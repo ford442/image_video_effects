@@ -6,6 +6,9 @@
 //  Created: 2026-05-30
 //  Updated: 2026-06-01
 //  By: Kimi Agent (4-Agent Swarm Upgrade)
+//  Upgraded: 2026-09-27
+//  Ideas: coherent forking branches (value-noise fix); C.a skeleton accretion + bleaching memory; star-lobed polyp mouths that retract at the pointer
+//  A packing: A.rgb = ACES display colour (temporal history); A.a = skeleton memory stored as skel*0.9 (NOT display alpha); writeTexture.a = semantic alpha
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -34,17 +37,55 @@ fn hash21(p: vec2<f32>) -> f32 {
   return fract(sin(h) * 43758.5453123);
 }
 
+// Value noise (smooth, interpolated). The previous fbm summed raw hash21 per pixel,
+// so branchNoise/branchAngle were white noise (grain), not branches.
+fn vnoise(p: vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let s = f * f * (3.0 - 2.0 * f);
+  let a = hash21(i);
+  let b = hash21(i + vec2<f32>(1.0, 0.0));
+  let c = hash21(i + vec2<f32>(0.0, 1.0));
+  let d = hash21(i + vec2<f32>(1.0, 1.0));
+  return mix(mix(a, b, s.x), mix(c, d, s.x), s.y);
+}
+
 fn fbm(p: vec2<f32>, time: f32) -> f32 {
   var v = 0.0;
   var a = 0.5;
-  var pp = p;
+  var pp = p + vec2<f32>(0.0, time * 0.01);
   for (var i: i32 = 0; i < 5; i = i + 1) {
-    let h = hash21(pp + vec2<f32>(f32(i) * 7.3, time * 0.01));
-    v += a * h;
+    v += a * vnoise(pp + vec2<f32>(f32(i) * 7.3, 0.0));
     pp = pp * 2.1 + vec2<f32>(3.2, 1.7);
     a *= 0.5;
   }
   return v;
+}
+
+fn rot2(v: vec2<f32>, a: f32) -> vec2<f32> {
+  let c = cos(a);
+  let s = sin(a);
+  return vec2<f32>(v.x * c - v.y * s, v.x * s + v.y * c);
+}
+
+// IDEA 1 helper: distance to a segment, .y = 0..1 position along it (for tip taper).
+fn segDist(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
+  let pa = p - a;
+  let ba = b - a;
+  let h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-6), 0.0, 1.0);
+  return vec2<f32>(length(pa - ba * h), h);
+}
+
+fn limb(d: f32, w: f32) -> f32 {
+  return min((1.0 - smoothstep(w * 0.55, w, d)) + 0.3 * (1.0 - smoothstep(w, w * 3.5, d)), 1.0);
+}
+
+// IDEA 2 helper: skeleton memory lives in C.a as skel*0.9. Values above 0.9 are foreign
+// (e.g. hardcoded alpha 1.0 left by a previous shader) and read as 0; zero-init C reads 0.
+fn skelAt(c: vec2<i32>, dim: vec2<i32>) -> f32 {
+  let cc = clamp(c, vec2<i32>(0), dim - vec2<i32>(1));
+  let a = textureLoad(dataTextureC, cc, 0).a;
+  return select(clamp(a, 0.0, 0.9) / 0.9, 0.0, !(a <= 0.9001));
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -84,6 +125,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let aspect = resolution.x / resolution.y;
   let depth = smoothstep(0.0, 1.0, uv.y);
 
+  // IDEA 2: skeleton memory read (exact loads), slight diffusion so accretion spreads.
+  let coord = vec2<i32>(global_id.xy);
+  let dim = vec2<i32>(resolution);
+  let skelC = skelAt(coord, dim);
+  let skelN = 0.25 * (skelAt(coord + vec2<i32>(1, 0), dim) + skelAt(coord - vec2<i32>(1, 0), dim)
+                    + skelAt(coord + vec2<i32>(0, 1), dim) + skelAt(coord - vec2<i32>(0, 1), dim));
+  let skelBlur = mix(skelC, skelN, 0.25);
+
   var clickFront = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);
   for (var i = 0u; i < rippleCount; i = i + 1u) {
@@ -106,21 +155,54 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let branchAngle = branchNoise * 6.2831;
 
   let nodePos = fract(colonyUV) - 0.5;
-  let rotNode = vec2<f32>(
-    nodePos.x * cos(branchAngle) - nodePos.y * sin(branchAngle),
-    nodePos.x * sin(branchAngle) + nodePos.y * cos(branchAngle)
-  );
 
-  let branch = smoothstep(0.45, 0.12, abs(rotNode.x)) * smoothstep(0.5, 0.0, abs(rotNode.y));
+  // IDEA 1: each colony cell is a small tree. Trunk angle comes from smooth cell-level noise
+  // (neighbours lean alike), sways in the current, forks ~35 deg into two tapering sub-branches.
+  // Accreted skeleton (IDEA 2) thickens the limbs.
+  let cellId = floor(colonyUV);
+  let cellNoise = fbm(cellId * 0.45 + vec2<f32>(2.3, 5.1), time);
+  let sway = sin(time * 0.6 + hash21(cellId) * 6.2831 + current.x * 2.0) * 0.07;
+  let brDir = vec2<f32>(cos(cellNoise * 6.2831 + sway), sin(cellNoise * 6.2831 + sway));
+  let forkAng = 0.61 + (hash21(cellId + vec2<f32>(1.7, 4.3)) - 0.5) * 0.2;
+  let girth = 1.0 + 0.5 * skelBlur;
+  let rootP = -brDir * 0.44;
+  let forkP = brDir * 0.10;
+  let tipA = forkP + rot2(brDir, forkAng) * 0.34;
+  let tipB = forkP + rot2(brDir, -forkAng) * 0.34;
+  let sT = segDist(nodePos, rootP, forkP);
+  let sA = segDist(nodePos, forkP, tipA);
+  let sB = segDist(nodePos, forkP, tipB);
+  let branch = max(
+    limb(sT.x, mix(0.085, 0.06, sT.y) * girth),
+    max(limb(sA.x, mix(0.06, 0.012, sA.y) * girth), limb(sB.x, mix(0.06, 0.012, sB.y) * girth))
+  );
   let dla = fbm(uv * 12.0 + hash21(floor(colonyUV)) * 3.0, time * 0.5);
   let dlaBranch = smoothstep(0.35, 0.7, dla) * nutrient;
 
   let mousePull = (1.0 - smoothstep(0.0, 0.55, length((uv - mouse) * vec2<f32>(aspect, 1.0)))) * mouseAttraction * (0.35 + held * 0.9);
   let coralDensity = clamp((branch * 0.7 + dlaBranch * 0.5 + spawnPulse * 0.3) * nutrient + mousePull + clickFront * 0.32, 0.0, 1.0);
 
-  let polypGrid = fract(uv * (18.0 + polypSize * 14.0)) - 0.5;
+  // IDEA 2: fed pixels accrete skeleton; it erodes slowly (per-frame rates, not dt based).
+  // Where the colony is starved now but skeleton remains, it bleaches to a pale ghost.
+  let skelNew = clamp(skelBlur * 0.9992 + smoothstep(0.08, 0.3, coralDensity) * 0.003, 0.0, 1.0);
+  let bleach = skelNew * (1.0 - smoothstep(0.05, 0.3, coralDensity));
+  let body = max(coralDensity, skelNew * 0.5);
+
+  // IDEA 3: star-lobed polyp mouths. 8 lobes with per-cell phase and sway, a dark mouth pit;
+  // lobes retract near the pointer (stronger when held) and extend with treble.
+  let polypScale = 18.0 + polypSize * 14.0;
+  let polypUV = uv * polypScale;
+  let polypGrid = fract(polypUV) - 0.5;
   let polypDist = length(polypGrid);
-  let polyp = smoothstep(polypSize * 0.5, polypSize * 0.08, polypDist) * coralDensity;
+  let polypPh = hash21(floor(polypUV)) * 6.2831;
+  let polypAng = atan2(polypGrid.y, polypGrid.x);
+  let nearPtr = 1.0 - smoothstep(0.0, 0.3, length((uv - mouse) * vec2<f32>(aspect, 1.0)));
+  let retract = nearPtr * clamp(mouseAttraction, 0.0, 1.0) * (0.45 + held * 0.4);
+  let extend = clamp(1.0 + treble * 0.45 - retract * 0.8, 0.3, 1.5);
+  let lobe = 1.0 + 0.3 * cos(8.0 * polypAng + polypPh + sin(time * 0.7 + polypPh) * 0.5);
+  let mouthR = polypSize * 0.5 * lobe * extend;
+  let polyp = (1.0 - smoothstep(mouthR * 0.16, mouthR, polypDist)) * coralDensity;
+  let mouthPit = 1.0 - smoothstep(mouthR * 0.05, mouthR * 0.2, polypDist);
 
   let caustics = abs(sin(uv.x * 40.0 + time * 0.6) + sin(uv.y * 35.0 - time * 0.4)) * 0.5;
   let causticLight = caustics * (0.15 + depth * 0.25) * (1.0 + treble * 0.5);
@@ -132,10 +214,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     0.35 + 0.65 * sin(hue * 6.28 + 4.1)
   );
   coral = mix(coral, vec3<f32>(0.1, 0.9, 0.7), spawnPulse * 0.4);
-  coral = mix(coral, aragoniteColor(coralDensity), 0.4);
+  coral = mix(coral, aragoniteColor(mix(coralDensity, 0.0, bleach)), 0.4 + 0.5 * bleach);
 
-  let sss = smoothstep(0.0, 0.4, coralDensity) * 0.35;
-  var color = coral * (coralDensity * 0.8 + polyp * 1.4 + sss);
+  let sss = smoothstep(0.0, 0.4, body) * 0.35;
+  var color = coral * (body * 0.8 + polyp * 1.4 * (1.0 - 0.45 * mouthPit) + sss);
 
   let bloom = polyp * vec3<f32>(0.6, 1.0, 0.8) * (0.5 + bass * 0.6);
   color += bloom * 0.6;
@@ -147,22 +229,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let waterTint = vec3<f32>(0.02, 0.08, 0.14);
   let depthAtten = mix(0.25, 0.85, depth);
-  color = mix(waterTint * depthAtten, color, clamp(coralDensity + polyp * 0.5, 0.0, 1.0));
+  color = mix(waterTint * depthAtten, color, clamp(body + polyp * 0.5, 0.0, 1.0));
 
   let biolum = polyp * (0.4 + bass * 0.5);
-  let semantic_alpha = clamp(coralDensity * (0.25 + biolum) * depthAtten + clickFront * 0.2, 0.05, 0.98);
+  let semantic_alpha = clamp(body * (0.25 + biolum) * depthAtten + clickFront * 0.2, 0.05, 0.98);
 
   let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
   color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
 
   color = acesToneMap(color * (1.0 + bass * 0.25));
 
-  let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
+  let prev = textureLoad(dataTextureC, coord, 0);
   let decay = 0.96;
   let temporal = mix(prev.rgb * decay, color, 0.25);
   color = temporal;
 
   textureStore(writeTexture, global_id.xy, vec4<f32>(color, semantic_alpha));
-  textureStore(dataTextureA, global_id.xy, vec4<f32>(color, semantic_alpha));
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(coralDensity * depthAtten, 0.0, 0.0, 0.0));
+  // A.rgb = display colour history; A.a = skeleton memory (skel*0.9), NOT display alpha.
+  textureStore(dataTextureA, global_id.xy, vec4<f32>(color, skelNew * 0.9));
+  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(body * depthAtten, 0.0, 0.0, 0.0));
 }

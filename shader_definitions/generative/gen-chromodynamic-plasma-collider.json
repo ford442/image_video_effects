@@ -11,7 +11,7 @@
     "music",
     "reactive"
   ],
-  "description": "A hyper-speed journey down an infinite magnetic containment tunnel where sub-atomic particles collide and shatter into vibrant, audio-reactive showers of exotic matter.",
+  "description": "A hyper-speed journey down an infinite magnetic containment tunnel where sub-atomic particles collide and shatter into vibrant, audio-reactive showers of exotic matter. Bunches colliding at the containment rings flash magenta debris shells, the beam is steered toward the magnetic anomaly while it betatron-wobbles through the ring apertures, and the tunnel's bends split it into dispersed colour fringes.",
   "workgroup_size": [
     16,
     16,
@@ -62,7 +62,10 @@
     "bounded-collision-plasma",
     "click-collision-shells",
     "temporal-feedback",
-    "depth-output"
+    "depth-output",
+    "upgraded-rgba",
+    "audio-reactive",
+    "mouse-driven"
   ],
   "params": [
     {

@@ -4,8 +4,8 @@
 //  Features: procedural, fractal, apollonian-gasket, circle-inversion,
 //            descartes-theorem, audio-reactive, mouse-driven, aces-tonemap, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-06
-//  Ideas: packing rims on seed circles; curvature tint from last inverted k
+//  Upgraded: 2026-09-27
+//  Ideas: packing rims on seed circles; curvature tint from last inverted k; generation stipple; tangent kisses
 //  A packing: linear RGB + alpha (ACES on display)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -136,9 +136,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     val * (0.5 + sat * cos((hue - 0.33) * 6.283) * 0.5),
     val * (0.5 + sat * cos((hue - 0.66) * 6.283) * 0.5)
   );
-  let ring = abs(fract(minDist * 18.0 + time * 2.0) - 0.5);
+  // Idea 3 — generation stipple: deeper inversions draw finer rings
+  let ringFreq = 18.0 * (1.0 + invCount * 0.85);
+  let ring = abs(fract(minDist * ringFreq + time * 2.0) - 0.5);
   color += vec3<f32>(1.0, 0.2, 0.85) * (1.0 - smoothstep(0.0, 0.08, ring)) * 0.35;
   color += vec3<f32>(0.92, 0.88, 0.72) * clamp(packRim, 0.0, 1.0) * 0.32;
+  // Idea 4 — tangent kisses where two seed circles nearly touch
+  var kisses = 0.0;
+  for (var j = 0; j < 5; j = j + 1) {
+    for (var k = j + 1; k < 5; k = k + 1) {
+      let gap = abs(distance(circles[j].xy, circles[k].xy) - (circles[j].z + circles[k].z));
+      let dir = circles[k].xy - circles[j].xy;
+      let contact = circles[j].xy + dir / max(length(dir), 1e-4) * circles[j].z;
+      let near = exp(-dot(p - contact, p - contact) * 220.0);
+      kisses += near * exp(-gap * 28.0);
+    }
+  }
+  color += vec3<f32>(1.0, 0.95, 0.75) * clamp(kisses, 0.0, 1.2) * 0.7;
 
   let ca = smoothstep(0.0, 0.4, density) * rainbow;
   color = vec3<f32>(

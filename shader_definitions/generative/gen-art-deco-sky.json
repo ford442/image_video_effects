@@ -66,7 +66,8 @@
     "click-reactive",
     "temporal",
     "raymarching",
-    "generated-depth"
+    "generated-depth",
+    "upgraded-rgba"
   ],
   "params": [
     {

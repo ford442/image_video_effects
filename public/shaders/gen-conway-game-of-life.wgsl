@@ -4,8 +4,8 @@
 //  Features: cellular-automata, neon, audio-reactive, mouse-interactive,
 //    depth-aware, temporal-feedback, aces-tone-map, chromatic-aberration, generation-counter, hue-preserve-clamp, ign-dither
 //  Complexity: High
-//  Upgraded: 2026-09-06
-//  Ideas: neighbor-count heat; still-life amber on low-activity survivors
+//  Upgraded: 2026-09-27
+//  Ideas: neighbor-count heat; still-life amber on low-activity survivors; split deaths; glider lean
 //  A packing: raw alive, generation, activity, alpha
 // ═══════════════════════════════════════════════════════════════════
 
@@ -59,15 +59,19 @@ fn cellState(tex: texture_2d<f32>, cell: vec2<i32>, cellSize: i32) -> f32 {
   return textureLoad(tex, samplePix, 0).r;
 }
 
-fn countNeighbors(tex: texture_2d<f32>, cell: vec2<i32>, cellSize: i32) -> f32 {
+fn neighborField(tex: texture_2d<f32>, cell: vec2<i32>, cellSize: i32) -> vec3<f32> {
   var count = 0.0;
+  var centroid = vec2<f32>(0.0);
   for (var dy = -1; dy <= 1; dy++) {
     for (var dx = -1; dx <= 1; dx++) {
       if dx == 0 && dy == 0 { continue; }
-      count += cellState(tex, cell + vec2<i32>(dx, dy), cellSize);
+      let s = cellState(tex, cell + vec2<i32>(dx, dy), cellSize);
+      count += s;
+      centroid += vec2<f32>(f32(dx), f32(dy)) * s;
     }
   }
-  return count;
+  let lean = centroid / max(count, 0.001);
+  return vec3<f32>(count, lean);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -104,7 +108,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let cell = pixel / cellSize;
 
   let prevState = cellState(dataTextureC, cell, cellSize);
-  let neighbors = countNeighbors(dataTextureC, cell, cellSize);
+  let field = neighborField(dataTextureC, cell, cellSize);
+  let neighbors = field.x;
+  let lean = field.yz;
 
   let ruleMorph = fract(time * p2 * 0.12);
   let golWeight = 1.0 - smoothstep(0.3, 0.7, ruleMorph);
@@ -141,7 +147,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var color = vec3<f32>(0.0);
   color += vec3<f32>(0.15, 0.95, 1.0) * birthR;
   color += vec3<f32>(1.0, 0.12, 0.82) * survival;
-  color += vec3<f32>(1.0, 0.85, 0.12) * deathEvent * 0.4;
+  // Idea 3 — isolation death (n<2) vs overcrowding death (n>3)
+  let isoDeath = deathEvent * (1.0 - step(2.0, neighbors));
+  let crowdDeath = deathEvent * step(4.0, neighbors);
+  let otherDeath = max(deathEvent - isoDeath - crowdDeath, 0.0);
+  color += vec3<f32>(0.35, 0.62, 1.0) * isoDeath * 0.55;
+  color += vec3<f32>(1.0, 0.2, 0.06) * crowdDeath * 0.55;
+  color += vec3<f32>(1.0, 0.85, 0.12) * otherDeath * 0.28;
   color += vec3<f32>(0.6, 0.2, 1.0) * mids * activity * 0.35;
   // Idea 1 — neighbor heat
   let crowd = clamp(neighbors / 8.0, 0.0, 1.0);
@@ -150,6 +162,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Idea 2 — still-life amber (survivors with almost no Δ)
   let stillLife = survival * (1.0 - smoothstep(0.0, 0.15, activity));
   color += vec3<f32>(1.0, 0.72, 0.22) * stillLife * 0.22;
+  // Idea 4 — glider lean toward the crowded neighbor side
+  let leanTint = clamp(vec3<f32>(0.55 + lean.x * 0.4, 0.22, 0.55 - lean.y * 0.4), vec3<f32>(0.0), vec3<f32>(1.0));
+  color += leanTint * newState * clamp(length(lean), 0.0, 1.0) * 0.24;
 
   let fadeDecay = 0.88 + p4 * 0.08;
   let fadeColor = prev.rgb * fadeDecay;

@@ -1,12 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Bioluminescent Abyss
 //  Category: generative
-//  Features: deep-sea-ecosystem, seasonal-audio, mouse-as-light, volumetric-bioluminescence, depth-stratified
+//  Features: deep-sea-ecosystem, seasonal-audio, mouse-as-light, volumetric-bioluminescence, depth-stratified, upgraded-rgba
 //  Complexity: High
 //  Chunks From: previous abyssal work + audio season patterns
 //  Created: 2026-05-23
 //  Updated: 2026-05-31
 //  By: Grok (seasonal audio ecosystem + submarine light mouse upgrade)
+//  Upgraded: 2026-09-27
+//  Ideas: tube-worm plume crown (radial gill lamellae bump, retracts under spotlight/click); chemosynthetic bacterial mats zoned around the nearest vent; arrival-gated click chain-reaction hopping worm to worm
+//  A packing: ACES display RGBA (rgb trail + alpha trail)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -146,6 +149,99 @@ fn calculateMarineAlpha(mat: f32, thickness: f32, n: vec3<f32>, l: vec3<f32>,
     return clamp(alpha, 0.3, 0.98);
 }
 
+// --- Upgrade helpers (2026-09-27) ---
+
+const CROWN_GILLS: f32 = 14.0;     // even, so the angular pattern wraps at the atan2 seam
+const CHAIN_SPEED: f32 = 6.0;      // world units / s for the click relay between worms
+const MAT_COLOR_SULPHUR: vec3<f32> = vec3<f32>(1.0, 0.92, 0.7);
+const MAT_COLOR_ORANGE: vec3<f32> = vec3<f32>(1.0, 0.42, 0.1);
+const MAT_COLOR_TEAL: vec3<f32> = vec3<f32>(0.05, 0.6, 0.5);
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Same world mapping as the mouse spotlight, anchored to the camera ground position
+// (target.z = 0.5 * clock). Pass the clock of the moment the point was placed.
+fn viewToWorld(uvxy: vec2<f32>, atClock: f32) -> vec2<f32> {
+    return vec2<f32>(uvxy.x * 10.0 - 5.0, atClock * 0.5 + uvxy.y * 8.0 - 4.0);
+}
+
+struct WormFrame {
+    q: vec3<f32>,        // worm-local position (swayed axis at x=z=0, y=0 at the ground)
+    h: f32,              // per-worm hash
+    height: f32,
+    radius: f32,
+    center: vec2<f32>,   // worm cell centre in world xz
+};
+
+// Mirrors the worm cell + sway logic of map() (keep in sync) so shading can find the swayed axis.
+fn wormFrame(p: vec3<f32>) -> WormFrame {
+    let cell_size = mix(10.0, 4.0, u.zoom_params.x);
+    let id = floor(p.xz / cell_size);
+    let q_xz = (fract(p.xz / cell_size) - 0.5) * cell_size;
+    let h = hash(id);
+    let center = (id + 0.5) * cell_size;
+    let ground_y = -4.0 - fbm(center * 0.2) * 2.0;
+    var q = vec3<f32>(q_xz.x, p.y - ground_y, q_xz.y);
+    let time = u.config.x;
+    let sway_amount = (q.y * 0.15) * u.zoom_params.y;
+    q.x -= sin(time * 0.5 + h * 10.0) * sway_amount;
+    q.z -= cos(time * 0.3 + h * 10.0) * sway_amount;
+    var f: WormFrame;
+    f.q = q;
+    f.h = h;
+    f.height = 2.0 + h * 3.0;
+    f.radius = 0.15 + h * 0.1;
+    f.center = center;
+    return f;
+}
+
+// IDEA 3 + feeding bloom: x = local click bloom at the tip, y = chain-reaction pulse of this worm.
+// Ages use the real clock (config.x), the same clock as ripple.z.
+fn clickField(pxz: vec2<f32>, wcenter: vec2<f32>, wh: f32, clock: f32) -> vec2<f32> {
+    var bloom = 0.0;
+    var chain = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = clock - ripple.z;
+        if (age <= 0.0 || age > 9.0) { continue; }
+        let cw = viewToWorld(ripple.xy, ripple.z);
+        let rDist = length(pxz - cw);
+        if (rDist < 1.5 && age < 3.0) {
+            bloom += exp(-rDist) * (1.0 - age * 0.3) * 0.4;
+        }
+        // Arrival-gated relay: this worm fires only once the front (plus its own reaction lag) reaches it.
+        let wd = length(wcenter - cw);
+        let a = age - (wd / CHAIN_SPEED + wh * 0.4);
+        if (a > 0.0) {
+            chain += smoothstep(0.0, 0.1, a) * exp(-a * 1.7) * exp(-wd * 0.05);
+        }
+    }
+    return vec2<f32>(bloom, min(chain, 2.0));
+}
+
+// IDEA 2: distance to, and hash of, the nearest thermal vent centre (3x3 scan of the 30-unit vent cells in map()).
+fn nearestVent(pxz: vec2<f32>) -> vec2<f32> {
+    let cs = 30.0;
+    let base = floor(pxz / cs);
+    var best = 1000.0;
+    var bh = 0.0;
+    for (var j = -1; j <= 1; j++) {
+        for (var i = -1; i <= 1; i++) {
+            let cell = base + vec2<f32>(f32(i), f32(j));
+            let vh = hash(cell + vec2<f32>(12.34, 56.78));
+            if (vh > 0.7) {
+                let d = length(pxz - (cell + 0.5) * cs);
+                if (d < best) { best = d; bh = vh; }
+            }
+        }
+    }
+    return vec2<f32>(best, bh);
+}
+
 // --- Map Function ---
 
 fn map(p: vec3<f32>) -> vec2<f32> {
@@ -256,14 +352,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    let texUV = vec2<f32>(global_id.xy) / resolution;
-    let prev = textureSampleLevel(dataTextureC, u_sampler, texUV, 0.0);
+    let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
 
     var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
 
     // Camera
     var mouse = u.zoom_config.yz;
-    var time = u.config.x * 0.1;
+    var time = u.config.x * 0.1;   // camera drift clock only
+    let clock = u.config.x;        // real clock (ripple.z, animation)
 
     let yaw = (mouse.x - 0.5) * 10.0 + time * 0.5;
     let pitch = ((mouse.y - 0.5)) * 2.0;
@@ -308,7 +404,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let n = calcNormal(p);
 
         // Grok upgrade: mouse as submarine spotlight (hoisted for whole hit block)
-        let mouseSpot = smoothstep(0.4, 0.05, length(p.xz - vec2<f32>(mouse.x*10.0 - 5.0, mouse.y*8.0 - 4.0))) * u.zoom_config.w;
+        // Spotlight world position is anchored to the camera ground point (== HEAD mapping at clock 0);
+        // viewToWorld() is the shared mapping that click ripples use too.
+        let mouseSpot = smoothstep(0.4, 0.05, length(p.xz - viewToWorld(mouse, clock))) * u.zoom_config.w;
 
         let diff = max(dot(n, lightDir), 0.0);
 
@@ -321,6 +419,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         var thickness = 0.2;
         var isGlowing = false;
         var glowIntensity = 0.0;
+        var matGlow = vec3<f32>(0.0);
+        var clickBloom = 0.0;
 
         if (mat == 2.0) { // Worm Body
             baseColor = vec3<f32>(0.1, 0.05, 0.05);
@@ -336,19 +436,56 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // Grok upgrade: Audio seasons + mouse as submarine spotlight
             let seasonGlow = seasonBloom * 0.6 + seasonVolatile * 0.9;
             glowIntensity = u.zoom_params.z * (0.7 + seasonGlow + mouseSpot * 1.8 + bass * 0.25);
-            
+
+            // Click feeding bloom + IDEA 3 chain-reaction. Accumulated BEFORE the colour is built
+            // (HEAD added the bloom after baseColor, so it only ever changed alpha).
+            let wf = wormFrame(p);
+            let cf = clickField(p.xz, wf.center, wf.h, clock);
+            clickBloom = cf.x;
+            let chain = cf.y;
+            glowIntensity += clickBloom + chain * 1.4;
+
             let hue = p.y * 0.1;
 
             let k = vec3<f32>(1.0, 2.0/3.0, 1.0/3.0);
             let p_col = abs(fract(vec3<f32>(hue) + k) * 6.0 - 3.0);
-            let glowColor = clamp(p_col - 1.0, vec3<f32>(0.0), vec3<f32>(1.0));
+            var glowColor = clamp(p_col - 1.0, vec3<f32>(0.0), vec3<f32>(1.0));
+            glowColor = mix(glowColor, vec3<f32>(0.7, 1.0, 1.0), clamp(chain, 0.0, 1.0) * 0.6); // IDEA 3 flash tint
+
+            // IDEA 1: plume crown. Radial gill lamellae around the swayed worm axis, in shading/bump only.
+            let ang = atan2(wf.q.z, wf.q.x);
+            let crownH = clamp((wf.q.y - (wf.height - 0.5)) * 2.0, 0.0, 1.0);
+            let retract = clamp(mouseSpot * 1.2 + clickBloom * 2.0 + chain * 1.2, 0.0, 1.0);
+            let crownAmp = (1.0 - retract) * (0.35 + 0.65 * crownH);
+            let gphase = ang * CROWN_GILLS + wf.q.y * 3.0 - clock * 0.35;
+            let lam = smoothstep(0.12, 0.88, 0.5 + 0.5 * cos(gphase));
+            let barb = 0.5 + 0.5 * sin(wf.q.y * 46.0 + ang * CROWN_GILLS * 0.5);
+            let gill = lam * (0.75 + 0.25 * barb);
+            let tang = vec3<f32>(-sin(ang), 0.0, cos(ang));
+            let nb = normalize(n + tang * (-sin(gphase)) * crownAmp * 0.7);
+            let gillRim = pow(1.0 - max(dot(nb, -rd), 0.0), 3.0);
+            let crownMod = mix(1.0, 0.3 + 1.2 * gill, crownAmp);
 
             baseColor = glowColor * 2.0 * glowIntensity;
+            baseColor *= crownMod;
+            baseColor += glowColor * gillRim * crownAmp * 0.6 * glowIntensity;
             baseColor *= (0.8 + 0.2 * sin(u.config.x * 2.0));
             thickness = 0.05; // Very thin at glowing tip
             
         } else if (mat == 4.0) { // Vent Body
             baseColor = vec3<f32>(0.02, 0.02, 0.02);
+        } else if (mat == 1.0) { // Floor
+            // IDEA 2: chemosynthetic bacterial mat, zoned by distance to the nearest vent.
+            let nv = nearestVent(p.xz);
+            let matR = 8.0 + nv.y * 8.0;
+            let zoneT = clamp(nv.x / matR, 0.0, 1.0);
+            let reach = 1.0 - smoothstep(0.35, 1.0, zoneT);
+            let patchy = fbm(p.xz * 0.9 + vec2<f32>(7.0));
+            let cover = reach * smoothstep(0.32, 0.62, patchy + reach * 0.35);
+            let mcol = mix(mix(MAT_COLOR_SULPHUR, MAT_COLOR_ORANGE, smoothstep(0.05, 0.45, zoneT)),
+                           MAT_COLOR_TEAL, smoothstep(0.4, 0.85, zoneT));
+            let breathe = 0.75 + 0.25 * sin(nv.x * 0.9 - clock * 1.2 + nv.y * 6.0);
+            matGlow = mcol * cover * breathe * 0.3 * u.zoom_params.z * (1.0 + seasonBloom * 0.8 + mouseSpot);
         }
 
         // Apply lighting
@@ -357,6 +494,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Add Caustics to non-emissive parts
         if (mat != 3.0) {
             lighting += vec3<f32>(0.1, 0.2, 0.3) * caustic * diff;
+            lighting += matGlow;
         } else {
             lighting = baseColor;
         }
@@ -384,21 +522,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             alpha = mix(alpha, alpha * 0.6 + 0.3, mouseSpot * 0.5 + seasonBloom * 0.3);
         }
 
-        // Ripples create local "feeding" blooms (small creative spark)
-        let rippleCount = min(u32(u.config.y), 50u);
-        for (var i = 0u; i < rippleCount; i = i + 1u) {
-            let ripple = u.ripples[i];
-            let rDist = length(p.xz - ripple.xy * 8.0);
-            if (rDist < 1.5) {
-                let rAge = time - ripple.z;
-                if (rAge > 0.0 && rAge < 3.0) {
-                    let bloom = exp(-rDist) * (1.0 - rAge * 0.3) * 0.4;
-                    if (isGlowing) {
-                        glowIntensity += bloom;
-                        alpha = mix(alpha, 0.5, bloom * 0.5);
-                    }
-                }
-            }
+        // Click feeding bloom (computed above, before the tip colour) also thins the tip alpha as in HEAD.
+        if (isGlowing) {
+            alpha = mix(alpha, 0.5, clamp(clickBloom * 0.5, 0.0, 1.0));
         }
 
     } else {
@@ -408,11 +534,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Temporal feedback via dataTextureA
     let decay = 0.96;
-    let temporal = mix(prev.rgb * decay, color, 0.25);
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(temporal, 1.0));
+    let a = clamp(alpha, 0.0, 1.0);
+    let display = aces(color * 1.4);
+    let temporal = mix(prev.rgb * decay, display, 0.25);
+    let temporalA = mix(prev.a * decay, a, 0.25);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(temporal, temporalA));
 
     // Final premultiplied write with improved alpha for layering
-    let a = clamp(alpha, 0.0, 1.0);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color * a, a));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(display * a, a));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(t / 100.0, 0.0, 0.0, 0.0));
 }

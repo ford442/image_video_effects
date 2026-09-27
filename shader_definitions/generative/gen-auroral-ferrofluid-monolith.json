@@ -10,7 +10,7 @@
     "audio-reactive",
     "collapse"
   ],
-  "description": "A colossal liquid-metal monolith whose surface forms readable magnetic glyphs under strong bass, then collapses into chaotic auroral breakup on treble. Mouse drag rotates an external magnetic field that sculpts the ferrofluid in real time.",
+  "description": "A colossal liquid-metal monolith whose surface forms readable magnetic glyphs under strong bass, then collapses into chaotic auroral breakup on treble. Mouse drag rotates an external magnetic field that sculpts the ferrofluid in real time. The aurora clings to the spiked surface as a sheath, co-winds with the Magnetic Twist and gathers at the mouse pole, and spike crests throw an aurora-tinted corona.",
   "workgroup_size": [
     16,
     16,
@@ -55,7 +55,11 @@
   "updated": true,
   "id": "gen-auroral-ferrofluid-monolith",
   "url": "shaders/gen-auroral-ferrofluid-monolith.wgsl",
-  "features": [],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
   "params": [
     {
       "id": "spike_length",

@@ -4,7 +4,7 @@
   "tags": [
     "generative"
   ],
-  "description": "A colossal undulating leviathan skeleton prowling the abyss, its quantum marrow glowing through the bones. Fast-motion upgrade: whip-amplified traveling-wave spine kinematics, ballistic lunge surges with bass-transient kicks, high-speed anisotropically-stretched aether-current speed streaks, and velocity-advected motion-blur trails.",
+  "description": "A colossal undulating leviathan skeleton prowling the abyss, its quantum marrow glowing through the bones. Fast-motion upgrade: whip-amplified traveling-wave spine kinematics, ballistic lunge surges with bass-transient kicks, high-speed anisotropically-stretched aether-current speed streaks, and velocity-advected motion-blur trails. 2026-09-27: the violet marrow canal now rides the displaced spine core and pinches at rib joints, the tension flank of each tight bend glows emerald bending-strain bioluminescence that travels with the wave, and the streak currents part around the swaying bones with a brightened bow on the leading flank.",
   "workgroup_size": [
     16,
     16,
@@ -60,7 +60,9 @@
     "temporal-feedback",
     "aces-tone-map",
     "semantic-alpha",
-    "generated-depth"
+    "generated-depth",
+    "mouse-driven",
+    "upgraded-rgba"
   ],
   "params": [
     {

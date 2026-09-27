@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-27T05:42:18.046052",
+  "timestamp": "2026-09-27T06:36:32.140596",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
   "total": 1,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/gen-quantum-liquid-gold-cymatic-vortex.wgsl",
+      "file": "public/shaders/gen-aperiodic-monotile.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

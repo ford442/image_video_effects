@@ -11,7 +11,7 @@
     "audio-reactive",
     "music"
   ],
-  "description": "A stylized projection of rotating 4D fractal slices with rapid hyperslice transport, velocity-stretched lattice afterimages, click phase kicks, live audio response, and bounded display history.",
+  "description": "A stylized projection of rotating 4D fractal slices with rapid hyperslice transport, velocity-stretched lattice afterimages, click phase kicks, live audio response, and bounded display history. Julia distance-estimate filaments trace the true set boundary, the hypercube folds draw a crease lattice coloured by fold count, and the lattice lives in 4D so the rotations skew and spread it.",
   "workgroup_size": [
     16,
     16,
@@ -62,7 +62,8 @@
     "click-reactive",
     "temporal",
     "fast-motion",
-    "depth-aware"
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "params": [
     {

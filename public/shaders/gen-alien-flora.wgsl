@@ -1,8 +1,12 @@
-// ═══════════════════════════════════════════════════════════════
-//  Alien Flora - Generative Shader with Organic Material Properties
+// ═══════════════════════════════════════════════════════════════════
+//  Alien Flora
 //  Category: generative
-//  Features: Subsurface scattering, bioluminescence, organic alpha
-// ═══════════════════════════════════════════════════════════════
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-27
+//  Ideas: gill ridges; spore motes
+//  A packing: linear history RGB + organic alpha (ACES on display)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -58,6 +62,15 @@ fn hash(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 // Calculate organic tissue thickness from SDF
 fn calculateThickness(d: f32, normal: vec3<f32>, p: vec3<f32>) -> f32 {
     // Sample SDF slightly inside the surface
@@ -111,10 +124,31 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     let p_cap = q - vec3<f32>(0.0, stemHeight, 0.0);
     let d_cap_sphere = length(p_cap * vec3<f32>(1.0, 2.0, 1.0)) - capRadius;
     let d_cap_cut = max(d_cap_sphere, -p_cap.y);
-    let cap = d_cap_cut;
+    // Idea 1 — gill ridges on the cap underside
+    let gillAng = atan2(p_cap.z, p_cap.x);
+    let underside = smoothstep(0.12, -0.08, p_cap.y);
+    let gillReach = smoothstep(0.2, 0.75, length(p_cap.xz) / max(capRadius, 0.2));
+    let gill = abs(sin(gillAng * 12.0)) * 0.055 * underside * gillReach;
+    let cap = d_cap_cut + gill;
 
     // Blend stem and cap
     let d_plant = smin(stem, cap, 0.3);
+
+    // Idea 2 — spore motes lifting off the cap rim
+    let bass = plasmaBuffer[0].x;
+    let treble = plasmaBuffer[0].z;
+    var d_spore = 8.0;
+    for (var s = 0; s < 3; s = s + 1) {
+        let sf = f32(s);
+        let ang = rand * 6.2831853 + sf * 2.094395;
+        let lift = fract(time * (0.12 + bass * 0.22) + rand * 3.1 + sf * 0.37);
+        let sporeP = vec3<f32>(
+            cos(ang) * capRadius * 0.82,
+            stemHeight + lift * (1.5 + bass * 0.9),
+            sin(ang) * capRadius * 0.82
+        );
+        d_spore = min(d_spore, sdSphere(q - sporeP, 0.065 + treble * 0.03));
+    }
 
     var d = d_terrain;
     var mat = 1.0;
@@ -122,6 +156,10 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     if (d_plant < d) {
         d = d_plant;
         mat = 2.0;
+    }
+    if (d_spore < d) {
+        d = d_spore;
+        mat = 3.0;
     }
 
     return vec2<f32>(d, mat);
@@ -192,8 +230,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
-    let uv_screen = vec2<f32>(global_id.xy) / resolution;
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv_screen, 0.0);
+    let dimsC = vec2<i32>(textureDimensions(dataTextureC));
+    let prev = textureLoad(dataTextureC, clamp(vec2<i32>(global_id.xy), vec2<i32>(0), dimsC - vec2<i32>(1)), 0);
 
     // Camera Setup
     var mouse = u.zoom_config.yz;
@@ -222,7 +260,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var mat = res.y;
 
     var color = vec3<f32>(0.0);
-    var alpha = 1.0;
+    var alpha = 0.2;
     let fogColor = vec3<f32>(0.02, 0.05, 0.1);
     let lightDir = normalize(vec3<f32>(0.5, 0.8, -0.5));
 
@@ -252,6 +290,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // Glow intensity affects emission, not alpha directly
             let glow = u.zoom_params.z;
             baseColor = baseColor * glow;
+        } else if (mat == 3.0) {
+            let treble = plasmaBuffer[0].z;
+            baseColor = vec3<f32>(0.72, 0.95, 1.0) * (0.7 + treble * 1.5);
         }
 
         // Apply subsurface scattering for organic materials
@@ -283,11 +324,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     } else {
         color = fogColor;
         color = mix(fogColor, vec3<f32>(0.0, 0.0, 0.05), rd.y * 0.5 + 0.5);
+        alpha = 0.18;
     }
 
     let decay = 0.96;
     let temporal = mix(prev.rgb * decay, color, 0.25);
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(temporal, 1.0));
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(temporal, alpha));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(acesToneMap(color), alpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(t / 100.0, 0.0, 0.0, 0.0));
 }

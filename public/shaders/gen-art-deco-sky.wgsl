@@ -1,18 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Art Deco Skyscraper
 //  Category: generative
-//  Features: raymarching, architectural, generative-city, audio-lights, mouse-wind, gold-metallic, atmospheric-fog
+//  Features: raymarching, architectural, audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Chunks From: previous art deco work + richer lighting and atmosphere
-//  Created: 2026-05-10
-//  Updated: 2026-05-31
-//  By: Grok (visual flourish pass — richer metallic light, audio city glow, depth)
-// ═══════════════════════════════════════════════════════════════════
-//  OPTIMIZATION LOG (2026-05-31):
-//  - Audio reactivity wired to plasmaBuffer (bass→gold glow + window flicker)
-//  - Raymarch 150→110 steps with adaptive relaxation
-//  - Reinhard → ACES filmic tone mapping
-//  - IGN dither added before write
+//  Upgraded: 2026-09-27
+//  Ideas: ziggurat setbacks; casement mullions
+//  A packing: pre-ACES history RGB (ACES on display)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -105,13 +98,12 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     let base_width = 8.0;
     let base_depth = 8.0;
 
-    // Stepped setbacks based on continuous Y
-    let tier = floor(pos.y / 20.0);
-    // Use modulo for infinite repeating setbacks if needed, or just let it be a straight tower for infinite ascent
-    // Let's make repeating geometric patterns instead of a shrinking tower since it's infinite ascent
+    // Idea 1 — repeating ziggurat setbacks (four terraces, then the shaft repeats)
+    let tierStep = floor(fract(pos.y / 80.0) * 4.0);
+    let wallW = max(3.2, 6.0 - tierStep * 0.7);
 
     // Core pillar
-    let d_core = sdBox(cp, vec3<f32>(6.0, 1000000.0, 6.0));
+    let d_core = sdBox(cp, vec3<f32>(wallW, 1000000.0, wallW));
 
     // Fluting (subtractive waves on X and Z facades)
     let fluting_freq = 2.0;
@@ -126,19 +118,19 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     let local_y = (fract((cp.y + floor_h * 0.5) / floor_h) - 0.5) * floor_h;
 
     // Main walls
-    var d_walls = sdBox(vec3<f32>(cp.x, local_y, cp.z), vec3<f32>(6.0, 5.0, 6.0));
+    var d_walls = sdBox(vec3<f32>(cp.x, local_y, cp.z), vec3<f32>(wallW, 5.0, wallW));
 
     // Recessed windows
-    let window_w = 4.0;
-    let d_windows_cut = sdBox(vec3<f32>(cp.x, local_y, cp.z), vec3<f32>(window_w, 4.0, 6.5));
-    var d_windows = sdBox(vec3<f32>(cp.x, local_y, cp.z), vec3<f32>(window_w - 0.2, 3.8, 5.8));
+    let window_w = wallW * 0.66;
+    let d_windows_cut = sdBox(vec3<f32>(cp.x, local_y, cp.z), vec3<f32>(window_w, 4.0, wallW + 0.5));
+    var d_windows = sdBox(vec3<f32>(cp.x, local_y, cp.z), vec3<f32>(window_w - 0.2, 3.8, wallW - 0.2));
 
     // Subtract windows from walls
     d_walls = max(d_walls, -d_windows_cut);
 
     // Add vertical columns (fluted)
-    let d_col1 = sdBox(vec3<f32>(cp.x - 5.0, local_y, cp.z - 6.0), vec3<f32>(0.5, 5.0, 0.5));
-    let d_col2 = sdBox(vec3<f32>(cp.x - 6.0, local_y, cp.z - 5.0), vec3<f32>(0.5, 5.0, 0.5));
+    let d_col1 = sdBox(vec3<f32>(cp.x - wallW * 0.83, local_y, cp.z - wallW), vec3<f32>(0.5, 5.0, 0.5));
+    let d_col2 = sdBox(vec3<f32>(cp.x - wallW, local_y, cp.z - wallW * 0.83), vec3<f32>(0.5, 5.0, 0.5));
 
     let fluted_col1 = d_col1 + cos(cp.x*10.0)*0.1 + cos(cp.z*10.0)*0.1;
     let fluted_col2 = d_col2 + cos(cp.x*10.0)*0.1 + cos(cp.z*10.0)*0.1;
@@ -146,10 +138,10 @@ fn map(p: vec3<f32>) -> vec2<f32> {
 
     // Gold Trim (horizontal bands and geometric motifs)
     // Horizontal band
-    let d_band = sdBox(vec3<f32>(cp.x, local_y - 4.5, cp.z), vec3<f32>(6.2, 0.5, 6.2));
+    let d_band = sdBox(vec3<f32>(cp.x, local_y - 4.5, cp.z), vec3<f32>(wallW + 0.2, 0.5, wallW + 0.2));
 
     // Sunburst or stepped motif on the band
-    let motif_x = sdBox(vec3<f32>(cp.x, local_y - 4.0, cp.z - 6.2), vec3<f32>(2.0 - cp.y%2.0, 1.0, 0.2));
+    let motif_x = sdBox(vec3<f32>(cp.x, local_y - 4.0, cp.z - (wallW + 0.2)), vec3<f32>(2.0 - cp.y%2.0, 1.0, 0.2));
 
     var d_gold = min(d_band, motif_x);
 
@@ -294,6 +286,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let lightColor2 = vec3<f32>(0.2, 0.5, 1.0); // Cool blue fill light
 
     var color = fogColor;
+    var coverage = 0.16;
 
     // Global Y offset for materials that depend on world pos
     var ascentSpeed = u.zoom_params.y;
@@ -338,6 +331,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 // Flicker — mid-range audio modulates window twinkle
                 emission *= 0.8 + 0.2 * sin(time * 5.0 + h * 100.0) + mid * 0.25;
             }
+            // Idea 2 — casement mullions over the glass
+            let mullion = max(
+                1.0 - smoothstep(0.0, 0.07, abs(fract(world_p.x * 0.55) - 0.5)),
+                1.0 - smoothstep(0.0, 0.07, abs(fract(world_p.y * 0.55) - 0.5))
+            );
+            emission *= 1.0 - mullion * 0.88;
+            albedo = mix(albedo, vec3<f32>(0.012, 0.01, 0.008), mullion * 0.92);
         }
 
         // Lighting
@@ -381,6 +381,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Distance Fog
         let fog_amount = 1.0 - exp(-t * (0.01 + fogDensity * 0.05));
+        let emitAmt = clamp(length(emission) * 0.28, 0.0, 1.0);
+        coverage = clamp(0.36 + emitAmt * 0.34 + metallic * 0.22 + ao * 0.08, 0.2, 0.96);
+        coverage *= 1.0 - fog_amount * 0.4;
         color = mix(color, fogColor, fog_amount);
 
         // Height Fog / City Glow
@@ -392,6 +395,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Add a vertical gradient for city glow
         let sky_glow = exp(-rd.y * 4.0) * 0.5;
         color += lightColor1 * sky_glow * fogDensity;
+        coverage = 0.14 + sky_glow * fogDensity * 0.2;
     }
 
     // Post processing / Vignette
@@ -403,6 +407,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pointerDelta = (uv_screen - mouse) * vec2<f32>(aspect, 1.0);
     let searchlight = exp(-abs(pointerDelta.x) * 28.0) * exp(-max(pointerDelta.y, 0.0) * 3.0) * mouseDown;
     color += lightColor1 * searchlight * (0.35 + goldGlow * 0.25);
+    coverage = clamp(coverage + searchlight * 0.22, 0.0, 0.98);
 
     let rippleCount = min(u32(u.config.y), 50u);
     for (var i: u32 = 0u; i < rippleCount; i++) {
@@ -412,12 +417,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let d = length((uv_screen - ripple.xy) * vec2<f32>(aspect, 1.0));
         let halo = exp(-abs(d - age * 0.3) * 75.0) * exp(-age * 1.1);
         color += mix(lightColor1, lightColor2, fract(age * 0.4)) * halo * (0.6 + bass);
+        coverage = clamp(coverage + halo * 0.18, 0.0, 0.98);
     }
 
     // Temporal blend before ACES
     let decay = 0.96;
     let temporal = mix(prev.rgb * decay, color, 0.25 + mouseDown * 0.12);
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(temporal, 1.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(temporal, coverage));
 
     // ACES filmic tone mapping (replaces Reinhard — gold accents keep their warmth)
     color = acesToneMapping(temporal);
@@ -427,6 +433,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let ign = fract(52.9829189 * fract(dot(vec2<f32>(global_id.xy), vec2<f32>(0.06711056, 0.00583715))));
     color = clamp(color + (ign - 0.5) * (1.0 / 255.0), vec3<f32>(0.0), vec3<f32>(1.0));
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
+    textureStore(writeTexture, global_id.xy, vec4<f32>(color, coverage));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(t / 200.0, 0.0, 0.0, 0.0));
 }

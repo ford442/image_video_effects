@@ -1,12 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Auroral Ferrofluid-Monolith
 //  Category: generative
-//  Features: ferrofluid-sculpture, magnetic-glyphs, audio-collapse, mouse-magnetic-field, auroral
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Chunks From: ferrofluid patterns + magnetic field math
 //  Created: 2026-05-23
-//  Updated: 2026-05-31
-//  By: Grok (magnetic glyph formation + bass/treble collapse behavior)
+//  Upgraded: 2026-09-27
+//  Ideas: aurora sheath hugging the spike SDF; co-wound field aurora pinched toward the mouse pole; aurora-tinted spike-tip corona
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -24,8 +24,8 @@
 // ---------------------------------------------------
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+    config: vec4<f32>,       // x=Time, y=ClickCount (NOT audio), z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
     zoom_params: vec4<f32>,  // x=Spike Length, y=Aurora Intensity, z=Magnetic Twist, w=Fluid Metallic
     ripples: array<vec4<f32>, 50>,
 };
@@ -81,22 +81,33 @@ fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
     return length(max(d, vec3<f32>(0.0))) + min(max(d.x, max(d.y, d.z)), 0.0);
 }
 
-// Map function for the monolith
-fn map(p_in: vec3<f32>) -> vec2<f32> {
+// Magnetic twist: the monolith's field frame (shared by the spikes and, via Idea 2, the aurora)
+fn fieldFrame(p_in: vec3<f32>) -> vec3<f32> {
     var p = p_in;
-
-    // Magnetic twist
     let twist = u.zoom_params.z;
     let rot_xz = rot(p.y * twist * 0.5 + u.config.x * 0.2) * p.xz;
     p.x = rot_xz.x;
     p.z = rot_xz.y;
+    return p;
+}
 
-    // Mouse as external rotating magnetic field (drag = field rotation)
+// Mouse as external rotating magnetic field, orbiting the pillar axis.
+// Fix: HEAD added zoom_config.w * 8.0 to the angle, which teleported the pole 8 rad on press/release.
+fn magPole() -> vec3<f32> {
     let mx = (u.zoom_config.y - 0.5) * 12.0;
     let my = (u.zoom_config.z - 0.5) * 12.0;
-    let mouseAngle = u.config.x * 1.2 + u.zoom_config.w * 8.0; // stronger rotation when mouse is down
+    let mouseAngle = u.config.x * 1.2;
     let mousePole = vec3<f32>(mx, my, 0.0);
-    let rotatedPole = vec3<f32>(mousePole.x * cos(mouseAngle) - mousePole.z * sin(mouseAngle), mousePole.y, mousePole.x * sin(mouseAngle) + mousePole.z * cos(mouseAngle));
+    return vec3<f32>(mousePole.x * cos(mouseAngle) - mousePole.z * sin(mouseAngle), mousePole.y, mousePole.x * sin(mouseAngle) + mousePole.z * cos(mouseAngle));
+}
+
+// Map function for the monolith. .x = SDF, .y = spike crest factor 0..1 (Idea 3)
+fn map(p_in: vec3<f32>) -> vec2<f32> {
+    // Magnetic twist
+    let p = fieldFrame(p_in);
+
+    // Mouse pole (held = stronger distortion, as HEAD)
+    let rotatedPole = magPole();
     let dPole = length(p - rotatedPole);
     let poleDistort = exp(-dPole * 0.45) * (0.6 + u.zoom_config.w * 0.8);
 
@@ -112,16 +123,19 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
     // Ferrofluid spikes — strong bass forms readable magnetic glyphs, treble collapses them into chaos
     let glyphForm = smoothstep(0.4, 0.85, bass) * (1.0 - treble * 0.8);
     let chaos = treble * 1.8 + mids * 0.3;
-    let spikeLength = u.zoom_params.x * (0.7 + bass * 2.2 * glyphForm) + poleDistort - chaos * 0.4;
+    // Fix: treble could drive this negative (spikes inverted into pits)
+    let spikeLength = max(u.zoom_params.x * (0.7 + bass * 2.2 * glyphForm) + poleDistort - chaos * 0.4, 0.0);
 
-    var sp = p * 4.0;
+    let sp = p * 4.0;
     let n = abs(noise(sp + vec3<f32>(0.0, -u.config.x * 2.0, 0.0)));
-    let spikes = pow(1.0 - n, 8.0) * spikeLength;
+    // Fix: clamp the pow base (negative base is NaN in WGSL)
+    let crest = pow(max(1.0 - n, 0.0), 8.0);
+    let spikes = crest * spikeLength;
 
     d1 -= spikes;
 
-    // Ensure smoothing
-    return vec2<f32>(d1, 1.0); // 1.0 = material ID
+    // Idea 3: hand the crest factor to the shading pass (HEAD returned a constant material ID)
+    return vec2<f32>(d1, crest);
 }
 
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
@@ -133,23 +147,49 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     ));
 }
 
+// Aurora colour: HEAD's green→magenta height gradient (shared by the volume and the Idea 3 corona)
+fn auroraTint(p: vec3<f32>) -> vec3<f32> {
+    let c1 = vec3<f32>(0.0, 1.0, 0.5); // Cyan/Green
+    let c2 = vec3<f32>(1.0, 0.0, 0.8); // Magenta
+    return mix(c1, c2, sin(p.y + u.config.x) * 0.5 + 0.5);
+}
+
 // Aurora density function
 fn mapAurora(p_in: vec3<f32>) -> f32 {
-    var p = p_in;
-    let dBox = sdBox(p, vec3<f32>(1.5, 4.5, 1.5));
+    let dBox = sdBox(p_in, vec3<f32>(1.5, 4.5, 1.5));
     if (dBox > 2.0) { return 0.0; } // Optimization
 
+    // Idea 2: co-wound field aurora — enter the monolith's own field frame (Magnetic Twist winding + spin),
+    // then pinch the domain toward the orbiting mouse pole the spikes also feel.
+    var p = fieldFrame(p_in);
+    let pole = magPole();
+    let dPole = length(p - pole);
+    p = p + (pole - p) * (exp(-dPole * 0.5) * 0.35);
+    let poleGlow = 1.0 + (0.8 + u.zoom_config.w * 0.6) * exp(-dPole * 0.6);
+
+    // HEAD rotation, verbatim
     let p_xz = rot(p.y * 0.5 - u.config.x * 0.5) * p.xz;
     p.x = p_xz.x;
     p.z = p_xz.y;
 
-    let f1 = fbm(p * 1.5 + vec3<f32>(0.0, u.config.x, 0.0));
-    let f2 = fbm(p * 3.0 - vec3<f32>(u.config.x, 0.0, u.config.x));
+    // Fix: HEAD fbm spans only ~±0.15, so f1*f2 never reached the 0.4 threshold and the aurora was
+    // identically zero. Remap each octave-sum to 0..1 so HEAD's smoothstep(0.4, 0.8) can fire.
+    let f1 = clamp(0.5 + 4.0 * fbm(p * 1.5 + vec3<f32>(0.0, u.config.x, 0.0)), 0.0, 1.0);
+    let f2 = clamp(0.5 + 4.0 * fbm(p * 3.0 - vec3<f32>(u.config.x, 0.0, u.config.x)), 0.0, 1.0);
 
     let density = smoothstep(0.4, 0.8, f1 * f2);
     let falloff = smoothstep(2.0, 0.0, dBox);
 
-    return density * falloff * u.zoom_params.y;
+    // Idea 1: aurora sheath — the curtain clings to the spiked surface (x2 at the SDF, ~x0.5 one unit out)
+    let dMono = map(p_in).x;
+    let sheath = 0.3 + 1.7 * exp(-max(dMono, 0.0) * 2.2);
+
+    return density * falloff * sheath * poleGlow * u.zoom_params.y;
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -174,14 +214,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var t = 0.0;
     var tMax = 20.0;
     var hit = false;
-    var m = 0.0;
+    var crest = 0.0;
 
     for(var i=0; i<100; i++) {
         let p = ro + rd * t;
         let d = map(p);
         if(d.x < 0.002) {
             hit = true;
-            m = d.y;
+            crest = d.y;
             break;
         }
         if(t > tMax) { break; }
@@ -216,37 +256,46 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col += vec3<f32>(1.0) * spe1 * metal;
         col = mix(col, vec3<f32>(0.5, 0.8, 1.0), fresnel * metal);
 
-        // Audio reactive chromatic dispersion on tips (based on normal variation)
-        let audio = u.config.y;
-        if (audio > 0.1) {
-            let tipGlow = smoothstep(0.7, 1.0, n.y) * audio;
-            col += vec3<f32>(0.8, 0.2, 1.0) * tipGlow;
-        }
+        // Idea 3: spike-tip corona — crests discharge in the local aurora colour, brighter at grazing angles.
+        // Replaces HEAD's tip glow, which read u.config.y (click count) as audio and grew with every click.
+        let tip = smoothstep(0.9, 0.99, crest);
+        let rim = 1.0 - max(dot(n, v), 0.0);
+        let corona = tip * (0.35 + 0.65 * rim) * (0.9 + treble * 1.5) * u.zoom_params.y;
+        col += auroraTint(p) * corona;
     } else {
         t = tMax; // for volumetric pass limit
     }
 
     // Volumetric Aurora Pass
     var aurCol = vec3<f32>(0.0);
-    var tVol = 0.0;
-    let stepSize = 0.1;
+    // Fix: HEAD marched t = 0..6 in 0.1 steps, but the aurora region starts at t = 4.5..5.9 and the pillar
+    // surface sits at t = 6.1..9.1, so only the outer falloff shell was ever sampled. March the aurora
+    // bounding box (half-extents 3.5/6.5/3.5 contain sdBox(1.5,4.5,1.5) < 2) from entry to min(exit, hit).
+    let auroraHalf = vec3<f32>(3.5, 6.5, 3.5);
+    let invRd = 1.0 / select(rd, vec3<f32>(1e-6), abs(rd) < vec3<f32>(1e-6));
+    let tb0 = (-auroraHalf - ro) * invRd;
+    let tb1 = (auroraHalf - ro) * invRd;
+    let tNear = max(max(min(tb0.x, tb1.x), min(tb0.y, tb1.y)), min(tb0.z, tb1.z));
+    let tFar = min(min(max(tb0.x, tb1.x), max(tb0.y, tb1.y)), max(tb0.z, tb1.z));
+    let volStart = max(tNear, 0.0);
+    let volEnd = min(tFar, t);
+    let volSteps = 56;
+    let stepSize = max(volEnd - volStart, 0.0) / f32(volSteps);
 
     // Offset start for dither
-    tVol += hash33(vec3<f32>(uv, u.config.x)).x * stepSize;
+    var tVol = volStart + hash33(vec3<f32>(uv, u.config.x)).x * stepSize;
+    var aurDepth = 0.0;
 
-    for(var i=0; i<60; i++) {
-        if(tVol >= t) { break; } // stop at geometry
+    for(var i=0; i<volSteps; i++) {
+        if(tVol >= volEnd) { break; } // stop at geometry / box exit
 
         let p = ro + rd * tVol;
         let den = mapAurora(p);
 
         if(den > 0.01) {
             // Color gradient based on height and density
-            let c1 = vec3<f32>(0.0, 1.0, 0.5); // Cyan/Green
-            let c2 = vec3<f32>(1.0, 0.0, 0.8); // Magenta
-
-            let c = mix(c1, c2, sin(p.y + u.config.x) * 0.5 + 0.5);
-            aurCol += c * den * stepSize * 2.0;
+            aurCol += auroraTint(p) * den * stepSize * 2.0;
+            aurDepth += den * stepSize * 2.0;
         }
 
         tVol += stepSize;
@@ -263,16 +312,20 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let glyphStrength = smoothstep(0.35, 0.8, bass) * (1.0 - treble * 0.7);
     col = mix(col, col * 1.15 + vec3<f32>(0.2, 0.4, 0.9) * 0.3, glyphStrength * 0.4);
 
-    // Tone mapping
-    col = col / (1.0 + col);
+    // Tone mapping: ACES replaces HEAD's Reinhard; HEAD's display gamma kept so the dark chrome is not crushed
+    col = acesToneMap(max(col, vec3<f32>(0.0)));
     col = pow(col, vec3<f32>(1.0 / 2.2));
 
-    // Meaningful alpha: magnetic field strength + auroral intensity
-    let magneticField = u.zoom_config.w * 0.6 + bass * 0.4;
-    let aurIntensity = length(aurCol) * 0.8;
-    let alpha = clamp(0.65 + magneticField * 0.5 + aurIntensity * 0.6, 0.0, 1.1);
+    // Semantic alpha: pillar coverage, else aurora optical depth, else the faint background glow
+    let coverage = select(0.0, 1.0, hit);
+    let aurOpacity = 1.0 - exp(-aurDepth * 1.5);
+    let alpha = clamp(max(coverage, max(aurOpacity, bgGlow * 4.0)), 0.0, 1.0);
 
-    let a = clamp(alpha, 0.0, 1.0);
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col * a, a));
-    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    // Depth: near = 1, miss = 0
+    let depth = select(0.0, clamp(1.0 - t / tMax, 0.0, 1.0), hit);
+
+    let coord = vec2<i32>(id.xy);
+    textureStore(writeTexture, coord, vec4<f32>(col, alpha));
+    textureStore(dataTextureA, coord, vec4<f32>(col, alpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

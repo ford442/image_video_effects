@@ -1,11 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Bio-Luminescent Jelly
 //  Category: generative
-//  Features: jellyfish, bioluminescence, sdf-tentacles, audio-pulse, mouse-current, depth-glow, organic-motion
+//  Features: jellyfish, bioluminescence, sdf-tentacles, audio-pulse, mouse-current, depth-glow, organic-motion, upgraded-rgba
 //  Complexity: High
 //  Updated: 2026-05-31
 //  By: Grok (visual flourish pass — richer pulsing, color, and atmospheric underwater light)
-// ═══════════════════════════════════════════════════════════════════
+//  Upgraded: 2026-09-27
+//  Ideas: jet propulsion (contraction wave stretches tentacles, drift-lag streaming); anatomy (radial canals, margin ring canal, horseshoe gonad, notched lappets); jelly-lit marine snow
+//  A packing: raw pulsePhase in A.r (identical at every pixel, read back from C.r), A.g/A.b = 0, A.a = semantic alpha; writeTexture = ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -86,6 +88,27 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+// ── IDEA 3: marine snow, stateless sinking specks lit by the jelly's own glow ──
+fn marine_snow(p: vec2<f32>, t: f32, scale: f32, fall: f32, seed: f32, radius: f32, jelly: vec2<f32>, pulse: f32) -> f32 {
+  let off = vec2<f32>(0.0, t * fall);
+  let q = p * scale - off;                 // pattern sinks toward +y
+  let cell = floor(q);
+  let cs = cell + vec2<f32>(seed, seed * 0.37);
+  let h1 = hash2_j(cs);
+  let h2 = hash2_j(cs + vec2<f32>(17.3, 5.1));
+  let h3 = hash2_j(cs + vec2<f32>(41.9, 9.7));
+  let present = step(0.45, h3);
+  let c = vec2<f32>(0.3 + 0.4 * h1 + 0.1 * sin(t * 0.6 + h2 * 40.0), 0.3 + 0.4 * h2);
+  let sp = (cell + c + off) / scale;       // speck position in p space
+  let d = length(p - sp);
+  let dj = length(sp - jelly);
+  let lit = (0.55 + 0.45 * pulse) / (1.0 + dj * dj * 14.0);
+  let core = exp(-d * d / (radius * radius));
+  let halo = exp(-d * d / (radius * radius * 12.0));
+  let twinkle = 0.75 + 0.25 * sin(t * 1.7 + h1 * 50.0);
+  return present * twinkle * (core * lit + halo * lit * lit * 1.5);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let res = u.config.zw;
@@ -138,13 +161,27 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Bell dome shape - flatten bottom
   if (bellP.y > 0.0) {
-    dBell = max(dBell, bellP.y - bellRadius * 0.3);
+    // IDEA 2 (lappets): 8 rounded lobes with V-notches along the flat margin
+    let lappet = 0.014 * sqrt(abs(sin(bellP.x / bellRadius * 12.566)));
+    dBell = max(dBell, bellP.y - bellRadius * 0.3 - lappet);
   }
 
   // ── Tentacles (line segment SDFs) ───────────────────────────────
   let numTentacles = 8;
   var dTentacles = 1000.0;
   var tentacleGlow = 0.0;
+
+  // IDEA 1 (jet propulsion): analytic drift velocity (jellyPos = 0.85*drift + 0.15*mouse)
+  // and a contraction wave that reaches each segment slightly later than the last.
+  let driftVel = 0.85 * vec2<f32>(
+    0.03 * driftSpeed * cos(time * 0.2 * driftSpeed),
+    -0.015 * driftSpeed * sin(time * 0.15 * driftSpeed) + 0.01 * cos(time * 0.5)
+  );
+  let lagVel = -driftVel * 3.5;
+  var thr: array<f32, 5>;
+  for (var k = 0; k < 5; k++) {
+    thr[k] = max(0.0, -cos(pulseSpeed * (time - 0.09 * f32(k + 1))));
+  }
 
   for (var i = 0; i < numTentacles; i++) {
     let fi = f32(i);
@@ -164,8 +201,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let tNorm = fs / f32(segments);
       let segLen = tentacleLen / f32(segments);
 
-      let swayX = sin(wavePhase + fs * 0.5) * waveAmp * tNorm;
-      let swayY = -segLen + sin(wavePhase * 0.7 + fs * 0.3) * waveAmp * 0.3 * tNorm;
+      // IDEA 1: thrust straightens + stretches the segment; drift lag streams it backward
+      let thrust = thr[s - 1];
+      let lag = lagVel * (tNorm / f32(segments));
+      let swayX = sin(wavePhase + fs * 0.5) * waveAmp * (1.0 - 0.4 * thrust) * tNorm + lag.x;
+      let swayY = -segLen * (1.0 + 0.25 * thrust) + sin(wavePhase * 0.7 + fs * 0.3) * waveAmp * 0.3 * tNorm + lag.y;
 
       let nextPoint = prevPoint + vec2<f32>(swayX, swayY);
       let dSeg = sdSegment(p, prevPoint, nextPoint);
@@ -209,6 +249,29 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     shockwave = glow(abs(swDist - swRadius), 1.0 / (swThickness * swThickness)) * 0.5;
   }
 
+  // ── IDEA 2: anatomy (canals, margin ring canal, horseshoe gonad) ─
+  var anatomy = vec3<f32>(0.0);
+  var anatomyLum = 0.0;
+  if (dBell < 0.0) {
+    let depth = -dBell;
+    let rad = length(bellPScaled) / bellRadius;
+    let ang = atan2(bellPScaled.x, -bellPScaled.y);          // 0 = dome apex
+    let sector = abs(fract(ang * 1.27324) - 0.5);            // 4 canals at half-octants
+    let arcD = sector * 0.7854 * rad * bellRadius;
+    let canalFade = smoothstep(0.1, 0.3, rad) * smoothstep(0.008, 0.02, depth);
+    let travel = 0.65 + 0.35 * sin(rad * 10.0 - time * pulseSpeed * 2.0);
+    let canal = exp(-arcD * arcD * 40000.0) * canalFade * travel;
+    let ringD = depth - 0.014;
+    let ring = exp(-ringD * ringD * 30000.0);
+    let gr = rad - (0.34 + 0.03 * pulsePhase);
+    let gonadOpen = 1.0 - smoothstep(2.3, 2.9, abs(ang));
+    let gonad = exp(-gr * gr * 400.0) * gonadOpen * (0.8 + 0.2 * cos(ang * 6.0));
+    let canalLum = canal * 0.5 + ring * 0.35;
+    let gonadLum = gonad * 0.55 * (0.6 + 0.4 * pulse);
+    anatomy = vec3<f32>(0.35, 0.85, 1.0) * canalLum + vec3<f32>(1.0, 0.5, 0.4) * gonadLum;
+    anatomyLum = canalLum + gonadLum;
+  }
+
   // ── Color composition ───────────────────────────────────────────
   // Bell color - deep sea translucent
   let bellColor = vec3<f32>(0.05, 0.15, 0.25) * (0.6 + pulsePhase * 0.4);
@@ -228,9 +291,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col += glowCol * sparkle * trebleSmooth * 3.0;
   col += glowCol * shockwave * 2.0;
 
-  // Inner organs glow
-  let innerGlow = glow(dBell - bellRadius * 0.3, 20.0 * glowIntensity) * pulse;
+  // Inner organs glow: diffuse mesoglea shell (kept, softened) + IDEA 2 anatomy on top
+  let innerGlow = glow(dBell - bellRadius * 0.3, 20.0 * glowIntensity) * pulse * 0.55;
   col += vec3<f32>(0.2, 0.6, 0.8) * innerGlow;
+  col += anatomy * glowIntensity * 0.6;
+
+  // IDEA 3: marine snow lit by the jelly (two parallax layers), dimmed behind the bell body
+  let snow = marine_snow(p, time, 9.0, 0.02, 0.0, 0.004, jellyPos, pulse)
+           + 0.7 * marine_snow(p, time, 15.0, 0.035, 31.0, 0.0028, jellyPos, pulse);
+  let snowCol = mix(vec3<f32>(0.75, 0.95, 1.0), glowCol, 0.45);
+  let inBell = smoothstep(0.01, -0.01, dBell);
+  col += snowCol * snow * glowIntensity * 0.4 * (1.0 - 0.6 * inBell);
 
   // Vignette
   let vignette = 1.0 - length(uv - 0.5) * 0.25;
@@ -246,13 +317,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Glowing parts are translucent (lower alpha), dense body is more opaque.
   let densityAlpha = smoothstep(0.02, -0.02, dBell) * 0.7;
   let tentacleAlpha = smoothstep(0.005, -0.005, dTentacles) * 0.5;
-  let glowAlpha = (pulseGlow + tentacleGlow * 0.3 + innerGlow * 0.5) * 0.4;
+  let glowAlpha = (pulseGlow + tentacleGlow * 0.3 + innerGlow * 0.5 + anatomyLum * 0.5) * 0.4;
 
   var alpha = densityAlpha + tentacleAlpha;
   // Glow reduces density alpha for translucency effect
   alpha = mix(alpha, glowAlpha, smoothstep(0.0, 0.5, glowAlpha));
   alpha += sparkle * trebleSmooth * 0.3;
   alpha += shockwave * 0.2;
+  alpha += snow * 0.1;
   alpha = clamp(alpha, 0.0, 0.92);
 
   let outCol = vec4<f32>(acesToneMap(col * 1.1), alpha);

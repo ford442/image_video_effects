@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mathematical, chaos, visualization, audio-parameter, mouse-exploration, temporal-evolution, density-color
 //  Complexity: Medium
-//  Upgraded: 2026-09-06
-//  Ideas: continuous color-scheme mix; period-window ridges at lyap≈0
+//  Upgraded: 2026-09-27
+//  Ideas: continuous color-scheme mix; period-window ridges at lyap≈0; transient ghost; cobweb ticks
 //  A packing: HDR density RGB + alpha
 // ═══════════════════════════════════════════════════════════════════
 
@@ -167,6 +167,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // duplicated a large fraction of the per-pixel work.
     let skip = 80;
     var density = 0.0;
+    var ghost = 0.0;
     let binSize = 0.5 / resolution.y;
     var x = 0.5;
     var lyapSum = 0.0;
@@ -174,6 +175,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     for (var i: i32 = 0; i < 280; i++) {
         if (i >= totalIterations) { break; }
         x = r * x * (1.0 - x);
+        // Idea 3 — pre-attractor transient, dimmer than the settled band
+        if (i >= skip / 2 && i < skip) {
+            let gdist = abs(x - targetX);
+            let gbin = binSize * 3.0;
+            if (gdist < gbin) {
+                ghost += (1.0 - gdist / max(gbin, 1e-5)) * 0.45;
+            }
+        }
         if (i >= skip) {
             let dist = abs(x - targetX);
             if (dist < binSize) {
@@ -186,6 +195,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
     density = min(density / 10.0, 1.0);
+    ghost = min(ghost / 12.0, 0.4);
     let lyap = lyapSum / max(f32(iterationCount), 1.0);
     
     // === Visual Flourish: Richer, audio-reactive coloring ===
@@ -232,6 +242,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 2 — period-doubling ridge where lyap crosses zero
     let windowRidge = exp(-abs(lyap) * 14.0) * density;
     col += vec3<f32>(0.95, 0.9, 0.45) * windowRidge * 0.55;
+    col += vec3<f32>(0.28, 0.48, 0.9) * ghost;
+    // Idea 4 — cobweb ticks in the column under the pointer
+    let pointerR = mix(rMin, rMax, mouseUv.x);
+    var cob = 0.5;
+    var cobweb = 0.0;
+    let onColumn = 1.0 - smoothstep(0.0, 3.5 / max(resolution.x, 1.0), abs(uv.x - mouseUv.x));
+    for (var k: i32 = 0; k < 6; k = k + 1) {
+        cob = pointerR * cob * (1.0 - cob);
+        cobweb = max(cobweb, exp(-abs(uv.y - cob) * resolution.y * 0.35));
+    }
+    col += vec3<f32>(0.82, 0.94, 1.0) * cobweb * onColumn * 0.65;
 
     // A fast chaos scanner races through the parameter axis, illuminating
     // derivative-rich branches without changing the logistic-map geometry.

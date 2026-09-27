@@ -715,7 +715,8 @@
       "mouse-driven",
       "audio-reactive",
       "audio-driven",
-      "temporal"
+      "temporal",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2379,7 +2380,7 @@
       "audio-reactive",
       "music"
     ],
-    "description": "A stylized projection of rotating 4D fractal slices with rapid hyperslice transport, velocity-stretched lattice afterimages, click phase kicks, live audio response, and bounded display history.",
+    "description": "A stylized projection of rotating 4D fractal slices with rapid hyperslice transport, velocity-stretched lattice afterimages, click phase kicks, live audio response, and bounded display history. Julia distance-estimate filaments trace the true set boundary, the hypercube folds draw a crease lattice coloured by fold count, and the lattice lives in 4D so the rotations skew and spread it.",
     "workgroup_size": [
       16,
       16,
@@ -2430,7 +2431,8 @@
       "click-reactive",
       "temporal",
       "fast-motion",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2490,7 +2492,7 @@
       "aces-tone-map",
       "semantic-alpha"
     ],
-    "description": "A vast abyssal coral reef torn along a fast current. Growth rings race instead of creeping, polyp corrugation carves micro-detail into every branch, and bioluminescent nodes pulse through a psychedelic cyan-magenta spectrum driven by mids and treble. The spring-smoothed cursor opens a time-dilation well, holding the button blooms the reef, and clicks raise sediment rings that surge across the structure.",
+    "description": "A vast abyssal coral reef torn along a fast current. Growth rings race instead of creeping, polyp corrugation carves micro-detail into every branch, and bioluminescent nodes pulse through a psychedelic cyan-magenta spectrum driven by mids and treble. Growth-band strata ledge every branch and age faster in the well, where light is red-shifted and ringed by a blue Einstein rim, while a budding front swells the tip nodes. The cursor opens a time-dilation well, holding the button blooms the reef, and clicks raise sediment rings that surge across the structure.",
     "workgroup_size": [
       16,
       16,
@@ -2535,7 +2537,11 @@
     "updated": true,
     "id": "gen-abyssal-chrono-coral",
     "url": "shaders/gen-abyssal-chrono-coral.wgsl",
-    "features": [],
+    "features": [
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
+    ],
     "params": [
       {
         "id": "coral_density",
@@ -2791,7 +2797,7 @@
     "tags": [
       "generative"
     ],
-    "description": "A colossal undulating leviathan skeleton prowling the abyss, its quantum marrow glowing through the bones. Fast-motion upgrade: whip-amplified traveling-wave spine kinematics, ballistic lunge surges with bass-transient kicks, high-speed anisotropically-stretched aether-current speed streaks, and velocity-advected motion-blur trails.",
+    "description": "A colossal undulating leviathan skeleton prowling the abyss, its quantum marrow glowing through the bones. Fast-motion upgrade: whip-amplified traveling-wave spine kinematics, ballistic lunge surges with bass-transient kicks, high-speed anisotropically-stretched aether-current speed streaks, and velocity-advected motion-blur trails. 2026-09-27: the violet marrow canal now rides the displaced spine core and pinches at rib joints, the tension flank of each tight bend glows emerald bending-strain bioluminescence that travels with the wave, and the streak currents part around the swaying bones with a brightened bow on the leading flank.",
     "workgroup_size": [
       16,
       16,
@@ -2847,7 +2853,9 @@
       "temporal-feedback",
       "aces-tone-map",
       "semantic-alpha",
-      "generated-depth"
+      "generated-depth",
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2900,7 +2908,7 @@
       "audio-reactive",
       "raymarching"
     ],
-    "description": "A stylized warp-flight through a crystalline cavity with fast gyroid filaments, audio-lit shard pulses, click refraction waves, and bounded iridescent trails.",
+    "description": "A stylized warp-flight through a crystalline cavity with fast gyroid filaments, audio-lit shard pulses, click refraction waves, and bounded iridescent trails. Agate-banded facets and dew-bead knots on the threads add mineral detail.",
     "url": "shaders/gen-abyssal-silicate-geode-weaver.wgsl",
     "updated": true,
     "supportsDepth": true,
@@ -2916,7 +2924,8 @@
       "click-reactive",
       "temporal",
       "fast-motion",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "updatedParams": [
       {
@@ -3357,7 +3366,11 @@
     "updated": true,
     "id": "gen-alien-flora",
     "url": "shaders/gen-alien-flora.wgsl",
-    "features": [],
+    "features": [
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
+    ],
     "params": [
       {
         "id": "vegetation_density",
@@ -3771,7 +3784,8 @@
       "click-reactive",
       "temporal",
       "raymarching",
-      "generated-depth"
+      "generated-depth",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -3817,6 +3831,12 @@
     "name": "Astral Plasma Accretion Forge",
     "category": "generative",
     "url": "/shaders/gen-astral-plasma-accretion-forge.wgsl",
+    "description": "A noisy, Keplerian-twisted accretion disk of blackbody plasma with pole flares around a small black horizon. Upgrade: cool midplane dust lanes absorb the plasma behind them (Core Density sets extinction, Core Temp sets the dust sublimation radius); Keplerian differential rotation (Omega ~ r^-1.5) shears plasma and dust into trailing spiral lanes; gravitational redshift cools and dims the inner rim toward the well. Drag to orbit; bass/mids raise the pole flares.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
     "params": [
       {
         "id": "core_density",
@@ -3849,6 +3869,40 @@
         "id": "core_temp",
         "name": "Core Temp",
         "mapping": "zoom_params.w",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Core Density",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Accretion Spin",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Flux Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Core Temp",
         "default": 0.7,
         "min": 0,
         "max": 1,
@@ -4075,7 +4129,7 @@
       "aces-tone-map",
       "semantic-alpha"
     ],
-    "description": "A brass KIFS gear-train run hot and fast around a quantum plasma furnace, with cut teeth and rivet rows carved into every gear and exhaust streaming through a psychedelic spectrum. The spring-smoothed cursor warps a magnetic well through the machine, holding overdrives the spin and pulls the camera in, and clicks touch off detonation rings. Audio now comes from the three plasmaBuffer bands rather than the rippleCount misread.",
+    "description": "A brass KIFS gear-train run hot and fast around a quantum plasma furnace, with cut teeth and rivet rows carved into every gear and exhaust streaming through a psychedelic spectrum. Every gear turns on its own axle and meshes counter-rotating with its fold-mirrored neighbours, the machine is seen bent through the plasma core by true refraction (Refraction Index), and the exhaust pillar chuffs four puffs per gear revolution. The cursor warps a magnetic well through the machine, holding overdrives the spin and pulls the camera in, and clicks touch off detonation rings. Audio comes from the three plasmaBuffer bands.",
     "workgroup_size": [
       16,
       16,
@@ -4120,7 +4174,11 @@
     "updated": true,
     "id": "gen-astro-mechanical-quantum-furnace-engine",
     "url": "shaders/gen-astro-mechanical-quantum-furnace-engine.wgsl",
-    "features": [],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
     "params": [
       {
         "id": "gear_complexity",
@@ -4284,7 +4342,7 @@
       "aces-tone-map",
       "semantic-alpha"
     ],
-    "description": "A Mandelbulb raymarched at speed: the fractal exponent morphs several times a second under bass, orbit-trap coloring races through a full psychedelic spectrum with treble, and a greebled ridge shell carves micro-detail into every surface. The spring-smoothed cursor orbits the camera, holding the button throttles the spin and dollies in, and clicks fire shock rings that deform the bulb and flash the palette.",
+    "description": "A Mandelbulb raymarched at speed: the fractal exponent morphs several times a second under bass, orbit-trap coloring races through a full psychedelic spectrum with treble, and a greebled ridge shell carves micro-detail into every surface. The cursor orbits the camera, holding the button throttles the spin and dollies in, and clicks fire shock rings that deform the bulb and flash the palette. Upgraded: the surface is terraced into escape-time strata (smooth escape-count onion shells with hue-stepped contours) whose shells the Escape Radius bailout slides, lobes cast DE soft shadows and ambient occlusion into their crevices, and rays grazing the bulb leave a silhouette halo coloured by the orbit trap at their closest approach (scaled by Glow).",
     "workgroup_size": [
       16,
       16,
@@ -4329,7 +4387,11 @@
     "updated": true,
     "id": "gen-audiovisual-mandelbulb-raymarcher",
     "url": "shaders/gen-audiovisual-mandelbulb-raymarcher.wgsl",
-    "features": [],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
     "params": [
       {
         "id": "iterations",
@@ -4423,7 +4485,11 @@
     "updated": true,
     "id": "gen-aurora-borealis-synthesis",
     "url": "shaders/gen-aurora-borealis-synthesis.wgsl",
-    "features": [],
+    "features": [
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
+    ],
     "params": [
       {
         "id": "intensity",
@@ -4534,7 +4600,9 @@
       "depth-layering",
       "audio-reactive",
       "temporal-feedback",
-      "chromatic-aberration"
+      "chromatic-aberration",
+      "upgraded-rgba",
+      "mouse-driven"
     ],
     "params": [
       {
@@ -4587,7 +4655,7 @@
       "audio-reactive",
       "collapse"
     ],
-    "description": "A colossal liquid-metal monolith whose surface forms readable magnetic glyphs under strong bass, then collapses into chaotic auroral breakup on treble. Mouse drag rotates an external magnetic field that sculpts the ferrofluid in real time.",
+    "description": "A colossal liquid-metal monolith whose surface forms readable magnetic glyphs under strong bass, then collapses into chaotic auroral breakup on treble. Mouse drag rotates an external magnetic field that sculpts the ferrofluid in real time. The aurora clings to the spiked surface as a sheath, co-winds with the Magnetic Twist and gathers at the mouse pole, and spike crests throw an aurora-tinted corona.",
     "workgroup_size": [
       16,
       16,
@@ -4632,7 +4700,11 @@
     "updated": true,
     "id": "gen-auroral-ferrofluid-monolith",
     "url": "shaders/gen-auroral-ferrofluid-monolith.wgsl",
-    "features": [],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
     "params": [
       {
         "id": "spike_length",
@@ -4999,7 +5071,7 @@
       "glow",
       "translucent"
     ],
-    "description": "SDF tentacle jellyfish with pulsing bio-luminescence and glow-intensity alpha encoding. Audio drives pulse rhythm and sparkle particles; mouse attracts the jellyfish and creates shockwaves.",
+    "description": "SDF tentacle jellyfish with pulsing bio-luminescence and glow-intensity alpha encoding. Audio drives pulse rhythm and sparkle particles; mouse attracts the jellyfish and creates shockwaves. Jet-propulsion tentacle stretch and drift streaming, radial canals / gonad / notched lappets, and jelly-lit marine snow. A packing: raw pulsePhase in A.r, alpha in A.a.",
     "workgroup_size": [
       16,
       16,
@@ -5044,7 +5116,11 @@
     "updated": true,
     "id": "gen-bio-luminescent-jelly",
     "url": "shaders/gen-bio-luminescent-jelly.wgsl",
-    "features": [],
+    "features": [
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
+    ],
     "params": [
       {
         "id": "pulse_speed",
@@ -6243,7 +6319,7 @@
       "audio-reactive",
       "bismuth"
     ],
-    "description": "A hyper-dimensional, continually self-assembling bismuth crystal matrix orbiting a microscopic gravitational singularity, its iridescent geometric steps carving sharp staircases into the fabric of spacetime. The scene blends hard-edged, prismatic synthetic-architecture with chaotic fluid distortions driven by an intense sub-bass core.",
+    "description": "A hyper-dimensional, continually self-assembling bismuth crystal matrix orbiting a microscopic gravitational singularity, its iridescent geometric steps carving sharp staircases into the fabric of spacetime. The scene blends hard-edged, prismatic synthetic-architecture with chaotic fluid distortions driven by an intense sub-bass core. Each of the six cubes runs its own assembly clock, carving from seed block to terraced shards to dust; clocks near the singularity run slow, shearing the weave and broadening its fringes, and rays that fall inside the horizon leave a black shadow at the core.",
     "url": "shaders/gen-bismuth-singularity-loom-engine.wgsl",
     "workgroup_size": [
       16,
@@ -6295,7 +6371,10 @@
       "click-spacetime-shockwaves",
       "gravitational-memory-feedback",
       "fft-band-flux-veins",
-      "hit-depth-output"
+      "hit-depth-output",
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -8310,7 +8389,7 @@
       "music",
       "reactive"
     ],
-    "description": "A hyper-speed journey down an infinite magnetic containment tunnel where sub-atomic particles collide and shatter into vibrant, audio-reactive showers of exotic matter.",
+    "description": "A hyper-speed journey down an infinite magnetic containment tunnel where sub-atomic particles collide and shatter into vibrant, audio-reactive showers of exotic matter. Bunches colliding at the containment rings flash magenta debris shells, the beam is steered toward the magnetic anomaly while it betatron-wobbles through the ring apertures, and the tunnel's bends split it into dispersed colour fringes.",
     "workgroup_size": [
       16,
       16,
@@ -8361,7 +8440,10 @@
       "bounded-collision-plasma",
       "click-collision-shells",
       "temporal-feedback",
-      "depth-output"
+      "depth-output",
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
     ],
     "params": [
       {
@@ -9482,7 +9564,11 @@
     "updated": true,
     "id": "gen-coral-reef-colony",
     "url": "shaders/gen-coral-reef-colony.wgsl",
-    "features": []
+    "features": [
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
+    ]
   },
   {
     "id": "gen-cosmic-clockwork-dyson-sphere",
@@ -9500,49 +9586,11 @@
       "beer-lambert",
       "fresnel"
     ],
-    "description": "A hyper-intricate colossal megastructure of interlocking golden gears, glowing plasma conduits, and rhythmic mechanical fractal shifts enclosing a blinding quantum singularity. Upgraded with enhanced KIFS SDFs, domain-warped FBM, Worley/Voronoi noise, Beer-Lambert volumetric extinction, Fresnel-Schlick metallic reflections, gear-ring toroids, and deep audio reactivity.",
+    "description": "A hyper-intricate colossal megastructure of interlocking golden gears, glowing plasma conduits, and rhythmic mechanical fractal shifts enclosing a blinding quantum singularity. Upgraded with enhanced KIFS SDFs, domain-warped FBM, Worley/Voronoi noise, Beer-Lambert volumetric extinction, Fresnel-Schlick metallic reflections, gear-ring toroids, and deep audio reactivity. 2026-09-27: plasma conduits glow along the Voronoi cell seams of the brass, fed outward from the core; the plasma is a true Beer-Lambert medium that dims and reddens brass behind it; the core lights the lattice and casts radial shadows.",
     "workgroup_size": [
       16,
       16,
       1
-    ],
-    "params": [
-      {
-        "id": "mechanical_complexity",
-        "name": "Mechanical Complexity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x"
-      },
-      {
-        "id": "clock_speed",
-        "name": "Clock Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.y"
-      },
-      {
-        "id": "plasma_intensity",
-        "name": "Plasma Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.z"
-      },
-      {
-        "id": "gear_ratio",
-        "name": "Gear Ratio",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w"
-      }
     ],
     "updatedParams": [
       {
@@ -9582,7 +9630,49 @@
     "supportsDof": false,
     "updated": true,
     "url": "shaders/gen-cosmic-clockwork-dyson-sphere.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "mechanical_complexity",
+        "name": "Mechanical Complexity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "clock_speed",
+        "name": "Clock Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "plasma_intensity",
+        "name": "Plasma Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "gear_ratio",
+        "name": "Gear Ratio",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
   },
   {
     "name": "Cosmic Slime Mold",

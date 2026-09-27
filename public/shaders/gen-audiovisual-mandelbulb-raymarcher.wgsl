@@ -1,11 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-//  Audiovisual Mandelbulb Raymarcher — Batch 63
+//  Audiovisual Mandelbulb Raymarcher
 //  Category: generative
-//  Fast-motion power morphing, psychedelic orbit-trap spectra, greebled
-//  micro-detail, spring-cursor orbit + held power surge + click shock rings.
-//  Contract: 13 bindings, ACES, semantic alpha, dataTextureA writeback only,
-//            exact textureLoad from dataTextureC, plasmaBuffer three-band audio,
-//            bounded extraBuffer[133..138] state.
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-27
+//  Ideas: escape-time strata (smooth escape-count onion shells, Escape Radius = real bailout); DE soft shadow + 5-tap AO; trap-coloured silhouette halo from closest approach
+//  A packing: A.rgb = linear HDR scene colour after trail blend (pre-tint, pre-ACES), A.a = semantic alpha; C read as the same HDR
+//  Fast power morphing, orbit-trap spectra, greebled micro-detail; cursor orbits
+//  the camera, held throttles spin + dollies in, clicks fire shock rings.
+//  Note: extraBuffer[133..138] spring is inert (slots are zeroed every frame).
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -45,6 +48,8 @@ var<private> g_iters: i32;
 var<private> g_shock: f32;
 var<private> g_time: f32;
 var<private> g_trap: f32;
+var<private> g_bailout: f32;  // Idea 1: Escape Radius slider -> true bailout radius
+var<private> g_esc: f32;      // Idea 1: smooth escape count from the last DE call
 
 fn rotY(a: f32) -> mat3x3<f32> {
     let s = sin(a);
@@ -120,9 +125,15 @@ fn mandelbulbDE(p: vec3<f32>) -> f32 {
     var dr = 1.0;
     var r = 0.0;
     var trap = 1e9;
+    var esc = f32(g_iters);
     for (var i: i32 = 0; i < g_iters; i = i + 1) {
         r = length(z);
-        if (r > 2.4) { break; }
+        if (r > g_bailout) {
+            // Idea 1: smooth (continuous) escape-time count, nu in (i-1, i]
+            let lr = log(max(r, 1.0001)) / log(g_bailout);
+            esc = clamp(f32(i) - log(max(lr, 1e-6)) / log(max(g_power, 1.01)), 0.0, f32(g_iters));
+            break;
+        }
         trap = min(trap, length(z - vec3<f32>(0.0, 0.35, 0.0)));
         let theta = acos(clamp(z.y / max(r, 1e-6), -1.0, 1.0));
         let phi = atan2(z.z, z.x);
@@ -135,6 +146,7 @@ fn mandelbulbDE(p: vec3<f32>) -> f32 {
         z = zr * vec3<f32>(st * cp, ct, st * sp) + p;
     }
     g_trap = trap;
+    g_esc = esc;
     var d = 0.5 * log(max(r, 1e-6)) * r / max(dr, 1e-6);
     // Greeble shell: high-frequency ridging carved into the surface (geometric detail)
     let ridge = sin(p.x * 24.0 + g_time * 3.0) * sin(p.y * 24.0 - g_time * 2.6) * sin(p.z * 24.0 + g_time * 3.4);
@@ -149,6 +161,32 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
         mandelbulbDE(p + e.yxy) - mandelbulbDE(p - e.yxy),
         mandelbulbDE(p + e.yyx) - mandelbulbDE(p - e.yyx)
     ));
+}
+
+// Idea 2: DE soft shadow — penumbra from the closest approach of the shadow ray
+fn softShadow(ro: vec3<f32>, rd: vec3<f32>, k: f32) -> f32 {
+    var res = 1.0;
+    var t = 0.02;
+    for (var i: i32 = 0; i < 20; i = i + 1) {
+        let h = mandelbulbDE(ro + rd * t);
+        res = min(res, k * h / t);
+        t += clamp(h, 0.01, 0.18);
+        if (res < 0.003 || t > 2.5) { break; }
+    }
+    return clamp(res, 0.0, 1.0);
+}
+
+// Idea 2: 5-tap ambient occlusion along the normal
+fn calcAO(p: vec3<f32>, n: vec3<f32>) -> f32 {
+    var occ = 0.0;
+    var sca = 1.0;
+    for (var i: i32 = 0; i < 5; i = i + 1) {
+        let h = 0.01 + 0.11 * f32(i) / 4.0;
+        let d = mandelbulbDE(p + n * h);
+        occ += max(h - d, 0.0) * sca;
+        sca *= 0.9;
+    }
+    return clamp(1.0 - 2.0 * occ, 0.0, 1.0);
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -222,6 +260,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // ── slider mapping ─────────────────────────────────────────────────────
     g_iters = i32(mix(5.0, 14.0, clamp(u.zoom_params.x, 0.0, 1.0)));
     let escapeRadius = clamp(u.zoom_params.y, 0.0, 1.0) * 2.0 + 6.0;
+    // Idea 1: the same slider is the real DE bailout; exactly 2.4 (HEAD) at the saved default 0.5.
+    // The set boundary barely moves with it (numpy: 99.97% same hit mask) — the escape strata slide.
+    g_bailout = 2.4 * exp2((clamp(u.zoom_params.y, 0.0, 1.0) - 0.5) * 1.4);
     let glowStrength = u.zoom_params.z * 2.0;
     let textureBlend = clamp(u.zoom_params.w, 0.0, 1.0);
 
@@ -246,6 +287,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var hit = false;
     var surfTrap = 0.0;
     var glowAccum = 0.0;
+    var surfEsc = 0.0;
+    // Idea 3: closest approach of the ray to the bulb, with the trap / radius seen there
+    var minD = 1e9;
+    var minTrap = 0.0;
+    var minR = 0.0;
     for (var i: i32 = 0; i < 90; i = i + 1) {
         let p = ro + rd * t;
         let d = mandelbulbDE(p);
@@ -253,7 +299,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         if (d < 0.0009) {
             hit = true;
             surfTrap = g_trap;
+            surfEsc = g_esc;
             break;
+        }
+        if (d < minD) {
+            minD = d;
+            minTrap = min(g_trap, 4.0);
+            minR = length(p);
         }
         t += d * 0.92;
         if (t > escapeRadius) { break; }
@@ -282,11 +334,28 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let dif = max(dot(n, lig), 0.0);
         let hal = normalize(lig + viewDir);
         let spec = pow(max(dot(n, hal), 0.0), 48.0);
-        col = col * (0.28 + dif * 0.72) + vec3<f32>(1.0, 0.95, 0.9) * spec * (0.35 + treble * 0.6);
+        // Idea 2: lobes shadow each other, crevices between greebled lobes occlude
+        let pn = p + n * 0.003;
+        // Shadow keeps a 0.4 sky-fill floor: numpy shows ~60% of lit-facing points are occluded by
+        // neighbouring lobes, so a hard shadow would drown the key light.
+        let sha = 0.4 + 0.6 * select(0.0, softShadow(pn, lig, 8.0), dif > 0.0);
+        let ao = calcAO(pn, n);
+        col = col * (0.28 * (0.4 + 0.6 * ao) + dif * 0.72 * sha) + vec3<f32>(1.0, 0.95, 0.9) * spec * sha * (0.35 + treble * 0.6);
 
         // Micro-detail bands read off the orbit trap — reads as engraved geometry
         let bands = 0.5 + 0.5 * sin(surfTrap * 90.0 - time * 6.0);
         col *= 0.78 + bands * 0.44;
+
+        // Idea 1: escape-time strata — onion shells of the escape count, each shell ramps dark->light
+        // toward its outer edge, with a thin hue-stepped contour at every integer escape crossing.
+        if (surfEsc < f32(g_iters) - 0.001) {
+            let sf = fract(surfEsc);
+            let shell = floor(surfEsc);
+            col *= 0.74 + 0.26 * smoothstep(0.0, 1.0, sf);
+            let edge = abs(fract(surfEsc + 0.5) - 0.5);
+            let contour = 1.0 - smoothstep(0.0, 0.06, edge);
+            col += psychePalette(orbit + shell * 0.083, mids) * contour * 0.55;
+        }
 
         hitFresnel = fresnel_rim(n, viewDir, 2.0 + bass * 2.0);
         col += psychePalette(orbit + 0.4, treble) * hitFresnel * 0.75 * (1.0 + bass);
@@ -297,6 +366,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col = textureSampleLevel(readTexture, u_sampler, bgUV, 0.0).rgb * 0.22;
         let glow = glowStrength * 0.02 / (t * t + 0.1);
         col += psychePalette(time * 0.12 + length(uv) * 0.6, mids) * glow * (1.0 + bass);
+
+        // Idea 3: trap-coloured silhouette halo — grazing rays glow in the hue the surface
+        // would have at their closest approach (same orbit-trap formula as the hit branch)
+        let haloOrbit = fract(minR * 0.7 + minTrap * 1.4 + time * (0.35 + treble * 0.9));
+        let halo = exp(-max(minD, 0.0) * 30.0) * glowStrength * 0.9;
+        col += psychePalette(haloOrbit, mids * 1.4 + shock) * halo * (1.0 + bass * 0.5);
         depth = 0.0;
     }
 
@@ -319,6 +394,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let prev = textureLoad(dataTextureC, coord, 0);
     let trailAmount = 0.06 + bass * 0.05;
     col = mix(col, prev.rgb * 0.93, trailAmount);
+    // A packing (fix: HEAD stored post-ACES colour here and re-ACES'd it next frame):
+    // store the HDR scene colour so C decodes as the same space it is blended into.
+    let hdrScene = max(col, vec3<f32>(0.0));
 
     let caStr = 0.004 * (1.0 + bass) + shock * 0.01;
     col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
@@ -333,6 +411,6 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         0.0, 1.0);
 
     textureStore(writeTexture, coord, vec4<f32>(col, alpha));
-    textureStore(dataTextureA, coord, vec4<f32>(col, alpha));
+    textureStore(dataTextureA, coord, vec4<f32>(hdrScene, alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

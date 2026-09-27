@@ -4,7 +4,11 @@
 //  Description: Smooth, continuous slicing and projection through
 //  higher-dimensional fractals. Mouse controls navigation through
 //  the extra two dimensions. Audio affects fractal parameters.
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
+//  Upgraded: 2026-09-27
+//  Ideas: Julia DE filaments on the true set boundary; hypercube fold-crease lattice coloured by fold count; 4D-space weave skewed by the rotations
+//  A packing: raw HDR peak-hold history RGB, a = coverage (C.a unread; ACES on display only)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -30,6 +34,20 @@ struct Uniforms {
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
+
+// Palette escape budget stays maxIter; the DE orbit keeps going to this depth.
+const JULIA_DE_ITERS: i32 = 20;
+const JULIA_DE_BAIL: f32 = 64.0;
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Same four rotations, same order and angles, as the p4 chain in main().
+fn rotChain(v: vec4<f32>, aXW: f32, aYZ: f32, aZW: f32, aXY: f32) -> vec4<f32> {
+    return rot4XY(rot4ZW(rot4YZ(rot4XW(v, aXW), aYZ), aZW), aXY);
+}
 
 // 4D rotation in the XW plane
 fn rot4XW(v: vec4<f32>, angle: f32) -> vec4<f32> {
@@ -80,14 +98,34 @@ fn rot4XY(v: vec4<f32>, angle: f32) -> vec4<f32> {
 }
 
 // 4D Mandelbulb-like iteration (quaternion julia variant projected from 4D)
-fn julia4D(c4: vec4<f32>, z0: vec4<f32>, maxIter: i32) -> vec2<f32> {
+// Returns (palette iter, palette r, DE in 4D units, 1 if the DE orbit escaped).
+// .xy are exactly HEAD's result: iteration of the first r > 4 inside maxIter,
+// or (maxIter, |z| after maxIter steps).
+fn julia4D(c4: vec4<f32>, z0: vec4<f32>, maxIter: i32) -> vec4<f32> {
     var z = z0;
     var dz = 1.0;
+    var palIter = f32(maxIter);
+    var palR = -1.0;
+    var de = 1e3;
+    var escaped = 0.0;
+    let total = max(maxIter, JULIA_DE_ITERS);
 
-    for (var i = 0; i < maxIter; i++) {
+    for (var i = 0; i < total; i++) {
         let r = length(z);
-        if (r > 4.0) {
-            return vec2<f32>(f32(i), r);
+        if (palR < 0.0) {
+            if (r > 4.0) {
+                palIter = f32(i); palR = r;
+            } else if (i == maxIter) {
+                palR = r;
+            }
+        }
+        // Idea 1: Julia DE filaments. The same orbit runs past the palette
+        // budget so the estimate resolves the true boundary, not the fat
+        // maxIter blob (numpy: at maxIter 7 the DE at the blob edge is 7-16 px).
+        if (r > JULIA_DE_BAIL) {
+            de = 0.5 * r * log(r) / dz;
+            escaped = 1.0;
+            break;
         }
         // Quaternion squaring: (a,b,c,d)^2 using quaternion algebra
         // z' = z^2 + c, quaternion multiplication
@@ -98,17 +136,62 @@ fn julia4D(c4: vec4<f32>, z0: vec4<f32>, maxIter: i32) -> vec2<f32> {
             2.0*a*c,
             2.0*a*d
         ) + c4;
-        dz = 2.0 * r * dz + 1.0;
+        // Julia derivative w.r.t. z0: |dz'| = 2|z||dz|. HEAD added the
+        // Mandelbrot "+1" (derivative w.r.t. c), which is wrong for a Julia DE.
+        dz = 2.0 * r * dz;
     }
-    return vec2<f32>(f32(maxIter), length(z));
+    let rEnd = length(z);
+    if (palR < 0.0) { palR = rEnd; }
+    // Late escapers that ran out of iterations before the big bailout.
+    if (escaped < 0.5 && rEnd > 4.0) {
+        de = 0.5 * rEnd * log(rEnd) / dz;
+        escaped = 1.0;
+    }
+    return vec4<f32>(palIter, palR, de, escaped);
+}
+
+struct HyperFold {
+    shellD: f32,   // screen distance to HEAD's |z.xyz| = 1 shell
+    crease: f32,   // fold-crease line intensity 0..1
+    folds: f32,    // number of box + sphere folds taken
+};
+
+fn tangentDist(g: f32, grad: vec2<f32>) -> f32 {
+    return abs(g) / max(length(grad), 1e-5);
 }
 
 // 4D hypercube lattice escape
-fn hypercubeFractal(p4: vec4<f32>, t: f32, bass: f32, mids: f32) -> f32 {
+// Idea 2: hypercube fold lattice. tA / tB are dz/d(screen x) and dz/d(screen y)
+// in the fractal's own coordinates; they ride through every fold so the
+// crease and shell distances below are true screen-space distances.
+fn hypercubeFractal(p4: vec4<f32>, t: f32, bass: f32, mids: f32, tA0: vec4<f32>, tB0: vec4<f32>) -> HyperFold {
     var z = p4;
+    var tA = tA0;
+    var tB = tB0;
     let fold = 1.2 + bass * 0.3;
+    let lineW = 0.004;
+    var crease = 0.0;
+    var folds = 0.0;
 
     for (var i = 0; i < 6; i++) {
+        // Crease hyperplanes |z_c| = fold of the first two live folds
+        // (iteration 0 almost never folds: |p4 * 0.5| < 1.2). Later ones are too dense.
+        if (i >= 1 && i <= 2) {
+            let sg = sign(z);
+            let g = abs(z) - vec4<f32>(fold);
+            let dx = tangentDist(g.x, vec2<f32>(sg.x * tA.x, sg.x * tB.x));
+            let dy = tangentDist(g.y, vec2<f32>(sg.y * tA.y, sg.y * tB.y));
+            let dzc = tangentDist(g.z, vec2<f32>(sg.z * tA.z, sg.z * tB.z));
+            let dw = tangentDist(g.w, vec2<f32>(sg.w * tA.w, sg.w * tB.w));
+            let dmin = min(min(dx, dy), min(dzc, dw));
+            let weight = select(0.55, 1.0, i == 1);
+            crease = max(crease, weight * smoothstep(lineW, 0.0, dmin));
+        }
+        let outside = abs(z) > vec4<f32>(fold);
+        let flip = select(vec4<f32>(1.0), vec4<f32>(-1.0), outside);
+        folds += dot(select(vec4<f32>(0.0), vec4<f32>(1.0), outside), vec4<f32>(1.0));
+        tA *= flip;
+        tB *= flip;
         // Box fold in 4D
         z = clamp(z, vec4<f32>(-fold), vec4<f32>(fold)) * 2.0 - z;
         // Sphere fold
@@ -116,14 +199,27 @@ fn hypercubeFractal(p4: vec4<f32>, t: f32, bass: f32, mids: f32) -> f32 {
         let minR2 = 0.4 + mids * 0.2;
         let fixedR2 = 1.0;
         if (r2 < minR2) {
+            tA *= fixedR2 / minR2;
+            tB *= fixedR2 / minR2;
             z *= fixedR2 / minR2;
+            folds += 1.0;
         } else if (r2 < fixedR2) {
+            // Inversion Jacobian: (I - 2 z z^T / r2) * fixedR2 / r2
+            tA = (tA - z * (2.0 * dot(z, tA) / r2)) * (fixedR2 / r2);
+            tB = (tB - z * (2.0 * dot(z, tB) / r2)) * (fixedR2 / r2);
             z *= fixedR2 / r2;
+            folds += 1.0;
         }
         // Scale and offset
-        z = z * (1.5 + bass * 0.3) + p4;
+        let sc = 1.5 + bass * 0.3;
+        tA = tA * sc + tA0;
+        tB = tB * sc + tB0;
+        z = z * sc + p4;
     }
-    return length(z.xyz) - 1.0;
+    let lz = max(length(z.xyz), 1e-5);
+    let n = z.xyz / lz;
+    let shellD = tangentDist(lz - 1.0, vec2<f32>(dot(n, tA.xyz), dot(n, tB.xyz)));
+    return HyperFold(shellD, crease, folds);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -180,6 +276,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     p4 = rot4ZW(p4, t * rotSpeed * 0.5 + treble * 0.4);
     p4 = rot4XY(p4, t * rotSpeed * 0.3);
 
+    // Screen axes carried into 4D: p4 is linear in uvA (z/w are per-frame
+    // constants), so d p4 / d uvA = rotChain(e_x | e_y) / zoomLevel.
+    let aXW = t * rotSpeed + bass * 0.5;
+    let aYZ = t * rotSpeed * 0.7 + mids * 0.3;
+    let aZW = t * rotSpeed * 0.5 + treble * 0.4;
+    let aXY = t * rotSpeed * 0.3;
+    let ex4 = rotChain(vec4<f32>(1.0, 0.0, 0.0, 0.0), aXW, aYZ, aZW, aXY) / zoomLevel;
+    let ey4 = rotChain(vec4<f32>(0.0, 1.0, 0.0, 0.0), aXW, aYZ, aZW, aXY) / zoomLevel;
+
     // Julia set constant: slowly navigates 4D parameter space
     let juliaC = vec4<f32>(
         -0.1 + sin(t * 0.11 + bass * 0.5) * 0.3,
@@ -192,9 +297,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let juliaResult = julia4D(juliaC, p4, maxIter);
     let juliaIter = juliaResult.x;
     let juliaR    = juliaResult.y;
+    // Idea 1: DE converted to screen units (rotations are isometries).
+    let juliaDE   = juliaResult.z * zoomLevel;
+    let filament  = exp(-juliaDE / 0.004) * juliaResult.w;
 
     // Hypercube fractal for structural detail
-    let hypercubeD = hypercubeFractal(p4 * (0.5 + treble * 0.2), t, bass, mids);
+    let hcScale = 0.5 + treble * 0.2;
+    let hyper = hypercubeFractal(p4 * hcScale, t, bass, mids, ex4 * hcScale, ey4 * hcScale);
 
     // Coloring: smooth iteration count + exterior distance
     let smoothIter = juliaIter + 1.0 - log2(log2(juliaR + 1.0) + 1.0);
@@ -214,8 +323,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // Hypercube structural overlay
-    let structuralLine = smoothstep(0.05, 0.0, abs(hypercubeD)) * treble * 0.5;
-    color += vec3<f32>(0.8, 0.9, 1.0) * structuralLine;
+    // Idea 2: shell + fold creases as screen-true lines, no treble gate
+    // (HEAD: * treble * 0.5 -> invisible at audio 0), hue stepped by fold count.
+    let shellLine = smoothstep(0.004, 0.0, hyper.shellD);
+    let structuralLine = max(shellLine, hyper.crease) * (0.3 + treble * 0.5);
+    let foldHue = colorShift + hyper.folds * 0.085 + t * 0.03;
+    let foldCol = 0.5 + 0.5 * cos(TAU * (vec3<f32>(foldHue) + vec3<f32>(0.0, 0.333, 0.667)));
+    color += mix(vec3<f32>(0.8, 0.9, 1.0), foldCol, 0.7 * hyper.crease) * structuralLine;
 
     // Velocity-stretched lattice afterimages are analytic projections of the
     // current hyperslice, not additional fractal evaluations.
@@ -224,12 +338,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         -sin(t * (1.3 + rotSpeed)) * (1.3 + rotSpeed)
     );
     let velocityDir = normalize(transportVelocity + vec2<f32>(0.001));
+    // Idea 3: 4D-space weave. The two families are hyperplanes p4.x = n·π/k and
+    // p4.y = n·π/k of the rotated 4D point; their screen gradients are
+    // (ex4.x, ey4.x) and (ex4.y, ey4.y), so XW / YZ rotations shear them off
+    // perpendicular and spread a family as its axis turns edge-on.
+    // k = 34 * 1.3 (default zoom) keeps HEAD's spacing and width unrotated.
+    let weaveK = 44.2;
+    let gradX = length(vec2<f32>(ex4.x, ey4.x)) * weaveK;
+    let gradY = length(vec2<f32>(ex4.y, ey4.y)) * weaveK;
+    let lagStep4 = ex4 * velocityDir.x + ey4 * velocityDir.y;
     var latticeTrail = 0.0;
     for (var li = 0; li < 4; li++) {
         let lag = f32(li) * 0.028;
-        let latticeUV = uvA - velocityDir * lag;
-        let lattice = min(abs(sin((latticeUV.x + p4.w * 0.08) * 34.0)), abs(sin((latticeUV.y + p4.z * 0.08) * 34.0)));
-        latticeTrail += smoothstep(0.12, 0.0, lattice) * (1.0 - f32(li) * 0.2);
+        let lp = p4 - lagStep4 * lag;
+        let dX = abs(sin(lp.x * weaveK)) / max(gradX, 1e-4);
+        let dY = abs(sin(lp.y * weaveK)) / max(gradY, 1e-4);
+        let lattice = min(dX, dY);
+        latticeTrail += smoothstep(0.12 / 34.0, 0.0, lattice) * (1.0 - f32(li) * 0.2);
     }
     color += vec3<f32>(0.2 + treble * 0.3, 0.45, 1.0) * latticeTrail * 0.12;
 
@@ -237,16 +362,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dimFog = 1.0 - exp(-abs(p4.w) * 0.8);
     color = mix(color, vec3<f32>(0.05, 0.03, 0.1), dimFog * 0.4);
 
-    // Edge sharpening: bright boundary between inside/outside
-    let boundarySharp = smoothstep(f32(maxIter) - 1.5, f32(maxIter) - 0.5, juliaIter);
-    color += vec3<f32>(1.0, 0.95, 0.8) * boundarySharp * 0.5;
+    // Edge sharpening: bright boundary between inside/outside.
+    // Idea 1: HEAD's smoothstep(maxIter-1.5, maxIter-0.5, iter) was 1 on every
+    // interior pixel (flat cream interior); the DE filament hugs the real edge.
+    color += vec3<f32>(1.0, 0.95, 0.8) * filament * (0.9 + mids * 0.4);
 
+    // Exact history load at the advected texel (HEAD filtered rgba32float).
     let historyUV = clamp(uv - velocityDir * (0.004 + rotSpeed * 0.008), vec2<f32>(0.002), vec2<f32>(0.998));
-    let advectedPrev = textureSampleLevel(dataTextureC, u_sampler, historyUV, 0.0);
+    let resI = vec2<i32>(res);
+    let historyCoord = clamp(vec2<i32>(floor(historyUV * res)), vec2<i32>(0), resI - vec2<i32>(1));
+    let advectedPrev = textureLoad(dataTextureC, historyCoord, 0);
     let temporal = clamp(max(color, advectedPrev.rgb * 0.9), vec3<f32>(0.0), vec3<f32>(5.0));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(temporal, 1.0));
 
-    let generatedDepth = clamp(0.2 + (1.0 - boundarySharp) * 0.55 + abs(p4.w) * 0.12, 0.0, 0.995);
-    textureStore(writeTexture, global_id.xy, vec4<f32>(temporal, 1.0));
+    // Semantic alpha: slice coverage (set interior, filament, creases) plus
+    // how slowly the exterior escaped; far W haze thins it.
+    let interiorMask = select(0.0, 1.0, juliaIter >= f32(maxIter));
+    let coverage = max(max(interiorMask, filament), structuralLine);
+    let alpha = clamp((coverage + clamp(normIter, 0.0, 1.0) * 0.65 + latticeTrail * 0.1) * (1.0 - dimFog * 0.25), 0.15, 1.0);
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(temporal, alpha));
+
+    // Depth: near = 1 on the set and its filament, exterior recedes with escape speed.
+    let setNear = max(max(interiorMask, filament), clamp(normIter, 0.0, 1.0) * 0.7);
+    let generatedDepth = clamp(0.15 + setNear * 0.7 - dimFog * 0.12, 0.0, 1.0);
+    textureStore(writeTexture, global_id.xy, vec4<f32>(acesToneMap(temporal), alpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(generatedDepth, 0.0, 0.0, 0.0));
 }

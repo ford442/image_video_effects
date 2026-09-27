@@ -6,7 +6,9 @@
 //            temporal-feedback, chromatic-aberration, semantic-alpha
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-06-29
+//  Upgraded: 2026-09-27
+//  Ideas: satin anisotropic sheen from ribbon fold slope; warp-thread striations along ribbons; fold-crease occlusion
+//  A packing: ACES display RGBA (HEAD stored wind/band/shimmer in A but read C as colour)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -161,7 +163,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Curtain falloff and ribbon bands
     let curtain = exp(-abs(p.x) * (1.3 + mids * 0.7));
     let ribbonWidth = mix(0.12, 0.52, u.zoom_params.z);
-    let ribbons = sin((p.y + wind * 0.55) * bandCount * 6.5 + time * flowSpeed * (1.0 + bass * 1.2));
+    let foldY = p.y + wind * 0.55;
+    let ph = foldY * bandCount * 6.5 + time * flowSpeed * (1.0 + bass * 1.2);
+    let ribbons = sin(ph);
     let band = smoothstep(1.0 - ribbonWidth, 1.0, abs(ribbons));
     let shimmer = 0.5 + 0.5 * sin(time * (2.0 + treble * 12.0) + p.y * 10.0);
 
@@ -178,8 +182,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         vec3<f32>(0.0, 0.10 + treble * 0.05, 0.24 + mids * 0.06)
     );
 
+    let silkTint = mix(vec3<f32>(1.0), color, 0.4);
+
     // HDR base color + bloom threshold glow
     color = color * hdrPresence * bloomAmt;
+
+    // IDEA 2: warp-thread striations. Threads follow the same iso-phase coordinate as the
+    // ribbons (foldY), so they run along each warped ribbon. Hashed per-thread brightness
+    // plus a slow along-thread glint.
+    let threadY = foldY * (60.0 + bandCount * 4.0);
+    let threadId = floor(threadY);
+    let threadF = fract(threadY);
+    let threadRnd = hash21(vec2<f32>(threadId, 3.7));
+    let threadLobe = 0.8 + 0.2 * sin(PI * threadF);
+    let glint = 0.6 + 0.4 * sin(p.x * 1.5 + threadRnd * TAU + time * 0.2);
+    let thread = (0.72 + 0.28 * threadRnd) * threadLobe;
+    color = color * mix(1.0, thread, 0.35);
+
+    // IDEA 3: fold-crease occlusion. The trough half of the ribbon phase is a crease.
+    let crease = sat(-ribbons);
+    let foldOcc = 1.0 - 0.32 * crease * crease * (0.4 + 0.6 * curtain);
+    color = color * foldOcc;
+
+    // IDEA 1: satin anisotropic sheen. cos(ph) is the fold slope; a 2D fold normal against a
+    // slowly sliding light gives one bright flank per fold (quarter-phase from crest/crease).
+    let foldN = normalize(vec2<f32>(cos(ph) * 0.9, 1.0));
+    let lightDir = normalize(vec2<f32>(0.55 + p.x * 0.25, 0.85));
+    let satin = pow(sat(dot(foldN, lightDir)), 14.0);
+    let sheen = satin * curtain * (0.35 + band * 0.65) * mix(0.55, 1.0, thread * glint);
+    color = color + silkTint * vec3<f32>(1.0, 0.94, 0.86) * sheen * (0.45 + bloomAmt * 0.35);
     let bloom = max(color - vec3<f32>(0.85), vec3<f32>(0.0)) * (bloomAmt * 0.8);
     color = color + bloom;
 
@@ -209,10 +240,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = colorTemperature(color, temp);
     color = splitTone(color, 0.18 + atmosphere * 0.22, 0.12 + bloomAmt * 0.08);
 
-    // Temporal silk persistence
-    let decay = 0.96 - u.zoom_params.w * 0.025;
-    color = mix(color, prev.rgb * decay, 0.04 + bass * 0.015);
-
     // Chromatic aberration toward screen edges
     let centerDir = normalize(uv01 - vec2<f32>(0.5) + vec2<f32>(0.0001));
     let caStr = 0.002 * (1.0 + bass) + depth * 0.001;
@@ -225,11 +252,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ACES tone map
     color = acesToneMap(color * (0.95 + mids * 0.15));
 
+    // Temporal silk persistence (display space: C holds post-ACES colour, so no double tone-map)
+    let decay = 0.96 - u.zoom_params.w * 0.025;
+    color = mix(color, prev.rgb * decay, 0.04 + bass * 0.015);
+
     // Semantic alpha and depth
     let alpha = sat(luma(color) * 1.4 + presence * 0.35 + fog * 0.15);
     let outDepth = sat(0.85 - presence * 0.6 - fog * 0.25);
 
     textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(outDepth, 0.0, 0.0, 1.0));
-    textureStore(dataTextureA, pixel, vec4<f32>(wind, band, shimmer, alpha));
+    textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
 }

@@ -69,7 +69,9 @@
     "depth-layering",
     "audio-reactive",
     "temporal-feedback",
-    "chromatic-aberration"
+    "chromatic-aberration",
+    "upgraded-rgba",
+    "mouse-driven"
   ],
   "params": [
     {

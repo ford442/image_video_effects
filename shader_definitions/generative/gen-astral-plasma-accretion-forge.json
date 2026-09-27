@@ -3,6 +3,12 @@
   "name": "Astral Plasma Accretion Forge",
   "category": "generative",
   "url": "/shaders/gen-astral-plasma-accretion-forge.wgsl",
+  "description": "A noisy, Keplerian-twisted accretion disk of blackbody plasma with pole flares around a small black horizon. Upgrade: cool midplane dust lanes absorb the plasma behind them (Core Density sets extinction, Core Temp sets the dust sublimation radius); Keplerian differential rotation (Omega ~ r^-1.5) shears plasma and dust into trailing spiral lanes; gravitational redshift cools and dims the inner rim toward the well. Drag to orbit; bass/mids raise the pole flares.",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
   "params": [
     {
       "id": "core_density",
@@ -35,6 +41,40 @@
       "id": "core_temp",
       "name": "Core Temp",
       "mapping": "zoom_params.w",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Core Density",
+      "default": 0.5,
+      "min": 0.1,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Accretion Spin",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Flux Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Core Temp",
       "default": 0.7,
       "min": 0.0,
       "max": 1.0,

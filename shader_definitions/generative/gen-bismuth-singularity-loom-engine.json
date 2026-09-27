@@ -10,7 +10,7 @@
     "audio-reactive",
     "bismuth"
   ],
-  "description": "A hyper-dimensional, continually self-assembling bismuth crystal matrix orbiting a microscopic gravitational singularity, its iridescent geometric steps carving sharp staircases into the fabric of spacetime. The scene blends hard-edged, prismatic synthetic-architecture with chaotic fluid distortions driven by an intense sub-bass core.",
+  "description": "A hyper-dimensional, continually self-assembling bismuth crystal matrix orbiting a microscopic gravitational singularity, its iridescent geometric steps carving sharp staircases into the fabric of spacetime. The scene blends hard-edged, prismatic synthetic-architecture with chaotic fluid distortions driven by an intense sub-bass core. Each of the six cubes runs its own assembly clock, carving from seed block to terraced shards to dust; clocks near the singularity run slow, shearing the weave and broadening its fringes, and rays that fall inside the horizon leave a black shadow at the core.",
   "url": "shaders/gen-bismuth-singularity-loom-engine.wgsl",
   "workgroup_size": [
     16,
@@ -62,7 +62,10 @@
     "click-spacetime-shockwaves",
     "gravitational-memory-feedback",
     "fft-band-flux-veins",
-    "hit-depth-output"
+    "hit-depth-output",
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

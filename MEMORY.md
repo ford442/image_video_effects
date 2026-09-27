@@ -1,6 +1,12 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-27 (xeno / kimi / holo unused ten)
+**Last updated:** 2026-09-27 (simpler / mid generative ten)
+
+## 2026-09-27 — Simpler / mid generative ten
+
+Acid Lissajous, audio spirograph, Barnsley fern, Apollonian gasket, aperiodic monotile, bifurcation diagram, chaos-game IFS, Conway Life, Art Deco sky, alien flora. Eight already had dated cards; two new ideas each on top. Art Deco and alien flora were first upgrades (ziggurat setbacks + casement mullions; gill ridges + spore motes). Saved params exact. No new springs. Naga 10/10. Catalog 1,373. Jest 741 pass / 6 fail / 1 skip (pre-existing WASM `bridge/api.js`). Real-GPU QA external. Cards: `agents/swarm-outputs/grok-2026-09-27-simpler-mid-ten/`.
+
+
 
 ## 2026-09-27 — Xeno / kimi / holo unused ten
 
@@ -3059,3 +3065,20 @@ User asked for progress + six GitHub issues (code changes, even large ones), not
 - Gates: Naga 8/8, precommit 8/8, extraBuffer audit pass (0 new), dead-slider audit scanned 0 defs (known blind spot; hand-grepped zoom_params.xyzw, all four read in every file), catalogs regenerated, Jest 741 pass / 6 fail (pre-existing `./bridge/api.js` import suites), SKIP_WASM_BUILD=1 build (see COORDINATOR_REVIEW.md).
 - Real-GPU visual QA: external. Open: forge beaming scale untuned; ouroboros ACES exposure; cathedral vault ring vs sanctum; physarum look.
 - Notes: agents/swarm-outputs/claude-2026-09-27-stellar-topological-eight/.
+
+## 2026-09-27 — organic/optical seven (7 shaders)
+
+- IDs: gen-abyssal-chrono-coral, gen-abyssal-silicate-geode-weaver, gen-aurora-silk, gen-aurora-borealis-synthesis, gen-bio-luminescent-jelly, gen-bioluminescent-abyss, gen-coral-reef-colony.
+- Not done (request listed 10): gen-chromatic-glass-lattice, gen-celestial-prism-orchid, gen-celestial-glass-tornado already carried `Ideas:` (bodies verified).
+- Per shader, the ideas actually added:
+  - chrono-coral: growth-band strata ledges aging faster in the well; gravitational red-shift + blue Einstein rim; budding front on tip nodes. Dead extraBuffer spring removed.
+  - geode-weaver: agate banding from Voronoi F1 rings; dew-bead knots on gyroid threads; thread thickness into thin-film phase. Filtered C read → manual bilinear; alpha 1.0 → semantic.
+  - aurora-silk: satin fold sheen; warp-thread striations; crease occlusion. A packing lie (wind/band/shimmer read as colour) → display RGBA.
+  - aurora-borealis-synthesis: altitude emission palette (557/630nm + magenta edge); sheared curtain pleats; age-based click substorm arcs. Colour LUT read plasmaBuffer[1..127] (never written) → aurora was ~black; ripple.w dead. Default look changes a lot.
+  - bio-luminescent-jelly: jet propulsion + drift-lag tentacles; lappets/radial canals/gonad anatomy; jelly-lit marine snow.
+  - bioluminescent-abyss: worm plume crown (shading bump); vent bacterial mats; click chain-reaction. Click age used the 0.1-scaled clock → fixed; ripple→world mapping fixed.
+  - coral-reef-colony: forking branches (fbm was raw per-pixel hash → value noise); C.a skeleton accretion/bleaching; star-lobed polyps retracting at pointer.
+- Floor: bindings / 16×16 / exact C / A packing documented per file / saved params exact. No springs/ripples added.
+- Gates: Naga 7/7, precommit 7/7, extraBuffer pass (0 new), dead sliders none flagged (hand-checked), catalogs regenerated, Jest 741 pass / 6 fail (pre-existing bridge `.js` imports), SKIP_WASM_BUILD=1 build green. Nothing committed.
+- Real-GPU visual QA: external.
+- Notes: agents/swarm-outputs/claude-2026-09-27-organic-optical-seven/.

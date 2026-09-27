@@ -1,6 +1,13 @@
-// ----------------------------------------------------------------
-// Abyssal Quantum-Leviathan Skeleton
-// Category: generative
+// ═══════════════════════════════════════════════════════════════════
+//  Abyssal Quantum-Leviathan Skeleton
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
+//  Complexity: High
+//  Upgraded: 2026-09-27
+//  Ideas: marrow canal riding the displaced spine core (pinches at rib joints); bending-strain bioluminescence on the tension flank of the traveling wave; bow-wave current parting around the swaying bones
+//  A packing: HDR history RGB (clamped <= 6) + semantic alpha; ACES on writeTexture only
+// ═══════════════════════════════════════════════════════════════════
+// History —
 // Batch 38 (Algorithmist): FAST MOTION upgrade —
 //   * fast undulating spine kinematics: closed-form traveling wave with
 //     tail-growing whip amplitude + incommensurate second harmonic
@@ -16,7 +23,10 @@
 //     (textureLoad only, HDR history clamped <= 6.0)
 //   * uniform-truth rewrite, plasmaBuffer audio (was fake: rippleCount!),
 //     ACES, semantic alpha, real generated depth.
-// ----------------------------------------------------------------
+// 2026-09-27 fixes: noise corner (1,0,1) hashed i+(1,0,0) (z-cell seams);
+//   rib flare now uses body z like the pulse lighting; miss depth = 0.0.
+//   Note: kick state in extraBuffer[133..135] is zeroed by the host every
+//   frame and raced by other threads — left as HEAD, nothing new built on it.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -81,7 +91,7 @@ fn noise3(p: vec3<f32>) -> f32 {
             mix(dot(hash3(i + vec3<f32>(0.0, 1.0, 0.0)), f - vec3<f32>(0.0, 1.0, 0.0)),
                 dot(hash3(i + vec3<f32>(1.0, 1.0, 0.0)), f - vec3<f32>(1.0, 1.0, 0.0)), u_f.x), u_f.y),
         mix(mix(dot(hash3(i + vec3<f32>(0.0, 0.0, 1.0)), f - vec3<f32>(0.0, 0.0, 1.0)),
-                dot(hash3(i + vec3<f32>(1.0, 0.0, 0.0)), f - vec3<f32>(1.0, 0.0, 1.0)), u_f.x),
+                dot(hash3(i + vec3<f32>(1.0, 0.0, 1.0)), f - vec3<f32>(1.0, 0.0, 1.0)), u_f.x),
             mix(dot(hash3(i + vec3<f32>(0.0, 1.0, 1.0)), f - vec3<f32>(0.0, 1.0, 1.0)),
                 dot(hash3(i + vec3<f32>(1.0, 1.0, 1.0)), f - vec3<f32>(1.0, 1.0, 1.0)), u_f.x), u_f.y), u_f.z);
 }
@@ -99,8 +109,34 @@ struct SceneCtx {
     mouseWorld: vec3<f32>,// cursor gravity-well position (uniform truth)
 };
 
+// Idea 2/3: analytic kinematics of the SAME traveling wave map() applies.
+// bend = d2/dz2 of the (x,y) displacement (whip held locally constant),
+// sway = d/d(animTime) of it. map() ADDS the displacement to the sample, so
+// the world centreline is -disp: tension flank is dot(offset, bend) > 0,
+// leading flank of the sideways sway is dot(offset, sway) < 0.
+struct SpineKin {
+    bend: vec2<f32>,
+    sway: vec2<f32>,
+};
+
+fn spineKin(z: f32, ctx: SceneCtx) -> SpineKin {
+    let whip = 1.4 + 0.9 * smoothstep(0.0, 12.0, abs(z));
+    let ph1 = z * 0.30 - ctx.animTime * ctx.waveSpeed;
+    let ph2 = z * 0.22 - ctx.animTime * ctx.waveSpeed * 0.77;
+    let h1 = ph1 * 2.17 + 1.3;
+    var k: SpineKin;
+    k.bend = vec2<f32>(-0.09 * (sin(ph1) + 0.35 * 4.7089 * sin(h1)) * whip * 1.3,
+                       -0.0484 * cos(ph2) * whip * 0.8);
+    k.sway = vec2<f32>(-ctx.waveSpeed * (cos(ph1) + 0.35 * 2.17 * cos(h1)) * whip * 1.3,
+                        ctx.waveSpeed * 0.77 * sin(ph2) * whip * 0.8);
+    return k;
+}
+
 // SDF for the leviathan skeleton
-fn map(pos_in: vec3<f32>, ctx: SceneCtx) -> vec2<f32> {
+// Returns (distance, spine-local frame xyz): .yz = offset from the DISPLACED
+// spine core, .w = body z (after lunge + mouse pull). Idea 1 uses .yz for the
+// marrow canal; the old .y material id was a constant 1.0 nobody read.
+fn map(pos_in: vec3<f32>, ctx: SceneCtx) -> vec4<f32> {
     var p = pos_in;
 
     // Ballistic lunge: the whole skeleton darts along its spine axis
@@ -125,7 +161,7 @@ fn map(pos_in: vec3<f32>, ctx: SceneCtx) -> vec2<f32> {
     // Spine core
     let spine_dist = length(p.xy) - 0.5 * ctx.boneDensity;
     var d = spine_dist;
-    var material = 1.0; // 1.0 for bone
+    let spineLocal = p; // Idea 1: displaced spine frame, before rib repetition
 
     // Ribs (domain repetition along Z)
     let rib_spacing = 1.5 / max(ctx.boneDensity, 0.05);
@@ -137,7 +173,9 @@ fn map(pos_in: vec3<f32>, ctx: SceneCtx) -> vec2<f32> {
     p_rib.y -= 0.5;
 
     // Audio reactivity bulges the ribs (real bass + racing pulse flare)
-    let flare = exp(-abs(pos_in.z - ctx.pulseZ) * 0.6) * ctx.pulseEnv;
+    // Fix: flare measured in body z (pos_in.z + lunge) — same frame as the
+    // pulse lighting in main(), so the bulge and the light coincide.
+    let flare = exp(-abs(pos_in.z + ctx.lungeOffset - ctx.pulseZ) * 0.6) * ctx.pulseEnv;
     let bulge = sin(ctx.animTime * 6.0 + p.z * 0.5) * ctx.audioReact * ctx.bass * 0.25 + flare * 0.15;
     let rib_thickness = max(0.2 * ctx.boneDensity + bulge, 0.03);
 
@@ -147,7 +185,7 @@ fn map(pos_in: vec3<f32>, ctx: SceneCtx) -> vec2<f32> {
 
     d = smin(d, rib_dist, 0.8);
 
-    return vec2<f32>(d, material);
+    return vec4<f32>(d, spineLocal.x, spineLocal.y, spineLocal.z);
 }
 
 fn calcNormal(p: vec3<f32>, ctx: SceneCtx) -> vec3<f32> {
@@ -239,7 +277,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ---- Raymarching -------------------------------------------------------
     var t = 0.0;
     var hit = false;
-    var res2 = vec2<f32>(0.0);
+    var res2 = vec4<f32>(0.0);
     var p = ro;
 
     for (var i = 0; i < 80; i++) {
@@ -270,8 +308,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let rim = 1.0 - max(dot(n, -rd), 0.0);
         color += vec3<f32>(0.1, 0.8, 1.0) * pow(rim, 3.0);
 
+        // Idea 1: Marrow canal — distance to the DISPLACED spine core (map .yz),
+        // not world length(p.xy): the violet canal rides the whip and pinches
+        // where the smin rib joints push the surface outward.
         // Marrow glow inside bones (real audio pulse: mids/treble + FFT)
-        let dist_to_center = length(p.xy);
+        let spineOff = res2.yz;
+        let dist_to_center = length(spineOff);
         let marrow_intensity = smoothstep(2.0, 0.0, dist_to_center) * marrowGlow;
         let audio_pulse = (sin(animTime * 8.0 + p.z) * 0.5 + 0.5) * (mids + fftPulse) * audioReact;
         color += vec3<f32>(0.5, 0.0, 1.0) * marrow_intensity * (0.6 + audio_pulse);
@@ -279,6 +321,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Racing shock-pulse lights the bones as it passes (kick/lunge)
         let pulseHere = exp(-abs(p.z + ctx.lungeOffset - ctx.pulseZ) * 0.6) * ctx.pulseEnv;
         color += vec3<f32>(0.2, 1.0, 0.9) * pulseHere * 0.8;
+
+        // Idea 2: Bending-strain bioluminescence — strain = offset . bend of
+        // the traveling wave at this body z. Tension (convex) flank of the
+        // tightest bends glows emerald, the compression flank dims; the light
+        // travels with the wave. Audio-independent.
+        let kin = spineKin(res2.w, ctx);
+        let strain = dot(spineOff, kin.bend);
+        let tension = smoothstep(0.25, 1.4, strain);
+        let compress = smoothstep(0.25, 1.4, -strain);
+        color *= 1.0 - 0.3 * compress;
+        color += vec3<f32>(0.35, 1.0, 0.45) * tension * (0.35 + 0.65 * pow(rim, 1.5));
 
         // Simple fog
         color = mix(color, vec3<f32>(0.0, 0.02, 0.05), smoothstep(10.0, MAX_D, t));
@@ -293,11 +346,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let freq = mix(0.35, 0.9, turb);
         for (var i = 0; i < 24; i++) {
             let vp = ro + rd * vol_t;
+            // Idea 3: Bow-wave current parting — near the bones the flow sample
+            // is pushed outward along the spine-local radial (streaks part
+            // around the silhouette); the flank leading the sideways sway is
+            // compressed/brightened, the trailing flank thinned (no vortices).
+            let mB = map(vp, ctx);
+            let nearB = exp(-max(mB.x, 0.0) * 0.9);
+            let dirB = mB.yz / max(length(mB.yz), 1e-3);
+            let swayB = spineKin(mB.w, ctx).sway;
+            let lead = -dot(dirB, swayB / max(length(swayB), 1e-3));
+            let bow = 1.0 + nearB * (0.9 * max(lead, 0.0) - 0.5 * max(-lead, 0.0));
+            let part = dirB * nearB * 1.4;
             // Stretch z (flow axis): elongates eddies into speed lines
-            let sp = vec3<f32>(vp.x * 2.0, vp.y * 2.0, vp.z * 0.35 - animTime * flowSpeed) * freq;
+            let sp = vec3<f32>((vp.x - part.x) * 2.0, (vp.y - part.y) * 2.0, vp.z * 0.35 - animTime * flowSpeed) * freq;
             let n_val = noise3(sp);
             let n_det = noise3(sp * 2.3 + vec3<f32>(0.0, animTime * flowSpeed * 0.35, 0.0));
-            vol_acc += smoothstep(0.15, 0.45, n_val + 0.4 * n_det) * 0.06;
+            vol_acc += smoothstep(0.15, 0.45, n_val + 0.4 * n_det) * 0.06 * bow;
             vol_t += step_size;
             if (vol_t > MAX_D) { break; }
         }
@@ -322,7 +386,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ---- HDR -> ACES, semantic alpha, real generated depth -----------------
     let tone = acesTone(history * 1.1);
     let alpha = clamp(select(0.08 + luma(color) * 0.4, 0.92, hit), 0.0, 0.97);
-    let depth = select(0.05, clamp(1.0 - t / MAX_D, 0.0, 1.0), hit); // near-is-one
+    let depth = select(0.0, clamp(1.0 - t / MAX_D, 0.0, 1.0), hit); // near-is-one, miss = far = 0
 
     textureStore(dataTextureA, coords, vec4<f32>(history, alpha));
     textureStore(writeTexture, coords, vec4<f32>(tone, alpha));

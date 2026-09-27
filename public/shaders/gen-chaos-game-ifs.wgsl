@@ -4,8 +4,8 @@
 //  Features: generative, audio-reactive, upgraded-rgba, temporal-ghosting, chromatic-attractors,
 //            bass-scale-pulse, upgraded-rgba, aces-tone-map
 //  Complexity: Medium
-//  Upgraded: 2026-09-06
-//  Ideas: last-vertex occupancy tint; Sierpinski hole
+//  Upgraded: 2026-09-27
+//  Ideas: last-vertex occupancy tint; Sierpinski hole; iterate age; median scaffold
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -97,12 +97,20 @@ fn hue2rgb(h: f32) -> vec3<f32> {
     return clamp(p - 1.0, vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn ifsPoint(uv: vec2<f32>, iter: i32, time: f32, bass: f32) -> vec3<f32> {
+fn sdSeg2(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
+    let pa = p - a;
+    let ba = b - a;
+    let h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-6), 0.0, 1.0);
+    return length(pa - ba * h);
+}
+
+fn ifsPoint(uv: vec2<f32>, iter: i32, time: f32, bass: f32) -> vec4<f32> {
     var p = uv * 2.0 - 1.0;
     let rot = time * 0.1 + bass * 0.5;
     let c = cos(rot);
     let s = sin(rot);
     var lastPick = 0.0;
+    var settle = 0.0;
     
     for (var i: i32 = 0; i < iter; i = i + 1) {
         let fi = f32(i);
@@ -123,8 +131,12 @@ fn ifsPoint(uv: vec2<f32>, iter: i32, time: f32, bass: f32) -> vec3<f32> {
             (p - a1) * scale,
             h < 0.33
         );
+        // Idea 3 — late iterates weigh more than the early wander
+        let w = (fi + 1.0) / max(f32(iter), 1.0);
+        settle += exp(-dot(p, p) * 1.6) * w;
     }
-    return vec3<f32>(p, lastPick);
+    settle = clamp(settle / max(f32(iter) * 0.5, 1.0), 0.0, 1.0);
+    return vec4<f32>(p, lastPick, settle);
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -173,6 +185,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let p_b = pb.xy;
     let p_g = pg.xy;
     let lastPick = pg.z;
+    let settle = pg.w;
     
     let d_r = length(p_r);
     let d_g = length(p_g);
@@ -203,6 +216,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 2 — Sierpinski hole (far from last iterate origin)
     let hole = smoothstep(0.35, 1.2, d_g);
     finalRGB *= 1.0 - hole * 0.28;
+    finalRGB *= mix(0.42, 1.15, settle);
+    // Idea 4 — median scaffold of the generating triangle
+    let spin = time * 0.1 + bass * 0.5;
+    let sc = cos(spin);
+    let ss = sin(spin);
+    let v1 = vec2<f32>(-0.5 * sc, -0.5 * ss) * 0.9;
+    let v2 = vec2<f32>(0.5 * sc, 0.5 * ss) * 0.9;
+    let v3 = vec2<f32>(-0.866 * ss, 0.866 * sc) * 0.9;
+    let tri = (uv - 0.5) * vec2<f32>(resolution.x / max(resolution.y, 1.0), 1.0);
+    let scaffold = exp(-min(sdSeg2(tri, v1, v2), min(sdSeg2(tri, v2, v3), sdSeg2(tri, v3, v1))) * 95.0);
+    finalRGB += vec3<f32>(0.72, 0.84, 1.0) * scaffold * 0.38;
 
     // Raymarched orbit sculpture layered over the 2D chaos-game field.
     let aspect = resolution.x / resolution.y;

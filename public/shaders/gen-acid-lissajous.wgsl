@@ -5,8 +5,8 @@
 //            luma-spawn, depth-aware, temporal-feedback, chromatic-aberration,
 //            aces-tone-map, emergent-trails
 //  Complexity: Medium
-//  Upgraded: 2026-09-06
-//  Ideas: origin-crossing beads; glow waist when freqX≈freqY
+//  Upgraded: 2026-09-27
+//  Ideas: origin-crossing beads; glow waist when freqX≈freqY; cusp dwell; 2:1 lobe split
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Lissajous figures drawn as glowing neon tubes with acid-trip color
@@ -184,14 +184,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let phase = sf * 0.63 + time * speed * (0.7 + sf * 0.11) * (1.0 + bass * 0.3);
     let hueBase = fract(sf / f32(activeStrands) + time * 0.16 * speed + mids * 0.22);
 
+    let ampX = 0.85 + treble * 0.12;
+    let ampY = 0.85 + bass * 0.12;
     var minDistSq = 1e9;
+    var bestT = 0.0;
+    var bestCy = 0.0;
     for (var ti: i32 = 0; ti < SAMPLES; ti = ti + 1) {
       let t  = f32(ti) / f32(SAMPLES - 1) * TAU;
-      let cx = sin(freqX * t + phase) * (0.85 + treble * 0.12);
-      let cy = sin(freqY * t) * (0.85 + bass * 0.12);
+      let cx = sin(freqX * t + phase) * ampX;
+      let cy = sin(freqY * t) * ampY;
       let diff = p - vec2<f32>(cx, cy);
       let d2 = dot(diff, diff);
+      let closer = d2 < minDistSq;
       minDistSq = min(minDistSq, d2);
+      bestT = select(bestT, t, closer);
+      bestCy = select(bestCy, cy, closer);
     }
     let minDist = sqrt(minDistSq);
 
@@ -204,9 +211,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let glow = core + bloom;
     // Idea 1 — Lissajous node beads at origin crossings
     let node = exp(-minDist / max(gwUse, 0.0008)) * exp(-dot(p, p) * 7.0);
+    // Idea 3 — cusp dwell where parametric speed is near zero
+    let vx = freqX * cos(freqX * bestT + phase) * ampX;
+    let vy = freqY * cos(freqY * bestT) * ampY;
+    let dwell = exp(-length(vec2<f32>(vx, vy)) * 0.45) * smoothstep(gwUse * 3.0, 0.0, minDist);
     let sat = clamp(0.8 + treble * 0.2, 0.0, 1.0);
-    let val = glow * (1.5 + mids * 0.8) + node * 1.4;
-    let rgb = hsv2rgb(vec3<f32>(hueBase, sat, 1.0)) * val;
+    let val = glow * (1.5 + mids * 0.8) + node * 1.4 + dwell * 0.9;
+    var rgb = hsv2rgb(vec3<f32>(hueBase, sat, 1.0)) * val;
+    // Idea 4 — 2:1 lobe split (distinct from the 1:1 waist)
+    let twoToOne = 1.0 - smoothstep(0.0, 0.55, abs(abs(freqX - freqY) - 1.0));
+    let lobeTint = mix(vec3<f32>(0.25, 0.9, 1.0), vec3<f32>(1.0, 0.4, 0.85), step(0.0, bestCy));
+    rgb = mix(rgb, rgb * lobeTint, twoToOne * smoothstep(gwUse * 5.0, 0.0, minDist));
 
     totalColor = totalColor + rgb;
     totalWeight = totalWeight + glow;

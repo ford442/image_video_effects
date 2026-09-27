@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-15
-//  Ideas: reflected hats on odd cells; chevron brim notch
+//  Upgraded: 2026-09-27
+//  Ideas: reflected hats on odd cells; chevron brim notch; kite notch; metatile outline
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -110,8 +110,8 @@ fn hue2rgb(h: f32) -> vec3<f32> {
     return clamp(p - 1.0, vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-// Returns (signed hat distance, chirality ±1, brim amount).
-fn hatTileField(uv: vec2<f32>, scale: f32) -> vec3<f32> {
+// Returns (signed hat distance, chirality ±1, brim amount, metatile edge).
+fn hatTileField(uv: vec2<f32>, scale: f32) -> vec4<f32> {
     let p = uv * scale;
     let hex_q = p.x * 0.57735 + p.y * 0.33333;
     let hex_r = p.y * 0.66667;
@@ -125,10 +125,18 @@ fn hatTileField(uv: vec2<f32>, scale: f32) -> vec3<f32> {
     let dq = abs(localQ);
     let dr = abs(localR);
     let ds = abs(localS);
-    let d = max(dq, max(dr, ds)) * 2.0 - 0.5;
     // Idea 2 — chevron brim along hex_q so cells read as hats, not hexes.
     let brim = abs(fract(hex_q * 0.5 + hex_r * 0.25) - 0.5);
-    return vec3<f32>(d - brim * 0.22, chirality, brim);
+    // Idea 3 — kite notch opposite the brim so neighboring hats interlock.
+    let notch = smoothstep(0.28, 0.02, abs(localR + 0.28 * chirality)) * smoothstep(0.42, 0.05, abs(localQ));
+    let d = max(dq, max(dr, ds)) * 2.0 - 0.5 - brim * 0.22 + notch * 0.2;
+    // Idea 4 — faint 4-cell metatile outline.
+    let sq = fract(hex_q * 0.5) - 0.5;
+    let sr = fract(hex_r * 0.5) - 0.5;
+    let ss = -sq - sr;
+    let superD = max(abs(sq), max(abs(sr), abs(ss))) * 2.0;
+    let metaEdge = 1.0 - smoothstep(0.02, 0.07, abs(superD - 0.92));
+    return vec4<f32>(d, chirality, brim, metaEdge);
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -168,6 +176,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let field = hatTileField(p, scale);
     let d = field.x;
     let chirality = field.y;
+    let metaEdge = field.w;
     
     let tileID = floor(p.x * scale * 0.57735) + floor(p.y * scale * 0.66667) * 137.0;
     let tileHash = hash12(vec2<f32>(tileID, fract(tileID * 0.618)));
@@ -188,6 +197,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let edgeColor = vec3<f32>(1.0, 0.95, 0.8) * chromaEdge;
 
     var liveRGB = rgb * val + edgeColor;
+    liveRGB += vec3<f32>(0.95, 0.88, 0.62) * metaEdge * 0.28;
     var reliefDepth = 0.0;
 
     // A budgeted raymarched relief gives the pattern a real geometric anchor.
