@@ -2911,3 +2911,28 @@ User asked for progress + six GitHub issues (code changes, even large ones), not
   installed at all, so the JS toolchain wasn't available; noted rather than faked.
 - Notes: agents/swarm-outputs/claude-2026-09-21-mouse-interactive-eight/. Real-GPU QA external
   (poly-art's finished edges + mouse-magnetic-pixel-sand's residue trail first — biggest visual change).
+
+## 2026-09-27 — quantum / radiant / crystalline generative (10)
+
+- IDs: gen-quantum-liquid-metal-chronosphere, gen-quantum-mycelial-neural-web, gen-quantum-mycelium,
+  gen-quantum-neural-lace, gen-quantum-pollen, gen-quantum-singularity-forge, gen-quantum-superposition,
+  gen-quasicrystal, gen-radiant-chrono-glass-nautilus, gen-radiant-quantum-crystalline-forge.
+- Ideas added:
+  - chronosphere: Rayleigh-Plateau tendril beading; chrono echo shells (radial C echo in the void).
+  - mycelial-neural-web: action-potential spikes along fibres; synaptic junction flares.
+  - mycelium: cytoplasmic streaming granules piling at septa; melanized wound rim at the cursor cut.
+  - neural-lace: per-node stochastic firing with refractory decay; nodes of Ranvier (saltatory packets).
+  - pollen: echinate exine spikes; tetrad dehiscence.
+  - singularity-forge: photon ring + lensed starfield (wires dead Lensing Intensity); Doppler beaming.
+  - superposition: coherent interference term from unused totalRe/Im; detector-screen hit buildup in A.a.
+  - quasicrystal: phason strain field (pointer-pushed); Ammann bars.
+  - chrono-glass-nautilus: siphuncle; chamber-sequential plasma tide.
+  - crystalline-forge: blackbody seam cooling; cleavage-plane glints.
+- Bugs fixed on the way: quasicrystal stored bass envelope in A.r and read it back as red trail; mycelial-neural-web
+  read "audio" from a filtered C sample; mycelium repulsion sphere was pinned at world z=5 (left behind by the camera);
+  singularity-forge and pollen sampled rgba32float C through a filtering sampler.
+- Floor: bindings / 16x16 / exact C / A packing documented per file / saved params byte-exact; mirrored `params`
+  added to 6 JSONs so the dead-slider audit scans them. No extraBuffer use.
+- Gates: naga 10/10, precommit 10/10, extraBuffer PASS, dead sliders scanned 10 / 0 dead, catalogs,
+  Jest (same 6 WASM-bridge failures as clean main), SKIP_WASM_BUILD=1 build. Real-GPU visual QA: external.
+- Notes: agents/swarm-outputs/claude-2026-09-27-quantum-radiant-ten/.

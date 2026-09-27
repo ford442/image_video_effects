@@ -10,7 +10,9 @@
     "curl-noise",
     "audio-reactive",
     "subsurface-scattering",
-    "mouse-attractor"
+    "mouse-attractor",
+    "mouse-driven",
+    "upgraded-rgba"
   ],
   "tags": [
     "organic",

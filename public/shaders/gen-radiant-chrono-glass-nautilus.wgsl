@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-15
-//  Ideas: logarithmic chamber septa; birefringent growth lamellae
+//  Upgraded: 2026-09-27
+//  Ideas: logarithmic chamber septa; birefringent growth lamellae; siphuncle plasma conduit; chamber-sequential plasma tide
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -54,6 +54,15 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
     return min(a, b) - h * h * k * (1.0 / 4.0);
 }
 
+var<private> g_chamber: f32;
+
+// Idea 4: plasma tide — brightness wave stepping chamber to chamber.
+fn chamberTide(chamber: f32) -> f32 {
+    let tideSpeed = 1.2 + plasmaBuffer[0].x * u.zoom_params.w * 2.0;
+    let w = 0.5 + 0.5 * sin(chamber * 0.9 - u.config.x * tideSpeed);
+    return 0.3 + 0.7 * w * w * w;
+}
+
 // Logarithmic spiral SDF
 fn map(p_in: vec3<f32>) -> vec2<f32> {
     var p = p_in;
@@ -84,14 +93,21 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
     let septumThick = 0.014 + clamp(r, 0.0, 4.0) * 0.010;
     let septum = length(vec2<f32>(wallPhase * 1.8, z * 2.2)) - septumThick;
 
+    // Idea 3: siphuncle — a thin tube running along the ventral side of the
+    // plasma interior, threading every chamber.
+    let siphuncle = length(vec2<f32>(fract(spiral_a * 1.5 + 0.5) - 0.5, z * 2.0 + 0.19)) - 0.04;
+    g_chamber = floor(spiral_a * 1.5);
+
     // Smoothly combine chambers + septa
     var dist = smin(shell, interior, 0.2);
     dist = smin(dist, septum, 0.06);
+    dist = smin(dist, siphuncle, 0.03);
 
     // ID mapping
     var id = 1.0;
     if (shell > interior) { id = 2.0; } // 1.0 = shell, 2.0 = interior
     if (septum < min(shell, interior)) { id = 3.0; } // 3.0 = septum
+    if (siphuncle < min(min(shell, interior), septum)) { id = 4.0; } // 4.0 = siphuncle
     return vec2<f32>(dist * 0.5, id);
 }
 
@@ -141,7 +157,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         if (d < 0.001 || t > 10.0) { break; }
         t += d;
         if (id == 2.0) {
-            glow += 0.01 / (0.01 + d * d) * u.zoom_params.y; // Plasma Bloom
+            glow += 0.01 / (0.01 + d * d) * u.zoom_params.y * chamberTide(g_chamber); // Plasma Bloom
         }
     }
 
@@ -161,6 +177,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         col = select(interior, shell, id == 1.0);
         if (id == 3.0) {
             col = vec3<f32>(0.85, 0.92, 1.0) * (0.35 + f);
+        }
+        // Chamber the hit belongs to (map() sets g_chamber).
+        let hitMap = map(p);
+        if (id == 2.0) {
+            col *= 0.55 + 0.45 * chamberTide(g_chamber);
+        }
+        if (hitMap.y == 4.0) {
+            // Plasma pulses travel outward along log r through the siphuncle.
+            let logR = log(max(length(p.xy), 0.001));
+            let pulse = pow(max(sin(logR * 9.0 - u.config.x * 3.0), 0.0), 8.0);
+            col = vec3<f32>(0.25, 0.1, 0.55) + vec3<f32>(0.4, 0.95, 1.0) * (0.3 + pulse * u.zoom_params.y * 0.8) * chamberTide(g_chamber);
         }
         // Birefringent growth lamellae: paired spectral lobes from spiral phase + n·v
         let spiralPhase = atan2(p.y, p.x);

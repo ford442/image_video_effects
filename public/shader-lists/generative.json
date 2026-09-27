@@ -32190,7 +32190,9 @@
       "curl-noise",
       "audio-reactive",
       "subsurface-scattering",
-      "mouse-attractor"
+      "mouse-attractor",
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "organic",
@@ -32340,6 +32342,44 @@
       "audio-reactive",
       "mouse-driven",
       "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "network_density",
+        "name": "Network Density",
+        "default": 1.5,
+        "min": 0.5,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "growth_chaos",
+        "name": "Growth Chaos",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.05,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "pulse_speed",
+        "name": "Pulse Speed",
+        "default": 2,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "edge_softness",
+        "name": "Edge Softness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.05,
+        "mapping": "zoom_params.w"
+      }
     ]
   },
   {
@@ -32406,7 +32446,46 @@
       "mouse-driven",
       "temporal",
       "raymarched",
-      "fast-motion"
+      "fast-motion",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "lattice_density",
+        "name": "Lattice Density",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "pulse_speed",
+        "name": "Pulse Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "fiber_chaos",
+        "name": "Fiber Chaos",
+        "default": 0.2,
+        "min": 0,
+        "max": 0.5,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "energy_level",
+        "name": "Energy Level",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ]
   },
   {
@@ -32479,7 +32558,47 @@
       "motion-advection",
       "domain-warp",
       "chromatic-aberration",
-      "aces-tone-map"
+      "aces-tone-map",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "swarm_density",
+        "name": "Swarm Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "morph_flow",
+        "name": "Morph Flow",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "bloom_glow",
+        "name": "Bloom Glow",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "feedback_trails",
+        "name": "Feedback Trails",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ]
   },
   {
@@ -32540,7 +32659,49 @@
     "updated": true,
     "id": "gen-quantum-singularity-forge",
     "url": "shaders/gen-quantum-singularity-forge.wgsl",
-    "features": []
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "singularity_gravity",
+        "name": "Singularity Gravity",
+        "default": 0.36,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "accretion_speed",
+        "name": "Accretion Speed",
+        "default": 0.33,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "ejection_rate",
+        "name": "Ejection Rate",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "lensing_intensity",
+        "name": "Lensing Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
   },
   {
     "name": "Quantum Superposition Lattice",
@@ -32603,7 +32764,49 @@
     "updated": true,
     "id": "gen-quantum-superposition",
     "url": "shaders/gen-quantum-superposition.wgsl",
-    "features": []
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "particle_count",
+        "name": "Particle Count",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "decoherence",
+        "name": "Decoherence",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "wave_speed",
+        "name": "Wave Speed",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "wavefunction_opacity",
+        "name": "Wavefunction Opacity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
   },
   {
     "id": "gen-quasicrystal",
@@ -32668,7 +32871,47 @@
     "updated": true,
     "url": "shaders/gen-quasicrystal.wgsl",
     "features": [
-      "audio-reactive"
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "symmetry_order",
+        "name": "Symmetry Order",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "pattern_density",
+        "name": "Pattern Density",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "color_cycling",
+        "name": "Color Cycling",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "projection_angle",
+        "name": "Projection Angle",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ]
   },
   {

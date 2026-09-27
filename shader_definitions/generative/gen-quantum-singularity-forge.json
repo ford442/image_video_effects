@@ -56,5 +56,47 @@
   "updated": true,
   "id": "gen-quantum-singularity-forge",
   "url": "shaders/gen-quantum-singularity-forge.wgsl",
-  "features": []
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "singularity_gravity",
+      "name": "Singularity Gravity",
+      "default": 0.36,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "accretion_speed",
+      "name": "Accretion Speed",
+      "default": 0.33,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "ejection_rate",
+      "name": "Ejection Rate",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "lensing_intensity",
+      "name": "Lensing Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
 }

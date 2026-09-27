@@ -1,12 +1,12 @@
-// ═══════════════════════════════════════════════════════════════
-//  Quantum Neural Lace - Generative Shader
+// ═══════════════════════════════════════════════════════════════════
+//  Quantum Neural Lace
 //  Category: generative
-//  Description: A mesmerizing 3D visualization of a hyper-advanced neural interface.
-//               Crystalline lattice of quantum nodes connected by pulsating,
-//               organic fiber-optic strands.
-//  Features: raymarched, mouse-driven
-//  Tags: cyber, network, 3d, raymarching, scifi, glowing, lattice
-// ═══════════════════════════════════════════════════════════════
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-27
+//  Ideas: per-node stochastic firing with refractory decay; nodes of Ranvier (saltatory packets)
+//  A packing: HDR trail RGB (pre-ACES, read back from C), alpha = coverage
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -41,6 +41,21 @@ fn sdOctahedron(p: vec3<f32>, s: f32) -> f32 {
 fn smin(a: f32, b: f32, k: f32) -> f32 {
     let h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
     return mix(b, a, h) - k * h * (1.0 - h);
+}
+
+fn hash31(p: vec3<f32>) -> f32 {
+    var q = fract(p * vec3<f32>(0.1031, 0.1030, 0.0973));
+    q = q + dot(q, q.yzx + 33.33);
+    return fract((q.x + q.y) * q.z);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn rotate2D(p: vec2<f32>, angle: f32) -> vec2<f32> {
@@ -87,13 +102,22 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     // Axis X cylinder
     // Add distortion
     let wave = sin(p.z * 2.0 + u.config.x) * distortion * 0.2;
-    let d_cyl_x = length(local_p.yz + vec2<f32>(wave, 0.0)) - node_size * 0.3;
+    let d_axis_x = length(local_p.yz + vec2<f32>(wave, 0.0));
+    let d_axis_y = length(local_p.xz);
+    let d_axis_z = length(local_p.xy);
 
-    // Axis Y cylinder
-    let d_cyl_y = length(local_p.xz) - node_size * 0.3;
+    // Idea 2: nodes of Ranvier — myelin segments along each strand's axis,
+    // separated by narrow constricted gaps.
+    var axial = local_p.x;
+    if (d_axis_y < d_axis_x && d_axis_y <= d_axis_z) { axial = local_p.y; }
+    if (d_axis_z < d_axis_x && d_axis_z < d_axis_y) { axial = local_p.z; }
+    let segPhase = fract(axial / cell_size * 4.0);
+    let gap = 1.0 - smoothstep(0.0, 0.07, min(segPhase, 1.0 - segPhase));
+    let strandR = node_size * 0.3 * (1.0 - gap * 0.35);
 
-    // Axis Z cylinder
-    let d_cyl_z = length(local_p.xy) - node_size * 0.3;
+    let d_cyl_x = d_axis_x - strandR;
+    let d_cyl_y = d_axis_y - strandR;
+    let d_cyl_z = d_axis_z - strandR;
 
     // Union cylinders
     let d_strands = min(d_cyl_x, min(d_cyl_y, d_cyl_z));
@@ -101,14 +125,9 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     // Smooth blend nodes and strands
     let d_struct = smin(d_node, d_strands, 0.2);
 
-    // Material ID: 1.0 = Structure
-    // We can vary material based on proximity to center for glow logic later
-    var mat = 1.0;
-
-    // Check if we are "inside" a pulse zone
-    // Pulse travels along the grid
-    // Use world position `id` to determine pulse state?
-    // Or just simple sine waves
+    // Material: [1, 1.5] = strand (fraction = Ranvier gap),
+    //           [2, 3)   = node   (fraction = per-cell firing seed from `id`).
+    let mat = select(1.0 + gap * 0.5, 2.0 + hash31(id) * 0.99, d_node < d_strands);
 
     return vec2<f32>(d_struct, mat);
 }
@@ -186,6 +205,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (t < 100.0) {
         var p = ro + rd * t;
         let n = calcNormal(p);
+        let mat = res.y;
+        let isNode = mat >= 2.0;
+        let gapMask = select(clamp((mat - 1.0) * 2.0, 0.0, 1.0), 0.0, isNode);
 
         let light_dir = normalize(vec3<f32>(0.5, 0.8, -0.5));
         let diff = max(dot(n, light_dir), 0.0);
@@ -200,11 +222,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Traveling pulse packets along fiber direction.
         let packetPhase = sin(dot(p, vec3<f32>(1.0, 0.3, 0.7)) * 2.0 - warpT * (6.0 + pulseSpeed * 8.0));
-        let packet = pow(max(packetPhase, 0.0), 10.0) * 2.5;
+        // Saltatory conduction: packets only light up at the Ranvier gaps on strands.
+        let packet = pow(max(packetPhase, 0.0), 10.0) * 2.5 * select(0.2 + 0.8 * gapMask, 1.0, isNode);
 
         let glow_col = vec3<f32>(0.0, 0.8, 1.0);
         color = base_col * (diff * 0.5 + 0.1) + vec3<f32>(spec);
         color += glow_col * (pow(pulse_mask, 8.0) * 2.0 + packet) * glowIntensity * (1.0 + treble * 0.5);
+
+        // Gap rings glow faintly even between packets.
+        color += glow_col * gapMask * 0.25 * glowIntensity;
+
+        // Idea 1: each node fires on its own clock — sharp flash, then an
+        // exponential refractory decay; bass quickens the firing rate.
+        if (isNode) {
+            let seed = fract(mat);
+            let fireRate = 0.25 + pulseSpeed * 0.9 + bass * 0.35;
+            let ph = fract(time * fireRate * (0.7 + seed * 0.6) + seed * 7.13);
+            let fire = exp(-ph * 9.0) * step(0.3, fract(seed * 13.7));
+            color += mix(vec3<f32>(0.6, 0.9, 1.0), vec3<f32>(1.0, 0.85, 0.6), seed) * fire * 3.0 * (0.4 + glowIntensity);
+        }
 
         let rim = pow(1.0 - max(dot(n, view_dir), 0.0), 3.0);
         color += vec3<f32>(0.5, 0.0, 0.8) * rim * 0.5;
@@ -226,7 +262,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depth = select(1.0, clamp(t / 100.0, 0.05, 0.98), t < 100.0);
     let alpha = clamp(length(temporal) * 0.9 + 0.1, 0.1, 1.0);
 
-    textureStore(writeTexture, pixel, vec4<f32>(temporal, alpha));
+    textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(temporal), alpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, pixel, vec4<f32>(temporal, alpha));
 }

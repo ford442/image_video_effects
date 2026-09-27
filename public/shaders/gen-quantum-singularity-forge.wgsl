@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Quantum Singularity-Forge
 //  Category: generative
-//  Features: raymarched, chromatic-dispersion, audio-reactive,
-//            mouse-driven, gravitational-lensing, upgraded-rgba,
-//            depth-aware, aces-tone-map, cosmic-forge
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Very High
-//  Created: 2026-06-28
+//  Upgraded: 2026-09-27
+//  Ideas: photon ring + lensed starfield (Lensing Intensity); relativistic Doppler beaming on the disk
+//  A packing: ACES display RGBA, alpha = coverage
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -213,7 +213,8 @@ fn heatGradient(t: f32) -> vec3<f32> {
 
 // ─── Raymarch ───
 fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: f32, mids: f32,
-            gravity: f32, accretionSpeed: f32, ejectionRate: f32, mousePos: vec3<f32>) -> vec4<f32> {
+            gravity: f32, accretionSpeed: f32, ejectionRate: f32, mousePos: vec3<f32>,
+            lensIntensity: f32) -> vec4<f32> {
   var t = 0.0;
   var col = vec3<f32>(0.0);
   var alpha = 0.0;
@@ -255,6 +256,18 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: f32, mids
         // Add emissive swirl
         let swirl = sin(p.x * 3.0 + time * 2.0 + p.z * 2.0) * 0.5 + 0.5;
         col = col + vec3<f32>(0.2, 0.4, 0.8) * swirl * bass * 0.3;
+
+        // Idea 2: relativistic Doppler beaming. The side of the disk moving
+        // toward the camera brightens and blue-shifts; the receding side dims
+        // and reddens. Faster accretion = higher orbital beta.
+        let orbitDir = normalize(vec3<f32>(p.z, 0.0, -p.x) + vec3<f32>(1e-4, 0.0, 0.0));
+        let beta = clamp(0.18 + accretionSpeed * 0.16, 0.0, 0.6);
+        let cosT = dot(orbitDir, -rd);
+        let dopp = sqrt(1.0 - beta * beta) / (1.0 - beta * cosT);
+        let beaming = clamp(dopp * dopp * dopp, 0.25, 3.5);
+        col = col * beaming;
+        col = mix(col, col * vec3<f32>(0.65, 0.9, 1.35), sat(dopp - 1.0) * 1.5);
+        col = mix(col, col * vec3<f32>(1.35, 0.7, 0.45), sat(1.0 - dopp) * 1.5);
         alpha = sat(0.3 + hitGlow * 0.7);
       }
       break;
@@ -272,14 +285,30 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: f32, mids
   }
 
   if (!hit) {
-    // Starfield background with gravitational lensing
+    // Idea 1: gravitational lensing of the sky. The impact parameter b of the
+    // missed ray bends it toward the hole (∝ Lensing Intensity / b), and a thin
+    // photon ring sits at the critical impact parameter.
+    let along = dot(-ro, rd);
+    let closest = ro + rd * max(along, 0.0);
+    let b = max(length(closest), 0.05);
+    let bhR = 0.3 + audio * 0.05;
+    let inFront = step(0.0, along);
+    let deflect = min(lensIntensity * bhR * 0.45 / b, 1.2) * inFront;
+    let rdL = normalize(rd - closest / b * deflect);
+    let bCrit = bhR * 2.6;
+    let ringW = 0.035 + bass * 0.01;
+    let ringX = (b - bCrit) / ringW;
+    let ring = exp(-ringX * ringX) * inFront * (0.35 + 0.45 * lensIntensity);
+
+    // Starfield background, sampled along the lensed ray
     var bg = vec3<f32>(0.0, 0.0, 0.01);
-    let starfield = fbm3(rd * 5.0 + time * 0.05, 4);
-    bg = bg + vec3<f32>(0.8, 0.85, 1.0) * pow(starfield, 4.0) * 0.3;
+    let starfield = fbm3(rdL * 5.0 + time * 0.05, 4);
+    bg = bg + vec3<f32>(0.8, 0.85, 1.0) * pow(starfield, 4.0) * 0.3 * (1.0 + deflect * 2.0);
     // Distant nebula glow
-    bg = bg + vec3<f32>(0.05, 0.0, 0.1) * (0.1 + bass * 0.1) * sat(0.5 / (abs(rd.y) + 0.1));
+    bg = bg + vec3<f32>(0.05, 0.0, 0.1) * (0.1 + bass * 0.1) * sat(0.5 / (abs(rdL.y) + 0.1));
+    bg = bg + vec3<f32>(1.0, 0.82, 0.55) * ring * (1.2 + bass * 0.8);
     col = bg;
-    alpha = 0.0;
+    alpha = sat(ring * 0.7);
   }
 
   return vec4<f32>(col, alpha);
@@ -331,7 +360,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let rd = normalize(p.x * uu + p.y * vv + 2.5 * ww);
 
   // Raymarch
-  let result = raymarch(ro, rd, time, audio, bass, mids, gravity, accretionSpeed, ejectionRate, mousePos);
+  let result = raymarch(ro, rd, time, audio, bass, mids, gravity, accretionSpeed, ejectionRate, mousePos, lensIntensity);
   var col = result.rgb;
   var alpha = result.a;
 
@@ -339,16 +368,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col = col + vec3<f32>(0.0, 0.2, 0.4) * bass * 0.15;
   col = col + vec3<f32>(0.3, 0.1, 0.5) * mids * 0.1;
 
-  // Temporal persistence using extraBuffer
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  // Temporal persistence from the previous frame (exact load)
+  let prev = textureLoad(dataTextureC, coord, 0);
   col = mix(col, prev.rgb * 0.92, 0.05);
 
   // Tone map
   col = acesToneMap(col * 1.5);
 
   let finalDepth = sat(0.95 - alpha * 0.3);
+  // Semantic alpha: surface/ring coverage plus emitted light (void stays thin).
+  let outAlpha = clamp(alpha + dot(col, vec3<f32>(0.2126, 0.7152, 0.0722)) * 0.3, 0.04, 1.0);
 
-  textureStore(writeTexture, coord, vec4<f32>(col, 1.0));
+  textureStore(writeTexture, coord, vec4<f32>(col, outAlpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 1.0));
-  textureStore(dataTextureA, coord, vec4<f32>(col.r, col.g, col.b, 1.0));
+  textureStore(dataTextureA, coord, vec4<f32>(col, outAlpha));
 }
