@@ -61,5 +61,9 @@
   "updated": true,
   "id": "gen-topological-phase-weave",
   "url": "shaders/gen-topological-phase-weave.wgsl",
-  "features": []
+  "features": [
+    "upgraded-rgba",
+    "audio-reactive",
+    "mouse-driven"
+  ]
 }

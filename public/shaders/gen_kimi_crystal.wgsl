@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: Nakaya habit transition - hex plates sprout six-fold stellar dendrite arms with 60-degree sidebranches as growth (and treble supersaturation) advances; 22-degree ice halo + parhelia around the mouse "sun" from minimum deviation through 60-degree ice prisms, dispersed by IOR 1.31/1.32/1.33
+//  Upgraded: 2026-09-27
+//  Ideas: Nakaya habit transition - hex plates sprout six-fold stellar dendrite arms with 60-degree sidebranches as growth (and treble supersaturation) advances; 22-degree ice halo + parhelia around the mouse "sun" from minimum deviation through 60-degree ice prisms, dispersed by IOR 1.31/1.32/1.33; 46-degree halo from 90-degree ice paths; light pillars from plate-habit diamond dust
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 //
@@ -122,6 +122,17 @@ fn sdDendrite(q: vec2<f32>, armLen: f32, width: f32, branchGrowth: f32) -> f32 {
 fn prismMinDeviation(n: f32) -> f32 {
     let A = TAU / 6.0;
     return 2.0 * asin(n * sin(A * 0.5)) - A;
+}
+
+// 46° halo: min deviation through the 90° prism of a hexagonal column/plate
+// (ray enters a side face and leaves a basal face).
+fn prismMinDeviation90(n: f32) -> f32 {
+    let A = TAU * 0.25;
+    return 2.0 * asin(clamp(n * sin(A * 0.5), 0.0, 0.999)) - A;
+}
+
+fn safeTan(a: f32) -> f32 {
+    return sin(a) / max(cos(a), 0.001);
 }
 
 // Halo radial profile: no refracted light inside minimum deviation (the dark
@@ -336,9 +347,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // inner edge and bluer outer skirt (n rises toward blue). Horizontally
     // settled plates concentrate it into sun dogs left and right of the sun.
     let haloScale = 1.4;
-    let rMinR = tan(prismMinDeviation(IOR_ICE_R)) * haloScale;
-    let rMinG = tan(prismMinDeviation(IOR_ICE_G)) * haloScale;
-    let rMinB = tan(prismMinDeviation(IOR_ICE_B)) * haloScale;
+    let rMinR = safeTan(prismMinDeviation(IOR_ICE_R)) * haloScale;
+    let rMinG = safeTan(prismMinDeviation(IOR_ICE_G)) * haloScale;
+    let rMinB = safeTan(prismMinDeviation(IOR_ICE_B)) * haloScale;
     let sunVec = p - mousePos;
     let sunR = length(sunVec);
     let haloRGB = vec3<f32>(haloProfile(sunR, rMinR), haloProfile(sunR, rMinG), haloProfile(sunR, rMinB));
@@ -355,9 +366,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sunCore = exp(-sunR * sunR * 900.0) * (0.4 + mouseDown * 0.8);
     let haloLight = (haloRGB * 0.55 + dogRGB * dogShape * 1.3) * haloStrength
                   + vec3<f32>(1.0, 0.97, 0.9) * sunCore;
+
+    // Idea 1 — 46° halo: weaker outer ring from 90° ice paths.
+    let r46R = safeTan(prismMinDeviation90(IOR_ICE_R)) * haloScale;
+    let r46G = safeTan(prismMinDeviation90(IOR_ICE_G)) * haloScale;
+    let r46B = safeTan(prismMinDeviation90(IOR_ICE_B)) * haloScale;
+    let halo46 = vec3<f32>(haloProfile(sunR, r46R), haloProfile(sunR, r46G), haloProfile(sunR, r46B));
+
+    // Idea 2 — light pillars: vertical diamond-dust glints from plate-habit cells.
+    let pillar = exp(-abs(sunVec.x) * 36.0) * exp(-abs(sunVec.y) * 2.15) * (1.0 - habit);
+
     // Inside minimum deviation the sky is darker (no refracted light there).
     linear *= 1.0 - smoothstep(rMinR, rMinR * 0.8, sunR) * 0.12 * haloStrength;
     linear += haloLight * (1.0 - body * 0.5);
+    linear += halo46 * haloStrength * 0.32 * (1.0 - body * 0.4);
+    linear += vec3<f32>(0.92, 0.95, 1.0) * pillar * haloStrength * 0.7;
 
     // Nucleation frost ring from clicks
     linear += crystalHighlight * frostFlash * 0.35;
@@ -368,7 +391,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Alpha: ice coverage (opaque where thick/impure, clearer where
     // transmissive) plus Fresnel edge, halo light and frost-front glow.
     let luma = dot(display, vec3<f32>(0.299, 0.587, 0.114));
-    let haloLum = dot(haloLight, vec3<f32>(0.333));
+    let haloLum = dot(haloLight, vec3<f32>(0.333)) + dot(halo46, vec3<f32>(0.333)) * 0.3 + pillar * 0.25;
     let edgeLum = dot(spectralEdge, vec3<f32>(0.333));
     let alpha = clamp(body * mix(1.0, 0.55, transmission) + edgeLum * 0.3 + haloLum * 0.4
                       + frostFlash * 0.25 + luma * 0.15, 0.02, 1.0);

@@ -62,6 +62,7 @@
     "click-gravity-surge",
     "fft-plasma-shimmer",
     "temporal-history-smoothing",
-    "depth-output"
+    "depth-output",
+    "upgraded-rgba"
   ]
 }

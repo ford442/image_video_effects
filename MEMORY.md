@@ -1,6 +1,17 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-26 (open issues tagged with Claude model/effort)
+**Last updated:** 2026-09-27 (xeno / kimi / holo unused ten)
+
+## 2026-09-27 — Xeno / kimi / holo unused ten
+
+- All ten requested IDs live in `shader_definitions/generative/`. Kimi filenames are underscores. `gravito-phononic-accretion` is not the already-carded `gen-` sibling.
+- Kimi Nebula Depth is a halftone. Lava A stays raw `(blobShape, blobHalo, heat, alpha)`. Zeta spectral voice must stay on plasmaBuffer, not extraBuffer[5..12].
+- Naga 10/10. Catalog 1,373. Jest 741/6/1 skip, the 6 are WASM `bridge/api.js`. Real-GPU QA external.
+- Cards: `agents/swarm-outputs/grok-2026-09-27-xeno-kimi-holo-ten/`.
+
+## 2026-09-27 — Classic sim ten
+
+Wave equation, Stam fluids, Turing, von Kármán, Verlet cloth, string theory, supernova remnant, topology flow, sonic lava, volcanic ink. Two native ideas each on the existing solver. Turing and cloth kept the 2026-09-15 ideas. Slider names and ranges unchanged. No new springs. Real-GPU QA still external. Cards: `agents/swarm-outputs/grok-2026-09-27-classic-sims-ten/`.
 
 ## 2026-09-26 — Issue complexity tags (titles)
 
@@ -2912,6 +2923,27 @@ User asked for progress + six GitHub issues (code changes, even large ones), not
 - Notes: agents/swarm-outputs/claude-2026-09-21-mouse-interactive-eight/. Real-GPU QA external
   (poly-art's finished edges + mouse-magnetic-pixel-sand's residue trail first — biggest visual change).
 
+## 2026-09-27 — quantum / psychedelic generative (7 of 10 requested)
+
+- IDs: gen-psychedelic-layered-time-stamps, gen_psychedelic_spiral, gen-quantum-acoustic-bioluminescent-void-urchin,
+  gen-quantum-entangled-ferrofluid-engine, gen-quantum-fluorescent-aether-moth-swarm,
+  gen-quantum-fluorescent-nebula-anemone, gen-quantum-foam-alpha. Skipped (already have `Ideas:`): protocell-division,
+  moire-flower, time-warp-kaleidoscope.
+- Ideas added:
+  - layered-time-stamps: lagged echo taps; postmark rings; delay wavefront.
+  - psychedelic-spiral: petal-tip pearls; pen-trace rosette; nested outline ladder.
+  - void-urchin: spine firing waves; C afterglow; cage void-reflection.
+  - ferrofluid-engine: Rosensweig spike lattice; entangled-pair filaments; psi^2 nodal contours.
+  - aether-moth-swarm: wingbeat flutter; flight-aligned smear; lantern orbit; idle roost mandala.
+  - nebula-anemone: nematocyst beads; Stokes-shift afterglow; breathing oral disc.
+  - quantum-foam-alpha: virtual pair flashes; Born-rule hits; foam membranes.
+- Floor: bindings / 16x16 / exact C / A packing documented per file / saved params byte-exact. plasmaBuffer[0] now IS
+  uploaded (frame.ts:171). extraBuffer[133..255] is still zeroed every frame — no state kept there.
+- Gates: naga 7/7, precommit 7/7, extraBuffer, dead sliders (by hand where JSON has only updatedParams), catalogs,
+  Jest (same 6 WASM-bridge failures as clean main), SKIP_WASM_BUILD=1 build.
+- Flags: anemone slider roles realigned to JSON labels; time-stamps default look shifts. Real-GPU visual QA: external.
+- Notes: agents/swarm-outputs/claude-2026-09-27-quantum-psychedelic-seven/.
+
 ## 2026-09-27 — quantum / radiant / crystalline generative (10)
 
 - IDs: gen-quantum-liquid-metal-chronosphere, gen-quantum-mycelial-neural-web, gen-quantum-mycelium,
@@ -2936,3 +2968,94 @@ User asked for progress + six GitHub issues (code changes, even large ones), not
 - Gates: naga 10/10, precommit 10/10, extraBuffer PASS, dead sliders scanned 10 / 0 dead, catalogs,
   Jest (same 6 WASM-bridge failures as clean main), SKIP_WASM_BUILD=1 build. Real-GPU visual QA: external.
 - Notes: agents/swarm-outputs/claude-2026-09-27-quantum-radiant-ten/.
+
+## 2026-09-27 — Sentient / Symbiotic five (5 shaders; 5 of the requested 10 already had `Ideas:`)
+
+- IDs: gen-sentient-aether-flora-biosphere, gen-sentient-cyber-chrono-void-serpent, gen-sentient-liquid-neon-fractal-heart,
+  gen-symbiotic-cyber-fungal-core-reactor, gen-symbiotic-light-networks. Skipped (already upgraded 09-13/09-15): aether-plasma-nebula-moth,
+  bismuth-hypercrystal, cyber-aurora-void-owl, void-silk-nebula, cyber-mycelium.
+- Per shader, the ideas actually added:
+  - flora-biosphere: async per-cell bud→open scalloped corollas; stamen crown with anthers; phototropic stem bow.
+  - chrono-void-serpent: phase-lagged chrono echoes; per-hex scale-glint facets; Julia-trap rift isochrones.
+  - liquid-neon-fractal-heart: lub-dub double beat; systolic wavefront ring; oxygenation gradient magenta→cyan.
+  - cyber-fungal-core-reactor: precessing containment torus; Worley sporangia pods; F2−F1 fractured core shell.
+  - light-networks: hub-thickened Physarum tubes; leakage halo; mycorrhizal hue exchange; luciferin afterglow in C.
+- Bugs fixed on the way: pow(negative) NaN in flora click ring, heart fresnel, reactor map/spore ring; heart history via sampler → exact loads;
+  reactor's dead extraBuffer spring replaced by raw mouse + ripple age (behaviour change). Flora's dead kick state left, noted.
+- Flags: heart default look shifts (ACES + semantic alpha); serpent march 80→96 steps.
+- Floor: bindings / 16x16 / A packing documented / saved params untouched; no springs, ripples or extraBuffer state added.
+- Gates: naga 5/5, precommit 5/5, extraBuffer PASS, catalogs regenerated, Jest 741 pass / 6 fail (same 6 WASM-bridge suites as prior batch, none touch shaders), SKIP_WASM_BUILD=1 build OK. Real-GPU visual QA: external.
+- Notes: agents/swarm-outputs/claude-2026-09-27-sentient-symbiotic-five/.
+
+## 2026-09-27 — Grok simpler generative leftover (10) — second-pass ideas
+
+- IDs: gen-rainbow-firefly-dance, gen-rainbow-icosahedron-cascade, gen-rainbow-smoke (`gen_rainbow_smoke`), gen-orb (`gen_orb`), gen-newton-fractal, gen-percolation-threshold, gen-neon-snowfall, gen-neon-lotus, gen-kimi-crystal (`gen_kimi_crystal`), gen-kimi-nebula (`gen_kimi_nebula`).
+- Per shader, the ideas actually added:
+  - firefly: Photinus flash codes (hash duty cycle, bass shortens dark); courtship antiphase (even/odd delay, held tightens pairing).
+  - icosa: dual dodeca vertices (20 triangle-centroid sparks); click shell pulse (ripple age breathes radius/thickness).
+  - smoke: vortex-ring clicks (toroidal plus existing radial burst); Kelvin–Helmholtz billows on the density-gradient edge.
+  - orb: Lyapunov stretch sheen (high |Δpos|/dt filaments thin and bright); Poincaré z=ρ−1 flashes.
+  - newton: Newton-flow striations (atan2 of last step); wandering-orbit dust (high orbitSecond despite convergence).
+  - percolation: red-bond bottlenecks (degree-2 spanning sites); finite-cluster mass fade by local degree.
+  - snowfall: riming → graupel toward the bottom; snowbank from C history with gust lean.
+  - lotus: nyctinasty (petals fold on Speed circadian; bass/held ease open); peltate lily pad with radiating veins.
+  - kimi-crystal: 46° halo from 90° ice paths; light pillars from plate-habit diamond dust.
+  - kimi-nebula: PDR skin just outside Rs; EGGs / cometary globules with tails away from the star.
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact (firefly gained matching `params`; updatedParams unchanged). Smoke [133..136] spring and snowfall [133] bass_env kept. No new springs. Percolation extraBuffer still unused.
+- Gates: Naga 10/10, extraBuffer, dead sliders 10/10, catalog 1386 unique definition IDs (unified 1373, generative 478), Jest 741 pass / 6 fail (pre-existing WASM `bridge/api.js`), SKIP_WASM_BUILD=1 build green.
+- Real-GPU visual QA: external.
+- Notes: agents/swarm-outputs/grok-2026-09-27-simpler-gen-leftover-ten/.
+
+## 2026-09-27 — Grok CLI unused generative ten
+
+- IDs: gen-radiant-cyber-bismuth-nebula-colossus, gen-radiant-cyber-chrono-void-stag, gen-radiant-cyber-plasma-astro-griffin, gen-radiant-quantum-plasma-kraken-core, gen-raptor-mini, gen-reaction-diffusion (`gen_reaction_diffusion.*`, underscore filename kept), gen-recursive-ancestral-terrains, gen-relay-psychedelia, gen-resonant-crystal-canyons, gen-resonant-quantum-obsidian-astro-manta.
+- Per shader, the ideas actually added:
+  - bismuth: hopper terrace stairs; terrace-lip emissive; nebula residue from C.a. FFT bin read removed.
+  - chrono-void-stag: kept tine bifurcation and hoof wakes; added antler growth rings; leap afterimage.
+  - plasma-astro-griffin: primary-feather slots; beak shear glint; flap ghost. A is now display RGBA.
+  - kraken: kept sucker rows and peristalsis; added siphon jet; ink wake.
+  - raptor-mini: claw-rake triad; tail counterphase. Spring and click strikes kept. ACES on writeTexture only.
+  - reaction-diffusion: refractory trough; gradient-stretched feed. Raw sim stays in A; B slot-chain kept.
+  - ancestral-terrains: unconformity terraces; valley sediment. A.a is raw height.
+  - relay-psychedelia: second curl octave; directional textureLoad smear; complementary seam fringe inside applyPalette.
+  - crystal-canyons: chromatic bore on the river; organ-pipe partials on the three crystals.
+  - obsidian-astro-manta: trailing membrane; buckle fractures. ACES replaced Reinhard. A.a is wing coverage.
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved slider names and ranges unchanged. `params` added where only `updatedParams` existed.
+- Gates: Naga 10/10, extraBuffer pass, dead sliders 0, catalogs 1,373, Jest 107 suites / 764 passed (`npm test` / craco), SKIP_WASM_BUILD=1 build compiled.
+- Real-GPU visual QA: external.
+- Notes: agents/swarm-outputs/grok-2026-09-27-gen-radiant-unused-ten/.
+
+## 2026-09-27 — Claude densest multi-system seven
+
+- IDs: gen-resonant-quantum-obsidian-scarab-engine, gen-resonant-quantum-plasma-dragon-eye, gen-sentient-ferro-silicate-swarm, gen-sonoluminescent-chrono-geode-matrix, gen-spectral-ferrofluid, gen-superfluid-quantum-foam, gen-symbiotic-bismuth-crystal-dragon-core. Requested leviathan-moth, chrono-mycelium, stellar-acoustic already had `Ideas:` — skipped.
+- Per shader, the ideas actually added:
+  - obsidian-scarab: elytra plate seams lit by core-breath pulse; plasma mirror in obsidian; core corona between plates.
+  - plasma-dragon-eye: fibre stroma + iridophore flecks; hippus-breathing slit coupled to fibre crimp; corneal dome; tapetum eyeshine gaze shaft. Pupil Sharpness slider revived (default-equal). Infinite iris/pupil bar on side views fixed.
+  - ferro-silicate-swarm: silicate assembly breath (lattice lock); quartz facets; Si–O struts; curl-advected wake. A was never written (rendered at 25% brightness) — fixed, look brighter.
+  - sonoluminescent-geode: shock-front crystal ignition; collapse-deposited agate strata; flash translucency through thin shards. Dead extraBuffer[133..135] kick → stateless.
+  - spectral-ferrofluid: Archimedean flux spirals; Cotton-Mouton birefringence + isogyres; pole meniscus mounds. rms from .w (always 0) fixed; ripple index clamped.
+  - superfluid-quantum-foam: coalescing bubble necks; film-drainage black-film pop; Kelvin-wave vortex filament. curlNoise hash-difference + floor/round split fixed (look changes).
+  - bismuth-dragon-core: ichor seep on crystal/sinew seam; peristaltic artery boluses; warm core light + haze. Camera was inside the sinew (every ray hit at step 0) — labyrinth now visible.
+- Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact. No new springs/ripples.
+- Gates: Naga 7/7, precommit 7/7, extraBuffer pass, dead sliders 0 new, 1386 unique IDs, Jest 741 pass / 6 fail (pre-existing), SKIP_WASM_BUILD=1 build green.
+- Real-GPU visual QA: external.
+- Notes: agents/swarm-outputs/claude-2026-09-27-densest-multi-system-seven/.
+
+## 2026-09-27 — stellar/topological eight (8 shaders: 7 upgrades + 1 rescue)
+
+- IDs: gen-singularity-forge, gen-stellar-plasma-ouroboros, gen-stellar-web-loom, gen-symbiotic-plasma-reef-matrix, gen-tectonic-plasma-crucible, gen-topological-phase-weave, gen-vortex-cathedral, gen-wasm-hls-physarum-swarm.
+- Not done (request listed 10): gen-topological-acoustic-knots and gen-void-harmonic-cymatic-resonator already carried `Ideas:` (09-15).
+- Per shader, the ideas actually added:
+  - singularity-forge: relativistic beaming + gravitational redshift; log-spiral disk arms replacing radial spokes; precessing helical jet. No lensed sky / photon ring (taken by quantum-singularity-forge).
+  - stellar-plasma-ouroboros: peristaltic bolus hinging the hex scale plates; plasma seam light through the gaps. Was missing A write + ACES — fixed (look brightness curve differs).
+  - stellar-web-loom: plucked standing-wave threads pinned at nodes; warp/weft hues with over/under thickness; gyro ring per node. Racy extraBuffer[133/134] burst → stateless.
+  - symbiotic-plasma-reef-matrix: entity-to-branch dock-and-pulse; caustic dapples. Reef Density slider was dead → branch count 3..9 (exactly 5 at default). C sampler read + alpha 1.0 fixed.
+  - tectonic-plasma-crucible: continuous incandescent-crack temperature ramp; per-plate isostatic bob/tilt + bass rift widening. C sampler, alpha 1.0, pow negative base, double tone-map fixed.
+  - topological-phase-weave: true line-integral convolution; comet/trefoil defect glyphs; order parameter drives coherence. extraBuffer[0] "prevBass" no-op/race removed.
+  - vortex-cathedral: arch-gated crepuscular shafts; stained-glass sector tint; counter-rotating vault ring. A packing lie (masks in A, C read as colour) → display RGBA; extraBuffer[0] race, C sampler, normalize(0) fixed.
+  - wasm-hls-physarum-swarm (RESCUE): sim was static noise (agents in per-frame-overwritten extraBuffer[0..], clobbering audio/FFT slots) → Eulerian agents in A `(trail,mx,my,hue)`, numpy-gated; ideas: peristaltic cytoplasm streaming; tube shading + foraging front. Look at saved sliders is new. Weakest numpy cases: Trail Decay=1 (faint veins), Sensor Distance=0.
+- Floor: bindings / 16×16 / exact C / A packing documented per file / `updatedParams` byte-exact (verified against HEAD). No springs/ripples added. `extraBuffer[133..138]` cannot persist (uploaded whole every frame) — not used.
+- Runtime finding: extraBuffer[0..2] are the raw uploaded bass/mid/treble, so any shader using `extraBuffer[0]` as "previous bass" has no-op smoothing and races thread (0,0) against every reader.
+- Gates: Naga 8/8, precommit 8/8, extraBuffer audit pass (0 new), dead-slider audit scanned 0 defs (known blind spot; hand-grepped zoom_params.xyzw, all four read in every file), catalogs regenerated, Jest 741 pass / 6 fail (pre-existing `./bridge/api.js` import suites), SKIP_WASM_BUILD=1 build (see COORDINATOR_REVIEW.md).
+- Real-GPU visual QA: external. Open: forge beaming scale untuned; ouroboros ACES exposure; cathedral vault ring vs sanctum; physarum look.
+- Notes: agents/swarm-outputs/claude-2026-09-27-stellar-topological-eight/.

@@ -1,12 +1,14 @@
-// ----------------------------------------------------------------
-// Quantum-Acoustic Bioluminescent Void-Urchin
-// Category: generative
-// Upgraded 2026-08-03 (batch b31, algorithmist):
-//   - CRITICAL FIX: canonical Uniforms struct (config/zoom_config/zoom_params/ripples)
-//   - Full 3D SDF library + gyroscopic torus rings + octahedron quantum cage (matIDs 3/4)
-//   - 2D geometric layer: hex-tessellated membrane shimmer + kaleidoscopic void backdrop
-//   - Adaptive raymarch step count, real depth, semantic alpha, dataTextureA output
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Quantum-Acoustic Bioluminescent Void-Urchin
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-27
+//  Ideas: spine firing waves; luminous C afterglow; cage void-reflection
+//  A packing: ACES display RGBA
+//  (2026-08-03 b31: canonical Uniforms, 3D SDF lib, gyro rings, quantum cage,
+//   hex membrane + kaleidoscopic void backdrop, adaptive steps, real depth)
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -106,6 +108,21 @@ fn kaleido(p: vec2<f32>, folds: f32) -> vec2<f32> {
     a = fract(a / seg) * seg;
     a = abs(a - seg * 0.5);
     return vec2<f32>(cos(a), sin(a)) * r;
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Kaleidoscopic void backdrop: folded hex tessellation drifting in zero-g (2D layer).
+// Shared by the miss branch and (idea 3) the quantum-cage reflection.
+fn voidBackdrop(q: vec2<f32>, time: f32, colorShift: f32, fluid: f32, audioBase: f32) -> vec3<f32> {
+    let kFolds = 6.0 + floor(fluid * 6.0); // Void Fluidity also drives fold count
+    let kUV = kaleido(q * (1.5 + 0.3 * sin(time * 0.1)), kFolds);
+    let hcBg = hexCell(kUV * 5.0 + vec2<f32>(0.0, time * 0.05));
+    let bgEdge = smoothstep(0.46, 0.5, hexDist(hcBg.xy));
+    let bgCol = mix(vec3<f32>(0.02, 0.0, 0.06), vec3<f32>(0.0, 0.08, 0.1), colorShift);
+    return bgCol * (0.4 + bgEdge * (0.3 + audioBase * 0.4));
 }
 
 fn hash33(p3_in: vec3<f32>) -> vec3<f32> {
@@ -322,6 +339,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             var emit = emitColor * lum + fresnel * vec3<f32>(0.5, 1.0, 1.0);
             emit += emitColor * hexEdge * hexPulse * (0.3 + audioBase * 0.5);
 
+            // IDEA 1 — spine firing waves: a nerve impulse races core -> tip along each spine,
+            // flaring at the octahedron crown. Stateless; phase is smooth over direction so
+            // neighbouring spines fire in coherent groups. Visible with audio = 0.
+            let rad = length(p);
+            let dirN = p / max(rad, 1e-4);
+            let firePhase = noise3D(dirN * 3.0 + vec3<f32>(0.0, 0.0, 3.7));
+            let sAlong = clamp((rad - 1.0) / 1.5, 0.0, 1.0);
+            let wave = fract(time * 0.35 + firePhase * 2.0);
+            let dW = sAlong - wave;
+            let band = exp(-dW * dW * 40.0);
+            let tipFlare = smoothstep(0.75, 1.0, wave) * smoothstep(0.7, 1.0, sAlong);
+            let spineMask = smoothstep(1.15, 1.4, rad);
+            let fireCol = mix(vec3<f32>(0.5, 1.0, 1.0), emitColor * 2.0, 0.35);
+            emit += fireCol * (band * 0.9 + tipFlare * 1.4) * spineMask;
+
             col = baseColor * (diff * 0.5 + 0.5) + emit;
 
         } else if (matID == 2.0) { // Plankton Material
@@ -331,28 +363,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             col = ringCol * (diff * 0.3 + 0.7) * (1.2 + audioBase) + fresnel * ringCol;
         } else if (matID == 4.0) { // Quantum cage — crystalline shard
             let cageCol = mix(vec3<f32>(0.4, 0.8, 1.0), vec3<f32>(0.8, 0.4, 1.0), colorShift);
-            col = cageCol * (diff * 0.6 + 0.4) + fresnel * vec3<f32>(0.9, 1.0, 1.0) * 0.8;
+            // IDEA 3 — cage void-reflection: shards mirror the kaleidoscopic hex void.
+            let refl = reflect(rd, n);
+            let voidRefl = voidBackdrop(refl.xy * 0.5 + n.xy * 0.1, time, colorShift, u.zoom_params.w, audioBase);
+            col = cageCol * (diff * 0.6 + 0.4) * 0.8 + fresnel * vec3<f32>(0.9, 1.0, 1.0) * 0.8
+                  + voidRefl * 5.0 * (0.4 + fresnel);
         }
 
         // Soft shadows / Subsurface faux
         let ao = clamp(map(p + n * 0.1).x / 0.1, 0.0, 1.0);
         col *= ao;
     } else {
-        // Kaleidoscopic void backdrop: folded hex tessellation drifting in zero-g (2D layer)
-        let kFolds = 6.0 + floor(u.zoom_params.w * 6.0); // Void Fluidity also drives fold count
-        let kUV = kaleido(uv * (1.5 + 0.3 * sin(time * 0.1)), kFolds);
-        let hcBg = hexCell(kUV * 5.0 + vec2<f32>(0.0, time * 0.05));
-        let bgEdge = smoothstep(0.46, 0.5, hexDist(hcBg.xy));
-        let bgCol = mix(vec3<f32>(0.02, 0.0, 0.06), vec3<f32>(0.0, 0.08, 0.1), colorShift);
-        col += bgCol * (0.4 + bgEdge * (0.3 + audioBase * 0.4));
+        col += voidBackdrop(uv, time, colorShift, u.zoom_params.w, audioBase);
     }
 
     // Add volumetric glow
     col += glow;
 
-    // Tone mapping
-    col = col / (1.0 + col);
-    col = pow(col, vec3<f32>(0.4545)); // Gamma correction
+    // Tone mapping: ACES on display RGB (gamma kept from HEAD to preserve brightness)
+    col = acesToneMap(col);
+    col = pow(col, vec3<f32>(0.4545));
+
+    // IDEA 2 — luminous afterglow: exact C load of last display frame; only the bright
+    // bioluminescent points (tips, plankton, rings) linger. max() keeps it bounded;
+    // Void Fluidity thickens the medium so glow persists longer.
+    let prev = textureLoad(dataTextureC, pixel, 0).rgb;
+    let glowKeep = smoothstep(0.55, 0.9, dot(prev, vec3<f32>(0.299, 0.587, 0.114)));
+    col = max(col, prev * mix(0.72, 0.9, u.zoom_params.w) * glowKeep);
 
     // Real depth: near surface on hit, far void on miss
     let depth = select(0.0, clamp(1.0 - t / maxDist, 0.0, 1.0), hit);

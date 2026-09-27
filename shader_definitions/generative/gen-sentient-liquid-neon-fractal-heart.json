@@ -8,7 +8,7 @@
     "neon",
     "plasma"
   ],
-  "description": "A stylized liquid-neon fractal heart with live-audio contractions, traveling artery pulses, click shocks processed outside the march, and bounded plasma-flow trails.",
+  "description": "A stylized liquid-neon fractal heart with live-audio contractions, traveling artery pulses, click shocks processed outside the march, bounded plasma-flow trails, a lub-dub double beat, a systolic pressure wavefront, and an oxygenation gradient from magenta core to cyan rim.",
   "workgroup_size": [
     16,
     16,
@@ -59,6 +59,7 @@
     "click-reactive",
     "temporal",
     "fast-motion",
+    "upgraded-rgba",
     "depth-aware"
   ]
 }

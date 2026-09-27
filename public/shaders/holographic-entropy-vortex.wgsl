@@ -1,6 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Holographic Entropy Vortex — Visualist Enhanced Edition
 //  Category: generative
+//  Upgraded: 2026-09-27
+//  Ideas: Rayleigh/Mie atmosphere column from Atmosphere Density; entropy caustics
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -163,7 +166,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
     extraBuffer[138] = front;
   }
-  workgroupBarrier();
 
   let uv = vec2<f32>(gid.xy) / dims;
   let t = u.config.x;
@@ -230,6 +232,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   rgb = rgb + iridColor * entropy * 0.8;
   
   rgb = mix(rgb, pastC.rgb, 0.1); // feedback from C
+
+  // Atmosphere column: the unused Rayleigh/Mie helpers, driven by Atmosphere Density.
+  let viewDir = normalize(centered + vec2<f32>(1e-4));
+  let cosTheta = clamp(viewDir.y, -1.0, 1.0);
+  let rayleigh = rayleighScattering(cosTheta) * atmoDensity;
+  let mie = mieScattering(cosTheta, 0.62) * atmoDensity;
+  rgb = rgb + rayleigh * 0.35 + vec3<f32>(1.0, 0.94, 0.82) * mie * 0.06;
+
+  // Entropy caustics folded into the vortex UV.
+  let caustic = caustics(vortexUV * entropyScale, t);
+  rgb = rgb + vec3<f32>(0.55, 0.8, 1.0) * caustic * entropy * 0.28 * holoIntensity;
   
   // Depth
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

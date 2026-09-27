@@ -11,7 +11,7 @@
     "music",
     "reactive"
   ],
-  "description": "A hyper-dimensional cosmic loom weaving infinite tendrils of starlight and plasma silk across a dark void, blending organic neuro-network vibes with vast, mechanical astrophysics. Upgraded for fast motion: warp-flight camera driven by Weave Speed, radial speed-line streaks, clamped HDR feedback light-trails, bass-transient flash bursts, audio-reactive color temperature, ACES tone mapping and real raymarched depth.",
+  "description": "A hyper-dimensional cosmic loom weaving infinite tendrils of starlight and plasma silk across a dark void, blending organic neuro-network vibes with vast, mechanical astrophysics. Upgraded for fast motion: warp-flight camera driven by Weave Speed, radial speed-line streaks, clamped HDR feedback light-trails, bass-transient flash bursts, audio-reactive color temperature, ACES tone mapping and real raymarched depth. Plucked standing-wave threads pinned at the lattice nodes, per-axis warp/weft hues with over/under weave thickness, and a gyro ring on every node.",
   "workgroup_size": [
     16,
     16,
@@ -65,6 +65,8 @@
     "audio-color-temperature",
     "aces-tone-map",
     "generated-depth",
-    "semantic-alpha"
+    "semantic-alpha",
+    "audio-reactive",
+    "mouse-driven"
   ]
 }

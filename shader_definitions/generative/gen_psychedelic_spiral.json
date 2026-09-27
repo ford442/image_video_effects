@@ -11,7 +11,8 @@
     "chromatic",
     "depth-aware",
     "spirograph",
-    "superformula"
+    "superformula",
+    "upgraded-rgba"
   ],
   "tags": [
     "procedural",

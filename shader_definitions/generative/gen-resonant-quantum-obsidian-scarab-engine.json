@@ -53,5 +53,9 @@
   "updated": true,
   "id": "gen-resonant-quantum-obsidian-scarab-engine",
   "url": "shaders/gen-resonant-quantum-obsidian-scarab-engine.wgsl",
-  "features": []
+  "features": [
+    "upgraded-rgba",
+    "audio-reactive",
+    "mouse-driven"
+  ]
 }

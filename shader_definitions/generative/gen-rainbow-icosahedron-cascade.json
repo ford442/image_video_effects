@@ -15,7 +15,7 @@
   "updated": true,
   "id": "gen-rainbow-icosahedron-cascade",
   "url": "shaders/gen-rainbow-icosahedron-cascade.wgsl",
-  "features": ["generative", "geometry", "audio-reactive", "mouse-driven", "spectral-color", "upgraded-rgba"],
+  "features": ["generative", "geometry", "audio-reactive", "mouse-driven", "click-reactive", "spectral-color", "upgraded-rgba"],
   "params": [
     { "id": "shell_count", "name": "Shell Count", "default": 0.55, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
     { "id": "shell_spacing", "name": "Shell Spacing", "default": 0.45, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },

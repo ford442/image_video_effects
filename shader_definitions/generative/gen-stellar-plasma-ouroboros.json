@@ -49,5 +49,9 @@
   "updated": true,
   "id": "gen-stellar-plasma-ouroboros",
   "url": "shaders/gen-stellar-plasma-ouroboros.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ]
 }

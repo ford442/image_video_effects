@@ -6,6 +6,9 @@
 //  Chunks From: previous supernova work + audio season patterns
 //  Created: 2026-03-22
 //  Updated: 2026-05-31
+//  Upgraded: 2026-09-27
+//  Ideas: Sedov-Taylor shell slowdown (age to the 2/5); reverse-shock rim on the inner edge
+//  A packing: ACES display RGBA (no field feedback)
 //  By: Grok (audio-driven shockwave evolution + mouse as gravitational perturber)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -107,6 +110,15 @@ fn temperatureColor(temp: f32) -> vec3<f32> {
     }
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 // Rayleigh-Taylor instability pattern
 fn rayleighTaylor(uv: vec2<f32>, t: f32) -> f32 {
     let n1 = fbm(vec3<f32>(uv * 8.0, t * 0.2), 3);
@@ -117,6 +129,8 @@ fn rayleighTaylor(uv: vec2<f32>, t: f32) -> f32 {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+    let pixel = vec2<i32>(global_id.xy);
     let uv = vec2<f32>(global_id.xy) / resolution;
     let t = u.config.x;
     
@@ -158,7 +172,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Each shell has different speed (inner shells faster)
         let speed = explosionEnergy * (1.0 + 0.2 * fi);
         let shellAge = fract(t * 0.05 * speed + fi * 0.1);
-        let shellRadius = shellAge * 0.8;
+        // Idea 1 — Sedov-Taylor slowdown. Outer shells bunch as radius grows with age^(2/5).
+        let shellRadius = pow(max(shellAge, 0.001), 0.4) * 0.8;
         
         // Shell thickness varies with age
         let thickness = 0.03 + 0.02 * shellAge;
@@ -183,6 +198,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Accumulate with alpha blending
         col = col + shellCol * turbDensity * (1.0 - totalDensity);
         totalDensity = min(totalDensity + turbDensity, 1.0);
+        // Idea 2 — reverse-shock rim on the inner edge, hotter than the shell body.
+        let innerR = max(shellRadius - thickness * 1.6, 0.0);
+        let reverse = smoothstep(thickness * 0.55, 0.0, abs(r * fingerMod - innerR));
+        let reverseCol = temperatureColor(clamp(temp + 0.28, 0.0, 1.0));
+        col = col + reverseCol * reverse * 0.55;
     }
     
     // Central star/core
@@ -208,19 +228,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vignette = 1.0 - r * 0.8;
     col *= vignette;
     
-    // Gamma correction
-    col = pow(col, vec3<f32>(0.9));
-    
     // Density-based alpha so outer gas is wispy (improved for compositing)
-    let alpha = clamp(totalDensity * gasOpacity * (0.7 + explosionEnergy * 0.2), 0.0, 1.1);
-    
-    // Small chromatic aberration on very hot/energetic areas
+    let alpha = clamp(totalDensity * gasOpacity * (0.7 + explosionEnergy * 0.2), 0.0, 1.0);
+
+    // Small chromatic tint on very hot/energetic areas
     let hot = smoothstep(0.7, 1.0, explosionEnergy);
-    let chr = vec2<f32>(0.003, -0.002) * hot;
-    // (we skip actual extra samples for perf, just tint)
     col = mix(col, col * vec3<f32>(1.0, 0.95, 0.9), hot * 0.2);
+    col = acesToneMap(col * 1.15);
 
     let a = clamp(alpha, 0.0, 1.0);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col * a, a));
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(1.0 - r * 0.5, 0.0, 0.0, 0.0));
+    let outColor = vec4<f32>(col * a, a);
+    textureStore(writeTexture, pixel, outColor);
+    textureStore(dataTextureA, pixel, outColor);
+    textureStore(writeDepthTexture, pixel, vec4<f32>(1.0 - r * 0.5, 0.0, 0.0, 0.0));
 }

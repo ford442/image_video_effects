@@ -56,5 +56,7 @@
   "updated": true,
   "id": "gen-xeno-botanical-synth-flora",
   "url": "shaders/gen-xeno-botanical-synth-flora.wgsl",
-  "features": []
+  "features": [
+    "upgraded-rgba"
+  ]
 }

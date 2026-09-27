@@ -7,7 +7,10 @@
 //            spring-damper-mouse, click-heat-injection
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-07-26 (Batch 15 — Interactivist pass)
+//  Upgraded: 2026-09-27
+//  Ideas: saddle meniscus in the melt window; cooler wax skin outside the blob
+//  A packing: raw (blobShape, blobHalo, heat, alpha). ACES on writeTexture only.
+//  Kept: 2026-07-26 blackbody core, per-blob FFT, click heat, spring mouse.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -164,20 +167,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // ── Aspect-corrected, spring-dampered mouse attraction ──────────
   // Persistent state: extraBuffer[133]=pos.x [134]=pos.y [135]=vel.x [136]=vel.y
-  var target = u.zoom_config.yz * 2.0 - 1.0;
-  target.x = target.x * aspect; // aspect-correct so attraction stays circular
-  var sPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-  let dt = 0.016;                       // fixed integration step
-  let stiffness = 42.0;
-  let damping = 9.0;                    // slightly underdamped: blobs lag then catch
-  let force = (target - sPos) * stiffness - sVel * damping;
-  sVel = sVel + force * dt;
-  sPos = sPos + sVel * dt;
-  extraBuffer[133] = sPos.x;
-  extraBuffer[134] = sPos.y;
-  extraBuffer[135] = sVel.x;
-  extraBuffer[136] = sVel.y;
+  // Single writer at (0,0). Every pixel reads the stored center.
+  let sPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  if (gid.x == 0u && gid.y == 0u) {
+    var springTarget = u.zoom_config.yz * 2.0 - 1.0;
+    springTarget.x = springTarget.x * aspect;
+    var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    let dt = 0.016;
+    let stiffness = 42.0;
+    let damping = 9.0;
+    let force = (springTarget - sPos) * stiffness - sVel * damping;
+    sVel = sVel + force * dt;
+    let nextPos = sPos + sVel * dt;
+    extraBuffer[133] = nextPos.x;
+    extraBuffer[134] = nextPos.y;
+    extraBuffer[135] = sVel.x;
+    extraBuffer[136] = sVel.y;
+  }
   p = p + sPos * 0.18;
 
   // ── Field evaluation ────────────────────────────────────────────
@@ -191,6 +197,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let blobShape = smoothstep(edge0, edge1, totalField);
   let blobHalo = smoothstep(0.2, 0.8, totalField) * (1.0 - blobShape);
   let blobCenter = smoothstep(1.0, 1.5, totalField);
+
+  // Previous frame is raw fields, not display color.
+  let prevField = textureLoad(dataTextureC, coord, 0);
+  let e = 0.025;
+  let fx = blobField(p + vec2<f32>(e, 0.0), time, blobCount, riseSpeed, mids)
+         - blobField(p - vec2<f32>(e, 0.0), time, blobCount, riseSpeed, mids);
+  let fy = blobField(p + vec2<f32>(0.0, e), time, blobCount, riseSpeed, mids)
+         - blobField(p - vec2<f32>(0.0, e), time, blobCount, riseSpeed, mids);
+  let grad = length(vec2<f32>(fx, fy));
+  let inMelt = smoothstep(edge0, (edge0 + edge1) * 0.5, totalField)
+             * (1.0 - smoothstep((edge0 + edge1) * 0.5, edge1, totalField));
+  let meniscus = inMelt * exp(-grad * grad * 6.0) * (0.65 + prevField.r * 0.35);
+  let skin = smoothstep(edge0 - 0.12, edge0, totalField) * (1.0 - blobShape);
 
   // Blackbody temperature: warm core, cool halo, driven by audio + click heat
   let coreTemp = 2000.0 + heat * 3000.0 + bass * 2000.0 + click.y * 2500.0;
@@ -216,6 +235,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   color = color + vec3<f32>(1.0, 0.85, 0.6) * sss * 0.5;
   color = color + vec3<f32>(1.2, 0.9, 0.7) * rim * 0.8;
   color = color + vec3<f32>(1.0, 0.95, 0.9) * blobCenter * treble * 1.2;
+  color = color + vec3<f32>(1.0, 0.72, 0.35) * meniscus * (0.8 + bass);
+  let skinTemp = mix(900.0, coreTemp * 0.45, 0.5);
+  color = color + blackbodyRGB(skinTemp) * skin * 0.9;
   // Click injections bleed extra ember light where they dissolve
   color = color + blackbodyRGB(2800.0 + click.y * 2000.0) * click.y * click.x * 1.5;
 
@@ -223,10 +245,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let distFromCenter = length(p);
   let haze = exp(-distFromCenter * 1.2);
   color = color * haze + mixOkLab(vec3<f32>(0.02,0.02,0.05), haloCol * 0.08, 0.4) * (1.0 - haze);
-
-  // Temporal feedback
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-  color = mix(color, prev.rgb * 0.9, 0.03 + bass * 0.01);
 
   // Tonemap & dither stack
   color = hue_preserve_clamp(color, 4.0);

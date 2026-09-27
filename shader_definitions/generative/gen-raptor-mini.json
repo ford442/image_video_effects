@@ -53,6 +53,44 @@
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
+  "params": [
+    {
+      "id": "turn_speed",
+      "name": "Turn Speed",
+      "default": 0.8,
+      "min": 0.2,
+      "max": 1,
+      "step": 0.1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "max_speed",
+      "name": "Max Speed",
+      "default": 3,
+      "min": 1,
+      "max": 5,
+      "step": 0.1,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "rage_duration",
+      "name": "Rage Duration",
+      "default": 1.2,
+      "min": 0.5,
+      "max": 5,
+      "step": 0.1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "glow_radius",
+      "name": "Glow Radius",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.05,
+      "mapping": "zoom_params.w"
+    }
+  ],
   "id": "gen-raptor-mini",
   "url": "shaders/gen-raptor-mini.wgsl",
   "features": [
@@ -61,6 +99,10 @@
     "click-strike-shockwaves",
     "audio-rage-bands-fft",
     "scent-memory-feedback-trails",
-    "generated-relief-depth"
+    "generated-relief-depth",
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba",
+    "aces-tone-map"
   ]
 }

@@ -6,6 +6,9 @@
 //            depth-aware, aces-tone-map, domain-warped
 //  Complexity: Very High
 //  Created: 2026-06-28
+//  Upgraded: 2026-09-27
+//  Ideas: chromatic bore; organ-pipe partials
+//  A packing: ACES display RGBA; C is a river reflection only
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -158,16 +161,20 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, crystalDensity: f32,
   // Crystal protrusions
   let crystalP = p;
   let crystalPhase = time * 0.3 + audio * 2.0;
+  // Organ-pipe partials: second harmonic on the three existing crystals.
+  // Audio Reactivity (zoom_params.w, 0–1) is the gain. Do not add crystals.
+  let pipe = u.zoom_params.w;
+  let harm = (sin(crystalPhase * 2.0) * plasmaBuffer[0].y + sin(crystalPhase * 3.1) * plasmaBuffer[0].z) * 0.22 * pipe;
   let crystal1 = sdOctahedron(
-    crystalP - vec3<f32>(wallOffset - 1.5, 1.0 + sin(crystalPhase) * 0.3, 0.0),
+    crystalP - vec3<f32>(wallOffset - 1.5, 1.0 + sin(crystalPhase) * 0.3 + harm, 0.0),
     0.8 + audio * 0.2
   );
   let crystal2 = sdOctahedron(
-    crystalP - vec3<f32>(wallOffset + 1.5, 0.5 + cos(crystalPhase * 1.3) * 0.2, 2.0),
+    crystalP - vec3<f32>(wallOffset + 1.5, 0.5 + cos(crystalPhase * 1.3) * 0.2 + harm * 0.8, 2.0),
     0.6 + audio * 0.15
   );
   let crystal3 = sdBox(
-    crystalP - vec3<f32>(wallOffset - 2.0, 2.0, -1.5),
+    crystalP - vec3<f32>(wallOffset - 2.0, 2.0 + harm * 0.6, -1.5),
     vec3<f32>(0.3, 0.6 + sin(crystalPhase * 0.7) * 0.2, 0.3)
   );
 
@@ -318,9 +325,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       // Plasma river - bioluminescent
       let plasmaCol = vec3<f32>(0.3, 0.0, 0.5) * (0.5 + hitGlow * 2.0);
       let surface = vec3<f32>(0.1, 0.0, 0.2) * diff;
-      let boil = fbm(hitPos * 3.0 + vec3<f32>(0.0, time * 2.0, 0.0)) * 0.5;
+      // Chromatic bore: split the boil along the downstream axis by Refractive Index.
+      let bore = (refractiveIndex - 1.0) * 0.45;
+      let flow = vec3<f32>(0.0, time * 2.0, 0.0);
+      let boilR = fbm(hitPos * 3.0 + flow + vec3<f32>(bore, 0.0, 0.0));
+      let boilG = fbm(hitPos * 3.0 + flow);
+      let boilB = fbm(hitPos * 3.0 + flow - vec3<f32>(bore, 0.0, 0.0));
+      let boil = vec3<f32>(boilR, boilG, boilB);
       col = plasmaCol + surface + vec3<f32>(0.5, 0.2, 0.8) * boil * (0.5 + audio * 0.5);
       col = col + vec3<f32>(0.3, 0.1, 0.5) * spec * 0.3;
+      // River reflection of the previous display only.
+      let reflected = textureLoad(dataTextureC, coord, 0).rgb;
+      col += reflected * 0.08;
     } else {
       // Canyon floor
       let floorCol = vec3<f32>(0.05, 0.04, 0.06);
@@ -354,14 +370,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   col = col + volGlow;
 
-  // Temporal persistence
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-  col = mix(col, prev.rgb * 0.92, 0.03);
-
   // Tone map
   col = acesToneMap(col * 1.2);
 
-  let alpha = 1.0;
+  let alpha = clamp(0.12 + select(0.08, 0.55, hit) + hitGlow * 0.35, 0.0, 1.0);
   let finalDepth = sat(0.95 - depth * 0.015);
 
   textureStore(writeTexture, coord, vec4<f32>(col, alpha));

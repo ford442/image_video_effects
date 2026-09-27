@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: conduction pulses flowing left-to-right along the spanning cluster backbone (dangling ends dim); critical opalescence haze that blooms as p approaches p_c
+//  Upgraded: 2026-09-27
+//  Ideas: conduction pulses flowing left-to-right along the spanning cluster backbone (dangling ends dim); critical opalescence haze that blooms as p approaches p_c; red-bond bottlenecks (degree-2 spanning sites constrict current); finite-cluster mass fade (small blobs milkier by local degree)
 //  A packing: lattice state in texels [0..79]x[0..59] = (cluster label, epoch stamp, touchesLeft, touchesRight); ACES display RGBA in all other texels
 // ═══════════════════════════════════════════════════════════════════
 
@@ -174,6 +174,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let eOcc = siteOccupied(clampSite(siteCoord + vec2<i32>(1, 0)), epoch, p, latticeZoom);
     let wOcc = siteOccupied(clampSite(siteCoord + vec2<i32>(-1, 0)), epoch, p, latticeZoom);
     let edgeCount = select(0, 1, !nOcc) + select(0, 1, !sOcc) + select(0, 1, !eOcc) + select(0, 1, !wOcc);
+    let occCount = select(0, 1, nOcc) + select(0, 1, sOcc) + select(0, 1, eOcc) + select(0, 1, wOcc);
 
     var color = sat * 0.6;
     if (isSpanning) {
@@ -184,9 +185,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let flow = fract(f32(siteX) / f32(LATTICE_W) * 3.0 - time * (0.35 + bass * 0.4));
       let pulse = smoothstep(0.0, 0.06, flow) * (1.0 - smoothstep(0.06, 0.3, flow));
       color = color + (sat + vec3<f32>(0.4)) * pulse * backbone * backbone * bloomAmt * (0.6 + treble * 0.4);
+      // Idea 1 (09-27) — red-bond bottlenecks: spanning sites with exactly two
+      // occupied neighbours constrict the current.
+      let redBond = select(0.0, 1.0, occCount == 2);
+      color = color + vec3<f32>(1.0, 0.52, 0.18) * redBond * (0.75 + treble * 0.55);
     } else {
       // Finite clusters turn milky near criticality (idea 2).
       color = mix(color, color + opalescence, 0.35);
+      // Idea 2 (09-27) — mass fade: small (low-degree) blobs dim and milkier.
+      let mass = f32(occCount) / 4.0;
+      color = color * mix(0.32, 1.0, mass);
+      color = mix(color, color + opalescence * 0.8, mix(0.5, 0.12, mass));
     }
     color = color + vec3<f32>(0.5, 0.3, 0.8) * f32(edgeCount) * 0.12;
     let ca = smoothstep(0.0, 1.0, f32(edgeCount)) * 0.08 * (1.0 + bass * 0.5);

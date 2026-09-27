@@ -3,6 +3,9 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
 //  Complexity: Very High
+//  Upgraded: 2026-09-27
+//  Ideas: virtual pair flashes (stateless birth/separate/annihilate); Born-rule detection hits; spacetime-foam membranes (Worley F2-F1)
+//  A packing: raw sim state (vacuumField, totalProb, avgUncertainty, alpha) - unchanged; ACES on writeTexture only
 //  Description: Particle positions rendered as quantum probability clouds.
 //    Alpha encodes Heisenberg uncertainty — high uncertainty creates diffuse
 //    translucent clouds, low uncertainty yields sharp opaque peaks.
@@ -84,6 +87,14 @@ fn interference(p: vec2<f32>, c1: vec2<f32>, c2: vec2<f32>, sigma: f32, t: f32) 
   return wave1 + wave2;
 }
 
+// ── [Idea 2] integer hash for Born-rule detector cells ────────────
+fn hash_u(a: vec3<u32>) -> f32 {
+  var h = a.x * 747796405u + a.y * 2891336453u + a.z * 3266489917u + 1013904223u;
+  h = ((h >> ((h >> 28u) + 4u)) ^ h) * 277803737u;
+  h = (h >> 22u) ^ h;
+  return f32(h) / 4294967295.0;
+}
+
 // ── Audio smoothing ───────────────────────────────────────────────
 fn env_q(prev: f32, val: f32, attack: f32, release: f32) -> f32 {
   let k = select(release, attack, val > prev);
@@ -139,6 +150,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let uncertaintyBase = u.zoom_params.y * 0.08 + 0.02;
   let vacuumEnergy = u.zoom_params.z;
   let collapseStrength = u.zoom_params.w * 2.0 + 0.5;
+  // Sliders that were computed but unused: neutral (=1) at saved default 0.5.
+  let densityK = cloudDensity / 30.0;        // x: pair / detection / foam occupancy
+  let collapseK = collapseStrength / 1.5;    // w: sharpening depth of the collapse
 
   // Audio smoothing
   let bassSmooth = env_q(0.5, bass, 0.08, 0.04);
@@ -194,8 +208,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
 
     // Collapse reduces uncertainty (sharpens peak)
-    let collapsedSigma = sigma * (1.0 - collapseFactor * 0.7);
-    let localSigma = mix(sigma, collapsedSigma, collapseFactor);
+    let collapsedSigma = sigma * (1.0 - collapseFactor * 0.7 * collapseK);
+    // Floor: while held, collapseFactor reaches 1.8 and sigma crossed zero
+    // (divide-by-zero NaN in probCloud, negative uncertainty into alpha).
+    let localSigma = max(mix(sigma, collapsedSigma, collapseFactor), sigma * 0.08);
 
     // Probability clouds
     let prob1 = probCloud(p, p1, localSigma);
@@ -243,6 +259,79 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
   col = pow(col, vec3<f32>(0.4545));
 
+  // Pixel-level measurement field (same falloff as the pair-loop collapse).
+  let cField = exp(-dot(p - mPos, p - mPos) * 4.0) * select(1.0, 1.5, mouseDown);
+
+  // ── [Idea 1] Virtual pair flashes ───────────────────────────────
+  // Stateless per-cell lifecycle: a hashed cell spawns a particle /
+  // antiparticle pair at its centre, they separate along a hashed axis,
+  // return and annihilate in a flash. Cell re-rolls every cycle.
+  let cellQ = p * 7.0;
+  let cellId = floor(cellQ);
+  let occ = clamp(0.28 * densityK, 0.0, 0.85);
+  var pairFlash = vec3<f32>(0.0);
+  for (var dy = -1; dy <= 1; dy++) {
+    for (var dx = -1; dx <= 1; dx++) {
+      let id = cellId + vec2<f32>(f32(dx), f32(dy));
+      let cs = id.x * 13.7 + id.y * 57.3;
+      let hc = hash3_q(cs);
+      let periodT = 2.5 + hc.y * 3.5;
+      let cyc = floor(time / periodT + hc.z);
+      let phase = fract(time / periodT + hc.z);
+      let hs = hash3_q(cs + cyc * 7.31);
+      let l = phase / 0.4;
+      if (hs.x < occ && l < 1.0) {
+        let jit = hash2_q(cs + cyc * 3.9 + 9.1) - 0.5;
+        let ang = hs.y * 2.0 * PI;
+        let center = id + 0.5 + jit * 0.3;
+        let sep = 0.32 * sin(PI * l);
+        let dirv = vec2<f32>(cos(ang), sin(ang));
+        let r2 = 0.0036;
+        let g1 = exp(-dot(cellQ - (center + dirv * sep), cellQ - (center + dirv * sep)) / r2);
+        let g2 = exp(-dot(cellQ - (center - dirv * sep), cellQ - (center - dirv * sep)) / r2);
+        let amp = sin(PI * l) * 0.9 + exp(-(1.0 - l) * 14.0) * 1.5;
+        pairFlash += (hsv2rgb_q(hs.z, 0.7, 1.0) * g1 + hsv2rgb_q(hs.z + 0.5, 0.7, 1.0) * g2) * amp;
+      }
+    }
+  }
+  col += pairFlash * (0.3 + vacuumField * 0.5);
+
+  // ── [Idea 3] Spacetime-foam membranes (Worley F2 - F1 films) ────
+  let bq = p * 5.0;
+  let bId = floor(bq);
+  var f1 = 8.0;
+  var f2 = 8.0;
+  for (var by = -1; by <= 1; by++) {
+    for (var bx = -1; bx <= 1; bx++) {
+      let nid = bId + vec2<f32>(f32(bx), f32(by));
+      let hb = hash2_q(nid.x * 13.7 + nid.y * 57.3 + 21.0);
+      let pt = nid + 0.5 + 0.4 * sin(time * (0.25 + hb * 0.4) + hb.yx * 6.2831853);
+      let dd = length(bq - pt);
+      if (dd < f1) { f2 = f1; f1 = dd; }
+      else if (dd < f2) { f2 = dd; }
+    }
+  }
+  let filmW = 0.03 + 0.07 * vacuumEnergy;
+  let film = 1.0 - smoothstep(0.0, filmW, f2 - f1);
+  col += hsv2rgb_q(fract(time * 0.03 + 0.55 + f1 * 0.3), 0.5, 1.0) * film * (0.05 + 0.18 * vacuumField);
+
+  // ── [Idea 2] Born-rule detection hits ───────────────────────────
+  // Sample the probability density: 4-px detector cells fire round hits
+  // with chance ~ totalProb (12 Hz re-roll); denser where the mouse measures.
+  let dCoord = vec2<u32>(gid.xy / 4u);
+  let dLocal = fract(vec2<f32>(gid.xy) / 4.0) - 0.5;
+  let tick = u32(max(time, 0.0) * 12.0);
+  let hHit = hash_u(vec3<u32>(dCoord, tick));
+  let dens = clamp(totalProb, 0.0, 2.0);
+  let pHit = clamp(0.16 * densityK * dens * (1.0 + 2.5 * cField * collapseK), 0.0, 0.9);
+  let hitMask = step(hHit, pHit) * (1.0 - smoothstep(0.25, 0.5, length(dLocal)));
+  var hitCol = vec3<f32>(1.0);
+  if (totalProb > 0.001) {
+    hitCol = mix(colorAccum / totalProb, vec3<f32>(1.0), 0.5);
+  }
+  col += hitCol * hitMask * 0.9;
+  col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
+
   // ── Alpha encoding ──────────────────────────────────────────────
   // Alpha = uncertainty. High uncertainty = diffuse/translucent.
   // Low uncertainty = sharp/opaque.
@@ -255,6 +344,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Vacuum foam adds faint translucency everywhere
   alpha = max(alpha, foam * 0.08);
+  alpha = max(alpha, film * 0.2);                    // [Idea 3] membranes
+  alpha = max(alpha, max(pairFlash.r, max(pairFlash.g, pairFlash.b)) * 0.5); // [Idea 1]
+  alpha = max(alpha, hitMask * 0.9);                 // [Idea 2] detections are opaque
 
   // Collapse region becomes more opaque
   let collapseAlphaBoost = collapseGlow * 0.4;

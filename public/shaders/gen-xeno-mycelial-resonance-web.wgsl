@@ -5,7 +5,10 @@
 //           upgraded-rgba, aces-tone-map, temporal-feedback, gravity-wells,
 //           mouse-attractors, feedback-accumulation, chromatic-aberration
 // Chunks From: gen-protocell-division.wgsl (upgraded-rgba stack)
-// Upgraded: 2026-06-28 — Interactivist Batch (gravity wells + feedback loops)
+// Upgraded: 2026-09-27
+// Ideas: anastomosis bridges between fold branches; septal rings; click inoculation thickening
+// A packing: ACES display RGBA
+// Kept: 2026-06-28 gravity well and feedback accumulation
 // ----------------------------------------------------------------
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -93,6 +96,7 @@ fn map(pos: vec3<f32>, time: f32) -> f32 {
     p = (fract(p / u.zoom_params.x + 0.5) - 0.5) * u.zoom_params.x;
 
     var d = 100.0;
+    var prevBranch = 100.0;
 
     // Branching KIFS with audio-reactive angle
     let bassAngle = plasmaBuffer[0].x * 0.3;
@@ -105,8 +109,28 @@ fn map(pos: vec3<f32>, time: f32) -> f32 {
         p.y = pYZ.x;
         p.z = pYZ.y;
 
-        let branch = length(p.xy) - u.zoom_params.y * (1.0 - f32(i)*0.2);
+        // Septal rings: periodic constrictions along the existing hypha.
+        let septal = 0.5 + 0.5 * sin(p.y * 36.0 + p.z * 8.0);
+        let branch = length(p.xy) - u.zoom_params.y * (1.0 - f32(i)*0.2) + septal * 0.018;
         d = smin(d, branch, 0.2);
+        // Anastomosis: a wider blend fuses successive fold branches.
+        if (i > 0) {
+            d = smin(d, smin(prevBranch, branch, 0.55), 0.35);
+        }
+        prevBranch = branch;
+    }
+
+    // Click inoculation thickens hyphae near the ripple for its lifetime.
+    let rippleCount = min(u32(u.config.y), 8u);
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+        let rp = u.ripples[ri];
+        let age = time - rp.z;
+        if (age > 0.0 && age < 2.6) {
+            let clickP = vec2<f32>((rp.x - 0.5) * 8.0, (rp.y - 0.5) * 8.0);
+            let cd = length(p.xy - clickP);
+            let life = exp(-age * 1.3);
+            d = d - exp(-cd * cd * 1.6) * life * 0.14;
+        }
     }
 
     // Audio reactive swelling — bass via plasmaBuffer

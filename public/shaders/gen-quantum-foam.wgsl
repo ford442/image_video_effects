@@ -4,7 +4,9 @@
 //  Features: audio-reactive, lod-scaling, blue-noise-jitter,
 //            bilinear-temporal-feedback, hdr-chaining, depth-aware
 //  Complexity: Medium
-//  Upgraded: 2026-06-29
+//  Upgraded: 2026-09-27
+//  Ideas: micro-singularity implosions at cell centers; subatomic chromatic diffraction fringes
+//  A packing: ACES display RGBA
 //
 //  Performance-first refactor of the Worley-noise quantum vacuum.
 //  - 3x3 branchless Worley kernel (was 5x5): mathematically sufficient
@@ -165,10 +167,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // ── Depth & temporal read ─────────────────────────────────────
     let depthIn = textureLoad(readDepthTexture, pixel, 0).r;
-    let prevHDR = textureSampleLevel(
-        dataTextureC, u_sampler,
-        clamp(uv01, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0
-    ).rgb;
+    let prevHDR = textureLoad(dataTextureC, pixel, 0).rgb;
 
     // ── LOD scaling: user Detail + frame-budget throttle ──────────
     let baseLayers = i32(round(mix(2.0, f32(MAX_LAYERS), detail)));
@@ -207,6 +206,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let border0 = exp(-f0 * 20.0) * 1.5;
     let border1 = exp(-f1 * 20.0) * 1.2;
     hdr += vec3<f32>(border0 * 0.3, border1 * 0.2, border0 * 0.4) * (1.0 + treble * 0.5);
+
+    // Idea 2: Subatomic chromatic diffraction fringes on bubble membranes
+    let fringe = sin(f0 * 30.0 - time * 5.0) * exp(-f0 * 5.0);
+    hdr += vec3<f32>(fringe * 0.8, fringe * 0.2, fringe * -0.5) * chroma * 0.5;
+
+    // Idea 1: Micro-singularity implosions in the vacuum voids
+    let voidCenter = smoothstep(0.8, 1.0, f0); // f0 is high at cell centers since it's d2 - d1
+    let singularity = voidCenter * treble * 2.0 * sin(time * 10.0 + bn * PI);
+    hdr -= vec3<f32>(singularity);
 
     // Vacuum background mix.
     let vacuumHue = fract(time * 0.03 + mids * 0.1);

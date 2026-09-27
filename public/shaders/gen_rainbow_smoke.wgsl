@@ -4,7 +4,9 @@
 //  Features: upgraded-rgba, depth-aware, audio-reactive, mouse-driven, temporal
 //  Complexity: Very High
 //  Scientific: Multi-scale curl-noise smoke with vorticity confinement, buoyancy, Rayleigh edge scattering, and Mie forward glow
-//  Upgraded: 2026-07-26 (Batch 18: CFL velocity clamp, spectral FFT emitters, click bursts, spring mouse)
+//  Upgraded: 2026-09-27
+//  Ideas: CFL velocity clamp; spectral FFT emitters; click bursts; spring mouse; vortex-ring clicks (toroidal smoke rings plus radial burst); Kelvin-Helmholtz billows along the density-gradient edge
+//  A packing: raw (velocity.xy, density, temperature) in A; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -231,10 +233,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let multiCurl = curl1 + curl2 * 0.5 + curl3 * 0.25;
   velocity += multiCurl * (0.0015 + turbulenceControl * 0.011);
 
-  let vN = textureLoad(dataTextureC, clampCoord(coord + vec2<i32>(0, -1), size), 0).rg;
-  let vS = textureLoad(dataTextureC, clampCoord(coord + vec2<i32>(0, 1), size), 0).rg;
-  let vE = textureLoad(dataTextureC, clampCoord(coord + vec2<i32>(1, 0), size), 0).rg;
-  let vW = textureLoad(dataTextureC, clampCoord(coord + vec2<i32>(-1, 0), size), 0).rg;
+  let vNtex = textureLoad(dataTextureC, clampCoord(coord + vec2<i32>(0, -1), size), 0);
+  let vStex = textureLoad(dataTextureC, clampCoord(coord + vec2<i32>(0, 1), size), 0);
+  let vEtex = textureLoad(dataTextureC, clampCoord(coord + vec2<i32>(1, 0), size), 0);
+  let vWtex = textureLoad(dataTextureC, clampCoord(coord + vec2<i32>(-1, 0), size), 0);
+  let vN = vNtex.rg;
+  let vS = vStex.rg;
+  let vE = vEtex.rg;
+  let vW = vWtex.rg;
   let omega = (vE.y - vW.y) - (vN.x - vS.x);
   let gradAbsOmega = vec2<f32>(abs(vE.y) - abs(vW.y), abs(vN.x) - abs(vS.x));
   let confDir = safeNormalize2(gradAbsOmega, vec2<f32>(0.0, 1.0));
@@ -243,6 +249,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   velocity += mouseDir * mouseMask * 0.008;
   velocity.y -= mouseMask * 0.005;
   velocity.y -= 0.0015 + temperature * 0.014 + density * 0.004;
+
+  // Idea 2 — Kelvin-Helmholtz billows: shear along the interface wrinkles
+  // the smoke/air edge (vorticity magnitude * interface tangent).
+  let shear = abs(vE.x - vW.x) + abs(vN.y - vS.y);
+  let densGrad = vec2<f32>(vEtex.b - vWtex.b, vNtex.b - vStex.b);
+  let khTangent = safeNormalize2(vec2<f32>(-densGrad.y, densGrad.x), vec2<f32>(1.0, 0.0));
+  let kh = sin(dot(uv, khTangent) * 52.0 + time * 4.2 + omega * 6.0)
+         * shear * (0.00035 + turbulenceControl * 0.0028);
+  velocity += khTangent * kh;
 
   // Click smoke bursts: each recorded click injects a radial velocity pulse
   // plus density/temperature impulses that decay over ~3 seconds.
@@ -261,6 +276,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       velocity += burstDir * ring * decay * 0.02;
       clickDensity += ring * decay * 0.45;
       clickHeat += ring * decay * 0.35;
+      // Idea 1 — vortex-ring clicks: toroidal swirl around the expanding
+      // ring radius, on top of the existing radial burst.
+      let ringR = 0.045 + clickAge * 0.075;
+      let ringBand = exp(-abs(clickDist - ringR) * 30.0) * decay;
+      let tang = safeNormalize2(vec2<f32>(-toPixel.y, toPixel.x), vec2<f32>(1.0, 0.0));
+      velocity += tang * ringBand * 0.018;
+      velocity += burstDir * ringBand * 0.007;
+      clickDensity += ringBand * 0.18;
+      clickHeat += ringBand * 0.12;
     }
   }
 
@@ -277,7 +301,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let densityE = sampleState(uv + vec2<f32>(pixel * 2.0, 0.0), resolution, size).b;
   let densityW = sampleState(uv + vec2<f32>(-pixel * 2.0, 0.0), resolution, size).b;
   let gradient = vec2<f32>(densityE - densityW, densityN - densityS);
-  let edge = smoothstep(0.015, 0.14, length(gradient));
+  let khVis = 0.5 + 0.5 * sin(dot(uv, safeNormalize2(vec2<f32>(-gradient.y, gradient.x), vec2<f32>(1.0, 0.0))) * 40.0 + time * 3.1);
+  let edge = smoothstep(0.015, 0.14, length(gradient)) * mix(1.0, khVis, 0.4);
 
   let spectralPhase = fract(time * 0.045 + density * 0.22 + uv.x * 0.25 + uv.y * 0.18 + treble * 0.25);
   let rainbow = 0.55 + 0.45 * cos(6.28318 * vec3<f32>(spectralPhase, spectralPhase + 0.33, spectralPhase + 0.67));

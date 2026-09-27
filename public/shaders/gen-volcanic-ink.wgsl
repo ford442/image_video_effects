@@ -6,7 +6,9 @@
 //            depth-aware, chromatic-aberration, ACES-tone-map, HDR-ready
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-06-29
+//  Upgraded: 2026-06-29, 2026-09-27
+//  Ideas: capillary ink margin around fissures; cooling rind advected by magma flow
+//  A packing: linear ink trail in A; ACES on display; B stores (lava, cracks, ember, smoke)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -123,23 +125,22 @@ fn qualityLOD(shortEdge: f32, detail: f32) -> i32 {
 // ── Temporal: unrolled 3x3 bilinear neighbor blur ─────────────────
 // Small, separable-ish kernel. Weights sum to 1.0 and use dataTextureC
 // so feedback trails stay smooth without a loop.
-fn neighborBlur(uv: vec2<f32>, invRes: vec2<f32>) -> vec4<f32> {
-    let dx = vec2<f32>(invRes.x, 0.0);
-    let dy = vec2<f32>(0.0, invRes.y);
+fn loadC(p: vec2<i32>, res: vec2<f32>) -> vec4<f32> {
+    let hi = vec2<i32>(max(i32(res.x) - 1, 0), max(i32(res.y) - 1, 0));
+    return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), hi), 0);
+}
+
+fn neighborBlur(pixel: vec2<i32>, res: vec2<f32>) -> vec4<f32> {
     var acc = vec4<f32>(0.0);
-
-    acc += 0.0625 * textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(-dx.x, -dy.y), 0.0);
-    acc += 0.1250 * textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>( 0.0,   -dy.y), 0.0);
-    acc += 0.0625 * textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>( dx.x, -dy.y), 0.0);
-
-    acc += 0.1250 * textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(-dx.x,  0.0),  0.0);
-    acc += 0.2500 * textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>( 0.0,    0.0),  0.0);
-    acc += 0.1250 * textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>( dx.x,  0.0),  0.0);
-
-    acc += 0.0625 * textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(-dx.x,  dy.y), 0.0);
-    acc += 0.1250 * textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>( 0.0,    dy.y), 0.0);
-    acc += 0.0625 * textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>( dx.x,  dy.y), 0.0);
-
+    acc += 0.0625 * loadC(pixel + vec2<i32>(-1, -1), res);
+    acc += 0.1250 * loadC(pixel + vec2<i32>( 0, -1), res);
+    acc += 0.0625 * loadC(pixel + vec2<i32>( 1, -1), res);
+    acc += 0.1250 * loadC(pixel + vec2<i32>(-1,  0), res);
+    acc += 0.2500 * loadC(pixel + vec2<i32>( 0,  0), res);
+    acc += 0.1250 * loadC(pixel + vec2<i32>( 1,  0), res);
+    acc += 0.0625 * loadC(pixel + vec2<i32>(-1,  1), res);
+    acc += 0.1250 * loadC(pixel + vec2<i32>( 0,  1), res);
+    acc += 0.0625 * loadC(pixel + vec2<i32>( 1,  1), res);
     return acc;
 }
 
@@ -152,7 +153,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv01 = vec2<f32>(pixel) / res;
     let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);
     let time = u.config.x;
-    let invRes = 1.0 / res;
 
     // Inputs
     let mouse = u.zoom_config.yz * 2.0 - 1.0;
@@ -212,8 +212,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color += SMOKE_TINT * smoke * soot * (1.0 + treble * 0.1);
     color += SPARK_TINT * emberSpark * (0.4 + bass);
 
+    // Idea 1 — capillary ink margin. A wider dark wet edge around the hot crack core.
+    let inkMargin = smoothstep(0.45, 0.72, crackDiff) * (1.0 - cracks);
+    color = mix(color, INK_BASE * 0.35, inkMargin * 0.75);
+
+    // Idea 2 — cooling rind. Off-crack lava skins darker and still rides Magma Flow.
+    let rindNoise = fbm(lavaUv * 0.5 - vec2<f32>(flowTime * 0.15, 0.0), max(octaves - 1, 2));
+    let rind = smoothstep(0.35, 0.7, rindNoise) * (1.0 - cracks) * (1.0 - lava);
+    color = mix(color, color * vec3<f32>(0.25, 0.12, 0.08), rind * 0.8);
+
     // ── Temporal feedback (ink persistence) ─────────────────────────
-    let prevBlur = neighborBlur(uv01, invRes);
+    let prevBlur = neighborBlur(pixel, res);
     let feedbackStrength = 0.03 + soot * 0.07 + bass * 0.015;
     let trail = mix(color, prevBlur.rgb * 0.96, feedbackStrength);
 

@@ -1,6 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Gravito-Phononic Accretion v5 — High-End Optical Prism
 //  Category: generative
+//  Upgraded: 2026-09-27
+//  Ideas: phonon standing ridges between the two centers; accretion shock shells
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -54,10 +57,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   
   // ── Persistent state strictly in extraBuffer[133..138] (single-writer) ──
   if (gid.x == 0u && gid.y == 0u) {
-    let target = (bass + mid + treble) * 0.333;
+    let audioMean = (bass + mid + treble) * 0.333;
     var springPos = extraBuffer[133];
     var springVel = extraBuffer[134];
-    springVel += (target - springPos) * 0.15; // Spring force
+    springVel += (audioMean - springPos) * 0.15; // Spring force
     springVel *= 0.82;                        // Damping
     springPos += springVel;
     extraBuffer[133] = clamp(springPos, 0.0, 5.0);
@@ -145,6 +148,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var color = prev * decay;
   
   color += prism * (inject1 + inject2 + injectM + ripples * 1.2) * 0.15;
+
+  // Phonon ridges: standing brightness along the segment between the centers.
+  let axis = c2 - c1;
+  let span = max(length(axis), 1e-4);
+  let axisN = axis / span;
+  let along = dot(uv - c1, axisN);
+  let across = abs(dot(uv - c1, vec2<f32>(-axisN.y, axisN.x)));
+  let onSeg = smoothstep(0.0, 0.02, along) * smoothstep(span, span - 0.02, along);
+  let phonon = exp(-across * across * 900.0) * abs(sin(along * 48.0 * (0.6 + p2))) * onSeg;
+  color += prism * phonon * p2 * 0.55;
+
+  // Shock shells sit outside the core inject (smoothstep radius 0.05).
+  let shellR = 0.12;
+  let shell1 = exp(-(d1 - shellR) * (d1 - shellR) / 0.0009);
+  let shell2 = exp(-(d2 - shellR) * (d2 - shellR) / 0.0009);
+  color += prism * (shell1 + shell2) * (0.18 + bass * 0.25);
   // Truthful three-band audio bins coloring
   color += vec3<f32>(bins.x, bins.y, bins.z) * 0.015;
   

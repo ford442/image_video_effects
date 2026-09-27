@@ -1,12 +1,23 @@
-// ----------------------------------------------------------------
-// Symbiotic Cyber-Fungal Core-Reactor
-// Category: generative
-// Features: spring-smoothed mouse gravity-well attractor, click
-//   spore-burst shockwave (bounded energy), real audio reactivity
-//   (bass/mids/treble + guarded FFT bins 1-8), engine-ripple nutrient
-//   rings, temporal feedback memory (dataTextureA/C), generated
-//   depth, semantic alpha, ACES tone map
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Symbiotic Cyber-Fungal Core-Reactor
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//    (mouse gravity-well core, click spore-burst from newest engine ripple,
+//    bass/mids/treble + guarded FFT bins 1-8, engine-ripple nutrient rings,
+//    temporal feedback memory dataTextureA/C, generated depth, semantic
+//    alpha, ACES tone map)
+//  Complexity: High
+//  Upgraded: 2026-09-27
+//  Ideas: reactor containment ring (precessing plasma torus + hot spot);
+//    sporangia pods (breathing Worley nuclei on the gyroid); fractured core
+//    shell (F2-F1 cracks leaking light through the inverted skin)
+//  A packing: raw HDR trail rgb (pre-ACES) + nutrient alpha; ACES on
+//    writeTexture only
+//  Fixes: extraBuffer[133..138] is zeroed per frame so the spring/click
+//    state never persisted -> stateless mouse + ripple-derived click age
+//    (old [133..138] writer left in place, unread); pow(negative, 2.0) NaN
+//    in the spore ring replaced by squaring
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -61,6 +72,32 @@ fn cellular(p: vec3<f32>) -> f32 {
         }
     }
     return minDist;
+}
+
+// Worley F1 / F2 / id of the nearest feature point (ideas 2 and 3)
+fn worley(p: vec3<f32>) -> vec3<f32> {
+    let pFloor = floor(p);
+    let pFract = fract(p);
+    var f1 = 8.0;
+    var f2 = 8.0;
+    var id = 0.0;
+    for (var k = -1; k <= 1; k++) {
+        for (var j = -1; j <= 1; j++) {
+            for (var i = -1; i <= 1; i++) {
+                let cell = vec3<f32>(f32(i), f32(j), f32(k));
+                let h = hash33(pFloor + cell);
+                let dist = length(cell + h - pFract);
+                if (dist < f1) {
+                    f2 = f1;
+                    f1 = dist;
+                    id = h.x;
+                } else if (dist < f2) {
+                    f2 = dist;
+                }
+            }
+        }
+    }
+    return vec3<f32>(f1, f2, id);
 }
 
 fn fbm(p: vec3<f32>) -> f32 {
@@ -123,7 +160,8 @@ fn map(p: vec3<f32>, c: ReactorCtx) -> f32 {
     d_gyroid -= pull * 0.5;
 
     // Click spore-burst: expanding shockwave swells the mycelium outward
-    let ring = exp(-pow((dist_to_core - c.pulse_age * 2.2) * 3.0, 2.0));
+    let ringX = (dist_to_core - c.pulse_age * 2.2) * 3.0;
+    let ring = exp(-(ringX * ringX)); // squared (pow of a negative base is NaN)
     d_gyroid -= ring * c.pulse * 0.45;
 
     // Blend core and mycelium
@@ -187,11 +225,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
         extraBuffer[137] = mouseDown;
     }
-    var sm = rawMouse;
-    var shockT = -10.0;
-    if (canState) {
-        sm = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-        shockT = extraBuffer[138];
+    // extraBuffer[133..138] is zeroed every frame by the engine, so the spring
+    // above never persists: read the mouse directly and derive the click age
+    // from the newest engine ripple (age = time - ripple.z; never ripple.w).
+    let sm = rawMouse;
+    var clickAge = 1.0e4;
+    let clickCount = min(u32(u.config.y), 50u);
+    for (var ci = 0u; ci < clickCount; ci++) {
+        let cage = tRaw - u.ripples[ci].z;
+        if (cage > 0.0) {
+            clickAge = min(clickAge, cage);
+        }
     }
 
     // Gravity-well attractor + slow autonomous drift: the core hunts nutrients
@@ -200,8 +244,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let core_pos = vec3<f32>((core_uv.x - 0.5) * 5.0, -(core_uv.y - 0.5) * 5.0, 0.0);
 
     // Click spore-burst energy (bounded, decaying)
-    let pulse_age = max(time - shockT, 0.0);
-    let pulse = select(0.0, exp(-pulse_age * 1.4), shockT > 0.0);
+    let pulse_age = min(clickAge, 60.0);
+    let pulse = select(0.0, exp(-pulse_age * 1.4), clickAge < 60.0);
     let mutate = step(0.5, mouseDown);
 
     // ── Guarded FFT bands (engine bins 1-8 at extraBuffer[6..13], read-only) ──
@@ -227,12 +271,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var glow = 0.0;
     var hit = false;
 
+    // IDEA 1: reactor containment ring — precessing plasma torus around the core
+    let coreR = 0.5 * u.zoom_params.x;
+    let ringAxis = normalize(vec3<f32>(0.55 * sin(time * 0.21), 1.0, 0.55 * cos(time * 0.17)));
+    let ringB1 = normalize(cross(ringAxis, vec3<f32>(0.0, 0.0, 1.0)));
+    let ringB2 = cross(ringAxis, ringB1);
+    let ringMajor = coreR * 1.9 + 0.15;
+    let ringMinor = 0.05 + 0.04 * coreR;
+    var ringGlow = 0.0;
+
     for (var i = 0; i < 100; i++) {
         let p = ro + rd * t;
         let d = map(p, ctx);
 
         // Volumetric glow accumulation (treble sparkle emission rate)
         glow += (0.01 + fft_hi * 0.004) / (0.01 + abs(d));
+
+        // IDEA 1: integrate the ring along the ray (stops at the core, so the
+        // core occludes the far side); a hot spot orbits the ring
+        let rq = p - core_pos;
+        let rh = dot(rq, ringAxis);
+        let rPlanar = rq - ringAxis * rh;
+        let dRing = length(vec2<f32>(length(rPlanar) - ringMajor, rh)) - ringMinor;
+        let rw = exp(-(dRing * dRing) * 40.0);
+        if (rw > 0.01) {
+            let ang = atan2(dot(rPlanar, ringB2), dot(rPlanar, ringB1));
+            let hs = max(cos(ang - time * 1.3), 0.0);
+            let hs2 = hs * hs;
+            ringGlow += rw * (0.35 + 1.4 * hs2 * hs2) * clamp(d, 0.01, 0.25);
+        }
 
         if (d < 0.001 || t > 10.0) {
             if (d < 0.001) {
@@ -253,13 +320,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 // Bass growth pulse warms the mycelium veins
                 base_col += vec3<f32>(0.5, 0.15, 0.05) * bass * 0.12 * cellular(p * 2.5 + 7.0);
                 // Spore-burst ring flash sweeping the surface
-                let ring = exp(-pow((dist_to_core - pulse_age * 2.2) * 3.0, 2.0));
+                let ringX = (dist_to_core - pulse_age * 2.2) * 3.0;
+                let ring = exp(-(ringX * ringX));
                 base_col += vec3<f32>(0.6, 1.0, 0.8) * ring * pulse * 0.8;
 
+                let coreSkin = dist_to_core < u.zoom_params.x * 0.55;
+
+                // IDEA 2: sporangia pods — Worley nuclei on the gyroid swell and
+                // breathe on per-cell phases (mycelium only, not the core skin)
+                if (!coreSkin) {
+                    let pw = worley(p * 3.0 + vec3<f32>(0.0, 0.0, time * 0.05));
+                    let pod = smoothstep(0.30, 0.07, pw.x);
+                    let breath = 0.5 + 0.5 * sin(time * 1.7 + pw.z * TAU);
+                    let nucleus = smoothstep(0.12, 0.0, pw.x);
+                    base_col += (vec3<f32>(0.55, 1.0, 0.3) * pod + vec3<f32>(1.0, 0.95, 0.7) * nucleus)
+                        * (0.3 + 0.7 * breath) * 0.8;
+                }
+
                 // Negative color space near singularity
-                if (dist_to_core < u.zoom_params.x * 0.55) {
+                if (coreSkin) {
                     base_col = 1.0 - base_col;
                     base_col *= vec3<f32>(1.0, 0.5, 0.2); // Chromatic aberration effect
+
+                    // IDEA 3: fractured core shell — Worley F2-F1 cracks leak
+                    // hot light through the inverted skin, flickering per fragment
+                    let cq = (p - core_pos) / max(coreR, 0.05);
+                    let cw = worley(cq * 2.6 + vec3<f32>(0.0, 0.0, time * 0.06));
+                    let crack = smoothstep(0.14, 0.0, cw.y - cw.x);
+                    let flick = 0.5 + 0.5 * sin(time * 3.1 + cw.z * TAU);
+                    base_col += vec3<f32>(1.0, 0.72, 0.35) * crack * (0.9 + 1.3 * flick);
                 }
 
                 col = base_col;
@@ -289,6 +378,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Subsurface scattering approximation (cheap distance based fog)
     col = mix(col, vec3<f32>(0.0, 0.05, 0.1), 1.0 - exp(-0.1 * t));
 
+    // IDEA 1: containment ring added after the fog so it stays vivid
+    col += vec3<f32>(1.0, 0.55, 0.2) * ringGlow * 2.2;
+
     // ── Temporal feedback memory: growth self-organizes along its history ──
     let prev = textureLoad(dataTextureC, px, 0); // non-filtering history read
     let decay = 0.90 + u.zoom_params.y * 0.06;   // Mycelium Spread = trail persistence
@@ -309,6 +401,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(writeDepthTexture, px, vec4<f32>(depth, 0.0, 0.0, 0.0));
 
     // Semantic alpha: reactor luminance density
-    let alpha = clamp(luma(col) * 1.1 + glow * 0.004 + rippleGlow * 0.2, 0.06, 1.0);
+    let alpha = clamp(luma(col) * 1.1 + glow * 0.004 + ringGlow * 0.3 + rippleGlow * 0.2, 0.06, 1.0);
     textureStore(writeTexture, px, vec4<f32>(col, alpha));
 }

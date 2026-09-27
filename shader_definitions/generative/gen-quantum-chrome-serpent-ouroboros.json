@@ -49,5 +49,7 @@
   "updated": true,
   "id": "gen-quantum-chrome-serpent-ouroboros",
   "url": "shaders/gen-quantum-chrome-serpent-ouroboros.wgsl",
-  "features": []
+  "features": [
+    "upgraded-rgba"
+  ]
 }

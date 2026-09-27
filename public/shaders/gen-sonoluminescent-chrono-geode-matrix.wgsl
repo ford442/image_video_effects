@@ -1,19 +1,24 @@
-// ----------------------------------------------------------------
-// Sonoluminescent Chrono-Geode Matrix
-// Category: generative
-// Batch 38 (Algorithmist): FAST MOTION upgrade —
+// ═══════════════════════════════════════════════════════════════════
+//  Sonoluminescent Chrono-Geode Matrix
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba, fast-motion
+//  Complexity: High
+//  Upgraded: 2026-09-27
+//  Ideas: shock-front crystal ignition; collapse-deposited agate strata; flash translucency through thin shard walls
+//  A packing: raw HDR history RGB (pre-ACES, clamped <= 5.0) + semantic alpha
+// ═══════════════════════════════════════════════════════════════════
+// Batch 38 (Algorithmist) FAST MOTION layer, kept:
 //   * closed-form high-speed orbital camera + eased time-warp spin
-//     (frame-rate independent, sub-frame stable, no hash strobing)
 //   * sonoluminescent flash-burst physics: closed-form bubble-collapse
 //     cycle (exp-collapse core radius + exp-decay flash envelope +
 //     ballistic expanding shockwave shell)
-//   * bass-transient kick detection (rising-edge, dt-integrated in
-//     extraBuffer[133..135]) that pumps flash amplitude + fracture
+//   * bass kick: stateless min(2.5*bass, 2) (2026-09-27: the old
+//     extraBuffer[133..135] "transient" never persisted — the engine
+//     re-uploads that range as zeros every frame — and its one-thread
+//     write raced other workgroups' reads, flickering per 16x16 tile)
 //   * velocity-advected motion-blur trails via dataTextureC feedback
 //     (swirl-advected, textureLoad only, HDR history clamped <= 5.0)
-//   * uniform-truth rewrite (config = [time, rippleCount, resW, resH]),
-//     plasmaBuffer audio, real generated depth, semantic alpha, ACES.
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -101,7 +106,7 @@ struct SceneCtx {
     fractureAmp: f32,    // Intensity slider * audio energy
     mouseWorld: vec3<f32>, // cursor in world units (z = 0 plane)
     mouseForce: f32,     // Mouse Influence slider (0 while not pressed)
-    kick: f32,           // bass-transient burst energy (bounded)
+    kick: f32,           // bass kick energy (stateless, bounded 0..2)
 };
 
 fn map(p: vec3<f32>, ctx: SceneCtx) -> vec2<f32> {
@@ -129,7 +134,10 @@ fn map(p: vec3<f32>, ctx: SceneCtx) -> vec2<f32> {
         vnoise3(sp * 5.0 + vec3<f32>(t * 1.5)) +
         0.35 * vnoise3(sp * 11.0 - vec3<f32>(0.0, t * 4.0, t * 2.0))
     );
-    let explode = explode_offset + normalize(sp + vec3<f32>(0.0001)) * fracture * 0.35;
+    // [Idea 1] Shock-front crystal ignition (geometry): the ballistic shell
+    // jolts the shards radially outward as its front sweeps through them.
+    let shockJolt = exp(-abs(length(p) - ctx.ringR) * 6.0) * ctx.flash * 0.06;
+    let explode = explode_offset + normalize(sp + vec3<f32>(0.0001)) * (fracture * 0.35 + shockJolt);
 
     let geode_dist = max(sdGeodeShell(sp - explode, 1.5), length(sp) - 1.0) * ctx.geodeScale;
 
@@ -175,23 +183,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         fftPulse = (extraBuffer[6] + extraBuffer[7] + extraBuffer[8] + extraBuffer[9]) * 0.25;
     }
 
-    // ---- Bass-transient kick: rising-edge detect, dt-integrated decay ----
-    // Persistent state ONLY in [133..135], single writer thread.
-    if (id.x == 0u && id.y == 0u && arrayLength(&extraBuffer) > 135u) {
-        let prevT = extraBuffer[134];
-        let dt = clamp(time - prevT, 0.0, 0.1); // frame-rate independent
-        let prevBass = extraBuffer[133];
-        var kickE = extraBuffer[135] * exp(-dt * 5.0);
-        let rising = max(bass - prevBass, 0.0);
-        kickE = min(kickE + rising * 2.5, 2.0); // bounded burst energy
-        extraBuffer[133] = bass;
-        extraBuffer[134] = time;
-        extraBuffer[135] = kickE;
-    }
-    var kick = 0.0;
-    if (arrayLength(&extraBuffer) > 135u) {
-        kick = extraBuffer[135];
-    }
+    // ---- Bass kick (stateless) ------------------------------------------
+    // Same value HEAD's writer thread produced with the per-frame-zeroed
+    // extraBuffer state (prevBass=0, kickE=0): no buffer writes, no race.
+    let kick = min(max(bass, 0.0) * 2.5, 2.0);
 
     // ---- Live slider wiring (Intensity / Speed / Scale / Mouse Influence)
     let intensity = mix(0.25, 1.6, clamp(u.zoom_params.x, 0.0, 1.0));
@@ -269,6 +264,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let hit = mat_id > 0.5 && d0 <= MAX_DIST;
 
     // ---- Shading ----------------------------------------------------------
+    let core_glow_color = mix(vec3<f32>(0.1, 0.6, 1.0), vec3<f32>(0.7, 0.9, 1.2), clamp(ctx.flash, 0.0, 1.0));
     var col = vec3<f32>(0.0);
     if (hit && mat_id == 1.0) {
         // Geode material (iridescent, kept from original)
@@ -283,7 +279,35 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Iridescence: fast hue sweep driven by eased warp time
         let iridescence = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.0, 4.0) + fresnel * 5.0 + warpTime * 1.5);
 
-        col = diff * vec3<f32>(0.2) + fresnel * iridescence * (0.6 + 0.6 * intensity);
+        // [Idea 2] Collapse-deposited agate strata: concentric chalcedony
+        // bands (noise-waved like real agate) laid around the core. The band
+        // field advances outward exactly one spacing per collapse cycle
+        // (regrow normalised to 0..1), so each implosion deposits a stratum.
+        let regrowN = (1.0 - exp(-ctx.flashPhase * 4.0)) / (1.0 - exp(-4.0));
+        let rS = length(p_surf) / ctx.geodeScale;
+        let strata = fract(rS * 9.0 + 0.8 * vnoise3(p_surf * 4.0) - regrowN);
+        let band = smoothstep(0.0, 0.15, strata) * smoothstep(1.0, 0.6, strata);
+        let agate = mix(vec3<f32>(0.12, 0.10, 0.19), vec3<f32>(0.34, 0.31, 0.42), band);
+        let strataEdge = exp(-strata * 16.0);                   // fresh deposition lip
+        col = diff * agate + fresnel * iridescence * (0.6 + 0.6 * intensity);
+        col = col + strataEdge * core_glow_color * (0.08 + 0.45 * ctx.flash) * intensity;
+
+        // [Idea 1] Shock-front crystal ignition (shading): where the shell
+        // crosses the crystal wall it burns a hot incandescent band.
+        let shellCross = exp(-abs(length(p_surf) - ctx.ringR) * 9.0) * ctx.flash;
+        col = col + shellCross * vec3<f32>(1.0, 0.82, 0.62) * (0.8 + 0.8 * intensity);
+
+        // [Idea 3] Flash translucency through thin shard walls: probe the SDF
+        // inward along -n; where the wall ends early (thin shard) the core's
+        // light bleeds through, pulsing with each collapse.
+        var thin = 0.0;
+        for (var k = 1; k <= 5; k = k + 1) {
+            let h = 0.035 * f32(k);
+            thin = thin + max(map(p_surf - n * h, ctx).x + h, 0.0) / h;
+        }
+        // numpy-port percentiles of thin: p5 0.87, p50 1.3, p95 6.0 -> bulk dark
+        let transl = smoothstep(1.2, 5.0, thin);
+        col = col + transl * core_glow_color * (0.15 + 0.85 * ctx.flash) * intensity;
 
         // Reflection of the plasma core, flash-boosted
         let r = reflect(rd, n);
@@ -292,7 +316,6 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     // Sonoluminescent flash glow (blue-white burst, HDR before tonemap)
-    let core_glow_color = mix(vec3<f32>(0.1, 0.6, 1.0), vec3<f32>(0.7, 0.9, 1.2), clamp(ctx.flash, 0.0, 1.0));
     col = col + plasma_acc * core_glow_color * intensity * (0.5 + bass * 0.5 + ctx.flash);
 
     // Background (deep space with fast faint dust streaks)

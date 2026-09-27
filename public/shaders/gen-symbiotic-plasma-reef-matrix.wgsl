@@ -5,6 +5,9 @@
 //            mouse-driven, upgraded-rgba, depth-aware, oceanic
 //  Complexity: Very High
 //  Created: 2026-06-28
+//  Upgraded: 2026-09-27
+//  Ideas: symbiotic dock-and-pulse (entity flares a coral branch, light climbs it); caustic dapples by height; Reef Density = branch count
+//  A packing: display RGBA (ACES colour, alpha = hit/glow coverage)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -126,7 +129,15 @@ struct MapResult {
   d: f32,
   mat: f32,
   glow: f32,
+  dock: f32,   // IDEA 1: flare of the coral branch an entity is docked to (0 elsewhere)
 };
+
+// IDEA 2: sun-net caustic pattern on a horizontal plane (thin bright filaments)
+fn causticNet(q: vec2<f32>, t: f32) -> f32 {
+  let w1 = sin(q.x * 2.3 + sin(q.y * 1.9 + t * 0.7) * 1.2 + t * 0.5);
+  let w2 = sin(q.y * 2.7 + sin(q.x * 2.1 - t * 0.6) * 1.2 - t * 0.4);
+  return pow(sat(1.0 - abs(w1 + w2) * 0.5), 6.0);
+}
 
 fn map(p_in: vec3<f32>, time: f32, audio: f32, bass: f32, reefDensity: f32,
        swarmSize: f32, glowIntensity: f32, mousePos: vec3<f32>) -> MapResult {
@@ -146,18 +157,29 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, bass: f32, reefDensity: f32,
   let terrain = p.y - terrainY;
 
   // Coral structures (multiple branches)
+  // Reef Density = branch count: 3..9, exactly 5 at the saved default (reefDensity 0.55 -> 4.95 -> 5)
+  let branchCount = clamp(i32(floor(reefDensity * 9.0 + 0.5)), 3, 9);
   var coral = 8.0;
-  for (var i: i32 = 0; i < 5; i = i + 1) {
+  var nearB = 8.0;          // IDEA 1: remember nearest branch (seed + base) for docking
+  var nearSeed = 0.5;
+  var nearPos = vec3<f32>(0.0);
+  for (var i: i32 = 0; i < 9; i = i + 1) {
+    if (i >= branchCount) { break; }
     let fi = f32(i);
     let pos = vec3<f32>(sin(fi * 2.1) * 2.0, -1.0 + fi * 0.2, cos(fi * 1.7) * 2.0);
     let branch = coralBranch(p - pos, fi + 0.5, time, audio);
+    if (branch < nearB) { nearB = branch; nearSeed = fi + 0.5; nearPos = pos; }
     coral = smin(coral, branch, 0.2 + audio * 0.1);
   }
+  // Axis of the nearest branch (same offset coralBranch applies), bend ignored
+  let axis = nearPos + vec3<f32>(sin(nearSeed * 3.0) * 0.5, nearSeed * 0.8, cos(nearSeed * 2.7) * 0.5);
+  var dockMin = 8.0;
 
   // Combine terrain and coral
   var d = smin(terrain, coral, 0.4);
   var mat = 1.0; // coral
   var glow = 0.0;
+  var dock = 0.0;
 
   if (coral < terrain) {
     // Coral glow
@@ -166,6 +188,12 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, bass: f32, reefDensity: f32,
     // Breathing expansion
     let breath = sin(time * 1.5 + p.y * 3.0) * 0.5 + 0.5;
     glow = glow * (0.5 + breath * 0.5 + bass * 0.5);
+    // IDEA 1: dock-and-pulse - branch flares while an entity is near its axis; a pulse climbs base -> tip
+    let dockAmt = 1.0 - smoothstep(0.35, 1.0, dockMin);
+    let yl = p.y - (axis.y - 0.5);
+    let ph = fract(time * 0.55 + nearSeed * 0.37) * 1.5 - 0.25;
+    let pulse = exp(-28.0 * (yl - ph) * (yl - ph));
+    dock = dockAmt * (0.35 + 1.4 * pulse);
   }
 
   // Bioluminescent entities (procedural particles via SDF)
@@ -187,14 +215,19 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, bass: f32, reefDensity: f32,
     }
     let ed = sdSphere(p - ePos, 0.05 + bass * 0.03);
     if (ed < entityDist) { entityDist = ed; }
+    // IDEA 1: how close does this entity pass to the nearest branch axis (horizontal + soft vertical)
+    let dxz = length(ePos.xz - axis.xz);
+    let dy = max(abs(ePos.y - axis.y) - 0.5, 0.0) * 0.5;
+    dockMin = min(dockMin, length(vec2<f32>(dxz, dy)));
   }
   if (entityDist < d) {
     d = entityDist;
     mat = 2.0; // entity
     glow = 1.0 + bass * 2.0;
+    dock = 0.0;
   }
 
-  return MapResult(d, mat, glow);
+  return MapResult(d, mat, glow, dock);
 }
 
 fn calcNormal(p: vec3<f32>, time: f32, audio: f32, bass: f32, reefDensity: f32,
@@ -219,6 +252,7 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: f32, mids
   var hit = false;
   var hitGlow = 0.0;
   var hitMat = 0.0;
+  var hitDock = 0.0;
 
   for (var i: i32 = 0; i < 80; i = i + 1) {
     let p = ro + rd * t;
@@ -229,6 +263,7 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: f32, mids
       hit = true;
       hitGlow = res.glow;
       hitMat = res.mat;
+      hitDock = res.dock;
       let n = calcNormal(p, time, audio, bass, reefDensity, swarmSize, glowIntensity, mousePos);
       let viewAngle = max(dot(-rd, n), 0.0);
 
@@ -241,8 +276,14 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: f32, mids
         // Subsurface scattering approximation
         let sss = pow(viewAngle, 3.0) * hitGlow;
         coralCol = coralCol + vec3<f32>(0.5, 0.1, 0.4) * sss;
+        // IDEA 1: docked branch flares in the entity palette, pulse climbs it
+        coralCol = coralCol + vec3<f32>(0.05, 0.55, 0.45) * hitDock * (0.5 + glowIntensity * 0.5);
+        // IDEA 2: caustic dapples - sunlit tips/shallows bright, deep seabed dim, up-facing surfaces catch more
+        let sunDepth = exp(-max(0.6 - p.y, 0.0) * 0.55);
+        let dapple = causticNet(p.xz + n.xz * 0.4, time) * sunDepth * (0.3 + 0.7 * sat(n.y));
+        coralCol = coralCol + vec3<f32>(0.05, 0.35, 0.45) * dapple * 0.7;
         col = coralCol;
-        alpha = sat(0.5 + hitGlow * 0.3);
+        alpha = sat(0.5 + hitGlow * 0.3 + hitDock * 0.15);
       } else {
         // Entity: bright cyan/green flash
         let flash = sin(time * 10.0 + p.x * 20.0) * 0.5 + 0.5;
@@ -340,7 +381,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col = col + vec3<f32>(0.0, 0.2, 0.0) * treble * 0.1;
 
   // Temporal persistence
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  let prev = textureLoad(dataTextureC, coord, 0);
   col = mix(col, prev.rgb * 0.93, 0.04);
 
   // Tone map
@@ -348,7 +389,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let finalDepth = sat(0.95 - alpha * 0.4 + fogDensity * 0.05);
 
-  textureStore(writeTexture, coord, vec4<f32>(col, 1.0));
+  // Semantic alpha: hit coverage + luminous glow (water column stays faintly present)
+  let outAlpha = clamp(alpha + dot(col, vec3<f32>(0.2126, 0.7152, 0.0722)) * 0.3, 0.04, 1.0);
+  textureStore(writeTexture, coord, vec4<f32>(col, outAlpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 1.0));
-  textureStore(dataTextureA, coord, vec4<f32>(col.r, col.g, col.b, 1.0));
+  textureStore(dataTextureA, coord, vec4<f32>(col, outAlpha));
 }

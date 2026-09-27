@@ -4,7 +4,9 @@
 //  Features: upgraded-rgba, aces-tone-map, depth-aware, audio-reactive, mouse-driven, temporal, hue-preserve-clamp, ign-dither
 //  Complexity: High
 //  Scientific: Dual-mode excitable media with FitzHugh-Nagumo action waves and Gray-Scott fallback kinetics
-//  Upgraded: 2026-07-22 (kimi swarm b14: treble micro-stimulus, click spiral seeds, disentangled Stimulus slider)
+//  Upgraded: 2026-09-27
+//  Ideas: refractory trough; gradient-stretched feed
+//  A packing: raw sim fields in A (and B slot-chain). ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -173,7 +175,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let diffA = mix(0.15, 0.28, stim);
   let diffB = mix(0.07, 0.14, stim);
   let reaction = a * b * b;
-  let grayA = saturate(a + (diffA * lap.x - reaction + feed * (1.0 - a)) * 0.55 - mouseStim * 0.05);
+  // Gradient-stretched feed: elongate Gray-Scott feed along the concentration gradient.
+  let gx = loadState(coord + vec2<i32>(1, 0), size).x - loadState(coord + vec2<i32>(-1, 0), size).x;
+  let gy = loadState(coord + vec2<i32>(0, 1), size).x - loadState(coord + vec2<i32>(0, -1), size).x;
+  let gmag = length(vec2<f32>(gx, gy));
+  let alongGrad = saturate(gmag * (2.0 + excite * 6.0));
+  let feedAniso = feed * (1.0 + alongGrad * excite * 0.35);
+  let grayA = saturate(a + (diffA * lap.x - reaction + feedAniso * (1.0 - a)) * 0.55 - mouseStim * 0.05);
   let grayB = saturate(b + (diffB * lap.y + reaction - (kill + feed) * b) * 0.55
     + mouseStim * 0.85 + audioStim * 0.6 + trebleStim * 0.5 + spiralSeed * 0.9);
 
@@ -214,6 +222,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Treble speckle shimmer + faint spiral-seed glow so the new voices read on screen.
   fitzColor += vec3<f32>(0.85, 0.95, 1.0) * trebleStim * 0.35;
   fitzColor += vec3<f32>(0.55, 0.85, 1.0) * spiralSeed * 0.25;
+  // Refractory trough: dark band behind the wave where recovery is high and the activator has fallen.
+  let troughWidth = 0.18 + recover * 0.45;
+  let refractory = smoothstep(0.12, troughWidth, inhibitor) * (1.0 - smoothstep(0.15, 0.62, activator));
+  fitzColor *= 1.0 - refractory * (0.32 + recover * 0.4);
 
   let generatedColor = mix(gsColor, fitzColor, fitzMode);
   let opacity = 0.9;

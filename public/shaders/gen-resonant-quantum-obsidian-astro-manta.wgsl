@@ -1,8 +1,12 @@
-// ----------------------------------------------------------------
-// Resonant Quantum-Obsidian Astro-Manta
-// Category: generative
-// Upgraded: 2026-08-03 - Interactivist b31: orbit cam, ripples, FFT folds.
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Resonant Quantum-Obsidian Astro-Manta
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-27
+//  Ideas: trailing membrane; buckle fractures
+//  A packing: ACES display RGB; A.a wing coverage (not tone-mapped)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -46,6 +50,9 @@ fn rotX(a: f32) -> mat3x3<f32> {
 fn smin(a: f32, b: f32, k: f32) -> f32 {
     let h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
     return mix(b, a, h) - k * h * (1.0 - h);
+}
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 // Engine FFT bins live at extraBuffer[5..132] (bin 0 at [5]) — read-only.
 fn fftBin(i: u32) -> f32 {
@@ -107,6 +114,12 @@ fn map(p_in: vec3<f32>, t: f32, snd: vec4<f32>, rip: f32) -> f32 {
 
     var d = smin(body, wings, 0.8);
     d = smin(d, tail, 0.3);
+    // Trailing membrane: a thin sheet behind the wing stroke. Evolution Speed scrolls it.
+    let evo = max(u.zoom_params.w, 0.05);
+    var p_mem = p_mod;
+    p_mem.z -= 0.45 + fract(t * 0.18 * evo) * 0.55;
+    let membrane = length(p_mem * vec3<f32>(0.28, 16.0, 2.4)) - 0.2;
+    d = smin(d, membrane, 0.16);
     // Click ripples buckle the obsidian plates
     d -= rip * 0.15 * (1.0 + snd.x * 0.5);
 
@@ -182,6 +195,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let shard = fract(kuv * 3.5 + vec2<f32>(0.0, u.config.x * 0.05 * evolution)) - 0.5;
     let seam = 1.0 - smoothstep(0.02, 0.08, abs(length(shard) - 0.26));
     col += vec3<f32>(0.08, 0.25, 0.4) * seam * (0.3 + fft_air * 1.2 + rip * 0.8);
+    // Wing coverage from the previous frame tints the shard sea only.
+    let hist = textureLoad(dataTextureC, coord, 0);
+    col += hist.rgb * hist.a * 0.1 * (1.0 - select(0.0, 1.0, hit));
 
     if (hit) {
         let n = calcNormal(p, t, snd, rip);
@@ -201,6 +217,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let veins = smoothstep(0.8, 1.0, sin(p.x * 10.0 + snd.w * 4.0) * sin(p.z * 10.0 - t));
 
         col = baseColor * diff + glowColor * veins + vec3<f32>(0.1, 0.4, 0.6) * fresnel * (0.5 + mids);
+        // Buckle fractures: the existing ripple displacement etches cracks. No new ripple system.
+        let crack = 1.0 - smoothstep(0.0, 0.045, abs(fract(p.x * 7.0 + p.z * 5.0 + rip * 6.0) - 0.5) - 0.46);
+        col += vec3<f32>(0.65, 0.9, 1.0) * crack * rip * (0.45 + audio_gain * 0.25);
 
         // Real depth: near = 1, far = 0
         depth = clamp(1.0 - dist / MAX_DIST, 0.0, 1.0);
@@ -209,15 +228,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Volumetric fog/bloom overlay (Brightness slider = emission strength)
     col += vec3<f32>(0.1, 0.3, 0.5) * (1.0 - exp(-0.05 * dist)) * u.zoom_params.z * max(0.5, evolution);
 
-    // Tonemap + gentle gamma
-    col = col / (1.0 + col * 0.5);
-    col = pow(col, vec3<f32>(1.0 / 2.2));
+    col = acesToneMap(col);
 
-    // Semantic alpha from luma
+    // Semantic alpha from luma. A.a is wing coverage, not tone-mapped.
     let luma = dot(clamp(col, vec3<f32>(0.0), vec3<f32>(1.0)), vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(luma * 0.7 + 0.25, 0.0, 1.0);
+    let coverage = select(0.0, 1.0, hit);
 
     textureStore(writeTexture, coord, vec4<f32>(col, alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coord, vec4<f32>(col, alpha));
+    textureStore(dataTextureA, coord, vec4<f32>(col, coverage));
 }

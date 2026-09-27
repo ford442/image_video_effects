@@ -6,7 +6,9 @@
 //  Scientific Math: Wavefunction ψ(x,t), Probability Density |ψ|², Quantum Measurement Collapse
 //  Chunks From: original gen-quantum-entangled-ferrofluid-engine
 //  Created: 2026-05-31
-//  Upgraded: 2026-06-07
+//  Upgraded: 2026-09-27
+//  Ideas: Rosensweig spike lattice; entangled-pair |psi|^2 bead filaments; |psi|^2 nodal contours on the metal
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -109,8 +111,60 @@ fn interferencePattern(p: vec2<f32>, t: f32, slitSep: f32, wavelength: f32) -> f
     return 0.5 + 0.5 * cos(phase);
 }
 
-// Global variable to store glow
+// Global variables to store glow (cyan = centre lines, bead = pair filaments)
 var<private> global_glow: f32 = 0.0;
+var<private> global_bead: f32 = 0.0;
+
+// Inverse of acesToneMap (per channel) so C history can re-enter the linear mix
+fn acesInverse(y: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    let yy = clamp(y, vec3<f32>(0.0), vec3<f32>(0.999));
+    let qa = a - c * yy;
+    let qb = b - d * yy;
+    let disc = max(qb * qb + 4.0 * qa * e * yy, vec3<f32>(0.0));
+    return max((-qb + sqrt(disc)) / (2.0 * qa), vec3<f32>(0.0));
+}
+
+// Satellite orbit (same formulas the original loop used)
+fn satPos(fi: f32, t: f32) -> vec3<f32> {
+    return vec3<f32>(
+        sin(t * 0.5 + fi * 1.5) * 2.5,
+        cos(t * 0.4 + fi * 2.1) * 2.5,
+        sin(t * 0.6 + fi * 0.8) * 2.5
+    );
+}
+
+// [IDEA 2] entangled-pair filament: segment a-b with a standing |psi|^2 bead wave
+fn pairFilament(pos: vec3<f32>, a: vec3<f32>, b: vec3<f32>, t: f32, phase: f32) {
+    let ba = b - a;
+    let pa = pos - a;
+    let h = clamp(dot(pa, ba) / max(dot(ba, ba), 0.0001), 0.0, 1.0);
+    let dist = length(pa - ba * h);
+    let w = max(0.12 - dist, 0.0) / 0.12;
+    if (w > 0.0) {
+        let node = sin(h * 3.14159265 * 5.0);
+        let bead = node * node * node * node;              // antinode beads
+        let pulse = 0.5 + 0.5 * cos(t * 2.5 + phase);       // antiphase between pairs
+        global_bead += w * bead * pulse * 0.12;
+        global_glow += w * 0.03;
+    }
+}
+
+// [IDEA 1] Rosensweig lattice: icosahedral-axis cosine sum -> cones on the shell
+fn rosensweigLattice(dirIn: vec3<f32>, t: f32) -> f32 {
+    let dir = rotY(t * 0.12) * dirIn;
+    let s0 = 0.5257311;   // 1/sqrt(1+phi^2)
+    let s1 = 0.8506508;   // phi/sqrt(1+phi^2)
+    let k = 7.0;
+    var sum = cos(k * dot(dir, vec3<f32>(0.0,  s0,  s1)));
+    sum += cos(k * dot(dir, vec3<f32>(0.0, -s0,  s1)));
+    sum += cos(k * dot(dir, vec3<f32>( s0,  s1, 0.0)));
+    sum += cos(k * dot(dir, vec3<f32>(-s0,  s1, 0.0)));
+    sum += cos(k * dot(dir, vec3<f32>( s1, 0.0,  s0)));
+    sum += cos(k * dot(dir, vec3<f32>( s1, 0.0, -s0)));
+    let s = sum / 6.0;
+    return pow(max(s - 0.2, 0.0) / 0.8, 1.6);
+}
 
 fn map(p: vec3<f32>) -> f32 {
     let t = u.config.x;
@@ -124,8 +178,8 @@ fn map(p: vec3<f32>) -> f32 {
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    // Low frequency audio (simulate via first ripple as fallback)
-    let audio_lf = length(u.ripples[0].xy) + u.ripples[1].x * 0.5 + 0.1;
+    // Low frequency audio (real plasmaBuffer; 0.1 floor keeps the silent look)
+    let audio_lf = 0.1 + bass * 0.6 + mids * 0.3;
 
     // Mouse Interaction (measurement disturbance)
     let aspect = u.config.z / u.config.w;
@@ -153,11 +207,7 @@ fn map(p: vec3<f32>) -> f32 {
     // Satellite droplets (quantum entangled)
     for(var i = 0; i < 4; i++) {
         let fi = f32(i);
-        let sat_pos = vec3<f32>(
-            sin(t * 0.5 + fi * 1.5) * 2.5,
-            cos(t * 0.4 + fi * 2.1) * 2.5,
-            sin(t * 0.6 + fi * 0.8) * 2.5
-        );
+        let sat_pos = satPos(fi, t);
         let d_sat = length(pos - sat_pos) - 0.3;
         d = smin(d, d_sat, viscosity * 1.5);
 
@@ -169,16 +219,24 @@ fn map(p: vec3<f32>) -> f32 {
         }
     }
 
+    // [IDEA 2] entangled pairs 0<->1 and 2<->3, antiphase bead pulse
+    pairFilament(pos, satPos(0.0, t), satPos(1.0, t), t, 0.0);
+    pairFilament(pos, satPos(2.0, t), satPos(3.0, t), t, 3.14159265);
+
     // Spikes (Ferrofluid effect driven by quantum probability density |ψ|²)
     let n_freq = 3.0 + mag_strength * 2.0;
     let n_amp = 0.3 + audio_lf * audio_react * 0.8 + prob_amp * 0.5;
 
     // Add audio ripples mapping
+    // (click fronts: age = time - startTime, active up to rippleCount, uv mapped like the mouse)
     var audio_disp = 0.0;
     for(var i = 0; i < 5; i++) {
+        if (f32(i) >= u.config.y) { break; }
         let rp = u.ripples[i];
-        let d_rp = length(pos.xy - rp.xy * 2.0);
-        audio_disp += sin(d_rp * 10.0 - t * 5.0) * rp.z * 0.5 * exp(-d_rp * 2.0);
+        let age = max(t - rp.z, 0.0);
+        let rp_pos = vec2<f32>((rp.x * 2.0 - 1.0) * aspect * 3.0, (rp.y * 2.0 - 1.0) * 3.0);
+        let d_rp = length(pos.xy - rp_pos);
+        audio_disp += sin(d_rp * 10.0 - age * 5.0) * 0.5 * exp(-d_rp * 2.0) * exp(-age * 1.5);
     }
 
     let disp = fbm(pos * n_freq + vec3<f32>(t * 0.5)) * n_amp + audio_disp;
@@ -187,6 +245,18 @@ fn map(p: vec3<f32>) -> f32 {
     let spike = pow(abs(disp), 1.5 + bass * 0.5) * sign(disp);
 
     d += spike;
+
+    // [IDEA 1] Rosensweig cones: field must exceed a critical value (smoothstep on
+    // Magnetic Strength), taller on the side facing the mouse magnet.
+    let rlen = length(pos);
+    if (rlen < 3.4 && rlen > 0.001) {
+        let dir = pos / rlen;
+        let magdir = normalize(vec3<f32>(mx, my, 1.5));
+        let pole = 0.55 + 0.45 * dot(dir, magdir);
+        let field = smoothstep(0.2, 1.2, mag_strength);
+        let shell = exp(-max(rlen - 1.5, 0.0) * 3.0);
+        d -= rosensweigLattice(dir, t) * 0.22 * field * pole * shell;
+    }
 
     return d;
 }
@@ -224,6 +294,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var p = ro;
 
     global_glow = 0.0;
+    global_bead = 0.0;
 
     for (var i = 0; i < 100; i++) {
         p = ro + rd * t_dist;
@@ -233,6 +304,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         }
         t_dist += d * 0.7;
     }
+
+    // Snapshot glow now: calcNormal()/thickness map() calls below would keep accumulating it
+    let march_glow = global_glow;
+    let march_bead = global_bead;
 
     var col = vec3<f32>(0.05, 0.02, 0.08);
 
@@ -269,6 +344,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Magnetic subsurface scattering (fake)
         let thickness = map(p - n * 0.1);
         col += vec3<f32>(0.2, 0.0, 0.5) * exp(-abs(thickness) * 10.0);
+
+        // [IDEA 3] |psi|^2 iso-contours (same wave that drives the spikes) traced on the metal
+        let mids_s = plasmaBuffer[0].y;
+        let treble_s = plasmaBuffer[0].z;
+        let psi = wavefunction(p, u.config.x + bass * 2.0, 2.0 + mids_s, 1.5 + treble_s);
+        let contour = 1.0 - smoothstep(0.0, 0.05, abs(psi - 0.5));
+        col += vec3<f32>(0.1, 0.7, 1.0) * contour * (0.35 + fresnel) * u.zoom_params.z * 0.25;
     }
 
     // Quantum interference pattern overlay in background
@@ -278,7 +360,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Add Quantum Entanglement Glow
     let glow_intensity = u.zoom_params.z;
-    col += vec3<f32>(0.0, 0.8, 1.0) * global_glow * glow_intensity * 0.05;
+    col += vec3<f32>(0.0, 0.8, 1.0) * march_glow * glow_intensity * 0.05;
+    col += vec3<f32>(1.0, 0.2, 0.8) * march_bead * glow_intensity * 0.05;   // [IDEA 2] bead tint
 
     // Vignette
     col *= 1.0 - length(pt) * 0.3;
@@ -288,8 +371,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
 
     // ═══ Temporal Feedback ═══
-    let prev = textureSampleLevel(dataTextureC, u_sampler, (vec2<f32>(id.xy) + 0.5) / tex_size, 0.0);
-    col = mix(prev.rgb * 0.96, col, 0.25);
+    // C holds ACES display RGB (x1.1 exposure): decode back to the linear pre-ACES domain first
+    let prev = textureLoad(dataTextureC, vec2<i32>(id.xy), 0);
+    col = mix(acesInverse(prev.rgb) / 1.1 * 0.96, col, 0.25);
 
     // ═══ ACES Tone Map + Semantic Alpha ═══
     col = acesToneMap(col * 1.1);

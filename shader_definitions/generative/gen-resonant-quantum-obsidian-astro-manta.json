@@ -8,7 +8,11 @@
     "raymarching",
     "fluid-dynamics",
     "audio-reactive",
-    "organic-mechanics"
+    "organic-mechanics",
+    "mouse-driven",
+    "upgraded-rgba",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
   "tags": [
     "organic",

@@ -12,6 +12,9 @@
 //    and brightness pulses; mids morph separation and color cycling;
 //    treble adds high-frequency sparkle. Mouse positions the obstacle.
 // ═══════════════════════════════════════════════════════════════════
+//  Upgraded: 2026-09-27
+//  Ideas: wake deficit between the vortex rows; alternating core pulse at the shedding rate
+//  A packing: display RGBA (trail blend)
 //  zoom_params: x=flow_speed, y=vortex_separation, z=vortex_spacing, w=hue
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -135,6 +138,26 @@ fn vortex_field(pos: vec2<f32>, time: f32, U: f32,
     return vec3<f32>(psi, vel);
 }
 
+// Idea 2 — alternating core pulse. Top and bottom rows brighten out of phase.
+fn core_pulse(pos: vec2<f32>, time: f32, U: f32, h: f32, spacing: f32, obst: vec2<f32>) -> f32 {
+    var pulse = 0.0;
+    let domainW = f32(N_VTX) * spacing;
+    let phase = fract(U * time / max(domainW, 0.001));
+    let sigma = CORE_R * 6.0;
+    let sig2 = max(sigma * sigma, 1e-4);
+    for (var i = 0; i < N_VTX; i = i + 1) {
+        let fi = f32(i);
+        let xT = obst.x + (fi / f32(N_VTX) - phase) * domainW - domainW * 0.5;
+        let xB = obst.x + ((fi + 0.5) / f32(N_VTX) - phase) * domainW - domainW * 0.5;
+        let shed = sin(TAU * (phase + fi / f32(N_VTX)));
+        let dT = pos - vec2<f32>(xT, obst.y + h);
+        let dB = pos - vec2<f32>(xB, obst.y - h);
+        pulse += exp(-dot(dT, dT) / sig2) * (0.5 + 0.5 * shed);
+        pulse += exp(-dot(dB, dB) / sig2) * (0.5 - 0.5 * shed);
+    }
+    return pulse;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let pixel = vec2<i32>(gid.xy);
@@ -152,9 +175,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let prev    = textureLoad(dataTextureC, pixel, 0);
 
     // Envelope-smoothed bass for coherent musical pulses
-    let bass = bass_env(extraBuffer[0], rawBass);
+    let bass = bass_env(extraBuffer[133], rawBass);
     if (gid.x == 0u && gid.y == 0u) {
-        extraBuffer[0] = bass;
+        extraBuffer[133] = bass;
     }
 
     // UI parameters
@@ -197,6 +220,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Base streamline colour with speed-dependent saturation
     var col = streamline_color(psi * 0.05 + spd * 0.02, hueShift, spd);
     col *= lineGlow * obstMask;
+
+    // Idea 1 — wake deficit. A dark channel sits between the rows, downstream of the obstacle.
+    let downX = physPos.x - obst.x;
+    let acrossY = physPos.y - obst.y;
+    let wake = smoothstep(0.0, 0.2, downX)
+        * exp(-acrossY * acrossY / max(h * h * 6.0, 0.01))
+        * exp(-downX * 0.35);
+    col *= 1.0 - wake * 0.62;
+
+    let pulse = core_pulse(warpedPos, time, U, h, spacing, obst);
+    col += vec3<f32>(0.82, 0.90, 1.0) * clamp(pulse, 0.0, 1.2) * 0.5;
 
     // Speed halo around vortex cores, pulsed by envelope bass
     let speedHalo = clamp(spd * 0.12, 0.0, 1.0);

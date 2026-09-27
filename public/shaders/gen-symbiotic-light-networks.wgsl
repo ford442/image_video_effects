@@ -1,11 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Symbiotic Light Propagation Networks
+//  Symbiotic Light Networks
 //  Category: generative
+//  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-27
+//  Ideas: hub-thickened Physarum tubes; evanescent leakage halo; mycorrhizal colour exchange; luciferin afterglow (C)
+//  A packing: raw afterglow memory (rgb, linear pre-ACES) + display alpha; ACES on writeTexture only
 //  Description: Network of light-conducting organic structures growing,
 //  competing and supporting each other while transporting and transforming
 //  light. Audio influences color, intensity, and transmission rules.
 //  Mouse seeds or prunes the network.
-//  Complexity: High
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -62,11 +66,12 @@ fn smoothNoise(p: vec2<f32>) -> f32 {
 }
 
 // Physarum-like slime mold trace: network segment
+// returns (core, halo). halo = IDEA 2: evanescent leakage skirt around the tube.
 fn networkSegment(uv: vec2<f32>, nodeA: vec2<f32>, nodeB: vec2<f32>,
-                  width: f32, t: f32, bass: f32) -> f32 {
+                  width: f32, t: f32, bass: f32) -> vec2<f32> {
     let ab = nodeB - nodeA;
     let len = length(ab);
-    if (len < 0.001) { return 0.0; }
+    if (len < 0.001) { return vec2<f32>(0.0); }
     let dir = ab / len;
     let toUV = uv - nodeA;
     let proj = clamp(dot(toUV, dir), 0.0, len);
@@ -79,7 +84,11 @@ fn networkSegment(uv: vec2<f32>, nodeA: vec2<f32>, nodeB: vec2<f32>,
 
     // Segment intensity: tapered + pulsing
     let taper = sin(clamp(proj / len, 0.0, 1.0) * PI);
-    return smoothstep(width, 0.0, dist) * (0.5 + 0.5 * pulse) * taper;
+    let core = smoothstep(width, 0.0, dist) * (0.5 + 0.5 * pulse) * taper;
+    // IDEA 2: light leaks out of the guide as a Gaussian skirt, carrying the same pulse
+    let hw = width * 3.5;
+    let halo = exp(-(dist * dist) / (hw * hw)) * (0.5 + 0.5 * pulse) * taper;
+    return vec2<f32>(core, halo);
 }
 
 // Network node glow
@@ -105,6 +114,32 @@ fn networkCompetition(brightness1: f32, brightness2: f32, competition: f32) -> v
     return vec2<f32>(
         brightness1 * suppress1 * amplify,
         brightness2 * suppress2 * amplify
+    );
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Node lattice (unchanged expressions from HEAD, hoisted out of the O(n^2) loop)
+fn nodeSp1(fi: f32, aspect: f32, t: f32, bass: f32, mids: f32) -> vec2<f32> {
+    let seed = hash22(vec2<f32>(fi * 0.3 + 0.1, fi * 0.7));
+    return vec2<f32>(
+        seed.x * aspect + sin(t * 0.08 + fi * 1.3 + bass * 0.5) * 0.05 * aspect,
+        seed.y + cos(t * 0.06 + fi * 0.9 + mids * 0.3) * 0.05
+    );
+}
+
+fn nodeSp2(fi: f32, aspect: f32, t: f32, bass: f32, treble: f32) -> vec2<f32> {
+    let seed = hash22(vec2<f32>(fi * 0.5 + 5.3, fi * 0.8 + 2.1));
+    return vec2<f32>(
+        seed.x * aspect + cos(t * 0.09 + fi * 1.1 + treble * 0.4) * 0.06 * aspect,
+        seed.y + sin(t * 0.07 + fi * 0.8 + bass * 0.2) * 0.06
     );
 }
 
@@ -139,6 +174,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var network2 = 0.0;
     var nodeLight1 = 0.0;
     var nodeLight2 = 0.0;
+    var halo1 = 0.0;
+    var halo2 = 0.0;
+
+    // Node lattices + IDEA 1: stateless node degree (hubs), audio-free so hubs are stable
+    var pos1: array<vec2<f32>, 16>;
+    var pos2: array<vec2<f32>, 16>;
+    var deg1: array<f32, 16>;
+    var deg2: array<f32, 16>;
+    for (var i = 0; i < numNodes; i++) {
+        pos1[i] = nodeSp1(f32(i), aspect, t, bass, mids);
+        pos2[i] = nodeSp2(f32(i), aspect, t, bass, treble);
+    }
+    for (var i = 0; i < numNodes; i++) {
+        var d1 = 0.0;
+        var d2 = 0.0;
+        for (var k = 0; k < numNodes; k++) {
+            if (k == i) { continue; }
+            if (length(pos1[i] - pos1[k]) < 0.25 * aspect) { d1 += 1.0; }
+            if (length(pos2[i] - pos2[k]) < 0.28 * aspect) { d2 += 1.0; }
+        }
+        deg1[i] = d1;
+        deg2[i] = d2;
+    }
 
     // Species 1: cool bioluminescent blue-green
     for (var i = 0; i < numNodes; i++) {
@@ -147,34 +205,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let birthTime = seed1.x * 3.0;
         let age = clamp(t * 0.1 - birthTime, 0.0, 1.0) * (1.0 - growthAmt * 0.3);
 
-        // Node positions: slowly drift with bass
-        let nodePos1 = vec2<f32>(
-            seed1.x * aspect + sin(t * 0.08 + fi * 1.3 + bass * 0.5) * 0.05 * aspect,
-            seed1.y + cos(t * 0.06 + fi * 0.9 + mids * 0.3) * 0.05
-        );
-
         // Node seeded near mouse
-        let nodePos1M = mix(nodePos1, mousePos, mouseSeed * 0.3);
+        let nodePos1M = mix(pos1[i], mousePos, mouseSeed * 0.3);
+        let hubI = smoothstep(1.0, 6.0, deg1[i]);
 
-        // Node glow
-        let ng = nodeGlow(uvA, nodePos1M, 0.015 + mids * 0.01, t, bass, treble) * age;
+        // Node glow (IDEA 1: hubs glow wider)
+        let ng = nodeGlow(uvA, nodePos1M, (0.015 + mids * 0.01) * (1.0 + 0.9 * hubI), t, bass, treble) * age;
         nodeLight1 += ng;
 
         // Connect to neighbors: filamentary light transport
         for (var j = i + 1; j < numNodes; j++) {
-            let fj = f32(j);
-            let seed2 = hash22(vec2<f32>(fj * 0.3 + 0.1, fj * 0.7));
-            let nodePos2 = vec2<f32>(
-                seed2.x * aspect + sin(t * 0.08 + fj * 1.3 + bass * 0.5) * 0.05 * aspect,
-                seed2.y + cos(t * 0.06 + fj * 0.9 + mids * 0.3) * 0.05
-            );
+            let nodePos2 = pos1[j];
             let dist12 = length(nodePos1M - nodePos2);
             // Only connect nearby nodes
             let maxDist = (0.25 + mids * 0.1) * aspect;
             if (dist12 < maxDist) {
-                let segWidth = 0.004 + treble * 0.002;
+                // IDEA 1: flux thickens the tube between two hubs (up to ~2.4x)
+                let hubJ = smoothstep(1.0, 6.0, deg1[j]);
+                let segWidth = (0.004 + treble * 0.002) * (1.0 + 0.7 * (hubI + hubJ));
                 let strength = (1.0 - dist12 / maxDist) * age;
-                network1 += networkSegment(uvA, nodePos1M, nodePos2, segWidth, t, bass) * strength;
+                let seg = networkSegment(uvA, nodePos1M, nodePos2, segWidth, t, bass);
+                network1 += seg.x * strength;
+                halo1 += seg.y * strength;
             }
         }
     }
@@ -186,27 +238,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let birthTime = seed1.x * 2.0 + 1.0;
         let age = clamp(t * 0.1 - birthTime, 0.0, 1.0) * (1.0 - growthAmt * 0.2);
 
-        let nodePos1 = vec2<f32>(
-            seed1.x * aspect + cos(t * 0.09 + fi * 1.1 + treble * 0.4) * 0.06 * aspect,
-            seed1.y + sin(t * 0.07 + fi * 0.8 + bass * 0.2) * 0.06
-        );
+        let nodePos1 = pos2[i];
+        let hubI = smoothstep(1.0, 6.0, deg2[i]);
 
-        let ng = nodeGlow(uvA, nodePos1, 0.012 + treble * 0.008, t, bass, treble) * age;
+        let ng = nodeGlow(uvA, nodePos1, (0.012 + treble * 0.008) * (1.0 + 0.9 * hubI), t, bass, treble) * age;
         nodeLight2 += ng;
 
         for (var j = i + 1; j < numNodes; j++) {
-            let fj = f32(j);
-            let seed2 = hash22(vec2<f32>(fj * 0.5 + 5.3, fj * 0.8 + 2.1));
-            let nodePos2 = vec2<f32>(
-                seed2.x * aspect + cos(t * 0.09 + fj * 1.1 + treble * 0.4) * 0.06 * aspect,
-                seed2.y + sin(t * 0.07 + fj * 0.8 + bass * 0.2) * 0.06
-            );
+            let nodePos2 = pos2[j];
             let dist12 = length(nodePos1 - nodePos2);
             let maxDist = (0.28 + treble * 0.1) * aspect;
             if (dist12 < maxDist) {
-                let segWidth = 0.003 + bass * 0.002;
+                let hubJ = smoothstep(1.0, 6.0, deg2[j]);
+                let segWidth = (0.003 + bass * 0.002) * (1.0 + 0.7 * (hubI + hubJ));
                 let strength = (1.0 - dist12 / maxDist) * age;
-                network2 += networkSegment(uvA, nodePos1, nodePos2, segWidth, t, treble) * strength;
+                let seg = networkSegment(uvA, nodePos1, nodePos2, segWidth, t, treble);
+                network2 += seg.x * strength;
+                halo2 += seg.y * strength;
             }
         }
     }
@@ -221,23 +269,39 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bgTexture = smoothNoise(uvA * 15.0 + vec2<f32>(t * 0.01, 0.0)) * 0.03;
     var color = vec3<f32>(0.01 + bgTexture, 0.02 + bgTexture, 0.04 + bgTexture * 1.5);
 
-    // Species 1: bioluminescent cyan-green filaments
+    // Species colours
     let col1 = vec3<f32>(0.05 + bass * 0.1, 0.8 + mids * 0.2, 0.5 + treble * 0.3);
-    color += col1 * n1 * lightIntensity * 0.8;
-    color += col1 * 1.2 * nodeLight1 * lightIntensity;
-
-    // Species 2: warm bioluminescent amber-pink filaments
     let col2 = vec3<f32>(0.9 + treble * 0.1, 0.4 + bass * 0.2, 0.2 + mids * 0.3);
-    color += col2 * n2 * lightIntensity * 0.7;
-    color += col2 * 1.0 * nodeLight2 * lightIntensity;
+
+    // IDEA 3: mycorrhizal exchange - filaments take up the partner's hue where the
+    // partner's leakage halo overlaps, in proportion to symbiosis (1 - competition)
+    let sym = 1.0 - competition;
+    let x1 = clamp(halo2 * 1.5, 0.0, 1.0) * sym * 0.55;
+    let x2 = clamp(halo1 * 1.5, 0.0, 1.0) * sym * 0.55;
+    let fil1 = mix(col1, col2, x1);
+    let fil2 = mix(col2, col1, x2);
+
+    // Species 1: bioluminescent cyan-green filaments (+ IDEA 2 leakage skirt)
+    color += fil1 * n1 * lightIntensity * 0.8;
+    color += fil1 * min(halo1, 1.5) * 0.10 * lightIntensity;
+
+    // Species 2: warm bioluminescent amber-pink filaments (+ IDEA 2 leakage skirt)
+    color += fil2 * n2 * lightIntensity * 0.7;
+    color += fil2 * min(halo2, 1.5) * 0.10 * lightIntensity;
 
     // Intersection zones: color mixing creates complex light transport
     let intersection = n1 * n2;
     let mixedLight = mix(col1, col2, 0.5) + vec3<f32>(0.3, 0.2, 0.5) * mids;
     color += mixedLight * intersection * lightIntensity * 2.0;
 
-    // Mouse influence: bright seeding pulse
-    color += mix(col1, col2, 0.5) * mouseSeed * (0.4 + bass * 0.3) * lightIntensity;
+    // IDEA 4: luciferin afterglow. Node flashes + mouse seeding pulse persist in C.
+    // Instantaneous value is exactly HEAD's node/mouse terms, so static look is unchanged.
+    let seedLight = col1 * 1.2 * nodeLight1 * lightIntensity
+                  + col2 * 1.0 * nodeLight2 * lightIntensity
+                  + mix(col1, col2, 0.5) * mouseSeed * (0.4 + bass * 0.3) * lightIntensity;
+    let prevMem = max(textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).rgb, vec3<f32>(0.0));
+    let memory = max(seedLight, prevMem * 0.95);
+    color += memory;
 
     // Ambient bioluminescence flicker
     let flicker = 0.5 + 0.5 * sin(t * 7.0 + uvA.x * 3.0 + bass * PI);
@@ -247,6 +311,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vig = 1.0 - smoothstep(0.25, 0.75, length(uv - 0.5) * 1.4);
     color *= vig;
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(clamp(color, vec3<f32>(0.0), vec3<f32>(1.0)), 1.0));
+    // Semantic alpha: coverage of light over the void (dark void translucent, lit filaments opaque)
+    let lum = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(0.4 + 0.6 * clamp(lum * 2.0, 0.0, 1.0), 0.0, 1.0);
+
+    textureStore(writeTexture, global_id.xy, vec4<f32>(acesToneMap(color), alpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(memory, alpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0));
 }

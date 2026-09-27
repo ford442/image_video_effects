@@ -54,5 +54,7 @@
   "updated": true,
   "id": "gen-xeno-mycelial-resonance-web",
   "url": "shaders/gen-xeno-mycelial-resonance-web.wgsl",
-  "features": []
+  "features": [
+    "upgraded-rgba"
+  ]
 }

@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-14
-//  Ideas: Nelumbo seed-pod receptacle with carpel pits on a Vogel golden-angle spiral ringed by stamen filaments; lotus-effect water beads rolling along petal midlines and shed at the tips, shaken loose by click pond-ripples
+//  Upgraded: 2026-09-27
+//  Ideas: Nelumbo seed-pod receptacle with carpel pits on a Vogel golden-angle spiral ringed by stamen filaments; lotus-effect water beads rolling along petal midlines and shed at the tips, shaken loose by click pond-ripples; nyctinasty (petals fold on a slow circadian of Speed, bass and held ease them open); peltate lily pad with radiating veins under the blossom
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -148,10 +148,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let r = length(p);
   let theta = atan2(p.y, p.x);
 
-  // Layered lotus: multiple rings of petals
-  var col = vec3<f32>(0.0);
+  // Idea 1 — nyctinasty: petals fold on a slow circadian of Speed;
+  // bloom slider remains max open; bass + held ease them open.
+  let nyct = 0.5 + 0.5 * sin(t * speed * 0.22);
+  var openAmt = mix(0.36, 1.0, nyct);
+  openAmt = mix(openAmt, 1.0, bass * 0.38);
+  openAmt = mix(openAmt, mix(openAmt, 1.0, 0.6), u.zoom_config.w);
+
+  // Idea 2 — peltate lily pad under the blossom (stem at the disc centre).
+  let padR = 0.64 + 0.08 * u.zoom_params.y;
+  let padBody = smoothstep(padR, padR - 0.04, r);
+  let padVein = pow(abs(cos(theta * 10.0)), 18.0) * padBody * smoothstep(padR * 0.92, 0.07, r);
+  let peltate = exp(-r * r / 0.0045);
+  var col = vec3<f32>(0.07, 0.38, 0.18) * padBody * 0.85;
+  col += vec3<f32>(0.12, 0.62, 0.30) * padVein * 0.75;
+  col += vec3<f32>(0.16, 0.32, 0.12) * peltate * 0.45;
   var totalGlow = 0.0;
-  var coverage = 0.0;
+  var coverage = padBody * 0.62;
   var beadDepth = 0.0;
 
   let nLayers = 3u;
@@ -165,7 +178,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let sector = floor(layerT / petalAngle + 0.5);
     let localTheta = layerT - sector * petalAngle;
     let phase = sector * 0.1;
-    let bloom = bloomAmt * layerScale * (0.8 + 0.2 * sin(t * 0.5 + lf));
+    let bloom = bloomAmt * layerScale * (0.8 + 0.2 * sin(t * 0.5 + lf)) * openAmt;
     let sdf = petalSdf(layerR, localTheta, phase, bloom);
     let petalMask = smoothstep(0.02, -0.02, sdf);
     let hue = fract(lf * 0.33 + t * 0.05 + bass * 0.15 + sector * 0.07);

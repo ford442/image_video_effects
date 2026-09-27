@@ -17,10 +17,55 @@
     "symmetry-fold",
     "depth-aware"
   ],
-  "description": "A colossal biomechanical titan raymarched from an IFS-folded cyber-bismuth lattice smooth-unioned with nested hopper-crystal octahedra, drifting through a kaleidoscopic symmetry-folded quantum-particle storm. Nebula Density drives a real volumetric accumulation along the march plus a hex-star field, Audio Reactivity wobbles the folds and fires auroral emissive from live bass/mids/treble and engine FFT bins, and Iridiscent Shift phases a thin-film palette with Fresnel hue flip. Adaptive fold/step LOD, soft shadows, mouse-orbit camera with click-dolly, real depth and semantic alpha.",
+  "description": "A colossal biomechanical titan raymarched from an IFS-folded cyber-bismuth lattice smooth-unioned with nested hopper-crystal octahedra, drifting through a kaleidoscopic symmetry-folded quantum-particle storm. Nebula Density drives a real volumetric accumulation along the march plus a hex-star field, Audio Reactivity wobbles the folds and fires auroral emissive from live bass/mids/treble, and Iridiscent Shift phases a thin-film palette with Fresnel hue flip and hopper terrace stairs. Adaptive fold/step LOD, soft shadows, mouse-orbit camera with click-dolly, real depth and semantic alpha.",
   "workgroup_size": [16, 16, 1],
   "updated": true,
   "supportsDepth": true,
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba",
+    "aces-tone-map",
+    "semantic-alpha"
+  ],
+  "params": [
+    {
+      "id": "fold_scale",
+      "name": "Fractal Fold Scale",
+      "default": 1.0,
+      "min": 0.1,
+      "max": 3.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "nebula_density",
+      "name": "Nebula Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "audio_reactivity",
+      "name": "Audio Reactivity",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "iridiscent_shift",
+      "name": "Iridiscent Shift",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
   "updatedParams": [
     {
       "index": 0,

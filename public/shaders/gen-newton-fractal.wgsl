@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-09-14
-//  Ideas: convergence-order sheen (estimated order q from successive Newton steps: quadratic glints, linear/relaxed zones shade violet with step isochrones); damped-Newton relaxation waves from clicks / held mouse reshaping the basins
+//  Upgraded: 2026-09-27
+//  Ideas: convergence-order sheen (estimated order q from successive Newton steps: quadratic glints, linear/relaxed zones shade violet with step isochrones); damped-Newton relaxation waves from clicks / held mouse reshaping the basins; Newton-flow striations (atan2 of last step inside basins); wandering-orbit dust (high orbitSecond despite convergence)
 //  A packing: ACES display RGBA in A; A.a = floor(convergenceAlpha*255)/256 + reactionState*(0.999/256) (reaction-diffusion state rides in the sub-1/256 fraction of alpha)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -291,6 +291,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let isochrone = pow(1.0 - abs(fract(smoothIter * 0.5) - 0.5) * 2.0, 10.0);
     color = color + vec3<f32>(0.45, 0.25, 0.95) * linearity * (0.22 + isochrone * 0.6) * (0.6 + p3 * 0.8) * convergence;
     color = color + vec3<f32>(1.0, 0.9, 0.7) * quadratic * isochrone * 0.18 * (1.0 + treble * 0.6);
+
+    // Idea 1 — Newton-flow striations: argument of the last Newton step
+    // paints the vector field inside each basin.
+    let flowAng = atan2(lastDz.y, lastDz.x);
+    let striations = pow(abs(sin(flowAng * 8.0)), 12.0) * convergence;
+    color = color + vec3<f32>(0.95, 0.82, 0.48) * striations * 0.16 * (0.45 + mids * 0.55);
+
+    // Idea 2 — wandering-orbit dust: high second trap despite convergence
+    // (Julia-adjacent itineraries that only graze one trap).
+    let wander = smoothstep(0.04, 0.20, orbitSecond) * convergence;
+    color = color + vec3<f32>(0.62, 0.32, 1.0) * wander * 0.22 * (0.5 + treble * 0.55);
 
     // Reaction-diffusion accent on basin boundaries
     let idims = vec2<i32>(res);

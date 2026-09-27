@@ -1,6 +1,9 @@
 // ----------------------------------------------------------------
 // Quantum Liquid-Gold Cymatic-Vortex
 // Category: generative
+// Upgraded: 2026-09-27
+// Ideas: liquid gold droplet ejections from cymatic peaks; subsurface heat incandescence at singularity core
+// A packing: ACES display RGBA
 // ----------------------------------------------------------------
 // --- COPY PASTE THIS HEADER ---
 @group(0) @binding(0) var u_sampler: sampler;
@@ -29,6 +32,11 @@ const MAX_STEPS: i32 = 100;
 const MAX_DIST: f32 = 15.0;
 const SURF_DIST: f32 = 0.005;
 const TAU: f32 = 6.28318530718;
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 // --- UTILS ---
 fn rot(a: f32) -> mat2x2<f32> {
@@ -152,13 +160,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var pt = uv * 2.0 - 1.0;
     pt.x *= res.x / res.y;
 
-    // Audio Reactivity
-    var bass = 0.0;
-    var treble = 0.0;
-    if (arrayLength(&extraBuffer) > 133u) {
-        bass = extraBuffer[133] * 0.5; // Smoothed bass
-        treble = extraBuffer[136] * 0.5;
-    }
+    // Audio Reactivity (Floor)
+    let bass = plasmaBuffer[0].x;
+    let treble = plasmaBuffer[0].z;
 
     let cymatic = u.zoom_params.z; // Cymatic Intensity
     let goldPurity = u.zoom_params.w;
@@ -182,6 +186,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     var col = vec3<f32>(0.05, 0.02, 0.01); // Background deep space
+    var alpha = 0.0;
 
     if (dO < MAX_DIST) {
         let n = getNormal(p, bass, cymatic);
@@ -214,17 +219,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         col += envReflection * 0.5 * goldPurity;
         col += vec3<f32>(spec) * pureGold;
 
-        // Add emission for cymatic peaks
+        // Idea 1: Liquid gold droplet ejections popping up from cymatic peaks
         let cymaticPeak = smoothstep(0.8, 1.0, sin(length(p.xz) * (10.0 + bass*20.0) - u.config.x * 5.0));
-        col += pureGold * cymaticPeak * cymatic * bass * 2.0;
+        let dropletEjection = pow(cymaticPeak, 4.0) * bass;
+        col += pureGold * dropletEjection * cymatic * 3.0;
+
+        // Idea 2: Subsurface heat incandescence at the singularity core based on audio
+        let coreDist = length(p - vec3<f32>(0.0, -1.0, 0.0));
+        let coreHeat = exp(-coreDist * 3.0) * bass * 2.0;
+        col += vec3<f32>(1.0, 0.4, 0.1) * coreHeat;
 
         // Fog
         col = mix(col, vec3<f32>(0.05, 0.02, 0.01), 1.0 - exp(-0.02 * dO * dO));
+        alpha = clamp(1.0 - exp(-0.02 * dO * dO) + 0.5, 0.0, 1.0);
     }
 
-    // Tonemapping
-    col = col / (1.0 + col);
-    col = pow(col, vec3<f32>(0.4545)); // Gamma correction
+    // Temporal smoothing
+    let prev = textureLoad(dataTextureC, coord, 0);
+    col = mix(max(col, vec3<f32>(0.0)), prev.rgb * 0.92, 0.04 + bass * 0.02);
+    alpha = mix(alpha, prev.a, 0.5);
 
-    textureStore(writeTexture, coord, vec4<f32>(col, 1.0));
+    // ACES Tonemapping and Semantic Alpha
+    let displayColor = acesToneMap(col * 1.2);
+    let finalAlpha = clamp(alpha * 1.2, 0.1, 0.95);
+    let depth = select(0.0, clamp(1.0 - dO / 15.0, 0.0, 1.0), dO < 15.0);
+
+    textureStore(writeTexture, coord, vec4<f32>(displayColor, finalAlpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, vec4<f32>(col, alpha));
 }

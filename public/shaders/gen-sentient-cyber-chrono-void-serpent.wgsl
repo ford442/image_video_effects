@@ -1,7 +1,11 @@
 // ----------------------------------------------------------------
 // Sentient Cyber-Chrono Void-Serpent
 // Category: generative
-// Upgraded 2026-08-03 (batch b31, algorithmist):
+// Features: audio-reactive, mouse-driven, upgraded-rgba
+// Upgraded: 2026-09-27
+// Ideas: chrono echoes (translucent phase-lagged spine afterimages); scale-glint facets (per-hex tilted specular); rift isochrones (Julia trap contour strata)
+// A packing: ACES display RGBA (post-tonemap col, luma alpha); no C read, no state
+// Earlier: 2026-08-03 (batch b31, algorithmist):
 //   - Bounds guard from u.config.zw; mouse handled as 0-1 (y=0 top), no flip/re-normalization
 //   - Full 3D SDF library; torus chrono-rings + octahedral chrono-glass shards (matID 3/4)
 //   - 2D geometric layer: hex-tessellated scale armor + Julia orbit-trap temporal rift backdrop
@@ -195,6 +199,28 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
     return res;
 }
 
+// [Idea 1] Chrono echoes: distance to the hollow skin of the serpent's spine as it was
+// `lag` phase-units ago (same undulation as map(), same mouse pull). Stateless.
+fn echoSkin(pos: vec3<f32>, phase: f32, r: f32) -> f32 {
+    var e = pos;
+    e.x = e.x + sin(e.z * 0.5 + phase) * 1.5;
+    e.y = e.y + cos(e.z * 0.4 + phase * 1.2) * 1.5;
+    return abs(length(e.xy) - r);
+}
+fn echoField(pos: vec3<f32>) -> vec2<f32> {
+    let t = u.config.x * u.zoom_params.x * 0.5;
+    let mUv = u.zoom_config.yz;
+    let mouse_pos = vec3<f32>((mUv.x - 0.5) * 6.0, (0.5 - mUv.y) * 6.0, 0.0);
+    let pull = 1.0 - smoothstep(0.0, 2.0, length(pos - mouse_pos));
+    let p = mix(pos, mouse_pos, pull * 0.5);
+    let bass = plasmaBuffer[0].x * u.zoom_params.y;
+    let r = (0.4 + bass * 0.3) * 0.95;
+    return vec2<f32>(echoSkin(p, t - 0.9, r), echoSkin(p, t - 1.8, r));
+}
+fn echoDensity(d: f32) -> f32 {
+    return 0.5 * exp(-d * 12.0) + 0.15 * exp(-d * 3.0);
+}
+
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     let e = vec2<f32>(0.001, 0.0);
     return normalize(vec3<f32>(
@@ -238,8 +264,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var hit_id = 0.0;
     var glow = 0.0;
     var hit = false;
+    var echoA = 0.0;
+    var echoB = 0.0;
 
-    let maxSteps = 80 + min(i32(u.zoom_params.w * 5.0), 40);
+    let maxSteps = 96 + min(i32(u.zoom_params.w * 5.0), 40);
     let maxDist = 20.0;
 
     for (var i = 0; i < maxSteps; i = i + 1) {
@@ -247,7 +275,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let dS = map(p);
         if (dS.x < 0.001) { hit_id = dS.y; hit = true; break; }
         if (dO > maxDist) { break; }
-        dO += dS.x;
+        // [Idea 1] step-limit near echo skins and integrate their soft rim glow along the ray
+        let ef = echoField(p);
+        let stepLen = min(dS.x, max(min(ef.x, ef.y) * 0.8, 0.06));
+        echoA += stepLen * echoDensity(ef.x);
+        echoB += stepLen * echoDensity(ef.y) * 0.7;
+        dO += stepLen;
         if (dS.y == 1.0 || dS.y == 3.0) {
             glow += 0.01 / (0.01 + abs(dS.x)) * (0.5 + bass * 0.5);
         }
@@ -275,6 +308,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let hexEdge = smoothstep(0.4, 0.48, hexDist(hc.xy));
             let hexPulse = 0.5 + 0.5 * sin(t * 4.0 + dot(hc.zw, vec2<f32>(2.1, 1.3)));
             col += spine_col * hexEdge * hexPulse * (0.3 + bass * 0.4);
+            // [Idea 2] scale-glint facets: each hex cell is a tilted scale with its own thin-film glint
+            let cellH = hash21(hc.zw);
+            let tilt = (vec3<f32>(cellH, hash21(hc.zw + vec2<f32>(17.3, 5.1)), hash21(hc.zw + vec2<f32>(3.1, 29.7))) - vec3<f32>(0.5)) * 0.7;
+            let ns = normalize(n + tilt * (1.0 - hexEdge));
+            let glint = pow(max(dot(reflect(rd, ns), l), 0.0), 24.0);
+            let sweep = 0.35 + 0.65 * smoothstep(0.55, 1.0, 0.5 + 0.5 * sin(p.z * 1.1 - t * 1.6 + cellH * 1.2));
+            let film = 0.5 + 0.5 * cos(TAU * (vec3<f32>(0.0, 0.33, 0.67) + cellH * 0.6 + fres * 0.8 + t * 0.05));
+            col += film * glint * sweep * 1.6;
         } else if (hit_id == 2.0) {
             col = vec3<f32>(0.1, 0.02, 0.2) * (diff + amb);
         } else if (hit_id == 3.0) {
@@ -299,10 +340,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                                vec3<f32>(1.0, 1.0, 1.0),
                                vec3<f32>(0.0, 0.33, 0.67));
         col += rift_col * trapGlow * u.zoom_params.z;
+        // [Idea 3] rift isochrones: time-strata contour lines of the orbit trap, flowing outward
+        let isoD = abs(fract(trap * 5.0 - t * 0.15) - 0.5);
+        let isoLine = 1.0 - smoothstep(0.0, 0.08, isoD);
+        let isoWeight = 1.0 - smoothstep(0.0, 1.2, trap);
+        let iso_col = palette(trap * 3.0 - t * 0.2,
+                              vec3<f32>(0.3, 0.2, 0.4), vec3<f32>(0.3, 0.3, 0.3),
+                              vec3<f32>(1.0, 1.0, 1.0), vec3<f32>(0.5, 0.2, 0.0));
+        col += iso_col * isoLine * isoWeight * 0.35 * u.zoom_params.z * (0.6 + bass * 0.4);
     }
 
     let fog = 1.0 - exp(-0.05 * dO);
     col = mix(col, vec3<f32>(0.02, 0.0, 0.05) + vec3<f32>(0.1, 0.05, 0.2) * glow * 0.2 * u.zoom_params.z, fog);
+
+    // [Idea 1] echo rim glow (added after fog so the afterimages stay luminous), scaled by Plasma Intensity
+    col += (vec3<f32>(0.1, 0.8, 1.0) * echoA + vec3<f32>(1.0, 0.35, 0.9) * echoB) * 3.0 * u.zoom_params.y;
 
     // ACES-ish tone map
     let a = 2.51;

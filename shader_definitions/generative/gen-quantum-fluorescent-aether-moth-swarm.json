@@ -62,6 +62,7 @@
     "temporal-feedback",
     "hdr-output",
     "semantic-alpha",
-    "depth-output"
+    "depth-output",
+    "upgraded-rgba"
   ]
 }

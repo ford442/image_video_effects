@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-15
-//  Ideas: known Riemann-zero rails; |ζ|=1 iso-contours
+//  Upgraded: 2026-09-27
+//  Ideas: known Riemann-zero rails; |ζ|=1 iso-contours; critical-line sheen; argument-winding ticks
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -141,13 +141,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let iso = abs(fract(log(1.0 + z_mag) * 2.4) - 0.5);
     let isoContour = 1.0 - smoothstep(0.0, 0.06, iso);
     
-    // Chromatic zeros: near zeros shift color toward cyan/purple
-    // Eight horizontal regions each listen to one FFT bin (extraBuffer[5..12]).
+    // Chromatic zeros: near zeros shift color toward cyan/purple.
+    // Eight horizontal regions each listen to one plasmaBuffer bin (not extraBuffer).
     let region = min(u32(clamp(landscapeUV.x, 0.0, 0.999) * 8.0), 7u);
-    var spectralVoice = 0.0;
-    if (arrayLength(&extraBuffer) > (5u + region)) {
-        spectralVoice = extraBuffer[5u + region];
-    }
+    let spectralVoice = plasmaBuffer[1u + region].x;
+
+    // Idea 3 — critical-line sheen. A slight real-part tilt across height
+    // crosses σ=1/2 as a band, separate from the ordinate rails.
+    let sigmaY = sigma + (landscapeUV.y - 0.5) * 0.35;
+    let critSheen = exp(-(sigmaY - 0.5) * (sigmaY - 0.5) * 220.0);
+
+    // Idea 4 — argument-winding ticks where arg(ζ) steps.
+    let argIso = abs(fract(z_arg * 6.0) - 0.5);
+    let argTick = 1.0 - smoothstep(0.0, 0.035, argIso);
     let hue = fract(z_arg + time * 0.02 + mids * 0.1 + landscapeUV.x * 0.2 + spectralVoice * 0.08);
     let zeroHue = mix(hue, 0.5 + treble * 0.2, zeroProximity * 0.5);
     let sat = clamp(mix(0.5, 1.0, ridge + bass * 0.3 + spectralVoice * 0.08), 0.0, 1.0);
@@ -155,7 +161,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     let rgb = hue2rgb(zeroHue) * sat + vec3<f32>(1.0 - sat) * val;
     let rgbRails = rgb + vec3<f32>(0.95, 0.82, 0.45) * zeroRail * 0.85
-                 + vec3<f32>(0.35, 0.75, 1.0) * isoContour * 0.35 * (0.4 + treble * 0.4);
+                 + vec3<f32>(0.35, 0.75, 1.0) * isoContour * 0.35 * (0.4 + treble * 0.4)
+                 + vec3<f32>(0.82, 0.78, 1.0) * critSheen * 0.55
+                 + vec3<f32>(1.0, 0.95, 0.85) * argTick * 0.28 * (0.5 + mids * 0.4);
     
     // Temporal smoothing: previous frame averages for landscape stability
     let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).rgb;

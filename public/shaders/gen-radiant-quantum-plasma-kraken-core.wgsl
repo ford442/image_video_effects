@@ -2,8 +2,8 @@
 // Radiant Quantum-Plasma Kraken-Core
 // Category: generative
 // Features: mouse-driven, audio-reactive, upgraded-rgba
-// Upgraded: 2026-09-15
-// Ideas: paired sucker-current rows; core-to-arm peristaltic discharge
+// Upgraded: 2026-09-27
+// Ideas: paired sucker-current rows; core-to-arm peristaltic discharge; siphon jet; ink wake
 // A packing: ACES display RGBA
 // ----------------------------------------------------------------
 
@@ -293,6 +293,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let suckers = (suckA + suckB) * underside * (1.0 - is_light) * (0.55 + treble);
         mat_col += vec3<f32>(0.2, 0.95, 1.0) * suckers;
         mat_col += vec3<f32>(1.0, 0.45, 0.85) * max(g_peri, 0.0) * (1.0 - is_light) * (0.35 + mids);
+        // Siphon jet: short discharge from the core along the nearest arm when bass rises.
+        let jet = exp(-pow((g_arm_tpos - 0.22) / 0.07, 2.0)) * clamp(bass, 0.0, 1.5) * (1.0 - is_light);
+        mat_col += vec3<f32>(1.0, 0.75, 0.95) * jet * (0.35 + plasma_glow * 0.08);
 
         col = mat_col * (diff1 * 0.8 + diff2 * 0.4 + 0.2) + fresnel * vec3<f32>(0.8, 0.9, 1.0);
         col += vec3<f32>(0.12) * clamp(-hitDist, 0.0, 1.0);
@@ -305,12 +308,21 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let glow_col = vec3<f32>(1.0, 0.3, 0.9);
     col = col + glow_col * acc * 0.02;
 
+    let coord = vec2<i32>(id.xy);
+    // Ink wake: previous display darkened along the nearest arm tangent. Core Heat sets the stain.
+    let armDir = normalize(vec2<f32>(g_arm_local.z, g_arm_local.y) + vec2<f32>(0.001, 0.0));
+    let inkReach = 3.0 + u.zoom_params.z * 4.0;
+    let inkPx = vec2<i32>(i32(armDir.x * inkReach), i32(armDir.y * inkReach));
+    let maxPix = vec2<i32>(i32(res.x) - 1, i32(res.y) - 1);
+    let inkC = textureLoad(dataTextureC, clamp(coord + inkPx, vec2<i32>(0), maxPix), 0).rgb;
+    let stain = select(0.0, (1.0 - is_light) * clamp(u.zoom_params.z / 3.0, 0.0, 1.0) * (0.12 + bass * 0.2), hit);
+    col = mix(col, col * 0.45 + inkC * 0.2, clamp(stain, 0.0, 0.65));
+
     col = mix(col, bg_color, 1.0 - exp(-0.02 * d * d));
 
     let alpha = clamp(select(0.0, 0.7, hit) + clamp(acc, 0.0, 2.0) * 0.12, 0.0, 1.0);
     let out = vec4<f32>(acesToneMap(col), alpha);
     let depth = select(0.0, clamp(1.0 - d / 30.0, 0.0, 1.0), hit);
-    let coord = vec2<i32>(id.xy);
     textureStore(writeTexture, coord, out);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, coord, out);

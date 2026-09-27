@@ -64,6 +64,9 @@
     "sprung-mouse-camera",
     "click-cavitation-shells",
     "temporal-feedback",
-    "depth-output"
+    "depth-output",
+    "upgraded-rgba",
+    "audio-reactive",
+    "mouse-driven"
   ]
 }

@@ -1,11 +1,14 @@
-// ----------------------------------------------------------------
-// Sentient Ferro-Silicate Swarm
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Sentient Ferro-Silicate Swarm
+//  Category: generative
 //  Features: procedural, audio-reactive, mouse-driven, temporal, chromatic,
 //            particle-swarm, SDF-attraction, liquid-chrome, iridescence,
 //            upgraded-rgba
-// ----------------------------------------------------------------
+//  Complexity: High
+//  Upgraded: 2026-09-27
+//  Ideas: world-scale silicate assembly breath; quartz facet crystallization of locked beads; Si-O bond struts between locked neighbours; curl-advected wake in the temporal smear
+//  A packing: ACES display RGBA (alpha = swarm occupancy); C read back as display RGB
+// ═══════════════════════════════════════════════════════════════════
 
 struct Uniforms {
   config      : vec4<f32>,
@@ -131,6 +134,34 @@ fn brutalistSDF(p: vec3<f32>, time: f32) -> f32 {
   return smin(structure, frac, 0.5);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// ── Idea 1: world-scale silicate assembly ─────────────────────────
+// The brutalist SDF is sampled at the cell's WORLD centre (slowly rotating,
+// sliding slice) so the swarm as a whole reads the building's silhouette.
+// `grow` breathes the iso-level: assemble (core -> full block) / dissolve.
+fn cellLockRaw(cid: vec2<f32>, gridScale: f32, time: f32, grow: f32) -> f32 {
+  let wc = (cid + 0.5) * gridScale * 3.0;
+  let a = time * 0.12;
+  let wp = vec3<f32>(wc.x * cos(a), wc.y, wc.x * sin(a) + 0.3 * sin(time * 0.07));
+  let d = brutalistSDF(wp, time);
+  return smoothstep(0.06, -0.06, d - grow);
+}
+
+// Same per-cell jitter HEAD applies to the particle (rnd / hash2(cellId + 1)).
+fn cellOffset(cid: vec2<f32>, time: f32) -> vec2<f32> {
+  return vec2<f32>((hash2(cid + time * 0.01) - 0.5) * 0.3, (hash2(cid + 1.0) - 0.5) * 0.3);
+}
+
+fn sdSegment(q: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
+  let pa = q - a; let ba = b - a;
+  let h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-5), 0.0, 1.0);
+  return length(pa - ba * h);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let res = vec2<f32>(u.config.z, u.config.w);
@@ -148,16 +179,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let shatterForce = u.zoom_params.z;
   let iridescence = u.zoom_params.w;
 
-  // ═══ CHUNK: bass_env smoothing ═══
-  let prevBass = extraBuffer[0];
-  let bassSmooth = bass_env(prevBass, bass, 0.08, 0.02);
-  if (global_id.x == 0u && global_id.y == 0u) {
-    extraBuffer[0] = bassSmooth;
-  }
-
-  // Pseudo-random particle seed based on pixel position
-  let seed = hash2(fragCoord * 0.01 + time * 0.1);
-  let particleID = f32(global_id.x + global_id.y * 1000u);
+  // Bass envelope: HEAD read+wrote engine-reserved extraBuffer[0] from thread
+  // (0,0) (illegal write + race, CPU overwrites it). Stateless now.
+  let bassSmooth = clamp(bass, 0.0, 2.0);
 
   // Particle position (simulated via domain repetition)
   let gridScale = 0.15;
@@ -169,16 +193,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let rnd = hash2(cellId + time * 0.01);
   let rnd3 = hash3(vec3<f32>(cellId, time * 0.05));
 
-  // Particle position in cell
+  // ── Idea 1: assemble / dissolve breath + lattice lock ──
+  // Shatter Force sets how deep the dissolve phase eats the building; bass
+  // (x Shatter Force) still blows locked cells loose.
+  let assemble = smoothstep(-0.6, 0.6, sin(time * 0.21));
+  let grow = mix(-0.30 - 0.25 * shatterForce, 0.12, assemble);
+  let unlockAudio = 1.0 - clamp(bassSmooth * shatterForce * 0.6, 0.0, 0.85);
+  let lock = cellLockRaw(cellId, gridScale, time, grow) * rigidity * unlockAudio;
+
+  // Particle position in cell (locked particles snap onto the lattice site)
+  let jitter = vec2<f32>((rnd - 0.5) * 0.3, (hash2(cellId + 1.0) - 0.5) * 0.3);
   var p = vec3<f32>(
-    cellFract.x + (rnd - 0.5) * 0.3,
-    cellFract.y + (hash2(cellId + 1.0) - 0.5) * 0.3,
-    (rnd3 - 0.5) * 0.5
+    cellFract.x + jitter.x * (1.0 - lock),
+    cellFract.y + jitter.y * (1.0 - lock),
+    mix((rnd3 - 0.5) * 0.5, 0.18, lock)
   );
 
-  // Curl noise flow field
+  // Curl noise flow field (frozen inside the assembled crystal)
   let curl = curlNoise(vec3<f32>(p.xy * 2.0, time * 0.2), time);
-  p += curl * 0.01 * (1.0 - rigidity);
+  p += curl * 0.01 * (1.0 - rigidity) * (1.0 - lock);
 
   // SDF attraction (swarm seeks brutalist form)
   let sdfD = brutalistSDF(p, time);
@@ -189,26 +222,44 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let shatter = bassSmooth * shatterForce * 2.0;
   p += curlNoise(p * 3.0 + time, time) * shatter;
 
-  // Mouse interaction (magnetic anomaly)
+  // Mouse interaction (magnetic anomaly). HEAD compared a screen-space cursor
+  // with cell-local p, i.e. a uniform bias on every cell. The cursor is now
+  // mapped into this cell's local frame: nearby beads lean toward it.
   let mouseUV = u.zoom_config.yz;
-  let mousePos = (mouseUV - 0.5) * vec2<f32>(res.x / res.y, 1.0) * 3.0;
-  let mouseY = mouseUV.y;  // Flip Y
-  let mouse3D = vec3<f32>(mousePos.x, mouseY * 3.0, 0.0);
-  let toMouse = mouse3D - p;
+  let mousePos = (mouseUV - 0.5) * vec2<f32>(res.x / res.y, 1.0);
+  let mouseLocal = mousePos / gridScale - cellId - 0.5;
+  let beadCentre = -jitter * (1.0 - lock);
+  let toMouse = mouseLocal - beadCentre;
   let mouseDist = length(toMouse);
-  let mouseForce = normalize(toMouse) * (1.0 / (1.0 + mouseDist * mouseDist)) * cohesion * 0.5;
-  p += mouseForce;
+  let mouseForce = toMouse / max(mouseDist, 1e-3) * (1.0 / (1.0 + mouseDist * mouseDist)) * cohesion * 0.5;
+  p -= vec3<f32>(mouseForce * (1.0 - 0.7 * lock), 0.0);
 
   // Calculate particle color based on state
   let vel = length(curl) + shatter * 0.5;
-  let density = 1.0 / (1.0 + abs(sdfD) * 2.0);
+  let density = max(1.0 / (1.0 + abs(sdfD) * 2.0), lock);
 
   // Liquid chrome base
-  let n = normalize(p);
+  var n = normalize(p);
+
+  // ── Idea 2: quartz facet crystallization ──
+  // Locked beads trade the round chrome normal for a hexagonal (6 sector x
+  // 30-degree tier) quartz facet set; facet edges catch a hard glint.
+  let az = atan2(n.y, n.x);
+  let el = asin(clamp(n.z, -1.0, 1.0));
+  let sector = 2.0 * PI / 6.0;
+  let tierH = PI / 6.0;
+  let azQ = (floor(az / sector) + 0.5) * sector;
+  let elQ = clamp((floor(el / tierH) + 0.5) * tierH, -0.5 * PI, 0.5 * PI);
+  let nFacet = vec3<f32>(cos(elQ) * cos(azQ), cos(elQ) * sin(azQ), sin(elQ));
+  let edgeAz = smoothstep(0.40, 0.5, abs(fract(az / sector) - 0.5));
+  let edgeEl = smoothstep(0.40, 0.5, abs(fract(el / tierH) - 0.5));
+  let facetGlint = max(edgeAz, edgeEl) * lock * smoothstep(0.05, 0.15, length(p.xy));
+  n = normalize(mix(n, nFacet, lock));
+
   let viewDir = normalize(vec3<f32>(uv, 1.0));
   let halfDir = normalize(n + viewDir);
   let spec = pow(max(dot(n, halfDir), 0.0), 128.0);
-  let fresnel = pow(1.0 - abs(dot(n, viewDir)), 2.0);
+  let fresnel = pow(max(1.0 - abs(dot(n, viewDir)), 0.0), 2.0);
 
   // Iridescent oil-spill
   let oilHue = fract(dot(p, vec3<f32>(1.0, 2.3, 3.7)) * 0.3 + time * 0.1) * iridescence;
@@ -230,6 +281,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col += spec * vec3<f32>(1.0) * 0.5;
   col = mix(col, heatCol, smoothstep(0.2, 0.8, vel) * bassSmooth);
 
+  // Idea 2 (cont.): silicate body is cooler/glassier; edges glint with a
+  // little of the oil-spill dispersion.
+  col = mix(col, col * vec3<f32>(0.82, 0.9, 1.0), lock * 0.6);
+  col += facetGlint * mix(vec3<f32>(0.85, 0.95, 1.0), oilCol, iridescence * 0.5) * 0.9;
+
+  // ── Idea 3: Si-O bond struts between locked 4-neighbours ──
+  // Each cell draws its half of the strut from its lattice site to each locked
+  // neighbour's site; Swarm Cohesion sets strut thickness.
+  var strut = 0.0;
+  var strutCore = 0.0;
+  let strutW = 0.035 + 0.08 * cohesion;
+  for (var k = 0; k < 4; k++) {
+    let fk = f32(k);
+    let dir = vec2<f32>(round(cos(fk * 0.5 * PI)), round(sin(fk * 0.5 * PI)));
+    let nid = cellId + dir;
+    let nLock = cellLockRaw(nid, gridScale, time, grow) * rigidity * unlockAudio;
+    let nCentre = dir - cellOffset(nid, time) * (1.0 - nLock);
+    let dSeg = sdSegment(cellFract, beadCentre, nCentre);
+    let bond = min(lock, nLock);
+    strut = max(strut, smoothstep(strutW, strutW * 0.3, dSeg) * bond);
+    strutCore = max(strutCore, smoothstep(strutW * 0.35, 0.0, dSeg) * bond);
+  }
+  let outsideBead = smoothstep(0.12, 0.24, length(cellFract - beadCentre));
+  strut *= outsideBead;
+  strutCore *= outsideBead;
+  col = mix(col, vec3<f32>(0.5, 0.58, 0.68) + oilCol * iridescence * 0.15, strut * 0.8);
+  col += strutCore * vec3<f32>(0.75, 0.9, 1.0) * 0.6;
+
   // Density-based brightening
   col *= (0.5 + density * 0.5);
 
@@ -241,10 +320,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col.r += noise3(p + vec3<f32>(ca, 0.0, 0.0)) * ca;
   col.b += noise3(p + vec3<f32>(-ca, 0.0, 0.0)) * ca;
 
-  // Temporal feedback
-  let prevCol = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).rgb;
-  col = mix(prevCol, col, 0.25);
+  let disp = acesToneMap(col * 1.1);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+  // ── Idea 4: curl-advected wake ──
+  // Temporal feedback samples C upstream along this cell's curl vector, so
+  // free ferro beads stream in wakes; locked crystal (lock -> 1) reads its own
+  // texel exactly and stays crisp. C holds display RGB (A below), so the blend
+  // is display-space on both sides. HEAD never wrote A, so C was zero and the
+  // 0.25 blend rendered the effect at ~25% brightness.
+  let wake = clamp(curl.xy * 3.0 * (1.0 - lock), vec2<f32>(-6.0), vec2<f32>(6.0));
+  let srcCoord = clamp(vec2<i32>(round(fragCoord - wake)), vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1));
+  let prevCol = textureLoad(dataTextureC, srcCoord, 0).rgb;
+  let outCol = mix(prevCol, disp, 0.25);
+
+  // Semantic alpha: swarm occupancy (dense beads, locked crystal, struts).
+  let occupancy = clamp(0.55 + 0.25 * density + 0.2 * max(lock, strut), 0.0, 1.0);
+  let relief = clamp(0.3 * density + 0.5 * lock + 0.2 * strut, 0.0, 1.0);
+
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(outCol, occupancy));
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(outCol, occupancy));
+  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(relief, 0.0, 0.0, 0.0));
 }

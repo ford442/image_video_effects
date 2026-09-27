@@ -3,6 +3,9 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
 //  Complexity: High
+//  Upgraded: 2026-09-27
+//  Ideas: Archimedean flux spirals from the four poles' stream functions woven across the iso-|B| bands; Cotton-Mouton birefringence (Michel-Levy tint + Maltese-cross isogyres from fieldDir); pole meniscus mounds with analytic specular normals
+//  A packing: raw field state (fMag*0.25, fieldDir.x, fieldDir.y, alpha) — C read as fields
 //  Description: Magnetic ferrofluid simulation with field-strength alpha
 //    translucency. Field lines react to mouse as a magnetic source while
 //    audio-reactive spikes and temporal feedback create organic fluid memory.
@@ -116,6 +119,26 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+// ── Idea 1: per-pole Archimedean stream function ──────────────────
+// magneticField() has radial |F| ~ s/r^2 and angular |F| ~ 0.5 s/r, so the
+// exact single-pole streamline obeys d(theta)/dr = 0.5  ->  theta - 0.5 r = const.
+// Weight w must make 10*w an integer so the atan2 seam is invisible in sin(10*psi).
+fn poleStream(p: vec2<f32>, pole: vec2<f32>, w: f32) -> f32 {
+  let d = p - pole;
+  return w * (atan2(d.y, d.x) - 0.5 * length(d));
+}
+
+// ── Idea 3: Lorentzian meniscus mound over a pole (height + analytic grad) ──
+// Returns (h, dh/dx, dh/dy); ferrofluid heaps where |B|^2 is large.
+fn poleMound(p: vec2<f32>, pole: vec2<f32>, w: f32) -> vec3<f32> {
+  let sig2 = 0.0144; // (0.12)^2
+  let d = p - pole;
+  let q = 1.0 + dot(d, d) / sig2;
+  let h = w / q;
+  let g = -w * 2.0 * d / (sig2 * q * q);
+  return vec3<f32>(h, g);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let res = u.config.zw;
@@ -129,7 +152,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
-  let rms = plasmaBuffer[0].w;
+  // Bug fix: plasmaBuffer[0].w is always uploaded as 0 — derive rms from xyz
+  // (identical to HEAD at audio = 0, live with audio).
+  let rms = (bass + mids + treble) / 3.0;
 
   // Mouse as magnetic source
   let mouse = u.zoom_config.yz;
@@ -204,6 +229,38 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var col = ferroPalette(spectralT) * (0.3 + lineSharp * 0.7);
   col += spikePalette(spectralT + 0.5) * lineDetailSharp;
 
+  // ── Idea 2: Cotton-Mouton birefringence (Michel-Levy tint + isogyres) ──
+  // Field-induced delta-n ~ B^2 (Langevin-saturated) -> optical path difference.
+  // Between crossed polarizers: I = sin^2(2*alpha) * sin^2(pi*OPD/lambda).
+  let cmSat = 1.0 - exp(-0.05 * fMag * fMag);
+  let opd = 2.4 * cmSat;                                  // microns
+  let lambdaRGB = vec3<f32>(0.65, 0.55, 0.45);            // microns
+  let retard = sin(3.14159265 * opd / lambdaRGB);
+  let mlTint = retard * retard;                           // Michel-Levy interference colour
+  let polAngle = time * 0.05;                             // slowly turning polarizer
+  let polDir = vec2<f32>(cos(polAngle), sin(polAngle));
+  let cosA = dot(fieldDir, polDir);
+  let sinA = fieldDir.x * polDir.y - fieldDir.y * polDir.x;
+  let sin2A = 2.0 * sinA * cosA;
+  let isogyre = sin2A * sin2A;                            // 0 on the Maltese-cross brushes
+  col = col * (0.6 + 0.4 * isogyre) + mlTint * isogyre * (0.25 + 0.35 * lineSharp);
+
+  // ── Idea 1: Archimedean flux spirals woven across the iso-|B| bands ──
+  // Weights x20 = 20/8/6/4 integer windings -> seamless atan2.
+  let psi = poleStream(p, mPos, 1.0) + poleStream(p, sec1, 0.4)
+          + poleStream(p, sec2, 0.3) + poleStream(p, sec3, 0.2);
+  let fluxPhase = 20.0 * psi - time * 0.4 + turbNoise * turbulence * 1.5;
+  let invR = 1.0 / max(length(p - mPos), 0.001)
+           + 0.4 / max(length(p - sec1), 0.001)
+           + 0.3 / max(length(p - sec2), 0.001)
+           + 0.2 / max(length(p - sec3), 0.001);
+  let phasePerPx = 20.0 * invR / res.y;                   // phase change per pixel
+  let fluxFade = 1.0 - smoothstep(0.35, 0.9, phasePerPx); // tubes merge into glow at the poles
+  let tubeD = abs(sin(fluxPhase));
+  let tube = (1.0 - smoothstep(0.06, 0.06 + 1.5 * phasePerPx, tubeD)) * fluxFade;
+  // inked groove in the fluid; glints where a flux tube crosses a contour band
+  col = col * (1.0 - 0.45 * tube) + spikePalette(spectralT + 0.25) * tube * lineSharp * 0.35;
+
   // Specular spike highlights
   let highlight = pow(spikes, 3.0) * (1.0 + bassSmooth);
   let highlight2 = pow(fineSpike, 4.0) * trebleSmooth * 2.0;
@@ -216,7 +273,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col += ferroPalette(time * 0.1 + 0.5) * mouseGlow;
 
   // Ripple-driven magnetic disturbances
-  let ripCount = u32(u.config.y);
+  // Bug fix: config.y is the lifetime click count — clamp to the 50-slot array.
+  let ripCount = min(u32(u.config.y), 50u);
   for (var i: u32 = 0u; i < ripCount; i = i + 1u) {
     let r = u.ripples[i];
     let age = time - r.z;
@@ -226,6 +284,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let rippleMag = exp(-rd * rd * 8.0) * exp(-age * 1.5) * 0.3;
     col += ferroPalette(age + fMag) * rippleMag;
   }
+
+  // ── Idea 3: pole meniscus mounds (analytic specular normals) ──
+  // Fluid heaps over every pole (|B|^2 pull, so held-mouse inversion keeps it).
+  let mound = poleMound(p, mPos, 1.0) + poleMound(p, sec1, 0.4)
+            + poleMound(p, sec2, 0.3) + poleMound(p, sec3, 0.2);
+  let moundSlope = fieldStrength * 0.12;
+  let nrm = normalize(vec3<f32>(-mound.yz * moundSlope, 1.0));
+  let lightDir = normalize(vec3<f32>(-0.45, 0.55, 0.7));
+  let halfV = normalize(lightDir + vec3<f32>(0.0, 0.0, 1.0));
+  let moundSpec = pow(max(dot(nrm, halfV), 0.0), 64.0) * (0.7 + 0.6 * spikeNoise);
+  let moundFres = pow(max(1.0 - nrm.z, 0.0), 2.0);
+  let moundMask = smoothstep(0.05, 0.6, mound.x);
+  col = col * (1.0 - 0.35 * moundMask)                     // glossy black body
+      + vec3<f32>(1.0, 0.96, 0.9) * moundSpec * 1.2        // shoulder ring glint
+      + ferroPalette(spectralT + 0.15) * moundFres * 1.5;  // Fresnel rim
 
   // Vignette
   let vignette = 1.0 - length(uv - 0.5) * 0.4;
@@ -251,6 +324,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   alpha = mix(alpha * 0.3, alpha, smoothstep(0.0, 0.15, fMag));
   // Temporal memory slightly increases alpha consistency
   alpha = mix(alpha, clamp(prevField.a * 1.1, 0.0, 1.0), memoryBlend * 0.2);
+  // Idea 3: heaped fluid over the poles is opaque; glints read as solid
+  alpha = clamp(max(alpha, moundMask * 0.85) + moundSpec * 0.3, 0.0, 1.0);
 
   let outCol = vec4<f32>(acesToneMap(col * 1.1), alpha);
   textureStore(writeTexture, gid.xy, outCol);

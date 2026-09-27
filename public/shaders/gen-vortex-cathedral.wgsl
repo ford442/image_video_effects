@@ -6,7 +6,9 @@
 //            starburst-diffraction, chromatic-aberration, light-attenuation
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-06-06, 2026-06-28
+//  Upgraded: 2026-06-06, 2026-06-28, 2026-09-27
+//  Ideas: arch-gated crepuscular shafts; stained-glass sector tint; counter-rotating second vault
+//  A packing: ACES display RGBA (HEAD stored arches/rings/centerLight but read C back as colour)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -37,9 +39,16 @@ fn sat(x: f32) -> f32 {
   return clamp(x, 0.0, 1.0);
 }
 
-fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
-  let k = select(release, attack, bass > prev);
-  return mix(prev, bass, k);
+// Stained-glass jewel table: one flat colour per pane (hand-picked, not a cosine palette).
+fn stainedGlass(idx: f32) -> vec3<f32> {
+  let h = fract(sin(idx * 127.1 + 311.7) * 43758.5453);
+  let s = floor(h * 5.0);
+  var c = vec3<f32>(0.85, 0.12, 0.22);          // ruby
+  if (s >= 4.0) { c = vec3<f32>(0.55, 0.22, 0.95); }      // violet
+  else if (s >= 3.0) { c = vec3<f32>(0.15, 0.75, 0.42); } // emerald
+  else if (s >= 2.0) { c = vec3<f32>(0.2, 0.36, 1.0); }   // sapphire
+  else if (s >= 1.0) { c = vec3<f32>(1.0, 0.7, 0.2); }    // amber
+  return c;
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -52,11 +61,15 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 }
 
 // ═══ Volumetric God Rays (ray march toward light source) ═══
-fn godRays(uv: vec2<f32>, lightPos: vec2<f32>, density: f32, time: f32) -> f32 {
-  let rayDir = normalize(lightPos - uv);
-  let rayLen = length(lightPos - uv);
+// vault = (archCount, spinRate, twist, aspect). Returns (tint-weighted rgb, scalar intensity).
+fn godRays(uv: vec2<f32>, lightPos: vec2<f32>, density: f32, time: f32,
+           vault: vec4<f32>, mouse: vec2<f32>) -> vec4<f32> {
+  let toLight = lightPos - uv;
+  let rayLen = length(toLight);
+  let rayDir = toLight / max(rayLen, 1e-5);
   let steps = 20.0;
   var rayIntensity = 0.0;
+  var tintAcc = vec3<f32>(0.0);
 
   for (var i = 0.0; i < steps; i = i + 1.0) {
     let t = i / steps;
@@ -67,9 +80,24 @@ fn godRays(uv: vec2<f32>, lightPos: vec2<f32>, density: f32, time: f32) -> f32 {
     // Noise for volumetric variation
     let noise = fract(sin(dot(samplePos * 8.0, vec2<f32>(12.9898, 78.233))) * 43758.5453);
     let attenuation = 1.0 - t * t; // Stronger near light source
-    rayIntensity = rayIntensity + dustDensity * attenuation * (0.5 + noise * 0.5);
+
+    // IDEA 1: arch-gated crepuscular shafts - same spinA formula in the sample's polar coords
+    var q = samplePos * 2.0 - 1.0;
+    q.x = q.x * vault.w;
+    q = q - mouse * 0.2;
+    let qr = max(length(q), 1e-5);
+    let x = (atan2(q.y, q.x) + time * vault.y - qr * vault.z) * vault.x;
+    let pier = smoothstep(0.75, 1.0, abs(sin(x)));
+    let gate = (1.0 - 0.85 * pier) * 1.3; // light falls between the piers
+
+    let w = dustDensity * attenuation * (0.5 + noise * 0.5) * gate;
+    // IDEA 2: stained-glass tint - one jewel colour per gap pane, fading out at the sanctum
+    let glassMix = smoothstep(0.05, 0.35, qr) * 0.6;
+    let glass = mix(vec3<f32>(1.0), stainedGlass(floor(x / PI + 0.5)) * 1.8, glassMix);
+    rayIntensity = rayIntensity + w;
+    tintAcc = tintAcc + w * glass;
   }
-  return rayIntensity / steps;
+  return vec4<f32>(tintAcc / steps, rayIntensity / steps);
 }
 
 // ═══ Light Attenuation ═══
@@ -118,12 +146,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let time = u.config.x;
   let bass = plasmaBuffer[0].x;
 
-  // ═══ CHUNK: bass_env smoothing (replaces raw-bass strobing) ═══
-  let prevBass = extraBuffer[0];
-  let smoothBass = bass_env(prevBass, bass, 0.8, 0.15);
-  if (gid.x == 0u && gid.y == 0u) {
-    extraBuffer[0] = smoothBass;
-  }
+  // Stateless bass (extraBuffer[0] is the raw uploaded bass; no shader-side state, no extraBuffer writes)
+  let smoothBass = max(bass, 0.0);
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
   let mouse = u.zoom_config.yz * 2.0 - 1.0;
@@ -140,7 +164,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let r = max(length(p), 1e-5);
   let a = atan2(p.y, p.x);
-  let spinA = a + time * spin * (1.0 + smoothBass * 0.7) - r * (1.8 + mids);
+  let spinRate = spin * (1.0 + smoothBass * 0.7);
+  let twist = 1.8 + mids;
+  let vault = vec4<f32>(archCount, spinRate, twist, aspect);
+  let spinA = a + time * spinRate - r * twist;
   let sector = sin(spinA * archCount);
   let arches = smoothstep(0.75, 1.0, abs(sector));
 
@@ -155,24 +182,35 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let chromaB = fog * (1.0 + smoothBass * 0.1);
 
   var color = vec3<f32>(0.02, 0.01, 0.03);
-  color = color + vec3<f32>(0.42, 0.15, 0.65) * chromaR;
-  color = color + vec3<f32>(0.75, 0.55, 0.85) * chromaG;
+  // IDEA 2: each pier is one stained-glass pane (tint fades toward the sanctum)
+  let pierGlass = stainedGlass(floor(spinA * archCount / PI));
+  let glassFade = smoothstep(0.05, 0.35, r);
+  color = color + mix(vec3<f32>(0.42, 0.15, 0.65), pierGlass * 0.75, 0.4 * glassFade) * chromaR;
+  color = color + mix(vec3<f32>(0.75, 0.55, 0.85), pierGlass, 0.3 * glassFade) * chromaG;
   color = color + vec3<f32>(0.15, 0.3, 0.55) * chromaB;
   color = color + vec3<f32>(0.9, 0.7, 1.0) * centerLight * (0.5 + smoothBass);
+
+  // IDEA 3: counter-rotating second vault ring at r ~ 0.6 (half arch density, opposite spin/twist)
+  let spinB = a - time * spinRate * 0.7 + r * (1.2 + mids * 0.5);
+  let xB = spinB * archCount * 0.5;
+  let dB = (r - 0.6) / 0.13;
+  let vaultB = smoothstep(0.8, 1.0, abs(sin(xB))) * exp(-dB * dB);
+  color = color + stainedGlass(floor(xB / PI)) * 0.55 * vaultB * (0.5 + rings * 0.5);
 
   // ═══ VOLUMETRIC GOD RAYS ═══
   // Light source at center (sanctum), ray marching toward it
   let lightPos = vec2<f32>(0.5) + mouse * 0.1; // Mouse shifts light center slightly
   let rayDensity = 0.8 + haze * 0.5 + smoothBass * 0.3;
-  let godRayIntensity = godRays(uv, lightPos, rayDensity, time);
-  // Warm golden god rays (cathedral sunlight)
-  let rayColor = vec3<f32>(1.0, 0.85, 0.6) * godRayIntensity * (0.5 + smoothBass * 0.5) * sanctum;
+  let rays1 = godRays(uv, lightPos, rayDensity, time, vault, mouse);
+  let godRayIntensity = rays1.w;
+  // Warm golden god rays (cathedral sunlight), stained by the panes they cross
+  let rayColor = vec3<f32>(1.0, 0.85, 0.6) * rays1.rgb * (0.5 + smoothBass * 0.5) * sanctum;
   color = color + rayColor;
 
   // Secondary volumetric beams from arches (cooler blue-white)
   let archLightPos = vec2<f32>(0.5 + sin(time * 0.3) * 0.3, 0.5 + cos(time * 0.2) * 0.2);
-  let archRayIntensity = godRays(uv, archLightPos, rayDensity * 0.5, time + 2.0);
-  let archRayColor = vec3<f32>(0.7, 0.8, 1.0) * archRayIntensity * 0.3 * haze;
+  let rays2 = godRays(uv, archLightPos, rayDensity * 0.5, time, vault, mouse);
+  let archRayColor = vec3<f32>(0.7, 0.8, 1.0) * rays2.rgb * 0.3 * haze;
   color = color + archRayColor;
 
   // Light attenuation: falloff from center
@@ -180,7 +218,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   color = color * (0.6 + atten * 0.4);
 
   // Temporal persistence: previous light bleeds for ghost cathedral
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  let prev = textureLoad(dataTextureC, coord, 0);
   let prevLight = prev.rgb;
   color = mix(color, prevLight * 0.92, 0.04 + mids * 0.015);
 
@@ -205,7 +243,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     color = mix(color, chromaticColor, smoothstep(0.3, 0.8, edgeDist) * 0.3);
   }
 
-  let presence = sat(columns * 0.85 + centerLight * 0.9 + fog * 0.3);
+  let presence = sat(columns * 0.85 + vaultB * 0.4 + centerLight * 0.9 + fog * 0.3);
   let depth = sat(0.92 - centerLight * 0.7 - columns * 0.25 + haze * 0.1);
 
   // Bloom-weighted alpha: light intensity drives compositing
@@ -217,5 +255,5 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Premultiplied alpha writeback
   textureStore(writeTexture, coord, vec4<f32>(color * alpha, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
-  textureStore(dataTextureA, coord, vec4<f32>(arches, rings, centerLight, alpha));
+  textureStore(dataTextureA, coord, vec4<f32>(color, alpha)); // A = ACES display RGBA (non-premultiplied)
 }

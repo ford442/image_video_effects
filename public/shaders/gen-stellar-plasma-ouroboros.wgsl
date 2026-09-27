@@ -2,8 +2,13 @@
 // Stellar Plasma-Ouroboros
 // Category: generative
 // Features: raymarched, OkLab-color-mixing, blackbody-palette,
-//           Fresnel-rim-lighting, audio-reactive, depth-aware
+//           Fresnel-rim-lighting, audio-reactive, depth-aware,
+//           upgraded-rgba, mouse-driven
 // Upgraded: 2026-06-28 — Visualist Batch (OkLab + blackbody + Fresnel)
+// Upgraded: 2026-09-27
+// Ideas: peristaltic plasma bolus hinging the scale plates outward;
+//        seam light leaking through the hex gaps, gated by the bolus phase
+// A packing: display RGBA (ACES)
 // ----------------------------------------------------------------
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -143,6 +148,17 @@ fn fresnel_rim(n: vec3<f32>, viewDir: vec3<f32>, power: f32) -> f32 {
     return pow(1.0 - max(dot(n, viewDir), 0.0), power);
 }
 
+// IDEA 1: peristaltic bolus envelope. Soft pulse, period 16 z-units, travelling +z.
+fn bolusAt(z: f32, time: f32) -> f32 {
+    let w = fract(z * 0.0625 - time) - 0.5;
+    return exp(-w * w * 30.0);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let res = vec2<f32>(u.config.z, u.config.w);
@@ -157,7 +173,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let timeWarp = u.zoom_params.w;
 
     let time = u.config.x * timeWarp * 0.2;
-    let audioReactivity = plasmaBuffer[0].x;
+    let audioReactivity = plasmaBuffer[0].x; // bass
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     var ro = vec3<f32>(0.0, 0.0, -10.0);
     var rd = normalize(vec3<f32>(uv, 1.0));
@@ -178,6 +196,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var glow = vec3<f32>(0.0);
     var hitPlasma = false;
     var surfaceNormal = vec3<f32>(0.0);
+    var hitSurface = false;
+    var hitT = 0.0;
+    var seamCov = 0.0;
 
     for (var i = 0; i < 100; i++) {
         var p = ro + rd * t;
@@ -200,6 +221,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         q.x -= 2.0;
 
+        // IDEA 1: as the bolus passes, each plate hinges about its inner edge
+        // (z tilt proportional to radial offset) and swings outward.
+        let bolus = bolusAt(p.z, time);
+        let hinge = bolus * (0.35 + 0.25 * mids);
+        q.z += (q.x + 0.5) * hinge;
+        q.x -= hinge * 0.35;
+
         let hexD = sdHexPrism(q, vec2<f32>(0.5, 0.1));
 
         d = max(cylD, -hexD);
@@ -214,6 +242,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             col = oklab_mix(cool, hot, n_fbm);
             let refl = reflect(rd, normalize(p));
             col += textureSampleLevel(readTexture, u_sampler, refl.xy, 0.0).rgb * 0.5;
+
+            // IDEA 2: seam light. Plasma leaks through the hex gaps: |hexD| contour,
+            // ember between boluses, hot while the bolus passes.
+            let seamGate = exp(-abs(hexD) * 14.0);
+            let seamAmp = 0.25 + 1.6 * bolus;
+            let seamCol = blackbody(0.75 + 0.25 * bolus) * (0.6 + 0.8 * n_fbm);
+            col += seamCol * seamGate * seamAmp * (plasmaIntensity * 0.4) * (1.0 + treble * 0.5);
+            seamCov = seamGate * clamp(seamAmp, 0.0, 1.0);
+            hitSurface = true;
+            hitT = t;
 
             // Approximate normal for Fresnel
             surfaceNormal = normalize(p);
@@ -246,12 +284,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col += rimCol;
     }
 
-    col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
+    // ACES display (exposure 0.8 keeps the old clamp look close while HDR glow rolls off)
+    let hdrLuma = dot(max(glow, vec3<f32>(0.0)), vec3<f32>(0.299, 0.587, 0.114));
+    let glowA = 1.0 - exp(-1.5 * hdrLuma);
+    let cover = max(max(select(0.0, 1.0, hitSurface), glowA), seamCov);
+    let alpha = mix(0.2, 1.0, clamp(cover, 0.0, 1.0));
+    col = acesToneMap(max(col, vec3<f32>(0.0)) * 0.8);
 
-    let _luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-    let _alpha = clamp(_luma * 0.7 + 0.2, 0.0, 1.0);
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, _alpha));
-    let _depth_uv = clamp(vec2<f32>(id.xy) / vec2<f32>(u.config.z, u.config.w), vec2<f32>(0.0), vec2<f32>(1.0));
-    let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(_depth, 0.0, 0.0, 0.0));
+    let outCol = vec4<f32>(col, alpha);
+    textureStore(writeTexture, vec2<i32>(id.xy), outCol);
+    textureStore(dataTextureA, vec2<i32>(id.xy), outCol);
+    // Truthful depth from the march distance (near = 1, miss = 0)
+    let depth = select(0.0, clamp(1.0 - hitT / 50.0, 0.0, 1.0), hitSurface);
+    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

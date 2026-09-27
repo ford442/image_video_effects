@@ -1,7 +1,12 @@
-// ----------------------------------------------------------------
-// Sentient Liquid-Neon Fractal-Heart
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Sentient Liquid-Neon Fractal-Heart
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, click-reactive, temporal, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-27
+//  Ideas: lub-dub double beat; systolic pressure wavefront through the tissue; oxygenation gradient (magenta core to cyan rim)
+//  A packing: raw HDR display history (bounded 0..5) in A.rgb, coverage in A.a; ACES on writeTexture only
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -31,6 +36,26 @@ var<private> g_audio: vec3<f32>;
 var<private> g_mouse: vec2<f32>;
 var<private> g_clickShock: f32;
 var<private> g_mouseDown: f32;
+
+// ACES filmic (Narkowicz) - applied on writeTexture only, never on stored history.
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Exact-texel bilinear read of dataTextureC history (same look as a linear sample).
+fn loadHistory(uvh: vec2<f32>, res: vec2<f32>) -> vec3<f32> {
+    let q = uvh * res - vec2<f32>(0.5);
+    let q0 = floor(q);
+    let f = q - q0;
+    let hi = vec2<i32>(i32(res.x) - 1, i32(res.y) - 1);
+    let c00 = clamp(vec2<i32>(q0), vec2<i32>(0), hi);
+    let c11 = clamp(vec2<i32>(q0) + vec2<i32>(1, 1), vec2<i32>(0), hi);
+    let a = textureLoad(dataTextureC, vec2<i32>(c00.x, c00.y), 0).rgb;
+    let b = textureLoad(dataTextureC, vec2<i32>(c11.x, c00.y), 0).rgb;
+    let c = textureLoad(dataTextureC, vec2<i32>(c00.x, c11.y), 0).rgb;
+    let d = textureLoad(dataTextureC, vec2<i32>(c11.x, c11.y), 0).rgb;
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
 
 fn rot(a: f32) -> mat2x2<f32> {
     let s = sin(a);
@@ -74,7 +99,10 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
     // Smooth contraction with real plasma bands and one precomputed click shock.
     let beat_phase = fract(time * (1.25 + g_audio.x * 0.2)) * PI * 2.0;
     let base_beat = exp(-3.0 * fract(time * 1.25)) * sin(beat_phase) * 0.1;
-    let pulse = 1.0 + (base_beat + g_audio.x * 0.11 + g_clickShock * 0.08) * u.zoom_params.y;
+    // [Idea 1] Lub-dub: weaker S2 contraction 0.35 of a cycle after S1 (half-sine, 0.25 cycle long).
+    let dubAge = fract(time * 1.25 - 0.35);
+    let dub_beat = sin(PI * clamp(dubAge * 4.0, 0.0, 1.0)) * exp(-2.0 * dubAge) * 0.05;
+    let pulse = 1.0 + (base_beat + dub_beat + g_audio.x * 0.11 + g_clickShock * 0.08) * u.zoom_params.y;
 
     // Localized Defibrillator Shock / Gravity Well (Mouse Interaction)
     let mouse_dist = distance(p.xy, g_mouse * vec2<f32>(1.8, 1.2));
@@ -205,11 +233,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let viewDir = normalize(camPos - p);
         let halfDir = normalize(lightDir + viewDir);
         let spec = pow(max(dot(n, halfDir), 0.0), 32.0);
-        let fresnel = pow(1.0 - max(dot(n, viewDir), 0.0), 4.0);
+        let fresnel = pow(max(1.0 - max(dot(n, viewDir), 0.0), 0.0), 4.0);
 
         // Base Colors
         let tissueColor = vec3<f32>(0.2, 0.0, 0.4); // Deep violet
-        let neonColor = vec3<f32>(1.0, 0.0, 0.8) * u.zoom_params.z; // Magenta / Cyan liquid neon
+        // [Idea 3] Oxygenation gradient: magenta at the core cooling to cyan at the periphery.
+        let pr = length(p);
+        let oxy = smoothstep(0.5, 2.6, pr);
+        let neonColor = mix(vec3<f32>(1.0, 0.0, 0.8), vec3<f32>(0.05, 0.75, 1.0), oxy * 0.85) * u.zoom_params.z;
+
+        // [Idea 2] Systolic wavefront: pressure ring launched from the core on S1 and (half strength) S2.
+        let ageS1 = fract(time * 1.25);
+        let ageS2 = fract(time * 1.25 - 0.35);
+        let z1 = (pr - (0.3 + ageS1 * 3.2)) / 0.22;
+        let z2 = (pr - (0.3 + ageS2 * 3.2)) / 0.22;
+        let w1 = exp(-z1 * z1) * (1.0 - ageS1) * (1.0 - ageS1);
+        let w2 = exp(-z2 * z2) * (1.0 - ageS2) * (1.0 - ageS2) * 0.5;
+        let waveGain = clamp(u.zoom_params.y * 1.6, 0.0, 1.0);
+        let wavefront = (w1 + w2) * waveGain * vec3<f32>(0.35, 0.9, 1.0) * 0.9;
 
         if (hit_mat == 2.0) {
             // Arteries
@@ -221,6 +262,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // Add subsurface scattering based on accumulated glow
             col += neonColor * min(glow, 4.0) * 0.1;
         }
+        col += wavefront;
     } else {
         // Void (Bioluminescent Fog)
         col = vec3<f32>(0.05, 0.0, 0.1) * min(glow, 4.0) * u.zoom_params.w;
@@ -236,11 +278,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let radial = normalize(uv + vec2<f32>(0.0001));
     let tangent = vec2<f32>(-radial.y, radial.x);
     let historyUV = clamp(screenUV - tangent * 0.008 - radial * 0.003, vec2<f32>(0.002), vec2<f32>(0.998));
-    let previous = textureSampleLevel(dataTextureC, u_sampler, historyUV, 0.0).rgb;
+    let previous = loadHistory(historyUV, res);
     let temporal = clamp(max(col, previous * 0.9), vec3<f32>(0.0), vec3<f32>(5.0));
     let hit = t < 10.0 && hit_mat > 0.0;
     let depth = select(1.0, clamp(t / 10.0, 0.0, 0.995), hit);
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(temporal, 1.0));
-    textureStore(writeTexture, vec2<i32>(coords), vec4<f32>(temporal, 1.0));
+    // Semantic alpha: opaque on the heart, fog/glow luminance elsewhere.
+    let cover = select(clamp(max(temporal.r, max(temporal.g, temporal.b)) * 1.2, 0.0, 1.0), 1.0, hit);
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(temporal, cover));
+    textureStore(writeTexture, vec2<i32>(coords), vec4<f32>(acesToneMap(temporal), cover));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

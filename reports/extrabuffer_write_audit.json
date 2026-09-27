@@ -1,6 +1,6 @@
 {
-  "generated": "2026-09-21T12:11:50.332309+00:00",
-  "files_scanned": 1415,
+  "generated": "2026-09-27T03:31:09.089339+00:00",
+  "files_scanned": 1417,
   "new_violations": [],
   "known_violations": [
     {
@@ -45,23 +45,7 @@
     },
     {
       "file": "public/shaders/gen-prismatic-quantum-fractal-nautilus-engine.wgsl",
-      "line": 314,
-      "expr": "0",
-      "op": "=",
-      "index": 0,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/gen-resonant-quantum-plasma-dragon-eye.wgsl",
-      "line": 340,
-      "expr": "0",
-      "op": "=",
-      "index": 0,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/gen-sentient-ferro-silicate-swarm.wgsl",
-      "line": 155,
+      "line": 323,
       "expr": "0",
       "op": "=",
       "index": 0,
@@ -124,35 +108,11 @@
       "class": "fft-zone"
     },
     {
-      "file": "public/shaders/gen-topological-phase-weave.wgsl",
-      "line": 187,
-      "expr": "0",
-      "op": "=",
-      "index": 0,
-      "class": "reserved"
-    },
-    {
       "file": "public/shaders/gen-translucent-nebula.wgsl",
       "line": 207,
       "expr": "1",
       "op": "=",
       "index": 1,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/gen-von-karman-vortex.wgsl",
-      "line": 157,
-      "expr": "0",
-      "op": "=",
-      "index": 0,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/gen-vortex-cathedral.wgsl",
-      "line": 125,
-      "expr": "0",
-      "op": "=",
-      "index": 0,
       "class": "reserved"
     },
     {
@@ -508,7 +468,7 @@
       "class": "fft-zone"
     }
   ],
-  "dynamic_writes": 23,
+  "dynamic_writes": 16,
   "dynamic_untriaged": 0,
   "out_of_range_writes": 0,
   "baseline": "reports/extrabuffer_write_audit_baseline.json"

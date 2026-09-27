@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-15
-//  Ideas: crystal tine bifurcation; segmented chrono hoof wakes
+//  Upgraded: 2026-09-27
+//  Ideas: crystal tine bifurcation; segmented chrono hoof wakes; antler growth rings; leap afterimage
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
@@ -212,6 +212,9 @@ p_antler.y = p_antler_xy_tmp.y;
         if (i >= complexity) { break; }
         let segment_d = sdCapsule(branch_p, vec3<f32>(0.0), vec3<f32>(0.0, branch_len, 0.0), branch_r);
         antler_d = smin(antler_d, segment_d, 0.05);
+        // Antler growth rings: ridges along this segment. Complexity still sets the segment count.
+        let rings = sin(branch_p.y * (28.0 + f32(i) * 6.0)) * 0.012;
+        antler_d += rings;
         // Crystal tine bifurcation: one bounded lateral child per enabled segment
         let childEnd = vec3<f32>(branch_len * 0.55, branch_len * 0.25, 0.12);
         let child_d = sdCapsule(branch_p, vec3<f32>(0.0, branch_len * 0.35, 0.0), childEnd, branch_r * 0.55);
@@ -407,6 +410,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let alpha = clamp(select(0.14, 0.5, hit) + length(map_res.glow) * 0.2, 0.08, 0.96);
     let depth = select(0.0, clamp(1.0 - map_res.d / MAX_DIST, 0.0, 1.0), hit);
     let pix = vec2<i32>(id.xy);
+    // Leap afterimage: previous display, offset along the leap tangent, trail and miss only.
+    let leapV = vec2<f32>(cos(u.config.x * 2.0) * 0.15, sin(u.config.x * 2.0));
+    let shift = vec2<i32>(i32(leapV.x * 14.0), i32(leapV.y * 18.0));
+    let maxPix = vec2<i32>(i32(resX) - 1, i32(resY) - 1);
+    let ghost = textureLoad(dataTextureC, clamp(pix + shift, vec2<i32>(0), maxPix), 0).rgb;
+    let showGhost = select(1.0, select(0.0, 1.0, map_res.mat == 4), hit);
+    col = mix(col, ghost, showGhost * 0.22);
     let outCol = vec4<f32>(col, alpha);
     textureStore(writeTexture, pix, outCol);
     textureStore(writeDepthTexture, pix, vec4<f32>(depth, 0.0, 0.0, 0.0));

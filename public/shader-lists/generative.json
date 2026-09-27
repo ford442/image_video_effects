@@ -30963,7 +30963,47 @@
     "updated": true,
     "id": "gen-prismatic-quantum-fractal-nautilus-engine",
     "url": "shaders/gen-prismatic-quantum-fractal-nautilus-engine.wgsl",
-    "features": []
+    "features": [
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "aura_intensity",
+        "name": "Aura Intensity",
+        "mapping": "zoom_params.x",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "spiral_expansion",
+        "name": "Spiral Expansion",
+        "mapping": "zoom_params.y",
+        "default": 0.44,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "fractal_depth",
+        "name": "Fractal Depth",
+        "mapping": "zoom_params.z",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "audio_reactivity",
+        "name": "Audio Reactivity",
+        "mapping": "zoom_params.w",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "id": "gen-prismatic-quantum-glass-chrysalis-engine",
@@ -31260,7 +31300,8 @@
       "click-gravity-surge",
       "fft-plasma-shimmer",
       "temporal-history-smoothing",
-      "depth-output"
+      "depth-output",
+      "upgraded-rgba"
     ]
   },
   {
@@ -31384,7 +31425,11 @@
     "updated": true,
     "id": "gen-psychedelic-layered-time-stamps",
     "url": "shaders/gen-psychedelic-layered-time-stamps.wgsl",
-    "features": []
+    "features": [
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
+    ]
   },
   {
     "name": "Psychedelic Moire Flower",
@@ -31520,6 +31565,9 @@
       "quantum",
       "oceanic",
       "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba",
+      "temporal",
       "sdf",
       "raymarched",
       "tessellation",
@@ -31635,7 +31683,9 @@
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
-    "features": []
+    "features": [
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Quantum-Chrome Serpent Ouroboros",
@@ -31688,7 +31738,9 @@
     "updated": true,
     "id": "gen-quantum-chrome-serpent-ouroboros",
     "url": "shaders/gen-quantum-chrome-serpent-ouroboros.wgsl",
-    "features": []
+    "features": [
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Quantum-Entangled Ferrofluid Engine",
@@ -31750,7 +31802,11 @@
     "updated": true,
     "id": "gen-quantum-entangled-ferrofluid-engine",
     "url": "shaders/gen-quantum-entangled-ferrofluid-engine.wgsl",
-    "features": []
+    "features": [
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
+    ]
   },
   {
     "name": "Quantum-Fluorescent Aether-Moth Swarm",
@@ -31816,7 +31872,8 @@
       "temporal-feedback",
       "hdr-output",
       "semantic-alpha",
-      "depth-output"
+      "depth-output",
+      "upgraded-rgba"
     ]
   },
   {
@@ -31874,7 +31931,11 @@
     "updated": true,
     "id": "gen-quantum-fluorescent-nebula-anemone",
     "url": "shaders/gen-quantum-fluorescent-nebula-anemone.wgsl",
-    "features": []
+    "features": [
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
+    ]
   },
   {
     "name": "Quantum Foam Alpha",
@@ -31932,7 +31993,11 @@
     "updated": true,
     "id": "gen-quantum-foam-alpha",
     "url": "shaders/gen-quantum-foam-alpha.wgsl",
-    "features": []
+    "features": [
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
+    ]
   },
   {
     "name": "Quantum Foam",
@@ -32004,7 +32069,8 @@
       "audio-reactive",
       "depth-aware",
       "temporal-feedback",
-      "chromatic-aberration"
+      "chromatic-aberration",
+      "upgraded-rgba"
     ]
   },
   {
@@ -32058,7 +32124,47 @@
         "max": 1.5,
         "step": 0.05
       }
-    ]
+    ],
+    "features": [
+      "upgraded-rgba"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Vortex Speed",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "index": 1,
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      },
+      {
+        "index": 2,
+        "name": "Cymatic Intensity",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.1
+      },
+      {
+        "index": 3,
+        "name": "Gold Purity",
+        "default": 1,
+        "min": 0.5,
+        "max": 1.5,
+        "step": 0.05
+      }
+    ],
+    "updated": true,
+    "supportsDepth": true,
+    "supportsDof": false
   },
   {
     "id": "gen-quantum-liquid-metal-chronosphere",
@@ -33036,7 +33142,7 @@
       "symmetry-fold",
       "depth-aware"
     ],
-    "description": "A colossal biomechanical titan raymarched from an IFS-folded cyber-bismuth lattice smooth-unioned with nested hopper-crystal octahedra, drifting through a kaleidoscopic symmetry-folded quantum-particle storm. Nebula Density drives a real volumetric accumulation along the march plus a hex-star field, Audio Reactivity wobbles the folds and fires auroral emissive from live bass/mids/treble and engine FFT bins, and Iridiscent Shift phases a thin-film palette with Fresnel hue flip. Adaptive fold/step LOD, soft shadows, mouse-orbit camera with click-dolly, real depth and semantic alpha.",
+    "description": "A colossal biomechanical titan raymarched from an IFS-folded cyber-bismuth lattice smooth-unioned with nested hopper-crystal octahedra, drifting through a kaleidoscopic symmetry-folded quantum-particle storm. Nebula Density drives a real volumetric accumulation along the march plus a hex-star field, Audio Reactivity wobbles the folds and fires auroral emissive from live bass/mids/treble, and Iridiscent Shift phases a thin-film palette with Fresnel hue flip and hopper terrace stairs. Adaptive fold/step LOD, soft shadows, mouse-orbit camera with click-dolly, real depth and semantic alpha.",
     "workgroup_size": [
       16,
       16,
@@ -33044,6 +33150,51 @@
     ],
     "updated": true,
     "supportsDepth": true,
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba",
+      "aces-tone-map",
+      "semantic-alpha"
+    ],
+    "params": [
+      {
+        "id": "fold_scale",
+        "name": "Fractal Fold Scale",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "nebula_density",
+        "name": "Nebula Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "audio_reactivity",
+        "name": "Audio Reactivity",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "iridiscent_shift",
+        "name": "Iridiscent Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
     "updatedParams": [
       {
         "index": 0,
@@ -33205,6 +33356,51 @@
     ],
     "updated": true,
     "supportsDepth": true,
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba",
+      "aces-tone-map",
+      "semantic-alpha"
+    ],
+    "params": [
+      {
+        "id": "warp_intensity",
+        "name": "Warp Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "wing_span",
+        "name": "Wing Span",
+        "default": 0.7,
+        "min": 0.1,
+        "max": 1.5,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "fractal_depth",
+        "name": "Fractal Depth",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.05,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "plasma_glow",
+        "name": "Plasma Glow",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.05,
+        "mapping": "zoom_params.w"
+      }
+    ],
     "updatedParams": [
       {
         "index": 0,
@@ -33507,7 +33703,46 @@
       "click-reactive",
       "temporal",
       "fast-motion",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Intensity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "speed",
+        "name": "Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "scale",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ]
   },
   {
@@ -33574,6 +33809,7 @@
       "geometry",
       "audio-reactive",
       "mouse-driven",
+      "click-reactive",
       "spectral-color",
       "upgraded-rgba"
     ],
@@ -33671,6 +33907,44 @@
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
+    "params": [
+      {
+        "id": "turn_speed",
+        "name": "Turn Speed",
+        "default": 0.8,
+        "min": 0.2,
+        "max": 1,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "max_speed",
+        "name": "Max Speed",
+        "default": 3,
+        "min": 1,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "rage_duration",
+        "name": "Rage Duration",
+        "default": 1.2,
+        "min": 0.5,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "glow_radius",
+        "name": "Glow Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.05,
+        "mapping": "zoom_params.w"
+      }
+    ],
     "id": "gen-raptor-mini",
     "url": "shaders/gen-raptor-mini.wgsl",
     "features": [
@@ -33679,7 +33953,11 @@
       "click-strike-shockwaves",
       "audio-rage-bands-fft",
       "scent-memory-feedback-trails",
-      "generated-relief-depth"
+      "generated-relief-depth",
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba",
+      "aces-tone-map"
     ]
   },
   {
@@ -33742,7 +34020,51 @@
     "updated": true,
     "id": "gen-recursive-ancestral-terrains",
     "url": "shaders/gen-recursive-ancestral-terrains.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba",
+      "aces-tone-map",
+      "semantic-alpha"
+    ],
+    "params": [
+      {
+        "id": "mutation_rate",
+        "name": "Mutation Rate",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "generation_depth",
+        "name": "Generation Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "height_scale",
+        "name": "Height Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "erosion",
+        "name": "Erosion",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
   },
   {
     "id": "gen-relay-psychedelia",
@@ -33761,7 +34083,47 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
-      "temporal-feedback"
+      "temporal-feedback",
+      "upgraded-rgba",
+      "aces-tone-map"
+    ],
+    "params": [
+      {
+        "id": "warp_depth",
+        "name": "Warp Depth",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "saturation",
+        "name": "Saturation",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "hue_shift",
+        "name": "Hue Shift",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "trail_echo",
+        "name": "Trail Echo",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ],
     "workgroup_size": [
       16,
@@ -33864,7 +34226,51 @@
     "updated": true,
     "id": "gen-resonant-crystal-canyons",
     "url": "shaders/gen-resonant-crystal-canyons.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba",
+      "aces-tone-map",
+      "semantic-alpha"
+    ],
+    "params": [
+      {
+        "id": "crystal_density",
+        "name": "Crystal Density",
+        "default": 0.27,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "plasma_glow",
+        "name": "Plasma Glow",
+        "default": 0.44,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "refractive_index",
+        "name": "Refractive Index",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "audio_reactivity",
+        "name": "Audio Reactivity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
   },
   {
     "id": "gen-resonant-quantum-obsidian-astro-manta",
@@ -33876,7 +34282,11 @@
       "raymarching",
       "fluid-dynamics",
       "audio-reactive",
-      "organic-mechanics"
+      "organic-mechanics",
+      "mouse-driven",
+      "upgraded-rgba",
+      "aces-tone-map",
+      "semantic-alpha"
     ],
     "tags": [
       "organic",
@@ -34029,7 +34439,11 @@
     "updated": true,
     "id": "gen-resonant-quantum-obsidian-scarab-engine",
     "url": "shaders/gen-resonant-quantum-obsidian-scarab-engine.wgsl",
-    "features": []
+    "features": [
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
+    ]
   },
   {
     "name": "Resonant Quantum-Plasma Dragon-Eye",
@@ -34089,7 +34503,11 @@
     "updated": true,
     "id": "gen-resonant-quantum-plasma-dragon-eye",
     "url": "shaders/gen-resonant-quantum-plasma-dragon-eye.wgsl",
-    "features": []
+    "features": [
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
+    ]
   },
   {
     "name": "RGB Diffraction",
@@ -34204,7 +34622,7 @@
       "fractal",
       "audio-reactive"
     ],
-    "description": "A hyper-organic, bioluminescent extraterrestrial terrarium where fractal aether-spores drift and blossom into complex, sentient crystalline flora that pulse with cosmic energy in sync with ambient audio. Upgraded (fast-motion batch): spores now fly as a fast swarm with spring-damped cursor chase, bass kicks trigger bloom-burst shockwaves with bounded decay, and growth fronts propagate rapidly along the flora's own feedback history while velocity-advected HDR trails streak the flythrough.",
+    "description": "A hyper-organic, bioluminescent extraterrestrial terrarium where fractal aether-spores drift and blossom into complex, sentient crystalline flora that pulse with cosmic energy in sync with ambient audio. Upgraded (fast-motion batch): spores now fly as a fast swarm with spring-damped cursor chase, bass kicks trigger bloom-burst shockwaves with bounded decay, and growth fronts propagate rapidly along the flora's own feedback history while velocity-advected HDR trails streak the flythrough. Upgraded 2026-09-27: each plant blossoms on its own bud-to-open clock with scalloped 5-fold corollas, six-filament stamen crowns end in glowing gold anthers, and stems bow toward the key light with per-plant sway.",
     "workgroup_size": [
       16,
       16,
@@ -34263,7 +34681,9 @@
       "raymarched",
       "hdr-output",
       "semantic-alpha",
-      "depth-output"
+      "depth-output",
+      "upgraded-rgba",
+      "mouse-driven"
     ]
   },
   {
@@ -34574,6 +34994,8 @@
       "fractal",
       "volumetric",
       "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba",
       "sdf",
       "raymarched",
       "orbit-trap",
@@ -34677,7 +35099,11 @@
     "updated": true,
     "id": "gen-sentient-ferro-silicate-swarm",
     "url": "shaders/gen-sentient-ferro-silicate-swarm.wgsl",
-    "features": []
+    "features": [
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
+    ]
   },
   {
     "id": "gen-sentient-holographic-neuro-lace-matrix",
@@ -34753,7 +35179,7 @@
       "neon",
       "plasma"
     ],
-    "description": "A stylized liquid-neon fractal heart with live-audio contractions, traveling artery pulses, click shocks processed outside the march, and bounded plasma-flow trails.",
+    "description": "A stylized liquid-neon fractal heart with live-audio contractions, traveling artery pulses, click shocks processed outside the march, bounded plasma-flow trails, a lub-dub double beat, a systolic pressure wavefront, and an oxygenation gradient from magenta core to cyan rim.",
     "workgroup_size": [
       16,
       16,
@@ -34804,6 +35230,7 @@
       "click-reactive",
       "temporal",
       "fast-motion",
+      "upgraded-rgba",
       "depth-aware"
     ]
   },
@@ -35605,7 +36032,8 @@
       "mouse-driven",
       "temporal",
       "fast-motion",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ]
   },
   {
@@ -35787,7 +36215,7 @@
       "temporal",
       "audio-reactive"
     ],
-    "description": "A colossal, infinitely shattering crystalline geode that fractures to reveal a violently erupting sonoluminescent plasma core. Fast-motion upgrade: closed-form orbital camera with eased time-warp spin, sonoluminescent flash-burst physics (bubble-collapse cycles with ballistic shockwave shells), bass-transient kick bursts, and swirl-advected motion-blur trails.",
+    "description": "A colossal, infinitely shattering crystalline geode that fractures to reveal a violently erupting sonoluminescent plasma core. Fast-motion upgrade: closed-form orbital camera with eased time-warp spin, sonoluminescent flash-burst physics (bubble-collapse cycles with ballistic shockwave shells), bass kick bursts, and swirl-advected motion-blur trails. 2026-09-27: the shock front ignites and jolts the crystal walls as it passes, each collapse deposits a new agate stratum in the geode, and the core flash bleeds through thin shard walls.",
     "workgroup_size": [
       16,
       16,
@@ -35838,8 +36266,10 @@
       "time-warp-easing",
       "orbital-camera",
       "motion-blur-trails",
-      "bass-transient-kick",
+      "bass-kick",
       "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba",
       "temporal-feedback",
       "aces-tone-map",
       "semantic-alpha",
@@ -35902,7 +36332,11 @@
     "updated": true,
     "id": "gen-spectral-ferrofluid",
     "url": "shaders/gen-spectral-ferrofluid.wgsl",
-    "features": []
+    "features": [
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
+    ]
   },
   {
     "name": "Stable Fluids (Jos Stam)",
@@ -36204,7 +36638,11 @@
     "updated": true,
     "id": "gen-stellar-plasma-ouroboros",
     "url": "shaders/gen-stellar-plasma-ouroboros.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Stellar Web-Loom",
@@ -36219,7 +36657,7 @@
       "music",
       "reactive"
     ],
-    "description": "A hyper-dimensional cosmic loom weaving infinite tendrils of starlight and plasma silk across a dark void, blending organic neuro-network vibes with vast, mechanical astrophysics. Upgraded for fast motion: warp-flight camera driven by Weave Speed, radial speed-line streaks, clamped HDR feedback light-trails, bass-transient flash bursts, audio-reactive color temperature, ACES tone mapping and real raymarched depth.",
+    "description": "A hyper-dimensional cosmic loom weaving infinite tendrils of starlight and plasma silk across a dark void, blending organic neuro-network vibes with vast, mechanical astrophysics. Upgraded for fast motion: warp-flight camera driven by Weave Speed, radial speed-line streaks, clamped HDR feedback light-trails, bass-transient flash bursts, audio-reactive color temperature, ACES tone mapping and real raymarched depth. Plucked standing-wave threads pinned at the lattice nodes, per-axis warp/weft hues with over/under weave thickness, and a gyro ring on every node.",
     "workgroup_size": [
       16,
       16,
@@ -36273,7 +36711,9 @@
       "audio-color-temperature",
       "aces-tone-map",
       "generated-depth",
-      "semantic-alpha"
+      "semantic-alpha",
+      "audio-reactive",
+      "mouse-driven"
     ]
   },
   {
@@ -36512,7 +36952,10 @@
       "sprung-mouse-camera",
       "click-cavitation-shells",
       "temporal-feedback",
-      "depth-output"
+      "depth-output",
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
     ]
   },
   {
@@ -36619,6 +37062,53 @@
         "step": 0.01,
         "uniform": "zoom_params.w"
       }
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "raymarched",
+      "upgraded-rgba"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "supportsDepth": true,
+    "updated": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Zoom",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "index": 1,
+        "name": "Complexity",
+        "default": 3,
+        "min": 1,
+        "max": 8,
+        "step": 1
+      },
+      {
+        "index": 2,
+        "name": "Breathing Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.1
+      },
+      {
+        "index": 3,
+        "name": "Iridescence Shift",
+        "default": 0,
+        "min": -3.14,
+        "max": 3.14,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -36687,7 +37177,7 @@
     "id": "gen-symbiotic-cyber-fungal-core-reactor",
     "name": "Symbiotic Cyber-Fungal Core-Reactor",
     "author": "Jules",
-    "description": "A biomechanical network of luminescent mycelium feeding off the chaotic energy of a fractured quantum singularity. Upgraded with a spring-smoothed mouse gravity-well attractor that steers fungal growth, click-spawned spore-burst shockwaves with bounded energy, hold-to-mutate surges, real audio reactivity (bass/mids/treble plus guarded FFT bins), engine-ripple nutrient rings, temporal feedback memory so growth self-organizes along its own history, generated raymarch depth, and semantic alpha.",
+    "description": "A biomechanical network of luminescent mycelium feeding off the chaotic energy of a fractured quantum singularity. Upgraded with a spring-smoothed mouse gravity-well attractor that steers fungal growth, click-spawned spore-burst shockwaves with bounded energy, hold-to-mutate surges, real audio reactivity (bass/mids/treble plus guarded FFT bins), engine-ripple nutrient rings, temporal feedback memory so growth self-organizes along its own history, generated raymarch depth, semantic alpha, a precessing plasma containment ring around the core, breathing sporangia pods on the mycelium, and a fractured core shell leaking light through Worley cracks.",
     "type": "generative",
     "url": "shaders/gen-symbiotic-cyber-fungal-core-reactor.wgsl",
     "tags": [
@@ -36783,6 +37273,7 @@
     "updated": true,
     "features": [
       "audio-reactive",
+      "upgraded-rgba",
       "mouse-driven",
       "click-reactive",
       "temporal-feedback",
@@ -36917,7 +37408,11 @@
     "updated": true,
     "id": "gen-symbiotic-light-networks",
     "url": "shaders/gen-symbiotic-light-networks.wgsl",
-    "features": []
+    "features": [
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
+    ]
   },
   {
     "name": "Symbiotic Plasma-Reef Matrix",
@@ -36977,7 +37472,11 @@
     "updated": true,
     "id": "gen-symbiotic-plasma-reef-matrix",
     "url": "shaders/gen-symbiotic-plasma-reef-matrix.wgsl",
-    "features": []
+    "features": [
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
+    ]
   },
   {
     "name": "Tectonic Plasma-Crucible",
@@ -37037,7 +37536,11 @@
     "updated": true,
     "id": "gen-tectonic-plasma-crucible",
     "url": "shaders/gen-tectonic-plasma-crucible.wgsl",
-    "features": []
+    "features": [
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
+    ]
   },
   {
     "name": "Temporal Motion Smear",
@@ -37338,7 +37841,11 @@
     "updated": true,
     "id": "gen-topological-phase-weave",
     "url": "shaders/gen-topological-phase-weave.wgsl",
-    "features": []
+    "features": [
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
+    ]
   },
   {
     "name": "Topology Flow",
@@ -38325,7 +38832,10 @@
       "chromatic-aberration",
       "light-attenuation",
       "enhanced-sanctum-glow",
-      "aces-tone-map"
+      "aces-tone-map",
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
     ]
   },
   {
@@ -38386,7 +38896,11 @@
     "updated": true,
     "id": "gen-wasm-hls-physarum-swarm",
     "url": "shaders/gen-wasm-hls-physarum-swarm.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Worley Cellular Noise",
@@ -38505,7 +39019,9 @@
     "updated": true,
     "id": "gen-xeno-botanical-synth-flora",
     "url": "shaders/gen-xeno-botanical-synth-flora.wgsl",
-    "features": []
+    "features": [
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Xeno-Mycelial Resonance-Web",
@@ -38563,7 +39079,9 @@
     "updated": true,
     "id": "gen-xeno-mycelial-resonance-web",
     "url": "shaders/gen-xeno-mycelial-resonance-web.wgsl",
-    "features": []
+    "features": [
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Zeta Function Landscape",
@@ -40228,7 +40746,8 @@
       "chromatic",
       "depth-aware",
       "spirograph",
-      "superformula"
+      "superformula",
+      "upgraded-rgba"
     ],
     "tags": [
       "procedural",

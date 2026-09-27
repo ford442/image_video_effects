@@ -1,0 +1,13 @@
+SHADER: gen-quantum-fluorescent-nebula-anemone
+IDENTITY (one sentence): a ring of 22 iridescent, swaying, dual-temperature-lit fluorescent tentacle bands floating in a violet fBm nebula with quantum interference sparkle, god rays and a mouse-attracted glow.
+KEEP VERBATIM: the 22-tentacle loop (rot(angle)*p, sway, dist = length(..)-1.6, exp falloff, per-tentacle HSV hue, warm/cool/rim lighting); the fBm nebula/nebula2/fog stack; qWave quantum field (constant freq 0.5, see below); god_rays; mouse reach + mouse glow; hue_preserving_clamp -> ACES -> IGN dither; semantic alpha; depth = depth*0.5+fog*0.2; readTexture *0.86 carry; the four saved `updatedParams` (names, defaults 0.5, 0..1, step 0.01) byte-exact (JSON has no `params` block).
+ADD (native ideas):
+  1. Nematocyst pulse beads — sparse bright photophore beads crawl around every tentacle band (pow(cos(atan2 phase * 7 - t + fi)) gated by the band), each tentacle with its own phase. An anemone's stinging-cell beads; visible at audio = 0.
+  2. Stokes-shift afterglow — tentacle emission is kept in dataTextureC/A.r with slow decay; where a tentacle has swayed away the residual glows amber/red-shifted (fluorescence re-emits at longer wavelength). Reads exact textureLoad(dataTextureC); seeded from zero with no early return.
+  3. Crenulated oral disc — the anemone body the god rays were supposed to radiate from: a breathing 11-lobed rosette with a glowing crenulated lip and dim magenta gullet at the centre of the tentacle ring.
+FORBID: spring cursor, IQ palette stamp, generic shockwave overlay, replacing tentacles with particles, ACES on stored A fields.
+A PACKING: raw sim/field state (glow history, fog, quantum, alpha) — same channel roles as HEAD, except .r changes from instantaneous tentacleEmission to decayed glow history (HEAD's A was never read). No ACES on stored fields; tone-map only on writeTexture.
+
+SLIDER MAPPING (silent bug found): JSON names (x Fluorescence Intensity, y Tentacle Density, z Audio Reactivity, w Nebula Density) did not match what HEAD read (x reach, y fluorescence, z nebula, w quantum freq) — the UI labels lied. WGSL now honours the labels, all at default 0.5 reproducing HEAD numerics:
+  x = fluorescence (HEAD y=0.5), y = Tentacle Density (visible tentacle count = y*44 soft-gated, all 22 at 0.5; also mouse reach = y*0.8 = HEAD 0.4), z = Audio Reactivity (gain z*2, =1 at default), w = nebula density (HEAD z=0.5). quantumFreq becomes constant 0.5 (HEAD's default value).
+OTHER READ-PATH BUGS TO FIX: audio was u.config.y (click count) -> plasmaBuffer[0].xyz; ripple strength used r.z (start time, grows unboundedly) -> age = time - r.z with decay, r.z>0 guard, no .w.

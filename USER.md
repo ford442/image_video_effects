@@ -2,6 +2,9 @@
 
 _Learn about the person you're helping. Update this as you go._
 
+- **Xeno / kimi / holo unused ten (2026-09-27):** Xeno Botanical Synth Flora, Xeno Mycelial Resonance Web, Zeta Function Landscape, Kimi Fractal Dreams, Kimi Nebula Depth (halftone, not a nebula), Kimi Quantum Field, Lava Lamp Blobs, Holographic Crystal, Holographic Entropy Vortex, Gravito-Phononic Accretion (the non-gen file). Two or three native ideas each. Zeta kept its 2026-09-15 rails and iso-contours and gained a critical-line sheen plus argument ticks; its spectral voice left extraBuffer[5..12]. Lava A stays raw sim fields. No new springs. Naga 10/10. Jest 741 pass / 6 fail / 1 skip (WASM bridge pre-existing). SKIP_WASM_BUILD=1 build green. Catalog 1,373. Real-GPU QA external. Cards: `agents/swarm-outputs/grok-2026-09-27-xeno-kimi-holo-ten/`.
+- **Classic sim ten (2026-09-27):** Wave Equation, Jos Stam Stable Fluids, Turing Morphogenesis, von Kármán Vortex, Verlet Cloth Wind, String Theory, Supernova Remnant, Topology Flow, Sonic Lava Flow, Volcanic Ink. Two native ideas each. Turing and cloth kept their 2026-09-15 ideas and gained two more. Saved slider names and ranges unchanged. No new springs (string theory kept its pointer spring). Stam and volcanic ink history reads are textureLoad. von Kármán bass envelope moved off extraBuffer[0]. Topology flow no longer reads engine FFT slots. Supernova gained a bounds guard, ACES, and a display store in A. Naga 10/10. Jest 764 pass / 1 skip. SKIP_WASM_BUILD=1 build green. Catalog 1,373. Real-GPU QA external. Cards: `agents/swarm-outputs/grok-2026-09-27-classic-sims-ten/`.
+- **Grok simpler generative leftover ten, second-pass (2026-09-27):** Rainbow Firefly Dance, Rainbow Icosahedron Cascade, Rainbow Smoke, Lorenz Orb, Newton Fractal, Percolation Threshold, Neon Snowfall, Neon Lotus, Kimi Crystal, Kimi Nebula. Two new native ideas each on top of existing 09-09/09-14/Batch-18 cards (user override of skip-if-idea-rich). Flash codes+courtship; dual dodeca+click pulse; vortex rings+KH billows; Lyapunov+Poincaré; Newton-flow striations+wandering dust; red-bonds+mass fade; graupel+snowbank; nyctinasty+lily pad; 46° halo+pillars; PDR+EGGs. Firefly gained matching `params`. No new springs. Percolation extraBuffer still unused. Naga 10/10. Cards: `agents/swarm-outputs/grok-2026-09-27-simpler-gen-leftover-ten/`. Real-GPU QA external.
 - **Issue dispatch (2026-09-26):** Open GitHub issues now carry a Claude model/effort prefix on the title. Sonnet 5 medium = mechanical pattern-follow (#1299, #1307, #1324). Sonnet 5 high = per-file judgment (#1300). Opus 5.5 low = evidence/decision (#1080). Medium = land existing design (#1182, #1308, #1309). High = multi-WP correctness / black-canvas / frozen solvers (#1310, #1311, #1312). Extra = later architecture epics (#1313, #1314).
 - **Name:**
 - **What to call them:**
@@ -400,3 +403,6 @@ Format specification:
   is deliberate: five display-history A effects and five raw simulation or
   telemetry A effects, with extraBuffer confined to the four documented owners.
 </IMPORTANT_REMINDER>
+
+## 2026-09-27 — physarum decision
+- Asked whether to skip, rescue, or hygiene-only the dead `gen-wasm-hls-physarum-swarm` sim; the user chose **rescue, then upgrade** (texture-only Eulerian solver, numpy-validated). Saved slider ids/defaults kept; the look at saved values is new.

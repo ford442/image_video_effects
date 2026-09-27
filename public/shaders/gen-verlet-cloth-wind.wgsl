@@ -5,8 +5,8 @@
 //            upgraded-rgba, aces-tone-map, chromatic-aberration
 //  Complexity: High
 //  Created: 2026-05-30
-//  Upgraded: 2026-06-06, 2026-09-15
-//  Ideas: gust-front propagation sweeping wind across the lattice; thread-tension sheen along warp/weft
+//  Upgraded: 2026-06-06, 2026-09-15, 2026-09-27
+//  Ideas: gust-front propagation sweeping wind across the lattice; thread-tension sheen along warp/weft; hem lead on the free edge; fold occlusion in concave valleys
 //  A packing: raw sim (h, v, 0, 0) on the 64x64 lattice (C read as fields there); ACES display RGBA elsewhere (unread)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -96,7 +96,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let mouse = u.zoom_config.yz * f32(gridRes);
       let toMouse = mouse - vec2<f32>(f32(gCoord.x), f32(gCoord.y));
       let mForce = smoothstep(8.0, 0.0, length(toMouse)) * select(0.0, 1.0, u.zoom_config.w > 0.5) * 0.5;
-      let force = gravity + wind + laplacian * stiffness + mForce;
+      // Idea 3 — hem lead. Rows far from the pin (y == 0) arrive ahead of the body.
+      let hem = f32(gCoord.y) / f32(gridRes - 1);
+      let hemLead = hem * hem * sin(frontT * 1.7) * windStr * 0.02;
+      let force = gravity + wind + laplacian * stiffness + mForce + hemLead;
       v = v * 0.95 + force * 0.016;
       h = h + v * 0.016;
     } else {
@@ -136,6 +139,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let warpHi = pow(1.0 - abs(fract(cUV.x) - 0.5) * 2.0, 8.0) * stretch;
   let weftHi = pow(1.0 - abs(fract(cUV.y) - 0.5) * 2.0, 8.0) * stretch;
   color = color + vec3<f32>(0.5, 0.65, 0.9) * (warpHi + weftHi) * (0.6 + bass * 0.8);
+  // Idea 4 — fold occlusion. Concave neighborhoods darken; stretch sheen stays on slope.
+  let neighAvg = (s10 + s01 + s11) / 3.0;
+  let fold = clamp(neighAvg - h, 0.0, 1.0);
+  color = color * (1.0 - fold * 0.5);
   let weave = hash12(uv * 300.0) * 0.05;
   color = color * (1.0 + weave);
   let vignetteUV = uv * (1.0 - uv);

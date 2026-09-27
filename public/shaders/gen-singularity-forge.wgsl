@@ -7,6 +7,10 @@
 //  Complexity: High
 //  Created: 2026-05-31
 //  Updated: 2026-06-01
+//  Upgraded: 2026-09-27
+//  Ideas: relativistic beaming + gravitational redshift on the disk; log-spiral
+//         density-wave arms; precessing helical jet riding the knot cadence
+//  A packing: raw HDR rgb + semantic alpha (ACES only on writeTexture)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -84,6 +88,19 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+// IDEA 1: relativistic beaming + gravitational redshift.
+// x = brightness factor (~D^3 * g^2), y = signed log2 colour shift (+ blue, - red).
+fn diskBeam(p: vec3<f32>, rd: vec3<f32>, r: f32, expo: f32) -> vec2<f32> {
+    let rr = max(r, 0.3);
+    let tang = vec3<f32>(-p.z, 0.0, p.x) / max(length(p.xz), 0.05);
+    let vOrb = min(0.62 * inverseSqrt(rr), 0.55);
+    let betaLos = vOrb * dot(tang, -rd);
+    let dop = clamp(sqrt(1.0 - vOrb * vOrb) / (1.0 - betaLos), 0.3, 1.9);
+    let g = sqrt(clamp(1.0 - 0.8 / rr, 0.09, 1.0));
+    let beam = clamp(pow(dop, expo) * g * g * 0.7, 0.06, 3.0);
+    return vec2<f32>(beam, clamp(log2(dop * g) * 0.6, -1.0, 1.0));
+}
+
 fn getRayDir(uv: vec2<f32>, time: f32, audioReactivity: f32) -> vec3<f32> {
     var rd = normalize(vec3<f32>(uv, 1.0));
     let camRotX = rotate2D(0.3);
@@ -104,7 +121,7 @@ struct MarchResult {
     hit: bool,
 };
 
-fn marchRay(ro: vec3<f32>, rd: vec3<f32>, time: f32, dd: f32, ji: f32, gw: f32, bass: f32) -> MarchResult {
+fn marchRay(ro: vec3<f32>, rd: vec3<f32>, time: f32, dd: f32, ji: f32, gw: f32, bass: f32, treble: f32) -> MarchResult {
     var col = vec3<f32>(0.0);
     var t = 0.0;
     var glow = vec3<f32>(0.0);
@@ -122,7 +139,13 @@ fn marchRay(ro: vec3<f32>, rd: vec3<f32>, time: f32, dd: f32, ji: f32, gw: f32, 
         let n = fbm(pDisk * 2.0 + vec3<f32>(time * 2.0 * (1.0 + bass * 0.5), bass * 5.0, time * 2.0));
         dDisk += n * 0.5;
         var pJet = p;
-        let dJet = length(pJet.xz) - 0.1 / (abs(pJet.y) + 0.1);
+        // IDEA 3: precessing helical jet. Axis offset is point-symmetric and its phase
+        // is the knots' own ballistic age, so knots ride the corkscrew.
+        let jetAge = abs(pJet.y) * 0.18 - time * (0.9 + bass * 1.8);
+        let helixPhi = 10.05 * jetAge + time * 0.35;
+        let helixAxis = vec2<f32>(cos(helixPhi), sin(helixPhi)) * 0.09 * clamp(pJet.y, -3.0, 3.0);
+        let dJet = length(pJet.xz - helixAxis) - 0.1 / (abs(pJet.y) + 0.1);
+        let beamTint = diskBeam(p, rd, length(pDisk.xz), 3.0 + treble * 0.6);
         let d = min(dBlackHole, dDisk);
         if (d < 0.01) {
             hit = true;
@@ -132,8 +155,13 @@ fn marchRay(ro: vec3<f32>, rd: vec3<f32>, time: f32, dd: f32, ji: f32, gw: f32, 
                 let diskDist = length(pDisk.xz);
                 let heat = clamp(1.0 - (diskDist - 1.0) * 0.3, 0.0, 1.0);
                 let diskAngle = atan2(pDisk.z, pDisk.x);
-                let shear = 0.62 + 0.38 * sin(diskAngle * 16.0 - time * (7.0 + dd * 2.0));
-                col = mix(vec3<f32>(0.8, 0.2, 0.0), vec3<f32>(0.8, 0.9, 1.0), heat) * heat * (1.4 + shear);
+                // IDEA 2: log-spiral density-wave arms (phase m*theta + a*ln r - w*t).
+                let armPhase = 3.0 * diskAngle + 9.0 * log(max(diskDist, 0.2)) - time * (7.0 + dd * 2.0) * 0.2;
+                let arm = 0.5 + 0.5 * sin(armPhase);
+                let shear = 0.24 + 0.76 * arm * arm;
+                let ts = beamTint.y;
+                let shift = vec3<f32>(1.0 - 0.3 * ts, 1.0, 1.0 + 0.4 * ts);
+                col = mix(vec3<f32>(0.8, 0.2, 0.0), vec3<f32>(0.8, 0.9, 1.0), heat) * heat * (1.4 + shear) * shift * beamTint.x;
             }
             break;
         }
@@ -141,7 +169,7 @@ fn marchRay(ro: vec3<f32>, rd: vec3<f32>, time: f32, dd: f32, ji: f32, gw: f32, 
         let jetKnot = exp(-knotPhase * knotPhase * 180.0);
         glow += vec3<f32>(1.0, 0.9, 1.0) * 0.02 / (abs(dBlackHole) + 0.05);
         glow += vec3<f32>(0.45, 0.12, 1.2) * (0.008 * ji * (0.7 + jetKnot * 2.4)) / (abs(dJet) + 0.05);
-        glow += vec3<f32>(1.0, 0.4, 0.1) * 0.005 / (abs(dDisk) + 0.1);
+        glow += vec3<f32>(1.0, 0.4, 0.1) * 0.005 * mix(1.0, beamTint.x, 0.6) / (abs(dDisk) + 0.1);
         t += max(abs(d) * 0.5, 0.003);
         if (distToOrigin < 0.8) {
             col = vec3<f32>(0.0);
@@ -194,10 +222,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // One primary march replaces the former three full raymarches. Spectral
     // separation comes from orbital velocity and material-space Doppler shift.
-    let result = marchRay(ro, rd, time, diskDensity, jetIntensity, effectiveGravity, bass);
-    let orbitalPhase = atan2(lensedUv.y, lensedUv.x) - time * (4.0 + diskDensity);
-    let doppler = sin(orbitalPhase) * (0.035 + treble * 0.045);
-    var fresh = max(result.color * vec3<f32>(1.0 + doppler, 1.0, 1.0 - doppler), vec3<f32>(0.0));
+    let result = marchRay(ro, rd, time, diskDensity, jetIntensity, effectiveGravity, bass, treble);
+    // (Beaming/redshift now happens per-step inside marchRay, replacing the old tint-only doppler.)
+    var fresh = max(result.color, vec3<f32>(0.0));
 
     // Angularly advected, bounded lensing history leaves fast curved trails.
     let swirlVelocity = vec2<f32>(-uv.y, uv.x) * (3.0 + timeDilation * 2.0 + bass * 2.5);

@@ -4,8 +4,17 @@
 // Features: raymarched twisted flora, KIFS petals, bioluminescent
 //   spore swarm with spring cursor-pursuit, bass-kick bloom shockwave,
 //   self-organizing fast growth fronts along feedback history,
-//   velocity-advected HDR trails, audio-reactive, generated depth,
-//   semantic alpha
+//   velocity-advected HDR trails, audio-reactive, mouse-driven,
+//   upgraded-rgba, generated depth, semantic alpha
+// Upgraded: 2026-09-27
+// Ideas: (1) asynchronous per-cell bud->open blossoming with 5-fold scalloped
+//   corollas; (2) stamen crown - six splayed filaments with glowing gold anthers
+//   (material 3); (3) phototropic stem bow toward the key light with per-cell sway
+// A packing: raw HDR history (A = hdr.rgb capped 6.0, alpha); C read as colour /
+//   growth luma; ACES on writeTexture only. New ideas are stateless, write nothing to A.
+// Silent bug fixed: click ring used pow(negative, 2.0) -> NaN inside the ring.
+// Note: HEAD's extraBuffer[133..137] state is zeroed per frame (kick / smoothed
+//   cursor never persist); left as-is, no new idea depends on it.
 // Interactivist pass (batch 38, FAST MOTION): fixed uniform-truth
 //   violations (click count was used as an audio proxy; p1/p2 sliders
 //   were declared but never used), wired all 4 sliders live, spores
@@ -95,6 +104,23 @@ fn opTwist(p: vec3<f32>, k: f32) -> vec3<f32> {
     return vec3<f32>(xz.x, p.y, xz.y);
 }
 
+// [Idea 2] capsule for stamen filaments
+fn sdCapsule(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, r: f32) -> f32 {
+    let pa = p - a;
+    let ba = b - a;
+    let h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+    return length(pa - ba * h) - r;
+}
+
+// [Idea 1] per-plant identity: xyz = stateless cell hash, w = bud(0) -> open(1) phase.
+// Each domain-repeat cell blossoms on its own clock so the field is never in lockstep.
+fn floraCell(pos: vec3<f32>, ctx: FloraCtx) -> vec4<f32> {
+    let cell = floor(vec2<f32>(pos.x, pos.z) / ctx.spacing);
+    let h = hash3(vec3<f32>(cell.x, 3.7, cell.y));
+    let open = 0.5 + 0.5 * sin(ctx.time * 0.8 + h.x * TAU);
+    return vec4<f32>(h, open);
+}
+
 // --- Raymarching ---
 // map(pos): returns vec2 (distance, material_id)
 fn map(pos: vec3<f32>, ctx: FloraCtx) -> vec2<f32> {
@@ -102,28 +128,67 @@ fn map(pos: vec3<f32>, ctx: FloraCtx) -> vec2<f32> {
     let c = vec3<f32>(ctx.spacing, 0.0, ctx.spacing);
     let rep_pos = vec3<f32>(pos.x - c.x * floor(pos.x / c.x), pos.y, pos.z - c.z * floor(pos.z / c.z)) - vec3<f32>(c.x * 0.5, 0.0, c.z * 0.5);
 
+    let cellH = floraCell(pos, ctx);
+    let ch = cellH.xyz;
+    let open = cellH.w;
+
+    // [Idea 3] Phototropic bow: each stem leans toward the key light (horizontal of
+    // l = (1,2,-1)) with a hashed deviation and slow independent sway; the head,
+    // stamens and twist axis all follow the bent stem.
+    var q = rep_pos;
+    let ly = clamp(q.y + 1.0, 0.0, 6.0);
+    let bowDir = normalize(vec2<f32>(0.707, -0.707) + (ch.xy - vec2<f32>(0.5)) * 0.9);
+    let bowAmp = 0.03 * (0.6 + 0.8 * ch.z) * (1.0 + 0.5 * sin(ctx.time * 0.7 + ch.y * TAU));
+    let bow = bowDir * (bowAmp * ly * ly);
+    q.x -= bow.x;
+    q.z -= bow.y;
+
     // Flora stems (twisted cylinders) — fast whip sway
-    let twisted_pos = opTwist(rep_pos, ctx.twist_k);
+    let twisted_pos = opTwist(q, ctx.twist_k);
     let stem_d = sdCylinder(twisted_pos, 4.0, 0.2);
 
     // Petals (KIFS-like folded planes + spheres)
-    var petal_pos = rep_pos;
+    var petal_pos = q;
     petal_pos.y -= 3.0; // move up
-    petal_pos.x = abs(petal_pos.x) - 0.5;
-    petal_pos.z = abs(petal_pos.z) - 0.5;
+    // [Idea 1] buds hold their petals close, open flowers spread them wide
+    let spread = mix(0.3, 0.65, open);
+    petal_pos.x = abs(petal_pos.x) - spread;
+    petal_pos.z = abs(petal_pos.z) - spread;
 
     // Fast growth front: petal pulse phase is advanced by the feedback
     // growth energy, so bloom waves travel along the flora's own
     // history (self-organizing); kick impulse whips petals open.
-    let petal_r = 1.0
+    let petal_r = (1.0
         + ctx.bloom_amp * sin(ctx.time * 3.0 + ctx.growth * 2.5 + pos.x * 0.35 + pos.z * 0.35)
-        + ctx.bloom * 0.6;
-    let petal_d = sdSphere(petal_pos, petal_r);
+        + ctx.bloom * 0.6) * mix(0.75, 1.1, open);
+    // [Idea 1] 5-fold scalloped corolla rim, deepens as the flower opens
+    let lobe = 1.0 + 0.14 * open * cos(5.0 * atan2(petal_pos.z, petal_pos.x) + ctx.time * 0.4);
+    let petal_d = sdSphere(petal_pos, petal_r * lobe) * 0.9;
 
-    let d = smin(stem_d, petal_d, 0.5);
+    // [Idea 2] Stamen crown: six splayed filaments (polar repeat) ending in anthers.
+    // Length and splay follow openness; bounded so far rays skip the exact test.
+    let s3 = q - vec3<f32>(0.0, 3.9, 0.0);
+    let sb = sdCylinder(vec3<f32>(s3.x, s3.y - 0.8, s3.z), 1.1, 1.0);
+    var fil_d = sb;
+    var anther_d = sb;
+    if (sb < 0.25) {
+        let sec = TAU / 6.0;
+        let ang = atan2(s3.z, s3.x) + ch.x * TAU;
+        let a2 = ang - sec * floor(ang / sec + 0.5);
+        let rr = length(vec2<f32>(s3.x, s3.z));
+        let sp = vec3<f32>(rr * cos(a2), s3.y, rr * sin(a2));
+        let tip = vec3<f32>(0.32 + 0.30 * open, 0.35 + 1.0 * open, 0.0);
+        fil_d = sdCapsule(sp, vec3<f32>(0.08, 0.0, 0.0), tip, 0.035);
+        anther_d = length(sp - tip) - (0.06 + 0.04 * open + 0.015 * sin(ctx.time * 2.0 + ch.z * TAU));
+    }
+
+    let stem_all = smin(stem_d, fil_d, 0.08);
+    var d = smin(stem_all, petal_d, 0.5);
+    d = smin(d, anther_d, 0.1) * 0.92;
 
     var mat_id = 1.0;
-    if (petal_d < stem_d) { mat_id = 2.0; }
+    if (petal_d < stem_all) { mat_id = 2.0; }
+    if (anther_d < min(stem_all, petal_d)) { mat_id = 3.0; }
 
     return vec2<f32>(d, mat_id);
 }
@@ -220,7 +285,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let rc = (rp.xy - 0.5) * 2.0 * vec2<f32>(res.x / res.y, 1.0);
             let dvec = uv - rc;
             let dist = length(dvec);
-            let ring = exp(-pow((dist - age * 2.6) * 7.0, 2.0)) * exp(-age * 2.0);
+            let rr = (dist - age * 2.6) * 7.0; // squared directly: pow(negative, 2.0) is NaN
+            let ring = exp(-rr * rr) * exp(-age * 2.0);
             shockVec += (dvec / max(dist, 0.05)) * ring;
             shockFlash += ring;
         }
@@ -298,6 +364,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         if (mat_id == 2.0) {
             base_color = vec3<f32>(0.8, 0.2, 0.6); // petal
         }
+        let cellHit = floraCell(p, ctx);
+        if (mat_id == 3.0) {
+            base_color = vec3<f32>(1.0, 0.72, 0.2); // [Idea 2] gold anther
+        }
 
         // subsurface scattering approximation
         let sss_sample_dist = 0.5;
@@ -317,6 +387,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Bloom flash: petals glow hot on kicks / growth fronts
         let bloomGlow = (bloomImpulse + growthEnergy * 0.4) * intensity;
         color += vec3<f32>(0.9, 0.4, 1.0) * bloomGlow * select(0.15, 0.6, mat_id == 2.0);
+
+        // [Idea 2] anthers glow hotter the more open the flower is
+        if (mat_id == 3.0) {
+            let openHit = cellHit.w;
+            color += vec3<f32>(1.0, 0.65, 0.15) * (0.35 + 1.15 * openHit * openHit) * (0.6 + intensity * 1.2);
+        }
 
         // fog
         let fog = exp(-0.02 * t * t);
