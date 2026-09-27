@@ -11,14 +11,30 @@ export const TEXTURE_ROLES: readonly TextureRole[] = [
   'read', 'color', 'dataA', 'dataB', 'dataC',
 ] as const;
 
+/**
+ * Group-1 sim-ring buffer roles (src/contracts/bind_group1.json). `simState` is
+ * the live agent buffer; `simIndex` is its read-only snapshot, refreshed by a
+ * copyBufferToBuffer barrier — the buffer twin of dataA → dataC.
+ */
+export type SimBufferRole = 'simState' | 'simIndex';
+
+export const SIM_BUFFER_ROLES: readonly SimBufferRole[] = ['simState', 'simIndex'] as const;
+
+export type GraphRole = TextureRole | SimBufferRole;
+
+/** `pixels` dispatches ceil(W/wg.x)×ceil(H/wg.y); `simState` dispatches ceil(stateCount/wg.x)×1. */
+export type GraphDispatchDomain = 'pixels' | 'simState';
+
 export const MAX_REPEAT = 64;
 
 export interface GraphNodeDef {
   id: string;
   entry: string;
-  reads: TextureRole[];
-  writes: TextureRole[];
+  reads: GraphRole[];
+  writes: GraphRole[];
   repeat?: number;
+  /** Dispatch domain; defaults to `pixels`. */
+  dispatch?: GraphDispatchDomain;
 }
 
 export interface MultipassGraphDef {
@@ -26,19 +42,18 @@ export interface MultipassGraphDef {
   nodes: GraphNodeDef[];
 }
 
-export interface CopyBarrier {
-  from: 'dataA' | 'dataB';
-  to: 'dataC';
-  reason: string;
-}
+export type CopyBarrier =
+  | { from: 'dataA' | 'dataB'; to: 'dataC'; reason: string }
+  | { from: 'simState'; to: 'simIndex'; reason: string };
 
 export interface ExpandedDispatch {
   nodeId: string;
   entry: string;
-  reads: TextureRole[];
-  writes: TextureRole[];
+  reads: GraphRole[];
+  writes: GraphRole[];
   iteration: number;
   copiesBefore: CopyBarrier[];
+  dispatch: GraphDispatchDomain;
 }
 
 export interface GraphShaderRecord {
@@ -48,6 +63,40 @@ export interface GraphShaderRecord {
 
 function isTextureRole(v: string): v is TextureRole {
   return (TEXTURE_ROLES as readonly string[]).includes(v);
+}
+
+function isGraphRole(v: string): v is GraphRole {
+  return isTextureRole(v) || (SIM_BUFFER_ROLES as readonly string[]).includes(v);
+}
+
+/** True when any node touches the group-1 sim ring or dispatches over simState. */
+export function graphUsesSimRing(graph: MultipassGraphDef): boolean {
+  return graph.nodes.some(
+    (n) =>
+      n.dispatch === 'simState' ||
+      [...(n.reads ?? []), ...(n.writes ?? [])].some((r) =>
+        (SIM_BUFFER_ROLES as readonly string[]).includes(r),
+      ),
+  );
+}
+
+/**
+ * simIndex freshness. It is stale at frame start (simState persists across
+ * frames and may have been written since the last snapshot), becomes fresh
+ * after a copy, and goes stale again on every simState write.
+ */
+interface SimIndexState {
+  fresh: boolean;
+}
+
+function simCopiesBeforeRead(reads: GraphRole[], sim: SimIndexState): CopyBarrier[] {
+  if (!reads.includes('simIndex') || sim.fresh) return [];
+  sim.fresh = true;
+  return [{ from: 'simState', to: 'simIndex', reason: 'simState → simIndex snapshot' }];
+}
+
+function applySimWrites(writes: GraphRole[], sim: SimIndexState): void {
+  if (writes.includes('simState')) sim.fresh = false;
 }
 
 /** Roles that hold simulation state across intra-frame handoff. */
@@ -63,9 +112,9 @@ function totalPassCount(graph: MultipassGraphDef): number {
  */
 function applyWrites(
   state: Map<TextureRole, TextureRole | 'frameSeed'>,
-  writes: TextureRole[],
+  writes: GraphRole[],
 ): void {
-  const primary = writes.find((w) => SIM_ROLES.includes(w));
+  const primary = writes.find((w): w is TextureRole => SIM_ROLES.includes(w as TextureRole));
   if (!primary) return;
   state.set(primary, primary);
   // Writing dataA or dataB invalidates stale dataC sample until copy.
@@ -75,7 +124,7 @@ function applyWrites(
 }
 
 function copiesNeededBeforeRead(
-  reads: TextureRole[],
+  reads: GraphRole[],
   state: Map<TextureRole, TextureRole | 'frameSeed'>,
 ): CopyBarrier[] {
   const copies: CopyBarrier[] = [];
@@ -116,7 +165,7 @@ function copiesNeededBeforeRead(
   return copies;
 }
 
-function alternateWrite(writes: TextureRole[], iteration: number): TextureRole[] {
+function alternateWrite(writes: GraphRole[], iteration: number): GraphRole[] {
   if (iteration === 0) return writes;
   const hasA = writes.includes('dataA');
   const hasB = writes.includes('dataB');
@@ -159,10 +208,16 @@ export function validateGraph(
       errors.push(`node ${node.id}: repeat must be 1–${MAX_REPEAT}`);
     }
     for (const r of node.reads ?? []) {
-      if (!isTextureRole(r)) errors.push(`node ${node.id}: invalid read role "${r}"`);
+      if (!isGraphRole(r)) errors.push(`node ${node.id}: invalid read role "${r}"`);
     }
     for (const w of node.writes ?? []) {
-      if (!isTextureRole(w)) errors.push(`node ${node.id}: invalid write role "${w}"`);
+      if (!isGraphRole(w)) errors.push(`node ${node.id}: invalid write role "${w}"`);
+      if (w === 'simIndex') {
+        errors.push(`node ${node.id}: simIndex is read-only (written only by the simState → simIndex barrier)`);
+      }
+    }
+    if (node.dispatch !== undefined && node.dispatch !== 'pixels' && node.dispatch !== 'simState') {
+      errors.push(`node ${node.id}: invalid dispatch "${node.dispatch}" (pixels | simState)`);
     }
     if (!node.reads?.length && !node.writes?.length) {
       errors.push(`node ${node.id}: must declare reads or writes`);
@@ -180,8 +235,8 @@ export function validateGraph(
       const reads = node.reads ?? [];
 
       for (const role of reads) {
-        if (!SIM_ROLES.includes(role)) continue;
-        const available = state.get(role);
+        if (!SIM_ROLES.includes(role as TextureRole)) continue;
+        const available = state.get(role as TextureRole);
         if (role === 'dataC' && available === 'frameSeed') continue;
         if (role === 'dataC' && (available === 'dataA' || available === 'dataB')) continue;
         if (available === role || available === 'frameSeed') continue;
@@ -197,7 +252,11 @@ export function validateGraph(
       const copies = copiesNeededBeforeRead(reads, new Map(state));
       if (copies.length === 0) {
         for (const role of reads) {
-          if (SIM_ROLES.includes(role) && state.get(role) === undefined && role !== 'dataC') {
+          if (
+            SIM_ROLES.includes(role as TextureRole) &&
+            state.get(role as TextureRole) === undefined &&
+            role !== 'dataC'
+          ) {
             const viaC = state.get('dataC');
             if (viaC !== role && viaC !== 'dataA' && viaC !== 'dataB' && viaC !== 'frameSeed') {
               errors.push(`node ${node.id} iter ${i}: cannot satisfy read "${role}"`);
@@ -219,13 +278,17 @@ export function expandGraph(graph: MultipassGraphDef): ExpandedDispatch[] {
   const result: ExpandedDispatch[] = [];
   const state = new Map<TextureRole, TextureRole | 'frameSeed'>();
   state.set('dataC', 'frameSeed');
+  const sim: SimIndexState = { fresh: false };
 
   for (const node of graph.nodes) {
     const repeat = node.repeat ?? 1;
     for (let i = 0; i < repeat; i++) {
       const reads = [...(node.reads ?? [])];
       const writes = alternateWrite(node.writes ?? [], i);
-      const copiesBefore = copiesNeededBeforeRead(reads, state);
+      const copiesBefore = [
+        ...copiesNeededBeforeRead(reads, state),
+        ...simCopiesBeforeRead(reads, sim),
+      ];
 
       result.push({
         nodeId: node.id,
@@ -234,9 +297,11 @@ export function expandGraph(graph: MultipassGraphDef): ExpandedDispatch[] {
         writes,
         iteration: i,
         copiesBefore,
+        dispatch: node.dispatch ?? 'pixels',
       });
 
       applyWrites(state, writes);
+      applySimWrites(writes, sim);
     }
   }
 

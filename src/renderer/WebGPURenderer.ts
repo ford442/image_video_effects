@@ -57,6 +57,9 @@ import { graphRunner } from './GraphRunner';
 import { GpuChoresHost } from '../gpuChores';
 import type { WebGpuProbeHandoff } from './webgpuBootProbe';
 import { allocateWorkingPool, rungsForRequest } from './webgpu/historyTexProbe';
+import { SimRing } from './webgpu/simRing';
+import { resolveGraphForShader, resolveSimRingRequest } from './multipassRegistry';
+import { graphUsesSimRing } from './multipassGraph';
 
 export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private device: GPUDevice | null = null;
@@ -122,6 +125,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private releasingDevice = false;
 
   readonly gpuChores = new GpuChoresHost();
+  /** Opt-in @group(1) sim ring — armed only when a group-1 pipeline compiles. */
+  readonly simRing = new SimRing();
 
   private frameState?: WebGPUFrameState;
 
@@ -465,12 +470,30 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   }
 
   async loadShader(id: string, url: string): Promise<boolean> {
-    return this.pipeline.shaderManager.loadShader(
+    const ok = await this.pipeline.shaderManager.loadShader(
       this.device, this.pipeline.pipelineLayout, id, url,
     );
+    if (ok && this.device && this.pipeline.shaderManager.usesSimRing(id)) {
+      const layout = this.pipeline.simRingBindGroupLayout;
+      if (!layout || !(await this.simRing.ensure(this.device, layout, resolveSimRingRequest(id)))) {
+        console.warn(`[WebGPU] "${id}" declares @group(1) but the sim ring could not be armed`);
+        return false;
+      }
+    }
+    return ok;
+  }
+
+  /** Re-arm sim-ring seeding when a slot switches to a group-1 shader. */
+  private rearmSimRingFor(id: string | null): void {
+    if (!id || !this.simRing.allocated) return;
+    const graph = resolveGraphForShader(id);
+    if (this.pipeline.shaderManager.usesSimRing(id) || (graph && graphUsesSimRing(graph))) {
+      this.simRing.resetFrame();
+    }
   }
 
   setActiveShader(id: string): void {
+    if (this.slots[0]?.shaderId !== id) this.rearmSimRingFor(id);
     this.slots[0] = { shaderId: id, enabled: true, mode: 'chained' };
     for (let i = 1; i < PHYSICAL_SLOT_LIMIT; i++) {
       this.slots[i] = { shaderId: null, enabled: false, mode: 'chained' };
@@ -480,6 +503,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   setSlotShader(index: number, id: string): void {
     if (!checkPhysicalSlotIndex('WebGPURenderer', index)) return;
     const mode = this.slots[index]?.mode ?? 'chained';
+    if (this.slots[index]?.shaderId !== id) this.rearmSimRingFor(id);
     this.slots[index] = { shaderId: id, enabled: !!id, mode };
   }
 
@@ -747,6 +771,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     if (this.frameState) this.frameRenderer.stopRenderLoop(this.frameState);
     this.initialized = false;
     this.gpuChores.destroy();
+    this.simRing.destroy();
     destroyTimestampQueries(this.timestampRuntime);
     this.supportsTimestampQuery = false;
     this.pipeline.clear();

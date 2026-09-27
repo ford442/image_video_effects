@@ -28,6 +28,17 @@ async function fetchAndExpand(id, url) {
     `${id}.wgsl`
   );
 }
+function declaresBindGroup1(wgslCode) {
+  const stripped = wgslCode.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+  return /@group\(\s*1\s*\)/.test(stripped);
+}
+function refuseBindGroup1(id, op) {
+  const message = `Shader ${id} declares @group(1) (sim ring) \u2014 WASM backend is group-0 only (feature freeze); skipped. Use the WebGPU (TS) renderer for sim-ring shaders.`;
+  console.warn(`[WASM] ${op}: ${message}`);
+  state.lastLoadError = message;
+  state.loadErrorCount++;
+  return false;
+}
 function loadShader(id, wgslCode) {
   if (!state.initialized || !wasmRef.module) {
     console.error("[WASM] Renderer not initialized");
@@ -40,6 +51,7 @@ function loadShader(id, wgslCode) {
     state.loadErrorCount++;
     return false;
   }
+  if (declaresBindGroup1(wgslCode)) return refuseBindGroup1(id, "loadShader");
   const rewritten = rewriteWgslStorageFormats(wgslCode, state.colorFormat);
   const idBuf = writeUtf8(id);
   const codeBuf = writeUtf8(rewritten);
@@ -71,6 +83,7 @@ function reloadShader(id, wgslCode) {
     state.loadErrorCount++;
     return false;
   }
+  if (declaresBindGroup1(wgslCode)) return refuseBindGroup1(id, "reloadShader");
   const rewritten = rewriteWgslStorageFormats(wgslCode, state.colorFormat);
   const idBuf = writeUtf8(id);
   const codeBuf = writeUtf8(rewritten);

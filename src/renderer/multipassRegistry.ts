@@ -178,10 +178,13 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
       {
         "id": "walkers",
         "entry": "dla-walkers",
+        "dispatch": "simState",
         "reads": [
-          "dataC"
+          "dataC",
+          "simState"
         ],
         "writes": [
+          "simState",
           "dataA"
         ]
       },
@@ -642,6 +645,13 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
   }
 };
 
+/** Opt-in @group(1) sim-ring requests (shader_definitions `simRing` field). */
+export const SIM_RING_REGISTRY: Record<string, { stateCount: number }> = {
+  "dla-crystals": {
+    "stateCount": 65536
+  }
+};
+
 /** Get the next shader in a multipass chain, if any. */
 export function getNextPass(shaderId: string): string | null {
   return MULTIPASS_REGISTRY[shaderId]?.nextShader ?? null;
@@ -684,4 +694,17 @@ export function getGraphEntryIds(shaderId: string): string[] {
 
 export function hasGraph(shaderId: string): boolean {
   return shaderId in GRAPH_REGISTRY;
+}
+
+/**
+ * Requested sim-ring element count for a shader id or one of its graph entries.
+ * Undefined → the ring's contract default (bind_group1.json oom.defaultStateCount).
+ */
+export function resolveSimRingRequest(shaderId: string): number | undefined {
+  const direct = SIM_RING_REGISTRY[shaderId];
+  if (direct) return direct.stateCount;
+  for (const [ownerId, req] of Object.entries(SIM_RING_REGISTRY)) {
+    if (GRAPH_REGISTRY[ownerId]?.nodes.some((n) => n.entry === shaderId)) return req.stateCount;
+  }
+  return undefined;
 }

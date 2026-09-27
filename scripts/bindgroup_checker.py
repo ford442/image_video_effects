@@ -557,6 +557,11 @@ def parse_shader(filepath):
     
     if result["workgroup_sizes"]:
         has_valid = any(ws == [8, 8, 1] or ws == [16, 16, 1] for ws in result["workgroup_sizes"])
+        # Opt-in @group(1) sim ring (src/contracts/bind_group1.json): simState-domain
+        # passes dispatch one invocation per agent with @workgroup_size(64, 1, 1).
+        declares_sim_ring = re.search(r"@group\(\s*1\s*\)", strip_wgsl_comments(content)) is not None
+        if not has_valid and declares_sim_ring:
+            has_valid = any(ws == [64, 1, 1] for ws in result["workgroup_sizes"])
         if not has_valid:
             if has_deep_workgroup_marker(filepath, content):
                 result["warnings"].append(

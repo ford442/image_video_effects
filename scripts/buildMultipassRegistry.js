@@ -13,6 +13,7 @@ const OUT_FILE = path.join(__dirname, '..', 'src', 'renderer', 'multipassRegistr
 
 const registry = {};
 const graphRegistry = {};
+const simRingRegistry = {};
 
 function scan(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -24,6 +25,9 @@ function scan(dir) {
         const json = JSON.parse(fs.readFileSync(fullPath, 'utf-8'));
         if (json.multipass?.graph) {
           graphRegistry[json.id] = json.multipass.graph;
+        }
+        if (json.simRing) {
+          simRingRegistry[json.id] = { stateCount: json.simRing.stateCount };
         }
         if (json.multipass?.pass !== undefined) {
           registry[json.id] = {
@@ -56,6 +60,9 @@ const lines = [
   `export const MULTIPASS_REGISTRY: Record<string, MultipassInfo> = ${JSON.stringify(registry, null, 2)};`,
   ``,
   `export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = ${JSON.stringify(graphRegistry, null, 2)};`,
+  ``,
+  `/** Opt-in @group(1) sim-ring requests (shader_definitions \`simRing\` field). */`,
+  `export const SIM_RING_REGISTRY: Record<string, { stateCount: number }> = ${JSON.stringify(simRingRegistry, null, 2)};`,
   ``,
   `/** Get the next shader in a multipass chain, if any. */`,
   `export function getNextPass(shaderId: string): string | null {`,
@@ -101,9 +108,22 @@ const lines = [
   `  return shaderId in GRAPH_REGISTRY;`,
   `}`,
   ``,
+  `/**`,
+  ` * Requested sim-ring element count for a shader id or one of its graph entries.`,
+  ` * Undefined → the ring's contract default (bind_group1.json oom.defaultStateCount).`,
+  ` */`,
+  `export function resolveSimRingRequest(shaderId: string): number | undefined {`,
+  `  const direct = SIM_RING_REGISTRY[shaderId];`,
+  `  if (direct) return direct.stateCount;`,
+  `  for (const [ownerId, req] of Object.entries(SIM_RING_REGISTRY)) {`,
+  `    if (GRAPH_REGISTRY[ownerId]?.nodes.some((n) => n.entry === shaderId)) return req.stateCount;`,
+  `  }`,
+  `  return undefined;`,
+  `}`,
+  ``,
 ];
 
 fs.writeFileSync(OUT_FILE, lines.join('\n'));
 console.log(
-  `Generated ${OUT_FILE} with ${Object.keys(registry).length} linear + ${Object.keys(graphRegistry).length} graph entries.`,
+  `Generated ${OUT_FILE} with ${Object.keys(registry).length} linear + ${Object.keys(graphRegistry).length} graph + ${Object.keys(simRingRegistry).length} sim-ring entries.`,
 );
