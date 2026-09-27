@@ -1,12 +1,8 @@
-// ═══════════════════════════════════════════════════════════════════
-//  Chronomorphic Glass Tesseract
-//  Category: generative
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
-//  Complexity: High
-//  Upgraded: 2026-09-15
-//  Ideas: 4D face-crossing caustics; temporal birefringence
-//  A packing: ACES display RGBA
-// ═══════════════════════════════════════════════════════════════════
+// ----------------------------------------------------------------
+// Chronomorphic Glass Tesseract
+// Category: generative
+// ----------------------------------------------------------------
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -24,313 +20,208 @@
 struct Uniforms {
   config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
   zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Fold Speed, .y = Dispersion, .z = Refraction IOR, .w = Gravity
+  zoom_params: vec4<f32>,  // .x = Shatter, .y = Refraction, .z = Color Shift, .w = Mouse Gravity
   ripples: array<vec4<f32>, 50>,
 };
 
-const PI: f32 = 3.14159265359;
-const TAU: f32 = 6.28318530718;
-
-// ── Helpers ─────────────
+// --- CORE UTILITIES ---
 fn rot(a: f32) -> mat2x2<f32> {
     let s = sin(a);
     let c = cos(a);
     return mat2x2<f32>(c, -s, s, c);
 }
 
-// 4D Rotation matrices
-fn rotXW(a: f32, p: vec4<f32>) -> vec4<f32> {
-    var pr = p;
-    let r = rot(a);
-    let r_xw = r * vec2<f32>(p.x, p.w);
-    pr.x = r_xw.x;
-    pr.w = r_xw.y;
-    return pr;
+fn hash12(p: vec2<f32>) -> f32 {
+    var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
 }
 
-fn rotYW(a: f32, p: vec4<f32>) -> vec4<f32> {
-    var pr = p;
-    let r = rot(a);
-    let r_yw = r * vec2<f32>(p.y, p.w);
-    pr.y = r_yw.x;
-    pr.w = r_yw.y;
-    return pr;
+// Rotate 3D space
+fn rot3D(axis: vec3<f32>, angle: f32) -> mat3x3<f32> {
+    let s = sin(angle);
+    let c = cos(angle);
+    let oc = 1.0 - c;
+    return mat3x3<f32>(
+        oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,
+        oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,
+        oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c
+    );
 }
 
-fn rotZW(a: f32, p: vec4<f32>) -> vec4<f32> {
-    var pr = p;
-    let r = rot(a);
-    let r_zw = r * vec2<f32>(p.z, p.w);
-    pr.z = r_zw.x;
-    pr.w = r_zw.y;
-    return pr;
+// --- SDF & ALGORITHM ---
+fn map(pos: vec3<f32>, time: f32, shatter: f32, audio: f32, mousePos: vec2<f32>, gravity: f32) -> f32 {
+    var p = pos;
+
+    // Mouse distortion (Gravity well)
+    // Convert pos.xy to similar space, maybe pos is in -1 to 1?
+    // mouse_uv is 0 to 1
+    let mouseSpace = (mousePos - 0.5) * 2.0 * vec2<f32>(1.0, -1.0);
+    let mouseDist = length(p.xy - mouseSpace);
+    let g = gravity * 0.5 * exp(-mouseDist * 2.0);
+    p *= 1.0 + g;
+    p.z += g * 0.5;
+
+    // Audio-reactive shatter
+    let noise = hash12(p.xy * 10.0 + time) * 2.0 - 1.0;
+    let shatterEffect = noise * shatter * 0.1 * audio;
+
+    p = p + shatterEffect;
+
+    // Recursive space folding
+    for (var i = 0; i < 4; i++) {
+        p = abs(p) - vec3<f32>(0.5 + sin(time * 0.2 + f32(i)) * 0.2 + audio * 0.1);
+        let r = rot(time * 0.1 + f32(i));
+        let pxy = r * p.xy;
+        p = vec3<f32>(pxy.x, pxy.y, p.z);
+
+        let pyz = rot(time * 0.15 - f32(i)) * p.yz;
+        p = vec3<f32>(p.x, pyz.x, pyz.y);
+    }
+
+    // Box SDF
+    let d = length(max(abs(p) - vec3<f32>(1.0), vec3<f32>(0.0))) - 0.1;
+    return d;
 }
 
-fn rotXY(a: f32, p: vec4<f32>) -> vec4<f32> {
-    var pr = p;
-    let r = rot(a);
-    let r_xy = r * vec2<f32>(p.x, p.y);
-    pr.x = r_xy.x;
-    pr.y = r_xy.y;
-    return pr;
-}
-
-fn rotXZ(a: f32, p: vec4<f32>) -> vec4<f32> {
-    var pr = p;
-    let r = rot(a);
-    let r_xz = r * vec2<f32>(p.x, p.z);
-    pr.x = r_xz.x;
-    pr.z = r_xz.y;
-    return pr;
-}
-
-fn rotYZ(a: f32, p: vec4<f32>) -> vec4<f32> {
-    var pr = p;
-    let r = rot(a);
-    let r_yz = r * vec2<f32>(p.y, p.z);
-    pr.y = r_yz.x;
-    pr.z = r_yz.y;
-    return pr;
-}
-
-// 3D smooth max
-fn smax(a: f32, b: f32, k: f32) -> f32 {
-    let h = clamp(0.5 + 0.5 * (a - b) / k, 0.0, 1.0);
-    return mix(b, a, h) + k * h * (1.0 - h);
-}
-
-fn rotateTesseractPoint(p3: vec3<f32>, time: f32) -> vec4<f32> {
-    var p = vec4<f32>(p3, 0.0);
-
-    let foldSpeed = u.zoom_params.x;
-    let t = time * foldSpeed * 0.2;
-
-    p = rotXY(t * 1.3, p);
-    p = rotYZ(t * 0.8, p);
-    p = rotXZ(t * 1.1, p);
-
-    p = rotXW(t * 0.7, p);
-    p = rotYW(t * 0.9, p);
-    p = rotZW(t * 1.2, p);
-    return p;
-}
-
-// Tesseract SDF
-fn sdf_tesseract(p3: vec3<f32>, time: f32) -> f32 {
-    let p = rotateTesseractPoint(p3, time);
-    // Base size
-    let s = 1.0;
-
-    // Distance to hypercube edges/faces
-    let d = abs(p) - vec4<f32>(s);
-
-    // Approximate distance
-    let dist4d = length(max(d, vec4<f32>(0.0))) + min(max(max(d.x, d.y), max(d.z, d.w)), 0.0);
-
-    // Add chronomorphic distortion (ripples)
-    let ripple1 = sin(p3.x * 3.0 + time) * sin(p3.y * 2.5 - time * 1.2) * sin(p3.z * 3.5 + time * 0.8);
-    let ripple2 = cos(length(p3) * 4.0 - time * 2.0);
-    let chronomorph = (ripple1 * 0.08 + ripple2 * 0.05);
-
-    return dist4d - 0.1 + chronomorph; // slight rounding
-}
-
-fn tesseractSliceMetrics(p3: vec3<f32>, time: f32) -> vec2<f32> {
-    let p4 = rotateTesseractPoint(p3, time);
-    // Idea 1: measure when hidden W faces cross the rendered 3D slice.
-    let face_distance = abs(abs(p4.w) - 1.0);
-    let face_caustic = 1.0 - smoothstep(0.035, 0.2, face_distance);
-    return vec2<f32>(face_caustic, p4.w);
-}
-
-// Map scene
-fn map(p: vec3<f32>) -> f32 {
-    let tesseract = sdf_tesseract(p, u.config.x);
-    return tesseract;
-}
-
-// Calculate normal
-fn calcNormal(p: vec3<f32>) -> vec3<f32> {
+fn getNormal(p: vec3<f32>, time: f32, shatter: f32, audio: f32, mousePos: vec2<f32>, gravity: f32) -> vec3<f32> {
     let e = vec2<f32>(0.001, 0.0);
-    return normalize(vec3<f32>(
-        map(p + e.xyy) - map(p - e.xyy),
-        map(p + e.yxy) - map(p - e.yxy),
-        map(p + e.yyx) - map(p - e.yyx)
-    ));
+    let d = map(p, time, shatter, audio, mousePos, gravity);
+    let n = d - vec3<f32>(
+        map(p - e.xyy, time, shatter, audio, mousePos, gravity),
+        map(p - e.yxy, time, shatter, audio, mousePos, gravity),
+        map(p - e.yyx, time, shatter, audio, mousePos, gravity)
+    );
+    return normalize(n);
 }
-
-fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
-    let a = 2.51;
-    let b = 0.03;
-    let c = 2.43;
-    let d = 0.59;
-    let e = 0.14;
-    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
-}
-
-struct RenderResult {
-    color: vec3<f32>,
-    depth: f32,
-    alpha: f32,
-    hit: bool,
-}
-
-// Shading & Raymarching
-fn render(ro: vec3<f32>, rd: vec3<f32>, uv: vec2<f32>, aspect: f32) -> RenderResult {
-    let max_steps = 80;
-    let max_dist = 20.0;
-    let surf_dist = 0.005;
-
-    var dO = 0.0;
-    var p = ro;
-
-    var hit = false;
-    for(var i = 0; i < max_steps; i++) {
-        p = ro + rd * dO;
-        let dS = map(p);
-        if(dS < surf_dist) {
-            hit = true;
-            break;
-        }
-        if(dO > max_dist) {
-            break;
-        }
-        dO += dS;
-    }
-
-    let audio = plasmaBuffer[0].xyz;
-    let audioPulse = audio.x * 0.35;
-
-    // Background color (cosmic gradient)
-    var col = mix(vec3<f32>(0.01, 0.01, 0.05), vec3<f32>(0.1, 0.02, 0.15), length(uv) * 0.5) + audioPulse * 0.1;
-    var alpha = 0.04;
-
-    if (hit) {
-        let n = calcNormal(p);
-        let v = -rd;
-        let slice_metrics = tesseractSliceMetrics(p, u.config.x);
-
-        let ior = u.zoom_params.z;
-        let dispersion = u.zoom_params.y;
-
-        // Chromatic Dispersion (Refraction)
-        // Idea 2: W-phase offsets split time as well as wavelength.
-        let temporal_delay = sin(u.config.x * (0.65 + u.zoom_params.x * 0.2) + slice_metrics.y * PI) *
-            dispersion * (0.18 + audio.y * 0.04);
-        let iorR = 1.0 / max(ior - dispersion - temporal_delay, 0.2);
-        let iorG = 1.0 / max(ior + temporal_delay * 0.25, 0.2);
-        let iorB = 1.0 / max(ior + dispersion + temporal_delay, 0.2);
-
-        let refR = refract(rd, n, iorR);
-        let refG = refract(rd, n, iorG);
-        let refB = refract(rd, n, iorB);
-
-        // Very basic mock environment sampling for internal refractions based on normal and refracted rays
-        let envR = vec3<f32>(1.0, 0.2, 0.5) * max(0.0, dot(refR, vec3<f32>(0.0, 1.0, 0.0)));
-        let envG = vec3<f32>(0.2, 1.0, 0.5) * max(0.0, dot(refG, vec3<f32>(1.0, 0.0, 0.0)));
-        let envB = vec3<f32>(0.2, 0.5, 1.0) * max(0.0, dot(refB, vec3<f32>(0.0, 0.0, 1.0)));
-
-        let refractColor = vec3<f32>(envR.x, envG.y, envB.z) * 1.5;
-
-        // Fresnel / Iridescence
-        let fresnel = pow(1.0 - max(dot(n, v), 0.0), 4.0);
-
-        // Iridescent pearlescent color based on normal
-        let iridescence = 0.5 + 0.5 * cos(TAU * (n.x * 2.0 + u.config.x * 0.2 + vec3<f32>(0.0, 0.33, 0.67)));
-
-        // Inner glow based on audio
-        let glow = vec3<f32>(0.8, 0.3, 0.9) * smoothstep(0.5, 1.0, fresnel) * audioPulse;
-
-        // Combine
-        col = mix(refractColor, iridescence, fresnel * 0.5) + glow * 2.0;
-
-        // Specular highlight
-        let l = normalize(vec3<f32>(1.0, 2.0, -1.0));
-        let h = normalize(l + v);
-        let spec = pow(max(dot(n, h), 0.0), 32.0) * 1.0;
-        col += vec3<f32>(spec);
-
-        // Idea 1: W-face crossings focus paired cyan/gold caustic sheets.
-        let caustic_color = mix(vec3<f32>(0.2, 0.8, 1.0), vec3<f32>(1.0, 0.55, 0.15),
-            0.5 + 0.5 * sin(slice_metrics.y * TAU + u.config.x * 0.4));
-        col += caustic_color * slice_metrics.x * (0.65 + audio.z * 0.18);
-
-        // Attenuate by distance
-        col *= exp(-0.1 * dO);
-        alpha = clamp(0.2 + fresnel * 0.45 + spec * 0.2 + slice_metrics.x * 0.35, 0.0, 1.0);
-    }
-
-    let depth = select(0.0, clamp(1.0 - dO / max_dist, 0.0, 1.0), hit);
-    return RenderResult(col, depth, alpha, hit);
-}
-
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dims = textureDimensions(writeTexture);
-    let x = i32(global_id.x);
-    let y = i32(global_id.y);
-    if (x >= i32(dims.x) || y >= i32(dims.y)) { return; }
+    if (global_id.x >= dims.x || global_id.y >= dims.y) { return; }
+    let uv = vec2<f32>(global_id.xy) / vec2<f32>(dims);
 
-    let res = vec2<f32>(f32(dims.x), f32(dims.y));
-    let base_uv = vec2<f32>(f32(x) + 0.5, f32(y) + 0.5) / res;
+    // Normalized coordinates (-1 to 1) with aspect ratio correction
+    var p = uv * 2.0 - 1.0;
+    p.y = -p.y; // Flip Y
+    p.x *= f32(dims.x) / f32(dims.y);
 
-    var uv = base_uv * 2.0 - 1.0;
-    let aspect = res.x / res.y;
-    uv.x *= aspect;
+    let time = u.config.x;
 
-    // Mouse Interaction (Gravity Well)
-    // Map mouse UV to screen space
-    var mouse_pos = u.zoom_config.yz; // [0, 1]
+    // Read audio data from extraBuffer
+    let bass = extraBuffer[0];
+    let mid = extraBuffer[1];
+    let audio = bass * 0.6 + mid * 0.4;
 
-    // If mouse is not interacting (0,0 is default when off-screen/uninitialized in some wrappers)
-    // we just put it off screen
-    if (length(mouse_pos) < 0.01) {
-        mouse_pos = vec2<f32>(999.0);
-    } else {
-        mouse_pos = mouse_pos * 2.0 - 1.0;
-        mouse_pos.x *= aspect;
-    }
-
-    let gravityStrength = u.zoom_params.w;
-    let isMouseDown = u.zoom_config.w > 0.0;
-
-    // Apply gravity well spatial distortion
-    let distToMouse = length(uv - mouse_pos);
-    let pull = (1.0 / (distToMouse + 0.1)) * gravityStrength * 0.5;
-    let delta = vec3<f32>(uv - mouse_pos, 0.0);
-    let dir = delta / max(length(delta), 0.001);
-    let polarity = select(-0.1, 0.2, isMouseDown);
-    let rd_warp = dir * pull * polarity;
+    // Read params
+    let shatter = u.zoom_params.x;
+    let refraction = u.zoom_params.y; // typically 1.33 for water, 1.5 for glass, etc.
+    let colorShift = u.zoom_params.z;
+    let gravity = u.zoom_params.w;
+    let mousePos = u.zoom_config.yz;
 
     // Camera setup
-    let time = u.config.x;
-    var ro = vec3<f32>(0.0, 0.0, 3.5);
+    let ro = vec3<f32>(0.0, 0.0, -3.5);
+    let lookAtTarget = vec3<f32>(0.0, 0.0, 0.0);
+    let w = normalize(lookAtTarget - ro);
+    let u_dir = normalize(cross(w, vec3<f32>(0.0, 1.0, 0.0)));
+    let v_dir = cross(u_dir, w);
+    var rd = normalize(p.x * u_dir + p.y * v_dir + 1.5 * w);
 
-    // Gentle camera drift
-    let rcam = rot(time * 0.1);
-    let rcam_xz = rcam * vec2<f32>(ro.x, ro.z);
-    ro.x = rcam_xz.x;
-    ro.z = rcam_xz.y;
+    // Rotate camera based on time
+    let camRot = rot(time * 0.1);
+    let ro_xz = camRot * ro.xz;
+    let roRot = vec3<f32>(ro_xz.x, ro.y, ro_xz.y);
 
-    let ta = vec3<f32>(0.0, 0.0, 0.0);
+    let targetRot = vec3<f32>(0.0, 0.0, 0.0);
+    let wRot = normalize(targetRot - roRot);
+    let u_dirRot = normalize(cross(wRot, vec3<f32>(0.0, 1.0, 0.0)));
+    let v_dirRot = cross(u_dirRot, wRot);
+    let rdRot = normalize(p.x * u_dirRot + p.y * v_dirRot + 1.5 * wRot);
 
-    let ww = normalize(ta - ro);
-    let uu = normalize(cross(ww, vec3<f32>(0.0, 1.0, 0.0)));
-    let vv = normalize(cross(uu, ww));
+    // Raymarching
+    var t = 0.0;
+    var d = 0.0;
+    var pos = roRot;
 
-    var rd = normalize(uv.x * uu + uv.y * vv + 1.5 * ww);
+    // Steps for volumetric/glass rendering
+    var hit = false;
+    var min_d = 1000.0;
+    var i_step = 0;
+    for (var i = 0; i < 100; i++) {
+        pos = roRot + rdRot * t;
+        d = map(pos, time, shatter, audio, mousePos, gravity);
+        min_d = min(min_d, d);
+        if (d < 0.001) {
+            hit = true;
+            i_step = i;
+            break;
+        }
+        t += d * 0.5; // slow down for more precise folding
+        if (t > 10.0) {
+            break;
+        }
+    }
 
-    // Apply gravity warp to ray direction
-    rd = normalize(rd + rd_warp);
+    var color = vec3<f32>(0.0);
 
-    // Render
-    let rendered = render(ro, rd, uv, aspect);
-    let coord = vec2<i32>(x, y);
-    let source_depth = textureLoad(readDepthTexture, coord, 0).r;
-    let depth = select(source_depth, rendered.depth, rendered.hit);
-    let display = vec4<f32>(acesToneMap(max(rendered.color, vec3<f32>(0.0))), rendered.alpha);
-    textureStore(writeTexture, coord, display);
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coord, display);
+    // Background color based on distance
+    let bg_color = vec3<f32>(0.05, 0.0, 0.1) * (1.0 - length(p) * 0.5);
+    color = bg_color;
+
+    if (hit) {
+        let n = getNormal(pos, time, shatter, audio, mousePos, gravity);
+
+        // Lighting
+        let lightDir = normalize(vec3<f32>(1.0, 1.0, -1.0));
+        let diff = max(dot(n, lightDir), 0.0);
+        let refl = reflect(rdRot, n);
+        let spec = pow(max(dot(refl, lightDir), 0.0), 32.0);
+
+        // Refraction (fake)
+        let refractDir = refract(rdRot, n, 1.0 / refraction);
+        let refractedPos = pos + refractDir * 0.1;
+        let refractDist = map(refractedPos, time, shatter, audio, mousePos, gravity);
+        let absorb = exp(-refractDist * 5.0);
+
+        // Chromatic dispersion (simple offset)
+        let r_refract = map(pos + refractDir * 0.1, time, shatter, audio, mousePos, gravity);
+        let g_refract = map(pos + refractDir * 0.11, time, shatter, audio, mousePos, gravity);
+        let b_refract = map(pos + refractDir * 0.12, time, shatter, audio, mousePos, gravity);
+
+        let dispersionColor = vec3<f32>(r_refract, g_refract, b_refract) * 2.0;
+
+        // Base color transition
+        let baseColor1 = vec3<f32>(0.1, 0.3, 0.8); // quantum blue
+        let baseColor2 = vec3<f32>(0.8, 0.2, 0.8); // striking purple
+        let baseColor3 = vec3<f32>(1.0, 0.2, 0.5); // hot neon pink
+
+        let colorMix = sin(length(pos) * 2.0 + time + colorShift * 3.14) * 0.5 + 0.5;
+        let objColor = mix(mix(baseColor1, baseColor2, colorMix), baseColor3, sin(time * 0.5) * 0.5 + 0.5);
+
+        // Subsurface scattering proxy (depth based)
+        let sss = vec3<f32>(1.0, 0.5, 0.2) * (1.0 - t / 10.0) * 0.5;
+
+        color = objColor * diff * 0.5 + spec * vec3<f32>(1.0) + dispersionColor * 0.2 + sss * absorb * 2.0;
+
+        // Edge glow / Fresnel
+        let fresnel = pow(1.0 - max(dot(n, -rdRot), 0.0), 3.0);
+        color += objColor * fresnel * 2.0;
+    } else {
+        // Add some glowing aura around the object
+        let glow = exp(-min_d * 2.0) * vec3<f32>(0.2, 0.5, 1.0) * (0.5 + audio * 0.5);
+        color += glow;
+    }
+
+    // Tone mapping and gamma correction
+    color = color / (1.0 + color);
+    color = pow(color, vec3<f32>(1.0 / 2.2));
+
+    let finalColor = vec4<f32>(color, 1.0);
+    textureStore(writeTexture, global_id.xy, finalColor);
+
+    // Write to required buffers
+    let depth = min(t / 20.0, 1.0);
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, global_id.xy, finalColor);
 }

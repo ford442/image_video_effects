@@ -8935,66 +8935,60 @@
   {
     "id": "gen-chronomorphic-glass-tesseract",
     "name": "Chronomorphic Glass Tesseract",
+    "type": "generative",
     "category": "generative",
+    "url": "shaders/gen-chronomorphic-glass-tesseract.wgsl",
+    "description": "A hyper-dimensional glass-like structure that morphs through time, capturing light in internal reflections while audio-reactive elements shatter and rebuild its crystalline facets.",
     "tags": [
-      "3d",
-      "raymarching",
+      "quantum",
       "glass",
       "tesseract",
-      "iridescent",
+      "audio-reactive",
+      "hyper-dimensional",
       "refraction"
     ],
-    "description": "A hyper-dimensional glass structure that continuously folds through time and space, refracting shifting iridescent cosmic energies. Features chronomorphic spatial distortion and raymarched chromatic dispersion.",
-    "url": "/shaders/gen-chronomorphic-glass-tesseract.wgsl",
-    "workgroup_size": [
-      16,
-      16,
-      1
+    "features": [
+      "audio-reactive",
+      "mouse-interactive",
+      "raymarching"
     ],
     "params": [
       {
-        "id": "fold_speed",
-        "name": "Fold Speed",
-        "default": 1,
+        "id": "shatter_intensity",
+        "name": "Shatter Intensity",
+        "default": 0.5,
         "min": 0,
-        "max": 3,
-        "step": 0.1,
+        "max": 1,
+        "step": 0.01,
         "mapping": "zoom_params.x"
       },
       {
-        "id": "dispersion",
-        "name": "Dispersion",
-        "default": 0.05,
-        "min": 0,
-        "max": 0.2,
+        "id": "refraction_index",
+        "name": "Refraction Index",
+        "default": 1.33,
+        "min": 1,
+        "max": 2,
         "step": 0.01,
         "mapping": "zoom_params.y"
       },
       {
-        "id": "refraction_ior",
-        "name": "Refraction IOR",
-        "default": 1.33,
-        "min": 1,
-        "max": 2.5,
-        "step": 0.05,
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0,
+        "min": -1,
+        "max": 1,
+        "step": 0.1,
         "mapping": "zoom_params.z"
       },
       {
-        "id": "gravity",
-        "name": "Gravity",
+        "id": "mouse_gravity",
+        "name": "Mouse Gravity",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "features": [
-      "4d-tesseract",
-      "raymarching",
-      "audio-reactive",
-      "mouse-interaction",
-      "upgraded-rgba"
     ]
   },
   {
