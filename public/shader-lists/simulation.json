@@ -2728,6 +2728,7 @@
     ],
     "feedbackPacking": "A/C = ACES display RGBA for continuous caustic irradiance persistence; B is unused; depth passes through refracted depth.",
     "features": [
+      "upgraded-rgba",
       "depth-aware",
       "temporal-feedback",
       "interactive",
@@ -3671,6 +3672,7 @@
     "description": "Mouse-steerable coupled fluid simulation combining Navier-Stokes feedback fields with viscous fluid stirring. Mouse drags fluid creating vortex streets; click ripples inject bursts. Fluid thickness drives color absorption, blur, and glow.",
     "requiresRgba32Float": true,
     "features": [
+      "upgraded-rgba",
       "simulation",
       "mouse-driven",
       "temporal",
@@ -3983,6 +3985,7 @@
       "paper"
     ],
     "features": [
+      "upgraded-rgba",
       "mouse-driven",
       "temporal",
       "rgba-state-machine"

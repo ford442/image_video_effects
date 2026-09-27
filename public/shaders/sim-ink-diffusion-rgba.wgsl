@@ -1,3 +1,9 @@
+// Sim Ink Diffusion RGBA — wet-paper pigment simulation.
+// Upgraded: 2026-09-21
+// Ideas: edge darkening on the pigment-density gradient (Bousseau 2006), stronger as the wash
+//        dries; granulation into paper valleys (fibre grain + photo tone) on drying pigment
+// A packing: raw state (pigment rgb, water a); display only in writeTexture
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -86,10 +92,23 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 
   let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let paper = mix(vec3f(0.96, 0.94, 0.89), source.rgb, 0.55);
-  let absorb = exp(-pigment * vec3f(2.8, 2.45, 2.65));
+  // Idea 1 — edge darkening. Real washes dry with dark rims (pigment drawn to the drying
+  // edge). Following Bousseau et al. 2006, pigment density is raised by its own gradient,
+  // and the rim hardens as the paper dries.
+  let dryness = 1.0 - clamp(nextWater, 0.0, 1.0);
+  let densGrad = 0.5 * length(vec2f(dot(e.rgb - w.rgb, vec3f(0.333333)), dot(n.rgb - s.rgb, vec3f(0.333333))));
+  let edgeDark = 1.0 + clamp(densGrad * 9.0, 0.0, 1.2) * (0.35 + 0.65 * dryness);
+  // Idea 2 — granulation. Drying pigment settles into the paper's valleys: fixed fibre grain
+  // at two scales plus the photo's own tone (the photo is the paper here).
+  let fibre = 0.6 * hash21(vec2f(p)) + 0.4 * hash21(floor(vec2f(p) / 3.0) + vec2f(17.0, 5.0));
+  let valley = clamp(fibre + (0.5 - dot(source.rgb, vec3f(0.299, 0.587, 0.114))) * 0.5, 0.0, 1.0);
+  let granulate = 1.0 + (valley - 0.5) * 0.9 * dryness;
+  let absorb = exp(-pigment * edgeDark * granulate * vec3f(2.8, 2.45, 2.65));
   let stained = paper * absorb + pigment.bgr * 0.08 * nextWater;
   let edge = length(vec2f(e.r - w.r, n.g - s.g));
   let color = aces(stained + edge * vec3f(0.08, 0.11, 0.15) + audio * pigment * 0.12);
   let alpha = clamp(max(max(pigment.r, pigment.g), pigment.b) * 0.72 + nextWater * 0.2, 0.0, 1.0);
   textureStore(writeTexture, p, vec4f(color, alpha));
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  textureStore(writeDepthTexture, p, vec4f(depth, 0.0, 0.0, 0.0));
 }

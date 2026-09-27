@@ -1,6 +1,10 @@
 // Graphic Novel — adaptive ink contours, rotated print screens, and paper grain.
 // Public id "graphic-novel" intentionally aliases this underscore filename.
 // A/C stores ACES display RGBA. B is unused.
+//  Upgraded: 2026-09-21
+//  Ideas: spot blacks in the deepest tones; 45° pen hatching with a crossing set in darker
+//         tones; shadow-side contour line weight
+//  A packing: ACES display RGBA
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -46,6 +50,18 @@ fn screenDot(pixel: vec2<f32>, angle: f32, frequency: f32, coverage: f32) -> f32
   return 1.0 - smoothstep(radius - 0.08, radius + 0.08, length(local));
 }
 
+// One family of parallel pen strokes. `coverage` widens the stroke; a slow wobble along the
+// stroke varies the pen pressure so the lines don't read as a ruled screen.
+fn hatchLines(pixel: vec2<f32>, angle: f32, spacing: f32, coverage: f32) -> f32 {
+  let dir = vec2<f32>(cos(angle), sin(angle));
+  let across = dot(pixel, vec2<f32>(-dir.y, dir.x)) / spacing;
+  let along = dot(pixel, dir) / spacing;
+  let pressure = 0.75 + 0.25 * sin(along * 0.9 + hash21(vec2<f32>(floor(across), 3.0)) * 6.2831);
+  let halfWidth = clamp(coverage, 0.0, 1.0) * 0.32 * pressure;
+  let d = abs(fract(across) - 0.5);
+  return 1.0 - smoothstep(halfWidth - 0.06, halfWidth + 0.06, d);
+}
+
 fn historyAt(uv: vec2<f32>, resolution: vec2<f32>) -> vec4<f32> {
   let hi = vec2<i32>(resolution) - vec2<i32>(1);
   let coord = clamp(vec2<i32>(clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * resolution), vec2<i32>(0), hi);
@@ -80,7 +96,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let gradientMagnitude = length(gradient);
   let localContrast = abs(lumR - lumL) + abs(lumB - lumT);
   let adaptiveThreshold = (0.018 + (1.0 - u.zoom_params.y) * 0.14) * (1.0 + luma(source.rgb) * 0.4);
-  let contour = smoothstep(adaptiveThreshold, adaptiveThreshold * 2.4 + 0.002, gradientMagnitude + localContrast * 0.35);
+  let thinContour = smoothstep(adaptiveThreshold, adaptiveThreshold * 2.4 + 0.002, gradientMagnitude + localContrast * 0.35);
+
+  // Idea 3 — line weight. Inkers thicken a contour on the side away from the light. A pixel darker
+  // than its neighbourhood also picks up the edge two texels out, so shadow-side lines print heavier.
+  let sourceLuma = luma(source.rgb);
+  let shadowSide = smoothstep(0.0, 0.025, (lumL + lumR + lumT + lumB) * 0.25 - sourceLuma);
+  let t2 = texel * 2.0;
+  let wideX = luma(textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(t2.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb) -
+              luma(textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(t2.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb);
+  let wideY = luma(textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.0, t2.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb) -
+              luma(textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(0.0, t2.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb);
+  let wideContour = smoothstep(adaptiveThreshold, adaptiveThreshold * 2.4 + 0.002, length(vec2<f32>(wideX, wideY)));
+  let contour = max(thinContour, wideContour * shadowSide);
 
   let mouseDelta = (uv - mouse) * aspectVec;
   let mouseDistance = length(mouseDelta);
@@ -108,6 +136,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dotK = screenDot(pixel, 0.7854, dotScale * 0.86, tone);
   let printMask = clamp(dotC * 0.3 + dotM * 0.3 + dotK * 0.65, 0.0, 1.0);
 
+  // Idea 1 — spot blacks. The darkest poster bucket is filled solid, the way an inker "spots" the
+  // blacks, instead of being left as a screen. Fewer colour levels leave broader black shapes.
+  let spotCut = 0.6 / levels;
+  let spotBlack = 1.0 - smoothstep(spotCut * 0.65, spotCut, sourceLuma);
+
+  // Idea 2 — tonal pen hatching. Mid-dark tones get 45° strokes; darker tones add a crossing set.
+  // Spacing follows Dot Size so hatching and screens stay on the same print scale.
+  let hatchSpacing = dotScale * 0.9 + 2.5;
+  let hatchA = hatchLines(pixel, 0.7854, hatchSpacing, smoothstep(0.42, 0.8, tone));
+  let hatchB = hatchLines(pixel, 2.2689, hatchSpacing * 1.1, smoothstep(0.62, 0.92, tone));
+  let hatch = max(hatchA, hatchB) * (1.0 - spotBlack);
+
   let fiberA = hash21(floor(pixel * vec2<f32>(0.5, 0.12)));
   let fiberB = hash21(floor(pixel.yx * vec2<f32>(0.23, 0.72)) + 17.0);
   let fibers = (fiberA - 0.5) * 0.07 + (fiberB - 0.5) * 0.045;
@@ -116,12 +156,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let emphasis = clamp(contour * edgeStrength + heldInk * 0.9 + ringInk * 0.7, 0.0, 1.0);
   var hdr = mix(paper, poster * (0.72 + 0.28 * (1.0 - paperAmount)), 0.62 + 0.18 * (1.0 - tone));
   hdr = mix(hdr, inkColor, clamp(printMask * (0.42 + paperAmount * 0.28) + emphasis, 0.0, 1.0));
+  hdr = mix(hdr, inkColor, clamp(hatch * 0.6 + spotBlack * 0.94, 0.0, 1.0));
   hdr += vec3<f32>(0.12, 0.035, 0.015) * (dotM - dotC) * (0.15 + audio.z * 0.12);
 
   let history = historyAt(uv - gradient * (0.2 + heldInk) * texel, resolution);
   let historyMix = clamp(0.025 + paperAmount * 0.035 + ringInk * 0.025, 0.0, 0.1);
   let display = mix(aces(max(hdr, vec3<f32>(0.0))), history.rgb, historyMix);
-  let alpha = clamp(0.12 + printMask * 0.48 + contour * 0.38 + heldInk * 0.22 + ringInk * 0.18, 0.0, 1.0);
+  let alpha = clamp(0.12 + printMask * 0.48 + contour * 0.38 + heldInk * 0.22 + ringInk * 0.18 +
+                    hatch * 0.25 + spotBlack * 0.5, 0.0, 1.0);
   let result = vec4<f32>(display, alpha);
   textureStore(writeTexture, coord, result);
   textureStore(dataTextureA, coord, result);

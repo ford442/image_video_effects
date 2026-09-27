@@ -3,9 +3,11 @@
 //  Category: post-processing
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
 //  Complexity: High
-//  Upgraded: 2026-09-06
+//  Upgraded: 2026-09-06, 2026-09-21
 //  A packing: ACES display RGBA
 //  Motion: interactive clarity lens + traveling sharpness wavefronts
+//  Ideas (2026-09-21): anti-halo overshoot clamp; luminance-only sharpening
+//         (both on the photographic modes 0/1; mode 2 untouched)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -136,6 +138,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var blurCol = vec3<f32>(0.0);
   var totalWeight = 0.0;
   var maxGradient = 0.0;
+  var minLuma = centerLuma;
+  var maxLuma = centerLuma;
 
   for (var k = 0; k < 8; k = k + 1) {
     let tapUV = clamp(uv + offsets[k] * effectiveRadius, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -143,6 +147,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let tapLuma = getLuma(tapCol);
     let diff = abs(centerLuma - tapLuma);
     maxGradient = max(maxGradient, diff);
+    minLuma = min(minLuma, tapLuma);
+    maxLuma = max(maxLuma, tapLuma);
 
     // Range weight to prevent haloing around high-contrast edges
     let rangeWeight = exp(-diff * diff / (2.0 * edgeThreshold * edgeThreshold + 0.001));
@@ -172,6 +178,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let pop = smoothstep(0.0, 0.25, length(highPass)) * highPass;
     let edgeNeon = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + time * 2.0 + binA * 3.0);
     sharpened = centerCol + pop * effectiveAmount * 2.0 + edgeNeon * edgeMask * rippleSurge * 0.35;
+  }
+
+  if (mode < 0.66) {
+    // ── Idea 2: luminance-only sharpening ─────────────────────────────
+    // Sharpening R, G and B independently amplifies colour noise and puts
+    // coloured fringes on saturated edges. The detail is re-applied as a
+    // luma delta added equally to all three channels, keeping the pixel's
+    // own chroma — what "sharpen on luminosity" means to a photographer.
+    //
+    // ── Idea 1: anti-halo overshoot clamp ─────────────────────────────
+    // The tell-tale of bad sharpening is the bright/dark halo either side of
+    // an edge, where the result overshoots anything actually in the
+    // neighbourhood. That sharpened luma is clamped to the min/max envelope
+    // of the 3x3 taps the kernel has already fetched, plus a little room,
+    // so edges get crisper without ringing.
+    let haloRoom = 0.015 + amountParam * 0.03;
+    let clampedLuma = clamp(getLuma(sharpened), minLuma - haloRoom, maxLuma + haloRoom);
+    sharpened = centerCol + vec3<f32>(clampedLuma - centerLuma);
   }
 
   // Exact previous frame history load from dataTextureC for temporal anti-jitter

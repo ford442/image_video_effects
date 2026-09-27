@@ -1,7 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Signal Noise — Batch 62
-//  Analog VHS/DCT noise: spring cursor, held burst, capped ripples,
-//  exact C temporal smear, regional FFT, ACES + semantic alpha.
+//  Signal Noise
+//  Category: retro-glitch
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-21
+//  Ideas: luma-shouldered noise; real quantisation staircase; dot crawl on
+//         vertical luma edges
+//  A packing: ACES display RGBA (C is read as colour history)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -175,8 +180,40 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col = mix(col, smearCol.rgb, smearAmount * 0.5);
 
   var yuv = rgbToYuv(col);
-  yuv.y = yuv.y + (noise - 0.5) * vhsIntensity * 0.3 + blockArtifact.r + fftNoise;
-  yuv.z = yuv.z + (vhsNoise - 0.5) * vhsIntensity * 0.3 + blockArtifact.g;
+
+  // ── Idea 1: luma-shouldered noise ─────────────────────────────────
+  // Composite and tape noise lives in the darks and cleans up toward the
+  // highlights. HEAD injected it flat, which reads as a uniform veil over
+  // the whole picture instead of as a noise floor.
+  let noiseShoulder = mix(1.35, 0.25, smoothstep(0.15, 0.85, yuv.x));
+  yuv.y = yuv.y + ((noise - 0.5) * vhsIntensity * 0.3 + blockArtifact.r + fftNoise) * noiseShoulder;
+  yuv.z = yuv.z + ((vhsNoise - 0.5) * vhsIntensity * 0.3 + blockArtifact.g) * noiseShoulder;
+
+  // ── Idea 2: real quantisation staircase ───────────────────────────
+  // dctBlockArtifact() only draws a decorative ring. Actually quantise the
+  // block's own luma to a level count driven by Artifact Strength, so flat
+  // regions band and the 8x8 tiles become visible as compression rather
+  // than as texture laid on top of the image.
+  let blockUV = clamp(floor(uvGlitch / 0.06) * 0.06 + 0.03, vec2<f32>(0.0), vec2<f32>(1.0));
+  let blockLuma = rgbToYuv(textureSampleLevel(readTexture, u_sampler, blockUV, 0.0).rgb).x;
+  let quantAmt = clamp(artifactStrength, 0.0, 1.0);
+  let levels = max(2.0, floor(mix(64.0, 4.0, quantAmt)));
+  let stepped = floor(blockLuma * levels + 0.5) / levels;
+  yuv.x = yuv.x + (stepped - blockLuma) * quantAmt * 0.85;
+
+  // ── Idea 3: dot crawl on vertical luma edges ──────────────────────
+  // Composite crosstalk parks a field-alternating subcarrier pattern on
+  // sharp vertical transitions — the crawling dotted fringe that gives
+  // composite away. Rides the YUV path the file already models.
+  let texelX = 2.0 / resolution.x;
+  let lumaL = rgbToYuv(textureSampleLevel(readTexture, u_sampler, clamp(uvGlitch - vec2<f32>(texelX, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb).x;
+  let lumaR = rgbToYuv(textureSampleLevel(readTexture, u_sampler, clamp(uvGlitch + vec2<f32>(texelX, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb).x;
+  let vEdge = clamp(abs(lumaR - lumaL) * 3.0, 0.0, 1.0);
+  let crawlField = f32(u32(floor(time * 50.0)) & 1u) * 2.0 - 1.0;
+  let crawl = sin((uv.x * resolution.x + uv.y * resolution.y) * 0.5 * 3.14159) * crawlField;
+  yuv.y = yuv.y + crawl * vEdge * chromaStrength * 0.22;
+  yuv.z = yuv.z - crawl * vEdge * chromaStrength * 0.22;
+
   col = yuvToRgb(yuv);
 
   let scanline = sin(uv.y * resolution.y * 3.14159) * 0.05 * mids;

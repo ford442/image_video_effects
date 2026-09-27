@@ -1,11 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
 //  mouse-magnetic-pixel-sand
 //  Category: interactive-mouse
-//  Features: mouse-driven, particle-simulation, magnetic
+//  Features: mouse-driven, particle-simulation, magnetic, audio-reactive, upgraded-rgba
 //  Complexity: Medium
 //  Chunks From: chunk-library.md (hash12)
 //  Created: 2026-04-18
 //  By: Agent 2C
+//  Upgraded: 2026-09-21
+//  Ideas: field-line chaining; bass-driven field pulse; settling residue (C feedback)
+//  A packing: raw sim state — C.a settled residue (decays), C.rgb last filing color
 // ═══════════════════════════════════════════════════════════════════
 //  Pixels are treated as iron filings. The mouse is a magnet that
 //  attracts bright pixels and repels dark ones. Creates beautiful
@@ -55,8 +58,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let aspect = resolution.x / resolution.y;
   let time = u.config.x;
 
-  let magnetStrength = mix(0.05, 0.4, u.zoom_params.x);
-  let magneticRange = mix(0.1, 0.5, u.zoom_params.y);
+  let bass = plasmaBuffer[0].x;
+
+  // Idea 2: bass-driven field pulse — the magnet visibly surges on the beat.
+  let magnetStrength = mix(0.05, 0.4, u.zoom_params.x) * (1.0 + bass * 0.5);
+  let magneticRange = mix(0.1, 0.5, u.zoom_params.y) * (1.0 + bass * 0.15);
   let polarity = select(-1.0, 1.0, u.zoom_params.z > 0.5); // attract vs repel
   let grainSize = mix(50.0, 300.0, u.zoom_params.w);
 
@@ -106,8 +112,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
   }
 
-  // Sample at displaced position for the "moved filing" look
-  let filingColor = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
+  // Idea 1: field-line chaining — average the displaced sample with taps
+  // slightly ahead of and behind it along the field direction, so grains
+  // read as short linked chains instead of independent jittered dots.
+  let chainStep = fieldDir * grainSize * 0.00035 * (0.5 + falloff);
+  let filingColorFwd = textureSampleLevel(readTexture, u_sampler, clamp(displacedUV + chainStep, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  let filingColorBack = textureSampleLevel(readTexture, u_sampler, clamp(displacedUV - chainStep, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  let filingColor = mix(textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb,
+                         (filingColorFwd + filingColorBack) * 0.5,
+                         susceptibility * falloff * 0.6);
 
   // Darken non-magnetic areas to emphasize filings
   let filingLuma = getLuma(filingColor);
@@ -121,10 +134,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let alignBoost = mouseDown * 0.3 * falloff * susceptibility;
   color = mix(color, vec3<f32>(1.0, 0.9, 0.7), alignBoost);
 
+  // Idea 3: settling residue — filings that clustered strongly leave a
+  // faint, slowly-decaying sediment behind once the field moves away,
+  // like real iron filings settling instead of snapping back instantly.
+  let prevResidue = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
+  let residueDecay = 0.985;
+  let depositRate = clamp(abs(fieldStrength) * falloff * 2.0, 0.0, 1.0);
+  let settled = max(prevResidue.a * residueDecay, depositRate);
+  let residueColor = mix(prevResidue.rgb * residueDecay, color, depositRate);
+  color = mix(color, residueColor, settled * 0.5 * (1.0 - falloff));
+
   // Alpha = magnetic field strength at this pixel
-  let alpha = clamp(abs(fieldStrength) * falloff * 3.0 + susceptibility * 0.3, 0.0, 1.0);
+  let alpha = clamp(abs(fieldStrength) * falloff * 3.0 + susceptibility * 0.3 + settled * 0.15, 0.0, 1.0);
 
   textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(residueColor, settled));
 
   // Depth passthrough
   let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

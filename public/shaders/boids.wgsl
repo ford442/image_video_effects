@@ -1,5 +1,9 @@
 // ═══════════════════════════════════════════════════════════════
 //  Boids Swarm with Alpha Scattering
+//  Upgraded: 2026-09-21
+//  Ideas: blind-spot vision cone (leaders, lines, V fronts); held pointer is a predator the
+//         flock splits around (fountain manoeuvre)
+//  A packing: row 0 = boid state (pos.xy, vel.xy); rest of A unused
 //  GPU-based flocking with physical light simulation
 //
 //  Scientific Concepts:
@@ -110,13 +114,18 @@ fn updateBoid(idx: u32) {
     var ali = vec2<f32>(0.0);
     var coh = vec2<f32>(0.0);
     var count: f32 = 0.0;
+    // Idea 1 — blind spot. Birds and fish don't see straight behind them: neighbours in a
+    // ~100° cone behind the heading are ignored, so the boids in front lead and the flock
+    // strings out into lines and V-fronts instead of isotropic clumps.
+    let heading = safeNormalize(vel);
     for (var j: u32 = 0u; j < BOID_COUNT; j = j + 1u) {
         if (j == idx) { continue; }
         let other = textureLoad(dataTextureC, vec2<i32>(i32(j), 0), 0);
         if (stateInvalid(other)) { continue; }
         let diff = wrapDelta(pos - other.xy);
         let d = length(diff);
-        if (d > 0.0001 && d < PERCEPTION_RADIUS) {
+        let behind = dot(-diff / max(d, 0.0001), heading) < -0.643;
+        if (d > 0.0001 && d < PERCEPTION_RADIUS && !behind) {
             sep += diff / (d * d);   // push away, weighted by proximity
             ali += other.zw;
             coh += diff;             // sum of (pos - other); toward = -coh
@@ -134,8 +143,19 @@ fn updateBoid(idx: u32) {
     let mouse_pos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
     let to_mouse = wrapDelta(mouse_pos - pos);
     let dist_to_mouse = length(to_mouse);
-    if (dist_to_mouse > 0.01) {
+    // Idea 2 — predator. Hovering keeps HEAD's gentle attraction; holding turns the cursor
+    // into a predator. A strong short-range flee splits the flock around it, and cohesion
+    // closes it up again behind (the fountain manoeuvre).
+    let predator = u.zoom_config.w > 0.5;
+    if (dist_to_mouse > 0.01 && !predator) {
         acc += safeNormalize(to_mouse) * 0.35 * smoothstep(0.6, 0.05, dist_to_mouse);
+    }
+    if (predator) {
+        let flee = smoothstep(0.22, 0.02, dist_to_mouse);
+        // Sideways escape: turn away from the side the predator is on, not straight back.
+        let side = select(-1.0, 1.0, heading.x * to_mouse.y - heading.y * to_mouse.x > 0.0);
+        let dodge = vec2<f32>(heading.y, -heading.x) * side;
+        acc += (-safeNormalize(to_mouse) * 1.6 + dodge * 0.9) * flee;
     }
 
     // ═══ Ripples as attractor seeds ═══

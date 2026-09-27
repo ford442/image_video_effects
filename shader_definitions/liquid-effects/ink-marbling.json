@@ -12,7 +12,8 @@
     "click-reactive",
     "aces-tone-map",
     "semantic-alpha",
-    "exact-load-feedback"
+    "exact-load-feedback",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

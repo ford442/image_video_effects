@@ -4,6 +4,10 @@
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, thin-film,
 //            marangoni-convection, membrane-resonance, ACES
 //  Complexity: Very High
+//  Upgraded: 2026-09-21
+//  Ideas: inverted rear-wall reflection by sphere-incidence Fresnel (IOR-driven);
+//         Marangoni vortices curl the film thickness
+//  A packing: ACES display RGBA (max-blended with C)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -92,9 +96,25 @@ fn evalBubble(
 
   let bubbleSample = textureSampleLevel(readTexture, u_sampler, warpedUV, 0.0);
 
+  // Idea 2 — Marangoni vortices. Surface-tension gradients spin the film into slow,
+  // counter-rotating swirls; two vortices rotate the thickness-noise lookup so the
+  // interference colours curl instead of only drifting.
+  let local = delta / max(bubbleRadius, 1e-4);
+  var swirled = local;
+  for (var k = 0; k < 2; k = k + 1) {
+    let sgn = select(-1.0, 1.0, k == 0);
+    let vc = vec2<f32>(cos(time * 0.21 + f32(k) * 3.1), sin(time * 0.17 + f32(k) * 2.3)) * 0.45;
+    let dv = swirled - vc;
+    let spin = sgn * (1.8 + 0.7 * sin(time * 0.3 + f32(k))) * exp(-dot(dv, dv) * 5.0);
+    let cs = cos(spin);
+    let sn = sin(spin);
+    swirled = vc + vec2<f32>(dv.x * cs - dv.y * sn, dv.x * sn + dv.y * cs);
+  }
+  let filmUV = warpedUV + (swirled - local) * bubbleRadius / vec2<f32>(aspect, 1.0) * inside;
+
   let drainage = clamp(0.5 + delta.y / max(bubbleRadius, 1e-4) * 0.5 + sin(time * 0.45) * 0.04, 0.0, 1.0);
-  let turbulence = noise(warpedUV * 8.0 + vec2<f32>(0.0, -time * 0.25)) * 0.6 * (1.0 + broadShimmer)
-                 + noise(warpedUV * 15.0 - vec2<f32>(time * 0.1, 0.0)) * 0.4 * (1.0 + fineShimmer);
+  let turbulence = noise(filmUV * 8.0 + vec2<f32>(0.0, -time * 0.25)) * 0.6 * (1.0 + broadShimmer)
+                 + noise(filmUV * 15.0 - vec2<f32>(time * 0.1, 0.0)) * 0.4 * (1.0 + fineShimmer);
   var drainedThickness = filmThickness * (0.14 + drainage * 1.6) * (0.75 + turbulence * 0.6);
   drainedThickness = drainedThickness * (1.0 + filmShock);
 
@@ -132,6 +152,18 @@ fn evalBubble(
 
   var bubbleColor = bubbleSample.rgb;
   bubbleColor = mix(bubbleColor, bubbleSample.rgb * interference * 1.25, 0.35 + fresnel * 0.35);
+
+  // Idea 1 — rear-wall reflection. The inside of the far wall is a concave mirror, so the
+  // scene appears inverted through the centre and squeezed toward the rim. Its strength is
+  // Schlick Fresnel at the true sphere incidence (cosθ = sqrt(1 - r²)), so the IOR slider
+  // now sets how mirror-like the rim gets; the reflection is tinted by the film colour.
+  let cosInc = sqrt(max(1.0 - factor * factor, 0.0));
+  let sphereFresnel = fresnelBase + (1.0 - fresnelBase) * pow(1.0 - cosInc, 5.0);
+  let reach = bubbleRadius * (0.35 + 2.4 * factor * factor);
+  let reflUV = clamp(center - direction * reach / vec2<f32>(aspect, 1.0), vec2<f32>(0.0), vec2<f32>(1.0));
+  let reflCol = textureSampleLevel(readTexture, u_sampler, reflUV, 0.0).rgb;
+  let reflW = clamp(0.06 + sphereFresnel * 0.9, 0.0, 0.7) * (1.0 - blackSpot * 0.8);
+  bubbleColor = mix(bubbleColor, reflCol * mix(vec3<f32>(1.0), interference * 1.3, 0.5), reflW);
   bubbleColor = bubbleColor + vec3<f32>(1.0, 0.95, 0.92) * spec + interference * (rim * 0.2);
 
   let transmittance = exp(-drainedThickness * 0.35) * (0.85 + fresnel * 0.15);

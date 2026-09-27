@@ -1,0 +1,8 @@
+// #include-expanded: _lib_b.wgsl (from case_nested.wgsl:1)
+// #include-expanded: _lib_a.wgsl (from _lib_b.wgsl:1)
+// library A
+fn lib_a_value() -> f32 { return 1.0; }
+
+fn lib_b_value() -> f32 { return lib_a_value() + 1.0; }
+
+fn use_it() -> f32 { return lib_b_value(); }

@@ -3,14 +3,14 @@
 `config = [time, rippleCount, resW, resH]` — see `src/contracts/uniforms_layout.json`.
 Every row below reads `config.y` (or a legacy `config` swizzle) as something else.
 
-**Total: 40 reads across 36 shaders**
+**Total: 33 reads across 33 shaders**
 
 | Category | Count |
 |----------|-------|
-| `audio` | 16 |
 | `unclassified` | 9 |
-| `click_or_frame_count` | 8 |
-| `delta_time` | 7 |
+| `audio` | 9 |
+| `delta_time` | 8 |
+| `click_or_frame_count` | 7 |
 
 ## Findings
 
@@ -24,6 +24,7 @@ Every row below reads `config.y` (or a legacy `config` swizzle) as something els
 | `public/shaders/dla-crystals.wgsl` | 93 | click_or_frame_count | `let frame = u.config.y;` |
 | `public/shaders/gen-abyssal-leviathan-iridescence.wgsl` | 145 | unclassified | `g_audio = u.config.y * 0.1;` |
 | `public/shaders/gen-auroral-ferrofluid-monolith.wgsl` | 220 | audio | `let audio = u.config.y;` |
+| `public/shaders/gen-cellular-automata-tapestry.wgsl` | 109 | delta_time | `let dt = 1.0 + u.config.y * 0.5;` |
 | `public/shaders/gen-chromatic-singularity-loom.wgsl` | 104 | audio | `let audio_intensity = u.config.y;` |
 | `public/shaders/gen-chronodynamic-aether-weaver-automata.wgsl` | 81 | audio | `let audio = u.config.y;` |
 | `public/shaders/gen-ethereal-anemone-bloom.wgsl` | 377 | audio | `let audio_pulse = plasmaBuffer[0].x; // was u.config.y (MouseClickCount)` |
@@ -31,16 +32,8 @@ Every row below reads `config.y` (or a legacy `config` swizzle) as something els
 | `public/shaders/gen-quantum-chrome-serpent-ouroboros.wgsl` | 218 | audio | `let audio = u.config.y;` |
 | `public/shaders/gen-quantum-fluorescent-nebula-anemone.wgsl` | 140 | audio | `let audio = u.config.y;` |
 | `public/shaders/gen-quantum-foam.wgsl` | 151 | delta_time | `let dt    = u.config.y;` |
-| `public/shaders/gen-quantum-liquid-metal-chronosphere.wgsl` | 101 | unclassified | `if (f32(i) >= u.config.y) { break; }` |
-| `public/shaders/gen-radiant-cyber-chrono-void-stag.wgsl` | 113 | audio | `let audio = u.config.y;` |
-| `public/shaders/gen-radiant-cyber-chrono-void-stag.wgsl` | 372 | audio | `var glow_intensity = u.config.y; // audio` |
-| `public/shaders/gen-radiant-quantum-plasma-kraken-core.wgsl` | 90 | audio | `let audio = u.config.y;` |
-| `public/shaders/gen-radiant-quantum-plasma-kraken-core.wgsl` | 196 | audio | `let audio = u.config.y;` |
-| `public/shaders/gen-sentient-cyber-aurora-void-owl.wgsl` | 192 | audio | `let audio = u.config.y;` |
-| `public/shaders/gen-sentient-quantum-chrono-leviathan-moth.wgsl` | 110 | audio | `let audio = u.config.y;` |
-| `public/shaders/gen-sentient-quantum-chrono-leviathan-moth.wgsl` | 207 | audio | `let audio = u.config.y;` |
-| `public/shaders/gen-sentient-quantum-chrono-leviathan-moth.wgsl` | 301 | click_or_frame_count | `let clickVal = u.config.y; // Simplified` |
-| `public/shaders/gen-singularity-forge-blackbody.wgsl` | 133 | unclassified | `let spaghettification = u.config.y;` |
+| `public/shaders/gen-quantum-liquid-metal-chronosphere.wgsl` | 127 | unclassified | `if (f32(i) >= u.config.y) { break; }` |
+| `public/shaders/gen-singularity-forge-blackbody.wgsl` | 126 | unclassified | `let spaghettification = u.config.y;` |
 | `public/shaders/gen_reaction_diffusion.wgsl` | 144 | click_or_frame_count | `let clickCount = u.config.y;` |
 | `public/shaders/glass-bead-curtain.wgsl` | 72 | unclassified | `let target = select(0.0, 1.0, u.config.y > 0.0);` |
 | `public/shaders/holographic-crystal.wgsl` | 53 | delta_time | `let dt = min(u.config.y, 0.05);` |

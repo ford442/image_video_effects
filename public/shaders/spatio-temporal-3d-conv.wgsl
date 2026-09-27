@@ -4,7 +4,10 @@
 //  Features: temporal, history-ring, advanced-convolution, audio-reactive,
 //             upgraded-rgba, spatio-temporal
 //  Complexity: High
-//  Requires: binding 13 (historyTexture — HISTORY_DEPTH=8 ring buffer)
+//  Upgraded: 2026-09-21
+//  Ideas: motion-adaptive temporal weights (NR mode); variance-driven NR strength
+//  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a hardcoded 8
+//  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
 //  Created: 2026-05-23
 //  By: Copilot
 //
@@ -59,7 +62,6 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-const HISTORY_DEPTH: u32 = 8u;
 
 // ── 3×3 Gaussian spatial weights from sigma ──────────────────────────────────
 fn gaussWeight(dx: f32, dy: f32, sigma: f32) -> f32 {
@@ -117,16 +119,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let strength  = u.zoom_params.w * (1.0 + bass * 0.25); // audio-reactive
 
   let historyHead = u32(extraBuffer[4]);
+  // Floor fix: the ring holds 8, 4 or 1 layers (VRAM probe) and the renderer
+  // wraps its head at that count; HEAD assumed 8 and read clamped layers.
+  let histDepth = max(textureNumLayers(historyTexture), 1u);
+  let depthUsed = min(tempDepth, histDepth - 1u);
+  let isNR      = mode < 0.33;
 
   // ── Current frame spatial ─────────────────────────────────────────────────
   let current = spatialConv3x3Current(uv, pixSz, spatSigma);
+  let lumaW   = vec3<f32>(0.2126, 0.7152, 0.0722);
+  let curLuma = dot(current.rgb, lumaW);
 
   // ── Accumulate spatio-temporal 3D convolution ─────────────────────────────
   var accumColor = vec4<f32>(0.0);
   var accumW     = 0.0;
+  // Similarity-weighted luma moments for the noise estimate (idea 2),
+  // seeded with the current frame at full weight.
+  var statW  = 1.0;
+  var statL  = curLuma;
+  var statL2 = curLuma * curLuma;
 
-  for (var age: u32 = 1u; age <= tempDepth; age = age + 1u) {
-    let layer = i32((historyHead + HISTORY_DEPTH - age) % HISTORY_DEPTH);
+  for (var age: u32 = 1u; age <= depthUsed; age = age + 1u) {
+    let layer = i32((historyHead + histDepth - age) % histDepth);
 
     // Temporal weight depends on mode
     var tw = 0.0;
@@ -142,16 +156,45 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     let spatialLayer = spatialConv3x3(uv, pixSz, layer, spatSigma);
-    accumColor += spatialLayer * tw;
-    accumW     += tw;
+
+    // ── Idea 1: motion-adaptive temporal weights (NR mode) ──────────────────
+    // The defining failure of temporal noise reduction is ghosting: anything
+    // that moved gets averaged with where it used to be. Weighting each frame
+    // by its photometric similarity to the current one — a bilateral in
+    // time — lets static detail average while moving objects keep only their
+    // own recent frames. Motion-blur mode keeps its ghosts (they ARE that
+    // effect) and sharpen mode keeps its full mean (it emphasises motion).
+    let delta      = length(spatialLayer.rgb - current.rgb);
+    let similarity = exp(-delta * delta / (2.0 * 0.07 * 0.07));
+    let adaptive   = select(1.0, similarity, isNR);
+
+    accumColor += spatialLayer * tw * adaptive;
+    accumW     += tw * adaptive;
+
+    let l = dot(spatialLayer.rgb, lumaW);
+    statW  += similarity;
+    statL  += l * similarity;
+    statL2 += l * l * similarity;
   }
-  if (accumW > 0.001) { accumColor = accumColor / accumW; }
+  // HEAD divided only when the weight was non-trivial and otherwise mixed
+  // toward black; with similarity weights that can happen on real motion,
+  // so fall back to the live frame.
+  if (accumW > 0.001) { accumColor = accumColor / accumW; } else { accumColor = current; }
+
+  // ── Idea 2: variance-driven NR strength ───────────────────────────────────
+  // A real video denoiser estimates the noise before removing it. The
+  // similarity-weighted temporal variance of luma (motion already excluded
+  // by idea 1's weights) is that estimate; NR strength follows it, so the
+  // averaging works hardest where there is actually noise to remove.
+  let statMean = statL / statW;
+  let noiseSigma = sqrt(max(statL2 / statW - statMean * statMean, 0.0));
+  let nrGain = mix(0.35, 1.0, smoothstep(0.004, 0.03, noiseSigma));
 
   // ── Apply mode-specific operation ─────────────────────────────────────────
   var result: vec4<f32>;
   if (mode < 0.33) {
     // Temporal noise reduction: blend current with temporal mean
-    result = mix(current, accumColor, strength);
+    result = mix(current, accumColor, clamp(strength * nrGain, 0.0, 1.0));
   } else if (mode < 0.67) {
     // Motion blur: blend current with accumulated trail
     result = mix(current, accumColor, strength * 0.8);

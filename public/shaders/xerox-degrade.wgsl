@@ -1,6 +1,13 @@
-// Xerox Degrade — Composer batch cyber/digital/glitch
-// Photocopy halftone + ordered dither: spring cursor, held smear burst,
-// capped ripples, exact C generation memory, three-band audio, ACES + semantic alpha.
+// ═══════════════════════════════════════════════════════════════════
+//  Xerox Degrade
+//  Category: retro-glitch
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-21
+//  Ideas: toner starvation bands; Mach-band edge halo; compounding
+//         generation loss through C
+//  A packing: ACES display RGBA (C is read as the previous generation)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -152,7 +159,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var color = mix(src.rgb, paper, min(oob, 1.0));
 
   let lumaRaw = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-  let contrasted = sigmoidContrast(clamp(lumaRaw - threshold + 0.5, 0.0, 1.0), contrast);
+
+  // ── Idea 2: Mach-band edge halo ───────────────────────────────────
+  // A copier's analog response over-sharpens: copied text carries a white
+  // fringe just outside every dark stroke. Subtracting a blurred luma from
+  // the local one and feeding the difference into the existing sigmoid puts
+  // that fringe where the threshold can bite on it, and scales it with the
+  // Contrast slider that already governs how hard the copier crushes.
+  let haloStep = 2.5 / resolution;
+  var blurLuma = 0.0;
+  blurLuma += dot(textureSampleLevel(readTexture, u_sampler, clamp(smearUV + vec2<f32>(haloStep.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+  blurLuma += dot(textureSampleLevel(readTexture, u_sampler, clamp(smearUV - vec2<f32>(haloStep.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+  blurLuma += dot(textureSampleLevel(readTexture, u_sampler, clamp(smearUV + vec2<f32>(0.0, haloStep.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+  blurLuma += dot(textureSampleLevel(readTexture, u_sampler, clamp(smearUV - vec2<f32>(0.0, haloStep.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+  blurLuma *= 0.25;
+  let machAmt = 0.25 + u.zoom_params.x * 0.4;
+  let mach = clamp((lumaRaw - blurLuma) * 3.5, -1.0, 1.0) * machAmt;
+
+  let contrasted = sigmoidContrast(clamp(lumaRaw + mach - threshold + 0.5, 0.0, 1.0), contrast);
 
   let grain = fbm(uv * 40.0 + time * 0.5, 4) * 2.0 - 1.0;
   let grainUV = clamp(uv + vec2<f32>(grain * grainAmt * 0.02), vec2<f32>(0.0), vec2<f32>(1.0));
@@ -164,11 +188,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let vign = edgeVignette(uv, 0.5 + treble * 0.5);
 
   let scatter = select(0.0, -0.4, h.y < grainAmt * 0.18) + select(0.0, 0.3, h.z > 1.0 - grainAmt * 0.18);
-  let finalLuma = clamp((blendLuma + scatter * grainAmt) * vign + grain * grainAmt * 0.08 + grainLuma * grainAmt * 0.05, 0.0, 1.0);
+
+  // ── Idea 1: toner starvation bands ────────────────────────────────
+  // A copier low on toner lays down vertical light streaks that follow the
+  // drum and drift as it turns. They only show where the machine is trying
+  // to put ink down, so the band lifts coverage rather than the paper.
+  let drumPhase = time * 0.07;
+  let bandCoord = uv.x * 7.0 + drumPhase;
+  let starveNoise = valueNoise(vec2<f32>(bandCoord, 0.37)) * 0.65
+                  + valueNoise(vec2<f32>(bandCoord * 3.1, 11.7)) * 0.35;
+  let starveBand = smoothstep(0.42, 0.78, starveNoise) * (0.35 + grainAmt * 0.65);
+  let coverage = 1.0 - blendLuma;
+
+  let finalLuma = clamp((blendLuma + scatter * grainAmt) * vign + grain * grainAmt * 0.08 + grainLuma * grainAmt * 0.05 + coverage * starveBand * 0.55, 0.0, 1.0);
   color = mix(vec3<f32>(0.05, 0.05, 0.12), paper, finalLuma);
 
+  // ── Idea 3: compounding generation loss ───────────────────────────
+  // HEAD blended raw history in at a flat 12%, which just softens the frame.
+  // Re-thresholding the previous generation through the same sigmoid before
+  // blending is what a copy of a copy of a copy actually does: contrast
+  // compounds, midtones fall out, the page drifts toward pure ink and paper.
   let prev = textureLoad(dataTextureC, coord, 0);
-  color = mix(color, prev.rgb, smearAmt * 0.12 + rippleSmear * 0.06);
+  let prevLuma = dot(prev.rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let regen = sigmoidContrast(clamp(prevLuma - threshold + 0.5, 0.0, 1.0), contrast);
+  let generation = mix(vec3<f32>(0.05, 0.05, 0.12), paper, clamp(regen, 0.0, 1.0));
+  color = mix(color, generation, smearAmt * 0.12 + rippleSmear * 0.06);
 
   color = acesToneMap(color * (0.95 + bass * 0.04));
 

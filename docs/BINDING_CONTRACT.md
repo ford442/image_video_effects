@@ -125,6 +125,27 @@ Total size **848 bytes** (212 floats) — matches `UNIFORM_BUFFER_LAYOUT.TOTAL_S
 - Shaders that sample `@binding(13) var historyTexture` must declare the binding; others omit it
 - Copy is gated by static analysis (`analyzeShaderBindings` / C++ `AnalyzeShaderBindings`) — skipped when no shader references binding 13
 
+## Sim ring (opt-in `@group(1)`, TS renderer only)
+
+Group 0 is at the contract ceiling (bindings 0–13, 2 storage buffers, 4 storage textures), so indexable agents (particles, walkers, photons) live in an opt-in second bind group. Source of truth: [`src/contracts/bind_group1.json`](../src/contracts/bind_group1.json); TS: `src/renderer/webgpu/simRing.ts`.
+
+| Binding | Name | Type |
+|--------:|------|------|
+| 0 | `simState` | `var<storage, read_write> simState: array<vec4<f32>>` |
+| 1 | `simIndex` | `var<storage, read> simIndex: array<u32>` — snapshot of simState (4 words / element, `bitcast<vec4<f32>>` to read) |
+| 2 | `simParams` | `var<uniform> simParams: SimParams` — `{ stateCount, indexCount, frame, truncated }`, all `u32` |
+
+- **Opt-in:** a shader that never writes `@group(1)` compiles against the single-layout pipeline exactly as before. Declaring any group-1 binding selects the `[group0, group1]` layout; a shader may declare a subset (e.g. only `simParams`).
+- **Barrier:** a graph node that reads `simIndex` after a `simState` write (or first in the frame) gets `copyBufferToBuffer(simState → simIndex)` — the buffer twin of `dataA → dataC`. `simIndex` is never a write role.
+- **Dispatch:** graph nodes take `"dispatch": "pixels"` (default) or `"simState"` (`ceil(stateCount / 64) × 1 × 1`, `@workgroup_size(64, 1, 1)`).
+- **Limits:** group-1 pipelines need `maxStorageBuffersPerShaderStage ≥ 4`, `maxUniformBuffersPerShaderStage ≥ 2`, `maxBindGroups ≥ 2` — all within the WebGPU base limits (8 / 12 / 4). They are checked against `device.limits` when the first group-1 pipeline compiles and are **never** added to catalog-wide `requiredLimits`.
+- **VRAM / OOM:** default 65536 elements (1 MiB state + 1 MiB snapshot). OOM ladder `65536 → 32768 → 16384 → 4096`; each failed rung writes the next rung to sessionStorage `px_simring_oom_cap`, same discipline as `px_history_oom_cap`. `simParams.truncated = 1` when the ladder stepped down. `simParams.frame` restarts at 0 when a slot switches to a sim shader, so shaders seed on `frame == 0u`.
+- **Catalog metadata:** `"simRing": { "stateCount": N }` in shader JSON; at least one graph node must `dispatch` over `simState` (checked by `verify:device-policy`).
+- **WASM:** feature freeze — `pipeline.cpp` keeps `bindGroupLayoutCount = 1` and `src/wasm/bridge/shader.ts` refuses group-1 WGSL before `LoadShader` (logged skip).
+- **Never** park persistent agents in `extraBuffer[0..]` or steal group-0 bindings.
+
+Flagship: `dla-crystals` (`dla-walkers` over simState → `dla-render` over pixels).
+
 ### Runtime format tiers (#1008)
 
 WGSL sources remain authored as **rgba32float** canonical. At pipeline compile the host rewrites bindings 2/7/8 for non-ultra tiers. See [`docs/FORMAT_TIERS.md`](FORMAT_TIERS.md).

@@ -1,6 +1,13 @@
-// Spectrum Bleed — Composer batch cyber/digital/glitch
-// Sprung spectrum-ink diffusion with bounded click splatters, plasma bin
-// shimmer, exact-C persistence, display RGBA in A, ACES output.
+// ═══════════════════════════════════════════════════════════════════
+//  Spectrum Bleed
+//  Category: retro-glitch
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-21
+//  Ideas: wavelength-ordered bleed distance; chromatographic advance front;
+//         dry-edge rim
+//  A packing: ACES display RGBA (C is read as colour through an advected coord)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -50,6 +57,19 @@ fn blurSource(uv: vec2<f32>, radius: f32) -> vec3<f32> {
   return sum * 0.25;
 }
 
+// ── Idea 1: wavelength-ordered bleed distance ──────────────────────
+// A spectrum bleed has to separate BY wavelength. Short wavelengths scatter
+// further in a wet medium, so blue must travel further than green and green
+// further than red. HEAD ran all three channels through one radius, which
+// is a blur — the fringes that make this effect its own thing never formed.
+fn spectralBleed(uv: vec2<f32>, radius: f32) -> vec3<f32> {
+  return vec3<f32>(
+    blurSource(uv, radius * 0.55).r,
+    blurSource(uv, radius * 1.00).g,
+    blurSource(uv, radius * 1.70).b
+  );
+}
+
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -94,7 +114,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let lensDist = length((uv - springPos) * aspectVec);
   let lens = smoothstep(0.36, 0.0, lensDist) * select(0.5, 1.0, u.zoom_config.w > 0.5);
   blendFactor = clamp(blendFactor + lens * 0.3, 0.0, 1.0);
-  var hsv = rgb2hsv(blurSource(uv, blurRadius));
+  var hsv = rgb2hsv(spectralBleed(uv, blurRadius));
   var clickInk = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);
   for (var i = 0u; i < rippleCount; i++) {
@@ -113,10 +133,31 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let historyUv = clamp(uv - springVel * lens * 0.5, vec2<f32>(0.0), vec2<f32>(1.0));
   let previous = textureLoad(dataTextureC, historyCoord(historyUv, dims), 0);
-  let persistence = clamp(0.12 + u.zoom_params.x * 0.2 + clickInk * 0.22, 0.0, 0.58);
+
+  // ── Idea 2: chromatographic advance front ─────────────────────────
+  // Ink on paper does not smear evenly — it piles into a travelling band
+  // whose leading edge is wherever concentration is still climbing. Gating
+  // the history weight on the saturation gradient makes the bleed gather
+  // into a front, instead of the flat wash a constant weight produced.
+  let satNow = rgb2hsv(max(hdr, vec3<f32>(0.0))).y;
+  let satPrev = rgb2hsv(max(previous.rgb, vec3<f32>(0.0))).y;
+  let advance = clamp((satNow - satPrev) * 2.5, -1.0, 1.0);
+  let frontGate = 1.0 + advance * 0.75;
+  let persistence = clamp((0.12 + u.zoom_params.x * 0.2 + clickInk * 0.22) * frontGate, 0.0, 0.72);
   hdr = mix(hdr, previous.rgb * (0.93 + bass * 0.02), persistence);
+
+  // ── Idea 3: dry-edge rim ──────────────────────────────────────────
+  // Where the front halts, solute concentrates and leaves the darker,
+  // more saturated ring every chromatogram and every coffee stain has. It
+  // lives exactly where the advance term goes negative — where the ink
+  // stopped moving — so it costs no extra state.
+  let dryRim = clamp(-advance, 0.0, 1.0) * smoothstep(0.08, 0.35, satPrev);
+  let rimHsv = rgb2hsv(max(hdr, vec3<f32>(0.0)));
+  let rimmed = hsv2rgb(vec3<f32>(rimHsv.x, min(rimHsv.y + dryRim * 0.5, 1.0), rimHsv.z * (1.0 - dryRim * 0.45)));
+  hdr = mix(hdr, rimmed, blendFactor);
+
   hdr += vec3<f32>(0.10, 0.02, 0.16) * fftVoice * treble * blendFactor;
-  let effectEnergy = clamp(blendFactor * 0.65 + clickInk * 0.35 + previous.a * persistence * 0.3, 0.0, 1.0);
+  let effectEnergy = clamp(blendFactor * 0.65 + clickInk * 0.35 + previous.a * persistence * 0.3 + dryRim * 0.15, 0.0, 1.0);
   let alpha = clamp(source.a + (1.0 - source.a) * effectEnergy, 0.0, 1.0);
   let display = vec4<f32>(acesToneMap(max(hdr, vec3<f32>(0.0))), alpha);
   textureStore(dataTextureA, pixel, display); textureStore(writeTexture, pixel, display);

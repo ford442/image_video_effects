@@ -34,7 +34,7 @@ export type UniformsUpdate = {
 
 export function setSlotParams(slotIndex: number, p1: number, p2: number, p3: number, p4: number): void {
   if (!state.initialized || !wasmRef.module) return;
-  if (slotIndex >= 0 && slotIndex < state.slotParams.length) {
+  if (slotIndex >= 0) {
     state.slotParams[slotIndex] = [p1, p2, p3, p4];
   }
   wasmRef.module.ccall(

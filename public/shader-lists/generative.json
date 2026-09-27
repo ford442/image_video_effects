@@ -6168,6 +6168,70 @@
     ]
   },
   {
+    "id": "gen-bismuth-hyper-crystals",
+    "name": "Bismuth Hyper-Crystals",
+    "url": "shaders/gen-bismuth-hyper-crystals.wgsl",
+    "type": "generative",
+    "category": "generative",
+    "description": "Witness the mesmerizing growth of non-Euclidean hopper crystals that refract light into a shifting, iridescent spectrum. This shader creates a slowly mutating, metallic fractal geometry inspired by the stepped, stair-like structure of bismuth crystals.",
+    "features": [
+      "bismuth",
+      "iridescent",
+      "metallic",
+      "audio-reactive"
+    ],
+    "tags": [
+      "3d",
+      "fractal",
+      "sdf",
+      "iridescent",
+      "bismuth",
+      "metallic"
+    ],
+    "params": [
+      {
+        "id": "complexity",
+        "name": "Complexity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Complexity of the spatial folding"
+      },
+      {
+        "id": "colorShift",
+        "name": "ColorShift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Shift in iridescence phase"
+      },
+      {
+        "id": "growthSpeed",
+        "name": "GrowthSpeed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Speed of crystal growth rotation"
+      },
+      {
+        "id": "specular",
+        "name": "Specular",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Specular highlight sharpness"
+      }
+    ]
+  },
+  {
     "name": "Bismuth Singularity-Loom Engine",
     "category": "generative",
     "tags": [
@@ -8020,7 +8084,8 @@
       "fast-motion",
       "semantic-alpha",
       "generated-depth",
-      "oracle-sigils"
+      "oracle-sigils",
+      "upgraded-rgba"
     ],
     "tags": [
       "generative",
@@ -9704,7 +9769,8 @@
       "fast-motion",
       "semantic-alpha",
       "generated-depth",
-      "counter-spiral-moire"
+      "counter-spiral-moire",
+      "upgraded-rgba"
     ],
     "tags": [
       "generative",
@@ -10704,7 +10770,8 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tone-mapping",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
@@ -12902,7 +12969,9 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tone-mapping",
-      "depth-aware"
+      "depth-aware",
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
@@ -14981,7 +15050,9 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tone-mapping",
-      "depth-aware"
+      "depth-aware",
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
@@ -20039,6 +20110,51 @@
     "feedbackPacking": "A/C = exact ACES display RGBA with finite fold-shock persistence"
   },
   {
+    "id": "gen-hyper-geometric-void-glass-seraph",
+    "name": "Hyper-Geometric Void-Glass Seraph",
+    "type": "generative",
+    "category": "generative",
+    "url": "shaders/gen-hyper-geometric-void-glass-seraph.wgsl",
+    "params": [
+      {
+        "name": "Folding Scale",
+        "type": "float",
+        "min": 0.5,
+        "max": 3,
+        "default": 1.5,
+        "step": 0.05,
+        "uniform": "zoom_params.x"
+      },
+      {
+        "name": "Glass Refraction",
+        "type": "float",
+        "min": 0.1,
+        "max": 2,
+        "default": 0.8,
+        "step": 0.05,
+        "uniform": "zoom_params.y"
+      },
+      {
+        "name": "Singularity Mass",
+        "type": "float",
+        "min": 0,
+        "max": 5,
+        "default": 1,
+        "step": 0.1,
+        "uniform": "zoom_params.z"
+      },
+      {
+        "name": "Chromatic Aberration",
+        "type": "float",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "step": 0.01,
+        "uniform": "zoom_params.w"
+      }
+    ]
+  },
+  {
     "name": "Hyper Labyrinth",
     "category": "generative",
     "tags": [
@@ -20653,7 +20769,12 @@
     "updated": true,
     "id": "gen-hyperbolic-tree",
     "url": "shaders/gen-hyperbolic-tree.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "upgraded-rgba"
+    ]
   },
   {
     "id": "gen-hyperdimensional-bismuth-lattice",
@@ -27040,6 +27161,57 @@
     ]
   },
   {
+    "id": "gen-neon-plasma-chrono-bloom",
+    "name": "Neon Plasma Chrono-Bloom",
+    "author": "Jules",
+    "description": "A hyper-vibrant, time-dilated explosion of neon plasma tendrils that bloom and interlace like a digital, cyberpunk flora.",
+    "category": "generative",
+    "type": "generative",
+    "url": "shaders/gen-neon-plasma-chrono-bloom.wgsl",
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Intensity",
+        "mapping": "zoom_params.x",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "distortionSpeed",
+        "name": "Distortion Speed",
+        "mapping": "zoom_params.y",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "id": "bloomThreshold",
+        "name": "Bloom Threshold",
+        "mapping": "zoom_params.z",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      },
+      {
+        "id": "hueShift",
+        "name": "Hue Shift",
+        "mapping": "zoom_params.w",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "name": "Neon Snowfall",
     "category": "generative",
     "tags": [
@@ -31012,7 +31184,8 @@
       "fast-motion",
       "semantic-alpha",
       "generated-depth",
-      "prismatic-fins"
+      "prismatic-fins",
+      "upgraded-rgba"
     ],
     "tags": [
       "generative",
@@ -31148,7 +31321,13 @@
     "updated": true,
     "id": "gen-protocell-division",
     "url": "shaders/gen-protocell-division.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal-feedback",
+      "semantic-alpha",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Psychedelic Layered Time-Stamps",
@@ -32543,44 +32722,6 @@
         "step": 0.01
       }
     ],
-    "params": [
-      {
-        "id": "spiral_tightness",
-        "name": "Spiral Tightness",
-        "mapping": "zoom_params.x",
-        "default": 0.5,
-        "min": 0.1,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "plasma_bloom",
-        "name": "Plasma Bloom",
-        "mapping": "zoom_params.y",
-        "default": 1.5,
-        "min": 0,
-        "max": 5,
-        "step": 0.1
-      },
-      {
-        "id": "glass_refraction",
-        "name": "Glass Refraction",
-        "mapping": "zoom_params.z",
-        "default": 1.33,
-        "min": 1,
-        "max": 2.5,
-        "step": 0.01
-      },
-      {
-        "id": "audio_reactivity",
-        "name": "Audio Reactivity",
-        "mapping": "zoom_params.w",
-        "default": 0.8,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
@@ -32589,10 +32730,48 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
+      "upgraded-rgba",
       "generated-depth",
       "semantic-alpha",
-      "aces-tone-map",
-      "upgraded-rgba"
+      "aces-tone-map"
+    ],
+    "params": [
+      {
+        "id": "spiral_tightness",
+        "name": "Spiral Tightness",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "plasma_bloom",
+        "name": "Plasma Bloom",
+        "default": 1.5,
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "glass_refraction",
+        "name": "Glass Refraction",
+        "default": 1.33,
+        "min": 1,
+        "max": 2.5,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "audio_reactivity",
+        "name": "Audio Reactivity",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ]
   },
   {
@@ -32705,44 +32884,6 @@
         "step": 0.1
       }
     ],
-    "params": [
-      {
-        "id": "stag_scale",
-        "name": "Stag Scale",
-        "mapping": "zoom_params.x",
-        "default": 1,
-        "min": 0.5,
-        "max": 2,
-        "step": 0.1
-      },
-      {
-        "id": "antler_complexity",
-        "name": "Antler Complexity",
-        "mapping": "zoom_params.y",
-        "default": 3,
-        "min": 1,
-        "max": 5,
-        "step": 0.1
-      },
-      {
-        "id": "nebula_density",
-        "name": "Nebula Density",
-        "mapping": "zoom_params.z",
-        "default": 0.5,
-        "min": 0.1,
-        "max": 1,
-        "step": 0.05
-      },
-      {
-        "id": "core_pulse_intensity",
-        "name": "Core Pulse Intensity",
-        "mapping": "zoom_params.w",
-        "default": 1,
-        "min": 0,
-        "max": 5,
-        "step": 0.1
-      }
-    ],
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
@@ -32751,10 +32892,48 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
+      "upgraded-rgba",
       "generated-depth",
       "semantic-alpha",
-      "aces-tone-map",
-      "upgraded-rgba"
+      "aces-tone-map"
+    ],
+    "params": [
+      {
+        "id": "stag_scale",
+        "name": "Stag Scale",
+        "default": 1,
+        "min": 0.5,
+        "max": 2,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "antler_complexity",
+        "name": "Antler Complexity",
+        "default": 3,
+        "min": 1,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "nebula_density",
+        "name": "Nebula Density",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.05,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "core_pulse_intensity",
+        "name": "Core Pulse Intensity",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.w"
+      }
     ]
   },
   {
@@ -32868,44 +33047,6 @@
         "step": 0.01
       }
     ],
-    "params": [
-      {
-        "id": "crystallization_density",
-        "name": "Crystallization Density",
-        "mapping": "zoom_params.x",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "chromatic_aberration",
-        "name": "Chromatic Aberration",
-        "mapping": "zoom_params.y",
-        "default": 1,
-        "min": 0,
-        "max": 5,
-        "step": 0.1
-      },
-      {
-        "id": "fog_intensity",
-        "name": "Fog Intensity",
-        "mapping": "zoom_params.z",
-        "default": 0.8,
-        "min": 0,
-        "max": 2,
-        "step": 0.05
-      },
-      {
-        "id": "mouse_influence",
-        "name": "Mouse Influence",
-        "mapping": "zoom_params.w",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
@@ -32914,10 +33055,48 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
+      "upgraded-rgba",
       "generated-depth",
       "semantic-alpha",
-      "aces-tone-map",
-      "upgraded-rgba"
+      "aces-tone-map"
+    ],
+    "params": [
+      {
+        "id": "crystallization_density",
+        "name": "Crystallization Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "chromatic_aberration",
+        "name": "Chromatic Aberration",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "fog_intensity",
+        "name": "Fog Intensity",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.05,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "mouse_influence",
+        "name": "Mouse Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ]
   },
   {
@@ -32970,44 +33149,6 @@
         "step": 0.05
       }
     ],
-    "params": [
-      {
-        "id": "tentacle_twist",
-        "name": "Tentacle Twist",
-        "mapping": "zoom_params.x",
-        "default": 1,
-        "min": 0,
-        "max": 5,
-        "step": 0.1
-      },
-      {
-        "id": "plasma_glow",
-        "name": "Plasma Glow",
-        "mapping": "zoom_params.y",
-        "default": 2,
-        "min": 0,
-        "max": 5,
-        "step": 0.1
-      },
-      {
-        "id": "core_heat",
-        "name": "Core Heat",
-        "mapping": "zoom_params.z",
-        "default": 1.5,
-        "min": 0.1,
-        "max": 3,
-        "step": 0.1
-      },
-      {
-        "id": "void_depth",
-        "name": "Void Depth",
-        "mapping": "zoom_params.w",
-        "default": 0.8,
-        "min": 0,
-        "max": 1,
-        "step": 0.05
-      }
-    ],
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
@@ -33016,10 +33157,48 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
+      "upgraded-rgba",
       "generated-depth",
       "semantic-alpha",
-      "aces-tone-map",
-      "upgraded-rgba"
+      "aces-tone-map"
+    ],
+    "params": [
+      {
+        "id": "tentacle_twist",
+        "name": "Tentacle Twist",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "plasma_glow",
+        "name": "Plasma Glow",
+        "default": 2,
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "core_heat",
+        "name": "Core Heat",
+        "default": 1.5,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "void_depth",
+        "name": "Void Depth",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.05,
+        "mapping": "zoom_params.w"
+      }
     ]
   },
   {
@@ -33894,44 +34073,6 @@
         "step": 0.01
       }
     ],
-    "params": [
-      {
-        "id": "wing_flutter_frequency",
-        "name": "Wing Flutter Frequency",
-        "mapping": "zoom_params.x",
-        "default": 1,
-        "min": 0.1,
-        "max": 5,
-        "step": 0.1
-      },
-      {
-        "id": "quantum_storm_intensity",
-        "name": "Quantum Storm Intensity",
-        "mapping": "zoom_params.y",
-        "default": 0.5,
-        "min": 0,
-        "max": 2,
-        "step": 0.05
-      },
-      {
-        "id": "aether_plasma_glow",
-        "name": "Aether-Plasma Glow",
-        "mapping": "zoom_params.z",
-        "default": 0.8,
-        "min": 0,
-        "max": 3,
-        "step": 0.1
-      },
-      {
-        "id": "time_rift_distortion",
-        "name": "Time Rift Distortion",
-        "mapping": "zoom_params.w",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "id": "gen-sentient-aether-plasma-nebula-moth",
     "url": "shaders/gen-sentient-aether-plasma-nebula-moth.wgsl",
     "supportsDepth": true,
@@ -33940,10 +34081,48 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
+      "upgraded-rgba",
       "generated-depth",
       "semantic-alpha",
-      "aces-tone-map",
-      "upgraded-rgba"
+      "aces-tone-map"
+    ],
+    "params": [
+      {
+        "id": "wing_flutter_frequency",
+        "name": "Wing Flutter Frequency",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "quantum_storm_intensity",
+        "name": "Quantum Storm Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "aether_plasma_glow",
+        "name": "Aether-Plasma Glow",
+        "default": 0.8,
+        "min": 0,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "time_rift_distortion",
+        "name": "Time Rift Distortion",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
     ]
   },
   {
@@ -34023,18 +34202,23 @@
         "step": 0.1
       }
     ],
-    "supportsDepth": true,
-    "supportsDof": false,
-    "updated": true,
     "features": [
       "audio-reactive",
       "mouse-driven",
+      "upgraded-rgba",
       "temporal-feedback",
       "generated-depth",
       "semantic-alpha",
-      "aces-tone-map",
-      "upgraded-rgba"
-    ]
+      "aces-tone-map"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "supportsDepth": true,
+    "updated": true,
+    "supportsDof": false
   },
   {
     "name": "Sentient Cyber-Aurora Void-Owl",
@@ -34082,44 +34266,6 @@
         "step": 0.05
       }
     ],
-    "params": [
-      {
-        "id": "wingbeat_speed",
-        "name": "Wingbeat Speed",
-        "mapping": "zoom_params.x",
-        "default": 1,
-        "min": 0.1,
-        "max": 3,
-        "step": 0.1
-      },
-      {
-        "id": "eye_intensity",
-        "name": "Eye Intensity",
-        "mapping": "zoom_params.y",
-        "default": 1,
-        "min": 0.5,
-        "max": 5,
-        "step": 0.1
-      },
-      {
-        "id": "aurora_density",
-        "name": "Aurora Density",
-        "mapping": "zoom_params.z",
-        "default": 0.7,
-        "min": 0.1,
-        "max": 2,
-        "step": 0.05
-      },
-      {
-        "id": "glass_refraction",
-        "name": "Glass Refraction",
-        "mapping": "zoom_params.w",
-        "default": 0.8,
-        "min": 0,
-        "max": 1,
-        "step": 0.05
-      }
-    ],
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
@@ -34128,11 +34274,49 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
+      "upgraded-rgba",
       "temporal-feedback",
       "generated-depth",
       "semantic-alpha",
-      "aces-tone-map",
-      "upgraded-rgba"
+      "aces-tone-map"
+    ],
+    "params": [
+      {
+        "id": "wingbeat_speed",
+        "name": "Wingbeat Speed",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "eye_intensity",
+        "name": "Eye Intensity",
+        "default": 1,
+        "min": 0.5,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "aurora_density",
+        "name": "Aurora Density",
+        "default": 0.7,
+        "min": 0.1,
+        "max": 2,
+        "step": 0.05,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "glass_refraction",
+        "name": "Glass Refraction",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.05,
+        "mapping": "zoom_params.w"
+      }
     ]
   },
   {
@@ -34253,6 +34437,70 @@
     "features": []
   },
   {
+    "id": "gen-sentient-holographic-neuro-lace-matrix",
+    "name": "Sentient Holographic Neuro-Lace Matrix",
+    "url": "shaders/gen-sentient-holographic-neuro-lace-matrix.wgsl",
+    "type": "generative",
+    "category": "generative",
+    "description": "A boundless, hyper-reactive lattice of luminous digital synapses that breathe, think, and evolve, seamlessly blending synthetic cyberpunk aesthetics with organic neural architecture.",
+    "features": [
+      "audio-reactive",
+      "raymarching",
+      "cyberpunk",
+      "holographic"
+    ],
+    "tags": [
+      "cyberpunk",
+      "neural",
+      "lattice",
+      "holographic",
+      "audio-reactive",
+      "organic"
+    ],
+    "params": [
+      {
+        "id": "complexity",
+        "name": "Complexity",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Complexity of the fractal lace"
+      },
+      {
+        "id": "colorShift",
+        "name": "ColorShift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Color shifting between cyan and indigo"
+      },
+      {
+        "id": "growthSpeed",
+        "name": "GrowthSpeed",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.z",
+        "description": "Speed of the structural growth and pulsing"
+      },
+      {
+        "id": "specular",
+        "name": "Specular",
+        "default": 1,
+        "min": 0,
+        "max": 2,
+        "step": 0.1,
+        "mapping": "zoom_params.w",
+        "description": "Intensity of the specular highlight bloom"
+      }
+    ]
+  },
+  {
     "name": "Sentient Liquid-Neon Fractal-Heart",
     "category": "generative",
     "tags": [
@@ -34368,44 +34616,6 @@
         "step": 0.1
       }
     ],
-    "params": [
-      {
-        "id": "wing_span",
-        "name": "Wing Span",
-        "mapping": "zoom_params.x",
-        "default": 1.5,
-        "min": 0.5,
-        "max": 3,
-        "step": 0.1
-      },
-      {
-        "id": "plasma_intensity",
-        "name": "Plasma Intensity",
-        "mapping": "zoom_params.y",
-        "default": 2,
-        "min": 0.1,
-        "max": 5,
-        "step": 0.1
-      },
-      {
-        "id": "chrono_distortion",
-        "name": "Chrono Distortion",
-        "mapping": "zoom_params.z",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.05
-      },
-      {
-        "id": "nebular_density",
-        "name": "Nebular Density",
-        "mapping": "zoom_params.w",
-        "default": 0.8,
-        "min": 0.1,
-        "max": 2,
-        "step": 0.1
-      }
-    ],
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
@@ -34414,10 +34624,48 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
+      "upgraded-rgba",
       "generated-depth",
       "semantic-alpha",
-      "aces-tone-map",
-      "upgraded-rgba"
+      "aces-tone-map"
+    ],
+    "params": [
+      {
+        "id": "wing_span",
+        "name": "Wing Span",
+        "default": 1.5,
+        "min": 0.5,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "plasma_intensity",
+        "name": "Plasma Intensity",
+        "default": 2,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "chrono_distortion",
+        "name": "Chrono Distortion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.05,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "nebular_density",
+        "name": "Nebular Density",
+        "default": 0.8,
+        "min": 0.1,
+        "max": 2,
+        "step": 0.1,
+        "mapping": "zoom_params.w"
+      }
     ]
   },
   {

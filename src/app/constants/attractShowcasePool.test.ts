@@ -6,6 +6,8 @@ import {
   ATTRACT_PHYSICS_DWELL_SEC,
   ATTRACT_DEFAULT_DWELL_SEC,
 } from './attractShowcasePool';
+import fs from 'fs';
+import path from 'path';
 import { ShaderEntry } from '../../renderer/types';
 
 describe('attractShowcasePool', () => {
@@ -61,5 +63,37 @@ describe('attractShowcasePool', () => {
     expect(getAttractDwellSeconds('gray-scott-tank')).toBe(ATTRACT_PHYSICS_DWELL_SEC);
     expect(getAttractDwellSeconds('optical-flow-dream')).toBe(ATTRACT_PHYSICS_DWELL_SEC);
     expect(getAttractDwellSeconds('gen-showcase-nebula-core')).toBe(ATTRACT_DEFAULT_DWELL_SEC);
+  });
+
+  it('drops ids without a healthy thumbnail when a predicate is given', () => {
+    const healthy = new Set(['gen-showcase-nebula-core', 'stellar-plasma']);
+    const pool = getAttractPool(generative, [], (id) => healthy.has(id));
+    expect(pool.map((s) => s.id).sort()).toEqual(['gen-showcase-nebula-core', 'stellar-plasma']);
+  });
+
+  it('keeps the full pool when no id has a thumbnail yet (manifest loading)', () => {
+    expect(getAttractPool(generative, [], () => false).length).toBe(generative.length);
+  });
+
+  describe('repo thumbnail truth', () => {
+    const root = path.join(__dirname, '..', '..', '..');
+    const manifest = JSON.parse(fs.readFileSync(path.join(root, 'public/thumbnails/manifest.json'), 'utf8'));
+    const deferred = new Set<string>(
+      JSON.parse(fs.readFileSync(path.join(root, 'reports/thumbnail_deferrals.json'), 'utf8')).entries.map(
+        (e: { id: string }) => e.id,
+      ),
+    );
+
+    it('no attract id is deferred-as-pending', () => {
+      const offenders = [...ATTRACT_SHOWCASE_IDS, ...ATTRACT_PHYSICS_LAB_IDS].filter((id) => deferred.has(id));
+      expect(offenders).toEqual([]);
+    });
+
+    it('Physics Lab flagships have healthy thumbnails', () => {
+      for (const id of ATTRACT_PHYSICS_LAB_IDS) {
+        expect(manifest[id]?.thumbnail_url).toBeTruthy();
+        expect(fs.existsSync(path.join(root, 'public/thumbnails', `${id}.png`))).toBe(true);
+      }
+    });
   });
 });

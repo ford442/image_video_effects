@@ -3,8 +3,10 @@
 //  Category: post-processing
 //  Features: mouse-driven, audio-reactive, temporal, history-ring, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-08-02 (Algorithmist — swarm b26)
-//  Requires: binding 13 (historyTexture — HISTORY_DEPTH=8 ring buffer)
+//  Upgraded: 2026-08-02 (Algorithmist — swarm b26), 2026-09-21
+//  Ideas: Hann-windowed DFT; DFT phase -> glow hue
+//  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a hardcoded 8
+//  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
 //  Created: 2026-05-23
 //  By: Copilot
 //
@@ -64,9 +66,8 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-const HISTORY_DEPTH: u32 = 8u;
 const TAU: f32 = 6.28318530718;
-const N_FRAMES: f32 = 8.0;  // total frames including current
+const MAX_FRAMES: u32 = 8u;  // current + up to 7 history layers
 const SPRING_DT: f32 = 0.0166667;  // fixed 60 Hz integration step
 const LENS_RADIUS: f32 = 0.35;     // aspect-corrected lens radius
 const PING_RADIUS: f32 = 0.2;      // aspect-corrected click ping radius
@@ -132,18 +133,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let historyHead = u32(extraBuffer[4]);
   let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
-  // Discrete Fourier bin at target frequency over 8 time samples
-  // Real part (cosine weights) and imaginary part (sine weights)
-  var realAcc = current.rgb * 1.0;  // cos(0) = 1
-  var imagAcc = current.rgb * 0.0;  // sin(0) = 0
+  // Floor fix: the ring holds 8, 4 or 1 layers (VRAM probe) and the
+  // renderer wraps its head at that count. HEAD assumed 8, so on a 4-layer
+  // device half the DFT samples came from the wrong frames.
+  let histDepth = max(textureNumLayers(historyTexture), 1u);
+  let frames    = min(histDepth, MAX_FRAMES);
+  let fN        = f32(frames);
 
-  for (var age: u32 = 1u; age <= 7u; age = age + 1u) {
-    let layer = (historyHead + HISTORY_DEPTH - age) % HISTORY_DEPTH;
+  // ── Idea 1: Hann-windowed DFT ─────────────────────────────────────
+  // An unwindowed 8-sample DFT leaks badly: its sidelobes are only ~13 dB
+  // down, so a pixel changing at almost ANY rate — or just sitting bright
+  // and still — lights up at the selected frequency, and the selector
+  // barely selects. A Hann window pushes the sidelobes to ~31 dB. It is
+  // normalised by the window's own sum so a pure tone keeps HEAD's scale.
+  // Real part (cosine weights) and imaginary part (sine weights).
+  let w0 = 0.5 - 0.5 * cos(TAU * 0.5 / fN);
+  var realAcc = current.rgb * w0;   // cos(0) = 1
+  var imagAcc = vec3<f32>(0.0);     // sin(0) = 0
+  var sumW = w0;
+
+  for (var age: u32 = 1u; age < frames; age = age + 1u) {
+    let layer = (historyHead + histDepth - age) % histDepth;
     let hist  = textureSampleLevel(historyTexture, u_sampler, uv, i32(layer), 0.0);
     let t     = f32(age);
-    realAcc += hist.rgb * cos(TAU * freq * t);
-    imagAcc += hist.rgb * sin(TAU * freq * t);
+    let w     = 0.5 - 0.5 * cos(TAU * (t + 0.5) / fN);
+    realAcc += hist.rgb * w * cos(TAU * freq * t);
+    imagAcc += hist.rgb * w * sin(TAU * freq * t);
+    sumW += w;
   }
+  // Pings were tuned against a /8 normalisation; keep their brightness.
+  let pingScale = sumW / fN;
 
   // ── Click tuning-fork pings ──────────────────────────────────────
   // Each live ripple injects a decaying oscillation at the target
@@ -158,12 +177,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pingMask  = 1.0 - smoothstep(0.0, PING_RADIUS, length(pingVec));
     let decay     = exp(-rippleAge * 1.5);
     let ageFrames = rippleAge * 60.0;          // seconds → frames
-    realAcc += vec3<f32>(cos(TAU * freq * ageFrames)) * pingMask * decay;
-    imagAcc += vec3<f32>(sin(TAU * freq * ageFrames)) * pingMask * decay;
+    realAcc += vec3<f32>(cos(TAU * freq * ageFrames)) * pingMask * decay * pingScale;
+    imagAcc += vec3<f32>(sin(TAU * freq * ageFrames)) * pingMask * decay * pingScale;
   }
 
   // Frequency magnitude (normalised by sample count)
-  let magnitude = sqrt(realAcc * realAcc + imagAcc * imagAcc) / N_FRAMES;
+  let magnitude = sqrt(realAcc * realAcc + imagAcc * imagAcc) / max(sumW, 1e-4);
 
   // Scalar energy level for glow brightness
   let energy = (magnitude.r + magnitude.g + magnitude.b) / 3.0;
@@ -177,8 +196,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let voice      = plasmaBuffer[(band % 8u) + 1u].x * 0.4;
   let voiceBoost = 1.0 + bass * 0.6 + voice;   // band voice + global bass
 
-  // Coloured glow: single hue tinted by frequency energy
-  let glowColor = hue2rgb(glowHue) * energyFocused * glowBright * voiceBoost;
+  // ── Idea 2: DFT phase -> glow hue ─────────────────────────────────
+  // HEAD computed the phase and threw it away. Rotating the glow hue by it
+  // (up to a quarter turn either side of the user's hue) makes regions that
+  // oscillate in sync share a colour, and a travelling wave shows up as a
+  // hue sweep across the frame. Where the magnitude is tiny the phase is
+  // noise, so the rotation fades out with energy.
+  let lumaW   = vec3<f32>(0.2126, 0.7152, 0.0722);
+  let phase   = atan2(dot(imagAcc, lumaW), dot(realAcc, lumaW)) / TAU;   // -0.5..0.5
+  let phaseHue = fract(glowHue + phase * 0.5 * smoothstep(0.01, 0.06, energy));
+
+  let glowColor = hue2rgb(phaseHue) * energyFocused * glowBright * voiceBoost;
 
   // Composite: base + glow
   let base   = current.rgb * baseBlend;

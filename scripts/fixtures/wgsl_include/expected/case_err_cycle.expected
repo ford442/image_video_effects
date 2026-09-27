@@ -1,0 +1,1 @@
+ERROR: #include cycle: case_err_cycle.wgsl -> _lib_cycle.wgsl -> _lib_cycle_partner.wgsl -> _lib_cycle.wgsl

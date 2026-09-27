@@ -33,7 +33,9 @@ const state = {
   lastLoadError: null,
   initStartTime: 0,
   initEndTime: 0,
-  colorFormat: 0
+  colorFormat: 0,
+  /** Slot indexes whose last setSlotShader the module did not accept. */
+  droppedSlots: /* @__PURE__ */ new Set()
 };
 const INIT_STAGE_NAMES = {
   0: "None",

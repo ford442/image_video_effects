@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-17T08:40:59.100055",
+  "timestamp": "2026-09-24T06:34:51.507670",
   "naga_bin": "/home/jules/.cargo/bin/naga",
   "naga_available": true,
   "total": 1,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/gen-kinetic-bioluminescent-obsidian-coral-reactor.wgsl",
+      "file": "public/shaders/gen-hyper-geometric-void-glass-seraph.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

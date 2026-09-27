@@ -1,3 +1,13 @@
+// ═══════════════════════════════════════════════════════════════════
+//  foil-impression
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Upgraded: 2026-09-21
+//  Ideas: anisotropic brushed-metal streaks along image relief;
+//         crinkle micro-fold shimmer at the press boundary
+//  A packing: display RGBA passthrough (no history)
+// ═══════════════════════════════════════════════════════════════════
+
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
@@ -133,14 +143,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let spec_pow = mix(30.0, 10.0, press_factor);
   let spec = pow(NdotH, spec_pow) * 0.8;
 
-  let brushed = sin((uv.x + uv.y) * mix(80.0, 260.0, roughness) - time * (4.0 + audio.y * 7.0));
+  // Idea 1: anisotropic brushed-metal streaks — the brushing direction bends
+  // to follow the local image-relief gradient where the foil is pressed,
+  // instead of a fixed diagonal, so streaks visibly wrap around embossed
+  // features (a true anisotropic brush, not a flat overlay pattern).
+  let reliefTangent = normalize(vec2<f32>(-dy, dx) + vec2<f32>(1e-4));
+  let brushFreq = mix(80.0, 260.0, roughness);
+  let brushCoordFixed = (uv.x + uv.y) * brushFreq;
+  let brushCoordRelief = dot(uv, reliefTangent) * brushFreq;
+  let brushCoord = mix(brushCoordFixed, brushCoordRelief, press_factor);
+  let brushed = sin(brushCoord - time * (4.0 + audio.y * 7.0));
   let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + brushed * 2.0 + time + audio.z * 2.0);
   var col = final_albedo * (0.3 + 0.7 * NdotL) + vec3<f32>(spec) + spectral * (abs(brushed) * 0.08 + clickFront * 0.22 + audio.x * 0.08) * (0.3 + relief);
+
+  // Idea 2: crinkle micro-fold shimmer — an extra high-frequency noise
+  // octave gated right at the press boundary (where press_factor transitions
+  // from silver to image), like foil catching light along a crease fold.
+  let foldBand = 4.0 * press_factor * (1.0 - press_factor);
+  let foldNoise = fbm(uv * noise_freq * 3.0 + time * 0.5);
+  col = col + vec3<f32>(1.0, 0.95, 0.85) * foldBand * foldNoise * foldNoise * 0.6;
 
   // Tone mapping / clamp
   col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
 
   textureStore(writeTexture, coord, vec4<f32>(col, img_color_sample.a));
+  textureStore(dataTextureA, coord, vec4<f32>(col, img_color_sample.a));
 
   // Pass through depth
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

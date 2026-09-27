@@ -20,6 +20,7 @@ using wasm_internal::CheckLimit;
 using wasm_internal::ParseWorkgroupSize;
 using wasm_internal::AnalyzeShaderBindings;
 using wasm_internal::RewriteWgslStorageFormats;
+using wasm_internal::ContainsWgslIncludeDirective;
 
 namespace {
 WGPUTextureFormat RgbaStorageFormat(policy::InternalColorFormat fmt) {
@@ -541,6 +542,16 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
     // Check if already loaded
     if (shaders_.find(id) != shaders_.end()) {
         return true;
+    }
+
+    // C++ deliberately has no #include parser: every byte of WGSL arrives here
+    // from src/wasm/bridge/shader.ts, which already expanded it. Growing a
+    // second parser would mean two dialects to keep in sync, so instead we fail
+    // loudly if a directive survived. See src/contracts/wgsl_include.json.
+    if (ContainsWgslIncludeDirective(wgslCode)) {
+        printf("❌ Shader '%s' still contains an unexpanded #include directive\n", id);
+        lastError_ = std::string("unexpanded #include in shader: ") + id;
+        return false;
     }
 
     const char* fmtName = colorFormat_ == policy::InternalColorFormat::Rgba16Float

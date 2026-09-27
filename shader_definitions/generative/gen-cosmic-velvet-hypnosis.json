@@ -86,7 +86,8 @@
     "fast-motion",
     "semantic-alpha",
     "generated-depth",
-    "counter-spiral-moire"
+    "counter-spiral-moire",
+    "upgraded-rgba"
   ],
   "tags": [
     "generative",

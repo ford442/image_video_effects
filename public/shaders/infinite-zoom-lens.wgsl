@@ -4,6 +4,10 @@
 //  Features: mouse-driven, audio-reactive, droste-recursion, chromatic-dispersion,
 //            temporal-feedback, semantic-alpha, ACES
 //  Complexity: High
+//  Upgraded: 2026-09-21
+//  Ideas: log-periodic Droste nesting inside the lens; endless inward fall (Zoom Strength);
+//         picture-frame seams at each nesting boundary
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -111,6 +115,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dist = length(centered);
   let lensMask = 1.0 - smoothstep(radius, radius + 0.03, dist);
 
+  // Idea 1 — log-periodic nesting. A real Droste repeats the picture inside itself: inside
+  // the lens, log-radius is wrapped so the band [R/S, R) repeats inward forever.
+  // Idea 2 — endless fall. The log phase scrolls with Zoom Strength, so nested copies
+  // stream toward the centre (HEAD's zoom speed only spun the spiral).
+  let nestS = 2.2;
+  let logS = log(nestS);
+  let fallPhase = time * zoomSpeed * 0.12;
+  let nestU = log(max(dist, 1e-5) / radius) / logS + fallPhase;
+  let nestF = fract(nestU);
+  let nestR = radius * exp((nestF - 1.0) * logS);
+  let nestUV = mouse + (uv - mouse) * (nestR / max(dist, 1e-5));
+  let lensUV = mix(uv, nestUV, lensMask);
+  // Idea 3 — picture-frame seams: the outer edge of every nested copy is a thin shadowed
+  // frame with a lit inner lip, like Droste packaging art.
+  let frameShadow = smoothstep(0.90, 0.985, nestF) * (1.0 - smoothstep(0.985, 1.0, nestF));
+  let frameLip = smoothstep(0.0, 0.012, nestF) * (1.0 - smoothstep(0.012, 0.04, nestF));
+
   var accum = vec3<f32>(0.0);
   var totalW = 0.0;
   var recursionConfidence = 0.0;
@@ -120,7 +141,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let scale = pow(0.78, fi) * (1.0 + bass * 0.12);
     let angle = time * zoomSpeed * 0.15 + fi * twistAmt * 0.4;
     let spiralCenter = mouse + vec2<f32>(sin(time * 0.2 + fi * 1.3) * 0.02, cos(time * 0.17 + fi * 1.1) * 0.02);
-    var sampleUV = drosteUV(uv, spiralCenter, angle, twistAmt * 0.6);
+    var sampleUV = drosteUV(lensUV, spiralCenter, angle, twistAmt * 0.6);
     sampleUV = (sampleUV - spiralCenter) / scale + spiralCenter;
     sampleUV = clamp(sampleUV, vec2<f32>(0.0), vec2<f32>(1.0));
 
@@ -141,6 +162,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   var finalColor = accum / max(totalW, 1e-4);
+  finalColor = finalColor * (1.0 - frameShadow * 0.6 * lensMask) + vec3<f32>(0.9, 0.85, 0.75) * frameLip * 0.18 * lensMask;
   let axial = smoothstep(0.07, 0.0, abs(fract(dist * 6.0 - time * (2.5 + mids)) - 0.5));
   let runner = smoothstep(0.05, 0.0, abs(fract(atan2(centered.y, centered.x) / TAU * 14.0 + time * 1.8) - 0.5));
   let oilSlick = 0.5 + 0.5 * cos(TAU * (vec3<f32>(dist * 8.0 - time * 0.5) + vec3<f32>(0.0, 0.333, 0.667)));

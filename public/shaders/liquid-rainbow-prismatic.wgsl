@@ -1,4 +1,10 @@
-// Liquid Rainbow Prismatic — Cauchy dispersion, thin-film optics, and caustics.
+// ═══════════════════════════════════════════════════════════════════
+//  Liquid Rainbow Prismatic — Cauchy dispersion, thin-film optics, and caustics.
+//  Category: liquid-effects
+//  Upgraded: 2026-09-21
+//  Ideas: gravity drainage + Newton's black film; dispersed caustics
+//  A packing: ACES display RGBA (C read as colour via historyAt)
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler:sampler; @group(0) @binding(1) var readTexture:texture_2d<f32>;
 @group(0) @binding(2) var writeTexture:texture_storage_2d<rgba32float,write>; @group(0) @binding(3) var<uniform> u:Uniforms;
 @group(0) @binding(4) var readDepthTexture:texture_2d<f32>; @group(0) @binding(5) var non_filtering_sampler:sampler;
@@ -25,11 +31,22 @@ fn main(@builtin(global_invocation_id) gid:vec3<u32>){
  let nR=1.46+dispersion/0.650/0.650;let nG=1.46+dispersion/0.510/0.510;let nB=1.46+dispersion/0.440/0.440;
  let uvR=clamp(uv-gradient*(nR-1.0),vec2<f32>(0.0),vec2<f32>(1.0));let uvG=clamp(uv-gradient*(nG-1.0),vec2<f32>(0.0),vec2<f32>(1.0));let uvB=clamp(uv-gradient*(nB-1.0),vec2<f32>(0.0),vec2<f32>(1.0));
  let sr=textureSampleLevel(readTexture,u_sampler,uvR,0.0);let sg=textureSampleLevel(readTexture,u_sampler,uvG,0.0);let sb=textureSampleLevel(readTexture,u_sampler,uvB,0.0);
- let thickness=filmScale*(0.5+0.5*sin(surface(p*1.7,time*0.7)*2.1+time*(0.35+audio.y)))+frontEnergy*0.08;
+ // Idea 1: gravity drainage + Newton's black film. A real film thins from the top down, so its
+ // bands stack horizontally; the thinnest region interferes destructively at EVERY wavelength and
+ // goes black just before it would pop. HEAD's thickness was a gravity-free swirl.
+ let swirl=0.5+0.5*sin(surface(p*1.7,time*0.7)*2.1+time*(0.35+audio.y));
+ let drain=pow(clamp(uv.y+0.05*surface(p*0.9,time*0.4),0.0,1.0),0.8);
+ let thickness=filmScale*mix(swirl,drain,0.45)+frontEnergy*0.08;
+ let blackFilm=1.0-smoothstep(0.03,0.11,thickness);
  let phase=vec3<f32>(thickness*19.0/0.650,thickness*19.0/0.510,thickness*19.0/0.440);
  let film=0.5+0.5*cos(phase+vec3<f32>(0.0,2.094,4.188));
- var caustic=vec3<f32>(0.0);for(var k=0;k<6;k=k+1){let a=f32(k)*1.04719755+time*0.31;let o=vec2<f32>(cos(a),sin(a))*texel*(2.0+filmScale*4.0);caustic+=textureSampleLevel(readTexture,u_sampler,clamp(uvG+o,vec2<f32>(0.0),vec2<f32>(1.0)),0.0).rgb;}caustic/=6.0;
- let history=historyAt(uv-gradient,size);var hdr=vec3<f32>(sr.r,sg.g,sb.b);hdr+=film*saturation*(0.12+audio.z*0.32)+caustic*(0.08+frontEnergy*0.08);
+ // Idea 2: dispersed caustics. In a dispersive lens each wavelength focuses somewhere else, so
+ // each channel's caustic is gathered around ITS OWN refracted uv instead of all around green.
+ var caustic=vec3<f32>(0.0);for(var k=0;k<6;k=k+1){let a=f32(k)*1.04719755+time*0.31;let o=vec2<f32>(cos(a),sin(a))*texel*(2.0+filmScale*4.0);
+  caustic.r+=textureSampleLevel(readTexture,u_sampler,clamp(uvR+o*(nR-0.46),vec2<f32>(0.0),vec2<f32>(1.0)),0.0).r;
+  caustic.g+=textureSampleLevel(readTexture,u_sampler,clamp(uvG+o*(nG-0.46),vec2<f32>(0.0),vec2<f32>(1.0)),0.0).g;
+  caustic.b+=textureSampleLevel(readTexture,u_sampler,clamp(uvB+o*(nB-0.46),vec2<f32>(0.0),vec2<f32>(1.0)),0.0).b;}caustic/=6.0;
+ let history=historyAt(uv-gradient,size);var hdr=vec3<f32>(sr.r,sg.g,sb.b);hdr+=film*saturation*(0.12+audio.z*0.32)*(1.0-blackFilm)+caustic*(0.08+frontEnergy*0.08);
  hdr=mix(hdr,history.rgb,clamp(history.a*(0.08+filmScale*0.09),0.0,0.24));hdr+=vec3<f32>(0.25,0.05,0.35)*audio.x*frontEnergy*0.18;let rgb=aces(hdr);
  let normal=normalize(vec3<f32>(-gradient*24.0,1.0));let fresnel=0.04+0.96*pow(1.0-max(normal.z,0.0),5.0);let sourceAlpha=max(sr.a,max(sg.a,sb.a));let alpha=clamp(sourceAlpha*0.76+thickness*0.12+fresnel*0.24+frontEnergy*0.05,0.0,1.0);
  let outputColor=vec4<f32>(rgb,alpha);textureStore(writeTexture,coord,outputColor);textureStore(dataTextureA,coord,outputColor);let depth=textureSampleLevel(readDepthTexture,non_filtering_sampler,uvG,0.0).r;

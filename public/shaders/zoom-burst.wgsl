@@ -3,7 +3,8 @@
 //  Category: distortion
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
 //  Complexity: High
-//  Upgraded: 2026-08-30
+//  Upgraded: 2026-08-30, 2026-09-21
+//  Ideas: highlight comets (luminance-weighted taps); zoom-ring dwell ghost at streak end
 //  A packing: ACES display RGBA
 //  Motion: radial speed lines + rotational shear streaks
 // ═══════════════════════════════════════════════════════════════════
@@ -132,12 +133,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let gch = sampleColor(sampleUV).g;
     let bch = sampleColor(sampleUV - split / aspectVec).b;
     let rayAngle = abs(sin(atan2(dir.y, dir.x) * 4.0 + time * 0.6));
-    let w = mix(1.0, 0.22, t) * (1.0 + rayAngle * 0.55) * (1.0 + bass * 0.4);
-    accum = accum + vec3<f32>(rch, gch, bch) * w;
+    // Idea 1 — highlight comets. A zoom exposure integrates light, so highlights drag
+    // long bright tails while midtones blur normally: taps are weighted by their luma.
+    let tap = vec3<f32>(rch, gch, bch);
+    let tapLum = dot(tap, vec3<f32>(0.299, 0.587, 0.114));
+    let comet = 1.0 + max(tapLum - 0.55, 0.0) * 4.0 * t;
+    let w = mix(1.0, 0.22, t) * (1.0 + rayAngle * 0.55) * (1.0 + bass * 0.4) * comet;
+    accum = accum + tap * w;
     weightSum = weightSum + w;
   }
 
-  let burst = accum / max(weightSum, 1e-4);
+  // Idea 2 — zoom-ring dwell. A hand zoom lingers at the end of its travel, so the far
+  // end of the streak holds a faint, sharper second image of the scene.
+  let endRadius = burstLength * depthStreak * hold * (1.0 + dist * 2.0 + click * 0.8);
+  let endShear = rotate(dir, spin + sin(time * 2.2 + dist * 9.0) * 0.18);
+  let ghost = sampleColor(uv - endShear * endRadius / aspectVec);
+  let burst = mix(accum / max(weightSum, 1e-4), ghost, 0.16);
   let lum = dot(burst, vec3<f32>(0.299, 0.587, 0.114));
   let bloom = max(lum - 0.50, 0.0) * 0.6;
   let speedLine = pow(max(0.0, sin(atan2(dir.y, dir.x) * 8.0 - time * (4.0 + bass * 2.0)) * 0.5 + 0.5), 10.0)

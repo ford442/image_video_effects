@@ -4,10 +4,12 @@
  *
  * CI check: webgpu_limits.json ↔ TS policy ↔ device.cpp CheckLimit/requiredLimits;
  * optional feature order ↔ device.ts / device.cpp;
+ * slot_limits.json ↔ PHYSICAL_SLOT_LIMIT / MAX_SHADER_SLOTS;
  * canvas_configure.json ↔ buildCanvasConfigureOptions / JS_CreateSurfaceFromCanvas / ConfigureSurface; wasm_exports.json ↔ KEEPALIVE /
  * build.sh / CMakeLists (no hardcoded export lists);
  * workgroup_dispatch.json ↔ ShaderCompilation.ts ↔ wasm_internal.cpp ParseWorkgroupSize;
- * emptyPlaceholder (r32float 1×1, 4 B/row) ↔ resources.ts emptyTex ↔ resources.cpp emptyTexture_.
+ * emptyPlaceholder (r32float 1×1, 4 B/row) ↔ resources.ts emptyTex ↔ resources.cpp emptyTexture_;
+ * bind_group1.json ↔ simRing.ts layout ↔ group-1 limits policy ↔ WASM group-1 refusal.
  */
 
 const fs = require('fs');
@@ -537,9 +539,185 @@ function verifyEmptyPlaceholder() {
   }
 }
 
+function verifySlotLimits() {
+  const file = 'src/contracts/slot_limits.json';
+  const c = JSON.parse(fs.readFileSync(path.join(ROOT, file), 'utf8'));
+  const n = c.maxPhysicalSlots;
+  if (!Number.isInteger(n) || n < 1) fail(`${file} maxPhysicalSlots must be a positive integer`);
+  const [capLo, capHi] = c.qualityCapRange || [];
+  if (!(capLo >= 1 && capHi >= capLo && capHi <= n)) {
+    fail(`${file} qualityCapRange must sit inside 1..maxPhysicalSlots`);
+  }
+
+  // ── TS: PHYSICAL_SLOT_LIMIT comes from the contract, not a literal ───────
+  const ts = fs.readFileSync(path.join(ROOT, c.ts.file), 'utf8');
+  if (!/import slotLimitsContract from '\.\.\/contracts\/slot_limits\.json'/.test(ts)) {
+    fail(`${c.ts.file} must import slotLimitsContract from contracts/slot_limits.json`);
+  }
+  if (!new RegExp(`export const ${c.ts.constant}(?::\\s*number)?\\s*=\\s*slotLimitsContract\\.maxPhysicalSlots;`).test(ts)) {
+    fail(`${c.ts.file} ${c.ts.constant} must equal slotLimitsContract.maxPhysicalSlots`);
+  }
+
+  // ── TS policy: quality cap never exceeds the contract range ──────────────
+  const policy = fs.readFileSync(path.join(ROOT, 'src/config/performancePolicy.ts'), 'utf8');
+  for (const m of policy.matchAll(/maxActiveSlots:\s*(\d+)/g)) {
+    const v = parseInt(m[1], 10);
+    if (v < capLo || v > capHi) fail(`performancePolicy.ts maxActiveSlots ${v} outside ${file} qualityCapRange ${capLo}..${capHi}`);
+  }
+
+  // ── C++: MAX_SHADER_SLOTS equals the contract ────────────────────────────
+  const header = fs.readFileSync(path.join(ROOT, c.cpp.file), 'utf8');
+  const m = header.match(new RegExp(`static\\s+constexpr\\s+int\\s+${c.cpp.constant}\\s*=\\s*(\\d+)\\s*;`));
+  if (!m) {
+    fail(`${c.cpp.file} ${c.cpp.constant} not found`);
+  } else if (parseInt(m[1], 10) !== n) {
+    fail(`${c.cpp.file} ${c.cpp.constant} = ${m[1]} but ${file} maxPhysicalSlots = ${n} (TS ${c.ts.constant})`);
+  }
+
+  // Per-index output tables only cover as many slots as they list; the frame
+  // loop must pick outputs by position in the chain instead.
+  const frame = fs.readFileSync(path.join(ROOT, c.cpp.frameFile), 'utf8');
+  if (new RegExp(`\\[\\s*${c.cpp.constant}\\s*\\]\\s*=\\s*\\{`).test(frame)) {
+    fail(`${c.cpp.frameFile} must not initialise a fixed per-slot array sized ${c.cpp.constant} (breaks when the limit changes)`);
+  }
+
+  // Out-of-range slot setters log instead of returning silently.
+  const slice = fs.readFileSync(path.join(ROOT, c.cpp.sliceFile), 'utf8');
+  for (const setter of ['SetSlotShader', 'SetSlotParams', 'SetSlotMode']) {
+    const body = slice.match(new RegExp(`void WebGPURenderer::${setter}\\([\\s\\S]*?\\n\\}`));
+    const guard = body && body[0].match(new RegExp(`slotIndex >= ${c.cpp.constant}\\)\\s*\\{([\\s\\S]*?)return;`));
+    if (!guard || !/printf\(/.test(guard[1])) {
+      fail(`${c.cpp.sliceFile} ${setter} must printf before ignoring an out-of-range slot`);
+    }
+  }
+}
+
+/**
+ * bind_group1.json (opt-in @group(1) sim ring) ↔ simRing.ts layout ↔ limits
+ * policy ↔ WASM refusal. The group-1 limits must never leak into the
+ * catalog-wide requiredLimits, and the C++ pipeline stays group-0 only.
+ */
+function verifyBindGroup1() {
+  const contractPath = path.join(ROOT, 'src/contracts/bind_group1.json');
+  const c = JSON.parse(fs.readFileSync(contractPath, 'utf8'));
+  const expected = [
+    { binding: 0, name: 'simState', bufferType: 'storage' },
+    { binding: 1, name: 'simIndex', bufferType: 'read-only-storage' },
+    { binding: 2, name: 'simParams', bufferType: 'uniform' },
+  ];
+  if (c.group !== 1) fail('bind_group1.json group must be 1');
+  if (!Array.isArray(c.bindings) || c.bindings.length !== expected.length) {
+    fail(`bind_group1.json must declare exactly ${expected.length} bindings`);
+    return;
+  }
+  expected.forEach((e, i) => {
+    const b = c.bindings[i];
+    if (b.binding !== e.binding || b.name !== e.name || b.bufferType !== e.bufferType) {
+      fail(`bind_group1.json binding ${i} must be ${e.name} (${e.bufferType}) at @binding(${e.binding})`);
+    }
+  });
+  if (c.bindings[0].elementBytes !== 16) fail('simState elementBytes must be 16 (vec4<f32>)');
+  const fields = c.bindings[2].fields || [];
+  if (fields.join(',') !== 'stateCount,indexCount,frame,truncated') {
+    fail('simParams fields must be [stateCount, indexCount, frame, truncated]');
+  }
+  if (c.bindings[2].sizeBytes !== fields.length * 4) fail('simParams sizeBytes must be 4 × fields');
+  if (c.barrier?.from !== 'simState' || c.barrier?.to !== 'simIndex' || c.barrier?.kind !== 'copyBufferToBuffer') {
+    fail('bind_group1.json barrier must be copyBufferToBuffer simState → simIndex');
+  }
+  const wg = c.dispatch?.simStateWorkgroupSize || [];
+  if (wg.join(',') !== '64,1,1') fail('simStateWorkgroupSize must be [64, 1, 1]');
+  if ((c.dispatch?.domains || []).join(',') !== 'pixels,simState') {
+    fail('dispatch.domains must be [pixels, simState]');
+  }
+
+  // TS layout ↔ JSON (binding order + buffer types).
+  const tsFile = 'src/renderer/webgpu/simRing.ts';
+  const ts = fs.readFileSync(path.join(ROOT, tsFile), 'utf8');
+  const bgl = ts.match(/export function createSimRingBindGroupLayout[\s\S]*?\n\}/);
+  if (!bgl) {
+    fail(`${tsFile} must export createSimRingBindGroupLayout`);
+  } else {
+    const entries = [...bgl[0].matchAll(/\{\s*binding:\s*(\d+)[^}]*buffer:\s*\{\s*type:\s*'([a-z-]+)'\s*\}/g)];
+    if (entries.length !== expected.length) {
+      fail(`${tsFile} createSimRingBindGroupLayout declares ${entries.length} entries, contract has ${expected.length}`);
+    }
+    entries.forEach((m, i) => {
+      const e = expected[i];
+      if (!e || parseInt(m[1], 10) !== e.binding || m[2] !== e.bufferType) {
+        fail(`${tsFile} layout entry ${i} is binding ${m[1]} '${m[2]}', contract wants ${e ? `${e.binding} '${e.bufferType}'` : 'nothing'}`);
+      }
+    });
+  }
+  if (!/import bindGroup1Contract from '..\/..\/contracts\/bind_group1\.json'/.test(ts)) {
+    fail(`${tsFile} must import bind_group1.json (ladder, key and limits come from the contract)`);
+  }
+  if (!/bindGroupLayouts:\s*\[group0,\s*group1\]/.test(ts)) {
+    fail(`${tsFile} createSimRingPipelineLayout must be [group0, group1]`);
+  }
+
+  // OOM ladder discipline.
+  const ladder = c.oom?.ladder || [];
+  if (ladder.join(',') !== '65536,32768,16384,4096') fail('sim-ring OOM ladder must be 65536 → 32768 → 16384 → 4096');
+  if (c.oom?.defaultStateCount !== ladder[0]) fail('oom.defaultStateCount must be the top ladder rung');
+  if (c.oom?.sessionStorageKey !== 'px_simring_oom_cap') fail('oom.sessionStorageKey must be px_simring_oom_cap');
+
+  // Group-1 limits: within WebGPU base limits, and never catalog-wide.
+  const base = c.webgpuBaseLimits || {};
+  for (const [key, need] of Object.entries(c.group1RequiredLimits || {})) {
+    if (!(key in base)) fail(`webgpuBaseLimits missing ${key}`);
+    else if (need > base[key]) fail(`group1RequiredLimits.${key}=${need} exceeds WebGPU base ${base[key]}`);
+  }
+  const g0 = EXPECTED_LIMITS;
+  if ('maxBindGroups' in g0) fail('webgpu_limits.json must not require maxBindGroups (group 1 is opt-in)');
+  if (g0.maxStorageBuffersPerShaderStage >= c.group1RequiredLimits.maxStorageBuffersPerShaderStage) {
+    fail('webgpu_limits.json maxStorageBuffersPerShaderStage was raised to the group-1 value — keep it catalog-minimal');
+  }
+  const policy = fs.readFileSync(TS_POLICY, 'utf8');
+  if (/bind_group1|GROUP1_REQUIRED_LIMITS/.test(policy)) {
+    fail('webgpuDevicePolicy.ts must not fold group-1 limits into requiredLimits');
+  }
+
+  // WASM: C++ stays single-layout; bridge refuses group-1 WGSL before LoadShader.
+  const pipelineCpp = fs.readFileSync(path.join(ROOT, 'wasm_renderer/pipeline.cpp'), 'utf8');
+  if (!/bindGroupLayoutCount\s*=\s*1\s*;/.test(pipelineCpp)) {
+    fail('wasm_renderer/pipeline.cpp must keep bindGroupLayoutCount = 1 (feature freeze)');
+  }
+  const bridgeFile = 'src/wasm/bridge/shader.ts';
+  const bridge = fs.readFileSync(path.join(ROOT, bridgeFile), 'utf8');
+  for (const fnName of ['loadShader', 'reloadShader']) {
+    const body = bridge.match(new RegExp(`export function ${fnName}\\([\\s\\S]*?\\n\\}`));
+    const refuse = body ? body[0].indexOf('declaresBindGroup1(') : -1;
+    const ccall = body ? body[0].indexOf(`ccall('${fnName}'`) : -1;
+    if (refuse < 0 || ccall < 0 || refuse > ccall) {
+      fail(`${bridgeFile} ${fnName} must refuse @group(1) WGSL before ccall('${fnName}')`);
+    }
+  }
+
+  // Definitions that opt into the ring must dispatch at least one simState node.
+  const defsDir = path.join(ROOT, 'shader_definitions');
+  const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+    e.isDirectory() ? walk(path.join(dir, e.name)) : e.name.endsWith('.json') ? [path.join(dir, e.name)] : []);
+  for (const file of walk(defsDir)) {
+    let def;
+    try { def = JSON.parse(fs.readFileSync(file, 'utf8')); } catch { continue; }
+    if (!def.simRing) continue;
+    const nodes = def.multipass?.graph?.nodes || [];
+    if (!nodes.some((n) => n.dispatch === 'simState')) {
+      fail(`${path.relative(ROOT, file)} declares simRing but no graph node dispatches simState`);
+    }
+    const n = def.simRing.stateCount;
+    if (!Number.isInteger(n) || n < 1 || n > ladder[0]) {
+      fail(`${path.relative(ROOT, file)} simRing.stateCount must be 1–${ladder[0]}`);
+    }
+  }
+}
+
 if (!ONLY_WASM_INVARIANTS) {
   verifyOptionalFeatures();
+  verifyBindGroup1();
   verifyCanvasConfigure();
+  verifySlotLimits();
   verifyWasmExports();
   verifyWorkgroupDispatch();
   verifyEmptyPlaceholder();
@@ -552,7 +730,7 @@ if (failed) {
 }
 
 console.log(
-  '✅ Device policy sync OK (limits + optional features + canvas_configure + wasm_exports + wasm_compile_flags + workgroup_dispatch + emptyPlaceholder + wasm_runtime_invariants ↔ TS/C++/shaders/wasm)',
+  '✅ Device policy sync OK (limits + optional features + canvas_configure + slot_limits + wasm_exports + wasm_compile_flags + workgroup_dispatch + emptyPlaceholder + bind_group1 + wasm_runtime_invariants ↔ TS/C++/shaders/wasm)',
 );
 
 function walkCppFiles(dir) {

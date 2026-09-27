@@ -1,9 +1,9 @@
 /**
  * audioDepth.ts
  *
- * Audio FFT bins, depth map upload, and extraBuffer (binding 10) management.
- * Plasma buffer (binding 12) is created in resources.ts; no per-frame CPU writes yet.
- * Mirrors wasm_renderer/audio_depth.cpp.
+ * Audio FFT bins, depth map upload, extraBuffer (binding 10), and plasmaBuffer
+ * (binding 12) management.
+ * Mirrors wasm_renderer/audio_depth.cpp and wasm_renderer/frame.cpp:100-108.
  */
 
 import { AUDIO_FFT_BINS, EXTRA_BIN_OFFSET, EXTRA_FLOATS } from './webgpuConstants';
@@ -54,6 +54,21 @@ export function writeExtraBuffer(device: GPUDevice, extraBuf: GPUBuffer, state: 
   extraScratch[4] = state.historyHead;
   extraScratch.set(state.freqBins, EXTRA_BIN_OFFSET);
   device.queue.writeBuffer(extraBuf, 0, extraScratch);
+}
+
+const plasmaScratch = new Float32Array(4);
+
+/**
+ * Flush audio into plasmaBuffer (binding 12) as vec4(bass, mid, treble, 0) at index 0.
+ * Mirrors wasm_renderer/frame.cpp:100-108. Shaders following the AGENTS.md audio
+ * convention read bass/mid/treble from plasmaBuffer[0].xyz.
+ */
+export function writePlasmaBuffer(device: GPUDevice, plasmaBuf: GPUBuffer, state: AudioDepthState): void {
+  plasmaScratch[0] = state.bass;
+  plasmaScratch[1] = state.mid;
+  plasmaScratch[2] = state.treble;
+  plasmaScratch[3] = 0;
+  device.queue.writeBuffer(plasmaBuf, 0, plasmaScratch);
 }
 
 /**

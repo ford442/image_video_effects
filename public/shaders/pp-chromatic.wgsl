@@ -1,6 +1,11 @@
-// PP Chromatic — Cauchy-dispersed lens with temporal fringe persistence.
-// A/C stores tone-mapped display RGBA. B and extraBuffer are unused.
-// Premium mixed-eight upgrade: 2026-08-27.
+// ═══════════════════════════════════════════════════════════════════
+//  PP Chromatic — Cauchy-dispersed lens with temporal fringe persistence.
+//  Category: post-processing
+//  Upgraded: 2026-08-27 (premium mixed-eight), 2026-09-21
+//  Ideas: longitudinal (axial) CA across the focal plane; purple fringing
+//         on blown highlights
+//  A packing: A/C store tone-mapped display RGBA. B and extraBuffer unused.
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -46,6 +51,16 @@ fn lensWarp(uv: vec2<f32>, center: vec2<f32>, curvature: f32, aspectVec: vec2<f3
 
 fn sampleBand(uv: vec2<f32>) -> vec3<f32> {
   return textureSampleLevel(readTexture, u_sampler, clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+}
+
+// Small 5-tap disc used as a defocus kernel for longitudinal CA.
+fn defocusDisc(uv: vec2<f32>, radius: f32, aspectVec: vec2<f32>) -> vec3<f32> {
+  var acc = sampleBand(uv);
+  for (var k = 0; k < 4; k = k + 1) {
+    let a = f32(k) * 1.5707963 + 0.7853982;
+    acc += sampleBand(uv + vec2<f32>(cos(a), sin(a)) * radius / aspectVec);
+  }
+  return acc * 0.2;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -111,6 +126,40 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
                       s1.g * 0.22 + s2.g * 0.58 + s3.g * 0.20,
                       s3.b * 0.32 + s4.b * 0.68);
 
+  // ── Idea 1: longitudinal (axial) CA ───────────────────────────────
+  // Everything above is LATERAL CA — colour-dependent magnification. Real
+  // lenses also focus each wavelength at a different depth, so an edge off
+  // the focal plane fringes one colour in front of it and the complementary
+  // colour behind it: green goes soft on one side (a magenta halo), red and
+  // blue go soft on the other (a green halo). Focus sits at the depth under
+  // the lens centre, which already follows the pointer. Amount rides the
+  // chroma slider, so a preset with no CA gets none of this either.
+  let depthHere = textureLoad(readDepthTexture, coord, 0).r;
+  let focusDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(center, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let defocus = clamp((depthHere - focusDepth) * 3.0, -1.0, 1.0);
+  let axialAmt = clamp(abs(defocus) * 1.5, 0.0, 0.85);
+  let soft = defocusDisc(warped, abs(defocus) * (0.002 + chroma * 0.35), aspectVec);
+  let greenSide = step(0.0, defocus);
+  hdr = vec3<f32>(mix(hdr.r, soft.r, (1.0 - greenSide) * axialAmt),
+                  mix(hdr.g, soft.g, greenSide * axialAmt),
+                  mix(hdr.b, soft.b, (1.0 - greenSide) * axialAmt));
+
+  // ── Idea 2: purple fringing on blown highlights ───────────────────
+  // The most recognisable real-lens CA artifact: a violet halo wherever a
+  // clipped highlight meets something darker (sensor bloom plus axial CA in
+  // the blue-violet). Look a few pixels out for near-clipped values and
+  // bleed violet onto this pixel only if it is the darker side.
+  let fringeReach = (3.0 + chroma * 180.0) / resolution.y;
+  var clipped = 0.0;
+  for (var k = 0; k < 6; k = k + 1) {
+    let a = f32(k) * 1.0471976;
+    let tap = sampleBand(warped + vec2<f32>(cos(a), sin(a)) * fringeReach / aspectVec);
+    clipped = max(clipped, smoothstep(0.86, 0.99, max(tap.r, max(tap.g, tap.b))));
+  }
+  let hereLuma = dot(hdr, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let purple = clipped * (1.0 - smoothstep(0.55, 0.9, hereLuma));
+  hdr += vec3<f32>(0.42, 0.10, 0.62) * purple * (0.08 + u.zoom_params.x * 0.7);
+
   let history = historyAt(uv - direction * clickLens * 0.003, resolution);
   let radialDist = length((uv - center) * aspectVec);
   let vignette = 1.0 - smoothstep(mix(1.15, 0.48, vignetteStrength), mix(1.42, 0.9, vignetteStrength), radialDist);
@@ -126,6 +175,5 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   textureStore(dataTextureA, coord, result);
   textureStore(writeTexture, coord, result);
-  let depth = textureLoad(readDepthTexture, coord, 0).r;
-  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, coord, vec4<f32>(depthHere, 0.0, 0.0, 0.0));
 }

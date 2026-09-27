@@ -3,8 +3,11 @@
 //  Category: post-processing
 //  Features: mouse-driven, audio-reactive, temporal, history-ring, upgraded-rgba
 //  Complexity: Low
-//  Upgraded: 2026-07-30 (Batch 18 — Optimizer)
-//  Requires: binding 13 (historyTexture — HISTORY_DEPTH=8 ring buffer)
+//  Upgraded: 2026-07-30 (Batch 18 — Optimizer), 2026-09-21
+//  Ideas: sub-frame layer interpolation; slit exposure integration
+//  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
+//         hardcoded 8 — see HISTORY RING DEPTH below
+//  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
 //  Created: 2026-05-23
 //  By: Copilot
 //
@@ -59,8 +62,33 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-const HISTORY_DEPTH: u32 = 8u;
-const MAX_OFFSET: u32    = 7u;   // maximum history age to reach
+const MAX_OFFSET: u32    = 7u;   // maximum history age to reach on a full ring
+
+// ── HISTORY RING DEPTH (floor fix, 2026-09-21) ─────────────────────
+// The ring is at most 8 layers; after the VRAM probe the runtime may
+// allocate 8, 4 or 1, and it wraps its write head at the ALLOCATED count
+// (renderer/webgpu/frame.ts). HEAD wrapped at a hardcoded 8, so on a
+// 4-layer device ages 4..7 asked for layers that do not exist and WGSL
+// clamped them to the last layer: scrambled frame order, silently. On an
+// 8-layer device everything below is bit-identical to HEAD's lookup.
+fn frameAt(uv: vec2<f32>, head: u32, depth: u32, age: u32, current: vec4<f32>) -> vec4<f32> {
+  let a = min(age, depth - 1u);
+  if (a == 0u) { return current; }
+  let layer = (head + depth - a) % depth;
+  return textureSampleLevel(historyTexture, u_sampler, uv, i32(layer), 0.0);
+}
+
+// ── Idea 1: sub-frame layer interpolation ──────────────────────────
+// HEAD rounded the age to a whole frame, so the "continuous" time ramp
+// was really eight hard bands with a seam at every step. Blending the two
+// neighbouring layers by the fractional age lets time flow smoothly
+// across the image.
+fn frameAtAge(uv: vec2<f32>, head: u32, depth: u32, age: f32, current: vec4<f32>) -> vec4<f32> {
+  let a0 = floor(max(age, 0.0));
+  let c0 = frameAt(uv, head, depth, u32(a0), current);
+  let c1 = frameAt(uv, head, depth, u32(a0) + 1u, current);
+  return mix(c0, c1, age - a0);
+}
 const TEAR_FRAMES: f32   = 3.0;  // extra history depth a click tear can reach
 const TEAR_RADIUS: f32   = 0.35; // uv-space radius of a click tear
 const TEAR_DECAY: f32    = 1.5;  // seconds a tear stays alive
@@ -103,7 +131,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let tentAge = clamp(abs(scanPos - pivot) * 2.0, 0.0, 1.0);
   let age01   = select(rampAge, tentAge, hasMouse);
 
-  let maxOffset = u32(spread * f32(MAX_OFFSET) + 0.5);
+  // Full spread reaches the oldest layer the ring actually holds.
+  let histDepth = max(textureNumLayers(historyTexture), 1u);
+  let maxAge    = f32(histDepth - 1u);
+  let reach     = min(f32(MAX_OFFSET), maxAge);
+  let maxOffset = u32(spread * reach + 0.5);
   var offsetF   = age01 * f32(maxOffset);
 
   // ── 2. Click temporal tears ──────────────────────────────────────
@@ -134,19 +166,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   offsetF = offsetF + clamp(spectral, 0.0, 1.0);
 
   // ── Resolve final history offset ─────────────────────────────────
-  let t_offset = u32(clamp(offsetF, 0.0, f32(MAX_OFFSET)) + 0.5);
+  let ageF = clamp(offsetF, 0.0, maxAge);
 
   let historyHead = u32(extraBuffer[4]);
   let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
-  var scanColor: vec4<f32>;
-  if (t_offset == 0u) {
-    // Live column: current frame (pivot / live edge / untouched area)
-    scanColor = current;
-  } else {
-    let layer = (historyHead + HISTORY_DEPTH - t_offset) % HISTORY_DEPTH;
-    scanColor = textureSampleLevel(historyTexture, u_sampler, uv, i32(layer), 0.0);
-  }
+  // ── Idea 2: slit exposure integration ──────────────────────────────
+  // A real slit-scan camera integrates light for as long as the slit is
+  // open, so each column is a short average over time rather than one
+  // instant. A 1-2-1 box over neighbouring ages, widened by spread, makes
+  // moving things smear along time the way they do on film. The width
+  // fades to zero at the live pivot so the live column stays crisp.
+  // (Idea 1 removes seams ACROSS columns; this adds exposure WITHIN one.)
+  let shutter = (0.35 + spread * 0.9) * smoothstep(0.0, 1.0, ageF);
+  let scanColor = frameAtAge(uv, historyHead, histDepth, clamp(ageF - shutter, 0.0, maxAge), current) * 0.25
+                + frameAtAge(uv, historyHead, histDepth, ageF, current) * 0.5
+                + frameAtAge(uv, historyHead, histDepth, clamp(ageF + shutter, 0.0, maxAge), current) * 0.25;
 
   let output = mix(scanColor, current, origBlend);
   let slitDiff = length(scanColor.rgb - current.rgb);

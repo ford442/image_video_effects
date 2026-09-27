@@ -22,6 +22,7 @@ import {
   stopRecording,
 } from './recording.js';
 import {
+  getDroppedSlots,
   getSlotState,
   loadShader,
   loadShaderFromURL,
@@ -79,6 +80,7 @@ const wasmBridge = {
   getSupportsDeepWorkgroup,
   getColorFormat,
   getSlotState,
+  getDroppedSlots,
   getGPUTimings,
   setRecording,
   isRecordingActive,

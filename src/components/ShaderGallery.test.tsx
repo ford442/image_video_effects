@@ -44,7 +44,7 @@ describe('ShaderGallery search', () => {
     expect(names()).toEqual(['Ferrofluid Spikes']);
   });
 
-  it('orders results by semantic rank when hits arrive', () => {
+  it('orders results by semantic rank, boosting ids with a healthy thumbnail', () => {
     mockSemantic.mockReturnValue({
       status: 'ready',
       hits: [
@@ -53,7 +53,8 @@ describe('ShaderGallery search', () => {
       ],
     });
     render(<ShaderGallery options={options} onSelect={jest.fn()} onClose={jest.fn()} />);
-    expect(names()).toEqual(['Plasma', 'Retro Halftone']);
+    // halftone (healthy thumb) outranks plasma despite the lower CLIP score
+    expect(names()).toEqual(['Retro Halftone', 'Plasma']);
   });
 
   it('dev "Needs thumb" filter hides shaders with a healthy thumbnail', () => {

@@ -1,4 +1,8 @@
 // Ion stream with helical packet conveyors, magnetic wakes, and click fronts.
+// Upgraded: 2026-09-21
+// Ideas: charge split (alternate lanes bend opposite ways around the magnet); cyclotron
+//        tightening (helix winds faster and tighter inside the field)
+// A packing: display RGBA
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -66,8 +70,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let lanes = max(2.0, floor(4.0 + streamDensity * 42.0));
     let lane = floor(uv.x * lanes);
     let laneCenter = (lane + 0.5) / lanes;
-    let helix = sin(lane * 2.17 + uv.y * 18.0 - time * speed) * (0.018 + curlStrength * 0.05);
-    let coreDist = abs(uv.x - laneCenter - helix);
+    // Field strength of the cursor magnet (hover half, held full), shared by both ideas.
+    let fieldB = exp(-safeDist * 5.0) * (1.0 + u.zoom_config.w) * 0.5;
+    // Idea 2 — cyclotron tightening. Gyration frequency grows with B and the Larmor radius
+    // shrinks as 1/B, so near the magnet the helix coils into a tight, fast spring.
+    let cyclo = 1.0 + fieldB * 4.0;
+    let helix = sin(lane * 2.17 + uv.y * 18.0 * cyclo - time * speed * (1.0 + fieldB * 2.0))
+        * (0.018 + curlStrength * 0.05) / (1.0 + fieldB * 3.0);
+    // Idea 1 — charge split. Alternate lanes carry opposite charge, so the magnet pushes them
+    // opposite ways and the stream parts around the cursor like a mass spectrometer.
+    let charge = select(-1.0, 1.0, (i32(lane) & 1) == 0);
+    let deflect = charge * fieldB * (0.45 / lanes) * (0.5 + curlStrength);
+    let coreDist = abs(uv.x - laneCenter - helix - deflect);
     let core = exp(-coreDist * (90.0 + streamDensity * 140.0));
     let packetPhase = fract(uv.y * (3.0 + streamDensity * 9.0) - time * speed * 0.42 + lane * 0.173);
     let packet = exp(-pow((packetPhase - 0.5) / 0.10, 2.0));
@@ -85,7 +99,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let wakeUV = clamp(uv - vec2<f32>(flow.x * 0.010, 0.006 + speed * 0.0015), vec2<f32>(0.0), vec2<f32>(1.0));
     let wake = historyLoadUV(wakeUV);
     let ionGlow = (core * (0.25 + packet * 1.6) + clickFront * 0.9) * colorIntensity * (1.0 + audio.y);
-    let ionColor = mix(vec3<f32>(0.12, 0.45, 1.0), vec3<f32>(0.75, 0.2, 1.0), packet + audio.z * 0.4) * ionGlow;
+    let ionColor = mix(vec3<f32>(0.12, 0.45, 1.0), vec3<f32>(0.75, 0.2, 1.0), clamp(packet + audio.z * 0.4 + select(-0.1, 0.35, charge < 0.0), 0.0, 1.0)) * ionGlow;
     let finalRGB = clamp(mix(source.rgb, wake.rgb, 0.18 + curlStrength * 0.24) + ionColor, vec3<f32>(0.0), vec3<f32>(1.0));
     let alpha = clamp(max(source.a, wake.a * 0.88) + ionGlow * 0.45, 0.0, 1.0);
     let output = vec4<f32>(finalRGB, alpha);

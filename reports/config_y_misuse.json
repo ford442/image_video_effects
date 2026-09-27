@@ -1,10 +1,10 @@
 {
-  "total": 40,
+  "total": 33,
   "byCategory": {
-    "delta_time": 7,
-    "click_or_frame_count": 8,
+    "delta_time": 8,
+    "click_or_frame_count": 7,
     "unclassified": 9,
-    "audio": 16
+    "audio": 9
   },
   "findings": [
     {
@@ -56,6 +56,12 @@
       "code": "let audio = u.config.y;"
     },
     {
+      "file": "public/shaders/gen-cellular-automata-tapestry.wgsl",
+      "line": 109,
+      "category": "delta_time",
+      "code": "let dt = 1.0 + u.config.y * 0.5;"
+    },
+    {
       "file": "public/shaders/gen-chromatic-singularity-loom.wgsl",
       "line": 104,
       "category": "audio",
@@ -99,61 +105,13 @@
     },
     {
       "file": "public/shaders/gen-quantum-liquid-metal-chronosphere.wgsl",
-      "line": 101,
+      "line": 127,
       "category": "unclassified",
       "code": "if (f32(i) >= u.config.y) { break; }"
     },
     {
-      "file": "public/shaders/gen-radiant-cyber-chrono-void-stag.wgsl",
-      "line": 113,
-      "category": "audio",
-      "code": "let audio = u.config.y;"
-    },
-    {
-      "file": "public/shaders/gen-radiant-cyber-chrono-void-stag.wgsl",
-      "line": 372,
-      "category": "audio",
-      "code": "var glow_intensity = u.config.y; // audio"
-    },
-    {
-      "file": "public/shaders/gen-radiant-quantum-plasma-kraken-core.wgsl",
-      "line": 90,
-      "category": "audio",
-      "code": "let audio = u.config.y;"
-    },
-    {
-      "file": "public/shaders/gen-radiant-quantum-plasma-kraken-core.wgsl",
-      "line": 196,
-      "category": "audio",
-      "code": "let audio = u.config.y;"
-    },
-    {
-      "file": "public/shaders/gen-sentient-cyber-aurora-void-owl.wgsl",
-      "line": 192,
-      "category": "audio",
-      "code": "let audio = u.config.y;"
-    },
-    {
-      "file": "public/shaders/gen-sentient-quantum-chrono-leviathan-moth.wgsl",
-      "line": 110,
-      "category": "audio",
-      "code": "let audio = u.config.y;"
-    },
-    {
-      "file": "public/shaders/gen-sentient-quantum-chrono-leviathan-moth.wgsl",
-      "line": 207,
-      "category": "audio",
-      "code": "let audio = u.config.y;"
-    },
-    {
-      "file": "public/shaders/gen-sentient-quantum-chrono-leviathan-moth.wgsl",
-      "line": 301,
-      "category": "click_or_frame_count",
-      "code": "let clickVal = u.config.y; // Simplified"
-    },
-    {
       "file": "public/shaders/gen-singularity-forge-blackbody.wgsl",
-      "line": 133,
+      "line": 126,
       "category": "unclassified",
       "code": "let spaghettification = u.config.y;"
     },

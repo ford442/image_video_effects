@@ -3,6 +3,7 @@ import * as WasmBridge from '../wasm/wasm_bridge';
 import { reportError } from './ErrorHandling';
 import { describeWasmInitFailure, summarizeWasmInitState } from './wasmInitDiagnostics';
 import { InputSource } from './types';
+import { checkPhysicalSlotIndex } from './slotOrchestrator';
 
 import {
   computeInternalDimensions,
@@ -190,9 +191,19 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     WasmBridge.setActiveShader(id);
   }
 
-  /** Assign a loaded shader to a slot (0-2). */
-  setSlotShader(slotIndex: number, id: string): void {
-    WasmBridge.setSlotShader(slotIndex, id);
+  /**
+   * Assign a loaded shader to a slot (0..PHYSICAL_SLOT_LIMIT-1). Returns false
+   * when the index is out of range or the module dropped the slot; both are
+   * logged, never silent.
+   */
+  setSlotShader(slotIndex: number, id: string): boolean {
+    if (!checkPhysicalSlotIndex('WASMRenderer', slotIndex)) return false;
+    return WasmBridge.setSlotShader(slotIndex, id);
+  }
+
+  /** Slot indexes whose last setSlotShader the WASM module did not accept. */
+  getDroppedSlots(): number[] {
+    return [...WasmBridge.getDroppedSlots()].sort((a, b) => a - b);
   }
 
   /** Set per-slot zoom parameters. */

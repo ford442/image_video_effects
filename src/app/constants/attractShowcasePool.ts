@@ -1,6 +1,10 @@
 import { ShaderEntry } from '../../renderer/types';
 
-/** Curated generative shaders for attract-mode rotation (≥20). */
+/**
+ * Curated generative shaders for attract-mode rotation (≥20).
+ * Must not contain ids deferred in reports/thumbnail_deferrals.json (asserted in Jest);
+ * re-add molten-gold, spec-quaternion-julia, gen-ethereal-cyber-chrono-nebula-phoenix after a clean capture.
+ */
 export const ATTRACT_SHOWCASE_IDS: string[] = [
   'gen-showcase-nebula-core',
   'gen-showcase-kinetic-bloom',
@@ -21,10 +25,7 @@ export const ATTRACT_SHOWCASE_IDS: string[] = [
   'kimi_quantum_field',
   'kimi_fractal_dreams',
   'supernova-core',
-  'molten-gold',
-  'gen-ethereal-cyber-chrono-nebula-phoenix',
   'chrono-voronoi-mycelium',
-  'spec-quaternion-julia',
   'bio_lenia_continuous',
 ];
 
@@ -79,6 +80,7 @@ export function getAttractDwellSeconds(shaderId: string, baseDelay = ATTRACT_DEF
 export function getAttractPool(
   availableModes: ShaderEntry[],
   ratedShaders: RatedShaderRef[] = [],
+  hasHealthyThumbnail?: (id: string) => boolean,
 ): ShaderEntry[] {
   const eligible = availableModes.filter((s) => s.id !== 'none');
   const generative = eligible.filter((s) => s.category === 'generative');
@@ -124,6 +126,13 @@ export function getAttractPool(
 
   for (const entry of generative) {
     add(entry);
+  }
+
+  // Ids without a healthy thumbnail (incl. deferred-pending) have no honest preview.
+  // If nothing has one yet (manifest still loading), keep the full pool rather than go dark.
+  if (hasHealthyThumbnail) {
+    const withThumb = pool.filter((entry) => hasHealthyThumbnail(entry.id));
+    if (withThumb.length > 0) return withThumb;
   }
 
   return pool;

@@ -1,7 +1,12 @@
 // ═══════════════════════════════════════════════════════════════
 //  Cross-Stitch - Physical Media Simulation with Alpha
 //  Category: artistic
-//  Features: thread coverage → alpha, fabric substrate, stitch depth
+//  Features: thread coverage → alpha, fabric substrate, stitch depth,
+//            audio-reactive, upgraded-rgba
+//  Upgraded: 2026-09-21
+//  Ideas: half-stitch/full-stitch shading; satin thread sheen;
+//         bass-driven weave tension pulse
+//  A packing: display RGBA passthrough (no history)
 // ═══════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -45,9 +50,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
+    // Idea 3: bass-driven weave tension pulse — the cloth gently breathes
+    // with the beat instead of sitting perfectly rigid.
+    let bass = plasmaBuffer[0].x;
+
     // Params
     let baseScale = max(0.005, u.zoom_params.x * 0.1);
-    let thickness = max(0.05, u.zoom_params.y);
+    let thickness = max(0.05, u.zoom_params.y) * (1.0 + bass * 0.06);
     let mouseRadius = u.zoom_params.z;
     let threadDensity = u.zoom_params.w; // How dense the thread coverage is
 
@@ -74,7 +83,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Draw X Shape (cross-stitch pattern)
     let d1 = abs(localUV.x - localUV.y);
     let d2 = abs(localUV.x + localUV.y - 1.0);
-    let lineDist = min(d1, d2);
+
+    // Idea 1: half-stitch / full-stitch shading — real cross-stitchers use a
+    // single diagonal (half-stitch) to shade darker areas and only complete
+    // the X (full-stitch) where the source is bright/mid, exactly like the
+    // stitch-count charts they work from.
+    let stitchLuma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let fullStitch = smoothstep(0.22, 0.55, stitchLuma);
+    let lineDist = mix(d1, min(d1, d2), fullStitch);
 
     // Mask for the thread
     let mask = 1.0 - smoothstep(thickness * 0.5, thickness * 0.5 + 0.1, lineDist);
@@ -125,20 +141,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Color modification based on thread properties
     var thread_color = color * thread;
-    
+
+    // Idea 2: satin thread sheen — a bright core running the length of the
+    // thread's own diagonal, brightest exactly at the stitch centerline,
+    // giving the floss the glossy highlight real embroidery thread has.
+    let sheen = smoothstep(thickness * 0.5, 0.0, lineDist) * 0.35;
+    thread_color = thread_color + vec3<f32>(sheen);
+
     // Darker threads appear more opaque (more pigment)
     let dark_boost = 1.0 - luma * 0.3;
     thread_alpha *= dark_boost;
-    
+
     // Final Mix with alpha
     var finalColor = mix(cloth_with_texture * shadow, thread_color, mask);
-    
+
     // Adjust final color alpha based on thread coverage
     // Where there's no thread, we see the fabric (low alpha)
     // Where there's thread, we see the stitch (higher alpha)
     let final_alpha = mix(0.15, thread_alpha, mask);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, final_alpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalColor, final_alpha));
 
     // Store thread thickness in depth
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(mask * threadDensity, 0.0, 0.0, final_alpha));

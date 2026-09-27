@@ -114,7 +114,8 @@
       "click-reactive",
       "aces-tone-map",
       "semantic-alpha",
-      "exact-load-feedback"
+      "exact-load-feedback",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -207,7 +208,8 @@
       "raw-height-thickness-state",
       "exact-load-feedback",
       "aces-tone-map",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
     "tags": [
       "fluid",
@@ -302,7 +304,8 @@
       "spring-interaction",
       "exact-load-feedback",
       "aces-tone-map",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
     "tags": [
       "navier-stokes",
@@ -752,7 +755,8 @@
       "reflective-surface",
       "exact-load-feedback",
       "aces-tone-map",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -820,7 +824,8 @@
       "thin-film-interference",
       "exact-load-feedback",
       "aces-tone-map",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ]
   },
   {

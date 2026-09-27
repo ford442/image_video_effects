@@ -6,7 +6,9 @@
 //            mouse-driven-zoom-focus, noise-warp
 //  Complexity: Medium
 //  Upgraded: 2026-06-28
-//  Requires: binding 13 (historyTexture — HISTORY_DEPTH=8 ring buffer)
+//  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
+//         hardcoded 8 — see HISTORY RING DEPTH below
+//  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
 //
 //  Reads the most recent history frame through an affine warp
 //  (zoom + rotation centred on mouse or canvas centre) then blends it
@@ -46,7 +48,6 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-const HISTORY_DEPTH: u32 = 8u;
 const PI: f32 = 3.14159265358979323846;
 
 // ── Hash & FBM noise ─────────────────────────────────────────────
@@ -132,8 +133,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   );
   let warpedUV = clamp(rotated / zoomFactor + focus + jitter, vec2<f32>(0.0), vec2<f32>(1.0));
 
+  // ── HISTORY RING DEPTH (floor fix, 2026-09-21) ───────────────────
+  // The ring is at most 8 layers; after the VRAM probe the runtime may
+  // allocate 8, 4 or 1, and it wraps its write head at the ALLOCATED
+  // count (renderer/webgpu/frame.ts). A hardcoded HISTORY_DEPTH=8 asked
+  // for layers that do not exist on a 4- or 1-layer device and WGSL
+  // clamped them to the last layer: scrambled frame order, silently.
+  let histDepth = max(textureNumLayers(historyTexture), 1u);
   let historyHead = u32(extraBuffer[4]);
-  let layerPrev = (historyHead + HISTORY_DEPTH - 1u) % HISTORY_DEPTH;
+  let layerPrev = (historyHead + histDepth - 1u) % histDepth;
 
   // Chromatic trail separation scales with zoom power
   let chromaShift = 0.001 + zp.x * 0.008;

@@ -4,7 +4,10 @@
 //  Features: gradient-flow, branchless-ripples, audio-reactive, advection, upgraded-rgba
 //  Complexity: Medium
 //  Created: Phase B / Optimizer
-//  Upgraded: 2026-05-23 — rewired 2026-08-02 (Algorithmist swarm b27)
+//  Upgraded: 2026-09-21 (2026-05-23; rewired 2026-08-02, Algorithmist swarm b27)
+//  Ideas: accumulated melt (the advected sample now drags exact C history, so the flow
+//         compounds into streams); gravity sag weighted by paint brightness
+//  A packing: pre-sheen melted RGB + alpha (the PHI sheen is on writeTexture only)
 //
 //  Slider contract (saved-preset safe — ids/names/defaults unchanged):
 //    x  Viscosity       (0.50) advection step length — liquid thickness
@@ -65,6 +68,19 @@ fn safeNormalize2(v: vec2<f32>) -> vec2<f32> {
 
 fn loadHistoryR(coord: vec2<i32>, dims: vec2<i32>) -> f32 {
     return textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), dims - vec2<i32>(1)), 0).r;
+}
+
+// Bilinear read of the melt history from four exact loads (no filtering sampler on rgba32float).
+fn loadHistoryBilinear(pos: vec2<f32>, dims: vec2<i32>) -> vec4<f32> {
+    let p = pos - 0.5;
+    let base = vec2<i32>(floor(p));
+    let f = fract(p);
+    let hi = dims - vec2<i32>(1);
+    let a = textureLoad(dataTextureC, clamp(base, vec2<i32>(0), hi), 0);
+    let b = textureLoad(dataTextureC, clamp(base + vec2<i32>(1, 0), vec2<i32>(0), hi), 0);
+    let c = textureLoad(dataTextureC, clamp(base + vec2<i32>(0, 1), vec2<i32>(0), hi), 0);
+    let d = textureLoad(dataTextureC, clamp(base + vec2<i32>(1, 1), vec2<i32>(0), hi), 0);
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -164,10 +180,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     stir *= mix(0.0, 2.0, rippleStrength);
     flow_dir = safeNormalize2(flow_dir + stir);
 
+    // Idea 2 — gravity sag. Melting paint runs downhill (y = 0 is the top): the flow is biased
+    // downward, and brighter, heavier-looking paint sags harder than the dark ground.
+    let sag = 0.3 + r1.y * 0.6;
+    flow_dir = safeNormalize2(flow_dir + vec2<f32>(0.0, sag));
+
     // ── Advection sampling (hand-tuned, verbatim) ──────────────────
     let advectStep = flow_dir * viscosity * (1.0 + audioK * 0.4);
     let last_pos = vec2<f32>(coord) - advectStep;
     let color = textureSampleLevel(readTexture, u_sampler, clamp(last_pos / dimF, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+
+    // Idea 1 — accumulated melt. HEAD re-sampled the source 1 px upstream every frame, so nothing
+    // ever flowed further than that. Dragging the exact C history along the same step lets each
+    // frame's shift compound into streams; Viscosity sets how much of the old paint the oil holds.
+    let melted = loadHistoryBilinear(last_pos + 0.5, dimI);
+    let hold = mix(0.72, 0.97, clamp(u.zoom_params.x, 0.0, 1.0)) * step(1e-4, melted.a);
+    let meltRGB = mix(color.rgb, melted.rgb, hold);
 
     // ── Hue shift (verbatim PHI math) + per-band FFT shimmer ───────
     // 8 vertical bands ride engine FFT bins so the oil sheen shimmers
@@ -179,7 +207,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let hueMat = vec3<f32>(0.5 + 0.5 * sin(hue_phase),
                            0.5 + 0.5 * sin(hue_phase + 2.094),
                            0.5 + 0.5 * sin(hue_phase + 4.188));
-    var shifted = mix(color.rgb, color.rgb * (0.6 + hueMat * 0.8), hueShiftK);
+    var shifted = mix(meltRGB, meltRGB * (0.6 + hueMat * 0.8), hueShiftK);
 
     // ── Alpha (hand-tuned, verbatim) ───────────────────────────────
     let luma = dot(shifted, vec3<f32>(0.299, 0.587, 0.114));
@@ -188,7 +216,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let finalColor = vec4<f32>(shifted, alpha);
 
     textureStore(writeTexture, coord, finalColor);
-    textureStore(dataTextureA, global_id.xy, finalColor);
+    // A keeps the pre-sheen melt so the hue shift doesn't compound through feedback.
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(meltRGB, alpha));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

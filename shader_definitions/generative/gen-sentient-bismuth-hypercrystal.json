@@ -75,16 +75,21 @@
       "step": 0.1
     }
   ],
-  "supportsDepth": true,
-  "supportsDof": false,
-  "updated": true,
   "features": [
     "audio-reactive",
     "mouse-driven",
+    "upgraded-rgba",
     "temporal-feedback",
     "generated-depth",
     "semantic-alpha",
-    "aces-tone-map",
-    "upgraded-rgba"
-  ]
+    "aces-tone-map"
+  ],
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "supportsDepth": true,
+  "updated": true,
+  "supportsDof": false
 }

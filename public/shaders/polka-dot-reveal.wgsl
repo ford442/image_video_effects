@@ -6,7 +6,10 @@
 //            hash-jitter, optimized
 //  Complexity: Medium
 //  Created: 2026-05-10
-//  Upgraded: 2026-07-08
+//  Upgraded: 2026-09-21 (first 2026-07-08)
+//  Ideas: chain-dot merge (bright dots join past ~50% coverage, the gaps become holes);
+//         drag-stretched dots along the cursor's motion; per-cell jitter (was per pixel)
+//  A packing: R bass envelope, GB smoothed mouse, A trail alpha
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -109,11 +112,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let revealRadius = 0.7 + mouseVel * 3.0;
     let density = mix(densityMax, densityMin, smoothstep(0.0, revealRadius, dist));
 
-    // Per-cell hash jitter (blue-noise substitute) plus a chromatic cell hash.
-    let jitter = (hash21(uv * 131.0 + vec2<f32>(17.0, 31.0)) - 0.5) / density;
-    let cellHash = hash21(uv * 97.0 + vec2<f32>(43.0, 19.0));
-    let grid_uv = floor((uv + jitter) * density) / density;
-    let cell_center = grid_uv + (0.5 / density);
+    // Per-cell hash jitter plus a chromatic cell hash. Both used to hash the pixel's uv, so every
+    // pixel near a border picked a random cell and the dots came out ragged; now they hash the
+    // cell id and the jitter nudges each dot's centre inside its own cell.
+    let cellId = floor(uv * density);
+    let jitter = vec2<f32>(hash21(cellId + vec2<f32>(17.0, 31.0)),
+                           hash21(cellId + vec2<f32>(53.0, 7.0))) - 0.5;
+    let cellHash = hash21(cellId + vec2<f32>(43.0, 19.0));
+    let cell_center = (cellId + 0.5) / density;
 
     let depth = textureLoad(readDepthTexture, pixel, 0).r;
     let color = textureSampleLevel(readTexture, u_sampler, cell_center, 0.0);
@@ -138,8 +144,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pulse = 1.0 + sin(time * (0.5 + speed * 2.0)) * 0.06 * speed;
     let animated_radius = radius * pulse;
 
-    let local_uv = fract((uv + jitter) * density);
-    let dist_to_center = distance(local_uv, vec2<f32>(0.5));
+    var local = fract(uv * density) - 0.5 - jitter * 0.16;
+
+    // Idea 2 — drag-stretched dots. Near the cursor the dots smear along the direction the
+    // mouse is travelling (smoothed-mouse lag), like wet dots dragged across the page.
+    let drag = mouse - smoothMouse;
+    let dragLen = length(drag);
+    let dragDir = drag / max(dragLen, 1e-5);
+    let dragAmt = clamp(dragLen * 45.0, 0.0, 1.0) * exp(-dist * dist * 10.0);
+    let along = dot(local, dragDir);
+    local = local - dragDir * along * (1.0 - 1.0 / (1.0 + dragAmt * 1.8));
+
+    // Idea 1 — chain-dot merge. Real halftone dots gain until they touch: above ~50% coverage the
+    // round metric morphs into a diamond whose corners reach the neighbours, so bright areas become
+    // a chained lattice and the dark gaps between dots read as holes instead of a background.
+    let chain = smoothstep(0.3, 0.5, animated_radius);
+    let diamond = (abs(local.x) + abs(local.y)) * 0.7071;
+    let dist_to_center = mix(length(local), diamond, chain);
 
     let aa = mix(0.03, 0.15, detail) * density / 50.0;
     let circle = 1.0 - smoothstep(animated_radius - aa, animated_radius + aa, dist_to_center);

@@ -32,6 +32,17 @@ export interface GraphRunReport {
   errors: string[];
 }
 
+/** Group-1 sim ring handed to the graph (src/contracts/bind_group1.json). */
+export interface GraphSimRingBindings {
+  bindGroup: GPUBindGroup;
+  stateBuffer: GPUBuffer;
+  indexBuffer: GPUBuffer;
+  /** Allocated vec4 elements (post OOM ladder). */
+  stateCount: number;
+  /** stateCount × 16 bytes. */
+  byteSize: number;
+}
+
 export interface GraphRunnerContext {
   device: GPUDevice;
   pipelineLayout: GPUPipelineLayout;
@@ -43,6 +54,10 @@ export interface GraphRunnerContext {
   scaledH: number;
   maxPassesPerFrame: number;
   shaderId?: string;
+  /** True when the entry's pipeline was built against the group-1 layout. */
+  usesSimRing?: (shaderId: string) => boolean;
+  /** Armed sim ring, or null/undefined when none is allocated. */
+  simRing?: GraphSimRingBindings | null;
   /**
    * Optional: return timestampWrites for the Nth compute dispatch in this graph run
    * (0-based among successfully encoded compute passes). Interior passes may return undefined.
@@ -57,13 +72,21 @@ function encodeCopy(
   encoder: GPUCommandEncoder,
   ctx: GraphRunnerContext,
   copy: CopyBarrier,
-): void {
+): boolean {
+  if (copy.from === 'simState') {
+    // Buffer twin of dataA → dataC: snapshot live agents for same-frame readers.
+    const ring = ctx.simRing;
+    if (!ring) return false;
+    encoder.copyBufferToBuffer(ring.stateBuffer, 0, ring.indexBuffer, 0, ring.byteSize);
+    return true;
+  }
   const fromTex = copy.from === 'dataA' ? ctx.textures.dataA : ctx.textures.dataB;
   encoder.copyTextureToTexture(
     { texture: fromTex },
     { texture: ctx.textures.dataC },
     [ctx.scaledW, ctx.scaledH, 1],
   );
+  return true;
 }
 
 function emptyReport(partial: Partial<GraphRunReport>): GraphRunReport {
@@ -149,6 +172,13 @@ export class GraphRunner {
       return false;
     }
 
+    const needsRing = !!ctx.usesSimRing?.(dispatch.entry) || dispatch.dispatch === 'simState';
+    const ring = ctx.simRing;
+    if (needsRing && (!ring || ring.stateCount === 0)) {
+      console.warn(`[GraphRunner] "${dispatch.entry}" needs the sim ring but none is armed — skipped`);
+      return false;
+    }
+
     const bindGroup = ctx.createBindGroupForRoles(ctx.textures);
     const wg = ctx.getWorkgroupSize(dispatch.entry);
 
@@ -159,11 +189,18 @@ export class GraphRunner {
     );
     pass.setPipeline(pipeline);
     pass.setBindGroup(0, bindGroup);
-    pass.dispatchWorkgroups(
-      Math.ceil(ctx.scaledW / wg.x),
-      Math.ceil(ctx.scaledH / wg.y),
-      1,
-    );
+    if (needsRing && ring && ctx.usesSimRing?.(dispatch.entry)) {
+      pass.setBindGroup(1, ring.bindGroup);
+    }
+    if (dispatch.dispatch === 'simState' && ring) {
+      pass.dispatchWorkgroups(Math.ceil(ring.stateCount / Math.max(1, wg.x)), 1, 1);
+    } else {
+      pass.dispatchWorkgroups(
+        Math.ceil(ctx.scaledW / wg.x),
+        Math.ceil(ctx.scaledH / wg.y),
+        1,
+      );
+    }
     pass.end();
     return true;
   }

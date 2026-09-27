@@ -1,0 +1,45 @@
+{
+  "id": "gen-hyper-geometric-void-glass-seraph",
+  "name": "Hyper-Geometric Void-Glass Seraph",
+  "type": "generative",
+  "category": "generative",
+  "url": "shaders/gen-hyper-geometric-void-glass-seraph.wgsl",
+  "params": [
+    {
+      "name": "Folding Scale",
+      "type": "float",
+      "min": 0.5,
+      "max": 3.0,
+      "default": 1.5,
+      "step": 0.05,
+      "uniform": "zoom_params.x"
+    },
+    {
+      "name": "Glass Refraction",
+      "type": "float",
+      "min": 0.1,
+      "max": 2.0,
+      "default": 0.8,
+      "step": 0.05,
+      "uniform": "zoom_params.y"
+    },
+    {
+      "name": "Singularity Mass",
+      "type": "float",
+      "min": 0.0,
+      "max": 5.0,
+      "default": 1.0,
+      "step": 0.1,
+      "uniform": "zoom_params.z"
+    },
+    {
+      "name": "Chromatic Aberration",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5,
+      "step": 0.01,
+      "uniform": "zoom_params.w"
+    }
+  ]
+}

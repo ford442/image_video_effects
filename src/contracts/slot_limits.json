@@ -1,0 +1,17 @@
+{
+  "description": "Physical shader-slot ceiling shared by both backends. TS PHYSICAL_SLOT_LIMIT (slotOrchestrator.ts) reads maxPhysicalSlots from this file; C++ MAX_SHADER_SLOTS (renderer.h) must equal it. Share URLs and App.tsx hydrate this many slots; the performance-tier quality cap (maxActiveSlots, 1-3) is a separate, lower soft limit. A slot index at or past maxPhysicalSlots is a logged no-op on both backends, never a silent drop. Enforced by verify:device-policy.",
+  "version": 1,
+  "maxPhysicalSlots": 6,
+  "qualityCapRange": [1, 3],
+  "ts": {
+    "file": "src/renderer/slotOrchestrator.ts",
+    "constant": "PHYSICAL_SLOT_LIMIT"
+  },
+  "cpp": {
+    "file": "wasm_renderer/renderer.h",
+    "constant": "MAX_SHADER_SLOTS",
+    "frameFile": "wasm_renderer/frame.cpp",
+    "sliceFile": "wasm_renderer/renderer.cpp"
+  },
+  "note": "Committed public/wasm artifacts built before this contract are 3-slot. The TS bridge reads each slot back after setSlotShader and warns when the artifact dropped it, so a stale build is visible rather than silent. GPU-PENDING: rebuild with emcc 6.0.9."
+}

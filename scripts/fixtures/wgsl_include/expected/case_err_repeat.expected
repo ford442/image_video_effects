@@ -1,0 +1,1 @@
+ERROR: _lib_b.wgsl:1: #include "_lib_a.wgsl" was already included by case_err_repeat.wgsl:1 — WGSL has no include guards, so the second copy would redeclare every symbol

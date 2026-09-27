@@ -1,6 +1,10 @@
 // Luminance Wind — exact-history advection with layered curl gusts.
 // A/C stores raw HDR trail RGB plus semantic alpha; writeTexture is ACES display.
 // B and extraBuffer are intentionally unused.
+//  Upgraded: 2026-09-21
+//  Ideas: lee-side shelter (calm pockets downwind of nearer objects); cat's-paw gust bands
+//         travelling along the wind so trail length pulses in waves
+//  A packing: raw HDR trail RGB + semantic alpha
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -114,7 +118,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let audioGust = 1.0 + bass * 0.85 + mids * 0.25;
   let wind = normalize(baseDirection + layeredCurl * turbulence * (0.28 + mids * 0.18) +
                        gustDirection * (0.38 + bass * 0.35) + vec2<f32>(0.0001));
-  let localSpeed = windSpeed * lumaGate * depthLayer * audioGust * (1.0 + localJet * 1.25 + abs(gustFront) * 0.5);
+  // Idea 1 — lee-side shelter. Downwind of anything nearer than this pixel the air is still: look
+  // upwind twice and, if the depth there is closer to camera, the pixel sits in that object's
+  // wind shadow, so silhouettes carve calm pockets into the trails behind them.
+  let hiCoord = vec2<i32>(resolution) - vec2<i32>(1);
+  let upwindA = clamp(vec2<i32>((uv - wind / aspectVec * 0.025) * resolution), vec2<i32>(0), hiCoord);
+  let upwindB = clamp(vec2<i32>((uv - wind / aspectVec * 0.06) * resolution), vec2<i32>(0), hiCoord);
+  let upwindDepth = max(textureLoad(readDepthTexture, upwindA, 0).r, textureLoad(readDepthTexture, upwindB, 0).r);
+  let shelter = smoothstep(0.04, 0.18, upwindDepth - depth);
+  // Idea 2 — cat's-paw gusts. Real wind arrives in bands of stronger air that travel downwind; the
+  // bands are warped by the large curl so they aren't ruled stripes. Mean speed stays ~1x.
+  let gustPhase = dot(uv * aspectVec, wind) * 13.0 - time * 2.1 + curlLarge.x * 0.9;
+  let catsPaw = 0.45 + 1.1 * smoothstep(0.15, 0.95, 0.5 + 0.5 * sin(gustPhase));
+  let localSpeed = windSpeed * lumaGate * depthLayer * audioGust * (1.0 + localJet * 1.25 + abs(gustFront) * 0.5) *
+                   (1.0 - shelter * 0.85) * catsPaw;
   let sourceUV = clamp(uv - wind / aspectVec * localSpeed, vec2<f32>(0.0), vec2<f32>(1.0));
   let chroma = wind / aspectVec * localSpeed * (0.12 + treble * 0.30);
   let historyR = historyAt(sourceUV - chroma, resolution);

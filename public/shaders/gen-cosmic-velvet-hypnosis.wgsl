@@ -1,4 +1,12 @@
-// Cosmic Velvet Hypnosis — soft spiral wells, chromatic runners, and click halos.
+// ═══════════════════════════════════════════════════════════════════
+//  Cosmic Velvet Hypnosis — soft spiral wells, chromatic runners, and click halos
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-21
+//  Ideas: crushed-velvet pile patches under a turning light; nested log-octave wells sinking inward
+//  A packing: ACES display RGBA (read back as colour history)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -26,6 +34,20 @@ const TAU: f32 = 6.28318530718;
 fn palette(t: f32) -> vec3<f32> {
     return vec3<f32>(0.50, 0.47, 0.55) + vec3<f32>(0.50, 0.52, 0.45) *
         cos(TAU * (vec3<f32>(1.0, 0.72, 0.46) * t + vec3<f32>(0.0, 0.25, 0.59)));
+}
+
+fn hash21(p: vec2<f32>) -> f32 {
+    var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+fn valueNoise(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let s = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), s.x),
+               mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), s.x), s.y);
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -73,6 +95,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let moire = pow(0.5 + 0.5 * cos(spiralPhase * 0.55 - angle * 3.0 + time * (0.4 + spinRate)), 14.0) * counterSpiral;
     let velvetWeave = pow(0.5 + 0.5 * cos(angle * (arms * 2.0 + 1.0) + radius * (44.0 + spiralArms * 38.0) - spin * 1.7), 18.0) * velvet;
 
+    // Idea 1 — crushed-velvet pile: fibres lie along the arm (perpendicular to grad spiralPhase);
+    // noise patches flip the nap, so a slowly turning light brightens some patches and darkens others.
+    let phaseGrad = vec2<f32>(-p.y, p.x) * (arms / (radius * radius)) +
+        p * ((5.0 + velvetSoftness * 8.0) / (radius * (radius + 0.035)));
+    let armTangent = normalize(vec2<f32>(-phaseGrad.y, phaseGrad.x) + vec2<f32>(0.00001, 0.0));
+    let nap = smoothstep(0.36, 0.64, valueNoise(p * (4.0 + spiralArms * 5.0) + vec2<f32>(7.3, time * 0.035))) * 2.0 - 1.0;
+    let lightDir = vec2<f32>(cos(time * 0.21), sin(time * 0.21));
+    let sheen = pow(0.5 + 0.5 * dot(armTangent * nap, lightDir), 3.0);
+    let pileLight = mix(0.6, 1.6, sheen);
+    let pileGlint = pow(sheen, 8.0) * velvet;
+
+    // Idea 2 — nested octave wells: plush seams at log-spaced radii drifting inward, so the well sinks forever.
+    let octave = log2(radius + 0.002) * (0.9 + velvetSoftness * 0.5) + time * (0.08 + spinRate * 0.3);
+    let octaveF = fract(octave);
+    let seam = 1.0 - smoothstep(0.0, 0.09, min(octaveF, 1.0 - octaveF));
+    let seamLip = exp(-pow((octaveF - 0.13) / 0.035, 2.0));
+
     var clickHalo = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
     for (var i = 0u; i < rippleCount; i = i + 1u) {
@@ -85,13 +124,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
 
-    let hue = angle / TAU + radius * 0.7 + saturation * 0.35 + time * (0.03 + spinRate * 0.12);
-    var hdr = palette(hue) * velvet * (0.6 + saturation * 2.5 + audio.y);
+    let hue = angle / TAU + radius * 0.7 + saturation * 0.35 + time * (0.03 + spinRate * 0.12) + floor(octave) * 0.07;
+    var hdr = palette(hue) * velvet * pileLight * (0.6 + saturation * 2.5 + audio.y);
+    hdr += palette(hue + 0.08) * pileGlint * (0.35 + saturation * 0.5);
     hdr += palette(hue + 0.36) * rings * (0.25 + runner * 1.8 + audio.z * 0.45);
     hdr += palette(hue + 0.51) * (counterSpiral * 0.42 + moire * 0.85) * (0.5 + audio.y);
     hdr += palette(hue + 0.18) * velvetWeave * (0.22 + audio.z * 0.72);
     hdr += palette(hue + 0.68) * clickHalo * 1.9;
     hdr += vec3<f32>(0.85, 0.25, 1.0) * (core * (0.7 + audio.x) + dragMask * 0.9);
+    hdr = hdr * (1.0 - seam * 0.6) + palette(hue + 0.9) * seamLip * (0.18 + velvet * 0.3);
     let radialDirection = p / radius;
     let historyUV = clamp(uv - vec2<f32>(radialDirection.x / max(aspect, 0.001), radialDirection.y) * (0.003 + spinRate * 0.007) + vec2<f32>(-radialDirection.y / max(aspect, 0.001), radialDirection.x) * 0.002, vec2<f32>(0.0), vec2<f32>(1.0));
     let history = historyLoadUV(historyUV);
@@ -100,5 +141,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let output = vec4<f32>(acesToneMap(hdr), clamp(0.12 + structure * 0.86, 0.0, 1.0));
     textureStore(writeTexture, coord, output);
     textureStore(dataTextureA, coord, output);
-    textureStore(writeDepthTexture, coord, vec4<f32>(clamp(0.12 + velvet * 0.48 + rings * 0.22 + core * 0.18, 0.0, 0.95), 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(clamp(0.12 + velvet * 0.48 + rings * 0.22 + core * 0.18 - seam * 0.1, 0.0, 0.95), 0.0, 0.0, 0.0));
 }

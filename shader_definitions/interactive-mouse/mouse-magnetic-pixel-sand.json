@@ -3,7 +3,9 @@
   "name": "Magnetic Pixel Sand",
   "url": "shaders/mouse-magnetic-pixel-sand.wgsl",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "description": "Pixels behave as iron filings attracted or repelled by the mouse magnet based on their brightness. Creates flowing metallic grain patterns with ripple magnetic pulses.",
   "params": [

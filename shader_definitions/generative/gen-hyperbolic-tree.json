@@ -56,5 +56,5 @@
   "updated": true,
   "id": "gen-hyperbolic-tree",
   "url": "shaders/gen-hyperbolic-tree.wgsl",
-  "features": []
+  "features": ["audio-reactive", "temporal-feedback", "semantic-alpha", "upgraded-rgba"]
 }

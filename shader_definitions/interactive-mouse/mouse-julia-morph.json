@@ -3,7 +3,9 @@
   "name": "Julia Morph",
   "url": "shaders/mouse-julia-morph.wgsl",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "description": "Mouse position controls the Julia set constant c for real-time fractal morphing. Click ripples pin configurations that blend together over the input image palette.",
   "params": [

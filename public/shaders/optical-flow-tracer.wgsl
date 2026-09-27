@@ -4,7 +4,10 @@
 //  Features: temporal, history-ring, audio-reactive, mouse-driven,
 //             optical-flow, motion-vectors, upgraded-rgba
 //  Complexity: High
-//  Requires: binding 13 (historyTexture — HISTORY_DEPTH=8 ring buffer)
+//  Upgraded: 2026-09-21
+//  Ideas: Shi-Tomasi confidence; pyramidal (coarse-to-fine) Lucas-Kanade
+//  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a hardcoded 8
+//  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
 //  Created: 2026-05-23
 //  By: Copilot
 //
@@ -50,7 +53,11 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-const HISTORY_DEPTH: u32 = 8u;
+// History ring depth is read at runtime (textureNumLayers) — the renderer
+// may allocate 8, 4 or 1 layers and wraps its head at that count.
+fn ringLayer(head: u32, age: u32, depth: u32) -> i32 {
+  return i32((head + depth - min(age, depth - 1u)) % depth);
+}
 
 // Luminance helper
 fn luma(c: vec3<f32>) -> f32 {
@@ -58,26 +65,30 @@ fn luma(c: vec3<f32>) -> f32 {
 }
 
 // ── Lucas-Kanade optical flow ─────────────────────────────────────
-//  Estimates 2D velocity at `uv` using a 5×5 window comparing
-//  readTexture (current) vs the most recent history frame (age=1).
-fn lucasKanade(uv: vec2<f32>, pixSz: vec2<f32>, prevLayer: i32) -> vec2<f32> {
+//  Estimates 2D velocity at `uv` comparing readTexture (current) against
+//  the most recent history frame (age=1), over a (2·half+1)² window with
+//  taps `stride` pixels apart. `prior` (pixels) pre-warps the previous
+//  frame so a finer level only has to solve the residual. Returns
+//  (flow in pixels, including prior; λmin of the structure tensor).
+fn lucasKanade(uv: vec2<f32>, pixSz: vec2<f32>, prevLayer: i32,
+               stride: f32, half: i32, prior: vec2<f32>) -> vec3<f32> {
   var Axx = 0.0; var Ayy = 0.0; var Axy = 0.0;
   var bx  = 0.0; var by  = 0.0;
 
-  let HALF = 2;
-  for (var dy = -HALF; dy <= HALF; dy++) {
-    for (var dx = -HALF; dx <= HALF; dx++) {
-      let off = vec2<f32>(f32(dx), f32(dy)) * pixSz;
+  let tapStep = pixSz * stride;
+  for (var dy = -half; dy <= half; dy++) {
+    for (var dx = -half; dx <= half; dx++) {
+      let off = vec2<f32>(f32(dx), f32(dy)) * tapStep;
       let p   = clamp(uv + off, vec2<f32>(0.0), vec2<f32>(1.0));
 
       let cur  = luma(textureSampleLevel(readTexture, u_sampler, p, 0.0).rgb);
-      let prev = luma(textureSampleLevel(historyTexture, u_sampler, p, prevLayer, 0.0).rgb);
+      let prev = luma(textureSampleLevel(historyTexture, u_sampler, clamp(p - prior * pixSz, vec2<f32>(0.0), vec2<f32>(1.0)), prevLayer, 0.0).rgb);
 
       // Spatial gradients from current frame (finite differences)
-      let right = luma(textureSampleLevel(readTexture, u_sampler, clamp(p + vec2<f32>(pixSz.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb);
-      let left  = luma(textureSampleLevel(readTexture, u_sampler, clamp(p - vec2<f32>(pixSz.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb);
-      let down  = luma(textureSampleLevel(readTexture, u_sampler, clamp(p + vec2<f32>(0.0, pixSz.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb);
-      let up    = luma(textureSampleLevel(readTexture, u_sampler, clamp(p - vec2<f32>(0.0, pixSz.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb);
+      let right = luma(textureSampleLevel(readTexture, u_sampler, clamp(p + vec2<f32>(tapStep.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb);
+      let left  = luma(textureSampleLevel(readTexture, u_sampler, clamp(p - vec2<f32>(tapStep.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb);
+      let down  = luma(textureSampleLevel(readTexture, u_sampler, clamp(p + vec2<f32>(0.0, tapStep.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb);
+      let up    = luma(textureSampleLevel(readTexture, u_sampler, clamp(p - vec2<f32>(0.0, tapStep.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb);
 
       let Ix = (right - left) * 0.5;
       let Iy = (down  - up)   * 0.5;
@@ -91,13 +102,22 @@ fn lucasKanade(uv: vec2<f32>, pixSz: vec2<f32>, prevLayer: i32) -> vec2<f32> {
     }
   }
 
-  let det = Axx * Ayy - Axy * Axy;
-  if (abs(det) < 1e-6) { return vec2<f32>(0.0); }
+  // ── Idea 1: Shi-Tomasi confidence ─────────────────────────────────
+  // LK is only trustworthy where the structure tensor has TWO strong
+  // eigenvalues. In flat regions both are tiny, and along a straight edge
+  // one is (the aperture problem): the solve returns noise either way. The
+  // smaller eigenvalue is the standard corner/confidence measure.
+  let halfTrace = 0.5 * (Axx + Ayy);
+  let lambdaMin = halfTrace - sqrt(max(0.25 * (Axx - Ayy) * (Axx - Ayy) + Axy * Axy, 0.0));
 
-  return vec2<f32>(
+  let det = Axx * Ayy - Axy * Axy;
+  if (abs(det) < 1e-6) { return vec3<f32>(prior, lambdaMin); }
+
+  let residual = vec2<f32>(
     (Ayy * bx - Axy * by) / det,
     (Axx * by - Axy * bx) / det
-  );
+  ) * stride;
+  return vec3<f32>(prior + residual, lambdaMin);
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────────
@@ -118,24 +138,41 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let blendAmt   = clamp(u.zoom_params.w * (1.0 - treble * 0.2), 0.0, 1.0);
 
   let historyHead = u32(extraBuffer[4]);
+  let histDepth   = max(textureNumLayers(historyTexture), 1u);
 
   // Most-recent history layer (age 1)
-  let prevLayer = i32((historyHead + HISTORY_DEPTH - 1u) % HISTORY_DEPTH);
+  let prevLayer = ringLayer(historyHead, 1u, histDepth);
 
-  // Compute optical flow at this pixel
-  let flow = lucasKanade(uv, pixSz, prevLayer);
+  // ── Idea 2: pyramidal (coarse-to-fine) Lucas-Kanade ───────────────
+  // Single-level LK linearises the image, so it only sees motion of a
+  // pixel or two — anything faster aliases to garbage, which is exactly
+  // the motion a flow tracer exists to show. Solve first on a coarse 4px
+  // stride (3x3 window, reaches ±4px), then run HEAD's 5x5 solve with the
+  // previous frame pre-warped by that estimate, so it only has to find the
+  // residual. The coarse prior is trusted only where its own λmin says so.
+  var flow = vec2<f32>(0.0);
+  if (histDepth > 1u) {
+    let coarse   = lucasKanade(uv, pixSz, prevLayer, 4.0, 1, vec2<f32>(0.0));
+    let coarseOk = smoothstep(0.002, 0.03, coarse.z);
+    let prior    = clamp(coarse.xy * coarseOk, vec2<f32>(-8.0), vec2<f32>(8.0));
+    let fine     = lucasKanade(uv, pixSz, prevLayer, 1.0, 2, prior);
+    // Idea 1 applied: damp the flow where the fine tensor is not a corner.
+    flow = fine.xy * smoothstep(0.0005, 0.01, fine.z);
+  }
 
   // ── Accumulate warped-history trail ────────────────────────────────────────
   var trail     = vec4<f32>(0.0);
   var totalW    = 0.0;
   var warpedUV  = uv;
+  let current   = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let trailAge  = min(maxAge, histDepth - 1u);
 
-  for (var age: u32 = 1u; age <= maxAge; age = age + 1u) {
+  for (var age: u32 = 1u; age <= trailAge; age = age + 1u) {
     // Warp UV backward along the flow vector for each additional age
     warpedUV = warpedUV - flow * flowScale * pixSz;
     warpedUV = clamp(warpedUV, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    let layer = i32((historyHead + HISTORY_DEPTH - age) % HISTORY_DEPTH);
+    let layer = ringLayer(historyHead, age, histDepth);
     let frame = textureSampleLevel(historyTexture, u_sampler, warpedUV, layer, 0.0);
 
     let t = f32(age) / f32(maxAge + 1u);
@@ -144,10 +181,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     totalW  += w;
   }
 
-  if (totalW > 0.001) { trail = trail / totalW; }
-
-  // ── Current frame ─────────────────────────────────────────────────────────
-  let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  // A 1-layer ring has no usable past (the renderer skips its copy), so the
+  // trail falls back to the live frame instead of blending toward black.
+  if (totalW > 0.001) { trail = trail / totalW; } else { trail = current; }
 
   // ── Composite: blend trail with current ────────────────────────────────────
   let output   = mix(trail, current, blendAmt);

@@ -40,7 +40,8 @@
     "held-pointer",
     "click-reactive",
     "psychedelic-color",
-    "depth-aware"
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

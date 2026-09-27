@@ -11,7 +11,7 @@ import {
   UniformBufferView,
   MAX_RIPPLES,
 } from '../UniformBuffer';
-import { writeExtraBuffer } from './audioDepth';
+import { writeExtraBuffer, writePlasmaBuffer } from './audioDepth';
 import type { WebGPUFrameState } from './frameState';
 import { WebGPUPresenter } from './present';
 import {
@@ -168,6 +168,7 @@ export class WebGPUFrameRenderer {
 
     state.device.queue.writeBuffer(state.uniformBuf, 0, uniforms.data);
     writeExtraBuffer(state.device, state.extraBuf, state.audioDepth);
+    writePlasmaBuffer(state.device, state.plasmaBuf, state.audioDepth);
   }
 
   private updateFPS(state: WebGPUFrameState): void {

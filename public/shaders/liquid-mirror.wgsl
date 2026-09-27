@@ -1,5 +1,10 @@
-// Liquid Mirror — sprung reflective height field with pointer push.
-// Raw A ownership: R=height, G=velocity, B=surface energy, A=coverage.
+// ═══════════════════════════════════════════════════════════════════
+//  Liquid Mirror — sprung reflective height field with pointer push.
+//  Category: liquid-effects
+//  Upgraded: 2026-09-21
+//  Ideas: glitter path (micro-facet glints); energy-roughened reflection
+//  A packing: raw — R=height, G=velocity, B=surface energy, A=coverage.
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -18,6 +23,7 @@
 struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>, };
 
 fn clampPixel(p: vec2<i32>, dims: vec2<i32>) -> vec2<i32> { return clamp(p, vec2<i32>(0), dims - vec2<i32>(1)); }
+fn hash21(p: vec2<f32>) -> f32 { return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123); }
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -87,16 +93,48 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let normal = normalize(vec3<f32>(gradient, 0.2 + smoothness * 0.3));
   let mirrorUV = clamp(vec2<f32>(1.0 - uv.x, uv.y) + normal.xy * (0.025 + height * 0.055) / aspectVec, vec2<f32>(0.001), vec2<f32>(0.999));
   let reflected = textureSampleLevel(readTexture, u_sampler, mirrorUV, 0.0);
+
+  // ── Idea 2: energy-roughened reflection ───────────────────────────
+  // Calm water reflects sharp; disturbed water reflects soft. The mirrored
+  // sample is blurred by a radius taken from B (surface energy) and from
+  // (1 - smooth). This is B's first visible optical job — HEAD only fed it
+  // through treble * 0.12, which is zero whenever audio is silent.
+  let roughR = (0.002 + energy * 0.018) * (1.0 - smoothness * 0.7);
+  var reflBlur = reflected.rgb;
+  for (var k = 0; k < 4; k += 1) {
+    let a = f32(k) * 1.5707963 + 0.7853982;
+    reflBlur += textureSampleLevel(readTexture, u_sampler, clamp(mirrorUV + vec2<f32>(cos(a), sin(a)) * roughR / aspectVec, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb;
+  }
+  reflBlur *= 0.2;
   let direct = textureSampleLevel(readTexture, u_sampler, clamp(uv - normal.xy * 0.016 / aspectVec, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0);
   let viewDir = normalize(vec3<f32>((uv - 0.5) * aspectVec * 0.35, 1.0));
   let f0 = mix(vec3<f32>(0.14), vec3<f32>(0.82, 0.87, 0.94), reflectivity);
   let fresnel = schlick(max(dot(normal, viewDir), 0.0), f0);
   let halfDir = normalize(viewDir + normalize(vec3<f32>(-0.52, 0.43, 0.74)));
   let specular = pow(max(dot(normal, halfDir), 0.0), mix(20.0, 190.0, smoothness));
-  let steel = mix(vec3<f32>(0.12, 0.16, 0.22), vec3<f32>(0.72, 0.84, 1.0), reflected.rgb);
+  let steel = mix(vec3<f32>(0.12, 0.16, 0.22), vec3<f32>(0.72, 0.84, 1.0), reflBlur);
+
+  // ── Idea 1: glitter path ──────────────────────────────────────────
+  // A light over rippled water breaks into thousands of tiny glints, packed
+  // into a band under the light and spreading wider as the surface
+  // roughens. Each 3px cell gets a micro-facet normal jittered around the
+  // solved normal; it glints only when that facet mirrors the light into
+  // the eye (a very tight lobe), and flickers as the facets tip. Because
+  // the view vector changes across the screen, the glints gather into a
+  // path on their own. Their spread is keyed to the stored surface energy.
+  let glintGrid = uv * resolution / 3.0;
+  let glintCell = floor(glintGrid);
+  let jitter = vec2<f32>(hash21(glintCell), hash21(glintCell + vec2<f32>(7.7, 1.9))) - 0.5;
+  let flick = hash21(glintCell + vec2<f32>(floor(time * 12.0), 3.3));
+  let facetRough = 0.55 + energy * 0.6 + distortion * 0.25;
+  let microN = normalize(vec3<f32>(normal.xy + jitter * facetRough, normal.z));
+  let glintDot = smoothstep(0.5, 0.1, length(fract(glintGrid) - 0.5));
+  let glint = pow(max(dot(microN, halfDir), 0.0), 600.0) * step(0.6, flick) * glintDot;
+
   let color = direct.rgb * (vec3<f32>(1.0) - fresnel) * (1.0 - reflectivity * 0.55)
-    + mix(reflected.rgb, steel, reflectivity * 0.55) * fresnel * (0.9 + mids * 0.2)
+    + mix(reflBlur, steel, reflectivity * 0.55) * fresnel * (0.9 + mids * 0.2)
     + vec3<f32>(1.05, 0.98, 0.88) * specular * (0.6 + bass * 0.5)
+    + vec3<f32>(1.1, 1.02, 0.9) * glint * (1.4 + bass) * (0.35 + reflectivity * 0.65)
     + vec3<f32>(0.3, 0.64, 1.0) * energy * treble * 0.12;
   let alpha = clamp(max(direct.a, reflected.a) * (0.45 + coverage * 0.48) + fresnel.b * 0.16 + energy * 0.06, 0.0, 1.0);
   textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(color), alpha));

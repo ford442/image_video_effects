@@ -183,6 +183,45 @@ static bool IsSpace(char c) {
     return c == ' ' || c == '\t' || c == '\n' || c == '\r';
 }
 
+bool ContainsWgslIncludeDirective(const char* wgsl) {
+    if (!wgsl) return false;
+
+    // Walk the source tracking comment state, so a directive that is only
+    // mentioned in a comment does not trip the guard. WGSL block comments nest.
+    const char* p = wgsl;
+    bool lineStart = true;
+    int blockDepth = 0;
+
+    while (*p) {
+        if (blockDepth > 0) {
+            if (p[0] == '/' && p[1] == '*') { blockDepth++; p += 2; continue; }
+            if (p[0] == '*' && p[1] == '/') { blockDepth--; p += 2; continue; }
+            if (*p == '\n') lineStart = true;
+            p++;
+            continue;
+        }
+
+        if (p[0] == '/' && p[1] == '*') { blockDepth = 1; p += 2; continue; }
+        if (p[0] == '/' && p[1] == '/') {
+            while (*p && *p != '\n') p++;
+            continue;
+        }
+
+        if (lineStart) {
+            const char* q = p;
+            while (*q == ' ' || *q == '\t') q++;
+            if (std::strncmp(q, "#include", 8) == 0 && (q[8] == ' ' || q[8] == '\t')) {
+                return true;
+            }
+        }
+
+        lineStart = (*p == '\n');
+        p++;
+    }
+
+    return false;
+}
+
 std::string RewriteWgslStorageFormats(const char* wgsl, const char* colorFormat) {
     if (!wgsl) return {};
     if (!colorFormat || !*colorFormat) return wgsl;

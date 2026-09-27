@@ -5,7 +5,9 @@
 //            temporal-blur-trail, chromatic-radial-streaks, depth-blur-attenuation,
 //            spring-damper-epicenter, click-zoom-shockwaves, per-ring-fft-voices
 //  Complexity: Medium
-//  Upgraded: 2026-08-02
+//  Upgraded: 2026-08-02, 2026-09-21
+//  Ideas: depth-occluded streak taps; radial trail advection (history streams outward)
+//  A packing: display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -131,6 +133,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let gSpread = chromatic * 0.008;
     let bSpread = chromatic * 0.008 * (1.0 - bass * 0.2);
 
+    var occlSum = 0.0;
     var rAcc = vec3<f32>(0.0);
     var gAcc = vec3<f32>(0.0);
     var bAcc = vec3<f32>(0.0);
@@ -144,11 +147,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let rT = t + rSpread * t;
         let gT = t;
         let bT = t - bSpread * t;
-        rAcc += textureSampleLevel(readTexture, u_sampler, clamp(center + dir * (1.0 + rT * attenuatedStrength), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb * tapWeight;
-        gAcc += textureSampleLevel(readTexture, u_sampler, clamp(center + dir * (1.0 + gT * attenuatedStrength), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb * tapWeight;
-        bAcc += textureSampleLevel(readTexture, u_sampler, clamp(center + dir * (1.0 + bT * attenuatedStrength), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb * tapWeight;
+        // Idea 1 — depth-occluded streaks. A tap that lands on a surface nearer than this
+        // pixel (depth: near = 1) is foreground smearing over background; reject it so
+        // foreground edges stay crisp against the zoom smear behind them.
+        let gTapUV = clamp(center + dir * (1.0 + gT * attenuatedStrength), vec2<f32>(0.0), vec2<f32>(1.0));
+        let tapDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, gTapUV, 0.0).r;
+        let occl = mix(1.0, 1.0 - smoothstep(0.04, 0.14, tapDepth - depth), 0.92);
+        occlSum += occl;
+        rAcc += textureSampleLevel(readTexture, u_sampler, clamp(center + dir * (1.0 + rT * attenuatedStrength), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb * tapWeight * occl;
+        gAcc += textureSampleLevel(readTexture, u_sampler, gTapUV, 0.0).rgb * tapWeight * occl;
+        bAcc += textureSampleLevel(readTexture, u_sampler, clamp(center + dir * (1.0 + bT * attenuatedStrength), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb * tapWeight * occl;
     }
-    let invSamples = 1.0 / f32(samples);
+    // With no occlusion occlSum == samples, so this is HEAD's 1/samples; the floor guards a fully occluded ray.
+    let invSamples = 1.0 / max(occlSum, 1.0);
     rAcc *= invSamples;
     gAcc *= invSamples;
     bAcc *= invSamples;
@@ -156,7 +167,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var color = vec3<f32>(rAcc.r, gAcc.g, bAcc.b);
 
     // Temporal blur trail persistence
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+    // Idea 2 — radial trail advection. History is read one step inward along the zoom ray,
+    // so each frame the trail moves outward from the epicentre, continuing the zoom motion
+    // instead of sitting as a static ghost. Exact load (C is rgba32float).
+    let advect = 1.0 - 0.03 * (0.5 + min(attenuatedStrength, 2.0));
+    let prevUV = clamp(center + dir * advect, vec2<f32>(0.0), vec2<f32>(1.0));
+    let prevCoord = clamp(vec2<i32>(prevUV * resolution), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1));
+    let prev = textureLoad(dataTextureC, prevCoord, 0).rgb;
     let trail = mix(color, prev * 0.88, 0.05 + mids * 0.02);
     color = mix(color, trail, 0.3);
 

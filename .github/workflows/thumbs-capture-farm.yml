@@ -1,0 +1,84 @@
+name: Thumbnail capture farm (GPU)
+
+# Captures one category wave of missing thumbnails on a self-hosted runner with a REAL
+# WebGPU adapter and opens a PR of PNGs. It never runs on ubuntu-latest: a software
+# adapter produces black/magenta frames and would fake coverage.
+#
+# BLOCKED until a runner labelled `gpu` is registered (see gpu-required.yml).
+# If the job queues forever, that runner does not exist yet.
+
+on:
+  workflow_dispatch:
+    inputs:
+      category:
+        description: Category wave (shader-lists/<name>.json), e.g. generative, interactive-mouse
+        type: string
+        default: generative
+      limit:
+        description: Max shaders this run (cap keeps the PR reviewable)
+        type: string
+        default: '80'
+      runner_label:
+        description: Self-hosted runner label with a real GPU
+        type: string
+        default: gpu
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  capture:
+    runs-on: ${{ inputs.runner_label }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build production app
+        run: npm run build
+        env:
+          SKIP_WASM_BUILD: '1'
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium
+
+      - name: Capture missing thumbnails
+        run: |
+          LIMIT=$(( ${{ inputs.limit }} > 80 ? 80 : ${{ inputs.limit }} ))
+          npm run thumbs:generate -- --category="${{ inputs.category }}" --missing --limit="$LIMIT"
+
+      - name: Integrity audit (non-zero exit expected from pre-existing flags)
+        run: python3 scripts/audit_thumbnail_integrity.py || true
+
+      - name: Gate new PNGs and prune deferrals
+        run: |
+          NEW=$(git ls-files --others --modified --exclude-standard public/thumbnails/*.png \
+            | xargs -n1 basename 2>/dev/null | sed 's/\.png$//' | paste -sd, -)
+          node scripts/thumbs-farm-finalize.js --new="$NEW"
+
+      - name: Regression + deferral gate
+        run: |
+          npm run verify:thumbs-deferrals
+          npm run thumbs:check-regression -- --base-ref origin/main
+
+      - name: Open PR
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: thumbs-farm/${{ inputs.category }}-${{ github.run_id }}
+          title: 'thumbs: ${{ inputs.category }} capture wave (${{ inputs.limit }} max)'
+          commit-message: 'thumbs: ${{ inputs.category }} capture wave'
+          body: |
+            GPU capture wave for `${{ inputs.category }}` on runner `${{ inputs.runner_label }}`.
+            New PNGs passed `audit_thumbnail_integrity.py` (no near-black / magenta); their
+            deferrals were removed and the gpu-capture-pending ratchet lowered.
+          add-paths: |
+            public/thumbnails/
+            reports/

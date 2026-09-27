@@ -53,7 +53,9 @@ export const ShaderGallery: React.FC<ShaderGalleryProps> = ({ options, value, on
     });
     if (!semantic.hits) return substringFilter(scoped, search);
     const byId = new Map(scoped.map(o => [o.id, o]));
-    return semantic.hits.flatMap(hit => byId.get(hit.id) ?? []);
+    // Boost ids with a healthy thumbnail; stable sort keeps CLIP order within each group.
+    const ranked = semantic.hits.flatMap(hit => byId.get(hit.id) ?? []);
+    return [...ranked.filter(o => hasHealthyThumbnail(o.id)), ...ranked.filter(o => !hasHealthyThumbnail(o.id))];
   }, [options, search, category, previewOnly, needsThumbOnly, hasThumbnail, hasHealthyThumbnail, semantic.hits]);
 
   // Reset pagination when filters change

@@ -1,3 +1,12 @@
+// ═══════════════════════════════════════════════════════════════════
+//  interactive-voronoi-web
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Upgraded: 2026-09-21
+//  Ideas: living neural web (pulses racing strands, firing synapse nodes);
+//         bass-synchronized firing bursts
+//  A packing: display RGBA passthrough (no history)
+// ═══════════════════════════════════════════════════════════════════
 // --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -116,7 +125,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Sample original image
     var color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
-    // ═══ UNIQUE VISUAL IDEA: living neural web — pulses race the strands ═══
+    let bass = plasmaBuffer[0].x;
+
+    // ═══ Idea 1: living neural web — pulses race the strands ═══
     // Treat each Voronoi edge as an axon. A charge pulse travels outward along the
     // strand (parameterised by distance from the owning cell point), with a random
     // phase per cell so strands fire independently — a flickering neural network.
@@ -131,17 +142,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let nodeFire = 0.6 + 0.4 * sin(time * 3.0 + cellPhase);
     let node = smoothstep(0.16, 0.0, nodeDist) * nodeFire;
 
+    // Idea 2: bass-synchronized firing burst — on top of each cell's own
+    // independent flicker, a bass hit sends one synchronized convulsion
+    // through every strand and node at once, like a shared nerve impulse.
+    let burst = bass * bass;
+
     // Mix web
     let webColor = vec3<f32>(0.0, 0.8, 1.0) + vec3<f32>(0.5 * sin(time), 0.0, 0.5 * cos(time));
     let nodeColor = vec3<f32>(0.7, 0.95, 1.0); // hotter white-cyan at the synapses
 
     // Final composite — strands carry traveling pulses, nodes flare.
-    let finalGlow = webPulse * (glow + mouseInfluence * 2.0);
+    let finalGlow = webPulse * (glow + mouseInfluence * 2.0) * (1.0 + burst * 0.8);
     color = mix(color, vec4<f32>(webColor, 1.0), clamp(finalGlow * 0.5, 0.0, 1.0));
     color = color + vec4<f32>(webColor * finalGlow, 0.0);
-    color = color + vec4<f32>(nodeColor * node * (glow + 0.5 + mouseInfluence * 2.0), 0.0);
+    color = color + vec4<f32>(nodeColor * node * (glow + 0.5 + mouseInfluence * 2.0) * (1.0 + burst * 1.2), 0.0);
 
+    color = clamp(color, vec4<f32>(0.0), vec4<f32>(1.0));
     textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), color);
 
     // Pass depth
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

@@ -1,11 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
 //  mouse-julia-morph
 //  Category: interactive-mouse
-//  Features: mouse-driven, fractal, temporal
+//  Features: mouse-driven, fractal, temporal, audio-reactive, upgraded-rgba
 //  Complexity: High
 //  Chunks From: chunk-library.md (palette)
 //  Created: 2026-04-18
 //  By: Agent 2C
+//  Upgraded: 2026-09-21
+//  Ideas: orbit-trap filament glow; bass-driven zoom breathing
+//  A packing: display RGBA passthrough (no history)
 // ═══════════════════════════════════════════════════════════════════
 //  Mouse position controls the Julia set constant c, morphing the
 //  fractal in real time. Click ripples pin Julia configurations
@@ -50,6 +53,21 @@ fn julia(z0: vec2<f32>, c: vec2<f32>, maxIter: i32) -> vec2<f32> {
   return vec2<f32>(smooth_i, f32(maxIter));
 }
 
+// Idea 1: orbit-trap filament glow — same iteration as `julia`, but also
+// tracks the closest the orbit ever comes to the origin. Points that graze
+// the origin trace the fractal's own filament structure, which is exactly
+// where a Julia set's finest boundary detail lives.
+fn juliaOrbitTrap(z0: vec2<f32>, c: vec2<f32>, maxIter: i32) -> f32 {
+  var z = z0;
+  var trap = 1e9;
+  for (var i = 0; i < maxIter; i = i + 1) {
+    if (dot(z, z) > 4.0) { break; }
+    trap = min(trap, dot(z, z));
+    z = vec2<f32>(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + c;
+  }
+  return sqrt(trap);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
@@ -60,7 +78,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let aspect = resolution.x / resolution.y;
   let time = u.config.x;
 
-  let zoom = mix(1.0, 4.0, u.zoom_params.x);
+  let bass = plasmaBuffer[0].x;
+  // Idea 2: bass-driven zoom breathing — a gentle pulse on top of the
+  // existing zoom param, so the fractal visibly breathes with the music.
+  let zoom = mix(1.0, 4.0, u.zoom_params.x) * (1.0 - bass * 0.06);
   let maxIter = i32(mix(30.0, 150.0, u.zoom_params.y));
   let morphSpeed = u.zoom_params.z * 2.0;
   let rippleInfluence = u.zoom_params.w;
@@ -133,10 +154,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let lum = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
   finalColor = mix(vec3<f32>(lum), finalColor, 1.3);
 
+  // Idea 1: orbit-trap filament glow on the base fractal only — brightest
+  // exactly where the orbit grazes the origin, tracing the finest boundary
+  // filaments of this Julia set.
+  let trap = juliaOrbitTrap(z0, blendedC, maxIter);
+  let filament = pow(1.0 - clamp(trap, 0.0, 1.0), 8.0);
+  finalColor = finalColor + vec3<f32>(0.9, 0.7, 1.0) * filament * 0.5;
+
   // Alpha = escape iteration count normalized
-  let alpha = clamp(finalIter / f32(maxIter), 0.0, 1.0);
+  let alpha = clamp(finalIter / f32(maxIter) + filament * 0.2, 0.0, 1.0);
 
   textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
 
   // Depth passthrough
   let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

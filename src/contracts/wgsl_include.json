@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "description": "The `#include` preprocessor for WGSL. Deliberately minimal: textual substitution of whole files from public/shaders, nothing else. No macros, no conditionals, no expressions, no include guards — a shader that includes the same library twice is an error, not a silent no-op, because duplicate WGSL declarations are. Implemented once in src/wasm/bridge/wgslInclude.ts (emitted to both bridge copies) and mirrored for the Python bindgroup checker in scripts/wgsl_include.py; the two are held byte-identical by scripts/verify-wgsl-include.mjs against the fixtures in scripts/fixtures/wgsl_include/.",
+  "directive": {
+    "pattern": "^[ \\t]*#include[ \\t]+\"([^\"]+)\"[ \\t]*$",
+    "example": "#include \"_prelude.wgsl\"",
+    "notes": "Whole-line only, one per line. A directive inside a // or /* */ comment is NOT expanded; a directive inside a string literal cannot occur because WGSL has none."
+  },
+  "root": "public/shaders",
+  "maxDepth": 8,
+  "rules": {
+    "libraryPrefix": "_",
+    "libraryPrefixReason": "Only `_`-prefixed files may be included. They are excluded from the shader manifest by generate_shader_lists.js and from the gates by bindgroup_checker.py TEMPLATE_FILES, so including one cannot pull a shipped catalog effect into another shader (a 2k-line effect silently inlined into a second effect).",
+    "extension": ".wgsl",
+    "flatRoot": true,
+    "flatRootReason": "public/shaders is a flat directory — 1417 files, no subfolders. A path separator in an include is rejected rather than resolved, which also rules out traversal (../, absolute paths).",
+    "cycleDetection": "An include chain that revisits a file already on the stack is an error naming the full cycle.",
+    "repeatInclude": "Including the same file twice anywhere in one expansion is an error: WGSL has no include guards and a duplicated declaration does not compile."
+  },
+  "lineDirectives": {
+    "enabled": true,
+    "format": "// #include-expanded: {file} (from {parent}:{line})",
+    "reason": "Expansion shifts line numbers, so naga diagnostics would point at the wrong source line. The marker comments let a reader map an expanded line back to its origin. They are comments, so they cost nothing at compile time."
+  },
+  "consumers": {
+    "typescript": [
+      "src/wasm/bridge/wgslInclude.ts",
+      "src/utils/fetchShaderWgsl.ts",
+      "src/wasm/bridge/shader.ts"
+    ],
+    "python": ["scripts/wgsl_include.py", "scripts/bindgroup_checker.py"],
+    "node": ["scripts/verify-naga-wasm.mjs"],
+    "cpp": ["wasm_renderer/pipeline.cpp"],
+    "cppNote": "C++ does NOT parse includes. Every byte of WGSL reaches LoadShader as a string that already passed through src/wasm/bridge/shader.ts, so the C++ side only asserts that no directive survived and fails loudly if one did."
+  },
+  "migration": {
+    "optIn": true,
+    "note": "Shaders are converted one at a time. 1417 catalog files are NOT rewritten. A file with no #include is returned unchanged, byte for byte."
+  }
+}

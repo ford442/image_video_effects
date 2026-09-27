@@ -38,6 +38,12 @@ void ParseWorkgroupSize(const char* wgslCode, uint32_t& x, uint32_t& y);
 ShaderBindingUsage AnalyzeShaderBindings(const char* wgslCode);
 /** Force write-only rgba storage decls onto the allocated BGL format (rgba16float or rgba32float). */
 std::string RewriteWgslStorageFormats(const char* wgsl, const char* colorFormat);
+/**
+ * True when a live (non-commented) `#include` directive survived expansion.
+ * Detection only — expansion belongs to src/wasm/bridge/wgslInclude.ts, the one
+ * implementation. See src/contracts/wgsl_include.json.
+ */
+bool ContainsWgslIncludeDirective(const char* wgsl);
 
 } // namespace wasm_internal
 } // namespace pixelocity

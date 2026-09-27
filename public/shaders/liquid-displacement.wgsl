@@ -1,5 +1,10 @@
-// Liquid Displacement — persistent incompressible flow and height-field warp.
-// Raw A ownership: RG=velocity, B=surface height, A=activity/initialization.
+// ═══════════════════════════════════════════════════════════════════
+//  Liquid Displacement — persistent incompressible flow and height-field warp.
+//  Category: liquid-effects
+//  Upgraded: 2026-09-21
+//  Ideas: vorticity confinement; flow-line streaks along the velocity
+//  A packing: raw — RG=velocity, B=surface height, A=activity/initialization.
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -48,6 +53,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let vD = select(vec2<f32>(0.0), d.rg, initialized); let vU = select(vec2<f32>(0.0), t.rg, initialized);
   let hL = select(0.12, l.b, initialized); let hR = select(0.12, r.b, initialized);
   let hD = select(0.12, d.b, initialized); let hU = select(0.12, t.b, initialized);
+  // Second ring of exact C loads, used only by vorticity confinement below:
+  // the curl at each of the four neighbours needs that neighbour's own
+  // neighbours, i.e. the four diagonals and the four 2-away texels.
+  let vLD = select(vec2<f32>(0.0), textureLoad(dataTextureC, clampPixel(pixel + vec2<i32>(-1, -1), dims), 0).rg, initialized);
+  let vLU = select(vec2<f32>(0.0), textureLoad(dataTextureC, clampPixel(pixel + vec2<i32>(-1, 1), dims), 0).rg, initialized);
+  let vRD = select(vec2<f32>(0.0), textureLoad(dataTextureC, clampPixel(pixel + vec2<i32>(1, -1), dims), 0).rg, initialized);
+  let vRU = select(vec2<f32>(0.0), textureLoad(dataTextureC, clampPixel(pixel + vec2<i32>(1, 1), dims), 0).rg, initialized);
+  let vLL = select(vec2<f32>(0.0), textureLoad(dataTextureC, clampPixel(pixel + vec2<i32>(-2, 0), dims), 0).rg, initialized);
+  let vRR = select(vec2<f32>(0.0), textureLoad(dataTextureC, clampPixel(pixel + vec2<i32>(2, 0), dims), 0).rg, initialized);
+  let vDD = select(vec2<f32>(0.0), textureLoad(dataTextureC, clampPixel(pixel + vec2<i32>(0, -2), dims), 0).rg, initialized);
+  let vUU = select(vec2<f32>(0.0), textureLoad(dataTextureC, clampPixel(pixel + vec2<i32>(0, 2), dims), 0).rg, initialized);
+
   let divergence = (vR.x - vL.x + vU.y - vD.y) * 0.5;
   let lapV = vL + vR + vD + vU - 4.0 * velocity;
   let heightGrad = vec2<f32>(hR - hL, hU - hD) * 0.5;
@@ -90,6 +107,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let p = (uv - 0.5) * aspectVec;
   let curl = vec2<f32>(sin(p.y * 12.0 + time * flowSpeed), -sin(p.x * 11.0 - time * flowSpeed * 0.83));
   velocity += lapV * mix(0.025, 0.13, viscosity) - heightGrad * pressureGain;
+
+  // ── Idea 1: vorticity confinement ─────────────────────────────────
+  // The standard remedy for this solver's failure mode: viscous diffusion
+  // and damping smear small swirls out of existence. Measure the curl here
+  // and at the four neighbours, take the gradient of |curl| (it points at
+  // vortex cores), and push back along N x omega to re-sharpen them.
+  // Strength rides the turbulence slot.
+  // Every curl reads last frame's stored field (vC, not the running
+  // `velocity`, which already carries this frame's pointer and click pushes).
+  let vC = select(vec2<f32>(0.0), c.rg, initialized);
+  let curlC = 0.5 * ((vR.y - vL.y) - (vU.x - vD.x));
+  let curlL = 0.5 * ((vC.y - vLL.y) - (vLU.x - vLD.x));
+  let curlR = 0.5 * ((vRR.y - vC.y) - (vRU.x - vRD.x));
+  let curlD = 0.5 * ((vRD.y - vLD.y) - (vC.x - vDD.x));
+  let curlU = 0.5 * ((vRU.y - vLU.y) - (vUU.x - vC.x));
+  let eta = vec2<f32>(abs(curlR) - abs(curlL), abs(curlU) - abs(curlD)) * 0.5;
+  let etaN = eta / max(length(eta), 1e-5);
+  velocity += vec2<f32>(etaN.y, -etaN.x) * curlC * turbulence * 0.12;
   velocity += curl * turbulence * (0.002 + mids * 0.0015);
   velocity *= mix(0.982, 0.935, viscosity);
   velocity = clamp(velocity, vec2<f32>(-1.1), vec2<f32>(1.1));
@@ -104,7 +139,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let fresnel = schlick(max(normal.z, 0.0), 0.025);
   let caustic = pow(clamp(abs(lapH) * 18.0 + clickHeight * 0.4, 0.0, 1.0), 2.0);
   let absorption = exp(-height * vec3<f32>(0.32, 0.16, 0.08) * (1.0 + turbulence));
-  let color = source.rgb * absorption + vec3<f32>(0.08, 0.42, 0.72) * (fresnel * (0.25 + mids * 0.18))
+  // ── Idea 2: flow-line streaks ─────────────────────────────────────
+  // A displacement shader otherwise only shows the flow as a warp. A short
+  // line integral of the source along the local velocity, mixed in by
+  // speed, drags the photo into visible streamlines where the flow is fast
+  // and leaves it crisp where the fluid is still.
+  let streakStep = velocity / aspectVec * (0.003 + u.zoom_params.z * 0.004);
+  var streak = source.rgb;
+  for (var k = 1; k <= 3; k += 1) {
+    streak += textureSampleLevel(readTexture, u_sampler, clamp(sourceUV - streakStep * f32(k), vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb;
+  }
+  streak *= 0.25;
+  let flowRgb = mix(source.rgb, streak, clamp(length(velocity) * 2.5, 0.0, 0.8));
+
+  let color = flowRgb * absorption + vec3<f32>(0.08, 0.42, 0.72) * (fresnel * (0.25 + mids * 0.18))
     + vec3<f32>(0.55, 0.9, 1.15) * caustic * (0.18 + treble * 0.22);
   let alpha = clamp(source.a + (1.0 - source.a) * activity * (0.2 + height * 0.65) + fresnel * 0.08, 0.0, 1.0);
   textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(color), alpha));

@@ -3,9 +3,11 @@
 //  Category: post-processing
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
 //  Complexity: High
-//  Upgraded: 2026-09-06
+//  Upgraded: 2026-09-06, 2026-09-21
 //  A packing: ACES display RGBA
 //  Motion: mobile anamorphic vignette aperture + exposure ripple blooms
+//  Ideas (2026-09-21): cos^4 natural falloff; grain rides the emulsion
+//         (midtone response, applied under the vignette)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -122,7 +124,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Falloff calculation with audio breathing
   let breathe = 1.0 - bass * 0.15 + select(0.0, 0.12, held);
   let effectiveFalloff = mix(0.3, 1.8, vignetteIntensity) * breathe;
-  let vigMask = 1.0 - smoothstep(0.35 / effectiveFalloff, 0.95 / effectiveFalloff, dist);
+  // ── Idea 1: cos^4 natural falloff ─────────────────────────────────
+  // Real lens vignetting follows the cos^4 law (inverse square x obliquity
+  // x pupil foreshortening), not a smoothstep: gentle across most of the
+  // frame, accelerating only into the corners. The off-axis angle comes
+  // from an effective focal length that shortens as intensity rises — a
+  // wide lens vignettes harder — and the law is blended with HEAD's shaped
+  // mask so the saved intensity range still lands where presets expect.
+  let cosFocal = 1.12 / effectiveFalloff;
+  let tanTheta = dist / cosFocal;
+  let obliquity = 1.0 + tanTheta * tanTheta;
+  let cos4 = 1.0 / (obliquity * obliquity);
+  let vigMask = mix(1.0 - smoothstep(0.35 / effectiveFalloff, 0.95 / effectiveFalloff, dist), cos4, 0.55);
 
   // Sample source texture
   let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
@@ -155,6 +168,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   graded = mix(graded, graded * (1.0 + mids * 0.25), 0.5);
 
+  // ── Idea 2: grain rides the emulsion ──────────────────────────────
+  // Film grain is densest in the lower midtones, thin in deep shadow and
+  // nearly absent in the highlights, and it lives IN the emulsion, so the
+  // vignette darkens it along with the image. HEAD added a flat grain on
+  // top of the finished vignette, which made corners look noisier than the
+  // centre. Weighted by a midtone response and applied before the blend.
+  let grainResponse = smoothstep(0.0, 0.22, srcLuma) * (1.0 - smoothstep(0.55, 0.98, srcLuma));
+  graded = graded + vec3<f32>(triGrain * mix(0.35, 1.25, grainResponse));
+
   // Blend modes for the vignette
   var vignetted = graded;
   if (blendMode < 0.5) {
@@ -173,7 +195,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Inject grain and ripple flash bloom
   let bloomTint = vec3<f32>(1.0, 0.92, 0.82) * rippleBloom * 0.45;
-  var hdr = vignetted + vec3<f32>(triGrain) + bloomTint;
+  var hdr = vignetted + bloomTint;
 
   // Exact previous frame history load from dataTextureC for temporal anti-strobe
   let hist = textureLoad(dataTextureC, coord, 0);

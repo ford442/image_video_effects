@@ -1,21 +1,129 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-15 (sentient/radiant cosmic entities eight)
+**Last updated:** 2026-09-26 (open issues tagged with Claude model/effort)
 
-## 2026-09-15 — Sentient / radiant cosmic entities eight
+## 2026-09-26 — Issue complexity tags (titles)
 
-- IDs: nebula-moth, bismuth-hypercrystal, cyber-aurora-void-owl,
-  quantum-chrono-leviathan-moth, chrono-glass-nautilus, cyber-chrono-void-stag,
-  quantum-crystalline-forge, quantum-plasma-kraken-core.
-- Ideas: wing venation + trailing scale-dust; hopper terraces + riser film;
-  feather barbs + iris rings; voronoi veins + antennae; chamber septa + nacre;
-  antler pearls + hoof-trail pulses; recalescence + hopper terraces; suckers +
-  chromatophores.
-- Floor only: plasmaBuffer, UV mouse, ACES A, canonical params. Forge helper
-  deleted. Kraken zoom clamp removed. No new springs.
-- Gates: Naga 8/8, extraBuffer/dead sliders 0, catalog 1,367, build green.
-  Jest 689/6 WASM `bridge/api.js` pre-existing. Real-GPU QA external.
-- Cards: `agents/swarm-outputs/sol-2026-09-15-sentient-radiant-eight/`.
+All 13 open issues got a prefix on the title so agents pick the right Claude + thinking level. Rubric: sonnet 5 for bounded pattern-follow; opus 5.5 when freeze/ABI/lifecycle/architecture can silently wreck the renderer.
+
+- **claude sonnet 5 medium:** #1299 plasmaBuffer write, #1307/#1324 history-ring `textureNumLayers`
+- **claude sonnet 5 high:** #1300 `pow` NaN audit (21 sites, do not blanket-clamp)
+- **opus 5.5 low:** #1080 Promote vs Stay-B evidence session
+- **opus 5.5 medium:** #1182 VJ audio/OSC, #1308 sim-ring land, #1309 JSPI + compile_commands
+- **opus 5.5 high:** #1310 WASM COPY_SRC/WebCodecs, #1311 foundation sweep, #1312 thumbs + four frozen sims
+- **opus 5.5 extra:** #1313 include/compositor/native fork, #1314 Engine 2.0 worker/DAG/video
+
+## 2026-09-23 — Foundation / next-work audit
+
+User asked for progress + six GitHub issues (code changes, even large ones), not another shader swarm.
+
+- Catalog **1,370**. Upgrade batches are not the bottleneck. Healthy thumbs **20.7%** (283/1369). Deferrals expire **2026-09-29**. JS still never writes `plasmaBuffer` (**#1299**). History-ring shaders still wrap at hardcoded 8 (**#1307**). Group 0 is at the binding ceiling (**#1308**). ASYNCIFY-only, no `compile_commands.json` (**#1309**). WASM recording still Canvas2D-pumps; artifacts may be 3-slot vs contract 6 (**#1310**). Four sims are frozen, not under-upgraded (**#1312**).
+- JS/TS/C++: bridge is TypeScript SoT; C++ is modular; GraphRunner/gpu-chores stay TS until #1080. Dual canvas configure is healthy — do not rewrite. emsdk 6.0.9 pin is healthy — do not unpin.
+- Filed: **#1307** history wrap, **#1308** sim ring (land `/root/iv-simring`), **#1309** JSPI + compile_commands (land `/root/iv-jspi`), **#1310** WASM COPY_SRC/WebCodecs/6-slot rebuild, **#1312** thumbs + rescue four sims, **#1313** later compositor + `#include` migration + native Dawn/wgpu (new libs: `@xyflow/react`, Dawn+GLFW+glm or wgpu/winit).
+- Same-morning sibling issues (other session): **#1311** lifecycle/lint/root cleanup, **#1314** Engine 2.0 worker/profiler. Complementary, not duplicates.
+- Play order: **#1299 → #1307 → #1308 / #1309 / #1310 → #1312 → #1080 → #1182 / #1313**. No GraphRunner C++ until Promote. No 10-wide content swarm as the next move.
+
+## 2026-09-23 — Pull/push
+
+- Rebased the local notes commit onto origin `0eff2050` and fast-forwarded `main` (`0eff2050..3c5e7767`).
+- Origin kept: Bismuth Hyper-Crystals (#1298, #1303), interactive-mouse eight (#1301), digital-crease `pow` NaN fix (#1305).
+- Local notes kept: #1299 silent plasmaBuffer, #1300 pow NaN audit. No shader overlap, no conflict markers.
+- #1305 clamps one of the #1300 sites (`digital-crease`). The rest of that audit is still open.
+
+## 2026-09-21 — Filed follow-up issues from generative eight
+
+- **#1299** [JS renderer never writes plasmaBuffer — shader audio is silent](https://github.com/ford442/image_video_effects/issues/1299). ~1,250 shaders read `plasmaBuffer[0].xyz`. JS `audioDepth.ts` writes extraBuffer only; C++ WASM already uploads `vec4(bass, mid, treble, 0)`. Not #1182 (that issue assumes plasmaBuffer already works). Fix is a small JS `writePlasmaBuffer` next to `writeExtraBuffer`.
+- **#1300** [audit remaining `pow(1.0 - abs(...))` sites for negative-base NaN](https://github.com/ford442/image_video_effects/issues/1300). Protocell is clamped; 21 other files / 22 call sites unreviewed. Do not blanket-clamp — some bases are already in `[0,1]`.
+- Open issues that still matter besides these: #1182 (all-slot host mapping + OSC, later), #1080 (WASM GPU evidence).
+
+## 2026-09-21 — Post-processing seven (7 shaders)
+
+- IDs: pp-sharpen, pp-vignette, pp-chromatic, temporal-slit-scan, optical-flow-tracer,
+  temporal-frequency-decomposition, spatio-temporal-3d-conv.
+- Ideas (2 each, 14 distinct): anti-halo clamp + luma-only sharpen; cos^4 falloff + emulsion grain;
+  longitudinal CA + purple fringing; sub-frame interpolation + slit exposure; Shi-Tomasi + pyramidal
+  LK; Hann window + phase->hue; motion-adaptive NR + variance-driven NR.
+- **Bug found:** all 11 history-ring (binding 13) shaders hardcode an 8-layer ring; the renderer
+  may allocate 4 or 1 and wraps at that. Fixed in 4, the other 7 are an open follow-up.
+- **Lesson:** a card can be wrong. spatio-temporal-3d-conv's said "NR and sharpen"; implementing it
+  showed sharpen mode *emphasises* motion, so rejecting moved frames would kill it. Corrected in
+  BRIEFS visibly, before gating. Cards are a plan, not a contract with yourself.
+- **Lesson two:** photo tools pass the §1 test ("would a photographer still use it as X?") best
+  with ideas taken from real lens/sensor/emulsion behaviour.
+- Gates green. GPU QA outstanding; optical-flow-tracer went 150 -> ~204 fetches/pixel.
+
+## 2026-09-21 — Liquid eight (8 shaders)
+
+- IDs: liquid-rainbow-prismatic, luma-velocity-melt, liquid, kimi_liquid_glass, liquid-oil,
+  liquid-mirror, ink-marbling, liquid-displacement.
+- Per shader, the ideas actually added (2 each, 16 distinct):
+  - liquid-rainbow-prismatic: gravity drainage + Newton's black film; dispersed caustics.
+  - luma-velocity-melt: drip pinch-off into beaded columns; depth-ledge pooling.
+  - liquid: capillary precursor ring (anomalous dispersion); foam drains into troughs.
+  - kimi_liquid_glass: total internal reflection on steep flanks; rising seed bubbles.
+  - liquid-oil: displacement wake (pointer parts the oil instead of lifting it); shear-aligned streaks.
+  - liquid-mirror: glitter path; energy-roughened reflection.
+  - ink-marbling: Jaffer's area-preserving drop map (replaces HEAD ring push); comb rake.
+  - liquid-displacement: vorticity confinement; flow-line streaks.
+- **Lesson:** the "no `Ideas:` line" proxy is leaky. 4 of 12 liquid candidates were already upgraded
+  or deliberately minimal once read (Batch 67 "A./B." comment blocks, idea-dense physics, a declared
+  clean baseline). Read every candidate before claiming it.
+- **Lesson two:** when four files share one solver template, pick each file's ideas from the physics
+  its *name* claims. Test: could you swap two cards between siblings? If yes, they're overlay.
+- Floor untouched; all raw-state files stayed raw. `upgraded-rgba` added to 5 definitions.
+- Gates: precommit 8/8; naga --all 0 new; extraBuffer/dead-sliders PASS; catalog 1370; build OK.
+- Real-GPU QA outstanding. Riskiest: liquid-displacement confinement at turbulence = 1.
+
+## 2026-09-21 — Retro-glitch ten (10 shaders)
+
+- IDs: crt-phosphor-decay, crt-magnet, vhs-tracking, signal-noise, byte-mosh, xerox-degrade,
+  ascii-flow, pixelation-drift, spectrum-bleed, vinyl-scratch.
+- **Second pass, not a first one.** All ten already had the floor; seven carried the
+  `Composer batch cyber/digital/glitch` overlay stamp whose header is §4.3 verbatim. Per §9 that
+  counts as not upgraded, so the entire batch was creative work: **0 springs, 0 ripple loops,
+  0 IQ palettes added.**
+- Per shader, the ideas actually added (3 each, 30 distinct, no idea shared between files):
+  - crt-phosphor-decay: two-rate phosphor knee; triad-aligned grain bleed; interlaced field parity.
+  - crt-magnet: tangential convergence error; warped shadow-mask moiré; purity stain erased by degauss.
+  - vhs-tracking: head-switch skew/flagging; dropout-compensator line repeat; line-alternate chroma phase.
+  - signal-noise: luma-shouldered noise; real quantisation staircase; dot crawl on vertical luma edges.
+  - byte-mosh: motion-vector inheritance; keyframe recovery flash; row desync trail.
+  - xerox-degrade: toner starvation bands; Mach-band edge halo; compounding generation loss via C.
+  - ascii-flow: ink-coverage glyph ramp; coverage-weighted glyph blend; typed-cell wake.
+  - pixelation-drift: block area average; block colour quantisation; drift-lit tile bevel.
+  - spectrum-bleed: wavelength-ordered bleed distance; chromatographic advance front; dry-edge rim.
+  - vinyl-scratch: eccentric spindle wow; radius-dependent groove pitch + label; stylus scratch marks.
+- **Lesson worth keeping:** on a second-pass batch, the best ideas come from finding the mechanism
+  the file already declares but never uses. Three landed that way — crt-magnet's degauss ring,
+  vinyl-scratch's clicks, and xerox-degrade's C history (a flat 12% blend doing nothing).
+- **Lesson two:** `crt-phosphor-decay`'s triad mask was dead code — `fract(uv.x * resX)` is
+  identically 0.5 for every texel, so the "subpixel mask" was a flat tint. Worth grepping the
+  catalog for that pattern; it is an easy one to write and impossible to see without a GPU.
+- Floor: bindings / 16×16 / exact C / A packing as documented (2 files keep raw sim state, not
+  promoted) / saved params byte-exact. Only `shader_definitions/` change is one line:
+  `upgraded-rgba` added to spectrum-bleed.
+- Gates: precommit 10/10; naga --all 1380 valid, 40 invalid (40 known, **0 new**); extraBuffer PASS;
+  dead-sliders PASS; catalog-counts 1370; wgsl-include green; SKIP_WASM_BUILD=1 build OK.
+  Jest 712/6 — the 6 failures reproduce identically on a stashed clean tree (WASM-bridge ESM
+  resolution, unrelated).
+- **Real-GPU visual QA: external, still outstanding.** Notes list five specific things to look at.
+- Batch folder: `agents/swarm-outputs/spark-2026-09-21-retro-glitch-ten/`. Pushed to main (`90339ab4`).
+
+## 2026-09-20 — Merge to local `main` (no push)
+
+- Landed `feat/naga-wasm-validation` onto local `main` after unioning origin `#1291`.
+- Origin `main` (`b815fd7d` Chrono-Bloom) still had the dirty `62f2d677` conflict markers. Kept the local cleanup (`593e8ccf`) for the overlapping sentient/radiant eight. Took unique origin Chrono-Bloom WGSL + definition + completed queue entry.
+- Catalog regenerated: **1,370** (generative 475). Search-index 1,370 entries, 1,369 embeddings reused.
+- Naga-wasm + real WGSL `#include` expansion is on local `main` (`ee64841e`). Ahead of origin by 5 commits. Did not push.
+- Gates: `verify:catalog-counts` passed; `naga-wasm:test` 15/15; `verify:wgsl-include` green.
+
+## 2026-09-19 — Merge conflict cleanup (`62f2d677` push fix)
+
+- Merge of local `75cb037d` (`push fix`) with origin `f6dd97e6` (`#1292`) was committed with conflict markers still in the tree.
+- Overlapping sentient/radiant eight WGSL kept local implementation (venation/wake, hopper/oxide, feather lanes/iris, armor/lamellae, septa/birefringence, tine/hoof packets, twin facets/welds, suckers/peristalsis). Did not take the `#1281` restamp (scale-dust/barbs/antennae/pearls/recalescence).
+- JSON: local canonical `params` kept; origin feature tags (`generated-depth`, `semantic-alpha`, `aces-tone-map`, plus temporal-feedback where present) unioned.
+- Unique origin kept: compact resonance eight, classic geometry leftover six, chrono-cosmic eight, later catalog shaders/plans (`#1283`–`#1292`).
+- Catalog lists and search-index regenerated after the cleanup.
 
 ## 2026-09-15 — Compact generative resonance eight
 
@@ -63,7 +171,6 @@
 - #1274/#1276 already took the morning sixes — did not restamp those IDs.
 - Cards: `agents/swarm-outputs/grok-2026-09-15-classic-geometry-six/`.
 - Real-GPU visual QA: external.
-**Last updated:** 2026-09-15 (chrono-cosmic mechanisms eight)
 
 ## 2026-09-15 — Pull/push union (ahead 1 / behind 1, origin #1278)
 
@@ -74,13 +181,23 @@
 - Did not take `#1278` leftover note claiming encaustic/energy-shield/hyper-space/warp-drive are still open — those four already landed locally.
 - Honey-melt and melting-oil stay skipped (Codex idea-rich). Catalog 1,367. Real-GPU QA external.
 
-## 2026-09-15 — Selected sentient / radiant cosmic entities eight (not yet implemented)
+## 2026-09-15 — Sentient / radiant cosmic entities eight (implemented)
 
-- Follow-on selection after the reserved chrono-cosmic mechanisms eight.
+- Follow-on after the reserved chrono-cosmic mechanisms eight (those IDs later landed as `#1280`; this eight kept the local idea set).
 - IDs: gen-sentient-aether-plasma-nebula-moth, gen-sentient-bismuth-hypercrystal, gen-sentient-cyber-aurora-void-owl, gen-sentient-quantum-chrono-leviathan-moth, gen-radiant-chrono-glass-nautilus, gen-radiant-cyber-chrono-void-stag, gen-radiant-quantum-crystalline-forge, gen-radiant-quantum-plasma-kraken-core.
-- Exact 4+4 prefix cohort of cosmic fauna/crystalline entities. All eight lack `Ideas:` headers; no substantive prior swarm cards/closeouts found; no extraBuffer[0..132].
-- Exclusions: sentient serpent/heart/flora and radiant colossus/griffin have prior substantive batch work; sentient ferro/silk use forbidden low extraBuffer slots.
-- Floor watch-outs: seven definitions need canonical `params` added without changing existing control meanings; bismuth hypercrystal reads C as fake audio; several need honest A packing and ACES. Plumbing is not the upgrade.
+- Per shader, the ideas actually added:
+  - moth: thorax-rooted plasma venation; flap-reversal ion-scale wake.
+  - bismuth: recursive hopper terraces; crystallographic oxide zoning.
+  - owl: auroral feather-current lanes; faceted cyber-iris aperture.
+  - leviathan-moth: peristaltic armor segments; frozen-time wing lamellae.
+  - nautilus: logarithmic chamber septa; birefringent growth lamellae.
+  - stag: crystal tine bifurcation; segmented chrono hoof wakes.
+  - forge: crystallographic twin facets; accretion weld seams.
+  - kraken: paired sucker-current rows; core-to-arm peristaltic discharge.
+- Floor: canonical `params` mirrored onto seven defs; bismuth C-audio → plasmaBuffer; forge `applyGenerativePrimaryControls` deleted; kraken zoom_params not clamped to 0–1; ACES display A; no new springs; extraBuffer[0..132] unused.
+- Exclusions unchanged: sentient serpent/heart/flora, radiant colossus/griffin (prior batches); sentient ferro/silk (low extraBuffer).
+- Gates: Naga 8/8, extraBuffer 0, dead sliders 0. Catalog 1,367 / generative 472. Jest 689/6 WASM pre-existing. SKIP_WASM_BUILD=1 build green. Real-GPU QA external.
+- Cards: `agents/swarm-outputs/sol-2026-09-15-sentient-radiant-eight/`.
 
 ## 2026-09-15 — Chrono-cosmic mechanisms eight
 
@@ -2705,3 +2822,92 @@
   catalogs 1378 unique, SKIP_WASM_BUILD=1 build green. Jest not run.
 - Notes: agents/swarm-outputs/claude-2026-09-13-luminescent-attractor-ten/. Real-GPU visual QA: external
   (stag framing change, lorenz-flow ridge flooding, phoenix-egg afterglow ghosting).
+
+## 2026-09-21 — distortion lens eight (8 shaders)
+
+- IDs: gravity-well, black-hole, heat-haze-gpt52, zoom-burst, interactive-zoom-blur, infinite-zoom-lens, bubble-lens, refraction-tunnel.
+- Ideas actually added:
+  - gravity-well: lensed far-side disk halo; Keplerian shear streaks.
+  - black-hole: frame-dragging swirl; photon-ring point-reflected secondary image.
+  - heat-haze-gpt52: inferior mirage; boundary-layer boost; held-pointer mirage pool.
+  - zoom-burst: highlight comets; zoom-ring dwell ghost.
+  - interactive-zoom-blur: depth-occluded taps; radial trail advection.
+  - infinite-zoom-lens: log-periodic Droste nesting; endless fall; frame seams.
+  - bubble-lens: inverted rear-wall reflection (Schlick at sphere incidence); Marangoni vortices.
+  - refraction-tunnel: glass-pipe wall reflection; perspective hoops/helix.
+- Floor: exact C in interactive-zoom-blur; refraction-tunnel Twist slider now twists the image. Params byte-exact, no JSON edits.
+- Gates: precommit 8/8, extraBuffer, dead sliders, catalogs, include, SKIP_WASM_BUILD=1 build; Jest only known bridge failures.
+- Notes: agents/swarm-outputs/spark-2026-09-21-distortion-lens-eight/. Real-GPU visual QA: external (infinite-zoom-lens first).
+
+## 2026-09-21 — stateful-simulation six (6 shaders)
+
+- IDs: boids, ion-stream, sim-ink-diffusion-rgba, steamy-glass, sim-fluid-feedback-coupled, photonic-caustics.
+- Ideas: boids blind spot + predator; ion-stream charge split + cyclotron; ink edge darkening + granulation;
+  steamy rivulets + beaded wipe rim; fluid buoyancy + schlieren; caustics Jacobian + glint.
+- Floor: ink depth write; photonic-caustics A packing (display → irradiance). Params byte-exact.
+- Rescues found (not changed): physarum, navier-stokes-dye, multi-turing, lenia — evidence in NOTES.
+- Notes: agents/swarm-outputs/spark-2026-09-21-sim-six/. Real-GPU QA external (photonic-caustics first).
+
+## 2026-09-21 — artistic surface eight (8 shaders)
+
+- IDs: graphic-novel, rorschach-inkblot, polka-dot-reveal, frosty-window, melting-oil, porcelain-fracture-glow, static-reveal, luminance-wind.
+- Per shader, the ideas actually added:
+  - graphic-novel: spot blacks; 45° pen hatching + crossing set; shadow-side line weight.
+  - rorschach-inkblot: fold crease pooling; press-off transfer stipple; capillary fibre feathering.
+  - polka-dot-reveal: chain-dot merge; drag-stretched dots. (Floor: jitter was per pixel, now per cell.)
+  - frosty-window: frame nucleation + creeping front (fixes the dead file: C=0 early return); meltwater runnels in A.g.
+  - melting-oil: accumulated melt from exact C (was a fixed 1 px shift); luma-weighted gravity sag. A = pre-sheen melt.
+  - porcelain-fracture-glow: crack memory in C.b ripening to gold kintsugi; stained glaze crazing by Patina Age.
+  - static-reveal: vertical-hold roll + blanking bar; multipath ghost. (Floor: threshold read mouse X.)
+  - luminance-wind: lee-side depth shelter; cat's-paw gust bands.
+- Floor: exact C loads (frosty, static); params byte-exact; JSON only +upgraded-rgba on graphic-novel.
+- Gates: precommit 8/8, extraBuffer, dead sliders (7 scanned + graphic-novel by hand), catalogs, build; Jest same 6 known failures.
+- Notes: agents/swarm-outputs/spark-2026-09-21-artistic-surface-eight/. Not committed. Real-GPU QA external (frosty-window first).
+
+## 2026-09-21 — Generative eight (8 shaders)
+
+- IDs: gen-cosmic-velvet-hypnosis, gen-prismatic-serpent-river, gen-cyber-terminal, gen-chromatic-oracle-jelly, gen-emergent-calligraphic-weave, gen-hyperbolic-tree, gen-protocell-division, gen-ferrofluid-monolith.
+- Per shader, the ideas actually added:
+  - cosmic-velvet-hypnosis: crushed-velvet pile patches under a turning light; nested log-octave wells sinking inward.
+  - prismatic-serpent-river: finite serpents (head + tapering tail, gaps); per-channel prismatic body dispersion.
+  - cyber-terminal: 3x5 segment glyph font; white-hot flickering leader. (Trail flipped so the bright end leads.)
+  - chromatic-oracle-jelly: pulse-swim contraction + thrust/coast surge; pupils track pointer + seeded blinks.
+  - emergent-calligraphic-weave: over/under weave occlusion at crossings; dry-brush starvation into bristle streaks.
+  - hyperbolic-tree: terminal leaf discs; rotating ideal-polygon Poincaré geodesics. (Floor: fork was per-pixel hash noise → speckle; now half-plane descent.)
+  - protocell-division: cleavage furrow; mitotic nuclei leading the membrane. (Floor: pow(negative) NaN off-cell; C sampled at centred coords.)
+  - ferrofluid-monolith: Rosensweig cone lattice; chrome reflects the core beam past the caps.
+- Floor: exact C loads (tree, protocell); params byte-exact (asserted); JSON +upgraded-rgba (+ truthful mouse/audio/temporal tags on tree/protocell).
+- Gates: precommit 8/8, extraBuffer, dead sliders (6 scanned + tree/protocell by hand), catalogs 1383 unique, build; Jest 5 suites/6 tests fail identically on clean main.
+- Follow-up: 20 more `pow(1.0 - abs(` sites library-wide may have the same negative-base NaN. Filed **#1299** (silent plasmaBuffer) and **#1300** (pow NaN audit).
+- Notes: agents/swarm-outputs/claude-2026-09-21-generative-eight/. Not committed. Real-GPU QA external (protocell + hyperbolic-tree first — biggest visual change).
+
+## 2026-09-21 — interactive-mouse eight (8 shaders)
+
+- IDs: mouse-magnetic-pixel-sand, magnetic-rgb, mouse-julia-morph, cross-stitch, foil-impression,
+  interactive-voronoi-web, mouse-polarized-light-field, poly-art.
+- Per shader, the ideas actually added:
+  - mouse-magnetic-pixel-sand: field-line chaining (grains link into short chains); bass field pulse;
+    settling residue via new C/A feedback (raw sim, first reader/writer of C in this file).
+  - magnetic-rgb: named the pre-existing iron-filing field-line filaments; bass field surge; semantic
+    alpha from R/G/B channel-UV divergence (was hardcoded 1.0).
+  - mouse-julia-morph: orbit-trap filament glow (new trap-tracking iteration on the base view only);
+    bass-driven zoom breathing.
+  - cross-stitch: half-stitch/full-stitch luma shading (real embroidery technique); satin thread sheen;
+    subtle bass weave-tension pulse.
+  - foil-impression: anisotropic brushed-metal streaks follow the image-relief tangent under press;
+    crinkle micro-fold shimmer gated at the press boundary.
+  - interactive-voronoi-web: named the pre-existing living-neural-web (racing pulses, firing synapses);
+    bass-synchronized firing burst layered on top.
+  - mouse-polarized-light-field: chromatic fringe dispersion (per-channel fringe density, true rainbow
+    edges, not just hue); treble-driven fringe shimmer (file had zero audio use before).
+  - poly-art: finished the facet edges the file had abandoned as dead code (2nd-closest-point border
+    distance); per-facet flat-shading with a bass pulse. Bug fix: file had **no bounds guard** at all.
+- Floor: all 8 now write dataTextureA (none did before) — 7 display-RGBA passthrough, one (magnetic
+  pixel sand) genuine raw-sim feedback with a documented C read. Params byte-exact; JSON features only
+  +audio-reactive/+upgraded-rgba where the WGSL now actually does that.
+- Gates: naga-wasm 8/8, precommit gate 8/8 (bindgroup+workgroup; no CLI naga binary in this VM),
+  extraBuffer 0 new violations, dead-sliders 0 new, catalogs regenerated clean (1384 defs, 1384 unique
+  IDs), catalog-drift 105 (unchanged baseline). Jest/build **not run** — this VM has no node_modules
+  installed at all, so the JS toolchain wasn't available; noted rather than faked.
+- Notes: agents/swarm-outputs/claude-2026-09-21-mouse-interactive-eight/. Real-GPU QA external
+  (poly-art's finished edges + mouse-magnetic-pixel-sand's residue trail first — biggest visual change).

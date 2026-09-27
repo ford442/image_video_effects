@@ -56,5 +56,5 @@
   "updated": true,
   "id": "gen-protocell-division",
   "url": "shaders/gen-protocell-division.wgsl",
-  "features": []
+  "features": ["audio-reactive", "mouse-driven", "temporal-feedback", "semantic-alpha", "upgraded-rgba"]
 }

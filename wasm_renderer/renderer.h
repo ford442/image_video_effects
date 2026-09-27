@@ -516,8 +516,9 @@ private:
     std::unordered_map<std::string, ShaderPipeline> shaders_;
     std::string activeShaderId_;  // legacy single-shader mode
 
-    // Multi-slot state
-    static constexpr int MAX_SHADER_SLOTS = 3;
+    // Multi-slot state. Must equal maxPhysicalSlots in src/contracts/slot_limits.json
+    // (TS PHYSICAL_SLOT_LIMIT). Enforced by verify:device-policy.
+    static constexpr int MAX_SHADER_SLOTS = 6;
     ShaderSlot slots_[MAX_SHADER_SLOTS];
 
     // ═══════════════════════════════════════════════════════════════════════════

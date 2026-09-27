@@ -1,5 +1,10 @@
-// Liquid Oil — high-viscosity film with persistent thickness and specular flow.
-// Raw A ownership: R=film height, G=vertical response, B=shear, A=coverage.
+// ═══════════════════════════════════════════════════════════════════
+//  Liquid Oil — high-viscosity film with persistent thickness and specular flow.
+//  Category: liquid-effects
+//  Upgraded: 2026-09-21
+//  Ideas: displacement wake that refills slowly; shear-aligned film streaks
+//  A packing: raw — R=film height, G=vertical response, B=shear, A=coverage.
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -63,7 +68,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let held = select(0.22, 1.0, u.zoom_config.w > 0.5);
   let stir = exp(-mouseDist * mouseDist * 70.0) * held;
   let tangent = select(vec2<f32>(0.0), vec2<f32>(-mouseDelta.y, mouseDelta.x) / mouseDist, mouseDist > 0.001);
-  acceleration += stir * (0.006 + rippleStrength * 0.02);
+  // ── Idea 1: displacement wake ─────────────────────────────────────
+  // Dragging through thick oil does not lift it — it PARTS it: a trough at
+  // the core, a raised rim around it, and a channel that stays open behind
+  // the pointer because high viscosity resists the refill. HEAD pushed the
+  // film straight up. The solver has no restoring term, only capillary
+  // smoothing that viscosity already weakens, so the wake closes slowly on
+  // its own.
+  let wakeRim = (exp(-mouseDist * mouseDist * 18.0) - exp(-mouseDist * mouseDist * 70.0)) * held;
+  acceleration += (wakeRim * 0.55 - stir) * (0.006 + rippleStrength * 0.02);
   shear = mix(shear, dot(tangent, vec2<f32>(0.707, 0.707)) * stir, 0.06 + turbulence * 0.05);
 
   var clickEnergy = 0.0; let rippleCount = min(u32(u.config.y), 50u);
@@ -89,7 +102,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let fresnel = schlick(max(dot(normal, viewDir), 0.0), vec3<f32>(0.045));
   let halfDir = normalize(viewDir + normalize(vec3<f32>(-0.45, 0.55, 0.8)));
   let specular = pow(max(dot(normal, halfDir), 0.0), mix(26.0, 130.0, viscosity));
-  let filmPhase = height * (46.0 + colorShift * 92.0) + shear * 1.8 + time * 0.018;
+  // ── Idea 2: shear-aligned film streaks ────────────────────────────
+  // Oil drags into long strands along its flow. Film height is averaged
+  // along the contour direction (perpendicular to the height gradient)
+  // before it drives the interference phase, weighted by the shear the file
+  // already tracks, so the colour bands stretch into streaks.
+  let contour = vec2<f32>(hU - hD, hL - hR);
+  let streakDir = contour / max(length(contour), 1e-4);
+  let s1 = vec2<i32>(round(streakDir * 2.0));
+  let s2 = vec2<i32>(round(streakDir * 4.0));
+  let hA1 = textureLoad(dataTextureC, clampPixel(pixel + s1, dims), 0).r;
+  let hB1 = textureLoad(dataTextureC, clampPixel(pixel - s1, dims), 0).r;
+  let hA2 = textureLoad(dataTextureC, clampPixel(pixel + s2, dims), 0).r;
+  let hB2 = textureLoad(dataTextureC, clampPixel(pixel - s2, dims), 0).r;
+  let streakH = (height * 2.0 + hA1 + hB1 + hA2 + hB2) / 6.0;
+  let streakAmt = select(0.0, clamp(abs(shear) * 3.0 + 0.2, 0.0, 0.85), initialized);
+  let filmHeight = mix(height, streakH, streakAmt);
+  let filmPhase = filmHeight * (46.0 + colorShift * 92.0) + shear * 1.8 + time * 0.018;
   let interference = 0.5 + 0.5 * cos(TAU * (vec3<f32>(1.0, 1.17, 1.36) * filmPhase + vec3<f32>(0.0, 0.2, 0.43)));
   let absorption = exp(-height * vec3<f32>(0.65, 1.05, 1.8));
   let color = source.rgb * absorption + interference * fresnel * (0.24 + colorShift * 0.5 + mids * 0.14)

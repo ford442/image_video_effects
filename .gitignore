@@ -26,3 +26,6 @@ test-results/
 /patch*.diff
 /patch*.js
 /fix_eslint*.py
+
+# Rust build output for tools/naga_wasm (the wasm artifact is committed to public/wasm/)
+tools/naga_wasm/target/

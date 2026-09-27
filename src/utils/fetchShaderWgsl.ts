@@ -1,4 +1,5 @@
 import { STORAGE_API_URL } from '../config/appConfig';
+import { expandWgslIncludes, hasWgslInclude } from '../wasm/bridge/wgslInclude';
 import { resolveShaderUrl } from './resolveShaderUrl';
 
 export interface FetchShaderWgslOptions {
@@ -67,8 +68,29 @@ export async function fetchShaderWgsl(
     if (!candidate || seen.has(candidate)) continue;
     seen.add(candidate);
     const wgsl = await tryFetchWgsl(candidate);
-    if (wgsl) return wgsl;
+    if (wgsl) return expandIncludes(wgsl, id, candidate);
   }
 
   return null;
+}
+
+/**
+ * Expand `#include` before the source reaches ShaderCompilation, which receives
+ * a finished string and has no way to fetch a library.
+ *
+ * Libraries resolve as siblings of the file that included them, so a shader
+ * served from the CDN pulls its prelude from the CDN too rather than silently
+ * mixing sources. A file with no directive is returned untouched — all 1417 of
+ * them today.
+ */
+async function expandIncludes(wgsl: string, id: string, sourceUrl: string): Promise<string | null> {
+  if (!hasWgslInclude(wgsl)) return wgsl;
+
+  const baseUrl = sourceUrl.slice(0, sourceUrl.lastIndexOf('/') + 1);
+  try {
+    return await expandWgslIncludes(wgsl, (name) => tryFetchWgsl(`${baseUrl}${name}`), `${id}.wgsl`);
+  } catch (err) {
+    console.error(`[fetchShaderWgsl] ${id}: ${(err as Error).message}`);
+    return null;
+  }
 }

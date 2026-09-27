@@ -1,5 +1,10 @@
-// Luma Velocity Melt — exact-load HDR display-history advection.
-// A owns untonemapped RGB and semantic alpha; B is intentionally unwritten.
+// ═══════════════════════════════════════════════════════════════════
+//  Luma Velocity Melt — exact-load HDR display-history advection.
+//  Category: liquid-effects
+//  Upgraded: 2026-09-21
+//  Ideas: drip pinch-off into beaded columns; depth-ledge pooling
+//  A packing: untonemapped HDR RGB + semantic alpha; B intentionally unwritten.
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -44,6 +49,32 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let nY = noise2(uv.yx * vec2<f32>(11.0, 7.0) + vec2<f32>(4.2, time * 0.1));
   var flow = vec2<f32>((nX - 0.5) * meltSpeed * (1.8 + mids), meltSpeed * hot * (1.0 + (1.0 - depth) * 0.5));
 
+  // ── Idea 1: drip pinch-off ────────────────────────────────────────
+  // Melting material does not slide as a sheet: it necks into columns and
+  // beads into drops. Each ~7px column gets its own bead phase travelling
+  // down it; the vertical flow slows at the beads (so content piles into
+  // them) and speeds through the necks, while a lateral pull toward the
+  // column centre narrows the stream. Only where the source is hot.
+  let dripW = 7.0 / res.x;
+  let dripCol = floor(uv.x / dripW);
+  let colSeed = hash21(vec2<f32>(dripCol, 3.17));
+  let colLocal = fract(uv.x / dripW) - 0.5;
+  let beadPhase = uv.y * (7.0 + colSeed * 5.0) - time * (0.25 + meltSpeed * 30.0) - colSeed;
+  let bead = 0.5 + 0.5 * cos(beadPhase * 6.2831853);
+  let pinch = clamp(hot, 0.0, 1.0);
+  flow.y *= mix(1.0, 0.3 + 1.4 * bead, pinch * 0.8);
+  flow.x -= colLocal * dripW * pinch * (0.15 + meltSpeed * 12.0);
+
+  // ── Idea 2: depth-ledge pooling ───────────────────────────────────
+  // The melt already reads scene depth. Where depth steps sharply directly
+  // below this pixel there is a ledge in the scene: the drip stops there,
+  // pools, and spills a little sideways along the edge — wax running down
+  // a real 3-D surface instead of down a flat photograph.
+  let depthBelow = textureLoad(readDepthTexture, clamp(pixel + vec2<i32>(0, 1), vec2<i32>(0), dims - vec2<i32>(1)), 0).r;
+  let ledge = smoothstep(0.02, 0.12, abs(depthBelow - depth)) * pinch;
+  flow.y *= 1.0 - ledge * 0.85;
+  flow.x += (nY - 0.5) * ledge * meltSpeed * 3.0;
+
   let mouseDelta = (uv - u.zoom_config.yz) * aspectVec; let mouseDist = length(mouseDelta);
   let mouseMask = exp(-mouseDist * mouseDist * 75.0); let held = select(0.16, 1.0, u.zoom_config.w > 0.5);
   let tangent = select(vec2<f32>(0.0), vec2<f32>(-mouseDelta.y, mouseDelta.x) / mouseDist, mouseDist > 0.001);
@@ -64,7 +95,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let sourceR = textureSampleLevel(readTexture, u_sampler, clamp(uv + chroma, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0);
   let sourceB = textureSampleLevel(readTexture, u_sampler, clamp(uv - chroma, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0);
   let injected = vec4<f32>(sourceR.r, source.g, sourceB.b, max(source.a, max(sourceR.a, sourceB.a)));
-  let historyWeight = persistence * history.a * smoothstep(0.001, 0.02, length(flow));
+  // HEAD only held history where the flow was fast. Beads and ledges are
+  // exactly where the flow is slowed on purpose, so they hold history too —
+  // that is what makes material pile into drops and pool on the edge.
+  let pileHold = max(ledge * 0.9, pinch * bead * 0.6);
+  let historyWeight = clamp(persistence * history.a * max(smoothstep(0.001, 0.02, length(flow)), pileHold), 0.0, 0.999);
   var hdr = mix(injected.rgb, history.rgb * (0.992 + bass * 0.004), historyWeight);
   hdr += vec3<f32>(1.0, 0.24, 0.04) * hot * heat * 0.045 + vec3<f32>(0.18, 0.4, 1.0) * clickEnergy * mids * 0.08;
   let alpha = clamp(max(injected.a, history.a * persistence) + hot * 0.04 + clickEnergy * 0.05, 0.0, 1.0);

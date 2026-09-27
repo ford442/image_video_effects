@@ -49,44 +49,6 @@
       "step": 0.01
     }
   ],
-  "params": [
-    {
-      "id": "spiral_tightness",
-      "name": "Spiral Tightness",
-      "mapping": "zoom_params.x",
-      "default": 0.5,
-      "min": 0.1,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "id": "plasma_bloom",
-      "name": "Plasma Bloom",
-      "mapping": "zoom_params.y",
-      "default": 1.5,
-      "min": 0,
-      "max": 5,
-      "step": 0.1
-    },
-    {
-      "id": "glass_refraction",
-      "name": "Glass Refraction",
-      "mapping": "zoom_params.z",
-      "default": 1.33,
-      "min": 1,
-      "max": 2.5,
-      "step": 0.01
-    },
-    {
-      "id": "audio_reactivity",
-      "name": "Audio Reactivity",
-      "mapping": "zoom_params.w",
-      "default": 0.8,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
-  ],
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
@@ -95,9 +57,47 @@
   "features": [
     "audio-reactive",
     "mouse-driven",
+    "upgraded-rgba",
     "generated-depth",
     "semantic-alpha",
-    "aces-tone-map",
-    "upgraded-rgba"
+    "aces-tone-map"
+  ],
+  "params": [
+    {
+      "id": "spiral_tightness",
+      "name": "Spiral Tightness",
+      "default": 0.5,
+      "min": 0.1,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "plasma_bloom",
+      "name": "Plasma Bloom",
+      "default": 1.5,
+      "min": 0,
+      "max": 5,
+      "step": 0.1,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "glass_refraction",
+      "name": "Glass Refraction",
+      "default": 1.33,
+      "min": 1,
+      "max": 2.5,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "audio_reactivity",
+      "name": "Audio Reactivity",
+      "default": 0.8,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
   ]
 }

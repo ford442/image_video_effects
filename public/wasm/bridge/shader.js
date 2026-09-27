@@ -2,6 +2,7 @@
 
 import { state, utf8ByteLength, wasmRef } from "./state.js";
 import { rewriteWgslStorageFormats } from "./wgslFormat.js";
+import { expandWgslIncludes, hasWgslInclude } from "./wgslInclude.js";
 function writeUtf8(id) {
   const module = wasmRef.module;
   if (!module) return null;
@@ -10,11 +11,47 @@ function writeUtf8(id) {
   module.stringToUTF8(id, ptr, len);
   return { ptr, free: () => module._free(ptr) };
 }
+async function fetchAndExpand(id, url) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
+  }
+  const wgslCode = await response.text();
+  if (!hasWgslInclude(wgslCode)) return wgslCode;
+  const baseUrl = url.slice(0, url.lastIndexOf("/") + 1);
+  return expandWgslIncludes(
+    wgslCode,
+    async (name) => {
+      const res = await fetch(`${baseUrl}${name}`);
+      return res.ok ? res.text() : null;
+    },
+    `${id}.wgsl`
+  );
+}
+function declaresBindGroup1(wgslCode) {
+  const stripped = wgslCode.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+  return /@group\(\s*1\s*\)/.test(stripped);
+}
+function refuseBindGroup1(id, op) {
+  const message = `Shader ${id} declares @group(1) (sim ring) \u2014 WASM backend is group-0 only (feature freeze); skipped. Use the WebGPU (TS) renderer for sim-ring shaders.`;
+  console.warn(`[WASM] ${op}: ${message}`);
+  state.lastLoadError = message;
+  state.loadErrorCount++;
+  return false;
+}
 function loadShader(id, wgslCode) {
   if (!state.initialized || !wasmRef.module) {
     console.error("[WASM] Renderer not initialized");
     return false;
   }
+  if (hasWgslInclude(wgslCode)) {
+    const message = `Shader ${id} still contains an unexpanded #include \u2014 expand before loadShader()`;
+    console.error(`[WASM] ${message}`);
+    state.lastLoadError = message;
+    state.loadErrorCount++;
+    return false;
+  }
+  if (declaresBindGroup1(wgslCode)) return refuseBindGroup1(id, "loadShader");
   const rewritten = rewriteWgslStorageFormats(wgslCode, state.colorFormat);
   const idBuf = writeUtf8(id);
   const codeBuf = writeUtf8(rewritten);
@@ -39,6 +76,14 @@ function reloadShader(id, wgslCode) {
     console.error("[WASM] Renderer not initialized");
     return false;
   }
+  if (hasWgslInclude(wgslCode)) {
+    const message = `Shader ${id} still contains an unexpanded #include \u2014 expand before reloadShader()`;
+    console.error(`[WASM] ${message}`);
+    state.lastLoadError = message;
+    state.loadErrorCount++;
+    return false;
+  }
+  if (declaresBindGroup1(wgslCode)) return refuseBindGroup1(id, "reloadShader");
   const rewritten = rewriteWgslStorageFormats(wgslCode, state.colorFormat);
   const idBuf = writeUtf8(id);
   const codeBuf = writeUtf8(rewritten);
@@ -59,12 +104,7 @@ function reloadShader(id, wgslCode) {
 }
 async function loadShaderFromURL(id, url) {
   try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
-    }
-    const wgslCode = await response.text();
-    return loadShader(id, wgslCode);
+    return loadShader(id, await fetchAndExpand(id, url));
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[WASM] Failed to fetch shader from ${url}:`, err);
@@ -75,12 +115,7 @@ async function loadShaderFromURL(id, url) {
 }
 async function reloadShaderFromURL(id, url) {
   try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
-    }
-    const wgslCode = await response.text();
-    return reloadShader(id, wgslCode);
+    return reloadShader(id, await fetchAndExpand(id, url));
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[WASM] Failed to fetch shader for reload from ${url}:`, err);
@@ -99,8 +134,21 @@ function setActiveShader(id) {
   }
 }
 function setSlotShader(slotIndex, shaderId) {
-  if (!state.initialized || !wasmRef.module) return;
-  wasmRef.module.ccall("setSlotShader", "number", ["number", "string"], [slotIndex, shaderId]);
+  if (!state.initialized || !wasmRef.module) return false;
+  wasmRef.module.ccall("setSlotShader", null, ["number", "string"], [slotIndex, shaderId]);
+  const accepted = !shaderId || getSlotShaderId(slotIndex) === shaderId;
+  if (accepted) {
+    state.droppedSlots.delete(slotIndex);
+  } else {
+    state.droppedSlots.add(slotIndex);
+    console.warn(
+      `[WASM] setSlotShader(${slotIndex}, "${shaderId}") dropped by the module (no valid pipeline, or the artifact has fewer slots than slot_limits.json)`
+    );
+  }
+  return accepted;
+}
+function getDroppedSlots() {
+  return state.droppedSlots;
 }
 function setSlotMode(slotIndex, mode) {
   if (!state.initialized || !wasmRef.module) return;
@@ -129,6 +177,7 @@ function getSlotState(slotIndex) {
   };
 }
 export {
+  getDroppedSlots,
   getSlotEnabled,
   getSlotMode,
   getSlotShaderId,

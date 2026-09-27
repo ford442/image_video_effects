@@ -1,6 +1,9 @@
 // Fluid Feedback Coupled — Codex (e) velocity/pressure/dye feedback solver.
 // A/C packing: velocity.xy, pressure, density.
 // B and extraBuffer are intentionally unused; C loads are exact and bounded.
+// Upgraded: 2026-09-21
+// Ideas: buoyant dye (Boussinesq sinking plumes / Rayleigh-Taylor fingers); schlieren display of
+//        the stored-but-never-shown pressure field (refraction + knife-edge shading)
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -126,13 +129,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
 
+  // Idea 1 — buoyant dye. Dye is denser than the fluid it is stirred into, so it gets a
+  // downward (Boussinesq) force relative to the ambient background density
+  // (0.002 / (1 - fade) ≈ 0.05). Heavy blobs sink into plumes that curl over at their
+  // fronts. Bounded by the velocity clamp below.
+  let ambient = 0.002 / max(1.0 - fade, 0.002);
+  velocity.y += max(density - ambient * 1.2, 0.0) * 0.0003;
   velocity = clamp(velocity, vec2<f32>(-0.075), vec2<f32>(0.075));
   density = clamp(density * fade + 0.002 * (1.0 + audio.y), 0.0, 1.6);
   textureStore(dataTextureA, coord,
     vec4<f32>(velocity, pressure, density));
 
-  let sourceUV = clamp(uv + velocity * (1.2 + turbulence),
+  // Idea 2 — schlieren. Pressure (A.z) has been solved and stored every frame but never
+  // shown. Its gradient bends the photo like a density gradient bends light, and a knife-edge
+  // shading term makes pressure waves from stirs and click fronts visible.
+  let gradP = vec2<f32>(right.z - left.z, bottom.z - top.z) * 0.5;
+  let sourceUV = clamp(uv + velocity * (1.2 + turbulence) + gradP * 0.08,
     vec2<f32>(0.0), vec2<f32>(1.0));
+  let knifeEdge = clamp(dot(gradP, vec2<f32>(0.7071, -0.7071)) * 2.5, -0.35, 0.35);
   let source = textureSampleLevel(readTexture, u_sampler, sourceUV, 0.0);
   let phase = atan2(velocity.y, velocity.x) * 0.15915494 +
     density * 0.19 + time * 0.045;
@@ -141,6 +155,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var rgb = mix(source.rgb, tint * (0.25 + density),
     clamp(density * 0.42, 0.0, 0.82));
   rgb += tint * glow * (speed * 2.2 + abs(curl) * 0.35 + clickFront * 0.08);
+  rgb *= 1.0 + knifeEdge;
   let alpha = clamp(source.a * 0.68 + density * 0.24 +
     speed * 1.1 + stir * 0.06, 0.0, 1.0);
   textureStore(writeTexture, coord, vec4<f32>(aces(rgb), alpha));

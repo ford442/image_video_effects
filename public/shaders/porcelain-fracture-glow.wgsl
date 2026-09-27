@@ -8,6 +8,10 @@
 //  By: Grok (new image/video effect — fine porcelain that develops glowing luminous cracks following image structure, audio makes the light sing)
 //  Upgraded: 2026-08-02 — click fracture impacts (drop-the-plate crack bursts with slow heal + vein flash),
 //            critically-damped sprung crack focus, per-band FFT vein song
+//  Upgraded: 2026-09-21
+//  Ideas: crack memory (held/click cracks persist in C.b and ripen from an open dark gap into a
+//         gold kintsugi seam); tea-stained glaze crazing whose spread follows Patina Age
+//  A packing: R totalCrack, G leak, B drawn-crack memory (was a copy of the Light slider), A alpha
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -53,6 +57,22 @@ fn fbm(p: vec2<f32>, oct: i32) -> f32 {
     return v;
 }
 
+// Cellular edge distance for the glaze craquelure: F2 - F1 of a jittered grid.
+fn crazeEdge(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    var d1 = 8.0;
+    var d2 = 8.0;
+    for (var y = -1; y <= 1; y = y + 1) {
+        for (var x = -1; x <= 1; x = x + 1) {
+            let n = vec2<f32>(f32(x), f32(y));
+            let o = vec2<f32>(hash21(i + n), hash21(i + n + 31.7)) * 0.9 + 0.05;
+            let d = length(n + o - f);
+            if (d < d1) { d2 = d1; d1 = d; } else if (d < d2) { d2 = d; }
+        }
+    }
+    return d2 - d1;
+}
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let res = u.config.zw;
@@ -133,6 +153,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     let totalCrack = clamp(crack + mouseCrack * 0.7 + impactCrack, 0.0, 1.0);
+    // Idea 1 — crack memory. HEAD's drawn and dropped cracks vanished the moment the button came up
+    // or the impact aged out. They now persist in C.b and heal slowly (~20 s), ripening on the way
+    // from an open dark gap into a gold kintsugi seam before they fade.
+    let prevMemory = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).b;
+    let freshCrack = clamp(mouseCrack * 0.7 + impactCrack * 1.4, 0.0, 1.0);
+    let crackMemory = max(freshCrack, prevMemory - 0.0008);
+    let ripeness = smoothstep(0.92, 0.45, crackMemory);
 
     // Luminous kintsugi-style veins (impact flash briefly overcharges the gold)
     let vein = pow(totalCrack, 1.4) * glowAmt + impactFlash * 0.6;
@@ -141,6 +168,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Porcelain base (slightly cool, glossy)
     let porcelain = mix(input.rgb, vec3<f32>(0.92, 0.9, 0.88), 0.35);
     var col = mix(porcelain, input.rgb, 0.7 - totalCrack * 0.4);
+    // Idea 2 — stained crazing. Old glaze crazes into a fine craquelure and dirt (tea, oil) settles
+    // into the lines, taking out blue first so they read brown. Patina Age spreads it across the
+    // plate through a low-frequency mask, so a young plate crazes only in patches.
+    let crazeP = uv * vec2<f32>(aspect, 1.0) * 34.0 + vec2<f32>(fbm(uv * 6.0, 2), fbm(uv * 6.0 + 4.3, 2)) * 1.2;
+    let crazeLine = 1.0 - smoothstep(0.0, 0.06, crazeEdge(crazeP));
+    let crazeSpread = smoothstep(0.25, 0.65, age * (0.55 + fbm(uv * 2.5 + 7.0, 3) * 0.9));
+    col *= 1.0 - crazeLine * crazeSpread * vec3<f32>(0.16, 0.24, 0.36);
+    // Idea 1 (display): fresh memory is an open dark gap; ripened memory is a gold seam.
+    let gapMask = smoothstep(0.05, 0.3, crackMemory);
+    col = mix(col, col * 0.18, gapMask * (1.0 - ripeness) * 0.8);
+    let gold = vec3<f32>(1.0, 0.74, 0.3) * (0.85 + 0.3 * valueNoise(uv * 90.0));
+    col = mix(col, gold, gapMask * ripeness * 0.9);
 
     // ── Per-band FFT vein song: 8 vertical bands each sing their own note ──
     let band = min(u32(floor(uv.x * 8.0)), 7u);
@@ -158,7 +197,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col = mix(col, col * vec3<f32>(0.75, 0.82, 0.78), patina);
 
     // Semantic alpha — cracks glow with light
-    let semantic_alpha = clamp(0.62 + leak * 0.7 + vein * 0.35, 0.5, 1.0);
+    let semantic_alpha = clamp(0.62 + leak * 0.7 + vein * 0.35 + gapMask * 0.3, 0.5, 1.0);
 
     // Hue-preserving HDR ceiling keeps simultaneous crack voices bounded while
     // dataTextureA retains the un-tonemapped diagnostic field values.
@@ -170,6 +209,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let d = clamp(0.22 + vein * 0.6, 0.0, 0.95);
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
 
-    // FIELD data (NOT display color): totalCrack, leak, lightTemp, semantic_alpha
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(totalCrack, leak, lightTemp, semantic_alpha));
+    // FIELD data (NOT display color): totalCrack, leak, crack memory, semantic_alpha
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(totalCrack, leak, crackMemory, semantic_alpha));
 }

@@ -4,7 +4,10 @@
 //  Features: atmospheric, mirage-refraction, thermal-source, audio-reactive,
 //            upgraded-rgba, thermal-filaments, held-drag, bounded-click-ripples
 //  Complexity: High
-//  Upgraded: 2026-08-23
+//  Upgraded: 2026-08-23, 2026-09-21
+//  Ideas: inferior mirage below a hot ground line; boundary-layer haze boost at the ground;
+//         held pointer lays a local mirage pool
+//  A packing: display RGBA (C blended back at 22%)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -59,6 +62,14 @@ fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
     return hsv.z * mix(k.xxx, clamp(p - k.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), hsv.y);
 }
 
+// Inferior mirage: below a hot line, air bends light from above back up, so the eye sees
+// the scene reflected (flipped, squashed) about the line and broken by the shimmer.
+fn mirageSample(uv: vec2<f32>, lineY: f32, warp: vec2<f32>) -> vec3<f32> {
+    let below = uv.y - lineY;
+    let reflUV = vec2<f32>(uv.x, lineY - below * 1.6) + warp * 2.5;
+    return textureSampleLevel(readTexture, u_sampler, clamp(reflUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = vec2<i32>(global_id.xy);
@@ -94,7 +105,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let grad_x = fbm(uv + vec2<f32>(texel.x, 0.0) * 3.0) - fbm(uv - vec2<f32>(texel.x, 0.0) * 3.0);
     let grad_y = fbm(uv + vec2<f32>(0.0, texel.y) * 3.0) - fbm(uv - vec2<f32>(0.0, texel.y) * 3.0);
     let curl = vec2<f32>(-grad_y, grad_x) * 0.025 * intensity;
-    let warp = haze + curl + vec2<f32>(0.0, sin((uv.x + time) * 6.28318) * 0.0025 * intensity);
+    // Idea 2 — boundary layer. Hot air is thickest at the surface, so shimmer is boosted
+    // near the ground line and decays with height; at the top of frame it is HEAD's.
+    let groundY = 0.78;
+    let boundary = 1.0 + 1.1 * exp(-abs(uv.y - groundY) / 0.15);
+    let warp = (haze + curl + vec2<f32>(0.0, sin((uv.x + time) * 6.28318) * 0.0025 * intensity)) * boundary;
     let dispersion = warp * (0.6 + chroma) * 0.5;
 
     let sampleR = clamp(uv + warp + dispersion, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -105,6 +120,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         textureSampleLevel(readTexture, u_sampler, sampleG, 0.0).g,
         textureSampleLevel(readTexture, u_sampler, sampleB, 0.0).b * exp(-0.6 * length(dispersion) * 2.0)
     );
+
+    // Idea 1 — inferior mirage below the ground line: a reflection strongest just under the
+    // line, fading downward, broken into pools by the same turbulence that drives the haze.
+    let belowGround = uv.y - groundY;
+    let pools = smoothstep(0.38, 0.62, n2 + (n1 - 0.5) * 0.6);
+    let mirage = smoothstep(0.0, 0.012, belowGround) * exp(-max(belowGround, 0.0) / 0.13) * intensity * pools;
+    // Idea 3 — a held pointer lays a hot patch: a local mirage pool just under the cursor.
+    let patchLine = mouse.y + 0.035;
+    let patchBelow = uv.y - patchLine;
+    let patchX = (uv.x - mouse.x) * aspect;
+    let hotPatch = held * smoothstep(0.0, 0.01, patchBelow) * exp(-max(patchBelow, 0.0) / 0.06)
+        * exp(-patchX * patchX * 30.0) * (0.4 + 0.6 * pools);
+    if (mirage > 0.001) {
+        color = mix(color, mirageSample(uv, groundY, warp) * 1.08, clamp(mirage, 0.0, 0.85));
+    }
+    if (hotPatch > 0.001) {
+        color = mix(color, mirageSample(uv, patchLine, warp) * 1.1, clamp(hotPatch * 0.9, 0.0, 0.9));
+    }
 
     let filaments = smoothstep(0.08, 0.0, abs(fract(uv.x * 18.0 + n1 * 2.0 - time * (1.4 + rise * 2.0)) - 0.5));
     let packets = smoothstep(0.08, 0.0, abs(fract((1.0 - uv.y) * 10.0 - time * (2.1 + bass * 1.8) + n2) - 0.5));
@@ -126,7 +159,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let warp_mag = clamp(length(warp) * 20.0, 0.0, 1.0);
     let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(0.4 + warp_mag * 0.35 + shimmer * 0.5 + thermalCol * 0.2 + luma * 0.1 + mids * 0.1, 0.0, 1.0);
+    let alpha = clamp(0.4 + warp_mag * 0.35 + shimmer * 0.5 + thermalCol * 0.2 + luma * 0.1 + mids * 0.1 + (mirage + hotPatch) * 0.2, 0.0, 1.0);
     let outCol = vec4<f32>(mix(color, prev.rgb * 0.88, 0.22), mix(alpha, prev.a * 0.88, 0.22));
     let depth = textureLoad(readDepthTexture, pixel, 0).r;
     textureStore(writeTexture, pixel, outCol);

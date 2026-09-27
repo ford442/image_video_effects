@@ -1,7 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 //  gen-cyber-terminal.wgsl - Retro Terminal & Digital Rain
 //  
-//  Upgraded: 2026-08-21 (Batch 42)
+//  Category: generative
+//  Features: audio-reactive, upgraded-rgba
+//  Upgraded: 2026-09-21 (was 2026-08-21, Batch 42)
+//  Ideas: 3x5 segment glyph font; white-hot flickering leader at each drop head
+//  A packing: raw HDR display RGBA history (C read back as the same)
 //  Techniques:
 //    - Falling digital rain (Matrix-style)
 //    - Audio-reactive data stream speed and brightness
@@ -34,6 +38,31 @@ fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
     p3 += dot(p3, p3.yzx + 33.33);
     return fract((p3.x + p3.y) * p3.z);
+}
+
+fn sdSegment(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
+    let pa = p - a;
+    let ba = b - a;
+    let h = clamp(dot(pa, ba) / max(dot(ba, ba), 0.0001), 0.0, 1.0);
+    return length(pa - ba * h);
+}
+
+// Idea 1 — segment glyph font: a random subset of nine strokes on a 3x5 skeleton
+// (7-segment frame + centre stem + one diagonal) so each cell reads as a character.
+fn segmentGlyph(cellUV: vec2<f32>, bits: f32, halfWidth: f32) -> f32 {
+    let mask = u32(bits * 511.0) | (1u << (u32(bits * 97.0) % 9u));
+    let l = -0.26; let r = 0.26; let t = -0.38; let m = 0.0; let b = 0.38;
+    var d = 10.0;
+    if ((mask & 1u) != 0u) { d = min(d, sdSegment(cellUV, vec2<f32>(l, t), vec2<f32>(r, t))); }
+    if ((mask & 2u) != 0u) { d = min(d, sdSegment(cellUV, vec2<f32>(l, m), vec2<f32>(r, m))); }
+    if ((mask & 4u) != 0u) { d = min(d, sdSegment(cellUV, vec2<f32>(l, b), vec2<f32>(r, b))); }
+    if ((mask & 8u) != 0u) { d = min(d, sdSegment(cellUV, vec2<f32>(l, t), vec2<f32>(l, m))); }
+    if ((mask & 16u) != 0u) { d = min(d, sdSegment(cellUV, vec2<f32>(l, m), vec2<f32>(l, b))); }
+    if ((mask & 32u) != 0u) { d = min(d, sdSegment(cellUV, vec2<f32>(r, t), vec2<f32>(r, m))); }
+    if ((mask & 64u) != 0u) { d = min(d, sdSegment(cellUV, vec2<f32>(r, m), vec2<f32>(r, b))); }
+    if ((mask & 128u) != 0u) { d = min(d, sdSegment(cellUV, vec2<f32>(0.0, t), vec2<f32>(0.0, b))); }
+    if ((mask & 256u) != 0u) { d = min(d, sdSegment(cellUV, vec2<f32>(r, t), vec2<f32>(l, b))); }
+    return 1.0 - smoothstep(halfWidth, halfWidth + 0.035, d);
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -75,16 +104,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         
         let speed = 2.0 + hash12(vec2<f32>(gridUV.x, 0.0)) * 5.0 + bass * 5.0;
         let dropPos = fract(time * speed + hash12(vec2<f32>(gridUV.x, 1.0)));
-        let trail = fract(uv.y - dropPos);
+        // Head at dropPos, tail trailing up the column (HEAD had the bright end trailing behind the motion).
+        let trail = fract(dropPos - uv.y);
         
+        // Idea 2 — white-hot leader: the cell at the drop head burns near-white and re-rolls its glyph every frame.
+        let leader = 1.0 - smoothstep(0.6 / rows, 1.6 / rows, trail);
         let dataBit = hash12(gridUV + floor(time * (7.0 + treble * 8.0)));
+        let leaderBit = hash12(gridUV + floor(time * 30.0) * 1.37 + 17.0);
+        let bit = mix(dataBit, leaderBit, step(0.5, leader));
         let strokeWidth = mix(0.22, 0.055, glyphSharpness);
-        let vertical = 1.0 - smoothstep(strokeWidth, strokeWidth + 0.035, abs(cellUV.x + (dataBit - 0.5) * 0.24));
-        let horizontal = 1.0 - smoothstep(strokeWidth, strokeWidth + 0.035, abs(cellUV.y - (fract(dataBit * 7.0) - 0.5) * 0.35));
-        let glyph = max(vertical * step(abs(cellUV.y), 0.42), horizontal * step(abs(cellUV.x), 0.38));
+        let glyph = segmentGlyph(cellUV, bit, strokeWidth * 0.5);
         let intensity = (1.0 - trail) * step(trail, 0.34) * glyph;
         let phosphor = mix(vec3<f32>(0.03, 0.72, 0.16), vec3<f32>(0.12, 1.0, 0.68), mids);
-        col = phosphor * intensity * characterBrightness * (1.0 + bass * 2.0 + treble * dataBit);
+        col = phosphor * intensity * characterBrightness * (1.0 + bass * 2.0 + treble * bit);
+        col += vec3<f32>(0.78, 1.0, 0.86) * glyph * leader * characterBrightness * 1.6;
         
         // Scanlines
         let scan = 0.78 + 0.22 * sin(uvFull.y * resolution.y * 3.14159);
