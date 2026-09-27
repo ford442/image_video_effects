@@ -1,6 +1,14 @@
 # Shader Upgrade Manifest
 
-> **Historical (2026-04-12).** Sixteen-shader initiative. **LIVE upgrade law:** [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md).
+> **Upgrade law (live):** [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md)
+> An upgrade **adds 2–4 named, effect-native visual ideas** to the existing picture.
+> Bindings / ACES / alpha / sliders / `updatedParams` / naga / springs-for-completeness
+> are the **floor**, not the upgrade. Size tiers and science lists below only decide
+> *which ideas to add* and *in what order*. They are not a completeness checklist.
+> Hygiene-only = not upgraded. Rewrite-as-new-motif = not upgraded (that is a new shader).
+
+> **Historical (2026-04-12).** Sixteen-shader initiative. Its "lines added" / "libraries created"
+> metrics are a record of that batch, not a definition of upgraded.
 
 ## WebGPU Compute Shader Enhancement Initiative
 

@@ -1,5 +1,8 @@
 # Effect Shader Upgrade Swarm Analysis
 
+> Historical / plumbing. Creative upgrade law is `docs/SHADER_UPGRADE_BATCH.md`.
+> ACES-only or binding-alignment batches are hygiene, not upgrades.
+>
 > **Historical (2026-04-12).** Line-count expansion of eight effect shaders. **Not** the live law.
 > **LIVE:** [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md).
 

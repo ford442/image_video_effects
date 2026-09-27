@@ -1,6 +1,7 @@
 # Generative Shader Upgrade Manifest
 
 > **Historical (2026-04-12).** **LIVE:** [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md).
+> Line-count expansion is recorded here as history; under the live law it is not what makes a shader upgraded.
 
 **Project**: Image Video Effects - Generative Shader Upgrade Swarm  
 **Date**: 2026-04-12  

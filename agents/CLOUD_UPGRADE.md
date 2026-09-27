@@ -1,5 +1,8 @@
 # Cloud Upgrade Guide — Pixelocity Shader Upgrades
 
+> Plumbing (live floor snippets; older examples historical). Creative upgrade law is `docs/SHADER_UPGRADE_BATCH.md`.
+> ACES-only or binding-alignment batches are hygiene, not upgrades.
+>
 > **For:** Copilot, Claude, Gemini, Kimi, Antigravity, Grok, and any other AI agent working on Pixelocity WGSL shaders.  
 > **Scope:** Upgrading existing WGSL compute shaders.  
 > **Live batch contract:** [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md) — incremental ideas, not rewrites, not hygiene-only. **Read that first.**  
@@ -61,6 +64,10 @@ struct Uniforms {
 >
 > Full contract, Idea Card template, anti-patterns, batch size vs model, and
 > library timeframe: [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md).
+> **That file owns the creative law.** This guide owns the floor snippets. ACES,
+> the 13-binding header, semantic alpha, and springs/ripples are floor or opt-in
+> tools — never the upgrade. If this section and the live contract disagree, the
+> live contract wins.
 
 **Before any WGSL edit**, write an Idea Card for the target (identity, keep-verbatim, 2–4 native additions, packing). Implement those additions in the existing main path. Then apply the floor.
 

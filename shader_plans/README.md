@@ -1,5 +1,11 @@
 # Shader Plan Queue System
 
+> This folder's dated `YYYY-MM-DD_name.md` files are **new shader** briefs.
+> Upgrading an existing catalog effect is a different job: add 2–4 native ideas
+> to that file. Live contract: [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md).
+> Category `*_upgrades.md` files in this folder are idea scouts for existing
+> effects, not a completeness standard and not this new-shader FIFO queue.
+
 Dated shader plan files to track pending, in-progress, and completed shader implementations.
 
 ## File Naming Convention

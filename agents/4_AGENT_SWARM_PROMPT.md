@@ -1,5 +1,8 @@
 # 4-Agent Shader Upgrade Swarm - Prompt Package
 
+> Historical / plumbing. Creative upgrade law is `docs/SHADER_UPGRADE_BATCH.md`.
+> ACES-only or binding-alignment batches are hygiene, not upgrades.
+>
 > **Historical role split.** Do **not** “transform into a masterpiece” or replace the algorithm.
 > **LIVE:** [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md). Role toolkits: `agents/prompt-templates/`.
 

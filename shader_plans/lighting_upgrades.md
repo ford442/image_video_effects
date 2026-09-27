@@ -1,8 +1,23 @@
 # Lighting, Plasma & Glow Shader Upgrade Plan
 
+> **Upgrade law (live):** [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md)
+> An upgrade **adds 2–4 named, effect-native visual ideas** to the existing picture.
+> Bindings / ACES / alpha / sliders / `updatedParams` / naga / springs-for-completeness
+> are the **floor**, not the upgrade. Size tiers and science lists below only decide
+> *which ideas to add* and *in what order*. They are not a completeness checklist.
+> Hygiene-only = not upgraded. Rewrite-as-new-motif = not upgraded (that is a new shader).
+
+> **Reading the per-shader entries:** every "Upgrade Concept", "→ New Name",
+> "Transform …", "Replace …" or "Upgrade to simulate …" line below is a **candidate
+> idea to add**, not a target the file must be rebuilt into. Read it as *"add X as 1–2
+> native ideas; keep the effect's identity, kernel, modes and saved params."* Pick 2–4
+> per file for its Idea Card. Do not stamp the same concept across a whole batch.
+> Parameter lists name quantities an idea *may* drive — map them onto the file's existing
+> param roles; saved `params` stay byte-exact (no renames, no re-defaults).
+
 ## Executive Summary
 
-This document outlines computational and artistic upgrades for 35 shaders across the LIGHTING, PLASMA, and GLOW categories in Pixelocity. The goal is to elevate visual fidelity by incorporating physically-based lighting phenomena while maintaining real-time performance.
+This document outlines computational and artistic upgrades for 35 shaders across the LIGHTING, PLASMA, and GLOW categories in Pixelocity. The goal is to find 2–4 native, physically-inspired ideas per shader to add to its existing look while maintaining real-time performance. A neon file stays a neon file.
 
 ---
 
@@ -35,7 +50,7 @@ This document outlines computational and artistic upgrades for 35 shaders across
 
 ---
 
-## Scientific Concept Integration Roadmap
+## Scientific Concept Idea Pool
 
 ### 1. Blackbody Radiation Curves for Realistic Glow
 
@@ -821,6 +836,8 @@ vec3 final = diffuse + sss + translucency_glow;
 
 ## Implementation Priority Matrix
 
+Order of work only. "Est. Lines" is a sizing hint, not a success target; each row is one candidate idea for that file's Idea Card.
+
 ### Phase 1: Quick Wins (High Impact, Low Complexity)
 
 | Shader | Upgrade | Est. Lines | Performance |
@@ -841,7 +858,7 @@ vec3 final = diffuse + sss + translucency_glow;
 | `neon-topology` | Electroluminescence | +60 | +10% GPU |
 | `plasma` | Enhanced metaball physics | +40 | +5% GPU |
 
-### Phase 3: Advanced Features (Maximum Realism)
+### Phase 3: Advanced Features (larger ideas — still additive)
 
 | Shader | Upgrade | Est. Lines | Performance |
 |--------|---------|------------|-------------|
@@ -853,6 +870,8 @@ vec3 final = diffuse + sss + translucency_glow;
 ---
 
 ## New Shader Opportunities
+
+> These are **new shader** ideas, not upgrades. Build them as new catalog entries; do not graft them onto an existing effect under its filename.
 
 ### 1. `blackbody-radiator`
 **Concept:** Interactive blackbody radiation visualization
@@ -900,7 +919,7 @@ vec3 final = diffuse + sss + translucency_glow;
 
 ### Shared Utilities
 
-Create `public/shaders/lib/lighting_physics.wgsl`:
+Optional helpers only. WGSL has no `#include`, so each file carries what it uses. A helper library or template is never the goal and never counts as an upgrade; each file still needs its own Idea Card. A sketch of useful helpers:
 
 ```wgsl
 // Blackbody radiation
@@ -919,7 +938,9 @@ fn srgb_to_linear(srgb: vec3<f32>) -> vec3<f32> { ... }
 
 *Note: WGSL does not support #include - consider code generation or copy-paste utility functions.*
 
-### Parameter Standardization
+### Parameter Roles (new shaders only)
+
+Existing files keep saved `params` byte-exact. This mapping is a default for **new** lighting shaders, not a standard to retrofit:
 
 | Param | Range | Usage |
 |-------|-------|-------|
@@ -938,6 +959,8 @@ fn srgb_to_linear(srgb: vec3<f32>) -> vec3<f32> { ... }
 ---
 
 ## Artistic Vision Summary
+
+Directions to draw candidate ideas from. "Before → After" describes a direction of added detail, not a replacement of the existing look.
 
 ### Neon Family Evolution
 Transform from "digital outline" aesthetic to "authentic light emission":
@@ -963,14 +986,14 @@ Transform from "procedural noise" to "energetic phenomena":
 
 ## Conclusion
 
-This upgrade plan provides a roadmap for transforming Pixelocity's lighting shaders from visually pleasing approximations to physically-grounded simulations. The key principles:
+This idea scout lists physically-grounded additions for Pixelocity's lighting shaders. Each file keeps its look and gains 2–4 native ideas. The key principles:
 
 1. **Physics-Inspired, Not Physics-Bound:** Use scientific principles as artistic tools, not rigid constraints
 2. **Progressive Enhancement:** Each upgrade can be toggled via parameters, preserving original looks
 3. **Performance Awareness:** Every upgrade includes performance impact estimates
-4. **Consistency:** Shared physical models ensure cohesive visual language across shaders
+4. **Per-file identity:** Shared physical models are a source of ideas, not a cohesive look to stamp across shaders
 
-The result will be a lighting system that not only looks more realistic but provides richer artistic expression through scientifically-informed parameters.
+The result should be the same recognizable lighting effects, each richer by a few native ideas — not a single realistic lighting system.
 
 ---
 

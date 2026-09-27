@@ -1,5 +1,8 @@
 # Composer Plan — Generative Shader Upgrade Sprint
 
+> Historical / plumbing. Creative upgrade law is `docs/SHADER_UPGRADE_BATCH.md`.
+> ACES-only or binding-alignment batches are hygiene, not upgrades.
+>
 > **Historical (2026-06-06).** An ACES / `upgraded-rgba` **hygiene** sprint. Not the live upgrade law.
 > **LIVE:** [`docs/SHADER_UPGRADE_BATCH.md`](docs/SHADER_UPGRADE_BATCH.md) — incremental ideas, not tag-and-ACES-only batches.
 
