@@ -1,5 +1,8 @@
 # WGSL Shader Upgrade Swarm Plan
 
+> Historical / plumbing. Creative upgrade law is `docs/SHADER_UPGRADE_BATCH.md`.
+> ACES-only or binding-alignment batches are hygiene, not upgrades.
+>
 > **Historical (2026-04-12).** Size-expansion brainstorm. Target line counts are **not** success.
 > **LIVE:** [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md).
 

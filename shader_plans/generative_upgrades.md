@@ -1,8 +1,27 @@
 # Generative Shader Upgrade Plan
 
+> **Upgrade law (live):** [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md)
+> An upgrade **adds 2–4 named, effect-native visual ideas** to the existing picture.
+> Bindings / ACES / alpha / sliders / `updatedParams` / naga / springs-for-completeness
+> are the **floor**, not the upgrade. Size tiers and science lists below only decide
+> *which ideas to add* and *in what order*. They are not a completeness checklist.
+> Hygiene-only = not upgraded. Rewrite-as-new-motif = not upgraded (that is a new shader).
+
+> **Reading the per-shader entries:** every "Upgrade Concept", "→ New Name",
+> "Transform …", "Replace …" or "Upgrade to simulate …" line below is a **candidate
+> idea to add**, not a target the file must be rebuilt into. Read it as *"add X as 1–2
+> native ideas; keep the effect's identity, kernel, modes and saved params."* Pick 2–4
+> per file for its Idea Card. Do not stamp the same concept across a whole batch.
+> Parameter lists name quantities an idea *may* drive — map them onto the file's existing
+> param roles; saved `params` stay byte-exact (no renames, no re-defaults).
+
 ## Executive Summary
 
-This document analyzes 49+ generative/procedural shaders in the Pixelocity project and identifies upgrade opportunities, focusing on "easy wins" for shaders under 4KB. The goal is to enhance visual complexity by applying established scientific/mathematical concepts from procedural graphics.
+This document analyzes 49+ generative/procedural shaders in the Pixelocity project and identifies upgrade opportunities, focusing on "easy wins" for shaders under 4KB. The goal is to find 2–4 native ideas per shader, drawn from established scientific/mathematical concepts, to add to its existing motif.
+
+> Where an entry names a *different* algorithm (orb → attractor, Julia → Newton, Life → SmoothLife,
+> Mandelbrot → Buddhabrot), take a **layer** from it that fuses with the existing motif (e.g. an
+> orbit-density glow on the existing Mandelbrot). Swapping the algorithm is a new shader, not an upgrade.
 
 ---
 
@@ -12,7 +31,7 @@ This document analyzes 49+ generative/procedural shaders in the Pixelocity proje
 
 | Shader | Size | Current Concept | Upgrade Path |
 |--------|------|-----------------|--------------|
-| `gen_orb` | 1,402 bytes | Simple glow orb | **Strange attractor particles** - Replace static orb with particle trails from Lorenz/Rössler attractors |
+| `gen_orb` | 1,402 bytes | Simple glow orb | **Strange attractor particles** - Add Lorenz/Rössler particle trails around the orb (the orb stays) |
 | `gen_grokcf_interference` | 1,535 bytes | Wave interference | **Modal synthesis cymatics** - Multiple resonant modes with Chladni plate patterns |
 | `gen_grid` | 1,594 bytes | Animated grid | **Domain warped grid** - Apply FBM distortion to UV space for organic grid |
 | `gen_grokcf_voronoi` | 1,630 bytes | Basic Voronoi | **Worley noise FBM** - Layer multiple octaves, add edge detection |
@@ -267,13 +286,15 @@ Creates complex organic shapes:
 
 ---
 
-## Priority Upgrade Recommendations
+## Priority Order (candidate ideas, not a standard)
+
+Line estimates below are ordering hints only. Success is the Idea Card implemented, not the line count.
 
 ### Phase 1: Quick Wins (<4KB shaders)
 
-1. **`gen_orb` → Lorenz Attractor**
-   - Replace single orb with particle system
-   - ~50 lines additional code
+1. **`gen_orb` + Lorenz attractor trails**
+   - Add an attractor trail layer orbiting the existing orb; keep the orb and its params
+   - ~50 lines additional code (size estimate for ordering only, not a target)
    - Dramatic visual improvement
 
 2. **`gen_grid` → Domain Warped Grid**
@@ -313,7 +334,9 @@ Creates complex organic shapes:
 
 ## Implementation Notes
 
-### Shader Templates to Create
+### Optional Helper Snippets
+
+Optional helpers only. WGSL has no `#include`, so each file carries what it uses. A helper library or template is never the goal and never counts as an upgrade; each file still needs its own Idea Card. Do not stamp one template across a batch.
 
 1. **Attractor Template** - Particle trail rendering
 2. **FBM Warp Template** - Domain distortion patterns
@@ -341,7 +364,7 @@ fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> ve
 
 ### Performance Considerations
 
-- Keep workgroup_size at (8, 8, 1)
+- Workgroup size is `@workgroup_size(16, 16, 1)` (plumbing floor — see `docs/SHADER_UPGRADE_BATCH.md` §3)
 - Minimize texture samples in loops
 - Use `select()` instead of `if` where possible
 - Precompute constants outside loops
@@ -351,11 +374,11 @@ fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> ve
 
 ## Success Metrics
 
-- **Visual Complexity:** Shaders should show more interesting patterns
-- **Scientific Accuracy:** Implementations should reflect real phenomena
+- **Ideas visible:** each numbered Idea Card addition is pointable in the WGSL diff
+- **Identity kept:** a viewer recognizes the original motif in the first second; saved params load unchanged
 - **Performance:** Maintain 60fps at 1080p
-- **Code Quality:** Consistent style, well-commented
-- **User Engagement:** Mouse interaction should feel responsive
+- **Not success on its own:** more lines, "scientific accuracy", consistent style, ACES/bindings/naga — those are floor or taste
+- **Mouse interaction:** only where the effect is already pointer-led
 
 ---
 

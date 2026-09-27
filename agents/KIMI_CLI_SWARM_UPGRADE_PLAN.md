@@ -1,5 +1,12 @@
 # Kimi-CLI Swarm Upgrade Plan
 
+> **Upgrade law (live):** [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md)
+> An upgrade **adds 2–4 named, effect-native visual ideas** to the existing picture.
+> Bindings / ACES / alpha / sliders / `updatedParams` / naga / springs-for-completeness
+> are the **floor**, not the upgrade. Size tiers and science lists below only decide
+> *which ideas to add* and *in what order*. They are not a completeness checklist.
+> Hygiene-only = not upgraded. Rewrite-as-new-motif = not upgraded (that is a new shader).
+
 > **Status**: planning (2026-05-17)
 > **Scope**: tailor the existing shader upgrade swarm prompts to `kimi-cli`'s
 > invocation model, response shape, and strengths so the auto-repair /

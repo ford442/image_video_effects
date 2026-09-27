@@ -1,5 +1,12 @@
 # Shader Upgrade Plan - File Size Analysis
 
+> **Upgrade law (live):** [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md)
+> An upgrade **adds 2–4 named, effect-native visual ideas** to the existing picture.
+> Bindings / ACES / alpha / sliders / `updatedParams` / naga / springs-for-completeness
+> are the **floor**, not the upgrade. Size tiers and science lists below only decide
+> *which ideas to add* and *in what order*. They are not a completeness checklist.
+> Hygiene-only = not upgraded. Rewrite-as-new-motif = not upgraded (that is a new shader).
+
 **Generated:** March 2026  
 **Total Shaders:** 593  
 **Total Size:** 2,826,772 bytes (~2.76 MB)  
@@ -7,28 +14,15 @@
 
 ---
 
-## What "Upgrade" Means Here
-
-> **An upgrade adds 2–4 named ideas to the existing effect — it is not a
-> refactor and not a reimagining.** Introduce new visual structure that belongs
-> on *this* picture (lighting, motion, texture, optical detail, interactivity)
-> while a viewer still recognizes the original effect. Fixing bindings, adding
-> the workgroup barrier, clamping UVs, ACES, or passing `naga` are
-> **prerequisites**, not the upgrade. A shader that compiles cleanly but looks
-> the same has **not** been upgraded. A shader rewritten as a different motif
-> under the same filename has **not** been upgraded either.
-> Live process: [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md).
-> The size tiers below only decide *order of work*.
-
 ## Executive Summary
 
-This document catalogs all WGSL shaders by file size to prioritize upgrade efforts. **Smaller shaders are recommended for first priority** as they represent simpler codebases that can be updated more quickly and with lower risk.
+This document catalogs all WGSL shaders by file size to set the **order of work** for upgrades. **Smaller shaders are recommended for first priority** as they represent simpler codebases that are quicker to read before writing an Idea Card. Size decides order only; it is not a quality metric or a target.
 
 ### Why Upgrade Smaller Shaders First?
-- **Lower complexity** = Easier to understand and refactor
-- **Faster iteration** = Quick validation of upgrade patterns
+- **Lower complexity** = Easier to read, so the Idea Card's KEEP VERBATIM is easy to fill
+- **Faster iteration** = Quick validation that the added ideas are visible
 - **Reduced risk** = Smaller surface area for bugs
-- **Template building** = Establish patterns that can be applied to larger shaders
+- **No template building** = Every file gets its own native ideas; do not stamp one file's overlay onto the next
 
 ---
 
@@ -202,10 +196,10 @@ Moderate complexity - these shaders have significant functionality.
 | Medium-Large (5-6KB) | 58 | Quarterly maintenance |
 | Large (6-8KB) | 44 | Major version updates only |
 | X-Large (8-12KB) | 37 | Requires dedicated sprints |
-| XX-Large (12-16KB) | 12 | Major refactor required |
-| Huge (>16KB) | 3 | Complete rewrite candidates |
+| XX-Large (12-16KB) | 12 | Careful reading first; ideas stay additive |
+| Huge (>16KB) | 3 | Deferred — upgrade is still additive, never a rewrite |
 
-### Huge Shaders (>16KB) - Complete Rewrite Candidates:
+### Huge Shaders (>16KB) - Deferred (additive ideas only; a rewrite would be a new shader):
 
 | Shader | Size (B) | Notes |
 |--------|----------|-------|
@@ -217,19 +211,22 @@ Moderate complexity - these shaders have significant functionality.
 
 ## Upgrade Strategy Recommendations
 
+Every phase means: Idea Card per file, 2–4 native ideas, then the floor. No phase is
+"bring these files up to a standard."
+
 ### Phase 1: Pilot (Week 1)
-- Upgrade all **9 Tiny shaders** to establish patterns
+- Upgrade the **9 Tiny shaders** with per-file Idea Cards
 - Document common issues and solutions
-- Create upgrade templates
+- No upgrade templates — ideas are per effect (live contract §4, "generic overlay")
 
 ### Phase 2: Small Scale (Weeks 2-3)
 - Upgrade **52 Small shaders** in 3-4 batches
-- Refine automation scripts based on patterns
+- Refine gate/audit scripts (floor checks only; they cannot judge ideas)
 - Build confidence with quick wins
 
 ### Phase 3: Volume (Weeks 4-8)
 - Tackle **207 Medium-Small shaders**
-- Consider automated refactoring for repetitive changes
+- Automated passes are hygiene only — they never count as upgrades and never bump `Upgraded:`
 - Prioritize by category/feature importance
 
 ### Phase 4: Selective (Ongoing)

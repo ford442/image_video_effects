@@ -1,5 +1,20 @@
 # DISTORTION & WARP Category Shader Upgrade Plan
 
+> **Upgrade law (live):** [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md)
+> An upgrade **adds 2–4 named, effect-native visual ideas** to the existing picture.
+> Bindings / ACES / alpha / sliders / `updatedParams` / naga / springs-for-completeness
+> are the **floor**, not the upgrade. Size tiers and science lists below only decide
+> *which ideas to add* and *in what order*. They are not a completeness checklist.
+> Hygiene-only = not upgraded. Rewrite-as-new-motif = not upgraded (that is a new shader).
+
+> **Reading the per-shader entries:** every "Upgrade Concept", "→ New Name",
+> "Transform …", "Replace …" or "Upgrade to simulate …" line below is a **candidate
+> idea to add**, not a target the file must be rebuilt into. Read it as *"add X as 1–2
+> native ideas; keep the effect's identity, kernel, modes and saved params."* Pick 2–4
+> per file for its Idea Card. Do not stamp the same concept across a whole batch.
+> Parameter lists name quantities an idea *may* drive — map them onto the file's existing
+> param roles; saved `params` stay byte-exact (no renames, no re-defaults).
+
 ## Executive Summary
 
 This document outlines artistic and computational upgrade pathways for 27 distortion and warp shaders in Pixelocity. Each shader is analyzed against 10 scientific concepts to identify enhancement opportunities that maintain real-time performance while significantly elevating visual fidelity.
@@ -537,10 +552,13 @@ Extend to multi-sheeted Riemann surfaces with branch cuts.
 
 ---
 
-## Implementation Roadmap
+## Implementation Roadmap (order of work, not a standard)
 
-### Phase 1: Foundation (Weeks 1-2)
-- Implement mathematical utilities:
+Each week's "focus" means: Idea Cards for those files, 2–4 native ideas each, then the floor.
+The science column is where to look for ideas, not a model each file must implement in full.
+
+### Phase 1: Foundation
+- Optional math helpers (Optional helpers only. WGSL has no `#include`, so each file carries what it uses. A helper library or template is never the goal and never counts as an upgrade; each file still needs its own Idea Card.):
   - Complex number operations
   - 2x2 and 3x3 matrix math
   - Numerical integration (Runge-Kutta)
@@ -562,17 +580,22 @@ Extend to multi-sheeted Riemann surfaces with branch cuts.
 | 9 | interactive-fisheye, bubble-lens | Optical Projection |
 | 10 | mirror-drag, polar-warp-interactive | Advanced Interaction |
 
-### Phase 4: Polish (Week 11-12)
-- Performance optimization
-- Parameter UI refinement
-- Edge case handling
-- Cross-shader compatibility testing
+### Phase 4: More ideas on files that already have the floor
+- Files with bindings / ACES / alpha / `updatedParams` but no native ideas are **not upgraded** — give them Idea Cards
+- Performance and edge-case fixes without renaming or re-defaulting saved `params`
+- No "cohesive suite" pass that makes every distortion look alike
 
 ---
 
 ## Technical Specifications
 
 ### Uniform Buffer Additions
+
+> **Historical sketch — do not implement as written.** The engine `Uniforms` struct and
+> bindings are fixed ([`docs/BINDING_CONTRACT.md`](../docs/BINDING_CONTRACT.md)). Drive
+> these quantities from the file's existing `zoom_params` roles, or persistent state in
+> `extraBuffer[133..]` per [`agents/WGSL_BUILTINS_GENERATIVE.md`](../agents/WGSL_BUILTINS_GENERATIVE.md).
+
 ```wgsl
 // For gravitational lensing
 struct GravitationalParams {
@@ -608,6 +631,8 @@ struct ElasticParams {
 ```
 
 ### Helper Functions Library
+Optional helpers only. WGSL has no `#include`, so each file carries what it uses. A helper library or template is never the goal and never counts as an upgrade; each file still needs its own Idea Card.
+
 ```wgsl
 // Complex arithmetic
 fn cmul(a: vec2<f32>, b: vec2<f32>) -> vec2<f32>
@@ -664,7 +689,7 @@ fn neo_hookean_stress(F: mat2x2<f32>, mu: f32, lambda: f32) -> mat2x2<f32>
 
 ## Conclusion
 
-This upgrade plan transforms the distortion category from a collection of ad-hoc effects into a cohesive suite of physically-grounded visualizations. By leveraging established scientific principles, each shader gains:
+This idea scout offers physically-grounded candidate additions for each distortion effect. It is not a plan to turn the category into one cohesive suite: each file keeps its own identity and adds 2–4 native ideas. Ideas drawn from these principles can give a shader:
 
 1. **Authenticity**: Real physics creates believable visuals
 2. **Predictability**: Users can reason about parameter effects

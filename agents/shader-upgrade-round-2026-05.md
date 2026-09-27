@@ -1,5 +1,8 @@
 # Shader Upgrade Round — May 2026
 
+> Historical / plumbing. Creative upgrade law is `docs/SHADER_UPGRADE_BATCH.md`.
+> ACES-only or binding-alignment batches are hygiene, not upgrades.
+>
 > **Date:** 2026-05-10
 > **Scope:** Next 25 shaders from the candidate pool
 > **Methodology:** Three-phase swarm — Analysis → Design → Implementation

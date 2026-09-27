@@ -1,5 +1,8 @@
 # PLAN.md — Weekly Shader Upgrade Agent Swarm
 
+> Historical / plumbing. Creative upgrade law is `docs/SHADER_UPGRADE_BATCH.md`.
+> ACES-only or binding-alignment batches are hygiene, not upgrades.
+>
 > **Mostly historical (new-shader weekly cadence).** For **upgrading existing catalog shaders**, use [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md) — incremental ideas, not new files, not hygiene-only.
 > New-shader hot-swap rules below still apply when you are asked to **create** an effect.
 

@@ -1,6 +1,7 @@
 # Effect Shader Upgrade Manifest
 
 > **Historical (2026-04-12).** **LIVE:** [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md).
+> Line-count expansion is recorded here as history; under the live law it is not what makes a shader upgraded.
 
 **Document Version:** 1.0  
 **Date:** 2026-04-12  

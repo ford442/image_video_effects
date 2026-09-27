@@ -266,7 +266,12 @@ fn srgbToRec2020(c: vec3<f32>) -> vec3<f32> {
 
 ## Success Metrics
 
+> Pipeline technique notes. For **upgrading an existing catalog effect**, the live law is
+> [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md): add 2–4 named, effect-native
+> ideas; HDR / multi-frame plumbing below is floor or technique, not the upgrade by itself.
+
 An upgrade is successful if:
+0. ✅ The Idea Card's 2–4 native ideas are visible and the original effect is still recognizable
 1. ✅ Visual richness increases (more layers, depth, "living" quality)
 2. ✅ HDR values exceed [0,1] and tone-map gracefully
 3. ✅ Multi-frame accumulation creates smoother results
@@ -277,7 +282,7 @@ An upgrade is successful if:
 
 ## Next Actions
 
-1. **Create template shader** demonstrating all techniques
+1. **Create reference shader** demonstrating the techniques (a reference, not a template to stamp onto upgrades)
 2. **Upgrade 3 low-rated shaders** using the new patterns
 3. **Add "Pipeline Info"** display to Controls.tsx
 4. **Create post-processing shader library** (5 core effects)

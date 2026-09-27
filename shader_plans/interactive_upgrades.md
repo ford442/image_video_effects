@@ -1,5 +1,20 @@
 # Interactive/Mouse-Driven Shader Upgrade Plan
 
+> **Upgrade law (live):** [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md)
+> An upgrade **adds 2–4 named, effect-native visual ideas** to the existing picture.
+> Bindings / ACES / alpha / sliders / `updatedParams` / naga / springs-for-completeness
+> are the **floor**, not the upgrade. Size tiers and science lists below only decide
+> *which ideas to add* and *in what order*. They are not a completeness checklist.
+> Hygiene-only = not upgraded. Rewrite-as-new-motif = not upgraded (that is a new shader).
+
+> **Reading the per-shader entries:** every "Upgrade Concept", "→ New Name",
+> "Transform …", "Replace …" or "Upgrade to simulate …" line below is a **candidate
+> idea to add**, not a target the file must be rebuilt into. Read it as *"add X as 1–2
+> native ideas; keep the effect's identity, kernel, modes and saved params."* Pick 2–4
+> per file for its Idea Card. Do not stamp the same concept across a whole batch.
+> Parameter lists name quantities an idea *may* drive — map them onto the file's existing
+> param roles; saved `params` stay byte-exact (no renames, no re-defaults).
+
 ## Analysis Summary
 
 Analyzed **33 interactive shaders** focusing on smallest files (<4KB) for maximum upgrade impact potential. The current interactive shader ecosystem relies primarily on:
@@ -58,7 +73,7 @@ Analyzed **33 interactive shaders** focusing on smallest files (<4KB) for maximu
 - **Concept:** Simulate surface tension and viscous fluid response
 - **Implementation:**
   - Add velocity-sensitive deformation (fast movement = elongated bulge)
-  - Implement spring-mass-damper system for lens surface
+  - Spring-mass-damper for the lens surface (native here: the fisheye already follows the pointer)
   - Create "splash" ripples on rapid mouse deceleration
   - Add surface tension recovery (oscillating return to equilibrium)
   
@@ -171,6 +186,7 @@ Analyzed **33 interactive shaders** focusing on smallest files (<4KB) for maximu
 **Current:** Cylindrical projection with static shadow
 
 **Scientific Upgrade - Spring-Mass-Damper Systems:**
+*(Native here: the page curl is already dragged by the pointer. Springs are never added for completeness.)*
 - **Concept:** Cloth simulation with spring-mass network
 - **Implementation:**
   - Model page as grid of masses connected by springs
@@ -498,7 +514,7 @@ Analyzed **33 interactive shaders** focusing on smallest files (<4KB) for maximu
 |--------|-------------------|--------|------------|----------|
 | velocity-field-paint | Fluid Dynamics | High | Medium | 1 |
 | thermal-touch | Thermal Diffusion | High | Medium | 2 |
-| interactive-fisheye | Spring-Mass-Damper | High | Low | 3 |
+| interactive-fisheye | Spring-Mass-Damper (pointer-led already) | High | Low | 3 |
 | quantized-ripples | Haptic Visualization | Medium | Low | 4 |
 | vortex-drag | Vorticity Dynamics | High | Medium | 5 |
 | echo-trace | Velocity Motion Blur | Medium | Low | 6 |
@@ -512,6 +528,12 @@ Analyzed **33 interactive shaders** focusing on smallest files (<4KB) for maximu
 ## Technical Implementation Notes
 
 ### DataTexture Usage for Scientific State
+
+> **Historical sketch.** Keep HEAD's A packing unless the Idea Card documents a change; do not
+> invent `dataTextureB` usage. The `extraBuffer[0..299]` layouts below **violate the floor** —
+> persistent state lives only in `extraBuffer[133..]`, single-writer, per
+> [`agents/WGSL_BUILTINS_GENERATIVE.md`](../agents/WGSL_BUILTINS_GENERATIVE.md). Multi-touch
+> history uses the engine's `u.ripples[]`.
 
 ```wgsl
 // dataTextureA (RG) = velocity field (vx, vy)
@@ -538,7 +560,8 @@ Analyzed **33 interactive shaders** focusing on smallest files (<4KB) for maximu
 
 ### Recommended New Parameters Structure
 
-All upgraded shaders should expose:
+Existing files keep saved `params` byte-exact. This is a default for **new** interactive shaders,
+not a structure every upgraded file must expose:
 - **Param1:** Physical coefficient (diffusivity, stiffness, etc.)
 - **Param2:** Temporal parameter (decay, relaxation, timescale)
 - **Param3:** Spatial parameter (scale, wavelength, range)
@@ -548,7 +571,7 @@ All upgraded shaders should expose:
 
 ## Artistic Vision
 
-These upgrades transform simple mouse effects into **physics-based playgrounds** where:
+These ideas deepen existing mouse effects — each stays recognizably itself — toward **physics-based playgrounds** where:
 - Every interaction has consequences that evolve over time
 - Users intuitively learn physical concepts through exploration
 - Visual feedback is scientifically grounded yet aesthetically compelling

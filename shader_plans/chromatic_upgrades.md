@@ -1,8 +1,23 @@
 # Chromatic/RGB Shader Upgrade Plan
 
+> **Upgrade law (live):** [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md)
+> An upgrade **adds 2–4 named, effect-native visual ideas** to the existing picture.
+> Bindings / ACES / alpha / sliders / `updatedParams` / naga / springs-for-completeness
+> are the **floor**, not the upgrade. Size tiers and science lists below only decide
+> *which ideas to add* and *in what order*. They are not a completeness checklist.
+> Hygiene-only = not upgraded. Rewrite-as-new-motif = not upgraded (that is a new shader).
+
+> **Reading the per-shader entries:** every "Upgrade Concept", "→ New Name",
+> "Transform …", "Replace …" or "Upgrade to simulate …" line below is a **candidate
+> idea to add**, not a target the file must be rebuilt into. Read it as *"add X as 1–2
+> native ideas; keep the effect's identity, kernel, modes and saved params."* Pick 2–4
+> per file for its Idea Card. Do not stamp the same concept across a whole batch.
+> Parameter lists name quantities an idea *may* drive — map them onto the file's existing
+> param roles; saved `params` stay byte-exact (no renames, no re-defaults).
+
 ## Executive Summary
 
-This document outlines artistic and computational upgrade opportunities for 22 chromatic/RGB shaders in the Pixelocity WebGPU project. Each shader is analyzed for its current capabilities and paired with scientifically-grounded visual enhancements based on real-world optical phenomena.
+This document outlines artistic and computational upgrade opportunities for 22 chromatic/RGB shaders in the Pixelocity WebGPU project. Each shader is analyzed for its current capabilities and paired with scientifically-grounded candidate ideas to add to its existing look, based on real-world optical phenomena.
 
 ---
 
@@ -36,7 +51,7 @@ Radial shockwave emanating from mouse position with simple RGB directional offse
 - Static RGB offset weights (R=1.0, G=0.3, B=-1.0)
 
 **Artistic Upgrade Concept:**
-**"Prismatic Shockwave"** - Transform the simple RGB split into a physically accurate dispersion simulation based on Cauchy's equation. The shockwave becomes a traveling rainbow spectrum with wavelength-dependent propagation speeds, mimicking a lightning strike through a prism.
+**"Prismatic Shockwave"** - Add Cauchy dispersion on top of the existing RGB split (the shockwave stays the shockwave). The shockwave becomes a traveling rainbow spectrum with wavelength-dependent propagation speeds, mimicking a lightning strike through a prism.
 
 **Computational Technique to Add:**
 - Implement Cauchy's dispersion equation: n(λ) = A + B/λ²
@@ -658,7 +673,7 @@ Chaotic color-swapping with Voronoi-based crawling regions. Rapid color exchange
 - Temporal color modulation with hash-based randomness
 
 **Artistic Upgrade Concept:**
-**"Reaction-Diffusion Turing Patterns"** - Replace chaotic swapping with Gray-Scott or FitzHugh-Nagumo reaction-diffusion system producing emergent, organic patterns that evolve naturally.
+**"Reaction-Diffusion Turing Patterns"** - Let a reaction-diffusion field steer the existing chaotic swapping (swap system kept), using a Gray-Scott or FitzHugh-Nagumo field to produce emergent, organic patterns that evolve naturally.
 
 **Computational Technique to Add:**
 - Implement Gray-Scott model: `∂u/∂t = D_u∇²u - uv² + F(1-u)`
@@ -796,7 +811,7 @@ When upgrading temporal shaders, preserve existing feedback architecture:
 
 ## Conclusion
 
-The chromatic shader family offers rich opportunities for scientifically-grounded visual enhancement. Priority should be given to shaders that can leverage existing temporal feedback infrastructure while adding meaningful physical simulation. The "Prismatic Shockwave" and "Photoelastic Ripple" upgrades offer the best combination of visual impact, scientific validity, and implementation feasibility.
+The chromatic shader family offers rich opportunities for scientifically-grounded visual enhancement. Priority should be given to shaders that can leverage existing temporal feedback infrastructure while adding native optical ideas on top of their current look. The "Prismatic Shockwave" and "Photoelastic Ripple" upgrades offer the best combination of visual impact, scientific validity, and implementation feasibility.
 
 ---
 

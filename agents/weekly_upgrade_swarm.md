@@ -1,5 +1,8 @@
 # Weekly Shader Upgrade Swarm — historical batch log
 
+> Historical / plumbing. Creative upgrade law is `docs/SHADER_UPGRADE_BATCH.md`.
+> ACES-only or binding-alignment batches are hygiene, not upgrades.
+>
 > **LIVE process:** [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md). This file is a **diary of completed batches**, not the upgrade law. Do not copy a past overlay (fast-motion conveyors, IQ palettes, springs on every file) onto a new family.
 > **Constraint:** Do NOT modify `Renderer.ts`, `types.ts`, or bind groups. Do NOT install new npm packages.
 

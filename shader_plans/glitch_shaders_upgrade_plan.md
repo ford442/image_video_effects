@@ -1,12 +1,27 @@
 # GLITCH & RETRO SHADERS: Aesthetic/Technical Upgrade Plan
 
+> **Upgrade law (live):** [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md)
+> An upgrade **adds 2–4 named, effect-native visual ideas** to the existing picture.
+> Bindings / ACES / alpha / sliders / `updatedParams` / naga / springs-for-completeness
+> are the **floor**, not the upgrade. Size tiers and science lists below only decide
+> *which ideas to add* and *in what order*. They are not a completeness checklist.
+> Hygiene-only = not upgraded. Rewrite-as-new-motif = not upgraded (that is a new shader).
+
+> **Reading the per-shader entries:** every "Upgrade Concept", "→ New Name",
+> "Transform …", "Replace …" or "Upgrade to simulate …" line below is a **candidate
+> idea to add**, not a target the file must be rebuilt into. Read it as *"add X as 1–2
+> native ideas; keep the effect's identity, kernel, modes and saved params."* Pick 2–4
+> per file for its Idea Card. Do not stamp the same concept across a whole batch.
+> Parameter lists name quantities an idea *may* drive — map them onto the file's existing
+> param roles; saved `params` stay byte-exact (no renames, no re-defaults).
+
 ## Research Synthesis: Digital Artifacting & Signal Processing
 
 ---
 
 ## Executive Summary
 
-This document outlines a comprehensive upgrade plan for glitch and retro-tech shader effects based on deep research into:
+This document is a research-backed idea pool for glitch and retro-tech shader effects. Each finding is a candidate native idea to add to an existing effect — not a full simulation each file must reach. Research areas:
 - Digital signal degradation mechanisms
 - Compression artifact physics (JPEG, MPEG)
 - Analog signal interference patterns
@@ -658,7 +673,8 @@ ordered_dither(pixel, threshold_matrix):
 
 ### 6.1 Core Parameter Framework
 
-All glitch/retro shaders should support these parameter categories:
+Candidate quantities an idea may drive. Existing shaders keep saved `params` byte-exact and use their
+4 existing sliders; this is **not** a set every glitch/retro shader must support:
 
 ```
 BASE_PARAMETERS:
@@ -867,7 +883,7 @@ interference(uv, t): sin(2π * (spatial + temporal_freq * t))
 
 ### 7.1 Shared Utilities Library
 
-Create a shared WGSL utility library for glitch effects:
+Optional helpers only. WGSL has no `#include`, so each file carries what it uses. A helper library or template is never the goal and never counts as an upgrade; each file still needs its own Idea Card. A sketch of useful helpers:
 
 ```wgsl
 // noise.wgsl - Shared noise functions
@@ -913,7 +929,7 @@ Pass 2: Primary Effect
 
 Pass 3: Post-Processing
   - Apply dithering
-  - Add scanlines/CRT effects
+  - Add scanlines/CRT effects (only where the effect is already CRT/analog — not a stamp on every glitch)
   - Final color grading
 ```
 
@@ -924,6 +940,9 @@ Maintain temporal state for:
 - Noise evolution
 - Glitch progression
 - Signal instability accumulation
+
+> Historical sketch: the engine `Uniforms` struct is fixed. Persist state in `dataTextureA`→`C`
+> or `extraBuffer[133..]` per [`agents/WGSL_BUILTINS_GENERATIVE.md`](../agents/WGSL_BUILTINS_GENERATIVE.md).
 
 ```wgsl
 // Uniform buffer for temporal state
@@ -990,28 +1009,30 @@ struct TemporalState {
 
 ---
 
-## Part 10: Development Priorities
+## Part 10: Development Priorities (order of work, not a standard)
 
-### Phase 1: Core Infrastructure
-1. Shared noise/dither utility library
-2. Temporal state management
-3. Parameter standardization
+Every item means: Idea Card for that file, 2–4 native ideas, then the floor. No item is "bring the file up to full simulation."
 
-### Phase 2: Digital Glitch Suite
-1. glitch-pixel-sort enhancements
-2. digital-glitch with DCT simulation
-3. datamosh with optical flow
-4. byte-mosh bit manipulation
+### Phase 1: Optional helpers
+1. Noise/dither helpers — copy-paste per file; not an upgrade by themselves
+2. Temporal state via exact `dataTextureC` loads (floor)
+3. No parameter standardization on existing files — saved `params` stay byte-exact
 
-### Phase 3: Analog/Retro Suite
-1. crt-tv comprehensive simulation
-2. vhs-tracking authentic artifacts
-3. signal-noise multi-model
-4. retro-gameboy accuracy
+### Phase 2: Digital glitch ideas
+1. glitch-pixel-sort: 2–4 native ideas on the existing sort
+2. digital-glitch: DCT block ringing as an added idea
+3. datamosh: optical-flow drift as an added idea
+4. byte-mosh: bit-manipulation chains as an added idea
 
-### Phase 4: Synthesis Effects
-1. Combined analog+digital pipelines
-2. Preset system
+### Phase 3: Analog/retro ideas
+1. crt-tv: 2–4 CRT ideas it does not yet have (not a "comprehensive simulation")
+2. vhs-tracking: one or two more authentic tracking artifacts
+3. signal-noise: one more noise model mixed into the existing one
+4. retro-gameboy: LCD/palette ideas that keep it a Game Boy look
+
+### Phase 4: More ideas on files that already have the floor
+1. Files with bindings / ACES / alpha / `updatedParams` but no native ideas are **not upgraded**
+2. Combined analog+digital pipelines belong in **new** shaders, not grafted onto existing ones
 3. Performance optimization
 
 ---
