@@ -1,5 +1,5 @@
 {
   "description": "Ratchet for gpu-capture-pending deferrals. Lower maxGpuCapturePending after every capture wave; never raise it.",
-  "maxGpuCapturePending": 1069,
+  "maxGpuCapturePending": 234,
   "target": 200
 }

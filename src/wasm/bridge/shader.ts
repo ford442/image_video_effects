@@ -44,6 +44,29 @@ async function fetchAndExpand(id: string, url: string): Promise<string> {
   );
 }
 
+/**
+ * Opt-in @group(1) sim ring (src/contracts/bind_group1.json) is TypeScript-only
+ * under the WASM_BACKEND_POLICY.md feature freeze: pipeline.cpp keeps
+ * bindGroupLayoutCount = 1, so a group-1 shader would fail pipeline creation
+ * inside emdawn. Refuse it here, before LoadShader, as a logged skip.
+ * Kept inline (not imported from src/renderer) because the bridge is emitted
+ * module-by-module without bundling.
+ */
+function declaresBindGroup1(wgslCode: string): boolean {
+  const stripped = wgslCode.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+  return /@group\(\s*1\s*\)/.test(stripped);
+}
+
+function refuseBindGroup1(id: string, op: 'loadShader' | 'reloadShader'): false {
+  const message =
+    `Shader ${id} declares @group(1) (sim ring) — WASM backend is group-0 only ` +
+    '(feature freeze); skipped. Use the WebGPU (TS) renderer for sim-ring shaders.';
+  console.warn(`[WASM] ${op}: ${message}`);
+  state.lastLoadError = message;
+  state.loadErrorCount++;
+  return false;
+}
+
 export function loadShader(id: string, wgslCode: string): boolean {
   if (!state.initialized || !wasmRef.module) {
     console.error('[WASM] Renderer not initialized');
@@ -59,6 +82,8 @@ export function loadShader(id: string, wgslCode: string): boolean {
     state.loadErrorCount++;
     return false;
   }
+
+  if (declaresBindGroup1(wgslCode)) return refuseBindGroup1(id, 'loadShader');
 
   const rewritten = rewriteWgslStorageFormats(wgslCode, state.colorFormat);
   const idBuf = writeUtf8(id);
@@ -96,6 +121,8 @@ export function reloadShader(id: string, wgslCode: string): boolean {
     state.loadErrorCount++;
     return false;
   }
+
+  if (declaresBindGroup1(wgslCode)) return refuseBindGroup1(id, 'reloadShader');
 
   const rewritten = rewriteWgslStorageFormats(wgslCode, state.colorFormat);
   const idBuf = writeUtf8(id);

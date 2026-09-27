@@ -13,11 +13,22 @@ const REASONS = ['gpu-capture-pending', 'audio-only', 'interactive-no-still', 'k
 const PERMANENT_REASONS = new Set(['audio-only', 'interactive-no-still']);
 const MAX_DEFERRAL_DAYS = 30;
 const MAX_RENEWALS_WITHOUT_NOTE = 1;
+const EXPIRY_WARNING_DAYS = 7;
 const DAY_MS = 86400000;
 
 const isoDate = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value));
 const daysBetween = (from, to) => Math.round((Date.parse(to) - Date.parse(from)) / DAY_MS);
-const today = () => new Date().toISOString().split('T')[0];
+
+/**
+ * "Today" for the gate. THUMBS_DEFERRALS_NOW=YYYY-MM-DD overrides it for tests and
+ * reproductions (e.g. previewing the expiry cliff); CI never sets it.
+ */
+function today(env = process.env) {
+  const override = env.THUMBS_DEFERRALS_NOW;
+  if (override === undefined || override === '') return new Date().toISOString().split('T')[0];
+  if (!isoDate(override)) throw new Error(`THUMBS_DEFERRALS_NOW must be YYYY-MM-DD, got "${override}"`);
+  return override;
+}
 
 function loadDeferralFile(file = DEFERRALS_PATH) {
   return fs.existsSync(file) ? (JSON.parse(fs.readFileSync(file, 'utf8')).entries || []) : [];
@@ -27,9 +38,14 @@ function loadRatchet(file = RATCHET_PATH) {
   return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : { maxGpuCapturePending: Infinity };
 }
 
-/** Returns human-readable violations; empty array means the deferral file is honest. */
-function validateDeferrals(entries, { now = today(), ratchet = loadRatchet() } = {}) {
+/**
+ * Checks the deferral file. `errors` fail the gate; `warnings` (entries expiring within
+ * EXPIRY_WARNING_DAYS) never do. An entry is valid through its `expires` day inclusive.
+ */
+function checkDeferrals(entries, { now = today(), ratchet = loadRatchet() } = {}) {
   const errors = [];
+  const warnings = [];
+  const expiringSoon = [];
   const seen = new Set();
   let pending = 0;
 
@@ -52,6 +68,7 @@ function validateDeferrals(entries, { now = today(), ratchet = loadRatchet() } =
       continue;
     }
     if (expires < now) errors.push(`${id}: expired ${expires} (today ${now}) — capture it or renew with a note`);
+    else if (daysBetween(now, expires) <= EXPIRY_WARNING_DAYS) expiringSoon.push(expires);
     if (daysBetween(e.deferred_at, expires) > MAX_DEFERRAL_DAYS) {
       errors.push(`${id}: expires ${expires} is more than ${MAX_DEFERRAL_DAYS} days after deferred_at ${e.deferred_at}`);
     }
@@ -64,10 +81,20 @@ function validateDeferrals(entries, { now = today(), ratchet = loadRatchet() } =
   if (pending > ratchet.maxGpuCapturePending) {
     errors.push(`gpu-capture-pending count ${pending} exceeds ratchet ${ratchet.maxGpuCapturePending}`);
   }
-  return errors;
+  if (expiringSoon.length) {
+    const earliest = expiringSoon.reduce((a, b) => (a < b ? a : b));
+    warnings.push(`${expiringSoon.length} deferral(s) expire within ${EXPIRY_WARNING_DAYS} days (earliest ${earliest}, today ${now})`);
+  }
+  return { errors, warnings };
+}
+
+/** Errors only; empty array means the deferral file is honest. */
+function validateDeferrals(entries, opts) {
+  return checkDeferrals(entries, opts).errors;
 }
 
 module.exports = {
-  REASONS, PERMANENT_REASONS, MAX_DEFERRAL_DAYS, DEFERRALS_PATH, RATCHET_PATH,
-  loadDeferralFile, loadRatchet, validateDeferrals,
+  REASONS, PERMANENT_REASONS, MAX_DEFERRAL_DAYS, MAX_RENEWALS_WITHOUT_NOTE, EXPIRY_WARNING_DAYS,
+  DEFERRALS_PATH, RATCHET_PATH,
+  today, isoDate, daysBetween, loadDeferralFile, loadRatchet, checkDeferrals, validateDeferrals,
 };

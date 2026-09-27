@@ -4,7 +4,9 @@
 //  Features: mouse-driven, audio-reactive, temporal, history-ring, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-05-23
-//  Requires: binding 13 (historyTexture — HISTORY_DEPTH=8 ring buffer)
+//  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
+//         hardcoded 8 — see HISTORY RING DEPTH below
+//  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
 //  Created: 2026-05-23
 //  By: Copilot
 //
@@ -48,8 +50,6 @@ struct Uniforms {
   zoom_params: vec4<f32>, // x=fastDecay, y=medDecay, z=slowDecay, w=origBlend
   ripples: array<vec4<f32>, 50>,
 };
-
-const HISTORY_DEPTH: u32 = 8u;
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -127,31 +127,43 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let historyHead = u32(extraBuffer[4]);
   let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
+  // ── HISTORY RING DEPTH (floor fix, 2026-09-21) ───────────────────────────
+  // The ring is at most 8 layers; after the VRAM probe the runtime may
+  // allocate 8, 4 or 1, and it wraps its write head at the ALLOCATED count
+  // (renderer/webgpu/frame.ts). A hardcoded HISTORY_DEPTH=8 asked for layers
+  // that do not exist on a 4- or 1-layer device and WGSL clamped them to the
+  // last layer: scrambled frame order, silently. `reach` is the oldest age
+  // this ring can actually supply — every requested age is clamped to it
+  // rather than pretending the missing layers exist.
+  let histDepth = max(textureNumLayers(historyTexture), 1u);
+  let reach = histDepth - 1u;
+
   // ── Fast timescale (R): average of ages 1–2 ──────────────────────────────
-  let l1 = (historyHead + HISTORY_DEPTH - 1u) % HISTORY_DEPTH;
-  let l2 = (historyHead + HISTORY_DEPTH - 2u) % HISTORY_DEPTH;
+  let l1 = (historyHead + histDepth - min(1u, reach)) % histDepth;
+  let l2 = (historyHead + histDepth - min(2u, reach)) % histDepth;
   let h1 = textureSampleLevel(historyTexture, u_sampler, historyUV, i32(l1), 0.0);
   let h2 = textureSampleLevel(historyTexture, u_sampler, historyUV, i32(l2), 0.0);
   let fastAvg = (h1 + h2) * 0.5;
 
   // ── Medium timescale (G): average of ages 4–5 ────────────────────────────
-  let l4 = (historyHead + HISTORY_DEPTH - 4u) % HISTORY_DEPTH;
-  let l5 = (historyHead + HISTORY_DEPTH - 5u) % HISTORY_DEPTH;
+  let l4 = (historyHead + histDepth - min(4u, reach)) % histDepth;
+  let l5 = (historyHead + histDepth - min(5u, reach)) % histDepth;
   let h4 = textureSampleLevel(historyTexture, u_sampler, historyUV, i32(l4), 0.0);
   let h5 = textureSampleLevel(historyTexture, u_sampler, historyUV, i32(l5), 0.0);
   let medAvg = (h4 + h5) * 0.5;
 
-  // ── Slow timescale (B): age 7 (oldest reliable frame) ────────────────────
-  let l7 = (historyHead + HISTORY_DEPTH - 7u) % HISTORY_DEPTH;
+  // ── Slow timescale (B): age 7, or the oldest the ring actually holds ─────
+  let l7 = (historyHead + histDepth - min(7u, reach)) % histDepth;
   let h7 = textureSampleLevel(historyTexture, u_sampler, historyUV, i32(l7), 0.0);
 
-  // ── Ultra-slow timescale: full average of all 7 stored frames ────────────
+  // ── Ultra-slow timescale: full average of every stored frame ─────────────
   var ultraSum = vec4<f32>(0.0);
-  for (var age: u32 = 1u; age <= 7u; age = age + 1u) {
-    let l = (historyHead + HISTORY_DEPTH - age) % HISTORY_DEPTH;
+  let ultraCount = max(reach, 1u);
+  for (var age: u32 = 1u; age <= ultraCount; age = age + 1u) {
+    let l = (historyHead + histDepth - age) % histDepth;
     ultraSum += textureSampleLevel(historyTexture, u_sampler, historyUV, i32(l), 0.0);
   }
-  let ultraAvg = ultraSum / 7.0;
+  let ultraAvg = ultraSum / f32(ultraCount);
 
   // ── Per-channel max(current, decayed_history) ─────────────────────────────
   let r = max(current.r, fastAvg.r   * decayFast);

@@ -11,6 +11,7 @@ import {
   ExpandedDispatch,
   MultipassGraphDef,
   capGraphDispatches,
+  graphUsesSimRing,
   resolveGraphForShader,
 } from '../multipassGraph';
 import type { WebGPUFrameState } from './frameState';
@@ -36,6 +37,8 @@ export interface FrameSlotDispatchPlan {
   chained: SlotDispatchPlan[];
   anyReadsDataC: boolean;
   anyUsesHistory: boolean;
+  /** Any enabled slot touches the group-1 sim ring → upload simParams this frame. */
+  anyUsesSimRing: boolean;
 }
 
 export interface FrameSlotDispatchResult {
@@ -92,6 +95,7 @@ export function getFeedbackCopyOrder(
 export function buildFrameSlotDispatchPlan(state: WebGPUFrameState): FrameSlotDispatchPlan {
   let anyReadsDataC = false;
   let anyUsesHistory = false;
+  let anyUsesSimRing = false;
 
   const plans = state.slots
     .filter((slot) => slot.enabled && slot.shaderId && state.hasPipeline(slot.shaderId))
@@ -105,8 +109,10 @@ export function buildFrameSlotDispatchPlan(state: WebGPUFrameState): FrameSlotDi
         writesDataA = usage.writesDataA;
         writesDataB = usage.writesDataB;
         anyReadsDataC = anyReadsDataC || usage.readsDataC;
+        anyUsesSimRing = anyUsesSimRing || graphUsesSimRing(program.graph);
         for (const node of program.graph.nodes) {
           anyUsesHistory = anyUsesHistory || state.getBindingUsage(node.entry).usesHistory;
+          anyUsesSimRing = anyUsesSimRing || state.usesSimRing(node.entry);
         }
       } else {
         for (const shaderId of program.shaderIds) {
@@ -115,6 +121,7 @@ export function buildFrameSlotDispatchPlan(state: WebGPUFrameState): FrameSlotDi
           writesDataB = writesDataB || usage.writesDataB;
           anyReadsDataC = anyReadsDataC || usage.readsDataC;
           anyUsesHistory = anyUsesHistory || usage.usesHistory;
+          anyUsesSimRing = anyUsesSimRing || state.usesSimRing(shaderId);
         }
       }
 
@@ -127,6 +134,7 @@ export function buildFrameSlotDispatchPlan(state: WebGPUFrameState): FrameSlotDi
     chained: plans.filter((plan) => plan.slot.mode === 'chained'),
     anyReadsDataC,
     anyUsesHistory,
+    anyUsesSimRing,
   };
 }
 
@@ -161,6 +169,8 @@ export function dispatchFrameSlots(
   };
 
   logDispatchPlan(state, parallel, chained);
+
+  if (plan.anyUsesSimRing) state.writeSimRingParams();
 
   for (const slotPlan of parallel) {
     const slotStart = performance.now();
@@ -238,6 +248,8 @@ function dispatchSlot(
       scaledH: state.scaledH,
       maxPassesPerFrame: state.maxPassesPerFrame,
       shaderId: plan.slot.shaderId ?? undefined,
+      usesSimRing: state.usesSimRing,
+      simRing: state.getSimRing(),
       getTimestampWrites: querySet
         ? () => {
             const { isLast } = nextPassMeta(mode);
@@ -254,6 +266,12 @@ function dispatchSlot(
       console.warn(`[WebGPURenderer] Pipeline missing for multipass step "${shaderId}"`);
       continue;
     }
+    const simRing = state.usesSimRing(shaderId) ? state.getSimRing() : null;
+    if (state.usesSimRing(shaderId) && !simRing) {
+      console.warn(`[WebGPURenderer] "${shaderId}" needs the sim ring but none is armed — skipped`);
+      nextPassMeta(mode);
+      continue;
+    }
     const wg = state.getWorkgroupSize(shaderId);
     const { isLast } = nextPassMeta(mode);
     const timestampWrites = querySet
@@ -266,6 +284,7 @@ function dispatchSlot(
     );
     pass.setPipeline(pipeline);
     pass.setBindGroup(0, state.computeBindGroup);
+    if (simRing) pass.setBindGroup(1, simRing.bindGroup);
     pass.dispatchWorkgroups(
       Math.ceil(state.scaledW / wg.x),
       Math.ceil(state.scaledH / wg.y),

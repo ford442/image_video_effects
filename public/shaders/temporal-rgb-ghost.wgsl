@@ -6,7 +6,9 @@
 //            vignette-falloff, chromatic-ghost
 //  Complexity: Medium
 //  Upgraded: 2026-06-28
-//  Requires: binding 13 (historyTexture — HISTORY_DEPTH=8 ring buffer)
+//  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
+//         hardcoded 8 — see HISTORY RING DEPTH below
+//  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
 //
 //  Per-channel temporal displacement with added per-channel angular drift,
 //  FBM-driven ghost displacement, and vignette falloff.  R channel uses
@@ -46,7 +48,6 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-const HISTORY_DEPTH: u32 = 8u;
 const PI: f32 = 3.14159265358979323846;
 
 // ── Hash & Noise ─────────────────────────────────────────────────
@@ -111,8 +112,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Clamp params
   let zp_x = u.zoom_params.x; let zp_y = u.zoom_params.y; let zp_z = u.zoom_params.z; let zp_w = u.zoom_params.w; let zp = clamp(vec4<f32>(zp_x, zp_y, zp_z, zp_w), vec4<f32>(0.0), vec4<f32>(1.0));
-  let ageG = 1u + u32(zp.x * 7.0);
-  let ageB = 1u + u32(zp.y * 7.0);
+
+  // ── HISTORY RING DEPTH (floor fix, 2026-09-21) ───────────────────
+  // The ring is at most 8 layers; after the VRAM probe the runtime may
+  // allocate 8, 4 or 1, and it wraps its write head at the ALLOCATED
+  // count (renderer/webgpu/frame.ts). A hardcoded HISTORY_DEPTH=8 asked
+  // for layers that do not exist on a 4- or 1-layer device and WGSL
+  // clamped them to the last layer: scrambled frame order, silently.
+  let histDepth = max(textureNumLayers(historyTexture), 1u);
+  let maxAge = histDepth - 1u;
+  let ageG = min(1u + u32(zp.x * 7.0), maxAge);
+  let ageB = min(1u + u32(zp.y * 7.0), maxAge);
   let blendAmt   = clamp(zp.z * (1.0 + bass * 0.4), 0.0, 1.0);
   let displace   = zp.w * 0.04 * (1.0 + bass * 0.6 + treble * 0.3);
   let lumaBoost  = 1.0 + zp.w * (1.0 + mids * 0.5);
@@ -123,12 +133,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
   // G channel: delayed frame with slight temporal angular drift
-  let layerG = (historyHead + HISTORY_DEPTH - ageG) % HISTORY_DEPTH;
+  let layerG = (historyHead + histDepth - ageG) % histDepth;
   let dispG = displacedUV(uv, time, displace * 0.6, 12.0);
   let histG = textureSampleLevel(historyTexture, u_sampler, dispG, i32(layerG), 0.0);
 
   // B channel: older frame with larger noise displacement and opposite drift
-  let layerB = (historyHead + HISTORY_DEPTH - ageB) % HISTORY_DEPTH;
+  let layerB = (historyHead + histDepth - ageB) % histDepth;
   let dispB = displacedUV(uv, time, displace, 94.0);
   let histB = textureSampleLevel(historyTexture, u_sampler, dispB, i32(layerB), 0.0);
 

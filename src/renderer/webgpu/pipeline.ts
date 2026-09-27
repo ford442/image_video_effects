@@ -16,6 +16,13 @@ import { BLIT_WGSL, GENERATIVE_BLIT_WGSL, SCALE_COPY_WGSL, VIDEO_COPY_WGSL } fro
 import { fetchShaderWgsl } from '../../utils/fetchShaderWgsl';
 import { HISTORY_DEPTH } from './webgpuConstants';
 import {
+  checkSimRingLimits,
+  createSimRingBindGroupLayout,
+  createSimRingPipelineLayout,
+  declaresBindGroup1,
+  validateGroup1Declarations,
+} from './simRing';
+import {
   WebGPUBufferSet,
   WebGPUSamplerSet,
   WebGPUTextureSet,
@@ -37,8 +44,13 @@ export interface WebGPUBlitResources {
   supportsExternalTexture: boolean;
 }
 
+/** Group-1 layout provider; null when the device cannot host the sim ring. */
+export type SimRingLayoutProvider = () => GPUPipelineLayout | null;
+
 export class WebGPUShaderManager {
   private pipelines = new Map<string, GPUComputePipeline>();
+  private simRingShaders = new Set<string>();
+  private simRingLayoutProvider: SimRingLayoutProvider = () => null;
   private pipelineHashes = new Map<string, string>();
   private workgroupSizes = new Map<string, { x: number; y: number }>();
   private bindingUsages = new Map<string, ShaderBindingUsage>();
@@ -66,6 +78,15 @@ export class WebGPUShaderManager {
     return this.workgroupSizes.get(id) || { x: 8, y: 8 };
   }
 
+  setSimRingLayoutProvider(provider: SimRingLayoutProvider): void {
+    this.simRingLayoutProvider = provider;
+  }
+
+  /** True when the cached pipeline for `id` was built against the group-1 layout. */
+  usesSimRing(id: string): boolean {
+    return this.simRingShaders.has(id);
+  }
+
   getBindingUsage(id: string): ShaderBindingUsage {
     return this.bindingUsages.get(id) ?? CONSERVATIVE_BINDING_USAGE;
   }
@@ -82,6 +103,7 @@ export class WebGPUShaderManager {
     this.pipelineHashes.clear();
     this.workgroupSizes.clear();
     this.bindingUsages.clear();
+    this.simRingShaders.clear();
   }
 
   async compile(
@@ -90,9 +112,29 @@ export class WebGPUShaderManager {
     id: string,
     wgsl: string,
   ): Promise<boolean> {
+    // Opt-in @group(1): only shaders that declare it get the two-layout pipeline.
+    // Everything else keeps the single group-0 layout it has always used.
+    let layout = pipelineLayout;
+    const wantsSimRing = declaresBindGroup1(wgsl);
+    if (wantsSimRing) {
+      const errors = validateGroup1Declarations(wgsl);
+      const simLayout = this.simRingLayoutProvider();
+      if (errors.length > 0 || !simLayout) {
+        console.warn(
+          `[WebGPU] Shader "${id}" declares @group(1) but ` +
+            (errors.length > 0
+              ? `violates bind_group1.json: ${errors.join('; ')}`
+              : 'this device cannot host the sim ring') +
+            ' — skipped.',
+        );
+        return false;
+      }
+      layout = simLayout;
+    }
+
     const ok = await compileShader(
       device,
-      pipelineLayout,
+      layout,
       id,
       wgsl,
       this.pipelines,
@@ -102,6 +144,8 @@ export class WebGPUShaderManager {
     );
     if (ok) {
       this.bindingUsages.set(id, analyzeShaderBindings(wgsl));
+      if (wantsSimRing) this.simRingShaders.add(id);
+      else this.simRingShaders.delete(id);
     }
     return ok;
   }
@@ -385,7 +429,16 @@ export class WebGPUPipelineModule {
   private canvasFormat: GPUTextureFormat = 'bgra8unorm';
   private blitReadTex!: GPUTexture;
 
+  /** Group-1 sim-ring layouts; created lazily, null when the device lacks the limits. */
+  simRingBindGroupLayout: GPUBindGroupLayout | null = null;
+  private simRingPipelineLayout: GPUPipelineLayout | null = null;
+  private simRingDevice: GPUDevice | null = null;
+
   readonly shaderManager = new WebGPUShaderManager();
+
+  constructor() {
+    this.shaderManager.setSimRingLayoutProvider(() => this.getSimRingPipelineLayout());
+  }
 
   setupComputeLayout(
     device: GPUDevice,
@@ -398,6 +451,33 @@ export class WebGPUPipelineModule {
     const layout = createComputeBindGroupLayout(device, hasF32Filt, colorFormat);
     this.bindGroupLayout = layout.bindGroupLayout;
     this.pipelineLayout = layout.pipelineLayout;
+    // Group 0 changed → any group-1 pipeline layout built on it is stale.
+    this.simRingDevice = device;
+    this.simRingBindGroupLayout = null;
+    this.simRingPipelineLayout = null;
+  }
+
+  /**
+   * [group 0, group 1] pipeline layout for sim-ring shaders. Built on first use
+   * so non-sim sessions never create it; the group-1 limits are checked against
+   * device.limits here instead of being added to catalog-wide requiredLimits.
+   */
+  getSimRingPipelineLayout(): GPUPipelineLayout | null {
+    if (this.simRingPipelineLayout) return this.simRingPipelineLayout;
+    const device = this.simRingDevice;
+    if (!device || !this.bindGroupLayout) return null;
+    const check = checkSimRingLimits(device.limits as never);
+    if (!check.ok) {
+      console.warn('[WebGPU] sim ring unavailable:', check.failures.join('; '));
+      return null;
+    }
+    this.simRingBindGroupLayout = createSimRingBindGroupLayout(device);
+    this.simRingPipelineLayout = createSimRingPipelineLayout(
+      device,
+      this.bindGroupLayout,
+      this.simRingBindGroupLayout,
+    );
+    return this.simRingPipelineLayout;
   }
 
   setupBlitPipelines(
