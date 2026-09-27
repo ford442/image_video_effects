@@ -1,0 +1,184 @@
+with '--enable-dawn-features=allow_unsafe_apis' and '--enable-webgpu-developer-features':
+
+
+
+
+
+s#PLAYWRIGHT_HTML_OPEN=never npx playwright test tests/wasm-benchmark.spec.ts --project=chromium --reporter=list 2>&1 | grep -v "dbus\|UPower""
+cat test-results/wasm-benchmark-report.json
+
+Running 3 tests using 1 worker
+
+
+Wrote benchmark report → test-results/wasm-benchmark-report.json
+
+
+      "shaderId": "gen-lichen-reaction-diffusion",
+      "backend": "webgpu",
+      "avgFps": 59.98800239950889,
+      "avgTotalMs": 0.5181818181352521,
+      "gpuTimingsAvailable": false,
+      "timingSource": "wall-clock",
+      "p95TotalMs": 0.30000000074505806
+    },
+    {
+      "shaderId": "cyber-ripples",
+      "backend": "wasm",
+      "avgFps": 60.00144488016765,
+      "avgTotalMs": 0.1982456151592104,
+      "gpuTimingsAvailable": false,
+      "timingSource": "wall-clock",
+      "p95TotalMs": 1
+    },
+    {
+      "shaderId": "cyber-ripples",
+      "backend": "webgpu",
+      "avgFps": 60.38843994289549,
+      "avgTotalMs": 0.4611111111180098,
+      "gpuTimingsAvailable": false,
+      "timingSource": "wall-clock",
+      "p95TotalMs": 0.40000000037252903
+    }
+  ],
+  "comparisons": [
+    {
+      "shaderId": "sim-fluid-feedback-coupled",
+      "wasmFps": 60.001442464192706,
+      "webgpuFps": 59.99370074984462,
+      "wasmAvgTotalMs": 0.16896552014453659,
+      "webgpuAvgTotalMs": 0.3157894737659055,
+      "speedupRatio": 1.000129042120278,
+      "meetsPromotionGate": false
+    },
+    {
+      "shaderId": "gen-lichen-reaction-diffusion",
+      "wasmFps": 59.51960798899333,
+      "webgpuFps": 59.98800239950889,
+      "wasmAvgTotalMs": 0.27924528535244597,
+      "webgpuAvgTotalMs": 0.5181818181352521,
+      "speedupRatio": 0.9921918651767041,
+      "meetsPromotionGate": false
+    },
+    {
+      "shaderId": "cyber-ripples",
+      "wasmFps": 60.00144488016765,
+      "webgpuFps": 60.38843994289549,
+      "wasmAvgTotalMs": 0.1982456151592104,
+      "webgpuAvgTotalMs": 0.4611111111180098,
+      "speedupRatio": 0.9935915704546467,
+      "meetsPromotionGate": false
+    }
+  ],
+  "promotionGateMet": false,
+  "promotionMinShaders": 3,
+  "promotionSpeedupRatio": 1.25
+}
+Promotion gate (≥1.25× on ≥3 shaders): NOT MET (0/3 shaders)
+Note: WASM getGPUTimings().available is false — timingSource is wall-clock.
+=============================
+
+  ✓  1 [chromium] › tests/wasm-benchmark.spec.ts:79:5 › WASM vs WebGPU benchmark matrix (1.1m)
+  ✓  2 [chromium] › tests/wasm-benchmark.spec.ts:185:5 › format tier FP16 vs FP32 (WebGPU) (14.8s)
+  ✓  3 [chromium] › tests/wasm-benchmark.spec.ts:230:5 › WASM getGPUTimings API surface (8.3s)
+
+  3 passed (1.6m)
+{
+  "generatedAt": "2026-09-27T01:51:11.589Z",
+  "strictGpuMode": true,
+  "gpuBackendObserved": true,
+  "benchmarkShaderIds": [
+    "sim-fluid-feedback-coupled",
+    "gen-lichen-reaction-diffusion",
+    "cyber-ripples"
+  ],
+  "wasmAdapterSummary": "Adapter: nvidia | 0x1eb8 | turing | backend=WebGPU type=Unknown | limits: maxTex2D=16384 storageTex=8 sampledTex=48 computeInvocations=1024 (sufficient) | features=[float32-filterable] | surfaceFormat=rgba8unorm",
+  "webgpuAdapterSummary": "Adapter attempt=HighPerformance | limits: maxTex2D=16384 storageTex=8 sampledTex=48 computeInvocations=1024 (sufficient) | device: maxTex2D=8192 computeInvocations=256 | features=[float32-filterable,timestamp-query,subgroups] | surfaceFormat=rgba8unorm | storage: rgba16float=yes rgba32float=yes float16Array=yes f32filter=yes f32blend=yes | canvas: copySrc=yes colorSpace=srgb",
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.7827.55 Safari/537.36",
+  "results": [
+    {
+      "shaderId": "sim-fluid-feedback-coupled",
+      "backend": "wasm",
+      "avgFps": 60.001442464192706,
+      "avgTotalMs": 0.16896552014453659,
+      "gpuTimingsAvailable": false,
+      "timingSource": "wall-clock",
+      "p95TotalMs": 0.20000000298023224
+    },
+    {
+      "shaderId": "sim-fluid-feedback-coupled",
+      "backend": "webgpu",
+      "avgFps": 59.99370074984462,
+      "avgTotalMs": 0.3157894737659055,
+      "gpuTimingsAvailable": false,
+      "timingSource": "wall-clock",
+      "p95TotalMs": 0.10000000055879354
+    },
+    {
+      "shaderId": "gen-lichen-reaction-diffusion",
+      "backend": "wasm",
+      "avgFps": 59.51960798899333,
+      "avgTotalMs": 0.27924528535244597,
+      "gpuTimingsAvailable": false,
+      "timingSource": "wall-clock",
+      "p95TotalMs": 2.4000000953674316
+    },
+    {
+      "shaderId": "gen-lichen-reaction-diffusion",
+      "backend": "webgpu",
+      "avgFps": 59.98800239950889,
+      "avgTotalMs": 0.5181818181352521,
+      "gpuTimingsAvailable": false,
+      "timingSource": "wall-clock",
+      "p95TotalMs": 0.30000000074505806
+    },
+    {
+      "shaderId": "cyber-ripples",
+      "backend": "wasm",
+      "avgFps": 60.00144488016765,
+      "avgTotalMs": 0.1982456151592104,
+      "gpuTimingsAvailable": false,
+      "timingSource": "wall-clock",
+      "p95TotalMs": 1
+    },
+    {
+      "shaderId": "cyber-ripples",
+      "backend": "webgpu",
+      "avgFps": 60.38843994289549,
+      "avgTotalMs": 0.4611111111180098,
+      "gpuTimingsAvailable": false,
+      "timingSource": "wall-clock",
+      "p95TotalMs": 0.40000000037252903
+    }
+  ],
+  "comparisons": [
+    {
+      "shaderId": "sim-fluid-feedback-coupled",
+      "wasmFps": 60.001442464192706,
+      "webgpuFps": 59.99370074984462,
+      "wasmAvgTotalMs": 0.16896552014453659,
+      "webgpuAvgTotalMs": 0.3157894737659055,
+      "speedupRatio": 1.000129042120278,
+      "meetsPromotionGate": false
+    },
+    {
+      "shaderId": "gen-lichen-reaction-diffusion",
+      "wasmFps": 59.51960798899333,
+      "webgpuFps": 59.98800239950889,
+      "wasmAvgTotalMs": 0.27924528535244597,
+      "webgpuAvgTotalMs": 0.5181818181352521,
+      "speedupRatio": 0.9921918651767041,
+      "meetsPromotionGate": false
+    },
+    {
+      "shaderId": "cyber-ripples",
+      "wasmFps": 60.00144488016765,
+      "webgpuFps": 60.38843994289549,
+      "wasmAvgTotalMs": 0.1982456151592104,
+      "webgpuAvgTotalMs": 0.4611111111180098,
+      "speedupRatio": 0.9935915704546467,
+      "meetsPromotionGate": false
+    }
+  ],
+  "promotionGateMet": false,
+  "promotionMinShaders": 3,
+  "promotionSpeedupRatio": 1.25
