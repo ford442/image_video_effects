@@ -1,6 +1,13 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-28 (local main union, no push)
+**Last updated:** 2026-09-28 (pulsar shader merge, no push)
+
+## 2026-09-28 — Void-Mycelium Pulsar shader (#1338, no push)
+
+- Merged origin `86160488` onto local main as `d15827aa`. Local main is 5 commits ahead of origin. Did not push.
+- Took the new `gen-cyber-organic-void-mycelium-pulsar` WGSL and JSON. Naga 1/1 valid. Catalog 1,373 → 1,374 (generative 479). Search index 1,374 with 1,373 embeddings reused.
+- Kept the 2026-09-15 Chronomorphic Glass Tesseract sliders (`fold_speed`, `dispersion`, `refraction_ior`, `gravity`). The 2026-09-26 tesseract plan stays completed and off pending. Pulsar plan moved pending → completed.
+- Sync manifest kept local hashes. Pulsar entry uses the local WGSL MD5 (`88d6d4bd…`); origin's recorded hash did not match the file bytes.
 
 ## 2026-09-28 — Local main union (no push)
 
