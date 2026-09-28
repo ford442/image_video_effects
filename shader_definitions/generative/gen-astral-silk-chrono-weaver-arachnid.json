@@ -53,7 +53,11 @@
   "updated": true,
   "id": "gen-astral-silk-chrono-weaver-arachnid",
   "url": "shaders/gen-astral-silk-chrono-weaver-arachnid.wgsl",
-  "features": [],
+  "features": [
+    "upgraded-rgba",
+    "audio-reactive",
+    "mouse-driven"
+  ],
   "params": [
     {
       "id": "web_glow",

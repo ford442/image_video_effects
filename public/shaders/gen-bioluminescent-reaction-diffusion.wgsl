@@ -4,8 +4,10 @@
 //  Features: mouse-driven, audio-reactive, simulation, upgraded-rgba,
 //            chromatic-species, temporal-mutation, depth-scaled-glow
 //  Complexity: Medium
-//  Upgraded: 2026-09-12
-//  Ideas: luciferin quench from stored B-age; excitation flash on advancing B fronts
+//  Upgraded: 2026-09-27
+//  Ideas: luciferin quench from stored B-age; excitation flash on advancing B fronts;
+//         pointer wake resets local luciferin-age for an unquenched glow trail;
+//         quorum-sensing ignition flash at local B concentration maxima
 //  A packing: raw (A, B, luciferin-age, 1)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -124,7 +126,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   finalB = mix(finalB, 1.0, mouseSeed);
 
   // Idea 1 — luciferin quench: age rises while B stays high, then glow dims
-  let luciferinAge = clamp(select(prevAge * 0.92, prevAge + simulationSpeed * 0.04, finalB > 0.45), 0.0, 1.0);
+  let luciferinAgeGrown = clamp(select(prevAge * 0.92, prevAge + simulationSpeed * 0.04, finalB > 0.45), 0.0, 1.0);
+  // Idea 3 — pointer wake: touching the field resets local luciferin-age, so the
+  // seeded trail glows unquenched-bright and only fades back over several seconds.
+  let luciferinAge = mix(luciferinAgeGrown, 0.0, mouseSeed * 0.85);
   let quench = 1.0 - smoothstep(0.35, 0.95, luciferinAge) * 0.55;
 
   let state = vec4<f32>(finalA, finalB, luciferinAge, 1.0);
@@ -149,13 +154,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let advancing = clamp(finalB - neighborB, 0.0, 1.0);
   let excitation = pow(advancing * 2.4, 2.0) * (0.55 + treble * 0.45);
 
+  // Idea 4 — quorum-sensing ignition: using the same 8-neighbor samples already
+  // loaded for the Laplacian, flash a cell that is a strict local B maximum,
+  // like a dinoflagellate colony igniting once local density peaks. Younger
+  // (low-age) colonies ignite brighter than long-quenched ones.
+  let neighborMaxB = max(max(max(nR.y, nL.y), max(nU.y, nD.y)), max(max(nNE.y, nSW.y), max(nSE.y, nNW.y)));
+  let isLocalMax = step(neighborMaxB, finalB) * step(0.5, finalB);
+  let ignition = pow(finalB, 3.0) * isLocalMax * (1.0 - luciferinAge * 0.6);
+
   let glow = clamp(finalB * 2.0, 0.0, 1.0) * quench;
 
   // Depth-scaled glow intensity
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let depthScale = 0.5 + depth * 0.5;
   let alpha = mix(video_color.a, 1.0, glow * 0.7 * depthScale);
-  let finalRGB = mixedSpecies * glow * depthScale * intensity + vec3<f32>(0.55, 0.95, 1.0) * excitation * intensity;
+  let finalRGB = mixedSpecies * glow * depthScale * intensity
+    + vec3<f32>(0.55, 0.95, 1.0) * excitation * intensity
+    + vec3<f32>(0.9, 1.0, 0.65) * ignition * intensity;
 
   textureStore(writeTexture, coord, vec4<f32>(acesToneMap(finalRGB * 1.1), alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

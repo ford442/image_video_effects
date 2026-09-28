@@ -3,8 +3,10 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-21
-//  Ideas: pulse-swim contraction with thrust/coast surge; pupils track the pointer and blink on seeded schedules
+//  Upgraded: 2026-09-27
+//  Ideas: pulse-swim contraction with thrust/coast surge; pupils track the pointer and
+//         blink on seeded schedules; tentacle-anchored luminous wake from a second
+//         history sample; click-triggered startle contraction spike; audio-linked pupil dilation
 //  A packing: ACES display RGBA (read back as colour history)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -79,10 +81,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     local.x += sin(drift + seed * TAU + cell.y) * (0.06 + tentacleCurl * 0.12);
     local.y += cos(drift * 0.7 + seed * 4.0) * 0.05;
 
+    // Idea 4 — click-triggered startle: a cell near a fresh ripple recoils with an
+    // extra contraction kick, wiring the existing (previously decorative) click
+    // ripples into the existing pulse-swim mechanism. Reuses the same ripple loop
+    // that also drives the deep-glow "clickOracle" ring below.
+    let cellCenterP = vec2<f32>((cell.x + 0.5) / gridScale - 1.0, (cell.y + 0.5) / gridScale - 1.0 - drift * 0.13);
+    var clickOracle = 0.0;
+    var startleKick = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 3.1) {
+            let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+            let ring = abs(length(delta) - age * (0.16 + driftSpeed * 0.16));
+            clickOracle += (1.0 - smoothstep(0.0, 0.030, ring)) * (1.0 - age / 3.1);
+        }
+        if (age >= 0.0 && age < 0.6) {
+            let rippleWorldP = (ripple.xy - 0.5) * vec2<f32>(aspect, 1.0);
+            let cellDist = length(cellCenterP - rippleWorldP);
+            startleKick += (1.0 - smoothstep(0.0, 0.35, cellDist)) * (1.0 - age / 0.6);
+        }
+    }
+
     // Idea 1 — pulse-swim: each jelly contracts (bell narrows and lengthens), surges up on the stroke,
     // then coasts back; the net rise is the grid drift. -y is up (bells dome toward -y).
     let swimPhase = fract(drift * 0.55 + seed * 3.7);
-    let contraction = smoothstep(0.0, 0.16, swimPhase) * (1.0 - smoothstep(0.16, 0.55, swimPhase));
+    let contraction = clamp(smoothstep(0.0, 0.16, swimPhase) * (1.0 - smoothstep(0.16, 0.55, swimPhase)) + startleKick * 0.6, 0.0, 1.4);
     local.y += (smoothstep(0.0, 0.45, swimPhase) - swimPhase) * (0.10 + tentacleCurl * 0.06);
     let bellDistance = length(vec2<f32>(local.x * 1.05 * (1.0 + contraction * 0.38), max(local.y + 0.08, 0.0) * 1.5 * (1.0 - contraction * 0.22)));
     let bell = smoothstep(0.42, 0.25, bellDistance) * smoothstep(0.32, -0.22, local.y);
@@ -96,26 +121,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let gaze = toPointer / max(length(toPointer), 0.001) * min(length(toPointer) * 2.5, 1.0) * 0.045;
     let eyeDistance = length(eyeLocal * vec2<f32>(1.0, 1.7 / max(1.0 - lid, 0.08)));
     let eye = exp(-eyeDistance * 22.0) * bell * (1.0 - lid * 0.85);
+    // Idea 5 (optional) — audio-linked pupil dilation: bass widens the pupil's
+    // falloff radius so the oracle's eyes visibly react to sound.
     let pupilDistance = length((eyeLocal - gaze) * vec2<f32>(1.0, 1.7));
-    let pupil = exp(-pupilDistance * (65.0 + oracleChroma * 45.0)) * (1.0 - lid) * bell;
+    let pupil = exp(-pupilDistance * max(65.0 + oracleChroma * 45.0 - audio.x * 35.0, 12.0)) * (1.0 - lid) * bell;
     let tentaclePhase = local.x * (18.0 + tentacleCurl * 30.0) + sin(local.y * 12.0 - drift * 3.0) * (1.0 + tentacleCurl * 3.0) * (1.0 - contraction * 0.5);
     let tentacles = pow(0.5 + 0.5 * cos(tentaclePhase), 12.0) * smoothstep(-0.08, 0.48 + contraction * 0.22, local.y) * exp(-abs(local.x) * 2.2);
     let oracleAngle = atan2(local.y + 0.07, local.x);
     let oracleSigil = pow(0.5 + 0.5 * cos(oracleAngle * (7.0 + floor(swarmDensity * 6.0)) + drift * 2.0), 14.0) *
         exp(-abs(eyeDistance - 0.15) * (45.0 + oracleChroma * 25.0));
     let deepBell = exp(-abs(bellDistance - 0.48) * 28.0) * (0.5 + 0.5 * sin(drift + seed * TAU));
-
-    var clickOracle = 0.0;
-    let rippleCount = min(u32(u.config.y), 50u);
-    for (var i = 0u; i < rippleCount; i = i + 1u) {
-        let ripple = u.ripples[i];
-        let age = time - ripple.z;
-        if (age >= 0.0 && age < 3.1) {
-            let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
-            let ring = abs(length(delta) - age * (0.16 + driftSpeed * 0.16));
-            clickOracle += (1.0 - smoothstep(0.0, 0.030, ring)) * (1.0 - age / 3.1);
-        }
-    }
 
     let hue = seed + oracleChroma * 0.55 + local.y * 0.35 + time * (0.04 + driftSpeed * 0.10);
     var hdr = palette(hue) * bell * (0.6 + oracleChroma * 2.1 + audio.y);
@@ -126,6 +141,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let historyUV = clamp(uv + vec2<f32>(sin(drift + uv.y * 9.0) * 0.002, 0.003 + driftSpeed * 0.008), vec2<f32>(0.0), vec2<f32>(1.0));
     let history = historyLoadUV(historyUV);
     hdr = mix(hdr, history.rgb, clamp(0.10 + oracleChroma * 0.16 + dragMask * 0.14, 0.0, 0.42));
+
+    // Idea 3 — tentacle-anchored luminous wake: a second history sample, offset
+    // along the tentacles' own phase, is screened additively into the tentacle
+    // term for a longer luminous streak distinct from the frame-wide history mix.
+    let tentacleWakeUV = clamp(uv + vec2<f32>(sin(tentaclePhase * 0.05) * 0.008, 0.014 + driftSpeed * 0.012), vec2<f32>(0.0), vec2<f32>(1.0));
+    let tentacleWake = historyLoadUV(tentacleWakeUV).rgb;
+    hdr += tentacleWake * tentacles * 0.55;
     let structure = clamp(bell * 0.65 + rim * 0.5 + tentacles * 0.45 + oracleSigil * 0.35 + eye + clickOracle * 0.45, 0.0, 1.0);
     let output = vec4<f32>(acesToneMap(max(hdr, vec3<f32>(0.0))), clamp(0.10 + structure * 0.88, 0.0, 1.0));
     textureStore(writeTexture, coord, output);

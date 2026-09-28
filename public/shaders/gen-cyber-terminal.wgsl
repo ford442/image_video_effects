@@ -3,8 +3,8 @@
 //  
 //  Category: generative
 //  Features: audio-reactive, upgraded-rgba
-//  Upgraded: 2026-09-21 (was 2026-08-21, Batch 42)
-//  Ideas: 3x5 segment glyph font; white-hot flickering leader at each drop head
+//  Upgraded: 2026-09-27 (was 2026-09-21, Batch 42)
+//  Ideas: 3x5 segment glyph font; white-hot flickering leader at each drop head; column gaps; bottom restart flash
 //  A packing: raw HDR display RGBA history (C read back as the same)
 //  Techniques:
 //    - Falling digital rain (Matrix-style)
@@ -103,21 +103,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let cellUV = fract(uv * vec2<f32>(cols, rows)) - 0.5;
         
         let speed = 2.0 + hash12(vec2<f32>(gridUV.x, 0.0)) * 5.0 + bass * 5.0;
-        let dropPos = fract(time * speed + hash12(vec2<f32>(gridUV.x, 1.0)));
+        let columnSeed = hash12(vec2<f32>(gridUV.x, 1.0));
+        let dropPos = fract(time * speed + columnSeed);
         // Head at dropPos, tail trailing up the column (HEAD had the bright end trailing behind the motion).
         let trail = fract(dropPos - uv.y);
+        let wrapGen = floor(time * speed + columnSeed);
         
         // Idea 2 — white-hot leader: the cell at the drop head burns near-white and re-rolls its glyph every frame.
         let leader = 1.0 - smoothstep(0.6 / rows, 1.6 / rows, trail);
-        let dataBit = hash12(gridUV + floor(time * (7.0 + treble * 8.0)));
+        let dataBit = hash12(gridUV + wrapGen * 0.37 + floor(time * (7.0 + treble * 8.0)));
         let leaderBit = hash12(gridUV + floor(time * 30.0) * 1.37 + 17.0);
         let bit = mix(dataBit, leaderBit, step(0.5, leader));
         let strokeWidth = mix(0.22, 0.055, glyphSharpness);
         let glyph = segmentGlyph(cellUV, bit, strokeWidth * 0.5);
-        let intensity = (1.0 - trail) * step(trail, 0.34) * glyph;
+        // Column gaps: seeded blanks so the trail is glyph blocks, not a solid streak.
+        let gap = step(0.64, hash12(vec2<f32>(gridUV.x, floor(trail * 7.0) + wrapGen)));
+        let intensity = (1.0 - trail) * step(trail, 0.34) * glyph * (1.0 - gap);
         let phosphor = mix(vec3<f32>(0.03, 0.72, 0.16), vec3<f32>(0.12, 1.0, 0.68), mids);
         col = phosphor * intensity * characterBrightness * (1.0 + bass * 2.0 + treble * bit);
-        col += vec3<f32>(0.78, 1.0, 0.86) * glyph * leader * characterBrightness * 1.6;
+        col += vec3<f32>(0.78, 1.0, 0.86) * glyph * leader * (1.0 - gap) * characterBrightness * 1.6;
+        // Bottom restart: one cold-green frame where the column wraps, then the new seed.
+        let wrapFlash = smoothstep(0.9, 1.0, uv.y) * (1.0 - smoothstep(0.0, 0.04, dropPos));
+        col += vec3<f32>(0.16, 0.48, 0.28) * wrapFlash * glyph * characterBrightness * 1.5;
         
         // Scanlines
         let scan = 0.78 + 0.22 * sin(uvFull.y * resolution.y * 3.14159);

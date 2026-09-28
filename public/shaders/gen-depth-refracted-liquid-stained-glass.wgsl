@@ -4,7 +4,10 @@
 //  Features: facet-refraction, depth-aware, chromatic-aberration, upgraded-rgba,
 //            temporal-rotation, audio-refraction, chromatic-edge-dispersion
 //  Complexity: High
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-09-27
+//  Ideas: leaded-came specular highlight along facet seams; depth-driven caustic
+//         focus glow where steep bevels concentrate the refraction
+//  A packing: A/C = final ACES display RGBA; exact stained-glass tint history
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -201,12 +204,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col += film * abs(clickWave) * (0.12 + treble * 0.18);
     col *= 1.0 - ornament.x * 0.18;
 
+    // Idea 1 — leaded-came highlight: a sharp specular line right on the facet
+    // seam, brighter where the key light grazes it, like metal holding the glass.
+    let seamKey = max(dot(normal, normalize(vec3<f32>(0.55, 0.75, 0.8))), 0.0);
+    let leadHighlight = pow(edgeFactor, 3.0) * pow(seamKey, 2.0);
+    col += vec3<f32>(1.0, 0.97, 0.85) * leadHighlight * (0.35 + bass * 0.25);
+
+    // Idea 2 — caustic focus glow: steep-bevel facets concentrate light like a
+    // lens, brightening in proportion to how hard this texel is refracting.
+    let causticStrength = clamp(length(offset) * (18.0 + bevelParam * 40.0), 0.0, 1.0);
+    col += glassTint * causticStrength * causticStrength * (0.3 + treble * 0.35);
+
     // Temporal color rotation via dataTextureC tint blend
     let prevTint = textureLoad(dataTextureC, coords, 0).rgb;
     col = mix(col, prevTint * 0.9, 0.04 + mids * 0.02);
 
     let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-    let materialCoverage = clamp(edgeFactor * 0.35 + fresnel * 0.3 + luma * 0.35 + abs(clickWave) * 0.12, 0.0, 1.0);
+    let materialCoverage = clamp(edgeFactor * 0.35 + fresnel * 0.3 + luma * 0.35 + abs(clickWave) * 0.12 + leadHighlight * 0.2 + causticStrength * 0.15, 0.0, 1.0);
     let alpha = max(sourceAlpha, materialCoverage);
 
     let reliefDepth = clamp(depth_val + edgeFactor * 0.1 + length(gradient) * mix(0.5, 2.0, bevelParam), 0.0, 1.0);

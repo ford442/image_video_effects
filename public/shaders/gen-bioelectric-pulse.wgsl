@@ -3,7 +3,10 @@
 //  Category: generative
 //  Features: generative, reaction-diffusion, organic-pulses, glow,
 //            fbm-noise, audio-reactive, mouse-activation, depth-aware,
-//            phosphor-trail feedback, kick-triggered mega-pulse
+//            phosphor-trail feedback, kick-triggered mega-pulse, upgraded-rgba
+//  Upgraded: 2026-09-27
+//  Ideas: recovery trough behind each sine ring; biphasic cyan/magenta spike
+//  A packing: unmapped phosphor trail RGB in A; ACES on writeTexture
 //  Agent 4a — Phase A shader upgrade swarm
 //  Interactivist pass (batch 14): fixed mouse reads to engine
 //  convention (zoom_config.yz = position, .w = down), added honest
@@ -74,13 +77,27 @@ fn glow(dist: f32, radius: f32, intensity: f32) -> f32 {
     return exp(-dist * dist / (radius * radius + 1e-6)) * intensity;
 }
 
-// Reaction-diffusion wave kernel: sum of decaying radial pulses
-fn rdPulse(p: vec2<f32>, center: vec2<f32>, time: f32, speed: f32, width: f32) -> f32 {
+// Reaction-diffusion wave kernel: sum of decaying radial pulses.
+// Returns (amplitude, raw sine). Trailing half of the sine is the recovery trough.
+fn rdPulse(p: vec2<f32>, center: vec2<f32>, time: f32, speed: f32, width: f32) -> vec2<f32> {
     let d = length(p - center);
     let phase = d * 8.0 - time * speed * 4.0;
-    let wave = sin(phase) * 0.5 + 0.5;
+    let sine = sin(phase);
+    var wave = sine * 0.5 + 0.5;
     let envelope = exp(-d * d * 2.0) * (1.0 - smoothstep(0.0, 1.5, d));
-    return wave * envelope * glow(d, width, 1.0);
+    wave = wave * envelope * glow(d, width, 1.0);
+    let trailing = smoothstep(0.2, -0.55, sine);
+    wave = wave * (1.0 - trailing * 0.7);
+    return vec2<f32>(wave, sine);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // Kick mega-pulse: an expanding bioelectric shockwave ring launched
@@ -156,6 +173,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Multiple organic pulse centers (wandering motion preserved)
     var pulseField = 0.0;
+    var riseW = 0.0;
+    var fallW = 0.0;
     let baseCenters = array<vec2<f32>, 5>(
         vec2<f32>(0.0, 0.0),
         vec2<f32>(0.35, 0.25),
@@ -174,12 +193,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         );
         let center = baseCenters[i] + offset;
         let pulse = rdPulse(p, center, time + fi, speed, pulseWidth * 0.25);
-        pulseField += pulse * (1.0 + bass * 0.5);
+        let amp = pulse.x * (1.0 + bass * 0.5);
+        pulseField += amp;
+        let rising = smoothstep(-0.15, 0.55, pulse.y);
+        riseW += amp * rising;
+        fallW += amp * (1.0 - rising);
     }
 
     // Mouse pulse when active (now at the real cursor position)
-    let mousePulse = rdPulse(p, mouse, time, speed * 1.5, pulseWidth * 0.2) * mouseDown;
-    pulseField += mousePulse * 2.0;
+    let mousePulse = rdPulse(p, mouse, time, speed * 1.5, pulseWidth * 0.2);
+    let mouseAmp = mousePulse.x * mouseDown * 2.0;
+    pulseField += mouseAmp;
+    let mouseRising = smoothstep(-0.15, 0.55, mousePulse.y);
+    riseW += mouseAmp * mouseRising;
+    fallW += mouseAmp * (1.0 - mouseRising);
 
     // Kick mega-pulse rides on top of the organic pulse field
     pulseField += mega * (1.5 + bass);
@@ -211,7 +238,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Combine
     var col = vec3<f32>(0.01, 0.02, 0.03);
     col += bioColor * substrate * 0.3;
-    col += pulseColor * pulseField;
+    // Idea: biphasic spike — rising half cyan, falling half magenta.
+    let cyan = mix(vec3<f32>(0.15, 0.85, 0.95), pulseColor, 0.35);
+    let magenta = mix(vec3<f32>(0.9, 0.18, 0.55), pulseColor, hueShift * 0.4);
+    col += cyan * riseW + magenta * fallW;
     col += bioColor * veinGlow * veinMask;
     col += megaColor * mega * 0.8;
 
@@ -227,7 +257,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Blend with the previous frame via dataTextureC so pulses leave
     // fading trails: ~0.9 decay, ~0.1 injection (Pulse Width widens
     // the injection), accumulated trail clamped pre-tint at ~1.2.
-    let prevFrame = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+    let prevFrame = textureLoad(dataTextureC, coord, 0).rgb;
     let trailDecay = 0.9;
     let inject = mix(0.07, 0.14, pulseWidth / 0.4);
     var trail = prevFrame * trailDecay + col * inject;
@@ -236,10 +266,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Hue Shift tints the persistent trail toward the live palette.
     let trailTint = mix(vec3<f32>(1.0), bioColor + vec3<f32>(0.3), 0.35 * hueShift);
 
-    // Output as generative background (alpha = 1.0)
-    let finalColor = clamp(trail * trailTint, vec3<f32>(0.0), vec3<f32>(1.0));
-    textureStore(writeTexture, coord, vec4<f32>(finalColor, 1.0));
-    textureStore(writeDepthTexture, coord, vec4<f32>(0.0, 0.0, 0.0, 0.0));
-    // Persist the clamped, pre-tint trail for next frame's feedback.
-    textureStore(dataTextureA, coord, vec4<f32>(trail, 1.0));
+    let coverage = clamp(0.18 + pulseField * 0.7 + veinMask * 0.2 + mega * 0.35, 0.0, 0.98);
+    let shown = clamp(trail * trailTint, vec3<f32>(0.0), vec3<f32>(1.6));
+    textureStore(dataTextureA, coord, vec4<f32>(trail, coverage));
+    textureStore(writeTexture, coord, vec4<f32>(acesToneMap(shown), coverage));
+    textureStore(writeDepthTexture, coord, vec4<f32>(clamp(pulseField * 0.45 + mega * 0.35, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

@@ -4,6 +4,9 @@
 //  Large-scale structure evolving at speed: Zel'dovich streaming,
 //  psychedelic stellar-population spectra, ridged filament micro-detail,
 //  spring-cursor void well, held collapse, capped click density shocks.
+//  Upgraded: 2026-09-27
+//  Ideas: cosmic-web walls; galaxy beads on filaments
+//  A packing: ACES display RGBA
 //  Contract: 13 bindings, ACES, semantic alpha, dataTextureA writeback only,
 //            exact textureLoad from dataTextureC, plasmaBuffer three-band audio,
 //            bounded extraBuffer[133..138] state.
@@ -335,6 +338,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let junction = pow(clamp(1.0 - (v.y - v.x) * (7.0 + densityParam), 0.0, 1.0), 12.0) * structDensity;
   let quasarPulse = 0.45 + 0.55 * sin(time * (3.0 + treble * 8.0) + age * 31.0);
   col += cosmicPalette(popHue + 0.18, 1.0 + mids) * junction * quasarPulse * (0.7 + bass * 1.2);
+
+  // Walls: mid-range F2−F1, between the filament ridge and the empty cell.
+  let gap = v.y - v.x;
+  let wall = smoothstep(0.05, 0.18, gap) * (1.0 - smoothstep(0.28, 0.62, gap));
+  col += cosmicPalette(popHue + 0.05, mids * 0.6) * wall * (0.16 + voidPull * 0.2);
+
+  // Galaxy beads on the filament, away from quasar junctions.
+  let beadH = hash31(floor(p * (6.0 + densityParam)));
+  let bead = smoothstep(0.992, 0.999, beadH) * smoothstep(0.25, 0.7, structDensity) * (1.0 - smoothstep(0.15, 0.6, junction));
+  col += vec3<f32>(0.95, 0.93, 0.82) * bead * (0.8 + treble * 1.4);
 
   // Shock flash + cursor void halo
   col += cosmicPalette(fract(time * 0.9), 1.0) * shock * 1.3;

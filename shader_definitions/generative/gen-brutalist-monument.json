@@ -55,7 +55,10 @@
   "updated": true,
   "id": "gen-brutalist-monument",
   "url": "shaders/gen-brutalist-monument.wgsl",
-  "features": [],
+  "features": [
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
   "params": [
     {
       "id": "sun_angle",

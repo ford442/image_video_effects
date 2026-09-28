@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-09-15
-//  Ideas: Nebulabrot early/mid/late escape channels; anti-Buddhabrot interior dust
+//  Upgraded: 2026-09-15, 2026-09-27
+//  Ideas: Nebulabrot early/mid/late escape channels; anti-Buddhabrot interior dust; min-distance orbit spine; escape-argument streaks
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -77,6 +77,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var bloom = vec3<f32>(0.0);
   var nebulaRGB = vec3<f32>(0.0);
   var interior = 0.0;
+  var spine = 0.0;
+  var escArg = vec3<f32>(0.0);
 
   let samples = 4u;
   let h0 = hash22(vec2<f32>(f32(global_id.x), f32(global_id.y)) + fract(time) * 13.37);
@@ -103,11 +105,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var z = vec2<f32>(0.0);
     var orbit = vec3<f32>(0.0);
     var escaped = false;
+    var minTrap = 4.0;
+    let trapC = vec2<f32>(0.35, 0.12);
 
     for (var i: i32 = 0; i < baseIter; i = i + 1) {
       z = vec2<f32>(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + c;
       let dist = dot(z, z);
-      orbit += orbitTrapColor(z, vec2<f32>(0.35, 0.12));
+      orbit += orbitTrapColor(z, trapC);
+      // Idea: min-distance spine along the existing trap.
+      minTrap = min(minTrap, length(z - trapC));
 
       if (dist > 4.0) {
         escaped = true;
@@ -121,9 +127,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let mid   = smoothstep(0.22, 0.38, tEsc) * (1.0 - smoothstep(0.58, 0.78, tEsc));
         let late  = smoothstep(0.58, 0.78, tEsc);
         nebulaRGB += vec3<f32>(early, mid, late) * esc;
+        // Idea: escape argument — angular streak, separate from the time bins.
+        let argHue = atan2(z.y, z.x) / 6.2831853 + 0.5;
+        escArg += vec3<f32>(
+          0.5 + 0.5 * cos(6.2831853 * argHue),
+          0.5 + 0.5 * cos(6.2831853 * argHue + 2.094395),
+          0.5 + 0.5 * cos(6.2831853 * argHue + 4.188790)
+        ) * esc;
         break;
       }
     }
+    spine += exp(-minTrap * 18.0);
     orbitColor += orbit * (1.0 / f32(baseIter));
     // Idea 2 — anti-Buddhabrot interior dust for orbits that never escape.
     interior += select(1.0, 0.0, escaped);
@@ -135,6 +149,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   bloom = bloom / f32(samples);
   nebulaRGB = nebulaRGB / f32(samples);
   interior = interior / f32(samples);
+  spine = spine / f32(samples);
+  escArg = escArg / f32(samples);
 
   let dMap = density * densityScale * 3.0;
   let nebula = vec3<f32>(
@@ -147,6 +163,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color += bloom * aura * 2.5;
   color += nebulaRGB * vec3<f32>(1.15, 0.85, 1.35) * aura * 1.4;
   color += vec3<f32>(0.18, 0.10, 0.28) * interior * aura * (0.7 + mids * 0.4);
+  color += vec3<f32>(1.0, 0.92, 0.75) * spine * aura * 0.85;
+  color += escArg * aura * 0.55;
 
   let centerGlow = length(uv - mouseC * 0.25);
   color += vec3<f32>(0.2, 0.15, 0.35) * smoothstep(0.9, 0.15, centerGlow) * aura * (0.6 + bass * 0.4);

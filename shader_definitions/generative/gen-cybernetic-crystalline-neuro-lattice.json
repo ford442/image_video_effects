@@ -93,6 +93,8 @@
   "id": "gen-cybernetic-crystalline-neuro-lattice",
   "url": "shaders/gen-cybernetic-crystalline-neuro-lattice.wgsl",
   "features": [
+    "upgraded-rgba",
+    "mouse-driven",
     "raymarched",
     "audio-reactive",
     "mouse-interactive",

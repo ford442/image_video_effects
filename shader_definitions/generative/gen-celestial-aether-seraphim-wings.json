@@ -57,7 +57,14 @@
   "updated": true,
   "id": "gen-celestial-aether-seraphim-wings",
   "url": "shaders/gen-celestial-aether-seraphim-wings.wgsl",
-  "features": [],
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "temporal-feedback",
+    "depth-aware",
+    "upgraded-rgba"
+  ],
+  "feedbackPacking": "A/C = display RGBA (same as writeTexture), exact texel history",
   "params": [
     {
       "id": "fractal_spread",

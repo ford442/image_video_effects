@@ -1,9 +1,14 @@
-// ----------------------------------------------------------------
-// Bioluminescent Chrono-Plasma Astro-Owl
-// Category: generative
-// Upgraded: 2026-08-03 — Interactivist b31: mouse-orbit camera, click-ripple
+// ═══════════════════════════════════════════════════════════════════
+//  Bioluminescent Chrono-Plasma Astro-Owl
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-27
+//  Ideas: frame-dragged sky (core gravity twist swirls nebula + lattice); lattice plumage (sky lattice etched on the owl); nebula-dissolve fog (distance + silhouette melt into the real sky)
+//  A packing: HDR linear RGB (pre-ACES echo history) + semantic alpha; C read back as HDR
+// ═══════════════════════════════════════════════════════════════════
+// History: 2026-08-03 Interactivist b31 — mouse-orbit camera, click-ripple
 // SDF deformation, FFT wing fold, tessellation layer, real depth + alpha.
-// ----------------------------------------------------------------
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -119,6 +124,26 @@ fn kaleido(uv: vec2<f32>, folds: f32) -> vec2<f32> {
     return vec2<f32>(cos(fa), sin(fa)) * rad;
 }
 
+// Shared chrono-tessellation lattice (one lattice for sky and plumage).
+// v = a direction's xy; folds counted by mids, cells drift with time.
+fn chronoLattice(v: vec2<f32>, time: f32, snd: vec4<f32>) -> f32 {
+    let folds = 6.0 + floor(snd.y * 4.0);
+    let kuv = kaleido(v * 1.6, folds);
+    let cell = fract(kuv * 3.0 + vec2<f32>(time * 0.05, time * 0.03)) - 0.5;
+    return 1.0 - smoothstep(0.02, 0.09, abs(length(cell) - 0.28));
+}
+
+// Core gravity twist about world Y: angle = g/(r+0.1) (bass-swelled) + ripple kick.
+fn coreTwistAngle(r: f32, snd: vec4<f32>, rip: f32) -> f32 {
+    return u.zoom_params.y * (1.0 / (r + 0.1)) * (1.0 + snd.x * 0.5) + rip * 2.0;
+}
+
+fn twistY(v: vec3<f32>, ang: f32) -> vec3<f32> {
+    let c = cos(ang);
+    let s = sin(ang);
+    return vec3<f32>(v.x * c - v.z * s, v.y, v.x * s + v.z * c);
+}
+
 // The SDF for the Owl
 // snd = (bass, mids, treble, fftWingBand); rip = click-ripple displacement
 fn map(p: vec3<f32>, snd: vec4<f32>, rip: f32) -> vec2<f32> {
@@ -126,18 +151,13 @@ fn map(p: vec3<f32>, snd: vec4<f32>, rip: f32) -> vec2<f32> {
 
     let t = u.config.x;
     let bass = snd.x;
-    let core_gravity = u.zoom_params.y;
 
     // Core gravity well bending space around the owl (fixed stale-read rotation)
-    let dist_to_core = length(q);
-    let gravity_warp = core_gravity * (1.0 / (dist_to_core + 0.1)) * (1.0 + bass * 0.5) + rip * 2.0;
-    let gq_x = q.x * cos(gravity_warp) - q.z * sin(gravity_warp);
-    let gq_z = q.x * sin(gravity_warp) + q.z * cos(gravity_warp);
-    q.x = gq_x;
-    q.z = gq_z;
+    q = twistY(q, coreTwistAngle(length(q), snd, rip));
 
     // Bass pulse breathes the whole chrono-plasma body
-    q = q / (1.0 + bass * 0.12);
+    let breathe = 1.0 + bass * 0.12;
+    q = q / breathe;
 
     // Owl Body (composite SDF)
     // Central ellipsoid body
@@ -190,7 +210,8 @@ fn map(p: vec3<f32>, snd: vec4<f32>, rip: f32) -> vec2<f32> {
         mat_id = 2.0; // Eyes
     }
 
-    return vec2<f32>(d, mat_id);
+    // Distance was measured in breathe-scaled space: scale back to world units.
+    return vec2<f32>(d * breathe, mat_id);
 }
 
 // Normal calculation
@@ -204,22 +225,35 @@ fn calcNormal(p: vec3<f32>, snd: vec4<f32>, rip: f32) -> vec3<f32> {
 }
 
 // Raymarching
+// Step 0.8 + 128 iterations: the core twist and fbm feathers are not 1-Lipschitz.
+// Step exhaustion near a surface counts as a hit; exhaustion in open space is a miss
+// (HEAD shaded exhausted rays as mat 0 -> black holes).
 fn raymarch(ro: vec3<f32>, rd: vec3<f32>, snd: vec4<f32>, rip: f32) -> vec2<f32> {
     var t = 0.0;
     var mat_id = 0.0;
-    for (var i = 0; i < 100; i++) {
+    var hit = false;
+    var last_d = 1e9;
+    var last_m = 0.0;
+    for (var i = 0; i < 128; i++) {
         let p = ro + rd * t;
         let d = map(p, snd, rip);
+        last_d = d.x;
+        last_m = d.y;
         if (d.x < 0.001) {
             mat_id = d.y;
+            hit = true;
             break;
         }
         if (t > MAX_DIST) {
             break;
         }
-        t += d.x;
+        t += d.x * 0.8;
     }
-    if (t > MAX_DIST) { t = -1.0; }
+    if (!hit && t < MAX_DIST && last_d < 0.02) {
+        hit = true;
+        mat_id = last_m;
+    }
+    if (!hit) { return vec2<f32>(-1.0, 0.0); }
     return vec2<f32>(t, mat_id);
 }
 
@@ -245,13 +279,25 @@ fn getNebula(ro: vec3<f32>, rd: vec3<f32>, time: f32, snd: vec4<f32>) -> vec3<f3
 
     // 2D chrono-tessellation: kaleidoscopic hex-fold lattice behind the owl,
     // folds counted by mids, cells shimmered by the high FFT band.
-    let folds = 6.0 + floor(snd.y * 4.0);
-    let kuv = kaleido(rd.xy * 1.6, folds);
-    let cell = fract(kuv * 3.0 + vec2<f32>(time * 0.05, time * 0.03)) - 0.5;
-    let lattice = 1.0 - smoothstep(0.02, 0.09, abs(length(cell) - 0.28));
+    let lattice = chronoLattice(rd.xy, time, snd);
     col += vec3<f32>(0.05, 0.3, 0.45) * lattice * particle_density * (0.25 + snd.w * 0.9);
 
     return col;
+}
+
+// Idea 1: Frame-dragged sky — the SAME g/(r+0.1) twist that bends the owl's SDF is
+// applied to every view ray about the owl's core, using the ray's closest approach
+// to the core as r. Rays grazing the silhouette are dragged furthest, so the nebula
+// and the chrono-lattice shear into a vortex around the owl. Core Gravity (y) is the
+// strength; click ripples kick it exactly as they kick the SDF. y = 0 → HEAD sky.
+fn dragSky(ro: vec3<f32>, rd: vec3<f32>, snd: vec4<f32>, rip: f32) -> vec3<f32> {
+    let b = max(-dot(ro, rd), 0.0);
+    let r_min = length(ro + rd * b);
+    return normalize(twistY(rd, coreTwistAngle(r_min, snd, rip)));
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -283,14 +329,21 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let cam = rotY(yaw) * rotX(pitch);
 
     var ro = cam * vec3<f32>(0.0, 0.0, 4.0);
-    let rd = cam * normalize(vec3<f32>(uv, -1.0));
+    // Pixel rows run top-down; flip so world +Y (the owl's head) is screen-up
+    // (HEAD rendered the owl upside down).
+    let rd = cam * normalize(vec3<f32>(uv.x, -uv.y, -1.0));
+
+    // Idea 1: every background lookup uses the frame-dragged direction.
+    let rd_sky = dragSky(ro, rd, snd, rip);
+    let sky = getNebula(ro, rd_sky, time, snd) * (1.0 + bass * 0.3 + rip * 0.8);
 
     let hit = raymarch(ro, rd, snd, rip);
     let t = hit.x;
     let mat_id = hit.y;
 
     var col = vec3<f32>(0.0);
-    var depth = textureLoad(readDepthTexture, coord, 0).r; // passthrough for misses
+    var depth = 0.0; // miss / far = 0
+    var solidity = 0.0;
 
     if (t > 0.0) {
         let p = ro + rd * t;
@@ -302,17 +355,29 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let rim = 1.0 - max(dot(n, view_dir), 0.0);
         let rim_power = pow(rim, 3.0);
 
-        if (mat_id == 1.0) {
-            // Owl Body (Bioluminescent cyber-organic)
-            var baseCol = mix(vec3<f32>(0.05, 0.2, 0.5), vec3<f32>(0.4, 0.1, 0.6), p.y * 0.5 + 0.5);
-            // SSS approx
-            let sss = pow(rim, 2.0) * vec3<f32>(0.2, 0.8, 1.0) * (0.5 + bass);
-            col = baseCol * diff + sss + rim_power * vec3<f32>(0.3, 0.1, 0.5) * (0.4 + mids);
-        } else if (mat_id == 2.0) {
+        if (mat_id == 2.0) {
             // Eyes (Glowing shattered glass) — treble shimmer
             let eye_glow = vec3<f32>(0.1, 1.0, 0.8) * (1.0 + treble * 2.0 + fft_air);
             let spec = pow(max(dot(reflect(-l, n), view_dir), 0.0), 32.0);
             col = eye_glow + vec3<f32>(spec);
+        } else {
+            // Owl Body (Bioluminescent cyber-organic); mix factor clamped (HEAD
+            // extrapolated below y=-1 → negative red → NaN after gamma).
+            var baseCol = mix(vec3<f32>(0.05, 0.2, 0.5), vec3<f32>(0.4, 0.1, 0.6), clamp(p.y * 0.5 + 0.5, 0.0, 1.0));
+            // SSS approx
+            let sss = pow(rim, 2.0) * vec3<f32>(0.2, 0.8, 1.0) * (0.5 + bass);
+            col = baseCol * diff + sss + rim_power * vec3<f32>(0.3, 0.1, 0.5) * (0.4 + mids);
+
+            // Idea 2: Lattice plumage — the sky's chrono-lattice is etched onto the
+            // body and wings as emissive cell edges. It is indexed by the direction
+            // from the core in the owl's own twisted, breathing frame, so it rides
+            // the flap/twist with the plumage while staying the same lattice
+            // (same folds, same drift) as the sky behind it.
+            let q_obj = twistY(p, coreTwistAngle(length(p), snd, rip)) / (1.0 + bass * 0.12);
+            let plume_dir = normalize(q_obj + vec3<f32>(0.0, 0.0, 1e-4));
+            let plume = chronoLattice(plume_dir.xy * 1.35, time, snd);
+            let plume_glow = 0.55 + 0.45 * (1.0 - diff) + snd.w * 0.9;
+            col += vec3<f32>(0.05, 0.3, 0.45) * plume * plume_glow;
         }
 
         // Bloom from core gravity well
@@ -320,31 +385,37 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let bloom = exp(-dist_to_center * 1.5) * vec3<f32>(0.8, 0.2, 1.0) * (bass * 2.0 + rip * 1.5);
         col += bloom;
 
-        // Distance fog integrating into nebula
-        let fog_factor = 1.0 - exp(-0.02 * t * t);
-        col = mix(col, vec3<f32>(0.05, 0.0, 0.1), fog_factor);
+        // Idea 3: Nebula-dissolve fog — distance fog and a silhouette fringe both
+        // blend toward the ACTUAL frame-dragged sky behind the pixel (HEAD used a
+        // flat purple), so distant feathers and the owl's outline melt into the
+        // swirling nebula/lattice instead of a painted-on haze.
+        let fog_factor = clamp(1.0 - exp(-0.02 * t * t) + 0.4 * pow(rim, 4.0), 0.0, 0.85);
+        col = mix(col, sky, fog_factor);
+        solidity = 1.0 - fog_factor;
 
         // Real depth: near = 1, far = 0
         depth = clamp(1.0 - t / MAX_DIST, 0.0, 1.0);
     } else {
-        col = getNebula(ro, rd, time, snd);
-        col *= (1.0 + bass * 0.3 + rip * 0.8);
+        col = sky;
     }
 
-    // Temporal Echo Fade slider: feedback from last frame's buffer
+    // Temporal Echo Fade slider: feedback from last frame's HDR history.
+    // A/C now hold linear HDR (HEAD stored Reinhard+gamma output and re-toned it
+    // every frame → a grey floor ~0.13 at echo 0.2 that never decayed).
     let echo_fade = u.zoom_params.w;
     let prev = textureLoad(dataTextureC, coord, 0);
     col = mix(col, prev.rgb * 0.94, clamp(echo_fade, 0.0, 1.0) * 0.45);
+    col = max(col, vec3<f32>(0.0));
 
-    // Tonemapping and Gamma
-    col = col / (1.0 + col);
-    col = pow(col, vec3<f32>(1.0 / 2.2));
+    // Display: ACES then gamma (HEAD's Reinhard+gamma replaced)
+    let display = pow(max(acesToneMap(col * 0.8), vec3<f32>(0.0)), vec3<f32>(1.0 / 2.2));
 
-    // Semantic alpha from luma (glow stays translucent, creature stays solid)
-    let luma = dot(clamp(col, vec3<f32>(0.0), vec3<f32>(1.0)), vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(luma * 0.7 + 0.25, 0.0, 1.0);
+    // Semantic alpha: owl solid, fog/glow translucent from luma
+    let luma = dot(display, vec3<f32>(0.299, 0.587, 0.114));
+    let glow_alpha = clamp(luma * 0.7 + 0.25, 0.0, 1.0);
+    let alpha = mix(glow_alpha, 1.0, solidity);
 
-    textureStore(writeTexture, coord, vec4<f32>(col, alpha));
+    textureStore(writeTexture, coord, vec4<f32>(display, alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, coord, vec4<f32>(col, alpha));
 }

@@ -73,7 +73,11 @@
   "updated": true,
   "id": "gen-chronos-labyrinth",
   "url": "shaders/gen-chronos-labyrinth.wgsl",
-  "features": [],
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ],
   "params": [
     {
       "id": "labyrinth_complexity",

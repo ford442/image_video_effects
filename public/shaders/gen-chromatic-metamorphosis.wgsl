@@ -1,16 +1,16 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Chromatic Metamorphosis
 //  Category: generative
-//  Features: color-morph, audio-spectrum, mouse-catalyst, temporal-evolution, depth-layers, iridescent-shift, semantic-alpha
+//  Features: audio-reactive, mouse-driven, temporal, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Updated: 2026-05-31
-//  By: Grok (deep visual/audio flourish — plasmaBuffer seasonal spectrum wired, mouse catalyst splits/accelerates morph, semantic alpha from fresnel+rim, richer filmic response)
+//  Upgraded: 2026-09-27
+//  Ideas: catalyst stutter-hold on the nearest phase before releasing; temporal afterimage from exact dataTextureC history; per-phase seasonal color lean (box/capsule read as a different material than sphere/torus)
+//  A packing: display RGBA
 // ═══════════════════════════════════════════════════════════════════
-//    across surfaces in waves. Beauty in perpetual transformation.
-//  Mathematical approach: Smooth-min SDF blending of sphere/torus/box SDFs;
-//    time-driven interpolation weights; surface color is a function of normal
-//    direction + UV-like projection independent of geometry; ray marching with
-//    soft shadows and ambient occlusion.
+//  Mathematical approach: Smooth-min SDF blending of sphere/torus/box/capsule
+//    SDFs; time-driven interpolation weights; surface color is a function of
+//    normal direction + time, independent of geometry; ray marching with
+//    soft shadows and ambient occlusion. Beauty in perpetual transformation.
 // ─────────────────────────────────────────────────────────────────────────────
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -150,6 +150,14 @@ fn fresnel(cosTheta: f32, F0: f32) -> f32 {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  ACES filmic tonemap (display RGB only)
+// ─────────────────────────────────────────────────────────────────────────────
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  GGX distribution for specular (for iridescent sheen)
 // ─────────────────────────────────────────────────────────────────────────────
 fn ggxD(NdotH: f32, roughness: f32) -> f32 {
@@ -208,8 +216,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mouseNDC = (mouse - 0.5) * 2.0;
     let catDist = length(uv - mouseNDC);
     let catalyst = smoothstep(0.9, 0.05, catDist) * (0.6 + bass * 0.8);
+
+    // Idea: catalyst stutter-hold — as catalyst rises, the morph clock is pulled
+    // toward whichever integer phase (a completed primitive) it is nearest, so
+    // touch makes the shape catch there for a beat before the perturbation below
+    // releases it again, instead of only accelerating through the cycle.
+    let stutterHold = clamp(catalyst * 0.6, 0.0, 0.85);
+    let heldMorphT = mix(morphT, round(morphT), stutterHold);
     // Local morph perturbation near mouse (feels like touching the form changes its evolution rate)
-    let localMorph = morphT + catalyst * 4.5 * sin(t * 3.0 + catDist * 12.0);
+    let localMorph = heldMorphT + catalyst * 4.5 * sin(t * 3.0 + catDist * 12.0) * (1.0 - stutterHold);
 
     // Camera
     let camPos = vec3<f32>(
@@ -242,10 +257,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (hit) {
         let N = sceneNormal(hitP, t, blendRadius, localMorph);
 
+        // Idea: per-phase seasonal color lean — box/capsule (w2/w3) read as a
+        // distinct material from sphere/torus (w0/w1), reusing sceneSDF's own
+        // phase weighting so the lean always matches the shape actually shown.
+        let colorPhaseW = fract(localMorph * 0.25) * 4.0;
+        let w0c = smoothstep(0.0, 1.0, 1.0 - abs(colorPhaseW - 0.0)) + smoothstep(0.0, 1.0, 1.0 - abs(colorPhaseW - 4.0));
+        let w1c = smoothstep(0.0, 1.0, 1.0 - abs(colorPhaseW - 1.0));
+        let w2c = smoothstep(0.0, 1.0, 1.0 - abs(colorPhaseW - 2.0));
+        let w3c = smoothstep(0.0, 1.0, 1.0 - abs(colorPhaseW - 3.0));
+        let materialLean = (w2c + w3c) - (w0c + w1c); // >0 near box/capsule, <0 near sphere/torus
+
         // Independent color field: based on normal + time + seasonal audio drift (deep audio wiring)
         let colorPhase = dot(N, vec3<f32>(0.577)) * 2.0 + t * colorSpeed + hueDrift * 1.6;
-        let hue = fract(colorPhase * 0.5 + 0.15 + season * 0.25);
-        let sat = 0.52 + 0.48 * abs(sin(colorPhase * 1.7)) + mids * 0.22;
+        let hue = fract(colorPhase * 0.5 + 0.15 + season * 0.25 + materialLean * 0.05);
+        let sat = 0.52 + 0.48 * abs(sin(colorPhase * 1.7)) + mids * 0.22 - max(materialLean, 0.0) * 0.14;
         let val = 0.88 + edgeEnergy * 0.4;
         let surfCol = hsv2rgb(hue, clamp(sat, 0.3, 1.0), clamp(val, 0.55, 1.25));
 
@@ -286,7 +311,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         // ── GGX specular sheen (seasonal audio tint) ───────────────────────
         let halfV = normalize(normalize(vec3<f32>(sin(t*0.2), 0.7, cos(t*0.2))) + (-rd));
         let NdotH = max(dot(N, halfV), 0.0);
-        let roughness = 0.3 + matNoise * 0.4;
+        // Box/capsule lean glossier (lower roughness); sphere/torus stay softer.
+        let roughness = clamp(0.3 + matNoise * 0.4 - max(materialLean, 0.0) * 0.15, 0.05, 0.9);
         let ggxSpec = ggxD(NdotH, roughness) * 0.15;
         col += hsv2rgb(fract(t * colorSpeed * 0.3 + 0.3 + season * 0.4), 0.75, 1.0) * ggxSpec * (0.9 + edgeEnergy * 0.4);
 
@@ -302,7 +328,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     col *= vign;
     // Treble micro-grain for texture
     let grain = (fract(sin(dot(vec2<f32>(gid.xy), vec2<f32>(12.9898, 78.233))) * 43758.5453) - 0.5) * treble * 0.035;
-    col = clamp(col + grain, vec3<f32>(0.0), vec3<f32>(1.25));
+    col = clamp(col + grain, vec3<f32>(0.0), vec3<f32>(4.0));
+
+    // Idea: temporal afterimage — dataTextureC was declared but never read; now
+    // a faint exact-texel echo of the previous frame's surface trails behind
+    // the current hit, paying off the "perpetual transformation" identity.
+    let histColor = textureLoad(dataTextureC, vec2<i32>(gid.xy), 0);
+    col = mix(col, histColor.rgb, 0.1 * (1.0 - catalyst * 0.5));
+
+    col = acesToneMap(col);
 
     // ═══ Semantic alpha (rim + catalyst energy + fresnel bloom give transparent edges during morph) ═══
     var semantic_alpha = 0.88;
@@ -317,5 +351,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Depth (normalized)
     let depthVal = select(0.0, 1.0 - tRay / 8.0, hit);
     textureStore(writeTexture, gid.xy, vec4<f32>(col, semantic_alpha));
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depthVal, 0.0, 0.0, 1.0));
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depthVal, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, gid.xy, vec4<f32>(col, semantic_alpha));
 }

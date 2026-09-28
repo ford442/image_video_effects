@@ -54,7 +54,10 @@
   "updated": true,
   "id": "gen-alpha-aurora",
   "url": "shaders/gen-alpha-aurora.wgsl",
-  "features": [],
+  "features": [
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
   "params": [
     {
       "id": "band_speed",

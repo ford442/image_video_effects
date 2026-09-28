@@ -62,7 +62,11 @@
     "sprung-orbit-camera",
     "bounded-volumetric-beams",
     "click-pulsar-shells",
-    "depth-output"
+    "depth-output",
+    "audio-reactive",
+    "mouse-driven",
+    "click-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

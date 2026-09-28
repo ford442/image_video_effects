@@ -1,18 +1,17 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Biomechanical Hive
 //  Category: generative
-//  Features: biomechanical, hive, organic-mechanical, audio-rhythm, mouse-drone, depth-layers, pulsing-growth
+//  Features: biomechanical, hive, organic-mechanical, audio-rhythm, mouse-drone,
+//             depth-layers, pulsing-growth, temporal-feedback, upgraded-rgba
 //  Complexity: High
-//  Updated: 2026-05-31
-//  By: Grok (visual flourish pass — richer organic light, audio pulsing, atmospheric depth)
+//  Upgraded: 2026-09-27
+//  Ideas: growth-memory afterglow (dataTextureA/C now wired — a strong core pulse
+//         lingers and slowly fades); biomass-driven vein bumps on the chitin walls;
+//         treble-triggered nerve flicker across the shell
+//  A packing: raw HDR display RGBA history (pre-ACES), ACES applied on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
-//  By: Claude Opus 4.8 (swarm optimization pass 2026-05-31)
-//  upgraded-rgba
-// ═══════════════════════════════════════════════════════════════════
-//  OPTIMIZATION LOG (2026-05-31):
-//  - Audio reactivity wired to plasmaBuffer (bass→core pulse, mid→hue breathing)
-//  - ACES filmic tone mapping added (was NO tone mapping — emissive cores clipped raw)
-//  - IGN dither added before write
+//  History: Grok (visual flourish pass 2026-05-31); Claude Opus 4.8 (swarm
+//  optimization pass 2026-05-31 — audio wiring, ACES, IGN dither)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -195,7 +194,13 @@ fn map(p: vec3<f32>) -> vec2<f32> {
 
     let breathing = sin(time + p.z) * 0.05;
 
-    let d_organic = d_base + ribs + displacement + breathing;
+    // Idea: biomass-driven vein growth — a finer, higher-frequency bump layer
+    // than the macro `displacement` term above, so raising Biomass visibly grows
+    // surface veins on the chitin rather than just deepening the big folds.
+    let vein_pattern = fbm(p * 6.0 + vec3<f32>(0.0, 0.0, time * 0.35)) - 0.5;
+    let veins = vein_pattern * biomass * 0.12;
+
+    let d_organic = d_base + ribs + displacement + breathing + veins;
 
     // Core sphere
     let d_sphere_core = length(local_p) - cell_size * 0.2;
@@ -244,9 +249,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
 
-    // Audio reactivity — bass drives core pulse, mid modulates hue breathing
+    // Audio reactivity — bass drives core pulse, mid modulates hue breathing,
+    // treble drives the nerve-flicker idea below
     let bass = plasmaBuffer[0].x;
     let mid = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     // Camera
     var mouse = u.zoom_config.yz;
@@ -324,6 +331,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // Apply chitinous SSS
             let sss = chitinSSS(n, lightDir, -rd, thickness, baseColor, false);
             baseColor += sss * 0.4;
+
+            // Idea: treble-triggered nerve flicker — sparse cell-locked flecks
+            // of light ripple across the shell on high-frequency audio content,
+            // reading as a nervous system firing under the chitin
+            let nerveSeed = fract(sin(dot(floor(p * 3.0), vec3<f32>(12.989, 78.233, 37.719))) * 43758.5453);
+            let nerveFlicker = step(0.965, nerveSeed) * treble * 1.5;
+            baseColor += vec3<f32>(0.3, 0.6, 1.0) * nerveFlicker;
         }
 
         // Diffuse
@@ -342,14 +356,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         color = fogColor;
     }
 
+    // Idea: growth-memory afterglow. dataTextureA/C were previously dead
+    // bindings — now a strong pulse leaves a decaying trail, as if the hive
+    // tissue keeps glowing for a moment after a hard heartbeat.
+    let history = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
+    let growthDecay = clamp(0.80 + bass * 0.06, 0.75, 0.92);
+    let trailedColor = max(color, history.rgb * growthDecay * history.a);
+
     // ACES filmic tone mapping (was none — emissive cores wrote raw HDR values)
-    color = acesToneMapping(color);
+    var displayColor = acesToneMapping(trailedColor);
 
     // IGN dither — suppresses banding in the near-black hive fog
     let ign = fract(52.9829189 * fract(dot(vec2<f32>(global_id.xy), vec2<f32>(0.06711056, 0.00583715))));
-    color = clamp(color + (ign - 0.5) * (1.0 / 255.0), vec3<f32>(0.0), vec3<f32>(1.0));
+    displayColor = clamp(displayColor + (ign - 0.5) * (1.0 / 255.0), vec3<f32>(0.0), vec3<f32>(1.0));
 
     // Output with alpha
-    textureStore(writeTexture, vec2<u32>(global_id.xy), vec4<f32>(color, alpha));
+    textureStore(writeTexture, vec2<u32>(global_id.xy), vec4<f32>(displayColor, alpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(trailedColor, alpha));
     textureStore(writeDepthTexture, vec2<u32>(global_id.xy), vec4<f32>(t / 100.0, 0.0, 0.0, 0.0));
 }

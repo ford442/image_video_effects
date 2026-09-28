@@ -1,12 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Celestial Weave
 //  Category: generative
-//  Features: procedural, audio-reactive, mouse-driven, temporal, chromatic,
-//            upgraded-rgba, depth-aware, aces-tone-map, fbm-warp,
-//            stellar-glow, constellation-lines, sdf-glow
+//  Features: procedural, audio-reactive, temporal, upgraded-rgba
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-06-28
+//  Upgraded: 2026-09-27
+//  Ideas: shimmer-driven traveling thread glint; void-depth star parallax; constellation pulse-travel timed to bass
+//  A packing: display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -145,10 +145,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let sa = sin(ang);
   let rp = vec2<f32>(ca * warpedP.x - sa * warpedP.y, sa * warpedP.x + ca * warpedP.y);
 
-  let weft = sin(rp.x * weaveScale + time * (0.8 + smoothBass));
-  let warpWave = sin(rp.y * weaveScale * (0.9 + mids * 0.2) - time * 0.7);
+  let weftPhase = rp.x * weaveScale + time * (0.8 + smoothBass);
+  let warpPhase = rp.y * weaveScale * (0.9 + mids * 0.2) - time * 0.7;
+  let weft = sin(weftPhase);
+  let warpWave = sin(warpPhase);
   let knot = smoothstep(0.7, 1.0, abs(weft * warpWave));
   let fiber = smoothstep(0.92, 1.0, max(abs(weft), abs(warpWave)));
+
+  // Idea: shimmer-driven traveling thread glint — a bright point riding each
+  // thread's own already-moving phase, scaled by the Shimmer-derived glowAmp.
+  let glintWeft = pow(sat(sin(weftPhase)), 48.0);
+  let glintWarp = pow(sat(sin(warpPhase)), 48.0);
+  let threadGlint = (glintWeft + glintWarp) * fiber * glowAmp;
 
   // ═══ Procedural star field with stochastic positions ═══
   let starUV = uv + vec2<f32>(time * 0.008, 0.0);
@@ -156,15 +164,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let starNoise = hash21(starGrid);
   let starThreshold = 0.997 - treble * 0.02;
   let starRaw = step(starThreshold, starNoise);
-  let starOffset = hash22(starGrid) * 0.4;
+  // Idea: void-depth star parallax — near stars (low hash) render bigger, brighter
+  // and drift a touch faster than far stars, scaled by the Void Depth param.
+  let starDepthHash = hash21(starGrid + vec2<f32>(4.0, 5.0));
+  let nearness = mix(1.7, 0.5, starDepthHash) * mix(1.0, 1.8, voidDepth);
+  let parallaxJitter = sin(time * 0.2 * nearness + starNoise * 17.0) * 0.0025 * voidDepth * nearness;
+  let starOffset = hash22(starGrid) * 0.4 + vec2<f32>(parallaxJitter, parallaxJitter * 0.6);
   let starPos = (starGrid + vec2<f32>(0.5) + starOffset) / 240.0;
-  let starRadius = mix(0.0012, 0.0040, hash21(starGrid + vec2<f32>(1.0, 2.0)));
+  let starRadius = mix(0.0012, 0.0040, hash21(starGrid + vec2<f32>(1.0, 2.0))) * nearness;
   let dToStar = length(uv - starPos);
   let starTwinkle = 0.5 + 0.5 * sin(time * 15.0 + starNoise * 31.0);
-  let starGlowVal = starGlow(dToStar, starRadius) * starRaw * (0.5 + starTwinkle);
+  let starGlowVal = starGlow(dToStar, starRadius) * starRaw * (0.5 + starTwinkle) * nearness;
 
   // ═══ Constellation connection lines between neighboring stars ═══
   var constellation = 0.0;
+  var constellationPulse = 0.0;
   for (var dy: i32 = -2; dy <= 2; dy = dy + 1) {
     for (var dx: i32 = -2; dx <= 2; dx = dx + 1) {
       if (dx == 0 && dy == 0) { continue; }
@@ -176,6 +190,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let link = smoothstep(0.55, 0.0, linkChance) * starRaw;
       let lineDist = sdSegment(uv, starPos, nPos);
       constellation = constellation + smoothstep(0.0025, 0.0003, lineDist) * link;
+
+      // Idea: constellation pulse-travel — a light pulse runs along each link,
+      // timed to the smoothed bass, using the segment's own along-length fraction.
+      let ba = nPos - starPos;
+      let along = sat(dot(uv - starPos, ba) / max(dot(ba, ba), 0.000001));
+      let travelPos = fract(along - time * 0.6 - linkChance * 4.0);
+      let pulseGate = smoothstep(0.12, 0.0, abs(travelPos - 0.5));
+      constellationPulse = constellationPulse + pulseGate * link * smoothstep(0.0018, 0.0002, lineDist) * smoothBass;
     }
   }
 
@@ -193,14 +215,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   color = color + vec3<f32>(0.95, 0.35, 0.75) * knot * glowAmp * (1.0 + smoothBass * 0.15);
   color = color + starCol * starGlowVal * glowAmp * (0.6 + treble);
   color = color + vec3<f32>(0.75, 0.95, 1.0) * constellation * glowAmp * (0.5 + mids * 0.3);
+  color = color + vec3<f32>(1.0, 0.95, 0.8) * threadGlint;
+  color = color + vec3<f32>(0.6, 0.85, 1.0) * constellationPulse * glowAmp;
 
-  // Temporal persistence: star trails and weave memory
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  // Temporal persistence: star trails and weave memory — exact texel read, no filtering.
+  let prev = textureLoad(dataTextureC, coord, 0);
   color = mix(color, prev.rgb * 0.9, 0.03 + mids * 0.01);
 
   color = acesToneMap(color * 1.1);
 
-  textureStore(writeTexture, coord, vec4<f32>(color, 1.0));
-  textureStore(writeDepthTexture, coord, vec4<f32>(0.0, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, coord, vec4<f32>(fiber, knot, starGlowVal + constellation, 1.0));
+  // Semantic alpha: coverage of fiber/knot/star/constellation structure over the void.
+  let alpha = sat(fiber * 0.5 + knot * 0.35 + starGlowVal * 0.4 + constellation * 0.3 + threadGlint * 0.3 + 0.08);
+  // Truthful relief: brighter thread/knot structure reads as nearer (lower depth).
+  let depthVal = sat(1.0 - (fiber * 0.55 + knot * 0.45) - voidDepth * 0.15);
+
+  textureStore(writeTexture, coord, vec4<f32>(color, alpha));
+  textureStore(writeDepthTexture, coord, vec4<f32>(depthVal, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, vec4<f32>(color, alpha));
 }

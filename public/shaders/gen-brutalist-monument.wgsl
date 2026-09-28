@@ -2,6 +2,9 @@
 //  Brutalist Monument - Generative Shader
 //  Category: Generative
 //  Description: Massive concrete architecture in an atmospheric void.
+//  Upgraded: 2026-09-27
+//  Ideas: board-form lines and tie holes on concrete; ledge drip stains
+//  A packing: pre-ACES display RGBA; ACES on writeTexture
 // ═══════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -139,6 +142,15 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     return vec2<f32>(d, mat);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     let e = 0.001;
     var d = map(p).x;
@@ -221,6 +233,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bg_color = vec3<f32>(0.05, 0.05, 0.06); // Dark Grey/Blue
 
     var color = bg_color;
+    var alpha = 0.18;
 
     if (t < 150.0) {
         var p = ro + rd * t;
@@ -253,9 +266,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // Bass-driven emission pulse
             albedo += vec3<f32>(0.3, 0.2, 0.05) * bass;
         } else {
-             // Concrete Texture (Simulated by noise in map? or just here)
+             // Concrete. Board-form lines and tie holes stay off the brass artifact.
              let n_tex = noise(p.xz * 0.5);
              albedo = vec3<f32>(0.2 + n_tex * 0.1);
+             let board = sin(p.y * 36.0);
+             albedo = albedo * (0.86 + 0.14 * board);
+             let tieCell = fract(vec2<f32>(p.x * 2.2 + p.z * 1.7, p.y * 1.4));
+             let tie = exp(-dot(tieCell - 0.5, tieCell - 0.5) * 80.0);
+             let verticalFace = 1.0 - abs(n.y);
+             albedo = albedo * (1.0 - tie * verticalFace * 0.55);
+             // Ledge stains: vertical streaks on upright concrete, stronger in high sun.
+             let streak = noise(vec2<f32>(p.x * 7.0 + p.z * 7.0, p.y * 0.25));
+             let underLedge = verticalFace * smoothstep(0.58, 0.86, streak) * (0.3 + 0.5 * max(sun_dir.y, 0.0));
+             albedo = albedo * (1.0 - underLedge * 0.5);
         }
 
         // Specular
@@ -278,6 +301,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // let height_fog = exp(-p.y * 0.1);
 
         color = mix(color, bg_color, fog_amount);
+        alpha = mix(0.92, 0.22, fog_amount);
 
     }
 
@@ -288,7 +312,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Bass-driven brightness pulse
     color = color * (1.0 + bass * 0.3);
 
-    // Output
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
+    let coord = vec2<i32>(global_id.xy);
+    textureStore(dataTextureA, coord, vec4<f32>(color, alpha));
+    textureStore(writeTexture, coord, vec4<f32>(acesToneMap(max(color, vec3<f32>(0.0))), alpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(t / 150.0, 0.0, 0.0, 0.0));
 }

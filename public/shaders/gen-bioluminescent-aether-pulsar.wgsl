@@ -1,10 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Bioluminescent Aether-Pulsar
 //  Category: generative
-//  Features: raymarched, mouse-driven, audio-reactive
+//  Features: raymarched, mouse-driven, audio-reactive, click-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-08-03 (Batch 34)
-//  upgraded-rgba
+//  Upgraded: 2026-09-27
+//  Ideas: spin-locked twin jet lobes above/below the disk plane; Keplerian
+//         azimuthal shear striping on the accretion disk noise;
+//         shockwave-triggered core brightness flare tying clicks into the
+//         pulsar material itself
+//  A packing: display RGBA (unchanged)
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -94,7 +98,14 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     let d2 = vec2<f32>(length(q_disk.xz) - 2.5, q_disk.y);
     let diskThickness = mix(0.22, 0.68, u.zoom_params.z);
     let d_disk_base = length(d2) - diskThickness;
-    let d_disk = d_disk_base + noise3(q_disk * 4.0) * mix(0.32, 0.08, u.zoom_params.z);
+    // Keplerian shear: inner radii wind faster than outer ones, warping the
+    // noise sample azimuthally so the disk shows spiral banding instead of
+    // static noise.
+    let diskRadius = length(q_disk.xz);
+    let shearAngle = -diskRadius * u.zoom_params.x * 1.4 + t * 0.5;
+    let shearRot = rotate2D(shearAngle);
+    let shearedXZ = shearRot * q_disk.xz;
+    let d_disk = d_disk_base + noise3(vec3<f32>(shearedXZ.x, q_disk.y, shearedXZ.y) * 4.0) * mix(0.32, 0.08, u.zoom_params.z);
 
     // Smoothmin between core and disk where they might interact
     let d = smin(d_core, d_disk, 0.5);
@@ -179,9 +190,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         p = ro + rd * t;
         d = map(p);
 
-        // Volumetric beams
+        // Volumetric beams — spin-locked twin jets: the two lobes above and
+        // below the disk plane carry a slight brightness asymmetry driven by
+        // Pulsar Spin Rate, so it reads as a bipolar jet pair, not one tube.
+        let jetLobe = sign(p.y + 0.0001);
+        let jetAsym = 1.0 + jetLobe * (u.zoom_params.x - 0.5) * 0.7;
         let beam_dist = length(p.xz) - 0.2 * (1.0 + p.y * 0.1);
-        glow += exp(-abs(beam_dist) * 7.0) * 0.025 * u.zoom_params.y * (1.0 + plasmaBuffer[0].z * 0.5);
+        glow += exp(-abs(beam_dist) * 7.0) * 0.025 * u.zoom_params.y * (1.0 + plasmaBuffer[0].z * 0.5) * jetAsym;
 
         if(d.x < 0.001) { hit = true; break; }
         if(t > 20.0) { break; }
@@ -191,11 +206,29 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var col = vec3<f32>(0.0);
     let audio = plasmaBuffer[0].x;
 
+    // Click shockwave shells — computed early so the core material itself can
+    // flare when a shell passes through it, not just a screen-space overlay.
+    let uv01 = (fragCoord + vec2<f32>(0.5)) / resolution;
+    var pulsarShock = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 1.6) {
+            let delta = (uv01 - ripple.xy) * vec2<f32>(resolution.x / resolution.y, 1.0);
+            let shell = exp(-abs(length(delta) - age * 0.3) * 76.0) * exp(-age * 1.9);
+            pulsarShock = max(pulsarShock, shell);
+        }
+    }
+
     if (hit) {
         let palette = vec3<f32>(0.5) + vec3<f32>(0.5) * cos(vec3<f32>(0.0, 2.1, 4.2) + u.zoom_params.w * 6.28318);
         // Base color
         if d.y < 0.5 { // Core
             col = mix(vec3<f32>(0.08, 0.25, 0.75), palette, 0.45) + palette * abs(p.y) * 0.35;
+            // Shockwave-triggered core flare: a passing click shell briefly
+            // spikes the core's own brightness instead of staying screen-only.
+            col += palette * pulsarShock * 1.6;
         } else { // Disk
             col = mix(vec3<f32>(0.15, 0.65, 0.8), palette, 0.35) * (1.0 + audio * 0.5);
         }
@@ -212,18 +245,6 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Add volumetric glow
     col += vec3<f32>(0.1, 0.8, 1.0) * glow;
 
-    let uv01 = (fragCoord + vec2<f32>(0.5)) / resolution;
-    var pulsarShock = 0.0;
-    let rippleCount = min(u32(u.config.y), 50u);
-    for (var i = 0u; i < rippleCount; i = i + 1u) {
-        let ripple = u.ripples[i];
-        let age = time - ripple.z;
-        if (age >= 0.0 && age < 1.6) {
-            let delta = (uv01 - ripple.xy) * vec2<f32>(resolution.x / resolution.y, 1.0);
-            let shell = exp(-abs(length(delta) - age * 0.3) * 76.0) * exp(-age * 1.9);
-            pulsarShock = max(pulsarShock, shell);
-        }
-    }
     col += vec3<f32>(0.4, 0.9, 1.4) * pulsarShock * (0.7 + plasmaBuffer[0].z * 0.35);
     let coord = vec2<i32>(id.xy);
     let prev = textureLoad(dataTextureC, coord, 0);

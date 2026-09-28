@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Crystalline Chrono-Dyson — Algorithmist Upgrade
 //  Category: generative
-//  Features: mouse-driven, audio-reactive, temporal, chromatic,
-//            depth-aware, Worley, KIFS, Fresnel-Schlick,
-//            Beer-Lambert, domain-warping
+//  Features: raymarched, audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-06-28
+//  Upgraded: 2026-09-27
+//  Ideas: statite swarm (Swarm Count = number of golden-phased octahedron statites on the satellite orbit, core-lit sails); power-grid packets (emissive packets run quasar -> spoke -> torus conduit as one harvest circuit, packet speed = Flux Speed); louvred panels (each shell plate tilts open on its own phase and throws core light outward)
+//  A packing: clamped HDR linear RGB (pre-ACES) + semantic alpha; C read back exactly as HDR for chromatic feedback
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -86,8 +86,6 @@ fn smin(a: f32, b: f32, k: f32) -> f32 { let h = clamp(0.5 + 0.5 * (b - a) / k, 
 fn sdSphere(p: vec3<f32>, r: f32) -> f32 { return length(p) - r; }
 fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 { let d = abs(p) - b; return min(max(d.x, max(d.y, d.z)), 0.0) + length(max(d, vec3<f32>(0.0))); }
 
-fn kifsFold(p: vec3<f32>, normal: vec3<f32>, d: f32) -> vec3<f32> { let t = dot(p, normal) - d; return p - 2.0 * min(0.0, t) * normal; }
-
 fn sdOctahedron(p: vec3<f32>, s: f32) -> f32 { let q = abs(p); return (q.x + q.y + q.z - s) * 0.57735027; }
 fn sdCapsule(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, r: f32) -> f32 {
     let pa = p - a; let ba = b - a;
@@ -114,12 +112,86 @@ fn volumetricFog(p: vec3<f32>, ro: vec3<f32>, t: f32, audio: f32) -> vec3<f32> {
     return fogColor * fogAmount;
 }
 
+// Shared Dyson clock + frame (HEAD rotation, now shared by map and shading).
+// NOTE: t = time * Flux Speed (HEAD): dragging the slider scrubs the clock. No persistent accumulator is possible
+// (extraBuffer[133..] is re-uploaded every frame), so this phase jump on slider moves is kept and documented.
+fn dysonClock() -> f32 { return u.config.x * u.zoom_params.z; }
+fn dysonFrame(p: vec3<f32>, t: f32) -> vec3<f32> {
+    var q = p;
+    let rx = rot2D(t * 0.1) * q.xz; q.x = rx.x; q.z = rx.y;
+    return q;
+}
+
+// Idea 3: louvred panels — every fract panel cell owns a phase and rate and tilts open about its cell X axis.
+// open = 0 is the HEAD plate exactly; most cells sit closed most of the time.
+fn louvreOpen(cell: vec3<f32>, t: f32) -> f32 {
+    let ph = hash1(cell + vec3<f32>(17.0, 3.0, 5.0));
+    return smoothstep(0.35, 0.9, sin(t * (0.35 + 0.4 * ph) + ph * TAU));
+}
+
+// Idea 1: statite swarm — Swarm Count statites share the HEAD satellite orbit by polar repetition.
+// Cell 0 IS the HEAD satellite (radius 2.5, PHI bob, full size); the others spread by golden-ratio phase in height and
+// radius, sized to their arc spacing. Only the nearest cell and its same-side neighbour are evaluated (2 SDFs, no N-loop).
+// Returns (distance, statite index).
+fn statiteSd(q: vec3<f32>, t: f32, treble: f32) -> vec2<f32> {
+    let n = clamp(round(u.zoom_params.w), 1.0, 100.0);
+    let sector = TAU / n;
+    let orbitAngle = t * 0.4;
+    let rel = atan2(q.z, q.x) - orbitAngle;
+    let kf = floor(rel / sector + 0.5);
+    let kn = kf + select(-1.0, 1.0, rel - kf * sector > 0.0);
+    let capSize = min(0.15 + treble * 0.05, 0.3 * 2.5 * sector);
+    var best = vec2<f32>(1e5, 0.0);
+    for (var j = 0; j < 2; j++) {
+        let k = select(kf, kn, j == 1);
+        let km = k - n * floor(k / n);
+        let a = orbitAngle + km * sector;
+        let rad = 2.5 + 0.3 * (fract(km * PHI + 0.5) - 0.5);
+        let pos = vec3<f32>(cos(a) * rad, sin(orbitAngle * PHI + km * TAU / PHI) * 0.5, sin(a) * rad);
+        let size = select(capSize, 0.15 + treble * 0.05, km < 0.5);
+        var lp = q - pos;
+        let spin = rot2D(t * 0.7 + km * 2.4) * lp.xz; lp.x = spin.x; lp.z = spin.y;
+        let d = sdOctahedron(lp, size);
+        if (d < best.x) { best = vec2<f32>(d, km); }
+    }
+    return best;
+}
+
+// Idea 2 geometry (+ FIX): 8 real radial spokes from the quasar surface to the conduit ring, built in a rotated sector
+// frame (HEAD folded the angle but never rotated q, and fed q.y into both capsule ends: unbounded sheets, not spokes).
+// Returns (spoke distance, conduit distance, circuit path length s from the quasar, spoke index 0..7).
+fn gridGeom(q: vec3<f32>, t: f32, mids: f32, bass: f32) -> vec4<f32> {
+    let sec = TAU / 8.0;
+    let ang = atan2(q.z, q.x) + t * 0.2;
+    let k = floor(ang / sec + 0.5);
+    let la = ang - k * sec;
+    let r = length(q.xz);
+    let qs = vec3<f32>(r * cos(la), q.y, r * sin(la));
+    let ringR = 1.8 + sin(t * 2.0) * 0.2;                       // HEAD conduit radius
+    let a = vec3<f32>(0.5, 0.0, 0.0); let b = vec3<f32>(ringR, 0.0, 0.0);
+    let pa = qs - a; let ba = b - a;
+    let h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);         // sdCapsule's h, kept for the packets
+    let dSpoke = length(pa - ba * h) - (0.03 + mids * 0.02);     // HEAD spoke radius
+    let dCond = sdTorus(q, vec2<f32>(ringR, 0.02 + bass * 0.03)); // HEAD conduit
+    let spokeLen = ringR - 0.5;
+    let s = select(h * spokeLen, spokeLen + abs(la) * ringR, dCond < dSpoke);
+    return vec4<f32>(dSpoke, dCond, s, k - 8.0 * floor(k / 8.0));
+}
+
+// Idea 2: power-grid packets — comet pulses with a hard leading edge run outward along the circuit
+// (quasar -> spoke -> both ways round the conduit) at a Flux-Speed rate; each spoke fires on its own golden phase;
+// energy drains as it spreads round the ring.
+fn gridPacket(s: f32, k: f32, t: f32) -> f32 {
+    let ph = fract(s / 0.45 - t * 0.9 + k * 0.618);
+    let pk = smoothstep(0.35, 0.9, ph) * (1.0 - smoothstep(0.9, 1.0, ph));
+    return pk * pk * exp(-max(s - 1.3, 0.0) * 0.9);
+}
+
 fn map(p: vec3<f32>) -> f32 {
     let audio = plasmaBuffer[0].x; let mids = plasmaBuffer[0].y; let treble = plasmaBuffer[0].z;
-    let t = u.config.x * u.zoom_params.z; let density = u.zoom_params.x;
-    var q = p;
+    let t = dysonClock(); let density = u.zoom_params.x;
     // Rotate entire Dyson sphere
-    let a = t * 0.1; let rx = rot2D(a) * q.xz; q.x = rx.x; q.z = rx.y;
+    let q = dysonFrame(p, t);
     // KIFS crystal fractal inside panel space
     var kq = q; var scale = 1.0;
     for (var i = 0; i < 4; i++) {
@@ -131,24 +203,23 @@ fn map(p: vec3<f32>) -> f32 {
     let kifs = sdBox(kq, vec3<f32>(0.1, 0.1, 0.01)) / scale;
     // Domain repetition for crystal panels
     var panel_q = fract(q * density) - 0.5;
+    // Idea 3: louvre tilt of this cell's plate about its X axis
+    let lz = rot2D(louvreOpen(floor(q * density), t) * 1.2) * panel_q.yz; panel_q.y = lz.x; panel_q.z = lz.y;
     let w = worley(q * 0.5 + t * 0.05, density * 2.0);
-    let crystal = sdBox(panel_q, vec3<f32>(0.15 + w.x * 0.05, 0.15 + w.y * 0.05, 0.01)) - 0.01;
+    // FIX: panel_q is in cell units, so divide by density (HEAD over-reported the plate distance by x density)
+    let crystal = (sdBox(panel_q, vec3<f32>(0.15 + w.x * 0.05, 0.15 + w.y * 0.05, 0.01)) - 0.01) / max(density, 1.0);
     // Dyson shell
     let shell = abs(length(q) - 2.0) - 0.1;
     let panels = max(shell, crystal);
     // Central quasar with FBM turbulence
     let qwarp = domainWarp(q * 0.5, t * 0.3);
     let quasar = sdSphere(q, 0.5 + sin(t * 5.0 + q.x * 10.0) * 0.05 * audio) + fbm(qwarp, 3) * 0.1;
-    // Plasma conduits between panels
-    let conduit = sdTorus(q, vec2<f32>(1.8 + sin(t * 2.0) * 0.2, 0.02 + audio * 0.03));
-    // Octahedron crystal satellites orbiting
-    let orbitAngle = t * 0.4;
-    let satPos = vec3<f32>(cos(orbitAngle) * 2.5, sin(orbitAngle * PHI) * 0.5, sin(orbitAngle) * 2.5);
-    let satellite = sdOctahedron(q - satPos, 0.15 + treble * 0.05);
-    // Radial capsule spokes
-    let spokeAngle = fmod(atan2(q.z, q.x) + t * 0.2, TAU / 8.0) - TAU / 16.0;
-    let spokePos = vec3<f32>(cos(spokeAngle) * 1.9, q.y, sin(spokeAngle) * 1.9);
-    let capsule = sdCapsule(q, spokePos, spokePos * 0.3 + vec3<f32>(0.0, 0.5, 0.0), 0.03 + mids * 0.02);
+    // Plasma conduit + radial capsule spokes (the power grid)
+    let grid = gridGeom(q, t, mids, audio);
+    let conduit = grid.y;
+    let capsule = grid.x;
+    // Octahedron crystal satellites orbiting — now the statite swarm
+    let satellite = statiteSd(q, t, treble).x;
     let h = 0.5; let blend = clamp(0.5 + 0.5 * (panels - quasar) / h, 0.0, 1.0);
     var d = mix(panels, quasar, blend) - h * blend * (1.0 - blend);
     d = smin(d, kifs, 0.15);
@@ -169,11 +240,13 @@ fn getNormal(p: vec3<f32>) -> vec3<f32> {
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let coords = vec2<i32>(id.xy); let res = vec2<f32>(u.config.z, u.config.w);
     if (f32(coords.x) >= res.x || f32(coords.y) >= res.y) { return; }
-    let uv01 = vec2<f32>(coords) / res; let uv = (vec2<f32>(coords) - 0.5 * res) / res.y;
+    let uv01 = vec2<f32>(coords) / res;
+    // FIX: flip Y so screen-top = world +Y (HEAD rendered the sphere upside-down despite the comment below)
+    let uv = vec2<f32>(f32(coords.x) - 0.5 * res.x, 0.5 * res.y - f32(coords.y)) / res.y;
     let bass = plasmaBuffer[0].x; let mids = plasmaBuffer[0].y; let treble = plasmaBuffer[0].z;
     var ro = vec3<f32>(0.0, 0.0, -5.0); var rd = normalize(vec3<f32>(uv, 1.0));
     // Mouse orbital camera (Y-flip: screen-top = +Y/up)
-    let mx = (u.zoom_config.y - 0.5) * 6.28; let my = (u.zoom_config.z - 0.5) * 3.14;
+    let mx = (u.zoom_config.y - 0.5) * 6.28; let my = clamp((u.zoom_config.z - 0.5) * 3.14, -1.45, 1.45); // FIX: pitch clamp, no pole NaN
     let ro_xz = rot2D(mx) * vec2<f32>(ro.x, ro.z); ro.x = ro_xz.x; ro.z = ro_xz.y;
     let ro_yz = rot2D(my) * vec2<f32>(ro.y, ro.z); ro.y = ro_yz.x; ro.z = ro_yz.y;
     let cw = normalize(-ro); let cu = normalize(cross(cw, vec3<f32>(0.0, 1.0, 0.0))); let cv = cross(cu, cw);
@@ -181,12 +254,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Gravity well warp
     let warp = 1.0 - smoothstep(0.0, 0.5, length(uv));
     rd = normalize(rd + vec3<f32>(warp * 0.1 * sin(u.config.x), warp * 0.1 * cos(u.config.x), 0.0));
-    var t = 0.0; var hit = false;
+    let tD = dysonClock();
+    var t = 0.0; var hit = false; var gridGlow = 0.0;
     for (var i = 0; i < 100; i++) {
         let p = ro + rd * t; let d = map(p);
+        // Idea 2: packet halo — line integral of packet light around spokes/conduit, occluded at the hit
+        let gg = gridGeom(dysonFrame(p, tD), tD, mids, bass);
+        gridGlow += gridPacket(gg.z, gg.w, tD) * exp(-max(min(gg.x, gg.y), 0.0) * 30.0) * clamp(d, 0.0, 0.25);
         if (d < 0.001) { hit = true; break; }
         if (t > 20.0) { break; }
-        t += d;
+        t += d * 0.9; // FIX: relaxed step (noise-displaced core, repeated louvres/statites are not exact SDFs)
     }
     var col = vec3<f32>(0.0);
     if (hit) {
@@ -204,10 +281,30 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Spectral glow from quasar core
         let viewAngle = max(dot(n, v), 0.0);
         col += spectralGlow(viewAngle * 3.0 + dist_to_center * 2.0, quasar_glow * 0.3 * audio_pulse);
-        // Swarm drones
-        let swarm = u.zoom_params.w;
-        col += vec3<f32>(0.1, 0.8, 1.0) * smoothstep(0.9, 1.0, sin(t * swarm + u.config.x + dist_to_center * 3.0));
-    } else { col = vec3<f32>(0.05, 0.05, 0.1) * hash3(rd).x; }
+        let q = dysonFrame(p, tD);
+        let coreDir = -p / max(dist_to_center, 1e-4); // toward the quasar (origin in both frames)
+        let coreFacing = max(dot(n, coreDir), 0.0);
+        // Idea 1: statite sails — Swarm Count now counts real statites; HEAD's fake drones (depth stripes
+        // sin(t * swarm)) are retired into them. Core-facing sail faces catch quasar light; golden-phased shimmer.
+        let st = statiteSd(q, tD, treble);
+        let onStatite = 1.0 - smoothstep(0.004, 0.03, st.x);
+        let shimmer = 0.6 + 0.4 * sin(u.config.x * 1.7 + st.y * TAU / PHI);
+        col += vec3<f32>(0.1, 0.8, 1.0) * onStatite * (0.3 + 1.1 * coreFacing * (0.4 + 0.4 * quasar_glow)) * shimmer;
+        // Idea 2: packets light the spoke / conduit surface they are crossing
+        let g = gridGeom(q, tD, mids, bass);
+        let onGrid = 1.0 - smoothstep(0.004, 0.03, min(g.x, g.y));
+        col += vec3<f32>(1.0, 0.72, 0.3) * onGrid * gridPacket(g.z, g.w, tD) * (1.2 + 1.2 * quasar_glow);
+        // Idea 3: open louvres turn their tilted faces to the core and throw its light outward
+        let onShell = 1.0 - smoothstep(0.1, 0.16, abs(dist_to_center - 2.0));
+        let louvre = louvreOpen(floor(q * u.zoom_params.x), tD);
+        col += vec3<f32>(1.0, 0.8, 0.45) * onShell * louvre * (0.25 + abs(dot(n, coreDir))) * quasar_glow * 0.45;
+    } else {
+        // FIX: HEAD hash3(rd).x was per-pixel static crawling with the camera — sparse fixed stars instead
+        let sc = hash3(floor(rd * 260.0) + 11.0);
+        col = vec3<f32>(0.012, 0.012, 0.025) + vec3<f32>(0.55, 0.6, 0.8) * step(0.995, sc.x) * (0.4 + 0.6 * sc.y);
+    }
+    // Idea 2: packet halo along the view ray
+    col += vec3<f32>(1.0, 0.72, 0.3) * gridGlow * (2.0 + 2.0 * u.zoom_params.y);
     // Volumetric fog integration
     col += volumetricFog(ro + rd * t, ro, t, bass);
     // Temporal feedback with integer chromatic dispersion. C must never be filtered.
@@ -236,7 +333,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let hdrColor = clamp(col, vec3<f32>(0.0), vec3<f32>(8.0));
     let mappedColor = acesToneMap(hdrColor);
     let lum = dot(mappedColor, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(select(0.08, 0.3 + lum * 0.65, hit) + clickEnergy * 0.08, 0.02, 1.0);
+    let alpha = clamp(select(0.08, 0.3 + lum * 0.65, hit) + clickEnergy * 0.08 + min(gridGlow, 1.0) * 0.2, 0.02, 1.0);
     textureStore(writeTexture, coords, vec4<f32>(mappedColor, alpha));
     let depth = select(0.0, clamp(1.0 - t / 20.0, 0.0, 1.0), hit);
     textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));

@@ -1,6 +1,44 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-27 (simpler / mid generative ten)
+**Last updated:** 2026-09-27 (simpler / mid crystal-math ten)
+
+## 2026-09-27 — Simpler / mid crystal-math ten
+
+- IDs: gen-crystal-caverns, gen-crystal-lattice-growth, gen-celestial-forge, gen-chromatic-zonohedron, gen-cosmic-web-filament, gen-cyber-terminal, gen-cyclic-automaton (`gen_cyclic_automaton.wgsl`), gen-cycloid-bloom, gen-de-jong-attractor, gen-dla-copper-deposition.
+- Per shader, the ideas actually added:
+  - gen-crystal-lattice-growth: growth striae; faceted nucleation core. Twin mirror and hopper edge kept. A stays HDR.
+  - gen-chromatic-zonohedron: zone belts; Minkowski inset. Fourth generator, dichroism, pair IDs, vertex stars kept.
+  - gen-cyber-terminal: column gaps; bottom restart flash. Segment glyphs and white-hot leader kept. A stays HDR history.
+  - gen-cyclic-automaton: pacemaker vs wave; cooldown ticks. Chirality, just-fired halo, tracer, and the pointer spring kept. A stays raw.
+  - gen-cycloid-bloom: epicycloid counter-layer; petal crossings. Vein and stamen kept. No spring.
+  - gen-de-jong-attractor: critical curves; antipodal ghost. Stretch tint, dwell rings, and the pointer spring kept. A stays raw density.
+  - gen-crystal-caverns: phantom shell; basal pinacoid. Three habits, caustics, and click shocks kept. No spring.
+  - gen-celestial-forge: temper gradient; hammer flats. Spring, greebles, and arcs kept. Did not copy twin facets or weld seams from the radiant crystalline forge.
+  - gen-cosmic-web-filament: walls; galaxy beads. Zel'dovich filaments, quasars, and the spring void well kept.
+  - gen-dla-copper-deposition: tip screening; growth-front sheen. Cathode, oxidation, and tip sparks kept. A stays raw.
+- Floor: bindings / 16×16 / exact C where history is read / A packing as documented / saved params exact.
+- Gates: Naga 10/10, extraBuffer 0 new, dead sliders 0, catalogs 1,373, Jest 741 pass / 6 fail / 1 skip (WASM bridge pre-existing), SKIP_WASM_BUILD=1 build green.
+- Real-GPU visual QA: external.
+- Cards: `agents/swarm-outputs/grok-2026-09-27-simpler-mid-crystal-ten/`.
+
+## 2026-09-27 — Chaos / chem generative ten
+
+- IDs: gen-3d-sierpinski-chaos, gen-alpha-aurora, gen-belousov-zhabotinsky, gen-bioelectric-pulse, gen-brutalist-monument, gen-buddhabrot-aura, gen-cellular-automata-tapestry, gen-chromatic-acid-drip, gen-alien-flora-ecosystem, gen-chronos-labyrinth.
+- Per shader, the ideas actually added:
+  - gen-3d-sierpinski-chaos: midpoint cavity; edge filament. Attractor die, corner flares, age hue, opposite-face chroma kept. No spring.
+  - gen-alpha-aurora: curtain rays; greener lower border. Four curl bands kept. Bass envelope moved off extraBuffer[0] to [133].
+  - gen-belousov-zhabotinsky: phase hue; annihilation cusp. Refractory tail and pacemaker kept. A stays raw.
+  - gen-bioelectric-pulse: recovery trough; biphasic cyan/magenta spike. Kick envelope kept. Trail in A is unmapped.
+  - gen-brutalist-monument: board-form lines and tie holes; ledge stains. Pillars and octahedron kept. No spring.
+  - gen-buddhabrot-aura: min-distance spine; escape-argument streaks. Nebulabrot and interior dust kept.
+  - gen-cellular-automata-tapestry: spot nucleus; substrate halo. Isochrones and anisotropy kept. A stays raw. Dropped the C-as-color mix and the plasma LUT.
+  - gen-chromatic-acid-drip: Plateau–Rayleigh neck; channel lag down-gravity. Meniscus and gravity fall kept.
+  - gen-alien-flora-ecosystem: cap vs stem species zoning; toxin allelopathy ring. Did not copy gill ridges or spore motes from gen-alien-flora.
+  - gen-chronos-labyrinth: stair nosing; shift ghost. Existing spring and rift-echo packing kept.
+- Floor: bindings / 16×16 / exact C where history is read / A packing as documented / saved params exact.
+- Gates: Naga 10/10, extraBuffer 0 new, dead sliders 0, catalogs 1,373, Jest 741 pass / 6 fail / 1 skip (WASM bridge pre-existing), SKIP_WASM_BUILD=1 build green.
+- Real-GPU visual QA: external.
+- Cards: `agents/swarm-outputs/grok-2026-09-27-chaos-chem-ten/`.
 
 ## 2026-09-27 — Simpler / mid generative ten
 
@@ -3082,3 +3120,22 @@ User asked for progress + six GitHub issues (code changes, even large ones), not
 - Gates: Naga 7/7, precommit 7/7, extraBuffer pass (0 new), dead sliders none flagged (hand-checked), catalogs regenerated, Jest 741 pass / 6 fail (pre-existing bridge `.js` imports), SKIP_WASM_BUILD=1 build green. Nothing committed.
 - Real-GPU visual QA: external.
 - Notes: agents/swarm-outputs/claude-2026-09-27-organic-optical-seven/.
+
+## 2026-09-27 — densest crystal/chrome nine (9 shaders)
+
+- IDs: gen-bismuth-hyper-crystals, gen-celestial-nanite-swarm-nebula, gen-chromatic-singularity-loom, gen-chrono-kitsune-prism-weaver, gen-chronodynamic-aether-weaver-automata, gen-crystalline-chrono-dyson, gen-crystalline-nebula-weaver-void-spider, gen-cybernetic-crystalline-neuro-lattice, gen-cybernetic-liquid-chrome-engine.
+- Not done (request listed 10): gen-chrono-kinetic-fractal-engine already carried 09-15 `Ideas:` (body verified).
+- Per shader, the ideas actually added:
+  - bismuth-hyper-crystals: nucleation seed under the cursor (revived dead distToMouse); fractional fold growth; fold-lineage palette phase. Camera was inside the solid at default → flat colour; now outside.
+  - celestial-nanite-swarm-nebula: Kuramoto (closed-form Adler) nanite blink sync; lattice-edge self-assembly; face-dust Beer-Lambert. Corner NaN fixed.
+  - chromatic-singularity-loom: tidal spaghettification necking; mirror-parity warp/weft families; orbital infall C trail. Was black after 0.1 s (plasmaBuffer LUT) with 0 folds at default.
+  - chrono-kitsune-prism-weaver: body-as-prism tail spectrum; heartbeat running down the tails; fractional tail unfurl. Tails were hidden behind the body at HEAD; now splayed.
+  - chronodynamic-aether-weaver-automata: coupled Rule 90 tooth-ring automaton (bounded stateless); capstan wrap of threads onto gear rims. Had 0 threads at default, input photo bleed, packing lie.
+  - crystalline-chrono-dyson: statite swarm (Swarm Count honest); quasar→spoke→conduit power packets; louvred panels. Spokes were sheets; pole NaN fixed.
+  - crystalline-nebula-weaver-void-spider: nebula-condensed web nodes; 8-leg tetrapod gait; spinneret dragline. Step exhaustion was painted as surface.
+  - cybernetic-crystalline-neuro-lattice: nucleation front gyroid→crystal; memory-crystal bit states (Glitch); light-piped links. Was blank (crystal box filled 96% of space); float % seams fixed.
+  - cybernetic-liquid-chrome-engine: V8 1-8-4-3-6-5-7-2 firing-order crank; compression ignition crush + TDC flash; heat shimmer on C fetch. Bass-teleporting camera and camera-in-piston fixed.
+- Floor: bindings / 16×16 / exact C / A packing documented per file / saved params + updatedParams byte-exact (verified against HEAD). No springs/ripples added. Slider-scaled time kept in 5 files (no persistent state slot); audio removed from every phase.
+- Gates: Naga 9/9, precommit 9/9, extraBuffer audit pass, dead-slider audit pass (1305 scanned), check_duplicates clean, catalogs regenerated, Jest 741 pass / 6 fail (pre-existing bridge `.js` imports), SKIP_WASM_BUILD=1 build green. Nothing committed.
+- Real-GPU visual QA: external.
+- Notes: agents/swarm-outputs/claude-2026-09-27-densest-crystal-chrome-nine/.

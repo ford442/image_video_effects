@@ -6,7 +6,13 @@
 //            nutrient-tendrils, pulsing-bloom, fbm-warp
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-06-28
+//  Upgraded: 2026-09-27
+//  Ideas: mitosis split event budding a second nucleus along a hashed
+//         division axis; toxicity necrosis creep fading tendrils that
+//         overlap the poison cloud; reactivity-scaled bloom-ring
+//         speed/thickness
+//  A packing: display RGBA (fixed — previously wrote raw fields while C was
+//             read as color; now matches the C-read)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -104,10 +110,10 @@ fn nutrientTendril(uv: vec2<f32>, time: f32, cell: vec2<f32>, seed: vec2<f32>, l
   return smoothstep(0.03, 0.0, d);
 }
 
-fn pulseBloom(uv: vec2<f32>, time: f32, center: vec2<f32>, radius: f32, speed: f32) -> f32 {
+fn pulseBloom(uv: vec2<f32>, time: f32, center: vec2<f32>, radius: f32, speed: f32, sharpness: f32) -> f32 {
   let d = length(uv - center);
   let ring = abs(d - radius * (0.7 + 0.3 * sin(time * speed)));
-  return exp(-ring * ring * 80.0) * smoothstep(radius * 1.5, 0.0, d);
+  return exp(-ring * ring * sharpness) * smoothstep(radius * 1.5, 0.0, d);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -129,13 +135,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
   let mouse = u.zoom_config.yz;
 
-  // Explicit bypass for regex auditor
-  let zp_x = u.zoom_params.x;
-  let zp_y = u.zoom_params.y;
-  let zp_z = u.zoom_params.z;
-  let zp_w = u.zoom_params.w;
-
-  let zp = clamp(vec4<f32>(zp_x, zp_y, zp_z, zp_w), vec4<f32>(0.0), vec4<f32>(1.0));
+  let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
 
   let cellScale = mix(6.0, 52.0, zp.x);
   let mitosis = mix(0.0, 1.0, zp.y);
@@ -158,7 +158,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let membrane = smoothstep(0.25, 0.05, abs(sdCircle(local - center, 0.22 + seed.x * 0.18)));
   let pulse = 0.5 + 0.5 * sin(time * (2.5 + mids * 6.0) + seed.y * 9.0 + d * 18.0);
 
-  let colony = nucleus * (0.7 + pulse * 0.7) + membrane * 0.5;
+  // Mitosis split event: past a phase+mitosis threshold, a second nucleus
+  // buds off along a hashed division axis, so the Mitosis slider shows real
+  // cell division instead of only biasing the base offset.
+  let divisionAxis = normalize(seed - 0.5 + vec2<f32>(0.0001));
+  let mitosisPhase = fract(time * (0.15 + mitosis * 0.25) + seed.x * 4.0);
+  let dividing = smoothstep(0.55, 0.95, mitosis) * smoothstep(0.35, 0.65, mitosisPhase) * smoothstep(1.0, 0.8, mitosisPhase);
+  let center2 = center + divisionAxis * dividing * 0.34;
+  let d2 = length(local - center2);
+  let nucleus2 = exp(-d2 * d2 * (18.0 + reactivity * 22.0)) * dividing;
+  let nucleusTotal = sat(nucleus + nucleus2);
+
+  let colony = nucleusTotal * (0.7 + pulse * 0.7) + membrane * 0.5;
 
   var tendrils = 0.0;
   for (var i: i32 = 0; i < 3; i = i + 1) {
@@ -169,32 +180,54 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   tendrils = sat(tendrils) * (0.6 + reactivity * 0.5);
 
+  // Reactivity-scaled bloom pulse: ring speed AND thickness now respond to
+  // bass x Reactivity, which previously never touched the bloom rings.
+  let bloomSharpness = mix(40.0, 110.0, reactivity);
   var bloomLayers = 0.0;
   for (var i: i32 = 0; i < 2; i = i + 1) {
     let fi = f32(i);
     let bloomCenter = uv + (hash22(cell + fi * 17.3) - 0.5) * 0.4;
-    let bloomSpeed = 0.8 + hash21(cell + fi * 9.1) * 1.5;
-    bloomLayers += pulseBloom(uv, time, bloomCenter, 0.12 + fi * 0.08, bloomSpeed);
+    let bloomSpeed = (0.8 + hash21(cell + fi * 9.1) * 1.5) * (1.0 + smoothBass * reactivity * 0.6);
+    bloomLayers += pulseBloom(uv, time, bloomCenter, 0.12 + fi * 0.08, bloomSpeed, bloomSharpness);
   }
-  bloomLayers = sat(bloomLayers) * (0.5 + mids * 0.5);
+  bloomLayers = sat(bloomLayers) * (0.5 + mids * 0.5) * (0.6 + reactivity * 0.5);
 
   let poisonCloud = exp(-length(uv - mouse) * (4.0 + toxicity * 12.0)) * toxicity;
   let spores = step(0.994 - treble * 0.03, hash21(floor((warpedUV + time * 0.03) * 300.0)));
 
+  // Toxicity necrosis creep: tendrils overlapping the poison cloud fade
+  // toward a necrotic tone and lose brightness, coupling the two previously
+  // independent additive layers.
+  let necrosis = sat(tendrils * poisonCloud * 3.0);
+  let tendrilColor = mix(vec3<f32>(0.3, 0.9, 1.0), vec3<f32>(0.35, 0.22, 0.12), necrosis);
+  let tendrilBrightness = tendrils * 0.8 * (1.0 + treble * 0.2) * mix(1.0, 0.4, necrosis);
+
   var color = vec3<f32>(0.02, 0.05, 0.03);
   color += vec3<f32>(0.1, 0.95, 0.5) * colony * (0.6 + reactivity * 0.7) * (1.0 + smoothBass * 0.1);
-  color += vec3<f32>(0.5, 1.0, 0.85) * nucleus * pulse * 0.6 * (1.0 + mids * 0.1);
-  color += vec3<f32>(0.3, 0.9, 1.0) * tendrils * 0.8 * (1.0 + treble * 0.2);
+  color += vec3<f32>(0.5, 1.0, 0.85) * nucleusTotal * pulse * 0.6 * (1.0 + mids * 0.1);
+  color += tendrilColor * tendrilBrightness;
   color += vec3<f32>(0.2, 0.85, 0.4) * bloomLayers * 0.7 * (1.0 + smoothBass * 0.15);
   color += vec3<f32>(0.65, 0.05, 0.15) * poisonCloud * (1.0 + treble * 0.15);
   color += vec3<f32>(0.9, 1.0, 0.75) * spores * (0.3 + treble);
 
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  // Exact previous-frame state — no filtering
+  let prev = textureLoad(dataTextureC, coord, 0);
   color = mix(color, prev.rgb * 0.9, 0.03 + smoothBass * 0.01);
 
   color = acesToneMap(color * 1.1);
 
-  textureStore(writeTexture, coord, vec4<f32>(color, 1.0));
-  textureStore(writeDepthTexture, coord, vec4<f32>(0.0, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, coord, vec4<f32>(nucleus, membrane, tendrils, bloomLayers));
+  // Semantic alpha: colony/tendril/bloom/toxin coverage, not a flat literal
+  let alpha = clamp(
+    0.12 + sat(nucleusTotal + membrane) * 0.5 + tendrils * 0.3 + bloomLayers * 0.25
+      + poisonCloud * 0.4 + spores * 0.3,
+    0.0, 1.0);
+
+  // Truthful relief from the colony/bloom height field (no raymarch here)
+  let relief = sat(nucleusTotal * 0.6 + membrane * 0.4 + bloomLayers * 0.2);
+  let depthVal = clamp(1.0 - relief * 0.8, 0.0, 1.0);
+
+  textureStore(writeTexture, coord, vec4<f32>(color, alpha));
+  textureStore(writeDepthTexture, coord, vec4<f32>(depthVal, 0.0, 0.0, 0.0));
+  // A packing fixed to display RGBA to match how this shader reads C as color.
+  textureStore(dataTextureA, coord, vec4<f32>(color, alpha));
 }
