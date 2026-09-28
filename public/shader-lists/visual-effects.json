@@ -1924,7 +1924,7 @@
     "id": "holographic-sticker",
     "name": "Holographic Sticker",
     "url": "shaders/holographic-sticker.wgsl",
-    "description": "Mouse-centered iridescent sticker with chromatic view-angle dispersion, temporal foil shimmer persistence, audio-driven sticker pulse, depth-layered alpha, and rainbow phase shift.",
+    "description": "Mouse-centered iridescent foil sticker with chromatic view-angle dispersion, grating ripple and rim highlight, embossed guilloche security rosettes whose hue slides as the sticker tilts across the screen, and an edge peel while the pointer is held that curls back the outer rim to show the white paper backing with a soft shadow on the image beneath. Click rainbow rings, audio-driven sticker pulse and hue-banded bass/mid/treble foil brightness, depth-layered alpha, subtle temporal shimmer.",
     "features": [
       "mouse-driven",
       "audio-reactive",

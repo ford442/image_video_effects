@@ -15,10 +15,10 @@
     "balmer-series",
     "astrophysics"
   ],
-  "description": "Deep-space nebula with organic plasma clouds enriched by Wolfram Alpha Hydrogen Balmer Series astrophysics data. H-alpha dominates core, H-beta fills mid regions. Bass drives ionization front expansion. Mouse seeds new star formation.",
+  "description": "Deep-space nebula of domain-warped plasma clouds coloured by the Hydrogen Balmer series: H-alpha dominates the core, H-beta fills mid regions, bass drives the ionization front and shockwave rings, treble adds sparkles. Domain Chaos twists and shears each warp octave into gas filaments; Warp Amount scales the domain-warp lens, and holding the pointer coils it into a swirling gravity well that seeds new star formation. Dark photoevaporation pillars point at the core, their eroded tips lit by bright ionised rims.",
   "workgroup_size": [
-    8,
-    8,
+    16,
+    16,
     1
   ],
   "updatedParams": [
@@ -33,7 +33,7 @@
     {
       "index": 1,
       "name": "Domain Chaos",
-      "default": 0.3,
+      "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
@@ -41,7 +41,7 @@
     {
       "index": 2,
       "name": "Warp Amount",
-      "default": 0.4,
+      "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
@@ -49,7 +49,7 @@
     {
       "index": 3,
       "name": "Time Speed",
-      "default": 0.2,
+      "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
@@ -60,7 +60,11 @@
   "updated": true,
   "id": "gen-showcase-nebula-core",
   "url": "shaders/gen-showcase-nebula-core.wgsl",
-  "features": [],
+  "features": [
+    "upgraded-rgba",
+    "audio-reactive",
+    "mouse-driven"
+  ],
   "params": [
     {
       "id": "plasma_density",

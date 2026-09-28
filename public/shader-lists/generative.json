@@ -35366,12 +35366,14 @@
     "url": "shaders/gen-sentient-holographic-neuro-lace-matrix.wgsl",
     "type": "generative",
     "category": "generative",
-    "description": "A boundless, hyper-reactive lattice of luminous digital synapses that breathe, think, and evolve, seamlessly blending synthetic cyberpunk aesthetics with organic neural architecture.",
+    "description": "Fly down a channel of an endless teal holographic gyroid lace. A breathing lace wave swells the sheets in bass-driven crests that roll away down the flight axis, bioluminescent depth fog dissolves distant lace into haze lit by how many strands each ray grazed, and the pointer gathers the lace toward a node that travels with the camera; holding the mouse blooms it into a glowing neuron that lights the surrounding strands.",
     "features": [
       "audio-reactive",
       "raymarching",
       "cyberpunk",
-      "holographic"
+      "holographic",
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "cyberpunk",
@@ -35967,10 +35969,10 @@
       "balmer-series",
       "astrophysics"
     ],
-    "description": "Deep-space nebula with organic plasma clouds enriched by Wolfram Alpha Hydrogen Balmer Series astrophysics data. H-alpha dominates core, H-beta fills mid regions. Bass drives ionization front expansion. Mouse seeds new star formation.",
+    "description": "Deep-space nebula of domain-warped plasma clouds coloured by the Hydrogen Balmer series: H-alpha dominates the core, H-beta fills mid regions, bass drives the ionization front and shockwave rings, treble adds sparkles. Domain Chaos twists and shears each warp octave into gas filaments; Warp Amount scales the domain-warp lens, and holding the pointer coils it into a swirling gravity well that seeds new star formation. Dark photoevaporation pillars point at the core, their eroded tips lit by bright ionised rims.",
     "workgroup_size": [
-      8,
-      8,
+      16,
+      16,
       1
     ],
     "updatedParams": [
@@ -35985,7 +35987,7 @@
       {
         "index": 1,
         "name": "Domain Chaos",
-        "default": 0.3,
+        "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
@@ -35993,7 +35995,7 @@
       {
         "index": 2,
         "name": "Warp Amount",
-        "default": 0.4,
+        "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
@@ -36001,7 +36003,7 @@
       {
         "index": 3,
         "name": "Time Speed",
-        "default": 0.2,
+        "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
@@ -36012,7 +36014,11 @@
     "updated": true,
     "id": "gen-showcase-nebula-core",
     "url": "shaders/gen-showcase-nebula-core.wgsl",
-    "features": [],
+    "features": [
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
+    ],
     "params": [
       {
         "id": "plasma_density",
@@ -39169,7 +39175,7 @@
       "abstract",
       "natural"
     ],
-    "description": "Worley cellular noise generating organic tissue-like patterns. Computes F1, F2, and cell boundaries with time-varying feature points, fBm variation, and subsurface scattering simulation.",
+    "description": "Worley cellular noise growing a living, soft-walled tissue: F1/F2 cells in pink, coral and ivory with subsurface-scattered walls, fBm variation and organic temporal drift. Feature points orbit smoothly per cell. Membranes act as thin lenses: the Chromatic Aberration slider splits red and blue by resampling the tissue along the wall gradient. Bass raises turgor pressure so cells swell into bright domes and their walls thin, and bright nodes mark every triple junction where three cells meet. The pointer pans the tissue; holding the mouse pushes the cells outward and flares the walls.",
     "workgroup_size": [
       16,
       16,
@@ -39214,7 +39220,11 @@
     "updated": true,
     "id": "gen-worley-cellular-noise",
     "url": "shaders/gen-worley-cellular-noise.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Xeno-Botanical Synth-Flora",
@@ -42396,7 +42406,7 @@
     "id": "kimi_flock_symphony",
     "name": "Kimi Flock Symphony",
     "url": "shaders/kimi_flock_symphony.wgsl",
-    "description": "Advanced particle flocking simulation with musical visualization, featuring separation, alignment, cohesion, and mouse interaction.",
+    "description": "Audio-driven boid flock (separation, alignment, cohesion, mouse spiral) drawn as soft coloured glows. Real trails: each glow leaves decaying history in the feedback texture (Trail Length = decay). Orchestra sections: boid quartiles are bass/mid/mid/treble voices - bass voices large, slow and warm, treble voices small, darting and cool - each sized and sped by its own audio band. Tutti swell: bass widens the separation radius so the whole flock breathes outward on hits. ACES tone map.",
     "tags": [
       "boids",
       "flocking",
@@ -42407,7 +42417,9 @@
       "procedural"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "author": "Kimi",
     "params": [

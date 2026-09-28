@@ -2,15 +2,14 @@
   "id": "cyber-terminal-ascii",
   "name": "Cyber Terminal ASCII",
   "url": "shaders/cyber-terminal-ascii.wgsl",
-  "description": "Scrolling hex-dump terminal with phosphor-green mono vs color blend, spring decoder lens, held decode widen, click packet bursts, exact C phosphor persistence, and ACES display.",
+  "description": "Scrolling grid of luma-picked SDF glyphs in phosphor green (or colour-blended) with a binary decode lens at the cursor that widens while held, click packet bursts and C phosphor persistence. Ideas: hex-dump decode (lens cells show the two hex nibbles of their luma byte from a 4x6 bitmap font), typewriter row entry (the row entering at the bottom types in left-to-right behind a blinking block cursor at a bass-driven rate), and bit-error flicker (treble flips random glyphs to a neighbour index for one frame, leaving a brief green after-image). ACES display.",
   "workgroup_size": [16, 16, 1],
   "updated": true,
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "click-ripples",
+    "click-reactive",
     "held-drag",
-    "spring-cursor",
     "aces-tone-map",
     "temporal-feedback",
     "upgraded-rgba"

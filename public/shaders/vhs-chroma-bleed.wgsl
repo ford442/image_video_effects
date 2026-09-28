@@ -1,14 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  VHS Chroma Bleed — Authentic Tape Degradation Edition
-//  Category: retro-glitch
-//  Features: mouse-driven, audio-reactive, jitter-smear, chromatic-bleed,
-//            depth-scatter, upgraded-rgba, film-grain, scanlines, crt-barrel,
-//            tape-tracking, compression-artifacts, analog-warmth, vignette,
-//            time-varying-chroma, noise-bands
+//  Category: image
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Chunks From: vhs-chroma-bleed, hash, bass_env
-//  Created: 2024-01-01
-//  Upgraded: 2026-06-28
+//  Upgraded: 2026-09-28
+//  Ideas: colour-under bandwidth (7-tap Y/C split, delayed chroma plane); cross-colour rainbow crawl; chroma loss in dropout rows
+//  A packing: ACES display RGB + source alpha (no C read)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -27,10 +24,12 @@
 
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
+
+const TAU: f32 = 6.28318530718;
 
 fn hash21(p: vec2<f32>) -> f32 {
   let h = dot(p, vec2<f32>(127.1, 311.7));
@@ -88,11 +87,12 @@ fn crtDistort(uv: vec2<f32>, k: f32) -> vec2<f32> {
     return center * distort + vec2<f32>(0.5);
 }
 
-// Vignette
+// Vignette (base guarded: pow of a negative base is NaN, so square by hand)
 fn vignette(uv: vec2<f32>, strength: f32) -> f32 {
     let center = uv - vec2<f32>(0.5);
     let r = length(center) * 1.4142;
-    return pow(1.0 - r * strength, 2.0);
+    let x = max(1.0 - r * strength, 0.0);
+    return x * x;
 }
 
 // Analog warmth: color temperature shift toward orange/yellow
@@ -124,6 +124,23 @@ fn noiseBands(uv: vec2<f32>, time: f32, strength: f32) -> f32 {
     return bandIntensity * (hash21(uv * 100.0 + time) - 0.5) * 0.1;
 }
 
+// Y / CbCr split used by the colour-under path (BT.601 weights).
+fn rgbToYcc(c: vec3<f32>) -> vec3<f32> {
+    let y = dot(c, vec3<f32>(0.299, 0.587, 0.114));
+    return vec3<f32>(y, (c.b - y) * 0.564, (c.r - y) * 0.713);
+}
+
+fn yccToRgb(ycc: vec3<f32>) -> vec3<f32> {
+    let y = ycc.x;
+    let cb = ycc.y;
+    let cr = ycc.z;
+    return vec3<f32>(y + 1.403 * cr, y - 0.344 * cb - 0.714 * cr, y + 1.773 * cb);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -136,6 +153,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     let mousePos = u.zoom_config.yz;
+    let texel = 1.0 / resolution;
 
     // ── Cinematic params ──
     let crtK = -0.06;
@@ -157,9 +175,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let jitterAmt = u.zoom_params.y;
     let driftSpeed = u.zoom_params.z;
     let rgbShift = u.zoom_params.w * depthScatter;
+    let bleedWidth = u.zoom_params.w;   // raw slider: colour-under bandwidth scale
 
-    // Audio-reactive jitter: bass drives line dropout, treble adds micro-jitter
-    let lineHash = hash21(vec2<f32>(0.0, uv.y * resolution.y));
+    // Audio-reactive jitter: bass drives line dropout, treble adds micro-jitter.
+    // The row hash is re-rolled ~24x/s so dropout rows flicker instead of sitting still.
+    let lineHash = hash21(vec2<f32>(floor(time * 24.0), uv.y * resolution.y));
     let dropOut = step(1.0 - bass * 0.15, lineHash);
     let microJitter = (hash21(vec2<f32>(time * 100.0, uv.y * 500.0)) - 0.5) * jitterAmt * (1.0 + treble);
 
@@ -185,16 +205,65 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let gOff = clamp(validUV + vec2<f32>(vhsCA.g + trackingOffset * 0.5, jitter * 0.5), vec2<f32>(0.0), vec2<f32>(1.0));
 
     let r = textureSampleLevel(readTexture, u_sampler, rOff, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, gOff, 0.0).g;
+    let gSample = textureSampleLevel(readTexture, u_sampler, gOff, 0.0);
+    let g = gSample.g;
     let b = textureSampleLevel(readTexture, u_sampler, bOff, 0.0).b;
+    let srcAlpha = gSample.a;
 
     // Mids add color flash during chroma shifts
     let flash = mids * 0.08 * bleed * 10.0;
     var rgb = vec3<f32>(r, g, b) + vec3<f32>(flash, flash * 0.5, flash * 0.2);
 
-    // ── Temporal film grain ──
+    // ── IDEA 1: colour-under bandwidth ──
+    // A colour-under recording keeps luma at full bandwidth but squeezes chroma through a
+    // ~0.6 MHz channel and demodulates it a few pixels late. Split the R/B-bled picture into
+    // Y and CbCr, replace the chroma with a 7-tap horizontal box of the source taken to the
+    // RIGHT of the luma position (delay + tap spacing both scale with Bleed Width), and keep
+    // the sharp Y. Colour then spills past every vertical edge like a real Y/C tape.
+    let ownYcc = rgbToYcc(rgb);
+    let chromaDelay = (2.5 + bleedStrength * 1.5) * bleedWidth * texel.x;
+    let tapStep = (1.4 + bleedWidth * 1.2) * texel.x;
+    var chromaSum = vec2<f32>(0.0);
+    var tapLuma = vec3<f32>(0.0);   // x = tap 2, y = tap 3 (centre), z = tap 4 — for the cross-colour gradient
+    for (var i = 0; i < 7; i = i + 1) {
+        let tapUV = clamp(gOff + vec2<f32>(chromaDelay + f32(i - 3) * tapStep, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+        let tapYcc = rgbToYcc(textureSampleLevel(readTexture, u_sampler, tapUV, 0.0).rgb);
+        chromaSum += tapYcc.yz;
+        if (i == 2) { tapLuma.x = tapYcc.x; }
+        if (i == 3) { tapLuma.y = tapYcc.x; }
+        if (i == 4) { tapLuma.z = tapYcc.x; }
+    }
+    let softChroma = chromaSum / 7.0;
+    let colourUnderMix = clamp(0.45 + bleedWidth * 0.2, 0.0, 0.9);
+    var ycc = vec3<f32>(ownYcc.x, mix(ownYcc.yz, softChroma, colourUnderMix));
+
+    // ── IDEA 2: cross-colour rainbow crawl ──
+    // Fine horizontal luma detail sits in the chroma sub-carrier band on tape, so the decoder
+    // reads it as a false colour whose hue rotates slowly with time and row. |dY/dx| from the
+    // neighbouring chroma taps gates the leak; the hue wheel drifts at ~0.7 rad/s.
+    let lumaGrad = abs(tapLuma.z - tapLuma.x) / max(2.0 * tapStep * resolution.x, 1.0) * 6.0;
+    let crossColour = smoothstep(0.10, 0.45, lumaGrad) * (0.10 + bleedStrength * 0.05) * bleedWidth;
+    let hueAng = time * 0.7 + uv.y * 28.0 + uv.x * 6.0;
+    ycc.y += cos(hueAng) * crossColour;
+    ycc.z += sin(hueAng) * crossColour;
+
+    // ── IDEA 3: chroma loss in dropout rows ──
+    // A tracking dropout kills the colour-under carrier before it kills luma: the row goes
+    // grey, starting from a ragged left edge (each row has its own hashed start column with
+    // a little per-frame jitter) and then staying grey to the right edge. A few rows drop
+    // even at rest; bass pushes the rate up alongside the existing luma dropout.
+    let rowKey = floor(uv.y * resolution.y);
+    let chromaDropRow = step(1.0 - 0.025 - bass * 0.15, lineHash);
+    let edgeStart = hash21(vec2<f32>(rowKey, 7.0)) * 0.35;
+    let edgeRag = (hash21(vec2<f32>(rowKey, floor(time * 24.0))) - 0.5) * 0.06;
+    let chromaDrop = chromaDropRow * smoothstep(edgeStart + edgeRag - 0.01, edgeStart + edgeRag + 0.01, uv.x);
+    ycc = vec3<f32>(ycc.x, ycc.yz * (1.0 - chromaDrop));
+
+    rgb = yccToRgb(ycc);
+
+    // ── Temporal film grain (Noise slider scales it: default 0.2 → HEAD's 0.08) ──
     let grain = vhsGrain(vec2<f32>(global_id.xy), time, treble);
-    rgb = rgb + grain * 0.08;
+    rgb = rgb + grain * jitterAmt * 0.4;
 
     // ── Scanlines ──
     let scan = vhsScanlines(uv.y, time, scanlineIntensity);
@@ -218,11 +287,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let nBand = noiseBands(uv, time, noiseBandStr);
     rgb = rgb + vec3<f32>(nBand);
 
-    let alpha = clamp((r + g + b) * 0.3 + bleed * 5.0 + bass * 0.05, 0.0, 1.0);
+    // Semantic alpha: the tape carries the source's transparency.
+    let alpha = clamp(srcAlpha, 0.0, 1.0);
 
-    // Premultiplied alpha
-    let finalColor = clamp(rgb, vec3<f32>(0.0), vec3<f32>(1.5));
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor * alpha, alpha));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(finalColor * alpha, alpha));
+    let display = acesToneMap(max(rgb, vec3<f32>(0.0)));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(display, alpha));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(display, alpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

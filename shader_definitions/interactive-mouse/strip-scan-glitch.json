@@ -2,7 +2,7 @@
   "id": "strip-scan-glitch",
   "name": "Strip Scan Glitch",
   "url": "shaders/strip-scan-glitch.wgsl",
-  "description": "Slices the image into vertical strips that drift and jitter, controlled by mouse position.",
+  "description": "Slices the image into vertical strips that scroll at hashed, brightness-weighted speeds with sideways tears, RGB split and a bass scan bar; mouse X sets strip density and mouse Y the scroll speed. Ideas: vertical-blanking seam (each strip's wrap shows a black blanking bar with sync-pulse ticks and a soft smear on the rows either side), held brake (holding the pointer drags the strips under the cursor to a freeze-frame halt with treble flutter, releasing back to speed), and speed-streak ghost (fast strips leave a short vertical smear read from the previous frame). ACES display.",
   "params": [
     {
       "id": "strips",
@@ -33,11 +33,44 @@
       "max": 1
     }
   ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Strip Count",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 1,
+      "name": "Scroll Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 2,
+      "name": "Glitch Jitter",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "index": 3,
+      "name": "RGB Split",
+      "default": 0.2,
+      "min": 0,
+      "max": 1
+    }
+  ],
   "features": [
     "mouse-driven",
+    "held-drag",
     "glitch",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "aces-tone-map",
+    "temporal-feedback"
   ],
   "tags": [
     "filter",

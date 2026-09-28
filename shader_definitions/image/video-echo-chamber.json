@@ -2,7 +2,7 @@
   "id": "video-echo-chamber",
   "name": "Video Echo Chamber",
   "url": "shaders/video-echo-chamber.wgsl",
-  "description": "Orbiting history conveyors and horizontal chromatic streaks form bounded video echoes around the mouse, while clicks launch expanding echo rings. Depth is passed through unchanged.",
+  "description": "Orbiting history conveyors and horizontal chromatic streaks form bounded video echoes around the mouse, while clicks launch expanding echo rings. Echoes are motion-keyed: moving content leaves trails that linger for a few frames while still areas stay clean (the tunnel stays visible under the pointer), and near objects in the depth map hold their echoes longer than the background. Rotation is aspect-correct, alpha is semantic, display is ACES tone-mapped. Depth is passed through unchanged.",
   "params": [
     {
       "id": "decay",
@@ -39,7 +39,8 @@
     "audio-reactive",
     "fast-motion",
     "click-reactive",
-    "bounded-history"
+    "bounded-history",
+    "upgraded-rgba"
   ],
   "updatedParams": [
     { "index": 0, "name": "Global Decay", "default": 0.6, "min": 0, "max": 0.95, "step": 0.01 },

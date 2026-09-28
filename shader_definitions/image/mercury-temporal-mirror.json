@@ -2,7 +2,7 @@
   "id": "mercury-temporal-mirror",
   "name": "Mercury Temporal Mirror",
   "url": "shaders/mercury-temporal-mirror.wgsl",
-  "description": "A stylized liquid-metal mirror with directionally advected wave state, traveling capillary packets, audio rain tracks, and click-launched impact fronts. Its generated depth follows the evolving wave energy rather than a physical fluid model.",
+  "description": "A liquid-mercury mirror reflecting the image. The surface is a true capillary wave (height + velocity wave equation): click launches, the held pointer's press and treble-driven rain drops ring outward on their own, while analytic capillary packets travel across it. Fresnel horizon reflection: steep glancing slopes stop mirroring the image and pick up a cool-top / warm-floor studio gradient. Specular glints ride the crests; generated depth follows the wave energy (stylized, not a physical fluid model).",
   "tags": [
     "mercury",
     "liquid",
@@ -21,9 +21,9 @@
     "semantic-alpha",
     "depth-aware",
     "generated-depth",
-    "fast-motion",
     "click-reactive",
-    "bounded-history"
+    "bounded-history",
+    "upgraded-rgba"
   ],
   "params": [
     {

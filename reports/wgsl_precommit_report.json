@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-09-28T13:12:47.321234",
+  "timestamp": "2026-09-28T14:54:45.742277",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
-  "total": 8,
-  "passed": 8,
+  "total": 5,
+  "passed": 5,
   "failed": 0,
   "skipped": 0,
   "workgroup_blocking": 0,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/anamorphic-caustic-flare.wgsl",
+      "file": "public/shaders/crt-scanline-damage.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -27,7 +27,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/crt-tv.wgsl",
+      "file": "public/shaders/cyber-terminal-ascii.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -42,7 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gemstone-fractures.wgsl",
+      "file": "public/shaders/holographic-glitch.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -57,7 +57,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-cybernetic-aether-moth-chrysalis.wgsl",
+      "file": "public/shaders/phosphor-decay.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -72,52 +72,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-cybernetic-plasma-orchid-nexus.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "workgroup_grace": false,
-      "extrabuffer_violations": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/gen-hyperdimensional-plasma-loom.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "workgroup_grace": false,
-      "extrabuffer_violations": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/gen-neon-plasma-chrono-bloom.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "workgroup_grace": false,
-      "extrabuffer_violations": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/silk-flow-advection.wgsl",
+      "file": "public/shaders/strip-scan-glitch.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

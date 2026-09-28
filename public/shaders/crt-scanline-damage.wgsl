@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  CRT Scanline Damage
 //  Category: image
-//  Features: upgraded-rgba, retro, glitch, barrel-distortion,
-//            temporal-phosphor, audio-rgb-separation, depth-aware-barrel
+//  Features: audio-reactive, click-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Created: 2026-05-23
-//  Upgraded: 2026-08-01 (Batch 23 — click damage/degauss, treble static)
+//  Upgraded: 2026-09-28
+//  Ideas: misconvergence swirl (degauss rings pull the R/G/B rasters apart radially with a rotating magenta/green purity blotch that settles); flyback retrace lines (faint diagonal retrace sweeps during the dark-band fault); radial chromatic barrel (RGB split grows radially toward the tube edges)
+//  A packing: pre-ACES linear display RGB + semantic alpha (opaque bezel outside the warp); C read back as that linear colour for phosphor persistence
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -29,6 +29,8 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+const PI: f32 = 3.14159265359;
+
 fn hash21(p: vec2<f32>) -> f32 {
     let h = dot(p, vec2<f32>(127.1, 311.7));
     return fract(sin(h) * 43758.5453123);
@@ -36,6 +38,14 @@ fn hash21(p: vec2<f32>) -> f32 {
 
 fn hash11(p: f32) -> f32 {
     return fract(sin(p * 12.9898) * 43758.5453);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn sampleClamped(uv: vec2<f32>) -> vec4<f32> {
+    return textureSampleLevel(readTexture, u_sampler, clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -56,7 +66,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let flickerSpeed = u.zoom_params.z;
     let rgbSeparation = u.zoom_params.w;
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depth = textureLoad(readDepthTexture, coords, 0).r;
 
     // Depth-aware barrel distortion: closer objects distort more
     let centered = uv - vec2<f32>(0.5);
@@ -71,6 +81,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aspectVec = vec2<f32>(res.x / max(res.y, 1.0), 1.0);
     var rippleDamage = 0.0;
     var degaussBand = 0.0;
+    // IDEA 1 accumulators: radial misconvergence vector and the purity blotch tint.
+    var misVec = vec2<f32>(0.0);
+    var purityTint = vec3<f32>(0.0);
+    var purityAmt = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
     for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
         let rp = u.ripples[ri];
@@ -86,21 +100,53 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         degaussBand += wave;
         let radialUV = (deltaAspect / max(dist, 1e-4)) / aspectVec;
         distortedUV = distortedUV + radialUV * wave * 0.004 * (0.5 + distortionAmount);
-    }
 
-    // Audio-driven RGB channel separation
+        // IDEA 1 — misconvergence swirl. The degauss front magnetises the shadow mask: inside
+        // the ring the three rasters are pulled apart along the radial, strongest just behind
+        // the front and relaxing as the field collapses (settles over ~2 s). A purity blotch
+        // (magenta vs green, the classic magnet-near-the-tube stain) rotates around the click
+        // point with age and fades with the same relaxation.
+        let behind = smoothstep(0.0, 0.08, age * 0.34 - dist);
+        let relax = exp(-age * 1.6);
+        misVec += radialUV * behind * relax * exp(-dist * 2.5);
+        let ang = atan2(deltaAspect.y, deltaAspect.x);
+        let lobe = 0.5 + 0.5 * sin(ang * 2.0 + age * 3.5 + rp.x * 9.0);
+        let blotch = behind * relax * smoothstep(0.45, 0.05, dist);
+        purityTint += mix(vec3<f32>(1.18, 0.82, 1.14), vec3<f32>(0.84, 1.16, 0.86), lobe) * blotch;
+        purityAmt += blotch;
+    }
+    // Cap the accumulated degauss sum so stacked clicks cannot blow out the channels.
+    degaussBand = clamp(degaussBand, -1.5, 1.5);
+    let misLen = length(misVec);
+    let misconvergence = misVec / max(misLen, 1e-4) * min(misLen, 1.0) * 0.012 * (1.0 + mids * 0.5);
+    purityAmt = min(purityAmt, 1.0);
+    let purity = select(vec3<f32>(1.0), purityTint / max(purityAmt, 1e-4), purityAmt > 1e-4);
+
+    // Audio-driven RGB channel separation (HEAD's horizontal split) plus
+    // IDEA 3 — radial chromatic barrel: the split also grows radially toward the tube edges,
+    // as a real barrel-lensed tube misregisters its colour rasters more at the corners.
     let sep = rgbSeparation * 0.008 * (1.0 + bass * 0.4 + rippleDamage * 0.8);
-    let rUV = distortedUV + vec2<f32>(sep, 0.0);
-    let gUV = distortedUV;
-    let bUV = distortedUV - vec2<f32>(sep, 0.0);
+    let radialSep = centered * r2 * rgbSeparation * 0.10 * (1.0 + bass * 0.4);
+    let chromaOffset = vec2<f32>(sep, 0.0) + radialSep + misconvergence;
+    let rUV = distortedUV + chromaOffset;
+    let gUV = distortedUV - misconvergence * 0.35;
+    let bUV = distortedUV - chromaOffset;
+
+    // Black bezel outside the warped raster (HEAD clamped, which smeared the edge texels).
+    let edgeSoft = 1.5 / res;
+    let inside = smoothstep(vec2<f32>(0.0), edgeSoft, distortedUV) * smoothstep(vec2<f32>(0.0), edgeSoft, 1.0 - distortedUV);
+    let tubeMask = inside.x * inside.y;
 
     var col = vec3<f32>(0.0);
-    col.r = textureSampleLevel(readTexture, u_sampler, clamp(rUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-    col.g = textureSampleLevel(readTexture, u_sampler, clamp(gUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
-    col.b = textureSampleLevel(readTexture, u_sampler, clamp(bUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
-    let baseAlpha = textureSampleLevel(readTexture, u_sampler, clamp(distortedUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).a;
+    col.r = sampleClamped(rUV).r;
+    col.g = sampleClamped(gUV).g;
+    col.b = sampleClamped(bUV).b;
+    let baseAlpha = sampleClamped(distortedUV).a;
+    col *= purity;
 
-    let scanline = sin(uv.y * res.y * 3.14159) * 0.5 + 0.5;
+    // Real raster: HEAD evaluated sin(k*pi) at texel centres, a constant 0.5. A 4-row beam
+    // profile on integer screen rows averages to the same 0.925 at the default slider.
+    let scanline = sin(f32(global_id.y) * PI * 0.5) * 0.5 + 0.5;
     let scanlineMask = mix(1.0, 0.85 + scanline * 0.15, scanlineIntensity);
     col = col * scanlineMask;
 
@@ -117,6 +163,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rollOffset = fract(hash11(floor(time * 2.0) + 100.0) + time * 0.5);
     let inRollBand = abs(uv.y - rollOffset) < 0.02;
     col = select(col, col * 0.5 + vec3<f32>(0.05), rollTrigger && inRollBand);
+
+    // IDEA 2 — flyback retrace lines. While the vertical-hold fault is active the blanking
+    // fails and the beam's return sweeps show: faint bright diagonals (steep, slightly
+    // left-leaning) racing upward across the picture, brighter near the dark band.
+    let retracePhase = fract((uv.y - uv.x * 0.18) * 7.0 + time * 4.0);
+    let retraceLine = smoothstep(0.06, 0.0, abs(retracePhase - 0.5));
+    let retraceGain = select(0.0, 1.0, rollTrigger) * (0.08 + smoothstep(0.25, 0.0, abs(uv.y - rollOffset)) * 0.14) * (1.0 + mids * 0.6);
+    col += vec3<f32>(0.9, 0.95, 1.0) * retraceLine * retraceGain;
 
     // Treble now drives genuinely damaged static: sparse bright/dark snow and
     // short horizontal scar bands, rather than being a dead aggregate read.
@@ -137,15 +191,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let edgeDarken = 1.0 - smoothstep(0.3, 0.7, r2) * 0.3;
     col = col * edgeDarken;
+    col = max(col, vec3<f32>(0.0)) * tubeMask;
 
-    // Temporal phosphor decay: previous frame bleeds in for CRT persistence
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+    // Temporal phosphor decay: previous frame bleeds in for CRT persistence.
+    // C holds last frame's pre-ACES linear colour (A packing), read exactly per texel.
+    let prev = max(textureLoad(dataTextureC, coords, 0).rgb, vec3<f32>(0.0));
     let phosphorDecay = mix(col, prev * 0.85, 0.06 + mids * 0.02);
     col = mix(col, phosphorDecay, 0.5);
+    col = clamp(col, vec3<f32>(0.0), vec3<f32>(4.0));
 
-    let finalColor = vec4<f32>(clamp(col, vec3<f32>(0.0), vec3<f32>(1.0)), baseAlpha);
+    // Semantic alpha: source coverage inside the tube, opaque black bezel outside.
+    let alpha = mix(1.0, clamp(baseAlpha + rippleDamage * 0.2, 0.0, 1.0), tubeMask);
 
-    textureStore(writeTexture, coords, finalColor);
-    textureStore(dataTextureA, coords, finalColor);
+    textureStore(dataTextureA, coords, vec4<f32>(col, alpha));
+    textureStore(writeTexture, coords, vec4<f32>(acesToneMap(col), alpha));
     textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

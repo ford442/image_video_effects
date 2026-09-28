@@ -2,7 +2,7 @@
   "id": "signal-tuner",
   "name": "Signal Tuner",
   "url": "shaders/signal-tuner.wgsl",
-  "description": "TV-style signal interference with a smoothed audio envelope, spring-damped mouse follow, click retuning rings, and temporal feedback trails.",
+  "description": "TV-style signal interference around the cursor: rows wobble with an R/B split inside the tuning radius, clicks launch retuning rings, and history ghosts only inside the zone. Upgraded with off-station snow (Static Noise mixes treble-flickered snow where the wobble is strongest), an RF multipath ghost (a delayed-path copy offset right by Frequency), and detune beat bands (slow moire bands where the row wobble nears the raster pitch).",
   "params": [
     {
       "id": "frequency",

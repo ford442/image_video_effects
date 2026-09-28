@@ -3148,3 +3148,24 @@ User asked for progress + six GitHub issues (code changes, even large ones), not
 - Gates: Naga 9/9, precommit 9/9, extraBuffer audit pass, dead-slider audit pass (1305 scanned), check_duplicates clean, catalogs regenerated, Jest 741 pass / 6 fail (pre-existing bridge `.js` imports), SKIP_WASM_BUILD=1 build green. Nothing committed.
 - Real-GPU visual QA: external.
 - Notes: agents/swarm-outputs/claude-2026-09-27-densest-crystal-chrome-nine/.
+
+## 2026-09-28 — Broadcast-Signal Twelve (12 shaders)
+
+- IDs: vhs-chroma-bleed, vhs-jog, vhs-tracking-mouse, signal-tuner, crt-scanline-damage, scan-distort, waveform-glitch, holographic-projection-failure, holographic-glitch, phosphor-decay, cyber-terminal-ascii, strip-scan-glitch. Folder: `agents/swarm-outputs/claude-2026-09-28-broadcast-signal-twelve/`.
+- Per shader, the ideas actually added:
+  - vhs-chroma-bleed: colour-under Y/C bandwidth (delayed, low-passed chroma); cross-colour rainbow crawl; chroma loss in dropout rows. Sliders kept; Noise slider now also scales grain.
+  - vhs-jog: cue/review noise bars; pause-mode field flutter (fixes the X=0.5 dead zone); reverse-play colour phase error.
+  - vhs-tracking-mouse: row-aligned dash noise; tracking knob on mouse X + held auto-track lock; AGC lift in the band.
+  - signal-tuner: off-station snow on the Static Noise slider; RF multipath ghost; detune beat bands. Global 85% history lag removed.
+  - crt-scanline-damage: misconvergence swirl on degauss rings; flyback retrace lines during the dark-band fault; radial chromatic barrel. Dead scanlines fixed; no pointer (JSON drops mouse-driven).
+  - scan-distort: sync-tear band dragging stale C rows; DCT-basis garble that re-rolls; MV arrows from a 1-px temporal gradient.
+  - waveform-glitch: waveform-monitor trace of the cursor row; beam-dwell brightness on the Lissajous; treble block glitch.
+  - holographic-projection-failure: emitter cone (cyan carrier, alpha = transmission); stale-frame tear bands; re-sync sweep in the repair circle.
+  - holographic-glitch: emitter flicker on the Flicker slider; grating ±1-order ghosts; peel contact shadow.
+  - phosphor-decay: burn-in accumulator in A.a; held static charge (crackle + dust); blanking-interval flicker. HEAD rendered near-black — fixed.
+  - cyber-terminal-ascii: hex-dump decode (4×6 font); typewriter row entry; bit-error flicker. Scroll-units drift fixed.
+  - strip-scan-glitch: vertical-blanking seam with sync ticks; held brake (C freeze); speed-streak ghost.
+- Floor: springs deleted everywhere (extraBuffer[133..] is zeroed per frame), `plasmaBuffer[n>0]` reads removed, exact C loads, pre-ACES linear in A wherever C is mixed, saved params byte-exact (python-verified).
+- Gates: precommit 12/12 naga+bindgroup, extraBuffer audit PASS, dead sliders PASS (0 new), catalogs regenerated, Jest + SKIP_WASM_BUILD=1 build: see closeout line below.
+- Rescue list (name≠code, not upgrades): rgb-split-glitch, spectral-glitch-sort, data-moshing, pixel-rain.
+- Real-GPU visual QA: external.
