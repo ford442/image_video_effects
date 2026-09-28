@@ -54,7 +54,12 @@
   "updated": true,
   "id": "gen-celestial-weave",
   "url": "shaders/gen-celestial-weave.wgsl",
-  "features": [],
+  "features": [
+    "audio-reactive",
+    "temporal",
+    "depth-aware",
+    "upgraded-rgba"
+  ],
   "params": [
     {
       "id": "weave_scale",

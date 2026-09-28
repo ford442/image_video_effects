@@ -7,7 +7,9 @@
 //            upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration
 //  Tags: crystal, gem, caustics, 3d, raymarching, subsurface
 //  Chunks From: gen-protocell-division.wgsl (upgraded-rgba stack)
-//  Upgraded: 2026-06-14
+//  Upgraded: 2026-09-27
+//  Ideas: phantom growth shell; basal pinacoid
+//  A packing: ACES display RGBA
 //  By: Claude Code Batch 3B
 // ═══════════════════════════════════════════════════════════════
 
@@ -103,10 +105,24 @@ fn map(p: vec3<f32>, scale: f32, pulse: f32, time: f32, audioReactivity: f32) ->
   var q = ps - cell * 1.25;
   let tmod = sin(time * pulse * audioReactivity * 8.0 + length(cell)) * 0.3;
   let id = (cell.x + cell.y + cell.z) % 3.0;
-  var crystal: f32;
-  if (id < 1.0) { crystal = sdOctahedron(q + vec3<f32>(0.0, tmod, 0.0), 0.5); }
-  else if (id < 2.0) { crystal = sdHexPrism(q + vec3<f32>(0.0, tmod, 0.0), vec2<f32>(0.35, 0.5)); }
-  else { crystal = sdPyramid(q + vec3<f32>(0.0, tmod, 0.0), 0.5); }
+  let qCrystal = q + vec3<f32>(0.0, tmod, 0.0);
+  var habit: f32;
+  if (id < 1.0) { habit = sdOctahedron(qCrystal, 0.5); }
+  else if (id < 2.0) { habit = sdHexPrism(qCrystal, vec2<f32>(0.35, 0.5)); }
+  else { habit = sdPyramid(qCrystal, 0.5); }
+  // Basal pinacoid: flat face so each habit sits instead of floating.
+  habit = max(habit, -0.2 - qCrystal.y);
+  // Phantom shell: smaller, earlier-time copy. Stronger when purity is low.
+  let purity = clamp((pulse - 0.2) / 0.8, 0.0, 1.0);
+  let tEarly = sin((time - 1.6) * pulse * audioReactivity * 8.0 + length(cell)) * 0.3;
+  let qPhantom = q * 1.42 + vec3<f32>(0.0, tEarly, 0.0);
+  var inner: f32;
+  if (id < 1.0) { inner = sdOctahedron(qPhantom, 0.5); }
+  else if (id < 2.0) { inner = sdHexPrism(qPhantom, vec2<f32>(0.35, 0.5)); }
+  else { inner = sdPyramid(qPhantom, 0.5); }
+  let shell = abs(inner) - mix(0.022, 0.0, purity);
+  let withPhantom = min(habit, max(shell, habit));
+  let crystal = mix(withPhantom, habit, purity);
   let finalD = min(d, crystal * (1.0 + id * 0.2));
   return vec2<f32>(finalD, 2.0);
 }

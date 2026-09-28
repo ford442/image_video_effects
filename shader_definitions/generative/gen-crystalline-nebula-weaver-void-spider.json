@@ -115,7 +115,7 @@
   ],
   "updated": true,
   "category": "generative",
-  "description": "A crystalline void-spider weaving at speed: a skittering articulated gait, a faceted plated carapace, and three tiers of web thread down to fine cross-bracing filaments. The nebula and the weaver are both graded through a psychedelic crystalline spectrum. The spring-smoothed cursor drags the gravity field, holding lunges the camera in, and clicks snap the web into expanding rings.",
+  "description": "A crystalline void-spider hanging from its own dragline in front of an fbm nebula: eight knee-bent legs step in an alternating tetrapod gait, and the web's lattice nodes only condense where the nebula gas is dense, glowing in its colour. Gravity Distortion warps the space and sags the silk; the cursor drags the weaver, holding lunges the camera in, and clicks send rings through the web.",
   "tags": [
     "fast-motion",
     "psychedelic",
@@ -140,7 +140,9 @@
     "temporal-feedback",
     "semantic-alpha",
     "aces-tone-mapping",
-    "depth-aware"
+    "depth-aware",
+    "upgraded-rgba",
+    "mouse-driven"
   ],
   "feedbackPacking": "A/C = raw HDR display RGBA history"
 }

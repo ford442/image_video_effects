@@ -5,8 +5,10 @@
 //            temporal-symmetry-memory, audio-cymatic-frequency, depth-edge-glow
 //  Complexity: High
 //  Created: 2026-05-10
-//  Upgraded: 2026-08-23 — bounds-safe spring state, held vortex gain,
-//            exact temporal memory, finite click nodes
+//  Upgraded: 2026-09-27
+//  Ideas: three-band wave interference replacing the single-sine cymatic fake;
+//         standing-wave sand speckle gathering at true zero-crossing nodes
+//  A packing: A/C = final ACES display RGBA; exact temporal symmetry memory
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -151,7 +153,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
     clickNode = clamp(clickNode, -1.0, 1.0);
-    let wave = sin(radius * cymaticFreq - t * 2.0 + audio * 5.0 + mids * 0.5 + clickNode) * cos(foldedAngle * symmetryOrder + t);
+
+    // Idea 1 — three-band interference: a real Chladni plate rings at several
+    // modes at once. Sum three audio-band-keyed radial waves instead of the
+    // single sine, so their crossings form genuine nodal interference lines.
+    let waveBass = sin(radius * cymaticFreq * 0.72 - t * 1.4 + bass * 4.0);
+    let waveMids = sin(radius * cymaticFreq - t * 2.0 + audio * 5.0 + mids * 0.5 + clickNode);
+    let waveTreble = sin(radius * cymaticFreq * 1.68 - t * 2.6 + treble * 6.0);
+    let waveSum = (waveBass + waveMids + waveTreble) / 3.0;
+    let wave = waveSum * cos(foldedAngle * symmetryOrder + t);
+
+    // Idea 2 — standing-wave sand: fine speckle brightens only where all three
+    // sources sit near zero together, i.e. a true shared node, not just one wave's.
+    let nodeProximity = 1.0 - clamp(abs(waveBass) + abs(waveMids) + abs(waveTreble), 0.0, 1.0);
+    let sandSpeckle = pow(nodeProximity, 6.0) * (0.5 + 0.5 * sin(radius * cymaticFreq * 9.0 + foldedAngle * 40.0));
+
     var d = sdPolygon(foldedUv, 6.0) - 0.4 - wave * 0.1;
     d = min(d, sdCircle(foldedUv - vec2<f32>(0.5, 0.0), 0.2 - wave * 0.05));
     d = d + sin(d * 10.0 - t * 3.0 + audio * 10.0 + treble * 2.0) * 0.02;
@@ -166,6 +182,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var col = colorBase * aberration;
 
     col = col + vec3<f32>(1.0, 0.8, 0.9) * exp(-length(uv) * 5.0) * (0.5 + audio * 0.5 + treble * 0.2);
+    col += vec3<f32>(0.95, 0.92, 0.85) * sandSpeckle * (0.6 + treble * 0.5);
 
     // Temporal symmetry memory: previous frame burns into current
     let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).rgb;
@@ -179,7 +196,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col += vec3<f32>(0.4, 0.7, 0.9) * edgeGlow * treble;
 
     let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(luma * 0.7 + 0.2 + bass * 0.05, 0.0, 1.0);
+    let alpha = clamp(luma * 0.7 + 0.2 + bass * 0.05 + sandSpeckle * 0.15, 0.0, 1.0);
     let finalColor = vec4<f32>(acesToneMap(col * 1.1), alpha);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);

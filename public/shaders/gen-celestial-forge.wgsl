@@ -4,6 +4,9 @@
 //  A stellar engine hammering at speed: contra-rotating greebled rings,
 //  psychedelic plasma spectra, spring-cursor orbit, held forge surge,
 //  capped click hammer-strike shockwaves.
+//  Upgraded: 2026-09-27
+//  Ideas: temper gradient by ring index; hammer flats on the tube
+//  A packing: ACES display RGBA
 //  Contract: 13 bindings, ACES, semantic alpha, dataTextureA writeback only,
 //            exact textureLoad from dataTextureC, plasmaBuffer three-band audio,
 //            bounded extraBuffer[133..138] state.
@@ -187,6 +190,12 @@ fn map(p_in: vec3<f32>) -> vec3<f32> {
 
         var dTorus = sdTorus(ringP, vec2<f32>(ringRadius, ringThickness));
 
+        // Hammer flats: low-count chamfer on the tube. Greeble noise stays below.
+        let radial = length(ringP.xz);
+        let minorAng = atan2(ringP.y, radial - ringRadius);
+        let flatFrac = abs(fract(minorAng * 4.0 / TAU + 0.5) - 0.5);
+        dTorus += (0.5 - flatFrac) * ringThickness * (0.28 + g_strike * 0.9);
+
         // Greeble pass: hull plating + rivet rows carved into every ring
         let ringAngle = atan2(ringP.z, ringP.x);
         let plating = sin(ringAngle * (24.0 + fi * 8.0)) * sin(ringP.y * 30.0);
@@ -211,9 +220,10 @@ fn map(p_in: vec3<f32>) -> vec3<f32> {
 
         if (dRingDetail < d) {
             d = dRingDetail;
-            mat = 2.0;
+            let ringT = fi / max(f32(numRings - 1), 1.0);
+            mat = 2.0 + ringT * 0.99;
             if (isPanel) {
-                mat = 3.0;
+                mat = 3.0 + ringT * 0.99;
                 emission = 0.5 * u.zoom_params.w;
             }
         }
@@ -377,17 +387,24 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Hue races around the forge with the mids
         let hue = fract(distToCore * 0.14 + time * (0.25 + g_mids * 0.85) + strike * 0.35);
 
-        if (m == 1.0) {
+        let matId = floor(m + 1.0e-4);
+        let ringT = fract(m);
+        if (matId == 1.0) {
             let plasmaDetail = fbm(p * 5.0 + time * 2.0);
             col = forgePalette(hue, 1.0 + g_bass) * (1.0 + plasmaDetail * 0.4) * coreIntensity * 2.0;
 
-        } else if (m == 2.0 || m == 3.0) {
+        } else if (matId == 2.0 || matId == 3.0) {
             let dif = max(dot(n, toCore), 0.0);
             let hal = normalize(toCore - rd);
             let spec = pow(max(dot(n, hal), 0.0), 64.0);
             fre = pow(1.0 - max(dot(n, v), 0.0), 5.0);
 
-            let metalCol = vec3<f32>(0.4, 0.45, 0.5);
+            // Temper: inner rings white-hot, outer rings straw then blue.
+            let hot = vec3<f32>(1.0, 0.96, 0.9);
+            let straw = vec3<f32>(0.92, 0.62, 0.22);
+            let blue = vec3<f32>(0.28, 0.48, 0.82);
+            let temper = mix(mix(hot, straw, smoothstep(0.0, 0.5, ringT)), blue, smoothstep(0.35, 1.0, ringT));
+            let metalCol = temper;
             let warmRim = forgePalette(hue + 0.2, g_treble) * fre * coreIntensity * 1.3;
             let ambientCore = coreIntensity / (distToCore * distToCore + 1.0);
 
@@ -399,11 +416,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let band = 0.5 + 0.5 * sin(atan2(p.z, p.x) * 24.0 + p.y * 30.0);
             col *= 0.82 + band * 0.36;
 
-            if (m == 3.0) {
+            if (matId == 3.0) {
                 col += forgePalette(hue + 0.55, 1.0) * (0.6 + g_treble * 0.8) * coreIntensity;
             }
 
-        } else if (m == 4.0) {
+        } else if (matId == 4.0) {
             col = forgePalette(hue + 0.7, 1.0 + g_treble) * coreIntensity * 3.2;
         }
 

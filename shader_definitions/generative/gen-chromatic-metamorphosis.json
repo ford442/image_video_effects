@@ -58,7 +58,13 @@
   "updated": true,
   "id": "gen-chromatic-metamorphosis",
   "url": "shaders/gen-chromatic-metamorphosis.wgsl",
-  "features": [],
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "temporal",
+    "depth-aware",
+    "upgraded-rgba"
+  ],
   "params": [
     {
       "id": "morph_speed",

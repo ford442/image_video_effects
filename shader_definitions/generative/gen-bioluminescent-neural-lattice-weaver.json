@@ -55,7 +55,7 @@
       "mapping": "zoom_params.w"
     }
   ],
-  "description": "An octahedral crystal lattice woven through an organic neural field, firing fast. Hollow shells carry strut greeble, pulses race the pathways at a treble-driven rate, and emission is graded through a psychedelic spectrum. The spring-smoothed cursor is a gravity well that bends the whole structure toward it, holding deepens the pull and draws the camera in, and clicks fire synapse bursts across the net.",
+  "description": "An octahedral crystal lattice woven through an organic neural field, firing fast. Hollow shells carry strut greeble, pulses race the pathways at a treble-driven rate, and emission is graded through a psychedelic spectrum. Every hollow cage holds a core charged by the membrane passing through its cell, glowing through shells and membranes like lantern paper. The cursor is a gravity well that bends the whole structure toward it, holding deepens the pull and draws the camera in, and clicks fire synapse bursts and send a spin cascade rolling through the cage.",
   "updatedParams": [
     {
       "index": 0,
@@ -96,6 +96,11 @@
     16,
     16,
     1
+  ],
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
   ],
   "params": [
     {

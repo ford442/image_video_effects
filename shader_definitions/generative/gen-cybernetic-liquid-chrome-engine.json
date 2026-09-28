@@ -99,7 +99,8 @@
     "depth-aware",
     "ripple-reactive",
     "semantic-alpha",
-    "aces-tone-mapping"
+    "aces-tone-mapping",
+    "upgraded-rgba"
   ],
   "feedbackPacking": "A/C = raw HDR display RGBA history"
 }

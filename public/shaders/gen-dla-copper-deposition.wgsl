@@ -4,8 +4,10 @@
 //  Features: persistent-state, mouse-driven, click-seeded, audio-reactive,
 //            upgraded-rgba, semantic-alpha, aces-tone-map
 //  Complexity: High
-//  Upgraded: 2026-08-23 — persistent DLA state, interactive electrodes,
-//            oxidation age, tip activity, single output-only ACES pass
+//  Upgraded: 2026-09-27
+//  Ideas: tip screening; growth-front sheen
+//  A packing: raw deposit, depletion, oxidation, activity
+//  Prior: 2026-08-23 persistent DLA, electrodes, oxidation age, tip activity
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -144,7 +146,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let contact = smoothstep(0.03, 0.42, neighborMax + neighborMean * 0.8);
   let electrolyte = 1.0 - clamp(previous.g, 0.0, 1.0);
   let stochastic = hash22(vec2<f32>(coord) + floor(time * 24.0)).x;
-  let attach = candidate * contact * electrolyte
+  // Tip screening: fjords slow as the neighborhood fills. Seeds still force growth.
+  let exposed = 1.0 - smoothstep(0.12, 0.78, neighborMean);
+  let attach = candidate * contact * electrolyte * exposed
     * smoothstep(0.82 - growthScale * 0.18 - bass * 0.12, 1.0, stochastic);
   let growth = max(seed, attach * (0.25 + mids * 0.35));
   let deposit = clamp(previous.r + (1.0 - previous.r) * growth * (0.12 + growthScale * 0.2), 0.0, 1.0);
@@ -163,6 +167,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var metal = mix(freshCopper, bronze, oxidation * 0.55);
   metal = mix(metal, oxidized, oxidation * oxidationAmount);
   metal *= deposit * (0.65 + neighborMean * 0.7);
+  // Growth-front sheen: deposit against empty electrolyte. Not the activity spark.
+  let front = smoothstep(0.18, 0.5, deposit) * (1.0 - smoothstep(0.08, 0.48, neighborMean));
+  metal += vec3<f32>(1.05, 0.62, 0.28) * front * 0.7;
   metal += vec3<f32>(1.2, 0.72, 0.28) * activity * (0.3 + bass * 0.5);
   metal += vec3<f32>(1.0, 0.9, 0.62) * spark * (0.6 + treble * 2.0);
   let electrolyteColor = vec3<f32>(0.008, 0.018, 0.025) + vec3<f32>(0.02, 0.08, 0.09) * depletion;

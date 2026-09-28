@@ -5,8 +5,8 @@
 //            wireframe, mouse warp, audio pulse, upgraded-rgba
 //  Complexity: High
 //  Created: 2026-07-12
-//  Upgraded: 2026-09-15
-//  Ideas: fourth golden-ratio generator; generator-axis dichroism; generator-pair face IDs; 3-space vertex stars
+//  Upgraded: 2026-09-27
+//  Ideas: fourth golden-ratio generator; generator-axis dichroism; generator-pair face IDs; 3-space vertex stars; zone belts; Minkowski inset
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -52,6 +52,49 @@ fn rot2(a: f32) -> mat2x2<f32> {
 }
 
 // Rhombic zonohedron in 2D projection: Minkowski sum of generator axes.
+fn zonoAxis(i: i32) -> vec2<f32> {
+  if (i == 0) { return vec2<f32>(1.0, 0.0); }
+  if (i == 1) { return vec2<f32>(0.5, 0.8660254); }
+  if (i == 2) { return vec2<f32>(-0.5, 0.8660254); }
+  return vec2<f32>(0.80901699, 0.58778525);
+}
+
+// Idea — zone belt: distance to edges parallel to one generator, plus that generator's index.
+fn zonoZone(p: vec2<f32>, scale: f32) -> vec2<f32> {
+  let w = scale * 0.22;
+  var best = 1e9;
+  var idx = 0.0;
+  for (var i = 0; i < 4; i = i + 1) {
+    let axis = zonoAxis(i);
+    let n = vec2<f32>(-axis.y, axis.x);
+    let dv = abs(fract(dot(p, n) / w + 0.5) - 0.5) * w;
+    if (dv < best) {
+      best = dv;
+      idx = f32(i);
+    }
+  }
+  return vec2<f32>(best, idx);
+}
+
+// Idea — half-width rhomb line inside the winning cell. No fifth generator.
+fn zonoInset(p: vec2<f32>, scale: f32) -> f32 {
+  let w = scale * 0.22;
+  var bestCell = 1e9;
+  var bestInset = 1e9;
+  for (var i = 0; i < 4; i = i + 1) {
+    let axis = zonoAxis(i);
+    let n = vec2<f32>(-axis.y, axis.x);
+    let du = abs(fract(dot(p, axis) / w + 0.5) - 0.5) * w;
+    let dv = abs(fract(dot(p, n) / w + 0.5) - 0.5) * w;
+    let cell = max(du, dv);
+    if (cell < bestCell) {
+      bestCell = cell;
+      bestInset = abs(cell - w * 0.25);
+    }
+  }
+  return bestInset;
+}
+
 fn zonoFacet(p: vec2<f32>, axis: vec2<f32>, width: f32) -> f32 {
   let n = vec2<f32>(-axis.y, axis.x);
   let uu = dot(p, axis);
@@ -144,12 +187,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let star = smoothstep(edgeWidth * 2.4, 0.0, z.w) * (1.0 + bass * 0.5);
   color += vec3<f32>(1.0, 0.96, 0.85) * star * 0.85;
 
+  // Zone belts: parallel-edge families share one generator hue.
+  let zone = zonoZone(p, facetScale);
+  let zoneLine = smoothstep(edgeWidth * 1.15, 0.0, zone.x);
+  color += spectral(zone.y * 0.25 + colorCycle) * zoneLine * (0.42 + bass * 0.2);
+
+  // Minkowski inset: inner rhomb of the winning cell only.
+  let inset = zonoInset(p, facetScale);
+  let insetLine = smoothstep(edgeWidth * 0.55, 0.0, inset);
+  color += spectral(hue + 0.18) * insetLine * 0.38;
+
   let prev = textureLoad(dataTextureC, pixel, 0);
   color = mix(color, prev.rgb, 0.03);
   color = acesToneMap(color * (1.2 + mids * 0.15));
 
-  let alpha = clamp(facetFill * 0.7 + edgeLine * 0.9 + star * 0.35 + 0.05, 0.0, 1.0);
-  let depthOut = clamp(facetFill * 0.5 + edgeLine * 0.3 + star * 0.2, 0.0, 1.0);
+  let alpha = clamp(facetFill * 0.7 + edgeLine * 0.9 + star * 0.35 + zoneLine * 0.2 + insetLine * 0.15 + 0.05, 0.0, 1.0);
+  let depthOut = clamp(facetFill * 0.5 + edgeLine * 0.3 + star * 0.2 + insetLine * 0.1, 0.0, 1.0);
   let outCol = vec4<f32>(color, alpha);
 
   textureStore(writeTexture, pixel, outCol);

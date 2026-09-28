@@ -65,7 +65,9 @@
     "temporal-feedback",
     "semantic-alpha",
     "depth-output",
-    "hdr-ready"
+    "hdr-ready",
+    "upgraded-rgba",
+    "mouse-driven"
   ],
   "params": [
     {

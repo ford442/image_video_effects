@@ -54,7 +54,13 @@
   "updated": true,
   "id": "gen-bioreactor-bloom",
   "url": "shaders/gen-bioreactor-bloom.wgsl",
-  "features": [],
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "temporal",
+    "depth-aware",
+    "upgraded-rgba"
+  ],
   "params": [
     {
       "id": "cell_scale",

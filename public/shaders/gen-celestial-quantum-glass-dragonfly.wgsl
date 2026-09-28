@@ -1,8 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  gen-celestial-quantum-glass-dragonfly
 //  Category: generative
-//  Features: dragonfly, quantum, fractal, audio-reactive, raymarching, crystalline
-//  Ideas: Cauchy thin-film wing iridescence, quantum glass caustic core & photon emission, acoustic wing-tip vortex trails
+//  Features: dragonfly, quantum, fractal, audio-reactive, mouse-driven, raymarching, crystalline, upgraded-rgba
+//  Upgraded: 2026-09-27
+//  Ideas: Cauchy thin-film wing iridescence, quantum glass caustic core & photon emission,
+//         acoustic wing-tip vortex trails; velocity-banked flight roll from the spring's
+//         own momentum; vortex-synced wingtip flutter in the wing SDF
 //  A packing: display RGBA (RGB=ACES tone-mapped dragonfly scene, A=semantic wing/body alpha)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -96,7 +99,7 @@ fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
     return length(max(d, vec3<f32>(0.0))) + min(max(d.x, max(d.y, d.z)), 0.0);
 }
 
-fn mapWings(p: vec3<f32>, audio_mod: f32) -> f32 {
+fn mapWings(p: vec3<f32>, audio_mod: f32, treble: f32) -> f32 {
     var p_w = p;
     let wing_freq = u.zoom_params.x;
     let time = u.config.x * wing_freq * (1.0 + audio_mod * 0.5);
@@ -118,7 +121,15 @@ fn mapWings(p: vec3<f32>, audio_mod: f32) -> f32 {
     let base_wing = sdBox(p_w, vec3<f32>(2.5, 0.02, 0.6));
     let venation = sdBox(p_f, vec3<f32>(1.5, 0.1, 1.0)) / scale;
 
-    return max(base_wing, -venation * fractal_density * 0.5);
+    // IDEA 5 — vortex-synced wingtip flutter: the same distance/time-driven wave
+    // shape that drives the background wingtip vortex (fog loop below) is echoed
+    // here at the wing's trailing edge, so the physical wing surface visibly
+    // flutters in sync with the vortex it emits into the fog.
+    let vortexPhase = sin(length(p_w.xz) * 4.0 - time * 8.0);
+    let trailingEdge = smoothstep(0.8, 2.5, abs(p_w.x));
+    let vortexFlutter = pow(max(vortexPhase, 0.0), 6.0) * (0.015 + treble * 0.05) * trailingEdge;
+
+    return max(base_wing, -venation * fractal_density * 0.5) - vortexFlutter;
 }
 
 fn mapBody(p: vec3<f32>, audio_mod: f32) -> f32 {
@@ -140,7 +151,7 @@ fn mapBody(p: vec3<f32>, audio_mod: f32) -> f32 {
     return body;
 }
 
-fn mapScene(p: vec3<f32>, mouse_pos: vec3<f32>, audio: f32) -> vec2<f32> {
+fn mapScene(p: vec3<f32>, mouse_pos: vec3<f32>, audio: f32, bank: f32, treble: f32) -> vec2<f32> {
     var p_mod = p;
     let time = u.config.x;
 
@@ -150,7 +161,10 @@ fn mapScene(p: vec3<f32>, mouse_pos: vec3<f32>, audio: f32) -> vec2<f32> {
         p_mod -= normalize(p_mod - mouse_pos) * exp(-dist_mouse * 2.0) * vortex_strength;
     }
 
-    p_mod = rot3x(-0.3 + sin(time * 0.5) * 0.1) * rot3y(sin(time * 0.2) * 0.2) * p_mod;
+    // IDEA 4 — velocity-banked flight roll: the spring already computes the
+    // cursor's own momentum (mouseVel) every frame; feed it into a small extra
+    // roll so the dragonfly visibly banks into turns instead of just following.
+    p_mod = rot3z(bank) * rot3x(-0.3 + sin(time * 0.5) * 0.1) * rot3y(sin(time * 0.2) * 0.2) * p_mod;
 
     let body = mapBody(p_mod, audio);
 
@@ -159,20 +173,20 @@ fn mapScene(p: vec3<f32>, mouse_pos: vec3<f32>, audio: f32) -> vec2<f32> {
     var p_wings2 = p_mod;
     p_wings2.z += 0.4;
 
-    let wings1 = mapWings(p_wings1, audio);
-    let wings2 = mapWings(p_wings2, audio * 0.8);
+    let wings1 = mapWings(p_wings1, audio, treble);
+    let wings2 = mapWings(p_wings2, audio * 0.8, treble);
     let wings = min(wings1, wings2);
 
     let isWing = select(0.0, 1.0, wings < body);
     return vec2<f32>(min(body, wings), isWing);
 }
 
-fn getNormal(p: vec3<f32>, mouse_pos: vec3<f32>, audio: f32) -> vec3<f32> {
+fn getNormal(p: vec3<f32>, mouse_pos: vec3<f32>, audio: f32, bank: f32, treble: f32) -> vec3<f32> {
     let e = vec2<f32>(0.001, 0.0);
     return normalize(vec3<f32>(
-        mapScene(p + e.xyy, mouse_pos, audio).x - mapScene(p - e.xyy, mouse_pos, audio).x,
-        mapScene(p + e.yxy, mouse_pos, audio).x - mapScene(p - e.yxy, mouse_pos, audio).x,
-        mapScene(p + e.yyx, mouse_pos, audio).x - mapScene(p - e.yyx, mouse_pos, audio).x
+        mapScene(p + e.xyy, mouse_pos, audio, bank, treble).x - mapScene(p - e.xyy, mouse_pos, audio, bank, treble).x,
+        mapScene(p + e.yxy, mouse_pos, audio, bank, treble).x - mapScene(p - e.yxy, mouse_pos, audio, bank, treble).x,
+        mapScene(p + e.yyx, mouse_pos, audio, bank, treble).x - mapScene(p - e.yyx, mouse_pos, audio, bank, treble).x
     ));
 }
 
@@ -225,6 +239,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let my = (sprungMouse.y - 0.5) * 4.0;
     let mouse_pos = vec3<f32>(mx, my, 0.0);
 
+    // IDEA 4 — velocity-banked flight roll: derive a bounded bank angle from the
+    // spring's own momentum (mouseVel), computed once above, consumed here.
+    let bank = clamp(mouseVel.x * 0.35, -0.5, 0.5);
+
     // Camera setup
     var ro = vec3<f32>(0.0, 0.0, -5.0);
     let rd = normalize(vec3<f32>(uv, 1.0));
@@ -260,7 +278,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     for (var i = 0; i < max_steps; i = i + 1) {
         p = ro + rd * t;
-        let res = mapScene(p, mouse_pos, audio);
+        let res = mapScene(p, mouse_pos, audio, bank, treble);
         let d = res.x;
         if (d < 0.001) { hit = true; hitMat = res.y; break; }
         if (t > 15.0) { break; }
@@ -271,7 +289,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var semanticAlpha = 0.0;
 
     if (hit) {
-        let n = getNormal(p, mouse_pos, audio);
+        let n = getNormal(p, mouse_pos, audio, bank, treble);
         let v = -rd;
 
         let l1 = normalize(vec3<f32>(1.0, 1.0, -1.0));

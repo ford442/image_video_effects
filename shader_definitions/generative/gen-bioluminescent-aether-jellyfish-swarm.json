@@ -49,7 +49,13 @@
   "updated": true,
   "id": "gen-bioluminescent-aether-jellyfish-swarm",
   "url": "shaders/gen-bioluminescent-aether-jellyfish-swarm.wgsl",
-  "features": [],
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "temporal",
+    "depth-aware",
+    "upgraded-rgba"
+  ],
   "params": [
     {
       "id": "swarm_density",

@@ -62,7 +62,8 @@
     "spring-dynamics",
     "audio-reactive",
     "mouse-driven",
-    "aces-tone-mapping"
+    "aces-tone-mapping",
+    "upgraded-rgba"
   ],
   "params": [
     {

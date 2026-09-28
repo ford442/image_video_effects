@@ -5,8 +5,8 @@
 //            chromatic-layer-separation, depth-output, upgraded-rgba, aces-tone-map
 //  Complexity: Medium
 //  Created: 2026-05-23
-//  Upgraded: 2026-09-06
-//  Ideas: hypotrochoid parameter vein; origin stamen
+//  Upgraded: 2026-09-27
+//  Ideas: hypotrochoid parameter vein; origin stamen; epicycloid counter-layer; petal crossings
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Nested hypotrochoid and epicycloid curves layered to form a
@@ -49,6 +49,13 @@ fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
 fn hypotrochoid(t: f32, R: f32, r: f32, d: f32) -> vec2<f32> {
   let x = (R - r) * cos(t) + d * cos((R - r) / r * t);
   let y = (R - r) * sin(t) - d * sin((R - r) / r * t);
+  return vec2<f32>(x, y);
+}
+
+fn epicycloid(t: f32, R: f32, r: f32, d: f32) -> vec2<f32> {
+  let k = (R + r) / max(r, 1.0e-4);
+  let x = (R + r) * cos(t) - d * cos(k * t);
+  let y = (R + r) * sin(t) - d * sin(k * t);
   return vec2<f32>(x, y);
 }
 
@@ -102,6 +109,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   var colorAcc = vec3<f32>(0.0);
   var glowAcc  = 0.0;
+  var nearA = 1e9;
+  var nearB = 1e9;
 
   for (var li: i32 = 0; li < LAYERS; li = li + 1) {
     let lf   = f32(li);
@@ -153,7 +162,50 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sat  = 0.82 + treble * 0.18;
     colorAcc = colorAcc + hsv2rgb(vec3<f32>(hue, sat, 1.0)) * (g + vein * 0.35);
     glowAcc  = glowAcc + g + vein * 0.15;
+    if (minDist < nearA) {
+      nearB = nearA;
+      nearA = minDist;
+    } else if (minDist < nearB) {
+      nearB = minDist;
+    }
   }
+
+  // Epicycloid counter-layer: same petal multiplier, opposite spin.
+  let epiR = 0.62;
+  let epiRin = epiR / (3.0 + petalMult);
+  let epiD = epiRin * 0.7;
+  let epiPhase = -time * spinSpeed * (0.2 + bass * 0.15);
+  let epiPeriod = TAU * (epiR / max(epiRin, 1.0e-4));
+  let epiStep = epiPeriod / f32(COARSE_STEPS);
+  var epiDist = 1e9;
+  var epiT = 0.0;
+  for (var si: i32 = 0; si < COARSE_STEPS; si = si + 1) {
+    let t = f32(si) * epiStep;
+    let pt = epicycloid(t + epiPhase, epiR, epiRin, epiD) * 0.72;
+    let di = distance(p, pt);
+    if (di < epiDist) {
+      epiDist = di;
+      epiT = t;
+    }
+  }
+  let epiCoarse = epiT;
+  for (var rsi: i32 = 0; rsi < REFINE_STEPS; rsi = rsi + 1) {
+    let local = mix(-epiStep, epiStep, f32(rsi) / f32(REFINE_STEPS - 1));
+    let t = epiCoarse + local;
+    let pt = epicycloid(t + epiPhase, epiR, epiRin, epiD) * 0.72;
+    let di = distance(p, pt);
+    if (di < epiDist) { epiDist = di; }
+  }
+  let epiW = glowWidth * (1.15 + bass * 0.4);
+  let epiG = smoothstep(epiW * 3.2, 0.0, epiDist);
+  colorAcc += hsv2rgb(vec3<f32>(fract(0.58 + time * spinSpeed * 0.04), 0.75, 1.0)) * epiG * (0.7 + mids * 0.25);
+  glowAcc += epiG * 0.45;
+
+  // Petal crossings: two hypotrochoid layers near the pixel, off the stamen.
+  let crossW = glowWidth * (1.2 + bass * 0.5);
+  let crossing = smoothstep(crossW * 5.0, 0.0, nearA) * smoothstep(crossW * 8.0, 0.0, nearB) * smoothstep(0.05, 0.16, length(p));
+  colorAcc += vec3<f32>(1.0, 0.94, 0.72) * crossing * 0.7;
+  glowAcc += crossing * 0.35;
 
   // Idea 2 — stamen: tight hypotrochoid at the origin
   let stam = hypotrochoid(time * spinSpeed * 2.2, 1.0, 0.22, 0.08) * 0.12;

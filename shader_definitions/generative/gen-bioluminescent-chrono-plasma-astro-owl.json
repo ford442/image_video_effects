@@ -24,6 +24,11 @@
   ],
   "updated": true,
   "supportsDepth": true,
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
   "updatedParams": [
     {
       "index": 0,

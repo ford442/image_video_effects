@@ -57,7 +57,13 @@
   "updated": true,
   "id": "gen-biomechanical-hive",
   "url": "shaders/gen-biomechanical-hive.wgsl",
-  "features": [],
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "temporal-feedback",
+    "upgraded-rgba"
+  ],
+  "feedbackPacking": "A/C = raw HDR display RGBA history (pre-ACES); growth-memory afterglow",
   "params": [
     {
       "id": "cell_density",
