@@ -1,6 +1,15 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-27 (simpler / mid crystal-math ten)
+**Last updated:** 2026-09-28 (local main union, no push)
+
+## 2026-09-28 — Local main union (no push)
+
+- Merged origin/main (`193bab3d` #1337 pulsar plan, `5b269bf1` #1336 tesseract restamp) onto local upgrades (`b48e7272`) as `1708a920`. Local main is 2 commits ahead of origin. Did not push.
+- Kept the 2026-09-15 Chronomorphic Glass Tesseract: face-crossing caustics, temporal birefringence, saved sliders `fold_speed` / `dispersion` / `refraction_ior` / `gravity`. Left the #1336 WGSL and JSON out (those rename the sliders to shatter_intensity / refraction_index / color_shift / mouse_gravity). Catalog list and `.shader_sync_manifest.json` stayed on the local descriptions.
+- Took the Cyber-Organic Void-Mycelium Pulsar plan. Removed `2026-09-26_chronomorphic-glass-tesseract.md` from pending; it stays in `completed` so it is not implemented again over the upgraded shader.
+- Naga known-failure ratchet 39 → 37 (`gravito-phononic-accretion`, `lava-lamp-blobs` pass). `verify:naga-wasm:all` 1386 valid / 37 known / 0 new. Catalog 1,373.
+
+
 
 ## 2026-09-27 — Simpler / mid crystal-math ten
 
