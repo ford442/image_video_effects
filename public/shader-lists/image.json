@@ -6308,7 +6308,7 @@
     "id": "silk-flow-advection",
     "name": "Silk Flow Advection",
     "url": "shaders/silk-flow-advection.wgsl",
-    "description": "The colors and details of the input are gently carried along living, silky curl-noise flows. The mouse acts like a finger disturbing delicate fabric. Creates beautiful organic painterly motion on stills and video.",
+    "description": "The colors and details of the input are gently carried along living, silky curl-noise flows, shaded with a watered-silk (moiré antique) watermark: two detuned fine rib layers whose beat flows along the streamlines. The mouse acts like a finger disturbing delicate fabric; hold to gather the silk toward the pointer in lit radial pleats, click to pluck it.",
     "tags": [
       "silk",
       "flow",
@@ -6326,7 +6326,9 @@
       "click-reactive",
       "temporal",
       "semantic-alpha",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba",
+      "held-drag"
     ],
     "params": [
       {

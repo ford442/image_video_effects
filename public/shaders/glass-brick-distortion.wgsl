@@ -1,10 +1,16 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Glass Brick Distortion — Architectural Fluted Lens Refraction
+//  Glass Brick Distortion
 //  Category: distortion
-//  Features: mouse-driven, depth-aware, audio-reactive, temporal,
-//            fresnel, chromatic-aberration, semantic-alpha, ACES
+//  Features: mouse-driven, depth-aware, audio-reactive, temporal, chromatic-aberration, upgraded-rgba
 //  Complexity: High
+//  Upgraded: 2026-09-28
+//  Ideas: vertical fluted ribs with crest highlight; grout-edge mirror bevel with specular line; per-brick batch tint and thickness
+//  A packing: ACES display RGBA (HEAD; C read back as colour history)
 // ═══════════════════════════════════════════════════════════════════
+//  Each brick is a plano-convex lens magnifying its own centre, now ribbed
+//  like architectural fluted glass. Pointer opens a clear zone; clicks send
+//  ripple shocks. The extraBuffer[133..138] spring is HEAD's (runtime zeroes
+//  that range each frame, so it is a harmless no-op and mouse = raw pointer).
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -29,6 +35,13 @@ struct Uniforms {
 
 fn schlick(cosTheta: f32, R0: f32) -> f32 {
   return R0 + (1.0 - R0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
+// Hoskins hash (no sin; stable for large drifting brick ids)
+fn hash21(p: vec2<f32>) -> f32 {
+  var p3 = fract(vec3<f32>(p.x, p.y, p.x) * 0.1031);
+  p3 = p3 + dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
 }
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
@@ -97,7 +110,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Mouse clear zone
   let mDist = length((uv - mouse) * vec2<f32>(aspect, 1.0));
-  let clearMask = smoothstep(0.18 + held * 0.15, 0.06, mDist);
+  let clearMask = 1.0 - smoothstep(0.06, 0.18 + held * 0.15, mDist); // == HEAD's reversed smoothstep
 
   // Brick grid geometry
   let uvS = (uv + vec2<f32>(drift, -drift)) * vec2<f32>(brickCount * aspect, brickCount);
@@ -111,7 +124,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Plano-convex lens offset
   let bCentered = brickUV - 0.5;
   let lensMag = dot(bCentered, bCentered);
-  let baseOffset = bCentered * (0.5 - lensMag) * iorEff;
+  let lensOffset = bCentered * (0.5 - lensMag) * iorEff;
+
+  // Idea 1 — Flutes: six vertical ribs per brick. Rib surface h = -cos(phase),
+  // so its slope sin(phase) bends the sample sideways; the ribs ride the IOR
+  // slider and go through the same R/G/B dispersion as the lens.
+  let fluteCount = 6.0;
+  let flutePhase = brickUV.x * fluteCount * 6.2831853;
+  let fluteOffset = vec2<f32>(sin(flutePhase) * iorEff * 0.045, 0.0);
+  let baseOffset = lensOffset + fluteOffset;
 
   // Prismatic dispersion
   let chDisp = chromaStr * (1.0 + treble * 0.5);
@@ -134,9 +155,43 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let fresnel = schlick(max(cosTheta, 0.0), 0.04) * activeMask;
   color = mix(color, vec3<f32>(0.92, 0.96, 1.0), fresnel * 0.5);
 
+  // Idea 1 — rib crest highlight: thin vertical glint on each flute's crest.
+  let ribCrest = max(-cos(flutePhase), 0.0);
+  let ribGlint = ribCrest * ribCrest * ribCrest * ribCrest;
+  let ribHL = ribGlint * ribGlint * ribGlint * (0.07 + treble * 0.04) * activeMask;
+  color += vec3<f32>(0.95, 0.98, 1.0) * ribHL;
+
+  // Idea 2 — Grout-edge mirror bevel: in a thin band inside the grout the
+  // moulded edge tilts steeply, so it shows the image mirrored across the
+  // nearest brick edge (compressed, darkened) plus a thin specular line.
+  let cellUV = 1.0 / vec2<f32>(brickCount * aspect, brickCount);
+  let edgeX = min(brickUV.x, 1.0 - brickUV.x);
+  let edgeY = min(brickUV.y, 1.0 - brickUV.y);
+  let useX = edgeX < edgeY;
+  let edgeDist = min(edgeX, edgeY);
+  let outN = select(vec2<f32>(0.0, select(-1.0, 1.0, brickUV.y > 0.5)),
+                    vec2<f32>(select(-1.0, 1.0, brickUV.x > 0.5), 0.0), useX);
+  let bevelW = 0.08;
+  let bevel = (1.0 - smoothstep(groutW, groutW + bevelW, edgeDist)) * (1.0 - isGrout) * (1.0 - clearMask);
+  if (bevel > 0.001) {
+    let edgeUVDist = edgeDist * dot(abs(outN), cellUV);
+    let uvMirror = clamp(uv + outN * edgeUVDist * 2.6, vec2<f32>(0.0), vec2<f32>(1.0));
+    let mirrored = textureSampleLevel(readTexture, u_sampler, uvMirror, 0.0).rgb * 0.55;
+    color = mix(color, mirrored, bevel * 0.6);
+    let specT = (edgeDist - (groutW + 0.014)) / 0.007;
+    color += vec3<f32>(0.9, 0.95, 1.0) * exp(-specT * specT) * 0.35 * (1.0 - isGrout) * (1.0 - clearMask);
+  }
+
+  // Idea 3 — Per-brick batch tint: mixed-batch glass-block walls vary from
+  // green to blue and in thickness. Deviations are centred on HEAD's glass.
+  let batchH = hash21(brickId);
+  let batchH2 = hash21(brickId + vec2<f32>(17.0, 41.0));
+  let batchTint = vec3<f32>(-0.03, 0.02, 0.0) * (batchH - 0.5) * 2.0; // +1 green, -1 blue; mean 0
+  let batchThick = 0.8 + batchH2 * 0.4;
+
   // Physical Beer-Lambert transmission
-  let glassColor = vec3<f32>(0.88, 0.96, 1.0);
-  let absorbed = exp(-(1.0 - glassColor) * thickness * 3.0);
+  let glassColor = clamp(vec3<f32>(0.88, 0.96, 1.0) + batchTint, vec3<f32>(0.0), vec3<f32>(1.0));
+  let absorbed = exp(-(1.0 - glassColor) * thickness * batchThick * 3.0);
   color *= mix(vec3<f32>(1.0), absorbed, activeMask);
 
   // Grout line tint

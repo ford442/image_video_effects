@@ -2,7 +2,7 @@
   "id": "volumetric-cloud-nebula",
   "name": "Volumetric Cloud Nebula",
   "url": "shaders/volumetric-cloud-nebula.wgsl",
-  "description": "Raymarched volumetric clouds with nebula coloring. Warp-flight orbital camera, fast cloud advection, treble ionization flashes, and advected HDR streaks. Bass/mids/treble drive flow, color, and sparkle. Extinction slider controls optical depth per march step.",
+  "description": "Raymarched volumetric clouds with nebula coloring. Warp-flight orbital camera, fast cloud advection, treble ionization flashes, advected colour trails, a periodic central flash whose light echo sweeps outward through the gas as a white-blue shell, dark absorbing cores inside bright envelopes, and background stars that streak along the orbit. Bass/mids/treble drive orbit speed, flash brightness, height and sparkle. Extinction slider controls optical depth per march step.",
   "tags": [
     "generative",
     "nebula",
@@ -18,7 +18,8 @@
     "audio-reactive",
     "temporal",
     "fast-motion",
-    "supportsDepth"
+    "supportsDepth",
+    "upgraded-rgba"
   ],
   "author": "Kimi",
   "params": [

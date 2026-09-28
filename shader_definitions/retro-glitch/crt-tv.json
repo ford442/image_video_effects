@@ -2,7 +2,7 @@
   "id": "crt-tv",
   "name": "CRT TV - Phosphor Physics",
   "url": "shaders/crt-tv.wgsl",
-  "description": "Authentic CRT phosphor physics with aperture grille, halation, barrel distortion, spring focus, held bulge, capped ripples, exact C persistence, and three-band audio.",
+  "description": "Authentic CRT phosphor physics: curved-raster Gaussian scanlines whose beam fattens on bright rows, soft aperture grille, registered halation, barrel distortion inside a rounded-corner faceplate with curved-glass glare, a rolling ground-loop hum bar deepened by mids, held/click bulge, exact C persistence, and three-band audio.",
   "workgroup_size": [16, 16, 1],
   "tags": ["crt", "retro", "phosphor", "scanlines", "vintage", "monitor"],
   "params": [

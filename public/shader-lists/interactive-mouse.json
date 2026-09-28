@@ -11572,7 +11572,7 @@
     "id": "paper-cutout",
     "name": "Paper Cutout",
     "url": "shaders/paper-cutout.wgsl",
-    "description": "Quantizes the image into relief paper layers with a spring-following light, audio-shimmered strata, and click-punched emboss rings.",
+    "description": "Quantizes the image into hand-cut, slightly off-register paper layers lit from the pointer: taller stacks cast darker shadows, cut edges facing the light show a white core, and clicks punch emboss rings.",
     "params": [
       {
         "id": "layers",

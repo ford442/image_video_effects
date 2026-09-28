@@ -3,7 +3,7 @@
   "name": "Morphogenic Resonance",
   "category": "generative",
   "url": "shaders/morphogenic-resonance.wgsl",
-  "description": "Organic shapes that morph between geometric and biological forms via sinusoidal interpolation. Closed-form morph-field conveyor, traveling resonance rings, and advected HDR trails. Bass drives morph speed, mids add surface ripple resonance, treble creates smooth edge discharge. Mouse warps the morph field.",
+  "description": "Organic shapes that morph between geometric and biological forms via sinusoidal interpolation. Closed-form morph-field conveyor, traveling resonance rings, and advected HDR trails. Bass drives morph speed, mids add surface ripple resonance, treble creates smooth edge discharge. Mouse warps the morph field and launches a travelling morph front: cells turn geometric-to-organic in a wave outward from the pointer. Geometric cells show crystalline facet spokes; in organic cells the treble discharge runs along the veins.",
   "features": [
     "audio-reactive",
     "generative",

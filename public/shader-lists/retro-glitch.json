@@ -529,7 +529,7 @@
     "id": "crt-tv",
     "name": "CRT TV - Phosphor Physics",
     "url": "shaders/crt-tv.wgsl",
-    "description": "Authentic CRT phosphor physics with aperture grille, halation, barrel distortion, spring focus, held bulge, capped ripples, exact C persistence, and three-band audio.",
+    "description": "Authentic CRT phosphor physics: curved-raster Gaussian scanlines whose beam fattens on bright rows, soft aperture grille, registered halation, barrel distortion inside a rounded-corner faceplate with curved-glass glare, a rolling ground-loop hum bar deepened by mids, held/click bulge, exact C persistence, and three-band audio.",
     "workgroup_size": [
       16,
       16,
@@ -1534,7 +1534,7 @@
     "name": "Film Gate Weave",
     "category": "retro-glitch",
     "url": "shaders/film-gate-weave.wgsl",
-    "description": "35mm gate weave with exact C scratch persistence (A packs rgb.r + scratch.g), spring registration anchor, held gate flutter, click splice flashes, and ACES tone mapping.",
+    "description": "35mm gate weave with exact C scratch persistence (A packs rgb.r + scratch.g), spring registration anchor, held gate flutter, click splice flashes, and ACES tone mapping. Weave past the gate reveals the frame line and the neighbouring frame, persisted scratches wander a pixel per frame, and a reel-change cue dot flashes top-right every ~11 s.",
     "workgroup_size": [
       16,
       16,
@@ -1555,7 +1555,9 @@
       "held-drag",
       "click-ripples",
       "aces-tone-map",
-      "temporal-feedback"
+      "temporal-feedback",
+      "audio-reactive",
+      "mouse-driven"
     ],
     "params": [
       {
@@ -2532,7 +2534,7 @@
     "id": "scanline-drift",
     "name": "Scanline Drift",
     "url": "shaders/scanline-drift.wgsl",
-    "description": "Horizontal strip drift with spring tracking band, held jitter boost, capped click tears, regional FFT flicker, exact C memory, and ACES output.",
+    "description": "Horizontal strip drift with RGB split: strips shear into each other like stretched tape, displaced lines reveal an h-sync blanking porch at the wrap seam, and fast-drifting strips smear along their velocity. Pointer band jitter, held boost, click tears, treble flicker, ACES output.",
     "workgroup_size": [
       16,
       16,

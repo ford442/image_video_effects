@@ -400,7 +400,7 @@
     "name": "Aurora Borealis Loom",
     "category": "generative",
     "url": "shaders/aurora-borealis-loom.wgsl",
-    "description": "Aurora curtains woven like fabric on a celestial loom. Curtain conveyor scroll, vertical ion drift streaks, and advected HDR trails. Bass swells the weave, mids shift hue through the spectrum, treble adds bead-like ionization nodes. Mouse pulls the fabric.",
+    "description": "Aurora curtains woven like fabric on a celestial loom. Curtain conveyor scroll, vertical ion drift streaks, and advected HDR trails. Bass swells the weave, mids shift hue through the spectrum, treble adds bead-like ionization nodes. Mouse pulls the fabric. The cloth ends at a travelling fell line where the reed beats up each new pick (harder on bass); hand-spun slub yarn pools the aurora light; soft patches of the curtains pulse on their own 3-12 s periods.",
     "features": [
       "audio-reactive",
       "generative",
@@ -11023,7 +11023,7 @@
       "plasma",
       "audio-reactive"
     ],
-    "description": "A hyper-intricate cyber-organic cocoon pulses with bioluminescent plasma trails and crystalline micro-circuitry, breathing and evolving over time.",
+    "description": "A Voronoi-perforated cyber-organic chrysalis hangs from a silk cremaster thread and girdle, swaying as a pendulum and spinning on its long axis around a glowing fibrous core. A dorsal eclosion seam gapes with bass or a held pointer, spilling core light; each click kicks a decaying defensive wriggle through the body.",
     "workgroup_size": [
       16,
       16,
@@ -11086,7 +11086,7 @@
       },
       {
         "index": 2,
-        "name": "Shell Thickness",
+        "name": "Shell Hole Width",
         "default": 0.4,
         "min": 0.1,
         "max": 1,
@@ -11114,7 +11114,11 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tone-mapping",
-      "depth-aware"
+      "depth-aware",
+      "mouse-driven",
+      "upgraded-rgba",
+      "click-reactive",
+      "held-drag"
     ],
     "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
@@ -11557,13 +11561,15 @@
     "name": "Cybernetic Plasma-Orchid Nexus",
     "url": "shaders/gen-cybernetic-plasma-orchid-nexus.wgsl",
     "category": "generative",
-    "description": "A hyper-stylized digital flora ecosystem where crystalline petals of plasma bloom from a glowing cybernetic core, pulsating with neon chromatic aberration.",
+    "description": "A hyper-stylized digital flora ecosystem where crystalline petals of plasma bloom from a glowing cybernetic core, pulsating with neon chromatic aberration. The lowest petal is a cupped orchid lip with a plasma nectar well glowing in its throat, and a central column carries two pollinia beads that pulse with the bass.",
     "features": [
       "raymarching",
       "domain-warping",
       "mouse-interactive",
+      "mouse-driven",
       "audio-reactive",
-      "volumetric-glow"
+      "volumetric-glow",
+      "upgraded-rgba"
     ],
     "tags": [
       "organic",
@@ -21121,7 +21127,7 @@
       "strands",
       "raymarching"
     ],
-    "description": "A mesmerizing tangle of iridescent energy threads weaving themselves into complex, higher-dimensional geometric topologies, creating the illusion of cosmic fabric being spun in real-time.",
+    "description": "A mesmerizing tangle of iridescent energy threads weaving themselves into complex, higher-dimensional geometric topologies, creating the illusion of cosmic fabric being spun in real-time. Each thread is the slice of a 4D hypertube by a moving hyperplane, so strands swell, pinch and vanish in a wave across the lattice, while current packets race in opposite directions along the paired helices and flash where they meet. Mids lengthen the packets, treble brightens them, bass thickens the weave; hold the mouse to pull the weave toward the cursor.",
     "workgroup_size": [
       16,
       16,
@@ -21135,7 +21141,9 @@
     "features": [
       "audio-reactive",
       "mouse-control",
-      "temporal-feedback"
+      "mouse-driven",
+      "temporal-feedback",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -21539,7 +21547,11 @@
     "updated": true,
     "id": "gen-image-pyro",
     "url": "shaders/gen-image-pyro.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "id": "gen-interference-moire-field",
@@ -27404,13 +27416,16 @@
     "id": "gen-neon-plasma-chrono-bloom",
     "name": "Neon Plasma Chrono-Bloom",
     "author": "Jules",
-    "description": "A hyper-vibrant, time-dilated explosion of neon plasma tendrils that bloom and interlace like a digital, cyberpunk flora.",
+    "description": "A hyper-vibrant, time-dilated explosion of neon plasma tendrils that bloom and interlace like a digital, cyberpunk flora. The field clock lags with radius so the bloom opens outward from the centre, and white-hot filaments ignite where two plasma sheet families cross. Hold the mouse to pull a gravity well that dilates time under the cursor; bass thickens the plasma, mids widen and treble heats the filaments.",
     "category": "generative",
     "type": "generative",
     "url": "shaders/gen-neon-plasma-chrono-bloom.wgsl",
     "features": [
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "raymarched",
+      "volumetric",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -43281,7 +43296,7 @@
     "name": "Morphogenic Resonance",
     "category": "generative",
     "url": "shaders/morphogenic-resonance.wgsl",
-    "description": "Organic shapes that morph between geometric and biological forms via sinusoidal interpolation. Closed-form morph-field conveyor, traveling resonance rings, and advected HDR trails. Bass drives morph speed, mids add surface ripple resonance, treble creates smooth edge discharge. Mouse warps the morph field.",
+    "description": "Organic shapes that morph between geometric and biological forms via sinusoidal interpolation. Closed-form morph-field conveyor, traveling resonance rings, and advected HDR trails. Bass drives morph speed, mids add surface ripple resonance, treble creates smooth edge discharge. Mouse warps the morph field and launches a travelling morph front: cells turn geometric-to-organic in a wave outward from the pointer. Geometric cells show crystalline facet spokes; in organic cells the treble discharge runs along the veins.",
     "features": [
       "audio-reactive",
       "generative",
@@ -46204,7 +46219,7 @@
     "id": "volumetric-cloud-nebula",
     "name": "Volumetric Cloud Nebula",
     "url": "shaders/volumetric-cloud-nebula.wgsl",
-    "description": "Raymarched volumetric clouds with nebula coloring. Warp-flight orbital camera, fast cloud advection, treble ionization flashes, and advected HDR streaks. Bass/mids/treble drive flow, color, and sparkle. Extinction slider controls optical depth per march step.",
+    "description": "Raymarched volumetric clouds with nebula coloring. Warp-flight orbital camera, fast cloud advection, treble ionization flashes, advected colour trails, a periodic central flash whose light echo sweeps outward through the gas as a white-blue shell, dark absorbing cores inside bright envelopes, and background stars that streak along the orbit. Bass/mids/treble drive orbit speed, flash brightness, height and sparkle. Extinction slider controls optical depth per march step.",
     "tags": [
       "generative",
       "nebula",
@@ -46220,7 +46235,8 @@
       "audio-reactive",
       "temporal",
       "fast-motion",
-      "supportsDepth"
+      "supportsDepth",
+      "upgraded-rgba"
     ],
     "author": "Kimi",
     "params": [

@@ -1,12 +1,17 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Silk Flow Advection
 //  Category: image
-//  Features: silk, flow, advection, painterly, curl-noise, audio-breath, mouse-finger, click-reactive, semantic-alpha
+//  Features: audio-reactive, upgraded-rgba, mouse-driven, click-reactive, held-drag, temporal
 //  Complexity: High
-//  Chunks From: _hash_library.wgsl (hash21, valueNoise)
-//  Created: 2026-06-01
-//  By: Grok (new image/video effect — image colors gently advected along living silky curl-noise flows. Mouse finger disturbs the silk like fabric)
+//  Upgraded: 2026-09-28
+//  Ideas: watered-silk moiré (moiré antique); held-pointer gathering with radial pleats
+//  A packing: xy velocity, z flowEnergy, w alpha (raw sim state; C read back as velocity)
 // ═══════════════════════════════════════════════════════════════════
+// Image colours are advected along a living curl-noise flow (Grok,
+// 2026-06-01). Flow (x) = curl strength, Silk (y) = softness + thread
+// fineness, Breath (z) = zero-mean sway + colour breathing, Disturb (w) =
+// mouse finger, click plucks and held gathering. Audio: bass -> flow,
+// mids -> curl drift / colour breath, treble -> breath + thread glint.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -42,13 +47,41 @@ fn valueNoise(p: vec2<f32>) -> f32 {
     return mix(mix(a,b,u.x), mix(c,d,u.x), u.y);
 }
 
-fn curlNoise(p: vec2<f32>, t: f32) -> vec2<f32> {
+// Returns (curl.xy, psi). psi is the stream function the curl is taken of,
+// recovered for free from the four taps; its iso-lines are the streamlines.
+fn curlNoise(p: vec2<f32>, t: f32) -> vec3<f32> {
     let e = 0.08;
     let n1 = valueNoise(p + vec2<f32>(0, e) + t);
     let n2 = valueNoise(p + vec2<f32>(e, 0) + t);
     let n3 = valueNoise(p - vec2<f32>(0, e) + t);
     let n4 = valueNoise(p - vec2<f32>(e, 0) + t);
-    return vec2<f32>(n1 - n3, n4 - n2) * 0.6;
+    return vec3<f32>(vec2<f32>(n1 - n3, n4 - n2) * 0.6, (n1 + n2 + n3 + n4) * 0.25);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Idea 1 — watered-silk moiré (moiré antique). Two fine rib gratings in
+// pixel units (periods >= 3 px, never fract(uv*res)). The second, "pressed"
+// layer is detuned and its phase is pushed by the flow's stream function, so
+// the low-frequency beat of the pair runs along the streamlines of the local
+// velocity (grad psi is perpendicular to vel) and flows as psi evolves.
+// q is the flow-mapped pixel position, so the ribs bend with the advection.
+// Returns (threads, watermark): threads = mean of the two layers (no sum
+// frequency, so nothing above ~0.33 cycles/px), whose envelope is the beat;
+// watermark = the analytic beat itself.
+fn wateredSilk(q: vec2<f32>, psi: f32, time: f32, fineness: f32) -> vec2<f32> {
+    let tau = 6.2831853;
+    let ribAxis = vec2<f32>(0.1736, 0.9848);             // near-vertical rib spacing axis (~10 deg twill)
+    let period = mix(5.0, 3.0, fineness);               // silk (y) -> finer threads
+    let s = dot(q, ribAxis);
+    let ribA = cos(tau * s / period);
+    let pressedPhase = s / (period * 1.035) + psi * 4.0 + time * 0.06;
+    let ribB = cos(tau * pressedPhase);
+    // Beat term alone (difference frequency) = the watermark contour field.
+    let watermark = cos(tau * (s / period - pressedPhase));
+    return vec2<f32>(0.5 * (ribA + ribB), watermark);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -72,41 +105,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aspect = res.x / max(res.y, 1.0);
     let aspectVec = vec2<f32>(aspect, 1.0);
 
-    // A critically-damped fabric finger follows the raw normalized cursor.
-    let rawMouse = u.zoom_config.yz;
-    var mouse = vec2<f32>(extraBuffer[133u], extraBuffer[134u]);
-    var mouseVelocity = vec2<f32>(extraBuffer[135u], extraBuffer[136u]);
-    let mouseInitialized = extraBuffer[137u] >= 0.5;
-    if (!mouseInitialized) {
-        mouse = rawMouse;
-        mouseVelocity = vec2<f32>(0.0);
-    }
-    let springDt = select(0.0, clamp(time - extraBuffer[138u], 0.0005, 0.05), mouseInitialized);
-    let springOmega = 8.0;
-    let mouseAccel = springOmega * springOmega * (rawMouse - mouse)
-        - 2.0 * springOmega * mouseVelocity;
-    mouseVelocity += mouseAccel * springDt;
-    mouse = clamp(mouse + mouseVelocity * springDt, vec2<f32>(-0.2), vec2<f32>(1.2));
-    if (global_id.x == 0u && global_id.y == 0u) {
-        extraBuffer[133u] = mouse.x;
-        extraBuffer[134u] = mouse.y;
-        extraBuffer[135u] = mouseVelocity.x;
-        extraBuffer[136u] = mouseVelocity.y;
-        extraBuffer[137u] = 1.0;
-        extraBuffer[138u] = time;
-    }
+    // Raw cursor (UV, y=0 top). HEAD's extraBuffer[133..138] spring was inert
+    // (buffer re-zeroed every frame => always snapped to the raw cursor).
+    let mouse = u.zoom_config.yz;
+    let held = select(0.0, 1.0, mousePress > 0.5);
 
-    // Previous advection state
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    // Previous advection state — exact texel load of rgba32float history.
+    let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
     let previousVelocity = clamp(prev.xy, vec2<f32>(-0.08), vec2<f32>(0.08));
 
     let input = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
     // Living silk curl flow field
-    let curl = curlNoise(uv * (3.5 + silk * 2.5), time * 0.04 + mids * 0.03);
+    let curlPsi = curlNoise(uv * (3.5 + silk * 2.5), time * 0.04 + mids * 0.03);
+    let curl = curlPsi.xy;
+    let psi = curlPsi.z;
     let breathWave = sin(uv.x * 4.0 + time * 1.2) * cos(uv.y * 3.0 - time * 0.7) * breath * 0.018;
+    // Breath rise/fall is zero-mean now (HEAD's constant -breath*0.011 was a
+    // static whole-image shift that stretched the bottom edge).
+    let breathLift = -breath * 0.011 * sin(time * 0.45 + uv.x * 1.3);
 
-    var liveVelocity = curl * flowAmt * 0.022 + vec2<f32>(breathWave, -breath * 0.011);
+    var liveVelocity = curl * flowAmt * 0.022 + vec2<f32>(breathWave, breathLift);
 
     // Mouse finger disturbance stays circular on wide canvases and safely
     // maps its aspect-space direction back into UV velocity.
@@ -117,6 +136,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let mouseDir = (mouseDeltaAspect / max(md, 0.001)) / aspectVec;
         liveVelocity += mouseDir * push * -0.035;
     }
+
+    // Idea 2 — held-pointer gathering. While held, the fabric bunches toward
+    // the pointer: extra inward velocity (enters the C-smoothed state, so the
+    // gather builds over frames) plus radial pleats — an integer number of
+    // angular folds around the pointer, twisting slightly with radius.
+    let gatherReach = 1.0 - smoothstep(0.05, 0.38, md);
+    let gather = held * disturb * gatherReach * smoothstep(0.015, 0.07, md);
+    let toPointerUV = -(mouseDeltaAspect / max(md, 0.001)) / aspectVec;
+    let pleatAngle = atan2(mouseDeltaAspect.y, mouseDeltaAspect.x) * 13.0 + md * 18.0;
+    let pleatHeight = cos(pleatAngle);                   // +1 ridge, -1 trough
+    let pleatSlope = -sin(pleatAngle);                   // d(height)/d(angle)
+    let pleatTangentUV = vec2<f32>(-mouseDeltaAspect.y, mouseDeltaAspect.x) / max(md, 0.001) / aspectVec;
+    liveVelocity += toPointerUV * gather * 0.03;
 
     // Clicks pluck the silk with alternating tangent waves.
     let rippleCount = min(u32(u.config.y), 50u);
@@ -140,30 +172,51 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let velocityResponse = clamp(0.38 + flowAmt * 0.18 + mousePress * 0.12, 0.25, 0.75);
     let vel = clamp(mix(previousVelocity, liveVelocity, velocityResponse), vec2<f32>(-0.08), vec2<f32>(0.08));
 
-    // Advect sample position
-    let advUV = clamp(uv - vel * 1.8, vec2<f32>(0.0), vec2<f32>(1.0));
+    // Pleat depth follows how much the fabric has actually gathered (the
+    // inward component of the history velocity from C).
+    let inwardPrev = max(dot(previousVelocity * aspectVec, -mouseDeltaAspect / max(md, 0.001)), 0.0);
+    let pleatDepth = gather * (0.45 + 0.55 * smoothstep(0.0, 0.035, inwardPrev));
+
+    // Advect sample position; the gather adds a sampling pull (content drawn
+    // in toward the pointer) and folds the image tangentially into the pleats.
+    let pleatPull = -toPointerUV * pleatDepth * 0.045 * (0.75 + 0.25 * pleatHeight)
+        + pleatTangentUV * pleatSlope * pleatDepth * 0.006;
+    let advUV = clamp(uv - vel * 1.8 + pleatPull, vec2<f32>(0.0), vec2<f32>(1.0));
     let carried = textureSampleLevel(readTexture, u_sampler, advUV, 0.0);
 
     // Silk filtering (soft, luxurious)
     let silkBlend = mix(input.rgb, carried.rgb, 0.55 + silk * 0.35);
 
-    // Subtle weave texture
-    let weaveBand = min(u32(clamp(uv.y, 0.0, 0.9999) * 8.0), 7u);
-    let weaveVoice = plasmaBuffer[(weaveBand % 8u) + 1u].x;
-    let weave = (valueNoise(uv * 48.0 + time * 0.1) - 0.5)
-        * 0.035 * silk * (1.0 + weaveVoice * 0.35);
-    var col = silkBlend + weave;
+    // Idea 1 — watered silk replaces HEAD's isotropic valueNoise weave (whose
+    // audio voice read plasmaBuffer[1..8], always zero). Ribs are sampled at
+    // the flow-mapped pixel so they bend with the carried image; the two rib
+    // layers give fine threads that fade in and out along the watermark, and
+    // the beat term lifts the sheen where the pressed ribs line up.
+    // Multiplicative: it shades the photo rather than overlaying colour.
+    let fineness = u.zoom_params.y;
+    let ribQ = (uv - vel * 1.8 + pleatPull) * res;   // same flow map as the photo, incl. gathering
+    let moire = wateredSilk(ribQ, psi, time, fineness);
+    let threadGlint = 1.0 + treble * 0.35;
+    let silkStrength = (0.02 + 0.045 * fineness) * threadGlint;
+    var col = silkBlend * (1.0 + silkStrength * (0.55 * moire.x + 0.8 * moire.y));
+
+    // Idea 2 shading — pleats: lit ridges / dark troughs, plus a side light
+    // (from the upper-left) across each fold's slope.
+    let lightSide = dot(pleatTangentUV * aspectVec, normalize(vec2<f32>(-0.6, -0.8)));
+    let pleatShade = 1.0 + pleatDepth * (0.16 * pleatHeight + 0.1 * pleatSlope * lightSide);
+    col *= pleatShade;
 
     // Gentle color breathing from audio
     let breathColor = vec3<f32>(0.98, 0.96, 0.92) + vec3<f32>(0.04, 0.02, -0.03) * sin(time * 0.6 + mids * 1.2) * breath * 0.3;
     col *= breathColor;
     col = max(col, vec3<f32>(0.0));
+    let display = acesToneMap(col * 0.92);
 
     // Semantic alpha — higher where flow is active (beautiful motion trails when stacked)
-    let flowEnergy = length(vel) * 28.0 + breath * 0.4;
+    let flowEnergy = length(vel) * 28.0 + breath * 0.4 + pleatDepth * 0.3;
     let semantic_alpha = clamp(0.62 + flowEnergy * 0.55, 0.5, 1.0);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(col, semantic_alpha));
+    textureStore(writeTexture, global_id.xy, vec4<f32>(display, semantic_alpha));
 
     // Store velocity field for next frame
     textureStore(dataTextureA, global_id.xy, vec4<f32>(vel.x, vel.y, flowEnergy, semantic_alpha));

@@ -520,7 +520,7 @@
     "id": "anamorphic-caustic-flare",
     "name": "Anamorphic Caustic Flare",
     "url": "shaders/anamorphic-caustic-flare.wgsl",
-    "description": "Premium cinematic anamorphic lens flares combined with living, refracting water caustics that distort and project the source footage. Bass stretches the flares dramatically while treble animates the caustic ripples. Mouse tilts the virtual lens.",
+    "description": "Cinematic anamorphic lens flare combined with living water caustics that refract the source footage along the caustic slope. Caustic peaks are squeezed into short horizontal glints whose length follows Caustic Stretch, matching the flare's anamorphic look. Bass stretches the flare and glints, treble brightens the caustics, and clicks fire local horizontal flare bursts. Mouse tilts the virtual lens.",
     "tags": [
       "anamorphic",
       "caustic",
@@ -537,7 +537,8 @@
       "mouse-tilt",
       "click-reactive",
       "semantic-alpha",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "supportsDepth": true,
     "params": [
