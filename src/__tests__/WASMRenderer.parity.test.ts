@@ -88,7 +88,11 @@ describe('WASMRenderer Phase 3 parity methods', () => {
   it('delegates startRecording and stopRecording to the bridge', async () => {
     const canvas = document.createElement('canvas');
     await renderer.startRecording(canvas, { durationMs: 5000 });
-    expect(WasmBridge.startRecording).toHaveBeenCalledWith(canvas, { durationMs: 5000 });
+    // WebCodecs is the default: WASMRenderer injects the shared encode session.
+    expect(WasmBridge.startRecording).toHaveBeenCalledWith(canvas, {
+      durationMs: 5000,
+      gpuEncode: expect.any(Function),
+    });
 
     renderer.stopRecording();
     expect(WasmBridge.stopRecording).toHaveBeenCalled();

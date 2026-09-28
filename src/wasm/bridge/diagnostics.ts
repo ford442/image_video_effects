@@ -1,4 +1,4 @@
-import { INIT_STAGE_NAMES, state, wasmRef } from './state.js';
+import { INIT_STAGE_NAMES, readCanvasCopySrc, state, wasmRef } from './state.js';
 
 export interface CppInitDiagnostics {
   stage: number;
@@ -50,5 +50,9 @@ export function getDiagnostics() {
     failedStageName: cpp.stageName,
     lastInitError: cpp.message,
     adapterInfo: cpp.adapterSummary,
+    /** C++ canvas COPY_SRC probe; null while C++ init runs or when the artifact predates it. */
+    canvasCopySrc: readCanvasCopySrc(),
+    /** MAX_SHADER_SLOTS in the loaded artifact; null when it predates the export. */
+    maxShaderSlots: state.maxShaderSlots,
   };
 }

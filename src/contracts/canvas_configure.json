@@ -1,6 +1,6 @@
 {
-  "description": "Canvas swapchain configure contract. Default path mirrors TS buildCanvasConfigureOptions() and WASM JS_CreateSurfaceFromCanvas + ConfigureSurface() (device.cpp). WASM keeps BOTH configures: JS (opaque + usage) then C++ (width/height + Fifo). Format is always navigator.gpu.getPreferredCanvasFormat(). colorSpace/toneMapping defaults are the browser defaults and are not written explicitly on the default path. Enforced by verify:device-policy.",
-  "version": 1,
+  "description": "Canvas swapchain configure contract. Default path mirrors TS buildCanvasConfigureOptions() and WASM JS_CreateSurfaceFromCanvas + ConfigureSurface() (device.cpp). WASM keeps BOTH configures: JS (opaque + usage) then C++ (width/height + Fifo). v2: the copySrc opt-in is implemented on both backends (TS boot probe; C++ JS_ProbeCanvasCopySrc at surface creation). Format is always navigator.gpu.getPreferredCanvasFormat(). colorSpace/toneMapping defaults are the browser defaults and are not written explicitly on the default path. Enforced by verify:device-policy.",
+  "version": 2,
   "alphaMode": "opaque",
   "usage": ["RENDER_ATTACHMENT"],
   "presentModeWasm": "fifo",
@@ -10,7 +10,7 @@
     "copySrc": {
       "usage": ["RENDER_ATTACHMENT", "COPY_SRC"],
       "probeFlag": "canvasCopySrc",
-      "note": "Boot probe tries RENDER_ATTACHMENT|COPY_SRC inside a validation error scope, records the result, then restores render-only. Capture code reconfigures with copySrc only when the flag is true. TS-first; C++ parity is a follow-up."
+      "note": "Boot probe tries RENDER_ATTACHMENT|COPY_SRC inside a validation error scope, records the result, then restores render-only. Capture code reconfigures with copySrc only when the flag is true, and restores render-only when the take ends. Both backends: TS probeCanvasCopySrc (window.webgpuProbe.canvasCopySrc) and C++ JS_ProbeCanvasCopySrc (window.webgpuProbe with backend: wasm). No second GPUDevice."
     },
     "displayP3": {
       "urlParam": "display_p3",
@@ -36,6 +36,14 @@
     },
     "presentModeEnums": {
       "fifo": "WGPUPresentMode_Fifo"
+    },
+    "copySrc": {
+      "probeFunction": "JS_ProbeCanvasCopySrc",
+      "supportedFlag": "canvasCopySrcSupported_",
+      "flag": "canvasCopySrc_",
+      "setter": "SetCanvasCopySrc",
+      "exports": ["_getCanvasCopySrcSupported", "_setCanvasCopySrc"],
+      "note": "Probe runs once in CreateDevice() between wgpuDevicePushErrorScope(Validation) and wgpuDevicePopErrorScope, then ConfigureSurface() restores render-only. ConfigureSurface() adds the opt-in bits only when canvasCopySrc_ is set, and only SetCanvasCopySrc() assigns it. colorSpace/toneMapping stay TS-first."
     }
   }
 }

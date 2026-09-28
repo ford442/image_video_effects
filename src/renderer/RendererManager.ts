@@ -383,19 +383,14 @@ export class RendererManager {
     if (r?.startRecording) return r.startRecording(canvas, options);
     return Promise.reject(new Error('[RendererManager] startRecording not supported for active backend'));
   }
-  /** Canvas → VideoFrame capture is usable (TS backend whose swapchain accepts COPY_SRC). */
+  /** Canvas → VideoFrame capture is usable (swapchain accepts COPY_SRC; TS boot probe or C++ init probe). */
   supportsCanvasFrameCapture(): boolean {
     const r = this.currentRenderer as { supportsCanvasCopySrc?: () => boolean } | null;
-    return !this.isWASM() && !!r?.supportsCanvasCopySrc?.();
+    return !!r?.supportsCanvasCopySrc?.();
   }
   setCanvasCopySrc(enabled: boolean): boolean {
     const r = this.currentRenderer as { setCanvasCopySrc?: (e: boolean) => boolean } | null;
     return r?.setCanvasCopySrc?.(enabled) ?? false;
-  }
-  /** GPU readback of the rendered frame (WASM beginFrameCapture), null when unsupported. */
-  getFrameReadback(): (() => Promise<ImageData>) | null {
-    const r = this.currentRenderer as { captureFrame?: () => Promise<ImageData> } | null;
-    return this.isWASM() && r?.captureFrame ? () => r.captureFrame!() : null;
   }
   stopRendererRecording(): void {
     (this.currentRenderer as { stopRecording?: () => void } | null)?.stopRecording?.();

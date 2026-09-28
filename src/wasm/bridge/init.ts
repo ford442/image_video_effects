@@ -117,6 +117,14 @@ export async function initWasmRenderer(canvasElement: HTMLCanvasElement): Promis
             `[WASM] colorFormat=${state.colorFormat === 1 ? 'rgba16float' : 'rgba32float'}`,
           );
 
+          // Compile-time constant, safe to read before C++ init finishes. The
+          // canvas COPY_SRC probe is NOT: read it live via readCanvasCopySrc().
+          const mod = wasmRef.module;
+          state.maxShaderSlots = typeof mod._getMaxShaderSlots === 'function'
+            ? mod._getMaxShaderSlots()
+            : null;
+          console.log(`[WASM] maxShaderSlots=${state.maxShaderSlots ?? 'unknown (artifact predates export)'}`);
+
           promoteWasmCanvasVisible(canvas);
 
           if (state.pendingInputSource !== null) {
@@ -184,6 +192,7 @@ export function shutdownWasmRenderer(): void {
   state.initialized = false;
   state.activeShader = null;
   state.droppedSlots.clear();
+  state.maxShaderSlots = null;
   wasmRef.module = null;
   wasmRef.canvas = null;
   console.log('[WASM] Shutdown complete');
@@ -239,3 +248,4 @@ export function getPresentCanvasId(): string {
   const found = document.querySelector<HTMLCanvasElement>('[id^="pixelocity-wasm-canvas-"]');
   return found?.id ?? tagged?.id ?? '';
 }
+

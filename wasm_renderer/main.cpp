@@ -98,6 +98,14 @@ void loadImageData(const uint8_t* data, int width, int height) {
     }
 }
 
+// GPU still ingest. The JS source is parked on Module.pixelocityPendingImage by
+// the bridge (capture.ts uploadImageSource). Returns 1 on success; 0 means the
+// caller should fall back to loadImageData.
+EMSCRIPTEN_KEEPALIVE
+int loadImageExternal(int width, int height) {
+    return (g_renderer && g_renderer->LoadImageExternal(width, height)) ? 1 : 0;
+}
+
 EMSCRIPTEN_KEEPALIVE
 void uploadVideoFrame(const uint8_t* data, int width, int height) {
     if (g_renderer) {
@@ -221,6 +229,27 @@ int getSlotEnabled(int slotIndex) {
 EMSCRIPTEN_KEEPALIVE
 int getSlotMode(int slotIndex) {
     return g_renderer ? g_renderer->GetSlotMode(slotIndex) : 0;
+}
+
+// Physical slot ceiling compiled into this artifact (MAX_SHADER_SLOTS; must equal
+// slot_limits.json maxPhysicalSlots). Needs no renderer, so wasm:validate can
+// read it from a stale binary without a GPU.
+EMSCRIPTEN_KEEPALIVE
+int getMaxShaderSlots() {
+    return WebGPURenderer::GetMaxShaderSlots();
+}
+
+// Canvas COPY_SRC opt-in (canvas_configure.json optIn.copySrc).
+EMSCRIPTEN_KEEPALIVE
+int getCanvasCopySrcSupported() {
+    return (g_renderer && g_renderer->IsCanvasCopySrcSupported()) ? 1 : 0;
+}
+
+// Reconfigures the swapchain with RENDER_ATTACHMENT | COPY_SRC (1) or back to
+// render-only (0). Returns 1 on success, 0 when unsupported or no surface.
+EMSCRIPTEN_KEEPALIVE
+int setCanvasCopySrc(int enabled) {
+    return (g_renderer && g_renderer->SetCanvasCopySrc(enabled != 0)) ? 1 : 0;
 }
 
 EMSCRIPTEN_KEEPALIVE

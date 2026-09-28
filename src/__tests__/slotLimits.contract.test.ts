@@ -65,6 +65,14 @@ describe('slot_limits.json', () => {
   });
 });
 
+describe('wasm_exports.json slot-count export', () => {
+  test('getMaxShaderSlots is exported so wasm:validate can read the compiled ceiling', () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const exportsContract = require('../contracts/wasm_exports.json');
+    expect(exportsContract.exportedFunctions).toContain('_getMaxShaderSlots');
+  });
+});
+
 describe('WASM bridge setSlotShader readback', () => {
   test('a 3-slot artifact dropping slot 4 is warned and recorded', () => {
     const mod = makeSlotModule(3, ['a', 'b']);

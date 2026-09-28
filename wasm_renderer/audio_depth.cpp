@@ -2,6 +2,7 @@
 #include "wasm_internal.h"
 #include <webgpu/webgpu.h>
 #include <emscripten/emscripten.h>
+#include <emscripten/em_js.h>
 #include <cstdio>
 #include <cstdint>
 #include <cstring>
@@ -11,6 +12,34 @@
 #include <vector>
 
 namespace pixelocity {
+
+// ─── JavaScript bridge: GPU still ingest ────────────────────────────────────────────────────
+//
+// TS parity: WebGPUMediaInput.copyExternalToSource. The bridge (capture.ts
+// uploadImageSource) parks an HTMLImageElement / HTMLCanvasElement / ImageBitmap
+// on Module.pixelocityPendingImage; this copies it into the destination texture
+// at the origin, clipped to copyW x copyH. No getImageData round-trip.
+// Returns 1 on success, 0 when the API is missing or the copy throws.
+EM_JS(int, JS_CopyExternalImageToTexture,
+      (WGPUQueue queueHandle, WGPUTexture textureHandle, int copyW, int copyH), {
+    var source = Module['pixelocityPendingImage'];
+    delete Module['pixelocityPendingImage'];
+    var queue = WebGPU.getJsObject(queueHandle);
+    var texture = WebGPU.getJsObject(textureHandle);
+    if (!source || !queue || !texture || typeof queue.copyExternalImageToTexture !== 'function') {
+        return 0;
+    }
+    try {
+        queue.copyExternalImageToTexture(
+            { source: source, origin: [0, 0], flipY: false },
+            { texture: texture, origin: [0, 0], premultipliedAlpha: false },
+            [copyW, copyH]);
+        return 1;
+    } catch (err) {
+        console.warn('[WASM] copyExternalImageToTexture failed, falling back to CPU upload:', err);
+        return 0;
+    }
+});
 
 using wasm_internal::MakeStringView;
 using wasm_internal::AlignUp;
@@ -28,6 +57,22 @@ void WebGPURenderer::SetInputSource(InputSource source) {
 void WebGPURenderer::LoadImage(const uint8_t* data, int width, int height) {
     printf("📷 Loading image: %dx%d\n", width, height);
     UploadRGBA8ToReadTexture(data, width, height);
+}
+
+bool WebGPURenderer::LoadImageExternal(int width, int height) {
+    if (!queue_.get() || !readTexture_.get() || deviceLost_ || width <= 0 || height <= 0) {
+        return false;
+    }
+    const int copyW = std::min(width, canvasWidth_);
+    const int copyH = std::min(height, canvasHeight_);
+    if (copyW <= 0 || copyH <= 0) return false;
+    // Same geometry as UploadRGBA8ToReadTexture: top-left, black outside the image.
+    if (copyW < canvasWidth_ || copyH < canvasHeight_) ClearReadTexture();
+    if (!JS_CopyExternalImageToTexture(queue_.get(), readTexture_.get(), copyW, copyH)) {
+        return false;
+    }
+    printf("📷 Loading image (GPU copy): %dx%d\n", width, height);
+    return true;
 }
 
 void WebGPURenderer::UpdateVideoFrame(const uint8_t* data, int width, int height) {
