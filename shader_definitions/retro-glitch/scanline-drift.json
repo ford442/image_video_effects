@@ -2,7 +2,7 @@
   "id": "scanline-drift",
   "name": "Scanline Drift",
   "url": "shaders/scanline-drift.wgsl",
-  "description": "Horizontal strip drift with spring tracking band, held jitter boost, capped click tears, regional FFT flicker, exact C memory, and ACES output.",
+  "description": "Horizontal strip drift with RGB split: strips shear into each other like stretched tape, displaced lines reveal an h-sync blanking porch at the wrap seam, and fast-drifting strips smear along their velocity. Pointer band jitter, held boost, click tears, treble flicker, ACES output.",
   "workgroup_size": [16, 16, 1],
   "params": [
     { "name": "Drift Speed", "id": "zoomParam1", "default": 0.5, "min": 0, "max": 1, "mapping": "zoom_params.x" },

@@ -2,7 +2,7 @@
   "id": "kimi_flock_symphony",
   "name": "Kimi Flock Symphony",
   "url": "shaders/kimi_flock_symphony.wgsl",
-  "description": "Advanced particle flocking simulation with musical visualization, featuring separation, alignment, cohesion, and mouse interaction.",
+  "description": "Audio-driven boid flock (separation, alignment, cohesion, mouse spiral) drawn as soft coloured glows. Real trails: each glow leaves decaying history in the feedback texture (Trail Length = decay). Orchestra sections: boid quartiles are bass/mid/mid/treble voices - bass voices large, slow and warm, treble voices small, darting and cool - each sized and sped by its own audio band. Tutti swell: bass widens the separation radius so the whole flock breathes outward on hits. ACES tone map.",
   "tags": [
     "boids",
     "flocking",
@@ -13,7 +13,9 @@
     "procedural"
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "author": "Kimi",
   "params": [

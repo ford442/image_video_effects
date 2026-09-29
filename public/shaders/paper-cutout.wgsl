@@ -1,3 +1,18 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Paper Cutout
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, depth-aware, click-reactive
+//  Complexity: Medium
+//  Upgraded: 2026-09-28
+//  Ideas: height-weighted shadows; lit cut edge with far-side rim; hand-cut layer jitter
+//  A packing: ACES display RGBA (same as writeTexture; C is not read)
+// ═══════════════════════════════════════════════════════════════════
+//  The photo is posterized by luma into stacked paper sheets (brighter = higher).
+//  The pointer is the light; sheets cast shadows away from it. Clicks emboss rings.
+//  Floor: removed the dead plasmaBuffer[layerBin] strata voice (plasmaBuffer[1..] reads 0,
+//  so the old multiplier was always 1.0). HEAD's peak limiter is replaced by ACES at
+//  exposure 0.72, which maps display 0.2 -> 0.20 and 0.5 -> 0.50 (upper layers compress).
+
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
@@ -21,6 +36,17 @@ struct Uniforms {
 
 fn getLuma(color: vec3<f32>) -> f32 {
   return dot(color, vec3<f32>(0.299, 0.587, 0.114));
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Idea 3 — hand-cut layer jitter: a fixed per-sheet placement error of 1..2 px.
+fn layerJitterPx(layerIndex: f32) -> vec2<f32> {
+  let h = fract(sin(vec2<f32>(layerIndex * 127.1 + 11.3, layerIndex * 311.7 + 57.1)) * 43758.5453);
+  let ang = h.x * 6.2831853;
+  return vec2<f32>(cos(ang), sin(ang)) * (1.0 + h.y);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -81,12 +107,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dist_to_light = length(dist_vec);
   let light_dir = select(vec2<f32>(0.0, 1.0), dist_vec / max(dist_to_light, 0.0001), dist_to_light > 0.0001);
 
+  // Idea 3 — hand-cut layer jitter. Find the sheet under this pixel, then read the photo
+  // through that sheet's own placement offset, so each sheet sits slightly off-register.
+  let texel = 1.0 / vec2<f32>(dims);
+  let reg_luma = getLuma(textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb);
+  let reg_layer = floor(reg_luma * num_layers);
+  let sheet_uv = clamp(uv - layerJitterPx(reg_layer) * texel, vec2<f32>(0.0), vec2<f32>(1.0));
+
   // Sample base color
-  let base_color = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+  let base_color = textureSampleLevel(readTexture, u_sampler, sheet_uv, 0.0).rgb;
   let luma = getLuma(base_color);
 
   // Quantize luma for "paper layers"
-  let quantized_luma = floor(luma * num_layers) / num_layers;
+  let layer_index = floor(luma * num_layers);
+  let quantized_luma = layer_index / num_layers;
 
   // Clicks punch expanding raised rings through the paper stack.
   var clickEmboss = 0.0;
@@ -109,6 +143,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   var shadow = 0.0;
   let shadow_samples = 4;
+  // Idea 1 — height-weighted shadows: the smallest step that clears `separation` keeps
+  // HEAD's weight 1.0; each extra layer of stack height darkens the cast shadow.
+  let min_cast_layers = floor(separation * num_layers) + 1.0;
 
   for (var i = 1; i <= shadow_samples; i++) {
     let t = f32(i) / f32(shadow_samples);
@@ -127,7 +164,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // If the sample is "higher" (brighter) than current pixel, it casts a shadow
     // We assume brighter = higher layer
     if (sample_quant > quantized_luma + separation) {
-      shadow += (1.0 - t) * (1.0 - softness);
+      let layers_higher = round((sample_quant - quantized_luma) * num_layers);
+      let height_w = min(1.0 + 0.5 * max(layers_higher - min_cast_layers, 0.0), 2.2);
+      shadow += (1.0 - t) * (1.0 - softness) * height_w;
     }
   }
 
@@ -136,15 +175,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Re-construct color based on quantized luma (posterized look)
   // To keep color, we normalize base color by luma and multiply by quantized luma
   let norm_color = base_color / (luma + 0.001);
-  let layerBin = (u32(floor(raisedLuma * num_layers)) % 8u) + 1u;
-  let layerVoice = plasmaBuffer[layerBin].x;
-  let paper_color = norm_color * raisedLuma * (1.0 + layerVoice * 0.12);
+  let paper_color = norm_color * raisedLuma;
 
   // Apply shadow
   var final_color = paper_color * (1.0 - shadow);
+
+  // Idea 2 — lit cut edge. One pixel toward the light (in this sheet's frame): if the
+  // neighbour is a lower sheet, this is the cut face turned to the light and shows the
+  // paper's white core. One pixel away from the light: a lower neighbour means the far
+  // cut face, which reads as a thin dark rim.
+  let edge_step = light_dir * texel;
+  let toward_uv = clamp(sheet_uv - edge_step, vec2<f32>(0.0), vec2<f32>(1.0));
+  let away_uv = clamp(sheet_uv + edge_step, vec2<f32>(0.0), vec2<f32>(1.0));
+  let toward_layer = floor(getLuma(textureSampleLevel(readTexture, u_sampler, toward_uv, 0.0).rgb) * num_layers);
+  let away_layer = floor(getLuma(textureSampleLevel(readTexture, u_sampler, away_uv, 0.0).rgb) * num_layers);
+  let lit_edge = step(toward_layer + 0.5, layer_index);
+  let far_rim = step(away_layer + 0.5, layer_index);
+  let cut_core = vec3<f32>(1.5, 1.46, 1.38);
+  final_color = mix(final_color, cut_core, lit_edge * (0.55 - 0.3 * softness) * (1.0 - shadow));
+  final_color *= 1.0 - far_rim * (0.4 - 0.2 * softness);
+
   final_color += vec3<f32>(1.0, 0.72, 0.38) * clickEmboss * (0.08 + treble * 0.06);
-  let peak = max(max(final_color.r, final_color.g), final_color.b);
-  final_color = max(final_color, vec3<f32>(0.0)) * min(1.0, 1.6 / max(peak, 0.001));
+  // ACES on display RGB; exposure 0.72 keeps the 0.2..0.5 midtones at HEAD's level.
+  final_color = acesToneMap(clamp(final_color, vec3<f32>(0.0), vec3<f32>(2.0)) * 0.72);
 
   // Layer-aware alpha: shadowed valleys recede, lit layers stay opaque
   let alpha = clamp(raisedLuma * (1.0 - shadow * 0.5) + clickEmboss * 0.15 + 0.2, 0.0, 1.0);

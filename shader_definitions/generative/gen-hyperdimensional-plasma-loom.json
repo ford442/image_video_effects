@@ -9,7 +9,7 @@
     "strands",
     "raymarching"
   ],
-  "description": "A mesmerizing tangle of iridescent energy threads weaving themselves into complex, higher-dimensional geometric topologies, creating the illusion of cosmic fabric being spun in real-time.",
+  "description": "A mesmerizing tangle of iridescent energy threads weaving themselves into complex, higher-dimensional geometric topologies, creating the illusion of cosmic fabric being spun in real-time. Each thread is the slice of a 4D hypertube by a moving hyperplane, so strands swell, pinch and vanish in a wave across the lattice, while current packets race in opposite directions along the paired helices and flash where they meet. Mids lengthen the packets, treble brightens them, bass thickens the weave; hold the mouse to pull the weave toward the cursor.",
   "workgroup_size": [
     16,
     16,
@@ -23,7 +23,9 @@
   "features": [
     "audio-reactive",
     "mouse-control",
-    "temporal-feedback"
+    "mouse-driven",
+    "temporal-feedback",
+    "upgraded-rgba"
   ],
   "params": [
     {

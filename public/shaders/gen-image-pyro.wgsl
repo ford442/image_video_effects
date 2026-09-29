@@ -1,16 +1,27 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Image Pyro
 //  Category: generative
-//  Features: image-reactive fireworks, color sampling, gravity,
-//            audio-reactive bursts, mouse-directed, trails, aces
-//  Complexity: Medium
-//  Created: 2026-07-05
-//  By: Spark Engine
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-28
+//  Ideas: drag-damped spark flight; shell types per mortar (peony / willow / ring); crossette split
+//  A packing: ACES display RGBA (rgb = tone-mapped colour, read back from C as trail history; a = semantic glow alpha)
 // ═══════════════════════════════════════════════════════════════════
-//  The loaded image (or video frame) is the source material.
-//  Bright areas "ignite" and launch fireworks whose sparks carry
-//  the photo's own colors. Explosions feel like the picture itself
-//  is celebrating and coming apart in colored light.
+//  Created 2026-07-05 (Spark Engine). The loaded image (or video frame)
+//  is the source material. Bright areas "ignite" and launch fireworks
+//  whose sparks carry the photo's own colors.
+//  Floor fixes (2026-09-28): scene is y-up (pixel y flipped) so shells rise
+//  and gravity pulls down; pointer is zoom_config.yz UV mapped into scene uv;
+//  image sampled full-frame (was 2x zoomed); core flash falls off from the
+//  burst centre; Trail Length now lengthens trails (mirror map, same 0.9025
+//  decay at default 0.5); unread dataTextureB write removed; depth = this
+//  frame's firework glow (bright = forward) over a far backdrop; one
+//  consistent launch clock (HEAD mixed scaled and real time, so every mortar
+//  went permanently dark after ~27 s at default; before that a shell was
+//  reset before its burst could open). Each mortar now fires every 3 cycles
+//  (~4.8 s at default) with phases spread over the period. Shell rise
+//  (ASCENT) scaled to the real ±0.5 frame so bursts open on screen, and the
+//  launch-brightness probe reads the photo instead of the clamped bottom row.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -36,6 +47,9 @@ struct Uniforms {
 
 const PI: f32 = 3.141592653589793;
 const TAU: f32 = 6.283185307179586;
+// FLOOR: shell rise height. HEAD's 1.12 assumed a [-1,1] frame; the short axis spans
+// [-0.5,0.5], so bursts opened on (or past) the top edge. 0.76 opens them upper-middle.
+const ASCENT: f32 = 0.76;
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
@@ -65,8 +79,11 @@ fn softGlow(uv: vec2<f32>, c: vec2<f32>, r: f32, i: f32) -> f32 {
   return (exp(-d*d/(r*r*0.55)) + 0.32 * exp(-d/(r*3.2))) * i;
 }
 
+// Scene uv is y-up with the short axis spanning [-0.5, 0.5]; map to the full frame (y=0 top).
 fn sampleImage(uv: vec2<f32>, res: vec2<f32>) -> vec3<f32> {
-  let p = clamp(uv * 0.5 + 0.5, vec2<f32>(0.0), vec2<f32>(1.0));
+  let m = min(res.x, res.y);
+  let q = vec2<f32>(uv.x * m / res.x + 0.5, 0.5 - uv.y * m / res.y);
+  let p = clamp(q, vec2<f32>(0.0), vec2<f32>(1.0));
   return textureSampleLevel(readTexture, u_sampler, p, 0.0).rgb;
 }
 
@@ -75,22 +92,51 @@ fn sparkPos(o: vec2<f32>, v: vec2<f32>, age: f32, g: f32) -> vec2<f32> {
   return o + v * t - vec2<f32>(0.0, g) * t * t * 0.5;
 }
 
+// Idea 1 — drag-damped spark flight. Closed form of p'' = -k p' - g y^ :
+//   p = o + v (1 - e^{-kt})/k - g y^ (t/k - (1 - e^{-kt})/k^2)
+// Sparks decelerate, then droop at terminal speed g/k. Callers pass k > 0.
+fn sparkPosDrag(o: vec2<f32>, v: vec2<f32>, t: f32, g: f32, k: f32) -> vec2<f32> {
+  let e = 1.0 - exp(-k * t);
+  return o + v * (e / k) - vec2<f32>(0.0, g * (t / k - e / (k * k)));
+}
+fn sparkVelDrag(v: vec2<f32>, t: f32, g: f32, k: f32) -> vec2<f32> {
+  let ek = exp(-k * t);
+  return v * ek - vec2<f32>(0.0, g * (1.0 - ek) / k);
+}
+
+// Capsule glow (softGlow's profile around a segment) for willow tails.
+fn segGlow(uv: vec2<f32>, a: vec2<f32>, b: vec2<f32>, r: f32, i: f32) -> f32 {
+  let ab = b - a;
+  let h = clamp(dot(uv - a, ab) / max(dot(ab, ab), 1e-6), 0.0, 1.0);
+  let d = length(uv - a - ab * h);
+  return (exp(-d*d/(r*r*0.55)) + 0.32 * exp(-d/(r*3.2))) * i;
+}
+
+fn rot2(v: vec2<f32>, a: f32) -> vec2<f32> {
+  let c = cos(a); let s = sin(a);
+  return vec2<f32>(c * v.x - s * v.y, s * v.x + c * v.y);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pixel = vec2<i32>(global_id.xy);
   let res = vec2<f32>(u.config.zw);
   if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
 
-  let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);
+  // FLOOR: y-up scene — pixel y grows downward, so flip it.
+  let minRes = min(res.x, res.y);
+  let uv = vec2<f32>(f32(pixel.x) - res.x * 0.5, res.y * 0.5 - f32(pixel.y)) / minRes;
   let time = u.config.x;
 
+  // FLOOR: zoom_config.yz is the pointer in canvas UV 0..1 (y=0 top); map into scene uv.
   let mouse = vec2<f32>(u.zoom_config.yz);
   let mouseDown = u.zoom_config.w;
-  let mUV = (mouse - res * 0.5) / min(res.x, res.y);
+  let mUV = vec2<f32>((mouse.x - 0.5) * res.x, (0.5 - mouse.y) * res.y) / minRes;
 
   let power = mix(0.35, 1.9, u.zoom_params.x);
   let ignition = mix(0.3, 1.4, u.zoom_params.y);
-  let trail = mix(0.3, 0.95, u.zoom_params.z);
+  // FLOOR: Trail Length lengthens trails (mirror of HEAD's inverted map; decay 0.9025 at default 0.5).
+  let trail = mix(0.3, 0.95, 1.0 - u.zoom_params.z);
   let hueTwist = u.zoom_params.w * 0.6;
 
   let bass = plasmaBuffer[0].x;
@@ -106,6 +152,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let igniteFactor = smoothstep(0.08, 0.65, lum) * ignition;
 
   var col = base * (0.55 + igniteFactor * 0.25);
+  var glowAcc = 0.0; // this frame's firework light, for depth
 
   // Subtle starfield over darks
   let dark = 1.0 - saturate(lum * 1.8);
@@ -121,14 +168,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Prefer launching from brighter parts of image
     let probe = vec2<f32>(seed - 0.5, -0.65 + seed2 * 0.12);
-    let probeCol = sampleImage(probe, res);
+    // FLOOR: the launch site sits just below the frame (short axis spans ±0.5), so read
+    // the photo a little above it — HEAD's probe sampled the clamped bottom row only.
+    let probeCol = sampleImage(vec2<f32>(probe.x, -0.3), res);
     let probeLum = dot(probeCol, vec3<f32>(0.299, 0.587, 0.114));
     let spawnProb = smoothstep(0.12, 0.75, probeLum) * 0.9 + 0.1;
 
+    // FLOOR: one local launch clock. Each mortar fires once per 3 ignition cycles,
+    // phases spread over the whole period; age is in real seconds.
     let cycle = 2.1 / (0.7 + ignition * 0.6);
-    let birth = floor((time * (0.7 + ignition * 0.4) + seed * 1.6) / cycle) * cycle - seed * 1.6;
-    let age = time - birth;
+    let rate = 0.7 + ignition * 0.4;
+    let period = cycle * 3.0;
+    let tl = time * rate + seed * period;
+    let cyc = floor(tl / period);
+    let age = (tl - cyc * period) / rate;
+    let lifeS = period / rate;
     if (age < 0.0 || age > 6.5) { continue; }
+    let lifeEnd = min(lifeS, 6.5);
+    let endFade = 1.0 - smoothstep(lifeEnd - 0.45, lifeEnd, age);
 
     let basePos = probe + vec2<f32>(0.0, -0.05);
     let burstDelay = 1.25 + seed * 0.6;
@@ -136,37 +193,61 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let shellPow = power * (0.6 + probeLum * 1.1 + bass * 0.7);
 
+    // Idea 2 — shell type per mortar per cycle: 0 peony (60%), 1 willow (22%), 2 ring (18%).
+    let typeH = hash1(si * 53.1 + cyc * 7.13);
+    var shellType = 0;
+    if (typeH < 0.22) { shellType = 1; } else if (typeH < 0.40) { shellType = 2; }
+    // Idea 3 — half the peony shells carry crossette stars.
+    let crossShell = shellType == 0 && hash1(si * 17.3 + cyc * 3.71) < 0.5;
+    let ringTilt = mix(0.25, 1.0, hash1(si * 5.1 + cyc * 1.9));   // ring plane seen edge-on .. face-on
+    let ringRoll = (hash1(si * 8.3 + cyc * 2.7) - 0.5) * 1.2;
+
     // Ascent
     if (age < burstDelay) {
       let t = age / burstDelay;
-      let y = mix(basePos.y, basePos.y + 1.15, t * t);
+      let y = mix(basePos.y, basePos.y + ASCENT * 1.03, t * t);
       let pos = vec2<f32>(basePos.x, y);
       let streak = softGlow(uv, pos, 0.012, shellPow * 1.9);
       let ascCol = mix(vec3<f32>(0.9, 0.85, 0.6), probeCol * 0.8 + 0.2, 0.5);
       col += ascCol * streak;
+      glowAcc += streak;
     }
 
     // Main burst — sample image colors for the sparks
-    if (bAge > 0.0 && bAge < 4.8) {
-      let bCenter = vec2<f32>(basePos.x * 0.9, basePos.y + 1.12);
+    let burstLife = select(4.8, 5.8, shellType == 1);
+    if (bAge > 0.0 && bAge < burstLife) {
+      let bCenter = vec2<f32>(basePos.x * 0.9, basePos.y + ASCENT);
       let nSparks = i32(32.0 + power * 42.0 + mids * 18.0);
+      let gGrav = 1.05 + shellPow * 0.1;
+      // Idea 1 — drag per shell type (willow: heavy drag, slow droop).
+      let kDrag = select(2.4, 4.6, shellType == 1);
+      let fadeEnd = select(4.3, 5.6, shellType == 1);
+      let fade = smoothstep(fadeEnd, 0.5, bAge) * endFade;
       for (var j = 0; j < nSparks; j = j + 1) {
         let jf = f32(j);
         let js = hash1(si * 7.0 + jf * 2.3);
         let js2 = hash1(si * 11.0 + jf * 5.9);
         let ang = (jf / f32(nSparks)) * TAU + (js - 0.5) * 1.2;
         let spd = (0.48 + js2 * 0.7) * (0.85 + shellPow * 0.4);
-        let vel = vec2<f32>(cos(ang), sin(ang)) * spd;
+        var vel = vec2<f32>(cos(ang), sin(ang)) * spd;
+        if (shellType == 1) {
+          vel *= 1.4;                                   // willow: stronger lift charge vs heavy drag
+        } else if (shellType == 2) {
+          // Idea 2 — ring: evenly spaced stars on a tilted planar ellipse, near-uniform speed.
+          let ra = (jf / f32(nSparks)) * TAU;
+          let rs = (0.8 + js2 * 0.08) * (0.85 + shellPow * 0.4);
+          vel = rot2(vec2<f32>(cos(ra), sin(ra) * ringTilt), ringRoll) * rs;
+        }
 
-        let sp = sparkPos(bCenter, vel, bAge, 1.05 + shellPow * 0.1);
-
-        let fade = smoothstep(4.3, 0.5, bAge);
-        let g = softGlow(uv, sp, 0.007 + js * 0.005, fade * shellPow * 1.6);
+        let sp = sparkPosDrag(bCenter, vel, bAge, gGrav, kDrag);
 
         // Sample image near burst center for color (with twist)
         let sampleUV = bCenter * 0.6 + sp * 0.4;
         var sparkCol = sampleImage(sampleUV, res);
         sparkCol = mix(sparkCol, vec3<f32>(0.95, 0.7, 0.4), js * 0.3); // gold bias
+        if (shellType == 1) {
+          sparkCol = mix(sparkCol, vec3<f32>(1.0, 0.72, 0.32), 0.65); // willow: charcoal gold
+        }
         sparkCol = sparkCol * (0.7 + 0.6 * js2);
 
         // Hue twist param
@@ -174,12 +255,47 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         sparkCol = mix(sparkCol, vec3<f32>(lumC), abs(hueTwist) * 0.5);
         if (hueTwist > 0.0) { sparkCol = sparkCol.bgr; }
 
+        let amp = fade * shellPow * 1.6;
+        let rad = 0.007 + js * 0.005;
+        var g = 0.0;
+        if (shellType == 1) {
+          // Willow: long hanging tail from 0.3 s back along the drooping path.
+          let tailP = sparkPosDrag(bCenter, vel, max(bAge - 0.3, 0.0), gGrav, kDrag);
+          g = segGlow(uv, tailP, sp, rad * 0.8, amp);
+        } else if (crossShell && js2 > 0.72) {
+          // Idea 3 — crossette: the star splits into four at mid-life, children at
+          // heading ±45° / ±135° (a cross, 90° apart), carrying some parent momentum.
+          let tS = 0.55 + js * 0.35;
+          if (bAge < tS) {
+            g = softGlow(uv, sp, rad, amp);
+          } else {
+            let pS = sparkPosDrag(bCenter, vel, tS, gGrav, kDrag);
+            let vS = sparkVelDrag(vel, tS, gGrav, kDrag);
+            let hd = normalize(vS + vec2<f32>(1e-5, 0.0));
+            let cAge = bAge - tS;
+            for (var c = 0; c < 4; c = c + 1) {
+              let cd = rot2(hd, PI * 0.25 + f32(c) * PI * 0.5);
+              let cv = vS * 0.35 + cd * (0.45 * spd);
+              let cp = sparkPosDrag(pS, cv, cAge, gGrav, kDrag);
+              g += softGlow(uv, cp, 0.006, amp * 0.75);
+            }
+            g += softGlow(uv, pS, 0.012, amp * 2.0 * exp(-cAge * 12.0)); // split pop
+          }
+        } else {
+          g = softGlow(uv, sp, rad, amp);
+        }
+
         col += sparkCol * g * (0.9 + treble * 0.7);
+        glowAcc += g;
       }
 
       // Quick core flash using image brightness
-      let core = exp(-bAge * 9.0) * shellPow * 1.8;
+      // FLOOR: fall off from the burst centre (HEAD lit the whole screen uniformly).
+      let cdist = length(uv - bCenter);
+      let coreFall = 0.8 * exp(-cdist * cdist / 0.035) + 0.2 * exp(-cdist * 5.0);
+      let core = exp(-bAge * 9.0) * shellPow * 1.8 * coreFall;
       col += probeCol * core * 1.3;
+      glowAcc += core;
     }
 
     // Lingering embers tinted by image
@@ -189,10 +305,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let es = hash1(si * 27.0 + f32(e) * 4.1);
         let eang = es * TAU * 0.6;
         let evel = vec2<f32>(cos(eang), -0.3 + sin(eang) * 0.3) * (0.22 + es * 0.2);
-        let epos = sparkPos(basePos + vec2<f32>(0.0, 1.1), evel, bAge * 0.85, 0.65);
-        let ef = softGlow(uv, epos, 0.005, smoothstep(4.8, 1.0, bAge - 0.5) * shellPow * 0.65);
+        let epos = sparkPos(basePos + vec2<f32>(0.0, ASCENT * 0.98), evel, bAge * 0.85, 0.65);
+        let ef = softGlow(uv, epos, 0.005, smoothstep(4.8, 1.0, bAge - 0.5) * shellPow * 0.65) * endFade;
         let ecol = sampleImage(epos * 0.7 + basePos * 0.3, res) * 0.85;
         col += ecol * ef;
+        glowAcc += ef;
       }
     }
   }
@@ -210,10 +327,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let ks = hash1(f32(k) * 1.3 + 9.0);
         let ka = (f32(k) / f32(mn)) * TAU + ks * 1.8;
         let kv = vec2<f32>(cos(ka), sin(ka)) * (0.6 + ks * 0.9);
-        let kp = sparkPos(mC, kv, mbAge, 1.0);
+        let kp = sparkPosDrag(mC, kv, mbAge, 1.0, 2.4); // Idea 1 — same drag flight
         let kg = softGlow(uv, kp, 0.0065, smoothstep(3.0, 0.2, mbAge) * mPow);
         let kc = sampleImage(kp * 0.4 + mUV * 0.6, res);
         col += kc * kg * (1.0 + treble * 0.4);
+        glowAcc += kg;
       }
     }
   }
@@ -236,10 +354,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let alpha = clamp(length(col) * 1.1 + 0.18, 0.12, 0.97);
 
-  // Feedback state
-  textureStore(dataTextureB, pixel, vec4<f32>(col * 0.55 + prev * 0.4, 1.0));
-  textureStore(dataTextureA, pixel, vec4<f32>(col, 1.0));
+  // Feedback state: A = ACES display RGBA (C.rgb read back as trail history).
+  textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
 
   textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
-  textureStore(writeDepthTexture, pixel, vec4<f32>(0.0));
+  // Depth: far photo backdrop (0.1); this frame's sparks / glow pull forward.
+  let depth = 0.1 + 0.85 * (1.0 - exp(-glowAcc * 1.5));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

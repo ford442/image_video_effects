@@ -8,7 +8,7 @@
     "audio-driven",
     "upgraded-rgba"
   ],
-  "description": "Reveals the original image in a radius around the mouse, with a scanning radar ring. Reactive to audio.",
+  "description": "Reveals the original image in a sonar disc around the mouse over a dimmed, tinted world, with concentric ring fronts and click shockwaves. A PPI radar sweep arm rotates from the pointer trailing a phosphor afterglow wedge; image edges flash as contact blips when a ring or shock front passes over them; and the Echo Mix return drifts outward from the pointer over frames. Bass, mids and treble shove the rings, shift the rim colour and add sparkle.",
   "params": [
     {
       "name": "Reveal Size",
@@ -37,6 +37,40 @@
       "default": 0,
       "min": 0,
       "max": 1
+    }
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Reveal Size",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Ring Intensity",
+      "default": 0.8,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Edge Softness",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Echo Mix",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
     }
   ],
   "tags": [

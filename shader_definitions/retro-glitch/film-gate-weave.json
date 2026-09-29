@@ -3,7 +3,7 @@
   "name": "Film Gate Weave",
   "category": "retro-glitch",
   "url": "shaders/film-gate-weave.wgsl",
-  "description": "35mm gate weave with exact C scratch persistence (A packs rgb.r + scratch.g), spring registration anchor, held gate flutter, click splice flashes, and ACES tone mapping.",
+  "description": "35mm gate weave with exact C scratch persistence (A packs rgb.r + scratch.g), spring registration anchor, held gate flutter, click splice flashes, and ACES tone mapping. Weave past the gate reveals the frame line and the neighbouring frame, persisted scratches wander a pixel per frame, and a reel-change cue dot flashes top-right every ~11 s.",
   "workgroup_size": [16, 16, 1],
   "updated": true,
   "features": [
@@ -20,7 +20,9 @@
     "held-drag",
     "click-ripples",
     "aces-tone-map",
-    "temporal-feedback"
+    "temporal-feedback",
+    "audio-reactive",
+    "mouse-driven"
   ],
   "params": [
     { "id": "weave", "name": "Gate Weave", "default": 0.4, "min": 0, "max": 1 },

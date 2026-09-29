@@ -2,7 +2,7 @@
   "id": "vhs-jog",
   "name": "VHS Jog Wheel",
   "url": "shaders/vhs-jog.wgsl",
-  "description": "Stylized VHS tracking and jogging with rapid head-switch rolls, horizontal tape-history streaks, and click tape-slip events. Mouse X controls jog distortion and Mouse Y controls tracking.",
+  "description": "Stylized VHS tracking and jogging with rapid head-switch rolls, horizontal tape-history streaks, and click tape-slip events. Mouse X is the shuttle: fast cue/review shows evenly spaced noise bars scrolling against play, backward shuttle adds a per-band colour phase error that settles as speed drops, and X near the centre is still-frame with a field flutter (odd rows from the held picture, jittering a row). Mouse Y controls tracking.",
   "params": [
     {
       "id": "noise",

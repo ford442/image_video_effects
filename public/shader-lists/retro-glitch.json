@@ -529,7 +529,7 @@
     "id": "crt-tv",
     "name": "CRT TV - Phosphor Physics",
     "url": "shaders/crt-tv.wgsl",
-    "description": "Authentic CRT phosphor physics with aperture grille, halation, barrel distortion, spring focus, held bulge, capped ripples, exact C persistence, and three-band audio.",
+    "description": "Authentic CRT phosphor physics: curved-raster Gaussian scanlines whose beam fattens on bright rows, soft aperture grille, registered halation, barrel distortion inside a rounded-corner faceplate with curved-glass glare, a rolling ground-loop hum bar deepened by mids, held/click bulge, exact C persistence, and three-band audio.",
     "workgroup_size": [
       16,
       16,
@@ -731,7 +731,7 @@
     "id": "cyber-terminal-ascii",
     "name": "Cyber Terminal ASCII",
     "url": "shaders/cyber-terminal-ascii.wgsl",
-    "description": "Scrolling hex-dump terminal with phosphor-green mono vs color blend, spring decoder lens, held decode widen, click packet bursts, exact C phosphor persistence, and ACES display.",
+    "description": "Scrolling grid of luma-picked SDF glyphs in phosphor green (or colour-blended) with a binary decode lens at the cursor that widens while held, click packet bursts and C phosphor persistence. Ideas: hex-dump decode (lens cells show the two hex nibbles of their luma byte from a 4x6 bitmap font), typewriter row entry (the row entering at the bottom types in left-to-right behind a blinking block cursor at a bass-driven rate), and bit-error flicker (treble flips random glyphs to a neighbour index for one frame, leaving a brief green after-image). ACES display.",
     "workgroup_size": [
       16,
       16,
@@ -741,9 +741,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "click-ripples",
+      "click-reactive",
       "held-drag",
-      "spring-cursor",
       "aces-tone-map",
       "temporal-feedback",
       "upgraded-rgba"
@@ -1534,7 +1533,7 @@
     "name": "Film Gate Weave",
     "category": "retro-glitch",
     "url": "shaders/film-gate-weave.wgsl",
-    "description": "35mm gate weave with exact C scratch persistence (A packs rgb.r + scratch.g), spring registration anchor, held gate flutter, click splice flashes, and ACES tone mapping.",
+    "description": "35mm gate weave with exact C scratch persistence (A packs rgb.r + scratch.g), spring registration anchor, held gate flutter, click splice flashes, and ACES tone mapping. Weave past the gate reveals the frame line and the neighbouring frame, persisted scratches wander a pixel per frame, and a reel-change cue dot flashes top-right every ~11 s.",
     "workgroup_size": [
       16,
       16,
@@ -1555,7 +1554,9 @@
       "held-drag",
       "click-ripples",
       "aces-tone-map",
-      "temporal-feedback"
+      "temporal-feedback",
+      "audio-reactive",
+      "mouse-driven"
     ],
     "params": [
       {
@@ -1729,7 +1730,7 @@
     "name": "Holographic Glitch",
     "category": "retro-glitch",
     "url": "shaders/holographic-glitch.wgsl",
-    "description": "Continuous holographic scan and phase corruption with chromatic peel interaction, click desynchronization fronts, and channel-separated exact-history trails.",
+    "description": "Continuous holographic scan and phase corruption with chromatic peel interaction, click desynchronization fronts, and channel-separated exact-history trails. Upgraded 2026-09-28: emitter flicker (random blackouts and slow luminance sag on the Flicker slider); grating-order ghosts (hue-split ±1-order copies along the shear axis, scaled by Holographic Intensity); peel shadow cast by the folded crest onto the image beneath.",
     "workgroup_size": [
       16,
       16,
@@ -1807,7 +1808,7 @@
         "step": 0.01
       }
     ],
-    "feedbackPacking": "A/C = final tone-mapped display RGBA with bounded exact channel-separated trails; B is unused",
+    "feedbackPacking": "A/C = pre-ACES linear display RGB + transmission alpha with bounded exact channel-separated trails; B is unused; ACES on writeTexture only",
     "features": [
       "upgraded-rgba",
       "depth-aware",
@@ -1815,14 +1816,8 @@
       "chromatic-aberration",
       "sci-fi",
       "audio-reactive",
-      "audio-driven",
       "mouse-driven",
       "aces-tone-map",
-      "ign-dither",
-      "fresnel-rim",
-      "split-tone",
-      "film-grain",
-      "hue-preserve-clamp",
       "exact-history",
       "three-band-audio",
       "held-pointer",
@@ -1841,7 +1836,7 @@
     "id": "holographic-projection-failure",
     "name": "Holo-Projection Failure v2",
     "url": "shaders/holographic-projection-failure.wgsl",
-    "description": "Faulty holographic emitter simulation with CRT V-hold rolling, chromatic RGB beam desync, DAC bit-depth truncation, ACES tone mapping, and phosphor beam persistence.",
+    "description": "Faulty holographic emitter simulation with CRT V-hold rolling, chromatic RGB beam desync, DAC bit-depth truncation, and phosphor beam persistence. Upgraded 2026-09-28: emitter cone (cyan carrier cast from bottom-centre; brightness and fringe pitch fall off with throw, alpha = carrier transmission); stale-frame tear bands that reveal the previous frame; re-sync lock line sweeping down inside the cursor repair circle (holding widens it and speeds the sweep).",
     "tags": [
       "glitch",
       "holographic",
@@ -1855,7 +1850,8 @@
       "mouse-driven",
       "depth-aware",
       "temporal-feedback",
-      "click-reactive"
+      "click-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -1899,7 +1895,7 @@
       {
         "index": 1,
         "name": "RGB Split",
-        "default": 0.5,
+        "default": 0.3,
         "min": 0,
         "max": 1,
         "step": 0.01
@@ -1915,13 +1911,13 @@
       {
         "index": 3,
         "name": "Static",
-        "default": 0.5,
+        "default": 0.2,
         "min": 0,
         "max": 1,
         "step": 0.01
       }
     ],
-    "feedbackPacking": "A/C = ACES display RGBA for continuous phosphor beam decay persistence; B is unused; depth passes through source depth."
+    "feedbackPacking": "A/C = pre-ACES linear display RGB + carrier-transmission alpha, read back for phosphor beam persistence and the stale-frame tear bands; B is unused; ACES on writeTexture only; depth passes through source depth."
   },
   {
     "id": "neon-edges",
@@ -2022,7 +2018,7 @@
     "id": "phosphor-decay",
     "name": "Phosphor Decay",
     "url": "shaders/phosphor-decay.wgsl",
-    "description": "Per-channel linear-feedback phosphor persistence with OkLab trail blending, blackbody grading, spring cursor, held static-charge, capped click blooms, row-voice FFT bins, and energy-carrying semantic alpha.",
+    "description": "Per-channel linear-feedback phosphor persistence with OkLab trail blending, bloom, shadow mask, scanlines and blackbody grading. Ideas: burn-in (a slow luma accumulator in the feedback alpha lowers phosphor efficiency so static content lingers as a dim negative ghost), held static charge (electrostatic crackle sparks at the cursor plus dust specks that cling to the glass and fade after release), and blanking-interval flicker (Scan Blanking drives a per-frame vertical-blank dip on the bottom rows). Cursor glow, capped click blooms, ACES display.",
     "workgroup_size": [
       16,
       16,
@@ -2092,12 +2088,11 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "click-reactive",
+      "held-drag",
       "depth-aware",
       "upgraded-rgba",
       "aces-tone-map",
-      "spring-cursor",
-      "held-drag",
-      "click-ripples",
       "temporal-feedback",
       "linear-feedback",
       "oklab-mixed",
@@ -2427,7 +2422,7 @@
     "id": "scan-distort",
     "name": "Scan Distort",
     "url": "shaders/scan-distort.wgsl",
-    "description": "CRT scanline tear with block quantization, spring cursor, held glitch bursts, exact C smear, capped ripples, three-band audio, and ACES output. Medium complexity, clear structure.",
+    "description": "CRT scanline tear with block quantization, held glitch bursts, exact C smear, capped click ripples, three-band audio, and ACES output. Upgraded with a sync-tear band (rows inside the glitch pulse slide along a sawtooth ramp and show stale rows from C), DCT-basis garble (corrupted blocks decode as hashed cosine basis patterns and the garbled set re-rolls with time), and MV arrows from a per-block temporal gradient (dots on still content).",
     "workgroup_size": [
       16,
       16,
@@ -2438,9 +2433,8 @@
       "audio-reactive",
       "temporal-feedback",
       "upgraded-rgba",
-      "click-ripples",
+      "click-reactive",
       "held-drag",
-      "spring-cursor",
       "aces-tone-map"
     ],
     "tags": [
@@ -2532,7 +2526,7 @@
     "id": "scanline-drift",
     "name": "Scanline Drift",
     "url": "shaders/scanline-drift.wgsl",
-    "description": "Horizontal strip drift with spring tracking band, held jitter boost, capped click tears, regional FFT flicker, exact C memory, and ACES output.",
+    "description": "Horizontal strip drift with RGB split: strips shear into each other like stretched tape, displaced lines reveal an h-sync blanking porch at the wrap seam, and fast-drifting strips smear along their velocity. Pointer band jitter, held boost, click tears, treble flicker, ACES output.",
     "workgroup_size": [
       16,
       16,
@@ -3109,7 +3103,7 @@
     "id": "waveform-glitch",
     "name": "Waveform Glitch",
     "url": "shaders/waveform-glitch.wgsl",
-    "description": "Oscilloscope Lissajous waveform glitch with signal aliasing, spring cursor, held burst, capped ripples, exact C phosphor trails, and three-band audio.",
+    "description": "Oscilloscope Lissajous waveform glitch with signal aliasing and exact C phosphor trails. Upgraded 2026-09-28: a waveform-monitor trace plots the luma of the source row under the cursor; beam-dwell brightness makes slow Lissajous lobes burn brighter than fast crossings; treble block glitch slides whole quantisation cells sideways. Aspect-corrected scope, three-band audio, held burst, capped click ripples.",
     "workgroup_size": [
       16,
       16,
@@ -3119,12 +3113,12 @@
       "mouse-driven",
       "audio-reactive",
       "temporal-feedback",
-      "click-ripples",
+      "click-reactive",
       "held-drag",
-      "spring-cursor",
       "aces-tone-map",
       "upgraded-rgba"
     ],
+    "feedbackPacking": "A/C = pre-ACES linear display RGB + semantic alpha (trail mix reads C as linear colour); B unused; ACES on writeTexture only.",
     "params": [
       {
         "id": "wave_intensity",

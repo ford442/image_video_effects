@@ -1,10 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
-//  audio-reactive-pyramid
+//  Audio Reactive Pyramid
 //  Category: post-processing
-//  Features: audio-reactive, fft-bins, frequency-coupled, pyramid
+//  Features: audio-reactive, fft-bins, frequency-coupled, pyramid, depth-aware
 //  Complexity: Medium
-//  Created: 2026-05-23
-//  By: copilot / P6 audio bridge
+//  Upgraded: 2026-09-28
+//  Ideas: depth-routed bands (near takes the fine boost, far takes gentle coarse softening); per-band chroma split (coarse halos warm, fine edges cool)
+//  A packing: display RGBA (enhanced photo, source alpha); C is not read back
+// ═══════════════════════════════════════════════════════════════════
+//  Created: 2026-05-23  By: copilot / P6 audio bridge
 //
 //  Three-level Laplacian-style sharpening pyramid whose band
 //  intensities are driven by matching FFT frequency bands:
@@ -17,7 +20,14 @@
 //  and then amplified by the per-band audio energy before being
 //  added back to the base (blurriest) image.
 //
-//  extraBuffer layout (relevant slots):
+//  2026-09-28 floor fix: every band also gets a small silence-floor
+//  gain (slider × 0.5), so at silence the default is a gentle detail
+//  enhancer instead of an exact pass-through. Audio adds on top.
+//
+//  No ACES: this is a detail enhancer for photos; a filmic curve would
+//  regrade every image's tones, so `upgraded-rgba` is not claimed.
+//
+//  extraBuffer layout (relevant slots, read-only here):
 //    [0]  bass,  [1] mid,  [2] treble
 //    [5..132] FFT bins 0..127 (normalised 0–1)
 //
@@ -98,6 +108,27 @@ fn gaussBlur(samp: texture_2d<f32>, uv: vec2<f32>, step: f32) -> vec4<f32> {
   return (col + row) * 0.5;
 }
 
+// Idea 1 support — depth-map confidence. Samples a fixed 3×3 grid of the
+// depth map; a flat or absent (all-zero) map has no spread → 0, so the
+// depth routing collapses to the plain, un-routed pyramid.
+fn depthConfidence() -> f32 {
+  var dMin = 1.0;
+  var dMax = 0.0;
+  for (var j = 0; j < 3; j++) {
+    for (var i = 0; i < 3; i++) {
+      let p = vec2<f32>(0.2 + 0.3 * f32(i), 0.2 + 0.3 * f32(j));
+      let d = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, p, 0.0).r, 0.0, 1.0);
+      dMin = min(dMin, d);
+      dMax = max(dMax, d);
+    }
+  }
+  return smoothstep(0.03, 0.2, dMax - dMin);
+}
+
+fn luma(c: vec3<f32>) -> f32 {
+  return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+}
+
 // ── main ─────────────────────────────────────────────────────────────────────
 
 @compute @workgroup_size(16, 16, 1)
@@ -133,18 +164,52 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let levelMid    = blur0    - blur1;   // mid detail
   let levelCoarse = blur1    - blur2;   // coarse detail
 
+  // ── Silence floor (HEAD fix) ────────────────────────────────────
+  // Small per-band base gain from the same sliders so the default is
+  // visible without audio; audio gains above still add on top.
+  let floorCoarse = u.zoom_params.x * 0.5;
+  let floorMid    = u.zoom_params.y * 0.5;
+  let floorFine   = u.zoom_params.z * 0.5;
+
+  // ── Idea 1: depth-routed bands (aerial perspective) ─────────────
+  // Library convention: depth 1 = near, 0 = far. Near pixels take up to
+  // 1.5× the fine-band boost (far down to 0.5×); far pixels also get a
+  // gentle negative coarse gain that lowers large-scale local contrast,
+  // like haze. conf = 0 on a flat / missing depth map → no routing.
+  let depth    = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let near     = clamp(depth, 0.0, 1.0);
+  let conf     = depthConfidence();
+  let fineRoute  = mix(1.0, 0.5 + near, conf);
+  let farSoften  = conf * (1.0 - smoothstep(0.0, 0.5, near)) * 0.35;
+
+  let gainCoarse = bassGain   + floorCoarse;
+  let gainMid    = midGain    + floorMid;
+  let gainFine   = (trebleGain + floorFine) * fineRoute;
+
   // Reconstruct with audio-driven amplitudes
   let enhanced = blur2
-    + levelCoarse * (1.0 + bassGain)
-    + levelMid    * (1.0 + midGain)
-    + levelFine   * (1.0 + trebleGain);
+    + levelCoarse * (1.0 + gainCoarse - farSoften)
+    + levelMid    * (1.0 + gainMid)
+    + levelFine   * (1.0 + gainFine);
 
-  let output = mix(original, enhanced, blend);
-  textureStore(writeTexture, global_id.xy, clamp(output, vec4<f32>(0.0), vec4<f32>(1.0)));
+  // ── Idea 2: per-band chroma split ───────────────────────────────
+  // Only the *added* detail is tinted: the coarse-band boost leans warm,
+  // the fine-band boost leans cool, in proportion to |added luma|, so both
+  // sides of a halo shift the same way and flat/neutral areas stay neutral.
+  let addCoarse = abs(luma(levelCoarse.rgb)) * max(gainCoarse - farSoften, 0.0);
+  let addFine   = abs(luma(levelFine.rgb))   * gainFine;
+  let warmDir   = vec3<f32>( 1.0, 0.35, -0.9);
+  let coolDir   = vec3<f32>(-0.7, 0.05,  1.0);
+  let chromaRGB = enhanced.rgb + (warmDir * addCoarse + coolDir * addFine) * 0.6;
+  let enhancedTinted = vec4<f32>(chromaRGB, enhanced.a);
+
+  let output = mix(original, enhancedTinted, blend);
+  let display = vec4<f32>(clamp(output.rgb, vec3<f32>(0.0), vec3<f32>(1.0)), clamp(original.a, 0.0, 1.0));
+  textureStore(writeTexture, global_id.xy, display);
 
   // Pass-through depth
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 1.0));
 
-  textureStore(dataTextureA, global_id.xy, output);
+  // A = display RGBA (not read back as C by this shader)
+  textureStore(dataTextureA, global_id.xy, display);
 }

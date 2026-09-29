@@ -2461,7 +2461,7 @@
     "id": "crt-scanline-damage",
     "name": "CRT Scanline Damage",
     "url": "shaders/crt-scanline-damage.wgsl",
-    "description": "Damaged CRT monitor simulation with barrel distortion, RGB phosphor mask, scanlines, temporal phosphor decay via dataTextureC, audio-driven chromatic barrel separation, depth-aware distortion, and occasional vertical roll.",
+    "description": "Damaged CRT monitor simulation with depth-aware barrel distortion, RGB phosphor triad mask, a real raster of scanlines, flicker, temporal phosphor decay via dataTextureC, treble snow and scar rows, occasional dark-band fault, and click degauss rings. Upgraded with a misconvergence swirl (degauss rings pull the R/G/B rasters apart radially with a rotating magenta/green purity blotch that settles), flyback retrace lines during the dark-band fault, and a radial chromatic barrel (the RGB split grows toward the tube edges).",
     "tags": [
       "crt",
       "scanline",
@@ -2482,7 +2482,6 @@
       "glitch",
       "audio-reactive",
       "depth-aware",
-      "mouse-driven",
       "click-reactive"
     ],
     "params": [
@@ -4789,7 +4788,7 @@
     "id": "mercury-temporal-mirror",
     "name": "Mercury Temporal Mirror",
     "url": "shaders/mercury-temporal-mirror.wgsl",
-    "description": "A stylized liquid-metal mirror with directionally advected wave state, traveling capillary packets, audio rain tracks, and click-launched impact fronts. Its generated depth follows the evolving wave energy rather than a physical fluid model.",
+    "description": "A liquid-mercury mirror reflecting the image. The surface is a true capillary wave (height + velocity wave equation): click launches, the held pointer's press and treble-driven rain drops ring outward on their own, while analytic capillary packets travel across it. Fresnel horizon reflection: steep glancing slopes stop mirroring the image and pick up a cool-top / warm-floor studio gradient. Specular glints ride the crests; generated depth follows the wave energy (stylized, not a physical fluid model).",
     "tags": [
       "mercury",
       "liquid",
@@ -4808,9 +4807,9 @@
       "semantic-alpha",
       "depth-aware",
       "generated-depth",
-      "fast-motion",
       "click-reactive",
-      "bounded-history"
+      "bounded-history",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -6308,7 +6307,7 @@
     "id": "silk-flow-advection",
     "name": "Silk Flow Advection",
     "url": "shaders/silk-flow-advection.wgsl",
-    "description": "The colors and details of the input are gently carried along living, silky curl-noise flows. The mouse acts like a finger disturbing delicate fabric. Creates beautiful organic painterly motion on stills and video.",
+    "description": "The colors and details of the input are gently carried along living, silky curl-noise flows, shaded with a watered-silk (moiré antique) watermark: two detuned fine rib layers whose beat flows along the streamlines. The mouse acts like a finger disturbing delicate fabric; hold to gather the silk toward the pointer in lit radial pleats, click to pluck it.",
     "tags": [
       "silk",
       "flow",
@@ -6326,7 +6325,9 @@
       "click-reactive",
       "temporal",
       "semantic-alpha",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba",
+      "held-drag"
     ],
     "params": [
       {
@@ -7256,7 +7257,7 @@
     "name": "VHS Chroma Bleed",
     "category": "image",
     "url": "shaders/vhs-chroma-bleed.wgsl",
-    "description": "VHS tape aesthetic with authentic tape degradation: time-varying chromatic aberration, tape tracking error with horizontal wobble and jitter, audio-reactive line dropouts, compression artifacts, analog warmth, saturation roll-off, noise bands, film grain, scanlines, CRT barrel distortion, and vignette. Chromatic bleed with depth-scatter. Bass drives line dropouts, treble adds micro-glitch.",
+    "description": "VHS tape aesthetic with authentic tape degradation: colour-under bandwidth (luma stays sharp while a 7-tap low-passed, delayed chroma plane spills colour past edges), cross-colour rainbow crawl on fine horizontal detail, and chroma loss in tracking-dropout rows with a ragged left edge. Keeps the time-varying chromatic aberration, tape tracking wobble and jitter, audio-reactive line dropouts, compression artifacts, analog warmth, saturation roll-off, noise bands, film grain (scaled by Noise Intensity), scanlines, CRT barrel distortion and vignette. Bass drives line dropouts, treble adds micro-glitch, the pointer nudges the jitter.",
     "tags": [
       "vhs",
       "retro",
@@ -7275,6 +7276,7 @@
       "temporal",
       "glitch",
       "audio-reactive",
+      "mouse-driven",
       "depth-aware",
       "chromatic-bleed",
       "film-grain",
@@ -7319,13 +7321,47 @@
         "max": 3,
         "step": 0.01
       }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Chroma Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Noise Intensity",
+        "default": 0.2,
+        "min": 0,
+        "max": 0.8,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Jitter Amount",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Bleed Width",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.01
+      }
     ]
   },
   {
     "id": "video-echo-chamber",
     "name": "Video Echo Chamber",
     "url": "shaders/video-echo-chamber.wgsl",
-    "description": "Orbiting history conveyors and horizontal chromatic streaks form bounded video echoes around the mouse, while clicks launch expanding echo rings. Depth is passed through unchanged.",
+    "description": "Orbiting history conveyors and horizontal chromatic streaks form bounded video echoes around the mouse, while clicks launch expanding echo rings. Echoes are motion-keyed: moving content leaves trails that linger for a few frames while still areas stay clean (the tunnel stays visible under the pointer), and near objects in the depth map hold their echoes longer than the background. Rotation is aspect-correct, alpha is semantic, display is ACES tone-mapped. Depth is passed through unchanged.",
     "params": [
       {
         "id": "decay",
@@ -7362,7 +7398,8 @@
       "audio-reactive",
       "fast-motion",
       "click-reactive",
-      "bounded-history"
+      "bounded-history",
+      "upgraded-rgba"
     ],
     "updatedParams": [
       {

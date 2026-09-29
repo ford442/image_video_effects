@@ -3996,7 +3996,7 @@
     "id": "fabric-zipper",
     "name": "Fabric Zipper",
     "url": "shaders/fabric-zipper.wgsl",
-    "description": "Unzip the canvas to reveal the underlying image. Drag the mouse vertically to control the zipper.",
+    "description": "Unzip a woven fabric cover to reveal the underlying image. The zipper slider follows the mouse and the opening spreads above it. The cloth is a lit 2/1 twill whose diagonal rib scale is set by Weave Frequency and slides with each flap as it parts, and the opening's edges roll back into tape lips (roll highlight, dark underside) that cast a soft contact shadow onto the revealed image.",
     "params": [
       {
         "id": "teeth_density",
@@ -4040,11 +4040,46 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
       "image-processing"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Teeth Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Opening Spread",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Weave Frequency",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Tooth Jaggedness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -7238,7 +7273,7 @@
     "id": "lighthouse-reveal",
     "name": "Lighthouse Reveal",
     "url": "shaders/lighthouse-reveal.wgsl",
-    "description": "A rotating beam of light that reveals the image, emanating from the mouse position.",
+    "description": "A rotating lighthouse beam sweeps out from the mouse position and reveals the image in a dark, foggy scene. The lamp is a 3-panel Fresnel bull's-eye lens: panel bands run along the shaft and a group of flashes fires as each panel faces the viewer (bass strengthens the flashes and the reveal). Near depth along the beam blocks it, casting radial shadow streaks down the shaft.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -7282,6 +7317,40 @@
       "audio",
       "music",
       "reactive"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Beam Length",
+        "default": 0.8,
+        "min": 0,
+        "max": 1.5,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Beam Width",
+        "default": 0.2,
+        "min": 0.05,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Edge Softness",
+        "default": 0.1,
+        "min": 0,
+        "max": 0.5,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Ambient Light",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -11572,7 +11641,7 @@
     "id": "paper-cutout",
     "name": "Paper Cutout",
     "url": "shaders/paper-cutout.wgsl",
-    "description": "Quantizes the image into relief paper layers with a spring-following light, audio-shimmered strata, and click-punched emboss rings.",
+    "description": "Quantizes the image into hand-cut, slightly off-register paper layers lit from the pointer: taller stacks cast darker shadows, cut edges facing the light show a white core, and clicks punch emboss rings.",
     "params": [
       {
         "id": "layers",
@@ -15240,7 +15309,7 @@
     "id": "signal-tuner",
     "name": "Signal Tuner",
     "url": "shaders/signal-tuner.wgsl",
-    "description": "TV-style signal interference with a smoothed audio envelope, spring-damped mouse follow, click retuning rings, and temporal feedback trails.",
+    "description": "TV-style signal interference around the cursor: rows wobble with an R/B split inside the tuning radius, clicks launch retuning rings, and history ghosts only inside the zone. Upgraded with off-station snow (Static Noise mixes treble-flickered snow where the wobble is strongest), an RF multipath ghost (a delayed-path copy offset right by Frequency), and detune beat bands (slow moire bands where the row wobble nears the raster pitch).",
     "params": [
       {
         "id": "frequency",
@@ -15707,7 +15776,7 @@
       "audio-driven",
       "upgraded-rgba"
     ],
-    "description": "Reveals the original image in a radius around the mouse, with a scanning radar ring. Reactive to audio.",
+    "description": "Reveals the original image in a sonar disc around the mouse over a dimmed, tinted world, with concentric ring fronts and click shockwaves. A PPI radar sweep arm rotates from the pointer trailing a phosphor afterglow wedge; image edges flash as contact blips when a ring or shock front passes over them; and the Echo Mix return drifts outward from the pointer over frames. Bass, mids and treble shove the rings, shift the rim colour and add sparkle.",
     "params": [
       {
         "name": "Reveal Size",
@@ -15736,6 +15805,40 @@
         "default": 0,
         "min": 0,
         "max": 1
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Reveal Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Ring Intensity",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Edge Softness",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Echo Mix",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "tags": [
@@ -16438,7 +16541,7 @@
     "id": "strip-scan-glitch",
     "name": "Strip Scan Glitch",
     "url": "shaders/strip-scan-glitch.wgsl",
-    "description": "Slices the image into vertical strips that drift and jitter, controlled by mouse position.",
+    "description": "Slices the image into vertical strips that scroll at hashed, brightness-weighted speeds with sideways tears, RGB split and a bass scan bar; mouse X sets strip density and mouse Y the scroll speed. Ideas: vertical-blanking seam (each strip's wrap shows a black blanking bar with sync-pulse ticks and a soft smear on the rows either side), held brake (holding the pointer drags the strips under the cursor to a freeze-frame halt with treble flutter, releasing back to speed), and speed-streak ghost (fast strips leave a short vertical smear read from the previous frame). ACES display.",
     "params": [
       {
         "id": "strips",
@@ -16469,11 +16572,44 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Strip Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 1,
+        "name": "Scroll Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 2,
+        "name": "Glitch Jitter",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "index": 3,
+        "name": "RGB Split",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      }
+    ],
     "features": [
       "mouse-driven",
+      "held-drag",
       "glitch",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "aces-tone-map",
+      "temporal-feedback"
     ],
     "tags": [
       "filter",
@@ -17300,7 +17436,7 @@
     "id": "vhs-jog",
     "name": "VHS Jog Wheel",
     "url": "shaders/vhs-jog.wgsl",
-    "description": "Stylized VHS tracking and jogging with rapid head-switch rolls, horizontal tape-history streaks, and click tape-slip events. Mouse X controls jog distortion and Mouse Y controls tracking.",
+    "description": "Stylized VHS tracking and jogging with rapid head-switch rolls, horizontal tape-history streaks, and click tape-slip events. Mouse X is the shuttle: fast cue/review shows evenly spaced noise bars scrolling against play, backward shuttle adds a per-band colour phase error that settles as speed drops, and X near the centre is still-frame with a field flutter (odd rows from the held picture, jittering a row). Mouse Y controls tracking.",
     "params": [
       {
         "id": "noise",
@@ -17384,7 +17520,7 @@
     "id": "vhs-tracking-mouse",
     "name": "VHS Tracking",
     "url": "shaders/vhs-tracking-mouse.wgsl",
-    "description": "A vertical tracking bar distortion controlled by mouse height with audio-reactive intensity.",
+    "description": "A horizontal tracking-noise band at mouse height with wobble, RGB split and treble flashes; clicks tear the tape. The band's noise is row-aligned dash dropouts (bright/dark streaks along scan lines), mouse X is the tracking knob (off-centre widens the band and lengthens the dashes) and holding the button auto-tracks the band down to a lock line over about a second. Inside the band the AGC lifts blacks and drains chroma. Audio-reactive intensity.",
     "params": [
       {
         "id": "barHeight",

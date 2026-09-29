@@ -2,18 +2,18 @@
   "id": "waveform-glitch",
   "name": "Waveform Glitch",
   "url": "shaders/waveform-glitch.wgsl",
-  "description": "Oscilloscope Lissajous waveform glitch with signal aliasing, spring cursor, held burst, capped ripples, exact C phosphor trails, and three-band audio.",
+  "description": "Oscilloscope Lissajous waveform glitch with signal aliasing and exact C phosphor trails. Upgraded 2026-09-28: a waveform-monitor trace plots the luma of the source row under the cursor; beam-dwell brightness makes slow Lissajous lobes burn brighter than fast crossings; treble block glitch slides whole quantisation cells sideways. Aspect-corrected scope, three-band audio, held burst, capped click ripples.",
   "workgroup_size": [16, 16, 1],
   "features": [
     "mouse-driven",
     "audio-reactive",
     "temporal-feedback",
-    "click-ripples",
+    "click-reactive",
     "held-drag",
-    "spring-cursor",
     "aces-tone-map",
     "upgraded-rgba"
   ],
+  "feedbackPacking": "A/C = pre-ACES linear display RGB + semantic alpha (trail mix reads C as linear colour); B unused; ACES on writeTexture only.",
   "params": [
     { "id": "wave_intensity", "name": "Wave Intensity", "default": 0.3, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
     { "id": "vhs_intensity", "name": "VHS Intensity", "default": 0.4, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },

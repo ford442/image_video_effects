@@ -2,7 +2,7 @@
   "id": "holographic-projection-failure",
   "name": "Holo-Projection Failure v2",
   "url": "shaders/holographic-projection-failure.wgsl",
-  "description": "Faulty holographic emitter simulation with CRT V-hold rolling, chromatic RGB beam desync, DAC bit-depth truncation, ACES tone mapping, and phosphor beam persistence.",
+  "description": "Faulty holographic emitter simulation with CRT V-hold rolling, chromatic RGB beam desync, DAC bit-depth truncation, and phosphor beam persistence. Upgraded 2026-09-28: emitter cone (cyan carrier cast from bottom-centre; brightness and fringe pitch fall off with throw, alpha = carrier transmission); stale-frame tear bands that reveal the previous frame; re-sync lock line sweeping down inside the cursor repair circle (holding widens it and speeds the sweep).",
   "tags": [
     "glitch",
     "holographic",
@@ -16,7 +16,8 @@
     "mouse-driven",
     "depth-aware",
     "temporal-feedback",
-    "click-reactive"
+    "click-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -60,7 +61,7 @@
     {
       "index": 1,
       "name": "RGB Split",
-      "default": 0.5,
+      "default": 0.3,
       "min": 0,
       "max": 1,
       "step": 0.01
@@ -76,11 +77,11 @@
     {
       "index": 3,
       "name": "Static",
-      "default": 0.5,
+      "default": 0.2,
       "min": 0,
       "max": 1,
       "step": 0.01
     }
   ],
-  "feedbackPacking": "A/C = ACES display RGBA for continuous phosphor beam decay persistence; B is unused; depth passes through source depth."
+  "feedbackPacking": "A/C = pre-ACES linear display RGB + carrier-transmission alpha, read back for phosphor beam persistence and the stale-frame tear bands; B is unused; ACES on writeTexture only; depth passes through source depth."
 }

@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-27T12:33:05.014196",
+  "timestamp": "2026-09-28T14:54:45.742277",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
   "total": 5,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/gen-bioluminescent-neural-lattice.wgsl",
+      "file": "public/shaders/crt-scanline-damage.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -27,7 +27,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-biomechanical-hive.wgsl",
+      "file": "public/shaders/cyber-terminal-ascii.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -42,7 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-celestial-aether-seraphim-wings.wgsl",
+      "file": "public/shaders/holographic-glitch.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -57,7 +57,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-cosmic-slime-mold.wgsl",
+      "file": "public/shaders/phosphor-decay.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -72,7 +72,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-crystalline-mandala-bloom.wgsl",
+      "file": "public/shaders/strip-scan-glitch.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

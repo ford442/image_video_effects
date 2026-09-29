@@ -2,7 +2,7 @@
   "id": "vhs-tracking-mouse",
   "name": "VHS Tracking",
   "url": "shaders/vhs-tracking-mouse.wgsl",
-  "description": "A vertical tracking bar distortion controlled by mouse height with audio-reactive intensity.",
+  "description": "A horizontal tracking-noise band at mouse height with wobble, RGB split and treble flashes; clicks tear the tape. The band's noise is row-aligned dash dropouts (bright/dark streaks along scan lines), mouse X is the tracking knob (off-centre widens the band and lengthens the dashes) and holding the button auto-tracks the band down to a lock line over about a second. Inside the band the AGC lifts blacks and drains chroma. Audio-reactive intensity.",
   "params": [
     {
       "id": "barHeight",

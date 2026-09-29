@@ -9,7 +9,7 @@
     "upgraded-rgba",
     "temporal"
   ],
-  "description": "Physically-based refraction shader where luminance drives glass refractive index. Features Sellmeier chromatic dispersion, caustic highlights, Fresnel reflections, and subsurface scattering.",
+  "description": "The image seen through glass embossed by its own luminance: luma-gradient normals refract seven wavelength taps whose Cauchy dispersion (scaled by Refraction Depth) is weighted through a per-channel-normalised wavelength-to-RGB response, so bright edges split into spectral fringes while flat grey stays grey. A Laplacian caustic network focuses the pointer light into bright filaments along convex luma crests, with pointer specular, Fresnel rim, subsurface tint and click waves. Depth thickens the glass, with a minimum slab so it works without a depth map.",
   "params": [
     {
       "id": "refract-str",

@@ -520,7 +520,7 @@
     "id": "anamorphic-caustic-flare",
     "name": "Anamorphic Caustic Flare",
     "url": "shaders/anamorphic-caustic-flare.wgsl",
-    "description": "Premium cinematic anamorphic lens flares combined with living, refracting water caustics that distort and project the source footage. Bass stretches the flares dramatically while treble animates the caustic ripples. Mouse tilts the virtual lens.",
+    "description": "Cinematic anamorphic lens flare combined with living water caustics that refract the source footage along the caustic slope. Caustic peaks are squeezed into short horizontal glints whose length follows Caustic Stretch, matching the flare's anamorphic look. Bass stretches the flare and glints, treble brightens the caustics, and clicks fire local horizontal flare bursts. Mouse tilts the virtual lens.",
     "tags": [
       "anamorphic",
       "caustic",
@@ -537,7 +537,8 @@
       "mouse-tilt",
       "click-reactive",
       "semantic-alpha",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "supportsDepth": true,
     "params": [
@@ -1923,7 +1924,7 @@
     "id": "holographic-sticker",
     "name": "Holographic Sticker",
     "url": "shaders/holographic-sticker.wgsl",
-    "description": "Mouse-centered iridescent sticker with chromatic view-angle dispersion, temporal foil shimmer persistence, audio-driven sticker pulse, depth-layered alpha, and rainbow phase shift.",
+    "description": "Mouse-centered iridescent foil sticker with chromatic view-angle dispersion, grating ripple and rim highlight, embossed guilloche security rosettes whose hue slides as the sticker tilts across the screen, and an edge peel while the pointer is held that curls back the outer rim to show the white paper backing with a soft shadow on the image beneath. Click rainbow rings, audio-driven sticker pulse and hue-banded bass/mid/treble foil brightness, depth-layered alpha, subtle temporal shimmer.",
     "features": [
       "mouse-driven",
       "audio-reactive",

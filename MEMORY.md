@@ -1,6 +1,22 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-09-27 (simpler / mid crystal-math ten)
+**Last updated:** 2026-09-28 (pulsar shader merge, no push)
+
+## 2026-09-28 — Void-Mycelium Pulsar shader (#1338, no push)
+
+- Merged origin `86160488` onto local main as `d15827aa`. Local main is 5 commits ahead of origin. Did not push.
+- Took the new `gen-cyber-organic-void-mycelium-pulsar` WGSL and JSON. Naga 1/1 valid. Catalog 1,373 → 1,374 (generative 479). Search index 1,374 with 1,373 embeddings reused.
+- Kept the 2026-09-15 Chronomorphic Glass Tesseract sliders (`fold_speed`, `dispersion`, `refraction_ior`, `gravity`). The 2026-09-26 tesseract plan stays completed and off pending. Pulsar plan moved pending → completed.
+- Sync manifest kept local hashes. Pulsar entry uses the local WGSL MD5 (`88d6d4bd…`); origin's recorded hash did not match the file bytes.
+
+## 2026-09-28 — Local main union (no push)
+
+- Merged origin/main (`193bab3d` #1337 pulsar plan, `5b269bf1` #1336 tesseract restamp) onto local upgrades (`b48e7272`) as `1708a920`. Local main is 2 commits ahead of origin. Did not push.
+- Kept the 2026-09-15 Chronomorphic Glass Tesseract: face-crossing caustics, temporal birefringence, saved sliders `fold_speed` / `dispersion` / `refraction_ior` / `gravity`. Left the #1336 WGSL and JSON out (those rename the sliders to shatter_intensity / refraction_index / color_shift / mouse_gravity). Catalog list and `.shader_sync_manifest.json` stayed on the local descriptions.
+- Took the Cyber-Organic Void-Mycelium Pulsar plan. Removed `2026-09-26_chronomorphic-glass-tesseract.md` from pending; it stays in `completed` so it is not implemented again over the upgraded shader.
+- Naga known-failure ratchet 39 → 37 (`gravito-phononic-accretion`, `lava-lamp-blobs` pass). `verify:naga-wasm:all` 1386 valid / 37 known / 0 new. Catalog 1,373.
+
+
 
 ## 2026-09-27 — Simpler / mid crystal-math ten
 
@@ -3139,3 +3155,24 @@ User asked for progress + six GitHub issues (code changes, even large ones), not
 - Gates: Naga 9/9, precommit 9/9, extraBuffer audit pass, dead-slider audit pass (1305 scanned), check_duplicates clean, catalogs regenerated, Jest 741 pass / 6 fail (pre-existing bridge `.js` imports), SKIP_WASM_BUILD=1 build green. Nothing committed.
 - Real-GPU visual QA: external.
 - Notes: agents/swarm-outputs/claude-2026-09-27-densest-crystal-chrome-nine/.
+
+## 2026-09-28 — Broadcast-Signal Twelve (12 shaders)
+
+- IDs: vhs-chroma-bleed, vhs-jog, vhs-tracking-mouse, signal-tuner, crt-scanline-damage, scan-distort, waveform-glitch, holographic-projection-failure, holographic-glitch, phosphor-decay, cyber-terminal-ascii, strip-scan-glitch. Folder: `agents/swarm-outputs/claude-2026-09-28-broadcast-signal-twelve/`.
+- Per shader, the ideas actually added:
+  - vhs-chroma-bleed: colour-under Y/C bandwidth (delayed, low-passed chroma); cross-colour rainbow crawl; chroma loss in dropout rows. Sliders kept; Noise slider now also scales grain.
+  - vhs-jog: cue/review noise bars; pause-mode field flutter (fixes the X=0.5 dead zone); reverse-play colour phase error.
+  - vhs-tracking-mouse: row-aligned dash noise; tracking knob on mouse X + held auto-track lock; AGC lift in the band.
+  - signal-tuner: off-station snow on the Static Noise slider; RF multipath ghost; detune beat bands. Global 85% history lag removed.
+  - crt-scanline-damage: misconvergence swirl on degauss rings; flyback retrace lines during the dark-band fault; radial chromatic barrel. Dead scanlines fixed; no pointer (JSON drops mouse-driven).
+  - scan-distort: sync-tear band dragging stale C rows; DCT-basis garble that re-rolls; MV arrows from a 1-px temporal gradient.
+  - waveform-glitch: waveform-monitor trace of the cursor row; beam-dwell brightness on the Lissajous; treble block glitch.
+  - holographic-projection-failure: emitter cone (cyan carrier, alpha = transmission); stale-frame tear bands; re-sync sweep in the repair circle.
+  - holographic-glitch: emitter flicker on the Flicker slider; grating ±1-order ghosts; peel contact shadow.
+  - phosphor-decay: burn-in accumulator in A.a; held static charge (crackle + dust); blanking-interval flicker. HEAD rendered near-black — fixed.
+  - cyber-terminal-ascii: hex-dump decode (4×6 font); typewriter row entry; bit-error flicker. Scroll-units drift fixed.
+  - strip-scan-glitch: vertical-blanking seam with sync ticks; held brake (C freeze); speed-streak ghost.
+- Floor: springs deleted everywhere (extraBuffer[133..] is zeroed per frame), `plasmaBuffer[n>0]` reads removed, exact C loads, pre-ACES linear in A wherever C is mixed, saved params byte-exact (python-verified).
+- Gates: precommit 12/12 naga+bindgroup, extraBuffer audit PASS, dead sliders PASS (0 new), catalogs regenerated, Jest + SKIP_WASM_BUILD=1 build: see closeout line below.
+- Rescue list (name≠code, not upgrades): rgb-split-glitch, spectral-glitch-sort, data-moshing, pixel-rain.
+- Real-GPU visual QA: external.
