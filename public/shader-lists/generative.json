@@ -3117,6 +3117,63 @@
     ]
   },
   {
+    "id": "gen-aether-forged-nacreous-labyrinth",
+    "name": "Aether-Forged Nacreous Labyrinth",
+    "description": "A hyper-dimensional structure where organic, pearlescent membranes weave continuously through rigid, crystalline geometries, bathed in shifting bioluminescent aether.",
+    "type": "generative",
+    "category": "generative",
+    "url": "shaders/gen-aether-forged-nacreous-labyrinth.wgsl",
+    "audioReactive": true,
+    "mouseReactive": true,
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "crystalSharpness",
+        "name": "Crystal Sharpness",
+        "mapping": "zoom_params.x",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "flowSpeed",
+        "name": "Flow Speed",
+        "mapping": "zoom_params.y",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "aetherDensity",
+        "name": "Aether Density",
+        "mapping": "zoom_params.z",
+        "default": 0.7,
+        "min": 0.1,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "id": "iridescenceShift",
+        "name": "Iridescence Shift",
+        "mapping": "zoom_params.w",
+        "default": 0,
+        "min": -1,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ]
+  },
+  {
     "id": "gen-aetherial-plasma-loom",
     "name": "Aetherial Plasma Loom",
     "url": "/shaders/gen-aetherial-plasma-loom.wgsl",
