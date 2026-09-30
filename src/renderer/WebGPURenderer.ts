@@ -81,8 +81,11 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private lastBlitScaledW = 0;
   private lastBlitScaledH = 0;
 
-  private slots: ShaderSlot[] = Array.from({ length: PHYSICAL_SLOT_LIMIT }, () => ({
-    shaderId: null, enabled: false, mode: 'chained' as SlotMode,
+  /** Per-slot zoom_params; slot objects hold these arrays by reference. */
+  private slotZoomParams: number[][] = Array.from({ length: PHYSICAL_SLOT_LIMIT }, () => [0.5, 0.5, 0.5, 0.5]);
+
+  private slots: ShaderSlot[] = Array.from({ length: PHYSICAL_SLOT_LIMIT }, (_, i) => ({
+    shaderId: null, enabled: false, mode: 'chained' as SlotMode, params: this.slotZoomParams[i],
   }));
 
   private currentTime = 0;
@@ -494,9 +497,9 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
 
   setActiveShader(id: string): void {
     if (this.slots[0]?.shaderId !== id) this.rearmSimRingFor(id);
-    this.slots[0] = { shaderId: id, enabled: true, mode: 'chained' };
+    this.slots[0] = { shaderId: id, enabled: true, mode: 'chained', params: this.slotZoomParams[0] };
     for (let i = 1; i < PHYSICAL_SLOT_LIMIT; i++) {
-      this.slots[i] = { shaderId: null, enabled: false, mode: 'chained' };
+      this.slots[i] = { shaderId: null, enabled: false, mode: 'chained', params: this.slotZoomParams[i] };
     }
   }
 
@@ -504,7 +507,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     if (!checkPhysicalSlotIndex('WebGPURenderer', index)) return;
     const mode = this.slots[index]?.mode ?? 'chained';
     if (this.slots[index]?.shaderId !== id) this.rearmSimRingFor(id);
-    this.slots[index] = { shaderId: id, enabled: !!id, mode };
+    this.slots[index] = { shaderId: id, enabled: !!id, mode, params: this.slotZoomParams[index] };
   }
 
   setSlotEnabled(index: number, enabled: boolean): void {
@@ -667,28 +670,29 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   setParam(name: string, value: number): void {
     switch (name) {
       case 'mouseDown': this.mouseDown = value > 0; break;
-      case 'zoomParam1': this.zoomParams[0] = value; break;
-      case 'zoomParam2': this.zoomParams[1] = value; break;
-      case 'zoomParam3': this.zoomParams[2] = value; break;
-      case 'zoomParam4': this.zoomParams[3] = value; break;
+      case 'zoomParam1': this.updateSlotParams({ zoomParam1: value }, 0); break;
+      case 'zoomParam2': this.updateSlotParams({ zoomParam2: value }, 0); break;
+      case 'zoomParam3': this.updateSlotParams({ zoomParam3: value }, 0); break;
+      case 'zoomParam4': this.updateSlotParams({ zoomParam4: value }, 0); break;
     }
   }
 
   setSlotParams(slotIndex: number, p1: number, p2: number, p3: number, p4: number): void {
-    if (slotIndex === 0) {
-      this.zoomParams = [p1, p2, p3, p4];
-    }
+    this.updateSlotParams({ zoomParam1: p1, zoomParam2: p2, zoomParam3: p3, zoomParam4: p4 }, slotIndex);
   }
 
   updateSlotParams(
     params: { zoomParam1?: number; zoomParam2?: number; zoomParam3?: number; zoomParam4?: number },
     slotIndex = 0,
   ): void {
-    if (slotIndex !== 0) return;
-    if (params.zoomParam1 !== undefined) this.zoomParams[0] = params.zoomParam1;
-    if (params.zoomParam2 !== undefined) this.zoomParams[1] = params.zoomParam2;
-    if (params.zoomParam3 !== undefined) this.zoomParams[2] = params.zoomParam3;
-    if (params.zoomParam4 !== undefined) this.zoomParams[3] = params.zoomParam4;
+    const target = this.slotZoomParams[slotIndex];
+    if (!target) return;
+    if (params.zoomParam1 !== undefined) target[0] = params.zoomParam1;
+    if (params.zoomParam2 !== undefined) target[1] = params.zoomParam2;
+    if (params.zoomParam3 !== undefined) target[2] = params.zoomParam3;
+    if (params.zoomParam4 !== undefined) target[3] = params.zoomParam4;
+    // Global uniform default (legacy single-shader path) tracks slot 0.
+    if (slotIndex === 0) this.zoomParams = [...target];
   }
 
   setInputSource(source: 'image' | 'video' | 'webcam' | 'generative' | 'live'): void {

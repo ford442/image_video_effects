@@ -142,6 +142,7 @@ export function dispatchFrameSlots(
   state: WebGPUFrameState,
   encoder: GPUCommandEncoder,
   plan: FrameSlotDispatchPlan,
+  beforeSlot?: (encoder: GPUCommandEncoder, slot: ShaderSlot) => void,
 ): FrameSlotDispatchResult {
   const { parallel, chained } = plan;
   const singleChained = plan.enabledCount === 1 && chained.length === 1;
@@ -174,6 +175,7 @@ export function dispatchFrameSlots(
 
   for (const slotPlan of parallel) {
     const slotStart = performance.now();
+    beforeSlot?.(encoder, slotPlan.slot);
     dispatchSlot(state, encoder, slotPlan, 'parallel', nextPassMeta);
     wallParallel += performance.now() - slotStart;
   }
@@ -193,6 +195,7 @@ export function dispatchFrameSlots(
 
   for (const slotPlan of chained) {
     const slotStart = performance.now();
+    beforeSlot?.(encoder, slotPlan.slot);
     dispatchSlot(state, encoder, slotPlan, 'chained', nextPassMeta);
     wallChained += performance.now() - slotStart;
 
