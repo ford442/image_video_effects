@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-29T08:20:41.431445",
+  "timestamp": "2026-10-01T08:03:38.894032",
   "naga_bin": "/home/jules/.cargo/bin/naga",
   "naga_available": true,
   "total": 1,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/gen-aether-forged-nacreous-labyrinth.wgsl",
+      "file": "public/shaders/gen-ethereal-chrono-fluid-symbiote.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
