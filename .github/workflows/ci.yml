@@ -28,6 +28,8 @@ jobs:
     
     - name: Install dependencies
       run: npm ci
+      env:
+        ONNXRUNTIME_NODE_INSTALL_SKIP: "true"
     
     - name: Setup Emscripten SDK
       uses: mymindstorm/setup-emsdk@v14
@@ -86,6 +88,8 @@ jobs:
     
     - name: Install dependencies
       run: npm ci
+      env:
+        ONNXRUNTIME_NODE_INSTALL_SKIP: "true"
 
     - name: Download WASM artifacts
       uses: actions/download-artifact@v4
@@ -156,6 +160,8 @@ jobs:
     
     - name: Install dependencies
       run: npm ci
+      env:
+        ONNXRUNTIME_NODE_INSTALL_SKIP: "true"
 
     - name: Download WASM artifacts
       uses: actions/download-artifact@v4
@@ -406,6 +412,8 @@ jobs:
     
     - name: Install dependencies
       run: npm ci
+      env:
+        ONNXRUNTIME_NODE_INSTALL_SKIP: "true"
     
     - name: Run ESLint
       run: npx eslint src --ext .ts,.tsx --max-warnings=0 || true
@@ -443,6 +451,8 @@ jobs:
 
     - name: Install dependencies
       run: npm ci
+      env:
+        ONNXRUNTIME_NODE_INSTALL_SKIP: "true"
 
     - name: Generate shader lists
       run: node scripts/generate_shader_lists.js
