@@ -42,4 +42,6 @@ export interface ShaderSlot {
   shaderId: string | null;
   enabled: boolean;
   mode: SlotMode;
+  /** Per-slot zoom_params (p1..p4), patched into the uniform buffer before this slot's pass. */
+  params?: number[];
 }

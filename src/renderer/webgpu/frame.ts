@@ -38,6 +38,10 @@ export type {
 export class WebGPUFrameRenderer {
   private uniformView: UniformBufferView = createUniformBufferView();
   private presenter = new WebGPUPresenter();
+  /** Staging copy of each enabled slot's zoom_params (16 bytes per slot). */
+  private slotParamsBuf: GPUBuffer | null = null;
+  private slotParamsDevice: GPUDevice | null = null;
+  private slotParamsCapacity = 0;
 
   startRenderLoop(state: WebGPUFrameState): void {
     const loop = () => {
@@ -65,6 +69,48 @@ export class WebGPUFrameRenderer {
     );
   }
 
+  /**
+   * Upload per-slot zoom_params and return a hook that copies a slot's params
+   * into uniformBuf (bytes 32-47) before its pass. Copies are ordered within
+   * the encoder, so each slot sees its own sliders (mirrors C++ WriteSlotParams).
+   */
+  private prepareSlotParams(
+    state: WebGPUFrameState,
+    slots: WebGPUFrameState['slots'],
+  ): ((encoder: GPUCommandEncoder, slot: WebGPUFrameState['slots'][number]) => void) | undefined {
+    const device = state.device;
+    if (!device || !state.uniformBuf) return undefined;
+    const withParams = slots.filter((slot) => slot.params && slot.params.length >= 4);
+    if (withParams.length === 0) return undefined;
+
+    if (!this.slotParamsBuf || this.slotParamsDevice !== device || this.slotParamsCapacity < withParams.length) {
+      this.slotParamsBuf?.destroy();
+      this.slotParamsCapacity = Math.max(withParams.length, state.slots.length);
+      this.slotParamsBuf = device.createBuffer({
+        label: 'slotParamsBuf',
+        size: this.slotParamsCapacity * 16,
+        usage: GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+      });
+      this.slotParamsDevice = device;
+    }
+
+    const data = new Float32Array(withParams.length * 4);
+    const offsets = new Map<WebGPUFrameState['slots'][number], number>();
+    withParams.forEach((slot, i) => {
+      data.set(slot.params!.slice(0, 4), i * 4);
+      offsets.set(slot, i * 16);
+    });
+    device.queue.writeBuffer(this.slotParamsBuf, 0, data);
+
+    const src = this.slotParamsBuf;
+    const dst = state.uniformBuf;
+    return (encoder, slot) => {
+      const offset = offsets.get(slot);
+      if (offset === undefined) return;
+      encoder.copyBufferToBuffer(src, offset, dst, 32, 16);
+    };
+  }
+
   renderFrame(state: WebGPUFrameState): void {
     if (!state.device || !state.context || !state.initialized) return;
 
@@ -82,7 +128,12 @@ export class WebGPUFrameRenderer {
     const encoder = state.device.createCommandEncoder({ label: 'frame' });
     this.presenter.encodeInputCopy(state, encoder);
     state.encodePreFxChores?.(encoder);
-    const dispatch = dispatchFrameSlots(state, encoder, slotPlan);
+    const dispatch = dispatchFrameSlots(
+      state,
+      encoder,
+      slotPlan,
+      this.prepareSlotParams(state, [...slotPlan.parallel, ...slotPlan.chained].map((p) => p.slot)),
+    );
 
     const historyLayers = state.historyLayers;
     const useHistoryRing = slotPlan.anyUsesHistory && historyLayers > 1;

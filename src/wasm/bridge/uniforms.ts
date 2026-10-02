@@ -37,6 +37,11 @@ export function setSlotParams(slotIndex: number, p1: number, p2: number, p3: num
   if (slotIndex >= 0) {
     state.slotParams[slotIndex] = [p1, p2, p3, p4];
   }
+  // The legacy single-shader path (no enabled slots) reads the global
+  // zoom_params, which the per-frame updateUniforms pushes from state.
+  if (slotIndex === 0) {
+    state.zoomParams = [p1, p2, p3, p4];
+  }
   wasmRef.module.ccall(
     'setSlotParams',
     null,
