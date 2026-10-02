@@ -615,7 +615,8 @@
       "title": "Ethereal Chrono-Fluid Symbiote",
       "added": "2026-09-29T15:27:07.618605"
     },
-    {      "filename": "2026-09-26_chronomorphic-glass-tesseract.md",
+    {
+      "filename": "2026-09-26_chronomorphic-glass-tesseract.md",
       "title": "Chronomorphic Glass Tesseract",
       "added": "2026-09-26T15:34:27.363398"
     },
@@ -623,6 +624,11 @@
       "filename": "2026-09-28_exoplanetary-silicon-anemone-reef.md",
       "title": "Exoplanetary Silicon-Anemone Reef",
       "added": "2026-09-28T15:31:08.252906"
+    },
+    {
+      "filename": "2026-10-02_ethereal-chrono-flora-loom.md",
+      "title": "Ethereal Chrono-Flora Loom",
+      "added": "2026-10-02T15:24:31.293156"
     }
   ],
   "current": null,
