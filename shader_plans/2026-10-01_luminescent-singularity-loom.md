@@ -144,4 +144,4 @@ Name (default, min, max, step)
 1. Create shader file `public/shaders/gen-luminescent-singularity-loom.wgsl`
 2. Create JSON definition `shader_definitions/generative/gen-luminescent-singularity-loom.json`
 3. Run `node scripts/generate_shader_lists.js`
-4. Upload via `python scripts/sync_shaders_to_storage.py --force`
+4. Upload via `python3 tools/deploy/sync_shaders_to_storage.py --force`

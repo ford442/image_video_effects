@@ -13,9 +13,9 @@ Provides an alternative to the JavaScript WebGPU renderer with potential perform
 | Init/format/limits (#817–#822) | ✅ Closed |
 | Integration glue (#886–#887) | ✅ In tree |
 | Playwright + benchmarks (#889) | ✅ See `WASM_TEST_SUITE.md` |
-| Promotion to Tier A | ⬜ Open — [`WASM_PROMOTION_TRACKING.md`](../WASM_PROMOTION_TRACKING.md) |
+| Promotion to Tier A | ⬜ Open — [`WASM_PROMOTION_TRACKING.md`](../docs/WASM_PROMOTION_TRACKING.md) |
 
-Full snapshot: [`STATUS.md`](./STATUS.md) · gaps: [`WASM_RENDERER_GAP_ANALYSIS.md`](../WASM_RENDERER_GAP_ANALYSIS.md)
+Full snapshot: [`STATUS.md`](./STATUS.md) · gaps: [`WASM_RENDERER_GAP_ANALYSIS.md`](../docs/WASM_RENDERER_GAP_ANALYSIS.md)
 
 ⚠️ **Do not describe WASM as production-ready** until promotion gates pass.
 
@@ -342,7 +342,7 @@ if (diagnostics.wasm?.errorCount > 0) {
 
 ### Testing Checklist
 
-See [`../WASM_TESTING.md`](../WASM_TESTING.md) for comprehensive testing procedures.
+See [`../WASM_TESTING.md`](../docs/WASM_TESTING.md) for comprehensive testing procedures.
 
 Quick smoke test:
 1. Open `http://localhost:3000/?renderer=wasm`
@@ -384,12 +384,12 @@ hardened the init/format/limits handshake:
 
 **July 2026 — integration + tests closed in tree (#886–#889). Still open for Tier A promotion:**
 
-- Promotion gates — [`WASM_PROMOTION_TRACKING.md`](../WASM_PROMOTION_TRACKING.md)
+- Promotion gates — [`WASM_PROMOTION_TRACKING.md`](../docs/WASM_PROMOTION_TRACKING.md)
 - Edge-GPU manual verification
 - Visual pixel-diff automation
 - `build.sh` requires `emcc` unless `SKIP_WASM_BUILD=1` (see [`ARTIFACTS.md`](./ARTIFACTS.md))
 
-Full tracking: [`WASM_RENDERER_GAP_ANALYSIS.md`](../WASM_RENDERER_GAP_ANALYSIS.md) · [`STATUS.md`](./STATUS.md)
+Full tracking: [`WASM_RENDERER_GAP_ANALYSIS.md`](../docs/WASM_RENDERER_GAP_ANALYSIS.md) · [`STATUS.md`](./STATUS.md)
 
 ## Roadmap
 

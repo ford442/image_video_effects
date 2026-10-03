@@ -115,5 +115,5 @@ Open **Preset Packs** in VJ Studio for **Physics Lab** solos (Ripple / Fabric / 
 
 - [`PHYSICS_LAB.md`](PHYSICS_LAB.md) — flagship QA, attract dwell, thumbnails
 - [`MULTIPASS_GRAPH.md`](MULTIPASS_GRAPH.md) — Tier C graph schema
-- [`WASM_SMOKE_TEST.md`](../WASM_SMOKE_TEST.md) — renderer smoke (separate from Studio)
+- [`WASM_SMOKE_TEST.md`](./WASM_SMOKE_TEST.md) — renderer smoke (separate from Studio)
 - Live Studio tab (canvas overlay) — recording / stream bridge via `LiveStudioTab`

@@ -12,7 +12,7 @@ from pathlib import Path
 BASE_DIR = Path("/workspaces/codepit/projects/image_video_effects")
 SHADERS_DIR = BASE_DIR / "public" / "shaders"
 DEFINITIONS_DIR = BASE_DIR / "shader_definitions"
-OUTPUT_DIR = BASE_DIR / "swarm-outputs"
+OUTPUT_DIR = BASE_DIR / "agents" / "swarm-outputs"
 
 # The 50+ target shaders from the task specification
 TARGET_SHADERS_PRIORITY = {

@@ -92,4 +92,4 @@ python3 scripts/audit_orphan_shader_defs.py
 
 Use `scripts/seed_orphan_shader_defs.py --write` to backfill JSON for legacy orphan WGSL (one-time / batch hygiene).
 
-Cross-reference: `scripts/AUTHORING.md`, `scripts/bindgroup_checker.py` (`TEMPLATE_FILES`).
+Cross-reference: `docs/AUTHORING.md`, `scripts/bindgroup_checker.py` (`TEMPLATE_FILES`).

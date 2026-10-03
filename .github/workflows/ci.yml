@@ -45,6 +45,19 @@ jobs:
     - name: Validate WASM artifacts
       run: npm run wasm:validate
 
+    # Committed artifact must match a fresh pinned build (replaces the old mtime
+    # heuristic). Report-only until the 6-slot artifact (#1339) lands on main.
+    - name: Compare built WASM to committed artifact
+      continue-on-error: true
+      run: |
+        built=$(sha256sum public/wasm/pixelocity_wasm.wasm | cut -d' ' -f1)
+        committed=$(git show HEAD:public/wasm/pixelocity_wasm.wasm | sha256sum | cut -d' ' -f1)
+        echo "built=$built committed=$committed"
+        if [ "$built" != "$committed" ]; then
+          echo "::warning file=public/wasm/pixelocity_wasm.wasm::Committed WASM artifact is stale; rebuild with emsdk 6.0.9 (npm run wasm:build) and commit public/wasm/."
+          exit 1
+        fi
+
     - name: Verify WASM bridge copies match TypeScript SoT
       run: npm run verify:wasm-bridge-sync
     

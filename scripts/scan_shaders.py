@@ -14,7 +14,7 @@ from collections import defaultdict
 PROJECT_ROOT = Path("/root/image_video_effects")
 SHADERS_DIR = PROJECT_ROOT / "public" / "shaders"
 DEFINITIONS_DIR = PROJECT_ROOT / "shader_definitions"
-OUTPUT_DIR = PROJECT_ROOT / "swarm-outputs"
+OUTPUT_DIR = PROJECT_ROOT / "agents" / "swarm-outputs"
 
 
 def get_json_definitions():

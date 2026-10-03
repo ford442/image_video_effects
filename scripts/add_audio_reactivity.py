@@ -404,7 +404,7 @@ def main():
         'results': results
     }
     
-    report_path = BASE_DIR / 'swarm-outputs' / 'audio-reactivity-report.json'
+    report_path = BASE_DIR / 'agents' / 'swarm-outputs' / 'audio-reactivity-report.json'
     report_path.parent.mkdir(exist_ok=True)
     report_path.write_text(json.dumps(report, indent=2))
     print(f"\nReport saved to: {report_path}")
