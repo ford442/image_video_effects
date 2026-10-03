@@ -1,5 +1,5 @@
 {
-  "description": "Single source of truth for Emscripten EXPORTED_FUNCTIONS and EXPORTED_RUNTIME_METHODS. Canonical compile path is wasm_renderer/build.sh (npm run wasm:build). CMakeLists.txt is IDE/fallback only and MUST read this file — do not hand-copy the list. _main/_malloc/_free are Emscripten runtime symbols, not EMSCRIPTEN_KEEPALIVE.",
+  "description": "Single source of truth for Emscripten EXPORTED_FUNCTIONS and EXPORTED_RUNTIME_METHODS. The only compile path is wasm_renderer/build.sh (npm run wasm:build); do not hand-copy the list. _main/_malloc/_free are Emscripten runtime symbols, not EMSCRIPTEN_KEEPALIVE.",
   "exportedFunctions": [
     "_main",
     "_initWasmRenderer",

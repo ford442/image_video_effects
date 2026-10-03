@@ -54,7 +54,7 @@ npm run wasm:build
 The Emscripten version is **pinned**, not `latest` — a moving emsdk silently changes the
 ABI of `public/wasm/pixelocity_wasm.{js,wasm}`.
 
-- **Pin:** `emsdkVersion` in [`src/contracts/wasm_compile_flags.json`](../src/contracts/wasm_compile_flags.json) (currently **6.0.9**). The same file holds `std`, `opt`, `usePort`, `sFlags`, `jsOutputName` — `build.sh` reads it via `scripts/format-wasm-compile-flags.js`, `CMakeLists.txt` via `file(READ)`.
+- **Pin:** `emsdkVersion` in [`src/contracts/wasm_compile_flags.json`](../src/contracts/wasm_compile_flags.json) (currently **6.0.9**). The same file holds `std`, `opt`, `usePort`, `sFlags`, `jsOutputName` — `build.sh` (the only build) reads it via `scripts/format-wasm-compile-flags.js`.
 - **CI:** `setup-emsdk` `version:` must equal the pin; `npm run verify:wasm-invariants` fails on drift or on `-s` flags hardcoded in `build.sh`/CMake.
 - **Local gate:** `build.sh` runs `scripts/emcc-version-gate.sh`; a mismatched emcc fails the build. Emscripten 6.x glue does not embed its version, so `wasm:validate` can only check the pin exists (and would fail if a future glue embeds a mismatched version).
 - **Beware stale SDKs:** `build.sh` sources the first `emsdk_env.sh` it finds (`$REPO_ROOT/emsdk`, `~/emsdk`, …), which can override an already-activated emsdk. The gate catches this.

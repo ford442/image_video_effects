@@ -32,7 +32,7 @@ ASYNCIFY is required for `wgpuInstanceWaitAny` + emdawn callback mode (`device.c
 
 ### CMake vs `build.sh`
 
-CI and `npm run wasm:build` use **`build.sh` only**. CMake (`CMakeLists.txt`) is IDE/fallback — two-step emdawn historically broke with `-sUSE_WEBGPU=1` leakage.
+CI and `npm run wasm:build` use **`build.sh` only**. `CMakeLists.txt` was deleted in 2026-10: it was never a CI build, two-step emdawn historically broke with `-sUSE_WEBGPU=1` leakage, and it guessed the emdawn include dir.
 
 **2026-07-26:** Removed duplicate `-sGROWABLE_ARRAYBUFFERS=0` from the emcc line (cosmetic; no size change).
 
@@ -66,9 +66,9 @@ change. That is the drift `latest` would have let through silently.
 
 ### Flag SoT
 
-`build.sh` (via `scripts/format-wasm-compile-flags.js`) and `CMakeLists.txt` (`file(READ)` +
-`string(JSON)`) both read `std`, `opt`, `usePort`, `sFlags`, `jsOutputName` from
-`wasm_compile_flags.json`. `verify:wasm-invariants` fails if either hardcodes a `-s` flag or
+`build.sh` (via `scripts/format-wasm-compile-flags.js`) reads `std`, `opt`, `usePort`,
+`sFlags`, `jsOutputName` from
+`wasm_compile_flags.json`. `verify:wasm-invariants` fails if it hardcodes a `-s` flag or
 `--use-port`, or if CI's emsdk version drifts from the pin. The flag set is unchanged, and so is the output
 (see the byte-identical rebuild above).
 

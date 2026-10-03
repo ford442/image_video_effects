@@ -6,7 +6,7 @@
  * optional feature order ↔ device.ts / device.cpp;
  * slot_limits.json ↔ PHYSICAL_SLOT_LIMIT / MAX_SHADER_SLOTS;
  * canvas_configure.json ↔ buildCanvasConfigureOptions / JS_CreateSurfaceFromCanvas / ConfigureSurface; wasm_exports.json ↔ KEEPALIVE /
- * build.sh / CMakeLists (no hardcoded export lists);
+ * build.sh (no hardcoded export lists; build.sh is the only build, CMakeLists.txt was removed);
  * workgroup_dispatch.json ↔ ShaderCompilation.ts ↔ wasm_internal.cpp ParseWorkgroupSize;
  * emptyPlaceholder (r32float 1×1, 4 B/row) ↔ resources.ts emptyTex ↔ resources.cpp emptyTexture_;
  * bind_group1.json ↔ simRing.ts layout ↔ group-1 limits policy ↔ WASM group-1 refusal.
@@ -491,18 +491,16 @@ function verifyWasmExports() {
   }
 
   const buildSh = fs.readFileSync(path.join(ROOT, 'wasm_renderer/build.sh'), 'utf8');
-  const cmake = fs.readFileSync(path.join(ROOT, 'wasm_renderer/CMakeLists.txt'), 'utf8');
   if (/_initWasmRenderer,_shutdownWasmRenderer/.test(buildSh)) {
     fail('build.sh must not hardcode EXPORTED_FUNCTIONS; use format-wasm-exports.js');
   }
   if (!buildSh.includes('format-wasm-exports.js')) {
     fail('build.sh must invoke scripts/format-wasm-exports.js');
   }
-  if (/_initWasmRenderer,_shutdownWasmRenderer/.test(cmake)) {
-    fail('CMakeLists.txt must not hardcode EXPORTED_FUNCTIONS; read wasm_exports.json');
-  }
-  if (!cmake.includes('wasm_exports.json')) {
-    fail('CMakeLists.txt must file(READ) src/contracts/wasm_exports.json');
+  // build.sh is the only build. A second build file must not come back with
+  // its own export/flag lists to keep in sync.
+  if (fs.existsSync(path.join(ROOT, 'wasm_renderer/CMakeLists.txt'))) {
+    fail('wasm_renderer/CMakeLists.txt was removed: build.sh is the only WASM build (keep one flag/export path)');
   }
 }
 
@@ -511,7 +509,6 @@ function verifyWasmCompileFlags() {
     fs.readFileSync(path.join(ROOT, 'src/contracts/wasm_compile_flags.json'), 'utf8'),
   );
   const buildSh = fs.readFileSync(path.join(ROOT, 'wasm_renderer/build.sh'), 'utf8');
-  const cmake = fs.readFileSync(path.join(ROOT, 'wasm_renderer/CMakeLists.txt'), 'utf8');
   const ci = fs.readFileSync(path.join(ROOT, '.github/workflows/ci.yml'), 'utf8');
 
   if (!/^\d+\.\d+\.\d+$/.test(flags.emsdkVersion || '')) {
@@ -531,17 +528,14 @@ function verifyWasmCompileFlags() {
     }
   }
 
-  // build.sh / CMake must read the JSON, not hand-copy -s flags.
+  // build.sh must read the JSON, not hand-copy -s flags.
   if (!buildSh.includes('format-wasm-compile-flags.js')) {
     fail('build.sh must read flags via scripts/format-wasm-compile-flags.js');
   }
   if (!buildSh.includes('emcc-version-gate.sh')) {
     fail('build.sh must run scripts/emcc-version-gate.sh before compiling');
   }
-  if (!cmake.includes('wasm_compile_flags.json')) {
-    fail('CMakeLists.txt must file(READ) src/contracts/wasm_compile_flags.json');
-  }
-  for (const [name, src] of [['build.sh', buildSh], ['CMakeLists.txt', cmake]]) {
+  for (const [name, src] of [['build.sh', buildSh]]) {
     const code = src.split('\n').filter((l) => !/^\s*#/.test(l)).join('\n');
     for (const f of flags.sFlags) {
       const key = f.split('=')[0];
