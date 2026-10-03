@@ -1,6 +1,6 @@
 // GENERATED — do not edit. Source: src/wasm/ (concat_bridge.sh / emit-wasm-bridge.mjs)
 
-import { INIT_STAGE_NAMES, state, wasmRef } from "./state.js";
+import { INIT_STAGE_NAMES, readCanvasCopySrc, state, wasmRef } from "./state.js";
 function readCppInitDiagnostics() {
   if (!wasmRef.module || typeof wasmRef.module.ccall !== "function") {
     return { stage: 0, stageName: "None", message: "", adapterSummary: "" };
@@ -39,7 +39,11 @@ function getDiagnostics() {
     failedStage: cpp.stage,
     failedStageName: cpp.stageName,
     lastInitError: cpp.message,
-    adapterInfo: cpp.adapterSummary
+    adapterInfo: cpp.adapterSummary,
+    /** C++ canvas COPY_SRC probe; null while C++ init runs or when the artifact predates it. */
+    canvasCopySrc: readCanvasCopySrc(),
+    /** MAX_SHADER_SLOTS in the loaded artifact; null when it predates the export. */
+    maxShaderSlots: state.maxShaderSlots
   };
 }
 export {

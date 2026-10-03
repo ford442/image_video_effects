@@ -570,6 +570,26 @@ export function publishWebGpuProbe(result: WebGpuProbeResult): void {
   window.webgpuProbe = toWebGpuProbeBreadcrumb(result);
 }
 
+/**
+ * WASM init success breadcrumb. ?renderer=wasm skips the TS boot probe, so this is
+ * the only window.webgpuProbe on that path; canvasCopySrc is the C++ swapchain
+ * probe (canvas_configure.json optIn.copySrc), omitted when the artifact predates it.
+ */
+export function publishWasmProbeSuccess(
+  adapterSummary: string,
+  canvasCopySrc: boolean | null,
+): void {
+  if (typeof window === 'undefined') return;
+  window.webgpuProbe = {
+    ...baseSerializable([], {
+      ok: true,
+      adapterSummary: adapterSummary || undefined,
+      backend: 'wasm',
+      ...(canvasCopySrc === null ? {} : { canvasCopySrc }),
+    }),
+  };
+}
+
 /** WASM init failure breadcrumb when ?renderer=wasm hard-fails. */
 export function publishWasmProbeFailure(
   lastError: string,

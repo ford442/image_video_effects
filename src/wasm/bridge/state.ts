@@ -13,6 +13,12 @@ export interface EmscriptenModule {
   stringToUTF8(str: string, ptr: number, maxBytes: number): void;
   HEAPU8: Uint8Array;
   HEAPF32: Float32Array;
+  /** Hand-off slot read (and cleared) by the C++ JS_CopyExternalImageToTexture EM_JS. */
+  pixelocityPendingImage?: unknown;
+  /** Present only in artifacts built with canvas COPY_SRC parity (older binaries lack them). */
+  _getCanvasCopySrcSupported?: () => number;
+  _setCanvasCopySrc?: (enabled: number) => number;
+  _getMaxShaderSlots?: () => number;
 }
 
 export type PixelocityWasmFactory = (opts: {
@@ -67,7 +73,36 @@ export const state = {
   colorFormat: 0 as 0 | 1,
   /** Slot indexes whose last setSlotShader the module did not accept. */
   droppedSlots: new Set<number>(),
+  /** MAX_SHADER_SLOTS compiled into the loaded artifact; null = older binary without the export. */
+  maxShaderSlots: null as number | null,
 };
+
+/**
+ * C++ finished Initialize() (device + surface). The init ccall can return
+ * before that while CreateDevice() is suspended on the adapter/device request,
+ * so anything C++ decides during init (the canvas COPY_SRC probe) must be read
+ * after this is true.
+ */
+export function isCppRendererReady(): boolean {
+  const mod = wasmRef.module;
+  if (!state.initialized || !mod) return false;
+  try {
+    return Number(mod.ccall('isRendererInitialized', 'number', [], [])) === 1;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Live C++ canvas COPY_SRC probe result (canvas_configure.json optIn.copySrc):
+ * null while C++ init is still running or when the artifact predates the export.
+ */
+export function readCanvasCopySrc(): boolean | null {
+  const mod = wasmRef.module;
+  if (!mod || typeof mod._getCanvasCopySrcSupported !== 'function') return null;
+  if (!isCppRendererReady()) return null;
+  return mod._getCanvasCopySrcSupported() === 1;
+}
 
 export const INIT_STAGE_NAMES: Record<number, string> = {
   0: 'None',

@@ -78,6 +78,39 @@ EM_JS(int, JS_GetPreferredCanvasFormat, (), {
     return -1;
 });
 
+// ─── JavaScript bridge: canvas COPY_SRC opt-in probe ───────────────────────────────────────────
+//
+// Mirrors TS probeCanvasCopySrc() (webgpuBootProbe.ts): configure with the
+// canvas_configure.json optIn.copySrc usage and read it back. The caller wraps
+// this in a validation error scope and then calls ConfigureSurface() to restore
+// the render-only default, so the live swapchain never keeps COPY_SRC from here.
+// Returns 1 when the configure was accepted with the COPY_SRC bit, 0 otherwise.
+EM_JS(int, JS_ProbeCanvasCopySrc, (const char* selectorPtr, WGPUDevice deviceHandle), {
+    var canvasEl = document.querySelector(UTF8ToString(selectorPtr));
+    var ctx = canvasEl ? canvasEl.getContext('webgpu') : null;
+    var jsDevice = WebGPU.getJsObject(deviceHandle);
+    if (!ctx || !jsDevice || typeof GPUTextureUsage === 'undefined') return 0;
+    var preferredFormat = (navigator.gpu && navigator.gpu.getPreferredCanvasFormat)
+        ? navigator.gpu.getPreferredCanvasFormat() : 'bgra8unorm';
+    try {
+        ctx.configure({
+            device: jsDevice,
+            format: preferredFormat,
+            alphaMode: 'opaque',
+            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC
+        });
+        var readback = typeof ctx.getConfiguration === 'function' ? ctx.getConfiguration() : null;
+        if (readback && typeof readback.usage === 'number'
+            && !(readback.usage & GPUTextureUsage.COPY_SRC)) {
+            return 0;
+        }
+        return 1;
+    } catch (err) {
+        console.warn('[WASM] Canvas COPY_SRC probe configure threw:', err);
+        return 0;
+    }
+});
+
 
 bool WebGPURenderer::CreateDevice() {
     // Adapter ladder, limit validation, and requiredLimits must stay in sync with
@@ -653,8 +686,40 @@ bool WebGPURenderer::CreateDevice() {
             return false;
         }
         surface_.reset(reinterpret_cast<WGPUSurface>(surfHandle));
+
+        // COPY_SRC opt-in probe (canvas_configure.json optIn.copySrc). Same
+        // validation-scope + WaitAny pattern as the storage-format probe above.
+        // Never fails init; ConfigureSurface() below restores render-only.
+        {
+            wgpuDevicePushErrorScope(device_.get(), WGPUErrorFilter_Validation);
+            const int accepted = JS_ProbeCanvasCopySrc(canvasSelector_.c_str(), device_.get());
+            bool hadError = false;
+            WGPUFuture popFuture = wgpuDevicePopErrorScope(device_.get(), WGPUPopErrorScopeCallbackInfo{
+                nullptr, WGPUCallbackMode_WaitAnyOnly,
+                [](WGPUPopErrorScopeStatus status, WGPUErrorType type,
+                   WGPUStringView message, void* userdata1, void* /*userdata2*/) {
+                    if (status != WGPUPopErrorScopeStatus_Success || type != WGPUErrorType_NoError) {
+                        *static_cast<bool*>(userdata1) = true;
+                        if (message.data && message.length > 0) {
+                            printf("[WASM] Canvas COPY_SRC probe validation: %.*s\n",
+                                   (int)message.length, message.data);
+                        }
+                    }
+                },
+                &hadError, nullptr
+            });
+            WGPUFutureWaitInfo popWait = {};
+            popWait.future = popFuture;
+            const WGPUWaitStatus waitStatus =
+                wgpuInstanceWaitAny(instance_.get(), 1, &popWait, UINT64_MAX);
+            canvasCopySrcSupported_ = accepted == 1 && !hadError
+                && waitStatus == WGPUWaitStatus_Success;
+            printf("[WASM] Canvas COPY_SRC probe: %s\n", canvasCopySrcSupported_ ? "yes" : "no");
+        }
+
         // Second configure: JS already set opaque + RENDER_ATTACHMENT so
-        // importJsSurface succeeds. This pass sets width/height + Fifo.
+        // importJsSurface succeeds. This pass sets width/height + Fifo and
+        // restores render-only after the COPY_SRC probe.
         // Do not delete this as a simplification — black canvas on present.
         ConfigureSurface();
     }
@@ -668,6 +733,7 @@ bool WebGPURenderer::CreateDevice() {
                              "other";
         adapterSummary_ += " | surfaceFormat=";
         adapterSummary_ += fmtStr;
+        adapterSummary_ += canvasCopySrcSupported_ ? " | canvasCopySrc=yes" : " | canvasCopySrc=no";
     }
     printf("[WASM] %s\n", adapterSummary_.c_str());
 
@@ -685,13 +751,27 @@ void WebGPURenderer::ConfigureSurface() {
     config.device      = device_.get();
     config.format      = surfaceFormat_;          // negotiated via JS_GetPreferredCanvasFormat()
     config.usage       = WGPUTextureUsage_RenderAttachment;
+    // Capture opt-in (canvas_configure.json optIn.copySrc). Only SetCanvasCopySrc()
+    // turns this on, and only after the boot probe said yes; kept in a member
+    // so a resize reconfigure does not drop it mid-recording.
+    if (canvasCopySrc_) config.usage |= WGPUTextureUsage_CopySrc;
     config.alphaMode   = WGPUCompositeAlphaMode_Opaque;
     config.width       = static_cast<uint32_t>(canvasWidth_);
     config.height      = static_cast<uint32_t>(canvasHeight_);
     config.presentMode = WGPUPresentMode_Fifo;
 
     wgpuSurfaceConfigure(surface_.get(), &config);
-    printf("✅ WebGPU surface configured (%dx%d)\n", canvasWidth_, canvasHeight_);
+    printf("✅ WebGPU surface configured (%dx%d%s)\n", canvasWidth_, canvasHeight_,
+           canvasCopySrc_ ? ", COPY_SRC" : "");
+}
+
+bool WebGPURenderer::SetCanvasCopySrc(bool enabled) {
+    if (!surface_.get() || !device_.get() || deviceLost_) return false;
+    if (enabled && !canvasCopySrcSupported_) return false;
+    if (canvasCopySrc_ == enabled) return true;
+    canvasCopySrc_ = enabled;
+    ConfigureSurface();
+    return true;
 }
 
 // ─── Present to canvas ────────────────────────────────────────────────────────

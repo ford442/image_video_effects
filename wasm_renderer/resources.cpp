@@ -211,8 +211,12 @@ bool WebGPURenderer::CreateResources() {
     // Ping-pong textures (tier-selected rgba format)
     texDesc.format = RgbaStorageFormat(colorFormat_);
     texDesc.usage = WGPUTextureUsage_CopyDst | WGPUTextureUsage_StorageBinding | WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopySrc;
+    // readTexture_ alone also needs RenderAttachment: it is the destination of
+    // queue.copyExternalImageToTexture (LoadImageExternal, GPU still ingest).
+    texDesc.usage |= WGPUTextureUsage_RenderAttachment;
     texDesc.label = MakeStringView("Read Texture");
     readTexture_.reset(wgpuDeviceCreateTexture(device_.get(), &texDesc));
+    texDesc.usage &= ~WGPUTextureUsage_RenderAttachment;
     texDesc.label = MakeStringView("Write Texture");
     writeTexture_.reset(wgpuDeviceCreateTexture(device_.get(), &texDesc));
     texDesc.label = MakeStringView("Ping-Pong 0");
@@ -308,8 +312,11 @@ void WebGPURenderer::RecreateTextures() {
     texDesc.format = RgbaStorageFormat(colorFormat_);
     texDesc.usage = WGPUTextureUsage_CopyDst | WGPUTextureUsage_StorageBinding
                   | WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopySrc;
+    // RenderAttachment on readTexture_ only: copyExternalImageToTexture destination.
+    texDesc.usage |= WGPUTextureUsage_RenderAttachment;
     texDesc.label = MakeStringView("Read Texture");
     readTexture_.reset(wgpuDeviceCreateTexture(device_.get(), &texDesc));
+    texDesc.usage &= ~WGPUTextureUsage_RenderAttachment;
     texDesc.label = MakeStringView("Write Texture");
     writeTexture_.reset(wgpuDeviceCreateTexture(device_.get(), &texDesc));
     texDesc.label = MakeStringView("Ping-Pong 0");

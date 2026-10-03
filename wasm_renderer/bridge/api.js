@@ -6,6 +6,7 @@ import {
   resizeCanvas,
   takeScreenshot,
   uploadImageData,
+  uploadImageSource,
   uploadVideoFrame
 } from "./capture.js";
 import { getDiagnostics } from "./diagnostics.js";
@@ -19,9 +20,11 @@ import {
 import {
   isRecordingActive,
   recordAndDownload,
+  setCanvasCopySrc,
   setRecording,
   startRecording,
-  stopRecording
+  stopRecording,
+  supportsCanvasCopySrc
 } from "./recording.js";
 import {
   getDroppedSlots,
@@ -34,6 +37,7 @@ import {
   setSlotMode,
   setSlotShader
 } from "./shader.js";
+import { isCppRendererReady, readCanvasCopySrc } from "./state.js";
 import {
   addRipple,
   clearRipples,
@@ -91,6 +95,7 @@ const wasmBridge = {
   getLastInitErrorMessage,
   isInitialized,
   uploadImageData,
+  uploadImageSource,
   uploadVideoFrame,
   resizeCanvas,
   setColorFormat,
@@ -98,7 +103,11 @@ const wasmBridge = {
   takeScreenshot,
   startRecording,
   stopRecording,
-  recordAndDownload
+  recordAndDownload,
+  supportsCanvasCopySrc,
+  setCanvasCopySrc,
+  isCppRendererReady,
+  readCanvasCopySrc
 };
 var api_default = wasmBridge;
 export {

@@ -315,6 +315,114 @@ function verifyCanvasConfigure() {
   if (!new RegExp(`\\n\\s*${c.cpp.surfaceConfigureFunction}\\(\\);`).test(afterImport)) {
     fail(`device.cpp must call ${c.cpp.surfaceConfigureFunction}() after ${c.cpp.jsConfigureFunction} (second configure; black canvas without it)`);
   }
+
+  verifyCanvasCopySrcCpp(c, cpp, surf ? surf[0] : '');
+}
+
+/**
+ * C++ canvas COPY_SRC opt-in (canvas_configure.json cpp.copySrc):
+ * probe EM_JS uses exactly optIn.copySrc.usage inside a validation error scope,
+ * ConfigureSurface() restores render-only after it, the opt-in bits map through
+ * cpp.usageEnums and are gated on the flag, and only the setter assigns the flag.
+ */
+function verifyCanvasCopySrcCpp(c, cpp, surfBody) {
+  const cs = c.cpp.copySrc;
+  if (!cs) {
+    fail('canvas_configure.json cpp.copySrc block missing (C++ COPY_SRC opt-in contract)');
+    return;
+  }
+  const optUsage = c.optIn.copySrc.usage;
+
+  const probeFn = cpp.match(new RegExp(`EM_JS\\([^,]+,\\s*${cs.probeFunction}[\\s\\S]*?\\n\\}\\);`));
+  const probeCfg = probeFn && probeFn[0].match(/ctx\.configure\(\{([\s\S]*?)\}\)/);
+  if (!probeCfg) {
+    fail(`device.cpp ${cs.probeFunction} ctx.configure({...}) not found`);
+  } else {
+    const body = probeCfg[1];
+    const usage = body.match(/usage:\s*([^,\n}]+)/);
+    const jsUsage = usage
+      ? usage[1].split('|').map((u) => u.trim().replace(/^GPUTextureUsage\./, '')).sort()
+      : [];
+    if (JSON.stringify(jsUsage) !== JSON.stringify([...optUsage].sort())) {
+      fail(`device.cpp ${cs.probeFunction} usage must be ${optUsage.join('|')} (got ${jsUsage.join('|') || 'missing'})`);
+    }
+    if (!new RegExp(`alphaMode:\\s*'${c.alphaMode}'`).test(body) || !/format:\s*preferredFormat/.test(body)) {
+      fail(`device.cpp ${cs.probeFunction} must keep alphaMode '${c.alphaMode}' and format preferredFormat`);
+    }
+    if (/colorSpace|toneMapping/.test(body)) {
+      fail(`device.cpp ${cs.probeFunction} must not set colorSpace/toneMapping (opt-in is TS-first)`);
+    }
+  }
+
+  // Probe call: push scope → probe → pop scope → ConfigureSurface() (restore render-only).
+  const iCall = cpp.search(new RegExp(`=\\s*${cs.probeFunction}\\(`));
+  if (iCall < 0) {
+    fail(`device.cpp must call ${cs.probeFunction}() at surface creation`);
+  } else {
+    const before = cpp.slice(0, iCall);
+    const after = cpp.slice(iCall);
+    const iPush = before.lastIndexOf('wgpuDevicePushErrorScope(');
+    if (iPush < 0 || !/WGPUErrorFilter_Validation/.test(before.slice(iPush, iPush + 120))) {
+      fail(`device.cpp ${cs.probeFunction}() must run inside wgpuDevicePushErrorScope(..., WGPUErrorFilter_Validation)`);
+    }
+    const iPop = after.indexOf('wgpuDevicePopErrorScope(');
+    const iRestore = after.search(new RegExp(`\\n\\s*${c.cpp.surfaceConfigureFunction}\\(\\);`));
+    if (iPop < 0 || iRestore < 0 || iRestore < iPop) {
+      fail(`device.cpp ${cs.probeFunction}() must be followed by wgpuDevicePopErrorScope then ${c.cpp.surfaceConfigureFunction}() (restore render-only)`);
+    }
+    if (!new RegExp(`${cs.supportedFlag}\\s*=`).test(after.slice(0, iRestore > 0 ? iRestore : undefined))) {
+      fail(`device.cpp must record the probe result in ${cs.supportedFlag} before ${c.cpp.surfaceConfigureFunction}()`);
+    }
+  }
+
+  // ConfigureSurface: opt-in bits (optIn.copySrc.usage minus default usage) via cpp.usageEnums, gated on the flag.
+  const extra = optUsage.filter((u) => !c.usage.includes(u));
+  const wantEnums = extra.map((u) => c.cpp.usageEnums[u]);
+  if (wantEnums.some((e) => !e)) {
+    fail(`canvas_configure.json cpp.usageEnums missing an entry for ${extra.join(', ')}`);
+  }
+  const optLine = surfBody.match(new RegExp(`if\\s*\\(\\s*${cs.flag}\\s*\\)\\s*config\\.usage\\s*\\|=\\s*([^;]+);`));
+  const gotEnums = optLine ? optLine[1].split('|').map((u) => u.trim()).sort() : [];
+  if (JSON.stringify(gotEnums) !== JSON.stringify([...wantEnums].sort())) {
+    fail(`device.cpp ${c.cpp.surfaceConfigureFunction} must have 'if (${cs.flag}) config.usage |= ${wantEnums.join(' | ')};' (got ${gotEnums.join(' | ') || 'missing'})`);
+  }
+
+  // Flag is assigned only in the setter; header defaults both flags to false.
+  const header = fs.readFileSync(path.join(ROOT, 'wasm_renderer/renderer.h'), 'utf8');
+  for (const flag of [cs.flag, cs.supportedFlag]) {
+    if (!new RegExp(`bool\\s+${flag}\\s*=\\s*false;`).test(header)) {
+      fail(`renderer.h must declare 'bool ${flag} = false;'`);
+    }
+  }
+  const setter = cpp.match(new RegExp(`bool WebGPURenderer::${cs.setter}\\([^)]*\\)\\s*\\{[\\s\\S]*?\\n\\}`));
+  if (!setter) {
+    fail(`device.cpp WebGPURenderer::${cs.setter}() not found`);
+  } else {
+    if (!new RegExp(`${c.cpp.surfaceConfigureFunction}\\(\\);`).test(setter[0])) {
+      fail(`device.cpp ${cs.setter}() must call ${c.cpp.surfaceConfigureFunction}()`);
+    }
+    if (!new RegExp(`!\\s*${cs.supportedFlag}`).test(setter[0])) {
+      fail(`device.cpp ${cs.setter}() must refuse enabling when ${cs.supportedFlag} is false`);
+    }
+  }
+  const assignRe = new RegExp(`\\b${cs.flag}\\s*=(?!=)`, 'g');
+  const outsideSetter = setter ? cpp.replace(setter[0], '') : cpp;
+  const stray = [...stripCppComments(outsideSetter).matchAll(assignRe)].length;
+  const wasmSources = walkCppFiles(path.join(ROOT, 'wasm_renderer'))
+    .filter((f) => f !== CPP_DEVICE && !f.endsWith('renderer.h'));
+  const strayElsewhere = wasmSources.filter(
+    (f) => [...stripCppComments(fs.readFileSync(f, 'utf8')).matchAll(assignRe)].length > 0,
+  );
+  if (stray > 0 || strayElsewhere.length > 0) {
+    fail(`${cs.flag} may only be assigned inside ${cs.setter}() (found ${stray} in device.cpp, files: ${strayElsewhere.map((f) => path.relative(ROOT, f)).join(', ') || 'none'})`);
+  }
+
+  const exportsJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/contracts/wasm_exports.json'), 'utf8'));
+  for (const name of cs.exports || []) {
+    if (!exportsJson.exportedFunctions.includes(name)) {
+      fail(`wasm_exports.json must export ${name} (canvas_configure.json cpp.copySrc.exports)`);
+    }
+  }
 }
 
 function verifyWasmExports() {

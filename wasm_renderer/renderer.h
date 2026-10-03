@@ -327,6 +327,21 @@ public:
     // Release the mapped readback buffer.  Call after ReadCapturedFrame().
     void EndFrameCapture();
 
+    // ── Canvas COPY_SRC opt-in (canvas_configure.json optIn.copySrc) ───────────
+    // Probed once at surface creation; the live swapchain stays render-only
+    // until capture code asks for COPY_SRC and restores it afterwards.
+    bool IsCanvasCopySrcSupported() const { return canvasCopySrcSupported_; }
+    bool IsCanvasCopySrc() const { return canvasCopySrc_; }
+    // Reconfigures the swapchain. Returns false when unsupported / no surface.
+    bool SetCanvasCopySrc(bool enabled);
+
+    // GPU still ingest: queue.copyExternalImageToTexture from the JS source the
+    // bridge parked on Module.pixelocityPendingImage into readTexture_. Same
+    // top-left clip + black borders as LoadImage(). Returns false on failure.
+    bool LoadImageExternal(int width, int height);
+
+    static constexpr int GetMaxShaderSlots() { return MAX_SHADER_SLOTS; }
+
 private:
     // ═══════════════════════════════════════════════════════════════════════════
     // INITIALIZATION HELPERS
@@ -467,6 +482,8 @@ private:
     bool     supportsDeepWorkgroup_ = false;
     bool     supportsRgba32FloatStorage_ = false;
     bool     supportsRgba16FloatStorage_ = false;
+    bool     canvasCopySrcSupported_ = false;   // boot probe result
+    bool     canvasCopySrc_ = false;            // assigned only in SetCanvasCopySrc()
     policy::InternalColorFormat colorFormat_ = policy::kUltraColorFormat;
 
     // Wall-clock render timings from last frame (ms) — always updated.

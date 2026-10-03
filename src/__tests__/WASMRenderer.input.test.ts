@@ -9,6 +9,8 @@ jest.mock('../wasm/wasm_bridge', () => ({
   setInputSource: jest.fn(),
   uploadVideoFrame: jest.fn(),
   uploadImageData: jest.fn(),
+  // GPU still ingest unavailable by default so the CPU fallback path is exercised.
+  uploadImageSource: jest.fn().mockReturnValue(false),
   updateUniforms: jest.fn(),
   getFPS: jest.fn().mockReturnValue(60),
 }));
@@ -123,7 +125,7 @@ describe('WASMRenderer input sources', () => {
     });
 
     await renderer.loadImageFromURL('https://example.com/rebind.png');
-    expect(log).toHaveBeenCalledWith('[WASM] Input upload ran: 8×4 (image)');
+    expect(log).toHaveBeenCalledWith('[WASM] Input upload ran: 8×4 (image, CPU fallback)');
     log.mockRestore();
   });
 
@@ -147,7 +149,38 @@ describe('WASMRenderer input sources', () => {
     const size = renderer.loadImageFromElement(src);
     expect(size).toEqual({ width: 4, height: 2 });
     expect(WasmBridge.uploadImageData).toHaveBeenCalledWith(fakeImageData, 4, 2);
-    expect(log).toHaveBeenCalledWith('[WASM] Input upload ran: 4×2 (image)');
+    expect(log).toHaveBeenCalledWith('[WASM] Input upload ran: 4×2 (image, CPU fallback)');
     log.mockRestore();
+  });
+
+  it('loadImageFromElement prefers GPU copyExternalImageToTexture and skips getImageData', () => {
+    const log = jest.spyOn(console, 'log').mockImplementation(() => {});
+    (WasmBridge.uploadImageSource as jest.Mock).mockReturnValueOnce(true);
+    const drawImage = jest.fn();
+    const getImageData = jest.fn();
+    const getContext = jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      drawImage,
+      clearRect: jest.fn(),
+      getImageData,
+    } as unknown as GPUCanvasContext);
+
+    const src = document.createElement('canvas');
+    src.width = 4;
+    src.height = 2;
+
+    expect(renderer.loadImageFromElement(src)).toEqual({ width: 4, height: 2 });
+    expect(WasmBridge.uploadImageSource).toHaveBeenCalledWith(src, 4, 2);
+    expect(WasmBridge.uploadImageData).not.toHaveBeenCalled();
+    expect(getImageData).not.toHaveBeenCalled();
+    expect(log).toHaveBeenCalledWith('[WASM] Input upload ran: 4×2 (image, GPU copy)');
+
+    // The CPU mirror still gets the new still, so a backend switch rebinds it.
+    expect(drawImage).toHaveBeenCalledWith(src, 0, 0, 4, 2);
+    const bitmap = renderer.getCpuInputBitmap() as HTMLCanvasElement;
+    expect(bitmap).not.toBe(src);
+    expect(bitmap.width).toBe(4);
+    expect(bitmap.height).toBe(2);
+    log.mockRestore();
+    getContext.mockRestore();
   });
 });

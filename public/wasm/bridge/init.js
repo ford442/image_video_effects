@@ -92,6 +92,9 @@ async function initWasmRenderer(canvasElement) {
           console.log(
             `[WASM] colorFormat=${state.colorFormat === 1 ? "rgba16float" : "rgba32float"}`
           );
+          const mod2 = wasmRef.module;
+          state.maxShaderSlots = typeof mod2._getMaxShaderSlots === "function" ? mod2._getMaxShaderSlots() : null;
+          console.log(`[WASM] maxShaderSlots=${state.maxShaderSlots ?? "unknown (artifact predates export)"}`);
           promoteWasmCanvasVisible(canvas);
           if (state.pendingInputSource !== null) {
             const src = state.pendingInputSource;
@@ -151,6 +154,7 @@ function shutdownWasmRenderer() {
   state.initialized = false;
   state.activeShader = null;
   state.droppedSlots.clear();
+  state.maxShaderSlots = null;
   wasmRef.module = null;
   wasmRef.canvas = null;
   console.log("[WASM] Shutdown complete");

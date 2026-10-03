@@ -83,14 +83,18 @@ Directory: `src/components/controls/panels/` — see prior doc; `ControlsContain
 
 **Stills (TS):** `WebGPUMediaInput.loadImage` letterboxes via `createImageBitmap(img, { colorSpaceConversion: 'none', resizeWidth/Height })` and `queue.copyExternalImageToTexture` straight into `sourceTex` (+ `readTex` when unscaled). The bitmap is retained in `mediaState.still` so `restoreSourceFromOffscreen` re-copies it after texture recreation. The 2D offscreen is still drawn (no `getImageData`) for CPU consumers (`gpuChores.ingestOffscreen`, `getCpuInputBitmap`). Fallback when the API is missing or the copy throws (tainted source): the old 2D `getImageData` → `rgba8ToFloat32` → `writeTexture` path. `loadImageFromElement` copies from the offscreen canvas the same way.
 
+**Stills (WASM):** `WASMRenderer.loadImageFromElement` → `WasmBridge.uploadImageSource` parks the `HTMLImageElement` / canvas on `Module.pixelocityPendingImage` and calls `loadImageExternal`; C++ `LoadImageExternal` (`audio_depth.cpp`) runs the `JS_CopyExternalImageToTexture` EM_JS, i.e. `queue.copyExternalImageToTexture` into `readTexture_` (which carries `RENDER_ATTACHMENT` for this). Geometry matches the CPU path exactly: top-left, clipped to the canvas, `ClearReadTexture()` first so the rest is black. No `getImageData` when WebGPU is up. Fallback when the export is missing or the copy throws: 2D `getImageData` → `uploadImageData` → `UploadRGBA8ToReadTexture`. Video frames still use the CPU path (follow-up).
+
 **Recording** (`src/hooks/useRecording.ts`, Controls → Recording panel):
 
-| Mode | When | Pipeline |
-|------|------|----------|
-| MediaRecorder (**default**) | GPU encode off, or GPU encode can't start | TS: `canvas.captureStream` → `MediaRecorder`. WASM: `WasmBridge.startRecording` (readback → `putImageData` pump, fallback only) |
-| GPU encode (opt-in checkbox, persisted in `localStorage['pixelocity.recording.gpuEncode']`) | `VideoEncoder` + `VideoFrame` exist and a frame source is available | WebCodecs `VideoEncoder` (VP9 → AV1 → VP8) + `webm-muxer` → `.webm` |
+| Backend | Mode | When | Pipeline |
+|---------|------|------|----------|
+| TS | MediaRecorder (**default**) | GPU encode off, or GPU encode can't start | `canvas.captureStream` → `MediaRecorder` |
+| TS | GPU encode (opt-in checkbox, persisted in `localStorage['pixelocity.recording.gpuEncode']`) | `VideoEncoder` + `VideoFrame` exist and the boot probe's `canvasCopySrc` is true | WebCodecs `VideoEncoder` (VP9 → AV1 → VP8) + `webm-muxer` → `.webm` |
+| WASM | WebCodecs (**default**, checkbox not consulted) | `VideoEncoder` + `VideoFrame` exist | `WASMRenderer.startRecording` injects `startGpuEncodeSession` into `WasmBridge.startRecording` |
+| WASM | MediaRecorder (**logged fallback**) | no `VideoEncoder`, no WebM codec, the session failed to start, or `?record=mediarecorder` | readback → `putImageData` pump → `MediaRecorder`; `console.warn('[WASM Recording] fallback to MediaRecorder: <reason>')` |
 
-GPU-encode frame sources, in order: WASM → `captureFrame()` RGBA readback (`beginFrameCapture`) wrapped as an `RGBA` `VideoFrame`; TS → the canvas itself, after `WebGPURenderer.setCanvasCopySrc(true)` reconfigures the swapchain with `COPY_SRC` (only if the boot probe's `canvasCopySrc` flag is true; restored on stop). Otherwise it falls back to MediaRecorder. A TS `writeTex` → rgba8 readback source for browsers that refuse canvas `COPY_SRC` is a follow-up. No encoder in C++; H.264 is not offered because the muxer is WebM-only.
+Both backends share `startGpuEncodeSession` (`gpuEncodeSupport.ts`). Frame sources, in order: the canvas itself after `setCanvasCopySrc(true)` reconfigures the swapchain with `COPY_SRC` (TS `WebGPURenderer`, or C++ `SetCanvasCopySrc` via `_setCanvasCopySrc`; only when that backend's probe flag is true; restored to render-only on stop, on a null recorder and on a throw); then, WASM only, the `captureFrame()` RGBA readback (`beginFrameCapture` → `readCapturedFrame(ptr, maxBytes)`) wrapped as an `RGBA` `VideoFrame`. Otherwise TS falls back to MediaRecorder. `recording.ts` creates a 2D context only inside the fallback pump (Jest static gate in `WASMBridge.recording.test.ts`). A TS `writeTex` → rgba8 readback source for browsers that refuse canvas `COPY_SRC` is a follow-up. No encoder in C++; H.264 is not offered because the muxer is WebM-only.
 
 **Bundle:** the encoder + muxer live in the lazy `gpu-encode` chunk (`src/recording/gpuEncoder.ts`, loaded by `loadGpuEncoder()` in `gpuEncodeSupport.ts`); `verify:bundle-size` fails if it becomes an entrypoint. `webm-muxer` was chosen over `mp4-muxer` (≈11.8 vs ≈14.3 KiB gzip unminified).
 
