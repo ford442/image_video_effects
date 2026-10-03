@@ -3,6 +3,7 @@
 #include <webgpu/webgpu.h>
 #include <cstdio>
 #include <algorithm>
+#include <memory>
 
 namespace pixelocity {
 
@@ -26,17 +27,14 @@ static float TimestampDeltaMs(uint64_t start, uint64_t end, uint64_t periodNs) {
 bool WebGPURenderer::CreateTimestampQueries() {
     if (!device_.get() || !queue_.get()) return false;
 
-#ifndef WGPUFeatureName_TimestampQuery
-    supportsTimestampQuery_ = false;
-    return false;
-#else
-    if (!wgpuAdapterHasFeature(adapter_.get(), WGPUFeatureName_TimestampQuery)) {
-        printf("[WASM] Timestamp queries: adapter does not support timestamp-query\n");
+    // The device, not the adapter, decides: the feature must have been granted.
+    if (!wgpuDeviceHasFeature(device_.get(), WGPUFeatureName_TimestampQuery)) {
+        printf("[WASM] Timestamp queries: device has no timestamp-query feature\n");
         supportsTimestampQuery_ = false;
         return false;
     }
 
-    WGPUQuerySetDescriptor qsDesc = {};
+    WGPUQuerySetDescriptor qsDesc = WGPU_QUERY_SET_DESCRIPTOR_INIT;
     qsDesc.label = MakeStringView("Timestamp Queries");
     qsDesc.type = WGPUQueryType_Timestamp;
     qsDesc.count = TS_QUERY_COUNT;
@@ -47,7 +45,7 @@ bool WebGPURenderer::CreateTimestampQueries() {
         return false;
     }
 
-    WGPUBufferDescriptor resolveDesc = {};
+    WGPUBufferDescriptor resolveDesc = WGPU_BUFFER_DESCRIPTOR_INIT;
     resolveDesc.label = MakeStringView("Timestamp Resolve");
     resolveDesc.size = TS_QUERY_COUNT * sizeof(uint64_t);
     resolveDesc.usage = WGPUBufferUsage_QueryResolve | WGPUBufferUsage_CopySrc;
@@ -59,7 +57,7 @@ bool WebGPURenderer::CreateTimestampQueries() {
         return false;
     }
 
-    WGPUBufferDescriptor readDesc = {};
+    WGPUBufferDescriptor readDesc = WGPU_BUFFER_DESCRIPTOR_INIT;
     readDesc.label = MakeStringView("Timestamp Readback");
     readDesc.size = TS_QUERY_COUNT * sizeof(uint64_t);
     readDesc.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
@@ -72,27 +70,52 @@ bool WebGPURenderer::CreateTimestampQueries() {
         return false;
     }
 
-    timestampPeriodNs_ = wgpuQueueGetTimestampPeriod(queue_.get());
-    if (timestampPeriodNs_ == 0) {
-        printf("[WASM] Timestamp queries: queue timestamp period is 0 — using wall-clock fallback\n");
-        timestampQuerySet_.reset();
-        timestampResolveBuffer_.reset();
-        timestampReadbackBuffer_.reset();
-        supportsTimestampQuery_ = false;
-        return false;
-    }
+    // Browser WebGPU reports resolved timestamps in nanoseconds (emdawnwebgpu
+    // has no wgpuQueueGetTimestampPeriod), so the period is a fixed 1 ns.
+    timestampPeriodNs_ = 1;
 
     supportsTimestampQuery_ = true;
     printf("[WASM] Timestamp queries enabled (period=%llu ns)\n",
            static_cast<unsigned long long>(timestampPeriodNs_));
     return true;
-#endif
 }
 
 void WebGPURenderer::ResetTimestampFrameState() {
     tsFrameStartWritten_ = false;
     tsParallelStartWritten_ = false;
     tsChainedStartWritten_ = false;
+    tsHadParallel_ = false;
+    tsHadChained_ = false;
+}
+
+void WebGPURenderer::PickComputeTimestampWrites(SlotMode mode, bool isLastComputeOfFrame,
+                                                int32_t& beginIndex, int32_t& endIndex) {
+    beginIndex = -1;
+    endIndex = -1;
+    if (!supportsTimestampQuery_ || !timestampQuerySet_.get()) return;
+
+    if (!tsFrameStartWritten_) {
+        beginIndex = kTsFrameStart;
+        tsFrameStartWritten_ = true;
+    }
+    if (mode == SlotMode::Parallel) {
+        tsHadParallel_ = true;
+        if (!tsParallelStartWritten_) {
+            // Frame start already covers the first parallel begin when both
+            // fall on one pass; decode falls back parallelStart -> frameStart.
+            if (beginIndex < 0) beginIndex = kTsParallelStart;
+            tsParallelStartWritten_ = true;
+        }
+    } else {
+        tsHadChained_ = true;
+        if (!tsChainedStartWritten_) {
+            if (beginIndex < 0) beginIndex = kTsChainedStart;
+            tsChainedStartWritten_ = true;
+        }
+    }
+    // Single end stamp for the whole compute phase; decode fills the
+    // parallel/chained ends from it.
+    if (isLastComputeOfFrame) endIndex = kTsComputeEnd;
 }
 
 void WebGPURenderer::OnTimestampReadback(WGPUMapAsyncStatus status, void* userdata) {
@@ -100,12 +123,8 @@ void WebGPURenderer::OnTimestampReadback(WGPUMapAsyncStatus status, void* userda
     if (!self) return;
     self->timestampReadbackPending_ = false;
 
-    if (status != WGPUMapAsyncStatus_Success) {
-        if (self->timestampReadbackBuffer_.get()) {
-            wgpuBufferUnmap(self->timestampReadbackBuffer_.get());
-        }
-        return;
-    }
+    // A failed or cancelled map leaves the buffer unmapped; nothing to undo.
+    if (status != WGPUMapAsyncStatus_Success) return;
 
     const void* mapped = wgpuBufferGetConstMappedRange(
         self->timestampReadbackBuffer_.get(), 0, TS_QUERY_COUNT * sizeof(uint64_t));
@@ -116,10 +135,29 @@ void WebGPURenderer::OnTimestampReadback(WGPUMapAsyncStatus status, void* userda
 
     const auto* stamps = static_cast<const uint64_t*>(mapped);
 
-    self->gpuParallelTimeMs_ = TimestampDeltaMs(
-        stamps[kTsParallelStart], stamps[kTsParallelEnd], self->timestampPeriodNs_);
-    self->gpuChainedTimeMs_ = TimestampDeltaMs(
-        stamps[kTsChainedStart], stamps[kTsChainedEnd], self->timestampPeriodNs_);
+    // Mirrors TS decodeGpuTimings: indices a frame never wrote resolve to 0,
+    // so fall back to frame start / compute end for the phase bounds.
+    const uint64_t frameStart = stamps[kTsFrameStart];
+    const uint64_t computeEnd = stamps[kTsComputeEnd];
+    uint64_t parallelStart = stamps[kTsParallelStart];
+    uint64_t parallelEnd = stamps[kTsParallelEnd];
+    if (self->readbackHadParallel_) {
+        if (parallelStart == 0) parallelStart = frameStart;
+        if (parallelEnd == 0) parallelEnd = computeEnd;
+    }
+    uint64_t chainedStart = stamps[kTsChainedStart];
+    uint64_t chainedEnd = stamps[kTsChainedEnd];
+    if (self->readbackHadChained_) {
+        if (chainedStart == 0) {
+            chainedStart = stamps[kTsParallelEnd] > 0 ? stamps[kTsParallelEnd] : frameStart;
+        }
+        if (chainedEnd == 0) chainedEnd = computeEnd;
+    }
+
+    self->gpuParallelTimeMs_ = self->readbackHadParallel_
+        ? TimestampDeltaMs(parallelStart, parallelEnd, self->timestampPeriodNs_) : 0.0f;
+    self->gpuChainedTimeMs_ = self->readbackHadChained_
+        ? TimestampDeltaMs(chainedStart, chainedEnd, self->timestampPeriodNs_) : 0.0f;
 
     const float frameToPresent = TimestampDeltaMs(
         stamps[kTsFrameStart], stamps[kTsPresentEnd], self->timestampPeriodNs_);
@@ -144,9 +182,7 @@ void WebGPURenderer::ResolveTimestampQueries() {
         return;
     }
 
-    WGPUCommandEncoderDescriptor encDesc = {};
-    encDesc.label = MakeStringView("Timestamp Resolve Encoder");
-    WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_.get(), &encDesc);
+    WGPUCommandEncoderHandle enc(CreateEncoder("Timestamp Resolve Encoder"));
     if (!enc) return;
 
     wgpuCommandEncoderResolveQuerySet(
@@ -168,18 +204,15 @@ void WebGPURenderer::ResolveTimestampQueries() {
             TS_QUERY_COUNT * sizeof(uint64_t));
     }
 
-    WGPUCommandBufferDescriptor cbDesc = {};
-    cbDesc.label = MakeStringView("Timestamp Resolve CmdBuf");
-    WGPUCommandBuffer cb = wgpuCommandEncoderFinish(enc, &cbDesc);
-    wgpuQueueSubmit(queue_.get(), 1, &cb);
-    wgpuCommandBufferRelease(cb);
-    wgpuCommandEncoderRelease(enc);
+    FinishAndSubmit(enc, "Timestamp Resolve CmdBuf");
 
     if (!canReadback) {
         return;
     }
 
     timestampReadbackPending_ = true;
+    readbackHadParallel_ = tsHadParallel_;
+    readbackHadChained_ = tsHadChained_;
     wgpuBufferMapAsync(
         timestampReadbackBuffer_.get(),
         WGPUMapMode_Read,
@@ -190,9 +223,11 @@ void WebGPURenderer::ResolveTimestampQueries() {
             WGPUCallbackMode_AllowSpontaneous,
             [](WGPUMapAsyncStatus status, WGPUStringView /*message*/,
                void* userdata1, void* /*userdata2*/) {
-                OnTimestampReadback(status, userdata1);
+                std::unique_ptr<CallbackBox> box(static_cast<CallbackBox*>(userdata1));
+                // Null after Shutdown(): the buffer and renderer are gone.
+                if (WebGPURenderer* self = box->Get()) OnTimestampReadback(status, self);
             },
-            this,
+            NewCallbackBox(),
             nullptr
         });
 }

@@ -14,7 +14,13 @@
     "maxComputeWorkgroupSizeY": 16,
     "maxComputeInvocationsPerWorkgroup": 256
   },
+  "deepWorkgroupLimits": {
+    "maxComputeWorkgroupSizeX": 32,
+    "maxComputeWorkgroupSizeY": 32,
+    "maxComputeInvocationsPerWorkgroup": 1024
+  },
   "notes": {
+    "deepWorkgroupLimits": "Requested on top of minimumComputeLimits only when the adapter reports all three at or above these values. WebGPU never grants more than requested, so without this a 1024-capable adapter still yields a 256-invocation device. supportsDeepWorkgroup is read from the device limits after creation, not the adapter. Mirrored in webgpuDevicePolicy.ts buildRequiredLimits(adapterLimits) and device.cpp adapterDeepWorkgroup.",
     "maxTextureDimension2D": "Comfortable floor (WebGPU base limit is 8192; minimum viable 4096). Never derive this from maxBufferSize, pixel count, width*height, or a mis-ordered init arg / heap pointer."
   },
   "cppReferences": {

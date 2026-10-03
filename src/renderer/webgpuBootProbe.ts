@@ -8,6 +8,7 @@ import {
   ADAPTER_ATTEMPT_LADDER,
   assertAdapterMeetsContract,
   buildRequiredLimits,
+  meetsDeepWorkgroupLimits,
   formatAdapterLimitsSummary,
   logAdapterFeatures,
   type AdapterAttempt,
@@ -393,7 +394,7 @@ export async function runWebGpuBootProbe(
       device = await adapter.requestDevice({
         label: 'PixelocityDevice',
         requiredFeatures: wantFeatures,
-        requiredLimits: buildRequiredLimits(maxCanvasDim),
+        requiredLimits: buildRequiredLimits(maxCanvasDim, adapter.limits),
       });
     } catch (e) {
       record.error = e instanceof Error ? e.message : String(e);
@@ -474,8 +475,8 @@ export async function runWebGpuBootProbe(
     attempts.push(record);
 
     const supportsSubgroups = !!(subgroupFeatureName && device.features.has(subgroupFeatureName));
-    const maxInvocations = adapter.limits?.maxComputeInvocationsPerWorkgroup ?? 256;
-    const supportsDeepWorkgroup = maxInvocations >= 1024;
+    // Granted device limits, not the adapter's: those are what shaders run under.
+    const supportsDeepWorkgroup = meetsDeepWorkgroupLimits(device.limits);
     const adapterGpuType = parseAdapterGpuType(
       (adapter.info as GPUAdapterInfo & { adapterType?: string })?.adapterType,
     );

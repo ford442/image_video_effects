@@ -104,18 +104,18 @@ void WebGPURenderer::UpdateDepthMap(const float* data, int width, int height) {
         }
     }
 
-    WGPUTexelCopyTextureInfo dest = {};
+    WGPUTexelCopyTextureInfo dest = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
     dest.texture  = depthTextureRead_;
     dest.mipLevel = 0;
     dest.origin   = {0, 0, 0};
     dest.aspect   = WGPUTextureAspect_All;
 
-    WGPUTexelCopyBufferLayout layout = {};
+    WGPUTexelCopyBufferLayout layout = WGPU_TEXEL_COPY_BUFFER_LAYOUT_INIT;
     layout.offset       = 0;
     layout.bytesPerRow  = static_cast<uint32_t>(dstW) * sizeof(float);
     layout.rowsPerImage = static_cast<uint32_t>(dstH);
 
-    WGPUExtent3D extent = {};
+    WGPUExtent3D extent = WGPU_EXTENT_3D_INIT;
     extent.width              = static_cast<uint32_t>(dstW);
     extent.height             = static_cast<uint32_t>(dstH);
     extent.depthOrArrayLayers = 1;

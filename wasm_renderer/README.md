@@ -37,8 +37,12 @@ Full snapshot: [`STATUS.md`](./STATUS.md) · gaps: [`WASM_RENDERER_GAP_ANALYSIS.
 | `wasm_internal.cpp/h` | Shared helpers (`CheckLimit`, `ParseWorkgroupSize`, …) |
 | `src/wasm/bridge/*.ts` | **Hand-edited TypeScript glue** (edit here; webpack compiles `src/wasm/wasm_bridge.ts`) |
 | `wasm_bridge.js` (generated) | ESM copies in `wasm_renderer/` + `public/wasm/` — do not edit |
-| `build.sh` | **Canonical build** — single-pass `emcc` + emdawnwebgpu |
-| `CMakeLists.txt` | Optional IDE/fallback build (link-time port only). Reads `src/contracts/wasm_exports.json` — not used in CI. |
+| `build.sh` | **The only build** — single-pass `emcc` + emdawnwebgpu. Flags from `src/contracts/wasm_compile_flags.json`, exports from `wasm_exports.json`. |
+
+There is no CMake build (removed 2026-10; it was never used by CI and guessed the emdawn
+include dir). For clangd/IDE indexing, point the language server at emsdk's
+`upstream/bin/clangd` with `--target=wasm32-unknown-emscripten` and
+`--sysroot=$EM_CACHE/sysroot`, plus the flags `build.sh` prints.
 
 Cross-reference: TypeScript device policy lives in `src/renderer/webgpuDevicePolicy.ts`
 (must stay in sync with `device.cpp` `CreateDevice()` limits table).

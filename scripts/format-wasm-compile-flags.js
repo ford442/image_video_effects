@@ -2,7 +2,7 @@
 /**
  * Print toolchain pin / compile flags from src/contracts/wasm_compile_flags.json.
  * Usage: node scripts/format-wasm-compile-flags.js [args|emsdk|output]
- *   args   — one em++ argument per line (std, opt, use-port, -s flags)
+ *   args   — one em++ argument per line (std, opt, use-port, -s flags, extraFlags)
  *   emsdk  — pinned emsdk/emcc version
  *   output — Emscripten JS output file name
  */
@@ -19,6 +19,7 @@ if (kind === 'args') {
     contract.opt,
     `--use-port=${contract.usePort}`,
     ...contract.sFlags.map((f) => `-s${f}`),
+    ...(contract.extraFlags || []),
   ];
   process.stdout.write(`${args.join('\n')}\n`);
 } else if (kind === 'emsdk') {

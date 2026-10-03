@@ -19,6 +19,7 @@ struct ShaderBindingUsage {
     bool writesDataB = false;
     bool readsDataC = false;
     bool usesHistory = false;
+    bool writesDepth = false;  // binding 6 (depth write); gates depthWrite → depthRead feedback
 };
 
 // Timestamp query indices (keep in sync with timing.cpp / WebGPURenderer.ts).

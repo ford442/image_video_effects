@@ -2,6 +2,7 @@
 #include <emscripten/emscripten.h>
 #include <cstdlib>
 #include <cstdio>
+#include <memory>
 
 using namespace pixelocity;
 
@@ -9,7 +10,10 @@ using namespace pixelocity;
 // main.cpp - WASM JavaScript Bridge
 // ═══════════════════════════════════════════════════════════════════════════════
 
-static WebGPURenderer* g_renderer = nullptr;
+// Owned here; every export null-checks it. Spontaneous WebGPU callbacks never
+// hold this pointer directly (see CallbackToken), so reset() is safe while a
+// map or device-lost callback is still pending.
+static std::unique_ptr<WebGPURenderer> g_renderer;
 
 extern "C" {
 
@@ -18,7 +22,7 @@ extern "C" {
 EMSCRIPTEN_KEEPALIVE
 int initWasmRenderer(int width, int height, const char* canvasSelector) {
     if (!g_renderer) {
-        g_renderer = new WebGPURenderer();
+        g_renderer = std::make_unique<WebGPURenderer>();
     }
     bool ok = g_renderer->Initialize(width, height, canvasSelector);
     return ok ? 1 : 0;
@@ -28,8 +32,7 @@ EMSCRIPTEN_KEEPALIVE
 void shutdownWasmRenderer() {
     if (g_renderer) {
         g_renderer->Shutdown();
-        delete g_renderer;
-        g_renderer = nullptr;
+        g_renderer.reset();
     }
 }
 
@@ -157,8 +160,10 @@ void setZoomParams(float p1, float p2, float p3, float p4) {
 
 EMSCRIPTEN_KEEPALIVE
 void updateMousePos(float x, float y) {
+    // Position only: the bridge calls this on every pointer move without a
+    // button state, so it must not clear mouseDown_ mid-drag.
     if (g_renderer) {
-        g_renderer->SetMouse(x, y, false);
+        g_renderer->SetMousePos(x, y);
     }
 }
 
