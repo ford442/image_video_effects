@@ -3,7 +3,7 @@ import * as WasmBridge from '../wasm/wasm_bridge';
 import { reportError, type RendererError } from './ErrorHandling';
 import { describeWasmInitFailure, summarizeWasmInitState } from './wasmInitDiagnostics';
 import { InputSource } from './types';
-import { checkPhysicalSlotIndex } from './slotOrchestrator';
+import { PHYSICAL_SLOT_LIMIT, checkPhysicalSlotIndex } from './slotOrchestrator';
 
 import {
   computeInternalDimensions,
@@ -516,7 +516,7 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
   }
 
   getSlotState(index: number): { shaderId: string | null; enabled: boolean; mode: SlotMode } | null {
-    if (index < 0 || index > 2) return null;
+    if (index < 0 || index >= PHYSICAL_SLOT_LIMIT) return null;
     return WasmBridge.getSlotState(index);
   }
 

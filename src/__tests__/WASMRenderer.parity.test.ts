@@ -1,3 +1,4 @@
+import { PHYSICAL_SLOT_LIMIT } from '../renderer/slotOrchestrator';
 import * as WasmBridge from '../wasm/wasm_bridge';
 import { WASMRenderer } from '../renderer/WASMRenderer';
 import { DEFAULT_CONFIG } from '../renderer/Renderer';
@@ -43,6 +44,10 @@ describe('WASMRenderer Phase 3 parity methods', () => {
   it('exposes slot state, GPU timings, and deep-workgroup queries', () => {
     expect(renderer.getSupportsDeepWorkgroup()).toBe(true);
     expect(renderer.getSlotState(0)).toEqual({ shaderId: 'rain', enabled: true, mode: 'chained' });
+    // #1311: slot range comes from PHYSICAL_SLOT_LIMIT (slot_limits.json), not a hardcoded 3.
+    for (let i = 0; i < PHYSICAL_SLOT_LIMIT; i++) expect(renderer.getSlotState(i)).not.toBeNull();
+    expect(renderer.getSlotState(PHYSICAL_SLOT_LIMIT)).toBeNull();
+    expect(renderer.getSlotState(-1)).toBeNull();
     expect(renderer.getGPUTimings()).toEqual({
       parallelTime: 1,
       chainedTime: 2,

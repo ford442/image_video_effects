@@ -1,7 +1,7 @@
 // GENERATED — do not edit. Source: src/wasm/ (concat_bridge.sh / emit-wasm-bridge.mjs)
 
 import { formatCppInitFailure, readCppInitDiagnostics } from "./diagnostics.js";
-import { state, wasmRef } from "./state.js";
+import { getHistoryWorkingSizeCap, state, wasmRef } from "./state.js";
 const SOURCE_MAP = {
   none: 0,
   image: 1,
@@ -16,16 +16,9 @@ async function initWasmRenderer(canvasElement) {
     return true;
   }
   wasmRef.canvas = canvasElement;
-  const sizeFallback = 1024;
-  let cap = sizeFallback;
-  try {
-    if (typeof sessionStorage !== "undefined" && sessionStorage.getItem("px_history_oom_cap") === "1024") {
-      cap = 1024;
-    }
-  } catch {
-  }
-  state.canvasWidth = Math.min(wasmRef.canvas.width || sizeFallback, cap);
-  state.canvasHeight = Math.min(wasmRef.canvas.height || sizeFallback, cap);
+  const cap = getHistoryWorkingSizeCap();
+  state.canvasWidth = Math.min(wasmRef.canvas.width || cap, cap);
+  state.canvasHeight = Math.min(wasmRef.canvas.height || cap, cap);
   state.initStartTime = performance.now();
   return new Promise((resolve) => {
     const pathname = window.location.pathname;

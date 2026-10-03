@@ -42,6 +42,18 @@ export const wasmRef: {
   canvasIdCounter: 0,
 };
 
+/**
+ * Session VRAM budget primitives (#1204). Defined here because the emitted bridge copies are
+ * unbundled and cannot import src/config; src/config/vramBudget.ts re-exports these (#1311).
+ */
+export const HISTORY_OOM_CAP_KEY = 'px_history_oom_cap';
+export const HISTORY_SAFE_WORKING_SIZE = 1024;
+
+/** Default and post-OOM working cap is 1024. 2048 is never returned here. */
+export function getHistoryWorkingSizeCap(): number {
+  return HISTORY_SAFE_WORKING_SIZE;
+}
+
 export const state = {
   initialized: false,
   activeShader: null as string | null,

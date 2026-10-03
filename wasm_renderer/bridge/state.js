@@ -11,6 +11,11 @@ const wasmRef = {
   canvas: null,
   canvasIdCounter: 0
 };
+const HISTORY_OOM_CAP_KEY = "px_history_oom_cap";
+const HISTORY_SAFE_WORKING_SIZE = 1024;
+function getHistoryWorkingSizeCap() {
+  return HISTORY_SAFE_WORKING_SIZE;
+}
 const state = {
   initialized: false,
   activeShader: null,
@@ -49,7 +54,10 @@ const INIT_STAGE_NAMES = {
   8: "Ready"
 };
 export {
+  HISTORY_OOM_CAP_KEY,
+  HISTORY_SAFE_WORKING_SIZE,
   INIT_STAGE_NAMES,
+  getHistoryWorkingSizeCap,
   state,
   utf8ByteLength,
   wasmRef

@@ -1,5 +1,5 @@
 import { formatCppInitFailure, readCppInitDiagnostics } from './diagnostics.js';
-import { state, wasmRef } from './state.js';
+import { getHistoryWorkingSizeCap, state, wasmRef } from './state.js';
 
 const SOURCE_MAP: Record<string, number> = {
   none: 0,
@@ -17,19 +17,11 @@ export async function initWasmRenderer(canvasElement: HTMLCanvasElement): Promis
   }
 
   wasmRef.canvas = canvasElement;
-  // Keep key in sync with src/config/vramBudget.ts HISTORY_OOM_CAP_KEY (#1204).
-  // Default working size is 1024; never pass 2048 as the first WASM committed resource.
-  const sizeFallback = 1024;
-  let cap = sizeFallback;
-  try {
-    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('px_history_oom_cap') === '1024') {
-      cap = 1024;
-    }
-  } catch {
-    /* private mode */
-  }
-  state.canvasWidth = Math.min(wasmRef.canvas.width || sizeFallback, cap);
-  state.canvasHeight = Math.min(wasmRef.canvas.height || sizeFallback, cap);
+  // Shared cap contract with src/config/vramBudget.ts (#1204): default and post-OOM cap is 1024,
+  // never pass 2048 as the first WASM committed resource.
+  const cap = getHistoryWorkingSizeCap();
+  state.canvasWidth = Math.min(wasmRef.canvas.width || cap, cap);
+  state.canvasHeight = Math.min(wasmRef.canvas.height || cap, cap);
   state.initStartTime = performance.now();
 
   return new Promise((resolve) => {

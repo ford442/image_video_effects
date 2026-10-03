@@ -1,18 +1,18 @@
 /**
  * Session VRAM budget after GPUOutOfMemoryError (#1204).
- * WASM bridge copies cannot import this file — keep the sessionStorage keys
- * in sync with src/wasm/bridge/init.ts.
+ * The OOM-cap key and working-size cap are defined in src/wasm/bridge/state.ts
+ * (the emitted bridge copies are unbundled and cannot import this file) and re-exported here.
  *
  * Default working size is 1024. 2048 is an upgrade only (allowsFullWorkingSize).
  * Do not derive maxTextureDimension2D from maxBufferSize — that stays 8192.
  */
 
 import type { AdapterGpuType } from './formatPolicy';
+import { HISTORY_OOM_CAP_KEY, HISTORY_SAFE_WORKING_SIZE, getHistoryWorkingSizeCap } from '../wasm/bridge/state';
 
-export const HISTORY_OOM_CAP_KEY = 'px_history_oom_cap';
+export { HISTORY_OOM_CAP_KEY, HISTORY_SAFE_WORKING_SIZE, getHistoryWorkingSizeCap };
 export const WASM_BLOCK_AFTER_OOM_KEY = 'px_webgpu_oom_block_wasm';
 
-export const HISTORY_SAFE_WORKING_SIZE = 1024;
 export const HISTORY_FULL_WORKING_SIZE = 2048;
 /** WebGPU base maxBufferSize is 256 MiB; require 1 GiB before attempting 2048. */
 export const MIN_MAX_BUFFER_SIZE_FOR_FULL = 1073741824;
@@ -44,11 +44,6 @@ function writeStorage(key: string, value: string): void {
   } catch {
     /* private mode / SSR */
   }
-}
-
-/** Default and post-OOM working cap is 1024. 2048 is never returned here. */
-export function getHistoryWorkingSizeCap(): number {
-  return HISTORY_SAFE_WORKING_SIZE;
 }
 
 export function persistHistoryOomCap(size: number = HISTORY_SAFE_WORKING_SIZE): void {
