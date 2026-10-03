@@ -9,6 +9,7 @@ import {
   collectUserAgentBrands,
 } from './webgpuBootProbe';
 import { ADAPTER_ATTEMPT_LADDER } from './webgpuDevicePolicy';
+import * as ErrorHandling from './ErrorHandling';
 
 const TU = {
   COPY_SRC: 0x01,
@@ -211,6 +212,18 @@ describe('webgpuBootProbe', () => {
       expect(configs.some((c: GPUCanvasConfiguration) => c.usage === (0x10 | 0x01))).toBe(true);
       expect(lastConfig(context)).toMatchObject({ alphaMode: 'opaque', usage: 0x10 });
       expect(lastConfig(context)).not.toHaveProperty('colorSpace');
+    });
+
+    it('routes uncaptured device errors into reportError (#1311)', async () => {
+      const device = makeMockDevice();
+      const result = await runWebGpuBootProbe(setup(makeMockContext(), device), 1024, 1024);
+      expect(result.ok).toBe(true);
+      const spy = jest.spyOn(ErrorHandling, 'reportError').mockImplementation(() => {});
+      jest.spyOn(console, 'error').mockImplementation(() => {});
+      const calls = (device.addEventListener as jest.Mock).mock.calls.filter(([t]) => t === 'uncapturederror');
+      expect(calls.length).toBeGreaterThan(0);
+      calls.forEach(([, fn]) => fn({ error: { name: 'GPUValidationError', message: 'probe-listener-msg' } }));
+      expect(spy).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('probe-listener-msg') }));
     });
 
     it('fails soft when configure throws for COPY_SRC', async () => {

@@ -4,6 +4,7 @@
  */
 
 import { reportError, getBrowserWarning } from './ErrorHandling';
+import { reportUncapturedGpuError } from './gpuErrorRateLimit';
 import {
   ADAPTER_ATTEMPT_LADDER,
   assertAdapterMeetsContract,
@@ -492,7 +493,9 @@ export async function runWebGpuBootProbe(
       + ` colorSpace=${canvasColorOptIns.displayP3 ? 'display-p3' : 'srgb'}`;
 
     device.addEventListener('uncapturederror', (ev) => {
-      console.error('[WebGPU] Uncaptured error:', (ev as GPUUncapturedErrorEvent).error);
+      const error = (ev as GPUUncapturedErrorEvent).error;
+      console.error('[WebGPU] Uncaptured error:', error);
+      if (error) reportUncapturedGpuError(error, 'boot-probe device');
     });
 
     console.log('[WebGPU Probe] Boot probe succeeded:', adapterSummary);

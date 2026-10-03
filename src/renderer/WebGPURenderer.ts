@@ -54,6 +54,7 @@ import type { InternalColorFormat } from '../config/formatPolicy';
 import { DEFAULT_FORMAT_CAPABILITIES, DeviceFormatCapabilities, inferRequiresRgba32Float } from '../config/formatPolicy';
 import { allowsFullWorkingSize, HISTORY_FULL_WORKING_SIZE, HISTORY_SAFE_WORKING_SIZE, persistHistoryOomCap } from '../config/vramBudget';
 import { graphRunner } from './GraphRunner';
+import { reportUncapturedGpuError } from './gpuErrorRateLimit';
 import { GpuChoresHost } from '../gpuChores';
 import type { WebGpuProbeHandoff } from './webgpuBootProbe';
 import { allocateWorkingPool, rungsForRequest } from './webgpu/historyTexProbe';
@@ -234,13 +235,18 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       const err = (ev as GPUUncapturedErrorEvent).error;
       if (!err) return;
       const name = (err as { name?: string }).name;
-      if (name === 'GPUValidationError') return;
+      if (name === 'GPUValidationError') {
+        reportUncapturedGpuError(err, 'WebGPURenderer');
+        return;
+      }
       if (
         (typeof GPUOutOfMemoryError !== 'undefined' && err instanceof GPUOutOfMemoryError) ||
         name === 'GPUOutOfMemoryError' ||
         /out of memory/i.test(err.message)
       ) {
         onOom();
+      } else {
+        reportUncapturedGpuError(err, 'WebGPURenderer');
       }
     });
   }

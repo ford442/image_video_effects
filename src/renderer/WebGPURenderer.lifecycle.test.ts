@@ -4,6 +4,7 @@
 import { WebGPURenderer } from './WebGPURenderer';
 import { DEFAULT_CONFIG } from './Renderer';
 import * as deviceModule from './webgpu/device';
+import * as ErrorHandling from './ErrorHandling';
 
 jest.mock('./webgpu/device', () => ({
   initializeWebGPUDevice: jest.fn(),
@@ -77,5 +78,17 @@ describe('WebGPURenderer lifecycle (#1311 WP-A)', () => {
     lostHandlers[1]();
     expect(detach).toHaveBeenCalledWith('device lost');
     expect((renderer as any).initialized).toBe(false);
+  });
+
+  it('reports GPUValidationError instead of swallowing it', async () => {
+    const dev = makeFakeDevice();
+    (deviceModule.initializeWebGPUDevice as jest.Mock).mockResolvedValueOnce(outcomeFor(dev));
+    const renderer = new WebGPURenderer(DEFAULT_CONFIG);
+    jest.spyOn(renderer as any, 'setupGpuResources').mockResolvedValueOnce('ok');
+    jest.spyOn(renderer.gpuChores, 'attach').mockImplementation(() => undefined as any);
+    expect(await renderer.init(document.createElement('canvas'))).toBe(true);
+    const spy = jest.spyOn(ErrorHandling, 'reportError').mockImplementation(() => {});
+    dev.dispatch('uncapturederror', { error: { name: 'GPUValidationError', message: 'renderer-listener-msg' } } as any);
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('renderer-listener-msg') }));
   });
 });

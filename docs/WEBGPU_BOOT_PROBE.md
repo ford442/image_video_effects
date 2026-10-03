@@ -46,6 +46,16 @@ Typed in `src/types/webgpuProbe.d.ts` / `WebGpuProbeSerializable`:
 
 GPU handles live only on the internal handoff object and are **stripped** before publish.
 
+## Lifecycle after the probe (#1311)
+
+- **Uncaptured device errors** (probe device and `WebGPURenderer`) go through `reportError` via
+  `src/renderer/gpuErrorRateLimit.ts`: first occurrence per message, then every 100th. OOM keeps its
+  dedicated working-size cap path. The `window.webgpuProbe` shape is unchanged.
+- **Remount / re-init** awaits the previous `RendererManager.destroy()` (device destroyed and `device.lost`
+  settled) before the probe runs again, so `requestDevice` never races an in-flight destroy.
+- **WASM render loop death** (10 consecutive errors) reports `wasm-device-lost`; the manager stops
+  advertising WASM and `WebGPUCanvas` shows this overlay with `backend: 'wasm'`. No fallback renderer.
+
 ## Code map
 
 | Piece | Path |
@@ -57,6 +67,7 @@ GPU handles live only on the internal handoff object and are **stripped** before
 | Facade (no auto JS fallback) | `src/renderer/RendererManager.ts` |
 | Overlay | `src/components/WebGpuProbeFailureOverlay.tsx` |
 | Mount (canvas slot) | `src/components/WebGPUCanvas.tsx` |
+| Uncaptured-error routing | `src/renderer/gpuErrorRateLimit.ts` |
 
 ## Related
 
