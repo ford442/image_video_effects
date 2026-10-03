@@ -4,14 +4,17 @@
 
 import {
   appendAdapterSummaryFields,
+  attachUncapturedErrorRouter,
   buildCanvasConfigureOptions,
   collectOptionalDeviceFeatures,
+  createErrorRateLimiter,
   formatEnabledDeviceFeatures,
   initializeWebGPUDevice,
   resolveCanvasColorOptIns,
   resolveSubgroupFeatureName,
 } from './device';
 import canvasConfigureContract from '../../contracts/canvas_configure.json';
+import { setRendererErrorHandler, type RendererError } from '../ErrorHandling';
 import { UNIFORM_BUFFER_LAYOUT } from '../types';
 
 const TU = {
@@ -310,5 +313,43 @@ describe('initializeWebGPUDevice', () => {
         format: 'bgra8unorm',
       }),
     );
+  });
+});
+
+describe('uncaptured error routing', () => {
+  it('rate limits per message and per minute', () => {
+    let now = 0;
+    const allow = createErrorRateLimiter(() => now, { perMessageMs: 5000, maxPerMinute: 3 });
+    expect(allow('a')).toBe(true);
+    expect(allow('a')).toBe(false);
+    now = 5000;
+    expect(allow('a')).toBe(true);
+    expect(allow('b')).toBe(true);
+    expect(allow('c')).toBe(false); // 3 per minute reached
+    now = 61_000;
+    expect(allow('c')).toBe(true);
+  });
+
+  it('sends OOM to onOom and validation errors to reportError, and detaches', () => {
+    const reported: RendererError[] = [];
+    setRendererErrorHandler((e) => reported.push(e));
+    let listener: ((ev: Event) => void) | null = null;
+    const device = {
+      addEventListener: jest.fn((_t: string, fn: (ev: Event) => void) => { listener = fn; }),
+      removeEventListener: jest.fn(() => { listener = null; }),
+    } as unknown as GPUDevice;
+    const onOom = jest.fn();
+    const detach = attachUncapturedErrorRouter(device, { onOom });
+
+    listener!({ error: { name: 'GPUOutOfMemoryError', message: 'oom' } } as unknown as Event);
+    listener!({ error: { name: 'GPUValidationError', message: 'bad layout' } } as unknown as Event);
+    expect(onOom).toHaveBeenCalledTimes(1);
+    expect(reported).toEqual([
+      { type: 'gpu-validation', message: 'GPUValidationError: bad layout', recoverable: true },
+    ]);
+
+    detach();
+    expect(listener).toBeNull();
+    setRendererErrorHandler((e) => console.error(e));
   });
 });

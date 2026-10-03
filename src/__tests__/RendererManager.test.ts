@@ -593,7 +593,7 @@ describe('RendererManager shader forwarding', () => {
   it('releases WebGPU before WASM init (exclusive adapter ownership)', async () => {
     const order: string[] = [];
     const webgpu = makeMockWebGPU();
-    webgpu.destroy = jest.fn(() => {
+    webgpu.destroy = jest.fn(async () => {
       order.push('webgpu.destroy');
     });
     const wasm = makeMockWASM();
@@ -669,5 +669,137 @@ describe('RendererManager shader forwarding', () => {
     expect(webgpuInstances[0].destroy).toHaveBeenCalled();
     expect(webgpuInitCount).toBe(2);
     expect(manager.getActiveRendererType()).toBe('webgpu');
+  });
+});
+
+describe('RendererManager lifecycle', () => {
+  let canvas: HTMLCanvasElement;
+  let rafCallbacks: Map<number, FrameRequestCallback>;
+  let nextRafId: number;
+  let rafSpy: jest.SpyInstance;
+  let cancelSpy: jest.SpyInstance;
+
+  /** Run one frame of every pending rAF callback (loops re-register themselves). */
+  function flushFrame(): void {
+    const pending = Array.from(rafCallbacks.entries());
+    rafCallbacks.clear();
+    for (const [, cb] of pending) cb(performance.now());
+  }
+
+  beforeEach(() => {
+    canvas = document.createElement('canvas');
+    jest.clearAllMocks();
+    rafCallbacks = new Map();
+    nextRafId = 1;
+    rafSpy = jest.spyOn(window, 'requestAnimationFrame').mockImplementation((cb: FrameRequestCallback) => {
+      const id = nextRafId++;
+      rafCallbacks.set(id, cb);
+      // Backend switches await yieldForGpuRelease(); resolve those frames promptly.
+      setTimeout(() => {
+        const pending = rafCallbacks.get(id);
+        if (pending && pending.toString().includes('resolve')) {
+          rafCallbacks.delete(id);
+          pending(performance.now());
+        }
+      }, 0);
+      return id;
+    });
+    cancelSpy = jest.spyOn(window, 'cancelAnimationFrame').mockImplementation((id: number) => {
+      rafCallbacks.delete(id);
+    });
+    (WebGPURenderer as jest.Mock).mockImplementation(() => makeMockWebGPU());
+    (WASMRenderer as jest.Mock).mockImplementation(() => makeMockWASM());
+    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+  });
+
+  afterEach(() => {
+    rafSpy.mockRestore();
+    cancelSpy.mockRestore();
+  });
+
+  it('keeps exactly one metrics loop across 10 backend toggles', async () => {
+    const onMetrics = jest.fn();
+    const manager = new RendererManager(DEFAULT_CONFIG, onMetrics);
+    await manager.init(canvas);
+    for (let i = 0; i < 10; i++) {
+      await manager.switchRenderer(i % 2 === 0 ? 'wasm' : 'webgpu');
+    }
+    await new Promise((r) => setTimeout(r, 0));
+    onMetrics.mockClear();
+    flushFrame();
+    expect(onMetrics).toHaveBeenCalledTimes(1);
+    expect(rafCallbacks.size).toBe(1);
+
+    await manager.destroy();
+    flushFrame();
+    expect(rafCallbacks.size).toBe(0);
+  });
+
+  it('runs no metrics loop without a listener but still reports live FPS', async () => {
+    const manager = new RendererManager(DEFAULT_CONFIG);
+    await manager.init(canvas);
+    await manager.switchRenderer('wasm');
+    await manager.switchRenderer('webgpu');
+    expect(rafCallbacks.size).toBe(0);
+    expect(manager.getCurrentFPS()).toBe(60);
+  });
+
+  it('render() takes no arguments and uploads video frames only on WASM', async () => {
+    const wasm = makeMockWASM();
+    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
+    const manager = new RendererManager(DEFAULT_CONFIG);
+    await manager.init(canvas);
+    await manager.switchRenderer('wasm');
+    expect(manager.render.length).toBe(0);
+    manager.render();
+    expect(wasm.updateVideoFrame).toHaveBeenCalled();
+  });
+
+  it('destroy() resolves after the backend releases its GPU device', async () => {
+    let releaseDone = false;
+    const webgpu = makeMockWebGPU();
+    (webgpu as unknown as { releaseExclusiveGpu: () => Promise<void> }).releaseExclusiveGpu = jest.fn(
+      () => new Promise<void>((resolve) => setTimeout(() => { releaseDone = true; resolve(); }, 5)),
+    );
+    (WebGPURenderer as jest.Mock).mockImplementation(() => webgpu);
+    const manager = new RendererManager(DEFAULT_CONFIG);
+    await manager.init(canvas);
+    await manager.destroy();
+    expect(releaseDone).toBe(true);
+    expect(manager.getActiveRendererType()).toBe('js');
+  });
+
+  it('falls back to WebGPU when the WASM loop reports a fatal error', async () => {
+    let fatal: ((message: string) => void) | null = null;
+    const wasm = makeMockWASM();
+    (wasm as unknown as { setFatalErrorHandler: jest.Mock }).setFatalErrorHandler = jest.fn((h) => { fatal = h; });
+    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
+    const onBackendFailure = jest.fn();
+    const manager = new RendererManager(DEFAULT_CONFIG, undefined, { onBackendFailure });
+    await manager.init(canvas);
+    await manager.switchRenderer('wasm');
+    expect(manager.getActiveRendererType()).toBe('wasm');
+    expect(fatal).not.toBeNull();
+
+    fatal!('render loop stopped');
+    await new Promise((r) => setTimeout(r, 20));
+    expect(manager.getActiveRendererType()).toBe('webgpu');
+    expect(onBackendFailure).not.toHaveBeenCalled();
+  });
+
+  it('reports backend failure when no fallback can take over', async () => {
+    let fatal: ((message: string) => void) | null = null;
+    const wasm = makeMockWASM();
+    (wasm as unknown as { setFatalErrorHandler: jest.Mock }).setFatalErrorHandler = jest.fn((h) => { fatal = h; });
+    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
+    const onBackendFailure = jest.fn();
+    const manager = new RendererManager(DEFAULT_CONFIG, undefined, { onBackendFailure });
+    await manager.init(canvas);
+    await manager.switchRenderer('wasm');
+    (WebGPURenderer as jest.Mock).mockImplementation(() => ({ init: jest.fn().mockResolvedValue(false), destroy: jest.fn() }));
+
+    fatal!('render loop stopped');
+    await new Promise((r) => setTimeout(r, 20));
+    expect(onBackendFailure).toHaveBeenCalledWith('wasm', 'render loop stopped');
   });
 });

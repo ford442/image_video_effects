@@ -3,7 +3,7 @@ import * as WasmBridge from '../wasm/wasm_bridge';
 import { reportError } from './ErrorHandling';
 import { describeWasmInitFailure, summarizeWasmInitState } from './wasmInitDiagnostics';
 import { InputSource } from './types';
-import { checkPhysicalSlotIndex } from './slotOrchestrator';
+import { PHYSICAL_SLOT_LIMIT, checkPhysicalSlotIndex } from './slotOrchestrator';
 
 import {
   computeInternalDimensions,
@@ -66,6 +66,7 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
   private maxInitAttempts = 3;
   private consecutiveRenderErrors = 0;
   private maxRenderErrorsBeforeStopping = 10;
+  private fatalErrorHandler: ((message: string) => void) | null = null;
   private lastFrameDataUrl = '';
   private recording = false;
   private recordingMode: 'loop' | 'continuous' = 'loop';
@@ -514,7 +515,7 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
   }
 
   getSlotState(index: number): { shaderId: string | null; enabled: boolean; mode: SlotMode } | null {
-    if (index < 0 || index > 2) return null;
+    if (!Number.isInteger(index) || index < 0 || index >= PHYSICAL_SLOT_LIMIT) return null;
     return WasmBridge.getSlotState(index);
   }
 
@@ -599,8 +600,8 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     }
   }
 
-  render(): void {
-    // Rendering is driven by the internal animation loop.
+  setFatalErrorHandler(handler: (message: string) => void): void {
+    this.fatalErrorHandler = handler;
   }
 
   destroy(): void {
@@ -655,6 +656,12 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
         if (this.consecutiveRenderErrors >= this.maxRenderErrorsBeforeStopping) {
           console.error('[WASM] Stopping render loop after', this.maxRenderErrorsBeforeStopping, 'consecutive errors');
           this.initialized = false;
+          this.animationId = null;
+          const message =
+            `WASM render loop stopped after ${this.maxRenderErrorsBeforeStopping} consecutive errors: ` +
+            (err instanceof Error ? err.message : String(err));
+          reportError({ type: 'wasm-device-lost', message, recoverable: true });
+          this.fatalErrorHandler?.(message);
           return;
         }
       }

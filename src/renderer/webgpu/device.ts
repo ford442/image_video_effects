@@ -28,6 +28,8 @@ export interface WebGPUDeviceInitResult {
   /** Probe result: swapchain accepts COPY_SRC (enables canvas → VideoFrame capture). */
   canvasCopySrc: boolean;
   canvasColorOptIns: Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'>;
+  /** Removes the boot probe's log-only uncapturederror listener (see WebGpuProbeHandoff). */
+  detachUncapturedLog?: () => void;
 }
 
 export interface WebGPUDeviceInitFailure {
@@ -56,6 +58,7 @@ function outcomeFromHandoff(handoff: WebGpuProbeHandoff): WebGPUDeviceInitResult
     adapterAttemptLabel: handoff.adapterAttemptLabel,
     canvasCopySrc: handoff.canvasCopySrc,
     canvasColorOptIns: handoff.canvasColorOptIns,
+    detachUncapturedLog: handoff.detachUncapturedLog,
   };
 }
 
@@ -213,6 +216,66 @@ export async function initializeWebGPUDevice(
   }
 
   return outcomeFromHandoff(probe.handoff);
+}
+
+/** Report at most one error per distinct message per window, and a global cap per minute. */
+export const UNCAPTURED_ERROR_RATE_LIMIT = { perMessageMs: 5000, maxPerMinute: 20 } as const;
+
+export function createErrorRateLimiter(
+  now: () => number = () => Date.now(),
+  limits: { perMessageMs: number; maxPerMinute: number } = UNCAPTURED_ERROR_RATE_LIMIT,
+): (message: string) => boolean {
+  const lastByMessage = new Map<string, number>();
+  let windowStart = -Infinity;
+  let windowCount = 0;
+  return (message: string) => {
+    const t = now();
+    const last = lastByMessage.get(message);
+    if (last !== undefined && t - last < limits.perMessageMs) return false;
+    if (t - windowStart >= 60_000) {
+      windowStart = t;
+      windowCount = 0;
+    }
+    if (windowCount >= limits.maxPerMinute) return false;
+    windowCount++;
+    lastByMessage.set(message, t);
+    if (lastByMessage.size > 200) lastByMessage.clear();
+    return true;
+  };
+}
+
+function isOutOfMemoryError(err: GPUError): boolean {
+  const name = (err as { name?: string }).name;
+  return (
+    (typeof GPUOutOfMemoryError !== 'undefined' && err instanceof GPUOutOfMemoryError) ||
+    name === 'GPUOutOfMemoryError' ||
+    /out of memory/i.test(err.message)
+  );
+}
+
+/**
+ * Single `uncapturederror` listener for an adopted device: OOM goes to `onOom`, validation and
+ * internal errors go to reportError (rate limited). Returns a detach function for teardown.
+ */
+export function attachUncapturedErrorRouter(
+  device: GPUDevice,
+  handlers: { onOom: () => void },
+  shouldReport: (message: string) => boolean = createErrorRateLimiter(),
+): () => void {
+  const listener = (ev: Event) => {
+    const err = (ev as GPUUncapturedErrorEvent).error;
+    if (!err) return;
+    if (isOutOfMemoryError(err)) {
+      handlers.onOom();
+      return;
+    }
+    const name = (err as { name?: string }).name ?? 'GPUError';
+    const message = `${name}: ${err.message}`;
+    if (!shouldReport(message)) return;
+    reportError({ type: 'gpu-validation', message, recoverable: true });
+  };
+  device.addEventListener('uncapturederror', listener);
+  return () => device.removeEventListener('uncapturederror', listener);
 }
 
 export function attachDeviceLostHandler(

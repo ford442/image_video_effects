@@ -73,6 +73,11 @@ export type WebGpuProbeHandoff = {
   canvasCopySrc: boolean;
   /** Color opt-ins actually applied to the live configure; rebuild configs with these. */
   canvasColorOptIns: Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'>;
+  /**
+   * Removes the probe's log-only `uncapturederror` listener. The renderer calls it when it
+   * adopts the device and installs its own routed listener.
+   */
+  detachUncapturedLog?: () => void;
 };
 
 export type WebGpuProbeSerializable = {
@@ -491,9 +496,11 @@ export async function runWebGpuBootProbe(
       + ` | canvas: copySrc=${canvasCopySrc ? 'yes' : 'no'}`
       + ` colorSpace=${canvasColorOptIns.displayP3 ? 'display-p3' : 'srgb'}`;
 
-    device.addEventListener('uncapturederror', (ev) => {
+    const logUncaptured = (ev: Event) => {
       console.error('[WebGPU] Uncaptured error:', (ev as GPUUncapturedErrorEvent).error);
-    });
+    };
+    device.addEventListener('uncapturederror', logUncaptured);
+    const detachUncapturedLog = () => device.removeEventListener('uncapturederror', logUncaptured);
 
     console.log('[WebGPU Probe] Boot probe succeeded:', adapterSummary);
 
@@ -528,6 +535,7 @@ export async function runWebGpuBootProbe(
         adapterAttemptLabel: attempt.label,
         canvasCopySrc,
         canvasColorOptIns,
+        detachUncapturedLog,
       },
     };
   }

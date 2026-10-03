@@ -39,8 +39,16 @@ export interface ShaderSlotRenderer {
 // Base renderer interface
 export interface Renderer {
   init(canvas: HTMLCanvasElement): Promise<boolean>;
-  render(): void;
-  destroy(): void;
+  /** Backends without an internal loop render on demand; TS WebGPU drives its own rAF loop. */
+  render?(): void;
+  /** Resolves (when async) once the backend's GPU device is released. */
+  destroy(): void | Promise<void>;
+
+  /**
+   * Optional: notified once when the backend stops rendering at runtime (not during init),
+   * so RendererManager can fall back or surface the blocked-renderer overlay.
+   */
+  setFatalErrorHandler?: (handler: (message: string) => void) => void;
 
   // Video input
   setVideo(video: HTMLVideoElement | undefined): void;
