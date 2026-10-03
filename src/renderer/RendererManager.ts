@@ -3,6 +3,7 @@ import { WASMRenderer } from './WASMRenderer';
 import { WebGPURenderer } from './WebGPURenderer';
 import { InputSource, RenderMode, ShaderEntry, SlotParams } from './types';
 import { AdaptivePerformanceController } from './adaptivePerformance';
+import { createMetricsLoop } from './metricsLoop';
 import {
   RendererType,
   getRendererTypeFromURL,
@@ -175,7 +176,7 @@ export class RendererManager {
       this.lastFailedWasmRenderer = null;
       refreshFormatCapabilities(this.perfState, this.shaderRenderer());
       applyPerformancePolicyToRenderer(this.perfState, this.shaderRenderer(), this.adaptiveController);
-      this.startMetricsCollection();
+      this.metricsLoop.start();
       if (type === 'wasm' || type === 'webgpu') {
         await inputBridge.rebindMediaAfterBackendSwitch(this.currentRenderer, {
           inputSource: this.lastInputSource,
@@ -207,15 +208,11 @@ export class RendererManager {
     return false;
   }
 
-  private startMetricsCollection(): void {
-    const tick = () => {
-      const fps = this.currentRenderer?.getFPS?.();
-      if (typeof fps === 'number') this.metrics.fps = fps;
-      this.onMetricsUpdate?.(this.metrics);
-      requestAnimationFrame(tick);
-    };
-    tick();
-  }
+  private readonly metricsLoop = createMetricsLoop(() => {
+    const fps = this.currentRenderer?.getFPS?.();
+    if (typeof fps === 'number') this.metrics.fps = fps;
+    this.onMetricsUpdate?.(this.metrics);
+  });
 
   setVideo(video: HTMLVideoElement): void { inputBridge.setVideo(this.currentRenderer, video); }
   updateVideoFrame(): void { inputBridge.updateVideoFrame(this.currentRenderer); }
@@ -412,6 +409,7 @@ export class RendererManager {
   }
   isRecording(): boolean { return this.currentRenderer?.isRecording?.() ?? false; }
   destroy(): void {
+    this.metricsLoop.stop();
     this.adaptiveController.stop();
     this.currentRenderer?.destroy();
     this.currentRenderer = null;
