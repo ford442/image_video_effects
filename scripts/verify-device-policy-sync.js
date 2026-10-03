@@ -1082,6 +1082,15 @@ function verifyWasmRuntimeInvariants() {
     if (!copyPat.test(frameCpp)) {
       fail(`${frameFile} must CopyTex depthTextureWrite_ → depthTextureRead_ (keep in sync with CopySrc on the write texture)`);
     }
+    if (fmt.depthFeedbackGatePattern) {
+      const gatePat = new RegExp(fmt.depthFeedbackGatePattern, 'g');
+      const gated = (frameCpp.match(gatePat) || []).length;
+      const ungated = (frameCpp.match(new RegExp(copyPat.source, 'g')) || []).length;
+      const want = fmt.depthFeedbackGateCount ?? 1;
+      if (gated < want || ungated !== gated) {
+        fail(`${frameFile} must gate every depthTextureWrite_ → depthTextureRead_ copy on anyWritesDepth (found ${gated} gated of ${ungated}, want ${want}); an ungated copy clobbers uploaded depth maps`);
+      }
+    }
   }
 
   const wg = inv.maxComputeWorkgroupsPerDimension;

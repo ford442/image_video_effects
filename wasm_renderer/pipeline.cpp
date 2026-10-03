@@ -257,94 +257,11 @@ bool WebGPURenderer::CreateBindGroups() {
         return false;
     }
 
-    static constexpr uint32_t BINDING_COUNT = 14;
-    WGPUTextureViewDescriptor viewDesc = {};
-    viewDesc.nextInChain = nullptr;
-    viewDesc.label = MakeStringView(nullptr);
-    viewDesc.format = RgbaStorageFormat(colorFormat_);
-    viewDesc.dimension = WGPUTextureViewDimension_2D;
-    viewDesc.baseMipLevel = 0;
-    viewDesc.mipLevelCount = 1;
-    viewDesc.baseArrayLayer = 0;
-    viewDesc.arrayLayerCount = 1;
-    viewDesc.aspect = WGPUTextureAspect_All;
-
-    WGPUBindGroupEntry entries[BINDING_COUNT] = {};
-    entries[0].binding = 0;
-    entries[0].sampler = filteringSampler_.get();
-
-    entries[1].binding = 1;
-    entries[1].textureView = wgpuTextureCreateView(readTexture_.get(), &viewDesc);
-
-    entries[2].binding = 2;
-    entries[2].textureView = wgpuTextureCreateView(writeTexture_.get(), &viewDesc);
-
-    entries[3].binding = 3;
-    entries[3].buffer = uniformBuffer_.get();
-    entries[3].offset = 0;
-    entries[3].size = wgpuBufferGetSize(uniformBuffer_.get());
-
-    entries[4].binding = 4;
-    viewDesc.format = WGPUTextureFormat_R32Float;
-    entries[4].textureView = wgpuTextureCreateView(depthTextureRead_.get(), &viewDesc);
-
-    entries[5].binding = 5;
-    entries[5].sampler = nonFilteringSampler_.get();
-
-    entries[6].binding = 6;
-    entries[6].textureView = wgpuTextureCreateView(depthTextureWrite_.get(), &viewDesc);
-
-    entries[7].binding = 7;
-    viewDesc.format = RgbaStorageFormat(colorFormat_);
-    entries[7].textureView = wgpuTextureCreateView(dataTextureA_.get(), &viewDesc);
-
-    entries[8].binding = 8;
-    entries[8].textureView = wgpuTextureCreateView(dataTextureB_.get(), &viewDesc);
-
-    entries[9].binding = 9;
-    entries[9].textureView = wgpuTextureCreateView(dataTextureC_.get(), &viewDesc);
-
-    entries[10].binding = 10;
-    entries[10].buffer = extraBuffer_.get();
-    entries[10].offset = 0;
-    entries[10].size = wgpuBufferGetSize(extraBuffer_.get());
-
-    entries[11].binding = 11;
-    entries[11].sampler = comparisonSampler_.get();
-
-    entries[12].binding = 12;
-    entries[12].buffer = plasmaBuffer_.get();
-    entries[12].offset = 0;
-    entries[12].size = wgpuBufferGetSize(plasmaBuffer_.get());
-
-    entries[13].binding = 13;
-    WGPUTextureViewDescriptor historyView = {};
-    historyView.format = RgbaStorageFormat(colorFormat_);
-    historyView.dimension = WGPUTextureViewDimension_2DArray;
-    historyView.baseMipLevel = 0;
-    historyView.mipLevelCount = 1;
-    historyView.baseArrayLayer = 0;
-    historyView.arrayLayerCount = historyLayerCount_;
-    historyView.aspect = WGPUTextureAspect_All;
-    entries[13].textureView = wgpuTextureCreateView(historyTexture_.get(), &historyView);
-
-    WGPUBindGroupDescriptor bindGroupDesc = {};
-    bindGroupDesc.nextInChain = nullptr;
-    bindGroupDesc.label = MakeStringView("Compute Bind Group");
-    bindGroupDesc.layout = computeBindGroupLayout_.get();
-    bindGroupDesc.entryCount = BINDING_COUNT;
-    bindGroupDesc.entries = entries;
-
-    computeBindGroup_.reset(wgpuDeviceCreateBindGroup(device_.get(), &bindGroupDesc));
-
-    // Release texture views (bind group holds its own references)
-    for (uint32_t i = 0; i < BINDING_COUNT; i++) {
-        if (entries[i].textureView) {
-            wgpuTextureViewRelease(entries[i].textureView);
-        }
-    }
-
-    if (!computeBindGroup_.get()) {
+    // Compute bind groups are built per slot in Render() (they differ only in
+    // bindings 1/2). Build one here anyway so a texture or layout mismatch
+    // fails Initialize instead of the first frame.
+    WGPUBindGroupHandle probe(CreateComputeBindGroup(readTexture_.get(), writeTexture_.get()));
+    if (!probe.get()) {
         printf("❌ Failed to create compute bind group\n");
         lastError_ = "wgpuDeviceCreateBindGroup (compute) returned null";
         return false;
@@ -686,6 +603,7 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
     sp.writesDataB = usage.writesDataB;
     sp.readsDataC = usage.readsDataC;
     sp.usesHistory = usage.usesHistory;
+    sp.writesDepth = usage.writesDepth;
     shaders_[id] = std::move(sp);
 
     printf("✅ Loaded shader: %s (workgroup: %ux%u)\n", id,

@@ -58,9 +58,11 @@
     "copySrcUsage": "WGPUTextureUsage_CopySrc",
     "frameFile": "wasm_renderer/frame.cpp",
     "depthFeedbackCopyPattern": "CopyTex\\s*\\([^;]*depthTextureWrite_",
+    "depthFeedbackGatePattern": "if\\s*\\(\\s*anyWritesDepth\\s*\\)\\s*\\{\\s*CopyTex\\s*\\([^;]*depthTextureWrite_",
+    "depthFeedbackGateCount": 2,
     "issue": 1205,
     "tracker": "memory/2026-08-31.md",
-    "rationale": "BGL RGBA32Float vs rewritten shader RGBA16Float produced an invalid pipeline submitted every frame. Catalog WGSL stays rgba32float; LoadShader rewrites storage decls. Depth write must include CopySrc because Feedback Encoder copies it to depth read."
+    "rationale": "BGL RGBA32Float vs rewritten shader RGBA16Float produced an invalid pipeline submitted every frame. Catalog WGSL stays rgba32float; LoadShader rewrites storage decls. Depth write must include CopySrc because Feedback Encoder copies it to depth read. The copy is gated on a pass writing binding 6 (both Render paths): TS has no depthWrite→depthRead copy, and an unconditional copy clobbered depth maps uploaded via UpdateDepthMap after one frame."
   },
   "maxComputeWorkgroupsPerDimension": {
     "value": 65535,

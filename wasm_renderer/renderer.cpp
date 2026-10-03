@@ -30,6 +30,8 @@ bool WebGPURenderer::Initialize(int canvasWidth, int canvasHeight,
     
     canvasWidth_ = canvasWidth;
     canvasHeight_ = canvasHeight;
+    requestedWidth_ = canvasWidth;
+    requestedHeight_ = canvasHeight;
     if (canvasSelector && *canvasSelector) {
         canvasSelector_ = canvasSelector;
     }
@@ -64,6 +66,14 @@ bool WebGPURenderer::Initialize(int canvasWidth, int canvasHeight,
         return false;
     }
 
+    // CreateDevice() configured the swapchain at the requested size; the
+    // historyTex fail-soft may since have shrunk the canvas. The present blit
+    // is a 1:1 textureLoad, so the swapchain must match or the frame crops.
+    if (surface_.get() &&
+        (canvasWidth_ != requestedWidth_ || canvasHeight_ != requestedHeight_)) {
+        ConfigureSurface();
+    }
+
     if (!CreateBindGroupLayout()) {
         if (failedStage_ == InitStage::None) failedStage_ = InitStage::BindGroups;
         if (lastError_.empty()) lastError_ = "CreateBindGroupLayout() failed: see console for details";
@@ -90,6 +100,8 @@ bool WebGPURenderer::Initialize(int canvasWidth, int canvasHeight,
 
     initialized_ = true;
     failedStage_ = InitStage::Ready;
+    frameCount_ = 0;
+    lastFrameTime_ = emscripten_get_now() / 1000.0;  // first FPS window starts now, not at 0
     printf("✅ WebGPU Renderer initialized successfully\n");
     return true;
 }
@@ -123,7 +135,6 @@ void WebGPURenderer::Shutdown() {
 
     // All other GPU objects are RAII handles — they release on assignment/destruction.
     // Explicit reset in reverse-creation order ensures proper GPU object lifetime.
-    computeBindGroup_.reset();
     renderBindGroup_.reset();
     renderPipeline_.reset();
     computePipelineLayout_.reset();

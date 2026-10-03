@@ -176,6 +176,7 @@ ShaderBindingUsage AnalyzeShaderBindings(const char* wgslCode) {
     usage.writesDataB = UsedBeyondDeclaration(wgslCode, 8);
     usage.readsDataC = UsedBeyondDeclaration(wgslCode, 9);
     usage.usesHistory = UsedBeyondDeclaration(wgslCode, 13);
+    usage.writesDepth = UsedBeyondDeclaration(wgslCode, 6);
     return usage;
 }
 

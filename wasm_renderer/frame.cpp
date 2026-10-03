@@ -118,7 +118,7 @@ void WebGPURenderer::UpdateUniformBuffer(bool includeHistoryHead) {
 //     -> Slot 1 compute -> pingPong1_
 //     -> Slot 2 compute -> writeTexture_
 //   Then: writeTexture_ -> readTexture_  (temporal feedback for next frame)
-//         depthWrite_   -> depthRead_
+//         depthWrite_   -> depthRead_    (only when a pass wrote binding 6)
 //         dataTextureA_ -> dataTextureC_  (data-texture feedback)
 //
 // Each slot submission is a separate wgpuQueueSubmit so that per-slot
@@ -149,12 +149,14 @@ void WebGPURenderer::Render() {
     bool anyWritesDataA = false;
     bool anyWritesDataB = false;
     bool anyUsesHistory = false;
+    bool anyWritesDepth = false;
 
     auto accumulateUsage = [&](const ShaderPipeline& sp) {
         anyReadsC = anyReadsC || sp.readsDataC;
         anyWritesDataA = anyWritesDataA || sp.writesDataA;
         anyWritesDataB = anyWritesDataB || sp.writesDataB;
         anyUsesHistory = anyUsesHistory || sp.usesHistory;
+        anyWritesDepth = anyWritesDepth || sp.writesDepth;
     };
 
     // Determine the first enabled slot and the last enabled slot.
@@ -217,7 +219,11 @@ void WebGPURenderer::Render() {
                 wgpuBindGroupRelease(bg);
 
                 CopyTex(enc, writeTexture_.get(), readTexture_.get(), W, H);
-                CopyTex(enc, depthTextureWrite_.get(), depthTextureRead_.get(), W, H);
+                // Depth feedback only when a pass wrote binding 6; otherwise
+                // the copy clobbers a depth map uploaded via UpdateDepthMap.
+                if (anyWritesDepth) {
+                    CopyTex(enc, depthTextureWrite_.get(), depthTextureRead_.get(), W, H);
+                }
                 // dataB first, dataA last — A is primary feedback and must win when both written
                 if (anyReadsC && anyWritesDataB) {
                     CopyTex(enc, dataTextureB_.get(), dataTextureC_.get(), W, H);
@@ -342,7 +348,10 @@ void WebGPURenderer::Render() {
             encDesc.label = MakeStringView("Feedback Encoder");
             WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_.get(), &encDesc);
             CopyTex(enc, writeTexture_.get(),       readTexture_.get(),      W, H);
-            CopyTex(enc, depthTextureWrite_.get(),  depthTextureRead_.get(), W, H);
+            // Depth feedback only when a pass wrote binding 6 (see single-shader path).
+            if (anyWritesDepth) {
+                CopyTex(enc, depthTextureWrite_.get(), depthTextureRead_.get(), W, H);
+            }
             // dataB first, dataA last — A is primary feedback and must win when both written
             if (anyReadsC && anyWritesDataB) {
                 CopyTex(enc, dataTextureB_.get(), dataTextureC_.get(), W, H);
@@ -383,9 +392,9 @@ void WebGPURenderer::Render() {
 
     // Update FPS counter
     frameCount_++;
-    float currentTime = emscripten_get_now() / 1000.0f;
-    if (currentTime - lastFrameTime_ >= 1.0f) {
-        fps_ = frameCount_ / (currentTime - lastFrameTime_);
+    const double currentTime = emscripten_get_now() / 1000.0;
+    if (currentTime - lastFrameTime_ >= 1.0) {
+        fps_ = static_cast<float>(frameCount_ / (currentTime - lastFrameTime_));
         frameCount_ = 0;
         lastFrameTime_ = currentTime;
     }

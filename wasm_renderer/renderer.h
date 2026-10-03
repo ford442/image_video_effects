@@ -159,6 +159,7 @@ struct ShaderPipeline {
     bool writesDataB = false;
     bool readsDataC = false;
     bool usesHistory = false;
+    bool writesDepth = false;
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -444,7 +445,6 @@ private:
     // Compute pipeline (single shared layout for all compute shaders)
     WGPUBindGroupLayoutHandle computeBindGroupLayout_;
     WGPUPipelineLayoutHandle  computePipelineLayout_;
-    WGPUBindGroupHandle       computeBindGroup_;
 
     // Render pipeline (full-screen triangle for final blit)
     WGPURenderPipelineHandle renderPipeline_;
@@ -582,6 +582,14 @@ private:
     bool        initialized_  = false;
     int         canvasWidth_  = 0;
     int         canvasHeight_ = 0;
+    // Size the caller asked for. canvasWidth_/Height_ can be smaller after the
+    // historyTex fail-soft shrink; ResizeCanvas compares against these so a
+    // repeated request for the same size does not rebuild every texture.
+    int         requestedWidth_  = 0;
+    int         requestedHeight_ = 0;
+    // Largest historyTex rung that fit after an OOM (0 = no cap yet). Later
+    // resizes never retry above it in this renderer's lifetime.
+    uint32_t    historySizeCap_  = 0;
 
     // CSS selector of the target HTMLCanvasElement, e.g. "#my-canvas".
     // Empty string means no surface / presentation path.
@@ -599,9 +607,9 @@ private:
     InputSource inputSource_ = InputSource::None;
 
     // Performance metrics
-    float fps_           = 0.0f;
-    float lastFrameTime_ = 0.0f;
-    int   frameCount_    = 0;
+    float  fps_           = 0.0f;
+    double lastFrameTime_ = 0.0;  // seconds; double so long sessions keep precision
+    int    frameCount_    = 0;
 
     static constexpr int MAX_RIPPLES     = 50;
     static constexpr int MAX_PLASMA_BALLS = 50;

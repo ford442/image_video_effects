@@ -121,6 +121,7 @@ bool WebGPURenderer::CreateHistoryTextureFailSoft() {
     };
     for (const auto& rung : rungs) {
         if (rung.size > current) continue;
+        if (historySizeCap_ != 0 && rung.size > historySizeCap_) continue;  // OOMed before
         historyTexture_.reset();
         if (TryCreateHistoryTexture(rung.size, rung.size, rung.layers)) {
             if (rung.size < current) {
@@ -128,6 +129,7 @@ bool WebGPURenderer::CreateHistoryTextureFailSoft() {
                        current, rung.size, rung.layers);
                 canvasWidth_ = static_cast<int>(rung.size);
                 canvasHeight_ = static_cast<int>(rung.size);
+                historySizeCap_ = rung.size;
             } else if (rung.layers < HISTORY_DEPTH) {
                 printf("[WASM] historyTex fail-soft: layers %u (size %u)\n", rung.layers, rung.size);
             }
@@ -264,13 +266,9 @@ bool WebGPURenderer::CreateResources() {
 
     wgpuQueueWriteTexture(queue_.get(), &emptyDest, &black, sizeof(black), &emptyDataLayout, &texDesc.size);
 
-    // Initialize data texture C and readTexture_ to zeros (avoids uninitialised GPU memory).
-    // bytesPerRow must match the allocated colorFormat_ (rgba16float is 8 B/px, not 16).
-    std::vector<float> zeros(static_cast<size_t>(canvasWidth_) * canvasHeight_ * 4, 0.0f);
-    QueueWriteRgba(queue_.get(), dataTextureC_.get(), zeros.data(),
-                   canvasWidth_, canvasHeight_, colorFormat_, packedUploadBuffer_);
-    QueueWriteRgba(queue_.get(), readTexture_.get(), zeros.data(),
-                   canvasWidth_, canvasHeight_, colorFormat_, packedUploadBuffer_);
+    // No zero-fill for dataTextureC_/readTexture_: WebGPU zero-initialises
+    // every new texture, so the old full-canvas upload (64 MB at 2048²
+    // rgba32float) only cost bandwidth.
 
     CreateTimestampQueries();
 
@@ -291,9 +289,6 @@ void WebGPURenderer::RecreateTextures() {
     historyTexture_.reset();
     depthTextureRead_.reset();
     depthTextureWrite_.reset();
-
-    // Release old bind group — it holds views into the old textures.
-    computeBindGroup_.reset();
 
     if (!CreateHistoryTextureFailSoft()) {
         printf("❌ RecreateTextures: historyTex allocation failed\n");
@@ -341,21 +336,7 @@ void WebGPURenderer::RecreateTextures() {
     texDesc.label = MakeStringView("Depth Texture Write");
     depthTextureWrite_.reset(wgpuDeviceCreateTexture(device_.get(), &texDesc));
 
-    // Zero-initialise textures that must start black.
-    // Reuse videoStagingBuffer_ (rgba32float sized) to avoid a separate allocation.
-    const size_t floatCount = static_cast<size_t>(canvasWidth_) * canvasHeight_ * 4;
-    if (videoStagingBuffer_.size() < floatCount) {
-        videoStagingBuffer_.assign(floatCount, 0.0f);
-    } else {
-        std::fill(videoStagingBuffer_.begin(),
-                  videoStagingBuffer_.begin() + static_cast<std::ptrdiff_t>(floatCount),
-                  0.0f);
-    }
-
-    QueueWriteRgba(queue_.get(), dataTextureC_.get(), videoStagingBuffer_.data(),
-                   canvasWidth_, canvasHeight_, colorFormat_, packedUploadBuffer_);
-    QueueWriteRgba(queue_.get(), readTexture_.get(), videoStagingBuffer_.data(),
-                   canvasWidth_, canvasHeight_, colorFormat_, packedUploadBuffer_);
+    // New textures are zero-initialised by WebGPU; no explicit clear needed.
 
     // Rebuild the bind groups with the new texture views.
     // CreateBindGroups() already calls CreateRenderBindGroup() internally.
@@ -369,12 +350,16 @@ void WebGPURenderer::RecreateTextures() {
 
 void WebGPURenderer::ResizeCanvas(int newWidth, int newHeight) {
     if (newWidth <= 0 || newHeight <= 0) return;
-    if (newWidth == canvasWidth_ && newHeight == canvasHeight_) return;
+    // Compare with the last request, not canvasWidth_: after a fail-soft
+    // shrink those differ and every repeat call would rebuild all textures.
+    if (newWidth == requestedWidth_ && newHeight == requestedHeight_) return;
     if (!initialized_ || deviceLost_) return;
 
     printf("🔄 Resizing canvas: %dx%d → %dx%d\n",
            canvasWidth_, canvasHeight_, newWidth, newHeight);
 
+    requestedWidth_ = newWidth;
+    requestedHeight_ = newHeight;
     canvasWidth_  = newWidth;
     canvasHeight_ = newHeight;
 
@@ -435,13 +420,29 @@ void WebGPURenderer::SetColorFormat(int formatEnum) {
 
     printf("[WASM] Switching internal color format to %s\n",
            fmt == policy::InternalColorFormat::Rgba16Float ? "rgba16float" : "rgba32float");
+    const auto previousFormat = colorFormat_;
     colorFormat_ = fmt;
+
+    // Every pipeline was built against the old layout. Drop them and clear
+    // the slots that referenced them, so Render() skips cleanly until the
+    // bridge reloads the stack (instead of looking up ids that are gone).
     shaders_.clear();
+    activeShaderId_.clear();
+    for (auto& slot : slots_) {
+        slot.shaderId.clear();
+        slot.enabled = false;
+    }
 
     computeBindGroupLayout_.reset();
     computePipelineLayout_.reset();
     if (!CreateBindGroupLayout()) {
-        printf("❌ SetColorFormat: CreateBindGroupLayout failed\n");
+        printf("❌ SetColorFormat: CreateBindGroupLayout failed — restoring previous format\n");
+        colorFormat_ = previousFormat;
+        computeBindGroupLayout_.reset();
+        computePipelineLayout_.reset();
+        if (!CreateBindGroupLayout()) {
+            printf("❌ SetColorFormat: previous layout also failed\n");
+        }
         return;
     }
 
