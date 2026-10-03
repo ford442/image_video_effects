@@ -338,28 +338,17 @@ bool WebGPURenderer::CreateDevice() {
     bool hasFloat32Filterable = wgpuAdapterHasFeature(adapter_.get(), WGPUFeatureName_Float32Filterable);
     bool hasFloat32Blendable  = wgpuAdapterHasFeature(adapter_.get(), WGPUFeatureName_Float32Blendable);
     bool hasBGRA8Storage      = wgpuAdapterHasFeature(adapter_.get(), WGPUFeatureName_BGRA8UnormStorage);
-#ifdef WGPUFeatureName_TimestampQuery
+    // WGPUFeatureName_* are enum members, not macros: never guard them with
+    // #ifdef (that compiled timestamp-query and subgroups out entirely).
+    // emdawnwebgpu has no chromium-experimental-subgroups member.
     bool hasTimestampQuery    = wgpuAdapterHasFeature(adapter_.get(), WGPUFeatureName_TimestampQuery);
-#else
-    bool hasTimestampQuery    = false;
-#endif
-#ifdef WGPUFeatureName_Subgroups
     bool hasSubgroups         = wgpuAdapterHasFeature(adapter_.get(), WGPUFeatureName_Subgroups);
-#else
-    bool hasSubgroups         = false;
-#endif
-#ifdef WGPUFeatureName_ChromiumExperimentalSubgroups
-    bool hasChromiumSubgroups = wgpuAdapterHasFeature(adapter_.get(), WGPUFeatureName_ChromiumExperimentalSubgroups);
-#else
-    bool hasChromiumSubgroups = false;
-#endif
-    printf("[WASM] Adapter features: Float32Filterable=%s Float32Blendable=%s BGRA8UnormStorage=%s TimestampQuery=%s Subgroups=%s ChromiumExperimentalSubgroups=%s\n",
+    printf("[WASM] Adapter features: Float32Filterable=%s Float32Blendable=%s BGRA8UnormStorage=%s TimestampQuery=%s Subgroups=%s\n",
            hasFloat32Filterable ? "yes" : "no",
            hasFloat32Blendable  ? "yes" : "no",
            hasBGRA8Storage      ? "yes" : "no",
            hasTimestampQuery    ? "yes" : "no",
-           hasSubgroups ? "yes" : "no",
-           hasChromiumSubgroups ? "yes" : "no");
+           hasSubgroups ? "yes" : "no");
 
     if (!limitsOk) {
         printf("❌ Adapter does not meet the minimum WebGPU limits required by Pixelocity's\n");
@@ -426,22 +415,13 @@ bool WebGPURenderer::CreateDevice() {
         requiredFeatures[requiredFeatureCount++] = WGPUFeatureName_Float32Filterable;
         printf("[WASM] Requesting device feature: Float32Filterable\n");
     }
-#ifdef WGPUFeatureName_TimestampQuery
     if (hasTimestampQuery) {
         requiredFeatures[requiredFeatureCount++] = WGPUFeatureName_TimestampQuery;
         printf("[WASM] Requesting device feature: TimestampQuery\n");
     }
-#endif
     if (hasSubgroups) {
-#ifdef WGPUFeatureName_Subgroups
         requiredFeatures[requiredFeatureCount++] = WGPUFeatureName_Subgroups;
         printf("[WASM] Requesting device feature: Subgroups\n");
-#endif
-    } else if (hasChromiumSubgroups) {
-#ifdef WGPUFeatureName_ChromiumExperimentalSubgroups
-        requiredFeatures[requiredFeatureCount++] = WGPUFeatureName_ChromiumExperimentalSubgroups;
-        printf("[WASM] Requesting device feature: ChromiumExperimentalSubgroups\n");
-#endif
     }
 
     // Request device using callback-based API
@@ -465,12 +445,8 @@ bool WebGPURenderer::CreateDevice() {
             switch (reason) {
                 case WGPUDeviceLostReason_Unknown:     reasonStr = "Unknown";     break;
                 case WGPUDeviceLostReason_Destroyed:   reasonStr = "Destroyed";   break;
-#ifdef WGPUDeviceLostReason_InstanceDropped
-                case WGPUDeviceLostReason_InstanceDropped: reasonStr = "InstanceDropped"; break;
-#endif
-#ifdef WGPUDeviceLostReason_FailedCreation
-                case WGPUDeviceLostReason_FailedCreation: reasonStr = "FailedCreation";  break;
-#endif
+                case WGPUDeviceLostReason_CallbackCancelled: reasonStr = "CallbackCancelled"; break;
+                case WGPUDeviceLostReason_FailedCreation:    reasonStr = "FailedCreation";    break;
                 default: break;
             }
             printf("[WebGPU] Device lost (%s): %.*s\n", reasonStr,
@@ -555,18 +531,10 @@ bool WebGPURenderer::CreateDevice() {
         };
         appendFeat(wgpuDeviceHasFeature(device_.get(), WGPUFeatureName_Float32Filterable),
                    "float32-filterable");
-#ifdef WGPUFeatureName_TimestampQuery
         appendFeat(wgpuDeviceHasFeature(device_.get(), WGPUFeatureName_TimestampQuery),
                    "timestamp-query");
-#endif
-#ifdef WGPUFeatureName_Subgroups
         appendFeat(wgpuDeviceHasFeature(device_.get(), WGPUFeatureName_Subgroups),
                    "subgroups");
-#endif
-#ifdef WGPUFeatureName_ChromiumExperimentalSubgroups
-        appendFeat(wgpuDeviceHasFeature(device_.get(), WGPUFeatureName_ChromiumExperimentalSubgroups),
-                   "chromium-experimental-subgroups");
-#endif
         enabled += "]";
         adapterSummary_ += " | ";
         adapterSummary_ += enabled;
@@ -847,26 +815,25 @@ void WebGPURenderer::PresentToSurface() {
     rpDesc.colorAttachments       = &colorAttach;
     rpDesc.depthStencilAttachment = nullptr;
 
+    // Present begin/end stamps go through the pass descriptor (browsers have
+    // no pass.writeTimestamp). Only when the frame's compute wrote a start,
+    // mirroring TS pickPresentTimestampWrites.
+    WGPUPassTimestampWrites presentStamps = WGPU_PASS_TIMESTAMP_WRITES_INIT;
+    if (supportsTimestampQuery_ && timestampQuerySet_.get() && tsFrameStartWritten_) {
+        presentStamps.querySet = timestampQuerySet_.get();
+        presentStamps.beginningOfPassWriteIndex = static_cast<uint32_t>(wasm_internal::kTsPresentStart);
+        presentStamps.endOfPassWriteIndex = static_cast<uint32_t>(wasm_internal::kTsPresentEnd);
+        rpDesc.timestampWrites = &presentStamps;
+    }
+
     WGPUCommandEncoderDescriptor encDesc = {};
     encDesc.label = MakeStringView("Present Encoder");
     WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_.get(), &encDesc);
 
     WGPURenderPassEncoder rp = wgpuCommandEncoderBeginRenderPass(enc, &rpDesc);
-#ifdef WGPUFeatureName_TimestampQuery
-    if (supportsTimestampQuery_ && timestampQuerySet_.get()) {
-        wgpuRenderPassEncoderWriteTimestamp(rp, timestampQuerySet_.get(),
-                                            static_cast<uint32_t>(wasm_internal::kTsPresentStart));
-    }
-#endif
     wgpuRenderPassEncoderSetPipeline(rp, renderPipeline_.get());
     wgpuRenderPassEncoderSetBindGroup(rp, 0, renderBindGroup_.get(), 0, nullptr);
     wgpuRenderPassEncoderDraw(rp, 4, 1, 0, 0);  // 4 verts for TriangleStrip quad
-#ifdef WGPUFeatureName_TimestampQuery
-    if (supportsTimestampQuery_ && timestampQuerySet_.get()) {
-        wgpuRenderPassEncoderWriteTimestamp(rp, timestampQuerySet_.get(),
-                                            static_cast<uint32_t>(wasm_internal::kTsPresentEnd));
-    }
-#endif
     wgpuRenderPassEncoderEnd(rp);
     wgpuRenderPassEncoderRelease(rp);
 

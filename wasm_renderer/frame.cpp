@@ -18,12 +18,6 @@ using wasm_internal::MakeStringView;
 using wasm_internal::AlignUp;
 using wasm_internal::CheckLimit;
 using wasm_internal::ParseWorkgroupSize;
-using wasm_internal::kTsFrameStart;
-using wasm_internal::kTsComputeEnd;
-using wasm_internal::kTsParallelStart;
-using wasm_internal::kTsParallelEnd;
-using wasm_internal::kTsChainedStart;
-using wasm_internal::kTsChainedEnd;
 
 static void CopyTex(WGPUCommandEncoder enc,
                     WGPUTexture src, WGPUTexture dst,
@@ -202,20 +196,16 @@ void WebGPURenderer::Render() {
                 encDesc.label = MakeStringView("Single Encoder");
                 WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_.get(), &encDesc);
 
-                int32_t tsStart = -1;
-                int32_t tsEndA = -1;
-                int32_t tsEndB = -1;
-                if (supportsTimestampQuery_) {
-                    tsStart = kTsFrameStart;
-                    tsEndA = kTsChainedEnd;
-                    tsEndB = kTsComputeEnd;
-                    tsFrameStartWritten_ = true;
-                    tsChainedStartWritten_ = true;
-                }
+                // One pass is both first and last: FrameStart -> ComputeEnd,
+                // decoded as the chained phase (legacy single shader = chained).
+                int32_t tsBegin = -1;
+                int32_t tsEnd = -1;
+                PickComputeTimestampWrites(SlotMode::Chained, /*isLastComputeOfFrame=*/true,
+                                           tsBegin, tsEnd);
 
                 DispatchComputePass(enc, it->second.pipeline.get(), bg,
                                     it->second.workgroupX, it->second.workgroupY,
-                                    tsStart, tsEndA, tsEndB);
+                                    tsBegin, tsEnd);
                 wgpuBindGroupRelease(bg);
 
                 CopyTex(enc, writeTexture_.get(), readTexture_.get(), W, H);
@@ -291,35 +281,16 @@ void WebGPURenderer::Render() {
             encDesc.label = MakeStringView("Slot Encoder");
             WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_.get(), &encDesc);
 
-            int32_t tsStart = -1;
-            int32_t tsEndA = -1;
-            int32_t tsEndB = -1;
-            if (supportsTimestampQuery_) {
-                if (!tsFrameStartWritten_) {
-                    tsStart = kTsFrameStart;
-                    tsFrameStartWritten_ = true;
-                }
-                if (slots_[i].mode == SlotMode::Parallel) {
-                    if (!tsParallelStartWritten_) {
-                        if (tsStart < 0) tsStart = kTsParallelStart;
-                        tsParallelStartWritten_ = true;
-                    }
-                    tsEndA = kTsParallelEnd;
-                } else {
-                    if (!tsChainedStartWritten_) {
-                        if (tsStart < 0) tsStart = kTsChainedStart;
-                        tsChainedStartWritten_ = true;
-                    }
-                    tsEndA = kTsChainedEnd;
-                }
-                if (i == lastEnabled) {
-                    tsEndB = kTsComputeEnd;
-                }
-            }
+            // Each query index may be written once per frame; reusing the
+            // phase end index on every pass (the old scheme) is a validation
+            // error that drops the whole command buffer.
+            int32_t tsBegin = -1;
+            int32_t tsEnd = -1;
+            PickComputeTimestampWrites(slots_[i].mode, i == lastEnabled, tsBegin, tsEnd);
 
             DispatchComputePass(enc, it->second.pipeline.get(), bg,
                                 it->second.workgroupX, it->second.workgroupY,
-                                tsStart, tsEndA, tsEndB);
+                                tsBegin, tsEnd);
             wgpuBindGroupRelease(bg);
 
             WGPUCommandBufferDescriptor cbDesc = {};

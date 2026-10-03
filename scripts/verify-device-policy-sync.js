@@ -207,6 +207,18 @@ function verifyOptionalFeatures() {
     fail('device.cpp must not request subgroups before timestamp-query');
   }
 
+  // WGPUFeatureName_* / WGPUDeviceLostReason_* are enum members, not macros:
+  // an #ifdef on them is always false and silently compiles the feature out
+  // (timestamp-query and subgroups were dead in every artifact until 2026-10).
+  const cppDir = path.join(ROOT, 'wasm_renderer');
+  for (const f of fs.readdirSync(cppDir).filter((n) => /\.(cpp|h)$/.test(n))) {
+    const src = fs.readFileSync(path.join(cppDir, f), 'utf8');
+    const m = src.match(/#\s*if(?:n?def|\s+defined\s*\(?)\s*(WGPU(?:FeatureName|DeviceLostReason)_\w+)/);
+    if (m) {
+      fail(`wasm_renderer/${f}: preprocessor guard on enum member ${m[1]} is always false; test it at runtime instead`);
+    }
+  }
+
   const scanner = path.join(ROOT, 'src/utils/requestPixelocityDevice.ts');
   if (fs.existsSync(scanner)) {
     const src = fs.readFileSync(scanner, 'utf8');

@@ -418,19 +418,25 @@ void WebGPURenderer::DispatchComputePass(WGPUCommandEncoder encoder,
                                           WGPUBindGroup bindGroup,
                                           uint32_t workgroupX,
                                           uint32_t workgroupY,
-                                          int32_t timestampStartIndex,
-                                          int32_t timestampEndIndexA,
-                                          int32_t timestampEndIndexB) {
+                                          int32_t timestampBeginIndex,
+                                          int32_t timestampEndIndex) {
     if (!pipeline || !bindGroup) return;
     WGPUComputePassDescriptor cpDesc = {};
     cpDesc.label = MakeStringView("Compute Pass");
-    WGPUComputePassEncoder cp = wgpuCommandEncoderBeginComputePass(encoder, &cpDesc);
-#ifdef WGPUFeatureName_TimestampQuery
-    if (supportsTimestampQuery_ && timestampQuerySet_.get() && timestampStartIndex >= 0) {
-        wgpuComputePassEncoderWriteTimestamp(cp, timestampQuerySet_.get(),
-                                             static_cast<uint32_t>(timestampStartIndex));
+    // Browsers only support pass-descriptor timestamps (no pass.writeTimestamp).
+    WGPUPassTimestampWrites stamps = WGPU_PASS_TIMESTAMP_WRITES_INIT;
+    if (supportsTimestampQuery_ && timestampQuerySet_.get()
+        && (timestampBeginIndex >= 0 || timestampEndIndex >= 0)) {
+        stamps.querySet = timestampQuerySet_.get();
+        if (timestampBeginIndex >= 0) {
+            stamps.beginningOfPassWriteIndex = static_cast<uint32_t>(timestampBeginIndex);
+        }
+        if (timestampEndIndex >= 0) {
+            stamps.endOfPassWriteIndex = static_cast<uint32_t>(timestampEndIndex);
+        }
+        cpDesc.timestampWrites = &stamps;
     }
-#endif
+    WGPUComputePassEncoder cp = wgpuCommandEncoderBeginComputePass(encoder, &cpDesc);
     wgpuComputePassEncoderSetPipeline(cp, pipeline);
     wgpuComputePassEncoderSetBindGroup(cp, 0, bindGroup, 0, nullptr);
     wgpuComputePassEncoderDispatchWorkgroups(
@@ -438,18 +444,6 @@ void WebGPURenderer::DispatchComputePass(WGPUCommandEncoder encoder,
         (static_cast<uint32_t>(canvasWidth_)  + workgroupX - 1u) / workgroupX,
         (static_cast<uint32_t>(canvasHeight_) + workgroupY - 1u) / workgroupY,
         1);
-#ifdef WGPUFeatureName_TimestampQuery
-    if (supportsTimestampQuery_ && timestampQuerySet_.get()) {
-        if (timestampEndIndexA >= 0) {
-            wgpuComputePassEncoderWriteTimestamp(cp, timestampQuerySet_.get(),
-                                                 static_cast<uint32_t>(timestampEndIndexA));
-        }
-        if (timestampEndIndexB >= 0) {
-            wgpuComputePassEncoderWriteTimestamp(cp, timestampQuerySet_.get(),
-                                                 static_cast<uint32_t>(timestampEndIndexB));
-        }
-    }
-#endif
     wgpuComputePassEncoderEnd(cp);
     wgpuComputePassEncoderRelease(cp);
 }

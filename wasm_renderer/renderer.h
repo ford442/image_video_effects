@@ -394,14 +394,20 @@ private:
     // Dispatch one compute pass using the given pipeline, bind group, and
     // texture dimensions.  The caller owns encoder/bind-group lifetime.
     // workgroupX/Y default to 16 (parsed from WGSL source in LoadShader).
+    // Timestamp indices (-1 = none) go into the pass descriptor's
+    // timestampWrites; pick them with PickComputeTimestampWrites.
     void DispatchComputePass(WGPUCommandEncoder encoder,
                              WGPUComputePipeline pipeline,
                              WGPUBindGroup bindGroup,
                              uint32_t workgroupX = 16,
                              uint32_t workgroupY = 16,
-                             int32_t timestampStartIndex = -1,
-                             int32_t timestampEndIndexA = -1,
-                             int32_t timestampEndIndexB = -1);
+                             int32_t timestampBeginIndex = -1,
+                             int32_t timestampEndIndex = -1);
+
+    // Port of TS pickComputeTimestampWrites (WebGPUTiming.ts): one begin and
+    // one end per pass, each query index written at most once per frame.
+    void PickComputeTimestampWrites(SlotMode mode, bool isLastComputeOfFrame,
+                                    int32_t& beginIndex, int32_t& endIndex);
 
     // Heap box for a spontaneous callback's userdata; the callback owns it.
     CallbackBox* NewCallbackBox(uint32_t generation = 0) const {
@@ -530,6 +536,11 @@ private:
     bool tsFrameStartWritten_ = false;
     bool tsParallelStartWritten_ = false;
     bool tsChainedStartWritten_ = false;
+    bool tsHadParallel_ = false;   // this frame dispatched a parallel slot
+    bool tsHadChained_  = false;   // this frame dispatched a chained slot
+    // Snapshot of tsHad* for the frame whose stamps are being read back.
+    bool readbackHadParallel_ = false;
+    bool readbackHadChained_  = false;
 
     bool isRecording_ = false;
 
