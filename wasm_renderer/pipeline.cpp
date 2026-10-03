@@ -12,6 +12,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <iterator>
 
 namespace pixelocity {
 
@@ -29,99 +30,113 @@ WGPUTextureFormat RgbaStorageFormat(policy::InternalColorFormat fmt) {
         ? WGPUTextureFormat_RGBA16Float
         : WGPUTextureFormat_RGBA32Float;
 }
+
+// ─── Compute binding table (group 0, bindings 0–13) ──────────────────────────
+// One table drives both the bind group layout and every compute bind group,
+// so the two can no longer drift. Authoritative list: docs/BINDING_CONTRACT.md.
+enum class BindingKind : uint8_t {
+    FilteringSampler,
+    NonFilteringSampler,
+    ComparisonSampler,
+    SampledRgba,       // texture_2d<f32>, tier rgba format
+    SampledRgbaArray,  // texture_2d_array<f32>, tier rgba format
+    SampledR32,        // texture_2d<f32>, r32float
+    StorageRgba,       // texture_storage_2d<tier rgba, write>
+    StorageR32,        // texture_storage_2d<r32float, write>
+    UniformBuffer,
+    StorageBuffer,
+    ReadOnlyStorageBuffer,
+};
+
+// Which renderer object fills the binding. Input/Output are per-pass (the
+// slot's read/write textures); everything else is a shared global.
+enum class BindingResource : uint8_t {
+    FilteringSampler, NonFilteringSampler, ComparisonSampler,
+    Input, Output, Uniforms, DepthRead, DepthWrite,
+    DataA, DataB, DataC, Extra, Plasma, History,
+};
+
+struct ComputeBinding {
+    uint32_t binding;
+    BindingKind kind;
+    BindingResource resource;
+};
+
+constexpr ComputeBinding kComputeBindings[] = {
+    {  0, BindingKind::FilteringSampler,      BindingResource::FilteringSampler },
+    {  1, BindingKind::SampledRgba,           BindingResource::Input },
+    {  2, BindingKind::StorageRgba,           BindingResource::Output },
+    {  3, BindingKind::UniformBuffer,         BindingResource::Uniforms },
+    {  4, BindingKind::SampledR32,            BindingResource::DepthRead },
+    {  5, BindingKind::NonFilteringSampler,   BindingResource::NonFilteringSampler },
+    {  6, BindingKind::StorageR32,            BindingResource::DepthWrite },
+    {  7, BindingKind::StorageRgba,           BindingResource::DataA },
+    {  8, BindingKind::StorageRgba,           BindingResource::DataB },
+    {  9, BindingKind::SampledRgba,           BindingResource::DataC },
+    { 10, BindingKind::StorageBuffer,         BindingResource::Extra },
+    { 11, BindingKind::ComparisonSampler,     BindingResource::ComparisonSampler },
+    { 12, BindingKind::ReadOnlyStorageBuffer, BindingResource::Plasma },
+    { 13, BindingKind::SampledRgbaArray,      BindingResource::History },
+};
+constexpr size_t kComputeBindingCount = std::size(kComputeBindings);
+static_assert(kComputeBindingCount == 14, "compute bind group contract is bindings 0-13");
+
+constexpr bool BindingsAreDense() {
+    for (size_t i = 0; i < kComputeBindingCount; ++i) {
+        if (kComputeBindings[i].binding != i) return false;
+    }
+    return true;
+}
+static_assert(BindingsAreDense(), "kComputeBindings must list bindings 0..13 in order");
 }  // namespace
 
 bool WebGPURenderer::CreateBindGroupLayout() {
-    // 14 bindings (0–13) matching the universal compute shader layout.
-    // See docs/BINDING_CONTRACT.md for the authoritative list.
-    static constexpr uint32_t BINDING_COUNT = 14;
-    WGPUBindGroupLayoutEntry entries[BINDING_COUNT] = {};
-    entries[0].binding = 0;
-    entries[0].visibility = WGPUShaderStage_Compute;
-    entries[0].sampler.type = WGPUSamplerBindingType_Filtering;
-    
-    // Binding 1: Read texture
-    entries[1].binding = 1;
-    entries[1].visibility = WGPUShaderStage_Compute;
-    entries[1].texture.sampleType = WGPUTextureSampleType_Float;
-    entries[1].texture.viewDimension = WGPUTextureViewDimension_2D;
-    
-    // Binding 2: Write texture (storage)
-    entries[2].binding = 2;
-    entries[2].visibility = WGPUShaderStage_Compute;
-    entries[2].storageTexture.access = WGPUStorageTextureAccess_WriteOnly;
-    entries[2].storageTexture.format = RgbaStorageFormat(colorFormat_);
-    entries[2].storageTexture.viewDimension = WGPUTextureViewDimension_2D;
-    
-    // Binding 3: Uniform buffer
-    entries[3].binding = 3;
-    entries[3].visibility = WGPUShaderStage_Compute;
-    entries[3].buffer.type = WGPUBufferBindingType_Uniform;
-    
-    // Binding 4: Depth texture (read)
-    entries[4].binding = 4;
-    entries[4].visibility = WGPUShaderStage_Compute;
-    entries[4].texture.sampleType = WGPUTextureSampleType_Float;
-    entries[4].texture.viewDimension = WGPUTextureViewDimension_2D;
-    
-    // Binding 5: Non-filtering sampler
-    entries[5].binding = 5;
-    entries[5].visibility = WGPUShaderStage_Compute;
-    entries[5].sampler.type = WGPUSamplerBindingType_NonFiltering;
-    
-    // Binding 6: Depth texture (write)
-    entries[6].binding = 6;
-    entries[6].visibility = WGPUShaderStage_Compute;
-    entries[6].storageTexture.access = WGPUStorageTextureAccess_WriteOnly;
-    entries[6].storageTexture.format = WGPUTextureFormat_R32Float;
-    entries[6].storageTexture.viewDimension = WGPUTextureViewDimension_2D;
-    
-    // Binding 7: Data texture A (write)
-    entries[7].binding = 7;
-    entries[7].visibility = WGPUShaderStage_Compute;
-    entries[7].storageTexture.access = WGPUStorageTextureAccess_WriteOnly;
-    entries[7].storageTexture.format = RgbaStorageFormat(colorFormat_);
-    entries[7].storageTexture.viewDimension = WGPUTextureViewDimension_2D;
-    
-    // Binding 8: Data texture B (write)
-    entries[8].binding = 8;
-    entries[8].visibility = WGPUShaderStage_Compute;
-    entries[8].storageTexture.access = WGPUStorageTextureAccess_WriteOnly;
-    entries[8].storageTexture.format = RgbaStorageFormat(colorFormat_);
-    entries[8].storageTexture.viewDimension = WGPUTextureViewDimension_2D;
-    
-    // Binding 9: Data texture C (read)
-    entries[9].binding = 9;
-    entries[9].visibility = WGPUShaderStage_Compute;
-    entries[9].texture.sampleType = WGPUTextureSampleType_Float;
-    entries[9].texture.viewDimension = WGPUTextureViewDimension_2D;
-    
-    // Binding 10: Extra buffer (storage)
-    entries[10].binding = 10;
-    entries[10].visibility = WGPUShaderStage_Compute;
-    entries[10].buffer.type = WGPUBufferBindingType_Storage;
-    
-    // Binding 11: Comparison sampler
-    entries[11].binding = 11;
-    entries[11].visibility = WGPUShaderStage_Compute;
-    entries[11].sampler.type = WGPUSamplerBindingType_Comparison;
-    
-    // Binding 12: Plasma buffer (read-only storage)
-    entries[12].binding = 12;
-    entries[12].visibility = WGPUShaderStage_Compute;
-    entries[12].buffer.type = WGPUBufferBindingType_ReadOnlyStorage;
+    // Layout entries come straight from kComputeBindings (see the table above).
+    std::array<WGPUBindGroupLayoutEntry, kComputeBindingCount> entries{};
+    for (size_t i = 0; i < kComputeBindingCount; ++i) {
+        const ComputeBinding& b = kComputeBindings[i];
+        WGPUBindGroupLayoutEntry e = WGPU_BIND_GROUP_LAYOUT_ENTRY_INIT;
+        e.binding = b.binding;
+        e.visibility = WGPUShaderStage_Compute;
+        switch (b.kind) {
+            case BindingKind::FilteringSampler:
+                e.sampler.type = WGPUSamplerBindingType_Filtering; break;
+            case BindingKind::NonFilteringSampler:
+                e.sampler.type = WGPUSamplerBindingType_NonFiltering; break;
+            case BindingKind::ComparisonSampler:
+                e.sampler.type = WGPUSamplerBindingType_Comparison; break;
+            case BindingKind::SampledRgba:
+            case BindingKind::SampledR32:
+                e.texture.sampleType = WGPUTextureSampleType_Float;
+                e.texture.viewDimension = WGPUTextureViewDimension_2D;
+                break;
+            case BindingKind::SampledRgbaArray:
+                e.texture.sampleType = WGPUTextureSampleType_Float;
+                e.texture.viewDimension = WGPUTextureViewDimension_2DArray;
+                break;
+            case BindingKind::StorageRgba:
+            case BindingKind::StorageR32:
+                e.storageTexture.access = WGPUStorageTextureAccess_WriteOnly;
+                e.storageTexture.format = b.kind == BindingKind::StorageR32
+                    ? WGPUTextureFormat_R32Float
+                    : RgbaStorageFormat(colorFormat_);
+                e.storageTexture.viewDimension = WGPUTextureViewDimension_2D;
+                break;
+            case BindingKind::UniformBuffer:
+                e.buffer.type = WGPUBufferBindingType_Uniform; break;
+            case BindingKind::StorageBuffer:
+                e.buffer.type = WGPUBufferBindingType_Storage; break;
+            case BindingKind::ReadOnlyStorageBuffer:
+                e.buffer.type = WGPUBufferBindingType_ReadOnlyStorage; break;
+        }
+        entries[i] = e;
+    }
 
-    // Binding 13: History ring (2d-array texture, opt-in temporal shaders)
-    entries[13].binding = 13;
-    entries[13].visibility = WGPUShaderStage_Compute;
-    entries[13].texture.sampleType = WGPUTextureSampleType_Float;
-    entries[13].texture.viewDimension = WGPUTextureViewDimension_2DArray;
-
-    WGPUBindGroupLayoutDescriptor layoutDesc = {};
+    WGPUBindGroupLayoutDescriptor layoutDesc = WGPU_BIND_GROUP_LAYOUT_DESCRIPTOR_INIT;
     layoutDesc.nextInChain = nullptr;
     layoutDesc.label = MakeStringView("Compute Bind Group Layout");
-    layoutDesc.entryCount = BINDING_COUNT;
-    layoutDesc.entries = entries;
+    layoutDesc.entryCount = kComputeBindingCount;
+    layoutDesc.entries = entries.data();
 
     computeBindGroupLayout_.reset(wgpuDeviceCreateBindGroupLayout(device_.get(), &layoutDesc));
     if (!computeBindGroupLayout_.get()) {
@@ -132,7 +147,7 @@ bool WebGPURenderer::CreateBindGroupLayout() {
 
     // Create pipeline layout
     WGPUBindGroupLayout rawLayout = computeBindGroupLayout_.get();
-    WGPUPipelineLayoutDescriptor pipelineLayoutDesc = {};
+    WGPUPipelineLayoutDescriptor pipelineLayoutDesc = WGPU_PIPELINE_LAYOUT_DESCRIPTOR_INIT;
     pipelineLayoutDesc.nextInChain = nullptr;
     pipelineLayoutDesc.label = MakeStringView("Compute Pipeline Layout");
     pipelineLayoutDesc.bindGroupLayoutCount = 1;
@@ -176,11 +191,11 @@ bool WebGPURenderer::CreateRenderPipeline() {
         }
     )";
 
-    WGPUShaderSourceWGSL wgslSource = {};
+    WGPUShaderSourceWGSL wgslSource = WGPU_SHADER_SOURCE_WGSL_INIT;
     wgslSource.chain.next = nullptr;
     wgslSource.chain.sType = WGPUSType_ShaderSourceWGSL;
 
-    WGPUShaderModuleDescriptor shaderDesc = {};
+    WGPUShaderModuleDescriptor shaderDesc = WGPU_SHADER_MODULE_DESCRIPTOR_INIT;
     shaderDesc.nextInChain = reinterpret_cast<WGPUChainedStruct*>(&wgslSource);
     wgslSource.code = MakeStringView(vertexShaderCode);
     shaderDesc.label = MakeStringView("Vertex Shader");
@@ -191,7 +206,7 @@ bool WebGPURenderer::CreateRenderPipeline() {
     WGPUShaderModuleHandle fragmentModule(wgpuDeviceCreateShaderModule(device_.get(), &shaderDesc));
 
     // Create render pipeline
-    WGPUBlendState blend = {};
+    WGPUBlendState blend = WGPU_BLEND_STATE_INIT;
     blend.color.operation = WGPUBlendOperation_Add;
     blend.color.srcFactor = WGPUBlendFactor_One;
     blend.color.dstFactor = WGPUBlendFactor_Zero;
@@ -199,39 +214,39 @@ bool WebGPURenderer::CreateRenderPipeline() {
     blend.alpha.srcFactor = WGPUBlendFactor_One;
     blend.alpha.dstFactor = WGPUBlendFactor_Zero;
 
-    WGPUColorTargetState colorTarget = {};
+    WGPUColorTargetState colorTarget = WGPU_COLOR_TARGET_STATE_INIT;
     colorTarget.nextInChain = nullptr;
     colorTarget.format = surfaceFormat_;
     colorTarget.blend = &blend;
     colorTarget.writeMask = WGPUColorWriteMask_All;
 
-    WGPUFragmentState fragmentState = {};
+    WGPUFragmentState fragmentState = WGPU_FRAGMENT_STATE_INIT;
     fragmentState.nextInChain = nullptr;
     fragmentState.module = fragmentModule.get();
     fragmentState.entryPoint = MakeStringView("fs_main");
     fragmentState.targetCount = 1;
     fragmentState.targets = &colorTarget;
 
-    WGPUPrimitiveState primitiveState = {};
+    WGPUPrimitiveState primitiveState = WGPU_PRIMITIVE_STATE_INIT;
     primitiveState.nextInChain = nullptr;
     primitiveState.topology = WGPUPrimitiveTopology_TriangleStrip;
     primitiveState.stripIndexFormat = WGPUIndexFormat_Undefined;
     primitiveState.frontFace = WGPUFrontFace_CCW;
     primitiveState.cullMode = WGPUCullMode_None;
 
-    WGPUMultisampleState multisampleState = {};
+    WGPUMultisampleState multisampleState = WGPU_MULTISAMPLE_STATE_INIT;
     multisampleState.nextInChain = nullptr;
     multisampleState.count = 1;
     multisampleState.mask = 0xFFFFFFFF;
 
-    WGPUVertexState vertexState = {};
+    WGPUVertexState vertexState = WGPU_VERTEX_STATE_INIT;
     vertexState.nextInChain = nullptr;
     vertexState.module = vertexModule.get();
     vertexState.entryPoint = MakeStringView("vs_main");
     vertexState.bufferCount = 0;
     vertexState.buffers = nullptr;
 
-    WGPURenderPipelineDescriptor pipelineDesc = {};
+    WGPURenderPipelineDescriptor pipelineDesc = WGPU_RENDER_PIPELINE_DESCRIPTOR_INIT;
     pipelineDesc.nextInChain = nullptr;
     pipelineDesc.label = MakeStringView("Render Pipeline");
     pipelineDesc.layout = nullptr;  // auto layout (inferred from shader)
@@ -287,11 +302,11 @@ void WebGPURenderer::CreateRenderBindGroup() {
     if (!renderPipeline_.get() || !writeTexture_.get()) return;
 
     // Derive the auto-layout from the pipeline's group 0.
-    WGPUBindGroupLayout layout =
-        wgpuRenderPipelineGetBindGroupLayout(renderPipeline_.get(), 0);
+    WGPUBindGroupLayoutHandle layout(
+        wgpuRenderPipelineGetBindGroupLayout(renderPipeline_.get(), 0));
     if (!layout) return;
 
-    WGPUTextureViewDescriptor viewDesc = {};
+    WGPUTextureViewDescriptor viewDesc = WGPU_TEXTURE_VIEW_DESCRIPTOR_INIT;
     viewDesc.format          = RgbaStorageFormat(colorFormat_);
     viewDesc.dimension       = WGPUTextureViewDimension_2D;
     viewDesc.baseMipLevel    = 0;
@@ -300,23 +315,19 @@ void WebGPURenderer::CreateRenderBindGroup() {
     viewDesc.arrayLayerCount = 1;
     viewDesc.aspect          = WGPUTextureAspect_All;
 
-    WGPUTextureView texView =
-        wgpuTextureCreateView(writeTexture_.get(), &viewDesc);
+    WGPUTextureViewHandle texView(wgpuTextureCreateView(writeTexture_.get(), &viewDesc));
 
-    WGPUBindGroupEntry entry = {};
+    WGPUBindGroupEntry entry = WGPU_BIND_GROUP_ENTRY_INIT;
     entry.binding     = 0;
     entry.textureView = texView;
 
-    WGPUBindGroupDescriptor bgDesc = {};
+    WGPUBindGroupDescriptor bgDesc = WGPU_BIND_GROUP_DESCRIPTOR_INIT;
     bgDesc.label      = MakeStringView("Render Bind Group");
     bgDesc.layout     = layout;
     bgDesc.entryCount = 1;
     bgDesc.entries    = &entry;
 
     renderBindGroup_.reset(wgpuDeviceCreateBindGroup(device_.get(), &bgDesc));
-
-    wgpuTextureViewRelease(texView);
-    wgpuBindGroupLayoutRelease(layout);
 }
 
 // ─── Surface configuration ────────────────────────────────────────────────────
@@ -325,85 +336,87 @@ void WebGPURenderer::CreateRenderBindGroup() {
 // Called once during initialisation and again whenever the canvas is resized.
 
 WGPUBindGroup WebGPURenderer::CreateComputeBindGroup(WGPUTexture readTex, WGPUTexture writeTex) {
-    static constexpr uint32_t BINDING_COUNT = 14;
-    WGPUTextureViewDescriptor rgbaView = {};
-    rgbaView.format          = RgbaStorageFormat(colorFormat_);
-    rgbaView.dimension       = WGPUTextureViewDimension_2D;
-    rgbaView.baseMipLevel    = 0;
-    rgbaView.mipLevelCount   = 1;
-    rgbaView.baseArrayLayer  = 0;
-    rgbaView.arrayLayerCount = 1;
-    rgbaView.aspect          = WGPUTextureAspect_All;
+    auto textureFor = [&](BindingResource r) -> WGPUTexture {
+        switch (r) {
+            case BindingResource::Input:      return readTex;
+            case BindingResource::Output:     return writeTex;
+            case BindingResource::DepthRead:  return depthTextureRead_.get();
+            case BindingResource::DepthWrite: return depthTextureWrite_.get();
+            case BindingResource::DataA:      return dataTextureA_.get();
+            case BindingResource::DataB:      return dataTextureB_.get();
+            case BindingResource::DataC:      return dataTextureC_.get();
+            case BindingResource::History:    return historyTexture_.get();
+            default:                          return nullptr;
+        }
+    };
+    auto samplerFor = [&](BindingResource r) -> WGPUSampler {
+        switch (r) {
+            case BindingResource::FilteringSampler:    return filteringSampler_.get();
+            case BindingResource::NonFilteringSampler: return nonFilteringSampler_.get();
+            case BindingResource::ComparisonSampler:   return comparisonSampler_.get();
+            default:                                   return nullptr;
+        }
+    };
+    auto bufferFor = [&](BindingResource r) -> WGPUBuffer {
+        switch (r) {
+            case BindingResource::Uniforms: return uniformBuffer_.get();
+            case BindingResource::Extra:    return extraBuffer_.get();
+            case BindingResource::Plasma:   return plasmaBuffer_.get();
+            default:                        return nullptr;
+        }
+    };
 
-    WGPUTextureViewDescriptor r32View = rgbaView;
-    r32View.format = WGPUTextureFormat_R32Float;
+    std::array<WGPUBindGroupEntry, kComputeBindingCount> entries{};
+    // Views only need to live until the bind group holds its own references.
+    std::array<WGPUTextureViewHandle, kComputeBindingCount> views;
+    for (size_t i = 0; i < kComputeBindingCount; ++i) {
+        const ComputeBinding& b = kComputeBindings[i];
+        WGPUBindGroupEntry e = WGPU_BIND_GROUP_ENTRY_INIT;
+        e.binding = b.binding;
+        switch (b.kind) {
+            case BindingKind::FilteringSampler:
+            case BindingKind::NonFilteringSampler:
+            case BindingKind::ComparisonSampler:
+                e.sampler = samplerFor(b.resource);
+                break;
+            case BindingKind::UniformBuffer:
+            case BindingKind::StorageBuffer:
+            case BindingKind::ReadOnlyStorageBuffer: {
+                WGPUBuffer buf = bufferFor(b.resource);
+                e.buffer = buf;
+                e.offset = 0;
+                e.size = buf ? wgpuBufferGetSize(buf) : 0;
+                break;
+            }
+            case BindingKind::SampledRgba:
+            case BindingKind::SampledRgbaArray:
+            case BindingKind::SampledR32:
+            case BindingKind::StorageRgba:
+            case BindingKind::StorageR32: {
+                const bool r32 = b.kind == BindingKind::SampledR32 || b.kind == BindingKind::StorageR32;
+                const bool array = b.kind == BindingKind::SampledRgbaArray;
+                WGPUTextureViewDescriptor view = WGPU_TEXTURE_VIEW_DESCRIPTOR_INIT;
+                view.format = r32 ? WGPUTextureFormat_R32Float : RgbaStorageFormat(colorFormat_);
+                view.dimension = array ? WGPUTextureViewDimension_2DArray : WGPUTextureViewDimension_2D;
+                view.baseMipLevel = 0;
+                view.mipLevelCount = 1;
+                view.baseArrayLayer = 0;
+                view.arrayLayerCount = array ? historyLayerCount_ : 1;
+                view.aspect = WGPUTextureAspect_All;
+                views[i].reset(wgpuTextureCreateView(textureFor(b.resource), &view));
+                e.textureView = views[i];
+                break;
+            }
+        }
+        entries[i] = e;
+    }
 
-    WGPUBindGroupEntry entries[BINDING_COUNT] = {};
-
-    entries[0].binding = 0;
-    entries[0].sampler = filteringSampler_.get();
-
-    entries[1].binding     = 1;
-    entries[1].textureView = wgpuTextureCreateView(readTex, &rgbaView);
-
-    entries[2].binding     = 2;
-    entries[2].textureView = wgpuTextureCreateView(writeTex, &rgbaView);
-
-    entries[3].binding = 3;
-    entries[3].buffer  = uniformBuffer_.get();
-    entries[3].offset  = 0;
-    entries[3].size    = wgpuBufferGetSize(uniformBuffer_.get());
-
-    entries[4].binding     = 4;
-    entries[4].textureView = wgpuTextureCreateView(depthTextureRead_.get(), &r32View);
-
-    entries[5].binding = 5;
-    entries[5].sampler = nonFilteringSampler_.get();
-
-    entries[6].binding     = 6;
-    entries[6].textureView = wgpuTextureCreateView(depthTextureWrite_.get(), &r32View);
-
-    entries[7].binding     = 7;
-    entries[7].textureView = wgpuTextureCreateView(dataTextureA_.get(), &rgbaView);
-
-    entries[8].binding     = 8;
-    entries[8].textureView = wgpuTextureCreateView(dataTextureB_.get(), &rgbaView);
-
-    entries[9].binding     = 9;
-    entries[9].textureView = wgpuTextureCreateView(dataTextureC_.get(), &rgbaView);
-
-    entries[10].binding = 10;
-    entries[10].buffer  = extraBuffer_.get();
-    entries[10].offset  = 0;
-    entries[10].size    = wgpuBufferGetSize(extraBuffer_.get());
-
-    entries[11].binding = 11;
-    entries[11].sampler = comparisonSampler_.get();
-
-    entries[12].binding = 12;
-    entries[12].buffer  = plasmaBuffer_.get();
-    entries[12].offset  = 0;
-    entries[12].size    = wgpuBufferGetSize(plasmaBuffer_.get());
-
-    entries[13].binding = 13;
-    WGPUTextureViewDescriptor historyView = rgbaView;
-    historyView.dimension = WGPUTextureViewDimension_2DArray;
-    historyView.arrayLayerCount = historyLayerCount_;
-    entries[13].textureView = wgpuTextureCreateView(historyTexture_.get(), &historyView);
-
-    WGPUBindGroupDescriptor bgDesc = {};
+    WGPUBindGroupDescriptor bgDesc = WGPU_BIND_GROUP_DESCRIPTOR_INIT;
     bgDesc.label      = MakeStringView("Compute Bind Group");
     bgDesc.layout     = computeBindGroupLayout_.get();
-    bgDesc.entryCount = BINDING_COUNT;
-    bgDesc.entries    = entries;
-
-    WGPUBindGroup bg = wgpuDeviceCreateBindGroup(device_.get(), &bgDesc);
-
-    // Release texture views — the bind group holds its own references.
-    for (uint32_t i = 0; i < BINDING_COUNT; i++) {
-        if (entries[i].textureView) wgpuTextureViewRelease(entries[i].textureView);
-    }
-    return bg;
+    bgDesc.entryCount = kComputeBindingCount;
+    bgDesc.entries    = entries.data();
+    return wgpuDeviceCreateBindGroup(device_.get(), &bgDesc);
 }
 
 // Overwrite only the zoom_params portion (bytes 32-47) of the uniform buffer.
@@ -421,7 +434,7 @@ void WebGPURenderer::DispatchComputePass(WGPUCommandEncoder encoder,
                                           int32_t timestampBeginIndex,
                                           int32_t timestampEndIndex) {
     if (!pipeline || !bindGroup) return;
-    WGPUComputePassDescriptor cpDesc = {};
+    WGPUComputePassDescriptor cpDesc = WGPU_COMPUTE_PASS_DESCRIPTOR_INIT;
     cpDesc.label = MakeStringView("Compute Pass");
     // Browsers only support pass-descriptor timestamps (no pass.writeTimestamp).
     WGPUPassTimestampWrites stamps = WGPU_PASS_TIMESTAMP_WRITES_INIT;
@@ -436,7 +449,7 @@ void WebGPURenderer::DispatchComputePass(WGPUCommandEncoder encoder,
         }
         cpDesc.timestampWrites = &stamps;
     }
-    WGPUComputePassEncoder cp = wgpuCommandEncoderBeginComputePass(encoder, &cpDesc);
+    WGPUComputePassEncoderHandle cp(wgpuCommandEncoderBeginComputePass(encoder, &cpDesc));
     wgpuComputePassEncoderSetPipeline(cp, pipeline);
     wgpuComputePassEncoderSetBindGroup(cp, 0, bindGroup, 0, nullptr);
     wgpuComputePassEncoderDispatchWorkgroups(
@@ -445,7 +458,6 @@ void WebGPURenderer::DispatchComputePass(WGPUCommandEncoder encoder,
         (static_cast<uint32_t>(canvasHeight_) + workgroupY - 1u) / workgroupY,
         1);
     wgpuComputePassEncoderEnd(cp);
-    wgpuComputePassEncoderRelease(cp);
 }
 
 bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
@@ -473,12 +485,12 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
     const char* compiledWgsl = rewritten.empty() ? wgslCode : rewritten.c_str();
 
     // Create shader module
-    WGPUShaderSourceWGSL wgslSource = {};
+    WGPUShaderSourceWGSL wgslSource = WGPU_SHADER_SOURCE_WGSL_INIT;
     wgslSource.chain.next = nullptr;
     wgslSource.chain.sType = WGPUSType_ShaderSourceWGSL;
     wgslSource.code = MakeStringView(compiledWgsl);
 
-    WGPUShaderModuleDescriptor shaderDesc = {};
+    WGPUShaderModuleDescriptor shaderDesc = WGPU_SHADER_MODULE_DESCRIPTOR_INIT;
     shaderDesc.nextInChain = reinterpret_cast<WGPUChainedStruct*>(&wgslSource);
     shaderDesc.label = MakeStringView(id);
     WGPUShaderModuleHandle module(wgpuDeviceCreateShaderModule(device_.get(), &shaderDesc));
@@ -526,7 +538,7 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
 
     // Create compute pipeline. Dawn may return a non-null invalid object on
     // format mismatch — catch Validation via error scope and do not store it.
-    WGPUComputePipelineDescriptor pipelineDesc = {};
+    WGPUComputePipelineDescriptor pipelineDesc = WGPU_COMPUTE_PIPELINE_DESCRIPTOR_INIT;
     pipelineDesc.nextInChain = nullptr;
     pipelineDesc.label = MakeStringView(id);
     pipelineDesc.layout = computePipelineLayout_.get();
@@ -558,7 +570,7 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
         WGPUFuture popFuture = wgpuDevicePopErrorScope(device_.get(), WGPUPopErrorScopeCallbackInfo{
             nullptr, WGPUCallbackMode_WaitAnyOnly, popCb, &pop, nullptr
         });
-        WGPUFutureWaitInfo popWait = {};
+        WGPUFutureWaitInfo popWait = WGPU_FUTURE_WAIT_INFO_INIT;
         popWait.future = popFuture;
         const WGPUWaitStatus waitStatus =
             wgpuInstanceWaitAny(instance_.get(), 1, &popWait, UINT64_MAX);

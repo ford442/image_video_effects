@@ -47,7 +47,7 @@
     "cppRewriteFile": "wasm_renderer/wasm_internal.cpp",
     "cppProbeFile": "wasm_renderer/device.cpp",
     "pipelineFile": "wasm_renderer/pipeline.cpp",
-    "bglStorageFormatPattern": "RgbaStorageFormat\\(colorFormat_\\)",
+    "bglStorageFormatPattern": "\\{\\s*(?:2|7|8),\\s*BindingKind::StorageRgba,",
     "bglStorageBindingCount": 3,
     "loadShaderRewriteCall": "RewriteWgslStorageFormats\\s*\\(",
     "loadShaderErrorScope": "wgpuDevicePushErrorScope",

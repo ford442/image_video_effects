@@ -1077,8 +1077,8 @@ function verifyWasmRuntimeInvariants() {
     const wantBgl = fmt.bglStorageBindingCount != null ? fmt.bglStorageBindingCount : 3;
     if (bglHits.length < wantBgl) {
       fail(
-        `${pipelineFile} must set storage texture format via RgbaStorageFormat(colorFormat_) ` +
-          `at least ${wantBgl} times (bindings 2/7/8); found ${bglHits.length}`,
+        `${pipelineFile} kComputeBindings must declare bindings 2/7/8 as BindingKind::StorageRgba ` +
+          `(layout format = RgbaStorageFormat(colorFormat_)); found ${bglHits.length} of ${wantBgl}`,
       );
     }
     const rewriteCall = new RegExp(fmt.loadShaderRewriteCall || 'RewriteWgslStorageFormats\\s*\\(');

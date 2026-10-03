@@ -38,18 +38,18 @@ void QueueWriteRgba(
     if (!queue || !texture || !rgba || width <= 0 || height <= 0) return;
     const size_t floatCount = static_cast<size_t>(width) * static_cast<size_t>(height) * 4u;
 
-    WGPUTexelCopyTextureInfo dest = {};
+    WGPUTexelCopyTextureInfo dest = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
     dest.texture = texture;
     dest.mipLevel = 0;
     dest.origin = {0, 0, 0};
     dest.aspect = WGPUTextureAspect_All;
 
-    WGPUTexelCopyBufferLayout layout = {};
+    WGPUTexelCopyBufferLayout layout = WGPU_TEXEL_COPY_BUFFER_LAYOUT_INIT;
     layout.offset = 0;
     layout.bytesPerRow = format_pack::BytesPerRow(width, fmt);
     layout.rowsPerImage = static_cast<uint32_t>(height);
 
-    WGPUExtent3D extent = {};
+    WGPUExtent3D extent = WGPU_EXTENT_3D_INIT;
     extent.width = static_cast<uint32_t>(width);
     extent.height = static_cast<uint32_t>(height);
     extent.depthOrArrayLayers = 1;
@@ -69,7 +69,7 @@ bool WebGPURenderer::TryCreateHistoryTexture(uint32_t width, uint32_t height, ui
 
     wgpuDevicePushErrorScope(device_.get(), WGPUErrorFilter_OutOfMemory);
 
-    WGPUTextureDescriptor texDesc = {};
+    WGPUTextureDescriptor texDesc = WGPU_TEXTURE_DESCRIPTOR_INIT;
     texDesc.nextInChain = nullptr;
     texDesc.dimension = WGPUTextureDimension_2D;
     texDesc.size = {width, height, layers};
@@ -97,7 +97,7 @@ bool WebGPURenderer::TryCreateHistoryTexture(uint32_t width, uint32_t height, ui
     WGPUFuture popFuture = wgpuDevicePopErrorScope(device_.get(), WGPUPopErrorScopeCallbackInfo{
         nullptr, WGPUCallbackMode_WaitAnyOnly, popCb, &pop, nullptr
     });
-    WGPUFutureWaitInfo popWait = {};
+    WGPUFutureWaitInfo popWait = WGPU_FUTURE_WAIT_INFO_INIT;
     popWait.future = popFuture;
     wgpuInstanceWaitAny(instance_.get(), 1, &popWait, UINT64_MAX);
 
@@ -146,7 +146,7 @@ bool WebGPURenderer::CreateResources() {
     // canvasWidth_/canvasHeight_ are set at init; defaults align with policy::kInternalRenderResolution.
     (void)policy::kInternalRenderResolution;
     // Create samplers
-    WGPUSamplerDescriptor samplerDesc = {};
+    WGPUSamplerDescriptor samplerDesc = WGPU_SAMPLER_DESCRIPTOR_INIT;
     samplerDesc.nextInChain = nullptr;
     // Dawn rejects maxAnisotropy < 1 (C++ {} leaves 0). Spec/JS default is 1.
     samplerDesc.maxAnisotropy = 1;
@@ -174,7 +174,7 @@ bool WebGPURenderer::CreateResources() {
     //   [12..211] = 200 floats: 50 ripples × 4 floats each
     constexpr size_t UNIFORM_BASE_FLOATS = 12;
     constexpr size_t uniformSize = sizeof(float) * (UNIFORM_BASE_FLOATS + MAX_RIPPLES * 4);
-    WGPUBufferDescriptor bufferDesc = {};
+    WGPUBufferDescriptor bufferDesc = WGPU_BUFFER_DESCRIPTOR_INIT;
     bufferDesc.nextInChain = nullptr;
     bufferDesc.label = MakeStringView("Uniform Buffer");
     bufferDesc.size = uniformSize;
@@ -203,7 +203,7 @@ bool WebGPURenderer::CreateResources() {
     }
 
     // Create remaining textures at (possibly fail-soft) canvas size
-    WGPUTextureDescriptor texDesc = {};
+    WGPUTextureDescriptor texDesc = WGPU_TEXTURE_DESCRIPTOR_INIT;
     texDesc.nextInChain = nullptr;
     texDesc.dimension = WGPUTextureDimension_2D;
     texDesc.size = {static_cast<uint32_t>(canvasWidth_), static_cast<uint32_t>(canvasHeight_), 1};
@@ -253,13 +253,13 @@ bool WebGPURenderer::CreateResources() {
     // Initialize empty texture to black (one r32float pixel)
     float black = 0.0f;
 
-    WGPUTexelCopyTextureInfo emptyDest = {};
+    WGPUTexelCopyTextureInfo emptyDest = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
     emptyDest.texture = emptyTexture_.get();
     emptyDest.mipLevel = 0;
     emptyDest.origin = {0, 0, 0};
     emptyDest.aspect = WGPUTextureAspect_All;
 
-    WGPUTexelCopyBufferLayout emptyDataLayout = {};
+    WGPUTexelCopyBufferLayout emptyDataLayout = WGPU_TEXEL_COPY_BUFFER_LAYOUT_INIT;
     emptyDataLayout.offset = 0;
     emptyDataLayout.bytesPerRow = sizeof(float);  // 4 bytes — one r32float pixel
     emptyDataLayout.rowsPerImage = 1;
@@ -296,7 +296,7 @@ void WebGPURenderer::RecreateTextures() {
     }
 
     // Create new textures at the current canvas dimensions.
-    WGPUTextureDescriptor texDesc = {};
+    WGPUTextureDescriptor texDesc = WGPU_TEXTURE_DESCRIPTOR_INIT;
     texDesc.nextInChain = nullptr;
     texDesc.dimension = WGPUTextureDimension_2D;
     texDesc.size = {static_cast<uint32_t>(canvasWidth_), static_cast<uint32_t>(canvasHeight_), 1};

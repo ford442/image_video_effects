@@ -191,7 +191,7 @@ bool WebGPURenderer::CreateDevice() {
                prefName,
                useFallbackAdapter ? "true" : "false");
 
-        WGPURequestAdapterOptions adapterOpts = {};
+        WGPURequestAdapterOptions adapterOpts = WGPU_REQUEST_ADAPTER_OPTIONS_INIT;
         adapterOpts.nextInChain = nullptr;
         // compatibleSurface is intentionally left null: JS_CreateSurfaceFromCanvas
         // (below) creates the surface via WebGPU.importJsSurface(ctx) *after*
@@ -227,7 +227,7 @@ bool WebGPURenderer::CreateDevice() {
                 nullptr, WGPUCallbackMode_WaitAnyOnly, adapterCallback, &adapterFromCallback, nullptr
             });
 
-        WGPUFutureWaitInfo adapterWait = {};
+        WGPUFutureWaitInfo adapterWait = WGPU_FUTURE_WAIT_INFO_INIT;
         adapterWait.future = adapterFuture;
         WGPUWaitStatus waitStatus =
             wgpuInstanceWaitAny(instance_.get(), 1, &adapterWait, UINT64_MAX);
@@ -261,7 +261,7 @@ bool WebGPURenderer::CreateDevice() {
     // ── Adapter info ──────────────────────────────────────────────────────
     // Logs vendor/architecture/device/description so "works on my machine"
     // reports are diagnosable from console output alone.
-    WGPUAdapterInfo adapterInfo = {};
+    WGPUAdapterInfo adapterInfo = WGPU_ADAPTER_INFO_INIT;
     wgpuAdapterGetInfo(adapter_.get(), &adapterInfo);
 
     const char* backendStr = "Unknown";
@@ -301,7 +301,7 @@ bool WebGPURenderer::CreateDevice() {
     // maxTextureDimension2D need is the named comfortable floor (8192), matching
     // src/contracts/webgpu_limits.json — NOT canvas max(w,h), NOT maxBufferSize,
     // NOT pixel count / width*height, and NOT a mis-ordered init heap pointer.
-    WGPULimits limits = {};
+    WGPULimits limits = WGPU_LIMITS_INIT;
     wgpuAdapterGetLimits(adapter_.get(), &limits);
 
     bool limitsOk = true;
@@ -425,7 +425,7 @@ bool WebGPURenderer::CreateDevice() {
     }
 
     // Request device using callback-based API
-    WGPUDeviceDescriptor deviceDesc = {};
+    WGPUDeviceDescriptor deviceDesc = WGPU_DEVICE_DESCRIPTOR_INIT;
     deviceDesc.nextInChain = nullptr;
     deviceDesc.label = MakeStringView("Pixelocity Device");
     deviceDesc.requiredFeatureCount = requiredFeatureCount;
@@ -498,7 +498,7 @@ bool WebGPURenderer::CreateDevice() {
             nullptr, WGPUCallbackMode_WaitAnyOnly, deviceCallback, &rawDevice, nullptr
         });
 
-    WGPUFutureWaitInfo deviceWait = {};
+    WGPUFutureWaitInfo deviceWait = WGPU_FUTURE_WAIT_INFO_INIT;
     deviceWait.future = deviceFuture;
     {
         WGPUWaitStatus waitStatus =
@@ -549,7 +549,7 @@ bool WebGPURenderer::CreateDevice() {
         auto probeFmt = [&](WGPUTextureFormat format, const char* label) -> bool {
             wgpuDevicePushErrorScope(device_.get(), WGPUErrorFilter_Validation);
 
-            WGPUTextureDescriptor texDesc = {};
+            WGPUTextureDescriptor texDesc = WGPU_TEXTURE_DESCRIPTOR_INIT;
             texDesc.nextInChain = nullptr;
             texDesc.label = MakeStringView(label);
             texDesc.dimension = WGPUTextureDimension_2D;
@@ -560,7 +560,7 @@ bool WebGPURenderer::CreateDevice() {
             texDesc.usage = WGPUTextureUsage_StorageBinding | WGPUTextureUsage_CopyDst
                           | WGPUTextureUsage_TextureBinding;
 
-            WGPUTexture tex = wgpuDeviceCreateTexture(device_.get(), &texDesc);
+            WGPUTextureHandle tex(wgpuDeviceCreateTexture(device_.get(), &texDesc));
 
             struct PopResult { bool hadError = false; };
             PopResult pop;
@@ -584,12 +584,11 @@ bool WebGPURenderer::CreateDevice() {
             WGPUFuture popFuture = wgpuDevicePopErrorScope(device_.get(), WGPUPopErrorScopeCallbackInfo{
                 nullptr, WGPUCallbackMode_WaitAnyOnly, popCb, &pop, nullptr
             });
-            WGPUFutureWaitInfo popWait = {};
+            WGPUFutureWaitInfo popWait = WGPU_FUTURE_WAIT_INFO_INIT;
             popWait.future = popFuture;
             wgpuInstanceWaitAny(instance_.get(), 1, &popWait, UINT64_MAX);
 
-            const bool ok = tex != nullptr && !pop.hadError;
-            if (tex) wgpuTextureRelease(tex);
+            const bool ok = tex.get() != nullptr && !pop.hadError;
             return ok;
         };
 
@@ -620,7 +619,7 @@ bool WebGPURenderer::CreateDevice() {
     // bugs. Do NOT drop the explicit requiredLimits as a "simplification" —
     // a null requiredLimits yields spec-default (lower) device limits.
     {
-        WGPULimits deviceLimits = {};
+        WGPULimits deviceLimits = WGPU_LIMITS_INIT;
         wgpuDeviceGetLimits(device_.get(), &deviceLimits);
         bool deviceLimitsOk = true;
         printf("[WASM] Device limits (post-creation, catches clamping):\n");
@@ -695,7 +694,7 @@ bool WebGPURenderer::CreateDevice() {
                 },
                 &hadError, nullptr
             });
-            WGPUFutureWaitInfo popWait = {};
+            WGPUFutureWaitInfo popWait = WGPU_FUTURE_WAIT_INFO_INIT;
             popWait.future = popFuture;
             const WGPUWaitStatus waitStatus =
                 wgpuInstanceWaitAny(instance_.get(), 1, &popWait, UINT64_MAX);
@@ -734,7 +733,7 @@ void WebGPURenderer::ConfigureSurface() {
     // Intentional second configure after JS_CreateSurfaceFromCanvas.
     // JS path matches TS { alphaMode: opaque, usage: RENDER_ATTACHMENT }.
     // C++ adds swapchain size + presentMode Fifo. Keep both.
-    WGPUSurfaceConfiguration config = {};
+    WGPUSurfaceConfiguration config = WGPU_SURFACE_CONFIGURATION_INIT;
     config.device      = device_.get();
     config.format      = surfaceFormat_;          // negotiated via JS_GetPreferredCanvasFormat()
     config.usage       = WGPUTextureUsage_RenderAttachment;
@@ -772,8 +771,10 @@ void WebGPURenderer::PresentToSurface() {
     if (deviceLost_ || !device_.get() || !queue_.get()) return;
 
     // Acquire the current swap-chain texture.
-    WGPUSurfaceTexture surfaceTex = {};
+    WGPUSurfaceTexture surfaceTex = WGPU_SURFACE_TEXTURE_INIT;
     wgpuSurfaceGetCurrentTexture(surface_.get(), &surfaceTex);
+    // We own the returned reference on every status, so release it on every path.
+    WGPUTextureHandle swapTexture(surfaceTex.texture);
 
     // Accept both SuccessOptimal (emdawnwebgpu ≥ 2024) and SuccessSuboptimal.
     // Older emdawnwebgpu headers use the single WGPUSurfaceGetCurrentTextureStatus_Success
@@ -786,7 +787,6 @@ void WebGPURenderer::PresentToSurface() {
     const bool ok = (surfaceTex.status == WGPUSurfaceGetCurrentTextureStatus_Success);
 #endif
     if (!ok) {
-        if (surfaceTex.texture) wgpuTextureRelease(surfaceTex.texture);
         presentFailureCount_++;
         if (presentFailureCount_ <= 5) {
             printf("⚠️  PresentToSurface: GetCurrentTexture failed (status=%d), attempt %d\n",
@@ -800,16 +800,16 @@ void WebGPURenderer::PresentToSurface() {
     presentFailureCount_ = 0;
 
     // Create a view of the swap-chain texture to use as the render attachment.
-    WGPUTextureView surfaceView = wgpuTextureCreateView(surfaceTex.texture, nullptr);
+    WGPUTextureViewHandle surfaceView(wgpuTextureCreateView(swapTexture, nullptr));
 
-    WGPURenderPassColorAttachment colorAttach = {};
+    WGPURenderPassColorAttachment colorAttach = WGPU_RENDER_PASS_COLOR_ATTACHMENT_INIT;
     colorAttach.view       = surfaceView;
     colorAttach.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;  // required for 2-D attachments
     colorAttach.loadOp     = WGPULoadOp_Clear;
     colorAttach.storeOp    = WGPUStoreOp_Store;
     colorAttach.clearValue = {0.0, 0.0, 0.0, 1.0};
 
-    WGPURenderPassDescriptor rpDesc = {};
+    WGPURenderPassDescriptor rpDesc = WGPU_RENDER_PASS_DESCRIPTOR_INIT;
     rpDesc.label                  = MakeStringView("Present Pass");
     rpDesc.colorAttachmentCount   = 1;
     rpDesc.colorAttachments       = &colorAttach;
@@ -826,26 +826,18 @@ void WebGPURenderer::PresentToSurface() {
         rpDesc.timestampWrites = &presentStamps;
     }
 
-    WGPUCommandEncoderDescriptor encDesc = {};
-    encDesc.label = MakeStringView("Present Encoder");
-    WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_.get(), &encDesc);
+    WGPUCommandEncoderHandle enc(CreateEncoder("Present Encoder"));
 
-    WGPURenderPassEncoder rp = wgpuCommandEncoderBeginRenderPass(enc, &rpDesc);
-    wgpuRenderPassEncoderSetPipeline(rp, renderPipeline_.get());
-    wgpuRenderPassEncoderSetBindGroup(rp, 0, renderBindGroup_.get(), 0, nullptr);
-    wgpuRenderPassEncoderDraw(rp, 4, 1, 0, 0);  // 4 verts for TriangleStrip quad
-    wgpuRenderPassEncoderEnd(rp);
-    wgpuRenderPassEncoderRelease(rp);
+    {
+        WGPURenderPassEncoderHandle rp(wgpuCommandEncoderBeginRenderPass(enc, &rpDesc));
+        wgpuRenderPassEncoderSetPipeline(rp, renderPipeline_.get());
+        wgpuRenderPassEncoderSetBindGroup(rp, 0, renderBindGroup_.get(), 0, nullptr);
+        wgpuRenderPassEncoderDraw(rp, 4, 1, 0, 0);  // 4 verts for TriangleStrip quad
+        wgpuRenderPassEncoderEnd(rp);
+    }
 
-    WGPUCommandBufferDescriptor cbDesc = {};
-    cbDesc.label = MakeStringView("Present CmdBuf");
-    WGPUCommandBuffer cb = wgpuCommandEncoderFinish(enc, &cbDesc);
-    wgpuQueueSubmit(queue_.get(), 1, &cb);
-    wgpuCommandBufferRelease(cb);
-    wgpuCommandEncoderRelease(enc);
+    FinishAndSubmit(enc, "Present CmdBuf");
 
-    wgpuTextureViewRelease(surfaceView);
-    wgpuTextureRelease(surfaceTex.texture);
 
     // Do not call wgpuSurfacePresent. emdawnwebgpu's browser stub aborts:
     // "wgpuSurfacePresent is unsupported (use requestAnimationFrame via html5.h instead)".

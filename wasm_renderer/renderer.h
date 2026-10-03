@@ -91,6 +91,11 @@ using WGPUComputePipelineHandle  = WGPUHandle<WGPUComputePipeline,  wgpuComputeP
 using WGPURenderPipelineHandle   = WGPUHandle<WGPURenderPipeline,   wgpuRenderPipelineRelease>;
 using WGPUShaderModuleHandle     = WGPUHandle<WGPUShaderModule,     wgpuShaderModuleRelease>;
 using WGPUQuerySetHandle         = WGPUHandle<WGPUQuerySet,         wgpuQuerySetRelease>;
+using WGPUTextureViewHandle        = WGPUHandle<WGPUTextureView,        wgpuTextureViewRelease>;
+using WGPUCommandEncoderHandle     = WGPUHandle<WGPUCommandEncoder,     wgpuCommandEncoderRelease>;
+using WGPUCommandBufferHandle      = WGPUHandle<WGPUCommandBuffer,      wgpuCommandBufferRelease>;
+using WGPUComputePassEncoderHandle = WGPUHandle<WGPUComputePassEncoder, wgpuComputePassEncoderRelease>;
+using WGPURenderPassEncoderHandle  = WGPUHandle<WGPURenderPassEncoder,  wgpuRenderPassEncoderRelease>;
 
 class WebGPURenderer;
 
@@ -387,6 +392,11 @@ private:
     // textures for bindings 1 and 2; all other bindings are shared globals.
     // Caller is responsible for releasing the returned WGPUBindGroup.
     WGPUBindGroup CreateComputeBindGroup(WGPUTexture readTex, WGPUTexture writeTex);
+
+    // Command encoder with a debug label; wrap the result in WGPUCommandEncoderHandle.
+    WGPUCommandEncoder CreateEncoder(const char* label) const;
+    // Finish `encoder` into one labelled command buffer and submit it.
+    void FinishAndSubmit(WGPUCommandEncoder encoder, const char* label);
 
     // Overwrite only the zoom_params portion (bytes 32-47) of the uniform buffer.
     void WriteSlotParams(const float* params);

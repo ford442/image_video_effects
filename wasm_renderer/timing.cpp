@@ -34,7 +34,7 @@ bool WebGPURenderer::CreateTimestampQueries() {
         return false;
     }
 
-    WGPUQuerySetDescriptor qsDesc = {};
+    WGPUQuerySetDescriptor qsDesc = WGPU_QUERY_SET_DESCRIPTOR_INIT;
     qsDesc.label = MakeStringView("Timestamp Queries");
     qsDesc.type = WGPUQueryType_Timestamp;
     qsDesc.count = TS_QUERY_COUNT;
@@ -45,7 +45,7 @@ bool WebGPURenderer::CreateTimestampQueries() {
         return false;
     }
 
-    WGPUBufferDescriptor resolveDesc = {};
+    WGPUBufferDescriptor resolveDesc = WGPU_BUFFER_DESCRIPTOR_INIT;
     resolveDesc.label = MakeStringView("Timestamp Resolve");
     resolveDesc.size = TS_QUERY_COUNT * sizeof(uint64_t);
     resolveDesc.usage = WGPUBufferUsage_QueryResolve | WGPUBufferUsage_CopySrc;
@@ -57,7 +57,7 @@ bool WebGPURenderer::CreateTimestampQueries() {
         return false;
     }
 
-    WGPUBufferDescriptor readDesc = {};
+    WGPUBufferDescriptor readDesc = WGPU_BUFFER_DESCRIPTOR_INIT;
     readDesc.label = MakeStringView("Timestamp Readback");
     readDesc.size = TS_QUERY_COUNT * sizeof(uint64_t);
     readDesc.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
@@ -182,9 +182,7 @@ void WebGPURenderer::ResolveTimestampQueries() {
         return;
     }
 
-    WGPUCommandEncoderDescriptor encDesc = {};
-    encDesc.label = MakeStringView("Timestamp Resolve Encoder");
-    WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_.get(), &encDesc);
+    WGPUCommandEncoderHandle enc(CreateEncoder("Timestamp Resolve Encoder"));
     if (!enc) return;
 
     wgpuCommandEncoderResolveQuerySet(
@@ -206,12 +204,7 @@ void WebGPURenderer::ResolveTimestampQueries() {
             TS_QUERY_COUNT * sizeof(uint64_t));
     }
 
-    WGPUCommandBufferDescriptor cbDesc = {};
-    cbDesc.label = MakeStringView("Timestamp Resolve CmdBuf");
-    WGPUCommandBuffer cb = wgpuCommandEncoderFinish(enc, &cbDesc);
-    wgpuQueueSubmit(queue_.get(), 1, &cb);
-    wgpuCommandBufferRelease(cb);
-    wgpuCommandEncoderRelease(enc);
+    FinishAndSubmit(enc, "Timestamp Resolve CmdBuf");
 
     if (!canReadback) {
         return;
