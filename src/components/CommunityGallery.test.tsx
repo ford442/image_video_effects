@@ -140,6 +140,7 @@ describe('CommunityGallery', () => {
     renderGallery({ open: true });
 
     await screen.findByText('Pack One');
+    // eslint-disable-next-line testing-library/no-node-access -- thumbnail <img> has empty alt, so it has no accessible role
     const img = document.querySelector('img[src="./thumbnails/liquid-metal.png"]');
     expect(img).toBeInTheDocument();
   });
@@ -153,6 +154,7 @@ describe('CommunityGallery', () => {
     renderGallery({ open: true });
 
     await screen.findByText('Pack One');
+    // eslint-disable-next-line testing-library/no-node-access -- thumbnail <img> has empty alt, so it has no accessible role
     expect(document.querySelector('img')).toBeNull();
   });
 

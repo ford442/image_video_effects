@@ -46,4 +46,4 @@ cat > "$HTACCESS" << 'HTACCESS_EOF'
 HTACCESS_EOF
 
 echo "✅ Generated $HTACCESS"
-echo "=== Build complete! Run 'python3 scripts/deploy.py' to deploy ==="
+echo "=== Build complete! Run 'python3 tools/deploy/deploy.py' to deploy ==="

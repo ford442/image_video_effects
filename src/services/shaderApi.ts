@@ -55,14 +55,6 @@ export interface ShaderContent {
   type: 'wgsl' | 'glsl';
 }
 
-export interface RendererStatus {
-  backends: string[];
-  default: string;
-  wasm_available: boolean;
-  wasm_module_url: string;
-  wasm_memory_required: number;
-}
-
 // --- TintWASM Converter ---
 
 /**
@@ -222,15 +214,6 @@ export async function rateShader(
 ): Promise<{ id: string; stars: number; rating_count: number; your_rating: number }> {
   if (stars < 1 || stars > 5) throw new RangeError('Stars must be between 1 and 5');
   return postShaderRating(API_BASE, shaderId, stars);
-}
-
-/**
- * Get renderer status
- */
-export async function getRendererStatus(): Promise<RendererStatus> {
-  const res = await fetch(`${API_BASE}/api/renderer/status`);
-  if (!res.ok) throw new Error('Failed to get renderer status');
-  return res.json();
 }
 
 /**

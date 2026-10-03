@@ -207,7 +207,7 @@ export class Alucinate {
     }
     console.log('Starting Alucinate loop...');
     this.isRunning = true;
-    this.runCycle(); 
+    void this.runCycle(); 
     this.loopInterval = window.setInterval(() => this.runCycle(), 25000);
     return true;
   }

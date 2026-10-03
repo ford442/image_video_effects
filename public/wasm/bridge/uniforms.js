@@ -14,6 +14,9 @@ function setSlotParams(slotIndex, p1, p2, p3, p4) {
   if (slotIndex >= 0) {
     state.slotParams[slotIndex] = [p1, p2, p3, p4];
   }
+  if (slotIndex === 0) {
+    state.zoomParams = [p1, p2, p3, p4];
+  }
   wasmRef.module.ccall(
     "setSlotParams",
     null,

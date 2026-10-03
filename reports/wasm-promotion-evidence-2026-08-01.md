@@ -37,8 +37,8 @@ no 2026-08-01 stub report, deliberately. Previous cycles' stubs already establis
 |------|--------|----------|
 | 1 Performance (≥1.25× on ≥3 shaders) | ⬜ **OPEN** | No adapter; last stub [`wasm-benchmark-report-stub-2026-07-26.json`](./wasm-benchmark-report-stub-2026-07-26.json) — `gpuBackendObserved: false` |
 | 2 Reliability (parity on ≥2 GPU configs) | ⬜ **OPEN** | Not run. Pixel-diff harness now available to strengthen this gate when a GPU exists |
-| 3 Integration (manual Controls smoke) | ⬜ **OPEN** | Requires a GPU browser without `testMode`; [`WASM_SMOKE_TEST.md`](../WASM_SMOKE_TEST.md) unsigned |
-| 4 Ops (4 consecutive green CI weeks) | ⬜ **OPEN** | Weekly table in [`WASM_PROMOTION_TRACKING.md`](../WASM_PROMOTION_TRACKING.md) — not met as of last review |
+| 3 Integration (manual Controls smoke) | ⬜ **OPEN** | Requires a GPU browser without `testMode`; [`WASM_SMOKE_TEST.md`](../docs/WASM_SMOKE_TEST.md) unsigned |
+| 4 Ops (4 consecutive green CI weeks) | ⬜ **OPEN** | Weekly table in [`WASM_PROMOTION_TRACKING.md`](../docs/WASM_PROMOTION_TRACKING.md) — not met as of last review |
 
 ## What changed this cycle (no C++ features)
 

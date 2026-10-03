@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include <memory>
 
 namespace pixelocity {
 
@@ -90,6 +91,27 @@ using WGPUComputePipelineHandle  = WGPUHandle<WGPUComputePipeline,  wgpuComputeP
 using WGPURenderPipelineHandle   = WGPUHandle<WGPURenderPipeline,   wgpuRenderPipelineRelease>;
 using WGPUShaderModuleHandle     = WGPUHandle<WGPUShaderModule,     wgpuShaderModuleRelease>;
 using WGPUQuerySetHandle         = WGPUHandle<WGPUQuerySet,         wgpuQuerySetRelease>;
+using WGPUTextureViewHandle        = WGPUHandle<WGPUTextureView,        wgpuTextureViewRelease>;
+using WGPUCommandEncoderHandle     = WGPUHandle<WGPUCommandEncoder,     wgpuCommandEncoderRelease>;
+using WGPUCommandBufferHandle      = WGPUHandle<WGPUCommandBuffer,      wgpuCommandBufferRelease>;
+using WGPUComputePassEncoderHandle = WGPUHandle<WGPUComputePassEncoder, wgpuComputePassEncoderRelease>;
+using WGPURenderPassEncoderHandle  = WGPUHandle<WGPURenderPassEncoder,  wgpuRenderPassEncoderRelease>;
+
+class WebGPURenderer;
+
+// Liveness token shared with spontaneous WebGPU callbacks (mapAsync, device
+// lost). Each callback receives a heap CallbackBox holding a shared_ptr to the
+// renderer's current token, and frees the box itself (WebGPU invokes every
+// callback exactly once). Shutdown() clears token->renderer before it releases
+// GPU objects, so a callback that fires late (even after `delete`) is a no-op.
+struct CallbackToken {
+    WebGPURenderer* renderer = nullptr;
+};
+struct CallbackBox {
+    std::shared_ptr<CallbackToken> token;
+    uint32_t generation = 0;
+    WebGPURenderer* Get() const { return token ? token->renderer : nullptr; }
+};
 
 // Slot execution mode: chained feeds output of slot N into slot N+1;
 // parallel makes every slot read from the same original source texture.
@@ -142,6 +164,7 @@ struct ShaderPipeline {
     bool writesDataB = false;
     bool readsDataC = false;
     bool usesHistory = false;
+    bool writesDepth = false;
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -236,6 +259,9 @@ public:
     // Update mouse position and button state for interactive shaders.
     void SetMouse(float x, float y, bool down);
 
+    // Update only the mouse position (preserves the button state).
+    void SetMousePos(float x, float y);
+
     // Update only the mouse button state (preserves existing x/y).
     void SetMouseDown(bool down);
 
@@ -327,6 +353,21 @@ public:
     // Release the mapped readback buffer.  Call after ReadCapturedFrame().
     void EndFrameCapture();
 
+    // ── Canvas COPY_SRC opt-in (canvas_configure.json optIn.copySrc) ───────────
+    // Probed once at surface creation; the live swapchain stays render-only
+    // until capture code asks for COPY_SRC and restores it afterwards.
+    bool IsCanvasCopySrcSupported() const { return canvasCopySrcSupported_; }
+    bool IsCanvasCopySrc() const { return canvasCopySrc_; }
+    // Reconfigures the swapchain. Returns false when unsupported / no surface.
+    bool SetCanvasCopySrc(bool enabled);
+
+    // GPU still ingest: queue.copyExternalImageToTexture from the JS source the
+    // bridge parked on Module.pixelocityPendingImage into readTexture_. Same
+    // top-left clip + black borders as LoadImage(). Returns false on failure.
+    bool LoadImageExternal(int width, int height);
+
+    static constexpr int GetMaxShaderSlots() { return MAX_SHADER_SLOTS; }
+
 private:
     // ═══════════════════════════════════════════════════════════════════════════
     // INITIALIZATION HELPERS
@@ -352,20 +393,36 @@ private:
     // Caller is responsible for releasing the returned WGPUBindGroup.
     WGPUBindGroup CreateComputeBindGroup(WGPUTexture readTex, WGPUTexture writeTex);
 
+    // Command encoder with a debug label; wrap the result in WGPUCommandEncoderHandle.
+    WGPUCommandEncoder CreateEncoder(const char* label) const;
+    // Finish `encoder` into one labelled command buffer and submit it.
+    void FinishAndSubmit(WGPUCommandEncoder encoder, const char* label);
+
     // Overwrite only the zoom_params portion (bytes 32-47) of the uniform buffer.
     void WriteSlotParams(const float* params);
 
     // Dispatch one compute pass using the given pipeline, bind group, and
     // texture dimensions.  The caller owns encoder/bind-group lifetime.
     // workgroupX/Y default to 16 (parsed from WGSL source in LoadShader).
+    // Timestamp indices (-1 = none) go into the pass descriptor's
+    // timestampWrites; pick them with PickComputeTimestampWrites.
     void DispatchComputePass(WGPUCommandEncoder encoder,
                              WGPUComputePipeline pipeline,
                              WGPUBindGroup bindGroup,
                              uint32_t workgroupX = 16,
                              uint32_t workgroupY = 16,
-                             int32_t timestampStartIndex = -1,
-                             int32_t timestampEndIndexA = -1,
-                             int32_t timestampEndIndexB = -1);
+                             int32_t timestampBeginIndex = -1,
+                             int32_t timestampEndIndex = -1);
+
+    // Port of TS pickComputeTimestampWrites (WebGPUTiming.ts): one begin and
+    // one end per pass, each query index written at most once per frame.
+    void PickComputeTimestampWrites(SlotMode mode, bool isLastComputeOfFrame,
+                                    int32_t& beginIndex, int32_t& endIndex);
+
+    // Heap box for a spontaneous callback's userdata; the callback owns it.
+    CallbackBox* NewCallbackBox(uint32_t generation = 0) const {
+        return new CallbackBox{callbackToken_, generation};
+    }
 
     bool CreateTimestampQueries();
     void ResetTimestampFrameState();
@@ -404,7 +461,6 @@ private:
     // Compute pipeline (single shared layout for all compute shaders)
     WGPUBindGroupLayoutHandle computeBindGroupLayout_;
     WGPUPipelineLayoutHandle  computePipelineLayout_;
-    WGPUBindGroupHandle       computeBindGroup_;
 
     // Render pipeline (full-screen triangle for final blit)
     WGPURenderPipelineHandle renderPipeline_;
@@ -467,6 +523,8 @@ private:
     bool     supportsDeepWorkgroup_ = false;
     bool     supportsRgba32FloatStorage_ = false;
     bool     supportsRgba16FloatStorage_ = false;
+    bool     canvasCopySrcSupported_ = false;   // boot probe result
+    bool     canvasCopySrc_ = false;            // assigned only in SetCanvasCopySrc()
     policy::InternalColorFormat colorFormat_ = policy::kUltraColorFormat;
 
     // Wall-clock render timings from last frame (ms) — always updated.
@@ -488,8 +546,16 @@ private:
     bool tsFrameStartWritten_ = false;
     bool tsParallelStartWritten_ = false;
     bool tsChainedStartWritten_ = false;
+    bool tsHadParallel_ = false;   // this frame dispatched a parallel slot
+    bool tsHadChained_  = false;   // this frame dispatched a chained slot
+    // Snapshot of tsHad* for the frame whose stamps are being read back.
+    bool readbackHadParallel_ = false;
+    bool readbackHadChained_  = false;
 
     bool isRecording_ = false;
+
+    // See CallbackToken. Created in Initialize(), cleared in Shutdown().
+    std::shared_ptr<CallbackToken> callbackToken_;
 
     // ═══════════════════════════════════════════════════════════════════════════
     // PERSISTENT STAGING BUFFER (avoids per-frame heap allocation)
@@ -505,6 +571,9 @@ private:
     // ═══════════════════════════════════════════════════════════════════════════
     enum class CaptureState { Idle = 0, Pending = 1, Ready = 2, Error = 3 };
     CaptureState     captureState_       = CaptureState::Idle;
+    // Bumped whenever the readback buffer is cancelled (resize, shutdown) so a
+    // late map callback for the old buffer cannot overwrite captureState_.
+    uint32_t         captureGeneration_  = 0;
     WGPUBufferHandle readbackBuffer_;
     size_t           readbackBufferSize_ = 0;
     // Aligned bytes-per-row used when copying texture → readback buffer.
@@ -534,6 +603,14 @@ private:
     bool        initialized_  = false;
     int         canvasWidth_  = 0;
     int         canvasHeight_ = 0;
+    // Size the caller asked for. canvasWidth_/Height_ can be smaller after the
+    // historyTex fail-soft shrink; ResizeCanvas compares against these so a
+    // repeated request for the same size does not rebuild every texture.
+    int         requestedWidth_  = 0;
+    int         requestedHeight_ = 0;
+    // Largest historyTex rung that fit after an OOM (0 = no cap yet). Later
+    // resizes never retry above it in this renderer's lifetime.
+    uint32_t    historySizeCap_  = 0;
 
     // CSS selector of the target HTMLCanvasElement, e.g. "#my-canvas".
     // Empty string means no surface / presentation path.
@@ -551,9 +628,9 @@ private:
     InputSource inputSource_ = InputSource::None;
 
     // Performance metrics
-    float fps_           = 0.0f;
-    float lastFrameTime_ = 0.0f;
-    int   frameCount_    = 0;
+    float  fps_           = 0.0f;
+    double lastFrameTime_ = 0.0;  // seconds; double so long sessions keep precision
+    int    frameCount_    = 0;
 
     static constexpr int MAX_RIPPLES     = 50;
     static constexpr int MAX_PLASMA_BALLS = 50;

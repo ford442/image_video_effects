@@ -340,6 +340,9 @@ export function useShaderRatings() {
     service.enrichWithRatings().then(data => {
       setShaders(data);
       setLoading(false);
+    }).catch((err) => {
+      console.warn('[Ratings] Failed to enrich shaders with ratings:', err);
+      setLoading(false);
     });
   }, [service]);
 

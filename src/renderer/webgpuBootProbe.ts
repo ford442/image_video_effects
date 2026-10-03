@@ -8,6 +8,7 @@ import {
   ADAPTER_ATTEMPT_LADDER,
   assertAdapterMeetsContract,
   buildRequiredLimits,
+  meetsDeepWorkgroupLimits,
   formatAdapterLimitsSummary,
   logAdapterFeatures,
   type AdapterAttempt,
@@ -73,6 +74,11 @@ export type WebGpuProbeHandoff = {
   canvasCopySrc: boolean;
   /** Color opt-ins actually applied to the live configure; rebuild configs with these. */
   canvasColorOptIns: Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'>;
+  /**
+   * Removes the probe's log-only `uncapturederror` listener. The renderer calls it when it
+   * adopts the device and installs its own routed listener.
+   */
+  detachUncapturedLog?: () => void;
 };
 
 export type WebGpuProbeSerializable = {
@@ -388,7 +394,7 @@ export async function runWebGpuBootProbe(
       device = await adapter.requestDevice({
         label: 'PixelocityDevice',
         requiredFeatures: wantFeatures,
-        requiredLimits: buildRequiredLimits(maxCanvasDim),
+        requiredLimits: buildRequiredLimits(maxCanvasDim, adapter.limits),
       });
     } catch (e) {
       record.error = e instanceof Error ? e.message : String(e);
@@ -469,8 +475,8 @@ export async function runWebGpuBootProbe(
     attempts.push(record);
 
     const supportsSubgroups = !!(subgroupFeatureName && device.features.has(subgroupFeatureName));
-    const maxInvocations = adapter.limits?.maxComputeInvocationsPerWorkgroup ?? 256;
-    const supportsDeepWorkgroup = maxInvocations >= 1024;
+    // Granted device limits, not the adapter's: those are what shaders run under.
+    const supportsDeepWorkgroup = meetsDeepWorkgroupLimits(device.limits);
     const adapterGpuType = parseAdapterGpuType(
       (adapter.info as GPUAdapterInfo & { adapterType?: string })?.adapterType,
     );
@@ -491,9 +497,11 @@ export async function runWebGpuBootProbe(
       + ` | canvas: copySrc=${canvasCopySrc ? 'yes' : 'no'}`
       + ` colorSpace=${canvasColorOptIns.displayP3 ? 'display-p3' : 'srgb'}`;
 
-    device.addEventListener('uncapturederror', (ev) => {
+    const logUncaptured = (ev: Event) => {
       console.error('[WebGPU] Uncaptured error:', (ev as GPUUncapturedErrorEvent).error);
-    });
+    };
+    device.addEventListener('uncapturederror', logUncaptured);
+    const detachUncapturedLog = () => device.removeEventListener('uncapturederror', logUncaptured);
 
     console.log('[WebGPU Probe] Boot probe succeeded:', adapterSummary);
 
@@ -528,6 +536,7 @@ export async function runWebGpuBootProbe(
         adapterAttemptLabel: attempt.label,
         canvasCopySrc,
         canvasColorOptIns,
+        detachUncapturedLog,
       },
     };
   }
@@ -560,6 +569,26 @@ export function toWebGpuProbeBreadcrumb(result: WebGpuProbeResult): WebGpuProbeS
 export function publishWebGpuProbe(result: WebGpuProbeResult): void {
   if (typeof window === 'undefined') return;
   window.webgpuProbe = toWebGpuProbeBreadcrumb(result);
+}
+
+/**
+ * WASM init success breadcrumb. ?renderer=wasm skips the TS boot probe, so this is
+ * the only window.webgpuProbe on that path; canvasCopySrc is the C++ swapchain
+ * probe (canvas_configure.json optIn.copySrc), omitted when the artifact predates it.
+ */
+export function publishWasmProbeSuccess(
+  adapterSummary: string,
+  canvasCopySrc: boolean | null,
+): void {
+  if (typeof window === 'undefined') return;
+  window.webgpuProbe = {
+    ...baseSerializable([], {
+      ok: true,
+      adapterSummary: adapterSummary || undefined,
+      backend: 'wasm',
+      ...(canvasCopySrc === null ? {} : { canvasCopySrc }),
+    }),
+  };
 }
 
 /** WASM init failure breadcrumb when ?renderer=wasm hard-fails. */

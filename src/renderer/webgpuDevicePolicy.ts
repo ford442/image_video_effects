@@ -73,14 +73,40 @@ const LIMIT_CHECKS: LimitCheck[] = [
   { name: 'maxComputeInvocationsPerWorkgroup', required: MINIMUM_COMPUTE_LIMITS.maxComputeInvocationsPerWorkgroup },
 ];
 
+/** 32×32 / 1024-invocation limits requested when the adapter offers them (webgpu_limits.json). */
+export const DEEP_WORKGROUP_LIMITS = webgpuLimitsContract.deepWorkgroupLimits;
+
+type WorkgroupLimits = Pick<
+  GPUSupportedLimits,
+  'maxComputeWorkgroupSizeX' | 'maxComputeWorkgroupSizeY' | 'maxComputeInvocationsPerWorkgroup'
+>;
+
+/** True when `limits` reach every deepWorkgroupLimits value (device.cpp adapterDeepWorkgroup). */
+export function meetsDeepWorkgroupLimits(limits: Partial<WorkgroupLimits> | undefined): boolean {
+  if (!limits) return false;
+  return (
+    (limits.maxComputeWorkgroupSizeX ?? 0) >= DEEP_WORKGROUP_LIMITS.maxComputeWorkgroupSizeX
+    && (limits.maxComputeWorkgroupSizeY ?? 0) >= DEEP_WORKGROUP_LIMITS.maxComputeWorkgroupSizeY
+    && (limits.maxComputeInvocationsPerWorkgroup ?? 0) >= DEEP_WORKGROUP_LIMITS.maxComputeInvocationsPerWorkgroup
+  );
+}
+
 /**
  * Build requiredLimits for requestDevice() — mirrors device.cpp requiredLimits seeding.
  * `maxCanvasDim` is accepted for call-site compatibility but does not drive
  * maxTextureDimension2D (fixed comfortable floor from the contract).
+ *
+ * Pass `adapterLimits` to also request the deep-workgroup limits when the adapter
+ * offers them; WebGPU never grants more than requested, so omitting this caps the
+ * device at 256 invocations even on a 1024-capable adapter.
  */
-export function buildRequiredLimits(_maxCanvasDim?: number): GPUDeviceDescriptor['requiredLimits'] {
+export function buildRequiredLimits(
+  _maxCanvasDim?: number,
+  adapterLimits?: Partial<WorkgroupLimits>,
+): GPUDeviceDescriptor['requiredLimits'] {
   return {
     ...MINIMUM_COMPUTE_LIMITS,
+    ...(meetsDeepWorkgroupLimits(adapterLimits) ? DEEP_WORKGROUP_LIMITS : {}),
   };
 }
 
@@ -113,71 +139,6 @@ export function assertAdapterMeetsContract(
       'compute bind group contract (bindings 0–13). Try ?renderer=js or a different GPU/browser.',
     failures,
   };
-}
-
-export type AdapterAttemptLog = {
-  label: string;
-  powerPreference?: GPUPowerPreference;
-  forceFallbackAdapter: boolean;
-  adapterPresent: boolean;
-  error?: string;
-};
-
-/**
- * Request an adapter using the 4-step fallback ladder (device.cpp requestAdapterWithFallback).
- */
-export async function requestAdapterWithFallback(
-  gpu: GPU,
-  attempts: readonly AdapterAttempt[] = ADAPTER_ATTEMPT_LADDER,
-): Promise<{
-  adapter: GPUAdapter | null;
-  attemptLabel: string | null;
-  attemptLogs: AdapterAttemptLog[];
-}> {
-  const attemptLogs: AdapterAttemptLog[] = [];
-
-  for (const attempt of attempts) {
-    const options: GPURequestAdapterOptions = {
-      forceFallbackAdapter: attempt.forceFallbackAdapter,
-    };
-    if (attempt.powerPreference !== undefined) {
-      options.powerPreference = attempt.powerPreference;
-    }
-
-    const pref = attempt.powerPreference ?? 'default';
-    console.log(
-      `[WebGPU] Requesting adapter (attempt=${attempt.label}, powerPreference=${pref}, ` +
-      `forceFallbackAdapter=${attempt.forceFallbackAdapter})`,
-    );
-
-    let adapter: GPUAdapter | null = null;
-    let error: string | undefined;
-    try {
-      adapter = await gpu.requestAdapter(options);
-    } catch (e) {
-      error = e instanceof Error ? e.message : String(e);
-      console.warn(`[WebGPU] requestAdapter failed on ${attempt.label}:`, error);
-    }
-
-    const log: AdapterAttemptLog = {
-      label: attempt.label,
-      powerPreference: attempt.powerPreference,
-      forceFallbackAdapter: attempt.forceFallbackAdapter,
-      adapterPresent: !!adapter,
-      error: adapter ? undefined : error ?? 'requestAdapter returned null',
-    };
-    attemptLogs.push(log);
-
-    if (adapter) {
-      console.log(
-        `[WebGPU] Obtained adapter on attempt: ${attempt.label} | ` +
-        `${formatAdapterLimitsSummary(adapter)}`,
-      );
-      return { adapter, attemptLabel: attempt.label, attemptLogs };
-    }
-  }
-
-  return { adapter: null, attemptLabel: null, attemptLogs };
 }
 
 /** Human-readable summary of adapter limits for diagnostics. */

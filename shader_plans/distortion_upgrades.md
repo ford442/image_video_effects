@@ -594,7 +594,7 @@ The science column is where to look for ideas, not a model each file must implem
 > **Historical sketch — do not implement as written.** The engine `Uniforms` struct and
 > bindings are fixed ([`docs/BINDING_CONTRACT.md`](../docs/BINDING_CONTRACT.md)). Drive
 > these quantities from the file's existing `zoom_params` roles, or persistent state in
-> `extraBuffer[133..]` per [`agents/WGSL_BUILTINS_GENERATIVE.md`](../agents/WGSL_BUILTINS_GENERATIVE.md).
+> `extraBuffer[133..]` per [`docs/agents/WGSL_BUILTINS_GENERATIVE.md`](../docs/agents/WGSL_BUILTINS_GENERATIVE.md).
 
 ```wgsl
 // For gravitational lensing

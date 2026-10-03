@@ -11,6 +11,7 @@ import { PHYSICAL_SLOT_LIMIT, checkPhysicalSlotIndex } from './slotOrchestrator'
 import {
   initializeWebGPUDevice,
   attachDeviceLostHandler,
+  attachUncapturedErrorRouter,
   buildCanvasConfigureOptions,
   type CanvasConfigureOptIns,
 } from './webgpu/device';
@@ -126,6 +127,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private adapterAttemptLabel: string | null = null;
   private formatCapabilities = DEFAULT_FORMAT_CAPABILITIES;
   private releasingDevice = false;
+  private detachUncapturedErrors: (() => void) | null = null;
 
   readonly gpuChores = new GpuChoresHost();
   /** Opt-in @group(1) sim ring — armed only when a group-1 pipeline compiles. */
@@ -146,6 +148,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
 
     let handoff = webGpuHandoff;
     for (let attempt = 0; attempt < 2; attempt++) {
+      // A previous attempt's teardown (OOM retry) set this; the new device must report loss.
+      this.releasingDevice = false;
       const outcome = await initializeWebGPUDevice(
         canvas,
         this.config.width,
@@ -169,25 +173,29 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       this.adapterSummary = outcome.adapterSummary ?? '';
       this.adapterAttemptLabel = outcome.adapterAttemptLabel ?? null;
 
-      attachDeviceLostHandler(outcome.device, outcome.context, () => {
-        if (this.releasingDevice) return;
+      const device = outcome.device;
+      attachDeviceLostHandler(device, outcome.context, () => {
+        if (this.releasingDevice || this.device !== device) return;
         this.initialized = false;
         this.timestampRuntime.hasRealGpuTimings = false;
         this.timestampRuntime.readbackPending = false;
         this.gpuChores.detach('device lost');
       });
 
-      this.bindOutOfMemoryHandler(outcome.device);
+      outcome.detachUncapturedLog?.();
+      this.bindOutOfMemoryHandler(device);
       this.updateScaledDimensions();
       const resourcesResult = await this.setupGpuResources(outcome.hasF32Filterable, this.colorFormat);
       if (resourcesResult !== 'ok') {
         if (resourcesResult === 'lost' && attempt === 0) {
           persistHistoryOomCap();
           this.workingSizeCap = HISTORY_SAFE_WORKING_SIZE;
-          this.teardownGpuHandles(false);
+          void this.teardownGpuHandles(false);
           handoff = undefined;
           continue;
         }
+        // Release the device so a failed init does not keep it (and its listeners) alive.
+        await this.teardownGpuHandles(true);
         return false;
       }
 
@@ -228,19 +236,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
         }
       }
     };
-    device.addEventListener('uncapturederror', (ev: Event) => {
-      const err = (ev as GPUUncapturedErrorEvent).error;
-      if (!err) return;
-      const name = (err as { name?: string }).name;
-      if (name === 'GPUValidationError') return;
-      if (
-        (typeof GPUOutOfMemoryError !== 'undefined' && err instanceof GPUOutOfMemoryError) ||
-        name === 'GPUOutOfMemoryError' ||
-        /out of memory/i.test(err.message)
-      ) {
-        onOom();
-      }
-    });
+    this.detachUncapturedErrors?.();
+    this.detachUncapturedErrors = attachUncapturedErrorRouter(device, { onOom });
   }
 
   private rebuildComputeBindGroup(): void {
@@ -754,7 +751,6 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     }
     return { width: dstW, height: dstH };
   }
-  render(): void {}
 
   setMaxPassesPerFrame(cap: number): void {
     this.maxPassesPerFrame = cap;
@@ -763,8 +759,9 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     }
   }
 
-  destroy(): void {
-    void this.teardownGpuHandles(true);
+  /** Resolves once `device.lost` settles, so a remount can re-probe without racing it. */
+  destroy(): Promise<void> {
+    return this.teardownGpuHandles(true) ?? Promise.resolve();
   }
 
   async releaseExclusiveGpu(): Promise<void> {
@@ -786,6 +783,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     } catch {
       /* ignore */
     }
+    this.detachUncapturedErrors?.();
+    this.detachUncapturedErrors = null;
     const device = this.device;
     this.device = null;
     this.context = null;

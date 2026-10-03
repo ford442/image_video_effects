@@ -143,7 +143,7 @@ export function AppOverlays({
                                 <button
                                     className="share-copy-btn"
                                     onClick={() => {
-                                        navigator.clipboard.writeText(shareableLink);
+                                        navigator.clipboard.writeText(shareableLink).catch((err) => console.warn('[Share] Clipboard write failed:', err));
                                         setStatus('🔗 Link copied to clipboard!');
                                     }}
                                 >
@@ -280,7 +280,7 @@ export function AppOverlays({
                                     setSlotParams(config.slotParams);
                                 }
                                 if (config.inputSource) syncInputSourceToRenderer(config.inputSource as InputSource);
-                                if (config.currentImageUrl) handleLoadImage(config.currentImageUrl);
+                                if (config.currentImageUrl) void handleLoadImage(config.currentImageUrl);
                                 setStatus('Loaded effect configuration from VPS');
                                 setShowStorageBrowser(false);
                             }}

@@ -68,7 +68,7 @@ export function useShaderCatalogLoad({
             }
         };
 
-        loadShaders();
+        void loadShaders();
         return () => { isMounted = false; };
     }, [setAvailableModes, setShadersReady, setStatus]);
 

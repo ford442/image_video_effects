@@ -1,8 +1,8 @@
 # Shader Upgrade Batches — Incremental Ideas Contract
 
 > **This is the live process.** Paste this file (or §0) into Gemini / Grok / Claude / Antigravity before a batch.
-> Longer plumbing reference: [`agents/CLOUD_UPGRADE.md`](../agents/CLOUD_UPGRADE.md).
-> Bindings / uniforms: [`docs/BINDING_CONTRACT.md`](BINDING_CONTRACT.md) and [`agents/WGSL_BUILTINS_GENERATIVE.md`](../agents/WGSL_BUILTINS_GENERATIVE.md).
+> Longer plumbing reference: [`docs/agents/CLOUD_UPGRADE.md`](agents/CLOUD_UPGRADE.md).
+> Bindings / uniforms: [`docs/BINDING_CONTRACT.md`](BINDING_CONTRACT.md) and [`docs/agents/WGSL_BUILTINS_GENERATIVE.md`](agents/WGSL_BUILTINS_GENERATIVE.md).
 
 ---
 
@@ -353,19 +353,19 @@ Future agents land in this repo and open the first markdown hit. **These files d
 | File | Status | Role |
 |---|---|---|
 | **`docs/SHADER_UPGRADE_BATCH.md`** | **LIVE** | Creative contract. Idea Cards, anti-patterns, batch size, timeframe. |
-| **`agents/WGSL_BUILTINS_GENERATIVE.md`** | **LIVE** | Bindings, uniforms, extraBuffer map, naga-safe builtins. |
+| **`docs/agents/WGSL_BUILTINS_GENERATIVE.md`** | **LIVE** | Bindings, uniforms, extraBuffer map, naga-safe builtins. |
 | **`docs/BINDING_CONTRACT.md`** | **LIVE** | Engine bind group, uniforms, feedback copy order. |
-| **`scripts/AUTHORING.md`** | **LIVE** | Scaffold, gates, audits. |
-| **`agents/CLOUD_UPGRADE.md`** | **LIVE plumbing** | Floor snippets (ACES, alpha, audio). Creative law is this file, not CLOUD §4–§10 examples. |
-| `agents/weekly_upgrade_swarm.md` | **Historical log** | Completed-batch diary. Do not copy its overlay themes onto a new family. |
-| `agents/upgrade_swarm.md` | **Historical (2026-04)** | Size-expansion ideas. Do not treat target line counts as success. |
-| `agents/GENERATIVE_UPGRADE_SWARM.md` | **Historical (2026-04)** | Same. |
-| `agents/4_AGENT_SWARM_PROMPT.md` | **Historical** | Role split. Do not “replace primitive noise with a masterpiece.” |
-| `agents/grok_build_upgrade.md` | **Historical weekly new-shader plan** | For **new** shaders, not upgrades. Upgrades use this file. |
+| **`docs/AUTHORING.md`** | **LIVE** | Scaffold, gates, audits. |
+| **`docs/agents/CLOUD_UPGRADE.md`** | **LIVE plumbing** | Floor snippets (ACES, alpha, audio). Creative law is this file, not CLOUD §4–§10 examples. |
+| `docs/agents/weekly_upgrade_swarm.md` | **Historical log** | Completed-batch diary. Do not copy its overlay themes onto a new family. |
+| `docs/agents/upgrade_swarm.md` | **Historical (2026-04)** | Size-expansion ideas. Do not treat target line counts as success. |
+| `docs/agents/GENERATIVE_UPGRADE_SWARM.md` | **Historical (2026-04)** | Same. |
+| `docs/agents/4_AGENT_SWARM_PROMPT.md` | **Historical** | Role split. Do not “replace primitive noise with a masterpiece.” |
+| `docs/agents/grok_build_upgrade.md` | **Historical weekly new-shader plan** | For **new** shaders, not upgrades. Upgrades use this file. |
 | `composer.md` | **Historical (2026-06)** | `upgraded-rgba` hygiene sprint. ACES-only batches are not upgrades. |
-| `notes/SHADER_UPGRADE_MANIFEST.md` | **Historical** | 16-shader April initiative. |
-| `notes/shaders_upgrade_plan.md` | **Historical queue** | Size tiers only. First principle now points here. |
-| `agents/prompt-templates/*.md` | **LIVE roles** | Toolkits. Identity-preserving rules at the top of each. Do not apply a whole toolkit to every file. |
+| `notes/SHADER_UPGRADE_MANIFEST.md` (local, untracked) | **Historical** | 16-shader April initiative. |
+| `notes/shaders_upgrade_plan.md` (local, untracked) | **Historical queue** | Size tiers only. First principle now points here. |
+| `docs/agents/prompt-templates/*.md` | **LIVE roles** | Toolkits. Identity-preserving rules at the top of each. Do not apply a whole toolkit to every file. |
 | `scripts/run-upgrade-swarm.js` | **LIVE generator** | Must emit Idea Cards. Ignore any leftover `target_lines ±20%` folklore in old queue JSON. |
 
 If two docs conflict, **this file wins on what an upgrade is.** BINDING_CONTRACT / WGSL_BUILTINS win on what the engine does.

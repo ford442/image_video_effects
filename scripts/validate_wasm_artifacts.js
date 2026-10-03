@@ -241,8 +241,9 @@ checkToolchainPin();
 /**
  * naga_wasm staleness + pin (src/contracts/wgsl_validation.json).
  * The artifact is committed and never rebuilt in CI, so the only thing standing
- * between a Rust edit and a silently stale validator is this mtime comparison —
- * the same guard CI applies to pixelocity_wasm.wasm.
+ * between a Rust edit and a silently stale validator is this commit-time comparison.
+ * (pixelocity_wasm.wasm is rebuilt in CI and hash-compared to the committed copy
+ * in ci.yml instead.)
  */
 function checkNagaWasm() {
   const contractPath = path.resolve('src/contracts/wgsl_validation.json');
@@ -319,25 +320,127 @@ function listRustSources(dir) {
 
 checkNagaWasm();
 
-// Summary
-console.log('=== Validation Summary ===\n');
+/**
+ * Stale-renderer gate. Every EXPORTED_FUNCTIONS entry in wasm_exports.json must
+ * be a real export of the committed .wasm (a binary built before an export was
+ * added fails here instead of throwing at the first ccall), and the compiled
+ * MAX_SHADER_SLOTS (_getMaxShaderSlots, no GPU needed) must equal
+ * slot_limits.json maxPhysicalSlots, so a 3-slot artifact can't silently clip
+ * slots 4-6.
+ */
+async function checkRendererArtifact() {
+  const wasmPath = path.resolve('public/wasm/pixelocity_wasm.wasm');
+  const gluePath = path.resolve('public/wasm/pixelocity_wasm.js');
+  if (!fs.existsSync(wasmPath) || !fs.existsSync(gluePath)) return; // reported above
 
-if (errors.length > 0) {
-  console.log('ERRORS:');
-  errors.forEach(err => console.log(err));
+  const contract = JSON.parse(fs.readFileSync(path.resolve('src/contracts/wasm_exports.json'), 'utf8'));
+  let exportNames;
+  try {
+    exportNames = new Set(
+      WebAssembly.Module.exports(new WebAssembly.Module(fs.readFileSync(wasmPath))).map((e) => e.name),
+    );
+  } catch (e) {
+    errors.push(`❌ public/wasm/pixelocity_wasm.wasm: failed to compile for export check: ${e.message}`);
+    allValid = false;
+    return;
+  }
+  const missing = contract.exportedFunctions
+    .map((name) => name.replace(/^_/, ''))
+    .filter((name) => !exportNames.has(name));
+  if (missing.length > 0) {
+    errors.push(
+      `❌ public/wasm/pixelocity_wasm.wasm is stale: missing exports ${missing.join(', ')} ` +
+        '(listed in src/contracts/wasm_exports.json) — rebuild with npm run wasm:build (emsdk pin)',
+    );
+    allValid = false;
+    return;
+  }
+  console.log(`Renderer exports: ✅ all ${contract.exportedFunctions.length} wasm_exports.json functions present`);
+
+  const slots = JSON.parse(fs.readFileSync(path.resolve('src/contracts/slot_limits.json'), 'utf8'));
+  let compiled;
+  try {
+    compiled = await readCompiledSlotCount(gluePath);
+  } catch (e) {
+    // The export exists, so the source compiled with the export; only the value is unverified.
+    warnings.push(`⚠️  public/wasm/pixelocity_wasm.js: could not instantiate in Node to read _getMaxShaderSlots (${e.message})`);
+    return;
+  }
+  if (compiled !== slots.maxPhysicalSlots) {
+    errors.push(
+      `❌ public/wasm/pixelocity_wasm.wasm: MAX_SHADER_SLOTS=${compiled} but slot_limits.json ` +
+        `maxPhysicalSlots=${slots.maxPhysicalSlots} — rebuild with npm run wasm:build`,
+    );
+    allValid = false;
+  } else {
+    console.log(`Renderer slots: ✅ artifact MAX_SHADER_SLOTS=${compiled} matches slot_limits.json`);
+  }
   console.log('');
 }
 
-if (warnings.length > 0) {
-  console.log('WARNINGS:');
-  warnings.forEach(warn => console.log(warn));
-  console.log('');
+/**
+ * Instantiate the MODULARIZE glue in a Node vm context (public/wasm is
+ * "type": "module", so it can't be require()d) and call _getMaxShaderSlots().
+ * No WebGPU is touched: main() only prints, and the export reads a constant.
+ */
+async function readCompiledSlotCount(gluePath) {
+  const vm = require('vm');
+  const dir = path.dirname(gluePath);
+  const sandbox = {
+    module: { exports: {} },
+    require,
+    process,
+    console: { ...console, log() {}, warn() {} },
+    WebAssembly,
+    URL,
+    TextDecoder,
+    setTimeout,
+    clearTimeout,
+    __filename: gluePath,
+    __dirname: dir,
+  };
+  sandbox.exports = sandbox.module.exports;
+  sandbox.globalThis = sandbox;
+  vm.createContext(sandbox);
+  vm.runInContext(`${fs.readFileSync(gluePath, 'utf8')}\n;module.exports = PixelocityWASM;`, sandbox, {
+    filename: gluePath,
+  });
+  const mod = await sandbox.module.exports({
+    locateFile: (p) => path.join(dir, p),
+    print() {},
+    printErr() {},
+  });
+  if (typeof mod._getMaxShaderSlots !== 'function') throw new Error('_getMaxShaderSlots not on Module');
+  return Number(mod._getMaxShaderSlots());
 }
 
-if (allValid && errors.length === 0) {
-  console.log('✅ All WASM artifacts are valid!');
-  process.exit(0);
-} else {
-  console.log('❌ WASM artifact validation failed!');
-  process.exit(1);
+checkRendererArtifact().then(finish, (e) => {
+  errors.push(`❌ renderer artifact check threw: ${e && e.message}`);
+  allValid = false;
+  finish();
+});
+
+function finish() {
+  // Summary
+  console.log('=== Validation Summary ===\n');
+
+  if (errors.length > 0) {
+    console.log('ERRORS:');
+    errors.forEach(err => console.log(err));
+    console.log('');
+  }
+
+  if (warnings.length > 0) {
+    console.log('WARNINGS:');
+    warnings.forEach(warn => console.log(warn));
+    console.log('');
+  }
+
+  if (allValid && errors.length === 0) {
+    console.log('✅ All WASM artifacts are valid!');
+    process.exit(0);
+  } else {
+    console.log('❌ WASM artifact validation failed!');
+    process.exit(1);
+  }
 }

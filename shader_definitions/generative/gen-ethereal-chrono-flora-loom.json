@@ -1,0 +1,62 @@
+{
+  "id": "gen-ethereal-chrono-flora-loom",
+  "name": "Ethereal Chrono-Flora Loom",
+  "url": "shaders/gen-ethereal-chrono-flora-loom.wgsl",
+  "category": "generative",
+  "type": "generative",
+  "workgroup_size": [16, 16, 1],
+  "description": "A mesmerizing, luminescent botanical matrix that weaves organic fractal geometry with time-dilating quantum energy threads, invoking the feeling of an alien greenhouse frozen in a dimension of light.",
+  "tags": [
+    "organic",
+    "botanical",
+    "quantum",
+    "fractal",
+    "luminescent"
+  ],
+  "features": [
+    "audio-reactive",
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "density",
+      "name": "Density",
+      "default": 1.0,
+      "min": 0.1,
+      "max": 5.0,
+      "step": 0.1,
+      "mapping": "zoom_params.x",
+      "description": "Thickness of the glowing flora."
+    },
+    {
+      "id": "flowSpeed",
+      "name": "Flow Speed",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.1,
+      "mapping": "zoom_params.y",
+      "description": "Speed of the time-dilating quantum energy threads."
+    },
+    {
+      "id": "glowIntensity",
+      "name": "Glow Intensity",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.1,
+      "mapping": "zoom_params.z",
+      "description": "Overall intensity of the glowing luminescent threads."
+    },
+    {
+      "id": "colorShift",
+      "name": "Color Shift",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Shift the base palette of the blooming fractal."
+    }
+  ]
+}

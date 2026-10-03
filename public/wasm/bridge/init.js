@@ -16,16 +16,9 @@ async function initWasmRenderer(canvasElement) {
     return true;
   }
   wasmRef.canvas = canvasElement;
-  const sizeFallback = 1024;
-  let cap = sizeFallback;
-  try {
-    if (typeof sessionStorage !== "undefined" && sessionStorage.getItem("px_history_oom_cap") === "1024") {
-      cap = 1024;
-    }
-  } catch {
-  }
-  state.canvasWidth = Math.min(wasmRef.canvas.width || sizeFallback, cap);
-  state.canvasHeight = Math.min(wasmRef.canvas.height || sizeFallback, cap);
+  const sizeCap = 1024;
+  state.canvasWidth = Math.min(wasmRef.canvas.width || sizeCap, sizeCap);
+  state.canvasHeight = Math.min(wasmRef.canvas.height || sizeCap, sizeCap);
   state.initStartTime = performance.now();
   return new Promise((resolve) => {
     const pathname = window.location.pathname;
@@ -99,6 +92,9 @@ async function initWasmRenderer(canvasElement) {
           console.log(
             `[WASM] colorFormat=${state.colorFormat === 1 ? "rgba16float" : "rgba32float"}`
           );
+          const mod2 = wasmRef.module;
+          state.maxShaderSlots = typeof mod2._getMaxShaderSlots === "function" ? mod2._getMaxShaderSlots() : null;
+          console.log(`[WASM] maxShaderSlots=${state.maxShaderSlots ?? "unknown (artifact predates export)"}`);
           promoteWasmCanvasVisible(canvas);
           if (state.pendingInputSource !== null) {
             const src = state.pendingInputSource;
@@ -158,6 +154,7 @@ function shutdownWasmRenderer() {
   state.initialized = false;
   state.activeShader = null;
   state.droppedSlots.clear();
+  state.maxShaderSlots = null;
   wasmRef.module = null;
   wasmRef.canvas = null;
   console.log("[WASM] Shutdown complete");

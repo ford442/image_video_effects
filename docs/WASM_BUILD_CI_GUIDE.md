@@ -1,0 +1,220 @@
+# WASM Renderer: Build & CI Documentation
+
+## The Blessed Build Path
+
+### Full production build (`npm run build`)
+
+CRA copies `public/` into the output **during** `craco build`, so WASM artifacts must exist **before** that step. The `prebuild` hook runs this sequence **once**:
+
+```
+wasm:build → generate_shader_lists → build:manifest → craco build
+```
+
+`npm run build` invokes `craco build` only — it does **not** call `wasm:build` again. A second compile would be redundant: artifacts are already in `public/wasm/` and are copied into `build/wasm/` by CRA.
+
+```bash
+npm run build                    # full path (requires emsdk, or see SKIP below)
+SKIP_WASM_BUILD=1 npm run build  # headless VMs: skip emcc, use committed public/wasm/
+```
+
+### WASM-only compile (`npm run wasm:build`)
+
+The canonical way to rebuild the C++ WASM renderer alone is:
+
+```bash
+npm run wasm:build
+```
+
+This script:
+1. Sources the Emscripten SDK environment
+2. Compiles the C++ renderer (`wasm_renderer/main.cpp` + `wasm_renderer/renderer.cpp`) with Emscripten + emdawnwebgpu
+3. Generates JavaScript glue code (`pixelocity_wasm.js`)
+4. Produces the WebAssembly binary (`pixelocity_wasm.wasm`)
+5. Copies the artifacts to `public/wasm/` for inclusion in the app bundle
+
+## Requirements
+
+To build the WASM renderer locally, you must have the **Emscripten SDK** installed:
+
+```bash
+# See https://emscripten.org/docs/getting_started/downloads.html
+# Standard setup:
+git clone https://github.com/emscripten-core/emsdk.git
+cd emsdk
+./emsdk install 6.0.9    # pinned — see src/contracts/wasm_compile_flags.json
+./emsdk activate 6.0.9
+source ./emsdk_env.sh
+
+# Then in the image_video_effects repo:
+npm run wasm:build
+```
+
+## Toolchain pin (2026-09)
+
+The Emscripten version is **pinned**, not `latest` — a moving emsdk silently changes the
+ABI of `public/wasm/pixelocity_wasm.{js,wasm}`.
+
+- **Pin:** `emsdkVersion` in [`src/contracts/wasm_compile_flags.json`](../src/contracts/wasm_compile_flags.json) (currently **6.0.9**). The same file holds `std`, `opt`, `usePort`, `sFlags`, `jsOutputName` — `build.sh` (the only build) reads it via `scripts/format-wasm-compile-flags.js`.
+- **CI:** `setup-emsdk` `version:` must equal the pin; `npm run verify:wasm-invariants` fails on drift or on `-s` flags hardcoded in `build.sh`/CMake.
+- **Local gate:** `build.sh` runs `scripts/emcc-version-gate.sh`; a mismatched emcc fails the build. Emscripten 6.x glue does not embed its version, so `wasm:validate` can only check the pin exists (and would fail if a future glue embeds a mismatched version).
+- **Beware stale SDKs:** `build.sh` sources the first `emsdk_env.sh` it finds (`$REPO_ROOT/emsdk`, `~/emsdk`, …), which can override an already-activated emsdk. The gate catches this.
+- **Cloud VMs / Jules:** `SKIP_WASM_BUILD=1`. Do not compile with 3.1.x.
+- **Bumping:** edit the JSON + `ci.yml` together, rebuild, commit artifacts in the same PR, note size deltas in `wasm_renderer/BUILD_FLAG_EXPERIMENTS.md`.
+
+## Build Failures: CI vs Local
+
+**CI — `wasm` job:** installs emsdk, runs `npm run wasm:build` **once**, then
+`npm run wasm:validate`, WASM Jest smoke tests, and uploads artifacts.
+
+**CI — `test` / `test-wasm-e2e` jobs:** download WASM artifacts, set
+`SKIP_WASM_BUILD=1`, then run `npm run build`. `prebuild` sees the skip and does not
+recompile; committed/downloaded `public/wasm/` is copied into `build/` by CRA.
+
+**Local:** `wasm_renderer/build.sh` **fails (exit 1) when `emcc` is missing**. Install emsdk
+or use committed artifacts with an explicit skip:
+
+```bash
+SKIP_WASM_BUILD=1 npm run build   # headless VMs without emsdk
+```
+
+### When `wasm:validate` runs
+
+| Context | Command |
+|---------|---------|
+| After local C++ or bridge change | `npm run wasm:validate` |
+| CI `wasm` job | immediately after `wasm:build` |
+| CI `test` job | after `npm run build` (confirms artifacts survived the bundle) |
+| Not run automatically | `npm start` / dev server (uses existing `public/wasm/`) |
+
+Run `npm run wasm:validate` manually after any C++ or bridge change.
+
+1. **No swallowed compile errors**: `package.json` no longer wraps `wasm:build` in
+   `2>/dev/null || echo` — if `emcc` is present and compilation fails, the error
+   propagates.
+
+2. **CI Validation**: The GitHub Actions CI pipeline includes a dedicated `wasm` job that:
+   - Installs the Emscripten SDK
+   - Builds the WASM renderer
+   - Validates that artifacts are:
+     - Present and have reasonable file sizes (50–200 KB for `.wasm`, 10+ KB for `.js`)
+     - Not stubs or corrupted (checks for WASM magic number `\0asm`)
+     - Contain expected exported functions
+   - Fails the build if artifacts are missing, stubs, or out of date with source files
+
+## Artifact Validation
+
+The validation script (`scripts/validate_wasm_artifacts.js`) checks:
+
+```bash
+node scripts/validate_wasm_artifacts.js
+# or
+npm run wasm:validate
+```
+
+This ensures:
+- **File Existence**: All three required files exist in `public/wasm/`
+  - `pixelocity_wasm.wasm` (WebAssembly binary)
+  - `pixelocity_wasm.js` (Emscripten runtime glue)
+  - `wasm_bridge.js` (JavaScript bridge to the C++ renderer)
+
+- **Bridge sync**: generated `wasm_renderer/` and `public/wasm/` ESM copies must match
+  each other; `wasm_bridge.d.ts` must match `src/wasm/wasm_bridge.d.ts`.
+  `npm run verify:wasm-bridge-sync` fails if they drift from TypeScript emit.
+  Edit `src/wasm/bridge/*.ts` only. **Never** edit `public/wasm/bridge/*.js`
+  or `wasm_renderer/bridge/*.js` — those are emitted copies.
+
+See [`wasm_renderer/ARTIFACTS.md`](../wasm_renderer/ARTIFACTS.md) for the full artifact layout.
+
+- **File Sizes**: Reasonable and non-empty
+  - `.wasm`: 50–200 KB (should be ~96 KB)
+  - `.js` files: 10+ KB minimum
+
+- **Content Integrity**:
+  - WASM magic number (`\0asm`) is present and correct
+  - Not a stub or placeholder (no `Promise.resolve({})`)
+  - Expected exported functions are present
+
+- **Freshness**: Timestamps ensure artifacts are not older than source files
+
+## What Happens During CI
+
+The `wasm` job runs on every push to `main`/`develop` and on pull requests to `main`:
+
+1. **Setup**: Node.js 24 + npm dependencies
+2. **Emscripten**: emsdk **6.0.9** (pinned) via `mymindstorm/setup-emsdk@v14`
+3. **Build**: `npm run wasm:build` compiles from source (fails if emcc missing)
+4. **Validation**: `npm run wasm:validate` — integrity, bridge sync, freshness
+5. **Smoke**: Jest tests matching `WASM` (bridge API surface)
+6. **Artifacts**: Uploaded for `test` and `test-wasm-e2e` jobs
+7. **Status**: If any step fails, CI fails (no silent skips)
+
+This ensures:
+- WASM artifacts are **never out of sync** with source code
+- Build failures are **visible and actionable**
+- Commits to `main` always have valid, up-to-date WASM artifacts
+
+## Troubleshooting
+
+### Local build fails: "emcc not found"
+
+Install and activate the Emscripten SDK:
+```bash
+git clone https://github.com/emscripten-core/emsdk.git ~/emsdk
+cd ~/emsdk
+./emsdk install 6.0.9
+./emsdk activate 6.0.9
+source ./emsdk_env.sh
+```
+
+Then try again:
+```bash
+npm run wasm:build
+```
+
+### CI job `wasm` is failing
+
+Check the GitHub Actions logs for the specific error. Common causes:
+- **Emscripten setup issue**: The emsdk action failed to install or activate the SDK. Check the setup step.
+- **Compilation error**: A C++ change broke the build. Check the compilation output.
+- **Validation failure**: Artifacts are missing, corrupted, or stubs. Check the validation output.
+
+### Artifacts are too large / small
+
+If file sizes are outside the expected range (50–200 KB for WASM), the build may be misconfigured:
+- Check that optimization flags (`-O2`) are set in `wasm_renderer/build.sh`
+- Ensure no debug symbols are included
+- Verify emdawnwebgpu is being used correctly
+
+## Current known reliability caveats (June 2026)
+
+The C++ renderer has a **real compute + present pipeline** (`Render()` →
+`PresentToSurface()` in `renderer.cpp`). The June 2026 reliability batch
+([#799](https://github.com/ford442/image_video_effects/issues/799),
+[roadmap comment](https://github.com/ford442/image_video_effects/issues/799#issuecomment-4678258584))
+hardened init/format/limits ([#817](https://github.com/ford442/image_video_effects/issues/817)–[#822](https://github.com/ford442/image_video_effects/issues/822) ✅).
+
+**Still open (not #817–#822):**
+
+- App never calls `setInputSource` — generative mode unreachable for WASM *(partially addressed 2026-06-20)*
+- Live-browser smoke on edge GPUs — informal only; promotion tracking in [`WASM_PROMOTION_TRACKING.md`](./WASM_PROMOTION_TRACKING.md)
+
+Tracking table:
+[`WASM_RENDERER_GAP_ANALYSIS.md`](./WASM_RENDERER_GAP_ANALYSIS.md#c-solidification-tracking-2026-06).
+
+## Summary
+
+- **Build command**: `npm run wasm:build` (requires emsdk; fails without it)
+- **Validation**: `npm run wasm:validate`
+- **CI**: `wasm` job builds + validates + Jest smoke; `test-wasm-e2e` runs Playwright smoke
+- **Skip (explicit)**: `SKIP_WASM_BUILD=1` for machines without emsdk using committed artifacts
+- **Artifact layout**: [`wasm_renderer/ARTIFACTS.md`](../wasm_renderer/ARTIFACTS.md)
+- **Roadmap**: See [`WASM_RENDERER_GAP_ANALYSIS.md`](./WASM_RENDERER_GAP_ANALYSIS.md) and [#799 roadmap comment](https://github.com/ford442/image_video_effects/issues/799#issuecomment-4678258584)
+
+### Known Workarounds
+
+#### TextDecoder and Resizable ArrayBuffers
+When compiling with recent Emscripten versions and enabling WebGPU (or certain `emcc` memory flags), the WebAssembly heap may be backed by a resizable `ArrayBuffer`.
+Certain browser implementations of `TextDecoder.decode()` throw a `TypeError` if provided a view into a resizable `ArrayBuffer`. This causes an initialization failure in the JS glue code (specifically within Emscripten's `UTF8ToString` or `UTF8ArrayToString`).
+
+**Solution:**
+The `wasm_renderer/build.sh` script explicitly includes `-sGROWABLE_ARRAYBUFFERS=0` while preserving `-sALLOW_MEMORY_GROWTH=1`. This prevents the memory's underlying ArrayBuffer from being marked resizable, completely bypassing the browser's `TextDecoder` exceptions without requiring runtime JS monkey-patches.

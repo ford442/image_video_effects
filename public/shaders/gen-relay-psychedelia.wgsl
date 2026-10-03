@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Relay Psychedelia — multi-agent generative shader relay
 //  Category: generative
-//  Relay doc: agents/RELAY_PROTOCOL.md
+//  Relay doc: docs/agents/RELAY_PROTOCOL.md
 //  Hop 0 (spine): baseline warped field + palette + feedback-ready composite
 //  Upgraded: 2026-09-27
 //  Ideas: second curl octave; directional trail smear; complementary seam fringe

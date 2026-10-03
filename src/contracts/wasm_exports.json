@@ -1,5 +1,5 @@
 {
-  "description": "Single source of truth for Emscripten EXPORTED_FUNCTIONS and EXPORTED_RUNTIME_METHODS. Canonical compile path is wasm_renderer/build.sh (npm run wasm:build). CMakeLists.txt is IDE/fallback only and MUST read this file — do not hand-copy the list. _main/_malloc/_free are Emscripten runtime symbols, not EMSCRIPTEN_KEEPALIVE.",
+  "description": "Single source of truth for Emscripten EXPORTED_FUNCTIONS and EXPORTED_RUNTIME_METHODS. The only compile path is wasm_renderer/build.sh (npm run wasm:build); do not hand-copy the list. _main/_malloc/_free are Emscripten runtime symbols, not EMSCRIPTEN_KEEPALIVE.",
   "exportedFunctions": [
     "_main",
     "_initWasmRenderer",
@@ -28,6 +28,9 @@
     "_getSlotShaderId",
     "_getSlotEnabled",
     "_getSlotMode",
+    "_getMaxShaderSlots",
+    "_getCanvasCopySrcSupported",
+    "_setCanvasCopySrc",
     "_getGPUTimings",
     "_setRecording",
     "_isRecording",
@@ -36,6 +39,7 @@
     "_getLastInitErrorMessage",
     "_isRendererInitialized",
     "_loadImageData",
+    "_loadImageExternal",
     "_uploadVideoFrame",
     "_resizeCanvas",
     "_beginFrameCapture",

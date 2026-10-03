@@ -65,6 +65,20 @@ export function yieldForGpuRelease(): Promise<void> {
   });
 }
 
+/**
+ * Tear a renderer down and resolve once its GPU device is released, so the next
+ * requestDevice (backend switch or remount re-probe) cannot race the old device.
+ */
+export async function releaseRendererGpu(renderer: Renderer): Promise<void> {
+  const exclusive = renderer as Renderer & { releaseExclusiveGpu?: () => Promise<void> };
+  if (typeof exclusive.releaseExclusiveGpu === 'function') {
+    await exclusive.releaseExclusiveGpu();
+    return;
+  }
+  await renderer.destroy();
+  await yieldForGpuRelease();
+}
+
 /** Factory for the three renderer backends — keeps RendererManager free of `new` branches. */
 export function createRendererForType(type: RendererType, config: RendererConfig): Renderer {
   if (type === 'webgpu') return new WebGPURenderer(config);
@@ -126,13 +140,7 @@ export async function performBackendSwitch(input: BackendSwitchInput): Promise<B
       `[RendererManager] Releasing ${previousType} before switching to ${targetType} ` +
         '(exclusive WebGPU adapter/device ownership)',
     );
-    const exclusive = previousRenderer as Renderer & { releaseExclusiveGpu?: () => Promise<void> };
-    if (typeof exclusive.releaseExclusiveGpu === 'function') {
-      await exclusive.releaseExclusiveGpu();
-    } else {
-      previousRenderer!.destroy();
-      await yieldForGpuRelease();
-    }
+    await releaseRendererGpu(previousRenderer!);
   }
 
   const renderer = createRendererForType(targetType, config);
@@ -144,8 +152,8 @@ export async function performBackendSwitch(input: BackendSwitchInput): Promise<B
   }
 
   if (success) {
-    if (!mustReleaseFirst) {
-      previousRenderer?.destroy();
+    if (!mustReleaseFirst && previousRenderer) {
+      await releaseRendererGpu(previousRenderer);
     }
 
     let nextCanvas = canvas;

@@ -1,6 +1,6 @@
 > **📜 HISTORICAL — March 2026 snapshot. Do not use for onboarding.**
 >
-> Superseded by [`STATUS.md`](STATUS.md) and [`../WASM_BACKEND_POLICY.md`](../WASM_BACKEND_POLICY.md).  
+> Superseded by [`STATUS.md`](STATUS.md) and [`../WASM_BACKEND_POLICY.md`](../docs/WASM_BACKEND_POLICY.md).  
 > See [`_HISTORICAL_ANALYSIS_README.md`](_HISTORICAL_ANALYSIS_README.md) for the full archive index.
 
 # Pixelocity WASM Renderer - Architecture Analysis

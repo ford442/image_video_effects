@@ -17,19 +17,12 @@ export async function initWasmRenderer(canvasElement: HTMLCanvasElement): Promis
   }
 
   wasmRef.canvas = canvasElement;
-  // Keep key in sync with src/config/vramBudget.ts HISTORY_OOM_CAP_KEY (#1204).
-  // Default working size is 1024; never pass 2048 as the first WASM committed resource.
-  const sizeFallback = 1024;
-  let cap = sizeFallback;
-  try {
-    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('px_history_oom_cap') === '1024') {
-      cap = 1024;
-    }
-  } catch {
-    /* private mode */
-  }
-  state.canvasWidth = Math.min(wasmRef.canvas.width || sizeFallback, cap);
-  state.canvasHeight = Math.min(wasmRef.canvas.height || sizeFallback, cap);
+  // Never pass more than HISTORY_SAFE_WORKING_SIZE (src/config/vramBudget.ts, 1024) as the
+  // first WASM committed resource (#1204). The cap is unconditional, so the OOM-cap
+  // sessionStorage flag cannot raise or lower it and is not read here.
+  const sizeCap = 1024;
+  state.canvasWidth = Math.min(wasmRef.canvas.width || sizeCap, sizeCap);
+  state.canvasHeight = Math.min(wasmRef.canvas.height || sizeCap, sizeCap);
   state.initStartTime = performance.now();
 
   return new Promise((resolve) => {
@@ -124,6 +117,14 @@ export async function initWasmRenderer(canvasElement: HTMLCanvasElement): Promis
             `[WASM] colorFormat=${state.colorFormat === 1 ? 'rgba16float' : 'rgba32float'}`,
           );
 
+          // Compile-time constant, safe to read before C++ init finishes. The
+          // canvas COPY_SRC probe is NOT: read it live via readCanvasCopySrc().
+          const mod = wasmRef.module;
+          state.maxShaderSlots = typeof mod._getMaxShaderSlots === 'function'
+            ? mod._getMaxShaderSlots()
+            : null;
+          console.log(`[WASM] maxShaderSlots=${state.maxShaderSlots ?? 'unknown (artifact predates export)'}`);
+
           promoteWasmCanvasVisible(canvas);
 
           if (state.pendingInputSource !== null) {
@@ -191,6 +192,7 @@ export function shutdownWasmRenderer(): void {
   state.initialized = false;
   state.activeShader = null;
   state.droppedSlots.clear();
+  state.maxShaderSlots = null;
   wasmRef.module = null;
   wasmRef.canvas = null;
   console.log('[WASM] Shutdown complete');
@@ -246,3 +248,4 @@ export function getPresentCanvasId(): string {
   const found = document.querySelector<HTMLCanvasElement>('[id^="pixelocity-wasm-canvas-"]');
   return found?.id ?? tagged?.id ?? '';
 }
+

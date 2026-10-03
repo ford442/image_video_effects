@@ -108,6 +108,7 @@ describe('RemoteApp chrome', () => {
     expect(screen.getByRole('heading', { name: /remote control/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /random image/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /show controls/i })).not.toBeInTheDocument();
+    // eslint-disable-next-line testing-library/no-node-access -- asserting CSS state classes, no accessible query exists
     expect(document.querySelector('.show-controls-overlay')).toBeNull();
   });
 
@@ -119,6 +120,7 @@ describe('RemoteApp chrome', () => {
     expect(screen.queryByRole('button', { name: /random image/i })).not.toBeInTheDocument();
     const strip = screen.getByRole('button', { name: /show controls/i });
     expect(strip).toHaveClass('remote-chrome-restore');
+    // eslint-disable-next-line testing-library/no-node-access -- asserting CSS state classes, no accessible query exists
     expect(document.querySelector('.remote-app.chrome-hidden')).toBeTruthy();
   });
 

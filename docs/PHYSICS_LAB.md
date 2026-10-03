@@ -2,7 +2,7 @@
 
 Physics flagships — five Tier C **multipass graph** simulations plus the
 canonical single-pass Optical Flow Dream. They should feel psychedelic,
-beautiful, and strange (see [`notes/CREATIVE_VISION.md`](../notes/CREATIVE_VISION.md)).
+beautiful, and strange (see [`docs/CREATIVE_VISION.md`](CREATIVE_VISION.md)).
 
 Canonical graph docs: [`MULTIPASS_GRAPH.md`](MULTIPASS_GRAPH.md).
 

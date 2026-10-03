@@ -35,8 +35,25 @@ const state = {
   initEndTime: 0,
   colorFormat: 0,
   /** Slot indexes whose last setSlotShader the module did not accept. */
-  droppedSlots: /* @__PURE__ */ new Set()
+  droppedSlots: /* @__PURE__ */ new Set(),
+  /** MAX_SHADER_SLOTS compiled into the loaded artifact; null = older binary without the export. */
+  maxShaderSlots: null
 };
+function isCppRendererReady() {
+  const mod = wasmRef.module;
+  if (!state.initialized || !mod) return false;
+  try {
+    return Number(mod.ccall("isRendererInitialized", "number", [], [])) === 1;
+  } catch {
+    return false;
+  }
+}
+function readCanvasCopySrc() {
+  const mod = wasmRef.module;
+  if (!mod || typeof mod._getCanvasCopySrcSupported !== "function") return null;
+  if (!isCppRendererReady()) return null;
+  return mod._getCanvasCopySrcSupported() === 1;
+}
 const INIT_STAGE_NAMES = {
   0: "None",
   1: "Instance",
@@ -50,6 +67,8 @@ const INIT_STAGE_NAMES = {
 };
 export {
   INIT_STAGE_NAMES,
+  isCppRendererReady,
+  readCanvasCopySrc,
   state,
   utf8ByteLength,
   wasmRef

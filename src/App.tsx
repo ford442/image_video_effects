@@ -411,7 +411,7 @@ function MainApp() {
         }
         syncInputSourceToRenderer('generative');
         setActiveGenerativeShader(id);
-        setMode(0, id as RenderMode);
+        void setMode(0, id as RenderMode);
         setShaderCategory('generative');
         setStatus(`Preview loaded: ${name}`);
     }, [syncInputSourceToRenderer, setMode, setStatus]);

@@ -63,7 +63,7 @@ export function useTestHarness({
                 if (params.get('shaderHotReload') === '1') {
                     import('../dev/shaderHotReload').then(({ trackShaderForHotReload }) => {
                         trackShaderForHotReload(id, url);
-                    });
+                    }).catch((err) => console.warn('[HotReload] Failed to load module:', err));
                 }
                 return ok;
             };
@@ -205,7 +205,7 @@ export function useTestHarness({
             };
             cleanup = attachShaderHotReload(manager);
             console.log('[HotReload] Enabled — edit files in public/shaders/ to reload pipelines');
-        });
+        }).catch((err) => console.warn('[HotReload] Failed to load module:', err));
         return () => cleanup?.();
     }, [rendererReady, rendererRef]);
 }

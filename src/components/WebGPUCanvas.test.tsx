@@ -1,25 +1,40 @@
 import React from 'react';
-import { render, fireEvent, screen } from '@testing-library/react';
-import WebGPUCanvas from './WebGPUCanvas';
+import { render, fireEvent, screen, act } from '@testing-library/react';
+import WebGPUCanvas, { waitForCanvasTeardown } from './WebGPUCanvas';
 import { RendererManager } from '../renderer/RendererManager';
 import { ShaderEntry, SlotParams } from '../renderer/types';
 
-// Mock the Renderer class to prevent WebGPU initialization in tests
-jest.mock('../renderer/Renderer', () => {
-    return {
-        Renderer: class {
-            init = jest.fn().mockResolvedValue(true);
-            render = jest.fn();
-            destroy = jest.fn();
-            setInputSource = jest.fn();
-            addRipplePoint = jest.fn();
-            firePlasma = jest.fn();
-            getAvailableModes = () => [
-                { id: 'interactive-ripple', features: ['mouse-driven'] }
-            ];
-        }
-    };
-});
+// Mock RendererManager + boot probe so no WebGPU initialization runs in tests.
+// Plain functions, not jest.fn(): CRA's resetMocks would wipe factory implementations.
+let mockReleaseGate: Promise<void> = Promise.resolve();
+const mockEvents: string[] = [];
+
+jest.mock('../renderer/RendererManager', () => ({
+    getRendererTypeFromURL: () => null,
+    RendererManager: class {
+        init = async () => true;
+        destroy = () => {
+            mockEvents.push('destroy:start');
+            return mockReleaseGate.then(() => { mockEvents.push('destroy:done'); });
+        };
+        setVideo = () => {};
+        setInputSource = () => {};
+        syncAllSlotParams = () => {};
+        render = () => {};
+        setParam = () => {};
+        getDiagnostics = () => ({});
+    },
+}));
+
+jest.mock('../renderer/webgpuBootProbe', () => ({
+    runWebGpuBootProbe: async () => {
+        mockEvents.push('probe');
+        return { ok: true, handoff: {} };
+    },
+    publishWebGpuProbe: () => {},
+    publishWasmProbeFailure: () => {},
+    toWebGpuProbeBreadcrumb: (p: unknown) => p,
+}));
 
 beforeAll(() => {
     // Mock ResizeObserver
@@ -106,4 +121,47 @@ test('mouse down emits ripple for mouse-driven shader', () => {
 
     // Expect addRipplePoint called with normalized coords (0.5, 0.25)
     expect(mockRenderer.addRipplePoint).toHaveBeenCalledWith(0.5, 0.25);
+});
+
+test('remount waits for the previous renderer teardown before re-probing', async () => {
+    const rectSpy = jest.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue(
+        { left: 0, top: 0, width: 200, height: 200, right: 200, bottom: 200, x: 0, y: 0, toJSON: () => ({}) } as DOMRect,
+    );
+    mockEvents.length = 0;
+    let releaseFirst!: () => void;
+    mockReleaseGate = new Promise<void>((resolve) => { releaseFirst = resolve; });
+
+    const props = {
+        modes: ['none'] as never,
+        slotParams: [] as SlotParams[],
+        farthestPoint: { x: 0.5, y: 0.5 },
+        mousePosition: { x: -1, y: -1 },
+        setMousePosition: jest.fn(),
+        isMouseDown: false,
+        setIsMouseDown: jest.fn(),
+        isMuted: false,
+        inputSource: 'image' as const,
+        selectedVideo: '',
+        apiBaseUrl: '',
+        activeSlot: 0,
+        setInputSource: () => {},
+    };
+
+    const view = render(<WebGPUCanvas {...props} rendererRef={{ current: null }} />);
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    expect(mockEvents).toEqual(['probe']);
+    view.unmount();
+
+    render(<WebGPUCanvas {...props} rendererRef={{ current: null }} />);
+    await act(async () => { await new Promise((r) => setTimeout(r, 10)); });
+    // The second mount must not request a device while the first is still releasing.
+    expect(mockEvents).toEqual(['probe', 'destroy:start']);
+
+    await act(async () => {
+        releaseFirst();
+        await waitForCanvasTeardown();
+        await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(mockEvents).toEqual(['probe', 'destroy:start', 'destroy:done', 'probe']);
+    rectSpy.mockRestore();
 });

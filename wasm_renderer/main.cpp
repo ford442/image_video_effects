@@ -2,6 +2,7 @@
 #include <emscripten/emscripten.h>
 #include <cstdlib>
 #include <cstdio>
+#include <memory>
 
 using namespace pixelocity;
 
@@ -9,7 +10,10 @@ using namespace pixelocity;
 // main.cpp - WASM JavaScript Bridge
 // ═══════════════════════════════════════════════════════════════════════════════
 
-static WebGPURenderer* g_renderer = nullptr;
+// Owned here; every export null-checks it. Spontaneous WebGPU callbacks never
+// hold this pointer directly (see CallbackToken), so reset() is safe while a
+// map or device-lost callback is still pending.
+static std::unique_ptr<WebGPURenderer> g_renderer;
 
 extern "C" {
 
@@ -18,7 +22,7 @@ extern "C" {
 EMSCRIPTEN_KEEPALIVE
 int initWasmRenderer(int width, int height, const char* canvasSelector) {
     if (!g_renderer) {
-        g_renderer = new WebGPURenderer();
+        g_renderer = std::make_unique<WebGPURenderer>();
     }
     bool ok = g_renderer->Initialize(width, height, canvasSelector);
     return ok ? 1 : 0;
@@ -28,8 +32,7 @@ EMSCRIPTEN_KEEPALIVE
 void shutdownWasmRenderer() {
     if (g_renderer) {
         g_renderer->Shutdown();
-        delete g_renderer;
-        g_renderer = nullptr;
+        g_renderer.reset();
     }
 }
 
@@ -98,6 +101,14 @@ void loadImageData(const uint8_t* data, int width, int height) {
     }
 }
 
+// GPU still ingest. The JS source is parked on Module.pixelocityPendingImage by
+// the bridge (capture.ts uploadImageSource). Returns 1 on success; 0 means the
+// caller should fall back to loadImageData.
+EMSCRIPTEN_KEEPALIVE
+int loadImageExternal(int width, int height) {
+    return (g_renderer && g_renderer->LoadImageExternal(width, height)) ? 1 : 0;
+}
+
 EMSCRIPTEN_KEEPALIVE
 void uploadVideoFrame(const uint8_t* data, int width, int height) {
     if (g_renderer) {
@@ -149,8 +160,10 @@ void setZoomParams(float p1, float p2, float p3, float p4) {
 
 EMSCRIPTEN_KEEPALIVE
 void updateMousePos(float x, float y) {
+    // Position only: the bridge calls this on every pointer move without a
+    // button state, so it must not clear mouseDown_ mid-drag.
     if (g_renderer) {
-        g_renderer->SetMouse(x, y, false);
+        g_renderer->SetMousePos(x, y);
     }
 }
 
@@ -221,6 +234,27 @@ int getSlotEnabled(int slotIndex) {
 EMSCRIPTEN_KEEPALIVE
 int getSlotMode(int slotIndex) {
     return g_renderer ? g_renderer->GetSlotMode(slotIndex) : 0;
+}
+
+// Physical slot ceiling compiled into this artifact (MAX_SHADER_SLOTS; must equal
+// slot_limits.json maxPhysicalSlots). Needs no renderer, so wasm:validate can
+// read it from a stale binary without a GPU.
+EMSCRIPTEN_KEEPALIVE
+int getMaxShaderSlots() {
+    return WebGPURenderer::GetMaxShaderSlots();
+}
+
+// Canvas COPY_SRC opt-in (canvas_configure.json optIn.copySrc).
+EMSCRIPTEN_KEEPALIVE
+int getCanvasCopySrcSupported() {
+    return (g_renderer && g_renderer->IsCanvasCopySrcSupported()) ? 1 : 0;
+}
+
+// Reconfigures the swapchain with RENDER_ATTACHMENT | COPY_SRC (1) or back to
+// render-only (0). Returns 1 on success, 0 when unsupported or no surface.
+EMSCRIPTEN_KEEPALIVE
+int setCanvasCopySrc(int enabled) {
+    return (g_renderer && g_renderer->SetCanvasCopySrc(enabled != 0)) ? 1 : 0;
 }
 
 EMSCRIPTEN_KEEPALIVE

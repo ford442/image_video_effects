@@ -1,42 +1,54 @@
 // GENERATED — do not edit. Source: src/wasm/ (concat_bridge.sh / emit-wasm-bridge.mjs)
 
 import { state, wasmRef } from "./state.js";
+const CAPTURE_READY = 2;
+const CAPTURE_ERROR = 3;
+let _captureInFlight = null;
 function captureFrame() {
-  return new Promise((resolve, reject) => {
+  if (_captureInFlight) return _captureInFlight;
+  const pending = new Promise((resolve, reject) => {
     if (!state.initialized || !wasmRef.module) {
       reject(new Error("[WASM] Renderer not initialized"));
       return;
     }
     wasmRef.module.ccall("beginFrameCapture", null, [], []);
     const pollState = () => {
-      if (!wasmRef.module) {
+      const mod = wasmRef.module;
+      if (!mod) {
         reject(new Error("[WASM] Module invalidated during capture"));
         return;
       }
-      const captureState = Number(wasmRef.module.ccall("getFrameCaptureState", "number", [], []));
-      if (captureState === 3) {
-        const width = Number(wasmRef.module.ccall("getCanvasWidth", "number", [], []));
-        const height = Number(wasmRef.module.ccall("getCanvasHeight", "number", [], []));
-        const numPixels = width * height;
-        const floatByteLength = numPixels * 4 * 4;
-        const floatPtr = Number(wasmRef.module.ccall("readCapturedFrame", "number", [], []));
-        if (!floatPtr) {
-          wasmRef.module.ccall("endFrameCapture", null, [], []);
-          reject(new Error("[WASM] readCapturedFrame returned null pointer"));
+      const captureState = Number(mod.ccall("getFrameCaptureState", "number", [], []));
+      if (captureState === CAPTURE_READY) {
+        const width = Number(mod.ccall("getCanvasWidth", "number", [], []));
+        const height = Number(mod.ccall("getCanvasHeight", "number", [], []));
+        const byteLength = width * height * 4;
+        const ptr = byteLength > 0 ? mod._malloc(byteLength) : 0;
+        let written = 0;
+        let rgba8 = null;
+        try {
+          if (ptr) {
+            written = Number(mod.ccall(
+              "readCapturedFrame",
+              "number",
+              ["number", "number"],
+              [ptr, byteLength]
+            ));
+            if (written === byteLength) {
+              rgba8 = new Uint8ClampedArray(mod.HEAPU8.slice(ptr, ptr + byteLength).buffer);
+            }
+          }
+        } finally {
+          if (ptr) mod._free(ptr);
+          mod.ccall("endFrameCapture", null, [], []);
+        }
+        if (!rgba8) {
+          reject(new Error(`[WASM] readCapturedFrame wrote ${written} of ${byteLength} bytes (${width}x${height})`));
           return;
         }
-        const floatBuffer = wasmRef.module.HEAPF32.subarray(
-          floatPtr / 4,
-          (floatPtr + floatByteLength) / 4
-        );
-        const rgba8 = new Uint8ClampedArray(numPixels * 4);
-        for (let i = 0; i < numPixels * 4; i++) {
-          rgba8[i] = Math.min(255, Math.max(0, Math.round(floatBuffer[i] * 255)));
-        }
-        wasmRef.module.ccall("endFrameCapture", null, [], []);
         resolve(new ImageData(rgba8, width, height));
-      } else if (captureState === 4) {
-        wasmRef.module.ccall("endFrameCapture", null, [], []);
+      } else if (captureState === CAPTURE_ERROR) {
+        mod.ccall("endFrameCapture", null, [], []);
         reject(new Error("[WASM] GPU frame capture failed on C++ side"));
       } else {
         requestAnimationFrame(pollState);
@@ -44,6 +56,12 @@ function captureFrame() {
     };
     requestAnimationFrame(pollState);
   });
+  _captureInFlight = pending;
+  const clear = () => {
+    if (_captureInFlight === pending) _captureInFlight = null;
+  };
+  pending.then(clear, clear);
+  return pending;
 }
 async function captureFrameDataUrl() {
   const imgData = await captureFrame();
@@ -64,6 +82,24 @@ async function takeScreenshot(filename = "pixelocity-shader.png") {
 }
 function asU8(pixels) {
   return pixels instanceof Uint8Array ? pixels : new Uint8Array(pixels.buffer, pixels.byteOffset, pixels.byteLength);
+}
+function uploadImageSource(source, width, height) {
+  const mod = wasmRef.module;
+  if (!state.initialized || !mod || !width || !height) return false;
+  mod.pixelocityPendingImage = source;
+  try {
+    return Number(mod.ccall(
+      "loadImageExternal",
+      "number",
+      ["number", "number"],
+      [width, height]
+    )) === 1;
+  } catch (err) {
+    console.warn("[WASM] loadImageExternal failed:", err);
+    return false;
+  } finally {
+    delete mod.pixelocityPendingImage;
+  }
 }
 function uploadImageData(image, width, height) {
   if (!state.initialized || !wasmRef.module) return;
@@ -158,5 +194,6 @@ export {
   resizeCanvas,
   takeScreenshot,
   uploadImageData,
+  uploadImageSource,
   uploadVideoFrame
 };

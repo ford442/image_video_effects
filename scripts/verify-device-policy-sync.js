@@ -6,7 +6,7 @@
  * optional feature order ↔ device.ts / device.cpp;
  * slot_limits.json ↔ PHYSICAL_SLOT_LIMIT / MAX_SHADER_SLOTS;
  * canvas_configure.json ↔ buildCanvasConfigureOptions / JS_CreateSurfaceFromCanvas / ConfigureSurface; wasm_exports.json ↔ KEEPALIVE /
- * build.sh / CMakeLists (no hardcoded export lists);
+ * build.sh (no hardcoded export lists; build.sh is the only build, CMakeLists.txt was removed);
  * workgroup_dispatch.json ↔ ShaderCompilation.ts ↔ wasm_internal.cpp ParseWorkgroupSize;
  * emptyPlaceholder (r32float 1×1, 4 B/row) ↔ resources.ts emptyTex ↔ resources.cpp emptyTexture_;
  * bind_group1.json ↔ simRing.ts layout ↔ group-1 limits policy ↔ WASM group-1 refusal.
@@ -127,6 +127,36 @@ function fail(msg) {
   failed = true;
 }
 
+// deepWorkgroupLimits: requested only when the adapter offers all three. Both
+// C++ (adapterDeepWorkgroup threshold + requiredLimits block) and TS
+// (buildRequiredLimits spreading the contract block) must mirror the JSON.
+function verifyDeepWorkgroupLimits() {
+  const deep = contract.deepWorkgroupLimits;
+  if (!deep) return;
+  const cpp = fs.readFileSync(CPP_DEVICE, 'utf8');
+  const gate = cpp.match(/const bool adapterDeepWorkgroup\s*=([^;]+);/);
+  const block = cpp.match(/if \(adapterDeepWorkgroup\) \{([^}]+)\}/);
+  if (!gate) fail('device.cpp: const bool adapterDeepWorkgroup = ... not found (deepWorkgroupLimits)');
+  if (!block) fail('device.cpp: if (adapterDeepWorkgroup) { requiredLimits... } not found (deepWorkgroupLimits)');
+  for (const [key, value] of Object.entries(deep)) {
+    if (gate && !new RegExp(`limits\\.${key}\\s*>=\\s*${value}\\b`).test(gate[1])) {
+      fail(`device.cpp adapterDeepWorkgroup must test limits.${key} >= ${value} (webgpu_limits.json deepWorkgroupLimits)`);
+    }
+    if (block && !new RegExp(`requiredLimits\\.${key}\\s*=\\s*${value}\\s*;`).test(block[1])) {
+      fail(`device.cpp deep requiredLimits.${key} must be ${value} (webgpu_limits.json deepWorkgroupLimits)`);
+    }
+  }
+  const ts = fs.readFileSync(TS_POLICY, 'utf8');
+  if (!/webgpuLimitsContract\.deepWorkgroupLimits/.test(ts)
+      || !/meetsDeepWorkgroupLimits\(adapterLimits\)\s*\?\s*DEEP_WORKGROUP_LIMITS/.test(ts)) {
+    fail('webgpuDevicePolicy.ts buildRequiredLimits must spread webgpuLimitsContract.deepWorkgroupLimits when meetsDeepWorkgroupLimits(adapterLimits)');
+  }
+}
+
+if (!ONLY_WASM_INVARIANTS) {
+  verifyDeepWorkgroupLimits();
+}
+
 function verifyOptionalFeatures() {
   const feat = JSON.parse(
     fs.readFileSync(path.join(ROOT, 'src/contracts/webgpu_optional_features.json'), 'utf8'),
@@ -175,6 +205,18 @@ function verifyOptionalFeatures() {
   }
   if (pSg >= 0 && pTs >= 0 && pSg < pTs) {
     fail('device.cpp must not request subgroups before timestamp-query');
+  }
+
+  // WGPUFeatureName_* / WGPUDeviceLostReason_* are enum members, not macros:
+  // an #ifdef on them is always false and silently compiles the feature out
+  // (timestamp-query and subgroups were dead in every artifact until 2026-10).
+  const cppDir = path.join(ROOT, 'wasm_renderer');
+  for (const f of fs.readdirSync(cppDir).filter((n) => /\.(cpp|h)$/.test(n))) {
+    const src = fs.readFileSync(path.join(cppDir, f), 'utf8');
+    const m = src.match(/#\s*if(?:n?def|\s+defined\s*\(?)\s*(WGPU(?:FeatureName|DeviceLostReason)_\w+)/);
+    if (m) {
+      fail(`wasm_renderer/${f}: preprocessor guard on enum member ${m[1]} is always false; test it at runtime instead`);
+    }
   }
 
   const scanner = path.join(ROOT, 'src/utils/requestPixelocityDevice.ts');
@@ -315,6 +357,114 @@ function verifyCanvasConfigure() {
   if (!new RegExp(`\\n\\s*${c.cpp.surfaceConfigureFunction}\\(\\);`).test(afterImport)) {
     fail(`device.cpp must call ${c.cpp.surfaceConfigureFunction}() after ${c.cpp.jsConfigureFunction} (second configure; black canvas without it)`);
   }
+
+  verifyCanvasCopySrcCpp(c, cpp, surf ? surf[0] : '');
+}
+
+/**
+ * C++ canvas COPY_SRC opt-in (canvas_configure.json cpp.copySrc):
+ * probe EM_JS uses exactly optIn.copySrc.usage inside a validation error scope,
+ * ConfigureSurface() restores render-only after it, the opt-in bits map through
+ * cpp.usageEnums and are gated on the flag, and only the setter assigns the flag.
+ */
+function verifyCanvasCopySrcCpp(c, cpp, surfBody) {
+  const cs = c.cpp.copySrc;
+  if (!cs) {
+    fail('canvas_configure.json cpp.copySrc block missing (C++ COPY_SRC opt-in contract)');
+    return;
+  }
+  const optUsage = c.optIn.copySrc.usage;
+
+  const probeFn = cpp.match(new RegExp(`EM_JS\\([^,]+,\\s*${cs.probeFunction}[\\s\\S]*?\\n\\}\\);`));
+  const probeCfg = probeFn && probeFn[0].match(/ctx\.configure\(\{([\s\S]*?)\}\)/);
+  if (!probeCfg) {
+    fail(`device.cpp ${cs.probeFunction} ctx.configure({...}) not found`);
+  } else {
+    const body = probeCfg[1];
+    const usage = body.match(/usage:\s*([^,\n}]+)/);
+    const jsUsage = usage
+      ? usage[1].split('|').map((u) => u.trim().replace(/^GPUTextureUsage\./, '')).sort()
+      : [];
+    if (JSON.stringify(jsUsage) !== JSON.stringify([...optUsage].sort())) {
+      fail(`device.cpp ${cs.probeFunction} usage must be ${optUsage.join('|')} (got ${jsUsage.join('|') || 'missing'})`);
+    }
+    if (!new RegExp(`alphaMode:\\s*'${c.alphaMode}'`).test(body) || !/format:\s*preferredFormat/.test(body)) {
+      fail(`device.cpp ${cs.probeFunction} must keep alphaMode '${c.alphaMode}' and format preferredFormat`);
+    }
+    if (/colorSpace|toneMapping/.test(body)) {
+      fail(`device.cpp ${cs.probeFunction} must not set colorSpace/toneMapping (opt-in is TS-first)`);
+    }
+  }
+
+  // Probe call: push scope → probe → pop scope → ConfigureSurface() (restore render-only).
+  const iCall = cpp.search(new RegExp(`=\\s*${cs.probeFunction}\\(`));
+  if (iCall < 0) {
+    fail(`device.cpp must call ${cs.probeFunction}() at surface creation`);
+  } else {
+    const before = cpp.slice(0, iCall);
+    const after = cpp.slice(iCall);
+    const iPush = before.lastIndexOf('wgpuDevicePushErrorScope(');
+    if (iPush < 0 || !/WGPUErrorFilter_Validation/.test(before.slice(iPush, iPush + 120))) {
+      fail(`device.cpp ${cs.probeFunction}() must run inside wgpuDevicePushErrorScope(..., WGPUErrorFilter_Validation)`);
+    }
+    const iPop = after.indexOf('wgpuDevicePopErrorScope(');
+    const iRestore = after.search(new RegExp(`\\n\\s*${c.cpp.surfaceConfigureFunction}\\(\\);`));
+    if (iPop < 0 || iRestore < 0 || iRestore < iPop) {
+      fail(`device.cpp ${cs.probeFunction}() must be followed by wgpuDevicePopErrorScope then ${c.cpp.surfaceConfigureFunction}() (restore render-only)`);
+    }
+    if (!new RegExp(`${cs.supportedFlag}\\s*=`).test(after.slice(0, iRestore > 0 ? iRestore : undefined))) {
+      fail(`device.cpp must record the probe result in ${cs.supportedFlag} before ${c.cpp.surfaceConfigureFunction}()`);
+    }
+  }
+
+  // ConfigureSurface: opt-in bits (optIn.copySrc.usage minus default usage) via cpp.usageEnums, gated on the flag.
+  const extra = optUsage.filter((u) => !c.usage.includes(u));
+  const wantEnums = extra.map((u) => c.cpp.usageEnums[u]);
+  if (wantEnums.some((e) => !e)) {
+    fail(`canvas_configure.json cpp.usageEnums missing an entry for ${extra.join(', ')}`);
+  }
+  const optLine = surfBody.match(new RegExp(`if\\s*\\(\\s*${cs.flag}\\s*\\)\\s*config\\.usage\\s*\\|=\\s*([^;]+);`));
+  const gotEnums = optLine ? optLine[1].split('|').map((u) => u.trim()).sort() : [];
+  if (JSON.stringify(gotEnums) !== JSON.stringify([...wantEnums].sort())) {
+    fail(`device.cpp ${c.cpp.surfaceConfigureFunction} must have 'if (${cs.flag}) config.usage |= ${wantEnums.join(' | ')};' (got ${gotEnums.join(' | ') || 'missing'})`);
+  }
+
+  // Flag is assigned only in the setter; header defaults both flags to false.
+  const header = fs.readFileSync(path.join(ROOT, 'wasm_renderer/renderer.h'), 'utf8');
+  for (const flag of [cs.flag, cs.supportedFlag]) {
+    if (!new RegExp(`bool\\s+${flag}\\s*=\\s*false;`).test(header)) {
+      fail(`renderer.h must declare 'bool ${flag} = false;'`);
+    }
+  }
+  const setter = cpp.match(new RegExp(`bool WebGPURenderer::${cs.setter}\\([^)]*\\)\\s*\\{[\\s\\S]*?\\n\\}`));
+  if (!setter) {
+    fail(`device.cpp WebGPURenderer::${cs.setter}() not found`);
+  } else {
+    if (!new RegExp(`${c.cpp.surfaceConfigureFunction}\\(\\);`).test(setter[0])) {
+      fail(`device.cpp ${cs.setter}() must call ${c.cpp.surfaceConfigureFunction}()`);
+    }
+    if (!new RegExp(`!\\s*${cs.supportedFlag}`).test(setter[0])) {
+      fail(`device.cpp ${cs.setter}() must refuse enabling when ${cs.supportedFlag} is false`);
+    }
+  }
+  const assignRe = new RegExp(`\\b${cs.flag}\\s*=(?!=)`, 'g');
+  const outsideSetter = setter ? cpp.replace(setter[0], '') : cpp;
+  const stray = [...stripCppComments(outsideSetter).matchAll(assignRe)].length;
+  const wasmSources = walkCppFiles(path.join(ROOT, 'wasm_renderer'))
+    .filter((f) => f !== CPP_DEVICE && !f.endsWith('renderer.h'));
+  const strayElsewhere = wasmSources.filter(
+    (f) => [...stripCppComments(fs.readFileSync(f, 'utf8')).matchAll(assignRe)].length > 0,
+  );
+  if (stray > 0 || strayElsewhere.length > 0) {
+    fail(`${cs.flag} may only be assigned inside ${cs.setter}() (found ${stray} in device.cpp, files: ${strayElsewhere.map((f) => path.relative(ROOT, f)).join(', ') || 'none'})`);
+  }
+
+  const exportsJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/contracts/wasm_exports.json'), 'utf8'));
+  for (const name of cs.exports || []) {
+    if (!exportsJson.exportedFunctions.includes(name)) {
+      fail(`wasm_exports.json must export ${name} (canvas_configure.json cpp.copySrc.exports)`);
+    }
+  }
 }
 
 function verifyWasmExports() {
@@ -341,18 +491,16 @@ function verifyWasmExports() {
   }
 
   const buildSh = fs.readFileSync(path.join(ROOT, 'wasm_renderer/build.sh'), 'utf8');
-  const cmake = fs.readFileSync(path.join(ROOT, 'wasm_renderer/CMakeLists.txt'), 'utf8');
   if (/_initWasmRenderer,_shutdownWasmRenderer/.test(buildSh)) {
     fail('build.sh must not hardcode EXPORTED_FUNCTIONS; use format-wasm-exports.js');
   }
   if (!buildSh.includes('format-wasm-exports.js')) {
     fail('build.sh must invoke scripts/format-wasm-exports.js');
   }
-  if (/_initWasmRenderer,_shutdownWasmRenderer/.test(cmake)) {
-    fail('CMakeLists.txt must not hardcode EXPORTED_FUNCTIONS; read wasm_exports.json');
-  }
-  if (!cmake.includes('wasm_exports.json')) {
-    fail('CMakeLists.txt must file(READ) src/contracts/wasm_exports.json');
+  // build.sh is the only build. A second build file must not come back with
+  // its own export/flag lists to keep in sync.
+  if (fs.existsSync(path.join(ROOT, 'wasm_renderer/CMakeLists.txt'))) {
+    fail('wasm_renderer/CMakeLists.txt was removed: build.sh is the only WASM build (keep one flag/export path)');
   }
 }
 
@@ -361,11 +509,15 @@ function verifyWasmCompileFlags() {
     fs.readFileSync(path.join(ROOT, 'src/contracts/wasm_compile_flags.json'), 'utf8'),
   );
   const buildSh = fs.readFileSync(path.join(ROOT, 'wasm_renderer/build.sh'), 'utf8');
-  const cmake = fs.readFileSync(path.join(ROOT, 'wasm_renderer/CMakeLists.txt'), 'utf8');
   const ci = fs.readFileSync(path.join(ROOT, '.github/workflows/ci.yml'), 'utf8');
 
   if (!/^\d+\.\d+\.\d+$/.test(flags.emsdkVersion || '')) {
     fail(`wasm_compile_flags.json emsdkVersion must be an exact x.y.z pin, got "${flags.emsdkVersion}"`);
+  }
+  for (const f of flags.extraFlags || []) {
+    if (typeof f !== 'string' || !f.startsWith('-') || f.startsWith('-s')) {
+      fail(`wasm_compile_flags.json extraFlags entry "${f}" must be a plain em++ flag (put -s settings in sFlags)`);
+    }
   }
   if (!flags.sFlags.includes('GROWABLE_ARRAYBUFFERS=0')) {
     fail('wasm_compile_flags.json must keep GROWABLE_ARRAYBUFFERS=0 (TextDecoder + resizable heap; re-test Dawn first)');
@@ -381,17 +533,14 @@ function verifyWasmCompileFlags() {
     }
   }
 
-  // build.sh / CMake must read the JSON, not hand-copy -s flags.
+  // build.sh must read the JSON, not hand-copy -s flags.
   if (!buildSh.includes('format-wasm-compile-flags.js')) {
     fail('build.sh must read flags via scripts/format-wasm-compile-flags.js');
   }
   if (!buildSh.includes('emcc-version-gate.sh')) {
     fail('build.sh must run scripts/emcc-version-gate.sh before compiling');
   }
-  if (!cmake.includes('wasm_compile_flags.json')) {
-    fail('CMakeLists.txt must file(READ) src/contracts/wasm_compile_flags.json');
-  }
-  for (const [name, src] of [['build.sh', buildSh], ['CMakeLists.txt', cmake]]) {
+  for (const [name, src] of [['build.sh', buildSh]]) {
     const code = src.split('\n').filter((l) => !/^\s*#/.test(l)).join('\n');
     for (const f of flags.sFlags) {
       const key = f.split('=')[0];
@@ -401,6 +550,11 @@ function verifyWasmCompileFlags() {
     }
     if (/--use-port=emdawnwebgpu/.test(code)) {
       fail(`${name} hardcodes --use-port; it belongs in wasm_compile_flags.json`);
+    }
+    for (const f of flags.extraFlags || []) {
+      if (code.split(/\s+/).includes(f)) {
+        fail(`${name} hardcodes ${f}; it belongs in wasm_compile_flags.json extraFlags`);
+      }
     }
   }
 }
@@ -856,6 +1010,18 @@ function verifyWasmRuntimeInvariants() {
       if (!/function getHistoryWorkingSizeCap[\s\S]*return HISTORY_SAFE_WORKING_SIZE/.test(vram)) {
         fail('vramBudget.ts getHistoryWorkingSizeCap() must default to HISTORY_SAFE_WORKING_SIZE (1024)');
       }
+      // The WASM bridge is emitted unbundled and cannot import vramBudget.ts, so its
+      // first-commit size cap is a literal that must track the contract.
+      const bridgeInit = fs.readFileSync(path.join(ROOT, 'src/wasm/bridge/init.ts'), 'utf8');
+      const bridgeCap = bridgeInit.match(/const\s+sizeCap\s*=\s*(\d+)/);
+      if (!bridgeCap || parseInt(bridgeCap[1], 10) !== ladder.defaultWorkingSize) {
+        fail(
+          `src/wasm/bridge/init.ts sizeCap ${bridgeCap && bridgeCap[1]} must equal historyTexLadder.defaultWorkingSize ${ladder.defaultWorkingSize}`,
+        );
+      }
+      if (bridgeInit.includes(`'${ladder.sessionStorageKey}'`)) {
+        fail(`src/wasm/bridge/init.ts must not hardcode '${ladder.sessionStorageKey}' (owned by vramBudget.ts)`);
+      }
     }
     if (ladder.minMaxBufferSizeForFull != null) {
       const minBuf = vram.match(/MIN_MAX_BUFFER_SIZE_FOR_FULL\s*=\s*(\d+)/);
@@ -915,8 +1081,8 @@ function verifyWasmRuntimeInvariants() {
     const wantBgl = fmt.bglStorageBindingCount != null ? fmt.bglStorageBindingCount : 3;
     if (bglHits.length < wantBgl) {
       fail(
-        `${pipelineFile} must set storage texture format via RgbaStorageFormat(colorFormat_) ` +
-          `at least ${wantBgl} times (bindings 2/7/8); found ${bglHits.length}`,
+        `${pipelineFile} kComputeBindings must declare bindings 2/7/8 as BindingKind::StorageRgba ` +
+          `(layout format = RgbaStorageFormat(colorFormat_)); found ${bglHits.length} of ${wantBgl}`,
       );
     }
     const rewriteCall = new RegExp(fmt.loadShaderRewriteCall || 'RewriteWgslStorageFormats\\s*\\(');
@@ -961,6 +1127,15 @@ function verifyWasmRuntimeInvariants() {
     const copyPat = new RegExp(fmt.depthFeedbackCopyPattern || 'CopyTex\\s*\\([^;]*depthTextureWrite_');
     if (!copyPat.test(frameCpp)) {
       fail(`${frameFile} must CopyTex depthTextureWrite_ → depthTextureRead_ (keep in sync with CopySrc on the write texture)`);
+    }
+    if (fmt.depthFeedbackGatePattern) {
+      const gatePat = new RegExp(fmt.depthFeedbackGatePattern, 'g');
+      const gated = (frameCpp.match(gatePat) || []).length;
+      const ungated = (frameCpp.match(new RegExp(copyPat.source, 'g')) || []).length;
+      const want = fmt.depthFeedbackGateCount ?? 1;
+      if (gated < want || ungated !== gated) {
+        fail(`${frameFile} must gate every depthTextureWrite_ → depthTextureRead_ copy on anyWritesDepth (found ${gated} gated of ${ungated}, want ${want}); an ungated copy clobbers uploaded depth maps`);
+      }
     }
   }
 

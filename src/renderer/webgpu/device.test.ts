@@ -4,14 +4,17 @@
 
 import {
   appendAdapterSummaryFields,
+  attachUncapturedErrorRouter,
   buildCanvasConfigureOptions,
   collectOptionalDeviceFeatures,
+  createErrorRateLimiter,
   formatEnabledDeviceFeatures,
   initializeWebGPUDevice,
   resolveCanvasColorOptIns,
   resolveSubgroupFeatureName,
 } from './device';
 import canvasConfigureContract from '../../contracts/canvas_configure.json';
+import { setRendererErrorHandler, type RendererError } from '../ErrorHandling';
 import { UNIFORM_BUFFER_LAYOUT } from '../types';
 
 const TU = {
@@ -227,10 +230,7 @@ describe('initializeWebGPUDevice', () => {
     Object.defineProperty(navigator, 'gpu', { configurable: true, value: undefined });
     const canvas = document.createElement('canvas');
     const result = await initializeWebGPUDevice(canvas, 800, 600);
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.adapterSummary).toBe('');
-    }
+    expect(result).toMatchObject({ ok: false, adapterSummary: '' });
   });
 
   it('returns ok:false when adapter ladder fails', async () => {
@@ -241,10 +241,10 @@ describe('initializeWebGPUDevice', () => {
     });
     const canvas = document.createElement('canvas');
     const result = await initializeWebGPUDevice(canvas, 800, 600);
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.lastInitError).toMatch(/Failed to obtain a WebGPU adapter/);
-    }
+    expect(result).toMatchObject({
+      ok: false,
+      lastInitError: expect.stringMatching(/Failed to obtain a WebGPU adapter/),
+    });
   });
 
   it('requests timestamp-query when adapter offers it', async () => {
@@ -276,10 +276,9 @@ describe('initializeWebGPUDevice', () => {
         }),
       }),
     );
-    if (result.ok) {
-      expect(result.adapterSummary).toContain('features=[float32-filterable,timestamp-query]');
-      expect(result.adapterSummary).toContain('surfaceFormat=bgra8unorm');
-    }
+    const summary = result.ok ? result.adapterSummary : '';
+    expect(summary).toContain('features=[float32-filterable,timestamp-query]');
+    expect(summary).toContain('surfaceFormat=bgra8unorm');
   });
 
   it('omits timestamp-query and still succeeds when adapter lacks it', async () => {
@@ -314,5 +313,43 @@ describe('initializeWebGPUDevice', () => {
         format: 'bgra8unorm',
       }),
     );
+  });
+});
+
+describe('uncaptured error routing', () => {
+  it('rate limits per message and per minute', () => {
+    let now = 0;
+    const allow = createErrorRateLimiter(() => now, { perMessageMs: 5000, maxPerMinute: 3 });
+    expect(allow('a')).toBe(true);
+    expect(allow('a')).toBe(false);
+    now = 5000;
+    expect(allow('a')).toBe(true);
+    expect(allow('b')).toBe(true);
+    expect(allow('c')).toBe(false); // 3 per minute reached
+    now = 61_000;
+    expect(allow('c')).toBe(true);
+  });
+
+  it('sends OOM to onOom and validation errors to reportError, and detaches', () => {
+    const reported: RendererError[] = [];
+    setRendererErrorHandler((e) => reported.push(e));
+    let listener: ((ev: Event) => void) | null = null;
+    const device = {
+      addEventListener: jest.fn((_t: string, fn: (ev: Event) => void) => { listener = fn; }),
+      removeEventListener: jest.fn(() => { listener = null; }),
+    } as unknown as GPUDevice;
+    const onOom = jest.fn();
+    const detach = attachUncapturedErrorRouter(device, { onOom });
+
+    listener!({ error: { name: 'GPUOutOfMemoryError', message: 'oom' } } as unknown as Event);
+    listener!({ error: { name: 'GPUValidationError', message: 'bad layout' } } as unknown as Event);
+    expect(onOom).toHaveBeenCalledTimes(1);
+    expect(reported).toEqual([
+      { type: 'gpu-validation', message: 'GPUValidationError: bad layout', recoverable: true },
+    ]);
+
+    detach();
+    expect(listener).toBeNull();
+    setRendererErrorHandler((e) => console.error(e));
   });
 });

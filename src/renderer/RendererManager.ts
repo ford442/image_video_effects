@@ -7,6 +7,7 @@ import {
   RendererType,
   getRendererTypeFromURL,
   performBackendSwitch,
+  releaseRendererGpu,
   resolveInitBackendPreference,
   type RendererInitOptions,
   type WebGpuProbeHandoff,
@@ -55,6 +56,15 @@ export { getRendererTypeFromURL };
 export type { RendererPerformanceStatus, ShaderLoadMeta };
 export type { RendererMetrics, RendererDiagnostics } from './rendererTypes';
 
+/** Optional RendererManager callbacks. */
+export interface RendererManagerOptions {
+  /**
+   * The active backend stopped at runtime and no fallback backend could take over.
+   * The renderer is blocked; the host should surface the WebGPU-required overlay.
+   */
+  onBackendFailure?: (failedType: RendererType, message: string) => void;
+}
+
 export class RendererManager {
   private currentRenderer: Renderer | null = null;
   private currentType: RendererType | null = null;
@@ -72,12 +82,20 @@ export class RendererManager {
   private webGpuHandoff: WebGpuProbeHandoff | undefined;
   private metrics: RendererMetrics = { fps: 0, frameTime: 0, agentCount: 0, isWASM: false };
   private readonly onMetricsUpdate?: (metrics: RendererMetrics) => void;
+  private readonly onBackendFailure?: RendererManagerOptions['onBackendFailure'];
+  private metricsRafId: number | null = null;
+  private destroyed = false;
   private readonly perfState: PerformancePolicyState = createPerformancePolicyState();
   private readonly adaptiveController: AdaptivePerformanceController;
 
-  constructor(config: RendererConfig, onMetricsUpdate?: (metrics: RendererMetrics) => void) {
+  constructor(
+    config: RendererConfig,
+    onMetricsUpdate?: (metrics: RendererMetrics) => void,
+    options: RendererManagerOptions = {},
+  ) {
     this.config = config;
     this.onMetricsUpdate = onMetricsUpdate;
+    this.onBackendFailure = options.onBackendFailure;
     this.adaptiveController = new AdaptivePerformanceController({
       getFps: () => this.getCurrentFPS(),
       getScale: () => this.perfState.resolutionScale,
@@ -175,6 +193,7 @@ export class RendererManager {
       this.lastFailedWasmRenderer = null;
       refreshFormatCapabilities(this.perfState, this.shaderRenderer());
       applyPerformancePolicyToRenderer(this.perfState, this.shaderRenderer(), this.adaptiveController);
+      this.installFatalErrorHandler(outcome.renderer, outcome.type);
       this.startMetricsCollection();
       if (type === 'wasm' || type === 'webgpu') {
         await inputBridge.rebindMediaAfterBackendSwitch(this.currentRenderer, {
@@ -207,14 +226,50 @@ export class RendererManager {
     return false;
   }
 
+  /**
+   * A backend that stops at runtime (e.g. the WASM loop after repeated errors) falls back to
+   * the TS WebGPU renderer; if that also fails the host is told the renderer is blocked.
+   */
+  private installFatalErrorHandler(renderer: Renderer | null, type: RendererType | null): void {
+    if (!renderer?.setFatalErrorHandler || !type) return;
+    renderer.setFatalErrorHandler((message) => {
+      if (this.destroyed || this.currentRenderer !== renderer) return;
+      void this.handleBackendFailure(type, message);
+    });
+  }
+
+  private async handleBackendFailure(type: RendererType, message: string): Promise<void> {
+    console.warn(`[RendererManager] ${type} backend stopped: ${message}`);
+    if (type !== 'webgpu' && (await this.switchRenderer('webgpu'))) {
+      console.warn('[RendererManager] Fell back to the TypeScript WebGPU renderer');
+      return;
+    }
+    if (this.destroyed) return;
+    this.onBackendFailure?.(type, message);
+  }
+
+  private refreshFps(): void {
+    const fps = this.currentRenderer?.getFPS?.();
+    if (typeof fps === 'number') this.metrics.fps = fps;
+  }
+
+  /** At most one metrics loop, and none when nobody listens (FPS is read lazily instead). */
   private startMetricsCollection(): void {
+    this.stopMetricsCollection();
+    if (!this.onMetricsUpdate) return;
     const tick = () => {
-      const fps = this.currentRenderer?.getFPS?.();
-      if (typeof fps === 'number') this.metrics.fps = fps;
+      this.refreshFps();
       this.onMetricsUpdate?.(this.metrics);
-      requestAnimationFrame(tick);
+      this.metricsRafId = requestAnimationFrame(tick);
     };
     tick();
+  }
+
+  private stopMetricsCollection(): void {
+    if (this.metricsRafId !== null) {
+      cancelAnimationFrame(this.metricsRafId);
+      this.metricsRafId = null;
+    }
   }
 
   setVideo(video: HTMLVideoElement): void { inputBridge.setVideo(this.currentRenderer, video); }
@@ -328,24 +383,22 @@ export class RendererManager {
     if (r?.startRecording) return r.startRecording(canvas, options);
     return Promise.reject(new Error('[RendererManager] startRecording not supported for active backend'));
   }
-  /** Canvas → VideoFrame capture is usable (TS backend whose swapchain accepts COPY_SRC). */
+  /** Canvas → VideoFrame capture is usable (swapchain accepts COPY_SRC; TS boot probe or C++ init probe). */
   supportsCanvasFrameCapture(): boolean {
     const r = this.currentRenderer as { supportsCanvasCopySrc?: () => boolean } | null;
-    return !this.isWASM() && !!r?.supportsCanvasCopySrc?.();
+    return !!r?.supportsCanvasCopySrc?.();
   }
   setCanvasCopySrc(enabled: boolean): boolean {
     const r = this.currentRenderer as { setCanvasCopySrc?: (e: boolean) => boolean } | null;
     return r?.setCanvasCopySrc?.(enabled) ?? false;
   }
-  /** GPU readback of the rendered frame (WASM beginFrameCapture), null when unsupported. */
-  getFrameReadback(): (() => Promise<ImageData>) | null {
-    const r = this.currentRenderer as { captureFrame?: () => Promise<ImageData> } | null;
-    return this.isWASM() && r?.captureFrame ? () => r.captureFrame!() : null;
-  }
   stopRendererRecording(): void {
     (this.currentRenderer as { stopRecording?: () => void } | null)?.stopRecording?.();
   }
-  getMetrics(): RendererMetrics { return this.metrics; }
+  getMetrics(): RendererMetrics {
+    this.refreshFps();
+    return this.metrics;
+  }
   isWASM(): boolean { return this.metrics.isWASM; }
   getActiveRendererType(): RendererType {
     if (this.currentType) return this.currentType;
@@ -357,6 +410,7 @@ export class RendererManager {
     return this.getActiveRendererType() === 'webgpu' ? getAdoptedRendererDevice() : null;
   }
   getDiagnostics(): RendererDiagnostics {
+    this.refreshFps();
     return buildRendererDiagnostics(
       this.getActiveRendererType(),
       this.metrics,
@@ -364,8 +418,12 @@ export class RendererManager {
       this.lastFailedWasmRenderer,
     );
   }
-  render(..._args: unknown[]): void { if (this.metrics.isWASM) this.updateVideoFrame(); }
-  getCurrentFPS(): number { return this.metrics.fps || 0; }
+  /** Per-frame host tick: uploads video frames on WASM (TS WebGPU drives its own loop). */
+  render(): void { if (this.metrics.isWASM) this.updateVideoFrame(); }
+  getCurrentFPS(): number {
+    this.refreshFps();
+    return this.metrics.fps || 0;
+  }
   setRenderQuality(mode: RenderQualityMode, hints?: { supportsDeepWorkgroup?: boolean; formatCaps?: DeviceFormatCapabilities }): void {
     this.applyQualityPolicy(mode, hints);
   }
@@ -411,13 +469,17 @@ export class RendererManager {
       ?.getAudioData?.() ?? null;
   }
   isRecording(): boolean { return this.currentRenderer?.isRecording?.() ?? false; }
-  destroy(): void {
+  /** Resolves once the backend has released its GPU device (safe to re-probe after). */
+  async destroy(): Promise<void> {
+    this.destroyed = true;
+    this.stopMetricsCollection();
     this.adaptiveController.stop();
-    this.currentRenderer?.destroy();
+    const renderer = this.currentRenderer;
     this.currentRenderer = null;
     this.currentType = null;
     this.metrics.isWASM = false;
     clearAdoptedRendererDevice();
+    if (renderer) await releaseRendererGpu(renderer);
   }
 }
 export default RendererManager;

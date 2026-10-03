@@ -150,7 +150,7 @@ export function useShareChain({
 
             const img = params.get('img');
             if (img && source !== 'webcam') {
-                handleLoadImage(decodeURIComponent(img));
+                void handleLoadImage(decodeURIComponent(img));
             }
 
             const gen = params.get('gen');

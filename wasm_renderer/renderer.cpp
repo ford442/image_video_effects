@@ -30,12 +30,18 @@ bool WebGPURenderer::Initialize(int canvasWidth, int canvasHeight,
     
     canvasWidth_ = canvasWidth;
     canvasHeight_ = canvasHeight;
+    requestedWidth_ = canvasWidth;
+    requestedHeight_ = canvasHeight;
     if (canvasSelector && *canvasSelector) {
         canvasSelector_ = canvasSelector;
     }
 
     failedStage_ = InitStage::None;
     lastError_.clear();
+
+    // Fresh liveness token for this device's spontaneous callbacks.
+    callbackToken_ = std::make_shared<CallbackToken>();
+    callbackToken_->renderer = this;
 
     // ARCH: [Low] Using printf for logging. Consider abstracting behind
     // a Logger interface to allow different output targets (console, file, etc.)
@@ -58,6 +64,14 @@ bool WebGPURenderer::Initialize(int canvasWidth, int canvasHeight,
         printf("❌ Failed to create resources\n");
         Shutdown();
         return false;
+    }
+
+    // CreateDevice() configured the swapchain at the requested size; the
+    // historyTex fail-soft may since have shrunk the canvas. The present blit
+    // is a 1:1 textureLoad, so the swapchain must match or the frame crops.
+    if (surface_.get() &&
+        (canvasWidth_ != requestedWidth_ || canvasHeight_ != requestedHeight_)) {
+        ConfigureSurface();
     }
 
     if (!CreateBindGroupLayout()) {
@@ -86,6 +100,8 @@ bool WebGPURenderer::Initialize(int canvasWidth, int canvasHeight,
 
     initialized_ = true;
     failedStage_ = InitStage::Ready;
+    frameCount_ = 0;
+    lastFrameTime_ = emscripten_get_now() / 1000.0;  // first FPS window starts now, not at 0
     printf("✅ WebGPU Renderer initialized successfully\n");
     return true;
 }
@@ -96,10 +112,20 @@ void WebGPURenderer::Shutdown() {
     // failed). All .reset() calls below are null-safe, so running this on a
     // partially-initialized (or already-shutdown) renderer is harmless.
 
-    // Cancel any in-progress frame capture before releasing the readback buffer.
-    if (readbackBuffer_.get() && captureState_ == CaptureState::Pending) {
+    // Detach every in-flight spontaneous callback (map, device lost) first:
+    // releasing the device and buffers below can fire them, and so can the
+    // browser after `delete`.
+    if (callbackToken_) {
+        callbackToken_->renderer = nullptr;
+        callbackToken_.reset();
+    }
+
+    // Cancel a pending map or drop a mapped-but-unread capture.
+    if (readbackBuffer_.get() &&
+        (captureState_ == CaptureState::Pending || captureState_ == CaptureState::Ready)) {
         wgpuBufferUnmap(readbackBuffer_.get());
     }
+    captureGeneration_++;
     captureState_        = CaptureState::Idle;
     readbackBufferSize_  = 0;
     readbackBytesPerRow_ = 0;
@@ -109,13 +135,18 @@ void WebGPURenderer::Shutdown() {
 
     // All other GPU objects are RAII handles — they release on assignment/destruction.
     // Explicit reset in reverse-creation order ensures proper GPU object lifetime.
-    computeBindGroup_.reset();
     renderBindGroup_.reset();
     renderPipeline_.reset();
     computePipelineLayout_.reset();
     computeBindGroupLayout_.reset();
 
     readbackBuffer_.reset();
+    timestampReadbackBuffer_.reset();
+    timestampResolveBuffer_.reset();
+    timestampQuerySet_.reset();
+    timestampReadbackPending_ = false;
+    supportsTimestampQuery_ = false;
+    gpuTimingsResolved_ = false;
     uniformBuffer_.reset();
     extraBuffer_.reset();
     plasmaBuffer_.reset();
@@ -131,6 +162,7 @@ void WebGPURenderer::Shutdown() {
     dataTextureA_.reset();
     dataTextureB_.reset();
     dataTextureC_.reset();
+    historyTexture_.reset();
     depthTextureRead_.reset();
     depthTextureWrite_.reset();
     emptyTexture_.reset();
@@ -222,6 +254,11 @@ void WebGPURenderer::SetMouse(float x, float y, bool down) {
     mouseX_ = x;
     mouseY_ = y;
     mouseDown_ = down;
+}
+
+void WebGPURenderer::SetMousePos(float x, float y) {
+    mouseX_ = x;
+    mouseY_ = y;
 }
 
 void WebGPURenderer::SetMouseDown(bool down) {

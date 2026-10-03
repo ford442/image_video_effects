@@ -107,7 +107,7 @@ export function useLiveControl({
             onStopAutoTransition?.();
             return;
         }
-        onStartAutoTransition?.({
+        void onStartAutoTransition?.({
             source: autoTransitionSource,
             intervalMs: autoTransitionIntervalMs,
             durationMs: autoTransitionDurationMs,
@@ -141,7 +141,7 @@ export function useLiveControl({
             setSlotParam: (slot, param, value) => onSetSlotParam?.(slot, param, value),
             randomizeSlot: (slot) => onRandomizeSlot?.(slot),
             randomizeAll: () => onRandomizeAllSlots?.(),
-            triggerTransition: () => { onTriggerNextTransition?.(); },
+            triggerTransition: () => { void onTriggerNextTransition?.(); },
             toggleAutoTransition: () => {
                 if (autoTransitionEnabled) {
                     setAutoTransitionEnabled(false);
@@ -178,7 +178,7 @@ export function useLiveControl({
             if (!ok) return;
             setMidiDevices(adapter.getDevices());
             adapter.subscribe((event: ControlEvent) => handleControlEventRef.current(event));
-        });
+        }).catch((err) => console.warn('[LiveControl] MIDI access failed:', err));
 
         return () => {
             adapter.disable();

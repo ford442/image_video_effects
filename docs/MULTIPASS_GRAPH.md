@@ -153,4 +153,4 @@ and no longer consumes the graph runner or binding 13.
 
 Graph execution is **TypeScript WebGPU only** in v1.
 
-**Follow-up:** [GH #929](https://github.com/ford442/image_video_effects/issues/929) — port `GraphRunner` to `wasm_renderer/frame.cpp` (`dispatchSlot` equivalent) once TS path is proven. Track under Tier B WASM promotion ([`WASM_PROMOTION_TRACKING.md`](../WASM_PROMOTION_TRACKING.md)).
+**Follow-up:** [GH #929](https://github.com/ford442/image_video_effects/issues/929) — port `GraphRunner` to `wasm_renderer/frame.cpp` (`dispatchSlot` equivalent) once TS path is proven. Track under Tier B WASM promotion ([`WASM_PROMOTION_TRACKING.md`](./WASM_PROMOTION_TRACKING.md)).

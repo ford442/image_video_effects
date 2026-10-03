@@ -942,7 +942,7 @@ Maintain temporal state for:
 - Signal instability accumulation
 
 > Historical sketch: the engine `Uniforms` struct is fixed. Persist state in `dataTextureA`→`C`
-> or `extraBuffer[133..]` per [`agents/WGSL_BUILTINS_GENERATIVE.md`](../agents/WGSL_BUILTINS_GENERATIVE.md).
+> or `extraBuffer[133..]` per [`docs/agents/WGSL_BUILTINS_GENERATIVE.md`](../docs/agents/WGSL_BUILTINS_GENERATIVE.md).
 
 ```wgsl
 // Uniform buffer for temporal state

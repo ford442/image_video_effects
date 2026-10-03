@@ -53,7 +53,7 @@ async function deviceAlreadyLost(device: GPUDevice): Promise<boolean> {
   const lost = device.lost as Promise<GPUDeviceLostInfo> & { then?: unknown };
   if (!lost || typeof lost.then !== 'function') return false;
   let settled = false;
-  lost.then(() => {
+  void lost.then(() => {
     settled = true;
   });
   await Promise.resolve();
