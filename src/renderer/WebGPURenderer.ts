@@ -765,8 +765,9 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     }
   }
 
-  destroy(): void {
-    void this.teardownGpuHandles(true);
+  /** Resolves once the device is destroyed and device.lost has settled (#1311). */
+  destroy(): Promise<void> {
+    return this.teardownGpuHandles(true) ?? Promise.resolve();
   }
 
   async releaseExclusiveGpu(): Promise<void> {

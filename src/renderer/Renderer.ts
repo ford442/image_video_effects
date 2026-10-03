@@ -40,7 +40,8 @@ export interface ShaderSlotRenderer {
 export interface Renderer {
   init(canvas: HTMLCanvasElement): Promise<boolean>;
   render(): void;
-  destroy(): void;
+  /** May resolve after GPU handles are released (WebGPU awaits device.lost) — #1311. */
+  destroy(): void | Promise<void>;
 
   // Video input
   setVideo(video: HTMLVideoElement | undefined): void;

@@ -8,6 +8,7 @@ import {
   RendererType,
   getRendererTypeFromURL,
   performBackendSwitch,
+  releaseRenderer,
   resolveInitBackendPreference,
   type RendererInitOptions,
   type WebGpuProbeHandoff,
@@ -408,14 +409,16 @@ export class RendererManager {
       ?.getAudioData?.() ?? null;
   }
   isRecording(): boolean { return this.currentRenderer?.isRecording?.() ?? false; }
-  destroy(): void {
+  /** Resolves once the active backend has released the GPU — await before re-probing (#1311). */
+  destroy(): Promise<void> {
     this.metricsLoop.stop();
     this.adaptiveController.stop();
-    this.currentRenderer?.destroy();
+    const released = releaseRenderer(this.currentRenderer);
     this.currentRenderer = null;
     this.currentType = null;
     this.metrics.isWASM = false;
     clearAdoptedRendererDevice();
+    return released;
   }
 }
 export default RendererManager;

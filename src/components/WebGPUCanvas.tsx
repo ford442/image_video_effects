@@ -12,6 +12,20 @@ import {
 import { LiveStreamBridge } from './LiveStreamBridge';
 import { WebGpuProbeFailureOverlay } from './WebGpuProbeFailureOverlay';
 
+/**
+ * Teardown of the previous RendererManager (StrictMode remount, HMR, re-init). The next mount
+ * awaits it before the boot probe so requestDevice never races an in-flight device destroy (#1311).
+ */
+let pendingRendererTeardown: Promise<void> = Promise.resolve();
+const releaseRendererManager = (renderer: RendererManager, after: Promise<unknown> = Promise.resolve()): void => {
+    const previous = pendingRendererTeardown;
+    // `after` = the mount's in-flight init: destroying before it settles would miss the device it creates.
+    const teardown = after.catch(() => undefined).then(() => renderer.destroy());
+    pendingRendererTeardown = Promise.all([previous, teardown])
+        .then(() => undefined)
+        .catch((err) => console.warn('[WebGPUCanvas] renderer teardown failed', err));
+};
+
 interface WebGPUCanvasProps {
     modes: RenderMode[];
     slotParams: SlotParams[];
@@ -163,8 +177,11 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         let mounted = true;
         const urlRenderer = getRendererTypeFromURL();
 
-        (async () => {
+        const initDone = (async () => {
             let initOptions: { webGpuHandoff?: import('../renderer/webgpuBootProbe').WebGpuProbeHandoff } | undefined;
+
+            await pendingRendererTeardown;
+            if (!mounted) return;
 
             if (urlRenderer !== 'js' && urlRenderer !== 'wasm') {
                 const probe = await runWebGpuBootProbe(
@@ -176,7 +193,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 if (!mounted) return;
                 if (!probe.ok) {
                     setProbeFailure(toWebGpuProbeBreadcrumb(probe));
-                    renderer.destroy();
+                    releaseRendererManager(renderer);
                     return;
                 }
                 initOptions = { webGpuHandoff: probe.handoff };
@@ -184,10 +201,8 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
             const success = await renderer.init(canvasRef.current!, initOptions);
             // StrictMode guard: if unmounted during async init, discard the result
-            if (!mounted) {
-                renderer.destroy();
-                return;
-            }
+            // (the cleanup's releaseRendererManager waits for initDone, then destroys).
+            if (!mounted) return;
             if (success) {
                 if (rendererRef) {
                     rendererRef.current = renderer;
@@ -218,7 +233,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                     );
                     setProbeFailure(window.webgpuProbe ?? null);
                 }
-                renderer.destroy();
+                releaseRendererManager(renderer);
             }
         })();
         return () => {
@@ -226,7 +241,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
             setManagerReady(false);
             setProbeFailure(null);
             cancelAnimationFrame(animationFrameId.current);
-            renderer.destroy();
+            releaseRendererManager(renderer, initDone);
             // Remove the dev-mode console handle when the component unmounts
             if (process.env.NODE_ENV === 'development') {
                 delete (window as any).__rendererManager;

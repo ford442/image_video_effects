@@ -65,6 +65,21 @@ export function yieldForGpuRelease(): Promise<void> {
   });
 }
 
+/**
+ * Release a renderer's GPU ownership and resolve once it is safe to request a new device
+ * (backend switch and RendererManager.destroy share this path — #1311).
+ */
+export async function releaseRenderer(renderer: Renderer | null): Promise<void> {
+  if (!renderer) return;
+  const exclusive = renderer as Renderer & { releaseExclusiveGpu?: () => Promise<void> };
+  if (typeof exclusive.releaseExclusiveGpu === 'function') {
+    await exclusive.releaseExclusiveGpu();
+  } else {
+    await renderer.destroy();
+    await yieldForGpuRelease();
+  }
+}
+
 /** Factory for the three renderer backends — keeps RendererManager free of `new` branches. */
 export function createRendererForType(type: RendererType, config: RendererConfig): Renderer {
   if (type === 'webgpu') return new WebGPURenderer(config);
@@ -126,13 +141,7 @@ export async function performBackendSwitch(input: BackendSwitchInput): Promise<B
       `[RendererManager] Releasing ${previousType} before switching to ${targetType} ` +
         '(exclusive WebGPU adapter/device ownership)',
     );
-    const exclusive = previousRenderer as Renderer & { releaseExclusiveGpu?: () => Promise<void> };
-    if (typeof exclusive.releaseExclusiveGpu === 'function') {
-      await exclusive.releaseExclusiveGpu();
-    } else {
-      previousRenderer!.destroy();
-      await yieldForGpuRelease();
-    }
+    await releaseRenderer(previousRenderer);
   }
 
   const renderer = createRendererForType(targetType, config);

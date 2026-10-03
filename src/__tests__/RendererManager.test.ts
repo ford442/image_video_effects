@@ -593,7 +593,7 @@ describe('RendererManager shader forwarding', () => {
   it('releases WebGPU before WASM init (exclusive adapter ownership)', async () => {
     const order: string[] = [];
     const webgpu = makeMockWebGPU();
-    webgpu.destroy = jest.fn(() => {
+    webgpu.destroy = jest.fn(async () => {
       order.push('webgpu.destroy');
     });
     const wasm = makeMockWASM();
