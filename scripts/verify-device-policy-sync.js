@@ -514,6 +514,11 @@ function verifyWasmCompileFlags() {
   if (!/^\d+\.\d+\.\d+$/.test(flags.emsdkVersion || '')) {
     fail(`wasm_compile_flags.json emsdkVersion must be an exact x.y.z pin, got "${flags.emsdkVersion}"`);
   }
+  for (const f of flags.extraFlags || []) {
+    if (typeof f !== 'string' || !f.startsWith('-') || f.startsWith('-s')) {
+      fail(`wasm_compile_flags.json extraFlags entry "${f}" must be a plain em++ flag (put -s settings in sFlags)`);
+    }
+  }
   if (!flags.sFlags.includes('GROWABLE_ARRAYBUFFERS=0')) {
     fail('wasm_compile_flags.json must keep GROWABLE_ARRAYBUFFERS=0 (TextDecoder + resizable heap; re-test Dawn first)');
   }
@@ -545,6 +550,11 @@ function verifyWasmCompileFlags() {
     }
     if (/--use-port=emdawnwebgpu/.test(code)) {
       fail(`${name} hardcodes --use-port; it belongs in wasm_compile_flags.json`);
+    }
+    for (const f of flags.extraFlags || []) {
+      if (code.split(/\s+/).includes(f)) {
+        fail(`${name} hardcodes ${f}; it belongs in wasm_compile_flags.json extraFlags`);
+      }
     }
   }
 }
