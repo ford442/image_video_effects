@@ -318,14 +318,19 @@ bool WebGPURenderer::CreateDevice() {
     CheckLimit("maxComputeWorkgroupSizeY",           limits.maxComputeWorkgroupSizeY,            16, limitsOk);
     CheckLimit("maxComputeInvocationsPerWorkgroup",  limits.maxComputeInvocationsPerWorkgroup,   256, limitsOk);
 
-    maxComputeInvocations_ = limits.maxComputeInvocationsPerWorkgroup;
-    supportsDeepWorkgroup_ = maxComputeInvocations_ >= 1024;
+    // Deep workgroup (webgpu_limits.json deepWorkgroupLimits): requested below
+    // only when the adapter offers all three. supportsDeepWorkgroup_ is set from
+    // the *device* limits after creation, since that is what shaders get.
+    const bool adapterDeepWorkgroup =
+        limits.maxComputeWorkgroupSizeX >= 32 &&
+        limits.maxComputeWorkgroupSizeY >= 32 &&
+        limits.maxComputeInvocationsPerWorkgroup >= 1024;
     printf("[WASM] Adapter limits: maxTex2D=%u, storageTex=%u, sampledTex=%u, computeInvocations=%u (%s)\n",
            limits.maxTextureDimension2D, limits.maxStorageTexturesPerShaderStage,
            limits.maxSampledTexturesPerShaderStage, limits.maxComputeInvocationsPerWorkgroup,
            limitsOk ? "sufficient" : "INSUFFICIENT");
-    printf("[WASM] Deep-workgroup (1024 invocations): %s\n",
-           supportsDeepWorkgroup_ ? "supported" : "NOT supported");
+    printf("[WASM] Adapter deep-workgroup (32x32, 1024 invocations): %s\n",
+           adapterDeepWorkgroup ? "supported" : "NOT supported");
 
     // ── Feature checks ────────────────────────────────────────────────────
     // rgba32float storage textures (bindings 2/7/8) require float32-filterable/
@@ -403,6 +408,12 @@ bool WebGPURenderer::CreateDevice() {
     requiredLimits.maxComputeWorkgroupSizeX          = 16;
     requiredLimits.maxComputeWorkgroupSizeY          = 16;
     requiredLimits.maxComputeInvocationsPerWorkgroup = 256;
+    if (adapterDeepWorkgroup) {
+        // webgpu_limits.json deepWorkgroupLimits — mirrors buildRequiredLimits(adapterLimits).
+        requiredLimits.maxComputeWorkgroupSizeX          = 32;
+        requiredLimits.maxComputeWorkgroupSizeY          = 32;
+        requiredLimits.maxComputeInvocationsPerWorkgroup = 1024;
+    }
 
     // Optional features: same order as collectOptionalDeviceFeatures() in
     // src/renderer/webgpu/device.ts — float32-filterable, timestamp-query
@@ -657,6 +668,12 @@ bool WebGPURenderer::CreateDevice() {
             printf("⚠️  Device limits were clamped below the adapter's reported limits and no\n");
             printf("   longer meet the 14-entry compute contract minimums. Rendering may fail.\n");
         }
+        maxComputeInvocations_ = deviceLimits.maxComputeInvocationsPerWorkgroup;
+        supportsDeepWorkgroup_ = deviceLimits.maxComputeInvocationsPerWorkgroup >= 1024
+            && deviceLimits.maxComputeWorkgroupSizeX >= 32
+            && deviceLimits.maxComputeWorkgroupSizeY >= 32;
+        printf("[WASM] Device deep-workgroup (32x32, 1024 invocations): %s\n",
+               supportsDeepWorkgroup_ ? "granted" : "not granted");
     }
 
     // Create the WebGPU surface from the canvas, if a selector was provided.

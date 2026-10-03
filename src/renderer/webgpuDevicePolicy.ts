@@ -73,14 +73,40 @@ const LIMIT_CHECKS: LimitCheck[] = [
   { name: 'maxComputeInvocationsPerWorkgroup', required: MINIMUM_COMPUTE_LIMITS.maxComputeInvocationsPerWorkgroup },
 ];
 
+/** 32×32 / 1024-invocation limits requested when the adapter offers them (webgpu_limits.json). */
+export const DEEP_WORKGROUP_LIMITS = webgpuLimitsContract.deepWorkgroupLimits;
+
+type WorkgroupLimits = Pick<
+  GPUSupportedLimits,
+  'maxComputeWorkgroupSizeX' | 'maxComputeWorkgroupSizeY' | 'maxComputeInvocationsPerWorkgroup'
+>;
+
+/** True when `limits` reach every deepWorkgroupLimits value (device.cpp adapterDeepWorkgroup). */
+export function meetsDeepWorkgroupLimits(limits: Partial<WorkgroupLimits> | undefined): boolean {
+  if (!limits) return false;
+  return (
+    (limits.maxComputeWorkgroupSizeX ?? 0) >= DEEP_WORKGROUP_LIMITS.maxComputeWorkgroupSizeX
+    && (limits.maxComputeWorkgroupSizeY ?? 0) >= DEEP_WORKGROUP_LIMITS.maxComputeWorkgroupSizeY
+    && (limits.maxComputeInvocationsPerWorkgroup ?? 0) >= DEEP_WORKGROUP_LIMITS.maxComputeInvocationsPerWorkgroup
+  );
+}
+
 /**
  * Build requiredLimits for requestDevice() — mirrors device.cpp requiredLimits seeding.
  * `maxCanvasDim` is accepted for call-site compatibility but does not drive
  * maxTextureDimension2D (fixed comfortable floor from the contract).
+ *
+ * Pass `adapterLimits` to also request the deep-workgroup limits when the adapter
+ * offers them; WebGPU never grants more than requested, so omitting this caps the
+ * device at 256 invocations even on a 1024-capable adapter.
  */
-export function buildRequiredLimits(_maxCanvasDim?: number): GPUDeviceDescriptor['requiredLimits'] {
+export function buildRequiredLimits(
+  _maxCanvasDim?: number,
+  adapterLimits?: Partial<WorkgroupLimits>,
+): GPUDeviceDescriptor['requiredLimits'] {
   return {
     ...MINIMUM_COMPUTE_LIMITS,
+    ...(meetsDeepWorkgroupLimits(adapterLimits) ? DEEP_WORKGROUP_LIMITS : {}),
   };
 }
 

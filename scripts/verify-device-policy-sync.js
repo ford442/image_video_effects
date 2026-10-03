@@ -127,6 +127,36 @@ function fail(msg) {
   failed = true;
 }
 
+// deepWorkgroupLimits: requested only when the adapter offers all three. Both
+// C++ (adapterDeepWorkgroup threshold + requiredLimits block) and TS
+// (buildRequiredLimits spreading the contract block) must mirror the JSON.
+function verifyDeepWorkgroupLimits() {
+  const deep = contract.deepWorkgroupLimits;
+  if (!deep) return;
+  const cpp = fs.readFileSync(CPP_DEVICE, 'utf8');
+  const gate = cpp.match(/const bool adapterDeepWorkgroup\s*=([^;]+);/);
+  const block = cpp.match(/if \(adapterDeepWorkgroup\) \{([^}]+)\}/);
+  if (!gate) fail('device.cpp: const bool adapterDeepWorkgroup = ... not found (deepWorkgroupLimits)');
+  if (!block) fail('device.cpp: if (adapterDeepWorkgroup) { requiredLimits... } not found (deepWorkgroupLimits)');
+  for (const [key, value] of Object.entries(deep)) {
+    if (gate && !new RegExp(`limits\\.${key}\\s*>=\\s*${value}\\b`).test(gate[1])) {
+      fail(`device.cpp adapterDeepWorkgroup must test limits.${key} >= ${value} (webgpu_limits.json deepWorkgroupLimits)`);
+    }
+    if (block && !new RegExp(`requiredLimits\\.${key}\\s*=\\s*${value}\\s*;`).test(block[1])) {
+      fail(`device.cpp deep requiredLimits.${key} must be ${value} (webgpu_limits.json deepWorkgroupLimits)`);
+    }
+  }
+  const ts = fs.readFileSync(TS_POLICY, 'utf8');
+  if (!/webgpuLimitsContract\.deepWorkgroupLimits/.test(ts)
+      || !/meetsDeepWorkgroupLimits\(adapterLimits\)\s*\?\s*DEEP_WORKGROUP_LIMITS/.test(ts)) {
+    fail('webgpuDevicePolicy.ts buildRequiredLimits must spread webgpuLimitsContract.deepWorkgroupLimits when meetsDeepWorkgroupLimits(adapterLimits)');
+  }
+}
+
+if (!ONLY_WASM_INVARIANTS) {
+  verifyDeepWorkgroupLimits();
+}
+
 function verifyOptionalFeatures() {
   const feat = JSON.parse(
     fs.readFileSync(path.join(ROOT, 'src/contracts/webgpu_optional_features.json'), 'utf8'),

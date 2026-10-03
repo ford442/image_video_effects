@@ -1,6 +1,8 @@
 import {
   assertAdapterMeetsContract,
   buildRequiredLimits,
+  DEEP_WORKGROUP_LIMITS,
+  meetsDeepWorkgroupLimits,
   MINIMUM_COMPUTE_LIMITS,
 } from './webgpuDevicePolicy';
 import { UNIFORM_BUFFER_LAYOUT } from './types';
@@ -71,6 +73,39 @@ describe('webgpuDevicePolicy', () => {
       });
       expect(limits!.maxUniformBufferBindingSize).toBe(MINIMUM_COMPUTE_LIMITS.maxUniformBufferBindingSize);
       expect(limits!.maxTextureDimension2D).toBe(MINIMUM_COMPUTE_LIMITS.maxTextureDimension2D);
+    });
+
+    it('requests 32x32 / 1024 invocations when the adapter offers them', () => {
+      const deep = makeLimits({
+        maxComputeInvocationsPerWorkgroup: 1024,
+        maxComputeWorkgroupSizeX: 1024,
+        maxComputeWorkgroupSizeY: 1024,
+      });
+      expect(DEEP_WORKGROUP_LIMITS).toEqual({
+        maxComputeWorkgroupSizeX: 32,
+        maxComputeWorkgroupSizeY: 32,
+        maxComputeInvocationsPerWorkgroup: 1024,
+      });
+      expect(buildRequiredLimits(1920, deep)).toMatchObject(DEEP_WORKGROUP_LIMITS);
+      // Base limits are still present alongside the deep block.
+      expect(buildRequiredLimits(1920, deep)!.maxBindingsPerBindGroup).toBe(14);
+    });
+
+    it('keeps 16x16 / 256 when the adapter falls short on any deep limit', () => {
+      const shallow = makeLimits({ maxComputeInvocationsPerWorkgroup: 256 });
+      const narrowY = makeLimits({
+        maxComputeInvocationsPerWorkgroup: 1024,
+        maxComputeWorkgroupSizeX: 1024,
+        maxComputeWorkgroupSizeY: 16,
+      });
+      for (const limits of [shallow, narrowY, undefined]) {
+        expect(buildRequiredLimits(1920, limits)).toMatchObject({
+          maxComputeWorkgroupSizeX: 16,
+          maxComputeWorkgroupSizeY: 16,
+          maxComputeInvocationsPerWorkgroup: 256,
+        });
+      }
+      expect(meetsDeepWorkgroupLimits(narrowY)).toBe(false);
     });
 
     it('does not canvas-scale maxTextureDimension2D (no pointer / pixel-count need)', () => {
