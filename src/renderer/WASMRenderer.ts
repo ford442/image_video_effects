@@ -490,6 +490,9 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     // GPU still ingest first (copyExternalImageToTexture, no getImageData);
     // the Canvas2D rasterize + CPU upload is the fallback.
     if (WasmBridge.uploadImageSource(element, w, h)) {
+      // Keep the CPU mirror current: getCpuInputBitmap() hands offscreenCanvas
+      // to the other backend on switchRenderer.
+      this.drawToOffscreen(element, w, h);
       console.log(`[WASM] Input upload ran: ${w}×${h} (image, GPU copy)`);
       this.logNextInputUpload = false;
       return { width: w, height: h };
@@ -507,13 +510,19 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     w: number,
     h: number,
   ): Uint8ClampedArray | null {
+    if (!this.drawToOffscreen(source, w, h) || !this.offscreenCtx) return null;
+    return this.offscreenCtx.getImageData(0, 0, w, h).data;
+  }
+
+  /** Draw `source` into the w×h offscreen canvas (no readback). */
+  private drawToOffscreen(source: CanvasImageSource, w: number, h: number): boolean {
     if (
       source === this.offscreenCanvas
       && this.offscreenCtx
       && this.offscreenCanvas.width === w
       && this.offscreenCanvas.height === h
     ) {
-      return this.offscreenCtx.getImageData(0, 0, w, h).data;
+      return true;
     }
 
     if (!this.offscreenCanvas || this.offscreenCanvas.width !== w || this.offscreenCanvas.height !== h) {
@@ -522,10 +531,10 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
       this.offscreenCanvas.height = h;
       this.offscreenCtx = this.offscreenCanvas.getContext('2d', { willReadFrequently: true });
     }
-    if (!this.offscreenCtx) return null;
+    if (!this.offscreenCtx) return false;
     this.offscreenCtx.clearRect(0, 0, w, h);
     this.offscreenCtx.drawImage(source, 0, 0, w, h);
-    return this.offscreenCtx.getImageData(0, 0, w, h).data;
+    return true;
   }
 
   /**

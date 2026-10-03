@@ -156,7 +156,13 @@ describe('WASMRenderer input sources', () => {
   it('loadImageFromElement prefers GPU copyExternalImageToTexture and skips getImageData', () => {
     const log = jest.spyOn(console, 'log').mockImplementation(() => {});
     (WasmBridge.uploadImageSource as jest.Mock).mockReturnValueOnce(true);
-    const getContext = jest.spyOn(HTMLCanvasElement.prototype, 'getContext');
+    const drawImage = jest.fn();
+    const getImageData = jest.fn();
+    const getContext = jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      drawImage,
+      clearRect: jest.fn(),
+      getImageData,
+    } as unknown as GPUCanvasContext);
 
     const src = document.createElement('canvas');
     src.width = 4;
@@ -165,8 +171,15 @@ describe('WASMRenderer input sources', () => {
     expect(renderer.loadImageFromElement(src)).toEqual({ width: 4, height: 2 });
     expect(WasmBridge.uploadImageSource).toHaveBeenCalledWith(src, 4, 2);
     expect(WasmBridge.uploadImageData).not.toHaveBeenCalled();
-    expect(getContext).not.toHaveBeenCalled();
+    expect(getImageData).not.toHaveBeenCalled();
     expect(log).toHaveBeenCalledWith('[WASM] Input upload ran: 4×2 (image, GPU copy)');
+
+    // The CPU mirror still gets the new still, so a backend switch rebinds it.
+    expect(drawImage).toHaveBeenCalledWith(src, 0, 0, 4, 2);
+    const bitmap = renderer.getCpuInputBitmap() as HTMLCanvasElement;
+    expect(bitmap).not.toBe(src);
+    expect(bitmap.width).toBe(4);
+    expect(bitmap.height).toBe(2);
     log.mockRestore();
     getContext.mockRestore();
   });
