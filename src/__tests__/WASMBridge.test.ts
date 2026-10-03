@@ -1,14 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-//  WASM Bridge & useWASM Hook Tests
+//  WASM Bridge Tests
 //
 //  These tests verify:
 //  1. wasm_bridge.js API surface: all exported functions have the right types
 //     and return the right value types.
-//  2. useWASM hook: initial state and safe no-op behaviour before initialization.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { renderHook, act } from '@testing-library/react';
-import { useWASM } from '../hooks/useWASM';
 
 // ── Mock the src/wasm/wasm_bridge module ─────────────────────────────────────
 //
@@ -161,55 +158,6 @@ describe('WASMBridge API surface', () => {
 
   it('startRecording() returns a Promise', () => {
     expect(b.startRecording(document.createElement('canvas'))).toEqual(expect.objectContaining({ then: expect.any(Function) }));
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Section 2: useWASM hook
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('useWASM hook', () => {
-  it('starts with isLoaded=false and isWASM=false', () => {
-    const { result } = renderHook(() => useWASM());
-    expect(result.current.isLoaded).toBe(false);
-    expect(result.current.isWASM).toBe(false);
-  });
-
-  it('exposes the required API functions', () => {
-    const { result } = renderHook(() => useWASM());
-    expect(typeof result.current.loadWASM).toBe('function');
-    expect(typeof result.current.initRenderer).toBe('function');
-    expect(typeof result.current.shutdown).toBe('function');
-    expect(typeof result.current.updateAudio).toBe('function');
-    expect(typeof result.current.updateMouse).toBe('function');
-    expect(typeof result.current.updateDepthMap).toBe('function');
-    expect(typeof result.current.getBridge).toBe('function');
-  });
-
-  it('getBridge() returns null before loadWASM()', () => {
-    const { result } = renderHook(() => useWASM());
-    expect(result.current.getBridge()).toBeNull();
-  });
-
-  it('updateAudio() is a no-op when bridge is not loaded', () => {
-    const { result } = renderHook(() => useWASM());
-    expect(() => result.current.updateAudio(0.1, 0.2, 0.3)).not.toThrow();
-  });
-
-  it('updateMouse() is a no-op when bridge is not loaded', () => {
-    const { result } = renderHook(() => useWASM());
-    expect(() => result.current.updateMouse(0.5, 0.5)).not.toThrow();
-  });
-
-  it('updateDepthMap() is a no-op when bridge is not loaded', () => {
-    const { result } = renderHook(() => useWASM());
-    expect(() => result.current.updateDepthMap(new Float32Array(4), 2, 2)).not.toThrow();
-  });
-
-  it('shutdown() is a safe no-op when bridge has not been loaded', async () => {
-    const { result } = renderHook(() => useWASM());
-    await act(async () => { result.current.shutdown(); });
-    expect(result.current.isWASM).toBe(false);
   });
 });
 

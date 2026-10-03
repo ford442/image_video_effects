@@ -762,7 +762,6 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     }
     return { width: dstW, height: dstH };
   }
-  render(): void {}
 
   setMaxPassesPerFrame(cap: number): void {
     this.maxPassesPerFrame = cap;

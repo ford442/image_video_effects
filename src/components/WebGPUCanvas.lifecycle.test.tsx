@@ -87,10 +87,10 @@ describe('WebGPUCanvas lifecycle (#1311 WP-A)', () => {
   });
 
   it('remount re-probes only after the previous renderer teardown resolves', async () => {
-    const first = mount();
+    const view = mount();
     await flush();
     expect(runWebGpuBootProbe).toHaveBeenCalledTimes(1);
-    first.unmount();
+    view.unmount();
     mount();
     await flush();
     expect(teardowns).toHaveLength(1);
