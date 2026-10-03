@@ -68,7 +68,7 @@ export const CommunityGallery: React.FC<CommunityGalleryProps> = ({
   useEffect(() => {
     if (!open || fetchStartedRef.current) return;
     fetchStartedRef.current = true;
-    loadPacks();
+    void loadPacks();
   }, [open, loadPacks]);
 
   const handleApply = useCallback(

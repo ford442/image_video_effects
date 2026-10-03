@@ -105,7 +105,7 @@ export function useAudioReactiveParams({
 
     useEffect(() => {
         if (audioReactiveParams) {
-            startAudioAnalyzer();
+            void startAudioAnalyzer();
         } else {
             stopAudioAnalyzer();
             audioParamSmoothedRef.current = {};

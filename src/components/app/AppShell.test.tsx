@@ -147,6 +147,7 @@ describe('AppShell chrome', () => {
 
     expect(screen.queryByAltText('Pixelocity')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /random image/i })).not.toBeInTheDocument();
+    // eslint-disable-next-line testing-library/no-node-access -- asserting CSS state classes, no accessible query exists
     expect(document.querySelector('.main-container.fullscreen')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: /show controls/i }));

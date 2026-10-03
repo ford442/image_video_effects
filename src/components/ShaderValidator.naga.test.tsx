@@ -11,17 +11,17 @@ import React from 'react';
 import fs from 'fs';
 import path from 'path';
 import { TextEncoder as NodeTextEncoder, TextDecoder as NodeTextDecoder } from 'util';
-
-// jsdom ships neither; browsers and Node both have them natively.
-if (typeof global.TextEncoder === 'undefined') {
-  (global as any).TextEncoder = NodeTextEncoder;
-  (global as any).TextDecoder = NodeTextDecoder;
-}
-
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ShaderValidator from './ShaderValidator';
 import { clearAdoptedRendererDevice } from '../utils/adoptedGpuDevice';
+
+// jsdom ships neither; browsers and Node both have them natively. Imports are
+// hoisted regardless of source order, so nothing above runs before this anyway.
+if (typeof global.TextEncoder === 'undefined') {
+  (global as any).TextEncoder = NodeTextEncoder;
+  (global as any).TextDecoder = NodeTextDecoder;
+}
 
 const WASM_PATH = path.join(__dirname, '../../public/wasm/naga_wasm.wasm');
 
@@ -144,11 +144,11 @@ describe('ShaderValidator GPU-less validation', () => {
     const { container } = render(<ShaderValidator />);
     fireEvent.click(screen.getByText(/Run Full Validation/));
 
-    // Both assertions inside one waitFor: the summary updates after every
+    // One assertion over both counts: the summary updates after every
     // shader, so checking them separately can read a partial tally.
     await waitFor(() => {
-      expect(container.textContent).toMatch(/✅ 1 passed/);
-      expect(container.textContent).toMatch(/❌ 1 errors/);
+      const text = container.textContent ?? '';
+      expect([/✅ 1 passed/.test(text), /❌ 1 errors/.test(text)]).toEqual([true, true]);
     });
     expect(requestAdapter).not.toHaveBeenCalled();
 

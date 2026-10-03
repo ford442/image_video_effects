@@ -163,7 +163,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         let mounted = true;
         const urlRenderer = getRendererTypeFromURL();
 
-        (async () => {
+        void (async () => {
             let initOptions: { webGpuHandoff?: import('../renderer/webgpuBootProbe').WebGpuProbeHandoff } | undefined;
 
             if (urlRenderer !== 'js' && urlRenderer !== 'wasm') {
@@ -416,7 +416,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
             }
         };
 
-        handleVideoSource();
+        void handleVideoSource();
 
         // Ensure the renderer is aware of the video element whenever source changes
         if (managerReady && rendererRef.current && videoRef.current) {

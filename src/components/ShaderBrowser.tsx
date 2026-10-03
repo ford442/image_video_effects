@@ -105,7 +105,7 @@ export const ShaderBrowser: React.FC<{
   const deferredPhysicsLabOnly = useDeferredValue(physicsLabOnly);
 
   useEffect(() => {
-    loadShaders();
+    void loadShaders();
   }, [category]);
 
   useEffect(() => {
@@ -186,7 +186,7 @@ export const ShaderBrowser: React.FC<{
         desc,
         tags
       );
-      loadShaders();
+      void loadShaders();
     } catch (err) {
       alert('Upload failed: ' + err);
     }

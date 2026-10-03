@@ -119,7 +119,10 @@ jobs:
         node -e "require.resolve('typescript'); console.log('typescript OK:', require('typescript').version)"
         npx tsc --version
         npx tsc --noEmit
-    
+
+    - name: Typecheck scripts/
+      run: npm run typecheck:scripts
+
     - name: Verify device policy sync (TS ↔ C++)
       run: npm run verify:device-policy
 
@@ -421,7 +424,7 @@ jobs:
       run: npm ci
     
     - name: Run ESLint
-      run: npx eslint src --ext .ts,.tsx --max-warnings=0 || true
+      run: npm run lint
     
     - name: Generate shader lists
       run: node scripts/generate_shader_lists.js

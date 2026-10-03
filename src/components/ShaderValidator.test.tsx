@@ -75,10 +75,8 @@ describe('ShaderValidator device policy', () => {
     fireEvent.click(screen.getByLabelText(/Also compile on the GPU/));
     fireEvent.click(screen.getByText(/Run Full Validation/));
 
-    await waitFor(() => {
-      expect(requestAdapter).not.toHaveBeenCalled();
-      expect(requestDevice).not.toHaveBeenCalled();
-    });
+    await waitFor(() => expect(requestAdapter).not.toHaveBeenCalled());
+    expect(requestDevice).not.toHaveBeenCalled();
 
     expect(mockDestroy).not.toHaveBeenCalled();
   });

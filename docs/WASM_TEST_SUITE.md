@@ -29,7 +29,7 @@ Full automated testing for the C++ WASM renderer path — parity with the TypeSc
 | Command | What it runs |
 |---------|----------------|
 | `npm run test:wasm:unit` | Jest — bridge API + RendererManager parity mocks |
-| `npm run test:wasm:smoke` | Playwright — init, multi-shader, error checks |
+| `npm run test:wasm:e2e` | Playwright — init, multi-shader, error checks |
 | `npm run test:wasm:parity` | Playwright — WASM vs WebGPU statistical parity matrix |
 | `npm run test:wasm:bench` | Playwright — FPS + `getGPUTimings()` benchmark report |
 | `npm run test:wasm` | All of the above (unit + full Playwright suite) |
@@ -44,7 +44,7 @@ npm run wasm:build && npm run build
 npm run test:wasm:unit
 
 # 3. Playwright suites (GPU required for meaningful results)
-WASM_GPU_TESTS=1 npm run test:wasm:smoke
+WASM_GPU_TESTS=1 npm run test:wasm:e2e
 WASM_GPU_TESTS=1 npm run test:wasm:parity
 WASM_GPU_TESTS=1 npm run test:wasm:bench
 
