@@ -220,7 +220,7 @@ export function attachDeviceLostHandler(
   context: GPUCanvasContext | null,
   onLost: () => void,
 ): void {
-  device.lost.then((info) => {
+  void device.lost.then((info) => {
     if (info.reason === 'destroyed') {
       try {
         context?.unconfigure();

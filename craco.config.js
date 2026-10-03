@@ -1,5 +1,8 @@
   const path = require('path');
   module.exports = {
+    // `npm run lint` (.eslintrc.cjs) is the lint gate. CRA's in-build pass would
+    // re-run the type-aware rules and, with CI=true, fail the build on warnings.
+    eslint: { enable: false },
     webpack: {
       configure: (webpackConfig) => {
         webpackConfig.module.rules.push({

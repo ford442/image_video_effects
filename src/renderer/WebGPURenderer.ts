@@ -184,7 +184,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
         if (resourcesResult === 'lost' && attempt === 0) {
           persistHistoryOomCap();
           this.workingSizeCap = HISTORY_SAFE_WORKING_SIZE;
-          this.teardownGpuHandles(false);
+          void this.teardownGpuHandles(false);
           handoff = undefined;
           continue;
         }

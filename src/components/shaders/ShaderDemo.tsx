@@ -59,7 +59,7 @@ export const ShaderDemo: React.FC<ShaderDemoProps> = ({ className = '' }) => {
           style={{ ...styles.tab, ...(activeTab === 'library' ? styles.tabActive : {}) }}
           onClick={() => {
             setActiveTab('library');
-            handleLoadLibrary();
+            void handleLoadLibrary();
           }}
         >
           📚 Library

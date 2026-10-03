@@ -61,7 +61,7 @@ export function useShaderBoot({
     useEffect(() => {
         if (!rendererReady || imageManifest.length === 0 || currentImageUrl) return;
         if (inputSource !== 'image') return;
-        handleNewRandomImage();
+        void handleNewRandomImage();
     }, [rendererReady, imageManifest, currentImageUrl, inputSource, handleNewRandomImage]);
 
     useEffect(() => {
@@ -79,7 +79,7 @@ export function useShaderBoot({
     useEffect(() => {
         if (!autoChangeEnabled || inputSource !== 'image') return;
         const interval = setInterval(() => {
-            handleNewRandomImage();
+            void handleNewRandomImage();
         }, autoChangeDelay * 1000);
         return () => clearInterval(interval);
     }, [autoChangeEnabled, autoChangeDelay, inputSource, handleNewRandomImage]);

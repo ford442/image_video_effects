@@ -49,18 +49,12 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
 
-  // Define projects
+  // Chromium only: every npm script and CI job passes --project=chromium.
+  // Specs start their own servers, so there is no webServer block.
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
   ],
-
-  // Global setup/teardown (optional)
-  webServer: undefined, // We start servers manually in tests
 });

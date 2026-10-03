@@ -43,7 +43,7 @@ export const useAudioAnalyzer = () => {
 
   const stopAudio = useCallback(() => {
     sourceRef.current?.disconnect();
-    audioContextRef.current?.close();
+    audioContextRef.current?.close().catch(() => { /* already closed */ });
     setIsActive(false);
   }, []);
 

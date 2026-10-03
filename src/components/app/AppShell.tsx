@@ -477,7 +477,7 @@ export function AppShell(props: AppShellProps) {
                                     wasm: 'js',
                                     js: 'webgpu',
                                 };
-                                handleSwitchRenderer(cycle[activeRendererType]);
+                                void handleSwitchRenderer(cycle[activeRendererType]);
                             }}
                             style={isRendererSwitching ? { opacity: 0.6, cursor: 'wait' } : undefined}
                         >

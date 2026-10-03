@@ -227,10 +227,7 @@ describe('initializeWebGPUDevice', () => {
     Object.defineProperty(navigator, 'gpu', { configurable: true, value: undefined });
     const canvas = document.createElement('canvas');
     const result = await initializeWebGPUDevice(canvas, 800, 600);
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.adapterSummary).toBe('');
-    }
+    expect(result).toMatchObject({ ok: false, adapterSummary: '' });
   });
 
   it('returns ok:false when adapter ladder fails', async () => {
@@ -241,10 +238,10 @@ describe('initializeWebGPUDevice', () => {
     });
     const canvas = document.createElement('canvas');
     const result = await initializeWebGPUDevice(canvas, 800, 600);
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.lastInitError).toMatch(/Failed to obtain a WebGPU adapter/);
-    }
+    expect(result).toMatchObject({
+      ok: false,
+      lastInitError: expect.stringMatching(/Failed to obtain a WebGPU adapter/),
+    });
   });
 
   it('requests timestamp-query when adapter offers it', async () => {
@@ -276,10 +273,9 @@ describe('initializeWebGPUDevice', () => {
         }),
       }),
     );
-    if (result.ok) {
-      expect(result.adapterSummary).toContain('features=[float32-filterable,timestamp-query]');
-      expect(result.adapterSummary).toContain('surfaceFormat=bgra8unorm');
-    }
+    const summary = result.ok ? result.adapterSummary : '';
+    expect(summary).toContain('features=[float32-filterable,timestamp-query]');
+    expect(summary).toContain('surfaceFormat=bgra8unorm');
   });
 
   it('omits timestamp-query and still succeeds when adapter lacks it', async () => {

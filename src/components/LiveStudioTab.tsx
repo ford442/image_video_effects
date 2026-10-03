@@ -48,7 +48,7 @@ export const LiveStudioTab: React.FC<LiveStudioTabProps> = ({ className }) => {
       rendererRef.current = renderer;
       setUseWasm(wasmMode);
       startMonitoring();
-      startAudio();
+      void startAudio();
 
       // Connect video if available
       if (videoRef.current) {
@@ -117,7 +117,7 @@ export const LiveStudioTab: React.FC<LiveStudioTabProps> = ({ className }) => {
 
   // Initialize JS renderer by default
   useEffect(() => {
-    initRenderer(false);
+    void initRenderer(false);
   }, [initRenderer]);
 
   return (

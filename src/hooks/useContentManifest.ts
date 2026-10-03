@@ -55,7 +55,7 @@ export function useContentManifest({
                 rendererRef.current.setImageList(content.manifest.map(m => m.url));
             }
         };
-        fetchManifests();
+        void fetchManifests();
         return () => controller.abort();
     }, [rendererRef, setImageManifest, setVideoList, setStatus]);
 }
