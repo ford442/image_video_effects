@@ -78,3 +78,25 @@ describe('RendererManager lifecycle (#1311 WP-A)', () => {
     expect(fake.live.size).toBe(0);
   });
 });
+
+describe('RendererManager backend failure (#1311 WP-A item 4)', () => {
+  it('stops advertising WASM and notifies the listener when its render loop dies', async () => {
+    const wasm: any = { ...mockBackend(55), releaseExclusiveGpu: jest.fn().mockResolvedValue(undefined) };
+    (WebGPURenderer as jest.Mock).mockImplementation(() => mockBackend(60));
+    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
+    (JSRenderer as jest.Mock).mockImplementation(() => mockBackend(30));
+    const manager = new RendererManager(DEFAULT_CONFIG);
+    const listener = jest.fn();
+    manager.onBackendFailure(listener);
+    await manager.init(document.createElement('canvas'));
+    expect(await manager.switchRenderer('wasm')).toBe(true);
+    expect(manager.isWASM()).toBe(true);
+
+    const err = { type: 'wasm-device-lost', message: 'stopped', recoverable: false };
+    wasm.onRenderLoopStopped(err);
+
+    expect(listener).toHaveBeenCalledWith(err);
+    expect(manager.isWASM()).toBe(false);
+    expect(manager.getActiveRendererType()).not.toBe('wasm');
+  });
+});

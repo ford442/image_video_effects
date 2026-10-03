@@ -1,9 +1,11 @@
 import { Renderer, RendererConfig, GPUTimings } from './Renderer';
+import type { RendererError } from './ErrorHandling';
 import { WASMRenderer } from './WASMRenderer';
 import { WebGPURenderer } from './WebGPURenderer';
 import { InputSource, RenderMode, ShaderEntry, SlotParams } from './types';
 import { AdaptivePerformanceController } from './adaptivePerformance';
 import { createMetricsLoop } from './metricsLoop';
+import { BackendFailureWatch } from './backendFailure';
 import {
   RendererType,
   getRendererTypeFromURL,
@@ -173,6 +175,8 @@ export class RendererManager {
       this.currentRenderer = outcome.renderer;
       this.currentType = outcome.type;
       this.canvas = outcome.canvas;
+      const active = outcome.renderer;
+      if (active) this.failureWatch.watch(active, outcome.type, () => this.currentRenderer === active, () => this.failActiveBackend());
       this.metrics.isWASM = outcome.isWASM;
       this.lastFailedWasmRenderer = null;
       refreshFormatCapabilities(this.perfState, this.shaderRenderer());
@@ -207,6 +211,15 @@ export class RendererManager {
       console.warn(`[RendererManager] switchRenderer('${type}') failed — keeping previous renderer`);
     }
     return false;
+  }
+
+  private readonly failureWatch = new BackendFailureWatch();
+  /** Overlay hook: the active backend died after init (no fallback — WebGPU-required policy). */
+  onBackendFailure(listener: (error: RendererError) => void): void { this.failureWatch.setListener(listener); }
+  private failActiveBackend(): void {
+    this.metricsLoop.stop();
+    this.lastFailedWasmRenderer = this.currentRenderer as WASMRenderer;
+    [this.currentRenderer, this.currentType, this.metrics.isWASM] = [null, null, false];
   }
 
   private readonly metricsLoop = createMetricsLoop(() => {
@@ -392,17 +405,10 @@ export class RendererManager {
   getMaxActiveSlots(): number { return this.perfState.performancePolicy.maxActiveSlots; }
   getPerformanceStatus(): RendererPerformanceStatus {
     const shader = this.shaderRenderer();
-    const historyLayers =
-      shader instanceof WebGPURenderer ? shader.getHistoryLayers() : undefined;
-    const workingSizeCap =
-      shader instanceof WebGPURenderer ? shader.getWorkingSizeCap() : undefined;
-    return buildPerformanceStatus(
-      this.perfState,
-      this.getActiveRendererType(),
-      () => this.getCurrentFPS(),
+    const ts = shader instanceof WebGPURenderer ? shader : null;
+    return buildPerformanceStatus(this.perfState, this.getActiveRendererType(), () => this.getCurrentFPS(),
       readResolutionScale(this.perfState, this.config, shader),
-      { historyLayers, workingSizeCap },
-    );
+      { historyLayers: ts?.getHistoryLayers(), workingSizeCap: ts?.getWorkingSizeCap() });
   }
   getAudioData() {
     return (this.currentRenderer as { getAudioData?: () => { bass: number; mid: number; treble: number; freqBins: Float32Array } } | null)

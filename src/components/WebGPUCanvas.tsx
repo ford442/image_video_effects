@@ -215,6 +215,12 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                     renderer.syncAllSlotParams(slotParams);
                 }
                 setManagerReady(true);
+                // Backend died after init (e.g. WASM loop stopped): show the existing failure overlay (#1311).
+                renderer.onBackendFailure((err) => {
+                    if (!mounted) return;
+                    publishWasmProbeFailure(err.message);
+                    setProbeFailure(window.webgpuProbe ?? null);
+                });
 
                 // Expose renderer on window in development mode so developers can
                 // switch renderers from the browser console, e.g.:

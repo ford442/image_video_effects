@@ -24,6 +24,7 @@ jest.mock('../renderer/RendererManager', () => ({
     syncAllSlotParams() {}
     render() {}
     setParam() {}
+    onBackendFailure() {}
     getAvailableModes() { return []; }
   },
 }));

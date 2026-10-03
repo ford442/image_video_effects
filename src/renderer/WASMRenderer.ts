@@ -1,6 +1,6 @@
 import { Renderer, RendererConfig, ShaderSlotRenderer, GPUTimings } from './Renderer';
 import * as WasmBridge from '../wasm/wasm_bridge';
-import { reportError } from './ErrorHandling';
+import { reportError, type RendererError } from './ErrorHandling';
 import { describeWasmInitFailure, summarizeWasmInitState } from './wasmInitDiagnostics';
 import { InputSource } from './types';
 import { checkPhysicalSlotIndex } from './slotOrchestrator';
@@ -66,6 +66,8 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
   private maxInitAttempts = 3;
   private consecutiveRenderErrors = 0;
   private maxRenderErrorsBeforeStopping = 10;
+  /** Set by RendererManager: the loop died, stop advertising this backend (#1311). */
+  onRenderLoopStopped?: (error: RendererError) => void;
   private lastFrameDataUrl = '';
   private recording = false;
   private recordingMode: 'loop' | 'continuous' = 'loop';
@@ -655,6 +657,14 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
         if (this.consecutiveRenderErrors >= this.maxRenderErrorsBeforeStopping) {
           console.error('[WASM] Stopping render loop after', this.maxRenderErrorsBeforeStopping, 'consecutive errors');
           this.initialized = false;
+          const stopped: RendererError = {
+            type: 'wasm-device-lost',
+            message: `WASM render loop stopped after ${this.maxRenderErrorsBeforeStopping} consecutive errors: ` +
+              (err instanceof Error ? err.message : String(err)),
+            recoverable: false,
+          };
+          reportError(stopped);
+          this.onRenderLoopStopped?.(stopped);
           return;
         }
       }
