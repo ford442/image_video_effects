@@ -2,6 +2,7 @@ import {
   createRendererForType,
   getRendererTypeFromURL,
   performBackendSwitch,
+  releaseRendererGpu,
   resolveInitBackendPreference,
   usesExclusiveWebGpu,
   yieldForGpuRelease,
@@ -150,6 +151,36 @@ describe('backendLifecycle', () => {
       await yieldForGpuRelease();
       expect(raf).toHaveBeenCalled();
       global.requestAnimationFrame = original;
+    });
+  });
+
+  describe('releaseRendererGpu', () => {
+    it('prefers releaseExclusiveGpu and does not call destroy separately', async () => {
+      const renderer = {
+        destroy: jest.fn(),
+        releaseExclusiveGpu: jest.fn().mockResolvedValue(undefined),
+      };
+      await releaseRendererGpu(renderer as never);
+      expect(renderer.releaseExclusiveGpu).toHaveBeenCalledTimes(1);
+      expect(renderer.destroy).not.toHaveBeenCalled();
+    });
+
+    it('awaits an async destroy() and then yields a frame', async () => {
+      const order: string[] = [];
+      const renderer = {
+        destroy: jest.fn(
+          () => new Promise<void>((resolve) => setTimeout(() => { order.push('destroyed'); resolve(); }, 5)),
+        ),
+      };
+      const original = global.requestAnimationFrame;
+      global.requestAnimationFrame = jest.fn((cb: FrameRequestCallback) => {
+        order.push('yield');
+        cb(0);
+        return 0;
+      });
+      await releaseRendererGpu(renderer as never);
+      global.requestAnimationFrame = original;
+      expect(order).toEqual(['destroyed', 'yield']);
     });
   });
 

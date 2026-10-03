@@ -16,16 +16,9 @@ async function initWasmRenderer(canvasElement) {
     return true;
   }
   wasmRef.canvas = canvasElement;
-  const sizeFallback = 1024;
-  let cap = sizeFallback;
-  try {
-    if (typeof sessionStorage !== "undefined" && sessionStorage.getItem("px_history_oom_cap") === "1024") {
-      cap = 1024;
-    }
-  } catch {
-  }
-  state.canvasWidth = Math.min(wasmRef.canvas.width || sizeFallback, cap);
-  state.canvasHeight = Math.min(wasmRef.canvas.height || sizeFallback, cap);
+  const sizeCap = 1024;
+  state.canvasWidth = Math.min(wasmRef.canvas.width || sizeCap, sizeCap);
+  state.canvasHeight = Math.min(wasmRef.canvas.height || sizeCap, sizeCap);
   state.initStartTime = performance.now();
   return new Promise((resolve) => {
     const pathname = window.location.pathname;

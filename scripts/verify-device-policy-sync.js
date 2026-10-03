@@ -856,6 +856,18 @@ function verifyWasmRuntimeInvariants() {
       if (!/function getHistoryWorkingSizeCap[\s\S]*return HISTORY_SAFE_WORKING_SIZE/.test(vram)) {
         fail('vramBudget.ts getHistoryWorkingSizeCap() must default to HISTORY_SAFE_WORKING_SIZE (1024)');
       }
+      // The WASM bridge is emitted unbundled and cannot import vramBudget.ts, so its
+      // first-commit size cap is a literal that must track the contract.
+      const bridgeInit = fs.readFileSync(path.join(ROOT, 'src/wasm/bridge/init.ts'), 'utf8');
+      const bridgeCap = bridgeInit.match(/const\s+sizeCap\s*=\s*(\d+)/);
+      if (!bridgeCap || parseInt(bridgeCap[1], 10) !== ladder.defaultWorkingSize) {
+        fail(
+          `src/wasm/bridge/init.ts sizeCap ${bridgeCap && bridgeCap[1]} must equal historyTexLadder.defaultWorkingSize ${ladder.defaultWorkingSize}`,
+        );
+      }
+      if (bridgeInit.includes(`'${ladder.sessionStorageKey}'`)) {
+        fail(`src/wasm/bridge/init.ts must not hardcode '${ladder.sessionStorageKey}' (owned by vramBudget.ts)`);
+      }
     }
     if (ladder.minMaxBufferSizeForFull != null) {
       const minBuf = vram.match(/MIN_MAX_BUFFER_SIZE_FOR_FULL\s*=\s*(\d+)/);

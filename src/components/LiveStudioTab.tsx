@@ -32,8 +32,8 @@ export const LiveStudioTab: React.FC<LiveStudioTabProps> = ({ className }) => {
 
     setIsLoading(true);
 
-    // Destroy old renderer
-    rendererRef.current?.destroy();
+    // Release the old renderer's GPU device before creating the next one
+    await rendererRef.current?.destroy();
 
     // Create new renderer
     const RendererClass = wasmMode ? WASMRenderer : JSRenderer;
@@ -109,7 +109,7 @@ export const LiveStudioTab: React.FC<LiveStudioTabProps> = ({ className }) => {
   // Cleanup
   useEffect(() => {
     return () => {
-      rendererRef.current?.destroy();
+      void rendererRef.current?.destroy();
       stopMonitoring();
       stopAudio();
     };
