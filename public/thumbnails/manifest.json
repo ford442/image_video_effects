@@ -3137,7 +3137,8 @@
       0.5,
       0.5,
       0.5
-    ]
+    ],
+    "source_hash": "1bb0886212a152f6"
   },
   "cyber-grid-pulse": {
     "thumbnail_url": "thumbnails/cyber-grid-pulse.png",
@@ -3377,7 +3378,8 @@
       0.5,
       0.5,
       0.5
-    ]
+    ],
+    "source_hash": "7e2128f690867813"
   },
   "rgb-distance-split": {
     "thumbnail_url": "thumbnails/rgb-distance-split.png",

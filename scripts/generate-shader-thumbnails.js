@@ -9,6 +9,7 @@
  *
  * Usage:
  *   npm run thumbs:generate -- --missing
+ *   npm run thumbs:generate -- --stale        # missing + changed since capture
  *   npm run thumbs:generate -- --category=generative --limit=50
  *   npm run thumbs:generate -- --shard=0/4 --force
  *   npm run thumbs:generate:minimal -- --category=generative --limit=10
@@ -29,6 +30,13 @@ const BUILD_DIR = path.join(ROOT, 'build');
 const DEFAULT_REPORT = path.join(ROOT, 'reports', 'thumbnail-failures.json');
 const MULTIPASS_REGISTRY_PATH = path.join(ROOT, 'src', 'renderer', 'multipassRegistry.ts');
 const { loadThumbnailSkipIds } = require('./lib/thumbnailSkipAllowlist');
+const { createHashContext, computeSourceHash, thumbnailFreshness } = require('./lib/shaderSourceHash');
+
+let HASH_CTX = null;
+function currentSourceHash(id) {
+  if (!HASH_CTX) HASH_CTX = createHashContext();
+  return computeSourceHash(id, HASH_CTX);
+}
 
 const DEFAULT_SIZE = 256;
 const DEFAULT_FRAMES = 60;
@@ -46,6 +54,7 @@ function parseArgs(argv) {
     headless: true,
     skipExisting: false,
     missing: false,
+    stale: false,
     force: false,
     shardIndex: null,
     shardCount: null,
@@ -67,6 +76,7 @@ function parseArgs(argv) {
     else if (key === 'headless') out.headless = val !== 'false';
     else if (key === 'skip-existing') out.skipExisting = val !== 'false';
     else if (key === 'missing') out.missing = val !== 'false';
+    else if (key === 'stale') out.stale = val !== 'false';
     else if (key === 'force') out.force = val !== 'false';
     else if (key === 'engine') out.engine = val;
     else if (key === 'frames') out.frames = parseInt(val, 10);
@@ -237,7 +247,14 @@ function updateManifestEntry(manifest, id, zoomParams) {
     thumbnail_url: `thumbnails/${id}.png`,
     generated_at: new Date().toISOString(),
     params_snapshot: zoomParams,
+    source_hash: currentSourceHash(id),
   };
+}
+
+/** --stale: keep shaders whose thumbnail is missing, unstamped, or older than their source. */
+function isStaleThumbnail(id, manifest) {
+  if (!fs.existsSync(path.join(OUT_DIR, `${id}.png`))) return true;
+  return thumbnailFreshness(id, currentSourceHash(id), manifest) !== 'fresh';
 }
 
 // ── Minimal engine: inline WebGPU ─────────────────────────────────────────────
@@ -609,7 +626,9 @@ async function main() {
     ? JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8'))
     : {};
 
-  if (args.skipExisting && !args.force) {
+  if (args.stale && !args.force) {
+    shaders = shaders.filter(s => isStaleThumbnail(s.id, manifest));
+  } else if (args.skipExisting && !args.force) {
     shaders = shaders.filter(s => !hasExistingThumbnail(s.id, manifest));
   }
 
@@ -651,7 +670,7 @@ async function main() {
     throw err;
   }
 
-  fs.writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2));
+  fs.writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2) + '\n');
 
   const payload = {
     generated_at: new Date().toISOString(),
@@ -683,6 +702,7 @@ if (require.main === module) {
 module.exports = {
   parseArgs,
   hasExistingThumbnail,
+  isStaleThumbnail,
   classifyFailure,
   extractDefaultParams,
   warmupFramesForShader,

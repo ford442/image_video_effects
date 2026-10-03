@@ -1,7 +1,9 @@
-import React, { RefObject } from 'react';
+import React, { RefObject, useMemo, useRef } from 'react';
 import ShaderScanner from '../ShaderScanner';
 import { StorageBrowser } from '../storage';
 import { RenderMode, ShaderEntry, SlotParams, InputSource } from '../../renderer/types';
+import type { RendererManager } from '../../renderer/RendererManager';
+import type { ThumbnailHost } from '../../services/thumbnailBatch';
 
 
 export interface AppOverlaysProps {
@@ -18,7 +20,7 @@ export interface AppOverlaysProps {
     showShaderScanner: boolean;
     setShowShaderScanner: (show: boolean) => void;
     availableModes: ShaderEntry[];
-    setMode: (index: number, mode: RenderMode) => void;
+    setMode: (index: number, mode: RenderMode) => void | Promise<void>;
     updateSlotParam: (slotIndex: number, updates: Partial<SlotParams>) => void;
     showStorageBrowser: boolean;
     setShowStorageBrowser: (show: boolean) => void;
@@ -28,6 +30,12 @@ export interface AppOverlaysProps {
     setSelectedVideo: React.Dispatch<React.SetStateAction<string>>;
     syncInputSourceToRenderer: (source: InputSource) => void;
     setSlotParams: React.Dispatch<React.SetStateAction<SlotParams[]>>;
+    /** Shader Scanner render check / thumbnail batch (optional — omit to disable). */
+    rendererRef?: RefObject<RendererManager | null>;
+    modes?: RenderMode[];
+    slotParams?: SlotParams[];
+    inputSource?: InputSource;
+    currentImageUrl?: string;
 }
 
 export function AppOverlays({
@@ -54,7 +62,54 @@ export function AppOverlays({
     setSelectedVideo,
     syncInputSourceToRenderer,
     setSlotParams,
+    rendererRef,
+    modes,
+    slotParams,
+    inputSource,
+    currentImageUrl,
 }: AppOverlaysProps) {
+    // Latest app state for the thumbnail batch to save/restore around a run.
+    const sessionRef = useRef({ modes, slotParams, inputSource, currentImageUrl });
+    sessionRef.current = { modes, slotParams, inputSource, currentImageUrl };
+    const setModeRef = useRef(setMode);
+    setModeRef.current = setMode;
+
+    const thumbnailHost = useMemo<ThumbnailHost | undefined>(() => {
+        if (!rendererRef) return undefined;
+        return {
+            getRenderer: () => rendererRef.current,
+            loadIntoSlot: async (index, shaderId) => {
+                await setModeRef.current(index, shaderId as RenderMode);
+            },
+            clearSlot: async (index) => {
+                await setModeRef.current(index, 'none');
+            },
+            beginSession: async () => {
+                const saved = { ...sessionRef.current };
+                const savedModes = saved.modes ? [...saved.modes] : [];
+                // Thumbnails show slot 0 alone, like the Playwright pipeline.
+                for (let i = 1; i < savedModes.length; i++) {
+                    if (savedModes[i] && savedModes[i] !== 'none') await setModeRef.current(i, 'none');
+                }
+                return async () => {
+                    // Every slot goes back to its saved mode, 'none' included — slot 0 holds
+                    // the last captured shader even when the user had it empty.
+                    for (let i = 0; i < savedModes.length; i++) {
+                        await setModeRef.current(i, savedModes[i] ?? 'none');
+                    }
+                    // setMode is awaited, so its default-param setSlotParams updaters are
+                    // already queued; this replacement is applied after them and wins.
+                    // WebGPUCanvas then pushes the restored slotParams to the renderer.
+                    if (saved.slotParams) setSlotParams(saved.slotParams);
+                    if (saved.inputSource) syncInputSourceToRenderer(saved.inputSource);
+                    if (saved.inputSource === 'image' && saved.currentImageUrl) {
+                        await handleLoadImage(saved.currentImageUrl).catch(() => undefined);
+                    }
+                };
+            },
+        };
+    }, [rendererRef, setSlotParams, syncInputSourceToRenderer, handleLoadImage]);
+
     return (
         <>
             <div
@@ -184,9 +239,10 @@ export function AppOverlays({
                 shaders={availableModes}
                 isOpen={showShaderScanner}
                 onClose={() => setShowShaderScanner(false)}
+                thumbnailHost={thumbnailHost}
                 onTestShader={async (shaderId, testValues) => {
                     try {
-                        setMode(0, shaderId as RenderMode);
+                        void setMode(0, shaderId as RenderMode);
                         await new Promise(resolve => setTimeout(resolve, 500));
                         const testParams: Partial<SlotParams> = {
                             zoomParam1: testValues[0] ?? 0.5,
@@ -246,7 +302,7 @@ export function AppOverlays({
                                             } else {
                                                 const existingMode = availableModes.find(m => m.id === shader.id);
                                                 if (existingMode) {
-                                                    setMode(activeSlot, shader.id as RenderMode);
+                                                    void setMode(activeSlot, shader.id as RenderMode);
                                                     setStatus(`Applied shader: ${shader.name}`);
                                                 } else {
                                                     setStatus(`Shader ${shader.name} not found in local modes`);
@@ -273,7 +329,7 @@ export function AppOverlays({
                             onLoadEffectConfig={(config) => {
                                 if (config.modes) {
                                     config.modes.forEach((mode: string, idx: number) => {
-                                        if (idx < 3) setMode(idx, mode as RenderMode);
+                                        if (idx < 3) void setMode(idx, mode as RenderMode);
                                     });
                                 }
                                 if (config.slotParams) {
