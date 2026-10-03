@@ -375,7 +375,7 @@ export class RendererManager {
       this.lastFailedWasmRenderer,
     );
   }
-  render(..._args: unknown[]): void { if (this.metrics.isWASM) this.updateVideoFrame(); }
+  render(): void { if (this.metrics.isWASM) this.updateVideoFrame(); }
   getCurrentFPS(): number { return this.metrics.fps || 0; }
   setRenderQuality(mode: RenderQualityMode, hints?: { supportsDeepWorkgroup?: boolean; formatCaps?: DeviceFormatCapabilities }): void {
     this.applyQualityPolicy(mode, hints);

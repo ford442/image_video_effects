@@ -46,15 +46,17 @@ beforeAll(() => {
   }
 });
 
-function mount() {
-  const rendererRef = { current: null as RendererManager | null };
-  return render(
+function canvasElement(
+  mousePosition = { x: -1, y: -1 },
+  rendererRef: { current: RendererManager | null } = { current: null },
+) {
+  return (
     <WebGPUCanvas
       modes={['none', 'none', 'none']}
       slotParams={[{}, {}, {}] as SlotParams[]}
       rendererRef={rendererRef}
       farthestPoint={{ x: 0.5, y: 0.5 }}
-      mousePosition={{ x: -1, y: -1 }}
+      mousePosition={mousePosition}
       setMousePosition={() => {}}
       isMouseDown={false}
       setIsMouseDown={() => {}}
@@ -63,9 +65,11 @@ function mount() {
       isMuted
       activeSlot={0}
       apiBaseUrl=""
-    />,
+    />
   );
 }
+
+const mount = () => render(canvasElement());
 
 const flush = () => act(async () => { await new Promise((r) => setTimeout(r, 0)); });
 
@@ -96,5 +100,19 @@ describe('WebGPUCanvas lifecycle (#1311 WP-A)', () => {
     await flush();
     expect(runWebGpuBootProbe).toHaveBeenCalledTimes(2);
     expect(events.indexOf('teardown-done')).toBeLessThan(events.lastIndexOf('probe'));
+  });
+
+  it('pointer moves do not restart the render loop', async () => {
+    const caf = jest.spyOn(window, 'cancelAnimationFrame');
+    const ref = { current: null as RendererManager | null };
+    const view = render(canvasElement({ x: -1, y: -1 }, ref));
+    await flush();
+    const before = caf.mock.calls.length;
+    for (let i = 0; i < 20; i++) {
+      view.rerender(canvasElement({ x: i / 20, y: 0.5 }, ref));
+    }
+    await flush();
+    expect(caf.mock.calls.length - before).toBe(0);
+    view.unmount();
   });
 });

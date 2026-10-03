@@ -59,10 +59,10 @@ interface WebGPUCanvasProps {
 
 const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     modes, slotParams, rendererRef,
-    farthestPoint, mousePosition, setMousePosition,
+    setMousePosition,
     isMouseDown, setIsMouseDown, onInit,
     inputSource, selectedVideo, videoSourceUrl, isMuted,
-    setInputSource, activeSlot, activeGenerativeShader, apiBaseUrl,
+    setInputSource, activeSlot, apiBaseUrl,
     isWebcamActive = false,
     webcamVideoElement,
     liveStreamUrl,
@@ -500,32 +500,21 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         }
     }, [slotParams, rendererRef]);
 
-    // Animation Loop
+    // Animation Loop — started once per renderer ref. Mouse/slot/mode state reaches the renderer
+    // through its own setters (updateMouse, syncAllSlotParams, …), never through this loop (#1311).
     useEffect(() => {
         let active = true;
         const animate = () => {
             if (!active) return;
             if (rendererRef.current && videoRef.current) {
-                // Force square viewport to match the aspect ratio of the 2048x2048 internal buffer
-                const canvasSize = Math.min(displaySize.width, displaySize.height);
-
-                // Upload video frames (WASM) and satisfy WebGPUCanvas render signature
                 rendererRef.current.setVideo(videoRef.current);
-                rendererRef.current.render(
-                    modes,
-                    slotParams,
-                    videoRef.current,
-                    farthestPoint, mousePosition, isMouseDown,
-                    activeGenerativeShader,
-                    canvasSize, // viewWidth (square)
-                    canvasSize  // viewHeight (square)
-                );
+                rendererRef.current.render();
             }
             animationFrameId.current = requestAnimationFrame(animate);
         };
         animate();
         return () => { active = false; cancelAnimationFrame(animationFrameId.current); };
-    }, [modes, slotParams, farthestPoint, mousePosition, isMouseDown, rendererRef, activeGenerativeShader, inputSource, displaySize]);
+    }, [rendererRef]);
 
     // Mouse Handlers
     const updateMousePosition = (event: React.MouseEvent<HTMLCanvasElement>) => {
