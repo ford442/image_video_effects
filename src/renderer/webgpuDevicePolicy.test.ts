@@ -1,9 +1,7 @@
 import {
-  ADAPTER_ATTEMPT_LADDER,
   assertAdapterMeetsContract,
   buildRequiredLimits,
   MINIMUM_COMPUTE_LIMITS,
-  requestAdapterWithFallback,
 } from './webgpuDevicePolicy';
 import { UNIFORM_BUFFER_LAYOUT } from './types';
 
@@ -111,45 +109,6 @@ describe('webgpuDevicePolicy', () => {
       const result = assertAdapterMeetsContract(adapter, { maxCanvasDim: 1024 });
       expect(result.ok).toBe(false);
       expect(result.failures.some((f) => f.includes('maxTextureDimension2D') && f.includes('8192'))).toBe(true);
-    });
-  });
-
-  describe('requestAdapterWithFallback', () => {
-    it('tries the 4-step ladder until an adapter is returned', async () => {
-      const mockAdapter = makeAdapter();
-      const requestAdapter = jest
-        .fn()
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(mockAdapter);
-
-      const gpu = { requestAdapter } as unknown as GPU;
-      const { adapter, attemptLabel, attemptLogs } = await requestAdapterWithFallback(gpu);
-
-      expect(adapter).toBe(mockAdapter);
-      expect(attemptLabel).toBe('LowPower');
-      expect(requestAdapter).toHaveBeenCalledTimes(3);
-      expect(attemptLogs.length).toBe(3);
-      expect(attemptLogs[2].adapterPresent).toBe(true);
-    });
-
-    it('returns null after all ladder attempts fail', async () => {
-      const requestAdapter = jest.fn().mockResolvedValue(null);
-      const gpu = { requestAdapter } as unknown as GPU;
-      const { adapter, attemptLogs } = await requestAdapterWithFallback(gpu);
-      expect(adapter).toBeNull();
-      expect(requestAdapter).toHaveBeenCalledTimes(ADAPTER_ATTEMPT_LADDER.length);
-      expect(attemptLogs.length).toBe(ADAPTER_ATTEMPT_LADDER.length);
-      expect(attemptLogs.every((l) => !l.adapterPresent)).toBe(true);
-    });
-
-    it('passes forceFallbackAdapter on the final attempt', async () => {
-      const requestAdapter = jest.fn().mockResolvedValue(null);
-      const gpu = { requestAdapter } as unknown as GPU;
-      await requestAdapterWithFallback(gpu);
-
-      const lastCall = requestAdapter.mock.calls[ADAPTER_ATTEMPT_LADDER.length - 1][0];
-      expect(lastCall.forceFallbackAdapter).toBe(true);
     });
   });
 });

@@ -2,11 +2,9 @@ import fs from 'fs';
 import path from 'path';
 
 const SRC_ROOT = path.join(__dirname, '..');
-const ALLOWED_RENDERER_TOGGLE_IMPORTS = new Set([
-  path.join(SRC_ROOT, 'components', 'shaders', 'ShaderDemo.tsx'),
-  path.join(SRC_ROOT, 'components', 'shaders', 'RendererToggle.tsx'),
-  path.join(SRC_ROOT, 'components', 'shaders', 'index.ts'),
-]);
+// Removed renderer demo/toggle modules (they loaded a nonexistent /wasm/wasm_renderer_test.js).
+// Backend switching lives in RendererManager + useRendererBackend.
+const REMOVED_MODULES = ['RendererToggle', 'RendererContext', 'ShaderDemo', 'WASMToggle', 'useWASM'];
 
 function collectSourceFiles(dir: string): string[] {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -25,31 +23,12 @@ function collectSourceFiles(dir: string): string[] {
   return files;
 }
 
-describe('deprecated renderer toggle imports', () => {
-  test('RendererToggle is only imported from shader demo paths', () => {
-    const offenders: string[] = [];
-
-    for (const file of collectSourceFiles(SRC_ROOT)) {
-      if (ALLOWED_RENDERER_TOGGLE_IMPORTS.has(file)) continue;
-      const content = fs.readFileSync(file, 'utf8');
-      if (/from\s+['"][^'"]*RendererToggle['"]/.test(content)) {
-        offenders.push(path.relative(SRC_ROOT, file));
-      }
-    }
-
-    expect(offenders).toEqual([]);
-  });
-
-  test('WASMToggle is not imported anywhere in src', () => {
-    const offenders: string[] = [];
-
-    for (const file of collectSourceFiles(SRC_ROOT)) {
-      const content = fs.readFileSync(file, 'utf8');
-      if (/from\s+['"][^'"]*WASMToggle['"]/.test(content)) {
-        offenders.push(path.relative(SRC_ROOT, file));
-      }
-    }
-
+describe('removed renderer toggle modules', () => {
+  test.each(REMOVED_MODULES)('%s is not imported anywhere in src', (name) => {
+    const importRe = new RegExp(`from\\s+['"][^'"]*/${name}['"]`);
+    const offenders = collectSourceFiles(SRC_ROOT)
+      .filter((file) => importRe.test(fs.readFileSync(file, 'utf8')))
+      .map((file) => path.relative(SRC_ROOT, file));
     expect(offenders).toEqual([]);
   });
 });

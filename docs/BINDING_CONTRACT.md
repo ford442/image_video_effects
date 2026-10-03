@@ -184,7 +184,7 @@ Documented exceptions in that contract:
 
 | Concern | TypeScript | C++ WASM |
 |---------|------------|----------|
-| Adapter ladder | `requestAdapterWithFallback` / `ADAPTER_ATTEMPT_LADDER` | `ADAPTER_ATTEMPT_LADDER` in `device.cpp` |
+| Adapter ladder | `ADAPTER_ATTEMPT_LADDER` (consumed by `runWebGpuBootProbe`) | `ADAPTER_ATTEMPT_LADDER` in `device.cpp` |
 | Limit validation | `assertAdapterMeetsContract` | `CheckLimit` table in `device.cpp` |
 | Device limits | `buildRequiredLimits` | `requiredLimits` on `wgpuAdapterRequestDevice` |
 | Feature logging | `logAdapterFeatures` | adapter feature `printf` block |

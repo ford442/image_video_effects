@@ -3,8 +3,8 @@
  *
  * The artifact is ~800 KB, so it is loaded from /wasm/naga_wasm.wasm on first
  * use and never enters the webpack bundle — the loader is imported with
- * `webpackIgnore`, the same trick src/hooks/useWASM.ts uses for the renderer
- * bridge. Keep it that way or `npm run verify:bundle-size` will regress.
+ * `webpackIgnore` so webpack never bundles it. Keep it that way or
+ * `npm run verify:bundle-size` will regress.
  *
  * Validation is GPU-less: no requestAdapter, no requestDevice, no GPUDevice.
  * That is the point — it lets ShaderValidator report a broken shader on a
