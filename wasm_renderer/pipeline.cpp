@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <vector>
 #include <string>
+#include <memory>
 
 namespace pixelocity {
 
@@ -580,6 +581,12 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
     // This is asynchronous but the uncaptured-error callback will also fire for
     // hard errors.  We use WGPUCallbackMode_AllowSpontaneous so the messages
     // arrive whenever the browser processes them.
+    //
+    // `id` is borrowed from the JS bridge, which frees it as soon as the
+    // loadShader ccall returns, so the callback gets its own heap copy.
+    // WebGPU invokes every callback exactly once (with a cancelled status on
+    // teardown), so the callback is the sole owner and frees it.
+    auto* ownedLabel = new std::string(id);
     wgpuShaderModuleGetCompilationInfo(
         module.get(),
         WGPUCompilationInfoCallbackInfo{
@@ -588,7 +595,8 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
             [](WGPUCompilationInfoRequestStatus /*status*/,
                WGPUCompilationInfo const* info,
                void* userdata1, void* /*userdata2*/) {
-                const char* shaderLabel = static_cast<const char*>(userdata1);
+                std::unique_ptr<std::string> label(static_cast<std::string*>(userdata1));
+                const char* shaderLabel = label->c_str();
                 if (!info) return;
                 for (size_t i = 0; i < info->messageCount; i++) {
                     const WGPUCompilationMessage& msg = info->messages[i];
@@ -602,8 +610,7 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
                            msg.message.data ? msg.message.data : "");
                 }
             },
-            // userdata1 points to the id string which remains valid for the lifetime of the module.
-            const_cast<char*>(id), nullptr
+            ownedLabel, nullptr
         });
 
     // Create compute pipeline. Dawn may return a non-null invalid object on
@@ -651,8 +658,11 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
         }
     } else {
         waitFailed = true;
+        // Spontaneous pop outlives this frame, so it must not point at `pop`.
         wgpuDevicePopErrorScope(device_.get(), WGPUPopErrorScopeCallbackInfo{
-            nullptr, WGPUCallbackMode_AllowSpontaneous, popCb, &pop, nullptr
+            nullptr, WGPUCallbackMode_AllowSpontaneous,
+            [](WGPUPopErrorScopeStatus, WGPUErrorType, WGPUStringView, void*, void*) {},
+            nullptr, nullptr
         });
         printf("[WASM] CreateComputePipeline: no instance for WaitAny — treat as invalid\n");
     }

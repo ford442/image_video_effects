@@ -10,6 +10,7 @@
 #include <array>
 #include <algorithm>
 #include <vector>
+#include <memory>
 
 namespace pixelocity {
 
@@ -398,6 +399,12 @@ void WebGPURenderer::Present() {
 
 void WebGPURenderer::BeginFrameCapture() {
     if (captureState_ == CaptureState::Pending) return;  // already in flight
+    // A finished capture nobody read is still mapped; copying into a mapped
+    // buffer is a validation error, so drop it and take a fresh frame.
+    if (captureState_ == CaptureState::Ready && readbackBuffer_.get()) {
+        wgpuBufferUnmap(readbackBuffer_.get());
+        captureState_ = CaptureState::Idle;
+    }
     if (!initialized_ || deviceLost_ || !writeTexture_.get() || !queue_.get() || !device_.get()) {
         captureState_ = CaptureState::Error;
         return;
@@ -462,7 +469,10 @@ void WebGPURenderer::BeginFrameCapture() {
             WGPUCallbackMode_AllowSpontaneous,
             [](WGPUMapAsyncStatus status, WGPUStringView /*message*/,
                void* userdata1, void* /*userdata2*/) {
-                WebGPURenderer* self = static_cast<WebGPURenderer*>(userdata1);
+                std::unique_ptr<CallbackBox> box(static_cast<CallbackBox*>(userdata1));
+                WebGPURenderer* self = box->Get();
+                // Renderer shut down, or this buffer was cancelled by a resize.
+                if (!self || box->generation != self->captureGeneration_) return;
                 if (status == WGPUMapAsyncStatus_Success) {
                     self->captureState_ = CaptureState::Ready;
                 } else {
@@ -471,7 +481,7 @@ void WebGPURenderer::BeginFrameCapture() {
                     self->captureState_ = CaptureState::Error;
                 }
             },
-            this, nullptr
+            NewCallbackBox(captureGeneration_), nullptr
         });
 }
 

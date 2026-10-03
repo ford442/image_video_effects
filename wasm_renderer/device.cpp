@@ -449,6 +449,7 @@ bool WebGPURenderer::CreateDevice() {
         WGPUCallbackMode_AllowSpontaneous,
         [](WGPUDevice const* /*device*/, WGPUDeviceLostReason reason,
            WGPUStringView message, void* userdata1, void* /*userdata2*/) {
+            std::unique_ptr<CallbackBox> box(static_cast<CallbackBox*>(userdata1));
             const char* reasonStr = "Unknown";
             switch (reason) {
                 case WGPUDeviceLostReason_Unknown:     reasonStr = "Unknown";     break;
@@ -463,11 +464,12 @@ bool WebGPURenderer::CreateDevice() {
             }
             printf("[WebGPU] Device lost (%s): %.*s\n", reasonStr,
                    static_cast<int>(message.length), message.data ? message.data : "");
-            if (userdata1) {
-                WebGPURenderer::MarkDeviceLostFromCallback(userdata1);
+            // Null after Shutdown()/delete: the renderer is gone, nothing to mark.
+            if (WebGPURenderer* self = box ? box->Get() : nullptr) {
+                WebGPURenderer::MarkDeviceLostFromCallback(self);
             }
         },
-        this, nullptr
+        NewCallbackBox(), nullptr
     };
 
     // ── Uncaptured-error callback ────────────────────────────────────────────

@@ -157,8 +157,10 @@ void setZoomParams(float p1, float p2, float p3, float p4) {
 
 EMSCRIPTEN_KEEPALIVE
 void updateMousePos(float x, float y) {
+    // Position only: the bridge calls this on every pointer move without a
+    // button state, so it must not clear mouseDown_ mid-drag.
     if (g_renderer) {
-        g_renderer->SetMouse(x, y, false);
+        g_renderer->SetMousePos(x, y);
     }
 }
 

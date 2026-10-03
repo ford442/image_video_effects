@@ -385,14 +385,17 @@ void WebGPURenderer::ResizeCanvas(int newWidth, int newHeight) {
     videoStagingBuffer_.clear();
 
     // Release the readback buffer; it will be recreated at the new size on next capture.
+    // Unmap cancels a pending map (its callback then sees a stale generation)
+    // or drops a mapped-but-unread capture.
     if (readbackBuffer_.get()) {
-        if (captureState_ == CaptureState::Pending) {
+        if (captureState_ == CaptureState::Pending || captureState_ == CaptureState::Ready) {
             wgpuBufferUnmap(readbackBuffer_.get());
         }
         readbackBuffer_.reset();
         readbackBufferSize_  = 0;
         readbackBytesPerRow_ = 0;
     }
+    captureGeneration_++;
     captureState_ = CaptureState::Idle;
 
     // A resize gives presentation a fresh start at the new size.

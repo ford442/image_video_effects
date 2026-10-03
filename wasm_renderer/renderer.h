@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include <memory>
 
 namespace pixelocity {
 
@@ -90,6 +91,22 @@ using WGPUComputePipelineHandle  = WGPUHandle<WGPUComputePipeline,  wgpuComputeP
 using WGPURenderPipelineHandle   = WGPUHandle<WGPURenderPipeline,   wgpuRenderPipelineRelease>;
 using WGPUShaderModuleHandle     = WGPUHandle<WGPUShaderModule,     wgpuShaderModuleRelease>;
 using WGPUQuerySetHandle         = WGPUHandle<WGPUQuerySet,         wgpuQuerySetRelease>;
+
+class WebGPURenderer;
+
+// Liveness token shared with spontaneous WebGPU callbacks (mapAsync, device
+// lost). Each callback receives a heap CallbackBox holding a shared_ptr to the
+// renderer's current token, and frees the box itself (WebGPU invokes every
+// callback exactly once). Shutdown() clears token->renderer before it releases
+// GPU objects, so a callback that fires late (even after `delete`) is a no-op.
+struct CallbackToken {
+    WebGPURenderer* renderer = nullptr;
+};
+struct CallbackBox {
+    std::shared_ptr<CallbackToken> token;
+    uint32_t generation = 0;
+    WebGPURenderer* Get() const { return token ? token->renderer : nullptr; }
+};
 
 // Slot execution mode: chained feeds output of slot N into slot N+1;
 // parallel makes every slot read from the same original source texture.
@@ -235,6 +252,9 @@ public:
 
     // Update mouse position and button state for interactive shaders.
     void SetMouse(float x, float y, bool down);
+
+    // Update only the mouse position (preserves the button state).
+    void SetMousePos(float x, float y);
 
     // Update only the mouse button state (preserves existing x/y).
     void SetMouseDown(bool down);
@@ -382,6 +402,11 @@ private:
                              int32_t timestampEndIndexA = -1,
                              int32_t timestampEndIndexB = -1);
 
+    // Heap box for a spontaneous callback's userdata; the callback owns it.
+    CallbackBox* NewCallbackBox(uint32_t generation = 0) const {
+        return new CallbackBox{callbackToken_, generation};
+    }
+
     bool CreateTimestampQueries();
     void ResetTimestampFrameState();
     void ResolveTimestampQueries();
@@ -508,6 +533,9 @@ private:
 
     bool isRecording_ = false;
 
+    // See CallbackToken. Created in Initialize(), cleared in Shutdown().
+    std::shared_ptr<CallbackToken> callbackToken_;
+
     // ═══════════════════════════════════════════════════════════════════════════
     // PERSISTENT STAGING BUFFER (avoids per-frame heap allocation)
     // ═══════════════════════════════════════════════════════════════════════════
@@ -522,6 +550,9 @@ private:
     // ═══════════════════════════════════════════════════════════════════════════
     enum class CaptureState { Idle = 0, Pending = 1, Ready = 2, Error = 3 };
     CaptureState     captureState_       = CaptureState::Idle;
+    // Bumped whenever the readback buffer is cancelled (resize, shutdown) so a
+    // late map callback for the old buffer cannot overwrite captureState_.
+    uint32_t         captureGeneration_  = 0;
     WGPUBufferHandle readbackBuffer_;
     size_t           readbackBufferSize_ = 0;
     // Aligned bytes-per-row used when copying texture → readback buffer.

@@ -3,6 +3,7 @@
 #include <webgpu/webgpu.h>
 #include <cstdio>
 #include <algorithm>
+#include <memory>
 
 namespace pixelocity {
 
@@ -100,12 +101,8 @@ void WebGPURenderer::OnTimestampReadback(WGPUMapAsyncStatus status, void* userda
     if (!self) return;
     self->timestampReadbackPending_ = false;
 
-    if (status != WGPUMapAsyncStatus_Success) {
-        if (self->timestampReadbackBuffer_.get()) {
-            wgpuBufferUnmap(self->timestampReadbackBuffer_.get());
-        }
-        return;
-    }
+    // A failed or cancelled map leaves the buffer unmapped; nothing to undo.
+    if (status != WGPUMapAsyncStatus_Success) return;
 
     const void* mapped = wgpuBufferGetConstMappedRange(
         self->timestampReadbackBuffer_.get(), 0, TS_QUERY_COUNT * sizeof(uint64_t));
@@ -190,9 +187,11 @@ void WebGPURenderer::ResolveTimestampQueries() {
             WGPUCallbackMode_AllowSpontaneous,
             [](WGPUMapAsyncStatus status, WGPUStringView /*message*/,
                void* userdata1, void* /*userdata2*/) {
-                OnTimestampReadback(status, userdata1);
+                std::unique_ptr<CallbackBox> box(static_cast<CallbackBox*>(userdata1));
+                // Null after Shutdown(): the buffer and renderer are gone.
+                if (WebGPURenderer* self = box->Get()) OnTimestampReadback(status, self);
             },
-            this,
+            NewCallbackBox(),
             nullptr
         });
 }
