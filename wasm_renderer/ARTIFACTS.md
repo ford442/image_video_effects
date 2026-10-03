@@ -82,4 +82,4 @@ CI jobs that consume pre-built artifacts from the `wasm` job set this automatica
 2. **`test` job** — downloads WASM artifacts, runs full unit tests + CRA build with `SKIP_WASM_BUILD=1`, re-validates artifacts (`verify:toolchain-foundation` includes bridge sync).
 3. **`test-wasm-e2e` job** — downloads artifacts, production build, Playwright smoke tests (`tests/wasm-renderer.smoke.spec.ts`).
 
-See [`WASM_BUILD_CI_GUIDE.md`](../WASM_BUILD_CI_GUIDE.md) for troubleshooting.
+See [`WASM_BUILD_CI_GUIDE.md`](../docs/WASM_BUILD_CI_GUIDE.md) for troubleshooting.

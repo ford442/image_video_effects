@@ -18,7 +18,7 @@ Usage:
     python scripts/wgsl_precommit_gate.py --fix   # local only: literal (int,int)->(int,int,1)
     python scripts/wgsl_precommit_gate.py --json
 
-For local pre-commit hook setup, see scripts/AUTHORING.md.
+For local pre-commit hook setup, see docs/AUTHORING.md.
 """
 
 import argparse

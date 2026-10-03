@@ -9,6 +9,6 @@ The `*_ANALYSIS.md` files in this directory are **archived snapshots** from Marc
 | `STABILITY_ANALYSIS.md` | [`STATUS.md`](STATUS.md) |
 | `COMPLETENESS_ANALYSIS.md` | [`STATUS.md`](STATUS.md) |
 
-**Current policy:** [`../WASM_BACKEND_POLICY.md`](../WASM_BACKEND_POLICY.md) — TypeScript WebGPU is Tier A (production); WASM is Tier B (experimental, opt-in).
+**Current policy:** [`../WASM_BACKEND_POLICY.md`](../docs/WASM_BACKEND_POLICY.md) — TypeScript WebGPU is Tier A (production); WASM is Tier B (experimental, opt-in).
 
 Do not use analysis docs for onboarding or architecture decisions.

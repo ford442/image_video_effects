@@ -532,7 +532,7 @@ Analyzed **33 interactive shaders** focusing on smallest files (<4KB) for maximu
 > **Historical sketch.** Keep HEAD's A packing unless the Idea Card documents a change; do not
 > invent `dataTextureB` usage. The `extraBuffer[0..299]` layouts below **violate the floor** —
 > persistent state lives only in `extraBuffer[133..]`, single-writer, per
-> [`agents/WGSL_BUILTINS_GENERATIVE.md`](../agents/WGSL_BUILTINS_GENERATIVE.md). Multi-touch
+> [`docs/agents/WGSL_BUILTINS_GENERATIVE.md`](../docs/agents/WGSL_BUILTINS_GENERATIVE.md). Multi-touch
 > history uses the engine's `u.ripples[]`.
 
 ```wgsl

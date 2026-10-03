@@ -13,4 +13,4 @@
 
 CI builds WASM via **`wasm_renderer/build.sh` only** (not CMake). Committed artifacts under `public/wasm/` must stay in sync when touching the renderer.
 
-See `wasm_renderer/README.md` and `WASM_BUILD_CI_GUIDE.md`.
+See `wasm_renderer/README.md` and `docs/WASM_BUILD_CI_GUIDE.md`.

@@ -107,7 +107,7 @@ check('C++ comment drift', (dir) =>
 check('agent brief reintroduces config.y = delta_time', (dir) =>
   patch(
     dir,
-    'agents/WGSL_BUILTINS_GENERATIVE.md',
+    'docs/agents/WGSL_BUILTINS_GENERATIVE.md',
     '.y = rippleCount (0-50 active ripples)',
     '.y = delta_time',
   ),

@@ -13,10 +13,10 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
-const DEFAULT_QUEUE_PATH = path.join(PROJECT_ROOT, 'swarm-tasks', 'upgrade-queue.json');
-const PROMPTS_DIR = path.join(PROJECT_ROOT, 'swarm-tasks', 'prompts');
+const DEFAULT_QUEUE_PATH = path.join(PROJECT_ROOT, 'agents', 'swarm-tasks', 'upgrade-queue.json');
+const PROMPTS_DIR = path.join(PROJECT_ROOT, 'agents', 'swarm-tasks', 'prompts');
 const TEMPLATES_DIR = path.join(PROJECT_ROOT, 'agents', 'prompt-templates');
-const PROGRESS_PATH = path.join(PROJECT_ROOT, 'swarm-outputs', 'upgrade-progress.json');
+const PROGRESS_PATH = path.join(PROJECT_ROOT, 'agents', 'swarm-outputs', 'upgrade-progress.json');
 const SHADERS_DIR = path.join(PROJECT_ROOT, 'public', 'shaders');
 const DEFINITIONS_DIR = path.join(PROJECT_ROOT, 'shader_definitions');
 
@@ -243,13 +243,13 @@ Options:
   --dispatch --kimi   Dispatch to kimi-cli (no API key needed; uses local kimi-cli)
   --agent-dispatch    Output JSON manifest for AI CLI Agent-tool dispatch
   --batch=N           Process N shaders in parallel (default: 4)
-  --queue=PATH        Use a custom queue file (default: swarm-tasks/upgrade-queue.json)
+  --queue=PATH        Use a custom queue file (default: agents/swarm-tasks/upgrade-queue.json)
   --help, -h          Show this help
 
 Files:
-  Queue:     swarm-tasks/upgrade-queue.json
-  Prompts:   swarm-tasks/prompts/<shader-id>.md
-  Progress:  swarm-outputs/upgrade-progress.json
+  Queue:     agents/swarm-tasks/upgrade-queue.json
+  Prompts:   agents/swarm-tasks/prompts/<shader-id>.md
+  Progress:  agents/swarm-outputs/upgrade-progress.json
 `);
 }
 
