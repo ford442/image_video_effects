@@ -146,6 +146,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
 
     let handoff = webGpuHandoff;
     for (let attempt = 0; attempt < 2; attempt++) {
+      // A previous teardown (OOM retry or destroy) set this; the new device's lost handler must be live (#1311).
+      this.releasingDevice = false;
       const outcome = await initializeWebGPUDevice(
         canvas,
         this.config.width,
@@ -797,7 +799,10 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     } catch {
       /* already destroyed */
     }
+    const settled = lost.then(() => undefined).catch(() => undefined).then(() => {
+      if (this.device === null) this.releasingDevice = false;
+    });
     if (!awaitLost) return undefined;
-    return lost.then(() => undefined).catch(() => undefined);
+    return settled;
   }
 }
