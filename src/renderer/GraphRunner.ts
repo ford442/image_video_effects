@@ -49,6 +49,12 @@ export interface GraphRunnerContext {
   getPipeline: (shaderId: string) => GPUComputePipeline | undefined;
   getWorkgroupSize: (shaderId: string) => { x: number; y: number };
   createBindGroupForRoles: (roles: GraphRoleBindings) => GPUBindGroup;
+  /**
+   * Bind group already built for `textures` (the renderer's cached compute
+   * group). When present no group is created per dispatch; roles never change
+   * inside a run, so every pass of the graph binds the same group.
+   */
+  bindGroup?: GPUBindGroup;
   textures: GraphRoleBindings;
   scaledW: number;
   scaledH: number;
@@ -100,12 +106,42 @@ function emptyReport(partial: Partial<GraphRunReport>): GraphRunReport {
   };
 }
 
+interface GraphPlanCache {
+  errors: string[];
+  requested: number;
+  byCap: Map<number, ExpandedDispatch[]>;
+}
+
+/** Graph defs are static registry objects: validate / expand / cap once, not per frame. */
+const graphPlans = new WeakMap<MultipassGraphDef, GraphPlanCache>();
+
+function graphPlan(graph: MultipassGraphDef): GraphPlanCache {
+  let plan = graphPlans.get(graph);
+  if (!plan) {
+    plan = { errors: validateGraph(graph), requested: countGraphPasses(graph), byCap: new Map() };
+    graphPlans.set(graph, plan);
+  }
+  return plan;
+}
+
+/** capGraphDispatches, memoized per (graph def, pass cap). Do not mutate the result. */
+export function cappedDispatches(graph: MultipassGraphDef, maxPassesPerFrame: number): ExpandedDispatch[] {
+  const plan = graphPlan(graph);
+  let expanded = plan.byCap.get(maxPassesPerFrame);
+  if (!expanded) {
+    expanded = capGraphDispatches(graph, maxPassesPerFrame);
+    plan.byCap.set(maxPassesPerFrame, expanded);
+  }
+  return expanded;
+}
+
 export class GraphRunner {
   lastReport: GraphRunReport | null = null;
 
   runGraph(encoder: GPUCommandEncoder, graph: MultipassGraphDef, ctx: GraphRunnerContext): GraphRunReport {
     const shaderId = ctx.shaderId ?? null;
-    const errors = validateGraph(graph);
+    const plan = graphPlan(graph);
+    const errors = plan.errors;
     if (errors.length > 0) {
       console.warn('[GraphRunner] Invalid graph:', errors);
       const report = emptyReport({
@@ -119,8 +155,8 @@ export class GraphRunner {
     }
 
     const cap = Math.min(graph.maxPassesPerFrame, ctx.maxPassesPerFrame);
-    const requested = countGraphPasses(graph);
-    let expanded = capGraphDispatches(graph, ctx.maxPassesPerFrame);
+    const requested = plan.requested;
+    const expanded = cappedDispatches(graph, ctx.maxPassesPerFrame);
 
     const truncated = Math.max(0, requested - expanded.length);
     if (truncated > 0) {
@@ -179,7 +215,7 @@ export class GraphRunner {
       return false;
     }
 
-    const bindGroup = ctx.createBindGroupForRoles(ctx.textures);
+    const bindGroup = ctx.bindGroup ?? ctx.createBindGroupForRoles(ctx.textures);
     const wg = ctx.getWorkgroupSize(dispatch.entry);
 
     const label = `graph-${dispatch.nodeId}-${dispatch.iteration}-${dispatch.entry}`;
@@ -208,16 +244,24 @@ export class GraphRunner {
 
 export const graphRunner = new GraphRunner();
 
-/** Summarize graph binding usage for frame feedback gating. */
-export function analyzeGraphBindingUsage(graph: MultipassGraphDef): {
+export interface GraphBindingUsage {
   writesDataA: boolean;
   writesDataB: boolean;
   readsDataC: boolean;
-} {
+}
+
+const graphUsage = new WeakMap<MultipassGraphDef, GraphBindingUsage>();
+
+/** Summarize graph binding usage for frame feedback gating (memoized per graph def). */
+export function analyzeGraphBindingUsage(graph: MultipassGraphDef): GraphBindingUsage {
+  const cached = graphUsage.get(graph);
+  if (cached) return cached;
   const expanded = expandGraph(graph);
-  return {
+  const usage = {
     writesDataA: expanded.some((d) => d.writes.includes('dataA')),
     writesDataB: expanded.some((d) => d.writes.includes('dataB')),
     readsDataC: expanded.some((d) => d.reads.includes('dataC')),
   };
+  graphUsage.set(graph, usage);
+  return usage;
 }

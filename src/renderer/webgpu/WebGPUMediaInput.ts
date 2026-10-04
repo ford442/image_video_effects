@@ -25,7 +25,6 @@ export interface WebGPUMediaInputState {
   video: HTMLVideoElement | null;
   offscreen: HTMLCanvasElement | null;
   offCtx: CanvasRenderingContext2D | null;
-  videoExternalTexture: GPUExternalTexture | null;
   /**
    * Letterboxed still uploaded via copyExternalImageToTexture. Kept so texture
    * recreation re-copies the same (unconverted) pixels instead of the 2D offscreen.
@@ -47,7 +46,6 @@ export function createMediaInputState(): WebGPUMediaInputState {
     video: null,
     offscreen: null,
     offCtx: null,
-    videoExternalTexture: null,
     still: null,
   };
 }
@@ -140,13 +138,20 @@ function copyStill(ctx: WebGPUMediaInputContext, still: StillPlacement): boolean
   );
 }
 
+/** A context, or a getter re-read after every await (textures may be recreated meanwhile). */
+export type MediaContextSource = WebGPUMediaInputContext | (() => WebGPUMediaInputContext);
+
+function liveContext(source: MediaContextSource): WebGPUMediaInputContext {
+  return typeof source === 'function' ? source() : source;
+}
+
 async function uploadStillBitmap(
-  ctx: WebGPUMediaInputContext,
+  ctxSource: MediaContextSource,
   state: WebGPUMediaInputState,
   img: HTMLImageElement,
   rect: { x: number; y: number; w: number; h: number },
 ): Promise<boolean> {
-  if (!hasCopyExternalImage(ctx) || typeof createImageBitmap !== 'function') return false;
+  if (!hasCopyExternalImage(liveContext(ctxSource)) || typeof createImageBitmap !== 'function') return false;
   let bitmap: ImageBitmap;
   try {
     bitmap = await createImageBitmap(img, {
@@ -160,6 +165,8 @@ async function uploadStillBitmap(
     console.warn('[WebGPU] createImageBitmap failed; using 2D upload:', e);
     return false;
   }
+  // Re-read after the decode await: a scale change may have recreated sourceTex.
+  const ctx = liveContext(ctxSource);
   const still: StillPlacement = { bitmap, x: rect.x, y: rect.y, canvasW: ctx.canvasW, canvasH: ctx.canvasH };
   if (!copyStill(ctx, still)) {
     bitmap.close?.();
@@ -287,10 +294,8 @@ export function restoreSourceFromOffscreen(
   }
 }
 
-export function clearSourceTexture(ctx: WebGPUMediaInputContext): void {
-  if (!ctx.device) return;
-
-  const encoder = ctx.device.createCommandEncoder({ label: 'clearSourceEncoder' });
+/** Encode a black clear of sourceTex into an existing encoder. */
+export function encodeClearSource(ctx: WebGPUMediaInputContext, encoder: GPUCommandEncoder): void {
   const pass = encoder.beginRenderPass({
     label: 'clearSourcePass',
     colorAttachments: [
@@ -303,34 +308,47 @@ export function clearSourceTexture(ctx: WebGPUMediaInputContext): void {
     ],
   });
   pass.end();
+}
+
+export function clearSourceTexture(ctx: WebGPUMediaInputContext): void {
+  if (!ctx.device) return;
+
+  const encoder = ctx.device.createCommandEncoder({ label: 'clearSourceEncoder' });
+  encodeClearSource(ctx, encoder);
   ctx.device.queue.submit([encoder.finish()]);
 }
 
-export function updateVideoFrameZeroCopy(
+/**
+ * Encode the external-texture video copy into `encoder`. The external texture
+ * is only valid until the current task ends, so the caller must submit the
+ * encoder in the same task (the frame loop does). Returns false when the
+ * zero-copy pipeline is unavailable.
+ */
+export function encodeVideoCopy(
   ctx: WebGPUMediaInputContext,
   state: WebGPUMediaInputState,
-): void {
+  encoder: GPUCommandEncoder,
+): boolean {
   if (
     !ctx.device ||
     !state.video ||
     !ctx.videoCopyPipeline ||
     !ctx.videoCopyBindGroupLayout
   ) {
-    return;
+    return false;
   }
 
-  state.videoExternalTexture = ctx.device.importExternalTexture({ source: state.video });
-
+  const external = ctx.device.importExternalTexture({ source: state.video });
+  // External textures expire with the task, so this group cannot be cached.
   const videoCopyBindGroup = ctx.device.createBindGroup({
     label: 'videoCopyBG',
     layout: ctx.videoCopyBindGroupLayout,
     entries: [
-      { binding: 0, resource: state.videoExternalTexture },
+      { binding: 0, resource: external },
       { binding: 1, resource: ctx.filterSampler },
     ],
   });
 
-  const encoder = ctx.device.createCommandEncoder({ label: 'videoCopyEncoder' });
   const pass = encoder.beginRenderPass({
     label: 'videoCopyPass',
     colorAttachments: [
@@ -347,9 +365,19 @@ export function updateVideoFrameZeroCopy(
   pass.setBindGroup(0, videoCopyBindGroup);
   pass.draw(3);
   pass.end();
+  return true;
+}
 
-  ctx.device.queue.submit([encoder.finish()]);
-  state.videoExternalTexture = null;
+/** Stand-alone zero-copy upload (own encoder + submit) for callers outside the frame loop. */
+export function updateVideoFrameZeroCopy(
+  ctx: WebGPUMediaInputContext,
+  state: WebGPUMediaInputState,
+): void {
+  if (!ctx.device) return;
+  const encoder = ctx.device.createCommandEncoder({ label: 'videoCopyEncoder' });
+  if (encodeVideoCopy(ctx, state, encoder)) {
+    ctx.device.queue.submit([encoder.finish()]);
+  }
 }
 
 export function updateVideoFrameCanvasFallback(
@@ -372,52 +400,71 @@ export function updateVideoFrameCanvasFallback(
   uploadRGBA8(ctx, state.offCtx.getImageData(0, 0, dstW, dstH).data, dstW, dstH);
 }
 
-export function updateVideoFrame(
+const VIDEO_ERROR_MESSAGES: Record<number, string> = {
+  1: 'Video loading aborted',
+  2: 'Network error while loading video',
+  3: 'Video decoding error (corrupt file?)',
+  4: 'Video format not supported',
+};
+
+/**
+ * Encode this frame's video ingest into `encoder` (zero-copy path), or upload
+ * through the 2D fallback via queue writes. Returns true when GPU commands were
+ * encoded. Shared by the frame loop and the stand-alone updateVideoFrame.
+ */
+export function encodeVideoFrame(
   ctx: WebGPUMediaInputContext,
   state: WebGPUMediaInputState,
-): void {
-  if (!state.video || state.video.readyState < 2) return;
+  encoder: GPUCommandEncoder,
+): boolean {
+  if (!state.video || state.video.readyState < 2) return false;
   if (state.still) releaseStill(state);
   const vw = state.video.videoWidth;
   const vh = state.video.videoHeight;
-  if (!vw || !vh) return;
+  if (!vw || !vh) return false;
 
   try {
     if (state.video.error) {
       const errorCode = state.video.error.code;
-      const errorMessages: Record<number, string> = {
-        1: 'Video loading aborted',
-        2: 'Network error while loading video',
-        3: 'Video decoding error (corrupt file?)',
-        4: 'Video format not supported',
-      };
-
       reportError({
         type: 'media-load',
-        message: `Video error: ${errorMessages[errorCode] || 'Unknown video error'}`,
+        message: `Video error: ${VIDEO_ERROR_MESSAGES[errorCode] || 'Unknown video error'}`,
         recoverable: true,
       });
-
-      clearSourceTexture(ctx);
-      return;
+      encodeClearSource(ctx, encoder);
+      return true;
     }
 
     if (ctx.supportsExternalTexture && ctx.device && ctx.videoCopyPipeline) {
-      updateVideoFrameZeroCopy(ctx, state);
-    } else {
-      updateVideoFrameCanvasFallback(ctx, state);
+      return encodeVideoCopy(ctx, state, encoder);
     }
+    updateVideoFrameCanvasFallback(ctx, state);
+    return false;
   } catch (e) {
     console.warn('[WebGPU] Video frame upload failed:', e);
-    clearSourceTexture(ctx);
+    encodeClearSource(ctx, encoder);
+    return true;
+  }
+}
+
+/** Stand-alone video upload (own encoder + submit), e.g. on input rebind. */
+export function updateVideoFrame(
+  ctx: WebGPUMediaInputContext,
+  state: WebGPUMediaInputState,
+): void {
+  if (!ctx.device) return;
+  const encoder = ctx.device.createCommandEncoder({ label: 'videoIngestEncoder' });
+  if (encodeVideoFrame(ctx, state, encoder)) {
+    ctx.device.queue.submit([encoder.finish()]);
   }
 }
 
 export async function loadImage(
-  ctx: WebGPUMediaInputContext,
+  ctxSource: MediaContextSource,
   state: WebGPUMediaInputState,
   url: string,
 ): Promise<string> {
+  let ctx = liveContext(ctxSource);
   try {
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -428,6 +475,7 @@ export async function loadImage(
       img.src = url;
     });
 
+    ctx = liveContext(ctxSource);
     const dstW = ctx.canvasW;
     const dstH = ctx.canvasH;
     const rect = letterboxRect(img.naturalWidth, img.naturalHeight, dstW, dstH);
@@ -446,8 +494,9 @@ export async function loadImage(
     // drawImage alone is cheap — the readback + float convert is what the GPU path skips.
     state.offCtx.drawImage(img, rect.x, rect.y, rect.w, rect.h);
 
-    if (!(await uploadStillBitmap(ctx, state, img, rect))) {
+    if (!(await uploadStillBitmap(ctxSource, state, img, rect))) {
       releaseStill(state);
+      ctx = liveContext(ctxSource);
       uploadRGBA8(ctx, state.offCtx.getImageData(0, 0, dstW, dstH).data, dstW, dstH);
     }
     return url;
@@ -463,6 +512,7 @@ export async function loadImage(
     console.warn('[WebGPU] Image load failed:', error);
 
     releaseStill(state);
+    ctx = liveContext(ctxSource);
     if (state.offscreen && state.offCtx) {
       const dstW = ctx.canvasW;
       const dstH = ctx.canvasH;

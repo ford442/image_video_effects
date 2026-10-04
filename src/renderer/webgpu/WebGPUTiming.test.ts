@@ -186,6 +186,18 @@ describe('createTimestampQueries', () => {
     expect(t.supportsTimestampQuery).toBe(false);
   });
 
+  it('treats an undefined timestampPeriod (current spec, Chrome) as 1 ns', () => {
+    const device = {
+      features: { has: (f: string) => f === 'timestamp-query' },
+      queue: {},
+      createQuerySet: jest.fn(() => ({ destroy: jest.fn() })),
+      createBuffer: jest.fn(() => ({ destroy: jest.fn(), mapAsync: jest.fn() })),
+    } as unknown as GPUDevice;
+    const t = createTimestampQueries(device);
+    expect(t.supportsTimestampQuery).toBe(true);
+    expect(t.timestampPeriodNs).toBe(1);
+  });
+
   it('allocates query set + resolve + staging ring when feature present', () => {
     const device = {
       features: { has: (f: string) => f === 'timestamp-query' },

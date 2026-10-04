@@ -264,6 +264,27 @@ describe('WebGPUMediaInput', () => {
         expect(state.still?.bitmap).toBe(bitmap);
       });
 
+      it('re-reads the context after the decode await (textures recreated mid-load)', async () => {
+        const before = makeCtx();
+        const after = makeCtx();
+        const staleCopy = withCopyExternal(before.ctx);
+        const liveCopy = withCopyExternal(after.ctx);
+        let current = before.ctx;
+        const bitmap = { width: 64, height: 32, close: jest.fn() };
+        (global as { createImageBitmap?: unknown }).createImageBitmap = jest.fn(async () => {
+          // A resolution-scale change lands while the bitmap decodes.
+          current = after.ctx;
+          return bitmap;
+        });
+        const state = createMediaInputState();
+
+        await loadImage(() => current, state, 'img.png');
+
+        expect(staleCopy).not.toHaveBeenCalled();
+        expect(liveCopy).toHaveBeenCalled();
+        expect(liveCopy.mock.calls[0][1].texture).toBe(after.sourceTex);
+      });
+
       it('falls back to the 2D upload when copyExternalImageToTexture is missing', async () => {
         const { ctx, writeTexture } = makeCtx();
         (global as { createImageBitmap?: unknown }).createImageBitmap = jest.fn();

@@ -112,9 +112,16 @@ export class RendererManager {
     return resolveShaderBackend(this.currentRenderer);
   }
 
+  /** Test-mode only: lift the quality slot cap (SwiftShader reports no deep workgroups → 1 slot). */
+  private slotCapOverride: number | null = null;
+
+  overrideSlotCapForTests(cap: number | null): void {
+    this.slotCapOverride = cap;
+  }
+
   private slotPolicy() {
     return {
-      maxActiveSlots: this.perfState.performancePolicy.maxActiveSlots,
+      maxActiveSlots: this.slotCapOverride ?? this.perfState.performancePolicy.maxActiveSlots,
       preferNonDeepVariants: this.perfState.performancePolicy.preferNonDeepVariants,
     };
   }

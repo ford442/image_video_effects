@@ -39,13 +39,25 @@ export function selectPresentPipeline<T>(
   return inputSource === 'generative' ? generativePipeline : standardPipeline;
 }
 
+/**
+ * readTex is smaller than the canvas-sized sourceTex whenever the resolution
+ * scale is below 1 *or* the working size is capped (1024 on every non-discrete
+ * adapter while the canvas is 2048). A plain copy would then overrun readTex,
+ * invalidating the whole frame command buffer, so resample instead.
+ */
+export function needsScaledInputCopy(
+  state: Pick<WebGPUFrameState, 'resolutionScale' | 'scaledW' | 'scaledH' | 'canvasW' | 'canvasH'>,
+): boolean {
+  return state.resolutionScale < 1.0 || state.scaledW < state.canvasW || state.scaledH < state.canvasH;
+}
+
 export class WebGPUPresenter {
   private scaleBindGroup: GPUBindGroup | null = null;
   private scaleBindGroupTex: GPUTexture | null = null;
 
   /** Seed readTex from the source, scaling through a render pass when required. */
   encodeInputCopy(state: WebGPUFrameState, encoder: GPUCommandEncoder): void {
-    if (state.resolutionScale < 1.0) {
+    if (needsScaledInputCopy(state)) {
       const scalePass = encoder.beginRenderPass({
         label: 'scalePass',
         colorAttachments: [
@@ -120,16 +132,6 @@ export class WebGPUPresenter {
     if (resolveSlot !== null) {
       scheduleTimestampReadback(state.timestampRuntime, resolveSlot);
     }
-  }
-
-  /** Present readTex directly when there are no enabled shader slots. */
-  presentWithoutEffects(state: WebGPUFrameState): void {
-    if (!state.device || !state.context || !state.initialized) return;
-
-    this.updateBlitBindGroup(state);
-    const encoder = state.device.createCommandEncoder({ label: 'blit' });
-    this.encodePresent(state, encoder);
-    state.device.queue.submit([encoder.finish()]);
   }
 
   updateBlitBindGroup(state: WebGPUFrameState): void {

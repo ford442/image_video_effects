@@ -25,6 +25,7 @@ export function buildRendererDiagnostics(
     getAdapterAttemptLabel?: () => string | null;
     getLastGraphReport?: () => import('./GraphRunner').GraphRunReport | null;
     getGpuChoresBreadcrumbs?: () => import('../gpuChores').GpuChoresBreadcrumbs;
+    getFrameStats?: () => import('./webgpu/deviceCounters').FrameStats;
   } | null;
 
   if (metrics.isWASM && active?.getDiagnostics) {
@@ -40,6 +41,7 @@ export function buildRendererDiagnostics(
         adapterAttemptLabel: active.getAdapterAttemptLabel?.() ?? null,
         graph: active.getLastGraphReport?.() ?? null,
         gpuChores: active.getGpuChoresBreadcrumbs?.(),
+        frameStats: active.getFrameStats?.(),
       },
       ...(lastFailedWasmRenderer ? { wasm: lastFailedWasmRenderer.getDiagnostics() } : {}),
     };

@@ -35,6 +35,7 @@
     "wasm:validate": "node scripts/validate_wasm_artifacts.js",
     "wasm:clean": "rm -rf wasm_renderer/build public/wasm",
     "test:wasm:unit": "craco test --watchAll=false --ci --testPathPattern=WASM",
+    "test:engine2": "playwright test --project=swiftshader",
     "test:wasm:e2e": "playwright test tests/wasm-renderer.smoke.spec.ts tests/layerChain.smoke.spec.ts --project=chromium",
     "test:wasm:parity": "playwright test tests/renderer-parity.spec.ts --project=chromium",
     "test:wasm:bench": "playwright test tests/wasm-benchmark.spec.ts --project=chromium",
