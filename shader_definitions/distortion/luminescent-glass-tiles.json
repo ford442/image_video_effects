@@ -9,7 +9,7 @@
     "upgraded-rgba",
     "temporal"
   ],
-  "description": "Glass tiles that refract based on video brightness and mouse interaction.",
+  "description": "Luminescent glass tiles that lens the video by brightness: Fresnel bevel rims, light leaking from bright tile edges, Beer-Lambert body tint, and a cursor swirl.",
   "params": [
     {
       "id": "density",

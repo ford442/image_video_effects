@@ -2,7 +2,7 @@
   "id": "interactive-halftone-spin",
   "name": "Interactive Halftone Spin",
   "url": "shaders/interactive-halftone-spin.wgsl",
-  "description": "CMYK halftone screens with held shear, ink conveyors, click splats, oil-slick registration glow, and three-band audio. A remains [C, M, Y, K] coverage.",
+  "description": "Spinning CMYK halftone screens with rotational arc-smear and a CMYK ink after-image. A remains [C, M, Y, K] coverage.",
   "params": [
     {
       "id": "scale",

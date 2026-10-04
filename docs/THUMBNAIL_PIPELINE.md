@@ -117,6 +117,58 @@ Failure reasons: `black_frame`, `magenta_frame`, `error_frame`, `compile`, `pipe
 
 Skipped shaders (intentional): listed in `reports/thumbnail_skip_allowlist.json` — excluded from generation queue and eligible coverage denominator.
 
+## Weekly refresh: only changed shaders (in-app or CLI)
+
+Every shader has a **source hash** covering its WGSL, its `#include`d `_*.wgsl`
+libraries, later multipass passes, and the `params` block of its definition
+JSON (`scripts/lib/shaderSourceHash.js`). Each thumbnail manifest entry stores
+the `source_hash` it was captured from, so a thumbnail is:
+
+| State | Meaning |
+|-------|---------|
+| `fresh` | Captured from the current source |
+| `stale` | Shader changed since capture (e.g. an upgrade batch) |
+| `missing` | No thumbnail |
+| `unknown` | Captured before hashing existed — run the backfill once |
+
+`npm start` / `npm run build` regenerate `public/thumbnails/source-hashes.json`
+(gitignored) via `npm run build:source-hashes`.
+
+### One-time setup
+
+```bash
+npm run thumbs:backfill-hashes        # needs full git history (not a --depth 1 clone)
+npm run upgrades:record               # first run creates the baseline ledger
+```
+
+The backfill stamps an existing thumbnail only when git shows no change to its
+source files after the thumbnail's `generated_at`, and never stamps ids in
+`public/thumbnails/unhealthy.json` (black/error PNGs). The 2026-10-04 run stamped
+2, left 281 changed-since-capture and 77 unhealthy unstamped (queued for recapture).
+Skip-allowlist ids are copied into `source-hashes.json` (`skip`) so the in-app
+scanner leaves them out of *Changed since last thumbnail* like the CLI does.
+
+### After each upgrade batch
+
+```bash
+npm run upgrades:record -- --note="2026-10-03 weekly batch (opus) — upgrade_batches/…"
+```
+
+This appends an entry to `reports/shader-upgrade-ledger.json` for every shader
+whose hash changed (`--event=fixed` or `--event=hygiene` for non-upgrade edits).
+Then refresh just those thumbnails, either:
+
+- **In the app (Chrome/Edge, real GPU):** open **Shader Scanner** → scope
+  *Changed since last thumbnail* → *Render + save thumbnails* → **Choose repo
+  folder** (the checkout root) → **Start Scan**. It compile-checks, renders each
+  passing shader through the live Tier A renderer, flags black/magenta frames,
+  writes `public/thumbnails/<id>.png`, merges `manifest.json` (every 10 captures),
+  and writes failures to `reports/thumbnail-failures-inapp.json`. Your slot
+  stack, params and input are restored afterwards.
+- **CLI:** `npm run thumbs:stale` (same as `thumbs:generate` with `--stale`).
+
+Both paths stamp `source_hash`, so the next run skips everything already current.
+
 ## Coverage strategy (campaign target ≥50% healthy; 80% later)
 
 **Do not capture on the Cloud VM** (no GPU adapter; black PNGs are not coverage). Run on a discrete-GPU workstation:

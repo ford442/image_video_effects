@@ -1,8 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Crystal Facets — Prismatic Facet Refraction & Birefringence
+//  Crystal Facets — Prismatic Facet Refraction & Total Internal Reflection
 //  Category: distortion
-//  Features: mouse-driven, refraction, fresnel, dispersion, internal-reflection,
-//            audio-caustics, depth-prisms, volumetric-gems, semantic-alpha, ACES
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, refraction, fresnel,
+//            dispersion, total-internal-reflection, beer-lambert, semantic-alpha, ACES
+//  Ideas:    1. TIR flash — facets tilted past asin(1/n) mirror the far side of the gem
+//            2. Beer-Lambert body colour — Crystal Thickness tints the light path
+//            3. crown/pavilion rings — radial tiers with half-offset sectors (kite cut)
 //  Complexity: High
 // ═══════════════════════════════════════════════════════════════════
 
@@ -69,38 +72,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let refraction = mix(0.02, 0.15, iorMix);
   let rotation = time * 0.1;
 
-  // Critically damped spring cursor in extraBuffer[133..138]
-  let rawMouse = u.zoom_config.yz;
+  // Raw pointer: the old extraBuffer[133..138] spring raced (pixel (0,0) wrote
+  // while every other pixel read) and the buffer is re-uploaded each frame.
+  let mouse = u.zoom_config.yz;
   let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
-  let isWriter = (gid.x == 0u && gid.y == 0u);
-  let hasState = (arrayLength(&extraBuffer) > 138u);
-
-  var mouse = rawMouse;
-  if (hasState && extraBuffer[138] > 0.5) {
-    mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  }
-
-  if (isWriter && hasState) {
-    let lastTime = extraBuffer[137];
-    let dt = clamp(time - lastTime, 0.0, 0.05);
-    var sPos = mouse;
-    var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[138] < 0.5) {
-      sPos = rawMouse;
-      sVel = vec2<f32>(0.0);
-    }
-    let stiffness = 45.0;
-    let damping = 13.416; // 2 * sqrt(45)
-    let accel = (rawMouse - sPos) * stiffness - sVel * damping;
-    sVel += accel * dt;
-    sPos += sVel * dt;
-    extraBuffer[133] = sPos.x;
-    extraBuffer[134] = sPos.y;
-    extraBuffer[135] = sVel.x;
-    extraBuffer[136] = sVel.y;
-    extraBuffer[137] = time;
-    extraBuffer[138] = 1.0;
-  }
 
   var center = mouse;
   var dir = (uv - center) * vec2<f32>(aspect, 1.0);
@@ -114,7 +89,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (age >= 0.0 && age < 2.0) {
       let d = length((uv - r.xy) * vec2<f32>(aspect, 1.0));
       let wave = sin((d - age * 0.6) * 30.0) * exp(-d * 4.0) * exp(-age * 1.5);
-      let rDir = normalize(uv - r.xy + vec2<f32>(0.0001));
+      let rDir = normalize((uv - r.xy) * vec2<f32>(aspect, 1.0) + vec2<f32>(0.0001));
       rippleDisp += rDir * wave * 0.035;
     }
   }
@@ -123,11 +98,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dist = length(dir);
   var angle = atan2(dir.y, dir.x) + rotation;
 
-  let rawSector = angle / (6.2831853 / facetCount);
+  // Idea 3: crown/pavilion rings — table, crown and pavilion tiers. Each tier
+  // shifts its sectors by half a facet, so the cut reads as kites, not pie slices.
+  let ringPos = dist / mix(0.10, 0.16, iorMix);
+  let ring = min(floor(ringPos), 2.0);
+  let ringLocal = select(fract(ringPos), ringPos - 2.0, ring >= 2.0);
+  let sectorWidth = 6.2831853 / facetCount;
+  let rawSector = angle / sectorWidth + ring * 0.5;
   let sector = floor(rawSector);
-  let sectorAngle = sector * (6.2831853 / facetCount);
+  let sectorAngle = (sector - ring * 0.5) * sectorWidth;
 
-  let facetID = sector;
+  let facetID = sector + ring * 37.0;
   let randomTilt = (hash11(facetID) - 0.5) * 2.0;
   let facetFracture = hash11(facetID + 100.0);
 
@@ -136,28 +117,45 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let gOffset = offsetDir * refraction * 0.5;
   let bOffset = offsetDir * refraction * (0.0 - randomTilt * 0.5);
 
-  let baseUV = center + vec2<f32>(cos(angle - rotation) / aspect, sin(angle - rotation)) * dist;
+  let baseUV = center + dir / vec2<f32>(aspect, 1.0);
 
   let r_val = textureSampleLevel(readTexture, u_sampler, clamp(baseUV - rOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
   let g_val = textureSampleLevel(readTexture, u_sampler, clamp(baseUV - gOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
   let b_val = textureSampleLevel(readTexture, u_sampler, clamp(baseUV - bOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
   var color = vec3<f32>(r_val, g_val, b_val);
 
-  // Exact dataTextureC persistence
-  let prev_c = textureLoad(dataTextureC, pixel, 0).rgb;
-  color = mix(color, prev_c, 0.06);
-
   let angleToNormal = abs(fract(rawSector) - 0.5) * 2.0;
   let cosTheta = cos(angleToNormal * 1.570796);
   let F0 = pow((ior - 1.0) / (ior + 1.0), 2.0);
   let fresnel = fresnelSchlick(cosTheta, F0);
-  let pathLength = crystalThickness / max(abs(cosTheta), 0.01);
+
+  // Idea 1: TIR flash. The facet's tilt grows outward (pavilion facets are the
+  // steepest). Past the critical angle asin(1/n) the facet stops transmitting
+  // and mirrors the opposite side of the stone, so diamond flashes more facets
+  // than glass does.
+  let sinI = clamp(0.16 + ring * 0.05 + randomTilt * randomTilt * 0.4 + bass * 0.05, 0.0, 0.99);
+  let criticalSin = 1.0 / ior;
+  let tir = smoothstep(criticalSin * 0.92, criticalSin, sinI);
+  let mirrorUV = clamp(center - dir / vec2<f32>(aspect, 1.0) * 0.7 + offsetDir * refraction,
+                       vec2<f32>(0.0), vec2<f32>(1.0));
+  let mirrored = textureSampleLevel(readTexture, u_sampler, mirrorUV, 0.0).rgb;
+  color = mix(color, mirrored * vec3<f32>(1.25, 1.28, 1.35) + vec3<f32>(0.10, 0.12, 0.16), tir * 0.85);
+
+  // Idea 2: Beer-Lambert body colour. The path length through the facet follows
+  // its tilt, and the stone absorbs blue a little more than red.
+  let cosT = sqrt(max(1.0 - sinI * sinI, 0.0));
+  let pathLength = crystalThickness / max(cosT, 0.3) * (1.0 - tir * 0.5);
   let purity = 1.0 - (fractureDensity * facetFracture);
   let absorptionCoeff = mix(0.5, 5.0, fractureDensity);
-  let absorption = exp(-absorptionCoeff * pathLength / max(purity, 0.1));
+  let absorption = exp(-absorptionCoeff * pathLength * 0.1 / max(purity, 0.1));
+  let bodyCoeff = vec3<f32>(0.05, 0.035, 0.08) * (1.0 + fractureDensity * 2.0);
+  let bodyTint = exp(-bodyCoeff * pathLength);
+  color = color * bodyTint;
 
   let angleLocal = fract(rawSector);
-  let edgeDist = min(angleLocal, 1.0 - angleLocal);
+  let edgeDist = min(min(angleLocal, 1.0 - angleLocal),
+                     select(select(min(ringLocal, 1.0 - ringLocal), 1.0 - ringLocal, ring < 0.5) * 0.5,
+                            ringLocal * 0.5, ring >= 2.0));
   let edgeFactor = smoothstep(0.04, 0.0, edgeDist);
 
   let transmission = absorption * (1.0 - fresnel) * purity;
@@ -171,7 +169,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let internalTint = vec3<f32>(1.0 + mids * 0.15, 1.0 - mids * 0.08, 1.0 - mids * 0.12);
   let sparkle = pow(hash11(facetID + time * 12.0), 8.0) * treble * 1.5;
 
-  color = color * internalTint * causticPulse + vec3<f32>(0.85, 0.92, 1.0) * sparkle * edgeFactor;
+  color = color * internalTint * causticPulse + vec3<f32>(0.85, 0.92, 1.0) * sparkle * (edgeFactor + tir * 0.5);
 
   // Semantic alpha
   let opticalDepth = pathLength * crystalThickness;
@@ -182,13 +180,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let transmittanceAlpha = transmission * dot(abs_val, vec3<f32>(0.3333)) * purity;
   let fresnelBoost = fresnel * edgeFactor * 0.4;
 
-  let alpha = clamp(mix(transmittanceAlpha, volumetricAlpha, 0.45) + fresnelBoost + held * 0.1, 0.1, 1.0);
+  let alpha = clamp(mix(transmittanceAlpha, volumetricAlpha, 0.45) + fresnelBoost + tir * 0.12 + held * 0.1, 0.1, 1.0);
 
-  let finalRGB = aces(color);
+  // Exact dataTextureC persistence, blended in display space (C holds ACES output).
+  let prev_c = textureLoad(dataTextureC, pixel, 0).rgb;
+  let finalRGB = mix(aces(color), prev_c, 0.06);
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let finalPixel = vec4<f32>(finalRGB, alpha);
 
   textureStore(writeTexture, pixel, finalPixel);
   textureStore(dataTextureA, pixel, finalPixel);
-  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  // Facets sit proud of the plate where the light path is longest.
+  textureStore(writeDepthTexture, pixel, vec4<f32>(clamp(depth - pathLength * 0.02, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

@@ -2,7 +2,7 @@
   "id": "interactive-fisheye",
   "name": "Fluid Lens Dynamics",
   "url": "shaders/interactive-fisheye.wgsl",
-  "description": "Kelvin-Voigt droplet lens with capillary waves, held meniscus pinch, oil-slick thin-film rim, traveling caustic runners, and exact-load state memory. A remains [h, v, nx, ny].",
+  "description": "Kelvin-Voigt droplet lens that refracts through its simulated surface, so overshoot and capillary waves really bend the image; the convex body focuses light into a caustic and the meniscus darkens. Held pinch, caustic runners and splash fronts. A remains [h, v, nx, ny].",
   "features": [
     "mouse-driven",
     "geometry",

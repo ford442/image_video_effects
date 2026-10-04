@@ -2,7 +2,7 @@
   "id": "voronoi-faceted-glass",
   "name": "Voronoi Faceted Glass",
   "url": "shaders/voronoi-faceted-glass.wgsl",
-  "description": "Cellular glass distortion effect with Voronoi facet refraction, mouse push/pull physics, and edge shading.",
+  "description": "Voronoi faceted glass: tilted cells refract the image each its own way, with chamfered bevels, lead lines, orbiting facet glints and cursor push.",
   "params": [
     {
       "id": "density",

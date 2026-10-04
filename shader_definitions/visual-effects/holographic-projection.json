@@ -2,7 +2,7 @@
   "id": "holographic-projection",
   "name": "Holo Projector",
   "url": "shaders/holographic-projection.wgsl",
-  "description": "Transforms the image into a flickering hologram. Move mouse to focus and stabilize the projection.",
+  "description": "Hologram projection with laser speckle, rainbow Bragg colour that shifts with viewing angle, and a rolling refresh band. Move the mouse to focus and stabilize it.",
   "features": [
     "mouse-driven",
     "audio-reactive",

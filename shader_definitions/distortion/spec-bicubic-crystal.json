@@ -2,7 +2,7 @@
   "id": "spec-bicubic-crystal",
   "name": "Bicubic Crystal",
   "url": "shaders/spec-bicubic-crystal.wgsl",
-  "description": "Bicubic Catmull-Rom crystalline distortion. Full 16-sample bicubic interpolation for perfectly smooth magnification, applied to prismatic crystalline faceting with chromatic separation.",
+  "description": "Bicubic crystal distortion: square wedge facets resampled with Catmull-Rom, Fresnel seams and dispersion along each facet's tilt.",
   "tags": [
     "bicubic",
     "catmull-rom",

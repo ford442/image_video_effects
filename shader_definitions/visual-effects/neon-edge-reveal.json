@@ -2,7 +2,7 @@
   "id": "neon-edge-reveal",
   "name": "Neon Edge Reveal",
   "url": "shaders/neon-edge-reveal.wgsl",
-  "description": "Neon edge detection with interactive flashlight reveal.",
+  "description": "Neon edge reveal: edges glow as neon tubes with hot cores and halos, a flashlight beam reveals the photo underneath, and lit edges burn in after the beam moves on.",
   "params": [
     {
       "id": "intensity",

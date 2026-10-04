@@ -1,7 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Phosphor Magnifier — Batch 56 merge
-//  Display-RGBA afterimage feedback + aurora runners, raster beam,
-//  degauss/click shells, held lens pressure
+//  Phosphor Magnifier
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-04
+//  Ideas: per-channel phosphor persistence from exact C; brightness-driven beam blooming across the aperture grille
+//  A packing: ACES display RGBA (C read back as the phosphor afterimage)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -17,6 +21,7 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
 
 struct Uniforms {
   config: vec4<f32>,
@@ -36,11 +41,17 @@ fn acesFilm(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn shadowMask(uv: vec2<f32>, pixelSize: f32) -> vec3<f32> {
+// Aperture-grille stripes. `bloomW` widens each stripe: an over-driven beam
+// spot spills past its phosphor stripe into the neighbouring ones.
+fn shadowMask(uv: vec2<f32>, pixelSize: f32, bloomW: f32) -> vec3<f32> {
   let local = fract(uv * pixelSize);
-  let r = smoothstep(0.32, 0.38, local.x) * smoothstep(0.62, 0.56, local.x);
-  let g = smoothstep(0.32, 0.38, abs(local.x - 0.5)) * smoothstep(0.62, 0.56, abs(local.x - 0.5));
-  let b = smoothstep(0.32, 0.38, 1.0 - local.x) * smoothstep(0.62, 0.56, 1.0 - local.x);
+  let lo0 = 0.32 - bloomW;
+  let lo1 = 0.38 - bloomW;
+  let hi0 = 0.62 + bloomW;
+  let hi1 = 0.56 + bloomW;
+  let r = smoothstep(lo0, lo1, local.x) * smoothstep(hi0, hi1, local.x);
+  let g = smoothstep(lo0, lo1, abs(local.x - 0.5)) * smoothstep(hi0, hi1, abs(local.x - 0.5));
+  let b = smoothstep(lo0, lo1, 1.0 - local.x) * smoothstep(hi0, hi1, 1.0 - local.x);
   return vec3<f32>(r, g, b);
 }
 
@@ -94,10 +105,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let colB = textureSampleLevel(readTexture, u_sampler, snappedB, 0.0).b;
   var sampleColor = vec3<f32>(colR, colG, colB);
 
-  let mask = shadowMask(snappedG, pixelSize);
+  // Idea 2: beam blooming. Bright content drives more beam current, and the
+  // spot widens into the neighbouring stripes (most visible on highlights).
+  let beamLuma = dot(sampleColor, vec3<f32>(0.299, 0.587, 0.114));
+  let bloomW = clamp(beamLuma * beamLuma * (0.06 + glow * 0.16) * (1.0 + audio.x * 0.5), 0.0, 0.2);
+  let mask = shadowMask(snappedG, pixelSize, bloomW);
+  // Per-channel phosphor persistence (frame-to-frame keep factor). HEAD only
+  // used this vector inside exp(-time * ...), which decayed to zero within
+  // about a minute and silently killed the bass excitation.
   let phosphorDecay = vec3<f32>(0.92, 0.88, 0.95);
-  let decayFactor = exp(-time * vec3<f32>(1.2, 0.8, 1.6) * (1.0 - phosphorDecay));
-  let excitation = 0.55 + 0.45 * bassExcite * decayFactor;
+  let excitation = vec3<f32>(0.55 + 0.45 * bassExcite);
 
   var clickShell = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);
@@ -122,13 +139,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let historyCoord = clamp(pixel, vec2<i32>(0), vec2<i32>(i32(dims.x) - 1, i32(dims.y) - 1));
   let afterimage = textureLoad(dataTextureC, historyCoord, 0).rgb;
-  let trail = mix(afterimage, finalColor, 0.12);
+  // Idea 1: honest phosphor persistence. Each channel keeps max(new beam,
+  // decayed glow) at its own rate, so moving the lens leaves trails that
+  // shift colour as the faster phosphors die out first. Compared in display
+  // space (C holds ACES output) so the glow always decays.
+  let display = acesFilm(finalColor * 1.15);
+  let trail = max(display, afterimage * phosphorDecay);
   let phosphorHue = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + time * 0.7 + dist * 18.0);
-  finalColor = mix(finalColor, trail, 0.22 * lensMask)
-    + phosphorHue * (rasterBeam * 0.12 + clickShell * 0.25 + heldPressure * 0.08);
-
-  finalColor = acesFilm(finalColor * 1.15);
-
+  finalColor = mix(display, trail, 0.6 * lensMask)
+    + phosphorHue * (rasterBeam * 0.12 + clickShell * 0.25 + heldPressure * 0.08) * 0.7;
+  finalColor = clamp(finalColor, vec3<f32>(0.0), vec3<f32>(1.0));
   let magnification = lensMask * zoomLevel * 0.1;
   let exciteAlpha = clamp(dot(excitation, vec3<f32>(0.333)), 0.0, 1.0);
   let finalAlpha = clamp(exciteAlpha * magnification * depth * 3.5, 0.15, 0.96);

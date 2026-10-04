@@ -16,7 +16,7 @@
     "mouse-driven",
     "temporal"
   ],
-  "description": "Prismatic displacement with anamorphic spectral lens dispersion, depth-weighted magnification, and chromatic rotation.",
+  "description": "Prism lens at the cursor: white-balanced spectral dispersion with a Cauchy fan, a rotating anamorphic axis, depth-weighted magnification and a Fresnel rim.",
   "params": [
     {
       "id": "zoomAmount",

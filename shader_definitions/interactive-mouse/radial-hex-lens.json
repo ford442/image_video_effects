@@ -2,9 +2,12 @@
   "id": "radial-hex-lens",
   "name": "Radial Hex Lens",
   "url": "shaders/radial-hex-lens.wgsl",
-  "description": "Interactive hexagonal mosaic lens with radial magnification, FBM organic warp, depth-aware fog, and semantic alpha for slot-chain compositing.",
+  "description": "Interactive compound-eye lens: inside the radial magnifier every hex cell is a tiny domed lens with its own magnified, slightly parallaxed view, lit from the cursor side. FBM warp, hex bokeh, depth-aware fog and semantic alpha for slot-chain compositing.",
   "features": [
     "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "hex-bokeh",
     "upgraded-rgba"
   ],
   "workgroup_size": [16, 16, 1],

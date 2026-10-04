@@ -2,7 +2,7 @@
   "id": "alpha-multi-layer-glass",
   "name": "Alpha Multi-Layer Glass",
   "url": "shaders/alpha-multi-layer-glass.wgsl",
-  "description": "Multi-layer glass refraction with RGBA data channels. Simulates looking through 3 layers of procedurally-distorted glass with Fresnel reflection, chromatic aberration, GGX roughness, and per-layer tinting. Alpha stores accumulated transmittance.",
+  "description": "Multi-layer glass stack: three refracting panes with their own surfaces and parallax, frosted scatter, Fresnel, chromatic aberration and green Beer-Lambert pane edges. Alpha stores accumulated transmittance.",
   "tags": [
     "glass",
     "refraction",

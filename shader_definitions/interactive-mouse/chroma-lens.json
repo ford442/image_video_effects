@@ -2,7 +2,7 @@
   "id": "chroma-lens",
   "name": "Chroma Lens",
   "url": "shaders/chroma-lens.wgsl",
-  "description": "Held magnifying lens with chromatic edge splitting, actual tangential edge blur, rapid rim runners, audio response, and click-launched glass fronts.",
+  "description": "Held magnifying lens whose edge dispersion is sampled across seven wavelengths for continuous rainbow fringes, with astigmatic edge blur (tangential smear plus a shorter radial one), rim runners, audio response and click-launched glass fronts.",
   "params": [
     {
       "id": "magnification",

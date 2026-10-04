@@ -2,7 +2,13 @@
 //  Holo Projector — Premium Volumetric Hologram
 //  Category: visual-effects
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, temporal,
-//            holographic-scan, speckle-interference, depth-aware
+//            holographic-scan, laser-speckle, bragg-colour, refresh-persistence, ACES
+//  Ideas:    1. object-locked laser speckle — stable grains in image space that boil slowly
+//               and slide with depth parallax as the viewer (cursor) moves
+//            2. Bragg colour shift — the reconstructed wavelength drifts across the plate
+//               with viewing angle, rainbow-hologram style (replaces the cosine palette)
+//            3. rolling refresh band — freshly redrawn rows are crisp, older rows persist
+//               as display-space ghosts
 //  Complexity: High
 // ═══════════════════════════════════════════════════════════════════
 
@@ -27,8 +33,6 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-const TAU: f32 = 6.28318530718;
-
 fn hash12(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
 }
@@ -43,12 +47,22 @@ fn aces(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn holoPalette(t: f32, hueShift: f32) -> vec3<f32> {
-  let a = vec3<f32>(0.35, 0.65, 0.75);
-  let b = vec3<f32>(0.45, 0.55, 0.65);
-  let c = vec3<f32>(1.0, 1.0, 1.0);
-  let d = vec3<f32>(hueShift, hueShift + 0.33, hueShift + 0.67);
-  return a + b * cos(TAU * (c * t + d));
+// Smooth visible-spectrum approximation (400–700 nm), normalised so the
+// laser lines read as saturated but not dim.
+fn wavelengthRGB(lambda: f32) -> vec3<f32> {
+  let x = clamp((lambda - 400.0) / 300.0, 0.0, 1.0);
+  let r = smoothstep(0.45, 0.75, x) + smoothstep(0.15, 0.0, x) * 0.35;
+  let g = 1.0 - smoothstep(0.0, 0.35, abs(x - 0.5));
+  let b = 1.0 - smoothstep(0.1, 0.5, x);
+  return vec3<f32>(r, g, b) * 0.85 + vec3<f32>(0.12);
+}
+
+fn valueNoise(p: vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let w = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash12(i), hash12(i + vec2<f32>(1.0, 0.0)), w.x),
+             mix(hash12(i + vec2<f32>(0.0, 1.0)), hash12(i + vec2<f32>(1.0, 1.0)), w.x), w.y);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -71,40 +85,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
-  let binVal = plasmaBuffer[(u32(uv.x * 7.0) % 8u) + 1u].x;
 
-  // Critically damped spring cursor in extraBuffer[133..138]
-  let rawMouse = u.zoom_config.yz;
+  // Raw pointer: the old extraBuffer[133..138] spring raced (pixel (0,0) wrote
+  // while every other pixel read) and the buffer is re-uploaded each frame.
+  let mouse = u.zoom_config.yz;
   let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
-  let isWriter = (global_id.x == 0u && global_id.y == 0u);
-  let hasState = (arrayLength(&extraBuffer) > 138u);
-
-  var mouse = rawMouse;
-  if (hasState && extraBuffer[138] > 0.5) {
-    mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  }
-
-  if (isWriter && hasState) {
-    let lastTime = extraBuffer[137];
-    let dt = clamp(time - lastTime, 0.0, 0.1);
-    var sPos = mouse;
-    var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[138] < 0.5) {
-      sPos = rawMouse;
-      sVel = vec2<f32>(0.0);
-    }
-    let stiffness = 36.0;
-    let damping = 12.0;
-    let accel = (rawMouse - sPos) * stiffness - sVel * damping;
-    sVel = sVel + accel * dt;
-    sPos = sPos + sVel * dt;
-    extraBuffer[133] = sPos.x;
-    extraBuffer[134] = sPos.y;
-    extraBuffer[135] = sVel.x;
-    extraBuffer[136] = sVel.y;
-    extraBuffer[137] = time;
-    extraBuffer[138] = 1.0;
-  }
 
   // Exact previous frame from dataTextureC
   let prev = textureLoad(dataTextureC, pixel, 0);
@@ -134,15 +119,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let srcA = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
   let holoBase = vec3<f32>(srcR, srcG, srcB);
 
-  // Volumetric quantum speckle & interference
-  let speckle = (hash12(uv * 500.0 + time) - 0.5) * (0.15 + treble * 0.25) * (1.0 - focusRegion * 0.5);
-  let fringeAngle = (uv.x * aspect + uv.y) * 90.0 + refreshWave * 2.5 + binVal * 4.0;
+  // Idea 1: object-locked laser speckle. Coherent light gives a grain that is
+  // fixed to the object, not fresh noise each frame. Grains are ~2.5 px in
+  // image space; near depth slides them against the cursor (view parallax),
+  // and the pattern boils slowly by crossfading two seeds. Intensity follows
+  // the exponential speckle law, so most grains are dim and a few sparkle.
+  let viewOff = (mouse - vec2<f32>(0.5)) * (0.5 + depth) * 6.0;
+  let speckleP = vec2<f32>(global_id.xy) / 2.5 + viewOff;
+  let boil = time * (0.6 + treble * 0.8);
+  let boilA = valueNoise(speckleP + floor(boil) * 17.3);
+  let boilB = valueNoise(speckleP + (floor(boil) + 1.0) * 17.3);
+  let speckleH = mix(boilA, boilB, smoothstep(0.0, 1.0, fract(boil)));
+  let speckleI = -log(max(1.0 - speckleH, 0.02)) * 1.3;
+  let speckleAmt = (0.22 + treble * 0.25) * (1.0 - focusRegion * 0.6);
+
+  let fringeAngle = (uv.x * aspect + uv.y) * 90.0 + refreshWave * 2.5 + mids * 3.0;
   let interference = 0.5 + 0.5 * cos(fringeAngle);
 
-  // Holographic tinting & depth slicing
-  let tint = holoPalette(holoHue + depth * 0.25 + time * 0.04, holoHue);
+  // Idea 2: Bragg colour shift. A rainbow hologram replays a wavelength that
+  // depends on viewing angle, so the colour sweeps across the plate and slides
+  // as the eye (cursor) moves. Hue picks the central laser line; depth tilts it.
+  let viewVec = (uv - mouse) * vec2<f32>(aspect, 1.0);
+  let lambda0 = 400.0 + fract(0.33 + holoHue) * 300.0;
+  let lambda = clamp(lambda0 * (1.0 + viewVec.x * 0.16 - viewVec.y * 0.06 + depth * 0.05), 400.0, 700.0);
+  let tint = wavelengthRGB(lambda);
   var color = holoBase * (0.65 + interference * 0.4) + tint * (scanLine * 0.8 + 0.15 * refreshWave);
-  color = color + vec3<f32>(speckle);
+  color = color * mix(1.0, speckleI, speckleAmt);
 
   // Focus stabilization & color enrichment
   color = mix(color, holoBase * 1.25 + tint * 0.2, focusRegion);
@@ -161,16 +163,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
   color += tint * (clickFlash * 0.85);
 
-  // Temporal persistence blend with dataTextureC
-  let persistFactor = mix(0.18, 0.04, focusRegion);
-  color = mix(color, prev.rgb, persistFactor);
+  // Idea 3: rolling refresh band. One bright band rolls down the plate; rows
+  // it just redrew are crisp and slightly hot, and rows it passed long ago
+  // lean on the previous frame (C holds ACES output, so blend in display space).
+  let bandPos = fract(time * scanSpeed * 0.22);
+  let sinceBand = fract(bandPos - uv.y);
+  let bandGlow = exp(-sinceBand * 40.0) * (1.0 - focusRegion * 0.5);
+  color += tint * bandGlow * 0.35;
 
   // ACES Tonemap
-  let finalRGB = aces(color * (1.0 + bass * 0.2));
+  // Clamp first: the refresh wave and speckle can push dark pixels negative,
+  // and this ACES fit maps negatives to bright values.
+  let toned = aces(max(color, vec3<f32>(0.0)) * (1.0 + bass * 0.2));
+  let persistFactor = mix(mix(0.04, 0.3, sinceBand), 0.04, focusRegion);
+  let finalRGB = mix(toned, prev.rgb, persistFactor);
 
   // Semantic alpha: blend source alpha with emission luminance & depth
   let luma = dot(finalRGB, vec3<f32>(0.299, 0.587, 0.114));
-  let alpha = clamp(mix(srcA, 0.4 + luma * 0.6, 0.75) + focusRegion * 0.15 + clickFlash * 0.1, 0.2, 1.0);
+  let alpha = clamp(mix(srcA, 0.4 + luma * 0.6, 0.75) + focusRegion * 0.15 + clickFlash * 0.1 + bandGlow * 0.1, 0.2, 1.0);
   let finalPixel = vec4<f32>(finalRGB, alpha);
 
   textureStore(writeTexture, pixel, finalPixel);
