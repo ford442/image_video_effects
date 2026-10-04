@@ -108,8 +108,8 @@ check('agent brief reintroduces config.y = delta_time', (dir) =>
   patch(
     dir,
     'docs/agents/WGSL_BUILTINS_GENERATIVE.md',
-    '.y = rippleCount (0-50 active ripples)',
-    '.y = delta_time',
+    '`u.config` = (time s, rippleCount 0–50, resolution w, h)',
+    'config.y = delta_time',
   ),
 );
 
