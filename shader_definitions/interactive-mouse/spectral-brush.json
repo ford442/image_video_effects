@@ -15,7 +15,7 @@
     "luminance-key",
     "upgraded-rgba"
   ],
-  "description": "Paints a spectral blackbody flame that follows the mouse, blended in OkLab and split-toned. Audio bass inflates the brush and bloom, while chromatic separation, depth diffusion, and alpha-layered luminance-key compositing add atmosphere.",
+  "description": "Paints a spectral blackbody flame that follows the mouse, blended in OkLab and split-toned. Audio bass inflates the brush and bloom, while chromatic separation, depth diffusion, and alpha-layered luminance-key compositing add atmosphere. Strokes cool along the blackbody locus as they fade, hot paint throws a heat-haze shimmer above it, and cooling embers flicker with cinders.",
   "params": [
     {
       "id": "brush-size",

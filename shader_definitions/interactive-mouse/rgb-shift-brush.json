@@ -2,7 +2,7 @@
   "id": "rgb-shift-brush",
   "name": "RGB Shift Brush",
   "url": "shaders/rgb-shift-brush.wgsl",
-  "description": "Held-pointer RGB separation brush with exact advected mask history, rapid spectral ribbons, stylized channel transmission, three-band audio response, and bounded click fronts.",
+  "description": "Held-pointer RGB separation brush with exact advected mask history, rapid spectral ribbons, stylized channel transmission, three-band audio response, and bounded click fronts. A slower long-wave tail mask leaves a lingering blue fringe behind the trail, and dense trail regions open into a seven-tap prism fan.",
   "params": [
     {
       "id": "shift",

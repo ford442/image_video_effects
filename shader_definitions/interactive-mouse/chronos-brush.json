@@ -3,7 +3,7 @@
   "name": "Chronos Brush",
   "category": "interactive-mouse",
   "url": "shaders/chronos-brush.wgsl",
-  "description": "Freeze time by painting over the video feed with chromatic brush tints that cycle per click. Audio boosts brush size and opacity; depth modulates paint intensity.",
+  "description": "Freeze time by painting over the video feed with chromatic brush tints that cycle per click. Audio boosts brush size and opacity; depth modulates paint intensity. A chronophotograph shutter stamps frozen frames in ticks, and fading frozen paint thaws and drips downward before it vanishes.",
   "params": [
     {
       "id": "brushSize",

@@ -3,7 +3,7 @@
   "name": "Mouse Ink Bleed",
   "url": "shaders/mouse-ink-bleed.wgsl",
   "category": "interactive-mouse",
-  "description": "Organic ink that bleeds and diffuses outward from the mouse position with domain-warped FBM turbulence, temporal trails, audio envelope reactivity, and depth-aware compositing.",
+  "description": "Organic ink that bleeds and diffuses outward from the mouse position with domain-warped FBM turbulence, temporal trails, audio envelope reactivity, and depth-aware compositing. Wet ink wicks along paper fibres in hairline feathers and leaves a dark tide-line rim where the wet front dries.",
   "tags": ["ink", "bleed", "paint", "organic", "diffusion", "artistic", "mouse-driven", "audio-reactive", "temporal-feedback", "depth-aware"],
   "features": [
     "mouse-driven",

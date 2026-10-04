@@ -3,9 +3,10 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
 //  Complexity: High
-//  Upgraded: 2026-09-06
-//  A packing: ACES display RGBA
-//  Motion: spring bristle stroke advection + wet paint ripple spatters
+//  Upgraded: 2026-10-04
+//  Ideas: bristle combing along the stroke tangent; dry-brush skips at speed; raking light on impasto grooves
+//  A packing: ACES display RGBA (history decoded with acesInverse); texel (0,0) = cursor state (prevMouse.xy, vel.xy)
+//  Motion: tangent-combed bristle stroke + wet paint ripple spatters
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -60,6 +61,27 @@ fn fbm(p0: vec2<f32>) -> f32 {
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn acesInverse(yIn: vec3<f32>) -> vec3<f32> {
+  let y = clamp(yIn, vec3<f32>(0.0), vec3<f32>(0.98));
+  let qa = 2.51 - 2.43 * y;
+  let qb = 0.03 - 0.59 * y;
+  let qc = -0.14 * y;
+  return (-qb + sqrt(max(qb * qb - 4.0 * qa * qc, vec3<f32>(0.0)))) / (2.0 * qa);
+}
+
+// Paint relief height: HEAD's drifting bristle noise at rest, blending into
+// grooves combed parallel to the stroke (across-axis frequency high, along-axis low).
+fn grooveHeight(p: vec2<f32>, spring: vec2<f32>, aspectVec: vec2<f32>, tangent: vec2<f32>,
+                speedN: f32, time: f32, strokeSpeed: f32) -> f32 {
+  let bristleCoord = p * vec2<f32>(45.0, 140.0) + vec2<f32>(time * 0.15 * strokeSpeed, -time * 0.08 * strokeSpeed);
+  let rest = noise2(bristleCoord);
+  let local = (p - spring) * aspectVec;
+  let across = dot(local, vec2<f32>(-tangent.y, tangent.x));
+  let along = dot(local, tangent);
+  let comb = noise2(vec2<f32>(across * 260.0, along * 9.0 - time * strokeSpeed * 0.5));
+  return mix(rest, comb, speedN);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -137,6 +159,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
 
+  // Cursor state texel: A(0,0) holds (prevMouse.xy, smoothed per-frame velocity.xy);
+  // every pixel reads last frame's copy exactly from C, only (0,0) writes it.
+  let isStateTexel = gid.x == 0u && gid.y == 0u;
+  let stateC = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+  let mouseValid = all(mouse >= vec2<f32>(0.0)) && all(mouse <= vec2<f32>(1.0));
+  let rawVel = select(vec2<f32>(0.0), clamp(mouse - stateC.xy, vec2<f32>(-0.08), vec2<f32>(0.08)), mouseValid);
+  let strokeVel = mix(clamp(stateC.zw, vec2<f32>(-0.08), vec2<f32>(0.08)), rawVel, 0.35);
+  let velA = strokeVel * aspectVec;
+  let speedN = smoothstep(0.002, 0.025, length(velA));
+  let tangent = select(vec2<f32>(1.0, 0.0), velA / max(length(velA), 1e-5), length(velA) > 1e-5);
+
   // Spring cursor proximity & velocity
   let toSpring = (uv - spring) * aspectVec;
   let dist = length(toSpring);
@@ -146,7 +179,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let strokeAngle = atan2(toSpring.y, toSpring.x);
   let bristleCoord = uv * vec2<f32>(45.0, 140.0) + vec2<f32>(time * 0.15 * strokeSpeed, -time * 0.08 * strokeSpeed);
   let bristleNoise = fbm(bristleCoord);
-  let strokeFlow = sin(strokeAngle * 4.0 + time * strokeSpeed * 3.0 + bristleNoise * 3.5) * 0.5 + 0.5;
+  let restFlow = sin(strokeAngle * 4.0 + time * strokeSpeed * 3.0 + bristleNoise * 3.5) * 0.5 + 0.5;
+
+  // Idea 1 — bristle combing: a moving brush leaves grooves parallel to its path.
+  let px = 2.0 / dims;
+  let groove = grooveHeight(uv, spring, aspectVec, tangent, speedN, time, strokeSpeed);
+  let strokeFlow = mix(restFlow, smoothstep(0.2, 0.8, groove), speedN);
 
   let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
 
@@ -156,7 +194,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let warmGlaze = mix(glazePalette, vec3<f32>(1.0, 0.75, 0.45), bass * 0.4);
 
   // Impasto layer formulation
-  let brushMask = clamp(strokeActive * (0.35 + strokeFlow * 0.65) * (0.8 + bass * 0.4) + spatterEnergy * 0.6, 0.0, 1.0);
+  // Idea 2 — dry-brush skips: faster strokes carry thinner paint, so groove valleys drop out.
+  let dryThreshold = speedN * (0.55 - colorIntensity * 0.2);
+  let paintLoad = mix(1.0, smoothstep(dryThreshold - 0.08, dryThreshold + 0.08, groove), speedN);
+  let brushMask = clamp(strokeActive * (0.35 + strokeFlow * 0.65) * (0.8 + bass * 0.4) * paintLoad + spatterEnergy * 0.6, 0.0, 1.0);
   let impastoRelief = pow(brushMask, 2.0) * (0.3 + bristleNoise * 0.7 * textureAmount);
   let wetBorder = smoothstep(brushRadius * 0.9, brushRadius * 0.5, dist) * smoothstep(brushRadius * 0.1, brushRadius * 0.5, dist);
 
@@ -165,14 +206,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   hdr += glazePalette * impastoRelief * (0.5 + mids * 0.6);
   hdr += vec3<f32>(1.0, 0.9, 0.7) * wetBorder * (0.2 + treble * 0.6 + binA * 0.3);
 
+  // Idea 3 — raking light: upper-left light across the groove relief (y=0 is top).
+  let hR = grooveHeight(uv + vec2<f32>(px.x, 0.0), spring, aspectVec, tangent, speedN, time, strokeSpeed);
+  let hL = grooveHeight(uv - vec2<f32>(px.x, 0.0), spring, aspectVec, tangent, speedN, time, strokeSpeed);
+  let hD = grooveHeight(uv + vec2<f32>(0.0, px.y), spring, aspectVec, tangent, speedN, time, strokeSpeed);
+  let hU = grooveHeight(uv - vec2<f32>(0.0, px.y), spring, aspectVec, tangent, speedN, time, strokeSpeed);
+  let rake = clamp(((hR - hL) + (hD - hU)) * 0.7, -1.0, 1.0);
+  hdr *= 1.0 + rake * brushMask * textureAmount * (0.7 + mids * 0.3);
+
   // Canvas grain relief
   let canvasGrain = (noise2(uv * 400.0) - 0.5) * 0.06 * textureAmount * (1.0 + treble * 0.4);
   hdr += vec3<f32>(canvasGrain);
 
   // Exact previous frame history load from dataTextureC for persistent paint accumulation
+  // A is ACES display, so decode it back to scene-linear before mixing into HDR.
   let hist = textureLoad(dataTextureC, coord, 0);
+  let histHdr = select(acesInverse(hist.rgb), hdr, isStateTexel);
   let paintPersistence = mix(0.06, 0.30, brushMask);
-  hdr = mix(hdr, hist.rgb, paintPersistence);
+  hdr = mix(hdr, histHdr, paintPersistence);
 
   let finalRGB = acesToneMap(hdr);
   let luma = dot(finalRGB, vec3<f32>(0.2126, 0.7152, 0.0722));
@@ -180,6 +231,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let outCol = vec4<f32>(finalRGB, semanticAlpha);
 
   textureStore(writeTexture, coord, outCol);
-  textureStore(dataTextureA, coord, outCol);
+  textureStore(dataTextureA, coord, select(outCol, vec4<f32>(select(stateC.xy, mouse, mouseValid), strokeVel), isStateTexel));
   textureStore(writeDepthTexture, coord, vec4<f32>(clamp(mix(depth, depth * depthFade + impastoRelief * 0.4, 0.35), 0.0, 1.0), 0.0, 0.0, 0.0));
 }
