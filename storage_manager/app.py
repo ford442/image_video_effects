@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
 from . import config, state, models, middleware, intents, utils
-from .routes import system, locations, shaders, preset_packs, library, media, sync, ftp
+from .routes import system, locations, shaders, preset_packs, library, media, sync, ftp, osc
 
 
 @asynccontextmanager
@@ -69,6 +69,7 @@ app.include_router(library.router)
 app.include_router(media.router)
 app.include_router(sync.router)
 app.include_router(ftp.router)
+app.include_router(osc.router)
 
 _delegate_modules = (state, intents, config, utils, models, middleware)
 

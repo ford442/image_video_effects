@@ -19,6 +19,7 @@ import { VideoSourcePanel } from './panels/VideoSourcePanel';
 import { WebcamSuggestionsPanel } from './panels/WebcamSuggestionsPanel';
 import { GenerativeSourcePanel } from './panels/GenerativeSourcePanel';
 import { useLiveControl } from './hooks/useLiveControl';
+import { useOscControl } from './hooks/useOscControl';
 import { useCoordinateNavigation } from './hooks/useCoordinateNavigation';
 import { useShaderMenuOptions } from './hooks/useShaderMenuOptions';
 import { useAiVjAutoTransition } from './hooks/useAiVjAutoTransition';
@@ -143,6 +144,15 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
         autoTransitionMode: autoTransition.autoTransitionMode,
     });
 
+    const osc = useOscControl({
+        modes,
+        availableModes,
+        setMode,
+        onSetSlotParam,
+        onTriggerNextTransition,
+        setAudioReactiveAmount,
+    });
+
     const { shaders: ratedShaders, rateShader } = useShaderRatings();
     const { ratingMap, slotMenuOptions, generativeMenuOptions } = useShaderMenuOptions({
         availableModes,
@@ -186,6 +196,7 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                 activeSlot={activeSlot}
                 setActiveSlot={setActiveSlot}
                 liveControl={liveControl}
+                osc={osc}
                 isAiVjMode={isAiVjMode}
                 autoTransitionOpen={autoTransition.autoTransitionOpen}
                 setAutoTransitionOpen={autoTransition.setAutoTransitionOpen}

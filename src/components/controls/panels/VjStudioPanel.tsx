@@ -3,6 +3,8 @@ import { RenderMode, SlotParams } from '../../../renderer/types';
 import { SharedChain } from '../../../services/layerChainShare';
 import { UseLiveControlReturn } from '../hooks/useLiveControl';
 import { LiveControlPanel } from './LiveControlPanel';
+import { OscPanel } from './OscPanel';
+import type { UseOscControlReturn } from '../hooks/useOscControl';
 import { loadMyVjSets, deleteMyVjSet, mergeMyVjSets } from '../../../services/myVjSets';
 import { loadVJHistory, clearVJHistory, VJHistoryEntry } from '../../../services/vjHistory';
 import { buildVjSetExport, parseVjSetExport, serializeVjSetExport } from '../../../services/vjSetExport';
@@ -18,6 +20,7 @@ export interface VjStudioPanelProps {
     activeSlot: number;
     setActiveSlot: (index: number) => void;
     liveControl: UseLiveControlReturn;
+    osc?: UseOscControlReturn;
     isAiVjMode: boolean;
     autoTransitionOpen: boolean;
     setAutoTransitionOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -63,6 +66,7 @@ export const VjStudioPanel: React.FC<VjStudioPanelProps> = ({
     activeSlot,
     setActiveSlot,
     liveControl,
+    osc,
     isAiVjMode,
     autoTransitionOpen,
     setAutoTransitionOpen,
@@ -93,6 +97,7 @@ export const VjStudioPanel: React.FC<VjStudioPanelProps> = ({
     const [setsOpen, setSetsOpen] = useState(false);
     const [shareOpen, setShareOpen] = useState(true);
     const [midiOpen, setMidiOpen] = useState(true);
+    const [oscOpen, setOscOpen] = useState(() => osc?.oscEnabled ?? false);
     const [history, setHistory] = useState<VJHistoryEntry[]>([]);
     const [myVjSets, setMyVjSets] = useState<MyVjSet[]>([]);
     const [vjSetName, setVjSetName] = useState('');
@@ -269,6 +274,21 @@ export const VjStudioPanel: React.FC<VjStudioPanelProps> = ({
                             </div>
                         )}
                     </div>
+
+                    {/* OSC */}
+                    {osc && (
+                        <div>
+                            <div
+                                className="gold-section-header"
+                                style={{ fontSize: '11px', marginTop: 0, cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}
+                                onClick={() => setOscOpen(o => !o)}
+                            >
+                                <span>OSC{osc.oscStatus === 'open' ? ' ●' : ''}</span>
+                                <span>{oscOpen ? '▼' : '▶'}</span>
+                            </div>
+                            {oscOpen && <OscPanel osc={osc} />}
+                        </div>
+                    )}
 
                     {/* Share & export */}
                     <div>
