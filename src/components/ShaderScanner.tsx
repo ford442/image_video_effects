@@ -134,14 +134,6 @@ function resolveProbeFailure(): WebGpuProbeSerializable | null {
   return null;
 }
 
-function deviceHasSubgroups(device: GPUDevice): boolean {
-  return (
-    getAdoptedSupportsSubgroups() ||
-    device.features.has('subgroups') ||
-    device.features.has('chromium-experimental-subgroups' as GPUFeatureName)
-  );
-}
-
 export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, onClose, onTestShader, thumbnailHost }) => {
   const [results, setResults] = useState<ShaderScanResult[]>([]);
   const [isScanning, setIsScanning] = useState(false);
