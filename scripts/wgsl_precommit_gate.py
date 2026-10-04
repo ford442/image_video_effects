@@ -92,7 +92,38 @@ def discover_changed_files(base_ref: str) -> list[Path]:
         p = PROJECT_ROOT / line.strip()
         if p.suffix == ".wgsl" and p.exists():
             files.append(p)
-    return files
+    return with_library_dependents(files)
+
+
+_INCLUDE_LINE_RE = re.compile(r'^[ \t]*#include[ \t]+"([^"]+)"[ \t]*$', re.MULTILINE)
+
+
+def with_library_dependents(files: list[Path]) -> list[Path]:
+    """
+    Add every shader that includes a changed `_` library. Editing _prelude.wgsl
+    changes every file that includes it, so a changed-files run must check them
+    too. Repeats until no new library joins, for libraries that include others.
+    """
+    libraries = {p.name for p in files if p.parent == SHADERS_DIR and p.name.startswith("_")}
+    if not libraries or not SHADERS_DIR.exists():
+        return files
+    result = list(files)
+    seen = set(files)
+    sources = {p: p.read_text(encoding="utf-8") for p in sorted(SHADERS_DIR.glob("*.wgsl"))}
+    grew = True
+    while grew:
+        grew = False
+        for path, text in sources.items():
+            if path in seen:
+                continue
+            if not libraries.intersection(_INCLUDE_LINE_RE.findall(text)):
+                continue
+            result.append(path)
+            seen.add(path)
+            if path.name.startswith("_"):
+                libraries.add(path.name)
+            grew = True
+    return result
 
 
 def discover_all_shader_files() -> list[Path]:

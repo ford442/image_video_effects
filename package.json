@@ -66,7 +66,7 @@
     "verify:wasm-bridge-sync": "node scripts/verify-wasm-bridge-sync.mjs",
     "verify:naga-wasm": "node scripts/verify-naga-wasm.mjs",
     "verify:wgsl-include": "node scripts/verify-wgsl-include.mjs",
-    "shaders:libs": "python3 scripts/generate_shader_libs.py",
+    "shaders:libs": "python3 scripts/generate_shader_libs.py && node scripts/emit-wasm-bridge.mjs",
     "verify:naga-wasm:all": "node scripts/verify-naga-wasm.mjs --all",
     "naga-wasm:build": "bash tools/naga_wasm/build.sh",
     "naga-wasm:test": "node --test scripts/verify-naga-wasm.test.mjs",

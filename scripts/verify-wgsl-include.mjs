@@ -114,6 +114,19 @@ function verifyCallSites() {
     }
   }
 
+  // The app deploy does not ship public/shaders and the storage sync never
+  // uploads `_` libraries, so the runtime seams must take _prelude.wgsl from the
+  // bundle (src/wasm/bridge/wgslLibraries.ts) rather than a sibling URL.
+  for (const file of ['src/utils/fetchShaderWgsl.ts', 'src/wasm/bridge/shader.ts']) {
+    const p = path.join(ROOT, file);
+    if (fs.existsSync(p) && !/withBundledLibraries\s*\(/.test(fs.readFileSync(p, 'utf8'))) {
+      fail(
+        `❌ ${file} must wrap its include resolver in withBundledLibraries() — ` +
+          'without it _prelude.wgsl is fetched from hosts that do not serve it',
+      );
+    }
+  }
+
   // C++ must reject a surviving directive rather than grow a second parser.
   const pipeline = path.join(ROOT, 'wasm_renderer/pipeline.cpp');
   if (fs.existsSync(pipeline)) {

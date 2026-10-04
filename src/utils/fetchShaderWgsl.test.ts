@@ -65,14 +65,13 @@ describe('fetchShaderWgsl', () => {
   });
 
   describe('#include expansion', () => {
-    it('expands a prelude include before returning', async () => {
+    it('expands a prelude include from the bundle, with no request for _prelude.wgsl', async () => {
+      const urls: string[] = [];
       global.fetch = jest.fn(async (input: RequestInfo | URL) => {
         const url = String(input);
+        urls.push(url);
         if (url.endsWith('./shaders/zz-includes.wgsl')) {
           return new Response('#include "_prelude.wgsl"\n@compute fn main() {}', { status: 200 });
-        }
-        if (url.endsWith('./shaders/_prelude.wgsl')) {
-          return new Response('@group(0) @binding(0) var u_sampler: sampler;', { status: 200 });
         }
         return new Response('not found', { status: 404 });
       }) as typeof fetch;
@@ -81,19 +80,39 @@ describe('fetchShaderWgsl', () => {
 
       expect(code).toContain('@group(0) @binding(0) var u_sampler: sampler;');
       expect(code).toContain('@compute fn main() {}');
-      expect(code).not.toContain('#include "_prelude.wgsl"');
+      // The prelude's own banner mentions the directive inside a comment; no live one survives.
+      expect(code).not.toMatch(/^#include/m);
+      expect(urls.some((u) => u.includes('_prelude.wgsl'))).toBe(false);
     });
 
-    it('resolves the library next to the shader it was served from', async () => {
+    it('expands a prelude include in storage-API JSON, which has no sibling directory', async () => {
+      global.fetch = jest.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes('/api/shaders/zz-api/code')) {
+          return new Response(JSON.stringify({ code: '#include "_prelude.wgsl"\nfn main() {}' }), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          });
+        }
+        return new Response('not found', { status: 404 });
+      }) as typeof fetch;
+
+      const code = await fetchShaderWgsl('zz-api', 'https://cdn.example/shaders/zz-api.wgsl');
+
+      expect(code).toContain('var<uniform> u: Uniforms;');
+      expect(code).toContain('fn main() {}');
+    });
+
+    it('resolves any other library next to the shader it was served from', async () => {
       const urls: string[] = [];
       global.fetch = jest.fn(async (input: RequestInfo | URL) => {
         const url = String(input);
         urls.push(url);
         if (url === 'https://cdn.example/shaders/zz-cdn.wgsl') {
-          return new Response('#include "_prelude.wgsl"\nfn main() {}', { status: 200 });
+          return new Response('#include "_lib.wgsl"\nfn main() {}', { status: 200 });
         }
-        if (url === 'https://cdn.example/shaders/_prelude.wgsl') {
-          return new Response('fn prelude() {}', { status: 200 });
+        if (url === 'https://cdn.example/shaders/_lib.wgsl') {
+          return new Response('fn lib() {}', { status: 200 });
         }
         return new Response('not found', { status: 404 });
       }) as typeof fetch;
@@ -101,8 +120,32 @@ describe('fetchShaderWgsl', () => {
       const code = await fetchShaderWgsl('zz-cdn', 'https://cdn.example/shaders/zz-cdn.wgsl');
 
       // The library must come from the CDN the shader came from, not same-origin.
-      expect(code).toContain('fn prelude() {}');
-      expect(urls).toContain('https://cdn.example/shaders/_prelude.wgsl');
+      expect(code).toContain('fn lib() {}');
+      expect(urls).toContain('https://cdn.example/shaders/_lib.wgsl');
+    });
+
+    it('falls through to the next host when a copy cannot resolve its includes', async () => {
+      const error = jest.spyOn(console, 'error').mockImplementation(() => {});
+      global.fetch = jest.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.endsWith('./shaders/zz-split.wgsl')) {
+          return new Response('#include "_lib.wgsl"\nfn main() { /* local */ }', { status: 200 });
+        }
+        if (url === 'https://cdn.example/shaders/zz-split.wgsl') {
+          return new Response('#include "_lib.wgsl"\nfn main() { /* cdn */ }', { status: 200 });
+        }
+        if (url === 'https://cdn.example/shaders/_lib.wgsl') {
+          return new Response('fn lib() {}', { status: 200 });
+        }
+        return new Response('not found', { status: 404 });
+      }) as typeof fetch;
+
+      const code = await fetchShaderWgsl('zz-split', 'https://cdn.example/shaders/zz-split.wgsl');
+
+      expect(code).toContain('cdn');
+      expect(code).toContain('fn lib() {}');
+      expect(error).toHaveBeenCalledWith(expect.stringContaining('file not found'));
+      error.mockRestore();
     });
 
     it('returns null rather than unexpanded source when a library is missing', async () => {

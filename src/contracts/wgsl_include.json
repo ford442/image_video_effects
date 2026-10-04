@@ -25,6 +25,7 @@
   "consumers": {
     "typescript": [
       "src/wasm/bridge/wgslInclude.ts",
+      "src/wasm/bridge/wgslLibraries.ts",
       "src/utils/fetchShaderWgsl.ts",
       "src/wasm/bridge/shader.ts"
     ],
@@ -32,6 +33,12 @@
     "node": ["scripts/verify-naga-wasm.mjs"],
     "cpp": ["wasm_renderer/pipeline.cpp"],
     "cppNote": "C++ does NOT parse includes. Every byte of WGSL reaches LoadShader as a string that already passed through src/wasm/bridge/shader.ts, so the C++ side only asserts that no directive survived and fails loudly if one did."
+  },
+  "bundledLibraries": {
+    "module": "src/wasm/bridge/wgslLibraries.ts",
+    "names": ["_prelude.wgsl"],
+    "generatedBy": "scripts/generate_shader_libs.py (checked by its --check mode)",
+    "reason": "The prelude describes the bind-group layout of the renderer in the same bundle, so the bundled copy is authoritative. Both runtime seams resolve it from the bundle before trying a sibling URL: the app deploy does not ship public/shaders, the storage sync never uploads `_` libraries, and blob: or storage-API sources have no sibling directory. Every other library is still fetched as a sibling of the file that includes it."
   },
   "migration": {
     "optIn": true,
