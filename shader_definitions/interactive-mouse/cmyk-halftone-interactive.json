@@ -53,7 +53,7 @@
     "print",
     "audio-reactive"
   ],
-  "description": "Rosette/moire CMYK halftone with rotating screens, registration drift and held plate shear, ink conveyors/packets, click blooms, rainbow registration glow, and three-band audio. A remains CMYK coverage masks.",
+  "description": "Rosette/moire CMYK halftone with rotating screens and per-plate registration drift. A printer's registration target follows the cursor in all four plates, so misregistration shows as coloured fringes; held drag slurs a ghost dot along the press feed. A remains CMYK coverage masks.",
   "updatedParams": [
     {
       "index": 0,

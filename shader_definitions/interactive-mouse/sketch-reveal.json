@@ -3,7 +3,7 @@
   "name": "Sketch Reveal",
   "category": "interactive-mouse",
   "url": "shaders/sketch-reveal.wgsl",
-  "description": "Gradient-directed pencil and charcoal cross-hatching with graphite sheen, paper tooth texture, smudge effects, and chromatic edge darkening. Bass drives reveal progression, mouse acts as the pencil, depth controls stroke size perspective.",
+  "description": "Gradient-directed pencil sketch with tonal-art-map hatching (single, cross and diagonal layers by darkness), paper tooth and graphite sheen. The cursor lays a watercolour wash of the photo that dries slowly from exact history and leaves a darker pigment rim at its edge. Depth controls stroke scale.",
   "params": [
     {
       "id": "brushSize",

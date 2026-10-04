@@ -3780,8 +3780,17 @@
       "history": []
     },
     "blueprint-reveal": {
-      "hash": "cb33591319712604",
-      "history": []
+      "hash": "a5cc1f0b76e1c1cf",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T11:12:07.380Z",
+          "hash": "a5cc1f0b76e1c1cf",
+          "prev_hash": "cb33591319712604",
+          "commit": "9f26f634",
+          "note": "2026-10-04 print-craft-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-print-craft-eight/NOTES.md"
+        }
+      ]
     },
     "brush-strokes": {
       "hash": "e1218cfbd0d29552",
@@ -3828,8 +3837,17 @@
       "history": []
     },
     "cmyk-halftone-interactive": {
-      "hash": "1a0810a684d8ae7b",
-      "history": []
+      "hash": "d247b10d37003852",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T11:12:07.380Z",
+          "hash": "d247b10d37003852",
+          "prev_hash": "1a0810a684d8ae7b",
+          "commit": "9f26f634",
+          "note": "2026-10-04 print-craft-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-print-craft-eight/NOTES.md"
+        }
+      ]
     },
     "codebreaker-reveal": {
       "hash": "9f4dda689c38405e",
@@ -3936,8 +3954,17 @@
       "history": []
     },
     "dynamic-halftone": {
-      "hash": "aaf0eb839e96776f",
-      "history": []
+      "hash": "ce53ec0879228ce6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T11:12:07.380Z",
+          "hash": "ce53ec0879228ce6",
+          "prev_hash": "aaf0eb839e96776f",
+          "commit": "9f26f634",
+          "note": "2026-10-04 print-craft-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-print-craft-eight/NOTES.md"
+        }
+      ]
     },
     "echo-ripple": {
       "hash": "315daeeda8d61ed5",
@@ -4044,8 +4071,17 @@
       "history": []
     },
     "interactive-emboss": {
-      "hash": "de9856e5388a2dba",
-      "history": []
+      "hash": "52e9bf6d8c81163f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T11:12:07.380Z",
+          "hash": "52e9bf6d8c81163f",
+          "prev_hash": "de9856e5388a2dba",
+          "commit": "9f26f634",
+          "note": "2026-10-04 print-craft-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-print-craft-eight/NOTES.md"
+        }
+      ]
     },
     "interactive-film-burn": {
       "hash": "1cae8a9e2312c896",
@@ -4072,12 +4108,30 @@
       "history": []
     },
     "interactive-halftone-spin": {
-      "hash": "4c2c4314993383fb",
-      "history": []
+      "hash": "d9dcf0f332b6c7bb",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T11:12:07.380Z",
+          "hash": "d9dcf0f332b6c7bb",
+          "prev_hash": "4c2c4314993383fb",
+          "commit": "9f26f634",
+          "note": "2026-10-04 print-craft-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-print-craft-eight/NOTES.md"
+        }
+      ]
     },
     "interactive-kuwahara": {
-      "hash": "ca998f2a48c384b4",
-      "history": []
+      "hash": "852f36738c9e0f66",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T11:12:07.380Z",
+          "hash": "852f36738c9e0f66",
+          "prev_hash": "ca998f2a48c384b4",
+          "commit": "9f26f634",
+          "note": "2026-10-04 print-craft-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-print-craft-eight/NOTES.md"
+        }
+      ]
     },
     "interactive-magnetic-ripple": {
       "hash": "4cf2e880c7c73d59",
@@ -4120,8 +4174,17 @@
       "history": []
     },
     "knitted-fabric": {
-      "hash": "26c718a80a2a93dd",
-      "history": []
+      "hash": "6a0c3dea34149aef",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T11:12:07.380Z",
+          "hash": "6a0c3dea34149aef",
+          "prev_hash": "26c718a80a2a93dd",
+          "commit": "9f26f634",
+          "note": "2026-10-04 print-craft-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-print-craft-eight/NOTES.md"
+        }
+      ]
     },
     "laser-burn": {
       "hash": "4bff97e88dc8b475",
@@ -4560,8 +4623,17 @@
       "history": []
     },
     "sketch-reveal": {
-      "hash": "a975bb79f6bb6f96",
-      "history": []
+      "hash": "f76c3ec3e6477960",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T11:12:07.380Z",
+          "hash": "f76c3ec3e6477960",
+          "prev_hash": "a975bb79f6bb6f96",
+          "commit": "9f26f634",
+          "note": "2026-10-04 print-craft-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-print-craft-eight/NOTES.md"
+        }
+      ]
     },
     "sliding-tile-glitch": {
       "hash": "a8df0584cd418295",
