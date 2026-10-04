@@ -108,9 +108,10 @@ def classify_index(i: int) -> str:
     return "out-of-range"
 
 
-def scan_shader(path: Path) -> dict:
-    """Scan one WGSL file. Returns findings dict."""
-    src = strip_comments(path.read_text(encoding="utf-8", errors="replace"))
+def scan_shader(path: Path, source: str | None = None) -> dict:
+    """Scan one WGSL file (or `source` in its place). Returns findings dict."""
+    raw = path.read_text(encoding="utf-8", errors="replace") if source is None else source
+    src = strip_comments(raw)
     consts = parse_consts(src)
     lines = src.split("\n")
 
