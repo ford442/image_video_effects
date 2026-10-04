@@ -10,7 +10,7 @@
     "upgraded-rgba",
     "temporal"
   ],
-  "description": "Multi-layer prismatic facet tiles with volumetric fog, chromatic dispersion, vortex distortion, and depth-gradient edge glows.",
+  "description": "Prismatic mosaic tunnel: five zooming layers cut into prism tiles that split colour, with depth-edge glints, a cursor vortex and volumetric fog.",
   "params": [
     {
       "id": "min_speed",

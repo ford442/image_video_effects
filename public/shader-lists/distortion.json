@@ -341,7 +341,7 @@
     "id": "crystal-facets",
     "name": "Crystal Facets",
     "url": "shaders/crystal-facets.wgsl",
-    "description": "Faceted crystal with per-facet normals, total internal reflection past the critical angle (which is what makes real gem facets flash rather than merely darken), and uniaxial birefringence splitting ordinary and extraordinary rays along a per-facet optic axis with FFT-banded retardation. Adds the dataTextureA writeback and dataTextureC read-back the shader was missing, plus bounded click fracture fronts and ACES.",
+    "description": "Crystal facets around the cursor: kite-cut crown and pavilion tiers, per-facet dispersion, Beer-Lambert body colour, and total internal reflection flashes past the critical angle.",
     "params": [
       {
         "name": "Facet Count",
@@ -384,13 +384,11 @@
       "held-drag",
       "bounded-click-ripples",
       "audio-reactive",
-      "per-band-fft",
       "depth-aware",
       "upgraded-rgba",
       "semantic-alpha",
       "aces",
       "total-internal-reflection",
-      "birefringence",
       "fresnel",
       "beer-lambert",
       "temporal-glint"
@@ -405,8 +403,7 @@
       "alpha",
       "physical-transmittance",
       "facets",
-      "gem",
-      "birefringence"
+      "gem"
     ],
     "updatedParams": [
       {
@@ -423,7 +420,7 @@
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "description": "IOR, 1.33-2.42; also sets the critical angle for total internal reflection."
+        "description": "IOR, 1.5-2.42; also sets the critical angle, so higher IOR flashes more facets."
       },
       {
         "name": "Fracture Density",
@@ -431,7 +428,7 @@
         "default": 0.2,
         "min": 0,
         "max": 1,
-        "description": "Internal fracture density; drives absorption and birefringence."
+        "description": "Internal fracture density; drives absorption and body colour."
       },
       {
         "name": "Crystal Thickness",
@@ -439,7 +436,7 @@
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "description": "Optical path length through the crystal."
+        "description": "Optical path length; deepens the crystal's body colour."
       }
     ]
   },
@@ -1445,14 +1442,13 @@
     "name": "Glass Brick Wall",
     "category": "distortion",
     "url": "shaders/glass-brick-wall.wgsl",
-    "description": "Refractive glass brick wall with FBM-perturbed normals, multi-frequency caustic patterns, chromatic dispersion through wavelength-dependent refraction, depth-layer compositing, and internal reflections. Beat-driven caustics and Voronoi cellular caustic enhancement.",
+    "description": "Glass brick wall: domed blocks with dispersion along each dome, focused caustic hot-spots, bottle-green Beer-Lambert edges, wall reflections and dark mortar.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
       "upgraded-rgba",
       "caustic-refraction",
-      "depth-layers",
       "chromatic-dispersion",
       "fbm-texture",
       "temporal"
@@ -1465,7 +1461,6 @@
       "audio-reactive",
       "chromatic",
       "fbm",
-      "voronoi",
       "dispersion"
     ],
     "params": [
@@ -2900,7 +2895,7 @@
       "upgraded-rgba",
       "temporal"
     ],
-    "description": "Glass tiles that refract based on video brightness and mouse interaction.",
+    "description": "Luminescent glass tiles that lens the video by brightness: Fresnel bevel rims, light leaking from bright tile edges, Beer-Lambert body tint, and a cursor swirl.",
     "params": [
       {
         "id": "density",
@@ -3703,7 +3698,7 @@
       "mouse-driven",
       "temporal"
     ],
-    "description": "Prismatic displacement with anamorphic spectral lens dispersion, depth-weighted magnification, and chromatic rotation.",
+    "description": "Prism lens at the cursor: white-balanced spectral dispersion with a Cauchy fan, a rotating anamorphic axis, depth-weighted magnification and a Fresnel rim.",
     "params": [
       {
         "id": "zoomAmount",
@@ -3795,7 +3790,7 @@
       "upgraded-rgba",
       "temporal"
     ],
-    "description": "Multi-layer prismatic facet tiles with volumetric fog, chromatic dispersion, vortex distortion, and depth-gradient edge glows.",
+    "description": "Prismatic mosaic tunnel: five zooming layers cut into prism tiles that split colour, with depth-edge glints, a cursor vortex and volumetric fog.",
     "params": [
       {
         "id": "min_speed",
@@ -4320,7 +4315,7 @@
     "id": "spec-bicubic-crystal",
     "name": "Bicubic Crystal",
     "url": "shaders/spec-bicubic-crystal.wgsl",
-    "description": "Bicubic Catmull-Rom crystalline distortion. Full 16-sample bicubic interpolation for perfectly smooth magnification, applied to prismatic crystalline faceting with chromatic separation.",
+    "description": "Bicubic crystal distortion: square wedge facets resampled with Catmull-Rom, Fresnel seams and dispersion along each facet's tilt.",
     "tags": [
       "bicubic",
       "catmull-rom",
@@ -4850,7 +4845,7 @@
     "id": "voronoi-faceted-glass",
     "name": "Voronoi Faceted Glass",
     "url": "shaders/voronoi-faceted-glass.wgsl",
-    "description": "Cellular glass distortion effect with Voronoi facet refraction, mouse push/pull physics, and edge shading.",
+    "description": "Voronoi faceted glass: tilted cells refract the image each its own way, with chamfered bevels, lead lines, orbiting facet glints and cursor push.",
     "params": [
       {
         "id": "density",

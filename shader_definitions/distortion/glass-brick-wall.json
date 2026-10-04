@@ -3,14 +3,13 @@
   "name": "Glass Brick Wall",
   "category": "distortion",
   "url": "shaders/glass-brick-wall.wgsl",
-  "description": "Refractive glass brick wall with FBM-perturbed normals, multi-frequency caustic patterns, chromatic dispersion through wavelength-dependent refraction, depth-layer compositing, and internal reflections. Beat-driven caustics and Voronoi cellular caustic enhancement.",
+  "description": "Glass brick wall: domed blocks with dispersion along each dome, focused caustic hot-spots, bottle-green Beer-Lambert edges, wall reflections and dark mortar.",
   "features": [
     "mouse-driven",
     "audio-reactive",
     "depth-aware",
     "upgraded-rgba",
     "caustic-refraction",
-    "depth-layers",
     "chromatic-dispersion",
     "fbm-texture",
     "temporal"
@@ -23,7 +22,6 @@
     "audio-reactive",
     "chromatic",
     "fbm",
-    "voronoi",
     "dispersion"
   ],
   "params": [

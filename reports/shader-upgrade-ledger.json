@@ -1080,8 +1080,17 @@
       "history": []
     },
     "crystal-facets": {
-      "hash": "0fb803b8a8b3a5ce",
-      "history": []
+      "hash": "be504a9768f5f5ae",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T12:17:55.674Z",
+          "hash": "be504a9768f5f5ae",
+          "prev_hash": "0fb803b8a8b3a5ce",
+          "commit": "136ae335",
+          "note": "2026-10-04 glass-facets-eight (claude-opus-5-5): idea cards in agents/swarm-outputs/claude-2026-10-04-glass-facets-eight/BRIEFS.md"
+        }
+      ]
     },
     "cyber-lens": {
       "hash": "343798918f3cb489",
@@ -1136,8 +1145,17 @@
       "history": []
     },
     "glass-brick-wall": {
-      "hash": "4d40e94da0ed2754",
-      "history": []
+      "hash": "31260c58e407e99d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T12:17:55.674Z",
+          "hash": "31260c58e407e99d",
+          "prev_hash": "4d40e94da0ed2754",
+          "commit": "136ae335",
+          "note": "2026-10-04 glass-facets-eight (claude-opus-5-5): idea cards in agents/swarm-outputs/claude-2026-10-04-glass-facets-eight/BRIEFS.md"
+        }
+      ]
     },
     "glitch-slice-mirror": {
       "hash": "d85ad0f2bc4be1c9",
@@ -1200,8 +1218,17 @@
       "history": []
     },
     "luminescent-glass-tiles": {
-      "hash": "fd1dadaa3abf01cc",
-      "history": []
+      "hash": "7b4da1ac10708139",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T12:17:55.674Z",
+          "hash": "7b4da1ac10708139",
+          "prev_hash": "fd1dadaa3abf01cc",
+          "commit": "136ae335",
+          "note": "2026-10-04 glass-facets-eight (claude-opus-5-5): idea cards in agents/swarm-outputs/claude-2026-10-04-glass-facets-eight/BRIEFS.md"
+        }
+      ]
     },
     "magnetic-field": {
       "hash": "9ecf033f16293bd9",
@@ -1236,12 +1263,30 @@
       "history": []
     },
     "prism-displacement": {
-      "hash": "92555232dcc9b605",
-      "history": []
+      "hash": "f273931e18e95e06",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T12:17:55.674Z",
+          "hash": "f273931e18e95e06",
+          "prev_hash": "92555232dcc9b605",
+          "commit": "136ae335",
+          "note": "2026-10-04 glass-facets-eight (claude-opus-5-5): idea cards in agents/swarm-outputs/claude-2026-10-04-glass-facets-eight/BRIEFS.md"
+        }
+      ]
     },
     "prismatic-mosaic": {
-      "hash": "b674f79232ceea44",
-      "history": []
+      "hash": "05ef7e5776d6081b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T12:17:55.674Z",
+          "hash": "05ef7e5776d6081b",
+          "prev_hash": "b674f79232ceea44",
+          "commit": "136ae335",
+          "note": "2026-10-04 glass-facets-eight (claude-opus-5-5): idea cards in agents/swarm-outputs/claude-2026-10-04-glass-facets-eight/BRIEFS.md"
+        }
+      ]
     },
     "radial-rgb": {
       "hash": "8a9fab9c725a7f6c",
@@ -1264,8 +1309,17 @@
       "history": []
     },
     "spec-bicubic-crystal": {
-      "hash": "265a0e8a2cf289f2",
-      "history": []
+      "hash": "492cdcb79ea69e22",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T12:17:55.674Z",
+          "hash": "492cdcb79ea69e22",
+          "prev_hash": "265a0e8a2cf289f2",
+          "commit": "136ae335",
+          "note": "2026-10-04 glass-facets-eight (claude-opus-5-5): idea cards in agents/swarm-outputs/claude-2026-10-04-glass-facets-eight/BRIEFS.md"
+        }
+      ]
     },
     "spectral-vortex": {
       "hash": "42212982781fa111",
@@ -1288,8 +1342,17 @@
       "history": []
     },
     "voronoi-faceted-glass": {
-      "hash": "599494d238cb7a26",
-      "history": []
+      "hash": "29fd87468196feda",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T12:17:55.674Z",
+          "hash": "29fd87468196feda",
+          "prev_hash": "599494d238cb7a26",
+          "commit": "136ae335",
+          "note": "2026-10-04 glass-facets-eight (claude-opus-5-5): idea cards in agents/swarm-outputs/claude-2026-10-04-glass-facets-eight/BRIEFS.md"
+        }
+      ]
     },
     "vortex-distortion": {
       "hash": "ecde435a2ebf09ed",
@@ -5540,8 +5603,17 @@
       "history": []
     },
     "alpha-multi-layer-glass": {
-      "hash": "42362fe5f64e336b",
-      "history": []
+      "hash": "646e65ae80178ac2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T12:17:55.674Z",
+          "hash": "646e65ae80178ac2",
+          "prev_hash": "42362fe5f64e336b",
+          "commit": "136ae335",
+          "note": "2026-10-04 glass-facets-eight (claude-opus-5-5): idea cards in agents/swarm-outputs/claude-2026-10-04-glass-facets-eight/BRIEFS.md"
+        }
+      ]
     },
     "alpha-spectral-decompose": {
       "hash": "bb35925ab1a0c455",
