@@ -12,6 +12,9 @@ import json
 import sys
 from pathlib import Path
 from datetime import datetime, timezone
+import tempfile
+
+from wgsl_include import WgslIncludeError, expand_wgsl_includes, has_wgsl_include
 
 SHADERS_DIR = Path("public/shaders").resolve()
 REPORT_FILE = Path("reports/naga-scan-report.json")
@@ -47,14 +50,34 @@ struct Uniforms {
 
 
 def run_naga(wgsl_file: Path) -> dict:
-    """Run naga CLI on a single .wgsl file. Returns full result dict."""
+    """
+    Run naga CLI on a single .wgsl file. Returns full result dict.
+
+    The naga CLI has no preprocessor, so `#include` is expanded into a temp file
+    first (npm run verify:naga-wasm does the same in-process and is the gate).
+    """
     try:
-        result = subprocess.run(
-            ["naga", str(wgsl_file)],
-            capture_output=True,
-            text=True,
-            timeout=15,
-        )
+        source = wgsl_file.read_text(encoding="utf-8")
+        target = wgsl_file
+        if has_wgsl_include(source):
+            try:
+                expanded = expand_wgsl_includes(source, entry=wgsl_file.name)
+            except WgslIncludeError as exc:
+                return {"valid": False, "errors": [{"line": None, "col": None, "message": str(exc)}], "raw": str(exc)}
+            tmp = tempfile.NamedTemporaryFile("w", suffix=".wgsl", delete=False, encoding="utf-8")
+            tmp.write(expanded)
+            tmp.close()
+            target = Path(tmp.name)
+        try:
+            result = subprocess.run(
+                ["naga", str(target)],
+                capture_output=True,
+                text=True,
+                timeout=15,
+            )
+        finally:
+            if target != wgsl_file:
+                target.unlink(missing_ok=True)
         if result.returncode == 0:
             return {"valid": True, "errors": [], "raw": ""}
         else:

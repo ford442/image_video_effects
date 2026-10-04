@@ -27,10 +27,12 @@
       "src/wasm/bridge/wgslInclude.ts",
       "src/wasm/bridge/wgslLibraries.ts",
       "src/utils/fetchShaderWgsl.ts",
-      "src/wasm/bridge/shader.ts"
+      "src/wasm/bridge/shader.ts",
+      "src/components/ShaderValidator.tsx",
+      "src/test-utils/shaderSource.ts"
     ],
-    "python": ["scripts/wgsl_include.py", "scripts/bindgroup_checker.py"],
-    "node": ["scripts/verify-naga-wasm.mjs"],
+    "python": ["scripts/wgsl_include.py", "scripts/bindgroup_checker.py", "scripts/wgsl_precommit_gate.py"],
+    "node": ["scripts/verify-naga-wasm.mjs", "scripts/generate-shader-thumbnails.js"],
     "cpp": ["wasm_renderer/pipeline.cpp"],
     "cppNote": "C++ does NOT parse includes. Every byte of WGSL reaches LoadShader as a string that already passed through src/wasm/bridge/shader.ts, so the C++ side only asserts that no directive survived and fails loudly if one did."
   },

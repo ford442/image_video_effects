@@ -13,7 +13,9 @@ const {
   applyAttractPriority,
   hasFourLiveParams,
   loadAttractPriorityIds,
+  readShaderSource,
 } = require('./generate-shader-thumbnails');
+const path = require('path');
 const frameAnalysis = require('./lib/thumbnailFrameAnalysis');
 
 describe('generate-shader-thumbnails', () => {
@@ -143,5 +145,15 @@ describe('generate-shader-thumbnails', () => {
     });
     assert.equal(params[0], 0.3);
     assert.equal(params[1], 0.7);
+  });
+
+  it('readShaderSource expands #include for the minimal engine', async () => {
+    const shaders = path.join(__dirname, '..', 'public', 'shaders');
+    const expanded = await readShaderSource(path.join(shaders, 'gray-scott-step.wgsl'));
+    assert.match(expanded, /@group\(0\) @binding\(3\) var<uniform> u: Uniforms;/);
+    assert.doesNotMatch(expanded, /^#include/m);
+
+    const plainPath = path.join(shaders, '_hash_library.wgsl');
+    assert.equal(await readShaderSource(plainPath), require('fs').readFileSync(plainPath, 'utf8'));
   });
 });
