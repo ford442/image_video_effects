@@ -1441,7 +1441,7 @@
       "print",
       "audio-reactive"
     ],
-    "description": "Rosette/moire CMYK halftone with rotating screens and per-plate registration drift. A printer's registration target follows the cursor in all four plates, so misregistration shows as coloured fringes; held drag slurs a ghost dot along the press feed. A remains CMYK coverage masks.",
+    "description": "CMYK halftone rosette print with rotating screens, registration drift, a registration target at the cursor and press slur. A remains CMYK coverage masks.",
     "updatedParams": [
       {
         "index": 0,
@@ -3585,7 +3585,7 @@
     "id": "dynamic-halftone",
     "name": "Dynamic Halftone",
     "url": "shaders/dynamic-halftone.wgsl",
-    "description": "Single-screen luma halftone whose dots swell and ovalise under the cursor. Euclidean spot shape (round highlights, chained diamonds at mid-tone), neighbour dots that overlap and pool ink, and ragged paper-tooth rims; spectral ink rims on treble.",
+    "description": "Halftone dot print that swells under the cursor: Euclidean dot shapes, pooling ink and ragged paper rims.",
     "params": [
       {
         "id": "density",
@@ -6088,7 +6088,7 @@
     "id": "interactive-halftone-spin",
     "name": "Interactive Halftone Spin",
     "url": "shaders/interactive-halftone-spin.wgsl",
-    "description": "CMYK halftone screens that spin under the cursor, with rotational arc-smear on fast-turning screens and a subtractive CMYK after-image decoded from last frame's coverage. Held shear, click splats and three-band audio. A remains [C, M, Y, K] coverage.",
+    "description": "Spinning CMYK halftone screens with rotational arc-smear and a CMYK ink after-image. A remains [C, M, Y, K] coverage.",
     "params": [
       {
         "id": "scale",

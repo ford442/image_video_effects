@@ -53,7 +53,7 @@
     "print",
     "audio-reactive"
   ],
-  "description": "Rosette/moire CMYK halftone with rotating screens and per-plate registration drift. A printer's registration target follows the cursor in all four plates, so misregistration shows as coloured fringes; held drag slurs a ghost dot along the press feed. A remains CMYK coverage masks.",
+  "description": "CMYK halftone rosette print with rotating screens, registration drift, a registration target at the cursor and press slur. A remains CMYK coverage masks.",
   "updatedParams": [
     {
       "index": 0,

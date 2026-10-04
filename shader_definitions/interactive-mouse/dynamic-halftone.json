@@ -2,7 +2,7 @@
   "id": "dynamic-halftone",
   "name": "Dynamic Halftone",
   "url": "shaders/dynamic-halftone.wgsl",
-  "description": "Single-screen luma halftone whose dots swell and ovalise under the cursor. Euclidean spot shape (round highlights, chained diamonds at mid-tone), neighbour dots that overlap and pool ink, and ragged paper-tooth rims; spectral ink rims on treble.",
+  "description": "Halftone dot print that swells under the cursor: Euclidean dot shapes, pooling ink and ragged paper rims.",
   "params": [
     {
       "id": "density",
