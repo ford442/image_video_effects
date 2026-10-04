@@ -182,7 +182,7 @@ export function decodeOscPacket(data: ArrayBuffer | ArrayBufferView): OscMessage
 function utf8Bytes(s: string): number[] {
   const out: number[] = [];
   for (const ch of s) {
-    const cp = ch.codePointAt(0)!;
+    const cp = ch.codePointAt(0) ?? 0;
     if (cp < 0x80) out.push(cp);
     else if (cp < 0x800) out.push(0xc0 | (cp >> 6), 0x80 | (cp & 63));
     else if (cp < 0x10000) out.push(0xe0 | (cp >> 12), 0x80 | ((cp >> 6) & 63), 0x80 | (cp & 63));

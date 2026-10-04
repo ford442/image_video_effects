@@ -61,8 +61,7 @@ export function useOscControl({
 
     // Handle is rebuilt every render and read per packet, so the socket never
     // reconnects just because a callback identity changed.
-    const handleRef = useRef<OscActionsHandle | null>(null);
-    handleRef.current = {
+    const handle: OscActionsHandle = {
         setSlotParam: (slot, param, value) => {
             if (slot < modes.length) onSetSlotParam?.(slot, param, value);
         },
@@ -73,6 +72,8 @@ export function useOscControl({
         triggerTransition: () => { void onTriggerNextTransition?.(); },
         setAudioAmount: (value) => setAudioReactiveAmount?.(value),
     };
+    const handleRef = useRef<OscActionsHandle>(handle);
+    handleRef.current = handle;
 
     useEffect(() => {
         writeStorage(OSC_ENABLED_STORAGE_KEY, oscEnabled ? '1' : '0');
@@ -95,7 +96,7 @@ export function useOscControl({
             if (cancelled) return;
             const bridge = new OscBridge({
                 url: oscUrl,
-                getHandle: () => handleRef.current!,
+                getHandle: () => handleRef.current,
                 onStatus: (status, detail) => {
                     if (cancelled) return;
                     setOscStatus(status);
