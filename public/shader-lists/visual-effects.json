@@ -455,7 +455,7 @@
     "name": "Anaglyph 3D",
     "category": "visual-effects",
     "url": "shaders/anaglyph-3d.wgsl",
-    "description": "Red-cyan stereoscopic anaglyph with temporal ghost fringing persistence, chromatic separation enhancement per depth, mouse focal depth curve refinement, bass-pulsed split width, and cinematic post-processing: film grain with temporal coherence, radial chromatic aberration, vignette darkening, CRT barrel distortion, color grading with lift/gamma/gain, anamorphic light streaks from bright points, and lens dirt overlay.",
+    "description": "Red-cyan anaglyph 3D with occlusion-aware stereo from depth, filter crosstalk on edges, a shimmering focal plane at the mouse depth, plus film grain, vignette and grading.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -989,7 +989,7 @@
     "id": "crt-clear-zone",
     "name": "CRT Clear Zone",
     "url": "shaders/crt-clear-zone.wgsl",
-    "description": "Accurate CRT electron beam simulation with Gaussian spot spread, inline shadow mask, phosphor decay via temporal feedback, barrel distortion with corner darkening, per-RGB chromatic aberration, and ACES tone mapping.",
+    "description": "CRT screen with a clear window at the cursor: slot mask, visible beam raster, corner misconvergence, glass halation, and purity blotches around the rim that wobble when you click to degauss.",
     "params": [
       {
         "name": "Distortion",
@@ -1198,7 +1198,7 @@
       "click-ripples",
       "aces-tone-map"
     ],
-    "description": "A digital scanning ecosystem with triple-layer scan lines, holographic interference patterns, hex-grid data visualization, binary rain effects, and FBM noise corruption. Depth-based colorization with chromatic RGB separation driven by treble intensity.",
+    "description": "Cyber scanner: triple scan beams with LIDAR depth contours, a live range readout, hex-grid data, binary rain and an afterimage trail, colored warm or cool by depth.",
     "params": [
       {
         "id": "scanWidth",
@@ -1245,8 +1245,38 @@
     ],
     "updated": true,
     "updatedParams": [
-      "scanWidth",
-      "edgeStrength"
+      {
+        "index": 0,
+        "name": "Scan Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Trail Length",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Scan Width",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -1656,7 +1686,7 @@
     "name": "Holographic Flicker",
     "category": "visual-effects",
     "url": "shaders/holographic-flicker.wgsl",
-    "description": "Holographic flicker with temporal ghosting and depth-rainbow colorization. Bass drives blackout probability, treble adds micro-glitch. Chromatic ghosting separates RGB channels across frames.",
+    "description": "Unstable laser hologram: mode-hopping laser lines with matching fringes, per-channel phosphor trails, vertical-hold slips and a rotating hex emblem.",
     "params": [
       {
         "id": "flickerSpeed",
@@ -1838,7 +1868,7 @@
     "id": "holographic-projection",
     "name": "Holo Projector",
     "url": "shaders/holographic-projection.wgsl",
-    "description": "Transforms the image into a flickering hologram. Move mouse to focus and stabilize the projection.",
+    "description": "Hologram projection with laser speckle, rainbow Bragg colour that shifts with viewing angle, and a rolling refresh band. Move the mouse to focus and stabilize it.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -2512,7 +2542,7 @@
     "id": "neon-edge-reveal",
     "name": "Neon Edge Reveal",
     "url": "shaders/neon-edge-reveal.wgsl",
-    "description": "Neon edge detection with interactive flashlight reveal.",
+    "description": "Neon edge reveal: edges glow as neon tubes with hot cores and halos, a flashlight beam reveals the photo underneath, and lit edges burn in after the beam moves on.",
     "params": [
       {
         "id": "intensity",
@@ -2906,7 +2936,7 @@
     "name": "Quantum Ghost",
     "category": "visual-effects",
     "url": "shaders/quantum-ghost.wgsl",
-    "description": "Quantum uncertainty visualization with Gaussian wave packet spreading, interference patterns from partial measurement, and entanglement correlation lines between ghost copies. Ghostly translucent copies with phase-dependent opacity, neon quantum numbers, HDR bloom on measurement events, ACES tone mapping, and chromatic separation by momentum uncertainty.",
+    "description": "Quantum ghost: radial ghost copies with double-slit fringes where they overlap, wave packets re-emitted from the cursor, and click collapse that snaps the ghosts back.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -2972,7 +3002,7 @@
       "upgraded-rgba"
     ],
     "url": "shaders/rgb-distance-split.wgsl",
-    "description": "Chromatic aberration that intensifies with distance from the mouse.",
+    "description": "RGB split that grows with distance from the cursor: a 7-wavelength rainbow fringe plus faint diffraction-grating ghosts far from the pointer.",
     "params": [
       {
         "id": "split",

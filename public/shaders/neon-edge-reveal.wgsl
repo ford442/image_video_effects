@@ -1,7 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Neon Edge Reveal
 //  Category: visual-effects
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, flashlight-reveal,
+//            neon-tube, burn-in-persistence
+//  Ideas:    1. real reveal — the photo shows through under the flashlight beam and at
+//               click flares (HEAD only brightened the edges)
+//            2. neon tube physics — white-hot core on strong edges, a wide halo from a
+//               3 px Sobel, and the gas colour leans by edge orientation (Ne red / Ar blue)
+//            3. burn-in persistence — lit edges keep glowing after the beam moves on (C)
 //  Complexity: Medium
 //  Upgraded: 2026-05-23
 //  Swarm upgrade: 2026-07-31 (Batch 20, Algorithmist)
@@ -13,8 +19,9 @@
 //   - HDR emission (~19.8x peak) tamed by a hue-preserving soft-knee that
 //     compresses the per-channel max above 1.5 and asymptotes near 2.0.
 //   - Click ripples ignite the reveal at their click point (~1.2s fade).
-//   - Flashlight beam glides via a critically-damped spring
-//     (extraBuffer[133..136] = pos.xy/vel.xy, init flag [137]).
+//   - 2026-10-04: the extraBuffer[133..137] spring was removed. It raced (only
+//     (0,0) wrote, every pixel read) and the buffer is zeroed each upload,
+//     so the beam was effectively the raw cursor anyway.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -42,13 +49,8 @@ fn getLuminance(color: vec3<f32>) -> f32 {
     return dot(color, vec3<f32>(0.299, 0.587, 0.114));
 }
 
-// Critically-damped spring step toward the beam aim point.
-// State lives in extraBuffer[133..136] (pos.xy, vel.xy), init flag [137].
-fn springStep(pos: vec2<f32>, vel: vec2<f32>, aim: vec2<f32>, omega: f32, dt: f32) -> vec4<f32> {
-    let accel = omega * omega * (aim - pos) - 2.0 * omega * vel;
-    let newVel = vel + accel * dt;
-    let newPos = pos + newVel * dt;
-    return vec4<f32>(newPos, newVel);
+fn wideLum(uv: vec2<f32>, o: vec2<f32>) -> f32 {
+    return getLuminance(textureSampleLevel(readTexture, u_sampler, clamp(uv + o, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb);
 }
 
 // Hue-preserving soft-knee: compresses the per-channel max above the knee
@@ -111,24 +113,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
            + getLuminance(s_bl.rgb) + 2.0 * getLuminance(s_bc.rgb) + getLuminance(s_br.rgb);
     let edgeStrength = sqrt(gx * gx + gy * gy);
 
-    // Mouse flashlight — spring-damped so the beam glides toward the cursor
-    let mousePos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
-    var springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[137] < 0.5) {
-        // First contact: snap the spring onto the cursor, zero velocity.
-        springPos = mousePos;
-        springVel = vec2<f32>(0.0, 0.0);
-    }
-    let springState = springStep(springPos, springVel, mousePos, 8.0, 0.016);
-    let beamPos = springState.xy;
-    if (global_id.x == 0u && global_id.y == 0u) {
-        extraBuffer[133] = springState.x;
-        extraBuffer[134] = springState.y;
-        extraBuffer[135] = springState.z;
-        extraBuffer[136] = springState.w;
-        extraBuffer[137] = 1.0;
-    }
+    // Mouse flashlight at the raw cursor.
+    let beamPos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
 
     let aspect = resolution.x / resolution.y;
     let distToMouse = distance(vec2<f32>(uv.x * aspect, uv.y), vec2<f32>(beamPos.x * aspect, beamPos.y));
@@ -152,22 +138,47 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let neonColor1 = vec3<f32>(1.0, 0.0, 0.8);
     let neonColor2 = vec3<f32>(0.0, 1.0, 1.0);
     let mixFactor = 0.5 + 0.5 * sin(time * hueSpeed * audioReactivity + uv.x * 3.0);
-    let neonColor = mix(neonColor1, neonColor2, mixFactor);
+    let cycleColor = mix(neonColor1, neonColor2, mixFactor);
+
+    // Idea 2a: gas colour by orientation. Horizontal strokes lean toward neon
+    // red-orange and vertical strokes toward argon blue, like a sign bent from
+    // different tubes. The hue cycle stays dominant.
+    let orient = abs(gx) / max(abs(gx) + abs(gy), 1e-4);
+    let gasColor = mix(vec3<f32>(1.0, 0.28, 0.12), vec3<f32>(0.3, 0.45, 1.0), orient);
+    let neonColor = mix(cycleColor, gasColor, 0.3);
 
     // Emission (branchless)
     let edge = smoothstep(mix(0.08, 0.02, detail), mix(0.5, 0.10, detail), edgeStrength);
     let glow = 0.3 + (2.0 + bass * 1.5) * reveal;
-    let emissionRaw = neonColor * glow * edge * 1.0 * glowIntensity * trebleBoost;
+    // Idea 2b: hot core and halo. The strongest edges burn toward white at the
+    // tube's core, and a 3 px Sobel adds a soft coloured halo around them.
+    let core = smoothstep(0.55, 1.0, edge) * smoothstep(0.3, 0.8, edgeStrength);
+    let tubeColor = mix(neonColor, vec3<f32>(1.0, 0.97, 0.95), core * 0.55);
+    let w3 = vec2<f32>(stepX, stepY) * 3.0;
+    let hgx = wideLum(uv, vec2<f32>(w3.x, 0.0)) - wideLum(uv, vec2<f32>(-w3.x, 0.0));
+    let hgy = wideLum(uv, vec2<f32>(0.0, w3.y)) - wideLum(uv, vec2<f32>(0.0, -w3.y));
+    let halo = smoothstep(0.05, 0.4, length(vec2<f32>(hgx, hgy))) * (1.0 - edge);
+    let emissionRaw = (tubeColor * edge + neonColor * halo * 0.3) * glow * glowIntensity * trebleBoost;
 
     // Tame the HDR: hue-preserving soft-knee caps the neon gracefully
     // (knee 1.5, asymptotic peak ~2.0) instead of clipping to white.
-    let emission = softKnee(emissionRaw, 1.5);
+    var emission = softKnee(emissionRaw, 1.5);
+
+    // Idea 1: real reveal. Under the beam (and at click flares) the photo
+    // itself shows through, slightly cool like a torch, beneath the neon.
+    let revealed = s_mc.rgb * vec3<f32>(0.9, 0.95, 1.05) * reveal * 0.85;
+    emission = emission + revealed * (1.0 - edge * 0.5);
+
+    // Idea 3: burn-in persistence. C holds last frame's output; lit edges and
+    // the revealed patch fade out over about half a second after the beam leaves.
+    let prev = textureLoad(dataTextureC, coord, 0).rgb;
+    emission = max(emission, prev * (0.86 + bass * 0.04));
 
     let glowStrength = length(emission);
 
     // Meaningful alpha: edge strength + reveal + source alpha + audio sparkle
     let baseAlpha = s_mc.a;
-    let alpha = clamp(edge * 0.5 + reveal * 0.3 + baseAlpha * 0.2 + glowStrength * 0.1 * detail + treble * 0.1, 0.0, 1.0);
+    let alpha = clamp(edge * 0.5 + reveal * 0.45 + halo * 0.15 + baseAlpha * 0.2 + glowStrength * 0.1 * detail + treble * 0.1, 0.0, 1.0);
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 

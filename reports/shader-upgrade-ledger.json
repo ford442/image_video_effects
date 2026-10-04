@@ -5620,8 +5620,17 @@
       "history": []
     },
     "anaglyph-3d": {
-      "hash": "a718215b004c4fd2",
-      "history": []
+      "hash": "b120def4f614c669",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T15:18:04.477Z",
+          "hash": "b120def4f614c669",
+          "prev_hash": "a718215b004c4fd2",
+          "commit": "bb2b2aed",
+          "note": "2026-10-04 holo-display-eight (claude-opus-5-5): idea cards in agents/swarm-outputs/claude-2026-10-04-holo-display-eight/BRIEFS.md"
+        }
+      ]
     },
     "anamorphic-caustic-flare": {
       "hash": "4774ff5151e999a5",
@@ -5648,8 +5657,17 @@
       "history": []
     },
     "crt-clear-zone": {
-      "hash": "1bb0886212a152f6",
-      "history": []
+      "hash": "701027a95746dfa2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T15:18:04.477Z",
+          "hash": "701027a95746dfa2",
+          "prev_hash": "1bb0886212a152f6",
+          "commit": "bb2b2aed",
+          "note": "2026-10-04 holo-display-eight (claude-opus-5-5): idea cards in agents/swarm-outputs/claude-2026-10-04-holo-display-eight/BRIEFS.md"
+        }
+      ]
     },
     "cyber-grid-pulse": {
       "hash": "caf0f99e3cc5b5e5",
@@ -5660,8 +5678,17 @@
       "history": []
     },
     "cyber-scan": {
-      "hash": "fee3a7b6bdd71949",
-      "history": []
+      "hash": "ebe7515b83bdb66b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T15:18:04.477Z",
+          "hash": "ebe7515b83bdb66b",
+          "prev_hash": "fee3a7b6bdd71949",
+          "commit": "bb2b2aed",
+          "note": "2026-10-04 holo-display-eight (claude-opus-5-5): idea cards in agents/swarm-outputs/claude-2026-10-04-holo-display-eight/BRIEFS.md"
+        }
+      ]
     },
     "data-scanner": {
       "hash": "6f57b7a449cd5ce2",
@@ -5684,16 +5711,34 @@
       "history": []
     },
     "holographic-flicker": {
-      "hash": "9a51fe6030c59989",
-      "history": []
+      "hash": "faf6ddebb1912b44",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T15:18:04.477Z",
+          "hash": "faf6ddebb1912b44",
+          "prev_hash": "9a51fe6030c59989",
+          "commit": "bb2b2aed",
+          "note": "2026-10-04 holo-display-eight (claude-opus-5-5): idea cards in agents/swarm-outputs/claude-2026-10-04-holo-display-eight/BRIEFS.md"
+        }
+      ]
     },
     "holographic-projection-gpt52": {
       "hash": "c63522934764b68b",
       "history": []
     },
     "holographic-projection": {
-      "hash": "fe3139e2131236ed",
-      "history": []
+      "hash": "cb13092e0a982b89",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T15:18:04.477Z",
+          "hash": "cb13092e0a982b89",
+          "prev_hash": "fe3139e2131236ed",
+          "commit": "bb2b2aed",
+          "note": "2026-10-04 holo-display-eight (claude-opus-5-5): idea cards in agents/swarm-outputs/claude-2026-10-04-holo-display-eight/BRIEFS.md"
+        }
+      ]
     },
     "holographic-sticker": {
       "hash": "ce628b94f172466e",
@@ -5724,8 +5769,17 @@
       "history": []
     },
     "neon-edge-reveal": {
-      "hash": "f51d400eee723a3d",
-      "history": []
+      "hash": "8d9e2fb8f25d2995",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T15:18:04.477Z",
+          "hash": "8d9e2fb8f25d2995",
+          "prev_hash": "f51d400eee723a3d",
+          "commit": "bb2b2aed",
+          "note": "2026-10-04 holo-display-eight (claude-opus-5-5): idea cards in agents/swarm-outputs/claude-2026-10-04-holo-display-eight/BRIEFS.md"
+        }
+      ]
     },
     "neon-topology": {
       "hash": "311446d4c2a2c9a9",
@@ -5744,12 +5798,30 @@
       "history": []
     },
     "quantum-ghost": {
-      "hash": "7e2128f690867813",
-      "history": []
+      "hash": "c6b50f5e3ab7ed29",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T15:18:04.477Z",
+          "hash": "c6b50f5e3ab7ed29",
+          "prev_hash": "7e2128f690867813",
+          "commit": "bb2b2aed",
+          "note": "2026-10-04 holo-display-eight (claude-opus-5-5): idea cards in agents/swarm-outputs/claude-2026-10-04-holo-display-eight/BRIEFS.md"
+        }
+      ]
     },
     "rgb-distance-split": {
-      "hash": "b11504ef185b76c9",
-      "history": []
+      "hash": "fe57fdb79debb70f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T15:18:04.477Z",
+          "hash": "fe57fdb79debb70f",
+          "prev_hash": "b11504ef185b76c9",
+          "commit": "bb2b2aed",
+          "note": "2026-10-04 holo-display-eight (claude-opus-5-5): idea cards in agents/swarm-outputs/claude-2026-10-04-holo-display-eight/BRIEFS.md"
+        }
+      ]
     },
     "rgb-topology": {
       "hash": "ba1e8929ec49cc48",

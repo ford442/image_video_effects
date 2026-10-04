@@ -4,6 +4,11 @@
 //  Features: mouse-driven, audio-reactive, temporal-flicker,
 //            depth-rainbow, chromatic-ghosting, interference-fringes,
 //            scanline-jitter, temporal-rgb-offset, upgraded-rgba
+//  Ideas:    1. laser mode-hop — on flicker events the projector snaps between discrete
+//               laser lines; fringe and emblem spacing scale with the wavelength
+//            2. per-channel phosphor persistence — R/G/B trails decay at their own rates
+//               (replaces the additive ghost that washed the image out)
+//            3. vertical-hold slip — a band of rows slips and snaps back, with a tear line
 //  Complexity: High
 // ═══════════════════════════════════════════════════════════════════
 
@@ -73,38 +78,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
-  // Spring cursor in extraBuffer[133..138]
-  let rawMouse = u.zoom_config.yz;
+  // Raw pointer: the old extraBuffer[133..138] spring raced (pixel (0,0) wrote
+  // while every other pixel read) and the buffer is re-uploaded each frame.
+  let mouse = u.zoom_config.yz;
   let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
-  let isWriter = (global_id.x == 0u && global_id.y == 0u);
-  let hasState = (arrayLength(&extraBuffer) > 138u);
 
-  var mouse = rawMouse;
-  if (hasState && extraBuffer[138] > 0.5) {
-    mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  }
-
-  if (isWriter && hasState) {
-    let lastTime = extraBuffer[137];
-    let dt = clamp(time - lastTime, 0.0, 0.1);
-    var sPos = mouse;
-    var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[138] < 0.5) {
-      sPos = rawMouse;
-      sVel = vec2<f32>(0.0);
-    }
-    let stiffness = 36.0;
-    let damping = 12.0;
-    let accel = (rawMouse - sPos) * stiffness - sVel * damping;
-    sVel = sVel + accel * dt;
-    sPos = sPos + sVel * dt;
-    extraBuffer[133] = sPos.x;
-    extraBuffer[134] = sPos.y;
-    extraBuffer[135] = sVel.x;
-    extraBuffer[136] = sVel.y;
-    extraBuffer[137] = time;
-    extraBuffer[138] = 1.0;
-  }
+  // Idea 1: laser mode-hop. The diode sits on one of three laser lines and
+  // hops on flicker events (faster with Flicker Speed, and bass kicks it).
+  // The active wavelength sets fringe and emblem spacing (longer = wider).
+  let hopClock = time * (0.6 + flickerSpeed * 2.4) + bass * 0.5;
+  let hopIdx = u32(hash21(vec2<f32>(floor(hopClock), 7.0)) * 2.999);
+  var laserLambda = 532.0;
+  var laserCol = vec3<f32>(0.35, 1.0, 0.45);
+  if (hopIdx == 0u) { laserLambda = 638.0; laserCol = vec3<f32>(1.0, 0.32, 0.25); }
+  else if (hopIdx == 2u) { laserLambda = 450.0; laserCol = vec3<f32>(0.35, 0.45, 1.0); }
+  let hopFlash = exp(-fract(hopClock) * 14.0);
+  let spacing = laserLambda / 532.0;
 
   // Aspect-corrected mouse interaction
   let mouseDist = length((uv - mouse) * vec2<f32>(aspect, 1.0));
@@ -126,7 +115,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var geo = 0.0;
   var gUv = centeredUV * rot2D(time * 0.4 + pointerEffect * 1.2) * (1.0 - rippleEffect * 0.1);
   for (var i = 0.0; i < 3.0; i += 1.0) {
-    gUv = gUv * (1.45 + bass * 0.15);
+    gUv = gUv * (1.45 + bass * 0.15) / spacing;
     let d = sdfHexagon(gUv, 0.3 + 0.12 * sin(time * 2.0 + i + mids * 1.5));
     geo += smoothstep(0.02, 0.0, abs(d)) * (1.0 - i * 0.25);
   }
@@ -135,7 +124,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let scanRate = time * (15.0 + flickerSpeed * 80.0);
   let glitchLine = floor(uv.y * resolution.y * 0.25 + scanRate);
   let jitter = (hash21(vec2<f32>(glitchLine, floor(time * 24.0))) - 0.5) * glitchAmt * (mids * 0.6 + 0.15) * 0.06;
-  let jitteredUV = clamp(uv + vec2<f32>(jitter, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+
+  // Idea 3: vertical-hold slip. Now and then a band of rows loses vertical
+  // hold, slides by a fraction of the frame and snaps back, leaving a bright
+  // tear line on its leading edge.
+  let slipEpoch = floor(time * (0.35 + flickerSpeed * 0.5));
+  let slipOn = step(0.55 - glitchAmt * 0.3, hash21(vec2<f32>(slipEpoch, 3.1)));
+  let slipCentre = hash21(vec2<f32>(slipEpoch, 9.7));
+  let slipBand = smoothstep(0.09, 0.0, abs(uv.y - slipCentre)) * slipOn;
+  let slipT = fract(time * (0.35 + flickerSpeed * 0.5));
+  // Slides out over most of the epoch, then snaps back in a few frames.
+  let slipEnv = smoothstep(0.0, 0.8, slipT) * (1.0 - smoothstep(0.86, 0.9, slipT));
+  let slip = slipBand * glitchAmt * 0.12 * slipEnv;
+  let tearLine = smoothstep(0.004, 0.0, abs(uv.y - (slipCentre - 0.09))) * slipOn * glitchAmt * slipEnv;
+  let jitteredUV = clamp(uv + vec2<f32>(jitter, slip), vec2<f32>(0.0), vec2<f32>(1.0));
 
   // Chromatic RGB separation
   let chromaOffset = (glitchAmt + ghostAmt * 0.5) * 0.015 * (1.0 + treble * 0.8);
@@ -154,7 +156,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let prevCenter = textureLoad(dataTextureC, pixel, 0);
   let rGhost = textureLoad(dataTextureC, rCoord, 0).r;
   let bGhost = textureLoad(dataTextureC, bCoord, 0).b;
-  let ghostColor = vec3<f32>(rGhost, prevCenter.g, bGhost) * ghostAmt * 0.85;
+  // Idea 2: per-channel phosphor persistence. C holds ACES output, so trails
+  // are compared in display space: red phosphor lingers longest, blue fades
+  // fastest. Ghost Amount sets how long they all last.
+  let phosphorDecay = vec3<f32>(0.9, 0.8, 0.62) * (0.5 + ghostAmt * 0.45);
+  let ghostColor = vec3<f32>(rGhost, prevCenter.g, bGhost) * phosphorDecay;
 
   // Prismatic depth rainbow
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
@@ -170,11 +176,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let luma = dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
   let geoColor = rainbow * (geo * hologramIntensity * 1.6);
 
-  var finalRGB = rgb + ghostColor + geoColor + (rainbow * (abs(rippleEffect) * 0.75));
+  // Interference fringes of the active laser line ride over the image.
+  let fringeDir = normalize(vec2<f32>(0.8, 0.6));
+  let fringe = 0.5 + 0.5 * cos(dot(centeredUV, fringeDir) * 220.0 / spacing - time * 3.0);
+  let laserTint = mix(vec3<f32>(1.0), laserCol * 1.3, 0.22 * hologramIntensity);
+
+  var finalRGB = rgb * laserTint * (0.9 + 0.2 * fringe * hologramIntensity) + geoColor
+               + (rainbow * (abs(rippleEffect) * 0.75))
+               + laserCol * (hopFlash * 0.25 * hologramIntensity + tearLine * 0.8);
   finalRGB = mix(finalRGB, vec3<f32>(0.02, 0.05, 0.1) * luma, blackout);
 
-  // ACES Tonemapping
-  finalRGB = aces(finalRGB);
+  // ACES Tonemapping, then phosphor persistence in display space.
+  finalRGB = max(aces(finalRGB), ghostColor);
 
   // Semantic alpha: source opacity + hologram emission + depth
   let alpha = clamp(aRead * 0.8 + luma * 0.25 + geo * 0.4 + abs(rippleEffect) * 0.2 + pointerEffect * 0.15, 0.25, 1.0);
