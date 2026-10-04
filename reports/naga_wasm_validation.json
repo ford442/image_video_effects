@@ -1,0 +1,233 @@
+{
+  "nagaCratePin": "30.0",
+  "generatedAt": "2026-10-04",
+  "total": 1429,
+  "valid": 1392,
+  "invalid": 37,
+  "known": 37,
+  "new": 0,
+  "failures": [
+    {
+      "id": "aurora-curtain",
+      "kind": "parse",
+      "line": 227,
+      "error": "redefinition of `aspect`"
+    },
+    {
+      "id": "aurora-rift",
+      "kind": "parse",
+      "line": 288,
+      "error": "redefinition of `spectral`"
+    },
+    {
+      "id": "bioluminescent-bloom",
+      "kind": "parse",
+      "line": 259,
+      "error": "redefinition of `aspect`"
+    },
+    {
+      "id": "byte-mosh-explosion",
+      "kind": "parse",
+      "line": 251,
+      "error": "invalid left-hand side of assignment"
+    },
+    {
+      "id": "cosmic-web",
+      "kind": "parse",
+      "line": 302,
+      "error": "redefinition of `rippleCount`"
+    },
+    {
+      "id": "crystal-illuminator",
+      "kind": "parse",
+      "line": 211,
+      "error": "redefinition of `aspect`"
+    },
+    {
+      "id": "crystal-refraction",
+      "kind": "parse",
+      "line": 141,
+      "error": "Identifier starts with a reserved prefix: `__finalRGB`"
+    },
+    {
+      "id": "crystalline-fracture",
+      "kind": "parse",
+      "line": 82,
+      "error": "name `target` is a reserved keyword"
+    },
+    {
+      "id": "crystalline-veins",
+      "kind": "parse",
+      "line": 273,
+      "error": "redefinition of `aspect`"
+    },
+    {
+      "id": "data-moshing-diffusion",
+      "kind": "parse",
+      "line": 48,
+      "error": "too many arguments passed to `max`"
+    },
+    {
+      "id": "electric-eel-storm",
+      "kind": "parse",
+      "line": 328,
+      "error": "Identifier starts with a reserved prefix: `__finalRGB`"
+    },
+    {
+      "id": "ethereal-swirl",
+      "kind": "parse",
+      "line": 183,
+      "error": "Identifier starts with a reserved prefix: `__finalRGB`"
+    },
+    {
+      "id": "fabric-render",
+      "kind": "parse",
+      "line": 62,
+      "error": "name `meta` is a reserved keyword"
+    },
+    {
+      "id": "fractal-boids-field",
+      "kind": "parse",
+      "line": 218,
+      "error": "Identifier starts with a reserved prefix: `__finalRGB`"
+    },
+    {
+      "id": "fractal-ice-palace",
+      "kind": "parse",
+      "line": 288,
+      "error": "redefinition of `aspect`"
+    },
+    {
+      "id": "gamma-ray-burst",
+      "kind": "parse",
+      "line": 157,
+      "error": "redefinition of `rippleCount`"
+    },
+    {
+      "id": "gen_mandelbulb_3d",
+      "kind": "parse",
+      "line": 154,
+      "error": "no definition in scope for identifier: `mouse`"
+    },
+    {
+      "id": "glass-bead-curtain",
+      "kind": "parse",
+      "line": 72,
+      "error": "name `target` is a reserved keyword"
+    },
+    {
+      "id": "glass-shatter",
+      "kind": "parse",
+      "line": 85,
+      "error": "name `target` is a reserved keyword"
+    },
+    {
+      "id": "glitch-slice-mirror",
+      "kind": "parse",
+      "line": 173,
+      "error": "invalid left-hand side of assignment"
+    },
+    {
+      "id": "holographic-contour",
+      "kind": "parse",
+      "line": 71,
+      "error": "name `target` is a reserved keyword"
+    },
+    {
+      "id": "holographic-edge-ripple",
+      "kind": "parse",
+      "line": 114,
+      "error": "name `target` is a reserved keyword"
+    },
+    {
+      "id": "holographic-prism",
+      "kind": "parse",
+      "line": 89,
+      "error": "name `target` is a reserved keyword"
+    },
+    {
+      "id": "hyper-chromatic-delay",
+      "kind": "parse",
+      "line": 98,
+      "error": "name `target` is a reserved keyword"
+    },
+    {
+      "id": "liquid-volumetric-zoom",
+      "kind": "parse",
+      "line": 231,
+      "error": "Identifier starts with a reserved prefix: `__finalRGB`"
+    },
+    {
+      "id": "neural-dreamscape",
+      "kind": "parse",
+      "line": 239,
+      "error": "redefinition of `aspect`"
+    },
+    {
+      "id": "optical-flow-advect",
+      "kind": "validate",
+      "line": 34,
+      "error": "Entry point main at Compute is invalid"
+    },
+    {
+      "id": "optical-flow-grade",
+      "kind": "validate",
+      "line": 33,
+      "error": "Entry point main at Compute is invalid"
+    },
+    {
+      "id": "plasma-orb",
+      "kind": "parse",
+      "line": 223,
+      "error": "redefinition of `aspect`"
+    },
+    {
+      "id": "quantum-foam-lattice",
+      "kind": "parse",
+      "line": 275,
+      "error": "redefinition of `rippleCount`"
+    },
+    {
+      "id": "quantum-superposition",
+      "kind": "parse",
+      "line": 136,
+      "error": "redefinition of `aspect`"
+    },
+    {
+      "id": "recursion-mirror-vortex",
+      "kind": "parse",
+      "line": 271,
+      "error": "Identifier starts with a reserved prefix: `__finalRGB`"
+    },
+    {
+      "id": "signal-modulation",
+      "kind": "parse",
+      "line": 157,
+      "error": "redefinition of `depth`"
+    },
+    {
+      "id": "stella-orbit",
+      "kind": "parse",
+      "line": 189,
+      "error": "no definition in scope for identifier: `u_zoom_dummy`"
+    },
+    {
+      "id": "temporal-feedback-zoom-tracer",
+      "kind": "parse",
+      "line": 173,
+      "error": "Identifier starts with a reserved prefix: `__finalRGB`"
+    },
+    {
+      "id": "tensor-flow-sculpt",
+      "kind": "parse",
+      "line": 258,
+      "error": "redefinition of `rippleCount`"
+    },
+    {
+      "id": "volumetric-depth-zoom",
+      "kind": "parse",
+      "line": 234,
+      "error": "Identifier starts with a reserved prefix: `__finalRGB`"
+    }
+  ]
+}
