@@ -201,7 +201,7 @@ fn mobius(z: vec2<f32>, a: vec2<f32>, b: vec2<f32>, c: vec2<f32>, d: vec2<f32>) 
 - **Upgrade = add 2–4 native ideas to this effect.** Name them before coding. Elevate the math that is already here (better kernel, extra field, extra force). Do not replace the solver with a different simulation. Bindings / ACES / naga are the floor. See `docs/SHADER_UPGRADE_BATCH.md`.
 - Keep the original "soul" of the shader while elevating it mathematically.
 - Use `@workgroup_size(16, 16, 1)` unless the shader explicitly requires a different size.
-- Do NOT modify the 13-binding header or the Uniforms struct.
+- Do NOT paste or edit binding declarations or `struct Uniforms`: they come from `#include "_prelude.wgsl"`. If the file still pastes them, run `python3 scripts/migrate_to_prelude.py --files <file>` first (header-only; no `Upgraded:` bump).
 - **Alpha must encode something useful** — bloom weight, depth, energy, or compositing mask.
 
 ## Performance Constraint

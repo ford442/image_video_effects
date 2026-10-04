@@ -94,7 +94,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>,
 - Optimize in place. Do not use a cleanup pass as cover for a rewrite or a generic overlay. See `docs/SHADER_UPGRADE_BATCH.md`.
 - Keep the original "soul" of the shader while making it production-ready.
 - Use `@workgroup_size(16, 16, 1)` unless the shader explicitly requires a different size.
-- Do NOT modify the 13-binding header or the Uniforms struct.
+- Do NOT paste or edit binding declarations or `struct Uniforms`: they come from `#include "_prelude.wgsl"`. If the file still pastes them, run `python3 scripts/migrate_to_prelude.py --files <file>` first (header-only; no `Upgraded:` bump).
 - Preserve or enhance RGBA channel usage.
 - Add JSON params if new tunable values are introduced (max 4 params mapped to zoom_params).
 

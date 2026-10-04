@@ -163,6 +163,8 @@ function checkBridgeSkew() {
     'state.js',
     'uniforms.js',
     'wgslFormat.js',
+    'wgslInclude.js',
+    'wgslLibraries.js',
   ];
   for (const name of bridgeModules) {
     pairs.push([`wasm_renderer/bridge/${name}`, `public/wasm/bridge/${name}`]);

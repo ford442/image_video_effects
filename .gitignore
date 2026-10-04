@@ -60,6 +60,7 @@ tests/smoke/.bundle/
 /temp/
 # Regenerated audit outputs (rerun the script instead of committing)
 /reports/fix_*.json
+/reports/prelude_migration_run*.json
 /reports/phase-f-audit-report.*
 
 # Generated in prestart/prebuild by scripts/build-shader-source-hashes.js

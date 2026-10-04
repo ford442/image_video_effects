@@ -238,6 +238,13 @@ jobs:
     - name: Verify WGSL include expanders
       run: node scripts/verify-wgsl-include.mjs
 
+    # Catalog shaders get their bindings from #include "_prelude.wgsl" (#1313).
+    # Fails on a newly pasted header (with the one-command fix), on a stale or
+    # growing src/contracts/prelude_migration.json, and on an edited shader that
+    # is still waiting to be migrated.
+    - name: Prelude migration ratchet
+      run: python3 scripts/check_prelude_migration.py --base origin/main
+
     - name: Validate WGSL with naga-wasm (changed files)
       run: node scripts/verify-naga-wasm.mjs --base-ref origin/main
 
@@ -273,6 +280,7 @@ jobs:
         python3 scripts/test_orphan_gate.py
         python3 scripts/test_audit_extrabuffer.py
         python3 scripts/test_audit_dead_sliders.py
+        python3 scripts/test_prelude_migration.py
 
     - name: Publish gate summary
       if: always()

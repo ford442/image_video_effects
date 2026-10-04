@@ -28,6 +28,6 @@ alpha = clamp(alpha, 0.1, 1.0);
 ## Output Rules
 - Remove hardcoded `vec4<f32>(color, 1.0)` unless the shader is intentionally opaque.
 - Update JSON `features` to include `depth-aware` or `alpha-layered` when applicable.
-- Do NOT modify the 13-binding header or `Uniforms` struct.
+- Do NOT paste or edit binding declarations or `struct Uniforms`: they come from `#include "_prelude.wgsl"`. If the file still pastes them, run `python3 scripts/migrate_to_prelude.py --files <file>` first (header-only; no `Upgraded:` bump).
 - Workgroup size stays `@workgroup_size(16, 16, 1)`.
 - Return exactly one ```` ```wgsl ```` block.

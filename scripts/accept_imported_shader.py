@@ -22,6 +22,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 WGSL_DIR = PROJECT_ROOT / "public" / "shaders"
 DEF_DIR = PROJECT_ROOT / "shader_definitions" / "generative"
 GATE = PROJECT_ROOT / "scripts" / "wgsl_precommit_gate.py"
+MIGRATE = PROJECT_ROOT / "scripts" / "migrate_to_prelude.py"
 GENERATE_LISTS = PROJECT_ROOT / "scripts" / "generate_shader_lists.js"
 
 
@@ -121,6 +122,17 @@ def main() -> int:
     json_path.write_text(json.dumps(json_content, indent=2) + "\n", encoding="utf-8")
     print(f"Wrote {wgsl_path.relative_to(PROJECT_ROOT)}")
     print(f"Wrote {json_path.relative_to(PROJECT_ROOT)}")
+
+    # Imports arrive with the binding header pasted in (shadertoyToPixelocity.ts
+    # CANONICAL_HEADER). Catalog shaders take it from _prelude.wgsl, and the gate
+    # rejects a pasted copy, so swap it for the include before gating.
+    migrate_result = subprocess.run(
+        [sys.executable, str(MIGRATE), "--files", str(wgsl_path)],
+        cwd=PROJECT_ROOT,
+    )
+    if migrate_result.returncode != 0:
+        print("prelude migration FAILED — files written but not accepted", file=sys.stderr)
+        return migrate_result.returncode
 
     gate_result = subprocess.run(
         [sys.executable, str(GATE), "--files", str(wgsl_path)],

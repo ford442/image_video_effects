@@ -4,15 +4,19 @@
  * a logged skip, never an emdawn abort.
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
 import { loadShader, reloadShader } from './bridge/shader';
 import { state, wasmRef, EmscriptenModule } from './bridge/state';
+import { expandShaderSource, readExpandedShader } from '../test-utils/shaderSource';
 
-const DLA_WALKERS = fs.readFileSync(
-  path.join(__dirname, '../../public/shaders/dla-walkers.wgsl'),
-  'utf8',
-);
+// loadShader receives source that loadShaderFromURL already expanded, so the
+// fixture is expanded too (dla-walkers may get its group-0 header from _prelude.wgsl).
+let DLA_WALKERS = '';
+
+beforeAll(async () => {
+  const wgsl = await readExpandedShader('dla-walkers');
+  if (wgsl === null) throw new Error('public/shaders/dla-walkers.wgsl is missing');
+  DLA_WALKERS = wgsl;
+});
 
 function mockModule(): EmscriptenModule & { ccall: jest.Mock } {
   return {
@@ -56,6 +60,18 @@ describe('WASM bridge — group-1 refusal', () => {
     expect(state.lastLoadError).toMatch(/@group\(1\)/);
     expect(state.loadErrorCount).toBe(errorsBefore + 1);
     expect(warn).toHaveBeenCalledWith(expect.stringContaining(`[WASM] ${op}:`));
+  });
+
+  it('refuses @group(1) that arrives alongside an expanded prelude include', async () => {
+    const module = wasmRef.module as ReturnType<typeof mockModule>;
+    const wgsl = await expandShaderSource(
+      '#include "_prelude.wgsl"\n@group(1) @binding(2) var<uniform> simParams: vec4<u32>;\n' +
+        '@compute @workgroup_size(64, 1, 1) fn main() {}',
+      'zz-ring.wgsl',
+    );
+    expect(loadShader('zz-ring', wgsl)).toBe(false);
+    expect(module.ccall).not.toHaveBeenCalled();
+    expect(state.lastLoadError).toMatch(/@group\(1\)/);
   });
 
   it('still loads group-0 shaders (a commented @group(1) does not opt in)', () => {

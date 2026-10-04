@@ -8,32 +8,16 @@
 
 ## 0. Canonical Compute Header (bindings 0–12 required)
 
-Copy this verbatim — do not invent bindings, rename them, or reorder them.
+Start every shader with the include below — do not paste, invent, rename, or reorder bindings.
+It is generated (`npm run shaders:libs`) from the binding contract and declares bindings 0–12 (`u_sampler`, `readTexture`, `writeTexture`, `u`, `readDepthTexture`, `non_filtering_sampler`, `writeDepthTexture`, `dataTextureA`, `dataTextureB`, `dataTextureC`, `extraBuffer`, `comparison_sampler`, `plasmaBuffer`) plus `struct Uniforms`: `u.config` = (time s, rippleCount 0–50, resolution w, h), `u.zoom_config.yz` = mouse uv (0–1, y=0 top), `u.zoom_config.w` = mouse down (> 0.5), `u.zoom_params` = sliders p1..p4, `u.ripples[i]` = (uv, startTime, 0).
+
+**Never** paste binding declarations or `struct Uniforms` into a shader: CI (`scripts/check_prelude_migration.py`) fails on a pasted copy. Binding 13 (`historyTexture`) is declared only by the shaders that read it. A file that still pastes the header is migrated with `python3 scripts/migrate_to_prelude.py --files public/shaders/<id>.wgsl` — header-only, so never bump `Upgraded:` for it.
 
 For temporal effects that sample past frames, add the **optional binding 13** extension
 (documented below). See [`docs/BINDING_CONTRACT.md`](../docs/BINDING_CONTRACT.md).
 
 ```wgsl
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time (seconds), .y = rippleCount (0-50 active ripples), .zw = resolution (width, height)
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0–1 canvas: y=0 top), .w = mouse_down (>0.5 = pressed)
-  zoom_params: vec4<f32>,  // .xyzw = user params p1…p4 (mapped from UI sliders)
-  ripples: array<vec4<f32>, 50>,  // .xy = ripple uv, .z = startTime (seconds), .w = padding (0)
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -620,7 +604,7 @@ Minimal fully-featured generative shader with all modern upgrades. Expand from h
 //             aces-tone-map, chromatic-aberration, semantic-alpha
 //  Complexity: Medium
 
-// [paste canonical 13-binding header here]
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;

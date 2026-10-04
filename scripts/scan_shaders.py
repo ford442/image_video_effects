@@ -11,6 +11,8 @@ import re
 from pathlib import Path
 from collections import defaultdict
 
+from wgsl_include import read_expanded_or_raw  # bindings may come from _prelude.wgsl
+
 PROJECT_ROOT = Path("/root/image_video_effects")
 SHADERS_DIR = PROJECT_ROOT / "public" / "shaders"
 DEFINITIONS_DIR = PROJECT_ROOT / "shader_definitions"
@@ -40,8 +42,7 @@ def get_json_definitions():
 def analyze_wgsl(filepath):
     """Analyze a single WGSL file and return a dict of findings."""
     try:
-        with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
-            content = f.read()
+        content = read_expanded_or_raw(filepath)
     except Exception as e:
         return {"error": str(e)}
 

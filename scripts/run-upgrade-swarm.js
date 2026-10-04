@@ -15,34 +15,30 @@ const { execSync } = require('child_process');
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const DEFAULT_QUEUE_PATH = path.join(PROJECT_ROOT, 'agents', 'swarm-tasks', 'upgrade-queue.json');
 const PROMPTS_DIR = path.join(PROJECT_ROOT, 'agents', 'swarm-tasks', 'prompts');
-const TEMPLATES_DIR = path.join(PROJECT_ROOT, 'agents', 'prompt-templates');
+const TEMPLATES_DIR = path.join(PROJECT_ROOT, 'docs', 'agents', 'prompt-templates');
 const PROGRESS_PATH = path.join(PROJECT_ROOT, 'agents', 'swarm-outputs', 'upgrade-progress.json');
 const SHADERS_DIR = path.join(PROJECT_ROOT, 'public', 'shaders');
 const DEFINITIONS_DIR = path.join(PROJECT_ROOT, 'shader_definitions');
 
 let QUEUE_PATH = DEFAULT_QUEUE_PATH;
 
-const BINDING_HEADER = `// ── IMMUTABLE 13-BINDING CONTRACT ──────────────────────────────
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time (seconds), .y = rippleCount (0-50 active ripples), .zw = resolution (width, height)
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0-1 canvas: y=0 top), .w = mouse_down (>0.5 = pressed)
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};`;
+// Catalog shaders get their 13 bindings and `struct Uniforms` from the generated
+// prelude (#1313); CI rejects a pasted copy. Field meanings are contract:
+// src/contracts/uniforms_layout.json.
+const PRELUDE_RULE = `// ── BINDINGS COME FROM THE PRELUDE ─────────────────────────────
+// Every catalog shader starts with:
+//
+//   #include "_prelude.wgsl"
+//
+// It declares bindings 0-12 (u_sampler, readTexture, writeTexture, u, readDepthTexture,
+// non_filtering_sampler, writeDepthTexture, dataTextureA, dataTextureB, dataTextureC,
+// extraBuffer, comparison_sampler, plasmaBuffer) and struct Uniforms:
+//   u.config.x = time (seconds), u.config.y = rippleCount (0-50), u.config.zw = resolution
+//   u.zoom_config.yz = mouse uv (0-1, y=0 top), u.zoom_config.w = mouse down (> 0.5)
+//   u.zoom_params.xyzw = user params p1..p4, u.ripples[i] = (uv.x, uv.y, startTime, 0)
+// Never paste these declarations into the shader; CI fails if you do. Binding 13
+// (historyTexture) is declared only by the shaders that read it. If the file still
+// has a pasted header, run: python3 scripts/migrate_to_prelude.py --files <file>`;
 
 // ── 12 WGSL GRAPHICAL TACTICS injected into kimi-cli prompts ─────────────────
 const KIMI_TACTICS = `
@@ -326,15 +322,15 @@ Read \`docs/SHADER_UPGRADE_BATCH.md\` first. An upgrade **adds 2–4 named visua
 
 ## Immutable Rules
 The following MUST NOT be changed:
-1. The 13-binding contract header (copy exactly).
-2. The \`Uniforms\` struct definition.
+1. The \`#include "_prelude.wgsl"\` line. Never paste binding declarations or \`struct Uniforms\` back in.
+2. The engine's \`Uniforms\` meanings (see below): do not repurpose fields.
 3. \`@workgroup_size\` unless the shader already uses shared memory or explicit local_invocation_id math.
 4. Saved JSON \`params\` (ids, names, defaults, min/max/step, mapping). Align \`updatedParams\` additively only.
 5. Do NOT install new npm packages.
 6. Do NOT modify Renderer.ts, types.ts, or bind groups.
 7. Do NOT stamp a spring + ripple + IQ-palette overlay unless this effect already lives under the pointer.
 
-${BINDING_HEADER}
+${PRELUDE_RULE}
 
 ---
 

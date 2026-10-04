@@ -7,6 +7,7 @@ import {
   type WebGpuProbeSerializable,
 } from '../renderer/webgpuBootProbe';
 import { getAdoptedRendererDevice, registerAdoptedRendererDevice } from '../utils/adoptedGpuDevice';
+import { expandFetchedWgsl } from '../utils/fetchShaderWgsl';
 import { formatNagaError, loadNagaValidator, type NagaValidator } from '../utils/nagaWasm';
 import { resolveShaderUrl } from '../utils/resolveShaderUrl';
 import { WebGpuProbeFailureOverlay } from './WebGpuProbeFailureOverlay';
@@ -134,7 +135,8 @@ export const ShaderValidator: React.FC = () => {
     const start = performance.now();
 
     try {
-      const wgslRes = await fetch(resolveShaderUrl(def.url));
+      const wgslUrl = resolveShaderUrl(def.url);
+      const wgslRes = await fetch(wgslUrl);
 
       if (wgslRes.status === 404) {
         return {
@@ -154,10 +156,23 @@ export const ShaderValidator: React.FC = () => {
         };
       }
 
-      const wgslCode = await wgslRes.text();
+      const rawCode = await wgslRes.text();
 
-      if (!wgslCode.trim()) {
+      if (!rawCode.trim()) {
         return { ...def, status: 'fail', error: 'Empty file', durationMs: Math.round(performance.now() - start) };
+      }
+
+      // Validate what the renderer compiles: `#include` expanded, as at the fetch seam.
+      let wgslCode: string;
+      try {
+        wgslCode = await expandFetchedWgsl(rawCode, def.id, wgslUrl);
+      } catch (err) {
+        return {
+          ...def,
+          status: 'fail',
+          error: `#include: ${(err as Error).message}`,
+          durationMs: Math.round(performance.now() - start),
+        };
       }
 
       const diag = naga.validate(wgslCode);

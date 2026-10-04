@@ -20,6 +20,7 @@
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
+const { pathToFileURL } = require('url');
 
 const ROOT = path.join(__dirname, '..');
 const SHADERS_DIR = path.join(ROOT, 'public', 'shaders');
@@ -465,7 +466,15 @@ async function runMinimalEngine(args, shaders, manifest) {
       failures.push({ id: shader.id, reason: 'no_wgsl', detail: 'missing .wgsl file' });
       continue;
     }
-    const wgsl = fs.readFileSync(wgslPath, 'utf8');
+    let wgsl;
+    try {
+      wgsl = await readShaderSource(wgslPath);
+    } catch (e) {
+      console.log(`${progress} ${shader.id}: FAIL (${e.message})`);
+      failures.push({ id: shader.id, reason: classifyFailure(e.message), detail: e.message });
+      summary.failed++;
+      continue;
+    }
     const zoomParams = extractDefaultParams(shader);
     const result = await page.evaluate(renderThumbnailInPage, {
       wgsl, zoomParams, size: args.size, time: args.time, id: shader.id,
@@ -692,6 +701,28 @@ async function main() {
   if (failures.length > 0) console.log(`[thumbnails] Failures: ${args.report}`);
 }
 
+/**
+ * Read a shader the way the app compiles it: `#include` expanded by the same
+ * expander the runtime ships (public/wasm/bridge/wgslInclude.js). The minimal
+ * engine hands the source straight to createShaderModule, which has no
+ * preprocessor, so a shader that includes _prelude.wgsl must be expanded here.
+ */
+async function readShaderSource(wgslPath) {
+  const source = fs.readFileSync(wgslPath, 'utf8');
+  const { expandWgslIncludes } = await import(
+    pathToFileURL(path.join(__dirname, '..', 'public', 'wasm', 'bridge', 'wgslInclude.js')).href
+  );
+  const libraryDir = path.dirname(wgslPath);
+  return expandWgslIncludes(
+    source,
+    async (name) => {
+      const file = path.join(libraryDir, name);
+      return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;
+    },
+    path.basename(wgslPath),
+  );
+}
+
 if (require.main === module) {
   main().catch(e => {
     console.error('[thumbnails] Fatal error:', e.message || e);
@@ -711,4 +742,5 @@ module.exports = {
   applyAttractPriority,
   hasFourLiveParams,
   loadAttractPriorityIds,
+  readShaderSource,
 };

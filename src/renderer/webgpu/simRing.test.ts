@@ -22,6 +22,7 @@ import {
 } from '../multipassGraph';
 import { GRAPH_REGISTRY, resolveSimRingRequest } from '../multipassRegistry';
 import { validateBindGroup } from '../bindGroupValidator';
+import { expandShaderSource } from '../../test-utils/shaderSource';
 import { WebGPUPipelineModule } from './pipeline';
 import {
   allocateSimRing,
@@ -173,9 +174,10 @@ describe('bind_group1.json contract', () => {
     expect(validateBindGroup('bad', extra).valid).toBe(false);
   });
 
-  it('accepts the DLA flagship shaders', () => {
+  it('accepts the DLA flagship shaders', async () => {
     for (const file of ['dla-walkers.wgsl', 'dla-render.wgsl']) {
-      const wgsl = readShader(file);
+      // Validate what the runtime compiles: the group-0 header may come from _prelude.wgsl.
+      const wgsl = await expandShaderSource(readShader(file), file);
       expect(declaresBindGroup1(wgsl)).toBe(true);
       expect(validateGroup1Declarations(wgsl)).toEqual([]);
       expect(validateBindGroup(file, wgsl).valid).toBe(true);

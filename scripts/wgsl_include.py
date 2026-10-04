@@ -164,6 +164,17 @@ def expand_file(path) -> str:
     return expand_wgsl_includes(path.read_text(encoding="utf-8"), entry=path.name)
 
 
+def read_expanded_or_raw(path) -> str:
+    """
+    For report-only scanners: the shader as the GPU sees it, or its raw text when
+    expansion fails. Reporting a broken include is the gates' job, not theirs.
+    """
+    try:
+        return expand_file(path)
+    except WgslIncludeError:
+        return Path(path).read_text(encoding="utf-8", errors="replace")
+
+
 if __name__ == "__main__":
     import sys
 

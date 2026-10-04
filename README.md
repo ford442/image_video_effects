@@ -34,8 +34,8 @@ WASM is **never** an automatic fallback. See [`WASM_BACKEND_POLICY.md`](docs/WAS
 
 ## Quick start: add a shader (5 minutes)
 
-1. **Create WGSL** — `public/shaders/my-effect.wgsl`  
-   Copy the 13-binding compute header from [`AGENTS.md`](AGENTS.md) (or [`docs/agents/WGSL_BUILTINS_GENERATIVE.md`](docs/agents/WGSL_BUILTINS_GENERATIVE.md) for generative shaders).
+1. **Create WGSL** — `python3 scripts/new_shader.py "My Effect" --category image` writes `public/shaders/my-effect.wgsl`  
+   starting with `#include "_prelude.wgsl"`, which declares the 13-binding compute header. Never paste the bindings yourself: CI rejects a pasted copy (see [`docs/SHADER_TEMPLATES.md`](docs/SHADER_TEMPLATES.md); generative helpers in [`docs/agents/WGSL_BUILTINS_GENERATIVE.md`](docs/agents/WGSL_BUILTINS_GENERATIVE.md)).
 
 2. **Register JSON** — `shader_definitions/<category>/my-effect.json`:
 
@@ -347,7 +347,7 @@ Or use the **Renderer** switcher in Controls.
 
 **Build WASM locally:** `npm run wasm:build` (requires [Emscripten](https://emscripten.org/)). In CI/headless VMs without emsdk: `SKIP_WASM_BUILD=1 npm run build` uses committed artifacts in `public/wasm/`.
 - **Pipeline:** Ping-pong textures; compute shaders read prior frame, write next
-- **Uniforms:** Shared 13-binding compute contract (see `AGENTS.md`)
+- **Uniforms:** Shared 13-binding compute contract, from `#include "_prelude.wgsl"` (see `docs/BINDING_CONTRACT.md`)
 - **Depth:** AI depth maps drive parallax and depth-aware effects
 - **Multipass:** Linear chains today; graph runner planned — [`docs/plans/PLAN-ADVANCED-EFFECTS.md`](docs/plans/PLAN-ADVANCED-EFFECTS.md)
 
