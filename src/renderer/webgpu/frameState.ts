@@ -116,6 +116,8 @@ export interface WebGPUFrameState {
   /** Encode chore readback copies into the frame encoder (before finish). */
   encodePostFxChores?: (encoder: GPUCommandEncoder) => void;
   afterFrameSubmitChores?: () => void;
+  /** After every frame submit (both paths): release per-frame inputs such as VideoFrames. */
+  afterFrameSubmit?: () => void;
 }
 
 /** Minimal host surface the frame loop reads/writes through getters. */
@@ -195,6 +197,8 @@ export interface WebGPUFrameHost {
   /** Encode chore readback copies into the frame encoder (before finish). */
   encodePostFxChores?: (encoder: GPUCommandEncoder) => void;
   afterFrameSubmitChores?: () => void;
+  /** After every frame submit (both paths): release per-frame inputs such as VideoFrames. */
+  afterFrameSubmit?: () => void;
 }
 
 /** Dependencies passed from WebGPURenderer to build a frame host. */
@@ -252,6 +256,8 @@ export interface RendererFrameDeps {
   /** Encode chore readback copies into the frame encoder (before finish). */
   encodePostFxChores?: (encoder: GPUCommandEncoder) => void;
   afterFrameSubmitChores?: () => void;
+  /** After every frame submit (both paths): release per-frame inputs such as VideoFrames. */
+  afterFrameSubmit?: () => void;
 }
 
 function simRingBindings(ring: SimRing | undefined): GraphSimRingBindings | null {
@@ -361,6 +367,7 @@ export function createRendererFrameHost(d: RendererFrameDeps): WebGPUFrameHost {
     encodePreFxChores: (encoder) => d.encodePreFxChores?.(encoder),
     encodePostFxChores: (encoder) => d.encodePostFxChores?.(encoder),
     afterFrameSubmitChores: () => d.afterFrameSubmitChores?.(),
+    afterFrameSubmit: () => d.afterFrameSubmit?.(),
   };
 }
 
@@ -452,5 +459,6 @@ export function createFrameState(host: WebGPUFrameHost): WebGPUFrameState {
     encodePreFxChores: (encoder) => h.encodePreFxChores?.(encoder),
     encodePostFxChores: (encoder) => h.encodePostFxChores?.(encoder),
     afterFrameSubmitChores: () => h.afterFrameSubmitChores?.(),
+    afterFrameSubmit: () => h.afterFrameSubmit?.(),
   };
 }

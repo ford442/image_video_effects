@@ -142,6 +142,7 @@ export class WebGPUFrameRenderer {
       this.presenter.updateBlitBindGroup(state);
       this.presenter.encodePresent(state, encoder);
       this.presenter.submitFrame(state, encoder);
+      state.afterFrameSubmit?.();
       this.updateFPS(state);
       return;
     }
@@ -171,6 +172,7 @@ export class WebGPUFrameRenderer {
     this.presenter.encodePresent(state, encoder);
     state.encodePostFxChores?.(encoder);
     this.presenter.submitFrame(state, encoder);
+    state.afterFrameSubmit?.();
     state.afterFrameSubmitChores?.();
 
     if (!state.timestampRuntime.hasRealGpuTimings) {

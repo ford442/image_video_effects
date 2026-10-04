@@ -5,6 +5,7 @@ import type { RendererType } from './backendLifecycle';
 import type { GraphRunReport } from './GraphRunner';
 import type { FrameStats } from './webgpu/deviceCounters';
 import type { PassTiming } from './passTimings';
+import type { VideoIngestStats } from './media/videoFramePump';
 
 export interface RendererMetrics {
   fps: number;
@@ -34,5 +35,7 @@ export interface RendererDiagnostics {
     timing?: { source: 'gpu-timestamp' | 'wall-clock'; periodNs: number; profiledPasses: number; overflow: number };
     /** Demoted opt-in graph nodes, `${slot}:${nodeId}` → scale. */
     nodeScales?: Record<string, number>;
+    /** Video ingest path + counters (#1314 WP-2). */
+    video?: VideoIngestStats;
   };
 }

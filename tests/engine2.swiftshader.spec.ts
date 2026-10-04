@@ -9,6 +9,7 @@
  * Needs a production build: `SKIP_WASM_BUILD=1 npm run build && npm run test:engine2`.
  */
 import { expect, test, type Page } from '@playwright/test';
+import { resolve } from 'path';
 import sharp from 'sharp';
 import {
   buildAppUrl,
@@ -19,6 +20,7 @@ import {
 } from './helpers/rendererHarness';
 
 const PORT = 3462;
+const VIDEO_FIXTURE = resolve(__dirname, 'fixtures/engine2-640x360-vp9.webm');
 
 const STACK = [
   'plasma',
@@ -54,7 +56,7 @@ async function boot(page: Page, params: Record<string, string> = {}): Promise<vo
   expect(probe.ok, `boot probe failed: ${probe.failedStage} ${probe.lastError}`).toBe(true);
 }
 
-async function loadStack(page: Page, ids: string[], input: 'generative' | 'image' = 'generative') {
+async function loadStack(page: Page, ids: string[], input: 'generative' | 'image' | 'video' | 'webcam' = 'generative') {
   return page.evaluate(
     async ({ ids, input }) => {
       const api = (window as any).__pixelocity__ as Api;
@@ -217,6 +219,69 @@ test.describe('engine2 on SwiftShader WebGPU', () => {
 
     const thumb = await thumbnailStats(page);
     expect(thumb.stdev).toBeGreaterThan(1);
+    expect(await readGpuUncapturedErrors(page)).toEqual([]);
+  });
+
+  test('video reaches the GPU as WebCodecs VideoFrames inside the single frame submit', async ({ page }) => {
+    await page.route('**/engine2-fixture.webm', (route) =>
+      route.fulfill({ path: VIDEO_FIXTURE, contentType: 'video/webm' }));
+    await boot(page);
+    const loaded = await loadStack(page, ['rgb-split-glitch'], 'video');
+    expect(loaded['rgb-split-glitch']).toBe(true);
+    await page.evaluate(async () => {
+      // The app's single hidden <video> (sibling of the main canvas) feeds every source.
+      const v = document.querySelector('canvas')?.parentElement?.querySelector('video') as HTMLVideoElement;
+      v.muted = true;
+      v.src = '/engine2-fixture.webm';
+      await v.play();
+    });
+    const video = await page.evaluate(async () => {
+      const api = (window as any).__pixelocity__;
+      const deadline = performance.now() + 60_000;
+      let stats: any;
+      while (performance.now() < deadline) {
+        await api.waitFrames(1);
+        stats = api.renderer.getDiagnostics()?.webgpu;
+        if ((stats?.video?.framesIngested ?? 0) >= 5) break;
+      }
+      return { video: stats?.video, frameStats: stats?.frameStats };
+    });
+    expect(video.video.ingestPath).toBe('videoframe');
+    expect(video.video.framesIngested).toBeGreaterThanOrEqual(5);
+    expect(typeof video.video.droppedFrames).toBe('number');
+    expect(video.frameStats.submitsLastFrame).toBe(1);
+
+    const thumb = await thumbnailStats(page);
+    expect(thumb.stdev).toBeGreaterThan(5); // testsrc2 is colorful
+    expect(await readGpuUncapturedErrors(page)).toEqual([]);
+  });
+
+  test('the fake webcam flows through the same VideoFrame path', async ({ page }) => {
+    await boot(page);
+    const loaded = await loadStack(page, ['rgb-split-glitch'], 'webcam');
+    expect(loaded['rgb-split-glitch']).toBe(true);
+    // Same wiring as useWebcam → WebGPUCanvas: a getUserMedia stream (Chromium's
+    // fake camera here) on the app's hidden <video>.
+    await page.evaluate(async () => {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 360 } });
+      const v = document.querySelector('canvas')?.parentElement?.querySelector('video') as HTMLVideoElement;
+      v.muted = true;
+      v.srcObject = stream;
+      await v.play();
+    });
+    const stats = await page.evaluate(async () => {
+      const api = (window as any).__pixelocity__;
+      const deadline = performance.now() + 60_000;
+      let video: any;
+      while (performance.now() < deadline) {
+        await api.waitFrames(1);
+        video = api.renderer.getDiagnostics()?.webgpu?.video;
+        if ((video?.framesIngested ?? 0) >= 3) break;
+      }
+      return video;
+    });
+    expect(stats, JSON.stringify(stats)).toMatchObject({ ingestPath: 'videoframe' });
+    expect(stats.framesIngested).toBeGreaterThanOrEqual(3);
     expect(await readGpuUncapturedErrors(page)).toEqual([]);
   });
 });

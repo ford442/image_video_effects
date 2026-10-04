@@ -42,7 +42,6 @@ import {
 } from './webgpu/frame';
 import {
   createMediaInputState,
-  encodeVideoFrame as mediaEncodeVideoFrame,
   updateVideoFrame as mediaUpdateVideoFrame,
   loadImage as mediaLoadImage,
   uploadRGBA8,
@@ -61,14 +60,25 @@ import { GpuChoresHost } from '../gpuChores';
 import type { WebGpuProbeHandoff } from './webgpuBootProbe';
 import { allocateWorkingPool, rungsForRequest } from './webgpu/historyTexProbe';
 import { SimRing } from './webgpu/simRing';
-import { resolveGraphForShader, resolveSimRingRequest } from './multipassRegistry';
+import { resolveGraphForShader, resolveSimRingRequest, getGraphEntryIds, resolveMultipassChain } from './multipassRegistry';
 import { graphUsesSimRing } from './multipassGraph';
 import { instrumentDevice, type FrameStats } from './webgpu/deviceCounters';
 import type { PassTiming } from './passTimings';
 import { ShaderWarmupQueue, type WarmupEntry } from './webgpu/shaderWarmup';
 import { NodeScaleIslands, nodeScaleKey, snapNodeScale } from './webgpu/nodeScale';
 import type { FrameIslands } from './webgpu/framePlan';
-import { getGraphEntryIds, resolveMultipassChain } from './multipassRegistry';
+import type { VideoIngestStats } from './media/videoFramePump';
+import { VideoIngest } from './media/videoIngest';
+
+/** `?video_ingest=element` forces the pre-#1314 per-rAF element import (A/B, debugging). */
+function videoFrameIngestDisabledByUrl(): boolean {
+  try {
+    const search = globalThis.location?.search ?? '';
+    return new URLSearchParams(search).get('video_ingest') === 'element';
+  } catch {
+    return false;
+  }
+}
 
 export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private device: GPUDevice | null = null;
@@ -149,6 +159,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private readonly islands = new NodeScaleIslands();
   /** Demoted opt-in graph nodes: `${slot}:${nodeId}` → scale (< 1). */
   private readonly nodeScales = new Map<string, number>();
+  /** WebCodecs VideoFrame ingest (element path as fallback). */
+  private readonly videoIngest = new VideoIngest(videoFrameIngestDisabledByUrl());
 
   constructor(private config: RendererConfig) {}
 
@@ -195,6 +207,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
         this.initialized = false;
         this.warmup?.stop();
         this.warmup = null;
+        this.videoIngest.detach();
         this.timestampRuntime.hasRealGpuTimings = false;
         this.timestampRuntime.readbackPending = false;
         this.gpuChores.detach('device lost');
@@ -660,6 +673,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     return {
       hasVideo: true, playing: !v.paused, readyState: v.readyState,
       currentTime: v.currentTime, videoWidth: v.videoWidth, videoHeight: v.videoHeight,
+      ...this.getVideoIngestStats(),
     };
   }
 
@@ -778,8 +792,12 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     }
   }
 
+  /** Idempotent: WebGPUCanvas calls this every rAF with the same element. */
   setVideo(video: HTMLVideoElement | undefined): void {
-    this.mediaState.video = video ?? null;
+    const next = video ?? null;
+    if (this.mediaState.video === next) return;
+    this.videoIngest.detach();
+    this.mediaState.video = next;
   }
 
   get mediaVideo(): HTMLVideoElement | null {
@@ -792,8 +810,21 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   }
 
   encodeVideoFrame(encoder: GPUCommandEncoder): boolean {
-    return mediaEncodeVideoFrame(this.getMediaContext(), this.mediaState, encoder, () =>
-      profilePass(this.timestampRuntime, { kind: 'video', label: 'videoCopyPass' }));
+    return this.videoIngest.encode(encoder, {
+      device: this.device,
+      media: this.mediaState,
+      context: () => this.getMediaContext(),
+      timestamps: () => profilePass(this.timestampRuntime, { kind: 'video', label: 'videoCopyPass' }),
+    });
+  }
+
+  /** Frame-loop hook after queue.submit: release the frame's VideoFrame. */
+  afterFrameSubmit(): void {
+    this.videoIngest.afterSubmit();
+  }
+
+  getVideoIngestStats(): VideoIngestStats {
+    return this.videoIngest.stats(!!this.mediaState.video);
   }
 
   async loadImage(url: string): Promise<string> {
@@ -941,6 +972,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.warmup = null;
     this.islands.destroy();
     this.nodeScales.clear();
+    this.videoIngest.detach();
     this.initialized = false;
     this.gpuChores.destroy();
     this.simRing.destroy();

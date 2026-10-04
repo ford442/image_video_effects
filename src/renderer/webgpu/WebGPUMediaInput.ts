@@ -330,16 +330,27 @@ export function encodeVideoCopy(
   encoder: GPUCommandEncoder,
   timestamps?: () => GPURenderPassTimestampWrites | undefined,
 ): boolean {
-  if (
-    !ctx.device ||
-    !state.video ||
-    !ctx.videoCopyPipeline ||
-    !ctx.videoCopyBindGroupLayout
-  ) {
+  return state.video ? encodeExternalCopy(ctx, state.video, encoder, timestamps) : false;
+}
+
+/**
+ * Encode an external-texture copy of `source` (the <video> element, or a
+ * WebCodecs VideoFrame from the ingest pump) stretched over sourceTex. A
+ * VideoFrame-backed external texture stays valid until the frame is closed,
+ * so the caller closes it only after queue.submit. May throw if the
+ * browser cannot import the source (the caller falls back).
+ */
+export function encodeExternalCopy(
+  ctx: WebGPUMediaInputContext,
+  source: HTMLVideoElement | VideoFrame,
+  encoder: GPUCommandEncoder,
+  timestamps?: () => GPURenderPassTimestampWrites | undefined,
+): boolean {
+  if (!ctx.device || !ctx.videoCopyPipeline || !ctx.videoCopyBindGroupLayout) {
     return false;
   }
 
-  const external = ctx.device.importExternalTexture({ source: state.video });
+  const external = ctx.device.importExternalTexture({ source });
   // External textures expire with the task, so this group cannot be cached.
   const videoCopyBindGroup = ctx.device.createBindGroup({
     label: 'videoCopyBG',
