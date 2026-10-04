@@ -2,7 +2,7 @@
   "id": "velocity-field-paint",
   "name": "Velocity Field — Vorticity Confinement",
   "url": "shaders/velocity-field-paint.wgsl",
-  "description": "2D Navier-Stokes momentum advection with 4-neighbor vorticity confinement (Fedkiw et al.), viscous Laplace damping, chromatic shear dispersion, and exact-load velocity state persistence.",
+  "description": "2D Navier-Stokes momentum advection with 4-neighbor vorticity confinement (Fedkiw et al.), viscous Laplace damping, chromatic shear dispersion, and exact-load velocity state persistence. Velocity self-advects semi-Lagrangian, confinement uses the stored curl field, and moving regions are combed into streamline paint streaks.",
   "features": [
     "mouse-driven",
     "audio-reactive",

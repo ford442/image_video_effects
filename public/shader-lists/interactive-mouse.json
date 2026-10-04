@@ -496,7 +496,7 @@
     "name": "Brush Strokes",
     "category": "interactive-mouse",
     "url": "shaders/brush-strokes.wgsl",
-    "description": "Impasto oil brush stroke simulation with directional bristle friction, dynamic glaze cycling, and canvas grain relief. Features spring cursor bristle tracking, click paint spatter ripples, exact-C temporal paint accumulation, and ACES tonemapping.",
+    "description": "Impasto oil brush stroke simulation with directional bristle friction, dynamic glaze cycling, and canvas grain relief. Features spring cursor bristle tracking, click paint spatter ripples, exact-C temporal paint accumulation, and ACES tonemapping. Moving strokes comb bristle grooves along the drag direction, break into dry-brush skips at speed, and catch a raking light on the impasto ridges.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -1255,7 +1255,7 @@
     "name": "Chronos Brush",
     "category": "interactive-mouse",
     "url": "shaders/chronos-brush.wgsl",
-    "description": "Freeze time by painting over the video feed with chromatic brush tints that cycle per click. Audio boosts brush size and opacity; depth modulates paint intensity.",
+    "description": "Freeze time by painting over the video feed with chromatic brush tints that cycle per click. Audio boosts brush size and opacity; depth modulates paint intensity. A chronophotograph shutter stamps frozen frames in ticks, and fading frozen paint thaws and drips downward before it vanishes.",
     "params": [
       {
         "id": "brushSize",
@@ -9451,7 +9451,7 @@
     "name": "Mouse Ink Bleed",
     "url": "shaders/mouse-ink-bleed.wgsl",
     "category": "interactive-mouse",
-    "description": "Organic ink that bleeds and diffuses outward from the mouse position with domain-warped FBM turbulence, temporal trails, audio envelope reactivity, and depth-aware compositing.",
+    "description": "Organic ink that bleeds and diffuses outward from the mouse position with domain-warped FBM turbulence, temporal trails, audio envelope reactivity, and depth-aware compositing. Wet ink wicks along paper fibres in hairline feathers and leaves a dark tide-line rim where the wet front dries.",
     "tags": [
       "ink",
       "bleed",
@@ -14640,7 +14640,7 @@
     "id": "rgb-shift-brush",
     "name": "RGB Shift Brush",
     "url": "shaders/rgb-shift-brush.wgsl",
-    "description": "Held-pointer RGB separation brush with exact advected mask history, rapid spectral ribbons, stylized channel transmission, three-band audio response, and bounded click fronts.",
+    "description": "Held-pointer RGB separation brush with exact advected mask history, rapid spectral ribbons, stylized channel transmission, three-band audio response, and bounded click fronts. A slower long-wave tail mask leaves a lingering blue fringe behind the trail, and dense trail regions open into a seven-tap prism fan.",
     "params": [
       {
         "id": "shift",
@@ -15915,7 +15915,7 @@
       "luminance-key",
       "upgraded-rgba"
     ],
-    "description": "Paints a spectral blackbody flame that follows the mouse, blended in OkLab and split-toned. Audio bass inflates the brush and bloom, while chromatic separation, depth diffusion, and alpha-layered luminance-key compositing add atmosphere.",
+    "description": "Paints a spectral blackbody flame that follows the mouse, blended in OkLab and split-toned. Audio bass inflates the brush and bloom, while chromatic separation, depth diffusion, and alpha-layered luminance-key compositing add atmosphere. Strokes cool along the blackbody locus as they fade, hot paint throws a heat-haze shimmer above it, and cooling embers flicker with cinders.",
     "params": [
       {
         "id": "brush-size",
@@ -16843,7 +16843,7 @@
     "id": "temporal-slit-paint",
     "name": "Temporal Slit Paint",
     "url": "shaders/temporal-slit-paint.wgsl",
-    "description": "Velocity-stretched brush and traveling slit-head runners on a raw A canvas. Display is ACES of the paint composite; coverage stays in A. Held stamps, click spatters, exact-C diffusion.",
+    "description": "Velocity-stretched brush and traveling slit-head runners on a raw A canvas. Display is ACES of the paint composite; coverage stays in A. Held stamps, click spatters, exact-C diffusion. Moving strokes slit-scan the live frame along the drag direction, with quarter-second exposure frame-lines marking time.",
     "features": [
       "mouse-driven",
       "upgraded-rgba",
@@ -17135,7 +17135,7 @@
     "id": "velocity-field-paint",
     "name": "Velocity Field — Vorticity Confinement",
     "url": "shaders/velocity-field-paint.wgsl",
-    "description": "2D Navier-Stokes momentum advection with 4-neighbor vorticity confinement (Fedkiw et al.), viscous Laplace damping, chromatic shear dispersion, and exact-load velocity state persistence.",
+    "description": "2D Navier-Stokes momentum advection with 4-neighbor vorticity confinement (Fedkiw et al.), viscous Laplace damping, chromatic shear dispersion, and exact-load velocity state persistence. Velocity self-advects semi-Lagrangian, confinement uses the stored curl field, and moving regions are combed into streamline paint streaks.",
     "features": [
       "mouse-driven",
       "audio-reactive",

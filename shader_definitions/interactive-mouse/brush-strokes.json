@@ -3,7 +3,7 @@
   "name": "Brush Strokes",
   "category": "interactive-mouse",
   "url": "shaders/brush-strokes.wgsl",
-  "description": "Impasto oil brush stroke simulation with directional bristle friction, dynamic glaze cycling, and canvas grain relief. Features spring cursor bristle tracking, click paint spatter ripples, exact-C temporal paint accumulation, and ACES tonemapping.",
+  "description": "Impasto oil brush stroke simulation with directional bristle friction, dynamic glaze cycling, and canvas grain relief. Features spring cursor bristle tracking, click paint spatter ripples, exact-C temporal paint accumulation, and ACES tonemapping. Moving strokes comb bristle grooves along the drag direction, break into dry-brush skips at speed, and catch a raking light on the impasto ridges.",
   "features": [
     "mouse-driven",
     "audio-reactive",

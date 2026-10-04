@@ -2,7 +2,7 @@
   "id": "temporal-slit-paint",
   "name": "Temporal Slit Paint",
   "url": "shaders/temporal-slit-paint.wgsl",
-  "description": "Velocity-stretched brush and traveling slit-head runners on a raw A canvas. Display is ACES of the paint composite; coverage stays in A. Held stamps, click spatters, exact-C diffusion.",
+  "description": "Velocity-stretched brush and traveling slit-head runners on a raw A canvas. Display is ACES of the paint composite; coverage stays in A. Held stamps, click spatters, exact-C diffusion. Moving strokes slit-scan the live frame along the drag direction, with quarter-second exposure frame-lines marking time.",
   "features": [
     "mouse-driven",
     "upgraded-rgba",

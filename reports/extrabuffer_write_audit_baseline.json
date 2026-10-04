@@ -345,20 +345,6 @@
         "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
       },
       {
-        "file": "public/shaders/mouse-ink-bleed.wgsl",
-        "indices": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7
-        ],
-        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
-      },
-      {
         "file": "public/shaders/oscilloscope-overlay.wgsl",
         "indices": [
           0
