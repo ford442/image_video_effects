@@ -82,5 +82,16 @@ export default defineConfig({
         launchOptions: { args: SWIFTSHADER_WEBGPU_ARGS },
       },
     },
+    {
+      // The existing renderer smoke suites on the software device. Run once per
+      // render thread: PX_RENDER_THREAD=main|worker (default worker, #1314).
+      name: 'swiftshader-smoke',
+      testMatch: ['**/wasm-renderer.smoke.spec.ts', '**/layerChain.smoke.spec.ts'],
+      timeout: 120 * 1000,
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: { args: SWIFTSHADER_WEBGPU_ARGS },
+      },
+    },
   ],
 });

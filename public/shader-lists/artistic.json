@@ -379,7 +379,9 @@
             "reads": [],
             "writes": [
               "dataA"
-            ]
+            ],
+            "scalable": true,
+            "minScale": 0.5
           },
           {
             "id": "filter",

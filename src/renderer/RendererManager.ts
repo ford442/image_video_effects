@@ -21,11 +21,15 @@ import {
   applyResolutionScaleToRenderer,
   buildPerformanceStatus,
   createPerformancePolicyState,
+  framePassBudgetFor,
   readResolutionScale,
   refreshFormatCapabilities,
   registerFp32Requirement,
   releaseFp32Requirement,
 } from './performanceStatus';
+import { isCanvasTransferred } from './worker/WorkerWebGPUBackend';
+import { isWebGpuBackend, type WebGPUBackendApi } from './webgpuBackendApi';
+import type { PassTiming } from './passTimings';
 import {
   ShaderLoadMeta,
   SLOT_COUNT,
@@ -63,6 +67,12 @@ export interface RendererManagerOptions {
    * The renderer is blocked; the host should surface the WebGPU-required overlay.
    */
   onBackendFailure?: (failedType: RendererType, message: string) => void;
+  /**
+   * Swap in a new <canvas> and resolve with it. Needed once the render worker
+   * owns the current canvas (#1314): switching to WASM / Canvas2D, or retrying
+   * on the page after a worker failure.
+   */
+  acquireFreshCanvas?: () => Promise<HTMLCanvasElement>;
 }
 
 export class RendererManager {
@@ -83,6 +93,9 @@ export class RendererManager {
   private metrics: RendererMetrics = { fps: 0, frameTime: 0, agentCount: 0, isWASM: false };
   private readonly onMetricsUpdate?: (metrics: RendererMetrics) => void;
   private readonly onBackendFailure?: RendererManagerOptions['onBackendFailure'];
+  private readonly acquireFreshCanvas?: RendererManagerOptions['acquireFreshCanvas'];
+  /** 'main' after the render worker failed for this manager (#1314). */
+  private renderThreadOverride: 'main' | 'worker' | null = null;
   private metricsRafId: number | null = null;
   private destroyed = false;
   private readonly perfState: PerformancePolicyState = createPerformancePolicyState();
@@ -96,16 +109,26 @@ export class RendererManager {
     this.config = config;
     this.onMetricsUpdate = onMetricsUpdate;
     this.onBackendFailure = options.onBackendFailure;
+    this.acquireFreshCanvas = options.acquireFreshCanvas;
     this.adaptiveController = new AdaptivePerformanceController({
       getFps: () => this.getCurrentFPS(),
       getScale: () => this.perfState.resolutionScale,
       setScale: (scale) => applyResolutionScaleToRenderer(this.perfState, this.shaderRenderer(), scale),
+      // #1314: shrink one expensive opt-in graph node before the whole canvas.
+      getPassTimings: () => this.getPassTimings(),
+      getScalableNodes: () => {
+        const r = this.shaderRenderer();
+        return isWebGpuBackend(r) ? r.getScalableNodes() : [];
+      },
+      setNodeScale: (slot, nodeId, scale) => {
+        this.setNodeScale(slot, nodeId, scale);
+      },
     });
   }
 
-  private shaderRenderer(): WebGPURenderer | WASMRenderer | null {
+  private shaderRenderer(): WebGPUBackendApi | WASMRenderer | null {
     const r = this.currentRenderer;
-    return r instanceof WebGPURenderer || r instanceof WASMRenderer ? r : null;
+    return isWebGpuBackend(r) || r instanceof WASMRenderer ? r : null;
   }
 
   private backend() {
@@ -117,6 +140,10 @@ export class RendererManager {
 
   overrideSlotCapForTests(cap: number | null): void {
     this.slotCapOverride = cap;
+    const r = this.shaderRenderer();
+    if (isWebGpuBackend(r)) {
+      r.setFramePassBudget(framePassBudgetFor(this.perfState.performancePolicy, cap));
+    }
   }
 
   private slotPolicy() {
@@ -167,12 +194,39 @@ export class RendererManager {
       console.log('✅ Using TypeScript WebGPU renderer (native navigator.gpu)');
       return true;
     }
+    if (isCanvasTransferred(this.canvas) && this.acquireFreshCanvas && this.renderThreadOverride !== 'main') {
+      // The worker took the canvas but could not render (probe / init failed there):
+      // one retry on the page with a fresh canvas before giving up.
+      console.warn('[RendererManager] Render worker failed after taking the canvas — retrying on the page');
+      this.renderThreadOverride = 'main';
+      if (await this.switchRenderer('webgpu')) return true;
+    }
     console.warn('⚠️ WebGPU unavailable — renderer blocked (no automatic Canvas2D fallback)');
     return false;
   }
 
   async switchRenderer(type: RendererType): Promise<boolean> {
     if (!this.canvas) return false;
+    // A canvas is bound to its first context type ('webgpu' or '2d') and, once
+    // the render worker took it (#1314), to the worker. Switching backend type
+    // therefore starts on a fresh <canvas> whenever the host can provide one.
+    const transferred = isCanvasTransferred(this.canvas);
+    const changingType = this.currentType !== null && this.currentType !== type;
+    if (transferred && !this.acquireFreshCanvas) {
+      console.warn(
+        `[RendererManager] switchRenderer('${type}') refused: the canvas belongs to the render worker ` +
+          '(reload with ?renderer=main to switch backends)',
+      );
+      return false;
+    }
+    if (this.acquireFreshCanvas && (transferred || changingType)) {
+      if (transferred && this.currentRenderer) {
+        await releaseRendererGpu(this.currentRenderer);
+        this.currentRenderer = null;
+        this.currentType = null;
+      }
+      this.canvas = await this.acquireFreshCanvas();
+    }
     const cpuBitmap = inputBridge.readCpuInputBitmap(this.currentRenderer);
     const handoff = type === 'webgpu' ? this.webGpuHandoff : undefined;
     releaseAdoptedDeviceIfLeavingWebGpu(this.currentType, type);
@@ -183,6 +237,7 @@ export class RendererManager {
     }
     const outcome = await performBackendSwitch({
       targetType: type,
+      renderThread: this.renderThreadOverride ?? undefined,
       canvas: this.canvas,
       config: this.config,
       previousType: this.currentType,
@@ -362,7 +417,7 @@ export class RendererManager {
     return reloadShaderOnBackend(this.currentRenderer, this.backend(), id, url);
   }
   applyTestRenderState(state: Parameters<NonNullable<WebGPURenderer['applyTestRenderState']>>[0]): void {
-    (this.currentRenderer as WebGPURenderer | null)?.applyTestRenderState?.(state);
+    (isWebGpuBackend(this.currentRenderer) ? this.currentRenderer : null)?.applyTestRenderState(state);
   }
   getFrameImage(): string { return this.currentRenderer?.getFrameImage?.() ?? ''; }
   async refreshFrameImage(): Promise<string> {
@@ -394,6 +449,22 @@ export class RendererManager {
   supportsCanvasFrameCapture(): boolean {
     const r = this.currentRenderer as { supportsCanvasCopySrc?: () => boolean } | null;
     return !!r?.supportsCanvasCopySrc?.();
+  }
+  /**
+   * Render worker (#1314): a function returning a VideoFrame of the next
+   * presented frame, taken in the worker and transferred. Null when the
+   * backend renders on the page (record from the canvas instead).
+   */
+  getWorkerFrameGrabber(): ((timestampUs: number) => Promise<VideoFrame | null>) | null {
+    const r = this.currentRenderer;
+    if (!isWebGpuBackend(r) || r.renderThread !== 'worker') return null;
+    const grab = (r as { grabVideoFrame?: (ts: number) => Promise<VideoFrame | null> }).grabVideoFrame;
+    return grab ? (ts) => grab.call(r, ts) : null;
+  }
+  /** Where the TS backend renders (main page or render worker); null for WASM / Canvas2D. */
+  getRenderThread(): 'main' | 'worker' | null {
+    const r = this.currentRenderer;
+    return isWebGpuBackend(r) ? r.renderThread : null;
   }
   setCanvasCopySrc(enabled: boolean): boolean {
     const r = this.currentRenderer as { setCanvasCopySrc?: (e: boolean) => boolean } | null;
@@ -437,13 +508,40 @@ export class RendererManager {
   setSourceAutoExposure(enabled: boolean): void {
     const r = this.shaderRenderer();
     if (r && 'setSourceAutoExposure' in r) {
-      (r as WebGPURenderer).setSourceAutoExposure(enabled);
+      (r as WebGPUBackendApi).setSourceAutoExposure(enabled);
     }
+  }
+  /** Smoothed per-pass GPU ms from the TS profiler (empty until timestamps resolve, or on WASM/JS). */
+  getPassTimings(): PassTiming[] {
+    const r = this.shaderRenderer();
+    return isWebGpuBackend(r) ? r.getPassTimings() : [];
+  }
+  /** Run an opt-in graph node below full size (TS WebGPU only). Returns the scale in effect. */
+  setNodeScale(slot: number, nodeId: string, scale: number): number {
+    const r = this.shaderRenderer();
+    return isWebGpuBackend(r) ? r.setNodeScale(slot, nodeId, scale) : 1;
+  }
+  /**
+   * True while a GPU backend holds a device, on this thread or in the render
+   * worker (where getDevice() is null). Lets depth estimation stay off WebGPU.
+   */
+  isGpuDeviceActive(): boolean {
+    return !!this.getDevice() || (isWebGpuBackend(this.currentRenderer) && this.currentRenderer.initialized);
+  }
+  /** True when the TS backend already holds a compiled pipeline for `id`. */
+  isShaderCached(id: string): boolean {
+    const r = this.shaderRenderer();
+    return isWebGpuBackend(r) ? r.isShaderCached(id) : false;
+  }
+  /** Pre-compile pipelines the user is about to pick (TS WebGPU only; no-op elsewhere). */
+  warmShaders(entries: Array<{ id: string; url: string }>): void {
+    const r = this.shaderRenderer();
+    if (isWebGpuBackend(r)) r.warmShaders(entries);
   }
   async captureThumbnailPng(outSize: number): Promise<string | null> {
     const r = this.shaderRenderer();
     if (r && 'captureChoresThumbnailPng' in r) {
-      return (r as WebGPURenderer).captureChoresThumbnailPng(outSize);
+      return (r as WebGPUBackendApi).captureChoresThumbnailPng(outSize);
     }
     return null;
   }
@@ -460,9 +558,9 @@ export class RendererManager {
   getPerformanceStatus(): RendererPerformanceStatus {
     const shader = this.shaderRenderer();
     const historyLayers =
-      shader instanceof WebGPURenderer ? shader.getHistoryLayers() : undefined;
+      isWebGpuBackend(shader) ? shader.getHistoryLayers() : undefined;
     const workingSizeCap =
-      shader instanceof WebGPURenderer ? shader.getWorkingSizeCap() : undefined;
+      isWebGpuBackend(shader) ? shader.getWorkingSizeCap() : undefined;
     return buildPerformanceStatus(
       this.perfState,
       this.getActiveRendererType(),

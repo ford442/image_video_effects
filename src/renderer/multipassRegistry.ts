@@ -147,7 +147,9 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
         "reads": [],
         "writes": [
           "dataA"
-        ]
+        ],
+        "scalable": true,
+        "minScale": 0.5
       },
       {
         "id": "filter",

@@ -30,6 +30,8 @@ export interface BenchResult {
   gpuTimingsAvailable: boolean;
   timingSource?: string;
   p95TotalMs: number;
+  /** Per-pass GPU ms when timestamps resolved (TS backend, #1314 WP-4). */
+  passTimings?: Array<{ key: string; label: string; kind: string; gpuMs: number; iterations: number }>;
   qualityMode?: string;
   colorFormat?: string;
   estimatedTextureMiB?: number;
@@ -87,15 +89,21 @@ export function buildAppUrl(
   extraParams: Record<string, string> = {},
   port = serverPort
 ): string {
+  // TS backend thread (#1314): the render worker by default; PX_RENDER_THREAD=main
+  // runs the same specs with ?renderer=main.
+  const renderer = backend === 'webgpu' && process.env.PX_RENDER_THREAD === 'main' ? 'main' : backend;
   const params = new URLSearchParams({
-    renderer: backend,
+    renderer,
     testMode: '1',
     ...extraParams,
   });
   return `http://localhost:${port}/?${params.toString()}`;
 }
 
-export async function startStaticServer(port = DEFAULT_PORT): Promise<void> {
+export async function startStaticServer(
+  port = DEFAULT_PORT,
+  options: { isolated?: boolean } = {},
+): Promise<void> {
   const indexHtml = resolve(BUILD_DIR, 'index.html');
   if (!existsSync(indexHtml)) {
     throw new Error(
@@ -104,9 +112,14 @@ export async function startStaticServer(port = DEFAULT_PORT): Promise<void> {
   }
 
   serverPort = port;
-  server = spawn('python3', ['-m', 'http.server', String(port), '--directory', BUILD_DIR], {
-    stdio: 'pipe',
-  });
+  // isolated: COOP/COEP like production (.htaccess), needed for SharedArrayBuffer (#1314).
+  server = options.isolated
+    ? spawn('node', [resolve(__dirname, '../../scripts/serve-isolated.mjs'), '--port', String(port), '--dir', BUILD_DIR], {
+        stdio: 'pipe',
+      })
+    : spawn('python3', ['-m', 'http.server', String(port), '--directory', BUILD_DIR], {
+        stdio: 'pipe',
+      });
 
   await new Promise<void>((resolvePromise, reject) => {
     const timeout = setTimeout(() => reject(new Error('Static server start timeout')), 60000);
@@ -297,6 +310,11 @@ export async function applyTestState(
 
 /** Sample canvas pixels in-browser (works for WebGPU-backed canvases). */
 export async function captureCanvasStats(page: Page): Promise<ImageStats> {
+  // A render-worker canvas is not readable on the page (#1314): the app captures over RPC.
+  const viaWorker = await page.evaluate(() => (window as any).__pixelocity__?.getRenderThread?.() === 'worker');
+  if (viaWorker) {
+    return page.evaluate(() => (window as any).__pixelocity__.captureCanvasStats());
+  }
   return page.evaluate(() => {
     const canvas = document.querySelector('canvas') as HTMLCanvasElement | null;
     if (!canvas) {

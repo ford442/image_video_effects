@@ -9,7 +9,7 @@
 import { ArrayBufferTarget, Muxer } from 'webm-muxer';
 
 export interface GpuFrameSource {
-  readonly kind: 'canvas' | 'readback';
+  readonly kind: 'canvas' | 'readback' | 'worker';
   /** Snapshot the current output as a VideoFrame at `timestampUs`; null skips the tick. */
   grab(timestampUs: number): VideoFrame | null | Promise<VideoFrame | null>;
 }
@@ -40,6 +40,11 @@ export function canvasFrameSource(canvas: HTMLCanvasElement): GpuFrameSource {
     kind: 'canvas',
     grab: (timestamp) => new VideoFrame(canvas, { timestamp, alpha: 'discard' }),
   };
+}
+
+/** Render worker (#1314): the worker grabs each presented frame and transfers it. */
+export function workerFrameSource(grab: (timestampUs: number) => Promise<VideoFrame | null>): GpuFrameSource {
+  return { kind: 'worker', grab };
 }
 
 /** RGBA8 readback (WASM beginFrameCapture) wrapped directly into a VideoFrame. */

@@ -25,6 +25,10 @@ export function loadTransformersModule(): Promise<typeof import('@xenova/transfo
 function configureTransformersEnv(env: typeof import('@xenova/transformers').env): void {
   env.allowLocalModels = false;
   env.backends.onnx.logLevel = 'warning';
+  // Cross-origin isolation (#1314) would otherwise switch ONNX Runtime to its
+  // threaded wasm build (extra cross-origin worker + SAB loads). Keep the
+  // single-threaded behaviour the app was tuned with.
+  if (env.backends.onnx.wasm) env.backends.onnx.wasm.numThreads = 1;
   env.useBrowserCache = true;
 }
 

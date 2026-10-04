@@ -3,7 +3,7 @@ import * as WasmBridge from '../wasm/wasm_bridge';
 import { reportError } from './ErrorHandling';
 import { describeWasmInitFailure, summarizeWasmInitState } from './wasmInitDiagnostics';
 import { publishWasmProbeSuccess } from './webgpuBootProbe';
-import { startGpuEncodeSession } from '../recording/gpuEncodeSupport';
+import { startGpuEncodeSession, type GpuEncodeSession } from '../recording/gpuEncodeSupport';
 import { InputSource } from './types';
 import { PHYSICAL_SLOT_LIMIT, checkPhysicalSlotIndex } from './slotOrchestrator';
 
@@ -400,12 +400,13 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     // with a logged reason, when VideoEncoder / a WebM codec is missing.
     return WasmBridge.startRecording(canvasElement, {
       ...options,
+      // No grabFrame here, so the session is 'canvas' or 'readback' (never 'worker').
       gpuEncode: (capture, opts) => startGpuEncodeSession({
         canvas: WasmBridge.getPresentCanvas() ?? canvasElement,
         supportsCanvasCopySrc: () => WasmBridge.supportsCanvasCopySrc(),
         setCanvasCopySrc: (enabled) => WasmBridge.setCanvasCopySrc(enabled),
         readback: capture,
-      }, opts),
+      }, opts) as Promise<(GpuEncodeSession & { kind: 'canvas' | 'readback' }) | null>,
     });
   }
 

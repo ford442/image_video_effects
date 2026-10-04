@@ -21,6 +21,7 @@ import {
   setupTimestampQueries,
   buildGPUTimings,
   destroyTimestampQueries,
+  profilePass,
   createDisabledTimestampQueries,
   WebGPUTimestampQueries,
 } from './webgpu/WebGPUTiming';
@@ -41,9 +42,10 @@ import {
 } from './webgpu/frame';
 import {
   createMediaInputState,
-  encodeVideoFrame as mediaEncodeVideoFrame,
   updateVideoFrame as mediaUpdateVideoFrame,
   loadImage as mediaLoadImage,
+  ingestDecodedImage,
+  ensureOffscreen,
   uploadRGBA8,
   copyExternalToSource,
   releaseStill,
@@ -60,11 +62,31 @@ import { GpuChoresHost } from '../gpuChores';
 import type { WebGpuProbeHandoff } from './webgpuBootProbe';
 import { allocateWorkingPool, rungsForRequest } from './webgpu/historyTexProbe';
 import { SimRing } from './webgpu/simRing';
-import { resolveGraphForShader, resolveSimRingRequest } from './multipassRegistry';
+import { resolveGraphForShader, resolveSimRingRequest, getGraphEntryIds, resolveMultipassChain } from './multipassRegistry';
 import { graphUsesSimRing } from './multipassGraph';
 import { instrumentDevice, type FrameStats } from './webgpu/deviceCounters';
+import type { PassTiming } from './passTimings';
+import { ShaderWarmupQueue, type WarmupEntry } from './webgpu/shaderWarmup';
+import { NodeScaleIslands, nodeScaleKey, snapNodeScale } from './webgpu/nodeScale';
+import type { FrameIslands } from './webgpu/framePlan';
+import type { TransferredVideoFrames, VideoIngestStats } from './media/videoFramePump';
+import { VideoIngest } from './media/videoIngest';
+
+/** `?video_ingest=element` forces the pre-#1314 per-rAF element import (A/B, debugging). */
+function videoFrameIngestDisabledByUrl(): boolean {
+  try {
+    const search = globalThis.location?.search ?? '';
+    return new URLSearchParams(search).get('video_ingest') === 'element';
+  } catch {
+    return false;
+  }
+}
 
 export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
+  /** Backend tag shared with the render-worker proxy (see webgpuBackendApi.ts). */
+  readonly backendKind = 'webgpu' as const;
+  /** This instance renders on the thread that owns it (the proxy reports 'worker'). */
+  readonly renderThread: 'main' | 'worker' = 'main';
   private device: GPUDevice | null = null;
   private context: GPUCanvasContext | null = null;
   private canvasFormat: GPUTextureFormat = 'bgra8unorm';
@@ -109,7 +131,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private timestampRuntime: WebGPUTimestampQueries = createDisabledTimestampQueries();
   private gpuTimings = this.timestampRuntime.gpuTimings;
 
-  private initialized = false;
+  /** Read by diagnostics; written only by init / teardown / device loss. */
+  initialized = false;
   private animationId: number | null = null;
   private startTime = 0;
   private frameCount = 0;
@@ -118,6 +141,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private targetFPS = 60;
   private adaptiveQuality = false;
   maxPassesPerFrame = 12;
+  /** Frame-wide compute pass budget (render-quality passes × active slots). */
+  framePassBudget = Number.POSITIVE_INFINITY;
 
   private inputSource: 'image' | 'video' | 'webcam' | 'generative' | 'live' = 'image';
   private supportsSubgroups = false;
@@ -136,16 +161,29 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   readonly simRing = new SimRing();
 
   private frameState?: WebGPUFrameState;
+  private warmup: ShaderWarmupQueue | null = null;
+  /** Scratch resources for opt-in graph nodes running below full size. */
+  private readonly islands = new NodeScaleIslands();
+  /** Demoted opt-in graph nodes: `${slot}:${nodeId}` → scale (< 1). */
+  private readonly nodeScales = new Map<string, number>();
+  /** The canvas this renderer presents to (an OffscreenCanvas in the render worker). */
+  private presentCanvas: HTMLCanvasElement | OffscreenCanvas | null = null;
+  /** Pending "give me the next presented frame" requests (recording / capture). */
+  private frameGrabs: Array<{ timestampUs: number; resolve: (frame: VideoFrame | null) => void }> = [];
+  /** WebCodecs VideoFrame ingest (element path as fallback). */
+  private readonly videoIngest = new VideoIngest(videoFrameIngestDisabledByUrl());
 
   constructor(private config: RendererConfig) {}
 
   getSupportsDeepWorkgroup(): boolean { return this.supportsDeepWorkgroup; }
+  getSupportsSubgroups(): boolean { return this.supportsSubgroups; }
   getColorFormat(): InternalColorFormat { return this.colorFormat; }
   getFormatCapabilities(): DeviceFormatCapabilities { return this.formatCapabilities; }
   getHistoryLayers(): number { return this.resources.historyLayers; }
   getWorkingSizeCap(): number { return this.workingSizeCap; }
 
-  async init(canvas: HTMLCanvasElement, webGpuHandoff?: WebGpuProbeHandoff): Promise<boolean> {
+  /** `canvas` is an OffscreenCanvas when this renderer runs inside the render worker. */
+  async init(canvas: HTMLCanvasElement | OffscreenCanvas, webGpuHandoff?: WebGpuProbeHandoff): Promise<boolean> {
     if (this.initialized) return true;
 
     let handoff = webGpuHandoff;
@@ -161,6 +199,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       if (!outcome.ok) return false;
 
       this.device = outcome.device;
+      this.presentCanvas = canvas;
       instrumentDevice(outcome.device);
       this.context = outcome.context;
       this.canvasFormat = outcome.canvasFormat;
@@ -180,6 +219,10 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       attachDeviceLostHandler(device, outcome.context, () => {
         if (this.releasingDevice || this.device !== device) return;
         this.initialized = false;
+        this.warmup?.stop();
+        this.warmup = null;
+        this.videoIngest.detach();
+        this.resolveFrameGrabs(null);
         this.timestampRuntime.hasRealGpuTimings = false;
         this.timestampRuntime.readbackPending = false;
         this.gpuChores.detach('device lost');
@@ -430,6 +473,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       this.scaledW,
       this.scaledH,
       this.resources.writeTex,
+      (label) => profilePass(this.timestampRuntime, { kind: 'chores', label }),
     );
   }
 
@@ -469,7 +513,25 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       this.gpuTimings,
       this.supportsTimestampQuery,
       this.timestampRuntime.hasRealGpuTimings,
+      this.timestampRuntime.passTimings,
     );
+  }
+
+  /** Smoothed per-pass GPU ms (empty until timestamps resolve). */
+  getPassTimings(): PassTiming[] {
+    const timing = this.timestampRuntime;
+    return timing.hasRealGpuTimings ? timing.passTimings.map((p) => ({ ...p })) : [];
+  }
+
+  /** Timestamp source + query usage, for diagnostics. */
+  getTimingInfo(): { source: 'gpu-timestamp' | 'wall-clock'; periodNs: number; profiledPasses: number; overflow: number } {
+    const timing = this.timestampRuntime;
+    return {
+      source: this.supportsTimestampQuery && timing.hasRealGpuTimings ? 'gpu-timestamp' : 'wall-clock',
+      periodNs: timing.timestampPeriodNs,
+      profiledPasses: timing.passTimings.reduce((n, p) => n + p.iterations, 0),
+      overflow: timing.lastOverflow,
+    };
   }
 
   applyTestRenderState(state: {
@@ -506,8 +568,77 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     }
   }
 
+  /** Requested scale for an opt-in node (frame-plan hook). */
+  nodeScale(slot: number, nodeId: string): number {
+    return this.nodeScales.get(nodeScaleKey(slot, nodeId)) ?? 1;
+  }
+
+  /** Island resources while any node is demoted; frees scratch otherwise. */
+  getIslands(): FrameIslands | null {
+    if (this.nodeScales.size === 0 || !this.device) {
+      if (this.islands.allocatedScales().length > 0) this.islands.releaseLevels();
+      return null;
+    }
+    this.islands.attach({
+      device: this.device,
+      colorFormat: this.colorFormat,
+      bindGroupLayout: this.pipeline.bindGroupLayout,
+      textures: this.resources.getTextureSet(),
+      buffers: this.resources.getBufferSet(),
+      samplers: this.resources.getSamplerSet(),
+      scaledW: this.scaledW,
+      scaledH: this.scaledH,
+    });
+    return this.islands;
+  }
+
+  /** Opt-in graph nodes of the bound slots, with their floor and current scale. */
+  getScalableNodes(): Array<{ slot: number; nodeId: string; minScale: number; scale: number }> {
+    const nodes: Array<{ slot: number; nodeId: string; minScale: number; scale: number }> = [];
+    this.slots.forEach((slot, index) => {
+      if (!slot.enabled || !slot.shaderId) return;
+      const graph = resolveGraphForShader(slot.shaderId);
+      for (const node of graph?.nodes ?? []) {
+        if (!node.scalable || node.dispatch === 'simState') continue;
+        nodes.push({
+          slot: index,
+          nodeId: node.id,
+          minScale: node.minScale ?? 0.5,
+          scale: this.nodeScale(index, node.id),
+        });
+      }
+    });
+    return nodes;
+  }
+
+  /**
+   * Run one opt-in graph node below the working size (#1314). Ignored for
+   * nodes that are not `scalable`; snapped to 0.25 steps above minScale;
+   * 1 restores full size. Returns the scale that will be used.
+   */
+  setNodeScale(slot: number, nodeId: string, scale: number): number {
+    const node = this.getScalableNodes().find((n) => n.slot === slot && n.nodeId === nodeId);
+    if (!node) return 1;
+    const snapped = snapNodeScale(scale, node.minScale);
+    const key = nodeScaleKey(slot, nodeId);
+    if (snapped >= 1) this.nodeScales.delete(key);
+    else this.nodeScales.set(key, snapped);
+    return snapped;
+  }
+
+  getNodeScales(): Record<string, number> {
+    return Object.fromEntries(this.nodeScales);
+  }
+
+  private clearNodeScales(slot: number): void {
+    for (const key of Array.from(this.nodeScales.keys())) {
+      if (key.startsWith(`${slot}:`)) this.nodeScales.delete(key);
+    }
+  }
+
   setActiveShader(id: string): void {
     if (this.slots[0]?.shaderId !== id) this.rearmSimRingFor(id);
+    for (let i = 0; i < PHYSICAL_SLOT_LIMIT; i++) this.clearNodeScales(i);
     this.slots[0] = { shaderId: id, enabled: true, mode: 'chained', params: this.slotZoomParams[0] };
     for (let i = 1; i < PHYSICAL_SLOT_LIMIT; i++) {
       this.slots[i] = { shaderId: null, enabled: false, mode: 'chained', params: this.slotZoomParams[i] };
@@ -517,7 +648,10 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   setSlotShader(index: number, id: string): void {
     if (!checkPhysicalSlotIndex('WebGPURenderer', index)) return;
     const mode = this.slots[index]?.mode ?? 'chained';
-    if (this.slots[index]?.shaderId !== id) this.rearmSimRingFor(id);
+    if (this.slots[index]?.shaderId !== id) {
+      this.rearmSimRingFor(id);
+      this.clearNodeScales(index);
+    }
     this.slots[index] = { shaderId: id, enabled: !!id, mode, params: this.slotZoomParams[index] };
   }
 
@@ -554,10 +688,42 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     return {
       hasVideo: true, playing: !v.paused, readyState: v.readyState,
       currentTime: v.currentTime, videoWidth: v.videoWidth, videoHeight: v.videoHeight,
+      ...this.getVideoIngestStats(),
     };
   }
 
   isShaderCached(id: string): boolean { return this.pipeline.shaderManager.hasPipeline(id); }
+
+  /**
+   * Compile pipelines the user is likely to pick next (gallery viewport) in
+   * idle time, so selecting one hits the cache. Compiles only: no slot binding
+   * and no sim-ring allocation (that happens on a real load).
+   */
+  warmShaders(entries: WarmupEntry[]): void {
+    if (!this.device || !this.initialized) return;
+    if (!this.warmup) {
+      this.warmup = new ShaderWarmupQueue({
+        load: (e) =>
+          this.pipeline.shaderManager.loadShader(this.device, this.pipeline.pipelineLayout, e.id, e.url),
+        isCached: (id) => this.pipeline.shaderManager.hasPipeline(id),
+        boundIds: () => this.boundShaderIds(),
+        evict: (id) => this.pipeline.shaderManager.evict(id),
+        // Graph roots pull in several entries + maybe a sim ring: load those for real only.
+        canWarm: (id) => !resolveGraphForShader(id),
+      });
+    }
+    this.warmup.request(entries);
+  }
+
+  private boundShaderIds(): Set<string> {
+    const ids = new Set<string>();
+    for (const slot of this.slots) {
+      if (!slot.shaderId) continue;
+      for (const step of resolveMultipassChain(slot.shaderId)) ids.add(step);
+      for (const entry of getGraphEntryIds(slot.shaderId)) ids.add(entry);
+    }
+    return ids;
+  }
   getPipelineCacheStats() { return this.pipeline.shaderManager.getCacheStats(); }
   async preloadShader(id: string, url: string): Promise<boolean> { return this.loadShader(id, url); }
 
@@ -641,8 +807,12 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     }
   }
 
+  /** Idempotent: WebGPUCanvas calls this every rAF with the same element. */
   setVideo(video: HTMLVideoElement | undefined): void {
-    this.mediaState.video = video ?? null;
+    const next = video ?? null;
+    if (this.mediaState.video === next) return;
+    this.videoIngest.detach();
+    this.mediaState.video = next;
   }
 
   get mediaVideo(): HTMLVideoElement | null {
@@ -655,7 +825,84 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   }
 
   encodeVideoFrame(encoder: GPUCommandEncoder): boolean {
-    return mediaEncodeVideoFrame(this.getMediaContext(), this.mediaState, encoder);
+    return this.videoIngest.encode(encoder, {
+      device: this.device,
+      media: this.mediaState,
+      context: () => this.getMediaContext(),
+      timestamps: () => profilePass(this.timestampRuntime, { kind: 'video', label: 'videoCopyPass' }),
+    });
+  }
+
+  private beforeFrameHook: (() => void) | null = null;
+
+  /** Run `hook` at the start of every frame (the render worker drains its input ring). */
+  setBeforeFrame(hook: (() => void) | null): void {
+    this.beforeFrameHook = hook;
+  }
+
+  beforeFrame(): void {
+    this.beforeFrameHook?.();
+  }
+
+  /** The input the next frame will use — diagnostics / tests prove input reached this thread. */
+  getInputEcho(): { mouse: [number, number]; mouseDown: boolean; audio: [number, number, number]; slot0: number[] } {
+    const audio = getAudioData(this.audioDepth);
+    return {
+      mouse: [this.mouseX, this.mouseYShader],
+      mouseDown: this.mouseDown,
+      audio: [audio.bass, audio.mid, audio.treble],
+      slot0: [...(this.slotZoomParams[0] ?? [])],
+    };
+  }
+
+  /** Frame-loop hook after queue.submit: release the frame's VideoFrame, serve frame grabs. */
+  afterFrameSubmit(): void {
+    this.videoIngest.afterSubmit();
+    if (this.frameGrabs.length > 0) this.resolveFrameGrabs();
+  }
+
+  /**
+   * A VideoFrame of the next presented frame. Taken in the same task as the
+   * submit, which is when the canvas still holds it (worker included; no
+   * COPY_SRC needed). Resolves null when no frame will come (teardown).
+   */
+  grabPresentedFrame(timestampUs: number): Promise<VideoFrame | null> {
+    if (!this.initialized || !this.presentCanvas || typeof VideoFrame === 'undefined') {
+      return Promise.resolve(null);
+    }
+    return new Promise((resolve) => this.frameGrabs.push({ timestampUs, resolve }));
+  }
+
+  private resolveFrameGrabs(canvas: HTMLCanvasElement | OffscreenCanvas | null = this.presentCanvas): void {
+    for (const grab of this.frameGrabs.splice(0)) {
+      if (!canvas) {
+        grab.resolve(null);
+        continue;
+      }
+      try {
+        grab.resolve(new VideoFrame(canvas, { timestamp: grab.timestampUs, alpha: 'discard' }));
+      } catch (e) {
+        console.warn('[WebGPU] frame grab failed:', e);
+        grab.resolve(null);
+      }
+    }
+  }
+
+  /** WGSL compile check on this renderer's device (ShaderScanner in worker mode). */
+  async compileCheck(id: string, code: string): Promise<Array<{ type: GPUCompilationMessageType; lineNum: number; linePos: number; message: string }>> {
+    if (!this.device) throw new Error('No GPUDevice');
+    const module = this.device.createShaderModule({ label: id, code });
+    const info = await module.getCompilationInfo();
+    return info.messages.map((m) => ({ type: m.type, lineNum: m.lineNum, linePos: m.linePos, message: m.message }));
+  }
+
+  /** Render-worker video: frames arrive as transfers (null when the source stops). */
+  setTransferredVideo(source: TransferredVideoFrames | null): void {
+    this.videoIngest.setExternalSource(source);
+  }
+
+  getVideoIngestStats(): VideoIngestStats {
+    return this.videoIngest.stats(!!this.mediaState.video);
   }
 
   async loadImage(url: string): Promise<string> {
@@ -733,8 +980,21 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       return this.mediaState.video;
     }
     const off = this.mediaState.offscreen;
-    if (off && off.width > 0 && off.height > 0) return off;
+    // Only a DOM canvas can be handed to main-thread consumers (the worker's is offscreen).
+    if (off && typeof HTMLCanvasElement !== 'undefined' && off instanceof HTMLCanvasElement
+      && off.width > 0 && off.height > 0) {
+      return off;
+    }
     return this.mediaState.video;
+  }
+
+  /**
+   * Upload an image decoded elsewhere (the render worker receives the main
+   * thread's decode as a transferred ImageBitmap). Letterboxed like loadImage.
+   */
+  async loadImageBitmap(bitmap: ImageBitmap): Promise<void> {
+    await ingestDecodedImage(() => this.getMediaContext(), this.mediaState, bitmap, bitmap.width, bitmap.height);
+    this.gpuChores.ingestOffscreen(this.mediaState.offscreen, this.mediaState.offCtx);
   }
 
   loadImageFromElement(
@@ -749,16 +1009,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     if (!w || !h) return null;
     const dstW = this.canvasW || w;
     const dstH = this.canvasH || h;
-    if (
-      !this.mediaState.offscreen
-      || this.mediaState.offscreen.width !== dstW
-      || this.mediaState.offscreen.height !== dstH
-    ) {
-      this.mediaState.offscreen = document.createElement('canvas');
-      this.mediaState.offscreen.width = dstW;
-      this.mediaState.offscreen.height = dstH;
-      this.mediaState.offCtx = this.mediaState.offscreen.getContext('2d', { willReadFrequently: true });
-    }
+    if (!ensureOffscreen(this.mediaState, dstW, dstH) || !this.mediaState.offscreen) return null;
     if (!this.mediaState.offCtx) return null;
     this.mediaState.offCtx.fillStyle = 'black';
     this.mediaState.offCtx.fillRect(0, 0, dstW, dstH);
@@ -779,6 +1030,15 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     }
   }
 
+  /**
+   * One per-frame pass budget across linear chains and Tier C graphs: chains
+   * are charged first (they cannot be truncated), graphs share the rest, each
+   * still within maxPassesPerFrame. Non-finite or < 1 → per-graph caps only.
+   */
+  setFramePassBudget(budget: number): void {
+    this.framePassBudget = Number.isFinite(budget) && budget >= 1 ? Math.floor(budget) : Number.POSITIVE_INFINITY;
+  }
+
   /** Resolves once `device.lost` settles, so a remount can re-probe without racing it. */
   destroy(): Promise<void> {
     return this.teardownGpuHandles(true) ?? Promise.resolve();
@@ -790,6 +1050,12 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
 
   private teardownGpuHandles(awaitLost: boolean): Promise<void> | void {
     if (this.frameState) this.frameRenderer.stopRenderLoop(this.frameState);
+    this.warmup?.stop();
+    this.warmup = null;
+    this.islands.destroy();
+    this.nodeScales.clear();
+    this.videoIngest.detach();
+    this.resolveFrameGrabs(null);
     this.initialized = false;
     this.gpuChores.destroy();
     this.simRing.destroy();

@@ -23,8 +23,8 @@ export interface WebGPUMediaInputContext {
 
 export interface WebGPUMediaInputState {
   video: HTMLVideoElement | null;
-  offscreen: HTMLCanvasElement | null;
-  offCtx: CanvasRenderingContext2D | null;
+  offscreen: ScratchCanvas | null;
+  offCtx: ScratchContext2D | null;
   /**
    * Letterboxed still uploaded via copyExternalImageToTexture. Kept so texture
    * recreation re-copies the same (unconverted) pixels instead of the 2D offscreen.
@@ -39,6 +39,29 @@ export interface StillPlacement {
   /** Canvas size the placement was computed for. */
   canvasW: number;
   canvasH: number;
+}
+
+/** A 2D scratch canvas: DOM canvas on the main thread, OffscreenCanvas in the render worker. */
+export type ScratchCanvas = HTMLCanvasElement | OffscreenCanvas;
+export type ScratchContext2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
+
+export function createScratchCanvas(width: number, height: number): ScratchCanvas {
+  if (typeof document !== 'undefined') {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    return canvas;
+  }
+  return new OffscreenCanvas(width, height);
+}
+
+/** (Re)size state.offscreen to w×h with a read-friendly 2D context. */
+export function ensureOffscreen(state: WebGPUMediaInputState, width: number, height: number): ScratchContext2D | null {
+  if (!state.offscreen || state.offscreen.width !== width || state.offscreen.height !== height) {
+    state.offscreen = createScratchCanvas(width, height);
+    state.offCtx = state.offscreen.getContext('2d', { willReadFrequently: true }) as ScratchContext2D | null;
+  }
+  return state.offCtx;
 }
 
 export function createMediaInputState(): WebGPUMediaInputState {
@@ -148,7 +171,7 @@ function liveContext(source: MediaContextSource): WebGPUMediaInputContext {
 async function uploadStillBitmap(
   ctxSource: MediaContextSource,
   state: WebGPUMediaInputState,
-  img: HTMLImageElement,
+  img: HTMLImageElement | ImageBitmap,
   rect: { x: number; y: number; w: number; h: number },
 ): Promise<boolean> {
   if (!hasCopyExternalImage(liveContext(ctxSource)) || typeof createImageBitmap !== 'function') return false;
@@ -328,17 +351,29 @@ export function encodeVideoCopy(
   ctx: WebGPUMediaInputContext,
   state: WebGPUMediaInputState,
   encoder: GPUCommandEncoder,
+  timestamps?: () => GPURenderPassTimestampWrites | undefined,
 ): boolean {
-  if (
-    !ctx.device ||
-    !state.video ||
-    !ctx.videoCopyPipeline ||
-    !ctx.videoCopyBindGroupLayout
-  ) {
+  return state.video ? encodeExternalCopy(ctx, state.video, encoder, timestamps) : false;
+}
+
+/**
+ * Encode an external-texture copy of `source` (the <video> element, or a
+ * WebCodecs VideoFrame from the ingest pump) stretched over sourceTex. A
+ * VideoFrame-backed external texture stays valid until the frame is closed,
+ * so the caller closes it only after queue.submit. May throw if the
+ * browser cannot import the source (the caller falls back).
+ */
+export function encodeExternalCopy(
+  ctx: WebGPUMediaInputContext,
+  source: HTMLVideoElement | VideoFrame,
+  encoder: GPUCommandEncoder,
+  timestamps?: () => GPURenderPassTimestampWrites | undefined,
+): boolean {
+  if (!ctx.device || !ctx.videoCopyPipeline || !ctx.videoCopyBindGroupLayout) {
     return false;
   }
 
-  const external = ctx.device.importExternalTexture({ source: state.video });
+  const external = ctx.device.importExternalTexture({ source });
   // External textures expire with the task, so this group cannot be cached.
   const videoCopyBindGroup = ctx.device.createBindGroup({
     label: 'videoCopyBG',
@@ -349,8 +384,10 @@ export function encodeVideoCopy(
     ],
   });
 
+  const timestampWrites = timestamps?.();
   const pass = encoder.beginRenderPass({
     label: 'videoCopyPass',
+    ...(timestampWrites ? { timestampWrites } : {}),
     colorAttachments: [
       {
         view: ctx.sourceTex.createView(),
@@ -388,13 +425,7 @@ export function updateVideoFrameCanvasFallback(
   const dstW = ctx.canvasW;
   const dstH = ctx.canvasH;
 
-  if (!state.offscreen || state.offscreen.width !== dstW || state.offscreen.height !== dstH) {
-    state.offscreen = document.createElement('canvas');
-    state.offscreen.width = dstW;
-    state.offscreen.height = dstH;
-    state.offCtx = state.offscreen.getContext('2d', { willReadFrequently: true });
-  }
-  if (!state.offCtx) return;
+  if (!ensureOffscreen(state, dstW, dstH) || !state.offCtx) return;
 
   state.offCtx.drawImage(state.video, 0, 0, dstW, dstH);
   uploadRGBA8(ctx, state.offCtx.getImageData(0, 0, dstW, dstH).data, dstW, dstH);
@@ -416,6 +447,7 @@ export function encodeVideoFrame(
   ctx: WebGPUMediaInputContext,
   state: WebGPUMediaInputState,
   encoder: GPUCommandEncoder,
+  timestamps?: () => GPURenderPassTimestampWrites | undefined,
 ): boolean {
   if (!state.video || state.video.readyState < 2) return false;
   if (state.still) releaseStill(state);
@@ -436,7 +468,7 @@ export function encodeVideoFrame(
     }
 
     if (ctx.supportsExternalTexture && ctx.device && ctx.videoCopyPipeline) {
-      return encodeVideoCopy(ctx, state, encoder);
+      return encodeVideoCopy(ctx, state, encoder, timestamps);
     }
     updateVideoFrameCanvasFallback(ctx, state);
     return false;
@@ -459,6 +491,38 @@ export function updateVideoFrame(
   }
 }
 
+/**
+ * Letterbox an already-decoded image into sourceTex (GPU copy, 2D fallback)
+ * and the CPU offscreen. Shared by URL loads and by the render worker, which
+ * receives images as transferred ImageBitmaps decoded on the main thread.
+ */
+export async function ingestDecodedImage(
+  ctxSource: MediaContextSource,
+  state: WebGPUMediaInputState,
+  img: HTMLImageElement | ImageBitmap,
+  srcW: number,
+  srcH: number,
+): Promise<void> {
+  let ctx = liveContext(ctxSource);
+  const dstW = ctx.canvasW;
+  const dstH = ctx.canvasH;
+  const rect = letterboxRect(srcW, srcH, dstW, dstH);
+  const offCtx = ensureOffscreen(state, dstW, dstH);
+  if (!offCtx) return;
+
+  offCtx.fillStyle = 'black';
+  offCtx.fillRect(0, 0, dstW, dstH);
+  // Offscreen stays populated for CPU consumers (chores ingest, getCpuInputBitmap);
+  // drawImage alone is cheap — the readback + float convert is what the GPU path skips.
+  offCtx.drawImage(img, rect.x, rect.y, rect.w, rect.h);
+
+  if (!(await uploadStillBitmap(ctxSource, state, img, rect))) {
+    releaseStill(state);
+    ctx = liveContext(ctxSource);
+    uploadRGBA8(ctx, offCtx.getImageData(0, 0, dstW, dstH).data, dstW, dstH);
+  }
+}
+
 export async function loadImage(
   ctxSource: MediaContextSource,
   state: WebGPUMediaInputState,
@@ -475,30 +539,7 @@ export async function loadImage(
       img.src = url;
     });
 
-    ctx = liveContext(ctxSource);
-    const dstW = ctx.canvasW;
-    const dstH = ctx.canvasH;
-    const rect = letterboxRect(img.naturalWidth, img.naturalHeight, dstW, dstH);
-
-    if (!state.offscreen || state.offscreen.width !== dstW || state.offscreen.height !== dstH) {
-      state.offscreen = document.createElement('canvas');
-      state.offscreen.width = dstW;
-      state.offscreen.height = dstH;
-      state.offCtx = state.offscreen.getContext('2d', { willReadFrequently: true });
-    }
-    if (!state.offCtx) return url;
-
-    state.offCtx.fillStyle = 'black';
-    state.offCtx.fillRect(0, 0, dstW, dstH);
-    // Offscreen stays populated for CPU consumers (chores ingest, getCpuInputBitmap);
-    // drawImage alone is cheap — the readback + float convert is what the GPU path skips.
-    state.offCtx.drawImage(img, rect.x, rect.y, rect.w, rect.h);
-
-    if (!(await uploadStillBitmap(ctxSource, state, img, rect))) {
-      releaseStill(state);
-      ctx = liveContext(ctxSource);
-      uploadRGBA8(ctx, state.offCtx.getImageData(0, 0, dstW, dstH).data, dstW, dstH);
-    }
+    await ingestDecodedImage(ctxSource, state, img, img.naturalWidth, img.naturalHeight);
     return url;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

@@ -1,3 +1,4 @@
+import type { PassTiming } from './passTimings';
 import type { InputSource } from './types';
 
 // Slot execution mode for inter-shader parallelization
@@ -22,6 +23,8 @@ export interface GPUTimings {
   available: boolean;
   /** Wall-clock timings may be present even when available is false (WASM path). */
   timingSource: GPUTimingSource;
+  /** Smoothed per-pass GPU time, when timestamps resolved (#1314 WP-4). */
+  passes?: PassTiming[];
 }
 
 /** Shader-slot backends (WebGPU + WASM). Canvas2D does not implement these. */

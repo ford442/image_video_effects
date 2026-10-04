@@ -19,6 +19,7 @@ import { WebGPUTimestampQueries } from './WebGPUTiming';
 import type { GraphSimRingBindings } from '../GraphRunner';
 import type { SimRing } from './simRing';
 import { ShaderSlot } from './webgpuConstants';
+import type { FrameIslands } from './framePlan';
 
 export interface WebGPUFrameState {
   device: GPUDevice | null;
@@ -77,6 +78,12 @@ export interface WebGPUFrameState {
   }) => GPUBindGroup;
   getTextureSet: () => WebGPUTextureSet;
   maxPassesPerFrame: number;
+  /** Compute passes allowed per frame across every slot (Infinity = per-graph caps only). */
+  framePassBudget: number;
+  /** Requested scale for an opt-in graph node (#1314; 1 = full size). */
+  nodeScale?: (slotIndex: number, nodeId: string) => number;
+  /** Scaled-island resources, or null when no node is demoted. */
+  getIslands?: () => FrameIslands | null;
 
   ripples: Ripple[];
   mouseX: number;
@@ -109,6 +116,10 @@ export interface WebGPUFrameState {
   /** Encode chore readback copies into the frame encoder (before finish). */
   encodePostFxChores?: (encoder: GPUCommandEncoder) => void;
   afterFrameSubmitChores?: () => void;
+  /** After every frame submit (both paths): release per-frame inputs such as VideoFrames. */
+  afterFrameSubmit?: () => void;
+  /** Before encoding each frame: pull input (the render worker drains its SAB ring here). */
+  beforeFrame?: () => void;
 }
 
 /** Minimal host surface the frame loop reads/writes through getters. */
@@ -160,6 +171,9 @@ export interface WebGPUFrameHost {
     dataC: GPUTexture;
   }) => GPUBindGroup;
   maxPassesPerFrame: number;
+  framePassBudget: number;
+  nodeScale?: (slotIndex: number, nodeId: string) => number;
+  getIslands?: () => FrameIslands | null;
   ripples: Ripple[];
   mouseX: number;
   mouseYShader: number;
@@ -185,6 +199,10 @@ export interface WebGPUFrameHost {
   /** Encode chore readback copies into the frame encoder (before finish). */
   encodePostFxChores?: (encoder: GPUCommandEncoder) => void;
   afterFrameSubmitChores?: () => void;
+  /** After every frame submit (both paths): release per-frame inputs such as VideoFrames. */
+  afterFrameSubmit?: () => void;
+  /** Before encoding each frame: pull input (the render worker drains its SAB ring here). */
+  beforeFrame?: () => void;
 }
 
 /** Dependencies passed from WebGPURenderer to build a frame host. */
@@ -235,10 +253,17 @@ export interface RendererFrameDeps {
   gpuTimings: { parallelTime: number; chainedTime: number; totalTime: number };
   timestampRuntime: WebGPUTimestampQueries;
   maxPassesPerFrame: number;
+  framePassBudget: number;
+  nodeScale?: (slotIndex: number, nodeId: string) => number;
+  getIslands?: () => FrameIslands | null;
   encodePreFxChores?: (encoder: GPUCommandEncoder) => void;
   /** Encode chore readback copies into the frame encoder (before finish). */
   encodePostFxChores?: (encoder: GPUCommandEncoder) => void;
   afterFrameSubmitChores?: () => void;
+  /** After every frame submit (both paths): release per-frame inputs such as VideoFrames. */
+  afterFrameSubmit?: () => void;
+  /** Before encoding each frame: pull input (the render worker drains its SAB ring here). */
+  beforeFrame?: () => void;
 }
 
 function simRingBindings(ring: SimRing | undefined): GraphSimRingBindings | null {
@@ -315,6 +340,9 @@ export function createRendererFrameHost(d: RendererFrameDeps): WebGPUFrameHost {
       ),
     get maxPassesPerFrame() { return d.maxPassesPerFrame; },
     set maxPassesPerFrame(v) { d.maxPassesPerFrame = v; },
+    get framePassBudget() { return d.framePassBudget; },
+    nodeScale: (slot, nodeId) => d.nodeScale?.(slot, nodeId) ?? 1,
+    getIslands: () => d.getIslands?.() ?? null,
     get ripples() { return d.ripples; },
     get mouseX() { return d.mouseX; },
     get mouseYShader() { return d.mouseYShader; },
@@ -345,6 +373,8 @@ export function createRendererFrameHost(d: RendererFrameDeps): WebGPUFrameHost {
     encodePreFxChores: (encoder) => d.encodePreFxChores?.(encoder),
     encodePostFxChores: (encoder) => d.encodePostFxChores?.(encoder),
     afterFrameSubmitChores: () => d.afterFrameSubmitChores?.(),
+    afterFrameSubmit: () => d.afterFrameSubmit?.(),
+    beforeFrame: () => d.beforeFrame?.(),
   };
 }
 
@@ -403,6 +433,9 @@ export function createFrameState(host: WebGPUFrameHost): WebGPUFrameState {
     getTextureSet: () => h.getTextureSet(),
     get maxPassesPerFrame() { return h.maxPassesPerFrame; },
     set maxPassesPerFrame(v) { h.maxPassesPerFrame = v; },
+    get framePassBudget() { return h.framePassBudget; },
+    nodeScale: (slot, nodeId) => h.nodeScale?.(slot, nodeId) ?? 1,
+    getIslands: () => h.getIslands?.() ?? null,
     get ripples() { return h.ripples; },
     get mouseX() { return h.mouseX; },
     get mouseYShader() { return h.mouseYShader; },
@@ -433,5 +466,7 @@ export function createFrameState(host: WebGPUFrameHost): WebGPUFrameState {
     encodePreFxChores: (encoder) => h.encodePreFxChores?.(encoder),
     encodePostFxChores: (encoder) => h.encodePostFxChores?.(encoder),
     afterFrameSubmitChores: () => h.afterFrameSubmitChores?.(),
+    afterFrameSubmit: () => h.afterFrameSubmit?.(),
+    beforeFrame: () => h.beforeFrame?.(),
   };
 }

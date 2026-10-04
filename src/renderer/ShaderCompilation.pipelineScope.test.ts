@@ -6,6 +6,7 @@
 
 import {
   compileShader,
+  createComputePipelineChecked,
   createComputePipelineWithValidationScope,
   FALLBACK_WGSL,
 } from './ShaderCompilation';
@@ -192,5 +193,44 @@ describe('reportError banner wiring', () => {
     setRendererErrorHandler((error) => {
       console.error(`[WebGPU Renderer] ${error.type}: ${error.message}`);
     });
+  });
+});
+
+describe('createComputePipelineChecked (#1314 async pipelines)', () => {
+  const descriptor = {
+    layout: {} as GPUPipelineLayout,
+    compute: { module: {} as GPUShaderModule, entryPoint: 'main' },
+  };
+
+  it('prefers createComputePipelineAsync and skips the error scope', async () => {
+    const pipeline = { label: 'async' } as unknown as GPUComputePipeline;
+    const device = {
+      createComputePipelineAsync: jest.fn(async () => pipeline),
+      createComputePipeline: jest.fn(),
+      pushErrorScope: jest.fn(),
+      popErrorScope: jest.fn(),
+    } as unknown as GPUDevice;
+    const res = await createComputePipelineChecked(device, descriptor);
+    expect(res).toEqual({ pipeline, error: null });
+    expect(device.createComputePipeline).not.toHaveBeenCalled();
+    expect(device.pushErrorScope).not.toHaveBeenCalled();
+  });
+
+  it('maps a GPUPipelineError rejection to a null pipeline', async () => {
+    const device = {
+      createComputePipelineAsync: jest.fn(async () => {
+        throw new Error('GPUPipelineError: storage format mismatch');
+      }),
+    } as unknown as GPUDevice;
+    const res = await createComputePipelineChecked(device, descriptor);
+    expect(res.pipeline).toBeNull();
+    expect(res.error?.message).toContain('storage format mismatch');
+  });
+
+  it('falls back to the synchronous create + validation scope', async () => {
+    const device = makeDevice({ popSequence: [makeValidationError('bad layout')] });
+    const res = await createComputePipelineChecked(device, descriptor);
+    expect(res.pipeline).toBeNull();
+    expect(device.pushErrorScope).toHaveBeenCalledWith('validation');
   });
 });

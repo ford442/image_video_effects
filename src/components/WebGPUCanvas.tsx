@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useLayoutEffect, useState, useCallback } from 'react';
 import { RendererManager, getRendererTypeFromURL } from '../renderer/RendererManager';
+import { resolveRenderThread } from '../renderer/backendLifecycle';
 import { RenderMode, InputSource, SlotParams, ShaderEntry } from '../renderer/types';
 import { INTERNAL_RENDER_RESOLUTION } from '../config/appConfig';
 import {
@@ -121,6 +122,24 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [onCanvasRef]);
 
+    // The render worker (#1314) takes the <canvas> for good. Switching to WASM /
+    // Canvas2D, or retrying on the page after a worker failure, remounts a new
+    // one by bumping the key; RendererManager awaits it through acquireFreshCanvas.
+    const [canvasKey, setCanvasKey] = useState(0);
+    const freshCanvasWaiters = useRef<Array<(canvas: HTMLCanvasElement) => void>>([]);
+    const acquireFreshCanvas = useCallback(() => new Promise<HTMLCanvasElement>((resolve) => {
+        freshCanvasWaiters.current.push(resolve);
+        setCanvasKey((k) => k + 1);
+    }), []);
+    useLayoutEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas || freshCanvasWaiters.current.length === 0) return;
+        canvas.width = INTERNAL_RENDER_RESOLUTION;
+        canvas.height = INTERNAL_RENDER_RESOLUTION;
+        onCanvasRef?.(canvas);
+        for (const resolve of freshCanvasWaiters.current.splice(0)) resolve(canvas);
+    }, [canvasKey, onCanvasRef]);
+
     // JSRenderer may replace the <canvas> after WebGPU permanently claims its
     // context type. Keep React's ref + parent onCanvasRef in sync.
     useEffect(() => {
@@ -181,6 +200,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
             },
             undefined,
             {
+                acquireFreshCanvas,
                 onBackendFailure: (failedType, message) => {
                     if (!mounted) return;
                     publishWasmProbeFailure(`${failedType} renderer stopped: ${message}`);
@@ -190,6 +210,8 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
             },
         );
         const urlRenderer = getRendererTypeFromURL();
+        // In worker mode the render worker runs the probe on the transferred canvas.
+        const probeInWorker = resolveRenderThread() === 'worker';
 
         const initDone = (async () => {
             // The previous mount's device must be fully released before requesting a new one.
@@ -198,7 +220,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
             let initOptions: { webGpuHandoff?: import('../renderer/webgpuBootProbe').WebGpuProbeHandoff } | undefined;
 
-            if (urlRenderer !== 'js' && urlRenderer !== 'wasm') {
+            if (urlRenderer !== 'js' && urlRenderer !== 'wasm' && !probeInWorker) {
                 const probe = await runWebGpuBootProbe(
                     canvasRef.current!,
                     INTERNAL_RENDER_RESOLUTION,
@@ -248,6 +270,9 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
                 if (onInit) onInit();
             } else {
+                if (probeInWorker && urlRenderer !== 'wasm' && urlRenderer !== 'js') {
+                    setProbeFailure(window.webgpuProbe ?? null);
+                }
                 if (urlRenderer === 'wasm') {
                     const diags = renderer.getDiagnostics();
                     publishWasmProbeFailure(
@@ -644,6 +669,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 />
             )}
             <canvas
+                key={canvasKey}
                 ref={canvasRef}
                 data-testid="webgpu-canvas"
                 width={INTERNAL_RENDER_RESOLUTION}

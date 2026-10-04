@@ -5,6 +5,7 @@ import { DEFAULT_B3HD_SEGMENT_LENGTH, DEFAULT_B3HD_INTERVAL_SECONDS } from './co
 import { RenderQualityMode } from './config/performancePolicy';
 import type { InternalColorFormat } from './config/formatPolicy';
 import type { RendererDiagnosticsSummary } from './components/controls/panels/AdvancedDebugPanel';
+import type { PassTiming } from './renderer/passTimings';
 import type { ImageRecord } from './types/aiVj';
 import { isRenderQualityMode, loadRenderQualityMode, saveRenderQualityMode } from './services/renderQuality';
 import { loadSourceAutoExposure, saveSourceAutoExposure } from './services/sourceAutoExposure';
@@ -33,6 +34,7 @@ import {
     useTestHarness,
 } from './hooks';
 import { useThumbnailManifest } from './hooks/useThumbnailManifest';
+import { useShaderWarmup } from './hooks/useShaderWarmup';
 import { WEBCAM_FUN_SHADERS, getShaderDefaults } from './app/constants/shaderDefaults';
 import { defaultSlotParams } from './app/constants/defaultSlotParams';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
@@ -172,6 +174,7 @@ function MainApp() {
         setSlotShaderStatus,
         setInputSource,
     });
+    useShaderWarmup(rendererRef, availableModesRef);
 
     const {
                 isModelLoaded,
@@ -602,7 +605,13 @@ function MainApp() {
                 gpuChoresEv: diags.webgpu?.gpuChores?.autoUniforms.exposureEv,
                 gpuChoresSourceGain: diags.webgpu?.gpuChores?.sourceGain,
                 gpuChoresClassify: diags.webgpu?.gpuChores?.classifyPreview,
+                passTimings: diags.webgpu?.passTimings,
+                timingSource: diags.webgpu?.timing?.source,
             };
+            // Pass timings are EMA'd every readback: compare at display precision.
+            const passesEq = (a?: PassTiming[], b?: PassTiming[]) =>
+                (a?.length ?? 0) === (b?.length ?? 0) &&
+                (a ?? []).every((p, i) => p.key === b?.[i]?.key && p.gpuMs.toFixed(2) === b?.[i]?.gpuMs.toFixed(2));
             setRendererDiagnostics((prev) => {
                 const errEq = (a?: string[], b?: string[]) =>
                     (a?.length ?? 0) === (b?.length ?? 0) && (a ?? []).every((e, i) => e === (b ?? [])[i]);
@@ -628,7 +637,9 @@ function MainApp() {
                     prev.gpuChoresBackend === nextDiags.gpuChoresBackend &&
                     prev.gpuChoresEv === nextDiags.gpuChoresEv &&
                     prev.gpuChoresSourceGain === nextDiags.gpuChoresSourceGain &&
-                    (prev.gpuChoresClassify?.bands.length ?? 0) === (nextDiags.gpuChoresClassify?.bands.length ?? 0)
+                    (prev.gpuChoresClassify?.bands.length ?? 0) === (nextDiags.gpuChoresClassify?.bands.length ?? 0) &&
+                    prev.timingSource === nextDiags.timingSource &&
+                    passesEq(prev.passTimings, nextDiags.passTimings)
                 ) {
                     return prev;
                 }

@@ -1,4 +1,6 @@
 import React, { useMemo } from 'react';
+import type { PassTiming } from '../renderer/passTimings';
+import { PassFlameStrip } from './controls/panels/PassFlameStrip';
 
 interface PerformanceDashboardProps {
   fps: number;
@@ -6,6 +8,8 @@ interface PerformanceDashboardProps {
   agentCount: number;
   isWASM: boolean;
   streamUrl: string;
+  /** Optional per-pass GPU timings (TS WebGPU profiler, #1314) rendered as a flame strip. */
+  passTimings?: PassTiming[];
 }
 
 export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
@@ -14,6 +18,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
   agentCount,
   isWASM,
   streamUrl,
+  passTimings,
 }) => {
   // Determine FPS color based on performance
   const fpsColor = useMemo(() => {
@@ -90,6 +95,11 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
         <div style={styles.label}>Last 60s</div>
         <FPSGraph fps={fps} />
       </div>
+      {passTimings && passTimings.length > 0 && (
+        <div style={{ flexBasis: '100%' }}>
+          <PassFlameStrip passes={passTimings} source="gpu-timestamp" topN={3} />
+        </div>
+      )}
     </div>
   );
 };
