@@ -3813,8 +3813,17 @@
       "history": []
     },
     "chroma-lens": {
-      "hash": "f26faed713d2a976",
-      "history": []
+      "hash": "c40376f29779e343",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T11:44:54.041Z",
+          "hash": "c40376f29779e343",
+          "prev_hash": "f26faed713d2a976",
+          "commit": "1008b956",
+          "note": "2026-10-04 lens-optics-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-lens-optics-eight/NOTES.md"
+        }
+      ]
     },
     "chroma-shift-grid": {
       "hash": "fcfa762aca156718",
@@ -3870,8 +3879,17 @@
       "history": []
     },
     "crystal-refraction": {
-      "hash": "8c353d8739f320eb",
-      "history": []
+      "hash": "8cae4364bfa59948",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T11:44:54.041Z",
+          "hash": "8cae4364bfa59948",
+          "prev_hash": "8c353d8739f320eb",
+          "commit": "1008b956",
+          "note": "2026-10-04 lens-optics-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-lens-optics-eight/NOTES.md"
+        }
+      ]
     },
     "cursor-aura": {
       "hash": "3f8656c9c6f35174",
@@ -3894,8 +3912,17 @@
       "history": []
     },
     "cyber-magnifier": {
-      "hash": "8f404e6e47c18622",
-      "history": []
+      "hash": "3efaba3039e551c1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T11:44:54.041Z",
+          "hash": "3efaba3039e551c1",
+          "prev_hash": "8f404e6e47c18622",
+          "commit": "1008b956",
+          "note": "2026-10-04 lens-optics-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-lens-optics-eight/NOTES.md"
+        }
+      ]
     },
     "cyber-organic": {
       "hash": "c5f5d513502265eb",
@@ -4088,8 +4115,17 @@
       "history": []
     },
     "interactive-fisheye": {
-      "hash": "710596b473e8bb3d",
-      "history": []
+      "hash": "44412883830c1090",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T11:44:54.041Z",
+          "hash": "44412883830c1090",
+          "prev_hash": "710596b473e8bb3d",
+          "commit": "1008b956",
+          "note": "2026-10-04 lens-optics-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-lens-optics-eight/NOTES.md"
+        }
+      ]
     },
     "interactive-frost": {
       "hash": "50c4117d1857eccd",
@@ -4443,8 +4479,17 @@
       "history": []
     },
     "phosphor-magnifier": {
-      "hash": "128876325f4c945d",
-      "history": []
+      "hash": "2d43bbd11a7c6dd2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T11:44:54.041Z",
+          "hash": "2d43bbd11a7c6dd2",
+          "prev_hash": "128876325f4c945d",
+          "commit": "1008b956",
+          "note": "2026-10-04 lens-optics-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-lens-optics-eight/NOTES.md"
+        }
+      ]
     },
     "pixel-drag-smear": {
       "hash": "8ae2f3c6c2668146",
@@ -4535,8 +4580,17 @@
       "history": []
     },
     "radial-hex-lens": {
-      "hash": "54bd96478c297d5a",
-      "history": []
+      "hash": "1350d1041c312241",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T11:44:54.041Z",
+          "hash": "1350d1041c312241",
+          "prev_hash": "54bd96478c297d5a",
+          "commit": "1008b956",
+          "note": "2026-10-04 lens-optics-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-lens-optics-eight/NOTES.md"
+        }
+      ]
     },
     "radial-slit-scan": {
       "hash": "525676007be96129",
@@ -4567,8 +4621,17 @@
       "history": []
     },
     "refractive-bubbles": {
-      "hash": "3de58970c188db66",
-      "history": []
+      "hash": "78731dc8b2f5263f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T11:44:54.041Z",
+          "hash": "78731dc8b2f5263f",
+          "prev_hash": "3de58970c188db66",
+          "commit": "1008b956",
+          "note": "2026-10-04 lens-optics-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-lens-optics-eight/NOTES.md"
+        }
+      ]
     },
     "rgb-delay-brush": {
       "hash": "4df34e03525b0a92",
@@ -4748,8 +4811,17 @@
       "history": []
     },
     "virtual-lens": {
-      "hash": "6c0074005247d66e",
-      "history": []
+      "hash": "657e52d898c5b5a9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-04T11:44:54.041Z",
+          "hash": "657e52d898c5b5a9",
+          "prev_hash": "6c0074005247d66e",
+          "commit": "1008b956",
+          "note": "2026-10-04 lens-optics-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-lens-optics-eight/NOTES.md"
+        }
+      ]
     },
     "volumetric-depth-zoom": {
       "hash": "1db18de6b4e7fb18",

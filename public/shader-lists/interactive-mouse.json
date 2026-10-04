@@ -935,7 +935,7 @@
     "id": "chroma-lens",
     "name": "Chroma Lens",
     "url": "shaders/chroma-lens.wgsl",
-    "description": "Held magnifying lens with chromatic edge splitting, actual tangential edge blur, rapid rim runners, audio response, and click-launched glass fronts.",
+    "description": "Held magnifying lens whose edge dispersion is sampled across seven wavelengths for continuous rainbow fringes, with astigmatic edge blur (tangential smear plus a shorter radial one), rim runners, audio response and click-launched glass fronts.",
     "params": [
       {
         "id": "magnification",
@@ -1861,7 +1861,7 @@
     "id": "crystal-refraction",
     "name": "Crystal Refraction",
     "url": "shaders/crystal-refraction.wgsl",
-    "description": "Interactive faceted crystal lens with physical light transmission. Features IOR-based chromatic dispersion, Fresnel reflection at edges, and variable crystal thickness affecting light path.",
+    "description": "Interactive faceted crystal lens with a flat brilliant-cut table window in the centre, IOR-based chromatic dispersion, Fresnel reflection and thickness-dependent transmission. Facets throw spectral fire flashes as they turn past the light; bass makes the stone sparkle.",
     "params": [
       {
         "id": "facetScale",
@@ -2325,10 +2325,11 @@
     "name": "Cyber Magnifier",
     "category": "interactive-mouse",
     "url": "shaders/cyber-magnifier.wgsl",
-    "description": "High-tech magnifying lens with chromatic aberration and HUD overlay.",
+    "description": "High-tech magnifying lens with chromatic aberration and a HUD: past ~2.5x it shows the source texels with a texel grid, the radar sweep traces glowing outlines that fade behind it, and a rangefinder arc reads out the depth under the lens.",
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "depth-aware",
       "upgraded-rgba"
     ],
     "params": [
@@ -5664,7 +5665,7 @@
     "id": "interactive-fisheye",
     "name": "Fluid Lens Dynamics",
     "url": "shaders/interactive-fisheye.wgsl",
-    "description": "Kelvin-Voigt droplet lens with capillary waves, held meniscus pinch, oil-slick thin-film rim, traveling caustic runners, and exact-load state memory. A remains [h, v, nx, ny].",
+    "description": "Kelvin-Voigt droplet lens that refracts through its simulated surface, so overshoot and capillary waves really bend the image; the convex body focuses light into a caustic and the meniscus darkens. Held pinch, caustic runners and splash fronts. A remains [h, v, nx, ny].",
     "features": [
       "mouse-driven",
       "geometry",
@@ -11911,7 +11912,7 @@
     "category": "interactive-mouse",
     "url": "shaders/phosphor-magnifier.wgsl",
     "icon": "search",
-    "description": "CRT phosphor magnifier with display-RGBA afterimage feedback, aurora scan runners, raster-beam motion, degauss rings, held lens pressure, click shells, chromatic aberration, and psychedelic phosphor hue. Intentional A feedback correction from diagnostic masks to display RGBA.",
+    "description": "CRT phosphor magnifier: per-channel phosphor persistence leaves colour-shifting afterimage trails from exact history, bright content blooms across the aperture-grille stripes, plus raster beam, degauss rings, held lens pressure, click shells and chromatic aberration.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -13720,9 +13721,12 @@
     "id": "radial-hex-lens",
     "name": "Radial Hex Lens",
     "url": "shaders/radial-hex-lens.wgsl",
-    "description": "Interactive hexagonal mosaic lens with radial magnification, FBM organic warp, depth-aware fog, and semantic alpha for slot-chain compositing.",
+    "description": "Interactive compound-eye lens: inside the radial magnifier every hex cell is a tiny domed lens with its own magnified, slightly parallaxed view, lit from the cursor side. FBM warp, hex bokeh, depth-aware fog and semantic alpha for slot-chain compositing.",
     "features": [
       "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "hex-bokeh",
       "upgraded-rgba"
     ],
     "workgroup_size": [
@@ -14299,7 +14303,7 @@
     "id": "refractive-bubbles",
     "name": "Refractive Bubbles",
     "url": "shaders/refractive-bubbles.wgsl",
-    "description": "Floating bubbles around the cursor that distort the background like glass.",
+    "description": "Glass bubbles orbiting the cursor that bend the background: each core shows a small inverted ball-lens image of the scene, the walls show thin-film colour where their thickness changes, and overlapping bubbles share a bright contact wall.",
     "params": [
       {
         "id": "size",
@@ -17605,7 +17609,7 @@
     "id": "virtual-lens",
     "name": "Virtual Lens",
     "url": "shaders/virtual-lens.wgsl",
-    "description": "A virtual magnifying glass with alpha translucency blending. Single magnification displacement plus spectral tint via mix. Alpha driven by lens edge falloff and Fresnel reflectance with depth-aware attenuation.",
+    "description": "A virtual magnifying glass focused on whatever is under the cursor: magnified content at other depths falls out of focus, and the glass reflects a mirrored, softened view of the surroundings toward its rim. Spectral tint, double-glass inner ring and Fresnel/depth-aware alpha.",
     "params": [
       {
         "id": "mag",
@@ -17640,6 +17644,7 @@
       "mouse-driven",
       "chromatic-aberration",
       "audio-reactive",
+      "depth-aware",
       "upgraded-rgba"
     ],
     "tags": [

@@ -1,8 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Chroma Lens
-//  Mouse-positioned magnifying lens with barrel distortion, per-channel
-//  chromatic separation toward the rim, and a glass rim highlight.
+//  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-04
+//  Ideas: 7-tap spectral dispersion (continuous rainbow fringes); astigmatic sagittal + tangential edge blur
+//  A packing: pre-tone-map lens colour RGBA (C is not read back); writeTexture is ACES
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -18,6 +21,7 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
 
 struct Uniforms {
   config: vec4<f32>,
@@ -44,6 +48,14 @@ fn aces_tonemap(color: vec3<f32>) -> vec3<f32> {
     let a = v * (v + 0.0245786) - 0.000090537;
     let b = v * (0.983729 * v + 0.4329510) + 0.238081;
     return clamp(m2 * (a / b), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Approximate visible-spectrum colour of a wavelength in nm.
+fn wavelengthToRGB(lambda: f32) -> vec3<f32> {
+    let r = select(select(1.0, (lambda - 510.0) / 70.0, lambda < 580.0), (440.0 - lambda) / 60.0, lambda < 440.0);
+    let g = select(select(select(0.0, (645.0 - lambda) / 65.0, lambda < 645.0), 1.0, lambda < 580.0), (lambda - 440.0) / 50.0, lambda < 490.0);
+    let b = select(select(0.0, (510.0 - lambda) / 20.0, lambda < 510.0), 1.0, lambda < 490.0);
+    return clamp(vec3<f32>(r, select(g, 0.0, lambda < 440.0), b), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -85,57 +97,47 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
 
-    var finalUV_R = uv;
-    var finalUV_G = uv;
-    var finalUV_B = uv;
-
-    // Lens Effect
+    // Barrel magnification (unchanged curve) and edge-weighted aberration.
+    var lensCurve = 1.0;
+    var abbStrength = 0.0;
+    var ndist = 1.0;
     if (dist < activeRadius) {
-        let ndist = dist / activeRadius; // 0 at center, 1 at edge
-
-        // Distortion curve (barrel)
-        // zoom factor increases towards center
-        // Let's model it as mapping a larger area of source to the lens area? No, that's shrinking.
-        // Magnifying means showing a smaller area of source in the lens.
-        // So we need to scale the UV vector from center by a factor < 1.
-
-        // Factor curve:
-        // Center (ndist=0): factor = 1.0 - mag
-        // Edge (ndist=1): factor = 1.0
-        // Parabolic interpolation
-
-        let lensCurve = 1.0 - (1.0 - ndist * ndist) * mag;
-
-        // Chromatic Aberration: different scaling factors for R, G, B
-        // R scales more (spreads out), B scales less? Or offset?
-        // Let's scale them slightly differently based on aberration param.
-
-        let abbStrength = aberration * 0.05 * ndist * (1.0 + clickFront); // More aberration at edges of lens
-
-        let factorR = lensCurve - abbStrength;
-        let factorG = lensCurve;
-        let factorB = lensCurve + abbStrength;
-
-        finalUV_R = mouse + (uv - mouse) * factorR;
-        finalUV_G = mouse + (uv - mouse) * factorG;
-        finalUV_B = mouse + (uv - mouse) * factorB;
-
-        // Blur / Edge Softening
-        // If blurEdges > 0, we can add a simple blur by jittering samples, but expensive.
-        // Or mix with blurred texture? We don't have one.
-        // Let's just do the lens and aberration.
+        ndist = dist / activeRadius;
+        lensCurve = 1.0 - (1.0 - ndist * ndist) * mag;
+        abbStrength = aberration * 0.05 * ndist * (1.0 + clickFront);
     }
-
     let edgeBand = smoothstep(activeRadius * 0.55, activeRadius, dist) * (1.0 - smoothstep(activeRadius, activeRadius + 0.02, dist));
     let tangent = vec2<f32>(-dVec.y, dVec.x) / max(dist, 0.001);
     let blurOffset = tangent * blurEdges * edgeBand * 0.006;
-    let safeR = clamp(finalUV_R, vec2<f32>(0.0), vec2<f32>(1.0));
-    let safeG = clamp(finalUV_G, vec2<f32>(0.0), vec2<f32>(1.0));
-    let safeB = clamp(finalUV_B, vec2<f32>(0.0), vec2<f32>(1.0));
-    let r = (textureSampleLevel(readTexture, u_sampler, safeR, 0.0).r + textureSampleLevel(readTexture, u_sampler, clamp(safeR + blurOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r) * 0.5;
-    let g = (textureSampleLevel(readTexture, u_sampler, safeG, 0.0).g + textureSampleLevel(readTexture, u_sampler, clamp(safeG - blurOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g) * 0.5;
-    let b = (textureSampleLevel(readTexture, u_sampler, safeB, 0.0).b + textureSampleLevel(readTexture, u_sampler, clamp(safeB + blurOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b) * 0.5;
+    // Idea 2: astigmatism. Off-axis a real lens focuses radial (sagittal) and
+    // tangential detail at different depths, so the edge blur is a cross: the
+    // existing tangential smear plus a shorter radial one growing with ndist².
+    let radialDir = dVec / max(dist, 0.001);
+    let sagittalOffset = vec2<f32>(radialDir.x / aspect, radialDir.y) * blurEdges * edgeBand * 0.0035 * ndist * ndist;
 
+    // Idea 1: spectral dispersion. Seven wavelengths from red to violet each
+    // get their own scale factor (red spreads out, violet pulls in, as the old
+    // R/B taps did) and are recombined by their spectral colour, so the fringe
+    // is a continuous rainbow instead of three offset copies.
+    var spectral = vec3<f32>(0.0);
+    var weightSum = vec3<f32>(0.0);
+    for (var i = 0; i < 7; i = i + 1) {
+        let t = f32(i) / 6.0;
+        let lambda = mix(650.0, 420.0, t);
+        let w = wavelengthToRGB(lambda) + vec3<f32>(0.02);
+        let factor = lensCurve + abbStrength * mix(-1.0, 1.0, t);
+        var tapUV = mouse + (uv - mouse) * factor;
+        let phase = i % 3;
+        tapUV = tapUV + select(select(-sagittalOffset, blurOffset, phase == 1), vec2<f32>(0.0), phase == 0);
+        let tap = textureSampleLevel(readTexture, u_sampler, clamp(tapUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+        spectral = spectral + tap * w;
+        weightSum = weightSum + w;
+    }
+    let lensRGB = spectral / max(weightSum, vec3<f32>(0.0001));
+    let r = lensRGB.r;
+    let g = lensRGB.g;
+    let b = lensRGB.b;
+    let safeG = clamp(mouse + (uv - mouse) * lensCurve, vec2<f32>(0.0), vec2<f32>(1.0));
     // Source alpha follows the green (undisplaced) channel's sample point
     let srcAlpha = textureSampleLevel(readTexture, u_sampler, safeG, 0.0).a;
 
