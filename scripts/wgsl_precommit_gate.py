@@ -81,7 +81,12 @@ def load_workgroup_grace_allowlist() -> set[str]:
 
 
 def discover_changed_files(base_ref: str) -> list[Path]:
-    """Return .wgsl files changed against base_ref."""
+    """
+    Return catalog .wgsl files (public/shaders/) changed against base_ref.
+
+    Fixtures under scripts/fixtures/ are deliberately broken or partial and have
+    their own unit tests; verify-naga-wasm.mjs applies the same filter.
+    """
     result = subprocess.run(
         ["git", "diff", "--name-only", "--diff-filter=ACMRT", base_ref],
         cwd=PROJECT_ROOT,
@@ -92,7 +97,7 @@ def discover_changed_files(base_ref: str) -> list[Path]:
     files = []
     for line in result.stdout.splitlines():
         p = PROJECT_ROOT / line.strip()
-        if p.suffix == ".wgsl" and p.exists():
+        if p.suffix == ".wgsl" and p.parent == SHADERS_DIR and p.exists():
             files.append(p)
     return with_library_dependents(files)
 
