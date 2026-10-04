@@ -2,7 +2,7 @@
   "id": "temporal-decay-multiresolution",
   "name": "Temporal Decay Multiresolution",
   "url": "shaders/temporal-decay-multiresolution.wgsl",
-  "description": "Four-timescale temporal decomposition with a spring-following history lens and click echo rings. R=fast, G=medium, B=slow, and A=ultra-slow luminance.",
+  "description": "Four-timescale temporal decomposition with a spring-following history lens and click echo rings. R=fast, G=medium, B=slow, and A=ultra-slow luminance. Each decay slider shapes an exponential window over its band of ages, and click echo rings swap the fast and slow timescales as they pass.",
   "tags": [
     "temporal",
     "multiresolution",

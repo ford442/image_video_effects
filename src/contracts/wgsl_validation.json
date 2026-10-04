@@ -14,7 +14,7 @@
   "knownFailures": {
     "description": "Shaders already on main that naga rejects. They predate this gate: scripts/wgsl_precommit_gate.py only ran naga on files changed against origin/main, and --full-tree skips naga entirely for speed, so these never had to pass. The ratchet may only go down — verify:naga-wasm fails both when an unlisted shader breaks and when a listed one starts passing without being removed here.",
     "discoveredAt": "2026-09-20",
-    "ratchet": 37,
+    "ratchet": 36,
     "ids": [
       "aurora-curtain",
       "aurora-rift",
@@ -50,7 +50,6 @@
       "recursion-mirror-vortex",
       "signal-modulation",
       "stella-orbit",
-      "temporal-feedback-zoom-tracer",
       "tensor-flow-sculpt",
       "volumetric-depth-zoom"
     ]

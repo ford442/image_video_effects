@@ -3,7 +3,9 @@
 //  Category: post-processing
 //  Features: mouse-driven, audio-reactive, temporal, history-ring, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-07-31 (Batch 19 — mouse lens, click stamps, FFT band drift)
+//  Upgraded: 2026-10-04 (prev 2026-07-31 Batch 19)
+//  Ideas: persistence colour aging (white head → amber tail); trail hysteresis from exact C
+//  A packing: display RGBA (read back exactly as last frame's burn)
 //  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
 //         hardcoded 8 — see HISTORY RING DEPTH below
 //  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
@@ -76,6 +78,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
   // Parameters; bass amplifies motion sensitivity for reactive trails
   let motionSens  = (1.0 + u.zoom_params.x * 9.0) * (1.0 + bass * 0.5);
@@ -118,18 +121,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Mouse lens: bias local decay toward decayMax (pointer charges the phosphor)
   decay = mix(decay, decayMax, mouseMask * 0.5);
 
-  // Per-band decay drift: 8 vertical FFT bands make the trails breathe
-  // with the spectrum (±0.005 — subtle enough that static areas still clear).
-  let bin   = min(u32(clamp(uv.y, 0.0, 0.999) * 8.0), 7u);
-  let drift = (plasmaBuffer[bin + 1u].x - 0.5) * 0.01;
+  // Per-band decay drift (±0.005). Floor fix: HEAD read plasmaBuffer[bin + 1], which is
+  // never uploaded (constant 0 → a fixed −0.005). Three vertical bands now breathe with
+  // treble (top), mids and bass (bottom); silence still gives HEAD's −0.005.
+  let band = min(u32(clamp(uv.y, 0.0, 0.999) * 3.0), 2u);
+  let bandEnergy = select(select(bass, mids, band == 1u), treble, band == 0u);
+  let drift = (bandEnergy - 0.5) * 0.01;
   decay = clamp(decay + drift, decayMin, 0.999);
+
+  // Idea 2 — trail hysteresis: a pixel that was glowing trail last frame (exact C burn
+  // brighter than the live frame) keeps the slow decay a little longer, so trails fade
+  // out instead of snapping off the moment motion stops.
+  let lastBurn = textureLoad(dataTextureC, coord, 0);
+  let trailExcess = dot(lastBurn.rgb - current.rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let wasTrail = smoothstep(0.03, 0.2, trailExcess);
+  decay = mix(decay, decayMax, wasTrail * 0.6);
 
   // Accumulate phosphor burn (max-based; history-ring indexing is an engine contract)
   var burned = current.rgb;
   for (var age: u32 = 1u; age <= min(7u, maxAge); age = age + 1u) {
     let layer   = (historyHead + histDepth - age) % histDepth;
     let hist    = textureSampleLevel(historyTexture, u_sampler, uv, i32(layer), 0.0);
-    let decayed = hist.rgb * pow(decay, f32(age));
+    // Idea 1 — persistence colour aging: each older frame leans further toward the
+    // long-persistence amber of the phosphor (scaled by Warm Tint), so trails run from a
+    // white head to an amber tail.
+    let ageTint = mix(vec3<f32>(1.0), vec3<f32>(1.0, 0.82, 0.38), clamp(f32(age) / 7.0, 0.0, 1.0) * clamp(warmStrength, 0.0, 1.0));
+    let decayed = hist.rgb * pow(decay, f32(age)) * ageTint;
     burned = max(burned, decayed);
   }
 

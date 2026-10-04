@@ -2,7 +2,7 @@
   "id": "temporal-phosphor-burn",
   "name": "Temporal Phosphor Burn",
   "url": "shaders/temporal-phosphor-burn.wgsl",
-  "description": "CRT phosphor persistence combining exact immediate display history with seven older ring frames, sprung beam burns, bounded click afterimages, three-band plasma audio, ACES, and semantic burn alpha.",
+  "description": "CRT phosphor persistence combining exact immediate display history with seven older ring frames, sprung beam burns, bounded click afterimages, three-band plasma audio, ACES, and semantic burn alpha. Scanlines are real 3-pixel beam rows that swell on bright content, and older afterglow softens as it fades.",
   "tags": [
     "temporal",
     "crt",

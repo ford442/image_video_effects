@@ -176,7 +176,7 @@
     "name": "Chrono Luma Slit Scan",
     "url": "shaders/chrono-luma-slit-scan.wgsl",
     "category": "post-processing",
-    "description": "Luminance slit-scan with horizontal/vertical scan runners, held temporal halo, treble warp detail, and capped ripple fronts.",
+    "description": "Luminance slit-scan with horizontal/vertical scan runners, held temporal halo, treble warp detail, and capped ripple fronts. Thin isochrone contours mark where the chosen age crosses a whole frame, and the sweeping scan bands open windows onto the oldest stored frame.",
     "tags": [
       "temporal",
       "slit-scan",
@@ -1377,7 +1377,7 @@
     "id": "temporal-decay-multiresolution",
     "name": "Temporal Decay Multiresolution",
     "url": "shaders/temporal-decay-multiresolution.wgsl",
-    "description": "Four-timescale temporal decomposition with a spring-following history lens and click echo rings. R=fast, G=medium, B=slow, and A=ultra-slow luminance.",
+    "description": "Four-timescale temporal decomposition with a spring-following history lens and click echo rings. R=fast, G=medium, B=slow, and A=ultra-slow luminance. Each decay slider shapes an exponential window over its band of ages, and click echo rings swap the fast and slow timescales as they pass.",
     "tags": [
       "temporal",
       "multiresolution",
@@ -1470,7 +1470,7 @@
     "id": "temporal-feedback-zoom-tracer",
     "name": "Temporal Feedback Zoom Tracer",
     "url": "shaders/temporal-feedback-zoom-tracer.wgsl",
-    "description": "Reads the most recent history frame through a slight affine warp (zoom + rotation) then blends with the current frame. The compounding warp generates infinite self-generating psychedelic zoom tunnels from any video content.",
+    "description": "Reads the most recent history frame through a slight affine warp (zoom + rotation) then blends with the current frame. The compounding warp generates infinite self-generating psychedelic zoom tunnels from any video content. Nested monitor bezels stream out of the zoom focus, and each feedback pass drifts the hue so the tunnel walks through the spectrum.",
     "tags": [
       "temporal",
       "feedback",
@@ -1723,7 +1723,7 @@
     "id": "temporal-layered-time-stamps",
     "name": "Temporal Layered Time-Stamps",
     "url": "shaders/temporal-layered-time-stamps.wgsl",
-    "description": "Psychedelic temporal echo: blends 4–8 past frames from the history ring buffer (binding 13) with per-layer hue rotation and spiral UV distortion",
+    "description": "Psychedelic temporal echo: blends 4–8 past frames from the history ring buffer (binding 13) with per-layer hue rotation and spiral UV distortion Older layers spiral around the cursor, and each layer is outlined in its own hue like an onion skin.",
     "tags": [
       "temporal",
       "psychedelic",
@@ -1775,7 +1775,7 @@
     "id": "temporal-phosphor-burn-motion-adaptive",
     "name": "Temporal Phosphor Burn (Motion Adaptive)",
     "url": "shaders/temporal-phosphor-burn-motion-adaptive.wgsl",
-    "description": "Motion-adaptive CRT phosphor burn. Fast-moving pixels get slow decay (long bright trails); still areas clear quickly. Green/amber warm tint follows the motion glow for vivid CRT ambiance.",
+    "description": "Motion-adaptive CRT phosphor burn. Fast-moving pixels get slow decay (long bright trails); still areas clear quickly. Green/amber warm tint follows the motion glow for vivid CRT ambiance. Older persistence ages toward phosphor amber, and trails linger with hysteresis instead of snapping off when motion stops.",
     "tags": [
       "temporal",
       "crt",
@@ -1868,7 +1868,7 @@
     "id": "temporal-phosphor-burn",
     "name": "Temporal Phosphor Burn",
     "url": "shaders/temporal-phosphor-burn.wgsl",
-    "description": "CRT phosphor persistence combining exact immediate display history with seven older ring frames, sprung beam burns, bounded click afterimages, three-band plasma audio, ACES, and semantic burn alpha.",
+    "description": "CRT phosphor persistence combining exact immediate display history with seven older ring frames, sprung beam burns, bounded click afterimages, three-band plasma audio, ACES, and semantic burn alpha. Scanlines are real 3-pixel beam rows that swell on bright content, and older afterglow softens as it fades.",
     "tags": [
       "temporal",
       "crt",
@@ -1964,7 +1964,7 @@
     "id": "temporal-rgb-ghost",
     "name": "Temporal RGB Ghost",
     "url": "shaders/temporal-rgb-ghost.wgsl",
-    "description": "Per-channel temporal displacement: R=current, G=N frames ago, B=M frames ago. Moving objects leave vivid rainbow comet tails as each color channel trails a different distance behind. Static areas appear normal.",
+    "description": "Per-channel temporal displacement: R=current, G=N frames ago, B=M frames ago. Moving objects leave vivid rainbow comet tails as each color channel trails a different distance behind. Static areas appear normal. The blue trail now integrates every frame between the two delays into a continuous comet streak, displacement only shimmers where something moved, and the G delay glides between frames.",
     "tags": [
       "temporal",
       "ghost",

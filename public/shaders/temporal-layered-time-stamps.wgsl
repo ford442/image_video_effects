@@ -3,7 +3,9 @@
 //  Category: post-processing
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-10-04 (prev 2026-05-31)
+//  Ideas: true per-age spiral about the cursor; onion-skin outlines in each layer's hue
+//  A packing: display RGBA
 //  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
 //         hardcoded 8 — see HISTORY RING DEPTH below
 //  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
@@ -104,6 +106,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // ── Accumulate history layers ───────────────────────────────────────────────
   var accumulated = vec4<f32>(0.0);
   var totalWeight = 0.0;
+  var onionRGB = vec3<f32>(0.0);
+  var onionAmt = 0.0;
+  let mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let aspect = res.x / max(res.y, 1.0);
+  let px = 1.5 / res;
 
   for (var age: u32 = 1u; age <= echoLayers; age = age + 1u) {
     let layer = (historyHead + histDepth - min(age, reach)) % histDepth;
@@ -115,7 +122,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       sin(angle + uv.y * 7.0 + time * 0.3) * warpAmt * t,
       cos(angle + uv.x * 7.0 + time * 0.3) * warpAmt * t
     );
-    let sampleUV = clamp(warpUV, vec2<f32>(0.0), vec2<f32>(1.0));
+    // Idea 1 — true spiral about the cursor: each older layer is turned further around
+    // the pointer and pushed slightly outward (HEAD's "spiral" was only the wobble above,
+    // and the mouse was never read).
+    let spinA = f32(age) * warpAmt * 2.5;
+    let rel = (warpUV - mouse) * vec2<f32>(aspect, 1.0) / (1.0 + f32(age) * warpAmt * 0.4);
+    let spun = vec2<f32>(rel.x * cos(spinA) - rel.y * sin(spinA), rel.x * sin(spinA) + rel.y * cos(spinA));
+    let sampleUV = clamp(mouse + spun / vec2<f32>(aspect, 1.0), vec2<f32>(0.0), vec2<f32>(1.0));
 
     // Sample the history frame
     let frame = textureSampleLevel(historyTexture, u_sampler, sampleUV, i32(layer), 0.0);
@@ -126,6 +139,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Exponential weight: recent frames count more
     let weight = exp(-t * 2.5);
+
+    // Idea 2 — onion-skin outlines: each layer's luminance edges are inked in its own
+    // hue, like an animator's onion skin, so past frames read as outlined time-stamps.
+    let lc = dot(frame.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let lx = dot(textureSampleLevel(historyTexture, u_sampler, clamp(sampleUV + vec2<f32>(px.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), i32(layer), 0.0).rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let ly = dot(textureSampleLevel(historyTexture, u_sampler, clamp(sampleUV + vec2<f32>(0.0, px.y), vec2<f32>(0.0), vec2<f32>(1.0)), i32(layer), 0.0).rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let edge = smoothstep(0.04, 0.18, length(vec2<f32>(lx - lc, ly - lc)));
+    onionRGB += tint.rgb * edge * weight;
+    onionAmt += edge * weight;
     accumulated += frame * tint * weight;
     totalWeight += weight;
   }
@@ -136,7 +158,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   // ── Composite: blend base with history layers ────────────────────────────────
-  let outRGB = mix(base.rgb, accumulated.rgb, blendMix);
+  var outRGB = mix(base.rgb, accumulated.rgb, blendMix);
+  if (totalWeight > 0.001) {
+    let onionCov = clamp(onionAmt / totalWeight * 2.0, 0.0, 1.0) * (0.35 + u.zoom_params.z * 0.5);
+    outRGB = mix(outRGB, onionRGB / max(onionAmt, 0.001), onionCov);
+  }
   // Alpha encodes temporal echo energy: how much history overrides the base frame.
   let echoEnergy = clamp(length(accumulated.rgb - base.rgb) * blendMix, 0.0, 1.0);
   let alpha = clamp(base.a * (1.0 - blendMix) + echoEnergy + bass * 0.15, 0.0, 1.0);

@@ -5,7 +5,9 @@
 //            upgraded-rgba, fbm-trail-jitter, chromatic-trail-separation,
 //            mouse-driven-zoom-focus, noise-warp
 //  Complexity: Medium
-//  Upgraded: 2026-06-28
+//  Upgraded: 2026-10-04 (prev 2026-06-28)
+//  Ideas: nested monitor bezels streaming out of the zoom focus; recursion hue drift per feedback pass
+//  A packing: display RGBA
 //  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
 //         hardcoded 8 — see HISTORY RING DEPTH below
 //  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
@@ -83,6 +85,13 @@ fn rgbToLuma(rgb: vec3<f32>) -> f32 {
   return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
 }
 
+// Hue rotation about the grey axis (Rodrigues), applied once per feedback pass.
+fn hueRotate(c: vec3<f32>, angle: f32) -> vec3<f32> {
+  let k = vec3<f32>(0.57735027);
+  let ca = cos(angle);
+  return c * ca + cross(k, c) * sin(angle) + k * dot(k, c) * (1.0 - ca);
+}
+
 // ── Chromatic history sample ─────────────────────────────────────
 fn sampleHistoryChromatic(uv: vec2<f32>, layer: i32, shift: f32) -> vec3<f32> {
   let r = textureSampleLevel(historyTexture, u_sampler, uv + vec2<f32>(shift, 0.0), layer, 0.0).r;
@@ -131,7 +140,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     cosR * uvC.x - sinR * uvC.y,
     sinR * uvC.x + cosR * uvC.y,
   );
-  let warpedUV = clamp(rotated / zoomFactor + focus + jitter, vec2<f32>(0.0), vec2<f32>(1.0));
+  let warpedRaw = rotated / zoomFactor + focus + jitter;
+  let warpedUV = clamp(warpedRaw, vec2<f32>(0.0), vec2<f32>(1.0));
+  // Reads that leave the frame (rotation pushes corners out) fall to a dark surround
+  // instead of HEAD's clamped edge smear.
+  let edgeD = min(min(warpedRaw.x, 1.0 - warpedRaw.x), min(warpedRaw.y, 1.0 - warpedRaw.y));
+  let inFrame = smoothstep(-0.002, 0.002, edgeD);
 
   // ── HISTORY RING DEPTH (floor fix, 2026-09-21) ───────────────────
   // The ring is at most 8 layers; after the VRAM probe the runtime may
@@ -145,12 +159,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Chromatic trail separation scales with zoom power
   let chromaShift = 0.001 + zp.x * 0.008;
-  let histWarp = sampleHistoryChromatic(warpedUV, i32(layerPrev), chromaShift);
+  // Idea 2 — recursion hue drift: every pass rotates the history hue a little (mids widen
+  // it), so the tunnel's depth layers walk through the spectrum like analog feedback.
+  let hueStep = 0.035 + mids * 0.05;
+  let histWarp = hueRotate(sampleHistoryChromatic(warpedUV, i32(layerPrev), chromaShift), hueStep) * inFrame
+               + vec3<f32>(0.015) * (1.0 - inFrame);
 
   let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
   // Blend: weighted history + current
-  let output = mix(histWarp * persistence, current.rgb, blendAmt);
+  var output = mix(histWarp * persistence, current.rgb, blendAmt);
+
+  // Idea 1 — nested monitor bezels: on a 3 Hz tick a thin bright bezel is injected at the
+  // zoom focus; the zoom-in recursion carries each one outward (rotating with the warp), so
+  // the tunnel fills with nested screens streaming toward the viewer.
+  let aspect = res.x / max(res.y, 1.0);
+  let bezelHalf = vec2<f32>(0.075 / aspect, 0.075) * (1.0 + bass * 0.25);
+  let bq = abs(uv - focus) - bezelHalf;
+  let bezelDist = abs(max(bq.x, bq.y));
+  let bezelTick = 1.0 - smoothstep(0.0, 0.1, fract(time * 3.0));
+  let bezel = (1.0 - smoothstep(0.0012, 0.0035, bezelDist)) * bezelTick * (0.35 + zp.x * 0.65);
+  output = mix(output, vec3<f32>(0.92, 0.95, 1.0), bezel * 0.8);
   let motionMag = length(histWarp - current.rgb);
 
   // Preserve input alpha, adding motion-driven echo alpha
@@ -167,11 +196,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         clickFront += exp(-age * 1.8) * exp(-abs(length((uv - event.xy) * vec2<f32>(u.config.z/u.config.w, 1.0)) - age * 0.38) * 58.0);
     }
     
-    let clockRings = sin(length(uv - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
+    let clockRings = sin(length(uv - focus) * 95.0 - time * (5.0 + treble * 7.0));
     let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
 
-    let __finalRGB = finalOut.rgb + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
-    textureStore(writeTexture, coord, vec4<f32>(__finalRGB, finalOut.a));
+    let finalRGB = finalOut.rgb + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
+    textureStore(writeTexture, coord, vec4<f32>(finalRGB, finalOut.a));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, coord, vec4<f32>(__finalRGB, finalOut.a));
+  textureStore(dataTextureA, coord, vec4<f32>(finalRGB, finalOut.a));
 }
