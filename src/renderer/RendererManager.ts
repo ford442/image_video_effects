@@ -446,10 +446,12 @@ export class RendererManager {
       (r as WebGPURenderer).setSourceAutoExposure(enabled);
     }
   }
-  /** Smoothed per-pass GPU ms from the TS profiler (empty until timestamps resolve, or on WASM/JS). */
+  /** Smoothed per-pass GPU ms from the TS or C++ profiler (empty until timestamps resolve, or on JS). */
   getPassTimings(): PassTiming[] {
     const r = this.shaderRenderer();
-    return r instanceof WebGPURenderer ? r.getPassTimings() : [];
+    if (r instanceof WebGPURenderer) return r.getPassTimings();
+    if (r instanceof WASMRenderer) return r.getPassTimings();
+    return [];
   }
   /** True when the TS backend already holds a compiled pipeline for `id`. */
   isShaderCached(id: string): boolean {
