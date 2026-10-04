@@ -3,6 +3,7 @@ import { RenderMode, ShaderEntry, InputSource, SlotParams } from '../renderer/ty
 import { RendererManager } from '../renderer/RendererManager';
 import { mapOrderedParamsToSlotParams } from '../utils/shaderParamMapping';
 import { getShaderDefaults } from '../app/constants/shaderDefaults';
+import { clearSlot as clearAudioParamHolds } from '../services/audioParamHold';
 
 export interface UseShaderModeOptions {
     rendererRef: RefObject<RendererManager | null>;
@@ -69,6 +70,8 @@ export function useShaderMode({
 
     const setMode = useCallback(async (index: number, mode: RenderMode) => {
         if (slotShaderStatusRef.current[index] === 'loading') return;
+        // New shader → old performer bases for this slot are meaningless.
+        if (modesRef.current[index] !== mode) clearAudioParamHolds(index);
 
         setModes(prev => {
             const next = [...prev];
@@ -132,7 +135,7 @@ export function useShaderMode({
                 setSlotShaderStatus(prev => { const n = [...prev]; n[index] = 'error'; return n; });
             }
         }
-    }, [availableModes, rendererRef, slotShaderStatusRef, setModes, setSlotShaderStatus, setSlotParams]);
+    }, [availableModes, rendererRef, modesRef, slotShaderStatusRef, setModes, setSlotShaderStatus, setSlotParams]);
 
     const updateSlotParam = useCallback((slotIndex: number, updates: Partial<SlotParams>) => {
         setSlotParams(prev => {

@@ -17,6 +17,7 @@ import {
 } from '../../../services/midiControl';
 import type { AutoTransitionConfig } from '../../../types/aiVj';
 import { shouldShowMidiControls } from '../../../utils/deviceCapabilities';
+import { hold as holdAudioParam, release as releaseAudioParam } from '../../../services/audioParamHold';
 
 export interface UseLiveControlOptions {
     isAiVjMode: boolean;
@@ -135,6 +136,16 @@ export function useLiveControl({
     useEffect(() => {
         saveBindings(bindings);
     }, [bindings]);
+
+    // Click-to-learn on a param: freeze host audio on it until learn ends so the
+    // slider does not move under the performer while they twist a knob.
+    const learnHoldSlot = learnTarget === 'param' && pendingAction.type === 'setSlotParam' ? pendingAction.slot : null;
+    const learnHoldParam = learnTarget === 'param' && pendingAction.type === 'setSlotParam' ? pendingAction.param : null;
+    useEffect(() => {
+        if (learnHoldSlot === null || learnHoldParam === null) return;
+        holdAudioParam(learnHoldSlot, learnHoldParam);
+        return () => releaseAudioParam(learnHoldSlot, learnHoldParam);
+    }, [learnHoldSlot, learnHoldParam]);
 
     useEffect(() => {
         liveHandleRef.current = {
