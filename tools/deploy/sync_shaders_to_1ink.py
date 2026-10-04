@@ -8,6 +8,10 @@ to the remote server via SFTP so they can be served by Nginx at:
 
 Features:
 - Incremental sync: skips files that already exist with the same size
+  (`_` libraries such as _prelude.wgsl are always re-uploaded: they are few,
+  small, and a same-size edit must not be skipped)
+- --ids-file always adds the `_` libraries, so a partial sync of shaders that
+  `#include` them never lands without them
 - Dry-run support
 - Progress reporting
 
@@ -69,15 +73,21 @@ def resolve_shader_files(ids_file: Path | None) -> list[Path]:
     if missing:
         print(f"⚠️  {len(missing)} ID(s) have no local WGSL file: {', '.join(missing[:10])}"
               + (" ..." if len(missing) > 10 else ""))
+    # Shaders `#include` the `_` libraries (public/shaders/_prelude.wgsl, ...);
+    # ship them with any partial sync. The app bundles _prelude.wgsl, but bundles
+    # cached from before #1313 resolve it next to the shader.
+    for library in sorted(LOCAL_SHADERS_DIR.glob("_*.wgsl")):
+        if library not in files:
+            files.append(library)
     return sorted(files)
 
 
 def upload_file(sftp, local_path: Path, remote_path: str, dry_run: bool = False) -> bool:
-    """Upload a single file if it doesn't exist or has a different size."""
+    """Upload a single file if it doesn't exist or has a different size (`_` libraries always)."""
     try:
         remote_stat = sftp.stat(remote_path)
         local_size = local_path.stat().st_size
-        if remote_stat.st_size == local_size:
+        if remote_stat.st_size == local_size and not local_path.name.startswith("_"):
             return True  # Already up to date
     except FileNotFoundError:
         pass  # File doesn't exist remotely, proceed with upload

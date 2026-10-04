@@ -11,6 +11,10 @@ Features:
 - Concurrent: uploads up to N shaders in parallel
 - Retry: exponential backoff on transient failures
 - Preserves IDs: uploads use the original kebab-case shader ID
+- `_` libraries (_prelude.wgsl, _hash.wgsl) are deliberately NOT uploaded: every
+  upload becomes a catalog record. The app resolves `#include "_prelude.wgsl"`
+  from its bundle; a shader that includes any other library is reported, because
+  the storage API cannot serve it
 
 Usage:
     python3 tools/deploy/sync_shaders_to_storage.py
@@ -24,6 +28,7 @@ import sys
 import json
 import time
 import hashlib
+import re
 import argparse
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -100,6 +105,20 @@ def file_hash(path: Path) -> str:
         for chunk in iter(lambda: f.read(8192), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+_INCLUDE_RE = re.compile(r'^[ \t]*#include[ \t]+"([^"]+)"[ \t]*$', re.MULTILINE)
+# Libraries the app bundle carries, from the include contract so they cannot drift.
+BUNDLED_LIBRARIES = set(
+    json.loads((REPO_ROOT / "src" / "contracts" / "wgsl_include.json").read_text(encoding="utf-8"))
+    ["bundledLibraries"]["names"]
+)
+
+
+def non_bundled_includes(wgsl_path: Path) -> List[str]:
+    """`#include` targets the storage API cannot resolve (not bundled in the app)."""
+    text = wgsl_path.read_text(encoding="utf-8", errors="replace")
+    return [name for name in _INCLUDE_RE.findall(text) if name not in BUNDLED_LIBRARIES]
 
 
 def check_shader_exists(shader_id: str) -> bool:
@@ -244,6 +263,10 @@ def main():
         if not wgsl_path.exists():
             missing_local += 1
             continue
+
+        for library in non_bundled_includes(wgsl_path):
+            print(f"⚠️  {shader_id} includes {library}, which the storage API does not serve — "
+                  "it will only load from hosts that serve public/shaders/")
 
         local_hash = file_hash(wgsl_path)
 
