@@ -79,6 +79,8 @@ Optional canvas snapshots (first 2 matrix entries) live under `tests/renderer-pa
 
 **Note:** WASM `getGPUTimings().available` is `true` when the adapter supports `timestamp-query` and readback succeeded; otherwise wall-clock with `available: false`. TS WebGPU uses the same shape.
 
+Per-slot C++ GPU time (#1314 D): `getGPUTimings().passes` / `getDiagnostics().wasm.passTimings` (shared `PassTiming` shape, one entry per slot compute pass, from the `getPassTimingsJson` export), and the uncaptured-error ring in `getDiagnostics().wasm.errors` (`getLastError` / `getErrorRingJson` / `clearErrorRing`). Smoke: `npm run test:engine2` runs `tests/wasm-measurement.swiftshader.spec.ts`.
+
 ## Shader hot-reload (dev)
 
 Edit WGSL under `public/shaders/` and reload compute pipelines without restarting:
