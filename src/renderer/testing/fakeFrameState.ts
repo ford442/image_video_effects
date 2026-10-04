@@ -104,6 +104,7 @@ export function createFakeFrameState(
       historyLayers: state.historyLayers,
     }) as unknown as ReturnType<WebGPUFrameState['getTextureSet']>,
     maxPassesPerFrame: 12,
+    framePassBudget: Number.POSITIVE_INFINITY,
 
     ripples: [],
     mouseX: 0.5,

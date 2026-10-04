@@ -196,8 +196,22 @@ export function applyPerformancePolicyToRenderer(
   if (renderer instanceof WebGPURenderer) {
     renderer.setAdaptiveQuality(false);
     renderer.setMaxPassesPerFrame(state.performancePolicy.maxPassesPerFrame);
+    renderer.setFramePassBudget(framePassBudgetFor(state.performancePolicy));
   }
   adaptiveController.updatePolicy(state.performancePolicy);
+}
+
+/**
+ * Frame-wide pass budget for a policy: the per-slot pass cap times the slots
+ * the policy allows (battery 4 · balanced 16 · ultra 48). A stack of graphs
+ * gets exactly what per-graph caps gave it before; long linear chains now
+ * count against the same budget (#1314 WP-3).
+ */
+export function framePassBudgetFor(
+  policy: { maxPassesPerFrame: number; maxActiveSlots: number },
+  slotCapOverride: number | null = null,
+): number {
+  return policy.maxPassesPerFrame * Math.max(1, slotCapOverride ?? policy.maxActiveSlots);
 }
 
 function applyColorFormat(renderer: WebGPURenderer | WASMRenderer | null, format: InternalColorFormat): void {

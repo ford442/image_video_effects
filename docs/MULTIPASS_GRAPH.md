@@ -9,7 +9,7 @@ Extends Tier B linear chains ([`multipassRegistry.ts`](../src/renderer/multipass
 - Sim texture packing: [`agents/swarm-tasks/advanced-physics/MULTIPASS_SIM_CONTRACT.md`](../agents/swarm-tasks/advanced-physics/MULTIPASS_SIM_CONTRACT.md)
 - Builder: [`scripts/buildMultipassRegistry.js`](../scripts/buildMultipassRegistry.js)
 - Validator: [`src/renderer/multipassGraph.ts`](../src/renderer/multipassGraph.ts)
-- Executor: [`src/renderer/GraphRunner.ts`](../src/renderer/GraphRunner.ts)
+- Frame plan + executor: [`src/renderer/webgpu/framePlan.ts`](../src/renderer/webgpu/framePlan.ts) (graph nodes and linear slots compile into one op list; `GraphRunner.runGraph` is the stand-alone shim)
 
 ## Tier comparison
 
@@ -103,11 +103,21 @@ effectiveCap = min(graph.maxPassesPerFrame, performancePolicy.maxPassesPerFrame)
 | auto (mobile) | 6 |
 | auto (desktop) | 12 |
 
-When over budget, iterative `repeat` counts shrink first and the last node that writes `color` is kept. Excess work is reported as truncated steps (Dev Tools + `GraphRunReport`), with a console warning.
+When over budget, iterative `repeat` counts shrink first and the last node that writes `color` is kept. Excess work is reported as truncated steps (Dev Tools + `GraphRunReport`), with a console warning (once per graph and cap).
+
+### Frame budget (#1314)
+
+On top of the per-graph cap, the TS renderer applies one budget to the whole frame:
+
+```
+framePassBudget = performancePolicy.maxPassesPerFrame × performancePolicy.maxActiveSlots
+```
+
+That is 4 for battery, 16 for balanced and 48 for ultra. Linear (Tier A/B) passes are charged first, because truncating a chain would change the picture. Graphs then share what is left in encode order. Each graph still stays within `effectiveCap` and keeps at least its color writer. A stack made only of graphs gets exactly what the per-graph caps gave it before. The C++ mirror ([`performance_policy.h`](../wasm_renderer/performance_policy.h)) is unchanged, since the frame plan is TS-only while WASM is frozen.
 
 ## Encoder boundaries
 
-All graph nodes run inside the slot's single `GPUCommandEncoder` for the frame. Each expanded dispatch opens one `beginComputePass` / `endComputePass` pair. The frame blit and end-of-frame `dataA`/`dataB` → `dataC` feedback copies run outside the graph, unchanged from Tier B.
+All graph nodes run inside the frame's single `GPUCommandEncoder` (one `queue.submit` per frame, #1314). They are compiled into the frame plan next to linear slots and bind the renderer's cached compute bind group, so no group is created per dispatch. Each expanded dispatch opens one `beginComputePass` / `endComputePass` pair. The frame blit and end-of-frame `dataA`/`dataB` → `dataC` feedback copies run outside the graph, unchanged from Tier B.
 
 ## Registry build
 

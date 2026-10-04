@@ -134,4 +134,24 @@ test.describe('engine2 on SwiftShader WebGPU', () => {
     expect(thumb.stdev).toBeGreaterThan(1);
     expect(await readGpuUncapturedErrors(page)).toEqual([]);
   });
+
+  test('gallery warm-up compiles pipelines ahead of selection without binding them', async ({ page }) => {
+    await boot(page);
+    const result = await page.evaluate(async () => {
+      const api = (window as any).__pixelocity__;
+      const ids = ['kaleidoscope', 'cyber-ripples'];
+      api.renderer.warmShaders(ids.map((id) => ({ id, url: `./shaders/${id}.wgsl` })));
+      const deadline = performance.now() + 60_000;
+      while (performance.now() < deadline && !ids.every((id) => api.renderer.isShaderCached(id))) {
+        await new Promise((r) => setTimeout(r, 250));
+      }
+      return {
+        cached: ids.map((id) => api.renderer.isShaderCached(id)),
+        slot0: api.getSlotState(0)?.shaderId ?? null,
+      };
+    });
+    expect(result.cached).toEqual([true, true]);
+    expect(result.slot0).toBeNull();
+    expect(await readGpuUncapturedErrors(page)).toEqual([]);
+  });
 });

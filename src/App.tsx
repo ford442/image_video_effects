@@ -33,6 +33,7 @@ import {
     useTestHarness,
 } from './hooks';
 import { useThumbnailManifest } from './hooks/useThumbnailManifest';
+import { useShaderWarmup } from './hooks/useShaderWarmup';
 import { WEBCAM_FUN_SHADERS, getShaderDefaults } from './app/constants/shaderDefaults';
 import { defaultSlotParams } from './app/constants/defaultSlotParams';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
@@ -172,6 +173,7 @@ function MainApp() {
         setSlotShaderStatus,
         setInputSource,
     });
+    useShaderWarmup(rendererRef, availableModesRef);
 
     const {
                 isModelLoaded,

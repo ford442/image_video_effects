@@ -227,6 +227,26 @@ export async function createComputePipelineWithValidationScope(
   }
 }
 
+/**
+ * Create a compute pipeline off the main thread when the device supports it
+ * (createComputePipelineAsync compiles in the background and rejects with a
+ * GPUPipelineError on validation failure — never yields an invalid pipeline).
+ * Falls back to the synchronous create + validation error scope (#1205).
+ */
+export async function createComputePipelineChecked(
+  device: GPUDevice,
+  descriptor: GPUComputePipelineDescriptor,
+): Promise<{ pipeline: GPUComputePipeline | null; error: GPUError | Error | null }> {
+  if (typeof device.createComputePipelineAsync === 'function') {
+    try {
+      return { pipeline: await device.createComputePipelineAsync(descriptor), error: null };
+    } catch (e) {
+      return { pipeline: null, error: e instanceof Error ? e : new Error(String(e)) };
+    }
+  }
+  return createComputePipelineWithValidationScope(device, descriptor);
+}
+
 export async function compileShader(
   device: GPUDevice,
   pipelineLayout: GPUPipelineLayout,
@@ -298,7 +318,7 @@ export async function compileShader(
         }).catch(() => { /* device lost / test mocks */ });
       }
 
-      const created = await createComputePipelineWithValidationScope(device, {
+      const created = await createComputePipelineChecked(device, {
         label: id,
         layout: pipelineLayout,
         compute: { module, entryPoint: 'main' },
@@ -325,7 +345,7 @@ export async function compileShader(
       label: `${id}-fallback`,
       code: fallbackWgsl,
     });
-    const created = await createComputePipelineWithValidationScope(device, {
+    const created = await createComputePipelineChecked(device, {
       label: `${id}-fallback`,
       layout: pipelineLayout,
       compute: { module: fallbackModule, entryPoint: 'main' },

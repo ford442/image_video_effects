@@ -77,6 +77,8 @@ export interface WebGPUFrameState {
   }) => GPUBindGroup;
   getTextureSet: () => WebGPUTextureSet;
   maxPassesPerFrame: number;
+  /** Compute passes allowed per frame across every slot (Infinity = per-graph caps only). */
+  framePassBudget: number;
 
   ripples: Ripple[];
   mouseX: number;
@@ -160,6 +162,7 @@ export interface WebGPUFrameHost {
     dataC: GPUTexture;
   }) => GPUBindGroup;
   maxPassesPerFrame: number;
+  framePassBudget: number;
   ripples: Ripple[];
   mouseX: number;
   mouseYShader: number;
@@ -235,6 +238,7 @@ export interface RendererFrameDeps {
   gpuTimings: { parallelTime: number; chainedTime: number; totalTime: number };
   timestampRuntime: WebGPUTimestampQueries;
   maxPassesPerFrame: number;
+  framePassBudget: number;
   encodePreFxChores?: (encoder: GPUCommandEncoder) => void;
   /** Encode chore readback copies into the frame encoder (before finish). */
   encodePostFxChores?: (encoder: GPUCommandEncoder) => void;
@@ -315,6 +319,7 @@ export function createRendererFrameHost(d: RendererFrameDeps): WebGPUFrameHost {
       ),
     get maxPassesPerFrame() { return d.maxPassesPerFrame; },
     set maxPassesPerFrame(v) { d.maxPassesPerFrame = v; },
+    get framePassBudget() { return d.framePassBudget; },
     get ripples() { return d.ripples; },
     get mouseX() { return d.mouseX; },
     get mouseYShader() { return d.mouseYShader; },
@@ -403,6 +408,7 @@ export function createFrameState(host: WebGPUFrameHost): WebGPUFrameState {
     getTextureSet: () => h.getTextureSet(),
     get maxPassesPerFrame() { return h.maxPassesPerFrame; },
     set maxPassesPerFrame(v) { h.maxPassesPerFrame = v; },
+    get framePassBudget() { return h.framePassBudget; },
     get ripples() { return h.ripples; },
     get mouseX() { return h.mouseX; },
     get mouseYShader() { return h.mouseYShader; },

@@ -63,6 +63,8 @@ import { SimRing } from './webgpu/simRing';
 import { resolveGraphForShader, resolveSimRingRequest } from './multipassRegistry';
 import { graphUsesSimRing } from './multipassGraph';
 import { instrumentDevice, type FrameStats } from './webgpu/deviceCounters';
+import { ShaderWarmupQueue, type WarmupEntry } from './webgpu/shaderWarmup';
+import { getGraphEntryIds, resolveMultipassChain } from './multipassRegistry';
 
 export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private device: GPUDevice | null = null;
@@ -118,6 +120,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private targetFPS = 60;
   private adaptiveQuality = false;
   maxPassesPerFrame = 12;
+  /** Frame-wide compute pass budget (render-quality passes × active slots). */
+  framePassBudget = Number.POSITIVE_INFINITY;
 
   private inputSource: 'image' | 'video' | 'webcam' | 'generative' | 'live' = 'image';
   private supportsSubgroups = false;
@@ -136,6 +140,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   readonly simRing = new SimRing();
 
   private frameState?: WebGPUFrameState;
+  private warmup: ShaderWarmupQueue | null = null;
 
   constructor(private config: RendererConfig) {}
 
@@ -180,6 +185,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       attachDeviceLostHandler(device, outcome.context, () => {
         if (this.releasingDevice || this.device !== device) return;
         this.initialized = false;
+        this.warmup?.stop();
+        this.warmup = null;
         this.timestampRuntime.hasRealGpuTimings = false;
         this.timestampRuntime.readbackPending = false;
         this.gpuChores.detach('device lost');
@@ -558,6 +565,37 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   }
 
   isShaderCached(id: string): boolean { return this.pipeline.shaderManager.hasPipeline(id); }
+
+  /**
+   * Compile pipelines the user is likely to pick next (gallery viewport) in
+   * idle time, so selecting one hits the cache. Compiles only: no slot binding
+   * and no sim-ring allocation (that happens on a real load).
+   */
+  warmShaders(entries: WarmupEntry[]): void {
+    if (!this.device || !this.initialized) return;
+    if (!this.warmup) {
+      this.warmup = new ShaderWarmupQueue({
+        load: (e) =>
+          this.pipeline.shaderManager.loadShader(this.device, this.pipeline.pipelineLayout, e.id, e.url),
+        isCached: (id) => this.pipeline.shaderManager.hasPipeline(id),
+        boundIds: () => this.boundShaderIds(),
+        evict: (id) => this.pipeline.shaderManager.evict(id),
+        // Graph roots pull in several entries + maybe a sim ring: load those for real only.
+        canWarm: (id) => !resolveGraphForShader(id),
+      });
+    }
+    this.warmup.request(entries);
+  }
+
+  private boundShaderIds(): Set<string> {
+    const ids = new Set<string>();
+    for (const slot of this.slots) {
+      if (!slot.shaderId) continue;
+      for (const step of resolveMultipassChain(slot.shaderId)) ids.add(step);
+      for (const entry of getGraphEntryIds(slot.shaderId)) ids.add(entry);
+    }
+    return ids;
+  }
   getPipelineCacheStats() { return this.pipeline.shaderManager.getCacheStats(); }
   async preloadShader(id: string, url: string): Promise<boolean> { return this.loadShader(id, url); }
 
@@ -779,6 +817,15 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     }
   }
 
+  /**
+   * One per-frame pass budget across linear chains and Tier C graphs: chains
+   * are charged first (they cannot be truncated), graphs share the rest, each
+   * still within maxPassesPerFrame. Non-finite or < 1 → per-graph caps only.
+   */
+  setFramePassBudget(budget: number): void {
+    this.framePassBudget = Number.isFinite(budget) && budget >= 1 ? Math.floor(budget) : Number.POSITIVE_INFINITY;
+  }
+
   /** Resolves once `device.lost` settles, so a remount can re-probe without racing it. */
   destroy(): Promise<void> {
     return this.teardownGpuHandles(true) ?? Promise.resolve();
@@ -790,6 +837,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
 
   private teardownGpuHandles(awaitLost: boolean): Promise<void> | void {
     if (this.frameState) this.frameRenderer.stopRenderLoop(this.frameState);
+    this.warmup?.stop();
+    this.warmup = null;
     this.initialized = false;
     this.gpuChores.destroy();
     this.simRing.destroy();

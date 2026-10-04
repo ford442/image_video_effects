@@ -21,6 +21,7 @@ import {
   applyResolutionScaleToRenderer,
   buildPerformanceStatus,
   createPerformancePolicyState,
+  framePassBudgetFor,
   readResolutionScale,
   refreshFormatCapabilities,
   registerFp32Requirement,
@@ -117,6 +118,10 @@ export class RendererManager {
 
   overrideSlotCapForTests(cap: number | null): void {
     this.slotCapOverride = cap;
+    const r = this.shaderRenderer();
+    if (r instanceof WebGPURenderer) {
+      r.setFramePassBudget(framePassBudgetFor(this.perfState.performancePolicy, cap));
+    }
   }
 
   private slotPolicy() {
@@ -439,6 +444,16 @@ export class RendererManager {
     if (r && 'setSourceAutoExposure' in r) {
       (r as WebGPURenderer).setSourceAutoExposure(enabled);
     }
+  }
+  /** True when the TS backend already holds a compiled pipeline for `id`. */
+  isShaderCached(id: string): boolean {
+    const r = this.shaderRenderer();
+    return r instanceof WebGPURenderer ? r.isShaderCached(id) : false;
+  }
+  /** Pre-compile pipelines the user is about to pick (TS WebGPU only; no-op elsewhere). */
+  warmShaders(entries: Array<{ id: string; url: string }>): void {
+    const r = this.shaderRenderer();
+    if (r instanceof WebGPURenderer) r.warmShaders(entries);
   }
   async captureThumbnailPng(outSize: number): Promise<string | null> {
     const r = this.shaderRenderer();

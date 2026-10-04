@@ -401,6 +401,45 @@ export function capGraphDispatches(
   return expanded.slice(Math.max(0, expanded.length - cap));
 }
 
+interface GraphPlanCache {
+  errors: string[];
+  requested: number;
+  byCap: Map<number, ExpandedDispatch[]>;
+}
+
+/** Graph defs are static registry objects: validate / expand / cap once, not per frame. */
+const graphPlans = new WeakMap<MultipassGraphDef, GraphPlanCache>();
+
+function graphPlan(graph: MultipassGraphDef): GraphPlanCache {
+  let plan = graphPlans.get(graph);
+  if (!plan) {
+    plan = { errors: validateGraph(graph), requested: countGraphPasses(graph), byCap: new Map() };
+    graphPlans.set(graph, plan);
+  }
+  return plan;
+}
+
+/** validateGraph, memoized per graph def. */
+export function graphPlanErrors(graph: MultipassGraphDef): string[] {
+  return graphPlan(graph).errors;
+}
+
+/** countGraphPasses, memoized per graph def. */
+export function graphRequestedPasses(graph: MultipassGraphDef): number {
+  return graphPlan(graph).requested;
+}
+
+/** capGraphDispatches, memoized per (graph def, pass cap). Do not mutate the result. */
+export function cappedDispatches(graph: MultipassGraphDef, maxPassesPerFrame: number): ExpandedDispatch[] {
+  const plan = graphPlan(graph);
+  let expanded = plan.byCap.get(maxPassesPerFrame);
+  if (!expanded) {
+    expanded = capGraphDispatches(graph, maxPassesPerFrame);
+    plan.byCap.set(maxPassesPerFrame, expanded);
+  }
+  return expanded;
+}
+
 /** Demo / test fixture matching wave-tank graph shape. */
 export function createWaveTankGraph(): MultipassGraphDef {
   return {
