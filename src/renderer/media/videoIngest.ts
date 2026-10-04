@@ -19,7 +19,13 @@ import {
   WebGPUMediaInputContext,
   WebGPUMediaInputState,
 } from '../webgpu/WebGPUMediaInput';
-import { safeClose, supportsVideoFrameIngest, VideoFramePump, VideoIngestStats } from './videoFramePump';
+import {
+  safeClose,
+  supportsVideoFrameIngest,
+  TransferredVideoFrames,
+  VideoFramePump,
+  VideoIngestStats,
+} from './videoFramePump';
 
 export interface VideoIngestDeps {
   device: GPUDevice | null;
@@ -30,6 +36,8 @@ export interface VideoIngestDeps {
 
 export class VideoIngest {
   private pump: VideoFramePump | null = null;
+  /** Worker mode: frames arrive by transfer instead of from a local <video>. */
+  private external: TransferredVideoFrames | null = null;
   private submitted: VideoFrame | null = null;
   private elementFrames = 0;
 
@@ -39,13 +47,25 @@ export class VideoIngest {
   detach(): void {
     this.pump?.detach();
     this.pump = null;
+    this.external?.detach();
+    this.external = null;
     this.afterSubmit();
+  }
+
+  /** Worker mode: take frames from transfers (null stops video ingest). */
+  setExternalSource(source: TransferredVideoFrames | null): void {
+    if (this.external === source) return;
+    this.external?.detach();
+    this.external = source;
   }
 
   /** Encode this frame's copy, if any. True when commands were added to `encoder`. */
   encode(encoder: GPUCommandEncoder, deps: VideoIngestDeps): boolean {
+    if (this.external) return this.encodeFrom(this.external, encoder, deps);
+
     const video = deps.media.video;
-    const pump = video && !video.error ? this.ensurePump(deps.device, video) : null;
+    if (!video || video.paused || video.readyState < 2) return false;
+    const pump = !video.error ? this.ensurePump(deps.device, video) : null;
     if (!pump) {
       const encoded = encodeElementFrame(deps.context(), deps.media, encoder, deps.timestamps);
       if (encoded) this.elementFrames++;
@@ -73,6 +93,30 @@ export class VideoIngest {
     return true;
   }
 
+  private encodeFrom(source: TransferredVideoFrames, encoder: GPUCommandEncoder, deps: VideoIngestDeps): boolean {
+    const frame = source.takeLatest();
+    if (!frame) return false;
+    releaseStill(deps.media);
+    try {
+      if (!encodeExternalCopy(deps.context(), frame, encoder, deps.timestamps)) {
+        safeClose(frame);
+        return false;
+      }
+    } catch (e) {
+      safeClose(frame);
+      reportError({
+        type: 'media-load',
+        message: `Video frame import failed: ${e instanceof Error ? e.message : String(e)}`,
+        recoverable: true,
+      });
+      return false;
+    }
+    safeClose(this.submitted);
+    this.submitted = frame;
+    source.noteIngested();
+    return true;
+  }
+
   /** After queue.submit: the GPU work holds its own reference; close the frame. */
   afterSubmit(): void {
     safeClose(this.submitted);
@@ -80,6 +124,7 @@ export class VideoIngest {
   }
 
   stats(hasVideo: boolean): VideoIngestStats {
+    if (this.external) return this.external.getStats();
     if (this.pump) return this.pump.getStats();
     return {
       ingestPath: hasVideo ? 'element' : 'none',

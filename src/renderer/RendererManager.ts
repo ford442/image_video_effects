@@ -27,6 +27,8 @@ import {
   registerFp32Requirement,
   releaseFp32Requirement,
 } from './performanceStatus';
+import { isCanvasTransferred } from './worker/WorkerWebGPUBackend';
+import { isWebGpuBackend, type WebGPUBackendApi } from './webgpuBackendApi';
 import type { PassTiming } from './passTimings';
 import {
   ShaderLoadMeta,
@@ -106,7 +108,7 @@ export class RendererManager {
       getPassTimings: () => this.getPassTimings(),
       getScalableNodes: () => {
         const r = this.shaderRenderer();
-        return r instanceof WebGPURenderer ? r.getScalableNodes() : [];
+        return isWebGpuBackend(r) ? r.getScalableNodes() : [];
       },
       setNodeScale: (slot, nodeId, scale) => {
         this.setNodeScale(slot, nodeId, scale);
@@ -114,9 +116,9 @@ export class RendererManager {
     });
   }
 
-  private shaderRenderer(): WebGPURenderer | WASMRenderer | null {
+  private shaderRenderer(): WebGPUBackendApi | WASMRenderer | null {
     const r = this.currentRenderer;
-    return r instanceof WebGPURenderer || r instanceof WASMRenderer ? r : null;
+    return isWebGpuBackend(r) || r instanceof WASMRenderer ? r : null;
   }
 
   private backend() {
@@ -129,7 +131,7 @@ export class RendererManager {
   overrideSlotCapForTests(cap: number | null): void {
     this.slotCapOverride = cap;
     const r = this.shaderRenderer();
-    if (r instanceof WebGPURenderer) {
+    if (isWebGpuBackend(r)) {
       r.setFramePassBudget(framePassBudgetFor(this.perfState.performancePolicy, cap));
     }
   }
@@ -188,6 +190,14 @@ export class RendererManager {
 
   async switchRenderer(type: RendererType): Promise<boolean> {
     if (!this.canvas) return false;
+    if (isCanvasTransferred(this.canvas)) {
+      // The render worker owns this canvas (#1314); another backend needs a fresh one.
+      console.warn(
+        `[RendererManager] switchRenderer('${type}') refused: the canvas belongs to the render worker ` +
+          '(reload with ?renderer=main to switch backends)',
+      );
+      return false;
+    }
     const cpuBitmap = inputBridge.readCpuInputBitmap(this.currentRenderer);
     const handoff = type === 'webgpu' ? this.webGpuHandoff : undefined;
     releaseAdoptedDeviceIfLeavingWebGpu(this.currentType, type);
@@ -377,7 +387,7 @@ export class RendererManager {
     return reloadShaderOnBackend(this.currentRenderer, this.backend(), id, url);
   }
   applyTestRenderState(state: Parameters<NonNullable<WebGPURenderer['applyTestRenderState']>>[0]): void {
-    (this.currentRenderer as WebGPURenderer | null)?.applyTestRenderState?.(state);
+    (isWebGpuBackend(this.currentRenderer) ? this.currentRenderer : null)?.applyTestRenderState(state);
   }
   getFrameImage(): string { return this.currentRenderer?.getFrameImage?.() ?? ''; }
   async refreshFrameImage(): Promise<string> {
@@ -452,33 +462,40 @@ export class RendererManager {
   setSourceAutoExposure(enabled: boolean): void {
     const r = this.shaderRenderer();
     if (r && 'setSourceAutoExposure' in r) {
-      (r as WebGPURenderer).setSourceAutoExposure(enabled);
+      (r as WebGPUBackendApi).setSourceAutoExposure(enabled);
     }
   }
   /** Smoothed per-pass GPU ms from the TS profiler (empty until timestamps resolve, or on WASM/JS). */
   getPassTimings(): PassTiming[] {
     const r = this.shaderRenderer();
-    return r instanceof WebGPURenderer ? r.getPassTimings() : [];
+    return isWebGpuBackend(r) ? r.getPassTimings() : [];
   }
   /** Run an opt-in graph node below full size (TS WebGPU only). Returns the scale in effect. */
   setNodeScale(slot: number, nodeId: string, scale: number): number {
     const r = this.shaderRenderer();
-    return r instanceof WebGPURenderer ? r.setNodeScale(slot, nodeId, scale) : 1;
+    return isWebGpuBackend(r) ? r.setNodeScale(slot, nodeId, scale) : 1;
+  }
+  /**
+   * True while a GPU backend holds a device, on this thread or in the render
+   * worker (where getDevice() is null). Lets depth estimation stay off WebGPU.
+   */
+  isGpuDeviceActive(): boolean {
+    return !!this.getDevice() || (isWebGpuBackend(this.currentRenderer) && this.currentRenderer.initialized);
   }
   /** True when the TS backend already holds a compiled pipeline for `id`. */
   isShaderCached(id: string): boolean {
     const r = this.shaderRenderer();
-    return r instanceof WebGPURenderer ? r.isShaderCached(id) : false;
+    return isWebGpuBackend(r) ? r.isShaderCached(id) : false;
   }
   /** Pre-compile pipelines the user is about to pick (TS WebGPU only; no-op elsewhere). */
   warmShaders(entries: Array<{ id: string; url: string }>): void {
     const r = this.shaderRenderer();
-    if (r instanceof WebGPURenderer) r.warmShaders(entries);
+    if (isWebGpuBackend(r)) r.warmShaders(entries);
   }
   async captureThumbnailPng(outSize: number): Promise<string | null> {
     const r = this.shaderRenderer();
     if (r && 'captureChoresThumbnailPng' in r) {
-      return (r as WebGPURenderer).captureChoresThumbnailPng(outSize);
+      return (r as WebGPUBackendApi).captureChoresThumbnailPng(outSize);
     }
     return null;
   }
@@ -495,9 +512,9 @@ export class RendererManager {
   getPerformanceStatus(): RendererPerformanceStatus {
     const shader = this.shaderRenderer();
     const historyLayers =
-      shader instanceof WebGPURenderer ? shader.getHistoryLayers() : undefined;
+      isWebGpuBackend(shader) ? shader.getHistoryLayers() : undefined;
     const workingSizeCap =
-      shader instanceof WebGPURenderer ? shader.getWorkingSizeCap() : undefined;
+      isWebGpuBackend(shader) ? shader.getWorkingSizeCap() : undefined;
     return buildPerformanceStatus(
       this.perfState,
       this.getActiveRendererType(),

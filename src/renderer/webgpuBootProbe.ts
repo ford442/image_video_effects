@@ -92,6 +92,8 @@ export type WebGpuProbeSerializable = {
   adapterSummary?: string;
   adapterAttemptLabel?: string | null;
   backend?: 'webgpu' | 'wasm';
+  /** Where the TS backend renders: the page ('main') or the render worker (#1314). */
+  renderThread?: 'main' | 'worker';
   /** Canvas swapchain accepted COPY_SRC (GPU capture without a Canvas2D roundtrip). */
   canvasCopySrc?: boolean;
   /** Applied canvas colorSpace ('srgb' unless ?display_p3=1 was accepted). */
@@ -313,10 +315,20 @@ function logAttempt(attempt: AdapterAttempt, record: WebGpuProbeAttempt): void {
  * Walk ADAPTER_ATTEMPT_LADDER with per-rung logging. Each rung may fail at
  * adapter acquisition, contract, device, surface, or pipeline compile.
  */
+export interface WebGpuProbeOptions {
+  /**
+   * Display-P3 / extended tone-mapping opt-ins. Defaults to the page URL +
+   * HDR media query; a worker cannot see either, so the render worker (#1314)
+   * passes the main thread's answer.
+   */
+  colorOptIns?: Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'>;
+}
+
 export async function runWebGpuBootProbe(
-  canvas: HTMLCanvasElement,
+  canvas: HTMLCanvasElement | OffscreenCanvas,
   configWidth: number,
   configHeight: number,
+  probeOptions: WebGpuProbeOptions = {},
 ): Promise<WebGpuProbeResult> {
   const attempts: WebGpuProbeAttempt[] = [];
 
@@ -442,7 +454,7 @@ export async function runWebGpuBootProbe(
         device,
         context,
         canvasFormat,
-        resolveCanvasColorOptIns(),
+        probeOptions.colorOptIns ?? resolveCanvasColorOptIns(),
       );
       canvasCopySrc = await probeCanvasCopySrc(device, context, canvasFormat, canvasColorOptIns);
     } catch (e) {
@@ -567,8 +579,13 @@ export function toWebGpuProbeBreadcrumb(result: WebGpuProbeResult): WebGpuProbeS
 }
 
 export function publishWebGpuProbe(result: WebGpuProbeResult): void {
+  publishWebGpuProbeBreadcrumb(toWebGpuProbeBreadcrumb(result));
+}
+
+/** Publish an already-serialized breadcrumb (e.g. one posted back by the render worker). */
+export function publishWebGpuProbeBreadcrumb(breadcrumb: WebGpuProbeSerializable): void {
   if (typeof window === 'undefined') return;
-  window.webgpuProbe = toWebGpuProbeBreadcrumb(result);
+  window.webgpuProbe = breadcrumb;
 }
 
 /**

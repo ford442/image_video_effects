@@ -11,6 +11,8 @@ import { JSRenderer } from './JSRenderer';
 import { WASMRenderer } from './WASMRenderer';
 import { WebGPURenderer } from './WebGPURenderer';
 import type { WebGpuProbeHandoff } from './webgpuBootProbe';
+import { isWebGpuBackend } from './webgpuBackendApi';
+import { WorkerWebGPUBackend } from './worker/WorkerWebGPUBackend';
 import { readRendererVideo } from './inputSourceBridge';
 
 export type { WebGpuProbeHandoff };
@@ -43,10 +45,34 @@ export function getRendererTypeFromURL(): RendererType | null {
     if (value === 'wasm' || value === 'webgpu' || value === 'js') {
       return value as RendererType;
     }
+    // Render-thread selectors still mean the TS WebGPU backend.
+    if (value === 'worker' || value === 'main') return 'webgpu';
   } catch {
     // Not in a browser context (e.g. tests)
   }
   return null;
+}
+
+/** Where the TS WebGPU backend renders (#1314 WP-1). */
+export type RenderThread = 'main' | 'worker';
+
+/**
+ * `?renderer=worker` runs the TS WebGPU renderer in the render worker
+ * (OffscreenCanvas); `?renderer=main` (or anything else) keeps it on the page.
+ */
+export function getRenderThreadFromURL(): RenderThread | null {
+  try {
+    const value = new URLSearchParams(window.location.search).get('renderer');
+    if (value === 'worker' || value === 'main') return value;
+  } catch {
+    // Not in a browser context
+  }
+  return null;
+}
+
+/** The render thread the TS WebGPU backend will use for this page. */
+export function resolveRenderThread(): RenderThread {
+  return getRenderThreadFromURL() === 'worker' ? 'worker' : 'main';
 }
 
 /** Both TS WebGPU and emdawnwebgpu (WASM) claim exclusive adapter/device ownership. */
@@ -81,7 +107,9 @@ export async function releaseRendererGpu(renderer: Renderer): Promise<void> {
 
 /** Factory for the three renderer backends — keeps RendererManager free of `new` branches. */
 export function createRendererForType(type: RendererType, config: RendererConfig): Renderer {
-  if (type === 'webgpu') return new WebGPURenderer(config);
+  if (type === 'webgpu') {
+    return resolveRenderThread() === 'worker' ? new WorkerWebGPUBackend(config) : new WebGPURenderer(config);
+  }
   if (type === 'wasm') return new WASMRenderer(config);
   return new JSRenderer(config);
 }
@@ -145,8 +173,8 @@ export async function performBackendSwitch(input: BackendSwitchInput): Promise<B
 
   const renderer = createRendererForType(targetType, config);
   let success = false;
-  if (targetType === 'webgpu') {
-    success = await (renderer as WebGPURenderer).init(canvas, input.webGpuHandoff);
+  if (isWebGpuBackend(renderer)) {
+    success = await renderer.init(canvas, input.webGpuHandoff);
   } else {
     success = await renderer.init(canvas);
   }

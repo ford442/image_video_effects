@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useLayoutEffect, useState, useCallback } from 'react';
 import { RendererManager, getRendererTypeFromURL } from '../renderer/RendererManager';
+import { resolveRenderThread } from '../renderer/backendLifecycle';
 import { RenderMode, InputSource, SlotParams, ShaderEntry } from '../renderer/types';
 import { INTERNAL_RENDER_RESOLUTION } from '../config/appConfig';
 import {
@@ -190,6 +191,8 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
             },
         );
         const urlRenderer = getRendererTypeFromURL();
+        // In worker mode the render worker runs the probe on the transferred canvas.
+        const probeInWorker = resolveRenderThread() === 'worker';
 
         const initDone = (async () => {
             // The previous mount's device must be fully released before requesting a new one.
@@ -198,7 +201,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
             let initOptions: { webGpuHandoff?: import('../renderer/webgpuBootProbe').WebGpuProbeHandoff } | undefined;
 
-            if (urlRenderer !== 'js' && urlRenderer !== 'wasm') {
+            if (urlRenderer !== 'js' && urlRenderer !== 'wasm' && !probeInWorker) {
                 const probe = await runWebGpuBootProbe(
                     canvasRef.current!,
                     INTERNAL_RENDER_RESOLUTION,
@@ -248,6 +251,9 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
                 if (onInit) onInit();
             } else {
+                if (probeInWorker && urlRenderer !== 'wasm' && urlRenderer !== 'js') {
+                    setProbeFailure(window.webgpuProbe ?? null);
+                }
                 if (urlRenderer === 'wasm') {
                     const diags = renderer.getDiagnostics();
                     publishWasmProbeFailure(

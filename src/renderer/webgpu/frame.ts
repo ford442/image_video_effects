@@ -50,14 +50,14 @@ export class WebGPUFrameRenderer {
       if (!state.initialized) return;
       state.currentTime = performance.now() / 1000 - state.startTime;
       this.renderFrame(state);
-      state.animationId = requestAnimationFrame(loop);
+      state.animationId = scheduleFrame(loop);
     };
     loop();
   }
 
   stopRenderLoop(state: WebGPUFrameState): void {
     if (state.animationId !== null) {
-      cancelAnimationFrame(state.animationId);
+      cancelFrame(state.animationId);
       state.animationId = null;
     }
   }
@@ -188,26 +188,9 @@ export class WebGPUFrameRenderer {
     this.updateFPS(state);
   }
 
+  /** The renderer decides (playing <video>, VideoFrame pump, or worker transfers). */
   private encodeVideoIngest(state: WebGPUFrameState, encoder: GPUCommandEncoder): void {
-    if (state.video && !state.video.paused && state.video.readyState >= 2) {
-      state.encodeVideoFrame(encoder);
-      return;
-    }
-    if (
-      state.video &&
-      state.video.readyState >= 2 &&
-      state.frameCount % 60 === 0 &&
-      process.env.NODE_ENV === 'development'
-    ) {
-      console.log('[WebGPURenderer] Video state:', {
-        paused: state.video.paused,
-        readyState: state.video.readyState,
-        videoWidth: state.video.videoWidth,
-        videoHeight: state.video.videoHeight,
-        src: state.video.src?.substring(0, 100),
-        error: state.video.error?.code,
-      });
-    }
+    state.encodeVideoFrame(encoder);
   }
 
   private writeUniforms(state: WebGPUFrameState): void {
@@ -257,6 +240,18 @@ export class WebGPUFrameRenderer {
     state.lastFPSTime = now;
     state.adaptQualityIfNeeded();
   }
+}
+
+// Dedicated workers get requestAnimationFrame in Chromium (paced to the
+// OffscreenCanvas' display); fall back to a 60 Hz timer where it is missing.
+function scheduleFrame(cb: () => void): number {
+  if (typeof requestAnimationFrame === 'function') return requestAnimationFrame(cb);
+  return setTimeout(cb, 1000 / 60) as unknown as number;
+}
+
+function cancelFrame(handle: number): void {
+  if (typeof cancelAnimationFrame === 'function') cancelAnimationFrame(handle);
+  else clearTimeout(handle);
 }
 
 export function computeScaledDimensions(

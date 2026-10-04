@@ -16,6 +16,8 @@ export interface RendererMetrics {
 
 export interface RendererDiagnostics {
   rendererType: RendererType;
+  /** TS WebGPU backend: rendering on the page or in the render worker (#1314). */
+  renderThread?: 'main' | 'worker';
   metrics: RendererMetrics;
   timestamp: string;
   /** Last published boot-probe breadcrumb (also on window.webgpuProbe). */
@@ -37,5 +39,7 @@ export interface RendererDiagnostics {
     nodeScales?: Record<string, number>;
     /** Video ingest path + counters (#1314 WP-2). */
     video?: VideoIngestStats;
+    /** Uncaptured GPU errors in the render worker (page hooks cannot see that device). */
+    gpuErrors?: string[];
   };
 }

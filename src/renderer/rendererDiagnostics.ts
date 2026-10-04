@@ -30,6 +30,8 @@ export function buildRendererDiagnostics(
     getTimingInfo?: () => NonNullable<RendererDiagnostics['webgpu']>['timing'];
     getNodeScales?: () => Record<string, number>;
     getVideoIngestStats?: () => import('./media/videoFramePump').VideoIngestStats;
+    getGpuErrors?: () => string[];
+    renderThread?: 'main' | 'worker';
   } | null;
 
   if (metrics.isWASM && active?.getDiagnostics) {
@@ -38,6 +40,7 @@ export function buildRendererDiagnostics(
   if (resolveShaderBackend(currentRenderer) && !metrics.isWASM && active) {
     return {
       ...base,
+      renderThread: active.renderThread ?? 'main',
       webgpu: {
         initialized: active.initialized ?? false,
         fps: active.getFPS?.() ?? 0,
@@ -50,6 +53,7 @@ export function buildRendererDiagnostics(
         timing: active.getTimingInfo?.(),
         nodeScales: active.getNodeScales?.(),
         video: active.getVideoIngestStats?.(),
+        ...(active.getGpuErrors ? { gpuErrors: active.getGpuErrors() } : {}),
       },
       ...(lastFailedWasmRenderer ? { wasm: lastFailedWasmRenderer.getDiagnostics() } : {}),
     };

@@ -41,9 +41,16 @@ test.afterAll(async () => {
   await stopStaticServer();
 });
 
-async function boot(page: Page, params: Record<string, string> = {}): Promise<void> {
+/** Where the TS WebGPU backend renders: on the page or in the render worker (#1314 WP-1). */
+type Mode = 'main' | 'worker';
+const MODES: Mode[] = ['main', 'worker'];
+
+async function boot(page: Page, mode: Mode = 'main'): Promise<void> {
   await installGpuUncapturedErrorHook(page);
-  await page.goto(buildAppUrl('webgpu', params, PORT), { waitUntil: 'load' });
+  const url = mode === 'worker'
+    ? `http://localhost:${PORT}/?renderer=worker&testMode=1`
+    : buildAppUrl('webgpu', {}, PORT);
+  await page.goto(url, { waitUntil: 'load' });
   await page.waitForFunction(
     () => {
       const w = window as any;
@@ -74,6 +81,24 @@ async function loadStack(page: Page, ids: string[], input: 'generative' | 'image
   );
 }
 
+/**
+ * Uncaptured GPU errors. The page hook only sees devices created on the page;
+ * in worker mode the worker reports its own through diagnostics.
+ */
+async function gpuErrors(page: Page, mode: Mode): Promise<string[]> {
+  if (mode === 'main') return (await readGpuUncapturedErrors(page)).map((e) => e.message);
+  return page.evaluate(() => (window as any).__pixelocity__.renderer.getDiagnostics()?.webgpu?.gpuErrors ?? []);
+}
+
+/** Wait until the backend has rendered `n` frames (worker stats arrive by snapshot). */
+async function waitForRenderedFrames(page: Page, n: number): Promise<void> {
+  await page.waitForFunction(
+    (min) => ((window as any).__pixelocity__.renderer.getDiagnostics()?.webgpu?.frameStats?.framesRendered ?? 0) >= min,
+    n,
+    { timeout: 90_000, polling: 250 },
+  );
+}
+
 async function waitFrames(page: Page, n: number): Promise<void> {
   await page.evaluate((count) => (window as any).__pixelocity__.waitFrames(count), n);
 }
@@ -97,6 +122,16 @@ async function thumbnailStats(page: Page, size = 64) {
 }
 
 test.describe('engine2 on SwiftShader WebGPU', () => {
+  test('?renderer=worker renders in the render worker, which owns the probe and the device', async ({ page }) => {
+    await boot(page, 'worker');
+    const diag = await page.evaluate(() => (window as any).__pixelocity__.renderer.getDiagnostics());
+    expect(diag.renderThread).toBe('worker');
+    expect(diag.webgpuProbe).toMatchObject({ ok: true, renderThread: 'worker' });
+    expect(diag.rendererType).toBe('webgpu');
+    // No GPUDevice on the page in worker mode: the page hook saw no requestDevice.
+    expect(await page.evaluate(() => (window as any).__pixelocity__.renderer.getDevice())).toBeNull();
+  });
+
   test('boots the TS backend on a software adapter', async ({ page }) => {
     await boot(page);
     const summary = await page.evaluate(() => (window as any).webgpuProbe.adapterSummary as string);
@@ -104,38 +139,41 @@ test.describe('engine2 on SwiftShader WebGPU', () => {
     expect(await page.evaluate(() => (window as any).__pixelocity__.getRendererType())).toBe('webgpu');
   });
 
-  test('a 6-slot stack with a Tier C graph submits once per frame, no bind-group churn, no GPU errors', async ({ page }) => {
-    await boot(page);
-    const loaded = await loadStack(page, STACK);
-    for (const id of STACK) expect(loaded[id], `${id} failed to load`).toBe(true);
+  for (const mode of MODES) {
+    test(`a 6-slot stack with a Tier C graph submits once per frame, no bind-group churn, no GPU errors [${mode}]`, async ({ page }) => {
+      await boot(page, mode);
+      const loaded = await loadStack(page, STACK);
+      for (const id of STACK) expect(loaded[id], `${id} failed to load`).toBe(true);
 
-    await waitFrames(page, 4);
-    const stats = await frameStats(page);
-    expect(stats.framesRendered).toBeGreaterThan(2);
-    expect(stats.submitsLastFrame).toBe(1);
-    expect(stats.bindGroupsLastFrame).toBe(0);
+      await waitForRenderedFrames(page, 4);
+      const stats = await frameStats(page);
+      expect(stats.submitsLastFrame).toBe(1);
+      expect(stats.bindGroupsLastFrame).toBe(0);
 
-    const slots = await page.evaluate(
-      (n) => Array.from({ length: n }, (_, i) => (window as any).__pixelocity__.getSlotState(i)?.shaderId),
-      STACK.length,
-    );
-    expect(slots).toEqual(STACK);
-    expect(await readGpuUncapturedErrors(page)).toEqual([]);
-  });
+      const slots = await page.evaluate(
+        (n) => Array.from({ length: n }, (_, i) => (window as any).__pixelocity__.getSlotState(i)?.shaderId),
+        STACK.length,
+      );
+      expect(slots).toEqual(STACK);
+      expect(await gpuErrors(page, mode)).toEqual([]);
+    });
+  }
 
-  test('thumbnail capture reads the presented output of a single-slot stack', async ({ page }) => {
-    await boot(page);
-    const loaded = await loadStack(page, ['plasma']);
-    expect(loaded.plasma).toBe(true);
-    await waitFrames(page, 3);
+  for (const mode of MODES) {
+    test(`thumbnail capture reads the presented output of a single-slot stack [${mode}]`, async ({ page }) => {
+      await boot(page, mode);
+      const loaded = await loadStack(page, ['plasma']);
+      expect(loaded.plasma).toBe(true);
+      await waitForRenderedFrames(page, 3);
 
-    const thumb = await thumbnailStats(page);
-    // Generative input is cleared to black, so reading readTex (the pre-fix
-    // behaviour for a single chained slot) yields max 0. Plasma draws bright orbs.
-    expect(thumb.max).toBeGreaterThan(64);
-    expect(thumb.stdev).toBeGreaterThan(1);
-    expect(await readGpuUncapturedErrors(page)).toEqual([]);
-  });
+      const thumb = await thumbnailStats(page);
+      // Generative input is cleared to black, so reading readTex (the pre-fix
+      // behaviour for a single chained slot) yields max 0. Plasma draws bright orbs.
+      expect(thumb.max).toBeGreaterThan(64);
+      expect(thumb.stdev).toBeGreaterThan(1);
+      expect(await gpuErrors(page, mode)).toEqual([]);
+    });
+  }
 
   test('gallery warm-up compiles pipelines ahead of selection without binding them', async ({ page }) => {
     await boot(page);
@@ -157,13 +195,14 @@ test.describe('engine2 on SwiftShader WebGPU', () => {
     expect(await readGpuUncapturedErrors(page)).toEqual([]);
   });
 
-  test('per-pass GPU timings name every graph node and slot step', async ({ page }) => {
-    await boot(page);
+  for (const mode of MODES) {
+  test(`per-pass GPU timings name every graph node and slot step [${mode}]`, async ({ page }) => {
+    await boot(page, mode);
     const loaded = await loadStack(page, ['plasma', 'anisotropic-kuwahara']);
     expect(Object.values(loaded).every(Boolean)).toBe(true);
     const timings = await page.evaluate(async () => {
       const api = (window as any).__pixelocity__;
-      const deadline = performance.now() + 30_000;
+      const deadline = performance.now() + 60_000;
       let passes: any[] = [];
       while (performance.now() < deadline) {
         await api.waitFrames(1);
@@ -182,6 +221,7 @@ test.describe('engine2 on SwiftShader WebGPU', () => {
     expect(timings.passes.every((p: any) => p.gpuMs >= 0)).toBe(true);
     expect(timings.gpu.passes?.length).toBe(timings.passes.length);
   });
+  }
 
   test('an opt-in graph node runs at half size inside a scaled island with no GPU errors', async ({ page }) => {
     await boot(page);
@@ -222,10 +262,11 @@ test.describe('engine2 on SwiftShader WebGPU', () => {
     expect(await readGpuUncapturedErrors(page)).toEqual([]);
   });
 
-  test('video reaches the GPU as WebCodecs VideoFrames inside the single frame submit', async ({ page }) => {
+  for (const mode of MODES) {
+  test(`video reaches the GPU as WebCodecs VideoFrames inside the single frame submit [${mode}]`, async ({ page }) => {
     await page.route('**/engine2-fixture.webm', (route) =>
       route.fulfill({ path: VIDEO_FIXTURE, contentType: 'video/webm' }));
-    await boot(page);
+    await boot(page, mode);
     const loaded = await loadStack(page, ['rgb-split-glitch'], 'video');
     expect(loaded['rgb-split-glitch']).toBe(true);
     await page.evaluate(async () => {
@@ -253,8 +294,9 @@ test.describe('engine2 on SwiftShader WebGPU', () => {
 
     const thumb = await thumbnailStats(page);
     expect(thumb.stdev).toBeGreaterThan(5); // testsrc2 is colorful
-    expect(await readGpuUncapturedErrors(page)).toEqual([]);
+    expect(await gpuErrors(page, mode)).toEqual([]);
   });
+  }
 
   test('the fake webcam flows through the same VideoFrame path', async ({ page }) => {
     await boot(page);

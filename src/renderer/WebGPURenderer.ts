@@ -44,6 +44,8 @@ import {
   createMediaInputState,
   updateVideoFrame as mediaUpdateVideoFrame,
   loadImage as mediaLoadImage,
+  ingestDecodedImage,
+  ensureOffscreen,
   uploadRGBA8,
   copyExternalToSource,
   releaseStill,
@@ -67,7 +69,7 @@ import type { PassTiming } from './passTimings';
 import { ShaderWarmupQueue, type WarmupEntry } from './webgpu/shaderWarmup';
 import { NodeScaleIslands, nodeScaleKey, snapNodeScale } from './webgpu/nodeScale';
 import type { FrameIslands } from './webgpu/framePlan';
-import type { VideoIngestStats } from './media/videoFramePump';
+import type { TransferredVideoFrames, VideoIngestStats } from './media/videoFramePump';
 import { VideoIngest } from './media/videoIngest';
 
 /** `?video_ingest=element` forces the pre-#1314 per-rAF element import (A/B, debugging). */
@@ -81,6 +83,10 @@ function videoFrameIngestDisabledByUrl(): boolean {
 }
 
 export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
+  /** Backend tag shared with the render-worker proxy (see webgpuBackendApi.ts). */
+  readonly backendKind = 'webgpu' as const;
+  /** This instance renders on the thread that owns it (the proxy reports 'worker'). */
+  readonly renderThread: 'main' | 'worker' = 'main';
   private device: GPUDevice | null = null;
   private context: GPUCanvasContext | null = null;
   private canvasFormat: GPUTextureFormat = 'bgra8unorm';
@@ -125,7 +131,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private timestampRuntime: WebGPUTimestampQueries = createDisabledTimestampQueries();
   private gpuTimings = this.timestampRuntime.gpuTimings;
 
-  private initialized = false;
+  /** Read by diagnostics; written only by init / teardown / device loss. */
+  initialized = false;
   private animationId: number | null = null;
   private startTime = 0;
   private frameCount = 0;
@@ -170,7 +177,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   getHistoryLayers(): number { return this.resources.historyLayers; }
   getWorkingSizeCap(): number { return this.workingSizeCap; }
 
-  async init(canvas: HTMLCanvasElement, webGpuHandoff?: WebGpuProbeHandoff): Promise<boolean> {
+  /** `canvas` is an OffscreenCanvas when this renderer runs inside the render worker. */
+  async init(canvas: HTMLCanvasElement | OffscreenCanvas, webGpuHandoff?: WebGpuProbeHandoff): Promise<boolean> {
     if (this.initialized) return true;
 
     let handoff = webGpuHandoff;
@@ -823,6 +831,11 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.videoIngest.afterSubmit();
   }
 
+  /** Render-worker video: frames arrive as transfers (null when the source stops). */
+  setTransferredVideo(source: TransferredVideoFrames | null): void {
+    this.videoIngest.setExternalSource(source);
+  }
+
   getVideoIngestStats(): VideoIngestStats {
     return this.videoIngest.stats(!!this.mediaState.video);
   }
@@ -902,8 +915,21 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       return this.mediaState.video;
     }
     const off = this.mediaState.offscreen;
-    if (off && off.width > 0 && off.height > 0) return off;
+    // Only a DOM canvas can be handed to main-thread consumers (the worker's is offscreen).
+    if (off && typeof HTMLCanvasElement !== 'undefined' && off instanceof HTMLCanvasElement
+      && off.width > 0 && off.height > 0) {
+      return off;
+    }
     return this.mediaState.video;
+  }
+
+  /**
+   * Upload an image decoded elsewhere (the render worker receives the main
+   * thread's decode as a transferred ImageBitmap). Letterboxed like loadImage.
+   */
+  async loadImageBitmap(bitmap: ImageBitmap): Promise<void> {
+    await ingestDecodedImage(() => this.getMediaContext(), this.mediaState, bitmap, bitmap.width, bitmap.height);
+    this.gpuChores.ingestOffscreen(this.mediaState.offscreen, this.mediaState.offCtx);
   }
 
   loadImageFromElement(
@@ -918,16 +944,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     if (!w || !h) return null;
     const dstW = this.canvasW || w;
     const dstH = this.canvasH || h;
-    if (
-      !this.mediaState.offscreen
-      || this.mediaState.offscreen.width !== dstW
-      || this.mediaState.offscreen.height !== dstH
-    ) {
-      this.mediaState.offscreen = document.createElement('canvas');
-      this.mediaState.offscreen.width = dstW;
-      this.mediaState.offscreen.height = dstH;
-      this.mediaState.offCtx = this.mediaState.offscreen.getContext('2d', { willReadFrequently: true });
-    }
+    if (!ensureOffscreen(this.mediaState, dstW, dstH) || !this.mediaState.offscreen) return null;
     if (!this.mediaState.offCtx) return null;
     this.mediaState.offCtx.fillStyle = 'black';
     this.mediaState.offCtx.fillRect(0, 0, dstW, dstH);

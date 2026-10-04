@@ -131,4 +131,45 @@ export class VideoFramePump {
   }
 }
 
+/**
+ * Frames produced elsewhere and handed over (the render worker receives the
+ * main thread's pump output as transferred VideoFrames, #1314 WP-1).
+ */
+export class TransferredVideoFrames {
+  private readonly queue = new LatestFrameQueue<VideoFrame>(2);
+  private ingested = 0;
+  /** Counters reported by the producer (main-thread pump). */
+  private upstream = { missedFrames: 0, droppedFrames: 0 };
+
+  push(frame: VideoFrame): void {
+    this.queue.push(frame);
+  }
+
+  takeLatest(): VideoFrame | null {
+    return this.queue.takeLatest();
+  }
+
+  noteIngested(): void {
+    this.ingested++;
+  }
+
+  setUpstreamStats(stats: { missedFrames: number; droppedFrames: number }): void {
+    this.upstream = stats;
+  }
+
+  getStats(): VideoIngestStats {
+    return {
+      ingestPath: 'videoframe',
+      framesIngested: this.ingested,
+      droppedFrames: this.queue.getStats().dropped + this.upstream.droppedFrames,
+      missedFrames: this.upstream.missedFrames,
+      queueDepth: this.queue.size,
+    };
+  }
+
+  detach(): void {
+    this.queue.clear();
+  }
+}
+
 export { safeClose };

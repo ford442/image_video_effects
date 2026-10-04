@@ -115,7 +115,7 @@ export function createFakeFrameState(
 
     inputSource: 'image' as WebGPUFrameState['inputSource'],
     video: null,
-    updateVideoFrame: () => {},
+    encodeVideoFrame: () => false,
 
     frameCount: 0,
     lastFPSTime: 0,

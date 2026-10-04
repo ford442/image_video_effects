@@ -1,6 +1,8 @@
 import {
   createRendererForType,
   getRendererTypeFromURL,
+  getRenderThreadFromURL,
+  resolveRenderThread,
   performBackendSwitch,
   releaseRendererGpu,
   resolveInitBackendPreference,
@@ -44,6 +46,35 @@ describe('backendLifecycle', () => {
       });
       expect(getRendererTypeFromURL()).toBeNull();
       Object.defineProperty(window, 'location', { value: original, configurable: true });
+    });
+  });
+
+  describe('render thread selection (#1314)', () => {
+    const withSearch = (search: string, fn: () => void) => {
+      const original = window.location;
+      Object.defineProperty(window, 'location', { value: { ...original, search }, configurable: true });
+      try {
+        fn();
+      } finally {
+        Object.defineProperty(window, 'location', { value: original, configurable: true });
+      }
+    };
+
+    it('?renderer=worker / main select the TS WebGPU backend on that thread', () => {
+      withSearch('?renderer=worker', () => {
+        expect(getRendererTypeFromURL()).toBe('webgpu');
+        expect(getRenderThreadFromURL()).toBe('worker');
+        expect(resolveRenderThread()).toBe('worker');
+      });
+      withSearch('?renderer=main', () => {
+        expect(getRendererTypeFromURL()).toBe('webgpu');
+        expect(resolveRenderThread()).toBe('main');
+      });
+    });
+
+    it('other renderer values keep the page thread', () => {
+      withSearch('?renderer=wasm', () => expect(getRenderThreadFromURL()).toBeNull());
+      withSearch('', () => expect(resolveRenderThread()).toBe('main'));
     });
   });
 

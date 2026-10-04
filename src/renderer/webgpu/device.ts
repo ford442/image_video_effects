@@ -195,7 +195,7 @@ export function resolveSubgroupFeatureName(adapter: GPUAdapter): GPUFeatureName 
 }
 
 export async function initializeWebGPUDevice(
-  canvas: HTMLCanvasElement,
+  canvas: HTMLCanvasElement | OffscreenCanvas,
   configWidth: number,
   configHeight: number,
   existingHandoff?: WebGpuProbeHandoff,

@@ -15,7 +15,7 @@ import { lumaHistogramBt709 } from './histogram';
 import { gpuComputeKillReason, isGpuComputeKillSwitchEnabled } from './killSwitch';
 import { isWebGpuProbeOk, webGpuProbeFailureReason } from './probeGate';
 import { buildLumaClassifyLut, lutU8Map, unpackClassifyRgba8 } from './lut';
-import { rgbaFloatsToPngBase64 } from './pngEncode';
+import { rgbaFloatsToPngBase64Async } from './pngEncode';
 import { reduceF32FromHistogram, reduceF32Luma } from './reduce';
 import {
   APPLY_GAIN_WGSL,
@@ -251,7 +251,10 @@ export class GpuChoresHost {
     this.analyzeCpuCache();
   }
 
-  ingestOffscreen(canvas: HTMLCanvasElement | null, ctx: CanvasRenderingContext2D | null): void {
+  ingestOffscreen(
+    canvas: HTMLCanvasElement | OffscreenCanvas | null,
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null,
+  ): void {
     if (!canvas || !ctx) return;
     try {
       const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -502,7 +505,7 @@ export class GpuChoresHost {
       readBuf.unmap();
       const floats = rgba16BufferToRgba32(packed, size, size, bytesPerRow);
       this.noteOp('downsample_2d', 'webgpu');
-      return rgbaFloatsToPngBase64(floats, size, size);
+      return await rgbaFloatsToPngBase64Async(floats, size, size);
     } catch {
       return null;
     } finally {
