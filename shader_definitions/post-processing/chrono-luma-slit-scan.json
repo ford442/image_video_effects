@@ -3,7 +3,7 @@
   "name": "Chrono Luma Slit Scan",
   "url": "shaders/chrono-luma-slit-scan.wgsl",
   "category": "post-processing",
-  "description": "Luminance slit-scan with horizontal/vertical scan runners, held temporal halo, treble warp detail, and capped ripple fronts.",
+  "description": "Luminance slit-scan with horizontal/vertical scan runners, held temporal halo, treble warp detail, and capped ripple fronts. Thin isochrone contours mark where the chosen age crosses a whole frame, and the sweeping scan bands open windows onto the oldest stored frame.",
   "tags": [
     "temporal",
     "slit-scan",

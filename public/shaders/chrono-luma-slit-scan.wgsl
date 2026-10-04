@@ -1,6 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Chrono Luma Slit Scan
 //  Category: post-processing
+//  Upgraded: 2026-10-04
+//  Ideas: isochrone contour lines at integer-age seams; scan-runner windows onto the oldest frame
+//  A packing: display RGBA
 //  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
 //         hardcoded 8 — see HISTORY RING DEPTH below
 //  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
@@ -70,7 +73,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let histDepth = max(textureNumLayers(historyTexture), 1u);
   let reach   = histDepth - 1u;
   let maxAge  = 1u + u32(spread * f32(max(reach, 1u) - 1u));
-  let ageFlt  = 1.0 + (1.0 - lumaAdjusted) * f32(maxAge - 1u);
+  let ageLuma = 1.0 + (1.0 - lumaAdjusted) * f32(maxAge - 1u);
+  // Idea 2 — runner time-windows: inside the sweeping scan bands the age jumps to the
+  // oldest frame the ring holds, so the runners scan old time across the picture.
+  let windowGate = smoothstep(0.3, 0.75, scanRunner) * step(1.5, f32(reach));
+  let ageFlt  = mix(ageLuma, f32(max(reach, 1u)) - 0.001, windowGate);
   let age     = clamp(u32(ageFlt), 1u, max(reach, 1u));
   let ageFrac = fract(ageFlt);
 
@@ -98,7 +105,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let frameB = textureSampleLevel(historyTexture, u_sampler, sampleUV, layerB, 0.0);
 
   let slitColor = mix(frameA, frameB, ageFrac);
-  let output   = mix(slitColor, current, origBlend);
+  var output   = mix(slitColor, current, origBlend);
+
+  // Idea 1 — isochrones: thin contours where the luma-chosen age crosses a whole frame,
+  // drawing the luma→time map as a topographic chart (absent on a 1–2 layer ring).
+  let seamDist = min(ageFrac, 1.0 - ageFrac);
+  let iso = (1.0 - smoothstep(0.0, 0.07, seamDist)) * step(2.5, f32(maxAge)) * (1.0 - windowGate) * (1.0 - origBlend);
+  output = vec4<f32>(output.rgb * (1.0 - iso * 0.45) + vec3<f32>(0.10, 0.11, 0.13) * iso * (0.6 + treble * 0.4), output.a);
   let motionD  = length(slitColor.rgb - current.rgb);
   let alpha    = clamp(0.6 + motionD * 2.0 + bass * 0.2 + scanRunner * 0.1, 0.0, 1.0);
   let finalOut = vec4<f32>(output.rgb, alpha);

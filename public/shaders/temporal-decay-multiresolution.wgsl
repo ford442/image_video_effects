@@ -3,7 +3,9 @@
 //  Category: post-processing
 //  Features: mouse-driven, audio-reactive, temporal, history-ring, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-10-04 (prev 2026-05-23)
+//  Ideas: decay-shaped exponential timescale kernels; time-inversion click echo rings
+//  A packing: display RGB, A = ultra-slow luminance
 //  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
 //         hardcoded 8 — see HISTORY RING DEPTH below
 //  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
@@ -138,37 +140,45 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let histDepth = max(textureNumLayers(historyTexture), 1u);
   let reach = histDepth - 1u;
 
-  // ── Fast timescale (R): average of ages 1–2 ──────────────────────────────
-  let l1 = (historyHead + histDepth - min(1u, reach)) % histDepth;
-  let l2 = (historyHead + histDepth - min(2u, reach)) % histDepth;
-  let h1 = textureSampleLevel(historyTexture, u_sampler, historyUV, i32(l1), 0.0);
-  let h2 = textureSampleLevel(historyTexture, u_sampler, historyUV, i32(l2), 0.0);
-  let fastAvg = (h1 + h2) * 0.5;
-
-  // ── Medium timescale (G): average of ages 4–5 ────────────────────────────
-  let l4 = (historyHead + histDepth - min(4u, reach)) % histDepth;
-  let l5 = (historyHead + histDepth - min(5u, reach)) % histDepth;
-  let h4 = textureSampleLevel(historyTexture, u_sampler, historyUV, i32(l4), 0.0);
-  let h5 = textureSampleLevel(historyTexture, u_sampler, historyUV, i32(l5), 0.0);
-  let medAvg = (h4 + h5) * 0.5;
-
-  // ── Slow timescale (B): age 7, or the oldest the ring actually holds ─────
-  let l7 = (historyHead + histDepth - min(7u, reach)) % histDepth;
-  let h7 = textureSampleLevel(historyTexture, u_sampler, historyUV, i32(l7), 0.0);
-
-  // ── Ultra-slow timescale: full average of every stored frame ─────────────
+  // Sample every ring age once (ages past `reach` clamp to the oldest real frame).
+  var hs: array<vec4<f32>, 8>;
   var ultraSum = vec4<f32>(0.0);
   let ultraCount = max(reach, 1u);
-  for (var age: u32 = 1u; age <= ultraCount; age = age + 1u) {
-    let l = (historyHead + histDepth - age) % histDepth;
-    ultraSum += textureSampleLevel(historyTexture, u_sampler, historyUV, i32(l), 0.0);
+  for (var age: u32 = 1u; age <= 7u; age = age + 1u) {
+    let l = (historyHead + histDepth - min(age, reach)) % histDepth;
+    hs[age] = textureSampleLevel(historyTexture, u_sampler, historyUV, i32(l), 0.0);
+    if (age <= ultraCount) { ultraSum += hs[age]; }
   }
   let ultraAvg = ultraSum / f32(ultraCount);
 
+  // Idea 1 — decay-shaped timescale kernels: each channel reads an exponentially weighted
+  // window anchored at its band's defining age (fast/medium: the newest age, slow: the
+  // oldest), weight = decay^(distance from anchor). A high decay spreads the window across
+  // the band; a low one collapses it onto the anchor frame. HEAD's fixed windows were
+  // fast = ages 1–2, medium = 4–5, slow = 7; the bands now overlap as fast 1–3, medium 3–6, slow 5–7.
+  var fastK = vec4<f32>(0.0); var fastW = 0.0;
+  var medK  = vec4<f32>(0.0); var medW  = 0.0;
+  var slowK = vec4<f32>(0.0); var slowW = 0.0;
+  for (var age: u32 = 1u; age <= 7u; age = age + 1u) {
+    let a = f32(age);
+    if (age <= 3u) { let w = pow(decayFast, a - 1.0); fastK += hs[age] * w; fastW += w; }
+    if (age >= 3u && age <= 6u) { let w = pow(decayMedium, a - 3.0); medK += hs[age] * w; medW += w; }
+    if (age >= 5u) { let w = pow(decaySlow, 7.0 - a); slowK += hs[age] * w; slowW += w; }
+  }
+  fastK /= fastW;
+  medK /= medW;
+  slowK /= slowW;
+
+  // Idea 2 — time-inversion echo rings: inside a click's echo front the channels swap
+  // timescales (R reads slow, B reads fast), so the ring passes as inverted colour-time.
+  let swapT = smoothstep(0.15, 0.7, clickEcho);
+  let rSrc = mix(fastK.r, slowK.r, swapT);
+  let bSrc = mix(slowK.b, fastK.b, swapT);
+
   // ── Per-channel max(current, decayed_history) ─────────────────────────────
-  let r = max(current.r, fastAvg.r   * decayFast);
-  let g = max(current.g, medAvg.g    * decayMedium);
-  let b = max(current.b, h7.b        * decaySlow);
+  let r = max(current.r, rSrc    * decayFast);
+  let g = max(current.g, medK.g  * decayMedium);
+  let b = max(current.b, bSrc    * decaySlow);
   // Alpha channel encodes ultra-slow luminance (useful for downstream slots)
   let a = (ultraAvg.r + ultraAvg.g + ultraAvg.b) / 3.0;
 

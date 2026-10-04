@@ -5,7 +5,9 @@
 //            upgraded-rgba, scanline-bloom, halation-glow,
 //            fbm-phosphor-mask, per-channel-decay
 //  Complexity: Medium
-//  Upgraded: 2026-06-28
+//  Upgraded: 2026-10-04 (prev 2026-06-28)
+//  Ideas: revived scanline beam (3-px Gaussian rows that swell with brightness); age-softened afterglow
+//  A packing: ACES display RGBA
 //  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
 //         hardcoded 8 — see HISTORY RING DEPTH below
 //  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
@@ -89,10 +91,18 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 }
 
 // ── Scanline bloom ───────────────────────────────────────────────
+// HEAD evaluated sin(uv.y * resY * PI) at pixel centres, which is ±1 everywhere, so
+// the scanlines never appeared. Idea 1: a Gaussian beam row every 3 px whose width
+// swells with brightness (bright CRT lines bloom fatter), normalised so the row
+// average stays near HEAD's 1 + luma * strength brightness.
 fn scanlineBloom(uv: vec2<f32>, luma: f32, strength: f32) -> f32 {
-  let scan = sin(uv.y * u.config.z * PI);
-  let lineGlow = pow(abs(scan), 0.5);
-  return 1.0 + luma * strength * lineGlow;
+  let pitch = 3.0;
+  let py = uv.y * u.config.w;
+  let d = abs(fract(py / pitch) - 0.5) * pitch;
+  let sigma = mix(0.45, 1.15, clamp(luma, 0.0, 1.0));
+  let beam = exp(-d * d / (2.0 * sigma * sigma));
+  let beamN = min(beam * pitch / (sigma * 2.5066), 2.5);
+  return (1.0 + luma * strength) * mix(1.0, beamN, clamp(strength * 1.1, 0.0, 0.8));
 }
 
 // ── Halation glow (simple neighbour luma blur) ───────────────────
@@ -168,8 +178,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var burned = max(current.rgb, vec3<f32>(immediate.r * decayR, immediate.g * decayG, immediate.b * decayB));
   for (var age: u32 = 1u; age <= min(7u, maxAge); age = age + 1u) {
     let layer = (historyHead + histDepth - age) % histDepth;
-    let hist  = textureSampleLevel(historyTexture, u_sampler, uv, i32(layer), 0.0);
+    // Idea 2 — age-softened afterglow: older frames are read through a widening
+    // diagonal tap pair (alternating orientation per age), so trails blur as they fade.
     let f = f32(age);
+    let r = f * 0.8 / res;
+    let diag = select(vec2<f32>(r.x, -r.y), r, (age & 1u) == 1u);
+    let centre = textureSampleLevel(historyTexture, u_sampler, uv, i32(layer), 0.0);
+    let spread = (textureSampleLevel(historyTexture, u_sampler, uv + diag, i32(layer), 0.0)
+                + textureSampleLevel(historyTexture, u_sampler, uv - diag, i32(layer), 0.0)) * 0.5;
+    let hist  = mix(centre, spread, min(f / 7.0, 1.0) * 0.75);
     let decayed = vec3<f32>(
       hist.r * pow(decayR, f),
       hist.g * pow(decayG, f),

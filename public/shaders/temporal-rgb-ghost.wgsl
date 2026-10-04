@@ -5,7 +5,9 @@
 //            upgraded-rgba, per-channel-temporal-offset, noise-displacement,
 //            vignette-falloff, chromatic-ghost
 //  Complexity: Medium
-//  Upgraded: 2026-06-28
+//  Upgraded: 2026-10-04 (prev 2026-06-28)
+//  Ideas: blue comet-tail integration over ring ages; motion-gated displacement; fractional G delay
+//  A packing: display RGBA
 //  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
 //         hardcoded 8 — see HISTORY RING DEPTH below
 //  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
@@ -121,26 +123,51 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // clamped them to the last layer: scrambled frame order, silently.
   let histDepth = max(textureNumLayers(historyTexture), 1u);
   let maxAge = histDepth - 1u;
-  let ageG = min(1u + u32(zp.x * 7.0), maxAge);
+  // Idea 3 — fractional delay: G crossfades between neighbouring ring ages so the
+  // slider glides instead of stepping (floor matches HEAD's integer age).
+  let ageGF = 1.0 + zp.x * 7.0;
+  let ageG = min(u32(ageGF), maxAge);
+  let ageG2 = min(ageG + 1u, maxAge);
+  let ageGFrac = fract(ageGF);
   let ageB = min(1u + u32(zp.y * 7.0), maxAge);
   let blendAmt   = clamp(zp.z * (1.0 + bass * 0.4), 0.0, 1.0);
-  let displace   = zp.w * 0.04 * (1.0 + bass * 0.6 + treble * 0.3);
+  let displaceBase = zp.w * 0.04 * (1.0 + bass * 0.6 + treble * 0.3);
   let lumaBoost  = 1.0 + zp.w * (1.0 + mids * 0.5);
 
   let historyHead = u32(extraBuffer[4]);
 
   // Current frame for R
   let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  // Idea 2 — motion-gated displacement: only pixels that changed since the newest ring
+  // frame wobble, so static areas stay clean and moving edges shimmer.
+  let layerRecent = (historyHead + histDepth - min(1u, maxAge)) % histDepth;
+  let recent = textureSampleLevel(historyTexture, u_sampler, uv, i32(layerRecent), 0.0);
+  let motion = smoothstep(0.03, 0.2, length(recent.rgb - current.rgb));
+  let displace = displaceBase * (0.15 + 0.85 * motion);
 
   // G channel: delayed frame with slight temporal angular drift
   let layerG = (historyHead + histDepth - ageG) % histDepth;
   let dispG = displacedUV(uv, time, displace * 0.6, 12.0);
-  let histG = textureSampleLevel(historyTexture, u_sampler, dispG, i32(layerG), 0.0);
+  let layerG2 = (historyHead + histDepth - ageG2) % histDepth;
+  let histG = mix(
+    textureSampleLevel(historyTexture, u_sampler, dispG, i32(layerG), 0.0),
+    textureSampleLevel(historyTexture, u_sampler, dispG, i32(layerG2), 0.0),
+    ageGFrac);
 
   // B channel: older frame with larger noise displacement and opposite drift
   let layerB = (historyHead + histDepth - ageB) % histDepth;
   let dispB = displacedUV(uv, time, displace, 94.0);
-  let histB = textureSampleLevel(historyTexture, u_sampler, dispB, i32(layerB), 0.0);
+  // Idea 1 — comet-tail integration: B averages every ring frame from the G age out to
+  // the B age (weighted toward the oldest), turning the blue copy into a continuous streak.
+  let tailStart = min(ageG, ageB);
+  var tailSum = textureSampleLevel(historyTexture, u_sampler, dispB, i32(layerB), 0.0) * 2.0;
+  var tailW = 2.0;
+  for (var a: u32 = tailStart; a < ageB; a = a + 1u) {
+    let la = (historyHead + histDepth - a) % histDepth;
+    tailSum += textureSampleLevel(historyTexture, u_sampler, dispB, i32(la), 0.0);
+    tailW += 1.0;
+  }
+  let histB = tailSum / tailW;
 
   // Assemble RGB ghost with per-channel temporal offset
   let ghost = vec4<f32>(
