@@ -21,6 +21,7 @@ import {
   setupTimestampQueries,
   buildGPUTimings,
   destroyTimestampQueries,
+  profilePass,
   createDisabledTimestampQueries,
   WebGPUTimestampQueries,
 } from './webgpu/WebGPUTiming';
@@ -63,6 +64,7 @@ import { SimRing } from './webgpu/simRing';
 import { resolveGraphForShader, resolveSimRingRequest } from './multipassRegistry';
 import { graphUsesSimRing } from './multipassGraph';
 import { instrumentDevice, type FrameStats } from './webgpu/deviceCounters';
+import type { PassTiming } from './passTimings';
 import { ShaderWarmupQueue, type WarmupEntry } from './webgpu/shaderWarmup';
 import { getGraphEntryIds, resolveMultipassChain } from './multipassRegistry';
 
@@ -437,6 +439,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       this.scaledW,
       this.scaledH,
       this.resources.writeTex,
+      (label) => profilePass(this.timestampRuntime, { kind: 'chores', label }),
     );
   }
 
@@ -476,7 +479,25 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       this.gpuTimings,
       this.supportsTimestampQuery,
       this.timestampRuntime.hasRealGpuTimings,
+      this.timestampRuntime.passTimings,
     );
+  }
+
+  /** Smoothed per-pass GPU ms (empty until timestamps resolve). */
+  getPassTimings(): PassTiming[] {
+    const timing = this.timestampRuntime;
+    return timing.hasRealGpuTimings ? timing.passTimings.map((p) => ({ ...p })) : [];
+  }
+
+  /** Timestamp source + query usage, for diagnostics. */
+  getTimingInfo(): { source: 'gpu-timestamp' | 'wall-clock'; periodNs: number; profiledPasses: number; overflow: number } {
+    const timing = this.timestampRuntime;
+    return {
+      source: this.supportsTimestampQuery && timing.hasRealGpuTimings ? 'gpu-timestamp' : 'wall-clock',
+      periodNs: timing.timestampPeriodNs,
+      profiledPasses: timing.passTimings.reduce((n, p) => n + p.iterations, 0),
+      overflow: timing.lastOverflow,
+    };
   }
 
   applyTestRenderState(state: {
@@ -693,7 +714,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   }
 
   encodeVideoFrame(encoder: GPUCommandEncoder): boolean {
-    return mediaEncodeVideoFrame(this.getMediaContext(), this.mediaState, encoder);
+    return mediaEncodeVideoFrame(this.getMediaContext(), this.mediaState, encoder, () =>
+      profilePass(this.timestampRuntime, { kind: 'video', label: 'videoCopyPass' }));
   }
 
   async loadImage(url: string): Promise<string> {

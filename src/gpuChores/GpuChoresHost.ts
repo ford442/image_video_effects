@@ -106,6 +106,8 @@ export class GpuChoresHost {
   private readbackEncodedSlot: number | null = null;
   /** Per-frame chore bind groups, reused while their resources are unchanged. */
   private bindGroupCache = new Map<string, { deps: readonly unknown[]; group: GPUBindGroup }>();
+  /** Per-pass timestamp provider for the encodePreFx call in progress. */
+  private passProfile: ((label: string) => GPUComputePassTimestampWrites | undefined) | null = null;
   private sourceNormalizeEnabled = false;
   private physicsPinned = false;
   private colorFormat: InternalColorFormat = 'rgba32float';
@@ -271,6 +273,28 @@ export class GpuChoresHost {
     srcW: number,
     srcH: number,
     dest?: GPUTexture | null,
+    profile?: (label: string) => GPUComputePassTimestampWrites | undefined,
+  ): void {
+    this.passProfile = profile ?? null;
+    try {
+      this.encodePreFxPasses(encoder, source, srcW, srcH, dest);
+    } finally {
+      this.passProfile = null;
+    }
+  }
+
+  /** Pass descriptor with this frame's profiler stamps, when one is attached. */
+  private passDescriptor(label: string): GPUComputePassDescriptor {
+    const timestampWrites = this.passProfile?.(label);
+    return timestampWrites ? { label, timestampWrites } : { label };
+  }
+
+  private encodePreFxPasses(
+    encoder: GPUCommandEncoder,
+    source: GPUTexture,
+    srcW: number,
+    srcH: number,
+    dest?: GPUTexture | null,
   ): void {
     const gpu = this.gpu;
     const device = this.device;
@@ -304,7 +328,7 @@ export class GpuChoresHost {
           { binding: 1, resource: { buffer: gpu.histBuf } },
         ],
       }));
-    const histPass = encoder.beginComputePass({ label: 'gpu-chores-histogram' });
+    const histPass = encoder.beginComputePass(this.passDescriptor('gpu-chores-histogram'));
     histPass.setPipeline(gpu.histPipeline);
     histPass.setBindGroup(0, histBg);
     const wg = workgroups2d(srcW, srcH, 8, 8, this.maxWorkgroups);
@@ -320,7 +344,7 @@ export class GpuChoresHost {
           { binding: 1, resource: { buffer: gpu.reduceBuf } },
         ],
       }));
-    const reducePass = encoder.beginComputePass({ label: 'gpu-chores-reduce' });
+    const reducePass = encoder.beginComputePass(this.passDescriptor('gpu-chores-reduce'));
     reducePass.setPipeline(gpu.reducePipeline);
     reducePass.setBindGroup(0, reduceBg);
     this.dispatchWorkgroupsSafe(reducePass, wg.x, wg.y);
@@ -533,7 +557,7 @@ export class GpuChoresHost {
           { binding: 2, resource: { buffer: gpu.gainParams } },
         ],
       }));
-    const pass = encoder.beginComputePass({ label: 'gpu-chores-apply-gain' });
+    const pass = encoder.beginComputePass(this.passDescriptor('gpu-chores-apply-gain'));
     pass.setPipeline(gpu.gainPipeline);
     pass.setBindGroup(0, bg);
     const wg = workgroups2d(srcW, srcH, 8, 8, this.maxWorkgroups);
@@ -585,7 +609,7 @@ export class GpuChoresHost {
           { binding: 2, resource: { buffer: gpu.lutBuf } },
         ],
       }));
-    const lutPass = encoder.beginComputePass({ label: 'gpu-chores-lut' });
+    const lutPass = encoder.beginComputePass(this.passDescriptor('gpu-chores-lut'));
     lutPass.setPipeline(gpu.lutPipeline);
     lutPass.setBindGroup(0, lutBg);
     const preview = workgroups2d(PREVIEW_SIZE, PREVIEW_SIZE, 8, 8, this.maxWorkgroups);
@@ -628,7 +652,7 @@ export class GpuChoresHost {
     const dsBg = cacheKey
       ? this.cachedBindGroup(cacheKey, [gpu.downsampleLayout, source, dest, gpu.downsampleParams], createDsBg)
       : createDsBg();
-    const dsPass = encoder.beginComputePass({ label: 'gpu-chores-downsample' });
+    const dsPass = encoder.beginComputePass(this.passDescriptor('gpu-chores-downsample'));
     dsPass.setPipeline(gpu.downsamplePipeline);
     dsPass.setBindGroup(0, dsBg);
     const ds = workgroups2d(destW, destH, 8, 8, this.maxWorkgroups);

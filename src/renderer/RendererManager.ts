@@ -27,6 +27,7 @@ import {
   registerFp32Requirement,
   releaseFp32Requirement,
 } from './performanceStatus';
+import type { PassTiming } from './passTimings';
 import {
   ShaderLoadMeta,
   SLOT_COUNT,
@@ -444,6 +445,11 @@ export class RendererManager {
     if (r && 'setSourceAutoExposure' in r) {
       (r as WebGPURenderer).setSourceAutoExposure(enabled);
     }
+  }
+  /** Smoothed per-pass GPU ms from the TS profiler (empty until timestamps resolve, or on WASM/JS). */
+  getPassTimings(): PassTiming[] {
+    const r = this.shaderRenderer();
+    return r instanceof WebGPURenderer ? r.getPassTimings() : [];
   }
   /** True when the TS backend already holds a compiled pipeline for `id`. */
   isShaderCached(id: string): boolean {

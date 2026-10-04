@@ -328,6 +328,7 @@ export function encodeVideoCopy(
   ctx: WebGPUMediaInputContext,
   state: WebGPUMediaInputState,
   encoder: GPUCommandEncoder,
+  timestamps?: () => GPURenderPassTimestampWrites | undefined,
 ): boolean {
   if (
     !ctx.device ||
@@ -349,8 +350,10 @@ export function encodeVideoCopy(
     ],
   });
 
+  const timestampWrites = timestamps?.();
   const pass = encoder.beginRenderPass({
     label: 'videoCopyPass',
+    ...(timestampWrites ? { timestampWrites } : {}),
     colorAttachments: [
       {
         view: ctx.sourceTex.createView(),
@@ -416,6 +419,7 @@ export function encodeVideoFrame(
   ctx: WebGPUMediaInputContext,
   state: WebGPUMediaInputState,
   encoder: GPUCommandEncoder,
+  timestamps?: () => GPURenderPassTimestampWrites | undefined,
 ): boolean {
   if (!state.video || state.video.readyState < 2) return false;
   if (state.still) releaseStill(state);
@@ -436,7 +440,7 @@ export function encodeVideoFrame(
     }
 
     if (ctx.supportsExternalTexture && ctx.device && ctx.videoCopyPipeline) {
-      return encodeVideoCopy(ctx, state, encoder);
+      return encodeVideoCopy(ctx, state, encoder, timestamps);
     }
     updateVideoFrameCanvasFallback(ctx, state);
     return false;

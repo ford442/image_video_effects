@@ -4,6 +4,7 @@ import { WASMDiagnostics } from './WASMRenderer';
 import type { RendererType } from './backendLifecycle';
 import type { GraphRunReport } from './GraphRunner';
 import type { FrameStats } from './webgpu/deviceCounters';
+import type { PassTiming } from './passTimings';
 
 export interface RendererMetrics {
   fps: number;
@@ -28,5 +29,8 @@ export interface RendererDiagnostics {
     gpuChores?: GpuChoresBreadcrumbs;
     /** Submits / bind groups per frame (#1314: steady state is one submit). */
     frameStats?: FrameStats;
+    /** Smoothed per-pass GPU ms (#1314 WP-4); empty until timestamps resolve. */
+    passTimings?: PassTiming[];
+    timing?: { source: 'gpu-timestamp' | 'wall-clock'; periodNs: number; profiledPasses: number; overflow: number };
   };
 }

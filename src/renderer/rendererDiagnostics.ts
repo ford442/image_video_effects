@@ -26,6 +26,8 @@ export function buildRendererDiagnostics(
     getLastGraphReport?: () => import('./GraphRunner').GraphRunReport | null;
     getGpuChoresBreadcrumbs?: () => import('../gpuChores').GpuChoresBreadcrumbs;
     getFrameStats?: () => import('./webgpu/deviceCounters').FrameStats;
+    getPassTimings?: () => import('./passTimings').PassTiming[];
+    getTimingInfo?: () => NonNullable<RendererDiagnostics['webgpu']>['timing'];
   } | null;
 
   if (metrics.isWASM && active?.getDiagnostics) {
@@ -42,6 +44,8 @@ export function buildRendererDiagnostics(
         graph: active.getLastGraphReport?.() ?? null,
         gpuChores: active.getGpuChoresBreadcrumbs?.(),
         frameStats: active.getFrameStats?.(),
+        passTimings: active.getPassTimings?.(),
+        timing: active.getTimingInfo?.(),
       },
       ...(lastFailedWasmRenderer ? { wasm: lastFailedWasmRenderer.getDiagnostics() } : {}),
     };

@@ -9,6 +9,7 @@ import { GpuChoresHost } from '../../gpuChores';
 import { createFakeGpu, FakeGpu, summarizeOps } from '../testing/fakeGpu';
 import { createFakeFrameState } from '../testing/fakeFrameState';
 import { instrumentDevice } from './deviceCounters';
+import { createTimestampQueries, profilePass, QUERY_COUNT } from './WebGPUTiming';
 import { WebGPUFrameRenderer } from './frame';
 import {
   createMediaInputState,
@@ -63,8 +64,10 @@ function attachVideo(state: FakeState, fake: FakeGpu): void {
     videoCopyBindGroupLayout: { label: 'videoCopyBGL' } as unknown as GPUBindGroupLayout,
   };
   (state as { video: HTMLVideoElement | null }).video = video;
+  // Same wiring as WebGPURenderer.encodeVideoFrame (lazy per-pass stamp).
   (state as { encodeVideoFrame: (e: GPUCommandEncoder) => boolean }).encodeVideoFrame =
-    (encoder) => encodeVideoFrame(ctx, media, encoder);
+    (encoder) => encodeVideoFrame(ctx, media, encoder, () =>
+      profilePass(state.timestampRuntime, { kind: 'video', label: 'videoCopyPass' }));
 }
 
 const SIX = ['a', 'b', 'c', 'd', 'e', 'f'];
@@ -226,5 +229,31 @@ describe('frame encoding contract', () => {
     expect(present).toBeGreaterThan(-1);
     expect(readback).toBeGreaterThan(present);
     chores.destroy();
+  });
+
+  it('profiles every pass once: video, input, slots, graph nodes and present, then resolves', () => {
+    const { fake, state, renderer } = build((st, f) => {
+      st.setSlots([{ id: 'a', mode: 'parallel' }, { id: GRAPH }]);
+      attachVideo(st, f);
+    });
+    (state as { timestampRuntime: unknown }).timestampRuntime = createTimestampQueries(fake.device);
+    renderer.renderFrame(state);
+
+    const passes = fake.ops.filter((op) => op.op === 'beginComputePass' || op.op === 'beginRenderPass');
+    const stamped = passes.filter((op) => 'timestampWrites' in op && op.timestampWrites);
+    expect(stamped).toHaveLength(passes.length);
+    const indices = stamped.flatMap((op) => {
+      const tw = (op as { timestampWrites: { begin?: number; end?: number } }).timestampWrites;
+      return [tw.begin, tw.end];
+    });
+    expect(new Set(indices).size).toBe(indices.length);
+    expect(Math.max(...(indices as number[]))).toBeLessThan(QUERY_COUNT);
+
+    const ops = summarizeOps(fake.ops);
+    expect(ops[ops.length - 2]).toBe(`resolve:0+${passes.length * 2}`);
+    expect(state.timestampRuntime.frame.passes.map((p) => p.kind)).toEqual([
+      'video', 'compute', 'compute', 'compute', 'compute', 'present',
+    ]);
+    expect(state.timestampRuntime.frame.passes[2]).toMatchObject({ slot: 1, nodeId: 'tensor', shaderId: GRAPH });
   });
 });

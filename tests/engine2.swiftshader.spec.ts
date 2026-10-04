@@ -154,4 +154,30 @@ test.describe('engine2 on SwiftShader WebGPU', () => {
     expect(result.slot0).toBeNull();
     expect(await readGpuUncapturedErrors(page)).toEqual([]);
   });
+
+  test('per-pass GPU timings name every graph node and slot step', async ({ page }) => {
+    await boot(page);
+    const loaded = await loadStack(page, ['plasma', 'anisotropic-kuwahara']);
+    expect(Object.values(loaded).every(Boolean)).toBe(true);
+    const timings = await page.evaluate(async () => {
+      const api = (window as any).__pixelocity__;
+      const deadline = performance.now() + 30_000;
+      let passes: any[] = [];
+      while (performance.now() < deadline) {
+        await api.waitFrames(1);
+        passes = api.getPassTimings();
+        if (passes.some((p: any) => p.nodeId === 'render')) break;
+      }
+      return {
+        passes,
+        source: api.renderer.getDiagnostics()?.webgpu?.timing?.source,
+        gpu: api.getGPUTimings(),
+      };
+    });
+    expect(timings.source).toBe('gpu-timestamp');
+    const keys = timings.passes.map((p: any) => p.key);
+    expect(keys).toEqual(expect.arrayContaining(['0:plasma', '1:tensor', '1:filter', '1:render', 'present']));
+    expect(timings.passes.every((p: any) => p.gpuMs >= 0)).toBe(true);
+    expect(timings.gpu.passes?.length).toBe(timings.passes.length);
+  });
 });

@@ -68,6 +68,7 @@ export class WebGPUFrameRenderer {
       state.gpuTimings,
       rt.supportsTimestampQuery,
       rt.hasRealGpuTimings,
+      rt.passTimings,
     );
   }
 
@@ -128,7 +129,7 @@ export class WebGPUFrameRenderer {
     if (!state.device || !state.context || !state.initialized) return;
 
     this.statsTracker.onFrameStart(state.device);
-    state.timestampRuntime.tracker.reset();
+    state.timestampRuntime.frame.reset();
 
     const encoder = state.device.createCommandEncoder({ label: 'frame' });
     this.encodeVideoIngest(state, encoder);

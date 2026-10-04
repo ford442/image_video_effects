@@ -168,6 +168,8 @@ export function useTestHarness({
                         // Timestamp-honesty gate: 'gpu-timestamp' only after a real readback.
                         timingSource: samples[samples.length - 1]?.gpu.timingSource ?? 'wall-clock',
                         hasRealGpuTimings: samples.some((s) => s.gpu.timingSource === 'gpu-timestamp'),
+                        // Per-pass GPU ms (#1314 WP-4): per-shader evidence, not just per frame.
+                        passTimings: manager.getPassTimings(),
                         samples: samples.slice(-5),
                     };
                 },
@@ -178,6 +180,7 @@ export function useTestHarness({
                 getPerformanceStatus: () => manager.getPerformanceStatus(),
                 releaseFp32Requirement: (id: string) => manager.releaseFp32Requirement(id),
                 getGPUTimings: () => manager.getGPUTimings(),
+                getPassTimings: () => manager.getPassTimings(),
                 getAdapterSummary: () => {
                     const diags = manager.getDiagnostics();
                     return diags.wasm?.adapterInfo ?? '';

@@ -73,6 +73,9 @@ async function benchBackend(
     gpuTimingsAvailable: report?.gpuTimingsAvailable ?? false,
     timingSource: lastGpu?.timingSource ?? 'unavailable',
     p95TotalMs: p95,
+    ...(lastGpu?.timingSource === 'gpu-timestamp' && report?.passTimings?.length
+      ? { passTimings: report.passTimings }
+      : {}),
   };
 }
 

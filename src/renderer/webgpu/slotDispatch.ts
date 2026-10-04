@@ -17,7 +17,7 @@ import {
 } from '../multipassGraph';
 import type { WebGPUFrameState } from './frameState';
 import { compileFramePlan, executeFramePlan, FramePlan } from './framePlan';
-import { pickComputeTimestampWrites } from './WebGPUTiming';
+import { profilePass } from './WebGPUTiming';
 import { ShaderSlot } from './webgpuConstants';
 
 export { getFeedbackCopyOrder } from './framePlan';
@@ -146,13 +146,11 @@ export function dispatchFrameSlots(
   plan: FrameSlotDispatchPlan,
   beforeSlot?: (encoder: GPUCommandEncoder, slot: ShaderSlot) => void,
 ): FrameSlotDispatchResult {
-  state.timestampRuntime.tracker.reset();
   logDispatchPlan(state, plan.parallel, plan.chained);
   if (plan.anyUsesSimRing) state.writeSimRingParams();
 
   const framePlan = compileSlotPlan(state, plan);
   const timing = state.timestampRuntime;
-  const querySet = timing.supportsTimestampQuery && timing.querySet ? timing.querySet : null;
 
   const result = executeFramePlan(
     encoder,
@@ -172,9 +170,18 @@ export function dispatchFrameSlots(
     },
     {
       beforeSlot,
-      timestampWrites: querySet
-        ? (op, index, count) =>
-            pickComputeTimestampWrites(timing.tracker, querySet, op.mode, index === count - 1)
+      timestampWrites: timing.supportsTimestampQuery
+        ? (op) =>
+            profilePass(timing, {
+              kind: 'compute',
+              label: op.label,
+              mode: op.mode,
+              slot: op.slotIndex,
+              shaderId: op.shaderId,
+              entry: op.entry,
+              nodeId: op.nodeId,
+              scale: 1,
+            })
         : undefined,
     },
   );

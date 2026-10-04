@@ -30,6 +30,8 @@ export interface BenchResult {
   gpuTimingsAvailable: boolean;
   timingSource?: string;
   p95TotalMs: number;
+  /** Per-pass GPU ms when timestamps resolved (TS backend, #1314 WP-4). */
+  passTimings?: Array<{ key: string; label: string; kind: string; gpuMs: number; iterations: number }>;
   qualityMode?: string;
   colorFormat?: string;
   estimatedTextureMiB?: number;
