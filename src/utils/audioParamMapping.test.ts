@@ -114,7 +114,8 @@ describe('audioParamMapping', () => {
         baseFor: (slot, key) => (key === 'zoomParam1' ? 0.1 : undefined),
         smoothing: 1,
       });
-      expect(out[0].updates).toEqual({ zoomParam1: expect.closeTo(0.35) });
+      expect(Object.keys(out[0].updates)).toEqual(['zoomParam1']);
+      expect(out[0].updates.zoomParam1).toBeCloseTo(0.35); // 0.1 + (1 - 0.5) * 0.5
       expect(smoothed['1:zoomParam2']).toBeUndefined();
     });
 
