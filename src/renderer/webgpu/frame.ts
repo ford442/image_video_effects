@@ -24,6 +24,7 @@ import {
   WG_SIZE_Y,
 } from './webgpuConstants';
 import { buildGPUTimings } from './WebGPUTiming';
+import { FrameStats, FrameStatsTracker } from './deviceCounters';
 
 export {
   createFrameState,
@@ -42,6 +43,7 @@ export class WebGPUFrameRenderer {
   private slotParamsBuf: GPUBuffer | null = null;
   private slotParamsDevice: GPUDevice | null = null;
   private slotParamsCapacity = 0;
+  private readonly statsTracker = new FrameStatsTracker();
 
   startRenderLoop(state: WebGPUFrameState): void {
     const loop = () => {
@@ -111,21 +113,40 @@ export class WebGPUFrameRenderer {
     };
   }
 
+  /** Submits / bind groups per frame, read from the instrumented device. */
+  getFrameStats(): FrameStats {
+    return { ...this.statsTracker.stats };
+  }
+
+  /**
+   * Encode and submit one frame. Every GPU command of a steady-state frame —
+   * video ingest, input copy, chores, all slots / graph passes, feedback,
+   * history, present, chore readback and timestamp resolve — goes into a
+   * single encoder and a single queue.submit (#1314 WP-3).
+   */
   renderFrame(state: WebGPUFrameState): void {
     if (!state.device || !state.context || !state.initialized) return;
 
-    this.refreshVideo(state);
+    this.statsTracker.onFrameStart(state.device);
+    state.timestampRuntime.tracker.reset();
+
+    const encoder = state.device.createCommandEncoder({ label: 'frame' });
+    this.encodeVideoIngest(state, encoder);
 
     const slotPlan = buildFrameSlotDispatchPlan(state);
     if (slotPlan.enabledCount === 0) {
+      // No effects: still refresh readTex from the (possibly video) source.
+      this.presenter.encodeInputCopy(state, encoder);
       state.blitReadTex = state.readTex;
-      this.presenter.presentWithoutEffects(state);
+      this.presenter.updateBlitBindGroup(state);
+      this.presenter.encodePresent(state, encoder);
+      this.presenter.submitFrame(state, encoder);
+      this.updateFPS(state);
       return;
     }
 
     this.writeUniforms(state);
 
-    const encoder = state.device.createCommandEncoder({ label: 'frame' });
     this.presenter.encodeInputCopy(state, encoder);
     state.encodePreFxChores?.(encoder);
     const dispatch = dispatchFrameSlots(
@@ -147,6 +168,7 @@ export class WebGPUFrameRenderer {
 
     this.presenter.updateBlitBindGroup(state);
     this.presenter.encodePresent(state, encoder);
+    state.encodePostFxChores?.(encoder);
     this.presenter.submitFrame(state, encoder);
     state.afterFrameSubmitChores?.();
 
@@ -163,9 +185,9 @@ export class WebGPUFrameRenderer {
     this.updateFPS(state);
   }
 
-  private refreshVideo(state: WebGPUFrameState): void {
+  private encodeVideoIngest(state: WebGPUFrameState, encoder: GPUCommandEncoder): void {
     if (state.video && !state.video.paused && state.video.readyState >= 2) {
-      state.updateVideoFrame();
+      state.encodeVideoFrame(encoder);
       return;
     }
     if (

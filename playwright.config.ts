@@ -1,5 +1,18 @@
 import { defineConfig, devices } from '@playwright/test';
 
+/** Chromium flags that give a working software WebGPU adapter (see tests/engine2.swiftshader.spec.ts). */
+export const SWIFTSHADER_WEBGPU_ARGS = [
+  '--enable-unsafe-webgpu',
+  '--enable-features=Vulkan',
+  '--use-vulkan=swiftshader',
+  '--use-webgpu-adapter=swiftshader',
+  '--enable-unsafe-swiftshader',
+  '--use-angle=swiftshader',
+  '--use-fake-device-for-media-stream',
+  '--use-fake-ui-for-media-stream',
+  '--autoplay-policy=no-user-gesture-required',
+];
+
 /**
  * Playwright configuration for smoke tests.
  * Configured for reliable testing in both local and CI environments.
@@ -54,7 +67,20 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      testIgnore: '**/*.swiftshader.spec.ts',
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      // Software WebGPU on GPU-less hosts (Cloud VM, CI). SwiftShader via Vulkan;
+      // without --use-angle=swiftshader canvas presentation drops the Dawn instance.
+      // Compositor screenshots stay blank: read pixels back through the renderer.
+      name: 'swiftshader',
+      testMatch: '**/*.swiftshader.spec.ts',
+      timeout: 120 * 1000,
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: { args: SWIFTSHADER_WEBGPU_ARGS },
+      },
     },
   ],
 });

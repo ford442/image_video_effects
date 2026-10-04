@@ -87,7 +87,8 @@ export interface WebGPUFrameState {
 
   inputSource: 'image' | 'video' | 'webcam' | 'generative' | 'live';
   video: HTMLVideoElement | null;
-  updateVideoFrame: () => void;
+  /** Encode this frame's video ingest into the frame encoder; true when commands were added. */
+  encodeVideoFrame: (encoder: GPUCommandEncoder) => boolean;
 
   frameCount: number;
   lastFPSTime: number;
@@ -105,6 +106,8 @@ export interface WebGPUFrameState {
   /** Mutable GPU timestamp runtime (shared with WebGPURenderer). */
   timestampRuntime: WebGPUTimestampQueries;
   encodePreFxChores?: (encoder: GPUCommandEncoder) => void;
+  /** Encode chore readback copies into the frame encoder (before finish). */
+  encodePostFxChores?: (encoder: GPUCommandEncoder) => void;
   afterFrameSubmitChores?: () => void;
 }
 
@@ -165,7 +168,7 @@ export interface WebGPUFrameHost {
   audioDepth: AudioDepthState;
   inputSource: 'image' | 'video' | 'webcam' | 'generative' | 'live';
   mediaVideo: HTMLVideoElement | null;
-  updateVideoFrame: () => void;
+  encodeVideoFrame: (encoder: GPUCommandEncoder) => boolean;
   frameCount: number;
   lastFPSTime: number;
   fps: number;
@@ -179,6 +182,8 @@ export interface WebGPUFrameHost {
   gpuTimings: { parallelTime: number; chainedTime: number; totalTime: number };
   timestampRuntime: WebGPUTimestampQueries;
   encodePreFxChores?: (encoder: GPUCommandEncoder) => void;
+  /** Encode chore readback copies into the frame encoder (before finish). */
+  encodePostFxChores?: (encoder: GPUCommandEncoder) => void;
   afterFrameSubmitChores?: () => void;
 }
 
@@ -216,7 +221,7 @@ export interface RendererFrameDeps {
   audioDepth: AudioDepthState;
   inputSource: 'image' | 'video' | 'webcam' | 'generative' | 'live';
   mediaVideo: HTMLVideoElement | null;
-  updateVideoFrame: () => void;
+  encodeVideoFrame: (encoder: GPUCommandEncoder) => boolean;
   frameCount: number;
   lastFPSTime: number;
   fps: number;
@@ -231,6 +236,8 @@ export interface RendererFrameDeps {
   timestampRuntime: WebGPUTimestampQueries;
   maxPassesPerFrame: number;
   encodePreFxChores?: (encoder: GPUCommandEncoder) => void;
+  /** Encode chore readback copies into the frame encoder (before finish). */
+  encodePostFxChores?: (encoder: GPUCommandEncoder) => void;
   afterFrameSubmitChores?: () => void;
 }
 
@@ -316,7 +323,7 @@ export function createRendererFrameHost(d: RendererFrameDeps): WebGPUFrameHost {
     get audioDepth() { return d.audioDepth; },
     get inputSource() { return d.inputSource; },
     get mediaVideo() { return d.mediaVideo; },
-    updateVideoFrame: () => d.updateVideoFrame(),
+    encodeVideoFrame: (encoder) => d.encodeVideoFrame(encoder),
     get frameCount() { return d.frameCount; },
     set frameCount(v) { d.frameCount = v; },
     get lastFPSTime() { return d.lastFPSTime; },
@@ -336,6 +343,7 @@ export function createRendererFrameHost(d: RendererFrameDeps): WebGPUFrameHost {
     get gpuTimings() { return d.gpuTimings; },
     get timestampRuntime() { return d.timestampRuntime; },
     encodePreFxChores: (encoder) => d.encodePreFxChores?.(encoder),
+    encodePostFxChores: (encoder) => d.encodePostFxChores?.(encoder),
     afterFrameSubmitChores: () => d.afterFrameSubmitChores?.(),
   };
 }
@@ -403,7 +411,7 @@ export function createFrameState(host: WebGPUFrameHost): WebGPUFrameState {
     get audioDepth() { return h.audioDepth; },
     get inputSource() { return h.inputSource; },
     get video() { return h.mediaVideo; },
-    updateVideoFrame: () => h.updateVideoFrame(),
+    encodeVideoFrame: (encoder) => h.encodeVideoFrame(encoder),
     get frameCount() { return h.frameCount; },
     set frameCount(v) { h.frameCount = v; },
     get lastFPSTime() { return h.lastFPSTime; },
@@ -423,6 +431,7 @@ export function createFrameState(host: WebGPUFrameHost): WebGPUFrameState {
     get gpuTimings() { return h.gpuTimings; },
     get timestampRuntime() { return h.timestampRuntime; },
     encodePreFxChores: (encoder) => h.encodePreFxChores?.(encoder),
+    encodePostFxChores: (encoder) => h.encodePostFxChores?.(encoder),
     afterFrameSubmitChores: () => h.afterFrameSubmitChores?.(),
   };
 }

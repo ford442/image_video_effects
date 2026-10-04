@@ -5,12 +5,11 @@
  * quality caps, feedback copy ordering, and compute timestamp phases.
  */
 
-import { analyzeGraphBindingUsage, graphRunner } from '../GraphRunner';
+import { analyzeGraphBindingUsage, cappedDispatches, graphRunner } from '../GraphRunner';
 import { resolveMultipassChain } from '../multipassRegistry';
 import {
   ExpandedDispatch,
   MultipassGraphDef,
-  capGraphDispatches,
   graphUsesSimRing,
   resolveGraphForShader,
 } from '../multipassGraph';
@@ -60,7 +59,7 @@ export function getCappedGraphDispatches(
   graph: MultipassGraphDef,
   maxPassesPerFrame: number,
 ): ExpandedDispatch[] {
-  return capGraphDispatches(graph, maxPassesPerFrame);
+  return cappedDispatches(graph, maxPassesPerFrame);
 }
 
 /** Count passes that will actually encode, for accurate last-compute timestamps. */
@@ -240,6 +239,8 @@ function dispatchSlot(
       getPipeline: state.getPipeline,
       getWorkgroupSize: state.getWorkgroupSize,
       createBindGroupForRoles: state.createBindGroupForRoles,
+      // Roles are the standard texture set, i.e. exactly state.computeBindGroup.
+      bindGroup: state.computeBindGroup,
       textures: {
         read: textures.readTex,
         color: textures.writeTex,

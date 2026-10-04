@@ -76,4 +76,50 @@ describe('GraphRunner', () => {
     expect(runner.lastReport?.errors).toEqual(report.errors);
     warn.mockRestore();
   });
+
+  it('binds the caller-provided group on every pass instead of building one per dispatch', () => {
+    const runner = new GraphRunner();
+    const graph = createWaveTankGraph();
+    const bound: unknown[] = [];
+    const encoder = {
+      copyTextureToTexture: () => {},
+      beginComputePass: () => ({
+        setPipeline: () => {},
+        setBindGroup: (_i: number, bg: unknown) => { bound.push(bg); },
+        dispatchWorkgroups: () => {},
+        end: () => {},
+      }),
+    } as unknown as GPUCommandEncoder;
+    const shared = { label: 'computeBG' } as unknown as GPUBindGroup;
+    const createBindGroupForRoles = jest.fn(() => ({} as GPUBindGroup));
+
+    const report = runner.runGraph(encoder, graph, {
+      ...mockCtx({ dispatched: [], maxPassesPerFrame: 16 }),
+      createBindGroupForRoles,
+      bindGroup: shared,
+    });
+
+    expect(report.executed).toBe(5);
+    expect(createBindGroupForRoles).not.toHaveBeenCalled();
+    expect(bound).toEqual(Array(5).fill(shared));
+  });
+
+  it('memoizes validation and capping per graph def across frames', () => {
+    const runner = new GraphRunner();
+    const graph = createWaveTankGraph();
+    const encoder = {
+      copyTextureToTexture: () => {},
+      beginComputePass: () => ({
+        setPipeline: () => {}, setBindGroup: () => {}, dispatchWorkgroups: () => {}, end: () => {},
+      }),
+    } as unknown as GPUCommandEncoder;
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const first = runner.runGraph(encoder, graph, mockCtx({ dispatched: [], maxPassesPerFrame: 2 }));
+    const again = runner.runGraph(encoder, graph, mockCtx({ dispatched: [], maxPassesPerFrame: 2 }));
+    const wider = runner.runGraph(encoder, graph, mockCtx({ dispatched: [], maxPassesPerFrame: 16 }));
+    warn.mockRestore();
+    expect(again).toEqual(first);
+    expect(wider.executed).toBe(5);
+    expect(wider.truncated).toBe(0);
+  });
 });

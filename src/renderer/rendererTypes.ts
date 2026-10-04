@@ -3,6 +3,7 @@ import type { WebGpuProbeSerializable } from './webgpuBootProbe';
 import { WASMDiagnostics } from './WASMRenderer';
 import type { RendererType } from './backendLifecycle';
 import type { GraphRunReport } from './GraphRunner';
+import type { FrameStats } from './webgpu/deviceCounters';
 
 export interface RendererMetrics {
   fps: number;
@@ -25,5 +26,7 @@ export interface RendererDiagnostics {
     adapterAttemptLabel: string | null;
     graph?: GraphRunReport | null;
     gpuChores?: GpuChoresBreadcrumbs;
+    /** Submits / bind groups per frame (#1314: steady state is one submit). */
+    frameStats?: FrameStats;
   };
 }

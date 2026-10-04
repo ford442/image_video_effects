@@ -41,6 +41,7 @@ import {
 } from './webgpu/frame';
 import {
   createMediaInputState,
+  encodeVideoFrame as mediaEncodeVideoFrame,
   updateVideoFrame as mediaUpdateVideoFrame,
   loadImage as mediaLoadImage,
   uploadRGBA8,
@@ -61,6 +62,7 @@ import { allocateWorkingPool, rungsForRequest } from './webgpu/historyTexProbe';
 import { SimRing } from './webgpu/simRing';
 import { resolveGraphForShader, resolveSimRingRequest } from './multipassRegistry';
 import { graphUsesSimRing } from './multipassGraph';
+import { instrumentDevice, type FrameStats } from './webgpu/deviceCounters';
 
 export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private device: GPUDevice | null = null;
@@ -159,6 +161,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       if (!outcome.ok) return false;
 
       this.device = outcome.device;
+      instrumentDevice(outcome.device);
       this.context = outcome.context;
       this.canvasFormat = outcome.canvasFormat;
       this.canvasCopySrcSupported = outcome.canvasCopySrc ?? false;
@@ -435,7 +438,9 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   }
 
   async captureChoresThumbnailPng(outSize: number): Promise<string | null> {
-    const src = this.resources.blitReadTex ?? this.resources.readTex;
+    // The texture the last frame presented. resources.blitReadTex is always
+    // readTex, which holds the *input* for a single chained slot (output → writeTex).
+    const src = this.blitReadTex ?? this.resources.readTex;
     if (!src) return null;
     return this.gpuChores.captureDownsampledPng(src, this.scaledW, this.scaledH, outSize);
   }
@@ -446,8 +451,17 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     );
   }
 
+  encodePostFxChores(encoder: GPUCommandEncoder): void {
+    this.gpuChores.encodeReadback(encoder);
+  }
+
   afterFrameSubmitChores(): void {
     this.gpuChores.afterSubmit();
+  }
+
+  /** Submits / bind groups created per frame (instrumented device counters). */
+  getFrameStats(): FrameStats {
+    return this.frameRenderer.getFrameStats();
   }
 
   getGPUTimings(): GPUTimings {
@@ -635,12 +649,18 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     return this.mediaState.video;
   }
 
+  /** Stand-alone upload with its own submit (input rebind); the frame loop uses encodeVideoFrame. */
   updateVideoFrame(): void {
     mediaUpdateVideoFrame(this.getMediaContext(), this.mediaState);
   }
 
+  encodeVideoFrame(encoder: GPUCommandEncoder): boolean {
+    return mediaEncodeVideoFrame(this.getMediaContext(), this.mediaState, encoder);
+  }
+
   async loadImage(url: string): Promise<string> {
-    const result = await mediaLoadImage(this.getMediaContext(), this.mediaState, url);
+    // Getter, not a snapshot: textures can be recreated while the image decodes.
+    const result = await mediaLoadImage(() => this.getMediaContext(), this.mediaState, url);
     this.gpuChores.ingestOffscreen(this.mediaState.offscreen, this.mediaState.offCtx);
     return result;
   }

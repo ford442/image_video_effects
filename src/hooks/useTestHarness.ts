@@ -115,6 +115,8 @@ export function useTestHarness({
                         };
                         requestAnimationFrame(tick);
                     }),
+                /** Lift the quality slot cap so multi-slot stacks run on low-end/SwiftShader adapters. */
+                overrideSlotCap: (cap: number | null) => manager.overrideSlotCapForTests(cap),
                 setRenderQuality: (mode: RenderQualityMode) => {
                     manager.setRenderQuality(mode, {
                         supportsDeepWorkgroup: manager.getSupportsDeepWorkgroup(),

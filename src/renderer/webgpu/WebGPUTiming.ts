@@ -5,7 +5,8 @@
  * Mirrors wasm_renderer/timing.cpp / wasm_internal.h index layout.
  *
  * Note: Chromium may quantize or zero absolute timestamp values for
- * fingerprinting mitigation. Metrics use deltas × timestampPeriod only.
+ * fingerprinting mitigation (100 µs buckets unless
+ * --enable-webgpu-developer-features). Metrics use deltas × period only.
  */
 
 import { GPUTimings } from '../Renderer';
@@ -96,13 +97,25 @@ export function createDisabledTimestampQueries(): WebGPUTimestampQueries {
   return emptyTimingState();
 }
 
+/**
+ * Nanoseconds per timestamp tick. The current spec resolves timestamps in ns
+ * and dropped `GPUQueue.timestampPeriod`, so Chrome leaves it undefined → 1.
+ * Only an implementation that still exposes the legacy field gets its value;
+ * an explicit non-positive value means the stamps are unusable (→ 0).
+ */
+export function resolveTimestampPeriodNs(queue: GPUQueue): number {
+  const legacy = (queue as GPUQueue & { timestampPeriod?: unknown }).timestampPeriod;
+  if (legacy === undefined || legacy === null) return 1;
+  return typeof legacy === 'number' && legacy > 0 ? legacy : 0;
+}
+
 export function createTimestampQueries(device: GPUDevice): WebGPUTimestampQueries {
   const featurePresent = device.features.has('timestamp-query');
   if (!featurePresent) {
     return emptyTimingState();
   }
 
-  const periodNs = (device.queue as GPUQueue & { timestampPeriod?: number }).timestampPeriod ?? 0;
+  const periodNs = resolveTimestampPeriodNs(device.queue);
   if (periodNs === 0) {
     console.warn(
       '[WebGPU] Timestamp queries: queue timestamp period is 0 — using wall-clock fallback',
