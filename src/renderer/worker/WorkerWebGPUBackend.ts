@@ -34,6 +34,7 @@ import { publishWebGpuProbeBreadcrumb } from '../webgpuBootProbe';
 import type { FrameInput, RenderEvent, RenderInitInfo, RenderSnapshot, TestRenderState } from './protocol';
 import { connectRenderWorker, RenderWorkerClient } from './renderWorkerClient';
 import { registerShaderCompileService } from '../../utils/shaderCompileService';
+import { canShareMemory, createInputRingBuffer, InputRingWriter } from './inputRing';
 
 const SLOT_COUNT = 6;
 const FFT_BINS = 128;
@@ -116,6 +117,8 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   private readonly cachedIds = new Set<string>();
   private readonly audio = { bass: 0, mid: 0, treble: 0, freqBins: new Float32Array(FFT_BINS) };
   private lastFrameImage = '';
+  /** SAB input ring when the page and the worker are cross-origin isolated (#1314 C3). */
+  private ring: InputRingWriter | null = null;
   private unregisterCompiler: (() => void) | null = null;
 
   constructor(
@@ -153,6 +156,10 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
     }
 
     this.unsubscribe = this.client.onEvent((event) => this.onEvent(event));
+    // Shared memory needs isolation on both sides (COOP same-origin + COEP credentialless).
+    const ringBuffer = canShareMemory() && caps.crossOriginIsolated && caps.sharedArrayBuffer
+      ? createInputRingBuffer()
+      : undefined;
     try {
       this.info = await this.client.rpc({
         type: 'init',
@@ -160,6 +167,7 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
         config: this.config,
         colorOptIns: resolveCanvasColorOptIns(),
         appBaseUrl: absoluteUrl('.'),
+        ...(ringBuffer ? { inputRing: ringBuffer } : {}),
       });
     } catch (e) {
       console.warn('[RenderWorker] init failed:', e);
@@ -174,6 +182,7 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
       this.shutdownClient();
       return false;
     }
+    if (ringBuffer) this.ring = new InputRingWriter(ringBuffer);
     const client = this.client;
     this.unregisterCompiler = registerShaderCompileService({
       supportsSubgroups: !!this.info.supportsSubgroups,
@@ -203,6 +212,7 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   }
 
   private shutdownClient(): void {
+    this.ring = null;
     this.unregisterCompiler?.();
     this.unregisterCompiler = null;
     this.unsubscribe?.();
@@ -255,7 +265,16 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
     if (Object.keys(input).length > 0) client.send({ type: 'frameInput', input });
   }
 
+  /** 'sab' when input is written straight into shared memory, else coalesced messages. */
+  get inputChannel(): 'sab' | 'postMessage' {
+    return this.ring ? 'sab' : 'postMessage';
+  }
+
   updateMouse(x: number, y: number): void {
+    if (this.ring) {
+      this.ring.setMouse(x, y);
+      return;
+    }
     this.pending.mouse = [x, y];
     this.markDirty();
   }
@@ -263,6 +282,10 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   setParam(name: string, value: number): void {
     switch (name) {
       case 'mouseDown':
+        if (this.ring) {
+          this.ring.setMouseDown(value > 0);
+          break;
+        }
         this.pending.mouseDown = value > 0;
         this.markDirty();
         break;
@@ -277,12 +300,20 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
     this.audio.bass = bass;
     this.audio.mid = mid;
     this.audio.treble = treble;
+    if (this.ring) {
+      this.ring.setAudio(bass, mid, treble);
+      return;
+    }
     this.pending.audio = [bass, mid, treble];
     this.markDirty();
   }
 
   updateAudioFrequencyBins(bins: Float32Array): void {
     this.audio.freqBins.set(bins.subarray(0, FFT_BINS));
+    if (this.ring) {
+      this.ring.setBins(bins);
+      return;
+    }
     // Copy: the caller reuses its array, and ours is transferred.
     this.pending.bins = bins.slice();
     this.markDirty();
@@ -299,16 +330,28 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
     if (params.zoomParam2 !== undefined) target[1] = params.zoomParam2;
     if (params.zoomParam3 !== undefined) target[2] = params.zoomParam3;
     if (params.zoomParam4 !== undefined) target[3] = params.zoomParam4;
+    if (this.ring) {
+      this.ring.setSlotParams(slotIndex, target);
+      return;
+    }
     this.dirtySlots.add(slotIndex);
     this.markDirty();
   }
 
   addRipple(x: number, y: number): void {
+    if (this.ring) {
+      this.ring.pushRipple(x, y);
+      return;
+    }
     (this.pending.ripples ??= []).push([x, y]);
     this.markDirty();
   }
 
   clearRipples(): void {
+    if (this.ring) {
+      this.ring.clearRipples();
+      return;
+    }
     this.pending.clearRipples = true;
     this.pending.ripples = [];
     this.markDirty();
@@ -615,6 +658,10 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
 
   getGpuChoresBreadcrumbs(): RenderSnapshot['chores'] {
     return this.snap?.chores ?? createDefaultBreadcrumbs();
+  }
+
+  getInputEcho(): RenderSnapshot['input'] | null {
+    return this.snap?.input ?? null;
   }
 
   /** Uncaptured GPU errors seen in the worker (newest last). */

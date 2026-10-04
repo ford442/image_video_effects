@@ -16,6 +16,7 @@ import {
   transferablesOf,
 } from './protocol';
 import { createRenderWorkerHost, HostedRenderer, RenderWorkerHostDeps } from './renderWorkerHost';
+import { createInputRingBuffer, InputRingWriter } from './inputRing';
 import { connectRenderWorker } from './renderWorkerClient';
 import { isCanvasTransferred, WorkerWebGPUBackend } from './WorkerWebGPUBackend';
 import type { WebGpuProbeResult } from '../webgpuBootProbe';
@@ -90,6 +91,8 @@ function fakeRenderer() {
     getAdapterSummary: () => 'fake adapter',
     getAdapterAttemptLabel: () => 'HighPerformance',
     getSupportsSubgroups: () => true,
+    setBeforeFrame: jest.fn(),
+    getInputEcho: () => ({ mouse: [0.5, 0.5] as [number, number], mouseDown: false, audio: [0, 0, 0] as [number, number, number], slot0: [0.5, 0.5, 0.5, 0.5] }),
     grabPresentedFrame: jest.fn(async () => null),
     compileCheck: jest.fn(async (_id: string, code: string) =>
       code.includes('oops') ? [{ type: 'error' as const, lineNum: 1, linePos: 2, message: 'bad' }] : []),
@@ -205,6 +208,24 @@ describe('render worker host ↔ client', () => {
     expect(fake.calls[2][1]).toEqual([2, 0.1, 0.2, 0.3, 0.4]);
   });
 
+  it('drains the SAB input ring before every frame when the page shares memory', async () => {
+    const { mainPort, fake } = setup();
+    const client = await connectRenderWorker(mainPort);
+    const ring = createInputRingBuffer();
+    await client.rpc({ type: 'init', canvas: {} as OffscreenCanvas, config: CONFIG, colorOptIns: {}, appBaseUrl: '/', inputRing: ring });
+    const hook = (fake.raw.setBeforeFrame as jest.Mock).mock.calls.at(-1)?.[0] as () => void;
+    expect(typeof hook).toBe('function');
+    const writer = new InputRingWriter(ring);
+    writer.setMouse(0.1, 0.9);
+    writer.setSlotParams(3, [0.2, 0.3, 0.4, 0.5]);
+    writer.pushRipple(0.5, 0.5);
+    fake.calls.length = 0;
+    hook(); // what the renderer's frame loop does at frame start
+    const names = fake.calls.map(([n]) => n);
+    expect(names).toEqual(expect.arrayContaining(['updateMouse', 'setSlotParams', 'addRipple']));
+    expect(fake.calls.find(([n]) => n === 'updateMouse')?.[1].map((v) => Number((v as number).toFixed(2)))).toEqual([0.1, 0.9]);
+  });
+
   it('forwards worker-side reportError calls as events', async () => {
     const { mainPort, emitError } = setup();
     const client = await connectRenderWorker(mainPort);
@@ -285,6 +306,8 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
         colorFormat: 'rgba16float', historyLayers: 4, workingSizeCap: 1024,
         resolution: { scale: 1, full: { w: 1, h: 1 }, scaled: { w: 1, h: 1 }, pixelReduction: '0%' },
         gpuErrors: ['oops'],
+        inputChannel: 'postMessage',
+        input: { mouse: [0.5, 0.5], mouseDown: false, audio: [0, 0, 0], slot0: [0.5, 0.5, 0.5, 0.5] },
       },
     });
     expect(backend.getFPS()).toBe(42);

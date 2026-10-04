@@ -50,6 +50,7 @@ app.add_middleware(
 )
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(middleware.RateLimitMiddleware)
+app.add_middleware(middleware.CrossOriginResourcePolicyMiddleware)
 
 # OpenTelemetry
 if state._OTEL_AVAILABLE:

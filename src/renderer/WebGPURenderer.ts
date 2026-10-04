@@ -833,6 +833,28 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     });
   }
 
+  private beforeFrameHook: (() => void) | null = null;
+
+  /** Run `hook` at the start of every frame (the render worker drains its input ring). */
+  setBeforeFrame(hook: (() => void) | null): void {
+    this.beforeFrameHook = hook;
+  }
+
+  beforeFrame(): void {
+    this.beforeFrameHook?.();
+  }
+
+  /** The input the next frame will use — diagnostics / tests prove input reached this thread. */
+  getInputEcho(): { mouse: [number, number]; mouseDown: boolean; audio: [number, number, number]; slot0: number[] } {
+    const audio = getAudioData(this.audioDepth);
+    return {
+      mouse: [this.mouseX, this.mouseYShader],
+      mouseDown: this.mouseDown,
+      audio: [audio.bass, audio.mid, audio.treble],
+      slot0: [...(this.slotZoomParams[0] ?? [])],
+    };
+  }
+
   /** Frame-loop hook after queue.submit: release the frame's VideoFrame, serve frame grabs. */
   afterFrameSubmit(): void {
     this.videoIngest.afterSubmit();

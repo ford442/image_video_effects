@@ -40,12 +40,33 @@ A canvas is bound to its first context type, and a transferred canvas belongs to
 - `?renderer=wasm` (C++ / emdawnwebgpu; frozen, see `WASM_BACKEND_POLICY.md`) and `?renderer=js`.
 - Depth estimation (transformers) stays on the page; `RendererManager.isGpuDeviceActive()` reports the worker's device, so it keeps using the CPU/WASM backend instead of creating a second `GPUDevice`.
 
-## SharedArrayBuffer
+## Cross-origin isolation and the SharedArrayBuffer ring
 
-Input travels by `postMessage` (with transferables). A `SharedArrayBuffer` ring, used when the page is cross-origin isolated, is tracked in #1314 C3.
+Production (`build.sh` → `.htaccess`), `npm start` (`craco.config.js` devServer) and `scripts/serve-isolated.mjs` send:
+
+```
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Embedder-Policy: credentialless
+```
+
+`credentialless` rather than `require-corp` keeps no-cors cross-origin images (gallery thumbnails on storage.noahcohn.com, test.1ink.us, Shadertoy) loading without CORP headers on those hosts. `storage_manager` also sends `Cross-Origin-Resource-Policy: cross-origin` for pages that use `require-corp`.
+
+When both the page and the worker report `crossOriginIsolated`, input bypasses messages. `src/renderer/worker/inputRing.ts` is a 4 KiB `SharedArrayBuffer` with one writer (the page) and one reader (the worker's frame loop, drained right before each frame is encoded):
+
+- **State block** (mouse, mouse-down, audio, 128 FFT bins, 6 × slot params) behind a seqlock. A torn read retries 3× and otherwise keeps last frame's input; dirty slots are retried next frame.
+- **Slot params** carry a dirty bitmask (`Atomics.or` / `Atomics.exchange`), so only changed slots are applied.
+- **Ripples** use an SPSC ring of 64. When full, new ripples are dropped. A clear generation discards ripples queued before the clear.
+
+Otherwise (Safari, which ignores `credentialless`; hosts without the headers) input is coalesced into one `frameInput` message per animation frame. Diagnostics report `inputChannel: 'sab' | 'postMessage'` and `crossOriginIsolated`.
+
+Side effects of isolation:
+- `window.open('?mode=remote')` is same-origin, so it keeps its opener.
+- There are no iframes.
+- Media already loads with CORS.
+- ONNX Runtime (depth model, CLIP search) is pinned to `numThreads = 1` so isolation does not silently switch it to the threaded wasm build.
 
 ## Testing
 
 - Jest: `src/renderer/worker/renderWorker.test.ts` (protocol contract, host ↔ client over an in-memory port with a fake renderer, proxy coalescing and getters).
-- Real (software) device: `npm run test:engine2` (`swiftshader` Playwright project). The core tests run with `?renderer=main` and with `?renderer=worker`. `npm run test:engine2:smoke` runs the renderer smoke + layer-chain specs on SwiftShader in both modes (`PX_RENDER_THREAD=main|worker`).
+- Real (software) device: `npm run test:engine2` (`swiftshader` Playwright project). The core tests run with `?renderer=main` and with `?renderer=worker`. `npm run test:engine2:isolated` runs the same suite cross-origin isolated (SAB channel). `tests/engine2-isolation.swiftshader.spec.ts` checks the SAB path end to end. `npm run test:engine2:smoke` runs the renderer smoke + layer-chain specs on SwiftShader in both modes (`PX_RENDER_THREAD=main|worker`).
 - Real-GPU gate (not runnable on the Cloud VM): main-thread idle trace during a 6-slot 1080p stack, 4K30 HLS throughput, hardware pixel diffs.

@@ -18,6 +18,9 @@ export interface RendererDiagnostics {
   rendererType: RendererType;
   /** TS WebGPU backend: rendering on the page or in the render worker (#1314). */
   renderThread?: 'main' | 'worker';
+  /** Page ↔ render-worker input path: shared memory (isolated pages) or messages. */
+  inputChannel?: 'sab' | 'postMessage';
+  crossOriginIsolated?: boolean;
   metrics: RendererMetrics;
   timestamp: string;
   /** Last published boot-probe breadcrumb (also on window.webgpuProbe). */
@@ -41,5 +44,7 @@ export interface RendererDiagnostics {
     video?: VideoIngestStats;
     /** Uncaptured GPU errors in the render worker (page hooks cannot see that device). */
     gpuErrors?: string[];
+    /** Input currently held by the renderer (worker mode; proves the input channel). */
+    input?: { mouse: [number, number]; mouseDown: boolean; audio: [number, number, number]; slot0: number[] } | null;
   };
 }

@@ -118,6 +118,8 @@ export interface WebGPUFrameState {
   afterFrameSubmitChores?: () => void;
   /** After every frame submit (both paths): release per-frame inputs such as VideoFrames. */
   afterFrameSubmit?: () => void;
+  /** Before encoding each frame: pull input (the render worker drains its SAB ring here). */
+  beforeFrame?: () => void;
 }
 
 /** Minimal host surface the frame loop reads/writes through getters. */
@@ -199,6 +201,8 @@ export interface WebGPUFrameHost {
   afterFrameSubmitChores?: () => void;
   /** After every frame submit (both paths): release per-frame inputs such as VideoFrames. */
   afterFrameSubmit?: () => void;
+  /** Before encoding each frame: pull input (the render worker drains its SAB ring here). */
+  beforeFrame?: () => void;
 }
 
 /** Dependencies passed from WebGPURenderer to build a frame host. */
@@ -258,6 +262,8 @@ export interface RendererFrameDeps {
   afterFrameSubmitChores?: () => void;
   /** After every frame submit (both paths): release per-frame inputs such as VideoFrames. */
   afterFrameSubmit?: () => void;
+  /** Before encoding each frame: pull input (the render worker drains its SAB ring here). */
+  beforeFrame?: () => void;
 }
 
 function simRingBindings(ring: SimRing | undefined): GraphSimRingBindings | null {
@@ -368,6 +374,7 @@ export function createRendererFrameHost(d: RendererFrameDeps): WebGPUFrameHost {
     encodePostFxChores: (encoder) => d.encodePostFxChores?.(encoder),
     afterFrameSubmitChores: () => d.afterFrameSubmitChores?.(),
     afterFrameSubmit: () => d.afterFrameSubmit?.(),
+    beforeFrame: () => d.beforeFrame?.(),
   };
 }
 
@@ -460,5 +467,6 @@ export function createFrameState(host: WebGPUFrameHost): WebGPUFrameState {
     encodePostFxChores: (encoder) => h.encodePostFxChores?.(encoder),
     afterFrameSubmitChores: () => h.afterFrameSubmitChores?.(),
     afterFrameSubmit: () => h.afterFrameSubmit?.(),
+    beforeFrame: () => h.beforeFrame?.(),
   };
 }

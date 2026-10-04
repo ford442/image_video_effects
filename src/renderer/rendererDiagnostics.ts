@@ -31,7 +31,9 @@ export function buildRendererDiagnostics(
     getNodeScales?: () => Record<string, number>;
     getVideoIngestStats?: () => import('./media/videoFramePump').VideoIngestStats;
     getGpuErrors?: () => string[];
+    getInputEcho?: () => NonNullable<RendererDiagnostics['webgpu']>['input'];
     renderThread?: 'main' | 'worker';
+    inputChannel?: 'sab' | 'postMessage';
   } | null;
 
   if (metrics.isWASM && active?.getDiagnostics) {
@@ -41,6 +43,8 @@ export function buildRendererDiagnostics(
     return {
       ...base,
       renderThread: active.renderThread ?? 'main',
+      ...(active.inputChannel ? { inputChannel: active.inputChannel } : {}),
+      crossOriginIsolated: typeof window !== 'undefined' && window.crossOriginIsolated === true,
       webgpu: {
         initialized: active.initialized ?? false,
         fps: active.getFPS?.() ?? 0,
@@ -54,6 +58,7 @@ export function buildRendererDiagnostics(
         nodeScales: active.getNodeScales?.(),
         video: active.getVideoIngestStats?.(),
         ...(active.getGpuErrors ? { gpuErrors: active.getGpuErrors() } : {}),
+        ...(active.getInputEcho ? { input: active.getInputEcho() } : {}),
       },
       ...(lastFailedWasmRenderer ? { wasm: lastFailedWasmRenderer.getDiagnostics() } : {}),
     };

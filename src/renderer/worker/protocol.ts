@@ -106,6 +106,8 @@ export type RenderRpc =
       colorOptIns: Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'>;
       /** Absolute app root; relative fetches in the worker resolve against it. */
       appBaseUrl: string;
+      /** SharedArrayBuffer input ring (inputRing.ts) when both sides are cross-origin isolated. */
+      inputRing?: SharedArrayBuffer;
     }
   | { type: 'loadShader'; requestId: number; id: string; url: string }
   | { type: 'loadImageBitmap'; requestId: number; bitmap: ImageBitmap }
@@ -158,6 +160,10 @@ export interface RenderSnapshot {
   resolution: { scale: number; full: { w: number; h: number }; scaled: { w: number; h: number }; pixelReduction: string };
   /** Most recent uncaptured GPU errors in the worker (newest last). */
   gpuErrors: string[];
+  /** How page input reaches the worker. */
+  inputChannel: 'sab' | 'postMessage';
+  /** The input the worker's renderer currently holds (proves the channel works). */
+  input: { mouse: [number, number]; mouseDown: boolean; audio: [number, number, number]; slot0: number[] };
 }
 
 export type RenderEvent =

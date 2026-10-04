@@ -11,6 +11,7 @@
 
 import type { RendererError } from '../ErrorHandling';
 import { safeClose, TransferredVideoFrames } from '../media/videoFramePump';
+import { InputRingReader, InputRingSnapshot } from './inputRing';
 import type { RendererConfig } from '../Renderer';
 import type { WebGPURenderer } from '../WebGPURenderer';
 import type { WebGpuProbeOptions, WebGpuProbeResult, WebGpuProbeSerializable } from '../webgpuBootProbe';
@@ -84,6 +85,8 @@ export type HostedRenderer = Pick<
   | 'getSupportsSubgroups'
   | 'grabPresentedFrame'
   | 'compileCheck'
+  | 'setBeforeFrame'
+  | 'getInputEcho'
 >;
 
 export interface RenderWorkerHostDeps {
@@ -124,6 +127,7 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
   let renderer: HostedRenderer | null = null;
   let video: TransferredVideoFrames | null = null;
   let snapshotTimer: ReturnType<typeof setInterval> | null = null;
+  let inputRing: InputRingReader | null = null;
   const gpuErrors: string[] = [];
 
   deps.setErrorSink((error) => deps.post({ type: 'error', error }));
@@ -137,6 +141,18 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
     if (input.clearRipples) r.clearRipples();
     for (const [x, y] of input.ripples ?? []) r.addRipple(x, y);
     if (input.videoStats) video?.setUpstreamStats(input.videoStats);
+  };
+
+  const applyRing = (r: HostedRenderer, input: InputRingSnapshot) => {
+    if (input.state) {
+      r.updateMouse(input.state.mouse[0], input.state.mouse[1]);
+      r.setParam('mouseDown', input.state.mouseDown ? 1 : 0);
+      r.updateAudioData(input.state.audio[0], input.state.audio[1], input.state.audio[2]);
+      r.updateAudioFrequencyBins(input.state.bins);
+    }
+    for (const [slot, p1, p2, p3, p4] of input.slotParams) r.setSlotParams(slot, p1, p2, p3, p4);
+    if (input.clearRipples) r.clearRipples();
+    for (const [x, y] of input.ripples) r.addRipple(x, y);
   };
 
   const snapshot = (r: HostedRenderer): RenderSnapshot => ({
@@ -158,6 +174,8 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
     workingSizeCap: r.getWorkingSizeCap(),
     resolution: r.getResolutionScale(),
     gpuErrors: [...gpuErrors],
+    inputChannel: inputRing ? 'sab' : 'postMessage',
+    input: r.getInputEcho(),
   });
 
   const postSnapshot = () => {
@@ -206,7 +224,7 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
   };
 
   const rpcs: RpcHandlers = {
-    init: async ({ canvas, config, colorOptIns, appBaseUrl }) => {
+    init: async ({ canvas, config, colorOptIns, appBaseUrl, inputRing: ringBuffer }) => {
       deps.setFetchBase(appBaseUrl);
       const probe = await deps.runProbe(canvas, config.width, config.height, { colorOptIns });
       const breadcrumb = deps.toBreadcrumb(probe);
@@ -226,6 +244,12 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
       }
       renderer = r;
       if (video) r.setTransferredVideo(video);
+      if (ringBuffer) {
+        const reader = new InputRingReader(ringBuffer);
+        inputRing = reader;
+        // Drained once per frame, right before the frame is encoded.
+        r.setBeforeFrame(() => applyRing(r, reader.drain()));
+      }
       snapshotTimer = setInterval(postSnapshot, deps.snapshotIntervalMs ?? 250);
       postSnapshot();
       return {
@@ -265,6 +289,8 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
       snapshotTimer = null;
       const r = renderer;
       renderer = null;
+      r?.setBeforeFrame(null);
+      inputRing = null;
       video?.detach();
       video = null;
       if (r) await r.destroy();

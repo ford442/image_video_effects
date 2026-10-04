@@ -100,7 +100,10 @@ export function buildAppUrl(
   return `http://localhost:${port}/?${params.toString()}`;
 }
 
-export async function startStaticServer(port = DEFAULT_PORT): Promise<void> {
+export async function startStaticServer(
+  port = DEFAULT_PORT,
+  options: { isolated?: boolean } = {},
+): Promise<void> {
   const indexHtml = resolve(BUILD_DIR, 'index.html');
   if (!existsSync(indexHtml)) {
     throw new Error(
@@ -109,9 +112,14 @@ export async function startStaticServer(port = DEFAULT_PORT): Promise<void> {
   }
 
   serverPort = port;
-  server = spawn('python3', ['-m', 'http.server', String(port), '--directory', BUILD_DIR], {
-    stdio: 'pipe',
-  });
+  // isolated: COOP/COEP like production (.htaccess), needed for SharedArrayBuffer (#1314).
+  server = options.isolated
+    ? spawn('node', [resolve(__dirname, '../../scripts/serve-isolated.mjs'), '--port', String(port), '--dir', BUILD_DIR], {
+        stdio: 'pipe',
+      })
+    : spawn('python3', ['-m', 'http.server', String(port), '--directory', BUILD_DIR], {
+        stdio: 'pipe',
+      });
 
   await new Promise<void>((resolvePromise, reject) => {
     const timeout = setTimeout(() => reject(new Error('Static server start timeout')), 60000);

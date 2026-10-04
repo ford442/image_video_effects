@@ -129,6 +129,7 @@ export class WebGPUFrameRenderer {
     if (!state.device || !state.context || !state.initialized) return;
 
     this.statsTracker.onFrameStart(state.device);
+    state.beforeFrame?.();
     state.timestampRuntime.frame.reset();
 
     const encoder = state.device.createCommandEncoder({ label: 'frame' });
