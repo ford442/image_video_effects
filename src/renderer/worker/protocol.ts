@@ -93,6 +93,7 @@ export interface RenderInitInfo {
   canvasCopySrc?: boolean;
   adapterSummary?: string;
   adapterAttemptLabel?: string | null;
+  supportsSubgroups?: boolean;
   lastInitError?: string;
 }
 
@@ -109,7 +110,20 @@ export type RenderRpc =
   | { type: 'loadShader'; requestId: number; id: string; url: string }
   | { type: 'loadImageBitmap'; requestId: number; bitmap: ImageBitmap }
   | { type: 'captureThumbnail'; requestId: number; size: number }
+  /** VideoFrame of the next presented frame (recording; transferred back). */
+  | { type: 'grabVideoFrame'; requestId: number; timestampUs: number }
+  /** PNG (base64, no data: prefix) of the next presented frame (screenshots, tests). */
+  | { type: 'captureFrame'; requestId: number }
+  /** Compile WGSL on the worker's device and return its compilation messages. */
+  | { type: 'compileCheck'; requestId: number; id: string; code: string }
   | { type: 'dispose'; requestId: number };
+
+export interface CompileMessage {
+  type: GPUCompilationMessageType;
+  lineNum: number;
+  linePos: number;
+  message: string;
+}
 
 /** Results by RPC type. */
 export interface RenderRpcResults {
@@ -117,6 +131,9 @@ export interface RenderRpcResults {
   loadShader: boolean;
   loadImageBitmap: true;
   captureThumbnail: string | null;
+  grabVideoFrame: VideoFrame | null;
+  captureFrame: string | null;
+  compileCheck: CompileMessage[];
   dispose: true;
 }
 
@@ -174,7 +191,16 @@ export const RENDER_COMMAND_TYPES = [
   'warmShaders',
 ] as const;
 
-export const RENDER_RPC_TYPES = ['init', 'loadShader', 'loadImageBitmap', 'captureThumbnail', 'dispose'] as const;
+export const RENDER_RPC_TYPES = [
+  'init',
+  'loadShader',
+  'loadImageBitmap',
+  'captureThumbnail',
+  'grabVideoFrame',
+  'captureFrame',
+  'compileCheck',
+  'dispose',
+] as const;
 
 export const RENDER_EVENT_TYPES = ['hello', 'snapshot', 'error', 'rpcResult'] as const;
 

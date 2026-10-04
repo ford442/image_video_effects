@@ -89,6 +89,10 @@ function fakeRenderer() {
     supportsCanvasCopySrc: () => true,
     getAdapterSummary: () => 'fake adapter',
     getAdapterAttemptLabel: () => 'HighPerformance',
+    getSupportsSubgroups: () => true,
+    grabPresentedFrame: jest.fn(async () => null),
+    compileCheck: jest.fn(async (_id: string, code: string) =>
+      code.includes('oops') ? [{ type: 'error' as const, lineNum: 1, linePos: 2, message: 'bad' }] : []),
   };
   return { r: r as unknown as HostedRenderer & { initialized: boolean }, calls, raw: r };
 }

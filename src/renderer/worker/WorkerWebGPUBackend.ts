@@ -33,6 +33,7 @@ import type { WebGpuProbeHandoff } from '../webgpuBootProbe';
 import { publishWebGpuProbeBreadcrumb } from '../webgpuBootProbe';
 import type { FrameInput, RenderEvent, RenderInitInfo, RenderSnapshot, TestRenderState } from './protocol';
 import { connectRenderWorker, RenderWorkerClient } from './renderWorkerClient';
+import { registerShaderCompileService } from '../../utils/shaderCompileService';
 
 const SLOT_COUNT = 6;
 const FFT_BINS = 128;
@@ -114,6 +115,8 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   private cpuImage: HTMLImageElement | HTMLCanvasElement | null = null;
   private readonly cachedIds = new Set<string>();
   private readonly audio = { bass: 0, mid: 0, treble: 0, freqBins: new Float32Array(FFT_BINS) };
+  private lastFrameImage = '';
+  private unregisterCompiler: (() => void) | null = null;
 
   constructor(
     private readonly config: RendererConfig,
@@ -171,6 +174,11 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
       this.shutdownClient();
       return false;
     }
+    const client = this.client;
+    this.unregisterCompiler = registerShaderCompileService({
+      supportsSubgroups: !!this.info.supportsSubgroups,
+      compile: (id, code) => client.rpc({ type: 'compileCheck', id, code }),
+    });
     console.log('✅ TypeScript WebGPU renderer running in the render worker');
     return true;
   }
@@ -195,6 +203,8 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   }
 
   private shutdownClient(): void {
+    this.unregisterCompiler?.();
+    this.unregisterCompiler = null;
     this.unsubscribe?.();
     this.unsubscribe = null;
     this.client?.terminate();
@@ -495,6 +505,24 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
     if (enabled && !this.supportsCanvasCopySrc()) return false;
     this.client?.send({ type: 'setCanvasCopySrc', enabled });
     return true;
+  }
+
+  /** VideoFrame of the next presented frame, transferred from the worker (recording). */
+  async grabVideoFrame(timestampUs: number): Promise<VideoFrame | null> {
+    if (!this.client) return null;
+    return this.client.rpc({ type: 'grabVideoFrame', timestampUs });
+  }
+
+  /** PNG data URL of the next presented frame (the page cannot read a transferred canvas). */
+  async refreshFrameImage(): Promise<string> {
+    if (!this.client) return '';
+    const png = await this.client.rpc({ type: 'captureFrame' });
+    this.lastFrameImage = png ? `data:image/png;base64,${png}` : '';
+    return this.lastFrameImage;
+  }
+
+  getFrameImage(): string {
+    return this.lastFrameImage;
   }
 
   async captureChoresThumbnailPng(outSize: number): Promise<string | null> {

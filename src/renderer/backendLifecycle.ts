@@ -12,7 +12,7 @@ import { WASMRenderer } from './WASMRenderer';
 import { WebGPURenderer } from './WebGPURenderer';
 import type { WebGpuProbeHandoff } from './webgpuBootProbe';
 import { isWebGpuBackend } from './webgpuBackendApi';
-import { WorkerWebGPUBackend } from './worker/WorkerWebGPUBackend';
+import { isCanvasTransferred, WorkerWebGPUBackend } from './worker/WorkerWebGPUBackend';
 import { readRendererVideo } from './inputSourceBridge';
 
 export type { WebGpuProbeHandoff };
@@ -70,9 +70,35 @@ export function getRenderThreadFromURL(): RenderThread | null {
   return null;
 }
 
-/** The render thread the TS WebGPU backend will use for this page. */
+/**
+ * Synchronous render-worker capability check: a Worker, OffscreenCanvas,
+ * canvas transfer and WebGPU. WebGPU *inside* the worker is confirmed by the
+ * worker's hello; if it is missing the page renders instead.
+ */
+export function supportsRenderWorker(): boolean {
+  try {
+    return (
+      typeof Worker !== 'undefined' &&
+      typeof OffscreenCanvas !== 'undefined' &&
+      typeof HTMLCanvasElement !== 'undefined' &&
+      typeof HTMLCanvasElement.prototype.transferControlToOffscreen === 'function' &&
+      typeof navigator !== 'undefined' &&
+      !!(navigator as Navigator & { gpu?: unknown }).gpu
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The render thread the TS WebGPU backend uses (#1314): the render worker by
+ * default where supported; `?renderer=main` keeps it on the page (escape hatch,
+ * deterministic pixel diffs), `?renderer=worker` insists on the worker.
+ */
 export function resolveRenderThread(): RenderThread {
-  return getRenderThreadFromURL() === 'worker' ? 'worker' : 'main';
+  const fromUrl = getRenderThreadFromURL();
+  if (fromUrl) return fromUrl;
+  return supportsRenderWorker() ? 'worker' : 'main';
 }
 
 /** Both TS WebGPU and emdawnwebgpu (WASM) claim exclusive adapter/device ownership. */
@@ -106,9 +132,13 @@ export async function releaseRendererGpu(renderer: Renderer): Promise<void> {
 }
 
 /** Factory for the three renderer backends — keeps RendererManager free of `new` branches. */
-export function createRendererForType(type: RendererType, config: RendererConfig): Renderer {
+export function createRendererForType(
+  type: RendererType,
+  config: RendererConfig,
+  renderThread: RenderThread = resolveRenderThread(),
+): Renderer {
   if (type === 'webgpu') {
-    return resolveRenderThread() === 'worker' ? new WorkerWebGPUBackend(config) : new WebGPURenderer(config);
+    return renderThread === 'worker' ? new WorkerWebGPUBackend(config) : new WebGPURenderer(config);
   }
   if (type === 'wasm') return new WASMRenderer(config);
   return new JSRenderer(config);
@@ -116,6 +146,8 @@ export function createRendererForType(type: RendererType, config: RendererConfig
 
 export interface BackendSwitchInput {
   targetType: RendererType;
+  /** TS WebGPU only: force the render thread (fallback after a worker failure). */
+  renderThread?: RenderThread;
   canvas: HTMLCanvasElement;
   config: RendererConfig;
   previousType: RendererType | null;
@@ -171,10 +203,17 @@ export async function performBackendSwitch(input: BackendSwitchInput): Promise<B
     await releaseRendererGpu(previousRenderer!);
   }
 
-  const renderer = createRendererForType(targetType, config);
+  let renderer = createRendererForType(targetType, config, input.renderThread);
   let success = false;
   if (isWebGpuBackend(renderer)) {
     success = await renderer.init(canvas, input.webGpuHandoff);
+    if (!success && renderer.renderThread === 'worker' && !isCanvasTransferred(canvas)) {
+      // The worker never took the canvas (no worker WebGPU, spawn failure): render on the page.
+      console.warn('[RendererManager] Render worker unavailable — rendering on the page');
+      const pageRenderer = new WebGPURenderer(config);
+      success = await pageRenderer.init(canvas, input.webGpuHandoff);
+      renderer = pageRenderer;
+    }
   } else {
     success = await renderer.init(canvas);
   }

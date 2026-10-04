@@ -46,11 +46,15 @@ export interface GpuEncodeFrames {
   setCanvasCopySrc(enabled: boolean): boolean;
   /** RGBA8 readback (WASM beginFrameCapture), null when unavailable. */
   readback: (() => Promise<ImageData>) | null;
+  /** Render worker: VideoFrames of presented frames, taken in the worker (#1314). Preferred when set. */
+  grabFrame?: ((timestampUs: number) => Promise<VideoFrame | null>) | null;
 }
 
 /** One WebCodecs take. stop() also restores the render-only swapchain. */
 export interface GpuEncodeSession {
-  readonly kind: 'canvas' | 'readback';
+  readonly kind: 'canvas' | 'readback' | 'worker';
+  /** Frames handed to the encoder so far. */
+  readonly framesEncoded: number;
   stop(): Promise<Blob>;
 }
 
@@ -65,9 +69,11 @@ export async function startGpuEncodeSession(
   frames: GpuEncodeFrames,
   opts: GpuEncoderModule.GpuEncodeOptions,
 ): Promise<GpuEncodeSession | null> {
-  const { GpuEncodeRecorder, canvasFrameSource, readbackFrameSource } = await loadGpuEncoder();
+  const { GpuEncodeRecorder, canvasFrameSource, readbackFrameSource, workerFrameSource } = await loadGpuEncoder();
   let source: GpuEncoderModule.GpuFrameSource;
-  if (frames.supportsCanvasCopySrc() && frames.setCanvasCopySrc(true)) {
+  if (frames.grabFrame) {
+    source = workerFrameSource(frames.grabFrame);
+  } else if (frames.supportsCanvasCopySrc() && frames.setCanvasCopySrc(true)) {
     source = canvasFrameSource(frames.canvas);
   } else if (frames.readback) {
     source = readbackFrameSource(frames.readback);
@@ -92,6 +98,9 @@ export async function startGpuEncodeSession(
   const started = recorder;
   return {
     kind: source.kind,
+    get framesEncoded() {
+      return started.framesEncoded;
+    },
     stop: () => started.stop().finally(restore),
   };
 }

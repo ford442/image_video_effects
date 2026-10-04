@@ -89,8 +89,11 @@ export function buildAppUrl(
   extraParams: Record<string, string> = {},
   port = serverPort
 ): string {
+  // TS backend thread (#1314): the render worker by default; PX_RENDER_THREAD=main
+  // runs the same specs with ?renderer=main.
+  const renderer = backend === 'webgpu' && process.env.PX_RENDER_THREAD === 'main' ? 'main' : backend;
   const params = new URLSearchParams({
-    renderer: backend,
+    renderer,
     testMode: '1',
     ...extraParams,
   });
@@ -299,6 +302,11 @@ export async function applyTestState(
 
 /** Sample canvas pixels in-browser (works for WebGPU-backed canvases). */
 export async function captureCanvasStats(page: Page): Promise<ImageStats> {
+  // A render-worker canvas is not readable on the page (#1314): the app captures over RPC.
+  const viaWorker = await page.evaluate(() => (window as any).__pixelocity__?.getRenderThread?.() === 'worker');
+  if (viaWorker) {
+    return page.evaluate(() => (window as any).__pixelocity__.captureCanvasStats());
+  }
   return page.evaluate(() => {
     const canvas = document.querySelector('canvas') as HTMLCanvasElement | null;
     if (!canvas) {

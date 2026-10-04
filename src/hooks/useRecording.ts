@@ -45,6 +45,7 @@ function startGpuEncode(
         supportsCanvasCopySrc: () => manager.supportsCanvasFrameCapture(),
         setCanvasCopySrc: (enabled) => manager.setCanvasCopySrc(enabled),
         readback: null,
+        grabFrame: manager.getWorkerFrameGrabber(),
     }, {
         width: canvas.width,
         height: canvas.height,

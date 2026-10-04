@@ -58,7 +58,22 @@ const scope = self as unknown as {
 };
 const post = (event: RenderEvent, transfer: Transferable[] = []) => scope.postMessage(event, transfer);
 
+/** Presented frame → PNG base64 via an OffscreenCanvas (screenshots, test harness). */
+async function encodeFramePng(frame: VideoFrame): Promise<string | null> {
+  const bitmap = await createImageBitmap(frame);
+  const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  ctx.drawImage(bitmap, 0, 0);
+  bitmap.close();
+  const bytes = new Uint8Array(await (await canvas.convertToBlob({ type: 'image/png' })).arrayBuffer());
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(binary);
+}
+
 const host = createRenderWorkerHost({
+  encodeFramePng,
   post,
   createRenderer: (config) => new WebGPURenderer(config),
   runProbe: (canvas, width, height, options) => runWebGpuBootProbe(canvas, width, height, options),

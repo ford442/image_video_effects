@@ -9,6 +9,19 @@ export interface CanvasImageStats {
     activePixelRatio: number;
 }
 
+/** Draw a captured frame (data URL) into a canvas so it can be measured. */
+async function canvasFromDataUrl(dataUrl: string): Promise<HTMLCanvasElement | null> {
+    if (!dataUrl) return null;
+    const img = new Image();
+    img.src = dataUrl;
+    await img.decode();
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    canvas.getContext('2d')?.drawImage(img, 0, 0);
+    return canvas;
+}
+
 function measureCanvasStats(canvas: HTMLCanvasElement): CanvasImageStats {
     const w = canvas.width;
     const h = canvas.height;
@@ -81,13 +94,17 @@ export function useTestHarness({
                 setTestRenderState: (state: Parameters<typeof manager.applyTestRenderState>[0]) => {
                     manager.applyTestRenderState(state);
                 },
+                // A render-worker canvas cannot be read on the page (#1314): capture over RPC.
                 captureCanvasScreenshot: async () => {
+                    if (manager.getRenderThread() === 'worker') return (await manager.refreshFrameImage()) || null;
                     const canvas = document.querySelector('canvas');
                     if (!canvas) return null;
                     return canvas.toDataURL('image/png');
                 },
-                captureCanvasStats: (): CanvasImageStats => {
-                    const canvas = document.querySelector('canvas');
+                captureCanvasStats: async (): Promise<CanvasImageStats> => {
+                    const canvas = manager.getRenderThread() === 'worker'
+                        ? await canvasFromDataUrl(await manager.refreshFrameImage())
+                        : document.querySelector('canvas');
                     if (!canvas) return { width: 0, height: 0, meanLuminance: 0, activePixelRatio: 0 };
                     return measureCanvasStats(canvas);
                 },
@@ -181,6 +198,34 @@ export function useTestHarness({
                 releaseFp32Requirement: (id: string) => manager.releaseFp32Requirement(id),
                 getGPUTimings: () => manager.getGPUTimings(),
                 getPassTimings: () => manager.getPassTimings(),
+                getRenderThread: () => manager.getRenderThread(),
+                /**
+                 * Record `ms` through the app's WebCodecs session (worker frame grabs in
+                 * worker mode, canvas VideoFrames on the page) and describe the WebM.
+                 */
+                recordClip: async (ms = 1500, size = 512, fps = 10) => {
+                    const { startGpuEncodeSession } = await import('../recording/gpuEncodeSupport');
+                    const canvas = document.querySelector('canvas[data-testid="webgpu-canvas"]') as HTMLCanvasElement | null;
+                    if (!canvas) return null;
+                    const session = await startGpuEncodeSession({
+                        canvas,
+                        supportsCanvasCopySrc: () => manager.supportsCanvasFrameCapture(),
+                        setCanvasCopySrc: (enabled) => manager.setCanvasCopySrc(enabled),
+                        readback: null,
+                        grabFrame: manager.getWorkerFrameGrabber(),
+                    }, { width: size, height: size, fps, bitrate: 2_000_000 });
+                    if (!session) return null;
+                    await new Promise((r) => setTimeout(r, ms));
+                    // A worker grab waits for the next presented frame; on a slow
+                    // device (SwiftShader, ~1 fps at 1024²) none may land within `ms`.
+                    const deadline = performance.now() + 15_000;
+                    while (session.framesEncoded === 0 && performance.now() < deadline) {
+                        await new Promise((r) => setTimeout(r, 100));
+                    }
+                    const frames = session.framesEncoded;
+                    const blob = await session.stop();
+                    return { kind: session.kind, size: blob.size, type: blob.type, frames };
+                },
                 setNodeScale: (slot: number, nodeId: string, scale: number) =>
                     manager.setNodeScale(slot, nodeId, scale),
                 getAdapterSummary: () => {

@@ -3,6 +3,7 @@ import {
   getRendererTypeFromURL,
   getRenderThreadFromURL,
   resolveRenderThread,
+  supportsRenderWorker,
   performBackendSwitch,
   releaseRendererGpu,
   resolveInitBackendPreference,
@@ -72,9 +73,34 @@ describe('backendLifecycle', () => {
       });
     });
 
-    it('other renderer values keep the page thread', () => {
+    it('other renderer values do not pick a thread from the URL', () => {
       withSearch('?renderer=wasm', () => expect(getRenderThreadFromURL()).toBeNull());
+    });
+
+    it('defaults to the worker only where Worker + OffscreenCanvas + transfer + WebGPU exist', () => {
+      // jsdom: no Worker / OffscreenCanvas → the page.
+      expect(supportsRenderWorker()).toBe(false);
       withSearch('', () => expect(resolveRenderThread()).toBe('main'));
+
+      const g = globalThis as Record<string, unknown>;
+      const proto = HTMLCanvasElement.prototype as unknown as Record<string, unknown>;
+      const saved = { Worker: g.Worker, OffscreenCanvas: g.OffscreenCanvas, transfer: proto.transferControlToOffscreen };
+      const nav = navigator as unknown as { gpu?: unknown };
+      const savedGpu = nav.gpu;
+      g.Worker = class {};
+      g.OffscreenCanvas = class {};
+      proto.transferControlToOffscreen = () => ({});
+      Object.defineProperty(navigator, 'gpu', { value: {}, configurable: true });
+      try {
+        expect(supportsRenderWorker()).toBe(true);
+        withSearch('', () => expect(resolveRenderThread()).toBe('worker'));
+        withSearch('?renderer=main', () => expect(resolveRenderThread()).toBe('main'));
+      } finally {
+        g.Worker = saved.Worker;
+        g.OffscreenCanvas = saved.OffscreenCanvas;
+        proto.transferControlToOffscreen = saved.transfer;
+        Object.defineProperty(navigator, 'gpu', { value: savedGpu, configurable: true });
+      }
     });
   });
 

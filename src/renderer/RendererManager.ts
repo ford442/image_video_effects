@@ -67,6 +67,12 @@ export interface RendererManagerOptions {
    * The renderer is blocked; the host should surface the WebGPU-required overlay.
    */
   onBackendFailure?: (failedType: RendererType, message: string) => void;
+  /**
+   * Swap in a new <canvas> and resolve with it. Needed once the render worker
+   * owns the current canvas (#1314): switching to WASM / Canvas2D, or retrying
+   * on the page after a worker failure.
+   */
+  acquireFreshCanvas?: () => Promise<HTMLCanvasElement>;
 }
 
 export class RendererManager {
@@ -87,6 +93,9 @@ export class RendererManager {
   private metrics: RendererMetrics = { fps: 0, frameTime: 0, agentCount: 0, isWASM: false };
   private readonly onMetricsUpdate?: (metrics: RendererMetrics) => void;
   private readonly onBackendFailure?: RendererManagerOptions['onBackendFailure'];
+  private readonly acquireFreshCanvas?: RendererManagerOptions['acquireFreshCanvas'];
+  /** 'main' after the render worker failed for this manager (#1314). */
+  private renderThreadOverride: 'main' | 'worker' | null = null;
   private metricsRafId: number | null = null;
   private destroyed = false;
   private readonly perfState: PerformancePolicyState = createPerformancePolicyState();
@@ -100,6 +109,7 @@ export class RendererManager {
     this.config = config;
     this.onMetricsUpdate = onMetricsUpdate;
     this.onBackendFailure = options.onBackendFailure;
+    this.acquireFreshCanvas = options.acquireFreshCanvas;
     this.adaptiveController = new AdaptivePerformanceController({
       getFps: () => this.getCurrentFPS(),
       getScale: () => this.perfState.resolutionScale,
@@ -184,19 +194,38 @@ export class RendererManager {
       console.log('✅ Using TypeScript WebGPU renderer (native navigator.gpu)');
       return true;
     }
+    if (isCanvasTransferred(this.canvas) && this.acquireFreshCanvas && this.renderThreadOverride !== 'main') {
+      // The worker took the canvas but could not render (probe / init failed there):
+      // one retry on the page with a fresh canvas before giving up.
+      console.warn('[RendererManager] Render worker failed after taking the canvas — retrying on the page');
+      this.renderThreadOverride = 'main';
+      if (await this.switchRenderer('webgpu')) return true;
+    }
     console.warn('⚠️ WebGPU unavailable — renderer blocked (no automatic Canvas2D fallback)');
     return false;
   }
 
   async switchRenderer(type: RendererType): Promise<boolean> {
     if (!this.canvas) return false;
-    if (isCanvasTransferred(this.canvas)) {
-      // The render worker owns this canvas (#1314); another backend needs a fresh one.
+    // A canvas is bound to its first context type ('webgpu' or '2d') and, once
+    // the render worker took it (#1314), to the worker. Switching backend type
+    // therefore starts on a fresh <canvas> whenever the host can provide one.
+    const transferred = isCanvasTransferred(this.canvas);
+    const changingType = this.currentType !== null && this.currentType !== type;
+    if (transferred && !this.acquireFreshCanvas) {
       console.warn(
         `[RendererManager] switchRenderer('${type}') refused: the canvas belongs to the render worker ` +
           '(reload with ?renderer=main to switch backends)',
       );
       return false;
+    }
+    if (this.acquireFreshCanvas && (transferred || changingType)) {
+      if (transferred && this.currentRenderer) {
+        await releaseRendererGpu(this.currentRenderer);
+        this.currentRenderer = null;
+        this.currentType = null;
+      }
+      this.canvas = await this.acquireFreshCanvas();
     }
     const cpuBitmap = inputBridge.readCpuInputBitmap(this.currentRenderer);
     const handoff = type === 'webgpu' ? this.webGpuHandoff : undefined;
@@ -208,6 +237,7 @@ export class RendererManager {
     }
     const outcome = await performBackendSwitch({
       targetType: type,
+      renderThread: this.renderThreadOverride ?? undefined,
       canvas: this.canvas,
       config: this.config,
       previousType: this.currentType,
@@ -419,6 +449,22 @@ export class RendererManager {
   supportsCanvasFrameCapture(): boolean {
     const r = this.currentRenderer as { supportsCanvasCopySrc?: () => boolean } | null;
     return !!r?.supportsCanvasCopySrc?.();
+  }
+  /**
+   * Render worker (#1314): a function returning a VideoFrame of the next
+   * presented frame, taken in the worker and transferred. Null when the
+   * backend renders on the page (record from the canvas instead).
+   */
+  getWorkerFrameGrabber(): ((timestampUs: number) => Promise<VideoFrame | null>) | null {
+    const r = this.currentRenderer;
+    if (!isWebGpuBackend(r) || r.renderThread !== 'worker') return null;
+    const grab = (r as { grabVideoFrame?: (ts: number) => Promise<VideoFrame | null> }).grabVideoFrame;
+    return grab ? (ts) => grab.call(r, ts) : null;
+  }
+  /** Where the TS backend renders (main page or render worker); null for WASM / Canvas2D. */
+  getRenderThread(): 'main' | 'worker' | null {
+    const r = this.currentRenderer;
+    return isWebGpuBackend(r) ? r.renderThread : null;
   }
   setCanvasCopySrc(enabled: boolean): boolean {
     const r = this.currentRenderer as { setCanvasCopySrc?: (e: boolean) => boolean } | null;

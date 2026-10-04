@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { ShaderEntry } from '../renderer/types';
 import { fetchShaderWgsl } from '../utils/fetchShaderWgsl';
-import { getAdoptedRendererDevice, getAdoptedSupportsSubgroups } from '../utils/adoptedGpuDevice';
+import { getShaderCompileService, type ShaderCompileService } from '../utils/shaderCompileService';
 import { WebGpuProbeFailureOverlay } from './WebGpuProbeFailureOverlay';
 import type { WebGpuProbeSerializable } from '../renderer/webgpuBootProbe';
 
@@ -96,24 +96,16 @@ function resolveProbeFailure(): WebGpuProbeSerializable | null {
       }
     );
   }
-  if (!getAdoptedRendererDevice()) {
+  if (!getShaderCompileService()) {
     return {
       ...probe,
       ok: false,
       lastError:
-        'Adopted renderer GPUDevice unavailable — WebGPU renderer must be active (boot probe device not registered)',
+        'Renderer GPUDevice unavailable — WebGPU renderer must be active (page device or render worker)',
       failedStage: 'requestDevice',
     };
   }
   return null;
-}
-
-function deviceHasSubgroups(device: GPUDevice): boolean {
-  return (
-    getAdoptedSupportsSubgroups() ||
-    device.features.has('subgroups') ||
-    device.features.has('chromium-experimental-subgroups' as GPUFeatureName)
-  );
 }
 
 export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, onClose, onTestShader }) => {
@@ -169,16 +161,16 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
     const doCompileCheck = scanMode === 'compile' || scanMode === 'both';
     const doParamCheck = scanMode === 'params' || scanMode === 'both';
     
-    let device: GPUDevice | null = null;
+    let compiler: ShaderCompileService | null = null;
     let supportsSubgroups = false;
     
     if (doCompileCheck) {
-      device = getAdoptedRendererDevice();
-      if (!device) {
-        alert('Adopted renderer GPUDevice unavailable — WebGPU renderer must be active');
+      compiler = getShaderCompileService();
+      if (!compiler) {
+        alert('Renderer GPUDevice unavailable — WebGPU renderer must be active');
         return;
       }
-      supportsSubgroups = deviceHasSubgroups(device);
+      supportsSubgroups = compiler.supportsSubgroups;
     }
 
     setIsScanning(true);
@@ -260,21 +252,15 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
           }
 
           // Compile check
-          if (doCompileCheck && device) {
+          if (doCompileCheck && compiler) {
             // Prepare shader code (add bindings if missing, but most shaders are complete)
             const shaderCode = prepareShaderCode(code);
 
-            // Try to create the shader module
-            const shaderModule = device.createShaderModule({
-              label: shader.id,
-              code: shaderCode
-            });
-
-            // Get compilation info
-            const compilationInfo = await shaderModule.getCompilationInfo();
+            // Compile on the renderer's device (page, or the render worker over RPC).
+            const messages = await compiler.compile(shader.id, shaderCode);
             
             // Check for errors
-            const errorMessages = compilationInfo.messages.filter(
+            const errorMessages = messages.filter(
               msg => msg.type === 'error'
             );
             

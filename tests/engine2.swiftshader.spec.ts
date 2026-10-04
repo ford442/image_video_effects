@@ -47,9 +47,8 @@ const MODES: Mode[] = ['main', 'worker'];
 
 async function boot(page: Page, mode: Mode = 'main'): Promise<void> {
   await installGpuUncapturedErrorHook(page);
-  const url = mode === 'worker'
-    ? `http://localhost:${PORT}/?renderer=worker&testMode=1`
-    : buildAppUrl('webgpu', {}, PORT);
+  // The render worker is the default (#1314 C2); ?renderer=main is the escape hatch.
+  const url = `http://localhost:${PORT}/?renderer=${mode === 'worker' ? 'worker' : 'main'}&testMode=1`;
   await page.goto(url, { waitUntil: 'load' });
   await page.waitForFunction(
     () => {
@@ -326,4 +325,77 @@ test.describe('engine2 on SwiftShader WebGPU', () => {
     expect(stats.framesIngested).toBeGreaterThanOrEqual(3);
     expect(await readGpuUncapturedErrors(page)).toEqual([]);
   });
+
+  test('the render worker is the default for the TS backend', async ({ page }) => {
+    await installGpuUncapturedErrorHook(page);
+    await page.goto(buildAppUrl('webgpu', {}, PORT), { waitUntil: 'load' });
+    await page.waitForFunction(() => (window as any).__pixelocity__?.renderer != null && (window as any).webgpuProbe != null, null, { timeout: 60_000 });
+    expect(await page.evaluate(() => (window as any).__pixelocity__.getRenderThread())).toBe('worker');
+  });
+
+  const switchTo = (page: Page, target: string) =>
+    page.evaluate(async (t) => {
+      const api = (window as any).__pixelocity__;
+      const ok = await api.renderer.switchRenderer(t);
+      return { target: t, ok, type: api.getRendererType(), thread: api.getRenderThread() };
+    }, target);
+
+  const assertStillRendering = async (page: Page) => {
+    const loaded = await loadStack(page, ['plasma']);
+    expect(loaded.plasma).toBe(true);
+    await waitForRenderedFrames(page, 3);
+    expect(await gpuErrors(page, 'worker')).toEqual([]);
+    expect(await page.locator('canvas[data-testid="webgpu-canvas"]').count()).toBe(1);
+  };
+
+  test('backend switches start on a fresh canvas: worker → Canvas2D → WebGPU → Canvas2D → WebGPU', async ({ page }) => {
+    test.setTimeout(240_000);
+    await boot(page, 'worker');
+    const steps = [];
+    for (const target of ['js', 'webgpu', 'js', 'webgpu']) steps.push(await switchTo(page, target));
+    expect(steps).toEqual([
+      { target: 'js', ok: true, type: 'js', thread: null },
+      { target: 'webgpu', ok: true, type: 'webgpu', thread: 'worker' },
+      { target: 'js', ok: true, type: 'js', thread: null },
+      { target: 'webgpu', ok: true, type: 'webgpu', thread: 'worker' },
+    ]);
+    await assertStillRendering(page);
+  });
+
+  test('backend switches start on a fresh canvas: worker → WASM → WebGPU', async ({ page }) => {
+    test.setTimeout(240_000);
+    await boot(page, 'worker');
+    expect(await switchTo(page, 'wasm')).toEqual({ target: 'wasm', ok: true, type: 'wasm', thread: null });
+    // The ASYNCIFY init ccall reports ready while C++ CreateDevice() is still
+    // waiting on the adapter, and on SwiftShader that request never resolves in
+    // ~1 run of 10 (main-thread mode too; the JSPI build fixes it). Releasing WASM
+    // in that window drops the Dawn instance mid-request and crashes the tab, so
+    // only switch away once C++ has published its probe breadcrumb.
+    const cppReady = await page
+      .waitForFunction(
+        () => (window as any).webgpuProbe?.backend === 'wasm' && (window as any).webgpuProbe?.ok === true,
+        undefined,
+        { timeout: 30_000 },
+      )
+      .then(() => true, () => false);
+    test.skip(!cppReady, 'WASM C++ adapter request hung on SwiftShader (known ASYNCIFY issue, not worker-related)');
+    expect(await switchTo(page, 'webgpu')).toEqual({ target: 'webgpu', ok: true, type: 'webgpu', thread: 'worker' });
+    await assertStillRendering(page);
+  });
+
+  for (const mode of MODES) {
+    test(`recording produces a WebM through WebCodecs [${mode}]`, async ({ page }) => {
+      await boot(page, mode);
+      const loaded = await loadStack(page, ['plasma']);
+      expect(loaded.plasma).toBe(true);
+      await waitForRenderedFrames(page, 2);
+      const clip = await page.evaluate(() => (window as any).__pixelocity__.recordClip(2500, 256, 10));
+      expect(clip, 'no WebCodecs session').not.toBeNull();
+      expect(clip.kind).toBe(mode === 'worker' ? 'worker' : 'canvas');
+      expect(clip.type).toContain('webm');
+      expect(clip.frames).toBeGreaterThan(0);
+      expect(clip.size).toBeGreaterThan(500);
+      expect(await gpuErrors(page, mode)).toEqual([]);
+    });
+  }
 });

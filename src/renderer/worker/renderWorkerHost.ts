@@ -81,6 +81,9 @@ export type HostedRenderer = Pick<
   | 'supportsCanvasCopySrc'
   | 'getAdapterSummary'
   | 'getAdapterAttemptLabel'
+  | 'getSupportsSubgroups'
+  | 'grabPresentedFrame'
+  | 'compileCheck'
 >;
 
 export interface RenderWorkerHostDeps {
@@ -97,6 +100,8 @@ export interface RenderWorkerHostDeps {
   setErrorSink(sink: (error: RendererError) => void): void;
   /** Anchor relative fetches (shaders, includes) at the app root. */
   setFetchBase(url: string): void;
+  /** PNG-encode a presented frame (base64, no prefix); absent → captureFrame answers null. */
+  encodeFramePng?(frame: VideoFrame): Promise<string | null>;
   snapshotIntervalMs?: number;
 }
 
@@ -231,6 +236,7 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
         canvasCopySrc: r.supportsCanvasCopySrc(),
         adapterSummary: r.getAdapterSummary(),
         adapterAttemptLabel: r.getAdapterAttemptLabel(),
+        supportsSubgroups: r.getSupportsSubgroups(),
       };
     },
     loadShader: async ({ id, url }) => (renderer ? renderer.loadShader(id, url) : false),
@@ -240,6 +246,20 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
       return true;
     },
     captureThumbnail: async ({ size }) => (renderer ? renderer.captureChoresThumbnailPng(size) : null),
+    grabVideoFrame: async ({ timestampUs }) => (renderer ? renderer.grabPresentedFrame(timestampUs) : null),
+    captureFrame: async () => {
+      const frame = renderer ? await renderer.grabPresentedFrame(0) : null;
+      if (!frame) return null;
+      try {
+        return deps.encodeFramePng ? await deps.encodeFramePng(frame) : null;
+      } finally {
+        safeClose(frame);
+      }
+    },
+    compileCheck: async ({ id, code }) => {
+      if (!renderer) throw new Error('render worker has no renderer');
+      return renderer.compileCheck(id, code);
+    },
     dispose: async () => {
       if (snapshotTimer !== null) clearInterval(snapshotTimer);
       snapshotTimer = null;
@@ -255,9 +275,15 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
   const isRpc = (message: RenderToWorker): message is RenderRpc =>
     (RENDER_RPC_TYPES as readonly string[]).includes(message.type);
 
+  const isVideoFrame = (value: unknown): value is VideoFrame =>
+    typeof VideoFrame !== 'undefined' && value instanceof VideoFrame;
+
   const answer = (requestId: number, run: () => Promise<unknown>) => {
     run()
-      .then((value) => deps.post({ type: 'rpcResult', requestId, ok: true, value }))
+      .then((value) => deps.post(
+        { type: 'rpcResult', requestId, ok: true, value },
+        isVideoFrame(value) ? [value as unknown as Transferable] : undefined,
+      ))
       .catch((e: unknown) =>
         deps.post({ type: 'rpcResult', requestId, ok: false, error: e instanceof Error ? e.message : String(e) }));
   };

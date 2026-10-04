@@ -166,12 +166,17 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private readonly islands = new NodeScaleIslands();
   /** Demoted opt-in graph nodes: `${slot}:${nodeId}` → scale (< 1). */
   private readonly nodeScales = new Map<string, number>();
+  /** The canvas this renderer presents to (an OffscreenCanvas in the render worker). */
+  private presentCanvas: HTMLCanvasElement | OffscreenCanvas | null = null;
+  /** Pending "give me the next presented frame" requests (recording / capture). */
+  private frameGrabs: Array<{ timestampUs: number; resolve: (frame: VideoFrame | null) => void }> = [];
   /** WebCodecs VideoFrame ingest (element path as fallback). */
   private readonly videoIngest = new VideoIngest(videoFrameIngestDisabledByUrl());
 
   constructor(private config: RendererConfig) {}
 
   getSupportsDeepWorkgroup(): boolean { return this.supportsDeepWorkgroup; }
+  getSupportsSubgroups(): boolean { return this.supportsSubgroups; }
   getColorFormat(): InternalColorFormat { return this.colorFormat; }
   getFormatCapabilities(): DeviceFormatCapabilities { return this.formatCapabilities; }
   getHistoryLayers(): number { return this.resources.historyLayers; }
@@ -194,6 +199,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       if (!outcome.ok) return false;
 
       this.device = outcome.device;
+      this.presentCanvas = canvas;
       instrumentDevice(outcome.device);
       this.context = outcome.context;
       this.canvasFormat = outcome.canvasFormat;
@@ -216,6 +222,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
         this.warmup?.stop();
         this.warmup = null;
         this.videoIngest.detach();
+        this.resolveFrameGrabs(null);
         this.timestampRuntime.hasRealGpuTimings = false;
         this.timestampRuntime.readbackPending = false;
         this.gpuChores.detach('device lost');
@@ -826,9 +833,45 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     });
   }
 
-  /** Frame-loop hook after queue.submit: release the frame's VideoFrame. */
+  /** Frame-loop hook after queue.submit: release the frame's VideoFrame, serve frame grabs. */
   afterFrameSubmit(): void {
     this.videoIngest.afterSubmit();
+    if (this.frameGrabs.length > 0) this.resolveFrameGrabs();
+  }
+
+  /**
+   * A VideoFrame of the next presented frame. Taken in the same task as the
+   * submit, which is when the canvas still holds it (worker included; no
+   * COPY_SRC needed). Resolves null when no frame will come (teardown).
+   */
+  grabPresentedFrame(timestampUs: number): Promise<VideoFrame | null> {
+    if (!this.initialized || !this.presentCanvas || typeof VideoFrame === 'undefined') {
+      return Promise.resolve(null);
+    }
+    return new Promise((resolve) => this.frameGrabs.push({ timestampUs, resolve }));
+  }
+
+  private resolveFrameGrabs(canvas: HTMLCanvasElement | OffscreenCanvas | null = this.presentCanvas): void {
+    for (const grab of this.frameGrabs.splice(0)) {
+      if (!canvas) {
+        grab.resolve(null);
+        continue;
+      }
+      try {
+        grab.resolve(new VideoFrame(canvas, { timestamp: grab.timestampUs, alpha: 'discard' }));
+      } catch (e) {
+        console.warn('[WebGPU] frame grab failed:', e);
+        grab.resolve(null);
+      }
+    }
+  }
+
+  /** WGSL compile check on this renderer's device (ShaderScanner in worker mode). */
+  async compileCheck(id: string, code: string): Promise<Array<{ type: GPUCompilationMessageType; lineNum: number; linePos: number; message: string }>> {
+    if (!this.device) throw new Error('No GPUDevice');
+    const module = this.device.createShaderModule({ label: id, code });
+    const info = await module.getCompilationInfo();
+    return info.messages.map((m) => ({ type: m.type, lineNum: m.lineNum, linePos: m.linePos, message: m.message }));
   }
 
   /** Render-worker video: frames arrive as transfers (null when the source stops). */
@@ -990,6 +1033,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.islands.destroy();
     this.nodeScales.clear();
     this.videoIngest.detach();
+    this.resolveFrameGrabs(null);
     this.initialized = false;
     this.gpuChores.destroy();
     this.simRing.destroy();
