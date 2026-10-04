@@ -19,6 +19,13 @@ export interface EmscriptenModule {
   _getCanvasCopySrcSupported?: () => number;
   _setCanvasCopySrc?: (enabled: number) => number;
   _getMaxShaderSlots?: () => number;
+  /** Exported runtime method (wasm_exports.json exportedRuntimeMethods). */
+  UTF8ToString?(ptr: number): string;
+  /** Measurement exports (#1314 D); artifacts built before them lack these. Return C-string pointers. */
+  _getPassTimingsJson?: () => number;
+  _getLastError?: () => number;
+  _getErrorRingJson?: () => number;
+  _clearErrorRing?: () => void;
 }
 
 export type PixelocityWasmFactory = (opts: {

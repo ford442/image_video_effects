@@ -1,5 +1,7 @@
 import { Renderer, RendererConfig, ShaderSlotRenderer, GPUTimings } from './Renderer';
 import * as WasmBridge from '../wasm/wasm_bridge';
+import type { WasmErrorRing } from '../wasm/wasm_bridge';
+import type { PassTiming } from './passTimings';
 import { reportError } from './ErrorHandling';
 import { describeWasmInitFailure, summarizeWasmInitState } from './wasmInitDiagnostics';
 import { publishWasmProbeSuccess } from './webgpuBootProbe';
@@ -47,6 +49,10 @@ export interface WASMDiagnostics {
   canvasCopySrc: boolean | null;
   /** MAX_SHADER_SLOTS in the loaded artifact; null = artifact predates the export. */
   maxShaderSlots: number | null;
+  /** Smoothed per-pass GPU ms from C++ timestamp queries (#1314 D); [] until they resolve. */
+  passTimings: PassTiming[];
+  /** C++ uncaptured WebGPU errors + device-lost messages (count survives clearErrorRing). */
+  errors: WasmErrorRing;
 }
 
 export class WASMRenderer implements Renderer, ShaderSlotRenderer {
@@ -201,7 +207,18 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
       }),
       canvasCopySrc: bridge?.canvasCopySrc ?? null,
       maxShaderSlots: bridge?.maxShaderSlots ?? null,
+      passTimings: this.getPassTimings(),
+      errors: WasmBridge.readErrorRing?.() ?? { count: 0, last: '', recent: [] },
     };
+  }
+
+  /**
+   * Smoothed per-pass GPU ms measured by the C++ renderer (one entry per slot
+   * compute pass). Empty until timestamps resolve, without timestamp-query, or
+   * on an artifact that predates the export.
+   */
+  getPassTimings(): PassTiming[] {
+    return WasmBridge.readPassTimings?.() ?? [];
   }
 
   /**
@@ -591,7 +608,11 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
   }
 
   getGPUTimings(): GPUTimings {
-    return WasmBridge.getGPUTimings();
+    const timings = WasmBridge.getGPUTimings();
+    // Per-pass numbers only ride along with real GPU timestamps.
+    if (!timings.available) return timings;
+    const passes = this.getPassTimings();
+    return passes.length > 0 ? { ...timings, passes } : timings;
   }
 
   async reloadShaderFromURL(id: string, url: string): Promise<boolean> {

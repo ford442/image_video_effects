@@ -7,7 +7,7 @@ import {
   uploadImageSource,
   uploadVideoFrame,
 } from './capture.js';
-import { getDiagnostics } from './diagnostics.js';
+import { clearErrorRing, getDiagnostics, readErrorRing, readPassTimings } from './diagnostics.js';
 import {
   getPresentCanvas,
   getPresentCanvasId,
@@ -107,6 +107,9 @@ const wasmBridge = {
   setCanvasCopySrc,
   isCppRendererReady,
   readCanvasCopySrc,
+  readPassTimings,
+  readErrorRing,
+  clearErrorRing,
 };
 
 export default wasmBridge;

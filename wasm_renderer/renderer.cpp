@@ -147,6 +147,10 @@ void WebGPURenderer::Shutdown() {
     timestampReadbackPending_ = false;
     supportsTimestampQuery_ = false;
     gpuTimingsResolved_ = false;
+    tsFramePasses_.clear();
+    readbackPasses_.clear();
+    readbackQueryCount_ = 0;
+    passTimings_.clear();
     uniformBuffer_.reset();
     extraBuffer_.reset();
     plasmaBuffer_.reset();
@@ -309,6 +313,77 @@ void WebGPURenderer::GetGPUTimings(float* parallelMs, float* chainedMs, float* t
 
 void WebGPURenderer::SetRecording(bool recording) {
     isRecording_ = recording;
+}
+
+// ─── Uncaptured-error ring (#1314 D, diagnostics only) ───────────────────────
+
+void GpuErrorRing::Push(const char* prefix, const char* message, size_t length) {
+    // memcpy, not snprintf: snprintf would pull this (and the WebGPU error
+    // callback) under ASYNCIFY instrumentation. See wasm_internal.cpp.
+    char* slot = messages[total % kCapacity];
+    const size_t cap = kMessageBytes - 1;
+    size_t pos = 0;
+    bool truncated = false;
+    auto put = [&](const char* s, size_t n) {
+        if (n > cap - pos) {
+            n = cap - pos;
+            truncated = true;
+        }
+        memcpy(slot + pos, s, n);
+        pos += n;
+    };
+    const char* p = prefix ? prefix : "Error";
+    put(p, strlen(p));
+    put(": ", 2);
+    // A WebGPU string view may be NUL-terminated (length == WGPU_STRLEN).
+    if (message) put(message, strnlen(message, length));
+    slot[pos] = '\0';
+    if (truncated) {
+        // Drop a trailing partial UTF-8 sequence so the JSON stays clean.
+        size_t lead = pos;
+        while (lead > 0 && (static_cast<unsigned char>(slot[lead - 1]) & 0xC0) == 0x80) lead--;
+        if (lead > 0) {
+            const unsigned char c = static_cast<unsigned char>(slot[lead - 1]);
+            const size_t need = c >= 0xF0 ? 4 : c >= 0xE0 ? 3 : c >= 0xC0 ? 2 : 1;
+            if (pos - (lead - 1) < need) slot[lead - 1] = '\0';
+        }
+    }
+    total++;
+    if (stored < kCapacity) stored++;
+}
+
+const char* GpuErrorRing::Last() const {
+    return stored > 0 ? messages[(total - 1) % kCapacity] : "";
+}
+
+const char* GpuErrorRing::At(uint32_t i) const {
+    if (i >= stored) return "";
+    return messages[(total - stored + i) % kCapacity];
+}
+
+void GpuErrorRing::Clear() {
+    stored = 0;
+    for (auto& m : messages) m[0] = '\0';
+}
+
+GpuErrorRing& WebGPURenderer::ErrorRing() {
+    static GpuErrorRing ring;
+    return ring;
+}
+
+const char* WebGPURenderer::ErrorRingJson() {
+    static std::string json;
+    const GpuErrorRing& ring = ErrorRing();
+    json.clear();
+    wasm_internal::AppendLit(json, "{\"count\":");
+    wasm_internal::AppendUInt(json, ring.total);
+    wasm_internal::AppendLit(json, ",\"messages\":[");
+    for (uint32_t i = 0; i < ring.stored; ++i) {
+        if (i > 0) wasm_internal::AppendLit(json, ",");
+        wasm_internal::AppendJsonString(json, ring.At(i));
+    }
+    wasm_internal::AppendLit(json, "]}");
+    return json.c_str();
 }
 
 } // namespace pixelocity

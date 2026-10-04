@@ -511,10 +511,12 @@ export class RendererManager {
       (r as WebGPUBackendApi).setSourceAutoExposure(enabled);
     }
   }
-  /** Smoothed per-pass GPU ms from the TS profiler (empty until timestamps resolve, or on WASM/JS). */
+  /** Smoothed per-pass GPU ms from the TS or C++ profiler (empty until timestamps resolve, or on JS). */
   getPassTimings(): PassTiming[] {
     const r = this.shaderRenderer();
-    return isWebGpuBackend(r) ? r.getPassTimings() : [];
+    if (isWebGpuBackend(r)) return r.getPassTimings();
+    if (r instanceof WASMRenderer) return r.getPassTimings();
+    return [];
   }
   /** Run an opt-in graph node below full size (TS WebGPU only). Returns the scale in effect. */
   setNodeScale(slot: number, nodeId: string, scale: number): number {

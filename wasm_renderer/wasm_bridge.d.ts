@@ -34,6 +34,31 @@ export interface GPUTimings {
   timingSource: 'gpu-timestamp' | 'wall-clock' | 'unavailable';
 }
 
+/** C++ per-pass GPU timing (#1314 D) in the shared PassTiming shape (src/renderer/passTimings.ts). */
+export interface WasmPassTiming {
+  /** `${slot}:${label}`; slot is '-' for the legacy single-shader pass. */
+  key: string;
+  label: string;
+  kind: 'compute';
+  slot?: number;
+  shaderId?: string;
+  entry?: string;
+  scale: number;
+  /** Smoothed (EMA) GPU milliseconds per frame. */
+  gpuMs: number;
+  iterations: number;
+}
+
+/** C++ uncaptured WebGPU error / device-lost ring (#1314 D). */
+export interface WasmErrorRing {
+  /** Messages pushed since the module loaded (clearErrorRing does not reset it). */
+  count: number;
+  /** Most recent held message, or ''. */
+  last: string;
+  /** Up to 16 most recent held messages, oldest first. */
+  recent: string[];
+}
+
 export interface SlotState {
   shaderId: string | null;
   enabled: boolean;
@@ -154,6 +179,12 @@ export function setCanvasCopySrc(enabled: boolean): boolean;
 export function isCppRendererReady(): boolean;
 /** Live C++ canvas COPY_SRC probe; null while C++ init runs or the artifact predates it. */
 export function readCanvasCopySrc(): boolean | null;
+/** Smoothed C++ per-pass GPU timings; [] until timestamps resolve or when the artifact predates the export. */
+export function readPassTimings(): WasmPassTiming[];
+/** C++ uncaptured-error ring; empty when the artifact predates the export. */
+export function readErrorRing(): WasmErrorRing;
+/** Drop held error messages (count keeps counting); false when the artifact predates the export. */
+export function clearErrorRing(): boolean;
 
 export interface WasmRenderer {
   getDiagnostics(): WasmBridgeDiagnostics;
@@ -212,6 +243,9 @@ export interface WasmRenderer {
   setCanvasCopySrc(enabled: boolean): boolean;
   isCppRendererReady(): boolean;
   readCanvasCopySrc(): boolean | null;
+  readPassTimings(): WasmPassTiming[];
+  readErrorRing(): WasmErrorRing;
+  clearErrorRing(): boolean;
 }
 
 declare const wasmRenderer: WasmRenderer;

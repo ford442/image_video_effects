@@ -46,8 +46,84 @@ function getDiagnostics() {
     maxShaderSlots: state.maxShaderSlots
   };
 }
+function readCStringExport(name) {
+  const mod = wasmRef.module;
+  const fn = mod?.[name];
+  if (!mod || typeof fn !== "function" || typeof mod.UTF8ToString !== "function") return null;
+  try {
+    return mod.UTF8ToString(fn());
+  } catch {
+    return null;
+  }
+}
+function parseJson(json) {
+  if (!json) return null;
+  try {
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+function parsePassTimingsJson(json) {
+  const raw = parseJson(json);
+  if (!Array.isArray(raw)) return [];
+  const passes = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const r = item;
+    const label = typeof r.label === "string" ? r.label : "";
+    const gpuMs = typeof r.gpuMs === "number" ? r.gpuMs : Number.NaN;
+    if (!label || !Number.isFinite(gpuMs) || gpuMs < 0) continue;
+    const slot = typeof r.slot === "number" && Number.isInteger(r.slot) && r.slot >= 0 ? r.slot : void 0;
+    const shaderId = typeof r.shaderId === "string" && r.shaderId ? r.shaderId : void 0;
+    const iterations = typeof r.iterations === "number" && Number.isInteger(r.iterations) && r.iterations > 0 ? r.iterations : 1;
+    passes.push({
+      key: `${slot ?? "-"}:${label}`,
+      label,
+      kind: "compute",
+      slot,
+      shaderId,
+      entry: label,
+      scale: 1,
+      gpuMs,
+      iterations
+    });
+  }
+  return passes;
+}
+function parseErrorRingJson(json, last = null) {
+  const raw = parseJson(json);
+  const recent = Array.isArray(raw?.messages) ? raw.messages.filter((m) => typeof m === "string") : [];
+  const rawCount = typeof raw?.count === "number" && Number.isFinite(raw.count) ? raw.count : 0;
+  return {
+    count: Math.max(rawCount, recent.length),
+    last: last ?? recent[recent.length - 1] ?? "",
+    recent
+  };
+}
+function readPassTimings() {
+  return parsePassTimingsJson(readCStringExport("_getPassTimingsJson"));
+}
+function readErrorRing() {
+  return parseErrorRingJson(readCStringExport("_getErrorRingJson"), readCStringExport("_getLastError"));
+}
+function clearErrorRing() {
+  const fn = wasmRef.module?._clearErrorRing;
+  if (typeof fn !== "function") return false;
+  try {
+    fn();
+    return true;
+  } catch {
+    return false;
+  }
+}
 export {
+  clearErrorRing,
   formatCppInitFailure,
   getDiagnostics,
-  readCppInitDiagnostics
+  parseErrorRingJson,
+  parsePassTimingsJson,
+  readCppInitDiagnostics,
+  readErrorRing,
+  readPassTimings
 };
