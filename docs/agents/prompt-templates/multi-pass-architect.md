@@ -26,7 +26,7 @@ Each pass must still write a valid `writeTexture` (even if just `vec4<f32>(0.0)`
 
 ## Output Rules
 - Keep the original shader's "soul".
-- Do NOT modify the 13-binding header or `Uniforms` struct.
+- Do NOT paste or edit binding declarations or `struct Uniforms`: they come from `#include "_prelude.wgsl"`. If the file still pastes them, run `python3 scripts/migrate_to_prelude.py --files <file>` first (header-only; no `Upgraded:` bump).
 - Workgroup size stays `@workgroup_size(16, 16, 1)` unless shared memory is required.
 - If you create passes, name them `<id>-pass1.wgsl`, `<id>-pass2.wgsl`, etc.
 - Alpha must carry meaning (depth, density, effect intensity).

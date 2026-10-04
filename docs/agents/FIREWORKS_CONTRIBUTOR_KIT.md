@@ -12,7 +12,7 @@
 |---|--------|----------------|
 | 1 | **Pick a category** | **Generative** (procedural night sky) → `shader_definitions/generative/` · **Image effect** (photo/video reactive) → `shader_definitions/image/` |
 | 2 | **Create WGSL** | `public/shaders/<id>.wgsl` (e.g. `gen-fireworks-willow-cascade.wgsl`) |
-| 3 | **Paste canonical header** | See §2 below — copy verbatim from `WGSL_BUILTINS_GENERATIVE.md` §0 |
+| 3 | **Include the prelude** | First code line: `#include "_prelude.wgsl"` (see §2). Never paste bindings — `python3 scripts/new_shader.py` scaffolds it for you |
 | 4 | **Implement `@compute` main** | `@workgroup_size(16, 16, 1)`, bounds guard, `textureStore` to `writeTexture` |
 | 5 | **Create JSON definition** | `shader_definitions/<category>/<id>.json` — same base name as WGSL |
 | 6 | **Fill four slider slots** | Generative: `updatedParams` with `index` 0–3 · Image: `params` array (4 entries) |
@@ -35,29 +35,13 @@
 
 ## 2. Canonical 13-Binding Contract
 
-**Copy this verbatim.** Do not reorder bindings, rename resources, or embed textures inside `Uniforms`.
+**Start every shader with the include below.** Do not paste, reorder, or rename bindings, or embed textures inside `Uniforms`.
+It is generated (`npm run shaders:libs`) from the binding contract and declares bindings 0–12 (`u_sampler`, `readTexture`, `writeTexture`, `u`, `readDepthTexture`, `non_filtering_sampler`, `writeDepthTexture`, `dataTextureA`, `dataTextureB`, `dataTextureC`, `extraBuffer`, `comparison_sampler`, `plasmaBuffer`) plus `struct Uniforms`: `u.config` = (time s, rippleCount 0–50, resolution w, h), `u.zoom_config.yz` = mouse uv (0–1, y=0 top), `u.zoom_config.w` = mouse down (> 0.5), `u.zoom_params` = sliders p1..p4, `u.ripples[i]` = (uv, startTime, 0).
+
+**Never** paste binding declarations or `struct Uniforms` into a shader: CI (`scripts/check_prelude_migration.py`) fails on a pasted copy. Binding 13 (`historyTexture`) is declared only by the shaders that read it. A file that still pastes the header is migrated with `python3 scripts/migrate_to_prelude.py --files public/shaders/<id>.wgsl` — header-only, so never bump `Upgraded:` for it.
 
 ```wgsl
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time (seconds), .y = rippleCount (0-50 active ripples), .zw = resolution (width, height)
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0-1 canvas: y=0 top), .w = mouse_down (>0.5 = pressed)
-  zoom_params: vec4<f32>,  // .xyzw = UI sliders p1–p4 (always 0–1 from engine)
-  ripples: array<vec4<f32>, 50>,  // .xy = ripple uv, .z = startTime (seconds), .w = padding (0)
-};
+#include "_prelude.wgsl"
 ```
 
 ### Binding cheat-sheet
@@ -306,7 +290,7 @@ BROWSER=none npm start
 
 ## 9. PR Checklist
 
-- [ ] Canonical 13-binding header unchanged
+- [ ] Starts with `#include "_prelude.wgsl"`; no pasted binding declarations
 - [ ] `@compute @workgroup_size(16, 16, 1)` + bounds guard
 - [ ] `textureStore(writeTexture, …)` every frame
 - [ ] Four sliders read and documented in JSON

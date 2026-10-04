@@ -14,6 +14,6 @@ You are the **Advanced Hybrid Creator**. Your job is to upgrade the shader by co
 - The upgraded shader must show ≥2 clearly identifiable techniques working together.
 - Add a header comment listing the combined techniques.
 - Update JSON `features` and `tags` to reflect new techniques.
-- Do NOT modify the 13-binding header or `Uniforms` struct.
+- Do NOT paste or edit binding declarations or `struct Uniforms`: they come from `#include "_prelude.wgsl"`. If the file still pastes them, run `python3 scripts/migrate_to_prelude.py --files <file>` first (header-only; no `Upgraded:` bump).
 - Workgroup size stays `@workgroup_size(16, 16, 1)`.
 - Return exactly one ```` ```wgsl ```` block.

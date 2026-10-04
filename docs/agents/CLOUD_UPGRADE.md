@@ -16,34 +16,17 @@
 
 Shaders live in `public/shaders/*.wgsl`. Their metadata lives in `shader_definitions/{category}/{id}.json`. The JSON files are the **source of truth** for the shader library.
 
-### The 13-Binding Header (Immutable)
+### Bindings come from `_prelude.wgsl` (immutable)
 
-Every compute shader MUST declare exactly these bindings:
+Every compute shader starts with:
 
 ```wgsl
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time (seconds), .y = rippleCount (0-50 active ripples), .zw = resolution (width, height)
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0-1 canvas: y=0 top), .w = mouse_down (>0.5 = pressed)
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 ```
 
-**Never** add, remove, or rename bindings. Never change the `Uniforms` struct.
+It is generated (`npm run shaders:libs`) from the binding contract and declares bindings 0–12 (`u_sampler`, `readTexture`, `writeTexture`, `u`, `readDepthTexture`, `non_filtering_sampler`, `writeDepthTexture`, `dataTextureA`, `dataTextureB`, `dataTextureC`, `extraBuffer`, `comparison_sampler`, `plasmaBuffer`) plus `struct Uniforms`: `u.config` = (time s, rippleCount 0–50, resolution w, h), `u.zoom_config.yz` = mouse uv (0–1, y=0 top), `u.zoom_config.w` = mouse down (> 0.5), `u.zoom_params` = sliders p1..p4, `u.ripples[i]` = (uv, startTime, 0).
+
+**Never** paste binding declarations or `struct Uniforms` into a shader: CI (`scripts/check_prelude_migration.py`) fails on a pasted copy. Binding 13 (`historyTexture`) is declared only by the shaders that read it. A file that still pastes the header is migrated with `python3 scripts/migrate_to_prelude.py --files public/shaders/<id>.wgsl` — header-only, so never bump `Upgraded:` for it. Never add, remove, or rename bindings.
 
 ---
 
@@ -91,7 +74,7 @@ A shader is `upgraded-rgba` when it has the Idea Card implemented **and** satisf
 - [ ] **`@workgroup_size(16, 16, 1)`** unless the shader explicitly requires a different size (e.g., 1D particle systems).
 - [ ] **Writes `writeDepthTexture`.** Every shader must write depth: `textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));`
 - [ ] **Writes `dataTextureA`.** Every shader must write A every frame. Packing must match how this shader reads `dataTextureC` next frame (display RGBA **or** raw sim fields). Do not ACES stored sim fields. Do not write “final display” into A if C is state.
-- [ ] **Passes `naga` validation.** Run `naga filename.wgsl` and fix any errors.
+- [ ] **Passes `naga` validation.** Run `node scripts/verify-naga-wasm.mjs --files public/shaders/<id>.wgsl` (it expands `#include`; the bare `naga` CLI does not) and fix any errors.
 
 ### 2.5 Documentation & JSON (15 pts)
 - [ ] **Standard header comment** at the top of the WGSL file — and it **names the ideas**:
@@ -393,7 +376,7 @@ Before marking any shader as complete, verify **ideas first**, then the floor:
 grep -n '^//  Ideas:' public/shaders/SHADER_ID.wgsl
 
 # 1. Syntax
-naga public/shaders/SHADER_ID.wgsl
+node scripts/verify-naga-wasm.mjs --files public/shaders/SHADER_ID.wgsl
 
 # 2. No hardcoded alpha
 grep -n 'vec4(.*, 1\.0)' public/shaders/SHADER_ID.wgsl || echo "OK: no hardcoded alpha"
@@ -424,7 +407,8 @@ Gates 2–7 without `Ideas:` in the header = hygiene, not upgraded. Full coordin
 
 | Task | Command |
 |---|---|
-| Validate WGSL | `naga shader.wgsl` |
+| Validate WGSL | `node scripts/verify-naga-wasm.mjs --files public/shaders/<id>.wgsl` (expands `#include`) |
+| Migrate a pasted header | `python3 scripts/migrate_to_prelude.py --files public/shaders/<id>.wgsl` |
 | Generate shader lists | `node scripts/generate_shader_lists.js` |
 | Check duplicates | `node scripts/check_duplicates.js` |
 | Find small un-upgraded shaders | See §5.1 discovery script |
@@ -439,9 +423,7 @@ Plumbing-only after (ACES + alpha + dataA, same picture) is **not** an upgrade. 
 
 ### BEFORE (`electric-contours.wgsl`, raw)
 ```wgsl
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
-@group(0) @binding(0) var u_sampler: sampler;
-// ... bindings ...
+#include "_prelude.wgsl"
 textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(result + glow, 1.0));
 ```
 
@@ -457,8 +439,7 @@ textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(result + glow, 1.0
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-// ... full 13-binding header ...
+#include "_prelude.wgsl"
 
 // Idea 1 — dual-scale Sobel (same edge identity, extra octave)
 // Idea 2 — runners along the gradient (not a spring overlay)

@@ -157,7 +157,7 @@ Other useful alpha encodings:
 - **Upgrade = add 2–4 native visual ideas to this effect.** Write them down first. Keep the existing algorithm, modes, and saved params. Do not reimagine the shader as a different look. ACES / alpha / bindings are the floor, not the upgrade. See `docs/SHADER_UPGRADE_BATCH.md`.
 - Keep the original "soul" of the shader while making it visually stunning. Color and lighting must serve *this* identity (sharpen stays sharpen; a brush stays a brush).
 - Use `@workgroup_size(16, 16, 1)` unless the shader explicitly requires a different size.
-- Do NOT modify the 13-binding header or the Uniforms struct.
+- Do NOT paste or edit binding declarations or `struct Uniforms`: they come from `#include "_prelude.wgsl"`. If the file still pastes them, run `python3 scripts/migrate_to_prelude.py --files <file>` first (header-only; no `Upgraded:` bump).
 - **Alpha must carry semantic meaning** — bloom weight, depth, or Fresnel reflectance.
 
 ## Performance Constraint

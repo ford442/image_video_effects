@@ -15,6 +15,7 @@ An upgrade **adds 2–4 named visual ideas to the existing effect**. It is not a
 3. **Plumbing is the floor, not the upgrade.** Canonical 13 bindings, 16×16, ACES, semantic alpha, exact C loads, live sliders, and `updatedParams` alignment must happen — they do not by themselves count as an upgrade.
 4. **No generic overlay.** Do not stamp every file with the same spring cursor, ripple shockwaves, IQ cosine palette, and two “conveyors.” Ideas must be native to *this* effect.
 5. **Refuse a header-only or rewrite-only result.** A shader that newly compiles, writes depth/A, and looks the same is not upgraded. A shader whose name still matches but whose picture is a different effect is not upgraded either.
+6. **Bindings come from `#include "_prelude.wgsl"`.** Never paste the 13 binding declarations or `struct Uniforms` — CI fails on a pasted copy. If a file you touch still pastes them, run `python3 scripts/migrate_to_prelude.py --files public/shaders/<id>.wgsl` first. That swap is infrastructure, not an upgrade: never bump `Upgraded:` for it.
 
 ---
 
@@ -75,7 +76,7 @@ After the edit, a reviewer who reads only the Idea Card and the diff should be a
 
 These are required so the shader can live in the catalog. They are **not** the creative work.
 
-- Canonical 13 bindings, `@workgroup_size(16, 16, 1)`, bounds guard.
+- Canonical 13 bindings via `#include "_prelude.wgsl"` (never pasted), `@workgroup_size(16, 16, 1)`, bounds guard.
 - Saved `params` byte-exact (ids, names, defaults, min/max/step, mapping order). Align `updatedParams` additively.
 - All four sliders live and shader-specific — no shared intensity/speed/contrast shim.
 - A-only writes unless the file already owns B for a documented reason. Do not invent B packing.
@@ -381,6 +382,8 @@ For each: write an Idea Card, then add 2–4 native ideas in the existing main p
 Do not reimagine. Do not treat ACES/bindings/updatedParams/springs as the upgrade.
 Do not stamp a spring+ripple+IQ overlay across the batch.
 Saved params stay byte-exact. Document A packing. Naga each file.
+Bindings come from #include "_prelude.wgsl" — never paste them; migrate a pasted
+header with python3 scripts/migrate_to_prelude.py --files <file> (no Upgraded: bump).
 Write agents/swarm-outputs/<you>-<date>-<batch>/BRIEFS.md before WGSL.
 Cloud VM has no GPU — structural gates only; do not claim visual QA.
 ```

@@ -101,7 +101,7 @@ Reactive patterns:
 - **Upgrade = add 2–4 native ideas.** Pointer/audio/click must belong on *this* effect. Do not stamp a spring + ripple overlay onto vignettes and sharpen filters. Bindings/ACES are the floor. See `docs/SHADER_UPGRADE_BATCH.md`.
 - Keep the original "soul" of the shader while making it alive and reactive.
 - Use `@workgroup_size(16, 16, 1)` unless the shader explicitly requires a different size.
-- Do NOT modify the 13-binding header or the Uniforms struct.
+- Do NOT paste or edit binding declarations or `struct Uniforms`: they come from `#include "_prelude.wgsl"`. If the file still pastes them, run `python3 scripts/migrate_to_prelude.py --files <file>` first (header-only; no `Upgraded:` bump).
 - `plasmaBuffer[0].x` = bass, `.y` = mids, `.z` = treble. Use them.
 - `u.zoom_config.yz` = mouse position (0-1). `u.zoom_config.w` = mouse down.
 - **Alpha must carry semantic meaning** — trail age, interaction intensity, or depth mask.

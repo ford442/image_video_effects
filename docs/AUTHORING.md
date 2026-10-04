@@ -60,7 +60,10 @@ python3 scripts/new_shader.py "My Cool Effect" --category generative
 ```
 
 - Emits `public/shaders/my-cool-effect.wgsl` starting with
-  `#include "_prelude.wgsl"` — do not paste your own binding header.
+  `#include "_prelude.wgsl"` — do not paste your own binding header. CI
+  (`npm run verify:prelude-migration`, `wgsl_precommit_gate.py`) rejects a pasted
+  copy; `python3 scripts/migrate_to_prelude.py --files <file>` swaps one for the
+  include and proves the rest of the file unchanged.
 - The prelude is generated from `scripts/bindgroup_checker.py` so it cannot
   drift from the source of truth. See
   [`docs/SHADER_TEMPLATES.md`](../docs/SHADER_TEMPLATES.md).

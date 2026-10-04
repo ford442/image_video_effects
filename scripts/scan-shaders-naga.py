@@ -25,28 +25,15 @@ CARGO_BIN = Path.home() / ".cargo" / "bin"
 if str(CARGO_BIN) not in os.environ.get("PATH", ""):
     os.environ["PATH"] = f"{CARGO_BIN}{os.pathsep}{os.environ.get('PATH', '')}"
 
-# Canonical 13-binding header that kimi-cli must reproduce verbatim
+# Catalog shaders get their 13 bindings and struct Uniforms from the prelude
+# (#1313); kimi-cli must keep the include and never paste them back.
 BINDING_HEADER = """\
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time (seconds), .y = rippleCount (0-50 active ripples), .zw = resolution (width, height)
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0-1 canvas: y=0 top), .w = mouse_down (>0.5 = pressed)
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};"""
+#include "_prelude.wgsl"
+// Declares bindings 0-12 (u_sampler, readTexture, writeTexture, u, readDepthTexture,
+// non_filtering_sampler, writeDepthTexture, dataTextureA, dataTextureB, dataTextureC,
+// extraBuffer, comparison_sampler, plasmaBuffer) and struct Uniforms
+// (config, zoom_config, zoom_params, ripples). Never paste them into the shader.\
+"""
 
 
 def run_naga(wgsl_file: Path) -> dict:
@@ -182,7 +169,7 @@ Shader theme: {theme_sentence}
 
 File: {wgsl_path}
 
-## Canonical 13-Binding Header (copy EXACTLY — do NOT rename or reorder bindings)
+## Bindings (keep this include as the first code line — do NOT paste, rename or reorder bindings)
 ```wgsl
 {BINDING_HEADER}
 ```
