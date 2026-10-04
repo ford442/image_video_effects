@@ -57,6 +57,11 @@ export function isHeld(slot: number, param: string): boolean {
   return false;
 }
 
+/** Pointer / learn hold only (ignores timed touches) — "hands on this param". */
+export function isGrabbed(slot: number, param: string): boolean {
+  return held.has(keyOf(slot, param));
+}
+
 /** Performer-set base value for a param, if any. */
 export function baseFor(slot: number, param: string): number | undefined {
   return bases.get(keyOf(slot, param));

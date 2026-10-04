@@ -18,7 +18,7 @@ VJ Studio is the unified control surface for live visual performance in Pixeloci
 | **MIDI & keyboard** | Map hardware CCs, notes, or keys to params and actions |
 | **OSC** | Opt-in bridge for live desks (TouchOSC, Max, Resolume…) via a local relay |
 | **Audio-reactive** | Drive parameter motion from microphone / audio analysis on every active slot |
-| **Share & export** | Chain URL, VJ set link, JSON export/import |
+| **Share & export** | Chain URL, VJ set link, JSON export/import, set recorder |
 | **My VJ sets** | Locally saved stacks (browser storage) |
 | **VJ history** | Restore recent AI-generated stacks |
 
@@ -81,6 +81,15 @@ The OSC decoder ships as a lazy `osc` chunk — it is never in the main bundle (
 - **Copy chain URL** — encodes up to 6 slots with compact params (`?chain=…`). Safe to bookmark or send in chat.
 - **Share VJ set link** — includes vibe metadata when available.
 - **Export JSON** — full portable file including optional MIDI bindings; use **Import JSON** to restore on another machine.
+
+## Set recorder
+
+Under **Share & export**: **● Record set** samples every slot's shader and its four sliders at 20 Hz, storing only changes. **▶ Play** replays the recording through the same path as MIDI/OSC.
+
+- What's recorded is what was on screen. That includes audio-reactive motion and the effect of transitions, so playback is deterministic and does not re-roll randomize.
+- During playback, grab any slider to ride it by hand. Playback skips that param until you let go.
+- **Export JSON** includes the recording (the optional `timeline` field in the v1 `.vjset.json`) when *Include recording* is ticked. **Import JSON** restores it. Older builds ignore the field.
+- Recordings are capped at 200 000 events, roughly 7 minutes with audio driving 6 slots and far longer for hand-driven sets. **My VJ sets** (browser storage) keeps the chain only, not the recording.
 
 ## Mobile
 
