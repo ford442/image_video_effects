@@ -32,5 +32,7 @@ export interface RendererDiagnostics {
     /** Smoothed per-pass GPU ms (#1314 WP-4); empty until timestamps resolve. */
     passTimings?: PassTiming[];
     timing?: { source: 'gpu-timestamp' | 'wall-clock'; periodNs: number; profiledPasses: number; overflow: number };
+    /** Demoted opt-in graph nodes, `${slot}:${nodeId}` → scale. */
+    nodeScales?: Record<string, number>;
   };
 }

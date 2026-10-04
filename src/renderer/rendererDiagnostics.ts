@@ -28,6 +28,7 @@ export function buildRendererDiagnostics(
     getFrameStats?: () => import('./webgpu/deviceCounters').FrameStats;
     getPassTimings?: () => import('./passTimings').PassTiming[];
     getTimingInfo?: () => NonNullable<RendererDiagnostics['webgpu']>['timing'];
+    getNodeScales?: () => Record<string, number>;
   } | null;
 
   if (metrics.isWASM && active?.getDiagnostics) {
@@ -46,6 +47,7 @@ export function buildRendererDiagnostics(
         frameStats: active.getFrameStats?.(),
         passTimings: active.getPassTimings?.(),
         timing: active.getTimingInfo?.(),
+        nodeScales: active.getNodeScales?.(),
       },
       ...(lastFailedWasmRenderer ? { wasm: lastFailedWasmRenderer.getDiagnostics() } : {}),
     };

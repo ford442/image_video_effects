@@ -102,6 +102,15 @@ export class RendererManager {
       getFps: () => this.getCurrentFPS(),
       getScale: () => this.perfState.resolutionScale,
       setScale: (scale) => applyResolutionScaleToRenderer(this.perfState, this.shaderRenderer(), scale),
+      // #1314: shrink one expensive opt-in graph node before the whole canvas.
+      getPassTimings: () => this.getPassTimings(),
+      getScalableNodes: () => {
+        const r = this.shaderRenderer();
+        return r instanceof WebGPURenderer ? r.getScalableNodes() : [];
+      },
+      setNodeScale: (slot, nodeId, scale) => {
+        this.setNodeScale(slot, nodeId, scale);
+      },
     });
   }
 
@@ -450,6 +459,11 @@ export class RendererManager {
   getPassTimings(): PassTiming[] {
     const r = this.shaderRenderer();
     return r instanceof WebGPURenderer ? r.getPassTimings() : [];
+  }
+  /** Run an opt-in graph node below full size (TS WebGPU only). Returns the scale in effect. */
+  setNodeScale(slot: number, nodeId: string, scale: number): number {
+    const r = this.shaderRenderer();
+    return r instanceof WebGPURenderer ? r.setNodeScale(slot, nodeId, scale) : 1;
   }
   /** True when the TS backend already holds a compiled pipeline for `id`. */
   isShaderCached(id: string): boolean {

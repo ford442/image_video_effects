@@ -19,6 +19,7 @@ import { WebGPUTimestampQueries } from './WebGPUTiming';
 import type { GraphSimRingBindings } from '../GraphRunner';
 import type { SimRing } from './simRing';
 import { ShaderSlot } from './webgpuConstants';
+import type { FrameIslands } from './framePlan';
 
 export interface WebGPUFrameState {
   device: GPUDevice | null;
@@ -79,6 +80,10 @@ export interface WebGPUFrameState {
   maxPassesPerFrame: number;
   /** Compute passes allowed per frame across every slot (Infinity = per-graph caps only). */
   framePassBudget: number;
+  /** Requested scale for an opt-in graph node (#1314; 1 = full size). */
+  nodeScale?: (slotIndex: number, nodeId: string) => number;
+  /** Scaled-island resources, or null when no node is demoted. */
+  getIslands?: () => FrameIslands | null;
 
   ripples: Ripple[];
   mouseX: number;
@@ -163,6 +168,8 @@ export interface WebGPUFrameHost {
   }) => GPUBindGroup;
   maxPassesPerFrame: number;
   framePassBudget: number;
+  nodeScale?: (slotIndex: number, nodeId: string) => number;
+  getIslands?: () => FrameIslands | null;
   ripples: Ripple[];
   mouseX: number;
   mouseYShader: number;
@@ -239,6 +246,8 @@ export interface RendererFrameDeps {
   timestampRuntime: WebGPUTimestampQueries;
   maxPassesPerFrame: number;
   framePassBudget: number;
+  nodeScale?: (slotIndex: number, nodeId: string) => number;
+  getIslands?: () => FrameIslands | null;
   encodePreFxChores?: (encoder: GPUCommandEncoder) => void;
   /** Encode chore readback copies into the frame encoder (before finish). */
   encodePostFxChores?: (encoder: GPUCommandEncoder) => void;
@@ -320,6 +329,8 @@ export function createRendererFrameHost(d: RendererFrameDeps): WebGPUFrameHost {
     get maxPassesPerFrame() { return d.maxPassesPerFrame; },
     set maxPassesPerFrame(v) { d.maxPassesPerFrame = v; },
     get framePassBudget() { return d.framePassBudget; },
+    nodeScale: (slot, nodeId) => d.nodeScale?.(slot, nodeId) ?? 1,
+    getIslands: () => d.getIslands?.() ?? null,
     get ripples() { return d.ripples; },
     get mouseX() { return d.mouseX; },
     get mouseYShader() { return d.mouseYShader; },
@@ -409,6 +420,8 @@ export function createFrameState(host: WebGPUFrameHost): WebGPUFrameState {
     get maxPassesPerFrame() { return h.maxPassesPerFrame; },
     set maxPassesPerFrame(v) { h.maxPassesPerFrame = v; },
     get framePassBudget() { return h.framePassBudget; },
+    nodeScale: (slot, nodeId) => h.nodeScale?.(slot, nodeId) ?? 1,
+    getIslands: () => h.getIslands?.() ?? null,
     get ripples() { return h.ripples; },
     get mouseX() { return h.mouseX; },
     get mouseYShader() { return h.mouseYShader; },

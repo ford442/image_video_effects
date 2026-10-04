@@ -180,4 +180,43 @@ test.describe('engine2 on SwiftShader WebGPU', () => {
     expect(timings.passes.every((p: any) => p.gpuMs >= 0)).toBe(true);
     expect(timings.gpu.passes?.length).toBe(timings.passes.length);
   });
+
+  test('an opt-in graph node runs at half size inside a scaled island with no GPU errors', async ({ page }) => {
+    await boot(page);
+    // Plasma feeds the filter real structure (a black generative input would filter to black).
+    const loaded = await loadStack(page, ['plasma', 'anisotropic-kuwahara']);
+    expect(Object.values(loaded).every(Boolean)).toBe(true);
+    const result = await page.evaluate(async () => {
+      const api = (window as any).__pixelocity__;
+      const applied = api.setNodeScale(1, 'tensor', 0.5);
+      const refused = api.setNodeScale(1, 'filter', 0.5); // not opted in
+      const deadline = performance.now() + 30_000;
+      let passes: any[] = [];
+      while (performance.now() < deadline) {
+        await api.waitFrames(1);
+        passes = api.getPassTimings();
+        if (passes.some((p: any) => p.nodeId === 'tensor' && p.scale === 0.5)) break;
+      }
+      return {
+        applied,
+        refused,
+        passes,
+        nodeScales: api.renderer.getDiagnostics()?.webgpu?.nodeScales,
+        stats: api.renderer.getDiagnostics()?.webgpu?.frameStats,
+      };
+    });
+    expect(result.applied).toBe(0.5);
+    expect(result.refused).toBe(1);
+    expect(result.nodeScales).toEqual({ '1:tensor': 0.5 });
+    const tensor = result.passes.find((p: any) => p.nodeId === 'tensor');
+    expect(tensor?.scale).toBe(0.5);
+    expect(result.passes.map((p: any) => p.label)).toEqual(
+      expect.arrayContaining(['island-down-read', 'island-down-dataC', 'island-up-dataA']),
+    );
+    expect(result.stats.submitsLastFrame).toBe(1);
+
+    const thumb = await thumbnailStats(page);
+    expect(thumb.stdev).toBeGreaterThan(1);
+    expect(await readGpuUncapturedErrors(page)).toEqual([]);
+  });
 });

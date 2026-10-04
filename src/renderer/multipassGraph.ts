@@ -27,6 +27,9 @@ export type GraphDispatchDomain = 'pixels' | 'simState';
 
 export const MAX_REPEAT = 64;
 
+/** Allowed per-node resolution scales (#1314); 1 = full working size. */
+export const NODE_SCALE_LEVELS = [0.25, 0.5, 0.75, 1] as const;
+
 export interface GraphNodeDef {
   id: string;
   entry: string;
@@ -35,6 +38,15 @@ export interface GraphNodeDef {
   repeat?: number;
   /** Dispatch domain; defaults to `pixels`. */
   dispatch?: GraphDispatchDomain;
+  /**
+   * Opt-in (#1314): this node may run below the working size. The renderer
+   * resamples its inputs into scratch textures, patches `config.zw` to the
+   * scaled size, and resamples declared writes back. Only for nodes whose
+   * output tolerates resampling (fields, blurs, tensors), not per-pixel sims.
+   */
+  scalable?: boolean;
+  /** Lowest scale adaptive demotion may pick (one of NODE_SCALE_LEVELS; default 0.5). */
+  minScale?: number;
 }
 
 export interface MultipassGraphDef {
@@ -54,6 +66,8 @@ export interface ExpandedDispatch {
   iteration: number;
   copiesBefore: CopyBarrier[];
   dispatch: GraphDispatchDomain;
+  scalable?: boolean;
+  minScale?: number;
 }
 
 export interface GraphShaderRecord {
@@ -222,6 +236,12 @@ export function validateGraph(
     if (!node.reads?.length && !node.writes?.length) {
       errors.push(`node ${node.id}: must declare reads or writes`);
     }
+    if (node.minScale !== undefined && !(NODE_SCALE_LEVELS as readonly number[]).includes(node.minScale)) {
+      errors.push(`node ${node.id}: minScale must be one of ${NODE_SCALE_LEVELS.join(', ')}`);
+    }
+    if (node.scalable && node.dispatch === 'simState') {
+      errors.push(`node ${node.id}: simState dispatches cannot be scalable`);
+    }
   }
 
   // Dependency / cycle check via simulated expansion
@@ -298,6 +318,7 @@ export function expandGraph(graph: MultipassGraphDef): ExpandedDispatch[] {
         iteration: i,
         copiesBefore,
         dispatch: node.dispatch ?? 'pixels',
+        ...(node.scalable ? { scalable: true, minScale: node.minScale ?? 0.5 } : {}),
       });
 
       applyWrites(state, writes);

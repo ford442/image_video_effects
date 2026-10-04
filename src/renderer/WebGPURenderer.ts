@@ -66,6 +66,8 @@ import { graphUsesSimRing } from './multipassGraph';
 import { instrumentDevice, type FrameStats } from './webgpu/deviceCounters';
 import type { PassTiming } from './passTimings';
 import { ShaderWarmupQueue, type WarmupEntry } from './webgpu/shaderWarmup';
+import { NodeScaleIslands, nodeScaleKey, snapNodeScale } from './webgpu/nodeScale';
+import type { FrameIslands } from './webgpu/framePlan';
 import { getGraphEntryIds, resolveMultipassChain } from './multipassRegistry';
 
 export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
@@ -143,6 +145,10 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
 
   private frameState?: WebGPUFrameState;
   private warmup: ShaderWarmupQueue | null = null;
+  /** Scratch resources for opt-in graph nodes running below full size. */
+  private readonly islands = new NodeScaleIslands();
+  /** Demoted opt-in graph nodes: `${slot}:${nodeId}` → scale (< 1). */
+  private readonly nodeScales = new Map<string, number>();
 
   constructor(private config: RendererConfig) {}
 
@@ -534,8 +540,77 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     }
   }
 
+  /** Requested scale for an opt-in node (frame-plan hook). */
+  nodeScale(slot: number, nodeId: string): number {
+    return this.nodeScales.get(nodeScaleKey(slot, nodeId)) ?? 1;
+  }
+
+  /** Island resources while any node is demoted; frees scratch otherwise. */
+  getIslands(): FrameIslands | null {
+    if (this.nodeScales.size === 0 || !this.device) {
+      if (this.islands.allocatedScales().length > 0) this.islands.releaseLevels();
+      return null;
+    }
+    this.islands.attach({
+      device: this.device,
+      colorFormat: this.colorFormat,
+      bindGroupLayout: this.pipeline.bindGroupLayout,
+      textures: this.resources.getTextureSet(),
+      buffers: this.resources.getBufferSet(),
+      samplers: this.resources.getSamplerSet(),
+      scaledW: this.scaledW,
+      scaledH: this.scaledH,
+    });
+    return this.islands;
+  }
+
+  /** Opt-in graph nodes of the bound slots, with their floor and current scale. */
+  getScalableNodes(): Array<{ slot: number; nodeId: string; minScale: number; scale: number }> {
+    const nodes: Array<{ slot: number; nodeId: string; minScale: number; scale: number }> = [];
+    this.slots.forEach((slot, index) => {
+      if (!slot.enabled || !slot.shaderId) return;
+      const graph = resolveGraphForShader(slot.shaderId);
+      for (const node of graph?.nodes ?? []) {
+        if (!node.scalable || node.dispatch === 'simState') continue;
+        nodes.push({
+          slot: index,
+          nodeId: node.id,
+          minScale: node.minScale ?? 0.5,
+          scale: this.nodeScale(index, node.id),
+        });
+      }
+    });
+    return nodes;
+  }
+
+  /**
+   * Run one opt-in graph node below the working size (#1314). Ignored for
+   * nodes that are not `scalable`; snapped to 0.25 steps above minScale;
+   * 1 restores full size. Returns the scale that will be used.
+   */
+  setNodeScale(slot: number, nodeId: string, scale: number): number {
+    const node = this.getScalableNodes().find((n) => n.slot === slot && n.nodeId === nodeId);
+    if (!node) return 1;
+    const snapped = snapNodeScale(scale, node.minScale);
+    const key = nodeScaleKey(slot, nodeId);
+    if (snapped >= 1) this.nodeScales.delete(key);
+    else this.nodeScales.set(key, snapped);
+    return snapped;
+  }
+
+  getNodeScales(): Record<string, number> {
+    return Object.fromEntries(this.nodeScales);
+  }
+
+  private clearNodeScales(slot: number): void {
+    for (const key of Array.from(this.nodeScales.keys())) {
+      if (key.startsWith(`${slot}:`)) this.nodeScales.delete(key);
+    }
+  }
+
   setActiveShader(id: string): void {
     if (this.slots[0]?.shaderId !== id) this.rearmSimRingFor(id);
+    for (let i = 0; i < PHYSICAL_SLOT_LIMIT; i++) this.clearNodeScales(i);
     this.slots[0] = { shaderId: id, enabled: true, mode: 'chained', params: this.slotZoomParams[0] };
     for (let i = 1; i < PHYSICAL_SLOT_LIMIT; i++) {
       this.slots[i] = { shaderId: null, enabled: false, mode: 'chained', params: this.slotZoomParams[i] };
@@ -545,7 +620,10 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   setSlotShader(index: number, id: string): void {
     if (!checkPhysicalSlotIndex('WebGPURenderer', index)) return;
     const mode = this.slots[index]?.mode ?? 'chained';
-    if (this.slots[index]?.shaderId !== id) this.rearmSimRingFor(id);
+    if (this.slots[index]?.shaderId !== id) {
+      this.rearmSimRingFor(id);
+      this.clearNodeScales(index);
+    }
     this.slots[index] = { shaderId: id, enabled: !!id, mode, params: this.slotZoomParams[index] };
   }
 
@@ -861,6 +939,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     if (this.frameState) this.frameRenderer.stopRenderLoop(this.frameState);
     this.warmup?.stop();
     this.warmup = null;
+    this.islands.destroy();
+    this.nodeScales.clear();
     this.initialized = false;
     this.gpuChores.destroy();
     this.simRing.destroy();

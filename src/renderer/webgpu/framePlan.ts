@@ -22,6 +22,7 @@ import {
 import type { FrameSlotDispatchPlan, SlotDispatchPlan } from './slotDispatch';
 import type { SlotTimingMode } from './WebGPUTiming';
 import type { ShaderSlot } from './webgpuConstants';
+import { IslandRole, PassProfiler, snapNodeScale } from './nodeScale';
 
 export type FeedbackCopySource = 'dataTexB' | 'dataTexA';
 
@@ -59,6 +60,8 @@ export interface ComputeOp {
   dispatch: 'pixels' | 'simState';
   /** Bind the group-1 sim ring for this pass. */
   bindSimRing: boolean;
+  /** Requested resolution scale (< 1 only inside an island of an opt-in node). */
+  scale: number;
 }
 
 export type FrameOp =
@@ -67,7 +70,10 @@ export type FrameOp =
   | { kind: 'slotStart'; slot: ShaderSlot; mode: SlotTimingMode }
   | { kind: 'copy'; from: FrameTexture; to: FrameTexture }
   /** Graph barrier: snapshot simState → simIndex (buffer twin of dataA → dataC). */
-  | { kind: 'simBarrier' };
+  | { kind: 'simBarrier' }
+  /** Scaled island around one opt-in node dispatch (see nodeScale.ts). */
+  | { kind: 'islandEnter'; scale: number }
+  | { kind: 'islandExit'; scale: number; writes: IslandRole[] };
 
 export interface FramePlan {
   ops: FrameOp[];
@@ -88,6 +94,8 @@ export interface FramePlanContext {
   maxPassesPerFrame: number;
   /** Total compute passes allowed this frame across all slots (Infinity = no frame cap). */
   framePassBudget: number;
+  /** Requested scale for an opt-in graph node (1 when absent / not demoted). */
+  nodeScale?: (slotIndex: number, nodeId: string) => number;
   warn?: (message: string) => void;
 }
 
@@ -171,6 +179,7 @@ function compileChain(
       workgroup: ctx.getWorkgroupSize(shaderId),
       dispatch: 'pixels',
       bindSimRing,
+      scale: 1,
     });
   }
 }
@@ -230,6 +239,13 @@ export function compileGraphOps(
       warnOnce(ctx, `ring:${dispatch.entry}`, `[GraphRunner] "${dispatch.entry}" needs the sim ring but none is armed — skipped`);
       continue;
     }
+    const scale = dispatch.scalable && dispatch.dispatch === 'pixels'
+      ? snapNodeScale(ctx.nodeScale?.(slotIndex, dispatch.nodeId) ?? 1, dispatch.minScale)
+      : 1;
+    const writes = dispatch.writes.filter(
+      (role): role is IslandRole => role === 'color' || role === 'dataA' || role === 'dataB',
+    );
+    if (scale < 1) ops.push({ kind: 'islandEnter', scale });
     ops.push({
       kind: 'compute',
       label: `graph-${dispatch.nodeId}-${dispatch.iteration}-${dispatch.entry}`,
@@ -243,7 +259,9 @@ export function compileGraphOps(
       iteration: dispatch.iteration,
       dispatch: dispatch.dispatch,
       bindSimRing: needsRing && ctx.usesSimRing(dispatch.entry),
+      scale,
     });
+    if (scale < 1) ops.push({ kind: 'islandExit', scale, writes });
     executed++;
   }
 
@@ -302,12 +320,22 @@ export function compileFramePlan(plan: FrameSlotDispatchPlan, ctx: FramePlanCont
   };
 }
 
+/** What the executor needs to run a scaled island (implemented by NodeScaleIslands). */
+export interface FrameIslands {
+  encodeEnter(encoder: GPUCommandEncoder, scale: number, profile?: PassProfiler): boolean;
+  encodeExit(encoder: GPUCommandEncoder, scale: number, writes: readonly IslandRole[], profile?: PassProfiler): void;
+  bindGroup(scale: number): GPUBindGroup | null;
+  size(scale: number): [number, number] | null;
+}
+
 export interface FrameExecResources {
   textures: Record<FrameTexture, GPUTexture>;
   computeBindGroup: GPUBindGroup;
   simRing: GraphSimRingBindings | null;
   scaledW: number;
   scaledH: number;
+  /** Absent → opt-in nodes run at full size. */
+  islands?: FrameIslands | null;
 }
 
 export interface FrameExecHooks {
@@ -318,7 +346,11 @@ export interface FrameExecHooks {
     op: ComputeOp,
     index: number,
     count: number,
+    /** Scale the pass actually ran at (1 when its island could not be prepared). */
+    effectiveScale: number,
   ) => GPUComputePassTimestampWrites | undefined;
+  /** Stamps for island resample passes. */
+  profileResample?: PassProfiler;
 }
 
 export interface FrameExecResult {
@@ -343,6 +375,7 @@ export function executeFramePlan(
     segmentMode = null;
   };
   let computeIndex = 0;
+  let activeIsland: number | null = null;
 
   for (const op of plan.ops) {
     switch (op.kind) {
@@ -364,24 +397,32 @@ export function executeFramePlan(
         if (ring) encoder.copyBufferToBuffer(ring.stateBuffer, 0, ring.indexBuffer, 0, ring.byteSize);
         break;
       }
+      case 'islandEnter':
+        activeIsland = res.islands?.encodeEnter(encoder, op.scale, hooks.profileResample) ? op.scale : null;
+        break;
+      case 'islandExit':
+        if (activeIsland === op.scale) res.islands?.encodeExit(encoder, op.scale, op.writes, hooks.profileResample);
+        activeIsland = null;
+        break;
       case 'compute': {
-        const timestampWrites = hooks.timestampWrites?.(op, computeIndex, plan.computeCount);
+        const island = op.scale < 1 && activeIsland === op.scale ? res.islands ?? null : null;
+        const bindGroup = island?.bindGroup(op.scale) ?? null;
+        const size = island?.size(op.scale) ?? null;
+        const scaled = !!(bindGroup && size);
+        const timestampWrites = hooks.timestampWrites?.(op, computeIndex, plan.computeCount, scaled ? op.scale : 1);
         computeIndex++;
         const pass = encoder.beginComputePass(
           timestampWrites ? { label: op.label, timestampWrites } : { label: op.label },
         );
         pass.setPipeline(op.pipeline);
-        pass.setBindGroup(0, res.computeBindGroup);
+        pass.setBindGroup(0, scaled && bindGroup ? bindGroup : res.computeBindGroup);
         const ring = res.simRing;
         if (op.bindSimRing && ring) pass.setBindGroup(1, ring.bindGroup);
         if (op.dispatch === 'simState' && ring) {
           pass.dispatchWorkgroups(Math.ceil(ring.stateCount / Math.max(1, op.workgroup.x)), 1, 1);
         } else {
-          pass.dispatchWorkgroups(
-            Math.ceil(res.scaledW / op.workgroup.x),
-            Math.ceil(res.scaledH / op.workgroup.y),
-            1,
-          );
+          const [w, h] = scaled && size ? size : [res.scaledW, res.scaledH];
+          pass.dispatchWorkgroups(Math.ceil(w / op.workgroup.x), Math.ceil(h / op.workgroup.y), 1);
         }
         pass.end();
         break;

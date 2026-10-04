@@ -137,6 +137,7 @@ export function compileSlotPlan(state: WebGPUFrameState, plan: FrameSlotDispatch
     simRing: state.getSimRing(),
     maxPassesPerFrame: state.maxPassesPerFrame,
     framePassBudget: state.framePassBudget,
+    nodeScale: state.nodeScale,
   });
 }
 
@@ -167,11 +168,12 @@ export function dispatchFrameSlots(
       simRing: state.getSimRing(),
       scaledW: state.scaledW,
       scaledH: state.scaledH,
+      islands: state.getIslands?.() ?? null,
     },
     {
       beforeSlot,
       timestampWrites: timing.supportsTimestampQuery
-        ? (op) =>
+        ? (op, _index, _count, effectiveScale) =>
             profilePass(timing, {
               kind: 'compute',
               label: op.label,
@@ -180,8 +182,11 @@ export function dispatchFrameSlots(
               shaderId: op.shaderId,
               entry: op.entry,
               nodeId: op.nodeId,
-              scale: 1,
+              scale: effectiveScale,
             })
+        : undefined,
+      profileResample: timing.supportsTimestampQuery
+        ? (label) => profilePass(timing, { kind: 'resample', label })
         : undefined,
     },
   );

@@ -181,6 +181,8 @@ export function useTestHarness({
                 releaseFp32Requirement: (id: string) => manager.releaseFp32Requirement(id),
                 getGPUTimings: () => manager.getGPUTimings(),
                 getPassTimings: () => manager.getPassTimings(),
+                setNodeScale: (slot: number, nodeId: string, scale: number) =>
+                    manager.setNodeScale(slot, nodeId, scale),
                 getAdapterSummary: () => {
                     const diags = manager.getDiagnostics();
                     return diags.wasm?.adapterInfo ?? '';
