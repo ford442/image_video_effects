@@ -43,7 +43,9 @@
     "reason": "The prelude describes the bind-group layout of the renderer in the same bundle, so the bundled copy is authoritative. Both runtime seams resolve it from the bundle before trying a sibling URL: the app deploy does not ship public/shaders, the storage sync never uploads `_` libraries, and blob: or storage-API sources have no sibling directory. Every other library is still fetched as a sibling of the file that includes it."
   },
   "migration": {
-    "optIn": true,
-    "note": "Shaders are converted one at a time. 1417 catalog files are NOT rewritten. A file with no #include is returned unchanged, byte for byte."
+    "tracker": "src/contracts/prelude_migration.json",
+    "codemod": "scripts/migrate_to_prelude.py",
+    "gate": "scripts/check_prelude_migration.py",
+    "note": "Catalog shaders take their header from #include \"_prelude.wgsl\". The ones that still paste it are listed in the tracker's `pending`, which may only shrink; a shader outside it that pastes the header fails CI with the codemod command. A file with no #include is still returned unchanged, byte for byte."
   }
 }

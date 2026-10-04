@@ -199,6 +199,122 @@ def test_category_map_follows_urls_and_graph_entries():
     assert "image" in stems.get("aerogel-smoke", set())
 
 
+# ── check_prelude_migration (the gate) ──────────────────────────────────────
+
+import subprocess  # noqa: E402
+
+import check_prelude_migration as gate  # noqa: E402
+
+
+def _gate_tree(tmp_path: Path, pending: dict, files: dict, prompt_sources: dict | None = None) -> Path:
+    shaders = tmp_path / "public" / "shaders"
+    shaders.mkdir(parents=True)
+    (shaders / ph.PRELUDE_NAME).write_text(PRELUDE, encoding="utf-8")
+    for name, text in files.items():
+        (shaders / f"{name}.wgsl").write_text(text, encoding="utf-8")
+    for rel, text in (prompt_sources or {}).items():
+        (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / rel).write_text(text, encoding="utf-8")
+    tracker = {
+        "version": 1,
+        "library": ph.PRELUDE_NAME,
+        "fixCommand": mig.FIX_COMMAND,
+        "reasons": mig.REASONS,
+        "promptSources": sorted(prompt_sources or {}),
+        "pending": pending,
+    }
+    (tmp_path / "src" / "contracts").mkdir(parents=True)
+    (tmp_path / gate.TRACKER_REL).write_text(json.dumps(tracker, indent=2) + "\n", encoding="utf-8")
+    return tmp_path
+
+
+def _rules(root: Path, base=None):
+    errors, warnings, _ = gate.check(root, base)
+    return sorted(e["rule"] for e in errors), sorted(w["rule"] for w in warnings), errors
+
+
+MIGRATED = (FIXTURES / "expected" / "case_canonical.wgsl").read_text(encoding="utf-8")
+PASTED = (FIXTURES / "case_canonical.wgsl").read_text(encoding="utf-8")
+RENAMED = (FIXTURES / "refuse_renamed.wgsl").read_text(encoding="utf-8")
+MIXED = (FIXTURES / "error_mixed.wgsl").read_text(encoding="utf-8")
+
+
+def test_gate_passes_a_consistent_tree(tmp_path):
+    root = _gate_tree(tmp_path, {"b": "eligible", "c": "renamed-binding"}, {"a": MIGRATED, "b": PASTED, "c": RENAMED})
+    assert _rules(root)[:2] == ([], [])
+
+
+def test_gate_r1_new_paste_names_the_fix(tmp_path):
+    root = _gate_tree(tmp_path, {}, {"a": MIGRATED, "d": PASTED, "e": RENAMED})
+    rules, _, errors = _rules(root)
+    assert rules == ["R1", "R1"]
+    d = next(e for e in errors if "shaders/d.wgsl" in e["message"])
+    assert d["fix"] == "python3 scripts/migrate_to_prelude.py --files public/shaders/d.wgsl"
+    e = next(e for e in errors if "shaders/e.wgsl" in e["message"])
+    assert "renamed-binding" in e["message"] and "restore the canonical declarations" in e["message"]
+
+
+def test_gate_r2_r3_stale_entries(tmp_path):
+    root = _gate_tree(tmp_path, {"a": "eligible", "ghost": "eligible"}, {"a": MIGRATED})
+    assert _rules(root)[0] == ["R2", "R3"]
+
+
+def test_gate_r4_mixed(tmp_path):
+    root = _gate_tree(tmp_path, {}, {"m": MIXED})
+    rules, _, errors = _rules(root)
+    assert rules == ["R4"]
+    assert "@binding(0)" in errors[0]["message"]
+
+
+def test_gate_r6_reason_must_match_the_classifier(tmp_path):
+    root = _gate_tree(tmp_path, {"b": "renamed-binding", "c": "made-up"}, {"b": PASTED, "c": RENAMED})
+    assert _rules(root)[0] == ["R6", "R6"]
+
+
+def test_gate_r8_prompt_sources(tmp_path):
+    bad = "Paste this:\n```wgsl\n@group(0) @binding(3) var<uniform> u: Uniforms;\n```\n"
+    good = 'Start every shader with:\n```wgsl\n#include "_prelude.wgsl"\n```\n'
+    root = _gate_tree(tmp_path, {}, {"a": MIGRATED}, {"docs/bad.md": bad, "docs/good.md": good})
+    rules, _, errors = _rules(root)
+    assert rules == ["R8"]
+    assert "docs/bad.md:3" in errors[0]["message"]
+
+
+def _git(root: Path, *args: str) -> None:
+    subprocess.run(
+        ["git", "-c", "user.email=t@t", "-c", "user.name=t", "-c", "commit.gpgsign=false", *args],
+        cwd=root,
+        check=True,
+        capture_output=True,
+    )
+
+
+def test_gate_r5_r7_against_a_base(tmp_path):
+    root = _gate_tree(tmp_path, {"b": "eligible", "c": "renamed-binding"}, {"a": MIGRATED, "b": PASTED, "c": RENAMED})
+    _git(root, "init", "-q", "-b", "main")
+    _git(root, "add", "-A")
+    _git(root, "commit", "-q", "-m", "base")
+    _git(root, "checkout", "-q", "-b", "feature")
+
+    shaders = root / "public" / "shaders"
+    (shaders / "b.wgsl").write_text(PASTED.replace("0.0, 1.0)", "0.0, 0.9)"), encoding="utf-8")
+    (shaders / "c.wgsl").write_text(RENAMED + "\n// touched\n", encoding="utf-8")
+    tracker = json.loads((root / gate.TRACKER_REL).read_text())
+    tracker["pending"]["a"] = "eligible"
+    (shaders / "a.wgsl").write_text(PASTED, encoding="utf-8")
+    (root / gate.TRACKER_REL).write_text(json.dumps(tracker, indent=2) + "\n")
+
+    rules, warnings, errors = _rules(root, base="main")
+    # a: listed anew (R5) and edited while eligible (R7); b: edited while eligible (R7).
+    assert rules == ["R5", "R7", "R7"], errors
+    assert warnings == ["R7"]  # c: blocked reason, warn only
+    r7 = [e for e in errors if e["rule"] == "R7"]
+    assert {e["fix"] for e in r7} == {
+        "python3 scripts/migrate_to_prelude.py --files public/shaders/a.wgsl",
+        "python3 scripts/migrate_to_prelude.py --files public/shaders/b.wgsl",
+    }
+
+
 if __name__ == "__main__":
     import tempfile
 
