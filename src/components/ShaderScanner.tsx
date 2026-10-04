@@ -1,9 +1,30 @@
-import React, { useState, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { ShaderEntry } from '../renderer/types';
 import { fetchShaderWgsl } from '../utils/fetchShaderWgsl';
 import { getAdoptedRendererDevice, getAdoptedSupportsSubgroups } from '../utils/adoptedGpuDevice';
 import { WebGpuProbeFailureOverlay } from './WebGpuProbeFailureOverlay';
 import type { WebGpuProbeSerializable } from '../renderer/webgpuBootProbe';
+import {
+  ThumbnailHost,
+  ThumbnailState,
+  ThumbnailFreshness,
+  ThumbnailManifest,
+  RepoThumbnailWriter,
+  CaptureResult,
+  CaptureSessionState,
+  DEFAULT_CAPTURE_OPTIONS,
+  captureShaderThumbnail,
+  loadThumbnailState,
+  needsThumbnail,
+  freshnessFor,
+  summarizeFreshness,
+  pickRepoWriter,
+  isRepoWriterSupported,
+} from '../services/thumbnailBatch';
+
+type ScanScope = 'changed' | 'all';
+/** off: compile/params only · check: also render each shader and flag black/magenta frames · save: check + write thumbnails */
+type ScanRenderMode = 'off' | 'check' | 'save';
 
 interface ShaderParam {
   id: string;
@@ -26,6 +47,9 @@ interface ShaderScanResult {
   params?: ShaderParam[];
   paramStatus?: 'valid' | 'invalid' | 'no-params';
   paramErrors?: string[];
+  thumb?: ThumbnailFreshness;
+  render?: 'pending' | 'ok' | 'saved' | 'failed';
+  lastUpgraded?: string;
 }
 
 interface ShaderScannerProps {
@@ -33,6 +57,8 @@ interface ShaderScannerProps {
   isOpen: boolean;
   onClose: () => void;
   onTestShader?: (shaderId: string, testValues: number[]) => Promise<{ success: boolean; error?: string }>;
+  /** Enables the render check + thumbnail capture phase. */
+  thumbnailHost?: ThumbnailHost;
 }
 
 // Shaders are already complete WGSL files with all necessary declarations
@@ -116,13 +142,61 @@ function deviceHasSubgroups(device: GPUDevice): boolean {
   );
 }
 
-export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, onClose, onTestShader }) => {
+export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, onClose, onTestShader, thumbnailHost }) => {
   const [results, setResults] = useState<ShaderScanResult[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [scanMode, setScanMode] = useState<'compile' | 'params' | 'both'>('both');
   const [progress, setProgress] = useState(0);
   const [showParamDetails, setShowParamDetails] = useState<string | null>(null);
   const abortRef = useRef(false);
+
+  // ── Thumbnail batch state ──────────────────────────────────────────────────
+  const [scope, setScope] = useState<ScanScope>('changed');
+  const [renderMode, setRenderMode] = useState<ScanRenderMode>(thumbnailHost ? 'save' : 'off');
+  const [thumbState, setThumbState] = useState<ThumbnailState | null>(null);
+  const [writer, setWriter] = useState<RepoThumbnailWriter | null>(null);
+  const [phase, setPhase] = useState<'compile' | 'render' | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    void loadThumbnailState().then((state) => {
+      if (cancelled) return;
+      setThumbState((prev) => (prev && writer ? { ...state, manifest: prev.manifest } : state));
+      if (!state.hashes) {
+        setNotice('thumbnails/source-hashes.json not found — run `npm run build:source-hashes` (prestart does this) to detect changed shaders.');
+      }
+    });
+    return () => { cancelled = true; };
+  }, [isOpen, writer]);
+
+  const changedShaders = useMemo(
+    () => (thumbState ? shaders.filter((s) => needsThumbnail(s.id, thumbState)) : shaders),
+    [shaders, thumbState],
+  );
+  const targets = scope === 'all' ? shaders : changedShaders;
+  const freshSummary = useMemo(
+    () => (thumbState ? summarizeFreshness(shaders.map((s) => s.id), thumbState) : null),
+    [shaders, thumbState],
+  );
+
+  const updateResult = useCallback((id: string, patch: Partial<ShaderScanResult>) => {
+    setResults((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  }, []);
+
+  const chooseRepoFolder = useCallback(async () => {
+    try {
+      const w = await pickRepoWriter();
+      const manifest = await w.readManifest();
+      setWriter(w);
+      setThumbState(await loadThumbnailState(manifest));
+      setNotice(`Saving thumbnails to ${w.label}${w.canWriteReports ? ' (failures → reports/thumbnail-failures-inapp.json)' : ''}`);
+    } catch (e) {
+      if ((e as DOMException)?.name === 'AbortError') return;
+      setNotice(e instanceof Error ? e.message : String(e));
+    }
+  }, []);
 
   const probeFailure = useMemo(() => (isOpen ? resolveProbeFailure() : null), [isOpen]);
   const gpuReady = probeFailure == null;
@@ -181,28 +255,37 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
       supportsSubgroups = deviceHasSubgroups(device);
     }
 
+    if (renderMode === 'save' && !writer) {
+      setNotice('Choose the repo folder before saving thumbnails.');
+      return;
+    }
     setIsScanning(true);
+    setPhase('compile');
+    setProgress(0);
     abortRef.current = false;
+    const compileOk = new Set<string>();
     
     // Initialize results with param info if available
-    const initialResults: ShaderScanResult[] = shaders.map(s => ({
+    const initialResults: ShaderScanResult[] = targets.map(s => ({
       id: s.id,
       name: s.name,
       url: s.url,
       category: s.category,
       status: 'pending',
       params: s.params,
-      paramStatus: s.params && s.params.length > 0 ? 'valid' : 'no-params'
+      paramStatus: s.params && s.params.length > 0 ? 'valid' : 'no-params',
+      thumb: thumbState ? freshnessFor(s.id, thumbState) : undefined,
+      lastUpgraded: thumbState?.hashes?.upgrades[s.id]?.date,
     }));
     setResults(initialResults);
 
     const errors: ShaderScanResult[] = [];
     const batchSize = 3; // Smaller batch for more reliable testing
 
-    for (let i = 0; i < shaders.length; i += batchSize) {
+    for (let i = 0; i < targets.length; i += batchSize) {
       if (abortRef.current) break;
 
-      const batch = shaders.slice(i, i + batchSize);
+      const batch = targets.slice(i, i + batchSize);
       const batchPromises = batch.map(async (shader, batchIndex) => {
         const index = i + batchIndex;
         
@@ -286,7 +369,8 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
           }
 
           // If we have onTestShader callback, run runtime test
-          if (onTestShader && doParamCheck && !compileError) {
+          // The render phase below replaces this runtime test when it is enabled.
+          if (onTestShader && doParamCheck && !compileError && renderMode === 'off') {
             const testValues = shader.params?.map((p: any) => {
               const min = p.min ?? 0;
               const max = p.max ?? 1;
@@ -336,6 +420,7 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
               compileTimeMs
             });
           } else {
+            compileOk.add(shader.id);
             setResults(prev => {
               const updated = [...prev];
               updated[index] = { 
@@ -370,9 +455,103 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
       });
 
       await Promise.all(batchPromises);
-      setProgress(Math.min(((i + batchSize) / shaders.length) * 100, 100));
+      setProgress(Math.min(((i + batchSize) / targets.length) * 100, 100));
     }
 
+    // ── Render phase: draw each passing shader, flag broken frames, save thumbnails ──
+    if (renderMode !== 'off' && thumbnailHost && !abortRef.current) {
+      const toRender = targets.filter((s) => compileOk.has(s.id));
+      setPhase('render');
+      setProgress(0);
+      let restore: (() => Promise<void>) | null = null;
+      let renderError: unknown = null;
+      const session: CaptureSessionState = { inputSource: null };
+      const pending: ThumbnailManifest = {};
+      const renderFailures: Array<{ id: string; reason: string; detail: string; stats?: unknown }> = [];
+      let rendered = 0;
+      let saved = 0;
+      const flush = async () => {
+        if (!writer || Object.keys(pending).length === 0) return;
+        const merged = await writer.mergeManifest({ ...pending });
+        for (const k of Object.keys(pending)) delete pending[k];
+        setThumbState((prev) => ({ hashes: prev?.hashes ?? null, manifest: merged }));
+      };
+      try {
+        restore = await thumbnailHost.beginSession();
+        for (let r = 0; r < toRender.length; r++) {
+          if (abortRef.current) break;
+          const shader = toRender[r];
+          updateResult(shader.id, { render: 'pending' });
+          let res: CaptureResult;
+          try {
+            res = await captureShaderThumbnail(thumbnailHost, shader, DEFAULT_CAPTURE_OPTIONS, session);
+          } catch (e) {
+            res = { ok: false, reason: 'capture_failed', detail: e instanceof Error ? e.message : String(e) };
+          }
+          rendered++;
+          if (res.ok) {
+            if (renderMode === 'save' && writer) {
+              await writer.writePng(shader.id, res.pngB64);
+              pending[shader.id] = {
+                thumbnail_url: `thumbnails/${shader.id}.png`,
+                generated_at: new Date().toISOString(),
+                params_snapshot: res.paramsSnapshot,
+                source_hash: thumbState?.hashes?.hashes[shader.id] ?? null,
+                engine: 'in-app',
+              };
+              saved++;
+              if (saved % 10 === 0) await flush();
+              updateResult(shader.id, { render: 'saved', thumb: 'fresh' });
+            } else {
+              updateResult(shader.id, { render: 'ok' });
+            }
+          } else {
+            renderFailures.push({ id: shader.id, reason: res.reason, detail: res.detail, stats: 'stats' in res ? res.stats : undefined });
+            updateResult(shader.id, {
+              status: 'error',
+              render: 'failed',
+              errorMessage: `RENDER: ${res.reason} (${res.detail})`,
+            });
+          }
+          setProgress(((r + 1) / Math.max(1, toRender.length)) * 100);
+        }
+      } catch (e) {
+        renderError = e;
+      } finally {
+        // Stop, an error or a closed scanner all land here: persist what was captured and
+        // give the user their slot stack back before the scan is reported finished.
+        try { await flush(); } catch (e) { renderError = renderError ?? e; }
+        if (restore) {
+          try { await restore(); } catch (e) { renderError = renderError ?? e; }
+        }
+      }
+
+      if (writer?.canWriteReports && renderMode === 'save') {
+        const count = (reason: string) => renderFailures.filter((f) => f.reason === reason).length;
+        await writer.writeReport('thumbnail-failures-inapp.json', {
+          generated_at: new Date().toISOString(),
+          engine: 'in-app',
+          summary: {
+            success: saved,
+            failed: renderFailures.length,
+            skipped: targets.length - toRender.length,
+            black_frame: count('black_frame'),
+            magenta_frame: count('magenta_frame'),
+            error_frame: count('error_frame'),
+            compile: targets.length - toRender.length,
+          },
+          failures: renderFailures,
+        }).catch((e) => console.warn('[scanner] could not write failure report', e));
+      }
+      setNotice(
+        `Rendered ${rendered}/${toRender.length}: ${renderMode === 'save' ? `${saved} thumbnails saved, ` : ''}` +
+        `${renderFailures.length} broken frames.` +
+        (saved > 0 ? ' Commit public/thumbnails, then `npm run thumbs:status`.' : '') +
+        (renderError ? ` Stopped on error: ${renderError instanceof Error ? renderError.message : String(renderError)}` : ''),
+      );
+    }
+
+    setPhase(null);
     setIsScanning(false);
     
     // Show summary
@@ -384,12 +563,18 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
       console.error(`❌ Found ${errorCount} shaders with errors`);
       console.table(errors.map(e => ({ id: e.id, error: e.errorMessage?.slice(0, 100) })));
     }
-  }, [shaders, scanMode, onTestShader]);
+  }, [targets, scanMode, onTestShader, renderMode, writer, thumbnailHost, thumbState, updateResult]);
 
+  // isScanning stays true until runScan has flushed and restored, so a new scan
+  // cannot start (and snapshot the thumbnail stack) while the old one unwinds.
   const stopScan = useCallback(() => {
     abortRef.current = true;
-    setIsScanning(false);
   }, []);
+
+  const handleClose = useCallback(() => {
+    abortRef.current = true;
+    onClose();
+  }, [onClose]);
 
   const exportResults = useCallback(() => {
     const errorResults = results.filter(r => r.status === 'error');
@@ -423,7 +608,10 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
         compileTimeMs: r.compileTimeMs,
         paramCount: r.params?.length || 0,
         paramStatus: r.paramStatus,
-        params: r.params
+        params: r.params,
+        thumb: r.thumb,
+        render: r.render,
+        lastUpgraded: r.lastUpgraded
       }))
     };
 
@@ -468,7 +656,7 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
       }}>
         <h2 style={{ margin: 0 }}>🔍 Shader Compilation Scanner</h2>
         <button 
-          onClick={onClose}
+          onClick={handleClose}
           disabled={isScanning}
           style={{
             background: 'transparent',
@@ -496,19 +684,20 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
       }}>
         <button
           onClick={runScan}
-          disabled={isScanning || !gpuReady}
+          disabled={isScanning || !gpuReady || (renderMode === 'save' && !writer)}
+          title={renderMode === 'save' && !writer ? 'Choose the repo folder first' : undefined}
           style={{
             background: isScanning ? '#333' : '#004400',
             border: '1px solid #00ff00',
             color: '#00ff00',
             padding: '10px 20px',
-            cursor: isScanning || !gpuReady ? 'not-allowed' : 'pointer',
+            cursor: isScanning || !gpuReady || (renderMode === 'save' && !writer) ? 'not-allowed' : 'pointer',
             fontFamily: 'monospace',
             fontSize: '14px',
-            opacity: isScanning || !gpuReady ? 0.5 : 1
+            opacity: isScanning || !gpuReady || (renderMode === 'save' && !writer) ? 0.5 : 1
           }}
         >
-          {isScanning ? 'Scanning...' : '▶️ Start Scan'}
+          {isScanning ? (phase === 'render' ? 'Rendering...' : 'Scanning...') : '▶️ Start Scan'}
         </button>
         
         {isScanning && (
@@ -565,13 +754,60 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
           <option value="params">🎚️ Parameters Only</option>
         </select>
 
+        <select
+          value={scope}
+          onChange={(e) => setScope(e.target.value as ScanScope)}
+          disabled={isScanning}
+          title="Changed = thumbnail missing, or shader source changed since its thumbnail was captured"
+          style={{ background: '#001100', border: '1px solid #00ff00', color: '#00ff00', padding: '8px 12px', fontFamily: 'monospace', fontSize: '14px' }}
+        >
+          <option value="changed">Changed since last thumbnail ({changedShaders.length})</option>
+          <option value="all">All shaders ({shaders.length})</option>
+        </select>
+
+        {thumbnailHost && (
+          <select
+            value={renderMode}
+            onChange={(e) => setRenderMode(e.target.value as ScanRenderMode)}
+            disabled={isScanning}
+            style={{ background: '#001100', border: '1px solid #00ff00', color: '#00ff00', padding: '8px 12px', fontFamily: 'monospace', fontSize: '14px' }}
+          >
+            <option value="save">🖼️ Render + save thumbnails</option>
+            <option value="check">👁️ Render check only</option>
+            <option value="off">No render check</option>
+          </select>
+        )}
+
+        {thumbnailHost && renderMode === 'save' && (
+          <button
+            onClick={chooseRepoFolder}
+            disabled={isScanning || !isRepoWriterSupported()}
+            title={isRepoWriterSupported() ? 'Pick the image_video_effects repo folder' : 'Needs Chrome or Edge (File System Access API)'}
+            style={{ background: writer ? '#002200' : '#222200', border: `1px solid ${writer ? '#00ff00' : '#ffff66'}`, color: writer ? '#00ff00' : '#ffff66', padding: '8px 12px', fontFamily: 'monospace', fontSize: '14px', cursor: 'pointer' }}
+          >
+            {writer ? `📁 ${writer.label}` : '📁 Choose repo folder'}
+          </button>
+        )}
+
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '15px' }}>
-          <span>Total: {shaders.length}</span>
+          <span>Total: {targets.length}</span>
           <span style={{ color: '#00ff00' }}>✅ {successCount}</span>
           <span style={{ color: '#ff6666' }}>❌ {errorCount}</span>
           {skippedCount > 0 && <span style={{ color: '#ffff66' }}>⏭️ {skippedCount}</span>}
         </div>
       </div>
+
+      {(freshSummary || notice) && (
+        <div style={{ marginBottom: '12px', fontSize: '12px', color: '#88cc88' }}>
+          {freshSummary && (
+            <span>
+              Thumbnails: {freshSummary.fresh} current · {freshSummary.stale} changed since capture · {freshSummary.missing} missing
+              {freshSummary.unknown > 0 && ` · ${freshSummary.unknown} unverified (run npm run thumbs:backfill-hashes once)`}
+            </span>
+          )}
+          {notice && <div style={{ color: '#ffff99', marginTop: '4px' }}>{notice}</div>}
+        </div>
+      )}
 
       {/* Progress Bar */}
       {isScanning && (
@@ -590,7 +826,7 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
             }} />
           </div>
           <div style={{ textAlign: 'center', marginTop: '5px' }}>
-            {Math.round(progress)}% ({Math.floor(progress * shaders.length / 100)} / {shaders.length})
+            {phase === 'render' ? 'Rendering' : 'Compiling'} — {Math.round(progress)}%
           </div>
         </div>
       )}
@@ -618,6 +854,7 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
               <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #00ff00' }}>ID</th>
               <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #00ff00' }}>Name</th>
               <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #00ff00' }}>Category</th>
+              <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #00ff00' }}>Thumb</th>
               <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #00ff00' }}>Time</th>
               <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #00ff00' }}>Error</th>
             </tr>
@@ -654,6 +891,14 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
                   <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>{result.id}</td>
                   <td style={{ padding: '6px 8px' }}>{result.name}</td>
                   <td style={{ padding: '6px 8px' }}>{result.category}</td>
+                  <td style={{ padding: '6px 8px', whiteSpace: 'nowrap' }} title={result.lastUpgraded ? `Last upgraded ${result.lastUpgraded.slice(0, 10)}` : undefined}>
+                    {result.render === 'pending' && '🔄'}
+                    {result.render === 'saved' && '🖼️ saved'}
+                    {result.render === 'ok' && '👁️ ok'}
+                    {result.render === 'failed' && <span style={{ color: '#ff6666' }}>broken</span>}
+                    {!result.render && (result.thumb ?? '-')}
+                    {result.lastUpgraded && ' ⬆'}
+                  </td>
                   <td style={{ padding: '6px 8px' }}>
                     {result.compileTimeMs ? `${result.compileTimeMs.toFixed(1)}ms` : '-'}
                   </td>
@@ -672,7 +917,7 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
                 {/* Parameter Details Row */}
                 {showParamDetails === result.id && result.params && result.params.length > 0 && (
                   <tr>
-                    <td colSpan={7} style={{ 
+                    <td colSpan={8} style={{ 
                       padding: '10px 20px', 
                       background: '#001a00',
                       borderBottom: '1px solid #003300'

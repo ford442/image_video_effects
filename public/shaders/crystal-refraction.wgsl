@@ -1,9 +1,12 @@
-// ═══════════════════════════════════════════════════════════════
-//  Crystal Refraction - Physical Light Transmission with Alpha
+// ═══════════════════════════════════════════════════════════════════
+//  Crystal Refraction
 //  Category: interactive-mouse
-//  Features: mouse-driven, faceted lens, chromatic dispersion
-//  Simulates faceted crystal lens with physical transmission
-// ═══════════════════════════════════════════════════════════════
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-04
+//  Ideas: brilliant-cut flat table window inside the facet ring; per-facet spectral fire flashes (bass sparkle)
+//  A packing: ACES display RGBA (HEAD never wrote A)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -19,6 +22,7 @@
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
+
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
@@ -32,6 +36,15 @@ const IOR_DIAMOND: f32 = 2.42;
 // Fresnel-Schlick
 fn fresnelSchlick(cosTheta: f32, F0: f32) -> f32 {
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Fully saturated spectral colour for a hue in [0, 1).
+fn spectralHue(h: f32) -> vec3<f32> {
+    return clamp(abs(fract(vec3<f32>(h) + vec3<f32>(0.0, 2.0 / 3.0, 1.0 / 3.0)) * 6.0 - vec3<f32>(3.0)) - vec3<f32>(1.0), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -83,8 +96,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Calculate displacement vector
     let displacementDir = vec2<f32>(cos(steppedAngle), sin(steppedAngle));
 
+    // Idea 1: brilliant-cut table. The centre of a cut stone is a flat octagonal
+    // window: it shows the scene almost undistorted (slightly magnified),
+    // ringed by the angled facets.
+    let tableR = lensRadius * 0.22;
+    let oct = max(max(abs(toCenter.x), abs(toCenter.y)), (abs(toCenter.x) + abs(toCenter.y)) * 0.70710678);
+    let inTable = 1.0 - smoothstep(tableR, tableR + 0.004, oct);
+    let tableEdge = (1.0 - smoothstep(0.0, 0.003, abs(oct - tableR))) * falloff;
+
     // Refraction strength falls off with distance from center
-    let displaceAmount = displacementDir * dist * strength * falloff;
+    let displaceAmount = mix(displacementDir * dist * strength * falloff, toCenter * 0.08 * strength, inTable);
 
     // Chromatic Aberration (Dispersion) based on IOR
     // Higher IOR = more dispersion
@@ -119,7 +140,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let edgeHighlight = (1.0 - smoothstep(0.0, 0.1, angleDiff)) * falloff * fresnel * 0.5;
 
     var color = vec3<f32>(r, g, b);
-    color += vec3<f32>(edgeHighlight);
+    color += vec3<f32>(edgeHighlight) * (1.0 - inTable) + vec3<f32>(tableEdge * fresnel * 0.6 + tableEdge * 0.15);
+
+    // Idea 2: fire. Each facet is a tiny prism that throws one spectral colour
+    // when its normal sweeps past the light; facets flash at their own phase,
+    // and bass makes the stone sparkle harder.
+    let facetIdx = floor(angle / (6.28318 / numFacets) + 0.5);
+    let facetSeed = fract(sin(facetIdx * 91.7 + 3.1) * 43758.5453);
+    let sweep = cos(steppedAngle * 2.0 - time * 0.9 + facetSeed * 6.28318);
+    let flash = pow(max(sweep, 0.0), 24.0) * (1.0 - inTable) * falloff;
+    let fireColor = spectralHue(fract(facetSeed + dispersion * 0.3 + time * 0.05));
+    color += fireColor * flash * (0.25 + dispersion * 0.9) * (1.0 + bass * 1.5);
 
     // Advanced Alpha: Physical Transmittance
     let alpha = calculateAdvancedAlpha(color, transmission, falloff, pathLength, fresnel);
@@ -138,8 +169,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let clockRings = sin(length(screenUV - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
     let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
 
-    let __finalRGB = vec4<f32>(color, alpha).rgb + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(__finalRGB, vec4<f32>(color, alpha).a));
+    let finalRGB = aces(max(color + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25), vec3<f32>(0.0)) * 0.8);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, alpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, alpha));
 
     // Update Depth (Pass-through)
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

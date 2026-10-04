@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Interactive Emboss — Batch 58E
-//  Mouse-aimed relief with sprung light, bevel ridges, traveling
-//  highlight packets, oil-slick phosphor on crests, held-drag punch,
-//  bounded click dents. Display RGBA in A. extraBuffer[133..137] is
-//  the existing critically-damped light spring (0,0 writer only).
+//  Interactive Emboss
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-04
+//  Ideas: relief self-shadow marched toward the cursor light; Blinn point-light glint on crests with distance falloff
+//  A packing: ACES display RGBA (C read back as colour for the light trail)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -20,6 +22,7 @@
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
+
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
@@ -35,6 +38,10 @@ fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
 
 fn luma(c: vec3<f32>) -> f32 {
   return dot(c, vec3<f32>(0.299, 0.587, 0.114));
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -54,31 +61,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let prev = textureLoad(dataTextureC, pixel, 0);
   let depth = textureLoad(readDepthTexture, pixel, 0).r;
 
-  var mouse = u.zoom_config.yz;
-  let hasState = arrayLength(&extraBuffer) > 137u;
-  if (global_id.x == 0u && global_id.y == 0u && hasState) {
-    let prevTime = extraBuffer[137];
-    let dt = clamp(time - prevTime, 0.001, 0.05);
-    var sPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (prevTime <= 0.0) {
-      sPos = mouse;
-      sVel = vec2<f32>(0.0, 0.0);
-    }
-    let omega = mix(8.0, 14.0, held);
-    let accel = (mouse - sPos) * (omega * omega) - sVel * (2.0 * omega);
-    sVel = sVel + accel * dt;
-    sPos = sPos + sVel * dt;
-    extraBuffer[133] = sPos.x;
-    extraBuffer[134] = sPos.y;
-    extraBuffer[135] = sVel.x;
-    extraBuffer[136] = sVel.y;
-    extraBuffer[137] = time;
-  }
-  if (hasState) {
-    mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  }
-
+  // Raw pointer. The old extraBuffer[133..137] spring never persisted (the host
+  // re-uploads extraBuffer each frame) and raced: invocations that ran before
+  // the (0,0) writer lit the relief from the top-left corner.
+  let mouse = u.zoom_config.yz;
   let light_vec = (mouse - uv) * vec2<f32>(aspect, 1.0);
   var light_dir = vec2<f32>(0.0, 0.0);
   if (length(light_vec) > 0.001) {
@@ -118,19 +104,51 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   diff = diff + stamp * (0.3 + 0.1 * strength) * reliefContrast;
 
   let c = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-  let gray_emboss = vec3<f32>(0.5 + diff);
-  let color_emboss = c + vec3<f32>(diff);
+
+  // Idea 1: self-shadow. Treat luma as height and march a few texels toward
+  // the cursor light; any ridge that rises above the light ray shades this
+  // pixel. The light sits lower the farther away the cursor is, so distant
+  // cursors rake the plate with long shadows.
+  let lightDist = length(light_vec);
+  let h0 = luma(c);
+  let reliefK = strength * reliefContrast * 0.3;
+  let elevation = mix(0.05, 0.010, smoothstep(0.0, 0.8, lightDist));
+  var shadow = 0.0;
+  for (var si = 1; si <= 6; si = si + 1) {
+    let fi = f32(si);
+    let suv = clamp(uv + light_dir * fi * 2.5 * texel, vec2<f32>(0.0), vec2<f32>(1.0));
+    let hs = luma(textureSampleLevel(readTexture, u_sampler, suv, 0.0).rgb);
+    let horizon = (hs - h0) * reliefK - fi * elevation;
+    shadow = max(shadow, smoothstep(0.0, 0.08, horizon) * (1.0 - fi / 7.0));
+  }
+  shadow = shadow * step(0.001, lightDist);
+
+  let gray_emboss = vec3<f32>(0.5 + diff) * (1.0 - shadow * 0.45);
+  let color_emboss = (c + vec3<f32>(diff)) * (1.0 - shadow * 0.45);
   let result_emboss = mix(gray_emboss, color_emboss, step(0.5, color_mode));
   let peak = max(result_emboss.r, max(result_emboss.g, result_emboss.b));
   let emboss_final = clamp(result_emboss / (1.0 + max(peak - 1.0, 0.0)), vec3<f32>(0.0), vec3<f32>(1.0));
   var final_color = mix(emboss_final, c, 1.0 - mix_amt);
 
+  // Idea 2: point-light glint. A Blinn half-vector highlight from a light
+  // hovering above the cursor, falling off with distance; strongest on crests
+  // and in shadow-free texels. Gray mode reads as pewter, colour as foil.
+  let N = normalize(vec3<f32>(grad * 8.0 * (0.4 + reliefContrast * 0.6), 1.0));
+  let L = normalize(vec3<f32>(light_vec, 0.22));
+  let H = normalize(L + vec3<f32>(0.0, 0.0, 1.0));
+  let atten = 1.0 / (1.0 + pow(lightDist / 0.45, 2.0));
+  let crest = 0.35 + 0.65 * smoothstep(0.01, 0.08, length(grad));
+  let glint = pow(max(dot(N, H), 0.0), 60.0) * atten * crest * (1.0 - shadow);
+  let glintTint = mix(vec3<f32>(1.0, 0.97, 0.92), mix(vec3<f32>(1.0), c, 0.5), step(0.5, color_mode));
+  final_color = final_color + glintTint * glint * 0.55 * mix_amt * (1.0 + held * 0.3);
+
   let slick = hsv2rgb(vec3<f32>(fract(0.08 + abs(diff) * 2.4 + mids * 0.2 + time * 0.12), 0.72, 1.0));
   final_color = mix(final_color, final_color * slick * 1.2, (0.14 + treble * 0.18) * clamp(abs(diff) * 3.0 + bevel, 0.0, 1.0));
   final_color += slick * (packets * 0.16 + stamp * 0.28 + bevel * 0.12);
+  final_color = aces(max(final_color, vec3<f32>(0.0)) * 0.8);
   final_color = mix(final_color, prev.rgb * 0.9, 0.16);
 
-  let alpha = clamp(abs(diff) * 2.0 + mix_amt * 0.3 + treble * 0.2 + 0.15, 0.0, 1.0);
+  let alpha = clamp(abs(diff) * 2.0 + mix_amt * 0.3 + treble * 0.2 + 0.15 + glint * 0.2, 0.0, 1.0);
   let outCol = vec4<f32>(final_color, mix(alpha, prev.a * 0.9, 0.16));
   textureStore(writeTexture, pixel, outCol);
   textureStore(dataTextureA, pixel, outCol);

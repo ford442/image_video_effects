@@ -3,7 +3,7 @@
   "name": "Knitted Fabric",
   "category": "interactive-mouse",
   "url": "shaders/knitted-fabric.wgsl",
-  "description": "Simulates a knitted wool texture. Mouse interaction pulls and stretches the fabric.",
+  "description": "Knitted wool texture with two-ply twisted yarn and heathered per-stitch fibre. The cursor pulls and stretches the fabric: strained stitches thin out and open onto the dark backing; clicks pluck the knit.",
   "params": [
     {
       "id": "scale",

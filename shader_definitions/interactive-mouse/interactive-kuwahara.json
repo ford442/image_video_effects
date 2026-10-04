@@ -2,7 +2,7 @@
   "id": "interactive-kuwahara",
   "name": "Oil Painting (Kuwahara)",
   "url": "shaders/interactive-kuwahara.wgsl",
-  "description": "Interactive Kuwahara oil painting with held wet-focus, traveling wet runners, oil-slick pigment, click clarity fronts, and exact C wetness trail. Display RGBA in A.",
+  "description": "Interactive Kuwahara oil painting with variance-weighted sector blending, impasto ridges where the paint is thick, and canvas weave through thin paint. Held wet-focus, wet runners, click clarity fronts and an exact C wetness trail. Display RGBA in A.",
   "updatedParams": [
     {
       "index": 0,

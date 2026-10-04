@@ -407,7 +407,7 @@
     "id": "blueprint-reveal",
     "name": "Blueprint Reveal",
     "url": "shaders/blueprint-reveal.wgsl",
-    "description": "Temporal ink dissolve with depth hatch density and audio surge. Sobel edge detection draws blueprint lines; previous reveal state bleeds outward like spreading ink. Depth modulates hatch fineness, bass creates ink ripple surges from the mouse.",
+    "description": "Blueprint drafting from Sobel edges: strong edges inked as bold contours, weak ones as thin construction lines, far-depth edges dashed as hidden lines. The cursor and clicks reveal the photo through a decaying ink mask that develops into a Prussian-blue cyanotype as it fades.",
     "params": [
       {
         "id": "edgeStrength",
@@ -935,7 +935,7 @@
     "id": "chroma-lens",
     "name": "Chroma Lens",
     "url": "shaders/chroma-lens.wgsl",
-    "description": "Held magnifying lens with chromatic edge splitting, actual tangential edge blur, rapid rim runners, audio response, and click-launched glass fronts.",
+    "description": "Held magnifying lens whose edge dispersion is sampled across seven wavelengths for continuous rainbow fringes, with astigmatic edge blur (tangential smear plus a shorter radial one), rim runners, audio response and click-launched glass fronts.",
     "params": [
       {
         "id": "magnification",
@@ -1441,7 +1441,7 @@
       "print",
       "audio-reactive"
     ],
-    "description": "Rosette/moire CMYK halftone with rotating screens, registration drift and held plate shear, ink conveyors/packets, click blooms, rainbow registration glow, and three-band audio. A remains CMYK coverage masks.",
+    "description": "CMYK halftone rosette print with rotating screens, registration drift, a registration target at the cursor and press slur. A remains CMYK coverage masks.",
     "updatedParams": [
       {
         "index": 0,
@@ -1861,7 +1861,7 @@
     "id": "crystal-refraction",
     "name": "Crystal Refraction",
     "url": "shaders/crystal-refraction.wgsl",
-    "description": "Interactive faceted crystal lens with physical light transmission. Features IOR-based chromatic dispersion, Fresnel reflection at edges, and variable crystal thickness affecting light path.",
+    "description": "Interactive faceted crystal lens with a flat brilliant-cut table window in the centre, IOR-based chromatic dispersion, Fresnel reflection and thickness-dependent transmission. Facets throw spectral fire flashes as they turn past the light; bass makes the stone sparkle.",
     "params": [
       {
         "id": "facetScale",
@@ -2325,10 +2325,11 @@
     "name": "Cyber Magnifier",
     "category": "interactive-mouse",
     "url": "shaders/cyber-magnifier.wgsl",
-    "description": "High-tech magnifying lens with chromatic aberration and HUD overlay.",
+    "description": "High-tech magnifying lens with chromatic aberration and a HUD: past ~2.5x it shows the source texels with a texel grid, the radar sweep traces glowing outlines that fade behind it, and a rangefinder arc reads out the depth under the lens.",
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "depth-aware",
       "upgraded-rgba"
     ],
     "params": [
@@ -3585,7 +3586,7 @@
     "id": "dynamic-halftone",
     "name": "Dynamic Halftone",
     "url": "shaders/dynamic-halftone.wgsl",
-    "description": "Variable-angle CMYK print rosettes morph between expressive dot shapes, with held magnification, click-driven ink waves, and three-band plate motion.",
+    "description": "Halftone dot print that swells under the cursor: Euclidean dot shapes, pooling ink and ragged paper rims.",
     "params": [
       {
         "id": "density",
@@ -3653,17 +3654,14 @@
         "step": 0.01
       }
     ],
-    "feedbackPacking": "A/C = premultiplied tone-mapped display RGBA with bounded exact print persistence; B is unused",
+    "feedbackPacking": "A/C = premultiplied ACES display RGBA (C is not read back); B is unused",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
-      "exact-history",
       "aces-tone-map",
       "three-band-audio",
-      "held-pointer",
-      "click-reactive",
-      "cmyk-rosette"
+      "halftone"
     ],
     "tags": [
       "halftone",
@@ -5475,7 +5473,7 @@
     "id": "interactive-emboss",
     "name": "Interactive Emboss",
     "url": "shaders/interactive-emboss.wgsl",
-    "description": "Mouse-aimed relief emboss with sprung light, bevel ridges, traveling highlight packets, oil-slick phosphor on crests, held-drag punch, and bounded click dents. Display RGBA in A.",
+    "description": "Relief emboss lit from the cursor: ridges cast self-shadows away from the light (longer when the cursor is far), and a Blinn point-light glint catches the crests with distance falloff. Bevel ridges, travelling highlight packets, held-drag punch and bounded click dents. Display RGBA in A.",
     "params": [
       {
         "id": "strength",
@@ -5667,7 +5665,7 @@
     "id": "interactive-fisheye",
     "name": "Fluid Lens Dynamics",
     "url": "shaders/interactive-fisheye.wgsl",
-    "description": "Kelvin-Voigt droplet lens with capillary waves, held meniscus pinch, oil-slick thin-film rim, traveling caustic runners, and exact-load state memory. A remains [h, v, nx, ny].",
+    "description": "Kelvin-Voigt droplet lens that refracts through its simulated surface, so overshoot and capillary waves really bend the image; the convex body focuses light into a caustic and the meniscus darkens. Held pinch, caustic runners and splash fronts. A remains [h, v, nx, ny].",
     "features": [
       "mouse-driven",
       "geometry",
@@ -6091,7 +6089,7 @@
     "id": "interactive-halftone-spin",
     "name": "Interactive Halftone Spin",
     "url": "shaders/interactive-halftone-spin.wgsl",
-    "description": "CMYK halftone screens with held shear, ink conveyors, click splats, oil-slick registration glow, and three-band audio. A remains [C, M, Y, K] coverage.",
+    "description": "Spinning CMYK halftone screens with rotational arc-smear and a CMYK ink after-image. A remains [C, M, Y, K] coverage.",
     "params": [
       {
         "id": "scale",
@@ -6181,7 +6179,7 @@
     "id": "interactive-kuwahara",
     "name": "Oil Painting (Kuwahara)",
     "url": "shaders/interactive-kuwahara.wgsl",
-    "description": "Interactive Kuwahara oil painting with held wet-focus, traveling wet runners, oil-slick pigment, click clarity fronts, and exact C wetness trail. Display RGBA in A.",
+    "description": "Interactive Kuwahara oil painting with variance-weighted sector blending, impasto ridges where the paint is thick, and canvas weave through thin paint. Held wet-focus, wet runners, click clarity fronts and an exact C wetness trail. Display RGBA in A.",
     "updatedParams": [
       {
         "index": 0,
@@ -7055,7 +7053,7 @@
     "name": "Knitted Fabric",
     "category": "interactive-mouse",
     "url": "shaders/knitted-fabric.wgsl",
-    "description": "Simulates a knitted wool texture. Mouse interaction pulls and stretches the fabric.",
+    "description": "Knitted wool texture with two-ply twisted yarn and heathered per-stitch fibre. The cursor pulls and stretches the fabric: strained stitches thin out and open onto the dark backing; clicks pluck the knit.",
     "params": [
       {
         "id": "scale",
@@ -11914,7 +11912,7 @@
     "category": "interactive-mouse",
     "url": "shaders/phosphor-magnifier.wgsl",
     "icon": "search",
-    "description": "CRT phosphor magnifier with display-RGBA afterimage feedback, aurora scan runners, raster-beam motion, degauss rings, held lens pressure, click shells, chromatic aberration, and psychedelic phosphor hue. Intentional A feedback correction from diagnostic masks to display RGBA.",
+    "description": "CRT phosphor magnifier: per-channel phosphor persistence leaves colour-shifting afterimage trails from exact history, bright content blooms across the aperture-grille stripes, plus raster beam, degauss rings, held lens pressure, click shells and chromatic aberration.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -13723,9 +13721,12 @@
     "id": "radial-hex-lens",
     "name": "Radial Hex Lens",
     "url": "shaders/radial-hex-lens.wgsl",
-    "description": "Interactive hexagonal mosaic lens with radial magnification, FBM organic warp, depth-aware fog, and semantic alpha for slot-chain compositing.",
+    "description": "Interactive compound-eye lens: inside the radial magnifier every hex cell is a tiny domed lens with its own magnified, slightly parallaxed view, lit from the cursor side. FBM warp, hex bokeh, depth-aware fog and semantic alpha for slot-chain compositing.",
     "features": [
       "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "hex-bokeh",
       "upgraded-rgba"
     ],
     "workgroup_size": [
@@ -14302,7 +14303,7 @@
     "id": "refractive-bubbles",
     "name": "Refractive Bubbles",
     "url": "shaders/refractive-bubbles.wgsl",
-    "description": "Floating bubbles around the cursor that distort the background like glass.",
+    "description": "Glass bubbles orbiting the cursor that bend the background: each core shows a small inverted ball-lens image of the scene, the walls show thin-film colour where their thickness changes, and overlapping bubbles share a bright contact wall.",
     "params": [
       {
         "id": "size",
@@ -15394,7 +15395,7 @@
     "name": "Sketch Reveal",
     "category": "interactive-mouse",
     "url": "shaders/sketch-reveal.wgsl",
-    "description": "Gradient-directed pencil and charcoal cross-hatching with graphite sheen, paper tooth texture, smudge effects, and chromatic edge darkening. Bass drives reveal progression, mouse acts as the pencil, depth controls stroke size perspective.",
+    "description": "Gradient-directed pencil sketch with tonal-art-map hatching (single, cross and diagonal layers by darkness), paper tooth and graphite sheen. The cursor lays a watercolour wash of the photo that dries slowly from exact history and leaves a darker pigment rim at its edge. Depth controls stroke scale.",
     "params": [
       {
         "id": "brushSize",
@@ -17608,7 +17609,7 @@
     "id": "virtual-lens",
     "name": "Virtual Lens",
     "url": "shaders/virtual-lens.wgsl",
-    "description": "A virtual magnifying glass with alpha translucency blending. Single magnification displacement plus spectral tint via mix. Alpha driven by lens edge falloff and Fresnel reflectance with depth-aware attenuation.",
+    "description": "A virtual magnifying glass focused on whatever is under the cursor: magnified content at other depths falls out of focus, and the glass reflects a mirrored, softened view of the surroundings toward its rim. Spectral tint, double-glass inner ring and Fresnel/depth-aware alpha.",
     "params": [
       {
         "id": "mag",
@@ -17643,6 +17644,7 @@
       "mouse-driven",
       "chromatic-aberration",
       "audio-reactive",
+      "depth-aware",
       "upgraded-rgba"
     ],
     "tags": [

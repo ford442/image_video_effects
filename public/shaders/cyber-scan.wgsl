@@ -2,6 +2,13 @@
 //  Cyber Scan — Batch 59
 //  Triple scan lines, hex grid, binary rain, exact C smear, capped click
 //  bursts, held widens band, ACES + semantic alpha.
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, lidar-contours, depth-readout
+//  Ideas:    1. LIDAR iso-depth contours — depth contour lines light up where the beams
+//               pass and linger in the trail
+//            2. range readout — tick marks along the primary beam, each as long as the
+//               depth at its row, like a scanner's live depth profile
+//  A packing: ACES display RGBA (HEAD stored a pre-decayed smear, so C only faded to
+//  black and the trail slider darkened the image).
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -204,7 +211,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let noiseOverlay = fbm(uv * 8.0 + time * 0.3, 5) * 0.1;
 
     // Chromatic scan: treble shifts RGB channels horizontally
-    let chroma = colorShiftAmt * treble * 0.02;
+    // Color Shift is live without audio (HEAD multiplied it by treble alone).
+    let chroma = colorShiftAmt * (0.25 + treble) * 0.02;
     let rUV = clamp(uv + vec2<f32>(chroma, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
     let bUV = clamp(uv - vec2<f32>(chroma, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
     let r = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
@@ -237,14 +245,38 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     rgb = rgb + vec3<f32>(sparkleBright);
     rgb = rgb + scanColor * clickBurst * (0.6 + treble * 0.4);
 
-    let band = min(u32(uv.x * 8.0), 7u);
-    rgb = rgb + vec3<f32>(0.05, 0.12, 0.18) * plasmaBuffer[band + 1u].x * totalIntensity * 0.15;
+    // plasmaBuffer[1..] is never written, so the old per-band term was always 0.
+    rgb = rgb + vec3<f32>(0.05, 0.12, 0.18) * treble * totalIntensity * 0.15;
+
+    // Idea 1: LIDAR iso-depth contours. Equal-depth lines are swept out by the
+    // beams and stay faintly lit in the trail behind them.
+    let contourCount = 14.0 + bass * 4.0;
+    // Lines sit at half-integer depth steps, so flat depth 0 or 1 (no depth map,
+    // sky) stays dark. The light is a narrow beam core plus a short linger
+    // behind the primary beam's travel, not the wide scan band.
+    let contour = smoothstep(0.07, 0.0, abs(fract(depth * contourCount) - 0.5));
+    let beamCore = smoothstep(0.03, 0.0, dist) + smoothstep(0.03, 0.0, dist2) * 0.5 + smoothstep(0.03, 0.0, dist3) * 0.3;
+    let behind = fract(scanLine - uv.x);
+    let linger = exp(-behind * 10.0) * trailLength;
+    rgb = rgb + scanColor * contour * (beamCore * 0.9 + linger * 0.45) * depthColorize;
+
+    // Idea 2: range readout. Ticks hang off the primary beam, one per row
+    // band, each as long as the depth sampled on the beam at that row.
+    let rows = 24.0;
+    let rowC = (floor(uv.y * rows) + 0.5) / rows;
+    let dRow = textureSampleLevel(readDepthTexture, non_filtering_sampler, vec2<f32>(scanLine, rowC), 0.0).r;
+    let dx = uv.x - scanLine;
+    let tickLen = 0.008 + dRow * 0.06;
+    let tick = step(0.0, dx) * step(dx, tickLen) * step(abs(fract(uv.y * rows) - 0.5), 0.07);
+    rgb = rgb + vec3<f32>(0.55, 1.0, 0.8) * tick * 0.7;
 
     rgb = acesToneMap(rgb * (0.95 + mids * 0.1));
 
-    let alpha = clamp(totalIntensity + totalTrail * 0.2 + bass * 0.05 + hexData * 0.1 + clickBurst * 0.2, 0.0, 1.0);
+    // Semantic alpha: the picture is covered, and the beams and readouts add
+    // emission on top (HEAD was ~0 outside the bands).
+    let alpha = clamp(0.55 + totalIntensity * 0.45 + totalTrail * 0.2 + contour * beamCore * 0.1 + tick * 0.2 + bass * 0.05 + hexData * 0.1 + clickBurst * 0.2, 0.0, 1.0);
 
     textureStore(writeTexture, pixel, vec4<f32>(rgb, alpha));
-    textureStore(dataTextureA, pixel, vec4<f32>(smear, alpha));
+    textureStore(dataTextureA, pixel, vec4<f32>(rgb, alpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

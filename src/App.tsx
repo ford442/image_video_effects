@@ -782,6 +782,11 @@ function MainApp() {
                 setSelectedVideo={setSelectedVideo}
                 syncInputSourceToRenderer={syncInputSourceToRenderer}
                 setSlotParams={setSlotParams}
+                rendererRef={rendererRef}
+                modes={modes}
+                slotParams={slotParams}
+                inputSource={inputSource}
+                currentImageUrl={currentImageUrl}
             />
         </div>
     );

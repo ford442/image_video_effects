@@ -296,6 +296,17 @@ HEAD packing wins when it is already consistent. If HEAD stored a mask in A and 
 
 ---
 
+## 8b. Record the batch (required, last step before commit)
+
+```bash
+npm run upgrades:record -- --note="<date> <batch name> (<model>) — <batch notes file>"
+```
+
+This logs every changed shader in `reports/shader-upgrade-ledger.json` and marks
+its thumbnail stale. Use `--event=hygiene` for plumbing-only passes so they are
+not counted as upgrades. Thumbnails are refreshed afterwards on a GPU machine
+(Shader Scanner → *Changed since last thumbnail*), not by the agent.
+
 ## 9. Notes, MEMORY.md, and coordinator review
 
 ### Where to write the batch

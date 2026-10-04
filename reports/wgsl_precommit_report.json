@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-10-01T08:03:38.894032",
+  "timestamp": "2026-10-04T08:45:56.371005",
   "naga_bin": "/home/jules/.cargo/bin/naga",
-  "naga_available": true,
+  "naga_available": false,
   "total": 1,
   "passed": 1,
   "failed": 0,
@@ -12,12 +12,12 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/gen-ethereal-chrono-fluid-symbiote.wgsl",
+      "file": "public/shaders/gen-quantum-resonance-lattice.wgsl",
       "skipped": false,
       "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
+      "naga_ok": null,
+      "naga_skipped": true,
+      "naga_error": null,
       "bindgroup_status": "compatible",
       "bindgroup_errors": [],
       "workgroup_errors": [],

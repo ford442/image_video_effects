@@ -3,7 +3,7 @@
   "name": "Holographic Flicker",
   "category": "visual-effects",
   "url": "shaders/holographic-flicker.wgsl",
-  "description": "Holographic flicker with temporal ghosting and depth-rainbow colorization. Bass drives blackout probability, treble adds micro-glitch. Chromatic ghosting separates RGB channels across frames.",
+  "description": "Unstable laser hologram: mode-hopping laser lines with matching fringes, per-channel phosphor trails, vertical-hold slips and a rotating hex emblem.",
   "params": [
     {
       "id": "flickerSpeed",

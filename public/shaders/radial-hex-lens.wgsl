@@ -1,8 +1,13 @@
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 //  Radial Hex Lens
 //  Category: interactive-mouse
-//  Features: mouse-driven, hexagonal, depth-aware, lod-bias, hex-bokeh, anti-moiré, shared-memory-tiling, branchless-select, temporal-feedback, upgraded-rgba
-// ═══════════════════════════════════════════════════════════════
+//  Features: mouse-driven, audio-reactive, depth-aware, hex-bokeh, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-04
+//  Ideas: compound eye — every hex cell is a tiny parallaxed lens; domed facets lit from the cursor side
+//  A packing: raw fields (falloff, hex_size, alpha, bass); B diagnostics (historyBlend, zoom, dist/radius, fog)
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -16,6 +21,7 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
@@ -28,8 +34,6 @@ const HEX_TAPS = array<vec2<f32>, 7>(
     vec2<f32>(-0.5, 0.866), vec2<f32>(-1.0, 0.0), vec2<f32>(-0.5, -0.866), vec2<f32>(0.5, -0.866)
 );
 
-// Tiling hint for future cooperative hex-cell sampling.
-var<workgroup> tile: array<array<vec3<f32>, 18>, 18>;
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
@@ -127,7 +131,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let lod = hexLOD(hex_size, zoom, res);
 
     // Hex-bokeh color sample for the lens interior; pass-through outside.
-    let lensColor = sampleHexBokeh(clamp(sample_uv, vec2<f32>(0.0), vec2<f32>(1.0)), hex_size, lod);
+    // Idea 1: compound eye. Each hex cell is its own small lens: it shows a
+    // magnified view of the scene around its centre, and cells look out in
+    // slightly different directions (parallax away from the cursor axis).
+    let local = distorted - center;
+    let eyeMag = mix(0.45, 0.2, p3);
+    let eyeA = center + local * eyeMag + (center - mouseA) * 0.12 * falloff;
+    let eyeUV = clamp(vec2<f32>(eyeA.x / aspect, eyeA.y), vec2<f32>(0.0), vec2<f32>(1.0));
+    let cellColor = sampleHexBokeh(clamp(sample_uv, vec2<f32>(0.0), vec2<f32>(1.0)), hex_size, lod);
+    let eyeColor = sampleHexBokeh(eyeUV, hex_size * 0.3, max(lod - 1.0, 0.0));
+    var lensColor = mix(cellColor, eyeColor, 0.75);
+
+    // Idea 2: domed facets. Each cell is a little dome; the side facing the
+    // cursor catches a highlight and the far side falls into shade.
+    let q = local / max(hex_size * 0.5, 1.0e-4);
+    let qz = sqrt(max(1.0 - dot(q, q), 0.0));
+    let domeN = normalize(vec3<f32>(q, qz + 0.05));
+    let toLight = mouseA - center;
+    let L = normalize(vec3<f32>(toLight, 0.35));
+    let H = normalize(L + vec3<f32>(0.0, 0.0, 1.0));
+    let domeShade = 0.72 + 0.28 * max(dot(domeN, L), 0.0);
+    let domeGlint = pow(max(dot(domeN, H), 0.0), 40.0) * 0.45 * (1.0 + bass * 0.5);
+    lensColor = lensColor * domeShade + vec3<f32>(domeGlint);
     let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     let color = mix(baseColor, lensColor, falloff);
 
