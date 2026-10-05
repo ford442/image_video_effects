@@ -896,12 +896,30 @@
       "history": []
     },
     "neon-contour-interactive": {
-      "hash": "cc02c1d6952e05f8",
-      "history": []
+      "hash": "68de0eb20631368c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T15:38:36.323Z",
+          "hash": "68de0eb20631368c",
+          "prev_hash": "cc02c1d6952e05f8",
+          "commit": "c9151d6f",
+          "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        }
+      ]
     },
     "neon-edge-diffusion": {
-      "hash": "dd5e5106f7fa5315",
-      "history": []
+      "hash": "0051a11a5bf8ed55",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T15:38:36.323Z",
+          "hash": "0051a11a5bf8ed55",
+          "prev_hash": "dd5e5106f7fa5315",
+          "commit": "c9151d6f",
+          "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        }
+      ]
     },
     "neural-dreamscape": {
       "hash": "6e4f56e5ce4feb03",
@@ -3203,8 +3221,17 @@
       "history": []
     },
     "neon-fern-garden": {
-      "hash": "6b77a62e8196cc04",
-      "history": []
+      "hash": "35cdc041b36f47b2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T15:38:36.323Z",
+          "hash": "35cdc041b36f47b2",
+          "prev_hash": "6b77a62e8196cc04",
+          "commit": "c9151d6f",
+          "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        }
+      ]
     },
     "neural-mandala": {
       "hash": "d2b2dd3da5bf022f",
@@ -3487,8 +3514,17 @@
       "history": []
     },
     "contour-flow": {
-      "hash": "3d05fbba482e7032",
-      "history": []
+      "hash": "3021509be1da9777",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T15:38:36.323Z",
+          "hash": "3021509be1da9777",
+          "prev_hash": "3d05fbba482e7032",
+          "commit": "c9151d6f",
+          "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        }
+      ]
     },
     "conv-anisotropic-diffusion": {
       "hash": "2d305d455de68b90",
@@ -3759,8 +3795,17 @@
       "history": []
     },
     "spec-cooperative-edge-linking": {
-      "hash": "e880293e3155df2f",
-      "history": []
+      "hash": "599091d96f2fd316",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T15:38:36.323Z",
+          "hash": "599091d96f2fd316",
+          "prev_hash": "e880293e3155df2f",
+          "commit": "c9151d6f",
+          "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        }
+      ]
     },
     "spec-histogram-equalize": {
       "hash": "556e658fc3aa0fcd",
@@ -4125,8 +4170,17 @@
       "history": []
     },
     "holographic-edge-ripple": {
-      "hash": "66079a07f69ae980",
-      "history": []
+      "hash": "4fb7056af5440f49",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T15:38:36.323Z",
+          "hash": "4fb7056af5440f49",
+          "prev_hash": "66079a07f69ae980",
+          "commit": "c9151d6f",
+          "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        }
+      ]
     },
     "holographic-prism": {
       "hash": "f9392380170a9f3f",
@@ -4466,40 +4520,85 @@
       "history": []
     },
     "neon-cursor-trace": {
-      "hash": "2d8ad0c6e4ebc77e",
-      "history": []
+      "hash": "37e688f36ab5e6f0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T15:38:36.323Z",
+          "hash": "37e688f36ab5e6f0",
+          "prev_hash": "2d8ad0c6e4ebc77e",
+          "commit": "c9151d6f",
+          "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        }
+      ]
     },
     "neon-echo": {
       "hash": "48f009fd8cc060fe",
       "history": []
     },
     "neon-edge-radar": {
-      "hash": "1b99af4585ba4dd3",
-      "history": []
+      "hash": "0eee57333425530c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T15:38:36.323Z",
+          "hash": "0eee57333425530c",
+          "prev_hash": "1b99af4585ba4dd3",
+          "commit": "c9151d6f",
+          "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        }
+      ]
     },
     "neon-flashlight": {
       "hash": "67ee96d546613169",
       "history": []
     },
     "neon-fluid-warp": {
-      "hash": "5a93d8a7a754a85c",
-      "history": []
+      "hash": "67036031e29df88c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T15:38:36.323Z",
+          "hash": "67036031e29df88c",
+          "prev_hash": "5a93d8a7a754a85c",
+          "commit": "c9151d6f",
+          "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        }
+      ]
     },
     "neon-pulse": {
       "hash": "bc78a2313b129feb",
       "history": []
     },
     "neon-ripple-split": {
-      "hash": "10bbdb0018309bcb",
-      "history": []
+      "hash": "b7e167212a504ef5",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T15:38:36.323Z",
+          "hash": "b7e167212a504ef5",
+          "prev_hash": "10bbdb0018309bcb",
+          "commit": "c9151d6f",
+          "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        }
+      ]
     },
     "neon-strings": {
       "hash": "b530edf6a70b1036",
       "history": []
     },
     "neon-warp": {
-      "hash": "ac657a8da3222279",
-      "history": []
+      "hash": "2d2ea4bac5879afb",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T15:38:36.323Z",
+          "hash": "2d2ea4bac5879afb",
+          "prev_hash": "ac657a8da3222279",
+          "commit": "c9151d6f",
+          "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        }
+      ]
     },
     "neural-nexus": {
       "hash": "2b3ce2b220d6f57f",
@@ -5765,8 +5864,17 @@
       "history": []
     },
     "neon-edge-pulse": {
-      "hash": "defc2d6b2a72f688",
-      "history": []
+      "hash": "77449fbc75cff242",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T15:38:36.323Z",
+          "hash": "77449fbc75cff242",
+          "prev_hash": "defc2d6b2a72f688",
+          "commit": "c9151d6f",
+          "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        }
+      ]
     },
     "neon-edge-reveal": {
       "hash": "8d9e2fb8f25d2995",
