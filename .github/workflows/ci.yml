@@ -342,10 +342,13 @@ jobs:
     - name: Regenerate unified shader manifest
       run: npm run build:manifest
 
+    # Blocking since healthy eligible coverage passed 50% (2026-10-05, 91.7%).
+    # pipefail: without it the tee's exit status hides the check's.
     - name: Check thumbnail coverage regression
       id: thumbs
-      continue-on-error: true
-      run: npm run thumbs:check-regression -- --base-ref "origin/${{ github.base_ref }}" 2>&1 | tee /tmp/thumbs-check.txt
+      run: |
+        set -o pipefail
+        npm run thumbs:check-regression -- --base-ref "origin/${{ github.base_ref }}" 2>&1 | tee /tmp/thumbs-check.txt
 
     - name: Report to job summary
       if: always()
