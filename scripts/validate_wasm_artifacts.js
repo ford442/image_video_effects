@@ -245,7 +245,7 @@ checkToolchainPin();
  * The artifact is committed and never rebuilt in CI, so the only thing standing
  * between a Rust edit and a silently stale validator is this commit-time comparison.
  * (pixelocity_wasm.wasm is rebuilt in CI and hash-compared to the committed copy
- * in ci.yml instead.)
+ * in wasm.yml instead.)
  */
 function checkNagaWasm() {
   const contractPath = path.resolve('src/contracts/wgsl_validation.json');

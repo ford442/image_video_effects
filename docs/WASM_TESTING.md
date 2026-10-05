@@ -282,10 +282,10 @@ See [`WASM_TEST_SUITE.md`](./WASM_TEST_SUITE.md) for the full command matrix. Su
 
 ### CI Integration
 
-The `.github/workflows/ci.yml` `test-wasm-e2e` job:
+The `.github/workflows/wasm.yml` `test-wasm-e2e` job (WASM-path PRs, weekly on `main`, or on demand; #1080):
 
-- **Depends on:** `wasm` + `test` jobs
-- **Runs:** `test:wasm:e2e` (soft) then `test:wasm:gpu` (strict; skips without adapter)
+- **Depends on:** `wasm` job
+- **Runs:** `test:wasm:e2e` (soft, `WASM_GPU_TESTS=0`)
 - **Artifacts:** Playwright report, benchmark JSON when produced
 - **Manual GPU run:** `wasm-gpu-manual` workflow dispatch → `test:wasm:full`
 

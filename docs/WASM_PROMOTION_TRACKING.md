@@ -6,10 +6,26 @@
 **Umbrella (closed):** [#885](https://github.com/ford442/image_video_effects/issues/885)  
 **Docs refresh (closed):** [#890](https://github.com/ford442/image_video_effects/issues/890)
 
-**Current tier:** **B — Experimental (opt-in)**  
-**Last evidence review:** 2026-08-01 (pre-GPU tooling; GPU gates still open)
+**Current tier:** **B — frozen R&D** (`?renderer=wasm` only; not promoted)  
+**Last evidence review:** 2026-09-27 — [`reports/wasm-promotion-evidence-2026-09-27.md`](../reports/wasm-promotion-evidence-2026-09-27.md)
 
 ---
+
+## Decision (2026-09-27) — STAY B, freeze as R&D (#1080)
+
+Gate 1 (`test:wasm:bench`, `WASM_GPU_TESTS=1`) ran twice on a real GPU (Tesla T4): 1 of 3 shaders
+passed, then 0 of 3. Both backends are vsync-bound at 60 fps; WASM's lower CPU submit time
+(~0.04–0.26 ms/frame) is not user-visible. This meets the policy's demotion trigger ("no
+meaningful win on target shader classes"). **Promotion gates are closed — not promoted.**
+
+Follow-through (#1329): the UI toggle is hidden (WASM only via `?renderer=wasm`, with an
+"Experimental (R&D)" badge), and the `wasm` / `test-wasm-e2e` jobs moved to `wasm.yml`, which
+runs only on PRs touching the WASM tree, weekly on `main`, or on demand. GraphRunner stays TS-only.
+
+**What would reopen this:** see the evidence report. Reopening also restarts the Gate 4 clock
+from zero (see [Gate 4](#gate-4--weekly-ci-table)).
+
+Evidence: [`reports/wasm-promotion-evidence-2026-09-27.md`](../reports/wasm-promotion-evidence-2026-09-27.md)
 
 ## Decision (2026-08-01) — reaffirm STAY TIER B
 
@@ -47,12 +63,14 @@ Foundation Wave 2 (#965) closed binding-13 parity in C++ and wired TS device pol
 
 ## Promotion gates (all must pass)
 
+All gates **closed — not promoted** as of 2026-09-27 (#1080). The table is kept as the bar a future reopen would have to clear.
+
 | # | Gate | Threshold | Status | Evidence |
 |---|------|-----------|--------|----------|
-| 1 | **Performance** | WASM ≥ **1.25×** TS FPS (or inverse frame-time) on **≥3** benchmark shaders | ⬜ **OPEN** | VM stub only — [`reports/wasm-benchmark-report-stub-2026-07-19.json`](../reports/wasm-benchmark-report-stub-2026-07-19.json) has `gpuBackendObserved: false` |
-| 2 | **Reliability** | Playwright parity green on **≥2 distinct GPU configs** | ⬜ **OPEN** | CI skips parity without adapter; no vendor matrix attached |
-| 3 | **Integration** | Manual Controls smoke outside `testMode` — shader pick, params, input sources, recording | ⬜ **OPEN** | Checklist in [`WASM_SMOKE_TEST.md`](./WASM_SMOKE_TEST.md) not signed off |
-| 4 | **Ops** | `wasm` + `test-wasm-e2e` jobs green **4 consecutive calendar weeks** on `main` | ⬜ **OPEN** | See [Weekly CI table](#weekly-ci-table) |
+| 1 | **Performance** | WASM ≥ **1.25×** TS FPS (or inverse frame-time) on **≥3** benchmark shaders | ⛔ **closed — not promoted** | **Failed on T4 2026-09-27** (1/3, then 0/3) — [`reports/wasm-promotion-evidence-2026-09-27.md`](../reports/wasm-promotion-evidence-2026-09-27.md). Earlier: VM stub only — [`reports/wasm-benchmark-report-stub-2026-07-19.json`](../reports/wasm-benchmark-report-stub-2026-07-19.json) has `gpuBackendObserved: false` |
+| 2 | **Reliability** | Playwright parity green on **≥2 distinct GPU configs** | ⛔ **closed — not promoted** | CI skips parity without adapter; no vendor matrix attached |
+| 3 | **Integration** | Manual Controls smoke outside `testMode` — shader pick, params, input sources, recording | ⛔ **closed — not promoted** | Checklist in [`WASM_SMOKE_TEST.md`](./WASM_SMOKE_TEST.md) not signed off |
+| 4 | **Ops** | `wasm` + `test-wasm-e2e` jobs green **4 consecutive calendar weeks** on `main` | ⛔ **closed — not promoted** | See [Weekly CI table](#gate-4--weekly-ci-table) |
 
 ---
 
@@ -176,7 +194,7 @@ Outside `testMode`. See [`WASM_SMOKE_TEST.md`](./WASM_SMOKE_TEST.md).
 ## Gate 4 — Weekly CI table
 
 Jobs: `wasm` (build + Jest WASM unit) and `test-wasm-e2e` (Playwright).  
-Source: `main` branch push runs — [Actions](https://github.com/ford442/image_video_effects/actions/workflows/ci.yml).
+Source: `main` branch push runs of `ci.yml` (through 2026-10) — [Actions](https://github.com/ford442/image_video_effects/actions/workflows/ci.yml); since #1329, weekly runs of [`wasm.yml`](https://github.com/ford442/image_video_effects/actions/workflows/wasm.yml).
 
 | ISO week | `wasm` | `test-wasm-e2e` | Both green? |
 |----------|--------|-----------------|-------------|
@@ -186,7 +204,7 @@ Source: `main` branch push runs — [Actions](https://github.com/ford442/image_v
 | 2026-W29 (Jul 14–20) | ✅ `wasm` green on Jul 14–18 pushes | ❌ `test` job fails → e2e **skipped** | **FAIL** |
 | 2026-W30+ | — | — | TBD |
 
-**4 consecutive weeks:** **NOT MET** (as of 2026-07-26).
+**4 consecutive weeks:** **NOT MET** (as of 2026-07-26). **Clock reset 2026-10 (#1329):** the jobs no longer run on every push to `main`, only weekly via [`wasm.yml`](https://github.com/ford442/image_video_effects/actions/workflows/wasm.yml). If WASM is ever reconsidered, the 4-week green streak starts over on that weekly schedule.
 
 Recent main CI pattern (Jul 14–18): `wasm` ✅, `test` ❌, `test-wasm-e2e` skipped (needs `test` green). Example runs: `29645534494`, `29645412792`, `29645154775`.
 

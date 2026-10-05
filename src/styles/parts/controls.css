@@ -183,7 +183,7 @@ hr {
     z-index: 20;
 }
 
-/* Renderer backend badge shown in the status bar */
+/* Renderer backend badge shown in the status bar (display-only; WASM is ?renderer=wasm only, #1080) */
 .renderer-badge {
     margin-left: auto;
     font-size: 10px;
@@ -191,12 +191,22 @@ hr {
     border-radius: 8px;
     font-family: monospace;
     letter-spacing: 0.05em;
-    cursor: pointer;
     pointer-events: auto;
     user-select: none;
     transition: opacity 0.15s ease;
 }
-.renderer-badge:hover { opacity: 0.8; }
+
+/* "Experimental (R&D)" chip — shown only when WASM is forced via ?renderer=wasm */
+.renderer-badge__rnd {
+    margin-left: 6px;
+    padding: 0 5px;
+    border-radius: 6px;
+    font-size: 9px;
+    text-transform: uppercase;
+    background: rgba(212, 175, 55, 0.25);
+    color: var(--color-gold-light, #D4AF37);
+    border: 1px solid rgba(212, 175, 55, 0.5);
+}
 
 /* WebGPU (TypeScript native) — full gold: this is the recommended default */
 .renderer-badge--webgpu {

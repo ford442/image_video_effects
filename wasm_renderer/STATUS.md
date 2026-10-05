@@ -8,8 +8,8 @@
 
 **Production default:** TypeScript WebGPU renderer.
 
-The C++ WASM path is available via `?renderer=wasm` or the Controls renderer switcher.
-It is labeled **Experimental** in the UI and is **not** held to the same SLA as the TS backend.
+The C++ WASM path is available only via `?renderer=wasm` (frozen R&D since 2026-09-27, #1080; no UI toggle).
+It shows an **Experimental (R&D)** badge in the status pill and is **not** held to the same SLA as the TS backend.
 
 | Doc | Purpose |
 |-----|---------|
@@ -122,7 +122,7 @@ Browser (TypeScript)
 http://localhost:3000/?renderer=wasm
 ```
 
-Or Controls → Renderer switcher (shows **Experimental** badge).
+The status pill then shows an **Experimental (R&D)** badge. There is no Controls toggle (#1329).
 
 Full testing guide: [`WASM_TESTING.md`](../docs/WASM_TESTING.md) · [`WASM_TEST_SUITE.md`](../docs/WASM_TEST_SUITE.md)
 

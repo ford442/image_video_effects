@@ -54,7 +54,7 @@ tools/naga_wasm/src/lib.rs                       ← separate crate, separate ar
 - `build.sh` runs `scripts/emcc-version-gate.sh` before `em++` and refuses a mismatched emcc. The minified glue does **not** embed the emcc version, so the gate is on the toolchain, not the artifact.
 - `build.sh` reads the flag JSON and may not hardcode `-s` flags or `--use-port` (enforced by `verify:wasm-invariants`). It is the only build; `CMakeLists.txt` was removed.
 - Cloud VMs / Jules: keep `SKIP_WASM_BUILD=1`. Never commit artifacts from a non-pinned emcc (e.g. 3.1.x). `ALLOW_EMCC_VERSION_MISMATCH=1` exists for local experiments only.
-- Bumping the pin: change `emsdkVersion` and `ci.yml` together, rebuild, commit artifacts in the same PR.
+- Bumping the pin: change `emsdkVersion` and `.github/workflows/wasm.yml` together, rebuild, commit artifacts in the same PR.
 
 ## Build commands
 

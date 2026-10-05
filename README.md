@@ -27,7 +27,7 @@ A React + WebGPU app for real-time GPU shader effects — fluids, generative art
 | Tier | Backend | Default? | Notes |
 |------|---------|----------|-------|
 | **A — Production** | TypeScript `WebGPURenderer` | ✅ Yes | Full Controls parity; recommended for all work |
-| **B — Experimental** | C++ WASM (`?renderer=wasm`) | Opt-in only | Labeled **Experimental** in UI; must not crash app |
+| **B — Frozen R&D** | C++ WASM (`?renderer=wasm`) | URL only, no UI toggle | **Experimental (R&D)** badge; parity bugs only |
 | Dev escape | Canvas2D `JSRenderer` (`?renderer=js`) | Explicit only | No GPU shaders; not auto-fallback |
 
 WASM is **never** an automatic fallback. See [`WASM_BACKEND_POLICY.md`](docs/WASM_BACKEND_POLICY.md) for promotion gates, CI expectations, and engineering rules.
@@ -327,13 +327,13 @@ See [`docs/THUMBNAIL_PIPELINE.md`](docs/THUMBNAIL_PIPELINE.md). CI: **Generate T
 
 ## Experimental C++ WASM Renderer (Tier B)
 
-An optional **C++ Emscripten** backend can be enabled for performance experiments. It is **not** the production default and is labeled **Experimental** in the UI.
+An optional **C++ Emscripten** backend can be enabled for performance experiments. It is **not** the production default: it was frozen as R&D on 2026-09-27 (#1080) and is reachable only through the URL, where the status pill shows an **Experimental (R&D)** badge.
 
 ```
 http://localhost:3000/?renderer=wasm
 ```
 
-Or use the **Renderer** switcher in Controls.
+There is no Controls toggle (removed in #1329).
 
 | Topic | Document |
 |-------|----------|

@@ -1,5 +1,7 @@
 # WASM Backend Support Policy (Tier B)
 
+**Status:** Tier B, frozen R&D as of 2026-09-27 (#1080). Parity bugs only; GraphRunner TS-only.
+
 **Decision:** June 2026 — **Option B: Opt-in experimental backend**
 
 The TypeScript WebGPU renderer is the **default production path**. The C++ Emscripten WASM renderer is an **experimental, opt-in performance backend** until promotion criteria are met.
@@ -9,7 +11,7 @@ The TypeScript WebGPU renderer is the **default production path**. The C++ Emscr
 | Tier | Backend | User-facing | SLA |
 |------|---------|-------------|-----|
 | **A — Production** | TypeScript WebGPU | Default; recommended | Full feature parity; must work on supported browsers |
-| **B — Experimental** | C++ WASM (`?renderer=wasm`, Controls switcher) | Labeled **Experimental (C++)** | Must not crash app; best-effort parity; no guarantee on edge GPUs |
+| **B — Frozen R&D** | C++ WASM (`?renderer=wasm` only, no UI toggle since #1329) | Status pill shows an **Experimental (R&D)** badge | Must not crash app; best-effort parity; no guarantee on edge GPUs |
 | Dev escape | Canvas2D (`js`, `?renderer=js`) | Explicit URL only | No shader effects |
 
 WASM is **never** an automatic fallback. Users must explicitly choose it.
@@ -20,7 +22,7 @@ WASM is **never** an automatic fallback. Users must explicitly choose it.
 http://localhost:3000/?renderer=wasm
 ```
 
-Or use the **Renderer** switcher in Controls → WASM (shows experimental badge).
+There is no UI toggle (removed in #1329 after the #1080 freeze). With the URL override the status-bar pill shows an **Experimental (R&D)** badge, and the Dev Tools debug panel and Live Studio offer a WASM button.
 
 ## Promotion gate (Tier B → Tier A)
 
@@ -40,12 +42,14 @@ Archive or remove the WASM path if:
 
 Demotion action: hide UI toggle, keep `wasm_renderer/` as R&D or move to separate branch; stop committing `public/wasm/*` binaries.
 
+**Triggered 2026-09-27** ([evidence](../reports/wasm-promotion-evidence-2026-09-27.md), #1080): no meaningful win on a Tesla T4. Applied as a freeze, not a removal: UI toggle hidden and per-PR WASM CI trimmed (#1329); `wasm_renderer/` and committed `public/wasm/*` artifacts kept.
+
 ## Engineering rules while Tier B
 
 1. **TS first:** New renderer features land in `WebGPURenderer` + `RendererManager`; WASM ports are follow-ups, not blockers
 1a. **Feature freeze while gates are open (reaffirmed 2026-08-01):** no new C++ renderer features — **parity bugs only**. Specifically out of scope until a GPU session closes gates 1–3: porting `GraphRunner` to C++ (`frame.cpp`), and making WASM the default backend. Measurement/diagnostics tooling is in scope
 2. **No dual-SLA bugs:** P0 fixes target TS path; WASM gets P1 unless WASM-only regression
-3. **CI:** WASM must **build** on every PR (`wasm` job); parity/benchmark Playwright tests may skip without GPU
+3. **CI:** WASM jobs (`wasm`, `test-wasm-e2e`) live in [`.github/workflows/wasm.yml`](../.github/workflows/wasm.yml) and run only on PRs touching `wasm_renderer/**`, `public/wasm/**` or `tests/wasm-*`, weekly on `main`, or on demand (#1329). They are not required checks. Parity/benchmark Playwright tests may skip without GPU
 4. **Docs:** Do not describe WASM as "Phase 3 complete / production ready" — see `wasm_renderer/STATUS.md`
 
 ## Related docs
