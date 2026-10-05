@@ -2,7 +2,7 @@
   "id": "chromatic-infection",
   "name": "Chromatic Infection",
   "url": "shaders/chromatic-infection.wgsl",
-  "description": "Strong colours spread like a living organism, infecting neutral regions with organic, pulsing tendrils. Watch vibrant hues consume the dull!",
+  "description": "Strong colours spread like a living organism, infecting neutral regions with pulsing tendrils. Infection now creeps outward frame by frame along the veins, with a hot inflamed front and scarred older tissue; hold the mouse to plant a patient zero. Bass throbs the veins.",
   "params": [
     {
       "id": "spreadSpeed",
@@ -38,7 +38,9 @@
     "temporal-persistence",
     "colour-masking",
     "organic-growth",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

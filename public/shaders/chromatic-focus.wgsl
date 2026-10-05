@@ -7,7 +7,9 @@
 //  Complexity: High
 //  Chunks From: chromatic-focus
 //  Created: 2026-05-31
-//  Upgraded: 2026-06-28
+//  Upgraded: 2026-10-05
+//  Ideas: highlight bokeh discs with rim ring; cat's-eye vignetting; bokeh fringing (longitudinal CA)
+//  A packing: mask (focusMask, blurMask, spectralSpread*40, alpha) — no reader
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -22,11 +24,11 @@ fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> ve
 
 // OkLab color space
 fn srgbToLinear(c: vec3<f32>) -> vec3<f32> {
-  return pow(c, vec3<f32>(2.2));
+  return pow(max(c, vec3<f32>(0.0)), vec3<f32>(2.2));
 }
 
 fn linearToSrgb(c: vec3<f32>) -> vec3<f32> {
-  return pow(c, vec3<f32>(1.0 / 2.2));
+  return pow(max(c, vec3<f32>(0.0)), vec3<f32>(1.0 / 2.2));
 }
 
 fn linearToOkLab(c: vec3<f32>) -> vec3<f32> {
@@ -137,15 +139,63 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let blurMask = 1.0 - focusMask;
   let t = time * animSpeed;
 
-  // Rotating blur samples
+  // Idea 2: Cat's-eye vignetting — off-axis the aperture is clipped by a second
+  // circle displaced toward the frame centre in proportion to the pixel's
+  // distance from it; taps outside that circle are rejected, so bokeh near the
+  // frame edges turns into cat's-eye lenses (on-axis every tap survives).
+  let catShift = (vec2<f32>(0.5) - uv) * 0.8;
+
+  // Rotating blur samples — HEAD's 6-tap ring (aperture coord 0.667, same
+  // radius as HEAD) plus
+  // Idea 1: Highlight bokeh discs — every tap is weighted by luma^4 so bright
+  // highlights dominate and bloom into discs, and a second rim ring of 6 taps
+  // sits at the aperture edge (coord 1.0) with rim brightening (soap-bubble).
+  let blurRadius = aperture * (1.0 + blurMask * 2.0);
   let angleStep = 6.28318 / 6.0;
-  var blurAccum = vec3<f32>(0.0);
-  for (var i = 0; i < 6; i = i + 1) {
-    let angle = f32(i) * angleStep + t * 0.7;
+  var coreAccum = vec3<f32>(0.0);
+  var coreWeight = 0.0;
+  var rimAccum = vec3<f32>(0.0);
+  var rimWeight = 0.0;
+  for (var i = 0; i < 12; i = i + 1) {
+    let isRim = i >= 6;
+    let ringCoord = select(0.667, 1.0, isRim);
+    let angle = f32(i % 6) * angleStep + t * 0.7 + select(0.0, angleStep * 0.5, isRim);
     let dir = vec2<f32>(cos(angle), sin(angle));
-    blurAccum = blurAccum + sampleColor(uv + dir * aperture * (1.0 + blurMask * 2.0));
+    let c = sampleColor(uv + dir * blurRadius * ringCoord * 1.5);
+    let tapLuma = dot(c, vec3<f32>(0.299, 0.587, 0.114));
+    // Idea 1: highlight weighting (~1 for mid-tones, up to 7 for highlights)
+    var w = 1.0 + 6.0 * pow(clamp(tapLuma, 0.0, 1.0), 4.0) * blurMask;
+    // Idea 2: cat's-eye clip (soft edge so the rotating taps do not pop)
+    w = w * (1.0 - smoothstep(1.0, 1.2, length(dir * ringCoord - catShift)));
+    if (isRim) {
+      // Idea 1: rim brightening — the aperture edge carries more energy
+      w = w * (1.0 + 0.35 * blurMask);
+      rimAccum = rimAccum + c * w;
+      rimWeight = rimWeight + w;
+    } else {
+      coreAccum = coreAccum + c * w;
+      coreWeight = coreWeight + w;
+    }
   }
-  let softColor = blurAccum / 6.0;
+  let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let totalWeight = coreWeight + rimWeight;
+  var softColor = select(source.rgb, (coreAccum + rimAccum) / max(totalWeight, 1e-4), totalWeight > 1e-3);
+
+  // Idea 3: Bokeh fringing (longitudinal CA) — the focus plane is the depth
+  // under the cursor. Where the bokeh rim sees different content than its core
+  // (the disc's edge), out-of-focus pixels nearer than the focus plane
+  // (depth 1 = near) get a magenta rim, farther ones a green rim. Flat depth
+  // reads as "behind the focus plane" (background bokeh) at reduced strength.
+  let pixDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let focusDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(mouse, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let defocus = pixDepth - focusDepth;
+  let fringeAmt = clamp(0.35 + abs(defocus) * 3.0, 0.0, 1.0) * blurMask;
+  let coreAvg = coreAccum / max(coreWeight, 1e-4);
+  let rimAvg = rimAccum / max(rimWeight, 1e-4);
+  let rimEdge = abs(dot(rimAvg - coreAvg, vec3<f32>(0.299, 0.587, 0.114))) * step(1e-3, min(coreWeight, rimWeight));
+  // luminance-neutral fringe directions: magenta (near) / green (far)
+  let fringeDir = select(vec3<f32>(-0.4, 0.3, -0.4), vec3<f32>(0.6, -0.4, 0.6), defocus > 0.0);
+  softColor = max(softColor + fringeDir * rimEdge * fringeAmt * 3.0, vec3<f32>(0.0));
 
   // ═══════════════════════════════════════════════════════════════
   //  VISUALIST: Enhanced chromatic aberration via dispersion
@@ -161,8 +211,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     sampleColor(uv + gOffset).g,
     sampleColor(uv - bOffset).b
   );
-
-  let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
   // ═══════════════════════════════════════════════════════════════
   //  VISUALIST: Cosine palette for dynamic halo color cycling
@@ -192,7 +240,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // ═══════════════════════════════════════════════════════════════
   //  VISUALIST: Mie scattering haze
   // ═══════════════════════════════════════════════════════════════
-  let viewDir = normalize(centered);
+  let viewDir = centered / max(dist, 1e-4);
   let lightDir = normalize(vec2<f32>(cos(t * 0.3), sin(t * 0.3)));
   let cosTheta = dot(viewDir, lightDir);
   let haze = mieScattering(cosTheta, 0.7) * blurMask * 0.08 * (1.0 + mids * 0.5);
@@ -218,7 +266,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   finalColor = finalColor * (1.0 + treble * 0.3);
 
   // Hue-preserving clamp before ACES
-  finalColor = huePreserveClamp(finalColor);
+  finalColor = huePreserveClamp(max(finalColor, vec3<f32>(0.0)));
 
   // ACES filmic tone mapping
   finalColor = aces(finalColor);
@@ -231,8 +279,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let bloomAlpha = pow(max(0.0, luma - 0.6), 2.0) * 3.0;
   let finalAlpha = clamp(mix(source.a, 0.72 + blurMask * 0.18, blurMask) + bloomAlpha * 0.1, 0.06, 0.98);
 
-  let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  let outDepth = clamp(mix(baseDepth, 0.20 + blurMask * 0.65, 0.24), 0.0, 1.0);
+  let outDepth = clamp(mix(pixDepth, 0.20 + blurMask * 0.65, 0.24), 0.0, 1.0);
 
   // Premultiplied alpha writeback
   let out = vec4<f32>(finalColor * finalAlpha, finalAlpha);

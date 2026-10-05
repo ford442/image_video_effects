@@ -20,7 +20,9 @@
     "artistic"
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "author": "AI",
   "params": [

@@ -2,6 +2,12 @@
 //  Chromatic Folds – mind‑bending psychedelic topology
 //  Color as a physical dimension: each pixel is a point in 4‑D (x, y, depth, hue).
 //  Warps image along local hue‑gradient, bends depth into curvature tensor.
+//  Category: artistic
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-05
+//  Ideas: fold creases at pivot and antipode; re-folding feedback; cursor pinch pivot
+//  A packing: linear pre-ACES display RGB + fold-coverage alpha (C read as colour)
 // ────────────────────────────────────────────────────────────────────────────────
 #include "_prelude.wgsl"
 
@@ -56,6 +62,18 @@ fn wrapMod(x: f32, y: f32) -> f32 {
     return x - y * floor(x / y);
 }
 
+// Signed shortest hue distance a - b in [-0.5, 0.5)
+fn hueDelta(a: f32, b: f32) -> f32 {
+  return wrapMod(a - b + 0.5, 1.0) - 0.5;
+}
+
+// Idea 1: Fold creases — anti-aliased line where the hue sits at `at`.
+// `w` is the local hue change per pixel, so the line stays ~1.5 px wide in screen space.
+fn creaseLine(hue: f32, at: f32, w: f32) -> f32 {
+  let d = abs(hueDelta(hue, at));
+  return 1.0 - smoothstep(0.0, 1.5 * w, d);
+}
+
 // ───────────────────────────────────────────────────────────────────────────────
 //  Main compute entry point
 // ───────────────────────────────────────────────────────────────────────────────
@@ -82,6 +100,7 @@ fn aces_tonemap(color: vec3<f32>) -> vec3<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dims = u.config.zw;
+  if (f32(gid.x) >= dims.x || f32(gid.y) >= dims.y) { return; }
 
   var uv = vec2<f32>(gid.xy) / dims;
   let texel = 1.0 / dims;
@@ -90,13 +109,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // ──────────────────────────────────────────────────────────────────────────
   //  Parameters
   // ──────────────────────────────────────────────────────────────────────────
-  let foldStrength = u.zoom_params.x * 1.5 + 0.5;           // 0.5 - 2.0
+  // Bass breathes the fold (≤ +30%). plasmaBuffer[0].x = bass.
+  let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+  let foldStrength = (u.zoom_params.x * 1.5 + 0.5) * (1.0 + 0.3 * bass); // 0.5 - 2.0 (+bass)
   let pivotHue = u.zoom_params.y;                            // 0 - 1
   let satScale = u.zoom_params.z * 0.5 + 0.75;              // 0.75 - 1.25
   let depthInfluence = u.zoom_params.w;                      // 0 - 1
-  let noiseAmount = u.zoom_config.x * 0.003;                 // noise displacement
-  let feedbackStrength = u.zoom_config.y * 0.15 + 0.8;      // 0.8 - 0.95
-  let rippleStrength = u.zoom_config.z * 0.005;             // ripple amplitude
+  // HEAD read these from zoom_config (time / mouse) — now the old midpoints.
+  let noiseAmount = 0.0015;                                  // noise displacement
+  let feedbackStrength = 0.875;                              // feedback mix
+  let rippleStrength = 0.0025;                               // ripple amplitude
+  let mouse = u.zoom_config.yz;
+  let mouseDown = u.zoom_config.w > 0.5;
 
   // ──────────────────────────────────────────────────────────────────────────
   //  1. Read source color & depth
@@ -164,21 +188,61 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // ──────────────────────────────────────────────────────────────────────────
   //  7. Fold the hue of the sampled color
   // ──────────────────────────────────────────────────────────────────────────
+  // Idea 3: Cursor pinch — near the pointer the pivot slides toward the hue
+  // under the cursor while the mouse is held, so the user grabs a
+  // colour and the image folds around it.
+  let aspect = dims.x / max(dims.y, 1.0);
+  let mDelta = (uv - mouse) * vec2<f32>(aspect, 1.0);
+  let mouseHue = rgb2hsv(textureSampleLevel(readTexture, u_sampler, clamp(mouse, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb).x;
+  // Hold-only: an idle pointer sits at (0.5, 0.5), so a hover pinch would be baked
+  // into the default look.
+  let pinch = (1.0 - smoothstep(0.0, 0.3, length(mDelta))) * select(0.0, 1.0, mouseDown);
+  let localPivot = fract(pivotHue + hueDelta(mouseHue, pivotHue) * pinch);
+
   var hsv = rgb2hsv(displacedColor);
-  hsv.x = foldHue(hsv.x, pivotHue, foldStrength);
+  let rawHue = hsv.x;
+  hsv.x = foldHue(hsv.x, localPivot, foldStrength);
   hsv.y = clamp(hsv.y * satScale, 0.0, 1.0);
-  let foldedColor = hsv2rgb(hsv.x, hsv.y, hsv.z);
+  var foldedColor = hsv2rgb(hsv.x, hsv.y, hsv.z);
+
+  // Idea 1: Fold creases — a bright crease where the sampled hue sits on the
+  // pivot and a softer shadow seam at the antipode (pivot + 0.5). Width follows
+  // the local hue-gradient (hueGrad spans 2 texels). Grey pixels have no hue → no crease.
+  let huePerPx = clamp(length(hueGrad) * 0.5, 0.002, 0.05);
+  let satGate = smoothstep(0.06, 0.25, hsv.y);
+  let creaseAmt = clamp(abs(foldStrength - 1.0) * 1.6 + 0.2, 0.0, 1.0) * satGate;
+  let crease = creaseLine(rawHue, localPivot, huePerPx) * creaseAmt;
+  let seam = creaseLine(rawHue, fract(localPivot + 0.5), huePerPx * 2.0) * creaseAmt;
+  let creaseCol = hsv2rgb(localPivot, 0.3, max(hsv.z, 0.6) * 1.15);
+  foldedColor = mix(foldedColor, creaseCol, crease * 0.75);
+  foldedColor = foldedColor * (1.0 - 0.45 * seam);
 
   // ──────────────────────────────────────────────────────────────────────────
   //  8. Feedback: blend with previous frame
   // ──────────────────────────────────────────────────────────────────────────
-  let prev = textureLoad(dataTextureC, vec2<i32>((uv) * vec2<f32>(textureDimensions(dataTextureC))), 0).rgb;
-  let finalColor = mix(foldedColor, prev, feedbackStrength);
+  let cDims = vec2<i32>(textureDimensions(dataTextureC));
+  let cCoord = clamp(vec2<i32>(gid.xy), vec2<i32>(0), cDims - vec2<i32>(1));
+  var prev = max(textureLoad(dataTextureC, cCoord, 0).rgb, vec3<f32>(0.0));
+
+  // Idea 2: Re-folding feedback — the history is folded again each frame
+  // (gentle strength, slowly drifting pivot), so bands nest into deeper folds
+  // instead of only smearing.
+  var prevHsv = rgb2hsv(prev);
+  let refoldStrength = mix(1.0, foldStrength, 0.15);
+  let pivotDrift = 0.02 * sin(time * 0.3);
+  prevHsv.x = foldHue(prevHsv.x, fract(localPivot + pivotDrift), refoldStrength);
+  prev = hsv2rgb(prevHsv.x, prevHsv.y, prevHsv.z);
+
+  let finalColor = max(mix(foldedColor, prev, feedbackStrength), vec3<f32>(0.0));
+
+  // Semantic alpha: how much the fold moved this pixel (hue shift × saturation) or creased it.
+  let foldShift = abs(hueDelta(hsv.x, rawHue)) * 4.0 * hsv.y;
+  let alpha = clamp(0.7 + 0.3 * max(foldShift, crease), 0.0, 1.0);
 
   // ──────────────────────────────────────────────────────────────────────────
   //  9. Write outputs
   // ──────────────────────────────────────────────────────────────────────────
-  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(aces_tonemap(finalColor), 1.0));
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(aces_tonemap(finalColor), alpha));
   textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthVal, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(finalColor, alpha));
 }
