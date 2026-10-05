@@ -71,8 +71,8 @@ export async function stopStaticServer() {
   }
 }
 
-export function attachConsoleCollector(page) {
-  const criticalErrors = [];
+/** `criticalErrors` may be passed in so one array survives a page being replaced. */
+export function attachConsoleCollector(page, criticalErrors = []) {
   const consoleErrors = [];
 
   page.on('console', (msg) => {

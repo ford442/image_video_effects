@@ -594,24 +594,38 @@ async function runAppEngine(args, shaders, manifest) {
 }
 
 async function captureAll(harness, browser, args, shaders, manifest, summary, failures) {
-  const page = await browser.newPage(
-    args.viewport ? { viewport: { width: args.viewport, height: args.viewport } } : {},
-  );
-  const { criticalErrors } = harness.attachConsoleCollector(page);
-  // Same-origin only: the app fetches a random remote image at boot, which can land
-  // mid-capture and replace the fixture. Offline also means reproducible.
-  await harness.blockExternalRequests(page);
-
+  const criticalErrors = [];
   const appUrl = harness.buildAppUrl({
     renderer: 'webgpu',
     renderQuality: args.quality,
     // On the page: one fewer hop for readback, and SwiftShader gains nothing from the worker.
     extraParams: args.adapter === 'swiftshader' ? { renderer: 'main' } : {},
   });
+
+  let page = null;
+  const newPage = async () => {
+    if (page) await page.close().catch(() => {});
+    page = await browser.newPage(
+      args.viewport ? { viewport: { width: args.viewport, height: args.viewport } } : {},
+    );
+    harness.attachConsoleCollector(page, criticalErrors);
+    // Same-origin only: the app fetches a random remote image at boot, which can land
+    // mid-capture and replace the fixture. Offline also means reproducible.
+    await harness.blockExternalRequests(page);
+  };
   // 'load', not 'networkidle': remote media hosts can keep retrying on sandboxed hosts.
+  // A page wedged by a runaway shader may not even navigate: then start a fresh page.
   const openApp = async () => {
-    await page.goto(appUrl, { waitUntil: 'load', timeout: 120000 });
-    await harness.waitForTestApi(page, 120000);
+    try {
+      if (!page) await newPage();
+      await page.goto(appUrl, { waitUntil: 'load', timeout: 120000 });
+      await harness.waitForTestApi(page, 120000);
+    } catch (err) {
+      console.log(`[thumbnails] app did not load (${String(err.message || err).split('\n')[0]}); new page`);
+      await newPage();
+      await page.goto(appUrl, { waitUntil: 'load', timeout: 120000 });
+      await harness.waitForTestApi(page, 120000);
+    }
   };
   await openApp();
 
