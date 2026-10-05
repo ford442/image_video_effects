@@ -200,8 +200,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let signal = image.r;
     // Deposit colour: inverse of the food under it, HDR-boosted where food is rich.
     let emission = agentEmissionColor(vec3<f32>(1.0) - image.rgb, signal);
-    // The Eulerian trail has a floor (~0.15) wherever agent mass is spread thin: veins are what rises above it.
-    let density = max(trailNew - 0.16, 0.0) * mix(4.0, 16.0, deposit_opacity);
+    // The Eulerian trail has a floor wherever agent mass is spread thin, and its level depends on the
+    // food (the image). Veins are what rises above the local background: the mean of an 8-tap ring.
+    var background = 0.0;
+    for (var k = 0; k < 8; k++) {
+        let a = f32(k) * 0.785398;
+        background += state(coord + vec2<i32>(round(vec2<f32>(cos(a), sin(a)) * 12.0))).x;
+    }
+    background = background / 8.0;
+    let density = max(trailNew - background - 0.01, 0.0) * mix(8.0, 30.0, deposit_opacity);
     let cumulative_alpha = 1.0 - transmittance(density);
     let color = mix(image.rgb, emission * (1.0 + trailNew), cumulative_alpha);
 

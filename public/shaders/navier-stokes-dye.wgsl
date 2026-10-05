@@ -76,7 +76,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let damping = 0.002 + 0.02 * viscosity;
     let vorticityScale = 0.05 + 0.3 * turbulence;
-    let push = (0.3 + 2.0 * rippleStrength) * (1.0 + bass * 0.4 + mids * 0.2);
+    // Velocities are px/frame: scale forces with the working size so the flow covers the
+    // same share of the frame at any working size (the numpy model is 128², scale 1).
+    let pxScale = resolution.x / 128.0;
+    let push = (0.3 + 2.0 * rippleStrength) * (1.0 + bass * 0.4 + mids * 0.2) * pxScale;
 
     // ── Advect velocity, dye and hue from p - v ──
     let here = stateAt(coord);
@@ -125,7 +128,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     var vel = (adv.xy * gain + force + confine + 0.25 * gradDiv) * (1.0 - damping);
     let speed = length(vel);
-    if (speed > VMAX) { vel = vel * (VMAX / speed); }
+    if (speed > VMAX * pxScale) { vel = vel * (VMAX * pxScale / speed); }
 
     // ── Dye: advected density fades slowly; the cursor and clicks inject new dye ──
     let inject = near * (0.08 + held * 0.3) + dyeBurst * 0.4;
@@ -138,7 +141,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ── Display: the image, tinted by flow speed and coloured by dye ──
     let src = textureLoad(readTexture, coord, 0);
     let dyeColor = palette(hue + colorShift + curl * 0.1);
-    let saturation = clamp(length(vel) * 0.15, 0.0, 1.0);
+    let saturation = clamp(length(vel) / pxScale * 0.15, 0.0, 1.0);
     var dyed = mix(src.rgb, src.rgb * (0.6 + dyeColor * 0.8), saturation);
     dyed = mix(dyed, dyeColor, clamp(dye, 0.0, 1.0) * (0.75 + 0.2 * bass));
     let finalAlpha = mix(src.a, 1.0, clamp((saturation + dye) * 0.7, 0.0, 1.0));
