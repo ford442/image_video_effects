@@ -174,24 +174,6 @@
       "line": 161,
       "expr": "idx * 4u + 3u",
       "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
-    },
-    {
-      "file": "public/shaders/physarum.wgsl",
-      "line": 131,
-      "expr": "idx * 3u + 0u",
-      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
-    },
-    {
-      "file": "public/shaders/physarum.wgsl",
-      "line": 132,
-      "expr": "idx * 3u + 1u",
-      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
-    },
-    {
-      "file": "public/shaders/physarum.wgsl",
-      "line": 133,
-      "expr": "idx * 3u + 2u",
-      "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
     }
   ]
 }

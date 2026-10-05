@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-04T08:46:36.556425+00:00",
+  "generated": "2026-10-05T10:58:16.234535+00:00",
   "files_scanned": 1423,
   "new_violations": [],
   "known_violations": [
@@ -110,70 +110,6 @@
     {
       "file": "public/shaders/interactive-voronoi-lens.wgsl",
       "line": 123,
-      "expr": "VEL_Y",
-      "op": "=",
-      "index": 7,
-      "class": "fft-zone"
-    },
-    {
-      "file": "public/shaders/mouse-ink-bleed.wgsl",
-      "line": 127,
-      "expr": "PREV_PRESS",
-      "op": "=",
-      "index": 0,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/mouse-ink-bleed.wgsl",
-      "line": 128,
-      "expr": "CLICK_TIME",
-      "op": "=",
-      "index": 1,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/mouse-ink-bleed.wgsl",
-      "line": 129,
-      "expr": "CLICK_X",
-      "op": "=",
-      "index": 2,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/mouse-ink-bleed.wgsl",
-      "line": 130,
-      "expr": "CLICK_Y",
-      "op": "=",
-      "index": 3,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/mouse-ink-bleed.wgsl",
-      "line": 131,
-      "expr": "SMOOTH_X",
-      "op": "=",
-      "index": 4,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/mouse-ink-bleed.wgsl",
-      "line": 132,
-      "expr": "SMOOTH_Y",
-      "op": "=",
-      "index": 5,
-      "class": "fft-zone"
-    },
-    {
-      "file": "public/shaders/mouse-ink-bleed.wgsl",
-      "line": 133,
-      "expr": "VEL_X",
-      "op": "=",
-      "index": 6,
-      "class": "fft-zone"
-    },
-    {
-      "file": "public/shaders/mouse-ink-bleed.wgsl",
-      "line": 134,
       "expr": "VEL_Y",
       "op": "=",
       "index": 7,
@@ -348,7 +284,7 @@
       "class": "fft-zone"
     }
   ],
-  "dynamic_writes": 16,
+  "dynamic_writes": 13,
   "dynamic_untriaged": 0,
   "out_of_range_writes": 0,
   "baseline": "reports/extrabuffer_write_audit_baseline.json"
