@@ -724,12 +724,30 @@
       "history": []
     },
     "chromatic-crawler": {
-      "hash": "011b8afb7bc196d4",
-      "history": []
+      "hash": "a588e2b84b469310",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:13:55.254Z",
+          "hash": "a588e2b84b469310",
+          "prev_hash": "011b8afb7bc196d4",
+          "commit": "86d8f696",
+          "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        }
+      ]
     },
     "chromatic-focus": {
-      "hash": "15da01520b6816bf",
-      "history": []
+      "hash": "a09ae5b0e5b77fcb",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:13:55.254Z",
+          "hash": "a09ae5b0e5b77fcb",
+          "prev_hash": "15da01520b6816bf",
+          "commit": "86d8f696",
+          "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        }
+      ]
     },
     "chromatic-folds-2": {
       "hash": "ea924ddca5224467",
@@ -740,24 +758,60 @@
       "history": []
     },
     "chromatic-folds": {
-      "hash": "3f9c7941622743a8",
-      "history": []
+      "hash": "ea833c55627bc42d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:13:55.254Z",
+          "hash": "ea833c55627bc42d",
+          "prev_hash": "3f9c7941622743a8",
+          "commit": "86d8f696",
+          "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        }
+      ]
     },
     "chromatic-infection": {
-      "hash": "5d370706de159e4c",
-      "history": []
+      "hash": "7d7bc7150871cd3e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:13:55.254Z",
+          "hash": "7d7bc7150871cd3e",
+          "prev_hash": "5d370706de159e4c",
+          "commit": "86d8f696",
+          "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        }
+      ]
     },
     "chromatic-manifold-2": {
       "hash": "f816450979ed851c",
       "history": []
     },
     "chromatic-manifold": {
-      "hash": "ff68d2c00695adae",
-      "history": []
+      "hash": "800b8c1ac6decfba",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:13:55.254Z",
+          "hash": "800b8c1ac6decfba",
+          "prev_hash": "ff68d2c00695adae",
+          "commit": "86d8f696",
+          "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        }
+      ]
     },
     "chromatic-phase-inversion": {
-      "hash": "9139d6ff94f912c7",
-      "history": []
+      "hash": "e54413627d196886",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:13:55.254Z",
+          "hash": "e54413627d196886",
+          "prev_hash": "9139d6ff94f912c7",
+          "commit": "86d8f696",
+          "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        }
+      ]
     },
     "chromatographic-separation": {
       "hash": "7098c1b7c25d73a7",
@@ -840,8 +894,17 @@
       "history": []
     },
     "iridescent-oil-slick": {
-      "hash": "861cdc2c9968c208",
-      "history": []
+      "hash": "c7865c42f6adf3e0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:13:55.254Z",
+          "hash": "c7865c42f6adf3e0",
+          "prev_hash": "861cdc2c9968c208",
+          "commit": "86d8f696",
+          "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        }
+      ]
     },
     "iso-hills": {
       "hash": "bd53f250446fee08",
@@ -856,8 +919,17 @@
       "history": []
     },
     "liquid-prism-cascade": {
-      "hash": "7ed38a1c6c8a1d01",
-      "history": []
+      "hash": "c92df32d84844700",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:13:55.254Z",
+          "hash": "c92df32d84844700",
+          "prev_hash": "7ed38a1c6c8a1d01",
+          "commit": "86d8f696",
+          "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        }
+      ]
     },
     "luminance-wind": {
       "hash": "545da307c5a1c7e1",
@@ -1060,8 +1132,17 @@
       "history": []
     },
     "vortex-prism": {
-      "hash": "83b5cfe3baa75b38",
-      "history": []
+      "hash": "db7723bbf50aa4e7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:13:55.254Z",
+          "hash": "db7723bbf50aa4e7",
+          "prev_hash": "83b5cfe3baa75b38",
+          "commit": "86d8f696",
+          "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        }
+      ]
     },
     "black-hole": {
       "hash": "86cf4f4ad771bf3d",
@@ -5115,8 +5196,17 @@
       "history": []
     },
     "audio-reactive-rgb-dispersion": {
-      "hash": "e79b1db05095be5a",
-      "history": []
+      "hash": "8ce5140e03df7071",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:13:55.254Z",
+          "hash": "8ce5140e03df7071",
+          "prev_hash": "e79b1db05095be5a",
+          "commit": "86d8f696",
+          "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        }
+      ]
     },
     "audio-reactive-temporal-decay": {
       "hash": "0c0e3a44e4d681e5",
