@@ -28,27 +28,9 @@
 //    [0]=bass  [1]=mid  [2]=treble  [3]=reserved  [4]=historyHead
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=R-decay, y=G-decay, z=B-decay, w=maskStr
 @group(0) @binding(13) var historyTexture: texture_2d_array<f32>;
-
-struct Uniforms {
-  config: vec4<f32>,      // x=time, y=rippleCount, z=resX, w=resY
-  zoom_config: vec4<f32>, // x=time, y=mouseX, z=mouseY, w=mouseDown
-  zoom_params: vec4<f32>, // x=R-decay, y=G-decay, z=B-decay, w=maskStr
-  ripples: array<vec4<f32>, 50>,
-};
 
 const PI: f32 = 3.14159265358979323846;
 
@@ -125,6 +107,19 @@ fn phosphorMask(uv: vec2<f32>, time: f32, strength: f32) -> vec3<f32> {
   return mix(vec3<f32>(1.0), vec3<f32>(r, g, b), strength);
 }
 
+// ── History ring read (#1307) ────────────────────────────────────
+// Every ring read goes through here. Ages clamp to the oldest layer the ring
+// actually holds; age 0 is the live frame — which is all a 1-layer ring has
+// (the host never writes a 1-layer ring, so its layer 0 is stale). On an
+// 8-layer ring this is the same layer lookup as before. Mirrors
+// temporal-slit-scan.wgsl frameAt.
+fn frameAt(uv: vec2<f32>, head: u32, depth: u32, age: u32, current: vec4<f32>) -> vec4<f32> {
+  let a = min(age, depth - 1u);
+  if (a == 0u) { return current; }
+  let layer = (head + depth - a) % depth;
+  return textureSampleLevel(historyTexture, u_sampler, uv, i32(layer), 0.0);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let res   = vec2<f32>(u.config.z, u.config.w);
@@ -165,7 +160,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // ── HISTORY RING DEPTH (floor fix, 2026-09-21) ───────────────────
   // The ring is at most 8 layers; after the VRAM probe the runtime may
   // allocate 8, 4 or 1, and it wraps its write head at the ALLOCATED
-  // count (renderer/webgpu/frame.ts). A hardcoded HISTORY_DEPTH=8 asked
+  // count (renderer/webgpu/frame.ts). A hardcoded ring depth of 8 asked
   // for layers that do not exist on a 4- or 1-layer device and WGSL
   // clamped them to the last layer: scrambled frame order, silently.
   let histDepth = max(textureNumLayers(historyTexture), 1u);
@@ -177,15 +172,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let immediate = textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), historyDims - vec2<i32>(1)), 0);
   var burned = max(current.rgb, vec3<f32>(immediate.r * decayR, immediate.g * decayG, immediate.b * decayB));
   for (var age: u32 = 1u; age <= min(7u, maxAge); age = age + 1u) {
-    let layer = (historyHead + histDepth - age) % histDepth;
     // Idea 2 — age-softened afterglow: older frames are read through a widening
     // diagonal tap pair (alternating orientation per age), so trails blur as they fade.
     let f = f32(age);
     let r = f * 0.8 / res;
     let diag = select(vec2<f32>(r.x, -r.y), r, (age & 1u) == 1u);
-    let centre = textureSampleLevel(historyTexture, u_sampler, uv, i32(layer), 0.0);
-    let spread = (textureSampleLevel(historyTexture, u_sampler, uv + diag, i32(layer), 0.0)
-                + textureSampleLevel(historyTexture, u_sampler, uv - diag, i32(layer), 0.0)) * 0.5;
+    let centre = frameAt(uv, historyHead, histDepth, age, current);
+    let spread = (frameAt(uv + diag, historyHead, histDepth, age, current)
+                + frameAt(uv - diag, historyHead, histDepth, age, current)) * 0.5;
     let hist  = mix(centre, spread, min(f / 7.0, 1.0) * 0.75);
     let decayed = vec3<f32>(
       hist.r * pow(decayR, f),

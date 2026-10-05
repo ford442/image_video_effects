@@ -240,7 +240,7 @@ describe('sanitizeBindings', () => {
     expect(sanitized).toHaveLength(1);
     expect(sanitized[0].trigger.id).toHaveLength(64);
     expect((sanitized[0].action as { param: string }).param).toHaveLength(128);
-    expect((sanitized[0].action as { slot: number }).slot).toBe(2);
+    expect((sanitized[0].action as { slot: number }).slot).toBe(5);
   });
 
   test('dedupes bindings by trigger', () => {
