@@ -1,31 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Complex Exponent Warp  (RETRY expanded upgrade)
+//  Complex Exponent Warp
 //  Category: distortion
 //  Features: mouse-driven, audio-reactive, upgraded-rgba,
 //            complex-math, domain-warp, depth-aware, aces-tone-map,
 //            julia-orbit-trap, sdf-cardioid, newton-fractal
+//  Upgraded: 2026-10-05
+//  Ideas: 1) Riemann-sheet crossfade at the atan2 cut 2) conformal magnification shading (|dz^w/dz| blur + brightness) 3) mirrored-repeat tiling
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -36,9 +20,9 @@ fn hash21(p: vec2<f32>) -> f32 {
 fn valueNoise(p: vec2<f32>) -> f32 {
     let i = floor(p);
     let f = fract(p);
-    let u = f * f * (3.0 - 2.0 * f);
-    return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), u.x),
-               mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
+    let s = f * f * (3.0 - 2.0 * f);  // floor: was `let u`, shadowing the uniform block
+    return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), s.x),
+               mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), s.x), s.y);
 }
 fn fbm(p: vec2<f32>, oct: i32) -> f32 {
     var s = 0.0;
@@ -69,13 +53,39 @@ fn cdiv(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
     let d = max(b.x * b.x + b.y * b.y, 0.0001);
     return vec2<f32>((a.x * b.x + a.y * b.y) / d, (a.y * b.x - a.x * b.y) / d);
 }
-fn complex_pow(z: vec2<f32>, w: vec2<f32>) -> vec2<f32> {
-    let r = max(length(z), 0.0001);
-    let angle = atan2(z.y, z.x);
+// z^w on an explicit sheet: angle may be atan2(z) (principal) or atan2(z) ± 2π.
+fn complex_pow(r_in: f32, angle: f32, w: vec2<f32>) -> vec2<f32> {
+    let r = max(r_in, 0.0001);
     let ln_z = vec2<f32>(log(r), angle);
     let exponent = cmul(w, ln_z);
-    let mag = exp(exponent.x);
+    let mag = exp(clamp(exponent.x, -16.0, 16.0));  // floor: overflow → inf/NaN at large |w|
     return vec2<f32>(mag * cos(exponent.y), mag * sin(exponent.y));
+}
+
+// Idea 3: mirrored-repeat (triangle-wave) fold instead of fract → seamless lattice.
+fn mirrorRepeat(x: vec2<f32>) -> vec2<f32> {
+    return vec2<f32>(1.0) - abs(vec2<f32>(1.0) - fract(x * 0.5) * 2.0);
+}
+
+// Chromatic-split sample of one sheet, with a software LOD (no mips on readTexture):
+// a rotated 4-tap box whose radius grows with the conformal stretch (Idea 2).
+fn sampleSheet(fuv: vec2<f32>, ca: vec2<f32>, blurUV: vec2<f32>) -> vec3<f32> {
+    let c0 = clamp(fuv, vec2<f32>(0.0), vec2<f32>(1.0));
+    let r = textureSampleLevel(readTexture, u_sampler, clamp(c0 + ca, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let g = textureSampleLevel(readTexture, u_sampler, c0, 0.0).g;
+    let b = textureSampleLevel(readTexture, u_sampler, clamp(c0 - ca * 0.7, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+    var col = vec3<f32>(r, g, b);
+    if (max(blurUV.x, blurUV.y) > 0.00005) {
+        var acc = vec3<f32>(0.0);
+        let o1 = vec2<f32>(0.5, 1.0) * blurUV;
+        let o2 = vec2<f32>(-1.0, 0.5) * blurUV;
+        acc += textureSampleLevel(readTexture, u_sampler, clamp(c0 + o1, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+        acc += textureSampleLevel(readTexture, u_sampler, clamp(c0 - o1, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+        acc += textureSampleLevel(readTexture, u_sampler, clamp(c0 + o2, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+        acc += textureSampleLevel(readTexture, u_sampler, clamp(c0 - o2, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+        col = (col + acc) * 0.2;
+    }
+    return col;
 }
 fn juliaOrbit(z: vec2<f32>, c: vec2<f32>) -> vec2<f32> {
     var zz = z;
@@ -158,7 +168,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let w_imag = (mouse.y - 0.5) * 6.0 + mids * sin(time) * 0.5;
     let w = vec2<f32>(w_real, w_imag);
 
-    var result_z = complex_pow(z, w);
+    // Idea 1: Riemann-sheet crossfade. Evaluate the principal sheet (θ) and the
+    // neighbouring sheet across the cut (θ ∓ 2π). Blending them 50/50 at |θ| = π
+    // makes both sides of the atan2 seam agree, so the cut becomes a twin-sheet
+    // ghost that fades in over the last part of the angle range. For integer real
+    // w (default w = 1) the sheets coincide and nothing changes.
+    let zr = length(z);
+    let theta = atan2(z.y, z.x);
+    let thetaB = theta - sign(theta) * TAU;
+    var result_z = complex_pow(zr, theta, w);
+    var result_zB = complex_pow(zr, thetaB, w);
+    let sheetW = 0.5 * smoothstep(0.55, 1.0, abs(theta) / PI);
+
+    // Idea 2: conformal magnification |d(z^w)/dz| = |w|·|z|^{Re w−1}·e^{−Im w·θ},
+    // taken relative to |z| = 1, θ = 0 (so the default w = 1 is neutral).
+    let relLogJ = clamp((w.x - 1.0) * log(max(zr, 0.0001)) - w.y * theta, -8.0, 8.0);
+    let stretchOct = relLogJ / 0.6931472;
 
     // Julia orbit-trap overlay.
     let juliaC = vec2<f32>(0.355 + 0.05 * sin(time * 0.3), 0.355 + 0.05 * cos(time * 0.2));
@@ -167,19 +192,34 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let spiral = p2 * PI + bass * 0.3;
     let rotation = vec2<f32>(cos(spiral), sin(spiral));
     result_z = cmul(result_z, rotation);
+    result_zB = cmul(result_zB, rotation);
 
     result_z.x /= aspect;
-    var final_uv = result_z * mix(0.1, 1.0, p4) + 0.5;
-    final_uv = fract(final_uv);
-    let final_uv_c = clamp(final_uv, vec2<f32>(0.0), vec2<f32>(1.0));
+    result_zB.x /= aspect;
+    let outScale = mix(0.1, 1.0, p4);
+    let final_uv = mirrorRepeat(result_z * outScale + 0.5);   // Idea 3 (was fract)
+    let final_uvB = mirrorRepeat(result_zB * outScale + 0.5);
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
+    // Idea 2: stretched regions (source squeezed into one pixel) get a wider
+    // software-LOD footprint instead of aliasing into sparkle.
+    let texDims = vec2<f32>(textureDimensions(readTexture));
+    let blurTexels = clamp(exp2(max(stretchOct, 0.0)) - 1.0, 0.0, 6.0);
+    let blurUV = blurTexels / max(texDims, vec2<f32>(1.0));
+
     let ca = (final_uv - 0.5) * 0.02 * p4 * (1.0 + treble);
-    let r = textureSampleLevel(readTexture, u_sampler, clamp(final_uv_c + ca, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, final_uv_c, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, clamp(final_uv_c - ca * 0.7, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
-    var col = vec3<f32>(r, g, b);
+    var col = sampleSheet(final_uv, ca, blurUV);
+    // Idea 1: twin-sheet ghost near the cut (skipped when the sheets coincide).
+    if (sheetW > 0.001 && length(final_uvB - final_uv) > 0.0005) {
+        let caB = (final_uvB - 0.5) * 0.02 * p4 * (1.0 + treble);
+        let colB = sampleSheet(final_uvB, caB, blurUV);
+        col = mix(col, colB, sheetW);
+    }
+
+    // Idea 2: conformal brightness — compressed regions gather more source
+    // light and brighten, stretched regions dim (a softened |J|² law).
+    col *= exp(clamp(relLogJ * 0.35, -0.45, 0.4));
 
     // Newton fractal color overlay.
     let newton = newtonColor(z * mix(0.5, 2.0, p3), time);
@@ -198,9 +238,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let orbitGlow = exp(-orbit.x * 4.0) * (0.5 + 0.5 * sin(time * 2.0));
     col += vec3<f32>(0.9, 0.7, 0.5) * orbitGlow * 0.2 * p4;
 
-    col = acesToneMap(col * (1.1 + mids * 0.2));
+    col = acesToneMap(max(col * (1.1 + mids * 0.2), vec3<f32>(0.0)));
 
-    let distAlpha = clamp(1.0 - uvDist * 0.15, 0.0, 1.0);
+    // Floor: HEAD's 1 − |z|·0.15 hit 0 for |z| > 6.7 (most of the frame at high
+    // |w|); a reciprocal falloff with a floor keeps the tiled image covered.
+    let distAlpha = mix(0.45, 1.0, 1.0 / (1.0 + uvDist * 0.15));
     let alpha = clamp(distAlpha * (0.7 + bass * 0.3) + depth * 0.2 + orbit.y * 0.01, 0.0, 1.0);
 
     textureStore(writeTexture, coord, vec4<f32>(col, alpha));
