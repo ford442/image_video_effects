@@ -523,7 +523,8 @@
       "branchless-sort",
       "sorting-network",
       "depth-weighted",
-      "lod-distance"
+      "lod-distance",
+      "semantic-alpha"
     ],
     "tags": [
       "filter",

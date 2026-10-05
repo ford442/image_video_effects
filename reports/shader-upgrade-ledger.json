@@ -1255,8 +1255,17 @@
       "history": []
     },
     "pixelate-blast": {
-      "hash": "953efd41efff3cdf",
-      "history": []
+      "hash": "a90c1b02c837063e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T22:34:40.747Z",
+          "hash": "a90c1b02c837063e",
+          "prev_hash": "953efd41efff3cdf",
+          "commit": "9cace4aa",
+          "note": null
+        }
+      ]
     },
     "predator-camouflage": {
       "hash": "01305e4831bc18e1",
@@ -3704,12 +3713,30 @@
       "history": []
     },
     "pixel-scattering": {
-      "hash": "52b9ddef1b39a664",
-      "history": []
+      "hash": "50886f0b5d1c04b9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T22:34:40.747Z",
+          "hash": "50886f0b5d1c04b9",
+          "prev_hash": "52b9ddef1b39a664",
+          "commit": "9cace4aa",
+          "note": null
+        }
+      ]
     },
     "pixel-stretch-interactive": {
-      "hash": "e99401cccdd38f9a",
-      "history": []
+      "hash": "a5db630615d3955d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T22:34:40.747Z",
+          "hash": "a5db630615d3955d",
+          "prev_hash": "e99401cccdd38f9a",
+          "commit": "9cace4aa",
+          "note": null
+        }
+      ]
     },
     "pixel-tornado": {
       "hash": "18ca8377cec78917",
@@ -4345,8 +4372,17 @@
       "history": []
     },
     "luma-echo-warp": {
-      "hash": "9672e97765373ea4",
-      "history": []
+      "hash": "1c7d3e91feaea18e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T22:34:40.747Z",
+          "hash": "1c7d3e91feaea18e",
+          "prev_hash": "9672e97765373ea4",
+          "commit": "9cace4aa",
+          "note": null
+        }
+      ]
     },
     "luma-force": {
       "hash": "39838263ef3e101b",
@@ -4375,8 +4411,17 @@
       ]
     },
     "luma-slice-interactive": {
-      "hash": "f165dab849d4caf4",
-      "history": []
+      "hash": "9ab617cb6eed38d7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T22:34:40.747Z",
+          "hash": "9ab617cb6eed38d7",
+          "prev_hash": "f165dab849d4caf4",
+          "commit": "9cace4aa",
+          "note": null
+        }
+      ]
     },
     "luma-topography": {
       "hash": "215d0be1fe295b06",
@@ -5203,8 +5248,17 @@
       "history": []
     },
     "luma-melt-interactive": {
-      "hash": "f12317950bdb781c",
-      "history": []
+      "hash": "661aa9caa4e1c8bf",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T22:34:40.747Z",
+          "hash": "661aa9caa4e1c8bf",
+          "prev_hash": "f12317950bdb781c",
+          "commit": "9cace4aa",
+          "note": null
+        }
+      ]
     },
     "luma-velocity-melt": {
       "hash": "c7ef16954b98e3ee",
@@ -5247,8 +5301,17 @@
       "history": []
     },
     "pixel-depth-sort": {
-      "hash": "b7ad81bf1b55f71a",
-      "history": []
+      "hash": "70618cb76c9da8cb",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T22:34:40.747Z",
+          "hash": "70618cb76c9da8cb",
+          "prev_hash": "b7ad81bf1b55f71a",
+          "commit": "9cace4aa",
+          "note": null
+        }
+      ]
     },
     "pp-bloom": {
       "hash": "3e4a43aed5cf71da",
@@ -5865,8 +5928,17 @@
       "history": []
     },
     "luma-smear-interactive": {
-      "hash": "994aea931fbf212b",
-      "history": []
+      "hash": "654f00414f3668f2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T22:34:40.747Z",
+          "hash": "654f00414f3668f2",
+          "prev_hash": "994aea931fbf212b",
+          "commit": "9cace4aa",
+          "note": null
+        }
+      ]
     },
     "neon-edge-glow": {
       "hash": "1ffd8584fde4b71c",
