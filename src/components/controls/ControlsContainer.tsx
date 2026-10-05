@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useShaderRatings } from '../../services/ShaderRatingIntegration';
 import { LiveStreamPanel } from '../LiveStreamPanel';
-import { RendererBackendPanel } from './panels/RendererBackendPanel';
 import { ParamSlidersPanel } from './panels/ParamSlidersPanel';
 import { SlotStackPanel } from './panels/SlotStackPanel';
 import { InputSourcePanel } from './panels/InputSourcePanel';
@@ -235,13 +234,6 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                     maxPassesPerFrame={performanceHud.maxPassesPerFrame}
                     historyLayers={performanceHud.historyLayers}
                     workingSizeCap={performanceHud.workingSizeCap}
-                />
-            )}
-
-            {onSwitchRenderer && activeRendererType && (
-                <RendererBackendPanel
-                    activeRendererType={activeRendererType}
-                    onSwitchRenderer={onSwitchRenderer}
                 />
             )}
 

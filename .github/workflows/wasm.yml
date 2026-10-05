@@ -1,0 +1,149 @@
+name: WASM (R&D)
+
+# WASM is Tier B, frozen R&D as of 2026-09-27 (#1080; evidence:
+# reports/wasm-promotion-evidence-2026-09-27.md). These jobs no longer run on
+# every PR: only when a PR touches the WASM tree, weekly on main, or on demand.
+# Moving them out of ci.yml reset the Gate 4 "4 consecutive green weeks" clock.
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'wasm_renderer/**'
+      - 'public/wasm/**'
+      - 'tests/wasm-*'
+      - '.github/workflows/wasm.yml'
+  schedule:
+    # Weekly, Monday 06:17 UTC. Scheduled runs always use the default branch (main).
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  wasm:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Setup Emscripten SDK
+      uses: mymindstorm/setup-emsdk@v14
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        # Pinned — must equal emsdkVersion in src/contracts/wasm_compile_flags.json
+        # (enforced by verify:wasm-invariants and emcc-version-gate.sh). Never `latest`.
+        version: 6.0.9
+        actions-cache-folder: 'emsdk-cache'
+    
+    - name: Build WASM renderer
+      run: npm run wasm:build
+    
+    - name: Validate WASM artifacts
+      run: npm run wasm:validate
+
+    # Committed artifact must match a fresh pinned build (replaces the old mtime
+    # heuristic). Report-only until the 6-slot artifact (#1339) lands on main.
+    - name: Compare built WASM to committed artifact
+      continue-on-error: true
+      run: |
+        built=$(sha256sum public/wasm/pixelocity_wasm.wasm | cut -d' ' -f1)
+        committed=$(git show HEAD:public/wasm/pixelocity_wasm.wasm | sha256sum | cut -d' ' -f1)
+        echo "built=$built committed=$committed"
+        if [ "$built" != "$committed" ]; then
+          echo "::warning file=public/wasm/pixelocity_wasm.wasm::Committed WASM artifact is stale; rebuild with emsdk 6.0.9 (npm run wasm:build) and commit public/wasm/."
+          exit 1
+        fi
+
+    - name: Verify WASM bridge copies match TypeScript SoT
+      run: npm run verify:wasm-bridge-sync
+    
+    - name: Run WASM unit smoke tests
+      run: |
+        echo "WASM Jest gate: testPathPattern=WASM (job fails on any test failure; no || true)"
+        npm test -- --watchAll=false --ci --testPathPattern='WASM'
+      env:
+        CI: true
+    
+    - name: Upload WASM build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: wasm-artifacts
+        path: |
+          public/wasm/pixelocity_wasm.js
+          public/wasm/pixelocity_wasm.wasm
+          public/wasm/wasm_bridge.js
+          public/wasm/wasm_bridge.d.ts
+          public/wasm/bridge
+          src/wasm/wasm_bridge.ts
+          src/wasm/wasm_bridge.d.ts
+        retention-days: 7
+
+  test-wasm-e2e:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    needs: wasm
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Download WASM artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: wasm-artifacts
+    
+    - name: Build production app
+      run: npm run build
+      env:
+        SKIP_WASM_BUILD: '1'
+    
+    - name: Install Playwright browsers
+      run: npx playwright install chromium
+    
+    - name: Run WASM Playwright smoke tests
+      run: npx playwright test tests/wasm-renderer.smoke.spec.ts tests/layerChain.smoke.spec.ts --project=chromium
+      env:
+        CI: true
+        WASM_GPU_TESTS: '0'
+    
+    - name: Upload Playwright report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: wasm-playwright-report
+        path: playwright-report/
+        retention-days: 30
+
+    - name: Upload WASM benchmark report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: wasm-benchmark-report
+        path: test-results/wasm-benchmark-report.json
+        retention-days: 30
+        if-no-files-found: warn

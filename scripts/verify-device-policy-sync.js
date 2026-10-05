@@ -509,7 +509,8 @@ function verifyWasmCompileFlags() {
     fs.readFileSync(path.join(ROOT, 'src/contracts/wasm_compile_flags.json'), 'utf8'),
   );
   const buildSh = fs.readFileSync(path.join(ROOT, 'wasm_renderer/build.sh'), 'utf8');
-  const ci = fs.readFileSync(path.join(ROOT, '.github/workflows/ci.yml'), 'utf8');
+  // The emsdk build lives in wasm.yml (path-filtered + weekly since WASM froze as R&D, #1080).
+  const ci = fs.readFileSync(path.join(ROOT, '.github/workflows/wasm.yml'), 'utf8');
 
   if (!/^\d+\.\d+\.\d+$/.test(flags.emsdkVersion || '')) {
     fail(`wasm_compile_flags.json emsdkVersion must be an exact x.y.z pin, got "${flags.emsdkVersion}"`);
@@ -525,11 +526,11 @@ function verifyWasmCompileFlags() {
 
   // CI setup-emsdk must use the pin, not `latest`.
   const emsdkStep = ci.match(/uses:\s*mymindstorm\/setup-emsdk@[^\n]*[\s\S]*?version:\s*['"]?([^'"\s]+)/g) || [];
-  if (emsdkStep.length === 0) fail('ci.yml: setup-emsdk step with version: not found');
+  if (emsdkStep.length === 0) fail('wasm.yml: setup-emsdk step with version: not found');
   for (const step of emsdkStep) {
     const v = step.match(/version:\s*['"]?([^'"\s]+)/)[1];
     if (v !== flags.emsdkVersion) {
-      fail(`ci.yml setup-emsdk version "${v}" must equal wasm_compile_flags.json emsdkVersion "${flags.emsdkVersion}"`);
+      fail(`wasm.yml setup-emsdk version "${v}" must equal wasm_compile_flags.json emsdkVersion "${flags.emsdkVersion}"`);
     }
   }
 

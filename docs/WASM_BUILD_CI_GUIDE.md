@@ -59,16 +59,20 @@ ABI of `public/wasm/pixelocity_wasm.{js,wasm}`.
 - **Local gate:** `build.sh` runs `scripts/emcc-version-gate.sh`; a mismatched emcc fails the build. Emscripten 6.x glue does not embed its version, so `wasm:validate` can only check the pin exists (and would fail if a future glue embeds a mismatched version).
 - **Beware stale SDKs:** `build.sh` sources the first `emsdk_env.sh` it finds (`$REPO_ROOT/emsdk`, `~/emsdk`, …), which can override an already-activated emsdk. The gate catches this.
 - **Cloud VMs / Jules:** `SKIP_WASM_BUILD=1`. Do not compile with 3.1.x.
-- **Bumping:** edit the JSON + `ci.yml` together, rebuild, commit artifacts in the same PR, note size deltas in `wasm_renderer/BUILD_FLAG_EXPERIMENTS.md`.
+- **Bumping:** edit the JSON + `.github/workflows/wasm.yml` together, rebuild, commit artifacts in the same PR, note size deltas in `wasm_renderer/BUILD_FLAG_EXPERIMENTS.md`.
 
 ## Build Failures: CI vs Local
 
-**CI — `wasm` job:** installs emsdk, runs `npm run wasm:build` **once**, then
+**CI — `wasm` job (`wasm.yml`):** installs emsdk, runs `npm run wasm:build` **once**, then
 `npm run wasm:validate`, WASM Jest smoke tests, and uploads artifacts.
 
-**CI — `test` / `test-wasm-e2e` jobs:** download WASM artifacts, set
-`SKIP_WASM_BUILD=1`, then run `npm run build`. `prebuild` sees the skip and does not
-recompile; committed/downloaded `public/wasm/` is copied into `build/` by CRA.
+**CI — `test-wasm-e2e` job (`wasm.yml`):** downloads the `wasm` job's artifacts, sets
+`SKIP_WASM_BUILD=1`, then runs `npm run build`. `prebuild` sees the skip and does not
+recompile; the downloaded `public/wasm/` is copied into `build/` by CRA.
+
+**CI — `test` job (`ci.yml`, every PR):** builds with `SKIP_WASM_BUILD=1` against the
+**committed** `public/wasm/` artifacts and runs `npm run wasm:validate` on them. It does not
+compile WASM.
 
 **Local:** `wasm_renderer/build.sh` **fails (exit 1) when `emcc` is missing**. Install emsdk
 or use committed artifacts with an explicit skip:
@@ -138,14 +142,20 @@ See [`wasm_renderer/ARTIFACTS.md`](../wasm_renderer/ARTIFACTS.md) for the full a
 
 ## What Happens During CI
 
-The `wasm` job runs on every push to `main`/`develop` and on pull requests to `main`:
+WASM is frozen R&D (#1080), so the `wasm` job lives in [`.github/workflows/wasm.yml`](../.github/workflows/wasm.yml) and runs only:
+
+- on pull requests to `main` that touch `wasm_renderer/**`, `public/wasm/**`, `tests/wasm-*` or `wasm.yml` itself;
+- weekly on `main` (Monday 06:17 UTC);
+- on demand (`workflow_dispatch`).
+
+Neither WASM job is a required check. Steps:
 
 1. **Setup**: Node.js 24 + npm dependencies
 2. **Emscripten**: emsdk **6.0.9** (pinned) via `mymindstorm/setup-emsdk@v14`
 3. **Build**: `npm run wasm:build` compiles from source (fails if emcc missing)
 4. **Validation**: `npm run wasm:validate` — integrity, bridge sync, freshness
 5. **Smoke**: Jest tests matching `WASM` (bridge API surface)
-6. **Artifacts**: Uploaded for `test` and `test-wasm-e2e` jobs
+6. **Artifacts**: Uploaded for the `test-wasm-e2e` job
 7. **Status**: If any step fails, CI fails (no silent skips)
 
 This ensures:
@@ -205,7 +215,7 @@ Tracking table:
 
 - **Build command**: `npm run wasm:build` (requires emsdk; fails without it)
 - **Validation**: `npm run wasm:validate`
-- **CI**: `wasm` job builds + validates + Jest smoke; `test-wasm-e2e` runs Playwright smoke
+- **CI** (`wasm.yml`, WASM-path PRs + weekly): `wasm` job builds + validates + Jest smoke; `test-wasm-e2e` runs Playwright smoke
 - **Skip (explicit)**: `SKIP_WASM_BUILD=1` for machines without emsdk using committed artifacts
 - **Artifact layout**: [`wasm_renderer/ARTIFACTS.md`](../wasm_renderer/ARTIFACTS.md)
 - **Roadmap**: See [`WASM_RENDERER_GAP_ANALYSIS.md`](./WASM_RENDERER_GAP_ANALYSIS.md) and [#799 roadmap comment](https://github.com/ford442/image_video_effects/issues/799#issuecomment-4678258584)

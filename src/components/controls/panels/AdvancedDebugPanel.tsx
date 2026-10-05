@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { ShadertoyImportPanel } from './ShadertoyImportPanel';
 import { classifyBandsToRgba } from '../../../gpuChores/lut';
 import type { PassTiming } from '../../../renderer/passTimings';
+import { isWasmForcedByURL } from '../../../renderer/rendererUrl';
 import { PassFlameStrip } from './PassFlameStrip';
 
 /** Backend health shown in the debug panel — see WASM_BACKEND_POLICY.md (Tier B triage). */
@@ -98,7 +99,11 @@ export const AdvancedDebugPanel: React.FC<AdvancedDebugPanelProps> = ({
                                         Renderer Backend
                                     </div>
                                     <div style={{ display: 'flex', gap: '4px' }}>
-                                        {(['webgpu', 'wasm', 'js'] as const).map(type => (
+                                        {/* WASM is frozen R&D (#1080): offered only when forced via ?renderer=wasm. */}
+                                        {(isWasmForcedByURL()
+                                            ? (['webgpu', 'wasm', 'js'] as const)
+                                            : (['webgpu', 'js'] as const)
+                                        ).map(type => (
                                             <button
                                                 key={type}
                                                 onClick={() => onSwitchRenderer(type)}

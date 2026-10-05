@@ -1,6 +1,7 @@
 import {
   createRendererForType,
   getRendererTypeFromURL,
+  isWasmForcedByURL,
   getRenderThreadFromURL,
   resolveRenderThread,
   supportsRenderWorker,
@@ -47,6 +48,24 @@ describe('backendLifecycle', () => {
       });
       expect(getRendererTypeFromURL()).toBeNull();
       Object.defineProperty(window, 'location', { value: original, configurable: true });
+    });
+  });
+
+  describe('isWasmForcedByURL (#1080)', () => {
+    it.each([
+      ['?renderer=wasm', true],
+      ['?renderer=webgpu', false],
+      ['?renderer=js', false],
+      ['?renderer=main', false],
+      ['', false],
+    ])('%s → %s', (search, expected) => {
+      const original = window.location;
+      Object.defineProperty(window, 'location', { value: { ...original, search }, configurable: true });
+      try {
+        expect(isWasmForcedByURL()).toBe(expected);
+      } finally {
+        Object.defineProperty(window, 'location', { value: original, configurable: true });
+      }
     });
   });
 

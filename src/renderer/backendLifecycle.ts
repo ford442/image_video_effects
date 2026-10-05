@@ -14,6 +14,7 @@ import type { WebGpuProbeHandoff } from './webgpuBootProbe';
 import { isWebGpuBackend } from './webgpuBackendApi';
 import { isCanvasTransferred, WorkerWebGPUBackend } from './worker/WorkerWebGPUBackend';
 import { readRendererVideo } from './inputSourceBridge';
+import { getRendererTypeFromURL } from './rendererUrl';
 
 export type { WebGpuProbeHandoff };
 
@@ -25,33 +26,9 @@ export interface RendererInitOptions {
 /** Supported renderer backend identifiers. */
 export type RendererType = 'webgpu' | 'wasm' | 'js';
 
-/**
- * Read the preferred renderer type from the URL query string.
- *
- * Supported values for the `renderer` parameter:
- *   - `wasm`   → C++ Emscripten WASM renderer (**experimental** — see WASM_BACKEND_POLICY.md)
- *   - `webgpu` → TypeScript native WebGPU renderer (default)
- *   - `js`     → Canvas 2D fallback (no shaders)
- *
- * Example: `http://localhost:3000/?renderer=wasm`
- *
- * Related: `?no_gpu_compute` forces gpu-chores (Tier 4b) onto the TS backend.
- * See docs/GPU_CHORES.md — it does not switch the renderer.
- */
-export function getRendererTypeFromURL(): RendererType | null {
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const value = params.get('renderer');
-    if (value === 'wasm' || value === 'webgpu' || value === 'js') {
-      return value as RendererType;
-    }
-    // Render-thread selectors still mean the TS WebGPU backend.
-    if (value === 'worker' || value === 'main') return 'webgpu';
-  } catch {
-    // Not in a browser context (e.g. tests)
-  }
-  return null;
-}
+// URL readers live in a dependency-free module so UI chrome can import them
+// without pulling the renderer graph (WASM bridge, worker backend).
+export { getRendererTypeFromURL, isWasmForcedByURL } from './rendererUrl';
 
 /** Where the TS WebGPU backend renders (#1314 WP-1). */
 export type RenderThread = 'main' | 'worker';
