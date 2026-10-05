@@ -14816,5 +14816,17 @@
     ],
     "source_hash": "16a346dcc3ffa78d",
     "capture_host": "swiftshader"
+  },
+  "gen-crystalline-nebula-weaver-forge": {
+    "thumbnail_url": "thumbnails/gen-crystalline-nebula-weaver-forge.png",
+    "generated_at": "2026-10-05T19:38:34.740Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "source_hash": "1688caf7bf62e4c5",
+    "capture_host": "swiftshader"
   }
 }

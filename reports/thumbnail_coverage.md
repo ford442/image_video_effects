@@ -1,9 +1,9 @@
 # Thumbnail coverage
 
-- Catalog: **1379**
+- Catalog: **1380**
 - Skip allowlist: **1**
-- Eligible: **1378**
-- Healthy: **1264** (91.7%)
+- Eligible: **1379**
+- Healthy: **1265** (91.7%)
 - Unexpired deferrals: **40** (do not count as coverage)
 - gpu-capture-pending: **40** — ratchet max **40**, target **200**
 - Deferral violations: **0**

@@ -350,10 +350,10 @@ Throughput was about 1.8 captures/min across the 3 shards (30-70 s per shader pe
 
 | | Before (main, 2026-10-05) | After |
 |---|---|---|
-| Healthy eligible | 277 / 1,378 (20.1%, after the `flat_frame` rule) | **1,264 / 1,378 (91.7%)** |
+| Healthy eligible | 277 / 1,378 (20.1%, after the `flat_frame` rule) | **1,265 / 1,379 (91.7%)** |
 | Integrity-flagged PNGs | 85 (74 black, 11 flat) | 22 (17 black, 5 flat) |
 | `gpu-capture-pending` deferrals / ratchet | 234 / 234 | **40 / 40** (target 200) |
-| PNGs tagged `capture_host: swiftshader` | 0 | 993 |
+| PNGs tagged `capture_host: swiftshader` | 0 | 994 |
 
 Every new PNG was reviewed on contact sheets before commit. Not healthy (114 eligible ids):
 
@@ -367,7 +367,7 @@ Every new PNG was reviewed on contact sheets before commit. Not healthy (114 eli
   device. A GPU host should capture these: `anisotropic-kuwahara-nlm`, `artistic_painterly_oil`, `bio_lenia_continuous`, `bitonic-sort`, `conv-difference-of-gaussians-cascade`, `conv-fractal-kernel`, `conv-frequency-domain-notch`, `conv-gabor-texture-analyzer`, `conv-non-local-means`, `cyber-scan-gabor`, `divine-light-gpt52`, `fractal-noise-dissolve-nlm`, `gen-cybernetic-ferro-coral`, `gen-cymatic-quantum-silk-loom`, `gen-image-pyro`, `gen-luminescent-aether-plasma-nebula-koi`, `gen-luminescent-nebula-silk-weaver`, `gen-orb`, `gen-quantum-singularity-forge`, `gen-resonant-crystal-canyons`, `gen-resonant-quantum-plasma-dragon-eye`, `gen-symbiotic-plasma-reef-matrix`, `gen-trails`, `hybrid-particle-fluid`, `kimi-flock-symphony-em`, `kimi-nebula-depth`, `lenia-on-video`, `painterly-oil-bilateral`, `sim-slime-mold-growth`, `sim-slime-mold-growth-em`.
 
 Low-information captures that pass the checks (washed-out near-white fields, dense noise, a lone
-sprite on black). They count as healthy but are worth a content look: `chromatic-folds-bilateral`, `gen-bismuth-citadel-crystal`, `gen-fractal-chrono-dendrite-forge`, `mirror-dimension`, `melting-oil-blackbody`, `alpha-em-field-simulation`, `gen-image-pixel-detonation`, `alpha-erosion-terrain`, `gen-singularity-forge-blackbody`, `gen-grok4-life`, `gen-grok4-perlin`, `chromatic-folds-2`, `gen-liquid-metal-cymatic-resonator`, `engraving-stipple-blue-noise`, `gen-hyper-dimensional-bismuth-matrix`, `rgb-fluid`, `photonic-caustics-iridescence`, `gen-fluffy-raincloud`, `cellular-automata-3d`, `gen-eldritch-tesseract-hive-mind`, `pp-vignette`, `sim-decay-system-rgba`, `gen-flame-fractal-attractor`, `gen-sentient-ferro-silicate-swarm`, `chromatic-folds`, `gen-radiant-cyber-chrono-void-stag`, `gen-fireworks-dahlia-burst`, `dimension-slicer-guided`, `bio-lenia-rgba`.
+sprite on black). They count as healthy but are worth a content look: `chromatic-folds-bilateral`, `gen-bismuth-citadel-crystal`, `gen-fractal-chrono-dendrite-forge`, `mirror-dimension`, `melting-oil-blackbody`, `alpha-em-field-simulation`, `gen-image-pixel-detonation`, `alpha-erosion-terrain`, `gen-singularity-forge-blackbody`, `gen-grok4-life`, `gen-grok4-perlin`, `chromatic-folds-2`, `gen-liquid-metal-cymatic-resonator`, `engraving-stipple-blue-noise`, `gen-hyper-dimensional-bismuth-matrix`, `rgb-fluid`, `photonic-caustics-iridescence`, `gen-fluffy-raincloud`, `cellular-automata-3d`, `gen-eldritch-tesseract-hive-mind`, `pp-vignette`, `sim-decay-system-rgba`, `gen-flame-fractal-attractor`, `gen-sentient-ferro-silicate-swarm`, `chromatic-folds`, `gen-radiant-cyber-chrono-void-stag`, `gen-fireworks-dahlia-burst`, `dimension-slicer-guided`, `bio-lenia-rgba`, `gen-crystalline-nebula-weaver-forge`.
 
 Deferrals: the 194 deferred ids that now have healthy thumbnails were removed with
 `scripts/thumbs-farm-finalize.js`; the remaining 40 are ids above that failed and still expire on

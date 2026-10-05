@@ -4,10 +4,10 @@ Snapshot: 2026-10-05 (after the SwiftShader capture waves)
 
 ## Coverage
 
-- Catalog: **1,379** unique list ids; skip list **1** (`deep-workgroup-multi-effect-blend`), **1,378** eligible.
-- PNG + manifest: **1,286**.
+- Catalog: **1,380** unique list ids; skip list **1** (`deep-workgroup-multi-effect-blend`), **1,379** eligible.
+- PNG + manifest: **1,287**.
 - Integrity flags: **22** (17 `black_frame`, 5 `flat_frame`; `flat_frame` = largest RGB std < 0.01, new this month).
-- **Healthy eligible: 1,264 / 1,378 (91.7%)**, past the 50% checkpoint and the 80% target (1,103).
+- **Healthy eligible: 1,265 / 1,379 (91.7%)**, past the 50% checkpoint and the 80% target (1,104).
 - Deferrals: **40** `gpu-capture-pending` (ratchet 40, target 200), expiring 2026-10-26.
 - Missing (no healthy PNG, no deferral): **74**.
 
@@ -15,7 +15,7 @@ Snapshot: 2026-10-05 (after the SwiftShader capture waves)
 
 Cloud VM, no GPU. Playwright Chromium with SwiftShader (`--adapter=swiftshader`), a conformant
 software WebGPU device; render scale 0.25 (512²), 30 warm-up frames (120 for simulation and
-multipass ids), 3 shards. 993 PNGs carry `capture_host: "swiftshader"` in `manifest.json`; a
+multipass ids), 3 shards. 994 PNGs carry `capture_host: "swiftshader"` in `manifest.json`; a
 GPU host should recapture them with `npm run thumbs:generate -- --recapture-host=swiftshader`.
 
 ## Not healthy (114 eligible ids)
