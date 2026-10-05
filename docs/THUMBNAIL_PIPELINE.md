@@ -4,17 +4,35 @@ Automated batch rendering of shader preview thumbnails for the gallery / mega-me
 
 ## Hardware requirements
 
-Thumbnail generation **requires a real WebGPU GPU**. The script drives Chromium via Playwright and renders through the production WebGPU renderer.
+Thumbnail generation needs a **WebGPU adapter**. The script drives Chromium via Playwright and renders through the production WebGPU renderer.
 
 | Environment | Works? |
 |-------------|--------|
-| Linux/macOS/Windows with Vulkan, D3D12, or Metal | Yes |
+| Linux/macOS/Windows with Vulkan, D3D12, or Metal | Yes (`capture_host: gpu`) |
 | Chrome / Chromium 121+ | Yes |
-| GitHub `ubuntu-latest` (no GPU adapter) | No — smoke-only |
-| Cursor Cloud VM (headless, no ICD) | No |
+| GPU-less host (Cloud VM) with Playwright's Chromium + `--adapter=swiftshader` | Yes, slowly (`capture_host: swiftshader`) |
+| GitHub `ubuntu-latest` | Not used: never register it as the `gpu` runner |
 | `xvfb-run` alone | No — provides a display, not a GPU |
 
 `xvfb-run` can help on headless Linux **when a GPU is present** but no display server is running.
+
+### SwiftShader captures (since 2026-10-05)
+
+`--adapter=swiftshader` launches Chromium with `SWIFTSHADER_WEBGPU_ARGS`
+(`scripts/lib/swiftshaderArgs.js`, shared with `playwright.config.ts`). That is a real,
+conformant WebGPU device in software (Vulkan SwiftShader), not a fallback: the production
+renderer runs the same WGSL, and the PNG is read back from the GPU texture. It is slow
+(about 2 fps at 512², 30-70 s per shader), so it renders at scale 0.25 (512²) on a 512 px page
+on the main thread. Pages narrower than about 512 px never start the renderer.
+
+Rules:
+
+- A SwiftShader PNG is coverage when it passes the same health checks as any other capture
+  (black, magenta, flat). It is tagged `capture_host: "swiftshader"` in `manifest.json`.
+- A GPU host should recapture them when one exists: `npm run thumbs:generate -- --recapture-host=swiftshader`.
+- Never commit an unreviewed wave: build a contact sheet of the new PNGs and look at it first.
+- Shaders that need features SwiftShader lacks (1024-invocation workgroups) stay in
+  `reports/thumbnail_skip_allowlist.json` with that reason.
 
 ## Prerequisites
 
@@ -74,6 +92,11 @@ npm run thumbs:generate:minimal -- --limit=20
 | `--quality=battery` | `battery` | Render quality preset (OOM guard) |
 | `--time=1.5` | `1.5` | Shader time uniform at capture |
 | `--report=PATH` | `reports/thumbnail-failures.json` | Failure report output |
+| `--adapter=default\|swiftshader` | `default` (env `THUMBS_ADAPTER`) | `swiftshader`: software WebGPU on GPU-less hosts; PNGs tagged `capture_host: swiftshader` |
+| `--viewport=N` | none (`512` with swiftshader) | Page size in px; the renderer does not start below ~512 |
+| `--render-scale=S` | none (`0.25` with swiftshader) | Pin the internal render scale (0.25 = 512²) |
+| `--port=N` | `3459` | Static server port, so several shards can run on one host |
+| `--recapture-host=HOST` | none | Only shaders whose manifest `capture_host` is HOST (e.g. redo `swiftshader` on a GPU) |
 
 ## Output
 
@@ -113,7 +136,27 @@ npm run thumbs:generate:minimal -- --limit=20
 }
 ```
 
-Failure reasons: `black_frame`, `magenta_frame`, `error_frame`, `compile`, `pipeline`, `no_wgsl`, `gpu_unavailable`, `load_failed`, `capture_failed`.
+Failure reasons: `black_frame`, `magenta_frame`, `error_frame`, `flat_frame`, `compile`, `pipeline`, `no_wgsl`, `gpu_unavailable`, `load_failed`, `capture_failed`.
+
+Health is measured on the PNG that will be committed (decoded with `sharp`), with the same
+thresholds in `scripts/lib/thumbnailFrameAnalysis.js`, `src/services/thumbnailBatch/frameCheck.ts`
+and `scripts/audit_thumbnail_integrity.py`: black = active pixels < 2% or mean luminance < 0.01;
+magenta = ≥ 75% magenta pixels; **flat** = largest R/G/B standard deviation < 0.01 (a solid fill or
+invisible noise, added 2026-10-05; it flagged 11 PNGs that had counted as healthy, including the
+attract ids `stellar-plasma` and `bio_lenia_continuous`).
+
+Capture conditions (both the CLI and the in-app scanner):
+
+- Every category except `generative` renders over the input image
+  `public/fixtures/thumbnail-scene.png` (512², procedural, `scripts/make-thumbnail-fixture.py`), as
+  in the app. List entries without a `category` take their list's name; before 2026-10-05 most of
+  them were captured over a cleared input and came out black.
+- The shader is loaded from its list `url` (graph steps and renamed files used to be skipped as `no_wgsl`).
+- Feedback textures are reallocated before each shader, so a capture starts from zero state
+  rather than the previous shader's.
+- The CLI page blocks every non-localhost request: the app otherwise fetches a random remote
+  image at boot that can land mid-capture.
+- Warm-up counts frames the renderer actually rendered, not page animation frames.
 
 Skipped shaders (intentional): listed in `reports/thumbnail_skip_allowlist.json` — excluded from generation queue and eligible coverage denominator.
 
@@ -171,7 +214,8 @@ Both paths stamp `source_hash`, so the next run skips everything already current
 
 ## Coverage strategy (campaign target ≥50% healthy; 80% later)
 
-**Do not capture on the Cloud VM** (no GPU adapter; black PNGs are not coverage). Run on a discrete-GPU workstation:
+Prefer a discrete-GPU workstation. A GPU-less host (the Cloud VM) can capture with
+`--adapter=swiftshader` (see Hardware requirements); never commit black PNGs as coverage.
 
 ```bash
 SKIP_WASM_BUILD=1 npm run build
@@ -192,7 +236,7 @@ Priority order: `ATTRACT_SHOWCASE_IDS` + `ATTRACT_PHYSICS_LAB_IDS`, then remaini
 | attract | `--priority=attract` | Curated pool first |
 | W1 | `generative` | Remaining generative |
 | W2 | `simulation`, `interactive-mouse` | Multipass flagships + user-facing interaction |
-| W3 | `visual-effects`, `distortion`, `liquid-effects`, `image`, remainder | Image shaders use `public/fixtures/thumbnail-sample.png` |
+| W3 | `visual-effects`, `distortion`, `liquid-effects`, `image`, remainder | Non-generative shaders use `public/fixtures/thumbnail-scene.png` |
 
 ### Campaign plan — 50% checkpoint (baseline 2026-09-13)
 

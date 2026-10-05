@@ -1,6 +1,6 @@
 import unittest
 
-from audit_thumbnail_integrity import paeth_predictor, unfilter_scanlines
+from audit_thumbnail_integrity import analyze_rgba, classify, paeth_predictor, unfilter_scanlines
 
 
 def encode_row(decoded: bytes, previous: bytes, bytes_per_pixel: int, filter_type: int) -> bytes:
@@ -48,6 +48,22 @@ class PngUnfilterTests(unittest.TestCase):
     def test_rejects_unknown_filter_type(self) -> None:
         with self.assertRaisesRegex(ValueError, "unsupported PNG filter type 5"):
             unfilter_scanlines(bytes([5, 0, 0, 0, 0]), width=1, height=1, bytes_per_pixel=4)
+
+
+class ClassifyTests(unittest.TestCase):
+    @staticmethod
+    def frame(pixels: list[tuple[int, int, int]]) -> dict:
+        data = bytes(v for (r, g, b) in pixels for v in (r, g, b, 255))
+        return analyze_rgba(data, len(pixels), 1)
+
+    def test_flat_fill_is_flagged(self) -> None:
+        self.assertEqual(classify(self.frame([(200, 40, 40)] * 16)), "flat_frame")
+
+    def test_black_wins_over_flat(self) -> None:
+        self.assertEqual(classify(self.frame([(0, 0, 0)] * 16)), "black_frame")
+
+    def test_structured_frame_is_healthy(self) -> None:
+        self.assertIsNone(classify(self.frame([(200, 40, 40), (20, 160, 220)] * 8)))
 
 
 if __name__ == "__main__":

@@ -2,6 +2,7 @@
  * Shared Playwright helpers for thumbnail generation (mirrors tests/helpers/rendererHarness.ts).
  */
 import { spawn } from 'child_process';
+import { createRequire } from 'module';
 import { existsSync } from 'fs';
 import { resolve, join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -12,8 +13,8 @@ export const ROOT = resolve(__dirname, '..', '..');
 export const BUILD_DIR = resolve(ROOT, 'build');
 export const DEFAULT_PORT = 3459;
 
-/** Categories that need an image input source. */
-export const IMAGE_CATEGORIES = new Set(['image', 'hybrid', 'advanced-hybrid']);
+/** Only standalone generative shaders render without an input image. */
+export const GENERATIVE_CATEGORIES = new Set(['generative']);
 
 let server = null;
 let serverPort = DEFAULT_PORT;
@@ -97,8 +98,16 @@ export function attachConsoleCollector(page) {
   return { criticalErrors, consoleErrors };
 }
 
+/** Abort every request that is not same-origin with the local build server. */
+export async function blockExternalRequests(page) {
+  await page.route(
+    (url) => url.hostname !== 'localhost' && url.hostname !== '127.0.0.1' && url.protocol.startsWith('http'),
+    (route) => route.abort(),
+  );
+}
+
 export async function waitForTestApi(page, timeoutMs = 60000) {
-  await page.waitForFunction(() => window.__pixelocity__?.renderer != null, {
+  await page.waitForFunction(() => window.__pixelocity__?.renderer != null, null, {
     timeout: timeoutMs,
   });
 }
@@ -128,6 +137,20 @@ export async function loadShaderOnSlot(
   );
 }
 
+/**
+ * Reallocate the working textures (a resolution-scale change does that), so the
+ * next shader's dataTextureC starts at zero. Ends at `scale` (default: battery 0.5).
+ */
+export async function resetFeedbackState(page, scale = null) {
+  await page.evaluate((target) => {
+    const api = window.__pixelocity__;
+    if (typeof api?.setRenderScale !== 'function') return;
+    const base = target ?? api.getPerformanceStatus?.()?.scale ?? 0.5;
+    api.setRenderScale(base >= 1 ? base - 0.125 : base + 0.125);
+    api.setRenderScale(base);
+  }, scale);
+}
+
 export async function applyTestState(page, state) {
   await page.evaluate((s) => {
     window.__pixelocity__?.setTestRenderState(s);
@@ -138,148 +161,46 @@ export async function waitFrames(page, frameCount) {
   await page.evaluate((n) => window.__pixelocity__?.waitFrames(n), frameCount);
 }
 
-function analyzeImageDataInPage(data, w, h) {
-  let lumSum = 0;
-  let active = 0;
-  let magenta = 0;
-  let rSum = 0;
-  let gSum = 0;
-  let bSum = 0;
-  const pixels = w * h;
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i] / 255;
-    const g = data[i + 1] / 255;
-    const b = data[i + 2] / 255;
-    rSum += r;
-    gSum += g;
-    bSum += b;
-    const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    lumSum += lum;
-    if (lum > 0.05) active++;
-    if (r > 0.8 && g < 0.2 && b > 0.8) magenta++;
+// Frame classification lives in one CommonJS module shared with the audit and tests.
+const frameAnalysis = createRequire(import.meta.url)('./thumbnailFrameAnalysis.js');
+export const {
+  isBlackFrame,
+  isMagentaFrame,
+  isFlatFrame,
+  isErrorFrame,
+  classifyErrorFrame,
+  formatFrameStats,
+  statsFromPngBuffer,
+} = frameAnalysis;
+
+/**
+ * Wait until the backend has rendered `n` more frames. Page rAF ticks are not
+ * rendered frames: on a slow device (SwiftShader) or in the render worker the
+ * page can tick many times per presented frame.
+ */
+export async function waitRenderedFrames(page, n, timeoutMs = 180000) {
+  const start = await renderedFrameCount(page);
+  if (start == null) {
+    await waitFrames(page, n);
+    return;
   }
-  return {
-    width: w,
-    height: h,
-    meanLuminance: lumSum / pixels,
-    activePixelRatio: active / pixels,
-    magentaPixelRatio: magenta / pixels,
-    meanR: rSum / pixels,
-    meanG: gSum / pixels,
-    meanB: bSum / pixels,
-  };
+  await page.waitForFunction(
+    (min) => (window.__pixelocity__?.renderer?.getDiagnostics?.()?.webgpu?.frameStats?.framesRendered ?? 0) >= min,
+    start + n,
+    { timeout: timeoutMs, polling: 100 },
+  );
 }
 
-/** Sample canvas pixels in-browser (works for WebGPU-backed canvases). */
-export async function captureCanvasStats(page) {
-  return page.evaluate(() => {
-    const analyze = (data, w, h) => {
-      let lumSum = 0;
-      let active = 0;
-      let magenta = 0;
-      let rSum = 0;
-      let gSum = 0;
-      let bSum = 0;
-      const pixels = w * h;
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i] / 255;
-        const g = data[i + 1] / 255;
-        const b = data[i + 2] / 255;
-        rSum += r;
-        gSum += g;
-        bSum += b;
-        const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-        lumSum += lum;
-        if (lum > 0.05) active++;
-        if (r > 0.8 && g < 0.2 && b > 0.8) magenta++;
-      }
-      return {
-        width: w,
-        height: h,
-        meanLuminance: lumSum / pixels,
-        activePixelRatio: active / pixels,
-        magentaPixelRatio: magenta / pixels,
-        meanR: rSum / pixels,
-        meanG: gSum / pixels,
-        meanB: bSum / pixels,
-      };
-    };
-
-    if (typeof window.__pixelocity__?.captureCanvasStats === 'function') {
-      const stats = window.__pixelocity__.captureCanvasStats();
-      if (stats.magentaPixelRatio != null) return stats;
-      const canvas = document.querySelector('canvas');
-      if (!canvas) return stats;
-      const w = canvas.width;
-      const h = canvas.height;
-      const tmp = document.createElement('canvas');
-      tmp.width = w;
-      tmp.height = h;
-      const ctx = tmp.getContext('2d');
-      if (!ctx) return stats;
-      ctx.drawImage(canvas, 0, 0);
-      return analyze(ctx.getImageData(0, 0, w, h).data, w, h);
-    }
-    const canvas = document.querySelector('canvas');
-    if (!canvas) {
-      return { width: 0, height: 0, meanLuminance: 0, activePixelRatio: 0, magentaPixelRatio: 0 };
-    }
-    const w = canvas.width;
-    const h = canvas.height;
-    const tmp = document.createElement('canvas');
-    tmp.width = w;
-    tmp.height = h;
-    const ctx = tmp.getContext('2d');
-    if (!ctx) {
-      return { width: w, height: h, meanLuminance: 0, activePixelRatio: 0, magentaPixelRatio: 0 };
-    }
-    ctx.drawImage(canvas, 0, 0);
-    return analyze(ctx.getImageData(0, 0, w, h).data, w, h);
-  });
+async function renderedFrameCount(page) {
+  return page.evaluate(
+    () => window.__pixelocity__?.renderer?.getDiagnostics?.()?.webgpu?.frameStats?.framesRendered ?? null,
+  );
 }
 
-export function isBlackFrame(stats, { minActive = 0.02, minLuminance = 0.01 } = {}) {
-  return stats.activePixelRatio < minActive || stats.meanLuminance < minLuminance;
+/** Adapter description reported by the live renderer (manifest provenance). */
+export async function getAdapterInfo(page) {
+  return page.evaluate(() => window.__pixelocity__?.renderer?.getDiagnostics?.()?.webgpu?.adapterInfo ?? null);
 }
-
-export function isMagentaFrame(stats, { minMagentaRatio = 0.75 } = {}) {
-  if (stats.magentaPixelRatio != null) {
-    return stats.magentaPixelRatio >= minMagentaRatio;
-  }
-  const r = stats.meanR ?? 0;
-  const g = stats.meanG ?? 0;
-  const b = stats.meanB ?? 0;
-  return r > 0.75 && g < 0.25 && b > 0.75;
-}
-
-export function isErrorFrame(stats, opts = {}) {
-  return isBlackFrame(stats, opts) || isMagentaFrame(stats, opts);
-}
-
-export function classifyErrorFrame(stats) {
-  const black = isBlackFrame(stats);
-  const magenta = isMagentaFrame(stats);
-  if (black && magenta) return 'error_frame';
-  if (black) return 'black_frame';
-  if (magenta) return 'magenta_frame';
-  return null;
-}
-
-export function formatFrameStats(stats) {
-  const parts = [
-    `meanLuminance=${(stats.meanLuminance ?? 0).toFixed(4)}`,
-    `activePixelRatio=${(stats.activePixelRatio ?? 0).toFixed(4)}`,
-  ];
-  if (stats.magentaPixelRatio != null) {
-    parts.push(`magentaPixelRatio=${stats.magentaPixelRatio.toFixed(4)}`);
-  }
-  if (stats.meanR != null) {
-    parts.push(`meanRGB=(${stats.meanR.toFixed(3)},${stats.meanG.toFixed(3)},${stats.meanB.toFixed(3)})`);
-  }
-  return parts.join(' ');
-}
-
-export { analyzeImageDataInPage };
 
 /** Capture canvas as base64 PNG, optionally downscaled to size×size. */
 export async function captureThumbnailPng(page, size = 256) {
@@ -293,14 +214,25 @@ export async function captureThumbnailPng(page, size = 256) {
   }, size);
 }
 
+/**
+ * Every effect except a standalone generator samples the input image, as it
+ * does in the app; a cleared input renders those effects black.
+ */
 export function inputSourceForCategory(category) {
-  return IMAGE_CATEGORIES.has(category) ? 'image' : 'generative';
+  return GENERATIVE_CATEGORIES.has(category) ? 'generative' : 'image';
 }
 
-export function localShaderUrl(id) {
+/** Same-origin URL for a catalog entry: its list `url` when present (graph steps, renamed files). */
+export function localShaderUrl(id, listUrl = null) {
+  if (listUrl && !/^https?:/i.test(listUrl)) {
+    return `./${listUrl.replace(/^\.?\/+/, '')}`;
+  }
   return `./shaders/${id}.wgsl`;
 }
 
+/** Procedural 512² scene, see scripts/make-thumbnail-fixture.py. */
+export const THUMBNAIL_FIXTURE = 'fixtures/thumbnail-scene.png';
+
 export function imageFixtureUrl() {
-  return './fixtures/thumbnail-sample.png';
+  return `./${THUMBNAIL_FIXTURE}`;
 }

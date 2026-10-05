@@ -146,6 +146,14 @@ export class RendererManager {
     }
   }
 
+  /**
+   * Test-mode only: pin the internal resolution scale (adaptive quality off).
+   * Each change reallocates the working textures, so feedback state starts from zero.
+   */
+  setResolutionScaleForTests(scale: number): void {
+    applyResolutionScaleToRenderer(this.perfState, this.shaderRenderer(), scale);
+  }
+
   private slotPolicy() {
     return {
       maxActiveSlots: this.slotCapOverride ?? this.perfState.performancePolicy.maxActiveSlots,

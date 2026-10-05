@@ -1,8 +1,11 @@
 name: Thumbnail capture farm (GPU)
 
 # Captures one category wave of missing thumbnails on a self-hosted runner with a REAL
-# WebGPU adapter and opens a PR of PNGs. It never runs on ubuntu-latest: a software
-# adapter produces black/magenta frames and would fake coverage.
+# WebGPU GPU and opens a PR of PNGs. It never runs on ubuntu-latest. Chromium's default
+# software path there has no WebGPU adapter, so it produces black frames. The SwiftShader
+# path (--adapter=swiftshader, docs/THUMBNAIL_PIPELINE.md) renders real but slow captures
+# tagged capture_host: swiftshader. This farm is for GPU captures, including redoing those
+# (--recapture-host=swiftshader).
 #
 # BLOCKED until a runner labelled `gpu` is registered (see gpu-required.yml).
 # If the job queues forever, that runner does not exist yet.
