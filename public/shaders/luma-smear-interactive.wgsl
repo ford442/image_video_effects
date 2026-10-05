@@ -1,11 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Luma Smear Interactive (Kinetic Echo)
 //  Category: visual-effects
-//  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba, semantic-alpha
 //  Complexity: High
-//  Upgraded: 2026-08-30
-//  A packing: ACES display RGBA (trail energy in alpha)
-//  Motion: chromatic R-lag / B-lead streaks + curl-advected exact-C trails
+//  Upgraded: 2026-10-06
+//  Ideas: luma-gradient slide (bright bleeds downhill into dark); wet-edge pigment ridge where trail energy ends
+//  A packing: linear pre-ACES trail RGB (pre-audio/boost/ridge) + A.a = trail energy; (0,0) = state texel (prev mouse xy, prev time, sentinel -7)
+//  Motion: chromatic R-lag / B-lead streaks + curl-advected exact-C trails (2026-08-30)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -53,8 +54,15 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 }
 
 fn loadC(uv: vec2<f32>, dims: vec2<f32>) -> vec4<f32> {
-  let c = vec2<i32>(clamp(uv, vec2<f32>(0.0), vec2<f32>(0.999)) * dims);
-  return textureLoad(dataTextureC, c, 0);
+  var c = vec2<i32>(clamp(uv, vec2<f32>(0.0), vec2<f32>(0.999)) * dims);
+  // (0,0) holds the pointer state texel, never trail colour.
+  if (c.x == 0 && c.y == 0) { c.x = 1; }
+  let v = textureLoad(dataTextureC, c, 0);
+  return select(vec4<f32>(0.0), clamp(v, vec4<f32>(0.0), vec4<f32>(16.0)), all(v == v));
+}
+
+fn lumaOf(c: vec3<f32>) -> f32 {
+  return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -72,38 +80,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
-  let binMid = plasmaBuffer[3].y;
-  let binHi = plasmaBuffer[8].x;
 
-  var spring = mouse;
-  var springVel = vec2<f32>(0.0);
-  let hasSpring = arrayLength(&extraBuffer) > 138u;
-  if (hasSpring && extraBuffer[138] > 0.5) {
-    spring = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-  }
-  if (gid.x == 0u && gid.y == 0u && hasSpring) {
-    var pos = spring;
-    var vel = springVel;
-    if (extraBuffer[138] <= 0.5) {
-      pos = mouse;
-      vel = vec2<f32>(0.0);
-    } else {
-      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
-      let omega = 11.0;
-      vel += ((mouse - pos) * (omega * omega) - vel * (2.0 * omega)) * dt;
-      vel = clamp(vel, vec2<f32>(-3.0), vec2<f32>(3.0));
-      pos += vel * dt;
-    }
-    extraBuffer[133] = pos.x;
-    extraBuffer[134] = pos.y;
-    extraBuffer[135] = vel.x;
-    extraBuffer[136] = vel.y;
-    extraBuffer[137] = time;
-    extraBuffer[138] = 1.0;
-    spring = pos;
-    springVel = vel;
-  }
+  // Pointer velocity from the (0,0) state texel (replaces the extraBuffer spring, which never
+  // persisted): xy = last frame's mouse, z = last frame's time, w = -7 sentinel.
+  let state = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+  let stateOk = state.w == -7.0 && all(state == state);
+  let stateDt = clamp(time - state.z, 0.004, 0.1);
+  let mouseVel = select(vec2<f32>(0.0), clamp((mouse - state.xy) / stateDt, vec2<f32>(-3.0), vec2<f32>(3.0)), stateOk);
+  let spring = mouse;
 
   let decay = u.zoom_params.x;
   let lumaThreshold = u.zoom_params.y;
@@ -111,7 +95,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let eraser = u.zoom_params.w;
 
   let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-  let luma = dot(src.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let luma = lumaOf(src.rgb);
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let viscosity = mix(1.45, 0.28, depth);
 
@@ -122,11 +106,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mouseGust = smoothstep(0.28, 0.0, dist);
 
   let smearAmt = max(0.0, luma - lumaThreshold) * (0.7 + decay * 1.4) * (1.0 + bass * 0.45);
-  let curl = curl2D(uv * 3.2 + time * 0.16, time * 0.28) * (0.006 + mids * 0.004 + binMid * 0.002);
-  let dir = normalize(aUv - aMouse + vec2<f32>(0.0001, 0.0));
+  let curl = curl2D(uv * 3.2 + time * 0.16, time * 0.28) * (0.006 + mids * 0.004);
+  let toPix = aUv - aMouse;
+  let dir = toPix / max(length(toPix), 1e-4);
   var velocity = dir * smearAmt * viscosity * 0.018 + curl;
   velocity = velocity + dir * bass * 0.012 * mouseGust;
-  velocity = velocity + clamp(springVel * vec2<f32>(aspect, 1.0) * 0.04, vec2<f32>(-0.08), vec2<f32>(0.08));
+  // Drag: pointer velocity pushes trails under the cursor gust.
+  velocity = velocity + clamp(mouseVel * 0.04, vec2<f32>(-0.08), vec2<f32>(0.08)) * mouseGust;
+
+  // IDEA 1 — luma-gradient slide: the smear also runs downhill on the luma slope (bright
+  // bleeds into dark), faster where the slope is steep. Central differences over ±2 px.
+  let px = 2.0 / dims;
+  let lR = lumaOf(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(px.x, 0.0), 0.0).rgb);
+  let lL = lumaOf(textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(px.x, 0.0), 0.0).rgb);
+  let lD = lumaOf(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, px.y), 0.0).rgb);
+  let lU = lumaOf(textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(0.0, px.y), 0.0).rgb);
+  let lumaGrad = vec2<f32>(lR - lL, lD - lU) * 0.5;
+  velocity = velocity - lumaGrad * smearAmt * viscosity * 0.06;
   velocity = select(velocity, vec2<f32>(0.0), held && eraserMask > 0.55);
 
   var clickKick = 0.0;
@@ -147,17 +143,30 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let bTrail = loadC(uv - velocity * (0.72 - colorShift * 0.12), dims).b;
   let chromaPrev = vec3<f32>(rTrail, prev.g, bTrail);
 
-  var hdr = mix(src.rgb, chromaPrev, persist * smearAmt / max(smearAmt + 0.15, 0.001));
-  hdr = mix(hdr, src.rgb, eraserMask * select(0.35, 1.0, held));
-  hdr = hdr + vec3<f32>(treble * 0.08, treble * 0.05 + binHi * 0.04, clickKick * 0.12);
-  let luma2 = dot(hdr, vec3<f32>(0.2126, 0.7152, 0.0722));
+  var trail = mix(src.rgb, chromaPrev, persist * smearAmt / max(smearAmt + 0.15, 0.001));
+  trail = mix(trail, src.rgb, eraserMask * select(0.35, 1.0, held));
+  var hdr = trail + vec3<f32>(treble * 0.08, treble * 0.05, clickKick * 0.12);
+  let luma2 = lumaOf(hdr);
   hdr = luma2 + (hdr - vec3<f32>(luma2)) * (1.15 + colorShift * 0.35);
 
-  let rgb = acesToneMap(hdr * 1.06);
-  let energy = clamp(smearAmt * 0.55 + persist * 0.25 + clickKick * 0.3 + prev.a * persist * 0.4, 0.08, 0.98);
-  let outCol = vec4<f32>(rgb, energy);
+  // IDEA 2 — wet-edge ridge: where last frame's trail energy (C.a) drops sharply — the end or
+  // rim of a smear — pigment piles up into a darker, denser ridge (display only).
+  let eR = loadC(uv + vec2<f32>(px.x, 0.0), dims).a;
+  let eL = loadC(uv - vec2<f32>(px.x, 0.0), dims).a;
+  let eD = loadC(uv + vec2<f32>(0.0, px.y), dims).a;
+  let eU = loadC(uv - vec2<f32>(0.0, px.y), dims).a;
+  let ridge = smoothstep(0.03, 0.25, length(vec2<f32>(eR - eL, eD - eU))) * (1.0 - eraserMask);
+  let lumaR = lumaOf(hdr);
+  hdr = (lumaR + (hdr - vec3<f32>(lumaR)) * (1.0 + 0.4 * ridge)) * (1.0 - 0.28 * ridge);
 
-  textureStore(writeTexture, coord, outCol);
-  textureStore(dataTextureA, coord, outCol);
+  let rgb = acesToneMap(max(hdr, vec3<f32>(0.0)) * 1.06);
+  let energy = clamp(smearAmt * 0.55 + persist * 0.25 + clickKick * 0.3 + prev.a * persist * 0.4, 0.08, 0.98);
+
+  textureStore(writeTexture, coord, vec4<f32>(rgb, clamp(energy + ridge * 0.15, 0.0, 1.0)));
+  if (gid.x == 0u && gid.y == 0u) {
+    textureStore(dataTextureA, coord, vec4<f32>(mouse, time, -7.0));
+  } else {
+    textureStore(dataTextureA, coord, vec4<f32>(clamp(trail, vec3<f32>(0.0), vec3<f32>(16.0)), energy));
+  }
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

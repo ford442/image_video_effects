@@ -1,13 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Luma Slice Interactive
 //  Category: interactive-mouse
-//  Features: mouse-driven, glitch, audio-reactive, upgraded-rgba,
+//  Features: mouse-driven, glitch, audio-reactive, upgraded-rgba, semantic-alpha,
 //            mouse-down-surge, fbm-wobble, palette-fringe
 //  Complexity: Medium
-//  Created: 2026-05-10
-//  Upgraded: 2026-05-23
-//  By: Phase A Upgrade Swarm
-//  Upgraded by: kimi-swarm 2026-07-19
+//  Upgraded: 2026-10-06
+//  Ideas: luma parallax layers (bright strips in front travel further); cut-face bevel + cast shadow at slice seams
+//  A packing: ACES display RGBA (C is never read)
+//  History: created 2026-05-10; Phase A swarm 2026-05-23; kimi-swarm 2026-07-19
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -58,6 +58,28 @@ fn cosPalette(t: f32) -> vec3<f32> {
 fn lumaOf(rgb: vec3<f32>) -> f32 {
     return dot(rgb, vec3<f32>(0.299, 0.587, 0.114));
 }
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let c = max(x, vec3<f32>(0.0));
+    return clamp((c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+// Luma trigger: 3-tap average along a slice centre (smooths the displacement field so strips
+// bend gradually instead of jumping with a single noisy sample).
+fn sliceLuma(sliceIndex: f32, sliceHeight: f32, sampleX: f32) -> f32 {
+    let cy = (sliceIndex + 0.5) * sliceHeight;
+    var lumaSum = 0.0;
+    for (var t = 0; t < 3; t++) {
+        let tapX = fract(sampleX + (f32(t) - 1.0) * 0.06);
+        let tap = textureSampleLevel(readTexture, non_filtering_sampler, vec2<f32>(tapX, cy), 0.0);
+        lumaSum += lumaOf(tap.rgb);
+    }
+    return lumaSum / 3.0;
+}
+// Per-slice displacement terms (original: luma push + phase sine; fBM wobble; hashed jitter).
+fn sliceTerms(sliceIndex: f32, luma: f32, time: f32, phase: f32, intensity: f32) -> f32 {
+    let wobble = (fbm3(vec2<f32>(sliceIndex * 0.37, time * 0.45)) - 0.5) * 0.35;
+    let jitter = (hashf(sliceIndex * 7.13) - 0.5) * 0.25;
+    return luma - 0.5 + sin(time * 2.0 + sliceIndex * phase) * 0.2 + wobble + jitter * intensity;
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -84,37 +106,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sliceIndex = floor(uv.y * sliceCount);
     let sliceCenterY = (sliceIndex + 0.5) * sliceHeight;
 
-    // ── Luma trigger: 3-tap average along the slice ─────────────────
-    // Smooths the displacement field so strips bend gradually instead of
-    // jumping with a single noisy sample.
     let sampleX = fract(mouse.x + time * 0.1);
-    var lumaSum = 0.0;
-    for (var t = 0; t < 3; t++) {
-        let tapX = fract(sampleX + (f32(t) - 1.0) * 0.06);
-        let tap = textureSampleLevel(readTexture, non_filtering_sampler,
-                                     vec2<f32>(tapX, sliceCenterY), 0.0);
-        lumaSum += lumaOf(tap.rgb);
-    }
-    let luma = lumaSum / 3.0;
+    let luma = sliceLuma(sliceIndex, sliceHeight, sampleX);
+    let aboveIndex = max(sliceIndex - 1.0, 0.0);
+    let lumaAbove = sliceLuma(aboveIndex, sliceHeight, sampleX);
 
     // ── Displacement field ──────────────────────────────────────────
-    // Original terms: luma push + phase sine. New terms: organic fBM
-    // wobble per slice and a mouse-down surge ripple from the cursor.
     let mouseFactor = smoothstep(0.0, 1.0, abs(mouse.y - 0.5) * 2.0 + 0.2);
-    let wobble = (fbm3(vec2<f32>(sliceIndex * 0.37, time * 0.45)) - 0.5) * 0.35;
-    let jitter = (hashf(sliceIndex * 7.13) - 0.5) * 0.25;
-
     let surgeDist = distance(uv, mouse);
     let surge = select(0.0, 1.0, mouseDown > 0.5)
               * sin(surgeDist * 36.0 - time * 9.0)
               * exp(-surgeDist * 5.0) * 0.6;
 
-    let offsetBase = (luma - 0.5
-                    + sin(time * 2.0 + sliceIndex * phase) * 0.2
-                    + wobble
-                    + jitter * intensity
-                    + surge) * intensity * mouseFactor;
-    let offset = clamp(offsetBase, -0.35, 0.35);
+    // IDEA 1 — luma parallax layers: the strip's luma is its layer z (bright = front);
+    // front strips travel further, back strips lag.
+    let z = luma;
+    let zAbove = lumaAbove;
+    let offset = clamp((sliceTerms(sliceIndex, luma, time, phase, intensity) + surge)
+                       * intensity * mouseFactor * mix(0.7, 1.3, z), -0.35, 0.35);
+    let offsetAbove = clamp((sliceTerms(aboveIndex, lumaAbove, time, phase, intensity) + surge)
+                       * intensity * mouseFactor * mix(0.7, 1.3, zAbove), -0.35, 0.35);
 
     // ── RGB-split sampling (u_sampler wraps; fract keeps it explicit) ─
     // Mids add a subtle shimmer to the channel separation.
@@ -138,6 +149,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let scanline = 1.0 - smoothstep(0.75, 1.0, distCenter) * 0.28;
     rgb *= scanline;
 
+    // IDEA 2 — cut-face bevel + cast shadow at the seam with the strip above. The sideways
+    // step (shear) plus the layer gap sets how tall the exposed cut face is; the front strip
+    // shows a lit bevel, a strip under a front neighbour receives its shadow.
+    let shear = offset - offsetAbove;
+    let dz = z - zAbove;
+    let dy = uv.y - sliceIndex * sliceHeight;
+    let faceH = min(abs(shear) * 0.8 + abs(dz) * sliceHeight * 0.5, sliceHeight * 0.45);
+    let band = (1.0 - smoothstep(0.0, max(faceH, 1e-5), dy)) * step(0.5, sliceIndex);
+    let inFront = smoothstep(-0.02, 0.02, dz);
+    let bevel = band * inFront;
+    let shadow = band * (1.0 - inFront);
+    rgb = rgb * (1.0 + 0.35 * bevel) + vec3<f32>(0.04) * bevel;
+    rgb *= 1.0 - 0.45 * shadow;
+
     // ── Highlight lift on strongly displaced bright strips ──────────
     let glowMask = smoothstep(0.55, 1.0, lumaOf(rgb)) * smoothstep(0.02, 0.2, abs(offset));
     rgb += rgb * glowMask * 0.22;
@@ -147,12 +172,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let grain = (hash21(uv * resolution + vec2<f32>(fract(time) * 61.7, fract(time * 0.7) * 43.1)) - 0.5) * 0.02;
     rgb = rgb * vig + grain;
 
-    // Bounded output (≤ ~1.3, HDR-friendly for downstream tonemapping)
-    let finalColor = clamp(rgb, vec3<f32>(0.0), vec3<f32>(1.3));
+    // Bounded HDR, then ACES for display
+    let finalColor = aces(clamp(rgb, vec3<f32>(0.0), vec3<f32>(1.3)));
 
-    // Preserve the input alpha from the unshifted source pixel
+    // Semantic alpha: slice coverage — source alpha, dimmed under a cast shadow
     let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let alpha = current.a;
+    let alpha = clamp(current.a * (1.0 - 0.3 * shadow), 0.0, 1.0);
 
     textureStore(writeTexture, coords, vec4<f32>(finalColor, alpha));
 

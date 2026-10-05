@@ -1,14 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Pixel Depth Sort — Multi-Pass Architect Upgrade
+//  Pixel Depth Sort
 //  Category: post-processing
-//  Features: upgraded-rgba, mouse-driven, audio-reactive, depth-aware,
-//            temporal-feedback, aces-tone-map, branchless-sort,
-//            sorting-network, depth-weighted, lod-distance
+//  Features: upgraded-rgba, mouse-driven, audio-reactive, depth-aware, semantic-alpha,
+//            temporal-feedback, sorting-network
 //  Complexity: Medium
-//  Upgraded: 2026-07-08
-//  Optimizer pass: 2026-07-21 — slider-wired sort radius, mids-driven
-//    radius modulation, span-seam chromatic accent, clamped temporal
-//    feedback (accumulation stability), dead-code removal.
+//  Upgraded: 2026-10-06
+//  Ideas: interval-bounded spans; melt drip overrun from C; rank ramp shading
+//  A packing: linear pre-ACES RGB; .a = centre depth
+//  History: architect upgrade 2026-07-08; optimizer pass 2026-07-21 (slider wiring, seam accent)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -26,6 +25,9 @@ const BASE_ABERRATION: f32 = 0.2;
 const SORT_RADIUS_SCALE: f32 = 40.0;
 const UV_LO: vec2<f32> = vec2<f32>(0.0, 0.0);
 const UV_HI: vec2<f32> = vec2<f32>(1.0, 1.0);
+const DEPTH_CEIL: f32 = 0.995;
+const SPAN_SENTINEL: f32 = 2.0;   // depth given to taps outside the span; sorts to the end
+const DRIP_TAPS: i32 = 6;
 
 // ── Fast math helpers ─────────────────────────────────────────────
 fn fast_atan2(y: f32, x: f32) -> f32 {
@@ -97,6 +99,10 @@ fn spanEdgeMask(centerDepth: f32, near: f32, far: f32) -> f32 {
   return max(nearEdge, farEdge);
 }
 
+fn hasSpanOf(sortLength: f32) -> f32 {
+  return smoothstep(0.0, 0.5, sortLength);
+}
+
 // ── Main compute kernel ───────────────────────────────────────────
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -112,22 +118,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let sortRadius = clamp(u.zoom_params.x, 0.0, 1.0);        // tap spacing
   let midsMod = clamp(u.zoom_params.y, 0.0, 1.0);           // audio mids → radius
   let chromaAccent = clamp(u.zoom_params.z, 0.0, 1.0);      // seam fringe strength
-  let feedbackClamp = clamp(u.zoom_params.w, 1.0, 2.0);     // temporal stability cap
+  // FIX: HEAD clamped the 0..1 slider into [1,2] (always 1.0, dead). Map it onto 1..2 instead.
+  let feedbackClamp = 1.0 + clamp(u.zoom_params.w, 0.0, 1.0); // temporal stability cap
 
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
   let centerDepth = textureLoad(readDepthTexture, pixel, 0).r;
   let bg = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-
-  // Branchless background mask: keep sky/background pixels unchanged
-  let isBg = f32(centerDepth < DEPTH_THRESHOLD || centerDepth > 0.995);
-  if (isBg > 0.5) {
-    textureStore(dataTextureA, pixel, bg);
-    textureStore(writeTexture, pixel, vec4<f32>(bg.rgb, centerDepth));
-    textureStore(writeDepthTexture, pixel, vec4<f32>(centerDepth, 0.0, 0.0, 0.0));
-    return;
-  }
 
   // Precompute sort direction and LOD factor from mouse distance
   let jitter = (hash21(uv * 1337.0 + time) - 0.5) * 0.04;
@@ -146,37 +144,74 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let sampleCount = u32(5.0 + lod * 4.0);
   let depthSharp = 8.0 + lod * 24.0;
 
+  // Background mask: sky/background pixels keep the frame (plus the drip overrun below)
+  let isBg = f32(centerDepth < DEPTH_THRESHOLD || centerDepth > DEPTH_CEIL);
+  if (isBg > 0.5) {
+    // Idea 2: melt drip overrun — look back along -dir for the end of a sorted span and pull
+    // the SORTED colour (last frame's A) over the boundary, tapering over DRIP_TAPS taps.
+    let dripStep = max(sortLength * 0.35, 1.0);
+    var dripCol = bg.rgb;
+    var dripW = 0.0;
+    for (var k: i32 = 1; k <= DRIP_TAPS; k = k + 1) {
+      if (dripW <= 0.0) {
+        let sUV = clamp(uv - dir * f32(k) * dripStep * invRes, UV_LO, UV_HI);
+        let sd = textureSampleLevel(readDepthTexture, non_filtering_sampler, sUV, 0.0).r;
+        if (sd >= DEPTH_THRESHOLD && sd <= DEPTH_CEIL) {
+          let sp = clamp(vec2<i32>(sUV * res), vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1));
+          let sc = textureLoad(dataTextureC, sp, 0).rgb;
+          dripCol = clamp(select(bg.rgb, sc, sc == sc), vec3<f32>(0.0), vec3<f32>(feedbackClamp));
+          let taper = 1.0 - f32(k - 1) / f32(DRIP_TAPS);
+          dripW = taper * taper * 0.85 * hasSpanOf(sortLength);
+        }
+      }
+    }
+    let bgOut = mix(bg.rgb, dripCol, dripW);
+    textureStore(dataTextureA, pixel, vec4<f32>(bgOut, centerDepth));
+    // FIX: HEAD used raw depth as alpha (0 = invisible with no depth map); clamp like the fg path.
+    textureStore(writeTexture, pixel, vec4<f32>(bgOut, clamp(centerDepth + dripW * 0.5, 0.2, 0.95)));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(centerDepth, 0.0, 0.0, 0.0));
+    return;
+  }
+
   // Sample taps along sort direction with depth-weighted accumulation
   var colors: array<vec4<f32>, 9>;
   var depths: array<f32, 9>;
-  var weights: array<f32, 9>;
+  // Idea 1: interval-bounded spans — the first tap that leaves the depth interval
+  // [DEPTH_THRESHOLD, DEPTH_CEIL] ends the span; it and every tap past it get the sentinel depth
+  // so they sort to the end and drop out (FIX: inactive taps i >= sampleCount used to sort too).
+  var alive: f32 = 1.0;
+  var activeCount: f32 = 0.0;
   for (var i: u32 = 0u; i < MAX_SAMPLES; i = i + 1u) {
-    let sampleActive = f32(i < sampleCount);
     let offset = dir * f32(i) * sortLength * invRes;
     let sampleUV = clamp(uv + offset, UV_LO, UV_HI);
     let c = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
-    let w = sampleActive / (1.0 + abs(d - centerDepth) * depthSharp);
+    alive = alive * f32(d >= DEPTH_THRESHOLD && d <= DEPTH_CEIL);
+    let act = f32(i < sampleCount) * alive;
     colors[i] = c;
-    depths[i] = d;
-    weights[i] = w;
+    depths[i] = mix(SPAN_SENTINEL, d, act);
+    activeCount = activeCount + act;
   }
+  let spanN = max(u32(activeCount + 0.5), 1u);
 
   // Sort active samples by depth (near to far)
   sort_network(&depths, &colors);
 
-  // Find insertion rank of centerDepth
+  // Find insertion rank of centerDepth (sentinels never count: centerDepth <= DEPTH_CEIL)
   var rank: u32 = 0u;
   for (var i: u32 = 0u; i < MAX_SAMPLES; i = i + 1u) {
     rank = rank + u32(centerDepth > depths[i]);
   }
-  rank = clamp(rank, 0u, 8u);
+  rank = min(rank, spanN - 1u);
 
-  // Depth-weighted blend around the insertion rank
+  // Depth-weighted blend around the insertion rank.
+  // FIX: weights are recomputed from the SORTED depths (HEAD paired pre-sort weights with
+  // post-sort colours).
   var weightedColor = vec3<f32>(0.0);
   var weightTotal: f32 = 0.0;
   for (var i: u32 = 0u; i < MAX_SAMPLES; i = i + 1u) {
-    let w = weights[i];
+    let d = depths[i];
+    let w = f32(d < 1.5) / (1.0 + abs(d - centerDepth) * depthSharp);
     weightedColor = weightedColor + colors[i].rgb * w;
     weightTotal = weightTotal + w;
   }
@@ -186,15 +221,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Branchless zero-radius fallback: with the radius slider at 0 the
   // taps collapse onto the center pixel — fall back to the raw frame
   // instead of smearing the same sample through the network.
-  let hasSpan = smoothstep(0.0, 0.5, sortLength);
+  let hasSpan = hasSpanOf(sortLength);
+
+  // Idea 3: rank ramp — shade the pick by its place in the sorted run (nearest +8%, farthest -8%)
+  // so every span reads as an ordered gradient.
+  let rankT = f32(rank) / f32(max(spanN - 1u, 1u));
+  let rampGain = select(1.0, mix(1.08, 0.92, rankT), spanN > 1u);
+  sortedColor = sortedColor * mix(1.0, rampGain, hasSpan);
   sortedColor = mix(bg.rgb, sortedColor, hasSpan);
 
-  // Directional chromatic aberration at depth boundaries
-  let depthRange = abs(depths[8] - depths[0]);
+  // Directional chromatic aberration at depth boundaries (far end = last ACTIVE tap)
+  let farDepth = depths[spanN - 1u];
+  let depthRange = abs(farDepth - depths[0]);
   let boundaryStrength = smoothstep(0.05, 0.3, depthRange);
 
   // Chromatic edge accent: extra RGB split exactly on sorted-span seams
-  let spanEdge = spanEdgeMask(centerDepth, depths[0], depths[8]) * boundaryStrength;
+  let spanEdge = spanEdgeMask(centerDepth, depths[0], farDepth) * boundaryStrength;
   let seamSplit = chromaAccent * spanEdge * 2.0;
   let caOffset = dir * (BASE_ABERRATION + seamSplit) * boundaryStrength * 4.0 * invRes;
 
@@ -216,8 +258,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // pre-mix so a hot upstream slot cannot blow out the accumulator
   // (luma-echo-warp lesson: cap pre-tint at ~1.2 by default).
   let prev = textureLoad(dataTextureC, pixel, 0);
-  let prevStable = clamp(prev.rgb, vec3<f32>(0.0), vec3<f32>(feedbackClamp));
+  let prevStable = clamp(select(color, prev.rgb, prev.rgb == prev.rgb), vec3<f32>(0.0), vec3<f32>(feedbackClamp));
   color = mix(prevStable, color, 0.88);
+  // FIX: A now holds linear pre-ACES colour (HEAD stored post-ACES and re-tonemapped it).
+  let linearOut = max(color, vec3<f32>(0.0));
 
   // 1-LSB hash dither: breaks up banding in the feedback accumulator
   // on slow gradients without visibly changing the signal.
@@ -225,10 +269,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color = color + vec3<f32>(dither);
 
   // ACES tone map + semantic alpha
-  color = acesToneMap(color * (0.95 + mids * 0.12));
+  color = acesToneMap(max(color, vec3<f32>(0.0)) * (0.95 + mids * 0.12));
   let alpha = clamp(luma(color) * 1.2 + centerDepth * 0.5, 0.2, 0.95);
 
-  textureStore(dataTextureA, pixel, vec4<f32>(color, centerDepth));
+  textureStore(dataTextureA, pixel, vec4<f32>(linearOut, centerDepth));
   textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(centerDepth, 0.0, 0.0, 0.0));
 }

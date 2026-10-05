@@ -3,10 +3,10 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, temporal-echo, depth-attenuation, upgraded-rgba, curl-noise, chromatic-echo
 //  Complexity: High
-//  Chunks From: luma-echo-warp, bass_env, temporal-feedback
-//  Created: 2024-01-01
-//  Upgraded: 2026-06-28
-//  Upgraded by: kimi-swarm 2026-07-19
+//  Upgraded: 2026-10-06
+//  Ideas: terraced luma weight (equal-luma bands warp as rigid terraces); contour ghost lines (band edges echo longer)
+//  A packing: linear echo RGB (pre-tint/sparkle, clamped 0..1.2) + alpha (echo coverage)
+//  History: created 2024-01-01; upgraded 2026-06-28; kimi-swarm 2026-07-19
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -63,11 +63,19 @@ fn cosPalette(t: f32) -> vec3<f32> {
     return vec3<f32>(0.5) + vec3<f32>(0.5) * cos(TAU * (t + vec3<f32>(0.0, 0.33, 0.67)));
 }
 
-// Soft shoulder: identity below 1.0, compresses highlights toward ~2.0
-fn highlightRollOff(c: vec3<f32>) -> vec3<f32> {
-    let over = max(c - vec3<f32>(1.0), vec3<f32>(0.0));
-    return min(c, vec3<f32>(1.0)) + over / (vec3<f32>(1.0) + over);
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let c = max(x, vec3<f32>(0.0));
+    return clamp((c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
+
+// Exact history load (rgba32float is unfilterable), NaN/range-guarded.
+fn loadHist(p: vec2<f32>, res: vec2<f32>) -> vec4<f32> {
+    let c = clamp(vec2<i32>(p * res), vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1));
+    let v = textureLoad(dataTextureC, c, 0);
+    return select(vec4<f32>(0.0), clamp(v, vec4<f32>(0.0), vec4<f32>(4.0)), all(v == v));
+}
+
+const LUMA_BANDS: f32 = 6.0;
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -103,7 +111,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let lenD = length(dVec);
     let dir = select(vec2<f32>(0.0, 0.0), dVec / max(lenD, 0.0001), lenD > 0.0001);
     let influence = smoothstep(radius, 0.0, dist);
-    let weight = mix(1.0, luma, lumaWeight);
+    // IDEA 1 — terraced luma weight: snap the luma weight toward LUMA_BANDS levels so
+    // equal-luma regions move as rigid terraces and tear apart at band contours.
+    let weightSmooth = mix(1.0, luma, lumaWeight);
+    // round() keeps the endpoints exact: Luma Weight 0 → weight 1.0 (HEAD), no overshoot at luma 1.
+    let weight = mix(weightSmooth, round(weightSmooth * LUMA_BANDS) / LUMA_BANDS, 0.75);
     let mouseActive = select(0.0, 1.0, mousePos.x >= 0.0);
 
     let tangent = vec2<f32>(-dir.y, dir.x);
@@ -118,16 +130,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let warpedColor = textureSampleLevel(readTexture, u_sampler, distortedUV, 0.0);
 
     // ── Temporal echo with true chromatic trail ────────────────────
-    // Per-channel history taps offset along the warp direction; bilinear
-    // history sampling keeps the trail smooth instead of stepping texels.
+    // Per-channel exact history taps offset along the warp direction.
     let caMag = (0.0012 + bass * 0.0018) * (0.3 + 0.7 * influence);
     let caVec = dir * caMag + warp * 0.05;
-    let histG = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-    let histR = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + caVec, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-    let histB = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - caVec * 0.7, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+    let histG = loadHist(uv, resolution);
+    let histR = loadHist(clamp(uv + caVec, vec2<f32>(0.0), vec2<f32>(1.0)), resolution).r;
+    let histB = loadHist(clamp(uv - caVec * 0.7, vec2<f32>(0.0), vec2<f32>(1.0)), resolution).b;
     let history = vec4<f32>(histR, histG.g, histB, histG.a);
 
-    let echoDecay = clamp(decay * (1.0 - bass * 0.05), 0.0, 1.0);
+    // IDEA 2 — contour ghost lines: at luma band boundaries of the warped frame the echo
+    // decays slower (toward 0.995), so topographic lines linger in the trail.
+    let wl = dot(warpedColor.rgb, vec3<f32>(0.299, 0.587, 0.114)) * LUMA_BANDS;
+    let bandEdge = min(fract(wl), 1.0 - fract(wl));
+    let contour = 1.0 - smoothstep(0.0, 0.12, bandEdge);
+    let echoDecay = mix(clamp(decay * (1.0 - bass * 0.05), 0.0, 1.0), 0.995, contour * 0.8);
     let mixed = mix(warpedColor, history, echoDecay);
     let outputColor = mix(mixed, warpedColor, isMouseDown * 0.5);
 
@@ -142,8 +158,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sparkle = treble * 0.15 * luma * influence * twinkle;
     finalRGB += vec3<f32>(sparkle);
 
-    // HDR-safe highlights: soft shoulder, then hard backstop
-    finalRGB = clamp(highlightRollOff(finalRGB), vec3<f32>(0.0), vec3<f32>(4.0));
+    // Ghost lift: contour pixels whose echo differs from the live frame glow faintly.
+    let ghost = contour * clamp(length(history.rgb - warpedColor.rgb) * 6.0, 0.0, 1.0);
+    finalRGB = finalRGB * (1.0 + 0.35 * ghost) + vec3<f32>(0.03) * ghost;
+
+    finalRGB = aces(clamp(finalRGB, vec3<f32>(0.0), vec3<f32>(4.0)));
     let alpha = clamp(outputColor.a * 0.7 + influence * 0.2 + bass * 0.08, 0.0, 1.0);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, alpha));

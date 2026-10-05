@@ -43,7 +43,8 @@
     "audio-reactive",
     "anisotropic-stretch",
     "depth-aware",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "semantic-alpha"
   ],
   "tags": [
     "filter",
