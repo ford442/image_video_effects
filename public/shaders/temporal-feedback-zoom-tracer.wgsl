@@ -28,27 +28,9 @@
 //    [0]=bass  [1]=mid  [2]=treble  [3]=reserved  [4]=historyHead
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=zoom, y=rotation, z=persistence, w=blend
 @group(0) @binding(13) var historyTexture: texture_2d_array<f32>;
-
-struct Uniforms {
-  config: vec4<f32>,      // x=time, y=rippleCount, z=resX, w=resY
-  zoom_config: vec4<f32>, // x=time, y=mouseX, z=mouseY, w=mouseDown
-  zoom_params: vec4<f32>, // x=zoom, y=rotation, z=persistence, w=blend
-  ripples: array<vec4<f32>, 50>,
-};
 
 const PI: f32 = 3.14159265358979323846;
 
@@ -92,11 +74,24 @@ fn hueRotate(c: vec3<f32>, angle: f32) -> vec3<f32> {
   return c * ca + cross(k, c) * sin(angle) + k * dot(k, c) * (1.0 - ca);
 }
 
+// ── History ring read (#1307) ────────────────────────────────────
+// Every ring read goes through here. Ages clamp to the oldest layer the ring
+// actually holds; age 0 is the live frame — which is all a 1-layer ring has
+// (the host never writes a 1-layer ring, so its layer 0 is stale). On an
+// 8-layer ring this is the same layer lookup as before. Mirrors
+// temporal-slit-scan.wgsl frameAt.
+fn frameAt(uv: vec2<f32>, head: u32, depth: u32, age: u32, current: vec4<f32>) -> vec4<f32> {
+  let a = min(age, depth - 1u);
+  if (a == 0u) { return current; }
+  let layer = (head + depth - a) % depth;
+  return textureSampleLevel(historyTexture, u_sampler, uv, i32(layer), 0.0);
+}
+
 // ── Chromatic history sample ─────────────────────────────────────
-fn sampleHistoryChromatic(uv: vec2<f32>, layer: i32, shift: f32) -> vec3<f32> {
-  let r = textureSampleLevel(historyTexture, u_sampler, uv + vec2<f32>(shift, 0.0), layer, 0.0).r;
-  let g = textureSampleLevel(historyTexture, u_sampler, uv, layer, 0.0).g;
-  let b = textureSampleLevel(historyTexture, u_sampler, uv - vec2<f32>(shift, 0.0), layer, 0.0).b;
+fn sampleHistoryChromatic(uv: vec2<f32>, head: u32, depth: u32, age: u32, current: vec4<f32>, shift: f32) -> vec3<f32> {
+  let r = frameAt(uv + vec2<f32>(shift, 0.0), head, depth, age, current).r;
+  let g = frameAt(uv, head, depth, age, current).g;
+  let b = frameAt(uv - vec2<f32>(shift, 0.0), head, depth, age, current).b;
   return vec3<f32>(r, g, b);
 }
 
@@ -150,22 +145,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // ── HISTORY RING DEPTH (floor fix, 2026-09-21) ───────────────────
   // The ring is at most 8 layers; after the VRAM probe the runtime may
   // allocate 8, 4 or 1, and it wraps its write head at the ALLOCATED
-  // count (renderer/webgpu/frame.ts). A hardcoded HISTORY_DEPTH=8 asked
+  // count (renderer/webgpu/frame.ts). A hardcoded ring depth of 8 asked
   // for layers that do not exist on a 4- or 1-layer device and WGSL
   // clamped them to the last layer: scrambled frame order, silently.
   let histDepth = max(textureNumLayers(historyTexture), 1u);
   let historyHead = u32(extraBuffer[4]);
-  let layerPrev = (historyHead + histDepth - 1u) % histDepth;
+  // 1-layer ring: frameAt hands back the live frame (the host never writes it).
+  let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
   // Chromatic trail separation scales with zoom power
   let chromaShift = 0.001 + zp.x * 0.008;
   // Idea 2 — recursion hue drift: every pass rotates the history hue a little (mids widen
   // it), so the tunnel's depth layers walk through the spectrum like analog feedback.
   let hueStep = 0.035 + mids * 0.05;
-  let histWarp = hueRotate(sampleHistoryChromatic(warpedUV, i32(layerPrev), chromaShift), hueStep) * inFrame
+  let histWarp = hueRotate(sampleHistoryChromatic(warpedUV, historyHead, histDepth, 1u, current, chromaShift), hueStep) * inFrame
                + vec3<f32>(0.015) * (1.0 - inFrame);
-
-  let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
   // Blend: weighted history + current
   var output = mix(histWarp * persistence, current.rgb, blendAmt);

@@ -31,27 +31,22 @@
 //    [0]=bass  [1]=mid  [2]=treble  [3]=reserved  [4]=historyHead
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=fastDecay, y=medDecay, z=slowDecay, w=origBlend
 @group(0) @binding(13) var historyTexture: texture_2d_array<f32>;
 
-struct Uniforms {
-  config: vec4<f32>,      // x=time, y=rippleCount, z=resX, w=resY
-  zoom_config: vec4<f32>, // x=time, y=mouseX, z=mouseY, w=mouseDown
-  zoom_params: vec4<f32>, // x=fastDecay, y=medDecay, z=slowDecay, w=origBlend
-  ripples: array<vec4<f32>, 50>,
-};
+// ── History ring read (#1307) ────────────────────────────────────
+// Every ring read goes through here. Ages clamp to the oldest layer the ring
+// actually holds; age 0 is the live frame — which is all a 1-layer ring has
+// (the host never writes a 1-layer ring, so its layer 0 is stale). On an
+// 8-layer ring this is the same layer lookup as before. Mirrors
+// temporal-slit-scan.wgsl frameAt.
+fn frameAt(uv: vec2<f32>, head: u32, depth: u32, age: u32, current: vec4<f32>) -> vec4<f32> {
+  let a = min(age, depth - 1u);
+  if (a == 0u) { return current; }
+  let layer = (head + depth - a) % depth;
+  return textureSampleLevel(historyTexture, u_sampler, uv, i32(layer), 0.0);
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -132,24 +127,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // ── HISTORY RING DEPTH (floor fix, 2026-09-21) ───────────────────────────
   // The ring is at most 8 layers; after the VRAM probe the runtime may
   // allocate 8, 4 or 1, and it wraps its write head at the ALLOCATED count
-  // (renderer/webgpu/frame.ts). A hardcoded HISTORY_DEPTH=8 asked for layers
+  // (renderer/webgpu/frame.ts). A hardcoded ring depth of 8 asked for layers
   // that do not exist on a 4- or 1-layer device and WGSL clamped them to the
   // last layer: scrambled frame order, silently. `reach` is the oldest age
-  // this ring can actually supply — every requested age is clamped to it
-  // rather than pretending the missing layers exist.
+  // this ring can actually supply; loops stop there rather than re-reading
+  // the oldest layer for every missing age.
   let histDepth = max(textureNumLayers(historyTexture), 1u);
   let reach = histDepth - 1u;
+  let ageCap = min(7u, reach);
 
-  // Sample every ring age once (ages past `reach` clamp to the oldest real frame).
+  // Sample every ring age the ring actually holds, once.
   var hs: array<vec4<f32>, 8>;
   var ultraSum = vec4<f32>(0.0);
   let ultraCount = max(reach, 1u);
-  for (var age: u32 = 1u; age <= 7u; age = age + 1u) {
-    let l = (historyHead + histDepth - min(age, reach)) % histDepth;
-    hs[age] = textureSampleLevel(historyTexture, u_sampler, historyUV, i32(l), 0.0);
+  for (var age: u32 = 1u; age <= ageCap; age = age + 1u) {
+    hs[age] = frameAt(historyUV, historyHead, histDepth, age, current);
     if (age <= ultraCount) { ultraSum += hs[age]; }
   }
-  let ultraAvg = ultraSum / f32(ultraCount);
+  // 1-layer ring: no history at all, so every timescale is the live frame.
+  let ultraAvg = select(ultraSum / f32(ultraCount), current, reach == 0u);
+  // A band whose ages the ring cannot reach falls back to the oldest real frame.
+  let oldest = select(hs[ageCap], current, reach == 0u);
 
   // Idea 1 — decay-shaped timescale kernels: each channel reads an exponentially weighted
   // window anchored at its band's defining age (fast/medium: the newest age, slow: the
@@ -159,15 +157,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var fastK = vec4<f32>(0.0); var fastW = 0.0;
   var medK  = vec4<f32>(0.0); var medW  = 0.0;
   var slowK = vec4<f32>(0.0); var slowW = 0.0;
-  for (var age: u32 = 1u; age <= 7u; age = age + 1u) {
+  // Weights sum only the ages actually read; on a 4-layer ring medium and slow
+  // both collapse onto age 3, the oldest frame held.
+  for (var age: u32 = 1u; age <= ageCap; age = age + 1u) {
     let a = f32(age);
     if (age <= 3u) { let w = pow(decayFast, a - 1.0); fastK += hs[age] * w; fastW += w; }
     if (age >= 3u && age <= 6u) { let w = pow(decayMedium, a - 3.0); medK += hs[age] * w; medW += w; }
     if (age >= 5u) { let w = pow(decaySlow, 7.0 - a); slowK += hs[age] * w; slowW += w; }
   }
-  fastK /= fastW;
-  medK /= medW;
-  slowK /= slowW;
+  if (fastW > 0.0) { fastK /= fastW; } else { fastK = oldest; }
+  if (medW > 0.0) { medK /= medW; } else { medK = oldest; }
+  if (slowW > 0.0) { slowK /= slowW; } else { slowK = oldest; }
 
   // Idea 2 — time-inversion echo rings: inside a click's echo front the channels swap
   // timescales (R reads slow, B reads fast), so the ring passes as inverted colour-time.

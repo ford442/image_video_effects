@@ -9,27 +9,21 @@
 //  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 @group(0) @binding(13) var historyTexture: texture_2d_array<f32>;
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+// ── History ring read (#1307) ────────────────────────────────────
+// Every ring read goes through here. Ages clamp to the oldest layer the ring
+// actually holds; age 0 is the live frame — which is all a 1-layer ring has
+// (the host never writes a 1-layer ring, so its layer 0 is stale). On an
+// 8-layer ring this is the same layer lookup as before. Mirrors
+// temporal-slit-scan.wgsl frameAt.
+fn frameAt(uv: vec2<f32>, head: u32, depth: u32, age: u32, current: vec4<f32>) -> vec4<f32> {
+  let a = min(age, depth - 1u);
+  if (a == 0u) { return current; }
+  let layer = (head + depth - a) % depth;
+  return textureSampleLevel(historyTexture, u_sampler, uv, i32(layer), 0.0);
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -66,7 +60,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // ── HISTORY RING DEPTH (floor fix, 2026-09-21) ───────────────────
   // The ring is at most 8 layers; after the VRAM probe the runtime may
   // allocate 8, 4 or 1, and it wraps its write head at the ALLOCATED
-  // count (renderer/webgpu/frame.ts). A hardcoded HISTORY_DEPTH=8 asked
+  // count (renderer/webgpu/frame.ts). A hardcoded ring depth of 8 asked
   // for layers that do not exist on a 4- or 1-layer device and WGSL
   // clamped them to the last layer: scrambled frame order, silently.
   // reach = oldest age this ring can actually supply (0 on a 1-layer ring).
@@ -98,11 +92,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let sampleUV  = clamp(uv + warpOffset, vec2<f32>(0.0), vec2<f32>(1.0));
 
-  let layerA = i32((historyHead + histDepth - min(age, reach))       % histDepth);
-  let layerB = i32((historyHead + histDepth - min(age + 1u, reach))  % histDepth);
-
-  let frameA = textureSampleLevel(historyTexture, u_sampler, sampleUV, layerA, 0.0);
-  let frameB = textureSampleLevel(historyTexture, u_sampler, sampleUV, layerB, 0.0);
+  // frameAt clamps both ages to `reach`; on a 1-layer ring both are the live frame.
+  let frameA = frameAt(sampleUV, historyHead, histDepth, age, current);
+  let frameB = frameAt(sampleUV, historyHead, histDepth, age + 1u, current);
 
   let slitColor = mix(frameA, frameB, ageFrac);
   var output   = mix(slitColor, current, origBlend);
