@@ -3663,8 +3663,17 @@
       "history": []
     },
     "magnetic-chroma": {
-      "hash": "564eb42cbd72628a",
-      "history": []
+      "hash": "adceef6d0b0416fb",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T12:42:59.573Z",
+          "hash": "adceef6d0b0416fb",
+          "prev_hash": "564eb42cbd72628a",
+          "commit": "485f3646",
+          "note": "2026-10-05 force-field twelve (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-force-field-twelve"
+        }
+      ]
     },
     "mercury-temporal-mirror": {
       "hash": "53a24cc297afced2",
@@ -3703,8 +3712,17 @@
       "history": []
     },
     "pixel-tornado": {
-      "hash": "c375178d926d845f",
-      "history": []
+      "hash": "18ca8377cec78917",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T12:42:59.573Z",
+          "hash": "18ca8377cec78917",
+          "prev_hash": "c375178d926d845f",
+          "commit": "485f3646",
+          "note": "2026-10-05 force-field twelve (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-force-field-twelve"
+        }
+      ]
     },
     "plastic-bricks": {
       "hash": "36f7647b7c2224de",
@@ -4113,8 +4131,17 @@
       "history": []
     },
     "gravity-lens": {
-      "hash": "f292c6072dee4f16",
-      "history": []
+      "hash": "a13497e2c83450ae",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T12:42:59.573Z",
+          "hash": "a13497e2c83450ae",
+          "prev_hash": "f292c6072dee4f16",
+          "commit": "485f3646",
+          "note": "2026-10-05 force-field twelve (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-force-field-twelve"
+        }
+      ]
     },
     "hex-mosaic": {
       "hash": "8ba85495ea408e2e",
@@ -4322,12 +4349,30 @@
       "history": []
     },
     "luma-force": {
-      "hash": "efe971007cd8e81b",
-      "history": []
+      "hash": "39838263ef3e101b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T12:42:59.573Z",
+          "hash": "39838263ef3e101b",
+          "prev_hash": "efe971007cd8e81b",
+          "commit": "485f3646",
+          "note": "2026-10-05 force-field twelve (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-force-field-twelve"
+        }
+      ]
     },
     "luma-magnetism": {
-      "hash": "359855fb7009eae7",
-      "history": []
+      "hash": "de1ea1a5a4393a53",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T12:42:59.573Z",
+          "hash": "de1ea1a5a4393a53",
+          "prev_hash": "359855fb7009eae7",
+          "commit": "485f3646",
+          "note": "2026-10-05 force-field twelve (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-force-field-twelve"
+        }
+      ]
     },
     "luma-slice-interactive": {
       "hash": "f165dab849d4caf4",
@@ -4354,16 +4399,34 @@
       "history": []
     },
     "magnetic-pixels": {
-      "hash": "9bf3719195d4ddf2",
-      "history": []
+      "hash": "da30d0afb1b89a6d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T12:42:59.573Z",
+          "hash": "da30d0afb1b89a6d",
+          "prev_hash": "9bf3719195d4ddf2",
+          "commit": "485f3646",
+          "note": "2026-10-05 force-field twelve (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-force-field-twelve"
+        }
+      ]
     },
     "magnetic-rgb": {
       "hash": "adb0d7a54861f2d0",
       "history": []
     },
     "magnetic-ring": {
-      "hash": "1290b66e42534630",
-      "history": []
+      "hash": "8bc245e9b0625fec",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T12:42:59.573Z",
+          "hash": "8bc245e9b0625fec",
+          "prev_hash": "1290b66e42534630",
+          "commit": "485f3646",
+          "note": "2026-10-05 force-field twelve (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-force-field-twelve"
+        }
+      ]
     },
     "matrix-curtain": {
       "hash": "112606262527633f",
@@ -4394,16 +4457,34 @@
       "history": []
     },
     "mouse-electromagnetic-aurora": {
-      "hash": "1dcc4d5949e28769",
-      "history": []
+      "hash": "c5f1e0eb850b05bc",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T12:42:59.573Z",
+          "hash": "c5f1e0eb850b05bc",
+          "prev_hash": "1dcc4d5949e28769",
+          "commit": "485f3646",
+          "note": "2026-10-05 force-field twelve (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-force-field-twelve"
+        }
+      ]
     },
     "mouse-fluid-coupling": {
       "hash": "a4aef4bbd1600066",
       "history": []
     },
     "mouse-gravity": {
-      "hash": "d14a362638b6818b",
-      "history": []
+      "hash": "19085ebf0212c091",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T12:42:59.573Z",
+          "hash": "19085ebf0212c091",
+          "prev_hash": "d14a362638b6818b",
+          "commit": "485f3646",
+          "note": "2026-10-05 force-field twelve (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-force-field-twelve"
+        }
+      ]
     },
     "mouse-hyperbolic-navigator": {
       "hash": "7593f63b1afdb920",
@@ -4534,8 +4615,17 @@
       "history": []
     },
     "particle-disperse": {
-      "hash": "2f1e1b6cc93ae520",
-      "history": []
+      "hash": "a1936d957f9f6ed4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T12:42:59.573Z",
+          "hash": "a1936d957f9f6ed4",
+          "prev_hash": "2f1e1b6cc93ae520",
+          "commit": "485f3646",
+          "note": "2026-10-05 force-field twelve (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-force-field-twelve"
+        }
+      ]
     },
     "particle-swarm": {
       "hash": "ac70dd179d9d3d6c",
@@ -4559,16 +4649,34 @@
       "history": []
     },
     "pixel-explode": {
-      "hash": "8fe7a50406e7d7a7",
-      "history": []
+      "hash": "ee737d3dc81843b7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T12:42:59.573Z",
+          "hash": "ee737d3dc81843b7",
+          "prev_hash": "8fe7a50406e7d7a7",
+          "commit": "485f3646",
+          "note": "2026-10-05 force-field twelve (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-force-field-twelve"
+        }
+      ]
     },
     "pixel-focus": {
       "hash": "c79643a90cd76fab",
       "history": []
     },
     "pixel-repel": {
-      "hash": "5dd495a2ceb7f95b",
-      "history": []
+      "hash": "7eabc401160686a0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T12:42:59.573Z",
+          "hash": "7eabc401160686a0",
+          "prev_hash": "5dd495a2ceb7f95b",
+          "commit": "485f3646",
+          "note": "2026-10-05 force-field twelve (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-force-field-twelve"
+        }
+      ]
     },
     "pixel-reveal": {
       "hash": "6f9bd0e04e269986",

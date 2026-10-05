@@ -3,8 +3,9 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-05-17
-//  Slider wiring: 2026-07-31 (batch 22 — all 4 sliders were dead)
+//  Upgraded: 2026-10-05
+//  Ideas: tumbling shards; drop shadows of lifted tiles on the navy gap; bevelled tiles with true lift depth
+//  A packing: ACES display RGBA (unread — no C feedback)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -15,6 +16,17 @@
 //   zoom_config = [time, mouseX, mouseY, mouseDown]
 //   zoom_params = [Intensity, Speed, Scale, Detail]  (wired below)
 //   ripples[i]  = [clickX, clickY, clickTime, _]     (uv-space click points)
+
+fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Rotate an aspect-space offset into a tile's frame and back to uv units.
+fn tile_frame(d_uv: vec2<f32>, aspect: f32, cs: vec2<f32>) -> vec2<f32> {
+    let p = d_uv * vec2<f32>(aspect, 1.0);
+    return vec2<f32>(p.x * cs.y + p.y * cs.x, -p.x * cs.x + p.y * cs.y) / vec2<f32>(aspect, 1.0);
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
@@ -45,11 +57,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let cell_size = 1.0 / grid_dims;
 
     let mouse = u.zoom_config.yz;
+    let treble = plasmaBuffer[0].z;
     let explosion_radius = 0.5 * (1.0 + bass * 0.2);
     let explosion_force  = mix(0.0, 0.16, intensity) * (1.0 + mids * 0.3);
 
     var final_color = vec4<f32>(0.0);
     var closest_z   = 1000.0;
+    var hit         = 0.0;
+    var hit_lift    = 0.0;
+    var hit_depth   = 0.0;
+    var shadow      = 0.0;
+    var shadow_lift = 0.0;
+    var best_tex_uv = vec2<f32>(0.0);
+    var best_local  = vec2<f32>(0.5);
+    var best_crack  = 0.0;
+    var best_str    = 0.0;
 
     let current_cell = floor(uv * grid_dims);
 
@@ -102,40 +124,80 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let scale             = 1.0 + strength * 2.0;
             let particle_half_size = (cell_size * 0.5) * scale * 0.9;
 
-            let diff = abs(uv - new_center);
+            // Idea 1: tumbling shards — each blown tile spins by its own hash,
+            // scaled by blast strength (still tiles stay square and upright);
+            // 'Speed' keeps them turning slowly while airborne.
+            let spin  = (cellHash - 0.5) * 2.4 * total_strength + sin(wphase * 0.5) * 0.25 * total_strength;
+            let cs    = vec2<f32>(sin(spin), cos(spin));
+            let rel   = tile_frame(uv - new_center, aspect, cs);
+            let diff  = abs(rel);
 
             // Branchless z-buffer and pixel coverage check
             let inParticle = select(0.0, 1.0, diff.x < particle_half_size.x && diff.y < particle_half_size.y);
             let z_depth    = dist;
+            let lift       = total_strength;
+
+            // Idea 2: drop shadow — the same rotated tile, offset down-right by
+            // its lift (light from the top-left), with a soft box edge.
+            let shadow_off = vec2<f32>(1.0, 1.4) * cell_size * (0.35 + 1.1 * lift) * lift;
+            let srel = abs(tile_frame(uv - new_center - shadow_off, aspect, cs)) - particle_half_size;
+            let sbox = max(srel.x / cell_size.x, srel.y / cell_size.y);
+            let s_cov = (1.0 - smoothstep(-0.15, 0.25, sbox)) * smoothstep(0.02, 0.2, lift);
+            if (s_cov > shadow) {
+                shadow = s_cov;
+                shadow_lift = lift;
+            }
 
             if (inParticle > 0.5 && z_depth < closest_z) {
                 closest_z = z_depth;
+                hit = 1.0;
+                hit_lift = lift;
 
-                let local_uv = (uv - new_center) / max(particle_half_size * 2.0, vec2<f32>(0.0001)) + 0.5;
-                let tex_uv   = clamp(neighbor_cell * cell_size + local_uv * cell_size, vec2<f32>(0.0), vec2<f32>(1.0));
-                final_color  = textureSampleLevel(readTexture, u_sampler, tex_uv, 0.0);
-                final_color  = final_color * (1.0 + strength * 0.5);
-
-                // Treble crackle — cells inside the explosion zone flash
-                // brighter by treble bins, so the blast edge sparkles.
-                let treble = plasmaBuffer[(u32(cellHash * 8.0) % 8u) + 1u].x;
-                final_color = final_color + vec4<f32>(vec3<f32>(treble * total_strength * 0.3), 0.0);
+                let local_uv = rel / max(particle_half_size * 2.0, vec2<f32>(0.0001)) + 0.5;
+                best_tex_uv  = clamp(neighbor_cell * cell_size + local_uv * cell_size, vec2<f32>(0.0), vec2<f32>(1.0));
+                best_local   = local_uv;
+                best_str     = strength;
+                // Treble crackle — cells inside the explosion zone flash with
+                // plasmaBuffer[0].z (HEAD read never-written bins 1..8), gated
+                // per cell by its hash so the blast edge sparkles.
+                best_crack   = treble * total_strength * 0.3 * step(0.45, cellHash);
             }
         }
     }
 
-    // Background — branchless: if final_color.a == 0 use dark bg
-    let isBg = select(0.0, 1.0, final_color.a == 0.0);
-    final_color = mix(final_color, vec4<f32>(0.05, 0.05, 0.1, 1.0), isBg);
+    // Shade the winning tile once (2 texture taps per pixel, whatever the overlap).
+    if (hit > 0.5) {
+        final_color = textureSampleLevel(readTexture, u_sampler, best_tex_uv, 0.0);
+        hit_depth   = textureSampleLevel(readDepthTexture, non_filtering_sampler, best_tex_uv, 0.0).r;
+        final_color = vec4<f32>(final_color.rgb * (1.0 + best_str * 0.5), final_color.a);
 
-    final_color = clamp(final_color, vec4<f32>(0.0), vec4<f32>(1.0));
+        // Idea 3: bevel — tile edges darken and the top-left rim catches
+        // light, more so the higher the tile is lifted.
+        let edge  = min(min(best_local.x, 1.0 - best_local.x), min(best_local.y, 1.0 - best_local.y));
+        let bevel = 1.0 - smoothstep(0.0, 0.12, edge);
+        let lit   = select(-1.0, 1.0, best_local.x + best_local.y < 1.0);
+        let bevel_gain = 1.0 + bevel * (0.35 * lit - 0.15) * (0.4 + hit_lift);
+        final_color = vec4<f32>(final_color.rgb * bevel_gain + vec3<f32>(best_crack), final_color.a);
+    }
 
-    // Depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    // Background — navy gap where no tile covers the pixel (coverage flag,
+    // not source alpha, so transparent source texels are not mistaken for gaps)
+    let isBg = 1.0 - hit;
+    // Idea 2: shadows fall on the gap, and on lower tiles under a higher one.
+    let shade = shadow * select(0.0, 1.0, isBg > 0.5 || shadow_lift > hit_lift + 0.05) * 0.65;
+    var rgb = mix(final_color.rgb, vec3<f32>(0.05, 0.05, 0.1), isBg);
+    rgb = rgb * (1.0 - shade);
+    rgb = aces_tonemap(max(rgb, vec3<f32>(0.0)));
 
-    // Meaningful alpha: particle coverage (non-bg) + bass energy
-    let alpha = clamp(final_color.a * 0.8 + bass * 0.15 + (1.0 - isBg) * 0.1, 0.0, 1.0);
-    let fc = vec4<f32>(final_color.rgb, alpha);
+    // Idea 3: true lift depth — tiles carry their source depth plus their
+    // lift toward the viewer; the gap sits behind everything.
+    let depth = select(clamp(hit_depth * 0.8 + 0.2 + hit_lift * 0.3, 0.0, 1.0), 0.0, isBg > 0.5);
+
+    // Semantic alpha: tile coverage (source alpha) vs the gap, which is
+    // denser under a shadow; bass still thickens the gap slightly.
+    let alpha = select(clamp(final_color.a * (0.92 + 0.08 * hit_lift), 0.0, 1.0),
+                       clamp(0.75 + shade * 0.2 + bass * 0.05, 0.0, 1.0), isBg > 0.5);
+    let fc = vec4<f32>(rgb, alpha);
 
     textureStore(writeTexture, vec2<i32>(gid.xy), fc);
     textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));

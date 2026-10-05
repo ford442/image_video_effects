@@ -1,17 +1,41 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Interactive Gravity
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, chromatic-aberration, depth-aware, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-05
+//  Ideas: frame-dragging swirl with drag-velocity smear; Doppler-beamed photon ring from the lensed sky; tidal spaghettification near the hole
+//  A packing: display RGBA; texel (0,0) = (prevMouse.xy, prevTime, valid); texel (1,0) = (smoothed pointer velocity.xy in aspect-uv/s, 0, valid)
+// ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 // zoom_params: x=Strength, y=Radius, z=Aberration, w=Darkness
+
+const PI: f32 = 3.14159265358979;
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn rot2(v: vec2<f32>, a: f32) -> vec2<f32> {
+    let c = cos(a);
+    let s = sin(a);
+    return vec2<f32>(v.x * c - v.y * s, v.x * s + v.y * c);
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let coord = vec2<i32>(global_id.xy);
 
     let time = u.config.x;
+    let aspect = resolution.x / resolution.y;
+    let aspectV = vec2<f32>(aspect, 1.0);
 
-    // Mouse coords are in u.zoom_config.yz
-    // The renderer maps them 0-1.
-    var mousePos = u.zoom_config.yz;
+    // The hole sits directly on the cursor (HEAD's extraBuffer spring was dead:
+    // the buffer is re-uploaded every frame, so it reset to the mouse anyway).
+    let wellPos = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
 
     // Audio: bass deepens the well, mids widens its reach, treble splits chromatic aberration
@@ -25,122 +49,116 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aberration = u.zoom_params.z * 0.05 * (1.0 + treble * 0.8); // 0.0 to 0.05
     let darkness = u.zoom_params.w;          // 0.0 to 1.0
 
-    // --- Spring-damper the singularity -----------------------------------
-    // The raw cursor is only the TARGET. The well itself has mass, so it
-    // drags behind on a critically-damped spring - heavy and slow is GOOD.
-    // Persistent state lives in extraBuffer (engine reserves [0..4], FFT
-    // bins are [5..132], shader state is [133..255]):
-    //   [133..134] sprung singularity position
-    //   [135..136] spring velocity
-    //   [137]      init flag
-    //   [138]      last integration time
-    if (global_id.x == 0u && global_id.y == 0u) {
-        var sPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-        var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-        if (extraBuffer[137] < 0.5) {
-            // First frame: start AT the cursor so we don't lurch in from (0,0).
-            sPos = mousePos;
-            sVel = vec2<f32>(0.0, 0.0);
-        }
-        let dt = clamp(time - extraBuffer[138], 0.0005, 0.05);
-        let omega = 6.0; // low stiffness = massive well; zeta = 1 (critical)
-        let sAcc = omega * omega * (mousePos - sPos) - 2.0 * omega * sVel;
-        sVel = sVel + sAcc * dt;
-        sPos = sPos + sVel * dt;
-        extraBuffer[133] = sPos.x;
-        extraBuffer[134] = sPos.y;
-        extraBuffer[135] = sVel.x;
-        extraBuffer[136] = sVel.y;
-        extraBuffer[137] = 1.0;
-        extraBuffer[138] = time;
+    // --- Pointer velocity from A-texel state (exact C loads) ---------------
+    let st0 = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+    let st1 = textureLoad(dataTextureC, vec2<i32>(1, 0), 0);
+    let dt = time - st0.z;
+    var rawVel = vec2<f32>(0.0);
+    let st0Ok = st0.w > 0.5 && all(st0.xy == st0.xy) && all(abs(st0.xy) <= vec2<f32>(4.0));
+    if (st0Ok && dt > 1e-4 && dt < 0.25) {
+        rawVel = (wellPos - st0.xy) * aspectV / max(dt, 1e-3);
+        let sp = length(rawVel);
+        if (sp > 4.0) { rawVel = rawVel * (4.0 / sp); }
     }
-    // Every thread rides the sprung position (<=1 frame of slack IS the lag).
-    let wellPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    // Leftover C from another shader can hold NaN or huge values here; only
+    // trust a finite, in-range velocity written alongside a valid texel (0,0).
+    let prevVel = select(vec2<f32>(0.0), st1.xy,
+        st0Ok && st1.w > 0.5 && all(st1.xy == st1.xy) && dot(st1.xy, st1.xy) <= 16.0);
+    let vel = mix(prevVel, rawVel, 0.35);     // aspect-uv per second
 
-    // Vector from UV to Mouse
+    // Vector from UV to the well, aspect-correct
     let toMouse = uv - wellPos;
-    // Correct aspect ratio for distance calculation
-    let aspect = resolution.x / resolution.y;
-    let distVec = toMouse * vec2<f32>(aspect, 1.0);
+    let distVec = toMouse * aspectV;
     let dist = length(distVec);
+    let well = exp(-dist / radius);
 
     // --- Click gravity pulses ---------------------------------------------
-    // Every live ripple is a temporary SECONDARY gravity well parked at its
-    // click point: same exp(-dist / radius) falloff as the main well, with
-    // strength exp(-age * 2.0) so the dent relaxes over ~2 seconds. Clicks
-    // punch dents into spacetime; combined multiplicatively with the main
-    // distortion below.
-    var clickWarp = 1.0;
+    // Every live ripple is a temporary SECONDARY well that pulls toward its own
+    // click point (HEAD multiplied it into the main well's radial scale, so the
+    // dent was centred on the cursor instead of the click). Relaxes over ~2 s.
+    var clickPull = vec2<f32>(0.0);
     let rippleCount = min(u32(u.config.y), 50u);
     for (var i = 0u; i < rippleCount; i = i + 1u) {
         let rp = u.ripples[i];
         let age = time - rp.z;
         if (age < 0.0 || age > 2.0) { continue; }
-        let rpVec = (uv - rp.xy) * vec2<f32>(aspect, 1.0);
+        let rpVec = (uv - rp.xy) * aspectV;
         let rpDist = length(rpVec);
         let rpStrength = 0.6 * exp(-age * 2.0);
-        clickWarp = clickWarp * (1.0 - rpStrength * exp(-rpDist / radius));
+        clickPull = clickPull - (uv - rp.xy) * rpStrength * exp(-rpDist / radius);
     }
 
-    // Gravity calculation
-    // Force falls off with distance.
-    // We want a warp that pulls pixels *away* from the mouse? No, a gravity well pulls space *towards* it.
-    // If I look at pixel P, I want to know what light ray hits it.
-    // If space is compressed towards the center, then a ray hitting P (near center) came from further out?
-    // Let's implement a simple radial distortion.
-    // NewUV = Mouse + (UV - Mouse) * DistortionFactor
+    // Gravity lens: NewUV = Well + (UV - Well) * (1 - Strength * exp(-dist / Radius)).
+    // Magnifies toward the well and inverts once the factor goes negative.
+    let distortion = 1.0 - strength * well;
 
-    // If factor < 1.0, we zoom in (pull from closer to center).
-    // If factor > 1.0, we zoom out (pull from further out).
+    // Idea 1: frame-dragging swirl — a spinning hole drags space around with it,
+    // a bounded tangential twist ∝ exp(-d/r). Moving the hole smears space
+    // behind it along the A-texel drag velocity.
+    let swirl = strength * 0.8 * well;
+    let twisted = rot2(distVec, swirl);
+    let dragSmear = -vel * 0.06 * well;
 
-    // Gravity pulls light towards it.
-    // So if we look "near" the black hole, we see light from "behind" it being bent around.
-    // Effectively, it magnifies the background.
+    // Idea 3: tidal stretching — the pull varies steeply with distance, so
+    // near the hole the image is spaghettified: stretched along the radius,
+    // squeezed across it. Grows with well² (tides are the field's gradient).
+    let tide = strength * 0.6 * well * well;
+    let rHat = twisted / max(dist, 1e-5);
+    let radialC = dot(twisted, rHat);
+    let tidal = rHat * (radialC / (1.0 + tide)) + (twisted - rHat * radialC) * (1.0 + 0.5 * tide);
 
-    // Let's use a smooth falloff.
-    // Distort = 1.0 - Strength * exp(-dist / Radius)
-    let distortion = (1.0 - strength * exp(-dist / radius)) * clickWarp;
+    // Chromatic aberration confined to the well (HEAD fringed the whole frame).
+    let ab = aberration * well;
+    let offsetR = tidal * (distortion - ab);
+    let offsetG = tidal * distortion;
+    let offsetB = tidal * (distortion + ab);
 
-    // Apply separate distortion for RGB for chromatic aberration
-    let offsetR = toMouse * (distortion - aberration);
-    let offsetG = toMouse * distortion;
-    let offsetB = toMouse * (distortion + aberration);
-
-    let uvR = wellPos + offsetR;
-    let uvG = wellPos + offsetG;
-    let uvB = wellPos + offsetB;
+    let uvR = wellPos + (offsetR + dragSmear) / aspectV + clickPull;
+    let uvG = wellPos + (offsetG + dragSmear) / aspectV + clickPull;
+    let uvB = wellPos + (offsetB + dragSmear) / aspectV + clickPull;
 
     let r = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
+    let gS = textureSampleLevel(readTexture, u_sampler, uvG, 0.0);
     let b = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
 
-    var color = vec3<f32>(r, g, b);
+    var color = vec3<f32>(r, gS.g, b);
 
     // Darkness at the singularity (center)
     let core = smoothstep(radius * 0.2, radius * 0.5, dist);
     color = mix(vec3<f32>(0.0), color, mix(1.0, core, darkness));
 
-    // Photon ring shimmer: a faint accretion glow hugging the event horizon.
-    // Tinted by the treble bins (plasmaBuffer[7].x) and gated by darkness so
-    // it only earns the black-hole look when the core is actually dark.
+    // Idea 2: Doppler-beamed photon ring — the ring is the lensed sky wrapped
+    // around the horizon, rotating with the hole's spin; the approaching side
+    // (left) is beamed brighter and bluer, the receding side dim and red.
     let ring = smoothstep(0.02, 0.0, abs(dist - radius * 0.35));
-    let ringEnergy = plasmaBuffer[7].x;
-    let ringGlow = ring * darkness * (1.0 - core) * (0.2 + 0.8 * ringEnergy);
-    color = color + ringGlow * vec3<f32>(0.85, 0.92, 1.0);
+    let phi = atan2(distVec.y, distVec.x + 1e-7);
+    let orbit = phi + time * 0.8;
+    let skyUV = wellPos + vec2<f32>(cos(orbit), sin(orbit)) * radius * 1.6 / aspectV;
+    let sky = textureSampleLevel(readTexture, u_sampler, skyUV, 0.0).rgb;
+    let approach = cos(phi - PI);
+    let dop = 1.0 + 0.55 * approach;              // >= 0.45, so the cube stays positive
+    let beaming = dop * dop * dop;
+    let dopTint = mix(vec3<f32>(1.0, 0.55, 0.3), vec3<f32>(0.75, 0.9, 1.15), 0.5 + 0.5 * approach);
+    let ringGlow = ring * darkness * (1.0 - core) * (0.5 + 0.8 * treble);
+    color = color + (sky * 0.7 + vec3<f32>(0.25)) * dopTint * beaming * ringGlow;
 
-    // Handle out of bounds (optional, sampler clamps or repeats usually)
-    // If we want black edges:
-    // if (any(uvR < vec2(0.0)) || any(uvR > vec2(1.0))) { r = 0.0; } etc.
-    // But sampler is usually set to repeat or clamp. Renderer sets it to 'repeat'.
+    let display = aces(max(color, vec3<f32>(0.0)));
 
     // Lensing-mask alpha: brighter near the warped core, luma-keyed elsewhere
-    let alpha = clamp(dot(color, vec3<f32>(0.299, 0.587, 0.114)) + (1.0 - core) * darkness * 0.5, 0.0, 1.0);
-    let finalOut = vec4<f32>(color, alpha);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalOut);
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), finalOut);
+    let alpha = clamp(dot(display, vec3<f32>(0.299, 0.587, 0.114)) * gS.a + (1.0 - core) * darkness * 0.5 + ringGlow * 0.3, 0.0, 1.0);
+    let finalOut = vec4<f32>(display, alpha);
+    textureStore(writeTexture, coord, finalOut);
 
-    // Passthrough depth for now, or warp it too?
-    // Warping depth might be more correct for compositing.
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uvG, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    // A: display RGBA, except the two state texels the next frame reads back.
+    var aOut = finalOut;
+    if (global_id.x == 0u && global_id.y == 0u) {
+        aOut = vec4<f32>(wellPos, time, 1.0);
+    } else if (global_id.x == 1u && global_id.y == 0u) {
+        aOut = vec4<f32>(vel, 0.0, 1.0);
+    }
+    textureStore(dataTextureA, coord, aOut);
+
+    // Depth warped with the lens so compositing follows the bent geometry.
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(uvG, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
