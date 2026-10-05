@@ -859,7 +859,7 @@
         "step": 0.01
       }
     ],
-    "feedbackPacking": "A/C = final tone-mapped display RGBA with bounded exact tangent-advection history; B is unused",
+    "feedbackPacking": "A/C = linear pre-ACES painting RGBA with bounded exact tangent-advection history (ACES on display only); B is unused",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -871,7 +871,8 @@
       "aces-tone-map",
       "three-band-audio",
       "held-pointer",
-      "click-reactive"
+      "click-reactive",
+      "semantic-alpha"
     ],
     "tags": [
       "image",
@@ -6498,7 +6499,9 @@
       "edge-linking",
       "segmentation",
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba",
+      "semantic-alpha"
     ],
     "params": [
       {

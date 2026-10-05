@@ -1,8 +1,15 @@
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 //  Neon Edge Diffusion
 //  Category: artistic
-//  Features: edge-detection, neon-glow, shared-memory, hex-bokeh, anti-moiré, lod-bias, branchless-select, depth-aware, temporal-feedback, upgraded-rgba
-// ═══════════════════════════════════════════════════════════════
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, semantic-alpha, depth-aware
+//  Complexity: Medium
+//  Upgraded: 2026-10-05
+//  Ideas: edge-energy dilation across the tile neighbours; luma²-weighted hex taps (bokeh discs behind the neon); tangent-stretched hex (1.6× along / 0.6× across the edge)
+//  A packing: ACES display RGBA (no history is read back; B unused)
+// ═══════════════════════════════════════════════════════════════════
+//  Shared-tile RGB edge magnitude turned into a fixed R/G/B neon ramp and
+//  diffused through a 7-tap hex bokeh. Click ripples flash the lit edges.
+// ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 
 const HEX_TAPS = array<vec2<f32>, 7>(
@@ -27,15 +34,36 @@ fn glowLOD(radius: f32, res: vec2<f32>) -> f32 {
     return clamp(log2(freq + 1.0) * 0.4 - 0.2, 0.0, 3.0);
 }
 
+// Shared-tile read with the index clamped to the 18x18 halo.
+fn tileAt(x: i32, y: i32) -> vec3<f32> {
+    return tile[clamp(y, 0, 17)][clamp(x, 0, 17)];
+}
+
+// Sobel-style RGB edge magnitude at a tile position (HEAD's formula).
+fn edgeAt(x: i32, y: i32) -> f32 {
+    let gx = length(tileAt(x + 1, y) - tileAt(x - 1, y));
+    let gy = length(tileAt(x, y + 1) - tileAt(x, y - 1));
+    return sqrt(gx * gx + gy * gy);
+}
+
 // Branchless 7-tap hex-bokeh glow. Center tap is weighted so the source color
 // remains visible through the diffusion.
-fn hexGlow(uv: vec2<f32>, radius: f32, lod: f32) -> vec3<f32> {
+//  Idea 2: every tap is additionally weighted by luma² so the brightest
+//  neighbours dominate and bokeh discs form behind the neon.
+//  Idea 3: the hex is stretched 1.6× along the edge tangent and squeezed
+//  0.6× across it (blended in by `stretch`, 0 = isotropic in flat regions).
+fn hexGlow(uv: vec2<f32>, radius: f32, lod: f32, tangent: vec2<f32>, stretch: f32) -> vec3<f32> {
     var acc = vec3<f32>(0.0);
     var wt = 0.0;
+    let normal = vec2<f32>(-tangent.y, tangent.x);
+    let along = mix(1.0, 1.6, stretch);
+    let across = mix(1.0, 0.6, stretch);
     for (var i = 0; i < 7; i = i + 1) {
-        let off = HEX_TAPS[i] * radius;
+        let tap = HEX_TAPS[i];
+        let off = (tangent * dot(tap, tangent) * along + normal * dot(tap, normal) * across) * radius;
         let s = textureSampleLevel(readTexture, u_sampler, clamp(uv + off, vec2<f32>(0.0), vec2<f32>(1.0)), lod).rgb;
-        let w = select(0.5, 1.0, i == 0);
+        let l = luma(s);
+        let w = select(0.5, 1.0, i == 0) * (0.05 + l * l);
         acc += s * w;
         wt += w;
     }
@@ -46,7 +74,6 @@ fn hexGlow(uv: vec2<f32>, radius: f32, lod: f32) -> vec3<f32> {
 fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(local_invocation_id) lid: vec3<u32>) {
     let res = vec2<f32>(u.config.zw);
     let pixel = vec2<i32>(gid.xy);
-    if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
     let uv = vec2<f32>(gid.xy) / res;
     let time = u.config.x;
     let p1 = u.zoom_params.x; let p2 = u.zoom_params.y; let p3 = u.zoom_params.z; let p4 = u.zoom_params.w;
@@ -62,14 +89,27 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(local_invocation
     }
     workgroupBarrier();
 
-    let lx = i32(lid.x) + 1; let ly = i32(lid.y) + 1;
-    let gx = length(tile[ly][lx+1] - tile[ly][lx-1]);
-    let gy = length(tile[ly+1][lx] - tile[ly-1][lx]);
-    var edge = sqrt(gx * gx + gy * gy);
+    // FIX: bounds guard after the barrier (uniform control flow).
+    if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
 
-    // Mouse hotspot boosts edge response near the cursor.
+    let lx = i32(lid.x) + 1; let ly = i32(lid.y) + 1;
+    let edgeC = edgeAt(lx, ly);
+
+    // ── Idea 1: edge-energy dilation — the edge is also measured at the four
+    // tile neighbours and the weighted max bleeds it one texel outward.
+    let edgeN = max(max(edgeAt(lx - 1, ly), edgeAt(lx + 1, ly)), max(edgeAt(lx, ly - 1), edgeAt(lx, ly + 1)));
+    var edge = max(edgeC, edgeN * 0.65);
+
+    // Signed luma gradient → edge tangent for the stretched hex (Idea 3).
+    let gxs = luma(tileAt(lx + 1, ly)) - luma(tileAt(lx - 1, ly));
+    let gys = luma(tileAt(lx, ly + 1)) - luma(tileAt(lx, ly - 1));
+    let gmag = length(vec2<f32>(gxs, gys));
+    let tangent = select(vec2<f32>(1.0, 0.0), vec2<f32>(-gys, gxs) / max(gmag, 1e-5), gmag > 1e-5);
+    let stretch = smoothstep(0.0, 0.06, gmag);
+
+    // Mouse hotspot boosts edge response near the cursor (FIX: ascending smoothstep).
     let mouse = u.zoom_config.yz;
-    edge *= 1.0 + smoothstep(0.2, 0.0, distance(uv, mouse)) * 2.0 * (1.0 + bass * 0.5);
+    edge *= 1.0 + (1.0 - smoothstep(0.0, 0.2, distance(uv, mouse))) * 2.0 * (1.0 + bass * 0.5);
 
     // Early-exit hint: pixels with negligible edge and no mouse proximity can
     // still emit a dim ambient glow, but we skip the expensive ripple loop.
@@ -81,27 +121,29 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(local_invocation
     let radius = (0.003 + p2 * 0.015) * (1.0 + bass * 0.2);
     let lod = glowLOD(radius, res);
 
-    // Hex-bokeh sampled glow.
-    let glow = hexGlow(uv, radius, lod);
+    // Hex-bokeh sampled glow (Ideas 2 + 3 live inside hexGlow).
+    let glow = hexGlow(uv, radius, lod, tangent, stretch);
 
     // Neon emission color derived from edge magnitude and color-shift param.
     var emission = vec3<f32>(edge * 4.0, edge * (1.1 - p4) * 3.0, edge * (0.3 + p4) * 5.0) * (1.0 + p1);
     emission = mix(emission, glow * edge * 5.0 * (1.0 + treble), 0.5);
 
-    // Audio-reactive ripple field. The branchless `hasEdge | nearMouse` gate
-    // keeps the loop from adding energy in flat regions, saving ALU.
+    // Click ripple field. The branchless `hasEdge | nearMouse` gate keeps the
+    // loop from adding energy in flat regions. FIX: amplitude 1 at the default
+    // Ripple Strength (p3 * 2), age from r.z, loop capped at rippleCount.
     var ripple = vec3<f32>(0.0);
-    for (var i = 0; i < 50; i = i + 1) {
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
         let r = u.ripples[i];
         let a = time - r.z;
         let hit = step(0.0, r.z) * step(0.0, a) * step(a, 2.0);
         let pulse = sin(distance(uv, r.xy) * 50.0 - a * 10.0) * exp(-a) * hit;
         let gated = pulse * max(hasEdge, nearMouse);
-        ripple += vec3<f32>(gated * (1.0 + p3), gated * 0.7, gated * 1.3) * r.w;
+        ripple += vec3<f32>(gated * (1.0 + p3), gated * 0.7, gated * 1.3);
     }
-    emission += ripple;
+    emission += ripple * (p3 * 2.0);
 
-    emission = aces(emission * (1.0 + bass * 0.2));
+    emission = aces(max(emission, vec3<f32>(0.0)) * (1.0 + bass * 0.2));
     let intensity = luma(emission);
     let alpha = clamp(intensity * (0.2 + p1 * 0.6), 0.0, 0.95);
 
@@ -112,12 +154,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(local_invocation
 
     let dither = (ign(vec2<f32>(gid.xy)) - 0.5) / 255.0;
 
-    // Temporal feedback: store the un-tonemapped emission energy and a stable
-    // history blend factor so the next frame can ghost previous ripples.
-    let historyBlend = clamp(p2 * 0.92 + alpha * 0.08, 0.0, 1.0);
-
-    textureStore(writeTexture, pixel, vec4<f32>(emission + dither, alpha));
-    textureStore(dataTextureA, pixel, vec4<f32>(edge, intensity, bass, alpha));
-    textureStore(dataTextureB, pixel, vec4<f32>(emission, historyBlend));
+    let outCol = vec4<f32>(emission + dither, alpha);
+    textureStore(writeTexture, pixel, outCol);
+    textureStore(dataTextureA, pixel, outCol);
     textureStore(writeDepthTexture, pixel, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
 }

@@ -1,13 +1,16 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Neon Contour Interactive
-//  Category: lighting-effects
-//  Features: mouse-driven, neon, edge, audio-pulse, depth-glow, rim-light, electric-atmosphere
+//  Neon Contour
+//  Category: artistic
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, semantic-alpha,
+//            edge-detection, depth-aware
 //  Complexity: Medium
-//  Updated: 2026-05-31
-//  By: Grok (visual flourish — richer electric rim light, audio-reactive pulses, volumetric neon)
+//  Upgraded: 2026-10-05
+//  Ideas: radial pulse front rolling outward from the cursor; starter-flicker cells gated by electricPulse; discrete tube palette (hue softly quantized to six tubes)
+//  A packing: diagnostic (isEdge, glowStrength pre-ACES, cursor proximity, alpha)
 // ═══════════════════════════════════════════════════════════════════
-//  Created: 2026-05-30
-//  By: Copilot CLI
+//  Sobel neon tubes on black. Hue cycles with edge strength and cursor
+//  distance; the tubes breathe on a sine pulse. Created 2026-05-30 (Copilot
+//  CLI), electric rim/audio pass 2026-05-31 (Grok).
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -20,10 +23,18 @@ fn getLuminance(color: vec3<f32>) -> f32 {
     return dot(color, vec3<f32>(0.299, 0.587, 0.114));
 }
 
+fn hash21(p: vec2<f32>) -> f32 {
+    return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
+}
+
 fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
     let K = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
     var p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
     return c.z * mix(K.xxx, clamp(p - K.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // Alpha calculation for emissive materials
@@ -48,11 +59,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let audioOverall = dot(audio, vec3<f32>(0.5, 0.3, 0.2));
     let audioReactivity = 1.0 + audioOverall * 0.5;
 
-    // Grok visual flourish: Electric, pulsing neon with rich atmospheric glow
+    // Electric pulse: now gates the starter-flicker cells (idea 2).
     let electricPulse = 1.0 + audioBass * 0.7 + sin(time * 8.0) * audioHigh * 0.4;
 
     // Params
-    // x: Threshold, y: Glow, z: CycleSpeed, w: OcclusionBalance
+    // x: Threshold, y: Glow, z: CycleSpeed, w: PulseSpeed
     let threshold = u.zoom_params.x;
     let glowIntensity = u.zoom_params.y * mix(2.5, 7.0, audioBass);
     let cycleSpeed = u.zoom_params.z;
@@ -95,30 +106,51 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Neon Color Calculation
     let baseHue = fract(time * cycleSpeed * audioReactivity * 0.1 + audioHigh * 0.15);
-    let hue = fract(baseHue + edge * 2.0 + dist * 0.5);
-    let pulse = sin(time * pulseSpeed * audioReactivity * 5.0) * 0.5 + 0.5;
+    var hue = fract(baseHue + edge * 2.0 + dist * 0.5);
+    // Idea 3 (discrete tube palette): the continuous hue is softly pulled
+    // toward one of six tube gases, so neighbouring edges read as the same
+    // tube colour instead of a smooth rainbow, while the cycle still glides.
+    let tubeHue = round(hue * 6.0) / 6.0;
+    hue = mix(hue, tubeHue, 0.35);
+
+    // Idea 1 (radial pulse front) + FIX: phase = time*speed + audio offset (the
+    // audio used to multiply the rate). The -dist*6 term turns the breathing
+    // into rings (~0.45 uv apart) that roll outward from the cursor.
+    let pulsePhase = time * pulseSpeed * 5.0 + audioOverall * 2.0 - dist * 14.0;
+    let pulse = sin(pulsePhase) * 0.5 + 0.5;
     let neonColor = hsv2rgb(vec3<f32>(hue, 1.0, 1.0));
 
+    // Idea 2 (starter-flicker cells): a 12x8 grid of hash cells re-rolled at
+    // 10 Hz; a cell whose roll falls under the fail probability drops its tube
+    // to 40% like a failing neon starter. Probability is rare at idle (~2.5%
+    // of cells) and grows with treble, with electricPulse gating the rate.
+    let cell = floor(uv * vec2<f32>(12.0, 8.0));
+    let roll = hash21(cell + (floor(time * 10.0) % 1024.0) * vec2<f32>(0.37, 0.91));
+    let failProb = clamp((0.025 + audioHigh * 0.35) * electricPulse, 0.0, 0.8);
+    let starter = select(1.0, 0.4, roll < failProb);
+
     // Emission calculation (HDR capable)
-    var emission = neonColor * isEdge * (glowIntensity + pulse);
+    var emission = neonColor * isEdge * glowIntensity * (0.55 + 0.9 * pulse) * starter;
     emission += vec3<f32>(0.05 * audioBass, 0.03 * audioMid, 0.08 * audioHigh) * isEdge;
 
-    // Add extra glow near mouse
+    // Extra glow near mouse — FIX: only on tubes (× isEdge), not a flat disc.
     if (dist < 0.2) {
-        emission += neonColor * (0.2 - dist) * 2.0 * glowIntensity;
+        emission += neonColor * (0.2 - dist) * 2.0 * glowIntensity * isEdge * starter;
     }
+    emission = max(emission, vec3<f32>(0.0));
 
-    // Calculate alpha based on emission intensity
+    // Calculate alpha based on (HDR, pre-ACES) emission intensity
     let glowStrength = length(emission);
-    let finalAlpha = calculateEmissiveAlpha(glowStrength, occlusionBalance);
+    let finalAlpha = clamp(calculateEmissiveAlpha(glowStrength, occlusionBalance), 0.0, 1.0);
     let depth = clamp(
         textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r + isEdge * 0.06 + audioBass * 0.02,
         0.0,
         1.0
     );
 
-    // Output RGBA: RGB = emission (HDR), A = physical occlusion
-    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(emission, finalAlpha));
+    // FIX: clamp then ACES on display only; A keeps the diagnostic packing.
+    let display = acesToneMap(clamp(emission, vec3<f32>(0.0), vec3<f32>(16.0)));
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(display, finalAlpha));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, gid.xy, vec4<f32>(isEdge, glowStrength, 1.0 - smoothstep(0.0, 0.2, dist), finalAlpha));
 }
