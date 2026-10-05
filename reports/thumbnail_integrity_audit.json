@@ -1,75 +1,25 @@
 {
-  "generated_at": "2026-09-13T05:11:31.979425Z",
-  "scanned": 360,
-  "png_fingerprint": "a2f01f5ec3a2978045056d4f3b5a3e3c643c28f010f76da3d9bb72d98f677a72",
-  "flagged": 77,
+  "generated_at": "2026-10-05T19:33:08.306107Z",
+  "scanned": 1286,
+  "png_fingerprint": "d8af5e5cdeb7098d46087c5e3bdea438d58e54f1226ba3cc98c593e54879b2eb",
+  "flagged": 22,
   "summary": {
-    "black_frame": 77
+    "black_frame": 17,
+    "flat_frame": 5
   },
   "entries": [
     {
-      "id": "alpha-hdr-bloom-chain",
+      "id": "bio_lenia_continuous",
       "in_manifest": true,
-      "reason": "black_frame",
+      "reason": "flat_frame",
       "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
+        "meanLuminance": 0.5005031577084443,
+        "activePixelRatio": 1.0,
         "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "alpha-luminance-history",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "alpha-multi-layer-glass",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "alpha-spectral-decompose",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "anaglyph-3d",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
+        "meanR": 0.5019466624537582,
+        "meanG": 0.5141426834408499,
+        "meanB": 0.3611419677731741,
+        "maxChannelStd": 0.009349357385395279
       }
     },
     {
@@ -82,59 +32,8 @@
         "magentaPixelRatio": 0.0,
         "meanR": 0.0,
         "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "chroma-vortex",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "chromatic-focus-interactive",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "cross-spec-alpha-spectral-bloom",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "elastic-chromatic",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
+        "meanB": 0.0,
+        "maxChannelStd": 0.0
       }
     },
     {
@@ -147,59 +46,8 @@
         "magentaPixelRatio": 0.0,
         "meanR": 0.0,
         "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "gen-audio-spirograph",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.003933065987381279,
-        "activePixelRatio": 0.0100250244140625,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0038905125038296647,
-        "meanG": 0.003977816712622561,
-        "meanB": 0.003615076401654417
-      }
-    },
-    {
-      "id": "gen-aurora-borealis-synthesis",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "gen-barnsley-fern",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.012890223376704186,
-        "activePixelRatio": 0.0146636962890625,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.012366201363357858,
-        "meanG": 0.013469740923713013,
-        "meanB": 0.008692662856158027
-      }
-    },
-    {
-      "id": "gen-bioluminescent-reaction-diffusion",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.008238359698127407,
-        "activePixelRatio": 0.0189971923828125,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.011323816636029728,
-        "meanG": 0.00707738539751842,
-        "meanB": 0.010653327493106358
+        "meanB": 0.0,
+        "maxChannelStd": 0.0
       }
     },
     {
@@ -212,46 +60,22 @@
         "magentaPixelRatio": 0.0,
         "meanR": 0.0,
         "meanG": 0.0,
-        "meanB": 0.0
+        "meanB": 0.0,
+        "maxChannelStd": 0.0
       }
     },
     {
-      "id": "gen-chromatic-singularity-loom",
+      "id": "gen-crystal-caverns",
       "in_manifest": true,
-      "reason": "black_frame",
+      "reason": "flat_frame",
       "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
+        "meanLuminance": 0.9958313725496609,
+        "activePixelRatio": 1.0,
         "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "gen-conway-game-of-life",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "gen-cyber-terminal",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
+        "meanR": 0.9803921568615418,
+        "meanG": 1.0,
+        "meanB": 1.0,
+        "maxChannelStd": 1.2563455233770624e-06
       }
     },
     {
@@ -264,33 +88,8 @@
         "magentaPixelRatio": 0.0,
         "meanR": 0.0,
         "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "gen-de-jong-attractor",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0015533448821423129,
-        "activePixelRatio": 0.0034332275390625,
-        "magentaPixelRatio": 0.0015106201171875,
-        "meanR": 0.0031445671530330884,
-        "meanG": 0.0009102017271752445,
-        "meanB": 0.0032386929381127442
-      }
-    },
-    {
-      "id": "gen-depth-refracted-liquid-stained-glass",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0015533448821423129,
-        "activePixelRatio": 0.0034332275390625,
-        "magentaPixelRatio": 0.0015106201171875,
-        "meanR": 0.0031445671530330884,
-        "meanG": 0.0009102017271752445,
-        "meanB": 0.0032386929381127442
+        "meanB": 0.0,
+        "maxChannelStd": 0.0
       }
     },
     {
@@ -303,85 +102,8 @@
         "magentaPixelRatio": 0.0,
         "meanR": 0.0,
         "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "gen-eldritch-quantum-fractal-eye",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0041738705982882355,
-        "activePixelRatio": 0.018096923828125,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.005809828814338311,
-        "meanG": 0.003592457490808862,
-        "meanB": 0.005116002699908131
-      }
-    },
-    {
-      "id": "gen-eldritch-tesseract-hive-mind",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0041738705982882355,
-        "activePixelRatio": 0.018096923828125,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.005809828814338311,
-        "meanG": 0.003592457490808862,
-        "meanB": 0.005116002699908131
-      }
-    },
-    {
-      "id": "gen-feedback-echo-chamber",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.021872042906504737,
-        "activePixelRatio": 0.0137786865234375,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.06600892310044773,
-        "meanG": 0.0047721114813117655,
-        "meanB": 0.06129545323984994
-      }
-    },
-    {
-      "id": "gen-holographic-bismuth-core-reactor",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0025651918299058026,
-        "activePixelRatio": 0.01458740234375,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0011947931027879897,
-        "meanG": 0.002782784256280631,
-        "meanB": 0.004445034849877432
-      }
-    },
-    {
-      "id": "gen-holographic-lens-flare-matrix",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "gen-langton-ant",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
+        "meanB": 0.0,
+        "maxChannelStd": 0.0
       }
     },
     {
@@ -394,7 +116,8 @@
         "magentaPixelRatio": 0.0,
         "meanR": 0.009290029488357917,
         "meanG": 0.006686580882352937,
-        "meanB": 0.009886079676011137
+        "meanB": 0.009886079676011137,
+        "maxChannelStd": 0.05063275929327501
       }
     },
     {
@@ -407,137 +130,8 @@
         "magentaPixelRatio": 0.0,
         "meanR": 0.0,
         "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "gen-lorenz-attractor",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.008599883829752675,
-        "activePixelRatio": 0.0154571533203125,
-        "magentaPixelRatio": 0.003173828125,
-        "meanR": 0.01315116134344361,
-        "meanG": 0.007036994485294108,
-        "meanB": 0.010679895737591908
-      }
-    },
-    {
-      "id": "gen-luminescent-chrono-fluid-astrolabe",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "gen-magnetic-dipole-field",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "gen-magnetic-field-warp",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "gen-metaball-soft-body",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.006725841088388498,
-        "activePixelRatio": 0.018707275390625,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.006487139533547799,
-        "meanG": 0.006772568646599284,
-        "meanB": 0.0069658466413909355
-      }
-    },
-    {
-      "id": "gen-minimal-surface-soap-iridescence",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0016937255859375,
-        "activePixelRatio": 0.0016937255859375,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0016937255859375,
-        "meanG": 0.0016937255859375,
-        "meanB": 0.0016937255859375
-      }
-    },
-    {
-      "id": "gen-multi-scale-evolutionary-cellular-gardens",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.003940282975739101,
-        "activePixelRatio": 0.0281219482421875,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.003975123985140949,
-        "meanG": 0.0039696786917892335,
-        "meanB": 0.0035465016084558795
-      }
-    },
-    {
-      "id": "gen-navier-stokes-ink",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "gen-neural-network-glow-synaptic-pulse",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "gen-physarum-sacred-geometry",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
+        "meanB": 0.0,
+        "maxChannelStd": 0.0
       }
     },
     {
@@ -550,33 +144,8 @@
         "magentaPixelRatio": 0.0,
         "meanR": 0.0,
         "meanG": 0.0,
-        "meanB": 0.35686274509837
-      }
-    },
-    {
-      "id": "gen-psychedelic-layered-time-stamps",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "gen-psychedelic-moire-flower",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
+        "meanB": 0.35686274509837,
+        "maxChannelStd": 0.0
       }
     },
     {
@@ -589,46 +158,22 @@
         "magentaPixelRatio": 0.0,
         "meanR": 0.0,
         "meanG": 0.0,
-        "meanB": 0.0
+        "meanB": 0.0,
+        "maxChannelStd": 0.0
       }
     },
     {
-      "id": "gen-quantum-fluorescent-aether-moth-swarm",
+      "id": "gen-quantum-neural-lace",
       "in_manifest": true,
-      "reason": "black_frame",
+      "reason": "flat_frame",
       "stats": {
-        "meanLuminance": 0.005079655187270222,
-        "activePixelRatio": 0.0218353271484375,
-        "magentaPixelRatio": 0.0017852783203125,
-        "meanR": 0.013748228783700972,
-        "meanG": 0.00176834405637256,
-        "meanB": 0.012355430453431382
-      }
-    },
-    {
-      "id": "gen-rainbow-firefly-dance",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.005966797054515165,
-        "activePixelRatio": 0.0094757080078125,
-        "magentaPixelRatio": 0.0015716552734375,
-        "meanR": 0.007504451976102948,
-        "meanG": 0.005396584903492644,
-        "meanB": 0.007087438246783094
-      }
-    },
-    {
-      "id": "gen-string-theory",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
+        "meanLuminance": 0.4035192156868704,
+        "activePixelRatio": 1.0,
         "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
+        "meanR": 0.5803921568628705,
+        "meanG": 0.31764705882347605,
+        "meanB": 0.7333333333323891,
+        "maxChannelStd": 1.388968880101759e-06
       }
     },
     {
@@ -641,7 +186,8 @@
         "magentaPixelRatio": 0.0,
         "meanR": 0.0,
         "meanG": 0.0,
-        "meanB": 0.0
+        "meanB": 0.0,
+        "maxChannelStd": 0.0
       }
     },
     {
@@ -654,20 +200,8 @@
         "magentaPixelRatio": 0.0,
         "meanR": 0.0,
         "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "gen-turing-morphogenesis",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
+        "meanB": 0.0,
+        "maxChannelStd": 0.0
       }
     },
     {
@@ -680,85 +214,22 @@
         "magentaPixelRatio": 0.0,
         "meanR": 0.0,
         "meanG": 0.0,
-        "meanB": 0.0
+        "meanB": 0.0,
+        "maxChannelStd": 0.0
       }
     },
     {
-      "id": "gen-worley-cellular-noise",
+      "id": "gen-xeno-mycelial-resonance-web",
       "in_manifest": true,
-      "reason": "black_frame",
+      "reason": "flat_frame",
       "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
+        "meanLuminance": 0.5064062745104896,
+        "activePixelRatio": 1.0,
         "magentaPixelRatio": 0.0,
         "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "glitch-pixel-sort",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "gravito-phononic-accretion",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.009937941224341253,
-        "activePixelRatio": 0.0546875,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.00974474140242037,
-        "meanG": 0.010483805338541688,
-        "meanB": 0.005099606981464481
-      }
-    },
-    {
-      "id": "holographic-projection",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "hyper-space-jump",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "luma-smear-interactive",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
+        "meanG": 0.6431372549023265,
+        "meanB": 0.6431372549023265,
+        "maxChannelStd": 0.0
       }
     },
     {
@@ -771,7 +242,8 @@
         "magentaPixelRatio": 0.0,
         "meanR": 0.0,
         "meanG": 0.0,
-        "meanB": 0.0
+        "meanB": 0.0,
+        "maxChannelStd": 0.0
       }
     },
     {
@@ -784,20 +256,8 @@
         "magentaPixelRatio": 0.0,
         "meanR": 0.0,
         "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "multi-scale-evolutionary-cellular-gardens",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.02745098039213588,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.02745098039213588,
-        "meanG": 0.02745098039213588,
-        "meanB": 0.02745098039213588
+        "meanB": 0.0,
+        "maxChannelStd": 0.0
       }
     },
     {
@@ -810,72 +270,22 @@
         "magentaPixelRatio": 0.0,
         "meanR": 0.0,
         "meanG": 0.0,
-        "meanB": 0.0
+        "meanB": 0.0,
+        "maxChannelStd": 0.0
       }
     },
     {
-      "id": "neon-edge-pulse",
+      "id": "recursive-ancestral-terrains",
       "in_manifest": true,
-      "reason": "black_frame",
+      "reason": "flat_frame",
       "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
+        "meanLuminance": 0.9197803858983795,
+        "activePixelRatio": 1.0,
         "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "neon-edge-reveal",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "phantom-lag",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "phase-memory-weave",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "pixel-sorter",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
+        "meanR": 0.9337502872244031,
+        "meanG": 0.9181578393068334,
+        "meanB": 0.894717287549711,
+        "maxChannelStd": 0.00727727850959535
       }
     },
     {
@@ -888,33 +298,8 @@
         "magentaPixelRatio": 0.0,
         "meanR": 0.0,
         "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "rgb-distance-split",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "spec-quaternion-julia",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0056726018928079025,
-        "activePixelRatio": 0.01495361328125,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.007376337986366418,
-        "meanG": 0.004890292298560063,
-        "meanB": 0.0084051992378983
+        "meanB": 0.0,
+        "maxChannelStd": 0.0
       }
     },
     {
@@ -927,85 +312,8 @@
         "magentaPixelRatio": 0.0,
         "meanR": 0.039215686274483165,
         "meanG": 0.039215686274483165,
-        "meanB": 0.039215686274483165
-      }
-    },
-    {
-      "id": "temporal-rgb-smear",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "time-slit-scan",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
-      }
-    },
-    {
-      "id": "topological-acoustic-knots",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 5.5713082107843155e-05,
-        "activePixelRatio": 0.000244140625,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 6.127450980392157e-05,
-        "meanB": 0.00016467524509803906
-      }
-    },
-    {
-      "id": "tornado-vortex",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.008393340872970249,
-        "activePixelRatio": 0.0328521728515625,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.007883288813572326,
-        "meanG": 0.008464917949601688,
-        "meanB": 0.009186209884344316
-      }
-    },
-    {
-      "id": "voxel-grid",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0021772197648590942,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0021772197648590942,
-        "meanG": 0.0021772197648590942,
-        "meanB": 0.0021772197648590942
-      }
-    },
-    {
-      "id": "wolfram-data-demo",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0
+        "meanB": 0.039215686274483165,
+        "maxChannelStd": 6.04284115042848e-08
       }
     }
   ]
