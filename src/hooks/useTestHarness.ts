@@ -1,6 +1,7 @@
 import { useEffect, RefObject } from 'react';
 import { RendererManager } from '../renderer/RendererManager';
 import { RenderQualityMode } from '../config/performancePolicy';
+import { computeBenchmarkStats } from '../utils/benchmarkStats';
 
 export interface CanvasImageStats {
     width: number;
@@ -143,7 +144,7 @@ export function useTestHarness({
                 loadImage: (url: string) => manager.loadImage(url),
                 runBenchmark: async (
                     frameCount = 90,
-                    options?: { qualityMode?: RenderQualityMode },
+                    options?: { qualityMode?: RenderQualityMode; warmupFrames?: number },
                 ) => {
                     if (options?.qualityMode) {
                         manager.setRenderQuality(options.qualityMode, {
@@ -152,6 +153,11 @@ export function useTestHarness({
                         });
                     }
                     const perf = manager.getPerformanceStatus();
+                    // Discarded warm-up frames (#1357 T5): pipelines settle before sampling.
+                    const warmupFrames = Math.max(0, options?.warmupFrames ?? 10);
+                    for (let i = 0; i < warmupFrames; i++) {
+                        await new Promise<void>((r) => requestAnimationFrame(() => r()));
+                    }
                     const samples: Array<{ fps: number; gpu: ReturnType<typeof manager.getGPUTimings> }> = [];
                     for (let i = 0; i < frameCount; i++) {
                         await new Promise<void>((r) => requestAnimationFrame(() => r()));
@@ -187,6 +193,11 @@ export function useTestHarness({
                         hasRealGpuTimings: samples.some((s) => s.gpu.timingSource === 'gpu-timestamp'),
                         // Per-pass GPU ms (#1314 WP-4): per-shader evidence, not just per frame.
                         passTimings: manager.getPassTimings(),
+                        // Stats over every sampled frame (#1357 T4); `samples` is only the tail.
+                        warmupFrames,
+                        totalMsStats: computeBenchmarkStats(totals),
+                        fpsStats: computeBenchmarkStats(samples.map((s) => s.fps)),
+                        timestampPeriodNs: manager.getDiagnostics().webgpu?.timing?.periodNs ?? 0,
                         samples: samples.slice(-5),
                     };
                 },
