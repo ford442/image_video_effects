@@ -36,7 +36,8 @@
   "features": [
     "mouse-driven",
     "physics",
-    "interactive"
+    "interactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",
