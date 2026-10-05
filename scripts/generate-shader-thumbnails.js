@@ -229,6 +229,7 @@ function classifyFailure(error) {
   if (msg === 'black_frame' || msg === 'magenta_frame' || msg === 'error_frame' || msg === 'flat_frame') return msg;
   if (msg.includes('no GPU') || msg.includes('navigator.gpu')) return 'gpu_unavailable';
   if (msg.includes('loadShader failed')) return 'load_failed';
+  if (msg.includes('Timeout')) return 'timeout';
   return 'unknown';
 }
 
@@ -608,8 +609,11 @@ async function captureAll(harness, browser, args, shaders, manifest, summary, fa
     extraParams: args.adapter === 'swiftshader' ? { renderer: 'main' } : {},
   });
   // 'load', not 'networkidle': remote media hosts can keep retrying on sandboxed hosts.
-  await page.goto(appUrl, { waitUntil: 'load', timeout: 120000 });
-  await harness.waitForTestApi(page, 120000);
+  const openApp = async () => {
+    await page.goto(appUrl, { waitUntil: 'load', timeout: 120000 });
+    await harness.waitForTestApi(page, 120000);
+  };
+  await openApp();
 
   const backend = await harness.getActiveBackend(page);
   if (backend !== 'webgpu') {
@@ -621,6 +625,7 @@ async function captureAll(harness, browser, args, shaders, manifest, summary, fa
   console.log(`[thumbnails] capture_host=${capture.host} adapter: ${await harness.getAdapterInfo(page) || 'unknown'}`);
   const perShaderTimeout = args.adapter === 'swiftshader' ? 300000 : 120000;
   let currentSource = null;
+  const retried = new Set();
 
   for (let i = 0; i < shaders.length; i++) {
     const shader = shaders[i];
@@ -678,8 +683,8 @@ async function captureAll(harness, browser, args, shaders, manifest, summary, fa
       updateManifestEntry(manifest, shader.id, zoomParams, capture);
       console.log(`${progress} ${shader.id}: OK`);
       summary.success++;
-      // Persist as we go: a software wave runs for hours and may be interrupted.
-      if (summary.success % 10 === 0) writeManifest(manifest);
+      // Persist every capture: a software wave runs for hours and may be interrupted.
+      writeManifest(manifest);
     } catch (err) {
       const detail = err.message || String(err);
       const reason = classifyFailure(detail);
@@ -689,9 +694,23 @@ async function captureAll(harness, browser, args, shaders, manifest, summary, fa
       } else {
         failures.push({ id: shader.id, reason, detail });
       }
+      criticalErrors.length = 0;
+      // A shader that times out can leave the device wedged: every later load then fails.
+      // Reload the app; retry a failed load once on the fresh page before recording it.
+      const wedged = /Timeout|loadShader failed|Target (page|crashed)|closed/i.test(detail);
+      if (wedged) {
+        console.log(`${progress} ${shader.id}: reloading the app after: ${detail.split('\n')[0]}`);
+        await openApp();
+        currentSource = null;
+        if (/loadShader failed/.test(detail) && !retried.has(shader.id)) {
+          retried.add(shader.id);
+          failures.pop();
+          i--;
+          continue;
+        }
+      }
       summary.failed++;
       console.log(`${progress} ${shader.id}: FAIL (${detail})`);
-      criticalErrors.length = 0;
     }
   }
 
