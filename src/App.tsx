@@ -38,6 +38,7 @@ import { useShaderWarmup } from './hooks/useShaderWarmup';
 import { WEBCAM_FUN_SHADERS, getShaderDefaults } from './app/constants/shaderDefaults';
 import { defaultSlotParams } from './app/constants/defaultSlotParams';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
+import { touch as touchAudioParam } from './services/audioParamHold';
 import './styles/index.css';
 
 function MainApp() {
@@ -198,6 +199,7 @@ function MainApp() {
         updateSlotParam,
         getShaderDefaults,
         setStatus,
+        maxActiveSlots: performanceHud.maxActiveSlots,
     });
 
     useContentManifest({
@@ -514,6 +516,8 @@ function MainApp() {
 
     const handleSetSlotParam = useCallback((slot: number, param: string, value: number) => {
         const updates: Partial<SlotParams> = { [param]: value };
+        // MIDI / keyboard / OSC drive this param: host audio backs off until it settles.
+        touchAudioParam(slot, param, value);
         updateSlotParam(slot, updates);
         rendererRef.current?.updateSlotParams(updates, slot);
     }, [updateSlotParam]);

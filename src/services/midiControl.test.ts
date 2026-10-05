@@ -6,6 +6,7 @@ import {
   subscribeKeyEvents,
   captureKeyOnce,
   translateMIDIMessage,
+  Midi14BitPairer,
 } from './midiControl';
 import { ControlEvent } from './controlBindings';
 
@@ -212,5 +213,44 @@ describe('captureKeyOnce', () => {
     unsubscribe();
 
     expect(events).toEqual([{ source: 'key', id: 'z', value: 1 }]);
+  });
+});
+
+describe('channels', () => {
+  it('keeps the same CC on different channels distinct', () => {
+    expect(translateMIDIMessage([0xb0, 7, 10])?.id).toBe('ch1/cc7');
+    expect(translateMIDIMessage([0xb1, 7, 10])?.id).toBe('ch2/cc7');
+    expect(translateMIDIMessage([0xbf, 7, 10])?.id).toBe('ch16/cc7');
+  });
+});
+
+describe('Midi14BitPairer', () => {
+  it('emits coarse MSB then a 14-bit refinement on the LSB', () => {
+    const p = new Midi14BitPairer();
+    const coarse = p.translate([0xb0, 1, 64]);
+    expect(coarse).toEqual({ source: 'midi-cc', id: 'ch1/cc1', value: 64 / 127 });
+    const fine = p.translate([0xb0, 33, 127]);
+    expect(fine?.id).toBe('ch1/cc1');
+    expect(fine?.value).toBeCloseTo(((64 << 7) | 127) / 16383);
+  });
+
+  it('reaches full scale exactly', () => {
+    const p = new Midi14BitPairer();
+    p.translate([0xb0, 0, 127]);
+    expect(p.translate([0xb0, 32, 127])?.value).toBe(1);
+  });
+
+  it('passes an unpaired LSB through as a plain CC', () => {
+    const p = new Midi14BitPairer();
+    expect(p.translate([0xb0, 40, 127])).toEqual({ source: 'midi-cc', id: 'ch1/cc40', value: 1 });
+    // MSB on another channel does not pair.
+    p.translate([0xb1, 8, 10]);
+    expect(p.translate([0xb0, 40, 0])?.id).toBe('ch1/cc40');
+  });
+
+  it('leaves notes and CC >= 64 untouched', () => {
+    const p = new Midi14BitPairer();
+    expect(p.translate([0x90, 60, 127])?.id).toBe('ch1/note60');
+    expect(p.translate([0xb0, 74, 127])?.id).toBe('ch1/cc74');
   });
 });

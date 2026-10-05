@@ -1,8 +1,36 @@
 import React from 'react';
 import { ShaderEntry, SlotParams } from '../../../renderer/types';
 import { shouldShowMidiControls } from '../../../utils/deviceCapabilities';
+import { hold, release, touch } from '../../../services/audioParamHold';
 
 const INDEX_TO_PARAM: Array<keyof SlotParams> = ['zoomParam1', 'zoomParam2', 'zoomParam3', 'zoomParam4'];
+
+/**
+ * Freeze host audio on a slider while the performer is on it: pointer grab
+ * holds until release; keyboard / any change records the value as audio base.
+ */
+function audioHoldProps(slot: number, paramKey: keyof SlotParams) {
+    const key = String(paramKey);
+    const end = (e: React.SyntheticEvent<HTMLInputElement>) =>
+        release(slot, key, parseFloat(e.currentTarget.value));
+    return {
+        onPointerDown: () => hold(slot, key),
+        onPointerUp: end,
+        onPointerCancel: end,
+        onBlur: end,
+    };
+}
+
+function changeSlider(
+    updateSlotParam: ParamSlidersPanelProps['updateSlotParam'],
+    slot: number,
+    paramKey: keyof SlotParams,
+    raw: string,
+) {
+    const value = parseFloat(raw);
+    touch(slot, String(paramKey), value);
+    updateSlotParam(slot, { [paramKey]: value });
+}
 
 export interface ParamSlidersPanelProps {
     activeSlot: number;
@@ -79,9 +107,8 @@ export const ParamSlidersPanel: React.FC<ParamSlidersPanelProps> = ({
                             max={param.max}
                             step={param.step || 0.01}
                             value={val}
-                            onChange={(e) => {
-                                updateSlotParam(activeSlot, { [paramKey]: parseFloat(e.target.value) });
-                            }}
+                            {...audioHoldProps(activeSlot, paramKey)}
+                            onChange={(e) => changeSlider(updateSlotParam, activeSlot, paramKey, e.target.value)}
                         />
                     </div>
                 );
@@ -124,9 +151,8 @@ export const ParamSlidersPanel: React.FC<ParamSlidersPanelProps> = ({
                                     max={1}
                                     step={0.01}
                                     value={val}
-                                    onChange={(e) => {
-                                        updateSlotParam(activeSlot, { [fb.paramKey]: parseFloat(e.target.value) });
-                                    }}
+                                    {...audioHoldProps(activeSlot, fb.paramKey)}
+                                    onChange={(e) => changeSlider(updateSlotParam, activeSlot, fb.paramKey, e.target.value)}
                                 />
                             </div>
                         );
