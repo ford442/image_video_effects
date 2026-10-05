@@ -3281,7 +3281,7 @@
     "id": "lenia",
     "name": "Lenia Cellular Automata",
     "url": "shaders/lenia.wgsl",
-    "description": "A Lenia-inspired continuous cellular field with audio-shaped growth, directional state advection, traveling growth packets, and click-launched inoculation fronts.",
+    "description": "A Lenia-inspired continuous cellular field with audio-shaped growth, gliding Lenia structures, traveling growth packets, and click-launched inoculation fronts.",
     "features": [
       "mouse-driven",
       "audio-reactive",
