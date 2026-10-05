@@ -1,13 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Fractal Noise Dissolve
 //  Category: image
-//  Features: noise, dissolve, fractal, audio-eat, depth-layers, temporal-erosion,
-//            organic-breakup, spring-tracking, click-rings, bounded-emission
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: Medium
-//  Updated: 2026-05-31
-//  By: Grok (visual flourish — richer erosion, audio-driven breakup, atmospheric layers)
-// ═══════════════════════════════════════════════════════════════════
-//  Upgraded: 2026-08-01 (Batch 23)
+//  Upgraded: 2026-10-05
+//  Ideas: heat-shimmer refraction; scorch band; fractal pinholes
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 
@@ -54,6 +52,10 @@ fn softKnee(c: vec3<f32>, knee: f32) -> vec3<f32> {
   return c * (mapped / max(peak, 1e-5));
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -75,33 +77,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let edgeWidth = max(u.zoom_params.z * 0.2, 0.01);
     let burnColor = u.zoom_params.w * (1.0 + mids * 0.35);
 
-    // Spring-following erosion center. State uses only the persistent-safe
-    // range: position [133..134], velocity [135..136], time [137], flag [138].
-    let hasSpringState = arrayLength(&extraBuffer) > 138u;
-    var erosionCenter = mouse;
-    if (hasSpringState && extraBuffer[138] > 0.5) {
-      erosionCenter = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    }
-    if (global_id.x == 0u && global_id.y == 0u && hasSpringState) {
-      var springPos = erosionCenter;
-      var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-      if (extraBuffer[138] <= 0.5) {
-        springPos = mouse;
-        springVel = vec2<f32>(0.0);
-      } else {
-        let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
-        let omega = 6.5;
-        let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
-        springVel = springVel + accel * dt;
-        springPos = springPos + springVel * dt;
-      }
-      extraBuffer[133] = springPos.x;
-      extraBuffer[134] = springPos.y;
-      extraBuffer[135] = springVel.x;
-      extraBuffer[136] = springVel.y;
-      extraBuffer[137] = time;
-      extraBuffer[138] = 1.0;
-    }
+    // Erosion centre follows the raw pointer (HEAD's extraBuffer spring was
+    // dead: the buffer is re-uploaded each frame and workgroups raced it).
+    let erosionCenter = mouse;
 
     // Domain warped FBM
     let warp = vec2<f32>(
@@ -137,9 +115,45 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var mask = smoothstep(radius, radius + edgeWidth, contour);
     mask = mask * (1.0 - clamp(clickErosion, 0.0, 1.0));
+    let burnAmt = clamp(burnColor * 1.4, 0.0, 1.0);
 
-    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let edge = max(1.0 - smoothstep(radius, radius + edgeWidth * 2.0, contour), clickEdge);
+    // Idea 3: fractal pinholes — a fine-octave FBM punches small detached
+    // holes just ahead of the front and leaves a few unburnt islands just
+    // behind it, so the erosion breaks up across scales.
+    // fbm(.,3) of this gradient noise spans only ~±0.17 (std ~0.058), so it is
+    // stretched x2 around 0.5 or the 0.64..0.76 cuts below are never reached.
+    let nf = fbm((uv + warp * 0.3) * noiseScale * 4.0 + vec2<f32>(-time * 0.4, time * 0.3), 3) * 2.0 + 0.5;
+    let ahead = smoothstep(radius - 0.01, radius + edgeWidth, contour)
+      * (1.0 - smoothstep(radius + edgeWidth, radius + edgeWidth * 3.0 + 0.06, contour));
+    let pinThr = 0.72 - 0.08 * ahead;
+    let pin = smoothstep(pinThr, pinThr + 0.03, nf) * ahead;
+    let pinEdge = clamp(pin * (1.0 - pin) * 4.0, 0.0, 1.0);
+    let island = smoothstep(0.74, 0.76, nf) * smoothstep(radius - 0.1, radius - 0.02, contour)
+      * (1.0 - smoothstep(radius - 0.01, radius + edgeWidth, contour));
+    mask = max(mask * (1.0 - pin), island * 0.9);
+
+    // Idea 1: heat-shimmer refraction — rising heat just outside the front
+    // bends the photo along the gradient of a scrolling noise.
+    let heatZone = smoothstep(radius - 0.005, radius + edgeWidth, contour)
+      * (1.0 - smoothstep(radius + edgeWidth, radius + edgeWidth * 4.0 + 0.06, contour));
+    let sp = uv * vec2<f32>(aspect, 1.0) * noiseScale * 1.5 + vec2<f32>(0.0, time * 1.6);
+    let he = 0.35;
+    let heatGrad = vec2<f32>(
+      noise(sp + vec2<f32>(he, 0.0)) - noise(sp - vec2<f32>(he, 0.0)),
+      noise(sp + vec2<f32>(0.0, he)) - noise(sp - vec2<f32>(0.0, he))
+    );
+    let heatUV = clamp(uv + heatGrad * heatZone * burnAmt * (0.012 + bass * 0.006), vec2<f32>(0.0), vec2<f32>(1.0));
+
+    var baseColor = textureSampleLevel(readTexture, u_sampler, heatUV, 0.0);
+
+    // Idea 2: scorch band — before the flame arrives the photo browns,
+    // desaturates and darkens toward char (islands stay fully charred).
+    let scorch = (1.0 - smoothstep(radius + edgeWidth, radius + edgeWidth * 3.0 + 0.05, contour)) * burnAmt;
+    let luma = dot(baseColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let sepia = luma * vec3<f32>(0.62, 0.40, 0.22);
+    baseColor = vec4<f32>(mix(baseColor.rgb, sepia, scorch * 0.6) * (1.0 - scorch * 0.45), baseColor.a);
+
+    let edge = max(max(1.0 - smoothstep(radius, radius + edgeWidth * 2.0, contour), clickEdge), pinEdge);
     let burnRaw = vec3<f32>(1.0, 0.45 + treble * 0.2, 0.18 + mids * 0.2)
       * edge * burnColor * 4.0 * (1.0 - mask);
     let burn = softKnee(burnRaw, 1.25);
@@ -147,9 +161,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Edge glow from audio
     let edgeGlow = vec3<f32>(0.5 + bass * 0.3, 0.3, 0.8) * edge * bass * 0.5;
     var finalColor = baseColor.rgb * mask + burn + edgeGlow;
-    finalColor = finalColor * depthFade;
+    finalColor = acesToneMap(max(finalColor * depthFade, vec3<f32>(0.0)));
     let alpha = clamp(baseColor.a * mask + edge * 0.42 + bass * 0.05, 0.04, 1.0);
-    let depthOut = clamp(depth + edge * 0.06, 0.0, 1.0);
+    let depthOut = clamp(depth + edge * 0.06 - scorch * 0.02, 0.0, 1.0);
     let finalPixel = vec4<f32>(finalColor, alpha);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalPixel);

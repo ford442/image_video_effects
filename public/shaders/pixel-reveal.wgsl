@@ -3,9 +3,9 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Chunks From: pixel-reveal
-//  Created: 2026-05-10
-//  Upgraded: 2026-05-30
+//  Upgraded: 2026-10-05
+//  Ideas: reveal memory with per-block dropout; progressive-decode resolution ladder; colour-depth ladder with block Bayer dither
+//  A packing: display RGB + reveal memory in .a as 10 + level (only C.a is read back; <9.5 = empty)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -23,6 +23,28 @@ fn aces_tone_map(color: vec3<f32>) -> vec3<f32> {
   let d = 0.59;
   let e = 0.14;
   return clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// 4x4 ordered-dither threshold in [0,1): bits (x0^y0, y0, x1^y1, y1) from MSB.
+fn bayer4(p: vec2<u32>) -> f32 {
+  let x = p.x & 3u;
+  let y = p.y & 3u;
+  let v = (((x ^ y) & 1u) << 3u) | ((y & 1u) << 2u) | ((((x >> 1u) ^ (y >> 1u)) & 1u) << 1u) | ((y >> 1u) & 1u);
+  return (f32(v) + 0.5) / 16.0;
+}
+
+// Reveal memory sentinel: A.a = 10 + level (level in 0..1). Anything outside [9.5, 11.5] — stale
+// alpha from another shader, an unwritten C, NaN — is treated as an empty memory.
+fn memRead(a: f32) -> f32 {
+  let valid = a > 9.5 && a < 11.5;
+  return select(0.0, clamp(a - 10.0, 0.0, 1.0), valid);
+}
+
+// Live pointer reveal (1 = revealed), held inverts it exactly as before.
+fn liveReveal(p: vec2<f32>, mousePos: vec2<f32>, aspect: f32, radius: f32, softness: f32, mouseDown: bool) -> f32 {
+  let dist = length((p - mousePos) * vec2<f32>(aspect, 1.0));
+  let revealMask = smoothstep(radius, radius + softness, dist);
+  return 1.0 - select(revealMask, 1.0 - revealMask, mouseDown);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -50,6 +72,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let stepBase = max(0.002, pixelSizeParam * 0.08 * depthBlock);
   let stepX = stepBase;
   let stepY = stepBase * (resolution.x / resolution.y);
+  let coarseStep = vec2<f32>(stepX, stepY);
+  let maxCoord = vec2<i32>(resolution) - vec2<i32>(1);
+  let aspect = resolution.x / max(resolution.y, 1.0);
+
+  // Idea 1: reveal memory with per-block dropout — the reveal persists in A.a and fades at the
+  // Temporal Decay rate; each coarse pixel block gets its own fade speed and is read back at its
+  // centre, so remembered areas drop out as whole pixels rather than a smooth gradient.
+  let coarseId = floor(uv / coarseStep);
+  let coarseUV = (coarseId + 0.5) * coarseStep;
+  let blockFade = max(decayRate * 0.025, 0.0015) * mix(0.4, 1.6, hash3(vec3<f32>(coarseId, 7.0)).x);
+  // Memory is stored as 10 + level so a previous shader's C.a (commonly 1.0), a never-written C (0)
+  // or a NaN all read as "nothing remembered" instead of "fully revealed".
+  let memPixel = memRead(textureLoad(dataTextureC, coord, 0).a);
+  let centerCoord = clamp(vec2<i32>(coarseUV * resolution), vec2<i32>(0), maxCoord);
+  let memBlock = clamp(memRead(textureLoad(dataTextureC, centerCoord, 0).a) - blockFade, 0.0, 1.0);
+  let liveCenter = liveReveal(coarseUV, mousePos, aspect, radius, softness, mouseDown);
+
+  // Idea 2: progressive-decode ladder — the coarse block's remembered reveal picks a power-of-two
+  // subdivision (1, 1/2, 1/4), so sub-blocks nest and refine toward the heart of the reveal.
+  let revealCenter = max(liveCenter, memBlock);
+  let ladder = select(select(0.0, 1.0, revealCenter > 0.34), 2.0, revealCenter > 0.67);
+  let fineStep = coarseStep / exp2(ladder);
+  let fineId = floor(uv / fineStep);
 
   // Bass-driven threshold oscillation
   let threshold = 0.3 + bass * 0.25 + sin(time * 3.0) * 0.1;
@@ -59,20 +104,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     (treble * 0.015) * sin(uv.y * 60.0 + time * 12.0),
     (treble * 0.015) * cos(uv.x * 60.0 + time * 12.0)
   );
-  let pixelatedUV = clamp(vec2<f32>(
-    floor(uv.x / stepX) * stepX + stepX * 0.5 + jitter.x,
-    floor(uv.y / stepY) * stepY + stepY * 0.5 + jitter.y
-  ), vec2<f32>(0.001), vec2<f32>(0.999));
+  let pixelatedUV = clamp(fineId * fineStep + fineStep * 0.5 + jitter, vec2<f32>(0.001), vec2<f32>(0.999));
 
-  // Mouse reveal mask (painted radius)
-  let aspect = resolution.x / max(resolution.y, 1.0);
-  let dist = length((uv - mousePos) * vec2<f32>(aspect, 1.0));
-  let revealMask = smoothstep(radius, radius + softness, dist);
-  let paintedMask = select(revealMask, 1.0 - revealMask, mouseDown);
+  // Mouse reveal mask (painted radius), now max'd with the remembered block reveal
+  let live = liveReveal(uv, mousePos, aspect, radius, softness, mouseDown);
+  let reveal = max(live, memBlock);
+  let memNext = clamp(max(live, memPixel - blockFade), 0.0, 1.0);
 
   // Temporal noise accumulation for decay
   let noise = hash3(vec3<f32>(uv * 30.0, fract(time * 0.5))).x;
-  let temporalDecay = fract(noise + time * decayRate * 0.5) * (1.0 - paintedMask);
+  let temporalDecay = fract(noise + time * decayRate * 0.5) * reveal;
 
   // Pixel sorting threshold: only reveal pixels above luminance threshold
   let pxColor = textureSampleLevel(readTexture, u_sampler, pixelatedUV, 0.0);
@@ -80,7 +121,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let sortReveal = smoothstep(threshold - 0.1, threshold + 0.1, pxLuma);
 
   // Combined reveal: mouse-painted area OR sorted bright pixels, minus decay
-  let combinedReveal = clamp((1.0 - paintedMask) + sortReveal * 0.6 - temporalDecay * 0.5, 0.0, 1.0);
+  let combinedReveal = clamp(reveal + sortReveal * 0.6 - temporalDecay * 0.5, 0.0, 1.0);
 
   // Chromatic separation on reveal edges
   let edgeWidth = 0.02 + softness * 0.5;
@@ -91,7 +132,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let r = textureSampleLevel(readTexture, non_filtering_sampler, pixelatedUV + vec2<f32>(chromaShift, 0.0), 0.0).r;
   let g = textureSampleLevel(readTexture, non_filtering_sampler, pixelatedUV, 0.0).g;
   let b = textureSampleLevel(readTexture, non_filtering_sampler, pixelatedUV - vec2<f32>(chromaShift, 0.0), 0.0).b;
-  let chromaColor = vec3<f32>(r, g, b);
+  // Idea 3: colour-depth ladder — 4 / 8 / 16 levels per channel following the same decode ladder,
+  // ordered-dithered with a Bayer 4x4 indexed by BLOCK so every big pixel is one flat palette colour.
+  let levels = exp2(ladder + 2.0) - 1.0;
+  let dither = bayer4(vec2<u32>(max(fineId, vec2<f32>(0.0))));
+  let chromaColor = floor(clamp(vec3<f32>(r, g, b), vec3<f32>(0.0), vec3<f32>(1.0)) * levels + dither) / levels;
 
   let clearColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
 
@@ -101,19 +146,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let hiddenColor = mix(scanDark, chromaColor * 0.3, temporalDecay * 0.4);
 
   var finalColor = mix(hiddenColor, chromaColor, combinedReveal);
-  finalColor = mix(finalColor, clearColor, (1.0 - paintedMask) * 0.3);
+  finalColor = mix(finalColor, clearColor, reveal * 0.3);
 
   // Film grain
   let grain = hash3(vec3<f32>(uv * 500.0, time)).x;
   finalColor += (grain - 0.5) * 0.03;
 
   // ACES tone mapping
-  finalColor = aces_tone_map(finalColor);
+  finalColor = aces_tone_map(max(finalColor, vec3<f32>(0.0)));
 
   // Alpha: Reveal_mask * (1.0 - temporal_decay) * depth
-  let alpha = clamp((1.0 - paintedMask) * (1.0 - temporalDecay * 0.7) * depth + combinedReveal * 0.2, 0.05, 1.0);
+  let alpha = clamp(reveal * (1.0 - temporalDecay * 0.7) * depth + combinedReveal * 0.2, 0.05, 1.0);
 
   textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, coord, vec4<f32>(finalColor, alpha));
+  textureStore(dataTextureA, coord, vec4<f32>(finalColor, 10.0 + memNext));
 }

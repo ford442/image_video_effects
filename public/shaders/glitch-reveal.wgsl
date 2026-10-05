@@ -1,8 +1,12 @@
-// ═══════════════════════════════════════════════════════════════
-//  Glitch Reveal — Batch 61
-//  Block scatter reveal: spring cursor, held widen, capped ripples,
-//  exact C persistence, hex block geometry, ACES + semantic alpha.
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Glitch Reveal
+//  Category: image
+//  Features: mouse-driven, audio-reactive, click-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-05
+//  Ideas: datamosh block hold from C along the block vector; horizontal tear bands; block-snapped window edge
+//  A packing: ACES display RGB + .a = 10 + alpha validity sentinel (C read as colour for the block hold / ghost)
+// ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
 
@@ -26,10 +30,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
   let coord = vec2<i32>(global_id.xy);
+  let maxCoord = vec2<i32>(resolution) - vec2<i32>(1);
   let uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
   let aspect = resolution.x / resolution.y;
   let held = u.zoom_config.w > 0.5;
+  // Raw pointer: the old extraBuffer[133..138] spring was re-zeroed by the CPU upload every
+  // frame and raced across workgroups, tearing the window toward the top-left corner.
   let mouse = u.zoom_config.yz;
 
   let bass = plasmaBuffer[0].x;
@@ -41,38 +48,39 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let revealRadius = (u.zoom_params.z * 0.5 + 0.05) * select(1.0, 1.35, held);
   let speed = u.zoom_params.w * 10.0;
 
-  var smoothMouse = mouse;
-  let hasSpring = arrayLength(&extraBuffer) > 138u;
-  if (hasSpring) { smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]); }
-  if (global_id.x == 0u && global_id.y == 0u && hasSpring) {
-    var springPos = smoothMouse;
-    var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[138] <= 0.5) { springPos = mouse; springVel = vec2<f32>(0.0); }
-    else {
-      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
-      let omega = 10.0;
-      let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
-      springVel += accel * dt;
-      springPos += springVel * dt;
-    }
-    extraBuffer[133] = springPos.x; extraBuffer[134] = springPos.y;
-    extraBuffer[135] = springVel.x; extraBuffer[136] = springVel.y;
-    extraBuffer[137] = time; extraBuffer[138] = 1.0;
-    smoothMouse = springPos;
-  }
-
   let depth = textureLoad(readDepthTexture, coord, 0).r;
   let effectiveRadius = revealRadius * mix(0.6, 1.4, depth);
+  let tick = floor(time * speed * (1.0 + mids));
 
-  let gridUV = floor(uv / blockSize);
-  let cellUV = fract(uv / blockSize);
-  let seed = gridUV + floor(time * speed * (1.0 + mids));
+  // Idea 2: horizontal tear bands — a slower hash over row strips shears whole rows of blocks
+  // sideways (sync-tear axis on top of the per-block scatter); bass makes tears more frequent.
+  let bandH = max(blockSize * 0.45, 0.004);
+  let bandId = floor(uv.y / bandH);
+  let bandRand = hash22(vec2<f32>(bandId * 1.37 + 11.0, floor(tick * 0.5) + 3.0));
+  let tearOn = step(0.86 - bass * 0.15, bandRand.x);
+  let tearShift = tearOn * (bandRand.y - 0.5) * 0.3 * scatter;
+  let tornUV = vec2<f32>(uv.x + tearShift, uv.y);
+
+  let gridUV = floor(tornUV / blockSize);
+  let cellUV = fract(tornUV / blockSize);
+  let seed = gridUV + tick;
   let rand = hash22(seed);
   var blockOffset = (rand - 0.5) * scatter;
 
-  let dVec = uv - smoothMouse;
+  let dVec = uv - mouse;
   let dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
-  var mask = select(1.0, smoothstep(effectiveRadius * 0.75, effectiveRadius, dist), dist < effectiveRadius);
+  let smoothMask = select(1.0, smoothstep(effectiveRadius * 0.75, effectiveRadius, dist), dist < effectiveRadius);
+
+  // Idea 3: block-snapped window edge — the window is also judged at each block's centre, with a
+  // per-block/per-tick dither in the edge band, so whole blocks lock clean (or drop out) at the rim.
+  let blockCenter = (gridUV + 0.5) * blockSize - vec2<f32>(tearShift, 0.0);
+  let centerCoord = clamp(vec2<i32>(blockCenter * resolution), vec2<i32>(0), maxCoord);
+  let centerDepth = textureLoad(readDepthTexture, centerCoord, 0).r;
+  let centerRadius = revealRadius * mix(0.6, 1.4, centerDepth);
+  let dCenter = length((blockCenter - mouse) * vec2<f32>(aspect, 1.0));
+  let edgeDither = (hash22(gridUV * 1.7 + vec2<f32>(tick, 5.0)).x - 0.5) * blockSize * 0.9;
+  let blockMask = smoothstep(centerRadius * 0.85, centerRadius, dCenter + edgeDither);
+  var mask = min(smoothMask, blockMask);
 
   var rippleReveal = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);
@@ -87,7 +95,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   mask = clamp(mask - rippleReveal * 0.8, 0.0, 1.0);
   blockOffset = blockOffset * mask;
 
-  let sampleUV = clamp(uv + blockOffset, vec2<f32>(0.0), vec2<f32>(1.0));
+  let sampleUV = clamp(uv + blockOffset + vec2<f32>(tearShift * mask, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
   let caDir = (uv - 0.5) * 0.035 * mask * scatter * (1.0 + depth);
   let colorSample = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
   var color = vec3<f32>(
@@ -95,21 +103,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     colorSample.g,
     textureSampleLevel(readTexture, u_sampler, clamp(sampleUV - caDir, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b
   );
-  var alpha = colorSample.a;
 
   if (mask > 0.01 && scatter > 0.0) {
     if (rand.x > 0.78) {
       let shiftSample = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV + vec2<f32>(0.012 * mask, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
       color = vec3<f32>(shiftSample.r, colorSample.g, colorSample.b);
-      alpha = mix(colorSample.a, shiftSample.a * 0.9 + 0.1, mask * 0.3);
     } else if (rand.x < 0.18) {
       color = 1.0 - colorSample.rgb;
-      alpha = colorSample.a * 0.95;
     }
   }
-
-  let prev = textureLoad(dataTextureC, coord, 0);
-  color = mix(color, prev.rgb, mask * scatter * 0.65);
 
   let border = smoothstep(effectiveRadius, effectiveRadius + 0.012, dist)
              - smoothstep(effectiveRadius + 0.012, effectiveRadius + 0.024, dist);
@@ -117,14 +119,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (border > 0.0 || edgeGlow > 0.3) {
     let borderColor = vec3<f32>(0.0, 1.0, 0.55) + vec3<f32>(treble * 0.2);
     color = mix(color, borderColor, (border + edgeGlow * 0.4) * 0.45);
-    alpha = mix(alpha, 1.0, border * 0.3);
   }
 
-  color = acesToneMap(color * (0.96 + bass * 0.06));
-  alpha = mix(mix(0.5, 1.0, depth), 1.0, 1.0 - mask * scatter);
-  alpha = clamp(alpha + rippleReveal * 0.1, 0.0, 1.0);
+  var display = acesToneMap(max(color, vec3<f32>(0.0)) * (0.96 + bass * 0.06));
 
-  textureStore(writeTexture, coord, vec4<f32>(color, alpha));
-  textureStore(dataTextureA, coord, vec4<f32>(mask, scatter, rippleReveal, alpha));
+  // C holds last frame's display RGB, so it is blended in display space (no re-tonemapping).
+  // A.a carries 10 + alpha: a C texel outside that band (never written, or another shader's
+  // output right after a switch) is ignored instead of washing its picture into the glitch.
+  let prev = textureLoad(dataTextureC, coord, 0);
+  let prevRGB = select(display, prev.rgb, prev.a > 9.5 && prev.a < 11.5);
+  // Capped below 1: with Scatter maxed and bass boosting it, a weight of 1 froze the frame for good.
+  display = mix(display, prevRGB, clamp(mask * scatter * 0.65, 0.0, 0.85));
+
+  // Idea 1: datamosh block hold — blocks that drew rand.y > 0.72 this tick skip their "I-frame" and
+  // re-use the previous frame from exact C, fetched along the block's own motion vector, so stale
+  // blocks slide and smear (P-frame drag) until the next jitter tick re-keys them.
+  if (rand.y > 0.72 && mask > 0.01 && scatter > 0.0) {
+    let motion = (rand - 0.5) * 0.02 * scatter;
+    let holdCoord = clamp(vec2<i32>((uv - motion) * resolution), vec2<i32>(0), maxCoord);
+    let heldTexel = textureLoad(dataTextureC, holdCoord, 0);
+    let held_rgb = select(display, heldTexel.rgb, heldTexel.a > 9.5 && heldTexel.a < 11.5);
+    let holdW = mask * clamp(scatter * 1.8, 0.0, 0.9);
+    display = mix(display, held_rgb, holdW);
+  }
+
+  var alpha = mix(mix(0.5, 1.0, depth), 1.0, 1.0 - clamp(mask * scatter, 0.0, 1.0));
+  alpha = clamp(alpha + rippleReveal * 0.1 + border * 0.3, 0.0, 1.0);
+
+  textureStore(writeTexture, coord, vec4<f32>(display, alpha));
+  textureStore(dataTextureA, coord, vec4<f32>(display, 10.0 + alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

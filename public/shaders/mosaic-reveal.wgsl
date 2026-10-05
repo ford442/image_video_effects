@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  mosaic-reveal — Phase B Advanced-Alpha Upgrade
-//  Category: distortion
-//  Features: upgraded-rgba, depth-aware, alpha-layered, mosaic,
-//            interactive-reveal, mouse-driven, hex-grid, flood-fill-reveal,
-//            audio-reactive, oklab-mixing, temporal-feedback, aces-tone-map
-//  Upgraded: 2026-07-08
+//  Mosaic Reveal
+//  Category: artistic
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, depth-aware, hex-grid
+//  Complexity: High
+//  Upgraded: 2026-10-05
+//  Ideas: tile-turn front; grout + tesserae bevel; re-mosaic afterimage from C
+//  A packing: pre-ACES reveal colour history RGB + .a = 10 + accumulated alpha (<9.5 = empty C)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -42,9 +43,9 @@ fn linear_srgb_to_oklab(c: vec3<f32>) -> vec3<f32> {
   let l = 0.4122214708 * c.r + 0.5363325363 * c.g + 0.0514459929 * c.b;
   let m = 0.2119034982 * c.r + 0.6806995451 * c.g + 0.1073969566 * c.b;
   let s = 0.0883024619 * c.r + 0.2817188376 * c.g + 0.6299787005 * c.b;
-  let l_ = pow(l, 1.0 / 3.0);
-  let m_ = pow(m, 1.0 / 3.0);
-  let s_ = pow(s, 1.0 / 3.0);
+  let l_ = pow(max(l, 0.0), 1.0 / 3.0);
+  let m_ = pow(max(m, 0.0), 1.0 / 3.0);
+  let s_ = pow(max(s, 0.0), 1.0 / 3.0);
   return vec3<f32>(
     0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_,
     1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_,
@@ -105,15 +106,17 @@ fn blackbodyRGB(T: f32) -> vec3<f32> {
   return vec3<f32>(r, g, b);
 }
 
-// ── Hex grid center ───────────────────────────────────────────────
-fn hexCenter(uv: vec2<f32>, size: f32) -> vec2<f32> {
+// ── Hex grid center (tile space) ──────────────────────────────────
+// FIXED: HEAD returned (floor(centre) + 0.5) / size; half the lattice has an
+// integer-x centre, so float error flipped the floor -> speckled hex cells.
+// Returns the true hex centre in tile (scaled) coordinates.
+fn hexCenterTile(uv: vec2<f32>) -> vec2<f32> {
   let s = vec2<f32>(1.0, 1.7320508);
   let h = s * 0.5;
   let a = (uv - s * floor(uv / s)) - h;
   let b = ((uv - h) - s * floor((uv - h) / s)) - h;
   let g = select(a, b, dot(a, a) > dot(b, b));
-  let hex = (uv - g);
-  return (floor(hex) + 0.5) / size;
+  return uv - g;
 }
 
 // ── Advanced alpha compositing ────────────────────────────────────
@@ -157,9 +160,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let conveyor = vec2<f32>(sin(time * 0.75), cos(time * 0.93)) * (0.008 + u.zoom_params.x * 0.018);
   let tileUV = uv01 + conveyor;
   let tile = tileUV * cellSize;
-  let sqCenter = (floor(tile) + 0.5) / cellSize;
-  let hxCenter = hexCenter(tileUV * cellSize, cellSize);
-  let tileCenter = select(sqCenter, hxCenter, isHex) - conveyor;
+  let sqCenterT = floor(tile) + 0.5;
+  let hxCenterT = hexCenterTile(tile);
+  let centerT = select(sqCenterT, hxCenterT, isHex);       // tile centre, tile space
+  let tileCenter = centerT / cellSize - conveyor;           // tile centre, screen uv
+  let q = tile - centerT;                                   // pixel within tile, ~[-0.5, 0.5]
 
   var colMosaic = textureSampleLevel(readTexture, non_filtering_sampler, tileCenter, 0.0).rgb;
   var colFull = textureSampleLevel(readTexture, u_sampler, uv01, 0.0).rgb;
@@ -168,10 +173,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Organic reveal boundary
   let warp = (fbm(uv01 * cellSize * 0.4 + time * 0.15, 3) - 0.5) * 0.06;
   let bassPulse = 1.0 + bass * 0.35;
-  let revealRadius = clamp(0.45 + 0.38 * sin(time * revealSpeed * bassPulse) + warp, 0.04, 0.92);
+  let revealCore = 0.45 + 0.38 * sin(time * revealSpeed * bassPulse);
+  let revealRadius = clamp(revealCore + warp, 0.04, 0.92);
   let floodRunner = exp(-abs(mouseDist - (0.45 + 0.35 * sin(time * revealSpeed * 1.7 + uv01.x * TAU))) * 45.0);
-  var revealMask = 1.0 - smoothstep(revealRadius - 0.05, revealRadius + 0.05, mouseDist);
-  revealMask = max(revealMask, floodRunner * (0.35 + held * 0.45));
 
   var clickWave = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);
@@ -184,14 +188,60 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         * (1.0 - age / 1.5));
     }
   }
-  revealMask = max(revealMask, clickWave * 0.9);
+
+  // Idea 1: Tile-turn front — tiles turn over one by one at the front instead
+  // of crossfading per pixel. Progress p is measured at the tile CENTRE (with
+  // the same fbm warp sampled there) plus a per-tile jitter; the tile squashes
+  // as cos(pi*p): front face = mosaic colour, back face = full image.
+  let tileDist = distance((tileCenter - mouse) * aspectVec, vec2<f32>(0.0));
+  let tileWarp = (fbm(tileCenter * cellSize * 0.4 + time * 0.15, 3) - 0.5) * 0.06;
+  let tileRadius = clamp(revealCore + tileWarp, 0.04, 0.92);
+  let jitter = (hash21(centerT + vec2<f32>(3.7, 9.1)) - 0.5) * 0.06;
+  let turnP = 1.0 - smoothstep(tileRadius - 0.05 + jitter, tileRadius + 0.05 + jitter, tileDist);
+  let squash = abs(cos(PI * turnP));
+  let qTurn = vec2<f32>(q.x / max(squash, 0.06), q.y);
+  let onFace = 1.0 - smoothstep(0.47, 0.5, abs(qTurn.x));
+  let backFace = step(0.5, turnP);
+  let backUV = clamp((centerT + qTurn) / cellSize - conveyor, vec2<f32>(0.0), vec2<f32>(1.0));
+  let colBack = textureSampleLevel(readTexture, u_sampler, backUV, 0.0).rgb;
+  var turnColor = mix(colMosaic, colBack, backFace) * (0.55 + 0.45 * squash);
+  turnColor = mix(colMosaic * 0.12, turnColor, onFace);      // dark bed behind a turning tile
+
+  // Pointer extras (flood runner, click fronts) still reveal per pixel on top.
+  let extraMask = clamp(max(floodRunner * (0.35 + held * 0.45), clickWave * 0.9), 0.0, 1.0);
+  let revealMask = max(turnP, extraMask);
 
   // Edge mask for rim light
   let edgeMask = smoothstep(revealRadius - 0.12, revealRadius - 0.03, mouseDist)
-               * smoothstep(revealRadius + 0.12, revealRadius + 0.03, mouseDist);
+               * (1.0 - smoothstep(revealRadius + 0.03, revealRadius + 0.12, mouseDist));
 
   // Perceptually clean mosaic ↔ full transition
-  var color = mixOkLab(colMosaic, colFull, revealMask);
+  let revealColor = mixOkLab(turnColor, colFull, extraMask);
+
+  // Idea 3: Re-mosaic afterimage — C holds the reveal colour history. Revealed
+  // pixels update at once; pixels the disc just left re-tile over ~5 frames.
+  // A.a stores 10 + alpha: a C texel outside [9.5, 11.5] (never written, another shader's
+  // output right after a switch, NaN) is "fresh" — no afterimage, no alpha memory.
+  let prevRaw = textureLoad(dataTextureC, pixel, 0);
+  let prevOk = prevRaw.a > 9.5 && prevRaw.a < 11.5;
+  let prevRGB = select(revealColor, clamp(prevRaw.rgb, vec3<f32>(0.0), vec3<f32>(4.0)), prevOk);
+  let prevA = select(0.0, clamp(prevRaw.a - 10.0, 0.0, 1.0), prevOk);
+  let trailRate = mix(0.18, 1.0, revealMask);
+  let trail = mix(prevRGB, revealColor, trailRate);
+  var color = trail;
+
+  // Idea 2: Grout + tesserae bevel — dark joints and a top-left bevel light on
+  // the mosaic side only (the revealed photo stays clean). Tile space, so it
+  // rides the conveyors.
+  let aq = abs(q);
+  let tileD = select(max(aq.x, aq.y), max(aq.x, dot(aq, vec2<f32>(0.5, 0.8660254))), isHex);
+  let tileEdge = 0.5 - tileD;
+  let mosaicSide = (1.0 - backFace) * (1.0 - extraMask) * onFace;
+  let grout = 1.0 - smoothstep(0.015, 0.06, tileEdge);
+  let bevelBand = 1.0 - smoothstep(0.04, 0.16, tileEdge);
+  let bevelLit = dot(q / max(length(q), 1e-3), vec2<f32>(-0.7071, -0.7071));
+  color = color * (1.0 + bevelBand * bevelLit * 0.12 * mosaicSide);
+  color = mix(color, color * 0.35 + vec3<f32>(0.02), grout * 0.5 * mosaicSide);
 
   // Audio-reactive blackbody rim glow
   let temp = 2200.0 + treble * 5500.0 + mids * 1200.0;
@@ -208,13 +258,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let vig = 1.0 - dot((uv01 - 0.5) * 1.3, (uv01 - 0.5) * 1.3);
   color = color * mix(0.85, 1.0, clamp(vig, 0.0, 1.0));
 
-  // Temporal feedback trail
-  let prev = textureLoad(dataTextureC, pixel, 0);
-  let decay = 0.94 + revealMask * 0.04;
-  let trail = mix(prev.rgb * decay, color, 0.18 + bass * 0.06);
-
   // HDR clamp, ACES tonemap, IGN dither
-  color = hue_preserve_clamp(color, 3.0);
+  color = hue_preserve_clamp(max(color, vec3<f32>(0.0)), 3.0);
   color = aces(color * (1.0 + mids * 0.1));
   let dither = (ign(vec2<f32>(pixel)) - 0.5) / 255.0;
   color = color + vec3<f32>(dither);
@@ -230,10 +275,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   );
 
   // Accumulative temporal alpha feedback
-  let accumAlpha = max(alpha, prev.a * 0.93);
+  let accumAlpha = max(alpha, prevA * 0.93);
   alpha = mix(alpha, accumAlpha, 0.35);
 
+  // Depth: tesserae relief on the mosaic side (raised tiles, sunken grout)
+  let relief = (smoothstep(0.015, 0.1, tileEdge) * 0.03 - grout * 0.02) * mosaicSide;
+  let depthOut = clamp(depth + relief, 0.0, 1.0);
+
   textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
-  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, pixel, vec4<f32>(trail, alpha));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, pixel, vec4<f32>(trail, 10.0 + alpha));
 }
