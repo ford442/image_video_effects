@@ -8623,6 +8623,57 @@
     ]
   },
   {
+    "id": "gen-chromodynamic-glass-labyrinth",
+    "name": "Chromodynamic Glass Labyrinth",
+    "type": "generative",
+    "category": "generative",
+    "url": "shaders/gen-chromodynamic-glass-labyrinth.wgsl",
+    "description": "A hyper-reflective, endlessly unfolding non-Euclidean maze of liquid glass that refracts a shifting spectrum of chromodynamic light.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "structuralDensity",
+        "name": "Structural Density",
+        "default": 2,
+        "min": 0.5,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "refractionIndex",
+        "name": "Refraction Index",
+        "default": 1.5,
+        "min": 1,
+        "max": 3,
+        "step": 0.05,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "dispersion",
+        "name": "Dispersion",
+        "default": 0.05,
+        "min": 0,
+        "max": 0.2,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "chromaticPhase",
+        "name": "Chromatic Phase",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
+  },
+  {
     "name": "Chromodynamic Plasma-Collider",
     "category": "generative",
     "tags": [
