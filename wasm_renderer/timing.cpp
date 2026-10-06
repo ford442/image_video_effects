@@ -1,6 +1,7 @@
 #include "renderer.h"
 #include "wasm_internal.h"
 #include <webgpu/webgpu.h>
+#include <emscripten/em_asm.h>
 #include <cstdio>
 #include <cmath>
 #include <algorithm>
@@ -317,6 +318,25 @@ void WebGPURenderer::ResolveTimestampQueries() {
             NewCallbackBox(),
             nullptr
         });
+}
+
+bool WebGPURenderer::RequestWorkDoneMark() {
+    if (!queue_) return false;
+    wgpuQueueOnSubmittedWorkDone(
+        queue_.get(),
+        WGPUQueueWorkDoneCallbackInfo{
+            nullptr,
+            WGPUCallbackMode_AllowSpontaneous,
+            [](WGPUQueueWorkDoneStatus status, WGPUStringView /*message*/,
+               void* /*userdata1*/, void* /*userdata2*/) {
+                // Touches no renderer state, so no CallbackBox: safe after Shutdown().
+                EM_ASM({ if (Module['__pxWorkDone']) Module['__pxWorkDone']($0); },
+                       status == WGPUQueueWorkDoneStatus_Success ? 1 : 0);
+            },
+            nullptr,
+            nullptr
+        });
+    return true;
 }
 
 const char* WebGPURenderer::GetPassTimingsJson() {

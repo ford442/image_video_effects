@@ -1,4 +1,4 @@
-import { Renderer, RendererConfig, ShaderSlotRenderer, GPUTimings } from './Renderer';
+import { Renderer, RendererConfig, ShaderSlotRenderer, GPUTimings, UncappedBenchResult } from './Renderer';
 import * as WasmBridge from '../wasm/wasm_bridge';
 import type { WasmErrorRing } from '../wasm/wasm_bridge';
 import type { PassTiming } from './passTimings';
@@ -649,6 +649,34 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
       mouseY: this.mouseY,
       mouseDown: this.mouseDown,
     });
+  }
+
+  /**
+   * Bench only (#1080): stop the rAF loop, render `frames` frames back to back
+   * (the updateUniforms export renders one frame), then time to GPU idle via
+   * requestWorkDoneMark. Null on artifacts without that export.
+   */
+  async benchmarkUncapped(frames: number): Promise<UncappedBenchResult | null> {
+    if (!this.initialized || frames <= 0) return null;
+    if (this.animationId !== null) {
+      cancelAnimationFrame(this.animationId);
+      this.animationId = null;
+    }
+    try {
+      const drained = WasmBridge.awaitSubmittedWorkDone();
+      if (!drained || !(await drained)) return null;
+      let time = performance.now() / 1000 - this.startTime;
+      const t0 = performance.now();
+      for (let i = 0; i < frames; i++) {
+        time += 1 / 60;
+        WasmBridge.updateUniforms({ time, mouseX: this.mouseX, mouseY: this.mouseY, mouseDown: this.mouseDown });
+      }
+      if (!(await WasmBridge.awaitSubmittedWorkDone())) return null;
+      const wallMs = performance.now() - t0;
+      return { frames, wallMs, msPerFrame: wallMs / frames };
+    } finally {
+      if (this.initialized && this.animationId === null) this.startRenderLoop();
+    }
   }
 
   /** Returns the last captured frame as a PNG data URL, or '' if none yet. */

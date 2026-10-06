@@ -1,9 +1,10 @@
 /**
- * WASM vs WebGPU benchmark suite — FPS + getGPUTimings() wall-clock metrics.
+ * WASM vs WebGPU benchmark suite — GPU timestamp ms, uncapped ms/frame, FPS.
  *
- * Writes JSON report for CI artifacts / Tier A promotion tracking.
+ * Writes JSON report for CI artifacts / Tier A promotion tracking
+ * (docs/WASM_BENCH_REPORT.md). Served with COOP/COEP for ~5 µs timers.
  *
- *   npm run build && WASM_GPU_TESTS=1 npm run test:wasm:bench
+ *   npm run build && WASM_GPU_TESTS=1 [WASM_BENCH_DEV_FEATURES=1] npm run test:wasm:bench
  */
 
 import { test, expect, type Page } from '@playwright/test';
@@ -28,14 +29,17 @@ import {
   type BenchComparison,
   PROMOTION_SPEEDUP_RATIO,
 } from './helpers/rendererHarness';
-import { buildGpuLaunchArgs } from '../src/utils/gpuLaunchArgs';
+import { buildGpuLaunchArgs, isBenchDevFeaturesEnabled } from '../src/utils/gpuLaunchArgs';
 
 const BENCHMARK_SHADER_IDS = BENCHMARK_MATRIX.map((s) => s.id);
-const BENCH_FRAMES = 60;
+// TS reads timestamps back every 250 ms: 180 frames ≈ 12 GPU samples at 60 fps (#1080).
+const BENCH_FRAMES = 180;
 const WARMUP_FRAMES = 10;
+const UNCAPPED_FRAMES = 120;
 
 test.beforeAll(async () => {
-  await startStaticServer();
+  // Cross-origin isolated (#1080): performance.now() at ~5 µs instead of ~100 µs.
+  await startStaticServer(undefined, { isolated: true });
 }, 60000);
 
 test.afterAll(async () => {
@@ -46,7 +50,7 @@ async function benchBackend(
   page: Page,
   backend: 'wasm' | 'webgpu',
   shader: (typeof BENCHMARK_MATRIX)[number]
-): Promise<{ result: BenchResult; timestampPeriodNs: number } | null> {
+): Promise<{ result: BenchResult; timestampPeriodNs: number; crossOriginIsolated: boolean } | null> {
   await page.goto(buildAppUrl(backend), { waitUntil: 'networkidle' });
   await waitForTestApi(page);
 
@@ -56,7 +60,11 @@ async function benchBackend(
     return null;
   }
 
-  await loadShaderOnSlot(page, shader);
+  // A failed load leaves an empty slot, and the leg would time a passthrough frame (#1080).
+  if (!(await loadShaderOnSlot(page, shader))) {
+    if (isStrictGpuMode()) throw new Error(`${shader.id}: shader failed to load on ${backend}`);
+    return null;
+  }
   if (shader.testState) {
     await applyTestState(page, shader.testState);
   }
@@ -79,8 +87,18 @@ async function benchBackend(
 
   const lastGpu = report?.samples?.[report.samples.length - 1]?.gpu;
 
+  // Vsync-free leg (#1080): N frames without rAF, timed to onSubmittedWorkDone.
+  const uncapped = await page.evaluate(
+    async ({ frameCount, warmupFrames }) =>
+      (window as any).__pixelocity__?.runUncappedBenchmark?.(frameCount, warmupFrames) ?? null,
+    { frameCount: UNCAPPED_FRAMES, warmupFrames: WARMUP_FRAMES },
+  );
+  if (!uncapped) console.warn(`[bench] ${shader.id}/${backend}: uncapped run unavailable`);
+  const crossOriginIsolated = await page.evaluate(() => self.crossOriginIsolated === true);
+
   return {
     timestampPeriodNs: report?.timestampPeriodNs ?? 0,
+    crossOriginIsolated,
     result: {
       shaderId: shader.id,
       backend,
@@ -92,6 +110,8 @@ async function benchBackend(
       p95TotalMs: report?.totalMsStats?.p95 ?? 0,
       totalMsStats: report?.totalMsStats,
       fpsStats: report?.fpsStats,
+      gpuReadbacks: report?.gpuReadbacks ?? 0,
+      ...(uncapped?.msPerFrame > 0 ? { uncappedMsPerFrame: uncapped.msPerFrame } : {}),
       ...(report?.timingSource === 'gpu-timestamp' && report?.passTimings?.length
         ? { passTimings: report.passTimings }
         : {}),
@@ -106,7 +126,7 @@ test('WASM vs WebGPU benchmark matrix', async ({ page, browser }) => {
   const strict = isStrictGpuMode();
   const environment = collectBenchEnvironment(
     browser.version(),
-    buildGpuLaunchArgs(process.platform, strict),
+    buildGpuLaunchArgs(process.platform, strict, isBenchDevFeaturesEnabled()),
     strict ? 'chromium' : 'chromium-headless-shell',
   );
 
@@ -132,6 +152,7 @@ test('WASM vs WebGPU benchmark matrix', async ({ page, browser }) => {
       const wasmBench = await benchBackend(wasmPage, 'wasm', shader);
       if (wasmBench && !environment.adapters.wasm) {
         environment.adapters.wasm = await collectAdapterSummary(wasmPage, 'wasm');
+        environment.crossOriginIsolated = { ...environment.crossOriginIsolated, wasm: wasmBench.crossOriginIsolated };
       }
       // Stop the WASM render loop so it cannot compete with the TS leg (#1357 T3).
       await wasmPage.goto('about:blank');
@@ -144,6 +165,7 @@ test('WASM vs WebGPU benchmark matrix', async ({ page, browser }) => {
         if (tsBench && !environment.adapters.webgpu) {
           environment.adapters.webgpu = await collectAdapterSummary(tsPage, 'webgpu');
           environment.timestampPeriodNs = tsBench.timestampPeriodNs;
+          environment.crossOriginIsolated = { ...environment.crossOriginIsolated, webgpu: tsBench.crossOriginIsolated };
         }
       } finally {
         await tsPage.close();
@@ -152,6 +174,11 @@ test('WASM vs WebGPU benchmark matrix', async ({ page, browser }) => {
       if (!wasmBench || !tsBench) {
         const msg = `${shader.id}: wasm=${wasmBench ? 'ok' : 'missing'} webgpu=${tsBench ? 'ok' : 'missing'}`;
         throw new Error(`[bench] ${msg}`);
+      }
+
+      // Without isolation the timers fall back to ~100 µs and the run is not the one documented.
+      if (!wasmBench.crossOriginIsolated || !tsBench.crossOriginIsolated) {
+        throw new Error(`[bench] ${shader.id}: page is not cross-origin isolated (COOP/COEP missing)`);
       }
 
       allResults.push(wasmBench.result, tsBench.result);
@@ -185,9 +212,10 @@ test('WASM vs WebGPU benchmark matrix', async ({ page, browser }) => {
         `${report.promotionGateMet ? 'MET' : 'NOT MET'} ` +
         `(${comparisons.filter((c) => c.meetsPromotionGate).length}/${comparisons.length} shaders)`
     );
+    const byMetric = comparisons.map((c) => `${c.shaderId}=${c.speedupMetric}`).join(', ');
+    console.log(`Speedup metric per shader (gpu-ms > uncapped-ms > fps): ${byMetric || 'none'}`);
     console.log(
-      `Timing sources like-for-like on ${likeForLike}/${comparisons.length} shaders ` +
-        '(WASM is wall-clock; mixed rows never meet the gate).'
+      `Like-for-like on ${likeForLike}/${comparisons.length} shaders (mixed rows never meet the gate).`
     );
     if (!completed) console.log('Run did not complete — report holds partial results.');
     console.log('=============================\n');

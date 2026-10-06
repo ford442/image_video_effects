@@ -20,7 +20,7 @@ import type { RendererError } from '../ErrorHandling';
 import type { GraphRunReport } from '../GraphRunner';
 import type { VideoIngestStats } from '../media/videoFramePump';
 import type { PassTiming } from '../passTimings';
-import type { GPUTimings, RendererConfig } from '../Renderer';
+import type { GPUTimings, RendererConfig, UncappedBenchResult } from '../Renderer';
 import type { InputSource } from '../types';
 import type { FrameStats } from '../webgpu/deviceCounters';
 import type { CanvasConfigureOptIns } from '../webgpu/device';
@@ -118,6 +118,8 @@ export type RenderRpc =
   | { type: 'captureFrame'; requestId: number }
   /** Compile WGSL on the worker's device and return its compilation messages. */
   | { type: 'compileCheck'; requestId: number; id: string; code: string }
+  /** Bench only (#1080): N frames without rAF, timed in the worker to GPU idle. */
+  | { type: 'benchmarkUncapped'; requestId: number; frames: number }
   | { type: 'dispose'; requestId: number };
 
 export interface CompileMessage {
@@ -136,6 +138,7 @@ export interface RenderRpcResults {
   grabVideoFrame: VideoFrame | null;
   captureFrame: string | null;
   compileCheck: CompileMessage[];
+  benchmarkUncapped: UncappedBenchResult | null;
   dispose: true;
 }
 
@@ -205,6 +208,7 @@ export const RENDER_RPC_TYPES = [
   'grabVideoFrame',
   'captureFrame',
   'compileCheck',
+  'benchmarkUncapped',
   'dispose',
 ] as const;
 

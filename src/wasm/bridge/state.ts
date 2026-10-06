@@ -26,6 +26,10 @@ export interface EmscriptenModule {
   _getLastError?: () => number;
   _getErrorRingJson?: () => number;
   _clearErrorRing?: () => void;
+  /** Bench export (#1080): queues onSubmittedWorkDone → __pxWorkDone(ok). 1 when queued. */
+  _requestWorkDoneMark?: () => number;
+  /** Set by awaitSubmittedWorkDone(); called from the C++ work-done callback. */
+  __pxWorkDone?: (ok: number) => void;
 }
 
 export type PixelocityWasmFactory = (opts: {

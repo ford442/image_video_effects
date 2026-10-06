@@ -1,7 +1,7 @@
 import { useEffect, RefObject } from 'react';
 import { RendererManager } from '../renderer/RendererManager';
 import { RenderQualityMode } from '../config/performancePolicy';
-import { computeBenchmarkStats } from '../utils/benchmarkStats';
+import { computeBenchmarkStats, countReadbacks } from '../utils/benchmarkStats';
 
 export interface CanvasImageStats {
     width: number;
@@ -196,10 +196,26 @@ export function useTestHarness({
                         // Stats over every sampled frame (#1357 T4); `samples` is only the tail.
                         warmupFrames,
                         totalMsStats: computeBenchmarkStats(totals),
+                        // TS reads timestamps back every 250 ms, so many frames repeat a value:
+                        // distinct values are the real GPU sample size (#1080).
+                        gpuReadbacks: countReadbacks(samples.map((s) => s.gpu.totalTime)),
                         fpsStats: computeBenchmarkStats(samples.map((s) => s.fps)),
                         timestampPeriodNs: manager.getDiagnostics().webgpu?.timing?.periodNs ?? 0,
                         samples: samples.slice(-5),
                     };
+                },
+                /**
+                 * Vsync-free ms/frame (#1080): the backend pauses its loop, renders
+                 * `frameCount` frames back to back and times to GPU idle.
+                 */
+                runUncappedBenchmark: async (frameCount = 120, warmupFrames = 10) => {
+                    if (warmupFrames > 0) await manager.benchmarkUncapped(warmupFrames);
+                    const result = await manager.benchmarkUncapped(frameCount);
+                    return result ? {
+                        ...result,
+                        rendererType: manager.getActiveRendererType(),
+                        renderThread: manager.getRenderThread(),
+                    } : null;
                 },
                 updateAudioFrequencyBins: (bins: Float32Array) => {
                     manager.updateAudioFrequencyBins(bins);

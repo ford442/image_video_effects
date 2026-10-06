@@ -339,6 +339,10 @@ public:
     // "[]" until timestamps resolve. The pointer stays valid until the next call.
     const char* GetPassTimingsJson();
 
+    // Bench only (#1080): queue an onSubmittedWorkDone that calls
+    // Module.__pxWorkDone(ok) from JS once the GPU drains. False without a queue.
+    bool RequestWorkDoneMark();
+
     // Process-wide ring of uncaptured WebGPU errors and device-lost messages.
     // Static so the error callback needs no renderer pointer (it can fire
     // after Shutdown) and so init-time errors survive g_renderer.reset().
