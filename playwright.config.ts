@@ -1,9 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
-import { buildGpuLaunchArgs } from './src/utils/gpuLaunchArgs';
+import { buildGpuLaunchArgs, isBenchDevFeaturesEnabled } from './src/utils/gpuLaunchArgs';
 
 /** Real-GPU runs (WASM_GPU_TESTS=1, #1357): GPU flags + new headless on the chromium project. */
 const GPU_TESTS = process.env.WASM_GPU_TESTS === '1';
-export const GPU_LAUNCH_ARGS = buildGpuLaunchArgs(process.platform, GPU_TESTS);
+export const GPU_LAUNCH_ARGS = buildGpuLaunchArgs(process.platform, GPU_TESTS, isBenchDevFeaturesEnabled());
 
 /** Desktop Chrome viewport without its spoofed Windows user agent (GPU runs report the real platform). */
 const { userAgent: _spoofedUserAgent, ...desktopChromeNoUa } = devices['Desktop Chrome'];

@@ -1,4 +1,4 @@
-import { Renderer, RendererConfig, GPUTimings } from './Renderer';
+import { Renderer, RendererConfig, GPUTimings, UncappedBenchResult } from './Renderer';
 import { WASMRenderer } from './WASMRenderer';
 import { WebGPURenderer } from './WebGPURenderer';
 import { InputSource, RenderMode, ShaderEntry, SlotParams } from './types';
@@ -517,6 +517,10 @@ export class RendererManager {
     if (isWebGpuBackend(r)) return r.getPassTimings();
     if (r instanceof WASMRenderer) return r.getPassTimings();
     return [];
+  }
+  /** Bench only (#1080): vsync-free ms/frame from the active TS or C++ backend. */
+  async benchmarkUncapped(frames: number): Promise<UncappedBenchResult | null> {
+    return (await this.shaderRenderer()?.benchmarkUncapped?.(frames)) ?? null;
   }
   /** Run an opt-in graph node below full size (TS WebGPU only). Returns the scale in effect. */
   setNodeScale(slot: number, nodeId: string, scale: number): number {

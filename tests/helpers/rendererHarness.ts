@@ -8,6 +8,7 @@ import { resolve } from 'path';
 import { expect, type Page } from '@playwright/test';
 import type { ParityShaderCase } from '../fixtures/parityMatrix';
 import type { BenchmarkStats } from '../../src/utils/benchmarkStats';
+import { computeSpeedup, type SpeedupMetric } from '../../src/utils/benchmarkSpeedup';
 
 export const BUILD_DIR = resolve(__dirname, '../../build');
 export const DEFAULT_PORT = 3458;
@@ -36,6 +37,10 @@ export interface BenchResult {
   /** Over all post-warm-up frames with gpu.totalTime > 0 (#1357 T4). */
   totalMsStats?: BenchmarkStats;
   fpsStats?: BenchmarkStats;
+  /** Distinct GPU timing values among the sampled frames: the real GPU sample size (#1080). */
+  gpuReadbacks?: number;
+  /** ms/frame of N frames submitted without rAF, timed to GPU idle (#1080); vsync cannot cap it. */
+  uncappedMsPerFrame?: number;
   /** Per-pass GPU ms when timestamps resolved (TS backend, #1314 WP-4). */
   passTimings?: Array<{ key: string; label: string; kind: string; gpuMs: number; iterations: number }>;
   qualityMode?: string;
@@ -49,14 +54,19 @@ export interface BenchComparison {
   webgpuFps: number;
   wasmAvgTotalMs: number;
   webgpuAvgTotalMs: number;
-  /** WASM fps / WebGPU fps (or inverse frame-time ratio). ≥1.25 meets promotion gate. */
+  /** WASM-over-TS speed by `speedupMetric` (> 1 = WASM faster). ≥1.25 meets the promotion gate. */
   speedupRatio: number;
+  /** gpu-ms > uncapped-ms > fps (#1080; src/utils/benchmarkSpeedup.ts). */
+  speedupMetric: SpeedupMetric;
+  wasmUncappedMsPerFrame?: number;
+  webgpuUncappedMsPerFrame?: number;
   meetsPromotionGate: boolean;
-  /** #1357 T11: the TS leg can be GPU timestamps while WASM is always wall-clock. */
+  /** #1357 T11: the legs can report different timing sources. */
   wasmTimingSource: string;
   webgpuTimingSource: string;
+  /** The legs measured the same quantity (always for gpu-ms / uncapped-ms). */
   likeForLike: boolean;
-  /** Why the gate is not met even though the ratio may be (e.g. 'mixed timing sources'). */
+  /** Why the gate is not met or the ratio is weak ('mixed timing sources', 'fps (vsync-capped)'). */
   gateReason?: string;
 }
 
@@ -71,11 +81,13 @@ export interface BenchEnvironment {
   webgpuDeveloperFeatures: boolean;
   /** Timestamp period of the TS device, 0 when timestamps are unavailable. */
   timestampPeriodNs?: number;
+  /** COOP/COEP on each leg: performance.now() ~5 µs instead of ~100 µs (#1080). */
+  crossOriginIsolated?: { wasm?: boolean; webgpu?: boolean };
   adapters: { wasm?: string; webgpu?: string };
 }
 
 /** Report schema — docs/WASM_BENCH_REPORT.md. v1 = the 2026-09-27 T4 files. */
-export const BENCH_REPORT_SCHEMA_VERSION = 2;
+export const BENCH_REPORT_SCHEMA_VERSION = 3;
 
 export interface WasmBenchmarkReport {
   schemaVersion: number;
@@ -513,34 +525,23 @@ export async function renderShaderCase(
 
 /** One matrix row (#1357 T11): mixed timing sources never meet the promotion gate. */
 export function buildComparison(wasm: BenchResult, webgpu: BenchResult): BenchComparison {
-  const speedupRatio = computeSpeedupRatio(wasm, webgpu);
-  const wasmTimingSource = wasm.timingSource ?? 'unavailable';
-  const webgpuTimingSource = webgpu.timingSource ?? 'unavailable';
-  const likeForLike = wasmTimingSource === webgpuTimingSource;
-  const ratioMet = speedupRatio >= PROMOTION_SPEEDUP_RATIO;
+  const speedup = computeSpeedup(wasm, webgpu, PROMOTION_SPEEDUP_RATIO);
   return {
     shaderId: wasm.shaderId,
     wasmFps: wasm.avgFps,
     webgpuFps: webgpu.avgFps,
     wasmAvgTotalMs: wasm.avgTotalMs,
     webgpuAvgTotalMs: webgpu.avgTotalMs,
-    speedupRatio,
-    meetsPromotionGate: ratioMet && likeForLike,
-    wasmTimingSource,
-    webgpuTimingSource,
-    likeForLike,
-    ...(ratioMet && !likeForLike ? { gateReason: 'mixed timing sources' } : {}),
+    ...(wasm.uncappedMsPerFrame ? { wasmUncappedMsPerFrame: wasm.uncappedMsPerFrame } : {}),
+    ...(webgpu.uncappedMsPerFrame ? { webgpuUncappedMsPerFrame: webgpu.uncappedMsPerFrame } : {}),
+    speedupRatio: speedup.ratio,
+    speedupMetric: speedup.metric,
+    meetsPromotionGate: speedup.meetsGate,
+    wasmTimingSource: wasm.timingSource ?? 'unavailable',
+    webgpuTimingSource: webgpu.timingSource ?? 'unavailable',
+    likeForLike: speedup.likeForLike,
+    ...(speedup.gateReason ? { gateReason: speedup.gateReason } : {}),
   };
-}
-
-export function computeSpeedupRatio(wasm: BenchResult, webgpu: BenchResult): number {
-  if (wasm.avgFps > 0 && webgpu.avgFps > 0) {
-    return wasm.avgFps / webgpu.avgFps;
-  }
-  if (wasm.avgTotalMs > 0 && webgpu.avgTotalMs > 0) {
-    return webgpu.avgTotalMs / wasm.avgTotalMs;
-  }
-  return 0;
 }
 
 /** Collect adapter summary from the active renderer or navigator.gpu (browser context). */

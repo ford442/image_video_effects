@@ -174,3 +174,29 @@ export function clearErrorRing(): boolean {
     return false;
   }
 }
+
+/**
+ * Resolves once the GPU has finished everything submitted so far (#1080
+ * uncapped bench): true on success, false when the queue reported an error.
+ * Null on artifacts without the export or before init. One mark at a time.
+ */
+export function awaitSubmittedWorkDone(timeoutMs = 60_000): Promise<boolean> | null {
+  const mod = wasmRef.module;
+  if (!mod || typeof mod._requestWorkDoneMark !== 'function') return null;
+  return new Promise<boolean>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      mod.__pxWorkDone = undefined;
+      reject(new Error('WASM onSubmittedWorkDone timed out'));
+    }, timeoutMs);
+    mod.__pxWorkDone = (ok) => {
+      clearTimeout(timer);
+      mod.__pxWorkDone = undefined;
+      resolve(ok !== 0);
+    };
+    if (mod._requestWorkDoneMark!() !== 1) {
+      clearTimeout(timer);
+      mod.__pxWorkDone = undefined;
+      resolve(false);
+    }
+  });
+}

@@ -18,9 +18,24 @@ export const GPU_LAUNCH_ARGS_LINUX = [
   '--disable-vulkan-surface',
 ];
 
-export function buildGpuLaunchArgs(platform: string, gpuTests: boolean): string[] {
+/**
+ * Un-quantised GPU timestamps (WASM_BENCH_DEV_FEATURES=1, #1080). Chromium
+ * otherwise rounds timestamp-query to 100 µs buckets. Off by default (#1357 Q1).
+ */
+export const GPU_LAUNCH_ARGS_DEV_FEATURES = [
+  '--enable-webgpu-developer-features',
+  '--enable-dawn-features=allow_unsafe_apis',
+];
+
+export function buildGpuLaunchArgs(platform: string, gpuTests: boolean, devFeatures = false): string[] {
   if (!gpuTests) return [];
-  return platform === 'linux'
-    ? [...GPU_LAUNCH_ARGS_COMMON, ...GPU_LAUNCH_ARGS_LINUX]
-    : [...GPU_LAUNCH_ARGS_COMMON];
+  return [
+    ...GPU_LAUNCH_ARGS_COMMON,
+    ...(platform === 'linux' ? GPU_LAUNCH_ARGS_LINUX : []),
+    ...(devFeatures ? GPU_LAUNCH_ARGS_DEV_FEATURES : []),
+  ];
+}
+
+export function isBenchDevFeaturesEnabled(env: Record<string, string | undefined> = process.env): boolean {
+  return env.WASM_BENCH_DEV_FEATURES === '1';
 }

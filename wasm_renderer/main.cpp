@@ -277,6 +277,13 @@ const char* getPassTimingsJson() {
     return g_renderer ? g_renderer->GetPassTimingsJson() : "[]";
 }
 
+// Bench only (#1080): 1 when an onSubmittedWorkDone was queued; it later calls
+// Module.__pxWorkDone(ok) from JS. Times uncapped runs without ASYNCIFY.
+EMSCRIPTEN_KEEPALIVE
+int requestWorkDoneMark() {
+    return (g_renderer && g_renderer->RequestWorkDoneMark()) ? 1 : 0;
+}
+
 // Most recent uncaptured WebGPU error or device-lost message ("" if none).
 // The ring is process-wide, so it also answers before init / after shutdown.
 EMSCRIPTEN_KEEPALIVE
