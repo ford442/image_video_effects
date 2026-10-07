@@ -621,11 +621,6 @@
       "added": "2026-09-30T15:33:09.517021"
     },
     {
-      "filename": "2026-10-01_luminescent-singularity-loom.md",
-      "title": "Luminescent Singularity Loom",
-      "added": "2026-10-01T15:25:19.287495"
-    },
-    {
       "filename": "2026-10-03_quantum-resonance-lattice.md",
       "title": "Quantum Resonance Lattice",
       "added": "2026-10-03T15:18:07.990796"
@@ -1239,6 +1234,13 @@
       "added": "2026-10-05T15:25:26.370474",
       "status": "completed",
       "completed_at": "2026-10-06T08:14:29.981866+00:00"
+    },
+    {
+      "filename": "2026-10-01_luminescent-singularity-loom.md",
+      "title": "Luminescent Singularity Loom",
+      "added": "2026-10-01T15:25:19.287495",
+      "status": "completed",
+      "completed_at": "2026-10-07T08:02:08.308251+00:00"
     }
   ],
   "rejected": [],

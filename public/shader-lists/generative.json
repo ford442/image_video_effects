@@ -25072,6 +25072,78 @@
     ]
   },
   {
+    "id": "gen-luminescent-singularity-loom",
+    "name": "Luminescent Singularity Loom",
+    "url": "shaders/gen-luminescent-singularity-loom.wgsl",
+    "category": "generative",
+    "type": "generative",
+    "description": "A cosmic-organic loom weaving ethereal, glowing threads around a central gravitational singularity that pulses and distorts spacetime.",
+    "features": [
+      "gravitational-lens",
+      "fractal-threads",
+      "domain-warping",
+      "subsurface-scattering",
+      "hdr-bloom",
+      "mouse-interaction"
+    ],
+    "tags": [
+      "organic",
+      "cosmic",
+      "fractal",
+      "singularity",
+      "loom",
+      "glow",
+      "3d"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "threadDensity",
+        "name": "Thread Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Density of the fractal threads"
+      },
+      {
+        "id": "loomSpeed",
+        "name": "Loom Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Speed of the loom's distortion"
+      },
+      {
+        "id": "glowIntensity",
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Intensity of the subsurface glow"
+      },
+      {
+        "id": "colorShift",
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Shift the color palette"
+      }
+    ]
+  },
+  {
     "name": "Luminous Cauldron",
     "category": "generative",
     "tags": [
