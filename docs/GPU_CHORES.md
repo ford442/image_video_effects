@@ -62,7 +62,7 @@ Dev Tools shows `gpuComputeAvailable`, backend, last op, reason, auto-exposure E
 ## Tests
 
 ```bash
-npx react-scripts test --watchAll=false --ci src/gpuChores/gpuChores.test.ts src/renderer/rendererDiagnostics.test.ts src/services/sourceAutoExposure.test.ts src/components/controls/panels/RenderQualityPanel.test.tsx src/components/controls/panels/AdvancedDebugPanel.test.tsx
+npm test -- --watchAll=false --ci src/gpuChores/gpuChores.test.ts src/renderer/rendererDiagnostics.test.ts src/services/sourceAutoExposure.test.ts src/components/controls/panels/RenderQualityPanel.test.tsx src/components/controls/panels/AdvancedDebugPanel.test.tsx
 ```
 
 CPU goldens are the parity SoT on this headless VM (no GPU adapter). GPU pipelines compile only on a real WebGPU device.

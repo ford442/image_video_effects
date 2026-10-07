@@ -147,7 +147,7 @@ Chores **adopt** the renderer `GPUDevice`. Kill switch: `?no_gpu_compute`.
 ## Testing
 
 ```bash
-npx react-scripts test --watchAll=false --ci
+npm test -- --watchAll=false --ci
 npm run verify:device-policy
 SKIP_WASM_BUILD=1 npm run build
 ```
