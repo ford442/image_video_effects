@@ -629,11 +629,6 @@
       "filename": "2026-10-07_sentient-plasma-silk-nebula-forge.md",
       "title": "Sentient Plasma-Silk Nebula Forge",
       "added": "2026-10-07T15:28:59.744843"
-    },
-    {
-      "filename": "2026-10-08_biomechanical-neural-mycelium.md",
-      "title": "Biomechanical Neural Mycelium",
-      "added": "2026-10-08T15:37:00.584768"
     }
   ],
   "current": null,
@@ -1258,6 +1253,13 @@
       "added": "2026-10-07T15:28:59.744843",
       "status": "completed",
       "completed_at": "2026-10-08T07:52:16.795121+00:00"
+    },
+    {
+      "filename": "2026-10-08_biomechanical-neural-mycelium.md",
+      "title": "Biomechanical Neural Mycelium",
+      "added": "2026-10-08T15:37:00.584768",
+      "status": "completed",
+      "completed_at": "2026-10-09T08:08:59.946396+00:00"
     }
   ],
   "rejected": [],
