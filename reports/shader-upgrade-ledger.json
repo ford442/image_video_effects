@@ -2291,36 +2291,108 @@
       "history": []
     },
     "gen-lichen-reaction-diffusion": {
-      "hash": "a9816ccf87abf4a0",
-      "history": []
+      "hash": "03bb9fb3cc2d86a7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T23:11:06.429Z",
+          "hash": "03bb9fb3cc2d86a7",
+          "prev_hash": "a9816ccf87abf4a0",
+          "commit": "cc600bb4",
+          "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        }
+      ]
     },
     "gen-lichtenberg-storm": {
-      "hash": "deada203f38bd4c3",
-      "history": []
+      "hash": "04533de375d0ebc4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T23:11:06.429Z",
+          "hash": "04533de375d0ebc4",
+          "prev_hash": "deada203f38bd4c3",
+          "commit": "cc600bb4",
+          "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        }
+      ]
     },
     "gen-liquid-cathedral-dream": {
-      "hash": "37f9a7f340a1ffa4",
-      "history": []
+      "hash": "92b3e3c8bda2b521",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T23:11:06.429Z",
+          "hash": "92b3e3c8bda2b521",
+          "prev_hash": "37f9a7f340a1ffa4",
+          "commit": "cc600bb4",
+          "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        }
+      ]
     },
     "gen-liquid-crystal-hive-mind": {
-      "hash": "4fae6eb7a7c4732d",
-      "history": []
+      "hash": "894999a66cf032c0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T23:11:06.429Z",
+          "hash": "894999a66cf032c0",
+          "prev_hash": "4fae6eb7a7c4732d",
+          "commit": "cc600bb4",
+          "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        }
+      ]
     },
     "gen-liquid-metal-cymatic-resonator": {
-      "hash": "81cd67ef016c05b7",
-      "history": []
+      "hash": "46ee86a9aa8ed55a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T23:11:06.429Z",
+          "hash": "46ee86a9aa8ed55a",
+          "prev_hash": "81cd67ef016c05b7",
+          "commit": "cc600bb4",
+          "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        }
+      ]
     },
     "gen-liquid-neon-cyber-metropolis": {
-      "hash": "84b4e5600bc9697e",
-      "history": []
+      "hash": "cf01be1185f8f4e4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T23:11:06.429Z",
+          "hash": "cf01be1185f8f4e4",
+          "prev_hash": "84b4e5600bc9697e",
+          "commit": "cc600bb4",
+          "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        }
+      ]
     },
     "gen-liquid-neon-topography": {
-      "hash": "d7ae2e4fe26e2b0b",
-      "history": []
+      "hash": "86bc849e812f6c12",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T23:11:06.429Z",
+          "hash": "86bc849e812f6c12",
+          "prev_hash": "d7ae2e4fe26e2b0b",
+          "commit": "cc600bb4",
+          "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        }
+      ]
     },
     "gen-liquid-rainbow-glass": {
-      "hash": "e2b2dbdc6af13665",
-      "history": []
+      "hash": "c9fd4a8ab74a8cf8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T23:11:06.429Z",
+          "hash": "c9fd4a8ab74a8cf8",
+          "prev_hash": "e2b2dbdc6af13665",
+          "commit": "cc600bb4",
+          "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        }
+      ]
     },
     "gen-live-studio-tab": {
       "hash": "edc06f46b37cca28",
@@ -2335,12 +2407,30 @@
       "history": []
     },
     "gen-luminescent-aether-plasma-astro-axolotl": {
-      "hash": "27d5c63a56153605",
-      "history": []
+      "hash": "ec6c859ef979551b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T23:11:06.429Z",
+          "hash": "ec6c859ef979551b",
+          "prev_hash": "27d5c63a56153605",
+          "commit": "cc600bb4",
+          "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        }
+      ]
     },
     "gen-luminescent-aether-plasma-nebula-koi": {
-      "hash": "e6c67f8bda21ceb4",
-      "history": []
+      "hash": "97f409a9239771c7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T23:11:06.429Z",
+          "hash": "97f409a9239771c7",
+          "prev_hash": "e6c67f8bda21ceb4",
+          "commit": "cc600bb4",
+          "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        }
+      ]
     },
     "gen-luminescent-chrono-fluid-astrolabe": {
       "hash": "40eed0c1817f7b7e",

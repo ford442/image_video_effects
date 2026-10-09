@@ -1,8 +1,13 @@
-// gen-lichtenberg-storm.wgsl — Interactivist upgrade (Batch 36)
-// Lichtenberg discharge with OkLab mixing, blackbody temperature, atmospheric depth.
-// Interactivity: spring-smoothed mouse electrode + velocity-reactive branching,
-// click shockwave rings, FFT-split sparkle, and emergent etched-channel memory
-// (past strikes bias future growth — self-organizing discharge paths).
+// ═══════════════════════════════════════════════════════════════════
+//  Lichtenberg Storm
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-10-10
+//  Ideas: stepped-leader return stroke racing out along every branch; violet corona sheath around etched channels (exact C blur, treble flicker)
+//  A packing: raw sim state (A = afterglow energy, etched charge, shock ring, 1; not tone-mapped)
+//  Kept from Batch 36: spring-smoothed electrode (extraBuffer 133..138), etched-channel bias, click shockwave ring, OkLab + blackbody grade, FFT-split sparkle
+// ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
 
@@ -90,14 +95,20 @@ fn ign(p: vec2<f32>) -> f32 {
     return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
 }
 
-fn licht(p: vec2<f32>, seed: vec2<f32>, branches: f32, jitter: f32, t: f32, etch: f32) -> f32 {
+fn licht(p: vec2<f32>, seed: vec2<f32>, branches: f32, jitter: f32, t: f32, etch: f32, phase: f32) -> f32 {
   let d = p - seed;
   let r = length(d);
   let a = atan2(d.y, d.x);
   let w = fbm(d * 3.0 + t * 0.1) * jitter * 3.0;
   // etch: accumulated charge history lowers the dendrite threshold along old channels
   let dend = fbm(vec2<f32>(a * branches + w, r * 6.0)) - etch;
-  return max(smoothstep(0.12, 0.0, r), smoothstep(0.55, 0.45, dend) * smoothstep(0.6, 0.0, r));
+  // Idea 1: stepped-leader return stroke — a bright head races outward along the branches; behind it the
+  // channel is hot, ahead of it the tree is only faintly ionised, then the cycle re-strikes.
+  let front = fract(t * 0.7 + phase) * 0.75;
+  let behind = smoothstep(front + 0.03, front - 0.03, r);
+  let head = exp(-(r - front) * (r - front) * 500.0);
+  let stroke = 0.45 + 0.55 * behind + 0.9 * head;
+  return max(smoothstep(0.12, 0.0, r), smoothstep(0.55, 0.45, dend) * smoothstep(0.6, 0.0, r) * stroke);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -177,23 +188,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   for (var i = 0u; i < numSeeds; i++) {
     let fi = f32(i);
     let seed = vec2<f32>(h13(vec3<f32>(fi, floor(t * 0.3 * stormFreq), 0.0)), h13(vec3<f32>(fi, floor(t * 0.3 * stormFreq), 1.0)));
-    energy = max(energy, licht(uv, seed + vec2<f32>(sin(t * 0.2 + fi), cos(t * 0.15 + fi)) * 0.1, branches, dynJitter, t, etch));
+    energy = max(energy, licht(uv, seed + vec2<f32>(sin(t * 0.2 + fi), cos(t * 0.15 + fi)) * 0.1, branches, dynJitter, t, etch, h13(vec3<f32>(fi, 7.0, 3.0))));
   }
   // Mouse electrode: the cursor is a live discharge terminal
-  let electrode = licht(uv, sm, branches * (1.2 + mouseSpeed), dynJitter, t, etch);
+  let electrode = licht(uv, sm, branches * (1.2 + mouseSpeed), dynJitter, t, etch, 0.0);
   energy = max(energy, electrode * (0.3 + 0.7 * press) * (0.55 + mouseSpeed * 0.6));
 
   let bassPulse = step(0.7, bass) * storm;
   if (bassPulse > 0.0) {
     let bs = vec2<f32>(h13(vec3<f32>(t, 0.0, 0.0)), h13(vec3<f32>(t, 0.0, 1.0)));
-    energy = max(energy, licht(uv, bs, branches * 1.5, dynJitter, t, etch) * bassPulse);
+    energy = max(energy, licht(uv, bs, branches * 1.5, dynJitter, t, etch, 0.5) * bassPulse);
   }
   let nRip = min(u32(u.config.y), 50u);
   for (var i = 0u; i < nRip; i++) {
     let rt = t - u.ripples[i].z;
     let rdecay = exp(-max(rt, 0.0) * 2.0);
     if (rt >= 0.0 && rdecay > 0.01) {
-      energy = max(energy, licht(uv, u.ripples[i].xy, branches, dynJitter, t, etch) * rdecay);
+      energy = max(energy, licht(uv, u.ripples[i].xy, branches, dynJitter, t, etch, u.ripples[i].z) * rdecay);
     }
   }
 
@@ -241,6 +252,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Phosphorescent afterglow with split-tone via OkLab
   let decayCol = mixOkLab(vec3<f32>(0.2, 0.0, 0.4), vec3<f32>(0.0, 0.6, 0.3), prevEnergy);
   col += decayCol * prevEnergy * afterglow * 0.4 * atmos;
+
+  // Idea 2: corona sheath — charged air glows violet just outside the etched channels. The halo is an exact
+  // 8-tap blur of last frame's charge (C.g) minus the channel itself, so it hugs old strikes and flickers with treble.
+  let cDims = vec2<i32>(res);
+  var haloSum = 0.0;
+  for (var k = 0; k < 4; k++) {
+    let ang = f32(k) * 1.5707963;
+    let dir = vec2<f32>(cos(ang), sin(ang));
+    let nearTap = clamp(px + vec2<i32>(dir * 5.0), vec2<i32>(0), cDims - vec2<i32>(1));
+    let farTap = clamp(px + vec2<i32>(dir * 11.0), vec2<i32>(0), cDims - vec2<i32>(1));
+    haloSum += textureLoad(dataTextureC, nearTap, 0).g * 0.6 + textureLoad(dataTextureC, farTap, 0).g * 0.4;
+  }
+  let corona = clamp(haloSum * 0.25 * 1.7 - prevCharge * 0.9, 0.0, 1.0);
+  let coronaFlicker = 0.75 + 0.25 * sin(t * 37.0 + h12(vec2<f32>(gid.xy) * 0.07) * 6.28) * (0.4 + treble);
+  col += vec3<f32>(0.42, 0.22, 1.0) * corona * coronaFlicker * (0.5 + treble * 0.9) * glow * 0.55;
 
   // Storm field background
   let field = fbm(uv * 4.0 + t * 0.2) * 0.04;

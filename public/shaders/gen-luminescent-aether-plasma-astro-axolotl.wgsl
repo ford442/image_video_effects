@@ -3,10 +3,12 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
+//  Upgraded: 2026-10-10
 //  Ideas: gill regeneration wave through fractal branch generations (bass-kicked);
 //         root-to-tip capillary plasma flow along gill filaments (mids);
-//         leucistic gold iridophore speckle on body skin (treble glint)
+//         leucistic gold iridophore speckle on body skin (treble glint);
+//         lateral-line neuromast dots with a head-to-tail pulse (air-band FFT);
+//         feathered gill fimbriae that breathe with Gill Expansion
 //  A packing: ACES display RGBA (C not read)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -156,7 +158,9 @@ fn map(p_in: vec3<f32>, snd: vec4<f32>, rip: f32) -> vec2<f32> {
 
         let gd = fi - front;
         let regrow = exp(-gd * gd * 2.0) * (0.6 + clamp(snd.x, 0.0, 1.5) * 0.6);
-        let cylinder = max(length(p_f.xz) - 0.02 * scale * (1.0 + regrow), abs(p_f.y) - 0.15 * scale * (1.0 + regrow * 0.35));
+        // Idea 5: fimbriae — ridged barbs along each filament, swelling with Gill Expansion, fringe the gill like a feather
+        let barb = pow(0.5 + 0.5 * sin(p_f.y * 80.0 / scale + fi * 2.1 + swim_time * 2.0), 2.0) * clamp(gill_expansion, 0.0, 2.0) * 0.3;
+        let cylinder = max(length(p_f.xz) - 0.02 * scale * (1.0 + regrow) * (1.0 + barb), abs(p_f.y) - 0.15 * scale * (1.0 + regrow * 0.35));
         gill_gen = select(gill_gen, fi, cylinder < d_gills);
         d_gills = min(d_gills, cylinder);
 
@@ -282,6 +286,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let fleck = smoothstep(0.72, 0.86, noise(p * 34.0 + vec3<f32>(0.0, swim_phase_skin(t), 0.0)));
             let glint = 0.35 + clamp(treble, 0.0, 1.5) * 1.1 * (0.5 + 0.5 * sin(t * 9.0 + p.y * 40.0));
             col += vec3<f32>(1.0, 0.72, 0.28) * fleck * glint * (0.25 + diff * 0.75);
+            // Idea 4: lateral-line neuromasts — a row of bioluminescent dots along each flank (z≈0 seam of the
+            // body, spaced along its y axis); a pulse runs head (+y) to tail (-y), quickened by the air-band FFT.
+            let nmCoord = p.y * 14.0;
+            let nmId = floor(nmCoord);
+            let nmDy = (fract(nmCoord) - 0.5) / 14.0;
+            let nmDot = exp(-(nmDy * nmDy + p.z * p.z) * 5200.0) * step(abs(p.y), 0.55) * smoothstep(0.05, 0.25, abs(p.x));
+            let nmPulse = pow(0.5 + 0.5 * sin(nmId * 0.55 + t * (3.0 + clamp(fft_air, 0.0, 1.5) * 4.0)), 6.0);
+            col += vec3<f32>(0.2, 0.9, 1.0) * nmDot * (0.35 + nmPulse * (0.6 + clamp(fft_air, 0.0, 1.5) * 2.0));
             col = mix(col, bg_color, 0.3); // Pick up ambient nebula light
         } else {
             // Gills: Bioluminescence synced to audio

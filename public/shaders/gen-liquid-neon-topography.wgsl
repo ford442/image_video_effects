@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: neon iso-height contour lines; liquid neon pooling in the valleys
+//  Upgraded: 2026-10-10
+//  Ideas: neon iso-height contour lines; liquid neon pooling in the valleys; downhill neon rivulets along steepest descent; shoreline foam where ridges meet the pool
 //  A packing: ACES display RGBA (C read back as colour history)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -176,6 +176,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let glowParam = u.zoom_params.z;
     let detail = u.zoom_params.w;
     let ridgeScale = max(u.zoom_params.x * 0.5, 0.001);
+    let poolLevel = -1.5 + ridgeScale * (0.14 + bass * 0.08);
 
     if (d < MAX_DIST) {
         let p = ro + rd * d;
@@ -210,6 +211,22 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let contourHue = neonPalette(floor(lineCoord + 0.5) * 0.07 + time * 0.2 * (1.0 + mids * 0.5));
         col += contourHue * contour * majorLine * glowParam * 0.6 * (1.0 - fresnel * 0.5);
 
+        // Idea 3: downhill rivulets — neon beads run along steepest descent (-grad h from the normal),
+        // only on slopes that are steep enough to shed liquid; Flow Speed sets how fast they travel.
+        let slope = length(n.xz);
+        let downhill = -n.xz / max(slope, 0.0001);
+        let advect = downhill * time * flowSpeed * 1.2;
+        let beadA = noise(p.xz * 5.0 - advect) * 0.5 + 0.5;
+        let beadB = noise(p.xz * 13.0 - advect * 1.7 + vec2<f32>(7.1, 3.3)) * 0.5 + 0.5;
+        let rivulet = smoothstep(0.55, 0.8, beadA * 0.6 + beadB * 0.5) * smoothstep(0.12, 0.45, slope);
+        col += neonPalette(p.z * 0.1 + time * 0.2 + 0.5) * rivulet * glowParam * 0.8 * (1.0 - fresnel * 0.4) * (1.0 + audioPulse * 0.2);
+
+        // Idea 4: shoreline foam — a bright, broken rim where the terrain crosses the pool level; treble sparkles it.
+        let shoreDist = abs(p.y - poolLevel);
+        let foamNoise = noise(p.xz * 18.0 + vec2<f32>(time * 0.7 * flowSpeed, -time * 0.5)) * 0.5 + 0.5;
+        let foam = (1.0 - smoothstep(0.0, 0.05 + 0.01 * d, shoreDist)) * smoothstep(0.35, 0.7, foamNoise);
+        col += vec3<f32>(0.7, 0.95, 1.1) * foam * glowParam * 0.7 * (0.6 + treble * 1.2);
+
         // Fog
         let fog = 1.0 - exp(-0.02 * d * d);
         col = mix(col, vec3<f32>(0.01, 0.01, 0.02), fog);
@@ -224,7 +241,6 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     // Idea 2: liquid neon pooling — a flat bass-lifted fluid level settles in the valleys the currents carve.
-    let poolLevel = -1.5 + ridgeScale * (0.14 + bass * 0.08);
     let tPool = (poolLevel - ro.y) / min(rd.y, -0.0001);
     let poolHit = rd.y < 0.0 && tPool > 0.0 && tPool < min(d, MAX_DIST);
     if (poolHit) {

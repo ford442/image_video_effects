@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: real viscosity drag from C history; Chladni nodal crystallization; ferrofluid spikes under the pointer
+//  Upgraded: 2026-10-10
+//  Ideas: real viscosity drag from C history; Chladni nodal crystallization; ferrofluid spikes under the pointer; Faraday capillary lattice on the antinodes; temper-colour oxide on hot crests
 //  A packing: ACES display RGBA (C read back via exact textureLoad as colour history)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -75,6 +75,12 @@ fn mapHeight(p: vec2<f32>, audio: f32, bass: f32) -> f32 {
     let hexWave = (cos(fp.x) + cos(0.5 * fp.x + 0.866 * fp.y) + cos(-0.5 * fp.x + 0.866 * fp.y)) / 3.0;
     let spikes = pow(max(hexWave, 0.0), 3.0);
     h += spikes * exp(-dist_to_mouse * 6.0) * (0.25 + bass * 0.45);
+
+    // Idea 4: Faraday capillary lattice — parametric ripples only bloom where the standing wave is strong
+    // (antinodes); a fine hexagonal lattice that shimmers with treble.
+    let fa = p * 46.0 + vec2<f32>(t * 0.9, -t * 0.6);
+    let faraday = (cos(fa.x) + cos(0.5 * fa.x + 0.866 * fa.y) + cos(-0.5 * fa.x + 0.866 * fa.y)) / 3.0;
+    h += faraday * smoothstep(0.35, 1.1, abs(h)) * (0.05 + plasmaBuffer[0].z * 0.10);
 
     // Add central audio peak
     h += exp(-r * 3.0) * audio * 0.5;
@@ -231,6 +237,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let glintPhase = sin(dot(pos.xz, vec2<f32>(91.7, 57.3)) + u.config.x * 7.0) * 0.5 + 0.5;
         let crystal = vec3<f32>(0.85, 0.95, 1.1) * (0.35 + crystalSpec * 2.0 + glintPhase * treble * 0.8);
         color = mix(color, color * 0.6 + crystal, node * 0.7);
+
+        // Idea 5: temper-colour oxide — hot crests of the metal carry heat-tint films, straw to violet to blue,
+        // stronger on bass hits (the colours steel takes when heated), masked to the crests only.
+        let crest = smoothstep(0.02, 0.10, hSurf);
+        let heat = smoothstep(0.02, 0.16, hSurf);
+        let temper = mix(mix(vec3<f32>(1.0, 0.8, 0.4), vec3<f32>(0.55, 0.25, 0.65), smoothstep(0.0, 0.5, heat)),
+                         vec3<f32>(0.15, 0.3, 0.85), smoothstep(0.5, 1.0, heat));
+        color = mix(color, color * temper * 1.5, crest * (0.3 + bass * 0.5));
 
         // Viscosity (temporal accumulation / motion blur effect approximation)
         // Since we can't easily read back history cleanly here without a dedicated pass,

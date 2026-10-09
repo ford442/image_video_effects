@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: liquid neon rivers flowing down tower veins; wet-street neon reflections; gravity-warp horizon ring
+//  Upgraded: 2026-10-10
+//  Ideas: liquid neon rivers flowing down tower veins; wet-street neon reflections; gravity-warp horizon ring; neon light-trail traffic in the street canyons; flickering lit-window lattice with bass-flash neon panes
 //  A packing: ACES display RGBA (C read back via exact textureLoad as neon persistence history)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -224,6 +224,20 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             // Concrete
             col = vec3<f32>(0.045, 0.05, 0.07) * (dif * 0.7 + amb);
             
+            // Idea 5: lit-window lattice on the tower faces — most panes dark, a few warm and flickering,
+            // and the rare pane flashes neon on a bass hit.
+            let faceLateral = select(p.x, p.z, abs(n.x) > abs(n.z));
+            let winGrid = vec2<f32>(faceLateral * 1.8, p.y * 1.4);
+            let winCell = floor(winGrid);
+            let winFrac = fract(winGrid) - 0.5;
+            let winHash = fract(sin(dot(winCell, vec2<f32>(12.9898, 78.233)) + hHash * 50.0) * 43758.5453);
+            let winFrame = step(abs(winFrac.x), 0.26) * step(abs(winFrac.y), 0.3);
+            let facade = smoothstep(0.35, 0.1, abs(n.y)) * step(0.3, p.y);
+            let winOn = step(0.7, winHash) * (0.55 + 0.45 * step(0.25, fract(winHash * 31.0 + time * 0.35)));
+            let winFlash = step(0.93, winHash) * clamp(bass, 0.0, 1.5);
+            let winNeon = mix(vec3<f32>(0.0, 1.0, 1.2), vec3<f32>(1.1, 0.0, 1.1), fract(winHash * 17.0));
+            col += (vec3<f32>(1.0, 0.72, 0.38) * winOn * 0.45 + winNeon * winFlash * 1.6) * winFrame * facade;
+
             // Subtle scanning lines
             let scan = fract(length(p.xz) * 0.08 - time * 3.0);
             if (scan < 0.04) {
@@ -237,6 +251,21 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let apronHue = fract(time * 0.25 + hHash);
             let apronCol = mix(vec3<f32>(0.0, 1.0, 1.2), vec3<f32>(1.1, 0.0, 1.1), apronHue);
             col += apronCol * exp(-veinEdge * 3.0) * groundMask * 0.9 * u.zoom_params.x * (1.0 + bass * 0.5);
+
+            // Idea 4: neon traffic — liquid light trails stream along the street canyons between towers.
+            // Two lanes per side of each street centreline, opposite directions either side, faster on bass.
+            let cl = vec2<f32>(repSize * 0.5 - abs(qxz.x), repSize * 0.5 - abs(qxz.y));
+            let side = vec2<f32>(select(-1.0, 1.0, qxz.x > 0.0), select(-1.0, 1.0, qxz.y > 0.0));
+            let cellIdXZ = floor((wp.xz + repSize * 0.5) / repSize);
+            let laneSeed = fract(sin(dot(cellIdXZ, vec2<f32>(7.1, 13.7))) * 4375.5453);
+            let trailSpeed = 1.2 + bass * 2.2;
+            let trailZ = pow(fract(p.z * 0.11 - side.x * time * trailSpeed + laneSeed * 9.0), 14.0);
+            let trailX = pow(fract(p.x * 0.11 - side.y * time * trailSpeed + laneSeed * 5.0), 14.0);
+            let laneZ = exp(-pow((cl.x - 0.45) / 0.09, 2.0));
+            let laneX = exp(-pow((cl.y - 0.45) / 0.09, 2.0));
+            let trailColZ = select(vec3<f32>(0.1, 0.9, 1.2), vec3<f32>(1.2, 0.15, 0.35), side.x > 0.0);
+            let trailColX = select(vec3<f32>(0.1, 0.9, 1.2), vec3<f32>(1.2, 0.15, 0.35), side.y > 0.0);
+            col += (trailColZ * trailZ * laneZ + trailColX * trailX * laneX) * groundMask * 2.4 * u.zoom_params.x;
 
             // Idea 3: gravity-warp horizon ring — the warp's 12-unit edge glows on the street.
             let mouseDist = length(p.xz - gravityMousePos().xz);
