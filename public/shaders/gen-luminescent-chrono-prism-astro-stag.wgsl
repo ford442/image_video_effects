@@ -10,27 +10,8 @@
 // Raymarched prismatic void-stag with volumetric aurora bloom.
 // Outputs: writeTexture, writeDepthTexture (march distance, far = 1), dataTextureA (display history)
 
-struct Uniforms {
-    config: vec4<f32>,       // .x = time (seconds), .y = rippleCount (0-50, NOT audio), .zw = resolution
-    zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0-1 canvas: y=0 top), .w = mouse_down
-    zoom_params: vec4<f32>,  // x=Temporal Distortion, y=Rift Density, z=Fractal Intensity, w=Prismatic Refraction
-    ripples: array<vec4<f32>, 50>,
-};
-
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
+#include "_prelude.wgsl"
+// zoom_params: x=Temporal Distortion, y=Rift Density, z=Fractal Intensity, w=Prismatic Refraction
 
 fn acesTone(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + vec3<f32>(0.03))) / (x * (2.43 * x + vec3<f32>(0.59)) + vec3<f32>(0.14)),
