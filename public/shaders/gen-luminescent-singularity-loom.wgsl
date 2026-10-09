@@ -1,7 +1,13 @@
-// ----------------------------------------------------------------
-// Luminescent Singularity Loom
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Luminescent Singularity Loom
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-10-10
+//  Ideas: gravitational ray-bending around the singularity (Einstein-ring stretch of the thread lattice); weft shuttle beads running along the folded threads; bass-plucked thread vibration
+//  A packing: ACES display RGBA (was the surface normal; C is never read)
+// ═══════════════════════════════════════════════════════════════════
+// zoom_params: x = Thread Density, y = Loom Speed, z = Glow Intensity, w = Color Shift
 
 #include "_prelude.wgsl"
 
@@ -15,6 +21,11 @@ fn rot2D(a: f32) -> mat2x2<f32> {
     return mat2x2<f32>(c, -s, s, c);
 }
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + vec3<f32>(0.03))) / (x * (2.43 * x + vec3<f32>(0.59)) + vec3<f32>(0.14)),
+                 vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 // Helper: Palette
 fn palette(t: f32, shift: f32) -> vec3<f32> {
     let a = vec3<f32>(0.5, 0.5, 0.5);
@@ -24,8 +35,16 @@ fn palette(t: f32, shift: f32) -> vec3<f32> {
     return a + b * cos(TAU * (c * t + d));
 }
 
-// Map function (SDF)
-fn map(p: vec3<f32>) -> vec2<f32> {
+// Pluck: bass twangs the threads. A travelling sine along the thread axis
+// swells the cylinder radius; slider-independent, silent at zero bass.
+fn threadPluck(axis: f32, fi: f32, tm: f32) -> f32 {
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    return bass * 0.55 * sin(axis * 5.0 - tm * 14.0 + fi * 1.7);
+}
+
+// Thread lattice. Returns (distance, thread-axis coordinate, thread index) of
+// the nearest thread so the shading can run shuttle beads along it.
+fn threadField(p: vec3<f32>) -> vec3<f32> {
     // Loom distortion
     var q = p;
     let time = u.config.x * u.zoom_params.y;
@@ -47,6 +66,8 @@ fn map(p: vec3<f32>) -> vec2<f32> {
 
     // Threads (fractal cylinders)
     var d = 100.0;
+    var axisBest = 0.0;
+    var idxBest = 0.0;
     let density = u.zoom_params.x * 2.0 + 1.0;
 
     for (var i = 0; i < 4; i++) {
@@ -54,9 +75,20 @@ fn map(p: vec3<f32>) -> vec2<f32> {
         q = abs(q) - vec3<f32>(0.5, 0.5, 0.5) * density;
         let qr = q.xy * rot2D(time * 0.1 + fi);
         q = vec3<f32>(qr, q.z);
-        let cyl = length(q.xy) - 0.05 * (fi + 1.0);
-        d = min(d, cyl);
+        // Idea 3: plucked thread — radius swells along a travelling wave
+        let cyl = length(q.xy) - 0.05 * (fi + 1.0) * (1.0 + threadPluck(q.z, fi, time));
+        if (cyl < d) {
+            d = cyl;
+            axisBest = q.z;
+            idxBest = fi;
+        }
     }
+    return vec3<f32>(d, axisBest, idxBest);
+}
+
+// Map function (SDF)
+fn map(p: vec3<f32>) -> vec2<f32> {
+    let d = threadField(p).x;
 
     // Central Singularity
     let sphere = length(p) - 0.8;
@@ -92,12 +124,22 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Camera setup
     let ro = vec3<f32>(0.0, 0.0, -4.0);
-    let rd = normalize(vec3<f32>(uv, 1.0));
+    var rd = normalize(vec3<f32>(uv, 1.0));
+
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
     var t: f32 = 0.0;
     var d: f32 = 0.0;
     var m: f32 = 0.0;
     var p: vec3<f32>;
+    var bend: f32 = 0.0;   // accumulated deflection, drives the lensing rim glow
+
+    // Idea 1: gravitational ray-bending. Each march step turns the ray toward
+    // the singularity in proportion to step length over squared distance, so
+    // threads behind the core wrap round it into a stretched Einstein ring.
+    let lensK = 0.32 * (1.0 + bass * 0.5);
 
     var i: i32 = 0;
     for (i = 0; i < 100; i++) {
@@ -106,12 +148,18 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         d = res.x;
         m = res.y;
         if (d < 0.001 || t > 20.0) { break; }
+        let r2 = dot(p, p);
+        let pull = lensK * d / (r2 + 0.6);
+        rd = normalize(rd - p * pull / sqrt(r2 + 1e-4));
+        bend += pull;
         t += d;
     }
 
     var col = vec3<f32>(0.05, 0.0, 0.1); // Base void color
     var depth = 1.0;
     var normal = vec3<f32>(0.0);
+    var beadAmt: f32 = 0.0;
+    var sssOut: f32 = 0.0;
 
     if (t < 20.0) {
         normal = get_normal(p);
@@ -132,9 +180,20 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         col = baseCol * (dif * 0.5 + amb * 0.5);
         col += baseCol * sssGlow; // Add subsurface glow
+        sssOut = sssGlow;
 
         // Add fake emission
         col += baseCol * u.zoom_params.z * smoothstep(0.8, 1.0, 1.0 - m);
+
+        // Idea 2: weft shuttle beads. Bright beads run along the nearest
+        // thread (its folded axis coordinate), each thread at its own speed
+        // and direction; mids quicken the shuttles.
+        let th = threadField(p);
+        let loomT = u.config.x * u.zoom_params.y;
+        let beadWave = sin(th.y * 2.4 - loomT * (3.0 + th.z * 1.3 + mids * 3.0) * select(1.0, -1.0, (i32(th.z) % 2) == 1) + th.z * 2.0);
+        let bead = smoothstep(0.92, 1.0, beadWave) * smoothstep(0.12, 0.0, th.x) * smoothstep(0.5, 0.9, m);
+        beadAmt = bead;
+        col += palette(m + 0.35 + th.z * 0.12, u.zoom_params.w) * bead * (1.2 + u.zoom_params.z * 1.5) * (1.0 + treble * 0.4);
 
         depth = t / 20.0;
     }
@@ -142,10 +201,18 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Fog / atmospheric scattering
     col = mix(col, vec3<f32>(0.05, 0.0, 0.1), 1.0 - exp(-0.02 * t * t));
 
-    // Gamma correction
-    col = pow(col, vec3<f32>(1.0 / 2.2));
+    // Lensing rim: light bent hardest near the singularity warms the void
+    col += palette(0.15 + u.zoom_params.w, u.zoom_params.w) * min(bend, 1.5) * 0.12 * u.zoom_params.z;
 
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+    // ACES on display RGB (replaces the plain gamma curve)
+    let mapped = aces(max(col, vec3<f32>(0.0)) * 1.25);
+
+    // Semantic alpha: surface coverage, subsurface glow, beads, lensing halo
+    let hitMask = select(0.0, 1.0, t < 20.0);
+    let alpha = clamp(0.06 + hitMask * 0.82 + sssOut * 0.03 + beadAmt * 0.12 + min(bend, 1.0) * 0.1, 0.0, 1.0);
+    let outColor = vec4<f32>(mapped, alpha);
+
+    textureStore(writeTexture, vec2<i32>(id.xy), outColor);
     textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(normal, 1.0));
+    textureStore(dataTextureA, vec2<i32>(id.xy), outColor);
 }

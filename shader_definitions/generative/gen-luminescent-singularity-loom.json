@@ -11,7 +11,10 @@
     "domain-warping",
     "subsurface-scattering",
     "hdr-bloom",
-    "mouse-interaction"
+    "mouse-interaction",
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
   ],
   "tags": [
     "organic",
@@ -64,5 +67,11 @@
       "mapping": "zoom_params.w",
       "description": "Shift the color palette"
     }
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Thread Density", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "index": 1, "name": "Loom Speed", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "index": 2, "name": "Glow Intensity", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+    { "index": 3, "name": "Color Shift", "default": 0.0, "min": 0.0, "max": 1.0, "step": 0.01 }
   ]
 }

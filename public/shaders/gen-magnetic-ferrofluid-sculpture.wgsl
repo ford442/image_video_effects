@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-09-14
-//  Ideas: Taylor-cone droplet pinch-off from spike tips on bass; field-induced dipole chain bridges between neighbouring spike tips (Magnetic Pull / mouse held)
+//  Upgraded: 2026-10-10
+//  Ideas: Taylor-cone droplet pinch-off from spike tips on bass; field-induced dipole chain bridges between neighbouring spike tips (Magnetic Pull / mouse held); spike lean toward the cursor magnet (cone shear, tips/chains follow); thin-film colour bands climbing spike height
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -143,21 +143,32 @@ fn ferrofluid(p: vec3<f32>, time: f32, bass: f32, spikeDensity: f32,
     let spikeTheta = 1.57 + sin(fi * 2.3 + time * 0.3) * 0.8;
     let spikeDir = vec3<f32>(sin(spikeTheta) * cos(spikeAngle), cos(spikeTheta), sin(spikeTheta) * sin(spikeAngle));
     let spikeTip = spikeDir * (baseRadius + spikeBaseHeight * (1.0 + sin(time * 2.0 + fi) * 0.3));
-    let spikeD = sdCone(pos - spikeTip + spikeDir * spikeBaseHeight * 0.5, spikeBaseHeight * 0.5, 0.08 * viscosity);
+    // Native idea 3: spike lean. Cones on the cursor-facing hemisphere shear
+    // toward the magnet (axis xz offset grows with height along the cone), by
+    // an amount set by Magnetic Pull (which the held mouse already boosts).
+    let leanDir = normalize(mousePos - spikeTip + vec3<f32>(1e-4));
+    let leanFacing = smoothstep(-0.2, 0.8, dot(spikeDir, normalize(mousePos + vec3<f32>(1e-4))));
+    let lean = clamp(magneticPull, 0.0, 1.0) * 0.7 * leanFacing;
+    var pCone = pos - spikeTip + spikeDir * spikeBaseHeight * 0.5;
+    pCone.x -= leanDir.x * pCone.y * lean;
+    pCone.z -= leanDir.z * pCone.y * lean;
+    let spikeD = sdCone(pCone, spikeBaseHeight * 0.5, 0.08 * viscosity);
     d = smin(d, spikeD, 0.15 * viscosity);
+    // droplets and chain beads follow the leaned tip
+    let leanedTip = spikeTip + vec3<f32>(leanDir.x, 0.0, leanDir.z) * lean * spikeBaseHeight * 0.5;
 
     // Taylor-cone ejection on bass (per-spike phase offset).
     if (eject > 0.01) {
       let cycle = fract(time * (0.35 + bass * 0.6) * (1.6 - viscosity) + fi * 0.37);
-      extras = min(extras, taylorConeDroplet(pos, spikeTip, spikeDir, eject, cycle, viscosity));
+      extras = min(extras, taylorConeDroplet(pos, leanedTip, spikeDir, eject, cycle, viscosity));
     }
     // Dipole chain bridging this tip to the previous one.
     if (i == 0) {
-      firstTip = spikeTip;
+      firstTip = leanedTip;
     } else if (chainStrength > 0.05) {
-      extras = min(extras, dipoleChain(pos, prevTip, spikeTip, chainStrength, time));
+      extras = min(extras, dipoleChain(pos, prevTip, leanedTip, chainStrength, time));
     }
-    prevTip = spikeTip;
+    prevTip = leanedTip;
   }
   if (chainStrength > 0.05) {
     extras = min(extras, dipoleChain(pos, prevTip, firstTip, chainStrength, time));
@@ -345,7 +356,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let baseMetal = vec3<f32>(0.08, 0.09, 0.12);
 
     // Iridescent thin-film
-    let ired = iridescent(nDotV, time * 0.3 + mid * 2.0) * iridescence;
+    // Native idea 4: thin-film thickness grows with height above the bulk
+    // sphere, so colour bands climb each spike and droplet (zero on the bulk,
+    // where the old viewing-angle colour is unchanged).
+    let filmH = clamp(length(hitPos) - (1.2 + bass * 0.3), 0.0, 1.2);
+    let ired = iridescent(nDotV + filmH * 1.8, time * 0.3 + mid * 2.0) * iridescence;
     let metal = baseMetal + ired * 0.7;
 
     // Specular highlights (chrome-like)

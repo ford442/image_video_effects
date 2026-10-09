@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: sand grains bounced off antinodes and packed onto nodal lines; Faraday subharmonic surface ripples above a bass drive threshold
+//  Upgraded: 2026-10-10
+//  Ideas: sand grains bounced off antinodes and packed onto nodal lines; Faraday subharmonic surface ripples above a bass drive threshold; sand streaming down the |c| gradient (flow-map advected); meniscus specular glint from the plate-mode slope
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -154,6 +154,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let antinode = smoothstep(0.2, 0.8, abs(c_val));
     c_val += faraday * faradayGain * antinode * 0.25;
 
+    // Plate-mode gradient (base modes only, ripples excluded): grains slide down
+    // the gradient of |c| toward the nodal lines, and the same gradient is the
+    // slope of the fluid surface for the meniscus glint.
+    let cpBase = uv_dist * 2.0 - vec2<f32>(1.0);
+    let gE = 0.01;
+    let c0 = chladni_multi(cpBase, n, m, t * 2.0);
+    let gx = chladni_multi(cpBase + vec2<f32>(gE, 0.0), n, m, t * 2.0) - chladni_multi(cpBase - vec2<f32>(gE, 0.0), n, m, t * 2.0);
+    let gy = chladni_multi(cpBase + vec2<f32>(0.0, gE), n, m, t * 2.0) - chladni_multi(cpBase - vec2<f32>(0.0, gE), n, m, t * 2.0);
+    let gradAbs = select(-1.0, 1.0, c0 >= 0.0) * vec2<f32>(gx, gy) / (2.0 * gE);
+    let gradLen = length(gradAbs);
+    let gradDir = gradAbs / max(gradLen, 1e-3);
+
     let ridge = 1.0 - smoothstep(0.0, 0.18, voronoiRidge(uv * 8.0 + velocity * 0.2));
     let mouse_uv = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
     let d_mouse = distance(uv, mouse_uv);
@@ -172,7 +184,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let intensity = smoothstep(0.18, 0.0, settled) * param_glow * (1.0 + bass * 0.5 + treble * 0.3);
 
     // Sand accumulation on nodal lines
-    let sand = sandGrains(uv * vec2<f32>(aspect, 1.0), abs(c_val) * damp, u.config.x, treble);
+    // Idea 3: gradient-streaming sand. Two phase-offset samples (flow-map
+    // blend) advect the grain lattice along the |c| gradient, so grains stream
+    // toward nodal lines and keep streaming without a reset pop.
+    let flowAmp = 0.022 * (0.4 + clamp(gradLen * 0.08, 0.0, 1.0));
+    let ph0 = fract(u.config.x * 0.4);
+    let ph1 = fract(ph0 + 0.5);
+    let wFlow = 1.0 - abs(2.0 * ph0 - 1.0);
+    let pSand = uv * vec2<f32>(aspect, 1.0);
+    let sandA = sandGrains(pSand + gradDir * ph0 * flowAmp, abs(c_val) * damp, u.config.x, treble);
+    let sandB = sandGrains(pSand + gradDir * ph1 * flowAmp, abs(c_val) * damp, u.config.x, treble);
+    let sand = mix(sandB, sandA, wFlow);
 
     let warm = blackbodyRGB(3500.0 + bass * 3000.0 + sin(t * 0.7) * 1000.0) * intensity * 3.0;
     let cool = blackbodyRGB(8500.0 + cos(t * 0.4) * 2000.0) * (intensity * 0.6 + ridge * 0.8);
@@ -180,6 +202,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sandCol = vec3<f32>(1.0, 0.86, 0.6) * (0.35 + intensity * 0.5) * min(param_glow, 2.5);
     hdr = hdr + sandCol * sand * 0.8;
     hdr = hdr + vec3<f32>(0.4, 0.8, 1.0) * max(faraday, 0.0) * faradayGain * antinode * 0.5 * param_glow;
+    // Idea 4: meniscus glint. The fluid film's slope is the plate-mode
+    // gradient; a key light + sky tint give a wet specular on antinode slopes.
+    let slopeN = normalize(vec3<f32>(-gradAbs * 0.035 * (0.4 + param_fluid), 1.0));
+    let keyL = normalize(vec3<f32>(-0.45, 0.55, 0.75));
+    let halfV = normalize(keyL + vec3<f32>(0.0, 0.0, 1.0));
+    let meniscusSpec = pow(max(dot(slopeN, halfV), 0.0), 70.0);
+    let skyTint = vec3<f32>(0.35, 0.6, 1.0) * (0.5 + 0.5 * slopeN.y) * (1.0 - slopeN.z) * 2.0;
+    let wet = smoothstep(0.1, 0.7, abs(c_val)) * damp;
+    hdr = hdr + (vec3<f32>(0.9, 0.95, 1.0) * meniscusSpec * 1.6 + skyTint * 0.12) * wet * (0.5 + param_glow * 0.5) * (1.0 + treble * 0.4);
     let luma = dot(hdr, vec3<f32>(0.2126, 0.7152, 0.0722));
     let alpha = clamp(intensity * 0.7 + luma * 0.25 + ridge * 0.15 + sand * 0.2, 0.0, 1.0);
     let mapped = aces(hdr) + vec3<f32>((ign(vec2<f32>(coord)) - 0.5) / 255.0);

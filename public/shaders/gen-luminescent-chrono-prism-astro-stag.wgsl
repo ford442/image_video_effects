@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-13
-//  Ideas: recursive forked antler tines (Fractal Intensity); per-channel prism dispersion of the aurora rift (Prismatic Refraction); chrono-echo afterimage from exact C history (Temporal Distortion)
+//  Upgraded: 2026-10-10
+//  Ideas: recursive forked antler tines (Fractal Intensity); per-channel prism dispersion of the aurora rift (Prismatic Refraction); chrono-echo afterimage from exact C history (Temporal Distortion); constellation hide (stars + Voronoi-seam filaments); antler sap pulse burr-to-tip
 //  A packing: ACES display RGBA (C read back as colour for the chrono-echo)
 // ═══════════════════════════════════════════════════════════════════
 // Raymarched prismatic void-stag with volumetric aurora bloom.
@@ -86,6 +86,39 @@ fn riftColor(dir: vec3<f32>, time: f32, rift: f32) -> vec3<f32> {
     return vec3<f32>(0.01, 0.02, 0.05)
         + (vec3<f32>(0.1, 0.9, 0.6) * band + vec3<f32>(0.6, 0.2, 1.0) * band * fold * 0.6)
         * (0.35 + 0.35 * rift);
+}
+
+// Idea 4: constellation hide. Star points sit on a jittered 3D lattice in the
+// stag's own space (they travel with it when dragged); the F2-F1 Voronoi seam
+// between neighbouring cells is drawn as a thin filament, so stars read as
+// joined by constellation lines. Returns (star glow, filament).
+fn constellationHide(sp: vec3<f32>, time: f32, mids: f32) -> vec2<f32> {
+    let q = sp * 3.4;
+    let ip = floor(q);
+    let fp = fract(q);
+    var f1 = 8.0;
+    var f2 = 8.0;
+    var starId = 0.0;
+    for (var k = -1; k <= 1; k = k + 1) {
+        for (var j = -1; j <= 1; j = j + 1) {
+            for (var i = -1; i <= 1; i = i + 1) {
+                let g = vec3<f32>(f32(i), f32(j), f32(k));
+                let h = hash3(ip + g);
+                let d = length(g + h - fp);
+                if (d < f1) {
+                    f2 = f1;
+                    f1 = d;
+                    starId = fract(h.x * 91.7 + h.y * 13.1);
+                } else if (d < f2) {
+                    f2 = d;
+                }
+            }
+        }
+    }
+    let twinkle = 0.65 + 0.35 * sin(time * 2.4 + starId * 40.0) * (0.5 + mids);
+    let star = step(0.55, starId) * exp(-f1 * f1 * 110.0) * twinkle;
+    let line = exp(-(f2 - f1) * 22.0) * step(0.35, starId) * 0.55;
+    return vec2<f32>(star, line);
 }
 
 // --- SCENE MAP ---
@@ -174,6 +207,30 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Mids drive an iridescent spectral sheen across the surface
         let sheen = sin(dot(n, rd) * 8.0 + time * 2.0 + mids * 6.0) * 0.5 + 0.5;
         col += vec3<f32>(1.0, 0.4, 0.7) * sheen * mids * 0.4 * fresnel;
+
+        // Stag-local frame (map() drags the stag with the cursor) for the hide + antler masks
+        let mouseL = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0)) - vec2<f32>(0.5);
+        let sp = p - vec3<f32>(mouseL.x * 2.0, -mouseL.y * 2.0, 0.0);
+        var stp = sp;
+        stp.x = abs(stp.x);
+        let bodyD = sdCapsule(sp, vec3<f32>(0.0, 0.0, -1.0), vec3<f32>(0.0, 0.0, 1.0), 0.5);
+        let beamA = vec3<f32>(0.3, 0.5, 1.0);
+        let beamB = vec3<f32>(0.8, 1.5, 1.2);
+        let antD = min(sdCapsule(stp, beamA, beamB, 0.1), sdAntlerTines(stp, beamA, beamB, time, params.z));
+        let antlerMask = smoothstep(0.03, 0.25, bodyD - antD);
+
+        // Idea 4: constellation hide on the body, gated by Rift Density so the
+        // hide fills in as the aurora rift opens
+        let consts = constellationHide(sp, time, mids);
+        let hideAmt = (1.0 - antlerMask) * (0.35 + 0.65 * clamp(params.y, 0.0, 1.0));
+        col += vec3<f32>(0.75, 0.95, 1.0) * consts.x * hideAmt * 1.4;
+        col += vec3<f32>(0.35, 0.7, 1.0) * consts.y * hideAmt * 0.5;
+
+        // Idea 5: antler sap pulse. Light climbs each antler from the burr
+        // (beamA) out to the tine tips; bass quickens the wave.
+        let sapR = length(stp - beamA);
+        let sapWave = pow(0.5 + 0.5 * sin(sapR * 5.5 - time * (2.0 + bass * 2.5)), 6.0);
+        col += vec3<f32>(1.0, 0.65, 0.35) * sapWave * antlerMask * exp(-sapR * 0.7) * (0.6 + 0.8 * params.z);
 
         // Idea 2: spectral prism dispersion — per-channel IOR spread
         let spread = 0.018 * params.w * (1.0 + treble * 0.5);

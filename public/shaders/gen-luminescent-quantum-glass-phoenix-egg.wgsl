@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: voronoi shell cracks leaking ember light; glass caustic threads; ember afterglow memory from exact C
+//  Upgraded: 2026-10-10
+//  Ideas: voronoi shell cracks leaking ember light; glass caustic threads; ember afterglow memory from exact C; hatching pip (bass-shivered shell + white-hot hole); feather-barb filaments in the core volume
 //  A packing: raw fields — x=ember heat (decayed, read back from C.x), y=core density, z=fog accum, w=alpha (not tone-mapped)
 // ═══════════════════════════════════════════════════════════════════
 // History: Visualist upgrade — multi-source lighting, volumetric internal
@@ -133,13 +133,20 @@ fn causticThreads(p: vec3<f32>, time: f32) -> f32 {
     return line * line * line * line;
 }
 
+// Idea 4: hatching pip. One fixed point on the shell (egg space) where the
+// chick is breaking out: the shell shivers around it on bass and a white-hot
+// hole opens with Core Activity.
+const PIP_DIR: vec3<f32> = vec3<f32>(0.29, -0.10, 0.95);
+
 // Egg outer shell SDF
 fn mapEgg(p: vec3<f32>) -> f32 {
     var p2 = p;
     p2.y *= 1.0 - 0.2 * p.y;
     let base = length(p2) - 1.5;
     let noise = snoise(p * vec3<f32>(5.0)) * 0.05;
-    return base + noise;
+    let pipNear = smoothstep(0.55, 0.98, dot(normalize(p + vec3<f32>(1e-5)), normalize(PIP_DIR)));
+    let tremor = clamp(plasmaBuffer[0].x, 0.0, 1.0) * 0.02 * sin(p.y * 14.0 + p.x * 9.0 + u.config.x * 26.0) * pipNear;
+    return base + noise + tremor;
 }
 
 // Inner plasma core SDF
@@ -250,6 +257,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 density += 0.04 * glow;
                 let coreCol = hsv2rgb(vec3<f32>(hue + fbm(pIn)*0.2, 0.85, 1.0));
                 colCore += coreCol * 0.06 * glow;
+                // Idea 5: feather barbs. Radial filaments sweep the core volume
+                // (azimuth-banded, wound by radius, drifting with time) like a
+                // folded phoenix plume; denser where the core is thick.
+                let barbAng = atan2(pIn.y, pIn.x);
+                let barbR = length(pIn);
+                let barb = pow(abs(sin(barbAng * 14.0 + barbR * 18.0 - time * 1.4)), 10.0)
+                         * smoothstep(0.0, 0.6, -dCore + 0.05);
+                colCore += hsv2rgb(vec3<f32>(fract(hue + 0.09), 0.65, 1.0)) * barb * 0.07 * glow;
+                density += barb * 0.012 * glow;
             }
 
             // Tendril emissive surface
@@ -287,9 +303,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let caustic = causticThreads(p, time) * (1.0 - fresnel) * (0.3 + density) * glow * (0.7 + mids * 0.5);
         let causticCol = mix(hsv2rgb(vec3<f32>(hue, 0.5, 1.0)), vec3<f32>(1.0, 0.95, 0.85), 0.5);
 
-        col = colCore * (1.0 - crack * 0.25) + shellLit * (1.0 - crack * 0.7) + iris * (1.0 + treble * 0.3)
-            + ember * leak + causticCol * caustic * 1.4;
-        emission = density + fresnel * 1.5 + leak * 0.8 + caustic * 0.5;
+        // Idea 4: the pip. Angular radius grows with Core Activity and bass;
+        // the shell is knocked out inside it and the core burns through.
+        let pipCos = dot(normalize(p), normalize(PIP_DIR));
+        let pipAng = acos(clamp(pipCos, -1.0, 1.0));
+        let pipR = 0.06 + 0.09 * clamp(act, 0.0, 1.5) * (1.0 + bass * 0.6) + held * 0.05;
+        let pipHole = 1.0 - smoothstep(pipR * 0.55, pipR, pipAng);
+        let pipRim = exp(-abs(pipAng - pipR) * 40.0);
+        let pipHot = vec3<f32>(1.6, 1.15, 0.8) * (pipHole * (1.0 + density) + pipRim * 0.5) * glow;
+        let shellKeep = 1.0 - pipHole;
+
+        col = colCore * (1.0 - crack * 0.25) + (shellLit * (1.0 - crack * 0.7) + iris * (1.0 + treble * 0.3)) * shellKeep
+            + ember * leak + causticCol * caustic * 1.4 * shellKeep + pipHot;
+        emission = density + fresnel * 1.5 * shellKeep + leak * 0.8 + caustic * 0.5 + pipHole * 0.8;
     }
 
     // Background cosmic dust + god rays

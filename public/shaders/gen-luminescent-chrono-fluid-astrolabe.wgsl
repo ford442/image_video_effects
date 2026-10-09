@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: engraved limb graduations on every ring; geared outer mater + radius-ratio gear train; rete star-chart plate (almucantars, azimuths, sidereal stars)
+//  Upgraded: 2026-10-10
+//  Ideas: engraved limb graduations on every ring; geared outer mater + radius-ratio gear train; rete star-chart plate (almucantars, azimuths, sidereal stars); ecliptic circle with 12 sign ticks + riding sun bead; cursor-led alidade sight-line that flares crossed stars
 //  A packing: ACES display RGBA (C read back as colour history, exact textureLoad)
 // ═══════════════════════════════════════════════════════════════════
 // Batch 36 (Optimizer) base kept: coarse->refined SDF (fluid noise culled
@@ -33,6 +33,9 @@ const GEAR_TEETH: f32 = 36.0;
 const GEAR_TOOTH_H: f32 = 0.025;
 // Idea 3: rete plate latitude (stereographic almucantar geometry)
 const PLATE_LAT: f32 = 0.72;
+// Idea 4: ecliptic circle (eccentric to the plate; obliquity offset)
+const ECLIPTIC_R: f32 = 1.25;
+const ECLIPTIC_OFFSET: f32 = 0.38;
 
 fn rot2(a: f32) -> mat2x2<f32> {
     let s = sin(a);
@@ -219,8 +222,41 @@ fn retePlate(uv: vec2<f32>, ctx: SceneCtx, time: f32, mids: f32) -> vec3<f32> {
     let starPos = (cell + vec2<f32>(0.3 + 0.4 * fract(h * 17.0), 0.3 + 0.4 * fract(h * 31.0))) / 22.0;
     let sd = length(su - starPos) * 22.0;
     let twinkle = 0.7 + 0.3 * sin(time * 3.0 + h * 50.0) * (0.4 + mids);
-    let star = step(0.9, h) * exp(-sd * sd * 60.0) * twinkle;
-    return (vec3<f32>(0.85, 0.62, 0.25) * lines * 0.22 + vec3<f32>(0.75, 0.9, 1.2) * star * 0.9) * plateMask;
+
+    // Idea 5: alidade sight-line. A sighting rule through the core follows the
+    // cursor (drifts slowly when the pointer is parked at the plate centre) and
+    // flares every star it crosses; the rule itself is a hair-thin lit edge.
+    let mw = ctx.mouseWorld;
+    let aliAng = select(ctx.animTime * 0.12, atan2(mw.y, mw.x), length(mw) > 0.15);
+    let aliDir = vec2<f32>(cos(aliAng), sin(aliAng));
+    let aliPerp = abs(dot(pu, vec2<f32>(-aliDir.y, aliDir.x)));
+    let aliAlong = dot(pu, aliDir);
+    let aliMask = smoothstep(-2.0, -1.7, aliAlong) * (1.0 - smoothstep(1.7, 2.0, aliAlong));
+    let flare = exp(-aliPerp * aliPerp * 220.0) * aliMask;
+    let rule = exp(-aliPerp * 260.0) * aliMask * (0.5 + 0.5 * step(0.0, aliAlong));
+
+    let star = step(0.9, h) * exp(-sd * sd * 60.0) * twinkle * (1.0 + 3.5 * flare);
+
+    // Idea 4: ecliptic circle. Eccentric to the plate centre (obliquity offset),
+    // twelve zodiac divisions along it, and a sun bead riding it with the clock.
+    let eclC = vec2<f32>(0.0, -ECLIPTIC_OFFSET);
+    let eclV = pu - eclC;
+    let eclR = length(eclV);
+    let eclBand = exp(-abs(eclR - ECLIPTIC_R) * 150.0);
+    let eclAng = atan2(eclV.y, eclV.x);
+    let signArc = abs(fract(eclAng * 12.0 / TAU + 0.5) - 0.5) * (TAU / 12.0) * ECLIPTIC_R;
+    let signTick = exp(-signArc * 150.0) * exp(-abs(eclR - ECLIPTIC_R) * 36.0);
+    let sunAng = ctx.animTime * 0.2;
+    let sunPos = eclC + ECLIPTIC_R * vec2<f32>(cos(sunAng), sin(sunAng));
+    let sunD = length(pu - sunPos);
+    let sunBead = exp(-sunD * sunD * 900.0) + 0.25 * exp(-sunD * 12.0);
+    let ecl = (eclBand * 0.45 + signTick * 0.9) * (1.0 - smoothstep(1.4, 2.0, rPlate));
+
+    return (vec3<f32>(0.85, 0.62, 0.25) * lines * 0.22
+          + vec3<f32>(0.75, 0.9, 1.2) * star * 0.9
+          + vec3<f32>(1.0, 0.72, 0.3) * ecl * 0.32
+          + vec3<f32>(1.2, 0.95, 0.5) * sunBead * 0.9
+          + vec3<f32>(0.55, 0.8, 1.2) * rule * 0.28) * plateMask;
 }
 
 @compute @workgroup_size(16, 16, 1)
