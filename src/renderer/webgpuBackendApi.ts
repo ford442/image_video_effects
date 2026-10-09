@@ -67,6 +67,7 @@ export type WebGPUBackendApi = Pick<
   | 'captureChoresThumbnailPng'
   | 'setSourceAutoExposure'
   | 'applyTestRenderState'
+  | 'benchmarkUncapped'
   | 'supportsCanvasCopySrc'
   | 'setCanvasCopySrc'
   | 'getAdapterSummary'

@@ -27,6 +27,13 @@ export interface GPUTimings {
   passes?: PassTiming[];
 }
 
+/** Vsync-free throughput: N frames submitted back to back, timed to GPU idle (#1080). */
+export interface UncappedBenchResult {
+  frames: number;
+  wallMs: number;
+  msPerFrame: number;
+}
+
 /** Shader-slot backends (WebGPU + WASM). Canvas2D does not implement these. */
 export interface ShaderSlotRenderer {
   loadShader(id: string, url: string): Promise<boolean>;
@@ -84,6 +91,8 @@ export interface Renderer {
   getSlotMode?: (index: number) => SlotMode | null;
   getSlotState?: (index: number) => { shaderId: string | null; enabled: boolean; mode: SlotMode } | null;
   getGPUTimings?: () => GPUTimings;
+  /** Bench only: pause the frame loop, render `frames` frames without rAF, time to GPU idle. */
+  benchmarkUncapped?: (frames: number) => Promise<UncappedBenchResult | null>;
   /** Returns true when the GPU supports 16×16×4 (1024-invocation) workgroups. */
   getSupportsDeepWorkgroup?: () => boolean;
 

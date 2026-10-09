@@ -1,4 +1,4 @@
-import { computeBenchmarkStats } from './benchmarkStats';
+import { computeBenchmarkStats, countReadbacks } from './benchmarkStats';
 
 describe('computeBenchmarkStats', () => {
   it('gives exact nearest-rank percentiles', () => {
@@ -40,5 +40,12 @@ describe('computeBenchmarkStats', () => {
     const values = [3, 1, 2];
     computeBenchmarkStats(values);
     expect(values).toEqual([3, 1, 2]);
+  });
+});
+
+describe('countReadbacks', () => {
+  it('counts value changes and skips zeros', () => {
+    expect(countReadbacks([])).toBe(0);
+    expect(countReadbacks([0, 0, 1.2, 1.2, 1.2, 1.4, 1.4, 1.2])).toBe(3);
   });
 });

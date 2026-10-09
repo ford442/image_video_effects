@@ -5,7 +5,7 @@
  * Delegates to webgpu/* modules (device, resources, pipeline, frame, audioDepth).
  */
 
-import { Renderer, RendererConfig, ShaderSlotRenderer, GPUTimings } from './Renderer';
+import { Renderer, RendererConfig, ShaderSlotRenderer, GPUTimings, UncappedBenchResult } from './Renderer';
 import { Ripple, MAX_RIPPLES } from './UniformBuffer';
 import { PHYSICAL_SLOT_LIMIT, checkPhysicalSlotIndex } from './slotOrchestrator';
 import {
@@ -543,6 +543,31 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     if (state.mouseY !== undefined) this.mouseYShader = state.mouseY;
     if (state.bass !== undefined) updateAudioData(this.audioDepth, state.bass, state.mid ?? 0, state.treble ?? 0);
     this.frameRenderer.renderFrame(this.frameState!);
+  }
+
+  /**
+   * Bench only (#1080): render `frames` frames back to back with the rAF loop
+   * stopped, then time to onSubmittedWorkDone(). Vsync cannot cap the result.
+   */
+  async benchmarkUncapped(frames: number): Promise<UncappedBenchResult | null> {
+    const state = this.frameState;
+    const device = this.device;
+    if (!device || !state?.initialized || frames <= 0) return null;
+    this.frameRenderer.stopRenderLoop(state);
+    try {
+      await device.queue.onSubmittedWorkDone();
+      const t0 = performance.now();
+      for (let i = 0; i < frames; i++) {
+        this.currentTime += 1 / 60;
+        this.frameRenderer.renderFrame(state);
+      }
+      await device.queue.onSubmittedWorkDone();
+      const wallMs = performance.now() - t0;
+      return { frames, wallMs, msPerFrame: wallMs / frames };
+    } finally {
+      // Teardown during the run owns the loop from here.
+      if (this.frameState === state && state.initialized) this.frameRenderer.startRenderLoop(state);
+    }
   }
 
   async loadShader(id: string, url: string): Promise<boolean> {

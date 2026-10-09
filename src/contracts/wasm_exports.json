@@ -33,6 +33,7 @@
     "_setCanvasCopySrc",
     "_getGPUTimings",
     "_getPassTimingsJson",
+    "_requestWorkDoneMark",
     "_getLastError",
     "_getErrorRingJson",
     "_clearErrorRing",

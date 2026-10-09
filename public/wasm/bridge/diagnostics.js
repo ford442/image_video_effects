@@ -117,7 +117,28 @@ function clearErrorRing() {
     return false;
   }
 }
+function awaitSubmittedWorkDone(timeoutMs = 6e4) {
+  const mod = wasmRef.module;
+  if (!mod || typeof mod._requestWorkDoneMark !== "function") return null;
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      mod.__pxWorkDone = void 0;
+      reject(new Error("WASM onSubmittedWorkDone timed out"));
+    }, timeoutMs);
+    mod.__pxWorkDone = (ok) => {
+      clearTimeout(timer);
+      mod.__pxWorkDone = void 0;
+      resolve(ok !== 0);
+    };
+    if (mod._requestWorkDoneMark() !== 1) {
+      clearTimeout(timer);
+      mod.__pxWorkDone = void 0;
+      resolve(false);
+    }
+  });
+}
 export {
+  awaitSubmittedWorkDone,
   clearErrorRing,
   formatCppInitFailure,
   getDiagnostics,

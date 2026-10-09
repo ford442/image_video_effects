@@ -29,3 +29,14 @@ export function computeBenchmarkStats(values: number[]): BenchmarkStats {
     mean: sorted.reduce((a, b) => a + b, 0) / n,
   };
 }
+
+/** Value changes in a per-frame series: one per timestamp readback (zeros skipped, #1080). */
+export function countReadbacks(values: number[]): number {
+  let count = 0;
+  let prev: number | undefined;
+  for (const v of values) {
+    if (v > 0 && v !== prev) count += 1;
+    prev = v;
+  }
+  return count;
+}

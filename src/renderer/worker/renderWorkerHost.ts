@@ -85,6 +85,7 @@ export type HostedRenderer = Pick<
   | 'getSupportsSubgroups'
   | 'grabPresentedFrame'
   | 'compileCheck'
+  | 'benchmarkUncapped'
   | 'setBeforeFrame'
   | 'getInputEcho'
 >;
@@ -284,6 +285,7 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
       if (!renderer) throw new Error('render worker has no renderer');
       return renderer.compileCheck(id, code);
     },
+    benchmarkUncapped: async ({ frames }) => (renderer ? renderer.benchmarkUncapped(frames) : null),
     dispose: async () => {
       if (snapshotTimer !== null) clearInterval(snapshotTimer);
       snapshotTimer = null;
