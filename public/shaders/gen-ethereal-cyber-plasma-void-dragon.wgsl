@@ -3,8 +3,10 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: breath plasma jet cone along spine tangent; per-segment scale overlap parallax
+//  Upgraded: 2026-10-10
+//  Ideas: breath plasma jet cone out of the mouth; per-segment scale overlap parallax;
+//         2nd pass: dorsal fin blades growing with treble; sequential halo sigil chase
+//         (bass kicks the comet forward and fires a fast second chaser)
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -20,10 +22,12 @@ fn hash12(p: vec2<f32>) -> f32 {
     return fract((p3.x + p3.y) * p3.z);
 }
 
-fn hash33(p3: vec3<f32>) -> vec3<f32> {
-    var p = fract(p3 * vec3<f32>(0.1031, 0.1030, 0.0973));
-    p = p + dot(p, p.yxz + 33.33);
-    return fract((p.xxy + p.yxx) * p.zyx);
+// Smooth 1D value noise over x (lattice-hashed per seed): time-continuous.
+fn vnoise1(seed: f32, x: f32) -> f32 {
+    let i = floor(x);
+    let f = fract(x);
+    let w = f * f * (3.0 - 2.0 * f);
+    return mix(hash12(vec2<f32>(seed, i)), hash12(vec2<f32>(seed, i + 1.0)), w);
 }
 
 // 3D Noise
@@ -144,8 +148,58 @@ fn kaleido(p: vec2<f32>, folds: f32) -> vec2<f32> {
     return vec2<f32>(cos(a), sin(a)) * r;
 }
 
+// Spine chain, built ONCE per invocation in main() and shared by map(),
+// the breath jet and the scale rings so all three agree on the real body.
+// gChain[0] is the head; gChain[i]..gChain[i+1] is segment i.
+const MAX_SEGMENTS: i32 = 40;
+var<private> gChain: array<vec3<f32>, 41>;
+
+fn buildChain(time: f32, audio: f32, mouseTarget: vec3<f32>, params: vec4<f32>) {
+    let t = time * params.y;
+    // Mouse attraction point + wandering head
+    var prev_pos = mouseTarget + vec3<f32>(sin(t * 0.5), cos(t * 0.3), sin(t * 0.7)) * 2.0;
+    gChain[0] = prev_pos;
+    for (var i = 0; i < MAX_SEGMENTS; i = i + 1) {
+        let fi = f32(i);
+        let t_offset = fi * 0.15;
+        // Generate undulation
+        let undulation = vec3<f32>(
+            sin(t * 2.0 - t_offset) * 1.5,
+            cos(t * 1.5 - t_offset) * 1.0,
+            sin(t * 1.2 - t_offset) * 1.0
+        );
+        var cur_pos = prev_pos + vec3<f32>(0.0, 0.0, 1.2) + undulation * (0.2 + fi * 0.02);
+        // Bass shiver: time-continuous value noise (was a per-frame hash that
+        // made the spine jump every frame).
+        let nt = time * 6.0;
+        let shiver = vec3<f32>(vnoise1(fi * 3.1 + 0.5, nt), vnoise1(fi * 3.1 + 101.5, nt), vnoise1(fi * 3.1 + 211.5, nt)) - 0.5;
+        cur_pos = cur_pos + shiver * 0.5 * audio;
+        gChain[i + 1] = cur_pos;
+        prev_pos = cur_pos;
+    }
+}
+
+// Idea: dorsal fin blades — a thin swept-back triangular blade riding the top
+// of each segment, oriented in the segment's own (side, up, along) frame.
+fn sdDorsalFin(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, r: f32, h: f32) -> f32 {
+    let dir = normalize(b - a);
+    let upRaw = vec3<f32>(0.0, 1.0, 0.0) - dir * dir.y;
+    let up = upRaw / max(length(upRaw), 1e-3);
+    let side = cross(dir, up);
+    // Rooted just inside the skin, ahead of the segment's crystal shard.
+    let base = mix(a, b, 0.15) + up * (r * 0.9);
+    let w = p - base;
+    let q = vec3<f32>(dot(w, side), dot(w, up), dot(w, dir));
+    let halfLen = 0.24;
+    let box = sdBox(q - vec3<f32>(0.0, h * 0.5, 0.0), vec3<f32>(0.016, h * 0.5, halfLen));
+    // Hypotenuse from the front root (y=0, z=-halfLen) to the trailing tip (y=h, z=+halfLen).
+    let nrm = normalize(vec2<f32>(2.0 * halfLen, -h));
+    let cut = dot(vec2<f32>(q.y, q.z + halfLen), nrm);
+    return max(box, cut);
+}
+
 // Main SDF evaluation: vec2(dist, matID) — 0 void, 1 dragon, 2 crystal, 3 halo
-fn map(p: vec3<f32>, time: f32, audio: f32, mouseTarget: vec3<f32>, params: vec4<f32>) -> vec2<f32> {
+fn map(p: vec3<f32>, time: f32, audio: f32, params: vec4<f32>) -> vec2<f32> {
     let plasma_int = params.x;
     let dragon_speed = params.y;
     let segment_den = params.z;
@@ -158,42 +212,39 @@ fn map(p: vec3<f32>, time: f32, audio: f32, mouseTarget: vec3<f32>, params: vec4
     var d = 1000.0;
     var matID = 0.0;
 
-    // Mouse attraction point + wandering head
-    let dragon_head = mouseTarget + vec3<f32>(sin(t * 0.5), cos(t * 0.3), sin(t * 0.7)) * 2.0;
-    var prev_pos = dragon_head;
+    let dragon_head = gChain[0];
 
-    // Segment logic (fixed loop bound, skipped by density slider)
-    for (var i = 0; i < 20; i = i + 1) {
-        if (f32(i) >= segment_den) { continue; }
+    // Crystalline temporal scales: octahedral displacement (segment-independent,
+    // hoisted out of the loop — same value as before).
+    let scale_disp = (noise(p * 5.0 + time) * 2.0 - 1.0) * 0.05 * (1.0 + audio * 2.0);
+    // Fin height grows with treble, tapering toward the tail.
+    // (the 0.8 smooth-min between segments fattens the body ~0.2, so the
+    // blade must clear that to read.)
+    let finH = 0.38 + clamp(treble, 0.0, 1.0) * 0.5;
+
+    // Segment logic: cap = slider max (40), density slider cuts it short.
+    for (var i = 0; i < MAX_SEGMENTS; i = i + 1) {
+        if (f32(i) >= segment_den) { break; }
 
         let fi = f32(i);
-        let t_offset = fi * 0.15;
-
-        // Generate undulation
-        let undulation = vec3<f32>(
-            sin(t * 2.0 - t_offset) * 1.5,
-            cos(t * 1.5 - t_offset) * 1.0,
-            sin(t * 1.2 - t_offset) * 1.0
-        );
-
-        var cur_pos = prev_pos + vec3<f32>(0.0, 0.0, 1.2) + undulation * (0.2 + fi * 0.02);
-        cur_pos = cur_pos + (hash33(vec3<f32>(fi, time * 0.1, 0.0)) - 0.5) * 0.5 * audio;
+        let prev_pos = gChain[i];
+        let cur_pos = gChain[i + 1];
 
         let r = 0.8 - fi * 0.03 + sin(fi * 0.5 + t * 3.0) * 0.1;
         let seg_d = sdCapsule(p, prev_pos, cur_pos, max(r, 0.1));
 
-        // Crystalline temporal scales: octahedral displacement + box rib cage per segment
-        let scale_disp = (noise(p * 5.0 + time) * 2.0 - 1.0) * 0.05 * (1.0 + audio * 2.0);
+        // box rib cage + crystal shard per segment
         let mid = (prev_pos + cur_pos) * 0.5;
         let ribLocal = rotY(fi * 0.6 + t * 0.5) * (p - mid);
         let rib_d = sdBox(ribLocal, vec3<f32>(max(r, 0.1) + 0.12, 0.04, 0.04)) - 0.02;
         let shardLocal = rotX(fi * 1.3 - t) * (p - mid - vec3<f32>(0.0, max(r, 0.1) + 0.15, 0.0));
         let shard_d = sdOctahedron(shardLocal, 0.09 + treble * 0.06);
 
-        let seg_geo = smin(smin(seg_d, rib_d, 0.1), shard_d, 0.08);
+        var seg_geo = smin(smin(seg_d, rib_d, 0.1), shard_d, 0.08);
+        let finTaper = 1.0 - 0.6 * fi / max(segment_den, 1.0);
+        let fin_d = sdDorsalFin(p, prev_pos, cur_pos, max(r, 0.1), finH * finTaper);
+        seg_geo = smin(seg_geo, fin_d, 0.04);
         d = smin(d, seg_geo + scale_disp, 0.8);
-
-        prev_pos = cur_pos;
     }
 
     matID = 1.0;
@@ -215,12 +266,12 @@ fn map(p: vec3<f32>, time: f32, audio: f32, mouseTarget: vec3<f32>, params: vec4
     return vec2<f32>(d, matID);
 }
 
-fn calcNormal(p: vec3<f32>, time: f32, audio: f32, mouseTarget: vec3<f32>, params: vec4<f32>) -> vec3<f32> {
+fn calcNormal(p: vec3<f32>, time: f32, audio: f32, params: vec4<f32>) -> vec3<f32> {
     let e = vec2<f32>(0.001, 0.0);
     let n = vec3<f32>(
-        map(p + e.xyy, time, audio, mouseTarget, params).x - map(p - e.xyy, time, audio, mouseTarget, params).x,
-        map(p + e.yxy, time, audio, mouseTarget, params).x - map(p - e.yxy, time, audio, mouseTarget, params).x,
-        map(p + e.yyx, time, audio, mouseTarget, params).x - map(p - e.yyx, time, audio, mouseTarget, params).x
+        map(p + e.xyy, time, audio, params).x - map(p - e.xyy, time, audio, params).x,
+        map(p + e.yxy, time, audio, params).x - map(p - e.yxy, time, audio, params).x,
+        map(p + e.yyx, time, audio, params).x - map(p - e.yyx, time, audio, params).x
     );
     return normalize(n);
 }
@@ -230,12 +281,14 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-// Native idea 1: breath plasma jet along head-to-tail spine tangent.
-fn breathPlasmaJet(p: vec3<f32>, head: vec3<f32>, tailDir: vec3<f32>, audio: f32, t: f32) -> f32 {
-    let along = dot(p - head, tailDir);
+// Native idea 1: breath plasma jet fired out of the mouth along the head's
+// forward direction (away from the body), widening into a cone.
+fn breathPlasmaJet(p: vec3<f32>, mouth: vec3<f32>, fwd: vec3<f32>, audio: f32, t: f32) -> f32 {
+    let along = dot(p - mouth, fwd);
     let clampedAlong = clamp(along, 0.0, 7.0);
-    let perp = length(p - head - tailDir * clampedAlong);
-    let inCone = smoothstep(6.5, 0.0, along) * smoothstep(1.4, 0.0, perp);
+    let perp = length(p - mouth - fwd * clampedAlong);
+    let coneR = 0.35 + clampedAlong * 0.17;
+    let inCone = smoothstep(6.5, 0.0, along) * smoothstep(coneR, 0.0, perp) * step(-0.3, along);
     let turbulence = 0.5 + 0.5 * sin(along * 9.0 - t * 7.0 + perp * 14.0);
     return inCone * turbulence * (0.45 + audio * 0.9);
 }
@@ -255,7 +308,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // bounds guard — mandatory
     if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
 
-    let uv = (vec2<f32>(pixel) - 0.5 * res) / res.y;
+    var uv = (vec2<f32>(pixel) + 0.5 - 0.5 * res) / res.y;
+    // Storage rows run top-down; flip so world +y (mouse up, dorsal fins) is screen-up.
+    uv.y = -uv.y;
 
     let time = u.config.x;
     let audio = plasmaBuffer[0].x; // bass 20-200 Hz
@@ -268,10 +323,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mUv = u.zoom_config.yz;
     let mouseTarget = vec3<f32>((mUv.x - 0.5) * 20.0, (0.5 - mUv.y) * 20.0, -5.0);
 
-    // Dragon head anchor (matches map()) for halo-space sigil shading
-    let tHead = time * params.y;
-    let headPos = mouseTarget + vec3<f32>(sin(tHead * 0.5), cos(tHead * 0.3), sin(tHead * 0.7)) * 2.0;
-    let tailDir = normalize(vec3<f32>(0.0, 0.0, 1.0) + vec3<f32>(sin(tHead * 0.4), cos(tHead * 0.25), 0.0) * 0.35);
+    // Real spine chain (shared with map()): head, mouth and forward axis.
+    buildChain(time, audio, mouseTarget, params);
+    let headPos = gChain[0];
+    let headFwd = normalize(gChain[0] - gChain[1]);
+    let headR = max(0.8 + sin(time * params.y * 3.0) * 0.1, 0.1);
+    let mouthPos = headPos + headFwd * headR;
 
     // Camera
     let ro = vec3<f32>(0.0, 0.0, -15.0);
@@ -290,7 +347,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let maxDist = 50.0;
 
     for (var i = 0; i < maxSteps; i = i + 1) {
-        let resMap = map(p, time, audio, mouseTarget, params);
+        let resMap = map(p, time, audio, params);
         let d = resMap.x;
         matID = resMap.y;
 
@@ -319,7 +376,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var col = neb_col * (1.0 + audio) + vec3<f32>(0.3, 0.1, 0.6) * veinGlow;
 
     if (hit) {
-        let n = calcNormal(p, time, audio, mouseTarget, params);
+        let n = calcNormal(p, time, audio, params);
         let l = normalize(vec3<f32>(1.0, 1.0, -1.0));
         let viewDir = normalize(-rd);
 
@@ -339,10 +396,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let etch = (1.0 - smoothstep(0.0, 0.06, veinBody.x)) * (0.5 + audio);
             col += vec3<f32>(0.0, 0.9, 1.0) * etch * params.x * 0.5;
             var scaleParallax = 0.0;
-            for (var si = 0; si < 20; si = si + 1) {
-                if (f32(si) >= params.z) { continue; }
+            for (var si = 0; si < MAX_SEGMENTS; si = si + 1) {
+                if (f32(si) >= params.z) { break; }
                 let fi = f32(si);
-                let segMid = headPos + vec3<f32>(0.0, 0.0, 1.2 * fi);
+                // Anchored to the real (undulating) segment midpoint.
+                let segMid = (gChain[si] + gChain[si + 1]) * 0.5;
                 scaleParallax = max(scaleParallax, scaleOverlapParallax(p, segMid, viewDir, fi, time));
             }
             col += vec3<f32>(0.15, 0.55, 0.75) * scaleParallax * (0.35 + audio * 0.5);
@@ -358,12 +416,41 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // Engraved star sigils rotating on the halo plane (2D geometric layer)
             let sigilUV = vec2<f32>(atan2(p.y - headPos.y, p.x - headPos.x), length(p.xy - headPos.xy));
             let star_d = sdStar5(vec2<f32>(fract(sigilUV.x * 2.5) - 0.5, sigilUV.y - 1.3) * 6.0, 0.6, 0.5);
-            col += halo_col * (1.0 - smoothstep(0.0, 0.1, abs(star_d))) * (0.5 + audio);
+            // Idea: sequential sigil chase — sigils light in turn around the
+            // torus. Each sigil's slot comes from its quantized angle; a comet
+            // head sweeps the slots, bass shoves it forward and, above a
+            // threshold, launches a fast second chaser.
+            let sigilSlot = (floor(sigilUV.x * 2.5) + 0.5) / 2.5;
+            let slot01 = (sigilSlot + PI) / TAU;
+            let chaseA = fract(time * 0.3 + audio * 0.25);
+            let chaseB = fract(time * 1.15 + 0.5);
+            let litA = exp(-fract(chaseA - slot01) * 7.0);
+            let litB = exp(-fract(chaseB - slot01) * 10.0) * smoothstep(0.35, 0.6, audio);
+            let chaseLit = max(litA, litB);
+            let starLine = 1.0 - smoothstep(0.0, 0.1, abs(star_d));
+            let starFill = 1.0 - smoothstep(-0.05, 0.05, star_d);
+            col += halo_col * starLine * (0.5 + audio) * (0.35 + 0.65 * chaseLit);
+            col += vec3<f32>(1.0, 0.85, 1.0) * starFill * chaseLit * (0.6 + audio);
         }
     }
 
-    // Breath plasma jet cone along spine tangent (volumetric, pre-fog).
-    let breathJet = breathPlasmaJet(ro + rd * min(total_dist, 12.0), headPos, tailDir, audio, time);
+    // Breath plasma jet out of the mouth, integrated along the view ray over
+    // the span where the ray passes the jet (mouth..tip, padded by the cone
+    // radius) and occluded by hits.
+    let tA = dot(mouthPos - ro, rd);
+    let tB = dot(mouthPos + headFwd * 6.5 - ro, rd);
+    let tLo = max(min(tA, tB) - 1.5, 0.0);
+    let tHi = max(max(tA, tB) + 1.5, tLo);
+    let tStop = select(maxDist, total_dist, hit);
+    let dtJet = (tHi - tLo) / 6.0;
+    var breathJet = 0.0;
+    for (var js = 0; js < 6; js = js + 1) {
+        let tj = tLo + (f32(js) + 0.5) * dtJet;
+        if (tj < tStop) {
+            breathJet += breathPlasmaJet(ro + rd * tj, mouthPos, headFwd, audio, time) * dtJet;
+        }
+    }
+    breathJet = min(breathJet * 0.5, 2.0);
     col += vec3<f32>(0.2, 0.85, 1.0) * breathJet * params.x * 1.2;
 
     // Add volumetric nebula fog
@@ -379,7 +466,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depth = select(0.0, clamp(1.0 - total_dist / maxDist, 0.0, 1.0), hit);
 
     // Semantic alpha from luma
-    col = acesToneMap(col * (1.05 + audio * 0.2));
+    col = acesToneMap(max(col, vec3<f32>(0.0)) * (1.05 + audio * 0.2));
     let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(luma * 0.7 + 0.2, 0.0, 1.0);
 

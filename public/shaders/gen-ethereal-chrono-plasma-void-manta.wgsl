@@ -2,11 +2,15 @@
 //  Ethereal Chrono-Plasma Void-Manta
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, click-reactive, upgraded-rgba
-//  Upgraded: 2026-09-13
-//  Ideas: spring-eased manta banking (wings roll/yaw toward the eased mouse,
-//         velocity drives the bank angle); bass-pumped wing flap amplitude
-//         via plasmaBuffer (replaces RippleCount-as-audio bug); treble
-//         chrono-plasma veins pulsing along the wing span at ripple freq
+//  Upgraded: 2026-10-10
+//  Ideas: manta banking (wings roll/yaw toward the pointer through a smooth
+//         cubic, stateless, plus a slow glide sway); bass-pumped wing flap
+//         amplitude via plasmaBuffer, bounded by a span falloff; treble
+//         chrono-plasma veins pulsing along the wing span at ripple freq.
+//         2nd pass: manta planform (diamond wings + cephalic fins + whip tail
+//         cut from the wing slab); wingtip vortex wakes (counter-rotating
+//         spiral filaments shed from the tips, phased by the flap); ventral
+//         counter-shading with breathing gill-slit rows on the underside
 //  A packing: ACES display RGBA (hue-preserving clamp before tonemap;
 //             alpha = manta/sss or fog coverage; matches exact C read)
 // ═══════════════════════════════════════════════════════════════════
@@ -20,6 +24,8 @@
 // zoom_params.w = Dark Matter Density
 
 const PI: f32 = 3.14159265359;
+const SPAN: f32 = 2.7;     // wingtip half-span (planform)
+const TIP_Z: f32 = 0.3;    // z of the wingtips (head is toward -z)
 
 var<private> g_audio: f32 = 0.0;
 var<private> g_bank: vec2<f32> = vec2<f32>(0.0);
@@ -114,34 +120,129 @@ fn iridescence(cosTheta: f32, time: f32) -> vec3<f32> {
     return hsv2rgb(vec3<f32>(fract(hue), 0.75, 1.0));
 }
 
-// Scene SDF
-fn map(p: vec3<f32>) -> vec2<f32> {
-    var pos = p;
-    let time = u.config.x * u.zoom_params.x;
-    let audio = g_audio;
-
-    // Spring banking: roll (xy) and yaw (xz) toward the eased mouse.
+// World -> manta frame: bank roll (xy) then yaw (xz). Pure rotation, so it
+// also maps directions and normals.
+fn toManta(v: vec3<f32>) -> vec3<f32> {
+    var pos = v;
     let rolled = rot(g_bank.x) * pos.xy;
     pos.x = rolled.x; pos.y = rolled.y;
     let yawed = rot(g_bank.y) * pos.xz;
     pos.x = yawed.x; pos.z = yawed.y;
+    return pos;
+}
 
-    // Manta motion
-    let flap = sin(pos.x * u.zoom_params.z - time * 3.0) * (pos.x * pos.x) * (0.2 + audio * 0.15);
+// Span envelope of the flap: grows ~x^2 near the body, saturates at the tips
+// (HEAD used raw x^2, unbounded across an infinite sheet).
+fn flapEnv(x: f32) -> f32 {
+    let x2 = x * x;
+    return x2 / (1.0 + 0.15 * x2);
+}
+
+fn ndot2(a: vec2<f32>, b: vec2<f32>) -> f32 { return a.x * b.x - a.y * b.y; }
+
+fn sdRhombus(p_in: vec2<f32>, b: vec2<f32>) -> f32 {
+    let p = abs(p_in);
+    let h = clamp(ndot2(b - 2.0 * p, b) / dot(b, b), -1.0, 1.0);
+    let d = length(p - 0.5 * b * vec2<f32>(1.0 - h, 1.0 + h));
+    return d * sign(p.x * b.y + p.y * b.x - b.x * b.y);
+}
+
+fn sdSeg2(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
+    let pa = p - a;
+    let ba = b - a;
+    let h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+    return length(pa - ba * h);
+}
+
+fn sdCapsule3(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, r: f32) -> f32 {
+    let pa = p - a;
+    let ba = b - a;
+    let h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+    return length(pa - ba * h) - r;
+}
+
+// Idea: manta planform — 2D outline in the wing plane (pos.xz): swept
+// diamond wings (head toward -z), plus two cephalic fins flanking the head.
+fn planform(q: vec2<f32>) -> f32 {
+    let zc = q.y - TIP_Z;
+    let b = vec2<f32>(SPAN, select(1.8, 2.0, zc < 0.0));
+    let wings = sdRhombus(vec2<f32>(q.x, zc), b) - 0.04;
+    let fins = sdSeg2(vec2<f32>(abs(q.x), q.y), vec2<f32>(0.42, -1.35), vec2<f32>(0.55, -2.25)) - 0.12;
+    return smin(wings, fins, 0.15);
+}
+
+// Scene SDF
+fn map(p: vec3<f32>) -> vec2<f32> {
+    var pos = toManta(p);
+    let time = u.config.x * u.zoom_params.x;
+    let audio = g_audio;
+    let freq = u.zoom_params.z;
+
+    // Manta motion: bass-pumped flap, span-bounded
+    let ampK = 0.2 + audio * 0.15;
+    let flap = sin(pos.x * freq - time * 3.0) * flapEnv(pos.x) * ampK;
     pos.y += flap;
 
-    // Core body (flattened sphere)
+    // Core body (flattened sphere) + whip tail
     let body_d = (length(pos / vec3<f32>(1.0, 0.2, 2.0)) - 1.0) * 0.2;
+    let tail = sdCapsule3(pos, vec3<f32>(0.0, -0.05, 1.9), vec3<f32>(0.0, -0.12, 4.0), 0.035);
+    let bodyAll = min(body_d * 0.5, tail);
 
-    // Wings (displaced plane with chrono-plasma ripple)
+    // Wings (displaced plane with chrono-plasma ripple), thinning to the tips
     let wingNoise = fbm3(pos * 1.5 + vec3<f32>(0.0, 0.0, time * 0.5));
     let wing_d = pos.y + wingNoise * 0.5 * (1.0 + audio);
+    let thick = 0.1 * (1.0 - 0.55 * smoothstep(0.3, SPAN, abs(pos.x)));
+    // Lipschitz guard for the flap + noise displacement
+    let gFlap = flapEnv(SPAN) * ampK * freq;
+    let lip = 0.85 / (1.0 + 0.5 * gFlap);
+    let slab = (abs(wing_d) - thick) * lip;
+    // Planform cut: the wing is a finite manta outline, not an infinite sheet
+    let wing = max(slab, planform(pos.xz));
 
     // Blend body and wings
-    let manta_d = smin(body_d * 0.5, abs(wing_d) - 0.1, 0.5);
+    let manta_d = smin(bodyAll, wing, 0.5);
 
     // Material ID: 1.0 for manta, 0.0 for background
     return vec2<f32>(manta_d, 1.0);
+}
+
+// Idea: wingtip vortex wakes. Each tip sheds a counter-rotating spiral
+// filament that streams aft (+z). Its centreline replays the tip's flap at
+// the retarded time (shed earlier = further back), so the wake traces the
+// stroke. Evaluated analytically at the ray's closest approach to each wake
+// axis (in the manta frame), occluded by the hit distance.
+fn wingtipWakes(ro_m: vec3<f32>, rd_m: vec3<f32>, tHit: f32, mantaTime: f32) -> vec3<f32> {
+    let freq = u.zoom_params.z;
+    let ampK = 0.2 + g_audio * 0.15;
+    var acc = vec3<f32>(0.0);
+    let denom = 1.0 - rd_m.z * rd_m.z;
+    if (denom < 1e-4) { return acc; }
+    for (var side = 0; side < 2; side++) {
+        let sgn = select(-1.0, 1.0, side == 1);
+        let xs = sgn * SPAN * 0.98;
+        let L0 = vec3<f32>(xs, -0.25, 0.0);
+        let w0 = ro_m - L0;
+        let dd = dot(rd_m, w0);
+        let t = (rd_m.z * w0.z - dd) / denom;
+        let s = (w0.z - rd_m.z * dd) / denom;
+        let ds = s - TIP_Z;
+        if (t <= 0.0 || t > tHit || ds < -0.2 || ds > 7.0) { continue; }
+        let P = ro_m + rd_m * t;
+        let tau = mantaTime - ds / 2.2;
+        let yc = -0.25 - sin(xs * freq - tau * 3.0) * flapEnv(xs) * ampK * exp(-ds * 0.15) - ds * 0.05;
+        let xc = xs + sgn * ds * 0.06;
+        let off = vec2<f32>(P.x - xc, P.y - yc);
+        let r = length(off);
+        let w = 0.05 + ds * 0.025;
+        let ang = atan2(off.y, off.x) * sgn;
+        let spiral = 0.5 + 0.5 * cos(2.0 * ang - log(r + 0.02) * 4.0 + ds * 3.0 - mantaTime * 4.0);
+        let core = exp(-r * r / (w * w));
+        let halo = exp(-r * r / (9.0 * w * w)) * 0.25;
+        let along = exp(-max(ds, 0.0) * 0.35) * smoothstep(-0.2, 0.25, ds);
+        let g = (core * (0.4 + 0.6 * spiral) + halo * spiral) * along;
+        acc += mix(vec3<f32>(0.3, 0.9, 1.4), vec3<f32>(1.0, 0.15, 0.75), spiral) * g;
+    }
+    return acc;
 }
 
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
@@ -171,27 +272,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let darkMatter = u.zoom_params.w;
     g_audio = audio;
 
-    // Spring-eased mouse -> manta bank. State [133..134] pos, [135..136] vel,
-    // [137] init. Guarded; only invocation (0,0) writes.
+    // Stateless banking: HEAD's spring lived in extraBuffer[133..137], which
+    // the engine re-uploads every frame, so it never moved. The pointer bank
+    // goes through a smooth cubic, plus a slow glide sway.
     let rawMouse = u.zoom_config.yz - vec2<f32>(0.5);
-    var easedMouse = rawMouse;
-    var mouseVel = vec2<f32>(0.0);
-    let hasSpring = arrayLength(&extraBuffer) > 138u;
-    if (hasSpring && extraBuffer[137] > 0.5) {
-        easedMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-        mouseVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-        mouseVel = (mouseVel + (rawMouse - easedMouse) * 0.08) * 0.85;
-        easedMouse += mouseVel;
-    }
-    if (hasSpring && coords.x == 0 && coords.y == 0) {
-        extraBuffer[133] = easedMouse.x;
-        extraBuffer[134] = easedMouse.y;
-        extraBuffer[135] = mouseVel.x;
-        extraBuffer[136] = mouseVel.y;
-        extraBuffer[137] = 1.0;
-    }
-    g_bank = vec2<f32>(clamp(-mouseVel.x * 18.0 - easedMouse.x * 0.6, -0.9, 0.9),
-                       clamp(easedMouse.x * 0.8, -1.2, 1.2));
+    let mx = clamp(rawMouse.x * 2.0, -1.0, 1.0);
+    let shaped = mx * (1.5 - 0.5 * mx * mx);
+    let mantaTime = time * u.zoom_params.x;
+    let sway = sin(mantaTime * 0.5) * 0.08;
+    g_bank = vec2<f32>(clamp(-shaped * 0.55 + sway, -0.9, 0.9),
+                       clamp(shaped * 0.4, -1.2, 1.2));
 
     // Exact previous-frame display history.
     let prev = textureLoad(dataTextureC, coords, 0);
@@ -211,7 +301,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Camera setup
     let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
     var ro = vec3<f32>(0.0, 2.0, -5.0 + held * 0.8);
-    var rd = normalize(vec3<f32>(uv, 1.5));
+    // Aim at the manta (origin) with +y up on screen (pixel rows grow down).
+    // HEAD looked level along +z over an infinite sheet, upside down; with a
+    // finite planform that framing would leave the manta out of shot.
+    let camFw = normalize(vec3<f32>(0.0, -0.25, -0.6) - ro); // head + cephalic fins in frame
+    let camRi = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), camFw));
+    let camUp = cross(camFw, camRi);
+    var rd = normalize(uv.x * camRi - uv.y * camUp + 1.5 * camFw);
 
     // Mouse rotation
     let mouse = (u.zoom_config.yz - vec2<f32>(0.5)) * 6.28;
@@ -248,8 +344,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let p = ro + rd * t;
         let d = map(p);
 
-        // Accumulate dark-matter density along ray
-        bg_density += noise(p * 0.5 + vec3<f32>(time * 0.1)) * darkMatter * 0.02;
+        // Accumulate dark-matter density along ray (per distance travelled,
+        // so the finite manta's longer steps keep HEAD's density)
+        bg_density += noise(p * 0.5 + vec3<f32>(time * 0.1)) * darkMatter * 0.02 * clamp(d.x / 0.6, 0.05, 1.0);
 
         if (d.x < 0.001) {
             hit = true;
@@ -260,11 +357,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let diffFill = max(dot(n, fillLight), 0.0) * 0.5;
             let rim = pow(1.0 - max(dot(n, -rd), 0.0), 4.0);
 
-            // Subsurface / bio-luminescence
-            let thickness = map(p + n * 0.1).x;
-            sss = smoothstep(0.0, 0.1, abs(thickness)) * bio;
+            // Subsurface / bio-luminescence: sample INSIDE (p - n*k), so thin
+            // wing membrane transmits and the thick body does not (HEAD
+            // sampled outward, which measured nothing).
+            let inside = map(p - n * 0.2).x;
+            sss = exp(-max(-inside, 0.0) * 25.0) * bio;
 
-            let base_col = vec3<f32>(0.08, 0.18, 0.45);
+            // Idea: ventral counter-shading — pale belly, dark back (manta frame)
+            let pm = toManta(p);
+            let nm = toManta(n);
+            let ventral = 1.0 - smoothstep(-0.4, 0.1, nm.y);
+            let base_col = mix(vec3<f32>(0.08, 0.18, 0.45), vec3<f32>(0.62, 0.66, 0.78) * 0.55, ventral);
             let glow_col = vec3<f32>(1.0, 0.15, 0.75) * (1.0 + audio * 2.0);
 
             // Iridescent wing rim
@@ -278,7 +381,20 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
                 + base_col * (keyColor * diffKey + fillColor * diffFill)
                 + glow_col * sss
                 + rimColor * rim * 1.8
-                + iris;
+                + iris
+                + vec3<f32>(0.62, 0.66, 0.78) * 0.06 * ventral;
+
+            // Idea: gill-slit rows — five paired slits on the ventral head,
+            // dark cuts with a breathing bioluminescent glow inside.
+            let gz = (pm.z + 0.95) / 0.17;
+            let gk = floor(gz);
+            let gValid = select(0.0, 1.0, gk >= 0.0 && gk <= 4.0);
+            let gxc = 0.42 + gk * 0.03;
+            let inX = 1.0 - smoothstep(0.1, 0.14, abs(abs(pm.x) - gxc));
+            let slitLine = 1.0 - smoothstep(0.06, 0.16, abs(fract(gz) - 0.5));
+            let slit = slitLine * inX * gValid * ventral;
+            let breath = 0.5 + 0.5 * sin(time * 2.0 + gk * 0.6);
+            col = col * (1.0 - slit * 0.6) + vec3<f32>(0.3, 0.9, 1.4) * slit * (0.25 + mids * 0.8) * bio * breath;
             break;
         }
         if (t > 20.0) { break; }
@@ -302,12 +418,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let fogColor = mix(vec3<f32>(0.1, 0.0, 0.25), vec3<f32>(0.0, 0.5, 0.7), 0.5);
     col += fogColor * fogAccum * 2.0;
 
+    // Wingtip vortex wakes, in the same void as the fog
+    let wakes = wingtipWakes(toManta(ro), toManta(rd), t, mantaTime);
+    col += wakes * bio * (0.35 + bass * 0.8);
+
     // Audio bloom on hit distance
     col += vec3<f32>(0.2, 0.5, 1.0) * audio * bio * (1.0 / (1.0 + t * t * 0.05));
     col += vec3<f32>(0.95, 0.16 + mids * 0.35, 1.0) * shock * (0.45 + treble * 0.8);
 
     // HDR clamp preserving hue, then ACES on display RGB
-    let display = aces_tone_map(hue_preserving_clamp(col, 8.0));
+    let display = aces_tone_map(hue_preserving_clamp(max(col, vec3<f32>(0.0)), 8.0));
 
     // Temporal blend in display space with exact previous-frame history
     col = mix(prev.rgb * 0.94, display, 0.3 + bass * 0.03);
@@ -321,6 +441,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
                        clamp(0.85 + sss * 0.15, 0.0, 1.0), hit);
 
     textureStore(writeTexture, coords, vec4<f32>(col, alpha));
-    textureStore(writeDepthTexture, coords, vec4<f32>(clamp(t * 0.05, 0.0, 1.0), 0.0, 0.0, 0.0));
+    // Depth: near = 1, void = 0
+    textureStore(writeDepthTexture, coords, vec4<f32>(1.0 - clamp(t * 0.05, 0.0, 1.0), 0.0, 0.0, 0.0));
     textureStore(dataTextureA, coords, vec4<f32>(col, alpha));
 }

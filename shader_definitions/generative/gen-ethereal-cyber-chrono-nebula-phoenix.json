@@ -17,10 +17,10 @@
       "id": "wingspan",
       "name": "Wingspan",
       "type": "range",
-      "min": 0.05,
-      "max": 0.5,
+      "min": 0.1,
+      "max": 1,
       "step": 0.01,
-      "default": 0.1,
+      "default": 0.2,
       "uniformMapping": {
         "struct": "zoom_params",
         "field": "x"
@@ -30,13 +30,39 @@
       "id": "plasma_intensity",
       "name": "Plasma Intensity",
       "type": "range",
-      "min": 0.1,
-      "max": 1.0,
-      "step": 0.05,
-      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "default": 0.5,
       "uniformMapping": {
         "struct": "zoom_params",
         "field": "y"
+      }
+    },
+    {
+      "id": "chrono_fracture",
+      "name": "Chrono Fracture",
+      "type": "range",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "default": 0.5,
+      "uniformMapping": {
+        "struct": "zoom_params",
+        "field": "z"
+      }
+    },
+    {
+      "id": "orbit_spin",
+      "name": "Orbit Spin",
+      "type": "range",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "default": 0.5,
+      "uniformMapping": {
+        "struct": "zoom_params",
+        "field": "w"
       }
     }
   ],
@@ -44,18 +70,18 @@
     {
       "index": 0,
       "name": "Wingspan",
-      "default": 0.1,
-      "min": 0.05,
-      "max": 0.5,
+      "default": 0.2,
+      "min": 0.1,
+      "max": 1,
       "step": 0.01
     },
     {
       "index": 1,
       "name": "Plasma Intensity",
-      "default": 0.2,
-      "min": 0.1,
-      "max": 1.0,
-      "step": 0.05
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
     },
     {
       "index": 2,
@@ -68,9 +94,9 @@
     {
       "index": 3,
       "name": "Orbit Spin",
-      "default": 0.1,
-      "min": 0.05,
-      "max": 0.5,
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
       "step": 0.01
     }
   ],
