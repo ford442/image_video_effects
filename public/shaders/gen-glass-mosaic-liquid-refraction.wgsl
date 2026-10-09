@@ -4,8 +4,8 @@
 //  Features: mouse-driven, audio-reactive, depth-aware, FBM, domain-warping,
 //            curl-noise, Worley, Fresnel-Schlick, Beer-Lambert, IOR, temporal, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-09-13
-//  Ideas: Voronoi facet-pane Snell tilt; meniscus refraction kick at the lead came
+//  Upgraded: 2026-10-10
+//  Ideas: lead came ridge (rounded metal came with a specular ridge instead of a flat dark line); seed bubbles (tiny lens inclusions that offset the refracted UV and ring-light at their rim); kept: Voronoi facet-pane Snell tilt; meniscus refraction kick at the lead came
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -16,6 +16,7 @@ const PHI: f32 = 1.618033988749895;
 const IOR_AIR: f32 = 1.0;
 const IOR_GLASS: f32 = 1.52;
 
+fn sq(x: f32) -> f32 { return x * x; }
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -166,6 +167,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let meniscusDir = normalize(refractOffset(uv, h, 1.0) + vec2<f32>(0.0001));
     refractUV += meniscusDir * meniscus * refractionStrength;
     refractUV2 += meniscusDir * meniscus * refractionStrength * 0.7;
+    // Idea 2 - seed bubbles: sparse lens inclusions inside the panes
+    let sbP = warpUV * facetCount * 2.3;
+    let sbC = floor(sbP);
+    let sbOn = step(0.82, hash1(sbC + vec2<f32>(11.3, 4.1)));
+    let sbV = fract(sbP) - (hash2(sbC + vec2<f32>(5.7, 9.2)) * 0.6 + vec2<f32>(0.2));
+    let sbRad = 0.07 + 0.08 * hash1(sbC + vec2<f32>(2.2, 7.7));
+    let sbD = length(sbV);
+    let sbInside = sbOn * smoothstep(sbRad, sbRad * 0.6, sbD);
+    let sbRing = sbOn * exp(-sq((sbD - sbRad) / (sbRad * 0.18 + 0.001)));
+    refractUV -= sbV * sbInside * 0.05 * (0.5 + refractionStrength * 3.0);
+    refractUV2 -= sbV * sbInside * 0.04 * (0.5 + refractionStrength * 3.0);
     refractUV = clamp(refractUV, vec2<f32>(0.0), vec2<f32>(1.0));
     refractUV2 = clamp(refractUV2, vec2<f32>(0.0), vec2<f32>(1.0));
     // Glass pane color with thin-film interference
@@ -204,6 +216,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let caustic2 = causticPattern(uv * facetCount, time, 1.0 + bass * 2.0);
     let sparkle = (caustic * 0.6 + caustic2 * 0.4) * bass * 0.5 * (1.0 + treble * 2.0);
     var finalCol = withLead + vec3<f32>(0.9, 0.85, 0.7) * sparkle;
+    // Idea 1 - lead came ridge: cylindrical profile, highlight sits off-centre, side picked per pane
+    let camS = clamp(edgeDist / max(bevelWidth * 1.5, 0.001), 0.0, 1.4);
+    let camMask = 1.0 - smoothstep(1.0, 1.4, camS);
+    let camSide = 0.5 + 0.5 * sin(cellHash * TAU + time * 0.2);
+    let camSheen = exp(-sq((camS - 0.4) * 4.5)) * camMask * mix(0.3, 1.0, camSide);
+    finalCol = mix(finalCol, finalCol * 0.55, camMask * 0.5);
+    finalCol += vec3<f32>(0.78, 0.74, 0.66) * camSheen * (0.4 + mids * 0.4);
+    finalCol += vec3<f32>(1.0, 0.97, 0.9) * sbRing * (0.2 + treble * 0.6);
     // Glass specular with temporal shimmer
     let specAngle = sin(uv.x * 20.0 + uv.y * 15.0 + time + fbm2(uv * 5.0, 3) * TAU) * 0.5 + 0.5;
     finalCol += vec3<f32>(0.3, 0.3, 0.35) * specAngle * specAngle * 0.3 * (1.0 + mids * 0.5);

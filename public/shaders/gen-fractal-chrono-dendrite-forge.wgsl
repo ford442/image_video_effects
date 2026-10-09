@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: side-branch buds at each L-system iteration; recalescence flash on entropy-pulse crests
+//  Upgraded: 2026-10-10
+//  Ideas: hopper terraces (quantised stair-step bands in the thin-film index with dark step-edge lines, bismuth's signature); self-shadow (soft shadow march toward the key light so branches shade each other); kept: side-branch buds at each L-system iteration; recalescence flash on entropy-pulse crests
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -156,8 +156,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
             // Multiple layers of fractional noise control the thickness of an
             // imaginary thin-film layer; FFT shimmer animates the oxide film.
-            let interference_t = ndotv + sin(length(p) * 5.0 + time * entropy) * 0.2
+            let interference_t0 = ndotv + sin(length(p) * 5.0 + time * entropy) * 0.2
                                + fftShimmer * 0.15;
+            // Idea 1 - hopper terraces: stair-step the film index along the growth axis
+            let terraceCoord = (length(p.xy) + p.z * 0.6) * 5.0;
+            let terraceStep = floor(terraceCoord) / 5.0;
+            let tf = fract(terraceCoord);
+            let terraceEdge = 1.0 - smoothstep(0.0, 0.08, min(tf, 1.0 - tf));
+            let interference_t = mix(interference_t0, interference_t0 * 0.5 + terraceStep * 0.5, 0.6);
             let albedo = getBismuthColor(interference_t, dispersion);
 
             // ── 3-point lighting rig (three distinct temperatures) ──────
@@ -184,10 +190,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let synapse_glow = (0.5 + 0.5 * sin(p.z * 10.0 - time * 5.0)) * (bass * 2.0 + mids);
             let glow_color = vec3<f32>(1.0, 0.5, 0.2) * synapse_glow;
 
-            col = albedo * (key_col * key_dif + fill_col * fill_dif * 0.6)
+            // Idea 2 - self-shadow: soft penumbra march toward the key light
+            var shade = 1.0;
+            var st = 0.04;
+            for (var si = 0; si < 20; si++) {
+                let sd = map(p + n * 0.01 + key_l * st, time, mouse_pos, click, complexity, entropy, gravity, bass);
+                shade = min(shade, 8.0 * sd / st);
+                st += clamp(sd, 0.03, 0.4);
+                if (shade < 0.02 || st > 6.0) { break; }
+            }
+            shade = clamp(shade, 0.0, 1.0);
+            let shadowK = mix(0.25, 1.0, shade);
+            col = albedo * (key_col * key_dif * shadowK + fill_col * fill_dif * 0.6)
                 + rim_col * fresnel * (0.9 + treble * 0.6)
-                + vec3<f32>(1.0) * spec
+                + vec3<f32>(1.0) * spec * shadowK
                 + glow_color;
+            col *= 1.0 - terraceEdge * 0.45;
 
             // Idea 2 — recalescence flash: entropy-pulse crest heats high-curvature metal
             let recalescence = pow(max(sin(time * entropy * 4.0 + length(p) * 3.0), 0.0), 8.0);

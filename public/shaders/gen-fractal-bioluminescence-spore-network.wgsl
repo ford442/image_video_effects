@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: generative, mouse-driven, audio-reactive, temporal, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: capsule hyphae between Clifford spores; quorum pulse when the two spores close
+//  Upgraded: 2026-10-10
+//  Ideas: light packets running along the spore-to-spore hypha (map returns the capsule parameter); marine-snow plankton motes that flash on bass and are depth-dimmed; kept: capsule hyphae between Clifford spores; quorum pulse when the two spores close
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 const PI=3.14159265358979323846; const TAU=6.28318530717958647692;
@@ -70,7 +70,9 @@ fn kaleido(uv: vec2<f32>, segs: f32) -> vec2<f32> {
     return vec2<f32>(cos(a), sin(a)) * r;
 }
 
-fn map(p_in: vec3<f32>, complexity: f32, time: f32, audio_react: f32) -> f32 {
+// returns (distance, hypha light-packet intensity)
+fn sq(x: f32) -> f32 { return x * x; }
+fn map(p_in: vec3<f32>, complexity: f32, time: f32, audio_react: f32) -> vec2<f32> {
     var p = p_in;
     let iters = i32(clamp(complexity, 1.0, 10.0));
     var scale = 1.0;
@@ -96,7 +98,9 @@ fn map(p_in: vec3<f32>, complexity: f32, time: f32, audio_react: f32) -> f32 {
     let ht = clamp(dot(pa, ba) / max(dot(ba, ba), 0.0001), 0.0, 1.0);
     let hypha = length(pa - ba * ht) - 0.045 * scale;
     d = smin(d, hypha, 0.06 * scale);
-    return d;
+    // Idea 1 - packets travel spore A -> B along the capsule parameter
+    let packet = exp(-sq((fract(ht * 3.0 - time * 0.9) - 0.5) * 7.0)) * exp(-max(hypha, 0.0) * 18.0 / max(scale, 0.05));
+    return vec2<f32>(d, packet);
 }
 
 fn hueShift(c: vec3<f32>, h: f32) -> vec3<f32> {
@@ -153,10 +157,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var ro = vec3<f32>(warp + jitter, warp * 0.5 + jitter, -5.0 + time * 0.2);
     var rd = normalize(vec3<f32>(uv, 1.0));
 
-    var t = 0.0; var d = 0.0; var glow = 0.0; var energy = 0.0;
+    var t = 0.0; var d = 0.0; var glow = 0.0; var energy = 0.0; var packetGlow = 0.0;
     for (var i = 0; i < 64; i = i + 1) {
         let p = ro + rd * t;
-        d = map(p, network_complexity + injection * 2.0 + clickPulse, time + (bass + mids * 0.5) * audio_react, audio_react);
+        let m = map(p, network_complexity + injection * 2.0 + clickPulse, time + (bass + mids * 0.5) * audio_react, audio_react);
+        d = m.x;
+        packetGlow += m.y * 0.02;
         if (d < 0.01) {
             energy = 1.0 - f32(i) / 64.0;
             break;
@@ -179,6 +185,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let sporeSep = length(caQ - vec2<f32>(-caQ.y, caQ.x));
     let quorum = exp(-sporeSep * 1.8) * (0.5 + 0.5 * sin(time * 3.2 + bass * 4.0));
     final_col += col_hot * quorum * glow * 0.12 * bio_intensity;
+    final_col += vec3<f32>(0.55, 1.0, 0.85) * packetGlow * bio_intensity * 0.35 * (1.0 + treble * 0.5);
+    // Idea 2 - marine snow: sparse drifting motes that flash with the bass
+    let snowP = uv * 46.0 + vec2<f32>(time * 0.05, time * 0.4);
+    let snowCell = floor(snowP);
+    let snowH = hash21(snowCell);
+    let snowJit = (vec2<f32>(hash21(snowCell + 3.1), hash21(snowCell + 7.7)) - 0.5) * 0.5;
+    let snowD = length(fract(snowP) - 0.5 - snowJit);
+    let mote = step(0.86, snowH) * smoothstep(0.1, 0.0, snowD) * (0.5 + 0.5 * sin(time * 2.0 + snowH * 40.0));
+    final_col += vec3<f32>(0.4, 0.9, 1.0) * mote * (0.12 + bass * audio_react * 0.5);
     final_col = final_col * (1.0 + audio_react * bass * 0.3 + treble * 0.1);
 
     let hueDrift = warpedFBM(uv * 2.0, time * 0.05) * PI * 0.25;

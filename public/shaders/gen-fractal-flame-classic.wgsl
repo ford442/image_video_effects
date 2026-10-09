@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: fractal, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: log-density compression; spherical z/r² variation
+//  Upgraded: 2026-10-10
+//  Ideas: white-hot cores (per-channel log blend with luminance-ratio colour, Draves-style vibrancy); julia variation on a third pick band with a per-iteration branch flip; kept: log-density compression; spherical z/r² variation
 //  A packing: raw HDR display RGBA (ACES on writeTexture)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -61,6 +61,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         var varied = mix(firstMix, polar, 0.22 + audio.y * 0.12);
         let pick = fract(fi * 0.37 + 0.11);
         varied = mix(varied, spherical, select(0.0, 0.55 + audio.z * 0.12, pick > 0.72));
+        // Idea 2 - julia variation: sqrt(r) * (cos, sin)(theta/2 + branch * pi), branch flips per iteration
+        let branch = select(0.0, 3.14159265, ((u32(i) * 5u + 1u) & 2u) != 0u);
+        let julia = sqrt(r) * vec2<f32>(cos(theta * 0.5 + branch), sin(theta * 0.5 + branch));
+        varied = mix(varied, julia, select(0.0, 0.3 + audio.y * 0.1, pick > 0.40 && pick < 0.58));
         let affine = rot(0.38 + sin(time * 0.12) * 0.07) * varied * (0.62 + audio.x * 0.035);
         z = affine + vec2<f32>(-0.12 + sin(fi * 2.1) * 0.025, 0.16);
         let trap = exp(-abs(length(z) - 0.48) * (12.0 + audio.z * 8.0));
@@ -86,7 +90,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let hue = hueMoment / max(density * 12.0, 0.001) * 0.002 + time * (0.015 + paletteCycle * 0.06) + audio.y * 0.12;
     let classicWarm = vec3<f32>(1.3, 0.18, 0.015);
     let spectral = palette(hue);
-    var hdrColor = vec3<f32>(0.006, 0.002, 0.008) + mix(classicWarm, spectral, paletteCycle * 0.72) * flame * (1.1 + audio.x * 0.8);
+    // Idea 1 - vibrancy: luminance-ratio colour keeps hue, per-channel log lets dense cores burn white-hot
+    let tint = mix(classicWarm, spectral, paletteCycle * 0.72);
+    let perChannel = log(vec3<f32>(1.0) + tint * (density + edgeTrap) * 8.0);
+    let vibrantCol = mix(perChannel, tint * flame, 0.65) + vec3<f32>(1.0, 0.82, 0.55) * smoothstep(2.0, 4.2, flame) * 0.5;
+    var hdrColor = vec3<f32>(0.006, 0.002, 0.008) + vibrantCol * (1.1 + audio.x * 0.8);
     hdrColor += vec3<f32>(1.2, 0.65 + audio.y * 0.25, 0.08 + audio.z * 0.25) * edgeTrap * 1.4;
     hdrColor += vec3<f32>(1.0, 0.28, 0.08 + audio.z * 0.35) * clickFlame * 0.38;
     let history = textureLoad(dataTextureC, coord, 0);
