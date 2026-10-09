@@ -88,6 +88,8 @@ export type HostedRenderer = Pick<
   | 'benchmarkUncapped'
   | 'setBeforeFrame'
   | 'getInputEcho'
+  | 'setFatalErrorHandler'
+  | 'simulateDeviceLoss'
 >;
 
 export interface RenderWorkerHostDeps {
@@ -126,6 +128,9 @@ export interface RenderWorkerHost {
 
 export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorkerHost {
   let renderer: HostedRenderer | null = null;
+  /** The renderer whose device was lost: no commands or RPCs reach it, only dispose. */
+  let lostRenderer: HostedRenderer | null = null;
+  let detachProbeErrorLog: (() => void) | null = null;
   let video: TransferredVideoFrames | null = null;
   let snapshotTimer: ReturnType<typeof setInterval> | null = null;
   let inputRing: InputRingReader | null = null;
@@ -187,6 +192,27 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
     if (renderer) fn(renderer);
   };
 
+  const stopSnapshots = () => {
+    if (snapshotTimer !== null) clearInterval(snapshotTimer);
+    snapshotTimer = null;
+  };
+
+  /**
+   * A runtime device loss: one last snapshot (initialized:false), then `deviceLost`. The
+   * page recovers on a new worker; this one only answers dispose from here on.
+   */
+  const onDeviceLost = (r: HostedRenderer, reason: string, message: string) => {
+    if (renderer !== r) return;
+    stopSnapshots();
+    postSnapshot();
+    renderer = null;
+    lostRenderer = r;
+    r.setBeforeFrame(null);
+    video?.detach();
+    video = null;
+    deps.post({ type: 'deviceLost', reason, message });
+  };
+
   const commands: CommandHandlers = {
     frameInput: ({ input }) => withRenderer((r) => applyFrameInput(r, input)),
     setActiveShader: ({ id }) => withRenderer((r) => r.setActiveShader(id)),
@@ -222,10 +248,15 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
       r.setCanvasCopySrc(enabled);
     }),
     warmShaders: ({ entries }) => withRenderer((r) => r.warmShaders(entries)),
+    simulateDeviceLoss: () => withRenderer((r) => {
+      r.simulateDeviceLoss();
+    }),
   };
 
   const rpcs: RpcHandlers = {
     init: async ({ canvas, config, colorOptIns, appBaseUrl, inputRing: ringBuffer }) => {
+      // One renderer (one GPUDevice) per worker: recovery spawns a new worker.
+      if (renderer || lostRenderer) throw new Error('render worker is already initialized');
       deps.setFetchBase(appBaseUrl);
       const probe = await deps.runProbe(canvas, config.width, config.height, { colorOptIns });
       const breadcrumb = deps.toBreadcrumb(probe);
@@ -233,17 +264,24 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
         return { ok: false, probe: breadcrumb, lastInitError: probe.lastError ?? 'WebGPU boot probe failed' };
       }
       const device = probe.handoff.device;
-      device.addEventListener?.('uncapturederror', (event) => {
+      const logGpuError = (event: Event) => {
         const message = (event as GPUUncapturedErrorEvent).error?.message ?? 'GPU error';
         gpuErrors.push(message);
         if (gpuErrors.length > MAX_GPU_ERRORS) gpuErrors.shift();
-      });
+      };
+      device.addEventListener?.('uncapturederror', logGpuError);
+      detachProbeErrorLog = () => device.removeEventListener?.('uncapturederror', logGpuError);
       const r = deps.createRenderer(config);
       const ok = await r.init(canvas, probe.handoff);
       if (!ok) {
+        detachProbeErrorLog?.();
+        detachProbeErrorLog = null;
         return { ok: false, probe: breadcrumb, lastInitError: 'WebGPU renderer init failed in the render worker' };
       }
       renderer = r;
+      r.setFatalErrorHandler((message, info) => {
+        if (info?.kind === 'device-lost') onDeviceLost(r, info.reason, info.message);
+      });
       if (video) r.setTransferredVideo(video);
       if (ringBuffer) {
         const reader = new InputRingReader(ringBuffer);
@@ -282,19 +320,22 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
       }
     },
     compileCheck: async ({ id, code }) => {
-      if (!renderer) throw new Error('render worker has no renderer');
+      if (!renderer) throw new Error(lostRenderer ? 'render device lost' : 'render worker has no renderer');
       return renderer.compileCheck(id, code);
     },
     benchmarkUncapped: async ({ frames }) => (renderer ? renderer.benchmarkUncapped(frames) : null),
     dispose: async () => {
-      if (snapshotTimer !== null) clearInterval(snapshotTimer);
-      snapshotTimer = null;
-      const r = renderer;
+      stopSnapshots();
+      const r = renderer ?? lostRenderer;
       renderer = null;
+      lostRenderer = null;
       r?.setBeforeFrame(null);
+      r?.setFatalErrorHandler(null);
       inputRing = null;
       video?.detach();
       video = null;
+      detachProbeErrorLog?.();
+      detachProbeErrorLog = null;
       if (r) await r.destroy();
       return true;
     },

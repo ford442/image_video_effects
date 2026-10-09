@@ -20,6 +20,7 @@ import { createInputRingBuffer, InputRingWriter } from './inputRing';
 import { connectRenderWorker } from './renderWorkerClient';
 import { isCanvasTransferred, WorkerWebGPUBackend } from './WorkerWebGPUBackend';
 import type { WebGpuProbeResult } from '../webgpuBootProbe';
+import type { DeviceLossInfo } from '../Renderer';
 
 const CONFIG = { width: 256, height: 256, agentCount: 0 };
 
@@ -29,6 +30,7 @@ function fakeRenderer() {
     calls.push([name, args]);
     return undefined;
   };
+  let fatal: ((message: string, info?: DeviceLossInfo) => void) | null = null;
   const r = {
     initialized: false,
     init: jest.fn(async () => {
@@ -96,8 +98,20 @@ function fakeRenderer() {
     grabPresentedFrame: jest.fn(async () => null),
     compileCheck: jest.fn(async (_id: string, code: string) =>
       code.includes('oops') ? [{ type: 'error' as const, lineNum: 1, linePos: 2, message: 'bad' }] : []),
+    setFatalErrorHandler: jest.fn((handler: typeof fatal) => {
+      fatal = handler;
+    }),
+    simulateDeviceLoss: jest.fn(() => {
+      lose('simulated');
+      return true;
+    }),
   };
-  return { r: r as unknown as HostedRenderer & { initialized: boolean }, calls, raw: r };
+  /** What WebGPURenderer does when its device.lost resolves while rendering. */
+  const lose = (reason = 'unknown') => {
+    r.initialized = false;
+    fatal?.(`GPU device lost (${reason})`, { kind: 'device-lost', reason, message: 'driver reset', at: 1 });
+  };
+  return { r: r as unknown as HostedRenderer & { initialized: boolean }, calls, raw: r, lose };
 }
 
 function probe(ok: boolean): WebGpuProbeResult {
@@ -115,9 +129,13 @@ function probe(ok: boolean): WebGpuProbeResult {
 function setup(options: { probeOk?: boolean; post?: (e: RenderEvent) => void } = {}) {
   const [mainPort, workerPort] = createPortPair();
   const fake = fakeRenderer();
+  const posted: RenderEvent[] = [];
   let errorSink: ((e: RendererError) => void) | null = null;
   const deps: RenderWorkerHostDeps = {
-    post: (event) => workerPort.postMessage(event),
+    post: (event) => {
+      posted.push(event);
+      workerPort.postMessage(event);
+    },
     createRenderer: () => fake.r,
     runProbe: jest.fn(async () => probe(options.probeOk ?? true)),
     toBreadcrumb: (p) => {
@@ -136,7 +154,7 @@ function setup(options: { probeOk?: boolean; post?: (e: RenderEvent) => void } =
     type: 'hello',
     caps: { gpu: true, offscreenWebgpu: true, raf: true, videoFrame: true, crossOriginIsolated: false, sharedArrayBuffer: false },
   });
-  return { mainPort, workerPort, host, fake, deps, emitError: (e: RendererError) => errorSink?.(e) };
+  return { mainPort, workerPort, host, fake, deps, posted, emitError: (e: RendererError) => errorSink?.(e) };
 }
 
 function fakeCanvas(): HTMLCanvasElement {
@@ -236,6 +254,94 @@ describe('render worker host ↔ client', () => {
     expect(events).toContainEqual({ type: 'error', error: { type: 'gpu-validation', message: 'boom', recoverable: true } });
   });
 
+  const initRpc = { type: 'init', canvas: {} as OffscreenCanvas, config: CONFIG, colorOptIns: {}, appBaseUrl: '/' } as const;
+
+  it('on a device loss posts a final snapshot then deviceLost, and stops driving the renderer', async () => {
+    const { mainPort, fake, posted } = setup();
+    const client = await connectRenderWorker(mainPort);
+    await client.rpc(initRpc);
+    expect(fake.raw.setFatalErrorHandler).toHaveBeenCalledWith(expect.any(Function));
+    posted.length = 0;
+
+    fake.lose('unknown');
+    expect(posted.map((e) => e.type)).toEqual(['snapshot', 'deviceLost']);
+    expect(posted[0]).toMatchObject({ type: 'snapshot', snapshot: { initialized: false } });
+    expect(posted[1]).toEqual({ type: 'deviceLost', reason: 'unknown', message: 'driver reset' });
+
+    // Commands and renderer RPCs no longer reach the dead renderer.
+    fake.calls.length = 0;
+    client.send({ type: 'setSlotShader', index: 0, id: 'plasma' });
+    client.send({ type: 'frameInput', input: { mouse: [0.1, 0.2] } });
+    await flushPorts();
+    expect(fake.calls).toEqual([]);
+    expect(await client.rpc({ type: 'loadShader', id: 'ok', url: 'x' })).toBe(false);
+    expect(await client.rpc({ type: 'captureThumbnail', size: 64 })).toBeNull();
+    await expect(client.rpc({ type: 'compileCheck', id: 'a', code: 'x' })).rejects.toThrow('render device lost');
+    expect(fake.raw.loadShader).not.toHaveBeenCalled();
+
+    // A second loss report for the same renderer is ignored.
+    fake.lose('unknown');
+    expect(posted.filter((e) => e.type === 'deviceLost')).toHaveLength(1);
+
+    // dispose still releases the lost renderer.
+    expect(await client.rpc({ type: 'dispose' })).toBe(true);
+    expect(fake.raw.destroy).toHaveBeenCalled();
+    expect(fake.raw.setFatalErrorHandler).toHaveBeenLastCalledWith(null);
+  });
+
+  it('stops the snapshot timer on a device loss', async () => {
+    jest.useFakeTimers();
+    try {
+      const [mainPort, workerPort] = createPortPair();
+      const fake = fakeRenderer();
+      const posted: RenderEvent[] = [];
+      const host = createRenderWorkerHost({
+        post: (event) => posted.push(event),
+        createRenderer: () => fake.r,
+        runProbe: async () => probe(true),
+        toBreadcrumb: (p) => p,
+        setErrorSink: () => undefined,
+        setFetchBase: () => undefined,
+        snapshotIntervalMs: 100,
+      });
+      void mainPort;
+      void workerPort;
+      const settle = async () => {
+        for (let i = 0; i < 10; i++) await Promise.resolve();
+      };
+      host.handle({ ...initRpc, requestId: 1 });
+      await settle();
+      jest.advanceTimersByTime(250);
+      expect(posted.filter((e) => e.type === 'snapshot').length).toBeGreaterThanOrEqual(3);
+      fake.lose();
+      const after = posted.length;
+      jest.advanceTimersByTime(1000);
+      expect(posted.length).toBe(after);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('refuses a second init in the same worker (recovery uses a new worker)', async () => {
+    const { mainPort, fake } = setup();
+    const client = await connectRenderWorker(mainPort);
+    await client.rpc(initRpc);
+    await expect(client.rpc(initRpc)).rejects.toThrow('already initialized');
+    fake.lose();
+    await expect(client.rpc(initRpc)).rejects.toThrow('already initialized');
+    expect(fake.raw.init).toHaveBeenCalledTimes(1);
+  });
+
+  it('simulateDeviceLoss goes through the same loss path', async () => {
+    const { mainPort, fake, posted } = setup();
+    const client = await connectRenderWorker(mainPort);
+    await client.rpc(initRpc);
+    client.send({ type: 'simulateDeviceLoss' });
+    await flushPorts();
+    expect(fake.raw.simulateDeviceLoss).toHaveBeenCalledTimes(1);
+    expect(posted).toContainEqual({ type: 'deviceLost', reason: 'simulated', message: 'driver reset' });
+  });
+
   it('rejects the handshake when the worker never says hello', async () => {
     const [mainPort] = createPortPair();
     jest.useFakeTimers();
@@ -330,4 +436,81 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
     expect(seen).toContainEqual({ type: 'shader-compile', message: 'bad wgsl', recoverable: true });
     await backend.destroy();
   });
+
+  it('a deviceLost event stops the proxy: initialized=false, one fatal call, no more input sent', async () => {
+    const { backend, fake } = await backendWithWorker();
+    const fatal = jest.fn();
+    backend.setFatalErrorHandler(fatal);
+    await flushPorts();
+    deliverSnapshot(backend, true);
+    expect(backend.initialized).toBe(true);
+
+    fake.lose('unknown');
+    await flushPorts();
+    expect(backend.initialized).toBe(false);
+    expect(fatal).toHaveBeenCalledTimes(1);
+    expect(fatal.mock.calls[0][1]).toMatchObject({ kind: 'device-lost', reason: 'unknown', message: 'driver reset' });
+    expect(backend.getLastDeviceLoss()).toMatchObject({ reason: 'unknown' });
+
+    // Stale: a snapshot that claims the old worker still renders cannot revive the proxy.
+    deliverSnapshot(backend, true);
+    expect(backend.initialized).toBe(false);
+
+    // Input stays on the page; a duplicate deviceLost does not re-notify.
+    fake.calls.length = 0;
+    backend.updateMouse(0.3, 0.3);
+    backend.flush();
+    (backend as unknown as { onEvent: (e: RenderEvent) => void }).onEvent({ type: 'deviceLost', reason: 'unknown', message: '' });
+    await flushPorts();
+    expect(fake.calls).toEqual([]);
+    expect(fatal).toHaveBeenCalledTimes(1);
+    expect(backend.simulateDeviceLoss()).toBe(false);
+    await backend.destroy();
+  });
+
+  it('ignores events from a worker after the proxy shut it down', async () => {
+    const { backend } = await backendWithWorker();
+    const fatal = jest.fn();
+    backend.setFatalErrorHandler(fatal);
+    const seen: RendererError[] = [];
+    setRendererErrorHandler((e) => seen.push(e));
+    await backend.destroy();
+    const onEvent = (backend as unknown as { onEvent: (e: RenderEvent) => void }).onEvent.bind(backend);
+    deliverSnapshot(backend, true);
+    onEvent({ type: 'error', error: { type: 'gpu-validation', message: 'late', recoverable: true } });
+    onEvent({ type: 'deviceLost', reason: 'unknown', message: 'late' });
+    expect(backend.initialized).toBe(false);
+    expect(seen).toEqual([]);
+    expect(fatal).not.toHaveBeenCalled();
+  });
+
+  it('a late rpcResult from the old worker cannot resolve a request on a new backend', async () => {
+    const first = await backendWithWorker();
+    await first.backend.destroy();
+    const second = await backendWithWorker();
+    // The old worker replies late, reusing request ids the new client also uses.
+    for (let requestId = 1; requestId <= 4; requestId++) {
+      first.workerPort.postMessage({ type: 'rpcResult', requestId, ok: true, value: 'stale' });
+    }
+    await flushPorts();
+    expect(await second.backend.loadShader('ok', 'x')).toBe(true);
+    await second.backend.destroy();
+  });
 });
+
+function deliverSnapshot(backend: WorkerWebGPUBackend, initialized: boolean): void {
+  (backend as unknown as { onEvent: (e: RenderEvent) => void }).onEvent({
+    type: 'snapshot',
+    snapshot: {
+      initialized, fps: 30, gpuTimings: { parallelTime: 0, chainedTime: 0, totalTime: 0, available: false, timingSource: 'wall-clock' },
+      passTimings: [], timing: { source: 'wall-clock', periodNs: 1, profiledPasses: 0, overflow: 0 },
+      frameStats: { submitsLastFrame: 1, bindGroupsLastFrame: 0, framesRendered: 1 },
+      video: { ingestPath: 'none', framesIngested: 0, droppedFrames: 0, missedFrames: 0, queueDepth: 0 },
+      nodeScales: {}, scalableNodes: [], slots: [], graphReport: null, chores: {} as never, cachedShaderIds: [],
+      colorFormat: 'rgba16float', historyLayers: 4, workingSizeCap: 1024,
+      resolution: { scale: 1, full: { w: 1, h: 1 }, scaled: { w: 1, h: 1 }, pixelReduction: '0%' },
+      gpuErrors: [], inputChannel: 'postMessage',
+      input: { mouse: [0.5, 0.5], mouseDown: false, audio: [0, 0, 0], slot0: [0.5, 0.5, 0.5, 0.5] },
+    },
+  });
+}

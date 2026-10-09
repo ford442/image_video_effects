@@ -34,6 +34,16 @@ export interface UncappedBenchResult {
   msPerFrame: number;
 }
 
+/** A runtime GPUDevice loss in a TS WebGPU backend (page or render worker). */
+export interface DeviceLossInfo {
+  kind: 'device-lost';
+  /** GPUDeviceLostInfo.reason, or 'simulated' for the test hook. */
+  reason: string;
+  message: string;
+  /** Date.now() when the loss was observed. */
+  at: number;
+}
+
 /** Shader-slot backends (WebGPU + WASM). Canvas2D does not implement these. */
 export interface ShaderSlotRenderer {
   loadShader(id: string, url: string): Promise<boolean>;
@@ -56,9 +66,10 @@ export interface Renderer {
 
   /**
    * Optional: notified once when the backend stops rendering at runtime (not during init),
-   * so RendererManager can fall back or surface the blocked-renderer overlay.
+   * so RendererManager can fall back or surface the blocked-renderer overlay. The TS WebGPU
+   * backends pass `info` when the stop was a GPUDevice loss (RendererManager recovers it).
    */
-  setFatalErrorHandler?: (handler: (message: string) => void) => void;
+  setFatalErrorHandler?: (handler: (message: string, info?: DeviceLossInfo) => void) => void;
 
   // Video input
   setVideo(video: HTMLVideoElement | undefined): void;

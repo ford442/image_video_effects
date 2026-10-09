@@ -22,7 +22,7 @@ import { createDefaultBreadcrumbs } from '../../gpuChores/types';
 import { reportError } from '../ErrorHandling';
 import { VideoFramePump, VideoIngestStats } from '../media/videoFramePump';
 import type { PassTiming } from '../passTimings';
-import type { GPUTimings, RendererConfig, SlotZoomParamsUpdate, UncappedBenchResult } from '../Renderer';
+import type { DeviceLossInfo, GPUTimings, RendererConfig, SlotZoomParamsUpdate, UncappedBenchResult } from '../Renderer';
 import type { InputSource } from '../types';
 import { createFrameStats, type FrameStats } from '../webgpu/deviceCounters';
 import { resolveCanvasColorOptIns } from '../webgpu/device';
@@ -120,6 +120,12 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   /** SAB input ring when the page and the worker are cross-origin isolated (#1314 C3). */
   private ring: InputRingWriter | null = null;
   private unregisterCompiler: (() => void) | null = null;
+  /** The worker reported a device loss: nothing more is sent, `initialized` stays false. */
+  private lost = false;
+  /** The client was shut down: late events from the old worker are ignored. */
+  private shutdown = false;
+  private fatalErrorHandler: ((message: string, info?: DeviceLossInfo) => void) | null = null;
+  private lastDeviceLoss: DeviceLossInfo | null = null;
 
   constructor(
     private readonly config: RendererConfig,
@@ -212,6 +218,7 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   }
 
   private shutdownClient(): void {
+    this.shutdown = true;
     this.ring = null;
     this.unregisterCompiler?.();
     this.unregisterCompiler = null;
@@ -222,13 +229,46 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   }
 
   private onEvent(event: RenderEvent): void {
+    if (this.shutdown) return;
     if (event.type === 'snapshot') {
       this.snap = event.snapshot;
-      this.initialized = event.snapshot.initialized;
+      // A lost worker never comes back; only a new backend (new worker) renders again.
+      this.initialized = !this.lost && event.snapshot.initialized;
       for (const id of event.snapshot.cachedShaderIds) this.cachedIds.add(id);
     } else if (event.type === 'error') {
       reportError(event.error);
+    } else if (event.type === 'deviceLost') {
+      this.onDeviceLost(event.reason, event.message);
     }
+  }
+
+  private onDeviceLost(reason: string, message: string): void {
+    if (this.lost) return;
+    this.lost = true;
+    this.initialized = false;
+    this.pump?.detach();
+    this.pump = null;
+    this.ring = null;
+    this.pending = {};
+    this.dirtySlots.clear();
+    const info: DeviceLossInfo = { kind: 'device-lost', reason, message, at: Date.now() };
+    this.lastDeviceLoss = info;
+    this.fatalErrorHandler?.(`GPU device lost in the render worker (${reason})`, info);
+  }
+
+  setFatalErrorHandler(handler: ((message: string, info?: DeviceLossInfo) => void) | null): void {
+    this.fatalErrorHandler = handler;
+  }
+
+  getLastDeviceLoss(): DeviceLossInfo | null {
+    return this.lastDeviceLoss;
+  }
+
+  /** Test hook (?testMode=1): the worker destroys its device and reports a runtime loss. */
+  simulateDeviceLoss(): boolean {
+    if (!this.client || this.lost || !this.initialized) return false;
+    this.client.send({ type: 'simulateDeviceLoss' });
+    return true;
   }
 
   // ── Per-frame input: coalesced, one message per main animation frame ──────
@@ -243,7 +283,7 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   flush(): void {
     this.flushScheduled = false;
     const client = this.client;
-    if (!client) return;
+    if (!client || this.lost) return;
     const input = this.pending;
     this.pending = {};
     if (this.dirtySlots.size > 0) {
@@ -428,6 +468,11 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   setVideo(video: HTMLVideoElement | undefined): void {
     const next = video ?? null;
     if (this.video === next) return;
+    if (this.lost) {
+      // Remembered for readRendererVideo(); the recovered backend pumps it.
+      this.video = next;
+      return;
+    }
     this.pump?.detach();
     this.pump = null;
     this.video = next;
