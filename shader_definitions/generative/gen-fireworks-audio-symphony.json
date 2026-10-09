@@ -108,5 +108,5 @@
     "mouse-driven",
     "audio-reactive"
   ],
-  "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history; extraBuffer[133] = smoothed bass envelope"
+  "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history; top-row texels (0..5,0) = per-shell onset latch (energy, spectral centroid, cycleId+1, 0), (6,0) = smoothed bass envelope; writeTexture keeps true display colour"
 }

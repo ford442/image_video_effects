@@ -60,6 +60,6 @@
   "updated": true,
   "id": "gen-ethereal-quantum-hologram-bonsai",
   "url": "shaders/gen-ethereal-quantum-hologram-bonsai.wgsl",
-  "features": ["audio-reactive", "mouse-driven", "temporal-feedback", "depth-output", "aces-tonemap", "semantic-alpha"],
-  "feedbackPacking": "A/C = final ACES display RGBA; exact hologram history; extraBuffer[133] = smoothed bass envelope"
+  "features": ["audio-reactive", "mouse-driven", "temporal-feedback", "depth-output", "aces-tonemap", "semantic-alpha", "upgraded-rgba"],
+  "feedbackPacking": "A/C = final ACES display RGBA; exact hologram history; no persistent extraBuffer state (direct plasmaBuffer bass)"
 }

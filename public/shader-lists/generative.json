@@ -3168,9 +3168,44 @@
         "step": 0.01
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Crystal Sharpness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Flow Speed",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "index": 2,
+        "name": "Aether Density",
+        "default": 0.7,
+        "min": 0.1,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "index": 3,
+        "name": "Iridescence Shift",
+        "default": 0,
+        "min": -1,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "features": [
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ]
   },
   {
@@ -8780,6 +8815,45 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Structural Density",
+        "default": 2,
+        "min": 0.5,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "index": 1,
+        "name": "Refraction Index",
+        "default": 1.5,
+        "min": 1,
+        "max": 3,
+        "step": 0.05
+      },
+      {
+        "index": 2,
+        "name": "Dispersion",
+        "default": 0.05,
+        "min": 0,
+        "max": 0.2,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Chromatic Phase",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "features": [
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
     ]
   },
   {
@@ -12347,7 +12421,8 @@
       "click-reactive",
       "temporal-feedback",
       "semantic-alpha",
-      "aces-tonemap"
+      "aces-tonemap",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = final ACES display RGBA; exact quantum-silk persistence history"
   },
@@ -15174,9 +15249,10 @@
       "temporal-feedback",
       "depth-output",
       "aces-tonemap",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
-    "feedbackPacking": "A/C = final ACES display RGBA; exact hologram history; extraBuffer[133] = smoothed bass envelope"
+    "feedbackPacking": "A/C = final ACES display RGBA; exact hologram history; no persistent extraBuffer state (direct plasmaBuffer bass)"
   },
   {
     "name": "Ethereal Quantum-Holographic Fractal-Coral",
@@ -15380,7 +15456,8 @@
       "temporal-feedback",
       "depth-output",
       "aces-tonemap",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = final ACES display RGBA; exact medusa bioluminescence history"
   },
@@ -16044,7 +16121,7 @@
       "mouse-driven",
       "audio-reactive"
     ],
-    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history; extraBuffer[133] = smoothed bass envelope"
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history; top-row texels (0..5,0) = per-shell onset latch (energy, spectral centroid, cycleId+1, 0), (6,0) = smoothed bass envelope; writeTexture keeps true display colour"
   },
   {
     "name": "4th of July — Chrysanthemum Burst",

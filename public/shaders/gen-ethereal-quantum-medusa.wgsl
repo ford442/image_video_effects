@@ -5,31 +5,14 @@
 //            upgraded-rgba, chromatic-tentacles, temporal-bioluminescence,
 //            audio-sway, depth-output, gravity-attractor, mouse-trail
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: nematocyst stinger dots along tentacle rim from edge SDF; bell contraction wave from radial phase tied to bass
+//  Upgraded: 2026-10-10
+//  Ideas: nematocyst stinger dots along tentacle rim from edge SDF; bell contraction wave from radial phase tied to bass;
+//         peristaltic pulse travelling down the existing tentacle column (swells the radius, gates the stingers);
+//         8-fold radial canals on the bell brightening with the contraction phase; click rings fixed-strength (ripple.w is always 0)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI:  f32 = 3.14159265358979323846;
 const TAU: f32 = 6.28318530717958647692;
@@ -60,6 +43,12 @@ fn applyMouseAttractor(p: vec3<f32>, mouse_pos: vec3<f32>, attract: f32) -> vec3
     let m_dist = length(p - mouse_pos);
     let pull = attract / (m_dist * m_dist + 1.0);
     return p - normalize(p - mouse_pos) * pull;
+}
+
+// Idea 2nd-pass A: the bell's contraction phase continued down the column, lagged by depth.
+// Crests travel from the bell toward the tentacle tips as time grows.
+fn columnPulse(y: f32, time: f32, bass: f32) -> f32 {
+    return sin(-y * 5.0 - time * 2.2 - bass * 4.5);
 }
 
 fn map(p: vec3<f32>, time: f32, bass: f32, mids: f32) -> vec2<f32> {
@@ -100,7 +89,10 @@ fn map(p: vec3<f32>, time: f32, bass: f32, mids: f32) -> vec2<f32> {
     let p_tent_xy = rot2D(time * 0.5 + p_tent.y * u.zoom_params.y) * p_tent.xy;
     p_tent.x = p_tent_xy.x;
     p_tent.y = p_tent_xy.y;
-    let tentacles = length(p_tent.xz) - 0.1 * (1.0 - p_tent.y * 0.1);
+    // Idea 2nd-pass A: peristaltic swell of the existing column below the bell
+    let colEnv = smoothstep(0.3, -0.4, p1.y);
+    let colSwell = 1.0 + (0.3 + bass * 0.12) * columnPulse(p1.y, time, bass) * colEnv;
+    let tentacles = length(p_tent.xz) - 0.1 * (1.0 - p_tent.y * 0.1) * colSwell;
 
     let d = smin(bell, tentacles, 0.5);
     return vec2<f32>(d, 1.0);
@@ -203,7 +195,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let rimAngle = atan2(p.z, p.x);
         let stingerGrid = fract(rimAngle / TAU * 8.0 * 10.0 + p.y * 7.0 + time * 0.15);
         let stingers = tentRim * smoothstep(0.9, 0.94, stingerGrid) * smoothstep(0.98, 0.95, stingerGrid);
-        col += vec3<f32>(0.88, 0.95, 1.0) * stingers * (0.55 + treble * 0.25);
+        // Idea 2nd-pass A: stingers flare as the peristaltic crest passes
+        let pulseGate = 0.5 + 0.5 * columnPulse(p.y, time, bass);
+        col += vec3<f32>(0.88, 0.95, 1.0) * stingers * (0.55 + treble * 0.25) * mix(0.4, 1.4, pulseGate);
+
+        // Idea 2nd-pass B: 8-fold radial canals on the bell, brightening with the contraction phase
+        let canalPhase = rimDist * 7.5 - time * 2.2 - bass * 4.5;
+        let canalLine = smoothstep(0.86, 0.99, cos(rimAngle * 8.0));
+        let canalMask = smoothstep(0.1, 0.3, rimDist) * smoothstep(1.2, 0.8, rimDist) * smoothstep(-0.05, 0.12, p.y);
+        let canalBeat = 0.3 + 0.7 * (0.5 + 0.5 * sin(canalPhase));
+        col += vec3<f32>(0.2, 0.85, 1.0) * canalLine * canalMask * canalBeat * 0.45;
     }
 
     // Feedback loop: blend with previous frame for motion trails
@@ -215,7 +216,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let age = u.config.x - ripple.z;
         if (age > 0.0 && age < 2.5) {
             let radius = age * 0.32;
-            let ring = exp(-abs(distance(vec2<f32>(id.xy) / res, ripple.xy) - radius) * 100.0) * exp(-age * 1.8) * ripple.w;
+            let ring = exp(-abs(distance(vec2<f32>(id.xy) / res, ripple.xy) - radius) * 100.0) * exp(-age * 1.8) * 0.7;
             col += vec3<f32>(0.25, 0.9, 1.0) * ring * (0.5 + treble);
         }
     }

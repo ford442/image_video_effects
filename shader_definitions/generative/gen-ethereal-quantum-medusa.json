@@ -55,6 +55,6 @@
   "updated": true,
   "id": "gen-ethereal-quantum-medusa",
   "url": "shaders/gen-ethereal-quantum-medusa.wgsl",
-  "features": ["audio-reactive", "mouse-driven", "click-reactive", "temporal-feedback", "depth-output", "aces-tonemap", "semantic-alpha"],
+  "features": ["audio-reactive", "mouse-driven", "click-reactive", "temporal-feedback", "depth-output", "aces-tonemap", "semantic-alpha", "upgraded-rgba"],
   "feedbackPacking": "A/C = final ACES display RGBA; exact medusa bioluminescence history"
 }
