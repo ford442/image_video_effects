@@ -78,6 +78,7 @@ var<private> gPlateF1: f32 = 0.0;
 var<private> gPlateEdge: f32 = 1.0;
 var<private> gPlateId: f32 = 0.0;
 var<private> gDilation: f32 = 0.0;
+var<private> gPBody: vec3<f32> = vec3<f32>(0.0);
 
 fn map(p_in: vec3<f32>) -> f32 {
     var p = p_in;
@@ -131,6 +132,7 @@ fn map(p_in: vec3<f32>) -> f32 {
     gPlateF1 = v.x;
     gPlateEdge = edge;
     gPlateId = v.z;
+    gPBody = pBody;
 
     // Hollow out gaps slightly
     shell = shell + inGap * 0.15;
@@ -318,7 +320,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // the seam glow. Small round blobs on a hash lattice, only near gaps.
         let seam = 1.0 - smoothstep(0.03, 0.22, plateEdge);
         let colonised = step(0.45, fract(plateId * 7.3));
-        let epiQ = p * 13.0;
+        let epiQ = gPBody * 13.0;
         let epiH = hash33(floor(epiQ));
         let epiBlob = smoothstep(0.34, 0.08, length(fract(epiQ) - vec3<f32>(0.5) - (epiH - vec3<f32>(0.5)) * 0.4));
         let epi = epiBlob * step(0.5, epiH.z) * seam * colonised;

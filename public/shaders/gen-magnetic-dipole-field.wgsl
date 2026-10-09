@@ -163,7 +163,7 @@ fn vanAllenBelts(r: vec2<f32>, time: f32, moment: f32, bass: f32, substorm: f32)
 fn magnetopause(r: vec2<f32>, time: f32, moment: f32, bass: f32, substorm: f32) -> vec2<f32> {
   let rp = max(length(r), 0.0001);
   let cosT = r.x / rp;
-  let standoff = (0.22 + 0.05 * moment) * (1.0 - bass * 0.14 - substorm * 0.1);
+  let standoff = (0.42 + 0.08 * moment) * (1.0 - bass * 0.14 - substorm * 0.1);
   let tailFade = smoothstep(-0.7, -0.15, cosT);
   let denom = max(1.0 + cosT, 0.12);
   let rMP = 2.0 * standoff / denom;

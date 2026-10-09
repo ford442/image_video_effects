@@ -5,7 +5,7 @@
 //  Complexity: High
 //  Upgraded: 2026-10-10
 //  Ideas: gravitational ray-bending around the singularity (Einstein-ring stretch of the thread lattice); weft shuttle beads running along the folded threads; bass-plucked thread vibration
-//  A packing: ACES display RGBA (was the surface normal; C is never read)
+//  A packing: ACES+gamma display RGBA (was the surface normal; C is never read)
 // ═══════════════════════════════════════════════════════════════════
 // zoom_params: x = Thread Density, y = Loom Speed, z = Glow Intensity, w = Color Shift
 
@@ -133,7 +133,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var t: f32 = 0.0;
     var d: f32 = 0.0;
     var m: f32 = 0.0;
-    var p: vec3<f32>;
+    var p: vec3<f32> = ro;
     var bend: f32 = 0.0;   // accumulated deflection, drives the lensing rim glow
 
     // Idea 1: gravitational ray-bending. Each march step turns the ray toward
@@ -143,7 +143,6 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     var i: i32 = 0;
     for (i = 0; i < 100; i++) {
-        p = ro + rd * t;
         let res = map(p);
         d = res.x;
         m = res.y;
@@ -152,6 +151,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let pull = lensK * d / (r2 + 0.6);
         rd = normalize(rd - p * pull / sqrt(r2 + 1e-4));
         bend += pull;
+        // integrate the position along the (bent) direction so the path is a real curve
+        p += rd * d;
         t += d;
     }
 
@@ -204,8 +205,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Lensing rim: light bent hardest near the singularity warms the void
     col += palette(0.15 + u.zoom_params.w, u.zoom_params.w) * min(bend, 1.5) * 0.12 * u.zoom_params.z;
 
-    // ACES on display RGB (replaces the plain gamma curve)
-    let mapped = aces(max(col, vec3<f32>(0.0)) * 1.25);
+    // ACES on display RGB (gamma kept after it, so the default look stays close to HEAD)
+    let mapped = pow(aces(max(col, vec3<f32>(0.0)) * 1.25), vec3<f32>(1.0 / 2.2));
 
     // Semantic alpha: surface coverage, subsurface glow, beads, lensing halo
     let hitMask = select(0.0, 1.0, t < 20.0);

@@ -148,7 +148,8 @@ fn ferrofluid(p: vec3<f32>, time: f32, bass: f32, spikeDensity: f32,
     // an amount set by Magnetic Pull (which the held mouse already boosts).
     let leanDir = normalize(mousePos - spikeTip + vec3<f32>(1e-4));
     let leanFacing = smoothstep(-0.2, 0.8, dot(spikeDir, normalize(mousePos + vec3<f32>(1e-4))));
-    let lean = clamp(magneticPull, 0.0, 1.0) * 0.7 * leanFacing;
+    // idle cursor (parked at the centre, mousePos ~ 0) must not lean anything
+    let lean = clamp(magneticPull, 0.0, 1.0) * 0.7 * leanFacing * smoothstep(0.3, 1.0, length(mousePos));
     var pCone = pos - spikeTip + spikeDir * spikeBaseHeight * 0.5;
     pCone.x -= leanDir.x * pCone.y * lean;
     pCone.z -= leanDir.z * pCone.y * lean;
