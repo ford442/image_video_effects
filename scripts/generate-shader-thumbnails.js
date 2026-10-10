@@ -13,8 +13,11 @@
  *   npm run thumbs:generate -- --category=generative --limit=50
  *   npm run thumbs:generate -- --shard=0/4 --force
  *   npm run thumbs:generate:minimal -- --category=generative --limit=10
+ *   npm run thumbs:generate -- --adapter=swiftshader --missing   # GPU-less host
+ *   npm run thumbs:generate -- --recapture-host=swiftshader      # redo software captures on a GPU
  *
- * Requires a real WebGPU host — see docs/THUMBNAIL_PIPELINE.md
+ * Needs a WebGPU adapter: a real GPU, or SwiftShader (--adapter=swiftshader; slow,
+ * captures are tagged capture_host=swiftshader). See docs/THUMBNAIL_PIPELINE.md.
  */
 
 const { chromium } = require('playwright');
@@ -31,6 +34,8 @@ const BUILD_DIR = path.join(ROOT, 'build');
 const DEFAULT_REPORT = path.join(ROOT, 'reports', 'thumbnail-failures.json');
 const MULTIPASS_REGISTRY_PATH = path.join(ROOT, 'src', 'renderer', 'multipassRegistry.ts');
 const { loadThumbnailSkipIds } = require('./lib/thumbnailSkipAllowlist');
+const { SWIFTSHADER_WEBGPU_ARGS } = require('./lib/swiftshaderArgs');
+const frameAnalysis = require('./lib/thumbnailFrameAnalysis');
 const { createHashContext, computeSourceHash, thumbnailFreshness } = require('./lib/shaderSourceHash');
 
 let HASH_CTX = null;
@@ -44,6 +49,8 @@ const DEFAULT_FRAMES = 60;
 const SIM_WARMUP_FRAMES = 120;
 const DEFAULT_TIME = 1.5;
 const DEFAULT_QUALITY = 'battery';
+const BASE_CHROMIUM_ARGS = ['--enable-unsafe-webgpu', '--no-sandbox', '--disable-gpu-sandbox'];
+const ADAPTERS = new Set(['default', 'swiftshader']);
 
 // ── CLI args ────────────────────────────────────────────────────────────────
 
@@ -66,6 +73,11 @@ function parseArgs(argv) {
     report: DEFAULT_REPORT,
     time: DEFAULT_TIME,
     priority: null,
+    adapter: process.env.THUMBS_ADAPTER || 'default',
+    viewport: null,
+    renderScale: null,
+    port: null,
+    recaptureHost: null,
   };
   for (const arg of argv) {
     const eq = arg.indexOf('=');
@@ -86,6 +98,11 @@ function parseArgs(argv) {
     else if (key === 'report') out.report = val;
     else if (key === 'time') out.time = parseFloat(val);
     else if (key === 'priority') out.priority = val;
+    else if (key === 'adapter') out.adapter = val;
+    else if (key === 'viewport') out.viewport = parseInt(val, 10);
+    else if (key === 'render-scale') out.renderScale = parseFloat(val);
+    else if (key === 'port') out.port = parseInt(val, 10);
+    else if (key === 'recapture-host') out.recaptureHost = val;
     else if (key === 'shard') {
       const [idx, count] = val.split('/').map(s => parseInt(s, 10));
       out.shardIndex = idx;
@@ -93,7 +110,35 @@ function parseArgs(argv) {
     }
   }
   if (out.missing) out.skipExisting = true;
+  if (!ADAPTERS.has(out.adapter)) {
+    throw new Error(`Unknown --adapter "${out.adapter}" (use ${[...ADAPTERS].join(' or ')})`);
+  }
+  // Software rendering is slow (~2 fps): render 512² (scale 0.25 of 2048). The PNG is read
+  // from the working texture; pages narrower than ~512 px never start the renderer.
+  if (out.adapter === 'swiftshader') {
+    if (out.viewport == null) out.viewport = 512;
+    if (out.renderScale == null) out.renderScale = 0.25;
+  }
   return out;
+}
+
+function chromiumArgs(adapter) {
+  return adapter === 'swiftshader'
+    ? [...new Set([...SWIFTSHADER_WEBGPU_ARGS, '--no-sandbox', '--disable-gpu-sandbox'])]
+    : BASE_CHROMIUM_ARGS;
+}
+
+/** Manifest provenance: software captures are real renders, but a GPU farm should redo them. */
+function captureHostFor(adapter) {
+  return adapter === 'swiftshader' ? 'swiftshader' : 'gpu';
+}
+
+/**
+ * Most list entries carry no `category`; the list they live in is their
+ * category. Without this, image effects were captured with a cleared input.
+ */
+function withListCategory(entry, listName) {
+  return entry.category ? entry : { ...entry, category: listName };
 }
 
 function loadAllCatalogShaders() {
@@ -101,8 +146,10 @@ function loadAllCatalogShaders() {
   const byId = new Map();
   for (const file of files) {
     const list = JSON.parse(fs.readFileSync(path.join(LISTS_DIR, file), 'utf8'));
+    if (!Array.isArray(list)) continue;
+    const listName = path.basename(file, '.json');
     for (const entry of list) {
-      if (entry && entry.id) byId.set(entry.id, entry);
+      if (entry && entry.id) byId.set(entry.id, withListCategory(entry, listName));
     }
   }
   return Array.from(byId.values());
@@ -119,7 +166,7 @@ function loadShaderList(category) {
   if (!fs.existsSync(file)) {
     throw new Error(`No shader list found for category "${category}" (expected ${file})`);
   }
-  return JSON.parse(fs.readFileSync(file, 'utf8'));
+  return JSON.parse(fs.readFileSync(file, 'utf8')).map(e => withListCategory(e, category));
 }
 
 function loadAttractPriorityIds() {
@@ -179,20 +226,22 @@ function classifyFailure(error) {
   const msg = String(error || '');
   if (msg.startsWith('compile:')) return 'compile';
   if (msg.startsWith('pipeline:')) return 'pipeline';
-  if (msg === 'black_frame' || msg === 'magenta_frame' || msg === 'error_frame') return msg;
+  if (msg === 'black_frame' || msg === 'magenta_frame' || msg === 'error_frame' || msg === 'flat_frame') return msg;
   if (msg.includes('no GPU') || msg.includes('navigator.gpu')) return 'gpu_unavailable';
   if (msg.includes('loadShader failed')) return 'load_failed';
+  if (msg.includes('Timeout')) return 'timeout';
   return 'unknown';
 }
 
 function emptySummary() {
-  return { success: 0, failed: 0, skipped: 0, black_frame: 0, magenta_frame: 0, error_frame: 0, compile: 0 };
+  return { success: 0, failed: 0, skipped: 0, black_frame: 0, magenta_frame: 0, error_frame: 0, flat_frame: 0, compile: 0 };
 }
 
 function bumpErrorSummary(summary, reason) {
   if (reason === 'black_frame') summary.black_frame++;
   else if (reason === 'magenta_frame') summary.magenta_frame++;
   else if (reason === 'error_frame') summary.error_frame++;
+  else if (reason === 'flat_frame') summary.flat_frame++;
 }
 
 /** Parse multipass + graph registry ids from generated TS for warmup heuristics. */
@@ -229,13 +278,21 @@ function warmupFramesForShader(shader, defaultFrames) {
   return defaultFrames;
 }
 
-function recordErrorFrameFailure(failures, summary, shaderId, stats, harness) {
-  const reason = harness.classifyErrorFrame(stats) || 'error_frame';
+function recordErrorFrameFailure(failures, summary, shaderId, stats, reason) {
   bumpErrorSummary(summary, reason);
   summary.failed++;
-  const detail = harness.formatFrameStats(stats);
+  const detail = frameAnalysis.formatFrameStats(stats);
   failures.push({ id: shaderId, reason, detail, stats });
   return { reason, detail };
+}
+
+/**
+ * Health of the bytes that will be committed. The PNG comes from a GPU readback;
+ * the compositor canvas is blank on SwiftShader and transferred in worker mode.
+ */
+async function classifyPng(png) {
+  const stats = await frameAnalysis.statsFromPngBuffer(png);
+  return { stats, reason: frameAnalysis.classifyErrorFrame(stats) };
 }
 
 function writeFailureReport(reportPath, payload) {
@@ -243,13 +300,27 @@ function writeFailureReport(reportPath, payload) {
   fs.writeFileSync(reportPath, JSON.stringify(payload, null, 2));
 }
 
-function updateManifestEntry(manifest, id, zoomParams) {
+function updateManifestEntry(manifest, id, zoomParams, capture = null) {
   manifest[id] = {
     thumbnail_url: `thumbnails/${id}.png`,
     generated_at: new Date().toISOString(),
     params_snapshot: zoomParams,
     source_hash: currentSourceHash(id),
+    ...(capture ? { capture_host: capture.host } : {}),
   };
+  capturedEntries.set(id, manifest[id]);
+}
+
+/** --recapture-host=swiftshader: thumbnails captured on that host (for a GPU farm to redo). */
+function capturedOn(id, manifest, host) {
+  return manifest[id]?.capture_host === host;
+}
+
+/** Smaller PNGs for the repo; pixels are unchanged. */
+async function compressPng(png) {
+  const sharp = require('sharp');
+  const out = await sharp(png).png({ compressionLevel: 9, adaptiveFiltering: true }).toBuffer();
+  return out.length < png.length ? out : png;
 }
 
 /** --stale: keep shaders whose thumbnail is missing, unstamped, or older than their source. */
@@ -439,10 +510,7 @@ async function runMinimalEngine(args, shaders, manifest) {
   const summary = emptySummary();
   const failures = [];
 
-  const browser = await chromium.launch({
-    headless: args.headless,
-    args: ['--enable-unsafe-webgpu', '--no-sandbox', '--disable-gpu-sandbox'],
-  });
+  const browser = await chromium.launch({ headless: args.headless, args: chromiumArgs(args.adapter) });
   const page = await browser.newPage();
   await page.setContent('<html><body></body></html>');
   let hasGpu = await page.evaluate(() => !!navigator.gpu);
@@ -483,7 +551,7 @@ async function runMinimalEngine(args, shaders, manifest) {
     if (result.ok) {
       const outPath = path.join(OUT_DIR, `${shader.id}.png`);
       fs.writeFileSync(outPath, Buffer.from(result.png, 'base64'));
-      updateManifestEntry(manifest, shader.id, zoomParams);
+      updateManifestEntry(manifest, shader.id, zoomParams, { host: captureHostFor(args.adapter) });
       console.log(`${progress} ${shader.id}: OK`);
       summary.success++;
     } else {
@@ -512,53 +580,92 @@ async function runAppEngine(args, shaders, manifest) {
     );
   }
 
-  await harness.startStaticServer(BUILD_DIR);
+  await harness.startStaticServer(BUILD_DIR, args.port || harness.DEFAULT_PORT);
 
-  const browser = await chromium.launch({
-    headless: args.headless,
-    args: ['--enable-unsafe-webgpu', '--no-sandbox', '--disable-gpu-sandbox'],
-  });
-  const page = await browser.newPage();
-  const { criticalErrors } = harness.attachConsoleCollector(page);
+  let browser = null;
+  try {
+    browser = await chromium.launch({ headless: args.headless, args: chromiumArgs(args.adapter) });
+    await captureAll(harness, browser, args, shaders, manifest, summary, failures);
+  } finally {
+    if (browser) await browser.close();
+    await harness.stopStaticServer();
+  }
+  return { summary, failures };
+}
 
+async function captureAll(harness, browser, args, shaders, manifest, summary, failures) {
+  const criticalErrors = [];
   const appUrl = harness.buildAppUrl({
     renderer: 'webgpu',
     renderQuality: args.quality,
+    // On the page: one fewer hop for readback, and SwiftShader gains nothing from the worker.
+    extraParams: args.adapter === 'swiftshader' ? { renderer: 'main' } : {},
   });
-  await page.goto(appUrl, { waitUntil: 'networkidle' });
-  await harness.waitForTestApi(page);
+
+  let page = null;
+  const newPage = async () => {
+    if (page) await page.close().catch(() => {});
+    page = await browser.newPage(
+      args.viewport ? { viewport: { width: args.viewport, height: args.viewport } } : {},
+    );
+    harness.attachConsoleCollector(page, criticalErrors);
+    // Same-origin only: the app fetches a random remote image at boot, which can land
+    // mid-capture and replace the fixture. Offline also means reproducible.
+    await harness.blockExternalRequests(page);
+  };
+  // 'load', not 'networkidle': remote media hosts can keep retrying on sandboxed hosts.
+  // A page wedged by a runaway shader may not even navigate: then start a fresh page.
+  const openApp = async () => {
+    try {
+      if (!page) await newPage();
+      await page.goto(appUrl, { waitUntil: 'load', timeout: 120000 });
+      await harness.waitForTestApi(page, 120000);
+    } catch (err) {
+      console.log(`[thumbnails] app did not load (${String(err.message || err).split('\n')[0]}); new page`);
+      await newPage();
+      await page.goto(appUrl, { waitUntil: 'load', timeout: 120000 });
+      await harness.waitForTestApi(page, 120000);
+    }
+  };
+  await openApp();
 
   const backend = await harness.getActiveBackend(page);
   if (backend !== 'webgpu') {
-    await browser.close();
-    await harness.stopStaticServer();
     throw new Error(`gpu_unavailable: expected webgpu backend, got "${backend}"`);
   }
 
   const imageUrl = harness.imageFixtureUrl();
+  const capture = { host: captureHostFor(args.adapter) };
+  console.log(`[thumbnails] capture_host=${capture.host} adapter: ${await harness.getAdapterInfo(page) || 'unknown'}`);
+  const perShaderTimeout = args.adapter === 'swiftshader' ? 300000 : 120000;
+  let currentSource = null;
+  const retried = new Set();
 
   for (let i = 0; i < shaders.length; i++) {
     const shader = shaders[i];
     const progress = `[${i + 1}/${shaders.length}]`;
-    const wgslPath = path.join(SHADERS_DIR, `${shader.id}.wgsl`);
-    if (!fs.existsSync(wgslPath)) {
-      console.log(`${progress} ${shader.id}: SKIP (no .wgsl file)`);
+    const shaderUrl = harness.localShaderUrl(shader.id, shader.url);
+    if (!fs.existsSync(path.join(BUILD_DIR, shaderUrl))) {
+      console.log(`${progress} ${shader.id}: SKIP (no .wgsl at ${shaderUrl})`);
       summary.skipped++;
-      failures.push({ id: shader.id, reason: 'no_wgsl', detail: 'missing .wgsl file' });
+      failures.push({ id: shader.id, reason: 'no_wgsl', detail: `missing ${shaderUrl}` });
       continue;
     }
 
     const zoomParams = extractDefaultParams(shader);
     const inputSource = harness.inputSourceForCategory(shader.category || '');
-    const shaderUrl = harness.localShaderUrl(shader.id);
 
     try {
+      // Data textures are not cleared on a shader switch: reallocate them so every
+      // capture starts from zero feedback state, as it does in a fresh session.
+      await harness.resetFeedbackState(page, args.renderScale);
       await harness.loadShaderOnSlot(
         page,
         { id: shader.id, url: shaderUrl, slot: 0 },
         inputSource,
-        inputSource === 'image' ? imageUrl : null,
+        inputSource === 'image' && currentSource !== 'image' ? imageUrl : null,
       );
+      currentSource = inputSource;
       await harness.applyTestState(page, {
         time: args.time,
         mouseX: 0.5,
@@ -566,17 +673,10 @@ async function runAppEngine(args, shaders, manifest) {
         mouseDown: 0,
       });
       const frameCount = warmupFramesForShader(shader, args.frames);
-      await harness.waitFrames(page, frameCount);
+      await harness.waitRenderedFrames(page, frameCount, perShaderTimeout);
 
-      const stats = await harness.captureCanvasStats(page);
-      if (harness.isErrorFrame(stats)) {
-        const { reason, detail } = recordErrorFrameFailure(failures, summary, shader.id, stats, harness);
-        console.log(`${progress} ${shader.id}: FAIL (${reason} ${detail})`);
-        continue;
-      }
-
+      // gpu-chores downsample_2d readback when WebGPU is live; canvas fallback otherwise.
       const pngB64 = await harness.captureThumbnailPng(page, args.size);
-      // app engine: gpu-chores downsample_2d when WebGPU is live; canvas fallback otherwise.
       if (!pngB64) {
         summary.failed++;
         console.log(`${progress} ${shader.id}: FAIL (capture failed)`);
@@ -584,11 +684,21 @@ async function runAppEngine(args, shaders, manifest) {
         continue;
       }
 
+      const png = Buffer.from(pngB64, 'base64');
+      const { stats, reason } = await classifyPng(png);
+      if (reason) {
+        const { detail } = recordErrorFrameFailure(failures, summary, shader.id, stats, reason);
+        console.log(`${progress} ${shader.id}: FAIL (${reason} ${detail})`);
+        continue;
+      }
+
       const outPath = path.join(OUT_DIR, `${shader.id}.png`);
-      fs.writeFileSync(outPath, Buffer.from(pngB64, 'base64'));
-      updateManifestEntry(manifest, shader.id, zoomParams);
+      fs.writeFileSync(outPath, await compressPng(png));
+      updateManifestEntry(manifest, shader.id, zoomParams, capture);
       console.log(`${progress} ${shader.id}: OK`);
       summary.success++;
+      // Persist every capture: a software wave runs for hours and may be interrupted.
+      writeManifest(manifest);
     } catch (err) {
       const detail = err.message || String(err);
       const reason = classifyFailure(detail);
@@ -598,18 +708,40 @@ async function runAppEngine(args, shaders, manifest) {
       } else {
         failures.push({ id: shader.id, reason, detail });
       }
+      criticalErrors.length = 0;
+      // A shader that times out can leave the device wedged: every later load then fails.
+      // Reload the app; retry a failed load once on the fresh page before recording it.
+      const wedged = /Timeout|loadShader failed|Target (page|crashed)|closed/i.test(detail);
+      if (wedged) {
+        console.log(`${progress} ${shader.id}: reloading the app after: ${detail.split('\n')[0]}`);
+        await openApp();
+        currentSource = null;
+        if (/loadShader failed/.test(detail) && !retried.has(shader.id)) {
+          retried.add(shader.id);
+          failures.pop();
+          i--;
+          continue;
+        }
+      }
       summary.failed++;
       console.log(`${progress} ${shader.id}: FAIL (${detail})`);
-      criticalErrors.length = 0;
     }
   }
 
-  await browser.close();
-  await harness.stopStaticServer();
-  return { summary, failures };
 }
 
 // ── Main ────────────────────────────────────────────────────────────────────
+
+/** Entries this process captured; merged into the on-disk manifest so parallel shards don't clobber it. */
+const capturedEntries = new Map();
+
+function writeManifest(manifest) {
+  const onDisk = fs.existsSync(MANIFEST_PATH) ? JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8')) : manifest;
+  for (const [id, entry] of capturedEntries) onDisk[id] = entry;
+  const tmp = `${MANIFEST_PATH}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(onDisk, null, 2) + '\n');
+  fs.renameSync(tmp, MANIFEST_PATH);
+}
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
@@ -635,7 +767,9 @@ async function main() {
     ? JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8'))
     : {};
 
-  if (args.stale && !args.force) {
+  if (args.recaptureHost) {
+    shaders = shaders.filter(s => capturedOn(s.id, manifest, args.recaptureHost));
+  } else if (args.stale && !args.force) {
     shaders = shaders.filter(s => isStaleThumbnail(s.id, manifest));
   } else if (args.skipExisting && !args.force) {
     shaders = shaders.filter(s => !hasExistingThumbnail(s.id, manifest));
@@ -654,7 +788,8 @@ async function main() {
 
   console.log(
     `[thumbnails] Generating ${shaders.length} thumbnail(s) ` +
-    `(engine=${args.engine}, category=${args.category}, size=${args.size}, frames=${args.frames}, t=${args.time})`,
+    `(engine=${args.engine}, adapter=${args.adapter}, category=${args.category}, size=${args.size}, ` +
+    `frames=${args.frames}, t=${args.time})`,
   );
 
   let summary;
@@ -679,7 +814,7 @@ async function main() {
     throw err;
   }
 
-  fs.writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2) + '\n');
+  writeManifest(manifest);
 
   const payload = {
     generated_at: new Date().toISOString(),
@@ -696,6 +831,7 @@ async function main() {
   if (summary.black_frame > 0) console.log(`[thumbnails] black_frame=${summary.black_frame}`);
   if (summary.magenta_frame > 0) console.log(`[thumbnails] magenta_frame=${summary.magenta_frame}`);
   if (summary.error_frame > 0) console.log(`[thumbnails] error_frame=${summary.error_frame}`);
+  if (summary.flat_frame > 0) console.log(`[thumbnails] flat_frame=${summary.flat_frame}`);
   if (summary.compile > 0) console.log(`[thumbnails] compile=${summary.compile}`);
   console.log(`[thumbnails] Manifest: ${MANIFEST_PATH}`);
   if (failures.length > 0) console.log(`[thumbnails] Failures: ${args.report}`);
@@ -732,6 +868,11 @@ if (require.main === module) {
 
 module.exports = {
   parseArgs,
+  chromiumArgs,
+  captureHostFor,
+  withListCategory,
+  loadAllCatalogShaders,
+  capturedOn,
   hasExistingThumbnail,
   isStaleThumbnail,
   classifyFailure,

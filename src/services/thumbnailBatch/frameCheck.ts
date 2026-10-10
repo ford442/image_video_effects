@@ -1,8 +1,11 @@
 /**
  * Render-error classification for captured frames. Same thresholds as
- * scripts/lib/thumbnailHarness.mjs (isBlackFrame / isMagentaFrame) so the
- * in-app batch and the Playwright CLI agree on what counts as broken.
+ * scripts/lib/thumbnailFrameAnalysis.js and scripts/audit_thumbnail_integrity.py
+ * so the in-app batch, the Playwright CLI and the audit agree on what is broken.
  */
+
+/** Largest per-channel standard deviation (0–1) below which a frame is a flat fill. */
+export const MIN_CHANNEL_STD = 0.01;
 
 export interface FrameStats {
   width: number;
@@ -10,19 +13,25 @@ export interface FrameStats {
   meanLuminance: number;
   activePixelRatio: number;
   magentaPixelRatio: number;
+  /** Largest of the R/G/B standard deviations (0–1). */
+  maxChannelStd: number;
 }
 
-export type FrameErrorReason = 'black_frame' | 'magenta_frame' | 'error_frame';
+export type FrameErrorReason = 'black_frame' | 'magenta_frame' | 'error_frame' | 'flat_frame';
 
 export function analyzeImageData(data: Uint8ClampedArray, width: number, height: number): FrameStats {
   let lumSum = 0;
   let active = 0;
   let magenta = 0;
+  const sum = [0, 0, 0];
+  const sumSq = [0, 0, 0];
   const pixels = Math.max(1, width * height);
   for (let i = 0; i < data.length; i += 4) {
     const r = data[i] / 255;
     const g = data[i + 1] / 255;
     const b = data[i + 2] / 255;
+    sum[0] += r; sum[1] += g; sum[2] += b;
+    sumSq[0] += r * r; sumSq[1] += g * g; sumSq[2] += b * b;
     const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
     lumSum += lum;
     if (lum > 0.05) active++;
@@ -34,6 +43,9 @@ export function analyzeImageData(data: Uint8ClampedArray, width: number, height:
     meanLuminance: lumSum / pixels,
     activePixelRatio: active / pixels,
     magentaPixelRatio: magenta / pixels,
+    maxChannelStd: Math.max(
+      ...[0, 1, 2].map(c => Math.sqrt(Math.max(0, sumSq[c] / pixels - (sum[c] / pixels) ** 2))),
+    ),
   };
 }
 
@@ -43,6 +55,7 @@ export function classifyFrame(stats: FrameStats): FrameErrorReason | null {
   if (black && magenta) return 'error_frame';
   if (black) return 'black_frame';
   if (magenta) return 'magenta_frame';
+  if (stats.maxChannelStd < MIN_CHANNEL_STD) return 'flat_frame';
   return null;
 }
 
@@ -50,7 +63,8 @@ export function formatFrameStats(stats: FrameStats): string {
   return (
     `meanLuminance=${stats.meanLuminance.toFixed(4)} ` +
     `activePixelRatio=${stats.activePixelRatio.toFixed(4)} ` +
-    `magentaPixelRatio=${stats.magentaPixelRatio.toFixed(4)}`
+    `magentaPixelRatio=${stats.magentaPixelRatio.toFixed(4)} ` +
+    `maxChannelStd=${stats.maxChannelStd.toFixed(4)}`
   );
 }
 

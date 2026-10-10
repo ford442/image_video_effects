@@ -135,6 +135,8 @@ export function useTestHarness({
                     }),
                 /** Lift the quality slot cap so multi-slot stacks run on low-end/SwiftShader adapters. */
                 overrideSlotCap: (cap: number | null) => manager.overrideSlotCapForTests(cap),
+                /** Pin the internal render scale (0.25–1); a change also clears feedback textures. */
+                setRenderScale: (scale: number) => manager.setResolutionScaleForTests(scale),
                 setRenderQuality: (mode: RenderQualityMode) => {
                     manager.setRenderQuality(mode, {
                         supportsDeepWorkgroup: manager.getSupportsDeepWorkgroup(),

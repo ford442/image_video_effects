@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-audit_thumbnail_integrity.py — flag committed thumbnail PNGs that are nearly black or magenta error frames.
+audit_thumbnail_integrity.py — flag committed thumbnail PNGs that are nearly black, magenta error
+frames, or a flat fill (no visible structure).
 """
 from __future__ import annotations
 
@@ -18,10 +19,11 @@ MANIFEST_PATH = THUMB_DIR / "manifest.json"
 REPORT_PATH = ROOT / "reports" / "thumbnail_integrity_audit.json"
 UNHEALTHY_PATH = THUMB_DIR / "unhealthy.json"
 
-# Match scripts/lib/thumbnailFrameAnalysis.js thresholds
+# Match scripts/lib/thumbnailFrameAnalysis.js and src/services/thumbnailBatch/frameCheck.ts
 MIN_ACTIVE = 0.02
 MIN_LUMINANCE = 0.01
 MIN_MAGENTA_RATIO = 0.75
+MIN_CHANNEL_STD = 0.01
 
 
 def thumbnail_fingerprint(paths: list[Path]) -> str:
@@ -124,6 +126,7 @@ def analyze_rgba(data: bytes, width: int, height: int) -> dict:
     active = 0
     magenta = 0
     r_sum = g_sum = b_sum = 0.0
+    r_sq = g_sq = b_sq = 0.0
     for i in range(0, len(data), 4):
         r = data[i] / 255.0
         g = data[i + 1] / 255.0
@@ -131,6 +134,9 @@ def analyze_rgba(data: bytes, width: int, height: int) -> dict:
         r_sum += r
         g_sum += g
         b_sum += b
+        r_sq += r * r
+        g_sq += g * g
+        b_sq += b * b
         lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
         lum_sum += lum
         if lum > 0.05:
@@ -144,7 +150,17 @@ def analyze_rgba(data: bytes, width: int, height: int) -> dict:
         "meanR": r_sum / pixels,
         "meanG": g_sum / pixels,
         "meanB": b_sum / pixels,
+        "maxChannelStd": max(
+            channel_std(r_sum, r_sq, pixels),
+            channel_std(g_sum, g_sq, pixels),
+            channel_std(b_sum, b_sq, pixels),
+        ),
     }
+
+
+def channel_std(total: float, total_sq: float, n: int) -> float:
+    mean = total / n
+    return max(0.0, total_sq / n - mean * mean) ** 0.5
 
 
 def classify(stats: dict) -> str | None:
@@ -156,6 +172,8 @@ def classify(stats: dict) -> str | None:
         return "black_frame"
     if magenta:
         return "magenta_frame"
+    if stats.get("maxChannelStd", 1.0) < MIN_CHANNEL_STD:
+        return "flat_frame"
     return None
 
 

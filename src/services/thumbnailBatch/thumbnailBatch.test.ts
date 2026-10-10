@@ -40,11 +40,14 @@ function solid(r: number, g: number, b: number, n = 16): Uint8ClampedArray {
   return d;
 }
 
-describe('frame check (matches thumbnailHarness thresholds)', () => {
-  it('flags black, magenta and passes normal frames', () => {
+describe('frame check (matches scripts/lib/thumbnailFrameAnalysis.js thresholds)', () => {
+  it('flags black, magenta and flat frames and passes structured ones', () => {
     expect(classifyFrame(analyzeImageData(solid(0, 0, 0), 4, 4))).toBe('black_frame');
     expect(classifyFrame(analyzeImageData(solid(255, 0, 255), 4, 4))).toBe('magenta_frame');
-    expect(classifyFrame(analyzeImageData(solid(120, 180, 90), 4, 4))).toBeNull();
+    expect(classifyFrame(analyzeImageData(solid(120, 180, 90), 4, 4))).toBe('flat_frame');
+    const striped = solid(120, 180, 90);
+    for (let i = 0; i < striped.length; i += 8) striped.set([20, 40, 200], i);
+    expect(classifyFrame(analyzeImageData(striped, 4, 4))).toBeNull();
   });
 });
 

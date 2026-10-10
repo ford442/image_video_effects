@@ -8,8 +8,10 @@ import type { ShaderEntry } from '../../renderer/types';
 import { MULTIPASS_REGISTRY } from '../../renderer/multipassRegistry';
 import { classifyFrame, formatFrameStats, statsFromPngBase64, FrameErrorReason, FrameStats } from './frameCheck';
 
-export const THUMB_IMAGE_CATEGORIES = new Set(['image', 'hybrid', 'advanced-hybrid']);
-export const THUMB_FIXTURE_URL = './fixtures/thumbnail-sample.png';
+/** Only standalone generators render without the input image (as in the app). */
+export const THUMB_GENERATIVE_CATEGORIES = new Set(['generative']);
+/** Procedural 512² scene, see scripts/make-thumbnail-fixture.py. */
+export const THUMB_FIXTURE_URL = './fixtures/thumbnail-scene.png';
 
 export interface CaptureOptions {
   size: number;
@@ -90,7 +92,7 @@ export async function captureShaderThumbnail(
     return { ok: false, reason: 'gpu_unavailable', detail: 'TypeScript WebGPU renderer (Tier A) must be active' };
   }
 
-  const source = THUMB_IMAGE_CATEGORIES.has(String(shader.category)) ? 'image' : 'generative';
+  const source = THUMB_GENERATIVE_CATEGORIES.has(String(shader.category)) ? 'generative' : 'image';
   if (session.inputSource !== source) {
     manager.setInputSource(source);
     if (source === 'image') await manager.loadImage(THUMB_FIXTURE_URL);
