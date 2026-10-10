@@ -236,6 +236,35 @@ describe('render worker host ↔ client', () => {
     expect(events).toContainEqual({ type: 'error', error: { type: 'gpu-validation', message: 'boom', recoverable: true } });
   });
 
+  it('closes a VideoFrame that arrives after its RPC timed out (#1395)', async () => {
+    const [mainPort, workerPort] = createPortPair();
+    workerPort.postMessage({
+      type: 'hello',
+      caps: { gpu: true, offscreenWebgpu: true, raf: true, videoFrame: true, crossOriginIsolated: false, sharedArrayBuffer: false },
+    });
+    const client = await connectRenderWorker(mainPort);
+    const g = globalThis as { VideoFrame?: unknown };
+    const hadVideoFrame = 'VideoFrame' in g;
+    class FakeVideoFrame {
+      close = jest.fn();
+    }
+    g.VideoFrame = FakeVideoFrame;
+    try {
+      let requestId = -1;
+      workerPort.addEventListener('message', (event) => {
+        requestId = (event.data as { requestId: number }).requestId;
+      });
+      const grab = client.rpc({ type: 'grabVideoFrame', timestampUs: 0 }, 10);
+      await expect(grab).rejects.toThrow('timed out');
+      const frame = new FakeVideoFrame();
+      workerPort.postMessage({ type: 'rpcResult', requestId, ok: true, value: frame });
+      await flushPorts();
+      expect(frame.close).toHaveBeenCalledTimes(1);
+    } finally {
+      if (!hadVideoFrame) delete g.VideoFrame;
+    }
+  });
+
   it('rejects the handshake when the worker never says hello', async () => {
     const [mainPort] = createPortPair();
     jest.useFakeTimers();

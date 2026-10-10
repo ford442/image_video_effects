@@ -622,3 +622,63 @@ describe('shouldEncodeSourceGain', () => {
     expect(sourceGainStatus(base)).toBe('on');
   });
 });
+
+describe('GpuChoresHost readback failures (#1395)', () => {
+  type Internals = { gpu: unknown; mapReadback(gpu: unknown, slot: number): void; mapPending: boolean };
+  const flush = () => new Promise((r) => setTimeout(r, 0));
+
+  function deviceWithMaps(mapAsync: () => Promise<void>): GPUDevice {
+    const device = stubAdoptedGpuDevice();
+    (device as unknown as { createBuffer: () => GPUBuffer }).createBuffer = () =>
+      ({ ...stubBuffer(), mapAsync } as unknown as GPUBuffer);
+    return device;
+  }
+
+  beforeAll(() => {
+    const g = globalThis as Record<string, unknown>;
+    if (!g.GPUMapMode) g.GPUMapMode = { READ: 1, WRITE: 2 };
+  });
+  beforeEach(probeOk);
+  afterEach(() => {
+    delete window.webgpuProbe;
+  });
+
+  it('ignores a map rejection that lands after releaseGpu (old generation)', async () => {
+    let rejectMap: (e: Error) => void = () => {};
+    const host = new GpuChoresHost();
+    host.attach(deviceWithMaps(() => new Promise<void>((_, reject) => { rejectMap = reject; })));
+    const internals = host as unknown as Internals;
+    internals.mapReadback(internals.gpu, 0);
+
+    host.attach(stubAdoptedGpuDevice()); // releaseGpu() destroys the mapped buffers
+    rejectMap(new Error('Buffer was destroyed'));
+    await flush();
+
+    expect(host.getBreadcrumbs().gpuComputeAvailable).toBe(true);
+    host.destroy();
+  });
+
+  it('treats AbortError as benign and only disables after repeated real failures', async () => {
+    let failure: Error = Object.assign(new Error('unmapped'), { name: 'AbortError' });
+    const host = new GpuChoresHost();
+    host.attach(deviceWithMaps(() => Promise.reject(failure)));
+    const internals = host as unknown as Internals;
+
+    internals.mapReadback(internals.gpu, 0);
+    await flush();
+    expect(internals.mapPending).toBe(false);
+    expect(host.getBreadcrumbs().gpuComputeAvailable).toBe(true);
+
+    failure = new Error('OperationError');
+    for (let i = 0; i < 2; i++) {
+      internals.mapReadback(internals.gpu, 0);
+      await flush();
+      expect(host.getBreadcrumbs().gpuComputeAvailable).toBe(true);
+    }
+    internals.mapReadback(internals.gpu, 0);
+    await flush();
+    expect(host.getBreadcrumbs().gpuComputeAvailable).toBe(false);
+    expect(host.getBreadcrumbs().reason).toMatch(/readback failed/);
+    host.destroy();
+  });
+});

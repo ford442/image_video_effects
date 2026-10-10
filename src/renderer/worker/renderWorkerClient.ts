@@ -69,7 +69,11 @@ export function connectRenderWorker(worker: WorkerLike, helloTimeoutMs = 3000): 
       }
       if (data.type === 'rpcResult') {
         const entry = pending.get(data.requestId);
-        if (!entry) return;
+        if (!entry) {
+          // Late reply after a timeout: nobody owns a transferred VideoFrame, so close it.
+          if (data.ok) closeIfVideoFrame(data.value);
+          return;
+        }
         pending.delete(data.requestId);
         if (data.ok) entry.resolve(data.value);
         else entry.reject(new Error(data.error));
@@ -130,4 +134,8 @@ export function connectRenderWorker(worker: WorkerLike, helloTimeoutMs = 3000): 
       },
     };
   }
+}
+
+function closeIfVideoFrame(value: unknown): void {
+  if (typeof VideoFrame !== 'undefined' && value instanceof VideoFrame) value.close();
 }

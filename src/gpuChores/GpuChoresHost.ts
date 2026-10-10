@@ -42,6 +42,8 @@ const HIST_BYTES = HISTOGRAM_BINS * 4;
 const REDUCE_BYTES = 16;
 const CPU_CACHE_MAX = 128;
 const GPU_PERIOD = 8;
+/** Real readback failures in a row before chores fall back to CPU for this attachment. */
+const MAX_CONSECUTIVE_READBACK_FAILURES = 3;
 const CLASSIFY_BYTES_PER_PIXEL = 4;
 const CLASSIFY_BYTES_PER_ROW = Math.ceil((PREVIEW_SIZE * CLASSIFY_BYTES_PER_PIXEL) / 256) * 256;
 const CLASSIFY_READ_BYTES = CLASSIFY_BYTES_PER_ROW * PREVIEW_SIZE;
@@ -99,6 +101,9 @@ export class GpuChoresHost {
   private frameCounter = 0;
   private readSlot = 0;
   private mapPending = false;
+  /** Bumped by releaseGpu(); in-flight maps from an older generation are ignored. */
+  private gpuGeneration = 0;
+  private readbackFailures = 0;
   /** Histogram/reduce passes were encoded this frame (GPU_PERIOD frame). */
   private histEncodedThisFrame = false;
   /** The frame loop called encodeReadback this frame (copies ride the frame encoder). */
@@ -426,6 +431,9 @@ export class GpuChoresHost {
 
   private mapReadback(gpu: GpuResources, slot: number): void {
     this.mapPending = true;
+    // releaseGpu() destroys these buffers; a map that settles after it belongs to
+    // resources that no longer exist and must not touch the current attachment.
+    const generation = this.gpuGeneration;
     const histRead = gpu.histRead[slot];
     const reduceRead = gpu.reduceRead[slot];
     const classifyRead = gpu.classifyRead[slot];
@@ -435,6 +443,7 @@ export class GpuChoresHost {
       classifyRead.mapAsync(GPUMapMode.READ),
     ])
       .then(() => {
+        if (generation !== this.gpuGeneration) return;
         const histCopy = new Uint32Array(histRead.getMappedRange().slice(0));
         const reduceCopy = new Uint32Array(reduceRead.getMappedRange().slice(0));
         const classifyPacked = new Uint8Array(classifyRead.getMappedRange().slice(0));
@@ -444,8 +453,10 @@ export class GpuChoresHost {
         this.applyGpuReadback(histCopy, reduceCopy, classifyPacked);
         this.readSlot = 1 - slot;
         this.mapPending = false;
+        this.readbackFailures = 0;
       })
       .catch((err) => {
+        if (generation !== this.gpuGeneration) return;
         try {
           histRead.unmap();
           reduceRead.unmap();
@@ -454,6 +465,10 @@ export class GpuChoresHost {
           /* already unmapped */
         }
         this.mapPending = false;
+        // An aborted map (buffer unmapped / destroyed under it) is not a chores failure.
+        if ((err as { name?: string } | null)?.name === 'AbortError') return;
+        this.readbackFailures += 1;
+        if (this.readbackFailures < MAX_CONSECUTIVE_READBACK_FAILURES) return;
         this.setStatus(
           false,
           `webgpu readback failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -915,6 +930,8 @@ export class GpuChoresHost {
   private releaseGpu(): void {
     const gpu = this.gpu;
     this.gpu = null;
+    this.gpuGeneration += 1;
+    this.readbackFailures = 0;
     this.mapPending = false;
     this.histEncodedThisFrame = false;
     this.readbackHandled = false;
