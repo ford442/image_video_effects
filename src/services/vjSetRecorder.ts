@@ -73,7 +73,7 @@ export function firstEventAfter(events: VjTimelineEvent[], time: number): number
   let hi = events.length;
   while (lo < hi) {
     const mid = (lo + hi) >> 1;
-    if (events[mid].t <= time) lo = mid + 1;
+    if (events[mid]!.t <= time) lo = mid + 1;
     else hi = mid;
   }
   return lo;

@@ -67,7 +67,8 @@ export async function listShadersWithErrors(config: StorageClientConfig): Promis
 export async function getShaderMeta(config: StorageClientConfig, shaderId: string): Promise<ShaderItem> {
   const encoded = encodeResourcePath(shaderId.replace(/\.json$/, ''));
   const item = await fetchJson<ShaderItem>(`${config.apiUrl}/api/shaders/${encoded}`);
-  return attachShaderUrls([item], config.shaderFilesBaseUrl)[0];
+  const [withUrls] = attachShaderUrls([item], config.shaderFilesBaseUrl);
+  return withUrls!;
 }
 
 export async function loadShader(

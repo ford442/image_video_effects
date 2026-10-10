@@ -99,8 +99,8 @@ export function extractShaderId(urlOrId: string): string | null {
   ];
   
   for (const pattern of patterns) {
-    const match = urlOrId.match(pattern);
-    if (match) return match[1];
+    const id = urlOrId.match(pattern)?.[1];
+    if (id) return id;
   }
   
   return null;

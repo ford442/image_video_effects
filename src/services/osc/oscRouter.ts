@@ -55,10 +55,10 @@ export function routeOscMessage(msg: OscMessage): OscAction | null {
   if (parts[0] !== OSC_ADDRESS_PREFIX.slice(1)) return null;
 
   if (parts[1] === 'slot' && parts.length >= 4) {
-    const slot = parseSlot(parts[2]);
+    const slot = parseSlot(parts[2]!);
     if (slot === null) return null;
     if (parts[3] === 'param' && parts.length === 5) {
-      const param = PARAM_KEYS[parts[4]];
+      const param = PARAM_KEYS[parts[4]!];
       const value = numericArg(msg.args);
       if (!param || value === null) return null;
       return { type: 'setSlotParam', slot, param, value: clamp01(value) };

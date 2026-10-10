@@ -20,9 +20,9 @@ export function analyzeImageData(data: Uint8ClampedArray, width: number, height:
   let magenta = 0;
   const pixels = Math.max(1, width * height);
   for (let i = 0; i < data.length; i += 4) {
-    const r = data[i] / 255;
-    const g = data[i + 1] / 255;
-    const b = data[i + 2] / 255;
+    const r = (data[i] ?? 0) / 255;
+    const g = (data[i + 1] ?? 0) / 255;
+    const b = (data[i + 2] ?? 0) / 255;
     const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
     lumSum += lum;
     if (lum > 0.05) active++;
