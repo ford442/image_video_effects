@@ -876,8 +876,17 @@
       "history": []
     },
     "mosaic-reveal": {
-      "hash": "40c13ec64a89e71d",
-      "history": []
+      "hash": "558f300759cc31f2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:37:35.925Z",
+          "hash": "558f300759cc31f2",
+          "prev_hash": "40c13ec64a89e71d",
+          "commit": "0910248e",
+          "note": "2026-10-05 dissolve & reveal ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-dissolve-reveal-ten/"
+        }
+      ]
     },
     "mouse-pixel-sort": {
       "hash": "2931bd1ce6848f9b",
@@ -1046,8 +1055,17 @@
       "history": []
     },
     "spirograph-reveal": {
-      "hash": "d01761f40c84b157",
-      "history": []
+      "hash": "03731c8ffbb09ab2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:37:35.925Z",
+          "hash": "03731c8ffbb09ab2",
+          "prev_hash": "d01761f40c84b157",
+          "commit": "0910248e",
+          "note": "2026-10-05 dissolve & reveal ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-dissolve-reveal-ten/"
+        }
+      ]
     },
     "static-reveal": {
       "hash": "bd073c44d04fac9e",
@@ -3783,8 +3801,17 @@
       "history": []
     },
     "crystalline-shatter": {
-      "hash": "cacbaf5281016b1e",
-      "history": []
+      "hash": "f62e04844a68cc83",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:37:35.925Z",
+          "hash": "f62e04844a68cc83",
+          "prev_hash": "cacbaf5281016b1e",
+          "commit": "0910248e",
+          "note": "2026-10-05 dissolve & reveal ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-dissolve-reveal-ten/"
+        }
+      ]
     },
     "cyber-halftone-scanner": {
       "hash": "0fa112f2ff329f82",
@@ -3795,8 +3822,17 @@
       "history": []
     },
     "directional-blur-wipe": {
-      "hash": "cb175c8b06fd7470",
-      "history": []
+      "hash": "c8e631d4adcf4d5b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:37:35.925Z",
+          "hash": "c8e631d4adcf4d5b",
+          "prev_hash": "cb175c8b06fd7470",
+          "commit": "0910248e",
+          "note": "2026-10-05 dissolve & reveal ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-dissolve-reveal-ten/"
+        }
+      ]
     },
     "ember-drift-dissolve": {
       "hash": "96bde2f27782461a",
@@ -3819,8 +3855,17 @@
       "history": []
     },
     "fractal-noise-dissolve": {
-      "hash": "73d75bff55bc2b52",
-      "history": []
+      "hash": "8e73e2dd2f4c0b0d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:37:35.925Z",
+          "hash": "8e73e2dd2f4c0b0d",
+          "prev_hash": "73d75bff55bc2b52",
+          "commit": "0910248e",
+          "note": "2026-10-05 dissolve & reveal ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-dissolve-reveal-ten/"
+        }
+      ]
     },
     "frost-reveal": {
       "hash": "2e6f53cd593020de",
@@ -3835,8 +3880,17 @@
       "history": []
     },
     "glitch-reveal": {
-      "hash": "08f986a8dce7c0e5",
-      "history": []
+      "hash": "d4e0aa99fe06bb2e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:37:35.925Z",
+          "hash": "d4e0aa99fe06bb2e",
+          "prev_hash": "08f986a8dce7c0e5",
+          "commit": "0910248e",
+          "note": "2026-10-05 dissolve & reveal ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-dissolve-reveal-ten/"
+        }
+      ]
     },
     "glitch-ripple-drag": {
       "hash": "d31d74b53017bd5f",
@@ -3855,8 +3909,17 @@
       "history": []
     },
     "holographic-shatter": {
-      "hash": "0031047ceb62343b",
-      "history": []
+      "hash": "ea08a1d213ad517d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:37:35.925Z",
+          "hash": "ea08a1d213ad517d",
+          "prev_hash": "0031047ceb62343b",
+          "commit": "0910248e",
+          "note": "2026-10-05 dissolve & reveal ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-dissolve-reveal-ten/"
+        }
+      ]
     },
     "honey-melt": {
       "hash": "70627c97c1e2baee",
@@ -3896,8 +3959,17 @@
       "history": []
     },
     "neon-pulse-dissolve": {
-      "hash": "6b2ad2a973bb774c",
-      "history": []
+      "hash": "4b4bc72e4f74a3d5",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:37:35.925Z",
+          "hash": "4b4bc72e4f74a3d5",
+          "prev_hash": "6b2ad2a973bb774c",
+          "commit": "0910248e",
+          "note": "2026-10-05 dissolve & reveal ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-dissolve-reveal-ten/"
+        }
+      ]
     },
     "neon-pulse-stream": {
       "hash": "d6147ee3846fae7d",
@@ -4994,8 +5066,17 @@
       ]
     },
     "pixel-reveal": {
-      "hash": "6f9bd0e04e269986",
-      "history": []
+      "hash": "bdac5ece68c7c56f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:37:35.925Z",
+          "hash": "bdac5ece68c7c56f",
+          "prev_hash": "6f9bd0e04e269986",
+          "commit": "0910248e",
+          "note": "2026-10-05 dissolve & reveal ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-dissolve-reveal-ten/"
+        }
+      ]
     },
     "pixel-sort-explorer": {
       "hash": "6e067109348ad3e7",
@@ -5338,8 +5419,17 @@
       "history": []
     },
     "x-ray-reveal": {
-      "hash": "7ffa76c6f1af67b2",
-      "history": []
+      "hash": "731f2cff8f750d44",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:37:35.925Z",
+          "hash": "731f2cff8f750d44",
+          "prev_hash": "7ffa76c6f1af67b2",
+          "commit": "0910248e",
+          "note": "2026-10-05 dissolve & reveal ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-dissolve-reveal-ten/"
+        }
+      ]
     },
     "alpha-aurora-bands": {
       "hash": "ec6bea63ebbeaf25",

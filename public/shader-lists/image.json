@@ -3474,8 +3474,8 @@
       "mouse-driven",
       "audio-reactive",
       "click-reactive",
-      "spring-tracking",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -3801,7 +3801,7 @@
   {
     "id": "glitch-reveal",
     "name": "Glitch Reveal",
-    "description": "Chaotic block-scatter noise field stabilized by a sprung cursor reveal window; held widens radius, clicks add capped ripples, exact C feedback, ACES composite.",
+    "description": "Chaotic block-scatter glitch with datamosh holds and tear bands, stabilized by a block-snapped cursor reveal window; held widens it, clicks punch clear holes.",
     "url": "shaders/glitch-reveal.wgsl",
     "workgroup_size": [
       16,
@@ -3814,7 +3814,6 @@
       "click-reactive",
       "held-drag",
       "upgraded-rgba",
-      "spring-cursor",
       "aces-tone-map"
     ],
     "params": [
@@ -3889,8 +3888,7 @@
       "filter",
       "image-processing",
       "glitch",
-      "reveal",
-      "spring-cursor"
+      "reveal"
     ],
     "updated": true
   },
