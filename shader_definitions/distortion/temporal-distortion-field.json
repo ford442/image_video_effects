@@ -2,7 +2,7 @@
   "id": "temporal-distortion-field",
   "name": "Temporal Distortion Field",
   "url": "shaders/temporal-distortion-field.wgsl",
-  "description": "Stylized temporal distortion with exact display-history feedback, depth-weighted freeze radius, moving clock rings, held freeze, click fronts, and chromatic lag.",
+  "description": "FBM time warp with history ghosts and past/present/future color channels; holding the mouse opens a lensed stasis bubble where time stops.",
   "params": [
     {
       "id": "freezeAmount",

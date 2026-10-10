@@ -607,7 +607,6 @@
     "url": "shaders/dimension-slicer.wgsl",
     "description": "Opens a dimensional rift with temporal slice rotation memory, chromatic inside-slice dispersion, audio-driven slice width modulation, depth-aware zoom warp, and edge glow.",
     "features": [
-      "mouse-driven",
       "chromatic-aberration",
       "audio-reactive",
       "upgraded-rgba",
@@ -859,11 +858,12 @@
     "id": "ethereal-swirl",
     "name": "Ethereal Swirl",
     "url": "shaders/ethereal-swirl.wgsl",
-    "description": "Ethereal swirling motion with soft gradients.",
+    "description": "Colour-cycling billow clouds swirl over the footage and leave streaming trails.",
     "features": [
-      "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "temporal",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -1285,7 +1285,7 @@
     "id": "gen-chromatic-vortex",
     "name": "Chromatic Vortex",
     "url": "shaders/gen-chromatic-vortex.wgsl",
-    "description": "Rotates image in polar coordinates with psychedelic color-space warping, chromatic sector dispersion, temporal spiral drift via dataTextureC, and audio-driven YUV hue rotation.",
+    "description": "Rotates image in polar coordinates into mirrored spiral sectors with breathing chromatic dispersion, hue-tinted arms, and audio-driven YUV hue rotation.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -2750,6 +2750,7 @@
     "features": [
       "audio-reactive",
       "graph-runner",
+      "upgraded-rgba",
       "interactive",
       "mathematical",
       "mouse-driven",
@@ -4603,7 +4604,7 @@
     "id": "temporal-distortion-field",
     "name": "Temporal Distortion Field",
     "url": "shaders/temporal-distortion-field.wgsl",
-    "description": "Stylized temporal distortion with exact display-history feedback, depth-weighted freeze radius, moving clock rings, held freeze, click fronts, and chromatic lag.",
+    "description": "FBM time warp with history ghosts and past/present/future color channels; holding the mouse opens a lensed stasis bubble where time stops.",
     "params": [
       {
         "id": "freezeAmount",
@@ -4701,7 +4702,7 @@
     "id": "tensor-flow-sculpt",
     "name": "Tensor Flow Sculpt",
     "url": "shaders/tensor-flow-sculpt.wgsl",
-    "description": "Catalog entry for Tensor Flow Sculpt.",
+    "description": "Pushes the image like clay along the depth map's structure-tensor directions, warping only low frequencies so fine detail stays put.",
     "tags": [
       "depth-aware",
       "tensor-warp",
@@ -4710,7 +4711,8 @@
     "features": [
       "depth-aware",
       "tensor-warp",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -5178,7 +5180,6 @@
     "name": "Clean Vortex",
     "url": "shaders/vortex.wgsl",
     "features": [
-      "mouse-driven",
       "audio-reactive",
       "audio-driven",
       "upgraded-rgba"
