@@ -4,6 +4,7 @@
  */
 
 import { inferAdapterGpuType, readAdapterIdentity } from './adapterIdentity';
+import { scopeFailed, withValidationScope } from '../renderer/webgpu/validationScope';
 import type { RenderQualityMode } from './performancePolicy';
 
 export type InternalColorFormat = 'rgba32float' | 'rgba16float';
@@ -118,32 +119,34 @@ export interface FormatProbeOptions {
   device?: GPUDevice | null;
 }
 
-function probeStorageTexture(
+/**
+ * 1×1 STORAGE_BINDING create inside a validation scope. An illegal storage format
+ * usually yields an invalid texture plus an async validation error rather than a
+ * throw, so the scope is what makes this probe able to say no (#1395).
+ */
+async function probeStorageTexture(
   device: GPUDevice | null | undefined,
   format: GPUTextureFormat,
-): boolean {
+): Promise<boolean> {
   if (!device || typeof device.createTexture !== 'function') return false;
   const usage: GPUTextureUsageFlags = typeof GPUTextureUsage !== 'undefined'
     ? GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.TEXTURE_BINDING
     : 0x0e;
+  const result = await withValidationScope(device, () =>
+    device.createTexture({ label: `format-probe-${format}`, size: [1, 1], format, usage }),
+  );
   try {
-    const tex = device.createTexture({
-      label: `format-probe-${format}`,
-      size: [1, 1],
-      format,
-      usage,
-    });
-    tex.destroy();
-    return true;
+    result.value?.destroy();
   } catch {
-    return false;
+    /* invalid texture */
   }
+  return !scopeFailed(result);
 }
 
-export function probeFormatCapabilities(
+export async function probeFormatCapabilities(
   adapter: GPUAdapter,
   isMobileOrOptions: boolean | FormatProbeOptions = false,
-): DeviceFormatCapabilities {
+): Promise<DeviceFormatCapabilities> {
   const options: FormatProbeOptions = typeof isMobileOrOptions === 'boolean'
     ? { isMobile: isMobileOrOptions }
     : isMobileOrOptions;
@@ -152,8 +155,8 @@ export function probeFormatCapabilities(
   const hasFloat32Filterable = !!features?.has('float32-filterable');
   const hasFloat32Blendable = !!features?.has('float32-blendable' as GPUFeatureName);
   const float16 = hasFloat16Array();
-  const supportsRgba16FloatStorage = probeStorageTexture(options.device, 'rgba16float');
-  const supportsRgba32FloatStorage = probeStorageTexture(options.device, 'rgba32float');
+  const supportsRgba16FloatStorage = await probeStorageTexture(options.device, 'rgba16float');
+  const supportsRgba32FloatStorage = await probeStorageTexture(options.device, 'rgba32float');
 
   if (!float16) {
     console.warn(

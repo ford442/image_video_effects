@@ -16,6 +16,7 @@
  */
 
 import bindGroup1Contract from '../../contracts/bind_group1.json';
+import { scopeFailed, withOutOfMemoryScope } from './validationScope';
 
 export const SIM_RING_GROUP = bindGroup1Contract.group;
 export const SIM_STATE_ELEMENT_BYTES = bindGroup1Contract.bindings[0].elementBytes as number;
@@ -210,15 +211,6 @@ export interface SimRingAllocation {
   requested: number;
 }
 
-function isOomError(err: unknown): boolean {
-  const name = (err as { name?: string } | null)?.name;
-  return (
-    (typeof GPUOutOfMemoryError !== 'undefined' && err instanceof GPUOutOfMemoryError) ||
-    name === 'GPUOutOfMemoryError' ||
-    /out of memory/i.test(String((err as { message?: string } | null)?.message ?? err))
-  );
-}
-
 function destroyQuietly(buffers: (GPUBuffer | undefined)[]): void {
   for (const b of buffers) {
     try {
@@ -233,44 +225,29 @@ async function tryAllocateRung(
   device: GPUDevice,
   stateCount: number,
 ): Promise<Omit<SimRingAllocation, 'requested'> | null> {
-  const hasScopes =
-    typeof device.pushErrorScope === 'function' && typeof device.popErrorScope === 'function';
-  if (hasScopes) device.pushErrorScope('out-of-memory');
-
   const bytes = stateCount * SIM_STATE_ELEMENT_BYTES;
-  let stateBuffer: GPUBuffer | undefined;
-  let indexBuffer: GPUBuffer | undefined;
-  let paramsBuffer: GPUBuffer | undefined;
-  let oom = false;
-  try {
-    stateBuffer = device.createBuffer({
+  // Filled as each create succeeds, so a throw part-way still frees what was made.
+  const made: { state?: GPUBuffer; index?: GPUBuffer; params?: GPUBuffer } = {};
+  const scoped = await withOutOfMemoryScope(device, () => {
+    made.state = device.createBuffer({
       label: 'simState',
       size: bytes,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
     });
-    indexBuffer = device.createBuffer({
+    made.index = device.createBuffer({
       label: 'simIndex',
       size: bytes,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
     });
-    paramsBuffer = device.createBuffer({
+    made.params = device.createBuffer({
       label: 'simParams',
       size: SIM_PARAMS_BYTES,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-  } catch (err) {
-    oom = isOomError(err) || true;
-  }
-
-  if (hasScopes) {
-    try {
-      if (await device.popErrorScope()) oom = true;
-    } catch {
-      oom = true;
-    }
-  }
-
-  if (oom || !stateBuffer || !indexBuffer || !paramsBuffer) {
+  });
+  const { state: stateBuffer, index: indexBuffer, params: paramsBuffer } = made;
+  // Any throw counts as OOM on this ladder, not only a GPUOutOfMemoryError.
+  if (scopeFailed(scoped) || !stateBuffer || !indexBuffer || !paramsBuffer) {
     destroyQuietly([stateBuffer, indexBuffer, paramsBuffer]);
     return null;
   }

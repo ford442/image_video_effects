@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { INTERNAL_RENDER_RESOLUTION } from '../config/appConfig';
+import { compileCheckWgsl } from '../renderer/webgpu/compileCheck';
 import {
   publishWebGpuProbe,
   runWebGpuBootProbe,
@@ -186,10 +187,8 @@ export const ShaderValidator: React.FC = () => {
       }
 
       if (device) {
-        const shaderModule = device.createShaderModule({ code: wgslCode });
-        const info = await shaderModule.getCompilationInfo();
-
-        const errors = info.messages.filter(m => m.type === 'error');
+        const messages = await compileCheckWgsl(device, def.id, wgslCode);
+        const errors = messages.filter(m => m.type === 'error');
 
         if (errors.length > 0) {
           return {

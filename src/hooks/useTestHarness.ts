@@ -2,6 +2,8 @@ import { useEffect, RefObject } from 'react';
 import { RendererManager } from '../renderer/RendererManager';
 import { RenderQualityMode } from '../config/performancePolicy';
 import { computeBenchmarkStats, countReadbacks } from '../utils/benchmarkStats';
+import { fetchShaderWgsl } from '../utils/fetchShaderWgsl';
+import { getShaderCompileService } from '../utils/shaderCompileService';
 
 export interface CanvasImageStats {
     width: number;
@@ -96,6 +98,16 @@ export function useTestHarness({
                     manager.applyTestRenderState(state);
                 },
                 // A render-worker canvas cannot be read on the page (#1314): capture over RPC.
+                // ShaderScanner's compile path, scriptable (#1395 validation-scope e2e).
+                compileCheckShader: async (id: string) => {
+                    const compiler = getShaderCompileService();
+                    if (!compiler) return { ok: false, errors: ['no shader compile service'] };
+                    const code = await fetchShaderWgsl(id, undefined, { primaryOnly: true });
+                    if (!code) return { ok: false, errors: ['fetch failed'] };
+                    const messages = await compiler.compile(id, code);
+                    const errors = messages.filter((m) => m.type === 'error').map((m) => m.message);
+                    return { ok: errors.length === 0, errors };
+                },
                 captureCanvasScreenshot: async () => {
                     if (manager.getRenderThread() === 'worker') return (await manager.refreshFrameImage()) || null;
                     const canvas = document.querySelector('canvas');

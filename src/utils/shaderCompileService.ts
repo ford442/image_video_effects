@@ -9,6 +9,7 @@
  */
 
 import { getAdoptedRendererDevice, getAdoptedSupportsSubgroups } from './adoptedGpuDevice';
+import { compileCheckWgsl } from '../renderer/webgpu/compileCheck';
 
 export interface CompileMessageLike {
   type: GPUCompilationMessageType;
@@ -42,10 +43,6 @@ export function getShaderCompileService(): ShaderCompileService | null {
       getAdoptedSupportsSubgroups() ||
       device.features.has('subgroups') ||
       device.features.has('chromium-experimental-subgroups' as GPUFeatureName),
-    async compile(id, code) {
-      const module = device.createShaderModule({ label: id, code });
-      const info = await module.getCompilationInfo();
-      return info.messages.map((m) => ({ type: m.type, lineNum: m.lineNum, linePos: m.linePos, message: m.message }));
-    },
+    compile: (id, code) => compileCheckWgsl(device, id, code),
   };
 }

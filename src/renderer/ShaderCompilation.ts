@@ -8,6 +8,7 @@
 import workgroupDispatchContract from '../contracts/workgroup_dispatch.json';
 import { validateBindGroup } from './bindGroupValidator';
 import { reportError } from './ErrorHandling';
+import { withValidationScope } from './webgpu/validationScope';
 import type { InternalColorFormat } from '../config/formatPolicy';
 import {
   pipelineCacheKey,
@@ -203,28 +204,13 @@ export async function createComputePipelineWithValidationScope(
   device: GPUDevice,
   descriptor: GPUComputePipelineDescriptor,
 ): Promise<{ pipeline: GPUComputePipeline | null; error: GPUError | Error | null }> {
-  const hasScope =
-    typeof device.pushErrorScope === 'function' && typeof device.popErrorScope === 'function';
-  if (hasScope) {
-    device.pushErrorScope('validation');
-  }
-  try {
-    const pipeline = device.createComputePipeline(descriptor);
-    const scoped = hasScope ? await device.popErrorScope() : null;
-    if (scoped) {
-      return { pipeline: null, error: scoped };
-    }
-    return { pipeline, error: null };
-  } catch (e) {
-    if (hasScope) {
-      try {
-        await device.popErrorScope();
-      } catch {
-        /* scope already closed or device lost */
-      }
-    }
+  const result = await withValidationScope(device, () => device.createComputePipeline(descriptor));
+  if (result.error) return { pipeline: null, error: result.error };
+  if (result.threw || !result.value) {
+    const e = result.thrown;
     return { pipeline: null, error: e instanceof Error ? e : new Error(String(e)) };
   }
+  return { pipeline: result.value, error: null };
 }
 
 /**
@@ -307,7 +293,14 @@ export async function compileShader(
   // Try to compile the requested shader only if validation passed
   if (validation.valid) {
     try {
-      const module = device.createShaderModule({ label: id, code: compiledWgsl });
+      // Scoped so a broken module is reported here, not again through uncapturederror.
+      const moduleResult = await withValidationScope(device, () =>
+        device.createShaderModule({ label: id, code: compiledWgsl }),
+      );
+      const module = moduleResult.value;
+      if (!module || moduleResult.threw || moduleResult.error) {
+        throw moduleResult.error ?? moduleResult.thrown ?? new Error('createShaderModule failed');
+      }
 
       if (typeof module.getCompilationInfo === 'function') {
         module.getCompilationInfo().then((info) => {
@@ -341,10 +334,13 @@ export async function compileShader(
 
   // Fallback only if its Validation scope is clean — never cache an invalid pipeline.
   try {
-    const fallbackModule = device.createShaderModule({
-      label: `${id}-fallback`,
-      code: fallbackWgsl,
-    });
+    const fallbackResult = await withValidationScope(device, () =>
+      device.createShaderModule({ label: `${id}-fallback`, code: fallbackWgsl }),
+    );
+    const fallbackModule = fallbackResult.value;
+    if (!fallbackModule || fallbackResult.threw || fallbackResult.error) {
+      throw fallbackResult.error ?? fallbackResult.thrown ?? new Error('fallback createShaderModule failed');
+    }
     const created = await createComputePipelineChecked(device, {
       label: `${id}-fallback`,
       layout: pipelineLayout,
