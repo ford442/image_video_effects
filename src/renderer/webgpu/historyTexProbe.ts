@@ -8,11 +8,11 @@ import {
   getHistoryWorkingSizeCap,
   HISTORY_FULL_WORKING_SIZE,
   HISTORY_SAFE_WORKING_SIZE,
-  isGpuOutOfMemoryError,
   persistHistoryOomCap,
 } from '../../config/vramBudget';
 import { createTextures, destroyTextureSet, type WebGPUTextureSet } from './resources';
 import { HISTORY_DEPTH } from './webgpuConstants';
+import { scopeFailed, withOutOfMemoryScope } from './validationScope';
 
 export interface HistoryProbeRung {
   size: number;
@@ -53,7 +53,7 @@ async function deviceAlreadyLost(device: GPUDevice): Promise<boolean> {
   const lost = device.lost as Promise<GPUDeviceLostInfo> & { then?: unknown };
   if (!lost || typeof lost.then !== 'function') return false;
   let settled = false;
-  lost.then(() => {
+  void lost.then(() => {
     settled = true;
   });
   await Promise.resolve();
@@ -70,41 +70,26 @@ async function tryHistoryAlloc(
     return { oom: true, lost: true };
   }
 
-  const hasScopes =
-    typeof device.pushErrorScope === 'function' && typeof device.popErrorScope === 'function';
-  if (hasScopes) {
-    device.pushErrorScope('out-of-memory');
-  }
-
-  let tex: GPUTexture | undefined;
-  try {
-    tex = device.createTexture({
+  const scoped = await withOutOfMemoryScope(device, () =>
+    device.createTexture({
       label: 'historyTex-probe',
       size: { width: size, height: size, depthOrArrayLayers: layers },
       format,
       usage: historyUsage(),
-    });
-  } catch (err) {
-    if (hasScopes) {
-      try {
-        await device.popErrorScope();
-      } catch {
-        /* ignore */
-      }
+    }),
+  );
+  const tex = scoped.value;
+  // Any throw counts as OOM here, not only a GPUOutOfMemoryError.
+  const oom = scopeFailed(scoped);
+  if (scoped.threw || !tex) {
+    try {
+      tex?.destroy(); // created, but the scope pop failed (device lost)
+    } catch {
+      /* ignore */
     }
     persistHistoryOomCap(HISTORY_SAFE_WORKING_SIZE);
     const lost = await deviceAlreadyLost(device);
-    return { oom: isGpuOutOfMemoryError(err) || true, lost };
-  }
-
-  let oom = false;
-  if (hasScopes) {
-    try {
-      const scoped = await device.popErrorScope();
-      if (scoped) oom = true;
-    } catch (err) {
-      oom = isGpuOutOfMemoryError(err) || true;
-    }
+    return { oom: true, lost };
   }
 
   try {
@@ -152,23 +137,12 @@ export async function allocateWorkingPool(
     };
   }
 
-  const hasScopes =
-    typeof device.pushErrorScope === 'function' && typeof device.popErrorScope === 'function';
-  if (hasScopes) {
-    device.pushErrorScope('out-of-memory');
-  }
-
-  let set: WebGPUTextureSet | undefined;
-  try {
-    set = createTextures(device, canvasW, canvasH, size, size, format, layers);
-  } catch (err) {
-    if (hasScopes) {
-      try {
-        await device.popErrorScope();
-      } catch {
-        /* ignore */
-      }
-    }
+  const scoped = await withOutOfMemoryScope(device, () =>
+    createTextures(device, canvasW, canvasH, size, size, format, layers),
+  );
+  const set = scoped.value;
+  if (scoped.threw || !set) {
+    if (set) destroyTextureSet(set); // created, but the scope pop failed (device lost)
     persistHistoryOomCap(HISTORY_SAFE_WORKING_SIZE);
     const lost = await deviceAlreadyLost(device);
     return {
@@ -176,19 +150,10 @@ export async function allocateWorkingPool(
       workingSize: HISTORY_SAFE_WORKING_SIZE,
       layers,
       deviceLost: lost,
-      oom: isGpuOutOfMemoryError(err) || true,
+      oom: true,
     };
   }
-
-  let oom = false;
-  if (hasScopes) {
-    try {
-      const scoped = await device.popErrorScope();
-      if (scoped) oom = true;
-    } catch (err) {
-      oom = isGpuOutOfMemoryError(err) || true;
-    }
-  }
+  const oom = scoped.error !== null;
 
   const lost = await deviceAlreadyLost(device);
   if (oom || lost) {

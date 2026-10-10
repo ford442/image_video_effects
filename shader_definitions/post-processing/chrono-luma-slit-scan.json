@@ -3,7 +3,7 @@
   "name": "Chrono Luma Slit Scan",
   "url": "shaders/chrono-luma-slit-scan.wgsl",
   "category": "post-processing",
-  "description": "Luminance slit-scan with horizontal/vertical scan runners, held temporal halo, treble warp detail, and capped ripple fronts.",
+  "description": "Luminance slit-scan with horizontal/vertical scan runners, held temporal halo, treble warp detail, and capped ripple fronts. Thin isochrone contours mark where the chosen age crosses a whole frame, and the sweeping scan bands open windows onto the oldest stored frame.",
   "tags": [
     "temporal",
     "slit-scan",
@@ -57,38 +57,42 @@
       "step": 0.01
     }
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Temporal Spread",
-      "default": 1.0,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Warp Strength",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Luma Gamma",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Original Blend",
-      "default": 0.1,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Temporal Spread",
+          "default": 1.0,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Warp Strength",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Luma Gamma",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Original Blend",
+          "default": 0.1,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
     }
-  ]
+  }
 }

@@ -2,7 +2,7 @@
   "id": "tensor-flow-sculpt",
   "name": "Tensor Flow Sculpt",
   "url": "shaders/tensor-flow-sculpt.wgsl",
-  "description": "Catalog entry for Tensor Flow Sculpt.",
+  "description": "Pushes the image like clay along the depth map's structure-tensor directions, warping only low frequencies so fine detail stays put.",
   "tags": [
     "depth-aware",
     "tensor-warp",
@@ -11,7 +11,8 @@
   "features": [
     "depth-aware",
     "tensor-warp",
-    "audio-reactive"
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -51,5 +52,7 @@
       "mapping": "zoom_params.w"
     }
   ],
-  "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  "x-meta": {
+    "seeded_by": "scripts/seed_orphan_shader_defs.py"
+  }
 }

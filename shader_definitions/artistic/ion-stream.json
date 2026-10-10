@@ -44,12 +44,6 @@
       "max": 1
     }
   ],
-  "updatedParams": [
-    { "index": 0, "name": "Stream Speed", "default": 0.6, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 1, "name": "Curl Strength", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 2, "name": "Stream Density", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 3, "name": "Ion Color", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
-  ],
   "tags": [
     "filter",
     "image-processing",
@@ -58,5 +52,43 @@
     "turbulence",
     "magnetic",
     "particles"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Stream Speed",
+          "default": 0.6,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Curl Strength",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Stream Density",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Ion Color",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

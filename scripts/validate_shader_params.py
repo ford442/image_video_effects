@@ -11,6 +11,8 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Any, Optional, Set, Tuple
 
+from wgsl_include import read_expanded_or_raw  # bindings may come from _prelude.wgsl
+
 # Configuration
 SHADER_DEFINITIONS_DIR = Path("/root/image_video_effects/shader_definitions")
 SHADERS_DIR = Path("/root/image_video_effects/public/shaders")
@@ -233,8 +235,7 @@ class ShaderValidator:
         used_components = set()
         
         try:
-            with open(wgsl_path, 'r', encoding='utf-8') as f:
-                content = f.read()
+            content = read_expanded_or_raw(wgsl_path)
         except Exception as e:
             issues.append({
                 "type": "wgsl_read_error",

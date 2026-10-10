@@ -17,7 +17,7 @@ export function reduceF32Luma(
   let sum = 0;
   for (let i = 0; i < limit; i++) {
     const o = i * 4;
-    const y = lumaBt709(rgba[o], rgba[o + 1], rgba[o + 2]);
+    const y = lumaBt709(rgba[o]!, rgba[o + 1]!, rgba[o + 2]!);
     if (y < min) min = y;
     if (y > max) max = y;
     sum += y;
@@ -35,7 +35,7 @@ export function reduceF32FromHistogram(hist: LumaHistogram): ReduceF32 {
   let maxBin = 0;
   let weighted = 0;
   for (let i = 0; i < bins.length; i++) {
-    const c = bins[i];
+    const c = bins[i]!;
     if (c === 0) continue;
     if (minBin < 0) minBin = i;
     maxBin = i;

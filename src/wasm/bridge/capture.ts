@@ -1,7 +1,20 @@
 import { state, wasmRef } from './state.js';
 
+/** C++ CaptureState (renderer.h): 0=idle, 1=pending, 2=ready, 3=error. */
+const CAPTURE_READY = 2;
+const CAPTURE_ERROR = 3;
+
+let _captureInFlight: Promise<ImageData> | null = null;
+
+/**
+ * Read the current output (writeTexture_) back as RGBA8. C++ packs the
+ * rgba16f/rgba32f texels into the caller's buffer (readCapturedFrame(ptr, maxBytes)).
+ * One capture at a time: the C++ side owns a single mapped readback buffer, so a
+ * caller that overlaps gets the in-flight promise instead of a second begin.
+ */
 export function captureFrame(): Promise<ImageData> {
-  return new Promise((resolve, reject) => {
+  if (_captureInFlight) return _captureInFlight;
+  const pending = new Promise<ImageData>((resolve, reject) => {
     if (!state.initialized || !wasmRef.module) {
       reject(new Error('[WASM] Renderer not initialized'));
       return;
@@ -10,41 +23,44 @@ export function captureFrame(): Promise<ImageData> {
     wasmRef.module.ccall('beginFrameCapture', null, [], []);
 
     const pollState = () => {
-      if (!wasmRef.module) {
+      const mod = wasmRef.module;
+      if (!mod) {
         reject(new Error('[WASM] Module invalidated during capture'));
         return;
       }
 
-      const captureState = Number(wasmRef.module.ccall('getFrameCaptureState', 'number', [], []));
+      const captureState = Number(mod.ccall('getFrameCaptureState', 'number', [], []));
 
-      if (captureState === 3) {
-        const width = Number(wasmRef.module.ccall('getCanvasWidth', 'number', [], []));
-        const height = Number(wasmRef.module.ccall('getCanvasHeight', 'number', [], []));
-        const numPixels = width * height;
-        const floatByteLength = numPixels * 4 * 4;
-
-        const floatPtr = Number(wasmRef.module.ccall('readCapturedFrame', 'number', [], []));
-
-        if (!floatPtr) {
-          wasmRef.module.ccall('endFrameCapture', null, [], []);
-          reject(new Error('[WASM] readCapturedFrame returned null pointer'));
+      if (captureState === CAPTURE_READY) {
+        const width = Number(mod.ccall('getCanvasWidth', 'number', [], []));
+        const height = Number(mod.ccall('getCanvasHeight', 'number', [], []));
+        const byteLength = width * height * 4;
+        const ptr = byteLength > 0 ? mod._malloc(byteLength) : 0;
+        let written = 0;
+        let rgba8: Uint8ClampedArray | null = null;
+        try {
+          if (ptr) {
+            written = Number(mod.ccall(
+              'readCapturedFrame',
+              'number',
+              ['number', 'number'],
+              [ptr, byteLength],
+            ));
+            if (written === byteLength) {
+              rgba8 = new Uint8ClampedArray(mod.HEAPU8.slice(ptr, ptr + byteLength).buffer);
+            }
+          }
+        } finally {
+          if (ptr) mod._free(ptr);
+          mod.ccall('endFrameCapture', null, [], []);
+        }
+        if (!rgba8) {
+          reject(new Error(`[WASM] readCapturedFrame wrote ${written} of ${byteLength} bytes (${width}x${height})`));
           return;
         }
-
-        const floatBuffer = wasmRef.module.HEAPF32.subarray(
-          floatPtr / 4,
-          (floatPtr + floatByteLength) / 4,
-        );
-
-        const rgba8 = new Uint8ClampedArray(numPixels * 4);
-        for (let i = 0; i < numPixels * 4; i++) {
-          rgba8[i] = Math.min(255, Math.max(0, Math.round(floatBuffer[i] * 255)));
-        }
-
-        wasmRef.module.ccall('endFrameCapture', null, [], []);
         resolve(new ImageData(rgba8, width, height));
-      } else if (captureState === 4) {
-        wasmRef.module.ccall('endFrameCapture', null, [], []);
+      } else if (captureState === CAPTURE_ERROR) {
+        mod.ccall('endFrameCapture', null, [], []);
         reject(new Error('[WASM] GPU frame capture failed on C++ side'));
       } else {
         requestAnimationFrame(pollState);
@@ -53,6 +69,12 @@ export function captureFrame(): Promise<ImageData> {
 
     requestAnimationFrame(pollState);
   });
+  _captureInFlight = pending;
+  const clear = () => {
+    if (_captureInFlight === pending) _captureInFlight = null;
+  };
+  pending.then(clear, clear);
+  return pending;
 }
 
 export async function captureFrameDataUrl(): Promise<string> {
@@ -78,6 +100,36 @@ function asU8(pixels: Uint8Array | Uint8ClampedArray): Uint8Array {
   return pixels instanceof Uint8Array
     ? pixels
     : new Uint8Array(pixels.buffer, pixels.byteOffset, pixels.byteLength);
+}
+
+/**
+ * GPU still ingest: C++ copies `source` straight into readTexture_ with
+ * queue.copyExternalImageToTexture (top-left, clipped to the canvas, black
+ * borders), the same geometry as the CPU uploadImageData path. Returns false
+ * when the module or browser cannot do it; the caller then falls back to
+ * uploadImageData.
+ */
+export function uploadImageSource(
+  source: HTMLImageElement | HTMLCanvasElement | ImageBitmap,
+  width: number,
+  height: number,
+): boolean {
+  const mod = wasmRef.module;
+  if (!state.initialized || !mod || !width || !height) return false;
+  mod.pixelocityPendingImage = source;
+  try {
+    return Number(mod.ccall(
+      'loadImageExternal',
+      'number',
+      ['number', 'number'],
+      [width, height],
+    )) === 1;
+  } catch (err) {
+    console.warn('[WASM] loadImageExternal failed:', err);
+    return false;
+  } finally {
+    delete mod.pixelocityPendingImage;
+  }
 }
 
 export function uploadImageData(

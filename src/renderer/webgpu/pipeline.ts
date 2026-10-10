@@ -98,6 +98,15 @@ export class WebGPUShaderManager {
     };
   }
 
+  /** Drop one cached pipeline (warm-up LRU eviction). */
+  evict(id: string): void {
+    this.pipelines.delete(id);
+    this.pipelineHashes.delete(id);
+    this.workgroupSizes.delete(id);
+    this.bindingUsages.delete(id);
+    this.simRingShaders.delete(id);
+  }
+
   clear(): void {
     this.pipelines.clear();
     this.pipelineHashes.clear();

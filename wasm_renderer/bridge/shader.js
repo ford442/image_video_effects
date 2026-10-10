@@ -3,6 +3,7 @@
 import { state, utf8ByteLength, wasmRef } from "./state.js";
 import { rewriteWgslStorageFormats } from "./wgslFormat.js";
 import { expandWgslIncludes, hasWgslInclude } from "./wgslInclude.js";
+import { withBundledLibraries } from "./wgslLibraries.js";
 function writeUtf8(id) {
   const module = wasmRef.module;
   if (!module) return null;
@@ -21,10 +22,10 @@ async function fetchAndExpand(id, url) {
   const baseUrl = url.slice(0, url.lastIndexOf("/") + 1);
   return expandWgslIncludes(
     wgslCode,
-    async (name) => {
+    withBundledLibraries(async (name) => {
       const res = await fetch(`${baseUrl}${name}`);
       return res.ok ? res.text() : null;
-    },
+    }),
     `${id}.wgsl`
   );
 }

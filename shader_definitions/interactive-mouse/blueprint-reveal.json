@@ -2,7 +2,7 @@
   "id": "blueprint-reveal",
   "name": "Blueprint Reveal",
   "url": "shaders/blueprint-reveal.wgsl",
-  "description": "Temporal ink dissolve with depth hatch density and audio surge. Sobel edge detection draws blueprint lines; previous reveal state bleeds outward like spreading ink. Depth modulates hatch fineness, bass creates ink ripple surges from the mouse.",
+  "description": "Blueprint drafting from Sobel edges: strong edges inked as bold contours, weak ones as thin construction lines, far-depth edges dashed as hidden lines. The cursor and clicks reveal the photo through a decaying ink mask that develops into a Prussian-blue cyanotype as it fades.",
   "params": [
     {
       "id": "edgeStrength",
@@ -33,40 +33,6 @@
       "max": 1
     }
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Edge Strength",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Grid Opacity",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Reveal Radius",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Edge Softness",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
-  ],
   "features": [
     "mouse-driven",
     "audio-reactive",
@@ -84,5 +50,43 @@
     "schematic"
   ],
   "supportsDepth": true,
-  "updated": true
+  "updated": true,
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Edge Strength",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Grid Opacity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Reveal Radius",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Edge Softness",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

@@ -2,7 +2,7 @@
   "id": "refractive-bubbles",
   "name": "Refractive Bubbles",
   "url": "shaders/refractive-bubbles.wgsl",
-  "description": "Floating bubbles around the cursor that distort the background like glass.",
+  "description": "Glass bubbles orbiting the cursor that bend the background: each core shows a small inverted ball-lens image of the scene, the walls show thin-film colour where their thickness changes, and overlapping bubbles share a bright contact wall.",
   "params": [
     {
       "id": "size",

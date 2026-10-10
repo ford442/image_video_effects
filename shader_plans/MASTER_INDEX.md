@@ -124,8 +124,10 @@ scale — see [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md) 
 ### Phase 1: Foundation
 - Start with Tier 1 (<2KB) files — smallest first is an ordering rule, not a quality metric
 - Each file gets its own Idea Card; ideas come from its category scout
-- Optional small helpers (WGSL has no `#include`, so copy-paste per file). Helpers and
-  templates are never the goal and do not count as an upgrade
+- Optional small helpers. `#include` works for `_`-prefixed libraries (`_prelude.wgsl`
+  is mandatory; `_hash.wgsl` collides with shaders that define their own `hash`), so
+  copy-paste per file only what has no library. Helpers and templates are never the goal
+  and do not count as an upgrade
 
 ### Phase 2: Core Physics (as native ideas)
 - Liquid: add one extra field or force the existing solver already implies

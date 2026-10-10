@@ -1,9 +1,13 @@
-import { Renderer, RendererConfig, ShaderSlotRenderer, GPUTimings } from './Renderer';
+import { Renderer, RendererConfig, ShaderSlotRenderer, GPUTimings, UncappedBenchResult } from './Renderer';
 import * as WasmBridge from '../wasm/wasm_bridge';
+import type { WasmErrorRing } from '../wasm/wasm_bridge';
+import type { PassTiming } from './passTimings';
 import { reportError } from './ErrorHandling';
 import { describeWasmInitFailure, summarizeWasmInitState } from './wasmInitDiagnostics';
+import { publishWasmProbeSuccess } from './webgpuBootProbe';
+import { startGpuEncodeSession, type GpuEncodeSession } from '../recording/gpuEncodeSupport';
 import { InputSource } from './types';
-import { checkPhysicalSlotIndex } from './slotOrchestrator';
+import { PHYSICAL_SLOT_LIMIT, checkPhysicalSlotIndex } from './slotOrchestrator';
 
 import {
   computeInternalDimensions,
@@ -41,6 +45,14 @@ export interface WASMDiagnostics {
   initTime: string;
   /** One-line "ready / partial / failed at <stage> · adapter: …" summary for the debug panel. */
   initSummary: string;
+  /** C++ canvas COPY_SRC probe (canvas_configure.json optIn.copySrc); null = artifact predates it. */
+  canvasCopySrc: boolean | null;
+  /** MAX_SHADER_SLOTS in the loaded artifact; null = artifact predates the export. */
+  maxShaderSlots: number | null;
+  /** Smoothed per-pass GPU ms from C++ timestamp queries (#1314 D); [] until they resolve. */
+  passTimings: PassTiming[];
+  /** C++ uncaptured WebGPU errors + device-lost messages (count survives clearErrorRing). */
+  errors: WasmErrorRing;
 }
 
 export class WASMRenderer implements Renderer, ShaderSlotRenderer {
@@ -66,6 +78,7 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
   private maxInitAttempts = 3;
   private consecutiveRenderErrors = 0;
   private maxRenderErrorsBeforeStopping = 10;
+  private fatalErrorHandler: ((message: string) => void) | null = null;
   private lastFrameDataUrl = '';
   private recording = false;
   private recordingMode: 'loop' | 'continuous' = 'loop';
@@ -110,6 +123,7 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
 
       this.initialized = true;
       this.logNextInputUpload = true;
+      void this.publishProbeWhenCppReady();
       this.startTime = performance.now() / 1000;
       if (this.resolutionScale !== 1.0) {
         this.setResolutionScale(this.resolutionScale);
@@ -135,6 +149,30 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
       });
       return false;
     }
+  }
+
+  /**
+   * Publish the WASM window.webgpuProbe breadcrumb (incl. the C++ canvas COPY_SRC
+   * probe) once C++ Initialize() has really finished. The ASYNCIFY init ccall
+   * can return while CreateDevice() is still waiting on the adapter, so this
+   * polls isRendererInitialized; if C++ never gets there, nothing is claimed.
+   */
+  private async publishProbeWhenCppReady(timeoutMs = 15000, pollMs = 100): Promise<boolean> {
+    if (typeof WasmBridge.isCppRendererReady !== 'function') return false;
+    const deadline = performance.now() + timeoutMs;
+    while (this.initialized && performance.now() < deadline) {
+      if (WasmBridge.isCppRendererReady()) {
+        const bridge = WasmBridge.getDiagnostics?.();
+        publishWasmProbeSuccess(bridge?.adapterInfo ?? '', bridge?.canvasCopySrc ?? null);
+        console.log(`[WASM] probe breadcrumb: canvasCopySrc=${bridge?.canvasCopySrc ?? 'unknown'}`);
+        return true;
+      }
+      await new Promise((resolve) => setTimeout(resolve, pollMs));
+    }
+    if (this.initialized) {
+      console.warn('[WASM] C++ Initialize() did not finish; window.webgpuProbe not published');
+    }
+    return false;
   }
 
   /**
@@ -167,7 +205,20 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
         hasModule: bridge?.hasModule,
         lastLoadError: bridge?.lastLoadError,
       }),
+      canvasCopySrc: bridge?.canvasCopySrc ?? null,
+      maxShaderSlots: bridge?.maxShaderSlots ?? null,
+      passTimings: this.getPassTimings(),
+      errors: WasmBridge.readErrorRing?.() ?? { count: 0, last: '', recent: [] },
     };
+  }
+
+  /**
+   * Smoothed per-pass GPU ms measured by the C++ renderer (one entry per slot
+   * compute pass). Empty until timestamps resolve, without timestamp-query, or
+   * on an artifact that predates the export.
+   */
+  getPassTimings(): PassTiming[] {
+    return WasmBridge.readPassTimings?.() ?? [];
   }
 
   /**
@@ -361,7 +412,29 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     canvasElement: HTMLCanvasElement,
     options?: { durationMs?: number; frameRate?: number; videoBitsPerSecond?: number }
   ): Promise<Blob> {
-    return WasmBridge.startRecording(canvasElement, options);
+    // WebCodecs is the default: the bridge runs this session (COPY_SRC canvas,
+    // else captureFrame() RGBA) and only falls back to its MediaRecorder pump,
+    // with a logged reason, when VideoEncoder / a WebM codec is missing.
+    return WasmBridge.startRecording(canvasElement, {
+      ...options,
+      // No grabFrame here, so the session is 'canvas' or 'readback' (never 'worker').
+      gpuEncode: (capture, opts) => startGpuEncodeSession({
+        canvas: WasmBridge.getPresentCanvas() ?? canvasElement,
+        supportsCanvasCopySrc: () => WasmBridge.supportsCanvasCopySrc(),
+        setCanvasCopySrc: (enabled) => WasmBridge.setCanvasCopySrc(enabled),
+        readback: capture,
+      }, opts) as Promise<(GpuEncodeSession & { kind: 'canvas' | 'readback' }) | null>,
+    });
+  }
+
+  /** C++ swapchain accepted COPY_SRC at init (canvas_configure.json optIn.copySrc). */
+  supportsCanvasCopySrc(): boolean {
+    return WasmBridge.supportsCanvasCopySrc();
+  }
+
+  /** Reconfigure the C++ swapchain with/without COPY_SRC; false when refused. */
+  setCanvasCopySrc(enabled: boolean): boolean {
+    return WasmBridge.setCanvasCopySrc(enabled);
   }
 
   /** Stop an in-progress recording immediately. */
@@ -432,10 +505,20 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
       : element.height;
     if (!w || !h) return null;
 
+    // GPU still ingest first (copyExternalImageToTexture, no getImageData);
+    // the Canvas2D rasterize + CPU upload is the fallback.
+    if (WasmBridge.uploadImageSource(element, w, h)) {
+      // Keep the CPU mirror current: getCpuInputBitmap() hands offscreenCanvas
+      // to the other backend on switchRenderer.
+      this.drawToOffscreen(element, w, h);
+      console.log(`[WASM] Input upload ran: ${w}×${h} (image, GPU copy)`);
+      this.logNextInputUpload = false;
+      return { width: w, height: h };
+    }
     const data = this.rasterizeToRgba(element, w, h);
     if (!data) return null;
     WasmBridge.uploadImageData(data, w, h);
-    console.log(`[WASM] Input upload ran: ${w}×${h} (image)`);
+    console.log(`[WASM] Input upload ran: ${w}×${h} (image, CPU fallback)`);
     this.logNextInputUpload = false;
     return { width: w, height: h };
   }
@@ -445,13 +528,19 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     w: number,
     h: number,
   ): Uint8ClampedArray | null {
+    if (!this.drawToOffscreen(source, w, h) || !this.offscreenCtx) return null;
+    return this.offscreenCtx.getImageData(0, 0, w, h).data;
+  }
+
+  /** Draw `source` into the w×h offscreen canvas (no readback). */
+  private drawToOffscreen(source: CanvasImageSource, w: number, h: number): boolean {
     if (
       source === this.offscreenCanvas
       && this.offscreenCtx
       && this.offscreenCanvas.width === w
       && this.offscreenCanvas.height === h
     ) {
-      return this.offscreenCtx.getImageData(0, 0, w, h).data;
+      return true;
     }
 
     if (!this.offscreenCanvas || this.offscreenCanvas.width !== w || this.offscreenCanvas.height !== h) {
@@ -460,10 +549,10 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
       this.offscreenCanvas.height = h;
       this.offscreenCtx = this.offscreenCanvas.getContext('2d', { willReadFrequently: true });
     }
-    if (!this.offscreenCtx) return null;
+    if (!this.offscreenCtx) return false;
     this.offscreenCtx.clearRect(0, 0, w, h);
     this.offscreenCtx.drawImage(source, 0, 0, w, h);
-    return this.offscreenCtx.getImageData(0, 0, w, h).data;
+    return true;
   }
 
   /**
@@ -514,12 +603,16 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
   }
 
   getSlotState(index: number): { shaderId: string | null; enabled: boolean; mode: SlotMode } | null {
-    if (index < 0 || index > 2) return null;
+    if (!Number.isInteger(index) || index < 0 || index >= PHYSICAL_SLOT_LIMIT) return null;
     return WasmBridge.getSlotState(index);
   }
 
   getGPUTimings(): GPUTimings {
-    return WasmBridge.getGPUTimings();
+    const timings = WasmBridge.getGPUTimings();
+    // Per-pass numbers only ride along with real GPU timestamps.
+    if (!timings.available) return timings;
+    const passes = this.getPassTimings();
+    return passes.length > 0 ? { ...timings, passes } : timings;
   }
 
   async reloadShaderFromURL(id: string, url: string): Promise<boolean> {
@@ -556,6 +649,34 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
       mouseY: this.mouseY,
       mouseDown: this.mouseDown,
     });
+  }
+
+  /**
+   * Bench only (#1080): stop the rAF loop, render `frames` frames back to back
+   * (the updateUniforms export renders one frame), then time to GPU idle via
+   * requestWorkDoneMark. Null on artifacts without that export.
+   */
+  async benchmarkUncapped(frames: number): Promise<UncappedBenchResult | null> {
+    if (!this.initialized || frames <= 0) return null;
+    if (this.animationId !== null) {
+      cancelAnimationFrame(this.animationId);
+      this.animationId = null;
+    }
+    try {
+      const drained = WasmBridge.awaitSubmittedWorkDone();
+      if (!drained || !(await drained)) return null;
+      let time = performance.now() / 1000 - this.startTime;
+      const t0 = performance.now();
+      for (let i = 0; i < frames; i++) {
+        time += 1 / 60;
+        WasmBridge.updateUniforms({ time, mouseX: this.mouseX, mouseY: this.mouseY, mouseDown: this.mouseDown });
+      }
+      if (!(await WasmBridge.awaitSubmittedWorkDone())) return null;
+      const wallMs = performance.now() - t0;
+      return { frames, wallMs, msPerFrame: wallMs / frames };
+    } finally {
+      if (this.initialized && this.animationId === null) this.startRenderLoop();
+    }
   }
 
   /** Returns the last captured frame as a PNG data URL, or '' if none yet. */
@@ -599,8 +720,8 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     }
   }
 
-  render(): void {
-    // Rendering is driven by the internal animation loop.
+  setFatalErrorHandler(handler: (message: string) => void): void {
+    this.fatalErrorHandler = handler;
   }
 
   destroy(): void {
@@ -655,6 +776,12 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
         if (this.consecutiveRenderErrors >= this.maxRenderErrorsBeforeStopping) {
           console.error('[WASM] Stopping render loop after', this.maxRenderErrorsBeforeStopping, 'consecutive errors');
           this.initialized = false;
+          this.animationId = null;
+          const message =
+            `WASM render loop stopped after ${this.maxRenderErrorsBeforeStopping} consecutive errors: ` +
+            (err instanceof Error ? err.message : String(err));
+          reportError({ type: 'wasm-device-lost', message, recoverable: true });
+          this.fatalErrorHandler?.(message);
           return;
         }
       }

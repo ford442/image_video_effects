@@ -65,7 +65,9 @@ After the default configure, `runWebGpuBootProbe()` calls `probeCanvasCopySrc()`
 - `WebGpuProbeHandoff.canvasCopySrc` (plus `canvasColorOptIns` so callers can rebuild the exact live config)
 - `adapterSummary … | canvas: copySrc=yes|no colorSpace=…`
 
-Rejection is fail-soft — it never fails the ladder rung. `encodePresent` (TS) and `PresentToSurface` (C++) remain blit-to-swapchain. Capture code (WebCodecs / lossless PNG) reconfigures with `buildCanvasConfigureOptions(device, format, { ...canvasColorOptIns, copySrc: true })` only when the flag is true; it does not create a second device. C++ `COPY_SRC` is a parity follow-up (WASM feature freeze until #1080).
+Rejection is fail-soft — it never fails the ladder rung. `encodePresent` (TS) and `PresentToSurface` (C++) remain blit-to-swapchain. Capture code (WebCodecs recording) reconfigures with `buildCanvasConfigureOptions(device, format, { ...canvasColorOptIns, copySrc: true })` only when the flag is true; it does not create a second device.
+
+**C++ parity (canvas_configure v2).** The WASM path keeps both default configures (`JS_CreateSurfaceFromCanvas` render-only, then `ConfigureSurface()`). Right after surface creation, `CreateDevice()` runs `JS_ProbeCanvasCopySrc` (configure `RENDER_ATTACHMENT | COPY_SRC`, `getConfiguration()` readback) between `wgpuDevicePushErrorScope(Validation)` and `wgpuDevicePopErrorScope` + `WaitAny`, which is the same pattern as the rgba16/32 storage probe. It stores `canvasCopySrcSupported_`, and `ConfigureSurface()` then restores render-only. `ConfigureSurface()` adds `WGPUTextureUsage_CopySrc` only while `canvasCopySrc_` is set, and only `SetCanvasCopySrc()` (export `_setCanvasCopySrc`) sets it. It refuses when the probe said no, and resize reconfigures keep it. The result is published as `window.webgpuProbe` `{ backend: 'wasm', ok: true, canvasCopySrc }` (`publishWasmProbeSuccess`, since `?renderer=wasm` skips the TS probe), `getDiagnostics().wasm.canvasCopySrc`, and `adapterSummary … | canvasCopySrc=yes|no`. `verify:device-policy` checks the probe usage, the scope ordering, the `if (canvasCopySrc_) config.usage |= …` enums against `cpp.usageEnums`, and setter-only assignment. WASM PNG capture does not need `COPY_SRC`: `captureFrame()` reads the internal `writeTexture_` back losslessly.
 
 ### Opt-in: Display P3 / extended tone mapping (default off)
 
@@ -77,5 +79,5 @@ Rejection is fail-soft — it never fails the ladder rung. `encodePresent` (TS) 
 
 ## Deferred
 
-- **C++ canvas parity:** `COPY_SRC` / `colorSpace` on `JS_CreateSurfaceFromCanvas` + `ConfigureSurface()` — after #1080.
+- **C++ canvas parity:** ~~`COPY_SRC`~~ (done: canvas_configure v2, see above) / `colorSpace` + extended tone mapping on `JS_CreateSurfaceFromCanvas` + `ConfigureSurface()` — after #1080 (TS-first `?display_p3=1`).
 - **Controls toggle** for Display P3 (URL opt-in only today).

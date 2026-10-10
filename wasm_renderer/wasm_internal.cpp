@@ -176,6 +176,7 @@ ShaderBindingUsage AnalyzeShaderBindings(const char* wgslCode) {
     usage.writesDataB = UsedBeyondDeclaration(wgslCode, 8);
     usage.readsDataC = UsedBeyondDeclaration(wgslCode, 9);
     usage.usesHistory = UsedBeyondDeclaration(wgslCode, 13);
+    usage.writesDepth = UsedBeyondDeclaration(wgslCode, 6);
     return usage;
 }
 
@@ -277,6 +278,57 @@ std::string RewriteWgslStorageFormats(const char* wgsl, const char* colorFormat)
         p = q;
     }
     return out;
+}
+
+// Out of line on purpose: under -flto every inlined std::string append grew
+// the .wasm by hundreds of bytes per call site.
+__attribute__((noinline)) void AppendRaw(std::string& out, const char* s, size_t n) {
+    out.append(s, n);
+}
+
+// The JSON helpers format by hand: snprintf reaches vfprintf's indirect write
+// call, which makes ASYNCIFY instrument every caller (several KB of .wasm).
+void AppendUInt(std::string& out, uint64_t v, int minDigits) {
+    char buf[24];
+    int i = sizeof(buf);
+    do {
+        buf[--i] = static_cast<char>('0' + v % 10);
+        v /= 10;
+    } while (v != 0 || static_cast<int>(sizeof(buf)) - i < minDigits);
+    AppendRaw(out, buf + i, sizeof(buf) - static_cast<size_t>(i));
+}
+
+void AppendInt(std::string& out, int64_t v) {
+    if (v < 0) {
+        AppendLit(out, "-");
+        AppendUInt(out, static_cast<uint64_t>(-(v + 1)) + 1u);
+    } else {
+        AppendUInt(out, static_cast<uint64_t>(v));
+    }
+}
+
+void AppendJsonString(std::string& out, const char* s) {
+    static const char kHex[] = "0123456789abcdef";
+    AppendLit(out, "\"");
+    const char* run = s ? s : "";
+    const char* p = run;
+    char esc[6] = {'\\', 'u', '0', '0', '0', '0'};
+    for (; *p; ++p) {
+        const unsigned char c = static_cast<unsigned char>(*p);
+        if (c >= 0x20 && c != '"' && c != '\\') continue;
+        AppendRaw(out, run, static_cast<size_t>(p - run));
+        if (c == '"' || c == '\\') {
+            const char pair[2] = {'\\', static_cast<char>(c)};
+            AppendRaw(out, pair, 2);
+        } else {
+            esc[4] = kHex[c >> 4];
+            esc[5] = kHex[c & 0xF];
+            AppendRaw(out, esc, 6);
+        }
+        run = p + 1;
+    }
+    AppendRaw(out, run, static_cast<size_t>(p - run));
+    AppendLit(out, "\"");
 }
 
 } // namespace wasm_internal

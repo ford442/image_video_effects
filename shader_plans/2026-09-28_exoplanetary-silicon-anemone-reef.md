@@ -243,4 +243,4 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 1. Create shader file `public/shaders/gen-exoplanetary-silicon-anemone-reef.wgsl`
 2. Create JSON definition `shader_definitions/generative/gen-exoplanetary-silicon-anemone-reef.json`
 3. Run `node scripts/generate_shader_lists.js`
-4. Upload via `python scripts/sync_shaders_to_storage.py` (if applicable in local pipeline)
+4. Upload via `python3 tools/deploy/sync_shaders_to_storage.py` (if applicable in local pipeline)

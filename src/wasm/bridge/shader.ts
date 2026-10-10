@@ -1,6 +1,7 @@
 import { state, utf8ByteLength, wasmRef } from './state.js';
 import { rewriteWgslStorageFormats } from './wgslFormat.js';
 import { expandWgslIncludes, hasWgslInclude } from './wgslInclude.js';
+import { withBundledLibraries } from './wgslLibraries.js';
 
 export interface SlotState {
   shaderId: string | null;
@@ -22,8 +23,9 @@ function writeUtf8(id: string): { ptr: number; free: () => void } | null {
  *
  * This is the only place WGSL crosses into the WASM module, so it is also the
  * only place that needs an include expander — the C++ side never parses one,
- * it just refuses source that still contains a directive. Libraries resolve as
- * siblings of the shader URL.
+ * it just refuses source that still contains a directive. `_prelude.wgsl` comes
+ * from the bundled copy (wgslLibraries.ts); other libraries resolve as siblings
+ * of the shader URL.
  */
 async function fetchAndExpand(id: string, url: string): Promise<string> {
   const response = await fetch(url);
@@ -36,10 +38,10 @@ async function fetchAndExpand(id: string, url: string): Promise<string> {
   const baseUrl = url.slice(0, url.lastIndexOf('/') + 1);
   return expandWgslIncludes(
     wgslCode,
-    async (name) => {
+    withBundledLibraries(async (name) => {
       const res = await fetch(`${baseUrl}${name}`);
       return res.ok ? res.text() : null;
-    },
+    }),
     `${id}.wgsl`,
   );
 }

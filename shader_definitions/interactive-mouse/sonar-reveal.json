@@ -39,45 +39,49 @@
       "max": 1
     }
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Reveal Size",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Ring Intensity",
-      "default": 0.8,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Edge Softness",
-      "default": 0.2,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Echo Mix",
-      "default": 0,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
-  ],
   "tags": [
     "filter",
     "image-processing",
     "audio",
     "music",
     "reactive"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Reveal Size",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Ring Intensity",
+          "default": 0.8,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Edge Softness",
+          "default": 0.2,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Echo Mix",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

@@ -2,7 +2,7 @@
 
 Physics flagships — five Tier C **multipass graph** simulations plus the
 canonical single-pass Optical Flow Dream. They should feel psychedelic,
-beautiful, and strange (see [`notes/CREATIVE_VISION.md`](../notes/CREATIVE_VISION.md)).
+beautiful, and strange (see [`docs/CREATIVE_VISION.md`](CREATIVE_VISION.md)).
 
 Canonical graph docs: [`MULTIPASS_GRAPH.md`](MULTIPASS_GRAPH.md).
 
@@ -74,7 +74,7 @@ For each flagship at **balanced**, 1080p-class internal:
 
 ```bash
 python3 scripts/wgsl_precommit_gate.py
-npx react-scripts test --watchAll=false --ci --testPathPattern='multipass|attractShowcase|multipassBadge|GraphRunner'
+npm test -- --watchAll=false --ci --testPathPattern='multipass|attractShowcase|multipassBadge|GraphRunner'
 ```
 
 ## Related

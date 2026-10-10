@@ -84,6 +84,17 @@ describe('attractShowcasePool', () => {
       ),
     );
 
+    it('every attract id is a catalog id (a miss is silently dropped from rotation)', () => {
+      const listDir = path.join(root, 'public/shader-lists');
+      const catalog = new Set<string>();
+      for (const file of fs.readdirSync(listDir).filter((f) => f.endsWith('.json'))) {
+        const list = JSON.parse(fs.readFileSync(path.join(listDir, file), 'utf8'));
+        if (Array.isArray(list)) list.forEach((e: { id?: string }) => e?.id && catalog.add(e.id));
+      }
+      const missing = [...ATTRACT_SHOWCASE_IDS, ...ATTRACT_PHYSICS_LAB_IDS].filter((id) => !catalog.has(id));
+      expect(missing).toEqual([]);
+    });
+
     it('no attract id is deferred-as-pending', () => {
       const offenders = [...ATTRACT_SHOWCASE_IDS, ...ATTRACT_PHYSICS_LAB_IDS].filter((id) => deferred.has(id));
       expect(offenders).toEqual([]);

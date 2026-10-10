@@ -2,7 +2,7 @@
   "id": "temporal-slit-paint",
   "name": "Temporal Slit Paint",
   "url": "shaders/temporal-slit-paint.wgsl",
-  "description": "Velocity-stretched brush and traveling slit-head runners on a raw A canvas. Display is ACES of the paint composite; coverage stays in A. Held stamps, click spatters, exact-C diffusion.",
+  "description": "Velocity-stretched brush and traveling slit-head runners on a raw A canvas. Display is ACES of the paint composite; coverage stays in A. Held stamps, click spatters, exact-C diffusion. Moving strokes slit-scan the live frame along the drag direction, with quarter-second exposure frame-lines marking time.",
   "features": [
     "mouse-driven",
     "upgraded-rgba",
@@ -70,35 +70,39 @@
     16,
     1
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Brush Size",
-      "default": 0.3,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "index": 1,
-      "name": "Brush Shape",
-      "default": 0,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "index": 2,
-      "name": "Brush Softness",
-      "default": 0.3,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "index": 3,
-      "name": "Diffusion",
-      "default": 0.2,
-      "min": 0,
-      "max": 1
+  "category": "interactive-mouse",
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Brush Size",
+          "default": 0.3,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 1,
+          "name": "Brush Shape",
+          "default": 0,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 2,
+          "name": "Brush Softness",
+          "default": 0.3,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 3,
+          "name": "Diffusion",
+          "default": 0.2,
+          "min": 0,
+          "max": 1
+        }
+      ]
     }
-  ],
-  "category": "interactive-mouse"
+  }
 }

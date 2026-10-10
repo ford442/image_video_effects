@@ -16,12 +16,6 @@
     "temporal",
     "aces-tone-map"
   ],
-  "updatedParams": [
-    { "index": 0, "name": "LIC Steps", "default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01 },
-    { "index": 1, "name": "Coherency Boost", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
-    { "index": 2, "name": "Sort Threshold", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
-    { "index": 3, "name": "Temporal Smoothing", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 }
-  ],
   "params": [
     {
       "id": "lic_steps",
@@ -64,12 +58,6 @@
       "description": "Sort blend smoothing amount"
     }
   ],
-  "chunks_used": [
-    "structureTensor (conv-structure-tensor-flow)",
-    "LIC (conv-structure-tensor-flow)",
-    "pixel sorting (spectral-flow-sorting)",
-    "frequency analysis (spectral-flow-sorting)"
-  ],
   "tags": [
     "structure-tensor",
     "LIC",
@@ -78,6 +66,50 @@
     "texture-analysis",
     "audio"
   ],
-  "created_by": "Agent CB-7 - Flow & Multi-Pass Enhancer",
-  "created_date": "2026-04-18"
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "LIC Steps",
+          "default": 0.3,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Coherency Boost",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Sort Threshold",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Temporal Smoothing",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
+    },
+    "chunks_used": [
+      "structureTensor (conv-structure-tensor-flow)",
+      "LIC (conv-structure-tensor-flow)",
+      "pixel sorting (spectral-flow-sorting)",
+      "frequency analysis (spectral-flow-sorting)"
+    ],
+    "created_by": "Agent CB-7 - Flow & Multi-Pass Enhancer",
+    "created_date": "2026-04-18"
+  }
 }

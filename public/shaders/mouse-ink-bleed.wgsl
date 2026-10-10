@@ -3,11 +3,14 @@
 //  Category: interactive-mouse
 //  Features: upgraded-rgba, mouse-driven, audio-reactive, ink-diffusion,
 //            organic, domain-warp, temporal-feedback, depth-aware,
-//            gravity-well, click-shockwave, spring-damper, emergent-feedback,
+//            gravity-well, click-shockwave, paper-wicking, tide-line, emergent-feedback,
 //            aces-tone-map, semantic-alpha
 //  Complexity: Medium
 //  Created: 2026-05-30
 //  Updated: 2026-07-12 (retry expansion)
+//  Upgraded: 2026-10-04
+//  Ideas: paper-fibre wicking of a wet-ink field; tide-line pigment rim at the drying front
+//  A packing: (trail rgb, wet-ink amount) — HEAD stored a per-pixel bass envelope in .a
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -33,14 +36,6 @@ struct Uniforms {
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
 
-const PREV_PRESS: i32 = 0;
-const CLICK_TIME: i32 = 1;
-const CLICK_X: i32 = 2;
-const CLICK_Y: i32 = 3;
-const SMOOTH_X: i32 = 4;
-const SMOOTH_Y: i32 = 5;
-const VEL_X: i32 = 6;
-const VEL_Y: i32 = 7;
 
 fn hash21(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
@@ -59,9 +54,6 @@ fn fbm(p: vec2<f32>, oct: i32) -> f32 {
 fn domainWarp(p: vec2<f32>, strength: f32, oct: i32) -> vec2<f32> {
     let q = vec2<f32>(fbm(p, oct), fbm(p + vec2<f32>(5.2, 1.3), oct));
     return p + strength * q;
-}
-fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
-    return mix(prev, bass, select(release, attack, bass > prev));
 }
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -91,7 +83,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = vec2<i32>(global_id.xy);
     let uv = vec2<f32>(global_id.xy) / res;
     let time = u.config.x;
-    let dt = u.config.y;
     let mouse = u.zoom_config.yz;
     let isPress = u.zoom_config.w;
 
@@ -103,35 +94,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
+    let maxPx = vec2<i32>(res) - vec2<i32>(1);
     let prev = textureLoad(dataTextureC, pixel, 0);
-    let env = bass_env(prev.a, bass, 0.8, 0.15);
+    // Stateless audio envelope (A.a now carries wet ink, not a per-pixel bass copy).
+    let env = clamp(bass * 0.85 + mids * 0.15, 0.0, 1.5);
 
-    // ---- persistent interactive state (spring-damper + click burst) ----
-    var prevPress = extraBuffer[PREV_PRESS];
-    var clickTime = extraBuffer[CLICK_TIME];
-    var clickPos = vec2<f32>(extraBuffer[CLICK_X], extraBuffer[CLICK_Y]);
-    var smoothMouse = vec2<f32>(extraBuffer[SMOOTH_X], extraBuffer[SMOOTH_Y]);
-    var velocity = vec2<f32>(extraBuffer[VEL_X], extraBuffer[VEL_Y]);
-
-    let k = 64.0;
-    let d = 10.0;
-    let accel = (mouse - smoothMouse) * k - velocity * d;
-    velocity = velocity + accel * dt;
-    smoothMouse = smoothMouse + velocity * dt;
-
-    if (isPress > 0.5 && prevPress <= 0.5) {
-        clickTime = time;
-        clickPos = mouse;
+    // Floor fix: HEAD kept spring/click state in extraBuffer[0..7], written by every
+    // thread and re-uploaded each frame, with config.y (ripple count) used as dt — the
+    // well sat near the top-left corner. The well now centres on the cursor and the
+    // shockwave follows the newest live click in u.ripples.
+    let smoothMouse = mouse;
+    var clickTime = -10.0;
+    var clickPos = mouse;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+        let r = u.ripples[ri];
+        if (r.z > clickTime && r.z <= time) {
+            clickTime = r.z;
+            clickPos = r.xy;
+        }
     }
-
-    extraBuffer[PREV_PRESS] = isPress;
-    extraBuffer[CLICK_TIME] = clickTime;
-    extraBuffer[CLICK_X] = clickPos.x;
-    extraBuffer[CLICK_Y] = clickPos.y;
-    extraBuffer[SMOOTH_X] = smoothMouse.x;
-    extraBuffer[SMOOTH_Y] = smoothMouse.y;
-    extraBuffer[VEL_X] = velocity.x;
-    extraBuffer[VEL_Y] = velocity.y;
 
     let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
@@ -184,8 +166,41 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ---- shockwave ink splash ----
     color = color + inkTint * shockStrength * colorIntensity * (0.8 + treble);
 
-    let trail = mix(prev.rgb * decay, color, 0.08 + inkRadius * 0.25);
+    // ---- Idea 1: paper-fibre wicking ----
+    // Wet ink (A.a) diffuses into its 4 neighbours weighted by alignment with a local fibre
+    // direction, faster along fibre strands; the stored trail pigment is carried with it,
+    // so ink creeps out in hairline feathers like ink on rice paper.
+    let cR = textureLoad(dataTextureC, clamp(pixel + vec2<i32>(1, 0), vec2<i32>(0), maxPx), 0);
+    let cL = textureLoad(dataTextureC, clamp(pixel - vec2<i32>(1, 0), vec2<i32>(0), maxPx), 0);
+    let cD = textureLoad(dataTextureC, clamp(pixel + vec2<i32>(0, 1), vec2<i32>(0), maxPx), 0);
+    let cU = textureLoad(dataTextureC, clamp(pixel - vec2<i32>(0, 1), vec2<i32>(0), maxPx), 0);
+    let fibreAngle = valueNoise(uv * vec2<f32>(14.0, 11.0)) * TAU;
+    let fibre = vec2<f32>(cos(fibreAngle), sin(fibreAngle));
+    let wX = 0.2 + 0.8 * fibre.x * fibre.x;
+    let wY = 0.2 + 0.8 * fibre.y * fibre.y;
+    let strandCoord = vec2<f32>(dot(uv, fibre), dot(uv, vec2<f32>(-fibre.y, fibre.x))) * vec2<f32>(60.0, 900.0);
+    let strand = smoothstep(0.45, 0.8, valueNoise(strandCoord));
+    let wetNbr = ((cR.a + cL.a) * wX + (cD.a + cU.a) * wY) / (2.0 * (wX + wY));
+    let pigmentNbr = ((cR.rgb + cL.rgb) * wX + (cD.rgb + cU.rgb) * wY) / (2.0 * (wX + wY));
+    let wick = (0.25 + 0.65 * strand) * (0.6 + turbulence * 0.3);
+    let dryRate = mix(0.975, 0.996, clamp(u.zoom_params.z, 0.0, 1.0));
+    let prevWet = clamp(prev.a, 0.0, 1.0);
+    let wetSpread = prevWet + (wetNbr - prevWet) * wick;
+    let newWet = clamp(max(wetSpread * dryRate, inkRadius * 0.9 + shockStrength * 0.15), 0.0, 1.0);
+
+    var trail = mix(prev.rgb * decay, color, 0.08 + inkRadius * 0.25);
+    let carry = wick * smoothstep(0.02, 0.25, wetNbr) * step(prevWet, wetNbr) * 0.5;
+    trail = mix(trail, pigmentNbr, carry);
     color = mix(color, trail, 0.55);
+    color = mix(color, color * inkTint * 2.2, newWet * colorIntensity * 0.45);
+
+    // ---- Idea 2: tide-line rim ----
+    // Where the wet front is steep and the ink is part-dry, pigment piles up at the edge
+    // (coffee-ring deposit) — a darker rim that is also written into the trail so it stays.
+    let wetGrad = length(vec2<f32>(cR.a - cL.a, cD.a - cU.a));
+    let rim = smoothstep(0.03, 0.18, wetGrad) * smoothstep(0.04, 0.25, newWet) * (1.0 - smoothstep(0.55, 0.9, newWet));
+    color = color * (1.0 - rim * 0.5 * colorIntensity);
+    trail = mix(trail, trail * 0.55, rim * 0.25);
 
     let fog = 1.0 - exp(-depth * 2.5);
     color = mix(color, color * 0.65 + vec3<f32>(0.02), fog * 0.35);
@@ -193,10 +208,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = acesToneMap(color * (0.95 + env * 0.15));
     color = color + (ign(vec2<f32>(global_id.xy)) - 0.5) * 0.006;
 
-    let effect = inkRadius * 0.7 + edgeGlow * 0.5 + shockStrength * 0.4;
+    let effect = inkRadius * 0.7 + edgeGlow * 0.5 + shockStrength * 0.4 + newWet * 0.3 + rim * 0.3;
     let semantic_alpha = clamp(baseColor.a * (0.5 + effect * 0.6), 0.0, 1.0);
 
     textureStore(writeTexture, pixel, vec4<f32>(color, semantic_alpha));
-    textureStore(dataTextureA, pixel, vec4<f32>(trail, env));
+    textureStore(dataTextureA, pixel, vec4<f32>(trail, newWet));
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

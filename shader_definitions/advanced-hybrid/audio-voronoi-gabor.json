@@ -55,13 +55,6 @@
       "description": "How much Gabor texture affects displacement"
     }
   ],
-  "chunks_used": [
-    "hash12 (gen_grid.wgsl)",
-    "hash22 (gen_grid.wgsl)",
-    "gaborResponse (conv-gabor-texture-analyzer)",
-    "Voronoi pattern (audio-voronoi-displacement)",
-    "Audio band simulation (audio-voronoi-displacement)"
-  ],
   "tags": [
     "audio",
     "music",
@@ -71,6 +64,15 @@
     "voronoi",
     "displacement"
   ],
-  "created_by": "Agent CB-7 - Flow & Multi-Pass Enhancer",
-  "created_date": "2026-04-18"
+  "x-meta": {
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "hash22 (gen_grid.wgsl)",
+      "gaborResponse (conv-gabor-texture-analyzer)",
+      "Voronoi pattern (audio-voronoi-displacement)",
+      "Audio band simulation (audio-voronoi-displacement)"
+    ],
+    "created_by": "Agent CB-7 - Flow & Multi-Pass Enhancer",
+    "created_date": "2026-04-18"
+  }
 }

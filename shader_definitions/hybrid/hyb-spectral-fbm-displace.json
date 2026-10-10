@@ -79,53 +79,57 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "chunks_used": [
-    "fbm2 (gen_grid.wgsl)",
-    "domainWarp (gen_grid.wgsl)",
-    "wavelengthToRGB (spec-prismatic-dispersion.wgsl)"
-  ],
-  "created_by": "Agent 4b - Advanced Hybrid Shader Creator",
   "updated": true,
-  "updatedParams": [
-    {
-      "id": "fbm_scale",
-      "name": "FBM Scale",
-      "default": 0.35,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x",
-      "description": "Scale of the FBM noise domain used for displacement"
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "id": "fbm_scale",
+          "name": "FBM Scale",
+          "default": 0.35,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "mapping": "zoom_params.x",
+          "description": "Scale of the FBM noise domain used for displacement"
+        },
+        {
+          "id": "warp_amount",
+          "name": "Warp Amount",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "mapping": "zoom_params.y",
+          "description": "Strength of the nested FBM domain warp"
+        },
+        {
+          "id": "spectral_spread",
+          "name": "Spectral Spread",
+          "default": 0.35,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "mapping": "zoom_params.z",
+          "description": "Amount of RGB channel separation along the displacement gradient"
+        },
+        {
+          "id": "effect_mix",
+          "name": "Effect Mix",
+          "default": 0.75,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "mapping": "zoom_params.w",
+          "description": "Blend strength of the spectral displacement over the input"
+        }
+      ]
     },
-    {
-      "id": "warp_amount",
-      "name": "Warp Amount",
-      "default": 0.4,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y",
-      "description": "Strength of the nested FBM domain warp"
-    },
-    {
-      "id": "spectral_spread",
-      "name": "Spectral Spread",
-      "default": 0.35,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z",
-      "description": "Amount of RGB channel separation along the displacement gradient"
-    },
-    {
-      "id": "effect_mix",
-      "name": "Effect Mix",
-      "default": 0.75,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w",
-      "description": "Blend strength of the spectral displacement over the input"
-    }
-  ]
+    "chunks_used": [
+      "fbm2 (gen_grid.wgsl)",
+      "domainWarp (gen_grid.wgsl)",
+      "wavelengthToRGB (spec-prismatic-dispersion.wgsl)"
+    ],
+    "created_by": "Agent 4b - Advanced Hybrid Shader Creator"
+  }
 }

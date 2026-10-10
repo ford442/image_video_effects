@@ -1,32 +1,29 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Chrono Luma Slit Scan
 //  Category: post-processing
+//  Upgraded: 2026-10-04
+//  Ideas: isochrone contour lines at integer-age seams; scan-runner windows onto the oldest frame
+//  A packing: display RGBA
 //  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
 //         hardcoded 8 — see HISTORY RING DEPTH below
 //  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 @group(0) @binding(13) var historyTexture: texture_2d_array<f32>;
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+// ── History ring read (#1307) ────────────────────────────────────
+// Every ring read goes through here. Ages clamp to the oldest layer the ring
+// actually holds; age 0 is the live frame — which is all a 1-layer ring has
+// (the host never writes a 1-layer ring, so its layer 0 is stale). On an
+// 8-layer ring this is the same layer lookup as before. Mirrors
+// temporal-slit-scan.wgsl frameAt.
+fn frameAt(uv: vec2<f32>, head: u32, depth: u32, age: u32, current: vec4<f32>) -> vec4<f32> {
+  let a = min(age, depth - 1u);
+  if (a == 0u) { return current; }
+  let layer = (head + depth - a) % depth;
+  return textureSampleLevel(historyTexture, u_sampler, uv, i32(layer), 0.0);
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -63,14 +60,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // ── HISTORY RING DEPTH (floor fix, 2026-09-21) ───────────────────
   // The ring is at most 8 layers; after the VRAM probe the runtime may
   // allocate 8, 4 or 1, and it wraps its write head at the ALLOCATED
-  // count (renderer/webgpu/frame.ts). A hardcoded HISTORY_DEPTH=8 asked
+  // count (renderer/webgpu/frame.ts). A hardcoded ring depth of 8 asked
   // for layers that do not exist on a 4- or 1-layer device and WGSL
   // clamped them to the last layer: scrambled frame order, silently.
   // reach = oldest age this ring can actually supply (0 on a 1-layer ring).
   let histDepth = max(textureNumLayers(historyTexture), 1u);
   let reach   = histDepth - 1u;
   let maxAge  = 1u + u32(spread * f32(max(reach, 1u) - 1u));
-  let ageFlt  = 1.0 + (1.0 - lumaAdjusted) * f32(maxAge - 1u);
+  let ageLuma = 1.0 + (1.0 - lumaAdjusted) * f32(maxAge - 1u);
+  // Idea 2 — runner time-windows: inside the sweeping scan bands the age jumps to the
+  // oldest frame the ring holds, so the runners scan old time across the picture.
+  let windowGate = smoothstep(0.3, 0.75, scanRunner) * step(1.5, f32(reach));
+  let ageFlt  = mix(ageLuma, f32(max(reach, 1u)) - 0.001, windowGate);
   let age     = clamp(u32(ageFlt), 1u, max(reach, 1u));
   let ageFrac = fract(ageFlt);
 
@@ -91,14 +92,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let sampleUV  = clamp(uv + warpOffset, vec2<f32>(0.0), vec2<f32>(1.0));
 
-  let layerA = i32((historyHead + histDepth - min(age, reach))       % histDepth);
-  let layerB = i32((historyHead + histDepth - min(age + 1u, reach))  % histDepth);
-
-  let frameA = textureSampleLevel(historyTexture, u_sampler, sampleUV, layerA, 0.0);
-  let frameB = textureSampleLevel(historyTexture, u_sampler, sampleUV, layerB, 0.0);
+  // frameAt clamps both ages to `reach`; on a 1-layer ring both are the live frame.
+  let frameA = frameAt(sampleUV, historyHead, histDepth, age, current);
+  let frameB = frameAt(sampleUV, historyHead, histDepth, age + 1u, current);
 
   let slitColor = mix(frameA, frameB, ageFrac);
-  let output   = mix(slitColor, current, origBlend);
+  var output   = mix(slitColor, current, origBlend);
+
+  // Idea 1 — isochrones: thin contours where the luma-chosen age crosses a whole frame,
+  // drawing the luma→time map as a topographic chart (absent on a 1–2 layer ring).
+  let seamDist = min(ageFrac, 1.0 - ageFrac);
+  let iso = (1.0 - smoothstep(0.0, 0.07, seamDist)) * step(2.5, f32(maxAge)) * (1.0 - windowGate) * (1.0 - origBlend);
+  output = vec4<f32>(output.rgb * (1.0 - iso * 0.45) + vec3<f32>(0.10, 0.11, 0.13) * iso * (0.6 + treble * 0.4), output.a);
   let motionD  = length(slitColor.rgb - current.rgb);
   let alpha    = clamp(0.6 + motionD * 2.0 + bass * 0.2 + scanRunner * 0.1, 0.0, 1.0);
   let finalOut = vec4<f32>(output.rgb, alpha);

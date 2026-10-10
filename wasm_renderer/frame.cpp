@@ -10,6 +10,7 @@
 #include <array>
 #include <algorithm>
 #include <vector>
+#include <memory>
 
 namespace pixelocity {
 
@@ -17,22 +18,30 @@ using wasm_internal::MakeStringView;
 using wasm_internal::AlignUp;
 using wasm_internal::CheckLimit;
 using wasm_internal::ParseWorkgroupSize;
-using wasm_internal::kTsFrameStart;
-using wasm_internal::kTsComputeEnd;
-using wasm_internal::kTsParallelStart;
-using wasm_internal::kTsParallelEnd;
-using wasm_internal::kTsChainedStart;
-using wasm_internal::kTsChainedEnd;
 
 static void CopyTex(WGPUCommandEncoder enc,
                     WGPUTexture src, WGPUTexture dst,
                     uint32_t w, uint32_t h) {
-    WGPUTexelCopyTextureInfo s = {};
+    WGPUTexelCopyTextureInfo s = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
     s.texture = src; s.mipLevel = 0; s.origin = {0,0,0}; s.aspect = WGPUTextureAspect_All;
-    WGPUTexelCopyTextureInfo d = {};
+    WGPUTexelCopyTextureInfo d = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
     d.texture = dst; d.mipLevel = 0; d.origin = {0,0,0}; d.aspect = WGPUTextureAspect_All;
     WGPUExtent3D ext = { w, h, 1 };
     wgpuCommandEncoderCopyTextureToTexture(enc, &s, &d, &ext);
+}
+
+WGPUCommandEncoder WebGPURenderer::CreateEncoder(const char* label) const {
+    WGPUCommandEncoderDescriptor desc = WGPU_COMMAND_ENCODER_DESCRIPTOR_INIT;
+    desc.label = MakeStringView(label);
+    return wgpuDeviceCreateCommandEncoder(device_.get(), &desc);
+}
+
+void WebGPURenderer::FinishAndSubmit(WGPUCommandEncoder encoder, const char* label) {
+    WGPUCommandBufferDescriptor desc = WGPU_COMMAND_BUFFER_DESCRIPTOR_INIT;
+    desc.label = MakeStringView(label);
+    WGPUCommandBufferHandle cb(wgpuCommandEncoderFinish(encoder, &desc));
+    WGPUCommandBuffer raw = cb.get();
+    wgpuQueueSubmit(queue_.get(), 1, &raw);
 }
 
 void WebGPURenderer::UpdateUniformBuffer(bool includeHistoryHead) {
@@ -117,7 +126,7 @@ void WebGPURenderer::UpdateUniformBuffer(bool includeHistoryHead) {
 //     -> Slot 1 compute -> pingPong1_
 //     -> Slot 2 compute -> writeTexture_
 //   Then: writeTexture_ -> readTexture_  (temporal feedback for next frame)
-//         depthWrite_   -> depthRead_
+//         depthWrite_   -> depthRead_    (only when a pass wrote binding 6)
 //         dataTextureA_ -> dataTextureC_  (data-texture feedback)
 //
 // Each slot submission is a separate wgpuQueueSubmit so that per-slot
@@ -148,12 +157,14 @@ void WebGPURenderer::Render() {
     bool anyWritesDataA = false;
     bool anyWritesDataB = false;
     bool anyUsesHistory = false;
+    bool anyWritesDepth = false;
 
     auto accumulateUsage = [&](const ShaderPipeline& sp) {
         anyReadsC = anyReadsC || sp.readsDataC;
         anyWritesDataA = anyWritesDataA || sp.writesDataA;
         anyWritesDataB = anyWritesDataB || sp.writesDataB;
         anyUsesHistory = anyUsesHistory || sp.usesHistory;
+        anyWritesDepth = anyWritesDepth || sp.writesDepth;
     };
 
     // Determine the first enabled slot and the last enabled slot.
@@ -193,30 +204,28 @@ void WebGPURenderer::Render() {
             if (it != shaders_.end() && it->second.pipeline.get()) {
                 // Single pass: readTexture_ -> writeTexture_
                 WriteSlotParams(zoomParams_);
-                WGPUBindGroup bg = CreateComputeBindGroup(readTexture_.get(), writeTexture_.get());
+                WGPUBindGroupHandle bg(CreateComputeBindGroup(readTexture_.get(), writeTexture_.get()));
 
-                WGPUCommandEncoderDescriptor encDesc = {};
-                encDesc.label = MakeStringView("Single Encoder");
-                WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_.get(), &encDesc);
+                WGPUCommandEncoderHandle enc(CreateEncoder("Single Encoder"));
 
-                int32_t tsStart = -1;
-                int32_t tsEndA = -1;
-                int32_t tsEndB = -1;
-                if (supportsTimestampQuery_) {
-                    tsStart = kTsFrameStart;
-                    tsEndA = kTsChainedEnd;
-                    tsEndB = kTsComputeEnd;
-                    tsFrameStartWritten_ = true;
-                    tsChainedStartWritten_ = true;
-                }
+                // One pass is both first and last: FrameStart -> ComputeEnd,
+                // decoded as the chained phase (legacy single shader = chained).
+                // No slot owns it, so it profiles as slot -1.
+                int32_t tsBegin = -1;
+                int32_t tsEnd = -1;
+                PickComputeTimestampWrites(SlotMode::Chained, /*slot=*/-1,
+                                           activeShaderId_, it->second.id, tsBegin, tsEnd);
 
                 DispatchComputePass(enc, it->second.pipeline.get(), bg,
                                     it->second.workgroupX, it->second.workgroupY,
-                                    tsStart, tsEndA, tsEndB);
-                wgpuBindGroupRelease(bg);
+                                    tsBegin, tsEnd);
 
                 CopyTex(enc, writeTexture_.get(), readTexture_.get(), W, H);
-                CopyTex(enc, depthTextureWrite_.get(), depthTextureRead_.get(), W, H);
+                // Depth feedback only when a pass wrote binding 6; otherwise
+                // the copy clobbers a depth map uploaded via UpdateDepthMap.
+                if (anyWritesDepth) {
+                    CopyTex(enc, depthTextureWrite_.get(), depthTextureRead_.get(), W, H);
+                }
                 // dataB first, dataA last — A is primary feedback and must win when both written
                 if (anyReadsC && anyWritesDataB) {
                     CopyTex(enc, dataTextureB_.get(), dataTextureC_.get(), W, H);
@@ -225,12 +234,12 @@ void WebGPURenderer::Render() {
                     CopyTex(enc, dataTextureA_.get(), dataTextureC_.get(), W, H);
                 }
                 if (anyUsesHistory && historyLayerCount_ > 1) {
-                    WGPUTexelCopyTextureInfo src = {};
+                    WGPUTexelCopyTextureInfo src = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
                     src.texture = writeTexture_.get();
                     src.mipLevel = 0;
                     src.origin = {0, 0, 0};
                     src.aspect = WGPUTextureAspect_All;
-                    WGPUTexelCopyTextureInfo dst = {};
+                    WGPUTexelCopyTextureInfo dst = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
                     dst.texture = historyTexture_.get();
                     dst.mipLevel = 0;
                     dst.origin = {0, 0, historyHead_};
@@ -240,12 +249,7 @@ void WebGPURenderer::Render() {
                     historyHead_ = (historyHead_ + 1) % historyLayerCount_;
                 }
 
-                WGPUCommandBufferDescriptor cbDesc = {};
-                cbDesc.label = MakeStringView("Single CmdBuf");
-                WGPUCommandBuffer cb = wgpuCommandEncoderFinish(enc, &cbDesc);
-                wgpuQueueSubmit(queue_.get(), 1, &cb);
-                wgpuCommandBufferRelease(cb);
-                wgpuCommandEncoderRelease(enc);
+                FinishAndSubmit(enc, "Single CmdBuf");
             }
         }
     } else {
@@ -278,51 +282,26 @@ void WebGPURenderer::Render() {
 
             const double slotStartMs = emscripten_get_now();
 
-            WGPUBindGroup bg = CreateComputeBindGroup(readFrom, writeTo);
+            WGPUBindGroupHandle bg(CreateComputeBindGroup(readFrom, writeTo));
 
-            WGPUCommandEncoderDescriptor encDesc = {};
-            encDesc.label = MakeStringView("Slot Encoder");
-            WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_.get(), &encDesc);
+            WGPUCommandEncoderHandle enc(CreateEncoder("Slot Encoder"));
 
-            int32_t tsStart = -1;
-            int32_t tsEndA = -1;
-            int32_t tsEndB = -1;
-            if (supportsTimestampQuery_) {
-                if (!tsFrameStartWritten_) {
-                    tsStart = kTsFrameStart;
-                    tsFrameStartWritten_ = true;
-                }
-                if (slots_[i].mode == SlotMode::Parallel) {
-                    if (!tsParallelStartWritten_) {
-                        if (tsStart < 0) tsStart = kTsParallelStart;
-                        tsParallelStartWritten_ = true;
-                    }
-                    tsEndA = kTsParallelEnd;
-                } else {
-                    if (!tsChainedStartWritten_) {
-                        if (tsStart < 0) tsStart = kTsChainedStart;
-                        tsChainedStartWritten_ = true;
-                    }
-                    tsEndA = kTsChainedEnd;
-                }
-                if (i == lastEnabled) {
-                    tsEndB = kTsComputeEnd;
-                }
-            }
+            // Each query index may be written once per frame; reusing the
+            // phase end index on every pass (the old scheme) is a validation
+            // error that drops the whole command buffer. Every slot pass gets
+            // its own begin/end pair; label = the pipeline this pass dispatches.
+            int32_t tsBegin = -1;
+            int32_t tsEnd = -1;
+            PickComputeTimestampWrites(slots_[i].mode, i, slots_[i].shaderId, it->second.id,
+                                       tsBegin, tsEnd);
 
             DispatchComputePass(enc, it->second.pipeline.get(), bg,
                                 it->second.workgroupX, it->second.workgroupY,
-                                tsStart, tsEndA, tsEndB);
-            wgpuBindGroupRelease(bg);
+                                tsBegin, tsEnd);
 
-            WGPUCommandBufferDescriptor cbDesc = {};
-            cbDesc.label = MakeStringView("Slot CmdBuf");
-            WGPUCommandBuffer cb = wgpuCommandEncoderFinish(enc, &cbDesc);
             // Submit this slot separately so the next WriteSlotParams (called
             // before the next slot's encoder) takes effect on the GPU.
-            wgpuQueueSubmit(queue_.get(), 1, &cb);
-            wgpuCommandBufferRelease(cb);
-            wgpuCommandEncoderRelease(enc);
+            FinishAndSubmit(enc, "Slot CmdBuf");
 
             const float slotMs = static_cast<float>(emscripten_get_now() - slotStartMs);
             if (slots_[i].mode == SlotMode::Parallel) {
@@ -337,11 +316,12 @@ void WebGPURenderer::Render() {
 
         // End-of-frame texture copies for temporal feedback.
         {
-            WGPUCommandEncoderDescriptor encDesc = {};
-            encDesc.label = MakeStringView("Feedback Encoder");
-            WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_.get(), &encDesc);
+            WGPUCommandEncoderHandle enc(CreateEncoder("Feedback Encoder"));
             CopyTex(enc, writeTexture_.get(),       readTexture_.get(),      W, H);
-            CopyTex(enc, depthTextureWrite_.get(),  depthTextureRead_.get(), W, H);
+            // Depth feedback only when a pass wrote binding 6 (see single-shader path).
+            if (anyWritesDepth) {
+                CopyTex(enc, depthTextureWrite_.get(), depthTextureRead_.get(), W, H);
+            }
             // dataB first, dataA last — A is primary feedback and must win when both written
             if (anyReadsC && anyWritesDataB) {
                 CopyTex(enc, dataTextureB_.get(), dataTextureC_.get(), W, H);
@@ -350,12 +330,12 @@ void WebGPURenderer::Render() {
                 CopyTex(enc, dataTextureA_.get(), dataTextureC_.get(), W, H);
             }
             if (anyUsesHistory && historyLayerCount_ > 1) {
-                WGPUTexelCopyTextureInfo src = {};
+                WGPUTexelCopyTextureInfo src = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
                 src.texture = writeTexture_.get();
                 src.mipLevel = 0;
                 src.origin = {0, 0, 0};
                 src.aspect = WGPUTextureAspect_All;
-                WGPUTexelCopyTextureInfo dst = {};
+                WGPUTexelCopyTextureInfo dst = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
                 dst.texture = historyTexture_.get();
                 dst.mipLevel = 0;
                 dst.origin = {0, 0, historyHead_};
@@ -364,12 +344,7 @@ void WebGPURenderer::Render() {
                 wgpuCommandEncoderCopyTextureToTexture(enc, &src, &dst, &ext);
                 historyHead_ = (historyHead_ + 1) % historyLayerCount_;
             }
-            WGPUCommandBufferDescriptor cbDesc = {};
-            cbDesc.label = MakeStringView("Feedback CmdBuf");
-            WGPUCommandBuffer cb = wgpuCommandEncoderFinish(enc, &cbDesc);
-            wgpuQueueSubmit(queue_.get(), 1, &cb);
-            wgpuCommandBufferRelease(cb);
-            wgpuCommandEncoderRelease(enc);
+            FinishAndSubmit(enc, "Feedback CmdBuf");
         }
     }
 
@@ -382,9 +357,9 @@ void WebGPURenderer::Render() {
 
     // Update FPS counter
     frameCount_++;
-    float currentTime = emscripten_get_now() / 1000.0f;
-    if (currentTime - lastFrameTime_ >= 1.0f) {
-        fps_ = frameCount_ / (currentTime - lastFrameTime_);
+    const double currentTime = emscripten_get_now() / 1000.0;
+    if (currentTime - lastFrameTime_ >= 1.0) {
+        fps_ = static_cast<float>(frameCount_ / (currentTime - lastFrameTime_));
         frameCount_ = 0;
         lastFrameTime_ = currentTime;
     }
@@ -398,6 +373,12 @@ void WebGPURenderer::Present() {
 
 void WebGPURenderer::BeginFrameCapture() {
     if (captureState_ == CaptureState::Pending) return;  // already in flight
+    // A finished capture nobody read is still mapped; copying into a mapped
+    // buffer is a validation error, so drop it and take a fresh frame.
+    if (captureState_ == CaptureState::Ready && readbackBuffer_.get()) {
+        wgpuBufferUnmap(readbackBuffer_.get());
+        captureState_ = CaptureState::Idle;
+    }
     if (!initialized_ || deviceLost_ || !writeTexture_.get() || !queue_.get() || !device_.get()) {
         captureState_ = CaptureState::Error;
         return;
@@ -413,7 +394,7 @@ void WebGPURenderer::BeginFrameCapture() {
 
     // (Re)create the readback buffer if the size has changed.
     if (!readbackBuffer_.get() || readbackBufferSize_ < needed) {
-        WGPUBufferDescriptor bufDesc = {};
+        WGPUBufferDescriptor bufDesc = WGPU_BUFFER_DESCRIPTOR_INIT;
         bufDesc.label            = MakeStringView("Readback Buffer");
         bufDesc.size             = needed;
         bufDesc.usage            = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
@@ -424,17 +405,15 @@ void WebGPURenderer::BeginFrameCapture() {
     readbackBytesPerRow_ = bytesPerRow;
 
     // Encode CopyTextureToBuffer: writeTexture_ → readbackBuffer_
-    WGPUCommandEncoderDescriptor encDesc = {};
-    encDesc.label = MakeStringView("Readback Encoder");
-    WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_.get(), &encDesc);
+    WGPUCommandEncoderHandle enc(CreateEncoder("Readback Encoder"));
 
-    WGPUTexelCopyTextureInfo src = {};
+    WGPUTexelCopyTextureInfo src = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
     src.texture  = writeTexture_.get();
     src.mipLevel = 0;
     src.origin   = {0, 0, 0};
     src.aspect   = WGPUTextureAspect_All;
 
-    WGPUTexelCopyBufferInfo dst = {};
+    WGPUTexelCopyBufferInfo dst = WGPU_TEXEL_COPY_BUFFER_INFO_INIT;
     dst.buffer             = readbackBuffer_.get();
     dst.layout.offset      = 0;
     dst.layout.bytesPerRow = bytesPerRow;
@@ -443,12 +422,7 @@ void WebGPURenderer::BeginFrameCapture() {
     WGPUExtent3D extent = { W, H, 1 };
     wgpuCommandEncoderCopyTextureToBuffer(enc, &src, &dst, &extent);
 
-    WGPUCommandBufferDescriptor cbDesc = {};
-    cbDesc.label = MakeStringView("Readback CmdBuf");
-    WGPUCommandBuffer cb = wgpuCommandEncoderFinish(enc, &cbDesc);
-    wgpuQueueSubmit(queue_.get(), 1, &cb);
-    wgpuCommandBufferRelease(cb);
-    wgpuCommandEncoderRelease(enc);
+    FinishAndSubmit(enc, "Readback CmdBuf");
 
     captureState_ = CaptureState::Pending;
 
@@ -462,7 +436,10 @@ void WebGPURenderer::BeginFrameCapture() {
             WGPUCallbackMode_AllowSpontaneous,
             [](WGPUMapAsyncStatus status, WGPUStringView /*message*/,
                void* userdata1, void* /*userdata2*/) {
-                WebGPURenderer* self = static_cast<WebGPURenderer*>(userdata1);
+                std::unique_ptr<CallbackBox> box(static_cast<CallbackBox*>(userdata1));
+                WebGPURenderer* self = box->Get();
+                // Renderer shut down, or this buffer was cancelled by a resize.
+                if (!self || box->generation != self->captureGeneration_) return;
                 if (status == WGPUMapAsyncStatus_Success) {
                     self->captureState_ = CaptureState::Ready;
                 } else {
@@ -471,7 +448,7 @@ void WebGPURenderer::BeginFrameCapture() {
                     self->captureState_ = CaptureState::Error;
                 }
             },
-            this, nullptr
+            NewCallbackBox(captureGeneration_), nullptr
         });
 }
 

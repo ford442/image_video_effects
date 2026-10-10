@@ -79,12 +79,42 @@ function changedShaderFiles(baseRef) {
       encoding: 'utf8',
     });
   }
-  return out
+  const changed = out
     .split('\n')
     .map((l) => l.trim())
     .filter((l) => l.startsWith('public/shaders/') && l.endsWith('.wgsl'))
     .map((l) => path.join(ROOT, l))
     .filter((p) => fs.existsSync(p));
+  return withLibraryDependents(changed);
+}
+
+/**
+ * Editing a `_` library changes every shader that includes it, so those are
+ * validated too; otherwise a broken _prelude.wgsl passes a changed-files run.
+ * Repeats until no new library joins the set, for libraries that include others.
+ */
+function withLibraryDependents(files) {
+  const result = new Set(files);
+  const libraries = new Set(files.map((p) => path.basename(p)).filter((n) => n.startsWith('_')));
+  if (libraries.size === 0) return files;
+  const sources = fs
+    .readdirSync(SHADER_DIR)
+    .filter((n) => n.endsWith('.wgsl'))
+    .map((n) => [n, fs.readFileSync(path.join(SHADER_DIR, n), 'utf8')]);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const [name, text] of sources) {
+      const p = path.join(SHADER_DIR, name);
+      if (result.has(p)) continue;
+      const includes = [...text.matchAll(/^[ \t]*#include[ \t]+"([^"]+)"[ \t]*$/gm)].map((m) => m[1]);
+      if (!includes.some((inc) => libraries.has(inc))) continue;
+      result.add(p);
+      if (name.startsWith('_')) libraries.add(name);
+      grew = true;
+    }
+  }
+  return [...result];
 }
 
 const shaderId = (file) => path.basename(file, '.wgsl');

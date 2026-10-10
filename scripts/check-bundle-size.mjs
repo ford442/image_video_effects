@@ -56,7 +56,7 @@ if (!Number.isFinite(limitKib) || limitKib <= 0) {
 const limitBytes = Math.round(limitKib * 1024);
 
 const main = readAsset(manifest, 'main.js');
-const lazyAssets = ['auto-dj.js', 'transformers.js', 'web-llm.js', 'gpu-encode.js']
+const lazyAssets = ['auto-dj.js', 'transformers.js', 'web-llm.js', 'gpu-encode.js', 'render-worker.js', 'osc.js', 'graph-lab.js']
   .map(key => readAsset(manifest, key))
   .filter(Boolean);
 
@@ -74,7 +74,7 @@ if (main) {
 
 for (const asset of lazyAssets) {
   if (entrypoints.has(asset.relativePath)) {
-    fail(`${asset.relativePath} is an entrypoint; AI and encoder/muxer code must remain lazy-loaded.`);
+    fail(`${asset.relativePath} is an entrypoint; AI, encoder/muxer, render-worker and OSC code must remain lazy-loaded.`);
   }
 }
 

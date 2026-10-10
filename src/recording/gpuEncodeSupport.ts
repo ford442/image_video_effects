@@ -30,6 +30,81 @@ export function writeGpuEncodePreference(enabled: boolean): void {
   }
 }
 
+/** `?record=mediarecorder` forces the legacy MediaRecorder path on every backend. */
+export function forcesMediaRecorder(
+  search: string = typeof window !== 'undefined' ? window.location.search : '',
+): boolean {
+  return new URLSearchParams(search).get('record') === 'mediarecorder';
+}
+
+/** Where a WebCodecs take gets its frames from (TS or WASM backend). */
+export interface GpuEncodeFrames {
+  canvas: HTMLCanvasElement;
+  /** Swapchain can take COPY_SRC (boot / WASM init probe was green). */
+  supportsCanvasCopySrc(): boolean;
+  /** Reconfigure the swapchain for the take; false when refused. */
+  setCanvasCopySrc(enabled: boolean): boolean;
+  /** RGBA8 readback (WASM beginFrameCapture), null when unavailable. */
+  readback: (() => Promise<ImageData>) | null;
+  /** Render worker: VideoFrames of presented frames, taken in the worker (#1314). Preferred when set. */
+  grabFrame?: ((timestampUs: number) => Promise<VideoFrame | null>) | null;
+}
+
+/** One WebCodecs take. stop() also restores the render-only swapchain. */
+export interface GpuEncodeSession {
+  readonly kind: 'canvas' | 'readback' | 'worker';
+  /** Frames handed to the encoder so far. */
+  readonly framesEncoded: number;
+  stop(): Promise<Blob>;
+}
+
+/**
+ * Start a WebCodecs take on whichever frame source the backend offers: the
+ * canvas VideoFrame when COPY_SRC is available (canvas_configure.json
+ * optIn.copySrc), else the RGBA readback. Resolves null when there is no source
+ * or no supported WebM codec (caller falls back to MediaRecorder). The
+ * swapchain goes back to render-only on stop, on null and on throw.
+ */
+export async function startGpuEncodeSession(
+  frames: GpuEncodeFrames,
+  opts: GpuEncoderModule.GpuEncodeOptions,
+): Promise<GpuEncodeSession | null> {
+  const { GpuEncodeRecorder, canvasFrameSource, readbackFrameSource, workerFrameSource } = await loadGpuEncoder();
+  let source: GpuEncoderModule.GpuFrameSource;
+  if (frames.grabFrame) {
+    source = workerFrameSource(frames.grabFrame);
+  } else if (frames.supportsCanvasCopySrc() && frames.setCanvasCopySrc(true)) {
+    source = canvasFrameSource(frames.canvas);
+  } else if (frames.readback) {
+    source = readbackFrameSource(frames.readback);
+  } else {
+    return null;
+  }
+  const restore = () => {
+    if (source.kind === 'canvas') frames.setCanvasCopySrc(false);
+  };
+
+  let recorder: GpuEncoderModule.GpuEncodeRecorder | null;
+  try {
+    recorder = await GpuEncodeRecorder.start(source, opts);
+  } catch (e) {
+    restore();
+    throw e;
+  }
+  if (!recorder) {
+    restore();
+    return null;
+  }
+  const started = recorder;
+  return {
+    kind: source.kind,
+    get framesEncoded() {
+      return started.framesEncoded;
+    },
+    stop: () => started.stop().finally(restore),
+  };
+}
+
 let modulePromise: Promise<typeof GpuEncoderModule> | null = null;
 
 export function loadGpuEncoder(): Promise<typeof GpuEncoderModule> {

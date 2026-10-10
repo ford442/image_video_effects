@@ -9,6 +9,7 @@ import { reportError } from '../ErrorHandling';
 import type { WebGpuProbeHandoff } from '../webgpuBootProbe';
 import { publishWebGpuProbe, runWebGpuBootProbe } from '../webgpuBootProbe';
 import { AdapterGpuType, DeviceFormatCapabilities } from '../../config/formatPolicy';
+import type { AdapterIdentity } from '../../config/adapterIdentity';
 import canvasConfigureContract from '../../contracts/canvas_configure.json';
 
 export interface WebGPUDeviceInitResult {
@@ -22,12 +23,15 @@ export interface WebGPUDeviceInitResult {
   supportsDeepWorkgroup: boolean;
   hasF32Filterable: boolean;
   adapterGpuType: AdapterGpuType;
+  adapterIdentity: AdapterIdentity;
   formatCapabilities: DeviceFormatCapabilities;
   adapterSummary: string;
   adapterAttemptLabel: string | null;
   /** Probe result: swapchain accepts COPY_SRC (enables canvas → VideoFrame capture). */
   canvasCopySrc: boolean;
   canvasColorOptIns: Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'>;
+  /** Removes the boot probe's log-only uncapturederror listener (see WebGpuProbeHandoff). */
+  detachUncapturedLog?: () => void;
 }
 
 export interface WebGPUDeviceInitFailure {
@@ -51,11 +55,13 @@ function outcomeFromHandoff(handoff: WebGpuProbeHandoff): WebGPUDeviceInitResult
     supportsDeepWorkgroup: handoff.supportsDeepWorkgroup,
     hasF32Filterable: handoff.hasF32Filterable,
     adapterGpuType: handoff.adapterGpuType,
+    adapterIdentity: handoff.adapterIdentity,
     formatCapabilities: handoff.formatCapabilities,
     adapterSummary: handoff.adapterSummary,
     adapterAttemptLabel: handoff.adapterAttemptLabel,
     canvasCopySrc: handoff.canvasCopySrc,
     canvasColorOptIns: handoff.canvasColorOptIns,
+    detachUncapturedLog: handoff.detachUncapturedLog,
   };
 }
 
@@ -114,7 +120,7 @@ function textureUsageBits(names: readonly string[]): GPUTextureUsageFlags {
   const table = (typeof GPUTextureUsage !== 'undefined'
     ? GPUTextureUsage
     : TEXTURE_USAGE_FALLBACK) as unknown as Record<string, number>;
-  return names.reduce((bits, name) => bits | table[name], 0);
+  return names.reduce((bits, name) => bits | (table[name] ?? 0), 0);
 }
 
 /**
@@ -192,7 +198,7 @@ export function resolveSubgroupFeatureName(adapter: GPUAdapter): GPUFeatureName 
 }
 
 export async function initializeWebGPUDevice(
-  canvas: HTMLCanvasElement,
+  canvas: HTMLCanvasElement | OffscreenCanvas,
   configWidth: number,
   configHeight: number,
   existingHandoff?: WebGpuProbeHandoff,
@@ -215,31 +221,106 @@ export async function initializeWebGPUDevice(
   return outcomeFromHandoff(probe.handoff);
 }
 
+/** Report at most one error per distinct message per window, and a global cap per minute. */
+export const UNCAPTURED_ERROR_RATE_LIMIT = { perMessageMs: 5000, maxPerMinute: 20 } as const;
+
+export function createErrorRateLimiter(
+  now: () => number = () => Date.now(),
+  limits: { perMessageMs: number; maxPerMinute: number } = UNCAPTURED_ERROR_RATE_LIMIT,
+): (message: string) => boolean {
+  const lastByMessage = new Map<string, number>();
+  let windowStart = -Infinity;
+  let windowCount = 0;
+  return (message: string) => {
+    const t = now();
+    const last = lastByMessage.get(message);
+    if (last !== undefined && t - last < limits.perMessageMs) return false;
+    if (t - windowStart >= 60_000) {
+      windowStart = t;
+      windowCount = 0;
+    }
+    if (windowCount >= limits.maxPerMinute) return false;
+    windowCount++;
+    lastByMessage.set(message, t);
+    if (lastByMessage.size > 200) lastByMessage.clear();
+    return true;
+  };
+}
+
+function isOutOfMemoryError(err: GPUError): boolean {
+  const name = (err as { name?: string }).name;
+  return (
+    (typeof GPUOutOfMemoryError !== 'undefined' && err instanceof GPUOutOfMemoryError) ||
+    name === 'GPUOutOfMemoryError' ||
+    /out of memory/i.test(err.message)
+  );
+}
+
+/**
+ * Single `uncapturederror` listener for an adopted device: OOM goes to `onOom`, validation and
+ * internal errors go to reportError (rate limited). Returns a detach function for teardown.
+ */
+export function attachUncapturedErrorRouter(
+  device: GPUDevice,
+  handlers: { onOom: () => void },
+  shouldReport: (message: string) => boolean = createErrorRateLimiter(),
+): () => void {
+  const listener = (ev: Event) => {
+    const err = (ev as GPUUncapturedErrorEvent).error;
+    if (!err) return;
+    if (isOutOfMemoryError(err)) {
+      handlers.onOom();
+      return;
+    }
+    const name = (err as { name?: string }).name ?? 'GPUError';
+    const message = `${name}: ${err.message}`;
+    if (!shouldReport(message)) return;
+    reportError({ type: 'gpu-validation', message, recoverable: true });
+  };
+  device.addEventListener('uncapturederror', listener);
+  return () => device.removeEventListener('uncapturederror', listener);
+}
+
+/** Why a device stopped; `reason` is the GPUDeviceLostInfo reason (or 'simulated'). */
+export interface DeviceLostDetails {
+  reason: string;
+  message: string;
+}
+
+export interface DeviceLostHandlerOptions {
+  /** True when a test hook destroyed the device to stand in for a real loss. */
+  isSimulated?: () => boolean;
+}
+
+/**
+ * Routes `device.lost`: a `'destroyed'` loss is silent and never touches the context (only
+ * the device owner destroys, and its teardown already unconfigured it; a late unconfigure
+ * could hit a context a newer device has since configured). A real (or simulated) loss is
+ * reported as recoverable, the context is unconfigured and `onLost` runs once.
+ */
 export function attachDeviceLostHandler(
   device: GPUDevice,
   context: GPUCanvasContext | null,
-  onLost: () => void,
+  onLost: (details: DeviceLostDetails) => void,
+  options: DeviceLostHandlerOptions = {},
 ): void {
-  device.lost.then((info) => {
-    if (info.reason === 'destroyed') {
-      try {
-        context?.unconfigure();
-      } catch {
-        // Ignore errors during cleanup
-      }
-      return;
-    }
+  void device.lost.then((info) => {
+    const simulated = info.reason === 'destroyed' && options.isSimulated?.() === true;
+    if (info.reason === 'destroyed' && !simulated) return;
+    const details: DeviceLostDetails = simulated
+      ? { reason: 'simulated', message: 'simulated device loss (test hook)' }
+      : { reason: String(info.reason ?? 'unknown'), message: info.message ?? '' };
     reportError({
       type: 'device-lost',
-      message: `GPU device lost: ${info.reason}. Try reloading the page.`,
-      recoverable: false,
+      message: `GPU device lost (${details.reason}) — restoring renderer…`,
+      recoverable: true,
     });
-    console.error('[WebGPU] Device lost:', info.reason, info.message);
+    console.error('[WebGPU] Device lost:', details.reason, details.message);
     try {
       context?.unconfigure();
     } catch {
       // Ignore errors during cleanup
     }
-    onLost();
+    onLost(details);
   });
 }

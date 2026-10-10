@@ -59,7 +59,7 @@
     "name": "Audio Reactive RGB Dispersion",
     "url": "shaders/audio-reactive-rgb-dispersion.wgsl",
     "category": "post-processing",
-    "description": "Chromatic (RGB) dispersion effect whose offset magnitudes and direction are driven by the spectral centroid of the live 128-bin FFT array. Bass-heavy music produces tight warm dispersion; treble-heavy music produces wide cool dispersion. Compatible with ford442/flac_player FFT wire format (128 bins in extraBuffer[5..132]).",
+    "description": "RGB dispersion driven by the live 128-bin FFT: the spectral centroid steers direction and width, spectral spread turns two crisp fringes into a rainbow smear on broadband sound, and bass pushes a radial lens-like split while treble slides it sideways.",
     "tags": [
       "audio-reactive",
       "chromatic-aberration",
@@ -176,7 +176,7 @@
     "name": "Chrono Luma Slit Scan",
     "url": "shaders/chrono-luma-slit-scan.wgsl",
     "category": "post-processing",
-    "description": "Luminance slit-scan with horizontal/vertical scan runners, held temporal halo, treble warp detail, and capped ripple fronts.",
+    "description": "Luminance slit-scan with horizontal/vertical scan runners, held temporal halo, treble warp detail, and capped ripple fronts. Thin isochrone contours mark where the chosen age crosses a whole frame, and the sweeping scan bands open windows onto the oldest stored frame.",
     "tags": [
       "temporal",
       "slit-scan",
@@ -223,40 +223,6 @@
       },
       {
         "id": "original_blend",
-        "name": "Original Blend",
-        "default": 0.1,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Temporal Spread",
-        "default": 1,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Warp Strength",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Luma Gamma",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
         "name": "Original Blend",
         "default": 0.1,
         "min": 0,
@@ -324,40 +290,6 @@
       }
     ],
     "coordinate": 890,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Accumulation Speed",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Decay Rate",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Glow Radius",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Brightness Threshold",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -406,40 +338,6 @@
       },
       {
         "id": "palette_mix",
-        "name": "Palette Mix",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Luma Threshold",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Sort Length",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Sort Angle",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
         "name": "Palette Mix",
         "default": 0.3,
         "min": 0,
@@ -523,7 +421,8 @@
       "branchless-sort",
       "sorting-network",
       "depth-weighted",
-      "lod-distance"
+      "lod-distance",
+      "semantic-alpha"
     ],
     "tags": [
       "filter",
@@ -569,40 +468,6 @@
         "step": 0.01
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Sort Radius",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Mids Modulation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Chromatic Accent",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Feedback Clamp",
-        "default": 1.2,
-        "min": 1,
-        "max": 2,
-        "step": 0.05
-      }
-    ],
     "updated": true
   },
   {
@@ -644,40 +509,6 @@
         "default": 0.5,
         "min": 0,
         "max": 1
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Anamorphic",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Threshold",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Quality Param",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ],
     "features": [
@@ -737,40 +568,6 @@
       "click-reactive",
       "cauchy-dispersion",
       "upgraded-rgba"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Chromatic Amount",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Distortion",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Vignette",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Mode",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ],
     "feedbackPacking": "A/C = final ACES display RGBA with bounded exact chromatic fringe persistence loads; B is unused"
   },
@@ -837,36 +634,6 @@
       16,
       16,
       1
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Amount",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 1,
-        "name": "Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 2,
-        "name": "Edge Threshold",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 3,
-        "name": "Mode",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      }
     ]
   },
   {
@@ -908,40 +675,6 @@
         "default": 0.2,
         "min": 0,
         "max": 1
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Radius",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Quality",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Color Bleed",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ],
     "features": [
@@ -992,40 +725,6 @@
         "default": 0.5,
         "min": 0,
         "max": 1
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Algorithm",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Exposure",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Contrast",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Saturation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ],
     "features": [
@@ -1097,36 +796,6 @@
       16,
       16,
       1
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Vignette Intensity",
-        "default": 0.4,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 1,
-        "name": "Grain Intensity",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 2,
-        "name": "Color Style",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 3,
-        "name": "Blend Mode",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      }
     ]
   },
   {
@@ -1188,52 +857,6 @@
       "depth-of-field",
       "post-processing",
       "chromatic"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "id": "sigma",
-        "name": "Blur Sigma",
-        "default": 0.3,
-        "min": 0.01,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x",
-        "description": "Base blur radius; also the length scale of the zoom-burst speed lines."
-      },
-      {
-        "index": 1,
-        "id": "shape",
-        "name": "Bokeh Shape",
-        "default": 0,
-        "min": 0,
-        "max": 2,
-        "step": 1,
-        "mapping": "zoom_params.y",
-        "description": "Aperture shape for the bokeh kernel."
-      },
-      {
-        "index": 2,
-        "id": "focalDepth",
-        "name": "Focal Depth",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.z",
-        "description": "Depth plane held in focus by the circle-of-confusion term."
-      },
-      {
-        "index": 3,
-        "id": "maxBlur",
-        "name": "Max Blur",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Upper clamp on the circle of confusion; also gains the rotational shear streaks."
-      }
     ]
   },
   {
@@ -1274,7 +897,6 @@
       {
         "id": "vignetteStrength",
         "name": "Vignette Strength",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1283,7 +905,6 @@
       {
         "id": "bloomRadius",
         "name": "Bloom Radius",
-        "type": "float",
         "default": 0.4,
         "min": 0,
         "max": 1,
@@ -1292,7 +913,6 @@
       {
         "id": "hazeAmount",
         "name": "Haze Amount",
-        "type": "float",
         "default": 0.3,
         "min": 0,
         "max": 1,
@@ -1301,7 +921,6 @@
       {
         "id": "bloomIntensity",
         "name": "Bloom Intensity",
-        "type": "float",
         "default": 0.6,
         "min": 0,
         "max": 1,
@@ -1377,7 +996,7 @@
     "id": "temporal-decay-multiresolution",
     "name": "Temporal Decay Multiresolution",
     "url": "shaders/temporal-decay-multiresolution.wgsl",
-    "description": "Four-timescale temporal decomposition with a spring-following history lens and click echo rings. R=fast, G=medium, B=slow, and A=ultra-slow luminance.",
+    "description": "Four-timescale temporal decomposition with a spring-following history lens and click echo rings. R=fast, G=medium, B=slow, and A=ultra-slow luminance. Each decay slider shapes an exponential window over its band of ages, and click echo rings swap the fast and slow timescales as they pass.",
     "tags": [
       "temporal",
       "multiresolution",
@@ -1430,47 +1049,13 @@
         "step": 0.01
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Fast Decay",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Medium Decay",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Slow Decay",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Original Blend",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
     "id": "temporal-feedback-zoom-tracer",
     "name": "Temporal Feedback Zoom Tracer",
     "url": "shaders/temporal-feedback-zoom-tracer.wgsl",
-    "description": "Reads the most recent history frame through a slight affine warp (zoom + rotation) then blends with the current frame. The compounding warp generates infinite self-generating psychedelic zoom tunnels from any video content.",
+    "description": "Reads the most recent history frame through a slight affine warp (zoom + rotation) then blends with the current frame. The compounding warp generates infinite self-generating psychedelic zoom tunnels from any video content. Nested monitor bezels stream out of the zoom focus, and each feedback pass drifts the hue so the tunnel walks through the spectrum.",
     "tags": [
       "temporal",
       "feedback",
@@ -1579,40 +1164,6 @@
         "step": 0.01
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Target Frequency",
-        "default": 0.25,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Glow Brightness",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Glow Hue",
-        "default": 0.17,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Base Blend",
-        "default": 0.8,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -1683,47 +1234,13 @@
         "mapping": "zoom_params.w",
         "description": "Ghost echo strength"
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Exposure Length",
-        "default": 0.7,
-        "min": 0,
-        "max": 1.5,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Decay Rate",
-        "default": 0.86,
-        "min": 0.6,
-        "max": 0.97,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Bloom Color Temp",
-        "default": 0.35,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Ghost Echo",
-        "default": 0.55,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
     "id": "temporal-layered-time-stamps",
     "name": "Temporal Layered Time-Stamps",
     "url": "shaders/temporal-layered-time-stamps.wgsl",
-    "description": "Psychedelic temporal echo: blends 4–8 past frames from the history ring buffer (binding 13) with per-layer hue rotation and spiral UV distortion",
+    "description": "Psychedelic temporal echo: blends 4–8 past frames from the history ring buffer (binding 13) with per-layer hue rotation and spiral UV distortion Older layers spiral around the cursor, and each layer is outlined in its own hue like an onion skin.",
     "tags": [
       "temporal",
       "psychedelic",
@@ -1775,7 +1292,7 @@
     "id": "temporal-phosphor-burn-motion-adaptive",
     "name": "Temporal Phosphor Burn (Motion Adaptive)",
     "url": "shaders/temporal-phosphor-burn-motion-adaptive.wgsl",
-    "description": "Motion-adaptive CRT phosphor burn. Fast-moving pixels get slow decay (long bright trails); still areas clear quickly. Green/amber warm tint follows the motion glow for vivid CRT ambiance.",
+    "description": "Motion-adaptive CRT phosphor burn. Fast-moving pixels get slow decay (long bright trails); still areas clear quickly. Green/amber warm tint follows the motion glow for vivid CRT ambiance. Older persistence ages toward phosphor amber, and trails linger with hysteresis instead of snapping off when motion stops.",
     "tags": [
       "temporal",
       "crt",
@@ -1828,47 +1345,13 @@
         "step": 0.01
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Motion Sensitivity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Max Decay (Fast)",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Min Decay (Still)",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Warm Tint",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
     "id": "temporal-phosphor-burn",
     "name": "Temporal Phosphor Burn",
     "url": "shaders/temporal-phosphor-burn.wgsl",
-    "description": "CRT phosphor persistence combining exact immediate display history with seven older ring frames, sprung beam burns, bounded click afterimages, three-band plasma audio, ACES, and semantic burn alpha.",
+    "description": "CRT phosphor persistence combining exact immediate display history with seven older ring frames, sprung beam burns, bounded click afterimages, three-band plasma audio, ACES, and semantic burn alpha. Scanlines are real 3-pixel beam rows that swell on bright content, and older afterglow softens as it fades.",
     "tags": [
       "temporal",
       "crt",
@@ -1924,47 +1407,13 @@
         "max": 1,
         "step": 0.01
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "R Decay",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "G Decay",
-        "default": 0.79,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "B Decay",
-        "default": 0.93,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Luma Floor",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
     "id": "temporal-rgb-ghost",
     "name": "Temporal RGB Ghost",
     "url": "shaders/temporal-rgb-ghost.wgsl",
-    "description": "Per-channel temporal displacement: R=current, G=N frames ago, B=M frames ago. Moving objects leave vivid rainbow comet tails as each color channel trails a different distance behind. Static areas appear normal.",
+    "description": "Per-channel temporal displacement: R=current, G=N frames ago, B=M frames ago. Moving objects leave vivid rainbow comet tails as each color channel trails a different distance behind. Static areas appear normal. The blue trail now integrates every frame between the two delays into a continuous comet streak, displacement only shimmers where something moved, and the G delay glides between frames.",
     "tags": [
       "temporal",
       "ghost",
@@ -2066,40 +1515,6 @@
       },
       {
         "id": "original_blend",
-        "name": "Original Blend",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Scan Axis",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Temporal Spread",
-        "default": 1,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Reverse",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 1
-      },
-      {
-        "index": 3,
         "name": "Original Blend",
         "default": 0,
         "min": 0,
@@ -2218,40 +1633,6 @@
       },
       {
         "id": "psychedelic",
-        "name": "Haze Removal",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Stretch Amount",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Toe Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Shoulder Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
         "name": "Haze Removal",
         "default": 0,
         "min": 0,

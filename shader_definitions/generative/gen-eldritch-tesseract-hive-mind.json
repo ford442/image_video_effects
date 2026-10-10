@@ -4,50 +4,48 @@
   "tags": [
     "generative"
   ],
-  "description": "An impossible, non-Euclidean hypercube hive populated by swarms of luminescent algorithmic sentinels, constantly unfolding and fracturing into new geometric dimensions driven by quantum noise and acoustic energy. Upgraded for fast motion: dual-plane 4D tumble, velocity-stretched sentinel speed-streaks, clamped HDR feedback light-trails, bass-transient flash bursts, audio-reactive color temperature, ACES tone mapping and real raymarched depth.",
+  "description": "An impossible, non-Euclidean hypercube hive populated by swarms of luminescent algorithmic sentinels, constantly unfolding and fracturing into new geometric dimensions driven by quantum noise and acoustic energy. Upgraded for fast motion: dual-plane 4D tumble, velocity-stretched sentinel speed-streaks, clamped HDR feedback light-trails, bass-transient flash bursts, audio-reactive color temperature, ACES tone mapping and real raymarched depth. Second pass: glowing hypercube wire edges, W-depth film hue and sentinels orbiting the projected 4D cells.",
   "workgroup_size": [
     16,
     16,
     1
   ],
   "params": [
-    { "id": "tesseract-rotation-speed", "name": "Tesseract Rotation Speed", "default": 0.5, "min": 0, "max": 2, "step": 0.01, "mapping": "zoom_params.x" },
-    { "id": "swarm-density", "name": "Swarm Density", "default": 1, "min": 0.1, "max": 5, "step": 0.1, "mapping": "zoom_params.y" },
-    { "id": "voxel-tearing-intensity", "name": "Voxel Tearing Intensity", "default": 0.5, "min": 0, "max": 2, "step": 0.05, "mapping": "zoom_params.z" },
-    { "id": "iridescence-shift", "name": "Iridescence Shift", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
-  ],
-  "updatedParams": [
     {
-      "index": 0,
+      "id": "tesseract-rotation-speed",
       "name": "Tesseract Rotation Speed",
       "default": 0.5,
       "min": 0,
       "max": 2,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x"
     },
     {
-      "index": 1,
+      "id": "swarm-density",
       "name": "Swarm Density",
       "default": 1,
       "min": 0.1,
       "max": 5,
-      "step": 0.1
+      "step": 0.1,
+      "mapping": "zoom_params.y"
     },
     {
-      "index": 2,
+      "id": "voxel-tearing-intensity",
       "name": "Voxel Tearing Intensity",
       "default": 0.5,
       "min": 0,
       "max": 2,
-      "step": 0.05
+      "step": 0.05,
+      "mapping": "zoom_params.z"
     },
     {
-      "index": 3,
+      "id": "iridescence-shift",
       "name": "Iridescence Shift",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w"
     }
   ],
   "supportsDepth": true,
@@ -56,6 +54,8 @@
   "id": "gen-eldritch-tesseract-hive-mind",
   "url": "shaders/gen-eldritch-tesseract-hive-mind.wgsl",
   "features": [
+    "mouse-driven",
+    "audio-reactive",
     "fast-motion",
     "hdr-feedback-trails",
     "speed-streaks",
@@ -66,5 +66,43 @@
     "generated-depth",
     "semantic-alpha",
     "upgraded-rgba"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Tesseract Rotation Speed",
+          "default": 0.5,
+          "min": 0,
+          "max": 2,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Swarm Density",
+          "default": 1,
+          "min": 0.1,
+          "max": 5,
+          "step": 0.1
+        },
+        {
+          "index": 2,
+          "name": "Voxel Tearing Intensity",
+          "default": 0.5,
+          "min": 0,
+          "max": 2,
+          "step": 0.05
+        },
+        {
+          "index": 3,
+          "name": "Iridescence Shift",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

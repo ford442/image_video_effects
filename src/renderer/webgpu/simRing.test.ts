@@ -22,6 +22,7 @@ import {
 } from '../multipassGraph';
 import { GRAPH_REGISTRY, resolveSimRingRequest } from '../multipassRegistry';
 import { validateBindGroup } from '../bindGroupValidator';
+import { expandShaderSource } from '../../test-utils/shaderSource';
 import { WebGPUPipelineModule } from './pipeline';
 import {
   allocateSimRing,
@@ -40,6 +41,12 @@ const g = globalThis as Record<string, unknown>;
 if (!g.GPUShaderStage) g.GPUShaderStage = { COMPUTE: 4 };
 if (!g.GPUBufferUsage) {
   g.GPUBufferUsage = { UNIFORM: 64, COPY_DST: 8, COPY_SRC: 4, STORAGE: 128 };
+}
+
+function at<T>(a: readonly T[], i: number): T {
+  const v = a[i];
+  if (v === undefined) throw new Error(`missing index ${i}`);
+  return v;
 }
 
 const SHADERS = path.join(__dirname, '../../../public/shaders');
@@ -173,9 +180,10 @@ describe('bind_group1.json contract', () => {
     expect(validateBindGroup('bad', extra).valid).toBe(false);
   });
 
-  it('accepts the DLA flagship shaders', () => {
+  it('accepts the DLA flagship shaders', async () => {
     for (const file of ['dla-walkers.wgsl', 'dla-render.wgsl']) {
-      const wgsl = readShader(file);
+      // Validate what the runtime compiles: the group-0 header may come from _prelude.wgsl.
+      const wgsl = await expandShaderSource(readShader(file), file);
       expect(declaresBindGroup1(wgsl)).toBe(true);
       expect(validateGroup1Declarations(wgsl)).toEqual([]);
       expect(validateBindGroup(file, wgsl).valid).toBe(true);
@@ -200,7 +208,7 @@ describe('pipeline layout selection', () => {
 
     expect(await mod.shaderManager.compile(device, mod.pipelineLayout, 'plain', PLAIN_WGSL)).toBe(true);
 
-    const desc = raw.createComputePipeline.mock.calls[0][0] as GPUComputePipelineDescriptor;
+    const desc = at(raw.createComputePipeline.mock.calls, 0)[0] as GPUComputePipelineDescriptor;
     expect(desc.layout).toBe(mod.pipelineLayout);
     expect(pipelineLayouts).toHaveLength(1);
     expect(pipelineLayouts[0]).toHaveLength(1);
@@ -217,9 +225,11 @@ describe('pipeline layout selection', () => {
     expect(await mod.shaderManager.compile(device, mod.pipelineLayout, 'sim', SIM_WGSL)).toBe(true);
     expect(await mod.shaderManager.compile(device, mod.pipelineLayout, 'plain', PLAIN_WGSL)).toBe(true);
 
-    const [simDesc, plainDesc] = raw.createComputePipeline.mock.calls.map(
+    const descs = raw.createComputePipeline.mock.calls.map(
       (c) => c[0] as GPUComputePipelineDescriptor,
     );
+    const simDesc = at(descs, 0);
+    const plainDesc = at(descs, 1);
     expect(simDesc.layout).not.toBe(mod.pipelineLayout);
     expect(pipelineLayouts[1]).toEqual([mod.bindGroupLayout, mod.simRingBindGroupLayout]);
     expect(plainDesc.layout).toBe(mod.pipelineLayout);
@@ -287,10 +297,10 @@ describe('sim ring OOM ladder', () => {
     ring.writeParams(device.queue);
     ring.writeParams(device.queue);
     expect(params[0]).toEqual([65536, 65536 * 4, 0, 0]);
-    expect(params[1][2]).toBe(1);
+    expect(at(params, 1)[2]).toBe(1);
     ring.resetFrame();
     ring.writeParams(device.queue);
-    expect(params[2][2]).toBe(0);
+    expect(at(params, 2)[2]).toBe(0);
   });
 
   it('reallocates on a new device instead of reusing lost-device buffers', async () => {
@@ -313,7 +323,7 @@ describe('sim ring OOM ladder', () => {
     expect(ring.stateCount).toBe(32768);
     expect(ring.truncated).toBe(true);
     ring.writeParams(device.queue);
-    expect(params[0][3]).toBe(1);
+    expect(at(params, 0)[3]).toBe(1);
   });
 });
 
@@ -370,7 +380,9 @@ function graphCtx(over: Partial<GraphRunnerContext>): GraphRunnerContext {
 }
 
 describe('dla-crystals flagship graph', () => {
-  const graph = GRAPH_REGISTRY['dla-crystals'];
+  const registered = GRAPH_REGISTRY['dla-crystals'];
+  if (!registered) throw new Error('dla-crystals missing from GRAPH_REGISTRY');
+  const graph = registered;
 
   it('is a valid simState-dispatch graph with a sim-ring request', () => {
     expect(validateGraph(graph)).toEqual([]);
@@ -391,9 +403,9 @@ describe('dla-crystals flagship graph', () => {
       graphCtx({ simRing: ringBindings(65536), shaderId: 'dla-crystals' }),
     );
     expect(report.executed).toBe(2);
-    expect(dispatches[0].xyz).toEqual([65536 / 64, 1, 1]);
-    expect(dispatches[0].groups).toEqual([0, 1]);
-    expect(dispatches[1].xyz).toEqual([1024 / 16, 1024 / 16, 1]);
+    expect(at(dispatches, 0).xyz).toEqual([65536 / 64, 1, 1]);
+    expect(at(dispatches, 0).groups).toEqual([0, 1]);
+    expect(at(dispatches, 1).xyz).toEqual([1024 / 16, 1024 / 16, 1]);
     // dataA (walker freezes) → dataC before the render pass reads it.
     expect(log).toEqual(['pass:graph-walkers-0-dla-walkers', 'copy:tex', 'pass:graph-render-0-dla-render']);
   });
@@ -418,7 +430,7 @@ describe('dla-crystals flagship graph', () => {
         },
       }),
     );
-    expect(dispatches[0].xyz).toEqual([16384 / 64, 1, 1]);
+    expect(at(dispatches, 0).xyz).toEqual([16384 / 64, 1, 1]);
   });
 
   it('skips sim passes (logged) when no ring is armed', () => {
@@ -475,6 +487,6 @@ describe('simState → simIndex barrier', () => {
     expect(graphUsesSimRing(plain)).toBe(false);
     const { encoder, dispatches } = makeEncoder();
     new GraphRunner().runGraph(encoder, plain, graphCtx({ usesSimRing: () => false }));
-    expect(dispatches[0].groups).toEqual([0]);
+    expect(at(dispatches, 0).groups).toEqual([0]);
   });
 });

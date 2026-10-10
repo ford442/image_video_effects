@@ -21,7 +21,6 @@
     {
       "id": "strength",
       "name": "Prism Strength",
-      "type": "float",
       "default": 0.5,
       "min": 0,
       "max": 1
@@ -29,7 +28,6 @@
     {
       "id": "frequency",
       "name": "Wave Frequency",
-      "type": "float",
       "default": 0.3,
       "min": 0,
       "max": 1
@@ -37,7 +35,6 @@
     {
       "id": "speed",
       "name": "Flow Speed",
-      "type": "float",
       "default": 0.2,
       "min": 0,
       "max": 1
@@ -45,7 +42,6 @@
     {
       "id": "aberration",
       "name": "Aberration",
-      "type": "float",
       "default": 0.5,
       "min": 0,
       "max": 1
@@ -64,42 +60,46 @@
     "chromatic"
   ],
   "name": "Liquid Prism",
-  "updatedParams": [
-    {
-      "id": "strength",
-      "name": "Prism Strength",
-      "type": "float",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "description": "Displacement amplitude of the refraction ripple."
-    },
-    {
-      "id": "frequency",
-      "name": "Wave Frequency",
-      "type": "float",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "description": "Ripple wavenumber; mids and the local FFT band modulate it."
-    },
-    {
-      "id": "speed",
-      "name": "Flow Speed",
-      "type": "float",
-      "default": 0.2,
-      "min": 0,
-      "max": 1,
-      "description": "Phase speed of the pointer ripple."
-    },
-    {
-      "id": "aberration",
-      "name": "Aberration / Transparency",
-      "type": "float",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "description": "Dual-purpose: scales the Cauchy index spread AND sets base glass transparency."
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "id": "strength",
+          "name": "Prism Strength",
+          "type": "float",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "description": "Displacement amplitude of the refraction ripple."
+        },
+        {
+          "id": "frequency",
+          "name": "Wave Frequency",
+          "type": "float",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "description": "Ripple wavenumber; mids and the local FFT band modulate it."
+        },
+        {
+          "id": "speed",
+          "name": "Flow Speed",
+          "type": "float",
+          "default": 0.2,
+          "min": 0,
+          "max": 1,
+          "description": "Phase speed of the pointer ripple."
+        },
+        {
+          "id": "aberration",
+          "name": "Aberration / Transparency",
+          "type": "float",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "description": "Dual-purpose: scales the Cauchy index spread AND sets base glass transparency."
+        }
+      ]
     }
-  ]
+  }
 }

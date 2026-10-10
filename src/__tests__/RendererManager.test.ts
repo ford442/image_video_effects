@@ -593,7 +593,7 @@ describe('RendererManager shader forwarding', () => {
   it('releases WebGPU before WASM init (exclusive adapter ownership)', async () => {
     const order: string[] = [];
     const webgpu = makeMockWebGPU();
-    webgpu.destroy = jest.fn(() => {
+    webgpu.destroy = jest.fn(async () => {
       order.push('webgpu.destroy');
     });
     const wasm = makeMockWASM();
@@ -666,8 +666,356 @@ describe('RendererManager shader forwarding', () => {
     const switched = await manager.switchRenderer('wasm');
     expect(switched).toBe(false);
     // First WebGPU destroyed for exclusive release; second created to restore.
-    expect(webgpuInstances[0].destroy).toHaveBeenCalled();
+    expect(webgpuInstances[0]!.destroy).toHaveBeenCalled();
     expect(webgpuInitCount).toBe(2);
     expect(manager.getActiveRendererType()).toBe('webgpu');
+  });
+});
+
+describe('RendererManager lifecycle', () => {
+  let canvas: HTMLCanvasElement;
+  let rafCallbacks: Map<number, FrameRequestCallback>;
+  let nextRafId: number;
+  let rafSpy: jest.SpyInstance;
+  let cancelSpy: jest.SpyInstance;
+
+  /** Run one frame of every pending rAF callback (loops re-register themselves). */
+  function flushFrame(): void {
+    const pending = Array.from(rafCallbacks.entries());
+    rafCallbacks.clear();
+    for (const [, cb] of pending) cb(performance.now());
+  }
+
+  beforeEach(() => {
+    canvas = document.createElement('canvas');
+    jest.clearAllMocks();
+    rafCallbacks = new Map();
+    nextRafId = 1;
+    rafSpy = jest.spyOn(window, 'requestAnimationFrame').mockImplementation((cb: FrameRequestCallback) => {
+      const id = nextRafId++;
+      rafCallbacks.set(id, cb);
+      // Backend switches await yieldForGpuRelease(); resolve those frames promptly.
+      setTimeout(() => {
+        const pending = rafCallbacks.get(id);
+        if (pending && pending.toString().includes('resolve')) {
+          rafCallbacks.delete(id);
+          pending(performance.now());
+        }
+      }, 0);
+      return id;
+    });
+    cancelSpy = jest.spyOn(window, 'cancelAnimationFrame').mockImplementation((id: number) => {
+      rafCallbacks.delete(id);
+    });
+    (WebGPURenderer as jest.Mock).mockImplementation(() => makeMockWebGPU());
+    (WASMRenderer as jest.Mock).mockImplementation(() => makeMockWASM());
+    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+  });
+
+  afterEach(() => {
+    rafSpy.mockRestore();
+    cancelSpy.mockRestore();
+  });
+
+  it('keeps exactly one metrics loop across 10 backend toggles', async () => {
+    const onMetrics = jest.fn();
+    const manager = new RendererManager(DEFAULT_CONFIG, onMetrics);
+    await manager.init(canvas);
+    for (let i = 0; i < 10; i++) {
+      await manager.switchRenderer(i % 2 === 0 ? 'wasm' : 'webgpu');
+    }
+    await new Promise((r) => setTimeout(r, 0));
+    onMetrics.mockClear();
+    flushFrame();
+    expect(onMetrics).toHaveBeenCalledTimes(1);
+    expect(rafCallbacks.size).toBe(1);
+
+    await manager.destroy();
+    flushFrame();
+    expect(rafCallbacks.size).toBe(0);
+  });
+
+  it('runs no metrics loop without a listener but still reports live FPS', async () => {
+    const manager = new RendererManager(DEFAULT_CONFIG);
+    await manager.init(canvas);
+    await manager.switchRenderer('wasm');
+    await manager.switchRenderer('webgpu');
+    expect(rafCallbacks.size).toBe(0);
+    expect(manager.getCurrentFPS()).toBe(60);
+  });
+
+  it('render() takes no arguments and uploads video frames only on WASM', async () => {
+    const wasm = makeMockWASM();
+    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
+    const manager = new RendererManager(DEFAULT_CONFIG);
+    await manager.init(canvas);
+    await manager.switchRenderer('wasm');
+    expect(manager.render.length).toBe(0);
+    manager.render();
+    expect(wasm.updateVideoFrame).toHaveBeenCalled();
+  });
+
+  it('destroy() resolves after the backend releases its GPU device', async () => {
+    let releaseDone = false;
+    const webgpu = makeMockWebGPU();
+    (webgpu as unknown as { releaseExclusiveGpu: () => Promise<void> }).releaseExclusiveGpu = jest.fn(
+      () => new Promise<void>((resolve) => setTimeout(() => { releaseDone = true; resolve(); }, 5)),
+    );
+    (WebGPURenderer as jest.Mock).mockImplementation(() => webgpu);
+    const manager = new RendererManager(DEFAULT_CONFIG);
+    await manager.init(canvas);
+    await manager.destroy();
+    expect(releaseDone).toBe(true);
+    expect(manager.getActiveRendererType()).toBe('js');
+  });
+
+  it('falls back to WebGPU when the WASM loop reports a fatal error', async () => {
+    let fatal: ((message: string) => void) | null = null;
+    const wasm = makeMockWASM();
+    (wasm as unknown as { setFatalErrorHandler: jest.Mock }).setFatalErrorHandler = jest.fn((h) => { fatal = h; });
+    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
+    const onBackendFailure = jest.fn();
+    const manager = new RendererManager(DEFAULT_CONFIG, undefined, { onBackendFailure });
+    await manager.init(canvas);
+    await manager.switchRenderer('wasm');
+    expect(manager.getActiveRendererType()).toBe('wasm');
+    expect(fatal).not.toBeNull();
+
+    fatal!('render loop stopped');
+    await new Promise((r) => setTimeout(r, 20));
+    expect(manager.getActiveRendererType()).toBe('webgpu');
+    expect(onBackendFailure).not.toHaveBeenCalled();
+  });
+
+  it('reports backend failure when no fallback can take over', async () => {
+    let fatal: ((message: string) => void) | null = null;
+    const wasm = makeMockWASM();
+    (wasm as unknown as { setFatalErrorHandler: jest.Mock }).setFatalErrorHandler = jest.fn((h) => { fatal = h; });
+    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
+    const onBackendFailure = jest.fn();
+    const manager = new RendererManager(DEFAULT_CONFIG, undefined, { onBackendFailure });
+    await manager.init(canvas);
+    await manager.switchRenderer('wasm');
+    (WebGPURenderer as jest.Mock).mockImplementation(() => ({ init: jest.fn().mockResolvedValue(false), destroy: jest.fn() }));
+
+    fatal!('render loop stopped');
+    await new Promise((r) => setTimeout(r, 20));
+    expect(onBackendFailure).toHaveBeenCalledWith('wasm', 'render loop stopped');
+  });
+});
+
+describe('RendererManager device-loss recovery', () => {
+  let canvas: HTMLCanvasElement;
+  let rafSpy: jest.SpyInstance;
+
+  type LossHandler = (message: string, info?: import('../renderer/Renderer').DeviceLossInfo) => void;
+  const loss = (reason = 'unknown') => ({ kind: 'device-lost' as const, reason, message: 'driver reset', at: Date.now() });
+
+  /** A TS WebGPU mock that captures the manager's fatal handler. */
+  function lossAwareWebGPU(initOk = true) {
+    const r = makeMockWebGPU() as unknown as jest.Mocked<WebGPURenderer> & { fatal: LossHandler | null };
+    r.fatal = null;
+    (r.init as jest.Mock).mockResolvedValue(initOk);
+    (r as unknown as { setFatalErrorHandler: jest.Mock }).setFatalErrorHandler = jest.fn((h: LossHandler) => {
+      r.fatal = h;
+    });
+    return r;
+  }
+
+  const rainStack = {
+    modes: ['rain', 'none'] as import('../renderer/types').RenderMode[],
+    slotParams: [defaultSlotParams, defaultSlotParams],
+    resolveShader: (id: string) => (id === 'rain' ? { id: 'rain', name: 'Rain', url: '/rain.wgsl', category: 'image' as const } : undefined),
+    inputSource: 'image' as const,
+  };
+  const settle = () => new Promise((r) => setTimeout(r, 10));
+
+  beforeEach(() => {
+    canvas = document.createElement('canvas');
+    jest.clearAllMocks();
+    rafSpy = jest.spyOn(window, 'requestAnimationFrame').mockImplementation((cb: FrameRequestCallback) =>
+      setTimeout(() => cb(performance.now()), 0) as unknown as number);
+    (WASMRenderer as jest.Mock).mockImplementation(() => makeMockWASM());
+    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+  });
+
+  afterEach(() => {
+    rafSpy.mockRestore();
+  });
+
+  async function bootWith(first: ReturnType<typeof lossAwareWebGPU>, options = {}) {
+    (WebGPURenderer as jest.Mock).mockImplementationOnce(() => first);
+    const statuses: string[] = [];
+    const onBackendFailure = jest.fn();
+    const manager = new RendererManager(DEFAULT_CONFIG, undefined, {
+      onBackendFailure,
+      getSessionState: () => rainStack,
+      onDeviceRecovery: (s) => statuses.push(s.state),
+      ...options,
+    });
+    expect(await manager.init(canvas)).toBe(true);
+    expect(first.fatal).toEqual(expect.any(Function));
+    return { manager, statuses, onBackendFailure };
+  }
+
+  it('rebuilds the WebGPU backend once and replays the live shader stack', async () => {
+    const first = lossAwareWebGPU();
+    const second = lossAwareWebGPU();
+    const { manager, statuses, onBackendFailure } = await bootWith(first);
+    (WebGPURenderer as jest.Mock).mockImplementation(() => second);
+
+    first.fatal!('GPU device lost (unknown)', loss());
+    await settle();
+
+    expect(statuses).toEqual(['lost', 'recovering', 'idle']);
+    expect(first.destroy).toHaveBeenCalled();
+    expect(second.init).toHaveBeenCalledTimes(1);
+    expect(second.loadShader).toHaveBeenCalledWith('rain', '/rain.wgsl');
+    expect(second.setSlotShader).toHaveBeenCalledWith(0, 'rain');
+    expect(second.setInputSource).toHaveBeenCalledWith('image');
+    expect(manager.getDeviceRecoveryStatus()).toMatchObject({ state: 'idle', attempts: 1, lastLoss: { reason: 'unknown' } });
+    expect(manager.getDiagnostics().deviceRecovery).toMatchObject({ state: 'idle', attempts: 1 });
+    expect(manager.getDevice()).toBeNull(); // the dead device is no longer adopted
+    // Never another backend type.
+    expect(WASMRenderer).not.toHaveBeenCalled();
+    expect(JSRenderer).not.toHaveBeenCalled();
+    expect(onBackendFailure).not.toHaveBeenCalled();
+
+    // A late report from the replaced renderer is ignored.
+    first.fatal!('GPU device lost (unknown)', loss());
+    await settle();
+    expect(statuses).toEqual(['lost', 'recovering', 'idle']);
+  });
+
+  it('a render-worker crash (worker-died) takes the same recovery path (#1395)', async () => {
+    const first = lossAwareWebGPU();
+    const second = lossAwareWebGPU();
+    const { manager, statuses } = await bootWith(first);
+    let releaseInit!: (ok: boolean) => void;
+    (second.init as jest.Mock).mockReturnValue(new Promise<boolean>((r) => { releaseInit = r; }));
+    (WebGPURenderer as jest.Mock).mockImplementation(() => second);
+
+    first.fatal!('Render worker crashed (boom)', {
+      kind: 'worker-died', reason: 'render worker crashed', message: 'boom', at: Date.now(),
+    });
+    await settle();
+    // The gap between the crash and the rebuilt device still counts as "a renderer owns the
+    // GPU", so depth estimation does not open a second WebGPU device meanwhile.
+    expect(statuses).toEqual(['lost', 'recovering']);
+    expect(manager.isGpuDeviceActive()).toBe(true);
+
+    releaseInit(true);
+    await settle();
+    expect(statuses).toEqual(['lost', 'recovering', 'idle']);
+    expect(second.loadShader).toHaveBeenCalledWith('rain', '/rain.wgsl');
+    expect(manager.getDeviceRecoveryStatus().lastLoss).toMatchObject({ kind: 'worker-died' });
+  });
+
+  it('a failed recovery blocks with diagnostics (no fallback, no restore loop) until Retry', async () => {
+    const first = lossAwareWebGPU();
+    const failing = lossAwareWebGPU(false);
+    const { manager, statuses, onBackendFailure } = await bootWith(first);
+    (WebGPURenderer as jest.Mock).mockImplementation(() => failing);
+
+    first.fatal!('GPU device lost (unknown)', loss());
+    await settle();
+
+    expect(statuses).toEqual(['lost', 'recovering', 'failed']);
+    expect(failing.init).toHaveBeenCalledTimes(1); // switchRenderer did not retry/restore on its own
+    expect(onBackendFailure).toHaveBeenCalledWith('webgpu', expect.any(String));
+    expect(WASMRenderer).not.toHaveBeenCalled();
+    expect(JSRenderer).not.toHaveBeenCalled();
+
+    const third = lossAwareWebGPU();
+    (WebGPURenderer as jest.Mock).mockImplementation(() => third);
+    expect(await manager.recoverFromDeviceLoss()).toBe(true);
+    expect(statuses.slice(-2)).toEqual(['recovering', 'idle']);
+    expect(manager.getDeviceRecoveryStatus().attempts).toBe(2);
+    expect(third.setSlotShader).toHaveBeenCalledWith(0, 'rain');
+  });
+
+  it('concurrent retries share one rebuild', async () => {
+    const first = lossAwareWebGPU();
+    const { manager } = await bootWith(first);
+    const second = lossAwareWebGPU();
+    (WebGPURenderer as jest.Mock).mockClear();
+    (WebGPURenderer as jest.Mock).mockImplementation(() => second);
+    const [a, b] = await Promise.all([manager.recoverFromDeviceLoss(), manager.recoverFromDeviceLoss()]);
+    expect(a).toBe(true);
+    expect(b).toBe(true);
+    expect(WebGPURenderer).toHaveBeenCalledTimes(1);
+  });
+
+  it('a second loss right after a recovery waits for the user instead of looping', async () => {
+    const first = lossAwareWebGPU();
+    const second = lossAwareWebGPU();
+    const { manager, statuses, onBackendFailure } = await bootWith(first);
+    (WebGPURenderer as jest.Mock).mockImplementation(() => second);
+    first.fatal!('lost', loss());
+    await settle();
+    (WebGPURenderer as jest.Mock).mockClear();
+
+    second.fatal!('lost again', loss());
+    await settle();
+    expect(statuses.slice(-2)).toEqual(['lost', 'failed']);
+    expect(WebGPURenderer).not.toHaveBeenCalled();
+    expect(onBackendFailure).toHaveBeenCalledTimes(1);
+    expect(manager.getDeviceRecoveryStatus().lastError).toMatch(/again/);
+  });
+
+  it('replays what the lost backend was rendering, even when the host session does not know it', async () => {
+    const first = lossAwareWebGPU();
+    (first as unknown as { getSlotState: jest.Mock }).getSlotState = jest.fn((i: number) =>
+      i === 1 ? { shaderId: 'plasma', enabled: true, mode: 'parallel' } : { shaderId: null, enabled: false, mode: 'chained' });
+    const second = lossAwareWebGPU();
+    const { manager } = await bootWith(first, { getSessionState: () => ({ ...rainStack, modes: ['none', 'none'] }) });
+    await manager.loadShader('plasma', '/shaders/plasma.wgsl', { requiresHistoryRing: true });
+    manager.setInputSource('generative');
+    (WebGPURenderer as jest.Mock).mockImplementation(() => second);
+
+    first.fatal!('lost', loss());
+    await settle();
+
+    expect(second.loadShader).toHaveBeenCalledWith('plasma', '/shaders/plasma.wgsl');
+    expect(second.setSlotShader).toHaveBeenCalledWith(1, 'plasma');
+    expect(second.setSlotShader).toHaveBeenCalledWith(0, '');
+    expect(second.setSlotMode).toHaveBeenCalledWith(1, 'parallel');
+    expect(second.setInputSource).toHaveBeenLastCalledWith('generative');
+  });
+
+  it('a non-loss fatal error keeps the existing backend-failure path', async () => {
+    const first = lossAwareWebGPU();
+    const { statuses, onBackendFailure } = await bootWith(first);
+    first.fatal!('render loop stopped');
+    await settle();
+    expect(statuses).toEqual([]);
+    expect(onBackendFailure).toHaveBeenCalledWith('webgpu', 'render loop stopped');
+  });
+
+  it('destroy during a recovery waits for it and releases the rebuilt backend', async () => {
+    const first = lossAwareWebGPU();
+    const second = lossAwareWebGPU();
+    let finishInit!: (ok: boolean) => void;
+    (second.init as jest.Mock).mockImplementation(() => new Promise<boolean>((r) => { finishInit = r; }));
+    const { manager } = await bootWith(first);
+    (WebGPURenderer as jest.Mock).mockImplementation(() => second);
+    first.fatal!('lost', loss());
+    await settle();
+    expect(second.init).toHaveBeenCalled();
+
+    const destroyed = manager.destroy();
+    finishInit(true);
+    await destroyed;
+    expect(second.destroy).toHaveBeenCalled();
+  });
+
+  it('does nothing after destroy', async () => {
+    const first = lossAwareWebGPU();
+    const { manager, statuses } = await bootWith(first);
+    await manager.destroy();
+    first.fatal!('lost', loss());
+    await settle();
+    expect(statuses).toEqual([]);
+    expect(await manager.recoverFromDeviceLoss()).toBe(false);
   });
 });

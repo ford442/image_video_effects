@@ -36,6 +36,7 @@
   "features": [
     "audio-reactive",
     "graph-runner",
+    "upgraded-rgba",
     "interactive",
     "mathematical",
     "mouse-driven",

@@ -8,6 +8,32 @@
 
 Dated shader plan files to track pending, in-progress, and completed shader implementations.
 
+## WGSL skeleton (plans and implementations)
+
+Plans must **not** embed the 13 binding declarations or `struct Uniforms`: every
+catalog shader gets them from the generated prelude, and CI rejects a pasted copy.
+Start the implementation with `python3 scripts/new_shader.py "<Name>" --category <cat>`
+or this skeleton:
+
+```wgsl
+// ═══════════════════════════════════════════════════════════════════
+//  <Shader Name>
+//  Category: <category>
+// ═══════════════════════════════════════════════════════════════════
+
+#include "_prelude.wgsl"
+
+@compute @workgroup_size(16, 16, 1)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let res = u.config.zw;
+  if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
+  // ... write writeTexture, writeDepthTexture and dataTextureA ...
+}
+```
+
+A plan that still contains a pasted header is migrated on implementation with
+`python3 scripts/migrate_to_prelude.py --files public/shaders/<id>.wgsl`.
+
 ## File Naming Convention
 
 ```

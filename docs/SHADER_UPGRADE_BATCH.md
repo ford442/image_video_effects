@@ -1,8 +1,8 @@
 # Shader Upgrade Batches — Incremental Ideas Contract
 
 > **This is the live process.** Paste this file (or §0) into Gemini / Grok / Claude / Antigravity before a batch.
-> Longer plumbing reference: [`agents/CLOUD_UPGRADE.md`](../agents/CLOUD_UPGRADE.md).
-> Bindings / uniforms: [`docs/BINDING_CONTRACT.md`](BINDING_CONTRACT.md) and [`agents/WGSL_BUILTINS_GENERATIVE.md`](../agents/WGSL_BUILTINS_GENERATIVE.md).
+> Longer plumbing reference: [`docs/agents/CLOUD_UPGRADE.md`](agents/CLOUD_UPGRADE.md).
+> Bindings / uniforms: [`docs/BINDING_CONTRACT.md`](BINDING_CONTRACT.md) and [`docs/agents/WGSL_BUILTINS_GENERATIVE.md`](agents/WGSL_BUILTINS_GENERATIVE.md).
 
 ---
 
@@ -12,9 +12,10 @@ An upgrade **adds 2–4 named visual ideas to the existing effect**. It is not a
 
 1. **Write an Idea Card for every shader before touching WGSL.** If you cannot name the additions in one sentence each, you are not ready to edit.
 2. **Keep the algorithm, the look, and the saved `params`.** Same modes, same kernel family, same identity. Deepen what is already there.
-3. **Plumbing is the floor, not the upgrade.** Canonical 13 bindings, 16×16, ACES, semantic alpha, exact C loads, live sliders, and `updatedParams` alignment must happen — they do not by themselves count as an upgrade.
+3. **Plumbing is the floor, not the upgrade.** Canonical 13 bindings, 16×16, ACES, semantic alpha, exact C loads, live sliders, and `x-meta.upgrade.params` alignment must happen — they do not by themselves count as an upgrade.
 4. **No generic overlay.** Do not stamp every file with the same spring cursor, ripple shockwaves, IQ cosine palette, and two “conveyors.” Ideas must be native to *this* effect.
 5. **Refuse a header-only or rewrite-only result.** A shader that newly compiles, writes depth/A, and looks the same is not upgraded. A shader whose name still matches but whose picture is a different effect is not upgraded either.
+6. **Bindings come from `#include "_prelude.wgsl"`.** Never paste the 13 binding declarations or `struct Uniforms` — CI fails on a pasted copy. If a file you touch still pastes them, run `python3 scripts/migrate_to_prelude.py --files public/shaders/<id>.wgsl` first. That swap is infrastructure, not an upgrade: never bump `Upgraded:` for it.
 
 ---
 
@@ -26,7 +27,7 @@ The catalog is ~1,350 effects. Many already have a distinct identity: unsharp-ma
 |---|---|
 | Two named, effect-specific visual ideas plus the contract floor | **Yes** |
 | Identity preserved; kernel/mode/param roles kept; new detail is additive | **Yes** |
-| Bindings, workgroup, ACES, alpha, `dataTextureA`, `updatedParams` only | **No** — that is hygiene |
+| Bindings, workgroup, ACES, alpha, `dataTextureA`, `x-meta.upgrade.params` only | **No** — that is hygiene |
 | Full rewrite, new motif, renamed modes, or “premium version” of a different effect | **No** — that is a new shader |
 | Same spring + ripple + oil-slick overlay on vignette, sharpen, and liquid | **No** — that is homogenization |
 
@@ -75,8 +76,8 @@ After the edit, a reviewer who reads only the Idea Card and the diff should be a
 
 These are required so the shader can live in the catalog. They are **not** the creative work.
 
-- Canonical 13 bindings, `@workgroup_size(16, 16, 1)`, bounds guard.
-- Saved `params` byte-exact (ids, names, defaults, min/max/step, mapping order). Align `updatedParams` additively.
+- Canonical 13 bindings via `#include "_prelude.wgsl"` (never pasted), `@workgroup_size(16, 16, 1)`, bounds guard.
+- Saved `params` byte-exact (ids, names, defaults, min/max/step, mapping order). Align `x-meta.upgrade.params` additively.
 - All four sliders live and shader-specific — no shared intensity/speed/contrast shim.
 - A-only writes unless the file already owns B for a documented reason. Do not invent B packing.
 - Exact `textureLoad(dataTextureC, coord, 0)` for feedback. No filtering sampler on `rgba32float` history.
@@ -93,7 +94,7 @@ Cloud-VM proof is structural (Naga, extraBuffer, dead sliders, catalogs, Jest, `
 
 ## 4. Anti-patterns (seen in real batches)
 
-1. **Hygiene as upgrade.** Header comment, ACES helper, `upgraded-rgba` tag, `updatedParams` — and the picture is unchanged.
+1. **Hygiene as upgrade.** Header comment, ACES helper, `upgraded-rgba` tag, `x-meta.upgrade.params` — and the picture is unchanged.
 2. **Reimagining.** `pp-sharpen` becomes a holographic neon scanner. The filename still says sharpen.
 3. **Generic overlay.** Every file in the batch gets `extraBuffer[133..138]` spring, ripple rings, IQ palette, two conveyors, oil-slick chroma. Batch 56/67-style motion is a *theme you opt into per shader*, not a stamp.
 4. **Param theft.** Rewiring saved sliders to new meanings. Presets must still load.
@@ -116,7 +117,7 @@ Do not run two agents on overlapping IDs. Claim the list in the batch notes befo
 
 ### Selection
 
-Prefer a **theme that already lives in the files** (optical, glitch, liquid, PP) or an objective backlog rule (smallest remaining, missing `updatedParams`). Do not pick twelve unrelated IDs and then apply one overlay to all of them.
+Prefer a **theme that already lives in the files** (optical, glitch, liquid, PP) or an objective backlog rule (smallest remaining, missing `x-meta.upgrade.params`). Do not pick twelve unrelated IDs and then apply one overlay to all of them.
 
 Post-processing and photographic image shaders need *quieter* ideas than generative or liquid. A sharpen upgrade that a photographer still uses as sharpen is success.
 
@@ -135,7 +136,7 @@ python3 scripts/wgsl_precommit_gate.py --files public/shaders/<id>.wgsl   # each
 npm run audit:extrabuffer
 npm run audit:dead-sliders -- --files <id1> <id2> …
 node scripts/generate_shader_lists.js
-npx react-scripts test --watchAll=false --ci
+npm test -- --watchAll=false --ci
 SKIP_WASM_BUILD=1 npm run build
 ```
 
@@ -268,7 +269,7 @@ Do not put `fast-motion` in Features unless this file actually opted into a fast
 ### JSON
 
 - Saved `params` (ids, names, defaults, min/max/step, mapping onto `zoom_params.xyzw`) stay **byte-exact**.
-- `updatedParams` may be added or aligned. Do not rename or re-default `params`.
+- `x-meta.upgrade.params` may be added or aligned. Do not rename or re-default `params`.
 - `"upgraded-rgba"` in `features` only when **ACES is in WGSL and the Idea Card is implemented**. Tag-without-ideas is the 2026-06 metadata-drift bug.
 - `"audio-reactive"` only when `plasmaBuffer[0].xyz` actually modulates something visible.
 - `"mouse-driven"` only when the pointer changes the picture. A unused `zoom_config` read is not mouse-driven.
@@ -295,6 +296,17 @@ HEAD packing wins when it is already consistent. If HEAD stored a mask in A and 
 - Do not add a spring “for contract completeness.”
 
 ---
+
+## 8b. Record the batch (required, last step before commit)
+
+```bash
+npm run upgrades:record -- --note="<date> <batch name> (<model>) — <batch notes file>"
+```
+
+This logs every changed shader in `reports/shader-upgrade-ledger.json` and marks
+its thumbnail stale. Use `--event=hygiene` for plumbing-only passes so they are
+not counted as upgrades. Thumbnails are refreshed afterwards on a GPU machine
+(Shader Scanner → *Changed since last thumbnail*), not by the agent.
 
 ## 9. Notes, MEMORY.md, and coordinator review
 
@@ -353,19 +365,19 @@ Future agents land in this repo and open the first markdown hit. **These files d
 | File | Status | Role |
 |---|---|---|
 | **`docs/SHADER_UPGRADE_BATCH.md`** | **LIVE** | Creative contract. Idea Cards, anti-patterns, batch size, timeframe. |
-| **`agents/WGSL_BUILTINS_GENERATIVE.md`** | **LIVE** | Bindings, uniforms, extraBuffer map, naga-safe builtins. |
+| **`docs/agents/WGSL_BUILTINS_GENERATIVE.md`** | **LIVE** | Bindings, uniforms, extraBuffer map, naga-safe builtins. |
 | **`docs/BINDING_CONTRACT.md`** | **LIVE** | Engine bind group, uniforms, feedback copy order. |
-| **`scripts/AUTHORING.md`** | **LIVE** | Scaffold, gates, audits. |
-| **`agents/CLOUD_UPGRADE.md`** | **LIVE plumbing** | Floor snippets (ACES, alpha, audio). Creative law is this file, not CLOUD §4–§10 examples. |
-| `agents/weekly_upgrade_swarm.md` | **Historical log** | Completed-batch diary. Do not copy its overlay themes onto a new family. |
-| `agents/upgrade_swarm.md` | **Historical (2026-04)** | Size-expansion ideas. Do not treat target line counts as success. |
-| `agents/GENERATIVE_UPGRADE_SWARM.md` | **Historical (2026-04)** | Same. |
-| `agents/4_AGENT_SWARM_PROMPT.md` | **Historical** | Role split. Do not “replace primitive noise with a masterpiece.” |
-| `agents/grok_build_upgrade.md` | **Historical weekly new-shader plan** | For **new** shaders, not upgrades. Upgrades use this file. |
+| **`docs/AUTHORING.md`** | **LIVE** | Scaffold, gates, audits. |
+| **`docs/agents/CLOUD_UPGRADE.md`** | **LIVE plumbing** | Floor snippets (ACES, alpha, audio). Creative law is this file, not CLOUD §4–§10 examples. |
+| `docs/agents/weekly_upgrade_swarm.md` | **Historical log** | Completed-batch diary. Do not copy its overlay themes onto a new family. |
+| `docs/agents/upgrade_swarm.md` | **Historical (2026-04)** | Size-expansion ideas. Do not treat target line counts as success. |
+| `docs/agents/GENERATIVE_UPGRADE_SWARM.md` | **Historical (2026-04)** | Same. |
+| `docs/agents/4_AGENT_SWARM_PROMPT.md` | **Historical** | Role split. Do not “replace primitive noise with a masterpiece.” |
+| `docs/agents/grok_build_upgrade.md` | **Historical weekly new-shader plan** | For **new** shaders, not upgrades. Upgrades use this file. |
 | `composer.md` | **Historical (2026-06)** | `upgraded-rgba` hygiene sprint. ACES-only batches are not upgrades. |
-| `notes/SHADER_UPGRADE_MANIFEST.md` | **Historical** | 16-shader April initiative. |
-| `notes/shaders_upgrade_plan.md` | **Historical queue** | Size tiers only. First principle now points here. |
-| `agents/prompt-templates/*.md` | **LIVE roles** | Toolkits. Identity-preserving rules at the top of each. Do not apply a whole toolkit to every file. |
+| `notes/SHADER_UPGRADE_MANIFEST.md` (local, untracked) | **Historical** | 16-shader April initiative. |
+| `notes/shaders_upgrade_plan.md` (local, untracked) | **Historical queue** | Size tiers only. First principle now points here. |
+| `docs/agents/prompt-templates/*.md` | **LIVE roles** | Toolkits. Identity-preserving rules at the top of each. Do not apply a whole toolkit to every file. |
 | `scripts/run-upgrade-swarm.js` | **LIVE generator** | Must emit Idea Cards. Ignore any leftover `target_lines ±20%` folklore in old queue JSON. |
 
 If two docs conflict, **this file wins on what an upgrade is.** BINDING_CONTRACT / WGSL_BUILTINS win on what the engine does.
@@ -381,6 +393,8 @@ For each: write an Idea Card, then add 2–4 native ideas in the existing main p
 Do not reimagine. Do not treat ACES/bindings/updatedParams/springs as the upgrade.
 Do not stamp a spring+ripple+IQ overlay across the batch.
 Saved params stay byte-exact. Document A packing. Naga each file.
+Bindings come from #include "_prelude.wgsl" — never paste them; migrate a pasted
+header with python3 scripts/migrate_to_prelude.py --files <file> (no Upgraded: bump).
 Write agents/swarm-outputs/<you>-<date>-<batch>/BRIEFS.md before WGSL.
 Cloud VM has no GPU — structural gates only; do not claim visual QA.
 ```

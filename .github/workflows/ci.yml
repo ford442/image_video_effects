@@ -73,7 +73,6 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    needs: wasm
     permissions:
       contents: read
     
@@ -91,11 +90,11 @@ jobs:
       env:
         ONNXRUNTIME_NODE_INSTALL_SKIP: "true"
 
-    - name: Download WASM artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: wasm-artifacts
-    
+    # Before anything below regenerates them: the committed registry, shader lists, alias
+    # maps, ShaderDefinition type and standalone validator must equal a fresh regeneration.
+    - name: Verify generated files are committed
+      run: npm run verify:generated-sync
+
     - name: Run shader list generation
       run: node scripts/generate_shader_lists.js
     
@@ -110,7 +109,10 @@ jobs:
         node -e "require.resolve('typescript'); console.log('typescript OK:', require('typescript').version)"
         npx tsc --version
         npx tsc --noEmit
-    
+
+    - name: Typecheck scripts/
+      run: npm run typecheck:scripts
+
     - name: Verify device policy sync (TS ↔ C++)
       run: npm run verify:device-policy
 
@@ -135,6 +137,7 @@ jobs:
     - name: Enforce bundle and dependency boundaries
       run: npm run verify:toolchain-foundation
 
+    # Committed public/wasm/ artifacts (the WASM build itself lives in wasm.yml, #1080).
     - name: Validate WASM artifacts after build
       run: npm run wasm:validate
     
@@ -228,6 +231,13 @@ jobs:
     - name: Verify WGSL include expanders
       run: node scripts/verify-wgsl-include.mjs
 
+    # Catalog shaders get their bindings from #include "_prelude.wgsl" (#1313).
+    # Fails on a newly pasted header (with the one-command fix), on a stale or
+    # growing src/contracts/prelude_migration.json, and on an edited shader that
+    # is still waiting to be migrated.
+    - name: Prelude migration ratchet
+      run: python3 scripts/check_prelude_migration.py --base origin/main
+
     - name: Validate WGSL with naga-wasm (changed files)
       run: node scripts/verify-naga-wasm.mjs --base-ref origin/main
 
@@ -246,6 +256,12 @@ jobs:
     - name: Run WGSL pre-commit gate on changed files
       run: python3 scripts/wgsl_precommit_gate.py --base origin/main --skip-naga
 
+    # Every shader_definitions/*/*.json against src/contracts/shader_definition.schema.json
+    # (compiled standalone validator, node builtins only) plus id/filename, category/folder,
+    # unique-param-id and default-in-range rules. Legacy keys: scripts/migrate_shader_definitions.py.
+    - name: Validate shader definitions (schema)
+      run: node scripts/validate_shader_definitions.mjs
+
     - name: Audit shader catalog hygiene (defs ↔ WGSL)
       run: python3 scripts/audit_orphan_shader_defs.py --ci-gate
 
@@ -263,6 +279,8 @@ jobs:
         python3 scripts/test_orphan_gate.py
         python3 scripts/test_audit_extrabuffer.py
         python3 scripts/test_audit_dead_sliders.py
+        python3 scripts/test_new_shader.py
+        python3 scripts/test_prelude_migration.py
 
     - name: Publish gate summary
       if: always()
@@ -332,35 +350,15 @@ jobs:
       with:
         node-version: '24'
 
-    - name: Report-only expiry check
-      run: |
-        MARKER="# REPORT-ONLY-UNTIL: 2026-10-15"
-        DEADLINE="2026-10-15"
-        TODAY=$(date +%Y-%m-%d)
-        if [ "$TODAY" \> "$DEADLINE" ]; then
-          if grep -Fq "$MARKER" .github/workflows/ci.yml; then
-            echo "Catalog/workgroup audits are still report-only after $DEADLINE."
-            echo "Promote to blocking: drop || true and the REPORT-ONLY-UNTIL marker."
-            exit 1
-          fi
-        fi
-
-    - name: Catalog drift audit (report-only)
-      run: |
-        # REPORT-ONLY-UNTIL: 2026-10-15
-        python3 scripts/audit_catalog_consistency.py --ensure-lists --report || true
-
-    - name: Workgroup size audit (report-only)
-      run: |
-        # REPORT-ONLY-UNTIL: 2026-10-15
-        python3 scripts/wgsl_workgroup_detector.py --report || true
+    - name: Workgroup size audit (blocking)
+      run: python3 scripts/wgsl_workgroup_detector.py --gate
 
     - name: Catalog and workgroup audit unit tests
       run: |
         python3 scripts/test_audit_catalog_consistency.py
         python3 scripts/test_wgsl_workgroup_detector.py
 
-    - name: Catalog drift gate (baseline-decay)
+    - name: Catalog drift gate (blocking, baseline may only shrink)
       run: python3 scripts/audit_catalog_consistency.py --ensure-lists --gate
 
     - name: Publish catalog audit summary
@@ -416,7 +414,7 @@ jobs:
         ONNXRUNTIME_NODE_INSTALL_SKIP: "true"
     
     - name: Run ESLint
-      run: npx eslint src --ext .ts,.tsx --max-warnings=0 || true
+      run: npm run lint
     
     - name: Generate shader lists
       run: node scripts/generate_shader_lists.js
@@ -460,10 +458,13 @@ jobs:
     - name: Regenerate unified shader manifest
       run: npm run build:manifest
 
+    # Blocking since healthy eligible coverage passed 50% (2026-10-05, 91.7%).
+    # pipefail: without it the tee's exit status hides the check's.
     - name: Check thumbnail coverage regression
       id: thumbs
-      continue-on-error: true
-      run: npm run thumbs:check-regression -- --base-ref "origin/${{ github.base_ref }}" 2>&1 | tee /tmp/thumbs-check.txt
+      run: |
+        set -o pipefail
+        npm run thumbs:check-regression -- --base-ref "origin/${{ github.base_ref }}" 2>&1 | tee /tmp/thumbs-check.txt
 
     - name: Report to job summary
       if: always()

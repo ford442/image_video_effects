@@ -1,9 +1,12 @@
-// ================================================================
-//  CMYK Halftone Interactive — Batch 56 cursor+main merge
-//  Rosette rings, rotating screens, registration drift/shear,
-//  ink conveyors/packets, click blooms, rainbow registration glow.
-//  A remains CMYK coverage masks.
-// ================================================================
+// ═══════════════════════════════════════════════════════════════════
+//  CMYK Halftone Interactive
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-04
+//  Ideas: per-plate registration target at the cursor; press slur/doubling ghost dot along the feed
+//  A packing: [C, M, Y, K] plate coverage with light persistence
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -18,6 +21,7 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
 
 struct Uniforms {
   config: vec4<f32>,
@@ -63,6 +67,25 @@ fn halftone_dot(
   let disc = 1.0 - smoothstep(radius - 0.05, radius + 0.05, dist);
   let ring = 1.0 - smoothstep(0.03, 0.08, abs(dist - radius * 0.72));
   return max(disc, ring * 0.35);
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Idea 1: a printer's registration target (ring + crosshair) centred on the
+// cursor. Each plate prints its own copy through its own offset, so any
+// misregistration shows as coloured fringes around a black target.
+fn registration_mark(uv: vec2<f32>, offset: vec2<f32>, mouse: vec2<f32>, aspect: f32, px: f32) -> f32 {
+  let p = (uv + offset - mouse) * vec2<f32>(aspect, 1.0);
+  let r = 0.032;
+  let lw = px * 1.6;
+  let ring = 1.0 - smoothstep(lw * 0.5, lw * 1.5, abs(length(p) - r));
+  let inner = 1.0 - smoothstep(lw * 0.5, lw * 1.5, abs(length(p) - r * 0.45));
+  let span = 1.0 - step(r * 1.45, max(abs(p.x), abs(p.y)));
+  let crossX = (1.0 - smoothstep(lw * 0.5, lw * 1.5, abs(p.y))) * (1.0 - step(r * 1.45, abs(p.x)));
+  let crossY = (1.0 - smoothstep(lw * 0.5, lw * 1.5, abs(p.x))) * (1.0 - step(r * 1.45, abs(p.y)));
+  return max(max(ring, inner * 0.8), max(crossX, crossY) * span);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -115,19 +138,40 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let offY = vec2<f32>(0.0, -1.0) * finalSpread * (1.0 + audio.z * 0.4) + drift.yx;
   let offK = vec2<f32>(0.0, 1.0) * finalSpread * (1.0 + (audio.x + audio.y) * 0.2) - drift.yx;
 
-  let finalC = halftone_dot(uv, aspect, density, angC, offC, cmyk.x, 1.0 + audio.x * 0.35);
-  let finalM = halftone_dot(uv, aspect, density, angM, offM, cmyk.y, 1.0 + audio.y * 0.35);
-  let finalY = halftone_dot(uv, aspect, density, angY, offY, cmyk.z, 1.0 + audio.z * 0.35);
-  let finalK = halftone_dot(uv, aspect, density, angK, offK, cmyk.w, 1.0 + (audio.x + audio.z) * 0.20);
+  // Idea 2: slur / doubling. Paper slipping on the impression cylinder lays a
+  // faint second dot behind each real one along the feed direction (+y).
+  // Dragging with the button held pulls the sheet further; bass thumps it.
+  let slurLen = (0.0012 + length(heldDelta) * 0.035) * (1.0 + audio.x * 0.6);
+  let feed = vec2<f32>(0.0, slurLen);
+  let slurAmt = 0.22 + held * 0.18;
+  let finalC = max(halftone_dot(uv, aspect, density, angC, offC, cmyk.x, 1.0 + audio.x * 0.35),
+                   halftone_dot(uv, aspect, density, angC, offC + feed, cmyk.x, 1.0 + audio.x * 0.35) * slurAmt);
+  let finalM = max(halftone_dot(uv, aspect, density, angM, offM, cmyk.y, 1.0 + audio.y * 0.35),
+                   halftone_dot(uv, aspect, density, angM, offM + feed * 1.15, cmyk.y, 1.0 + audio.y * 0.35) * slurAmt);
+  let finalY = max(halftone_dot(uv, aspect, density, angY, offY, cmyk.z, 1.0 + audio.z * 0.35),
+                   halftone_dot(uv, aspect, density, angY, offY + feed * 0.85, cmyk.z, 1.0 + audio.z * 0.35) * slurAmt);
+  let dotK = max(halftone_dot(uv, aspect, density, angK, offK, cmyk.w, 1.0 + (audio.x + audio.z) * 0.20),
+                 halftone_dot(uv, aspect, density, angK, offK + feed, cmyk.w, 1.0 + (audio.x + audio.z) * 0.20) * slurAmt);
 
-  let mixC = mix(vec3<f32>(1.0), vec3<f32>(0.0, 1.0, 1.0), finalC * inkDarkness);
-  let mixM = mix(vec3<f32>(1.0), vec3<f32>(1.0, 0.0, 1.0), finalM * inkDarkness);
-  let mixY = mix(vec3<f32>(1.0), vec3<f32>(1.0, 1.0, 0.0), finalY * inkDarkness);
+  let px = 1.0 / max(resolution.y, 1.0);
+  let markVis = 0.55 + held * 0.45;
+  let markC = registration_mark(uv, offC, mouse, aspect, px) * markVis;
+  let markM = registration_mark(uv, offM, mouse, aspect, px) * markVis;
+  let markY = registration_mark(uv, offY, mouse, aspect, px) * markVis;
+  let markK = registration_mark(uv, offK, mouse, aspect, px) * markVis;
+  let plateC = max(finalC, markC);
+  let plateM = max(finalM, markM);
+  let plateY = max(finalY, markY);
+  let finalK = max(dotK, markK);
+
+  let mixC = mix(vec3<f32>(1.0), vec3<f32>(0.0, 1.0, 1.0), plateC * inkDarkness);
+  let mixM = mix(vec3<f32>(1.0), vec3<f32>(1.0, 0.0, 1.0), plateM * inkDarkness);
+  let mixY = mix(vec3<f32>(1.0), vec3<f32>(1.0, 1.0, 0.0), plateY * inkDarkness);
   let mixK = mix(vec3<f32>(1.0), vec3<f32>(0.0, 0.0, 0.0), finalK * inkDarkness);
 
   let conveyor = smoothstep(0.1, 0.0, abs(fract(uv.x * density * 0.04 - time * (1.6 + audio.x * 2.0)) - 0.5));
   let packets = smoothstep(0.09, 0.0, abs(fract(length((uv - mouse) * vec2<f32>(aspect, 1.0)) * 9.0 - time * 2.6) - 0.5));
-  let coverage = clamp((finalC + finalM + finalY + finalK) * 0.25, 0.0, 1.0);
+  let coverage = clamp((plateC + plateM + plateY + finalK) * 0.25, 0.0, 1.0);
   let hue = fract(coverage + time * 0.08 + audio.y * 0.2);
   let slick = hsv2rgb(vec3<f32>(hue, 0.55, 1.0));
   let paperTint = mix(vec3<f32>(1.0), vec3<f32>(0.98, 0.95, 0.90), inkDarkness * 0.25);
@@ -141,10 +185,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   finalColor += slick * (conveyor * 0.14 + packets * 0.18 + bloom * 0.22) * (0.4 + held * 0.2);
   finalColor += registrationGlow + spectralBloom * bloom * 0.22 + rosette * finalC * finalM * 0.05;
 
+  finalColor = aces(max(finalColor, vec3<f32>(0.0)) * 1.6);
   let finalAlpha = clamp(0.58 + coverage * 0.38 + cmyk.w * 0.10 + bloom * 0.06, 0.50, 0.98);
   let baseDepth = textureLoad(readDepthTexture, pixel, 0).r;
   let depthOut = clamp(mix(baseDepth, 0.25 + coverage * 0.70, 0.25) + bloom * 0.04, 0.0, 1.0);
-  let cmykOut = vec4<f32>(finalC, finalM, finalY, finalK);
+  let cmykOut = vec4<f32>(plateC, plateM, plateY, finalK);
   let persist = mix(cmykOut, prev, 0.18);
 
   textureStore(writeTexture, pixel, vec4<f32>(finalColor, finalAlpha));

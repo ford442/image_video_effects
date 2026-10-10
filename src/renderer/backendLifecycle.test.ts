@@ -1,7 +1,12 @@
 import {
   createRendererForType,
   getRendererTypeFromURL,
+  isWasmForcedByURL,
+  getRenderThreadFromURL,
+  resolveRenderThread,
+  supportsRenderWorker,
   performBackendSwitch,
+  releaseRendererGpu,
   resolveInitBackendPreference,
   usesExclusiveWebGpu,
   yieldForGpuRelease,
@@ -43,6 +48,78 @@ describe('backendLifecycle', () => {
       });
       expect(getRendererTypeFromURL()).toBeNull();
       Object.defineProperty(window, 'location', { value: original, configurable: true });
+    });
+  });
+
+  describe('isWasmForcedByURL (#1080)', () => {
+    it.each([
+      ['?renderer=wasm', true],
+      ['?renderer=webgpu', false],
+      ['?renderer=js', false],
+      ['?renderer=main', false],
+      ['', false],
+    ])('%s → %s', (search, expected) => {
+      const original = window.location;
+      Object.defineProperty(window, 'location', { value: { ...original, search }, configurable: true });
+      try {
+        expect(isWasmForcedByURL()).toBe(expected);
+      } finally {
+        Object.defineProperty(window, 'location', { value: original, configurable: true });
+      }
+    });
+  });
+
+  describe('render thread selection (#1314)', () => {
+    const withSearch = (search: string, fn: () => void) => {
+      const original = window.location;
+      Object.defineProperty(window, 'location', { value: { ...original, search }, configurable: true });
+      try {
+        fn();
+      } finally {
+        Object.defineProperty(window, 'location', { value: original, configurable: true });
+      }
+    };
+
+    it('?renderer=worker / main select the TS WebGPU backend on that thread', () => {
+      withSearch('?renderer=worker', () => {
+        expect(getRendererTypeFromURL()).toBe('webgpu');
+        expect(getRenderThreadFromURL()).toBe('worker');
+        expect(resolveRenderThread()).toBe('worker');
+      });
+      withSearch('?renderer=main', () => {
+        expect(getRendererTypeFromURL()).toBe('webgpu');
+        expect(resolveRenderThread()).toBe('main');
+      });
+    });
+
+    it('other renderer values do not pick a thread from the URL', () => {
+      withSearch('?renderer=wasm', () => expect(getRenderThreadFromURL()).toBeNull());
+    });
+
+    it('defaults to the worker only where Worker + OffscreenCanvas + transfer + WebGPU exist', () => {
+      // jsdom: no Worker / OffscreenCanvas → the page.
+      expect(supportsRenderWorker()).toBe(false);
+      withSearch('', () => expect(resolveRenderThread()).toBe('main'));
+
+      const g = globalThis as Record<string, unknown>;
+      const proto = HTMLCanvasElement.prototype as unknown as Record<string, unknown>;
+      const saved = { Worker: g.Worker, OffscreenCanvas: g.OffscreenCanvas, transfer: proto.transferControlToOffscreen };
+      const nav = navigator as unknown as { gpu?: unknown };
+      const savedGpu = nav.gpu;
+      g.Worker = class {};
+      g.OffscreenCanvas = class {};
+      proto.transferControlToOffscreen = () => ({});
+      Object.defineProperty(navigator, 'gpu', { value: {}, configurable: true });
+      try {
+        expect(supportsRenderWorker()).toBe(true);
+        withSearch('', () => expect(resolveRenderThread()).toBe('worker'));
+        withSearch('?renderer=main', () => expect(resolveRenderThread()).toBe('main'));
+      } finally {
+        g.Worker = saved.Worker;
+        g.OffscreenCanvas = saved.OffscreenCanvas;
+        proto.transferControlToOffscreen = saved.transfer;
+        Object.defineProperty(navigator, 'gpu', { value: savedGpu, configurable: true });
+      }
     });
   });
 
@@ -150,6 +227,36 @@ describe('backendLifecycle', () => {
       await yieldForGpuRelease();
       expect(raf).toHaveBeenCalled();
       global.requestAnimationFrame = original;
+    });
+  });
+
+  describe('releaseRendererGpu', () => {
+    it('prefers releaseExclusiveGpu and does not call destroy separately', async () => {
+      const renderer = {
+        destroy: jest.fn(),
+        releaseExclusiveGpu: jest.fn().mockResolvedValue(undefined),
+      };
+      await releaseRendererGpu(renderer as never);
+      expect(renderer.releaseExclusiveGpu).toHaveBeenCalledTimes(1);
+      expect(renderer.destroy).not.toHaveBeenCalled();
+    });
+
+    it('awaits an async destroy() and then yields a frame', async () => {
+      const order: string[] = [];
+      const renderer = {
+        destroy: jest.fn(
+          () => new Promise<void>((resolve) => setTimeout(() => { order.push('destroyed'); resolve(); }, 5)),
+        ),
+      };
+      const original = global.requestAnimationFrame;
+      global.requestAnimationFrame = jest.fn((cb: FrameRequestCallback) => {
+        order.push('yield');
+        cb(0);
+        return 0;
+      });
+      await releaseRendererGpu(renderer as never);
+      global.requestAnimationFrame = original;
+      expect(order).toEqual(['destroyed', 'yield']);
     });
   });
 

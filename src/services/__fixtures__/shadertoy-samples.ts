@@ -58,3 +58,26 @@ fn hash(p: vec2<f32>) -> f32 {
 }
 var outColor = vec4<f32>(vec3<f32>(hash(floor(uv * 32.0) + vec2<f32>(u.config.x, 0.0))), 1.0);
 `;
+
+/** iMouse, iChannel0, a const global, a loop and a helper with a non-default mainImage signature. */
+export const SAMPLE_MOUSE_CHANNEL_GLSL = `
+precision highp float;
+const float RINGS = 6.0;
+
+mat2 rot(float a) {
+    float c = cos(a), s = sin(a);
+    return mat2(c, -s, s, c);
+}
+
+void mainImage(out vec4 col, in vec2 p) {
+    vec2 uv = p / iResolution.xy;
+    vec2 m = iMouse.xy / iResolution.xy;
+    float d = length(uv - m);
+    vec3 acc = vec3(0.0);
+    for (int i = 0; i < 4; i++) {
+        acc += 0.25 * texture(iChannel0, uv * rot(iTime * 0.1 * float(i))).rgb;
+    }
+    float ring = 0.5 + 0.5 * cos(d * RINGS * 6.2831 - iTime);
+    col = vec4(acc * ring, 1.0);
+}
+`;

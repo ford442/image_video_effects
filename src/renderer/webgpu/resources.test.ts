@@ -141,6 +141,6 @@ describe('WebGPUResourcePool', () => {
     const createTexture = device.createTexture as unknown as {
       mock: { calls: Array<[{ label?: string }]> };
     };
-    expect(createTexture.mock.calls[0][0]?.label).toBe('historyTex');
+    expect(createTexture.mock.calls[0]?.[0]?.label).toBe('historyTex');
   });
 });

@@ -1,0 +1,102 @@
+{
+  "id": "gen-aethereal-ferrofluid-chrono-core",
+  "name": "Aethereal Ferrofluid Chrono-Core",
+  "type": "generative",
+  "category": "generative",
+  "url": "shaders/gen-aethereal-ferrofluid-chrono-core.wgsl",
+  "tags": [
+    "ferrofluid",
+    "organic",
+    "magnetic",
+    "bioluminescent",
+    "liquid"
+  ],
+  "description": "A hyper-magnetic temporal liquid entity that pulses and spikes to an unseen quantum beat, blending dark metallic spikes with internal bioluminescent ethereal light.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "params": [
+    {
+      "id": "viscosity",
+      "name": "Viscosity",
+      "default": 0.5,
+      "min": 0.1,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "spike_density",
+      "name": "Spike Density",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "magnetic_strength",
+      "name": "Magnetic Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "bioluminescence",
+      "name": "Bioluminescence",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Viscosity",
+          "default": 0.5,
+          "min": 0.1,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Spike Density",
+          "default": 0.6,
+          "min": 0.0,
+          "max": 2.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Magnetic Strength",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Bioluminescence",
+          "default": 0.8,
+          "min": 0.0,
+          "max": 2.0,
+          "step": 0.01
+        }
+      ]
+    }
+  }
+}

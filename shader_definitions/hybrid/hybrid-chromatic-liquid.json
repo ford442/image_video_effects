@@ -61,11 +61,13 @@
     "audio",
     "music"
   ],
-  "chunks_used": [
-    "fbm2 (gen_grid.wgsl)",
-    "fresnelSchlick (crystal-facets.wgsl)",
-    "flow-field pattern (luma-flow-field.wgsl)"
-  ],
-  "created_by": "Agent 2A - Shader Surgeon",
-  "created_date": "2026-03-22"
+  "x-meta": {
+    "chunks_used": [
+      "fbm2 (gen_grid.wgsl)",
+      "fresnelSchlick (crystal-facets.wgsl)",
+      "flow-field pattern (luma-flow-field.wgsl)"
+    ],
+    "created_by": "Agent 2A - Shader Surgeon",
+    "created_date": "2026-03-22"
+  }
 }

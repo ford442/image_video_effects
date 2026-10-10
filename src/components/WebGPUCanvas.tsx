@@ -1,5 +1,7 @@
 import React, { useRef, useEffect, useLayoutEffect, useState, useCallback } from 'react';
-import { RendererManager, getRendererTypeFromURL } from '../renderer/RendererManager';
+import { RendererManager, getRendererTypeFromURL, type DeviceRecoveryStatus } from '../renderer/RendererManager';
+import { resolveShaderId } from '../utils/resolveShaderId';
+import { resolveRenderThread } from '../renderer/backendLifecycle';
 import { RenderMode, InputSource, SlotParams, ShaderEntry } from '../renderer/types';
 import { INTERNAL_RENDER_RESOLUTION } from '../config/appConfig';
 import {
@@ -43,12 +45,30 @@ interface WebGPUCanvasProps {
     segment?: { start: number; end: number } | null;
 }
 
+/**
+ * Teardown of the previous RendererManager (and any probed-but-unused device). A remount
+ * (StrictMode, HMR, key change) awaits it before re-probing so two devices never overlap.
+ */
+let pendingTeardown: Promise<void> = Promise.resolve();
+
+function queueTeardown(release: () => Promise<void> | void): Promise<void> {
+    pendingTeardown = pendingTeardown
+        .then(release)
+        .catch((err) => console.warn('[WebGPUCanvas] renderer teardown failed:', err));
+    return pendingTeardown;
+}
+
+/** Test seam: resolves once every queued renderer teardown has finished. */
+export function waitForCanvasTeardown(): Promise<void> {
+    return pendingTeardown;
+}
+
 const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     modes, slotParams, rendererRef,
-    farthestPoint, mousePosition, setMousePosition,
+    mousePosition, setMousePosition,
     isMouseDown, setIsMouseDown, onInit,
     inputSource, selectedVideo, videoSourceUrl, isMuted,
-    setInputSource, activeSlot, activeGenerativeShader, apiBaseUrl,
+    setInputSource, activeSlot, apiBaseUrl,
     isWebcamActive = false,
     webcamVideoElement,
     liveStreamUrl,
@@ -65,7 +85,6 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     const dragStartTime = useRef<number>(0);
     const streamRef = useRef<MediaStream | null>(null);
     const hlsVideoRef = useRef<HTMLVideoElement | null>(null); // NEW: Live stream video element
-    const bufferingStartedRef = useRef<boolean>(false); // Track if buffering triggered
 
     // Track the CSS display size of the canvas element
     const [displaySize, setDisplaySize] = useState({ width: 1, height: 1 });
@@ -75,6 +94,12 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     // Track when RendererManager finished init so input-source sync runs once
     const [managerReady, setManagerReady] = useState(false);
     const [probeFailure, setProbeFailure] = useState<WebGpuProbeSerializable | null>(null);
+    // GPUDevice-loss recovery (lost → recovering → idle | failed); null until the first loss.
+    const [deviceRecovery, setDeviceRecovery] = useState<DeviceRecoveryStatus | null>(null);
+    const managerRef = useRef<RendererManager | null>(null);
+    // The live session a recovered renderer replays (read lazily, never stale).
+    const sessionRef = useRef({ modes, slotParams, inputSource, shaderCatalog });
+    sessionRef.current = { modes, slotParams, inputSource, shaderCatalog };
 
     // Track if there are active interactive/mouse-driven effects
     const [hasInteractiveEffects, setHasInteractiveEffects] = useState(false);
@@ -103,6 +128,24 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     // canvasRef.current is stable; we only need to re-run if the callback identity changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [onCanvasRef]);
+
+    // The render worker (#1314) takes the <canvas> for good. Switching to WASM /
+    // Canvas2D, or retrying on the page after a worker failure, remounts a new
+    // one by bumping the key; RendererManager awaits it through acquireFreshCanvas.
+    const [canvasKey, setCanvasKey] = useState(0);
+    const freshCanvasWaiters = useRef<Array<(canvas: HTMLCanvasElement) => void>>([]);
+    const acquireFreshCanvas = useCallback(() => new Promise<HTMLCanvasElement>((resolve) => {
+        freshCanvasWaiters.current.push(resolve);
+        setCanvasKey((k) => k + 1);
+    }), []);
+    useLayoutEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas || freshCanvasWaiters.current.length === 0) return;
+        canvas.width = INTERNAL_RENDER_RESOLUTION;
+        canvas.height = INTERNAL_RENDER_RESOLUTION;
+        onCanvasRef?.(canvas);
+        for (const resolve of freshCanvasWaiters.current.splice(0)) resolve(canvas);
+    }, [canvasKey, onCanvasRef]);
 
     // JSRenderer may replace the <canvas> after WebGPU permanently claims its
     // context type. Keep React's ref + parent onCanvasRef in sync.
@@ -155,28 +198,80 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
             console.log(`Initializing WebGPU with canvas: ${canvas.width}x${canvas.height}`);
         }
 
-        const renderer = new RendererManager({
-            width: INTERNAL_RENDER_RESOLUTION,
-            height: INTERNAL_RENDER_RESOLUTION,
-            agentCount: 50000
-        });
         let mounted = true;
+        const renderer = new RendererManager(
+            {
+                width: INTERNAL_RENDER_RESOLUTION,
+                height: INTERNAL_RENDER_RESOLUTION,
+                agentCount: 50000
+            },
+            undefined,
+            {
+                acquireFreshCanvas,
+                onBackendFailure: (failedType, message) => {
+                    if (!mounted) return;
+                    // A failed device-loss recovery keeps the real boot-probe diagnostics.
+                    if (failedType !== 'webgpu' || renderer.getDeviceRecoveryStatus().state !== 'failed') {
+                        publishWasmProbeFailure(`${failedType} renderer stopped: ${message}`);
+                    }
+                    setProbeFailure(window.webgpuProbe ?? null);
+                    setManagerReady(false);
+                },
+                getSessionState: () => {
+                    const session = sessionRef.current;
+                    return {
+                        modes: session.modes,
+                        slotParams: session.slotParams,
+                        inputSource: session.inputSource,
+                        resolveShader: (shaderId) =>
+                            session.shaderCatalog.find((s) => s.id === resolveShaderId(shaderId)),
+                    };
+                },
+                onDeviceRecovery: (status) => {
+                    if (!mounted) return;
+                    setDeviceRecovery(status);
+                    if (status.state === 'lost' || status.state === 'recovering') {
+                        setManagerReady(false);
+                    } else if (status.state === 'idle') {
+                        setProbeFailure(null);
+                        setManagerReady(true);
+                        if (onInit) onInit();
+                    }
+                },
+            },
+        );
+        managerRef.current = renderer;
         const urlRenderer = getRendererTypeFromURL();
+        // In worker mode the render worker runs the probe on the transferred canvas.
+        const probeInWorker = resolveRenderThread() === 'worker';
 
-        (async () => {
+        const initDone = (async () => {
+            // The previous mount's device must be fully released before requesting a new one.
+            await pendingTeardown;
+            if (!mounted) return;
+
             let initOptions: { webGpuHandoff?: import('../renderer/webgpuBootProbe').WebGpuProbeHandoff } | undefined;
 
-            if (urlRenderer !== 'js' && urlRenderer !== 'wasm') {
+            if (urlRenderer !== 'js' && urlRenderer !== 'wasm' && !probeInWorker) {
                 const probe = await runWebGpuBootProbe(
                     canvasRef.current!,
                     INTERNAL_RENDER_RESOLUTION,
                     INTERNAL_RENDER_RESOLUTION,
                 );
                 publishWebGpuProbe(probe);
-                if (!mounted) return;
+                if (!mounted) {
+                    // Unmounted mid-probe: nobody will adopt the handoff device.
+                    const orphan = probe.handoff?.device;
+                    if (orphan) {
+                        const lost = orphan.lost;
+                        orphan.destroy();
+                        await lost;
+                    }
+                    return;
+                }
                 if (!probe.ok) {
                     setProbeFailure(toWebGpuProbeBreadcrumb(probe));
-                    renderer.destroy();
+                    await renderer.destroy();
                     return;
                 }
                 initOptions = { webGpuHandoff: probe.handoff };
@@ -184,10 +279,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
             const success = await renderer.init(canvasRef.current!, initOptions);
             // StrictMode guard: if unmounted during async init, discard the result
-            if (!mounted) {
-                renderer.destroy();
-                return;
-            }
+            if (!mounted) return; // cleanup's queued teardown destroys it
             if (success) {
                 if (rendererRef) {
                     rendererRef.current = renderer;
@@ -210,6 +302,9 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
                 if (onInit) onInit();
             } else {
+                if (probeInWorker && urlRenderer !== 'wasm' && urlRenderer !== 'js') {
+                    setProbeFailure(window.webgpuProbe ?? null);
+                }
                 if (urlRenderer === 'wasm') {
                     const diags = renderer.getDiagnostics();
                     publishWasmProbeFailure(
@@ -218,15 +313,21 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                     );
                     setProbeFailure(window.webgpuProbe ?? null);
                 }
-                renderer.destroy();
+                await renderer.destroy();
             }
-        })();
+        })().catch((err) => console.error('[WebGPUCanvas] renderer init failed:', err));
         return () => {
             mounted = false;
+            if (managerRef.current === renderer) managerRef.current = null;
             setManagerReady(false);
             setProbeFailure(null);
+            setDeviceRecovery(null);
             cancelAnimationFrame(animationFrameId.current);
-            renderer.destroy();
+            // Wait for an in-flight init so its device is included in the release.
+            void queueTeardown(async () => {
+                await initDone;
+                await renderer.destroy();
+            });
             // Remove the dev-mode console handle when the component unmounts
             if (process.env.NODE_ENV === 'development') {
                 delete (window as any).__rendererManager;
@@ -416,7 +517,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
             }
         };
 
-        handleVideoSource();
+        void handleVideoSource();
 
         // Ensure the renderer is aware of the video element whenever source changes
         if (managerReady && rendererRef.current && videoRef.current) {
@@ -432,39 +533,6 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         }
     }, [isMuted]);
 
-    // Video buffering: Start buffering at 50% of segment duration (B3HD mode optimization)
-    useEffect(() => {
-        if (!videoRef.current || inputSource !== 'video' || !segment) {
-            bufferingStartedRef.current = false;
-            return;
-        }
-
-        const video = videoRef.current;
-        const onTimeUpdate = () => {
-            if (!video || !segment) return;
-
-            // Calculate the midpoint of the segment (50% through)
-            const segmentDuration = segment.end - segment.start;
-            const midpoint = segment.start + (segmentDuration * 0.5);
-
-            // If we've reached the midpoint and haven't buffered yet
-            if (video.currentTime >= midpoint && !bufferingStartedRef.current) {
-                bufferingStartedRef.current = true;
-                // In a real implementation, this would trigger loading the next video
-                // For now, just log it for debugging
-                console.log('[Video Buffering] Midpoint reached at', video.currentTime.toFixed(2), 's - ready for next video load');
-            }
-        };
-
-        video.addEventListener('timeupdate', onTimeUpdate);
-
-        // Reset buffering flag when segment changes
-        return () => {
-            video.removeEventListener('timeupdate', onTimeUpdate);
-            bufferingStartedRef.current = false;
-        };
-    }, [inputSource, segment]);
-
     // Sync mouseDown state to renderer
     useEffect(() => {
         if (rendererRef.current?.setParam) {
@@ -479,32 +547,22 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         }
     }, [slotParams, rendererRef]);
 
-    // Animation Loop
+    // Animation Loop: one long-lived rAF loop. Mouse, params and modes reach the renderer
+    // through their own effects/handlers, so pointer moves must not restart this loop.
     useEffect(() => {
         let active = true;
         const animate = () => {
             if (!active) return;
             if (rendererRef.current && videoRef.current) {
-                // Force square viewport to match the aspect ratio of the 2048x2048 internal buffer
-                const canvasSize = Math.min(displaySize.width, displaySize.height);
-
-                // Upload video frames (WASM) and satisfy WebGPUCanvas render signature
+                // Upload video frames (WASM); the TS backend drives its own frame loop.
                 rendererRef.current.setVideo(videoRef.current);
-                rendererRef.current.render(
-                    modes,
-                    slotParams,
-                    videoRef.current,
-                    farthestPoint, mousePosition, isMouseDown,
-                    activeGenerativeShader,
-                    canvasSize, // viewWidth (square)
-                    canvasSize  // viewHeight (square)
-                );
+                rendererRef.current.render();
             }
             animationFrameId.current = requestAnimationFrame(animate);
         };
         animate();
         return () => { active = false; cancelAnimationFrame(animationFrameId.current); };
-    }, [modes, slotParams, farthestPoint, mousePosition, isMouseDown, rendererRef, activeGenerativeShader, inputSource, displaySize]);
+    }, [rendererRef]);
 
     // Mouse Handlers
     const updateMousePosition = (event: React.MouseEvent<HTMLCanvasElement>) => {
@@ -645,6 +703,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 />
             )}
             <canvas
+                key={canvasKey}
                 ref={canvasRef}
                 data-testid="webgpu-canvas"
                 width={INTERNAL_RENDER_RESOLUTION}
@@ -656,7 +715,19 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 style={canvasStyle}
                 className={`webgpu-canvas ${isWebcamActive ? 'webcam-canvas' : ''} ${hasInteractiveEffects ? 'interactive-effects' : ''}`}
             />
-            {probeFailure && <WebGpuProbeFailureOverlay probe={probeFailure} />}
+            {deviceRecovery && deviceRecovery.state !== 'idle' ? (
+                <WebGpuProbeFailureOverlay
+                    probe={deviceRecovery.state === 'failed' ? probeFailure : null}
+                    deviceLoss={{
+                        state: deviceRecovery.state === 'failed' ? 'failed' : 'recovering',
+                        reason: deviceRecovery.lastLoss?.reason ?? 'unknown',
+                        error: deviceRecovery.lastError,
+                        onRetry: () => { void managerRef.current?.recoverFromDeviceLoss(); },
+                    }}
+                />
+            ) : (
+                probeFailure && <WebGpuProbeFailureOverlay probe={probeFailure} />
+            )}
             <video
                 ref={videoRef}
                 crossOrigin="anonymous"

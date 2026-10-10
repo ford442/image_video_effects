@@ -11,6 +11,8 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 
+from wgsl_include import read_expanded_or_raw  # bindings may come from _prelude.wgsl
+
 SHADER_DIR = Path('/root/image_video_effects/public/shaders')
 DEF_DIR = Path('/root/image_video_effects/shader_definitions')
 REPORT_JSON = Path('/root/image_video_effects/reports/phase-f-audit-report.json')
@@ -138,7 +140,7 @@ def check_json(id: str) -> dict:
     effective_category = data.get('category') or category
     if effective_category not in VALID_CATEGORIES:
         issues.append(f'Invalid category: {effective_category}')
-    params = data.get('parameters', [])
+    params = data.get('params', [])
     for p in params:
         for key in ['id', 'name', 'default', 'min', 'max', 'step']:
             if key not in p:
@@ -148,7 +150,7 @@ def check_json(id: str) -> dict:
 
 def audit_shader(path: Path) -> dict:
     id = path.stem
-    content = path.read_text(encoding='utf-8')
+    content = read_expanded_or_raw(path)
     json_info = check_json(id)
     is_generative = (
         id.startswith('gen-') or

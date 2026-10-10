@@ -120,7 +120,7 @@ export const LiveStreamBridge: React.FC<LiveStreamBridgeProps> = ({
       };
     };
 
-    run();
+    void run();
 
     return () => {
       cancelled = true;

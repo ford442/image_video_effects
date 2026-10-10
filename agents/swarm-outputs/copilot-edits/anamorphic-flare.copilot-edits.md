@@ -1,4 +1,0 @@
-- Applied a Standard Hybrid Header with the requested self-referential `Chunks From` line; bindings were already canonical.
-- JSON changes: added explicit `category`.
-- Confidence: High.
-- Suspicious but left alone: the repository currently classifies this flare under `interactive-mouse`, so I did not reshuffle it into another family.

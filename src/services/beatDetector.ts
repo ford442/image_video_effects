@@ -50,7 +50,7 @@ export class BeatDetector {
     const lowBandEnd = Math.max(1, Math.floor(this.buffer.length * BeatDetector.LOW_BAND_RATIO));
     let energy = 0;
     for (let i = 0; i < lowBandEnd; i++) {
-      energy += this.buffer[i] / 255;
+      energy += (this.buffer[i] ?? 0) / 255;
     }
     energy /= lowBandEnd;
 

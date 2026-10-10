@@ -1,811 +1,308 @@
-# image_video_effects — 2026-09-05 dispatch
+# image_video_effects — 2026-10-10 dispatch
 
-**Status:** #1180 (TS/C++ workgroup fallback + empty-placeholder packing parity) shipped + merged + closed, all three parts; every headless gate green. Today = **lock the 2026-08-30/31 real-GPU WASM boot cascade (#1200–#1206) behind headless invariants**. Plan updated, PR #1221 open.
+**Status:** CI green on `main` @ `d74e665` (run 2709). Both 10-03 tracks shipped (#1329 → PR #1380, #1357 → PR #1385). Noah's 2026-10-07 audit (#1393–#1408) is the live backlog and he has 10 PRs in flight against it. Today: **#1393 versioned project files** (kimi), **#1404 video preload dedupe** (Copilot), **`deploy.py --dry-run` finally built** (Claude Code).
 
 ## Mode declaration
 
-**User Idea mode.** The 2026-08-26 audit set is spent — #1179/#1180/#1181/#1183/#1184/#1185 are all **closed**, leaving only the `future`-tagged #1182. Noah's **2026-08-30/31 real-GPU session on Pascal/Chrome** (`test.1ink.us`) is now the freshest in-context signal and produced #1200–#1206; per standing precedent that set is the live Ideas source. Foundation is healthy on every gate → **not Fix First**.
-
-The pick is shaped by one fact that changes what "work on these bugs" means: **all six already have fixes in the tree.** What none of them has is a *guard*. So today is proof, not repair.
+**User Idea.** Nothing is red and last week's work landed, so Fix First does not apply. The Ideas section (seeded by Noah's PR #1420, merged into this branch) has unfinished items; everything already under one of his open PRs is excluded so today's agents don't collide with branches he is driving. #1393 is the only Noah-authored, product-facing, fully headless item with no PR and a code surface none of the 19 open PRs touch.
 
 ## Context from prior sessions
 
-- **Last week's focus #1180 SHIPPED + MERGED + CLOSED — all three parts**, verified on `main` @ `d5fffd4`. (A) `src/contracts/workgroup_dispatch.json` is the SoT and `src/renderer/ShaderCompilation.ts` returns `workgroupDispatchContract.unparsedFallback` (warning now reads "defaulting to 16x16"). (B) A fresh histogram of `public/shaders/*.wgsl` is **1408 × 16×16×1, 1 × 256×1×1, 1 × 16×16×4, and zero × 8×8** — all 26 leftovers migrated, and the catalog grew ~50 files in the same window without reintroducing one. (C) `wasm_renderer/resources.cpp` builds the 1×1 placeholder from an explicitly reset descriptor and uploads `bytesPerRow = sizeof(float)` (4 B, was 16). `npm run verify:device-policy` reports `workgroup_dispatch + emptyPlaceholder` in sync.
-- **Noah ran a real-GPU session 2026-08-30/31** on Pascal/Chrome and filed seven issues: #1200 (gpu-chores-reduce `DispatchWorkgroups(65536)` > 65535 → black blink — the only one on the **default TS production path**), #1201 (remote-control gaps), #1202 (`wgpuSurfacePresent` unsupported in browser → abort), #1203 (`CreateSampler maxAnisotropy=0` → invalid bind groups), #1204 (`historyTex` `GPUOutOfMemoryError` on Pascal 2048²), #1205 (pipeline format mismatch, layout RGBA32Float vs shader RGBA16Float), #1206 (WASM boots clean then shows no image after JS→WASM switch). His own root-cause writeups are in `memory/2026-08-30.md` and `memory/2026-08-31.md` — read directly this run, and the authoritative account.
-- **He also fixed all six the same night**, verified individually in tree: `GpuChoresHost.ts:307` now dispatches 2-D `(ceil(srcW/8), ceil(srcH/8))` with `shaders.ts` reduce at `@workgroup_size(8,8)` (`ac253e0`); `device.cpp:782-783` carries the "Do not call wgpuSurfacePresent…" contract comment and the call is gone; `resources.cpp` sets `samplerDesc.maxAnisotropy = 1` before all three `wgpuDeviceCreateSampler` calls; `historyTexProbe.ts` (+ colocated test) and `vramBudget.ts`'s `px_history_oom_cap` implement the 2048×8 → 1024×8 → 1024×4 → 1024×1 ladder, with `historyLayerCount_` threaded through `pipeline.cpp`/`frame.cpp`/`resources.cpp`; the `colorFormat_` storage-decl rewrite lives in `bridge/wgslFormat.js` + `pipeline.cpp`; `rebindMediaAfterBackendSwitch` is in `inputSourceBridge.ts` (+ test). Rebuilt `public/wasm/pixelocity_wasm.{js,wasm}` were committed the same day (`504a59c`) and `wasm:validate` passes on them.
-- **But every issue is still open**, each annotated "Real-GPU confirm still needed", with the `go.1ink.us` promote on **HOLD**. And there is **no guard anywhere**: `maxAnisotropy` occurs in exactly one file repo-wide (`wasm_renderer/resources.cpp`) and in no test; nothing forbids re-adding `wgpuSurfacePresent`; nothing asserts the shipped `.wasm` is free of that import; and only **one** of the five `GpuChoresHost.ts` dispatch sites was converted — `:294`, `:468`, `:516`, `:552` remain unclamped against `maxComputeWorkgroupsPerDimension`.
-- **#1184 landed visibly** even though it was last week's Copilot track: `public/shader-id-aliases.json`, `reports/catalog_drift.{md,json}`, and `verify:catalog-counts` are all in tree.
-- **Gate status this run (all run live, not carried):** `verify:device-policy` ✅ · `verify:uniforms` ✅ · `wasm:validate` ✅ (artifacts + all four `bridge/*.js` in sync) · `audit:dead-sliders` PASS (1201 scanned, **0 new**, 26 known) · `audit:extrabuffer` PASS (0 new, 84 known, 32 dynamic-index for review, 0 out-of-range).
+- **10-03 tracks:** A (#1329) shipped via PR #1380 on 10-05 — no UI toggle, `?renderer=wasm` still works, `wasm`/`test-wasm-e2e` moved to path-filtered `wasm.yml`, policy docs carry "Tier B, frozen R&D". B (#1357) shipped via PR #1385 on 10-09; `d74e665` adds `benchmarkSpeedup.ts`, uncapped mode, COOP/COEP serving, report schema v3. C (deploy dry-run) **did not run** — third week.
+- **Noah's 2026-10-07 audit** opened #1393–#1408 (two Opus/Sonnet audit passes: renderer/device/WASM/build foundation + a no-WebGPU-machine usability sweep). Of these, #1394 → PR #1419, #1395 → PRs #1421–#1425, #1396 → PR #1415, #1399 → PR #1418, #1402 merged. Uncovered: #1393, #1397, #1398, #1400, #1401, #1403–#1408.
+- **Thumbnails:** PR #1383 (open since 10-05, `clean`, 1,040 files) captures on SwiftShader: healthy 20.1% → 91.7%, `gpu-capture-pending` 234 → 40, coverage check becomes blocking, and it rescues the four #1312-C sims with numpy gates under `scripts/sim_models/`. After it merges, 40 deferrals still expire 10-26.
+- **PR pile-up risk:** 19 open PRs — #1383, #1419 (rewrites shader definitions), eight shader-upgrade batches, five #1395 slices + #1415 + #1418 in `src/renderer/**`. Merge order matters; suggestion recorded in Backlog.
+- **Gaps:** `recent_chats` / `conversation_search` unavailable in this headless run. No `memory/`, `MEMORY.md`, `SOUL.md`, `USER.md` in the clone (gitignored since WP-D) — `weekly_plan.md` is the only state that persists. Jest not re-run here (`node_modules` absent); CI on `d74e665` and PR #1383's 993-pass run are the evidence.
 
-**Context gaps (flagged, not hidden):**
+## weekly_plan.md changes (written to this branch)
 
-- `recent_chats` / `conversation_search` **unavailable** in this headless scheduled run. Context is reconstructed from the repo tree, `weekly_plan.md`, `.swarm-state.md`, `memory/2026-08-30.md` + `memory/2026-08-31.md`, live gate runs, and GitHub issue/PR state — not from conversation history.
-- **Jest count carried, not measured.** `node_modules` is absent on this VM and plain `npm ci` is still blocked by the `sharp` postinstall behind the proxy (`npm ci --ignore-scripts` is the workaround). `.swarm-state.md` last recorded 84 suites / 550 passed / 1 skipped. kimi re-establishes the baseline on iteration 0.
-- **`verify:wasm-bridge-sync` could not run** — `ERR_MODULE_NOT_FOUND` from the absent `node_modules`. Environmental, not a defect; `wasm:validate` covers the same artifacts and passes.
-- **Real-GPU status of the six fixes is unknown to this run.** They are verified *present in source*; none is verified *working on hardware*. Nothing below claims otherwise.
-
-## weekly_plan.md changes (written to the file, PR #1221)
-
-- **Today's focus** — new 2026-09-05 block; the 08-29 (#1180) block archived into a `<details>`.
-- **Ideas** — #1180 marked `[x]` with all three parts' verification evidence; the 08-26 set marked spent; the 08-30/31 cascade added as the live source with the picked item marked `[in progress — 2026-09-05]`; #1201, #1080, #1182 added as non-picks.
-- **Backlog** — four new entries: the 08-30/31 set as live backlog; the "zero automated guards" finding; the **emcc 6.0.3 vs 3.1.56 read-only boundary**; and stale PR #1219.
-- **Done** — 2026-09-05 entry for #1180 with per-part evidence and the full gate table.
-- **Last run** — 08-29 outcome flipped from `pending` to SHIPPED+MERGED+CLOSED; new 2026-09-05 entry appended.
+- **Today's focus:** new 2026-10-10 entry; 10-03 entry archived with outcome.
+- **Ideas:** merged Noah's seed block (PR #1420); #1393 marked `[in progress — 2026-10-10]`; #1329 and #1357 marked DONE with PR numbers; thumbnails-10-26 item annotated "covered by PR #1383, 40 remain"; #1404 added as today's Copilot track with verified file pointers; prioritisation note on the seed comment.
+- **Backlog:** five NEW items (PR pile-up + merge order; deploy dry-run still missing; 40 post-#1383 deferrals; #1408's 503 verification; absent workspace memory files). 10-03 dry-run item marked still open; #1312-C harness item marked resolved-by-#1383.
+- **Done:** 2026-10-10 reconciliation entry.
+- **Last run:** 10-03 outcome filled; 10-10 entry appended.
 
 ## Today's focus
 
-**Lock the 2026-08-30/31 real-GPU WASM boot cascade behind headless invariants (#1200–#1206; unblocks #1080).**
+**#1393 — "Product: versioned project files for saving and restoring a complete VJ session"** (Noah, 2026-10-07, labels `product` / `roadmap`). Issue text, verbatim scope: *"Introduce a versioned project document and user-facing export/import flow for the recoverable parts of a session: ordered shader slots and params, active slot, input-source choice and safe source references, and relevant render/audio-control settings. Provide local file download and import first; this should not require a server account. Treat browser permissions, live device handles, and local media bytes as runtime-only. Reuse chain/preset data where possible rather than creating a competing shader-stack model. Keep migrations explicit as the schema evolves."*
 
-Six bugs, six fixes already in tree, zero guards, six open issues, and a promote on HOLD. The gap is not code — it is that nothing in the repo can re-check any of this, and nothing tells Noah what is actually proven. Today closes both: every root cause becomes a machine-checked invariant (the pattern `uniforms_layout.json` and last week's `workgroup_dispatch.json` already established), and the run emits `reports/wasm_promotion_evidence.md` — the artifact #1080 has been blocked on since 08-07.
-
-The sharpest single check available: the 08-31 memory note observes that the emscripten glue DCE-dropped `_wgpuSurfacePresent` and the wasm bytes no longer contain the import. That is a one-time observation today. Parsing the `.wasm` import table in CI turns it into a permanent proof.
-
-**A hard new boundary applies to every track:** Noah rebuilt the artifacts with **emcc 6.0.3**; this VM has **3.1.56 with no emdawnwebgpu port** (#848). Editing `wasm_renderer/**` would desync the committed `.wasm` from its source and break `wasm:validate`. C++ is read-only until #848 is resolved.
+Why now: the two existing half-formats — `SharedChain` (`src/services/layerChainShare.ts`, `v`-versioned, slots + params only) and `VjSetExportPayload` (`src/services/vjSetExport.ts`, `VJ_SET_EXPORT_VERSION = 1`, timeline only) — are exactly the pieces the issue says to reuse, and nothing in the 19 open PRs touches them.
 
 ---
 
-# Dispatch
+## Dispatch
 
-## A. kimi-cli swarm task — the main event
+### A. kimi-cli swarm task — #1393 versioned project files
 
-```
-You are working in the Pixelocity repo (image_video_effects): a React 19 + TypeScript
-web app that renders real-time image/video effects with WebGPU compute shaders, with an
-experimental opt-in C++/WASM renderer backend alongside the production TypeScript one.
+```text
+OBJECTIVE
+Implement GitHub issue #1393 in ford442/image_video_effects: a versioned, user-owned project file that saves and restores a complete VJ session, with local export/import (no server, no account). Branch from current `main`; branch name `feat/1393-project-files`.
 
-# Objective
+WHY
+The app has two partial formats that each capture a slice of a session: `SharedChain` in src/services/layerChainShare.ts (schema field `v`; ordered slots with shaderId/params/enabled/mode, compacted against per-shader defaults, with a migrate step in decodeChain) and `VjSetExportPayload` in src/services/vjSetExport.ts (`VJ_SET_EXPORT_VERSION = 1`; a recorded timeline, parsed by parseVjSetExport/sanitizeTimeline). Neither captures the active slot, input-source choice, or render/audio settings, and neither is a file a user owns. The issue forbids building a third competing stack model: the project file must be a versioned envelope that embeds those two, plus the missing session fields.
 
-On 2026-08-30/31 the maintainer ran the project's first real-GPU debugging session on a
-Pascal-class NVIDIA GPU under Chrome/Windows and found six distinct runtime bugs. He
-diagnosed every root cause and fixed every one of them in the tree the same night. He
-then left all six issues OPEN, annotated each "Real-GPU confirm still needed", and put
-the production promote on HOLD.
+READ FIRST (in this order, before writing code)
+1. The issue body for #1393 (acceptance criteria are the spec).
+2. src/services/layerChainShare.ts, src/hooks/useShareChain.ts (what is captured today: modes, activeSlot, slotParams, inputSource, currentImageUrl, activeGenerativeShader), src/services/vjToSharedChain.ts, src/services/vjSetExport.ts, src/services/vjSetRecorder.ts, src/hooks/useSetRecorder.ts.
+3. src/components/controls/panels/VjStudioPanel.tsx (where "Save to My Sets" lives) and src/components/controls/types.ts.
+4. src/contracts/ (how JSON contracts are laid out; e.g. slot_limits.json, canvas_configure.json) and scripts/verify-uniforms-layout.js for the pattern of a contract-vs-code verifier.
+5. docs/VJ_STUDIO.md and docs/APP_STRUCTURE.md.
 
-Your job is NOT to fix these bugs. They are already fixed. Your job is to make them
-UN-REGRESSABLE and to make the current state LEGIBLE, because right now:
+DELIVERABLE
+1. src/contracts/project_file.json — the schema (JSON Schema draft 2020-12) for ProjectFile v1:
+   { schemaVersion: 1, app: { name: "pixelocity", version: string }, createdAt: ISO, chain: SharedChain (embed as-is, keep its own `v`), activeSlot: number, source: { kind: 'image'|'video'|'webcam'|'generative'|'stream'|'none', ref?: string (URL or catalog id — never bytes, never a MediaStream/track id), generativeShaderId?: string }, render: { renderScale?: number, quality?: string } (only fields that already exist in app state — do not invent settings), audio: { mappings as already serialised by the app, or omit }, timeline?: VjSetExportPayload (optional embed) }.
+   Secrets/permissions/device handles are forbidden by schema (additionalProperties: false at the top level).
+2. src/services/project/ — new directory:
+   - types.ts (ProjectFile, ProjectFileV1, discriminated by schemaVersion)
+   - validate.ts (validateProjectFile(raw: unknown): { ok: true, project } | { ok: false, errors: string[] }) with safe defaults for optional fields. Prefer a hand-written validator consistent with how decodeChain/parseVjSetExport already validate; do not add a runtime JSON-schema dependency unless one is already in package.json.
+   - migrate.ts (migrateProjectFile(raw): explicit v→v+1 chain; v1 is identity; unrecognised version returns null with a reason). Add a "v0" migration that accepts a bare SharedChain or a bare VjSetExportPayload and lifts it into v1, so existing exported files import.
+   - exportProject.ts / importProject.ts (buildProjectFile(sessionState), serializeProjectFile → string, parseProjectFile(string) → validated+migrated ProjectFile). Import is two-phase: validate the whole file first; only then produce an "apply plan" { chain, activeSlot, source, warnings[] } — unknown shader ids become empty slots with a warning, an unavailable media ref becomes source.kind 'none' with a "relink" warning. Nothing touches live session state until the plan exists.
+   - index.ts barrel.
+3. A hook src/hooks/useProjectFile.ts that adapts live app state → buildProjectFile and apply plan → the existing setters (reuse what useShareChain already does to apply a decoded chain; do not duplicate its expansion logic — call it).
+4. One panel src/components/controls/panels/ProjectFilePanel.tsx: "Export project (.pixelocity.json)" (Blob download) and "Import project…" (file input), showing the warnings list after import. Wire it where VjStudioPanel's "Save to My Sets" lives, as a sibling, minimal CSS in the existing stylesheet split (run `npm run verify:css`).
+5. Tests (Jest, colocated *.test.ts): schema validation (valid, missing fields, extra top-level key rejected), migration (v0 SharedChain → v1, v0 VjSetExport → v1, unknown version → null), round-trip (buildProjectFile → serialize → parse → deep-equal on supported fields), unknown shader id → empty slot + warning, unavailable media → 'none' + warning, and a guard test that the serialised file never contains the strings "MediaStream", "permission", or a data: URI.
+6. Docs: a short "Project files" section in docs/VJ_STUDIO.md (format, what is and is not saved, migration policy). README one-liner only if README lists VJ features.
+7. Backward compatibility: existing share links (useShareChain URL path) and PresetPackGallery must be untouched — run their tests.
 
-  - `maxAnisotropy` appears in exactly ONE file in the entire repository
-    (`wasm_renderer/resources.cpp`) and in ZERO tests.
-  - Nothing prevents a future agent from re-adding the `wgpuSurfacePresent` call that
-    hard-aborts the renderer in a browser.
-  - Nothing asserts that the shipped `public/wasm/pixelocity_wasm.wasm` is free of that
-    import (it currently is, by dead-code elimination — but that is luck, not a gate).
-  - Only ONE of the five `dispatchWorkgroups` call sites in `src/gpuChores/GpuChoresHost.ts`
-    was hardened; the other four can still exceed the device limit.
-  - No document states which of the six fixes is confirmed on hardware and which is not.
+BOUNDARIES
+ALLOWED: src/services/project/** (new), src/contracts/project_file.json (new), src/hooks/useProjectFile.ts (new), src/components/controls/panels/ProjectFilePanel.tsx (new), src/components/controls/panels/VjStudioPanel.tsx (mount point only), src/components/controls/types.ts (prop plumbing only if required), src/hooks/useShareChain.ts and src/services/vjSetExport.ts (export small adapters only — no behaviour changes), docs/VJ_STUDIO.md, the CSS file that already styles VjStudioPanel.
+READ-ONLY: src/renderer/**, src/wasm/**, src/gpuChores/**, src/components/PresetPackGallery.tsx, src/services/layerChainShare.ts (import it; do not change the wire format), storage_manager/**, public/shaders/**, shader_definitions/**, .github/**, package.json dependencies (scripts block may gain nothing — no new deps).
+IGNORE COMPLETELY: anything in src/renderer or webgpu device code — five open PRs (#1421–#1425, #1415) are rewriting it; wasm_renderer/** (frozen Tier B); thumbnails/scripts.
 
-This repository already has the right pattern for this: `src/contracts/*.json` files that
-are validated against both the TypeScript and the C++ sources by
-`scripts/verify-device-policy-sync.js`. Read `src/contracts/workgroup_dispatch.json` and
-`src/contracts/webgpu_limits.json` and mirror their shape exactly. Do not invent a new
-mechanism.
+ITERATION LOOP (repeat until acceptance is met)
+0. Baseline: `npm ci` (retry once on sharp ECONNRESET), `npx tsc --noEmit`, `npm test -- --watchAll=false --ci` — record suite/test counts as MEASURED (do not copy a previous number).
+1. Implement one deliverable item.
+2. Verify: `npx tsc --noEmit` → `npm run lint` (real CI gate, must be clean) → `npm test -- --watchAll=false --ci` → `npm run verify:css` → `npm run verify:dependency-boundaries`. Fix before moving on.
+3. Every third iteration: `SKIP_WASM_BUILD=1 npm run build`, then `npx serve -s build` and load `?renderer=main` in Chromium; open the panel, export, re-import, confirm no console errors. (If no GPU adapter is available, the WebGPU-required overlay is expected; the panel must still export/import the current state.)
+4. Write .swarm-state.md (see below) and commit with a scoped message (`feat(project): …`).
 
-# Read these first — they are the authoritative account
+SAVE STATE — write .swarm-state.md at EVERY iteration boundary:
+# .swarm-state.md
+iteration: N
+baseline: suites X / tests Y (measured at iteration 0)
+done: [list]
+in_progress: [item + exact next step]
+blocked: [anything needing Noah: e.g. which audio fields exist in state]
+verification_last_run: tsc OK/FAIL, lint OK/FAIL, jest suites/pass/fail, build OK/FAIL/skipped
+files_touched: [paths]
+Noah may stop you at any boundary and resume from this file; make it sufficient on its own.
 
-  - `memory/2026-08-30.md` and `memory/2026-08-31.md` — the maintainer's own root-cause
-    notes for all six bugs. Everything you assert must be traceable to these or to code.
-  - `src/contracts/workgroup_dispatch.json` — the contract shape to mirror.
-  - `scripts/verify-device-policy-sync.js` — the validator you are extending.
-  - `docs/GPU_CHORES.md`, `docs/BINDING_CONTRACT.md`.
-
-# The six root causes you are locking down
-
-  1. gpu-chores reduce dispatched `ceil(srcW*srcH/64)` as a 1-D grid, which at large
-     canvas sizes produced `DispatchWorkgroups(65536,1,1)` and exceeded
-     `maxComputeWorkgroupsPerDimension` (65535), throwing a GPUValidationError every
-     frame (visible as a steady black blink). Fixed by moving the kernel to
-     `@workgroup_size(8,8)` and dispatching 2-D.
-  2. The C++ present path called `wgpuSurfacePresent`, whose emdawnwebgpu browser stub
-     aborts the module ("use requestAnimationFrame via html5.h instead"). JS rAF already
-     drives the render loop. Fixed by acquire + blit + submit, then return.
-  3. `WGPUSamplerDescriptor samplerDesc = {}` left `maxAnisotropy` at 0; Dawn requires
-     >= 1 for every sampler type including comparison samplers, so all bind groups using
-     them were rejected. Fixed by setting it once before the three sampler creations.
-  4. `historyTex` at 2048² × 8 rgba-float layers (~256-512 MiB) hit a committed-heap
-     GPUOutOfMemoryError on Pascal under D3D12. Fixed with a probe ladder
-     2048×8 -> 1024×8 -> 1024×4 -> 1024×1, a `px_history_oom_cap` sessionStorage latch
-     that never retries the larger size in the same tab, and a C++ fail-soft path.
-  5. The WASM pipeline layout declared RGBA32Float while a rewritten shader declared
-     RGBA16Float, producing an invalid pipeline submitted every frame. Fixed by having
-     WASM prefer rgba16float after a successful probe and rewrite storage declarations to
-     the active colour format at LoadShader time; catalog WGSL stays rgba32float.
-  6. After a JS->WASM backend switch the canvas showed no image: the exclusive switch
-     destroys the JS device that owned the uploaded photo, and the new WASM device was
-     never given the pixels. Fixed by re-uploading the current image/video frame after
-     the switch, then resyncing the shader stack.
-
-# Work items
-
-1. Create `src/contracts/wasm_runtime_invariants.json` as the single source of truth,
-   mirroring the existing contract files' shape. It must encode at minimum:
-     - `forbiddenCppSymbols`: `wgpuSurfacePresent`, each with the reason and the correct
-       alternative, and the source globs the ban applies to.
-     - `requiredSamplerDefaults`: `maxAnisotropy` minimum 1, noting it applies to
-       filtering, non-filtering AND comparison samplers.
-     - `historyTexLadder`: [[2048,8],[1024,8],[1024,4],[1024,1]] plus the
-       `px_history_oom_cap` sessionStorage key name.
-     - `storageFormatRewrite`: catalog WGSL stays rgba32float; WASM rewrites storage
-       declarations to the active colour format after a successful probe.
-     - `maxComputeWorkgroupsPerDimension`: 65535, as the dispatch ceiling.
-   Every entry carries the issue number that produced it and a one-line rationale.
-
-2. Extend `scripts/verify-device-policy-sync.js` to enforce all of the above against the
-   real sources. EXTEND ONLY — the existing limits / optional-features / wasm_exports /
-   workgroup_dispatch / emptyPlaceholder checks are currently green and must stay green
-   and unweakened. Specifically:
-     - Scan `wasm_renderer/**/*.cpp` for the forbidden symbols and fail on any call.
-     - Assert the `maxAnisotropy` assignment in `resources.cpp` precedes all three
-       `wgpuDeviceCreateSampler` calls.
-     - Assert the TS history ladder in `src/config/vramBudget.ts` and
-       `src/renderer/webgpu/historyTexProbe.ts` matches the JSON.
-     - **Parse the import table of `public/wasm/pixelocity_wasm.wasm`** and fail if any
-       forbidden symbol appears as an import. This is a binary check on the actual
-       shipped artifact — implement a minimal WASM import-section reader (the format is
-       simple: magic + version, then sections; you want section id 2). Put it in
-       `scripts/wasm_import_table.js` if that reads more cleanly than inlining it.
-   Expose it as `npm run verify:wasm-invariants` and add it to `verify:toolchain-foundation`
-   without reordering or dropping any existing script.
-
-3. Add `src/gpuChores/dispatchLimits.ts` exporting a shared
-   `assertDispatchWithinLimits(x, y, z, limits)` (or a clamping equivalent — pick one and
-   be consistent), and route ALL FIVE `dispatchWorkgroups` call sites in
-   `src/gpuChores/GpuChoresHost.ts` through it: the histogram, reduce, source-gain, LUT
-   and downsample passes. Do not touch the kernel math or `src/gpuChores/shaders.ts` —
-   the 8x8 reduce kernel IS the fix, do not revert or re-tune it. Extend
-   `src/gpuChores/gpuChores.test.ts` (which already asserts the reduce dispatch stays
-   <= 65535) to cover all five passes, with a 2048-square source and a deliberately
-   oversized one.
-
-4. Extend `tests/wasm-renderer.smoke.spec.ts` (or add a sibling spec) with a Playwright
-   `?renderer=wasm` boot smoke that installs an `uncapturederror` / GPUValidationError
-   listener and FAILS the spec on any captured error, plus a JS->WASM switch case
-   asserting the input is non-empty afterwards (root cause 6). It must SKIP CLEANLY when
-   no GPU adapter is present so headless CI stays green — a skip is correct here, a
-   false pass is not.
-
-5. Write `docs/WASM_RUNTIME_INVARIANTS.md` mapping each invariant -> the issue that
-   produced it -> the guard that now enforces it. Then write
-   `reports/wasm_promotion_evidence.md`: for each of the six bugs, state the root cause,
-   the fix location, the automated guard you added, and an explicit
-   **GPU-CONFIRMED** or **GPU-PENDING** flag. This document is the deliverable the
-   maintainer takes to the promotion decision. Be honest: you cannot confirm anything on
-   hardware from here, so almost everything is GPU-PENDING. Marking something
-   GPU-CONFIRMED that you only checked headlessly makes the whole document worthless.
-
-# Files you may touch
-
-  - NEW `src/contracts/wasm_runtime_invariants.json`
-  - `scripts/verify-device-policy-sync.js` (extend only)
-  - NEW `scripts/wasm_import_table.js`
-  - `src/gpuChores/GpuChoresHost.ts` (dispatch-clamp routing ONLY)
-  - NEW `src/gpuChores/dispatchLimits.ts` (+ colocated test)
-  - `src/gpuChores/gpuChores.test.ts`
-  - `tests/wasm-renderer.smoke.spec.ts`, `tests/helpers/**`
-  - `src/config/vramBudget.ts`, `src/renderer/webgpu/historyTexProbe.ts` — ONLY if the
-    ladder must be read from the contract rather than a literal. They are already
-    correct; prefer leaving them alone.
-  - NEW `docs/WASM_RUNTIME_INVARIANTS.md`, NEW `reports/wasm_promotion_evidence.md`
-  - `docs/GPU_CHORES.md` (dispatch-ceiling note)
-  - `package.json` (add the new script, wire it into verify:toolchain-foundation)
-
-READ-ONLY reference (read to write assertions; never edit):
-  `wasm_renderer/**`, `public/wasm/*` (parse, never regenerate),
-  `memory/2026-08-30.md`, `memory/2026-08-31.md`,
-  `src/contracts/webgpu_limits.json`, `src/contracts/workgroup_dispatch.json`
-
-# Files you must NOT touch
-
-  - **`wasm_renderer/**` C++ sources and `public/wasm/*` artifacts.** The maintainer
-    rebuilt these with emcc 6.0.3 on 08-31 and the source and artifacts were committed
-    together. This machine has emcc 3.1.56 with no emdawnwebgpu port, so it CANNOT
-    rebuild them. Any C++ edit silently desyncs the shipped .wasm from its source and
-    breaks `npm run wasm:validate`. This is a hard boundary, not a preference.
-  - `src/gpuChores/shaders.ts` — the 8x8 reduce kernel is the fix.
-  - The adapter ladder, `webgpuDevicePolicy.ts`, `webgpuBootProbe.ts`,
-    `WebGpuProbeFailureOverlay` — frozen.
-  - `src/utils/adoptedGpuDevice.ts`, `RendererManager.getDevice()` — the device
-    single-source-of-truth; do not re-plumb it.
-  - `src/renderer/ShaderCompilation.ts`, `src/contracts/workgroup_dispatch.json` — just
-    closed last week; do not reopen the dispatch contract.
-  - `src/renderer/UniformBuffer.ts` — immutable uniform packing.
-  - `src/RemoteApp.tsx`, `src/RemoteControlHeader.tsx`,
-    `src/components/app/AppShell.tsx`, `src/hooks/useRemoteSync.ts`, `src/style.css` —
-    a separate agent owns these today. Staying out of them is what keeps the two tracks
-    from colliding.
-  - `storage_manager/**`, `public/shaders/**`, `shader_definitions/**`, `shader_plans/**`.
-
-Do not change the WASM default-backend policy (it stays experimental opt-in). Do not add
-a WebGL fallback. Do not close any of the six issues — real-GPU confirmation belongs to
-the maintainer, not to you.
-
-# How to verify yourself, every iteration
-
-Run these and do not proceed past a red one:
-
-  npm ci --ignore-scripts        # plain `npm ci` is blocked by the sharp postinstall
-  npx tsc --noEmit               # must be clean on src/
-  CI=true npx craco test --watchAll=false
-  SKIP_WASM_BUILD=1 npm run build            # must print "Compiled successfully"
-  npm run verify:device-policy               # must stay green
-  npm run verify:wasm-invariants             # your new gate
-  npm run wasm:validate                      # proof you did not touch the artifacts
-  npm run verify:uniforms
-  npm run verify:dependency-boundaries
-  npm run audit:extrabuffer                  # baseline: 0 new / 84 known
-  npm run audit:dead-sliders                 # baseline: 0 new / 26 known
-
-On iteration 0, RE-ESTABLISH the test baseline before changing anything and record it.
-The last recorded count was 84 suites / 550 passed / 1 skipped, but it was carried from a
-previous session rather than measured, so treat it as approximate.
-
-**Prove each guard actually bites.** A gate that cannot fail is not a gate. For each
-invariant, temporarily reintroduce the regression — add a `wgpuSurfacePresent` call, drop
-the `maxAnisotropy` line, set a dispatch above the ceiling — confirm the check FAILS, then
-revert. Record each of these proofs in your save-state. If a check passes both with and
-without the regression, it is broken; fix it before moving on.
-
-eslint noise is non-gating. Focus on tests, build, and the verify gates.
-
-# Save-state
-
-At every iteration boundary, append to `.swarm-state.md`:
-  - Iteration number and date
-  - What changed, file by file
-  - Real command output for each gate above (not a summary — the actual result lines)
-  - The bite-proof result for each new invariant
-  - What is still GPU-PENDING and therefore cannot be closed from here
-  - What you would do next if interrupted right now
-
-Write this so the maintainer can stop you at any point and resume cleanly without
-re-deriving anything.
-
-# Definition of done
-
-  - All six root causes represented in `wasm_runtime_invariants.json`, each with a
-    passing enforcement check AND a recorded proof that the check fails on a
-    reintroduced regression.
-  - The .wasm import-table assertion runs in CI and passes on the committed artifact.
-  - All five gpu-chores dispatch sites clamped and unit-tested.
-  - The `?renderer=wasm` boot smoke exists and skips cleanly without an adapter.
-  - `reports/wasm_promotion_evidence.md` written, with honest GPU-CONFIRMED /
-    GPU-PENDING flags on every line.
-  - Every gate above green, `wasm:validate` included.
-  - Zero edits under `wasm_renderer/` and `public/wasm/`.
+ACCEPTANCE (all required)
+- validateProjectFile rejects malformed input with messages; accepts a minimal valid v1.
+- Migration: v0 SharedChain and v0 VjSetExport import; unknown version → null with reason.
+- Round-trip export→import restores slots, params, activeSlot, source ref, render settings; a file with an unknown shaderId imports with that slot empty and a warning, live session untouched until apply.
+- Serialized file never contains permission state, device handles, or media bytes (guard test).
+- Share links and preset packs unchanged (their existing tests pass).
+- tsc clean, lint clean, Jest green, build green.
+- Open a PR against main titled "feat(project): versioned project files — export/import a VJ session (#1393)" with: what is saved / not saved, migration policy, screenshots or a short description of the panel, and "Closes #1393".
 ```
 
----
+### B. GitHub issue draft — #1404 expansion (Copilot prep)
 
-## B. GitHub issue — EXPANDED AND FILED AS #1223
-
-> **Update, later on 2026-09-05.** The draft below was expanded through C1–C3 and filed as **issue #1223**. Point Copilot at #1223, not at this draft.
->
-> **Three tree-verified corrections came out of the expansion, and they changed the design:**
->
-> 1. **The remote window has no canvas.** `RemoteApp.tsx` renders the header plus `<div className="remote-content"><Controls …/></div>` — nothing else. #1201's "expand canvas" means the scrollable control area, so there is no resize observer to notify and no canvas z-index hazard.
-> 2. **The remote is the operator's control surface, not the output** — a 420×900 popup they are looking at. There is no blind-control scenario, which is the deciding argument for keeping the hidden flag local rather than syncing it.
-> 3. **`go.1ink.us` is already gated.** `publicHost.ts` `shouldMountRemoteApp()` returns `false` there and `AppShell` hides the "Open Remote" button. This work does **not** lift that hold, contrary to one model's answer.
->
-> Two further claims were fabricated and are not in the filed issue: this project has **no Redux/Zustand** (so no "200 KB of selectors" cost), and the host does **not** share one injected `<link>` with the remote — they are separate documents loading the same bundle, so there is no cross-window cascade.
->
-> **Decisions locked in #1223:** hidden flag local to the remote, never in `SyncMessage`/`FullState` (syncing it would make the restore path depend on the same channel that hid it — and `RemoteApp` already has a `LOST CONNECTION` state); persistence via a `chrome` URL param with `history.replaceState`; a **sticky restore strip, not** a copy of `.show-controls-overlay`, because the remote is a dense scrolling control panel rather than a canvas; plus a keyboard restore; scoped plain CSS in `style.css` (the project has zero CSS modules); and no extraction from `AppShell`, which stays untouched.
-
-Decoupled from A by construction: A lives in `src/contracts/`, `scripts/`, `src/gpuChores/`, `tests/` and docs; B lives entirely in the remote-control UI surface. No shared file.
-
-Original first-pass draft, kept for reference:
-
-```
-Title: remote: complete #1201 — hide-controls must collapse the remote's own titlebar,
-       and harden the remote surface with regression coverage
+```markdown
+Title: Video preloads: dedupe duration probes, defer until selection, skip when the renderer is blocked (#1404)
 
 ## Context / motivation
+On a machine with no WebGPU adapter, the new build (test.1ink.us) logs ~34 `net::ERR_ABORTED` for videos under storage.googleapis.com/my-sd35-space-images-2025/video/*.mp4. Each URL is requested twice, then aborted (#1404). This happens while the "WebGPU required" overlay is up, so the work is wasted twice over. Active focus: the renderer is production-default TS WebGPU with a hard-fail boot probe (`window.webgpuProbe`); media handling should respect that probe.
 
-Issue #1201 (filed during the 2026-08-30 real-GPU session) asked for two things on the
-remote-control window: a random-image control, and for "hide controls" to also hide the
-titlebar and random-image button so the canvas can expand.
+## Verified surface (main @ d74e665)
+- `src/services/videoSegmentManager.ts` — `probeVideoDuration(url)` creates a hidden `<video preload="metadata" muted crossOrigin="anonymous">` per URL, caches the duration in a module-level `DURATION_CACHE` **only after** `loadedmetadata`, and its `cleanup()` sets `src=''` then calls `load()` (that is one abort per probe). There is no in-flight map, so two callers for the same URL before metadata arrives produce two requests.
+- Callers: `src/hooks/useContentManifest.ts`, `src/hooks/useB3hdMode.ts`, `src/App.tsx`, `src/components/app/AppShell.tsx`.
+- Manifest fetch: `src/services/contentLoader.ts:64` (`VIDEO_MANIFEST_URL = ${STORAGE_API_URL}/api/songs?type=video`, `src/config/appConfig.ts:35`), with a fallback in `src/app/constants/fallbackContent.ts`.
+- `src/components/WebGPUCanvas.tsx:685` — the one real playback `<video preload="auto">`; not the source of the burst.
 
-Half of it landed in commit `ac253e0`:
+## Proposed approach (first pass — Noah expands)
+1. In `probeVideoDuration`: add an in-flight `Map<string, Promise<number|undefined>>` next to `DURATION_CACHE`, return the same promise for concurrent callers, and clear it on settle. Make `cleanup()` idempotent and only call `load()` if `src` was actually set.
+2. Add a gate: `probeVideoDuration` (or its callers) no-ops when `window.webgpuProbe?.ok !== true` (renderer blocked) — resolve `undefined`, record "skipped: renderer blocked" once in the console, not per URL.
+3. Make probing lazy: callers probe on selection/hover (or when a segment is actually needed by useB3hdMode), not for the whole manifest at boot. Keep a small bounded prefetch (e.g. first N=3 in the active list) if the UX needs instant durations.
+4. Confirm the "twice" part: check whether `useContentManifest` and `useB3hdMode` each probe the full list, or whether React StrictMode double-invokes an effect in dev only. Fix the real cause, not the symptom.
 
-  - `src/RemoteControlHeader.tsx` now renders a "Random Image" button, disabled unless
-    `inputSource === 'image'`, with `src/RemoteControlHeader.test.tsx` alongside it.
-  - The MAIN app's hide-chrome path works: `src/components/app/AppShell.tsx` computes
-    `chromeHidden = !showSidebar && activeTab === 'main'`, suppresses the `<header>`,
-    adds a `fullscreen` class to `.main-container`, and renders a `show-controls-overlay`
-    button over the canvas so the chrome can be brought back.
+## Acceptance criteria (rough)
+- Loading the app with the WebGPU-required overlay up produces **zero** `.mp4` requests.
+- With a working renderer, each video URL is probed at most once per session (Network panel shows one metadata range request per URL, no `ERR_ABORTED`).
+- Unit tests (Jest, `src/services/videoSegmentManager.test.ts`): concurrent calls share one promise; cache hit skips element creation; blocked probe resolves `undefined` without touching `document.createElement`.
+- `npx tsc --noEmit`, `npm run lint`, `npm test -- --watchAll=false --ci`, `SKIP_WASM_BUILD=1 npm run build` all green.
+- No change to `WebGPUCanvas.tsx`, `src/renderer/**`, `contentLoader.ts`'s manifest shape, or the storage-manager API.
 
-What did NOT land is the remote window's own half. `RemoteControlHeader` renders an
-unconditional `<h2 className="remote-app-header">` with inline styles and has no hide
-behaviour at all — the remote's titlebar and random button are always visible, which is
-exactly the fullscreen complaint in the issue.
-
-This matters beyond aesthetics: per #1201 the remote is a HOLD item for the public
-`go.1ink.us` build ("no remote on public build"). Making the remote surface complete and
-tested is on the path to lifting that hold.
-
-Relates to the active focus areas: the VJ/live-performance control surface, and the
-public-audience polish bar.
-
-## Proposed approach — first pass, to be expanded
-
-1. Give the remote its own chrome-hidden state, mirroring `AppShell`'s `chromeHidden`
-   rather than inventing a second pattern. When hidden: suppress the
-   `remote-app-header` (titlebar text + random-image button) and expand the remote's
-   content area.
-2. Provide an always-reachable way back — an overlay button equivalent to
-   `show-controls-overlay`, so a user cannot strand themselves in a chromeless remote
-   with no control.
-3. Decide and document where the hidden state lives: local component state, a URL
-   parameter, or synced through `src/hooks/useRemoteSync.ts` so the host and remote
-   agree. This is the main open design question (see below).
-4. Move the inline styles in `RemoteControlHeader.tsx` into `src/style.css` alongside
-   the `.show-controls-overlay` / `.main-container.fullscreen` rules added in `ac253e0`,
-   so both surfaces are themed from one place.
-5. Add regression coverage: extend `src/RemoteControlHeader.test.tsx` and
-   `src/hooks/useRemoteSync.test.ts` for the hidden/shown transitions and for the
-   random-image button's `inputSource` gating.
-
-## Acceptance criteria — rough, to be refined
-
-  - Hiding controls on the remote hides the titlebar AND the random-image button, and
-    the canvas/content area expands to fill the space.
-  - There is always a visible affordance to restore the chrome. No dead end.
-  - The random-image button keeps its existing `inputSource !== 'image'` disabled state.
-  - `RemoteControlHeader.tsx` carries no inline layout styles; they live in `style.css`.
-  - Jest covers hidden/shown transitions and the disabled-state gating.
-  - `npx tsc --noEmit` clean, `CI=true npx craco test --watchAll=false` green,
-    `SKIP_WASM_BUILD=1 npm run build` compiles.
-  - No files touched under `src/contracts/`, `src/gpuChores/`, `src/renderer/`,
-    `wasm_renderer/`, `scripts/`, or `tests/` — those belong to a concurrent track.
-
-## Open questions for the maintainer
-
-  1. Should the hidden state sync between host and remote via `useRemoteSync`, or stay
-     local to the remote window? Syncing is more coherent but widens the blast radius
-     into the sync protocol.
-  2. Should it persist across reloads (URL param or localStorage), or reset each time?
-  3. #1201 mentions a mouse-XY-reverse report but explicitly says it was NOT
-     re-confirmed and should be omitted unless reproduced. Confirming: out of scope here?
-  4. Does completing this actually lift the "no remote on public build" hold for
-     `go.1ink.us`, or is that gated on something else as well?
+## Open questions for Noah
+1. Is duration needed at boot for anything user-visible (e.g. B3HD segment planning), or only when a video is chosen?
+2. Should the "renderer blocked" gate also skip the manifest fetch itself (`contentLoader.ts`), or only the per-video probes? (#1408 wants the 503 fallback path verified — keep manifest fetch as is unless you say otherwise.)
+3. Dev-only StrictMode double-probe: acceptable, or guard with a ref?
 ```
 
+### C. Three chat-model prompts for the #1404 issue
 
-### Related filed issue from `main`
+**C1 — Gemini Pro (codebase + issue → complete plan)**
 
-- **[#1195 — Catalog count SoT: assert the derivable invariant, alias legacy IDs, split the extraBuffer baseline](https://github.com/ford442/image_video_effects/issues/1195)** was filed from the earlier section-B draft on 2026-08-29; the full issue text is also saved in `weekly_issue_catalog_sot.md`.
-- Tree verification corrected the original premise: there are **33** ID-vs-filename mismatches, **0** graph-parent mismatches, and the **13-count** catalog gap is exactly the set of `multipass.pass > 1` secondary definitions.
-- The verified invariant is `definitions - secondaries - duplicates == list entries == manifest total`, and the design call is to gate only that derivable invariant in CI — aliases only, no shader-file renames, and no stale-README diff gate.
-
----
-
-## C. Three chat-model prompts targeting the issue from B
-
-### C1 — Gemini Pro (codebase + issue → complete implementation plan)
-
-```
-I'm going to give you a GitHub issue from a React 19 + TypeScript codebase called
-Pixelocity (a WebGPU shader playground for images and video). I want a complete
-implementation plan, not a code dump.
-
-Please:
-1. Identify every file and function that must change, and every file that merely reads
-   the affected state. I especially want dependencies I have missed — anything that
-   reads the sidebar/chrome visibility state, anything that lays out the remote window,
-   and anything in the host<->remote sync path that could be surprised by a new synced
-   field.
-2. Flag ordering hazards: which change must land before which, and what breaks if they
-   land out of order.
-3. Point out where the proposed approach duplicates something the codebase already does
-   and should reuse instead. The issue notes the main app already solved the same
-   problem — I want the remote to mirror that, not fork it.
-4. Give me the failure modes a reviewer would catch: a user stranded in a chromeless
-   window, state desync between host and remote, a CSS rule that leaks into the main app
-   surface, a test that passes for the wrong reason.
-5. Produce an ordered implementation plan with a verification step after each stage.
-
-Relevant known context about the codebase:
-  - `src/components/app/AppShell.tsx` already implements the main app's version:
-    `chromeHidden = !showSidebar && activeTab === 'main'` suppresses the header, adds a
-    `fullscreen` class to `.main-container`, and renders a `show-controls-overlay`
-    button over the canvas.
-  - `src/RemoteControlHeader.tsx` is a small presentational component with inline styles
-    and no hide behaviour.
-  - `src/hooks/useRemoteSync.ts` carries host<->remote state.
-  - `src/style.css` holds the shared rules including `.show-controls-overlay`.
-  - Tests are Jest via craco; the build is Create React App with CRACO.
-
-Here is the issue:
+```text
+You are reviewing the React 19 / TypeScript 5.4 / WebGPU repo ford442/image_video_effects (Create React App + CRACO, Jest, ESLint as a CI gate). I'm attaching the repo. Here is a draft GitHub issue:
 
 [PASTE THE FULL ISSUE TEXT FROM SECTION B]
+
+Tasks:
+1. Open src/services/videoSegmentManager.ts, src/hooks/useContentManifest.ts, src/hooks/useB3hdMode.ts, src/App.tsx, src/components/app/AppShell.tsx and src/services/contentLoader.ts. List every call path that ends in probeVideoDuration, with file:line, and say which ones run at boot versus on user action.
+2. Determine why each URL is requested twice. Candidates: two independent callers, React StrictMode double effects, or the cleanup() src=''+load() pattern. Say which, with evidence from the code.
+3. Produce a complete implementation plan: exact functions to change, the in-flight promise map design, where the `window.webgpuProbe.ok` gate belongs (service vs. hook), and how to make probing lazy without breaking useB3hdMode's segment planning.
+4. List the Jest tests to add (file, test names, how to mock document.createElement and window.webgpuProbe under jsdom).
+5. Name anything the issue missed: other media preloading (images, HLS in HLSVideoSource.tsx), the fallbackContent path, or anything that would also fire with the renderer blocked.
+Only name files you actually opened. If a path in the issue is wrong, say so.
 ```
 
-### C2 — Kimi.com (K2) (stress-test + alternatives)
+**C2 — Kimi K2 (stress-test + alternatives)**
 
-```
-Stress-test the approach in the GitHub issue below, then give me two genuine
-alternatives and argue for the best one. Be adversarial about the proposed approach
-before you offer replacements — I want the weaknesses named specifically, not
-generically.
-
-Context you need: this is a React 19 + TypeScript app with a main window and a separate
-"remote control" window opened via `window.open('?mode=remote')`. The two share state
-through a sync hook. The main window already implements exactly this hide-chrome
-behaviour; the issue proposes mirroring it in the remote window.
-
-Attack these points specifically:
-  - The proposal says to mirror the main app's `chromeHidden` pattern. Is mirroring
-    right, or does it duplicate logic that should be extracted into something shared?
-    What is the actual cost of each choice at this codebase's size?
-  - Where should the hidden state live — local component state, a URL parameter, or the
-    host<->remote sync hook? Each has a different failure mode. Name them.
-  - The proposal adds an overlay button so users can restore the chrome. Is an overlay
-    button the right affordance for a small remote-control window, or is there something
-    better (keyboard, edge hover, auto-hide on idle)?
-  - Is moving inline styles to a global stylesheet an improvement here, or is it
-    trading one problem for a specificity/collision problem across two window surfaces?
-
-Then give me two alternative designs that are meaningfully different from the proposal
-(not variations on it), evaluate all three against: implementation cost, risk of
-breaking the main window, testability in Jest, and how it degrades if the sync channel
-is unavailable. Recommend one and commit to the recommendation.
-
-Here is the issue:
+```text
+Stress-test this GitHub issue for a React 19 + WebGPU web app. The app shows a hard-fail "WebGPU required" overlay when navigator.gpu.requestAdapter() returns null, exposes window.webgpuProbe { ok: boolean, ... }, and loads a video manifest from a FastAPI storage backend, then probes each video's duration with a hidden <video preload="metadata"> element.
 
 [PASTE THE FULL ISSUE TEXT FROM SECTION B]
+
+1. Attack the proposed approach: where does an in-flight promise map leak or deadlock (component unmount mid-probe, URL changes, manifest refetch)? What breaks if probing becomes lazy (segment planning that needs all durations up front)?
+2. Propose two alternatives: (a) server-side durations in the manifest (the backend is ours: FastAPI, GCS-backed), (b) a single shared <video> element worker queue with bounded concurrency. Give cost, risk and what each does to the "zero requests while blocked" criterion.
+3. Argue for the best option for a solo maintainer who ships weekly, and write the acceptance criteria you would hold it to.
+Be concrete; no generic advice about performance.
 ```
 
-### C3 — Grok.com (ecosystem currency check)
+**C3 — Grok (ecosystem currency check)**
 
-```
-I want a current-ecosystem sanity check on an approach before I build it, so I don't
-implement something that is already outdated.
-
-The stack: React 19, TypeScript 4.9, Create React App with CRACO, Jest via craco test,
-Playwright for browser automation, plain CSS in a shared stylesheet. The app renders
-WebGPU compute shaders and has a secondary "remote control" browser window opened with
-`window.open`, sharing state with the main window through a custom hook.
-
-Questions:
-1. React 19 specifically — is there anything in current React 19 practice that changes
-   how I should manage a "chrome hidden" UI state shared across two browser windows?
-   Anything that makes a custom sync hook the wrong call now?
-2. Cross-window state sharing in 2026: what is the current default? BroadcastChannel,
-   a shared worker, storage events, something else? Is a hand-rolled hook still
-   reasonable, and what are its known sharp edges today?
-3. TypeScript 4.9 is old. Is anything in this plan going to be materially easier or
-   safer on TS 5.x, and is there a concrete reason this project should move? (Note: the
-   project has explicitly decided to stay on CRA/CRACO and not migrate to Vite, so
-   answer within that constraint.)
-4. Fullscreen/chrome-hiding UI patterns for live-performance tools: has the accepted
-   pattern moved on from an overlay "show controls" button? What do current
-   VJ/performance tools do?
-5. Anything about testing multi-window UI in current Jest/jsdom and Playwright that I
-   should know before writing the tests?
-
-Flag anything where my stated approach is already behind current practice, and say
-plainly if the answer is "this is still fine, don't churn it."
-
-Here is the issue describing what I plan to build:
+```text
+Current-ecosystem check for a web app built with React 19, TypeScript 5.4, Create React App + CRACO, WebGPU compute shaders (WGSL), hls.js, Playwright 1.58+, Jest/jsdom. Issue under consideration:
 
 [PASTE THE FULL ISSUE TEXT FROM SECTION B]
+
+Questions, with sources and dates:
+1. As of October 2026, what do Chromium, Firefox and Safari do with <video preload="metadata"> for cross-origin MP4s — one range request or several? Does setting src='' then load() still trigger a visible net::ERR_ABORTED in Chromium DevTools, and is there a cleaner teardown?
+2. Is there a 2026-current way to read MP4 duration without a media element (fetch a byte range + parse moov; WebCodecs; mp4box.js) that is small enough for a CRA bundle with a size gate?
+3. React 19 StrictMode: does it still double-invoke effects in development, and what is the idiomatic guard today?
+4. Anything in WebGPU/Chromium 2026 about media and "no adapter" states that should change how a blocked renderer handles media preloading?
+Flag anything in the issue that is already outdated.
 ```
 
----
+### D. Copilot Agent handoff
 
-## D. Copilot Agent handoff
-
-```
-Implement the issue below in the Pixelocity repo (React 19 + TypeScript, Create React App
-with CRACO, Jest).
-
-Scope is strict. You may touch ONLY these files:
-  src/RemoteApp.tsx
-  src/RemoteControlHeader.tsx
-  src/RemoteControlHeader.test.tsx
-  src/RemoteApp.test.tsx              (new, if the toggle path needs its own suite)
-  src/style.css
-
-Do NOT touch anything under src/contracts/, src/gpuChores/, src/renderer/,
-wasm_renderer/, public/wasm/, scripts/, tests/, public/shaders/, or storage_manager/.
-Another agent is working in those directories concurrently and any overlap will conflict.
-
-Also do NOT touch `src/hooks/useRemoteSync.ts`, `src/syncTypes.ts`, or
-`src/components/app/AppShell.tsx`. The issue explains why: the hidden flag is deliberately
-LOCAL to the remote window and must not enter the `SyncMessage` union or `FullState`, and
-the host's chrome handling stays exactly as it is.
-
-The issue's "Design decisions" section is decided, not advisory. In particular: do NOT
-copy `.show-controls-overlay` — the remote is a dense scrolling control panel, not a
-canvas, and a floating button would sit on top of sliders. Use the sticky restore strip
-the issue specifies. Do NOT introduce CSS modules; this project has none.
-
-Before you open a PR, all of these must pass:
-  npx tsc --noEmit
-  CI=true npx craco test --watchAll=false
-  SKIP_WASM_BUILD=1 npm run build
-
-Every acceptance criterion in the issue must be met, including the test coverage. If an
-acceptance criterion turns out to be wrong or impossible, say so in the PR description
-rather than silently dropping it.
+```text
+Implement the following GitHub issue in ford442/image_video_effects on a new branch from main. Work only in the files the issue names plus new colocated test files; do not touch src/renderer/**, src/components/WebGPUCanvas.tsx, the storage-manager API, or package.json dependencies.
 
 {{EXPANDED_ISSUE}}
+
+Before opening the PR: `npm ci`, `npx tsc --noEmit`, `npm run lint` (must be clean — it is a CI gate), `npm test -- --watchAll=false --ci`, `SKIP_WASM_BUILD=1 npm run build`. Paste the measured Jest suite/test counts into the PR body. Open the PR as ready for review, titled "fix(media): dedupe video duration probes and skip them when the renderer is blocked (#1404)", body: cause found, what changed, how verified, "Closes #1404". Do not merge.
 ```
 
----
+### E. Claude Code whole-stack task — build the deploy dry-run, then exercise the pipeline
 
-## E. Claude Code — whole-stack pipeline task
+```text
+Repo: ford442/image_video_effects (fresh clone of main). Goal: the frontend deploy script has never had a dry-run mode — three weekly plans have scheduled a "deploy dry-run" that cannot run. Build it, then exercise the pipeline end to end and report what you measured. Work on branch `chore/deploy-dry-run`. Do not touch src/**, shaders, or CI workflows.
 
-Independent of A and B. This exercises the pipeline described in the project's whole-stack definition: WebGPU client → FTP deploy to DreamHost → FastAPI backend on the VPS → CI.
-
-```
-Run a whole-stack pipeline hygiene pass on the Pixelocity repo (image_video_effects) and
-report stage by stage with real command output. This is a verification pass — do not fix
-anything unless it is trivially safe and clearly in scope, and say explicitly when you
-decline to fix something and why.
-
-Two findings from a prior pass are still open and are the priority of this run. Both were
-deliberately left unfixed because they need a human decision; get them to the point where
-that decision is a one-liner.
-
-PRIORITY 1 — Storage Manager CORS (security-sensitive, unresolved since 2026-08-24).
-  `storage_manager/config.py` `ALLOWED_ORIGINS` was found to (a) be missing the real
-  production origin `noahcohn.com`, and (b) contain a `"*"` wildcard entry while
-  `storage_manager/app.py` sets `allow_credentials=True`. Starlette's CORSMiddleware,
-  when `"*"` is present alongside credentialed requests, reflects the caller's Origin
-  header instead of emitting a literal `*` — which means any origin can make credentialed
-  cross-site requests to this API.
-  Verify whether this is still true in the current tree. If it is: do NOT silently change
-  it. Instead produce (1) the exact diff you would apply, (2) the list of origins that
-  actually need to be allowed, derived from evidence in the repo rather than guessed —
-  check `storage_manager/app.py` for the `--base-url` value and any deploy scripts for
-  the real frontend host, (3) a regression test asserting the allowlist is finite and
-  contains no wildcard, and (4) a note on what breaks if an origin is missed.
-
-PRIORITY 2 — the WASM artifact/source sync boundary.
-  `public/wasm/pixelocity_wasm.{js,wasm}` were rebuilt with emcc 6.0.3 and committed
-  alongside their C++ sources. Most agent VMs have emcc 3.1.56 with no emdawnwebgpu port
-  and cannot rebuild them, so a C++ edit would desync the shipped artifact from its
-  source. `npm run wasm:validate` currently passes.
-  Determine whether that validation would actually CATCH a desync, or whether it only
-  checks the bridge JS files and artifact well-formedness. If it would not catch a C++
-  source change that was never rebuilt, that is a real gap — propose the cheapest gate
-  that would (a recorded source hash, a build-stamp comparison, whatever fits the
-  existing script), but do not implement it without saying what it costs.
-
-Then run the standard stages and report each with actual output:
-
-  1. INSTALL — `npm ci --ignore-scripts` (plain `npm ci` is blocked by the sharp
-     postinstall behind the proxy; note if that is still true).
-  2. TYPECHECK + TEST — `npx tsc --noEmit`; `CI=true npx craco test --watchAll=false`.
-     Report the suite/test counts as numbers.
-  3. BUILD — `SKIP_WASM_BUILD=1 npm run build`. Report the gzipped main.js size and the
-     lazy chunk sizes.
-  4. SHADER LISTS — `node scripts/generate_shader_lists.js`; confirm it is deterministic
-     (zero git diff against committed output) and duplicate-id clean.
-  5. DEPLOY DRY-RUN — compute the manifest diff LOCALLY with zero network calls. Confirm
-     the deploy credential path still reads from env / .env.deploy / prompt with no
-     hardcoded secrets. Make no connection to DreamHost.
-  6. BACKEND — `python -m pytest storage_manager/tests/ -q` FROM THE REPO ROOT (the tests
-     import `storage_manager.app`, which only resolves with the repo root on sys.path).
-  7. DEPENDENCY AUDIT — `npm audit --production`. The known chain is @xenova/transformers
-     for depth estimation; report whether the CVE set has shifted again and whether any
-     fix has become available. Do not auto-fix.
-  8. VERIFY GATES — `verify:device-policy`, `verify:uniforms`, `verify:dependency-boundaries`,
-     `verify:catalog-counts`, `wasm:validate`, `audit:extrabuffer`, `audit:dead-sliders`.
-     Current baselines to compare against: extrabuffer 0 new / 84 known / 32 dynamic-index;
-     dead-sliders 1201 scanned / 0 new / 26 known.
-
-For each stage give a PASS/FAIL verdict and the evidence. Where a check cannot run in this
-environment, say so plainly and label it UNVERIFIED rather than assuming it passes. End
-with a single verdict line: pipeline healthy, or N issues found with severity.
+1. Add `--dry-run` to tools/deploy/deploy.py and tools/deploy/deploy_app_only.py.
+   - Read both scripts fully first. Today they parse only `--force`/`--fresh` from sys.argv (deploy.py:305-306, deploy_app_only.py:137-138) and walk build/ against .deploy_manifest.json, uploading on hash mismatch with ALWAYS_UPLOAD = ['index.html', '.htaccess', 'asset-manifest.json'].
+   - Dry run must: compute the exact upload plan (new / changed / always-upload / unchanged counts, and the file list with sizes) WITHOUT opening an SFTP connection, without touching the manifest, and without prompting. Exit 0. Print a one-screen summary plus `--dry-run --verbose` for the full list.
+   - Keep argument handling minimal and consistent with the existing style (no new deps; argparse is fine if you convert both flags too). Credentials must not be required for a dry run — guard the import/use of deploy_credentials so a missing credentials file does not block the plan.
+   - Add tests next to tools/deploy/test_deploy_credentials.py: plan computation over a temp build dir with a synthetic manifest (new, changed, unchanged, always-upload cases). Run with `python3 -m pytest tools/deploy -q`.
+2. Pipeline rehearsal (record real output for each step; if a step fails for an environmental reason, say so explicitly rather than skipping silently):
+   a. `npm ci` (retry once if sharp's postinstall hits ECONNRESET).
+   b. `SKIP_WASM_BUILD=1 npm run build` (no emsdk here; committed public/wasm/* is used and sha-checked in CI).
+   c. `npm run build:manifest` then `npm run verify:toolchain-foundation` — note: verify:catalog-counts needs public/shader-manifest-unified.json, which build:manifest produces; a cold clone fails there otherwise. If it still fails cold, make the verifier print that hint (scripts/verify-catalog-counts.mjs only) and note it.
+   d. `python3 tools/deploy/deploy.py --dry-run` against the fresh build/ — paste the summary.
+   e. Backend: `cd storage_manager && python3 -m pip install -r requirements.txt && python3 -m pytest -q`; then `curl -sS -m 10 https://ford442-storage-manager.hf.space/api/health` and `.../api/songs?type=video` — record HTTP status and body head. Issue #1408 reported a 503 on 10-07; do not fix the backend, just record what you see and whether the frontend's fallback (src/services/contentLoader.ts:64, src/app/constants/fallbackContent.ts) would engage.
+   f. `npm run verify:css`, `npm run lint`.
+3. Report: a table of step → command → result → duration, the dry-run summary, the backend health result, and any finding that belongs in an issue (do not file issues; list them). Commit the dry-run work with tests, push, open a PR "chore(deploy): --dry-run for deploy.py and deploy_app_only.py" with the rehearsal table in the body. Do not merge.
 ```
 
----
+### F. Jules wrap-up — integrate kimi-cli's #1393 output (fill placeholders at end of day)
 
-## F. Jules wrap-up — integrate kimi-cli's output (fill placeholders at end of day)
+```text
+You are wrapping up a day of agent work on ford442/image_video_effects (React 19 + TypeScript 5.4, CRA + CRACO, Jest, ESLint gate, WGSL compute shaders, optional C++/WASM renderer that is FROZEN and must not be touched). Another agent (kimi-cli) implemented GitHub issue #1393 — versioned project files for saving/restoring a VJ session — on branch `feat/1393-project-files`. Your job is to turn that branch into a clean, reviewable PR. You do NOT merge.
 
-```
-You are wrapping up and integrating work that another agent (kimi-cli) produced today in
-the Pixelocity repo (image_video_effects): React 19 + TypeScript 4.9, Create React App
-with CRACO, Jest, Playwright, and a C++/WASM renderer backend.
-
-## What was being built
-
-The objective was to make six real-GPU bugs found on 2026-08-30/31 un-regressable. The
-bugs were already fixed in the tree; the work was to add machine-checked invariants that
-prevent regression, clamp all gpu-chores compute dispatches against the device limit, add
-a `?renderer=wasm` boot smoke test, and produce a promotion-evidence report.
-
-Files changed by kimi-cli:
+CONTEXT FROM TODAY
+Files kimi-cli changed:
 {{KIMI_CLI_FILES_CHANGED}}
 
-What kimi-cli did:
+What kimi-cli did (summary):
 {{KIMI_CLI_SUMMARY}}
 
-Issues I noticed on a cursory review:
+Known issues Noah noticed on cursory review:
 {{KNOWN_ISSUES}}
 
-## Hard constraint — read this before touching anything
+The original objective (hold the work to this): a versioned ProjectFile v1 envelope (src/contracts/project_file.json + src/services/project/**) that embeds the existing SharedChain (src/services/layerChainShare.ts) and optional VjSetExportPayload (src/services/vjSetExport.ts), adds activeSlot / source reference / render settings, validates with safe defaults, migrates explicitly (v0 bare SharedChain or VjSetExport → v1), exports/imports as a local file with two-phase import (validate whole file → apply plan with warnings; unknown shader ids → empty slot; missing media → 'none' + relink warning; live session untouched until apply), never serialises permissions/device handles/media bytes, and keeps share links + preset packs backward-compatible.
 
-There must be ZERO changes under `wasm_renderer/` and `public/wasm/`. Those artifacts
-were built with emcc 6.0.3 and cannot be rebuilt in this environment (emcc 3.1.56, no
-emdawnwebgpu port). If the diff contains changes there, STOP and report it rather than
-trying to rebuild — a desynced .wasm is worse than an unfinished PR.
+WRAP-UP CHECKLIST (do all; record the command and result for each)
+1. `git fetch origin && git checkout feat/1393-project-files && git merge origin/main` — resolve conflicts preserving kimi's intent; never rebase or force-push.
+2. `npm ci` (retry once on sharp ECONNRESET).
+3. Format: run Prettier only on the files in {{KIMI_CLI_FILES_CHANGED}} using the repo config (`npx prettier --write <files>`); do not reformat unrelated files.
+4. Lint: `npm run lint` — must be clean (it is a CI gate). Fix in place.
+5. Types: `npx tsc --noEmit`.
+6. Tests: `npm test -- --watchAll=false --ci`. Fix failures caused by the branch; do not skip, disable, or `.only` any test. Paste the measured suite/test counts into the PR body (never copy a number from a previous note).
+7. TODO/stub sweep: `grep -rn "TODO\|FIXME\|stub\|not implemented" <changed files>` — complete or remove each; if something genuinely needs Noah, leave the TODO with "NOAH:" prefix and list it in the PR body.
+8. Coverage for new public functions: every exported function in src/services/project/** and src/hooks/useProjectFile.ts needs at least one Jest test (valid path + one failure path). Add colocated *.test.ts files where missing. Required tests, add if absent: extra top-level key rejected; v0 SharedChain → v1 migration; unknown schemaVersion → null; round-trip deep-equal; unknown shaderId → empty slot + warning; serialised output never contains "MediaStream", "permission", or "data:" (guard).
+9. Docs: if any public API or user-facing flow changed, update docs/VJ_STUDIO.md (a "Project files" section: saved / not saved / migration policy) and README only if it lists VJ features. Keep docs/APP_STRUCTURE.md's component list current if a panel was added.
+10. Boundary checks: `npm run verify:css`, `npm run verify:dependency-boundaries`, `npm run verify:bundle-size`.
+11. Build: `SKIP_WASM_BUILD=1 npm run build` must pass.
+12. Confirm nothing outside the allowed surface changed: `git diff --stat origin/main...HEAD` must show no files under src/renderer/**, src/wasm/**, wasm_renderer/**, public/wasm/**, public/shaders/**, shader_definitions/**, storage_manager/**, .github/**. If any appear, revert them and say so.
+13. Commit with scoped messages (`chore(project): wrap-up — lint, tests, docs`), push, and open a PR against main: title "feat(project): versioned project files — export/import a VJ session (#1393)". Body: what is saved / not saved, migration policy, measured test counts, remaining NOAH: items, "Closes #1393". Mark ready for review. DO NOT MERGE.
 
-Also do not weaken any existing check in `scripts/verify-device-policy-sync.js`. Its
-limits / optional-features / wasm_exports / workgroup_dispatch / emptyPlaceholder
-assertions were green before today and must be green after.
-
-## Wrap-up checklist
-
-1. Read the full diff before changing anything. Note anything that looks unfinished,
-   stubbed, or inconsistent with the objective above.
-2. Run the formatter across changed files.
-3. Run the linter. Fix real problems; leave pre-existing unrelated noise alone.
-4. Run the tests: `CI=true npx craco test --watchAll=false`. Fix every failure. Do not
-   skip, disable, or quarantine a test to get green — if a test is wrong, fix the test
-   and say why in the PR.
-5. Complete any TODOs or stubs kimi-cli left behind. If a stub cannot be completed
-   without a decision I need to make, leave it and list it in the PR description.
-6. Add unit tests for any new exported function that lacks coverage — in particular the
-   dispatch-limit helper and the .wasm import-table parser, both of which are pure and
-   easy to test properly.
-7. **Verify the new guards actually bite.** For each invariant added, temporarily
-   reintroduce the regression it guards against, confirm the check FAILS, then revert. A
-   check that passes both with and without the regression is broken. Report the result
-   of each of these probes in the PR description — this is the single most important
-   thing in this wrap-up, because the entire value of today's work is that these gates
-   are real.
-8. Check `reports/wasm_promotion_evidence.md` for honesty: nothing may be marked
-   GPU-CONFIRMED that was only verified headlessly. Downgrade any overclaim to
-   GPU-PENDING.
-9. Update inline docs and `docs/WASM_RUNTIME_INVARIANTS.md` / `docs/GPU_CHORES.md` if the
-   public surface changed. Update README only if a documented command changed.
-10. Run the full gate set and confirm green.
-
-## Commands for this stack
-
-  npm ci --ignore-scripts                     # plain `npm ci` is blocked by sharp's postinstall
-  npx tsc --noEmit
-  CI=true npx craco test --watchAll=false
-  SKIP_WASM_BUILD=1 npm run build
-  npm run verify:device-policy
-  npm run verify:wasm-invariants              # the new gate, if it landed
-  npm run wasm:validate
-  npm run verify:uniforms
-  npm run verify:dependency-boundaries
-  npm run audit:extrabuffer                   # baseline: 0 new / 84 known
-  npm run audit:dead-sliders                  # baseline: 0 new / 26 known
-  npx playwright test                         # GPU specs should SKIP, not fail, without an adapter
-
-## Acceptance criteria
-
-  - [ ] Formatter and linter clean on changed files
-  - [ ] `npx tsc --noEmit` clean
-  - [ ] Full Jest suite green; suite/test counts reported as numbers in the PR
-  - [ ] `SKIP_WASM_BUILD=1 npm run build` prints "Compiled successfully"
-  - [ ] Every verify and audit gate above green, at or better than the stated baselines
-  - [ ] Playwright GPU specs skip cleanly without an adapter (skip, never false-pass)
-  - [ ] Zero changes under `wasm_renderer/` and `public/wasm/`
-  - [ ] No existing check in `verify-device-policy-sync.js` weakened
-  - [ ] Every new exported function has unit test coverage
-  - [ ] Each new guard proven to fail on a reintroduced regression, with results in the PR
-  - [ ] No TODO or stub left unlisted
-  - [ ] `reports/wasm_promotion_evidence.md` contains no unearned GPU-CONFIRMED flags
-
-## Output
-
-Open a pull request for me to review. Do NOT merge it. In the description: what changed
-and why, the test/suite counts, the result of every gate, the guard bite-proofs from
-step 7, and an explicit list of anything you could not finish or chose not to do.
+ACCEPTANCE
+- [ ] Branch merges cleanly with main
+- [ ] `npm run lint` clean; `npx tsc --noEmit` clean
+- [ ] Jest green with measured counts in the PR body
+- [ ] Every exported function in the new service/hook has a test; the guard test exists
+- [ ] No TODO/stub left without a NOAH: prefix and a PR-body mention
+- [ ] docs/VJ_STUDIO.md updated
+- [ ] verify:css, verify:dependency-boundaries, verify:bundle-size green
+- [ ] `SKIP_WASM_BUILD=1 npm run build` green
+- [ ] Diff touches nothing in the forbidden paths
+- [ ] PR open, ready for review, not merged
 ```
 
----
+### G. Review prompts (Gemini Pro)
 
-## G. Review prompts
+**G1 — kimi-cli diff review (before Jules)**
 
-### G1 — Gemini Pro: review the kimi-cli diff before Jules wraps it
+```text
+Review this diff for ford442/image_video_effects (React 19, TypeScript 5.4, CRA/CRACO, WebGPU compute shaders; the renderer and WASM backend are out of scope and must be untouched). The objective was GitHub issue #1393: a versioned project file (src/contracts/project_file.json, src/services/project/**) that embeds the existing SharedChain (src/services/layerChainShare.ts) and optional VjSetExportPayload (src/services/vjSetExport.ts), adds activeSlot/source reference/render settings, validates with safe defaults, migrates explicitly, and imports in two phases (validate whole file → apply plan with warnings) without touching live state until apply.
 
-```
-Review this diff for performance problems and architectural drift. It is from a React 19
-+ TypeScript WebGPU application. Be specific and skip praise.
+[PASTE `git diff origin/main...feat/1393-project-files`]
 
-The diff's stated objective: take six runtime bugs that were already fixed in the tree
-and make them un-regressable, by adding a JSON contract file validated against the
-TypeScript and C++ sources by an existing verification script, clamping all compute
-dispatches against the device's maxComputeWorkgroupsPerDimension limit, adding a browser
-boot smoke test, and writing a promotion-evidence report.
-
-Assess:
-
-1. **Do the guards actually guard?** For each check added, could it pass while the
-   regression it targets is present? Look hard at anything grep- or regex-based against
-   source files — those are easy to write and easy to fool. The .wasm import-table parser
-   in particular: is it parsing the binary format correctly, and does it fail closed if
-   the file is malformed or the section is absent?
-
-2. **Per-frame cost.** The dispatch clamp runs on paths executed every frame. Does the
-   diff add per-frame allocation, per-frame limit lookups that should be hoisted, or
-   anything that turns a hot loop into a slower one? The correct implementation caches
-   limits once at attach time.
-
-3. **Architectural drift.** This repo has an established contract pattern:
-   `src/contracts/*.json` validated by `scripts/verify-device-policy-sync.js`. Does this
-   diff follow it, or does it introduce a parallel mechanism that will need maintaining
-   separately? Flag any near-duplicate of existing logic.
-
-4. **Boundary violations.** There must be zero changes under `wasm_renderer/` or
-   `public/wasm/`, and no existing assertion in the verification script may be weakened,
-   loosened, or made conditional. Check for subtle versions of this — a check that still
-   runs but now skips on a condition that is usually true is a weakened check.
-
-5. **Test quality.** Do the new tests fail if the implementation is wrong, or do they
-   assert on the mock? Does the Playwright spec skip when no adapter is available rather
-   than silently passing?
-
-For each finding: file and line, why it is wrong, what breaks in practice, and the
-smallest correct fix. Rank by severity and be honest if the diff is basically sound.
+Check, with file:line for every finding:
+1. Architectural drift: did it build a third stack model instead of embedding SharedChain? Did it change layerChainShare's wire format or duplicate expandSharedChain's logic in useProjectFile?
+2. Safety: can anything in the serialised file carry media bytes, data: URIs, MediaStream/track ids, permission state, or GPU objects? Is `additionalProperties:false` actually enforced by the validator?
+3. Import atomicity: trace one malformed file and one file with an unknown shaderId through parse → plan → apply. Does any setter run before validation completes?
+4. Migration: is v0 → v1 explicit and tested; is an unknown version rejected rather than guessed?
+5. Performance: anything O(slots × catalog) on every render; anything that reads the full catalog synchronously in the panel.
+6. Boundaries: any change under src/renderer/**, src/wasm/**, shaders, storage_manager, .github.
+Rank findings blocking / should-fix / nit. No praise.
 ```
 
-### G2 — Gemini Pro: review the Jules PR against the original objective
+**G2 — Jules PR review (against objective + checklist)**
 
+```text
+Review this pull request for ford442/image_video_effects against two references.
+
+Reference 1 — original objective (issue #1393): versioned ProjectFile v1 embedding SharedChain + optional VjSetExportPayload; activeSlot, source reference (never bytes/handles), render settings; validation with safe defaults; explicit migrations (v0 bare formats → v1, unknown → null); two-phase import with per-slot warnings; local export/import only; share links and preset packs unchanged.
+
+Reference 2 — wrap-up checklist Jules was given: merge main; prettier on changed files only; `npm run lint` clean; `npx tsc --noEmit` clean; Jest green with MEASURED counts in the PR body; every exported function in src/services/project/** and src/hooks/useProjectFile.ts tested, including the "never serialises MediaStream/permission/data:" guard; no TODO without a NOAH: prefix; docs/VJ_STUDIO.md updated; verify:css, verify:dependency-boundaries, verify:bundle-size green; `SKIP_WASM_BUILD=1 npm run build` green; no files under src/renderer/**, src/wasm/**, wasm_renderer/**, public/wasm/**, public/shaders/**, shader_definitions/**, storage_manager/**, .github/**; PR open and not merged.
+
+[PASTE PR TITLE, BODY, AND FULL DIFF]
+
+Report:
+1. For each checklist item: met / not met / cannot tell from the PR, with evidence.
+2. Any objective item the PR silently narrowed (e.g. import applies before validation, migration missing, render settings dropped).
+3. Any test that asserts the wrong thing or was weakened to pass.
+4. Merge recommendation: merge / request changes (list them) / reject (why).
 ```
-Review this pull request against the objective it was supposed to fulfil and the wrap-up
-checklist it was supposed to complete. I want gaps, not a summary.
-
-ORIGINAL OBJECTIVE: six real-GPU bugs (a compute dispatch exceeding the device's
-workgroups-per-dimension limit; a browser-unsupported present call that aborted the WASM
-module; samplers created with maxAnisotropy=0 which Dawn rejects; a history-texture
-out-of-memory failure needing a size-ladder fallback; a pipeline/shader storage-format
-mismatch; and lost image input after a renderer backend switch) were ALREADY fixed in the
-tree but had no automated protection. The work was to encode each root cause as a
-machine-checked invariant, clamp every compute dispatch site, add a WASM-renderer boot
-smoke test, and produce an honest promotion-evidence report.
-
-WRAP-UP CHECKLIST that should have been completed: formatter, linter, full test suite
-green with counts reported, all TODOs and stubs resolved or explicitly listed, unit tests
-for every new exported function, docs updated, full build passing, every verify and audit
-gate green, zero changes under the C++/WASM directories, and — most importantly — a
-recorded proof for each new guard that it FAILS when its regression is reintroduced.
-
-Check specifically:
-
-1. Is any of the six root causes missing an invariant, or covered only by a weak check?
-2. Are the guard bite-proofs actually present in the PR description, with results — or
-   was that step quietly skipped? This is the highest-value item; treat its absence as a
-   blocking finding, because a guard nobody proved can fail is indistinguishable from no
-   guard.
-3. Does the evidence report mark anything as hardware-confirmed that could only have been
-   verified headlessly? Any such claim is a defect.
-4. Were any tests skipped, disabled, weakened, or given loosened assertions to reach
-   green? Compare assertion strength before and after, not just pass/fail.
-5. Are the reported test counts consistent with the number of tests added?
-6. Any changes under the C++/WASM directories at all?
-7. Anything listed as "could not finish" that is actually load-bearing for the objective?
-
-Give me a merge / do-not-merge recommendation with the specific blocking items, then the
-non-blocking nits separately.
-```
-
----
 
 ## Suggested timeline
 
-| Offset | Action |
-| --- | --- |
-| **T+0:00** | Fire **B → Copilot** first. #1201's remote half is small, entirely decoupled, and gets a head start while you set up. Then launch **A (kimi-cli)** — it is the long-horizon job and should be running before anything else competes for your attention. |
-| **T+0:15** | Kickoff done. kimi-cli is on iteration 0 re-establishing the test baseline. |
-| **T+0:30 – T+2:00** | Expansion window. Run **C1/C2/C3** against the issue from B, fold the answers into the expanded issue, hand it to **D**. Check kimi's iteration-0 save-state: if it did not record real baseline numbers, correct that now — everything downstream compares against it. |
-| **T+2:00 – T+4:00** | Mid-day. Run **E** (whole-stack hygiene). The CORS finding has been open since 08-24 and this run is meant to end with a one-line decision for you, so read that section properly rather than skimming the verdict. |
-| **T+4:00 – T+6:00** | kimi-cli's tail. The bite-proofs (temporarily reintroducing each regression to confirm the gate fails) are the part most likely to be skipped under time pressure — check `.swarm-state.md` for them specifically. |
-| **T+6:00** | Run **G1** on the final kimi-cli diff before wrapping. |
-| **T+6:30** | Fill the three placeholders in **F** and hand it to Jules. |
-| **T+7:30** | Run **G2** on the Jules PR. Review and merge if clean. |
-| **End of day** | Update the `Outcome:` line in `weekly_plan.md`'s Last run section. Decide on PR #1219 (last week's routine branch, still open) and PR #1221 (this week's). |
+| Offset | Step |
+|---|---|
+| 0:00 | Kick off kimi-cli (A). Paste issue B into GitHub as a draft issue. |
+| 0:15 | Run C1–C3 in parallel; fold the useful parts into the issue; resolve the three open questions. |
+| 0:45 | Hand D to Copilot with the expanded issue. |
+| 1:30 | Claude Code E (deploy dry-run + pipeline rehearsal) while kimi iterates. |
+| mid-day | Check `.swarm-state.md`; merge-order pass on the 19 open PRs (#1383 first). |
+| end of day | Fill F's placeholders from `.swarm-state.md`, hand to Jules. Run G1 on kimi's diff before Jules starts, G2 on the Jules PR after. |
 
 ## Open questions
 
-1. **The six issues' real-GPU status is unknown to this run.** All six fixes are verified present in source; none is verified working on hardware. Only you can close that loop, and only on the Pascal/Chrome host. Today's evidence report is written to make that session short, not to replace it.
-2. **Does the `go.1ink.us` promote hold lift after real-GPU confirmation, or is something else gating it?** #1200 says "HOLD go.1ink.us /pixelocity/ (100%)" and #1201 adds "no remote on public build" — it is not clear from the issues whether those are one hold or two.
-3. **#848 (emscripten toolchain) is now load-bearing.** Until agent environments can build with emcc 6.0.3 + emdawnwebgpu, all C++ work is yours alone, and every routine track has to route around `wasm_renderer/`. That is a real constraint on how much of this project the weekly loop can reach.
-4. **Jest baseline is carried, not measured** (84 suites / 550 passed / 1 skipped, from `.swarm-state.md`). `node_modules` is absent on the routine's VM. kimi re-establishes it on iteration 0; treat any comparison against the carried number as approximate until then.
-5. **PR #1219** (`claude/nice-bardeen-50zdxv`, non-draft) is last week's routine branch and is still open. This week's branch was cut fresh from `main` rather than stacked on it, so #1219 needs a merge-or-close decision from you.
+- **PR #1420** is merged into this routine branch; close it once this PR lands, or merge it first and I rebase — either is fine.
+- **Merge order** for the 19 open PRs: is #1383 → #1419 → shader batches → #1422 → #1423 → #1424 → #1425 → #1415 acceptable? The 10-26 deferral chore (40 entries) depends on #1383 landing.
+- **#1393 scope:** which render/audio settings should be in the project file? The issue says "relevant"; kimi is told to serialise only fields that already exist in app state. Name the ones you want if that's too narrow.
+- **Workspace memory:** `memory/`, `MEMORY.md`, `SOUL.md`, `USER.md` are gitignored, so this scheduled run starts from `weekly_plan.md` alone every week. Intentional?
+- **Stale PROJECT CONTEXT:** TypeScript is `~5.4.5` and the transformers dep is `@huggingface/transformers` v4 (not `@xenova/transformers`); still unfixed in the routine's block.

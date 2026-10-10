@@ -748,48 +748,6 @@
       ]
     },
     {
-      "id": "temporal-feedback-zoom-tracer",
-      "category": "post-processing",
-      "dead_param_ids": [
-        "blend",
-        "param1",
-        "param2",
-        "param3",
-        "param4",
-        "persistence",
-        "rotation",
-        "zoom"
-      ]
-    },
-    {
-      "id": "temporal-phosphor-burn",
-      "category": "post-processing",
-      "dead_param_ids": [
-        "b_decay",
-        "g_decay",
-        "mask_strength",
-        "param1",
-        "param2",
-        "param3",
-        "param4",
-        "r_decay"
-      ]
-    },
-    {
-      "id": "temporal-rgb-ghost",
-      "category": "post-processing",
-      "dead_param_ids": [
-        "b_delay",
-        "blend",
-        "displace",
-        "g_delay",
-        "param1",
-        "param2",
-        "param3",
-        "param4"
-      ]
-    },
-    {
       "id": "vortex-warp",
       "category": "distortion",
       "dead_param_ids": [

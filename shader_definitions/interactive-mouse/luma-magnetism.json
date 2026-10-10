@@ -3,7 +3,7 @@
   "name": "Luma Magnetism",
   "url": "shaders/luma-magnetism.wgsl",
   "category": "interactive-mouse",
-  "description": "Magnetic field line simulation with Runge-Kutta integration. Bright pixels act as north poles, dark as south. Renders glowing iron-filing filaments with HDR bloom and ACES tone mapping.",
+  "description": "Magnetic field lines traced with bidirectional Runge-Kutta streamlines. Bright pixels act as north poles, dark as south; hold the mouse to turn the swirl into a pole.",
   "params": [
     {
       "id": "field-strength",
@@ -46,5 +46,39 @@
     "iron-filings",
     "distortion",
     "interactive"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Field Strength",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 1,
+          "name": "Effect Radius",
+          "default": 0.3,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 2,
+          "name": "Filament Density",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 3,
+          "name": "Depth Layer",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        }
+      ]
+    }
+  }
 }

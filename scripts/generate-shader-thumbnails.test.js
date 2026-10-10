@@ -13,7 +13,15 @@ const {
   applyAttractPriority,
   hasFourLiveParams,
   loadAttractPriorityIds,
+  readShaderSource,
+  chromiumArgs,
+  captureHostFor,
+  withListCategory,
+  loadAllCatalogShaders,
+  capturedOn,
 } = require('./generate-shader-thumbnails');
+const { SWIFTSHADER_WEBGPU_ARGS } = require('./lib/swiftshaderArgs');
+const path = require('path');
 const frameAnalysis = require('./lib/thumbnailFrameAnalysis');
 
 describe('generate-shader-thumbnails', () => {
@@ -143,5 +151,74 @@ describe('generate-shader-thumbnails', () => {
     });
     assert.equal(params[0], 0.3);
     assert.equal(params[1], 0.7);
+  });
+
+  it('--adapter=swiftshader adds the SwiftShader flags, a 512 page and scale 0.25', () => {
+    const args = parseArgs(['--adapter=swiftshader']);
+    assert.equal(args.adapter, 'swiftshader');
+    assert.equal(args.viewport, 512);
+    assert.equal(args.renderScale, 0.25);
+    for (const flag of SWIFTSHADER_WEBGPU_ARGS) assert.ok(chromiumArgs('swiftshader').includes(flag), flag);
+    assert.ok(!chromiumArgs('default').includes('--use-webgpu-adapter=swiftshader'));
+    assert.equal(parseArgs([]).viewport, null);
+    assert.throws(() => parseArgs(['--adapter=llvmpipe']), /Unknown --adapter/);
+  });
+
+  it('captures are tagged with their host; --recapture-host selects them', () => {
+    assert.equal(captureHostFor('swiftshader'), 'swiftshader');
+    assert.equal(captureHostFor('default'), 'gpu');
+    const manifest = { a: { capture_host: 'swiftshader' }, b: { capture_host: 'gpu' }, c: {} };
+    assert.deepEqual(['a', 'b', 'c'].filter(id => capturedOn(id, manifest, 'swiftshader')), ['a']);
+    assert.equal(parseArgs(['--recapture-host=swiftshader']).recaptureHost, 'swiftshader');
+  });
+
+  it('entries without a category take their list name (input source depends on it)', () => {
+    assert.equal(withListCategory({ id: 'x' }, 'distortion').category, 'distortion');
+    assert.equal(withListCategory({ id: 'x', category: 'image' }, 'distortion').category, 'image');
+    const catalog = loadAllCatalogShaders();
+    assert.ok(catalog.length > 1000);
+    assert.deepEqual(catalog.filter(s => !s.category).map(s => s.id), []);
+  });
+
+  it('flat frames are errors; black wins over flat', () => {
+    const flat = { meanLuminance: 0.5, activePixelRatio: 1, magentaPixelRatio: 0, maxChannelStd: 0.002 };
+    assert.equal(frameAnalysis.classifyErrorFrame(flat), 'flat_frame');
+    assert.equal(frameAnalysis.classifyErrorFrame({ ...flat, meanLuminance: 0, activePixelRatio: 0 }), 'black_frame');
+    assert.equal(frameAnalysis.classifyErrorFrame({ ...flat, maxChannelStd: 0.2 }), null);
+    assert.equal(classifyFailure('flat_frame'), 'flat_frame');
+  });
+
+  it('statsFromPngBuffer measures the committed PNG bytes', async () => {
+    const sharp = require('sharp');
+    const raw = Buffer.alloc(8 * 8 * 4);
+    for (let i = 0; i < 64; i++) raw.set(i % 2 ? [250, 20, 20, 255] : [10, 10, 200, 255], i * 4);
+    const png = await sharp(raw, { raw: { width: 8, height: 8, channels: 4 } }).png().toBuffer();
+    const stats = await frameAnalysis.statsFromPngBuffer(png);
+    assert.equal(stats.width, 8);
+    assert.ok(stats.maxChannelStd > 0.3);
+    assert.equal(frameAnalysis.classifyErrorFrame(stats), null);
+  });
+
+  it('harness: every non-generative category gets the image input; list urls resolve', async () => {
+    const harness = await import('./lib/thumbnailHarness.mjs');
+    assert.equal(harness.inputSourceForCategory('generative'), 'generative');
+    for (const c of ['image', 'distortion', 'visual-effects', 'artistic', 'simulation']) {
+      assert.equal(harness.inputSourceForCategory(c), 'image', c);
+    }
+    assert.equal(harness.localShaderUrl('ripple-tank', 'shaders/ripple-tank-step.wgsl'), './shaders/ripple-tank-step.wgsl');
+    assert.equal(harness.localShaderUrl('x', '/shaders/x_y.wgsl'), './shaders/x_y.wgsl');
+    assert.equal(harness.localShaderUrl('plasma'), './shaders/plasma.wgsl');
+    assert.equal(harness.localShaderUrl('remote', 'https://cdn.example/remote.wgsl'), './shaders/remote.wgsl');
+    assert.ok(require('fs').existsSync(path.join(__dirname, '..', 'public', harness.THUMBNAIL_FIXTURE)));
+  });
+
+  it('readShaderSource expands #include for the minimal engine', async () => {
+    const shaders = path.join(__dirname, '..', 'public', 'shaders');
+    const expanded = await readShaderSource(path.join(shaders, 'gray-scott-step.wgsl'));
+    assert.match(expanded, /@group\(0\) @binding\(3\) var<uniform> u: Uniforms;/);
+    assert.doesNotMatch(expanded, /^#include/m);
+
+    const plainPath = path.join(shaders, '_hash_library.wgsl');
+    assert.equal(await readShaderSource(plainPath), require('fs').readFileSync(plainPath, 'utf8'));
   });
 });

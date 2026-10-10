@@ -19,6 +19,7 @@ struct ShaderBindingUsage {
     bool writesDataB = false;
     bool readsDataC = false;
     bool usesHistory = false;
+    bool writesDepth = false;  // binding 6 (depth write); gates depthWrite → depthRead feedback
 };
 
 // Timestamp query indices (keep in sync with timing.cpp / WebGPURenderer.ts).
@@ -30,6 +31,17 @@ constexpr int32_t kTsChainedStart  = 4;
 constexpr int32_t kTsChainedEnd    = 5;
 constexpr int32_t kTsPresentStart  = 6;
 constexpr int32_t kTsPresentEnd    = 7;
+constexpr uint32_t kTsPhaseQueryCount = 8;
+
+// Per-pass profiling (#1314 D, measurement only). Each compute pass a slot
+// encodes gets its own begin/end pair after the phase block:
+//   pass i -> queries kTsPassQueryBase + 2i (begin), + 2i + 1 (end).
+// A pass descriptor carries one begin and one end index, so compute passes
+// stamp only their pair; the phase stamps above are rebuilt from the pairs at
+// decode (timing.cpp). Present still writes kTsPresentStart/End directly.
+constexpr uint32_t kMaxProfiledSlotPasses = 64;
+constexpr uint32_t kTsPassQueryBase = kTsPhaseQueryCount;
+constexpr uint32_t kTsQueryCapacity = kTsPhaseQueryCount + 2 * kMaxProfiledSlotPasses;
 
 WGPUStringView MakeStringView(const char* str);
 uint32_t AlignUp(uint32_t value, uint32_t align);
@@ -44,6 +56,16 @@ std::string RewriteWgslStorageFormats(const char* wgsl, const char* colorFormat)
  * implementation. See src/contracts/wgsl_include.json.
  */
 bool ContainsWgslIncludeDirective(const char* wgsl);
+/** out.append(s, n), kept out of line (size: see wasm_internal.cpp). */
+void AppendRaw(std::string& out, const char* s, size_t n);
+/** AppendRaw for a string literal (length from the array, not by hand). */
+template <size_t N>
+inline void AppendLit(std::string& out, const char (&lit)[N]) { AppendRaw(out, lit, N - 1); }
+/** Decimal digits of v, zero-padded to minDigits (no snprintf; see wasm_internal.cpp). */
+void AppendUInt(std::string& out, uint64_t v, int minDigits = 1);
+void AppendInt(std::string& out, int64_t v);
+/** Append `s` to `out` as a quoted JSON string (quotes, backslashes, control chars escaped). */
+void AppendJsonString(std::string& out, const char* s);
 
 } // namespace wasm_internal
 } // namespace pixelocity

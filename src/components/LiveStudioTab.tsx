@@ -7,6 +7,7 @@ import { BilibiliInput } from './BilibiliInput';
 import { usePerformanceMonitor } from '../hooks/usePerformanceMonitor';
 import { useAudioAnalyzer } from '../hooks/useAudioAnalyzer';
 import { WASMRenderer } from '../renderer/WASMRenderer';
+import { isWasmForcedByURL } from '../renderer/rendererUrl';
 import { JSRenderer } from '../renderer/JSRenderer';
 import { type Renderer, DEFAULT_CONFIG } from '../renderer/Renderer';
 
@@ -19,6 +20,7 @@ export const LiveStudioTab: React.FC<LiveStudioTabProps> = ({ className }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const rendererRef = useRef<Renderer | null>(null);
   const [useWasm, setUseWasm] = useState(false);
+  const wasmForced = isWasmForcedByURL();
   const [streamUrl, setStreamUrl] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [agentCount, setAgentCount] = useState(DEFAULT_CONFIG.agentCount);
@@ -32,8 +34,8 @@ export const LiveStudioTab: React.FC<LiveStudioTabProps> = ({ className }) => {
 
     setIsLoading(true);
 
-    // Destroy old renderer
-    rendererRef.current?.destroy();
+    // Release the old renderer's GPU device before creating the next one
+    await rendererRef.current?.destroy();
 
     // Create new renderer
     const RendererClass = wasmMode ? WASMRenderer : JSRenderer;
@@ -48,7 +50,7 @@ export const LiveStudioTab: React.FC<LiveStudioTabProps> = ({ className }) => {
       rendererRef.current = renderer;
       setUseWasm(wasmMode);
       startMonitoring();
-      startAudio();
+      void startAudio();
 
       // Connect video if available
       if (videoRef.current) {
@@ -109,7 +111,7 @@ export const LiveStudioTab: React.FC<LiveStudioTabProps> = ({ className }) => {
   // Cleanup
   useEffect(() => {
     return () => {
-      rendererRef.current?.destroy();
+      void rendererRef.current?.destroy();
       stopMonitoring();
       stopAudio();
     };
@@ -117,7 +119,7 @@ export const LiveStudioTab: React.FC<LiveStudioTabProps> = ({ className }) => {
 
   // Initialize JS renderer by default
   useEffect(() => {
-    initRenderer(false);
+    void initRenderer(false);
   }, [initRenderer]);
 
   return (
@@ -125,26 +127,29 @@ export const LiveStudioTab: React.FC<LiveStudioTabProps> = ({ className }) => {
       {/* Header */}
       <div style={styles.header}>
         <h2 style={styles.title}>🎥 LIVE STUDIO</h2>
-        <button
-          type="button"
-          onClick={() => initRenderer(!useWasm)}
-          disabled={isLoading}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '12px',
-            border: '1px solid rgba(255,255,255,0.15)',
-            background: useWasm
-              ? 'linear-gradient(135deg, #00c853, #64dd17)'
-              : 'linear-gradient(135deg, #2979ff, #448aff)',
-            color: '#fff',
-            fontWeight: 600,
-            fontSize: '12px',
-            cursor: isLoading ? 'wait' : 'pointer',
-            opacity: isLoading ? 0.6 : 1,
-          }}
-        >
-          {isLoading ? '⏳ Switching…' : useWasm ? '🔄 Switch to JS' : '⚡ Switch to WASM'}
-        </button>
+        {/* WASM is frozen R&D (#1080): the toggle appears only under ?renderer=wasm. */}
+        {wasmForced && (
+          <button
+            type="button"
+            onClick={() => initRenderer(!useWasm)}
+            disabled={isLoading}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '12px',
+              border: '1px solid rgba(255,255,255,0.15)',
+              background: useWasm
+                ? 'linear-gradient(135deg, #00c853, #64dd17)'
+                : 'linear-gradient(135deg, #2979ff, #448aff)',
+              color: '#fff',
+              fontWeight: 600,
+              fontSize: '12px',
+              cursor: isLoading ? 'wait' : 'pointer',
+              opacity: isLoading ? 0.6 : 1,
+            }}
+          >
+            {isLoading ? '⏳ Switching…' : useWasm ? '🔄 Switch to JS' : '⚡ Switch to WASM'}
+          </button>
+        )}
       </div>
 
       {/* Main Content */}

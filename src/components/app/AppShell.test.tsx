@@ -147,6 +147,7 @@ describe('AppShell chrome', () => {
 
     expect(screen.queryByAltText('Pixelocity')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /random image/i })).not.toBeInTheDocument();
+    // eslint-disable-next-line testing-library/no-node-access -- asserting CSS state classes, no accessible query exists
     expect(document.querySelector('.main-container.fullscreen')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: /show controls/i }));
@@ -162,5 +163,36 @@ describe('AppShell chrome', () => {
   it('shows Open Remote on non-public hosts', () => {
     render(<AppShell {...baseProps()} />);
     expect(screen.getByRole('button', { name: /open remote/i })).toBeInTheDocument();
+  });
+});
+
+describe('AppShell renderer pill (WASM frozen R&D, #1080)', () => {
+  beforeEach(() => {
+    mockedIsPublic.mockReturnValue(false);
+  });
+
+  afterEach(() => {
+    window.history.replaceState(null, '', '/');
+  });
+
+  it('is display-only and shows no R&D badge by default', () => {
+    const handleSwitchRenderer = jest.fn(async () => {});
+    render(<AppShell {...baseProps({ handleSwitchRenderer })} />);
+
+    const pill = screen.getByText('🔷 WebGPU');
+    fireEvent.click(pill);
+    expect(handleSwitchRenderer).not.toHaveBeenCalled();
+    expect(screen.queryByText('Experimental (R&D)')).not.toBeInTheDocument();
+  });
+
+  it('shows the Experimental (R&D) badge only when WASM is forced via ?renderer=wasm', () => {
+    window.history.replaceState(null, '', '/?renderer=wasm');
+    render(<AppShell {...baseProps({ activeRendererType: 'wasm' })} />);
+    expect(screen.getByText('Experimental (R&D)')).toBeInTheDocument();
+  });
+
+  it('shows no R&D badge when WASM is active without the URL override', () => {
+    render(<AppShell {...baseProps({ activeRendererType: 'wasm' })} />);
+    expect(screen.queryByText('Experimental (R&D)')).not.toBeInTheDocument();
   });
 });

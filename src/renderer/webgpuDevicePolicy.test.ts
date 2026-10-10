@@ -1,9 +1,10 @@
 import {
-  ADAPTER_ATTEMPT_LADDER,
   assertAdapterMeetsContract,
   buildRequiredLimits,
+  BUFFER_SIZE_LIMIT_FLOORS,
+  DEEP_WORKGROUP_LIMITS,
+  meetsDeepWorkgroupLimits,
   MINIMUM_COMPUTE_LIMITS,
-  requestAdapterWithFallback,
 } from './webgpuDevicePolicy';
 import { UNIFORM_BUFFER_LAYOUT } from './types';
 
@@ -75,6 +76,60 @@ describe('webgpuDevicePolicy', () => {
       expect(limits!.maxTextureDimension2D).toBe(MINIMUM_COMPUTE_LIMITS.maxTextureDimension2D);
     });
 
+    it('requests 32x32 / 1024 invocations when the adapter offers them', () => {
+      const deep = makeLimits({
+        maxComputeInvocationsPerWorkgroup: 1024,
+        maxComputeWorkgroupSizeX: 1024,
+        maxComputeWorkgroupSizeY: 1024,
+      });
+      expect(DEEP_WORKGROUP_LIMITS).toEqual({
+        maxComputeWorkgroupSizeX: 32,
+        maxComputeWorkgroupSizeY: 32,
+        maxComputeInvocationsPerWorkgroup: 1024,
+      });
+      expect(buildRequiredLimits(1920, deep)).toMatchObject(DEEP_WORKGROUP_LIMITS);
+      // Base limits are still present alongside the deep block.
+      expect(buildRequiredLimits(1920, deep)!.maxBindingsPerBindGroup).toBe(14);
+    });
+
+    it('keeps 16x16 / 256 when the adapter falls short on any deep limit', () => {
+      const shallow = makeLimits({ maxComputeInvocationsPerWorkgroup: 256 });
+      const narrowY = makeLimits({
+        maxComputeInvocationsPerWorkgroup: 1024,
+        maxComputeWorkgroupSizeX: 1024,
+        maxComputeWorkgroupSizeY: 16,
+      });
+      for (const limits of [shallow, narrowY, undefined]) {
+        expect(buildRequiredLimits(1920, limits)).toMatchObject({
+          maxComputeWorkgroupSizeX: 16,
+          maxComputeWorkgroupSizeY: 16,
+          maxComputeInvocationsPerWorkgroup: 256,
+        });
+      }
+      expect(meetsDeepWorkgroupLimits(narrowY)).toBe(false);
+    });
+
+    it('requests the adapter buffer-size limits so the 2048 gate can see them (#1395)', () => {
+      const fat = makeLimits({ maxBufferSize: 4294967296, maxStorageBufferBindingSize: 2147483648 });
+      expect(buildRequiredLimits(1920, fat)).toMatchObject({
+        maxBufferSize: 4294967296,
+        maxStorageBufferBindingSize: 2147483648,
+      });
+    });
+
+    it('leaves buffer-size limits at the spec default when the adapter offers no more', () => {
+      expect(BUFFER_SIZE_LIMIT_FLOORS).toEqual({
+        maxBufferSize: 268435456,
+        maxStorageBufferBindingSize: 134217728,
+      });
+      const base = makeLimits({ maxBufferSize: 268435456, maxStorageBufferBindingSize: 134217728 });
+      for (const limits of [base, undefined]) {
+        const required = buildRequiredLimits(1920, limits)!;
+        expect(required).not.toHaveProperty('maxBufferSize');
+        expect(required).not.toHaveProperty('maxStorageBufferBindingSize');
+      }
+    });
+
     it('does not canvas-scale maxTextureDimension2D (no pointer / pixel-count need)', () => {
       // Regression: mis-ordered initWasmRenderer args once fed a heap pointer (~79984)
       // into the WASM CheckLimit need. The JS mirror must stay on the named 8192 floor.
@@ -111,45 +166,6 @@ describe('webgpuDevicePolicy', () => {
       const result = assertAdapterMeetsContract(adapter, { maxCanvasDim: 1024 });
       expect(result.ok).toBe(false);
       expect(result.failures.some((f) => f.includes('maxTextureDimension2D') && f.includes('8192'))).toBe(true);
-    });
-  });
-
-  describe('requestAdapterWithFallback', () => {
-    it('tries the 4-step ladder until an adapter is returned', async () => {
-      const mockAdapter = makeAdapter();
-      const requestAdapter = jest
-        .fn()
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(mockAdapter);
-
-      const gpu = { requestAdapter } as unknown as GPU;
-      const { adapter, attemptLabel, attemptLogs } = await requestAdapterWithFallback(gpu);
-
-      expect(adapter).toBe(mockAdapter);
-      expect(attemptLabel).toBe('LowPower');
-      expect(requestAdapter).toHaveBeenCalledTimes(3);
-      expect(attemptLogs.length).toBe(3);
-      expect(attemptLogs[2].adapterPresent).toBe(true);
-    });
-
-    it('returns null after all ladder attempts fail', async () => {
-      const requestAdapter = jest.fn().mockResolvedValue(null);
-      const gpu = { requestAdapter } as unknown as GPU;
-      const { adapter, attemptLogs } = await requestAdapterWithFallback(gpu);
-      expect(adapter).toBeNull();
-      expect(requestAdapter).toHaveBeenCalledTimes(ADAPTER_ATTEMPT_LADDER.length);
-      expect(attemptLogs.length).toBe(ADAPTER_ATTEMPT_LADDER.length);
-      expect(attemptLogs.every((l) => !l.adapterPresent)).toBe(true);
-    });
-
-    it('passes forceFallbackAdapter on the final attempt', async () => {
-      const requestAdapter = jest.fn().mockResolvedValue(null);
-      const gpu = { requestAdapter } as unknown as GPU;
-      await requestAdapterWithFallback(gpu);
-
-      const lastCall = requestAdapter.mock.calls[ADAPTER_ATTEMPT_LADDER.length - 1][0];
-      expect(lastCall.forceFallbackAdapter).toBe(true);
     });
   });
 });

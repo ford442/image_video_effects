@@ -1,0 +1,67 @@
+# WASM Backend Support Policy (Tier B)
+
+**Status:** Tier B, frozen R&D as of 2026-09-27 (#1080). Parity bugs only; GraphRunner TS-only.
+
+**Decision:** June 2026 — **Option B: Opt-in experimental backend**
+
+The TypeScript WebGPU renderer is the **default production path**. The C++ Emscripten WASM renderer is an **experimental, opt-in performance backend** until promotion criteria are met.
+
+## Support tiers
+
+| Tier | Backend | User-facing | SLA |
+|------|---------|-------------|-----|
+| **A — Production** | TypeScript WebGPU | Default; recommended | Full feature parity; must work on supported browsers |
+| **B — Frozen R&D** | C++ WASM (`?renderer=wasm` only, no UI toggle since #1329) | Status pill shows an **Experimental (R&D)** badge | Must not crash app; best-effort parity; no guarantee on edge GPUs |
+| Dev escape | Canvas2D (`js`, `?renderer=js`) | Explicit URL only | No shader effects |
+
+WASM is **never** an automatic fallback. Users must explicitly choose it.
+
+## How to enable (developers / power users)
+
+```
+http://localhost:3000/?renderer=wasm
+```
+
+There is no UI toggle (removed in #1329 after the #1080 freeze). With the URL override the status-bar pill shows an **Experimental (R&D)** badge, and the Dev Tools debug panel and Live Studio offer a WASM button.
+
+## Promotion gate (Tier B → Tier A)
+
+Promote WASM to full production support only when **all** are true:
+
+1. **Performance:** WASM ≥ **1.25×** TS WebGPU (FPS or frame time) on **≥3** priority shaders (fluids, reaction-diffusion, multi-slot stacks) — measured via `npm run test:wasm:bench` with `WASM_GPU_TESTS=1`
+2. **Reliability:** Playwright parity suite green on **≥2** distinct GPU configs (document hardware in issue/PR). Attach the frozen-seed pixel diff (`npm run test:wasm:pixeldiff`, `test-results/wasm-pixel-diff.json` with `gpuObserved: true`) — statistical parity alone can pass on structurally different images. Adapter strings for both backends are readable in **Controls → Dev Tools → renderer diagnostics**
+3. **Integration:** No P0 gaps in normal Controls flow (shader pick, params, input sources, recording) — not just `testMode`
+4. **Ops:** CI `wasm` + `test-wasm-e2e` jobs green for **4 consecutive weeks** without emdawn/emsdk breakage
+
+## Demotion gate (Tier B → remove)
+
+Archive or remove the WASM path if:
+
+- Benchmark pass shows **no meaningful win** on target shader classes, **or**
+- Init failure rate is unacceptably high on target browsers after #817–#822 fixes
+
+Demotion action: hide UI toggle, keep `wasm_renderer/` as R&D or move to separate branch; stop committing `public/wasm/*` binaries.
+
+**Triggered 2026-09-27** ([evidence](../reports/wasm-promotion-evidence-2026-09-27.md), #1080): no meaningful win on a Tesla T4. Applied as a freeze, not a removal: UI toggle hidden and per-PR WASM CI trimmed (#1329); `wasm_renderer/` and committed `public/wasm/*` artifacts kept.
+
+## Engineering rules while Tier B
+
+1. **TS first:** New renderer features land in `WebGPURenderer` + `RendererManager`; WASM ports are follow-ups, not blockers
+1a. **Feature freeze while gates are open (reaffirmed 2026-08-01):** no new C++ renderer features — **parity bugs only**. Specifically out of scope until a GPU session closes gates 1–3: porting `GraphRunner` to C++ (`frame.cpp`), and making WASM the default backend. Measurement/diagnostics tooling is in scope
+2. **No dual-SLA bugs:** P0 fixes target TS path; WASM gets P1 unless WASM-only regression
+3. **CI:** WASM jobs (`wasm`, `test-wasm-e2e`) live in [`.github/workflows/wasm.yml`](../.github/workflows/wasm.yml) and run only on PRs touching `wasm_renderer/**`, `public/wasm/**` or `tests/wasm-*`, weekly on `main`, or on demand (#1329). They are not required checks. Parity/benchmark Playwright tests may skip without GPU
+4. **Docs:** Do not describe WASM as "Phase 3 complete / production ready" — see `wasm_renderer/STATUS.md`
+
+## Related docs
+
+- [`WASM_RENDERER_GAP_ANALYSIS.md`](./WASM_RENDERER_GAP_ANALYSIS.md) — technical gaps
+- [`WASM_TEST_SUITE.md`](./WASM_TEST_SUITE.md) — how to run benchmarks and parity tests
+- [`WASM_PROMOTION_TRACKING.md`](./WASM_PROMOTION_TRACKING.md) — Tier B → A checklist + evidence log
+- [`wasm_renderer/ARTIFACTS.md`](../wasm_renderer/ARTIFACTS.md) — build artifacts
+- [`wasm_renderer/STATUS.md`](../wasm_renderer/STATUS.md) — implementation snapshot
+- GitHub: [#885](https://github.com/ford442/image_video_effects/issues/885) (epic), [#890](https://github.com/ford442/image_video_effects/issues/890) (promotion tracking)
+- Closed batches: #799/#817–#823 (C++ init), #845–#849 (integration/CI), #886–#889 (July glue/tests)
+
+## Native desktop (out of scope for Tier B)
+
+A future Vulkan/Metal app via Dawn would likely **fork** `wasm_renderer/` into a separate repo. The browser WASM module is not the desktop delivery vehicle.

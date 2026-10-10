@@ -5,7 +5,7 @@
  * Strict mode (WASM_GPU_TESTS=1): requires real ?renderer=wasm backend, FPS health,
  * and exercises the full parity matrix (fluid, RD, audio, generative, interactive).
  *
- *   npm run build && WASM_GPU_TESTS=1 npm run test:wasm:smoke
+ *   npm run build && WASM_GPU_TESTS=1 npm run test:wasm:e2e
  */
 
 import { test, expect } from '@playwright/test';

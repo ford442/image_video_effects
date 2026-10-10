@@ -17,7 +17,6 @@
     "audio-reactive",
     "upgraded-rgba"
   ],
-  "author": "Kimi",
   "params": [
     {
       "id": "trail_length",
@@ -60,40 +59,45 @@
       "description": "Controls mouse-driven or secondary variation influence."
     }
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Trail Length",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Glow Radius",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Color Shift",
-      "default": 0,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Particle Density",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    }
-  ],
   "updated": true,
-  "category": "generative"
+  "category": "generative",
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Trail Length",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Glow Radius",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Color Shift",
+          "default": 0,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Particle Density",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
+    },
+    "author": "Kimi"
+  }
 }

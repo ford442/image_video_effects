@@ -1,5 +1,8 @@
   const path = require('path');
   module.exports = {
+    // `npm run lint` (.eslintrc.cjs) is the lint gate. CRA's in-build pass would
+    // re-run the type-aware rules and, with CI=true, fail the build on warnings.
+    eslint: { enable: false },
     webpack: {
       configure: (webpackConfig) => {
         webpackConfig.module.rules.push({
@@ -42,6 +45,16 @@
         return webpackConfig;
       },
     },
+    // Same cross-origin isolation as production (build.sh .htaccess, #1314), so
+    // `npm start` exercises the SharedArrayBuffer input ring of the render worker.
+    devServer: (devServerConfig) => ({
+      ...devServerConfig,
+      headers: {
+        ...(devServerConfig.headers || {}),
+        'Cross-Origin-Opener-Policy': 'same-origin',
+        'Cross-Origin-Embedder-Policy': 'credentialless',
+      },
+    }),
     jest: {
       configure: (jestConfig) => {
         // Jest 27 has no webpack extensionAlias. Browser ESM keeps explicit

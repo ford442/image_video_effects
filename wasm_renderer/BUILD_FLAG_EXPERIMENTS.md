@@ -32,7 +32,7 @@ ASYNCIFY is required for `wgpuInstanceWaitAny` + emdawn callback mode (`device.c
 
 ### CMake vs `build.sh`
 
-CI and `npm run wasm:build` use **`build.sh` only**. CMake (`CMakeLists.txt`) is IDE/fallback — two-step emdawn historically broke with `-sUSE_WEBGPU=1` leakage.
+CI and `npm run wasm:build` use **`build.sh` only**. `CMakeLists.txt` was deleted in 2026-10: it was never a CI build, two-step emdawn historically broke with `-sUSE_WEBGPU=1` leakage, and it guessed the emdawn include dir.
 
 **2026-07-26:** Removed duplicate `-sGROWABLE_ARRAYBUFFERS=0` from the emcc line (cosmetic; no size change).
 
@@ -66,11 +66,33 @@ change. That is the drift `latest` would have let through silently.
 
 ### Flag SoT
 
-`build.sh` (via `scripts/format-wasm-compile-flags.js`) and `CMakeLists.txt` (`file(READ)` +
-`string(JSON)`) both read `std`, `opt`, `usePort`, `sFlags`, `jsOutputName` from
-`wasm_compile_flags.json`. `verify:wasm-invariants` fails if either hardcodes a `-s` flag or
+`build.sh` (via `scripts/format-wasm-compile-flags.js`) reads `std`, `opt`, `usePort`,
+`sFlags`, `extraFlags`, `jsOutputName` from
+`wasm_compile_flags.json`. `verify:wasm-invariants` fails if it hardcodes a `-s` flag or
 `--use-port`, or if CI's emsdk version drifts from the pin. The flag set is unchanged, and so is the output
 (see the byte-identical rebuild above).
+
+### `-sENVIRONMENT=web`, `-msimd128`, `-flto` (2026-10-03, emsdk 6.0.9, `-O2`, ASYNCIFY)
+
+Measured with the source of the WP-B correctness branch. All variants pass `wasm:validate`.
+
+| Variant | .wasm bytes | .js bytes | Delta (.wasm / .js) |
+|---------|------------:|----------:|---------------------|
+| baseline | 158,745 | 82,803 | — |
+| `-sENVIRONMENT=web` | 158,745 | 81,385 | 0 / −1,418 |
+| `-msimd128` | 159,855 | 82,803 | +1,110 / 0 |
+| `-flto` | 146,198 | 83,053 | **−12,547** / +250 |
+| web + simd128 | 159,855 | 81,385 | +1,110 / −1,418 |
+| web + simd128 + flto | 147,096 | 81,635 | −11,649 / −1,168 |
+
+**Decision: adopt `-flto` only** (`extraFlags` in `wasm_compile_flags.json`).
+- `-flto`: −12.5 KB `.wasm` for +250 B glue. Pure optimisation, no ABI change.
+- `-sENVIRONMENT=web`: rejected. It only trims 1.4 KB of glue, and it drops the worker/node
+  loaders. That would block loading the module in a Worker, which the planned off-main-thread
+  render engine needs, and Node-side tooling.
+- `-msimd128`: rejected on size (+1.1 KB). The RGBA8→float upload loop and `FloatToHalf` did not
+  get smaller under autovectorisation at `-O2`. Revisit only with a measured upload-time win on
+  real hardware. That is a perf question, and it can't be answered headlessly.
 
 ### JSPI vs ASYNCIFY: stay on ASYNCIFY (2026-09-13)
 

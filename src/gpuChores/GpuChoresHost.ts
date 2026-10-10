@@ -15,7 +15,7 @@ import { lumaHistogramBt709 } from './histogram';
 import { gpuComputeKillReason, isGpuComputeKillSwitchEnabled } from './killSwitch';
 import { isWebGpuProbeOk, webGpuProbeFailureReason } from './probeGate';
 import { buildLumaClassifyLut, lutU8Map, unpackClassifyRgba8 } from './lut';
-import { rgbaFloatsToPngBase64 } from './pngEncode';
+import { rgbaFloatsToPngBase64Async } from './pngEncode';
 import { reduceF32FromHistogram, reduceF32Luma } from './reduce';
 import {
   APPLY_GAIN_WGSL,
@@ -42,6 +42,8 @@ const HIST_BYTES = HISTOGRAM_BINS * 4;
 const REDUCE_BYTES = 16;
 const CPU_CACHE_MAX = 128;
 const GPU_PERIOD = 8;
+/** Real readback failures in a row before chores fall back to CPU for this attachment. */
+const MAX_CONSECUTIVE_READBACK_FAILURES = 3;
 const CLASSIFY_BYTES_PER_PIXEL = 4;
 const CLASSIFY_BYTES_PER_ROW = Math.ceil((PREVIEW_SIZE * CLASSIFY_BYTES_PER_PIXEL) / 256) * 256;
 const CLASSIFY_READ_BYTES = CLASSIFY_BYTES_PER_ROW * PREVIEW_SIZE;
@@ -51,6 +53,9 @@ export interface CpuSourceCache {
   width: number;
   height: number;
 }
+
+/** Index into the double-buffered readback pairs. */
+type ReadSlot = 0 | 1;
 
 interface GpuResources {
   histBuf: GPUBuffer;
@@ -97,8 +102,20 @@ export class GpuChoresHost {
   private classifyWidth = 0;
   private classifyHeight = 0;
   private frameCounter = 0;
-  private readSlot = 0;
+  private readSlot: ReadSlot = 0;
   private mapPending = false;
+  /** Bumped by releaseGpu(); in-flight maps from an older generation are ignored. */
+  private gpuGeneration = 0;
+  private readbackFailures = 0;
+  /** Histogram/reduce passes were encoded this frame (GPU_PERIOD frame). */
+  private histEncodedThisFrame = false;
+  /** The frame loop called encodeReadback this frame (copies ride the frame encoder). */
+  private readbackHandled = false;
+  private readbackEncodedSlot: ReadSlot | null = null;
+  /** Per-frame chore bind groups, reused while their resources are unchanged. */
+  private bindGroupCache = new Map<string, { deps: readonly unknown[]; group: GPUBindGroup }>();
+  /** Per-pass timestamp provider for the encodePreFx call in progress. */
+  private passProfile: ((label: string) => GPUComputePassTimestampWrites | undefined) | null = null;
   private sourceNormalizeEnabled = false;
   private physicsPinned = false;
   private colorFormat: InternalColorFormat = 'rgba32float';
@@ -242,12 +259,15 @@ export class GpuChoresHost {
     this.analyzeCpuCache();
   }
 
-  ingestOffscreen(canvas: HTMLCanvasElement | null, ctx: CanvasRenderingContext2D | null): void {
+  ingestOffscreen(
+    canvas: HTMLCanvasElement | OffscreenCanvas | null,
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null,
+  ): void {
     if (!canvas || !ctx) return;
     try {
       const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const floats = new Float32Array(image.data.length);
-      for (let i = 0; i < image.data.length; i++) floats[i] = image.data[i] / 255;
+      for (let i = 0; i < image.data.length; i++) floats[i] = image.data[i]! / 255;
       this.ingestRgba(floats, canvas.width, canvas.height);
     } catch {
       // Offscreen may be tainted; GPU hist still runs when available.
@@ -259,6 +279,28 @@ export class GpuChoresHost {
    * Optional apply_gain_2d writes dest then copies back onto source (readTex).
    */
   encodePreFx(
+    encoder: GPUCommandEncoder,
+    source: GPUTexture,
+    srcW: number,
+    srcH: number,
+    dest?: GPUTexture | null,
+    profile?: (label: string) => GPUComputePassTimestampWrites | undefined,
+  ): void {
+    this.passProfile = profile ?? null;
+    try {
+      this.encodePreFxPasses(encoder, source, srcW, srcH, dest);
+    } finally {
+      this.passProfile = null;
+    }
+  }
+
+  /** Pass descriptor with this frame's profiler stamps, when one is attached. */
+  private passDescriptor(label: string): GPUComputePassDescriptor {
+    const timestampWrites = this.passProfile?.(label);
+    return timestampWrites ? { label, timestampWrites } : { label };
+  }
+
+  private encodePreFxPasses(
     encoder: GPUCommandEncoder,
     source: GPUTexture,
     srcW: number,
@@ -288,28 +330,32 @@ export class GpuChoresHost {
     }
     encoder.copyBufferToBuffer(gpu.reduceInitBuf, 0, gpu.reduceBuf, 0, REDUCE_BYTES);
 
-    const histBg = device.createBindGroup({
-      layout: gpu.histLayout,
-      entries: [
-        { binding: 0, resource: source.createView() },
-        { binding: 1, resource: { buffer: gpu.histBuf } },
-      ],
-    });
-    const histPass = encoder.beginComputePass({ label: 'gpu-chores-histogram' });
+    const histBg = this.cachedBindGroup('hist', [gpu.histLayout, source, gpu.histBuf], () =>
+      device.createBindGroup({
+        label: 'gpu-chores-histogram',
+        layout: gpu.histLayout,
+        entries: [
+          { binding: 0, resource: source.createView() },
+          { binding: 1, resource: { buffer: gpu.histBuf } },
+        ],
+      }));
+    const histPass = encoder.beginComputePass(this.passDescriptor('gpu-chores-histogram'));
     histPass.setPipeline(gpu.histPipeline);
     histPass.setBindGroup(0, histBg);
     const wg = workgroups2d(srcW, srcH, 8, 8, this.maxWorkgroups);
     this.dispatchWorkgroupsSafe(histPass, wg.x, wg.y);
     histPass.end();
 
-    const reduceBg = device.createBindGroup({
-      layout: gpu.reduceLayout,
-      entries: [
-        { binding: 0, resource: source.createView() },
-        { binding: 1, resource: { buffer: gpu.reduceBuf } },
-      ],
-    });
-    const reducePass = encoder.beginComputePass({ label: 'gpu-chores-reduce' });
+    const reduceBg = this.cachedBindGroup('reduce', [gpu.reduceLayout, source, gpu.reduceBuf], () =>
+      device.createBindGroup({
+        label: 'gpu-chores-reduce',
+        layout: gpu.reduceLayout,
+        entries: [
+          { binding: 0, resource: source.createView() },
+          { binding: 1, resource: { buffer: gpu.reduceBuf } },
+        ],
+      }));
+    const reducePass = encoder.beginComputePass(this.passDescriptor('gpu-chores-reduce'));
     reducePass.setPipeline(gpu.reducePipeline);
     reducePass.setBindGroup(0, reduceBg);
     this.dispatchWorkgroupsSafe(reducePass, wg.x, wg.y);
@@ -317,17 +363,29 @@ export class GpuChoresHost {
 
     this.encodeDownsampleAndLut(encoder, gpu, device, source, srcW, srcH);
     this.encodeSourceGain(encoder, gpu, device, source, dest ?? null, srcW, srcH);
+    this.histEncodedThisFrame = true;
     this.noteOp('luma_histogram_bt709', 'webgpu');
   }
 
-  afterSubmit(): void {
+  /**
+   * Encode this frame's histogram/reduce/classify readback copies into the
+   * frame encoder, so chores add no submit of their own (#1314). afterSubmit
+   * then only maps. Callers that skip this keep the legacy own-submit path.
+   */
+  encodeReadback(encoder: GPUCommandEncoder): void {
+    this.readbackHandled = true;
+    const encoded = this.histEncodedThisFrame;
+    this.histEncodedThisFrame = false;
     const gpu = this.gpu;
-    const device = this.device;
-    if (!gpu || !device || !this.breadcrumbs.gpuComputeAvailable || this.mapPending) return;
-    if (this.frameCounter % GPU_PERIOD !== 1 && this.frameCounter !== 1) return;
-
+    if (!encoded || !gpu || !this.device || !this.breadcrumbs.gpuComputeAvailable || this.mapPending) {
+      return;
+    }
     const slot = this.readSlot;
-    const encoder = device.createCommandEncoder({ label: 'gpu-chores-readback' });
+    this.encodeReadbackCopies(encoder, gpu, slot);
+    this.readbackEncodedSlot = slot;
+  }
+
+  private encodeReadbackCopies(encoder: GPUCommandEncoder, gpu: GpuResources, slot: ReadSlot): void {
     encoder.copyBufferToBuffer(gpu.histBuf, 0, gpu.histRead[slot], 0, HIST_BYTES);
     encoder.copyBufferToBuffer(gpu.reduceBuf, 0, gpu.reduceRead[slot], 0, REDUCE_BYTES);
     encoder.copyTextureToBuffer(
@@ -335,9 +393,50 @@ export class GpuChoresHost {
       { buffer: gpu.classifyRead[slot], bytesPerRow: CLASSIFY_BYTES_PER_ROW, rowsPerImage: PREVIEW_SIZE },
       [PREVIEW_SIZE, PREVIEW_SIZE, 1],
     );
-    device.queue.submit([encoder.finish()]);
+  }
 
+  private cachedBindGroup(
+    key: string,
+    deps: readonly unknown[],
+    create: () => GPUBindGroup,
+  ): GPUBindGroup {
+    const hit = this.bindGroupCache.get(key);
+    if (hit && hit.deps.length === deps.length && hit.deps.every((d, i) => d === deps[i])) {
+      return hit.group;
+    }
+    const group = create();
+    this.bindGroupCache.set(key, { deps, group });
+    return group;
+  }
+
+  afterSubmit(): void {
+    const gpu = this.gpu;
+    const device = this.device;
+    if (this.readbackHandled) {
+      this.readbackHandled = false;
+      const slot = this.readbackEncodedSlot;
+      this.readbackEncodedSlot = null;
+      if (slot !== null && gpu && device) this.mapReadback(gpu, slot);
+      return;
+    }
+
+    // Legacy path: the caller did not encode readback into its frame encoder.
+    this.histEncodedThisFrame = false;
+    if (!gpu || !device || !this.breadcrumbs.gpuComputeAvailable || this.mapPending) return;
+    if (this.frameCounter % GPU_PERIOD !== 1 && this.frameCounter !== 1) return;
+
+    const slot = this.readSlot;
+    const encoder = device.createCommandEncoder({ label: 'gpu-chores-readback' });
+    this.encodeReadbackCopies(encoder, gpu, slot);
+    device.queue.submit([encoder.finish()]);
+    this.mapReadback(gpu, slot);
+  }
+
+  private mapReadback(gpu: GpuResources, slot: ReadSlot): void {
     this.mapPending = true;
+    // releaseGpu() destroys these buffers; a map that settles after it belongs to
+    // resources that no longer exist and must not touch the current attachment.
+    const generation = this.gpuGeneration;
     const histRead = gpu.histRead[slot];
     const reduceRead = gpu.reduceRead[slot];
     const classifyRead = gpu.classifyRead[slot];
@@ -347,6 +446,7 @@ export class GpuChoresHost {
       classifyRead.mapAsync(GPUMapMode.READ),
     ])
       .then(() => {
+        if (generation !== this.gpuGeneration) return;
         const histCopy = new Uint32Array(histRead.getMappedRange().slice(0));
         const reduceCopy = new Uint32Array(reduceRead.getMappedRange().slice(0));
         const classifyPacked = new Uint8Array(classifyRead.getMappedRange().slice(0));
@@ -354,10 +454,12 @@ export class GpuChoresHost {
         reduceRead.unmap();
         classifyRead.unmap();
         this.applyGpuReadback(histCopy, reduceCopy, classifyPacked);
-        this.readSlot = 1 - slot;
+        this.readSlot = slot === 0 ? 1 : 0;
         this.mapPending = false;
+        this.readbackFailures = 0;
       })
       .catch((err) => {
+        if (generation !== this.gpuGeneration) return;
         try {
           histRead.unmap();
           reduceRead.unmap();
@@ -366,6 +468,10 @@ export class GpuChoresHost {
           /* already unmapped */
         }
         this.mapPending = false;
+        // An aborted map (buffer unmapped / destroyed under it) is not a chores failure.
+        if ((err as { name?: string } | null)?.name === 'AbortError') return;
+        this.readbackFailures += 1;
+        if (this.readbackFailures < MAX_CONSECUTIVE_READBACK_FAILURES) return;
         this.setStatus(
           false,
           `webgpu readback failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -417,7 +523,7 @@ export class GpuChoresHost {
       readBuf.unmap();
       const floats = rgba16BufferToRgba32(packed, size, size, bytesPerRow);
       this.noteOp('downsample_2d', 'webgpu');
-      return rgbaFloatsToPngBase64(floats, size, size);
+      return await rgbaFloatsToPngBase64Async(floats, size, size);
     } catch {
       return null;
     } finally {
@@ -462,15 +568,17 @@ export class GpuChoresHost {
     const params = new Float32Array([gain, 0, 0, 0]);
     device.queue.writeBuffer(gpu.gainParams, 0, params);
 
-    const bg = device.createBindGroup({
-      layout: gpu.gainLayout,
-      entries: [
-        { binding: 0, resource: source.createView() },
-        { binding: 1, resource: dest.createView() },
-        { binding: 2, resource: { buffer: gpu.gainParams } },
-      ],
-    });
-    const pass = encoder.beginComputePass({ label: 'gpu-chores-apply-gain' });
+    const bg = this.cachedBindGroup('gain', [gpu.gainLayout, source, dest, gpu.gainParams], () =>
+      device.createBindGroup({
+        label: 'gpu-chores-apply-gain',
+        layout: gpu.gainLayout,
+        entries: [
+          { binding: 0, resource: source.createView() },
+          { binding: 1, resource: dest.createView() },
+          { binding: 2, resource: { buffer: gpu.gainParams } },
+        ],
+      }));
+    const pass = encoder.beginComputePass(this.passDescriptor('gpu-chores-apply-gain'));
     pass.setPipeline(gpu.gainPipeline);
     pass.setBindGroup(0, bg);
     const wg = workgroups2d(srcW, srcH, 8, 8, this.maxWorkgroups);
@@ -509,17 +617,20 @@ export class GpuChoresHost {
       PREVIEW_SIZE,
       PREVIEW_SIZE,
       this.breadcrumbs.autoUniforms.exposureGain,
+      'downsample:preview',
     );
 
-    const lutBg = device.createBindGroup({
-      layout: gpu.lutLayout,
-      entries: [
-        { binding: 0, resource: source.createView() },
-        { binding: 1, resource: gpu.classifyTex.createView() },
-        { binding: 2, resource: { buffer: gpu.lutBuf } },
-      ],
-    });
-    const lutPass = encoder.beginComputePass({ label: 'gpu-chores-lut' });
+    const lutBg = this.cachedBindGroup('lut', [gpu.lutLayout, source, gpu.classifyTex, gpu.lutBuf], () =>
+      device.createBindGroup({
+        label: 'gpu-chores-lut',
+        layout: gpu.lutLayout,
+        entries: [
+          { binding: 0, resource: source.createView() },
+          { binding: 1, resource: gpu.classifyTex.createView() },
+          { binding: 2, resource: { buffer: gpu.lutBuf } },
+        ],
+      }));
+    const lutPass = encoder.beginComputePass(this.passDescriptor('gpu-chores-lut'));
     lutPass.setPipeline(gpu.lutPipeline);
     lutPass.setBindGroup(0, lutBg);
     const preview = workgroups2d(PREVIEW_SIZE, PREVIEW_SIZE, 8, 8, this.maxWorkgroups);
@@ -538,6 +649,7 @@ export class GpuChoresHost {
     destW: number,
     destH: number,
     gain: number,
+    cacheKey: string | null = null,
   ): void {
     const params = new Float32Array(8);
     const u32 = new Uint32Array(params.buffer);
@@ -548,15 +660,20 @@ export class GpuChoresHost {
     params[4] = clampExposureGain(gain);
     device.queue.writeBuffer(gpu.downsampleParams, 0, params);
 
-    const dsBg = device.createBindGroup({
-      layout: gpu.downsampleLayout,
-      entries: [
-        { binding: 0, resource: source.createView() },
-        { binding: 1, resource: dest.createView() },
-        { binding: 2, resource: { buffer: gpu.downsampleParams } },
-      ],
-    });
-    const dsPass = encoder.beginComputePass({ label: 'gpu-chores-downsample' });
+    const createDsBg = () =>
+      device.createBindGroup({
+        label: 'gpu-chores-downsample',
+        layout: gpu.downsampleLayout,
+        entries: [
+          { binding: 0, resource: source.createView() },
+          { binding: 1, resource: dest.createView() },
+          { binding: 2, resource: { buffer: gpu.downsampleParams } },
+        ],
+      });
+    const dsBg = cacheKey
+      ? this.cachedBindGroup(cacheKey, [gpu.downsampleLayout, source, dest, gpu.downsampleParams], createDsBg)
+      : createDsBg();
+    const dsPass = encoder.beginComputePass(this.passDescriptor('gpu-chores-downsample'));
     dsPass.setPipeline(gpu.downsamplePipeline);
     dsPass.setBindGroup(0, dsBg);
     const ds = workgroups2d(destW, destH, 8, 8, this.maxWorkgroups);
@@ -576,9 +693,9 @@ export class GpuChoresHost {
     const count = reduceRaw[3] || 0;
     const reduce = count > 0
       ? {
-          min: reduceRaw[0] / 65535,
-          max: reduceRaw[1] / 65535,
-          mean: reduceRaw[2] / 65535 / count,
+          min: reduceRaw[0]! / 65535,
+          max: reduceRaw[1]! / 65535,
+          mean: reduceRaw[2]! / 65535 / count,
         }
       : fromHist;
     this.breadcrumbs.autoUniforms = {
@@ -728,7 +845,7 @@ export class GpuChoresHost {
       device.createBuffer({ label: 'chores-classify-read-1', size: CLASSIFY_READ_BYTES, usage: mapRead }),
     ];
     const lutU32 = new Uint32Array(LUT_SIZE);
-    for (let i = 0; i < LUT_SIZE; i++) lutU32[i] = this.classifyLut[i];
+    for (let i = 0; i < LUT_SIZE; i++) lutU32[i] = this.classifyLut[i] ?? 0;
     const lutBuf = device.createBuffer({
       label: 'chores-lut',
       size: LUT_SIZE * 4,
@@ -816,7 +933,13 @@ export class GpuChoresHost {
   private releaseGpu(): void {
     const gpu = this.gpu;
     this.gpu = null;
+    this.gpuGeneration += 1;
+    this.readbackFailures = 0;
     this.mapPending = false;
+    this.histEncodedThisFrame = false;
+    this.readbackHandled = false;
+    this.readbackEncodedSlot = null;
+    this.bindGroupCache.clear();
     if (!gpu) return;
     gpu.histBuf.destroy();
     gpu.histRead[0].destroy();
@@ -900,10 +1023,10 @@ export function rgba16BufferToRgba32(
     }
     for (let x = 0; x < width; x++) {
       const di = (y * width + x) * 4;
-      out[di] = float16ToFloat32(row[x * 4]);
-      out[di + 1] = float16ToFloat32(row[x * 4 + 1]);
-      out[di + 2] = float16ToFloat32(row[x * 4 + 2]);
-      out[di + 3] = float16ToFloat32(row[x * 4 + 3]);
+      out[di] = float16ToFloat32(row[x * 4]!);
+      out[di + 1] = float16ToFloat32(row[x * 4 + 1]!);
+      out[di + 2] = float16ToFloat32(row[x * 4 + 2]!);
+      out[di + 3] = float16ToFloat32(row[x * 4 + 3]!);
     }
   }
   return out;

@@ -50,36 +50,6 @@
       "max": 1
     }
   ],
-  "updatedParams": [
-    {
-      "id": "param1",
-      "name": "Curl Radius",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "param2",
-      "name": "Shadow Strength",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "param3",
-      "name": "Feedback Amount",
-      "default": 0,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "param4",
-      "name": "Depth Influence",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    }
-  ],
   "tags": [
     "filter",
     "image-processing",
@@ -91,5 +61,39 @@
     "aces",
     "oklab",
     "lighting"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "id": "param1",
+          "name": "Curl Radius",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "id": "param2",
+          "name": "Shadow Strength",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "id": "param3",
+          "name": "Feedback Amount",
+          "default": 0,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "id": "param4",
+          "name": "Depth Influence",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        }
+      ]
+    }
+  }
 }

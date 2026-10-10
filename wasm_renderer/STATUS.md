@@ -8,14 +8,14 @@
 
 **Production default:** TypeScript WebGPU renderer.
 
-The C++ WASM path is available via `?renderer=wasm` or the Controls renderer switcher.
-It is labeled **Experimental** in the UI and is **not** held to the same SLA as the TS backend.
+The C++ WASM path is available only via `?renderer=wasm` (frozen R&D since 2026-09-27, #1080; no UI toggle).
+It shows an **Experimental (R&D)** badge in the status pill and is **not** held to the same SLA as the TS backend.
 
 | Doc | Purpose |
 |-----|---------|
-| [`WASM_BACKEND_POLICY.md`](../WASM_BACKEND_POLICY.md) | Tier B policy, promotion/demotion rules |
-| [`WASM_PROMOTION_TRACKING.md`](../WASM_PROMOTION_TRACKING.md) | Tier B → A checklist + evidence log ([#890](https://github.com/ford442/image_video_effects/issues/890)) |
-| [`WASM_RENDERER_GAP_ANALYSIS.md`](../WASM_RENDERER_GAP_ANALYSIS.md) | Technical gaps + July 2026 status |
+| [`WASM_BACKEND_POLICY.md`](../docs/WASM_BACKEND_POLICY.md) | Tier B policy, promotion/demotion rules |
+| [`WASM_PROMOTION_TRACKING.md`](../docs/WASM_PROMOTION_TRACKING.md) | Tier B → A checklist + evidence log ([#890](https://github.com/ford442/image_video_effects/issues/890)) |
+| [`WASM_RENDERER_GAP_ANALYSIS.md`](../docs/WASM_RENDERER_GAP_ANALYSIS.md) | Technical gaps + July 2026 status |
 
 ---
 
@@ -25,7 +25,7 @@ The C++ WASM renderer runs the full compute pipeline and blits to the canvas via
 `PresentToSurface()`. Init/format/limits handshake was hardened in #817–#822.
 
 > **Do not read "pipeline implemented" as "production ready."** WASM remains Tier B
-> until all promotion gates in [`WASM_PROMOTION_TRACKING.md`](../WASM_PROMOTION_TRACKING.md) pass.
+> until all promotion gates in [`WASM_PROMOTION_TRACKING.md`](../docs/WASM_PROMOTION_TRACKING.md) pass.
 
 Older analysis files (`ARCHITECTURE_ANALYSIS.md`, `COMPLETENESS_ANALYSIS.md`,
 `PERFORMANCE_ANALYSIS.md`, `STABILITY_ANALYSIS.md`, `RENDERER_PLAN.md`) are
@@ -63,7 +63,7 @@ Older analysis files (`ARCHITECTURE_ANALYSIS.md`, `COMPLETENESS_ANALYSIS.md`,
 |------------|-------|
 | Not production default | TS WebGPU is Tier A |
 | GPU timings on WASM | GPU timestamp queries when `timestamp-query` feature is supported; otherwise wall-clock (`available: false`) |
-| Promotion gates open | See [`WASM_PROMOTION_TRACKING.md`](../WASM_PROMOTION_TRACKING.md) |
+| Promotion gates open | See [`WASM_PROMOTION_TRACKING.md`](../docs/WASM_PROMOTION_TRACKING.md) |
 | Edge GPU coverage | Informal — run manual smoke on target hardware |
 | Visual pixel-diff | Not automated (statistical luminance parity only) |
 | Per-slot `QueueSubmit` | May affect perf — benchmark gate tracks |
@@ -84,7 +84,7 @@ Older analysis files (`ARCHITECTURE_ANALYSIS.md`, `COMPLETENESS_ANALYSIS.md`,
 | [#822](https://github.com/ford442/image_video_effects/issues/822) | Init hardening + diagnostics |
 | [#823](https://github.com/ford442/image_video_effects/issues/823) | Docs refresh (June 2026) |
 
-Full table: [`WASM_RENDERER_GAP_ANALYSIS.md` § C++ Solidification](../WASM_RENDERER_GAP_ANALYSIS.md#c-solidification-tracking-2026-06)
+Full table: [`WASM_RENDERER_GAP_ANALYSIS.md` § C++ Solidification](../docs/WASM_RENDERER_GAP_ANALYSIS.md#c-solidification-tracking-2026-06)
 
 ### Integration / CI / tests (#845–#849, #886–#889) — ✅ closed in tree
 
@@ -100,7 +100,7 @@ Umbrella: [#885](https://github.com/ford442/image_video_effects/issues/885)
 
 ### Open: promotion + docs (#890)
 
-- [`WASM_PROMOTION_TRACKING.md`](../WASM_PROMOTION_TRACKING.md) — evidence checklist
+- [`WASM_PROMOTION_TRACKING.md`](../docs/WASM_PROMOTION_TRACKING.md) — evidence checklist
 - [#890](https://github.com/ford442/image_video_effects/issues/890) — docs refresh (this pass)
 
 ---
@@ -122,9 +122,9 @@ Browser (TypeScript)
 http://localhost:3000/?renderer=wasm
 ```
 
-Or Controls → Renderer switcher (shows **Experimental** badge).
+The status pill then shows an **Experimental (R&D)** badge. There is no Controls toggle (#1329).
 
-Full testing guide: [`WASM_TESTING.md`](../WASM_TESTING.md) · [`WASM_TEST_SUITE.md`](../WASM_TEST_SUITE.md)
+Full testing guide: [`WASM_TESTING.md`](../docs/WASM_TESTING.md) · [`WASM_TEST_SUITE.md`](../docs/WASM_TEST_SUITE.md)
 
 Runtime switch:
 

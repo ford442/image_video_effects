@@ -13,9 +13,9 @@ Provides an alternative to the JavaScript WebGPU renderer with potential perform
 | Init/format/limits (#817–#822) | ✅ Closed |
 | Integration glue (#886–#887) | ✅ In tree |
 | Playwright + benchmarks (#889) | ✅ See `WASM_TEST_SUITE.md` |
-| Promotion to Tier A | ⬜ Open — [`WASM_PROMOTION_TRACKING.md`](../WASM_PROMOTION_TRACKING.md) |
+| Promotion to Tier A | ⬜ Open — [`WASM_PROMOTION_TRACKING.md`](../docs/WASM_PROMOTION_TRACKING.md) |
 
-Full snapshot: [`STATUS.md`](./STATUS.md) · gaps: [`WASM_RENDERER_GAP_ANALYSIS.md`](../WASM_RENDERER_GAP_ANALYSIS.md)
+Full snapshot: [`STATUS.md`](./STATUS.md) · gaps: [`WASM_RENDERER_GAP_ANALYSIS.md`](../docs/WASM_RENDERER_GAP_ANALYSIS.md)
 
 ⚠️ **Do not describe WASM as production-ready** until promotion gates pass.
 
@@ -32,13 +32,17 @@ Full snapshot: [`STATUS.md`](./STATUS.md) · gaps: [`WASM_RENDERER_GAP_ANALYSIS.
 | `resources.cpp` | Textures, buffers, samplers, `ResizeCanvas` / `RecreateTextures` |
 | `pipeline.cpp` | Shader load/reload, compute + blit pipelines, bind groups |
 | `frame.cpp` | Multi-slot `Render()`, uniforms flush, async frame capture |
-| `timing.cpp` | GPU timestamp queries + `getGPUTimings` resolve/readback |
+| `timing.cpp` | GPU timestamp queries: one begin/end pair per slot compute pass, resolve/readback, `getGPUTimings` phases + `getPassTimingsJson` (#1314 D) |
 | `audio_depth.cpp` | Image/video upload, depth map, audio FFT bins |
 | `wasm_internal.cpp/h` | Shared helpers (`CheckLimit`, `ParseWorkgroupSize`, …) |
 | `src/wasm/bridge/*.ts` | **Hand-edited TypeScript glue** (edit here; webpack compiles `src/wasm/wasm_bridge.ts`) |
 | `wasm_bridge.js` (generated) | ESM copies in `wasm_renderer/` + `public/wasm/` — do not edit |
-| `build.sh` | **Canonical build** — single-pass `emcc` + emdawnwebgpu |
-| `CMakeLists.txt` | Optional IDE/fallback build (link-time port only). Reads `src/contracts/wasm_exports.json` — not used in CI. |
+| `build.sh` | **The only build** — single-pass `emcc` + emdawnwebgpu. Flags from `src/contracts/wasm_compile_flags.json`, exports from `wasm_exports.json`. |
+
+There is no CMake build (removed 2026-10; it was never used by CI and guessed the emdawn
+include dir). For clangd/IDE indexing, point the language server at emsdk's
+`upstream/bin/clangd` with `--target=wasm32-unknown-emscripten` and
+`--sysroot=$EM_CACHE/sysroot`, plus the flags `build.sh` prints.
 
 Cross-reference: TypeScript device policy lives in `src/renderer/webgpuDevicePolicy.ts`
 (must stay in sync with `device.cpp` `CreateDevice()` limits table).
@@ -342,7 +346,7 @@ if (diagnostics.wasm?.errorCount > 0) {
 
 ### Testing Checklist
 
-See [`../WASM_TESTING.md`](../WASM_TESTING.md) for comprehensive testing procedures.
+See [`../WASM_TESTING.md`](../docs/WASM_TESTING.md) for comprehensive testing procedures.
 
 Quick smoke test:
 1. Open `http://localhost:3000/?renderer=wasm`
@@ -384,12 +388,12 @@ hardened the init/format/limits handshake:
 
 **July 2026 — integration + tests closed in tree (#886–#889). Still open for Tier A promotion:**
 
-- Promotion gates — [`WASM_PROMOTION_TRACKING.md`](../WASM_PROMOTION_TRACKING.md)
+- Promotion gates — [`WASM_PROMOTION_TRACKING.md`](../docs/WASM_PROMOTION_TRACKING.md)
 - Edge-GPU manual verification
 - Visual pixel-diff automation
 - `build.sh` requires `emcc` unless `SKIP_WASM_BUILD=1` (see [`ARTIFACTS.md`](./ARTIFACTS.md))
 
-Full tracking: [`WASM_RENDERER_GAP_ANALYSIS.md`](../WASM_RENDERER_GAP_ANALYSIS.md) · [`STATUS.md`](./STATUS.md)
+Full tracking: [`WASM_RENDERER_GAP_ANALYSIS.md`](../docs/WASM_RENDERER_GAP_ANALYSIS.md) · [`STATUS.md`](./STATUS.md)
 
 ## Roadmap
 

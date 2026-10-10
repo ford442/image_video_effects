@@ -20,6 +20,10 @@ export interface WasmBridgeDiagnostics {
   lastInitError: string;
   /** Adapter/device/limits summary from C++ CreateDevice(). */
   adapterInfo: string;
+  /** C++ canvas COPY_SRC boot probe (canvas_configure.json optIn.copySrc); null = artifact predates it. */
+  canvasCopySrc: boolean | null;
+  /** MAX_SHADER_SLOTS compiled into the loaded artifact; null = artifact predates the export. */
+  maxShaderSlots: number | null;
 }
 
 export interface GPUTimings {
@@ -28,6 +32,31 @@ export interface GPUTimings {
   totalTime: number;
   available: boolean;
   timingSource: 'gpu-timestamp' | 'wall-clock' | 'unavailable';
+}
+
+/** C++ per-pass GPU timing (#1314 D) in the shared PassTiming shape (src/renderer/passTimings.ts). */
+export interface WasmPassTiming {
+  /** `${slot}:${label}`; slot is '-' for the legacy single-shader pass. */
+  key: string;
+  label: string;
+  kind: 'compute';
+  slot?: number;
+  shaderId?: string;
+  entry?: string;
+  scale: number;
+  /** Smoothed (EMA) GPU milliseconds per frame. */
+  gpuMs: number;
+  iterations: number;
+}
+
+/** C++ uncaptured WebGPU error / device-lost ring (#1314 D). */
+export interface WasmErrorRing {
+  /** Messages pushed since the module loaded (clearErrorRing does not reset it). */
+  count: number;
+  /** Most recent held message, or ''. */
+  last: string;
+  /** Up to 16 most recent held messages, oldest first. */
+  recent: string[];
 }
 
 export interface SlotState {
@@ -92,6 +121,12 @@ export function getLastInitErrorStage(): number;
 export function getLastInitErrorMessage(): string;
 export function isInitialized(): boolean;
 export function uploadImageData(rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number): void;
+/** GPU still ingest (copyExternalImageToTexture); false = caller falls back to uploadImageData. */
+export function uploadImageSource(
+  source: HTMLImageElement | HTMLCanvasElement | ImageBitmap,
+  width: number,
+  height: number
+): boolean;
 export function uploadVideoFrame(rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number): void;
 
 export function resizeCanvas(newWidth: number, newHeight: number): void;
@@ -102,10 +137,27 @@ export function captureFrame(): Promise<ImageData>;
 export function captureFrameDataUrl(): Promise<string>;
 export function takeScreenshot(filename?: string): Promise<void>;
 
+/** One WebCodecs take (src/recording/gpuEncodeSupport.ts GpuEncodeSession). */
+export interface WasmEncodeSession {
+  readonly kind?: 'canvas' | 'readback';
+  stop(): Promise<Blob>;
+}
+
+/** WebCodecs starter injected by WASMRenderer; resolves null when no WebM codec is supported. */
+export type WasmGpuEncodeStarter = (
+  capture: () => Promise<ImageData>,
+  opts: { width: number; height: number; fps: number; bitrate: number }
+) => Promise<WasmEncodeSession | null>;
+
 export interface RecordingOptions {
   durationMs?: number;
   frameRate?: number;
   videoBitsPerSecond?: number;
+  fps?: number;
+  bitrate?: number;
+  mimeType?: string;
+  /** WebCodecs encoder; the default whenever VideoEncoder exists. */
+  gpuEncode?: WasmGpuEncodeStarter;
 }
 
 export function startRecording(
@@ -116,8 +168,23 @@ export function stopRecording(): void;
 export function recordAndDownload(
   canvasElement: HTMLCanvasElement,
   durationMs?: number,
-  filename?: string
+  filename?: string,
+  gpuEncode?: WasmGpuEncodeStarter
 ): Promise<void>;
+/** Loaded artifact probed canvas COPY_SRC as supported. */
+export function supportsCanvasCopySrc(): boolean;
+/** Reconfigure the C++ swapchain with/without COPY_SRC; false when refused or dropped. */
+export function setCanvasCopySrc(enabled: boolean): boolean;
+/** C++ Initialize() finished (the init ccall can return while CreateDevice is still suspended). */
+export function isCppRendererReady(): boolean;
+/** Live C++ canvas COPY_SRC probe; null while C++ init runs or the artifact predates it. */
+export function readCanvasCopySrc(): boolean | null;
+/** Smoothed C++ per-pass GPU timings; [] until timestamps resolve or when the artifact predates the export. */
+export function readPassTimings(): WasmPassTiming[];
+/** C++ uncaptured-error ring; empty when the artifact predates the export. */
+export function readErrorRing(): WasmErrorRing;
+/** Drop held error messages (count keeps counting); false when the artifact predates the export. */
+export function clearErrorRing(): boolean;
 
 export interface WasmRenderer {
   getDiagnostics(): WasmBridgeDiagnostics;
@@ -159,13 +226,26 @@ export interface WasmRenderer {
   getLastInitErrorMessage(): string;
   isInitialized(): boolean;
   uploadImageData(rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number): void;
+  uploadImageSource(source: HTMLImageElement | HTMLCanvasElement | ImageBitmap, width: number, height: number): boolean;
   uploadVideoFrame(rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number): void;
   resizeCanvas(newWidth: number, newHeight: number): void;
   captureFrame(): Promise<ImageData>;
   takeScreenshot(filename?: string): Promise<void>;
   startRecording(canvasElement: HTMLCanvasElement, options?: RecordingOptions): Promise<Blob>;
   stopRecording(): void;
-  recordAndDownload(canvasElement: HTMLCanvasElement, durationMs?: number, filename?: string): Promise<void>;
+  recordAndDownload(
+    canvasElement: HTMLCanvasElement,
+    durationMs?: number,
+    filename?: string,
+    gpuEncode?: WasmGpuEncodeStarter
+  ): Promise<void>;
+  supportsCanvasCopySrc(): boolean;
+  setCanvasCopySrc(enabled: boolean): boolean;
+  isCppRendererReady(): boolean;
+  readCanvasCopySrc(): boolean | null;
+  readPassTimings(): WasmPassTiming[];
+  readErrorRing(): WasmErrorRing;
+  clearErrorRing(): boolean;
 }
 
 declare const wasmRenderer: WasmRenderer;

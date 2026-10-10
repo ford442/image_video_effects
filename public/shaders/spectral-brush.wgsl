@@ -5,7 +5,9 @@
 //             oklab, chromatic-aberration, aces-tone-mapped, premultiplied-alpha,
 //             alpha-layered, luminance-key
 //  Complexity: High
-//  Upgraded: 2026-07-08
+//  Upgraded: 2026-10-04 (prev 2026-07-08)
+//  Ideas: stroke cooling along the blackbody locus; heat-haze shimmer above hot paint; cinder flicker in cooling embers
+//  A packing: (heat mask, brush alpha, 0, out alpha) — unchanged; B = alpha-layer debug (HEAD)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -105,6 +107,12 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+fn hash21(p: vec2<f32>) -> f32 {
+  var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
+
 // ═══ CHUNK: IGN_dither ═══
 fn ign(p: vec2<f32>) -> f32 { return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715)))); }
 
@@ -156,16 +164,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let finalMask = max(cooledMask, brushVal);
   let effectiveMask = mix(finalMask, 0.0, untouched);
 
+  // Idea 2 — heat-haze shimmer: hot paint below a pixel (y grows downward) refracts the
+  // photo with a rising, wavering offset, strongest just above the stroke.
+  let maxPx = vec2<i32>(res) - vec2<i32>(1);
+  let heatBelowNear = textureLoad(dataTextureC, clamp(pixel + vec2<i32>(0, 6), vec2<i32>(0), maxPx), 0).r;
+  let heatBelowFar = textureLoad(dataTextureC, clamp(pixel + vec2<i32>(0, 16), vec2<i32>(0), maxPx), 0).r;
+  let hazeHeat = clamp(max(effectiveMask * 0.6, max(heatBelowNear, heatBelowFar * 0.7)), 0.0, 1.0);
+  let waver = sin(uv.y * 90.0 + time * 7.0 + sin(uv.x * 37.0 - time * 2.3) * 1.6);
+  let hazeOffset = vec2<f32>(waver * 0.0024, -abs(waver) * 0.0014) * hazeHeat * (1.0 + bass * 0.5);
+  let hazeUV = clamp(uv + hazeOffset, vec2<f32>(0.0), vec2<f32>(1.0));
+
   // Base image with subtle spectral separation
   let caAmount = 0.0015 * (1.0 + bass) + depth * 0.001;
-  let baseRGB = chromaticAberration(uv, caAmount);
-  let baseSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let baseRGB = chromaticAberration(hazeUV, caAmount);
+  let baseSample = textureSampleLevel(readTexture, u_sampler, hazeUV, 0.0);
   let base = vec4<f32>(baseRGB, baseSample.a);
   let baseLin = srgb_to_linear(base.rgb);
 
-  // Blackbody spectral core, cooled by time and pushed by audio
-  let coolTime = time * 0.06;
-  let bbTemp = clamp(temperature + bass * 0.15 - coolTime * (1.0 - effectiveMask), 0.0, 1.0);
+  // Idea 1 — stroke cooling: the decaying mask is the stroke's heat, so a trail slides
+  // down the blackbody locus (white-hot at the tip -> orange -> ember red) as it fades.
+  let heat = effectiveMask;
+  let bbTemp = clamp((temperature + bass * 0.15) * pow(heat, 0.6), 0.0, 1.0);
   let T = mix(1800.0, 12000.0, bbTemp);
   var bbLin = srgb_to_linear(blackbodyRGB(T) * (1.0 + bass * 0.9 + mids * 0.25));
 
@@ -181,6 +200,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bloomFalloff = smoothstep(bloomRadius, 0.0, dist);
   let bloom = bbLin * bloomFalloff * bass * 0.7;
   color = color + bloom * effectiveMask;
+
+  // Idea 3 — cinder flicker: cooling embers (heat 0.05..0.35) carry sparse hashed sparks
+  // that re-roll at 12 Hz, thicken with treble, and die as the heat reaches zero.
+  let emberBand = smoothstep(0.04, 0.1, heat) * (1.0 - smoothstep(0.22, 0.36, heat));
+  let sparkCell = floor(vec2<f32>(pixel) / 3.0);
+  let sparkRoll = hash21(sparkCell + vec2<f32>(floor(time * 12.0) * 7.31, 3.7));
+  let spark = step(0.985 - treble * 0.025, sparkRoll) * emberBand;
+  color = color + srgb_to_linear(blackbodyRGB(1600.0 + sparkRoll * 900.0)) * spark * 2.2;
 
   // HDR clamp, ACES filmic tonemap, and sRGB gamma encode
   color = hue_preserve_clamp(color, 2.5);
@@ -200,7 +227,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Advanced alpha compositing: depth-layered + luminance-key + effect intensity
   let depthAlpha = mix(0.35, 1.0, depth);
   let lumaAlpha = smoothstep(0.03, 0.25, lum);
-  let effectAlpha = clamp(effectiveMask + bloomFalloff * bass * 0.4, 0.0, 1.0);
+  let effectAlpha = clamp(effectiveMask + bloomFalloff * bass * 0.4 + spark, 0.0, 1.0);
   let brushA = clamp(effectAlpha * lumaAlpha * depthAlpha, 0.0, 1.0);
 
   let baseA = baseSample.a;

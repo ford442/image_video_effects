@@ -1,5 +1,5 @@
 {
-  "name": "4th of July \u2014 Wind & Ripple",
+  "name": "4th of July — Wind & Ripple",
   "category": "generative",
   "tags": [
     "fireworks",
@@ -21,43 +21,45 @@
     1
   ],
   "params": [
-    { "id": "windEnergy", "name": "Wind Energy", "default": 0.55, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x", "audio": "bass" },
-    { "id": "rippleSensitivity", "name": "Ripple Sensitivity", "default": 0.65, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y", "audio": "mid" },
-    { "id": "trailLength", "name": "Trail Length", "default": 0.72, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z", "audio": "treble" },
-    { "id": "colorDrift", "name": "Color Drift", "default": 0.15, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w", "audio": "overall" }
-  ],
-  "updatedParams": [
     {
-      "index": 0,
+      "id": "windEnergy",
       "name": "Wind Energy",
       "default": 0.55,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "audio": "bass"
     },
     {
-      "index": 1,
+      "id": "rippleSensitivity",
       "name": "Ripple Sensitivity",
       "default": 0.65,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "audio": "mid"
     },
     {
-      "index": 2,
+      "id": "trailLength",
       "name": "Trail Length",
       "default": 0.72,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "audio": "treble"
     },
     {
-      "index": 3,
+      "id": "colorDrift",
       "name": "Color Drift",
       "default": 0.15,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "audio": "overall"
     }
   ],
   "supportsDepth": true,
@@ -71,5 +73,43 @@
     "temporal",
     "fast-motion",
     "upgraded-rgba"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Wind Energy",
+          "default": 0.55,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Ripple Sensitivity",
+          "default": 0.65,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Trail Length",
+          "default": 0.72,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Color Drift",
+          "default": 0.15,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

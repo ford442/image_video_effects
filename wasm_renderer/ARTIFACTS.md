@@ -52,9 +52,9 @@ tools/naga_wasm/src/lib.rs                       ← separate crate, separate ar
 
 - CI `setup-emsdk` `version:` must equal `emsdkVersion` (`npm run verify:wasm-invariants` fails otherwise). Never `latest`.
 - `build.sh` runs `scripts/emcc-version-gate.sh` before `em++` and refuses a mismatched emcc. The minified glue does **not** embed the emcc version, so the gate is on the toolchain, not the artifact.
-- `build.sh` and `CMakeLists.txt` both read the flag JSON; neither may hardcode `-s` flags or `--use-port` (enforced by `verify:wasm-invariants`).
+- `build.sh` reads the flag JSON and may not hardcode `-s` flags or `--use-port` (enforced by `verify:wasm-invariants`). It is the only build; `CMakeLists.txt` was removed.
 - Cloud VMs / Jules: keep `SKIP_WASM_BUILD=1`. Never commit artifacts from a non-pinned emcc (e.g. 3.1.x). `ALLOW_EMCC_VERSION_MISMATCH=1` exists for local experiments only.
-- Bumping the pin: change `emsdkVersion` and `ci.yml` together, rebuild, commit artifacts in the same PR.
+- Bumping the pin: change `emsdkVersion` and `.github/workflows/wasm.yml` together, rebuild, commit artifacts in the same PR.
 
 ## Build commands
 
@@ -82,4 +82,4 @@ CI jobs that consume pre-built artifacts from the `wasm` job set this automatica
 2. **`test` job** — downloads WASM artifacts, runs full unit tests + CRA build with `SKIP_WASM_BUILD=1`, re-validates artifacts (`verify:toolchain-foundation` includes bridge sync).
 3. **`test-wasm-e2e` job** — downloads artifacts, production build, Playwright smoke tests (`tests/wasm-renderer.smoke.spec.ts`).
 
-See [`WASM_BUILD_CI_GUIDE.md`](../WASM_BUILD_CI_GUIDE.md) for troubleshooting.
+See [`WASM_BUILD_CI_GUIDE.md`](../docs/WASM_BUILD_CI_GUIDE.md) for troubleshooting.

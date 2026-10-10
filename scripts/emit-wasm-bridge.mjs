@@ -24,6 +24,7 @@ export const BRIDGE_MODULES = [
   'uniforms.js',
   'wgslFormat.js',
   'wgslInclude.js',
+  'wgslLibraries.js',
 ];
 
 function listTsEntries() {

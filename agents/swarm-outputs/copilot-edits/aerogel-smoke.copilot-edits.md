@@ -1,4 +1,0 @@
-- Applied a Standard Hybrid Header and added a one-line alpha comment; the 13-binding contract was already in place.
-- JSON changes: added explicit `category`.
-- Confidence: High.
-- Suspicious but left alone: volumetric alpha semantics were preserved exactly as authored.

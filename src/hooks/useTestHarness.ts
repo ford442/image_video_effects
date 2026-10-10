@@ -1,12 +1,28 @@
 import { useEffect, RefObject } from 'react';
 import { RendererManager } from '../renderer/RendererManager';
 import { RenderQualityMode } from '../config/performancePolicy';
+import { computeBenchmarkStats, countReadbacks } from '../utils/benchmarkStats';
+import { fetchShaderWgsl } from '../utils/fetchShaderWgsl';
+import { getShaderCompileService } from '../utils/shaderCompileService';
 
 export interface CanvasImageStats {
     width: number;
     height: number;
     meanLuminance: number;
     activePixelRatio: number;
+}
+
+/** Draw a captured frame (data URL) into a canvas so it can be measured. */
+async function canvasFromDataUrl(dataUrl: string): Promise<HTMLCanvasElement | null> {
+    if (!dataUrl) return null;
+    const img = new Image();
+    img.src = dataUrl;
+    await img.decode();
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    canvas.getContext('2d')?.drawImage(img, 0, 0);
+    return canvas;
 }
 
 function measureCanvasStats(canvas: HTMLCanvasElement): CanvasImageStats {
@@ -25,9 +41,9 @@ function measureCanvasStats(canvas: HTMLCanvasElement): CanvasImageStats {
     let active = 0;
     const pixels = w * h;
     for (let i = 0; i < data.length; i += 4) {
-        const r = data[i] / 255;
-        const g = data[i + 1] / 255;
-        const b = data[i + 2] / 255;
+        const r = data[i]! / 255;
+        const g = data[i + 1]! / 255;
+        const b = data[i + 2]! / 255;
         const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
         lumSum += lum;
         if (lum > 0.05) active++;
@@ -63,7 +79,7 @@ export function useTestHarness({
                 if (params.get('shaderHotReload') === '1') {
                     import('../dev/shaderHotReload').then(({ trackShaderForHotReload }) => {
                         trackShaderForHotReload(id, url);
-                    });
+                    }).catch((err) => console.warn('[HotReload] Failed to load module:', err));
                 }
                 return ok;
             };
@@ -81,13 +97,27 @@ export function useTestHarness({
                 setTestRenderState: (state: Parameters<typeof manager.applyTestRenderState>[0]) => {
                     manager.applyTestRenderState(state);
                 },
+                // A render-worker canvas cannot be read on the page (#1314): capture over RPC.
+                // ShaderScanner's compile path, scriptable (#1395 validation-scope e2e).
+                compileCheckShader: async (id: string) => {
+                    const compiler = getShaderCompileService();
+                    if (!compiler) return { ok: false, errors: ['no shader compile service'] };
+                    const code = await fetchShaderWgsl(id, undefined, { primaryOnly: true });
+                    if (!code) return { ok: false, errors: ['fetch failed'] };
+                    const messages = await compiler.compile(id, code);
+                    const errors = messages.filter((m) => m.type === 'error').map((m) => m.message);
+                    return { ok: errors.length === 0, errors };
+                },
                 captureCanvasScreenshot: async () => {
+                    if (manager.getRenderThread() === 'worker') return (await manager.refreshFrameImage()) || null;
                     const canvas = document.querySelector('canvas');
                     if (!canvas) return null;
                     return canvas.toDataURL('image/png');
                 },
-                captureCanvasStats: (): CanvasImageStats => {
-                    const canvas = document.querySelector('canvas');
+                captureCanvasStats: async (): Promise<CanvasImageStats> => {
+                    const canvas = manager.getRenderThread() === 'worker'
+                        ? await canvasFromDataUrl(await manager.refreshFrameImage())
+                        : document.querySelector('canvas');
                     if (!canvas) return { width: 0, height: 0, meanLuminance: 0, activePixelRatio: 0 };
                     return measureCanvasStats(canvas);
                 },
@@ -115,6 +145,10 @@ export function useTestHarness({
                         };
                         requestAnimationFrame(tick);
                     }),
+                /** Lift the quality slot cap so multi-slot stacks run on low-end/SwiftShader adapters. */
+                overrideSlotCap: (cap: number | null) => manager.overrideSlotCapForTests(cap),
+                /** Pin the internal render scale (0.25–1); a change also clears feedback textures. */
+                setRenderScale: (scale: number) => manager.setResolutionScaleForTests(scale),
                 setRenderQuality: (mode: RenderQualityMode) => {
                     manager.setRenderQuality(mode, {
                         supportsDeepWorkgroup: manager.getSupportsDeepWorkgroup(),
@@ -124,7 +158,7 @@ export function useTestHarness({
                 loadImage: (url: string) => manager.loadImage(url),
                 runBenchmark: async (
                     frameCount = 90,
-                    options?: { qualityMode?: RenderQualityMode },
+                    options?: { qualityMode?: RenderQualityMode; warmupFrames?: number },
                 ) => {
                     if (options?.qualityMode) {
                         manager.setRenderQuality(options.qualityMode, {
@@ -133,6 +167,11 @@ export function useTestHarness({
                         });
                     }
                     const perf = manager.getPerformanceStatus();
+                    // Discarded warm-up frames (#1357 T5): pipelines settle before sampling.
+                    const warmupFrames = Math.max(0, options?.warmupFrames ?? 10);
+                    for (let i = 0; i < warmupFrames; i++) {
+                        await new Promise<void>((r) => requestAnimationFrame(() => r()));
+                    }
                     const samples: Array<{ fps: number; gpu: ReturnType<typeof manager.getGPUTimings> }> = [];
                     for (let i = 0; i < frameCount; i++) {
                         await new Promise<void>((r) => requestAnimationFrame(() => r()));
@@ -166,8 +205,31 @@ export function useTestHarness({
                         // Timestamp-honesty gate: 'gpu-timestamp' only after a real readback.
                         timingSource: samples[samples.length - 1]?.gpu.timingSource ?? 'wall-clock',
                         hasRealGpuTimings: samples.some((s) => s.gpu.timingSource === 'gpu-timestamp'),
+                        // Per-pass GPU ms (#1314 WP-4): per-shader evidence, not just per frame.
+                        passTimings: manager.getPassTimings(),
+                        // Stats over every sampled frame (#1357 T4); `samples` is only the tail.
+                        warmupFrames,
+                        totalMsStats: computeBenchmarkStats(totals),
+                        // TS reads timestamps back every 250 ms, so many frames repeat a value:
+                        // distinct values are the real GPU sample size (#1080).
+                        gpuReadbacks: countReadbacks(samples.map((s) => s.gpu.totalTime)),
+                        fpsStats: computeBenchmarkStats(samples.map((s) => s.fps)),
+                        timestampPeriodNs: manager.getDiagnostics().webgpu?.timing?.periodNs ?? 0,
                         samples: samples.slice(-5),
                     };
+                },
+                /**
+                 * Vsync-free ms/frame (#1080): the backend pauses its loop, renders
+                 * `frameCount` frames back to back and times to GPU idle.
+                 */
+                runUncappedBenchmark: async (frameCount = 120, warmupFrames = 10) => {
+                    if (warmupFrames > 0) await manager.benchmarkUncapped(warmupFrames);
+                    const result = await manager.benchmarkUncapped(frameCount);
+                    return result ? {
+                        ...result,
+                        rendererType: manager.getActiveRendererType(),
+                        renderThread: manager.getRenderThread(),
+                    } : null;
                 },
                 updateAudioFrequencyBins: (bins: Float32Array) => {
                     manager.updateAudioFrequencyBins(bins);
@@ -176,6 +238,43 @@ export function useTestHarness({
                 getPerformanceStatus: () => manager.getPerformanceStatus(),
                 releaseFp32Requirement: (id: string) => manager.releaseFp32Requirement(id),
                 getGPUTimings: () => manager.getGPUTimings(),
+                getPassTimings: () => manager.getPassTimings(),
+                getRenderThread: () => manager.getRenderThread(),
+                /** Destroy the TS WebGPU device but report it as a runtime loss (main + worker). */
+                simulateDeviceLoss: () => manager.simulateDeviceLoss(),
+                /** Worker mode only: an uncaught error in the render worker (#1395). */
+                simulateWorkerCrash: () => manager.simulateWorkerCrash(),
+                getDeviceRecoveryStatus: () => manager.getDeviceRecoveryStatus(),
+                recoverFromDeviceLoss: () => manager.recoverFromDeviceLoss(),
+                /**
+                 * Record `ms` through the app's WebCodecs session (worker frame grabs in
+                 * worker mode, canvas VideoFrames on the page) and describe the WebM.
+                 */
+                recordClip: async (ms = 1500, size = 512, fps = 10) => {
+                    const { startGpuEncodeSession } = await import('../recording/gpuEncodeSupport');
+                    const canvas = document.querySelector('canvas[data-testid="webgpu-canvas"]') as HTMLCanvasElement | null;
+                    if (!canvas) return null;
+                    const session = await startGpuEncodeSession({
+                        canvas,
+                        supportsCanvasCopySrc: () => manager.supportsCanvasFrameCapture(),
+                        setCanvasCopySrc: (enabled) => manager.setCanvasCopySrc(enabled),
+                        readback: null,
+                        grabFrame: manager.getWorkerFrameGrabber(),
+                    }, { width: size, height: size, fps, bitrate: 2_000_000 });
+                    if (!session) return null;
+                    await new Promise((r) => setTimeout(r, ms));
+                    // A worker grab waits for the next presented frame; on a slow
+                    // device (SwiftShader, ~1 fps at 1024²) none may land within `ms`.
+                    const deadline = performance.now() + 15_000;
+                    while (session.framesEncoded === 0 && performance.now() < deadline) {
+                        await new Promise((r) => setTimeout(r, 100));
+                    }
+                    const frames = session.framesEncoded;
+                    const blob = await session.stop();
+                    return { kind: session.kind, size: blob.size, type: blob.type, frames };
+                },
+                setNodeScale: (slot: number, nodeId: string, scale: number) =>
+                    manager.setNodeScale(slot, nodeId, scale),
                 getAdapterSummary: () => {
                     const diags = manager.getDiagnostics();
                     return diags.wasm?.adapterInfo ?? '';
@@ -205,7 +304,7 @@ export function useTestHarness({
             };
             cleanup = attachShaderHotReload(manager);
             console.log('[HotReload] Enabled — edit files in public/shaders/ to reload pipelines');
-        });
+        }).catch((err) => console.warn('[HotReload] Failed to load module:', err));
         return () => cleanup?.();
     }, [rendererReady, rendererRef]);
 }

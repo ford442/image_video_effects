@@ -5,44 +5,6 @@
   "type": "generative",
   "category": "generative",
   "url": "shaders/gen-symbiotic-bismuth-crystal-dragon-core.wgsl",
-  "parameters": [
-    {
-      "name": "Zoom",
-      "type": "float",
-      "default": 1.0,
-      "min": 0.1,
-      "max": 5.0,
-      "step": 0.1,
-      "uniform": "zoom_params.x"
-    },
-    {
-      "name": "Complexity",
-      "type": "float",
-      "default": 3.0,
-      "min": 1.0,
-      "max": 8.0,
-      "step": 1.0,
-      "uniform": "zoom_params.y"
-    },
-    {
-      "name": "Breathing Speed",
-      "type": "float",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 2.0,
-      "step": 0.1,
-      "uniform": "zoom_params.z"
-    },
-    {
-      "name": "Iridescence Shift",
-      "type": "float",
-      "default": 0.0,
-      "min": -3.14,
-      "max": 3.14,
-      "step": 0.01,
-      "uniform": "zoom_params.w"
-    }
-  ],
   "features": [
     "audio-reactive",
     "mouse-driven",
@@ -56,38 +18,80 @@
   ],
   "supportsDepth": true,
   "updated": true,
-  "updatedParams": [
+  "params": [
     {
-      "index": 0,
+      "id": "zoom",
       "name": "Zoom",
       "default": 1.0,
       "min": 0.1,
       "max": 5.0,
-      "step": 0.1
+      "step": 0.1,
+      "mapping": "zoom_params.x"
     },
     {
-      "index": 1,
+      "id": "complexity",
       "name": "Complexity",
       "default": 3.0,
       "min": 1.0,
       "max": 8.0,
-      "step": 1.0
+      "step": 1.0,
+      "mapping": "zoom_params.y"
     },
     {
-      "index": 2,
+      "id": "breathing_speed",
       "name": "Breathing Speed",
       "default": 0.5,
       "min": 0.0,
       "max": 2.0,
-      "step": 0.1
+      "step": 0.1,
+      "mapping": "zoom_params.z"
     },
     {
-      "index": 3,
+      "id": "iridescence_shift",
       "name": "Iridescence Shift",
       "default": 0.0,
       "min": -3.14,
       "max": 3.14,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w"
     }
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Zoom",
+          "default": 1.0,
+          "min": 0.1,
+          "max": 5.0,
+          "step": 0.1
+        },
+        {
+          "index": 1,
+          "name": "Complexity",
+          "default": 3.0,
+          "min": 1.0,
+          "max": 8.0,
+          "step": 1.0
+        },
+        {
+          "index": 2,
+          "name": "Breathing Speed",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 2.0,
+          "step": 0.1
+        },
+        {
+          "index": 3,
+          "name": "Iridescence Shift",
+          "default": 0.0,
+          "min": -3.14,
+          "max": 3.14,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

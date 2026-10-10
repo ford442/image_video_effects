@@ -6,8 +6,6 @@
  * for stacks of varying depth (N = 1, 2, 3, 5) across all 14 categories.
  */
 
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
 import {
   orchestrateSlots,
   isFrameValid,
@@ -15,21 +13,30 @@ import {
   ShaderSlot,
   SlotOrchestration,
 } from '../renderer/slotOrchestrator';
+import { readExpandedShader } from '../test-utils/shaderSource';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-const SHADER_DIR = resolve(__dirname, '../../public/shaders');
+// Sources are expanded up front (expansion is async) so loadWgsl stays a plain
+// lookup: orchestrateSlots validates bindings, and a shader that includes
+// _prelude.wgsl only has them after expansion — exactly what the runtime sees.
+const WGSL_CACHE = new Map<string, string | null>();
 
 function loadWgsl(id: string): string | null {
-  try {
-    return readFileSync(resolve(SHADER_DIR, `${id}.wgsl`), 'utf-8');
-  } catch {
-    return null;
+  if (!WGSL_CACHE.has(id)) {
+    throw new Error(`layerChain.spec: ${id} was not preloaded — add it to PRELOAD_IDS`);
   }
+  return WGSL_CACHE.get(id) ?? null;
 }
 
 function makeSlot(index: number, shaderId: string, mode: 'chained' | 'parallel' = 'chained'): ShaderSlot {
   return { shaderId, enabled: true, mode };
+}
+
+function at<T>(a: readonly T[], i: number): T {
+  const v = a[i];
+  if (v === undefined) throw new Error(`missing index ${i}`);
+  return v;
 }
 
 function expectValidPlan(plan: SlotOrchestration) {
@@ -41,7 +48,7 @@ function expectValidPlan(plan: SlotOrchestration) {
 // ── Category Representatives ─────────────────────────────────────────────────
 // One shader from each of the 14 categories in shader_definitions/
 
-const CATEGORY_REPS: Record<string, string> = {
+const CATEGORY_REPS = {
   'advanced-hybrid': 'audio-voronoi-displacement',
   artistic: 'ambient-liquid',
   distortion: 'black-hole',
@@ -56,11 +63,45 @@ const CATEGORY_REPS: Record<string, string> = {
   'retro-glitch': 'ascii-flow',
   simulation: 'aero-chromatics',
   'visual-effects': 'ascii-shockwave',
-};
+} satisfies Record<string, string>;
+
+// Physics Lab pass that already gets its header from _prelude.wgsl.
+const PRELUDE_INCLUDER = 'gray-scott-step';
+
+const PRELOAD_IDS = [
+  ...Object.values(CATEGORY_REPS),
+  'aurora-rift-pass1',
+  'aurora-rift-pass2',
+  'quantum-foam-pass1',
+  'quantum-foam-pass2',
+  'quantum-foam-pass3',
+  PRELUDE_INCLUDER,
+];
+
+beforeAll(async () => {
+  await Promise.all(
+    PRELOAD_IDS.map(async (id) => {
+      WGSL_CACHE.set(id, await readExpandedShader(id));
+    }),
+  );
+});
 
 // ── Bind-Group Validation Tests ──────────────────────────────────────────────
 
 describe('Bind-group validation', () => {
+  test('a shader that includes _prelude.wgsl validates on its expanded source', () => {
+    const wgsl = loadWgsl(PRELUDE_INCLUDER);
+    expect(wgsl).not.toBeNull();
+
+    const plan = orchestrateSlots([makeSlot(0, PRELUDE_INCLUDER)], (id) =>
+      id === PRELUDE_INCLUDER ? wgsl : null,
+    );
+
+    const result = plan.validationResults.find((r) => r.shaderId === PRELUDE_INCLUDER);
+    expect(result).toBeDefined();
+    expect(result!.errors).toEqual([]);
+  });
+
   test.each(Object.entries(CATEGORY_REPS))(
     'category "%s" representative "%s" has compatible bind group',
     (_category, shaderId) => {
@@ -117,8 +158,8 @@ describe('N-slot stacks', () => {
 
     expectValidPlan(plan);
     expect(plan.dispatches).toHaveLength(1);
-    expect(plan.dispatches[0].shaderId).toBe(id);
-    expect(plan.dispatches[0].mode).toBe('chained');
+    expect(at(plan.dispatches, 0).shaderId).toBe(id);
+    expect(at(plan.dispatches, 0).mode).toBe('chained');
 
     // Should copy writeTex→readTex after the slot
     const writeToRead = plan.copies.filter((c) => c.from === 'writeTex' && c.to === 'readTex');
@@ -171,10 +212,10 @@ describe('N-slot stacks', () => {
     expectValidPlan(plan);
 
     // Parallel first, then chained
-    expect(plan.dispatches[0].mode).toBe('parallel');
-    expect(plan.dispatches[0].shaderId).toBe(parallelId);
-    expect(plan.dispatches[1].mode).toBe('chained');
-    expect(plan.dispatches[2].mode).toBe('chained');
+    expect(at(plan.dispatches, 0).mode).toBe('parallel');
+    expect(at(plan.dispatches, 0).shaderId).toBe(parallelId);
+    expect(at(plan.dispatches, 1).mode).toBe('chained');
+    expect(at(plan.dispatches, 2).mode).toBe('chained');
 
     // Must have a copy after parallel slots finish
     const parallelCopyIndex = plan.copies.findIndex(
@@ -224,7 +265,7 @@ describe('N-slot stacks', () => {
   test('N=7: seven slots exceed PHYSICAL_SLOT_LIMIT=6 and are flagged invalid', () => {
     // Use 7 distinct shader IDs (repeat some since we only have 14 category reps)
     const allIds = Object.values(CATEGORY_REPS);
-    const ids = [...allIds.slice(0, 6), allIds[0]]; // 7 entries
+    const ids = [...allIds.slice(0, 6), at(allIds, 0)]; // 7 entries
     const wgslMap: Record<string, string> = {};
     for (const id of ids) {
       if (!wgslMap[id]) wgslMap[id] = loadWgsl(id)!;
@@ -261,10 +302,10 @@ describe('Multipass chains', () => {
 
     expectValidPlan(plan);
     expect(plan.dispatches).toHaveLength(2);
-    expect(plan.dispatches[0].shaderId).toBe(pass1);
-    expect(plan.dispatches[0].passIndex).toBe(0);
-    expect(plan.dispatches[1].shaderId).toBe(pass2);
-    expect(plan.dispatches[1].passIndex).toBe(1);
+    expect(at(plan.dispatches, 0).shaderId).toBe(pass1);
+    expect(at(plan.dispatches, 0).passIndex).toBe(0);
+    expect(at(plan.dispatches, 1).shaderId).toBe(pass2);
+    expect(at(plan.dispatches, 1).passIndex).toBe(1);
   });
 
   test('quantum-foam expands into 3 dispatches', () => {
@@ -275,7 +316,7 @@ describe('Multipass chains', () => {
     }
 
     const plan = orchestrateSlots(
-      [makeSlot(0, ids[0], 'chained')],
+      [makeSlot(0, at(ids, 0), 'chained')],
       (sid) => wgslMap[sid] ?? null
     );
 

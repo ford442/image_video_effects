@@ -23,7 +23,7 @@ import {
 import { AdaptivePerformanceController } from './adaptivePerformance';
 import { RendererConfig } from './Renderer';
 import { WASMRenderer } from './WASMRenderer';
-import { WebGPURenderer } from './WebGPURenderer';
+import { isWebGpuBackend, type WebGPUBackendApi } from './webgpuBackendApi';
 import type { RendererType } from './backendLifecycle';
 import { HISTORY_DEPTH } from './webgpu/webgpuConstants';
 import { getHistoryWorkingSizeCap } from '../config/vramBudget';
@@ -83,7 +83,7 @@ export function createPerformancePolicyState(): PerformancePolicyState {
 
 export function refreshFormatCapabilities(
   state: PerformancePolicyState,
-  renderer: WebGPURenderer | WASMRenderer | null,
+  renderer: WebGPUBackendApi | WASMRenderer | null,
 ): void {
   const fromRenderer = renderer && 'getFormatCapabilities' in renderer
     ? renderer.getFormatCapabilities?.()
@@ -131,7 +131,7 @@ export function releaseFp32Requirement(state: PerformancePolicyState, shaderId: 
 export function readResolutionScale(
   state: PerformancePolicyState,
   config: RendererConfig,
-  renderer: WebGPURenderer | WASMRenderer | null,
+  renderer: WebGPUBackendApi | WASMRenderer | null,
 ): { scale: number; scaled: { w: number; h: number } } {
   const fromRenderer = renderer && 'getResolutionScale' in renderer
     ? renderer.getResolutionScale?.()
@@ -188,20 +188,34 @@ export function buildPerformanceStatus(
 
 export function applyPerformancePolicyToRenderer(
   state: PerformancePolicyState,
-  renderer: WebGPURenderer | WASMRenderer | null,
+  renderer: WebGPUBackendApi | WASMRenderer | null,
   adaptiveController: AdaptivePerformanceController,
 ): void {
   applyResolutionScale(state, renderer, state.performancePolicy.scale);
   applyColorFormat(renderer, state.performancePolicy.colorFormat);
-  if (renderer instanceof WebGPURenderer) {
+  if (isWebGpuBackend(renderer)) {
     renderer.setAdaptiveQuality(false);
     renderer.setMaxPassesPerFrame(state.performancePolicy.maxPassesPerFrame);
+    renderer.setFramePassBudget(framePassBudgetFor(state.performancePolicy));
   }
   adaptiveController.updatePolicy(state.performancePolicy);
 }
 
-function applyColorFormat(renderer: WebGPURenderer | WASMRenderer | null, format: InternalColorFormat): void {
-  if (renderer instanceof WebGPURenderer) {
+/**
+ * Frame-wide pass budget for a policy: the per-slot pass cap times the slots
+ * the policy allows (battery 4 · balanced 16 · ultra 48). A stack of graphs
+ * gets exactly what per-graph caps gave it before; long linear chains now
+ * count against the same budget (#1314 WP-3).
+ */
+export function framePassBudgetFor(
+  policy: { maxPassesPerFrame: number; maxActiveSlots: number },
+  slotCapOverride: number | null = null,
+): number {
+  return policy.maxPassesPerFrame * Math.max(1, slotCapOverride ?? policy.maxActiveSlots);
+}
+
+function applyColorFormat(renderer: WebGPUBackendApi | WASMRenderer | null, format: InternalColorFormat): void {
+  if (isWebGpuBackend(renderer)) {
     renderer.setColorFormat(format);
   } else if (renderer instanceof WASMRenderer) {
     renderer.setColorFormat(format);
@@ -210,11 +224,11 @@ function applyColorFormat(renderer: WebGPURenderer | WASMRenderer | null, format
 
 function applyResolutionScale(
   state: PerformancePolicyState,
-  renderer: WebGPURenderer | WASMRenderer | null,
+  renderer: WebGPUBackendApi | WASMRenderer | null,
   scale: number,
 ): void {
   state.resolutionScale = scale;
-  if (renderer instanceof WebGPURenderer) {
+  if (isWebGpuBackend(renderer)) {
     renderer.setResolutionScale(scale);
     renderer.setAdaptiveQuality(false);
   } else if (renderer instanceof WASMRenderer) {
@@ -224,7 +238,7 @@ function applyResolutionScale(
 
 export function applyResolutionScaleToRenderer(
   state: PerformancePolicyState,
-  renderer: WebGPURenderer | WASMRenderer | null,
+  renderer: WebGPUBackendApi | WASMRenderer | null,
   scale: number,
 ): void {
   applyResolutionScale(state, renderer, scale);

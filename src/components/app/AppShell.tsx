@@ -3,6 +3,7 @@ import WebGPUCanvas from '../WebGPUCanvas';
 import Controls from '../Controls';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from '../../renderer/types';
 import { RendererManager, RendererType } from '../../renderer/RendererManager';
+import { isWasmForcedByURL } from '../../renderer/rendererUrl';
 import type { AIStatus, AutoTransitionConfig } from '../../types/aiVj';
 import { VideoRecord } from '../../syncTypes';
 import { VideoSegment } from '../../services/videoSegmentManager';
@@ -460,32 +461,27 @@ export function AppShell(props: AppShellProps) {
                             </span>
                         )}
 
+                        {/* Display-only: WASM is frozen R&D (#1080), reachable only via ?renderer=wasm. */}
                         <span
                             className={`renderer-badge renderer-badge--${activeRendererType}`}
                             title={[
                                 activeRendererType === 'wasm'
-                                    ? 'Experimental C++ WASM — click to cycle renderer'
-                                    : 'Click to cycle renderer (WebGPU ↔ WASM ↔ Canvas2D)',
+                                    ? 'C++ WASM — frozen R&D, forced via ?renderer=wasm'
+                                    : null,
                                 jsFps > 0 ? `JS ${jsFps} FPS` : null,
                                 wasmFps > 0 ? `WASM ${wasmFps} FPS` : null,
                                 isRendererSwitching ? 'Switching…' : null,
-                            ].filter(Boolean).join(' · ')}
-                            onClick={() => {
-                                if (isRendererSwitching) return;
-                                const cycle: Record<RendererType, RendererType> = {
-                                    webgpu: 'wasm',
-                                    wasm: 'js',
-                                    js: 'webgpu',
-                                };
-                                handleSwitchRenderer(cycle[activeRendererType]);
-                            }}
-                            style={isRendererSwitching ? { opacity: 0.6, cursor: 'wait' } : undefined}
+                            ].filter(Boolean).join(' · ') || undefined}
+                            style={isRendererSwitching ? { opacity: 0.6 } : undefined}
                         >
                             {activeRendererType === 'wasm'
-                                ? '⚡ WASM (exp.)'
+                                ? '⚡ WASM'
                                 : activeRendererType === 'js'
                                   ? '🎨 Canvas2D'
                                   : '🔷 WebGPU'}
+                            {activeRendererType === 'wasm' && isWasmForcedByURL() && (
+                                <span className="renderer-badge__rnd">{'Experimental (R&D)'}</span>
+                            )}
                         </span>
                     </div>
                 </main>

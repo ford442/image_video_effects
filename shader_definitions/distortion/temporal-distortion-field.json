@@ -2,7 +2,7 @@
   "id": "temporal-distortion-field",
   "name": "Temporal Distortion Field",
   "url": "shaders/temporal-distortion-field.wgsl",
-  "description": "Stylized temporal distortion with exact display-history feedback, depth-weighted freeze radius, moving clock rings, held freeze, click fronts, and chromatic lag.",
+  "description": "FBM time warp with history ghosts and past/present/future color channels; holding the mouse opens a lensed stasis bubble where time stops.",
   "params": [
     {
       "id": "freezeAmount",
@@ -60,39 +60,43 @@
     "depth-aware",
     "freeze"
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Freeze Amount",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Warp Strength",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Ghost Count",
-      "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Depth Weight",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+  "updated": true,
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Freeze Amount",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Warp Strength",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Ghost Count",
+          "default": 0.3,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Depth Weight",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
     }
-  ],
-  "updated": true
+  }
 }

@@ -12,6 +12,9 @@ import json
 import sys
 from pathlib import Path
 from datetime import datetime, timezone
+import tempfile
+
+from wgsl_include import WgslIncludeError, expand_wgsl_includes, has_wgsl_include
 
 SHADERS_DIR = Path("public/shaders").resolve()
 REPORT_FILE = Path("reports/naga-scan-report.json")
@@ -22,39 +25,46 @@ CARGO_BIN = Path.home() / ".cargo" / "bin"
 if str(CARGO_BIN) not in os.environ.get("PATH", ""):
     os.environ["PATH"] = f"{CARGO_BIN}{os.pathsep}{os.environ.get('PATH', '')}"
 
-# Canonical 13-binding header that kimi-cli must reproduce verbatim
+# Catalog shaders get their 13 bindings and struct Uniforms from the prelude
+# (#1313); kimi-cli must keep the include and never paste them back.
 BINDING_HEADER = """\
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time (seconds), .y = rippleCount (0-50 active ripples), .zw = resolution (width, height)
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0-1 canvas: y=0 top), .w = mouse_down (>0.5 = pressed)
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};"""
+#include "_prelude.wgsl"
+// Declares bindings 0-12 (u_sampler, readTexture, writeTexture, u, readDepthTexture,
+// non_filtering_sampler, writeDepthTexture, dataTextureA, dataTextureB, dataTextureC,
+// extraBuffer, comparison_sampler, plasmaBuffer) and struct Uniforms
+// (config, zoom_config, zoom_params, ripples). Never paste them into the shader.\
+"""
 
 
 def run_naga(wgsl_file: Path) -> dict:
-    """Run naga CLI on a single .wgsl file. Returns full result dict."""
+    """
+    Run naga CLI on a single .wgsl file. Returns full result dict.
+
+    The naga CLI has no preprocessor, so `#include` is expanded into a temp file
+    first (npm run verify:naga-wasm does the same in-process and is the gate).
+    """
     try:
-        result = subprocess.run(
-            ["naga", str(wgsl_file)],
-            capture_output=True,
-            text=True,
-            timeout=15,
-        )
+        source = wgsl_file.read_text(encoding="utf-8")
+        target = wgsl_file
+        if has_wgsl_include(source):
+            try:
+                expanded = expand_wgsl_includes(source, entry=wgsl_file.name)
+            except WgslIncludeError as exc:
+                return {"valid": False, "errors": [{"line": None, "col": None, "message": str(exc)}], "raw": str(exc)}
+            tmp = tempfile.NamedTemporaryFile("w", suffix=".wgsl", delete=False, encoding="utf-8")
+            tmp.write(expanded)
+            tmp.close()
+            target = Path(tmp.name)
+        try:
+            result = subprocess.run(
+                ["naga", str(target)],
+                capture_output=True,
+                text=True,
+                timeout=15,
+            )
+        finally:
+            if target != wgsl_file:
+                target.unlink(missing_ok=True)
         if result.returncode == 0:
             return {"valid": True, "errors": [], "raw": ""}
         else:
@@ -113,7 +123,11 @@ def find_shader_json(wgsl_path: Path) -> dict:
     for cat_dir in definitions_dir.iterdir():
         if not cat_dir.is_dir():
             continue
-        json_file = cat_dir / f"{stem}.json"
+        # Legacy underscore WGSL stems map to definition files named after the hyphen id.
+        json_file = next(
+            (p for p in (cat_dir / f"{stem}.json", cat_dir / f"{stem.replace('_', '-')}.json") if p.exists()),
+            cat_dir / f"{stem}.json",
+        )
         if json_file.exists():
             try:
                 return json.loads(json_file.read_text(encoding="utf-8"))
@@ -159,7 +173,7 @@ Shader theme: {theme_sentence}
 
 File: {wgsl_path}
 
-## Canonical 13-Binding Header (copy EXACTLY — do NOT rename or reorder bindings)
+## Bindings (keep this include as the first code line — do NOT paste, rename or reorder bindings)
 ```wgsl
 {BINDING_HEADER}
 ```

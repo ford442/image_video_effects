@@ -1,12 +1,13 @@
 import { useState, useCallback, useRef, useEffect, RefObject } from 'react';
 import { RendererManager } from '../renderer/RendererManager';
 import {
+    forcesMediaRecorder,
     isGpuEncodeAvailable,
-    loadGpuEncoder,
     readGpuEncodePreference,
+    startGpuEncodeSession,
     writeGpuEncodePreference,
+    type GpuEncodeSession,
 } from '../recording/gpuEncodeSupport';
-import type { GpuEncodeRecorder } from '../recording/gpuEncoder';
 
 const CLIP_SECONDS = 8;
 const CLIP_FPS = 60;
@@ -31,38 +32,26 @@ export interface UseRecordingReturn {
 }
 
 /**
- * Try Recording 2.0 (WebCodecs). Resolves null when no frame source or codec is
- * available so the caller keeps the MediaRecorder path.
+ * Try Recording 2.0 (WebCodecs) on the TS backend. Resolves null when no frame
+ * source or codec is available so the caller keeps the MediaRecorder path. The
+ * WASM backend runs the same session inside its bridge (WASMRenderer.startRecording).
  */
-async function startGpuEncode(
+function startGpuEncode(
     manager: RendererManager,
     canvas: HTMLCanvasElement,
-): Promise<GpuEncodeRecorder | null> {
-    const { GpuEncodeRecorder, canvasFrameSource, readbackFrameSource } = await loadGpuEncoder();
-    const readback = manager.getFrameReadback();
-    let usesCanvas = false;
-    let source;
-    if (readback) {
-        source = readbackFrameSource(readback);
-    } else if (manager.supportsCanvasFrameCapture() && manager.setCanvasCopySrc(true)) {
-        source = canvasFrameSource(canvas);
-        usesCanvas = true;
-    } else {
-        return null;
-    }
-    try {
-        const recorder = await GpuEncodeRecorder.start(source, {
-            width: canvas.width,
-            height: canvas.height,
-            fps: CLIP_FPS,
-            bitrate: CLIP_BITRATE,
-        });
-        if (!recorder && usesCanvas) manager.setCanvasCopySrc(false);
-        return recorder;
-    } catch (e) {
-        if (usesCanvas) manager.setCanvasCopySrc(false);
-        throw e;
-    }
+): Promise<GpuEncodeSession | null> {
+    return startGpuEncodeSession({
+        canvas,
+        supportsCanvasCopySrc: () => manager.supportsCanvasFrameCapture(),
+        setCanvasCopySrc: (enabled) => manager.setCanvasCopySrc(enabled),
+        readback: null,
+        grabFrame: manager.getWorkerFrameGrabber(),
+    }, {
+        width: canvas.width,
+        height: canvas.height,
+        fps: CLIP_FPS,
+        bitrate: CLIP_BITRATE,
+    });
 }
 
 export function useRecording({
@@ -78,7 +67,7 @@ export function useRecording({
     const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
     const wasmRecordingPromiseRef = useRef<Promise<Blob> | null>(null);
     const recordingFinishedRef = useRef(false);
-    const gpuRecorderRef = useRef<GpuEncodeRecorder | null>(null);
+    const gpuRecorderRef = useRef<GpuEncodeSession | null>(null);
     const gpuEncodeAvailable = isGpuEncodeAvailable();
     const [gpuEncode, setGpuEncodeState] = useState(() => gpuEncodeAvailable && readGpuEncodePreference());
 
@@ -126,7 +115,6 @@ export function useRecording({
                     setStatus('❌ GPU encode failed. Turn off GPU encode to use MediaRecorder.');
                 })
                 .finally(() => {
-                    manager?.setCanvasCopySrc(false);
                     manager?.setRecording(false);
                 });
             setIsRecording(false);
@@ -177,7 +165,8 @@ export function useRecording({
 
         recordingFinishedRef.current = false;
 
-        if (gpuEncode && gpuEncodeAvailable) {
+        // WASM: WebCodecs is the bridge default (usesInternalRecording below).
+        if (gpuEncode && gpuEncodeAvailable && !manager.usesInternalRecording() && !forcesMediaRecorder()) {
             try {
                 const recorder = await startGpuEncode(manager, canvas);
                 if (recorder) {
@@ -278,7 +267,7 @@ export function useRecording({
             const gpuRecorder = gpuRecorderRef.current;
             if (gpuRecorder) {
                 gpuRecorderRef.current = null;
-                gpuRecorder.stop().catch(() => {}).finally(() => currentRenderer?.setCanvasCopySrc(false));
+                gpuRecorder.stop().catch(() => {});
             } else if (currentRenderer?.usesInternalRecording()) {
                 currentRenderer.stopRendererRecording();
             } else if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {

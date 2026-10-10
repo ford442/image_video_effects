@@ -6,38 +6,34 @@
   "params": [
     {
       "name": "Cell Density",
-      "type": "float",
       "default": 1,
       "min": 1,
       "max": 5,
-      "target": "zoom_params.x",
+      "mapping": "zoom_params.x",
       "id": "cell_density"
     },
     {
       "name": "Turbulence Speed",
-      "type": "float",
       "default": 1,
       "min": 0,
       "max": 3,
-      "target": "zoom_params.y",
+      "mapping": "zoom_params.y",
       "id": "turbulence_speed"
     },
     {
       "name": "Zoom Intensity",
-      "type": "float",
       "default": 1,
       "min": 0,
       "max": 2,
-      "target": "zoom_params.z",
+      "mapping": "zoom_params.z",
       "id": "zoom_intensity"
     },
     {
       "name": "Mouse Influence",
-      "type": "float",
       "default": 1,
       "min": -1,
       "max": 1,
-      "target": "zoom_params.w",
+      "mapping": "zoom_params.w",
       "id": "mouse_influence"
     }
   ],
@@ -68,35 +64,39 @@
     16,
     1
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Cell Density",
-      "default": 1,
-      "min": 1,
-      "max": 5
-    },
-    {
-      "index": 1,
-      "name": "Turbulence Speed",
-      "default": 1,
-      "min": 0,
-      "max": 3
-    },
-    {
-      "index": 2,
-      "name": "Zoom Intensity",
-      "default": 1,
-      "min": 0,
-      "max": 2
-    },
-    {
-      "index": 3,
-      "name": "Mouse Influence",
-      "default": 1,
-      "min": -1,
-      "max": 1
+  "category": "geometric",
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Cell Density",
+          "default": 1,
+          "min": 1,
+          "max": 5
+        },
+        {
+          "index": 1,
+          "name": "Turbulence Speed",
+          "default": 1,
+          "min": 0,
+          "max": 3
+        },
+        {
+          "index": 2,
+          "name": "Zoom Intensity",
+          "default": 1,
+          "min": 0,
+          "max": 2
+        },
+        {
+          "index": 3,
+          "name": "Mouse Influence",
+          "default": 1,
+          "min": -1,
+          "max": 1
+        }
+      ]
     }
-  ],
-  "category": "geometric"
+  }
 }

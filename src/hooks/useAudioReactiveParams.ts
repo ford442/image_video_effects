@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef, RefObject, Dispatch, SetState
 import { RenderMode, ShaderEntry, SlotParams } from '../renderer/types';
 import { RendererManager } from '../renderer/RendererManager';
 import { useAudioAnalyzer } from './useAudioAnalyzer';
-import { resolveAudioTargets, sampleAudioSource } from '../utils/audioParamMapping';
+import { AudioSlotInput, computeAudioSlotUpdates, resolveAudioTargets } from '../utils/audioParamMapping';
+import { baseFor, isHeld } from '../services/audioParamHold';
 
 export interface UseAudioReactiveParamsOptions {
     rendererRef: RefObject<RendererManager | null>;
@@ -11,6 +12,8 @@ export interface UseAudioReactiveParamsOptions {
     updateSlotParam: (slotIndex: number, updates: Partial<SlotParams>) => void;
     getShaderDefaults: (shaderId: string, numParams?: number) => number[];
     setStatus: (status: string) => void;
+    /** Quality-tier slot cap; falls back to the renderer's policy. */
+    maxActiveSlots?: number;
 }
 
 export interface UseAudioReactiveParamsReturn {
@@ -27,6 +30,7 @@ export function useAudioReactiveParams({
     updateSlotParam,
     getShaderDefaults,
     setStatus,
+    maxActiveSlots,
 }: UseAudioReactiveParamsOptions): UseAudioReactiveParamsReturn {
     const [audioReactiveParams, setAudioReactiveParams] = useState(false);
     const [audioReactiveAmount, setAudioReactiveAmount] = useState(0.8);
@@ -35,6 +39,7 @@ export function useAudioReactiveParams({
         useAudioAnalyzer();
 
     const audioParamSmoothedRef = useRef<Record<string, number>>({});
+    const slotShaderIdsRef = useRef<Array<RenderMode | undefined>>([]);
 
     const updateAudioReactiveParams = useCallback(() => {
         const manager = rendererRef.current;
@@ -48,39 +53,46 @@ export function useAudioReactiveParams({
         manager.updateAudioFrequencyBins(getAudioBins());
 
         const overall = (bass + mid + treble) / 3.0;
-        const amount = audioReactiveAmount;
         const bands = { bass, mid, treble, overall };
-        const fftBins = getAudioBins();
 
-        const currentShader = modes[0];
-        const shaderEntry = availableModes.find(m => m.id === currentShader);
-        if (shaderEntry && shaderEntry.category === 'generative') {
+        // Every active slot (bounded by the quality-tier cap), every category
+        // whose params declare `audio` — generative keeps positional fallback.
+        const cap = Math.max(1, maxActiveSlots ?? manager.getMaxActiveSlots());
+        const slots: AudioSlotInput[] = [];
+        const lastIds = slotShaderIdsRef.current;
+        for (let slot = 0; slot < Math.min(cap, modes.length); slot++) {
+            const shaderId = modes[slot];
+            if (lastIds[slot] !== shaderId) {
+                // Shader swapped under this slot: drop its smoothing (performer
+                // bases are cleared by setMode via audioParamHold.clearSlot).
+                for (const k of Object.keys(audioParamSmoothedRef.current)) {
+                    if (k.startsWith(`${slot}:`)) delete audioParamSmoothedRef.current[k];
+                }
+                lastIds[slot] = shaderId;
+            }
+            if (!shaderId || shaderId === 'none') continue;
+            const shaderEntry = availableModes.find(m => m.id === shaderId);
+            if (!shaderEntry) continue;
             const targets = resolveAudioTargets(shaderEntry);
-            const baseDefaults = getShaderDefaults(currentShader, 4);
-            const modulated: Partial<SlotParams> = {};
-            const smoothing = 0.15;
-
-            targets.forEach((target, idx) => {
-                const raw = sampleAudioSource(target.audioSource, bands, fftBins);
-                const key = target.slotParamKey;
-                const prev = audioParamSmoothedRef.current[key] ?? raw;
-                const smoothed = prev + (raw - prev) * smoothing;
-                audioParamSmoothedRef.current[key] = smoothed;
-
-                const baseDefault = baseDefaults[idx] ?? target.default;
-                const value = Math.max(
-                    target.min,
-                    Math.min(target.max, baseDefault + (smoothed - 0.5) * amount),
-                );
-                modulated[key] = value;
-            });
-
-            updateSlotParam(0, modulated);
-            rendererRef.current?.updateSlotParams(modulated, 0);
+            if (targets.length === 0) continue;
+            slots.push({ slot, targets, defaults: getShaderDefaults(shaderId, 4) });
         }
+
+        const updates = computeAudioSlotUpdates({
+            slots,
+            bands,
+            fftBins: getAudioBins(),
+            amount: audioReactiveAmount,
+            smoothed: audioParamSmoothedRef.current,
+            isHeld,
+            baseFor,
+        });
+        // updateSlotParam already pushes to the renderer; one write per slot.
+        for (const { slot, updates: u } of updates) updateSlotParam(slot, u);
     }, [
         audioReactiveParams,
         audioReactiveAmount,
+        maxActiveSlots,
         modes,
         availableModes,
         updateSlotParam,
@@ -105,10 +117,11 @@ export function useAudioReactiveParams({
 
     useEffect(() => {
         if (audioReactiveParams) {
-            startAudioAnalyzer();
+            void startAudioAnalyzer();
         } else {
             stopAudioAnalyzer();
             audioParamSmoothedRef.current = {};
+            slotShaderIdsRef.current = [];
         }
     }, [audioReactiveParams, startAudioAnalyzer, stopAudioAnalyzer]);
 

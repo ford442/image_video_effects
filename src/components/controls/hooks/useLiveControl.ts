@@ -17,6 +17,7 @@ import {
 } from '../../../services/midiControl';
 import type { AutoTransitionConfig } from '../../../types/aiVj';
 import { shouldShowMidiControls } from '../../../utils/deviceCapabilities';
+import { hold as holdAudioParam, release as releaseAudioParam } from '../../../services/audioParamHold';
 
 export interface UseLiveControlOptions {
     isAiVjMode: boolean;
@@ -40,6 +41,9 @@ export interface UseLiveControlReturn {
     midiEnabled: boolean;
     setMidiEnabled: Dispatch<SetStateAction<boolean>>;
     midiDevices: MIDIDevice[];
+    /** Pair CC 0–31 / 32–63 into 14-bit values (persisted, default off). */
+    midiPair14Bit: boolean;
+    setMidiPair14Bit: Dispatch<SetStateAction<boolean>>;
     armed: null | 'midi' | 'key';
     setArmed: Dispatch<SetStateAction<null | 'midi' | 'key'>>;
     learnedTrigger: ControlTrigger | null;
@@ -59,6 +63,8 @@ export interface UseLiveControlReturn {
     confirmLearnBinding: () => void;
 }
 
+const MIDI_14BIT_STORAGE_KEY = 'vj_midi_14bit';
+
 export function useLiveControl({
     isAiVjMode,
     autoTransitionEnabled,
@@ -77,6 +83,9 @@ export function useLiveControl({
     const [liveControlOpen, setLiveControlOpen] = useState(false);
     const [midiEnabled, setMidiEnabled] = useState(false);
     const [midiDevices, setMidiDevices] = useState<MIDIDevice[]>([]);
+    const [midiPair14Bit, setMidiPair14Bit] = useState<boolean>(() => {
+        try { return localStorage.getItem(MIDI_14BIT_STORAGE_KEY) === '1'; } catch { return false; }
+    });
     const [armed, setArmed] = useState<null | 'midi' | 'key'>(null);
     const [learnedTrigger, setLearnedTrigger] = useState<ControlTrigger | null>(null);
     const [pendingAction, setPendingAction] = useState<ControlAction>({ type: 'triggerTransition' });
@@ -107,7 +116,7 @@ export function useLiveControl({
             onStopAutoTransition?.();
             return;
         }
-        onStartAutoTransition?.({
+        void onStartAutoTransition?.({
             source: autoTransitionSource,
             intervalMs: autoTransitionIntervalMs,
             durationMs: autoTransitionDurationMs,
@@ -136,12 +145,22 @@ export function useLiveControl({
         saveBindings(bindings);
     }, [bindings]);
 
+    // Click-to-learn on a param: freeze host audio on it until learn ends so the
+    // slider does not move under the performer while they twist a knob.
+    const learnHoldSlot = learnTarget === 'param' && pendingAction.type === 'setSlotParam' ? pendingAction.slot : null;
+    const learnHoldParam = learnTarget === 'param' && pendingAction.type === 'setSlotParam' ? pendingAction.param : null;
+    useEffect(() => {
+        if (learnHoldSlot === null || learnHoldParam === null) return;
+        holdAudioParam(learnHoldSlot, learnHoldParam);
+        return () => releaseAudioParam(learnHoldSlot, learnHoldParam);
+    }, [learnHoldSlot, learnHoldParam]);
+
     useEffect(() => {
         liveHandleRef.current = {
             setSlotParam: (slot, param, value) => onSetSlotParam?.(slot, param, value),
             randomizeSlot: (slot) => onRandomizeSlot?.(slot),
             randomizeAll: () => onRandomizeAllSlots?.(),
-            triggerTransition: () => { onTriggerNextTransition?.(); },
+            triggerTransition: () => { void onTriggerNextTransition?.(); },
             toggleAutoTransition: () => {
                 if (autoTransitionEnabled) {
                     setAutoTransitionEnabled(false);
@@ -162,6 +181,13 @@ export function useLiveControl({
         setAutoTransitionEnabled,
     ]);
 
+    const midiPair14BitRef = useRef(midiPair14Bit);
+    useEffect(() => {
+        midiPair14BitRef.current = midiPair14Bit;
+        midiAdapterRef.current?.setPair14Bit(midiPair14Bit);
+        try { localStorage.setItem(MIDI_14BIT_STORAGE_KEY, midiPair14Bit ? '1' : '0'); } catch { /* private mode */ }
+    }, [midiPair14Bit]);
+
     // MIDI must stay live after learn closes the panel — bindings only fire while
     // the adapter is subscribed. Gate on midiEnabled alone (not liveControlOpen).
     useEffect(() => {
@@ -172,13 +198,13 @@ export function useLiveControl({
             return;
         }
 
-        const adapter = new MidiControlAdapter();
+        const adapter = new MidiControlAdapter(undefined, { pair14Bit: midiPair14BitRef.current });
         midiAdapterRef.current = adapter;
         adapter.requestAccess().then((ok) => {
             if (!ok) return;
             setMidiDevices(adapter.getDevices());
             adapter.subscribe((event: ControlEvent) => handleControlEventRef.current(event));
-        });
+        }).catch((err) => console.warn('[LiveControl] MIDI access failed:', err));
 
         return () => {
             adapter.disable();
@@ -268,6 +294,8 @@ export function useLiveControl({
         midiEnabled,
         setMidiEnabled,
         midiDevices,
+        midiPair14Bit,
+        setMidiPair14Bit,
         armed,
         setArmed,
         learnedTrigger,

@@ -43,7 +43,7 @@ export const useAudioAnalyzer = () => {
 
   const stopAudio = useCallback(() => {
     sourceRef.current?.disconnect();
-    audioContextRef.current?.close();
+    audioContextRef.current?.close().catch(() => { /* already closed */ });
     setIsActive(false);
   }, []);
 
@@ -64,7 +64,7 @@ export const useAudioAnalyzer = () => {
     let bass = 0, mid = 0, treble = 0, overall = 0;
 
     for (let i = 0; i < bufferLength; i++) {
-      const value = dataArray[i] / 255;
+      const value = dataArray[i]! / 255;
       overall += value;
 
       if (i < bassEnd) {
@@ -112,7 +112,7 @@ export const useAudioAnalyzer = () => {
 
     const len = Math.min(dataArray.length, AUDIO_FFT_BINS);
     for (let i = 0; i < len; i++) {
-      bins[i] = dataArray[i] / 255;
+      bins[i] = dataArray[i]! / 255;
     }
     // Zero any remaining slots if bin count < AUDIO_FFT_BINS
     for (let i = len; i < AUDIO_FFT_BINS; i++) {

@@ -54,13 +54,6 @@
       "description": "Interlaced field flicker"
     }
   ],
-  "chunks_used": [
-    "Barrel distortion, scanlines, persistence (retro_phosphor_dream.wgsl)",
-    "Blue-noise offset, golden angle disk (spec-blue-noise-stipple.wgsl)"
-  ],
-  "performance_target": "60 FPS (GTX 1060)",
-  "created_by": "Agent CB-6 - Alpha & Post-Process Enhancer",
-  "created_date": "2026-04-18",
   "tags": [
     "crt",
     "retro",
@@ -68,5 +61,14 @@
     "blue-noise",
     "stipple",
     "vintage"
-  ]
+  ],
+  "x-meta": {
+    "chunks_used": [
+      "Barrel distortion, scanlines, persistence (retro_phosphor_dream.wgsl)",
+      "Blue-noise offset, golden angle disk (spec-blue-noise-stipple.wgsl)"
+    ],
+    "performance_target": "60 FPS (GTX 1060)",
+    "created_by": "Agent CB-6 - Alpha & Post-Process Enhancer",
+    "created_date": "2026-04-18"
+  }
 }

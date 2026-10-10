@@ -52,52 +52,6 @@
       "filter",
       "image-processing"
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "id": "intensity",
-        "name": "Rain Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x",
-        "description": "Bead density on the scrolling lattice conveyor; bass adds up to +80%. The cell hash keys on position only, never on time."
-      },
-      {
-        "index": 1,
-        "id": "wiper",
-        "name": "Wiper Size",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.y",
-        "description": "Blade half-width for both the hand wiper and the autonomous sweep; also sets the sweep rate."
-      },
-      {
-        "index": 2,
-        "id": "distortion",
-        "name": "Distortion",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.z",
-        "description": "Refraction offset through the water film."
-      },
-      {
-        "index": 3,
-        "id": "dry_speed",
-        "name": "Drying Speed",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Evaporation rate of the water film."
-      }
-    ],
     "updated": true
   },
   {
@@ -148,40 +102,6 @@
       },
       {
         "id": "param4",
-        "name": "Detail",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
         "name": "Detail",
         "default": 0.5,
         "min": 0,
@@ -386,40 +306,6 @@
       "temporal",
       "upgraded-rgba"
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Response",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Turbulence",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Ripple Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Highlight Shift",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -488,40 +374,6 @@
       "semantic-alpha",
       "temporal",
       "upgraded-rgba"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Block Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Flow Corruption",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Burst Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Chromatic Shift",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ],
     "updated": true
   },
@@ -592,52 +444,6 @@
         "step": 0.01,
         "mapping": "zoom_params.w",
         "description": "Warm-to-cool subsurface color"
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "id": "viscosity",
-        "name": "Damping",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x",
-        "description": "Damping of the jelly's shear oscillation; also sets the pointer-spring recovery."
-      },
-      {
-        "index": 1,
-        "id": "turbulence",
-        "name": "Elasticity",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.y",
-        "description": "Shear modulus G; sets the finite wave speed c = sqrt(G/rho) at which click wobbles propagate outward."
-      },
-      {
-        "index": 2,
-        "id": "ripple_strength",
-        "name": "Wobble Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.z",
-        "description": "Displacement amplitude of the shear wave and the length of the jiggle overshoot streaks."
-      },
-      {
-        "index": 3,
-        "id": "color_shift",
-        "name": "Scatter Tint",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Hue offset into the candy palette that replaced the warm/cool two-tone lerp."
       }
     ],
     "updated": true
@@ -949,44 +755,6 @@
         "max": 1,
         "step": 0.01
       }
-    ],
-    "updatedParams": [
-      {
-        "id": "surfaceTension",
-        "name": "Surface Tension",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "description": "Height scale and refraction strength of the film."
-      },
-      {
-        "id": "gravityScale",
-        "name": "Gravity Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "description": "Wavenumber and phase speed of the click ripple packets."
-      },
-      {
-        "id": "damping",
-        "name": "Damping",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "description": "Ripple packet amplitude retention."
-      },
-      {
-        "id": "turbidity",
-        "name": "Turbidity",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "description": "Absorption path multiplier; also dulls the specular."
-      }
     ]
   },
   {
@@ -1107,40 +875,6 @@
       "gerstner",
       "refraction"
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Color Shift",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = final tone-mapped display RGBA; exact bounded parallax history loads",
     "updated": true
   },
@@ -1206,43 +940,8 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Param 1",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Param 2",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Param 3",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Param 4",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = final tone-mapped display RGBA; exact bounded refractive history loads",
-    "updated": true,
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updated": true
   },
   {
     "id": "liquid-rainbow",
@@ -1311,40 +1010,6 @@
       "aces-tone-map",
       "semantic-alpha"
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Viscosity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Turbulence",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Ripple Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Dispersion",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -1410,40 +1075,6 @@
       "temporal",
       "upgraded-rgba"
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Viscosity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Turbulence",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Ripple Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "RGB Separation",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = final tone-mapped display RGBA; exact bounded wavelength-flow history loads",
     "updated": true
   },
@@ -1506,40 +1137,6 @@
       "brush",
       "paint",
       "feedback"
-    ],
-    "updatedParams": [
-      {
-        "id": "strength",
-        "name": "Smear Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "description": "Drag length along the pointer stroke."
-      },
-      {
-        "id": "size",
-        "name": "Brush Size",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "description": "Radius of the drag falloff around the cursor."
-      },
-      {
-        "id": "decay",
-        "name": "Persistence",
-        "default": 0.9,
-        "min": 0,
-        "max": 1,
-        "description": "How much of the smeared field survives each frame."
-      },
-      {
-        "id": "mix",
-        "name": "Mix Strength",
-        "default": 0.1,
-        "min": 0,
-        "max": 1,
-        "description": "Blend of the smeared field over the live plate."
-      }
     ]
   },
   {
@@ -1598,40 +1195,6 @@
       },
       {
         "id": "transmission",
-        "name": "Transmission",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.05
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Flow Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 2,
-        "step": 0.05
-      },
-      {
-        "index": 1,
-        "name": "Surface Tension",
-        "default": 0.5,
-        "min": 0,
-        "max": 2,
-        "step": 0.05
-      },
-      {
-        "index": 2,
-        "name": "Specular",
-        "default": 1,
-        "min": 0,
-        "max": 3,
-        "step": 0.1
-      },
-      {
-        "index": 3,
         "name": "Transmission",
         "default": 0.5,
         "min": 0,
@@ -1764,40 +1327,6 @@
       "aces-tone-map",
       "semantic-alpha"
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Viscosity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Flow Turbulence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Nebula Glow",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Spectral Shift",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -1860,40 +1389,6 @@
       "mouse-driven",
       "temporal",
       "upgraded-rgba"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Viscosity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Turbulence",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Ripple Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Color Shift",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ],
     "feedbackPacking": "A/C = final tone-mapped display RGBA; exact bounded laminar history loads",
     "updated": true
@@ -1971,48 +1466,6 @@
       "stencil-vorticity",
       "local-jacobi-pressure",
       "fluid-simulation"
-    ],
-    "updatedParams": [
-      {
-        "id": "viscosity",
-        "name": "Viscosity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x",
-        "description": "Velocity damping and dye dissipation rate."
-      },
-      {
-        "id": "turbulence",
-        "name": "Vorticity Confinement",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.y",
-        "description": "Strength of the confinement force that keeps eddies from smearing out (maps to zoom_params.y)."
-      },
-      {
-        "id": "ripple_strength",
-        "name": "Turbulence Injection",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.z",
-        "description": "Gain on the three-octave cascade and the per-band dye emitters (maps to zoom_params.z)."
-      },
-      {
-        "id": "color_shift",
-        "name": "Hue Shift",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Rotates the dye/vorticity hue mapping (maps to zoom_params.w)."
-      }
     ]
   },
   {
@@ -2075,44 +1528,6 @@
         "min": 0,
         "max": 1,
         "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "id": "param1",
-        "name": "Near Layer Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "description": "Zoom cadence for near (low-depth) pixels — maps to zoom_params.x."
-      },
-      {
-        "id": "param2",
-        "name": "Far Layer Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "description": "Zoom cadence for far (high-depth) pixels — maps to zoom_params.y."
-      },
-      {
-        "id": "param3",
-        "name": "Parallax Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "description": "Exponent shaping the depth-to-speed curve — maps to zoom_params.z."
-      },
-      {
-        "id": "param4",
-        "name": "Fog Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "description": "Distance fog applied to far layers — maps to zoom_params.w."
       }
     ]
   },
@@ -2196,7 +1611,6 @@
       {
         "id": "speed",
         "name": "Melt Speed",
-        "type": "float",
         "default": 0.3,
         "min": 0,
         "max": 1
@@ -2204,7 +1618,6 @@
       {
         "id": "persistence",
         "name": "Trails",
-        "type": "float",
         "default": 0.9,
         "min": 0.5,
         "max": 0.99
@@ -2212,7 +1625,6 @@
       {
         "id": "radius",
         "name": "Heat Radius",
-        "type": "float",
         "default": 0.2,
         "min": 0,
         "max": 1
@@ -2220,48 +1632,13 @@
       {
         "id": "heat",
         "name": "Heat Intensity",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Melt Speed",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Trails",
-        "default": 0.9,
-        "min": 0.5,
-        "max": 0.99,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Heat Radius",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Heat Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "description": "Luma-thresholded cohesive rivulets branch under heat-dependent viscosity, held-pointer melting, exact advected history, and aspect-correct click fronts.",
-    "feedbackPacking": "A/C = final tone-mapped display RGBA; exact bounded melt-history loads",
+    "feedbackPacking": "A/C = linear pre-ACES melt RGB + molten temperature in alpha; exact bounded melt-history loads",
     "tags": [
       "fluid",
       "liquid",
@@ -2422,40 +1799,6 @@
       "fast-motion",
       "click-reactive",
       "bounded-history"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Viscosity",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Push Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Flow Memory",
-        "default": 0.95,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Warp Amount",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ],
     "params": [
       {

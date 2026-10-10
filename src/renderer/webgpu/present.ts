@@ -9,7 +9,7 @@ import { createBlitBindGroup } from './pipeline';
 import type { WebGPUFrameState } from './frameState';
 import {
   encodeResolveAndCopy,
-  pickPresentTimestampWrites,
+  profilePass,
   scheduleTimestampReadback,
 } from './WebGPUTiming';
 
@@ -39,15 +39,29 @@ export function selectPresentPipeline<T>(
   return inputSource === 'generative' ? generativePipeline : standardPipeline;
 }
 
+/**
+ * readTex is smaller than the canvas-sized sourceTex whenever the resolution
+ * scale is below 1 *or* the working size is capped (1024 on every non-discrete
+ * adapter while the canvas is 2048). A plain copy would then overrun readTex,
+ * invalidating the whole frame command buffer, so resample instead.
+ */
+export function needsScaledInputCopy(
+  state: Pick<WebGPUFrameState, 'resolutionScale' | 'scaledW' | 'scaledH' | 'canvasW' | 'canvasH'>,
+): boolean {
+  return state.resolutionScale < 1.0 || state.scaledW < state.canvasW || state.scaledH < state.canvasH;
+}
+
 export class WebGPUPresenter {
   private scaleBindGroup: GPUBindGroup | null = null;
   private scaleBindGroupTex: GPUTexture | null = null;
 
   /** Seed readTex from the source, scaling through a render pass when required. */
   encodeInputCopy(state: WebGPUFrameState, encoder: GPUCommandEncoder): void {
-    if (state.resolutionScale < 1.0) {
+    if (needsScaledInputCopy(state)) {
+      const scaleWrites = profilePass(state.timestampRuntime, { kind: 'input', label: 'scalePass' });
       const scalePass = encoder.beginRenderPass({
         label: 'scalePass',
+        ...(scaleWrites ? { timestampWrites: scaleWrites } : {}),
         colorAttachments: [
           {
             view: state.readTex.createView(),
@@ -83,11 +97,7 @@ export class WebGPUPresenter {
     }
     if (!currentTexture) return false;
 
-    const timing = state.timestampRuntime;
-    const timestampWrites =
-      timing.supportsTimestampQuery && timing.querySet
-        ? pickPresentTimestampWrites(timing.tracker, timing.querySet)
-        : undefined;
+    const timestampWrites = profilePass(state.timestampRuntime, { kind: 'present', label: 'present' });
     const pass = encoder.beginRenderPass({
       colorAttachments: [
         {
@@ -115,21 +125,11 @@ export class WebGPUPresenter {
   /** Submit a fully encoded frame, including timestamp resolve/readback bookkeeping. */
   submitFrame(state: WebGPUFrameState, encoder: GPUCommandEncoder): void {
     if (!state.device) return;
-    const resolveSlot = encodeResolveAndCopy(encoder, state.timestampRuntime);
+    const readback = encodeResolveAndCopy(encoder, state.timestampRuntime);
     state.device.queue.submit([encoder.finish()]);
-    if (resolveSlot !== null) {
-      scheduleTimestampReadback(state.timestampRuntime, resolveSlot);
+    if (readback !== null) {
+      scheduleTimestampReadback(state.timestampRuntime, readback);
     }
-  }
-
-  /** Present readTex directly when there are no enabled shader slots. */
-  presentWithoutEffects(state: WebGPUFrameState): void {
-    if (!state.device || !state.context || !state.initialized) return;
-
-    this.updateBlitBindGroup(state);
-    const encoder = state.device.createCommandEncoder({ label: 'blit' });
-    this.encodePresent(state, encoder);
-    state.device.queue.submit([encoder.finish()]);
   }
 
   updateBlitBindGroup(state: WebGPUFrameState): void {

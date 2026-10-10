@@ -2,7 +2,12 @@
 //  Glass Brick Wall — Textured Architectural Glass Surface
 //  Category: distortion
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba,
-//            caustic-refraction, depth-layers, chromatic-dispersion, fbm-texture, ACES
+//            caustic-refraction, chromatic-dispersion, fbm-texture, beer-lambert, ACES
+//  Ideas:    1. dome dispersion — R/B split along each brick's dome normal, blue bending
+//               hardest, instead of one fixed diagonal offset
+//            2. dome caustic — each brick focuses its own light into a hot-spot
+//            3. green block edges — Beer-Lambert path grows toward the side walls
+//            4. wall reflection — side walls mirror the brick interior (internal reflection)
 //  Complexity: High
 // ═══════════════════════════════════════════════════════════════════
 
@@ -76,36 +81,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let rawMouse = u.zoom_config.yz;
   let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
 
-  // Critically damped spring cursor in extraBuffer[133..138]
-  let isWriter = (gid.x == 0u && gid.y == 0u);
-  let hasState = (arrayLength(&extraBuffer) > 138u);
-
-  var mouse = rawMouse;
-  if (hasState && extraBuffer[138] > 0.5) {
-    mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  }
-
-  if (isWriter && hasState) {
-    let lastTime = extraBuffer[137];
-    let dt = clamp(time - lastTime, 0.0, 0.05);
-    var sPos = mouse;
-    var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[138] < 0.5) {
-      sPos = rawMouse;
-      sVel = vec2<f32>(0.0);
-    }
-    let stiffness = 42.0;
-    let damping = 12.96; // 2 * sqrt(42)
-    let accel = (rawMouse - sPos) * stiffness - sVel * damping;
-    sVel += accel * dt;
-    sPos += sVel * dt;
-    extraBuffer[133] = sPos.x;
-    extraBuffer[134] = sPos.y;
-    extraBuffer[135] = sVel.x;
-    extraBuffer[136] = sVel.y;
-    extraBuffer[137] = time;
-    extraBuffer[138] = 1.0;
-  }
+  // Raw pointer: the old extraBuffer[133..138] spring raced (pixel (0,0) wrote
+  // while every other pixel read) and the buffer is re-uploaded each frame.
+  let mouse = rawMouse;
 
   // Exact parameter contracts
   let brickSize = mix(10.0, 54.0, u.zoom_params.x);
@@ -144,34 +122,64 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let refractOffset = normal.xy * distortion * (1.0 - mortarMask) * (1.0 + bass * 0.35 + ptr_influence * 0.2 + click_wave * 0.5);
   let frontUV = clamp(uv + refractOffset, vec2<f32>(0.0), vec2<f32>(1.0));
 
-  // Chromatic dispersion
-  let cr = textureSampleLevel(readTexture, u_sampler, clamp(frontUV + vec2<f32>(0.005) * (treble * 0.5 + 0.5), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let gridScale = vec2<f32>(brickSize * aspect, brickSize);
+  let brickCenterUV = (cellId + 0.5) / gridScale;
+
+  // Idea 1: dome dispersion. Each colour refracts along the dome normal by its
+  // own amount (Cauchy order, so blue bends most), and denser glass disperses
+  // more. The fringes follow every brick's curvature instead of one diagonal.
+  let dispAmt = distortion * 0.12 * (0.5 + glassDensity * 0.3) * (0.5 + treble * 0.5) * (1.0 - mortarMask);
+  let dispDir = normal.xy;
+  let cr = textureSampleLevel(readTexture, u_sampler, clamp(frontUV - dispDir * dispAmt, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
   let cg = textureSampleLevel(readTexture, u_sampler, frontUV, 0.0).g;
-  let cb = textureSampleLevel(readTexture, u_sampler, clamp(frontUV - vec2<f32>(0.005) * (treble * 0.5 + 0.5), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  let cb = textureSampleLevel(readTexture, u_sampler, clamp(frontUV + dispDir * dispAmt * 1.6, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
   let base_a = textureSampleLevel(readTexture, u_sampler, frontUV, 0.0).a;
 
   var color = vec3<f32>(cr, cg, cb);
 
-  // Exact dataTextureC persistence
-  let prevC = textureLoad(dataTextureC, pixel, 0).rgb;
-  color = mix(color, prevC, 0.07);
+  // Idea 4: wall reflection. Near the side walls of a block, total internal
+  // reflection shows the brick's own interior flipped across the wall it
+  // faces, compressed into the band.
+  let edgeMax = max(abs(cell.x), abs(cell.y));
+  let wallBand = smoothstep(0.30, 0.46 - mortarSize * 0.5, edgeMax) * (1.0 - mortarMask);
+  var cellR = cell;
+  if (abs(cell.x) > abs(cell.y)) { cellR.x = -cell.x * 0.6; } else { cellR.y = -cell.y * 0.6; }
+  let wallUV = clamp((cellId + 0.5 + cellR) / gridScale + refractOffset * 0.5, vec2<f32>(0.0), vec2<f32>(1.0));
+  let wallImg = textureSampleLevel(readTexture, u_sampler, wallUV, 0.0).rgb;
+  color = mix(color, wallImg * 1.1, wallBand * (0.25 + u.zoom_params.w * 0.3));
 
   var finalAlpha = base_a;
-  if (mortarMask < 0.5) {
-    let lightDir = normalize(vec3<f32>(0.0, 0.0, 1.0));
-    let spec = pow(max(dot(normal, lightDir), 0.0), 32.0) * (0.5 + mids);
-    let glassColor = vec3<f32>(0.85, 0.94, 1.0) * (1.0 - glassDensity * 0.15);
-    color = color * glassColor + spec;
-    finalAlpha = mix(0.85, 0.3, 1.0 - mortarMask);
-  } else {
-    color *= 0.3; // mortar is dark
-    finalAlpha = 0.95;
-  }
+  let lightDir = normalize(vec3<f32>(0.0, 0.0, 1.0));
+  let spec = pow(max(dot(normal, lightDir), 0.0), 32.0) * (0.5 + mids);
+  let glassColor = vec3<f32>(0.85, 0.94, 1.0) * (1.0 - glassDensity * 0.15);
 
-  color += ptr_influence * vec3<f32>(0.2, 0.4, 0.8) * mids;
+  // Idea 3: green block edges. The light path runs longest through a glass
+  // block near its walls, and iron in the glass absorbs red and blue there,
+  // which turns the edges bottle-green. Glass Density scales the path.
+  let pathLen = glassDensity * (0.3 + edgeMax * edgeMax * 4.8);
+  let blockTint = exp(-vec3<f32>(0.35, 0.08, 0.22) * pathLen * 0.6);
+
+  // Idea 2: dome caustic. The domed face focuses light from the whole brick
+  // into a soft hot-spot that drifts with the FBM surface, and bass pumps it.
+  let focusPt = vec2<f32>(0.10, -0.08) + vec2<f32>(normalNoise, -normalNoise) * 0.6;
+  let spotD = length(cell - focusPt);
+  let caustic = exp(-spotD * spotD * 60.0) * (1.0 - mortarMask);
+  let brickLight = textureSampleLevel(readTexture, u_sampler, brickCenterUV, 0.0).rgb;
+  let causticCol = brickLight * caustic * (0.45 + bass * 0.4) * (0.6 + distortion * 5.0);
+
+  let glassCol = color * glassColor * blockTint + spec + causticCol;
+  let mortarCol = color * 0.3; // mortar is dark
+  let mortarW = smoothstep(0.4, 0.6, mortarMask);
+  color = mix(glassCol, mortarCol, mortarW);
+  finalAlpha = mix(mix(0.85, 0.3, 1.0 - mortarMask), 0.95, mortarW);
+
+  // HEAD scaled this by mids alone, so the pointer halo vanished without audio.
+  color += ptr_influence * vec3<f32>(0.2, 0.4, 0.8) * (0.2 + mids);
   color += click_wave * vec3<f32>(1.0, 0.85, 0.5);
 
-  let finalRGB = aces(color);
+  // Exact dataTextureC persistence, blended in display space (C holds ACES output).
+  let prevC = textureLoad(dataTextureC, pixel, 0).rgb;
+  let finalRGB = mix(aces(color), prevC, 0.07);
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, frontUV, 0.0).r;
   let finalPixel = vec4<f32>(finalRGB, clamp(finalAlpha + ptr_influence * 0.1, 0.1, 1.0));
 

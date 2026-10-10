@@ -14,6 +14,19 @@ Memory sketch (order of magnitude, 2048²):
 
 `historyTex` is the largest single `CreateCommittedResource`. **Default working size is 1024.** 2048 is an upgrade only on a fat discrete adapter (`maxBufferSize >= 1 GiB`, not Pascal / GTX 10-series, no OOM this tab) after a successful 1024 pool. After OOM, working size stays capped at 1024 and history layers may drop to 4 or 1 (#1204). Do not retry 2048 in the same tab.
 
+### What the 2048 gate reads (#1395)
+
+`allowsFullWorkingSize` ([`src/config/vramBudget.ts`](../src/config/vramBudget.ts)) checks four inputs. Before #1395 none of the first three could pass in a browser.
+
+| Input | Source |
+|-------|--------|
+| `device.limits.maxBufferSize >= 1 GiB` | `buildRequiredLimits` requests the adapter's own `maxBufferSize` / `maxStorageBufferBindingSize` (`bufferSizeLimits` in [`webgpu_limits.json`](../src/contracts/webgpu_limits.json)). A device only gets the 256 MiB spec default unless a higher value is requested. |
+| `adapterGpuType === 'discrete'` | `inferAdapterGpuType` ([`src/config/adapterIdentity.ts`](../src/config/adapterIdentity.ts)). Browsers expose no adapter type, so it is inferred from `adapter.info` vendor / architecture / description: NVIDIA and non-APU AMD count as discrete, Intel only for Arc (`xe-hpg`), Apple as integrated, SwiftShader and fallback adapters as `cpu`. |
+| not Pascal / GTX 10 | `PASCAL_ADAPTER_BLOCKLIST` against `adapterSummary` plus the identity's architecture / device / description. `adapterSummary` now starts with `adapter: vendor=… arch=… device=… desc=… fallback=…`. |
+| not a fallback adapter | `adapter.info.isFallbackAdapter` (or the `forceFallback` ladder rung). |
+
+A wrong "discrete" guess (for example an AMD APU with an empty description) costs one OOM: the pool falls back to 1024, the cap is stored for the tab, and 2048 is not tried again. The WASM backend does not mirror the buffer-size request (`cppMirror.bufferSizeLimits: false`); it is frozen as R&D and never offers 2048. The inferred type also feeds `auto` color-format selection (discrete desktop with measured `rgba32float` storage starts on FP32).
+
 Adaptive resolution scaling alone cannot save integrated GPUs when format bandwidth dominates.
 
 ## Design decision: storage demotion, not present-only

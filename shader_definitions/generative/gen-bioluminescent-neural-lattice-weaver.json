@@ -17,79 +17,7 @@
     "aces-tone-map",
     "semantic-alpha"
   ],
-  "controls": [
-    {
-      "name": "Synapse Density",
-      "type": "slider",
-      "min": 0.1,
-      "max": 5.0,
-      "step": 0.1,
-      "default": 1.5,
-      "mapping": "zoom_params.x"
-    },
-    {
-      "name": "Growth Speed",
-      "type": "slider",
-      "min": 0.0,
-      "max": 3.0,
-      "step": 0.1,
-      "default": 1.0,
-      "mapping": "zoom_params.y"
-    },
-    {
-      "name": "Lattice Hardness",
-      "type": "slider",
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.05,
-      "default": 0.8,
-      "mapping": "zoom_params.z"
-    },
-    {
-      "name": "Bioluminescence Intensity",
-      "type": "slider",
-      "min": 0.0,
-      "max": 5.0,
-      "step": 0.1,
-      "default": 2.0,
-      "mapping": "zoom_params.w"
-    }
-  ],
   "description": "An octahedral crystal lattice woven through an organic neural field, firing fast. Hollow shells carry strut greeble, pulses race the pathways at a treble-driven rate, and emission is graded through a psychedelic spectrum. Every hollow cage holds a core charged by the membrane passing through its cell, glowing through shells and membranes like lantern paper. The cursor is a gravity well that bends the whole structure toward it, holding deepens the pull and draws the camera in, and clicks fire synapse bursts and send a spin cascade rolling through the cage.",
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Synapse Density",
-      "default": 1.0,
-      "min": 0.1,
-      "max": 3.0,
-      "step": 0.05
-    },
-    {
-      "index": 1,
-      "name": "Growth Speed",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 2.0,
-      "step": 0.05
-    },
-    {
-      "index": 2,
-      "name": "Lattice Hardness",
-      "default": 1.0,
-      "min": 0.2,
-      "max": 2.0,
-      "step": 0.05
-    },
-    {
-      "index": 3,
-      "name": "Bioluminescence",
-      "default": 1.0,
-      "min": 0.0,
-      "max": 3.0,
-      "step": 0.05
-    }
-  ],
   "supportsDepth": true,
   "updated": true,
   "workgroup_size": [
@@ -139,5 +67,83 @@
       "step": 0.05,
       "mapping": "zoom_params.w"
     }
-  ]
+  ],
+  "x-meta": {
+    "legacy": {
+      "controls": [
+        {
+          "name": "Synapse Density",
+          "type": "slider",
+          "min": 0.1,
+          "max": 5.0,
+          "step": 0.1,
+          "default": 1.5,
+          "mapping": "zoom_params.x"
+        },
+        {
+          "name": "Growth Speed",
+          "type": "slider",
+          "min": 0.0,
+          "max": 3.0,
+          "step": 0.1,
+          "default": 1.0,
+          "mapping": "zoom_params.y"
+        },
+        {
+          "name": "Lattice Hardness",
+          "type": "slider",
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.05,
+          "default": 0.8,
+          "mapping": "zoom_params.z"
+        },
+        {
+          "name": "Bioluminescence Intensity",
+          "type": "slider",
+          "min": 0.0,
+          "max": 5.0,
+          "step": 0.1,
+          "default": 2.0,
+          "mapping": "zoom_params.w"
+        }
+      ]
+    },
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Synapse Density",
+          "default": 1.0,
+          "min": 0.1,
+          "max": 3.0,
+          "step": 0.05
+        },
+        {
+          "index": 1,
+          "name": "Growth Speed",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 2.0,
+          "step": 0.05
+        },
+        {
+          "index": 2,
+          "name": "Lattice Hardness",
+          "default": 1.0,
+          "min": 0.2,
+          "max": 2.0,
+          "step": 0.05
+        },
+        {
+          "index": 3,
+          "name": "Bioluminescence",
+          "default": 1.0,
+          "min": 0.0,
+          "max": 3.0,
+          "step": 0.05
+        }
+      ]
+    }
+  }
 }
