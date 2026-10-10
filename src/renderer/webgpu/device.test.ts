@@ -385,32 +385,19 @@ describe('attachDeviceLostHandler', () => {
     expect(errors[0].message).not.toMatch(/reload/i);
   });
 
-  it('an intentional destroy is silent and leaves the (possibly reused) context alone', async () => {
+  it('a destroy is silent and leaves the (possibly reused) context alone', async () => {
     const context = ctx();
     const onLost = jest.fn();
-    attachDeviceLostHandler(lostDevice({ reason: 'destroyed', message: '' }), context, onLost, {
-      isIntentional: () => true,
-    });
+    attachDeviceLostHandler(lostDevice({ reason: 'destroyed', message: '' }), context, onLost);
     await settle();
     expect(onLost).not.toHaveBeenCalled();
     expect(context.unconfigure).not.toHaveBeenCalled();
     expect(errors).toEqual([]);
   });
 
-  it('an unowned destroy still unconfigures but does not report', async () => {
-    const context = ctx();
-    const onLost = jest.fn();
-    attachDeviceLostHandler(lostDevice({ reason: 'destroyed', message: '' }), context, onLost);
-    await settle();
-    expect(onLost).not.toHaveBeenCalled();
-    expect(context.unconfigure).toHaveBeenCalled();
-    expect(errors).toEqual([]);
-  });
-
   it('a simulated loss (test hook destroy) takes the loss path', async () => {
     const onLost = jest.fn();
     attachDeviceLostHandler(lostDevice({ reason: 'destroyed', message: '' }), ctx(), onLost, {
-      isIntentional: () => true,
       isSimulated: () => true,
     });
     await settle();

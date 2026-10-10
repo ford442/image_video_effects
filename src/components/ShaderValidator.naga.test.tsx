@@ -14,7 +14,7 @@ import { TextEncoder as NodeTextEncoder, TextDecoder as NodeTextDecoder } from '
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ShaderValidator from './ShaderValidator';
-import { clearAdoptedRendererDevice } from '../utils/adoptedGpuDevice';
+import { resetRendererDeviceRegistryForTests } from '../renderer/deviceRegistry';
 
 // jsdom ships neither; browsers and Node both have them natively. Imports are
 // hoisted regardless of source order, so nothing above runs before this anyway.
@@ -86,10 +86,10 @@ describe('ShaderValidator GPU-less validation', () => {
   });
 
   beforeEach(() => {
-    clearAdoptedRendererDevice();
+    resetRendererDeviceRegistryForTests();
     delete (window as any).webgpuProbe;
 
-    // No adopted device, and navigator.gpu present only to prove it is untouched.
+    // No renderer device, and navigator.gpu present only to prove it is untouched.
     const nav = navigator as unknown as { gpu?: unknown };
     nav.gpu = { requestAdapter, requestDevice };
 
@@ -116,7 +116,7 @@ describe('ShaderValidator GPU-less validation', () => {
   });
 
   afterEach(() => {
-    clearAdoptedRendererDevice();
+    resetRendererDeviceRegistryForTests();
     jest.clearAllMocks();
   });
 

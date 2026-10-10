@@ -18,6 +18,13 @@ Single source of truth for the Pixelocity compute bind group layout and device p
 
 **One renderer `GPUDevice`:** the boot probe owns the sole `requestAdapter`/`requestDevice` for catalog rendering, gpu-chores, ShaderValidator, and ShaderScanner. Lazy depth (`@xenova/transformers`) prefers WASM/CPU while that device is live — Transformers may still allocate internally when `device:'webgpu'` is selected.
 
+**Device owner registry (#1395):** [`src/renderer/deviceRegistry.ts`](../src/renderer/deviceRegistry.ts) records which backend owns the live device. The page `WebGPURenderer` publishes the device it *ended up with* after setup — after any OOM retry, never the probe handoff it may have destroyed. The render-worker proxy publishes `{ device: null, thread: 'worker' }`. The owner clears the entry on device loss, worker crash and teardown, and only the current owner can clear it. Every publish and clear bumps `generation`. Consumers read or subscribe and never cache a device across a generation change:
+- `RendererManager.getDevice()` / `isGpuDeviceActive()`
+- `shaderCompileService` (ShaderScanner resolves it per shader and retries once when the generation changed mid-compile)
+- depth estimation (through `isGpuDeviceActive()`, which also stays true while a lost device is being rebuilt)
+
+The standalone `?validator` page has no renderer, so its probe device stays local to the run and is destroyed afterwards. `getDiagnostics().liveGpuDevices` counts every device the boot probe created whose `lost` has not settled, on the page plus in the current render worker. It is 1 while rendering, including after a recovery.
+
 ## Naming
 
 | Term | Meaning |

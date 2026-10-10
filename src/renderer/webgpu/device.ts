@@ -285,14 +285,14 @@ export interface DeviceLostDetails {
 }
 
 export interface DeviceLostHandlerOptions {
-  /** True when our own teardown destroyed the device (and already unconfigured the context). */
-  isIntentional?: () => boolean;
   /** True when a test hook destroyed the device to stand in for a real loss. */
   isSimulated?: () => boolean;
 }
 
 /**
- * Routes `device.lost`: an intentional destroy is silent; a real (or simulated) loss is
+ * Routes `device.lost`: a `'destroyed'` loss is silent and never touches the context (only
+ * the device owner destroys, and its teardown already unconfigured it; a late unconfigure
+ * could hit a context a newer device has since configured). A real (or simulated) loss is
  * reported as recoverable, the context is unconfigured and `onLost` runs once.
  */
 export function attachDeviceLostHandler(
@@ -303,17 +303,7 @@ export function attachDeviceLostHandler(
 ): void {
   void device.lost.then((info) => {
     const simulated = info.reason === 'destroyed' && options.isSimulated?.() === true;
-    if (info.reason === 'destroyed' && !simulated) {
-      // Teardown unconfigured already; a late unconfigure could hit a context a
-      // newer device has since configured (OOM retry / recovery on the same canvas).
-      if (options.isIntentional?.()) return;
-      try {
-        context?.unconfigure();
-      } catch {
-        // Ignore errors during cleanup
-      }
-      return;
-    }
+    if (info.reason === 'destroyed' && !simulated) return;
     const details: DeviceLostDetails = simulated
       ? { reason: 'simulated', message: 'simulated device loss (test hook)' }
       : { reason: String(info.reason ?? 'unknown'), message: info.message ?? '' };

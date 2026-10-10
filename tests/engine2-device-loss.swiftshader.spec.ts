@@ -4,7 +4,8 @@
  * `__pixelocity__.simulateDeviceLoss()` destroys the live device (so it really is
  * dead) but routes its `lost` through the runtime loss path. RendererManager then
  * rebuilds the TS WebGPU backend — on the page, or on a new render worker with a
- * fresh canvas — and replays the session. Pixels are read back through the
+ * fresh canvas — and replays the session. `simulateWorkerCrash()` raises an uncaught
+ * error in the render worker, which recovers the same way (#1395). Pixels are read back through the
  * renderer (`captureThumbnailPng`) because compositor screenshots stay blank.
  *
  * Needs a production build: `SKIP_WASM_BUILD=1 npm run build && npm run test:engine2`.
@@ -125,6 +126,17 @@ async function thumbnailStats(page: Page, size = 64, attempts = 4) {
   return best;
 }
 
+/** Page + current render worker: exactly one GPUDevice once the old one's `lost` settled. */
+async function expectOneLiveDevice(page: Page): Promise<void> {
+  await page.waitForFunction(
+    () => (window as any).__pixelocity__.renderer.getDiagnostics()?.liveGpuDevices === 1,
+    null,
+    { timeout: 10_000, polling: 250 },
+  ).catch(() => undefined);
+  const live = await page.evaluate(() => (window as any).__pixelocity__.renderer.getDiagnostics()?.liveGpuDevices);
+  expect(live, 'live GPUDevices after recovery').toBe(1);
+}
+
 async function gpuErrors(page: Page, mode: Mode): Promise<string[]> {
   if (mode === 'main') return (await readGpuUncapturedErrors(page)).map((e) => e.message);
   return page.evaluate(() => (window as any).__pixelocity__.renderer.getDiagnostics()?.webgpu?.gpuErrors ?? []);
@@ -161,8 +173,35 @@ test.describe('device-loss recovery on SwiftShader WebGPU', () => {
       await expect(page.getByTestId('webgpu-device-lost')).toHaveCount(0);
       await expect(page.getByTestId('webgpu-probe-failure')).toHaveCount(0);
       expect(await gpuErrors(page, mode)).toEqual([]);
+      // One device owner (#1395): the lost device is gone, only the rebuilt one is alive.
+      await expectOneLiveDevice(page);
     });
   }
+
+  test('a crashed render worker is replaced by a new one with the session [worker]', async ({ page }) => {
+    await boot(page, 'worker');
+    await loadSession(page);
+    await waitForFramesAbove(page, 3);
+    const generation = await page.evaluate(
+      () => (window as any).__pixelocity__.renderer.getDiagnostics().deviceGeneration,
+    );
+
+    expect(await page.evaluate(() => (window as any).__pixelocity__.simulateWorkerCrash())).toBe(true);
+    const status = await waitForRecovery(page, 'idle', 1);
+    expect(status.lastLoss).toMatchObject({ kind: 'worker-died', reason: 'render worker crashed' });
+
+    const diag = await page.evaluate(() => (window as any).__pixelocity__.renderer.getDiagnostics());
+    expect(diag.renderThread).toBe('worker');
+    expect(diag.webgpu?.initialized).toBe(true);
+    // Cleared by the crash, published again by the new worker's backend.
+    expect(diag.deviceGeneration).toBeGreaterThanOrEqual(generation + 2);
+    expect(await slotShaders(page)).toEqual(STACK);
+    const after = await framesRendered(page);
+    await waitForFramesAbove(page, after + 2);
+    expect((await thumbnailStats(page)).max, 'image + stack replayed on the new worker').toBeGreaterThan(64);
+    expect(await gpuErrors(page, 'worker')).toEqual([]);
+    await expectOneLiveDevice(page);
+  });
 
   test('a failed recovery shows the diagnostic overlay with Retry, and Retry restores rendering [main]', async ({ page }) => {
     await installAdapterKillSwitch(page);

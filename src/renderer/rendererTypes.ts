@@ -29,6 +29,10 @@ export interface RendererDiagnostics {
   wasm?: WASMDiagnostics;
   /** TS WebGPU device-loss recovery (state, attempts, last loss / failure). */
   deviceRecovery?: DeviceRecoveryStatus;
+  /** Renderer device registry generation: bumps on every device publish / clear (#1395). */
+  deviceGeneration?: number;
+  /** GPUDevices alive on the page plus in the current render worker; 1 while rendering. */
+  liveGpuDevices?: number;
   webgpu?: {
     initialized: boolean;
     fps: number;

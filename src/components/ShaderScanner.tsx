@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { ShaderEntry } from '../renderer/types';
 import { fetchShaderWgsl } from '../utils/fetchShaderWgsl';
-import { getShaderCompileService, type ShaderCompileService } from '../utils/shaderCompileService';
+import { getShaderCompileService, type CompileMessageLike, type ShaderCompileService } from '../utils/shaderCompileService';
+import { getDeviceGeneration } from '../renderer/deviceRegistry';
 import { WebGpuProbeFailureOverlay } from './WebGpuProbeFailureOverlay';
 import type { WebGpuProbeSerializable } from '../renderer/webgpuBootProbe';
 import {
@@ -106,6 +107,25 @@ struct Uniforms {
 
   return bindings + uniforms + code;
 };
+
+/**
+ * Compile on whichever renderer device is current. Resolved per shader, not per scan: a
+ * device loss or recovery mid-scan replaces it (registry generation), and a result from
+ * a device that went away while compiling is retried once on the new one.
+ */
+async function compileOnRendererDevice(id: string, code: string): Promise<CompileMessageLike[]> {
+  for (let attempt = 0; ; attempt++) {
+    const compiler = getShaderCompileService();
+    if (!compiler) throw new Error('Renderer GPUDevice unavailable (lost or recovering)');
+    const generation = getDeviceGeneration();
+    try {
+      const messages = await compiler.compile(id, code);
+      if (attempt > 0 || getDeviceGeneration() === generation) return messages;
+    } catch (e) {
+      if (attempt > 0 || getDeviceGeneration() === generation) throw e;
+    }
+  }
+}
 
 function resolveProbeFailure(): WebGpuProbeSerializable | null {
   const probe = window.webgpuProbe;
@@ -340,7 +360,7 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
             const shaderCode = prepareShaderCode(code);
 
             // Compile on the renderer's device (page, or the render worker over RPC).
-            const messages = await compiler.compile(shader.id, shaderCode);
+            const messages = await compileOnRendererDevice(shader.id, shaderCode);
             
             // Check for errors
             const errorMessages = messages.filter(

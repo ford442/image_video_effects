@@ -118,6 +118,25 @@ export type WebGpuProbeResult = WebGpuProbeSerializable & {
 
 const PROBE_PIPELINE_WGSL = '@compute @workgroup_size(1) fn main() {}';
 
+/**
+ * Devices this thread's probe created whose `lost` has not settled yet. The probe is the
+ * only requestDevice caller (deviceOwnership.test.ts), so this is every live GPUDevice on
+ * the thread: after a loss + recovery it must be back to 1 (#1395).
+ */
+let liveDeviceCount = 0;
+
+export function getLiveDeviceCount(): number {
+  return liveDeviceCount;
+}
+
+function trackLiveDevice(device: GPUDevice): void {
+  liveDeviceCount++;
+  void device.lost?.then(
+    () => { liveDeviceCount--; },
+    () => { liveDeviceCount--; },
+  );
+}
+
 export function collectUserAgentBrands(): Array<{ brand: string; version: string }> {
   try {
     const nav = navigator as Navigator & {
@@ -408,6 +427,7 @@ export async function runWebGpuBootProbe(
         requiredFeatures: wantFeatures,
         requiredLimits: buildRequiredLimits(maxCanvasDim, adapter.limits),
       });
+      trackLiveDevice(device);
     } catch (e) {
       record.error = e instanceof Error ? e.message : String(e);
       record.failedStage = 'requestDevice';

@@ -85,7 +85,9 @@ export type RenderCommand =
   | { type: 'setCanvasCopySrc'; enabled: boolean }
   | { type: 'warmShaders'; entries: Array<{ id: string; url: string }> }
   /** Test hook (?testMode=1): destroy the device but report it as a runtime loss. */
-  | { type: 'simulateDeviceLoss' };
+  | { type: 'simulateDeviceLoss' }
+  /** Test hook: raise an uncaught error in the worker, like a crash (#1395). */
+  | { type: 'simulateWorkerCrash' };
 
 export interface RenderInitInfo {
   ok: boolean;
@@ -165,6 +167,8 @@ export interface RenderSnapshot {
   resolution: { scale: number; full: { w: number; h: number }; scaled: { w: number; h: number }; pixelReduction: string };
   /** Most recent uncaptured GPU errors in the worker (newest last). */
   gpuErrors: string[];
+  /** GPUDevices alive in this worker (its boot probe's count; 1 while rendering). */
+  liveGpuDevices: number;
   /** How page input reaches the worker. */
   inputChannel: 'sab' | 'postMessage';
   /** The input the worker's renderer currently holds (proves the channel works). */
@@ -203,6 +207,7 @@ export const RENDER_COMMAND_TYPES = [
   'setCanvasCopySrc',
   'warmShaders',
   'simulateDeviceLoss',
+  'simulateWorkerCrash',
 ] as const;
 
 export const RENDER_RPC_TYPES = [

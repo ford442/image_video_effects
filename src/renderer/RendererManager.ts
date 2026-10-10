@@ -27,7 +27,7 @@ import {
   registerFp32Requirement,
   releaseFp32Requirement,
 } from './performanceStatus';
-import { isCanvasTransferred } from './worker/WorkerWebGPUBackend';
+import { isCanvasTransferred, WorkerWebGPUBackend } from './worker/WorkerWebGPUBackend';
 import { isWebGpuBackend, type WebGPUBackendApi } from './webgpuBackendApi';
 import type { PassTiming } from './passTimings';
 import {
@@ -53,7 +53,8 @@ import { DeviceFormatCapabilities } from '../config/formatPolicy';
 import { RenderQualityMode } from '../config/performancePolicy';
 import { buildRendererDiagnostics } from './rendererDiagnostics';
 import type { RendererDiagnostics, RendererMetrics } from './rendererTypes';
-import { adoptHandoffDeviceIfWebGpu, clearAdoptedRendererDevice, getAdoptedRendererDevice, registerAdoptedRendererDevice, releaseAdoptedDeviceIfLeavingWebGpu } from '../utils/adoptedGpuDevice';
+import { getDeviceGeneration, getRendererDevice, isRendererDeviceLive } from './deviceRegistry';
+import { getLiveDeviceCount } from './webgpuBootProbe';
 import { DeviceRecoveryController, type DeviceRecoveryStatus } from './deviceRecovery';
 
 export type { RendererType, RendererInitOptions, WebGpuProbeHandoff };
@@ -263,7 +264,6 @@ export class RendererManager {
       this.canvas = await this.acquireFreshCanvas();
     }
     const handoff = type === 'webgpu' ? this.webGpuHandoff : undefined;
-    releaseAdoptedDeviceIfLeavingWebGpu(this.currentType, type);
     if (type === 'wasm') {
       console.warn(
         '[RendererManager] Exclusive JS→WASM switch: hard-reload if this tab already allocated a 2048² historyTex (~512MB) before a second device',
@@ -281,7 +281,6 @@ export class RendererManager {
     if (type === 'webgpu') this.webGpuHandoff = undefined;
 
     if (outcome.success) {
-      adoptHandoffDeviceIfWebGpu(type, handoff);
       this.currentRenderer = outcome.renderer;
       this.currentType = outcome.type;
       this.canvas = outcome.canvas;
@@ -330,7 +329,7 @@ export class RendererManager {
     if (!renderer?.setFatalErrorHandler || !type) return;
     renderer.setFatalErrorHandler((message, info) => {
       if (this.destroyed || this.currentRenderer !== renderer) return;
-      if (type === 'webgpu' && info?.kind === 'device-lost') {
+      if (type === 'webgpu' && (info?.kind === 'device-lost' || info?.kind === 'worker-died')) {
         this.handleDeviceLoss(info);
         return;
       }
@@ -338,10 +337,12 @@ export class RendererManager {
     });
   }
 
-  /** A TS WebGPU backend lost its GPUDevice at runtime: recover it (never fall back). */
+  /**
+   * A TS WebGPU backend lost its GPUDevice at runtime, or its render worker crashed:
+   * recover it (never fall back). The backend already cleared the device registry.
+   */
   private handleDeviceLoss(info: DeviceLossInfo): void {
     console.warn(`[RendererManager] GPU device lost (${info.reason}) — rebuilding the WebGPU renderer`);
-    clearAdoptedRendererDevice();
     this.stopMetricsCollection();
     this.deviceRecovery.handleLoss(info);
   }
@@ -364,6 +365,12 @@ export class RendererManager {
     return isWebGpuBackend(r) ? r.simulateDeviceLoss() : false;
   }
 
+  /** Test hook (?testMode=1 via __pixelocity__): crash the render worker (worker mode only). */
+  simulateWorkerCrash(): boolean {
+    const r = this.currentRenderer;
+    return r instanceof WorkerWebGPUBackend ? r.simulateWorkerCrash() : false;
+  }
+
   /**
    * webgpu → webgpu switch: releases the dead backend (worker: dispose + terminate, then a
    * fresh canvas and a new worker), reruns the boot probe in the new backend's init, then
@@ -372,7 +379,6 @@ export class RendererManager {
    */
   private async reinitAfterDeviceLoss(): Promise<boolean> {
     if (this.destroyed) return false;
-    clearAdoptedRendererDevice();
     // A failed attempt released the dead backend: keep replaying what was captured from it.
     const captured = this.captureLiveStack();
     if (captured) {
@@ -385,9 +391,6 @@ export class RendererManager {
       if (mode === 'parallel') this.setSlotMode(i, mode);
     });
     this.pendingSlotModes = [];
-    if (this.currentRenderer instanceof WebGPURenderer) {
-      registerAdoptedRendererDevice(this.currentRenderer.getGpuDevice(), this.currentRenderer.getSupportsSubgroups());
-    }
     return true;
   }
 
@@ -606,8 +609,9 @@ export class RendererManager {
     if (this.backend()) return 'webgpu';
     return 'js';
   }
+  /** The renderer's page-thread device (null in worker mode, on WASM / Canvas2D, or while lost). */
   getDevice(): GPUDevice | null {
-    return this.getActiveRendererType() === 'webgpu' ? getAdoptedRendererDevice() : null;
+    return getRendererDevice();
   }
   getDiagnostics(): RendererDiagnostics {
     this.refreshFps();
@@ -619,7 +623,15 @@ export class RendererManager {
         this.lastFailedWasmRenderer,
       ),
       deviceRecovery: this.deviceRecovery.getStatus(),
+      deviceGeneration: getDeviceGeneration(),
+      liveGpuDevices: this.getLiveGpuDevices(),
     };
+  }
+
+  /** GPUDevices alive on this page and in the current render worker (1 while rendering). */
+  getLiveGpuDevices(): number {
+    const r = this.currentRenderer;
+    return getLiveDeviceCount() + (r instanceof WorkerWebGPUBackend ? r.getLiveGpuDevices() : 0);
   }
   /** Per-frame host tick: uploads video frames on WASM (TS WebGPU drives its own loop). */
   render(): void { if (this.metrics.isWASM) this.updateVideoFrame(); }
@@ -653,11 +665,13 @@ export class RendererManager {
     return isWebGpuBackend(r) ? r.setNodeScale(slot, nodeId, scale) : 1;
   }
   /**
-   * True while a GPU backend holds a device, on this thread or in the render
-   * worker (where getDevice() is null). Lets depth estimation stay off WebGPU.
+   * True while a TS backend holds a device, on this thread or in the render worker
+   * (where getDevice() is null), and while a lost one is being rebuilt. Lets depth
+   * estimation stay off WebGPU instead of opening a second device in the gap.
    */
   isGpuDeviceActive(): boolean {
-    return !!this.getDevice() || (isWebGpuBackend(this.currentRenderer) && this.currentRenderer.initialized);
+    const recovery = this.deviceRecovery.getStatus().state;
+    return isRendererDeviceLive() || recovery === 'lost' || recovery === 'recovering';
   }
   /** True when the TS backend already holds a compiled pipeline for `id`. */
   isShaderCached(id: string): boolean {
@@ -717,7 +731,6 @@ export class RendererManager {
     this.currentRenderer = null;
     this.currentType = null;
     this.metrics.isWASM = false;
-    clearAdoptedRendererDevice();
     if (renderer) await releaseRendererGpu(renderer);
   }
 }

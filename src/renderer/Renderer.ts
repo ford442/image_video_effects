@@ -36,8 +36,9 @@ export interface UncappedBenchResult {
 
 /** A runtime GPUDevice loss in a TS WebGPU backend (page or render worker). */
 export interface DeviceLossInfo {
-  kind: 'device-lost';
-  /** GPUDeviceLostInfo.reason, or 'simulated' for the test hook. */
+  /** 'worker-died': the render worker crashed, taking its device with it (#1395). */
+  kind: 'device-lost' | 'worker-died';
+  /** GPUDeviceLostInfo.reason, 'simulated' for the test hook, or 'render worker crashed'. */
   reason: string;
   message: string;
   /** Date.now() when the loss was observed. */

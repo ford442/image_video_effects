@@ -3,6 +3,12 @@ import { DEFAULT_CONFIG } from './Renderer';
 import { initializeWebGPUDevice } from './webgpu/device';
 import { setRendererErrorHandler as setErrorSink } from './ErrorHandling';
 import { createFrameState } from './webgpu/frame';
+import {
+  getDeviceGeneration,
+  getRendererDevice,
+  getRendererDeviceEntry,
+  resetRendererDeviceRegistryForTests,
+} from './deviceRegistry';
 
 jest.mock('./webgpu/device', () => {
   const actual = jest.requireActual('./webgpu/device');
@@ -236,4 +242,78 @@ describe('WebGPURenderer lifecycle', () => {
       expect(errors.filter((e) => e.type === 'device-lost')).toEqual([]);
     });
   });
+
+  describe('device registry (#1395)', () => {
+    beforeEach(() => resetRendererDeviceRegistryForTests());
+
+    it('publishes the device it ended up with after an OOM retry, not the handoff', async () => {
+      const handoffDevice = makeDevice();
+      const retried = makeDevice();
+      (initializeWebGPUDevice as jest.Mock)
+        .mockResolvedValueOnce(outcomeFor(handoffDevice))
+        .mockResolvedValueOnce(outcomeFor(retried));
+      setupSpy.mockResolvedValueOnce('lost').mockResolvedValueOnce('ok');
+      const wgpu = createWebGpu();
+      expect(await wgpu.init(document.createElement('canvas'))).toBe(true);
+      expect(getRendererDevice()).toBe(retried);
+      expect(getRendererDeviceEntry().thread).toBe('main');
+    });
+
+    it('the OOM retry waits for the old device to be lost before probing again', async () => {
+      const first = makeDevice();
+      const second = makeDevice();
+      let releaseLost!: () => void;
+      (first.destroy as jest.Mock).mockImplementation(() => undefined);
+      const order: string[] = [];
+      (initializeWebGPUDevice as jest.Mock)
+        .mockImplementationOnce(async () => outcomeFor(first))
+        .mockImplementationOnce(async () => {
+          order.push('probe-2');
+          return outcomeFor(second);
+        });
+      Object.defineProperty(first, 'lost', {
+        value: new Promise<GPUDeviceLostInfo>((r) => {
+          releaseLost = () => {
+            order.push('lost-1');
+            r({ reason: 'destroyed', message: '' } as GPUDeviceLostInfo);
+          };
+        }),
+      });
+      setupSpy.mockResolvedValueOnce('lost').mockResolvedValueOnce('ok');
+      const wgpu = createWebGpu();
+      const init = wgpu.init(document.createElement('canvas'));
+      await flush();
+      expect(order).toEqual([]);
+      releaseLost();
+      expect(await init).toBe(true);
+      expect(order).toEqual(['lost-1', 'probe-2']);
+    });
+
+    it('clears the registry on a runtime loss and on destroy, bumping the generation', async () => {
+      const device = makeDevice();
+      (initializeWebGPUDevice as jest.Mock).mockResolvedValueOnce(outcomeFor(device));
+      setupSpy.mockResolvedValueOnce('ok');
+      const wgpu = createWebGpu();
+      await wgpu.init(document.createElement('canvas'));
+      const published = getDeviceGeneration();
+      device.loseUnexpectedly();
+      await flush();
+      expect(getRendererDevice()).toBeNull();
+      expect(getRendererDeviceEntry().clearedBecause).toBe('device lost');
+      expect(getDeviceGeneration()).toBe(published + 1);
+
+      const next = makeDevice();
+      (initializeWebGPUDevice as jest.Mock).mockResolvedValueOnce(outcomeFor(next));
+      setupSpy.mockResolvedValueOnce('ok');
+      const rebuilt = createWebGpu();
+      await rebuilt.init(document.createElement('canvas'));
+      expect(getRendererDevice()).toBe(next);
+      // The old renderer's late teardown must not clear the new owner's device.
+      await wgpu.destroy();
+      expect(getRendererDevice()).toBe(next);
+      await rebuilt.destroy();
+      expect(getRendererDevice()).toBeNull();
+    });
+  });
 });
+

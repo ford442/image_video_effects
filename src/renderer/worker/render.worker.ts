@@ -9,7 +9,7 @@
 
 import { setRendererErrorHandler } from '../ErrorHandling';
 import { WebGPURenderer } from '../WebGPURenderer';
-import { runWebGpuBootProbe, toWebGpuProbeBreadcrumb } from '../webgpuBootProbe';
+import { getLiveDeviceCount, runWebGpuBootProbe, toWebGpuProbeBreadcrumb } from '../webgpuBootProbe';
 import { createRenderWorkerHost } from './renderWorkerHost';
 import type { RenderEvent, RenderToWorker, RenderWorkerCaps } from './protocol';
 
@@ -77,6 +77,13 @@ const host = createRenderWorkerHost({
   post,
   createRenderer: (config) => new WebGPURenderer(config),
   runProbe: (canvas, width, height, options) => runWebGpuBootProbe(canvas, width, height, options),
+  liveDeviceCount: getLiveDeviceCount,
+  crash: (message) => {
+    // Uncaught on purpose: the page sees an `error` event on the Worker, as for a real crash.
+    setTimeout(() => {
+      throw new Error(message);
+    }, 0);
+  },
   toBreadcrumb: toWebGpuProbeBreadcrumb,
   setErrorSink: (sink) => setRendererErrorHandler(sink),
   setFetchBase: (url) => {

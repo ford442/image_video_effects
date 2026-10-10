@@ -18,6 +18,13 @@ import {
 import { createRenderWorkerHost, HostedRenderer, RenderWorkerHostDeps } from './renderWorkerHost';
 import { createInputRingBuffer, InputRingWriter } from './inputRing';
 import { connectRenderWorker } from './renderWorkerClient';
+import {
+  getDeviceGeneration,
+  getRendererDeviceEntry,
+  isRendererDeviceLive,
+  resetRendererDeviceRegistryForTests,
+} from '../deviceRegistry';
+import { getShaderCompileService } from '../../utils/shaderCompileService';
 import { isCanvasTransferred, WorkerWebGPUBackend } from './WorkerWebGPUBackend';
 import type { WebGpuProbeResult } from '../webgpuBootProbe';
 import type { DeviceLossInfo } from '../Renderer';
@@ -342,6 +349,20 @@ describe('render worker host ↔ client', () => {
     expect(posted).toContainEqual({ type: 'deviceLost', reason: 'simulated', message: 'driver reset' });
   });
 
+  it('an error after hello marks the client dead and notifies onDied once', async () => {
+    const { mainPort } = setup();
+    const client = await connectRenderWorker(mainPort);
+    const died = jest.fn();
+    client.onDied(died);
+    const pending = client.rpc({ type: 'captureFrame' });
+    mainPort.dispatch('error', { message: 'boom' } as unknown as MessageEvent);
+    mainPort.dispatch('error', { message: 'again' } as unknown as MessageEvent);
+    await expect(pending).rejects.toThrow('boom');
+    expect(died).toHaveBeenCalledTimes(1);
+    expect(died).toHaveBeenCalledWith('boom');
+    await expect(client.rpc({ type: 'captureFrame' })).rejects.toThrow('boom');
+  });
+
   it('rejects the handshake when the worker never says hello', async () => {
     const [mainPort] = createPortPair();
     jest.useFakeTimers();
@@ -412,6 +433,7 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
         colorFormat: 'rgba16float', historyLayers: 4, workingSizeCap: 1024,
         resolution: { scale: 1, full: { w: 1, h: 1 }, scaled: { w: 1, h: 1 }, pixelReduction: '0%' },
         gpuErrors: ['oops'],
+        liveGpuDevices: 1,
         inputChannel: 'postMessage',
         input: { mouse: [0.5, 0.5], mouseDown: false, audio: [0, 0, 0], slot0: [0.5, 0.5, 0.5, 0.5] },
       },
@@ -468,6 +490,50 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
     await backend.destroy();
   });
 
+  it('publishes a worker-thread owner in the device registry and clears it on dispose', async () => {
+    resetRendererDeviceRegistryForTests();
+    const { backend } = await backendWithWorker();
+    expect(getRendererDeviceEntry()).toMatchObject({ thread: 'worker', device: null });
+    expect(isRendererDeviceLive()).toBe(true);
+    await backend.destroy();
+    expect(isRendererDeviceLive()).toBe(false);
+  });
+
+  it('a worker crash stops the proxy like a loss: registry cleared, one worker-died fatal, compiler gone', async () => {
+    resetRendererDeviceRegistryForTests();
+    const { backend, mainPort } = await backendWithWorker();
+    const fatal = jest.fn();
+    backend.setFatalErrorHandler(fatal);
+    deliverSnapshot(backend, true);
+    expect(getShaderCompileService()).not.toBeNull();
+    const generation = getDeviceGeneration();
+
+    const crash = { message: 'Uncaught Error: boom' } as unknown as MessageEvent;
+    mainPort.dispatch('error', crash);
+    mainPort.dispatch('error', crash);
+    expect(backend.initialized).toBe(false);
+    expect(fatal).toHaveBeenCalledTimes(1);
+    expect(fatal.mock.calls[0][1]).toMatchObject({ kind: 'worker-died', reason: 'render worker crashed', message: 'Uncaught Error: boom' });
+    expect(isRendererDeviceLive()).toBe(false);
+    expect(getDeviceGeneration()).toBe(generation + 1);
+    expect(getShaderCompileService()).toBeNull();
+    expect(backend.getLiveGpuDevices()).toBe(0);
+    // Pending and later RPCs fail fast instead of waiting for a dead worker.
+    await expect(backend.loadShader('x', 'y')).rejects.toThrow('boom');
+    await backend.destroy();
+  });
+
+  it('simulateWorkerCrash asks the worker to crash; the snapshot carries its live device count', async () => {
+    const { backend, deps } = await backendWithWorker();
+    deliverSnapshot(backend, true);
+    expect(backend.getLiveGpuDevices()).toBe(1);
+    deps.crash = jest.fn();
+    expect(backend.simulateWorkerCrash()).toBe(true);
+    await flushPorts();
+    expect(deps.crash).toHaveBeenCalledWith('simulated render worker crash (test hook)');
+    await backend.destroy();
+  });
+
   it('ignores events from a worker after the proxy shut it down', async () => {
     const { backend } = await backendWithWorker();
     const fatal = jest.fn();
@@ -509,7 +575,7 @@ function deliverSnapshot(backend: WorkerWebGPUBackend, initialized: boolean): vo
       nodeScales: {}, scalableNodes: [], slots: [], graphReport: null, chores: {} as never, cachedShaderIds: [],
       colorFormat: 'rgba16float', historyLayers: 4, workingSizeCap: 1024,
       resolution: { scale: 1, full: { w: 1, h: 1 }, scaled: { w: 1, h: 1 }, pixelReduction: '0%' },
-      gpuErrors: [], inputChannel: 'postMessage',
+      gpuErrors: [], liveGpuDevices: 1, inputChannel: 'postMessage',
       input: { mouse: [0.5, 0.5], mouseDown: false, audio: [0, 0, 0], slot0: [0.5, 0.5, 0.5, 0.5] },
     },
   });
