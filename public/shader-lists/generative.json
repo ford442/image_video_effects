@@ -6633,6 +6633,65 @@
     ]
   },
   {
+    "id": "gen-bismuth-quantum-reef",
+    "name": "Bismuth Quantum Reef",
+    "type": "compute",
+    "category": "generative",
+    "url": "shaders/gen-bismuth-quantum-reef.wgsl",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "description": "A mesmerizing, infinite landscape of shifting iridescent geometric crystals that evolve like a digital, extraterrestrial coral reef.",
+    "tags": [
+      "3d",
+      "raymarching",
+      "fractal",
+      "crystal",
+      "iridescent",
+      "bismuth"
+    ],
+    "params": [
+      {
+        "id": "quantum_fluctuation",
+        "name": "Quantum Fluctuation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "crystal_density",
+        "name": "Crystal Density",
+        "default": 1,
+        "min": 0.5,
+        "max": 2,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "iridescence_shift",
+        "name": "Iridescence Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "sss_glow",
+        "name": "SSS Glow",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
+  },
+  {
     "name": "Bismuth Singularity-Loom Engine",
     "category": "generative",
     "tags": [
