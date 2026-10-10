@@ -2059,6 +2059,10 @@
         "max": 1,
         "step": 0.01
       }
+    ],    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "updatedParams": [
       {
@@ -2093,11 +2097,6 @@
         "max": 1,
         "step": 0.01
       }
-    ],
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "upgraded-rgba"
     ]
   },
   {
@@ -6045,6 +6044,10 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
+    ],    "features": [
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
     ],
     "updatedParams": [
       {
@@ -6079,11 +6082,6 @@
         "max": 1,
         "step": 0.01
       }
-    ],
-    "features": [
-      "upgraded-rgba",
-      "audio-reactive",
-      "mouse-driven"
     ]
   },
   {
@@ -12999,40 +12997,6 @@
       "audio-reactive",
       "mouse-driven",
       "upgraded-rgba"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Branch Density",
-        "default": 1,
-        "min": 0.1,
-        "max": 5,
-        "step": 0.1
-      },
-      {
-        "index": 1,
-        "name": "Flow Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 2,
-        "step": 0.05
-      },
-      {
-        "index": 2,
-        "name": "Glow Intensity",
-        "default": 1.5,
-        "min": 0,
-        "max": 5,
-        "step": 0.1
-      },
-      {
-        "index": 3,
-        "name": "Audio Reactivity",
-        "default": 1,
-        "min": 0,
-        "max": 3,
-        "step": 0.1
-      }
     ]
   },
   {
@@ -17677,11 +17641,49 @@
       "plasma",
       "volumetric"
     ],
-    "description": "",
+    "description": "Iridescent glass egg with a volumetric ember core, shell cracks and a hatching pip.",
     "workgroup_size": [
       16,
       16,
       1
+    ],
+    "params": [
+      {
+        "id": "hue",
+        "name": "Hue",
+        "mapping": "zoom_params.x",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "coreActivity",
+        "name": "Core Activity",
+        "mapping": "zoom_params.y",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "glassRefraction",
+        "name": "Glass Refraction",
+        "mapping": "zoom_params.z",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "glow",
+        "name": "Glow",
+        "mapping": "zoom_params.w",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "supportsDepth": true,
     "supportsDof": false,
@@ -17938,7 +17940,10 @@
       "domain-warping",
       "subsurface-scattering",
       "hdr-bloom",
-      "mouse-interaction"
+      "mouse-interaction",
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "organic",

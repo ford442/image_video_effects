@@ -3,30 +3,12 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: Rosensweig hexagonal spike lattice with critical-field onset and capillary-wavenumber spacing; labyrinthine fingering instability when the field is tipped tangential (mouse held)
+//  Upgraded: 2026-10-10
+//  Ideas: Rosensweig hexagonal spike lattice with critical-field onset and capillary-wavenumber spacing; labyrinthine fingering instability when the field is tipped tangential (mouse held); Rayleigh l=2/l=3 shape-mode ringing kicked by bass; studio softbox + horizon reflections on the mirror body
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-    zoom_params: vec4<f32>,  // x=Magnetic Strength (Spikes), y=Fluid Density, z=Oscillation Speed, w=Iridescence Shift
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Magnetic Strength (Spikes), y=Fluid Density, z=Oscillation Speed, w=Iridescence Shift
 
 // --- Helper Functions ---
 
@@ -83,6 +65,34 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
     return min(a, b) - h * h * k * (1.0 / 4.0);
 }
 
+// Native idea 3: Rayleigh shape modes. A free liquid drop rings in
+// Legendre modes P_l(cos theta) with omega_l ~ sqrt(l(l-1)(l+2)); the l=2
+// (prolate/oblate) and l=3 (pear) modes are kicked by bass and ring down.
+fn rayleighModes(pos: vec3<f32>, time: f32, bass: f32) -> f32 {
+    let c = pos.y / max(length(pos), 1e-3);
+    let p2 = 0.5 * (3.0 * c * c - 1.0);
+    let p3 = 0.5 * (5.0 * c * c * c - 3.0 * c);
+    let a2 = 0.02 + bass * 0.11;
+    let a3 = 0.012 + bass * 0.07;
+    return p2 * a2 * sin(time * 2.83 * 1.6) + p3 * a3 * sin(time * 5.48 * 1.6 + 1.3);
+}
+
+// Native idea 4: studio softbox environment. Two rectangular boxes (warm key,
+// cool strip) and a thin horizon line, defined on the reflection direction, so
+// the black mirror surface carries the classic ferrofluid product-photo glints.
+fn softboxEnv(refl: vec3<f32>) -> vec3<f32> {
+    let az = atan2(refl.z, refl.x);
+    let el = asin(clamp(refl.y, -1.0, 1.0));
+    let key = smoothstep(0.07, 0.0, max(abs(az - 0.7) - 0.32, abs(el - 0.55) - 0.4));
+    let strip = smoothstep(0.05, 0.0, max(abs(az + 2.1) - 0.1, abs(el - 0.1) - 0.7));
+    let top = smoothstep(0.08, 0.0, max(abs(refl.x) - 0.35, abs(refl.z - 0.15) - 0.25)) * step(0.7, refl.y);
+    let horizon = smoothstep(0.035, 0.0, abs(el + 0.03));
+    return vec3<f32>(1.0, 0.93, 0.82) * key * 2.6
+         + vec3<f32>(0.75, 0.88, 1.0) * strip * 2.2
+         + vec3<f32>(1.0) * top * 1.8
+         + vec3<f32>(0.5, 0.65, 0.9) * horizon * 0.5;
+}
+
 // --- SDFs ---
 
 fn sdSphere(p: vec3<f32>, r: f32) -> f32 {
@@ -104,6 +114,7 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     // Base fluid mass
     let fluidRadius = 1.15 + u.zoom_params.y * 0.65;
     var d = sdSphere(pos, fluidRadius);
+    d -= rayleighModes(pos, time, bass);
 
     // Magnetic spikes displacement
     let spikeDensity = u.zoom_params.y * 5.0 + 3.0;
@@ -269,6 +280,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let refl = reflect(rd, n);
         let envCol = mix(vec3<f32>(0.1, 0.2, 0.3), vec3<f32>(0.8, 0.9, 1.0), refl.y * 0.5 + 0.5);
         col += envCol * matCol * 0.8;
+        // Idea 4: softbox glints on the mirror body, Fresnel-weighted
+        col += softboxEnv(refl) * (0.3 + 0.7 * fre) * 0.55 * (1.0 + treble * 0.25);
     }
 
     let uv01 = (fragCoord + vec2<f32>(0.5)) / dims;
