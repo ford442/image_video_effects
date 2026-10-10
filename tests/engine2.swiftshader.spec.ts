@@ -381,20 +381,25 @@ test.describe('engine2 on SwiftShader WebGPU', () => {
   test('backend switches start on a fresh canvas: worker → WASM → WebGPU', async ({ page }) => {
     test.setTimeout(240_000);
     await boot(page, 'worker');
-    expect(await switchTo(page, 'wasm')).toEqual({ target: 'wasm', ok: true, type: 'wasm', thread: null });
-    // The ASYNCIFY init ccall reports ready while C++ CreateDevice() is still
-    // waiting on the adapter, and on SwiftShader that request never resolves in
-    // ~1 run of 10 (main-thread mode too; the JSPI build fixes it). Releasing WASM
-    // in that window drops the Dawn instance mid-request and crashes the tab, so
-    // only switch away once C++ has published its probe breadcrumb.
-    const cppReady = await page
-      .waitForFunction(
-        () => (window as any).webgpuProbe?.backend === 'wasm' && (window as any).webgpuProbe?.ok === true,
-        undefined,
-        { timeout: 30_000 },
-      )
-      .then(() => true, () => false);
-    test.skip(!cppReady, 'WASM C++ adapter request hung on SwiftShader (known ASYNCIFY issue, not worker-related)');
+    // switchRenderer('wasm') resolves only after C++ Initialize() reached Ready or
+    // failed / timed out (C++ WaitAny budgets + the bridge backstop), so there is no
+    // window where switching away destroys the Dawn instance mid-WaitAny.
+    const step = await switchTo(page, 'wasm');
+    if (!step.ok) {
+      // SwiftShader sometimes never produces an adapter for emdawn; that is a
+      // probe failure with a named stage, not a hang. Anything else is a bug.
+      const wasm = await page.evaluate(() => (window as any).__pixelocity__.renderer.getDiagnostics().wasm ?? null);
+      expect(wasm, 'failed WASM switch must leave diagnostics').not.toBeNull();
+      expect(wasm.initialized).toBe(false);
+      expect(wasm.failedStageName).not.toBe('None');
+      // The tab survived and the switch restored the TS backend.
+      expect(step).toMatchObject({ type: 'webgpu', thread: 'worker' });
+      await assertStillRendering(page);
+      test.skip(true, `WASM probe failed on SwiftShader: ${wasm.failedStageName} · ${wasm.lastInitError || wasm.lastLoadError}`);
+    }
+    expect(step).toEqual({ target: 'wasm', ok: true, type: 'wasm', thread: null });
+    const probe = await page.evaluate(() => (window as any).webgpuProbe);
+    expect(probe).toMatchObject({ backend: 'wasm', ok: true });
     expect(await switchTo(page, 'webgpu')).toEqual({ target: 'webgpu', ok: true, type: 'webgpu', thread: 'worker' });
     await assertStillRendering(page);
   });

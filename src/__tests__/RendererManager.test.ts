@@ -670,6 +670,37 @@ describe('RendererManager shader forwarding', () => {
     expect(webgpuInitCount).toBe(2);
     expect(manager.getActiveRendererType()).toBe('webgpu');
   });
+
+  it('restores WebGPU when WASM init fails after a worker-owned canvas was released', async () => {
+    // The worker took the canvas, so switchRenderer releases it before WASM init and
+    // performBackendSwitch has no previous renderer to restore by itself.
+    const webgpu = makeMockWebGPU();
+    (WebGPURenderer as jest.Mock).mockImplementation(() => webgpu);
+    const wasm = makeMockWASM();
+    wasm.init = jest.fn().mockResolvedValue(false);
+    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
+
+    const fresh = document.createElement('canvas');
+    const acquireFreshCanvas = jest.fn(async () => fresh);
+    const manager = new RendererManager(DEFAULT_CONFIG, undefined, { acquireFreshCanvas });
+    await manager.init(canvas);
+    expect(manager.getActiveRendererType()).toBe('webgpu');
+    // Only now does the worker own the canvas the manager holds.
+    const workerBackend = await import('../renderer/worker/WorkerWebGPUBackend');
+    const transferredSpy = jest
+      .spyOn(workerBackend, 'isCanvasTransferred')
+      .mockImplementation((c) => c === canvas);
+
+    expect(await manager.switchRenderer('wasm')).toBe(false);
+    expect(acquireFreshCanvas).toHaveBeenCalled();
+    expect(wasm.init).toHaveBeenCalledTimes(1);
+    expect(webgpu.destroy).toHaveBeenCalled();
+    expect(webgpu.init).toHaveBeenCalledTimes(2);
+    expect(manager.getActiveRendererType()).toBe('webgpu');
+    // The failed attempt stays inspectable after the restore.
+    expect(manager.getDiagnostics().wasm).toBeDefined();
+    transferredSpy.mockRestore();
+  });
 });
 
 describe('RendererManager lifecycle', () => {

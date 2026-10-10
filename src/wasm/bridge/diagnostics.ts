@@ -47,8 +47,8 @@ export function getDiagnostics() {
     lastLoadError: state.lastLoadError,
     initTime: initMs === null ? 'pending' : `${Math.round(initMs)}ms`,
     failedStage: cpp.stage,
-    failedStageName: cpp.stageName,
-    lastInitError: cpp.message,
+    failedStageName: state.initTimedOut ? 'Timeout' : cpp.stageName,
+    lastInitError: state.initTimedOut ? (state.lastLoadError ?? '') : cpp.message,
     adapterInfo: cpp.adapterSummary,
     /** C++ canvas COPY_SRC probe; null while C++ init runs or when the artifact predates it. */
     canvasCopySrc: readCanvasCopySrc(),

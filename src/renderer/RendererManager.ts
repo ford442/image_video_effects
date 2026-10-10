@@ -219,9 +219,13 @@ export class RendererManager {
       );
       return false;
     }
+    // A worker-owned canvas forces the old backend out before the new one inits, so
+    // performBackendSwitch sees no previous renderer to keep or restore; remember it here.
+    let releasedType: RendererType | null = null;
     if (this.acquireFreshCanvas && (transferred || changingType)) {
       if (transferred && this.currentRenderer) {
         await releaseRendererGpu(this.currentRenderer);
+        releasedType = this.currentType;
         this.currentRenderer = null;
         this.currentType = null;
       }
@@ -252,7 +256,8 @@ export class RendererManager {
       this.currentType = outcome.type;
       this.canvas = outcome.canvas;
       this.metrics.isWASM = outcome.isWASM;
-      this.lastFailedWasmRenderer = null;
+      // Keep a failed WASM attempt's diagnostics across the restore switch.
+      if (type === 'wasm') this.lastFailedWasmRenderer = null;
       refreshFormatCapabilities(this.perfState, this.shaderRenderer());
       applyPerformancePolicyToRenderer(this.perfState, this.shaderRenderer(), this.adaptiveController);
       this.installFatalErrorHandler(outcome.renderer, outcome.type);
@@ -277,10 +282,12 @@ export class RendererManager {
     this.currentType = outcome.type;
     this.metrics.isWASM = outcome.isWASM;
 
-    if (outcome.restoreType) {
-      console.warn(`[RendererManager] Restoring previous renderer '${outcome.restoreType}' after ${type} init failure`);
-      if (!(await this.switchRenderer(outcome.restoreType))) {
-        console.warn(`[RendererManager] Restore of '${outcome.restoreType}' failed — renderer blocked`);
+    const restoreType =
+      outcome.restoreType ?? (outcome.renderer === null && releasedType !== type ? releasedType : null);
+    if (restoreType) {
+      console.warn(`[RendererManager] Restoring previous renderer '${restoreType}' after ${type} init failure`);
+      if (!(await this.switchRenderer(restoreType))) {
+        console.warn(`[RendererManager] Restore of '${restoreType}' failed — renderer blocked`);
       }
     } else {
       console.warn(`[RendererManager] switchRenderer('${type}') failed — keeping previous renderer`);

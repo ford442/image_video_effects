@@ -51,6 +51,8 @@ describe('WASM bridge uniforms (setInputSource)', () => {
     const bridge = await import('../wasm/wasm_bridge');
     ccall.mockImplementation((name: string) => {
       if (name === 'initWasmRenderer') return Promise.resolve(1);
+      // The bridge waits for C++ Initialize() to report Ready (init gate).
+      if (name === 'isRendererInitialized') return 1;
       return undefined;
     });
     const canvas = document.createElement('canvas');
@@ -94,6 +96,8 @@ describe('WASM bridge uniforms (setInputSource)', () => {
 
     ccall.mockImplementation((name: string) => {
       if (name === 'initWasmRenderer') return Promise.resolve(1);
+      // The bridge waits for C++ Initialize() to report Ready (init gate).
+      if (name === 'isRendererInitialized') return 1;
       return undefined;
     });
     const canvas = document.createElement('canvas');
