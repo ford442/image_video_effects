@@ -20,7 +20,6 @@
     "audio-reactive",
     "audio-driven"
   ],
-  "author": "AI",
   "params": [
     {
       "id": "amplitude_of_the_tensor_field_deformation",
@@ -58,5 +57,8 @@
       "step": 0.01,
       "description": "Blend from stretch-dominant (0) to shear-dominant (1) deformation."
     }
-  ]
+  ],
+  "x-meta": {
+    "author": "AI"
+  }
 }

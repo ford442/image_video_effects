@@ -62,13 +62,45 @@
       "mapping": "zoom_params.w"
     }
   ],
-  "updatedParams": [
-    { "index": 0, "name": "Frost Amount", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 1, "name": "Lens Radius", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 2, "name": "Edge Softness", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 3, "name": "Film IOR / Iridescence", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
-  ],
   "feedbackPacking": "A/C = display RGBA with frosted transmission and thin-film iridescent coating",
   "updated": true,
-  "target_rating": 4.8
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Frost Amount",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Lens Radius",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Edge Softness",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Film IOR / Iridescence",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    },
+    "target_rating": 4.8
+  }
 }

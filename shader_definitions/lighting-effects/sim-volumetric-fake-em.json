@@ -63,14 +63,16 @@
     "god-rays",
     "electromagnetic"
   ],
-  "chunks_used": [
-    "hash12 (gen_grid.wgsl)",
-    "noise",
-    "Radial blur",
-    "electricField (mouse-electromagnetic-aurora.wgsl)",
-    "magneticField (mouse-electromagnetic-aurora.wgsl)"
-  ],
-  "performance_target": "45-60 FPS (GTX 1060)",
-  "created_by": "Agent CB-4 - Mouse Physics Injector",
-  "created_date": "2026-04-18"
+  "x-meta": {
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "noise",
+      "Radial blur",
+      "electricField (mouse-electromagnetic-aurora.wgsl)",
+      "magneticField (mouse-electromagnetic-aurora.wgsl)"
+    ],
+    "performance_target": "45-60 FPS (GTX 1060)",
+    "created_by": "Agent CB-4 - Mouse Physics Injector",
+    "created_date": "2026-04-18"
+  }
 }

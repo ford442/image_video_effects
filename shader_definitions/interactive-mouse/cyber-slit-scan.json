@@ -17,7 +17,6 @@
   "params": [
     {
       "name": "Scan Speed",
-      "type": "float",
       "default": 0.2,
       "min": 0,
       "max": 1,
@@ -25,7 +24,6 @@
     },
     {
       "name": "Bit Crush",
-      "type": "float",
       "default": 0.1,
       "min": 0,
       "max": 1,
@@ -33,7 +31,6 @@
     },
     {
       "name": "Hue Shift",
-      "type": "float",
       "default": 0,
       "min": 0,
       "max": 1,
@@ -41,7 +38,6 @@
     },
     {
       "name": "Artifact Amount",
-      "type": "float",
       "default": 0,
       "min": 0,
       "max": 1,
@@ -53,39 +49,43 @@
     "interactive"
   ],
   "name": "Cyber Slit Scan",
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Scan Speed",
-      "default": 0.2,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Bit Crush",
-      "default": 0.1,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Hue Shift",
-      "default": 0,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Artifact Amount",
-      "default": 0,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+  "updated": true,
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Scan Speed",
+          "default": 0.2,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Bit Crush",
+          "default": 0.1,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Hue Shift",
+          "default": 0,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Artifact Amount",
+          "default": 0,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
     }
-  ],
-  "updated": true
+  }
 }

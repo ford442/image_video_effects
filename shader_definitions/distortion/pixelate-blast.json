@@ -62,36 +62,6 @@
     16,
     1
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Cell Density",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "index": 1,
-      "name": "Blast Radius",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "index": 2,
-      "name": "Edge Glow Amount",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "index": 3,
-      "name": "Chromatic Amount",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    }
-  ],
   "tags": [
     "distortion",
     "pixelate",
@@ -100,5 +70,39 @@
     "fast-motion",
     "audio-reactive",
     "aces"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Cell Density",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 1,
+          "name": "Blast Radius",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 2,
+          "name": "Edge Glow Amount",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 3,
+          "name": "Chromatic Amount",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        }
+      ]
+    }
+  }
 }

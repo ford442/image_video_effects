@@ -55,17 +55,49 @@
       "description": "Size of particle glow effect"
     }
   ],
-  "chunks_used": [
-    "curl noise velocity field",
-    "fbm2 (gen_grid.wgsl)",
-    "palette (gen-xeno-botanical-synth-flora.wgsl)"
-  ],
-  "created_by": "Agent 2A - Shader Surgeon",
-  "created_date": "2026-03-22",
-  "updatedParams": [
-    { "index": 0, "name": "Particle Density", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 1, "name": "Flow Speed", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 2, "name": "Trail Decay", "default": 0.8, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 3, "name": "Glow Size", "default": 0.4, "min": 0, "max": 1, "step": 0.01 }
-  ]
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Particle Density",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Flow Speed",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Trail Decay",
+          "default": 0.8,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Glow Size",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    },
+    "chunks_used": [
+      "curl noise velocity field",
+      "fbm2 (gen_grid.wgsl)",
+      "palette (gen-xeno-botanical-synth-flora.wgsl)"
+    ],
+    "created_by": "Agent 2A - Shader Surgeon",
+    "created_date": "2026-03-22"
+  }
 }

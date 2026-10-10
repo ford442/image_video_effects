@@ -36,13 +36,13 @@ function collectMultipassSecondaryIds(definitionsDir) {
     const allDefs = [];
     const secondaryIds = new Set();
 
-    const categories = fs.readdirSync(definitionsDir).filter((file) => {
+    const categories = fs.readdirSync(definitionsDir).sort().filter((file) => {
         return fs.statSync(path.join(definitionsDir, file)).isDirectory();
     });
 
     for (const dir of categories) {
         const dirPath = path.join(definitionsDir, dir);
-        const files = fs.readdirSync(dirPath).filter((f) => f.endsWith('.json'));
+        const files = fs.readdirSync(dirPath).sort().filter((f) => f.endsWith('.json'));
         for (const file of files) {
             const filePath = path.join(dirPath, file);
             try {
@@ -134,13 +134,13 @@ if (fs.existsSync(DEFINITIONS_DIR)) {
     const buckets = new Map(); // Map<category, Array<shaderDef>>
 
     // walk one level deep for json files
-    const categories = fs.readdirSync(DEFINITIONS_DIR).filter(file => {
+    const categories = fs.readdirSync(DEFINITIONS_DIR).sort().filter(file => {
         return fs.statSync(path.join(DEFINITIONS_DIR, file)).isDirectory();
     });
 
     categories.forEach(dir => {
         const dirPath = path.join(DEFINITIONS_DIR, dir);
-        const files = fs.readdirSync(dirPath).filter(f => f.endsWith('.json'));
+        const files = fs.readdirSync(dirPath).sort().filter(f => f.endsWith('.json'));
 
         files.forEach(file => {
             const filePath = path.join(dirPath, file);
@@ -210,7 +210,8 @@ if (fs.existsSync(DEFINITIONS_DIR)) {
                 if (!buckets.has(category)) buckets.set(category, []);
 
                 // If --base-url is provided, rewrite the shader URL to absolute
-                const outputDef = { ...shaderDef };
+                // x-meta is authoring/swarm provenance (see shader_definition.schema.json); the app never reads it.
+                const { 'x-meta': _xMeta, ...outputDef } = shaderDef;
                 if (BASE_URL && outputDef.url) {
                     const relativePath = outputDef.url.replace(/^\.?\//, '');
                     outputDef.url = `${BASE_URL}/${relativePath}`;

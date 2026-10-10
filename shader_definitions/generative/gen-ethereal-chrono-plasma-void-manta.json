@@ -3,82 +3,129 @@
   "url": "shaders/gen-ethereal-chrono-plasma-void-manta.wgsl",
   "name": "Ethereal Chrono-Plasma Void-Manta",
   "category": "generative",
-  "features": ["mouse-driven", "audio-reactive", "click-reactive", "upgraded-rgba"],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "click-reactive",
+    "upgraded-rgba"
+  ],
   "description": "A majestic, hyper-organic cybernetic space-manta ray gliding through a dark-matter ocean, its translucent biomimetic wings rippling with shifting auroral temporal energy as it consumes deep acoustic bass frequencies. Second pass: a true manta planform with cephalic fins, spiral wingtip vortex wakes and a pale ventral side with glowing gill slits.",
-  "parameters": [
-    {
-      "name": "Manta Speed",
-      "uniform": "zoom_params.x",
-      "default": 1.0,
-      "min": 0.1,
-      "max": 5.0,
-      "step": 0.1
-    },
-    {
-      "name": "Bio-Luminescence Intensity",
-      "uniform": "zoom_params.y",
-      "default": 1.0,
-      "min": 0.0,
-      "max": 3.0,
-      "step": 0.1
-    },
-    {
-      "name": "Wing Ripple Frequency",
-      "uniform": "zoom_params.z",
-      "default": 2.0,
-      "min": 0.5,
-      "max": 5.0,
-      "step": 0.1
-    },
-    {
-      "name": "Dark Matter Density",
-      "uniform": "zoom_params.w",
-      "default": 1.0,
-      "min": 0.0,
-      "max": 2.0,
-      "step": 0.05
-    }
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "workgroup_size": [16, 16, 1],
   "params": [
-    { "id": "manta-speed", "name": "Manta Speed", "default": 1.0, "min": 0.1, "max": 5.0, "step": 0.1, "mapping": "zoom_params.x" },
-    { "id": "bio-luminescence-intensity", "name": "Bio-Luminescence Intensity", "default": 1.0, "min": 0.0, "max": 3.0, "step": 0.1, "mapping": "zoom_params.y" },
-    { "id": "wing-ripple-frequency", "name": "Wing Ripple Frequency", "default": 2.0, "min": 0.5, "max": 5.0, "step": 0.1, "mapping": "zoom_params.z" },
-    { "id": "dark-matter-density", "name": "Dark Matter Density", "default": 1.0, "min": 0.0, "max": 2.0, "step": 0.05, "mapping": "zoom_params.w" }
-  ],
-  "updatedParams": [
     {
-      "index": 0,
+      "id": "manta-speed",
       "name": "Manta Speed",
       "default": 1.0,
       "min": 0.1,
       "max": 5.0,
-      "step": 0.1
+      "step": 0.1,
+      "mapping": "zoom_params.x"
     },
     {
-      "index": 1,
+      "id": "bio-luminescence-intensity",
       "name": "Bio-Luminescence Intensity",
       "default": 1.0,
       "min": 0.0,
       "max": 3.0,
-      "step": 0.1
+      "step": 0.1,
+      "mapping": "zoom_params.y"
     },
     {
-      "index": 2,
+      "id": "wing-ripple-frequency",
       "name": "Wing Ripple Frequency",
       "default": 2.0,
       "min": 0.5,
       "max": 5.0,
-      "step": 0.1
+      "step": 0.1,
+      "mapping": "zoom_params.z"
     },
     {
-      "index": 3,
+      "id": "dark-matter-density",
       "name": "Dark Matter Density",
       "default": 1.0,
       "min": 0.0,
       "max": 2.0,
-      "step": 0.05
+      "step": 0.05,
+      "mapping": "zoom_params.w"
     }
   ],
-  "updated": true
+  "updated": true,
+  "x-meta": {
+    "legacy": {
+      "parameters": [
+        {
+          "name": "Manta Speed",
+          "uniform": "zoom_params.x",
+          "default": 1.0,
+          "min": 0.1,
+          "max": 5.0,
+          "step": 0.1
+        },
+        {
+          "name": "Bio-Luminescence Intensity",
+          "uniform": "zoom_params.y",
+          "default": 1.0,
+          "min": 0.0,
+          "max": 3.0,
+          "step": 0.1
+        },
+        {
+          "name": "Wing Ripple Frequency",
+          "uniform": "zoom_params.z",
+          "default": 2.0,
+          "min": 0.5,
+          "max": 5.0,
+          "step": 0.1
+        },
+        {
+          "name": "Dark Matter Density",
+          "uniform": "zoom_params.w",
+          "default": 1.0,
+          "min": 0.0,
+          "max": 2.0,
+          "step": 0.05
+        }
+      ]
+    },
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Manta Speed",
+          "default": 1.0,
+          "min": 0.1,
+          "max": 5.0,
+          "step": 0.1
+        },
+        {
+          "index": 1,
+          "name": "Bio-Luminescence Intensity",
+          "default": 1.0,
+          "min": 0.0,
+          "max": 3.0,
+          "step": 0.1
+        },
+        {
+          "index": 2,
+          "name": "Wing Ripple Frequency",
+          "default": 2.0,
+          "min": 0.5,
+          "max": 5.0,
+          "step": 0.1
+        },
+        {
+          "index": 3,
+          "name": "Dark Matter Density",
+          "default": 1.0,
+          "min": 0.0,
+          "max": 2.0,
+          "step": 0.05
+        }
+      ]
+    }
+  }
 }

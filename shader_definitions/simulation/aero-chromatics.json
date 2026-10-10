@@ -12,7 +12,6 @@
     {
       "id": "wind-strength",
       "name": "Wind Force",
-      "type": "float",
       "default": 0.5,
       "min": 0,
       "max": 1
@@ -20,7 +19,6 @@
     {
       "id": "decay",
       "name": "Smoke Decay",
-      "type": "float",
       "default": 0.8,
       "min": 0,
       "max": 1
@@ -28,7 +26,6 @@
     {
       "id": "chroma",
       "name": "Chromatic Split",
-      "type": "float",
       "default": 0.5,
       "min": 0,
       "max": 1
@@ -36,7 +33,6 @@
     {
       "id": "source-mix",
       "name": "Source Intensity",
-      "type": "float",
       "default": 0.5,
       "min": 0,
       "max": 1
@@ -46,39 +42,43 @@
     "simulation",
     "physics"
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Wind Force",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Smoke Decay",
-      "default": 0.8,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Chromatic Split",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Source Intensity",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+  "updated": true,
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Wind Force",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Smoke Decay",
+          "default": 0.8,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Chromatic Split",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Source Intensity",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
     }
-  ],
-  "updated": true
+  }
 }

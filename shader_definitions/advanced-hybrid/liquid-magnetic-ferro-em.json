@@ -63,14 +63,6 @@
       "description": "Number of orbiting magnetic dipoles"
     }
   ],
-  "chunks_used": [
-    "Magnetic dipole field, Rosensweig spikes (liquid_magnetic_ferro.wgsl)",
-    "EM wave propagation, charge injection (alpha-em-field-simulation.wgsl)",
-    "Value noise, fbm2 (alpha-em-field-simulation.wgsl)"
-  ],
-  "performance_target": "60 FPS (GTX 1060)",
-  "created_by": "Agent CB-6 - Alpha & Post-Process Enhancer",
-  "created_date": "2026-04-18",
   "tags": [
     "ferrofluid",
     "magnetic",
@@ -78,5 +70,15 @@
     "waves",
     "metallic",
     "simulation"
-  ]
+  ],
+  "x-meta": {
+    "chunks_used": [
+      "Magnetic dipole field, Rosensweig spikes (liquid_magnetic_ferro.wgsl)",
+      "EM wave propagation, charge injection (alpha-em-field-simulation.wgsl)",
+      "Value noise, fbm2 (alpha-em-field-simulation.wgsl)"
+    ],
+    "performance_target": "60 FPS (GTX 1060)",
+    "created_by": "Agent CB-6 - Alpha & Post-Process Enhancer",
+    "created_date": "2026-04-18"
+  }
 }

@@ -37,16 +37,22 @@ WASM is **never** an automatic fallback. See [`WASM_BACKEND_POLICY.md`](docs/WAS
 1. **Create WGSL** — `python3 scripts/new_shader.py "My Effect" --category image` writes `public/shaders/my-effect.wgsl`  
    starting with `#include "_prelude.wgsl"`, which declares the 13-binding compute header. Never paste the bindings yourself: CI rejects a pasted copy (see [`docs/SHADER_TEMPLATES.md`](docs/SHADER_TEMPLATES.md); generative helpers in [`docs/agents/WGSL_BUILTINS_GENERATIVE.md`](docs/agents/WGSL_BUILTINS_GENERATIVE.md)).
 
-2. **Register JSON** — `shader_definitions/<category>/my-effect.json`:
+2. **Register JSON** — `shader_definitions/<category>/my-effect.json` (the file is named after the `id`; `new_shader.py` writes it for you). The format is defined by [`src/contracts/shader_definition.schema.json`](src/contracts/shader_definition.schema.json) (TypeScript type: generated `src/types/ShaderDefinition.ts`); sliders live in a single `params` key and authoring metadata goes under `x-meta`:
 
 ```json
 {
   "id": "my-effect",
   "name": "My Effect",
   "url": "shaders/my-effect.wgsl",
-  "category": "image"
+  "description": "One sentence.",
+  "tags": ["image"],
+  "params": [
+    { "id": "amount", "name": "Amount", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" }
+  ]
 }
 ```
+
+`category` is optional (the folder is authoritative; if present it must match). Check it with `npm run verify:shader-definitions`. Definitions with pre-schema keys (`updatedParams`, `parameters`, `controls`, `advanced_params`, `_seeded_by`, …) are fixed by `python3 scripts/migrate_shader_definitions.py --write`.
 
 Canonical categories: `advanced-hybrid`, `artistic`, `distortion`, `generative`, `geometric`, `hybrid`, `image`, `interactive-mouse`, `lighting-effects`, `liquid-effects`, `post-processing`, `retro-glitch`, `simulation`, `visual-effects`.
 
@@ -55,6 +61,8 @@ Canonical categories: `advanced-hybrid`, `artistic`, `distortion`, `generative`,
 ```bash
 node scripts/generate_shader_lists.js && npm run build:manifest
 ```
+
+The generated registry, shader lists and alias maps are committed; CI fails if they differ from a fresh regeneration (`npm run verify:generated-sync`).
 
 4. **Refresh** — `npm start` (or hard-refresh if already running). The shader appears in the picker. No TypeScript recompile needed (Universal BindGroup hot-swap).
 

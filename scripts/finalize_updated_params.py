@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Add updatedParams + updated:true to generative JSON from existing params/controls."""
+"""Add x-meta.upgrade.params + updated:true to generative JSON from existing params.
+
+(`x-meta.upgrade.params` was the top-level `updatedParams` key before the definition schema;
+the app never read it.)
+"""
 
 from __future__ import annotations
 
@@ -8,8 +12,11 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "temp"))
-from make_briefs_common import extract_params  # noqa: E402
+
+
+def extract_params(meta: dict) -> list[dict]:
+    """Sliders in zoom_params slot order; definitions carry them in the canonical `params` key."""
+    return [p for p in meta.get("params") or [] if isinstance(p, dict)]
 
 
 def apply(def_path: Path) -> bool:
@@ -18,7 +25,7 @@ def apply(def_path: Path) -> bool:
     if not params:
         print(f"SKIP {def_path.stem}: no params")
         return False
-    meta["updatedParams"] = [
+    meta.setdefault("x-meta", {}).setdefault("upgrade", {})["params"] = [
         {
             "index": i,
             "name": p["name"],
@@ -31,7 +38,7 @@ def apply(def_path: Path) -> bool:
     ]
     meta["updated"] = True
     def_path.write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
-    print(f"OK {def_path.stem}: {len(meta['updatedParams'])} updatedParams")
+    print(f"OK {def_path.stem}: {len(meta['x-meta']['upgrade']['params'])} x-meta.upgrade.params")
     return True
 
 

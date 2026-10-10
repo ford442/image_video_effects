@@ -58,40 +58,6 @@
       "pattern",
       "audio",
       "reactive"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Tile Size",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Depth Blend",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Bevel Width",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Audio Sensitivity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -148,40 +114,6 @@
         "step": 0.01
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Glyph Size",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Brightness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Color Amount",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Density Boost",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -202,36 +134,6 @@
       "subsurface-scattering",
       "light-attenuation",
       "Fresnel-reflections"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Tile Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 1,
-        "name": "Rotation Amount",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 2,
-        "name": "Chromatic Edge",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 3,
-        "name": "Mouse Influence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
     ],
     "params": [
       {
@@ -338,40 +240,6 @@
         "step": 0.01,
         "description": "How long motion trails persist (higher=longer trails)"
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Motion Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "I-Frame Interval",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Smear Blend",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Trail Decay",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -419,40 +287,6 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Fold Count",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Fold Depth",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Fold Softness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Chromatic Offset",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "features": [
       "audio-reactive",
       "depth-aware",
@@ -496,7 +330,6 @@
       {
         "id": "density",
         "name": "Grid Density",
-        "type": "float",
         "default": 0.3,
         "min": 0,
         "max": 1
@@ -504,7 +337,6 @@
       {
         "id": "radius",
         "name": "Effect Radius",
-        "type": "float",
         "default": 0.4,
         "min": 0,
         "max": 1
@@ -512,44 +344,12 @@
       {
         "id": "rotation",
         "name": "Flip Intensity",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
         "id": "gap",
-        "name": "Tile Gap",
-        "type": "float",
-        "default": 0.1,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Grid Density",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 1,
-        "name": "Effect Radius",
-        "default": 0.4,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 2,
-        "name": "Flip Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 3,
         "name": "Tile Gap",
         "default": 0.1,
         "min": 0,
@@ -572,38 +372,34 @@
     "params": [
       {
         "name": "Tile Count",
-        "type": "range",
         "min": 0,
         "max": 1,
         "default": 0.5,
-        "desc": "Number of hyperbolic tiles (3-9)",
+        "description": "Number of hyperbolic tiles (3-9)",
         "id": "tile_count"
       },
       {
         "name": "Curvature",
-        "type": "range",
         "min": 0,
         "max": 1,
         "default": 0.5,
-        "desc": "Hyperbolic bending strength (depth-modulated)",
+        "description": "Hyperbolic bending strength (depth-modulated)",
         "id": "curvature"
       },
       {
         "name": "Aberration",
-        "type": "range",
         "min": 0,
         "max": 1,
         "default": 0.3,
-        "desc": "Chromatic splitting in curved space",
+        "description": "Chromatic splitting in curved space",
         "id": "aberration"
       },
       {
         "name": "Glow Intensity",
-        "type": "range",
         "min": 0,
         "max": 1,
         "default": 0.4,
-        "desc": "Symmetry line luminescence",
+        "description": "Symmetry line luminescence",
         "id": "glow_intensity"
       }
     ],
@@ -624,40 +420,6 @@
       "audio",
       "music",
       "reactive"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Tile Count",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Curvature",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Aberration",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Glow Intensity",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -721,44 +483,6 @@
       "audio",
       "reactive"
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "id": "fold_scale",
-        "name": "Fold Scale",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "id": "fold_depth",
-        "name": "Fold Depth",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "id": "light_intensity",
-        "name": "Light Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "id": "depth_influence",
-        "name": "Depth Influence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -777,36 +501,6 @@
       "stained-glass-facets"
     ],
     "params": [
-      {
-        "id": "segments",
-        "name": "Segments",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "speed",
-        "name": "Rotation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "zoom",
-        "name": "Zoom",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "offset",
-        "name": "Ring Offset",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "updatedParams": [
       {
         "id": "segments",
         "name": "Segments",
@@ -892,41 +586,7 @@
       "hyperbolic",
       "tessellation"
     ],
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Segments",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Rotation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Zoom",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Ring Offset",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
+    "updated": true
   },
   {
     "id": "kinetic-tiles",
@@ -952,7 +612,6 @@
       {
         "id": "density",
         "name": "Grid Density",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -960,7 +619,6 @@
       {
         "id": "radius",
         "name": "Mouse Radius",
-        "type": "float",
         "default": 0.3,
         "min": 0,
         "max": 1
@@ -968,7 +626,6 @@
       {
         "id": "rotation",
         "name": "Rotation Amt",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -976,7 +633,6 @@
       {
         "id": "scale",
         "name": "Tile Scale",
-        "type": "float",
         "default": 0.8,
         "min": 0,
         "max": 1
@@ -987,36 +643,6 @@
       16,
       16,
       1
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Grid Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 1,
-        "name": "Mouse Radius",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 2,
-        "name": "Rotation Amt",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 3,
-        "name": "Tile Scale",
-        "default": 0.8,
-        "min": 0,
-        "max": 1
-      }
     ],
     "tags": [
       "geometric",
@@ -1075,40 +701,6 @@
       "pattern"
     ],
     "supportsDepth": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Grid Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Line Width",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Glow Strength",
-        "default": 0.8,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Trail Duration",
-        "default": 0.8,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -1144,40 +736,6 @@
         "default": 0.6,
         "min": 0,
         "max": 1
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Tile Density",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Neon Glow Width",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Depth Parallax",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Brightness",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ],
     "features": [
@@ -1252,41 +810,6 @@
         "max": 1,
         "step": 0.01
       }
-    ],
-    "target_rating": 4.7,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "XW Rotation",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "YZ Rotation",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Edge Glow",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Face Opacity",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -1335,40 +858,6 @@
     "tags": [
       "filter",
       "image-processing"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Delay Length",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Delay Pattern",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Feedback Mix",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Motion Sensitivity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -1379,38 +868,34 @@
     "params": [
       {
         "name": "Cell Density",
-        "type": "float",
         "default": 1,
         "min": 1,
         "max": 5,
-        "target": "zoom_params.x",
+        "mapping": "zoom_params.x",
         "id": "cell_density"
       },
       {
         "name": "Turbulence Speed",
-        "type": "float",
         "default": 1,
         "min": 0,
         "max": 3,
-        "target": "zoom_params.y",
+        "mapping": "zoom_params.y",
         "id": "turbulence_speed"
       },
       {
         "name": "Zoom Intensity",
-        "type": "float",
         "default": 1,
         "min": 0,
         "max": 2,
-        "target": "zoom_params.z",
+        "mapping": "zoom_params.z",
         "id": "zoom_intensity"
       },
       {
         "name": "Mouse Influence",
-        "type": "float",
         "default": 1,
         "min": -1,
         "max": 1,
-        "target": "zoom_params.w",
+        "mapping": "zoom_params.w",
         "id": "mouse_influence"
       }
     ],
@@ -1440,36 +925,6 @@
       16,
       16,
       1
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Cell Density",
-        "default": 1,
-        "min": 1,
-        "max": 5
-      },
-      {
-        "index": 1,
-        "name": "Turbulence Speed",
-        "default": 1,
-        "min": 0,
-        "max": 3
-      },
-      {
-        "index": 2,
-        "name": "Zoom Intensity",
-        "default": 1,
-        "min": 0,
-        "max": 2
-      },
-      {
-        "index": 3,
-        "name": "Mouse Influence",
-        "default": 1,
-        "min": -1,
-        "max": 1
-      }
     ],
     "category": "geometric"
   }

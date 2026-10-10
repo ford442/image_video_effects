@@ -18,43 +18,41 @@
     1
   ],
   "params": [
-    {"id": "intensity", "name": "Intensity", "default": 0.7, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x"},
-    {"id": "speed", "name": "Speed", "default": 0.4, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y"},
-    {"id": "scale", "name": "Scale", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z"},
-    {"id": "colorShift", "name": "Color Shift", "default": 0, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w"}
-  ],
-  "updatedParams": [
     {
-      "index": 0,
+      "id": "intensity",
       "name": "Intensity",
       "default": 0.7,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x"
     },
     {
-      "index": 1,
+      "id": "speed",
       "name": "Speed",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y"
     },
     {
-      "index": 2,
+      "id": "scale",
       "name": "Scale",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z"
     },
     {
-      "index": 3,
+      "id": "colorShift",
       "name": "Color Shift",
       "default": 0,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w"
     }
   ],
   "supportsDepth": true,
@@ -62,6 +60,56 @@
   "updated": true,
   "id": "gen-hyper-rainbow-vortex",
   "url": "shaders/gen-hyper-rainbow-vortex.wgsl",
-  "features": ["upgraded-rgba", "rankine-vortex", "audio-reactive", "mouse-driven", "mouse-interactive", "held-interactive", "ripple-reactive", "temporal-feedback", "semantic-alpha", "aces-tone-mapping", "depth-aware"],
-  "feedbackPacking": "A/C = raw HDR vortex display RGBA history"
+  "features": [
+    "upgraded-rgba",
+    "rankine-vortex",
+    "audio-reactive",
+    "mouse-driven",
+    "mouse-interactive",
+    "held-interactive",
+    "ripple-reactive",
+    "temporal-feedback",
+    "semantic-alpha",
+    "aces-tone-mapping",
+    "depth-aware"
+  ],
+  "feedbackPacking": "A/C = raw HDR vortex display RGBA history",
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Intensity",
+          "default": 0.7,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Speed",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Scale",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Color Shift",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

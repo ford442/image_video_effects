@@ -56,19 +56,21 @@
       "description": "Temporal smoothing amount"
     }
   ],
-  "chunks_used": [
-    "Optical flow calculation",
-    "Local frequency analysis",
-    "Pixel sorting along lines"
-  ],
-  "performance_target": "45-60 FPS (GTX 1060)",
-  "created_by": "Agent 3B - Advanced Hybrid Creator",
-  "created_date": "2026-03-22",
   "tags": [
     "interactive",
     "cursor",
     "audio",
     "music",
     "reactive"
-  ]
+  ],
+  "x-meta": {
+    "chunks_used": [
+      "Optical flow calculation",
+      "Local frequency analysis",
+      "Pixel sorting along lines"
+    ],
+    "performance_target": "45-60 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22"
+  }
 }

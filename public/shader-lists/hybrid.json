@@ -77,47 +77,6 @@
     ],
     "supportsDepth": true,
     "supportsDof": false,
-    "chunks_used": [
-      "nearestHexCenter (hex-mosaic.wgsl / quantum-prism.wgsl)",
-      "sdSegment (gen-holographic-fracture.wgsl)",
-      "glow (anamorphic-flare.wgsl)",
-      "hsv2rgb (chronos-brush.wgsl)"
-    ],
-    "created_by": "Agent 4c - Advanced Hybrid Effect Creator",
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Grid Scale",
-        "default": 0.35,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Trace Width",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Chroma Spread",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Effect Mix",
-        "default": 0.75,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -194,44 +153,6 @@
     ],
     "supportsDepth": true,
     "supportsDof": false,
-    "chunks_used": [
-      "nearestHexCenter (hex-mosaic.wgsl)",
-      "voronoi2D (interactive-voronoi-lens.wgsl)"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Hex Scale",
-        "default": 0.35,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Voronoi Density",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Distortion Amount",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Effect Mix",
-        "default": 0.75,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -312,10 +233,6 @@
     ],
     "supportsDepth": true,
     "supportsDof": false,
-    "chunks_used": [
-      "fbm2 (gen_grid.wgsl)",
-      "iridescence (gen-holographic-fracture.wgsl)"
-    ],
     "updated": true
   },
   {
@@ -393,11 +310,6 @@
     ],
     "supportsDepth": true,
     "supportsDof": false,
-    "chunks_used": [
-      "kaleidoscope (kaleidoscope.wgsl)",
-      "rdPulse (gen-bioelectric-pulse.wgsl)",
-      "glow (anamorphic-flare.wgsl)"
-    ],
     "updated": true
   },
   {
@@ -478,47 +390,6 @@
     ],
     "supportsDepth": true,
     "supportsDof": false,
-    "chunks_used": [
-      "voronoi2D (interactive-voronoi-lens.wgsl)",
-      "fbm2 (gen_grid.wgsl)",
-      "glow (anamorphic-flare.wgsl)",
-      "iridescence (gen-holographic-fracture.wgsl)"
-    ],
-    "created_by": "Agent 4b - Advanced Hybrid Shader Creator",
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Voronoi Density",
-        "default": 0.35,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Feedback Drift",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Dust Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Effect Mix",
-        "default": 0.75,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -602,55 +473,7 @@
     ],
     "supportsDepth": true,
     "supportsDof": false,
-    "chunks_used": [
-      "fbm2 (gen_grid.wgsl)",
-      "domainWarp (gen_grid.wgsl)",
-      "wavelengthToRGB (spec-prismatic-dispersion.wgsl)"
-    ],
-    "created_by": "Agent 4b - Advanced Hybrid Shader Creator",
-    "updated": true,
-    "updatedParams": [
-      {
-        "id": "fbm_scale",
-        "name": "FBM Scale",
-        "default": 0.35,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x",
-        "description": "Scale of the FBM noise domain used for displacement"
-      },
-      {
-        "id": "warp_amount",
-        "name": "Warp Amount",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.y",
-        "description": "Strength of the nested FBM domain warp"
-      },
-      {
-        "id": "spectral_spread",
-        "name": "Spectral Spread",
-        "default": 0.35,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.z",
-        "description": "Amount of RGB channel separation along the displacement gradient"
-      },
-      {
-        "id": "effect_mix",
-        "name": "Effect Mix",
-        "default": 0.75,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Blend strength of the spectral displacement over the input"
-      }
-    ]
+    "updated": true
   },
   {
     "id": "hyb-temporal-fbm-ghost",
@@ -732,48 +555,7 @@
     ],
     "supportsDepth": true,
     "supportsDof": false,
-    "chunks_used": [
-      "fbm2 (gen_grid.wgsl)",
-      "domainWarp (gen_grid.wgsl)",
-      "glow (anamorphic-flare.wgsl)",
-      "palette (gen-xeno-botanical-synth-flora.wgsl)"
-    ],
-    "created_by": "Agent 4c - Advanced Hybrid Effect Creator",
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Temporal Shift",
-        "default": 0.35,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "FBM Scale",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Warp Amount",
-        "default": 0.35,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Effect Mix",
-        "default": 0.75,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
+    "updated": true
   },
   {
     "id": "hybrid-chromatic-liquid",
@@ -837,14 +619,7 @@
       "cursor",
       "audio",
       "music"
-    ],
-    "chunks_used": [
-      "fbm2 (gen_grid.wgsl)",
-      "fresnelSchlick (crystal-facets.wgsl)",
-      "flow-field pattern (luma-flow-field.wgsl)"
-    ],
-    "created_by": "Agent 2A - Shader Surgeon",
-    "created_date": "2026-03-22"
+    ]
   },
   {
     "id": "hybrid-cyber-organic",
@@ -901,47 +676,6 @@
         "step": 0.01,
         "mapping": "zoom_params.w",
         "description": "Chaos/randomness in growth patterns"
-      }
-    ],
-    "chunks_used": [
-      "hexEdgeDist (hex-circuit.wgsl)",
-      "fbm2 growth pattern (digital-moss.wgsl)",
-      "palette (gen-xeno-botanical-synth-flora.wgsl)"
-    ],
-    "created_by": "Agent 2A - Shader Surgeon",
-    "created_date": "2026-03-22",
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Circuit Density",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Organic Growth",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Neon Glow",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Randomness",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ]
   },
@@ -1005,47 +739,6 @@
         "description": "Speed of palette color cycling"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Zoom Level",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Feedback Strength",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "RGB Channel Delay",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Color Cycling",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "chunks_used": [
-      "juliaIterate (julia-warp.wgsl)",
-      "fbm2 flow field (gen_grid.wgsl)",
-      "palette (gen-xeno-botanical-synth-flora.wgsl)"
-    ],
-    "created_by": "Agent 2A - Shader Surgeon",
-    "created_date": "2026-03-22",
     "supportsDepth": true,
     "updated": true
   },
@@ -1114,48 +807,6 @@
       "particles",
       "trails",
       "glow"
-    ],
-    "chunks_used": [
-      "magnetic field calculation",
-      "fbm2 variation (gen_grid.wgsl)",
-      "palette (gen-xeno-botanical-synth-flora.wgsl)",
-      "rot2 (kaleidoscope.wgsl)"
-    ],
-    "created_by": "Agent 2A - Shader Surgeon",
-    "created_date": "2026-03-22",
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Field Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Line Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Trail Persistence",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Field Distortion",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -1215,14 +866,7 @@
         "mapping": "zoom_params.w",
         "description": "Speed of color cycling"
       }
-    ],
-    "chunks_used": [
-      "fbm2 (gen_grid.wgsl)",
-      "kaleidoscope (kaleidoscope.wgsl)",
-      "hueShift (stellar-plasma.wgsl)"
-    ],
-    "created_by": "Agent 2A - Shader Surgeon",
-    "created_date": "2026-03-22"
+    ]
   },
   {
     "id": "hybrid-particle-fluid",
@@ -1279,47 +923,6 @@
         "step": 0.01,
         "mapping": "zoom_params.w",
         "description": "Size of particle glow effect"
-      }
-    ],
-    "chunks_used": [
-      "curl noise velocity field",
-      "fbm2 (gen_grid.wgsl)",
-      "palette (gen-xeno-botanical-synth-flora.wgsl)"
-    ],
-    "created_by": "Agent 2A - Shader Surgeon",
-    "created_date": "2026-03-22",
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Particle Density",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Flow Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Trail Decay",
-        "default": 0.8,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Glow Size",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ]
   },
@@ -1380,50 +983,8 @@
         "description": "How much depth affects distortion"
       }
     ],
-    "chunks_used": [
-      "Gray-Scott reaction-diffusion (reaction-diffusion.wgsl)",
-      "fresnelSchlick (crystal-facets.wgsl)",
-      "laplacian operator",
-      "palette (gen-xeno-botanical-synth-flora.wgsl)"
-    ],
-    "created_by": "Agent 2A - Shader Surgeon",
-    "created_date": "2026-03-22",
     "feedbackPacking": "A/C = chem, |grad|, caustic, coverage. ACES display only.",
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Feed Rate",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Kill Rate",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Glass Refraction",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Depth Effect",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
+    "updated": true
   },
   {
     "id": "hybrid-sdf-plasma",
@@ -1479,15 +1040,7 @@
         "mapping": "zoom_params.w",
         "description": "Raymarching step count (affects performance)"
       }
-    ],
-    "chunks_used": [
-      "sdSphere (gen-xeno-botanical-synth-flora.wgsl)",
-      "sdSmoothUnion (gen-xeno-botanical-synth-flora.wgsl)",
-      "fbm3 (gen-xeno-botanical-synth-flora.wgsl)",
-      "palette (gen-xeno-botanical-synth-flora.wgsl)"
-    ],
-    "created_by": "Agent 2A - Shader Surgeon",
-    "created_date": "2026-03-22"
+    ]
   },
   {
     "id": "hybrid-spectral-sorting",
@@ -1549,17 +1102,7 @@
     "tags": [
       "interactive",
       "cursor"
-    ],
-    "chunks_used": [
-      "pixel sorting pattern (bitonic-sort)",
-      "spectral analysis (spectrogram-displace)",
-      "audio-reactive pattern",
-      "fbm2 (gen_grid.wgsl)",
-      "palette (gen-xeno-botanical-synth-flora.wgsl)",
-      "hueShift (stellar-plasma.wgsl)"
-    ],
-    "created_by": "Agent 2A - Shader Surgeon",
-    "created_date": "2026-03-22"
+    ]
   },
   {
     "id": "hybrid-voronoi-glass",
@@ -1623,40 +1166,6 @@
         "description": "Virtual thickness of glass blocks"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Cell Density",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Refraction Index",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Chromatic Dispersion",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Glass Thickness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = ACES display RGBA for restrained glass persistence; B is unused; refracted source depth retains Fresnel modulation.",
     "tags": [
       "interactive",
@@ -1664,14 +1173,7 @@
       "voronoi",
       "glass",
       "dispersion"
-    ],
-    "chunks_used": [
-      "hash22 (voronoi-glass.wgsl)",
-      "fresnelSchlick (crystal-facets.wgsl)",
-      "dispersion pattern (hyperbolic-dreamweaver.wgsl)"
-    ],
-    "created_by": "Agent 2A - Shader Surgeon",
-    "created_date": "2026-03-22"
+    ]
   },
   {
     "id": "ripple-bloom",
@@ -1712,7 +1214,7 @@
         "min": 0,
         "max": 1.6,
         "step": 0.01,
-        "param": "zoom_params.x"
+        "mapping": "zoom_params.x"
       },
       {
         "id": "bloomAmount",
@@ -1721,7 +1223,7 @@
         "min": 0,
         "max": 1.8,
         "step": 0.01,
-        "param": "zoom_params.y"
+        "mapping": "zoom_params.y"
       },
       {
         "id": "mouseInfluence",
@@ -1730,7 +1232,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "param": "zoom_params.z"
+        "mapping": "zoom_params.z"
       },
       {
         "id": "colorShift",
@@ -1739,7 +1241,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "param": "zoom_params.w"
+        "mapping": "zoom_params.w"
       }
     ]
   }

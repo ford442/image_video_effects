@@ -13,7 +13,6 @@
       {
         "id": "wind-strength",
         "name": "Wind Force",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -21,7 +20,6 @@
       {
         "id": "decay",
         "name": "Smoke Decay",
-        "type": "float",
         "default": 0.8,
         "min": 0,
         "max": 1
@@ -29,7 +27,6 @@
       {
         "id": "chroma",
         "name": "Chromatic Split",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -37,7 +34,6 @@
       {
         "id": "source-mix",
         "name": "Source Intensity",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -46,40 +42,6 @@
     "tags": [
       "simulation",
       "physics"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Wind Force",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Smoke Decay",
-        "default": 0.8,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Chromatic Split",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Source Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ],
     "updated": true
   },
@@ -109,7 +71,6 @@
       {
         "id": "supercooling",
         "name": "Supercooling",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -118,7 +79,6 @@
       {
         "id": "anisotropy",
         "name": "Anisotropy",
-        "type": "float",
         "default": 0.3,
         "min": 0,
         "max": 1,
@@ -127,7 +87,6 @@
       {
         "id": "growthRate",
         "name": "Growth Rate",
-        "type": "float",
         "default": 0.4,
         "min": 0,
         "max": 1,
@@ -135,41 +94,6 @@
       },
       {
         "id": "impurity",
-        "name": "Impurity Level",
-        "type": "float",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Supercooling",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Anisotropy",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Growth Rate",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
         "name": "Impurity Level",
         "default": 0.2,
         "min": 0,
@@ -205,7 +129,6 @@
       {
         "id": "damping",
         "name": "Field Damping",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -214,7 +137,6 @@
       {
         "id": "chargeIntensity",
         "name": "Charge Intensity",
-        "type": "float",
         "default": 0.7,
         "min": 0,
         "max": 1,
@@ -223,7 +145,6 @@
       {
         "id": "bFieldVis",
         "name": "B-Field Visibility",
-        "type": "float",
         "default": 0.3,
         "min": 0,
         "max": 1,
@@ -231,41 +152,6 @@
       },
       {
         "id": "waveSpeed",
-        "name": "Wave Speed",
-        "type": "float",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Field Damping",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Charge Intensity",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "B-Field Visibility",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
         "name": "Wave Speed",
         "default": 0.5,
         "min": 0,
@@ -302,7 +188,6 @@
       {
         "id": "rainRate",
         "name": "Rain Rate",
-        "type": "float",
         "default": 0.3,
         "min": 0,
         "max": 1,
@@ -311,7 +196,6 @@
       {
         "id": "erosionRate",
         "name": "Erosion Rate",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -320,7 +204,6 @@
       {
         "id": "depositionRate",
         "name": "Deposition Rate",
-        "type": "float",
         "default": 0.4,
         "min": 0,
         "max": 1,
@@ -328,41 +211,6 @@
       },
       {
         "id": "sedimentCapacity",
-        "name": "Sediment Capacity",
-        "type": "float",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Rain Rate",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Erosion Rate",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Deposition Rate",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
         "name": "Sediment Capacity",
         "default": 0.5,
         "min": 0,
@@ -399,7 +247,6 @@
       {
         "id": "burnRate",
         "name": "Burn Rate",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -408,7 +255,6 @@
       {
         "id": "convection",
         "name": "Convection",
-        "type": "float",
         "default": 0.6,
         "min": 0,
         "max": 1,
@@ -417,7 +263,6 @@
       {
         "id": "smokeDensity",
         "name": "Smoke Density",
-        "type": "float",
         "default": 0.4,
         "min": 0,
         "max": 1,
@@ -425,41 +270,6 @@
       },
       {
         "id": "emberGlow",
-        "name": "Ember Glow",
-        "type": "float",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Burn Rate",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Convection",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Smoke Density",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
         "name": "Ember Glow",
         "default": 0.5,
         "min": 0,
@@ -486,40 +296,6 @@
       "rgba-state-machine"
     ],
     "requiresRgba32Float": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Viscosity",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Dye Brightness",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Vorticity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Decay Rate",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = velocity.xy, signed pressure, dye density; raw simulation state via exact bounded loads",
     "features": [
       "mouse-driven",
@@ -538,7 +314,6 @@
       {
         "id": "viscosity",
         "name": "Viscosity",
-        "type": "float",
         "default": 0.3,
         "min": 0,
         "max": 1,
@@ -547,7 +322,6 @@
       {
         "id": "dyeBrightness",
         "name": "Dye Brightness",
-        "type": "float",
         "default": 0.7,
         "min": 0,
         "max": 1,
@@ -556,7 +330,6 @@
       {
         "id": "vorticity",
         "name": "Vorticity",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -565,7 +338,6 @@
       {
         "id": "decayRate",
         "name": "Decay Rate",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -598,7 +370,6 @@
       {
         "id": "growthRate1",
         "name": "Species 1 Growth",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -607,7 +378,6 @@
       {
         "id": "growthRate2",
         "name": "Species 2 Growth",
-        "type": "float",
         "default": 0.4,
         "min": 0,
         "max": 1,
@@ -616,7 +386,6 @@
       {
         "id": "diffusion",
         "name": "Diffusion Rate",
-        "type": "float",
         "default": 0.3,
         "min": 0,
         "max": 1,
@@ -624,41 +393,6 @@
       },
       {
         "id": "toxinStrength",
-        "name": "Toxin Strength",
-        "type": "float",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Species 1 Growth",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Species 2 Growth",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Diffusion Rate",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
         "name": "Toxin Strength",
         "default": 0.5,
         "min": 0,
@@ -694,7 +428,6 @@
       {
         "id": "feed",
         "name": "Feed Rate",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -703,7 +436,6 @@
       {
         "id": "kill",
         "name": "Kill Rate",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -712,7 +444,6 @@
       {
         "id": "crossInhibit",
         "name": "Cross Inhibition",
-        "type": "float",
         "default": 0.3,
         "min": 0,
         "max": 1,
@@ -721,7 +452,6 @@
       {
         "id": "sourceMix",
         "name": "Source Mix",
-        "type": "float",
         "default": 0.2,
         "min": 0,
         "max": 1,
@@ -729,40 +459,6 @@
       }
     ],
     "updated": true,
-    "updatedParams": [
-      {
-        "id": "param1",
-        "name": "Feed Rate",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param2",
-        "name": "Kill Rate",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param3",
-        "name": "Cross Inhibition",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param4",
-        "name": "Source Mix",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = warm U, warm V, cool U, cool V. ACES display only."
   },
   {
@@ -830,40 +526,6 @@
         "step": 0.01
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Sort Threshold",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Warp Amplitude",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Edge Glow",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Sort Length",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -892,7 +554,6 @@
       {
         "id": "growthRate",
         "name": "Plant Growth",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -901,7 +562,6 @@
       {
         "id": "herbivoreEff",
         "name": "Herbivore Efficiency",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -910,7 +570,6 @@
       {
         "id": "predatorEff",
         "name": "Predator Efficiency",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -918,41 +577,6 @@
       },
       {
         "id": "decayRate",
-        "name": "Decay Rate",
-        "type": "float",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Plant Growth",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Herbivore Efficiency",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Predator Efficiency",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
         "name": "Decay Rate",
         "default": 0.5,
         "min": 0,
@@ -989,7 +613,6 @@
       {
         "id": "feed",
         "name": "Feed Rate",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -998,7 +621,6 @@
       {
         "id": "kill",
         "name": "Kill Rate",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1007,7 +629,6 @@
       {
         "id": "chromaticSep",
         "name": "Chromatic Separation",
-        "type": "float",
         "default": 0.3,
         "min": 0,
         "max": 1,
@@ -1016,7 +637,6 @@
       {
         "id": "crossCouple",
         "name": "Cross Coupling",
-        "type": "float",
         "default": 0.3,
         "min": 0,
         "max": 1,
@@ -1024,40 +644,6 @@
       }
     ],
     "updated": true,
-    "updatedParams": [
-      {
-        "id": "param1",
-        "name": "Feed Rate",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param2",
-        "name": "Kill Rate",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param3",
-        "name": "Chromatic Separation",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param4",
-        "name": "Cross Coupling",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = warm U, warm V, cool U, cool V. ACES display only."
   },
   {
@@ -1177,40 +763,6 @@
         "description": "Hold-paint and click-splash amount"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Viscosity Split",
-        "default": 0.55,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Wind",
-        "default": 0.45,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Temperature",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Dye Inject",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = separated dye RGB and solvent temperature; all seven graph dispatches hand off through A only",
     "features": [
       "simulation",
@@ -1248,40 +800,6 @@
       "depth-aware"
     ],
     "updated": true,
-    "updatedParams": [
-      {
-        "id": "param1",
-        "name": "Frequency Mode",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param2",
-        "name": "Harmonic Mix",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param3",
-        "name": "Grain Density",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param4",
-        "name": "Audio Sensitivity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "params": [
       {
         "id": "frequency_mode",
@@ -1388,40 +906,6 @@
         "step": 0.01,
         "mapping": "zoom_params.w",
         "description": "Moss thickness and opacity detail"
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Detail",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ],
     "tags": [
@@ -1625,52 +1109,6 @@
       "3-point-lighting",
       "anisotropic",
       "ambient-occlusion"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "id": "magnet",
-        "name": "Magnet Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x",
-        "description": "Rosensweig spike amplitude; bass adds up to +50% and drives the eruption-packet speed."
-      },
-      {
-        "index": 1,
-        "id": "density",
-        "name": "Spike Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.y",
-        "description": "Lattice frequency of the Rosensweig peaks; also sets the travelling field-conveyor rate."
-      },
-      {
-        "index": 2,
-        "id": "viscosity",
-        "name": "Fluid Viscosity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.z",
-        "description": "Damping on the magnet spring and the spike relaxation; higher values slow the snap-back."
-      },
-      {
-        "index": 3,
-        "id": "highlight",
-        "name": "Highlight Sharpness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "GGX roughness for the metallic specular lobe on the spike tips."
-      }
     ]
   },
   {
@@ -1715,40 +1153,6 @@
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Flow Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Sort Passes",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Trail Persistence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Sort Threshold",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ],
     "tags": [
       "filter",
@@ -1886,40 +1290,6 @@
         "step": 0.01,
         "mapping": "zoom_params.w",
         "description": "Hold-paint and click seed amplitude"
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Feed",
-        "default": 0.42,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Kill",
-        "default": 0.55,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Diffusion",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Seed Strength",
-        "default": 0.65,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ],
     "feedbackPacking": "A/C = Gray-Scott U, V, reaction age, seed mask; six graph dispatches use A-only handoffs",
@@ -2115,40 +1485,6 @@
         "step": 0.01
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Kernel Radius",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Video Coupling",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Glow Intensity",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Composite Mix",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = Lenia density, kernel neighborhood, signed growth response, video luminance",
     "updated": true
   },
@@ -2169,40 +1505,6 @@
       "semantic-alpha"
     ],
     "feedbackPacking": "A/C = charge, age, curl bias, residual scorch; raw DBM state via exact bounded loads",
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Branch Complexity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Decay Speed",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Glow Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Depth Attraction",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "params": [
       {
         "id": "branch_complexity",
@@ -2259,40 +1561,6 @@
       "upgraded-rgba"
     ],
     "updated": true,
-    "updatedParams": [
-      {
-        "id": "param1",
-        "name": "Flow Scale",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param2",
-        "name": "Trail Decay",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param3",
-        "name": "Curl Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param4",
-        "name": "Audio Sensitivity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "params": [
       {
         "id": "flow_scale",
@@ -2384,41 +1652,7 @@
       "physics"
     ],
     "feedbackPacking": "A = ACES display RGBA (no persistent sim).",
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Assembly",
-        "default": 1,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Disruption",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Rebuild Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
+    "updated": true
   },
   {
     "id": "optical-flow-dream",
@@ -2468,40 +1702,6 @@
       }
     ],
     "updated": true,
-    "updatedParams": [
-      {
-        "id": "param1",
-        "name": "Flow Scale",
-        "default": 0.55,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param2",
-        "name": "Decay",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param3",
-        "name": "Chroma Smear",
-        "default": 0.45,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param4",
-        "name": "Dream Mix",
-        "default": 0.75,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "features": [
       "simulation",
       "physics",
@@ -2604,40 +1804,6 @@
         "description": "Caustic brightness and accumulator display gain"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "IOR",
-        "default": 0.55,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Light Size",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Dispersion",
-        "default": 0.55,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Intensity",
-        "default": 0.65,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "Graph pipeline: emit writes normal to dataA; trace reads via dataC and accumulates into dataA (2 passes); accumulate presents ACES color with persistent caustic field.",
     "features": [
       "simulation",
@@ -2690,40 +1856,6 @@
         "default": 0.5,
         "min": 0,
         "max": 1
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Index of Refraction",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Light Size",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Chromatic Dispersion",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ],
     "feedbackPacking": "A/C = ACES display RGBA for continuous caustic irradiance persistence; B is unused; depth passes through refracted depth.",
@@ -2812,40 +1944,6 @@
       },
       {
         "id": "bounce",
-        "name": "Bounce",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "id": "param1",
-        "name": "Gravity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param2",
-        "name": "Particle Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param3",
-        "name": "Curl Force",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param4",
         "name": "Bounce",
         "default": 0.5,
         "min": 0,
@@ -3093,41 +2191,7 @@
       "generative"
     ],
     "feedbackPacking": "A/C = species, energy, age, variant. ACES display only.",
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Eat Probability",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Death Rate",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Mutation Rate",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Breed Threshold",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
+    "updated": true
   },
   {
     "id": "quantum-foam-pass1",
@@ -3277,41 +2341,7 @@
         "step": 0.01
       }
     ],
-    "updated": true,
-    "updatedParams": [
-      {
-        "id": "param1",
-        "name": "Feed",
-        "default": 0.45,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param2",
-        "name": "Kill",
-        "default": 0.35,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param3",
-        "name": "Diffusion",
-        "default": 0.45,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param4",
-        "name": "Time Step",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
+    "updated": true
   },
   {
     "id": "ripple-tank",
@@ -3421,40 +2451,6 @@
       "temporal-persistence",
       "interactive"
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Wave Speed",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Damping",
-        "default": 0.65,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Source Strength",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Boundary Reflect",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = height, velocity, foam energy, oscillator phase; graph uses A-only writeback",
     "updated": true,
     "tags": [
@@ -3492,7 +2488,6 @@
       {
         "id": "baseDecay",
         "name": "Base Decay",
-        "type": "float",
         "default": 0.3,
         "min": 0,
         "max": 1,
@@ -3501,7 +2496,6 @@
       {
         "id": "edgeVuln",
         "name": "Edge Vulnerability",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -3510,7 +2504,6 @@
       {
         "id": "moisture",
         "name": "Moisture",
-        "type": "float",
         "default": 0.3,
         "min": 0,
         "max": 1,
@@ -3518,41 +2511,6 @@
       },
       {
         "id": "recovery",
-        "name": "Recovery Rate",
-        "type": "float",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Base Decay",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Edge Vulnerability",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Moisture",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
         "name": "Recovery Rate",
         "default": 0.2,
         "min": 0,
@@ -3619,49 +2577,6 @@
         "description": "Recovery/regeneration rate (paint protection)"
       }
     ],
-    "chunks_used": [
-      "hash12 (gen_grid.wgsl)",
-      "Edge detection",
-      "Cellular automata decay",
-      "Multi-material system"
-    ],
-    "performance_target": "60 FPS (GTX 1060)",
-    "created_by": "Agent 3B - Advanced Hybrid Creator",
-    "created_date": "2026-03-22",
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Decay Rate",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Edge Vulnerability",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Color Shift",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Recovery Rate",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = damage, material class, corrosion bloom, protection memory",
     "updated": true
   },
@@ -3722,58 +2637,15 @@
         "description": "Glow intensity from fluid density"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Viscosity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Turbulence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Fade Rate",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Glow Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = velocity.xy, pressure, density",
     "updated": true,
-    "chunks_used": [
-      "hash12 (gen_grid.wgsl)",
-      "curlNoise (sim-fluid-feedback-field)",
-      "velocity advection (sim-fluid-feedback-field)",
-      "mouse stirring (mouse-fluid-coupling)",
-      "vortex force (mouse-fluid-coupling)"
-    ],
     "tags": [
       "fluid",
       "simulation",
       "mouse-driven",
       "interactive",
       "temporal"
-    ],
-    "created_by": "Agent CB-7 - Flow & Multi-Pass Enhancer",
-    "created_date": "2026-04-18"
+    ]
   },
   {
     "id": "sim-fluid-feedback-field",
@@ -3850,57 +2722,13 @@
         "mapping": "zoom_params.w",
         "description": "Glow intensity"
       }
-    ],
-    "chunks_used": [
-      "hash12 (gen_grid.wgsl)",
-      "noise",
-      "Curl noise",
-      "Velocity advection",
-      "Density advection"
-    ],
-    "performance_target": "45-60 FPS (GTX 1060)",
-    "created_by": "Agent 3B - Advanced Hybrid Creator",
-    "created_date": "2026-03-22"
+    ]
   },
   {
     "id": "sim-heat-haze-field",
     "name": "Heat Haze Field",
     "url": "shaders/sim-heat-haze-field.wgsl",
     "description": "Temperature simulation with convection currents. Desert mirage effect with rising heat patterns.",
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Temperature Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Convection Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Distortion Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Heat Source Count",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = temperature, gradient.xy, refractive activity; raw thermal state via exact bounded loads",
     "features": [
       "simulation",
@@ -3958,16 +2786,7 @@
         "mapping": "zoom_params.w",
         "description": "Number of heat sources"
       }
-    ],
-    "chunks_used": [
-      "hash12 (gen_grid.wgsl)",
-      "Temperature diffusion",
-      "Convection simulation",
-      "Refraction mapping"
-    ],
-    "performance_target": "60 FPS (GTX 1060)",
-    "created_by": "Agent 3B - Advanced Hybrid Creator",
-    "created_date": "2026-03-22"
+    ]
   },
   {
     "id": "sim-ink-diffusion-rgba",
@@ -3994,7 +2813,6 @@
       {
         "id": "wetness",
         "name": "Wetness",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4003,7 +2821,6 @@
       {
         "id": "diffusion",
         "name": "Pigment Diffusion",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4012,7 +2829,6 @@
       {
         "id": "colorMixing",
         "name": "Color Mixing",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4020,41 +2836,6 @@
       },
       {
         "id": "evaporation",
-        "name": "Evaporation Rate",
-        "type": "float",
-        "default": 0.8,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Wetness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Pigment Diffusion",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Color Mixing",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
         "name": "Evaporation Rate",
         "default": 0.8,
         "min": 0,
@@ -4120,54 +2901,6 @@
         "mapping": "zoom_params.w",
         "description": "Color mixing intensity"
       }
-    ],
-    "chunks_used": [
-      "hash12 (gen_grid.wgsl)",
-      "Gray-Scott reaction-diffusion",
-      "Multi-channel processing",
-      "Paper texture simulation"
-    ],
-    "wolfram_params": {
-      "coral": "F=0.0545, k=0.062",
-      "fingerprint": "F=0.0545, k=0.063",
-      "spots_waves": "F=0.018, k=0.050"
-    },
-    "performance_target": "60 FPS (GTX 1060)",
-    "created_by": "Agent 3B - Advanced Hybrid Creator",
-    "created_date": "2026-03-22",
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Paper Wetness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Ink Viscosity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Feed Rate",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Color Mixing",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -4194,7 +2927,6 @@
       {
         "id": "gravity",
         "name": "Gravity",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4203,7 +2935,6 @@
       {
         "id": "wind",
         "name": "Wind",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4212,7 +2943,6 @@
       {
         "id": "moisture",
         "name": "Moisture",
-        "type": "float",
         "default": 0.3,
         "min": 0,
         "max": 1,
@@ -4221,48 +2951,13 @@
       {
         "id": "dustiness",
         "name": "Dustiness",
-        "type": "float",
         "default": 0.3,
         "min": 0,
         "max": 1,
         "step": 0.01
       }
     ],
-    "updated": true,
-    "updatedParams": [
-      {
-        "id": "param1",
-        "name": "Gravity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param2",
-        "name": "Wind",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param3",
-        "name": "Moisture",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param4",
-        "name": "Dustiness",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
+    "updated": true
   },
   {
     "id": "sim-sand-dunes",
@@ -4277,40 +2972,6 @@
       "randomization-safe"
     ],
     "updated": true,
-    "updatedParams": [
-      {
-        "id": "param1",
-        "name": "Gravity Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param2",
-        "name": "Wind Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param3",
-        "name": "Sand Viscosity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param4",
-        "name": "Erosion Rate",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "params": [
       {
         "id": "gravity",
@@ -4352,55 +3013,13 @@
         "mapping": "zoom_params.w",
         "description": "Wind erosion rate"
       }
-    ],
-    "chunks_used": [
-      "hash12 (gen_grid.wgsl)",
-      "Sand physics rules",
-      "Wind simulation"
-    ],
-    "performance_target": "60 FPS (GTX 1060)",
-    "created_by": "Agent 3B - Advanced Hybrid Creator",
-    "created_date": "2026-03-22"
+    ]
   },
   {
     "id": "sim-slime-mold-growth-em",
     "name": "Slime Mold Growth + EM Field",
     "url": "shaders/sim-slime-mold-growth-em.wgsl",
     "description": "Physarum slime mold simulation with mouse electromagnetic field interaction. Agents steer along electric field lines; click ripples spawn secondary charges.",
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Sensor Angle",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Trail Decay",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "EM Influence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Ripple Charge",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = trail, electric magnitude, signed magnetic field, growth activity; pointer history uses only extraBuffer[133..138]",
     "features": [
       "simulation",
@@ -4467,58 +3086,13 @@
       "slime",
       "electromagnetic",
       "agents"
-    ],
-    "chunks_used": [
-      "hash12 (gen_grid.wgsl)",
-      "hash22 (gen_grid.wgsl)",
-      "hueShift (stellar-plasma.wgsl)",
-      "electricField (mouse-electromagnetic-aurora.wgsl)",
-      "magneticField (mouse-electromagnetic-aurora.wgsl)",
-      "Physarum agent simulation"
-    ],
-    "performance_target": "25-40 FPS (GTX 1060)",
-    "created_by": "Agent CB-4 - Mouse Physics Injector",
-    "created_date": "2026-04-18"
+    ]
   },
   {
     "id": "sim-slime-mold-growth",
     "name": "Slime Mold Growth",
     "url": "shaders/sim-slime-mold-growth.wgsl",
     "description": "Physarum-style slime mold with trail following. Branching network of glowing trails exploring space.",
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Sensor Angle",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Trail Decay",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Particle Count",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Randomness",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = trail, diffused nutrient, growth activity, deposit strength; exact Physarum state",
     "features": [
       "simulation",
@@ -4576,17 +3150,7 @@
         "mapping": "zoom_params.w",
         "description": "Randomness/jitter in movement"
       }
-    ],
-    "chunks_used": [
-      "hash12 (gen_grid.wgsl)",
-      "hash22 (gen_grid.wgsl)",
-      "Physarum agent simulation",
-      "Trail deposition",
-      "Sensor-based steering"
-    ],
-    "performance_target": "30-45 FPS (GTX 1060)",
-    "created_by": "Agent 3B - Advanced Hybrid Creator",
-    "created_date": "2026-03-22"
+    ]
   },
   {
     "id": "sim-smoke-trails",
@@ -4646,49 +3210,6 @@
         "description": "Smoke dissipation rate"
       }
     ],
-    "chunks_used": [
-      "hash12 (gen_grid.wgsl)",
-      "noise",
-      "Curl noise",
-      "Buoyancy simulation"
-    ],
-    "performance_target": "60 FPS (GTX 1060)",
-    "created_by": "Agent 3B - Advanced Hybrid Creator",
-    "created_date": "2026-03-22",
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Smoke Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Turbulence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Rise Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Dissipation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = density, temp, vel.xy (raw). Display ACES."
   },
   {
@@ -4746,16 +3267,7 @@
         "mapping": "zoom_params.w",
         "description": "Dust movement speed"
       }
-    ],
-    "chunks_used": [
-      "hash12 (gen_grid.wgsl)",
-      "noise",
-      "Radial blur",
-      "Depth-based occlusion"
-    ],
-    "performance_target": "60 FPS (GTX 1060)",
-    "created_by": "Agent 3B - Advanced Hybrid Creator",
-    "created_date": "2026-03-22"
+    ]
   },
   {
     "id": "slime-mold-on-video",
@@ -4826,40 +3338,6 @@
         "max": 1,
         "step": 0.01
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Trail Follow",
-        "default": 0.55,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Trail Decay",
-        "default": 0.65,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Food Gain",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Glow",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -4875,40 +3353,6 @@
       "simulation",
       "vortex",
       "temporal"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Time Step",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Diffusion",
-        "default": 0.1,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Vortex Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Temporal Feedback",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ],
     "feedbackPacking": "A/C = un-tonemapped advected dye RGB and flow speed; exact manually reconstructed history",
     "features": [
@@ -4959,8 +3403,7 @@
         "max": 1,
         "step": 0.01
       }
-    ],
-    "target_rating": 4.8
+    ]
   },
   {
     "id": "split-flap-display",
@@ -5009,7 +3452,7 @@
       {
         "id": "damping",
         "name": "Damping",
-        "default": 0.5,
+        "default": 0.8,
         "min": 0.8,
         "max": 0.99,
         "step": 0.01,
@@ -5055,40 +3498,6 @@
         "default": 0.5,
         "min": 0,
         "max": 1
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Fog Density",
-        "default": 0.8,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Fade Speed",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Wipe Radius",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Blur Amount",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ],
     "feedbackPacking": "A/C = steam density, droplet mass, runoff, wipe memory",
@@ -5150,40 +3559,6 @@
         "step": 0.01,
         "mapping": "zoom_params.w",
         "description": "Edge absorption (0) vs reflection (1)"
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Wave Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Damping",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Source Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Boundary Reflect",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ],
     "feedbackPacking": "A/C = wave height, velocity, foam energy, oscillator phase",

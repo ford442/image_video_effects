@@ -123,7 +123,11 @@ def find_shader_json(wgsl_path: Path) -> dict:
     for cat_dir in definitions_dir.iterdir():
         if not cat_dir.is_dir():
             continue
-        json_file = cat_dir / f"{stem}.json"
+        # Legacy underscore WGSL stems map to definition files named after the hyphen id.
+        json_file = next(
+            (p for p in (cat_dir / f"{stem}.json", cat_dir / f"{stem.replace('_', '-')}.json") if p.exists()),
+            cat_dir / f"{stem}.json",
+        )
         if json_file.exists():
             try:
                 return json.loads(json_file.read_text(encoding="utf-8"))

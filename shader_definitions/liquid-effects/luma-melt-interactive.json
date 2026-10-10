@@ -13,7 +13,6 @@
     {
       "id": "speed",
       "name": "Melt Speed",
-      "type": "float",
       "default": 0.3,
       "min": 0,
       "max": 1
@@ -21,7 +20,6 @@
     {
       "id": "persistence",
       "name": "Trails",
-      "type": "float",
       "default": 0.9,
       "min": 0.5,
       "max": 0.99
@@ -29,7 +27,6 @@
     {
       "id": "radius",
       "name": "Heat Radius",
-      "type": "float",
       "default": 0.2,
       "min": 0,
       "max": 1
@@ -37,17 +34,10 @@
     {
       "id": "heat",
       "name": "Heat Intensity",
-      "type": "float",
       "default": 0.5,
       "min": 0,
       "max": 1
     }
-  ],
-  "updatedParams": [
-    { "index": 0, "name": "Melt Speed", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 1, "name": "Trails", "default": 0.9, "min": 0.5, "max": 0.99, "step": 0.01 },
-    { "index": 2, "name": "Heat Radius", "default": 0.2, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 3, "name": "Heat Intensity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
   ],
   "description": "Luma-thresholded cohesive rivulets branch under heat-dependent viscosity, held-pointer melting, exact advected history, and aspect-correct click fronts.",
   "feedbackPacking": "A/C = linear pre-ACES melt RGB + molten temperature in alpha; exact bounded melt-history loads",
@@ -56,5 +46,43 @@
     "liquid",
     "water"
   ],
-  "name": "Luma Melt"
+  "name": "Luma Melt",
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Melt Speed",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Trails",
+          "default": 0.9,
+          "min": 0.5,
+          "max": 0.99,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Heat Radius",
+          "default": 0.2,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Heat Intensity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

@@ -21,7 +21,6 @@
     "temporal-persistence",
     "upgraded-rgba"
   ],
-  "author": "Kimi",
   "params": [
     {
       "id": "filmScale",
@@ -55,5 +54,8 @@
       "max": 1,
       "step": 0.01
     }
-  ]
+  ],
+  "x-meta": {
+    "author": "Kimi"
+  }
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Finalize updatedParams for all generative defs missing them (gate + audit first)."""
+"""Finalize x-meta.upgrade.params for all generative defs missing them (gate + audit first)."""
 
 from __future__ import annotations
 
@@ -14,7 +14,8 @@ sys.path.insert(0, str(ROOT / "temp"))
 
 from audit_dead_sliders import scan_definition, wgsl_path_for  # noqa: E402
 from audit_extrabuffer import load_baseline, scan_shader  # noqa: E402
-from make_briefs_common import POOL_EXCLUDE, extract_params  # noqa: E402
+from make_briefs_common import POOL_EXCLUDE  # noqa: E402
+from finalize_updated_params import extract_params  # noqa: E402
 
 DEF_DIR = ROOT / "shader_definitions" / "generative"
 SHADERS_DIR = ROOT / "public" / "shaders"
@@ -22,7 +23,7 @@ SHADERS_DIR = ROOT / "public" / "shaders"
 
 def needs_update(meta: dict) -> bool:
     params = extract_params(meta)
-    up = meta.get("updatedParams")
+    up = (meta.get("x-meta") or {}).get("upgrade", {}).get("params")
     if not params:
         return up is None or not isinstance(up, list) or len(up) < 4
     need = min(4, len(params))
@@ -59,7 +60,7 @@ def extrabuffer_ok(wgsl: Path, baseline: dict) -> bool:
 def finalize(def_path: Path) -> None:
     meta = json.loads(def_path.read_text(encoding="utf-8"))
     params = extract_params(meta)
-    meta["updatedParams"] = [
+    meta.setdefault("x-meta", {}).setdefault("upgrade", {})["params"] = [
         {
             "index": i,
             "name": p["name"],

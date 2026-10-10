@@ -1,16 +1,56 @@
 {
   "id": "gen-neon-plasma-chrono-bloom",
   "name": "Neon Plasma Chrono-Bloom",
-  "author": "Jules",
   "description": "A hyper-vibrant, time-dilated explosion of neon plasma tendrils that bloom and interlace like a digital, cyberpunk flora. The field clock lags with radius so the bloom opens outward from the centre, and white-hot filaments ignite where two plasma sheet families cross. Hold the mouse to pull a gravity well that dilates time under the cursor; bass thickens the plasma, mids widen and treble heats the filaments.",
   "category": "generative",
   "type": "generative",
   "url": "shaders/gen-neon-plasma-chrono-bloom.wgsl",
-  "features": ["mouse-driven", "audio-reactive", "raymarched", "volumetric", "upgraded-rgba"],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "raymarched",
+    "volumetric",
+    "upgraded-rgba"
+  ],
   "params": [
-    { "id": "intensity", "name": "Intensity", "mapping": "zoom_params.x", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
-    { "id": "distortionSpeed", "name": "Distortion Speed", "mapping": "zoom_params.y", "default": 1.0, "min": 0.1, "max": 3.0, "step": 0.1 },
-    { "id": "bloomThreshold", "name": "Bloom Threshold", "mapping": "zoom_params.z", "default": 0.7, "min": 0.0, "max": 1.0, "step": 0.05 },
-    { "id": "hueShift", "name": "Hue Shift", "mapping": "zoom_params.w", "default": 0.0, "min": 0.0, "max": 1.0, "step": 0.01 }
-  ]
+    {
+      "id": "intensity",
+      "name": "Intensity",
+      "mapping": "zoom_params.x",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "distortionSpeed",
+      "name": "Distortion Speed",
+      "mapping": "zoom_params.y",
+      "default": 1.0,
+      "min": 0.1,
+      "max": 3.0,
+      "step": 0.1
+    },
+    {
+      "id": "bloomThreshold",
+      "name": "Bloom Threshold",
+      "mapping": "zoom_params.z",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.05
+    },
+    {
+      "id": "hueShift",
+      "name": "Hue Shift",
+      "mapping": "zoom_params.w",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "x-meta": {
+    "author": "Jules"
+  }
 }

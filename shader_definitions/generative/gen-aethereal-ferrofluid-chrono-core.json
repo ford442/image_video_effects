@@ -21,7 +21,6 @@
     {
       "id": "viscosity",
       "name": "Viscosity",
-      "type": "slider",
       "default": 0.5,
       "min": 0.1,
       "max": 1.0,
@@ -31,7 +30,6 @@
     {
       "id": "spike_density",
       "name": "Spike Density",
-      "type": "slider",
       "default": 0.6,
       "min": 0.0,
       "max": 2.0,
@@ -41,7 +39,6 @@
     {
       "id": "magnetic_strength",
       "name": "Magnetic Strength",
-      "type": "slider",
       "default": 0.5,
       "min": 0.0,
       "max": 1.0,
@@ -51,7 +48,6 @@
     {
       "id": "bioluminescence",
       "name": "Bioluminescence",
-      "type": "slider",
       "default": 0.8,
       "min": 0.0,
       "max": 2.0,
@@ -65,38 +61,42 @@
     "depth-aware",
     "upgraded-rgba"
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Viscosity",
-      "default": 0.5,
-      "min": 0.1,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Spike Density",
-      "default": 0.6,
-      "min": 0.0,
-      "max": 2.0,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Magnetic Strength",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Bioluminescence",
-      "default": 0.8,
-      "min": 0.0,
-      "max": 2.0,
-      "step": 0.01
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Viscosity",
+          "default": 0.5,
+          "min": 0.1,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Spike Density",
+          "default": 0.6,
+          "min": 0.0,
+          "max": 2.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Magnetic Strength",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Bioluminescence",
+          "default": 0.8,
+          "min": 0.0,
+          "max": 2.0,
+          "step": 0.01
+        }
+      ]
     }
-  ]
+  }
 }

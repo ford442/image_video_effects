@@ -37,7 +37,7 @@ It is generated (`npm run shaders:libs`) from the binding contract and declares 
 > **Upgrading means adding 2–4 named visual ideas to the existing effect.**
 > Keep the algorithm, the look, and the saved params. Deepen what is already
 > there. Do not reimagine the shader as a different effect. Do not treat
-> formatting, binding alignment, ACES, or `updatedParams` as the upgrade.
+> formatting, binding alignment, ACES, or `x-meta.upgrade.params` as the upgrade.
 >
 > §2.1–2.5 (bindings, workgroup guard, branchless safety, depth/data writes,
 > naga, JSON) are the **floor**. A shader that newly compiles, writes depth,
@@ -89,7 +89,7 @@ A shader is `upgraded-rgba` when it has the Idea Card implemented **and** satisf
   //  A packing: display RGBA | raw sim …
   // ═══════════════════════════════════════════════════════════════════
   ```
-- [ ] **JSON features updated only when true.** `"upgraded-rgba"` requires ACES **and** the Idea Card. `"audio-reactive"` requires `plasmaBuffer[0].xyz` used. Saved `params` stay byte-exact; `updatedParams` may be aligned additively.
+- [ ] **JSON features updated only when true.** `"upgraded-rgba"` requires ACES **and** the Idea Card. `"audio-reactive"` requires `plasmaBuffer[0].xyz` used. Saved `params` stay byte-exact; `x-meta.upgrade.params` may be aligned additively.
 
 ---
 
@@ -285,7 +285,7 @@ Select **6–10** shaders (Flash: 6–8; Opus/Grok: 8–10; never more than 12) 
 | Missing floor (header / audio / depth / dataA / alpha) **and** thin visuals | **Idea Card + floor.** Keep the existing kernel. Add 2–4 native ideas while wiring the floor. **Not a rewrite.** |
 | Floor present, picture still thin | **Idea Card only.** Do not restamp ACES/spring/ripples. Add native structure. |
 | Floor present, already idea-rich | **Skip.** Do not bump the `Upgraded:` date for hygiene. |
-| Header / tag / `updatedParams` missing, picture already good | **Metadata pass** — allowed, but **do not call it an upgrade** and do not mix it into an idea batch. |
+| Header / tag / `x-meta.upgrade.params` missing, picture already good | **Metadata pass** — allowed, but **do not call it an upgrade** and do not mix it into an idea batch. |
 
 ### 5.4 Parallel Validation
 After writing all shaders in a batch:

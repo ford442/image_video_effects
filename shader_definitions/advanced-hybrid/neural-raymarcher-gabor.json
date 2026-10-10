@@ -53,49 +53,6 @@
       "description": "Camera orbit position"
     }
   ],
-  "advanced_params": [
-    {
-      "id": "gabor_freq",
-      "name": "Gabor Frequency",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_config.x",
-      "description": "Gabor filter frequency"
-    },
-    {
-      "id": "gabor_sigma",
-      "name": "Gabor Sigma",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_config.y",
-      "description": "Gabor Gaussian envelope width"
-    },
-    {
-      "id": "gabor_scale",
-      "name": "Gabor Scale",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_config.z",
-      "description": "Response scaling factor"
-    }
-  ],
-  "chunks_used": [
-    "ping_pong (neural-raymarcher.wgsl)",
-    "hash21 (neural-raymarcher.wgsl)",
-    "noise (neural-raymarcher.wgsl)",
-    "reconstruct_normal (neural-raymarcher.wgsl)",
-    "gaborResponse (conv-gabor-texture-analyzer.wgsl)",
-    "palette (conv-gabor-texture-analyzer.wgsl)"
-  ],
-  "performance_target": "20-30 FPS (GTX 1060)",
-  "created_by": "Agent CB-3 — Convolution Post-Processor",
-  "created_date": "2026-04-18",
   "tags": [
     "neural",
     "raymarcher",
@@ -103,5 +60,52 @@
     "texture",
     "volumetric",
     "psychedelic"
-  ]
+  ],
+  "x-meta": {
+    "legacy": {
+      "advanced_params": [
+        {
+          "id": "gabor_freq",
+          "name": "Gabor Frequency",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "mapping": "zoom_config.x",
+          "description": "Gabor filter frequency"
+        },
+        {
+          "id": "gabor_sigma",
+          "name": "Gabor Sigma",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "mapping": "zoom_config.y",
+          "description": "Gabor Gaussian envelope width"
+        },
+        {
+          "id": "gabor_scale",
+          "name": "Gabor Scale",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "mapping": "zoom_config.z",
+          "description": "Response scaling factor"
+        }
+      ]
+    },
+    "chunks_used": [
+      "ping_pong (neural-raymarcher.wgsl)",
+      "hash21 (neural-raymarcher.wgsl)",
+      "noise (neural-raymarcher.wgsl)",
+      "reconstruct_normal (neural-raymarcher.wgsl)",
+      "gaborResponse (conv-gabor-texture-analyzer.wgsl)",
+      "palette (conv-gabor-texture-analyzer.wgsl)"
+    ],
+    "performance_target": "20-30 FPS (GTX 1060)",
+    "created_by": "Agent CB-3 — Convolution Post-Processor",
+    "created_date": "2026-04-18"
+  }
 }

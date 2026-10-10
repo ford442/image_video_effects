@@ -48,40 +48,6 @@
         "max": 1,
         "step": 0.01
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Detail",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -146,40 +112,6 @@
         "max": 1
       }
     ],
-    "updatedParams": [
-      {
-        "id": "bubble_size",
-        "name": "Bubble Size",
-        "default": 0.45,
-        "min": 0,
-        "max": 1,
-        "description": "Radius of the main bubble."
-      },
-      {
-        "id": "magnification",
-        "name": "Magnification",
-        "default": 0.55,
-        "min": 0,
-        "max": 1,
-        "description": "Lens power of the bubble surface."
-      },
-      {
-        "id": "film_thickness",
-        "name": "Film Thickness",
-        "default": 0.45,
-        "min": 0,
-        "max": 1,
-        "description": "Soap film thickness; sets the interference order."
-      },
-      {
-        "id": "ior",
-        "name": "IOR",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "description": "Refractive index of the film, driving Fresnel and rim."
-      }
-    ],
     "updated": true
   },
   {
@@ -227,41 +159,7 @@
       "distort",
       "transform"
     ],
-    "name": "Chromatic Swirl",
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Swirl Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Aberration",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Animate",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 1
-      }
-    ]
+    "name": "Chromatic Swirl"
   },
   {
     "id": "complex-exponent-warp",
@@ -404,40 +302,6 @@
       "physical-transmittance",
       "facets",
       "gem"
-    ],
-    "updatedParams": [
-      {
-        "name": "Facet Count",
-        "id": "zoomParam1",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "description": "Number of crystal facets across the frame."
-      },
-      {
-        "name": "Refractive Index",
-        "id": "zoomParam2",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "description": "IOR, 1.5-2.42; also sets the critical angle, so higher IOR flashes more facets."
-      },
-      {
-        "name": "Fracture Density",
-        "id": "zoomParam3",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "description": "Internal fracture density; drives absorption and body colour."
-      },
-      {
-        "name": "Crystal Thickness",
-        "id": "zoomParam4",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "description": "Optical path length; deepens the crystal's body colour."
-      }
     ]
   },
   {
@@ -504,40 +368,6 @@
         "min": 0,
         "max": 1
       }
-    ],
-    "updatedParams": [
-      {
-        "id": "hud_scale",
-        "name": "HUD Scale",
-        "default": 0.35,
-        "min": 0,
-        "max": 1,
-        "description": "Size of the HUD grid and frame elements."
-      },
-      {
-        "id": "target_size",
-        "name": "Target Size",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "description": "Reticle radius; also sets the telemetry ring spacing."
-      },
-      {
-        "id": "glitch_intensity",
-        "name": "Glitch Intensity",
-        "default": 0.25,
-        "min": 0,
-        "max": 1,
-        "description": "Rolling-shutter shear amplitude and tearing."
-      },
-      {
-        "id": "chromatic_aberration",
-        "name": "Chromatic Aberration",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "description": "Channel split around the lens."
-      }
     ]
   },
   {
@@ -595,11 +425,7 @@
       "voronoi",
       "quasicrystal"
     ],
-    "updated": true,
-    "updatedParams": [
-      "chaos",
-      "aberration"
-    ]
+    "updated": true
   },
   {
     "id": "dimension-slicer",
@@ -697,40 +523,6 @@
         ]
       }
     ],
-    "updatedParams": [
-      {
-        "id": "density",
-        "name": "Strip Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "strength",
-        "name": "Stretch Strength",
-        "default": 0.7,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "falloff",
-        "name": "Influence Radius",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "dir",
-        "name": "Direction (V/H)",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "labels": [
-          "Vertical Strips",
-          "Horizontal Strips"
-        ]
-      }
-    ],
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -787,40 +579,6 @@
       },
       {
         "id": "depth_influence",
-        "name": "Depth Influence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Elasticity",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Surface Tension",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Wave Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
         "name": "Depth Influence",
         "default": 0.5,
         "min": 0,
@@ -960,40 +718,6 @@
       "image-processing"
     ],
     "supportsDepth": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Grid Size",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Flow Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Distortion",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Turbulence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -1046,40 +770,6 @@
       "ifs",
       "attractor",
       "glass"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Contraction",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "IFS Rotation",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Refraction",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Aberration",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -1091,7 +781,6 @@
     "params": [
       {
         "name": "Iterations",
-        "type": "float",
         "default": 0.3,
         "min": 0,
         "max": 1,
@@ -1099,7 +788,6 @@
       },
       {
         "name": "Zoom",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1107,7 +795,6 @@
       },
       {
         "name": "Offset X",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1115,7 +802,6 @@
       },
       {
         "name": "Offset Y",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1150,40 +836,6 @@
       "image-processing"
     ],
     "params": [
-      {
-        "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param2",
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param3",
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param4",
-        "name": "Detail",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
       {
         "id": "param1",
         "name": "Intensity",
@@ -1401,41 +1053,7 @@
         "step": 0.01
       }
     ],
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Brick Size",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "IOR Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Chromatic Aberration",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Depth Influence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
+    "updated": true
   },
   {
     "id": "glass-brick-wall",
@@ -1493,41 +1111,7 @@
         "max": 1
       }
     ],
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Brick Size",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Distortion",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Mortar Size",
-        "default": 0.25,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Glass Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
+    "updated": true
   },
   {
     "id": "glitch-slice-mirror",
@@ -1592,40 +1176,6 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w"
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Detail",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ],
     "updated": true
@@ -1733,40 +1283,6 @@
       "distortion",
       "heat",
       "atmospheric"
-    ],
-    "updatedParams": [
-      {
-        "id": "intensity",
-        "name": "Haze Intensity",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "rise",
-        "name": "Rise Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "frequency",
-        "name": "Turbulence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "chroma",
-        "name": "Chromatic Split",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -1802,52 +1318,6 @@
         "default": 0.5,
         "min": 0,
         "max": 1
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "id": "heatGain",
-        "name": "Heat Gain",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x",
-        "description": "Injection rate into the heat field, which lives in dataTextureA/C rather than the depth texture; also gains the buoyant updraft packets."
-      },
-      {
-        "index": 1,
-        "id": "decayRate",
-        "name": "Decay Rate",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.y",
-        "description": "Cooling rate of the heat field between frames."
-      },
-      {
-        "index": 2,
-        "id": "diffusion",
-        "name": "Diffusion",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.z",
-        "description": "Lateral spread of the heat field per step."
-      },
-      {
-        "index": 3,
-        "id": "refraction",
-        "name": "Refraction",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Mirage displacement gain; also scales the shear-layer shimmer streaks."
       }
     ],
     "features": [
@@ -1895,36 +1365,6 @@
       "recursive"
     ],
     "params": [
-      {
-        "id": "zoom_strength",
-        "name": "Zoom Strength",
-        "default": 0.45,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "lens_radius",
-        "name": "Lens Radius",
-        "default": 0.35,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "feedback_persistence",
-        "name": "Feedback Persistence",
-        "default": 0.65,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "twist",
-        "name": "Twist",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "updatedParams": [
       {
         "id": "zoom_strength",
         "name": "Zoom Strength",
@@ -2008,40 +1448,6 @@
         "mapping": "zoom_params.w",
         "description": "Maximum fractal iterations"
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Zoom Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Distortion",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Rotation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Max Iterations",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -2090,40 +1496,6 @@
       "chromatic-aberration",
       "audio-reactive",
       "distortion"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Localization",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Mode (Rad/Dir)",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Angle Offset",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -2184,40 +1556,6 @@
       "audio-reactive",
       "depth-aware"
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Blur Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Chromatic Amount",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Quality",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Depth Attenuation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -2273,40 +1611,6 @@
       },
       {
         "id": "max_iter",
-        "name": "Max Iter",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Julia Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Depth Weight",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
         "name": "Max Iter",
         "default": 0.5,
         "min": 0,
@@ -2382,45 +1686,7 @@
         "step": 0.01
       }
     ],
-    "description": "Rose-FBM kaleidoscope whose mirror bank is now steerable: the segment fan pivots and re-centres on a spring-damped pointer in extraBuffer[133..134] instead of being pinned to frame centre, and each mirror segment owns one FFT bin driving its own petal amplitude and Gabor texture gain. Fixes a shader that never read the mouse at all, and adds the dataTextureA writeback the slot was missing.",
-    "updatedParams": [
-      {
-        "id": "segments",
-        "name": "Segments",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "description": "Number of mirror wedges in the fan."
-      },
-      {
-        "id": "speed",
-        "name": "Rotation Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "description": "Lissajous and epicycloid drift rate."
-      },
-      {
-        "id": "zoom",
-        "name": "Zoom",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "description": "Radial magnification inside each wedge."
-      },
-      {
-        "id": "edge_softness",
-        "name": "Edge Softness",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "description": "Wedge edge feathering; also sets the superellipse aperture exponent and the per-segment RGB split."
-      }
-    ]
+    "description": "Rose-FBM kaleidoscope whose mirror bank is now steerable: the segment fan pivots and re-centres on a spring-damped pointer in extraBuffer[133..134] instead of being pinned to frame centre, and each mirror segment owns one FFT bin driving its own petal amplitude and Gabor texture gain. Fixes a shader that never read the mouse at all, and adds the dataTextureA writeback the slot was missing."
   },
   {
     "id": "liquid-prism",
@@ -2445,7 +1711,6 @@
       {
         "id": "strength",
         "name": "Prism Strength",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -2453,7 +1718,6 @@
       {
         "id": "frequency",
         "name": "Wave Frequency",
-        "type": "float",
         "default": 0.3,
         "min": 0,
         "max": 1
@@ -2461,7 +1725,6 @@
       {
         "id": "speed",
         "name": "Flow Speed",
-        "type": "float",
         "default": 0.2,
         "min": 0,
         "max": 1
@@ -2469,7 +1732,6 @@
       {
         "id": "aberration",
         "name": "Aberration",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -2487,45 +1749,7 @@
       "refraction",
       "chromatic"
     ],
-    "name": "Liquid Prism",
-    "updatedParams": [
-      {
-        "id": "strength",
-        "name": "Prism Strength",
-        "type": "float",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "description": "Displacement amplitude of the refraction ripple."
-      },
-      {
-        "id": "frequency",
-        "name": "Wave Frequency",
-        "type": "float",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "description": "Ripple wavenumber; mids and the local FFT band modulate it."
-      },
-      {
-        "id": "speed",
-        "name": "Flow Speed",
-        "type": "float",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "description": "Phase speed of the pointer ripple."
-      },
-      {
-        "id": "aberration",
-        "name": "Aberration / Transparency",
-        "type": "float",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "description": "Dual-purpose: scales the Cauchy index spread AND sets base glass transparency."
-      }
-    ]
+    "name": "Liquid Prism"
   },
   {
     "id": "liquid-swirl",
@@ -2585,40 +1809,6 @@
       "music",
       "reactive"
     ],
-    "updatedParams": [
-      {
-        "id": "strength",
-        "name": "Circulation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "description": "Circulation of the primary and paired vortices."
-      },
-      {
-        "id": "radius",
-        "name": "Vortex Core Radius",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "description": "Finite viscous-core radius and satellite orbit scale."
-      },
-      {
-        "id": "smoothness",
-        "name": "Fluid Smoothness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "description": "Pointer spring stiffness and temporal sheen persistence."
-      },
-      {
-        "id": "rotation",
-        "name": "Pair Rotation",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "description": "Signed orbital speed of the counter-rotating vortex pair."
-      }
-    ],
     "name": "Liquid Swirl",
     "feedbackPacking": "A/C = ACES display RGBA; B unwritten; spring cursor extraBuffer[133..136]"
   },
@@ -2676,40 +1866,6 @@
       "warp",
       "distort",
       "transform"
-    ],
-    "updatedParams": [
-      {
-        "id": "distort",
-        "name": "Distortion",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "description": "Distance traced through the analytic spectral flow field."
-      },
-      {
-        "id": "speed",
-        "name": "Flow Speed",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "description": "Temporal phase speed of the four flow modes."
-      },
-      {
-        "id": "scale",
-        "name": "Spectral Flow Scale",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "description": "Base frequency of the divergence-free stream-function spectrum."
-      },
-      {
-        "id": "visc",
-        "name": "Viscosity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "description": "Temporal memory and strength of flow attachment along depth boundaries."
-      }
     ]
   },
   {
@@ -2811,7 +1967,6 @@
       {
         "id": "refract-str",
         "name": "Refraction Depth",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -2819,7 +1974,6 @@
       {
         "id": "smoothness",
         "name": "Surface Smoothness",
-        "type": "float",
         "default": 0.2,
         "min": 0,
         "max": 1
@@ -2827,7 +1981,6 @@
       {
         "id": "specular",
         "name": "Specular Shine",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -2835,7 +1988,6 @@
       {
         "id": "light-height",
         "name": "Light Distance",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -2849,41 +2001,7 @@
       "chromatic-dispersion",
       "caustics"
     ],
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Refraction Depth",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Surface Smoothness",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Specular Shine",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Light Distance",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
+    "updated": true
   },
   {
     "id": "luminescent-glass-tiles",
@@ -2901,7 +2019,6 @@
       {
         "id": "density",
         "name": "Grid Density",
-        "type": "float",
         "default": 0.2,
         "min": 0,
         "max": 1
@@ -2909,7 +2026,6 @@
       {
         "id": "refraction",
         "name": "Refraction",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -2917,7 +2033,6 @@
       {
         "id": "radius",
         "name": "Mouse Radius",
-        "type": "float",
         "default": 0.3,
         "min": 0,
         "max": 1
@@ -2925,7 +2040,6 @@
       {
         "id": "turbulence",
         "name": "Mouse Chaos",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -2939,41 +2053,7 @@
       "refraction",
       "tiles"
     ],
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Grid Density",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Refraction",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Mouse Radius",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Mouse Chaos",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
+    "updated": true
   },
   {
     "id": "magnetic-field",
@@ -3032,40 +2112,6 @@
         "max": 1
       }
     ],
-    "updatedParams": [
-      {
-        "id": "strength",
-        "name": "Field Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "description": "Lorentz displacement gain applied to the image."
-      },
-      {
-        "id": "radius",
-        "name": "Field Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "description": "Extent of the field envelope around the pointer."
-      },
-      {
-        "id": "density",
-        "name": "Line Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "description": "Spacing of the field-line caustic ridges and tracer bands."
-      },
-      {
-        "id": "mode",
-        "name": "Field Mode",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "description": "Monopole / dipole / multipole / solenoid vortex geometry."
-      }
-    ],
     "tags": [
       "filter",
       "image-processing",
@@ -3090,7 +2136,6 @@
       {
         "id": "strength",
         "name": "Depth Scale",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -3098,7 +2143,6 @@
       {
         "id": "aberration",
         "name": "Aberration",
-        "type": "float",
         "default": 0.2,
         "min": 0,
         "max": 1
@@ -3106,7 +2150,6 @@
       {
         "id": "zoom",
         "name": "Edge Zoom",
-        "type": "float",
         "default": 0.1,
         "min": 0,
         "max": 1
@@ -3114,7 +2157,6 @@
       {
         "id": "focus",
         "name": "Focus Plane",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -3130,41 +2172,7 @@
       "distort",
       "transform"
     ],
-    "name": "Parallax Shift",
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Depth Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Aberration",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Edge Zoom",
-        "default": 0.1,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Focus Plane",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
+    "name": "Parallax Shift"
   },
   {
     "id": "perspective-tilt",
@@ -3220,40 +2228,6 @@
     "tags": [
       "filter",
       "image-processing"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Tilt Sensitivity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Distance (FOV)",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Y-Axis Tilt (Pitch)",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Plane Scale",
-        "default": 1,
-        "min": 0.5,
-        "max": 2,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -3303,40 +2277,6 @@
     "tags": [
       "filter",
       "image-processing"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Layer Speed Low",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Layer Speed High",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Edge Glow",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Fog Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -3441,40 +2381,6 @@
       "filter",
       "image-processing"
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Storm Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Chaos",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Trail Length",
-        "default": 0.8,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -3541,36 +2447,6 @@
       16,
       1
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Cell Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 1,
-        "name": "Blast Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 2,
-        "name": "Edge Glow Amount",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 3,
-        "name": "Chromatic Amount",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
     "tags": [
       "distortion",
       "pixelate",
@@ -3595,7 +2471,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "param": "zoom_params.x"
+        "mapping": "zoom_params.x"
       },
       {
         "id": "distortion",
@@ -3604,7 +2480,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "param": "zoom_params.y"
+        "mapping": "zoom_params.y"
       },
       {
         "id": "shimmer",
@@ -3613,7 +2489,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "param": "zoom_params.z"
+        "mapping": "zoom_params.z"
       },
       {
         "id": "noise_scale",
@@ -3622,41 +2498,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "param": "zoom_params.w"
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Cloak Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Refraction Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Chromatophore Speed",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Noise Scale",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
+        "mapping": "zoom_params.w"
       }
     ],
     "features": [
@@ -3703,7 +2545,6 @@
       {
         "id": "zoomAmount",
         "name": "Zoom Amount",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -3711,7 +2552,6 @@
       {
         "id": "chromatic",
         "name": "Chromatic Amount",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -3719,7 +2559,6 @@
       {
         "id": "rotationSpeed",
         "name": "Rotation Speed",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -3727,7 +2566,6 @@
       {
         "id": "depthWeight",
         "name": "Depth Weight",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -3742,41 +2580,7 @@
       "spectral",
       "anamorphic"
     ],
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Zoom Amount",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Chromatic Amount",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Rotation Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Depth Weight",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
+    "updated": true
   },
   {
     "id": "prismatic-mosaic",
@@ -3795,7 +2599,6 @@
       {
         "id": "min_speed",
         "name": "Min Speed",
-        "type": "float",
         "default": 0.3,
         "min": 0,
         "max": 1
@@ -3803,7 +2606,6 @@
       {
         "id": "max_speed",
         "name": "Max Speed",
-        "type": "float",
         "default": 0.7,
         "min": 0,
         "max": 1
@@ -3811,7 +2613,6 @@
       {
         "id": "saturation_boost",
         "name": "Saturation Boost",
-        "type": "float",
         "default": 0.2,
         "min": 0,
         "max": 1
@@ -3819,7 +2620,6 @@
       {
         "id": "fog_density",
         "name": "Fog Density",
-        "type": "float",
         "default": 0.3,
         "min": 0,
         "max": 1
@@ -3833,41 +2633,7 @@
       "chromatic",
       "fog"
     ],
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Min Speed",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Max Speed",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Saturation Boost",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Fog Density",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
+    "updated": true
   },
   {
     "id": "radial-rgb",
@@ -3920,40 +2686,6 @@
       "spectral",
       "distortion",
       "anamorphic"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Barrel / Pincushion",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Lens Curvature",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Anamorphic Stretch",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Dispersion",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -3962,36 +2694,6 @@
     "url": "shaders/refraction-tunnel.wgsl",
     "description": "Chromatic refraction tunnel with wall ribs, hoop rings, helical rails, analytic liquid-rainbow caustics, held aim, and bounded click shock rings. Display RGBA is packed in A.",
     "params": [
-      {
-        "id": "depth",
-        "name": "Tunnel Depth",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "twist",
-        "name": "Twist Amount",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "aberration",
-        "name": "Chromatic Dispersion",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "curvature",
-        "name": "Tunnel Curvature",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "updatedParams": [
       {
         "id": "depth",
         "name": "Tunnel Depth",
@@ -4047,36 +2749,6 @@
     "description": "High-density scanlines with smooth multi-band jitter, opposing scan heads, diagonal tear conveyors, held-pointer band pulling, bounded click shocks, curvature, domain-warped FBM, and audio-reactive chromatic grading.",
     "updated": true,
     "params": [
-      {
-        "id": "scan_intensity",
-        "name": "Scan Intensity",
-        "default": 0.6,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "band_split",
-        "name": "Band Split",
-        "default": 0.35,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "fbm_scale",
-        "name": "FBM Scale",
-        "default": 0.4,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "chromatic_mix",
-        "name": "Chromatic Mix",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "updatedParams": [
       {
         "id": "scan_intensity",
         "name": "Scan Intensity",
@@ -4189,40 +2861,6 @@
         "max": 1,
         "step": 0.01
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Wave Amplitude",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Wave Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Wave Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Chroma Detail",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -4274,40 +2912,6 @@
       "shock-wave",
       "mach-cone",
       "supersonic"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Ring Radius",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Ring Width",
-        "default": 0.05,
-        "min": 0.01,
-        "max": 0.2,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Distortion",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Chrom. Split",
-        "default": 0.02,
-        "min": 0,
-        "max": 0.1,
-        "step": 0.01
-      }
     ],
     "updated": true
   },
@@ -4368,42 +2972,7 @@
         "step": 0.01
       }
     ],
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Crystal Scale",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Distortion",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Facet Sharpness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Chromatic Sep",
-        "default": 0.1,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "target_rating": 4.7
+    "updated": true
   },
   {
     "id": "spectral-vortex",
@@ -4464,40 +3033,6 @@
         "mapping": "zoom_params.w",
         "description": "Amplification of curl velocity field"
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Twist Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Distortion Step",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Color Shift",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Curl Amplification",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -4523,36 +3058,6 @@
       "spectral-caustics",
       "bounded-click-ripples",
       "held-drag"
-    ],
-    "updatedParams": [
-      {
-        "id": "param1",
-        "name": "Spiral Tightness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "param2",
-        "name": "Lens Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "param3",
-        "name": "Chromatic",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "param4",
-        "name": "Rotation Speed",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      }
     ],
     "params": [
       {
@@ -4662,40 +3167,6 @@
       "depth-aware",
       "freeze"
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Freeze Amount",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Warp Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Ghost Count",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Depth Weight",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -4751,8 +3222,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "voronoi-chaos",
@@ -4762,7 +3232,6 @@
     "params": [
       {
         "name": "Cell Scale",
-        "type": "float",
         "min": 0,
         "max": 1,
         "default": 0.5,
@@ -4770,7 +3239,6 @@
       },
       {
         "name": "Chaos Amount",
-        "type": "float",
         "min": 0,
         "max": 1,
         "default": 0.5,
@@ -4778,7 +3246,6 @@
       },
       {
         "name": "Color Mix",
-        "type": "float",
         "min": 0,
         "max": 1,
         "default": 0,
@@ -4786,7 +3253,6 @@
       },
       {
         "name": "Center Dot Size",
-        "type": "float",
         "min": 0,
         "max": 1,
         "default": 0.2,
@@ -4805,40 +3271,6 @@
       "warp",
       "distort",
       "transform"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Cell Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Chaos Amount",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Color Mix",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Center Dot Size",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ],
     "updated": true
   },
@@ -4896,41 +3328,7 @@
       "refraction",
       "faceted"
     ],
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Refraction",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Shimmer",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Edge Softness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
+    "updated": true
   },
   {
     "id": "vortex-distortion",
@@ -4980,40 +3378,6 @@
       "physics",
       "vortex",
       "reactive"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Circulation Γ",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Viscosity ν",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "KH Instability",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Chromatic Aber",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -5137,42 +3501,6 @@
       "turbulence",
       "chromatic",
       "distortion"
-    ],
-    "updatedParams": [
-      {
-        "id": "strength",
-        "name": "Vortex Strength",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "description": "Circulation gain of the Rankine profile; bass adds up to +45%."
-      },
-      {
-        "id": "radius",
-        "name": "Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "description": "Vortex extent; also sets the solid-body core radius."
-      },
-      {
-        "id": "twist",
-        "name": "Spiral Twist",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "description": "Radius-dependent spiral layered on the circulation."
-      },
-      {
-        "id": "turbulence",
-        "name": "Turbulence",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Gain on the FFT-banded azimuthal lobes."
-      }
     ]
   },
   {
@@ -5296,36 +3624,6 @@
       16,
       16,
       1
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Burst Length",
-        "default": 0.45,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 1,
-        "name": "Sample Quality",
-        "default": 0.55,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 2,
-        "name": "Spin",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 3,
-        "name": "Chroma",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      }
     ]
   }
 ]

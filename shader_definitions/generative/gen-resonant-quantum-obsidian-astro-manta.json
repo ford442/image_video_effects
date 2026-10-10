@@ -75,38 +75,42 @@
       "description": "Speed of the dark matter fluid nebula shifting in the background"
     }
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Time Scale",
-      "default": 1.0,
-      "min": 0.1,
-      "max": 5.0,
-      "step": 0.1
-    },
-    {
-      "index": 1,
-      "name": "Audio Reactivity",
-      "default": 1.0,
-      "min": 0.0,
-      "max": 3.0,
-      "step": 0.1
-    },
-    {
-      "index": 2,
-      "name": "Brightness",
-      "default": 1.0,
-      "min": 0.1,
-      "max": 3.0,
-      "step": 0.1
-    },
-    {
-      "index": 3,
-      "name": "Evolution Speed",
-      "default": 1.0,
-      "min": 0.0,
-      "max": 5.0,
-      "step": 0.1
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Time Scale",
+          "default": 1.0,
+          "min": 0.1,
+          "max": 5.0,
+          "step": 0.1
+        },
+        {
+          "index": 1,
+          "name": "Audio Reactivity",
+          "default": 1.0,
+          "min": 0.0,
+          "max": 3.0,
+          "step": 0.1
+        },
+        {
+          "index": 2,
+          "name": "Brightness",
+          "default": 1.0,
+          "min": 0.1,
+          "max": 3.0,
+          "step": 0.1
+        },
+        {
+          "index": 3,
+          "name": "Evolution Speed",
+          "default": 1.0,
+          "min": 0.0,
+          "max": 5.0,
+          "step": 0.1
+        }
+      ]
     }
-  ]
+  }
 }
