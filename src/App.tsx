@@ -247,9 +247,7 @@ function MainApp() {
     const handleUpdateStack = useCallback((ids: string[]) => {
         setModes(prev => {
             const next = [...prev];
-            if (ids.length > 0) next[0] = ids[0];
-            if (ids.length > 1) next[1] = ids[1];
-            if (ids.length > 2) next[2] = ids[2];
+            ids.slice(0, 3).forEach((id, i) => { next[i] = id; });
             return next;
         });
     }, []);

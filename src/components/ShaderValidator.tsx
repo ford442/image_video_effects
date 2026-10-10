@@ -273,8 +273,7 @@ export const ShaderValidator: React.FC = () => {
 
     const newResults: ValidationResult[] = [];
 
-    for (let i = 0; i < shaders.length; i++) {
-      const shader = shaders[i];
+    for (const [i, shader] of shaders.entries()) {
       setCurrentTest(`${shader.name} (${shader.id})`);
       setProgress({ current: i + 1, total: shaders.length });
 

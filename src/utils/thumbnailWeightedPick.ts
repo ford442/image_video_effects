@@ -9,14 +9,14 @@ export function pickWeighted<T>(items: T[], weightFn: (item: T) => number): T | 
   const weights = items.map(weightFn);
   const total = weights.reduce((sum, w) => sum + w, 0);
   if (total <= 0) {
-    return items[Math.floor(Math.random() * items.length)];
+    return items[Math.floor(Math.random() * items.length)] ?? null;
   }
   let roll = Math.random() * total;
-  for (let i = 0; i < items.length; i++) {
-    roll -= weights[i];
-    if (roll <= 0) return items[i];
+  for (const [i, item] of items.entries()) {
+    roll -= weights[i]!;
+    if (roll <= 0) return item;
   }
-  return items[items.length - 1];
+  return items[items.length - 1] ?? null;
 }
 
 /**
