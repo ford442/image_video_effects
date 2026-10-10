@@ -63,6 +63,6 @@
   "updated": true,
   "id": "gen-cymatic-quantum-silk-loom",
   "url": "shaders/gen-cymatic-quantum-silk-loom.wgsl",
-  "features": ["raymarched", "audio-reactive", "mouse-driven", "click-reactive", "temporal-feedback", "semantic-alpha", "aces-tonemap"],
+  "features": ["raymarched", "audio-reactive", "mouse-driven", "click-reactive", "temporal-feedback", "semantic-alpha", "aces-tonemap", "upgraded-rgba"],
   "feedbackPacking": "A/C = final ACES display RGBA; exact quantum-silk persistence history"
 }

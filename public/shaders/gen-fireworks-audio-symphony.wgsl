@@ -4,31 +4,12 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
 //  Created: 2026-07-05
-//  Upgraded: 2026-09-11
-//  Ideas: onset-only primary (bassPulse gates the big shell); band-tinted stars
-//  A packing: ACES display RGBA; extraBuffer[133] smoothed bass envelope
+//  Upgraded: 2026-10-10
+//  Ideas: onset-only primary (bassPulse gates the big shell); band-tinted stars; per-shell onset latch + spectral-centroid hue (A texels 0..5,0); wavefront-lit stars (ring at burstAge*0.9)
+//  A packing: ACES display RGBA; top-row texels (0..5,0) = shell latch vec4(energy, centroid, cycleId+1, 0), (6,0) = smoothed bass envelope; everything else display history
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.141592653589793;
 const TAU: f32 = 6.283185307179586;
@@ -100,17 +81,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
-  // Smoothed bass envelope for transient launches
-  var prevBass = extraBuffer[133];
+  // Smoothed bass envelope for transient launches.
+  // Idea 3: persisted in A texel (6,0) and read back via exact dataTextureC
+  // (single writer = the invocation at that pixel; replaces the extraBuffer[133] envelope).
+  let prevBass = clamp(textureLoad(dataTextureC, vec2<i32>(6, 0), 0).x, 0.0, 4.0);
   let envK = select(0.04, 0.18, bass > prevBass);
   let smoothBass = mix(prevBass, bass, envK);
-  if (global_id.x == 0u && global_id.y == 0u) {
-    extraBuffer[133] = smoothBass;
-  }
   let bassPulse = max(0.0, bass - smoothBass);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, vec2<f32>(pixel) / res, 0.0).r;
-  let prev = textureLoad(dataTextureC, pixel, 0).rgb;
+  // Top-row texels (0..6,0) hold latch state in A, not colour: borrow the texel below for trail history.
+  let isStateTexel = pixel.y == 0 && pixel.x <= 6;
+  let prev = textureLoad(dataTextureC, select(pixel, pixel + vec2<i32>(0, 1), isStateTexel), 0).rgb;
+  var latchOut = vec4<f32>(0.0);
 
   var col = vec3<f32>(0.01, 0.008, 0.026);
   let star = step(0.991, hash2(floor(uv * 140.0))) * (0.5 + 0.5 * sin(time * 5.0 + hash2(uv * 60.0) * 20.0));
@@ -133,17 +116,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let cycle = baseCycle * (0.8 + seed * 0.4);
     let birth = floor((time + seed * 2.0) / cycle) * cycle - seed * 2.0;
     let age = time - birth;
-    if (age < 0.0 || age > 7.5) { continue; }
 
-    let baseX = (seed - 0.5) * 1.7;
-    let baseY = -0.78;
     let burstDelay = 1.1 + seed * 0.6 - bassPulse * 0.2;
     let burstAge = max(0.0, age - burstDelay);
     // Idea 1 — onset-only primary: idle mortar stays small; bassPulse opens the big shell
     let idleEnergy = bassDrive * (0.35 + bass * 0.22) * (0.8 + seed2 * 0.3);
     let onsetEnergy = bassDrive * (1.15 + bass * 0.45) * (0.8 + seed2 * 0.3);
-    let shellEnergy = mix(idleEnergy, onsetEnergy, smoothstep(0.02, 0.12, bassPulse));
-    let hue = fract(seed * 1.7 + time * 0.02 + si * 0.1);
+    let liveEnergy = mix(idleEnergy, onsetEnergy, smoothstep(0.02, 0.12, bassPulse));
+
+    // Idea 3 — per-shell onset latch + spectral-centroid hue.
+    // While the mortar rises the latch tracks the live onset energy and band balance;
+    // at burst it freezes, so sparks no longer pop with live audio. State lives in A
+    // texel (s,0) (written only by that invocation) and is read via exact dataTextureC.
+    let bandSum = bass + mids + treble;
+    let liveCentroid = select(0.33, treble / (bandSum + 0.001), bandSum > 0.02);
+    // bassPulse-free id: the cycle length above shifts on onsets, which would defeat the latch
+    let cycleId = floor((time + seed * 2.0) / (2.4 / launchDensity * (0.8 + seed * 0.4))) + 1.0;
+    let latch = textureLoad(dataTextureC, vec2<i32>(s, 0), 0);
+    let frozen = latch.z == cycleId && burstAge > 0.0 && latch.x > 0.0;
+    let shellEnergy = select(liveEnergy, clamp(latch.x, 0.0, 6.0), frozen);
+    let centroid = select(liveCentroid, clamp(latch.y, 0.0, 1.0), frozen);
+    if (pixel.y == 0 && pixel.x == s) {
+      latchOut = vec4<f32>(shellEnergy, centroid, cycleId, 0.0);
+    }
+
+    if (age < 0.0 || age > 7.5) { continue; }
+
+    let baseX = (seed - 0.5) * 1.7;
+    let baseY = -0.78;
+    let hue = fract(seed * 1.7 + time * 0.02 + si * 0.1 + (centroid - 0.33) * 0.6);
 
     if (age < burstDelay) {
       let t = age / burstDelay;
@@ -172,6 +173,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let g = softGlow(uv, sp, sz, fade * shellEnergy * 1.5);
         col += shellColor(hue + js * 0.25, smoothstep(0.5, 0.0, burstAge * 0.2)) * g;
       }
+
+      // Idea 4 — wavefront-lit stars: the expanding shock ring (radius burstAge*0.9)
+      // ignites the existing star field with a travel delay.
+      let ring = smoothstep(0.04, 0.0, abs(length(uv - center) - burstAge * 0.9));
+      col += shellColor(hue, 0.6) * star * ring * fade * (0.6 + shellEnergy) * 1.6;
 
       // Mids-driven secondary shells
       let secondaries = i32(1.0 + mids * midsLayering * 4.0);
@@ -252,7 +258,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let alpha = clamp(length(col) * 1.1 + 0.13, 0.14, 0.96);
 
   let generatedDepth = clamp((alpha - 0.14) / 0.82, 0.0, 1.0) * 0.85;
-  textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
+  // A: display RGBA history, except the 7 state texels of the top row.
+  var aOut = vec4<f32>(col, alpha);
+  if (pixel.y == 0 && pixel.x < 6) { aOut = latchOut; }
+  if (pixel.y == 0 && pixel.x == 6) { aOut = vec4<f32>(smoothBass, 0.0, 0.0, 0.0); }
+  textureStore(dataTextureA, pixel, aOut);
   textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(generatedDepth, 0.0, 0.0, 0.0));
 }
