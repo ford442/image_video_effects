@@ -236,11 +236,12 @@ export const MAX_PASSES_HINT = 64;
  */
 function unsatisfiedReadCode(graph: MultipassGraphDef, nodeIndex: number, role: string): 'cycle' | 'dependency' {
   const node = graph.nodes[nodeIndex];
+  if (!node) return 'dependency';
   const writes = node.writes ?? [];
   if (writes.includes(role as GraphRole)) return 'cycle';
   for (let j = nodeIndex + 1; j < graph.nodes.length; j++) {
     const later = graph.nodes[j];
-    if (!(later.writes ?? []).includes(role as GraphRole)) continue;
+    if (!later || !(later.writes ?? []).includes(role as GraphRole)) continue;
     const waitsOnUs = (later.reads ?? []).some(
       (q) => SIM_ROLES.includes(q as TextureRole) && writes.includes(q),
     );

@@ -155,6 +155,7 @@ export function moveNode(draft: GraphDraft, from: number, to: number): GraphDraf
   const target = clampInt(to, 0, nodes.length - 1, from);
   if (target === from) return draft;
   const [moved] = nodes.splice(from, 1);
+  if (!moved) return draft;
   nodes.splice(target, 0, moved);
   return withGraph(draft, nodes);
 }

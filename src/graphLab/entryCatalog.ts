@@ -44,7 +44,7 @@ export interface CatalogShader {
 
 /** `shaders/kinetic_tiles.wgsl`, `https://host/p/x.wgsl?v=2` → `kinetic_tiles`, `x`. */
 export function entryStem(url: string): string {
-  const path = url.split(/[?#]/)[0];
+  const path = url.split(/[?#]/)[0] ?? '';
   const file = path.slice(path.lastIndexOf('/') + 1);
   return file.replace(/\.wgsl$/i, '');
 }
@@ -100,7 +100,8 @@ export function searchEntries(catalog: EntryCatalog, query: string, limit = 50):
   for (const option of catalog.options) {
     const haystack = `${option.entry} ${option.label}`.toLowerCase();
     if (!tokens.every((t) => haystack.includes(t))) continue;
-    hits.push({ option, rank: option.entry.toLowerCase().startsWith(tokens[0]) ? 0 : 1 });
+    const first = tokens[0] ?? '';
+    hits.push({ option, rank: option.entry.toLowerCase().startsWith(first) ? 0 : 1 });
   }
   hits.sort((a, b) => a.rank - b.rank || a.option.entry.localeCompare(b.option.entry));
   return hits.slice(0, limit).map((h) => h.option);

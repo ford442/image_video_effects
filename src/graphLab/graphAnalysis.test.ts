@@ -29,17 +29,17 @@ describe('analyzeGraph', () => {
     });
 
     it('traces each read to its producer', () => {
-      expect(rows[0].reads).toEqual([{ role: 'dataC', from: 'previous frame' }]);
+      expect(rows[0]?.reads).toEqual([{ role: 'dataC', from: 'previous frame' }]);
       // Later iterations sample dataC, which a barrier refreshed from the previous iteration's dataA.
-      expect(rows[2].reads[0]).toEqual({ role: 'dataC', from: 'dataA → dataC (step#2)' });
-      expect(rows[3].reads).toEqual([{ role: 'dataA', from: 'step#3' }]);
-      expect(rows[4].reads).toEqual([{ role: 'dataB', from: 'inject' }]);
+      expect(rows[2]?.reads[0]).toEqual({ role: 'dataC', from: 'dataA → dataC (step#2)' });
+      expect(rows[3]?.reads).toEqual([{ role: 'dataA', from: 'step#3' }]);
+      expect(rows[4]?.reads).toEqual([{ role: 'dataB', from: 'inject' }]);
     });
 
     it('shows the copy barriers the planner will insert', () => {
-      expect(rows[0].barriers).toEqual([]);
-      expect(rows[1].barriers).toEqual(['dataA → dataC']);
-      expect(rows[3].barriers).toEqual(['dataA → dataC']);
+      expect(rows[0]?.barriers).toEqual([]);
+      expect(rows[1]?.barriers).toEqual(['dataA → dataC']);
+      expect(rows[3]?.barriers).toEqual(['dataA → dataC']);
       const a = analyzeGraph(waveTank);
       expect(a.barrierCount).toBe(rows.reduce((s, r) => s + r.barriers.length, 0));
       expect(a.nodes.find((n) => n.nodeId === 'step')?.barriers).toBe(2);
@@ -50,7 +50,7 @@ describe('analyzeGraph', () => {
         maxPassesPerFrame: 4,
         nodes: [{ id: 'a', entry: 'x', reads: ['read', 'dataB'], writes: ['color'] }],
       });
-      expect(a.rows[0].reads).toEqual([
+      expect(a.rows[0]?.reads).toEqual([
         { role: 'read', from: 'source image' },
         { role: 'dataB', from: 'nothing produces it' },
       ]);
@@ -120,7 +120,7 @@ describe('analyzeGraph', () => {
         ],
       });
       expect(a.valid).toBe(false);
-      expect(a.errors[0].code).toBe('pass-budget');
+      expect(a.errors[0]?.code).toBe('pass-budget');
       expect(a.caps).toEqual([]);
     });
   });
@@ -157,7 +157,9 @@ describe('analyzeGraph', () => {
   });
 
   it('flags sim-ring graphs', () => {
-    expect(analyzeGraph(GRAPH_REGISTRY['dla-crystals']).usesSimRing).toBe(true);
+    const dla = GRAPH_REGISTRY['dla-crystals'];
+    if (!dla) throw new Error('missing dla-crystals graph');
+    expect(analyzeGraph(dla).usesSimRing).toBe(true);
   });
 
   it('analyses every registry graph as valid with a full preview', () => {

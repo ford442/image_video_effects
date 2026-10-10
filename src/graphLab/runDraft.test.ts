@@ -76,7 +76,9 @@ describe('runDraft', () => {
     const invalid = await runDraft(manager, 0, bad);
     expect(invalid).toMatchObject({ ok: false, reason: 'invalid', message: 'graph exceeds maxPassesPerFrame: 5 > 2' });
 
-    const dla = await runDraft(manager, 0, draftFromRegistryGraph('dla-crystals', GRAPH_REGISTRY['dla-crystals']));
+    const dlaGraph = GRAPH_REGISTRY['dla-crystals'];
+    if (!dlaGraph) throw new Error('missing dla-crystals graph');
+    const dla = await runDraft(manager, 0, draftFromRegistryGraph('dla-crystals', dlaGraph));
     expect(dla).toMatchObject({ ok: false, reason: 'sim-ring' });
 
     expect(calls).toEqual([]);

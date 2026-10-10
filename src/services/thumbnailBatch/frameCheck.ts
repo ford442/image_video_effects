@@ -44,7 +44,9 @@ export function analyzeImageData(data: Uint8ClampedArray, width: number, height:
     activePixelRatio: active / pixels,
     magentaPixelRatio: magenta / pixels,
     maxChannelStd: Math.max(
-      ...[0, 1, 2].map(c => Math.sqrt(Math.max(0, sumSq[c] / pixels - (sum[c] / pixels) ** 2))),
+      Math.sqrt(Math.max(0, sumSq[0] / pixels - (sum[0] / pixels) ** 2)),
+      Math.sqrt(Math.max(0, sumSq[1] / pixels - (sum[1] / pixels) ** 2)),
+      Math.sqrt(Math.max(0, sumSq[2] / pixels - (sum[2] / pixels) ** 2)),
     ),
   };
 }

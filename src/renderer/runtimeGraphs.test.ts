@@ -115,19 +115,19 @@ describe('runtime graphs through the frame planner', () => {
     });
     const fp = compileFramePlan(planFor(GRAPH_LAB_RUNTIME_ID), ctx());
     expect(fp.computeCount).toBe(0);
-    expect(fp.graphReports[0].executed).toBe(0);
-    expect(fp.graphReports[0].errors.join(' ')).toContain('reads "dataB" before any producer');
+    expect(fp.graphReports[0]?.executed).toBe(0);
+    expect(fp.graphReports[0]?.errors.join(' ')).toContain('reads "dataB" before any producer');
   });
 
   it('plans a fresh graph object per edit (plans are memoised per object)', () => {
     const first = createWaveTankGraph();
     setRuntimeGraph(GRAPH_LAB_RUNTIME_ID, first);
-    expect(compileFramePlan(planFor(GRAPH_LAB_RUNTIME_ID), ctx()).graphReports[0].requested).toBe(5);
+    expect(compileFramePlan(planFor(GRAPH_LAB_RUNTIME_ID), ctx()).graphReports[0]?.requested).toBe(5);
     const edited: MultipassGraphDef = {
       ...first,
       nodes: first.nodes.map((n) => (n.id === 'step' ? { ...n, repeat: 1 } : n)),
     };
     setRuntimeGraph(GRAPH_LAB_RUNTIME_ID, edited);
-    expect(compileFramePlan(planFor(GRAPH_LAB_RUNTIME_ID), ctx()).graphReports[0].requested).toBe(3);
+    expect(compileFramePlan(planFor(GRAPH_LAB_RUNTIME_ID), ctx()).graphReports[0]?.requested).toBe(3);
   });
 });

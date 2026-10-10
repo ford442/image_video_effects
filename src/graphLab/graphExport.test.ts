@@ -139,7 +139,7 @@ describe('exportGraphDefinition', () => {
       const notes = ok(fork(), { entries }).notes;
       const hidden = notes.filter((n) => n.code === 'hides-catalog-entry');
       expect(hidden).toHaveLength(1);
-      expect(hidden[0].message).toContain('"wave-inject"');
+      expect(hidden[0]?.message).toContain('"wave-inject"');
       expect(notes.map((n) => n.code)).toContain('drift-baseline');
     });
 

@@ -77,15 +77,15 @@ describe('graphDraft edits', () => {
   it('toggles only the editable roles and keeps a canonical order', () => {
     let d = waveTank();
     d = toggleRole(d, 0, 'reads', 'read');
-    expect(d.graph.nodes[0].reads).toEqual(['read', 'dataC']);
+    expect(d.graph.nodes[0]?.reads).toEqual(['read', 'dataC']);
     d = toggleRole(d, 0, 'reads', 'dataC');
-    expect(d.graph.nodes[0].reads).toEqual(['read']);
+    expect(d.graph.nodes[0]?.reads).toEqual(['read']);
     // `color` is a display target, not a readable role; simState is view-only.
     expect(toggleRole(d, 0, 'reads', 'color')).toBe(d);
     expect(toggleRole(d, 0, 'reads', 'simState')).toBe(d);
     expect(toggleRole(d, 0, 'writes', 'dataC')).toBe(d);
     d = toggleRole(d, 0, 'writes', 'color');
-    expect(d.graph.nodes[0].writes).toEqual(['color', 'dataA']);
+    expect(d.graph.nodes[0]?.writes).toEqual(['color', 'dataA']);
   });
 
   it('preserves roles it does not expose when toggling others', () => {
@@ -94,27 +94,29 @@ describe('graphDraft edits', () => {
     });
     if (!d.ok) throw new Error(d.error);
     const next = toggleRole(d.draft, 0, 'reads', 'dataA');
-    expect(next.graph.nodes[0].reads).toEqual(['dataA', 'dataC', 'simState']);
-    expect(next.graph.nodes[0].writes).toEqual(['simState', 'dataA']);
+    expect(next.graph.nodes[0]?.reads).toEqual(['dataA', 'dataC', 'simState']);
+    expect(next.graph.nodes[0]?.writes).toEqual(['simState', 'dataA']);
   });
 
   it('clamps repeat to a whole number in 1–64 and omits the default', () => {
     let d = waveTank();
-    expect(setRepeat(d, 0, 0).graph.nodes[0].repeat).toBeUndefined();
-    expect(setRepeat(d, 0, 2.6).graph.nodes[0].repeat).toBe(3);
-    expect(setRepeat(d, 0, 1000).graph.nodes[0].repeat).toBe(64);
-    expect(setRepeat(d, 0, NaN).graph.nodes[0].repeat).toBeUndefined();
+    expect(setRepeat(d, 0, 0).graph.nodes[0]?.repeat).toBeUndefined();
+    expect(setRepeat(d, 0, 2.6).graph.nodes[0]?.repeat).toBe(3);
+    expect(setRepeat(d, 0, 1000).graph.nodes[0]?.repeat).toBe(64);
+    expect(setRepeat(d, 0, NaN).graph.nodes[0]?.repeat).toBeUndefined();
     d = setRepeat(d, 0, 1);
-    expect('repeat' in d.graph.nodes[0]).toBe(false);
+    const cleared = d.graph.nodes[0];
+    expect(cleared !== undefined && !('repeat' in cleared)).toBe(true);
   });
 
   it('sets scalable with a valid minScale and removes both keys when switched off', () => {
     let d = setScalable(waveTank(), 0, true, 0.25);
     expect(d.graph.nodes[0]).toMatchObject({ scalable: true, minScale: 0.25 });
-    expect(setScalable(d, 0, true, 0.3).graph.nodes[0].minScale).toBe(0.25);
+    expect(setScalable(d, 0, true, 0.3).graph.nodes[0]?.minScale).toBe(0.25);
     d = setScalable(d, 0, false);
-    expect('scalable' in d.graph.nodes[0]).toBe(false);
-    expect('minScale' in d.graph.nodes[0]).toBe(false);
+    const off = d.graph.nodes[0];
+    expect(off !== undefined && !('scalable' in off)).toBe(true);
+    expect(off !== undefined && !('minScale' in off)).toBe(true);
     expect(validateGraph(setScalable(waveTank(), 0, true).graph)).toEqual([]);
   });
 
@@ -157,7 +159,9 @@ describe('graphDraft import', () => {
 
   it('flags sim-ring drafts as view-only', () => {
     expect(isSimRingDraft(waveTank())).toBe(false);
-    const dla = draftFromRegistryGraph('dla-crystals', GRAPH_REGISTRY['dla-crystals']);
+    const dlaGraph = GRAPH_REGISTRY['dla-crystals'];
+    if (!dlaGraph) throw new Error('missing dla-crystals graph');
+    const dla = draftFromRegistryGraph('dla-crystals', dlaGraph);
     expect(isSimRingDraft(dla)).toBe(true);
     const withField = draftFromDefinition({ id: 'x', simRing: { stateCount: 4 }, multipass: { graph: createWaveTankGraph() } });
     expect(withField.ok && isSimRingDraft(withField.draft)).toBe(true);

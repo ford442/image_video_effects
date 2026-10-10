@@ -67,8 +67,10 @@ export async function runDraft(
   const entries = Array.from(new Set(graph.nodes.map((n) => n.entry)));
   // The root id needs a compiled pipeline (the planner gates slots on it); the first entry's WGSL serves.
   if (!manager.isShaderCached(GRAPH_LAB_RUNTIME_ID)) {
-    const ok = await manager.loadShader(GRAPH_LAB_RUNTIME_ID, entryUrl(entries[0]));
-    if (!ok) return { ok: false, reason: 'load-failed', message: `Could not compile "${entries[0]}".` };
+    const rootEntry = entries[0];
+    if (!rootEntry) return { ok: false, reason: 'empty', message: 'The graph has no entries to compile.' };
+    const ok = await manager.loadShader(GRAPH_LAB_RUNTIME_ID, entryUrl(rootEntry));
+    if (!ok) return { ok: false, reason: 'load-failed', message: `Could not compile "${rootEntry}".` };
   }
   for (const entry of entries) {
     if (manager.isShaderCached(entry)) continue;

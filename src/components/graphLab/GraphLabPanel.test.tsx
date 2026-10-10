@@ -193,6 +193,7 @@ describe('GraphLabPanel', () => {
     it('adds a node by searching the entry catalog (including graph secondaries)', () => {
       // The "Add node" picker comes first; the inspector's picker (which re-points the selected node) second.
       const add = screen.getAllByTestId('entry-picker-input')[0];
+      if (!add) throw new Error('missing entry picker');
       fireEvent.change(add, { target: { value: 'wave-inject' } });
       fireEvent.click(screen.getByTestId('entry-option-wave-inject'));
       const items = within(screen.getByTestId('graph-lab-nodes')).getAllByRole('listitem');
@@ -260,7 +261,7 @@ describe('GraphLabPanel', () => {
       fireEvent.click(screen.getByTestId('graph-lab-node-select-0'));
       fireEvent.change(screen.getByTestId('node-repeat'), { target: { value: '2' } });
       await waitFor(() => expect(getRuntimeGraph(GRAPH_LAB_RUNTIME_ID)).not.toBe(before));
-      expect(getRuntimeGraph(GRAPH_LAB_RUNTIME_ID)?.nodes[0].repeat).toBe(2);
+      expect(getRuntimeGraph(GRAPH_LAB_RUNTIME_ID)?.nodes[0]?.repeat).toBe(2);
     });
 
     it('keeps the last good graph running while an edit leaves the draft invalid', async () => {
