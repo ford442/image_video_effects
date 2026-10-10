@@ -50,11 +50,11 @@ Static analysis cannot prove the index stays in the safe zone; human triage acce
 
 | Line | Expression | Triage |
 |-----:|------------|--------|
-| 113 | `bufOff` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
-| 114 | `bufOff + 1u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
-| 115 | `bufOff + 2u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
-| 116 | `bufOff + 3u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
-| 117 | `bufOff + 4u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
+| 94 | `bufOff` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
+| 95 | `bufOff + 1u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
+| 96 | `bufOff + 2u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
+| 97 | `bufOff + 3u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
+| 98 | `bufOff + 4u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
 
 ### `public/shaders/physarum-gemini.wgsl`
 

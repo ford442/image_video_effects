@@ -2493,9 +2493,11 @@
       "mouse-driven",
       "audio-reactive",
       "audio-driven",
-      "advanced-alpha"
+      "upgraded-rgba",
+      "advanced-alpha",
+      "semantic-alpha"
     ],
-    "description": "Detects edges and highlights them with pulsing neon colors. Mouse proximity increases intensity.",
+    "description": "Five mirrored zoom layers centred on the pointer, each outlined by neon edges that pulse inward with the bass; hold to spin the tunnel.",
     "params": [
       {
         "id": "edgeThreshold",

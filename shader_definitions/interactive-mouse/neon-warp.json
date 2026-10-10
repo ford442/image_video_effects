@@ -2,7 +2,7 @@
   "id": "neon-warp",
   "name": "Neon Warp",
   "url": "shaders/neon-warp.wgsl",
-  "description": "Closed-form thermal packets and a refraction whip. Heat is analytic from pointer and ripples \u2014 A stores ACES display, not a second sim. Exact-C glow advection, ACES, heat-energy alpha.",
+  "description": "Heat-haze mirage: closed-form thermal plumes from the pointer, clicks and bass blobs refract the image with schlieren bands and an inferior mirage; blackbody glow, heat-energy alpha.",
   "params": [
     {
       "id": "refraction_strength",
@@ -44,7 +44,6 @@
     "aces-tone-map",
     "temporal-feedback",
     "fast-motion",
-    "spring-cursor",
     "semantic-alpha",
     "exact-c-history"
   ],

@@ -44729,7 +44729,7 @@
     "name": "Neon Fern Garden",
     "url": "shaders/neon-fern-garden.wgsl",
     "category": "generative",
-    "description": "Procedurally generated fern fronds unfurling in neon colors against dark soil. Bass drives growth animation, mids control frond density, treble creates dewdrop sparkles. Mouse attracts or repels frond tips.",
+    "description": "Procedurally generated fern fronds unfurling in neon colors against dark soil. Bass drives growth animation, mids brighten the soil glow-bed, treble creates dewdrop sparkles. Mouse attracts or repels frond tips.",
     "tags": [
       "generative",
       "fern",

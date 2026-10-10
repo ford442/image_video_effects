@@ -2,7 +2,7 @@
   "id": "neon-fluid-warp",
   "name": "Neon Fluid Warp",
   "url": "shaders/neon-fluid-warp.wgsl",
-  "description": "Viscous curl jets and neon edge runners around a sprung pointer. Held drag thickens the fluid, clicks kick refraction rings, exact-C glow persist, ACES display, emissive semantic alpha.",
+  "description": "Viscous curl jets and neon runners around the pointer; moving it drags a viscous wake, the lens rim carries a meniscus highlight, and holding thickens the fluid.",
   "params": [
     {
       "id": "warpStrength",
@@ -44,7 +44,6 @@
     "aces-tone-map",
     "temporal-feedback",
     "fast-motion",
-    "spring-cursor",
     "semantic-alpha",
     "exact-c-history"
   ],
