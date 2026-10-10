@@ -24,9 +24,14 @@ import {
 import {
   AdapterGpuType,
   DeviceFormatCapabilities,
-  parseAdapterGpuType,
   probeFormatCapabilities,
 } from '../config/formatPolicy';
+import {
+  formatAdapterIdentity,
+  inferAdapterGpuType,
+  readAdapterIdentity,
+  type AdapterIdentity,
+} from '../config/adapterIdentity';
 import { isMobileDevice } from '../config/performancePolicy';
 
 export type WebGpuProbeStage =
@@ -67,6 +72,8 @@ export type WebGpuProbeHandoff = {
   supportsDeepWorkgroup: boolean;
   hasF32Filterable: boolean;
   adapterGpuType: AdapterGpuType;
+  /** From `adapter.info`; drives the 2048 gate (fallback, Pascal blocklist). */
+  adapterIdentity: AdapterIdentity;
   formatCapabilities: DeviceFormatCapabilities;
   adapterSummary: string;
   adapterAttemptLabel: string | null;
@@ -151,31 +158,15 @@ export function collectUserAgentBrands(): Array<{ brand: string; version: string
   return [];
 }
 
-async function readAdapterInfo(adapter: GPUAdapter): Promise<WebGpuProbeAdapterInfo | undefined> {
-  try {
-    const withReq = adapter as unknown as { requestAdapterInfo?: () => Promise<GPUAdapterInfo> };
-    if (typeof withReq.requestAdapterInfo === 'function') {
-      const info = await withReq.requestAdapterInfo();
-      return {
-        vendor: info.vendor,
-        architecture: info.architecture,
-        device: info.device,
-        description: info.description,
-      };
-    }
-    const legacy = (adapter as unknown as { info?: GPUAdapterInfo }).info;
-    if (legacy) {
-      return {
-        vendor: legacy.vendor,
-        architecture: legacy.architecture,
-        device: legacy.device,
-        description: legacy.description,
-      };
-    }
-  } catch {
-    /* optional */
-  }
-  return undefined;
+function readAdapterInfo(adapter: GPUAdapter): WebGpuProbeAdapterInfo | undefined {
+  const id = readAdapterIdentity(adapter);
+  if (!id.vendor && !id.architecture && !id.device && !id.description) return undefined;
+  return {
+    vendor: id.vendor,
+    architecture: id.architecture,
+    device: id.device,
+    description: id.description,
+  };
 }
 
 function formatDeviceLimitsSummary(device: GPUDevice): string {
@@ -404,7 +395,7 @@ export async function runWebGpuBootProbe(
 
     record.adapterPresent = true;
     record.limitsSummary = formatAdapterLimitsSummary(adapter);
-    record.adapterInfo = await readAdapterInfo(adapter);
+    record.adapterInfo = readAdapterInfo(adapter);
 
     const contract = assertAdapterMeetsContract(adapter, { maxCanvasDim });
     if (!contract.ok) {
@@ -509,16 +500,17 @@ export async function runWebGpuBootProbe(
     const supportsSubgroups = !!(subgroupFeatureName && device.features.has(subgroupFeatureName));
     // Granted device limits, not the adapter's: those are what shaders run under.
     const supportsDeepWorkgroup = meetsDeepWorkgroupLimits(device.limits);
-    const adapterGpuType = parseAdapterGpuType(
-      (adapter.info as GPUAdapterInfo & { adapterType?: string })?.adapterType,
-    );
+    const adapterIdentity = readAdapterIdentity(adapter);
+    const adapterGpuType = inferAdapterGpuType(adapterIdentity);
     const formatCapabilities = probeFormatCapabilities(adapter, {
       isMobile: isMobileDevice(),
       device,
     });
 
+    // Identity first: allowsFullWorkingSize matches the Pascal blocklist against this string.
     let adapterSummary =
-      `Adapter attempt=${attempt.label} | limits: ${formatAdapterLimitsSummary(adapter)} (sufficient)`;
+      `Adapter attempt=${attempt.label} | adapter: ${formatAdapterIdentity(adapterIdentity)}`
+      + ` type=${adapterGpuType} | limits: ${formatAdapterLimitsSummary(adapter)} (sufficient)`;
     adapterSummary = appendAdapterSummaryFields(adapterSummary, device, canvasFormat);
     adapterSummary +=
       ` | storage: rgba16float=${formatCapabilities.supportsRgba16FloatStorage ? 'yes' : 'no'}`
@@ -563,6 +555,7 @@ export async function runWebGpuBootProbe(
         supportsDeepWorkgroup,
         hasF32Filterable: device.features.has('float32-filterable'),
         adapterGpuType,
+        adapterIdentity,
         formatCapabilities,
         adapterSummary,
         adapterAttemptLabel: attempt.label,

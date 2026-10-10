@@ -19,9 +19,14 @@
     "maxComputeWorkgroupSizeY": 32,
     "maxComputeInvocationsPerWorkgroup": 1024
   },
+  "bufferSizeLimits": {
+    "maxBufferSize": 268435456,
+    "maxStorageBufferBindingSize": 134217728
+  },
   "notes": {
     "deepWorkgroupLimits": "Requested on top of minimumComputeLimits only when the adapter reports all three at or above these values. WebGPU never grants more than requested, so without this a 1024-capable adapter still yields a 256-invocation device. supportsDeepWorkgroup is read from the device limits after creation, not the adapter. Mirrored in webgpuDevicePolicy.ts buildRequiredLimits(adapterLimits) and device.cpp adapterDeepWorkgroup.",
-    "maxTextureDimension2D": "Comfortable floor (WebGPU base limit is 8192; minimum viable 4096). Never derive this from maxBufferSize, pixel count, width*height, or a mis-ordered init arg / heap pointer."
+    "maxTextureDimension2D": "Comfortable floor (WebGPU base limit is 8192; minimum viable 4096). Never derive this from maxBufferSize, pixel count, width*height, or a mis-ordered init arg / heap pointer.",
+    "bufferSizeLimits": "Floors (the WebGPU spec defaults). buildRequiredLimits(adapterLimits) requests the adapter's own value for each, never less than the floor, because a device only gets the spec default unless a higher value is requested. allowsFullWorkingSize (src/config/vramBudget.ts) needs device.limits.maxBufferSize >= 1 GiB for the 2048 working size. TypeScript only (cppMirror false): the WASM backend is frozen as R&D (docs/WASM_BACKEND_POLICY.md) and never offers the 2048 tier."
   },
   "cppReferences": {
     "file": "wasm_renderer/device.cpp",
@@ -39,5 +44,8 @@
       "maxComputeWorkgroupSizeY",
       "maxComputeInvocationsPerWorkgroup"
     ]
+  },
+  "cppMirror": {
+    "bufferSizeLimits": false
   }
 }

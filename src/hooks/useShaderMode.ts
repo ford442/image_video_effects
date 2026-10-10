@@ -1,4 +1,4 @@
-import { useCallback, RefObject } from 'react';
+import { useCallback, useRef, RefObject } from 'react';
 import { RenderMode, ShaderEntry, InputSource, SlotParams } from '../renderer/types';
 import { RendererManager } from '../renderer/RendererManager';
 import { mapOrderedParamsToSlotParams } from '../utils/shaderParamMapping';
@@ -68,8 +68,7 @@ export function useShaderMode({
         });
     }, [mapShaderParamUpdates, rendererRef]);
 
-    const setMode = useCallback(async (index: number, mode: RenderMode) => {
-        if (slotShaderStatusRef.current[index] === 'loading') return;
+    const applyMode = useCallback(async (index: number, mode: RenderMode) => {
         // New shader → old performer bases for this slot are meaningless.
         if (modesRef.current[index] !== mode) clearAudioParamHolds(index);
 
@@ -136,6 +135,22 @@ export function useShaderMode({
             }
         }
     }, [availableModes, rendererRef, modesRef, slotShaderStatusRef, setModes, setSlotShaderStatus, setSlotParams]);
+
+    /** Picks made while a slot is loading; the newest one is applied when the load settles. */
+    const pendingModesRef = useRef(new Map<number, RenderMode>());
+
+    const setMode = useCallback(async (index: number, mode: RenderMode) => {
+        if (slotShaderStatusRef.current[index] === 'loading') {
+            pendingModesRef.current.set(index, mode);
+            return;
+        }
+        let next: RenderMode | undefined = mode;
+        while (next !== undefined) {
+            await applyMode(index, next);
+            next = pendingModesRef.current.get(index);
+            pendingModesRef.current.delete(index);
+        }
+    }, [applyMode, slotShaderStatusRef]);
 
     const updateSlotParam = useCallback((slotIndex: number, updates: Partial<SlotParams>) => {
         setSlotParams(prev => {

@@ -25,6 +25,8 @@ import {
 } from './webgpuConstants';
 import { buildGPUTimings } from './WebGPUTiming';
 import { FrameStats, FrameStatsTracker } from './deviceCounters';
+import { createErrorRateLimiter } from './device';
+import { reportError } from '../ErrorHandling';
 
 export {
   createFrameState,
@@ -45,12 +47,23 @@ export class WebGPUFrameRenderer {
   private slotParamsCapacity = 0;
   private readonly statsTracker = new FrameStatsTracker();
 
+  /** One report per distinct message per window; a throwing frame repeats every tick. */
+  private readonly shouldReportFrameError = createErrorRateLimiter();
+
   startRenderLoop(state: WebGPUFrameState): void {
     const loop = () => {
       if (!state.initialized) return;
       state.currentTime = performance.now() / 1000 - state.startTime;
-      this.renderFrame(state);
-      state.animationId = scheduleFrame(loop);
+      try {
+        this.renderFrame(state);
+      } catch (e) {
+        // A throw must not end the loop: the next frame may succeed (e.g. after a reload).
+        const message = e instanceof Error ? e.message : String(e);
+        if (this.shouldReportFrameError(message)) {
+          reportError({ type: 'render-frame', message, recoverable: true });
+        }
+      }
+      if (state.initialized) state.animationId = scheduleFrame(loop);
     };
     loop();
   }

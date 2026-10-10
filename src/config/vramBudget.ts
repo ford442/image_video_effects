@@ -7,6 +7,7 @@
  * Do not derive maxTextureDimension2D from maxBufferSize — that stays 8192.
  */
 
+import type { AdapterIdentity } from './adapterIdentity';
 import type { AdapterGpuType } from './formatPolicy';
 
 export const HISTORY_OOM_CAP_KEY = 'px_history_oom_cap';
@@ -22,9 +23,12 @@ export const PASCAL_ADAPTER_BLOCKLIST =
   /pascal|gtx\s*10[0-9]{2}|gt\s*10[0-9]{2}|mx\s*1[0-9]{2}/i;
 
 export interface FullWorkingSizeGate {
+  /** Granted device limit (the boot probe requests the adapter's value). */
   maxBufferSize?: number;
   adapterGpuType?: AdapterGpuType;
   adapterSummary?: string;
+  /** From adapter.info; its architecture / device / description feed the Pascal blocklist. */
+  adapterIdentity?: AdapterIdentity;
   isFallbackAdapter?: boolean;
 }
 
@@ -67,10 +71,11 @@ export function hasHistoryOomCapThisTab(): boolean {
 
 export function allowsFullWorkingSize(gate: FullWorkingSizeGate): boolean {
   if (isWasmBlockedAfterOom() || hasHistoryOomCapThisTab()) return false;
-  if (gate.isFallbackAdapter) return false;
+  if (gate.isFallbackAdapter || gate.adapterIdentity?.isFallbackAdapter) return false;
   if (gate.adapterGpuType !== 'discrete') return false;
   if ((gate.maxBufferSize ?? 0) < MIN_MAX_BUFFER_SIZE_FOR_FULL) return false;
-  const hay = gate.adapterSummary ?? '';
+  const id = gate.adapterIdentity;
+  const hay = [gate.adapterSummary, id?.architecture, id?.device, id?.description].join(' ');
   if (PASCAL_ADAPTER_BLOCKLIST.test(hay)) return false;
   return true;
 }

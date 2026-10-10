@@ -125,7 +125,7 @@ Total size **848 bytes** (212 floats) — matches `UNIFORM_BUFFER_LAYOUT.TOTAL_S
 ## History ring (binding 13)
 
 - **Depth:** 8 layers (`HISTORY_DEPTH`) is the **maximum**. Runtime may allocate 8, 4, or 1 after a `historyTex` VRAM probe (#1204). Bind-group `arrayLayerCount` must match the allocated texture. At 1 layer the ring copy is skipped (fail-soft graph history).
-- **VRAM:** Default working size is **1024**. 2048² × 8 × rgba32float is ~512 MiB — Pascal/Chrome D3D12 often OOMs, so 2048 is an upgrade only after a discrete + `maxBufferSize >= 1 GiB` + non-Pascal gate and a full-pool allocate. On `GPUOutOfMemoryError` stay at 1024 and **do not retry 2048** this tab. JS→WASM must `device.destroy()` and **await** `device.lost` before the next `requestDevice`.
+- **VRAM:** Default working size is **1024**. 2048² × 8 × rgba32float is ~512 MiB — Pascal/Chrome D3D12 often OOMs, so 2048 is an upgrade only after a discrete + `maxBufferSize >= 1 GiB` + non-Pascal gate and a full-pool allocate. The device requests the adapter's `maxBufferSize` (`bufferSizeLimits`), and discrete / Pascal come from `adapter.info` — see [FORMAT_TIERS.md](./FORMAT_TIERS.md#what-the-2048-gate-reads-1395). On `GPUOutOfMemoryError` stay at 1024 and **do not retry 2048** this tab. JS→WASM must `device.destroy()` and **await** `device.lost` before the next `requestDevice`.
 - **Catalog metadata:** `requiresHistoryRing: true` in shader JSON for temporal effects
 - **CPU:** `historyHead` written to `extraBuffer[4]` when any enabled shader uses binding 13
 - **GPU:** after each frame, copy presented color into `historyTexture[historyHead]`, then `historyHead = (historyHead + 1) % 8`
@@ -194,6 +194,7 @@ Documented exceptions in that contract:
 | Adapter ladder | `ADAPTER_ATTEMPT_LADDER` (consumed by `runWebGpuBootProbe`) | `ADAPTER_ATTEMPT_LADDER` in `device.cpp` |
 | Limit validation | `assertAdapterMeetsContract` | `CheckLimit` table in `device.cpp` |
 | Device limits | `buildRequiredLimits` | `requiredLimits` on `wgpuAdapterRequestDevice` |
+| Buffer-size limits (`bufferSizeLimits`) | `buildRequiredLimits` requests the adapter value | not mirrored (`cppMirror: false`, WASM R&D freeze) |
 | Feature logging | `logAdapterFeatures` | adapter feature `printf` block |
 
 ### Optional features

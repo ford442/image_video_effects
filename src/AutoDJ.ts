@@ -48,6 +48,7 @@ export class Alucinate {
   // State
   private loopInterval: number | null = null;
   private isRunning = false;
+  private cycleInFlight = false;
   public status: AIStatus = 'idle';
   public statusMessage: string = "AI Not Initialized";
   public onStatusChange: ((status: AIStatus, message: string) => void) | null = null;
@@ -200,7 +201,9 @@ export class Alucinate {
 
   public start(): boolean {
     if (this.isRunning) return false;
-    if (this.status !== 'ready') {
+    // 'error' after a failed cycle or vibe still has loaded models and can restart.
+    const modelsLoaded = this.status === 'ready' || (this.status === 'error' && !!this.llm);
+    if (!modelsLoaded) {
         console.warn('Alucinate is not ready. Please initialize models first.');
         this.setStatus('idle', 'Cannot start: AI not initialized.');
         return false;
@@ -238,7 +241,7 @@ export class Alucinate {
                 const s = this.shaderManifest.find(m => m.id === id);
                 return s ? s.name : id;
             }).join(' + ');
-            this.setStatus('generating', `Mixing stack: ${readableStack}`);
+            this.setStatus('ready', `Mixing stack: ${readableStack}`);
             this.activeShaderIds = ids;
             this.onUpdateStack(ids);
             this.currentParams = params.map(p => ({ ...p }));
@@ -259,7 +262,18 @@ export class Alucinate {
   }
 
   private async runCycle() {
-    if (!this.isRunning || this.status !== 'ready') return;
+    // Gate on an in-flight flag, not on status: a failed caption leaves 'error' and a
+    // kept image leaves 'generating', and either used to stop the loop for good (#1395).
+    if (!this.isRunning || this.cycleInFlight || this.status === 'loading-models') return;
+    this.cycleInFlight = true;
+    try {
+      await this.runCycleOnce();
+    } finally {
+      this.cycleInFlight = false;
+    }
+  }
+
+  private async runCycleOnce() {
 
     const { currentImage } = this.getCurrentState();
     if (!currentImage || !currentImage.url) {
@@ -315,7 +329,10 @@ export class Alucinate {
         const primaryShaderName = this.shaderManifest.find(s => s.id === (shaderStack ? shaderStack[0].id : ''))?.name || 'effect';
         
         const nextTheme = await this.getNextImageThemeFromLLM(caption, primaryShaderName);
-        if (!nextTheme) return; // Keep current image if theme fails
+        if (!nextTheme) {
+            this.setStatus('ready', 'Kept the current image.');
+            return;
+        }
         
         this.setStatus('generating', `Next theme: "${nextTheme}"`);
 

@@ -9,6 +9,7 @@ import { reportError } from '../ErrorHandling';
 import type { WebGpuProbeHandoff } from '../webgpuBootProbe';
 import { publishWebGpuProbe, runWebGpuBootProbe } from '../webgpuBootProbe';
 import { AdapterGpuType, DeviceFormatCapabilities } from '../../config/formatPolicy';
+import type { AdapterIdentity } from '../../config/adapterIdentity';
 import canvasConfigureContract from '../../contracts/canvas_configure.json';
 
 export interface WebGPUDeviceInitResult {
@@ -22,6 +23,7 @@ export interface WebGPUDeviceInitResult {
   supportsDeepWorkgroup: boolean;
   hasF32Filterable: boolean;
   adapterGpuType: AdapterGpuType;
+  adapterIdentity: AdapterIdentity;
   formatCapabilities: DeviceFormatCapabilities;
   adapterSummary: string;
   adapterAttemptLabel: string | null;
@@ -53,6 +55,7 @@ function outcomeFromHandoff(handoff: WebGpuProbeHandoff): WebGPUDeviceInitResult
     supportsDeepWorkgroup: handoff.supportsDeepWorkgroup,
     hasF32Filterable: handoff.hasF32Filterable,
     adapterGpuType: handoff.adapterGpuType,
+    adapterIdentity: handoff.adapterIdentity,
     formatCapabilities: handoff.formatCapabilities,
     adapterSummary: handoff.adapterSummary,
     adapterAttemptLabel: handoff.adapterAttemptLabel,

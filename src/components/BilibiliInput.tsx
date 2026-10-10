@@ -30,7 +30,7 @@ export const BilibiliInput: React.FC<BilibiliInputProps> = ({ onStreamLoaded }) 
 
       for (const proxy of proxies) {
         try {
-          response = await fetch(proxy, { timeout: 10000 } as any);
+          response = await fetch(proxy, { signal: AbortSignal.timeout(10000) });
           if (response.ok) break;
         } catch (e) {
           lastErr = e;
