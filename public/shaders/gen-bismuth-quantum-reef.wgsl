@@ -163,10 +163,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Background color
     var col = vec3<f32>(0.01, 0.02, 0.05);
     var depth = 1.0;
+    var out_n = vec3<f32>(0.0);
 
     if (d < MAX_DIST) {
         let p = ro + rd * d;
         let n = calcNormal(p);
+        out_n = n;
 
         let iridescence_shift = u.zoom_params.z;
         let sss_glow = u.zoom_params.w;
@@ -214,6 +216,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
 
     // Write to other required textures
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(n, depth));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(out_n, depth));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
