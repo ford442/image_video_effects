@@ -1,9 +1,11 @@
-import React, { useMemo, useState } from 'react';
-import { ShadertoyImportPanel } from './ShadertoyImportPanel';
+import React, { lazy, Suspense, useMemo, useState } from 'react';
 import { classifyBandsToRgba } from '../../../gpuChores/lut';
 import type { PassTiming } from '../../../renderer/passTimings';
 import { isWasmForcedByURL } from '../../../renderer/rendererUrl';
 import { PassFlameStrip } from './PassFlameStrip';
+
+// The GLSL→WGSL importer (and its converter) loads only when the debug panel opens it.
+const ShadertoyImportPanel = lazy(() => import(/* webpackChunkName: "shadertoy-import" */ './ShadertoyImportPanel'));
 
 /** Backend health shown in the debug panel — see WASM_BACKEND_POLICY.md (Tier B triage). */
 export interface RendererDiagnosticsSummary {
@@ -128,10 +130,12 @@ export const AdvancedDebugPanel: React.FC<AdvancedDebugPanelProps> = ({
                                     </div>
                                 </div>
                             )}
-                            <ShadertoyImportPanel
-                                onPreviewShader={onPreviewImportShader}
-                                onStatus={onImportStatus}
-                            />
+                            <Suspense fallback={null}>
+                                <ShadertoyImportPanel
+                                    onPreviewShader={onPreviewImportShader}
+                                    onStatus={onImportStatus}
+                                />
+                            </Suspense>
                         </div>
                     )}
                 </div>

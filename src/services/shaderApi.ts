@@ -105,9 +105,6 @@ export function extractShaderId(urlOrId: string): string | null {
   return null;
 }
 
-/** @deprecated Use convertShadertoyGlsl from shadertoyToPixelocity.ts */
-export { wrapShadertoyGlsl } from './shadertoyToPixelocity';
-
 // --- API Functions ---
 
 /**
