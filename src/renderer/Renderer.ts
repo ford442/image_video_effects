@@ -124,6 +124,23 @@ export interface Renderer {
   setMaskEnabled?: (enabled: boolean) => void;
   setRecording?: (isRecording: boolean) => void;
   setRecordingMode?: (mode: 'loop' | 'continuous') => void;
+  // Capture / recording capabilities. Typed here so RendererManager never duck-types (#1395).
+  /** Read the presented frame back as a data URL (the worker and WASM cannot read the page canvas). */
+  refreshFrameImage?: () => Promise<string>;
+  /** WASM: save a screenshot through the C++ readback. */
+  takeScreenshot?: (filename?: string) => Promise<void>;
+  /** WASM: record the canvas output internally. */
+  startRecording?: (
+    canvas: HTMLCanvasElement,
+    options?: { durationMs?: number; frameRate?: number; videoBitsPerSecond?: number },
+  ) => Promise<Blob>;
+  stopRecording?: () => void;
+  /** Swapchain accepted COPY_SRC at init (canvas → VideoFrame capture). */
+  supportsCanvasCopySrc?: () => boolean;
+  /** Reconfigure the swapchain with / without COPY_SRC; false when refused. */
+  setCanvasCopySrc?: (enabled: boolean) => boolean;
+  /** Render worker: the next presented frame as a transferred VideoFrame. */
+  grabVideoFrame?: (timestampUs: number) => Promise<VideoFrame | null>;
   /** Optional: last audio analysis snapshot (WebGPU + WASM). */
   getAudioData?: () => { bass: number; mid: number; treble: number; freqBins: Float32Array };
   /** Optional: whether an internal recording flag is active (WASM). */

@@ -31,7 +31,7 @@ export {
   createRendererFrameHost,
 } from './frameState';
 export type {
-  RendererFrameDeps,
+  FrameContext,
   WebGPUFrameHost,
   WebGPUFrameState,
 } from './frameState';

@@ -27,6 +27,7 @@ import {
   RenderToWorker,
   transferablesOf,
 } from './protocol';
+import { PHYSICAL_SLOT_LIMIT } from '../slotOrchestrator';
 
 /** The slice of WebGPURenderer the host drives. */
 export type HostedRenderer = Pick<
@@ -115,7 +116,6 @@ export interface RenderWorkerHostDeps {
   snapshotIntervalMs?: number;
 }
 
-const SLOT_COUNT = 6;
 const MAX_GPU_ERRORS = 16;
 
 type CommandHandlers = { [K in RenderCommand['type']]: (msg: Extract<RenderCommand, { type: K }>) => void };
@@ -175,7 +175,7 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
     video: r.getVideoIngestStats(),
     nodeScales: r.getNodeScales(),
     scalableNodes: r.getScalableNodes(),
-    slots: Array.from({ length: SLOT_COUNT }, (_, i) => r.getSlotState(i)),
+    slots: Array.from({ length: PHYSICAL_SLOT_LIMIT }, (_, i) => r.getSlotState(i)),
     graphReport: r.getLastGraphReport(),
     chores: r.getGpuChoresBreadcrumbs(),
     cachedShaderIds: r.getPipelineCacheStats().cachedIds,

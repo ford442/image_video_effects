@@ -36,8 +36,8 @@ import { connectRenderWorker, RenderWorkerClient } from './renderWorkerClient';
 import { registerShaderCompileService } from '../../utils/shaderCompileService';
 import { clearRendererDevice, publishRendererDevice } from '../deviceRegistry';
 import { canShareMemory, createInputRingBuffer, InputRingWriter } from './inputRing';
+import { PHYSICAL_SLOT_LIMIT } from '../slotOrchestrator';
 
-const SLOT_COUNT = 6;
 const FFT_BINS = 128;
 
 type SlotShadow = { shaderId: string | null; enabled: boolean; mode: SlotMode };
@@ -100,12 +100,12 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   private info: RenderInitInfo | null = null;
   private snap: RenderSnapshot | null = null;
 
-  private readonly slots: SlotShadow[] = Array.from({ length: SLOT_COUNT }, () => ({
+  private readonly slots: SlotShadow[] = Array.from({ length: PHYSICAL_SLOT_LIMIT }, () => ({
     shaderId: null,
     enabled: false,
     mode: 'chained' as SlotMode,
   }));
-  private readonly slotParams: number[][] = Array.from({ length: SLOT_COUNT }, () => [0.5, 0.5, 0.5, 0.5]);
+  private readonly slotParams: number[][] = Array.from({ length: PHYSICAL_SLOT_LIMIT }, () => [0.5, 0.5, 0.5, 0.5]);
   private readonly dirtySlots = new Set<number>();
   private pending: FrameInput = {};
   private flushScheduled = false;
@@ -445,7 +445,7 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
 
   setActiveShader(id: string): void {
     this.slots[0] = { shaderId: id, enabled: true, mode: 'chained' };
-    for (let i = 1; i < SLOT_COUNT; i++) this.slots[i] = { shaderId: null, enabled: false, mode: 'chained' };
+    for (let i = 1; i < PHYSICAL_SLOT_LIMIT; i++) this.slots[i] = { shaderId: null, enabled: false, mode: 'chained' };
     this.client?.send({ type: 'setActiveShader', id });
   }
 

@@ -19,10 +19,13 @@
  *   704  Float32 ripples[64 × 2]
  */
 
+import { PHYSICAL_SLOT_LIMIT } from '../slotOrchestrator';
+
 export const INPUT_RING_BYTES = 4096;
 export const INPUT_RING_MAGIC = 0x50585231; // "PXR1"
 export const RIPPLE_CAPACITY = 64;
-export const SLOT_COUNT = 6;
+/** SAB layout reserves params for every physical slot (slot_limits.json). */
+export const SLOT_COUNT = PHYSICAL_SLOT_LIMIT;
 export const BIN_COUNT = 128;
 
 const H_MAGIC = 0;

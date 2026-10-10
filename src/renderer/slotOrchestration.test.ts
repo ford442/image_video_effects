@@ -3,7 +3,6 @@ import {
   resyncShaderStack,
   setSlotParams,
   syncAllSlotParams,
-  SLOT_COUNT,
 } from './slotOrchestration';
 import { SlotParams } from './types';
 
@@ -81,7 +80,7 @@ describe('slotOrchestration', () => {
       { ...defaultSlotParams, zoomParam2: 0.22 },
       { ...defaultSlotParams, zoomParam3: 0.33 },
     ];
-    syncAllSlotParams(backend, slots, SLOT_COUNT);
+    syncAllSlotParams(backend, slots);
     expect(backend.updateSlotParams).toHaveBeenCalledTimes(3);
     expect(backend.updateSlotParams).toHaveBeenNthCalledWith(
       1,
@@ -122,5 +121,31 @@ describe('slotOrchestration', () => {
     expect(backend.setSlotShader).not.toHaveBeenCalledWith(0, 'broken');
     expect(backend.setSlotShader).toHaveBeenCalledWith(1, '');
     expect(backend.setSlotShader).toHaveBeenCalledWith(2, 'liquid');
+  });
+
+  it('resyncShaderStack replays every physical slot, not the 3-slot UI default (#1395)', async () => {
+    const backend = {
+      loadShader: jest.fn(),
+      setActiveShader: jest.fn(),
+      setSlotShader: jest.fn(),
+      updateSlotParams: jest.fn(),
+      setSlotMode: jest.fn(),
+      addRipple: jest.fn(),
+      clearRipples: jest.fn(),
+    };
+    const ids = ['a', 'b', 'c', 'd', 'e', 'f'];
+    await resyncShaderStack(
+      backend,
+      { maxActiveSlots: 6, preferNonDeepVariants: false },
+      { onFp32Required: jest.fn() },
+      jest.fn(async () => true),
+      jest.fn(),
+      {
+        modes: ids,
+        slotParams: ids.map(() => defaultSlotParams),
+        resolveShader: (id) => ({ id, name: id, url: `/${id}.wgsl`, category: 'image' }),
+      },
+    );
+    for (let i = 0; i < ids.length; i++) expect(backend.setSlotShader).toHaveBeenCalledWith(i, ids[i]);
   });
 });

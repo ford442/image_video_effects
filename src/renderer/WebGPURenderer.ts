@@ -39,7 +39,7 @@ import {
   createRendererFrameHost,
   computeScaledDimensions,
   WebGPUFrameState,
-  RendererFrameDeps,
+  FrameContext,
 } from './webgpu/frame';
 import {
   createMediaInputState,
@@ -264,7 +264,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       // The device this renderer actually ended up with (after any OOM retry), not the handoff.
       publishRendererDevice(outcome.device, { supportsSubgroups: this.supportsSubgroups, thread: 'main', owner: this });
 
-      this.frameState = createFrameState(createRendererFrameHost(this as unknown as RendererFrameDeps));
+      this.frameState = createFrameState(createRendererFrameHost(this.createFrameContext()));
       this.initialized = true;
       this.startTime = performance.now() / 1000;
       this.lastFPSTime = this.startTime;
@@ -837,6 +837,96 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     const cap = this.workingSizeCap;
     this.scaledW = Math.min(dims.scaledW, cap);
     this.scaledH = Math.min(dims.scaledH, cap);
+  }
+
+  /**
+   * The frame loop's view of this renderer (#1395): explicit accessors instead of
+   * casting `this`, so the compiler checks every field the frame code reads or writes.
+   */
+  private createFrameContext(): FrameContext {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const r = this;
+    return {
+      get resources() { return r.resources; },
+      get pipeline() { return r.pipeline; },
+      get simRing() { return r.simRing; },
+      get computeBindGroup() { return r.computeBindGroup; },
+      get audioDepth() { return r.audioDepth; },
+      get mediaVideo() { return r.mediaVideo; },
+      get device() { return r.device; },
+      set device(v) { r.device = v; },
+      get context() { return r.context; },
+      set context(v) { r.context = v; },
+      get initialized() { return r.initialized; },
+      set initialized(v) { r.initialized = v; },
+      get startTime() { return r.startTime; },
+      set startTime(v) { r.startTime = v; },
+      get currentTime() { return r.currentTime; },
+      set currentTime(v) { r.currentTime = v; },
+      get animationId() { return r.animationId; },
+      set animationId(v) { r.animationId = v; },
+      get blitReadTex() { return r.blitReadTex; },
+      set blitReadTex(v) { r.blitReadTex = v; },
+      get canvasW() { return r.canvasW; },
+      set canvasW(v) { r.canvasW = v; },
+      get canvasH() { return r.canvasH; },
+      set canvasH(v) { r.canvasH = v; },
+      get scaledW() { return r.scaledW; },
+      set scaledW(v) { r.scaledW = v; },
+      get scaledH() { return r.scaledH; },
+      set scaledH(v) { r.scaledH = v; },
+      get resolutionScale() { return r.resolutionScale; },
+      set resolutionScale(v) { r.resolutionScale = v; },
+      get slots() { return r.slots; },
+      set slots(v) { r.slots = v; },
+      get ripples() { return r.ripples; },
+      set ripples(v) { r.ripples = v; },
+      get mouseX() { return r.mouseX; },
+      set mouseX(v) { r.mouseX = v; },
+      get mouseYShader() { return r.mouseYShader; },
+      set mouseYShader(v) { r.mouseYShader = v; },
+      get mouseDown() { return r.mouseDown; },
+      set mouseDown(v) { r.mouseDown = v; },
+      get zoomParams() { return r.zoomParams; },
+      set zoomParams(v) { r.zoomParams = v; },
+      get inputSource() { return r.inputSource; },
+      set inputSource(v) { r.inputSource = v; },
+      get frameCount() { return r.frameCount; },
+      set frameCount(v) { r.frameCount = v; },
+      get lastFPSTime() { return r.lastFPSTime; },
+      set lastFPSTime(v) { r.lastFPSTime = v; },
+      get fps() { return r.fps; },
+      set fps(v) { r.fps = v; },
+      get adaptiveQuality() { return r.adaptiveQuality; },
+      set adaptiveQuality(v) { r.adaptiveQuality = v; },
+      get targetFPS() { return r.targetFPS; },
+      set targetFPS(v) { r.targetFPS = v; },
+      get lastBlitReadTex() { return r.lastBlitReadTex; },
+      set lastBlitReadTex(v) { r.lastBlitReadTex = v; },
+      get lastBlitScaledW() { return r.lastBlitScaledW; },
+      set lastBlitScaledW(v) { r.lastBlitScaledW = v; },
+      get lastBlitScaledH() { return r.lastBlitScaledH; },
+      set lastBlitScaledH(v) { r.lastBlitScaledH = v; },
+      get supportsTimestampQuery() { return r.supportsTimestampQuery; },
+      set supportsTimestampQuery(v) { r.supportsTimestampQuery = v; },
+      get gpuTimings() { return r.gpuTimings; },
+      set gpuTimings(v) { r.gpuTimings = v; },
+      get timestampRuntime() { return r.timestampRuntime; },
+      set timestampRuntime(v) { r.timestampRuntime = v; },
+      get maxPassesPerFrame() { return r.maxPassesPerFrame; },
+      set maxPassesPerFrame(v) { r.maxPassesPerFrame = v; },
+      get framePassBudget() { return r.framePassBudget; },
+      set framePassBudget(v) { r.framePassBudget = v; },
+      encodeVideoFrame: r.encodeVideoFrame.bind(r),
+      adaptQualityIfNeeded: r.adaptQualityIfNeeded.bind(r),
+      nodeScale: r.nodeScale.bind(r),
+      getIslands: r.getIslands.bind(r),
+      encodePreFxChores: r.encodePreFxChores.bind(r),
+      encodePostFxChores: r.encodePostFxChores.bind(r),
+      afterFrameSubmitChores: r.afterFrameSubmitChores.bind(r),
+      afterFrameSubmit: r.afterFrameSubmit.bind(r),
+      beforeFrame: r.beforeFrame.bind(r),
+    };
   }
 
   private adaptQualityIfNeeded(): void {

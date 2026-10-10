@@ -78,7 +78,9 @@ export type WebGPUBackendApi = Pick<
   | 'getLastDeviceLoss'
   | 'simulateDeviceLoss'
   | 'initialized'
-> & Required<Pick<Renderer, 'loadImageFromElement' | 'getCpuInputBitmap'>>;
+> & Required<Pick<Renderer, 'loadImageFromElement' | 'getCpuInputBitmap'>>
+  // Worker proxy only: the in-thread renderer records from the page canvas instead.
+  & Pick<Renderer, 'grabVideoFrame'>;
 
 /** Narrow any renderer to the TS WebGPU backend (in-thread or worker proxy). */
 export function isWebGpuBackend(renderer: unknown): renderer is WebGPUBackendApi {
