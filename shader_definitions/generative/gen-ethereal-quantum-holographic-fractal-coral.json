@@ -61,6 +61,6 @@
   "updated": true,
   "id": "gen-ethereal-quantum-holographic-fractal-coral",
   "url": "shaders/gen-ethereal-quantum-holographic-fractal-coral.wgsl",
-  "features": ["audio-reactive", "mouse-driven", "click-reactive", "temporal-feedback", "depth-output", "aces-tonemap", "semantic-alpha"],
-  "feedbackPacking": "A/C = final ACES display RGBA; exact fractal-coral persistence history"
+  "features": ["audio-reactive", "mouse-driven", "click-reactive", "temporal-feedback", "depth-output", "aces-tonemap", "semantic-alpha", "upgraded-rgba"],
+  "feedbackPacking": "A/C = final ACES display RGBA (alpha = branch coverage); exact fractal-coral persistence history"
 }

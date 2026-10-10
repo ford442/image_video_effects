@@ -3,40 +3,30 @@
 //  Category: generative
 //  Features: 4d-tesseract-raymarch, thin-film-iridescence, voxel-tearing,
 //            sentinel-swarm, hdr-feedback-trails, speed-streaks,
-//            audio-transient-burst, audio-color-temperature,
-//            aces-tone-map, semantic-alpha, generated-depth, fast-motion, upgraded-rgba
+//            audio-transient-burst, audio-color-temperature, mouse-driven,
+//            audio-reactive, aces-tone-map, semantic-alpha, generated-depth,
+//            fast-motion, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: W-cell hive lattice along unused W; sentinel pheromone lanes on radial spokes
-//  A packing: raw HDR trail RGB + raymarch depth in A.a; ACES on writeTexture only
+//  Upgraded: 2026-10-10
+//  Ideas: W-cell hive lattice along unused W; sentinel pheromone lanes on radial
+//         spokes. 2nd pass: 4D hypercube wire glow (slice edges from the 2-faces,
+//         sparks where the 32 edges pierce the slice); W-depth film phase (the
+//         rotated W of each hit point shifts the thin-film hue); sentinels orbit
+//         the projected centres of the 8 cubic cells + hive cell
+//  A packing: raw HDR peak-hold trail RGB (steady state = current frame) +
+//             depth (near = 1) in A.a, except A(0,0).a = fract(time) (trail dt);
+//             ACES on writeTexture only. No extraBuffer state.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4)  var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5)  var non_filtering_sampler: sampler;
-@group(0) @binding(6)  var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7)  var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8)  var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9)  var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time (seconds), .y = rippleCount (0-50 active ripples), .zw = resolution (width, height)
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0–1 canvas: y=0 top), .w = mouse_down (>0.5 = pressed)
-  zoom_params: vec4<f32>,  // .xyzw = user params p1…p4 (mapped from UI sliders)
-  ripples: array<vec4<f32>, 50>,  // .xy = ripple uv, .z = startTime (seconds), .w = padding (0)
-};
+#include "_prelude.wgsl"
 
 // --- CONSTANTS & HELPERS ---
 const MAX_STEPS: i32 = 100;
 const MAX_DIST: f32 = 100.0;
 const SURF_DIST: f32 = 0.001;
 const HDR_CLAMP: f32 = 6.0; // feedback history energy ceiling (stability at speed)
+const HIVE_W: f32 = 2.15;   // W offset of the neighbouring hive cell
+const HIVE_HALF: f32 = 0.85;
 
 // 4D Rotation matrix helper (any 2-plane)
 fn rot4D(theta: f32) -> mat2x2<f32> {
@@ -73,50 +63,96 @@ fn luma(rgb: vec3<f32>) -> f32 {
     return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
 }
 
-// Map function evaluating the 4D Tesseract SDF
-fn map(p: vec3<f32>, time: f32, bass: f32) -> vec2<f32> {
-    // 4D coordinate initialization (w component dynamically adjusted by mouse)
+// Exact 4D rounded-box SDF (interior distance is real, so carving can use it)
+fn sdBox4(q4: vec4<f32>, h: f32, r: f32) -> f32 {
+    let q = abs(q4) - vec4<f32>(h);
+    return length(max(q, vec4<f32>(0.0))) + min(max(max(q.x, q.y), max(q.z, q.w)), 0.0) - r;
+}
+
+fn sdBox3(q3: vec3<f32>, h: vec3<f32>) -> f32 {
+    let q = abs(q3) - h;
+    return length(max(q, vec3<f32>(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0);
+}
+
+// World 3D slice point -> tesseract-frame 4D point (dual-plane tumble)
+fn tessP4(p: vec3<f32>, time: f32) -> vec4<f32> {
     let w_offset = (u.zoom_config.z - 0.5) * 2.0; // Mouse Y drives 4th dimension
     var p4 = vec4<f32>(p, w_offset);
-
     let rotation_speed = u.zoom_params.x;
-
-    // Rotate in 4D space — primary x-z plane, now ~2x faster at default
+    // Primary x-z plane
     let r1 = rot4D(time * (0.25 + rotation_speed * 1.5));
     let x_new = r1[0][0]*p4.x + r1[0][1]*p4.z;
     let z_new = r1[1][0]*p4.x + r1[1][1]*p4.z;
     p4.x = x_new;
     p4.z = z_new;
-
     // Secondary y-w plane tumble — the hypercube visibly unfolds through itself
     let r2 = rot4D(time * (0.31 + rotation_speed * 0.9) + 1.3);
     let y_new = r2[0][0]*p4.y + r2[0][1]*p4.w;
     let w_new = r2[1][0]*p4.y + r2[1][1]*p4.w;
     p4.y = y_new;
     p4.w = w_new;
+    return p4;
+}
+
+// Inverse of tessP4: tesseract-frame point -> world (xyz, w)
+fn tessInv(o: vec4<f32>, time: f32) -> vec4<f32> {
+    let rotation_speed = u.zoom_params.x;
+    let a1 = time * (0.25 + rotation_speed * 1.5);
+    let a2 = time * (0.31 + rotation_speed * 0.9) + 1.3;
+    let c1 = cos(a1); let s1 = sin(a1);
+    let c2 = cos(a2); let s2 = sin(a2);
+    let y = c2 * o.y + s2 * o.w;
+    let w = -s2 * o.y + c2 * o.w;
+    let x = c1 * o.x + s1 * o.z;
+    let z = -s1 * o.x + c1 * o.z;
+    return vec4<f32>(x, y, z, w);
+}
+
+// Vein field: tubes along the 0.5 iso-surface of a drifting value noise
+fn veinField(p: vec3<f32>, time: f32) -> f32 {
+    return abs(vnoise3(p * vec3<f32>(2.0) + vec3<f32>(time * 0.6)) - 0.5) * 0.35 - 0.022;
+}
+
+// Map function evaluating the 4D Tesseract SDF
+fn map(p: vec3<f32>, time: f32, bass: f32) -> vec2<f32> {
+    let p4 = tessP4(p, time);
 
     // Core tesseract SDF evaluation
-    var d1 = length(max(abs(p4) - vec4<f32>(1.0), vec4<f32>(0.0))) - 0.1;
+    var d1 = sdBox4(p4, 1.0, 0.1);
 
     // Idea 1 — W-cell hive lattice: neighboring 4D cube along unused W
-    let p4hive = p4 - vec4<f32>(0.0, 0.0, 0.0, 2.15);
-    let dHive = length(max(abs(p4hive) - vec4<f32>(0.85), vec4<f32>(0.0))) - 0.08;
+    let dHive = sdBox4(p4 - vec4<f32>(0.0, 0.0, 0.0, HIVE_W), HIVE_HALF, 0.08);
     d1 = min(d1, dHive);
 
-    // Boolean Carving using noise to create veins
-    let carve = vnoise3(p * vec3<f32>(2.0) + vec3<f32>(time * 0.6)) * 0.3;
-    d1 = max(d1, -carve);
+    // Boolean carving: noise veins cut as grooves into the outer 0.07 shell
+    // (HEAD's max(d1, -carve) with carve >= 0 only touched the hidden interior)
+    let groove = max(veinField(p, time), -d1 - 0.07);
+    d1 = max(d1, -groove);
 
-    // Add voxel tearing based on audio
+    // Voxel tearing: per-cell glitch cubes, bounded to a crust around the surface
+    // (HEAD put a sphere at every lattice corner in space -> solid magenta frame)
     let tearing_intensity = u.zoom_params.z;
-    let voxel_scale = vec3<f32>(10.0 + (bass * tearing_intensity) * 20.0);
-    let voxel_p = floor(p * voxel_scale) / voxel_scale;
-    let d2 = length(p - voxel_p) - 0.05;
-
-    // Material ID mix
-    // 1.0: Structure, 2.0: Voxel Glitch
-    if (d2 < d1 && bass > 0.1 * (1.0 - tearing_intensity)) {
-        return vec2<f32>(d2, 2.0);
+    let tearAmt = clamp(bass * tearing_intensity * 0.22 + tearing_intensity * 0.06, 0.0, 0.45);
+    if (tearAmt > 0.01) {
+        let s = 10.0 + (bass * tearing_intensity) * 20.0;
+        let cell = floor(p * s);
+        let q = p - (cell + vec3<f32>(0.5)) / s;
+        let h = 0.5 / s;
+        var vox = 1000.0;
+        if (hash33(cell + vec3<f32>(7.0)).x < tearAmt) {
+            vox = sdBox3(q, vec3<f32>(h * 0.72));
+        }
+        // Step toward the cell wall (neighbouring voxels are not in this SDF),
+        // but never less than a third of a cell: a pure wall cap made grazing
+        // rays crawl through the crust, exhaust MAX_STEPS and shade as false
+        // hits, washing the whole frame out once bass shrank the cells.
+        let aq = abs(q);
+        vox = min(vox, max(h - max(aq.x, max(aq.y, aq.z)) + h * 0.06, h * 0.33));
+        // thin crust straddling the surface: tiles protrude ~0.04 at most
+        let d2 = max(vox, abs(d1 + 0.02) - 0.06);
+        if (d2 < d1) {
+            return vec2<f32>(d2, 2.0);
+        }
     }
 
     return vec2<f32>(d1, 1.0);
@@ -126,13 +162,18 @@ fn map(p: vec3<f32>, time: f32, bass: f32) -> vec2<f32> {
 fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, bass: f32) -> vec2<f32> {
     var dO: f32 = 0.0;
     var mat_id: f32 = 0.0;
+    var converged = false;
     for(var i = 0; i < MAX_STEPS; i++) {
         let p = ro + rd * vec3<f32>(dO);
         let dS = map(p, time, bass);
         dO += dS.x;
         mat_id = dS.y;
-        if(dS.x < SURF_DIST || dO > MAX_DIST) { break; }
+        if (dS.x < SURF_DIST) { converged = true; break; }
+        if (dO > MAX_DIST) { break; }
     }
+    // A grazing ray that runs out of steps inside the tear crust reports the
+    // cell-wall bound as material 2; only a converged hit is a real voxel.
+    if (!converged && mat_id == 2.0) { mat_id = 1.0; }
     return vec2<f32>(dO, mat_id);
 }
 
@@ -159,15 +200,27 @@ fn iridescence(view_dir: vec3<f32>, normal: vec3<f32>, shift: f32) -> vec3<f32> 
     return a + b * cos(vec3<f32>(6.28318) * (c * vec3<f32>(t) + d));
 }
 
+// Sort four values descending (compare-swap network)
+fn sort4desc(v: vec4<f32>) -> vec4<f32> {
+    var a = v.x; var b = v.y; var c = v.z; var d = v.w;
+    var t = 0.0;
+    if (a < b) { t = a; a = b; b = t; }
+    if (c < d) { t = c; c = d; d = t; }
+    if (a < c) { t = a; a = c; c = t; }
+    if (b < d) { t = b; b = d; d = t; }
+    if (b < c) { t = b; b = c; c = t; }
+    return vec4<f32>(a, b, c, d);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = vec2<i32>(global_id.xy);
     let resolution = vec2<f32>(u.config.zw);
     if (pixel.x >= i32(resolution.x) || pixel.y >= i32(resolution.y)) { return; }
 
-    let fragCoord = vec2<f32>(pixel);
+    let fragCoord = vec2<f32>(pixel) + vec2<f32>(0.5);
     var uv = (fragCoord - vec2<f32>(0.5) * resolution) / resolution.y;
-    let uv01 = (fragCoord + 0.5) / resolution;
+    let uv01 = fragCoord / resolution;
     let time = u.config.x;
 
     // Audio (plasmaBuffer only) — bass/mids/treble
@@ -175,18 +228,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids   = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    // ── Audio transient burst envelope (rising-edge on bass, bounded decay) ──
-    // extraBuffer[133] = previous bass, [134] = burst envelope. Single writer.
-    let bufLen = arrayLength(&extraBuffer);
-    if (global_id.x == 0u && global_id.y == 0u && bufLen > 135u) {
-        let prevBass = extraBuffer[133];
-        var env = extraBuffer[134] * 0.90; // smooth exp decay
-        env = max(env, min((bass - prevBass) * 5.0, 2.0)); // rising-edge launch
-        extraBuffer[133] = bass;
-        extraBuffer[134] = clamp(env, 0.0, 2.0);
-    }
-    var burst = 0.0;
-    if (bufLen > 135u) { burst = extraBuffer[134]; }
+    // ── Stateless transient burst: bass punching above the mids bed ──
+    // (HEAD kept prevBass/envelope in extraBuffer[133/134], which the engine
+    //  re-uploads every frame, so the "rising edge" never existed.)
+    let burst = clamp((bass - mids * 0.7) * 3.0, 0.0, 2.0) * smoothstep(0.12, 0.45, bass);
 
     // Parameters (all four sliders LIVE)
     let rotation_speed = u.zoom_params.x;    // p1 — governs 4D spin AND motion energy
@@ -245,8 +290,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let n = get_normal(p, warpT, bass);
 
         if (mat_id == 1.0) {
-            // Tesseract Structure - Iridescent Quantum-Slick
-            col = iridescence(-rd, n, iridescence_shift + warpT * 0.05);
+            // Which 4D cell did we hit — the core tesseract or the W hive cell?
+            let p4 = tessP4(p, warpT);
+            let p4h = p4 - vec4<f32>(0.0, 0.0, 0.0, HIVE_W);
+            let inHive = sdBox4(p4h, HIVE_HALF, 0.08) < sdBox4(p4, 1.0, 0.1);
+            let q4 = select(p4, p4h, inHive);
+            let cellHalf = select(1.0, HIVE_HALF, inHive);
+
+            // Idea: W-depth film phase — the hit point's rotated W coordinate
+            // feeds the film, so cells sliding through W sweep the hue.
+            let wPhase = q4.w * 0.45;
+            col = iridescence(-rd, n, iridescence_shift + warpT * 0.05 + wPhase);
             // Diffuse lighting
             let light_dir = normalize(vec3<f32>(1.0, 2.0, -1.0));
             let diff = max(dot(n, light_dir), 0.0);
@@ -256,38 +310,86 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let glow_factor = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
             let huePhase = sin(warpT * 1.7 + p.y) * 0.5 + 0.5; // fast smooth hue cycle
             let glow_color = mix(vec3<f32>(0.0, 1.0, 1.0), vec3<f32>(1.0, 0.0, 1.0), huePhase) * tempTint;
-            col += glow_color * vec3<f32>(glow_factor * (1.2 + 2.0 * bass + 2.5 * burst));
+            col += glow_color * vec3<f32>(glow_factor * (1.2 + 0.7 * bass + 0.45 * burst));
+
+            // Carved vein grooves now exist on the surface: light their floors
+            let veinLit = 1.0 - smoothstep(0.0, 0.03, veinField(p, warpT));
+            col += glow_color * veinLit * (0.5 + bass * 0.35 + burst * 0.2);
+
+            // Idea: 4D hypercube wire glow. On the 3D slice, the edges are where
+            // two |q4| components sit at the half-size (the 24 square 2-faces);
+            // the 32 4D edges (three components at the half-size) pierce the
+            // slice as vertex sparks.
+            let sq = sort4desc(abs(q4));
+            let e2 = max(cellHalf - sq.y, 0.0);
+            let e3 = max(cellHalf - sq.z, 0.0);
+            let wire = exp(-e2 * 28.0);
+            let node = exp(-(e2 + e3) * 22.0);
+            let wireCol = mix(vec3<f32>(0.2, 1.0, 1.0), vec3<f32>(1.0, 0.25, 1.0), fract(wPhase + huePhase * 0.5));
+            col += wireCol * (wire * 1.4 + node * 3.0) * (0.8 + bass * 0.6 + burst * 0.5);
 
         } else if (mat_id == 2.0) {
             // Voxel Tearing — hot HDR glitch, flashes harder on transients
-            col = vec3<f32>(1.0, 0.2, 0.5) * vec3<f32>(1.5 + 4.0 * bass + 3.0 * burst);
+            col = vec3<f32>(1.0, 0.2, 0.5) * vec3<f32>(0.85 + 0.35 * bass + 0.3 * burst);
         }
     }
 
     // ── Sentinel Swarms: velocity-stretched SPEED STREAKS ─────────────
-    // Particles are elongated along their orbital (tangential) velocity and
-    // scrolled fast — smooth value noise only, so no per-frame hash strobe.
-    let rad = max(length(uv), 0.001);
-    let tangential = vec2<f32>(-uv.y, uv.x) / rad;
-    let radialDir = uv / rad;
+    // Idea: sentinels orbit the projected centres of the 8 cubic cells (±axis
+    // in the tesseract frame) and the hive cell — inverse 4D tumble, 4D→3D
+    // perspective by W distance from the slice, then the camera projection.
+    // (HEAD streamed them around the screen centre with dot(uv, tangential),
+    //  which is identically 0, so they were flickering concentric rings.)
     let swarmSpeed = 4.0 + rotation_speed * 4.0 + bass * 5.0;
-    let along = dot(uv, tangential) * 2.5 - warpT * swarmSpeed * 0.28;
-    let across = dot(uv, radialDir) * 12.0;
-    let n1 = vnoise3(vec3<f32>(along * 2.0, across, warpT * 0.7));
-    let n2 = vnoise3(vec3<f32>(along * 5.0 + 31.7, across * 2.0 + 11.3, warpT * 1.3));
-    let swarmNoise = n1 * 0.65 + n2 * 0.35;
     let thresh = 0.94 - swarm_density * 0.055;
-    let swarm_val = smoothstep(thresh, thresh + 0.06, swarmNoise);
+    let w_off = (u.zoom_config.z - 0.5) * 2.0;
+    var swarm_val = 0.0;
+    var bestR = 1e3;
+    var bestLoc = vec2<f32>(0.0);
+    var bestRk = 1.0;
+    for (var k = 0; k < 9; k++) {
+        var o = vec4<f32>(0.0, 0.0, 0.0, HIVE_W);
+        if (k < 8) {
+            let axis = k / 2;
+            let sgn = select(-1.0, 1.0, (k % 2) == 0);
+            o = vec4<f32>(0.0);
+            o[axis] = sgn;
+        }
+        let wc = tessInv(o, warpT);
+        let persp = 1.0 / (1.0 + 0.3 * abs(wc.w - w_off));
+        let rel = wc.xyz * persp - ro;
+        // world -> camera (transpose of camR on xz)
+        let lz = -camR[0][1] * rel.x + camR[1][1] * rel.z;
+        let lx = camR[0][0] * rel.x - camR[1][0] * rel.z;
+        if (lz < 0.2) { continue; }
+        let suv = vec2<f32>(lx, rel.y) / lz;
+        let rk = 0.75 * persp / lz; // projected cell radius
+        let loc = uv - suv;
+        let r = length(loc);
+        let rn = r / rk;
+        if (rn < bestR) { bestR = rn; bestLoc = loc; bestRk = rk; }
+        let fk = f32(k);
+        // Kepler-ish angular speed: inner orbits are faster
+        let a = atan2(loc.y, loc.x) - warpT * swarmSpeed * 0.07 / (rn + 0.35);
+        let n1 = vnoise3(vec3<f32>(cos(a) * 2.2 + fk * 5.1, sin(a) * 2.2, rn * 9.0 + warpT * 0.7));
+        let n2 = vnoise3(vec3<f32>(cos(a) * 5.5 + 31.7 + fk * 3.3, sin(a) * 5.5 + 11.3, rn * 18.0 + warpT * 1.3));
+        let swarmNoise = n1 * 0.65 + n2 * 0.35;
+        let orbitBand = exp(-rn * rn * 0.9);
+        swarm_val = max(swarm_val, smoothstep(thresh, thresh + 0.06, swarmNoise) * orbitBand);
+    }
 
     // Mask swarms to only appear near the structure using depth
     let depth_mask = 1.0 - smoothstep(0.0, 12.0, d);
-    let swarm_color = vec3<f32>(0.1, 1.0, 0.55) * tempTint * vec3<f32>(swarm_val * depth_mask * (2.2 + burst * 2.0));
+    let swarm_color = vec3<f32>(0.1, 1.0, 0.55) * tempTint * vec3<f32>(swarm_val * depth_mask * (2.2 + burst * 0.8));
     col += swarm_color;
 
-    // Idea 2 — sentinel pheromone lanes: radial hive traffic beside tangential streaks
-    let alongRad = dot(uv, radialDir) * 3.5 - warpT * swarmSpeed * 0.12;
-    let nPhero = vnoise3(vec3<f32>(alongRad, across * 0.35, warpT * 0.4));
-    let phero = smoothstep(0.90, 0.97, nPhero) * depth_mask * clamp(swarm_density * 0.15, 0.0, 0.8);
+    // Idea 2 — sentinel pheromone lanes: radial spokes streaming outward from
+    // the nearest projected cell centre, beside the orbiting streaks
+    let a0 = atan2(bestLoc.y, bestLoc.x);
+    let alongRad = bestR * 3.5 - warpT * swarmSpeed * 0.12;
+    let nPhero = vnoise3(vec3<f32>(cos(a0) * 6.0, sin(a0) * 6.0, alongRad));
+    let phero = smoothstep(0.90, 0.97, nPhero) * depth_mask * exp(-bestR * 0.5)
+              * clamp(swarm_density * 0.15, 0.0, 0.8);
     col += vec3<f32>(0.08, 0.55, 0.28) * tempTint * vec3<f32>(phero * (1.2 + burst));
     col += iridescence(vec3<f32>(0.0, 0.0, 1.0), normalize(vec3<f32>(uv, 1.0)), iridescence_shift + time * 0.1)
          * shock * (0.8 + treble * 1.2);
@@ -295,23 +397,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Atmospheric Fog — depth atmosphere, temperature-tinted shadows
     let fogCol = mix(vec3<f32>(0.02, 0.0, 0.05), vec3<f32>(0.05, 0.025, 0.0), tempMix * 0.5);
     col = mix(col, fogCol, 1.0 - exp(-0.02 * d * d));
+    col = max(col, vec3<f32>(0.0));
 
     // ── HDR velocity feedback trails (dataTextureC → dataTextureA) ────
-    // Fast 4D spins and swarm streaks leave decaying light-trails. History is
-    // clamped to HDR_CLAMP so speed can never blow up the feedback loop.
+    // Peak-hold: steady state equals the current frame (HEAD's col + 0.86·prev
+    // settled at ~7× and washed out); moving light leaves decaying trails.
+    // The decay is per 1/60 s, not per frame: texel (0,0).a carries fract(time)
+    // of the previous frame, so a slow frame (SwiftShader ~2 fps, a hitch, a
+    // re-seeked clock) does not peak-hold several distant poses of the spinning
+    // slice into one washed-out white union.
     let prev = textureLoad(dataTextureC, pixel, 0);
-    let trailDecay = 0.84 + clamp(rotation_speed, 0.0, 2.0) * 0.045; // faster spin → longer streaks
-    let history = min(prev.rgb * trailDecay, vec3<f32>(HDR_CLAMP));
-    var hdr = col + history;
+    let prevT = textureLoad(dataTextureC, vec2<i32>(0, 0), 0).a;
+    let dt = fract(fract(time) - prevT + 1.0); // wraps; a > 1 s gap reads short but still decays hard
+    let trailDecay = 0.78 + clamp(rotation_speed, 0.0, 2.0) * 0.04; // faster spin → longer streaks
+    let decay = pow(trailDecay, clamp(dt * 60.0, 1.0, 60.0));
+    let history = min(max(prev.rgb, vec3<f32>(0.0)) * decay, vec3<f32>(HDR_CLAMP));
+    var hdr = max(col, history);
     hdr = min(hdr, vec3<f32>(HDR_CLAMP));
 
-    // Real generated depth (raymarch hit distance, normalized)
-    let depthOut = clamp(d / 12.0, 0.0, 1.0);
-    textureStore(dataTextureA, pixel, vec4<f32>(hdr, depthOut));
+    // Real generated depth (near = 1, background = 0)
+    let depthOut = 1.0 - clamp(d / 12.0, 0.0, 1.0);
+    // A.a = depth, except texel (0,0) which stamps the frame clock for the trail dt
+    let aOut = select(depthOut, fract(time), pixel.x == 0 && pixel.y == 0);
+    textureStore(dataTextureA, pixel, vec4<f32>(hdr, aOut));
 
     // ── ACES tone map (linear HDR workflow, exposure rides audio) ─────
-    let exposure = 1.15 + mids * 0.25 + burst * 0.35 + treble * 0.1;
-    let outCol = acesToneMap(hdr * exposure);
+    // Audio gains stay modest: the quiet frame already fills most of the screen,
+    // so HEAD's 3-7x bass multipliers saturated the whole frame to white.
+    let exposure = 1.15 + mids * 0.1 + burst * 0.12 + treble * 0.05;
+    let outCol = acesToneMap(max(hdr * exposure, vec3<f32>(0.0)));
 
     // Semantic alpha: luminous intensity + structural hit, never flat 1.0
     let hitMask = 1.0 - f32(d > MAX_DIST);

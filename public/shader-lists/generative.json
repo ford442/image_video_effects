@@ -3236,7 +3236,7 @@
         "min": 0.1,
         "max": 1,
         "step": 0.01,
-        "mapping": "u.zoom_params.x"
+        "mapping": "zoom_params.x"
       },
       {
         "id": "spike_density",
@@ -3246,7 +3246,7 @@
         "min": 0,
         "max": 2,
         "step": 0.01,
-        "mapping": "u.zoom_params.y"
+        "mapping": "zoom_params.y"
       },
       {
         "id": "magnetic_strength",
@@ -3256,7 +3256,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "u.zoom_params.z"
+        "mapping": "zoom_params.z"
       },
       {
         "id": "bioluminescence",
@@ -3266,7 +3266,47 @@
         "min": 0,
         "max": 2,
         "step": 0.01,
-        "mapping": "u.zoom_params.w"
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Spike Density",
+        "default": 0.6,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Magnetic Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Bioluminescence",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
       }
     ]
   },
@@ -6301,7 +6341,10 @@
       "3d",
       "audio-reactive",
       "mouse-interactive",
-      "raymarching"
+      "raymarching",
+      "mouse-driven",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
       "organic",
@@ -11093,7 +11136,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "u.zoom_params.x"
+        "mapping": "zoom_params.x"
       },
       {
         "id": "nebula_density",
@@ -11103,7 +11146,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "u.zoom_params.y"
+        "mapping": "zoom_params.y"
       },
       {
         "id": "crystal_refraction",
@@ -11113,7 +11156,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "u.zoom_params.z"
+        "mapping": "zoom_params.z"
       },
       {
         "id": "core_pulse_speed",
@@ -11123,7 +11166,47 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "u.zoom_params.w"
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Folding Complexity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Nebula Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Crystal Refraction",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Core Pulse Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ]
   },
@@ -13346,7 +13429,9 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tone-mapping",
-      "depth-aware"
+      "depth-aware",
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
@@ -13356,7 +13441,7 @@
     "tags": [
       "generative"
     ],
-    "description": "An impossible, non-Euclidean hypercube hive populated by swarms of luminescent algorithmic sentinels, constantly unfolding and fracturing into new geometric dimensions driven by quantum noise and acoustic energy. Upgraded for fast motion: dual-plane 4D tumble, velocity-stretched sentinel speed-streaks, clamped HDR feedback light-trails, bass-transient flash bursts, audio-reactive color temperature, ACES tone mapping and real raymarched depth.",
+    "description": "An impossible, non-Euclidean hypercube hive populated by swarms of luminescent algorithmic sentinels, constantly unfolding and fracturing into new geometric dimensions driven by quantum noise and acoustic energy. Upgraded for fast motion: dual-plane 4D tumble, velocity-stretched sentinel speed-streaks, clamped HDR feedback light-trails, bass-transient flash bursts, audio-reactive color temperature, ACES tone mapping and real raymarched depth. Second pass: glowing hypercube wire edges, W-depth film hue and sentinels orbiting the projected 4D cells.",
     "workgroup_size": [
       16,
       16,
@@ -13440,6 +13525,8 @@
     "id": "gen-eldritch-tesseract-hive-mind",
     "url": "shaders/gen-eldritch-tesseract-hive-mind.wgsl",
     "features": [
+      "mouse-driven",
+      "audio-reactive",
       "fast-motion",
       "hdr-feedback-trails",
       "speed-streaks",
@@ -14203,7 +14290,7 @@
       "tessellation",
       "audio-reactive"
     ],
-    "description": "A hyper-dimensional avian entity forged from iridescent bismuth lattices, suspended in a zero-gravity quantum field. Upgraded with thin-film interference on the stepped bismuth shell, per-facet crystal color variation, 3-point lighting with soft shadows and AO, horn-like stepped ear tufts, a tessellated hopper-crystal inlay glowing in the void ether, ACES filmic tonemapping and real depth output.",
+    "description": "A hyper-dimensional avian entity forged from iridescent bismuth lattices, suspended in a zero-gravity quantum field. Upgraded with thin-film interference on the stepped bismuth shell, per-facet crystal color variation, 3-point lighting with soft shadows and AO, horn-like stepped ear tufts, a tessellated hopper-crystal inlay glowing in the void ether, ACES filmic tonemapping and real depth output. Second pass: hopper-terrace film steps, a stepped facial-disc ruff and lattice-snapped debris with hopper tips.",
     "complexity": "High",
     "features": [
       "mouse-driven",
@@ -14459,7 +14546,7 @@
       "click-reactive",
       "upgraded-rgba"
     ],
-    "description": "A majestic, hyper-organic cybernetic space-manta ray gliding through a dark-matter ocean, its translucent biomimetic wings rippling with shifting auroral temporal energy as it consumes deep acoustic bass frequencies.",
+    "description": "A majestic, hyper-organic cybernetic space-manta ray gliding through a dark-matter ocean, its translucent biomimetic wings rippling with shifting auroral temporal energy as it consumes deep acoustic bass frequencies. Second pass: a true manta planform with cephalic fins, spiral wingtip vortex wakes and a pale ventral side with glowing gill slits.",
     "parameters": [
       {
         "name": "Manta Speed",
@@ -14692,10 +14779,10 @@
         "id": "wingspan",
         "name": "Wingspan",
         "type": "range",
-        "min": 0.05,
-        "max": 0.5,
+        "min": 0.1,
+        "max": 1,
         "step": 0.01,
-        "default": 0.1,
+        "default": 0.2,
         "uniformMapping": {
           "struct": "zoom_params",
           "field": "x"
@@ -14705,13 +14792,39 @@
         "id": "plasma_intensity",
         "name": "Plasma Intensity",
         "type": "range",
-        "min": 0.1,
+        "min": 0,
         "max": 1,
-        "step": 0.05,
-        "default": 0.2,
+        "step": 0.01,
+        "default": 0.5,
         "uniformMapping": {
           "struct": "zoom_params",
           "field": "y"
+        }
+      },
+      {
+        "id": "chrono_fracture",
+        "name": "Chrono Fracture",
+        "type": "range",
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "default": 0.5,
+        "uniformMapping": {
+          "struct": "zoom_params",
+          "field": "z"
+        }
+      },
+      {
+        "id": "orbit_spin",
+        "name": "Orbit Spin",
+        "type": "range",
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "default": 0.5,
+        "uniformMapping": {
+          "struct": "zoom_params",
+          "field": "w"
         }
       }
     ],
@@ -14719,18 +14832,18 @@
       {
         "index": 0,
         "name": "Wingspan",
-        "default": 0.1,
-        "min": 0.05,
-        "max": 0.5,
+        "default": 0.2,
+        "min": 0.1,
+        "max": 1,
         "step": 0.01
       },
       {
         "index": 1,
         "name": "Plasma Intensity",
-        "default": 0.2,
-        "min": 0.1,
+        "default": 0.5,
+        "min": 0,
         "max": 1,
-        "step": 0.05
+        "step": 0.01
       },
       {
         "index": 2,
@@ -14743,9 +14856,9 @@
       {
         "index": 3,
         "name": "Orbit Spin",
-        "default": 0.1,
-        "min": 0.05,
-        "max": 0.5,
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
         "step": 0.01
       }
     ],
@@ -15415,9 +15528,10 @@
       "temporal-feedback",
       "depth-output",
       "aces-tonemap",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
-    "feedbackPacking": "A/C = final ACES display RGBA; exact fractal-coral persistence history"
+    "feedbackPacking": "A/C = final ACES display RGBA (alpha = branch coverage); exact fractal-coral persistence history"
   },
   {
     "name": "Ethereal Quantum Medusa",

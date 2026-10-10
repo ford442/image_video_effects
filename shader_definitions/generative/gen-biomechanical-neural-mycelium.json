@@ -14,7 +14,10 @@
     "3d",
     "audio-reactive",
     "mouse-interactive",
-    "raymarching"
+    "raymarching",
+    "mouse-driven",
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "tags": [
     "organic",
@@ -24,7 +27,11 @@
     "fractal",
     "3d"
   ],
-  "workgroup_size": [16, 16, 1],
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
   "params": [
     {
       "id": "networkDensity",

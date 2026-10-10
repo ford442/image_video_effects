@@ -4,7 +4,7 @@
   "tags": [
     "generative"
   ],
-  "description": "An impossible, non-Euclidean hypercube hive populated by swarms of luminescent algorithmic sentinels, constantly unfolding and fracturing into new geometric dimensions driven by quantum noise and acoustic energy. Upgraded for fast motion: dual-plane 4D tumble, velocity-stretched sentinel speed-streaks, clamped HDR feedback light-trails, bass-transient flash bursts, audio-reactive color temperature, ACES tone mapping and real raymarched depth.",
+  "description": "An impossible, non-Euclidean hypercube hive populated by swarms of luminescent algorithmic sentinels, constantly unfolding and fracturing into new geometric dimensions driven by quantum noise and acoustic energy. Upgraded for fast motion: dual-plane 4D tumble, velocity-stretched sentinel speed-streaks, clamped HDR feedback light-trails, bass-transient flash bursts, audio-reactive color temperature, ACES tone mapping and real raymarched depth. Second pass: glowing hypercube wire edges, W-depth film hue and sentinels orbiting the projected 4D cells.",
   "workgroup_size": [
     16,
     16,
@@ -56,6 +56,8 @@
   "id": "gen-eldritch-tesseract-hive-mind",
   "url": "shaders/gen-eldritch-tesseract-hive-mind.wgsl",
   "features": [
+    "mouse-driven",
+    "audio-reactive",
     "fast-motion",
     "hdr-feedback-trails",
     "speed-streaks",

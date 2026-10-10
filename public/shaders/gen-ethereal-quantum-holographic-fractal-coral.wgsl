@@ -3,35 +3,27 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: polyp mouth pits along branch axis; zooxanthellae symbiont pulse from exact C
+//  Upgraded: 2026-10-10
+//  Ideas: polyp mouth pits on the branches (fold space); zooxanthellae symbiont pulse
+//         on-branch from exact C; 2nd pass: polyp tentacle tufts at fold-trap tips
+//         swaying with mids; bass spawning bursts released from the tips into the glow
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // params mapped from UI
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: params mapped from UI
 
 const MAX_STEPS: i32 = 100;
 const MAX_DIST: f32 = 100.0;
 const SURF_DIST: f32 = 0.001;
+// Depth convention: near = high, miss = 0; scene spans ~12 units from camera.
+const DEPTH_FAR: f32 = 12.0;
+
+// Per-invocation side outputs of map() (last evaluation wins): distance to
+// the nearest tentacle tuft and to the nearest spawning particle.
+var<private> gTuft: f32 = 1e3;
+var<private> gBurst: f32 = 1e3;
+var<private> gHitDist: f32 = 1e3;
 
 fn rot(a: f32) -> mat2x2<f32> {
     let s = sin(a);
@@ -87,7 +79,9 @@ fn map(p_in: vec3<f32>) -> f32 {
 
     // Mouse attraction
     let mouse = u.zoom_config.yz * 2.0 - 1.0; // center mapped
-    p = p - vec3<f32>(mouse.x * 2.0, -mouse.y * 2.0, 0.0) * exp(-length(p) * 0.5);
+    // The camera basis (cu ≈ -x, rd.y = +uv.y with rows top-down) shows the
+    // world rotated 180°, so both axes are negated to pull toward the pointer.
+    p = p - vec3<f32>(-mouse.x * 2.0, mouse.y * 2.0, 0.0) * exp(-length(p) * 0.5);
 
     // KIFS setup
     var d = 1000.0;
@@ -96,6 +90,19 @@ fn map(p_in: vec3<f32>) -> f32 {
     let iterations = i32(clamp(floor(u.zoom_params.x) + floor(audioEnergy * 2.0), 1.0, 10.0));
 
     let fold = vec3<f32>(1.5, 1.2, 1.5) + vec3<f32>(sin(t), cos(t * 0.8), sin(t * 1.2)) * 0.1;
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let tt = u.config.x;
+
+    // Bass spawning bursts: hashed 1.4 s cycles, stateless. Each cycle picks
+    // fresh launch directions; particles travel outward from the tuft tips
+    // and are only lit while bass is up.
+    let burstRate = 0.7;
+    let burstPhase = fract(tt * burstRate);
+    let burstEpoch = floor(tt * burstRate);
+
+    var tuft = 1e3;
+    var burst = 1e3;
 
     for (var i = 0; i < iterations; i++) {
         p = abs(p);
@@ -106,6 +113,35 @@ fn map(p_in: vec3<f32>) -> f32 {
 
         p = vec3<f32>(rotMatrix1 * p.xy, p.z);
         p = vec3<f32>(p.x, rotMatrix2 * p.yz);
+
+        // Idea: polyp tentacle tufts — a small cluster of swaying spheres at
+        // the fold-trap tip (the folded-space point the branches reach toward),
+        // replicated by the KIFS symmetry onto every branch end. Mids widen
+        // the sway.
+        let fi = f32(i);
+        let sway = vec3<f32>(sin(tt * 1.7 + fi * 1.3), 0.0, cos(tt * 1.3 + fi * 2.1)) * (0.06 + mids * 0.14);
+        let tip = vec3<f32>(0.0, 0.62, 0.0) + sway;
+        for (var k = 0; k < 3; k++) {
+            let ang = f32(k) * 2.094 + tt * 0.4;
+            let lean = vec3<f32>(cos(ang), 0.0, sin(ang)) * 0.11 + vec3<f32>(0.0, 0.08, 0.0);
+            let tentacleTip = tip + lean + sway * 0.6;
+            // Tapered tentacle (segment tip..tentacleTip) capped by a bead.
+            let pa = p - tip;
+            let ba = tentacleTip - tip;
+            let h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+            let stalk = length(pa - ba * h) - mix(0.035, 0.015, h);
+            let bead = length(p - tentacleTip) - 0.04;
+            tuft = min(tuft, min(stalk, bead) / scale);
+        }
+
+        // Idea: bass spawning bursts (particles leave the tip). The glow is
+        // gated by smoothstep(0.2, 0.6, bass), so skip the loop below that.
+        for (var k = 0; k < select(0, 3, bass > 0.2); k++) {
+            let hk = hash3(vec3<f32>(burstEpoch, f32(k) * 7.3, fi * 3.1));
+            let dir = normalize(hk + vec3<f32>(0.0, 1.2, 0.0));
+            let pos = tip + dir * (0.1 + burstPhase * 0.9);
+            burst = min(burst, (length(p - pos) - 0.02) / scale);
+        }
 
         let r2 = dot(p, p);
         let s = max(0.5, 2.0 / clamp(r2, 0.1, 1.0));
@@ -122,13 +158,17 @@ fn map(p_in: vec3<f32>) -> f32 {
 
     d = smin(baseGeom, baseGeom + organicNoise, 0.2);
 
-    // Polyp mouth pits along branch axis (tube SDF minus)
-    let axisDir = normalize(vec3<f32>(p_in.x, p_in.y * 0.45, p_in.z + 0.001));
-    let axial = dot(p_in, axisDir);
-    let radial = p_in - axisDir * axial;
-    let pitCell = fract(axial * 2.8 + t * 0.15) - 0.5;
-    let pitSDF = length(vec2<f32>(length(radial), pitCell * 1.6)) - 0.055;
-    d = max(d, -pitSDF * 0.4);
+    // Polyp mouth pits, carved in fold space so they sit on the branches:
+    // a lattice of small spheres in the final folded frame (where the branch
+    // surface is the |p| = 1.2 shell), scaled back to world units.
+    let pitCell = fract(p * 2.5) - 0.5;
+    let pitSDF = (length(pitCell) / 2.5 - 0.07) / scale;
+    d = max(d, -pitSDF);
+
+    // Tufts join the branch tips; side outputs for shading/glow.
+    d = smin(d, tuft, 0.02);
+    gTuft = tuft;
+    gBurst = burst;
 
     return d;
 }
@@ -164,6 +204,8 @@ fn render(ro: vec3<f32>, rd: vec3<f32>) -> vec4<f32> {
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
     let audioEnergy = bass;
+    var tipGlow = 0.0;
+    var burstGlow = 0.0;
 
     for (var i = 0; i < MAX_STEPS; i++) {
         p = ro + rd * tDist;
@@ -179,6 +221,10 @@ fn render(ro: vec3<f32>, rd: vec3<f32>) -> vec4<f32> {
         tDist = tDist + d;
         // Accumulate volumetric glow based on proximity and audio
         glow = glow + (0.01 / (0.01 + abs(d))) * (0.1 + audioEnergy * 0.5);
+        // Glowing tentacle tips and bass spawning particles feed the same
+        // scattering accumulator.
+        tipGlow = tipGlow + 0.004 / (0.004 + max(gTuft, 0.0)) * (0.05 + mids * 0.1);
+        burstGlow = burstGlow + 0.003 / (0.003 + max(gBurst, 0.0)) * smoothstep(0.2, 0.6, bass);
     }
 
     if (tDist < MAX_DIST) {
@@ -200,7 +246,14 @@ fn render(ro: vec3<f32>, rd: vec3<f32>) -> vec4<f32> {
 
         // Audio reactive pulsing from the interior
         col = col + vec3<f32>(0.2, 0.8, 1.0) * audioEnergy * maxGlow * fresnel;
+
+        // Tentacle tuft surface: pale polyp flesh with glowing beads.
+        let onTuft = 1.0 - smoothstep(0.0, 0.01, gTuft - d);
+        col = mix(col, vec3<f32>(1.0, 0.75, 0.9) * (0.6 + 0.6 * maxGlow), onTuft * 0.7);
     }
+    // Volumetric tip glow (pink-white) and spawning particles (warm gold).
+    col = col + vec3<f32>(1.0, 0.55, 0.85) * min(tipGlow, 6.0) * 0.05 * maxGlow;
+    col = col + vec3<f32>(1.0, 0.85, 0.45) * min(burstGlow, 8.0) * 0.08 * (0.5 + maxGlow);
 
     // Add volumetric glow (scattering)
     col = col + vec3<f32>(0.1 + treble * 0.15, 0.5, 0.8) * glow * 0.05 * maxGlow;
@@ -212,8 +265,9 @@ fn render(ro: vec3<f32>, rd: vec3<f32>) -> vec4<f32> {
     // Background fog / attenuation
     col = mix(col, vec3<f32>(0.01, 0.02, 0.05), 1.0 - exp(-0.02 * tDist));
 
-    let coverage = select(0.0, clamp(1.0 - tDist / MAX_DIST, 0.0, 1.0), tDist < MAX_DIST);
-    return vec4<f32>(max(col, vec3<f32>(0.0)), coverage);
+    let hitMask = select(0.0, 1.0, tDist < MAX_DIST);
+    gHitDist = tDist;
+    return vec4<f32>(max(col, vec3<f32>(0.0)), hitMask);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -225,7 +279,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         return;
     }
 
-    let uv = (fragCoord * 2.0 - res) / min(res.x, res.y);
+    let uv = ((fragCoord + 0.5) * 2.0 - res) / min(res.x, res.y);
 
     // Camera setup
     let camTime = u.config.x * 0.1;
@@ -244,12 +298,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let previous = textureLoad(dataTextureC, coord, 0);
     var rawColor = rendered.rgb;
 
-    // Zooxanthellae symbiont pulse in branch interior from exact C
+    // Zooxanthellae symbiont pulse, on-branch only (coverage mask): a green
+    // breathing pulse whose memory is the exact-C green channel at low gain
+    // (display RGB never re-enters the HDR path with gain >= 1).
     let bass = plasmaBuffer[0].x;
     let maxGlow = u.zoom_params.z;
-    let volumeVeil = 1.0 - rendered.a;
-    let symPulse = mix(previous.rgb * 0.94, vec3<f32>(0.25, 0.85, 0.32), 0.12 + bass * 0.24);
-    rawColor += symPulse * volumeVeil * smoothstep(0.0, 0.55, volumeVeil) * maxGlow * 0.32;
+    let coverage = rendered.a;
+    let breath = 0.5 + 0.5 * sin(u.config.x * 1.6 - gHitDist * 2.5);
+    let symMemory = clamp(previous.g, 0.0, 1.0) * 0.25;
+    let symPulse = vec3<f32>(0.25, 0.85, 0.32) * (0.12 + bass * 0.24 + symMemory) * (0.4 + 0.6 * breath);
+    rawColor += symPulse * coverage * maxGlow * 0.32;
 
     let rippleCount = min(i32(u.config.y), 50);
     for (var i = 0; i < rippleCount; i++) {
@@ -257,16 +315,19 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let age = u.config.x - ripple.z;
         if (age > 0.0 && age < 2.5) {
             let radius = age * (0.25 + u.zoom_params.w * 0.08);
-            let ring = exp(-abs(distance(fragCoord / res, ripple.xy) - radius) * 90.0) * exp(-age * 1.6) * ripple.w;
+            // ripple.w is always 0 (padding) — age alone fades the ring.
+            let ring = exp(-abs(distance((fragCoord + 0.5) / res, ripple.xy) - radius) * 90.0) * exp(-age * 1.6);
             rawColor += vec3<f32>(0.15, 0.55, 1.0) * ring;
         }
     }
 
-    let mapped = acesToneMap(rawColor * 1.25);
+    let mapped = acesToneMap(max(rawColor, vec3<f32>(0.0)) * 1.25);
     let col = mix(mapped, previous.rgb, 0.08);
-    let alpha = clamp(max(rendered.a, previous.a * 0.9), 0.0, 1.0);
+    // Semantic alpha: branch coverage, with a short exact-C persistence trail.
+    let alpha = clamp(max(coverage, previous.a * 0.9), 0.0, 1.0);
     let packed = vec4<f32>(col, alpha);
-    let finalDepth = clamp(1.0 - rendered.a, 0.0, 1.0);
+    // Near = high, miss = 0 (catalog convention).
+    let finalDepth = select(0.0, clamp(1.0 - gHitDist / DEPTH_FAR, 0.0, 1.0), coverage > 0.5);
 
     textureStore(writeTexture, coord, packed);
     textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 1.0));
