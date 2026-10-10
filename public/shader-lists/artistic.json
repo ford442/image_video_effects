@@ -1012,9 +1012,10 @@
     "id": "chromatic-crawler",
     "name": "Chromatic Crawler",
     "url": "shaders/chromatic-crawler.wgsl",
-    "description": "Smooth hue-rotating regions that crawl across the screen with Voronoi-based patterns, temporal feedback trails, and alpha translucency blending.",
+    "description": "Smooth hue-rotating regions that crawl across the screen with Voronoi-based patterns, temporal feedback trails, and alpha translucency blending. Cell membranes glow in the neighbour's wavelength, trails stream behind the crawl, and the cursor joins it.",
     "features": [
       "mouse-driven",
+      "audio-reactive",
       "upgraded-rgba"
     ],
     "tags": [
@@ -1061,7 +1062,7 @@
     "name": "Chromatic Focus",
     "category": "artistic",
     "url": "shaders/chromatic-focus.wgsl",
-    "description": "Breathing spectral focus keeps the cursor region crisp while the outer image blooms into colorful chromatic bokeh. Enhanced with OkLab mixing, iridescent thin-film interference, Mie scattering haze, split-tone grading, and ACES filmic tone mapping.",
+    "description": "Breathing spectral focus keeps the cursor region crisp while the outer image blooms into chromatic bokeh: highlights swell into rimmed discs that turn cat's-eye toward the frame edges, with magenta/green fringes keyed to the depth under the cursor. OkLab split-tone, thin-film halo, ACES.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -1213,9 +1214,11 @@
     "id": "chromatic-folds",
     "name": "Chromatic Folds",
     "url": "shaders/chromatic-folds.wgsl",
-    "description": "Geometric color folding and warping effects.",
+    "description": "Geometric color folding and warping effects. Visible fold creases at the pivot hue, history re-folded each frame into nested bands, and the cursor pinches the pivot to the hue beneath it; bass breathes the fold.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -1260,7 +1263,7 @@
     "id": "chromatic-infection",
     "name": "Chromatic Infection",
     "url": "shaders/chromatic-infection.wgsl",
-    "description": "Strong colours spread like a living organism, infecting neutral regions with organic, pulsing tendrils. Watch vibrant hues consume the dull!",
+    "description": "Strong colours spread like a living organism, infecting neutral regions with pulsing tendrils. Infection now creeps outward frame by frame along the veins, with a hot inflamed front and scarred older tissue; hold the mouse to plant a patient zero. Bass throbs the veins.",
     "params": [
       {
         "id": "spreadSpeed",
@@ -1296,7 +1299,9 @@
       "temporal-persistence",
       "colour-masking",
       "organic-growth",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -1354,7 +1359,7 @@
     "id": "chromatic-manifold",
     "name": "Chromatic Manifold",
     "url": "shaders/chromatic-manifold.wgsl",
-    "description": "4D topological color manifold with HDR tears, temporal persistence, and depth-driven curvature.",
+    "description": "4D topological color manifold with HDR tears, temporal persistence, and depth-driven curvature. Iso-hue contour lines map the manifold; shadow colour debt shows as a complementary ghost repaid over frames; bass pushes the warp.",
     "tags": [
       "filter",
       "image-processing",
@@ -1363,9 +1368,9 @@
       "reactive"
     ],
     "features": [
-      "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -1414,7 +1419,7 @@
     "id": "chromatic-phase-inversion",
     "name": "Chromatic Phase Inversion",
     "url": "shaders/chromatic-phase-inversion.wgsl",
-    "description": "Individual color channels are inverted by a slowly evolving temporal phase, causing color ghosts that drift ahead or behind the true image in surreal independent waves. Audio reactivity pulses phase speed and ghost offset with the beat.",
+    "description": "Individual color channels are inverted by a slowly evolving temporal phase, causing color ghosts that drift ahead or behind the true image. Sabattier-style Mackie lines flare on edges mid-inversion; the cursor phase-locks a coherent spot (hold for a full negative). Bass pulses phase and ghosts.",
     "tags": [
       "chromatic",
       "phase",
@@ -1428,7 +1433,9 @@
     ],
     "features": [
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "author": "AI",
     "params": [
@@ -3168,7 +3175,7 @@
     "id": "iridescent-oil-slick",
     "name": "Iridescent Oil Slick",
     "url": "shaders/iridescent-oil-slick.wgsl",
-    "description": "Mesmerizing thin-film interference simulation that recreates the rainbow patterns of oil on water or soap bubbles. Features flowing organic motion, hexagonal bubble cells, and mouse-reactive disturbances.",
+    "description": "Thin-film interference of oil on water, integrated across the visible spectrum: black film where it thins, gold-magenta-blue first-order bands, pastel thick film. Flowing motion, Marangoni cell ridges, and a finger push (hold the mouse) that clears a black disc which heals with the flow.",
     "tags": [
       "iridescent",
       "oil",
@@ -3182,7 +3189,10 @@
       "stylized"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "temporal-persistence",
+      "upgraded-rgba"
     ],
     "author": "Kimi",
     "params": [
@@ -3471,7 +3481,9 @@
       "artistic"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "author": "AI",
     "params": [
@@ -7151,7 +7163,7 @@
     "id": "vortex-prism",
     "name": "Vortex Prism",
     "url": "shaders/vortex-prism.wgsl",
-    "description": "Twists the image around the mouse cursor, separating colors like a prism.",
+    "description": "Twists the image around the mouse cursor, fanning colors into smooth rainbow arcs like a prism. Smoothness sets a calm Rankine eye, shear caustics streak the outer band, and bass tightens the twist.",
     "params": [
       {
         "id": "twist",
@@ -7186,7 +7198,8 @@
       "mouse-driven",
       "distortion",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",

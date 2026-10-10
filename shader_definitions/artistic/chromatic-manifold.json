@@ -2,7 +2,7 @@
   "id": "chromatic-manifold",
   "name": "Chromatic Manifold",
   "url": "shaders/chromatic-manifold.wgsl",
-  "description": "4D topological color manifold with HDR tears, temporal persistence, and depth-driven curvature.",
+  "description": "4D topological color manifold with HDR tears, temporal persistence, and depth-driven curvature. Iso-hue contour lines map the manifold; shadow colour debt shows as a complementary ghost repaid over frames; bass pushes the warp.",
   "tags": [
     "filter",
     "image-processing",
@@ -11,9 +11,9 @@
     "reactive"
   ],
   "features": [
-    "mouse-driven",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "upgraded-rgba"
   ],
   "params": [
     {
