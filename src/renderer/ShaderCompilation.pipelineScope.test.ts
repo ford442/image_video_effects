@@ -6,6 +6,7 @@
 
 import {
   compileShader,
+  createComputePipelineChecked,
   createComputePipelineWithValidationScope,
   FALLBACK_WGSL,
 } from './ShaderCompilation';
@@ -127,8 +128,11 @@ describe('compileShader validation-scope fail-soft', () => {
 
   it('does not cache an invalid pipeline; uses fallback when fallback scope is clean', async () => {
     const device = makeDevice({
+      // Pops in order: module, pipeline, fallback module, fallback pipeline.
       popSequence: [
+        null,
         makeValidationError('layout RGBA32Float vs shader RGBA16Float'),
+        null,
         null,
       ],
     });
@@ -153,7 +157,7 @@ describe('compileShader validation-scope fail-soft', () => {
 
   it('skips the slot when requested and fallback pipelines both fail Validation', async () => {
     const err = makeValidationError('invalid pipeline');
-    const device = makeDevice({ popSequence: [err, err] });
+    const device = makeDevice({ popSequence: [null, err, null, err] });
     const pipelines = new Map<string, GPUComputePipeline>();
     const hashes = new Map<string, string>();
     const wgs = new Map<string, { x: number; y: number }>();
@@ -170,6 +174,25 @@ describe('compileShader validation-scope fail-soft', () => {
     expect(ok).toBe(false);
     expect(pipelines.size).toBe(0);
     expect(reported.some((e) => e.type === 'shader-compile' && /skipped/i.test(e.message))).toBe(true);
+  });
+
+  it('treats a shader-module validation error as a compile failure without building its pipeline (#1395)', async () => {
+    const device = makeDevice({ popSequence: [makeValidationError('unresolved identifier'), null, null] });
+    const pipelines = new Map<string, GPUComputePipeline>();
+    const ok = await compileShader(
+      device,
+      {} as GPUPipelineLayout,
+      'broken',
+      VALID_WGSL,
+      pipelines,
+      new Map(),
+      new Map(),
+      'rgba32float',
+    );
+    expect(ok).toBe(true); // fallback pass-through
+    expect(device.createComputePipeline).toHaveBeenCalledTimes(1);
+    expect(device.pushErrorScope).toHaveBeenCalledWith('validation');
+    expect(reported.some((e) => e.type === 'shader-compile')).toBe(true);
   });
 
   it('still compiles FALLBACK_WGSL storage decls onto the allocated color format', () => {
@@ -192,5 +215,44 @@ describe('reportError banner wiring', () => {
     setRendererErrorHandler((error) => {
       console.error(`[WebGPU Renderer] ${error.type}: ${error.message}`);
     });
+  });
+});
+
+describe('createComputePipelineChecked (#1314 async pipelines)', () => {
+  const descriptor = {
+    layout: {} as GPUPipelineLayout,
+    compute: { module: {} as GPUShaderModule, entryPoint: 'main' },
+  };
+
+  it('prefers createComputePipelineAsync and skips the error scope', async () => {
+    const pipeline = { label: 'async' } as unknown as GPUComputePipeline;
+    const device = {
+      createComputePipelineAsync: jest.fn(async () => pipeline),
+      createComputePipeline: jest.fn(),
+      pushErrorScope: jest.fn(),
+      popErrorScope: jest.fn(),
+    } as unknown as GPUDevice;
+    const res = await createComputePipelineChecked(device, descriptor);
+    expect(res).toEqual({ pipeline, error: null });
+    expect(device.createComputePipeline).not.toHaveBeenCalled();
+    expect(device.pushErrorScope).not.toHaveBeenCalled();
+  });
+
+  it('maps a GPUPipelineError rejection to a null pipeline', async () => {
+    const device = {
+      createComputePipelineAsync: jest.fn(async () => {
+        throw new Error('GPUPipelineError: storage format mismatch');
+      }),
+    } as unknown as GPUDevice;
+    const res = await createComputePipelineChecked(device, descriptor);
+    expect(res.pipeline).toBeNull();
+    expect(res.error?.message).toContain('storage format mismatch');
+  });
+
+  it('falls back to the synchronous create + validation scope', async () => {
+    const device = makeDevice({ popSequence: [makeValidationError('bad layout')] });
+    const res = await createComputePipelineChecked(device, descriptor);
+    expect(res.pipeline).toBeNull();
+    expect(device.pushErrorScope).toHaveBeenCalledWith('validation');
   });
 });

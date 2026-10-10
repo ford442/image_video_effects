@@ -2,7 +2,7 @@
   "id": "spec-bicubic-crystal",
   "name": "Bicubic Crystal",
   "url": "shaders/spec-bicubic-crystal.wgsl",
-  "description": "Bicubic Catmull-Rom crystalline distortion. Full 16-sample bicubic interpolation for perfectly smooth magnification, applied to prismatic crystalline faceting with chromatic separation.",
+  "description": "Bicubic crystal distortion: square wedge facets resampled with Catmull-Rom, Fresnel seams and dispersion along each facet's tilt.",
   "tags": [
     "bicubic",
     "catmull-rom",
@@ -56,39 +56,43 @@
     }
   ],
   "updated": true,
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Crystal Scale",
-      "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Crystal Scale",
+          "default": 0.3,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Distortion",
+          "default": 0.3,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Facet Sharpness",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Chromatic Sep",
+          "default": 0.1,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
     },
-    {
-      "index": 1,
-      "name": "Distortion",
-      "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Facet Sharpness",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Chromatic Sep",
-      "default": 0.1,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    }
-  ],
-  "target_rating": 4.7
+    "target_rating": 4.7
+  }
 }

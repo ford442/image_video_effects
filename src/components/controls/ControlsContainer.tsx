@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useShaderRatings } from '../../services/ShaderRatingIntegration';
 import { LiveStreamPanel } from '../LiveStreamPanel';
-import { RendererBackendPanel } from './panels/RendererBackendPanel';
 import { ParamSlidersPanel } from './panels/ParamSlidersPanel';
 import { SlotStackPanel } from './panels/SlotStackPanel';
 import { InputSourcePanel } from './panels/InputSourcePanel';
@@ -19,10 +18,13 @@ import { VideoSourcePanel } from './panels/VideoSourcePanel';
 import { WebcamSuggestionsPanel } from './panels/WebcamSuggestionsPanel';
 import { GenerativeSourcePanel } from './panels/GenerativeSourcePanel';
 import { useLiveControl } from './hooks/useLiveControl';
+import { useOscControl } from './hooks/useOscControl';
+import { useSetRecorder } from '../../hooks/useSetRecorder';
 import { useCoordinateNavigation } from './hooks/useCoordinateNavigation';
 import { useShaderMenuOptions } from './hooks/useShaderMenuOptions';
 import { useAiVjAutoTransition } from './hooks/useAiVjAutoTransition';
 import type { ControlsProps } from './types';
+import { defaultSlotParams } from '../../app/constants/defaultSlotParams';
 import '../../styles/gold-glass-theme.css';
 
 export const ControlsContainer: React.FC<ControlsProps> = ({
@@ -143,6 +145,17 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
         autoTransitionMode: autoTransition.autoTransitionMode,
     });
 
+    const osc = useOscControl({
+        modes,
+        availableModes,
+        setMode,
+        onSetSlotParam,
+        onTriggerNextTransition,
+        setAudioReactiveAmount,
+    });
+
+    const recorder = useSetRecorder({ modes, slotParams, setMode, onSetSlotParam });
+
     const { shaders: ratedShaders, rateShader } = useShaderRatings();
     const { ratingMap, slotMenuOptions, generativeMenuOptions } = useShaderMenuOptions({
         availableModes,
@@ -151,8 +164,8 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
         ratedShaders,
     });
 
-    const currentMode = modes[activeSlot];
-    const currentParams = slotParams[activeSlot];
+    const currentMode = modes[activeSlot] ?? 'none';
+    const currentParams = slotParams[activeSlot] ?? defaultSlotParams;
     const currentShaderEntry = availableModes.find(m => m.id === currentMode);
     const currentCoordinate = getShaderCoordinate(currentMode);
 
@@ -186,6 +199,8 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                 activeSlot={activeSlot}
                 setActiveSlot={setActiveSlot}
                 liveControl={liveControl}
+                osc={osc}
+                recorder={recorder}
                 isAiVjMode={isAiVjMode}
                 autoTransitionOpen={autoTransition.autoTransitionOpen}
                 setAutoTransitionOpen={autoTransition.setAutoTransitionOpen}
@@ -235,13 +250,6 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                     maxPassesPerFrame={performanceHud.maxPassesPerFrame}
                     historyLayers={performanceHud.historyLayers}
                     workingSizeCap={performanceHud.workingSizeCap}
-                />
-            )}
-
-            {onSwitchRenderer && activeRendererType && (
-                <RendererBackendPanel
-                    activeRendererType={activeRendererType}
-                    onSwitchRenderer={onSwitchRenderer}
                 />
             )}
 

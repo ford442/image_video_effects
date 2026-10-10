@@ -54,5 +54,12 @@
     "quasicrystal"
   ],
   "updated": true,
-  "updatedParams": ["chaos", "aberration"]
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        "chaos",
+        "aberration"
+      ]
+    }
+  }
 }

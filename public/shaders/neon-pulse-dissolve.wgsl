@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Neon Pulse Dissolve
 //  Category: image
-//  Features: audio-reactive, upgraded-rgba, semantic-alpha
+//  Features: audio-reactive, mouse-driven, upgraded-rgba, semantic-alpha
 //  Complexity: Medium
-//  Created: 2026-05-30
+//  Upgraded: 2026-10-05
+//  Ideas: neon tube core + halo; neon threshold fringe; failing-tube flicker
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Detects edges in the source, overlays glowing neon halos that
 //  pulse with audio bass, and dissolves the image interior into
@@ -62,6 +64,10 @@ fn neonColor(angle: f32, sat: f32) -> vec3<f32> {
     return rgb + vec3<f32>(1.0 - sat) * 0.5;
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
@@ -103,33 +109,61 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let age = time - ripple.z;
         if (age >= 0.0 && age < 1.8) {
             let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
-            clickFront += smoothstep(0.025, 0.0, abs(length(delta) - age * 0.46)) * exp(-age * 1.5);
+            clickFront += (1.0 - smoothstep(0.0, 0.025, abs(length(delta) - age * 0.46))) * exp(-age * 1.5);
         }
     }
     edge = clamp(edge + scanRunner * (0.08 + treble * 0.16) + clickFront * 0.7 + mouseEnergy * 0.2, 0.0, 2.0);
 
+    // Idea 1: neon tube core + halo — a 1-px Sobel tap marks the glass
+    // centre of each tube; it burns near-white inside the wide coloured
+    // halo that GlowRadius spreads.
+    let coreEdge  = clamp(sobel(uv, ps) * edgeSharpness, 0.0, 1.0);
+    let core      = smoothstep(0.55, 0.95, coreEdge) * clamp(edge, 0.0, 1.0);
+
+    // Idea 3: failing-tube flicker — coarse sign "segments" occasionally
+    // stutter dark like a neon tube on a tired transformer; treble raises
+    // the stutter rate. Only the neon light flickers, not the photo.
+    // Fixed tick clock (time * audio-scaled rate re-rolls every frame once
+    // time is large); treble raises the stutter odds per tick instead.
+    let segCell   = floor(uv * vec2<f32>(aspect, 1.0) * 9.0);
+    let segClock  = floor(time * 8.0);
+    let segSeed   = vec2<f32>(fract(segClock * 0.1317) * 97.0, fract(segClock * 0.0719) * 61.0);
+    let stutter   = step(hash(segCell + segSeed), 0.035 + treble * 0.08);
+    let flick     = 1.0 - stutter * (0.55 + 0.3 * hash(segCell + segSeed.yx));
+
     // Neon edge colour cycles with position + time
     let angle     = atan2(uv.y - 0.5, uv.x - 0.5) + time * 0.5 + bass * PI;
     let neonCol   = neonColor(angle, neonSat);
-    let neonGlow  = neonCol * edge * (1.0 + bass * 1.5);
+    let tubeCore  = mix(neonCol, vec3<f32>(1.0, 0.98, 0.95), 0.75) * core * 0.65 * (1.0 + bass);
+    let neonGlow  = (neonCol * edge * (1.0 + bass * 1.5) + tubeCore) * flick;
 
     // Interior dissolve into colour noise
     let noiseUV   = uv * 18.0 + vec2<f32>(time * 3.2, time * 1.9);
     let n         = valueNoise(noiseUV);
     let noiseCol  = neonColor(n * 2.0 * PI + time, neonSat * 0.7);
     let dissolve  = dissolveAmt * (0.2 + mid * 0.5 + treble * 0.5 + scanRunner * 0.35 + mouseEnergy * 0.45) * (1.0 - clamp(edge, 0.0, 1.0));
-    let interior  = mix(src.rgb, noiseCol, clamp(dissolve * 2.0, 0.0, 1.0));
+    var interior  = mix(src.rgb, noiseCol, clamp(dissolve * 2.0, 0.0, 1.0));
 
-    // Blend: edges overlay on interior
-    var finalRGB = interior + neonGlow;
-    finalRGB = clamp(finalRGB, vec3<f32>(0.0), vec3<f32>(1.5));
+    // Idea 2: neon threshold fringe — a coarse drifting field is cut at the
+    // same dissolve level: cells under it are fully eaten into colour noise
+    // and the cut contour itself is drawn as a thin neon line.
+    let level     = clamp(dissolve * 2.0, 0.0, 1.0);
+    let levelOn   = smoothstep(0.0, 0.03, level);
+    let cellField = valueNoise(uv * vec2<f32>(aspect, 1.0) * 7.0 + vec2<f32>(time * 0.35, -time * 0.22));
+    let eaten     = (1.0 - smoothstep(level - 0.02, level + 0.02, cellField)) * levelOn;
+    let fringe    = (1.0 - smoothstep(0.0, 0.025, abs(cellField - level))) * levelOn;
+    interior      = mix(interior, noiseCol, eaten);
+    let fringeCol = neonCol * fringe * 0.9 * (1.0 + bass) * flick;
 
-    // Semantic alpha: driven by edge + original alpha
-    let alpha = clamp(src.a + edge * 0.8, 0.0, 1.0);
+    // Blend: edges overlay on interior, then ACES on display RGB
+    var finalRGB = interior + neonGlow + fringeCol;
+    finalRGB = acesToneMap(max(finalRGB, vec3<f32>(0.0)));
+
+    // Semantic alpha: eaten interior loses coverage, neon light keeps it
+    let alpha = clamp(src.a * (1.0 - eaten * 0.35 - level * 0.2) + edge * 0.8 + core * 0.2 + fringe * 0.4, 0.0, 1.0);
 
     let outColor = vec4<f32>(finalRGB, alpha);
     textureStore(writeTexture, coord, outColor);
-    textureStore(writeDepthTexture, coord, vec4<f32>(edge, 0.0, 0.0, 1.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(clamp(edge + core * 0.25, 0.0, 1.0), 0.0, 0.0, 1.0));
     textureStore(dataTextureA, coord, outColor);
-    textureStore(dataTextureB, coord, vec4<f32>(edge, bass, mid, treble));
 }

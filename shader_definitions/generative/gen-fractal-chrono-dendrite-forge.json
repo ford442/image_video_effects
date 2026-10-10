@@ -1,7 +1,6 @@
 {
   "id": "gen-fractal-chrono-dendrite-forge",
   "name": "Fractal Chrono-Dendrite Forge",
-  "author": "Jules",
   "description": "A hyper-intricate procedural branching structure simulating crystalline growth and decay through a spacetime distortion field, rendered with a bismuth-iridescent glass aesthetic. Upgraded with a three-point warm/cool/rim lighting rig, HDR bloom-ready speculars, volumetric near-miss glow, chrono-violet depth fog, ACES tone mapping, and FFT-shimmered thin-film interference.",
   "type": "generative",
   "category": "generative",
@@ -20,47 +19,90 @@
     1
   ],
   "params": [
-    { "id": "dendriteComplexity", "name": "Dendrite Complexity", "default": 0.6, "min": 0.0, "max": 1.0, "step": 0.01, "mapping": "zoom_params.x", "audio": "bass" },
-    { "id": "entropyPulseRate", "name": "Entropy Pulse Rate", "default": 0.25, "min": 0.0, "max": 1.0, "step": 0.01, "mapping": "zoom_params.y", "audio": "mid" },
-    { "id": "spectralDispersion", "name": "Spectral Dispersion", "default": 0.38, "min": 0.0, "max": 1.0, "step": 0.01, "mapping": "zoom_params.z", "audio": "treble" },
-    { "id": "gravityWellStrength", "name": "Gravity Well Strength", "default": 0.4, "min": 0.0, "max": 1.0, "step": 0.01, "mapping": "zoom_params.w", "audio": "overall" }
-  ],
-  "updatedParams": [
     {
-      "index": 0,
+      "id": "dendriteComplexity",
       "name": "Dendrite Complexity",
       "default": 0.6,
       "min": 0.0,
       "max": 1.0,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "audio": "bass"
     },
     {
-      "index": 1,
+      "id": "entropyPulseRate",
       "name": "Entropy Pulse Rate",
       "default": 0.25,
       "min": 0.0,
       "max": 1.0,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "audio": "mid"
     },
     {
-      "index": 2,
+      "id": "spectralDispersion",
       "name": "Spectral Dispersion",
       "default": 0.38,
       "min": 0.0,
       "max": 1.0,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "audio": "treble"
     },
     {
-      "index": 3,
+      "id": "gravityWellStrength",
       "name": "Gravity Well Strength",
       "default": 0.4,
       "min": 0.0,
       "max": 1.0,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "audio": "overall"
     }
   ],
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
-  "features": ["upgraded-rgba"]
+  "features": [
+    "upgraded-rgba"
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Dendrite Complexity",
+          "default": 0.6,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Entropy Pulse Rate",
+          "default": 0.25,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Spectral Dispersion",
+          "default": 0.38,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Gravity Well Strength",
+          "default": 0.4,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
+    },
+    "author": "Jules"
+  }
 }

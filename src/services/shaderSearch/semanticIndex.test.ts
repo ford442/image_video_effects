@@ -17,8 +17,14 @@ const indexFile = JSON.parse(
 const index = decodeShaderSearchIndex(indexFile);
 const queries = queryFixture.queries as Record<string, number[]>;
 
+function queryVec(query: string): number[] {
+  const vec = queries[query];
+  if (vec === undefined) throw new Error(`missing query fixture ${query}`);
+  return vec;
+}
+
 function top(query: string, k = 5, queryText?: string): string[] {
-  return rankShaderSearch(index, queries[query], { topK: k, queryText }).map(h => h.id);
+  return rankShaderSearch(index, queryVec(query), { topK: k, queryText }).map(h => h.id);
 }
 
 describe('shader search index', () => {
@@ -55,9 +61,9 @@ describe('shader search index', () => {
 
   it('restricts results to allowIds', () => {
     const allowIds = new Set(['halftone', 'plasma', 'ferrofluid-spikes']);
-    const hits = rankShaderSearch(index, queries['halftone rosette'], { allowIds, topK: 10 });
+    const hits = rankShaderSearch(index, queryVec('halftone rosette'), { allowIds, topK: 10 });
     expect(hits.map(h => h.id).sort()).toEqual([...allowIds].sort());
-    expect(hits[0].id).toBe('halftone');
+    expect(hits[0]!.id).toBe('halftone');
   });
 
   it('substring fallback matches name or id', () => {

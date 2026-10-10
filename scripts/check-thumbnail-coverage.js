@@ -20,7 +20,8 @@ const DEFERRALS_PATH = path.join(ROOT, 'reports', 'thumbnail_deferrals.json');
 const COVERAGE_MD_PATH = path.join(ROOT, 'reports', 'thumbnail_coverage.md');
 
 function gitText(args) {
-  return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+  // Shader lists exceed execFileSync's 1 MB default buffer; a truncated read returned null silently.
+  return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 256 * 1024 * 1024 });
 }
 
 function readGitJson(ref, file) {
@@ -53,22 +54,25 @@ function loadCurrentCatalog() {
   return ids;
 }
 
+/**
+ * Same source as loadCurrentCatalog (public/shader-lists). The tracked unified manifest
+ * lags the lists (895 vs ~1,370 ids), and reading it here made hundreds of long-standing
+ * shaders look "newly eligible", so the gate failed on a clean main.
+ */
 function loadBaseCatalog(ref) {
-  const manifest = readGitJson(ref, 'public/shader-manifest-unified.json');
-  if (manifest?.shaders) {
-    return new Set(manifest.shaders.map(shader => shader.id).filter(Boolean));
-  }
-
   const ids = new Set();
   for (const file of gitText(['ls-tree', '-r', '--name-only', ref, 'public/shader-lists'])
     .split('\n')
     .filter(name => name.endsWith('.json'))) {
     const list = readGitJson(ref, file);
-    for (const entry of list || []) {
+    for (const entry of Array.isArray(list) ? list : []) {
       if (entry?.id) ids.add(entry.id);
     }
   }
-  return ids;
+  if (ids.size > 0) return ids;
+
+  const manifest = readGitJson(ref, 'public/shader-manifest-unified.json');
+  return new Set((manifest?.shaders || []).map(shader => shader.id).filter(Boolean));
 }
 
 function loadBasePngs(ref) {

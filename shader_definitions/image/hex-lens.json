@@ -55,8 +55,12 @@
     "fbm"
   ],
   "updated": true,
-  "updatedParams": [
-    "param2",
-    "param4"
-  ]
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        "param2",
+        "param4"
+      ]
+    }
+  }
 }

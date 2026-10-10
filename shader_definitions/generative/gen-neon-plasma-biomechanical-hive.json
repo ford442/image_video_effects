@@ -15,40 +15,6 @@
     16,
     1
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Hive Breathing Speed",
-      "default": 1,
-      "min": 0.1,
-      "max": 5,
-      "step": 0.1
-    },
-    {
-      "index": 1,
-      "name": "Neon Intensity",
-      "default": 2,
-      "min": 0,
-      "max": 10,
-      "step": 0.1
-    },
-    {
-      "index": 2,
-      "name": "Spore Density",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.05
-    },
-    {
-      "index": 3,
-      "name": "Magnetic Pull",
-      "default": 1.5,
-      "min": 0,
-      "max": 5,
-      "step": 0.1
-    }
-  ],
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
@@ -108,5 +74,43 @@
       "max": 5,
       "step": 0.1
     }
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Hive Breathing Speed",
+          "default": 1,
+          "min": 0.1,
+          "max": 5,
+          "step": 0.1
+        },
+        {
+          "index": 1,
+          "name": "Neon Intensity",
+          "default": 2,
+          "min": 0,
+          "max": 10,
+          "step": 0.1
+        },
+        {
+          "index": 2,
+          "name": "Spore Density",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.05
+        },
+        {
+          "index": 3,
+          "name": "Magnetic Pull",
+          "default": 1.5,
+          "min": 0,
+          "max": 5,
+          "step": 0.1
+        }
+      ]
+    }
+  }
 }

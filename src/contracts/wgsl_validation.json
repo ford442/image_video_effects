@@ -6,15 +6,17 @@
   "artifact": "public/wasm/naga_wasm.wasm",
   "loader": "public/wasm/naga_wasm.js",
   "rebuildCommand": "bash tools/naga_wasm/build.sh",
+  "nagaFeatures": ["wgsl-in", "glsl-in", "wgsl-out"],
   "notes": {
     "pin": "Matches the naga-cli minor the CI gate used to `cargo install` (30.0.0). Bumping the minor can change which shaders parse, so a bump must be accompanied by a re-run of `npm run verify:naga-wasm -- --all` and any resulting knownFailures change.",
     "whyCommitted": "Same discipline as public/wasm/pixelocity_wasm.wasm: the artifact is committed so `npm start`, `npm run verify:naga-wasm` and CI all work without a Rust toolchain.",
-    "noWasmBindgen": "The wasm exposes a hand-written C ABI (wgsl_alloc / wgsl_validate / wgsl_result_ptr / wgsl_result_len / wgsl_free), so neither wasm-pack nor wasm-bindgen is needed on CI or on agent VMs."
+    "noWasmBindgen": "The wasm exposes a hand-written C ABI (wgsl_alloc / wgsl_validate / glsl_to_wgsl / wgsl_result_ptr / wgsl_result_len / wgsl_free), so neither wasm-pack nor wasm-bindgen is needed on CI or on agent VMs.",
+    "glslIn": "glsl-in + wgsl-out back the Shadertoy GLSL import (src/services/shadertoyToPixelocity.ts): naga's GLSL 450 front-end translates, wgsl_validate checks the rewritten compute shader. They do not change which WGSL the validator accepts."
   },
   "knownFailures": {
     "description": "Shaders already on main that naga rejects. They predate this gate: scripts/wgsl_precommit_gate.py only ran naga on files changed against origin/main, and --full-tree skips naga entirely for speed, so these never had to pass. The ratchet may only go down — verify:naga-wasm fails both when an unlisted shader breaks and when a listed one starts passing without being removed here.",
     "discoveredAt": "2026-09-20",
-    "ratchet": 37,
+    "ratchet": 32,
     "ids": [
       "aurora-curtain",
       "aurora-rift",
@@ -22,12 +24,10 @@
       "byte-mosh-explosion",
       "cosmic-web",
       "crystal-illuminator",
-      "crystal-refraction",
       "crystalline-fracture",
       "crystalline-veins",
       "data-moshing-diffusion",
       "electric-eel-storm",
-      "ethereal-swirl",
       "fabric-render",
       "fractal-boids-field",
       "fractal-ice-palace",
@@ -37,7 +37,6 @@
       "glass-shatter",
       "glitch-slice-mirror",
       "holographic-contour",
-      "holographic-edge-ripple",
       "holographic-prism",
       "hyper-chromatic-delay",
       "liquid-volumetric-zoom",
@@ -50,8 +49,6 @@
       "recursion-mirror-vortex",
       "signal-modulation",
       "stella-orbit",
-      "temporal-feedback-zoom-tracer",
-      "tensor-flow-sculpt",
       "volumetric-depth-zoom"
     ]
   }

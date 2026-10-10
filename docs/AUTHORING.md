@@ -222,7 +222,7 @@ python3 scripts/audit_dead_sliders.py --files my-shader-id
 ```
 
 Writes `reports/dead_sliders_audit.{json,md}`. CI runs this in a **grace
-period** (non-blocking) until the generative `updatedParams` pool is closed;
+period** (non-blocking) until the generative `x-meta.upgrade.params` pool is closed;
 then flip to blocking.
 
 ### Generative batch completion checklist
@@ -238,7 +238,7 @@ After each 8-shader upgrade batch:
 2. `npm run audit:extrabuffer` (or `--files` on batch WGSL)
 3. `npm run audit:dead-sliders -- --files <id1> <id2> …`
 4. `node scripts/generate_shader_lists.js` + duplicate check
-5. `npx react-scripts test --watchAll=false --ci`
+5. `npm test -- --watchAll=false --ci`
 
 ## Local pre-commit hook
 
@@ -260,6 +260,10 @@ To use against `main` when on a feature branch:
 BASE=$(git merge-base origin/main HEAD)
 python3 scripts/wgsl_precommit_gate.py --base "$BASE"
 ```
+
+## Shader definitions
+
+`shader_definitions/<category>/<id>.json` must satisfy `src/contracts/shader_definition.schema.json` (`npm run verify:shader-definitions`, blocking in CI). Sliders are a single `params` array; swarm and provenance data live under `x-meta` (`x-meta.upgrade.params` is what used to be `updatedParams`). Batch PRs opened before the schema landed run `python3 scripts/migrate_shader_definitions.py --write` once after rebasing; it is idempotent and keeps each file's formatting. Format reference: [`docs/SHADER_TEMPLATES.md`](SHADER_TEMPLATES.md#definition-format).
 
 ## Source of truth
 

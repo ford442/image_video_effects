@@ -1,18 +1,21 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Directional Blur Wipe
 //  Category: image
-//  Features: mouse-driven, audio-reactive, blur-wipe, depth-scatter, chromatic-offset, upgraded-rgba
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Chunks From: directional-blur-wipe, bass_env
-//  Created: 2024-01-01
-//  Upgraded: 2026-05-31
-//  Upgraded: 2026-07-31 (wired Split Pos slider + per-sample chroma, sprung wipe, click flash)
+//  Upgraded: 2026-10-05
+//  Ideas: wipe-front ramp; shutter-weighted comet kernel; long-exposure highlight streaks
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
 
 fn bass_env(bass: f32, mids: f32) -> f32 {
   return 1.0 + bass * 0.5 + mids * 0.2;
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -25,46 +28,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let treble = plasmaBuffer[0].z;
 
     let uv = vec2<f32>(global_id.xy) / resolution;
-    let mouseRaw = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
     let time = u.config.x;
 
-    // ── Spring-damper wipe anchor ───────────────────────────────────
-    // The split line rides a critically-damped spring chasing the raw
-    // cursor, so the wipe sweeps with weight instead of teleporting.
-    // Persistent state lives in extraBuffer[133..137] ([0..4] reserved,
-    // [5..132] = engine FFT bins): 133/134 = sprung position (uv),
-    // 135/136 = spring velocity, 137 = last update time.
-    var mouse = mouseRaw;
-    var springVel = vec2<f32>(0.0, 0.0);
-    let hasState = arrayLength(&extraBuffer) > 137u;
-    if (hasState) {
-        mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-        springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    }
-    if (global_id.x == 0u && global_id.y == 0u && hasState) {
-        let prevTime = extraBuffer[137];
-        let dt = clamp(time - prevTime, 0.001, 0.05);
-        var sPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-        var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-        if (prevTime <= 0.0) {
-            // First touch: seed the spring at the cursor so it never snaps.
-            sPos = mouseRaw;
-            sVel = vec2<f32>(0.0, 0.0);
-        }
-        // Critically damped spring: stiffness = omega^2, damping = 2*omega.
-        let omega = 10.0;
-        let accel = (mouseRaw - sPos) * (omega * omega) - sVel * (2.0 * omega);
-        sVel = sVel + accel * dt;
-        sPos = sPos + sVel * dt;
-        extraBuffer[133] = sPos.x;
-        extraBuffer[134] = sPos.y;
-        extraBuffer[135] = sVel.x;
-        extraBuffer[136] = sVel.y;
-        extraBuffer[137] = time;
-    }
-    // Spring overshoot energy: nudges the blur side while the line settles.
-    let springEnergy = clamp(length(springVel) * 2.0, 0.0, 1.0);
+    // Wipe anchor = raw pointer. HEAD's extraBuffer[133..137] spring was dead:
+    // the buffer is re-uploaded with zeros there every frame, so every pixel
+    // but (0,0) anchored the line at the top-left corner.
+    let mouse = u.zoom_config.yz;
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let depthScatter = mix(0.7, 1.3, depth);
@@ -74,7 +44,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let strength_param = u.zoom_params.z * bass_env(bass, mids);
     let samples_param = u.zoom_params.w;
 
-    // Angle lean rides the SPRUNG y, so the wipe axis lags with the line.
+    // Angle lean rides the pointer y.
     let angle = angle_param * 6.28 + (mouse.y - 0.5) * 3.14;
     let dir = vec2<f32>(cos(angle), sin(angle));
     let normal = vec2<f32>(-dir.y, dir.x);
@@ -111,14 +81,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     clickGlow = min(clickGlow, 2.0);
     clickKick = min(clickKick, 1.5);
 
+    let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     var color = vec4<f32>(0.0);
     if (dist < 0.0) {
-        color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+        color = src;
         // Echo the click flash faintly on the clean side of the line.
         color = color + vec4<f32>(clickGlow * 0.06, clickGlow * 0.05, clickGlow * 0.08, 0.0);
     } else {
         let num_samples = i32(samples_param * 50.0) + 5;
-        let strength = strength_param * 0.05 * depthScatter * (1.0 + clickKick + springEnergy * 0.25);
+        // Idea 1: wipe-front ramp — the smear builds over a short ramp past
+        // the seam, so the clean side flows into the blur as a moving front.
+        let ramp = smoothstep(0.0, 0.08, dist);
+        let strength = strength_param * 0.05 * depthScatter * (1.0 + clickKick) * ramp;
 
         var accum = vec3<f32>(0.0);
         var weight = 0.0;
@@ -126,8 +100,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Chromatic offset: R and B sample at slightly different offsets per sample
         for (var i = 0; i < num_samples; i = i + 1) {
             let t = f32(i) / f32(num_samples - 1);
-            let offset = dir * t * strength;
-            let chroma = treble * 0.01 * t;
+            // Shutter curve front-loads the taps, so stretch the reach to keep
+            // the overall smear length close to HEAD's flat box.
+            let offset = dir * t * strength * 1.35;
+            let chroma = treble * 0.01 * t * ramp;
 
             let sampleUV = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
             // Per-sample chromatic dispersion: R leads, B trails along dir.
@@ -136,8 +112,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let sampleColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
             let rTap = textureSampleLevel(readTexture, u_sampler, sampleRUV, 0.0).r;
             let bTap = textureSampleLevel(readTexture, u_sampler, sampleBUV, 0.0).b;
-            accum = accum + vec3<f32>(rTap, sampleColor.g, bTap);
-            weight = weight + 1.0;
+            let tap = vec3<f32>(rTap, sampleColor.g, bTap);
+            // Idea 2: shutter-weighted comet kernel — heavy head, tapering tail.
+            let shutter = 0.15 + 0.85 * (1.0 - t) * (1.0 - t);
+            // Idea 3: long-exposure highlight streaks — bright taps weigh more,
+            // so highlights drag into light trails across the blurred side.
+            let tapLuma = dot(tap, vec3<f32>(0.299, 0.587, 0.114));
+            let streak = 1.0 + 2.5 * smoothstep(0.6, 1.0, tapLuma) * ramp;
+            let w = shutter * streak;
+            accum = accum + tap * w;
+            weight = weight + w;
         }
         let blurRGB = accum / weight;
 
@@ -147,7 +131,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let r = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
         let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
 
-        color = vec4<f32>(mix(blurRGB.r, r, 0.3), blurRGB.g, mix(blurRGB.b, b, 0.3), 1.0);
+        color = vec4<f32>(mix(blurRGB.r, r, 0.3), blurRGB.g, mix(blurRGB.b, b, 0.3), mix(src.a, 1.0, ramp));
 
         // Bass drives blur-side brightness pulse
         color = color + vec4<f32>(bass * 0.1 * (dist * 0.5 + 0.5), bass * 0.05, 0.0, 0.0);
@@ -165,8 +149,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
 
-    let alpha = color.a;
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color.rgb, alpha));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(color.rgb, alpha));
+    // ACES on display RGB; semantic alpha = clean-side transmission, blurred
+    // coverage, seam/flash boost.
+    let rgb = acesToneMap(max(color.rgb, vec3<f32>(0.0)));
+    let seam = 1.0 - smoothstep(0.0, 0.005 * (1.0 + clickGlow * 6.0), abs(dist));
+    let alpha = clamp(color.a + seam * 0.25, 0.0, 1.0);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(rgb, alpha));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(rgb, alpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

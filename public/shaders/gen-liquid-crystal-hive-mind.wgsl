@@ -4,31 +4,13 @@
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-09-13
-//  Ideas: crossed-polariser birefringence from the curl director; hive relay wave spreading cell-to-cell from the pointer
+//  Upgraded: 2026-10-10
+//  Ideas: crossed-polariser birefringence from the curl director; hive relay wave spreading cell-to-cell from the pointer; four-brush schlieren cross in every cell; refractory shadow trailing the relay wave
 //  A packing: raw sim state (A.rgb = bass/mids/treble envelopes, A.a = hive pulse; not tone-mapped)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Cell Density, y=Fluid Turbulence, z=Sync Pulse, w=Disruption Radius
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Cell Density, y=Fluid Turbulence, z=Sync Pulse, w=Disruption Radius
 
 // --- UTILS ---
 fn rot2D(angle: f32) -> mat2x2<f32> {
@@ -169,7 +151,9 @@ struct MapResult {
     glow: f32,    // Inner glow intensity
     hexId: vec2<f32>, // ID of the current hex cell
     director: f32, // Nematic director angle of the local curl flow
-    relay: f32     // Hive relay wave intensity for this cell
+    relay: f32,    // Hive relay wave intensity for this cell
+    brush: f32,    // Schlieren extinction brush darkness (0 = clear, 1 = on a brush)
+    refractory: f32 // Refractory dip trailing the relay wave
 }
 
 fn map(p: vec3<f32>, bass: f32, mids: f32, hivePulse: f32, mouseField: vec2<f32>) -> MapResult {
@@ -249,6 +233,17 @@ fn map(p: vec3<f32>, bass: f32, mids: f32, hivePulse: f32, mouseField: vec2<f32>
     let relayPhase = cellDistance * 0.9 - t * (1.2 + syncPulse * 1.1);
     res.relay = pow(0.5 + 0.5 * cos(relayPhase), 10.0) * (0.25 + syncPulse * 0.35) * (1.0 + bass * 0.6)
         * exp(-cellDistance * 0.08);
+
+    // Idea 3: schlieren brushes — a nematic cell seen between crossed polarisers shows four dark brushes
+    // meeting at its defect core; brush axes rotate with the cell hash and the local curl director.
+    let cellUV = grid.uv / hexSize;
+    let brushAngle = atan2(cellUV.y, cellUV.x) - cellHash * 3.14159 - res.director * 0.5;
+    let brushAxis = 1.0 - pow(sin(2.0 * brushAngle), 2.0);
+    res.brush = brushAxis * smoothstep(0.55, 0.05, length(cellUV)) * (0.55 + 0.45 * smoothstep(0.0, 0.4, 1.0 - length(cellUV)));
+
+    // Idea 4: refractory shadow — the cells the wave has just left stay dark and cool for a beat
+    // (excitable-medium recovery), a half-cycle behind each relay crest.
+    res.refractory = pow(0.5 + 0.5 * cos(relayPhase + 1.5), 6.0) * (0.3 + syncPulse * 0.4) * exp(-cellDistance * 0.08);
     return res;
 }
 
@@ -345,11 +340,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let extinction = pow(sin(2.0 * m.director), 2.0);
             let retardance = 0.6 + abs(m.glow) * 1.8 * (0.4 + u.zoom_params.y * 0.25) + t_dist * 0.08 + treble * 0.15;
             let fringe = vec3<f32>(0.5) - vec3<f32>(0.5) * cos(6.28318 * retardance * vec3<f32>(1.0 / 0.65, 1.0 / 0.53, 1.0 / 0.45));
-            let fluidColor = mix(paletteColor, fringe * extinction * 1.3, 0.45);
+            var fluidColor = mix(paletteColor, fringe * extinction * 1.3, 0.45);
+            fluidColor *= 1.0 - m.brush * 0.55;
+            fluidColor = mix(fluidColor, fluidColor * vec3<f32>(0.35, 0.5, 0.9), clamp(m.refractory, 0.0, 1.0) * 0.8);
 
             // Accumulate
             // Deeper fluid = denser accumulation, audio boosts brightness
-            let density = 0.045 * (1.0 + bass * 0.8 + treble * 0.25) * (1.0 + m.relay * 1.5);
+            let density = 0.045 * (1.0 + bass * 0.8 + treble * 0.25) * (1.0 + m.relay * 1.5) * (1.0 - 0.4 * clamp(m.refractory, 0.0, 1.0));
             relaySum += m.relay * density;
             fluidAccum += fluidColor * density * exp(-t_dist * 0.2);
             glowSum += m.glow * density;

@@ -3,17 +3,17 @@
   "name": "Cyber Magnifier",
   "category": "interactive-mouse",
   "url": "shaders/cyber-magnifier.wgsl",
-  "description": "High-tech magnifying lens with chromatic aberration and HUD overlay.",
+  "description": "High-tech magnifying lens with chromatic aberration and a HUD: past ~2.5x it shows the source texels with a texel grid, the radar sweep traces glowing outlines that fade behind it, and a rangefinder arc reads out the depth under the lens.",
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "depth-aware",
     "upgraded-rgba"
   ],
   "params": [
     {
       "id": "magnification",
       "name": "Magnification",
-      "type": "float",
       "default": 0.5,
       "min": 0,
       "max": 1
@@ -21,7 +21,6 @@
     {
       "id": "lens_size",
       "name": "Lens Size",
-      "type": "float",
       "default": 0.4,
       "min": 0,
       "max": 1
@@ -29,7 +28,6 @@
     {
       "id": "aberration",
       "name": "Aberration",
-      "type": "float",
       "default": 0.5,
       "min": 0,
       "max": 1
@@ -37,7 +35,6 @@
     {
       "id": "grid_opacity",
       "name": "Grid Opacity",
-      "type": "float",
       "default": 0.3,
       "min": 0,
       "max": 1
@@ -50,39 +47,43 @@
     "cyber",
     "hud"
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Magnification",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Lens Size",
-      "default": 0.4,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Aberration",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Grid Opacity",
-      "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+  "updated": true,
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Magnification",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Lens Size",
+          "default": 0.4,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Aberration",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Grid Opacity",
+          "default": 0.3,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
     }
-  ],
-  "updated": true
+  }
 }

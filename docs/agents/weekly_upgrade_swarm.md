@@ -3,6 +3,8 @@
 > Historical / plumbing. Creative upgrade law is `docs/SHADER_UPGRADE_BATCH.md`.
 > ACES-only or binding-alignment batches are hygiene, not upgrades.
 >
+> **Key rename (definition schema):** entries below say `updatedParams`; since the shader-definition schema that key is `x-meta.upgrade.params` (see `src/contracts/shader_definition.schema.json`). The log is left as written.
+>
 > **LIVE process:** [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md). This file is a **diary of completed batches**, not the upgrade law. Do not copy a past overlay (fast-motion conveyors, IQ palettes, springs on every file) onto a new family.
 > **Constraint:** Do NOT modify `Renderer.ts`, `types.ts`, or bind groups. Do NOT install new npm packages.
 

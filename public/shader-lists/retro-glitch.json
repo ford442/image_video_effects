@@ -54,40 +54,6 @@
     ],
     "name": "ASCII Flow",
     "description": "Parameterized animated ASCII current with eight procedural glyphs, held pointer vortices, click fronts, three-band audio, and shifting phosphor hues.",
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Detail",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true,
     "workgroup_size": [
       16,
@@ -106,40 +72,6 @@
       "retro-style",
       "audio-reactive",
       "upgraded-rgba"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Bit Depth",
-        "default": 0.1,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Contrast",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Dither Spread",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Pixel Scale Max",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ],
     "params": [
       {
@@ -236,40 +168,6 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Operation Mix",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Bit Shift",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Error Rate",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Block Size",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "features": [
       "aces-tone-map",
       "audio-reactive",
@@ -332,36 +230,6 @@
     "description": "CRT degaussing distortion with continuous magnetic rings and rolling beam sweeps, held-pointer field gain, bounded click shocks, exact-load feedback echo, aperture grille, hex bloom, spectral palette, and preserved A-state packing.",
     "updated": true,
     "params": [
-      {
-        "id": "magnet_strength",
-        "name": "Magnet Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "bloom_intensity",
-        "name": "Bloom Intensity",
-        "default": 0.4,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "color_shift",
-        "name": "Color Shift",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "distortion_radius",
-        "name": "Distortion Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "updatedParams": [
       {
         "id": "magnet_strength",
         "name": "Magnet Strength",
@@ -484,40 +352,6 @@
       "audio"
     ],
     "supportsDepth": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Decay Rate",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Scanline Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Halation Spread",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Audio Sensitivity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "workgroup_size": [
       16,
       16,
@@ -579,40 +413,6 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w"
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Scanline Intensity",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Phosphor Glow",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Halation Strength",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Barrel Distortion",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ],
     "features": [
@@ -691,40 +491,6 @@
       "rain",
       "glyph",
       "parallax"
-    ],
-    "updatedParams": [
-      {
-        "id": "speed",
-        "name": "Rain Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "description": "Base fall rate before the per-column band multiplier."
-      },
-      {
-        "id": "density",
-        "name": "Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "description": "Column pitch of the middle sheet (40–150 columns)."
-      },
-      {
-        "id": "glitch",
-        "name": "Glitch",
-        "default": 0.1,
-        "min": 0,
-        "max": 1,
-        "description": "Column-coherent dropout rate and glyph scramble amount."
-      },
-      {
-        "id": "trail",
-        "name": "Trail Len",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "description": "Length of the fading tail behind each drop head."
-      }
     ]
   },
   {
@@ -785,40 +551,6 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Grid Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Color Mode",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Glow",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Decoder Radius",
-        "default": 0.3,
-        "min": 0.05,
-        "max": 0.4,
-        "step": 0.01
-      }
-    ],
     "tags": [
       "filter",
       "image-processing",
@@ -832,7 +564,7 @@
     "id": "data-moshing-diffusion",
     "name": "Data Moshing Diffusion",
     "url": "shaders/data-moshing-diffusion.wgsl",
-    "category": "advanced-hybrid",
+    "category": "retro-glitch",
     "description": "Anisotropic data-mosh diffusion with exact packed-state advection, rapid chromatic stream packets, held-pointer swirl, and click-launched smear fronts.",
     "tags": [
       "glitch",
@@ -844,40 +576,6 @@
       "chromatic",
       "mouse-driven",
       "upgraded-rgba"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Smear Strength",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Diffusion Kappa",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Time Step",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Quantize",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ],
     "features": [
       "audio-reactive",
@@ -954,7 +652,6 @@
       {
         "id": "smearStrength",
         "name": "Smear Strength",
-        "type": "float",
         "default": 0.4,
         "min": 0,
         "max": 1,
@@ -963,7 +660,6 @@
       {
         "id": "blockSize",
         "name": "Block Size",
-        "type": "float",
         "default": 0.3,
         "min": 0,
         "max": 1,
@@ -972,7 +668,6 @@
       {
         "id": "corruption",
         "name": "Corruption",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -980,41 +675,6 @@
       },
       {
         "id": "quantize",
-        "name": "Quantize",
-        "type": "float",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Smear Strength",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Block Size",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Corruption",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
         "name": "Quantize",
         "default": 0.3,
         "min": 0,
@@ -1084,36 +744,6 @@
       "datamosh",
       "temporal"
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Brush Size",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 1,
-        "name": "Block Crush",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 2,
-        "name": "Decay Rate",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 3,
-        "name": "Ghost Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
     "updated": true
   },
   {
@@ -1173,40 +803,6 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w"
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Corruption Rate",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Block Size",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Ghost Decay",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Depth Influence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ],
     "tags": [
@@ -1289,40 +885,6 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Corruption Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Bit Manipulation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Error Propagation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Decay Rate",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -1391,40 +953,6 @@
       "glitch",
       "digital"
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Corruption Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Bit Manipulation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Error Propagation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Decay Rate",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -1492,40 +1020,6 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Detail",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -1582,36 +1076,6 @@
       },
       {
         "id": "flicker",
-        "name": "Color Flicker",
-        "default": 0.4,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Gate Weave",
-        "default": 0.4,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 1,
-        "name": "Dust Amount",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 2,
-        "name": "Scratches",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 3,
         "name": "Color Flicker",
         "default": 0.4,
         "min": 0,
@@ -1689,40 +1153,6 @@
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Dot Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Contrast",
-        "default": 1,
-        "min": 0,
-        "max": 2,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Color Mode",
-        "default": 1,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Screen Angle",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -1772,40 +1202,6 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w"
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Glitch Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Holographic Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "RGB Shift",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Flicker",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ],
     "feedbackPacking": "A/C = pre-ACES linear display RGB + transmission alpha with bounded exact channel-separated trails; B is unused; ACES on writeTexture only",
@@ -1883,40 +1279,6 @@
         "max": 1
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Instability",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "RGB Split",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "V-Hold",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Static",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = pre-ACES linear display RGB + carrier-transmission alpha, read back for phosphor beam persistence and the stale-frame tear bands; B is unused; ACES on writeTexture only; depth passes through source depth."
   },
   {
@@ -1978,40 +1340,6 @@
       "depth-aware",
       "mouse-driven",
       "upgraded-rgba"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Edge Sensitivity",
-        "default": 0.45,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Mach Strength",
-        "default": 0.55,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Spotlight Radius",
-        "default": 0.45,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Neon Gain",
-        "default": 0.65,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -2049,36 +1377,6 @@
       },
       {
         "id": "scan_blanking",
-        "name": "Scan Blanking",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Decay Rate",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 1,
-        "name": "Bloom Spread",
-        "default": 0.4,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 2,
-        "name": "Shadow Mask Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 3,
         "name": "Scan Blanking",
         "default": 0.3,
         "min": 0,
@@ -2173,40 +1471,6 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Rain Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Glitch / Tint",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Trail Fade",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "tags": [
       "filter",
       "image-processing",
@@ -2275,40 +1539,6 @@
       "depth-aware"
     ],
     "supportsDepth": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Pixel Size",
-        "default": 0.15,
-        "min": 0.01,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Drift Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Color Bleed",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Depth Influence",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "workgroup_size": [
       16,
       16,
@@ -2343,7 +1573,6 @@
       "aces"
     ],
     "feedbackPacking": "A packs offset.xy + glitchEnergy; writeTexture is ACES display RGBA; spring cursor extraBuffer[133..136]",
-    "author": "Kimi",
     "params": [
       {
         "id": "glitchIntensity",
@@ -2486,40 +1715,6 @@
         "description": "Frequency of glitch pulses"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Block Size",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Quantization Levels",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "MV Visibility",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Glitch Frequency",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -2564,40 +1759,6 @@
         "min": 0,
         "max": 1,
         "mapping": "zoom_params.w"
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Drift Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Line Height",
-        "default": 0.1,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Jitter Amount",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Color Shift",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ],
     "features": [
@@ -2675,40 +1836,6 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "VHS Intensity",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Artifact Strength",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Smear Amount",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Chroma Strength",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "tags": [
       "glitch",
       "retro",
@@ -2766,40 +1893,6 @@
       "glitch",
       "retro",
       "vintage"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Sort Length",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Luma Threshold",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Direction",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Digital Noise",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ],
     "updated": true
   },
@@ -2863,40 +1956,6 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Detail",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -2953,40 +2012,6 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Tracking Error",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Noise Level",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Color Drift",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Scanlines",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "tags": [
       "filter",
       "image-processing",
@@ -3032,36 +2057,6 @@
       },
       {
         "id": "sepia",
-        "name": "Vintage Tone",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Scratch Amount",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 1,
-        "name": "Dust Particles",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 2,
-        "name": "Record Warp",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 3,
         "name": "Vintage Tone",
         "default": 0.5,
         "min": 0,
@@ -3157,40 +2152,6 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Wave Intensity",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "VHS Intensity",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Block Glitch Size",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Shadow Mask",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "tags": [
       "glitch",
       "retro",
@@ -3246,40 +2207,6 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w"
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Contrast",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Grain",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Smear",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Threshold",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ],
     "features": [

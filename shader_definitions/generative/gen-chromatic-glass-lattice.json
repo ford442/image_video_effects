@@ -30,40 +30,6 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Refraction Index",
-      "default": 0.36,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Chromatic Spread",
-      "default": 0.33,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Lattice Density",
-      "default": 0.41,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Shatter Force",
-      "default": 0.25,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
-  ],
   "params": [
     {
       "id": "refraction_index",
@@ -101,5 +67,43 @@
       "step": 0.01,
       "mapping": "zoom_params.w"
     }
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Refraction Index",
+          "default": 0.36,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Chromatic Spread",
+          "default": 0.33,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Lattice Density",
+          "default": 0.41,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Shatter Force",
+          "default": 0.25,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

@@ -70,49 +70,53 @@
       "mapping": "zoom_params.w"
     }
   ],
-  "target_rating": 4.7,
-  "updatedParams": [
-    {
-      "id": "param1",
-      "name": "Cell Thickness",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.1,
-      "mapping": "zoom_params.x",
-      "description": "Optical path through the nematic layer \u2014 maps to zoom_params.x."
-    },
-    {
-      "id": "param2",
-      "name": "Twist Angle",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.1,
-      "mapping": "zoom_params.y",
-      "description": "Total director twist across the cell, 0-2pi \u2014 maps to zoom_params.y."
-    },
-    {
-      "id": "param3",
-      "name": "Birefringence",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "step": 0.1,
-      "mapping": "zoom_params.z",
-      "description": "Index difference (delta n), 0.1-0.3 \u2014 maps to zoom_params.z."
-    },
-    {
-      "id": "param4",
-      "name": "Voltage",
-      "default": 0.2,
-      "min": 0,
-      "max": 1,
-      "step": 0.1,
-      "mapping": "zoom_params.w",
-      "description": "Frederiks drive; also sets the switching rise time \u2014 maps to zoom_params.w."
-    }
-  ],
   "updated": true,
-  "category": "generative"
+  "category": "generative",
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "id": "param1",
+          "name": "Cell Thickness",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.1,
+          "mapping": "zoom_params.x",
+          "description": "Optical path through the nematic layer \u2014 maps to zoom_params.x."
+        },
+        {
+          "id": "param2",
+          "name": "Twist Angle",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.1,
+          "mapping": "zoom_params.y",
+          "description": "Total director twist across the cell, 0-2pi \u2014 maps to zoom_params.y."
+        },
+        {
+          "id": "param3",
+          "name": "Birefringence",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.1,
+          "mapping": "zoom_params.z",
+          "description": "Index difference (delta n), 0.1-0.3 \u2014 maps to zoom_params.z."
+        },
+        {
+          "id": "param4",
+          "name": "Voltage",
+          "default": 0.2,
+          "min": 0,
+          "max": 1,
+          "step": 0.1,
+          "mapping": "zoom_params.w",
+          "description": "Frederiks drive; also sets the switching rise time \u2014 maps to zoom_params.w."
+        }
+      ]
+    },
+    "target_rating": 4.7
+  }
 }

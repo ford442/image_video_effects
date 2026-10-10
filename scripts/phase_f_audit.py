@@ -140,7 +140,7 @@ def check_json(id: str) -> dict:
     effective_category = data.get('category') or category
     if effective_category not in VALID_CATEGORIES:
         issues.append(f'Invalid category: {effective_category}')
-    params = data.get('parameters', [])
+    params = data.get('params', [])
     for p in params:
         for key in ['id', 'name', 'default', 'min', 'max', 'step']:
             if key not in p:

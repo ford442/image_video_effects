@@ -9,7 +9,7 @@
     "depth-aware",
     "upgraded-rgba"
   ],
-  "description": "HSV hue-wheel warping via RK2-integrated magnetic field line advection per RGB channel. Chromatic dispersion, neon glow, and ACES tone mapping.",
+  "description": "Per-channel RK2 field-line advection around an N/S pole pair at the cursor, with compass hue that maps field angle to the hue wheel. Chromatic dispersion and neon glow.",
   "params": [
     {
       "id": "field_strength",
@@ -49,5 +49,39 @@
     "bloom",
     "audio-reactive",
     "depth-aware"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Field Strength",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 1,
+          "name": "Radius",
+          "default": 0.3,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 2,
+          "name": "Chromatic",
+          "default": 0.3,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 3,
+          "name": "Falloff",
+          "default": 0.2,
+          "min": 0,
+          "max": 1
+        }
+      ]
+    }
+  }
 }

@@ -3,7 +3,7 @@
   "name": "Chronos Brush",
   "category": "interactive-mouse",
   "url": "shaders/chronos-brush.wgsl",
-  "description": "Freeze time by painting over the video feed with chromatic brush tints that cycle per click. Audio boosts brush size and opacity; depth modulates paint intensity.",
+  "description": "Freeze time by painting over the video feed with chromatic brush tints that cycle per click. Audio boosts brush size and opacity; depth modulates paint intensity. A chronophotograph shutter stamps frozen frames in ticks, and fading frozen paint thaws and drips downward before it vanishes.",
   "params": [
     {
       "id": "brushSize",
@@ -55,39 +55,43 @@
     "depth-aware",
     "chromatic"
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Brush Size",
-      "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Freeze Decay",
-      "default": 0.9,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Time Edge Distort",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Mode (Paint/Erase)",
-      "default": 0,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+  "updated": true,
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Brush Size",
+          "default": 0.3,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Freeze Decay",
+          "default": 0.9,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Time Edge Distort",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Mode (Paint/Erase)",
+          "default": 0,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
     }
-  ],
-  "updated": true
+  }
 }

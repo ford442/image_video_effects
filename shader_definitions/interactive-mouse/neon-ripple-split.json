@@ -6,7 +6,6 @@
   "params": [
     {
       "name": "Ripple Speed",
-      "type": "float",
       "min": 0,
       "max": 1,
       "default": 0.5,
@@ -14,7 +13,6 @@
     },
     {
       "name": "Color Split",
-      "type": "float",
       "min": 0,
       "max": 1,
       "default": 0.5,
@@ -22,7 +20,6 @@
     },
     {
       "name": "Glow Intensity",
-      "type": "float",
       "min": 0,
       "max": 1,
       "default": 0.5,
@@ -30,7 +27,6 @@
     },
     {
       "name": "Frequency",
-      "type": "float",
       "min": 0,
       "max": 1,
       "default": 0.5,
@@ -45,5 +41,39 @@
   "tags": [
     "mouse-driven",
     "interactive"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Shear Amount",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 1,
+          "name": "Ripple Speed",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 2,
+          "name": "Glow Intensity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 3,
+          "name": "Frequency",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        }
+      ]
+    }
+  }
 }

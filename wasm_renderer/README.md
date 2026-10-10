@@ -32,7 +32,7 @@ Full snapshot: [`STATUS.md`](./STATUS.md) · gaps: [`WASM_RENDERER_GAP_ANALYSIS.
 | `resources.cpp` | Textures, buffers, samplers, `ResizeCanvas` / `RecreateTextures` |
 | `pipeline.cpp` | Shader load/reload, compute + blit pipelines, bind groups |
 | `frame.cpp` | Multi-slot `Render()`, uniforms flush, async frame capture |
-| `timing.cpp` | GPU timestamp queries + `getGPUTimings` resolve/readback |
+| `timing.cpp` | GPU timestamp queries: one begin/end pair per slot compute pass, resolve/readback, `getGPUTimings` phases + `getPassTimingsJson` (#1314 D) |
 | `audio_depth.cpp` | Image/video upload, depth map, audio FFT bins |
 | `wasm_internal.cpp/h` | Shared helpers (`CheckLimit`, `ParseWorkgroupSize`, …) |
 | `src/wasm/bridge/*.ts` | **Hand-edited TypeScript glue** (edit here; webpack compiles `src/wasm/wasm_bridge.ts`) |

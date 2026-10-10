@@ -128,8 +128,8 @@ describe('ControlBindingRegistry', () => {
 
     const parsed = ControlBindingRegistry.deserialize(raw);
     expect(parsed).toHaveLength(1);
-    expect(parsed[0].trigger).toEqual({ source: 'key', id: 'x' });
-    expect(parsed[0].action).toEqual({ type: 'randomizeAll' });
+    expect(parsed[0]!.trigger).toEqual({ source: 'key', id: 'x' });
+    expect(parsed[0]!.action).toEqual({ type: 'randomizeAll' });
   });
 });
 
@@ -238,9 +238,9 @@ describe('sanitizeBindings', () => {
     ]);
 
     expect(sanitized).toHaveLength(1);
-    expect(sanitized[0].trigger.id).toHaveLength(64);
-    expect((sanitized[0].action as { param: string }).param).toHaveLength(128);
-    expect((sanitized[0].action as { slot: number }).slot).toBe(2);
+    expect(sanitized[0]!.trigger.id).toHaveLength(64);
+    expect((sanitized[0]!.action as { param: string }).param).toHaveLength(128);
+    expect((sanitized[0]!.action as { slot: number }).slot).toBe(5);
   });
 
   test('dedupes bindings by trigger', () => {
@@ -256,6 +256,6 @@ describe('sanitizeBindings', () => {
     ]);
 
     expect(sanitized).toHaveLength(1);
-    expect(sanitized[0].action).toEqual({ type: 'triggerTransition' });
+    expect(sanitized[0]!.action).toEqual({ type: 'triggerTransition' });
   });
 });

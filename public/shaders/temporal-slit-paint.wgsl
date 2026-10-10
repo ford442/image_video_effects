@@ -3,8 +3,9 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
 //  Complexity: High
-//  Upgraded: 2026-08-30
-//  A packing: raw canvas RGBA (linear paint / coverage) — display is ACES on writeTexture
+//  Upgraded: 2026-10-04 (prev 2026-08-30)
+//  Ideas: revived velocity stretch from a C state texel; slit-scan stamping along the stroke; exposure frame-lines
+//  A packing: raw canvas RGBA (linear paint / coverage) — display is ACES on writeTexture; texel (0,0) = cursor state (prevMouse.xy, vel.xy)
 //  Motion: velocity-stretched brush + traveling slit-head runners
 // ═══════════════════════════════════════════════════════════════════
 
@@ -36,7 +37,10 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 }
 
 fn loadC(c: vec2<i32>, maxC: vec2<i32>) -> vec4<f32> {
-  return textureLoad(dataTextureC, clamp(c, vec2<i32>(0), maxC), 0);
+  // Texel (0,0) holds cursor state, not paint; substitute its diagonal neighbour.
+  let cc = clamp(c, vec2<i32>(0), maxC);
+  let isState = cc.x == 0 && cc.y == 0;
+  return textureLoad(dataTextureC, select(cc, vec2<i32>(1, 1), isState), 0);
 }
 
 fn brushMask(local: vec2<f32>, size: f32, shapeType: i32, softness: f32) -> f32 {
@@ -72,35 +76,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let binA = plasmaBuffer[1].y;
   let binB = plasmaBuffer[5].z;
 
-  var spring = mouse;
-  var springVel = vec2<f32>(0.0);
-  let hasSpring = arrayLength(&extraBuffer) > 138u;
-  if (hasSpring && extraBuffer[138] > 0.5) {
-    spring = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-  }
-  if (gid.x == 0u && gid.y == 0u && hasSpring) {
-    var pos = spring;
-    var vel = springVel;
-    if (extraBuffer[138] <= 0.5) {
-      pos = mouse;
-      vel = vec2<f32>(0.0);
-    } else {
-      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
-      let omega = 14.0;
-      vel += ((mouse - pos) * (omega * omega) - vel * (2.0 * omega)) * dt;
-      vel = clamp(vel, vec2<f32>(-4.0), vec2<f32>(4.0));
-      pos += vel * dt;
-    }
-    extraBuffer[133] = pos.x;
-    extraBuffer[134] = pos.y;
-    extraBuffer[135] = vel.x;
-    extraBuffer[136] = vel.y;
-    extraBuffer[137] = time;
-    extraBuffer[138] = 1.0;
-    spring = pos;
-    springVel = vel;
-  }
+  // Idea 1 — revived velocity stretch. HEAD's extraBuffer spring never persisted (the
+  // scratch buffer is re-uploaded every frame), so springVel was always zero and the
+  // stretch/orientation below was dead. Cursor state now lives in A texel (0,0):
+  // (prevMouse.xy, smoothed per-frame velocity.xy), read back exactly from C.
+  let isStateTexel = gid.x == 0u && gid.y == 0u;
+  let stateC = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+  let mouseValid = all(mouse >= vec2<f32>(0.0)) && all(mouse <= vec2<f32>(1.0));
+  let rawVel = select(vec2<f32>(0.0), clamp(mouse - stateC.xy, vec2<f32>(-0.08), vec2<f32>(0.08)), mouseValid);
+  let frameVel = mix(clamp(stateC.zw, vec2<f32>(-0.08), vec2<f32>(0.08)), rawVel, 0.35);
+  let spring = mouse;
+  let springVel = frameVel * 60.0; // uv per second at 60 fps, the units HEAD's stretch expects
 
   let brushSize = mix(0.01, 0.2, u.zoom_params.x) * (1.0 + bass * 0.15);
   let shapeType = i32(clamp(u.zoom_params.y * 3.0 + 0.5, 0.0, 3.0));
@@ -130,7 +116,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     click = click + select(0.0, exp(-abs(rd - age * 0.5) * 14.0) * exp(-age * 1.4), alive);
   }
 
-  let hist = loadC(coord, maxC);
+  let hist = loadC(coord, maxC);  // (0,0) reads (1,1): the state texel is never paint
   let n1 = loadC(coord + vec2<i32>(1, 0), maxC);
   let n2 = loadC(coord + vec2<i32>(-1, 0), maxC);
   let n3 = loadC(coord + vec2<i32>(0, 1), maxC);
@@ -139,12 +125,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
+  // Idea 2 — slit-scan stamping: while moving, a painted pixel takes the live frame from
+  // the slit through the brush centre (keeping only its across-stroke coordinate), so the
+  // drag direction becomes a time axis and the stroke smears a strip of video.
+  let slitMix = smoothstep(0.15, 1.0, speed);
+  let slitOffset = vec2<f32>(local.y * sa, local.y * ca); // R(+velAng) * (0, local.y); sa = sin(-velAng)
+  let slitUV = clamp(spring + slitOffset / vec2<f32>(aspect, 1.0), vec2<f32>(0.0), vec2<f32>(1.0));
+  let slitColor = textureSampleLevel(readTexture, u_sampler, slitUV, 0.0).rgb;
+  // Idea 3 — exposure frame-lines: a brief darkening every quarter second marks equal time
+  // intervals across a moving stroke, like frame lines on slit-scan film.
+  let frameLine = mix(0.72, 1.0, smoothstep(0.0, 0.1, fract(time * 4.0)));
+  let stampColor = mix(current.rgb, slitColor * mix(1.0, frameLine, slitMix), slitMix);
+
   let stamp = max(mask * select(0.15, 1.0, held), runner * 0.65 + click * 0.45);
-  var canvas = mix(hist, vec4<f32>(current.rgb, 1.0), clamp(stamp, 0.0, 1.0));
+  var canvas = mix(hist, vec4<f32>(stampColor, 1.0), clamp(stamp, 0.0, 1.0));
   canvas = mix(canvas, laplacian, diffusion * 0.12);
   canvas.a = clamp(mix(hist.a * 0.992, 1.0, stamp) + runner * 0.08, 0.0, 1.0);
 
-  textureStore(dataTextureA, coord, canvas);
+  textureStore(dataTextureA, coord, select(canvas, vec4<f32>(select(stateC.xy, mouse, mouseValid), frameVel), isStateTexel));
 
   var hdr = mix(current.rgb, canvas.rgb, canvas.a);
   hdr = hdr + vec3<f32>(0.95, 0.55, 1.0) * runner * (0.25 + binA * 0.1);

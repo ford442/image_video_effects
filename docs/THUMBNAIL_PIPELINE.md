@@ -4,17 +4,35 @@ Automated batch rendering of shader preview thumbnails for the gallery / mega-me
 
 ## Hardware requirements
 
-Thumbnail generation **requires a real WebGPU GPU**. The script drives Chromium via Playwright and renders through the production WebGPU renderer.
+Thumbnail generation needs a **WebGPU adapter**. The script drives Chromium via Playwright and renders through the production WebGPU renderer.
 
 | Environment | Works? |
 |-------------|--------|
-| Linux/macOS/Windows with Vulkan, D3D12, or Metal | Yes |
+| Linux/macOS/Windows with Vulkan, D3D12, or Metal | Yes (`capture_host: gpu`) |
 | Chrome / Chromium 121+ | Yes |
-| GitHub `ubuntu-latest` (no GPU adapter) | No — smoke-only |
-| Cursor Cloud VM (headless, no ICD) | No |
+| GPU-less host (Cloud VM) with Playwright's Chromium + `--adapter=swiftshader` | Yes, slowly (`capture_host: swiftshader`) |
+| GitHub `ubuntu-latest` | Not used: never register it as the `gpu` runner |
 | `xvfb-run` alone | No — provides a display, not a GPU |
 
 `xvfb-run` can help on headless Linux **when a GPU is present** but no display server is running.
+
+### SwiftShader captures (since 2026-10-05)
+
+`--adapter=swiftshader` launches Chromium with `SWIFTSHADER_WEBGPU_ARGS`
+(`scripts/lib/swiftshaderArgs.js`, shared with `playwright.config.ts`). That is a real,
+conformant WebGPU device in software (Vulkan SwiftShader), not a fallback: the production
+renderer runs the same WGSL, and the PNG is read back from the GPU texture. It is slow
+(about 2 fps at 512², 30-70 s per shader), so it renders at scale 0.25 (512²) on a 512 px page
+on the main thread. Pages narrower than about 512 px never start the renderer.
+
+Rules:
+
+- A SwiftShader PNG is coverage when it passes the same health checks as any other capture
+  (black, magenta, flat). It is tagged `capture_host: "swiftshader"` in `manifest.json`.
+- A GPU host should recapture them when one exists: `npm run thumbs:generate -- --recapture-host=swiftshader`.
+- Never commit an unreviewed wave: build a contact sheet of the new PNGs and look at it first.
+- Shaders that need features SwiftShader lacks (1024-invocation workgroups) stay in
+  `reports/thumbnail_skip_allowlist.json` with that reason.
 
 ## Prerequisites
 
@@ -74,6 +92,11 @@ npm run thumbs:generate:minimal -- --limit=20
 | `--quality=battery` | `battery` | Render quality preset (OOM guard) |
 | `--time=1.5` | `1.5` | Shader time uniform at capture |
 | `--report=PATH` | `reports/thumbnail-failures.json` | Failure report output |
+| `--adapter=default\|swiftshader` | `default` (env `THUMBS_ADAPTER`) | `swiftshader`: software WebGPU on GPU-less hosts; PNGs tagged `capture_host: swiftshader` |
+| `--viewport=N` | none (`512` with swiftshader) | Page size in px; the renderer does not start below ~512 |
+| `--render-scale=S` | none (`0.25` with swiftshader) | Pin the internal render scale (0.25 = 512²) |
+| `--port=N` | `3459` | Static server port, so several shards can run on one host |
+| `--recapture-host=HOST` | none | Only shaders whose manifest `capture_host` is HOST (e.g. redo `swiftshader` on a GPU) |
 
 ## Output
 
@@ -113,13 +136,86 @@ npm run thumbs:generate:minimal -- --limit=20
 }
 ```
 
-Failure reasons: `black_frame`, `magenta_frame`, `error_frame`, `compile`, `pipeline`, `no_wgsl`, `gpu_unavailable`, `load_failed`, `capture_failed`.
+Failure reasons: `black_frame`, `magenta_frame`, `error_frame`, `flat_frame`, `compile`, `pipeline`, `no_wgsl`, `gpu_unavailable`, `load_failed`, `capture_failed`.
+
+Health is measured on the PNG that will be committed (decoded with `sharp`), with the same
+thresholds in `scripts/lib/thumbnailFrameAnalysis.js`, `src/services/thumbnailBatch/frameCheck.ts`
+and `scripts/audit_thumbnail_integrity.py`: black = active pixels < 2% or mean luminance < 0.01;
+magenta = ≥ 75% magenta pixels; **flat** = largest R/G/B standard deviation < 0.01 (a solid fill or
+invisible noise, added 2026-10-05; it flagged 11 PNGs that had counted as healthy, including the
+attract ids `stellar-plasma` and `bio_lenia_continuous`).
+
+Capture conditions (both the CLI and the in-app scanner):
+
+- Every category except `generative` renders over the input image
+  `public/fixtures/thumbnail-scene.png` (512², procedural, `scripts/make-thumbnail-fixture.py`), as
+  in the app. List entries without a `category` take their list's name; before 2026-10-05 most of
+  them were captured over a cleared input and came out black.
+- The shader is loaded from its list `url` (graph steps and renamed files used to be skipped as `no_wgsl`).
+- Feedback textures are reallocated before each shader, so a capture starts from zero state
+  rather than the previous shader's.
+- The CLI page blocks every non-localhost request: the app otherwise fetches a random remote
+  image at boot that can land mid-capture.
+- Warm-up counts frames the renderer actually rendered, not page animation frames.
 
 Skipped shaders (intentional): listed in `reports/thumbnail_skip_allowlist.json` — excluded from generation queue and eligible coverage denominator.
 
+## Weekly refresh: only changed shaders (in-app or CLI)
+
+Every shader has a **source hash** covering its WGSL, its `#include`d `_*.wgsl`
+libraries, later multipass passes, and the `params` block of its definition
+JSON (`scripts/lib/shaderSourceHash.js`). Each thumbnail manifest entry stores
+the `source_hash` it was captured from, so a thumbnail is:
+
+| State | Meaning |
+|-------|---------|
+| `fresh` | Captured from the current source |
+| `stale` | Shader changed since capture (e.g. an upgrade batch) |
+| `missing` | No thumbnail |
+| `unknown` | Captured before hashing existed — run the backfill once |
+
+`npm start` / `npm run build` regenerate `public/thumbnails/source-hashes.json`
+(gitignored) via `npm run build:source-hashes`.
+
+### One-time setup
+
+```bash
+npm run thumbs:backfill-hashes        # needs full git history (not a --depth 1 clone)
+npm run upgrades:record               # first run creates the baseline ledger
+```
+
+The backfill stamps an existing thumbnail only when git shows no change to its
+source files after the thumbnail's `generated_at`, and never stamps ids in
+`public/thumbnails/unhealthy.json` (black/error PNGs). The 2026-10-04 run stamped
+2, left 281 changed-since-capture and 77 unhealthy unstamped (queued for recapture).
+Skip-allowlist ids are copied into `source-hashes.json` (`skip`) so the in-app
+scanner leaves them out of *Changed since last thumbnail* like the CLI does.
+
+### After each upgrade batch
+
+```bash
+npm run upgrades:record -- --note="2026-10-03 weekly batch (opus) — upgrade_batches/…"
+```
+
+This appends an entry to `reports/shader-upgrade-ledger.json` for every shader
+whose hash changed (`--event=fixed` or `--event=hygiene` for non-upgrade edits).
+Then refresh just those thumbnails, either:
+
+- **In the app (Chrome/Edge, real GPU):** open **Shader Scanner** → scope
+  *Changed since last thumbnail* → *Render + save thumbnails* → **Choose repo
+  folder** (the checkout root) → **Start Scan**. It compile-checks, renders each
+  passing shader through the live Tier A renderer, flags black/magenta frames,
+  writes `public/thumbnails/<id>.png`, merges `manifest.json` (every 10 captures),
+  and writes failures to `reports/thumbnail-failures-inapp.json`. Your slot
+  stack, params and input are restored afterwards.
+- **CLI:** `npm run thumbs:stale` (same as `thumbs:generate` with `--stale`).
+
+Both paths stamp `source_hash`, so the next run skips everything already current.
+
 ## Coverage strategy (campaign target ≥50% healthy; 80% later)
 
-**Do not capture on the Cloud VM** (no GPU adapter; black PNGs are not coverage). Run on a discrete-GPU workstation:
+Prefer a discrete-GPU workstation. A GPU-less host (the Cloud VM) can capture with
+`--adapter=swiftshader` (see Hardware requirements); never commit black PNGs as coverage.
 
 ```bash
 SKIP_WASM_BUILD=1 npm run build
@@ -140,7 +236,7 @@ Priority order: `ATTRACT_SHOWCASE_IDS` + `ATTRACT_PHYSICS_LAB_IDS`, then remaini
 | attract | `--priority=attract` | Curated pool first |
 | W1 | `generative` | Remaining generative |
 | W2 | `simulation`, `interactive-mouse` | Multipass flagships + user-facing interaction |
-| W3 | `visual-effects`, `distortion`, `liquid-effects`, `image`, remainder | Image shaders use `public/fixtures/thumbnail-sample.png` |
+| W3 | `visual-effects`, `distortion`, `liquid-effects`, `image`, remainder | Non-generative shaders use `public/fixtures/thumbnail-scene.png` |
 
 ### Campaign plan — 50% checkpoint (baseline 2026-09-13)
 
@@ -192,8 +288,8 @@ fails when any entry has `expires < today`, and it runs in `verify:toolchain-fou
 push and PR, so an un-actioned expiry turns CI red on every run with no code change. All 1,069
 original deferrals were due to expire 2026-09-29. They were dispositioned once (below) rather than
 bulk-extended. Expired ids that are not renewed simply become "Missing" in the report-only
-coverage job, which is the honest meaning of expiry. **Next expiry: 2026-10-26** (all 234
-remaining entries); the gate starts warning 7 days earlier (2026-10-19) and fails on 2026-10-27.
+coverage job, which is the honest meaning of expiry. **Next expiry: 2026-10-26** (the 40
+entries left after the 2026-10-05 SwiftShader waves; originally 234); the gate starts warning 7 days earlier (2026-10-19) and fails on 2026-10-27.
 Renew only the categories in the next scheduled capture wave, 30 days at most, via the writer.
 
 In the picker, authors can use the dev-only **Needs thumb** filter in `ShaderGallery` to list
@@ -245,6 +341,49 @@ renewed entries), so they are counted as deferred, not as coverage. The 234 pend
 77 with a black PNG and 157 with no PNG at all; none of them is healthy.
 Not-healthy eligible = 1,089 = 234 deferred + 855 "Missing" (no healthy PNG, no deferral).
 
+### 2026-10-05 SwiftShader capture station log
+
+Host: the Cloud VM (8 cores, no GPU), Playwright Chromium + SwiftShader (`--adapter=swiftshader`),
+3 parallel shards plus retry passes, 30 warm-up frames (120 for simulation/multipass ids),
+render scale 0.25 (512²), every non-generative shader over `fixtures/thumbnail-scene.png`.
+Throughput was about 1.8 captures/min across the 3 shards (30-70 s per shader per browser).
+
+| | Before (main, 2026-10-05) | After |
+|---|---|---|
+| Healthy eligible | 277 / 1,378 (20.1%, after the `flat_frame` rule) | **1,265 / 1,379 (91.7%)** |
+| Integrity-flagged PNGs | 85 (74 black, 11 flat) | 22 (17 black, 5 flat) |
+| `gpu-capture-pending` deferrals / ratchet | 234 / 234 | **40 / 40** (target 200) |
+| PNGs tagged `capture_host: swiftshader` | 0 | 994 |
+
+Every new PNG was reviewed on contact sheets before commit. Not healthy (114 eligible ids):
+
+- **black_frame (55)** and **flat_frame (29)** at default params on SwiftShader. 13 of the 55 black
+  ones were also black when captured on a real GPU in 2026-06; the other 42 had never been captured.
+  Black or flat on SwiftShader is strong evidence of a shader problem at default params but not
+  proof: a GPU recapture should confirm before anything is filed as a content bug. black: `aerogel-smoke-hdr`, `alpha-fire-temperature`, `audio-reactive-rgb-dispersion`, `boids`, `bubble-chamber`, `cellular-automata-rgba`, `charcoal-rub-diffusion`, `chromatic-manifold-2`, `conv-guided-video-filter`, `double-exposure-hdr`, `elastic-chromatic-explosion`, `emergent-calligraphic-weave`, `fire-smoke-volumetric-fog`, `flow-sort`, `fractal-boids-field`, `gen-cellular-automata-tapestry`, `gen-dragon-curve`, `gen-fireworks-crackle-palm`, `gen-grok41-plasma`, `gen-hyper-geometric-void-glass-seraph`, `gen-hyperdimensional-bismuth-lattice`, `gen-lenia-2`, `gen-lichen-reaction-diffusion`, `gen-live-studio-tab`, `gen-neural-dust`, `gen-prismatic-aether-loom`, `gen-prismatic-quantum-glass-chrysalis-engine`, `gen-psychedelic-time-warp-kaleidoscope`, `gen-rainbow-icosahedron-cascade`, `gen-velocity-bloom`, `ink-bleed`, `interactive-film-burn`, `interactive-magnetic-ripple-em`, `liquid-optimized-pass1`, `liquid-rainbow`, `liquid-smear`, `long-exposure`, `magnetic-flux-garden`, `molten-gold`, `mouse-time-crystal`, `nano-repair`, `nebula-gyroid`, `neon-cursor-trace`, `particle-disperse`, `pixel-depth-sort`, `plastic-bricks`, `pp-sharpen`, `quantum-foam-pass1`, `quantum-smear`, `retro_phosphor_dream`, `spatio-temporal-3d-conv`, `spec-spherical-harmonics-light`, `temporal-frequency-decomposition`, `tile-twist`, `velocity-field-paint`.
+  flat: `alpha-multi-state-ecosystem`, `chromatic-folds-gemini`, `gamma-ray-burst-blackbody`, `gen-crystal-caverns`, `gen-cyclic-automaton`, `gen-fractal-flame-classic`, `gen-julia-set`, `gen-neon-plasma-chrono-bloom`, `gen-quantum-neural-lace`, `gen-reaction-diffusion`, `gen-sentient-cyber-chrono-void-serpent`, `gen-symbiotic-cyber-fungal-core-reactor`, `gen-symbiotic-cyber-mycelium`, `gen-temporal-motion-smear`, `gen-thermal-rainbow-topography`, `gen-xeno-mycelial-resonance-web`, `glitch-ripple-drag`, `hybrid-spectral-decomposed`, `ink-bleed-fluid`, `kimi-fractal-dreams`, `liquid`, `liquid-viscous`, `luma-melt-interactive`, `neon-quantum-lattice`, `optical-feedback`, `quad-mirror`, `recursive-ancestral-terrains`, `stellar-plasma-blackbody`, `symbiotic-light-propagation-networks`.
+- **timeout / load failure (30)**: heavy kernels (non-local means, Gabor, frequency-domain notch,
+  Lenia variants, slime moulds) exceed the 5-minute per-shader budget on SwiftShader, or wedge the
+  device. A GPU host should capture these: `anisotropic-kuwahara-nlm`, `artistic_painterly_oil`, `bio_lenia_continuous`, `bitonic-sort`, `conv-difference-of-gaussians-cascade`, `conv-fractal-kernel`, `conv-frequency-domain-notch`, `conv-gabor-texture-analyzer`, `conv-non-local-means`, `cyber-scan-gabor`, `divine-light-gpt52`, `fractal-noise-dissolve-nlm`, `gen-cybernetic-ferro-coral`, `gen-cymatic-quantum-silk-loom`, `gen-image-pyro`, `gen-luminescent-aether-plasma-nebula-koi`, `gen-luminescent-nebula-silk-weaver`, `gen-orb`, `gen-quantum-singularity-forge`, `gen-resonant-crystal-canyons`, `gen-resonant-quantum-plasma-dragon-eye`, `gen-symbiotic-plasma-reef-matrix`, `gen-trails`, `hybrid-particle-fluid`, `kimi-flock-symphony-em`, `kimi-nebula-depth`, `lenia-on-video`, `painterly-oil-bilateral`, `sim-slime-mold-growth`, `sim-slime-mold-growth-em`.
+
+Low-information captures that pass the checks (washed-out near-white fields, dense noise, a lone
+sprite on black). They count as healthy but are worth a content look: `chromatic-folds-bilateral`, `gen-bismuth-citadel-crystal`, `gen-fractal-chrono-dendrite-forge`, `mirror-dimension`, `melting-oil-blackbody`, `alpha-em-field-simulation`, `gen-image-pixel-detonation`, `alpha-erosion-terrain`, `gen-singularity-forge-blackbody`, `gen-grok4-life`, `gen-grok4-perlin`, `chromatic-folds-2`, `gen-liquid-metal-cymatic-resonator`, `engraving-stipple-blue-noise`, `gen-hyper-dimensional-bismuth-matrix`, `rgb-fluid`, `photonic-caustics-iridescence`, `gen-fluffy-raincloud`, `cellular-automata-3d`, `gen-eldritch-tesseract-hive-mind`, `pp-vignette`, `sim-decay-system-rgba`, `gen-flame-fractal-attractor`, `gen-sentient-ferro-silicate-swarm`, `chromatic-folds`, `gen-radiant-cyber-chrono-void-stag`, `gen-fireworks-dahlia-burst`, `dimension-slicer-guided`, `bio-lenia-rgba`, `gen-crystalline-nebula-weaver-forge`.
+
+Deferrals: the 194 deferred ids that now have healthy thumbnails were removed with
+`scripts/thumbs-farm-finalize.js`; the remaining 40 are ids above that failed and still expire on
+2026-10-26 (renew only with a `capture_failure` note, or let them lapse to "Missing").
+`kimi-fractal-dreams` (flat white at default params) left the attract pool.
+
+Harness fixes found while doing this (all in `scripts/generate-shader-thumbnails.js`,
+`scripts/lib/thumbnailHarness.mjs`): health measured on the committed PNG instead of a blank
+compositor canvas; non-generative effects get an input image (most list entries have no
+`category`); list `url` used for the WGSL; feedback textures reset per shader; remote requests
+blocked; warm-up counts rendered frames; the app reloads (or a new page opens) after a wedged
+shader; the manifest is flushed per capture so shards can run in parallel and survive interruption.
+`check-thumbnail-coverage.js` read base-ref shader lists through a 1 MB pipe buffer, so large lists
+silently vanished and hundreds of old shaders looked "newly eligible"; fixed (256 MB buffer, lists
+first).
+
 ## CI
 
 Manual workflow: **Actions → Generate Thumbnails → Run workflow**
@@ -256,9 +395,9 @@ The check compares the PR with the base branch and **fails only** when a newly e
 id has no healthy PNG (PNG + manifest + not integrity-flagged) and no unexpired deferral,
 or when a previously healthy PNG is deleted. Global coverage **percentage and count are not gates**.
 
-The CI job stays `continue-on-error` (reporting-only with a sticky PR comment) until
-healthy eligible coverage is ≥ 50%; then drop `continue-on-error` so new-definition
-failures block the PR. The weekly coverage workflow remains reporting-only until that flip.
+Healthy eligible coverage passed 50% on 2026-10-05 (91.7%), so the PR job is **blocking**
+(`continue-on-error` dropped, `set -o pipefail` so the `tee` cannot hide the exit status).
+The sticky comment step stays non-blocking. The weekly coverage workflow is still reporting-only.
 
 ### Deferral Mechanism
 

@@ -1,17 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Virtual Lens
-//  Category: image
-//  Features: mouse-driven, chromatic-aberration, audio-reactive, upgraded-rgba
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: Medium
-//  Created: 2026-05-10
-//  By: Phase A Upgrade Swarm
-//  Upgraded: Single magnification + spectral tint, alpha = Fresnel edge falloff
-// ═══════════════════════════════════════════════════════════════════
-//  Replaces per-channel chromatic aberration with a single
-//  magnification displacement field. Spectral tint is applied
-//  via mix() with wavelengthToRGB. Alpha encodes lens edge
-//  falloff multiplied by Schlick Fresnel for glass translucency.
-//  Depth-aware attenuation makes distant pixels more transparent.
+//  Upgraded: 2026-10-04
+//  Ideas: focal plane at the cursor depth with disc defocus; Fresnel glass reflection of the surroundings
+//  A packing: ACES display RGBA (single magnification UV kept: no per-channel split)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -27,6 +21,7 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
 
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
@@ -55,6 +50,14 @@ fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
 
 fn gaussianMask(dist: f32, sigma: f32) -> f32 {
   return exp(-dist * dist / (2.0 * sigma * sigma));
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn sampleSafe(uv: vec2<f32>) -> vec3<f32> {
+  return textureSampleLevel(readTexture, u_sampler, clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -87,13 +90,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Single magnification displacement — no per-channel UVs
     let displacedUV = uv - dir * distortion;
-    let baseColor = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
+    // Idea 1: focal plane. A hand lens is focused on whatever sits under the
+    // cursor; magnified content at other depths falls out of focus. Six taps on
+    // a disc whose radius grows with |depth - focus depth|, only inside the glass.
+    let focusDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(mouse, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let sceneDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(displacedUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let coc = abs(sceneDepth - focusDepth) * 0.014 * mask * (0.5 + magnification);
+    var defocus = sampleSafe(displacedUV) * 2.0;
+    for (var k = 0; k < 6; k = k + 1) {
+        let a = f32(k) * 1.0472;
+        defocus = defocus + sampleSafe(displacedUV + vec2<f32>(cos(a) / aspect, sin(a)) * coc);
+    }
+    let baseColor = defocus / 8.0;
 
     // Spectral tint via mix based on aberration strength
     let wavelength = mix(420.0, 700.0, aberration * 10.0 + distortion * 2.0);
     let spectralTint = wavelengthToRGB(wavelength);
     let tintStrength = clamp(aberration * 4.0, 0.0, 1.0);
-    let tintedColor = mix(baseColor, baseColor * spectralTint, tintStrength);
+    var tintedColor = mix(baseColor, baseColor * spectralTint, tintStrength);
+    // Idea 2: the glass also reflects the room. A mirrored, minified and
+    // softened view of the surroundings rides on the surface, weighted by a
+    // Fresnel term that rises toward the rim.
+    let rimT = clamp(dist / max(radius, 0.001), 0.0, 1.0);
+    let reflFresnel = schlickFresnel(sqrt(max(1.0 - rimT * rimT, 0.0)), 0.04);
+    let reflUV = mouse - dir * 1.6;
+    let reflOff = vec2<f32>(0.006 / aspect, 0.006);
+    let reflection = (sampleSafe(reflUV + reflOff) + sampleSafe(reflUV - reflOff)
+        + sampleSafe(reflUV + vec2<f32>(reflOff.x, -reflOff.y)) + sampleSafe(reflUV - vec2<f32>(reflOff.x, -reflOff.y))) * 0.25;
+    tintedColor = mix(tintedColor, reflection * 0.85 + vec3<f32>(0.04), clamp(reflFresnel * 0.6, 0.0, 0.45) * mask);
 
     // Lens rim glow for glass edge highlight
     let rim = smoothstep(radius * 0.9, radius, dist) * mask * 0.2;
@@ -134,7 +158,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Additional bass-reactive pulse warps the lens edge slightly
     let bassPulse = sin(time * 6.0) * bass * 0.02 * mask;
-    let pulsedColor = darkenedColor + vec3<f32>(bassPulse);
+    let pulsedColor = aces(max(darkenedColor + vec3<f32>(bassPulse), vec3<f32>(0.0)) * 0.8);
 
     // Final composite with all translucency layers
     textureStore(writeTexture, coords, vec4<f32>(pulsedColor, depthAlpha));

@@ -2,6 +2,7 @@
 // Do not edit manually — re-run the script instead.
 
 import type { MultipassGraphDef } from './multipassGraph';
+import { getRuntimeGraph } from './runtimeGraphs';
 
 export interface MultipassInfo {
   pass: number;
@@ -147,7 +148,9 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
         "reads": [],
         "writes": [
           "dataA"
-        ]
+        ],
+        "scalable": true,
+        "minScale": 0.5
       },
       {
         "id": "filter",
@@ -676,14 +679,17 @@ export function resolveMultipassChain(startId: string): string[] {
   return chain;
 }
 
-/** Resolve Tier C graph for a shader id, if declared in JSON. */
+/**
+ * Resolve the Tier C graph for a shader id: a runtime graph (the Graph Lab draft,
+ * renderer/runtimeGraphs.ts) wins over the one declared in JSON.
+ */
 export function resolveGraphForShader(shaderId: string): MultipassGraphDef | null {
-  return GRAPH_REGISTRY[shaderId] ?? null;
+  return getRuntimeGraph(shaderId) ?? GRAPH_REGISTRY[shaderId] ?? null;
 }
 
 /** All unique WGSL entry ids referenced by a graph shader. */
 export function getGraphEntryIds(shaderId: string): string[] {
-  const graph = GRAPH_REGISTRY[shaderId];
+  const graph = resolveGraphForShader(shaderId);
   if (!graph) return [];
   const ids = new Set<string>();
   for (const node of graph.nodes) {
@@ -693,7 +699,7 @@ export function getGraphEntryIds(shaderId: string): string[] {
 }
 
 export function hasGraph(shaderId: string): boolean {
-  return shaderId in GRAPH_REGISTRY;
+  return resolveGraphForShader(shaderId) !== null;
 }
 
 /**

@@ -1,11 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Luma Melt
 //  Category: liquid-effects
-//  Features: mouse-driven, audio-reactive, depth-aware, temporal, upgraded-rgba
+//  Features: mouse-driven, audio-reactive, depth-aware, temporal, upgraded-rgba, semantic-alpha
 //  Complexity: High
-//  Chunks From: luma-melt-interactive, warpedFBM, curl2D, bass_env
-//  Created: 2024-01-01
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-10-06
+//  Ideas: molten-temperature memory (drips re-solidify); ledge pooling + meniscus lip
+//  A packing: linear pre-ACES melt RGB (advected history mix, no display glow); A.a = molten temperature 0..1
+//  History: created 2024-01-01; upgraded-rgba 2026-05-31; chunks warpedFBM, curl2D, bass_env
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -107,27 +108,57 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dripPacket = pow(max(0.0, sin(uv.y * 62.0 + branchNoise * 8.0 - time * (18.0 + treble * 7.0))), 18.0) * branch;
     let curl = curl2D(uv * 3.0, time * 0.2) * meltSpeed * (1.0 + bass * 0.5);
     let gravity = vec2<f32>((branch - 0.5) * meltSpeed * 0.16, meltSpeed * luma * meltMask * (1.0 + meltRunner * 0.7 + branch * 0.5));
-    let flow = (curl + gravity) * viscosity;
 
-    let totalFlow = flow + vec2<f32>(0.0, heat * (mouseFactor + clickHeat * 0.8 + dripPacket * 0.18));
+    // IDEA 1 — molten-temperature memory. Last frame's temperature at this pixel (A.a) sets how
+    // runny the melt is here; hot pixels flow up to 1.6x, cooled ones re-solidify toward 0.6x.
+    let coord = vec2<i32>(global_id.xy);
+    let hereTempRaw = textureLoad(dataTextureC, coord, 0).a;
+    let hereTemp = clamp(select(0.0, hereTempRaw, hereTempRaw == hereTempRaw), 0.0, 1.0);
+    let fluidity = mix(0.6, 1.6, smoothstep(0.05, 0.6, hereTemp));
+
+    // IDEA 2 — ledge pooling. Molten pixel above a non-melting (dark) pixel = a ledge: the downward
+    // flow stalls and the drip pools on the lip.
+    let belowUV = vec2<f32>(uv.x, min(uv.y + 4.0 / resolution.y, 1.0));
+    let lumaBelow = dot(textureSampleLevel(readTexture, u_sampler, belowUV, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let meltBelow = smoothstep(0.28 + heat * 0.12, 0.78 - heat * 0.08, lumaBelow);
+    let ledge = smoothstep(0.08, 0.5, meltMask - meltBelow);
+
+    let flow = (curl + gravity) * viscosity * fluidity;
+
+    var totalFlow = flow + vec2<f32>(0.0, heat * (mouseFactor + clickHeat * 0.8 + dripPacket * 0.18));
+    totalFlow.y = totalFlow.y * (1.0 - 0.85 * ledge);
     let sourceUV = clamp(uv - totalFlow, vec2<f32>(0.0), vec2<f32>(1.0));
 
     let historyCoord = clamp(vec2<i32>(sourceUV * resolution), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1));
-    let history = textureLoad(dataTextureC, historyCoord, 0);
+    let historyRaw = textureLoad(dataTextureC, historyCoord, 0);
+    let historyOk = all(historyRaw == historyRaw);
+    // NaN fallback: source colour at ambient temperature 0 (newColor.a is coverage, not heat).
+    let history = select(vec4<f32>(newColor.rgb, 0.0), clamp(historyRaw, vec4<f32>(0.0), vec4<f32>(16.0)), historyOk);
 
+    // Temperature advects with the melt, cools ~3%/frame, and is re-heated by bright luma
+    // (Heat Intensity), the pointer and click fronts.
+    let heatIn = max(meltMask * u.zoom_params.w * 0.6, max(mouseFactor, min(clickHeat, 1.0)));
+    let temp = clamp(max(history.a * 0.97, heatIn), 0.0, 1.0);
+
+    // Pooled drips hold longer on the ledge.
+    let localPersist = min(persistence + 0.08 * ledge, 0.99);
     let trebleGlow = treble * 0.1 * mouseFactor;
-    let blended = mix(newColor, history, persistence);
+    let blended = mix(newColor, history, localPersist);
     let heated = blended + vec4<f32>(trebleGlow + meltRunner * mids * 0.05,
                                      trebleGlow * 0.5 + clickHeat * 0.05,
                                      trebleGlow * 0.2 + dripPacket * treble * 0.04,
                                      0.0);
 
     let meltAlpha = clamp(luma * 0.8 + mouseFactor * 0.3 + bass * 0.15, 0.0, 1.0);
-    let hdr = heated.rgb + vec3<f32>(0.45, 0.12 + mids * 0.18, 0.04 + treble * 0.12) * (branch + clickHeat) * heat * 0.24;
+    let molten = smoothstep(0.45, 1.0, temp);
+    var hdr = heated.rgb + vec3<f32>(0.45, 0.12 + mids * 0.18, 0.04 + treble * 0.12) * (branch + clickHeat + molten * 0.6) * heat * 0.24;
+    // Meniscus: the pooled lip catches light.
+    hdr = hdr + vec3<f32>(1.0, 0.92, 0.8) * ledge * 0.10 * (0.4 + 0.6 * smoothstep(0.05, 0.6, temp));
+    hdr = max(hdr, vec3<f32>(0.0));
     let mapped = clamp((hdr * (2.51 * hdr + 0.03)) / (hdr * (2.43 * hdr + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
-    let finalColor = vec4<f32>(mapped, clamp(meltAlpha + branch * 0.12 + clickHeat * 0.08, 0.0, 1.0));
+    let finalColor = vec4<f32>(mapped, clamp(meltAlpha + branch * 0.12 + clickHeat * 0.08 + ledge * 0.1, 0.0, 1.0));
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), finalColor);
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, coord, finalColor);
+    textureStore(dataTextureA, coord, vec4<f32>(clamp(blended.rgb, vec3<f32>(0.0), vec3<f32>(16.0)), temp));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

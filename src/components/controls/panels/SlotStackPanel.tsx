@@ -29,7 +29,7 @@ export const SlotStackPanel: React.FC<SlotStackPanelProps> = ({
         <>
             <div className="glass-panel" style={{ padding: '12px' }}>
                 <div className="gold-section-header" style={{ fontSize: '12px', marginTop: '0' }}>Shader Slots</div>
-                {modes.map((_, i) => {
+                {modes.map((mode, i) => {
                     if (i >= maxActiveSlots) return null;
                     const slotStatus = slotShaderStatus[i] || 'idle';
                     const borderColor = slotStatus === 'error' ? '#ff4757'
@@ -70,7 +70,7 @@ export const SlotStackPanel: React.FC<SlotStackPanelProps> = ({
                                         </span>
                                         <button
                                             title="Retry loading this shader (useful for transient network errors)"
-                                            onClick={(e) => { e.stopPropagation(); setMode(i, modes[i]); }}
+                                            onClick={(e) => { e.stopPropagation(); setMode(i, mode); }}
                                             style={{
                                                 background: 'rgba(255,71,87,0.15)',
                                                 border: '1px solid rgba(255,71,87,0.4)',
@@ -91,7 +91,7 @@ export const SlotStackPanel: React.FC<SlotStackPanelProps> = ({
                                 <div style={{ flex: 1 }}>
                                     <ShaderMegaMenu
                                         options={slotMenuOptions}
-                                        value={modes[i]}
+                                        value={mode}
                                         onChange={(id) => setMode(i, id as RenderMode)}
                                         includeNone={true}
                                         onClick={(e) => e.stopPropagation()}

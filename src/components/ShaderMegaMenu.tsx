@@ -221,13 +221,13 @@ export const ShaderMegaMenu: React.FC<ShaderMegaMenuProps> = ({
         let groupIdx = -1;
         let posInGroup = 0;
 
-        for (let g = 0; g < groups.length; g++) {
-          if (idx < cumulative + groups[g].items.length) {
+        for (const [g, group] of groups.entries()) {
+          if (idx < cumulative + group.items.length) {
             groupIdx = g;
             posInGroup = idx - cumulative;
             break;
           }
-          cumulative += groups[g].items.length;
+          cumulative += group.items.length;
         }
 
         if (groupIdx === -1) return;
@@ -235,7 +235,8 @@ export const ShaderMegaMenu: React.FC<ShaderMegaMenuProps> = ({
           ? Math.min(groupIdx + 1, groups.length - 1)
           : Math.max(groupIdx - 1, 0);
 
-        const targetItems = groups[targetGroup].items;
+        const targetItems = groups[targetGroup]?.items;
+        if (!targetItems) return;
         const targetPos = Math.min(posInGroup, targetItems.length - 1);
         setFocusedId(targetItems[targetPos]?.id ?? null);
       }

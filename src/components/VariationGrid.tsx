@@ -67,7 +67,7 @@ function previewStyle(variation: ChainVariation): React.CSSProperties {
   let b = 0.5;
   variation.summary.slots.forEach(slot => {
     const p = slot.params || {};
-    const vals = [
+    const vals: [number, number, number, number] = [
       p.zoomParam1 ?? 0.5,
       p.zoomParam2 ?? 0.5,
       p.zoomParam3 ?? 0.5,
@@ -160,6 +160,7 @@ export const VariationGrid: React.FC<VariationGridProps> = ({
   const handleBreed = useCallback(() => {
     if (selected.size !== 2) return;
     const [aIndex, bIndex] = Array.from(selected).sort((x, y) => x - y);
+    if (aIndex === undefined || bIndex === undefined) return;
     const parentA = displayVariations[aIndex]?.chain;
     const parentB = displayVariations[bIndex]?.chain;
     if (!parentA || !parentB) return;

@@ -8,6 +8,9 @@ import { inferRequiresRgba32Float } from '../config/formatPolicy';
 import { resolveShaderUrl } from '../utils/resolveShaderUrl';
 import { fetchShaderWgsl } from '../utils/fetchShaderWgsl';
 import { postShaderRating } from './postShaderRating';
+import { formatNagaError, loadNagaGlslConverter } from '../utils/nagaWasm';
+import type { ShaderParam } from '../renderer/types';
+import { parseShaderDefinition } from './shaderDefinition';
 
 const API_BASE = process.env.REACT_APP_API_BASE_URL || API_BASE_URL;
 
@@ -55,28 +58,24 @@ export interface ShaderContent {
   type: 'wgsl' | 'glsl';
 }
 
-// --- TintWASM Converter ---
+// --- GLSL → WGSL (naga) ---
 
 /**
- * Convert GLSL shader code to WGSL using official TintWASM
+ * Convert GLSL 450 to WGSL with naga's GLSL front-end (tools/naga_wasm, loaded
+ * lazily from /wasm/naga_wasm.js — same-origin, never bundled).
  */
 export async function glslToWgsl(glsl: string, stage: 'fragment' | 'vertex' = 'fragment'): Promise<string> {
-  // @ts-ignore CDN module has no type declarations
-  const { init } = await import('https://cdn.jsdelivr.net/npm/@webgpu/tint-wasm@latest/dist/tint.js');
-  const tint = await init();
-  const result = await tint.convertGLSLToWGSL(glsl, stage);
-  if (result.error) throw new Error(result.error);
+  const naga = await loadNagaGlslConverter();
+  const result = naga.glslToWgsl(glsl, stage);
+  if (!result.ok || result.wgsl === undefined) throw new Error(formatNagaError(result));
   return result.wgsl;
 }
 
 // Alias for backward compatibility
 export const convertGlslToWgsl = glslToWgsl;
 
-/**
- * Check if TintWASM is available
- */
-export function isTintAvailable(): boolean {
-  // Tint availability is determined by whether WebAssembly is supported
+/** The converter needs WebAssembly; the artifact itself is fetched on first use. */
+export function isGlslConversionAvailable(): boolean {
   return typeof WebAssembly !== 'undefined';
 }
 
@@ -99,8 +98,8 @@ export function extractShaderId(urlOrId: string): string | null {
   ];
   
   for (const pattern of patterns) {
-    const match = urlOrId.match(pattern);
-    if (match) return match[1];
+    const id = urlOrId.match(pattern)?.[1];
+    if (id) return id;
   }
   
   return null;
@@ -245,17 +244,7 @@ export async function convertShader(shaderId: string, targetFormat: string = 'wg
 //  VPS Storage API Types
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export interface ShaderParam {
-  id: string;
-  name: string;
-  default: number;
-  min: number;
-  max: number;
-  step?: number;
-  labels?: string[];
-  mapping?: string;
-  audio?: 'bass' | 'mid' | 'treble' | 'overall' | { fft: number };
-}
+export type { ShaderParam };
 
 export interface ApiShaderEntry {
   id: string;
@@ -418,35 +407,30 @@ class ShaderApiService {
       SHADER_LIST_CATEGORIES.map(async (category) => {
         const response = await fetch(`./shader-lists/${category}.json`);
         if (!response.ok) return [];
-        const shaders: any[] = await response.json();
-        return shaders.map((shader: any) => ({
-          id: shader.id,
-          name: shader.name || shader.id,
-          filename: `${shader.id}.json`,
-          type: 'shader',
-          format: 'wgsl',
-          description: shader.description || '',
-          category: shader.category || category,  // Use shader's own category or the file category
-          tags: shader.tags || [],
-          url: shader.url ? resolveShaderUrl(shader.url) : resolveShaderUrl(`shaders/${shader.id}.wgsl`),
-          requiresDeepWorkgroup: shader.requiresDeepWorkgroup === true,
-          requiresHistoryRing: shader.requiresHistoryRing === true,
-          requiresRgba32Float: inferRequiresRgba32Float({
+        const raw: unknown = await response.json();
+        return (Array.isArray(raw) ? raw : []).flatMap((item): ApiShaderEntry[] => {
+          const shader = parseShaderDefinition(item);
+          if (!shader) return [];
+          return [{
             id: shader.id,
-            requiresRgba32Float: shader.requiresRgba32Float === true,
-          }),
-          params: (shader.params || []).map((p: any, idx: number) => ({
-            id: p.id || p.name || `param${idx + 1}`,
-            name: p.label || p.name || `Parameter ${idx + 1}`,
-            default: p.default ?? 0.5,
-            min: p.min ?? 0,
-            max: p.max ?? 1,
-            step: p.step ?? 0.01,
-            labels: p.labels,
-            mapping: p.mapping,
-            audio: p.audio,
-          })),
-        } as ApiShaderEntry));
+            name: shader.name,
+            filename: `${shader.id}.json`,
+            type: 'shader',
+            format: 'wgsl',
+            description: shader.description || '',
+            category: shader.category || category,  // Use shader's own category or the file category
+            tags: shader.tags || [],
+            url: resolveShaderUrl(shader.url),
+            requiresDeepWorkgroup: shader.requiresDeepWorkgroup === true,
+            requiresHistoryRing: shader.requiresHistoryRing === true,
+            requiresRgba32Float: inferRequiresRgba32Float({
+              id: shader.id,
+              requiresRgba32Float: shader.requiresRgba32Float === true,
+            }),
+            // The list API has always exposed a 0.01 step for sliders that omit one.
+            params: (shader.params ?? []).map((p) => ({ ...p, step: p.step ?? 0.01 })),
+          }];
+        });
       })
     );
 

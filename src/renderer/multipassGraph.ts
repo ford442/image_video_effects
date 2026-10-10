@@ -27,6 +27,9 @@ export type GraphDispatchDomain = 'pixels' | 'simState';
 
 export const MAX_REPEAT = 64;
 
+/** Allowed per-node resolution scales (#1314); 1 = full working size. */
+export const NODE_SCALE_LEVELS = [0.25, 0.5, 0.75, 1] as const;
+
 export interface GraphNodeDef {
   id: string;
   entry: string;
@@ -35,6 +38,15 @@ export interface GraphNodeDef {
   repeat?: number;
   /** Dispatch domain; defaults to `pixels`. */
   dispatch?: GraphDispatchDomain;
+  /**
+   * Opt-in (#1314): this node may run below the working size. The renderer
+   * resamples its inputs into scratch textures, patches `config.zw` to the
+   * scaled size, and resamples declared writes back. Only for nodes whose
+   * output tolerates resampling (fields, blurs, tensors), not per-pixel sims.
+   */
+  scalable?: boolean;
+  /** Lowest scale adaptive demotion may pick (one of NODE_SCALE_LEVELS; default 0.5). */
+  minScale?: number;
 }
 
 export interface MultipassGraphDef {
@@ -54,6 +66,8 @@ export interface ExpandedDispatch {
   iteration: number;
   copiesBefore: CopyBarrier[];
   dispatch: GraphDispatchDomain;
+  scalable?: boolean;
+  minScale?: number;
 }
 
 export interface GraphShaderRecord {
@@ -176,51 +190,131 @@ function alternateWrite(writes: GraphRole[], iteration: number): GraphRole[] {
   return writes;
 }
 
-export function validateGraph(
+export type GraphDiagnosticCode =
+  | 'max-passes'
+  | 'empty-graph'
+  | 'pass-budget'
+  | 'node-id'
+  | 'missing-entry'
+  | 'repeat-range'
+  | 'invalid-role'
+  | 'sim-index-write'
+  | 'invalid-dispatch'
+  | 'no-io'
+  | 'min-scale'
+  | 'scalable-sim'
+  | 'dependency'
+  | 'cycle'
+  // Authoring-only warnings: the runtime accepts these graphs.
+  | 'no-color-writer'
+  | 'duplicate-node-id'
+  | 'non-integer-repeat'
+  | 'ineffective-role'
+  | 'unbounded-max-passes';
+
+export interface GraphDiagnostic {
+  code: GraphDiagnosticCode;
+  /** Errors are exactly what `validateGraph` reports; warnings are authoring hints only. */
+  severity: 'error' | 'warning';
+  message: string;
+  nodeId?: string;
+  /** Expanded `repeat` iteration for dependency / cycle errors. */
+  iteration?: number;
+  role?: string;
+}
+
+/**
+ * `maxPassesPerFrame` above this is almost certainly a typo: the quality presets
+ * cap a graph at 4–16 passes (src/config/performancePolicy.ts).
+ */
+export const MAX_PASSES_HINT = 64;
+
+/**
+ * An unsatisfied read is a `cycle` when the node waits on its own output, or on
+ * a later producer that in turn waits on something this node writes. Otherwise
+ * it is a plain `dependency` (nothing produces the role before this node).
+ */
+function unsatisfiedReadCode(graph: MultipassGraphDef, nodeIndex: number, role: string): 'cycle' | 'dependency' {
+  const node = graph.nodes[nodeIndex];
+  if (!node) return 'dependency';
+  const writes = node.writes ?? [];
+  if (writes.includes(role as GraphRole)) return 'cycle';
+  for (let j = nodeIndex + 1; j < graph.nodes.length; j++) {
+    const later = graph.nodes[j];
+    if (!later || !(later.writes ?? []).includes(role as GraphRole)) continue;
+    const waitsOnUs = (later.reads ?? []).some(
+      (q) => SIM_ROLES.includes(q as TextureRole) && writes.includes(q),
+    );
+    if (waitsOnUs) return 'cycle';
+  }
+  return 'dependency';
+}
+
+function collectDiagnostics(
   graph: MultipassGraphDef,
-  options?: { knownEntries?: Set<string> },
-): string[] {
-  const errors: string[] = [];
+  options: { knownEntries?: Set<string> } | undefined,
+  withWarnings: boolean,
+): GraphDiagnostic[] {
+  const out: GraphDiagnostic[] = [];
+  const error = (
+    code: GraphDiagnosticCode,
+    message: string,
+    extra: Pick<GraphDiagnostic, 'nodeId' | 'iteration' | 'role'> = {},
+  ) => out.push({ code, severity: 'error', message, ...extra });
+  const warn = (
+    code: GraphDiagnosticCode,
+    message: string,
+    extra: Pick<GraphDiagnostic, 'nodeId' | 'iteration' | 'role'> = {},
+  ) => out.push({ code, severity: 'warning', message, ...extra });
 
   if (!graph.maxPassesPerFrame || graph.maxPassesPerFrame < 1) {
-    errors.push('graph.maxPassesPerFrame must be >= 1');
+    error('max-passes', 'graph.maxPassesPerFrame must be >= 1');
   }
   if (!graph.nodes || graph.nodes.length === 0) {
-    errors.push('graph must have at least one node');
-    return errors;
+    error('empty-graph', 'graph must have at least one node');
+    return out;
   }
 
   const passCount = totalPassCount(graph);
   if (graph.maxPassesPerFrame && passCount > graph.maxPassesPerFrame) {
-    errors.push(
-      `graph exceeds maxPassesPerFrame: ${passCount} > ${graph.maxPassesPerFrame}`,
-    );
+    error('pass-budget', `graph exceeds maxPassesPerFrame: ${passCount} > ${graph.maxPassesPerFrame}`);
   }
 
   for (const node of graph.nodes) {
-    if (!node.id) errors.push('node.id is required');
-    if (!node.entry) errors.push(`node ${node.id}: entry is required`);
+    const at = { nodeId: node.id };
+    if (!node.id) error('node-id', 'node.id is required');
+    if (!node.entry) error('missing-entry', `node ${node.id}: entry is required`, at);
     if (options?.knownEntries && node.entry && !options.knownEntries.has(node.entry)) {
-      errors.push(`node ${node.id}: unknown entry "${node.entry}"`);
+      error('missing-entry', `node ${node.id}: unknown entry "${node.entry}"`, at);
     }
     const repeat = node.repeat ?? 1;
     if (repeat < 1 || repeat > MAX_REPEAT) {
-      errors.push(`node ${node.id}: repeat must be 1–${MAX_REPEAT}`);
+      error('repeat-range', `node ${node.id}: repeat must be 1–${MAX_REPEAT}`, at);
     }
     for (const r of node.reads ?? []) {
-      if (!isGraphRole(r)) errors.push(`node ${node.id}: invalid read role "${r}"`);
+      if (!isGraphRole(r)) error('invalid-role', `node ${node.id}: invalid read role "${r}"`, { ...at, role: r });
     }
     for (const w of node.writes ?? []) {
-      if (!isGraphRole(w)) errors.push(`node ${node.id}: invalid write role "${w}"`);
+      if (!isGraphRole(w)) error('invalid-role', `node ${node.id}: invalid write role "${w}"`, { ...at, role: w });
       if (w === 'simIndex') {
-        errors.push(`node ${node.id}: simIndex is read-only (written only by the simState → simIndex barrier)`);
+        error(
+          'sim-index-write',
+          `node ${node.id}: simIndex is read-only (written only by the simState → simIndex barrier)`,
+          { ...at, role: w },
+        );
       }
     }
     if (node.dispatch !== undefined && node.dispatch !== 'pixels' && node.dispatch !== 'simState') {
-      errors.push(`node ${node.id}: invalid dispatch "${node.dispatch}" (pixels | simState)`);
+      error('invalid-dispatch', `node ${node.id}: invalid dispatch "${node.dispatch}" (pixels | simState)`, at);
     }
     if (!node.reads?.length && !node.writes?.length) {
-      errors.push(`node ${node.id}: must declare reads or writes`);
+      error('no-io', `node ${node.id}: must declare reads or writes`, at);
+    }
+    if (node.minScale !== undefined && !(NODE_SCALE_LEVELS as readonly number[]).includes(node.minScale)) {
+      error('min-scale', `node ${node.id}: minScale must be one of ${NODE_SCALE_LEVELS.join(', ')}`, at);
+    }
+    if (node.scalable && node.dispatch === 'simState') {
+      error('scalable-sim', `node ${node.id}: simState dispatches cannot be scalable`, at);
     }
   }
 
@@ -228,9 +322,11 @@ export function validateGraph(
   const state = new Map<TextureRole, TextureRole | 'frameSeed'>();
   state.set('dataC', 'frameSeed');
 
-  for (const node of graph.nodes) {
-    const repeat = node.repeat ?? 1;
-    for (let i = 0; i < repeat; i++) {
+  graph.nodes.forEach((node, nodeIndex) => {
+    // A repeat above MAX_REPEAT is already a `repeat-range` error; stop simulating one past the
+    // limit so an imported `repeat: 1e9` is reported instead of spinning here for minutes.
+    const iterations = Math.min(node.repeat ?? 1, MAX_REPEAT + 1);
+    for (let i = 0; i < iterations; i++) {
       const writes = alternateWrite(node.writes ?? [], i);
       const reads = node.reads ?? [];
 
@@ -243,8 +339,10 @@ export function validateGraph(
         if (role === 'dataA' && state.get('dataC') === 'dataA') continue;
         if (role === 'dataB' && state.get('dataC') === 'dataB') continue;
         if (available === undefined) {
-          errors.push(
+          error(
+            unsatisfiedReadCode(graph, nodeIndex, role),
             `node ${node.id} iter ${i}: reads "${role}" before any producer in this frame`,
+            { nodeId: node.id, iteration: i, role },
           );
         }
       }
@@ -259,7 +357,11 @@ export function validateGraph(
           ) {
             const viaC = state.get('dataC');
             if (viaC !== role && viaC !== 'dataA' && viaC !== 'dataB' && viaC !== 'frameSeed') {
-              errors.push(`node ${node.id} iter ${i}: cannot satisfy read "${role}"`);
+              error('dependency', `node ${node.id} iter ${i}: cannot satisfy read "${role}"`, {
+                nodeId: node.id,
+                iteration: i,
+                role,
+              });
             }
           }
         }
@@ -268,9 +370,77 @@ export function validateGraph(
       copiesNeededBeforeRead(reads, state);
       applyWrites(state, writes);
     }
+  });
+
+  if (!withWarnings) return out;
+
+  if (graph.maxPassesPerFrame > MAX_PASSES_HINT) {
+    warn(
+      'unbounded-max-passes',
+      `graph.maxPassesPerFrame ${graph.maxPassesPerFrame} is above ${MAX_PASSES_HINT}; quality presets cap a graph at 4–16 passes`,
+    );
+  }
+  if (lastColorWriterIndex(graph.nodes) < 0) {
+    warn(
+      'no-color-writer',
+      'no node writes "color": nothing reaches the display, and a pass cap truncates a plain prefix',
+    );
+  }
+  const seenIds = new Set<string>();
+  const reportedIds = new Set<string>();
+  for (const node of graph.nodes) {
+    if (!node.id) continue;
+    if (seenIds.has(node.id) && !reportedIds.has(node.id)) {
+      reportedIds.add(node.id);
+      warn(
+        'duplicate-node-id',
+        `duplicate node id "${node.id}": per-node scale overrides and pass timings are keyed by node id`,
+        { nodeId: node.id },
+      );
+    }
+    seenIds.add(node.id);
+  }
+  for (const node of graph.nodes) {
+    const at = { nodeId: node.id };
+    if (node.repeat !== undefined && !Number.isInteger(node.repeat)) {
+      warn('non-integer-repeat', `node ${node.id}: repeat ${node.repeat} is not an integer`, at);
+    }
+    for (const r of node.reads ?? []) {
+      if (r === 'color') {
+        warn('ineffective-role', `node ${node.id}: reading "color" has no effect (it is the display target)`, { ...at, role: r });
+      }
+    }
+    for (const w of node.writes ?? []) {
+      if (w === 'read' || w === 'dataC') {
+        warn(
+          'ineffective-role',
+          `node ${node.id}: writing "${w}" has no effect (${w === 'read' ? 'the source image is read-only' : 'dataC is refreshed by copy barriers from dataA / dataB'})`,
+          { ...at, role: w },
+        );
+      }
+    }
   }
 
-  return errors;
+  return out;
+}
+
+/**
+ * Structured validation for tools: every `validateGraph` error (same message,
+ * same order) with a stable code, followed by authoring-only warnings. The
+ * runtime never acts on the warnings.
+ */
+export function diagnoseGraph(
+  graph: MultipassGraphDef,
+  options?: { knownEntries?: Set<string> },
+): GraphDiagnostic[] {
+  return collectDiagnostics(graph, options, true);
+}
+
+export function validateGraph(
+  graph: MultipassGraphDef,
+  options?: { knownEntries?: Set<string> },
+): string[] {
+  return collectDiagnostics(graph, options, false).map((d) => d.message);
 }
 
 /** Flatten repeat nodes and compute copy barriers between dispatches. */
@@ -298,6 +468,7 @@ export function expandGraph(graph: MultipassGraphDef): ExpandedDispatch[] {
         iteration: i,
         copiesBefore,
         dispatch: node.dispatch ?? 'pixels',
+        ...(node.scalable ? { scalable: true, minScale: node.minScale ?? 0.5 } : {}),
       });
 
       applyWrites(state, writes);
@@ -314,7 +485,7 @@ export function countGraphPasses(graph: MultipassGraphDef): number {
 
 function lastColorWriterIndex(nodes: GraphNodeDef[]): number {
   for (let i = nodes.length - 1; i >= 0; i--) {
-    if ((nodes[i].writes ?? []).includes('color')) return i;
+    if ((nodes[i]!.writes ?? []).includes('color')) return i;
   }
   return -1;
 }
@@ -345,11 +516,11 @@ export function shrinkGraphToCap(graph: MultipassGraphDef, cap: number): Multipa
   while (passCount() > safeCap) {
     let reduced = false;
     const colorIdx = lastColorWriterIndex(nodes);
-    for (let i = 0; i < nodes.length; i++) {
+    for (const [i, node] of nodes.entries()) {
       if (i === colorIdx) continue;
-      const r = nodes[i].repeat ?? 1;
+      const r = node.repeat ?? 1;
       if (r > 1) {
-        nodes[i].repeat = r - 1;
+        node.repeat = r - 1;
         reduced = true;
         break;
       }
@@ -373,10 +544,11 @@ export function shrinkGraphToCap(graph: MultipassGraphDef, cap: number): Multipa
 
   while (passCount() > safeCap) {
     const colorIdx = lastColorWriterIndex(nodes);
-    if (colorIdx < 0) break;
-    const r = nodes[colorIdx].repeat ?? 1;
+    const colorNode = nodes[colorIdx];
+    if (!colorNode) break;
+    const r = colorNode.repeat ?? 1;
     if (r <= 1) break;
-    nodes[colorIdx].repeat = r - 1;
+    colorNode.repeat = r - 1;
   }
 
   return { maxPassesPerFrame: graph.maxPassesPerFrame, nodes };
@@ -399,6 +571,45 @@ export function capGraphDispatches(
   const expanded = expandGraph(shrunk);
   if (expanded.length <= cap) return expanded;
   return expanded.slice(Math.max(0, expanded.length - cap));
+}
+
+interface GraphPlanCache {
+  errors: string[];
+  requested: number;
+  byCap: Map<number, ExpandedDispatch[]>;
+}
+
+/** Graph defs are static registry objects: validate / expand / cap once, not per frame. */
+const graphPlans = new WeakMap<MultipassGraphDef, GraphPlanCache>();
+
+function graphPlan(graph: MultipassGraphDef): GraphPlanCache {
+  let plan = graphPlans.get(graph);
+  if (!plan) {
+    plan = { errors: validateGraph(graph), requested: countGraphPasses(graph), byCap: new Map() };
+    graphPlans.set(graph, plan);
+  }
+  return plan;
+}
+
+/** validateGraph, memoized per graph def. */
+export function graphPlanErrors(graph: MultipassGraphDef): string[] {
+  return graphPlan(graph).errors;
+}
+
+/** countGraphPasses, memoized per graph def. */
+export function graphRequestedPasses(graph: MultipassGraphDef): number {
+  return graphPlan(graph).requested;
+}
+
+/** capGraphDispatches, memoized per (graph def, pass cap). Do not mutate the result. */
+export function cappedDispatches(graph: MultipassGraphDef, maxPassesPerFrame: number): ExpandedDispatch[] {
+  const plan = graphPlan(graph);
+  let expanded = plan.byCap.get(maxPassesPerFrame);
+  if (!expanded) {
+    expanded = capGraphDispatches(graph, maxPassesPerFrame);
+    plan.byCap.set(maxPassesPerFrame, expanded);
+  }
+  return expanded;
 }
 
 /** Demo / test fixture matching wave-tank graph shape. */

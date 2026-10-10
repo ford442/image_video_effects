@@ -1,9 +1,11 @@
-import { Renderer, RendererConfig, ShaderSlotRenderer, GPUTimings } from './Renderer';
+import { Renderer, RendererConfig, ShaderSlotRenderer, GPUTimings, UncappedBenchResult } from './Renderer';
 import * as WasmBridge from '../wasm/wasm_bridge';
+import type { WasmErrorRing } from '../wasm/wasm_bridge';
+import type { PassTiming } from './passTimings';
 import { reportError } from './ErrorHandling';
 import { describeWasmInitFailure, summarizeWasmInitState } from './wasmInitDiagnostics';
 import { publishWasmProbeSuccess } from './webgpuBootProbe';
-import { startGpuEncodeSession } from '../recording/gpuEncodeSupport';
+import { startGpuEncodeSession, type GpuEncodeSession } from '../recording/gpuEncodeSupport';
 import { InputSource } from './types';
 import { PHYSICAL_SLOT_LIMIT, checkPhysicalSlotIndex } from './slotOrchestrator';
 
@@ -47,6 +49,10 @@ export interface WASMDiagnostics {
   canvasCopySrc: boolean | null;
   /** MAX_SHADER_SLOTS in the loaded artifact; null = artifact predates the export. */
   maxShaderSlots: number | null;
+  /** Smoothed per-pass GPU ms from C++ timestamp queries (#1314 D); [] until they resolve. */
+  passTimings: PassTiming[];
+  /** C++ uncaptured WebGPU errors + device-lost messages (count survives clearErrorRing). */
+  errors: WasmErrorRing;
 }
 
 export class WASMRenderer implements Renderer, ShaderSlotRenderer {
@@ -201,7 +207,18 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
       }),
       canvasCopySrc: bridge?.canvasCopySrc ?? null,
       maxShaderSlots: bridge?.maxShaderSlots ?? null,
+      passTimings: this.getPassTimings(),
+      errors: WasmBridge.readErrorRing?.() ?? { count: 0, last: '', recent: [] },
     };
+  }
+
+  /**
+   * Smoothed per-pass GPU ms measured by the C++ renderer (one entry per slot
+   * compute pass). Empty until timestamps resolve, without timestamp-query, or
+   * on an artifact that predates the export.
+   */
+  getPassTimings(): PassTiming[] {
+    return WasmBridge.readPassTimings?.() ?? [];
   }
 
   /**
@@ -400,12 +417,13 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     // with a logged reason, when VideoEncoder / a WebM codec is missing.
     return WasmBridge.startRecording(canvasElement, {
       ...options,
+      // No grabFrame here, so the session is 'canvas' or 'readback' (never 'worker').
       gpuEncode: (capture, opts) => startGpuEncodeSession({
         canvas: WasmBridge.getPresentCanvas() ?? canvasElement,
         supportsCanvasCopySrc: () => WasmBridge.supportsCanvasCopySrc(),
         setCanvasCopySrc: (enabled) => WasmBridge.setCanvasCopySrc(enabled),
         readback: capture,
-      }, opts),
+      }, opts) as Promise<(GpuEncodeSession & { kind: 'canvas' | 'readback' }) | null>,
     });
   }
 
@@ -590,7 +608,11 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
   }
 
   getGPUTimings(): GPUTimings {
-    return WasmBridge.getGPUTimings();
+    const timings = WasmBridge.getGPUTimings();
+    // Per-pass numbers only ride along with real GPU timestamps.
+    if (!timings.available) return timings;
+    const passes = this.getPassTimings();
+    return passes.length > 0 ? { ...timings, passes } : timings;
   }
 
   async reloadShaderFromURL(id: string, url: string): Promise<boolean> {
@@ -627,6 +649,34 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
       mouseY: this.mouseY,
       mouseDown: this.mouseDown,
     });
+  }
+
+  /**
+   * Bench only (#1080): stop the rAF loop, render `frames` frames back to back
+   * (the updateUniforms export renders one frame), then time to GPU idle via
+   * requestWorkDoneMark. Null on artifacts without that export.
+   */
+  async benchmarkUncapped(frames: number): Promise<UncappedBenchResult | null> {
+    if (!this.initialized || frames <= 0) return null;
+    if (this.animationId !== null) {
+      cancelAnimationFrame(this.animationId);
+      this.animationId = null;
+    }
+    try {
+      const drained = WasmBridge.awaitSubmittedWorkDone();
+      if (!drained || !(await drained)) return null;
+      let time = performance.now() / 1000 - this.startTime;
+      const t0 = performance.now();
+      for (let i = 0; i < frames; i++) {
+        time += 1 / 60;
+        WasmBridge.updateUniforms({ time, mouseX: this.mouseX, mouseY: this.mouseY, mouseDown: this.mouseDown });
+      }
+      if (!(await WasmBridge.awaitSubmittedWorkDone())) return null;
+      const wallMs = performance.now() - t0;
+      return { frames, wallMs, msPerFrame: wallMs / frames };
+    } finally {
+      if (this.initialized && this.animationId === null) this.startRenderLoop();
+    }
   }
 
   /** Returns the last captured frame as a PNG data URL, or '' if none yet. */

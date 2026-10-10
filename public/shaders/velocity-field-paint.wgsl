@@ -3,7 +3,9 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, temporal, fluid-dynamics
 //  Complexity: High
-//  Upgraded: 2026-08-16 (Batch 52: 2D Navier-Stokes momentum advection, vorticity confinement, exact C load)
+//  Upgraded: 2026-10-04 (prev 2026-08-16 Batch 52)
+//  Ideas: semi-Lagrangian momentum self-advection; confinement from the stored curl field; streamline paint streaks (LIC)
+//  A packing: raw sim (vel.x, vel.y, omega, speed) — never tonemapped
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -48,6 +50,22 @@ fn simplex_flow(p: vec2<f32>, t: f32) -> vec2<f32> {
   return k1 * 0.6 + k2 * 0.4;
 }
 
+fn loadState(c: vec2<i32>, res: vec2<f32>) -> vec4<f32> {
+  return textureLoad(dataTextureC, clamp(c, vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1)), 0);
+}
+
+// Bilinear velocity from four exact texel loads (C is rgba32float history; no filtering sampler).
+fn velocityAt(p_uv: vec2<f32>, res: vec2<f32>) -> vec2<f32> {
+  let p = p_uv * res - 0.5;
+  let base = vec2<i32>(floor(p));
+  let f = fract(p);
+  let v00 = loadState(base, res).xy;
+  let v10 = loadState(base + vec2<i32>(1, 0), res).xy;
+  let v01 = loadState(base + vec2<i32>(0, 1), res).xy;
+  let v11 = loadState(base + vec2<i32>(1, 1), res).xy;
+  return mix(mix(v00, v10, f.x), mix(v01, v11, f.x), f.y);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let res = u.config.zw;
@@ -80,20 +98,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var prev_dye = prev_raw.zw;
 
   // 4-neighbor velocity stencil for discrete vorticity and laplace diffusion
-  let c_r = textureLoad(dataTextureC, clamp(coord + vec2<i32>(1, 0), vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1)), 0).xy;
-  let c_l = textureLoad(dataTextureC, clamp(coord - vec2<i32>(1, 0), vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1)), 0).xy;
-  let c_u = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, 1), vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1)), 0).xy;
-  let c_d = textureLoad(dataTextureC, clamp(coord - vec2<i32>(0, 1), vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1)), 0).xy;
+  let st_r = loadState(coord + vec2<i32>(1, 0), res);
+  let st_l = loadState(coord - vec2<i32>(1, 0), res);
+  let st_u = loadState(coord + vec2<i32>(0, 1), res);
+  let st_d = loadState(coord - vec2<i32>(0, 1), res);
+  let c_r = st_r.xy;
+  let c_l = st_l.xy;
+  let c_u = st_u.xy;
+  let c_d = st_d.xy;
 
   // Discrete curl: omega = dv_y/dx - dv_x/dy
   let omega = ((c_r.y - c_l.y) - (c_u.x - c_d.x)) * 0.5;
   let lap_vel = (c_r + c_l + c_u + c_d - 4.0 * prev_vel) * 0.25;
 
   // Vorticity confinement force: f_conf = epsilon * (nabla |omega| x omega / |omega|)
-  let omega_r = abs(c_r.y - c_r.x);
-  let omega_l = abs(c_l.y - c_l.x);
-  let omega_u = abs(c_u.y - c_u.x);
-  let omega_d = abs(c_d.y - c_d.x);
+  // Idea 2 — |omega| gradient from the curl field stored in A.z last frame
+  // (HEAD used abs(v.y - v.x), which is not a curl and smeared the confinement).
+  let omega_r = abs(st_r.z);
+  let omega_l = abs(st_l.z);
+  let omega_u = abs(st_u.z);
+  let omega_d = abs(st_d.z);
   let grad_omega = vec2<f32>(omega_r - omega_l, omega_u - omega_d) * 0.5;
   let len_grad = length(grad_omega);
   let conf_dir = select(vec2<f32>(0.0), vec2<f32>(grad_omega.y, -grad_omega.x) / max(len_grad, 0.001), len_grad > 0.001);
@@ -125,8 +149,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
   }
 
+  // Idea 1 — momentum self-advection: fetch last frame's velocity upstream (same
+  // 0.02 displacement scale the dye uses), so eddies travel with the flow.
+  let adv_vel = velocityAt(clamp(uv - prev_vel * 0.02, vec2<f32>(0.0), vec2<f32>(1.0)), res);
+
   // Momentum integration
-  var new_vel = (prev_vel + lap_vel * 0.35 + conf_force + mouse_force + bg_stream + click_force) * dissipation;
+  var new_vel = (adv_vel + lap_vel * 0.35 + conf_force + mouse_force + bg_stream + click_force) * dissipation;
   new_vel /= depth_viscosity;
 
   // Dye transport and dispersion
@@ -140,7 +168,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let s_r = textureSampleLevel(readTexture, u_sampler, clamp(advect_coord + shear_dir * shear_mag, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).r;
   let s_g = textureSampleLevel(readTexture, u_sampler, clamp(advect_coord, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).g;
   let s_b = textureSampleLevel(readTexture, u_sampler, clamp(advect_coord - shear_dir * shear_mag, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).b;
-  let sheared_color = vec3<f32>(s_r, s_g, s_b);
+  var sheared_color = vec3<f32>(s_r, s_g, s_b);
+
+  // Idea 3 — streamline paint streaks: integrate the image two steps each way along the
+  // stored velocity field (line-integral convolution), so moving regions read as strokes
+  // combed along the flow. Step length grows with speed; still regions are untouched.
+  let lic_amt = smoothstep(0.02, 0.25, length(new_vel));
+  if (lic_amt > 0.001) {
+    let h = clamp(length(new_vel), 0.0, 1.0) * 0.004;
+    var lic = sheared_color * 1.5;
+    var wsum = 1.5;
+    var pf = advect_coord;
+    var pb = advect_coord;
+    for (var k = 1; k <= 2; k = k + 1) {
+      let vf = velocityAt(clamp(pf, vec2<f32>(0.0), vec2<f32>(1.0)), res);
+      let vb = velocityAt(clamp(pb, vec2<f32>(0.0), vec2<f32>(1.0)), res);
+      pf += select(shear_dir, normalize(vf), length(vf) > 0.0001) * h;
+      pb -= select(shear_dir, normalize(vb), length(vb) > 0.0001) * h;
+      let w = 1.0 / f32(k + 1);
+      lic += textureSampleLevel(readTexture, u_sampler, clamp(pf, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb * w;
+      lic += textureSampleLevel(readTexture, u_sampler, clamp(pb, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb * w;
+      wsum += 2.0 * w;
+    }
+    sheared_color = mix(sheared_color, lic / wsum, lic_amt * 0.85);
+  }
 
   // Vorticity kinetic luminescence
   let speed = length(new_vel);

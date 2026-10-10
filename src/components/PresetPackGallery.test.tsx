@@ -56,9 +56,9 @@ describe('PresetPackGallery', () => {
 
         await screen.findByText('Pack A');
         const loadButtons = screen.getAllByText('Load Pack');
-        fireEvent.click(loadButtons[0]);
+        fireEvent.click(loadButtons[0]!);
 
-        expect(onApplyPack).toHaveBeenCalledWith(samplePacks.packs[0].chain);
+        expect(onApplyPack).toHaveBeenCalledWith(samplePacks.packs[0]!.chain);
     });
 
     it('shows an error state when the fetch fails', async () => {

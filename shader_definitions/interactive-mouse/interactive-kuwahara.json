@@ -2,45 +2,7 @@
   "id": "interactive-kuwahara",
   "name": "Oil Painting (Kuwahara)",
   "url": "shaders/interactive-kuwahara.wgsl",
-  "description": "Interactive Kuwahara oil painting with held wet-focus, traveling wet runners, oil-slick pigment, click clarity fronts, and exact C wetness trail. Display RGBA in A.",
-  "updatedParams": [
-    {
-      "index": 0,
-      "id": "radius",
-      "name": "Brush Size",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "id": "satBoost",
-      "name": "Saturation",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "id": "mouseFalloff",
-      "name": "Focus Radius",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "id": "hardness",
-      "name": "Hardness",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
-  ],
+  "description": "Interactive Kuwahara oil painting with variance-weighted sector blending, impasto ridges where the paint is thick, and canvas weave through thin paint. Held wet-focus, wet runners, click clarity fronts and an exact C wetness trail. Display RGBA in A.",
   "params": [
     {
       "id": "radius",
@@ -86,5 +48,47 @@
     "filter",
     "image-processing"
   ],
-  "updated": true
+  "updated": true,
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "id": "radius",
+          "name": "Brush Size",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "id": "satBoost",
+          "name": "Saturation",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "id": "mouseFalloff",
+          "name": "Focus Radius",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "id": "hardness",
+          "name": "Hardness",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

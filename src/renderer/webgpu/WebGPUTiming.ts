@@ -1,27 +1,29 @@
 /**
  * WebGPUTiming.ts
  *
- * GPU timestamp query setup and timing readback for the WebGPU renderer.
- * Mirrors wasm_renderer/timing.cpp / wasm_internal.h index layout.
+ * Per-pass GPU profiler for the WebGPU renderer (#1314 WP-4). Every compute
+ * and render pass of a frame (graph nodes, slot steps, video copy, input
+ * scale, chores, present) gets a begin/end timestamp pair in one query set.
+ * The set is resolved every frame that wrote stamps. A WebGPU query may not be
+ * rewritten before it is resolved, and that rule made the old phase layout
+ * flash black. The resolved block is copied to a staging ring for CPU
+ * readback at most every READBACK_INTERVAL_MS, then smoothed per pass.
  *
- * Note: Chromium may quantize or zero absolute timestamp values for
- * fingerprinting mitigation. Metrics use deltas × timestampPeriod only.
+ * Note: Chromium quantizes timestamps (100 µs buckets unless
+ * --enable-webgpu-developer-features) and may zero them. Metrics use deltas.
  */
 
 import { GPUTimings } from '../Renderer';
+import type { PassKind, PassTiming } from '../passTimings';
 
-/** Keep in sync with wasm_renderer/wasm_internal.h */
-export const TS_QUERY_COUNT = 8;
-export const kTsFrameStart = 0;
-export const kTsComputeEnd = 1;
-export const kTsParallelStart = 2;
-export const kTsParallelEnd = 3;
-export const kTsChainedStart = 4;
-export const kTsChainedEnd = 5;
-export const kTsPresentStart = 6;
-export const kTsPresentEnd = 7;
-
+/** Passes that get a timestamp pair per frame; later passes run unprofiled. */
+export const MAX_PROFILED_PASSES = 128;
+export const QUERY_COUNT = MAX_PROFILED_PASSES * 2;
 export const STAGING_RING_DEPTH = 2;
+/** Minimum spacing between CPU readbacks (resolve itself runs every frame). */
+export const READBACK_INTERVAL_MS = 250;
+/** Weight of the newest readback in the per-pass moving average. */
+export const PASS_EMA_ALPHA = 0.3;
 
 export type GpuTimingsState = {
   parallelTime: number;
@@ -31,21 +33,26 @@ export type GpuTimingsState = {
 
 export type SlotTimingMode = 'parallel' | 'chained';
 
-export class TimestampPhaseTracker {
-  tsFrameStartWritten = false;
-  tsParallelStartWritten = false;
-  tsChainedStartWritten = false;
-  /** True if at least one parallel compute pass was encoded this frame. */
-  hadParallel = false;
-  /** True if at least one chained compute pass was encoded this frame. */
-  hadChained = false;
+export interface PassProfileMeta {
+  kind: PassKind;
+  label: string;
+  mode?: SlotTimingMode;
+  slot?: number;
+  shaderId?: string;
+  entry?: string;
+  nodeId?: string;
+  scale?: number;
+}
+
+/** Passes stamped in the frame being encoded (index i → queries 2i, 2i+1). */
+export class FramePassProfile {
+  passes: PassProfileMeta[] = [];
+  /** Passes that wanted a stamp after MAX_PROFILED_PASSES was reached. */
+  overflow = 0;
 
   reset(): void {
-    this.tsFrameStartWritten = false;
-    this.tsParallelStartWritten = false;
-    this.tsChainedStartWritten = false;
-    this.hadParallel = false;
-    this.hadChained = false;
+    this.passes = [];
+    this.overflow = 0;
   }
 }
 
@@ -54,24 +61,24 @@ export interface WebGPUTimestampQueries {
   querySet: GPUQuerySet | null;
   /** QUERY_RESOLVE | COPY_SRC — receives resolveQuerySet output. */
   queryBuffer: GPUBuffer | null;
-  /** 2-deep MAP_READ | COPY_DST ring for async readback. */
+  /** MAP_READ | COPY_DST ring for async readback. */
   stagingRing: GPUBuffer[];
-  /**
-   * Per-slot map-in-flight flags. A busy slot must not be copy destinations or
-   * mapAsync targets until unmap completes.
-   */
+  /** A busy slot must not be a copy destination until its map completes. */
   stagingBusy: boolean[];
   timestampPeriodNs: number;
-  /**
-   * True while at least one staging slot is mapped. Kept for diagnostics;
-   * resolve is no longer gated on this (see encodeResolveAndCopy).
-   */
+  /** True while at least one staging slot is mapped (diagnostics). */
   readbackPending: boolean;
   ringIndex: number;
   /** Honesty signal: true only after a valid GPU stamp decode. */
   hasRealGpuTimings: boolean;
-  tracker: TimestampPhaseTracker;
+  frame: FramePassProfile;
+  /** performance.now() of the last staging copy. */
+  lastReadbackAt: number;
   gpuTimings: GpuTimingsState;
+  /** Smoothed per-pass timings, in frame order. */
+  passTimings: PassTiming[];
+  /** Passes that went unprofiled last readback because the query set was full. */
+  lastOverflow: number;
 }
 
 function emptyTimingState(overrides: Partial<WebGPUTimestampQueries> = {}): WebGPUTimestampQueries {
@@ -85,8 +92,11 @@ function emptyTimingState(overrides: Partial<WebGPUTimestampQueries> = {}): WebG
     readbackPending: false,
     ringIndex: 0,
     hasRealGpuTimings: false,
-    tracker: new TimestampPhaseTracker(),
+    frame: new FramePassProfile(),
+    lastReadbackAt: Number.NEGATIVE_INFINITY,
     gpuTimings: { parallelTime: 0, chainedTime: 0, totalTime: 0 },
+    passTimings: [],
+    lastOverflow: 0,
     ...overrides,
   };
 }
@@ -96,13 +106,24 @@ export function createDisabledTimestampQueries(): WebGPUTimestampQueries {
   return emptyTimingState();
 }
 
+/**
+ * Nanoseconds per timestamp tick. The current spec resolves timestamps in ns
+ * and dropped `GPUQueue.timestampPeriod`, so Chrome leaves it undefined → 1.
+ * Only an implementation that still exposes the legacy field gets its value;
+ * an explicit non-positive value means the stamps are unusable (→ 0).
+ */
+export function resolveTimestampPeriodNs(queue: GPUQueue): number {
+  const legacy = (queue as GPUQueue & { timestampPeriod?: unknown }).timestampPeriod;
+  if (legacy === undefined || legacy === null) return 1;
+  return typeof legacy === 'number' && legacy > 0 ? legacy : 0;
+}
+
 export function createTimestampQueries(device: GPUDevice): WebGPUTimestampQueries {
-  const featurePresent = device.features.has('timestamp-query');
-  if (!featurePresent) {
+  if (!device.features.has('timestamp-query')) {
     return emptyTimingState();
   }
 
-  const periodNs = (device.queue as GPUQueue & { timestampPeriod?: number }).timestampPeriod ?? 0;
+  const periodNs = resolveTimestampPeriodNs(device.queue);
   if (periodNs === 0) {
     console.warn(
       '[WebGPU] Timestamp queries: queue timestamp period is 0 — using wall-clock fallback',
@@ -111,12 +132,10 @@ export function createTimestampQueries(device: GPUDevice): WebGPUTimestampQuerie
   }
 
   try {
-    const querySet = device.createQuerySet({
-      type: 'timestamp',
-      count: TS_QUERY_COUNT,
-    });
+    const querySet = device.createQuerySet({ type: 'timestamp', count: QUERY_COUNT });
     const queryBuffer = device.createBuffer({
-      size: TS_QUERY_COUNT * 8,
+      label: 'timestamp-resolve',
+      size: QUERY_COUNT * 8,
       usage: GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC,
     });
     const stagingRing: GPUBuffer[] = [];
@@ -124,12 +143,12 @@ export function createTimestampQueries(device: GPUDevice): WebGPUTimestampQuerie
       stagingRing.push(
         device.createBuffer({
           label: `timestamp-staging-${i}`,
-          size: TS_QUERY_COUNT * 8,
+          size: QUERY_COUNT * 8,
           usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
         }),
       );
     }
-    console.log(`[WebGPU] Timestamp queries enabled (period=${periodNs} ns)`);
+    console.log(`[WebGPU] Per-pass timestamp queries enabled (period=${periodNs} ns, ${MAX_PROFILED_PASSES} passes)`);
     return emptyTimingState({
       supportsTimestampQuery: true,
       querySet,
@@ -149,19 +168,9 @@ export function setupTimestampQueries(device: GPUDevice): WebGPUTimestampQueries
 }
 
 export function destroyTimestampQueries(timing: WebGPUTimestampQueries): void {
-  try {
-    timing.querySet?.destroy();
-  } catch {
-    /* already destroyed */
-  }
-  try {
-    timing.queryBuffer?.destroy();
-  } catch {
-    /* already destroyed */
-  }
-  for (const buf of timing.stagingRing) {
+  for (const resource of [timing.querySet, timing.queryBuffer, ...timing.stagingRing]) {
     try {
-      buf.destroy();
+      resource?.destroy();
     } catch {
       /* already destroyed */
     }
@@ -173,6 +182,32 @@ export function destroyTimestampQueries(timing: WebGPUTimestampQueries): void {
   timing.supportsTimestampQuery = false;
   timing.hasRealGpuTimings = false;
   timing.readbackPending = false;
+  timing.passTimings = [];
+  timing.frame.reset();
+}
+
+/**
+ * Reserve a begin/end timestamp pair for the next pass of this frame. Works for
+ * compute and render passes (same descriptor shape). Undefined when timing is
+ * off or the query set is full.
+ */
+export function profilePass(
+  timing: WebGPUTimestampQueries,
+  meta: PassProfileMeta,
+): GPUComputePassTimestampWrites | undefined {
+  if (!timing.supportsTimestampQuery || !timing.querySet) return undefined;
+  const frame = timing.frame;
+  if (frame.passes.length >= MAX_PROFILED_PASSES) {
+    frame.overflow++;
+    return undefined;
+  }
+  const index = frame.passes.length;
+  frame.passes.push(meta);
+  return {
+    querySet: timing.querySet,
+    beginningOfPassWriteIndex: index * 2,
+    endOfPassWriteIndex: index * 2 + 1,
+  };
 }
 
 /** Convert a GPU timestamp delta to milliseconds (mirrors timing.cpp TimestampDeltaMs). */
@@ -182,230 +217,176 @@ export function timestampDeltaMs(start: bigint, end: bigint, periodNs: number): 
   return (Number(end - start) * periodNs) / 1e6;
 }
 
-/** Validate stamps the way C++ sets gpuTimingsResolved_. */
-export function stampsIndicateRealGpuTimings(stamps: BigUint64Array): boolean {
-  const frameStart = stamps[kTsFrameStart] ?? 0n;
-  const presentEnd = stamps[kTsPresentEnd] ?? 0n;
-  const computeEnd = stamps[kTsComputeEnd] ?? 0n;
-  return (
-    (frameStart > 0n && presentEnd > frameStart) ||
-    (frameStart > 0n && computeEnd > frameStart)
-  );
+export function passKey(meta: PassProfileMeta): string {
+  return meta.kind === 'compute'
+    ? `${meta.slot ?? '-'}:${meta.nodeId ?? meta.entry ?? meta.label}`
+    : meta.label;
 }
 
-export function decodeGpuTimings(
+export interface DecodedPassTimings {
+  timings: GpuTimingsState;
+  /** One entry per key (iterations summed), in frame order. */
+  passes: PassTiming[];
+  valid: boolean;
+}
+
+/** Decode one resolved frame of stamps against the passes that wrote them. */
+export function decodePassTimings(
   stamps: BigUint64Array,
+  passes: readonly PassProfileMeta[],
   periodNs: number,
-  tracker: Pick<TimestampPhaseTracker, 'hadParallel' | 'hadChained'>,
-): { timings: GpuTimingsState; valid: boolean } {
-  const frameStart = stamps[kTsFrameStart] ?? 0n;
-  const computeEnd = stamps[kTsComputeEnd] ?? 0n;
-  const presentEnd = stamps[kTsPresentEnd] ?? 0n;
+): DecodedPassTimings {
+  const byKey = new Map<string, PassTiming>();
+  const span: Record<SlotTimingMode | 'all', [bigint, bigint]> = {
+    parallel: [0n, 0n],
+    chained: [0n, 0n],
+    all: [0n, 0n],
+  };
+  const widen = (name: SlotTimingMode | 'all', begin: bigint, end: bigint) => {
+    const s = span[name];
+    if (s[0] === 0n || begin < s[0]) s[0] = begin;
+    if (end > s[1]) s[1] = end;
+  };
+  let valid = false;
 
-  let parallelStart = stamps[kTsParallelStart] ?? 0n;
-  let parallelEnd = stamps[kTsParallelEnd] ?? 0n;
-  if (tracker.hadParallel) {
-    if (parallelStart === 0n) parallelStart = frameStart;
-    if (parallelEnd === 0n) parallelEnd = computeEnd;
-  }
-
-  let chainedStart = stamps[kTsChainedStart] ?? 0n;
-  let chainedEnd = stamps[kTsChainedEnd] ?? 0n;
-  if (tracker.hadChained) {
-    if (chainedStart === 0n) {
-      // First chained pass may have used frameStart as begin when it was also first of frame.
-      chainedStart = stamps[kTsParallelEnd] > 0n ? stamps[kTsParallelEnd]! : frameStart;
+  passes.forEach((meta, i) => {
+    const begin = stamps[i * 2] ?? 0n;
+    const end = stamps[i * 2 + 1] ?? 0n;
+    const ok = begin > 0n && end > begin;
+    if (ok) {
+      valid = true;
+      widen('all', begin, end);
+      if (meta.mode) widen(meta.mode, begin, end);
     }
-    if (chainedEnd === 0n) chainedEnd = computeEnd;
-  }
+    const ms = ok ? timestampDeltaMs(begin, end, periodNs) : 0;
+    const key = passKey(meta);
+    const existing = byKey.get(key);
+    if (existing) {
+      existing.gpuMs += ms;
+      existing.iterations++;
+      return;
+    }
+    byKey.set(key, {
+      key,
+      label: meta.kind === 'compute' ? (meta.nodeId ?? meta.entry ?? meta.label) : meta.label,
+      kind: meta.kind,
+      slot: meta.slot,
+      shaderId: meta.shaderId,
+      entry: meta.entry,
+      nodeId: meta.nodeId,
+      scale: meta.scale ?? 1,
+      gpuMs: ms,
+      iterations: 1,
+    });
+  });
 
-  const frameToPresent = timestampDeltaMs(frameStart, presentEnd, periodNs);
-  const computeOnly = timestampDeltaMs(frameStart, computeEnd, periodNs);
-
+  const spanMs = (name: SlotTimingMode | 'all') => timestampDeltaMs(span[name][0], span[name][1], periodNs);
   return {
-    timings: {
-      parallelTime: tracker.hadParallel
-        ? timestampDeltaMs(parallelStart, parallelEnd, periodNs)
-        : 0,
-      chainedTime: tracker.hadChained
-        ? timestampDeltaMs(chainedStart, chainedEnd, periodNs)
-        : 0,
-      totalTime: frameToPresent > 0 ? frameToPresent : computeOnly,
-    },
-    valid: stampsIndicateRealGpuTimings(stamps),
+    timings: { parallelTime: spanMs('parallel'), chainedTime: spanMs('chained'), totalTime: spanMs('all') },
+    passes: Array.from(byKey.values()),
+    valid,
   };
 }
 
-/**
- * Pick begin/end query indices for one compute pass.
- * Browser WebGPU allows one beginningOfPass + one endOfPass per pass, and each
- * query index may be written at most once between resolveQuerySet calls.
- *
- * Intermediate multipass dispatches therefore return undefined (no timestamps).
- * Only phase starts and the final compute end are stamped — reusing end indices
- * on every pass was illegal and could invalidate the whole command buffer
- * (visible as a repeating black present flash).
- */
-export function pickComputeTimestampWrites(
-  tracker: TimestampPhaseTracker,
-  querySet: GPUQuerySet,
-  mode: SlotTimingMode,
-  isLastComputeOfFrame: boolean,
-): GPUComputePassTimestampWrites | undefined {
-  let beginningOfPassWriteIndex: number | undefined;
-  let endOfPassWriteIndex: number | undefined;
-
-  if (!tracker.tsFrameStartWritten) {
-    beginningOfPassWriteIndex = kTsFrameStart;
-    tracker.tsFrameStartWritten = true;
-  }
-
-  if (mode === 'parallel') {
-    tracker.hadParallel = true;
-    if (!tracker.tsParallelStartWritten) {
-      // Frame start already covers the first parallel begin when both fire on
-      // the same pass; decode falls back parallelStart → frameStart when 0.
-      if (beginningOfPassWriteIndex === undefined) {
-        beginningOfPassWriteIndex = kTsParallelStart;
-      }
-      tracker.tsParallelStartWritten = true;
-    }
-  } else {
-    tracker.hadChained = true;
-    if (!tracker.tsChainedStartWritten) {
-      if (beginningOfPassWriteIndex === undefined) {
-        beginningOfPassWriteIndex = kTsChainedStart;
-      }
-      tracker.tsChainedStartWritten = true;
-    }
-  }
-
-  // Single end stamp for the whole compute phase. Decode fills missing
-  // parallel/chained ends from computeEnd when those indices stay 0.
-  if (isLastComputeOfFrame) {
-    endOfPassWriteIndex = kTsComputeEnd;
-  }
-
-  if (beginningOfPassWriteIndex === undefined && endOfPassWriteIndex === undefined) {
-    return undefined;
-  }
-
-  const writes: GPUComputePassTimestampWrites = { querySet };
-  if (beginningOfPassWriteIndex !== undefined) {
-    writes.beginningOfPassWriteIndex = beginningOfPassWriteIndex;
-  }
-  if (endOfPassWriteIndex !== undefined) {
-    writes.endOfPassWriteIndex = endOfPassWriteIndex;
-  }
-  return writes;
+/** Fold a fresh decode into the smoothed per-pass list (EMA; vanished passes drop out). */
+export function smoothPassTimings(
+  previous: readonly PassTiming[],
+  next: readonly PassTiming[],
+  alpha = PASS_EMA_ALPHA,
+): PassTiming[] {
+  const prev = new Map(previous.map((p) => [p.key, p]));
+  return next.map((p) => {
+    const old = prev.get(p.key);
+    return old ? { ...p, gpuMs: old.gpuMs + (p.gpuMs - old.gpuMs) * alpha } : { ...p };
+  });
 }
 
-export function pickPresentTimestampWrites(
-  tracker: TimestampPhaseTracker,
-  querySet: GPUQuerySet,
-): GPURenderPassTimestampWrites | undefined {
-  if (!tracker.tsFrameStartWritten) return undefined;
-  return {
-    querySet,
-    beginningOfPassWriteIndex: kTsPresentStart,
-    endOfPassWriteIndex: kTsPresentEnd,
-  };
+export interface ReadbackTicket {
+  slot: number;
+  passes: PassProfileMeta[];
+  overflow: number;
 }
 
 /**
- * Resolve timestamp queries every frame they were written, then copy into a free
- * staging ring slot for async readback.
- *
- * Critical: resolve must NOT be gated on mapAsync completion. Skipping resolve
- * while a readback is in flight leaves query indices written; the next frame
- * rewrites them without resolve → WebGPU validation error → entire command
- * buffer dropped → repeating black canvas flashes. Staging copy/map is optional
- * when the ring is busy; resolve still frees the query set.
- *
- * Returns the staging slot used for readback, or null when only resolved
- * (or when timing is inactive / no stamps were written).
+ * Resolve this frame's stamps (always, when any were written) and, at most
+ * every READBACK_INTERVAL_MS, copy them into a free staging slot. Returns the
+ * readback ticket for scheduleTimestampReadback, or null.
  */
 export function encodeResolveAndCopy(
   encoder: GPUCommandEncoder,
   timing: WebGPUTimestampQueries,
-): number | null {
+  now: number = performance.now(),
+): ReadbackTicket | null {
+  const count = timing.frame.passes.length;
   if (
     !timing.supportsTimestampQuery ||
     !timing.querySet ||
     !timing.queryBuffer ||
-    timing.stagingRing.length === 0
+    timing.stagingRing.length === 0 ||
+    count === 0
   ) {
     return null;
   }
-  if (!timing.tracker.tsFrameStartWritten) {
-    return null;
-  }
 
-  // Always resolve so query indices can be rewritten next frame.
-  encoder.resolveQuerySet(timing.querySet, 0, TS_QUERY_COUNT, timing.queryBuffer, 0);
+  // Always resolve so the query indices may be written again next frame.
+  encoder.resolveQuerySet(timing.querySet, 0, count * 2, timing.queryBuffer, 0);
+
+  if (now - timing.lastReadbackAt < READBACK_INTERVAL_MS) return null;
 
   if (timing.stagingBusy.length !== timing.stagingRing.length) {
     timing.stagingBusy = timing.stagingRing.map(() => false);
   }
-
-  // Prefer ringIndex, then scan for any free slot (true 2-deep pipeline).
   let slot: number | null = null;
+  let staging: GPUBuffer | undefined;
   for (let i = 0; i < timing.stagingRing.length; i++) {
     const candidate = (timing.ringIndex + i) % timing.stagingRing.length;
-    if (!timing.stagingBusy[candidate] && timing.stagingRing[candidate]) {
+    staging = timing.stagingRing[candidate];
+    if (!timing.stagingBusy[candidate] && staging) {
       slot = candidate;
       break;
     }
   }
-  if (slot === null) {
-    // Resolved (safe for next frame) but no free staging buffer for CPU readback.
-    return null;
-  }
+  if (slot === null || !staging) return null;
 
-  encoder.copyBufferToBuffer(
-    timing.queryBuffer,
-    0,
-    timing.stagingRing[slot],
-    0,
-    TS_QUERY_COUNT * 8,
-  );
-  return slot;
+  encoder.copyBufferToBuffer(timing.queryBuffer, 0, staging, 0, count * 2 * 8);
+  timing.lastReadbackAt = now;
+  return { slot, passes: [...timing.frame.passes], overflow: timing.frame.overflow };
 }
 
 /**
- * Fire-and-forget mapAsync on a staging ring slot. Never await this from the submit frame.
- * On success, updates timing.gpuTimings / hasRealGpuTimings. On failure, falls back cleanly.
+ * Fire-and-forget mapAsync of a staging slot. Never await this from the frame.
+ * On success, updates gpuTimings / passTimings / hasRealGpuTimings.
  */
 export function scheduleTimestampReadback(
   timing: WebGPUTimestampQueries,
-  slot: number,
+  ticket: ReadbackTicket,
 ): void {
-  const staging = timing.stagingRing[slot];
+  const staging = timing.stagingRing[ticket.slot];
   if (!staging) return;
-
-  // Snapshot tracker flags for this resolved frame (next frame will reset tracker).
-  const hadParallel = timing.tracker.hadParallel;
-  const hadChained = timing.tracker.hadChained;
   const periodNs = timing.timestampPeriodNs;
+  const byteLength = ticket.passes.length * 2 * 8;
 
-  if (timing.stagingBusy.length !== timing.stagingRing.length) {
-    timing.stagingBusy = timing.stagingRing.map(() => false);
-  }
-  timing.stagingBusy[slot] = true;
-  timing.readbackPending = timing.stagingBusy.some(Boolean);
-  timing.ringIndex = (slot + 1) % timing.stagingRing.length;
+  timing.stagingBusy[ticket.slot] = true;
+  timing.readbackPending = true;
+  timing.ringIndex = (ticket.slot + 1) % timing.stagingRing.length;
+
+  const release = () => {
+    timing.stagingBusy[ticket.slot] = false;
+    timing.readbackPending = timing.stagingBusy.some(Boolean);
+  };
 
   staging
-    .mapAsync(GPUMapMode.READ)
+    .mapAsync(GPUMapMode.READ, 0, byteLength)
     .then(() => {
       try {
-        const copy = staging.getMappedRange().slice(0);
-        const stamps = new BigUint64Array(copy);
-        const decoded = decodeGpuTimings(stamps, periodNs, { hadParallel, hadChained });
+        const stamps = new BigUint64Array(staging.getMappedRange(0, byteLength).slice(0));
+        const decoded = decodePassTimings(stamps, ticket.passes, periodNs);
         if (decoded.valid) {
           timing.gpuTimings.parallelTime = decoded.timings.parallelTime;
           timing.gpuTimings.chainedTime = decoded.timings.chainedTime;
           timing.gpuTimings.totalTime = decoded.timings.totalTime;
+          timing.passTimings = smoothPassTimings(timing.passTimings, decoded.passes);
+          timing.lastOverflow = ticket.overflow;
           timing.hasRealGpuTimings = true;
         }
       } finally {
@@ -414,13 +395,11 @@ export function scheduleTimestampReadback(
         } catch {
           /* device lost */
         }
-        timing.stagingBusy[slot] = false;
-        timing.readbackPending = timing.stagingBusy.some(Boolean);
+        release();
       }
     })
     .catch(() => {
-      timing.stagingBusy[slot] = false;
-      timing.readbackPending = timing.stagingBusy.some(Boolean);
+      release();
       timing.hasRealGpuTimings = false;
     });
 }
@@ -433,11 +412,13 @@ export function buildGPUTimings(
   gpuTimings: GpuTimingsState,
   supportsTimestampQuery: boolean,
   hasRealGpuTimings = false,
+  passes?: readonly PassTiming[],
 ): GPUTimings {
   const real = supportsTimestampQuery && hasRealGpuTimings;
   return {
     ...gpuTimings,
     available: real,
     timingSource: real ? 'gpu-timestamp' : 'wall-clock',
+    ...(real && passes && passes.length > 0 ? { passes: passes.map((p) => ({ ...p })) } : {}),
   };
 }

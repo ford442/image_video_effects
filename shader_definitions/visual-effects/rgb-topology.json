@@ -54,34 +54,38 @@
       "max": 1
     }
   ],
-  "updatedParams": [
-    {
-      "id": "contour_density",
-      "name": "Contour Density",
-      "default": 0.4,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "line_thickness",
-      "name": "Line Thickness",
-      "default": 0.22,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "channel_separation",
-      "name": "Channel Separation",
-      "default": 0.35,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "source_blend",
-      "name": "Source Blend",
-      "default": 0.4,
-      "min": 0,
-      "max": 1
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "id": "contour_density",
+          "name": "Contour Density",
+          "default": 0.4,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "id": "line_thickness",
+          "name": "Line Thickness",
+          "default": 0.22,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "id": "channel_separation",
+          "name": "Channel Separation",
+          "default": 0.35,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "id": "source_blend",
+          "name": "Source Blend",
+          "default": 0.4,
+          "min": 0,
+          "max": 1
+        }
+      ]
     }
-  ]
+  }
 }

@@ -1,20 +1,16 @@
 /**
  * ShaderValidator must be able to fail a bad shader with WebGPU entirely absent.
  *
- * The real public/wasm/naga_wasm.wasm is instantiated here — this is an end-to-end
- * check of the committed artifact, not a stub. The ABI is re-implemented inline
- * rather than imported from public/wasm/naga_wasm.js because that file is ESM and
- * jest runs these tests as CommonJS; the loader itself is covered by
- * scripts/verify-naga-wasm.test.mjs.
+ * The real public/wasm/naga_wasm.wasm is instantiated here (test-utils/nagaWasmNode)
+ * — this is an end-to-end check of the committed artifact, not a stub.
  */
 import React from 'react';
-import fs from 'fs';
-import path from 'path';
 import { TextEncoder as NodeTextEncoder, TextDecoder as NodeTextDecoder } from 'util';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ShaderValidator from './ShaderValidator';
-import { clearAdoptedRendererDevice } from '../utils/adoptedGpuDevice';
+import { resetRendererDeviceRegistryForTests } from '../renderer/deviceRegistry';
+import { loadRealNaga } from '../test-utils/nagaWasmNode';
 
 // jsdom ships neither; browsers and Node both have them natively. Imports are
 // hoisted regardless of source order, so nothing above runs before this anyway.
@@ -22,8 +18,6 @@ if (typeof global.TextEncoder === 'undefined') {
   (global as any).TextEncoder = NodeTextEncoder;
   (global as any).TextDecoder = NodeTextDecoder;
 }
-
-const WASM_PATH = path.join(__dirname, '../../public/wasm/naga_wasm.wasm');
 
 const VALID_WGSL = `
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -35,27 +29,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
 // `let x: i32 = 1.5;` — a type error naga reports with a line and column.
 const BROKEN_WGSL = '@compute @workgroup_size(1,1,1)\nfn main() { let x: i32 = 1.5; }';
-
-async function realValidator() {
-  const { instance } = await WebAssembly.instantiate(fs.readFileSync(WASM_PATH), {});
-  const w = instance.exports as any;
-  const heap = () => new Uint8Array(w.memory.buffer);
-  return {
-    validate(wgsl: string) {
-      const bytes = new TextEncoder().encode(wgsl);
-      const ptr = w.wgsl_alloc(bytes.length);
-      try {
-        heap().set(bytes, ptr);
-        w.wgsl_validate(ptr, bytes.length);
-        const p = w.wgsl_result_ptr();
-        const len = w.wgsl_result_len();
-        return JSON.parse(new TextDecoder().decode(heap().slice(p, p + len)));
-      } finally {
-        w.wgsl_free(ptr, bytes.length);
-      }
-    },
-  };
-}
 
 // A plain function, not jest.fn(): CRA's jest config sets resetMocks, which
 // would strip a jest.fn implementation between tests and hand back undefined.
@@ -82,14 +55,14 @@ describe('ShaderValidator GPU-less validation', () => {
   const requestDevice = jest.fn();
 
   beforeAll(() => {
-    (global as any).__nagaValidatorPromise = realValidator();
+    (global as any).__nagaValidatorPromise = loadRealNaga();
   });
 
   beforeEach(() => {
-    clearAdoptedRendererDevice();
+    resetRendererDeviceRegistryForTests();
     delete (window as any).webgpuProbe;
 
-    // No adopted device, and navigator.gpu present only to prove it is untouched.
+    // No renderer device, and navigator.gpu present only to prove it is untouched.
     const nav = navigator as unknown as { gpu?: unknown };
     nav.gpu = { requestAdapter, requestDevice };
 
@@ -116,7 +89,7 @@ describe('ShaderValidator GPU-less validation', () => {
   });
 
   afterEach(() => {
-    clearAdoptedRendererDevice();
+    resetRendererDeviceRegistryForTests();
     jest.clearAllMocks();
   });
 

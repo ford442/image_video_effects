@@ -57,8 +57,8 @@ export function depthTensorHeightWidth(dims: number[]): { height: number; width:
   if (dims.length < 2) {
     throw new Error(`Depth tensor dims must be at least 2-D, got ${JSON.stringify(dims)}`);
   }
-  const height = dims[dims.length - 2];
-  const width = dims[dims.length - 1];
+  const height = dims[dims.length - 2]!;
+  const width = dims[dims.length - 1]!;
   if (!Number.isFinite(height) || !Number.isFinite(width) || height <= 0 || width <= 0) {
     throw new Error(`Invalid depth dimensions: ${JSON.stringify(dims)}`);
   }
@@ -77,7 +77,7 @@ export function normalizeDepthMap(tensor: DepthTensor): NormalizedDepthMap {
   let max = -Infinity;
 
   for (let i = 0; i < data.length; i++) {
-    const v = data[i];
+    const v = data[i]!;
     if (Number.isFinite(v)) {
       min = Math.min(min, v);
       max = Math.max(max, v);
@@ -90,7 +90,7 @@ export function normalizeDepthMap(tensor: DepthTensor): NormalizedDepthMap {
 
   const range = max - min || 1;
   for (let i = 0; i < data.length; i++) {
-    normalizedData[i] = 1.0 - ((data[i] - min) / range);
+    normalizedData[i] = 1.0 - ((data[i]! - min) / range);
   }
 
   return { data: normalizedData, width, height };

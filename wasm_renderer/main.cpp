@@ -266,6 +266,43 @@ void getGPUTimings(float* parallelMs, float* chainedMs, float* totalMs, int* ava
     }
 }
 
+// ─── Measurement / diagnostics (#1314 D) ─────────────────────────────────────
+
+// JSON array of smoothed per-pass GPU timings from the last timestamp
+// readback: [{"slot","shaderId","label","gpuMs","iterations"}, ...]. slot -1
+// is the legacy single-shader path. "[]" until timestamps resolve or when the
+// device has no timestamp-query. Valid until the next call.
+EMSCRIPTEN_KEEPALIVE
+const char* getPassTimingsJson() {
+    return g_renderer ? g_renderer->GetPassTimingsJson() : "[]";
+}
+
+// Bench only (#1080): 1 when an onSubmittedWorkDone was queued; it later calls
+// Module.__pxWorkDone(ok) from JS. Times uncapped runs without ASYNCIFY.
+EMSCRIPTEN_KEEPALIVE
+int requestWorkDoneMark() {
+    return (g_renderer && g_renderer->RequestWorkDoneMark()) ? 1 : 0;
+}
+
+// Most recent uncaptured WebGPU error or device-lost message ("" if none).
+// The ring is process-wide, so it also answers before init / after shutdown.
+EMSCRIPTEN_KEEPALIVE
+const char* getLastError() {
+    return WebGPURenderer::ErrorRing().Last();
+}
+
+// {"count":<messages ever pushed>,"messages":[up to 16, oldest first]}.
+EMSCRIPTEN_KEEPALIVE
+const char* getErrorRingJson() {
+    return WebGPURenderer::ErrorRingJson();
+}
+
+// Drop the held messages; count keeps counting.
+EMSCRIPTEN_KEEPALIVE
+void clearErrorRing() {
+    WebGPURenderer::ErrorRing().Clear();
+}
+
 EMSCRIPTEN_KEEPALIVE
 void setRecording(int recording) {
     if (g_renderer) {

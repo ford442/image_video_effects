@@ -11,6 +11,12 @@ import { CatalogShader, CatalogParam } from './shaderCatalog';
 
 // ── Test catalog ──────────────────────────────────────────────────────────────
 
+function at<T>(a: readonly T[], i: number): T {
+  const v = a[i];
+  if (v === undefined) throw new Error(`missing index ${i}`);
+  return v;
+}
+
 function param(id: string, def = 0.5): CatalogParam {
     return { id, name: id, default: def, min: 0, max: 1 };
 }
@@ -66,9 +72,9 @@ describe('mapVJStackToSharedChain', () => {
             KNOWN,
         );
         expect(chain.slots).toHaveLength(1);
-        expect(chain.slots[0].shaderId).toBe('plasma');
+        expect(at(chain.slots, 0).shaderId).toBe('plasma');
         // freq → zoomParam1, amp → zoomParam2
-        expect(chain.slots[0].params).toMatchObject({ zoomParam1: 0.3, zoomParam2: 0.7 });
+        expect(at(chain.slots, 0).params).toMatchObject({ zoomParam1: 0.3, zoomParam2: 0.7 });
     });
 
     it('keeps exactly 6 shaders without truncation', () => {
@@ -96,7 +102,7 @@ describe('mapVJStackToSharedChain', () => {
             KNOWN,
         );
         expect(chain.slots.map(s => s.shaderId)).toEqual(['plasma', 'glitch']);
-        expect(chain.slots[1].params).toMatchObject({ zoomParam1: 0.6 });
+        expect(at(chain.slots, 1).params).toMatchObject({ zoomParam1: 0.6 });
         expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('does-not-exist'));
     });
 
@@ -109,8 +115,8 @@ describe('mapVJStackToSharedChain', () => {
 
         // 5th param ('extra') must not leak into any SlotParams field.
         expect(expected).toEqual({ zoomParam1: 0.11, zoomParam2: 0.22, zoomParam3: 0.33, zoomParam4: 0.44 });
-        expect(chain.slots[0].params).toMatchObject(expected);
-        expect(chain.slots[0].params).not.toHaveProperty('zoomParam5');
+        expect(at(chain.slots, 0).params).toMatchObject(expected);
+        expect(at(chain.slots, 0).params).not.toHaveProperty('zoomParam5');
     });
 
     it('compacts default-valued params away when a defaultsLookup is provided', () => {
@@ -124,8 +130,8 @@ describe('mapVJStackToSharedChain', () => {
             KNOWN,
             lookup,
         );
-        expect(chain.slots[0].shaderId).toBe('a');
-        expect(chain.slots[0].params).toBeUndefined();
+        expect(at(chain.slots, 0).shaderId).toBe('a');
+        expect(at(chain.slots, 0).params).toBeUndefined();
     });
 
     it('does NOT over-compact against per-shader defaults when no lookup is given', () => {
@@ -137,7 +143,7 @@ describe('mapVJStackToSharedChain', () => {
             CATALOG,
             KNOWN,
         );
-        expect(chain.slots[0].params).toMatchObject({
+        expect(at(chain.slots, 0).params).toMatchObject({
             zoomParam1: 0.1, zoomParam2: 0.2, zoomParam3: 0.3, zoomParam4: 0.4,
         });
     });
@@ -160,24 +166,24 @@ describe('mapVJStackToSharedChain', () => {
         expect(modes).toEqual(['liquid', 'plasma', 'glitch']);
 
         // zoomParam1-4 reproduced for the liquid slot.
-        expect(slotParams[0].zoomParam1).toBeCloseTo(0.12);
-        expect(slotParams[0].zoomParam2).toBeCloseTo(0.34);
-        expect(slotParams[0].zoomParam3).toBeCloseTo(0.56);
-        expect(slotParams[0].zoomParam4).toBeCloseTo(0.78);
+        expect(at(slotParams, 0).zoomParam1).toBeCloseTo(0.12);
+        expect(at(slotParams, 0).zoomParam2).toBeCloseTo(0.34);
+        expect(at(slotParams, 0).zoomParam3).toBeCloseTo(0.56);
+        expect(at(slotParams, 0).zoomParam4).toBeCloseTo(0.78);
 
         // plasma: only first two params set; rest fall back to generic defaults.
-        expect(slotParams[1].zoomParam1).toBeCloseTo(0.25);
-        expect(slotParams[1].zoomParam2).toBeCloseTo(0.65);
-        expect(slotParams[1].zoomParam3).toBeCloseTo(DEFAULT_SLOT_PARAMS.zoomParam3);
+        expect(at(slotParams, 1).zoomParam1).toBeCloseTo(0.25);
+        expect(at(slotParams, 1).zoomParam2).toBeCloseTo(0.65);
+        expect(at(slotParams, 1).zoomParam3).toBeCloseTo(DEFAULT_SLOT_PARAMS.zoomParam3);
 
         // glitch: single param.
-        expect(slotParams[2].zoomParam1).toBeCloseTo(0.45);
+        expect(at(slotParams, 2).zoomParam1).toBeCloseTo(0.45);
     });
 
     it('tolerates a params array shorter than shaderIds without throwing', () => {
         const chain = mapVJStackToSharedChain(['plasma', 'glitch'], [{ freq: 0.3 }], CATALOG, KNOWN);
         expect(chain.slots.map(s => s.shaderId)).toEqual(['plasma', 'glitch']);
         // glitch had no params entry → no overrides carried.
-        expect(chain.slots[1].params).toBeUndefined();
+        expect(at(chain.slots, 1).params).toBeUndefined();
     });
 });

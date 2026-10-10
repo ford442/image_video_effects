@@ -3,82 +3,102 @@
   "name": "Vitreous Quantum-Lotus Singularity",
   "category": "generative",
   "url": "shaders/gen-vitreous-quantum-lotus-singularity.wgsl",
-  "tags": ["organic", "quantum", "cosmic", "fractal", "flower", "refraction", "audio-reactive", "sdf", "raymarched", "thin-film", "iridescent"],
+  "tags": [
+    "organic",
+    "quantum",
+    "cosmic",
+    "fractal",
+    "flower",
+    "refraction",
+    "audio-reactive",
+    "sdf",
+    "raymarched",
+    "thin-film",
+    "iridescent"
+  ],
   "description": "A hyper-dimensional, translucent crystalline lotus flower continuously blooming and fracturing around a gravitational singularity. Upgraded with thin-film iridescence on the vitreous petals, per-petal cell color variation, symmetry-folded radial vein inlays pulsing with the music, an event-horizon core with photon ring, 3-point lighting with ambient occlusion, chromatic dispersion, ACES filmic tonemapping and real depth output.",
-  "complexity": "High",
-  "workgroup_size": [16, 16, 1],
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
   "updated": true,
   "supportsDepth": true,
-  "parameters": [
+  "params": [
     {
+      "id": "petal_complexity",
       "name": "Petal Complexity",
-      "type": "slider",
       "default": 5.0,
       "min": 1.0,
       "max": 10.0,
       "step": 1.0,
-      "uniform": "zoom_params.x"
+      "mapping": "zoom_params.x"
     },
     {
+      "id": "singularity_mass",
       "name": "Singularity Mass",
-      "type": "slider",
       "default": 1.5,
       "min": 0.1,
       "max": 5.0,
       "step": 0.1,
-      "uniform": "zoom_params.y"
+      "mapping": "zoom_params.y"
     },
     {
+      "id": "refraction_index",
       "name": "Refraction Index",
-      "type": "slider",
       "default": 1.33,
       "min": 1.0,
       "max": 2.5,
       "step": 0.01,
-      "uniform": "zoom_params.z"
+      "mapping": "zoom_params.z"
     },
     {
+      "id": "audio_pulse_glow",
       "name": "Audio Pulse Glow",
-      "type": "slider",
       "default": 1.0,
       "min": 0.0,
       "max": 3.0,
       "step": 0.1,
-      "uniform": "zoom_params.w"
+      "mapping": "zoom_params.w"
     }
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Petal Complexity",
-      "default": 5.0,
-      "min": 1.0,
-      "max": 10.0,
-      "step": 1.0
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Petal Complexity",
+          "default": 5.0,
+          "min": 1.0,
+          "max": 10.0,
+          "step": 1.0
+        },
+        {
+          "index": 1,
+          "name": "Singularity Mass",
+          "default": 1.5,
+          "min": 0.1,
+          "max": 5.0,
+          "step": 0.1
+        },
+        {
+          "index": 2,
+          "name": "Refraction Index",
+          "default": 1.33,
+          "min": 1.0,
+          "max": 2.5,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Audio Pulse Glow",
+          "default": 1.0,
+          "min": 0.0,
+          "max": 3.0,
+          "step": 0.1
+        }
+      ]
     },
-    {
-      "index": 1,
-      "name": "Singularity Mass",
-      "default": 1.5,
-      "min": 0.1,
-      "max": 5.0,
-      "step": 0.1
-    },
-    {
-      "index": 2,
-      "name": "Refraction Index",
-      "default": 1.33,
-      "min": 1.0,
-      "max": 2.5,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Audio Pulse Glow",
-      "default": 1.0,
-      "min": 0.0,
-      "max": 3.0,
-      "step": 0.1
-    }
-  ]
+    "complexity": "High"
+  }
 }

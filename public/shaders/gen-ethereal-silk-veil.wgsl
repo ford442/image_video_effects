@@ -4,31 +4,16 @@
 //  Features: generative, audio-reactive, mouse-driven, temporal, depth-aware,
 //            upgraded-rgba, aces-tone-map, chromatic-aberration
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: selvage fray noise along ribbon width edges; held-crease memory blended from exact C when mouse down
+//  Upgraded: 2026-10-10
+//  Ideas: selvage fray noise along ribbon width edges; held-crease memory blended from exact C when mouse down;
+//         2nd pass (2026-10-10): shot-silk dichroism (fold-slope shifts warp-gold vs cool weft,
+//         anisotropic highlight with thread striations); ribbon half-twist (width x |cos twist|,
+//         darker back-face, thin spec line at the flip); click pluck now has a real strength
+//         (ripples[].w is always 0, so it was dead)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
@@ -84,7 +69,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let age = time - event.z;
     if (age > 0.0 && age < 2.5) {
       let radius = age * 0.3;
-      let ring = exp(-abs(distance(uv, event.xy) - radius) * 100.0) * exp(-age * 1.7) * event.w;
+      // Floor fix: ripples[].w is always 0 (dead pluck). Fixed strength, ring + time falloff only.
+      let pluckStrength = 1.0;
+      let ring = exp(-abs(distance(uv, event.xy) - radius) * 100.0) * exp(-age * 1.7) * pluckStrength;
       clickPluck += ring;
     }
   }
@@ -127,8 +114,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Mouse gather shifts ribbon toward mouse
     let gatherX = baseX + wave + ripple - toMouse.x * gatherStrength * (0.5 + layerDepth * 0.5) + creaseBias;
 
+    // Idea 2nd-pass B: ribbon half-twist. Width follows |cos(twist)| (floored so a ribbon never
+    // vanishes); cosT < 0 is the back face of the fabric.
+    let twist = uv.y * (5.0 + f32(li) * 0.6) + time * speed * 0.35 + ribbonPhase * 1.3;
+    let cosT = cos(twist);
+    let twistWidth = mix(0.35, 1.0, abs(cosT));
+
     // Ribbon width varies with layer (front layers wider)
-    let ribbonWidth = mix(0.04, 0.12, layerDepth) * (1.0 + bass * 0.1);
+    let ribbonWidth = mix(0.04, 0.12, layerDepth) * (1.0 + bass * 0.1) * twistWidth;
 
     // Distance from this pixel to the ribbon center
     let distToRibbon = abs(uv.x - gatherX);
@@ -154,6 +147,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let sheenMask = pow(smoothstep(0.4, 0.6, foldDepth), 3.0) * sheenAmount;
     layerColor = mix(layerColor, goldSheen, sheenMask * (0.5 + bass * 0.3));
     layerColor += goldSheen * selvageZone * 0.22;
+
+    // Idea 2nd-pass A: shot-silk dichroism. Warp threads read gold, weft threads read cool;
+    // which one you see follows the local fold slope (d wave / d y), like tilting shot silk.
+    let foldSlope = cos(uv.y * freq + time * speed + ribbonPhase) * freq * waveIntensity
+                  + cos(uv.y * freq * 2.5 + time * speed * 1.3 + ribbonPhase * 2.0) * freq * 2.5 * waveIntensity * 0.3;
+    let tilt = clamp(foldSlope * 6.0, -1.0, 1.0);
+    let warpWeft = smoothstep(-0.6, 0.6, tilt);
+    let dichroTint = mix(vec3<f32>(0.82, 0.92, 1.08), vec3<f32>(1.08, 0.98, 0.86), warpWeft);
+    layerColor = mix(layerColor, layerColor * dichroTint, 0.25 + 0.5 * sheenAmount);
+    // Thread striations run along the ribbon (constant across y, varying across width)
+    let relX = uv.x - gatherX;
+    let thread = noise2(vec2<f32>(relX * 260.0, f32(li) * 3.7 + uv.y * 1.5));
+    // Anisotropic highlight where the fibre is face-on (slope ~ 0), broken up by the threads
+    let aniso = exp(-tilt * tilt * 6.0) * (0.55 + 0.9 * thread);
+    layerColor += silkHighlight * aniso * 0.3 * sheenAmount * depthDarken;
+
+    // Back face of the twisted ribbon: darker and cooler; thin spec line where it turns edge-on
+    let frontFace = smoothstep(-0.25, 0.25, cosT);
+    layerColor = layerColor * mix(vec3<f32>(0.62, 0.68, 0.76), vec3<f32>(1.0), frontFace);
+    layerColor += silkHighlight * exp(-cosT * cosT * 40.0) * 0.35 * depthDarken;
 
     // Held-crease color memory when mouse down
     let heldCrease = smoothstep(0.035, 0.0, abs(uv.x - gatherX)) * mouseDown * ribbonMask;

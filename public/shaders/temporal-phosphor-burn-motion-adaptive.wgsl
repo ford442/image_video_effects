@@ -3,7 +3,9 @@
 //  Category: post-processing
 //  Features: mouse-driven, audio-reactive, temporal, history-ring, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-07-31 (Batch 19 — mouse lens, click stamps, FFT band drift)
+//  Upgraded: 2026-10-04 (prev 2026-07-31 Batch 19)
+//  Ideas: persistence colour aging (white head → amber tail); trail hysteresis from exact C
+//  A packing: display RGBA (read back exactly as last frame's burn)
 //  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
 //         hardcoded 8 — see HISTORY RING DEPTH below
 //  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
@@ -40,30 +42,25 @@
 //    [0]=bass  [1]=mid  [2]=treble  [3]=reserved  [4]=historyHead
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=motionSens, y=maxDecay, z=minDecay, w=warmTint
 @group(0) @binding(13) var historyTexture: texture_2d_array<f32>;
-
-struct Uniforms {
-  config: vec4<f32>,      // x=time, y=rippleCount, z=resX, w=resY
-  zoom_config: vec4<f32>, // x=time, y=mouseX, z=mouseY, w=mouseDown
-  zoom_params: vec4<f32>, // x=motionSens, y=maxDecay, z=minDecay, w=warmTint
-  ripples: array<vec4<f32>, 50>,
-};
 
 const MOUSE_LENS_RADIUS: f32 = 0.3;  // aspect-corrected lens radius (uv units)
 const STAMP_FADE: f32 = 2.0;         // click-stamp lifetime in seconds
+
+// ── History ring read (#1307) ────────────────────────────────────
+// Every ring read goes through here. Ages clamp to the oldest layer the ring
+// actually holds; age 0 is the live frame — which is all a 1-layer ring has
+// (the host never writes a 1-layer ring, so its layer 0 is stale). On an
+// 8-layer ring this is the same layer lookup as before. Mirrors
+// temporal-slit-scan.wgsl frameAt.
+fn frameAt(uv: vec2<f32>, head: u32, depth: u32, age: u32, current: vec4<f32>) -> vec4<f32> {
+  let a = min(age, depth - 1u);
+  if (a == 0u) { return current; }
+  let layer = (head + depth - a) % depth;
+  return textureSampleLevel(historyTexture, u_sampler, uv, i32(layer), 0.0);
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -76,6 +73,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
   // Parameters; bass amplifies motion sensitivity for reactive trails
   let motionSens  = (1.0 + u.zoom_params.x * 9.0) * (1.0 + bass * 0.5);
@@ -86,7 +84,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // ── HISTORY RING DEPTH (floor fix, 2026-09-21) ───────────────────
   // The ring is at most 8 layers; after the VRAM probe the runtime may
   // allocate 8, 4 or 1, and it wraps its write head at the ALLOCATED
-  // count (renderer/webgpu/frame.ts). A hardcoded HISTORY_DEPTH=8 asked
+  // count (renderer/webgpu/frame.ts). A hardcoded ring depth of 8 asked
   // for layers that do not exist on a 4- or 1-layer device and WGSL
   // clamped them to the last layer: scrambled frame order, silently.
   let histDepth = max(textureNumLayers(historyTexture), 1u);
@@ -104,8 +102,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let charge = mouseMask * (0.6 + 0.4 * clamp(u.zoom_config.w, 0.0, 1.0));
 
   // Compute per-pixel motion from most recent history frame
-  let layerRecent = (historyHead + histDepth - min(1u, maxAge)) % histDepth;
-  let recent = textureSampleLevel(historyTexture, u_sampler, uv, i32(layerRecent), 0.0);
+  // (1-layer ring: frameAt returns the live frame, so motion reads 0, not a stale diff.)
+  let recent = frameAt(uv, historyHead, histDepth, 1u, current);
   // Cursor proximity feeds the motion term, so pointer movement itself
   // leaves a faint trail as it sweeps across the screen.
   var motion = clamp(length(current.rgb - recent.rgb) * motionSens, 0.0, 1.0);
@@ -118,18 +116,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Mouse lens: bias local decay toward decayMax (pointer charges the phosphor)
   decay = mix(decay, decayMax, mouseMask * 0.5);
 
-  // Per-band decay drift: 8 vertical FFT bands make the trails breathe
-  // with the spectrum (±0.005 — subtle enough that static areas still clear).
-  let bin   = min(u32(clamp(uv.y, 0.0, 0.999) * 8.0), 7u);
-  let drift = (plasmaBuffer[bin + 1u].x - 0.5) * 0.01;
+  // Per-band decay drift (±0.005). Floor fix: HEAD read plasmaBuffer[bin + 1], which is
+  // never uploaded (constant 0 → a fixed −0.005). Three vertical bands now breathe with
+  // treble (top), mids and bass (bottom); silence still gives HEAD's −0.005.
+  let band = min(u32(clamp(uv.y, 0.0, 0.999) * 3.0), 2u);
+  let bandEnergy = select(select(bass, mids, band == 1u), treble, band == 0u);
+  let drift = (bandEnergy - 0.5) * 0.01;
   decay = clamp(decay + drift, decayMin, 0.999);
+
+  // Idea 2 — trail hysteresis: a pixel that was glowing trail last frame (exact C burn
+  // brighter than the live frame) keeps the slow decay a little longer, so trails fade
+  // out instead of snapping off the moment motion stops.
+  let lastBurn = textureLoad(dataTextureC, coord, 0);
+  let trailExcess = dot(lastBurn.rgb - current.rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let wasTrail = smoothstep(0.03, 0.2, trailExcess);
+  decay = mix(decay, decayMax, wasTrail * 0.6);
 
   // Accumulate phosphor burn (max-based; history-ring indexing is an engine contract)
   var burned = current.rgb;
   for (var age: u32 = 1u; age <= min(7u, maxAge); age = age + 1u) {
-    let layer   = (historyHead + histDepth - age) % histDepth;
-    let hist    = textureSampleLevel(historyTexture, u_sampler, uv, i32(layer), 0.0);
-    let decayed = hist.rgb * pow(decay, f32(age));
+    let hist    = frameAt(uv, historyHead, histDepth, age, current);
+    // Idea 1 — persistence colour aging: each older frame leans further toward the
+    // long-persistence amber of the phosphor (scaled by Warm Tint), so trails run from a
+    // white head to an amber tail.
+    let ageTint = mix(vec3<f32>(1.0), vec3<f32>(1.0, 0.82, 0.38), clamp(f32(age) / 7.0, 0.0, 1.0) * clamp(warmStrength, 0.0, 1.0));
+    let decayed = hist.rgb * pow(decay, f32(age)) * ageTint;
     burned = max(burned, decayed);
   }
 

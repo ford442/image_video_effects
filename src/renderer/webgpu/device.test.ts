@@ -12,6 +12,7 @@ import {
   initializeWebGPUDevice,
   resolveCanvasColorOptIns,
   resolveSubgroupFeatureName,
+  attachDeviceLostHandler,
 } from './device';
 import canvasConfigureContract from '../../contracts/canvas_configure.json';
 import { setRendererErrorHandler, type RendererError } from '../ErrorHandling';
@@ -351,5 +352,56 @@ describe('uncaptured error routing', () => {
     detach();
     expect(listener).toBeNull();
     setRendererErrorHandler((e) => console.error(e));
+  });
+});
+
+describe('attachDeviceLostHandler', () => {
+  const errors: RendererError[] = [];
+  beforeEach(() => {
+    errors.length = 0;
+    setRendererErrorHandler((e) => errors.push(e));
+    jest.spyOn(console, 'error').mockImplementation(() => undefined);
+  });
+  afterEach(() => {
+    jest.restoreAllMocks();
+    setRendererErrorHandler((e) => console.error(e));
+  });
+
+  function lostDevice(info: { reason: string; message: string }) {
+    return { lost: Promise.resolve(info) } as unknown as GPUDevice;
+  }
+  const ctx = () => ({ unconfigure: jest.fn() }) as unknown as GPUCanvasContext & { unconfigure: jest.Mock };
+  const settle = () => new Promise((r) => setTimeout(r, 0));
+
+  it('a real loss is reported as recoverable, unconfigures and calls onLost once', async () => {
+    const context = ctx();
+    const onLost = jest.fn();
+    attachDeviceLostHandler(lostDevice({ reason: 'unknown', message: 'driver reset' }), context, onLost);
+    await settle();
+    expect(onLost).toHaveBeenCalledTimes(1);
+    expect(onLost).toHaveBeenCalledWith({ reason: 'unknown', message: 'driver reset' });
+    expect(context.unconfigure).toHaveBeenCalled();
+    expect(errors).toEqual([expect.objectContaining({ type: 'device-lost', recoverable: true })]);
+    expect(errors[0]!.message).not.toMatch(/reload/i);
+  });
+
+  it('a destroy is silent and leaves the (possibly reused) context alone', async () => {
+    const context = ctx();
+    const onLost = jest.fn();
+    attachDeviceLostHandler(lostDevice({ reason: 'destroyed', message: '' }), context, onLost);
+    await settle();
+    expect(onLost).not.toHaveBeenCalled();
+    expect(context.unconfigure).not.toHaveBeenCalled();
+    expect(errors).toEqual([]);
+  });
+
+  it('a simulated loss (test hook destroy) takes the loss path', async () => {
+    const onLost = jest.fn();
+    attachDeviceLostHandler(lostDevice({ reason: 'destroyed', message: '' }), ctx(), onLost, {
+      isSimulated: () => true,
+    });
+    await settle();
+    expect(onLost).toHaveBeenCalledWith(expect.objectContaining({ reason: 'simulated' }));
+    expect(errors).toHaveLength(1);
   });
 });

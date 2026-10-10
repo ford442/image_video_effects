@@ -153,8 +153,27 @@ function verifyDeepWorkgroupLimits() {
   }
 }
 
+// bufferSizeLimits: TS requests the adapter's value above the floor so the 2048
+// working-size gate (maxBufferSize >= 1 GiB) can pass. C++ deliberately does not
+// mirror it (WASM R&D freeze); the contract must say so explicitly.
+function verifyBufferSizeLimits() {
+  const floors = contract.bufferSizeLimits;
+  if (!floors) return;
+  if (contract.cppMirror?.bufferSizeLimits !== false || !contract.notes?.bufferSizeLimits) {
+    fail('webgpu_limits.json bufferSizeLimits needs cppMirror.bufferSizeLimits: false and a notes.bufferSizeLimits reason');
+  }
+  const ts = fs.readFileSync(TS_POLICY, 'utf8');
+  if (!/webgpuLimitsContract\.bufferSizeLimits/.test(ts) || !/\.\.\.bufferSizeRequest\(adapterLimits\)/.test(ts)) {
+    fail('webgpuDevicePolicy.ts buildRequiredLimits must spread bufferSizeRequest(adapterLimits) built from webgpuLimitsContract.bufferSizeLimits');
+  }
+  for (const key of Object.keys(floors)) {
+    if (!ts.includes(`'${key}'`)) fail(`webgpuDevicePolicy.ts bufferSizeRequest must request ${key}`);
+  }
+}
+
 if (!ONLY_WASM_INVARIANTS) {
   verifyDeepWorkgroupLimits();
+  verifyBufferSizeLimits();
 }
 
 function verifyOptionalFeatures() {
@@ -509,7 +528,8 @@ function verifyWasmCompileFlags() {
     fs.readFileSync(path.join(ROOT, 'src/contracts/wasm_compile_flags.json'), 'utf8'),
   );
   const buildSh = fs.readFileSync(path.join(ROOT, 'wasm_renderer/build.sh'), 'utf8');
-  const ci = fs.readFileSync(path.join(ROOT, '.github/workflows/ci.yml'), 'utf8');
+  // The emsdk build lives in wasm.yml (path-filtered + weekly since WASM froze as R&D, #1080).
+  const ci = fs.readFileSync(path.join(ROOT, '.github/workflows/wasm.yml'), 'utf8');
 
   if (!/^\d+\.\d+\.\d+$/.test(flags.emsdkVersion || '')) {
     fail(`wasm_compile_flags.json emsdkVersion must be an exact x.y.z pin, got "${flags.emsdkVersion}"`);
@@ -525,11 +545,11 @@ function verifyWasmCompileFlags() {
 
   // CI setup-emsdk must use the pin, not `latest`.
   const emsdkStep = ci.match(/uses:\s*mymindstorm\/setup-emsdk@[^\n]*[\s\S]*?version:\s*['"]?([^'"\s]+)/g) || [];
-  if (emsdkStep.length === 0) fail('ci.yml: setup-emsdk step with version: not found');
+  if (emsdkStep.length === 0) fail('wasm.yml: setup-emsdk step with version: not found');
   for (const step of emsdkStep) {
     const v = step.match(/version:\s*['"]?([^'"\s]+)/)[1];
     if (v !== flags.emsdkVersion) {
-      fail(`ci.yml setup-emsdk version "${v}" must equal wasm_compile_flags.json emsdkVersion "${flags.emsdkVersion}"`);
+      fail(`wasm.yml setup-emsdk version "${v}" must equal wasm_compile_flags.json emsdkVersion "${flags.emsdkVersion}"`);
     }
   }
 

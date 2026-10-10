@@ -3,6 +3,12 @@
 //  Category: distortion
 //  Features: mouse-driven, audio-reactive, depth-aware, multi-layer-mosaic,
 //            chromatic-dispersion, volumetric-fog, semantic-alpha, ACES
+//  Ideas:    1. prism tiles — every tunnel layer is cut into facet tiles that zoom with it,
+//               each splitting R/B along its own prism axis, with a thin facet seam
+//            2. Sobel depth glint — a real 3×3 depth gradient on the front layer lights
+//               silhouettes (HEAD's "edge" glow lit flat regions)
+//            3. layer fade window — each layer fades in at zoom 1× and out at 5×, so the
+//               fract() wrap no longer pops
 //  Complexity: High
 // ═══════════════════════════════════════════════════════════════════
 
@@ -91,36 +97,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let rawMouse = u.zoom_config.yz;
   let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
 
-  // Critically damped spring cursor in extraBuffer[133..138]
-  let isWriter = (gid.x == 0u && gid.y == 0u);
-  let hasState = (arrayLength(&extraBuffer) > 138u);
-
-  var mouse = rawMouse;
-  if (hasState && extraBuffer[138] > 0.5) {
-    mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  }
-
-  if (isWriter && hasState) {
-    let lastTime = extraBuffer[137];
-    let dt = clamp(time - lastTime, 0.0, 0.05);
-    var sPos = mouse;
-    var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[138] < 0.5) {
-      sPos = rawMouse;
-      sVel = vec2<f32>(0.0);
-    }
-    let stiffness = 42.0;
-    let damping = 12.96; // 2 * sqrt(42)
-    let accel = (rawMouse - sPos) * stiffness - sVel * damping;
-    sVel += accel * dt;
-    sPos += sVel * dt;
-    extraBuffer[133] = sPos.x;
-    extraBuffer[134] = sPos.y;
-    extraBuffer[135] = sVel.x;
-    extraBuffer[136] = sVel.y;
-    extraBuffer[137] = time;
-    extraBuffer[138] = 1.0;
-  }
+  // Raw pointer: the old extraBuffer[133..138] spring raced (pixel (0,0) wrote
+  // while every other pixel read) and the buffer is re-uploaded each frame.
+  let mouse = rawMouse;
 
   // Exact parameter contracts
   let minSpeed = u.zoom_params.x;
@@ -146,11 +125,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var totalWeight = 0.0;
 
   let zoom_center = mouse;
+  var frontUV = uv;
+  var frontW = -1.0;
+  let tileDisp = 0.006 * (1.0 + treble * 0.5);
 
   for (var layer = 0; layer < 5; layer = layer + 1) {
     let layerDepth = f32(layer) / 4.0;
     let layerSpeed = mix(minSpeed, maxSpeed, layerDepth);
-    let layerZoom = 1.0 + fract(zoom_time * layerSpeed + time * 0.1) * 4.0;
+    // Small per-layer phase offset keeps the fade windows apart even when
+    // Min Speed equals Max Speed.
+    let zoomPhase = fract(zoom_time * layerSpeed + time * 0.1 + layerDepth * 0.8);
+    let layerZoom = 1.0 + zoomPhase * 4.0;
 
     let toCenter = (uv - zoom_center) * vec2<f32>(aspect, 1.0);
     let dist = length(toCenter);
@@ -169,11 +154,29 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let transformed = (flowUV - zoom_center) / layerZoom + zoom_center;
     let sampleUV = pingPongV2(transformed);
 
-    let sampleColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
+    // Idea 1: prism tiles. The layer plane is cut into facet tiles that live in
+    // layer space, so they zoom with it. Each tile is a small prism that splits
+    // R and B along its own axis, and deeper layers disperse more.
+    let tileCoord = (transformed - zoom_center) * vec2<f32>(aspect, 1.0) * 7.0 + f32(layer) * 3.17;
+    let tileId = floor(tileCoord);
+    let tileLocal = fract(tileCoord) - 0.5;
+    let prismAngle = hash21(tileId + f32(layer) * 11.0) * 6.2831853;
+    let prismDir = vec2<f32>(cos(prismAngle) / aspect, sin(prismAngle)) * tileDisp * (0.5 + layerDepth) / layerZoom;
+    let tr = textureSampleLevel(readTexture, u_sampler, pingPongV2(transformed + prismDir), 0.0).r;
+    let tg = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).g;
+    let tb = textureSampleLevel(readTexture, u_sampler, pingPongV2(transformed - prismDir), 0.0).b;
+    let tileSeam = smoothstep(0.44, 0.5, max(abs(tileLocal.x), abs(tileLocal.y)));
+    let sampleColor = vec3<f32>(tr, tg, tb) * (1.0 - tileSeam * 0.5);
     let sampleDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
 
+    // Idea 3: layer fade window. A layer fades in as it is born at 1× zoom and
+    // out as it reaches 5×, so the fract() wrap happens while it is invisible.
+    let layerWindow = 0.02 + sin(zoomPhase * 3.14159265);
+
     let density = exp(-layerDepth * 1.5);
-    let weight = density * (1.0 + sampleDepth * 0.5);
+    let weight = density * (1.0 + sampleDepth * 0.5) * layerWindow;
+    // The depth glint follows whichever layer currently dominates.
+    if (weight > frontW) { frontW = weight; frontUV = sampleUV; }
 
     accumulatedColor += sampleColor * weight;
     accumulatedDepth += sampleDepth * weight;
@@ -183,23 +186,29 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let baseColor = accumulatedColor / max(totalWeight, 0.0001);
   let baseDepth = accumulatedDepth / max(totalWeight, 0.0001);
 
-  // Chromatic dispersion
-  let chroma = 0.02 * (1.0 + treble * 0.5);
-  let r = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(chroma * baseDepth, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-  let g = textureSampleLevel(readTexture, u_sampler, uv, 0.0).g;
-  let b = textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(chroma * baseDepth, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
-  var chromaticColor = mix(baseColor, vec3<f32>(r, g, b), 0.5);
+  // Chromatic dispersion now comes from the per-layer prism tiles. HEAD mixed
+  // in R/B taps at the unwarped uv, which left a ghost double image.
+  var chromaticColor = baseColor;
 
   // Apply saturation boost
   let luma = dot(chromaticColor, vec3<f32>(0.299, 0.587, 0.114));
   chromaticColor = mix(vec3<f32>(luma), chromaticColor, 1.0 + saturationBoost * 1.5 + mids * 0.3);
 
-  // Edge glow from depth gradient
-  let ps = vec2<f32>(1.0) / resolution;
-  let depthX = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(ps.x, 0.0), 0.0).r;
-  let depthY = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, ps.y), 0.0).r;
-  let depthGrad = length(vec2<f32>(depthX - baseDepth, depthY - baseDepth));
-  let edgeGlow = exp(-depthGrad * 30.0) * baseDepth * 1.5;
+  // Idea 2: Sobel depth glint. A 3x3 Sobel on the depth under the dominant layer
+  // lights real silhouettes. HEAD's exp(−grad) peaked where nothing changed.
+  let ps = vec2<f32>(1.5) / resolution;
+  var dTap: array<f32, 9>;
+  for (var j = 0; j < 3; j = j + 1) {
+    for (var i = 0; i < 3; i = i + 1) {
+      let o = vec2<f32>(f32(i - 1), f32(j - 1)) * ps;
+      dTap[j * 3 + i] = textureSampleLevel(readDepthTexture, non_filtering_sampler,
+                                           clamp(frontUV + o, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    }
+  }
+  let gx = (dTap[2] + 2.0 * dTap[5] + dTap[8]) - (dTap[0] + 2.0 * dTap[3] + dTap[6]);
+  let gy = (dTap[6] + 2.0 * dTap[7] + dTap[8]) - (dTap[0] + 2.0 * dTap[1] + dTap[2]);
+  let edgeGlow = smoothstep(0.03, 0.25, length(vec2<f32>(gx, gy))) * (0.35 + baseDepth * 0.5) * (1.0 + bass * 0.4)
+               * clamp(frontW / max(totalWeight, 1e-4) * 2.0, 0.0, 1.0);
   var finalColor = chromaticColor + vec3<f32>(edgeGlow, edgeGlow * 0.8, edgeGlow * 0.6);
 
   // Volumetric fog
@@ -207,14 +216,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let fogColor = vec3<f32>(0.02, 0.05, 0.1) * (1.0 + bass * 0.5);
   finalColor = mix(finalColor, fogColor, (1.0 - fog) * 0.7);
 
-  // Exact dataTextureC persistence
+  // Exact dataTextureC persistence, blended in display space (C holds ACES output).
   let prevC = textureLoad(dataTextureC, pixel, 0).rgb;
-  finalColor = mix(finalColor, prevC, 0.08);
+  let finalRGB = mix(aces(finalColor), prevC, 0.08);
 
-  let finalRGB = aces(finalColor);
-
-  // Volumetric alpha
-  let fresnel = schlickFresnel(0.8, 0.03);
+  // Volumetric alpha. The view grazes the tunnel walls away from the zoom centre.
+  let centreDist = length((uv - zoom_center) * vec2<f32>(aspect, 1.0));
+  let fresnel = schlickFresnel(inverseSqrt(1.0 + 4.0 * centreDist * centreDist), 0.03);
   let alpha = clamp((mix(0.95, 0.4, fog) * 0.8 + edgeGlow * 0.3) * (1.0 - fresnel * 0.2) + held * 0.1, 0.15, 1.0);
   let finalPixel = vec4<f32>(finalRGB, alpha);
 

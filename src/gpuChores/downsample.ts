@@ -25,10 +25,10 @@ export function downsample2d(
       for (let y = y0; y < y1 && y < srcH; y++) {
         for (let x = x0; x < x1 && x < srcW; x++) {
           const si = (y * srcW + x) * 4;
-          r += rgba[si];
-          g += rgba[si + 1];
-          b += rgba[si + 2];
-          a += rgba[si + 3];
+          r += rgba[si]!;
+          g += rgba[si + 1]!;
+          b += rgba[si + 2]!;
+          a += rgba[si + 3]!;
           n += 1;
         }
       }

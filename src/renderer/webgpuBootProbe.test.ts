@@ -179,6 +179,29 @@ describe('webgpuBootProbe', () => {
     expect(device.destroy).toHaveBeenCalled();
   });
 
+  it('fails at probePipeline stage when the async create rejects without throwing (#1395)', async () => {
+    const device = makeMockDevice();
+    (device as unknown as { createComputePipelineAsync: jest.Mock }).createComputePipelineAsync = jest.fn(
+      async () => {
+        throw Object.assign(new Error('entry point not found'), { name: 'GPUPipelineError' });
+      },
+    );
+    const adapter = makeMockAdapter({}, device);
+    const context = makeMockContext();
+    const canvas = document.createElement('canvas');
+    canvas.getContext = jest.fn(() => context) as unknown as typeof canvas.getContext;
+    (navigator as Navigator & { gpu?: GPU }).gpu = {
+      requestAdapter: jest.fn().mockResolvedValue(adapter),
+      getPreferredCanvasFormat: () => 'bgra8unorm',
+    } as unknown as GPU;
+
+    const result = await runWebGpuBootProbe(canvas, 1024, 1024);
+    expect(result.ok).toBe(false);
+    const failed = result.attempts.find((a) => a.failedStage === 'probePipeline');
+    expect(failed?.error).toBe('entry point not found');
+    expect(device.createComputePipeline).not.toHaveBeenCalled();
+  });
+
   describe('canvas configure opt-ins', () => {
     function setup(context: GPUCanvasContext, device: GPUDevice = makeMockDevice()) {
       const canvas = document.createElement('canvas');

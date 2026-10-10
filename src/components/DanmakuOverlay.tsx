@@ -45,11 +45,11 @@ export const DanmakuOverlay: React.FC<DanmakuOverlayProps> = ({
 
     const msg: DanmakuMessage = {
       id: Math.random().toString(36).substr(2, 9),
-      text: text || SAMPLE_MESSAGES[Math.floor(Math.random() * SAMPLE_MESSAGES.length)],
+      text: text || (SAMPLE_MESSAGES[Math.floor(Math.random() * SAMPLE_MESSAGES.length)] ?? ''),
       x: dimensions.width,
       y: Math.random() * (dimensions.height - 40) + 20,
       speed: 2 + Math.random() * 3,
-      color: ['#fff', '#ff6b6b', '#4ecdc4', '#ffe66d', '#a8e6cf'][Math.floor(Math.random() * 5)],
+      color: ['#fff', '#ff6b6b', '#4ecdc4', '#ffe66d', '#a8e6cf'][Math.floor(Math.random() * 5)] ?? '#fff',
       size: 16 + Math.random() * 8,
       opacity: opacity,
     };

@@ -12,50 +12,48 @@
     "audio",
     "music"
   ],
-  "description": "Non-Euclidean Poincar\u00e9-disk tessellation in real-time. Hyperbolic tiles subdivide infinitely toward the boundary disk, colored by recursive depth \u2014 M.C. Escher meets fractals.",
+  "description": "Non-Euclidean Poincaré-disk tessellation in real-time. Hyperbolic tiles subdivide infinitely toward the boundary disk, colored by recursive depth — M.C. Escher meets fractals.",
   "workgroup_size": [
     16,
     16,
     1
   ],
   "params": [
-    {"id": "tileSymmetry", "name": "Tile Symmetry", "default": 0.4, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x"},
-    {"id": "depthColor", "name": "Depth Color", "default": 0.2, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y"},
-    {"id": "rotationSpeed", "name": "Rotation Speed", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z"},
-    {"id": "boundaryGlow", "name": "Boundary Glow", "default": 0.7, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w"}
-  ],
-  "updatedParams": [
     {
-      "index": 0,
+      "id": "tileSymmetry",
       "name": "Tile Symmetry",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x"
     },
     {
-      "index": 1,
+      "id": "depthColor",
       "name": "Depth Color",
       "default": 0.2,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y"
     },
     {
-      "index": 2,
+      "id": "rotationSpeed",
       "name": "Rotation Speed",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z"
     },
     {
-      "index": 3,
+      "id": "boundaryGlow",
       "name": "Boundary Glow",
       "default": 0.7,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w"
     }
   ],
   "supportsDepth": true,
@@ -63,6 +61,57 @@
   "updated": true,
   "id": "gen-hyperbolic-tessellation",
   "url": "shaders/gen-hyperbolic-tessellation.wgsl",
-  "features": ["upgraded-rgba", "hyperbolic-geometry", "recursive", "audio-reactive", "mouse-driven", "mouse-interactive", "held-interactive", "ripple-reactive", "temporal-feedback", "semantic-alpha", "aces-tone-mapping", "depth-aware"],
-  "feedbackPacking": "A/C = raw HDR tessellation display RGBA history; depth = normalized recursive depth"
+  "features": [
+    "upgraded-rgba",
+    "hyperbolic-geometry",
+    "recursive",
+    "audio-reactive",
+    "mouse-driven",
+    "mouse-interactive",
+    "held-interactive",
+    "ripple-reactive",
+    "temporal-feedback",
+    "semantic-alpha",
+    "aces-tone-mapping",
+    "depth-aware"
+  ],
+  "feedbackPacking": "A/C = raw HDR tessellation display RGBA history; depth = normalized recursive depth",
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Tile Symmetry",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Depth Color",
+          "default": 0.2,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Rotation Speed",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Boundary Glow",
+          "default": 0.7,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

@@ -74,7 +74,7 @@ For each flagship at **balanced**, 1080p-class internal:
 
 ```bash
 python3 scripts/wgsl_precommit_gate.py
-npx react-scripts test --watchAll=false --ci --testPathPattern='multipass|attractShowcase|multipassBadge|GraphRunner'
+npm test -- --watchAll=false --ci --testPathPattern='multipass|attractShowcase|multipassBadge|GraphRunner'
 ```
 
 ## Related

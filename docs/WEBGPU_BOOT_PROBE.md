@@ -14,6 +14,10 @@ Chrome and Edge can disagree on adapter/device support on the same host. Without
 4. On failure: blocking overlay in the **canvas slot only** (gallery/storage stay usable); renderer does not start.
 5. On success: live handles are handed off once (`webGpuHandoff`) so `requestDevice` is not called twice.
 
+**Render worker (#1314, default where supported).** The TS backend renders in a dedicated worker on a transferred `OffscreenCanvas`. A `GPUDevice` cannot be transferred, and a canvas that already has a context cannot be transferred either, so in that mode **the probe runs inside the worker** on the `OffscreenCanvas`. It uses the same ladder, the same stages, and color opt-ins resolved by the page. The worker posts the serializable result back; the page publishes it to `window.webgpuProbe` (with `renderThread: 'worker'`) and still owns the overlay. If the worker cannot start, or has no WebGPU, before it takes the canvas, the page renders instead and runs the probe as above. If it fails after taking the canvas, one retry happens on the page with a fresh `<canvas>`. `?renderer=main` skips the worker. See [`RENDER_WORKER.md`](./RENDER_WORKER.md).
+
+**Runtime device loss.** A `GPUDevice` lost after boot (driver reset, GPU process crash) is the only other time the probe runs. `RendererManager` rebuilds the TS backend through its normal webgpu → webgpu switch: it releases the dead backend, and the new backend's `init` runs this same probe and ladder (in the worker on a fresh canvas, or on the page). One attempt runs automatically. If it fails, the overlay shows the new probe result with a **Retry** button. There is no fallback to Canvas2D or WASM, and no `requestAdapter`/`requestDevice` outside the probe. See [Device loss in `RENDER_WORKER.md`](./RENDER_WORKER.md#device-loss).
+
 `?renderer=wasm` (emdawnwebgpu) is still WebGPU ownership. If WASM init fails, the same hard-fail surface applies via `publishWasmProbeFailure` — no soft fall-through to TS WebGPU or Canvas2D.
 
 `?renderer=js` is an **explicit debug opt-in** for Canvas2D (no shaders). It is not used as recovery after a WebGPU probe failure.

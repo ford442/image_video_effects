@@ -452,8 +452,13 @@ bool WebGPURenderer::CreateDevice() {
             printf("[WebGPU] Device lost (%s): %.*s\n", reasonStr,
                    static_cast<int>(message.length), message.data ? message.data : "");
             // Null after Shutdown()/delete: the renderer is gone, nothing to mark.
+            // Only a live renderer's loss goes into the error ring, so an
+            // intentional teardown does not read as a GPU fault.
             if (WebGPURenderer* self = box ? box->Get() : nullptr) {
                 WebGPURenderer::MarkDeviceLostFromCallback(self);
+                char prefix[48];
+                snprintf(prefix, sizeof(prefix), "DeviceLost(%s)", reasonStr);
+                WebGPURenderer::ErrorRing().Push(prefix, message.data, message.length);
             }
         },
         NewCallbackBox(), nullptr
@@ -461,7 +466,9 @@ bool WebGPURenderer::CreateDevice() {
 
     // ── Uncaptured-error callback ────────────────────────────────────────────
     // Fired for validation errors, shader compilation failures, etc.
-    // Without this, GPU errors are silently swallowed.
+    // Without this, GPU errors are silently swallowed. Each message also goes
+    // into the static error ring (getLastError / getErrorRingJson); the ring
+    // is process-wide, so this callback needs no renderer userdata.
     deviceDesc.uncapturedErrorCallbackInfo = WGPUUncapturedErrorCallbackInfo{
         nullptr,
         [](WGPUDevice const* /*device*/, WGPUErrorType type,
@@ -476,6 +483,7 @@ bool WebGPURenderer::CreateDevice() {
             }
             printf("[WebGPU Error] %s: %.*s\n", typeStr,
                    static_cast<int>(message.length), message.data ? message.data : "");
+            WebGPURenderer::ErrorRing().Push(typeStr, message.data, message.length);
         },
         nullptr, nullptr
     };

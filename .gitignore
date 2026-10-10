@@ -62,3 +62,6 @@ tests/smoke/.bundle/
 /reports/fix_*.json
 /reports/prelude_migration_run*.json
 /reports/phase-f-audit-report.*
+
+# Generated in prestart/prebuild by scripts/build-shader-source-hashes.js
+public/thumbnails/source-hashes.json

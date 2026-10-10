@@ -55,41 +55,45 @@
       "step": 0.01
     }
   ],
-  "target_rating": 4.8,
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Spread Speed",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Branch Density",
-      "default": 0.6,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Glow Intensity",
-      "default": 0.7,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Spore Count",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
-  ],
   "feedbackPacking": "A/C = growth, heat, 0, 1. ACES display only.",
-  "updated": true
+  "updated": true,
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Spread Speed",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Branch Density",
+          "default": 0.6,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Glow Intensity",
+          "default": 0.7,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Spore Count",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    },
+    "target_rating": 4.8
+  }
 }

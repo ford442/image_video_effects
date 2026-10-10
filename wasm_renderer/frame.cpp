@@ -210,10 +210,11 @@ void WebGPURenderer::Render() {
 
                 // One pass is both first and last: FrameStart -> ComputeEnd,
                 // decoded as the chained phase (legacy single shader = chained).
+                // No slot owns it, so it profiles as slot -1.
                 int32_t tsBegin = -1;
                 int32_t tsEnd = -1;
-                PickComputeTimestampWrites(SlotMode::Chained, /*isLastComputeOfFrame=*/true,
-                                           tsBegin, tsEnd);
+                PickComputeTimestampWrites(SlotMode::Chained, /*slot=*/-1,
+                                           activeShaderId_, it->second.id, tsBegin, tsEnd);
 
                 DispatchComputePass(enc, it->second.pipeline.get(), bg,
                                     it->second.workgroupX, it->second.workgroupY,
@@ -287,10 +288,12 @@ void WebGPURenderer::Render() {
 
             // Each query index may be written once per frame; reusing the
             // phase end index on every pass (the old scheme) is a validation
-            // error that drops the whole command buffer.
+            // error that drops the whole command buffer. Every slot pass gets
+            // its own begin/end pair; label = the pipeline this pass dispatches.
             int32_t tsBegin = -1;
             int32_t tsEnd = -1;
-            PickComputeTimestampWrites(slots_[i].mode, i == lastEnabled, tsBegin, tsEnd);
+            PickComputeTimestampWrites(slots_[i].mode, i, slots_[i].shaderId, it->second.id,
+                                       tsBegin, tsEnd);
 
             DispatchComputePass(enc, it->second.pipeline.get(), bg,
                                 it->second.workgroupX, it->second.workgroupY,

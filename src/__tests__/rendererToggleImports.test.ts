@@ -4,7 +4,17 @@ import path from 'path';
 const SRC_ROOT = path.join(__dirname, '..');
 // Removed renderer demo/toggle modules (they loaded a nonexistent /wasm/wasm_renderer_test.js).
 // Backend switching lives in RendererManager + useRendererBackend.
-const REMOVED_MODULES = ['RendererToggle', 'RendererContext', 'ShaderDemo', 'WASMToggle', 'useWASM'];
+// RendererSwitcher / RendererBackendPanel: Controls toggle removed when WASM froze as R&D (#1080);
+// WASM is reachable only via ?renderer=wasm.
+const REMOVED_MODULES = [
+  'RendererToggle',
+  'RendererContext',
+  'ShaderDemo',
+  'WASMToggle',
+  'useWASM',
+  'RendererSwitcher',
+  'RendererBackendPanel',
+];
 
 function collectSourceFiles(dir: string): string[] {
   const entries = fs.readdirSync(dir, { withFileTypes: true });

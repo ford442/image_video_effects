@@ -5,7 +5,9 @@
 //            upgraded-rgba, per-channel-temporal-offset, noise-displacement,
 //            vignette-falloff, chromatic-ghost
 //  Complexity: Medium
-//  Upgraded: 2026-06-28
+//  Upgraded: 2026-10-04 (prev 2026-06-28)
+//  Ideas: blue comet-tail integration over ring ages; motion-gated displacement; fractional G delay
+//  A packing: display RGBA
 //  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
 //         hardcoded 8 — see HISTORY RING DEPTH below
 //  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
@@ -26,27 +28,9 @@
 //    [0]=bass  [1]=mid  [2]=treble  [3]=reserved  [4]=historyHead
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=G-delay, y=B-delay, z=blend, w=displace
 @group(0) @binding(13) var historyTexture: texture_2d_array<f32>;
-
-struct Uniforms {
-  config: vec4<f32>,      // x=time, y=rippleCount, z=resX, w=resY
-  zoom_config: vec4<f32>, // x=time, y=mouseX, z=mouseY, w=mouseDown
-  zoom_params: vec4<f32>, // x=G-delay, y=B-delay, z=blend, w=displace
-  ripples: array<vec4<f32>, 50>,
-};
 
 const PI: f32 = 3.14159265358979323846;
 
@@ -97,6 +81,19 @@ fn displacedUV(uv: vec2<f32>, time: f32, strength: f32, seed: f32) -> vec2<f32> 
   return uv + (vec2<f32>(n1, n2) - 0.5) * strength;
 }
 
+// ── History ring read (#1307) ────────────────────────────────────
+// Every ring read goes through here. Ages clamp to the oldest layer the ring
+// actually holds; age 0 is the live frame — which is all a 1-layer ring has
+// (the host never writes a 1-layer ring, so its layer 0 is stale). On an
+// 8-layer ring this is the same layer lookup as before. Mirrors
+// temporal-slit-scan.wgsl frameAt.
+fn frameAt(uv: vec2<f32>, head: u32, depth: u32, age: u32, current: vec4<f32>) -> vec4<f32> {
+  let a = min(age, depth - 1u);
+  if (a == 0u) { return current; }
+  let layer = (head + depth - a) % depth;
+  return textureSampleLevel(historyTexture, u_sampler, uv, i32(layer), 0.0);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let res   = vec2<f32>(u.config.z, u.config.w);
@@ -116,31 +113,51 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // ── HISTORY RING DEPTH (floor fix, 2026-09-21) ───────────────────
   // The ring is at most 8 layers; after the VRAM probe the runtime may
   // allocate 8, 4 or 1, and it wraps its write head at the ALLOCATED
-  // count (renderer/webgpu/frame.ts). A hardcoded HISTORY_DEPTH=8 asked
+  // count (renderer/webgpu/frame.ts). A hardcoded ring depth of 8 asked
   // for layers that do not exist on a 4- or 1-layer device and WGSL
   // clamped them to the last layer: scrambled frame order, silently.
   let histDepth = max(textureNumLayers(historyTexture), 1u);
   let maxAge = histDepth - 1u;
-  let ageG = min(1u + u32(zp.x * 7.0), maxAge);
+  // Idea 3 — fractional delay: G crossfades between neighbouring ring ages so the
+  // slider glides instead of stepping (floor matches HEAD's integer age).
+  let ageGF = 1.0 + zp.x * 7.0;
+  let ageG = min(u32(ageGF), maxAge);
+  let ageG2 = min(ageG + 1u, maxAge);
+  let ageGFrac = fract(ageGF);
   let ageB = min(1u + u32(zp.y * 7.0), maxAge);
   let blendAmt   = clamp(zp.z * (1.0 + bass * 0.4), 0.0, 1.0);
-  let displace   = zp.w * 0.04 * (1.0 + bass * 0.6 + treble * 0.3);
+  let displaceBase = zp.w * 0.04 * (1.0 + bass * 0.6 + treble * 0.3);
   let lumaBoost  = 1.0 + zp.w * (1.0 + mids * 0.5);
 
   let historyHead = u32(extraBuffer[4]);
 
   // Current frame for R
   let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  // Idea 2 — motion-gated displacement: only pixels that changed since the newest ring
+  // frame wobble, so static areas stay clean and moving edges shimmer.
+  let recent = frameAt(uv, historyHead, histDepth, 1u, current);
+  let motion = smoothstep(0.03, 0.2, length(recent.rgb - current.rgb));
+  let displace = displaceBase * (0.15 + 0.85 * motion);
 
   // G channel: delayed frame with slight temporal angular drift
-  let layerG = (historyHead + histDepth - ageG) % histDepth;
   let dispG = displacedUV(uv, time, displace * 0.6, 12.0);
-  let histG = textureSampleLevel(historyTexture, u_sampler, dispG, i32(layerG), 0.0);
+  let histG = mix(
+    frameAt(dispG, historyHead, histDepth, ageG, current),
+    frameAt(dispG, historyHead, histDepth, ageG2, current),
+    ageGFrac);
 
   // B channel: older frame with larger noise displacement and opposite drift
-  let layerB = (historyHead + histDepth - ageB) % histDepth;
   let dispB = displacedUV(uv, time, displace, 94.0);
-  let histB = textureSampleLevel(historyTexture, u_sampler, dispB, i32(layerB), 0.0);
+  // Idea 1 — comet-tail integration: B averages every ring frame from the G age out to
+  // the B age (weighted toward the oldest), turning the blue copy into a continuous streak.
+  let tailStart = min(ageG, ageB);
+  var tailSum = frameAt(dispB, historyHead, histDepth, ageB, current) * 2.0;
+  var tailW = 2.0;
+  for (var a: u32 = tailStart; a < ageB; a = a + 1u) {
+    tailSum += frameAt(dispB, historyHead, histDepth, a, current);
+    tailW += 1.0;
+  }
+  let histB = tailSum / tailW;
 
   // Assemble RGB ghost with per-channel temporal offset
   let ghost = vec4<f32>(

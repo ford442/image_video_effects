@@ -2,11 +2,12 @@
   "id": "ethereal-swirl",
   "name": "Ethereal Swirl",
   "url": "shaders/ethereal-swirl.wgsl",
-  "description": "Ethereal swirling motion with soft gradients.",
+  "description": "Colour-cycling billow clouds swirl over the footage and leave streaming trails.",
   "features": [
-    "mouse-driven",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "temporal",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

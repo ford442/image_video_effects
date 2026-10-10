@@ -19,6 +19,17 @@ export interface EmscriptenModule {
   _getCanvasCopySrcSupported?: () => number;
   _setCanvasCopySrc?: (enabled: number) => number;
   _getMaxShaderSlots?: () => number;
+  /** Exported runtime method (wasm_exports.json exportedRuntimeMethods). */
+  UTF8ToString?(ptr: number): string;
+  /** Measurement exports (#1314 D); artifacts built before them lack these. Return C-string pointers. */
+  _getPassTimingsJson?: () => number;
+  _getLastError?: () => number;
+  _getErrorRingJson?: () => number;
+  _clearErrorRing?: () => void;
+  /** Bench export (#1080): queues onSubmittedWorkDone → __pxWorkDone(ok). 1 when queued. */
+  _requestWorkDoneMark?: () => number;
+  /** Set by awaitSubmittedWorkDone(); called from the C++ work-done callback. */
+  __pxWorkDone?: (ok: number) => void;
 }
 
 export type PixelocityWasmFactory = (opts: {

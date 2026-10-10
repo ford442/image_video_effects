@@ -56,3 +56,147 @@ export function getDiagnostics() {
     maxShaderSlots: state.maxShaderSlots,
   };
 }
+
+// ─── Measurement exports (#1314 D) ──────────────────────────────────────────
+// Plain getters on the C++ side (no ASYNCIFY). Every reader tolerates an
+// artifact built before the exports existed and malformed JSON.
+
+/** Per-pass GPU timing in the shared PassTiming shape (src/renderer/passTimings.ts). */
+export interface WasmPassTiming {
+  /** `${slot}:${label}`; slot is '-' for the legacy single-shader pass. */
+  key: string;
+  label: string;
+  kind: 'compute';
+  slot?: number;
+  shaderId?: string;
+  entry?: string;
+  scale: number;
+  /** Smoothed (EMA) GPU milliseconds per frame. */
+  gpuMs: number;
+  iterations: number;
+}
+
+/** Uncaptured WebGPU errors and device-lost messages held by the C++ ring. */
+export interface WasmErrorRing {
+  /** Messages pushed since the module loaded (clearErrorRing does not reset it). */
+  count: number;
+  /** Most recent held message, or ''. */
+  last: string;
+  /** Up to 16 most recent held messages, oldest first. */
+  recent: string[];
+}
+
+type CStringExport = '_getPassTimingsJson' | '_getLastError' | '_getErrorRingJson';
+
+/** UTF8ToString of a const char* export; null when the module or export is missing. */
+function readCStringExport(name: CStringExport): string | null {
+  const mod = wasmRef.module;
+  const fn = mod?.[name];
+  if (!mod || typeof fn !== 'function' || typeof mod.UTF8ToString !== 'function') return null;
+  try {
+    return mod.UTF8ToString(fn());
+  } catch {
+    return null;
+  }
+}
+
+function parseJson(json: string | null): unknown {
+  if (!json) return null;
+  try {
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+
+/** Parse getPassTimingsJson output; drops entries without a label or a finite, non-negative gpuMs. */
+export function parsePassTimingsJson(json: string | null): WasmPassTiming[] {
+  const raw = parseJson(json);
+  if (!Array.isArray(raw)) return [];
+  const passes: WasmPassTiming[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const r = item as Record<string, unknown>;
+    const label = typeof r.label === 'string' ? r.label : '';
+    const gpuMs = typeof r.gpuMs === 'number' ? r.gpuMs : Number.NaN;
+    if (!label || !Number.isFinite(gpuMs) || gpuMs < 0) continue;
+    const slot = typeof r.slot === 'number' && Number.isInteger(r.slot) && r.slot >= 0 ? r.slot : undefined;
+    const shaderId = typeof r.shaderId === 'string' && r.shaderId ? r.shaderId : undefined;
+    const iterations =
+      typeof r.iterations === 'number' && Number.isInteger(r.iterations) && r.iterations > 0 ? r.iterations : 1;
+    passes.push({
+      key: `${slot ?? '-'}:${label}`,
+      label,
+      kind: 'compute',
+      slot,
+      shaderId,
+      entry: label,
+      scale: 1,
+      gpuMs,
+      iterations,
+    });
+  }
+  return passes;
+}
+
+/** Parse getErrorRingJson ({count, messages}) plus getLastError into one summary. */
+export function parseErrorRingJson(json: string | null, last: string | null = null): WasmErrorRing {
+  const raw = parseJson(json) as { count?: unknown; messages?: unknown } | null;
+  const recent = Array.isArray(raw?.messages)
+    ? raw.messages.filter((m): m is string => typeof m === 'string')
+    : [];
+  const rawCount = typeof raw?.count === 'number' && Number.isFinite(raw.count) ? raw.count : 0;
+  return {
+    count: Math.max(rawCount, recent.length),
+    last: last ?? recent[recent.length - 1] ?? '',
+    recent,
+  };
+}
+
+/** Smoothed per-pass C++ GPU timings; [] until timestamps resolve or on artifacts without the export. */
+export function readPassTimings(): WasmPassTiming[] {
+  return parsePassTimingsJson(readCStringExport('_getPassTimingsJson'));
+}
+
+/** C++ uncaptured-error ring; empty on artifacts without the export. Readable before init / after shutdown. */
+export function readErrorRing(): WasmErrorRing {
+  return parseErrorRingJson(readCStringExport('_getErrorRingJson'), readCStringExport('_getLastError'));
+}
+
+/** Drop the held error messages (the count keeps counting). False when the artifact lacks the export. */
+export function clearErrorRing(): boolean {
+  const fn = wasmRef.module?._clearErrorRing;
+  if (typeof fn !== 'function') return false;
+  try {
+    fn();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Resolves once the GPU has finished everything submitted so far (#1080
+ * uncapped bench): true on success, false when the queue reported an error.
+ * Null on artifacts without the export or before init. One mark at a time.
+ */
+export function awaitSubmittedWorkDone(timeoutMs = 60_000): Promise<boolean> | null {
+  const mod = wasmRef.module;
+  if (!mod || typeof mod._requestWorkDoneMark !== 'function') return null;
+  return new Promise<boolean>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      mod.__pxWorkDone = undefined;
+      reject(new Error('WASM onSubmittedWorkDone timed out'));
+    }, timeoutMs);
+    mod.__pxWorkDone = (ok) => {
+      clearTimeout(timer);
+      mod.__pxWorkDone = undefined;
+      resolve(ok !== 0);
+    };
+    if (mod._requestWorkDoneMark!() !== 1) {
+      clearTimeout(timer);
+      mod.__pxWorkDone = undefined;
+      resolve(false);
+    }
+  });
+}

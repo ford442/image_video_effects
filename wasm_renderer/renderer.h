@@ -117,6 +117,46 @@ struct CallbackBox {
 // parallel makes every slot read from the same original source texture.
 enum class SlotMode { Chained = 0, Parallel = 1 };
 
+// Last kCapacity uncaptured WebGPU errors / device-lost messages (#1314 D,
+// diagnostics only). Fixed buffers: pushing never allocates. Messages longer
+// than kMessageBytes - 1 bytes are truncated on a UTF-8 boundary.
+struct GpuErrorRing {
+    static constexpr uint32_t kCapacity = 16;
+    static constexpr uint32_t kMessageBytes = 256;
+
+    char messages[kCapacity][kMessageBytes] = {};
+    // Every message pushed since module load; Clear() keeps it (monotonic).
+    uint32_t total = 0;
+    // Messages currently held (<= kCapacity); Clear() resets it.
+    uint32_t stored = 0;
+
+    // Stores "<prefix>: <message>" (message is a WebGPU string view, not NUL-terminated).
+    void Push(const char* prefix, const char* message, size_t length);
+    // Most recent held message, or "" when none.
+    const char* Last() const;
+    // Held message i, oldest first (i < stored).
+    const char* At(uint32_t i) const;
+    void Clear();
+};
+
+// Metadata for one profiled compute pass of a frame (index i owns the query
+// pair wasm_internal::kTsPassQueryBase + 2i, + 2i + 1).
+struct ProfiledPass {
+    int         slot = -1;        // -1 = legacy single-shader path (no slot)
+    SlotMode    mode = SlotMode::Chained;
+    std::string shaderId;         // the slot's shader
+    std::string label;            // pipeline dispatched by this pass
+};
+
+// Smoothed per-pass GPU time, in frame order (mirrors TS PassTiming).
+struct PassTimingEntry {
+    int         slot = -1;
+    std::string shaderId;
+    std::string label;
+    float       gpuMs = 0.0f;
+    int         iterations = 0;   // passes folded into this entry last readback
+};
+
 // Input source for the renderer.  Generative shaders use a black texture.
 enum class InputSource { None = 0, Image = 1, Video = 2, Webcam = 3, Generative = 4, Live = 5 };
 
@@ -294,6 +334,22 @@ public:
     // supported; otherwise CPU wall-clock with available()==false.
     void GetGPUTimings(float* parallelMs, float* chainedMs, float* totalMs, int* available) const;
 
+    // JSON array of smoothed per-pass GPU timings from the last resolved
+    // readback: [{"slot","shaderId","label","gpuMs","iterations"}, ...].
+    // "[]" until timestamps resolve. The pointer stays valid until the next call.
+    const char* GetPassTimingsJson();
+
+    // Bench only (#1080): queue an onSubmittedWorkDone that calls
+    // Module.__pxWorkDone(ok) from JS once the GPU drains. False without a queue.
+    bool RequestWorkDoneMark();
+
+    // Process-wide ring of uncaptured WebGPU errors and device-lost messages.
+    // Static so the error callback needs no renderer pointer (it can fire
+    // after Shutdown) and so init-time errors survive g_renderer.reset().
+    static GpuErrorRing& ErrorRing();
+    // {"count":<total pushed>,"messages":[oldest..newest]}; valid until the next call.
+    static const char* ErrorRingJson();
+
     // Recording flag (used by JS MediaRecorder integration).
     void SetRecording(bool recording);
     bool IsRecording() const { return isRecording_; }
@@ -414,9 +470,12 @@ private:
                              int32_t timestampBeginIndex = -1,
                              int32_t timestampEndIndex = -1);
 
-    // Port of TS pickComputeTimestampWrites (WebGPUTiming.ts): one begin and
-    // one end per pass, each query index written at most once per frame.
-    void PickComputeTimestampWrites(SlotMode mode, bool isLastComputeOfFrame,
+    // Reserve this pass's begin/end query pair (TS profilePass, WebGPUTiming.ts):
+    // each query index is written at most once per frame. Both indices stay -1
+    // when timing is off or kMaxProfiledSlotPasses passes are already stamped.
+    // slot = -1 for the legacy single-shader path.
+    void PickComputeTimestampWrites(SlotMode mode, int slot,
+                                    const std::string& shaderId, const std::string& label,
                                     int32_t& beginIndex, int32_t& endIndex);
 
     // Heap box for a spontaneous callback's userdata; the callback owns it.
@@ -428,6 +487,8 @@ private:
     void ResetTimestampFrameState();
     void ResolveTimestampQueries();
     static void OnTimestampReadback(WGPUMapAsyncStatus status, void* userdata);
+    // Phase + per-pass decode of one mapped readback (queryCount resolved stamps).
+    void DecodeTimestampReadback(const uint64_t* stamps, uint32_t queryCount);
 
     // ═══════════════════════════════════════════════════════════════════════════
     // WebGPU OBJECTS  (RAII-managed via WGPUHandle<> wrappers)
@@ -543,14 +604,22 @@ private:
     float gpuParallelTimeMs_ = 0.0f;
     float gpuChainedTimeMs_  = 0.0f;
     float gpuTotalTimeMs_    = 0.0f;
+    // True once any compute pass of this frame reserved a query pair; gates
+    // the present stamps and the per-frame resolve.
     bool tsFrameStartWritten_ = false;
-    bool tsParallelStartWritten_ = false;
-    bool tsChainedStartWritten_ = false;
     bool tsHadParallel_ = false;   // this frame dispatched a parallel slot
     bool tsHadChained_  = false;   // this frame dispatched a chained slot
     // Snapshot of tsHad* for the frame whose stamps are being read back.
     bool readbackHadParallel_ = false;
     bool readbackHadChained_  = false;
+    // Per-pass profiling: passes stamped this frame (index i -> query pair i),
+    // and the snapshot taken for the readback in flight.
+    std::vector<ProfiledPass> tsFramePasses_;
+    std::vector<ProfiledPass> readbackPasses_;
+    uint32_t readbackQueryCount_ = 0;
+    // Smoothed per-pass timings (EMA) and the JSON cache GetPassTimingsJson returns.
+    std::vector<PassTimingEntry> passTimings_;
+    std::string passTimingsJson_;
 
     bool isRecording_ = false;
 

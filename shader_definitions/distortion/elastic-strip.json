@@ -37,40 +37,6 @@
       ]
     }
   ],
-  "updatedParams": [
-    {
-      "id": "density",
-      "name": "Strip Density",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "strength",
-      "name": "Stretch Strength",
-      "default": 0.7,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "falloff",
-      "name": "Influence Radius",
-      "default": 0.3,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "dir",
-      "name": "Direction (V/H)",
-      "default": 0,
-      "min": 0,
-      "max": 1,
-      "labels": [
-        "Vertical Strips",
-        "Horizontal Strips"
-      ]
-    }
-  ],
   "features": [
     "mouse-driven",
     "audio-reactive",
@@ -93,5 +59,43 @@
     "frequency",
     "iridescent",
     "bevel"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "id": "density",
+          "name": "Strip Density",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "id": "strength",
+          "name": "Stretch Strength",
+          "default": 0.7,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "id": "falloff",
+          "name": "Influence Radius",
+          "default": 0.3,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "id": "dir",
+          "name": "Direction (V/H)",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "labels": [
+            "Vertical Strips",
+            "Horizontal Strips"
+          ]
+        }
+      ]
+    }
+  }
 }

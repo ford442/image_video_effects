@@ -4,7 +4,13 @@
 //  Features: depth-aware, upgraded-rgba, red-cyan, stereoscopic, audio-reactive,
 //            temporal-ghosting, chromatic-separation, mouse-focal-depth,
 //            film-grain, chromatic-aberration, vignette, scanlines, crt-barrel,
-//            color-grading, anamorphic-streaks, lens-dirt
+//            color-grading, anamorphic-streaks, lens-dirt, view-synthesis, ACES
+//  Ideas:    1. occlusion-aware view synthesis — each eye forward-warps a strip of source
+//               pixels, near pixels win, and disocclusions fill from the background
+//            2. filter crosstalk — the glasses leak the other eye's image on high-contrast
+//               edges, with a slow binocular-rivalry flicker
+//            3. convergence-plane shimmer — a faint neutral contour marks the zero-parallax
+//               depth set by the mouse
 //  Complexity: High
 //  Upgraded: 2026-06-28
 // ═══════════════════════════════════════════════════════════════════
@@ -74,11 +80,54 @@ fn colorGrade(color: vec3<f32>, lift: vec3<f32>, gamma: vec3<f32>, gain: vec3<f3
     return c;
 }
 
-// Anamorphic streaks: horizontal light streaks from bright points
-fn anamorphicStreaks(uv: vec2<f32>, center: vec2<f32>, brightness: f32, strength: f32) -> vec3<f32> {
-    let dx = abs(uv.x - center.x);
-    let streak = exp(-dx * dx * 2000.0) * brightness * strength;
+// Anamorphic streaks: horizontal light streaks from bright points along the
+// row (HEAD centred one streak at x = 0.5, a fixed vertical stripe).
+fn anamorphicStreaks(uv: vec2<f32>, strength: f32) -> vec3<f32> {
+    var acc = 0.0;
+    for (var i = 1; i <= 6; i = i + 1) {
+        let o = f32(i) * 0.012;
+        let w = exp(-f32(i) * 0.45);
+        let lL = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(o, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+        let lR = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(o, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+        acc += (smoothstep(0.75, 1.0, lL) + smoothstep(0.75, 1.0, lR)) * w;
+    }
+    let streak = acc * 0.12 * strength;
     return vec3<f32>(streak * 1.0, streak * 0.9, streak * 0.7);
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Idea 1: forward-warp view synthesis for one eye. A source pixel s lands at
+// s − eyeSign·shift(d_s). Search a strip of candidates for ones whose landing
+// point hits this pixel. Among the hits the nearest (largest depth) wins, so
+// the foreground occludes. The winner's own shift is used, which keeps the
+// warp continuous rather than tap-quantised. If nothing lands (a disocclusion),
+// fill from the farthest candidate, because background is what was hidden.
+// Returns the horizontal sample offset for this eye.
+fn synthEye(uv: vec2<f32>, eyeSign: f32, sepCurve: f32, focal: f32) -> f32 {
+    let maxS = abs(sepCurve) * 2.0 + 1e-4;
+    let sigma = maxS / 4.0;
+    var bestScore = -1.0;
+    var bestLand = 0.0;
+    var far = 2.0;
+    var farO = 0.0;
+    for (var k = -4; k <= 4; k = k + 1) {
+        let o = f32(k) / 4.0 * maxS;
+        let sUV = clamp(uv + vec2<f32>(o, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+        let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, sUV, 0.0).r;
+        let land = eyeSign * sepCurve * (d - focal) * 2.0;
+        let err = (o - land) / sigma;
+        let hit = exp(-err * err);
+        let score = hit * (0.25 + d);
+        // hit > 0.55 accepts only taps within ~0.8σ of landing here; looser
+        // thresholds let a weak foreground hit drag its shift onto background.
+        if (hit > 0.55 && score > bestScore) { bestScore = score; bestLand = land; }
+        // Hole fill takes the far candidate's own position (nearest one on ties).
+        if (d < far - 1e-3 || (abs(d - far) <= 1e-3 && abs(o) < abs(farO))) { far = d; farO = o; }
+    }
+    return select(farO, bestLand, bestScore > 0.0);
 }
 
 // Lens dirt: subtle dust/grime overlay on bright areas
@@ -123,13 +172,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Mouse focal depth curve refinement
     let focalDepth = mix(mouseDepth, 0.5, 0.3);
     let depthOffset = depthCurve * (depth - focalDepth) * 2.0;
-    let shift = separation * depthOffset;
 
     // Radial chromatic aberration offset
     let caOffset = radialChromatic(validUV, vec2<f32>(0.5), caStrength * (1.0 + bass * 0.5));
 
-    let rUV = clamp(validUV + vec2<f32>(shift, 0.0) + caOffset, vec2<f32>(0.0), vec2<f32>(1.0));
-    let cUV = clamp(validUV - vec2<f32>(shift, 0.0) - caOffset, vec2<f32>(0.0), vec2<f32>(1.0));
+    // Idea 1: per-eye forward-warp synthesis replaces the flat backward shift.
+    // Where nothing lands (a disocclusion), the eye fills from the farthest
+    // nearby pixel, as background is what was hidden.
+    let sepCurve = separation * depthCurve;
+    let eyeR = synthEye(validUV, 1.0, sepCurve, focalDepth);
+    let eyeC = synthEye(validUV, -1.0, sepCurve, focalDepth);
+    let rBase = validUV + vec2<f32>(eyeR, 0.0);
+    let cBase = validUV + vec2<f32>(eyeC, 0.0);
+    let rUV = clamp(rBase + caOffset, vec2<f32>(0.0), vec2<f32>(1.0));
+    let cUV = clamp(cBase - caOffset, vec2<f32>(0.0), vec2<f32>(1.0));
 
     var color = vec3<f32>(0.0);
     color.r = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
@@ -142,6 +198,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let ghostC = textureSampleLevel(readTexture, u_sampler, clamp(cUV - vec2<f32>(ghostShift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g * 0.5;
     color.r = color.r + ghostR * ghostAmount;
     color.g = color.g + ghostC * ghostAmount;
+
+    // Idea 2: filter crosstalk. Real red/cyan gels leak a few percent of the
+    // other eye's image. The leak is visible only where the two views differ
+    // (high-contrast parallax edges), and it pulses slowly like binocular rivalry.
+    let lumR = dot(textureSampleLevel(readTexture, u_sampler, rUV, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let lumC = dot(textureSampleLevel(readTexture, u_sampler, cUV, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let rivalry = 0.6 + 0.4 * sin(time * 1.7 + hash21(floor(validUV * 12.0)) * 6.2831853);
+    let leak = abs(lumR - lumC) * ghostAmount * 0.35 * rivalry;
+    color.r = color.r + lumC * leak;
+    color.g = color.g + lumR * leak * 0.6;
+    color.b = color.b + lumR * leak * 0.6;
 
     // Chromatic separation enhancement per depth
     let chromaBoost = smoothstep(0.0, 1.0, abs(depth - focalDepth)) * treble * 0.2;
@@ -170,7 +237,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ── Anamorphic streaks from bright points ──
     let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
     let brightMask = smoothstep(0.6, 0.95, luma);
-    let streaks = anamorphicStreaks(validUV, vec2<f32>(0.5), brightMask, anamorphicStrength);
+    let streaks = anamorphicStreaks(validUV, anamorphicStrength);
     color = color + streaks;
 
     // ── Lens dirt on bright areas ──
@@ -178,16 +245,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dirtColor = vec3<f32>(0.9, 0.85, 0.7) * dirt;
     color = color + dirtColor;
 
-    // Temporal ghost persistence
-    let prev = textureSampleLevel(dataTextureC, u_sampler, validUV, 0.0).rgb;
-    color = mix(color, prev * 0.9, 0.04 + mids * 0.01);
+    // Idea 3: convergence-plane shimmer. Pixels at the zero-parallax depth (the
+    // mouse focal plane) are where both eyes agree. A faint neutral contour
+    // traces that plane with a slow travelling sparkle.
+    let zd = (depth - focalDepth) / 0.025;
+    let zp = exp(-zd * zd);
+    let shimmer = zp * (0.5 + 0.5 * sin(time * 5.0 + validUV.y * 90.0 + validUV.x * 40.0)) * 0.14 * (0.5 + depthCurve);
+    color = color + vec3<f32>(shimmer);
+
+    // ACES on display RGB, then temporal ghost persistence from the exact C
+    // load in display space (HEAD filtered rgba32float history and fed back
+    // premultiplied colour).
+    let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).rgb;
+    let toned = mix(aces(max(color, vec3<f32>(0.0))), prev * 0.9, 0.04 + mids * 0.01);
 
     let baseAlpha = textureSampleLevel(readTexture, u_sampler, validUV, 0.0).a;
-    let finalAlpha = mix(baseAlpha, 1.0, separation * 0.3 + brightMask * 0.2);
+    let finalAlpha = mix(baseAlpha, 1.0, separation * 0.3 + brightMask * 0.2 + zp * 0.1);
 
-    // Clamp and premultiply alpha
-    color = clamp(color, vec3<f32>(0.0), vec3<f32>(1.5));
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color * finalAlpha, finalAlpha));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(color * finalAlpha, finalAlpha));
+    // Straight (non-premultiplied) alpha, like the rest of the catalog.
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(toned, finalAlpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(toned, finalAlpha));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0, 0, 1));
 }

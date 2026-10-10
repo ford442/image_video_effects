@@ -79,6 +79,8 @@ Optional canvas snapshots (first 2 matrix entries) live under `tests/renderer-pa
 
 **Note:** WASM `getGPUTimings().available` is `true` when the adapter supports `timestamp-query` and readback succeeded; otherwise wall-clock with `available: false`. TS WebGPU uses the same shape.
 
+Per-slot C++ GPU time (#1314 D): `getGPUTimings().passes` / `getDiagnostics().wasm.passTimings` (shared `PassTiming` shape, one entry per slot compute pass, from the `getPassTimingsJson` export), and the uncaptured-error ring in `getDiagnostics().wasm.errors` (`getLastError` / `getErrorRingJson` / `clearErrorRing`). Smoke: `npm run test:engine2` runs `tests/wasm-measurement.swiftshader.spec.ts`.
+
 ## Shader hot-reload (dev)
 
 Edit WGSL under `public/shaders/` and reload compute pipelines without restarting:
@@ -100,11 +102,11 @@ See [`WASM_SMOKE_TEST.md`](./WASM_SMOKE_TEST.md) for browser DevTools checks whe
 
 ## CI
 
-The `test-wasm-e2e` job in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml):
+The `test-wasm-e2e` job in [`.github/workflows/wasm.yml`](../.github/workflows/wasm.yml) runs only on PRs touching `wasm_renderer/**`, `public/wasm/**` or `tests/wasm-*`, weekly on `main`, or on demand (WASM is frozen R&D, #1080):
 
 1. Downloads WASM artifacts from the `wasm` job
 2. Builds production app (`SKIP_WASM_BUILD=1`)
-3. Runs all Playwright WASM specs with `WASM_GPU_TESTS=1`
+3. Runs `tests/wasm-renderer.smoke.spec.ts` + `tests/layerChain.smoke.spec.ts` (soft, `WASM_GPU_TESTS=0`)
 4. Uploads Playwright HTML report
 
 The `wasm` job runs Jest unit smoke (`--testPathPattern=WASM`).

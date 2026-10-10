@@ -1,5 +1,7 @@
 import React, { useRef, useEffect, useLayoutEffect, useState, useCallback } from 'react';
-import { RendererManager, getRendererTypeFromURL } from '../renderer/RendererManager';
+import { RendererManager, getRendererTypeFromURL, type DeviceRecoveryStatus } from '../renderer/RendererManager';
+import { resolveShaderId } from '../utils/resolveShaderId';
+import { resolveRenderThread } from '../renderer/backendLifecycle';
 import { RenderMode, InputSource, SlotParams, ShaderEntry } from '../renderer/types';
 import { INTERNAL_RENDER_RESOLUTION } from '../config/appConfig';
 import {
@@ -92,6 +94,12 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     // Track when RendererManager finished init so input-source sync runs once
     const [managerReady, setManagerReady] = useState(false);
     const [probeFailure, setProbeFailure] = useState<WebGpuProbeSerializable | null>(null);
+    // GPUDevice-loss recovery (lost → recovering → idle | failed); null until the first loss.
+    const [deviceRecovery, setDeviceRecovery] = useState<DeviceRecoveryStatus | null>(null);
+    const managerRef = useRef<RendererManager | null>(null);
+    // The live session a recovered renderer replays (read lazily, never stale).
+    const sessionRef = useRef({ modes, slotParams, inputSource, shaderCatalog });
+    sessionRef.current = { modes, slotParams, inputSource, shaderCatalog };
 
     // Track if there are active interactive/mouse-driven effects
     const [hasInteractiveEffects, setHasInteractiveEffects] = useState(false);
@@ -120,6 +128,24 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     // canvasRef.current is stable; we only need to re-run if the callback identity changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [onCanvasRef]);
+
+    // The render worker (#1314) takes the <canvas> for good. Switching to WASM /
+    // Canvas2D, or retrying on the page after a worker failure, remounts a new
+    // one by bumping the key; RendererManager awaits it through acquireFreshCanvas.
+    const [canvasKey, setCanvasKey] = useState(0);
+    const freshCanvasWaiters = useRef<Array<(canvas: HTMLCanvasElement) => void>>([]);
+    const acquireFreshCanvas = useCallback(() => new Promise<HTMLCanvasElement>((resolve) => {
+        freshCanvasWaiters.current.push(resolve);
+        setCanvasKey((k) => k + 1);
+    }), []);
+    useLayoutEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas || freshCanvasWaiters.current.length === 0) return;
+        canvas.width = INTERNAL_RENDER_RESOLUTION;
+        canvas.height = INTERNAL_RENDER_RESOLUTION;
+        onCanvasRef?.(canvas);
+        for (const resolve of freshCanvasWaiters.current.splice(0)) resolve(canvas);
+    }, [canvasKey, onCanvasRef]);
 
     // JSRenderer may replace the <canvas> after WebGPU permanently claims its
     // context type. Keep React's ref + parent onCanvasRef in sync.
@@ -181,15 +207,43 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
             },
             undefined,
             {
+                acquireFreshCanvas,
                 onBackendFailure: (failedType, message) => {
                     if (!mounted) return;
-                    publishWasmProbeFailure(`${failedType} renderer stopped: ${message}`);
+                    // A failed device-loss recovery keeps the real boot-probe diagnostics.
+                    if (failedType !== 'webgpu' || renderer.getDeviceRecoveryStatus().state !== 'failed') {
+                        publishWasmProbeFailure(`${failedType} renderer stopped: ${message}`);
+                    }
                     setProbeFailure(window.webgpuProbe ?? null);
                     setManagerReady(false);
                 },
+                getSessionState: () => {
+                    const session = sessionRef.current;
+                    return {
+                        modes: session.modes,
+                        slotParams: session.slotParams,
+                        inputSource: session.inputSource,
+                        resolveShader: (shaderId) =>
+                            session.shaderCatalog.find((s) => s.id === resolveShaderId(shaderId)),
+                    };
+                },
+                onDeviceRecovery: (status) => {
+                    if (!mounted) return;
+                    setDeviceRecovery(status);
+                    if (status.state === 'lost' || status.state === 'recovering') {
+                        setManagerReady(false);
+                    } else if (status.state === 'idle') {
+                        setProbeFailure(null);
+                        setManagerReady(true);
+                        if (onInit) onInit();
+                    }
+                },
             },
         );
+        managerRef.current = renderer;
         const urlRenderer = getRendererTypeFromURL();
+        // In worker mode the render worker runs the probe on the transferred canvas.
+        const probeInWorker = resolveRenderThread() === 'worker';
 
         const initDone = (async () => {
             // The previous mount's device must be fully released before requesting a new one.
@@ -198,7 +252,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
             let initOptions: { webGpuHandoff?: import('../renderer/webgpuBootProbe').WebGpuProbeHandoff } | undefined;
 
-            if (urlRenderer !== 'js' && urlRenderer !== 'wasm') {
+            if (urlRenderer !== 'js' && urlRenderer !== 'wasm' && !probeInWorker) {
                 const probe = await runWebGpuBootProbe(
                     canvasRef.current!,
                     INTERNAL_RENDER_RESOLUTION,
@@ -248,6 +302,9 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
                 if (onInit) onInit();
             } else {
+                if (probeInWorker && urlRenderer !== 'wasm' && urlRenderer !== 'js') {
+                    setProbeFailure(window.webgpuProbe ?? null);
+                }
                 if (urlRenderer === 'wasm') {
                     const diags = renderer.getDiagnostics();
                     publishWasmProbeFailure(
@@ -261,8 +318,10 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         })().catch((err) => console.error('[WebGPUCanvas] renderer init failed:', err));
         return () => {
             mounted = false;
+            if (managerRef.current === renderer) managerRef.current = null;
             setManagerReady(false);
             setProbeFailure(null);
+            setDeviceRecovery(null);
             cancelAnimationFrame(animationFrameId.current);
             // Wait for an in-flight init so its device is included in the release.
             void queueTeardown(async () => {
@@ -644,6 +703,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 />
             )}
             <canvas
+                key={canvasKey}
                 ref={canvasRef}
                 data-testid="webgpu-canvas"
                 width={INTERNAL_RENDER_RESOLUTION}
@@ -655,7 +715,19 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 style={canvasStyle}
                 className={`webgpu-canvas ${isWebcamActive ? 'webcam-canvas' : ''} ${hasInteractiveEffects ? 'interactive-effects' : ''}`}
             />
-            {probeFailure && <WebGpuProbeFailureOverlay probe={probeFailure} />}
+            {deviceRecovery && deviceRecovery.state !== 'idle' ? (
+                <WebGpuProbeFailureOverlay
+                    probe={deviceRecovery.state === 'failed' ? probeFailure : null}
+                    deviceLoss={{
+                        state: deviceRecovery.state === 'failed' ? 'failed' : 'recovering',
+                        reason: deviceRecovery.lastLoss?.reason ?? 'unknown',
+                        error: deviceRecovery.lastError,
+                        onRetry: () => { void managerRef.current?.recoverFromDeviceLoss(); },
+                    }}
+                />
+            ) : (
+                probeFailure && <WebGpuProbeFailureOverlay probe={probeFailure} />
+            )}
             <video
                 ref={videoRef}
                 crossOrigin="anonymous"

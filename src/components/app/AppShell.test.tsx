@@ -165,3 +165,34 @@ describe('AppShell chrome', () => {
     expect(screen.getByRole('button', { name: /open remote/i })).toBeInTheDocument();
   });
 });
+
+describe('AppShell renderer pill (WASM frozen R&D, #1080)', () => {
+  beforeEach(() => {
+    mockedIsPublic.mockReturnValue(false);
+  });
+
+  afterEach(() => {
+    window.history.replaceState(null, '', '/');
+  });
+
+  it('is display-only and shows no R&D badge by default', () => {
+    const handleSwitchRenderer = jest.fn(async () => {});
+    render(<AppShell {...baseProps({ handleSwitchRenderer })} />);
+
+    const pill = screen.getByText('🔷 WebGPU');
+    fireEvent.click(pill);
+    expect(handleSwitchRenderer).not.toHaveBeenCalled();
+    expect(screen.queryByText('Experimental (R&D)')).not.toBeInTheDocument();
+  });
+
+  it('shows the Experimental (R&D) badge only when WASM is forced via ?renderer=wasm', () => {
+    window.history.replaceState(null, '', '/?renderer=wasm');
+    render(<AppShell {...baseProps({ activeRendererType: 'wasm' })} />);
+    expect(screen.getByText('Experimental (R&D)')).toBeInTheDocument();
+  });
+
+  it('shows no R&D badge when WASM is active without the URL override', () => {
+    render(<AppShell {...baseProps({ activeRendererType: 'wasm' })} />);
+    expect(screen.queryByText('Experimental (R&D)')).not.toBeInTheDocument();
+  });
+});

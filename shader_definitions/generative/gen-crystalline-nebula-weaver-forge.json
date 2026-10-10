@@ -1,0 +1,103 @@
+{
+  "id": "gen-crystalline-nebula-weaver-forge",
+  "name": "Crystalline Nebula-Weaver Forge",
+  "type": "generative",
+  "category": "generative",
+  "url": "shaders/gen-crystalline-nebula-weaver-forge.wgsl",
+  "tags": [
+    "cosmic",
+    "crystal",
+    "fractal",
+    "raymarching",
+    "volumetric",
+    "geometric"
+  ],
+  "description": "A hyper-dimensional cosmic foundry where fractal glass formations weave starlight into geometric constellations, pulsing with crystalline refractions and deep space iridescence.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "params": [
+    {
+      "id": "folding_complexity",
+      "name": "Folding Complexity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "nebula_density",
+      "name": "Nebula Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "crystal_refraction",
+      "name": "Crystal Refraction",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "core_pulse_speed",
+      "name": "Core Pulse Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Folding Complexity",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Nebula Density",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Crystal Refraction",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Core Pulse Speed",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
+    }
+  }
+}
