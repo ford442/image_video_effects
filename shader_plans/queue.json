@@ -634,11 +634,6 @@
       "filename": "2026-10-08_biomechanical-neural-mycelium.md",
       "title": "Biomechanical Neural Mycelium",
       "added": "2026-10-08T15:37:00.584768"
-    },
-    {
-      "filename": "2026-10-09_bismuth-quantum-reef.md",
-      "title": "Bismuth Quantum Reef",
-      "added": "2026-10-09T15:15:45.639294"
     }
   ],
   "current": null,
@@ -1270,6 +1265,13 @@
       "added": "2026-10-08T15:37:00.584768",
       "status": "completed",
       "completed_at": "2026-10-09T08:08:59.946396+00:00"
+    },
+    {
+      "filename": "2026-10-09_bismuth-quantum-reef.md",
+      "title": "Bismuth Quantum Reef",
+      "added": "2026-10-09T15:15:45.639294",
+      "status": "completed",
+      "completed_at": "2026-10-10T08:23:58.831840+00:00"
     }
   ],
   "rejected": [],
