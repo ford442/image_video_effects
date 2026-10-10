@@ -3,9 +3,12 @@
  */
 import { spawn, type ChildProcessWithoutNullStreams } from 'child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { release } from 'os';
 import { resolve } from 'path';
 import { expect, type Page } from '@playwright/test';
 import type { ParityShaderCase } from '../fixtures/parityMatrix';
+import type { BenchmarkStats } from '../../src/utils/benchmarkStats';
+import { computeSpeedup, type SpeedupMetric } from '../../src/utils/benchmarkSpeedup';
 
 export const BUILD_DIR = resolve(__dirname, '../../build');
 export const DEFAULT_PORT = 3458;
@@ -29,7 +32,15 @@ export interface BenchResult {
   avgTotalMs: number;
   gpuTimingsAvailable: boolean;
   timingSource?: string;
+  /** p95 over every sampled frame (= totalMsStats.p95 when present). */
   p95TotalMs: number;
+  /** Over all post-warm-up frames with gpu.totalTime > 0 (#1357 T4). */
+  totalMsStats?: BenchmarkStats;
+  fpsStats?: BenchmarkStats;
+  /** Distinct GPU timing values among the sampled frames: the real GPU sample size (#1080). */
+  gpuReadbacks?: number;
+  /** ms/frame of N frames submitted without rAF, timed to GPU idle (#1080); vsync cannot cap it. */
+  uncappedMsPerFrame?: number;
   /** Per-pass GPU ms when timestamps resolved (TS backend, #1314 WP-4). */
   passTimings?: Array<{ key: string; label: string; kind: string; gpuMs: number; iterations: number }>;
   qualityMode?: string;
@@ -43,19 +54,53 @@ export interface BenchComparison {
   webgpuFps: number;
   wasmAvgTotalMs: number;
   webgpuAvgTotalMs: number;
-  /** WASM fps / WebGPU fps (or inverse frame-time ratio). ≥1.25 meets promotion gate. */
+  /** WASM-over-TS speed by `speedupMetric` (> 1 = WASM faster). ≥1.25 meets the promotion gate. */
   speedupRatio: number;
+  /** gpu-ms > uncapped-ms > fps (#1080; src/utils/benchmarkSpeedup.ts). */
+  speedupMetric: SpeedupMetric;
+  wasmUncappedMsPerFrame?: number;
+  webgpuUncappedMsPerFrame?: number;
   meetsPromotionGate: boolean;
+  /** #1357 T11: the legs can report different timing sources. */
+  wasmTimingSource: string;
+  webgpuTimingSource: string;
+  /** The legs measured the same quantity (always for gpu-ms / uncapped-ms). */
+  likeForLike: boolean;
+  /** Why the gate is not met or the ratio is weak ('mixed timing sources', 'fps (vsync-capped)'). */
+  gateReason?: string;
 }
 
+/** Real host facts (#1357 T9): `navigator.userAgent` is spoofed by devices['Desktop Chrome']. */
+export interface BenchEnvironment {
+  platform: string;
+  osRelease: string;
+  browserVersion: string;
+  channel: string;
+  launchArgs: string[];
+  /** --enable-webgpu-developer-features (un-quantised timestamps); off by default (#1357 Q1). */
+  webgpuDeveloperFeatures: boolean;
+  /** Timestamp period of the TS device, 0 when timestamps are unavailable. */
+  timestampPeriodNs?: number;
+  /** COOP/COEP on each leg: performance.now() ~5 µs instead of ~100 µs (#1080). */
+  crossOriginIsolated?: { wasm?: boolean; webgpu?: boolean };
+  adapters: { wasm?: string; webgpu?: string };
+}
+
+/** Report schema — docs/WASM_BENCH_REPORT.md. v1 = the 2026-09-27 T4 files. */
+export const BENCH_REPORT_SCHEMA_VERSION = 3;
+
 export interface WasmBenchmarkReport {
+  schemaVersion: number;
   generatedAt: string;
+  /** False when the run stopped mid-matrix; results hold the shaders done so far. */
+  completed: boolean;
   strictGpuMode: boolean;
   gpuBackendObserved: boolean;
   benchmarkShaderIds: string[];
-  wasmAdapterSummary?: string;
-  webgpuAdapterSummary?: string;
-  userAgent?: string;
+  environment?: BenchEnvironment;
+  warmupFrames?: number;
+  /** navigator.userAgent as the page saw it — spoofed by the device preset, not the host. */
+  spoofedUserAgent?: string;
   results: BenchResult[];
   comparisons: BenchComparison[];
   promotionGateMet: boolean;
@@ -65,10 +110,11 @@ export interface WasmBenchmarkReport {
 
 export interface BenchmarkReportMetadata {
   benchmarkShaderIds: string[];
-  wasmAdapterSummary?: string;
-  webgpuAdapterSummary?: string;
-  userAgent?: string;
+  environment?: BenchEnvironment;
+  warmupFrames?: number;
+  spoofedUserAgent?: string;
   gpuBackendObserved?: boolean;
+  completed?: boolean;
 }
 
 let server: ChildProcessWithoutNullStreams | null = null;
@@ -274,7 +320,72 @@ export async function assertExpectedBackend(
       `[harness] Backend is "${active}" not "${expected}" — acceptable without WASM_GPU_TESTS=1`
     );
   }
+  if (active === expected) await assertRendererHealthy(page, expected);
   return active;
+}
+
+export interface RendererHealth {
+  ok: boolean;
+  reason: string;
+}
+
+/**
+ * #1357 T8: getRendererType() still says 'wasm' after the WASM device failed and
+ * the renderer shut down, so also check the backend's own diagnostics. Strict
+ * mode throws; otherwise the verdict is returned for the caller to log.
+ */
+export async function assertRendererHealthy(
+  page: Page,
+  backend: RendererBackend
+): Promise<RendererHealth> {
+  const { health, diags } = await page.evaluate((expectedBackend) => {
+    const d = (window as any).__pixelocity__?.renderer?.getDiagnostics?.();
+    if (!d) return { health: { ok: false, reason: 'no diagnostics' }, diags: null };
+    if (expectedBackend === 'wasm') {
+      const w = d.wasm;
+      if (!w) return { health: { ok: false, reason: 'no wasm diagnostics' }, diags: d };
+      if (!w.initialized || !w.hasModule) {
+        return { health: { ok: false, reason: `wasm not initialized (${w.initSummary || w.failedStageName || 'unknown'})` }, diags: w };
+      }
+      if (w.lastInitError) return { health: { ok: false, reason: `wasm init error: ${w.lastInitError}` }, diags: w };
+      return { health: { ok: true, reason: '' }, diags: w };
+    }
+    const g = d.webgpu;
+    if (!g?.initialized) return { health: { ok: false, reason: 'webgpu not initialized' }, diags: g ?? d };
+    if (g.gpuErrors?.length) return { health: { ok: false, reason: `gpu errors: ${g.gpuErrors.join('; ')}` }, diags: g };
+    return { health: { ok: true, reason: '' }, diags: g };
+  }, backend);
+
+  if (!health.ok && isStrictGpuMode()) {
+    throw new Error(
+      `${backend} renderer unhealthy: ${health.reason}\n${JSON.stringify(diags, null, 2)}`
+    );
+  }
+  return health;
+}
+
+/**
+ * #1357 T7: with WASM_GPU_TESTS=1, a missing or software (SwiftShader) adapter
+ * fails the run instead of skipping shader by shader. Returns the adapter summary.
+ */
+export async function assertGpuAdapter(page: Page): Promise<string> {
+  const probe = await page.evaluate(async () => {
+    if (!navigator.gpu) return { found: false, fallback: false, vendor: '', summary: 'navigator.gpu missing' };
+    const adapter = await navigator.gpu.requestAdapter();
+    if (!adapter) return { found: false, fallback: false, vendor: '', summary: 'requestAdapter() returned null' };
+    const info = adapter.info as GPUAdapterInfo & { isFallbackAdapter?: boolean };
+    return {
+      found: true,
+      fallback: Boolean(info.isFallbackAdapter ?? (adapter as any).isFallbackAdapter),
+      vendor: info.vendor ?? '',
+      summary: [info.vendor, info.architecture, info.device, info.description].filter(Boolean).join(' | '),
+    };
+  });
+  if (!probe.found) throw new Error(`no GPU adapter (${probe.summary})`);
+  if (probe.fallback || probe.vendor === 'google') {
+    throw new Error(`software GPU adapter, not a real GPU (${probe.summary})`);
+  }
+  return probe.summary;
 }
 
 export async function loadShaderOnSlot(
@@ -412,14 +523,25 @@ export async function renderShaderCase(
   return { backend: active, stats, criticalErrors };
 }
 
-export function computeSpeedupRatio(wasm: BenchResult, webgpu: BenchResult): number {
-  if (wasm.avgFps > 0 && webgpu.avgFps > 0) {
-    return wasm.avgFps / webgpu.avgFps;
-  }
-  if (wasm.avgTotalMs > 0 && webgpu.avgTotalMs > 0) {
-    return webgpu.avgTotalMs / wasm.avgTotalMs;
-  }
-  return 0;
+/** One matrix row (#1357 T11): mixed timing sources never meet the promotion gate. */
+export function buildComparison(wasm: BenchResult, webgpu: BenchResult): BenchComparison {
+  const speedup = computeSpeedup(wasm, webgpu, PROMOTION_SPEEDUP_RATIO);
+  return {
+    shaderId: wasm.shaderId,
+    wasmFps: wasm.avgFps,
+    webgpuFps: webgpu.avgFps,
+    wasmAvgTotalMs: wasm.avgTotalMs,
+    webgpuAvgTotalMs: webgpu.avgTotalMs,
+    ...(wasm.uncappedMsPerFrame ? { wasmUncappedMsPerFrame: wasm.uncappedMsPerFrame } : {}),
+    ...(webgpu.uncappedMsPerFrame ? { webgpuUncappedMsPerFrame: webgpu.uncappedMsPerFrame } : {}),
+    speedupRatio: speedup.ratio,
+    speedupMetric: speedup.metric,
+    meetsPromotionGate: speedup.meetsGate,
+    wasmTimingSource: wasm.timingSource ?? 'unavailable',
+    webgpuTimingSource: webgpu.timingSource ?? 'unavailable',
+    likeForLike: speedup.likeForLike,
+    ...(speedup.gateReason ? { gateReason: speedup.gateReason } : {}),
+  };
 }
 
 /** Collect adapter summary from the active renderer or navigator.gpu (browser context). */
@@ -456,13 +578,15 @@ export function buildBenchmarkReport(
   const promotionHits = comparisons.filter((c) => c.meetsPromotionGate).length;
   const gpuFromResults = results.some((r) => r.backend === 'wasm' && r.avgFps > 0);
   return {
+    schemaVersion: BENCH_REPORT_SCHEMA_VERSION,
     generatedAt: new Date().toISOString(),
+    completed: metadata.completed ?? true,
     strictGpuMode: isStrictGpuMode(),
     gpuBackendObserved: metadata.gpuBackendObserved ?? gpuFromResults,
     benchmarkShaderIds: metadata.benchmarkShaderIds,
-    wasmAdapterSummary: metadata.wasmAdapterSummary,
-    webgpuAdapterSummary: metadata.webgpuAdapterSummary,
-    userAgent: metadata.userAgent,
+    environment: metadata.environment,
+    warmupFrames: metadata.warmupFrames,
+    spoofedUserAgent: metadata.spoofedUserAgent,
     results,
     comparisons,
     promotionGateMet: promotionHits >= PROMOTION_MIN_SHADERS,
@@ -482,10 +606,42 @@ export function buildStubBenchmarkReport(
   });
 }
 
+/** Host facts for the report (#1357 T9); adapters are filled in as the legs run. */
+export function collectBenchEnvironment(
+  browserVersion: string,
+  launchArgs: string[],
+  channel: string
+): BenchEnvironment {
+  return {
+    platform: process.platform,
+    osRelease: release(),
+    browserVersion,
+    channel,
+    launchArgs,
+    webgpuDeveloperFeatures: launchArgs.some((a) => a.includes('enable-webgpu-developer-features')),
+    adapters: {},
+  };
+}
+
+/** Timestamped copy under reports/data/ (or WASM_BENCH_OUT_DIR) — Playwright wipes test-results/. */
+export function benchmarkArchivePath(report: WasmBenchmarkReport): string {
+  const dir = process.env.WASM_BENCH_OUT_DIR || 'reports/data';
+  const platform = report.environment?.platform ?? process.platform;
+  const stamp = report.generatedAt.replace(/[:.]/g, '-');
+  return resolve(dir, `wasm-benchmark-${platform}-${stamp}.json`);
+}
+
 export function writeBenchmarkReport(report: WasmBenchmarkReport, path = 'test-results/wasm-benchmark-report.json'): void {
+  const json = JSON.stringify(report, null, 2);
   mkdirSync(resolve(path, '..'), { recursive: true });
-  writeFileSync(path, JSON.stringify(report, null, 2));
+  writeFileSync(path, json);
   console.log(`\nWrote benchmark report → ${path}\n`);
+  // Stubs (no GPU observed, nothing measured) stay out of the archive.
+  if (report.results.length === 0) return;
+  const archive = benchmarkArchivePath(report);
+  mkdirSync(resolve(archive, '..'), { recursive: true });
+  writeFileSync(archive, json);
+  console.log(`Archived benchmark report → ${archive}\n`);
 }
 
 // ── Format-tier bench (#1008 follow-up) ─────────────────────────────────────

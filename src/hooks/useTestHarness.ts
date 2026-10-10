@@ -1,6 +1,7 @@
 import { useEffect, RefObject } from 'react';
 import { RendererManager } from '../renderer/RendererManager';
 import { RenderQualityMode } from '../config/performancePolicy';
+import { computeBenchmarkStats, countReadbacks } from '../utils/benchmarkStats';
 
 export interface CanvasImageStats {
     width: number;
@@ -145,7 +146,7 @@ export function useTestHarness({
                 loadImage: (url: string) => manager.loadImage(url),
                 runBenchmark: async (
                     frameCount = 90,
-                    options?: { qualityMode?: RenderQualityMode },
+                    options?: { qualityMode?: RenderQualityMode; warmupFrames?: number },
                 ) => {
                     if (options?.qualityMode) {
                         manager.setRenderQuality(options.qualityMode, {
@@ -154,6 +155,11 @@ export function useTestHarness({
                         });
                     }
                     const perf = manager.getPerformanceStatus();
+                    // Discarded warm-up frames (#1357 T5): pipelines settle before sampling.
+                    const warmupFrames = Math.max(0, options?.warmupFrames ?? 10);
+                    for (let i = 0; i < warmupFrames; i++) {
+                        await new Promise<void>((r) => requestAnimationFrame(() => r()));
+                    }
                     const samples: Array<{ fps: number; gpu: ReturnType<typeof manager.getGPUTimings> }> = [];
                     for (let i = 0; i < frameCount; i++) {
                         await new Promise<void>((r) => requestAnimationFrame(() => r()));
@@ -189,8 +195,29 @@ export function useTestHarness({
                         hasRealGpuTimings: samples.some((s) => s.gpu.timingSource === 'gpu-timestamp'),
                         // Per-pass GPU ms (#1314 WP-4): per-shader evidence, not just per frame.
                         passTimings: manager.getPassTimings(),
+                        // Stats over every sampled frame (#1357 T4); `samples` is only the tail.
+                        warmupFrames,
+                        totalMsStats: computeBenchmarkStats(totals),
+                        // TS reads timestamps back every 250 ms, so many frames repeat a value:
+                        // distinct values are the real GPU sample size (#1080).
+                        gpuReadbacks: countReadbacks(samples.map((s) => s.gpu.totalTime)),
+                        fpsStats: computeBenchmarkStats(samples.map((s) => s.fps)),
+                        timestampPeriodNs: manager.getDiagnostics().webgpu?.timing?.periodNs ?? 0,
                         samples: samples.slice(-5),
                     };
+                },
+                /**
+                 * Vsync-free ms/frame (#1080): the backend pauses its loop, renders
+                 * `frameCount` frames back to back and times to GPU idle.
+                 */
+                runUncappedBenchmark: async (frameCount = 120, warmupFrames = 10) => {
+                    if (warmupFrames > 0) await manager.benchmarkUncapped(warmupFrames);
+                    const result = await manager.benchmarkUncapped(frameCount);
+                    return result ? {
+                        ...result,
+                        rendererType: manager.getActiveRendererType(),
+                        renderThread: manager.getRenderThread(),
+                    } : null;
                 },
                 updateAudioFrequencyBins: (bins: Float32Array) => {
                     manager.updateAudioFrequencyBins(bins);

@@ -22,7 +22,7 @@ import { createDefaultBreadcrumbs } from '../../gpuChores/types';
 import { reportError } from '../ErrorHandling';
 import { VideoFramePump, VideoIngestStats } from '../media/videoFramePump';
 import type { PassTiming } from '../passTimings';
-import type { GPUTimings, RendererConfig, SlotZoomParamsUpdate } from '../Renderer';
+import type { GPUTimings, RendererConfig, SlotZoomParamsUpdate, UncappedBenchResult } from '../Renderer';
 import type { InputSource } from '../types';
 import { createFrameStats, type FrameStats } from '../webgpu/deviceCounters';
 import { resolveCanvasColorOptIns } from '../webgpu/device';
@@ -566,6 +566,12 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
 
   getFrameImage(): string {
     return this.lastFrameImage;
+  }
+
+  /** Bench only (#1080): timed in the worker, so the page's postMessage hop is excluded. */
+  async benchmarkUncapped(frames: number): Promise<UncappedBenchResult | null> {
+    if (!this.client) return null;
+    return this.client.rpc({ type: 'benchmarkUncapped', frames }, 180_000);
   }
 
   async captureChoresThumbnailPng(outSize: number): Promise<string | null> {

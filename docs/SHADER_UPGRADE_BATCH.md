@@ -136,7 +136,7 @@ python3 scripts/wgsl_precommit_gate.py --files public/shaders/<id>.wgsl   # each
 npm run audit:extrabuffer
 npm run audit:dead-sliders -- --files <id1> <id2> …
 node scripts/generate_shader_lists.js
-npx react-scripts test --watchAll=false --ci
+npm test -- --watchAll=false --ci
 SKIP_WASM_BUILD=1 npm run build
 ```
 

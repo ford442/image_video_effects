@@ -238,7 +238,7 @@ After each 8-shader upgrade batch:
 2. `npm run audit:extrabuffer` (or `--files` on batch WGSL)
 3. `npm run audit:dead-sliders -- --files <id1> <id2> …`
 4. `node scripts/generate_shader_lists.js` + duplicate check
-5. `npx react-scripts test --watchAll=false --ci`
+5. `npm test -- --watchAll=false --ci`
 
 ## Local pre-commit hook
 

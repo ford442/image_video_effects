@@ -275,7 +275,7 @@ This repository is the **Pixelocity / WebGPU Shader Effects** app (Create React 
 
 ### Services / commands
 - **Dev server:** `npm start` (CRA on port 3000). The `prestart` step regenerates `public/shader-lists/*.json` and the unified manifest with **relative** same-origin shader paths (no `--base-url`; set `SHADER_LIST_BASE_URL` only for deploy builds). Use `BROWSER=none` to avoid CRA trying to open a browser.
-- **Unit tests:** `npx react-scripts test --watchAll=false --ci` (Jest; ~125 tests, all pass). `npm test` works too.
+- **Unit tests:** `npm test -- --watchAll=false --ci` (Jest via craco; 130 suites / ~990 tests, all pass). Do **not** call `npx react-scripts test` directly: it skips the craco `moduleNameMapper` and 11 WASM-bridge suites fail on `./bridge/api.js`.
 - **Lint:** `npx eslint src --ext .ts,.tsx`. NOTE: lint is **non-gating** — CI runs it with `|| true`, and there are pre-existing eslint errors/warnings in test/component files. Don't treat a non-zero eslint exit as a setup failure.
 - **Build:** `npm run build` runs `wasm:build` once in `prebuild`, then CRA; CI `wasm` job compiles separately. Use `SKIP_WASM_BUILD=1 npm run build` without emcc.
 

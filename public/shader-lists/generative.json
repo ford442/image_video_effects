@@ -6251,6 +6251,115 @@
     ]
   },
   {
+    "id": "gen-biomechanical-neural-mycelium",
+    "name": "Biomechanical Neural Mycelium",
+    "url": "shaders/gen-biomechanical-neural-mycelium.wgsl",
+    "category": "generative",
+    "type": "generative",
+    "description": "A pulsing, subterranean network of glowing bio-metallic fibers that autonomously reconnect and twitch with synthetic intelligence.",
+    "features": [
+      "organic",
+      "mechanical",
+      "network",
+      "glow",
+      "fractal",
+      "3d",
+      "audio-reactive",
+      "mouse-interactive",
+      "raymarching"
+    ],
+    "tags": [
+      "organic",
+      "mechanical",
+      "network",
+      "glow",
+      "fractal",
+      "3d"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "networkDensity",
+        "name": "Network Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Density of the mycelium network."
+      },
+      {
+        "id": "pulseSpeed",
+        "name": "Pulse Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Speed of energy pulses traversing the fibers."
+      },
+      {
+        "id": "glowIntensity",
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Intensity of the emissive glow."
+      },
+      {
+        "id": "myceliumColor",
+        "name": "Mycelium Color",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Color shifting across depths (Acid-green to electric-blue)."
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Network Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Pulse Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Mycelium Color",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
+  },
+  {
     "name": "Bioreactor Bloom",
     "category": "generative",
     "tags": [
@@ -8615,6 +8724,57 @@
         "id": "color_cycle",
         "name": "Color Cycle",
         "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
+  },
+  {
+    "id": "gen-chromodynamic-glass-labyrinth",
+    "name": "Chromodynamic Glass Labyrinth",
+    "type": "generative",
+    "category": "generative",
+    "url": "shaders/gen-chromodynamic-glass-labyrinth.wgsl",
+    "description": "A hyper-reflective, endlessly unfolding non-Euclidean maze of liquid glass that refracts a shifting spectrum of chromodynamic light.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "structuralDensity",
+        "name": "Structural Density",
+        "default": 2,
+        "min": 0.5,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "refractionIndex",
+        "name": "Refraction Index",
+        "default": 1.5,
+        "min": 1,
+        "max": 3,
+        "step": 0.05,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "dispersion",
+        "name": "Dispersion",
+        "default": 0.05,
+        "min": 0,
+        "max": 0.2,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "chromaticPhase",
+        "name": "Chromatic Phase",
+        "default": 0,
         "min": 0,
         "max": 1,
         "step": 0.01,
@@ -25021,6 +25181,78 @@
     ]
   },
   {
+    "id": "gen-luminescent-singularity-loom",
+    "name": "Luminescent Singularity Loom",
+    "url": "shaders/gen-luminescent-singularity-loom.wgsl",
+    "category": "generative",
+    "type": "generative",
+    "description": "A cosmic-organic loom weaving ethereal, glowing threads around a central gravitational singularity that pulses and distorts spacetime.",
+    "features": [
+      "gravitational-lens",
+      "fractal-threads",
+      "domain-warping",
+      "subsurface-scattering",
+      "hdr-bloom",
+      "mouse-interaction"
+    ],
+    "tags": [
+      "organic",
+      "cosmic",
+      "fractal",
+      "singularity",
+      "loom",
+      "glow",
+      "3d"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "threadDensity",
+        "name": "Thread Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Density of the fractal threads"
+      },
+      {
+        "id": "loomSpeed",
+        "name": "Loom Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Speed of the loom's distortion"
+      },
+      {
+        "id": "glowIntensity",
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Intensity of the subsurface glow"
+      },
+      {
+        "id": "colorShift",
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Shift the color palette"
+      }
+    ]
+  },
+  {
     "name": "Luminous Cauldron",
     "category": "generative",
     "tags": [
@@ -35913,6 +36145,115 @@
       "upgraded-rgba",
       "depth-aware"
     ]
+  },
+  {
+    "id": "gen-sentient-plasma-silk-nebula-forge",
+    "name": "Sentient Plasma-Silk Nebula Forge",
+    "url": "shaders/gen-sentient-plasma-silk-nebula-forge.wgsl",
+    "category": "generative",
+    "type": "generative",
+    "description": "A hyper-dimensional nebula forge that weaves luminous, reactive threads of plasma silk around a cosmic spindle. Features an ethereal plasma-silk web generated via domain warping and 3D noise.",
+    "features": [
+      "organic",
+      "cosmic",
+      "nebula",
+      "plasma",
+      "glow",
+      "3d",
+      "audio-reactive",
+      "mouse-interactive",
+      "raymarching"
+    ],
+    "tags": [
+      "organic",
+      "cosmic",
+      "nebula",
+      "plasma",
+      "glow",
+      "3d"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "silkDensity",
+        "name": "Silk Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Density of the plasma silk threads."
+      },
+      {
+        "id": "spindleSpeed",
+        "name": "Spindle Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Rotation and evolution speed."
+      },
+      {
+        "id": "coreGlow",
+        "name": "Core Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Intensity of the central energy core."
+      },
+      {
+        "id": "colorShift",
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Shifts the base hue of the palette."
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Silk Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Spindle Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Core Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "name": "Sentient Quantum-Chrono Leviathan-Moth",
