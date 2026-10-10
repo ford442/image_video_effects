@@ -9,6 +9,7 @@
  * a device loss or recovery replaces the device (registry generation).
  */
 
+import { compileCheckWgsl } from '../renderer/webgpu/compileCheck';
 import { getRendererDevice, getRendererSupportsSubgroups } from '../renderer/deviceRegistry';
 
 export interface CompileMessageLike {
@@ -43,10 +44,6 @@ export function getShaderCompileService(): ShaderCompileService | null {
       getRendererSupportsSubgroups() ||
       device.features.has('subgroups') ||
       device.features.has('chromium-experimental-subgroups' as GPUFeatureName),
-    async compile(id, code) {
-      const module = device.createShaderModule({ label: id, code });
-      const info = await module.getCompilationInfo();
-      return info.messages.map((m) => ({ type: m.type, lineNum: m.lineNum, linePos: m.linePos, message: m.message }));
-    },
+    compile: (id, code) => compileCheckWgsl(device, id, code),
   };
 }

@@ -161,6 +161,8 @@ WGSL sources remain authored as **rgba32float** canonical. At pipeline compile t
 
 Both backends validate adapter limits before device creation and request explicit `requiredLimits`.
 
+**Error scopes (#1395).** A GPU call whose failure we act on runs through `withErrorScope` / `withValidationScope` / `withOutOfMemoryScope` ([`src/renderer/webgpu/validationScope.ts`](../src/renderer/webgpu/validationScope.ts)), never a hand-rolled `pushErrorScope` block. The scope covers only the callback's synchronous part and is popped before any returned promise is awaited, so frame-loop errors are never captured or hidden. Async creates (`createComputePipelineAsync`) report through their own rejection. Shader compile checks (renderer `compileCheck`, ShaderScanner, ShaderValidator) all go through `compileCheckWgsl` ([`compileCheck.ts`](../src/renderer/webgpu/compileCheck.ts)): the module is scoped, and with the renderer's pipeline layout a shader that compiles but does not fit the bind group is reported too. Nothing in these paths should reach `uncapturederror`; `tests/engine2-validation-scope.swiftshader.spec.ts` checks that.
+
 ### Limits table (must match TS ↔ C++)
 
 | Limit | Required | Notes |

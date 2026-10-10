@@ -33,6 +33,7 @@ import {
   type AdapterIdentity,
 } from '../config/adapterIdentity';
 import { isMobileDevice } from '../config/performancePolicy';
+import { describeScopeFailure, scopeFailed, withValidationScope } from './webgpu/validationScope';
 
 export type WebGpuProbeStage =
   | 'requestAdapter'
@@ -177,16 +178,29 @@ function formatDeviceLimitsSummary(device: GPUDevice): string {
   );
 }
 
-function runProbePipeline(device: GPUDevice): void {
-  const module = device.createShaderModule({
-    label: 'WebGpuBootProbe',
-    code: PROBE_PIPELINE_WGSL,
+/**
+ * Compile a trivial compute pipeline. Validation errors arrive asynchronously, so
+ * a try/catch alone never saw them (#1395): scope the module and use the async
+ * create, which rejects with a GPUPipelineError instead of yielding an invalid pipeline.
+ * Throws with the failure message so the caller records failedStage 'probePipeline'.
+ */
+async function runProbePipeline(device: GPUDevice): Promise<void> {
+  const result = await withValidationScope(device, () => {
+    const module = device.createShaderModule({
+      label: 'WebGpuBootProbe',
+      code: PROBE_PIPELINE_WGSL,
+    });
+    const descriptor: GPUComputePipelineDescriptor = {
+      label: 'WebGpuBootProbePipeline',
+      layout: 'auto',
+      compute: { module, entryPoint: 'main' },
+    };
+    return typeof device.createComputePipelineAsync === 'function'
+      ? device.createComputePipelineAsync(descriptor)
+      : device.createComputePipeline(descriptor);
   });
-  device.createComputePipeline({
-    label: 'WebGpuBootProbePipeline',
-    layout: 'auto',
-    compute: { module, entryPoint: 'main' },
-  });
+  const failure = describeScopeFailure(result);
+  if (failure) throw new Error(failure);
 }
 
 type CanvasConfigurationReadback = GPUCanvasConfiguration & {
@@ -215,17 +229,7 @@ async function tryConfigure(
   context: GPUCanvasContext,
   config: GPUCanvasConfiguration,
 ): Promise<boolean> {
-  const scoped =
-    typeof device.pushErrorScope === 'function' && typeof device.popErrorScope === 'function';
-  if (scoped) device.pushErrorScope('validation');
-  let threw = false;
-  try {
-    context.configure(config);
-  } catch {
-    threw = true;
-  }
-  const scopeError = scoped ? await device.popErrorScope().catch(() => null) : null;
-  return !threw && !scopeError;
+  return !scopeFailed(await withValidationScope(device, () => context.configure(config)));
 }
 
 /**
@@ -479,7 +483,7 @@ export async function runWebGpuBootProbe(
     console.log(`[WebGPU Probe] canvasCopySrc=${canvasCopySrc}`);
 
     try {
-      runProbePipeline(device);
+      await runProbePipeline(device);
     } catch (e) {
       record.error = e instanceof Error ? e.message : String(e);
       record.failedStage = 'probePipeline';
@@ -502,7 +506,7 @@ export async function runWebGpuBootProbe(
     const supportsDeepWorkgroup = meetsDeepWorkgroupLimits(device.limits);
     const adapterIdentity = readAdapterIdentity(adapter);
     const adapterGpuType = inferAdapterGpuType(adapterIdentity);
-    const formatCapabilities = probeFormatCapabilities(adapter, {
+    const formatCapabilities = await probeFormatCapabilities(adapter, {
       isMobile: isMobileDevice(),
       device,
     });

@@ -63,7 +63,8 @@ import { graphRunner } from './GraphRunner';
 import { GpuChoresHost } from '../gpuChores';
 import type { WebGpuProbeHandoff } from './webgpuBootProbe';
 import { allocateWorkingPool, rungsForRequest } from './webgpu/historyTexProbe';
-import { SimRing } from './webgpu/simRing';
+import { declaresBindGroup1, SimRing } from './webgpu/simRing';
+import { rewriteWgslStorageFormats } from './wgslFormatRewrite';
 import { resolveGraphForShader, resolveSimRingRequest, getGraphEntryIds, resolveMultipassChain } from './multipassRegistry';
 import { graphUsesSimRing } from './multipassGraph';
 import { instrumentDevice, type FrameStats } from './webgpu/deviceCounters';
@@ -73,6 +74,8 @@ import { NodeScaleIslands, nodeScaleKey, snapNodeScale } from './webgpu/nodeScal
 import type { FrameIslands } from './webgpu/framePlan';
 import type { TransferredVideoFrames, VideoIngestStats } from './media/videoFramePump';
 import { VideoIngest } from './media/videoIngest';
+import { compileCheckWgsl } from './webgpu/compileCheck';
+import { registerShaderCompileService } from '../utils/shaderCompileService';
 
 /** `?video_ingest=element` forces the pre-#1314 per-rAF element import (A/B, debugging). */
 function videoFrameIngestDisabledByUrl(): boolean {
@@ -155,6 +158,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private adapterSummary = '';
   private adapterAttemptLabel: string | null = null;
   private adapterIdentity: AdapterIdentity = UNKNOWN_ADAPTER_IDENTITY;
+  private unregisterCompileService: (() => void) | null = null;
   private formatCapabilities = DEFAULT_FORMAT_CAPABILITIES;
   private releasingDevice = false;
   private detachUncapturedErrors: (() => void) | null = null;
@@ -266,6 +270,12 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       this.gpuChores.attach(outcome.device, 'no GPUDevice adopted', this.colorFormat);
       // The device this renderer actually ended up with (after any OOM retry), not the handoff.
       publishRendererDevice(outcome.device, { supportsSubgroups: this.supportsSubgroups, thread: 'main', owner: this });
+      // Dev tools (ShaderScanner) compile against this renderer's layout, not a bare module check.
+      this.unregisterCompileService?.();
+      this.unregisterCompileService = registerShaderCompileService({
+        supportsSubgroups: this.supportsSubgroups,
+        compile: (id, code) => this.compileCheck(id, code),
+      });
 
       this.frameState = createFrameState(createRendererFrameHost(this as unknown as RendererFrameDeps));
       this.initialized = true;
@@ -939,9 +949,12 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   /** WGSL compile check on this renderer's device (ShaderScanner in worker mode). */
   async compileCheck(id: string, code: string): Promise<Array<{ type: GPUCompilationMessageType; lineNum: number; linePos: number; message: string }>> {
     if (!this.device) throw new Error('No GPUDevice');
-    const module = this.device.createShaderModule({ label: id, code });
-    const info = await module.getCompilationInfo();
-    return info.messages.map((m) => ({ type: m.type, lineNum: m.lineNum, linePos: m.linePos, message: m.message }));
+    // As loadShader compiles it: storage formats rewritten to the active tier, then checked
+    // against the catalog layout, so "compiles but does not fit the bind group" fails here too.
+    // @group(1) sim-ring shaders need the two-group layout; those get the module check only.
+    const compiled = rewriteWgslStorageFormats(code, this.colorFormat);
+    const layout = declaresBindGroup1(code) ? undefined : this.pipeline.pipelineLayout;
+    return compileCheckWgsl(this.device, id, compiled, { layout });
   }
 
   /** Render-worker video: frames arrive as transfers (null when the source stops). */
@@ -1127,6 +1140,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   }
 
   private teardownGpuHandles(awaitLost: boolean): Promise<void> | void {
+    this.unregisterCompileService?.();
+    this.unregisterCompileService = null;
     if (this.frameState) this.frameRenderer.stopRenderLoop(this.frameState);
     this.warmup?.stop();
     this.warmup = null;

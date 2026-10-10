@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { INTERNAL_RENDER_RESOLUTION } from '../config/appConfig';
+import { compileCheckWgsl } from '../renderer/webgpu/compileCheck';
 import {
   publishWebGpuProbe,
   runWebGpuBootProbe,
@@ -92,10 +93,8 @@ async function acquireGpuCompilePass(
   return {
     compiler: {
       supportsSubgroups: probe.handoff?.supportsSubgroups ?? false,
-      async compile(id, code) {
-        const module = device.createShaderModule({ label: id, code });
-        const info = await module.getCompilationInfo();
-        return info.messages.map((m) => ({ type: m.type, lineNum: m.lineNum, linePos: m.linePos, message: m.message }));
+      compile(id, code) {
+        return compileCheckWgsl(device, id, code);
       },
     },
     release: async () => {
@@ -213,7 +212,6 @@ export const ShaderValidator: React.FC = () => {
 
       if (compiler) {
         const messages = await compiler.compile(def.id, wgslCode);
-
         const errors = messages.filter(m => m.type === 'error');
 
         if (errors.length > 0) {
