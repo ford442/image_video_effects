@@ -2,13 +2,14 @@
  * shaderCompileService.ts
  *
  * "Compile this WGSL and tell me what the GPU said" for dev tools
- * (ShaderScanner). With the renderer on the page that is the adopted
- * GPUDevice; with the render worker (#1314) there is no page device, so the
- * worker proxy registers an RPC-backed compiler instead. Never creates a
- * second GPUDevice.
+ * (ShaderScanner, ShaderValidator). With the renderer on the page that is
+ * the device in the renderer device registry; with the render worker (#1314)
+ * there is no page device, so the worker proxy registers an RPC-backed
+ * compiler instead. Never creates a second GPUDevice. Resolve it per use:
+ * a device loss or recovery replaces the device (registry generation).
  */
 
-import { getAdoptedRendererDevice, getAdoptedSupportsSubgroups } from './adoptedGpuDevice';
+import { getRendererDevice, getRendererSupportsSubgroups } from '../renderer/deviceRegistry';
 
 export interface CompileMessageLike {
   type: GPUCompilationMessageType;
@@ -32,14 +33,14 @@ export function registerShaderCompileService(service: ShaderCompileService): () 
   };
 }
 
-/** The active compiler: the registered one, else the adopted page device, else null. */
+/** The active compiler: the registered one, else the renderer's page device, else null. */
 export function getShaderCompileService(): ShaderCompileService | null {
   if (registered) return registered;
-  const device = getAdoptedRendererDevice();
+  const device = getRendererDevice();
   if (!device) return null;
   return {
     supportsSubgroups:
-      getAdoptedSupportsSubgroups() ||
+      getRendererSupportsSubgroups() ||
       device.features.has('subgroups') ||
       device.features.has('chromium-experimental-subgroups' as GPUFeatureName),
     async compile(id, code) {

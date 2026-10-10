@@ -230,6 +230,8 @@ export function useTestHarness({
                 getRenderThread: () => manager.getRenderThread(),
                 /** Destroy the TS WebGPU device but report it as a runtime loss (main + worker). */
                 simulateDeviceLoss: () => manager.simulateDeviceLoss(),
+                /** Worker mode only: an uncaught error in the render worker (#1395). */
+                simulateWorkerCrash: () => manager.simulateWorkerCrash(),
                 getDeviceRecoveryStatus: () => manager.getDeviceRecoveryStatus(),
                 recoverFromDeviceLoss: () => manager.recoverFromDeviceLoss(),
                 /**

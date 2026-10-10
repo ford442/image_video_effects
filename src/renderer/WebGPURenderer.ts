@@ -8,6 +8,7 @@
 import { Renderer, RendererConfig, ShaderSlotRenderer, GPUTimings, UncappedBenchResult, DeviceLossInfo } from './Renderer';
 import { Ripple, MAX_RIPPLES } from './UniformBuffer';
 import { PHYSICAL_SLOT_LIMIT, checkPhysicalSlotIndex } from './slotOrchestrator';
+import { clearRendererDevice, publishRendererDevice } from './deviceRegistry';
 import {
   initializeWebGPUDevice,
   attachDeviceLostHandler,
@@ -155,8 +156,6 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private formatCapabilities = DEFAULT_FORMAT_CAPABILITIES;
   private releasingDevice = false;
   private detachUncapturedErrors: (() => void) | null = null;
-  /** Devices our own teardown destroyed: their `lost` is silent (and must not unconfigure). */
-  private readonly releasedDevices = new WeakSet<GPUDevice>();
   /** Set by simulateDeviceLoss(): the next 'destroyed' of this device counts as a loss. */
   private simulatedLossDevice: GPUDevice | null = null;
   private fatalErrorHandler: ((message: string, info?: DeviceLossInfo) => void) | null = null;
@@ -237,9 +236,9 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
         this.gpuChores.detach('device lost');
         const info: DeviceLossInfo = { kind: 'device-lost', ...details, at: Date.now() };
         this.lastDeviceLoss = info;
+        clearRendererDevice('device lost', this);
         if (wasRendering) this.fatalErrorHandler?.(`GPU device lost (${info.reason})`, info);
       }, {
-        isIntentional: () => this.releasedDevices.has(device),
         isSimulated: () => this.simulatedLossDevice === device,
       });
 
@@ -251,7 +250,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
         if (resourcesResult === 'lost' && attempt === 0) {
           persistHistoryOomCap();
           this.workingSizeCap = HISTORY_SAFE_WORKING_SIZE;
-          void this.teardownGpuHandles(false);
+          // The next requestDevice must not race the old device's release (backendLifecycle).
+          await this.teardownGpuHandles(true);
           handoff = undefined;
           continue;
         }
@@ -261,6 +261,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       }
 
       this.gpuChores.attach(outcome.device, 'no GPUDevice adopted', this.colorFormat);
+      // The device this renderer actually ended up with (after any OOM retry), not the handoff.
+      publishRendererDevice(outcome.device, { supportsSubgroups: this.supportsSubgroups, thread: 'main', owner: this });
 
       this.frameState = createFrameState(createRendererFrameHost(this as unknown as RendererFrameDeps));
       this.initialized = true;
@@ -1084,7 +1086,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.fatalErrorHandler = handler;
   }
 
-  /** The live device, for RendererManager's adopted-device registry after a recovery. */
+  /** The live device (null until init succeeds and after a loss / teardown). */
   getGpuDevice(): GPUDevice | null {
     return this.initialized ? this.device : null;
   }
@@ -1141,12 +1143,12 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     }
     this.detachUncapturedErrors?.();
     this.detachUncapturedErrors = null;
+    clearRendererDevice('renderer released', this);
     const device = this.device;
     this.device = null;
     this.context = null;
     if (!device) return awaitLost ? Promise.resolve() : undefined;
     this.releasingDevice = true;
-    if (this.simulatedLossDevice !== device) this.releasedDevices.add(device);
     const lost = device.lost;
     try {
       device.destroy();

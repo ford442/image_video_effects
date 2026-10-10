@@ -106,6 +106,10 @@ export interface RenderWorkerHostDeps {
   setErrorSink(sink: (error: RendererError) => void): void;
   /** Anchor relative fetches (shaders, includes) at the app root. */
   setFetchBase(url: string): void;
+  /** GPUDevices alive on the worker thread (webgpuBootProbe's counter). */
+  liveDeviceCount?(): number;
+  /** Test hook: raise an uncaught error in the worker scope (a crash, as the page sees it). */
+  crash?(message: string): void;
   /** PNG-encode a presented frame (base64, no prefix); absent → captureFrame answers null. */
   encodeFramePng?(frame: VideoFrame): Promise<string | null>;
   snapshotIntervalMs?: number;
@@ -180,6 +184,7 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
     workingSizeCap: r.getWorkingSizeCap(),
     resolution: r.getResolutionScale(),
     gpuErrors: [...gpuErrors],
+    liveGpuDevices: deps.liveDeviceCount?.() ?? 0,
     inputChannel: inputRing ? 'sab' : 'postMessage',
     input: r.getInputEcho(),
   });
@@ -251,6 +256,7 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
     simulateDeviceLoss: () => withRenderer((r) => {
       r.simulateDeviceLoss();
     }),
+    simulateWorkerCrash: () => deps.crash?.('simulated render worker crash (test hook)'),
   };
 
   const rpcs: RpcHandlers = {

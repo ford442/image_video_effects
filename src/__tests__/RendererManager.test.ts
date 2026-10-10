@@ -887,6 +887,30 @@ describe('RendererManager device-loss recovery', () => {
     expect(statuses).toEqual(['lost', 'recovering', 'idle']);
   });
 
+  it('a render-worker crash (worker-died) takes the same recovery path (#1395)', async () => {
+    const first = lossAwareWebGPU();
+    const second = lossAwareWebGPU();
+    const { manager, statuses } = await bootWith(first);
+    let releaseInit!: (ok: boolean) => void;
+    (second.init as jest.Mock).mockReturnValue(new Promise<boolean>((r) => { releaseInit = r; }));
+    (WebGPURenderer as jest.Mock).mockImplementation(() => second);
+
+    first.fatal!('Render worker crashed (boom)', {
+      kind: 'worker-died', reason: 'render worker crashed', message: 'boom', at: Date.now(),
+    });
+    await settle();
+    // The gap between the crash and the rebuilt device still counts as "a renderer owns the
+    // GPU", so depth estimation does not open a second WebGPU device meanwhile.
+    expect(statuses).toEqual(['lost', 'recovering']);
+    expect(manager.isGpuDeviceActive()).toBe(true);
+
+    releaseInit(true);
+    await settle();
+    expect(statuses).toEqual(['lost', 'recovering', 'idle']);
+    expect(second.loadShader).toHaveBeenCalledWith('rain', '/rain.wgsl');
+    expect(manager.getDeviceRecoveryStatus().lastLoss).toMatchObject({ kind: 'worker-died' });
+  });
+
   it('a failed recovery blocks with diagnostics (no fallback, no restore loop) until Retry', async () => {
     const first = lossAwareWebGPU();
     const failing = lossAwareWebGPU(false);

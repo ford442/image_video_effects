@@ -39,24 +39,28 @@ A canvas is bound to its first context type, and a transferred canvas belongs to
 
 A runtime `GPUDevice` loss is recovered without a page reload. The flow is the same on the page and in the worker.
 
-1. **Detect.** `attachDeviceLostHandler` (`webgpu/device.ts`) ignores destroys from our own teardown. On a real loss it reports `device-lost` with `recoverable: true`. `WebGPURenderer` stops its frame loop, detaches gpu-chores and calls its fatal handler once with `DeviceLossInfo`.
+1. **Detect.** `attachDeviceLostHandler` (`webgpu/device.ts`) ignores every `'destroyed'` loss without touching the context: only the owner destroys, and its teardown already unconfigured. On a real loss it reports `device-lost` with `recoverable: true`. `WebGPURenderer` stops its frame loop, detaches gpu-chores and calls its fatal handler once with `DeviceLossInfo`.
 2. **Worker.** The host posts a final snapshot (`initialized: false`), then a `deviceLost` event, and stops its snapshot timer. After that it drops commands, renderer RPCs return empty results (`compileCheck` rejects with `render device lost`), and only `dispose` reaches the lost renderer. A second `init` in the same worker is refused. The page proxy (`WorkerWebGPUBackend`) stops sending input and video frames. A late snapshot cannot set `initialized` back to true, and once the client is shut down every event from the old worker is ignored.
-3. **Recover.** `RendererManager` clears the adopted device, then `DeviceRecoveryController` (`deviceRecovery.ts`) moves `lost → recovering` and runs one automatic attempt. The attempt is `switchRenderer('webgpu', { restoreOnFailure: false })`:
+3. **Recover.** The lost backend has already cleared the device registry (`deviceRegistry.ts`). `DeviceRecoveryController` (`deviceRecovery.ts`) moves `lost → recovering` and runs one automatic attempt. The attempt is `switchRenderer('webgpu', { restoreOnFailure: false })`:
    - The dead backend is released. In worker mode that means `dispose` + terminate, then a fresh `<canvas>` and a **new worker**.
-   - The new backend's `init` reruns the boot probe.
+   - The new backend's `init` reruns the boot probe, then publishes its device (a new registry generation).
    - The lost backend's own slot state is replayed (shader per slot, enabled, chained/parallel), with each shader loaded from the URL it was originally loaded from. Slot params come from the host's `getSessionState()`, and the manager's last input source is reused. So is the CPU-side still (read *before* the release) or else the last image URL. The `<video>` element re-attaches on the next page frame.
 4. **Fail.** If the attempt fails, the state goes to `failed`. `WebGPUCanvas` shows `WebGpuProbeFailureOverlay` with the new probe diagnostics and a **Retry** button (`recoverFromDeviceLoss()`). A second loss within 30 s of a recovery skips the automatic attempt and goes straight to `failed`.
 
 Not replayed: depth map, source auto-exposure, node scales, ripples. Quality, resolution scale and pass budgets come back through the manager's performance policy, as on any backend switch.
 
-A worker **crash** (`error` event on the worker) is not a device loss and is not recovered.
+A worker **crash** recovers the same way (#1395). An `error` event on the Worker after the handshake marks the client dead: pending RPCs reject and sends are dropped. `renderWorkerClient` then notifies `onDied`. `WorkerWebGPUBackend` stops like a loss (`initialized = false`, registry cleared, compile service unregistered) and fires the fatal handler once with `kind: 'worker-died'`. `RendererManager` hands that to the same `DeviceRecoveryController`, so the new worker replays the page-side slot shadow. Nothing is asked of the dead worker. `messageerror` is not treated as a crash.
 
-Status is reported in `getDiagnostics().deviceRecovery` and `__pixelocity__.getDeviceRecoveryStatus()`. In test mode, `__pixelocity__.simulateDeviceLoss()` destroys the live device and reports it as a loss (`reason: 'simulated'`). `tests/engine2-device-loss.swiftshader.spec.ts` runs it in both threads, plus a failed attempt followed by Retry.
+Status is reported in `getDiagnostics().deviceRecovery` and `__pixelocity__.getDeviceRecoveryStatus()`. `getDiagnostics().liveGpuDevices` (page + current worker) is back to 1 after a recovery. Test-mode hooks:
+- `__pixelocity__.simulateDeviceLoss()` destroys the live device and reports it as a loss (`reason: 'simulated'`).
+- `__pixelocity__.simulateWorkerCrash()` (worker mode) throws an uncaught error in the worker.
+
+`tests/engine2-device-loss.swiftshader.spec.ts` runs the loss in both threads, the worker crash, and a failed attempt followed by Retry.
 
 ## Not in the worker
 
 - `?renderer=wasm` (C++ / emdawnwebgpu; frozen, see `WASM_BACKEND_POLICY.md`) and `?renderer=js`.
-- Depth estimation (transformers) stays on the page; `RendererManager.isGpuDeviceActive()` reports the worker's device, so it keeps using the CPU/WASM backend instead of creating a second `GPUDevice`.
+- Depth estimation (transformers) stays on the page. `RendererManager.isGpuDeviceActive()` reports the worker's device through the registry (and stays true while a lost one is rebuilt), so it keeps using the CPU/WASM backend instead of creating a second `GPUDevice`.
 
 ## Cross-origin isolation and the SharedArrayBuffer ring
 

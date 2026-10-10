@@ -6,9 +6,9 @@ import {
   toWebGpuProbeBreadcrumb,
   type WebGpuProbeSerializable,
 } from '../renderer/webgpuBootProbe';
-import { getAdoptedRendererDevice, registerAdoptedRendererDevice } from '../utils/adoptedGpuDevice';
 import { expandFetchedWgsl } from '../utils/fetchShaderWgsl';
 import { formatNagaError, loadNagaValidator, type NagaValidator } from '../utils/nagaWasm';
+import { getShaderCompileService, type ShaderCompileService } from '../utils/shaderCompileService';
 import { resolveShaderUrl } from '../utils/resolveShaderUrl';
 import { WebGpuProbeFailureOverlay } from './WebGpuProbeFailureOverlay';
 
@@ -34,12 +34,24 @@ const SHADER_LIST_FILES = [
   'visual-effects.json', 'lighting-effects.json', 'retro-glitch.json', 'post-processing.json'
 ];
 
-async function ensureAdoptedDevice(
+/** A GPU compile pass plus how to release it when the run ends. */
+interface GpuCompilePass {
+  compiler: ShaderCompileService;
+  release: () => Promise<void>;
+}
+
+/**
+ * The renderer's compiler when a renderer owns a device (page or render worker). The
+ * standalone validator page (?validator) has no renderer, so it owns a probe device of its
+ * own for the run — kept local, never published to the renderer device registry, and
+ * destroyed afterwards.
+ */
+async function acquireGpuCompilePass(
   canvas: HTMLCanvasElement | null,
-): Promise<{ device: GPUDevice } | { failure: WebGpuProbeSerializable }> {
-  const existing = getAdoptedRendererDevice();
+): Promise<GpuCompilePass | { failure: WebGpuProbeSerializable }> {
+  const existing = getShaderCompileService();
   if (existing) {
-    return { device: existing };
+    return { compiler: existing, release: async () => {} };
   }
 
   if (window.webgpuProbe?.ok === true) {
@@ -47,7 +59,7 @@ async function ensureAdoptedDevice(
       failure: {
         ...window.webgpuProbe,
         ok: false,
-        lastError: 'Boot probe succeeded but no adopted GPUDevice is registered',
+        lastError: 'Boot probe succeeded but the renderer device is not available (lost or recovering)',
         failedStage: 'requestDevice',
       },
     };
@@ -72,12 +84,26 @@ async function ensureAdoptedDevice(
   const probe = await runWebGpuBootProbe(canvas, INTERNAL_RENDER_RESOLUTION, INTERNAL_RENDER_RESOLUTION);
   publishWebGpuProbe(probe);
 
-  if (!probe.ok || !probe.handoff?.device) {
+  const device = probe.ok ? probe.handoff?.device : undefined;
+  if (!device) {
     return { failure: toWebGpuProbeBreadcrumb(probe) };
   }
 
-  registerAdoptedRendererDevice(probe.handoff.device, probe.handoff.supportsSubgroups);
-  return { device: probe.handoff.device };
+  return {
+    compiler: {
+      supportsSubgroups: probe.handoff?.supportsSubgroups ?? false,
+      async compile(id, code) {
+        const module = device.createShaderModule({ label: id, code });
+        const info = await module.getCompilationInfo();
+        return info.messages.map((m) => ({ type: m.type, lineNum: m.lineNum, linePos: m.linePos, message: m.message }));
+      },
+    },
+    release: async () => {
+      const lost = device.lost;
+      device.destroy();
+      await lost;
+    },
+  };
 }
 
 export const ShaderValidator: React.FC = () => {
@@ -123,14 +149,14 @@ export const ShaderValidator: React.FC = () => {
 
   /**
    * naga (GPU-less) is the primary check — it is the same compiler CI gates on,
-   * so a pass/fail here matches `npm run verify:naga-wasm`. The adopted device is
+   * so a pass/fail here matches `npm run verify:naga-wasm`. The GPU compiler is
    * only consulted when "Also compile on the GPU" is on, to catch the Dawn-side
    * differences naga cannot see.
    */
   const validateShader = async (
     def: ShaderDef,
     naga: NagaValidator,
-    device: GPUDevice | null,
+    compiler: ShaderCompileService | null,
   ): Promise<ValidationResult> => {
     const start = performance.now();
 
@@ -185,11 +211,10 @@ export const ShaderValidator: React.FC = () => {
         };
       }
 
-      if (device) {
-        const shaderModule = device.createShaderModule({ code: wgslCode });
-        const info = await shaderModule.getCompilationInfo();
+      if (compiler) {
+        const messages = await compiler.compile(def.id, wgslCode);
 
-        const errors = info.messages.filter(m => m.type === 'error');
+        const errors = messages.filter(m => m.type === 'error');
 
         if (errors.length > 0) {
           return {
@@ -229,14 +254,14 @@ export const ShaderValidator: React.FC = () => {
     setLoadError(null);
 
     // Only the opt-in GPU pass needs a device; naga alone runs anywhere.
-    let device: GPUDevice | null = null;
+    let gpuPass: GpuCompilePass | null = null;
     if (alsoCompileOnGpu) {
-      const adopted = await ensureAdoptedDevice(probeCanvasRef.current);
-      if ('failure' in adopted) {
-        setProbeFailure(adopted.failure);
+      const acquired = await acquireGpuCompilePass(probeCanvasRef.current);
+      if ('failure' in acquired) {
+        setProbeFailure(acquired.failure);
         return;
       }
-      device = adopted.device;
+      gpuPass = acquired;
     }
 
     setIsRunning(true);
@@ -253,13 +278,14 @@ export const ShaderValidator: React.FC = () => {
       setCurrentTest(`${shader.name} (${shader.id})`);
       setProgress({ current: i + 1, total: shaders.length });
 
-      const result = await validateShader(shader, naga, device);
+      const result = await validateShader(shader, naga, gpuPass?.compiler ?? null);
       newResults.push(result);
       setResults([...newResults]);
 
       await new Promise(r => setTimeout(r, 20));
     }
 
+    await gpuPass?.release();
     setCurrentTest('');
     setIsRunning(false);
   };
@@ -316,7 +342,7 @@ export const ShaderValidator: React.FC = () => {
         Show only problems
       </label>
 
-      <label style={{ marginLeft: 20 }} title="Adds a device.createShaderModule pass on the adopted renderer device. Requires a working WebGPU probe; naga alone does not.">
+      <label style={{ marginLeft: 20 }} title="Adds a device.createShaderModule pass on the renderer device (or a probe device on this standalone page). Requires a working WebGPU probe; naga alone does not.">
         <input
           type="checkbox"
           checked={alsoCompileOnGpu}

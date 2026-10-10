@@ -34,6 +34,7 @@ import { publishWebGpuProbeBreadcrumb } from '../webgpuBootProbe';
 import type { FrameInput, RenderEvent, RenderInitInfo, RenderSnapshot, TestRenderState } from './protocol';
 import { connectRenderWorker, RenderWorkerClient } from './renderWorkerClient';
 import { registerShaderCompileService } from '../../utils/shaderCompileService';
+import { clearRendererDevice, publishRendererDevice } from '../deviceRegistry';
 import { canShareMemory, createInputRingBuffer, InputRingWriter } from './inputRing';
 
 const SLOT_COUNT = 6;
@@ -120,7 +121,8 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   /** SAB input ring when the page and the worker are cross-origin isolated (#1314 C3). */
   private ring: InputRingWriter | null = null;
   private unregisterCompiler: (() => void) | null = null;
-  /** The worker reported a device loss: nothing more is sent, `initialized` stays false. */
+  private unsubscribeDied: (() => void) | null = null;
+  /** The worker lost its device or died: nothing more is sent, `initialized` stays false. */
   private lost = false;
   /** The client was shut down: late events from the old worker are ignored. */
   private shutdown = false;
@@ -190,10 +192,12 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
     }
     if (ringBuffer) this.ring = new InputRingWriter(ringBuffer);
     const client = this.client;
+    this.unsubscribeDied = client.onDied((message) => this.onWorkerDied(message));
     this.unregisterCompiler = registerShaderCompileService({
       supportsSubgroups: !!this.info.supportsSubgroups,
       compile: (id, code) => client.rpc({ type: 'compileCheck', id, code }),
     });
+    publishRendererDevice(null, { supportsSubgroups: !!this.info.supportsSubgroups, thread: 'worker', owner: this });
     console.log('✅ TypeScript WebGPU renderer running in the render worker');
     return true;
   }
@@ -220,8 +224,11 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   private shutdownClient(): void {
     this.shutdown = true;
     this.ring = null;
+    clearRendererDevice('render worker shut down', this);
     this.unregisterCompiler?.();
     this.unregisterCompiler = null;
+    this.unsubscribeDied?.();
+    this.unsubscribeDied = null;
     this.unsubscribe?.();
     this.unsubscribe = null;
     this.client?.terminate();
@@ -243,6 +250,19 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   }
 
   private onDeviceLost(reason: string, message: string): void {
+    this.markLost({ kind: 'device-lost', reason, message, at: Date.now() }, `GPU device lost in the render worker (${reason})`);
+  }
+
+  /** The worker crashed (uncaught error): its device went with it. Recover like a loss (#1395). */
+  private onWorkerDied(message: string): void {
+    if (this.shutdown) return;
+    this.markLost(
+      { kind: 'worker-died', reason: 'render worker crashed', message, at: Date.now() },
+      `Render worker crashed (${message})`,
+    );
+  }
+
+  private markLost(info: DeviceLossInfo, fatalMessage: string): void {
     if (this.lost) return;
     this.lost = true;
     this.initialized = false;
@@ -251,9 +271,11 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
     this.ring = null;
     this.pending = {};
     this.dirtySlots.clear();
-    const info: DeviceLossInfo = { kind: 'device-lost', reason, message, at: Date.now() };
+    clearRendererDevice(info.kind === 'worker-died' ? 'render worker crashed' : 'device lost', this);
+    this.unregisterCompiler?.();
+    this.unregisterCompiler = null;
     this.lastDeviceLoss = info;
-    this.fatalErrorHandler?.(`GPU device lost in the render worker (${reason})`, info);
+    this.fatalErrorHandler?.(fatalMessage, info);
   }
 
   setFatalErrorHandler(handler: ((message: string, info?: DeviceLossInfo) => void) | null): void {
@@ -718,5 +740,17 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   /** Uncaptured GPU errors seen in the worker (newest last). */
   getGpuErrors(): string[] {
     return [...(this.snap?.gpuErrors ?? [])];
+  }
+
+  /** GPUDevices alive in this backend's worker (0 once it is lost, dead or shut down). */
+  getLiveGpuDevices(): number {
+    return this.lost || this.shutdown ? 0 : this.snap?.liveGpuDevices ?? 0;
+  }
+
+  /** Test hook (?testMode=1): crash the worker with an uncaught error. */
+  simulateWorkerCrash(): boolean {
+    if (!this.client || this.lost) return false;
+    this.client.send({ type: 'simulateWorkerCrash' });
+    return true;
   }
 }
