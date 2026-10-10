@@ -188,15 +188,15 @@ export class InputRingReader {
         this.lastStateGen = gen;
         const c = this.copy;
         out.state = {
-          mouse: [c[S_MOUSE], c[S_MOUSE + 1]],
+          mouse: [c[S_MOUSE]!, c[S_MOUSE + 1]!],
           mouseDown: Atomics.load(this.header, H_MOUSE_DOWN) === 1,
-          audio: [c[S_AUDIO], c[S_AUDIO + 1], c[S_AUDIO + 2]],
+          audio: [c[S_AUDIO]!, c[S_AUDIO + 1]!, c[S_AUDIO + 2]!],
           bins: c.slice(S_BINS, S_BINS + BIN_COUNT),
         };
         for (let slot = 0; slot < SLOT_COUNT; slot++) {
           if (!(dirty & (1 << slot))) continue;
           const o = S_SLOTS + slot * 4;
-          out.slotParams.push([slot, c[o], c[o + 1], c[o + 2], c[o + 3]]);
+          out.slotParams.push([slot, c[o]!, c[o + 1]!, c[o + 2]!, c[o + 3]!]);
         }
       } else {
         out.torn = true;
@@ -215,7 +215,7 @@ export class InputRingReader {
     }
     for (; r < w; r++) {
       const i = (r % RIPPLE_CAPACITY) * 2;
-      out.ripples.push([this.ripples[i], this.ripples[i + 1]]);
+      out.ripples.push([this.ripples[i]!, this.ripples[i + 1]!]);
     }
     Atomics.store(this.header, H_RIPPLE_R, w);
     return out;

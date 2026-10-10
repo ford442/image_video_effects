@@ -105,7 +105,10 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
     enabled: false,
     mode: 'chained' as SlotMode,
   }));
-  private readonly slotParams: number[][] = Array.from({ length: PHYSICAL_SLOT_LIMIT }, () => [0.5, 0.5, 0.5, 0.5]);
+  private readonly slotParams: [number, number, number, number][] = Array.from(
+    { length: PHYSICAL_SLOT_LIMIT },
+    (): [number, number, number, number] => [0.5, 0.5, 0.5, 0.5],
+  );
   private readonly dirtySlots = new Set<number>();
   private pending: FrameInput = {};
   private flushScheduled = false;
@@ -309,10 +312,11 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
     const input = this.pending;
     this.pending = {};
     if (this.dirtySlots.size > 0) {
-      input.slotParams = Array.from(this.dirtySlots, (slot) => {
+      input.slotParams = [];
+      for (const slot of this.dirtySlots) {
         const p = this.slotParams[slot];
-        return [slot, p[0], p[1], p[2], p[3]] as [number, number, number, number, number];
-      });
+        if (p) input.slotParams.push([slot, p[0], p[1], p[2], p[3]]);
+      }
       this.dirtySlots.clear();
     }
     const pump = this.pump;
@@ -457,12 +461,14 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   }
 
   setSlotEnabled(index: number, enabled: boolean): void {
-    if (this.slots[index]) this.slots[index].enabled = enabled;
+    const slot = this.slots[index];
+    if (slot) slot.enabled = enabled;
     this.client?.send({ type: 'setSlotEnabled', index, enabled });
   }
 
   setSlotMode(index: number, mode: SlotMode): void {
-    if (this.slots[index]) this.slots[index].mode = mode;
+    const slot = this.slots[index];
+    if (slot) slot.mode = mode;
     this.client?.send({ type: 'setSlotMode', index, mode });
   }
 

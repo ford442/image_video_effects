@@ -12,7 +12,7 @@ export function lumaHistogramBt709(
   const limit = Math.min(pixelCount, Math.floor(rgba.length / 4));
   for (let i = 0; i < limit; i++) {
     const o = i * 4;
-    const y = lumaBt709(rgba[o], rgba[o + 1], rgba[o + 2]);
+    const y = lumaBt709(rgba[o]!, rgba[o + 1]!, rgba[o + 2]!);
     bins[lumaToBin(y)] += 1;
   }
   return { bins, pixelCount: limit };

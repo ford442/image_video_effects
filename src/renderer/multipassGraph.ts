@@ -335,7 +335,7 @@ export function countGraphPasses(graph: MultipassGraphDef): number {
 
 function lastColorWriterIndex(nodes: GraphNodeDef[]): number {
   for (let i = nodes.length - 1; i >= 0; i--) {
-    if ((nodes[i].writes ?? []).includes('color')) return i;
+    if ((nodes[i]!.writes ?? []).includes('color')) return i;
   }
   return -1;
 }
@@ -366,11 +366,11 @@ export function shrinkGraphToCap(graph: MultipassGraphDef, cap: number): Multipa
   while (passCount() > safeCap) {
     let reduced = false;
     const colorIdx = lastColorWriterIndex(nodes);
-    for (let i = 0; i < nodes.length; i++) {
+    for (const [i, node] of nodes.entries()) {
       if (i === colorIdx) continue;
-      const r = nodes[i].repeat ?? 1;
+      const r = node.repeat ?? 1;
       if (r > 1) {
-        nodes[i].repeat = r - 1;
+        node.repeat = r - 1;
         reduced = true;
         break;
       }
@@ -394,10 +394,11 @@ export function shrinkGraphToCap(graph: MultipassGraphDef, cap: number): Multipa
 
   while (passCount() > safeCap) {
     const colorIdx = lastColorWriterIndex(nodes);
-    if (colorIdx < 0) break;
-    const r = nodes[colorIdx].repeat ?? 1;
+    const colorNode = nodes[colorIdx];
+    if (!colorNode) break;
+    const r = colorNode.repeat ?? 1;
     if (r <= 1) break;
-    nodes[colorIdx].repeat = r - 1;
+    colorNode.repeat = r - 1;
   }
 
   return { maxPassesPerFrame: graph.maxPassesPerFrame, nodes };

@@ -17,9 +17,15 @@
 
 import bindGroup1Contract from '../../contracts/bind_group1.json';
 
+function contractBinding(index: number): (typeof bindGroup1Contract.bindings)[number] {
+  const binding = bindGroup1Contract.bindings[index];
+  if (!binding) throw new Error(`bind_group1.json is missing binding ${index}`);
+  return binding;
+}
+
 export const SIM_RING_GROUP = bindGroup1Contract.group;
-export const SIM_STATE_ELEMENT_BYTES = bindGroup1Contract.bindings[0].elementBytes as number;
-export const SIM_PARAMS_BYTES = bindGroup1Contract.bindings[2].sizeBytes as number;
+export const SIM_STATE_ELEMENT_BYTES = contractBinding(0).elementBytes as number;
+export const SIM_PARAMS_BYTES = contractBinding(2).sizeBytes as number;
 export const SIM_RING_OOM_LADDER: readonly number[] = bindGroup1Contract.oom.ladder;
 export const SIM_RING_OOM_CAP_KEY = bindGroup1Contract.oom.sessionStorageKey;
 export const SIM_RING_DEFAULT_STATE_COUNT = bindGroup1Contract.oom.defaultStateCount;
@@ -68,15 +74,15 @@ export function validateGroup1Declarations(wgsl: string): string[] {
   const declRe = /@group\(\s*1\s*\)\s*@binding\(\s*(\d+)\s*\)\s*([^;]*);/g;
   let m: RegExpExecArray | null;
   while ((m = declRe.exec(src)) !== null) {
-    const binding = parseInt(m[1], 10);
+    const binding = parseInt(m[1]!, 10);
     const spec = GROUP1_BINDING_PATTERNS[binding];
     if (!spec) {
       errors.push(`@group(1) @binding(${binding}) is outside the sim-ring contract (0–2)`);
       continue;
     }
-    if (!spec.pattern.test(m[2])) {
+    if (!spec.pattern.test(m[2]!)) {
       errors.push(
-        `@group(1) @binding(${binding}) must be \`${bindGroup1Contract.bindings[binding].wgsl}\``,
+        `@group(1) @binding(${binding}) must be \`${contractBinding(binding).wgsl}\``,
       );
     }
   }
@@ -88,8 +94,8 @@ export function validateGroup1Declarations(wgsl: string): string[] {
     if (!struct) {
       errors.push('simParams declared without `struct SimParams`');
     } else {
-      const fields = bindGroup1Contract.bindings[2].fields ?? [];
-      const body = struct[1];
+      const fields = contractBinding(2).fields ?? [];
+      const body = struct[1]!;
       fields.forEach((field, i) => {
         const re = new RegExp(`\\b${field}\\s*:\\s*u32`);
         if (!re.test(body)) errors.push(`SimParams field ${i} must be \`${field}: u32\``);
@@ -192,7 +198,7 @@ export function simRingRungsForRequest(
   const ceiling = Math.min(requested, cap ?? Number.POSITIVE_INFINITY);
   const rungs = SIM_RING_OOM_LADDER.filter((n) => n <= ceiling);
   // A request below the smallest rung still gets the smallest rung.
-  return rungs.length > 0 ? rungs : [SIM_RING_OOM_LADDER[SIM_RING_OOM_LADDER.length - 1]];
+  return rungs.length > 0 ? rungs : SIM_RING_OOM_LADDER.slice(-1);
 }
 
 /** Next rung below `stateCount`, or null at the bottom of the ladder. */
@@ -351,7 +357,7 @@ export class SimRing {
     // Buffers from a lost / replaced device are unusable — reallocate on the new one.
     if (this.device !== device) this.destroy();
     const wanted = simRingRungsForRequest(requested)[0];
-    if (this.alloc && this.alloc.stateCount >= wanted) {
+    if (this.alloc && wanted !== undefined && this.alloc.stateCount >= wanted) {
       this.alloc.requested = Math.max(this.alloc.requested, requested);
       return true;
     }

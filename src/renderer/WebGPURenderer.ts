@@ -698,20 +698,26 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   }
 
   setSlotEnabled(index: number, enabled: boolean): void {
-    if (index >= 0 && index < PHYSICAL_SLOT_LIMIT) this.slots[index].enabled = enabled;
+    if (index < 0 || index >= PHYSICAL_SLOT_LIMIT) return;
+    const slot = this.slots[index];
+    if (slot) slot.enabled = enabled;
   }
 
   setSlotMode(index: number, mode: SlotMode): void {
-    if (index >= 0 && index < PHYSICAL_SLOT_LIMIT) this.slots[index].mode = mode;
+    if (index < 0 || index >= PHYSICAL_SLOT_LIMIT) return;
+    const slot = this.slots[index];
+    if (slot) slot.mode = mode;
   }
 
   getSlotMode(index: number): SlotMode | null {
-    return index >= 0 && index < PHYSICAL_SLOT_LIMIT ? this.slots[index].mode : null;
+    if (index < 0 || index >= PHYSICAL_SLOT_LIMIT) return null;
+    return this.slots[index]?.mode ?? null;
   }
 
   getSlotState(index: number): { shaderId: string | null; enabled: boolean; mode: SlotMode } | null {
     if (index < 0 || index >= PHYSICAL_SLOT_LIMIT) return null;
     const slot = this.slots[index];
+    if (!slot) return null;
     return { shaderId: slot.shaderId, enabled: slot.enabled, mode: slot.mode };
   }
 

@@ -99,7 +99,7 @@ export function syncAllSlotParams(
   if (!backend || slotParams.length === 0) return;
   const count = Math.min(maxSlots, slotParams.length);
   for (let i = 0; i < count; i++) {
-    const p = slotParams[i];
+    const p = slotParams[i]!;
     updateSlotParams(
       backend,
       {

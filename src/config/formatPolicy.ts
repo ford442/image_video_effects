@@ -41,7 +41,7 @@ export function floatToHalfBits(value: number): number {
   const f32 = new Float32Array(1);
   const u32 = new Uint32Array(f32.buffer);
   f32[0] = value;
-  const x = u32[0];
+  const x = u32[0]!;
   const sign = (x >>> 16) & 0x8000;
   const exp = (x >>> 23) & 0xff;
   const mant = x & 0x7fffff;
@@ -84,13 +84,13 @@ export function packRgbaUploadData(
     const f16 = new Float16Ctor(floats.length);
     const f16View = f16 as unknown as { length: number; [i: number]: number };
     for (let i = 0; i < floats.length; i++) {
-      f16View[i] = floats[i];
+      f16View[i] = floats[i]!;
     }
     return { data: f16, bytesPerRow, rowsPerImage: height };
   }
   const packed = new Uint16Array(floats.length);
   for (let i = 0; i < floats.length; i++) {
-    packed[i] = floatToHalfBits(floats[i]);
+    packed[i] = floatToHalfBits(floats[i]!);
   }
   return { data: packed, bytesPerRow, rowsPerImage: height };
 }
