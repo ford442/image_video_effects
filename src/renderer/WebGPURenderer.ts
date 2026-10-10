@@ -5,7 +5,7 @@
  * Delegates to webgpu/* modules (device, resources, pipeline, frame, audioDepth).
  */
 
-import { Renderer, RendererConfig, ShaderSlotRenderer, GPUTimings, UncappedBenchResult } from './Renderer';
+import { Renderer, RendererConfig, ShaderSlotRenderer, GPUTimings, UncappedBenchResult, DeviceLossInfo } from './Renderer';
 import { Ripple, MAX_RIPPLES } from './UniformBuffer';
 import { PHYSICAL_SLOT_LIMIT, checkPhysicalSlotIndex } from './slotOrchestrator';
 import {
@@ -155,6 +155,12 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private formatCapabilities = DEFAULT_FORMAT_CAPABILITIES;
   private releasingDevice = false;
   private detachUncapturedErrors: (() => void) | null = null;
+  /** Devices our own teardown destroyed: their `lost` is silent (and must not unconfigure). */
+  private readonly releasedDevices = new WeakSet<GPUDevice>();
+  /** Set by simulateDeviceLoss(): the next 'destroyed' of this device counts as a loss. */
+  private simulatedLossDevice: GPUDevice | null = null;
+  private fatalErrorHandler: ((message: string, info?: DeviceLossInfo) => void) | null = null;
+  private lastDeviceLoss: DeviceLossInfo | null = null;
 
   readonly gpuChores = new GpuChoresHost();
   /** Opt-in @group(1) sim ring — armed only when a group-1 pipeline compiles. */
@@ -216,9 +222,12 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       this.adapterAttemptLabel = outcome.adapterAttemptLabel ?? null;
 
       const device = outcome.device;
-      attachDeviceLostHandler(device, outcome.context, () => {
+      attachDeviceLostHandler(device, outcome.context, (details) => {
         if (this.releasingDevice || this.device !== device) return;
+        // Only a loss while rendering is a runtime stop; init failures report through init().
+        const wasRendering = this.initialized;
         this.initialized = false;
+        if (this.frameState) this.frameRenderer.stopRenderLoop(this.frameState);
         this.warmup?.stop();
         this.warmup = null;
         this.videoIngest.detach();
@@ -226,6 +235,12 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
         this.timestampRuntime.hasRealGpuTimings = false;
         this.timestampRuntime.readbackPending = false;
         this.gpuChores.detach('device lost');
+        const info: DeviceLossInfo = { kind: 'device-lost', ...details, at: Date.now() };
+        this.lastDeviceLoss = info;
+        if (wasRendering) this.fatalErrorHandler?.(`GPU device lost (${info.reason})`, info);
+      }, {
+        isIntentional: () => this.releasedDevices.has(device),
+        isSimulated: () => this.simulatedLossDevice === device,
       });
 
       outcome.detachUncapturedLog?.();
@@ -1064,6 +1079,36 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.framePassBudget = Number.isFinite(budget) && budget >= 1 ? Math.floor(budget) : Number.POSITIVE_INFINITY;
   }
 
+  /** Notified once per device when a runtime GPUDevice loss stops rendering. */
+  setFatalErrorHandler(handler: ((message: string, info?: DeviceLossInfo) => void) | null): void {
+    this.fatalErrorHandler = handler;
+  }
+
+  /** The live device, for RendererManager's adopted-device registry after a recovery. */
+  getGpuDevice(): GPUDevice | null {
+    return this.initialized ? this.device : null;
+  }
+
+  getLastDeviceLoss(): DeviceLossInfo | null {
+    return this.lastDeviceLoss;
+  }
+
+  /**
+   * Test hook (?testMode=1): destroy the live device so it really is dead, but route its
+   * `lost` through the device-loss path instead of the silent intentional-destroy path.
+   */
+  simulateDeviceLoss(): boolean {
+    const device = this.device;
+    if (!device || !this.initialized) return false;
+    this.simulatedLossDevice = device;
+    try {
+      device.destroy();
+    } catch {
+      /* already destroyed */
+    }
+    return true;
+  }
+
   /** Resolves once `device.lost` settles, so a remount can re-probe without racing it. */
   destroy(): Promise<void> {
     return this.teardownGpuHandles(true) ?? Promise.resolve();
@@ -1101,6 +1146,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.context = null;
     if (!device) return awaitLost ? Promise.resolve() : undefined;
     this.releasingDevice = true;
+    if (this.simulatedLossDevice !== device) this.releasedDevices.add(device);
     const lost = device.lost;
     try {
       device.destroy();

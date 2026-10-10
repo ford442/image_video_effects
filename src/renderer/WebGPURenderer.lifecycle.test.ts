@@ -2,6 +2,7 @@ import { WebGPURenderer } from './WebGPURenderer';
 import { DEFAULT_CONFIG } from './Renderer';
 import { initializeWebGPUDevice } from './webgpu/device';
 import { setRendererErrorHandler as setErrorSink } from './ErrorHandling';
+import { createFrameState } from './webgpu/frame';
 
 jest.mock('./webgpu/device', () => {
   const actual = jest.requireActual('./webgpu/device');
@@ -165,5 +166,74 @@ describe('WebGPURenderer lifecycle', () => {
 
     await wgpu.destroy().catch(() => undefined);
     expect(device.listeners.get('uncapturederror')!.size).toBe(0);
+  });
+
+  describe('runtime device loss', () => {
+    async function initialized() {
+      // CRA's resetMocks clears the factory implementation; the loop needs a frame state.
+      (createFrameState as jest.Mock).mockReturnValue({ maxPassesPerFrame: 12 });
+      const device = makeDevice();
+      (initializeWebGPUDevice as jest.Mock).mockResolvedValueOnce(outcomeFor(device));
+      setupSpy.mockResolvedValueOnce('ok');
+      const wgpu = createWebGpu();
+      const detach = jest.spyOn(wgpu.gpuChores, 'detach');
+      const fatal = jest.fn();
+      wgpu.setFatalErrorHandler(fatal);
+      expect(await wgpu.init(document.createElement('canvas'))).toBe(true);
+      const loop = (wgpu as unknown as { frameRenderer: { stopRenderLoop: jest.Mock } }).frameRenderer;
+      return { wgpu, device, fatal, detach, loop };
+    }
+
+    it('stops the loop, detaches chores and fires the fatal handler once with the loss', async () => {
+      const { wgpu, device, fatal, detach, loop } = await initialized();
+      device.loseUnexpectedly();
+      await flush();
+      expect((wgpu as unknown as { initialized: boolean }).initialized).toBe(false);
+      expect(loop.stopRenderLoop).toHaveBeenCalled();
+      expect(detach).toHaveBeenCalledWith('device lost');
+      expect(fatal).toHaveBeenCalledTimes(1);
+      expect(fatal.mock.calls[0][1]).toMatchObject({ kind: 'device-lost', reason: 'unknown', message: 'driver reset' });
+      expect(wgpu.getLastDeviceLoss()).toMatchObject({ reason: 'unknown' });
+      expect(wgpu.getGpuDevice()).toBeNull();
+      expect(errors).toContainEqual(expect.objectContaining({ type: 'device-lost', recoverable: true }));
+
+      // Teardown of the lost renderer settles at once and does not report again.
+      await wgpu.destroy();
+      expect(fatal).toHaveBeenCalledTimes(1);
+    });
+
+    it('an intentional destroy is not a loss', async () => {
+      const { wgpu, fatal } = await initialized();
+      await wgpu.destroy();
+      await flush();
+      expect(fatal).not.toHaveBeenCalled();
+      expect(errors.filter((e) => e.type === 'device-lost')).toEqual([]);
+    });
+
+    it('simulateDeviceLoss destroys the live device but reports a runtime loss', async () => {
+      const { wgpu, device, fatal } = await initialized();
+      expect(wgpu.simulateDeviceLoss()).toBe(true);
+      expect(device.destroy).toHaveBeenCalled();
+      await flush();
+      expect(fatal).toHaveBeenCalledTimes(1);
+      expect(fatal.mock.calls[0][1]).toMatchObject({ reason: 'simulated' });
+      expect(wgpu.simulateDeviceLoss()).toBe(false);
+    });
+
+    it('a loss while init is still allocating (OOM retry) does not fire the runtime handler', async () => {
+      const first = makeDevice();
+      const second = makeDevice();
+      (initializeWebGPUDevice as jest.Mock)
+        .mockResolvedValueOnce(outcomeFor(first))
+        .mockResolvedValueOnce(outcomeFor(second));
+      setupSpy.mockResolvedValueOnce('lost').mockResolvedValueOnce('ok');
+      const wgpu = createWebGpu();
+      const fatal = jest.fn();
+      wgpu.setFatalErrorHandler(fatal);
+      expect(await wgpu.init(document.createElement('canvas'))).toBe(true);
+      await flush();
+      expect(fatal).not.toHaveBeenCalled();
+      expect(errors.filter((e) => e.type === 'device-lost')).toEqual([]);
+    });
   });
 });

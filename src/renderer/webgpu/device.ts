@@ -278,13 +278,35 @@ export function attachUncapturedErrorRouter(
   return () => device.removeEventListener('uncapturederror', listener);
 }
 
+/** Why a device stopped; `reason` is the GPUDeviceLostInfo reason (or 'simulated'). */
+export interface DeviceLostDetails {
+  reason: string;
+  message: string;
+}
+
+export interface DeviceLostHandlerOptions {
+  /** True when our own teardown destroyed the device (and already unconfigured the context). */
+  isIntentional?: () => boolean;
+  /** True when a test hook destroyed the device to stand in for a real loss. */
+  isSimulated?: () => boolean;
+}
+
+/**
+ * Routes `device.lost`: an intentional destroy is silent; a real (or simulated) loss is
+ * reported as recoverable, the context is unconfigured and `onLost` runs once.
+ */
 export function attachDeviceLostHandler(
   device: GPUDevice,
   context: GPUCanvasContext | null,
-  onLost: () => void,
+  onLost: (details: DeviceLostDetails) => void,
+  options: DeviceLostHandlerOptions = {},
 ): void {
   void device.lost.then((info) => {
-    if (info.reason === 'destroyed') {
+    const simulated = info.reason === 'destroyed' && options.isSimulated?.() === true;
+    if (info.reason === 'destroyed' && !simulated) {
+      // Teardown unconfigured already; a late unconfigure could hit a context a
+      // newer device has since configured (OOM retry / recovery on the same canvas).
+      if (options.isIntentional?.()) return;
       try {
         context?.unconfigure();
       } catch {
@@ -292,17 +314,20 @@ export function attachDeviceLostHandler(
       }
       return;
     }
+    const details: DeviceLostDetails = simulated
+      ? { reason: 'simulated', message: 'simulated device loss (test hook)' }
+      : { reason: String(info.reason ?? 'unknown'), message: info.message ?? '' };
     reportError({
       type: 'device-lost',
-      message: `GPU device lost: ${info.reason}. Try reloading the page.`,
-      recoverable: false,
+      message: `GPU device lost (${details.reason}) — restoring renderer…`,
+      recoverable: true,
     });
-    console.error('[WebGPU] Device lost:', info.reason, info.message);
+    console.error('[WebGPU] Device lost:', details.reason, details.message);
     try {
       context?.unconfigure();
     } catch {
       // Ignore errors during cleanup
     }
-    onLost();
+    onLost(details);
   });
 }

@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useLayoutEffect, useState, useCallback } from 'react';
-import { RendererManager, getRendererTypeFromURL } from '../renderer/RendererManager';
+import { RendererManager, getRendererTypeFromURL, type DeviceRecoveryStatus } from '../renderer/RendererManager';
+import { resolveShaderId } from '../utils/resolveShaderId';
 import { resolveRenderThread } from '../renderer/backendLifecycle';
 import { RenderMode, InputSource, SlotParams, ShaderEntry } from '../renderer/types';
 import { INTERNAL_RENDER_RESOLUTION } from '../config/appConfig';
@@ -93,6 +94,12 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     // Track when RendererManager finished init so input-source sync runs once
     const [managerReady, setManagerReady] = useState(false);
     const [probeFailure, setProbeFailure] = useState<WebGpuProbeSerializable | null>(null);
+    // GPUDevice-loss recovery (lost → recovering → idle | failed); null until the first loss.
+    const [deviceRecovery, setDeviceRecovery] = useState<DeviceRecoveryStatus | null>(null);
+    const managerRef = useRef<RendererManager | null>(null);
+    // The live session a recovered renderer replays (read lazily, never stale).
+    const sessionRef = useRef({ modes, slotParams, inputSource, shaderCatalog });
+    sessionRef.current = { modes, slotParams, inputSource, shaderCatalog };
 
     // Track if there are active interactive/mouse-driven effects
     const [hasInteractiveEffects, setHasInteractiveEffects] = useState(false);
@@ -203,12 +210,37 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 acquireFreshCanvas,
                 onBackendFailure: (failedType, message) => {
                     if (!mounted) return;
-                    publishWasmProbeFailure(`${failedType} renderer stopped: ${message}`);
+                    // A failed device-loss recovery keeps the real boot-probe diagnostics.
+                    if (failedType !== 'webgpu' || renderer.getDeviceRecoveryStatus().state !== 'failed') {
+                        publishWasmProbeFailure(`${failedType} renderer stopped: ${message}`);
+                    }
                     setProbeFailure(window.webgpuProbe ?? null);
                     setManagerReady(false);
                 },
+                getSessionState: () => {
+                    const session = sessionRef.current;
+                    return {
+                        modes: session.modes,
+                        slotParams: session.slotParams,
+                        inputSource: session.inputSource,
+                        resolveShader: (shaderId) =>
+                            session.shaderCatalog.find((s) => s.id === resolveShaderId(shaderId)),
+                    };
+                },
+                onDeviceRecovery: (status) => {
+                    if (!mounted) return;
+                    setDeviceRecovery(status);
+                    if (status.state === 'lost' || status.state === 'recovering') {
+                        setManagerReady(false);
+                    } else if (status.state === 'idle') {
+                        setProbeFailure(null);
+                        setManagerReady(true);
+                        if (onInit) onInit();
+                    }
+                },
             },
         );
+        managerRef.current = renderer;
         const urlRenderer = getRendererTypeFromURL();
         // In worker mode the render worker runs the probe on the transferred canvas.
         const probeInWorker = resolveRenderThread() === 'worker';
@@ -286,8 +318,10 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         })().catch((err) => console.error('[WebGPUCanvas] renderer init failed:', err));
         return () => {
             mounted = false;
+            if (managerRef.current === renderer) managerRef.current = null;
             setManagerReady(false);
             setProbeFailure(null);
+            setDeviceRecovery(null);
             cancelAnimationFrame(animationFrameId.current);
             // Wait for an in-flight init so its device is included in the release.
             void queueTeardown(async () => {
@@ -681,7 +715,19 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 style={canvasStyle}
                 className={`webgpu-canvas ${isWebcamActive ? 'webcam-canvas' : ''} ${hasInteractiveEffects ? 'interactive-effects' : ''}`}
             />
-            {probeFailure && <WebGpuProbeFailureOverlay probe={probeFailure} />}
+            {deviceRecovery && deviceRecovery.state !== 'idle' ? (
+                <WebGpuProbeFailureOverlay
+                    probe={deviceRecovery.state === 'failed' ? probeFailure : null}
+                    deviceLoss={{
+                        state: deviceRecovery.state === 'failed' ? 'failed' : 'recovering',
+                        reason: deviceRecovery.lastLoss?.reason ?? 'unknown',
+                        error: deviceRecovery.lastError,
+                        onRetry: () => { void managerRef.current?.recoverFromDeviceLoss(); },
+                    }}
+                />
+            ) : (
+                probeFailure && <WebGpuProbeFailureOverlay probe={probeFailure} />
+            )}
             <video
                 ref={videoRef}
                 crossOrigin="anonymous"

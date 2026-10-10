@@ -228,6 +228,10 @@ export function useTestHarness({
                 getGPUTimings: () => manager.getGPUTimings(),
                 getPassTimings: () => manager.getPassTimings(),
                 getRenderThread: () => manager.getRenderThread(),
+                /** Destroy the TS WebGPU device but report it as a runtime loss (main + worker). */
+                simulateDeviceLoss: () => manager.simulateDeviceLoss(),
+                getDeviceRecoveryStatus: () => manager.getDeviceRecoveryStatus(),
+                recoverFromDeviceLoss: () => manager.recoverFromDeviceLoss(),
                 /**
                  * Record `ms` through the app's WebCodecs session (worker frame grabs in
                  * worker mode, canvas VideoFrames on the page) and describe the WebM.

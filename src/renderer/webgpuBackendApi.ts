@@ -74,6 +74,9 @@ export type WebGPUBackendApi = Pick<
   | 'getAdapterAttemptLabel'
   | 'getLastGraphReport'
   | 'getGpuChoresBreadcrumbs'
+  | 'setFatalErrorHandler'
+  | 'getLastDeviceLoss'
+  | 'simulateDeviceLoss'
   | 'initialized'
 > & Required<Pick<Renderer, 'loadImageFromElement' | 'getCpuInputBitmap'>>;
 

@@ -83,7 +83,9 @@ export type RenderCommand =
   | { type: 'setSourceAutoExposure'; enabled: boolean }
   | { type: 'applyTestRenderState'; state: TestRenderState }
   | { type: 'setCanvasCopySrc'; enabled: boolean }
-  | { type: 'warmShaders'; entries: Array<{ id: string; url: string }> };
+  | { type: 'warmShaders'; entries: Array<{ id: string; url: string }> }
+  /** Test hook (?testMode=1): destroy the device but report it as a runtime loss. */
+  | { type: 'simulateDeviceLoss' };
 
 export interface RenderInitInfo {
   ok: boolean;
@@ -173,6 +175,8 @@ export type RenderEvent =
   | { type: 'hello'; caps: RenderWorkerCaps }
   | { type: 'snapshot'; snapshot: RenderSnapshot }
   | { type: 'error'; error: RendererError }
+  /** The worker's GPUDevice was lost at runtime; it renders nothing more (recover on a new worker). */
+  | { type: 'deviceLost'; reason: string; message: string }
   | { type: 'rpcResult'; requestId: number; ok: true; value: unknown }
   | { type: 'rpcResult'; requestId: number; ok: false; error: string };
 
@@ -198,6 +202,7 @@ export const RENDER_COMMAND_TYPES = [
   'applyTestRenderState',
   'setCanvasCopySrc',
   'warmShaders',
+  'simulateDeviceLoss',
 ] as const;
 
 export const RENDER_RPC_TYPES = [
@@ -212,7 +217,7 @@ export const RENDER_RPC_TYPES = [
   'dispose',
 ] as const;
 
-export const RENDER_EVENT_TYPES = ['hello', 'snapshot', 'error', 'rpcResult'] as const;
+export const RENDER_EVENT_TYPES = ['hello', 'snapshot', 'error', 'deviceLost', 'rpcResult'] as const;
 
 // Compile-time exhaustiveness: every union member is listed, and nothing else.
 type Exact<A, B> = [A] extends [B] ? ([B] extends [A] ? true : never) : never;
