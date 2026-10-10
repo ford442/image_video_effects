@@ -1,16 +1,18 @@
 # naga_wasm
 
-GPU-less WGSL validation for the shader catalog.
+GPU-less WGSL validation for the shader catalog, plus the GLSL → WGSL
+translation behind the Shadertoy import.
 
 A thin Rust crate wrapping [`naga`](https://crates.io/crates/naga)'s WGSL front-end
-and validator, compiled to `wasm32-unknown-unknown`. Node, CI and the browser all
+and validator (and its GLSL front-end + WGSL writer), compiled to
+`wasm32-unknown-unknown`. Node, CI and the browser all
 run the same compiler the host `naga` CLI runs — in-process, with no GPU, no
 adapter and no device.
 
 | | |
 |---|---|
 | Contract | `src/contracts/wgsl_validation.json` |
-| Artifact | `public/wasm/naga_wasm.wasm` (committed, ~805 KB) |
+| Artifact | `public/wasm/naga_wasm.wasm` (committed, ~1.15 MB) |
 | JS loader | `public/wasm/naga_wasm.js` (hand-written, shared by Node and the browser) |
 | TS wrapper | `src/utils/nagaWasm.ts` (browser; dynamic import, stays out of the bundle) |
 | Gate | `npm run verify:naga-wasm` / `npm run verify:naga-wasm:all` |
@@ -50,16 +52,38 @@ The module exports a hand-written C ABI instead:
 ```
 wgsl_alloc(len) -> ptr              caller writes `len` UTF-8 bytes at ptr
 wgsl_validate(ptr, len) -> i32      0 = valid, 1 = parse error, 2 = validation error
-wgsl_result_ptr() / wgsl_result_len()   JSON diagnostic for the last call
+glsl_to_wgsl(ptr, len, stage) -> i32
+                                    stage 0 = vertex, 1 = fragment, 2 = compute;
+                                    0 = translated, 1 = parse, 2 = validation, 3 = WGSL writer error
+wgsl_result_ptr() / wgsl_result_len()   JSON result for the last call
 wgsl_free(ptr, len)
 ```
+
+`glsl_to_wgsl` leaves `{"ok":true,"wgsl":"..."}` in the result buffer on success,
+and the same diagnostic shape as `wgsl_validate` otherwise.
 
 It is small enough to write by hand, which keeps `wasm-pack` and `wasm-bindgen`
 off CI and off agent VMs. `public/wasm/naga_wasm.js` is the only supported caller;
 keep the two in sync.
 
 The result buffer is owned by the module and is overwritten by the next
-`wgsl_validate`, so JS copies it out before calling again.
+call, so JS copies it out before calling again.
+
+## GLSL → WGSL (Shadertoy import)
+
+`glsl_to_wgsl` runs naga's GLSL front-end, which accepts **Vulkan-flavoured
+GLSL 450**, not Shadertoy's GLSL ES. `src/services/shadertoyToPixelocity.ts`
+bridges the two: it prepends a `#version 450` prelude that declares the
+Shadertoy uniforms as a uniform block and `iChannel0` as a separate texture +
+sampler (naga has no combined image samplers), translates, rewrites naga's
+fragment shader into a Pixelocity compute shader, and validates the result with
+`wgsl_validate` before handing it to the import panel.
+
+This replaced a runtime `import()` of `@webgpu/tint-wasm@latest` from jsDelivr.
+That package never existed on npm, so the import had always failed.
+
+The `glsl-in` and `wgsl-out` features grew the artifact from 843 KB to 1.18 MB;
+it is still fetched lazily and never enters the CRA bundle.
 
 ## The naga pin
 

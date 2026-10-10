@@ -8,6 +8,7 @@ import { inferRequiresRgba32Float } from '../config/formatPolicy';
 import { resolveShaderUrl } from '../utils/resolveShaderUrl';
 import { fetchShaderWgsl } from '../utils/fetchShaderWgsl';
 import { postShaderRating } from './postShaderRating';
+import { formatNagaError, loadNagaGlslConverter } from '../utils/nagaWasm';
 
 const API_BASE = process.env.REACT_APP_API_BASE_URL || API_BASE_URL;
 
@@ -55,28 +56,24 @@ export interface ShaderContent {
   type: 'wgsl' | 'glsl';
 }
 
-// --- TintWASM Converter ---
+// --- GLSL → WGSL (naga) ---
 
 /**
- * Convert GLSL shader code to WGSL using official TintWASM
+ * Convert GLSL 450 to WGSL with naga's GLSL front-end (tools/naga_wasm, loaded
+ * lazily from /wasm/naga_wasm.js — same-origin, never bundled).
  */
 export async function glslToWgsl(glsl: string, stage: 'fragment' | 'vertex' = 'fragment'): Promise<string> {
-  // @ts-ignore CDN module has no type declarations
-  const { init } = await import('https://cdn.jsdelivr.net/npm/@webgpu/tint-wasm@latest/dist/tint.js');
-  const tint = await init();
-  const result = await tint.convertGLSLToWGSL(glsl, stage);
-  if (result.error) throw new Error(result.error);
+  const naga = await loadNagaGlslConverter();
+  const result = naga.glslToWgsl(glsl, stage);
+  if (!result.ok || result.wgsl === undefined) throw new Error(formatNagaError(result));
   return result.wgsl;
 }
 
 // Alias for backward compatibility
 export const convertGlslToWgsl = glslToWgsl;
 
-/**
- * Check if TintWASM is available
- */
-export function isTintAvailable(): boolean {
-  // Tint availability is determined by whether WebAssembly is supported
+/** The converter needs WebAssembly; the artifact itself is fetched on first use. */
+export function isGlslConversionAvailable(): boolean {
   return typeof WebAssembly !== 'undefined';
 }
 
