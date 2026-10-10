@@ -24,6 +24,7 @@ const PORT = 3463;
 const ROOT = resolve(__dirname, '..');
 const FULL = process.env.PX_FULL_CATALOG === '1';
 const SAMPLE_EVERY = 40;
+const CHUNK = 25;
 
 type Mode = 'main' | 'worker';
 
@@ -85,12 +86,22 @@ for (const mode of ['main', 'worker'] as Mode[]) {
     await boot(page, mode);
     const before = await uncaptured(page, mode);
 
-    const results = await page.evaluate(async (list: string[]) => {
-      const api = (window as any).__pixelocity__;
-      const out: Array<{ id: string; ok: boolean; errors: string[] }> = [];
-      for (const id of list) out.push({ id, ...(await api.compileCheckShader(id)) });
-      return out;
-    }, ids);
+    // Chunked so a long run (PX_FULL_CATALOG) logs progress and slow shaders as it goes.
+    const results: Array<{ id: string; ok: boolean; errors: string[]; ms: number }> = [];
+    for (let i = 0; i < ids.length; i += CHUNK) {
+      const chunk = await page.evaluate(async (list: string[]) => {
+        const api = (window as any).__pixelocity__;
+        const out: Array<{ id: string; ok: boolean; errors: string[]; ms: number }> = [];
+        for (const id of list) {
+          const t0 = performance.now();
+          out.push({ id, ...(await api.compileCheckShader(id)), ms: Math.round(performance.now() - t0) });
+        }
+        return out;
+      }, ids.slice(i, i + CHUNK));
+      results.push(...chunk);
+      const slow = chunk.filter((r) => r.ms > 10_000).map((r) => `${r.id} ${r.ms}ms`);
+      console.log(`[${mode}] ${results.length}/${ids.length}${slow.length ? ` slow: ${slow.join(', ')}` : ''}`);
+    }
 
     // Wait out a few frames so any error the checks leaked has been delivered.
     await page.waitForTimeout(1500);
