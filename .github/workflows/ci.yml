@@ -27,6 +27,11 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
+    # Before anything below regenerates them: the committed registry, shader lists, alias
+    # maps, ShaderDefinition type and standalone validator must equal a fresh regeneration.
+    - name: Verify generated files are committed
+      run: npm run verify:generated-sync
+
     - name: Run shader list generation
       run: node scripts/generate_shader_lists.js
     
@@ -131,6 +136,12 @@ jobs:
     - name: Run WGSL pre-commit gate on changed files
       run: python3 scripts/wgsl_precommit_gate.py --base origin/main --skip-naga
 
+    # Every shader_definitions/*/*.json against src/contracts/shader_definition.schema.json
+    # (compiled standalone validator, node builtins only) plus id/filename, category/folder,
+    # unique-param-id and default-in-range rules. Legacy keys: scripts/migrate_shader_definitions.py.
+    - name: Validate shader definitions (schema)
+      run: node scripts/validate_shader_definitions.mjs
+
     - name: Audit shader catalog hygiene (defs ↔ WGSL)
       run: python3 scripts/audit_orphan_shader_defs.py --ci-gate
 
@@ -148,6 +159,7 @@ jobs:
         python3 scripts/test_orphan_gate.py
         python3 scripts/test_audit_extrabuffer.py
         python3 scripts/test_audit_dead_sliders.py
+        python3 scripts/test_new_shader.py
         python3 scripts/test_prelude_migration.py
 
     - name: Publish gate summary

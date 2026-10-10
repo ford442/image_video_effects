@@ -140,16 +140,10 @@ def title_from_id(shader_id: str) -> str:
     return " ".join(word.capitalize() for word in shader_id.split("-"))
 
 
-def write_shader_definition(shader_id: str, category: str | None) -> Path:
-    """Create shader_definitions/<category>/<id>.json alongside the WGSL file."""
-    import json
-
-    folder = infer_category(shader_id, category)
-    def_path = DEFINITIONS_DIR / folder / f"{shader_id}.json"
-    if def_path.exists():
-        raise FileExistsError(f"Definition already exists: {def_path}")
-
-    defn = {
+def build_definition(shader_id: str, folder: str) -> dict:
+    """The scaffold's definition. Must stay valid against src/contracts/shader_definition.schema.json
+    (scripts/test_new_shader.py runs it through scripts/validate_shader_definitions.mjs)."""
+    return {
         "id": shader_id,
         "name": title_from_id(shader_id),
         "url": f"shaders/{shader_id}.wgsl",
@@ -169,6 +163,18 @@ def write_shader_definition(shader_id: str, category: str | None) -> Path:
             for i, axis in enumerate(["x", "y", "z", "w"], start=1)
         ],
     }
+
+
+def write_shader_definition(shader_id: str, category: str | None) -> Path:
+    """Create shader_definitions/<category>/<id>.json alongside the WGSL file."""
+    import json
+
+    folder = infer_category(shader_id, category)
+    def_path = DEFINITIONS_DIR / folder / f"{shader_id}.json"
+    if def_path.exists():
+        raise FileExistsError(f"Definition already exists: {def_path}")
+
+    defn = build_definition(shader_id, folder)
     def_path.parent.mkdir(parents=True, exist_ok=True)
     def_path.write_text(json.dumps(defn, indent=2) + "\n", encoding="utf-8")
     return def_path
@@ -228,6 +234,7 @@ def main() -> int:
         print(f"Created {written_def}")
 
     print("Next:")
+    print(f"  node scripts/validate_shader_definitions.mjs   # schema: src/contracts/shader_definition.schema.json")
     print(f"  node scripts/generate_shader_lists.js")
     print(f"  python3 scripts/audit_orphan_shader_defs.py")
     print(f"  python scripts/wgsl_precommit_gate.py --files {out_path.name}")

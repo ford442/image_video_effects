@@ -8,6 +8,8 @@ import { inferRequiresRgba32Float } from '../config/formatPolicy';
 import { resolveShaderUrl } from '../utils/resolveShaderUrl';
 import { fetchShaderWgsl } from '../utils/fetchShaderWgsl';
 import { postShaderRating } from './postShaderRating';
+import type { ShaderParam } from '../renderer/types';
+import { parseShaderDefinition } from './shaderDefinition';
 
 const API_BASE = process.env.REACT_APP_API_BASE_URL || API_BASE_URL;
 
@@ -245,17 +247,7 @@ export async function convertShader(shaderId: string, targetFormat: string = 'wg
 //  VPS Storage API Types
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export interface ShaderParam {
-  id: string;
-  name: string;
-  default: number;
-  min: number;
-  max: number;
-  step?: number;
-  labels?: string[];
-  mapping?: string;
-  audio?: 'bass' | 'mid' | 'treble' | 'overall' | { fft: number };
-}
+export type { ShaderParam };
 
 export interface ApiShaderEntry {
   id: string;
@@ -418,35 +410,30 @@ class ShaderApiService {
       SHADER_LIST_CATEGORIES.map(async (category) => {
         const response = await fetch(`./shader-lists/${category}.json`);
         if (!response.ok) return [];
-        const shaders: any[] = await response.json();
-        return shaders.map((shader: any) => ({
-          id: shader.id,
-          name: shader.name || shader.id,
-          filename: `${shader.id}.json`,
-          type: 'shader',
-          format: 'wgsl',
-          description: shader.description || '',
-          category: shader.category || category,  // Use shader's own category or the file category
-          tags: shader.tags || [],
-          url: shader.url ? resolveShaderUrl(shader.url) : resolveShaderUrl(`shaders/${shader.id}.wgsl`),
-          requiresDeepWorkgroup: shader.requiresDeepWorkgroup === true,
-          requiresHistoryRing: shader.requiresHistoryRing === true,
-          requiresRgba32Float: inferRequiresRgba32Float({
+        const raw: unknown = await response.json();
+        return (Array.isArray(raw) ? raw : []).flatMap((item): ApiShaderEntry[] => {
+          const shader = parseShaderDefinition(item);
+          if (!shader) return [];
+          return [{
             id: shader.id,
-            requiresRgba32Float: shader.requiresRgba32Float === true,
-          }),
-          params: (shader.params || []).map((p: any, idx: number) => ({
-            id: p.id || p.name || `param${idx + 1}`,
-            name: p.label || p.name || `Parameter ${idx + 1}`,
-            default: p.default ?? 0.5,
-            min: p.min ?? 0,
-            max: p.max ?? 1,
-            step: p.step ?? 0.01,
-            labels: p.labels,
-            mapping: p.mapping,
-            audio: p.audio,
-          })),
-        } as ApiShaderEntry));
+            name: shader.name,
+            filename: `${shader.id}.json`,
+            type: 'shader',
+            format: 'wgsl',
+            description: shader.description || '',
+            category: shader.category || category,  // Use shader's own category or the file category
+            tags: shader.tags || [],
+            url: resolveShaderUrl(shader.url),
+            requiresDeepWorkgroup: shader.requiresDeepWorkgroup === true,
+            requiresHistoryRing: shader.requiresHistoryRing === true,
+            requiresRgba32Float: inferRequiresRgba32Float({
+              id: shader.id,
+              requiresRgba32Float: shader.requiresRgba32Float === true,
+            }),
+            // The list API has always exposed a 0.01 step for sliders that omit one.
+            params: (shader.params ?? []).map((p) => ({ ...p, step: p.step ?? 0.01 })),
+          }];
+        });
       })
     );
 
