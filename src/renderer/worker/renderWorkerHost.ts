@@ -13,6 +13,7 @@ import type { RendererError } from '../ErrorHandling';
 import { safeClose, TransferredVideoFrames } from '../media/videoFramePump';
 import { InputRingReader, InputRingSnapshot } from './inputRing';
 import type { RendererConfig } from '../Renderer';
+import { setRuntimeGraph } from '../runtimeGraphs';
 import type { WebGPURenderer } from '../WebGPURenderer';
 import type { WebGpuProbeOptions, WebGpuProbeResult, WebGpuProbeSerializable } from '../webgpuBootProbe';
 import {
@@ -222,6 +223,8 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
       r.setCanvasCopySrc(enabled);
     }),
     warmShaders: ({ entries }) => withRenderer((r) => r.warmShaders(entries)),
+    // Module-level overlay of this realm (runtimeGraphs.ts): applies even before init finishes.
+    setRuntimeGraph: ({ id, graph }) => setRuntimeGraph(id, graph),
   };
 
   const rpcs: RpcHandlers = {

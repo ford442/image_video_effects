@@ -19,6 +19,7 @@ import type { GpuChoresBreadcrumbs } from '../../gpuChores';
 import type { RendererError } from '../ErrorHandling';
 import type { GraphRunReport } from '../GraphRunner';
 import type { VideoIngestStats } from '../media/videoFramePump';
+import type { MultipassGraphDef } from '../multipassGraph';
 import type { PassTiming } from '../passTimings';
 import type { GPUTimings, RendererConfig, UncappedBenchResult } from '../Renderer';
 import type { InputSource } from '../types';
@@ -83,7 +84,9 @@ export type RenderCommand =
   | { type: 'setSourceAutoExposure'; enabled: boolean }
   | { type: 'applyTestRenderState'; state: TestRenderState }
   | { type: 'setCanvasCopySrc'; enabled: boolean }
-  | { type: 'warmShaders'; entries: Array<{ id: string; url: string }> };
+  | { type: 'warmShaders'; entries: Array<{ id: string; url: string }> }
+  /** Graph Lab draft: register (or, with null, drop) a runtime Tier C graph under `id`. */
+  | { type: 'setRuntimeGraph'; id: string; graph: MultipassGraphDef | null };
 
 export interface RenderInitInfo {
   ok: boolean;
@@ -198,6 +201,7 @@ export const RENDER_COMMAND_TYPES = [
   'applyTestRenderState',
   'setCanvasCopySrc',
   'warmShaders',
+  'setRuntimeGraph',
 ] as const;
 
 export const RENDER_RPC_TYPES = [

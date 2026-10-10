@@ -21,6 +21,7 @@ import { DEFAULT_FORMAT_CAPABILITIES, DeviceFormatCapabilities, InternalColorFor
 import { createDefaultBreadcrumbs } from '../../gpuChores/types';
 import { reportError } from '../ErrorHandling';
 import { VideoFramePump, VideoIngestStats } from '../media/videoFramePump';
+import type { MultipassGraphDef } from '../multipassGraph';
 import type { PassTiming } from '../passTimings';
 import type { GPUTimings, RendererConfig, SlotZoomParamsUpdate, UncappedBenchResult } from '../Renderer';
 import type { InputSource } from '../types';
@@ -379,6 +380,11 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
       type: 'warmShaders',
       entries: entries.map((e) => ({ id: e.id, url: absoluteUrl(e.url) })),
     });
+  }
+
+  /** The worker realm has its own graph overlay: forward the draft (fresh object per edit). */
+  setRuntimeGraph(id: string, graph: MultipassGraphDef | null): void {
+    this.client?.send({ type: 'setRuntimeGraph', id, graph });
   }
 
   setActiveShader(id: string): void {

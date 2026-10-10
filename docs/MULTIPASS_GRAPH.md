@@ -9,6 +9,7 @@ Extends Tier B linear chains ([`multipassRegistry.ts`](../src/renderer/multipass
 - Sim texture packing: [`agents/swarm-tasks/advanced-physics/MULTIPASS_SIM_CONTRACT.md`](../agents/swarm-tasks/advanced-physics/MULTIPASS_SIM_CONTRACT.md)
 - Builder: [`scripts/buildMultipassRegistry.js`](../scripts/buildMultipassRegistry.js)
 - Validator: [`src/renderer/multipassGraph.ts`](../src/renderer/multipassGraph.ts)
+- Authoring workspace: [`docs/GRAPH_LAB.md`](GRAPH_LAB.md) (experimental, `?graphlab`)
 - Frame plan + executor: [`src/renderer/webgpu/framePlan.ts`](../src/renderer/webgpu/framePlan.ts) (graph nodes and linear slots compile into one op list; `GraphRunner.runGraph` is the stand-alone shim)
 
 ## Tier comparison
@@ -49,6 +50,9 @@ Secondary WGSL files are referenced by `entry` id only — no separate JSON.
 | `reads` | yes | Texture roles sampled this dispatch |
 | `writes` | yes | Texture roles written this dispatch |
 | `repeat` | no | Dispatch count (default `1`, max `64`) |
+| `dispatch` | no | `pixels` (default) or `simState` (sim-ring agents; see [`BINDING_CONTRACT.md`](BINDING_CONTRACT.md)) |
+| `scalable` | no | Opt in to per-node resolution scaling (see below) |
+| `minScale` | no | Lowest scale adaptive demotion may pick: `0.25`, `0.5` (default) or `0.75` |
 
 Tier B `pass` / `nextShader` fields may coexist on the same shader for catalog compatibility; when `graph` is present, the graph runner takes precedence.
 
@@ -143,19 +147,38 @@ Scans `shader_definitions/**/*.json` and regenerates [`src/renderer/multipassReg
 
 - `MULTIPASS_REGISTRY` — Tier B linear chains
 - `GRAPH_REGISTRY` — Tier C graphs keyed by primary shader id
-- `resolveGraphForShader(shaderId)` — graph lookup
+- `resolveGraphForShader(shaderId)` — graph lookup (a [runtime graph](#runtime-graphs) for the id wins)
 
-Wired into `prestart` / `prebuild` alongside `generate_shader_lists.js`.
+Wired into `prestart` / `prebuild` alongside `generate_shader_lists.js`. The work is `buildRegistry({ defsDir, outFile, write })`, exported for tests.
+
+Writing these definitions by hand is optional: the [Graph Lab](GRAPH_LAB.md) authors, validates, runs and exports them.
 
 ## Validation
 
-`validateGraph(graph)` checks:
+`validateGraph(graph)` returns the error strings the frame planner acts on; an invalid graph is reported (`GraphRunReport.errors`) and not encoded. It checks:
 
-- Known texture roles only
+- Known roles only; `simIndex` is never a write target
 - `repeat` ∈ [1, 64]
 - Pass count ≤ `maxPassesPerFrame`
-- Dependency order: no read of a role before it is produced (seed: `dataC` from previous frame)
-- No cyclic dependencies within the expanded dispatch list
+- Every node has an `entry`, and declares reads or writes
+- `minScale` is one of `0.25, 0.5, 0.75, 1`; `simState` dispatches are not `scalable`
+- Dependency order, simulated over the expanded dispatch list: no read of `dataA` / `dataB` before something in the frame produced it (`dataC` is seeded from the previous frame)
+- `knownEntries` (optional): every `entry` is one of the given WGSL ids
+
+`diagnoseGraph(graph, { knownEntries })` is the same pass with structure, for tools. Each diagnostic has a stable `code`, a `severity`, the same message `validateGraph` returns, and `nodeId` / `iteration` / `role` where they apply. Error codes: `max-passes`, `empty-graph`, `pass-budget`, `node-id`, `missing-entry`, `repeat-range`, `invalid-role`, `sim-index-write`, `invalid-dispatch`, `no-io`, `min-scale`, `scalable-sim`, `dependency`, `cycle`.
+
+Nodes run in array order, so a graph cannot contain a cycle in the graph-theory sense. `cycle` is the diagnostic for an unsatisfiable read that is circular: the node waits on a role only it writes, or on a later producer that in turn needs something this node writes. Any other unsatisfiable read is `dependency`.
+
+`diagnoseGraph` also returns **warnings**, which never change what the planner does: `no-color-writer` (nothing reaches the display), `duplicate-node-id` (per-node scale overrides and pass timings key on the node id), `non-integer-repeat`, `ineffective-role` (reading `color`, writing `read` or `dataC`), `unbounded-max-passes` (above 64; presets cap a graph at 4–16).
+
+## Runtime graphs
+
+`runtimeGraphs.ts` is an overlay on the generated registry: `setRuntimeGraph(id, graph | null)` makes `resolveGraphForShader`, `hasGraph` and `getGraphEntryIds` answer for an id that is not in `shader_definitions/`. The [Graph Lab](GRAPH_LAB.md) runs its draft this way (id `graphlab-draft`), so the draft goes through the same planner, pass budgets, truncation and color-writer rules as a shipped graph.
+
+- One overlay per JS realm. The render worker has its own copy, fed by the `setRuntimeGraph` render command; `RendererManager.setRuntimeGraph` sets both.
+- Pass a **new graph object** for every change. Validation, expansion and pass caps are memoised per graph object, so mutating a registered graph in place keeps serving the old plan.
+- A runtime graph wins over a static one with the same id; `null` restores the static graph.
+- TS WebGPU only. Sim-ring graphs need `simRing` from a definition and are not supported through the overlay.
 
 ## Reference implementations
 
