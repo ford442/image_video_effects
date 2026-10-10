@@ -27,7 +27,7 @@ function ctx(overrides: Partial<FramePlanContext> = {}): FramePlanContext {
 }
 
 function slot(index: number, program: SlotDispatchPlan['program'], mode: 'chained' | 'parallel' = 'chained'): SlotDispatchPlan {
-  const shaderId = program.kind === 'chain' ? program.shaderIds[0] : `graph-${index}`;
+  const shaderId = program.kind === 'chain' ? program.shaderIds[0] ?? null : `graph-${index}`;
   return {
     slot: { shaderId, enabled: true, mode, params: [0.5, 0.5, 0.5, 0.5] },
     slotIndex: index,
@@ -112,7 +112,7 @@ describe('compileFramePlan', () => {
     const bad: MultipassGraphDef = { maxPassesPerFrame: 0, nodes: [] };
     const fp = compileFramePlan(plan([slot(0, graph(bad))]), ctx({ warn }));
     expect(fp.computeCount).toBe(0);
-    expect(fp.graphReports[0].errors.length).toBeGreaterThan(0);
+    expect(fp.graphReports[0]!.errors.length).toBeGreaterThan(0);
     expect(warn).toHaveBeenCalledTimes(1);
   });
 });

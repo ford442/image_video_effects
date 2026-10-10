@@ -69,7 +69,7 @@ function fakeDir(name: string, tree: FakeTree): unknown {
         tree[child] = {};
       }
       const sub = tree[child];
-      if (typeof sub === 'string') throw new DOMException('not a dir', 'TypeMismatchError');
+      if (sub === undefined || typeof sub === 'string') throw new DOMException('not a dir', 'TypeMismatchError');
       return fakeDir(child, sub);
     },
     async getFileHandle(file: string, opts?: { create?: boolean }) {

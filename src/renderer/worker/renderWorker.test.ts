@@ -230,7 +230,7 @@ describe('render worker host ↔ client', () => {
     });
     await flushPorts();
     expect(fake.calls.map(([name]) => name)).toEqual(['updateMouse', 'setParam', 'setSlotParams', 'clearRipples', 'addRipple']);
-    expect(fake.calls[2][1]).toEqual([2, 0.1, 0.2, 0.3, 0.4]);
+    expect(fake.calls[2]![1]).toEqual([2, 0.1, 0.2, 0.3, 0.4]);
   });
 
   it('drains the SAB input ring before every frame when the page shares memory', async () => {

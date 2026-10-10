@@ -38,7 +38,7 @@ describe('vjSetExport', () => {
       chainString,
       savedAt: Date.now(),
     }));
-    expect(parsed?.chain.slots[0].shaderId).toBe('liquid-metal');
+    expect(parsed?.chain.slots[0]?.shaderId).toBe('liquid-metal');
   });
 });
 
@@ -79,7 +79,7 @@ describe('layerChainShare — 6-slot full param stress', () => {
 
     for (let i = 0; i < 6; i++) {
       for (const key of ALL_PARAM_KEYS) {
-        expect(expanded.slotParams[i][key]).toBeCloseTo(slotParams[i][key], 5);
+        expect(expanded.slotParams[i]![key]).toBeCloseTo(slotParams[i]![key], 5);
       }
     }
 

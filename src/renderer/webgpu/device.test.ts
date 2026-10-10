@@ -382,7 +382,7 @@ describe('attachDeviceLostHandler', () => {
     expect(onLost).toHaveBeenCalledWith({ reason: 'unknown', message: 'driver reset' });
     expect(context.unconfigure).toHaveBeenCalled();
     expect(errors).toEqual([expect.objectContaining({ type: 'device-lost', recoverable: true })]);
-    expect(errors[0].message).not.toMatch(/reload/i);
+    expect(errors[0]!.message).not.toMatch(/reload/i);
   });
 
   it('a destroy is silent and leaves the (possibly reused) context alone', async () => {

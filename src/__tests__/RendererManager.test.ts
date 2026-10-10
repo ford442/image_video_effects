@@ -666,7 +666,7 @@ describe('RendererManager shader forwarding', () => {
     const switched = await manager.switchRenderer('wasm');
     expect(switched).toBe(false);
     // First WebGPU destroyed for exclusive release; second created to restore.
-    expect(webgpuInstances[0].destroy).toHaveBeenCalled();
+    expect(webgpuInstances[0]!.destroy).toHaveBeenCalled();
     expect(webgpuInitCount).toBe(2);
     expect(manager.getActiveRendererType()).toBe('webgpu');
   });
