@@ -153,8 +153,27 @@ function verifyDeepWorkgroupLimits() {
   }
 }
 
+// bufferSizeLimits: TS requests the adapter's value above the floor so the 2048
+// working-size gate (maxBufferSize >= 1 GiB) can pass. C++ deliberately does not
+// mirror it (WASM R&D freeze); the contract must say so explicitly.
+function verifyBufferSizeLimits() {
+  const floors = contract.bufferSizeLimits;
+  if (!floors) return;
+  if (contract.cppMirror?.bufferSizeLimits !== false || !contract.notes?.bufferSizeLimits) {
+    fail('webgpu_limits.json bufferSizeLimits needs cppMirror.bufferSizeLimits: false and a notes.bufferSizeLimits reason');
+  }
+  const ts = fs.readFileSync(TS_POLICY, 'utf8');
+  if (!/webgpuLimitsContract\.bufferSizeLimits/.test(ts) || !/\.\.\.bufferSizeRequest\(adapterLimits\)/.test(ts)) {
+    fail('webgpuDevicePolicy.ts buildRequiredLimits must spread bufferSizeRequest(adapterLimits) built from webgpuLimitsContract.bufferSizeLimits');
+  }
+  for (const key of Object.keys(floors)) {
+    if (!ts.includes(`'${key}'`)) fail(`webgpuDevicePolicy.ts bufferSizeRequest must request ${key}`);
+  }
+}
+
 if (!ONLY_WASM_INVARIANTS) {
   verifyDeepWorkgroupLimits();
+  verifyBufferSizeLimits();
 }
 
 function verifyOptionalFeatures() {

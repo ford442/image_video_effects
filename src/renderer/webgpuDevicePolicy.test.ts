@@ -1,6 +1,7 @@
 import {
   assertAdapterMeetsContract,
   buildRequiredLimits,
+  BUFFER_SIZE_LIMIT_FLOORS,
   DEEP_WORKGROUP_LIMITS,
   meetsDeepWorkgroupLimits,
   MINIMUM_COMPUTE_LIMITS,
@@ -106,6 +107,27 @@ describe('webgpuDevicePolicy', () => {
         });
       }
       expect(meetsDeepWorkgroupLimits(narrowY)).toBe(false);
+    });
+
+    it('requests the adapter buffer-size limits so the 2048 gate can see them (#1395)', () => {
+      const fat = makeLimits({ maxBufferSize: 4294967296, maxStorageBufferBindingSize: 2147483648 });
+      expect(buildRequiredLimits(1920, fat)).toMatchObject({
+        maxBufferSize: 4294967296,
+        maxStorageBufferBindingSize: 2147483648,
+      });
+    });
+
+    it('leaves buffer-size limits at the spec default when the adapter offers no more', () => {
+      expect(BUFFER_SIZE_LIMIT_FLOORS).toEqual({
+        maxBufferSize: 268435456,
+        maxStorageBufferBindingSize: 134217728,
+      });
+      const base = makeLimits({ maxBufferSize: 268435456, maxStorageBufferBindingSize: 134217728 });
+      for (const limits of [base, undefined]) {
+        const required = buildRequiredLimits(1920, limits)!;
+        expect(required).not.toHaveProperty('maxBufferSize');
+        expect(required).not.toHaveProperty('maxStorageBufferBindingSize');
+      }
     });
 
     it('does not canvas-scale maxTextureDimension2D (no pointer / pixel-count need)', () => {

@@ -56,6 +56,7 @@ import {
 import { HISTORY_DEPTH, ShaderSlot, SlotMode, WG_SIZE_X, WG_SIZE_Y, WG_SIZE_1D } from './webgpu/webgpuConstants';
 import type { InternalColorFormat } from '../config/formatPolicy';
 import { DEFAULT_FORMAT_CAPABILITIES, DeviceFormatCapabilities, inferRequiresRgba32Float } from '../config/formatPolicy';
+import { UNKNOWN_ADAPTER_IDENTITY, type AdapterIdentity } from '../config/adapterIdentity';
 import { allowsFullWorkingSize, HISTORY_FULL_WORKING_SIZE, HISTORY_SAFE_WORKING_SIZE, persistHistoryOomCap } from '../config/vramBudget';
 import { graphRunner } from './GraphRunner';
 import { GpuChoresHost } from '../gpuChores';
@@ -152,6 +153,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   /** Adapter identity from the init ladder — surfaced in diagnostics for Tier B evidence. */
   private adapterSummary = '';
   private adapterAttemptLabel: string | null = null;
+  private adapterIdentity: AdapterIdentity = UNKNOWN_ADAPTER_IDENTITY;
   private formatCapabilities = DEFAULT_FORMAT_CAPABILITIES;
   private releasingDevice = false;
   private detachUncapturedErrors: (() => void) | null = null;
@@ -214,6 +216,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       this.formatCapabilities = outcome.formatCapabilities;
       this.adapterSummary = outcome.adapterSummary ?? '';
       this.adapterAttemptLabel = outcome.adapterAttemptLabel ?? null;
+      this.adapterIdentity = outcome.adapterIdentity ?? UNKNOWN_ADAPTER_IDENTITY;
 
       const device = outcome.device;
       attachDeviceLostHandler(device, outcome.context, () => {
@@ -351,7 +354,10 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       maxBufferSize: d.limits?.maxBufferSize ?? 0,
       adapterGpuType: this.formatCapabilities.adapterGpuType,
       adapterSummary: this.adapterSummary,
-      isFallbackAdapter: (this.adapterAttemptLabel ?? '').includes('forceFallback'),
+      adapterIdentity: this.adapterIdentity,
+      isFallbackAdapter:
+        this.adapterIdentity.isFallbackAdapter
+        || (this.adapterAttemptLabel ?? '').includes('forceFallback'),
     };
     if (allowsFullWorkingSize(gate)) {
       const upgraded = await this.tryUpgradeToFullWorkingSize(d, colorFormat, allocated.layers);
@@ -446,7 +452,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     }
   }
 
-  /** Adapter identity string (vendor | architecture | device | description), '' before init. */
+  /** Probe summary: attempt, adapter identity, limits, features, formats; '' before init. */
   getAdapterSummary(): string {
     return this.adapterSummary;
   }

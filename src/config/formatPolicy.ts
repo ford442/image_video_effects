@@ -3,6 +3,7 @@
  * Keep numeric / enum mapping in sync with wasm_renderer/performance_policy.h.
  */
 
+import { inferAdapterGpuType, readAdapterIdentity } from './adapterIdentity';
 import type { RenderQualityMode } from './performancePolicy';
 
 export type InternalColorFormat = 'rgba32float' | 'rgba16float';
@@ -111,24 +112,6 @@ export function estimateInternalTextureMiB(
   return Math.round((bytes / (1024 * 1024)) * 10) / 10;
 }
 
-export function parseAdapterGpuType(
-  adapterType: string | undefined,
-): AdapterGpuType {
-  switch (adapterType) {
-    case 'discrete':
-    case 'DiscreteGPU':
-      return 'discrete';
-    case 'integrated':
-    case 'IntegratedGPU':
-      return 'integrated';
-    case 'cpu':
-    case 'CPU':
-      return 'cpu';
-    default:
-      return 'unknown';
-  }
-}
-
 export interface FormatProbeOptions {
   isMobile?: boolean;
   /** Boot-probe GPUDevice — same requestDevice; never a second device. */
@@ -180,9 +163,7 @@ export function probeFormatCapabilities(
   }
 
   return {
-    adapterGpuType: parseAdapterGpuType(
-      (adapter.info as GPUAdapterInfo & { adapterType?: string })?.adapterType,
-    ),
+    adapterGpuType: inferAdapterGpuType(readAdapterIdentity(adapter)),
     isMobile,
     supportsRgba32FloatStorage,
     supportsRgba16FloatStorage,
