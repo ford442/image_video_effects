@@ -7,6 +7,7 @@
 //  Ideas: wipe-front ramp; shutter-weighted comet kernel; long-exposure highlight streaks
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
+
 #include "_prelude.wgsl"
 
 fn bass_env(bass: f32, mids: f32) -> f32 {

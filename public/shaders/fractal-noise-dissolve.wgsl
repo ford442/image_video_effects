@@ -7,6 +7,8 @@
 //  Ideas: heat-shimmer refraction; scorch band; fractal pinholes
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
+//  Upgraded: 2026-08-01 (Batch 23)
+// ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 
 fn hash22(p: vec2<f32>) -> vec2<f32> {
