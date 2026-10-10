@@ -23702,7 +23702,12 @@
     "updated": true,
     "id": "gen-lichtenberg-storm",
     "url": "shaders/gen-lichtenberg-storm.wgsl",
-    "features": []
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "upgraded-rgba"
+    ]
   },
   {
     "id": "gen-liquid-cathedral-dream",
@@ -23951,7 +23956,7 @@
     "updatedParams": [
       {
         "index": 0,
-        "name": "Intensity",
+        "name": "Neon Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -23959,7 +23964,7 @@
       },
       {
         "index": 1,
-        "name": "Speed",
+        "name": "City Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -23967,7 +23972,7 @@
       },
       {
         "index": 2,
-        "name": "Scale",
+        "name": "Audio Reactivity",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -23975,7 +23980,7 @@
       },
       {
         "index": 3,
-        "name": "Mouse Influence",
+        "name": "Gravity Warp",
         "default": 0.5,
         "min": 0,
         "max": 1,

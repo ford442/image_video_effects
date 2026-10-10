@@ -62,5 +62,10 @@
   "updated": true,
   "id": "gen-lichtenberg-storm",
   "url": "shaders/gen-lichtenberg-storm.wgsl",
-  "features": []
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "temporal",
+    "upgraded-rgba"
+  ]
 }
