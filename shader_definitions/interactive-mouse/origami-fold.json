@@ -12,7 +12,7 @@
       "min": 0,
       "max": 0.5,
       "step": 0.01,
-      "param": "zoom_params.x"
+      "mapping": "zoom_params.x"
     },
     {
       "id": "shadowStrength",
@@ -21,7 +21,7 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "param": "zoom_params.y"
+      "mapping": "zoom_params.y"
     },
     {
       "id": "angle",
@@ -30,7 +30,7 @@
       "min": 0,
       "max": 6.28,
       "step": 0.01,
-      "param": "zoom_params.z"
+      "mapping": "zoom_params.z"
     },
     {
       "id": "paperOpacity",
@@ -39,7 +39,7 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "param": "zoom_params.w"
+      "mapping": "zoom_params.w"
     }
   ],
   "features": [
@@ -61,40 +61,44 @@
     "mountain-valley",
     "Kawasaki-Justin"
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Fold Speed",
-      "default": 0.1,
-      "min": 0,
-      "max": 0.5,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Shadow Strength",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Fold Angle",
-      "default": 0,
-      "min": 0,
-      "max": 6.28,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Paper Opacity",
-      "default": 0.1,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
-  ],
   "feedbackPacking": "A/C = ACES display RGBA",
-  "updated": true
+  "updated": true,
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Fold Speed",
+          "default": 0.1,
+          "min": 0,
+          "max": 0.5,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Shadow Strength",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Fold Angle",
+          "default": 0,
+          "min": 0,
+          "max": 6.28,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Paper Opacity",
+          "default": 0.1,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

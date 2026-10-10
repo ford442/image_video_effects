@@ -325,7 +325,7 @@ The following MUST NOT be changed:
 1. The \`#include "_prelude.wgsl"\` line. Never paste binding declarations or \`struct Uniforms\` back in.
 2. The engine's \`Uniforms\` meanings (see below): do not repurpose fields.
 3. \`@workgroup_size\` unless the shader already uses shared memory or explicit local_invocation_id math.
-4. Saved JSON \`params\` (ids, names, defaults, min/max/step, mapping). Align \`updatedParams\` additively only.
+4. Saved JSON \`params\` (ids, names, defaults, min/max/step, mapping). Align \`x-meta.upgrade.params\` additively only.
 5. Do NOT install new npm packages.
 6. Do NOT modify Renderer.ts, types.ts, or bind groups.
 7. Do NOT stamp a spring + ripple + IQ-palette overlay unless this effect already lives under the pointer.

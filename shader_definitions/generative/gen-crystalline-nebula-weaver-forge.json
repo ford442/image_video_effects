@@ -22,42 +22,38 @@
     {
       "id": "folding_complexity",
       "name": "Folding Complexity",
-      "type": "slider",
       "default": 0.5,
       "min": 0.0,
       "max": 1.0,
       "step": 0.01,
-      "mapping": "u.zoom_params.x"
+      "mapping": "zoom_params.x"
     },
     {
       "id": "nebula_density",
       "name": "Nebula Density",
-      "type": "slider",
       "default": 0.5,
       "min": 0.0,
       "max": 1.0,
       "step": 0.01,
-      "mapping": "u.zoom_params.y"
+      "mapping": "zoom_params.y"
     },
     {
       "id": "crystal_refraction",
       "name": "Crystal Refraction",
-      "type": "slider",
       "default": 0.5,
       "min": 0.0,
       "max": 1.0,
       "step": 0.01,
-      "mapping": "u.zoom_params.z"
+      "mapping": "zoom_params.z"
     },
     {
       "id": "core_pulse_speed",
       "name": "Core Pulse Speed",
-      "type": "slider",
       "default": 0.5,
       "min": 0.0,
       "max": 1.0,
       "step": 0.01,
-      "mapping": "u.zoom_params.w"
+      "mapping": "zoom_params.w"
     }
   ]
 }

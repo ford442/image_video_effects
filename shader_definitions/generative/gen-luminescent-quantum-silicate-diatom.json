@@ -4,40 +4,6 @@
   "category": "generative",
   "url": "shaders/gen-luminescent-quantum-silicate-diatom.wgsl",
   "description": "A hyper-detailed, microscopic journey into a living quantum silicate organism, where crystalline structures pulse with bioluminescent energy and fold through higher dimensions.",
-  "parameters": [
-    {
-      "name": "Pore Density",
-      "type": "range",
-      "default": 0.5,
-      "min": 0.1,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "name": "Pulse Speed",
-      "type": "range",
-      "default": 0.2,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "name": "Iridescence Spread",
-      "type": "range",
-      "default": 0.4,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "name": "Bioluminescence Shift",
-      "type": "range",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    }
-  ],
   "params": [
     {
       "id": "poreDensity",
@@ -76,39 +42,83 @@
       "step": 0.01
     }
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Pore Density",
-      "default": 0.5,
-      "min": 0.1,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Pulse Speed",
-      "default": 0.2,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Iridescence Spread",
-      "default": 0.4,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Bioluminescence Shift",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    }
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
   ],
-  "features": ["audio-reactive", "mouse-driven", "upgraded-rgba"]
+  "x-meta": {
+    "legacy": {
+      "parameters": [
+        {
+          "name": "Pore Density",
+          "type": "range",
+          "default": 0.5,
+          "min": 0.1,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "name": "Pulse Speed",
+          "type": "range",
+          "default": 0.2,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "name": "Iridescence Spread",
+          "type": "range",
+          "default": 0.4,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "name": "Bioluminescence Shift",
+          "type": "range",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
+    },
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Pore Density",
+          "default": 0.5,
+          "min": 0.1,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Pulse Speed",
+          "default": 0.2,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Iridescence Spread",
+          "default": 0.4,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Bioluminescence Shift",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

@@ -4,13 +4,21 @@
   "url": "shaders/neon-pulse-dissolve.wgsl",
   "category": "image",
   "description": "Audio-reactive neon edge dissolve with smooth traveling scan packets, held-pointer energy, bounded click fronts, and continuously advected luminous noise.",
-  "tags": ["neon", "glow", "edge", "dissolve", "audio-reactive", "cinematic"],
-  "features": ["audio-reactive", "upgraded-rgba", "semantic-alpha", "mouse-driven", "click-reactive", "fast-motion"],
-  "updatedParams": [
-    { "index": 0, "name": "Glow Radius", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 1, "name": "Dissolve Amount", "default": 0.2, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 2, "name": "Neon Saturation", "default": 0.7, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 3, "name": "Edge Sharpness", "default": 0.4, "min": 0, "max": 1, "step": 0.01 }
+  "tags": [
+    "neon",
+    "glow",
+    "edge",
+    "dissolve",
+    "audio-reactive",
+    "cinematic"
+  ],
+  "features": [
+    "audio-reactive",
+    "upgraded-rgba",
+    "semantic-alpha",
+    "mouse-driven",
+    "click-reactive",
+    "fast-motion"
   ],
   "params": [
     {
@@ -45,5 +53,43 @@
       "max": 1,
       "step": 0.01
     }
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Glow Radius",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Dissolve Amount",
+          "default": 0.2,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Neon Saturation",
+          "default": 0.7,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Edge Sharpness",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

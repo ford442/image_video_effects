@@ -16,43 +16,41 @@
     1
   ],
   "params": [
-    {"id": "rainDensity", "name": "Rain Density", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x"},
-    {"id": "dropSpeed", "name": "Drop Speed", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y"},
-    {"id": "fluidViscosity", "name": "Fluid Viscosity", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z"},
-    {"id": "stormIntensity", "name": "Storm Intensity", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w"}
-  ],
-  "updatedParams": [
     {
-      "index": 0,
+      "id": "rainDensity",
       "name": "Rain Density",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x"
     },
     {
-      "index": 1,
+      "id": "dropSpeed",
       "name": "Drop Speed",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y"
     },
     {
-      "index": 2,
+      "id": "fluidViscosity",
       "name": "Fluid Viscosity",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z"
     },
     {
-      "index": 3,
+      "id": "stormIntensity",
       "name": "Storm Intensity",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w"
     }
   ],
   "supportsDepth": true,
@@ -60,6 +58,56 @@
   "updated": true,
   "id": "gen-hyper-refractive-rain-matrix",
   "url": "shaders/gen-hyper-refractive-rain-matrix.wgsl",
-  "features": ["raymarched", "audio-reactive", "mouse-interactive", "ripple-reactive", "temporal-feedback", "semantic-alpha", "aces-tone-mapping", "depth-aware", "input-depth-aware", "mouse-driven", "upgraded-rgba"],
-  "feedbackPacking": "A/C = raw HDR refractive rain display RGBA history"
+  "features": [
+    "raymarched",
+    "audio-reactive",
+    "mouse-interactive",
+    "ripple-reactive",
+    "temporal-feedback",
+    "semantic-alpha",
+    "aces-tone-mapping",
+    "depth-aware",
+    "input-depth-aware",
+    "mouse-driven",
+    "upgraded-rgba"
+  ],
+  "feedbackPacking": "A/C = raw HDR refractive rain display RGBA history",
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Rain Density",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Drop Speed",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Fluid Viscosity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Storm Intensity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

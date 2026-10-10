@@ -6,7 +6,6 @@
   "params": [
     {
       "name": "Ripple Speed",
-      "type": "float",
       "min": 0,
       "max": 1,
       "default": 0.5,
@@ -14,7 +13,6 @@
     },
     {
       "name": "Color Split",
-      "type": "float",
       "min": 0,
       "max": 1,
       "default": 0.5,
@@ -22,7 +20,6 @@
     },
     {
       "name": "Glow Intensity",
-      "type": "float",
       "min": 0,
       "max": 1,
       "default": 0.5,
@@ -30,7 +27,6 @@
     },
     {
       "name": "Frequency",
-      "type": "float",
       "min": 0,
       "max": 1,
       "default": 0.5,

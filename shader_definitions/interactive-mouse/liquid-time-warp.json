@@ -23,7 +23,6 @@
   "params": [
     {
       "name": "Distortion",
-      "type": "float",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -31,7 +30,6 @@
     },
     {
       "name": "Flow Speed",
-      "type": "float",
       "default": 0.3,
       "min": 0,
       "max": 1,
@@ -39,7 +37,6 @@
     },
     {
       "name": "Scale",
-      "type": "float",
       "default": 0.4,
       "min": 0,
       "max": 1,
@@ -47,7 +44,6 @@
     },
     {
       "name": "Decay",
-      "type": "float",
       "default": 0.8,
       "min": 0,
       "max": 1,
@@ -63,42 +59,46 @@
     "flow"
   ],
   "name": "Liquid Time Warp",
-  "updatedParams": [
-    {
-      "name": "Distortion",
-      "type": "float",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "id": "distortion",
-      "description": "Advection distance per frame; bass adds up to +50%."
-    },
-    {
-      "name": "Flow Speed",
-      "type": "float",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "id": "flow_speed",
-      "description": "Drift rate of the curl-noise octaves."
-    },
-    {
-      "name": "Scale",
-      "type": "float",
-      "default": 0.4,
-      "min": 0,
-      "max": 1,
-      "id": "scale",
-      "description": "Base spatial frequency of the flow field."
-    },
-    {
-      "name": "Decay",
-      "type": "float",
-      "default": 0.8,
-      "min": 0,
-      "max": 1,
-      "id": "decay",
-      "description": "History retention before wipes are applied."
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "name": "Distortion",
+          "type": "float",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "id": "distortion",
+          "description": "Advection distance per frame; bass adds up to +50%."
+        },
+        {
+          "name": "Flow Speed",
+          "type": "float",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "id": "flow_speed",
+          "description": "Drift rate of the curl-noise octaves."
+        },
+        {
+          "name": "Scale",
+          "type": "float",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "id": "scale",
+          "description": "Base spatial frequency of the flow field."
+        },
+        {
+          "name": "Decay",
+          "type": "float",
+          "default": 0.8,
+          "min": 0,
+          "max": 1,
+          "id": "decay",
+          "description": "History retention before wipes are applied."
+        }
+      ]
     }
-  ]
+  }
 }

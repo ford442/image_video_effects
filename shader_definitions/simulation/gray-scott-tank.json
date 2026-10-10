@@ -8,9 +8,38 @@
     "graph": {
       "maxPassesPerFrame": 8,
       "nodes": [
-        { "id": "step", "entry": "gray-scott-step", "reads": ["dataC"], "writes": ["dataA"], "repeat": 4 },
-        { "id": "inject", "entry": "gray-scott-inject", "reads": ["dataC"], "writes": ["dataA"] },
-        { "id": "render", "entry": "gray-scott-render", "reads": ["dataC"], "writes": ["color", "dataA"] }
+        {
+          "id": "step",
+          "entry": "gray-scott-step",
+          "reads": [
+            "dataC"
+          ],
+          "writes": [
+            "dataA"
+          ],
+          "repeat": 4
+        },
+        {
+          "id": "inject",
+          "entry": "gray-scott-inject",
+          "reads": [
+            "dataC"
+          ],
+          "writes": [
+            "dataA"
+          ]
+        },
+        {
+          "id": "render",
+          "entry": "gray-scott-render",
+          "reads": [
+            "dataC"
+          ],
+          "writes": [
+            "color",
+            "dataA"
+          ]
+        }
       ]
     }
   },
@@ -56,12 +85,6 @@
       "description": "Hold-paint and click seed amplitude"
     }
   ],
-  "updatedParams": [
-    { "index": 0, "name": "Feed", "default": 0.42, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 1, "name": "Kill", "default": 0.55, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 2, "name": "Diffusion", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 3, "name": "Seed Strength", "default": 0.65, "min": 0, "max": 1, "step": 0.01 }
-  ],
   "feedbackPacking": "A/C = Gray-Scott U, V, reaction age, seed mask; six graph dispatches use A-only handoffs",
   "features": [
     "simulation",
@@ -70,7 +93,13 @@
     "physics",
     "mouse-driven",
     "audio-reactive",
-    "interactive", "exact-load-feedback", "a-only-feedback", "held-seeding", "click-seeding", "aces-tone-map", "semantic-alpha"
+    "interactive",
+    "exact-load-feedback",
+    "a-only-feedback",
+    "held-seeding",
+    "click-seeding",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
   "tags": [
     "reaction-diffusion",
@@ -78,5 +107,43 @@
     "simulation",
     "physics",
     "showcase"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Feed",
+          "default": 0.42,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Kill",
+          "default": 0.55,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Diffusion",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Seed Strength",
+          "default": 0.65,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

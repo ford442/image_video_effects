@@ -27,7 +27,11 @@
     "glow",
     "noise"
   ],
-  "workgroup_size": [16, 16, 1],
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
   "params": [
     {
       "id": "fbm_scale",
@@ -72,9 +76,11 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "chunks_used": [
-    "fbm2 (gen_grid.wgsl)",
-    "iridescence (gen-holographic-fracture.wgsl)"
-  ],
-  "updated": true
+  "updated": true,
+  "x-meta": {
+    "chunks_used": [
+      "fbm2 (gen_grid.wgsl)",
+      "iridescence (gen-holographic-fracture.wgsl)"
+    ]
+  }
 }

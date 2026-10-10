@@ -25,7 +25,6 @@
       {
         "id": "brushSize",
         "name": "Brush Size",
-        "type": "float",
         "default": 0.3,
         "min": 0,
         "max": 1,
@@ -34,7 +33,6 @@
       {
         "id": "paintSaturation",
         "name": "Paint Saturation",
-        "type": "float",
         "default": 0.7,
         "min": 0,
         "max": 1,
@@ -43,7 +41,6 @@
       {
         "id": "specularPower",
         "name": "Specular Power",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -51,41 +48,6 @@
       },
       {
         "id": "dryingRate",
-        "name": "Drying Rate",
-        "type": "float",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Brush Size",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Paint Saturation",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Specular Power",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
         "name": "Drying Rate",
         "default": 0.2,
         "min": 0,
@@ -120,7 +82,6 @@
       {
         "id": "dryRate",
         "name": "Drying Rate",
-        "type": "float",
         "default": 0.3,
         "min": 0,
         "max": 1,
@@ -129,7 +90,6 @@
       {
         "id": "pigmentDeposit",
         "name": "Pigment Deposit",
-        "type": "float",
         "default": 0.6,
         "min": 0,
         "max": 1,
@@ -138,7 +98,6 @@
       {
         "id": "waterCapacity",
         "name": "Water Capacity",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -146,41 +105,6 @@
       },
       {
         "id": "flowStrength",
-        "name": "Flow Strength",
-        "type": "float",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Drying Rate",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Pigment Deposit",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Water Capacity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
         "name": "Flow Strength",
         "default": 0.4,
         "min": 0,
@@ -270,49 +194,7 @@
     ],
     "supportsDepth": true,
     "supportsDof": false,
-    "updated": true,
-    "updatedParams": [
-      {
-        "id": "viscosity",
-        "name": "Flow Viscosity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x",
-        "description": "Curl displacement scale; higher damps the flow (zoom_params.x)."
-      },
-      {
-        "id": "turbulence",
-        "name": "Turbulence",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.y",
-        "description": "Noise frequency of the curl and FBM fields (zoom_params.y)."
-      },
-      {
-        "id": "ripple_strength",
-        "name": "Ripple / Feed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.z",
-        "description": "Click ripple strength; also biases the Gray-Scott feed rate (zoom_params.z)."
-      },
-      {
-        "id": "color_shift",
-        "name": "Hue / Kill",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Hue rotation; also biases the Gray-Scott kill rate (zoom_params.w)."
-      }
-    ]
+    "updated": true
   },
   {
     "id": "anisotropic-kuwahara",
@@ -455,41 +337,6 @@
       },
       {
         "id": "impasto_strength",
-        "name": "Impasto Strength",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      }
-    ],
-    "target_rating": 4.5,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Brush Size",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "index": 1,
-        "name": "Paint Wetness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "index": 2,
-        "name": "Color Levels",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "index": 3,
         "name": "Impasto Strength",
         "default": 0.3,
         "min": 0,
@@ -741,40 +588,6 @@
         "step": 0.01
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Depth Weight",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Turbulence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = ACES display RGBA for restrained curtain persistence; B is unused; source depth passes through."
   },
   {
@@ -923,40 +736,6 @@
       "audio",
       "music",
       "reactive"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Spread Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Branch Density",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Glow Intensity",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Spore Count",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ],
     "feedbackPacking": "A/C = growth, 0, 0, 1. ACES display only.",
     "updated": true
@@ -1430,7 +1209,6 @@
       "mouse-driven",
       "audio-reactive"
     ],
-    "author": "AI",
     "params": [
       {
         "id": "speed_of_the_temporal_phase_oscillation_per_channel",
@@ -1517,40 +1295,6 @@
     "tags": [
       "simulation",
       "physics"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Red Viscosity",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Green Viscosity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Blue Viscosity",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Temperature",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -1659,8 +1403,7 @@
         "max": 1,
         "step": 0.1
       }
-    ],
-    "target_rating": 4.7
+    ]
   },
   {
     "id": "dla-crystals",
@@ -1809,40 +1552,6 @@
       "reactive",
       "film",
       "double-exposure"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Rotation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Zoom Level",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Edge Fade",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Audio Reactivity",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -1852,36 +1561,6 @@
     "description": "4D Kalman mouse estimator with covariance-driven Mahalanobis dashed trails, held brush tightening, capped click spark echoes, oil-slick psychedelic tint, exact-load C feedback, and ACES display. Kalman state lives in extraBuffer[133..141].",
     "updated": true,
     "params": [
-      {
-        "id": "prediction_horizon",
-        "name": "Prediction Horizon",
-        "default": 0.35,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "velocity_smoothing",
-        "name": "Velocity Smoothing",
-        "default": 0.55,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "trail_deformation",
-        "name": "Trail Deformation",
-        "default": 0.45,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "velocity_threshold",
-        "name": "Velocity Threshold",
-        "default": 0.15,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "updatedParams": [
       {
         "id": "prediction_horizon",
         "name": "Prediction Horizon",
@@ -1993,40 +1672,6 @@
         "min": 0,
         "max": 1
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Brush Scale",
-        "default": 0.35,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Melt Intensity",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Pigment Deposit",
-        "default": 0.55,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Relief",
-        "default": 0.45,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -2052,40 +1697,6 @@
       "audio-reactive",
       "cross-hatch",
       "copperplate"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Line Density",
-        "default": 0.45,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Stipple Scale",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Contrast",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Light Rotation",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ],
     "params": [
       {
@@ -2161,40 +1772,6 @@
       "mouse-driven",
       "upgraded-rgba"
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Stiffness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Tear Threshold",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Gravity",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Damping",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "tags": [
       "simulation",
       "physics"
@@ -2259,40 +1836,6 @@
       }
     ],
     "coordinate": 891,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Contrast Punch",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Colour Skew",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Film Grain",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Vignette",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -2459,40 +2002,6 @@
         "step": 0.01
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Trail Decay",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Flow Intensity",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Turbulence",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Feedback Mix",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -2569,45 +2078,6 @@
         "max": 1,
         "step": 0.1
       }
-    ],
-    "target_rating": 4.8,
-    "updatedParams": [
-      {
-        "id": "param1",
-        "name": "Transparency",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.1,
-        "description": "Base transmission of the glass body (maps to zoom_params.x)."
-      },
-      {
-        "id": "param2",
-        "name": "Dispersion",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.1,
-        "description": "Cauchy B coefficient — the width of the wavelength spread (zoom_params.y)."
-      },
-      {
-        "id": "param3",
-        "name": "Thickness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.1,
-        "description": "Beer-Lambert absorption scale over the interior path (zoom_params.z)."
-      },
-      {
-        "id": "param4",
-        "name": "Roughness",
-        "default": 0.1,
-        "min": 0,
-        "max": 1,
-        "step": 0.1,
-        "description": "Surface roughness; softens the specular (zoom_params.w)."
-      }
     ]
   },
   {
@@ -2657,40 +2127,6 @@
     "tags": [
       "filter",
       "image-processing"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Trail Length",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Glow Intensity",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Green Tint",
-        "default": 0.8,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Film Grain",
-        "default": 0.1,
-        "min": 0,
-        "max": 0.5,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -2702,7 +2138,6 @@
     "params": [
       {
         "name": "Dot Size",
-        "type": "f32",
         "min": 0,
         "max": 1,
         "default": 0.3,
@@ -2710,7 +2145,6 @@
       },
       {
         "name": "Angle",
-        "type": "f32",
         "min": 0,
         "max": 1,
         "default": 0.5,
@@ -2718,7 +2152,6 @@
       },
       {
         "name": "Reveal Size",
-        "type": "f32",
         "min": 0,
         "max": 1,
         "default": 0.4,
@@ -2726,7 +2159,6 @@
       },
       {
         "name": "Magnify",
-        "type": "f32",
         "min": 0,
         "max": 1,
         "default": 0.3,
@@ -2737,36 +2169,6 @@
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Dot Size",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 1,
-        "name": "Angle",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 2,
-        "name": "Reveal Size",
-        "default": 0.4,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 3,
-        "name": "Magnify",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      }
     ],
     "tags": [
       "halftone",
@@ -2833,40 +2235,6 @@
         "default": 0.8,
         "min": 0,
         "max": 1
-      }
-    ],
-    "updatedParams": [
-      {
-        "id": "threshold",
-        "name": "Halftone Dot Size",
-        "default": 0.1,
-        "min": 0.01,
-        "max": 0.5,
-        "description": "Halftone cell pitch in pixels (maps to zoom_params.x)."
-      },
-      {
-        "id": "glow_strength",
-        "name": "Edge Threshold",
-        "default": 2,
-        "min": 0,
-        "max": 5,
-        "description": "Sobel magnitude required to register a contour (maps to zoom_params.y)."
-      },
-      {
-        "id": "shift_amount",
-        "name": "Posterize Levels",
-        "default": 0.05,
-        "min": 0,
-        "max": 0.2,
-        "description": "Number of quantisation levels for the base colour (maps to zoom_params.z)."
-      },
-      {
-        "id": "dim_bg",
-        "name": "Ink Density",
-        "default": 0.8,
-        "min": 0,
-        "max": 1,
-        "description": "Contour and halftone ink coverage (maps to zoom_params.w)."
       }
     ],
     "tags": [
@@ -2944,36 +2312,6 @@
       "sumi-e",
       "hdr-specular",
       "aces-tone-mapping"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Spread Rate",
-        "default": 0.4,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 1,
-        "name": "Ink Decay",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 2,
-        "name": "Turbulence",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 3,
-        "name": "Ink Density",
-        "default": 0.6,
-        "min": 0,
-        "max": 1
-      }
     ]
   },
   {
@@ -3037,42 +2375,7 @@
         "max": 1,
         "step": 0.1
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Diffusion",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "index": 1,
-        "name": "Viscosity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "index": 2,
-        "name": "Intensity",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "index": 3,
-        "name": "Reaction",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      }
-    ],
-    "target_rating": 4.7
+    ]
   },
   {
     "id": "ion-stream",
@@ -3120,40 +2423,6 @@
         "max": 1
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Stream Speed",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Curl Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Stream Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Ion Color",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "tags": [
       "filter",
       "image-processing",
@@ -3184,7 +2453,6 @@
     "features": [
       "mouse-driven"
     ],
-    "author": "Kimi",
     "params": [
       {
         "id": "filmScale",
@@ -3229,7 +2497,6 @@
     "params": [
       {
         "name": "Contour Steps",
-        "type": "f32",
         "min": 0,
         "max": 1,
         "default": 0.3,
@@ -3237,7 +2504,6 @@
       },
       {
         "name": "Height Scale",
-        "type": "f32",
         "min": 0,
         "max": 1,
         "default": 0.5,
@@ -3245,7 +2511,6 @@
       },
       {
         "name": "Smoothness",
-        "type": "f32",
         "min": 0,
         "max": 1,
         "default": 0,
@@ -3253,7 +2518,6 @@
       },
       {
         "name": "Haze Strength",
-        "type": "f32",
         "min": 0,
         "max": 1,
         "default": 0.3,
@@ -3334,40 +2598,6 @@
         "max": 1,
         "step": 0.01
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Neighborhood Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Growth Rate",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Accumulation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Threshold",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -3417,36 +2647,6 @@
       "filter",
       "image-processing"
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Scan Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 1,
-        "name": "Beam Width",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 2,
-        "name": "Contour Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 3,
-        "name": "Edge Sensitivity",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      }
-    ],
     "feedbackPacking": "A/C echo scalar in A.r. Display ACES."
   },
   {
@@ -3473,7 +2673,6 @@
     "features": [
       "mouse-driven"
     ],
-    "author": "AI",
     "params": [
       {
         "id": "dispersion_strength",
@@ -3511,40 +2710,6 @@
         "step": 0.01,
         "description": "Blend weight between luminance gradient and depth curvature."
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Dispersion Strength",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Depth Curvature",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Prism Twist",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Depth Weight",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -3556,7 +2721,6 @@
     "params": [
       {
         "name": "Wind Speed",
-        "type": "f32",
         "min": 0,
         "max": 1,
         "default": 0.5,
@@ -3564,7 +2728,6 @@
       },
       {
         "name": "Trail Decay",
-        "type": "f32",
         "min": 0,
         "max": 1,
         "default": 0.8,
@@ -3572,7 +2735,6 @@
       },
       {
         "name": "Luma Threshold",
-        "type": "f32",
         "min": 0,
         "max": 1,
         "default": 0.1,
@@ -3580,45 +2742,10 @@
       },
       {
         "name": "Turbulence",
-        "type": "f32",
         "min": 0,
         "max": 1,
         "default": 0.2,
         "id": "turbulence"
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Wind Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Trail Decay",
-        "default": 0.8,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Luma Threshold",
-        "default": 0.1,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Turbulence",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ],
     "feedbackPacking": "A/C = raw HDR trail RGB and semantic alpha via bounded exact advection loads; writeTexture alone is ACES tone-mapped; B is unused",
@@ -3696,52 +2823,6 @@
     "tags": [
       "simulation",
       "physics"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "id": "chargeStrength",
-        "name": "Charge Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x",
-        "description": "Dipole moment; bass now modulates it through plasmaBuffer, which was previously bound but never read."
-      },
-      {
-        "index": 1,
-        "id": "alignmentInertia",
-        "name": "Alignment Inertia",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.y",
-        "description": "How strongly filings hold their previous alignment; read from dataTextureA channel b."
-      },
-      {
-        "index": 2,
-        "id": "spriteSize",
-        "name": "Filing Size",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.z",
-        "description": "Length of each iron-filing sprite."
-      },
-      {
-        "index": 3,
-        "id": "fieldDensity",
-        "name": "Field Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Filing lattice frequency; sets the spacing of the field-line particle dance."
-      }
     ]
   },
   {
@@ -3800,40 +2881,6 @@
         "description": "Color manipulation amount"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Viscosity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Turbulence",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Ripple Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Color Shift",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -3878,40 +2925,6 @@
       "stylized",
       "artistic"
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Segments",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Spin Speed",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Shift",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Zoom",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -3938,36 +2951,6 @@
     ],
     "updated": true,
     "params": [
-      {
-        "id": "cellSize",
-        "name": "Cell Size",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "revealSpeed",
-        "name": "Reveal Speed",
-        "default": 0.4,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "edgeGlow",
-        "name": "Edge Glow",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "gridType",
-        "name": "Grid Type",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "updatedParams": [
       {
         "id": "cellSize",
         "name": "Cell Size",
@@ -4060,41 +3043,7 @@
       "fbm",
       "voronoi"
     ],
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Threshold",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Sort Length",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Direction (V/H)",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Invert Sort",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
+    "updated": true
   },
   {
     "id": "multi-turing",
@@ -4198,40 +3147,6 @@
         "step": 0.01,
         "mapping": "zoom_params.w",
         "description": "Color manipulation amount"
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Viscosity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Turbulence",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Ripple Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Color Shift",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ]
   },
@@ -4491,40 +3406,6 @@
         "max": 1
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Amplification",
-        "default": 0.45,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Curl Strength",
-        "default": 0.45,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Feedback Mix",
-        "default": 0.55,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Chromatic Drift",
-        "default": 0.35,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -4588,42 +3469,7 @@
         "max": 1,
         "step": 0.1
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Parallax",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "index": 1,
-        "name": "Layer Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "index": 2,
-        "name": "Depth of Field",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "index": 3,
-        "name": "Fog",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      }
-    ],
-    "target_rating": 4.6
+    ]
   },
   {
     "id": "particle_dreams_alpha",
@@ -4684,42 +3530,7 @@
         "max": 1,
         "step": 0.1
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Particle Count",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "index": 1,
-        "name": "Trail Persistence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "index": 2,
-        "name": "Color Shift",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "index": 3,
-        "name": "Chaos",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      }
-    ],
-    "target_rating": 4.7
+    ]
   },
   {
     "id": "physarum-gemini",
@@ -5087,40 +3898,6 @@
         "step": 0.01
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Crack Amount",
-        "default": 0.65,
-        "min": 0,
-        "max": 1.4,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Glow Intensity",
-        "default": 0.85,
-        "min": 0,
-        "max": 1.6,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Light Temperature",
-        "default": 0.35,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Patina Age",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -5172,41 +3949,7 @@
         "step": 0.01
       }
     ],
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Detail",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
+    "updated": true
   },
   {
     "id": "quantum-fractal",
@@ -5317,41 +4060,7 @@
         "step": 0.01
       }
     ],
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Detail",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
+    "updated": true
   },
   {
     "id": "quantum-wormhole",
@@ -5402,41 +4111,7 @@
         "step": 0.01
       }
     ],
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Detail",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
+    "updated": true
   },
   {
     "id": "radiating-displacement",
@@ -5485,36 +4160,6 @@
     "tags": [
       "filter",
       "image-processing"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Wave Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 1,
-        "name": "Displace Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 2,
-        "name": "Saturation Threshold",
-        "default": 0.4,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 3,
-        "name": "Wave Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
     ]
   },
   {
@@ -5563,36 +4208,6 @@
     "tags": [
       "filter",
       "image-processing"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Wave Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 1,
-        "name": "Aura Intensity",
-        "default": 0.6,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 2,
-        "name": "Saturation Threshold",
-        "default": 0.4,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 3,
-        "name": "Aura Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
     ]
   },
   {
@@ -5759,40 +4374,6 @@
         "step": 0.01
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Detail",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = U, V, packet, accumulation. ACES display only.",
     "updated": true
   },
@@ -5813,7 +4394,6 @@
     "features": [
       "mouse-driven"
     ],
-    "author": "AI",
     "params": [
       {
         "id": "number_of_m_bius_fold_iterations_1_6",
@@ -5906,40 +4486,6 @@
       "click-reactive",
       "mirrored-advection"
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Threshold",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Distortion",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Smoothness",
-        "default": 0.1,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Invert Mode",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = final ACES display RGBA with semantic ink alpha via bounded exact mirrored-advection loads; B is unused",
     "tags": [
       "filter",
@@ -6004,40 +4550,6 @@
         "min": 0,
         "max": 1
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Edge Threshold",
-        "default": 0.32,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Posterize Levels",
-        "default": 0.45,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Ink Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Shade Mix",
-        "default": 0.55,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -6080,40 +4592,6 @@
       },
       {
         "id": "accumulation",
-        "name": "Accumulation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Wind",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
         "name": "Accumulation",
         "default": 0.5,
         "min": 0,
@@ -6178,42 +4656,7 @@
         "max": 1,
         "step": 0.01
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Dot Scale",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Dot Size",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Color Variation",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Dot Density",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "target_rating": 4.6
+    ]
   },
   {
     "id": "spectral-bleed-confinement",
@@ -6241,7 +4684,6 @@
       "temporal",
       "aces-tone-map"
     ],
-    "author": "AI",
     "params": [
       {
         "id": "param1",
@@ -6279,40 +4721,6 @@
         "step": 0.01,
         "description": "Minimum edge magnitude required to trigger spectral bleed."
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Bleed Radius",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Confinement",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Curl Speed",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Edge Threshold",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -6345,7 +4753,6 @@
       {
         "id": "slitCount",
         "name": "Slit Density",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -6354,7 +4761,6 @@
       {
         "id": "trailDecay",
         "name": "Trail Decay",
-        "type": "float",
         "default": 0.6,
         "min": 0,
         "max": 1,
@@ -6363,7 +4769,6 @@
       {
         "id": "chromaShift",
         "name": "Chromatic Shift",
-        "type": "float",
         "default": 0.4,
         "min": 0,
         "max": 1,
@@ -6371,41 +4776,6 @@
       },
       {
         "id": "curveAmp",
-        "name": "Curve Amplitude",
-        "type": "float",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Slit Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Trail Decay",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Chromatic Shift",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
         "name": "Curve Amplitude",
         "default": 0.3,
         "min": 0,
@@ -6520,40 +4890,6 @@
         "max": 1,
         "step": 0.01
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Detail",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -6564,7 +4900,6 @@
     "params": [
       {
         "name": "Blur Strength",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -6572,7 +4907,6 @@
       },
       {
         "name": "Line Density",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -6580,7 +4914,6 @@
       },
       {
         "name": "Line Speed",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -6588,7 +4921,6 @@
       },
       {
         "name": "Contrast",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -6603,40 +4935,6 @@
     "tags": [
       "filter",
       "image-processing"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Blur Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Line Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Line Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Contrast",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ],
     "updated": true
   },
@@ -6670,7 +4968,6 @@
       {
         "id": "outerTeeth",
         "name": "Outer Teeth",
-        "type": "float",
         "default": 0.3,
         "min": 0,
         "max": 1,
@@ -6679,7 +4976,6 @@
       {
         "id": "innerTeeth",
         "name": "Inner Teeth",
-        "type": "float",
         "default": 0.4,
         "min": 0,
         "max": 1,
@@ -6688,7 +4984,6 @@
       {
         "id": "speed",
         "name": "Rotation Speed",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -6696,41 +4991,6 @@
       },
       {
         "id": "thickness",
-        "name": "Line Thickness",
-        "type": "float",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Outer Teeth",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Inner Teeth",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Rotation Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
         "name": "Line Thickness",
         "default": 0.3,
         "min": 0,
@@ -6890,36 +5150,6 @@
       "audio-reactive",
       "depth-aware",
       "upgraded-rgba"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Dot Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 1,
-        "name": "Contrast",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 2,
-        "name": "Wet Ink Radius",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 3,
-        "name": "Color Reveal",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      }
     ],
     "tags": [
       "stylized",

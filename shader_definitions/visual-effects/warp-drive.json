@@ -52,34 +52,38 @@
       "max": 1
     }
   ],
-  "updatedParams": [
-    {
-      "id": "warp_speed",
-      "name": "Warp Speed",
-      "default": 0.45,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "prism_split",
-      "name": "Prism Split",
-      "default": 0.3,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "core_glow",
-      "name": "Core Glow",
-      "default": 0.45,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "blur_quality",
-      "name": "Blur Quality",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "id": "warp_speed",
+          "name": "Warp Speed",
+          "default": 0.45,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "id": "prism_split",
+          "name": "Prism Split",
+          "default": 0.3,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "id": "core_glow",
+          "name": "Core Glow",
+          "default": 0.45,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "id": "blur_quality",
+          "name": "Blur Quality",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        }
+      ]
     }
-  ]
+  }
 }

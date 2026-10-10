@@ -59,45 +59,10 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Wind Force",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Smoke Decay",
-        "default": 0.8,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Chromatic Split",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Source Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
-    "feedbackPacking": "A/C = ACES display RGBA; exact integer textureLoad feedback",
-    "target_rating": 4.8
+    "feedbackPacking": "A/C = ACES display RGBA; exact integer textureLoad feedback"
   },
   {
     "id": "aerogel-smoke-hdr",
@@ -153,43 +118,8 @@
         "step": 0.01
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Blue Scatter",
-        "default": 0.8,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Light Intensity",
-        "default": 1,
-        "min": 0,
-        "max": 2,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "HDR Bloom",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = aerogel density, scatter energy, horizontal and vertical velocity",
-    "updated": true,
-    "target_rating": 4.8
+    "updated": true
   },
   {
     "id": "alucinate-hdr",
@@ -394,43 +324,8 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Flare Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Streak Length",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Film Thickness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Film IOR",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = display RGBA with anamorphic streaks, ghost elements, and thin-film sheen history",
-    "updated": true,
-    "target_rating": 4.8
+    "updated": true
   },
   {
     "id": "anisotropic-kuwahara-nlm",
@@ -486,8 +381,7 @@
         "max": 1,
         "step": 0.01
       }
-    ],
-    "target_rating": 4.5
+    ]
   },
   {
     "id": "ascii-flow-structure",
@@ -553,40 +447,6 @@
         "max": 1,
         "step": 0.01
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Grid Density",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Coherence Boost",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "LIC Blend",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Mouse Influence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -643,8 +503,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "astral-kaleidoscope-morph",
@@ -701,8 +560,7 @@
         "max": 1,
         "step": 0.01
       }
-    ],
-    "target_rating": 4.5
+    ]
   },
   {
     "id": "atmos-fog-volumetric",
@@ -759,43 +617,8 @@
         "step": 0.01
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Fog Density",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Fog Height",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Depth Weight",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Turbulence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = fog density, horizontal and vertical drift, moisture",
-    "updated": true,
-    "target_rating": 4.7
+    "updated": true
   },
   {
     "id": "audio-voronoi-displacement",
@@ -854,15 +677,6 @@
         "description": "Intensity of frequency-based coloring"
       }
     ],
-    "chunks_used": [
-      "hash12 (gen_grid.wgsl)",
-      "hash22 (gen_grid.wgsl)",
-      "Voronoi pattern",
-      "Audio band simulation"
-    ],
-    "performance_target": "60 FPS (GTX 1060)",
-    "created_by": "Agent 3B - Advanced Hybrid Creator",
-    "created_date": "2026-03-22",
     "tags": [
       "interactive",
       "cursor",
@@ -928,13 +742,6 @@
         "description": "How much Gabor texture affects displacement"
       }
     ],
-    "chunks_used": [
-      "hash12 (gen_grid.wgsl)",
-      "hash22 (gen_grid.wgsl)",
-      "gaborResponse (conv-gabor-texture-analyzer)",
-      "Voronoi pattern (audio-voronoi-displacement)",
-      "Audio band simulation (audio-voronoi-displacement)"
-    ],
     "tags": [
       "audio",
       "music",
@@ -943,9 +750,7 @@
       "gabor",
       "voronoi",
       "displacement"
-    ],
-    "created_by": "Agent CB-7 - Flow & Multi-Pass Enhancer",
-    "created_date": "2026-04-18"
+    ]
   },
   {
     "id": "aurora-borealis-iridescence",
@@ -1004,42 +809,7 @@
         "step": 0.01
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Ribbon Count",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Flow Speed",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Ribbon Width",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Iridescence",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "feedbackPacking": "A/C = ACES display RGBA for atmospheric luminescence persistence; B is unused; depth passes through source depth.",
-    "target_rating": 4.9
+    "feedbackPacking": "A/C = ACES display RGBA for atmospheric luminescence persistence; B is unused; depth passes through source depth."
   },
   {
     "id": "aurora-rift-2-iridescence",
@@ -1107,40 +877,6 @@
         "description": "Noise turbulence for film thickness variation"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Depth Weight",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Turbulence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = ACES display RGBA for continuous atmospheric luminescence persistence; B is unused; depth passes through layered depth."
   },
   {
@@ -1202,42 +938,7 @@
         "step": 0.01
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Pattern Scale",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Flow Speed",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Film IOR",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Iridescence Intensity",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "feedbackPacking": "A/C = ACES display RGBA for continuous plasma trail persistence; B is unused; depth passes through source depth.",
-    "target_rating": 4.8
+    "feedbackPacking": "A/C = ACES display RGBA for continuous plasma trail persistence; B is unused; depth passes through source depth."
   },
   {
     "id": "bio-lenia-rgba",
@@ -1402,41 +1103,6 @@
         "step": 0.01
       }
     ],
-    "target_rating": 4.8,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Spread Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Branch Density",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Glow Intensity",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Spore Count",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = growth, heat, 0, 1. ACES display only.",
     "updated": true
   },
@@ -1502,41 +1168,7 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Supercooling",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Anisotropy",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Growth Rate",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Color Frequency",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
+    "updated": true
   },
   {
     "id": "black-hole-iridescence",
@@ -1595,42 +1227,7 @@
         "step": 0.01
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Lens Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Event Horizon",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Disk Glow",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Iridescence",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "feedbackPacking": "A/C = ACES display RGBA for relativistic photon persistence; B is unused; depth passes through source depth.",
-    "target_rating": 4.9
+    "feedbackPacking": "A/C = ACES display RGBA for relativistic photon persistence; B is unused; depth passes through source depth."
   },
   {
     "id": "block-distort-em",
@@ -1733,8 +1330,7 @@
         "max": 1,
         "step": 0.01
       }
-    ],
-    "target_rating": 4.5
+    ]
   },
   {
     "id": "boids-rgba-ecosystem",
@@ -1849,8 +1445,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "bubble-lens-coupled",
@@ -1903,41 +1498,7 @@
       "distortion",
       "interactive"
     ],
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Bubble Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Magnification",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Film Thickness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Viscosity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
+    "updated": true
   },
   {
     "id": "byte-mosh-explosion",
@@ -1999,40 +1560,6 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Operation Mix",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Bit Shift",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Error Rate",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Prism Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "tags": [
       "glitch",
       "bitwise",
@@ -2061,40 +1588,6 @@
       "click-reactive",
       "aces-tone-map",
       "semantic-alpha"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Evolution Speed",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Initial Density",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Color Cycling",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Camera Rotation",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ],
     "params": [
       {
@@ -2138,16 +1631,6 @@
         "description": "Camera rotation speed"
       }
     ],
-    "chunks_used": [
-      "hash12 (gen_grid.wgsl)",
-      "hash3 (gen-xeno-botanical-synth-flora.wgsl)",
-      "3D CA rules (26 neighbors)",
-      "Volume raymarching",
-      "Transfer function coloring"
-    ],
-    "performance_target": "30-45 FPS (GTX 1060)",
-    "created_by": "Agent 3B - Advanced Hybrid Creator",
-    "created_date": "2026-03-22",
     "tags": [
       "audio",
       "music",
@@ -2202,41 +1685,6 @@
       },
       {
         "id": "diffusion_strength",
-        "name": "Diffusion Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "target_rating": 4.5,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Hardness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Texture Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Reveal Rate",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
         "name": "Diffusion Strength",
         "default": 0.5,
         "min": 0,
@@ -2302,42 +1750,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Tunnel Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Ring Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Chromatic Spread",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Center Fade",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "chroma-kinetic-blackbody",
@@ -2394,42 +1807,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Effect Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Effect Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Luma Influence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Rotation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "chroma-lens-iridescence",
@@ -2494,43 +1872,8 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Magnification",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Chromatic Dispersion",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Lens Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Iridescence / Rim Blur",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = display RGBA with chromatic lens magnification and iridescent sheen history",
-    "updated": true,
-    "target_rating": 4.8
+    "updated": true
   },
   {
     "id": "chroma-threads-gabor",
@@ -2584,8 +1927,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "chroma-vortex-coupled",
@@ -2613,40 +1955,6 @@
       "strain-birefringence",
       "mouse-driven",
       "aces-tone-mapping"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Twist",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Spread",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Center Bias",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ],
     "params": [
       {
@@ -2712,40 +2020,6 @@
       "audio-reactive",
       "mouse-driven",
       "aces-tone-mapping"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Crawl Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Swap Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Feedback Mix",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Flash Rate",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ],
     "params": [
       {
@@ -2837,41 +2111,7 @@
       "depth-of-field",
       "interactive"
     ],
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Aberration",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Blur",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Focus Radius",
-        "default": 0.2,
-        "min": 0,
-        "max": 0.8,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Viscosity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
+    "updated": true
   },
   {
     "id": "chromatic-focus-guided",
@@ -2933,42 +2173,7 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Aberration Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Focus Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Spectral Spread",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Animation Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updated": true
   },
   {
     "id": "chromatic-folds-bilateral",
@@ -3026,45 +2231,10 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Fold Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Pivot Hue",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Sat Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Depth Influence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
-    "feedbackPacking": "A/C = ACES display RGBA; exact integer textureLoad feedback",
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "feedbackPacking": "A/C = ACES display RGBA; exact integer textureLoad feedback"
   },
   {
     "id": "chromatic-reaction-diffusion",
@@ -3086,40 +2256,6 @@
       "randomization-safe",
       "audio-reactive",
       "audio-driven"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Red Feed Rate",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Green Feed Rate",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Blue Feed Rate",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Chromatic Separation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ],
     "params": [
       {
@@ -3163,14 +2299,6 @@
         "description": "Amount of chromatic aberration"
       }
     ],
-    "chunks_used": [
-      "Gray-Scott reaction-diffusion",
-      "Laplacian operator",
-      "Multi-channel processing"
-    ],
-    "performance_target": "60 FPS (GTX 1060)",
-    "created_by": "Agent 3B - Advanced Hybrid Creator",
-    "created_date": "2026-03-22",
     "tags": [
       "audio",
       "music",
@@ -3233,8 +2361,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "circuit-breaker-explosion",
@@ -3388,8 +2515,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "cosmic-web-structure",
@@ -3443,8 +2569,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "crt-tv-stipple",
@@ -3508,40 +2633,6 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w"
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Scanline Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Phosphor Glow",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Stipple Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Barrel Distortion",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ],
     "tags": [
@@ -3614,42 +2705,7 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Cell Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "IOR Mix",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Light Power",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Film Thickness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updated": true
   },
   {
     "id": "cursor-aura-explosion",
@@ -3705,8 +2761,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "cyber-lattice-bilateral",
@@ -3767,40 +2822,6 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w"
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Grid Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Distort Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Glow Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ],
     "tags": [
@@ -3866,8 +2887,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "cyber-rain-em",
@@ -3936,40 +2956,6 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Rain Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Charge Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Field Visibility",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Wiper Size",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -3982,40 +2968,6 @@
       "digital-ripples",
       "fluid-coupling",
       "temporal"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Viscosity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Aberration",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Frequency",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ],
     "feedbackPacking": "A/C = velocity.xy, vorticity, density; exact fluid-coupled cyber ripple state",
     "features": [
@@ -4069,8 +3021,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "cyber-scan-gabor",
@@ -4126,8 +3077,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "cyber-trace-structure",
@@ -4196,40 +3146,6 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Decay Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Glow Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Hue Shift",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Brush Size",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -4284,8 +3200,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "data-stream-corruption-hdr",
@@ -4341,8 +3256,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "data-stream-spectral",
@@ -4396,8 +3310,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "data-stream-structure",
@@ -4470,40 +3383,6 @@
         "description": "Digital glow and spectral mix"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Stream Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Corruption Rate",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Trail Fade",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Chromatic Spread",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -4570,47 +3449,6 @@
         "description": "Alpha ghost trail intensity"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Brush Size",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Edge Sensitivity",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Diffusion Rate",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Ghost Intensity",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "chunks_used": [
-      "Datamosh brush, block corruption, alpha ghosting (datamosh-brush.wgsl)",
-      "Perona-Malik diffusion, edge coefficients (conv-anisotropic-diffusion.wgsl)"
-    ],
-    "performance_target": "40 FPS (GTX 1060)",
-    "created_by": "Agent CB-13 — Retro & Glitch Enhancer",
-    "created_date": "2026-04-18",
     "tags": [
       "datamosh",
       "glitch",
@@ -4739,47 +3577,6 @@
         "description": "Reaction-diffusion feed rate"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Decay Intensity",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Block Size",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Corruption Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "RD Feed Rate",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "chunks_used": [
-      "Block corruption, chromatic aberration, scanlines (digital-decay.wgsl)",
-      "4-species reaction-diffusion, Laplacian (alpha-reaction-diffusion-rgba.wgsl)"
-    ],
-    "performance_target": "35 FPS (GTX 1060)",
-    "created_by": "Agent CB-13 — Retro & Glitch Enhancer",
-    "created_date": "2026-04-18",
     "tags": [
       "glitch",
       "decay",
@@ -4849,40 +3646,6 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w"
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Corruption Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Prism Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Dispersion",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Decay Rate",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ],
     "tags": [
@@ -4962,40 +3725,6 @@
         "mapping": "zoom_params.w",
         "description": "Cauchy dispersion strength"
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Lens Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Chromatic Spread",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Barrel Distortion",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Center Glow",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -5066,40 +3795,6 @@
         "step": 0.01,
         "mapping": "zoom_params.w",
         "description": "Moss growth speed"
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Moss Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Growth Rate",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Color Shift",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Moisture",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ],
     "feedbackPacking": "A/C = A, B, C, D chemistry. ACES display only.",
@@ -5174,40 +3869,6 @@
         "mapping": "zoom_params.w",
         "description": "Depth filter influence"
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Rain Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Reveal Size",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Trail Fade",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Depth Influence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -5266,8 +3927,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "distortion-gravitational-prismatic",
@@ -5330,42 +3990,7 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Lens Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Mass Count",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Disk Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Cauchy Dispersion",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updated": true
   },
   {
     "id": "divine-light-iridescence",
@@ -5427,40 +4052,6 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Ray Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Luma Threshold",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Softness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Ray Count",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = ACES display RGBA for smooth volumetric beam persistence; B is unused; depth passes through source depth."
   },
   {
@@ -5513,41 +4104,6 @@
       "photography",
       "artistic",
       "ghostly"
-    ],
-    "target_rating": 4.5,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Zoom Level",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Rotation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Opacity",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Saturation",
-        "default": 0.8,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -5612,43 +4168,8 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Flare Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Threshold / Sensitivity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Dispersion / Spread",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Ghost Count / Saturation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = display RGBA with dispersed ghost elements and optical flare persistence",
-    "updated": true,
-    "target_rating": 4.8
+    "updated": true
   },
   {
     "id": "edge-glow-mouse-em",
@@ -5704,8 +4225,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "elastic-chromatic-explosion",
@@ -5770,44 +4290,6 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "updatedParams": [
-      {
-        "id": "param1",
-        "name": "Explosion Force",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x"
-      },
-      {
-        "id": "param2",
-        "name": "Chromatic Spread",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.y"
-      },
-      {
-        "id": "param3",
-        "name": "Elastic Snap",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.z"
-      },
-      {
-        "id": "param4",
-        "name": "Trail Decay",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w"
-      }
     ]
   },
   {
@@ -5861,37 +4343,6 @@
       "wax",
       "artistic",
       "HDR"
-    ],
-    "target_rating": 4.6,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Wax Thickness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 1,
-        "name": "Surface Texture",
-        "default": 0.7,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 2,
-        "name": "Melt Radius",
-        "default": 0.2,
-        "min": 0,
-        "max": 0.5
-      },
-      {
-        "index": 3,
-        "name": "Thermal Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
     ]
   },
   {
@@ -5950,42 +4401,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Hex Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Ripple Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Impact Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Decay",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "engraving-stipple-blue-noise",
@@ -6035,8 +4451,7 @@
       "pointillism",
       "artistic",
       "dithering"
-    ],
-    "target_rating": 4.6
+    ]
   },
   {
     "id": "ethereal-swirl-coupled",
@@ -6094,8 +4509,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "fabric-step-gabor",
@@ -6147,8 +4561,7 @@
       "texture-analysis",
       "psychedelic",
       "physics"
-    ],
-    "target_rating": 4.6
+    ]
   },
   {
     "id": "ferrofluid-em",
@@ -6217,8 +4630,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "fire-smoke-volumetric-fog",
@@ -6279,43 +4691,8 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Flame Heat",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Smoke Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Fog Depth",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Turbulence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = smoke density, temperature, soot, lateral momentum",
-    "updated": true,
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updated": true
   },
   {
     "id": "fluid-grid-rgba-fluid",
@@ -6371,8 +4748,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "fractal-boids-field-coupled",
@@ -6442,17 +4818,7 @@
       "audio",
       "music",
       "reactive"
-    ],
-    "chunks_used": [
-      "hash12 (gen_grid.wgsl)",
-      "fbm2 (gen_grid.wgsl)",
-      "domainWarp",
-      "Boids separation/alignment/cohesion",
-      "Mouse fluid coupling (mouse-fluid-coupling.wgsl)"
-    ],
-    "performance_target": "40-55 FPS (GTX 1060)",
-    "created_by": "Agent CB-4 - Mouse Physics Injector",
-    "created_date": "2026-04-18"
+    ]
   },
   {
     "id": "fractal-boids-field",
@@ -6510,15 +4876,6 @@
         "description": "Boid separation distance"
       }
     ],
-    "chunks_used": [
-      "hash12 (gen_grid.wgsl)",
-      "fbm2 (gen_grid.wgsl)",
-      "domainWarp",
-      "Boids separation/alignment/cohesion"
-    ],
-    "performance_target": "45-60 FPS (GTX 1060)",
-    "created_by": "Agent 3B - Advanced Hybrid Creator",
-    "created_date": "2026-03-22",
     "tags": [
       "audio",
       "music",
@@ -6585,42 +4942,7 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Rotation Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Refract Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Bilateral Mix",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updated": true
   },
   {
     "id": "fractal-noise-dissolve-nlm",
@@ -6674,8 +4996,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "frost-reveal-crystal",
@@ -6737,42 +5058,7 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Growth Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Melt Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Max Opacity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Anisotropy",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updated": true
   },
   {
     "id": "frosted-glass-lens-iridescence",
@@ -6838,43 +5124,8 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Frost Amount",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Lens Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Edge Softness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Film IOR / Iridescence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = display RGBA with frosted transmission and thin-film iridescent coating",
-    "updated": true,
-    "target_rating": 4.8
+    "updated": true
   },
   {
     "id": "gamma-ray-burst-blackbody",
@@ -6934,42 +5185,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Decay",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Ray Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Exposure",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "gemstone-fractures-crystal",
@@ -7034,41 +5250,7 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "IOR Mix",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Rotation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Fracture Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
+    "updated": true
   },
   {
     "id": "gen-abyssal-leviathan-iridescence",
@@ -7124,8 +5306,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "gen-art-deco-sky-prismatic",
@@ -7181,8 +5362,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "gen-astro-orrery-blackbody",
@@ -7371,8 +5551,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "gen-neural-fractal-hdr",
@@ -7428,8 +5607,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "gen-quasicrystal-iridescence",
@@ -7487,41 +5665,6 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w"
-      }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py",
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Symmetry",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Pattern Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Color Cycle",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Projection Angle",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ]
   },
@@ -7635,42 +5778,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Disk Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Jet Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Gravity Warp",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Time Dilation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "gen-string-theory-structure",
@@ -7689,8 +5797,7 @@
       "structure-tensor",
       "LIC"
     ],
-    "params": [],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "params": []
   },
   {
     "id": "gen-xeno-botanical-ecosystem",
@@ -7806,42 +5913,7 @@
         "step": 0.01
       }
     ],
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Bead Size",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Refraction",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Iridescence",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Film Thickness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "target_rating": 4.8
+    "updated": true
   },
   {
     "id": "glass-refraction-prismatic",
@@ -7911,43 +5983,8 @@
         "description": "Surface roughness affecting specular highlights"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Transparency",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Cauchy B Coefficient",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Thickness Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Surface Roughness",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = display RGBA with spectrally refracted raymarched prism transmission",
-    "updated": true,
-    "target_rating": 4.8
+    "updated": true
   },
   {
     "id": "glass-shatter-morph",
@@ -8008,42 +6045,7 @@
         "step": 0.01
       }
     ],
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Shard Size",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Displacement",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Morph Blend",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Edge Width",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "target_rating": 4.7
+    "updated": true
   },
   {
     "id": "glass-wall-prismatic",
@@ -8104,43 +6106,8 @@
         "step": 0.01
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Grid Size",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Curvature",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Dispersion",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Thickness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = display RGBA with tilted tile prismatic refraction and Fresnel highlights",
-    "updated": true,
-    "target_rating": 4.8
+    "updated": true
   },
   {
     "id": "glass-wipes-coupled",
@@ -8190,40 +6157,6 @@
       },
       {
         "id": "vortex_strength",
-        "name": "Vortex Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Rain Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Fluid Viscosity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Wiper Size",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
         "name": "Vortex Strength",
         "default": 0.5,
         "min": 0,
@@ -8292,58 +6225,6 @@
         "description": "Intensity of gravitational redshift"
       }
     ],
-    "advanced_params": [
-      {
-        "id": "patch_radius",
-        "name": "Patch Radius",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_config.x",
-        "description": "NLM patch comparison radius"
-      },
-      {
-        "id": "search_radius",
-        "name": "Search Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_config.y",
-        "description": "NLM search window radius"
-      },
-      {
-        "id": "filter_strength",
-        "name": "Filter Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_config.z",
-        "description": "NLM filter strength (h parameter)"
-      },
-      {
-        "id": "overdrive",
-        "name": "Artistic Overdrive",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_config.w",
-        "description": "Artistic overdrive blend amount"
-      }
-    ],
-    "chunks_used": [
-      "hash12 (gravitational-lensing.wgsl)",
-      "schwarzschildFactor (gravitational-lensing.wgsl)",
-      "renderAccretionDisk (gravitational-lensing.wgsl)",
-      "gravitationalRedshift (gravitational-lensing.wgsl)",
-      "patchDistance (conv-non-local-means.wgsl)"
-    ],
-    "performance_target": "20-30 FPS (GTX 1060)",
-    "created_by": "Agent CB-3 — Convolution Post-Processor",
-    "created_date": "2026-04-18",
     "tags": [
       "black-hole",
       "gravitational-lensing",
@@ -8351,41 +6232,7 @@
       "artistic",
       "space"
     ],
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Black Hole Mass",
-        "default": 0.25,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Accretion Disk Brightness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Camera Orbit",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Gravitational Redshift",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
+    "updated": true
   },
   {
     "id": "gravitational-lensing",
@@ -8453,15 +6300,6 @@
         "description": "Intensity of gravitational redshift"
       }
     ],
-    "chunks_used": [
-      "Schwarzschild metric",
-      "Geodesic raytracing",
-      "Accretion disk rendering",
-      "Doppler beaming"
-    ],
-    "performance_target": "30-45 FPS (GTX 1060)",
-    "created_by": "Agent 3B - Advanced Hybrid Creator",
-    "created_date": "2026-03-22",
     "tags": [
       "interactive",
       "cursor",
@@ -8472,48 +6310,6 @@
       "relativity",
       "lensing",
       "accretion"
-    ],
-    "updatedParams": [
-      {
-        "id": "black_hole_mass",
-        "name": "Black Hole Mass",
-        "default": 0.25,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x",
-        "description": "Schwarzschild radius and Einstein ring size; also sets the ISCO."
-      },
-      {
-        "id": "disk_brightness",
-        "name": "Disk Brightness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.y",
-        "description": "Accretion disk emission gain."
-      },
-      {
-        "id": "camera_orbit",
-        "name": "Camera Orbit",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.z",
-        "description": "Static offset added to the orbit angle."
-      },
-      {
-        "id": "redshift",
-        "name": "Redshift",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Gravitational redshift applied to the escaping background."
-      }
     ]
   },
   {
@@ -8568,8 +6364,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "heat-haze-volumetric",
@@ -8626,43 +6421,8 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Heat Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Refraction Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Column Depth",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Turbulence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = horizontal and vertical velocity, heat, refractive column density",
-    "updated": true,
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updated": true
   },
   {
     "id": "holographic-failure-iridescence",
@@ -8732,43 +6492,8 @@
         "description": "Film thickness noise variation"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Failure Amount",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Holographic Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Film IOR",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Turbulence",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = display RGBA with failing holographic carrier and iridescent interference history",
-    "updated": true,
-    "target_rating": 4.8
+    "updated": true
   },
   {
     "id": "holographic-interferometry-bilateral",
@@ -8838,43 +6563,8 @@
         "description": "Saturation of holographic colors"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Fringe Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Coherence Length",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Reconstruction Angle",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Color Saturation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = display RGBA with bilaterally filtered holographic reconstruction and fringe edge confidence",
-    "updated": true,
-    "target_rating": 4.8
+    "updated": true
   },
   {
     "id": "holographic-interferometry",
@@ -8949,46 +6639,8 @@
         "description": "Saturation of holographic colors"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Fringe Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Coherence Length",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Reconstruction Angle",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Color Saturation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "performance_target": "60 FPS (GTX 1060)",
-    "created_by": "Agent 3B - Advanced Hybrid Creator",
-    "created_date": "2026-03-22",
     "feedbackPacking": "A/C = display RGBA with reconstructed holographic color and fringe confidence",
-    "updated": true,
-    "target_rating": 4.8
+    "updated": true
   },
   {
     "id": "honey-melt-blackbody",
@@ -9045,43 +6697,8 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Cell Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Melt Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Flow Pull",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Surface Softness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = velocity.xy, honey thickness, normalized temperature",
-    "updated": true,
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updated": true
   },
   {
     "id": "hybrid-spectral-decomposed",
@@ -9139,13 +6756,6 @@
         "description": "Color shift based on frequency band"
       }
     ],
-    "chunks_used": [
-      "hash12 (gen_grid.wgsl)",
-      "palette (gen-xeno-botanical-synth-flora.wgsl)",
-      "hueShift (stellar-plasma.wgsl)",
-      "4-band decomposition (alpha-spectral-decompose)",
-      "pixel sorting (hybrid-spectral-sorting)"
-    ],
     "tags": [
       "spectral",
       "decomposition",
@@ -9153,9 +6763,7 @@
       "audio",
       "frequency",
       "equalizer"
-    ],
-    "created_by": "Agent CB-7 - Flow & Multi-Pass Enhancer",
-    "created_date": "2026-04-18"
+    ]
   },
   {
     "id": "hyper-space-jump-blackbody",
@@ -9213,42 +6821,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Jump Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Low Temperature",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "High Temperature",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Chromatic Spread",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "hyper-tensor-fluid-coupled",
@@ -9317,17 +6890,7 @@
       "audio",
       "music",
       "reactive"
-    ],
-    "chunks_used": [
-      "hash12 (gen_grid.wgsl)",
-      "fbm2 (gen_grid.wgsl)",
-      "Structure tensor eigendecomposition",
-      "Velocity advection",
-      "Mouse fluid coupling (mouse-fluid-coupling.wgsl)"
-    ],
-    "performance_target": "40-55 FPS (GTX 1060)",
-    "created_by": "Agent CB-4 - Mouse Physics Injector",
-    "created_date": "2026-04-18"
+    ]
   },
   {
     "id": "hyper-tensor-fluid",
@@ -9386,51 +6949,8 @@
         "description": "Speed of fluid advection"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Tensor Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Viscosity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Turbulence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Advection Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = velocity.xy, tensor anisotropy, transported dye",
     "updated": true,
-    "chunks_used": [
-      "hash12 (gen_grid.wgsl)",
-      "fbm2 (gen_grid.wgsl)",
-      "Structure tensor eigendecomposition",
-      "Velocity advection"
-    ],
-    "performance_target": "45-60 FPS (GTX 1060)",
-    "created_by": "Agent 3B - Advanced Hybrid Creator",
-    "created_date": "2026-03-22",
     "tags": [
       "audio",
       "music",
@@ -9493,42 +7013,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Zoom",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Morph Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Color Cycles",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Detail",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "impasto-swirl-bilateral",
@@ -9584,8 +7069,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "infinite-fractal-feedback-hdr",
@@ -9641,8 +7125,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "ink-bleed-fluid",
@@ -9699,41 +7182,6 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w"
-      }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py",
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Ink Hue",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Viscosity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Spread Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ]
   },
@@ -9793,14 +7241,6 @@
         "description": "Density of ink lines and dots"
       }
     ],
-    "chunks_used": [
-      "Guided filter linear model (conv-guided-filter-depth.wgsl)",
-      "Halftone dot rendering (ink_dispersion_alpha.wgsl)",
-      "Mouse aperture modulation (conv-guided-filter-depth.wgsl)"
-    ],
-    "performance_target": "60 FPS (GTX 1060)",
-    "created_by": "Agent CB-6 - Alpha & Post-Process Enhancer",
-    "created_date": "2026-04-18",
     "tags": [
       "ink",
       "halftone",
@@ -9865,43 +7305,8 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Field Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Wave Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Magnetic Damping",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Spectral Gain",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = electric field xy, magnetic scalar, field energy",
-    "updated": true,
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updated": true
   },
   {
     "id": "interactive-origami-coupled",
@@ -9956,41 +7361,6 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w"
-      }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py",
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Fold Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Fold Depth",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Viscosity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Vortex Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ],
     "feedbackPacking": "A/C = vx, vy, vorticity, density. Prev mouse extraBuffer[133..134].",
@@ -10050,8 +7420,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "interactive-rgb-split-explosion",
@@ -10109,8 +7478,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "kimi-flock-symphony-em",
@@ -10162,8 +7530,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "liquid-jelly-fluid",
@@ -10228,43 +7595,8 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Viscosity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Dye Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Vorticity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Elasticity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = velocity.xy, pressure, density; exact bounded state loads",
-    "updated": true,
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updated": true
   },
   {
     "id": "liquid-magnetic-ferro-em",
@@ -10331,14 +7663,6 @@
         "description": "Number of orbiting magnetic dipoles"
       }
     ],
-    "chunks_used": [
-      "Magnetic dipole field, Rosensweig spikes (liquid_magnetic_ferro.wgsl)",
-      "EM wave propagation, charge injection (alpha-em-field-simulation.wgsl)",
-      "Value noise, fbm2 (alpha-em-field-simulation.wgsl)"
-    ],
-    "performance_target": "60 FPS (GTX 1060)",
-    "created_by": "Agent CB-6 - Alpha & Post-Process Enhancer",
-    "created_date": "2026-04-18",
     "tags": [
       "ferrofluid",
       "magnetic",
@@ -10407,43 +7731,8 @@
         "step": 0.01
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Ripple Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Ripple Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Prism Curvature",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Spectral Saturation",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = violet, cyan, amber, red spectral-band intensities",
-    "updated": true,
-    "target_rating": 4.8
+    "updated": true
   },
   {
     "id": "liquid-oil-iridescence",
@@ -10508,43 +7797,8 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Film Viscosity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Film IOR",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Interference Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Capillary Turbulence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = spectral interference RGB, normalized film thickness",
-    "updated": true,
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updated": true
   },
   {
     "id": "liquid-smear-structure",
@@ -10603,43 +7857,8 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Smear Memory",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Streamline Length",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Tensor Coherence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Brush Force",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = linear display RGBA history; exact bounded history loads",
-    "updated": true,
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updated": true
   },
   {
     "id": "melting-oil-blackbody",
@@ -10696,43 +7915,8 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Viscosity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Temperature Range",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Thermal Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Ember Bloom",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = velocity.xy, normalized temperature, molten coverage",
-    "updated": true,
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updated": true
   },
   {
     "id": "multi-fractal-compositor-lens",
@@ -10806,51 +7990,7 @@
       "music",
       "reactive"
     ],
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Lens Mass",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Ring Glow",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Ripple Mass",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Chroma Boost",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "chunks_used": [
-      "hash12 (gen_grid.wgsl)",
-      "palette (gen-xeno-botanical-synth-flora.wgsl)",
-      "ping_pong wrapping",
-      "Depth compositing",
-      "gravitationalBend (gravitational-lensing.wgsl)"
-    ],
-    "performance_target": "40-55 FPS (GTX 1060)",
-    "created_by": "Agent CB-4 - Mouse Physics Injector",
-    "created_date": "2026-04-18"
+    "updated": true
   },
   {
     "id": "multi-fractal-compositor",
@@ -10909,17 +8049,6 @@
         "description": "Blend between fractal types"
       }
     ],
-    "chunks_used": [
-      "hash12 (gen_grid.wgsl)",
-      "palette (gen-xeno-botanical-synth-flora.wgsl)",
-      "Mandelbrot iteration",
-      "Julia iteration",
-      "Burning Ship iteration",
-      "Newton fractal"
-    ],
-    "performance_target": "45-60 FPS (GTX 1060)",
-    "created_by": "Agent 3B - Advanced Hybrid Creator",
-    "created_date": "2026-03-22",
     "tags": [
       "audio",
       "music",
@@ -10985,41 +8114,7 @@
       }
     ],
     "feedbackPacking": "A/C = phase, temperature, orientation, impurity. ACES display only.",
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Assembly Progress",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Grid Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Disruption",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Rebuild Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
+    "updated": true
   },
   {
     "id": "neural-raymarcher-gabor",
@@ -11076,49 +8171,6 @@
         "description": "Camera orbit position"
       }
     ],
-    "advanced_params": [
-      {
-        "id": "gabor_freq",
-        "name": "Gabor Frequency",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_config.x",
-        "description": "Gabor filter frequency"
-      },
-      {
-        "id": "gabor_sigma",
-        "name": "Gabor Sigma",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_config.y",
-        "description": "Gabor Gaussian envelope width"
-      },
-      {
-        "id": "gabor_scale",
-        "name": "Gabor Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_config.z",
-        "description": "Response scaling factor"
-      }
-    ],
-    "chunks_used": [
-      "ping_pong (neural-raymarcher.wgsl)",
-      "hash21 (neural-raymarcher.wgsl)",
-      "noise (neural-raymarcher.wgsl)",
-      "reconstruct_normal (neural-raymarcher.wgsl)",
-      "gaborResponse (conv-gabor-texture-analyzer.wgsl)",
-      "palette (conv-gabor-texture-analyzer.wgsl)"
-    ],
-    "performance_target": "20-30 FPS (GTX 1060)",
-    "created_by": "Agent CB-3 — Convolution Post-Processor",
-    "created_date": "2026-04-18",
     "tags": [
       "neural",
       "raymarcher",
@@ -11184,15 +8236,6 @@
         "description": "Camera orbit position"
       }
     ],
-    "chunks_used": [
-      "sdSphere (gen-xeno-botanical-synth-flora.wgsl)",
-      "sdSmoothUnion (gen-xeno-botanical-synth-flora.wgsl)",
-      "palette (gen-xeno-botanical-synth-flora.wgsl)",
-      "Activation functions (tanh, ReLU, sigmoid)"
-    ],
-    "performance_target": "30-45 FPS (GTX 1060)",
-    "created_by": "Agent 3B - Advanced Hybrid Creator",
-    "created_date": "2026-03-22",
     "tags": [
       "audio",
       "music",
@@ -11212,40 +8255,6 @@
       "artistic",
       "dreamy",
       "convolution"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Brush Size",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Wetness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Bilateral Blend",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Mouse Focus",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ],
     "feedbackPacking": "A/C = final ACES display RGB and paint thickness; exact wet-paint memory",
     "features": [
@@ -11295,8 +8304,7 @@
         "max": 1,
         "step": 0.01
       }
-    ],
-    "target_rating": 4.5
+    ]
   },
   {
     "id": "particle-dreams-hdr",
@@ -11354,14 +8362,6 @@
         "description": "Volumetric fog density"
       }
     ],
-    "chunks_used": [
-      "Layer accumulation, flow noise (particle_dreams_alpha.wgsl)",
-      "HDR bloom kernel, ACES tone map (alpha-hdr-bloom-chain.wgsl)",
-      "Depth chromatic aberration (particle_dreams_alpha.wgsl)"
-    ],
-    "performance_target": "60 FPS (GTX 1060)",
-    "created_by": "Agent CB-6 - Alpha & Post-Process Enhancer",
-    "created_date": "2026-04-18",
     "tags": [
       "particles",
       "hdr",
@@ -11427,41 +8427,6 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py",
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Echo Decay",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Lag Offset X",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Lag Offset Y",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Hue Shift",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -11526,43 +8491,8 @@
         "step": 0.01
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Index of Refraction",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Light Size",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Chromatic Dispersion",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = display RGBA with accumulated photonic caustics and thin-film iridescent sheen",
-    "updated": true,
-    "target_rating": 4.8
+    "updated": true
   },
   {
     "id": "predator-prey-rgba",
@@ -11622,41 +8552,7 @@
       }
     ],
     "feedbackPacking": "A/C = plants, herbivores, carnivores, toxin. ACES display only.",
-    "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Eat Probability",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Death Rate",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Plant Growth",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Toxin Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
+    "updated": true
   },
   {
     "id": "quantum-foam-bilateral",
@@ -11712,48 +8608,6 @@
         "description": "Octave count and emission detail"
       }
     ],
-    "advanced_params": [
-      {
-        "id": "bilateral_spatial",
-        "name": "Bilateral Spatial",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_config.x",
-        "description": "Spatial sigma of bilateral filter"
-      },
-      {
-        "id": "bilateral_color",
-        "name": "Bilateral Color",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_config.y",
-        "description": "Color sigma of bilateral filter"
-      },
-      {
-        "id": "bilateral_blend",
-        "name": "Bilateral Blend",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_config.z",
-        "description": "Blend between original foam and smoothed result"
-      }
-    ],
-    "chunks_used": [
-      "hash3 (quantum-foam.wgsl)",
-      "fbm (quantum-foam.wgsl)",
-      "curlNoise (quantum-foam.wgsl)",
-      "voronoi (quantum-foam.wgsl)",
-      "bilateral filter (conv-bilateral-dream.wgsl)"
-    ],
-    "performance_target": "25-35 FPS (GTX 1060)",
-    "created_by": "Agent CB-3 — Convolution Post-Processor",
-    "created_date": "2026-04-18",
     "tags": [
       "quantum",
       "foam",
@@ -11818,13 +8672,6 @@
         "description": "HDR bloom intensity"
       }
     ],
-    "chunks_used": [
-      "Phosphor triad, barrel distortion, persistence (retro_phosphor_dream.wgsl)",
-      "HDR bloom kernel, ACES tone mapping (alpha-hdr-bloom-chain.wgsl)"
-    ],
-    "performance_target": "50 FPS (GTX 1060)",
-    "created_by": "Agent CB-13 — Retro & Glitch Enhancer",
-    "created_date": "2026-04-18",
     "tags": [
       "crt",
       "phosphor",
@@ -11890,13 +8737,6 @@
         "description": "Interlaced field flicker"
       }
     ],
-    "chunks_used": [
-      "Barrel distortion, scanlines, persistence (retro_phosphor_dream.wgsl)",
-      "Blue-noise offset, golden angle disk (spec-blue-noise-stipple.wgsl)"
-    ],
-    "performance_target": "60 FPS (GTX 1060)",
-    "created_by": "Agent CB-6 - Alpha & Post-Process Enhancer",
-    "created_date": "2026-04-18",
     "tags": [
       "crt",
       "retro",
@@ -11963,41 +8803,6 @@
         "max": 1,
         "step": 0.01
       }
-    ],
-    "target_rating": 4.7,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Temperature Intensity",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Convection Speed",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Distortion Strength",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Heat Source Count",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -12056,43 +8861,8 @@
         "step": 0.01
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Smoke Density",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Turbulence",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Rise Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Thermal Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = smoke density, temperature, horizontal and vertical velocity",
-    "updated": true,
-    "target_rating": 4.7
+    "updated": true
   },
   {
     "id": "spec-blackbody-thermal",
@@ -12156,42 +8926,7 @@
         "max": 1,
         "step": 0.01
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Low Temperature",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "High Temperature",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Thermal Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Ember Glow",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "target_rating": 4.7
+    ]
   },
   {
     "id": "spec-importance-sampled-bokeh",
@@ -12249,42 +8984,7 @@
         "step": 0.01
       }
     ],
-    "target_rating": 4.7,
     "supportsDepth": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Bokeh Radius",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Highlight Shape",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Brightness Boost",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Chromatic Aberration",
-        "default": 0.1,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -12335,41 +9035,6 @@
       },
       {
         "id": "turbulence",
-        "name": "Turbulence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "target_rating": 4.8,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Film Thickness",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Film IOR",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Intensity",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
         "name": "Turbulence",
         "default": 0.5,
         "min": 0,
@@ -12436,44 +9101,9 @@
       }
     ],
     "updated": true,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Glass Curvature",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Cauchy B (Dispersion)",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Glass Thickness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Spectral Saturation",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "supportsDepth": true,
     "supportsDof": false,
-    "feedbackPacking": "A/C = ACES display RGBA; exact integer textureLoad feedback",
-    "target_rating": 4.8
+    "feedbackPacking": "A/C = ACES display RGBA; exact integer textureLoad feedback"
   },
   {
     "id": "spec-spherical-harmonics-light",
@@ -12526,8 +9156,7 @@
         "max": 1,
         "step": 0.01
       }
-    ],
-    "target_rating": 4.7
+    ]
   },
   {
     "id": "spec-temporal-path-tracer",
@@ -12582,8 +9211,7 @@
         "max": 1,
         "step": 0.01
       }
-    ],
-    "target_rating": 4.9
+    ]
   },
   {
     "id": "spectral-bleed-confine",
@@ -12633,8 +9261,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "spectral-flow-sorting",
@@ -12694,14 +9321,6 @@
         "description": "Temporal smoothing amount"
       }
     ],
-    "chunks_used": [
-      "Optical flow calculation",
-      "Local frequency analysis",
-      "Pixel sorting along lines"
-    ],
-    "performance_target": "45-60 FPS (GTX 1060)",
-    "created_by": "Agent 3B - Advanced Hybrid Creator",
-    "created_date": "2026-03-22",
     "tags": [
       "interactive",
       "cursor",
@@ -12727,40 +9346,6 @@
       "click-reactive",
       "temporal",
       "aces-tone-map"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "LIC Steps",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Coherency Boost",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Sort Threshold",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Temporal Smoothing",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ],
     "params": [
       {
@@ -12804,12 +9389,6 @@
         "description": "Sort blend smoothing amount"
       }
     ],
-    "chunks_used": [
-      "structureTensor (conv-structure-tensor-flow)",
-      "LIC (conv-structure-tensor-flow)",
-      "pixel sorting (spectral-flow-sorting)",
-      "frequency analysis (spectral-flow-sorting)"
-    ],
     "tags": [
       "structure-tensor",
       "LIC",
@@ -12817,9 +9396,7 @@
       "flow",
       "texture-analysis",
       "audio"
-    ],
-    "created_by": "Agent CB-7 - Flow & Multi-Pass Enhancer",
-    "created_date": "2026-04-18"
+    ]
   },
   {
     "id": "steamy-glass-volumetric",
@@ -12876,43 +9453,8 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Steam Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Fog Depth",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Droplet Scatter",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Turbulence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = steam density, optical depth, droplets, vertical flow",
-    "updated": true,
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updated": true
   },
   {
     "id": "stellar-plasma-blackbody",
@@ -12965,41 +9507,6 @@
       },
       {
         "id": "thermal_intensity",
-        "name": "Thermal Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "target_rating": 4.8,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Temperature Shift",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Evolution Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Zoom Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
         "name": "Thermal Intensity",
         "default": 0.5,
         "min": 0,
@@ -13063,60 +9570,6 @@
         "description": "Blend from stretch-dominant to shear-dominant"
       }
     ],
-    "advanced_params": [
-      {
-        "id": "kernel_radius",
-        "name": "Kernel Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_config.x",
-        "description": "Morphological structuring element radius"
-      },
-      {
-        "id": "erosion_dilation_blend",
-        "name": "Erosion/Dilation Blend",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_config.y",
-        "description": "0=erosion, 1=dilation"
-      },
-      {
-        "id": "gradient_boost",
-        "name": "Gradient Boost",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_config.z",
-        "description": "Morphological gradient amplification"
-      },
-      {
-        "id": "morph_blend",
-        "name": "Morphology Blend",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_config.w",
-        "description": "Blend between sculpted and morphological result"
-      }
-    ],
-    "chunks_used": [
-      "sampleDepth (tensor-flow-sculpting.wgsl)",
-      "tensorEigen (tensor-flow-sculpting.wgsl)",
-      "vnoise (tensor-flow-sculpting.wgsl)",
-      "rippleDisp (tensor-flow-sculpting.wgsl)",
-      "fbm_tfs (tensor-flow-sculpting.wgsl)",
-      "stressColor (tensor-flow-sculpting.wgsl)",
-      "morphological operators (conv-morphological-erosion-dilation.wgsl)"
-    ],
-    "performance_target": "25-35 FPS (GTX 1060)",
-    "created_by": "Agent CB-3 — Convolution Post-Processor",
-    "created_date": "2026-04-18",
     "tags": [
       "tensor",
       "warp",
@@ -13181,42 +9634,7 @@
         "max": 1,
         "step": 0.01
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Heat Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Heat Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Ambient Temperature",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Original Blend",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "target_rating": 4.7
+    ]
   },
   {
     "id": "thermal-vision-blackbody",
@@ -13267,41 +9685,6 @@
       },
       {
         "id": "shift",
-        "name": "Color Shift",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "target_rating": 4.7,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Temperature Low",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Temperature High",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Sensor Contrast",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
         "name": "Color Shift",
         "default": 0,
         "min": 0,
@@ -13370,40 +9753,6 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Grid Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Glow Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Grid Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Warp Amount",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = ACES display RGBA for CRT phosphor glow persistence; B is unused; depth passes through source depth."
   },
   {
@@ -13470,40 +9819,6 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Tracking Error",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Chroma Noise",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Spatial Sigma",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Color Sigma",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "tags": [
       "vhs",
       "retro",
@@ -13568,43 +9883,8 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Viscosity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Range Sigma",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Spectral Shift",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Drag Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = displacement.xy, edge confidence, coating thickness",
-    "updated": true,
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "updated": true
   },
   {
     "id": "vortex-warp-coupled",
@@ -13660,8 +9940,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "warp-drive-blackbody",
@@ -13721,42 +10000,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Aberration",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Brightness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Samples",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+    ]
   },
   {
     "id": "wave-equation-rgba-fluid",
@@ -13788,40 +10032,6 @@
       "semantic-alpha"
     ],
     "feedbackPacking": "A/C = wave height, velocity, pressure, dye; raw coupled-wave state via exact bounded loads",
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Wave Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Wave Damping",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Fluid Viscosity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Source Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "params": [
       {
         "id": "waveSpeed",

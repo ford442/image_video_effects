@@ -175,7 +175,7 @@ def build_definition(shader_id: str, wgsl_path: Path) -> dict:
         "tags": features[:6] if features else [category.replace("-", " ")],
         "features": features if features else ["mouse-driven"],
         "params": DEFAULT_PARAMS,
-        "_seeded_by": "scripts/seed_orphan_shader_defs.py",
+        "x-meta": {"seeded_by": "scripts/seed_orphan_shader_defs.py"},
         "_category_folder": category,
     }
 

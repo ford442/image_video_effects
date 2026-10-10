@@ -24,7 +24,6 @@
     {
       "id": "feed",
       "name": "Feed Rate",
-      "type": "float",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -33,7 +32,6 @@
     {
       "id": "kill",
       "name": "Kill Rate",
-      "type": "float",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -42,7 +40,6 @@
     {
       "id": "chromaticSep",
       "name": "Chromatic Separation",
-      "type": "float",
       "default": 0.3,
       "min": 0,
       "max": 1,
@@ -51,7 +48,6 @@
     {
       "id": "crossCouple",
       "name": "Cross Coupling",
-      "type": "float",
       "default": 0.3,
       "min": 0,
       "max": 1,
@@ -59,39 +55,43 @@
     }
   ],
   "updated": true,
-  "updatedParams": [
-    {
-      "id": "param1",
-      "name": "Feed Rate",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "id": "param2",
-      "name": "Kill Rate",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "id": "param3",
-      "name": "Chromatic Separation",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "id": "param4",
-      "name": "Cross Coupling",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
+  "feedbackPacking": "A/C = warm U, warm V, cool U, cool V. ACES display only.",
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "id": "param1",
+          "name": "Feed Rate",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "id": "param2",
+          "name": "Kill Rate",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "id": "param3",
+          "name": "Chromatic Separation",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "id": "param4",
+          "name": "Cross Coupling",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
     }
-  ],
-  "feedbackPacking": "A/C = warm U, warm V, cool U, cool V. ACES display only."
+  }
 }

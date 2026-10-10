@@ -25,7 +25,6 @@
     "aces"
   ],
   "feedbackPacking": "A packs offset.xy + glitchEnergy; writeTexture is ACES display RGBA; spring cursor extraBuffer[133..136]",
-  "author": "Kimi",
   "params": [
     {
       "id": "glitchIntensity",
@@ -51,5 +50,8 @@
       "max": 1,
       "step": 0.01
     }
-  ]
+  ],
+  "x-meta": {
+    "author": "Kimi"
+  }
 }

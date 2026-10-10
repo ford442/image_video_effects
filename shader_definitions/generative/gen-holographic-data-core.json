@@ -57,45 +57,61 @@
       "mapping": "zoom_params.w"
     }
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Node Density",
-      "default": 1,
-      "min": 0.1,
-      "max": 2,
-      "step": 0.1
-    },
-    {
-      "index": 1,
-      "name": "Travel Speed",
-      "default": 2,
-      "min": 0,
-      "max": 10,
-      "step": 0.5
-    },
-    {
-      "index": 2,
-      "name": "Data Pulse Rate",
-      "default": 1,
-      "min": 0.1,
-      "max": 5,
-      "step": 0.1
-    },
-    {
-      "index": 3,
-      "name": "Glitch Intensity",
-      "default": 0.2,
-      "min": 0,
-      "max": 1,
-      "step": 0.05
-    }
-  ],
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
   "id": "gen-holographic-data-core",
   "url": "shaders/gen-holographic-data-core.wgsl",
-  "features": ["procedural", "audio-reactive", "mouse-driven", "drag-reactive", "click-reactive", "temporal", "volumetric", "semantic-alpha", "aces-tonemap", "generated-depth", "upgraded-rgba"],
-  "feedbackPacking": "A/C = linear HDR display RGBA history; exact bounded temporal loads"
+  "features": [
+    "procedural",
+    "audio-reactive",
+    "mouse-driven",
+    "drag-reactive",
+    "click-reactive",
+    "temporal",
+    "volumetric",
+    "semantic-alpha",
+    "aces-tonemap",
+    "generated-depth",
+    "upgraded-rgba"
+  ],
+  "feedbackPacking": "A/C = linear HDR display RGBA history; exact bounded temporal loads",
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Node Density",
+          "default": 1,
+          "min": 0.1,
+          "max": 2,
+          "step": 0.1
+        },
+        {
+          "index": 1,
+          "name": "Travel Speed",
+          "default": 2,
+          "min": 0,
+          "max": 10,
+          "step": 0.5
+        },
+        {
+          "index": 2,
+          "name": "Data Pulse Rate",
+          "default": 1,
+          "min": 0.1,
+          "max": 5,
+          "step": 0.1
+        },
+        {
+          "index": 3,
+          "name": "Glitch Intensity",
+          "default": 0.2,
+          "min": 0,
+          "max": 1,
+          "step": 0.05
+        }
+      ]
+    }
+  }
 }

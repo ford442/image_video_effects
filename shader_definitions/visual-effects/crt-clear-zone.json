@@ -6,7 +6,6 @@
   "params": [
     {
       "name": "Distortion",
-      "type": "f32",
       "min": 0,
       "max": 1,
       "default": 0.5,
@@ -15,7 +14,6 @@
     },
     {
       "name": "Aberration",
-      "type": "f32",
       "min": 0,
       "max": 1,
       "default": 0.3,
@@ -24,7 +22,6 @@
     },
     {
       "name": "Clear Radius",
-      "type": "f32",
       "min": 0,
       "max": 1,
       "default": 0.3,
@@ -33,7 +30,6 @@
     },
     {
       "name": "Scanlines",
-      "type": "f32",
       "min": 0,
       "max": 1,
       "default": 0.5,

@@ -229,40 +229,6 @@
         "max": 1,
         "step": 0.01
       }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Temporal Spread",
-        "default": 1,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Warp Strength",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Luma Gamma",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Original Blend",
-        "default": 0.1,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -324,40 +290,6 @@
       }
     ],
     "coordinate": 890,
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Accumulation Speed",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Decay Rate",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Glow Radius",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Brightness Threshold",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -406,40 +338,6 @@
       },
       {
         "id": "palette_mix",
-        "name": "Palette Mix",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Luma Threshold",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Sort Length",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Sort Angle",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
         "name": "Palette Mix",
         "default": 0.3,
         "min": 0,
@@ -569,40 +467,6 @@
         "step": 0.01
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Sort Radius",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Mids Modulation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Chromatic Accent",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Feedback Clamp",
-        "default": 1.2,
-        "min": 1,
-        "max": 2,
-        "step": 0.05
-      }
-    ],
     "updated": true
   },
   {
@@ -644,40 +508,6 @@
         "default": 0.5,
         "min": 0,
         "max": 1
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Anamorphic",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Threshold",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Quality Param",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ],
     "features": [
@@ -737,40 +567,6 @@
       "click-reactive",
       "cauchy-dispersion",
       "upgraded-rgba"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Chromatic Amount",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Distortion",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Vignette",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Mode",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ],
     "feedbackPacking": "A/C = final ACES display RGBA with bounded exact chromatic fringe persistence loads; B is unused"
   },
@@ -837,36 +633,6 @@
       16,
       16,
       1
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Amount",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 1,
-        "name": "Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 2,
-        "name": "Edge Threshold",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 3,
-        "name": "Mode",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      }
     ]
   },
   {
@@ -908,40 +674,6 @@
         "default": 0.2,
         "min": 0,
         "max": 1
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Radius",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Quality",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Color Bleed",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ],
     "features": [
@@ -992,40 +724,6 @@
         "default": 0.5,
         "min": 0,
         "max": 1
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Algorithm",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Exposure",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Contrast",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Saturation",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ],
     "features": [
@@ -1097,36 +795,6 @@
       16,
       16,
       1
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Vignette Intensity",
-        "default": 0.4,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 1,
-        "name": "Grain Intensity",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 2,
-        "name": "Color Style",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "index": 3,
-        "name": "Blend Mode",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      }
     ]
   },
   {
@@ -1188,52 +856,6 @@
       "depth-of-field",
       "post-processing",
       "chromatic"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "id": "sigma",
-        "name": "Blur Sigma",
-        "default": 0.3,
-        "min": 0.01,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x",
-        "description": "Base blur radius; also the length scale of the zoom-burst speed lines."
-      },
-      {
-        "index": 1,
-        "id": "shape",
-        "name": "Bokeh Shape",
-        "default": 0,
-        "min": 0,
-        "max": 2,
-        "step": 1,
-        "mapping": "zoom_params.y",
-        "description": "Aperture shape for the bokeh kernel."
-      },
-      {
-        "index": 2,
-        "id": "focalDepth",
-        "name": "Focal Depth",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.z",
-        "description": "Depth plane held in focus by the circle-of-confusion term."
-      },
-      {
-        "index": 3,
-        "id": "maxBlur",
-        "name": "Max Blur",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Upper clamp on the circle of confusion; also gains the rotational shear streaks."
-      }
     ]
   },
   {
@@ -1274,7 +896,6 @@
       {
         "id": "vignetteStrength",
         "name": "Vignette Strength",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1283,7 +904,6 @@
       {
         "id": "bloomRadius",
         "name": "Bloom Radius",
-        "type": "float",
         "default": 0.4,
         "min": 0,
         "max": 1,
@@ -1292,7 +912,6 @@
       {
         "id": "hazeAmount",
         "name": "Haze Amount",
-        "type": "float",
         "default": 0.3,
         "min": 0,
         "max": 1,
@@ -1301,7 +920,6 @@
       {
         "id": "bloomIntensity",
         "name": "Bloom Intensity",
-        "type": "float",
         "default": 0.6,
         "min": 0,
         "max": 1,
@@ -1430,40 +1048,6 @@
         "step": 0.01
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Fast Decay",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Medium Decay",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Slow Decay",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Original Blend",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -1579,40 +1163,6 @@
         "step": 0.01
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Target Frequency",
-        "default": 0.25,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Glow Brightness",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Glow Hue",
-        "default": 0.17,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Base Blend",
-        "default": 0.8,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -1682,40 +1232,6 @@
         "step": 0.01,
         "mapping": "zoom_params.w",
         "description": "Ghost echo strength"
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Exposure Length",
-        "default": 0.7,
-        "min": 0,
-        "max": 1.5,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Decay Rate",
-        "default": 0.86,
-        "min": 0.6,
-        "max": 0.97,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Bloom Color Temp",
-        "default": 0.35,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Ghost Echo",
-        "default": 0.55,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ]
   },
@@ -1828,40 +1344,6 @@
         "step": 0.01
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Motion Sensitivity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Max Decay (Fast)",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Min Decay (Still)",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Warm Tint",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -1919,40 +1401,6 @@
       {
         "id": "mask_strength",
         "name": "Mask Strength",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "R Decay",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "G Decay",
-        "default": 0.79,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "B Decay",
-        "default": 0.93,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Luma Floor",
         "default": 0,
         "min": 0,
         "max": 1,
@@ -2073,40 +1521,6 @@
         "step": 0.01
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Scan Axis",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Temporal Spread",
-        "default": 1,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Reverse",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 1
-      },
-      {
-        "index": 3,
-        "name": "Original Blend",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "updated": true
   },
   {
@@ -2218,40 +1632,6 @@
       },
       {
         "id": "psychedelic",
-        "name": "Haze Removal",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Stretch Amount",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Toe Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Shoulder Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
         "name": "Haze Removal",
         "default": 0,
         "min": 0,
