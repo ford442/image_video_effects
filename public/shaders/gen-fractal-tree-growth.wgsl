@@ -3,30 +3,12 @@
 //  Category: generative
 //  Features: fractal, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: bark rings from segment h; apical meristem glow on growing tips
+//  Upgraded: 2026-10-10
+//  Ideas: idle sway (per-level phase-lagged sine bend so the tree breathes without the pointer); sap pulses (bright bands rising along each segment's h, phase offset per level); kept: bark rings from segment h; apical meristem glow on growing tips
 //  A packing: raw HDR display RGBA (ACES on writeTexture)
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>, // x=Branch Depth, y=Branch Spread, z=Growth Phase, w=Leaf Glow
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Branch Depth, y=Branch Spread, z=Growth Phase, w=Leaf Glow
 
 fn sdSegment2(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
     let pa = p - a;
@@ -40,6 +22,7 @@ fn rotateVector(v: vec2<f32>, angle: f32) -> vec2<f32> {
     return vec2<f32>(c * v.x - s * v.y, s * v.x + c * v.y);
 }
 
+fn sq(x: f32) -> f32 { return x * x; }
 fn palette(t: f32) -> vec3<f32> {
     return vec3<f32>(0.5) + vec3<f32>(0.5) * cos(6.28318 * (vec3<f32>(t) + vec3<f32>(0.08, 0.33, 0.58)));
 }
@@ -71,6 +54,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var branchField = 0.0;
     var leafField = 0.0;
     var barkRings = 0.0;
+    var sapAcc = 0.0;
     var heightDepth = 0.0;
     var hueMoment = 0.0;
     for (var leafPath = 0; leafPath < 32; leafPath++) {
@@ -83,7 +67,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             if (levelGrowth <= 0.0) { break; }
             let bit = (u32(leafPath) >> u32(level)) & 1u;
             let side = select(-1.0, 1.0, bit == 1u);
-            let bend = side * spread * (0.72 + f32(level) * 0.08) + wind * (f32(level) + 1.0);
+            // Idea 1 - idle sway: each level lags the previous one, amplitude grows toward the tips
+            let sway = sin(time * 0.8 - f32(level) * 0.9) * 0.035 * (f32(level) + 1.0);
+            let bend = side * spread * (0.72 + f32(level) * 0.08) + wind * (f32(level) + 1.0) + sway;
             direction = normalize(rotateVector(direction, bend));
             let tip = origin + direction * segmentLength * levelGrowth;
             let thickness = mix(0.026, 0.006, f32(level) / 5.0) * (1.0 + audio.x * 0.2);
@@ -92,6 +78,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let h = sh.y;
             let branch = exp(-d * d / max(thickness * thickness, 0.000001));
             let rings = branch * exp(-abs(fract(h * 6.5 + f32(level) * 0.17) - 0.5) * 16.0);
+            // Idea 2 - sap pulse rising along the segment (h runs origin -> tip)
+            let sap = branch * exp(-sq((fract(h * 1.0 - time * 0.45 + f32(level) * 0.37) - 0.5) * 6.0));
+            sapAcc += sap / 32.0 * levelGrowth;
             branchField += branch / 32.0;
             barkRings += rings / 32.0;
             heightDepth = max(heightDepth, branch * (0.35 + f32(level) * 0.11));
@@ -127,12 +116,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let foliage = palette(hue) * (0.55 + leafGlow + audio.z * 0.6);
     var hdrColor = vec3<f32>(0.006, 0.012, 0.012) + bark * branchField * (1.1 + audio.x * 0.5);
     hdrColor += vec3<f32>(0.42, 0.22, 0.08) * barkRings * 1.35;
+    hdrColor += vec3<f32>(0.55, 1.0, 0.45) * sapAcc * (1.4 + audio.y * 0.8);
     hdrColor += foliage * leafField * leafGlow;
     hdrColor += vec3<f32>(0.3 + audio.x * 0.25, 0.9 + audio.y * 0.35, 0.45 + audio.z * 0.45) * clickGrowth * 0.34;
     let history = textureLoad(dataTextureC, coord, 0);
     hdrColor = clamp(mix(hdrColor, history.rgb, 0.045 + audio.x * 0.06), vec3<f32>(0.0), vec3<f32>(7.0));
     let mapped = acesToneMap(hdrColor * 1.08);
-    let alpha = clamp(branchField * 0.62 + barkRings * 0.12 + leafField * 0.32 + clickGrowth * 0.1, 0.02, 0.98);
+    let alpha = clamp(branchField * 0.62 + barkRings * 0.12 + sapAcc * 0.1 + leafField * 0.32 + clickGrowth * 0.1, 0.02, 0.98);
     let depth = clamp(heightDepth, 0.0, 1.0);
 
     textureStore(writeTexture, coord, vec4<f32>(mapped, alpha));

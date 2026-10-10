@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: action-potential runners along Voronoi edges; synapse flash at nodes
+//  Upgraded: 2026-10-10
+//  Ideas: myelin beading (sheath segments with dark node-of-Ranvier gaps banded along the lattice); refractory tail (teal after-glow trailing each runner, then a dim hyperpolarised gap); kept: action-potential runners along Voronoi edges; synapse flash at nodes
 //  A packing: ACES display RGBA (C unused)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Branch Density, .y = Flow Speed, .z = Glow Intensity, .w = Audio Reactivity
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Branch Density, .y = Flow Speed, .z = Glow Intensity, .w = Audio Reactivity
 
 const MAX_STEPS = 100;
 const MAX_DIST = 30.0;
@@ -221,13 +203,21 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Idea 2 — synapse flash at Voronoi sites when the runner arrives
         let nodeProx = 1.0 - smoothstep(0.0, 0.18, hitMap.z);
         synapse = nodeProx * smoothstep(0.35, 0.72, runner);
+        // Idea 1 - myelin sheath beads: bright segments, narrow gaps (nodes of Ranvier)
+        let beadPhase = dot(p, vec3<f32>(0.62, 0.47, 0.63)) * 9.0;
+        let bead = smoothstep(0.1, 0.45, abs(sin(beadPhase)));
+        // Idea 2 - refractory tail: afterglow just behind the spike, dim gap further behind
+        let behind = clamp(0.5 - apPhase, -0.5, 0.5);
+        let tail = select(0.0, exp(-behind * 7.0) * smoothstep(0.0, 0.08, behind), behind > 0.0) * 0.55;
+        let refractory = select(0.0, smoothstep(0.2, 0.32, behind) * (1.0 - smoothstep(0.38, 0.5, behind)), behind > 0.0);
 
         let pulse = sin(p.z * 5.0 - u.config.x * 10.0) * 0.5 + 0.5;
         let emit = pulse * audio * u.zoom_params.w * u.zoom_params.z;
 
         let base_col = vec3<f32>(0.1, 0.3, 0.8) * sss + vec3<f32>(0.8, 0.9, 1.0) * dif * 0.2;
         let glow_col = vec3<f32>(0.0, 1.0, 0.8) * emit;
-        col = base_col + glow_col;
+        col = (base_col + glow_col) * mix(0.55, 1.12, bead) * (1.0 - refractory * 0.35);
+        col += vec3<f32>(0.05, 0.7, 0.75) * tail * u.zoom_params.z * 0.5 * bead;
         col += vec3<f32>(0.35, 1.0, 0.55) * runner * u.zoom_params.z * 0.85;
         col += vec3<f32>(1.0, 0.95, 0.55) * synapse * (1.4 + treble);
 

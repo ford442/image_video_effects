@@ -3,30 +3,12 @@
 //  Category: generative
 //  Features: audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: warp threads along ribbon length; selvage edge highlight
+//  Upgraded: 2026-10-10
+//  Ideas: half-twist pinch (each ribbon rotates about its own axis, width pinches edge-on and the back face is cooler); travelling satin glint (anisotropic highlight slides along the ribbon, peaking where the slope faces the light); kept: warp threads along ribbon length; selvage edge highlight
 //  A packing: raw HDR display RGBA (ACES on writeTexture)
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>, // x=Ribbon Count, y=Flow Speed, z=Silk Width, w=Iridescence
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Ribbon Count, y=Flow Speed, z=Silk Width, w=Iridescence
 
 fn palette(t: f32) -> vec3<f32> {
     return vec3<f32>(0.52) + vec3<f32>(0.48) * cos(6.28318 * (vec3<f32>(t) + vec3<f32>(0.0, 0.22, 0.47)));
@@ -64,6 +46,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var warpAcc = 0.0;
     var selvageAcc = 0.0;
     var hueAccum = 0.0;
+    var backAcc = 0.0;
+    var glintAcc = 0.0;
     var depth = 0.0;
     for (var i = 0; i < 12; i++) {
         if (i >= ribbonCount) { break; }
@@ -75,16 +59,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let comb = (mouse.y - lane) * exp(-abs(p.x - mouse.x) * 4.5) * held * 0.42;
         let center = lane + primary + secondary + comb;
         let slope = cos(p.x * (1.8 + fi * 0.08) - phase) * (0.24 + audio.x * 0.06);
-        let width = silkWidth * (0.72 + 0.4 * sin(phase + fi));
+        // Idea 1 - half-twist: cos(twist) is the visible face width; sign picks front/back face
+        let twist = cos(p.x * (1.1 + fi * 0.05) - phase * 0.7 + fi * 1.3);
+        let width = silkWidth * (0.72 + 0.4 * sin(phase + fi)) * (0.3 + 0.7 * abs(twist));
         let d = abs(p.y - center);
         let ribbon = smoothstep(width, width * 0.15, d);
         let sheen = pow(max(1.0 - d / max(width, 0.001), 0.0), 7.0) * (0.35 + abs(slope));
         let warp = ribbon * pow(abs(sin(p.x * (26.0 + fi * 2.2) - phase * 0.18)), 10.0);
+        // Idea 2 - satin glint travelling along the ribbon, strongest on slopes facing the light
+        let glintPos = 0.5 + 0.5 * sin(p.x * 1.3 - time * flowSpeed * 0.9 + fi * 1.9);
+        let glint = ribbon * pow(glintPos, 14.0) * (0.35 + abs(slope) * 1.4) * (1.0 - smoothstep(0.0, width, d) * 0.5);
         let selvage = exp(-abs(d - width * 0.88) * 90.0) * smoothstep(width * 1.15, width * 0.7, d);
         coverage += ribbon * (1.0 - coverage * 0.18);
         highlight += sheen;
         warpAcc += warp;
         selvageAcc += selvage;
+        glintAcc += glint;
+        backAcc += ribbon * step(twist, 0.0);
         hueAccum += (ribbon + sheen) * (fi / max(f32(ribbonCount), 1.0) + slope * 0.15);
         depth = max(depth, ribbon * (1.0 - fi / max(f32(ribbonCount), 1.0) * 0.55));
     }
@@ -105,12 +96,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var hdrColor = vec3<f32>(0.006, 0.008, 0.018) + baseSilk * coverage * (0.8 + audio.x * 0.5);
     hdrColor += palette(hue + 0.2) * highlight * (0.18 + iridescence * 0.85 + audio.z * 0.35);
     hdrColor += palette(hue + 0.08) * warpAcc * (0.22 + iridescence * 0.18);
+    // back face of the twisted ribbon: cooler, duller
+    hdrColor = mix(hdrColor, hdrColor * vec3<f32>(0.62, 0.78, 1.1), clamp(backAcc / max(coverage + 0.001, 0.001), 0.0, 1.0) * 0.6);
+    hdrColor += vec3<f32>(1.2, 1.1, 0.95) * glintAcc * (0.5 + iridescence * 0.4 + audio.z * 0.3);
     hdrColor += vec3<f32>(1.15, 1.05, 0.85) * selvageAcc * (0.28 + audio.z * 0.12);
     hdrColor += vec3<f32>(0.45, 0.7 + audio.y * 0.4, 1.15 + audio.z * 0.5) * clickWave * 0.32;
     let history = textureLoad(dataTextureC, coord, 0);
     hdrColor = clamp(mix(hdrColor, history.rgb, 0.06 + audio.x * 0.065), vec3<f32>(0.0), vec3<f32>(7.0));
     let mapped = acesToneMap(hdrColor * 1.08);
-    let alpha = clamp(coverage * 0.7 + highlight * 0.12 + warpAcc * 0.08 + selvageAcc * 0.1 + clickWave * 0.1, 0.02, 0.98);
+    let alpha = clamp(coverage * 0.7 + highlight * 0.12 + warpAcc * 0.08 + selvageAcc * 0.1 + glintAcc * 0.05 + clickWave * 0.1, 0.02, 0.98);
 
     textureStore(writeTexture, coord, vec4<f32>(mapped, alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(clamp(depth, 0.0, 1.0), 0.0, 0.0, 0.0));

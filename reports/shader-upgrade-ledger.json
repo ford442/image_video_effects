@@ -2262,24 +2262,60 @@
       "history": []
     },
     "gen-flame-fractal-attractor": {
-      "hash": "25fec48bbf9d9451",
-      "history": []
+      "hash": "ce9d0c111ea94ecb",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T22:58:42.638Z",
+          "hash": "ce9d0c111ea94ecb",
+          "prev_hash": "25fec48bbf9d9451",
+          "commit": "f17da9d0",
+          "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
+        }
+      ]
     },
     "gen-flowing-silk-ribbons": {
-      "hash": "c056ddd0c5909704",
-      "history": []
+      "hash": "54c8ee2190fa8133",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T22:58:42.638Z",
+          "hash": "54c8ee2190fa8133",
+          "prev_hash": "c056ddd0c5909704",
+          "commit": "f17da9d0",
+          "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
+        }
+      ]
     },
     "gen-fourier-epicycles": {
       "hash": "2a1fb20c938ccd5b",
       "history": []
     },
     "gen-fractal-bioluminescence-spore-network": {
-      "hash": "ab1a6fc9b6898637",
-      "history": []
+      "hash": "3f7edf38b2175a8b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T22:58:42.638Z",
+          "hash": "3f7edf38b2175a8b",
+          "prev_hash": "ab1a6fc9b6898637",
+          "commit": "f17da9d0",
+          "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
+        }
+      ]
     },
     "gen-fractal-chrono-dendrite-forge": {
-      "hash": "6e46cbc365db917f",
-      "history": []
+      "hash": "5119f37d90a1ecc7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T22:58:42.638Z",
+          "hash": "5119f37d90a1ecc7",
+          "prev_hash": "6e46cbc365db917f",
+          "commit": "f17da9d0",
+          "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
+        }
+      ]
     },
     "gen-fractal-clockwork": {
       "hash": "d285b97cf093c71a",
@@ -2290,36 +2326,90 @@
       "history": []
     },
     "gen-fractal-flame-classic": {
-      "hash": "4940f1cd4f1432eb",
-      "history": []
+      "hash": "bd92ccc6f61ff483",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T22:58:42.638Z",
+          "hash": "bd92ccc6f61ff483",
+          "prev_hash": "4940f1cd4f1432eb",
+          "commit": "f17da9d0",
+          "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
+        }
+      ]
     },
     "gen-fractal-neuro-mycelium-lattice": {
-      "hash": "47edf63c619a1efd",
-      "history": []
+      "hash": "440459aea0cf419e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T22:58:42.638Z",
+          "hash": "440459aea0cf419e",
+          "prev_hash": "47edf63c619a1efd",
+          "commit": "f17da9d0",
+          "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
+        }
+      ]
     },
     "gen-fractal-tree-growth": {
-      "hash": "2de708e2aaae5d20",
-      "history": []
+      "hash": "ed4cbbf64668ffd4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T22:58:42.638Z",
+          "hash": "ed4cbbf64668ffd4",
+          "prev_hash": "2de708e2aaae5d20",
+          "commit": "f17da9d0",
+          "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
+        }
+      ]
     },
     "gen-fractured-monolith": {
       "hash": "1d49d72bf7a5ee3e",
       "history": []
     },
     "gen-galactic-aether-crystal-geode-core": {
-      "hash": "9907e41bb61fae88",
-      "history": []
+      "hash": "21ea4275811141bc",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T22:58:42.638Z",
+          "hash": "21ea4275811141bc",
+          "prev_hash": "9907e41bb61fae88",
+          "commit": "f17da9d0",
+          "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
+        }
+      ]
     },
     "gen-ghost-flame": {
       "hash": "6aaaa38000c73713",
       "history": []
     },
     "gen-glacial-aether-quantum-cavern": {
-      "hash": "b9018d8f053db2ab",
-      "history": []
+      "hash": "17cf492f608aecf5",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T22:58:42.638Z",
+          "hash": "17cf492f608aecf5",
+          "prev_hash": "b9018d8f053db2ab",
+          "commit": "f17da9d0",
+          "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
+        }
+      ]
     },
     "gen-glass-mosaic-liquid-refraction": {
-      "hash": "65c82966bbb1fbab",
-      "history": []
+      "hash": "f9723ffd11440f44",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T22:58:42.638Z",
+          "hash": "f9723ffd11440f44",
+          "prev_hash": "65c82966bbb1fbab",
+          "commit": "f17da9d0",
+          "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
+        }
+      ]
     },
     "gen-gravitational-ferrofluid-singularity-engine": {
       "hash": "4f8fd4a51d914b22",
