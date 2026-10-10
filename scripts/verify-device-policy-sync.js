@@ -557,6 +557,81 @@ function verifyWasmCompileFlags() {
         fail(`${name} hardcodes ${f}; it belongs in wasm_compile_flags.json extraFlags`);
       }
     }
+    // No second -s list at all: only the export lists (from wasm_exports.json) are spelled here.
+    for (const m of code.matchAll(/(?:^|[\s"'])-s([A-Z][A-Z0-9_]*)/g)) {
+      if (m[1] !== 'EXPORTED_FUNCTIONS' && m[1] !== 'EXPORTED_RUNTIME_METHODS') {
+        fail(`${name} hardcodes -s${m[1]}; -s settings belong in wasm_compile_flags.json sFlags`);
+      }
+    }
+  }
+
+  verifyWasmCompileSources(flags, buildSh);
+}
+
+/**
+ * One TU list (wasm_compile_flags.json `sources`) feeds build.sh and the clangd
+ * compile database; the database carries build.sh's exact flag list. CMake was
+ * removed on purpose (its two-step emdawn compile leaked -sUSE_WEBGPU=1).
+ */
+function verifyWasmCompileSources(flags, buildSh) {
+  const { compileCommands, emccArgs } = require('./format-wasm-compile-flags.js');
+  const rendererDir = path.join(ROOT, 'wasm_renderer');
+  const onDisk = fs.readdirSync(rendererDir).filter((f) => f.endsWith('.cpp')).sort();
+  const sources = Array.isArray(flags.sources) ? flags.sources : [];
+  if (JSON.stringify([...sources].sort()) !== JSON.stringify(onDisk)) {
+    fail(`wasm_compile_flags.json sources [${sources.join(', ')}] must equal wasm_renderer/*.cpp [${onDisk.join(', ')}]`);
+  }
+  const code = buildSh.split('\n').filter((l) => !/^\s*#/.test(l)).join('\n');
+  if (!/format-wasm-compile-flags\.js"?\s+sources/.test(code)) {
+    fail('build.sh must read its TU list via `format-wasm-compile-flags.js sources`');
+  }
+  if (/\b[\w/$.{}-]+\.cpp\b/.test(code)) {
+    fail('build.sh must not list .cpp files; add them to wasm_compile_flags.json sources');
+  }
+  for (const cm of ['CMakeLists.txt', 'wasm_renderer/CMakeLists.txt']) {
+    if (fs.existsSync(path.join(ROOT, cm))) {
+      fail(`${cm} must not exist: build.sh is the only WASM build (compile_commands.json comes from npm run wasm:compdb)`);
+    }
+  }
+
+  const stubCflags = ['--target=wasm32-unknown-emscripten', '--sysroot=/stub/sysroot'];
+  const cmds = compileCommands(flags, { cflags: stubCflags, emCache: '/stub/cache', rendererDir });
+  const expected = emccArgs(flags);
+  const files = cmds.map((c) => path.basename(c.file)).sort();
+  if (JSON.stringify(files) !== JSON.stringify([...sources].sort())) {
+    fail(`compile_commands.json must have one entry per TU; got [${files.join(', ')}]`);
+  }
+  for (const c of cmds) {
+    if (!path.isAbsolute(c.file) || !path.isAbsolute(c.directory)) {
+      fail(`compile_commands.json entry for ${c.file} must use absolute paths`);
+    }
+    const missing = expected.filter((a) => !c.arguments.includes(a));
+    if (missing.length) {
+      fail(`compile_commands.json ${path.basename(c.file)} is missing build flags: ${missing.join(' ')}`);
+    }
+    if (!c.arguments.includes(`-I${rendererDir}`)) {
+      fail(`compile_commands.json ${path.basename(c.file)} must include -I${rendererDir}`);
+    }
+    if (!stubCflags.every((a) => c.arguments.includes(a))) {
+      fail(`compile_commands.json ${path.basename(c.file)} must carry em++ --cflags (target / sysroot)`);
+    }
+  }
+  const clangdPath = path.join(rendererDir, '.clangd');
+  if (!fs.existsSync(clangdPath)) {
+    fail('wasm_renderer/.clangd must exist (strips -s / --use-port from the compile database)');
+  } else {
+    const clangd = fs.readFileSync(clangdPath, 'utf8');
+    for (const f of flags.sFlags) {
+      const key = f.split('=')[0];
+      if (!clangd.includes(`- -s${key}*`)) {
+        fail(`wasm_renderer/.clangd Remove must list -s${key}* (one entry per wasm_compile_flags.json sFlags key)`);
+      }
+    }
+    if (/-\s+-s\*\s*$/m.test(clangd)) fail('wasm_renderer/.clangd must not Remove a bare -s* (it strips -std=c++20)');
+  }
+  const gitignore = fs.readFileSync(path.join(ROOT, '.gitignore'), 'utf8');
+  if (!/^wasm_renderer\/compile_commands\.json$/m.test(gitignore)) {
+    fail('.gitignore must list wasm_renderer/compile_commands.json (it embeds the machine emsdk path)');
   }
 }
 
