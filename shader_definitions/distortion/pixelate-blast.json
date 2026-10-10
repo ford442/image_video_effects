@@ -3,7 +3,7 @@
   "name": "Pixelate Blast",
   "category": "distortion",
   "url": "shaders/pixelate-blast.wgsl",
-  "description": "Voronoi cellular pixelation with shockwave domain distortion and explosive blast dispersal. Features spring-damper cursor dynamics, Cauchy chromatic aberration along blast normals, multi-ring click ripples, exact-C temporal feedback, and ACES tonemapping.",
+  "description": "Pixel mosaic with Voronoi facets blown out from the pointer: bevelled fragments tilt away from the blast and shatter finer in its core.",
   "features": [
     "mouse-driven",
     "audio-reactive",
@@ -11,7 +11,6 @@
     "depth-aware",
     "voronoi-cells",
     "fast-motion",
-    "spring-cursor",
     "held-drag",
     "bounded-click-ripples",
     "aces-tone-map",

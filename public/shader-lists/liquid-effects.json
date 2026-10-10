@@ -2261,7 +2261,7 @@
       }
     ],
     "description": "Luma-thresholded cohesive rivulets branch under heat-dependent viscosity, held-pointer melting, exact advected history, and aspect-correct click fronts.",
-    "feedbackPacking": "A/C = final tone-mapped display RGBA; exact bounded melt-history loads",
+    "feedbackPacking": "A/C = linear pre-ACES melt RGB + molten temperature in alpha; exact bounded melt-history loads",
     "tags": [
       "fluid",
       "liquid",
