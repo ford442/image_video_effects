@@ -6,6 +6,9 @@
 
 import { createPortPair, flushPorts, FakePort } from '../testing/fakePorts';
 import { setRendererErrorHandler } from '../ErrorHandling';
+import { createWaveTankGraph } from '../multipassGraph';
+import { hasGraph } from '../multipassRegistry';
+import { clearRuntimeGraphs, getRuntimeGraph } from '../runtimeGraphs';
 import type { RendererError } from '../ErrorHandling';
 import {
   PROTOCOL_LISTS_ARE_EXHAUSTIVE,
@@ -30,6 +33,8 @@ import type { WebGpuProbeResult } from '../webgpuBootProbe';
 import type { DeviceLossInfo } from '../Renderer';
 
 const CONFIG = { width: 256, height: 256, agentCount: 0 };
+
+afterEach(() => clearRuntimeGraphs());
 
 function fakeRenderer() {
   const calls: Array<[string, unknown[]]> = [];
@@ -203,6 +208,20 @@ describe('render worker host ↔ client', () => {
     expect(await client.rpc({ type: 'captureThumbnail', size: 64 })).toBe('cG5n');
     expect(await client.rpc({ type: 'dispose' })).toBe(true);
     expect(fake.raw.destroy).toHaveBeenCalled();
+  });
+
+  it('applies setRuntimeGraph to the worker-realm overlay, with or without a renderer', async () => {
+    const { mainPort } = setup();
+    const client = await connectRenderWorker(mainPort);
+    const graph = createWaveTankGraph();
+    client.send({ type: 'setRuntimeGraph', id: 'graphlab-draft', graph });
+    await flushPorts();
+    expect(getRuntimeGraph('graphlab-draft')).toEqual(graph);
+    expect(hasGraph('graphlab-draft')).toBe(true);
+    client.send({ type: 'setRuntimeGraph', id: 'graphlab-draft', graph: null });
+    await flushPorts();
+    expect(getRuntimeGraph('graphlab-draft')).toBeNull();
+    expect(hasGraph('graphlab-draft')).toBe(false);
   });
 
   it('reports a failed probe without creating a renderer', async () => {
@@ -475,6 +494,18 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
     expect(backend.getGpuErrors()).toEqual(['oops']);
     expect(backend.setNodeScale(0, 'tensor', 0.3)).toBe(0.5);
     expect(backend.setNodeScale(0, 'not-scalable', 0.5)).toBe(1);
+    await backend.destroy();
+  });
+
+  it('forwards runtime graphs to the worker as a setRuntimeGraph command', async () => {
+    const { backend } = await backendWithWorker();
+    const graph = createWaveTankGraph();
+    backend.setRuntimeGraph('graphlab-draft', graph);
+    await flushPorts();
+    expect(getRuntimeGraph('graphlab-draft')).toEqual(graph);
+    backend.setRuntimeGraph('graphlab-draft', null);
+    await flushPorts();
+    expect(getRuntimeGraph('graphlab-draft')).toBeNull();
     await backend.destroy();
   });
 

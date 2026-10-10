@@ -4,6 +4,8 @@ import { StorageBrowser } from '../storage';
 import { RenderMode, ShaderEntry, SlotParams, InputSource } from '../../renderer/types';
 import type { RendererManager } from '../../renderer/RendererManager';
 import type { ThumbnailHost } from '../../services/thumbnailBatch';
+import { readGraphLabEnabled } from '../../graphLab/graphLabFlags';
+import { GraphLabLauncher } from '../graphLab/GraphLabLauncher';
 
 
 export interface AppOverlaysProps {
@@ -68,6 +70,8 @@ export function AppOverlays({
     inputSource,
     currentImageUrl,
 }: AppOverlaysProps) {
+    // Experimental Graph Lab (?graphlab): the launcher is tiny, the workspace is a lazy chunk.
+    const graphLabEnabled = useMemo(() => readGraphLabEnabled(), []);
     // Latest app state for the thumbnail batch to save/restore around a run.
     const sessionRef = useRef({ modes, slotParams, inputSource, currentImageUrl });
     sessionRef.current = { modes, slotParams, inputSource, currentImageUrl };
@@ -344,6 +348,15 @@ export function AppOverlays({
                         />
                     </div>
                 </div>
+            )}
+
+            {graphLabEnabled && rendererRef && (
+                <GraphLabLauncher
+                    rendererRef={rendererRef}
+                    availableModes={availableModes}
+                    activeSlot={activeSlot}
+                    setStatus={setStatus}
+                />
             )}
         </>
     );

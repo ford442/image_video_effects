@@ -56,7 +56,7 @@ if (!Number.isFinite(limitKib) || limitKib <= 0) {
 const limitBytes = Math.round(limitKib * 1024);
 
 const main = readAsset(manifest, 'main.js');
-const lazyAssets = ['auto-dj.js', 'transformers.js', 'web-llm.js', 'gpu-encode.js', 'render-worker.js', 'osc.js']
+const lazyAssets = ['auto-dj.js', 'transformers.js', 'web-llm.js', 'gpu-encode.js', 'render-worker.js', 'osc.js', 'graph-lab.js']
   .map(key => readAsset(manifest, key))
   .filter(Boolean);
 

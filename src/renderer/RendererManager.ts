@@ -30,6 +30,8 @@ import {
 import { isCanvasTransferred, WorkerWebGPUBackend } from './worker/WorkerWebGPUBackend';
 import { isWebGpuBackend, type WebGPUBackendApi } from './webgpuBackendApi';
 import type { PassTiming } from './passTimings';
+import type { MultipassGraphDef } from './multipassGraph';
+import { setRuntimeGraph as setRuntimeGraphOverlay } from './runtimeGraphs';
 import {
   ShaderLoadMeta,
   addRipple,
@@ -663,6 +665,21 @@ export class RendererManager {
   /** Bench only (#1080): vsync-free ms/frame from the active TS or C++ backend. */
   async benchmarkUncapped(frames: number): Promise<UncappedBenchResult | null> {
     return (await this.shaderRenderer()?.benchmarkUncapped?.(frames)) ?? null;
+  }
+  /**
+   * Register (or, with `null`, drop) a runtime Tier C graph under `id` — the Graph
+   * Lab draft (TS WebGPU only; WASM stays frozen). The main-thread overlay is set
+   * even when the renderer runs in the worker, because shader loading and badges
+   * resolve graphs on this thread; the backend call then reaches the worker's copy.
+   * Pass a fresh graph object per edit: plans are memoised per object.
+   * Returns false when the active backend cannot run graphs.
+   */
+  setRuntimeGraph(id: string, graph: MultipassGraphDef | null): boolean {
+    const r = this.shaderRenderer();
+    if (!isWebGpuBackend(r)) return false;
+    setRuntimeGraphOverlay(id, graph);
+    r.setRuntimeGraph(id, graph);
+    return true;
   }
   /** Run an opt-in graph node below full size (TS WebGPU only). Returns the scale in effect. */
   setNodeScale(slot: number, nodeId: string, scale: number): number {

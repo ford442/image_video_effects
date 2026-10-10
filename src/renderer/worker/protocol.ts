@@ -19,6 +19,7 @@ import type { GpuChoresBreadcrumbs } from '../../gpuChores';
 import type { RendererError } from '../ErrorHandling';
 import type { GraphRunReport } from '../GraphRunner';
 import type { VideoIngestStats } from '../media/videoFramePump';
+import type { MultipassGraphDef } from '../multipassGraph';
 import type { PassTiming } from '../passTimings';
 import type { GPUTimings, RendererConfig, UncappedBenchResult } from '../Renderer';
 import type { InputSource } from '../types';
@@ -87,7 +88,9 @@ export type RenderCommand =
   /** Test hook (?testMode=1): destroy the device but report it as a runtime loss. */
   | { type: 'simulateDeviceLoss' }
   /** Test hook: raise an uncaught error in the worker, like a crash (#1395). */
-  | { type: 'simulateWorkerCrash' };
+  | { type: 'simulateWorkerCrash' }
+  /** Graph Lab draft: register (or, with null, drop) a runtime Tier C graph under `id`. */
+  | { type: 'setRuntimeGraph'; id: string; graph: MultipassGraphDef | null };
 
 export interface RenderInitInfo {
   ok: boolean;
@@ -208,6 +211,7 @@ export const RENDER_COMMAND_TYPES = [
   'warmShaders',
   'simulateDeviceLoss',
   'simulateWorkerCrash',
+  'setRuntimeGraph',
 ] as const;
 
 export const RENDER_RPC_TYPES = [

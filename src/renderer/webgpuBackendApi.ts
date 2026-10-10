@@ -64,6 +64,7 @@ export type WebGPUBackendApi = Pick<
   | 'getScalableNodes'
   | 'isShaderCached'
   | 'warmShaders'
+  | 'setRuntimeGraph'
   | 'captureChoresThumbnailPng'
   | 'setSourceAutoExposure'
   | 'applyTestRenderState'

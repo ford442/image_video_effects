@@ -66,7 +66,8 @@ import { allocateWorkingPool, rungsForRequest } from './webgpu/historyTexProbe';
 import { declaresBindGroup1, SimRing } from './webgpu/simRing';
 import { rewriteWgslStorageFormats } from './wgslFormatRewrite';
 import { resolveGraphForShader, resolveSimRingRequest, getGraphEntryIds, resolveMultipassChain } from './multipassRegistry';
-import { graphUsesSimRing } from './multipassGraph';
+import { graphUsesSimRing, type MultipassGraphDef } from './multipassGraph';
+import { setRuntimeGraph as setRuntimeGraphOverlay } from './runtimeGraphs';
 import { instrumentDevice, type FrameStats } from './webgpu/deviceCounters';
 import type { PassTiming } from './passTimings';
 import { ShaderWarmupQueue, type WarmupEntry } from './webgpu/shaderWarmup';
@@ -667,6 +668,14 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       }
     });
     return nodes;
+  }
+
+  /**
+   * Register (or, with `null`, drop) a runtime Tier C graph under `id` (Graph Lab
+   * draft; see runtimeGraphs.ts). Takes effect on the next frame's slot plan.
+   */
+  setRuntimeGraph(id: string, graph: MultipassGraphDef | null): void {
+    setRuntimeGraphOverlay(id, graph);
   }
 
   /**
