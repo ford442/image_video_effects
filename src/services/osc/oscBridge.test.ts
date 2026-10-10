@@ -54,13 +54,14 @@ describe('OscBridge', () => {
     const { bridge, handle } = make();
     bridge.start();
     const ws = FakeSocket.instances[0];
-    expect(ws.binaryType).toBe('arraybuffer');
-    ws.onopen?.();
+    expect(ws).toBeDefined();
+    expect(ws!.binaryType).toBe('arraybuffer');
+    ws!.onopen?.();
     const pkt = encodeOscMessage('/pixelocity/slot/1/param/y', [0.5]);
-    ws.onmessage?.({ data: pkt.buffer.slice(pkt.byteOffset, pkt.byteOffset + pkt.byteLength) });
+    ws!.onmessage?.({ data: pkt.buffer.slice(pkt.byteOffset, pkt.byteOffset + pkt.byteLength) });
     expect(handle.setSlotParam).toHaveBeenCalledWith(1, 'zoomParam2', 0.5);
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
-    ws.onmessage?.({ data: new ArrayBuffer(3) });
+    ws!.onmessage?.({ data: new ArrayBuffer(3) });
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
     bridge.stop();
@@ -69,12 +70,12 @@ describe('OscBridge', () => {
   it('reconnects with capped exponential backoff until stopped', () => {
     const { bridge, statuses } = make();
     bridge.start();
-    FakeSocket.instances[0].onclose?.();
+    FakeSocket.instances[0]!.onclose?.();
     jest.advanceTimersByTime(99);
     expect(FakeSocket.instances).toHaveLength(1);
     jest.advanceTimersByTime(1);
     expect(FakeSocket.instances).toHaveLength(2);
-    FakeSocket.instances[1].onclose?.();
+    FakeSocket.instances[1]!.onclose?.();
     jest.advanceTimersByTime(200);
     expect(FakeSocket.instances).toHaveLength(3);
     bridge.stop();

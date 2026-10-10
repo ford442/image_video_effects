@@ -54,6 +54,9 @@ export interface CpuSourceCache {
   height: number;
 }
 
+/** Index into the double-buffered readback pairs. */
+type ReadSlot = 0 | 1;
+
 interface GpuResources {
   histBuf: GPUBuffer;
   histRead: [GPUBuffer, GPUBuffer];
@@ -99,7 +102,7 @@ export class GpuChoresHost {
   private classifyWidth = 0;
   private classifyHeight = 0;
   private frameCounter = 0;
-  private readSlot = 0;
+  private readSlot: ReadSlot = 0;
   private mapPending = false;
   /** Bumped by releaseGpu(); in-flight maps from an older generation are ignored. */
   private gpuGeneration = 0;
@@ -108,7 +111,7 @@ export class GpuChoresHost {
   private histEncodedThisFrame = false;
   /** The frame loop called encodeReadback this frame (copies ride the frame encoder). */
   private readbackHandled = false;
-  private readbackEncodedSlot: number | null = null;
+  private readbackEncodedSlot: ReadSlot | null = null;
   /** Per-frame chore bind groups, reused while their resources are unchanged. */
   private bindGroupCache = new Map<string, { deps: readonly unknown[]; group: GPUBindGroup }>();
   /** Per-pass timestamp provider for the encodePreFx call in progress. */
@@ -264,7 +267,7 @@ export class GpuChoresHost {
     try {
       const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const floats = new Float32Array(image.data.length);
-      for (let i = 0; i < image.data.length; i++) floats[i] = image.data[i] / 255;
+      for (let i = 0; i < image.data.length; i++) floats[i] = image.data[i]! / 255;
       this.ingestRgba(floats, canvas.width, canvas.height);
     } catch {
       // Offscreen may be tainted; GPU hist still runs when available.
@@ -382,7 +385,7 @@ export class GpuChoresHost {
     this.readbackEncodedSlot = slot;
   }
 
-  private encodeReadbackCopies(encoder: GPUCommandEncoder, gpu: GpuResources, slot: number): void {
+  private encodeReadbackCopies(encoder: GPUCommandEncoder, gpu: GpuResources, slot: ReadSlot): void {
     encoder.copyBufferToBuffer(gpu.histBuf, 0, gpu.histRead[slot], 0, HIST_BYTES);
     encoder.copyBufferToBuffer(gpu.reduceBuf, 0, gpu.reduceRead[slot], 0, REDUCE_BYTES);
     encoder.copyTextureToBuffer(
@@ -429,7 +432,7 @@ export class GpuChoresHost {
     this.mapReadback(gpu, slot);
   }
 
-  private mapReadback(gpu: GpuResources, slot: number): void {
+  private mapReadback(gpu: GpuResources, slot: ReadSlot): void {
     this.mapPending = true;
     // releaseGpu() destroys these buffers; a map that settles after it belongs to
     // resources that no longer exist and must not touch the current attachment.
@@ -451,7 +454,7 @@ export class GpuChoresHost {
         reduceRead.unmap();
         classifyRead.unmap();
         this.applyGpuReadback(histCopy, reduceCopy, classifyPacked);
-        this.readSlot = 1 - slot;
+        this.readSlot = slot === 0 ? 1 : 0;
         this.mapPending = false;
         this.readbackFailures = 0;
       })
@@ -690,9 +693,9 @@ export class GpuChoresHost {
     const count = reduceRaw[3] || 0;
     const reduce = count > 0
       ? {
-          min: reduceRaw[0] / 65535,
-          max: reduceRaw[1] / 65535,
-          mean: reduceRaw[2] / 65535 / count,
+          min: reduceRaw[0]! / 65535,
+          max: reduceRaw[1]! / 65535,
+          mean: reduceRaw[2]! / 65535 / count,
         }
       : fromHist;
     this.breadcrumbs.autoUniforms = {
@@ -842,7 +845,7 @@ export class GpuChoresHost {
       device.createBuffer({ label: 'chores-classify-read-1', size: CLASSIFY_READ_BYTES, usage: mapRead }),
     ];
     const lutU32 = new Uint32Array(LUT_SIZE);
-    for (let i = 0; i < LUT_SIZE; i++) lutU32[i] = this.classifyLut[i];
+    for (let i = 0; i < LUT_SIZE; i++) lutU32[i] = this.classifyLut[i] ?? 0;
     const lutBuf = device.createBuffer({
       label: 'chores-lut',
       size: LUT_SIZE * 4,
@@ -1020,10 +1023,10 @@ export function rgba16BufferToRgba32(
     }
     for (let x = 0; x < width; x++) {
       const di = (y * width + x) * 4;
-      out[di] = float16ToFloat32(row[x * 4]);
-      out[di + 1] = float16ToFloat32(row[x * 4 + 1]);
-      out[di + 2] = float16ToFloat32(row[x * 4 + 2]);
-      out[di + 3] = float16ToFloat32(row[x * 4 + 3]);
+      out[di] = float16ToFloat32(row[x * 4]!);
+      out[di + 1] = float16ToFloat32(row[x * 4 + 1]!);
+      out[di + 2] = float16ToFloat32(row[x * 4 + 2]!);
+      out[di + 3] = float16ToFloat32(row[x * 4 + 3]!);
     }
   }
   return out;

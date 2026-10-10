@@ -237,8 +237,12 @@ export function decodePassTimings(
   periodNs: number,
 ): DecodedPassTimings {
   const byKey = new Map<string, PassTiming>();
-  const span = { parallel: [0n, 0n], chained: [0n, 0n], all: [0n, 0n] } as Record<string, [bigint, bigint]>;
-  const widen = (name: string, begin: bigint, end: bigint) => {
+  const span: Record<SlotTimingMode | 'all', [bigint, bigint]> = {
+    parallel: [0n, 0n],
+    chained: [0n, 0n],
+    all: [0n, 0n],
+  };
+  const widen = (name: SlotTimingMode | 'all', begin: bigint, end: bigint) => {
     const s = span[name];
     if (s[0] === 0n || begin < s[0]) s[0] = begin;
     if (end > s[1]) s[1] = end;
@@ -276,7 +280,7 @@ export function decodePassTimings(
     });
   });
 
-  const spanMs = (name: string) => timestampDeltaMs(span[name][0], span[name][1], periodNs);
+  const spanMs = (name: SlotTimingMode | 'all') => timestampDeltaMs(span[name][0], span[name][1], periodNs);
   return {
     timings: { parallelTime: spanMs('parallel'), chainedTime: spanMs('chained'), totalTime: spanMs('all') },
     passes: Array.from(byKey.values()),
@@ -333,16 +337,18 @@ export function encodeResolveAndCopy(
     timing.stagingBusy = timing.stagingRing.map(() => false);
   }
   let slot: number | null = null;
+  let staging: GPUBuffer | undefined;
   for (let i = 0; i < timing.stagingRing.length; i++) {
     const candidate = (timing.ringIndex + i) % timing.stagingRing.length;
-    if (!timing.stagingBusy[candidate] && timing.stagingRing[candidate]) {
+    staging = timing.stagingRing[candidate];
+    if (!timing.stagingBusy[candidate] && staging) {
       slot = candidate;
       break;
     }
   }
-  if (slot === null) return null;
+  if (slot === null || !staging) return null;
 
-  encoder.copyBufferToBuffer(timing.queryBuffer, 0, timing.stagingRing[slot], 0, count * 2 * 8);
+  encoder.copyBufferToBuffer(timing.queryBuffer, 0, staging, 0, count * 2 * 8);
   timing.lastReadbackAt = now;
   return { slot, passes: [...timing.frame.passes], overflow: timing.frame.overflow };
 }

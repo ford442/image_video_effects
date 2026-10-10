@@ -44,8 +44,8 @@ describe('shadertoyToPixelocity', () => {
   it('generates shader definition draft with audio mappings', () => {
     const draft = generateShaderDefinitionDraft('st-plasma', 'Test Plasma');
     expect(draft.params).toHaveLength(4);
-    expect(draft.params[0].audio).toBe('bass');
-    expect(draft.params[0].mapping).toBe('zoom_params.x');
+    expect(draft.params[0]!.audio).toBe('bass');
+    expect(draft.params[0]!.mapping).toBe('zoom_params.x');
   });
 
   describe('assembleComputeShader gate-clean samples', () => {

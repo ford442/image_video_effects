@@ -90,7 +90,7 @@ export const PhysarumControls: React.FC<PhysarumControlsProps> = ({ onParamChang
             <div style={styles.controlHeader}>
               <label style={styles.label}>{param.label}</label>
               <span style={styles.value}>
-                {values[param.name].toFixed(param.step < 1 ? 2 : 0)}{param.unit}
+                {(values[param.name] ?? param.defaultValue).toFixed(param.step < 1 ? 2 : 0)}{param.unit}
               </span>
             </div>
             <input

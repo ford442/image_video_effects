@@ -58,10 +58,10 @@ describe('LatestFrameQueue', () => {
     const q = new LatestFrameQueue<FakeVideoFrame>(2);
     const frames = [1, 2, 3].map((i) => new FakeVideoFrame(i));
     frames.forEach((f) => q.push(f));
-    expect(frames[0].closed).toBe(true);
+    expect(frames[0]!.closed).toBe(true);
     expect(q.getStats()).toEqual({ enqueued: 3, consumed: 0, dropped: 1 });
     expect(q.takeLatest()).toBe(frames[2]);
-    expect(frames[1].closed).toBe(true); // superseded
+    expect(frames[1]!.closed).toBe(true); // superseded
     expect(q.getStats()).toEqual({ enqueued: 3, consumed: 1, dropped: 2 });
     expect(q.takeLatest()).toBeNull();
   });

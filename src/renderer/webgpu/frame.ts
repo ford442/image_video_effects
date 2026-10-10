@@ -33,7 +33,7 @@ export {
   createRendererFrameHost,
 } from './frameState';
 export type {
-  RendererFrameDeps,
+  FrameContext,
   WebGPUFrameHost,
   WebGPUFrameState,
 } from './frameState';
@@ -224,15 +224,15 @@ export class WebGPUFrameRenderer {
       state.mouseDown ? 1 : 0,
     );
     uniforms.setZoomParams(
-      state.zoomParams[0],
-      state.zoomParams[1],
-      state.zoomParams[2],
-      state.zoomParams[3],
+      state.zoomParams[0] ?? 0.5,
+      state.zoomParams[1] ?? 0.5,
+      state.zoomParams[2] ?? 0.5,
+      state.zoomParams[3] ?? 0.5,
     );
 
     for (let i = 0; i < MAX_RIPPLES; i++) {
-      if (i < state.ripples.length) {
-        const ripple = state.ripples[i];
+      const ripple = state.ripples[i];
+      if (ripple) {
         uniforms.setRipple(i, ripple.x, ripple.y, ripple.startTime);
       } else {
         uniforms.clearRipple(i);

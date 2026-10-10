@@ -51,11 +51,11 @@ export function parseWorkgroupSize(
   while ((m = entryRe.exec(wgslSource)) !== null) {
     if (!firstMatch) firstMatch = m;
     if (m[3] === entryPoint) {
-      return { x: parseInt(m[1], 10), y: parseInt(m[2], 10) };
+      return { x: parseInt(m[1]!, 10), y: parseInt(m[2]!, 10) };
     }
   }
   if (firstMatch) {
-    return { x: parseInt(firstMatch[1], 10), y: parseInt(firstMatch[2], 10) };
+    return { x: parseInt(firstMatch[1]!, 10), y: parseInt(firstMatch[2]!, 10) };
   }
 
   // Fallback: search for @workgroup_size anywhere after @compute
@@ -64,7 +64,7 @@ export function parseWorkgroupSize(
     const afterCompute = wgslSource.slice(computeIdx);
     const match2 = afterCompute.match(/@workgroup_size\(\s*(\d+)\s*,\s*(\d+)/);
     if (match2) {
-      return { x: parseInt(match2[1], 10), y: parseInt(match2[2], 10) };
+      return { x: parseInt(match2[1]!, 10), y: parseInt(match2[2]!, 10) };
     }
   }
 
@@ -99,7 +99,7 @@ function bindingVarName(wgsl: string, binding: number): string | null {
   const m = wgsl.match(
     new RegExp(`@group\\(0\\)\\s*@binding\\(${binding}\\)\\s*var(?:<[^>]*>)?\\s+([A-Za-z_][A-Za-z0-9_]*)`),
   );
-  return m ? m[1] : null;
+  return m?.[1] ?? null;
 }
 
 function usedBeyondDeclaration(wgsl: string, binding: number): boolean {

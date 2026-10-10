@@ -120,7 +120,7 @@ function textureUsageBits(names: readonly string[]): GPUTextureUsageFlags {
   const table = (typeof GPUTextureUsage !== 'undefined'
     ? GPUTextureUsage
     : TEXTURE_USAGE_FALLBACK) as unknown as Record<string, number>;
-  return names.reduce((bits, name) => bits | table[name], 0);
+  return names.reduce((bits, name) => bits | (table[name] ?? 0), 0);
 }
 
 /**

@@ -289,7 +289,7 @@ export function compileFramePlan(plan: FrameSlotDispatchPlan, ctx: FramePlanCont
     const program = slotPlan.program;
     if (program.kind === 'graph') {
       graphReports.push(compileGraphOps(
-        ops, program.graph, slotPlan.slotIndex, slotPlan.slot.shaderId, mode, caps[index], ctx,
+        ops, program.graph, slotPlan.slotIndex, slotPlan.slot.shaderId, mode, caps[index]!, ctx,
       ));
     } else {
       compileChain(ops, slotPlan, program.shaderIds, mode, ctx);

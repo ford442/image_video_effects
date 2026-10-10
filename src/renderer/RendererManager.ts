@@ -32,7 +32,6 @@ import { isWebGpuBackend, type WebGPUBackendApi } from './webgpuBackendApi';
 import type { PassTiming } from './passTimings';
 import {
   ShaderLoadMeta,
-  SLOT_COUNT,
   addRipple,
   clearRipples,
   firePlasmaOnBackend,
@@ -56,6 +55,7 @@ import type { RendererDiagnostics, RendererMetrics } from './rendererTypes';
 import { getDeviceGeneration, getRendererDevice, isRendererDeviceLive } from './deviceRegistry';
 import { getLiveDeviceCount } from './webgpuBootProbe';
 import { DeviceRecoveryController, type DeviceRecoveryStatus } from './deviceRecovery';
+import { PHYSICAL_SLOT_LIMIT } from './slotOrchestrator';
 
 export type { RendererType, RendererInitOptions, WebGpuProbeHandoff };
 export { getRendererTypeFromURL };
@@ -411,7 +411,7 @@ export class RendererManager {
     const r = this.currentRenderer;
     if (!r) return null;
     const session = this.getSessionState?.() ?? null;
-    const slots = Array.from({ length: SLOT_COUNT }, (_, i) => r.getSlotState?.(i) ?? null);
+    const slots = Array.from({ length: PHYSICAL_SLOT_LIMIT }, (_, i) => r.getSlotState?.(i) ?? null);
     if (!slots.some(Boolean)) {
       return session ? { stack: { ...session, inputSource: this.lastInputSource }, slotModes: [] } : null;
     }
@@ -491,7 +491,7 @@ export class RendererManager {
   updateSlotParams(params: import('./Renderer').SlotZoomParamsUpdate, slotIndex = 0): void {
     updateSlotParams(this.backend(), params, slotIndex);
   }
-  syncAllSlotParams(slotParams: SlotParams[], maxSlots = SLOT_COUNT): void {
+  syncAllSlotParams(slotParams: SlotParams[], maxSlots = PHYSICAL_SLOT_LIMIT): void {
     syncAllSlotParams(this.backend(), slotParams, maxSlots);
   }
   async resyncShaderStack(options: {
@@ -554,12 +554,12 @@ export class RendererManager {
   }
   getFrameImage(): string { return this.currentRenderer?.getFrameImage?.() ?? ''; }
   async refreshFrameImage(): Promise<string> {
-    const r = this.currentRenderer as { refreshFrameImage?: () => Promise<string> } | null;
+    const r = this.currentRenderer;
     if (r?.refreshFrameImage) return r.refreshFrameImage();
     return this.canvas ? this.canvas.toDataURL('image/png') : '';
   }
   async takeScreenshot(filename = 'screenshot.png'): Promise<void> {
-    const r = this.currentRenderer as { takeScreenshot?: (f?: string) => Promise<void> } | null;
+    const r = this.currentRenderer;
     if (r?.takeScreenshot) return r.takeScreenshot(filename);
     const dataUrl = await this.refreshFrameImage();
     if (!dataUrl) throw new Error('[RendererManager] Screenshot unavailable — no frame source');
@@ -574,14 +574,13 @@ export class RendererManager {
   setRecordingMode(mode: 'loop' | 'continuous'): void { this.currentRenderer?.setRecordingMode?.(mode); }
   usesInternalRecording(): boolean { return this.isWASM(); }
   startRecording(canvas: HTMLCanvasElement, options?: { durationMs?: number; frameRate?: number; videoBitsPerSecond?: number }): Promise<Blob> {
-    const r = this.currentRenderer as { startRecording?: typeof RendererManager.prototype.startRecording } | null;
+    const r = this.currentRenderer;
     if (r?.startRecording) return r.startRecording(canvas, options);
     return Promise.reject(new Error('[RendererManager] startRecording not supported for active backend'));
   }
   /** Canvas → VideoFrame capture is usable (swapchain accepts COPY_SRC; TS boot probe or C++ init probe). */
   supportsCanvasFrameCapture(): boolean {
-    const r = this.currentRenderer as { supportsCanvasCopySrc?: () => boolean } | null;
-    return !!r?.supportsCanvasCopySrc?.();
+    return !!this.currentRenderer?.supportsCanvasCopySrc?.();
   }
   /**
    * Render worker (#1314): a function returning a VideoFrame of the next
@@ -591,8 +590,7 @@ export class RendererManager {
   getWorkerFrameGrabber(): ((timestampUs: number) => Promise<VideoFrame | null>) | null {
     const r = this.currentRenderer;
     if (!isWebGpuBackend(r) || r.renderThread !== 'worker') return null;
-    const grab = (r as { grabVideoFrame?: (ts: number) => Promise<VideoFrame | null> }).grabVideoFrame;
-    return grab ? (ts) => grab.call(r, ts) : null;
+    return r.grabVideoFrame?.bind(r) ?? null;
   }
   /** Where the TS backend renders (main page or render worker); null for WASM / Canvas2D. */
   getRenderThread(): 'main' | 'worker' | null {
@@ -600,11 +598,10 @@ export class RendererManager {
     return isWebGpuBackend(r) ? r.renderThread : null;
   }
   setCanvasCopySrc(enabled: boolean): boolean {
-    const r = this.currentRenderer as { setCanvasCopySrc?: (e: boolean) => boolean } | null;
-    return r?.setCanvasCopySrc?.(enabled) ?? false;
+    return this.currentRenderer?.setCanvasCopySrc?.(enabled) ?? false;
   }
   stopRendererRecording(): void {
-    (this.currentRenderer as { stopRecording?: () => void } | null)?.stopRecording?.();
+    this.currentRenderer?.stopRecording?.();
   }
   getMetrics(): RendererMetrics {
     this.refreshFps();
@@ -723,8 +720,7 @@ export class RendererManager {
     );
   }
   getAudioData() {
-    return (this.currentRenderer as { getAudioData?: () => { bass: number; mid: number; treble: number; freqBins: Float32Array } } | null)
-      ?.getAudioData?.() ?? null;
+    return this.currentRenderer?.getAudioData?.() ?? null;
   }
   isRecording(): boolean { return this.currentRenderer?.isRecording?.() ?? false; }
   /** Resolves once the backend has released its GPU device (safe to re-probe after). */

@@ -119,8 +119,10 @@ export function useShaderMode({
                     }
                     
                     setSlotParams(prev => {
+                        const current = prev[index];
+                        if (!current) return prev;
                         const next = [...prev];
-                        next[index] = { ...next[index], ...paramDefaults };
+                        next[index] = { ...current, ...paramDefaults };
                         return next;
                     });
                 }
@@ -154,8 +156,10 @@ export function useShaderMode({
 
     const updateSlotParam = useCallback((slotIndex: number, updates: Partial<SlotParams>) => {
         setSlotParams(prev => {
+            const current = prev[slotIndex];
+            if (!current) return prev;
             const next = [...prev];
-            next[slotIndex] = { ...next[slotIndex], ...updates };
+            next[slotIndex] = { ...current, ...updates };
             return next;
         });
         // Push to GPU immediately so remote control / MIDI / sliders affect the

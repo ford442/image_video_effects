@@ -14,7 +14,7 @@ export interface BenchmarkStats {
 
 function nearestRank(sorted: number[], p: number): number {
   const rank = Math.ceil((p / 100) * sorted.length);
-  return sorted[Math.min(sorted.length, Math.max(1, rank)) - 1];
+  return sorted[Math.min(sorted.length, Math.max(1, rank)) - 1]!;
 }
 
 export function computeBenchmarkStats(values: number[]): BenchmarkStats {
@@ -25,7 +25,7 @@ export function computeBenchmarkStats(values: number[]): BenchmarkStats {
     n,
     p50: nearestRank(sorted, 50),
     p95: nearestRank(sorted, 95),
-    max: sorted[n - 1],
+    max: sorted[n - 1]!,
     mean: sorted.reduce((a, b) => a + b, 0) / n,
   };
 }

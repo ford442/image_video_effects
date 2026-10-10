@@ -162,7 +162,7 @@ test.skip('filters slot mega-menu to non-generative or generative shaders based 
         />
     );
 
-    fireEvent.click(screen.getAllByRole('button', { name: /liquid/i })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: /liquid/i })[0]!);
     expect(screen.getByText('Paint Flow')).toBeInTheDocument();
     expect(screen.queryByText('Gen Orb')).not.toBeInTheDocument();
 
@@ -278,7 +278,7 @@ describe('Live Control panel', () => {
             expect(screen.getByText(/Bindings \(1\)/)).toBeInTheDocument();
         });
 
-        fireEvent.click(screen.getAllByText('✕')[0]);
+        fireEvent.click(screen.getAllByText('✕')[0]!);
 
         await waitFor(() => {
             expect(screen.queryByText(/Bindings/)).not.toBeInTheDocument();

@@ -27,9 +27,9 @@ describe('audioParamMapping', () => {
   it('resolves audio targets from metadata', () => {
     const targets = resolveAudioTargets(shader);
     expect(targets).toHaveLength(4);
-    expect(targets[0].slotParamKey).toBe('zoomParam1');
-    expect(targets[0].audioSource).toBe('bass');
-    expect(targets[2].audioSource).toEqual({ fft: 10 });
+    expect(targets[0]!.slotParamKey).toBe('zoomParam1');
+    expect(targets[0]!.audioSource).toBe('bass');
+    expect(targets[2]!.audioSource).toEqual({ fft: 10 });
   });
 
   it('samples fft bins', () => {
@@ -51,7 +51,7 @@ describe('audioParamMapping', () => {
       category: 'generative',
     });
     expect(targets).toHaveLength(4);
-    expect(targets[1].audioSource).toBe('mid');
+    expect(targets[1]!.audioSource).toBe('mid');
   });
 
   describe('non-generative categories', () => {
@@ -69,8 +69,8 @@ describe('audioParamMapping', () => {
     it('maps only params with explicit audio metadata', () => {
       const targets = resolveAudioTargets(sim);
       expect(targets).toHaveLength(1);
-      expect(targets[0].slotParamKey).toBe('zoomParam2');
-      expect(targets[0].audioSource).toBe('treble');
+      expect(targets[0]!.slotParamKey).toBe('zoomParam2');
+      expect(targets[0]!.audioSource).toBe('treble');
     });
 
     it('returns no targets (no synthetic fallback) without metadata', () => {
@@ -98,8 +98,8 @@ describe('audioParamMapping', () => {
         smoothing: 1,
       });
       expect(out.map(o => o.slot)).toEqual([0, 2]);
-      expect(out[1].updates.zoomParam1).toBeCloseTo(0.9); // 0.4 + (1 - 0.5)
-      expect(out[1].updates.zoomParam2).toBeCloseTo(0.5);
+      expect(out[1]!.updates.zoomParam1).toBeCloseTo(0.9); // 0.4 + (1 - 0.5)
+      expect(out[1]!.updates.zoomParam2).toBeCloseTo(0.5);
     });
 
     it('skips held params and modulates around the performer base', () => {
@@ -114,8 +114,8 @@ describe('audioParamMapping', () => {
         baseFor: (slot, key) => (key === 'zoomParam1' ? 0.1 : undefined),
         smoothing: 1,
       });
-      expect(Object.keys(out[0].updates)).toEqual(['zoomParam1']);
-      expect(out[0].updates.zoomParam1).toBeCloseTo(0.35); // 0.1 + (1 - 0.5) * 0.5
+      expect(Object.keys(out[0]!.updates)).toEqual(['zoomParam1']);
+      expect(out[0]!.updates.zoomParam1).toBeCloseTo(0.35); // 0.1 + (1 - 0.5) * 0.5
       expect(smoothed['1:zoomParam2']).toBeUndefined();
     });
 

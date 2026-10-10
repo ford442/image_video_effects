@@ -8,6 +8,12 @@ import { SharedChain, MAX_SHARED_SLOTS, expandSharedChain } from './layerChainSh
 import { CatalogShader, CatalogParam } from './shaderCatalog';
 import { SlotParams } from '../renderer/types';
 
+function at<T>(a: readonly T[], i: number): T {
+  const v = a[i];
+  if (v === undefined) throw new Error(`missing index ${i}`);
+  return v;
+}
+
 function param(id: string, overrides: Partial<CatalogParam> = {}): CatalogParam {
   return {
     id,
@@ -134,7 +140,7 @@ describe('variationExplorer', () => {
       seed: 'flags',
     });
     for (const variation of result) {
-      const first = variation.chain.slots[0];
+      const first = at(variation.chain.slots, 0);
       expect(first.enabled).toBe(false);
       expect(first.mode).toBe('parallel');
     }
@@ -149,10 +155,10 @@ describe('variationExplorer', () => {
     for (const variation of result) {
       const expanded = expandSharedChain(variation.chain, defaultsLookup);
       for (let i = 0; i < variation.chain.slots.length; i++) {
-        const slot = variation.chain.slots[i];
+        const slot = at(variation.chain.slots, i);
         if (!slot.shaderId) continue;
         const shaderMeta = CATALOG.find(s => s.id === slot.shaderId)!;
-        const params = expanded.slotParams[i];
+        const params = at(expanded.slotParams, i);
         const orderedIds = shaderMeta.params.map(p => p.id);
         const values = [
           { key: 'zoomParam1', val: params.zoomParam1 },
@@ -161,8 +167,8 @@ describe('variationExplorer', () => {
           { key: 'zoomParam4', val: params.zoomParam4 },
         ];
         for (let pIndex = 0; pIndex < shaderMeta.params.length; pIndex++) {
-          const catalogParam = shaderMeta.params[pIndex];
-          const slotKey = values[pIndex].key as keyof SlotParams;
+          const catalogParam = at(shaderMeta.params, pIndex);
+          const slotKey = at(values, pIndex).key as keyof SlotParams;
           const val = params[slotKey];
           expect(val).toBeGreaterThanOrEqual(catalogParam.min);
           expect(val).toBeLessThanOrEqual(catalogParam.max);
@@ -332,9 +338,9 @@ describe('variationExplorer', () => {
       });
       for (const child of result) {
         for (let i = 0; i < child.chain.slots.length; i++) {
-          const slot = child.chain.slots[i];
+          const slot = at(child.chain.slots, i);
           if (!slot.shaderId) continue;
-          const originalId = PARENT_A.slots[i].shaderId ?? PARENT_B.slots[i].shaderId;
+          const originalId = at(PARENT_A.slots, i).shaderId ?? at(PARENT_B.slots, i).shaderId;
           if (!originalId) continue;
           const originalCategory = CATALOG.find(s => s.id === originalId)?.category;
           const childCategory = CATALOG.find(s => s.id === slot.shaderId)?.category;
@@ -364,8 +370,8 @@ describe('variationExplorer', () => {
         seed: 'flags',
       });
       for (const child of result) {
-        expect(child.chain.slots[0].enabled).toBe(false);
-        expect(child.chain.slots[0].mode).toBe('parallel');
+        expect(at(child.chain.slots, 0).enabled).toBe(false);
+        expect(at(child.chain.slots, 0).mode).toBe('parallel');
       }
     });
 
@@ -378,10 +384,10 @@ describe('variationExplorer', () => {
       for (const child of result) {
         const expanded = expandSharedChain(child.chain, defaultsLookup);
         for (let i = 0; i < child.chain.slots.length; i++) {
-          const slot = child.chain.slots[i];
+          const slot = at(child.chain.slots, i);
           if (!slot.shaderId) continue;
           const meta = CATALOG.find(s => s.id === slot.shaderId)!;
-          const params = expanded.slotParams[i];
+          const params = at(expanded.slotParams, i);
           const values = [
             params.zoomParam1,
             params.zoomParam2,
@@ -390,8 +396,8 @@ describe('variationExplorer', () => {
           ];
           for (let pIndex = 0; pIndex < meta.params.length; pIndex++) {
             const val = values[pIndex];
-            expect(val).toBeGreaterThanOrEqual(meta.params[pIndex].min);
-            expect(val).toBeLessThanOrEqual(meta.params[pIndex].max);
+            expect(val).toBeGreaterThanOrEqual(at(meta.params, pIndex).min);
+            expect(val).toBeLessThanOrEqual(at(meta.params, pIndex).max);
           }
         }
       }

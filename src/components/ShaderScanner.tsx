@@ -300,13 +300,18 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
       const batch = targets.slice(i, i + batchSize);
       const batchPromises = batch.map(async (shader, batchIndex) => {
         const index = i + batchIndex;
-        
-        // Update status to loading
-        setResults(prev => {
+
+
+        const patchResult = (patch: Partial<ShaderScanResult>) => setResults(prev => {
+          const current = prev[index];
+          if (!current) return prev;
           const updated = [...prev];
-          updated[index] = { ...updated[index], status: 'loading' };
+          updated[index] = { ...current, ...patch };
           return updated;
         });
+
+        // Update status to loading
+        patchResult({ status: 'loading' });
 
         const startTime = performance.now();
         let compileError: string | undefined;
@@ -315,15 +320,10 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
         try {
           // Subgroup variants need the same device features as WebGPURenderer.
           if (shader.id.endsWith('-sg') && !supportsSubgroups) {
-            setResults(prev => {
-              const updated = [...prev];
-              updated[index] = {
-                ...updated[index],
-                status: 'skipped',
-                errorMessage: 'Subgroup variant requires subgroups GPU feature',
-                paramStatus: shader.params && shader.params.length > 0 ? 'valid' : 'no-params',
-              };
-              return updated;
+            patchResult({
+              status: 'skipped',
+              errorMessage: 'Subgroup variant requires subgroups GPU feature',
+              paramStatus: shader.params && shader.params.length > 0 ? 'valid' : 'no-params',
             });
             return;
           }
@@ -336,15 +336,10 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
           
           // Skip if not a compute shader
           if (!code.includes('@compute')) {
-            setResults(prev => {
-              const updated = [...prev];
-              updated[index] = { 
-                ...updated[index], 
-                status: 'skipped',
-                errorMessage: 'Not a compute shader',
-                paramStatus: 'no-params'
-              };
-              return updated;
+            patchResult({
+              status: 'skipped',
+              errorMessage: 'Not a compute shader',
+              paramStatus: 'no-params'
             });
             return;
           }
@@ -406,18 +401,13 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
             if (hasCompileError) errorParts.push(`COMPILE: ${compileError}`);
             if (hasParamErrors) errorParts.push(`PARAMS: ${paramValidation.errors.join(', ')}`);
             
-            setResults(prev => {
-              const updated = [...prev];
-              updated[index] = { 
-                ...updated[index], 
-                status: 'error',
-                errorMessage: errorParts.join(' | '),
-                compileTimeMs,
-                params: paramValidation.normalized,
-                paramStatus: hasParamErrors ? 'invalid' : 'valid',
-                paramErrors: paramValidation.errors
-              };
-              return updated;
+            patchResult({
+              status: 'error',
+              errorMessage: errorParts.join(' | '),
+              compileTimeMs,
+              params: paramValidation.normalized,
+              paramStatus: hasParamErrors ? 'invalid' : 'valid',
+              paramErrors: paramValidation.errors
             });
             errors.push({
               ...shader,
@@ -427,30 +417,20 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
             });
           } else {
             compileOk.add(shader.id);
-            setResults(prev => {
-              const updated = [...prev];
-              updated[index] = { 
-                ...updated[index], 
-                status: 'success',
-                compileTimeMs,
-                params: paramValidation.normalized,
-                paramStatus: paramValidation.normalized.length > 0 ? 'valid' : 'no-params'
-              };
-              return updated;
+            patchResult({
+              status: 'success',
+              compileTimeMs,
+              params: paramValidation.normalized,
+              paramStatus: paramValidation.normalized.length > 0 ? 'valid' : 'no-params'
             });
           }
         } catch (err) {
           const errorMessage = err instanceof Error ? err.message : String(err);
-          setResults(prev => {
-            const updated = [...prev];
-            updated[index] = { 
-              ...updated[index], 
-              status: 'error',
-              errorMessage,
-              compileTimeMs: performance.now() - startTime,
-              paramStatus: 'invalid'
-            };
-            return updated;
+          patchResult({
+            status: 'error',
+            errorMessage,
+            compileTimeMs: performance.now() - startTime,
+            paramStatus: 'invalid'
           });
           errors.push({
             ...shader,
@@ -484,9 +464,8 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
       };
       try {
         restore = await thumbnailHost.beginSession();
-        for (let r = 0; r < toRender.length; r++) {
+        for (const [r, shader] of toRender.entries()) {
           if (abortRef.current) break;
-          const shader = toRender[r];
           updateResult(shader.id, { render: 'pending' });
           let res: CaptureResult;
           try {

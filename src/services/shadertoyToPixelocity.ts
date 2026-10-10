@@ -81,11 +81,11 @@ export function extractMainImageGlsl(glsl: string): { body: string; helpers: str
       /void\s+mainImage\s*\([^)]*\)\s*\{([\s\S]*)\}/
     );
     if (!loose) return null;
-    const body = loose[1];
+    const body = loose[1] ?? '';
     const before = normalized.slice(0, loose.index ?? 0);
     return { body, helpers: before };
   }
-  const body = mainImageMatch[1];
+  const body = mainImageMatch[1] ?? '';
   const before = normalized.slice(0, mainImageMatch.index ?? 0);
   return { body, helpers: before };
 }

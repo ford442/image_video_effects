@@ -40,8 +40,9 @@ export function parseAudioSource(raw: unknown): AudioSource | null {
 }
 
 export function mappingToSlotParamKey(mapping: string | undefined, index: number): keyof SlotParams | null {
-  if (mapping && ZOOM_MAPPING_TO_SLOT[mapping]) {
-    return ZOOM_MAPPING_TO_SLOT[mapping];
+  const mapped = mapping ? ZOOM_MAPPING_TO_SLOT[mapping] : undefined;
+  if (mapped) {
+    return mapped;
   }
   return SLOT_KEYS[index] ?? null;
 }
@@ -69,8 +70,7 @@ export function resolveAudioTargets(
   const params = shaderEntry?.params ?? [];
   const targets: AudioParamTarget[] = [];
 
-  for (let i = 0; i < Math.min(4, params.length); i++) {
-    const param = params[i];
+  for (const [i, param] of params.slice(0, 4).entries()) {
     const slotKey = mappingToSlotParamKey(param.mapping, i);
     if (!slotKey) continue;
 
@@ -94,7 +94,7 @@ export function resolveAudioTargets(
   if (targets.length === 0 && !requireExplicit) {
     return SLOT_KEYS.map((slotParamKey, i) => ({
       slotParamKey,
-      audioSource: FALLBACK_BANDS[i],
+      audioSource: FALLBACK_BANDS[i] ?? 'overall',
       min: 0,
       max: 1,
       default: 0.5,

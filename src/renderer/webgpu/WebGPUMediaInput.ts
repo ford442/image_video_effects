@@ -231,10 +231,10 @@ function rgba8ToFloat32(
     for (let x = 0; x < cW; x++) {
       const si = (y * srcW + x) * 4;
       const di = (y * cW + x) * 4;
-      floats[di] = data[si] / 255;
-      floats[di + 1] = data[si + 1] / 255;
-      floats[di + 2] = data[si + 2] / 255;
-      floats[di + 3] = data[si + 3] / 255;
+      floats[di] = data[si]! / 255;
+      floats[di + 1] = data[si + 1]! / 255;
+      floats[di + 2] = data[si + 2]! / 255;
+      floats[di + 3] = data[si + 3]! / 255;
     }
   }
   return { floats, cW, cH };

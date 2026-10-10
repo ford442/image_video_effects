@@ -74,10 +74,10 @@ async function expandWgslIncludes(source, resolve, entry = "<entry>") {
     const lines = text.split("\n");
     const blanked = stripComments(text).split("\n");
     const out = [];
-    for (let i = 0; i < lines.length; i += 1) {
+    for (const [i, line] of lines.entries()) {
       const match = blanked[i]?.match(INCLUDE_RE);
       if (!match) {
-        out.push(lines[i]);
+        out.push(line);
         continue;
       }
       const name = match[1];

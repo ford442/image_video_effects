@@ -42,8 +42,9 @@ export function defaultParamsSnapshot(shader: ShaderEntry): number[] {
   const out = [0.5, 0.5, 0.5, 0.5];
   const slot: Record<string, number> = { x: 0, y: 1, z: 2, w: 3 };
   for (const p of shader.params ?? []) {
-    const m = /^zoom_params\.([xyzw])$/.exec((p as { mapping?: string }).mapping ?? '');
-    if (m && typeof p.default === 'number') out[slot[m[1]]] = p.default;
+    const axis = /^zoom_params\.([xyzw])$/.exec((p as { mapping?: string }).mapping ?? '')?.[1];
+    const idx = axis ? slot[axis] : undefined;
+    if (idx !== undefined && typeof p.default === 'number') out[idx] = p.default;
   }
   return out;
 }

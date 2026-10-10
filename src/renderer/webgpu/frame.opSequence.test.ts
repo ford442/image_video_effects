@@ -152,18 +152,24 @@ const GOLDEN: Record<string, string[]> = {
   cappedWorkingSize: ['render:scalePass>readTex', P, 'compute:chained-a', PRESENT],
 };
 
+function caseOf(name: string): Setup {
+  const setup = CASES[name];
+  if (setup === undefined) throw new Error(`missing case ${name}`);
+  return setup;
+}
+
 describe('frame encoding contract', () => {
   it.each(Object.keys(CASES))('%s: encodes the golden op order into one command buffer', (name) => {
-    const { fake, state, renderer } = build(CASES[name]);
+    const { fake, state, renderer } = build(caseOf(name));
     renderer.renderFrame(state);
     expect(fake.counters.submits).toBe(1);
     expect(fake.counters.commandBuffers).toBe(1);
-    expect(fake.submitted[0].label).toBe('frame');
+    expect(fake.submitted[0]!.label).toBe('frame');
     expect(summarizeOps(fake.ops)).toEqual(GOLDEN[name]);
   });
 
   it.each(Object.keys(CASES))('%s: steady state creates no bind groups except the video external group', (name) => {
-    const { fake, state, renderer } = build(CASES[name]);
+    const { fake, state, renderer } = build(caseOf(name));
     renderer.renderFrame(state);
     fake.reset();
     renderer.renderFrame(state);
