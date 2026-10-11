@@ -4,7 +4,14 @@ import '@testing-library/jest-dom';
 import { createWaveTankGraph } from '../../renderer/multipassGraph';
 import type { PassTiming } from '../../renderer/passTimings';
 import type { RendererManager } from '../../renderer/RendererManager';
-import { clearRuntimeGraphs, getRuntimeGraph, GRAPH_LAB_RUNTIME_ID, setRuntimeGraph } from '../../renderer/runtimeGraphs';
+import {
+  clearRuntimeGraphs,
+  getRuntimeGraph,
+  getRuntimeSimRingRequest,
+  GRAPH_LAB_RUNTIME_ID,
+  RuntimeSimRingRequest,
+  setRuntimeGraph,
+} from '../../renderer/runtimeGraphs';
 import type { ShaderEntry } from '../../renderer/types';
 import GraphLabPanel from './GraphLabPanel';
 import { GraphLabLauncher } from './GraphLabLauncher';
@@ -20,8 +27,8 @@ function fakeManager(opts: { report?: Record<string, unknown> | null; timings?: 
   const cached = new Set<string>();
   const m = {
     getSlotState: jest.fn((i: number) => ({ shaderId: slots.get(i) ?? null, enabled: true, mode: 'chained' })),
-    setRuntimeGraph: jest.fn((id: string, graph) => {
-      setRuntimeGraph(id, graph);
+    setRuntimeGraph: jest.fn((id: string, graph, simRing: RuntimeSimRingRequest | null = null) => {
+      setRuntimeGraph(id, graph, simRing);
       return true;
     }),
     isShaderCached: jest.fn((id: string) => cached.has(id)),
@@ -56,8 +63,18 @@ beforeEach(() => {
 afterEach(() => clearRuntimeGraphs());
 
 describe('GraphLabPanel', () => {
-  it('starts empty: nothing to run or export', () => {
+  it('opens on a working copy of the wave-tank flagship, not a blank form', () => {
     renderPanel();
+    expect(within(screen.getByTestId('graph-lab-nodes')).getAllByRole('listitem')).toHaveLength(3);
+    expect(screen.getByTestId('graph-lab-diagnostics-clear')).toBeInTheDocument();
+    expect(screen.getByTestId('graph-lab-run')).toBeEnabled();
+    expect(screen.getByTestId('export-id')).toHaveValue('wave-tank-lab');
+    expect(screen.getByTestId('sim-ring-toggle')).not.toBeChecked();
+  });
+
+  it('New starts a blank graph: nothing to run or export', () => {
+    renderPanel();
+    fireEvent.click(screen.getByTestId('graph-lab-new'));
     expect(screen.getByTestId('graph-lab-no-nodes')).toBeInTheDocument();
     expect(screen.getByTestId('graph-lab-run')).toBeDisabled();
     expect(screen.getByTestId('export-download')).toBeDisabled();
@@ -207,18 +224,60 @@ describe('GraphLabPanel', () => {
     });
   });
 
-  describe('sim-ring graphs', () => {
-    it('are shown read-only and cannot be run', () => {
+  describe('sim ring', () => {
+    it('edits a sim-ring graph: element count, dispatch domain, sim roles, and the WASM refusal line', () => {
       renderPanel();
       startFrom('dla-crystals');
-      expect(screen.getByTestId('graph-lab-readonly')).toBeInTheDocument();
-      expect(screen.getByTestId('graph-lab-run')).toBeDisabled();
-      expect(screen.getByTestId('node-repeat')).toBeDisabled();
-      expect(screen.getByTestId('role-reads-dataC')).toBeDisabled();
-      expect(screen.queryByLabelText('Remove walkers')).not.toBeInTheDocument();
-      // Still valid, still exportable.
+      expect(screen.getByTestId('sim-ring-toggle')).toBeChecked();
+      // walkers dispatch over simState: the ring cannot be switched off under them.
+      expect(screen.getByTestId('sim-ring-toggle')).toBeDisabled();
+      expect(screen.getByTestId('sim-ring-count')).toHaveValue('65536');
+      expect(screen.getByTestId('sim-ring-wasm')).toHaveTextContent('?renderer=wasm refuses this shader');
+      expect(screen.getByTestId('node-dispatch')).toHaveValue('simState');
+      expect(screen.getByTestId('role-reads-simState')).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByTestId('role-writes-simState')).toBeEnabled();
+      expect(screen.queryByTestId('role-writes-simIndex')).not.toBeInTheDocument();
+      expect(screen.getByTestId('node-repeat')).toBeEnabled();
+      expect(screen.getByTestId('graph-lab-run')).toBeEnabled();
+
+      fireEvent.change(screen.getByTestId('sim-ring-count'), { target: { value: '16384' } });
+      expect(JSON.parse(window.localStorage.getItem(DRAFT_STORAGE_KEY) as string).envelope.simRing).toMatchObject({ stateCount: 16384 });
       expect(screen.getByTestId('graph-lab-diagnostics-clear')).toBeInTheDocument();
-      expect(screen.getByTestId('export-download')).toBeEnabled();
+    });
+
+    it('turns the ring on for a plain graph and off again', () => {
+      renderPanel();
+      expect(screen.queryByTestId('role-reads-simState')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('node-dispatch')).not.toBeInTheDocument();
+      fireEvent.click(screen.getByTestId('sim-ring-toggle'));
+      expect(screen.getByTestId('sim-ring-count')).toHaveValue('65536');
+      expect(screen.getByTestId('role-reads-simState')).toBeInTheDocument();
+      fireEvent.change(screen.getByTestId('node-dispatch'), { target: { value: 'simState' } });
+      expect(screen.getByTestId('sim-ring-toggle')).toBeDisabled();
+      fireEvent.change(screen.getByTestId('node-dispatch'), { target: { value: 'pixels' } });
+      fireEvent.click(screen.getByTestId('sim-ring-toggle'));
+      expect(screen.queryByTestId('sim-ring-count')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('role-reads-simState')).not.toBeInTheDocument();
+    });
+
+    it('runs a sim-ring draft with its ring request and re-arms (recompiles) when the size changes', async () => {
+      const { manager, m } = fakeManager();
+      renderPanel(manager);
+      startFrom('dla-crystals');
+      fireEvent.click(screen.getByTestId('graph-lab-run'));
+      await screen.findByTestId('graph-lab-live-report');
+      expect(getRuntimeSimRingRequest(GRAPH_LAB_RUNTIME_ID)).toBe(65536);
+      const loadsAfterRun = m.loadShader.mock.calls.length;
+
+      // A plain edit keeps the ring running: no recompile.
+      fireEvent.change(screen.getByTestId('node-repeat'), { target: { value: '2' } });
+      await waitFor(() => expect(getRuntimeGraph(GRAPH_LAB_RUNTIME_ID)?.nodes[0]?.repeat).toBe(2));
+      expect(m.loadShader.mock.calls.length).toBe(loadsAfterRun);
+
+      fireEvent.change(screen.getByTestId('sim-ring-count'), { target: { value: '4096' } });
+      await waitFor(() => expect(getRuntimeSimRingRequest(GRAPH_LAB_RUNTIME_ID)).toBe(4096));
+      await waitFor(() => expect(m.loadShader.mock.calls.length).toBe(loadsAfterRun + 3));
+      expect(m.loadShader.mock.calls.slice(loadsAfterRun).map((c) => c[0])).toEqual([GRAPH_LAB_RUNTIME_ID, 'dla-walkers', 'dla-render']);
     });
   });
 
@@ -279,6 +338,22 @@ describe('GraphLabPanel', () => {
       });
       expect(screen.getByTestId('graph-lab-diagnostic')).toHaveAttribute('data-code', 'cycle');
       expect(getRuntimeGraph(GRAPH_LAB_RUNTIME_ID)).toBe(good);
+    });
+
+    it('never loads a graph with an illegal read (a role used before it is produced)', async () => {
+      const { manager, m } = fakeManager();
+      renderPanel(manager);
+      // step reads dataB, which only the later inject writes.
+      fireEvent.click(screen.getByTestId('graph-lab-node-select-0'));
+      fireEvent.click(screen.getByTestId('role-reads-dataB'));
+      expect(screen.getByTestId('graph-lab-run')).toBeDisabled();
+      fireEvent.click(screen.getByTestId('graph-lab-run'));
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 300));
+      });
+      expect(m.loadShader).not.toHaveBeenCalled();
+      expect(m.setRuntimeGraph).not.toHaveBeenCalled();
+      expect(m.setSlotShader).not.toHaveBeenCalled();
     });
 
     it('surfaces a compile failure instead of binding the slot', async () => {

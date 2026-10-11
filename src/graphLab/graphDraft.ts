@@ -11,6 +11,7 @@
  */
 
 import {
+  GraphDispatchDomain,
   GraphNodeDef,
   GraphRole,
   graphUsesSimRing,
@@ -20,10 +21,15 @@ import {
   SIM_BUFFER_ROLES,
   TEXTURE_ROLES,
 } from '../renderer/multipassGraph';
+import type { RuntimeSimRingRequest } from '../renderer/runtimeGraphs';
+import { SIM_RING_DEFAULT_STATE_COUNT, SIM_RING_OOM_LADDER } from '../renderer/webgpu/simRing';
 
 /** Roles the editor lets a user toggle: the ones with defined runtime behaviour. */
 export const EDITABLE_READ_ROLES = ['read', 'dataA', 'dataB', 'dataC'] as const;
 export const EDITABLE_WRITE_ROLES = ['color', 'dataA', 'dataB'] as const;
+/** Added while the draft uses the group-1 sim ring (bind_group1.json; simIndex is barrier-written only). */
+export const SIM_READ_ROLES = ['simState', 'simIndex'] as const;
+export const SIM_WRITE_ROLES = ['simState'] as const;
 
 export type RoleSide = 'reads' | 'writes';
 
@@ -62,10 +68,25 @@ export function newDraft(overrides: Partial<Pick<GraphDraft, 'id' | 'name' | 'ca
   };
 }
 
-/** Sim-ring graphs need the group-1 ring armed from a definition: view-only in v1. */
+/** True when the draft uses the group-1 sim ring (sim roles / simState dispatch, or a `simRing` request). */
 export function isSimRingDraft(draft: GraphDraft): boolean {
   return graphUsesSimRing(draft.graph) || draft.envelope.simRing !== undefined;
 }
+
+/**
+ * The ring size the draft asks for, as the renderer consumes a definition's
+ * `simRing` field (only `stateCount`). Null when the draft does not use the ring;
+ * a sim draft without an explicit count gets the contract default.
+ */
+export function simRingRequest(draft: GraphDraft): RuntimeSimRingRequest | null {
+  if (!isSimRingDraft(draft)) return null;
+  const raw = draft.envelope.simRing;
+  const count = isRecord(raw) && typeof raw.stateCount === 'number' && raw.stateCount > 0 ? raw.stateCount : undefined;
+  return { stateCount: count ?? SIM_RING_DEFAULT_STATE_COUNT };
+}
+
+/** Sizes the editor offers: the contract's OOM ladder (the ring allocates the largest rung that fits). */
+export const SIM_STATE_COUNT_CHOICES: readonly number[] = SIM_RING_OOM_LADDER;
 
 // ── Node ids ────────────────────────────────────────────────────────────────
 
@@ -87,6 +108,8 @@ export function uniqueNodeId(nodes: readonly GraphNodeDef[], entry: string, igno
 }
 
 // ── Internals ───────────────────────────────────────────────────────────────
+
+const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 
 function withGraph(draft: GraphDraft, nodes: GraphNodeDef[], maxPassesPerFrame = draft.graph.maxPassesPerFrame): GraphDraft {
   return { ...draft, graph: { maxPassesPerFrame, nodes } };
@@ -170,11 +193,17 @@ export function setNodeId(draft: GraphDraft, index: number, id: string): GraphDr
   return node ? replaceNode(draft, index, { ...node, id }) : draft;
 }
 
+/** Roles the editor offers on one side: the texture roles, plus the sim roles while the ring is on. */
+export function editableRoles(draft: GraphDraft, side: RoleSide): readonly GraphRole[] {
+  const sim = isSimRingDraft(draft);
+  if (side === 'reads') return sim ? [...EDITABLE_READ_ROLES, ...SIM_READ_ROLES] : EDITABLE_READ_ROLES;
+  return sim ? [...EDITABLE_WRITE_ROLES, ...SIM_WRITE_ROLES] : EDITABLE_WRITE_ROLES;
+}
+
 /** Toggle one editable role. Roles outside the editable set are left exactly as they are. */
 export function toggleRole(draft: GraphDraft, index: number, side: RoleSide, role: GraphRole): GraphDraft {
   const node = draft.graph.nodes[index];
-  const editable: readonly string[] = side === 'reads' ? EDITABLE_READ_ROLES : EDITABLE_WRITE_ROLES;
-  if (!node || !editable.includes(role)) return draft;
+  if (!node || !editableRoles(draft, side).includes(role)) return draft;
   const current = node[side] ?? [];
   const next = current.includes(role) ? current.filter((r) => r !== role) : sortRoles([...current, role]);
   return replaceNode(draft, index, { ...node, [side]: next });
@@ -203,6 +232,38 @@ export function setScalable(draft: GraphDraft, index: number, scalable: boolean,
   return replaceNode(draft, index, next);
 }
 
+/**
+ * Dispatch domain of one node. `simState` needs the ring (the toggle turns it on
+ * first) and cannot be scalable, so switching to it drops `scalable` / `minScale`.
+ */
+export function setNodeDispatch(draft: GraphDraft, index: number, domain: GraphDispatchDomain): GraphDraft {
+  const node = draft.graph.nodes[index];
+  if (!node) return draft;
+  const { dispatch: _d, ...rest } = node;
+  if (domain === 'pixels') return replaceNode(draft, index, rest);
+  if (!isSimRingDraft(draft)) return draft;
+  const { scalable: _s, minScale: _m, ...unscaled } = rest;
+  return replaceNode(draft, index, { ...unscaled, dispatch: 'simState' });
+}
+
+/**
+ * Turn the group-1 sim ring on (with a `simRing.stateCount` request) or off.
+ * Off is refused while any node still uses a sim role or a simState dispatch:
+ * the graph would keep needing the ring. Other `simRing` fields (agent, packing)
+ * are kept while it stays on.
+ */
+export function setSimRing(draft: GraphDraft, enabled: boolean, stateCount?: number): GraphDraft {
+  const { simRing: current, ...rest } = draft.envelope;
+  if (!enabled) {
+    if (graphUsesSimRing(draft.graph) || current === undefined) return draft;
+    return { ...draft, envelope: rest };
+  }
+  const base = isRecord(current) ? current : {};
+  const fallback = typeof base.stateCount === 'number' ? base.stateCount : SIM_RING_DEFAULT_STATE_COUNT;
+  const count = stateCount !== undefined && SIM_STATE_COUNT_CHOICES.includes(stateCount) ? stateCount : fallback;
+  return { ...draft, envelope: { ...rest, simRing: { ...base, stateCount: count } } };
+}
+
 export function setMaxPasses(draft: GraphDraft, maxPassesPerFrame: number): GraphDraft {
   return withGraph(draft, draft.graph.nodes.slice(), clampInt(maxPassesPerFrame, 1, 4096, DEFAULT_MAX_PASSES));
 }
@@ -214,8 +275,6 @@ export function setMeta(draft: GraphDraft, meta: Partial<Pick<GraphDraft, 'id' |
 // ── Import ──────────────────────────────────────────────────────────────────
 
 export type DraftImport = { ok: true; draft: GraphDraft } | { ok: false; error: string };
-
-const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 
 function cloneJson<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;

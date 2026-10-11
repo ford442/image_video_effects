@@ -2,8 +2,15 @@ import { createWaveTankGraph, MultipassGraphDef } from '../renderer/multipassGra
 import { GRAPH_REGISTRY } from '../renderer/multipassRegistry';
 import type { PassTiming } from '../renderer/passTimings';
 import type { RendererManager } from '../renderer/RendererManager';
-import { clearRuntimeGraphs, getRuntimeGraph, GRAPH_LAB_RUNTIME_ID, setRuntimeGraph } from '../renderer/runtimeGraphs';
-import { draftFromRegistryGraph, GraphDraft, newDraft, addNode } from './graphDraft';
+import { resolveSimRingRequest } from '../renderer/multipassRegistry';
+import {
+  clearRuntimeGraphs,
+  getRuntimeGraph,
+  GRAPH_LAB_RUNTIME_ID,
+  RuntimeSimRingRequest,
+  setRuntimeGraph,
+} from '../renderer/runtimeGraphs';
+import { draftFromRegistryGraph, GraphDraft, newDraft, addNode, setSimRing, toggleRole } from './graphDraft';
 import { readLive, runDraft, stopDraft } from './runDraft';
 
 function fakeManager(overrides: Partial<Record<string, unknown>> = {}) {
@@ -11,9 +18,9 @@ function fakeManager(overrides: Partial<Record<string, unknown>> = {}) {
   const calls: string[] = [];
   const m = {
     getSlotState: jest.fn(() => ({ shaderId: 'plasma', enabled: true, mode: 'chained' })),
-    setRuntimeGraph: jest.fn((id: string, graph: MultipassGraphDef | null) => {
-      calls.push(`graph:${id}:${graph ? 'set' : 'clear'}`);
-      setRuntimeGraph(id, graph);
+    setRuntimeGraph: jest.fn((id: string, graph: MultipassGraphDef | null, simRing: RuntimeSimRingRequest | null = null) => {
+      calls.push(`graph:${id}:${graph ? 'set' : 'clear'}${simRing ? `:ring=${simRing.stateCount}` : ''}`);
+      setRuntimeGraph(id, graph, simRing);
       return true;
     }),
     isShaderCached: jest.fn((id: string) => cached.has(id)),
@@ -67,7 +74,7 @@ describe('runDraft', () => {
     expect(calls).toEqual(['graph:graphlab-draft:set', 'load:extra-pass:shaders/extra-pass.wgsl', 'slot:0:graphlab-draft']);
   });
 
-  it('refuses an empty, invalid or sim-ring draft without touching the renderer', async () => {
+  it('refuses an empty or invalid draft without touching the renderer', async () => {
     const { manager, calls } = fakeManager();
     const empty = await runDraft(manager, 0, newDraft());
     expect(empty).toMatchObject({ ok: false, reason: 'empty' });
@@ -76,11 +83,17 @@ describe('runDraft', () => {
     const invalid = await runDraft(manager, 0, bad);
     expect(invalid).toMatchObject({ ok: false, reason: 'invalid', message: 'graph exceeds maxPassesPerFrame: 5 > 2' });
 
-    const dlaGraph = GRAPH_REGISTRY['dla-crystals'];
-    if (!dlaGraph) throw new Error('missing dla-crystals graph');
-    const dla = await runDraft(manager, 0, draftFromRegistryGraph('dla-crystals', dlaGraph));
-    expect(dla).toMatchObject({ ok: false, reason: 'sim-ring' });
+    expect(calls).toEqual([]);
+  });
 
+  it('never loads a graph with an illegal read (a role used before it is produced)', async () => {
+    const { manager, m, calls } = fakeManager();
+    // step reads dataB, which only the later inject writes.
+    const illegal = toggleRole(waveTank(), 0, 'reads', 'dataB');
+    const res = await runDraft(manager, 0, illegal);
+    expect(res).toMatchObject({ ok: false, reason: 'invalid' });
+    expect(m.loadShader).not.toHaveBeenCalled();
+    expect(m.setRuntimeGraph).not.toHaveBeenCalled();
     expect(calls).toEqual([]);
   });
 
@@ -97,6 +110,52 @@ describe('runDraft', () => {
     const res = await runDraft(manager, 0, waveTank());
     expect(res).toMatchObject({ ok: false, reason: 'load-failed', message: 'Could not compile "wave-inject".' });
     expect(calls.some((c) => c.startsWith('slot:'))).toBe(false);
+  });
+
+  describe('sim-ring drafts', () => {
+    const dla = (stateCount?: number): GraphDraft => {
+      const graph = GRAPH_REGISTRY['dla-crystals'];
+      if (!graph) throw new Error('missing dla-crystals graph');
+      return setSimRing(draftFromRegistryGraph('dla-crystals', graph), true, stateCount);
+    };
+
+    it('run, sending the ring request with the graph so group-1 entries size the ring from it', async () => {
+      const { manager, calls } = fakeManager();
+      const res = await runDraft(manager, 0, dla(16384));
+      expect(res).toMatchObject({ ok: true, entries: ['dla-walkers', 'dla-render'] });
+      expect(calls[0]).toBe('graph:graphlab-draft:set:ring=16384');
+      // What WebGPURenderer.loadShader hands SimRing.ensure for the root and each entry.
+      expect(resolveSimRingRequest(GRAPH_LAB_RUNTIME_ID)).toBe(16384);
+      expect(resolveSimRingRequest('dla-walkers')).toBe(16384);
+      stopDraft(manager, 0, 'plasma');
+      // Dropped with the draft: the shipped definition's request is back.
+      expect(resolveSimRingRequest('dla-walkers')).toBe(65536);
+    });
+
+    it('recompile every entry when asked to re-arm (Run, size change), not on plain edits', async () => {
+      const { manager, calls } = fakeManager();
+      await runDraft(manager, 0, dla(), { rearmSimRing: true });
+      calls.length = 0;
+      await runDraft(manager, 0, dla(4096), { rearmSimRing: true });
+      expect(calls).toEqual([
+        'graph:graphlab-draft:set:ring=4096',
+        'load:graphlab-draft:shaders/dla-walkers.wgsl',
+        'load:dla-walkers:shaders/dla-walkers.wgsl',
+        'load:dla-render:shaders/dla-render.wgsl',
+        'slot:0:graphlab-draft',
+      ]);
+      calls.length = 0;
+      await runDraft(manager, 0, dla(4096));
+      expect(calls).toEqual(['graph:graphlab-draft:set:ring=4096', 'slot:0:graphlab-draft']);
+    });
+
+    it('send no ring request for a plain draft, and never recompile it to re-arm', async () => {
+      const { manager, calls } = fakeManager();
+      await runDraft(manager, 0, waveTank(), { rearmSimRing: true });
+      calls.length = 0;
+      await runDraft(manager, 0, waveTank(), { rearmSimRing: true });
+      expect(calls).toEqual(['graph:graphlab-draft:set', 'slot:0:graphlab-draft']);
+    });
   });
 
   it('applies the entry catalog check when one is given', async () => {

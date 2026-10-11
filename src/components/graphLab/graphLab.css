@@ -122,11 +122,14 @@
 .graph-lab__ok {
   color: var(--success, #2ed573);
 }
-.graph-lab__banner {
-  padding: 8px 10px;
-  border: 1px solid var(--info, #4a9eff);
-  border-radius: 6px;
-  color: var(--info, #4a9eff);
+.graph-lab__notes {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  color: var(--text-secondary, #a0a0b0);
+  font-size: 12px;
+}
+.graph-lab__notes li + li {
+  margin-top: 3px;
 }
 
 .graph-lab__section {

@@ -173,12 +173,13 @@ Nodes run in array order, so a graph cannot contain a cycle in the graph-theory 
 
 ## Runtime graphs
 
-`runtimeGraphs.ts` is an overlay on the generated registry: `setRuntimeGraph(id, graph | null)` makes `resolveGraphForShader`, `hasGraph` and `getGraphEntryIds` answer for an id that is not in `shader_definitions/`. The [Graph Lab](GRAPH_LAB.md) runs its draft this way (id `graphlab-draft`), so the draft goes through the same planner, pass budgets, truncation and color-writer rules as a shipped graph.
+`runtimeGraphs.ts` is an overlay on the generated registry: `setRuntimeGraph(id, graph | null, simRing?)` makes `resolveGraphForShader`, `hasGraph` and `getGraphEntryIds` answer for an id that is not in `shader_definitions/`. The [Graph Lab](GRAPH_LAB.md) runs its draft this way (id `graphlab-draft`), so the draft goes through the same planner, pass budgets, truncation and color-writer rules as a shipped graph.
 
 - One overlay per JS realm. The render worker has its own copy, fed by the `setRuntimeGraph` render command; `RendererManager.setRuntimeGraph` sets both.
 - Pass a **new graph object** for every change. Validation, expansion and pass caps are memoised per graph object, so mutating a registered graph in place keeps serving the old plan.
 - A runtime graph wins over a static one with the same id; `null` restores the static graph.
-- TS WebGPU only. Sim-ring graphs need `simRing` from a definition and are not supported through the overlay.
+- TS WebGPU only.
+- The optional `simRing` (`{ stateCount }`, the definition field as consumed) is what `resolveSimRingRequest` returns for the graph's id and its entries while it is registered; it wins over `SIM_RING_REGISTRY`. It only sizes the ring: the ring is still armed by `WebGPURenderer.loadShader` → `SimRing.ensure` when an entry that declares `@group(1)` compiles, and group 1 is still bound only to those entries. A request that is set after the entries compiled takes effect on their next compile.
 
 ## Reference implementations
 

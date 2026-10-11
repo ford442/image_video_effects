@@ -37,7 +37,7 @@ export const EXPORT_CATEGORIES = [
 const ID_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
 
 export interface ExportNote {
-  code: 'replaces-existing' | 'hides-catalog-entry' | 'drift-baseline' | 'sim-ring-untouched' | 'no-params';
+  code: 'replaces-existing' | 'hides-catalog-entry' | 'drift-baseline' | 'sim-ring' | 'no-params';
   message: string;
 }
 
@@ -132,8 +132,9 @@ export function exportGraphDefinition(draft: GraphDraft, context: ExportContext 
   }
   if (analysis.usesSimRing || draft.envelope.simRing !== undefined) {
     notes.push({
-      code: 'sim-ring-untouched',
-      message: 'Sim-ring fields are exported exactly as imported; the Lab cannot edit or run them in v1.',
+      code: 'sim-ring',
+      message:
+        'The simRing request ships with the graph. Only entries that declare @group(1) get the ring, and ?renderer=wasm refuses the shader.',
     });
   }
   if (draft.envelope.params === undefined) {
@@ -146,7 +147,9 @@ export function exportGraphDefinition(draft: GraphDraft, context: ExportContext 
   const envelope = Object.fromEntries(Object.entries(draft.envelope).filter(([key]) => !RESERVED_ENVELOPE.has(key)));
   // Defaults only for a graph started from scratch. An imported or forked definition is exported
   // exactly as it came (adding `requiresRgba32Float` would change how a shipped shader is allocated).
-  const fresh = Object.keys(envelope).length === 0;
+  // The sim-ring toggle writes `simRing` into a from-scratch draft too; it does not make the draft imported.
+  const fresh = Object.keys(envelope).every((key) => key === 'simRing');
+  const sim = analysis.usesSimRing || envelope.simRing !== undefined;
   const definition: Record<string, unknown> = {
     id: draft.id,
     name: draft.name.trim(),
@@ -155,7 +158,7 @@ export function exportGraphDefinition(draft: GraphDraft, context: ExportContext 
       ? {
           description: 'Tier C graph authored in the Graph Lab.',
           ...(usesSimTextures(draft) ? { requiresRgba32Float: true } : {}),
-          features: ['simulation', 'multi-pass', 'graph-runner'],
+          features: ['simulation', 'multi-pass', 'graph-runner', ...(sim ? ['sim-ring'] : [])],
           tags: ['simulation', 'graph'],
         }
       : {}),

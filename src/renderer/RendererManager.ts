@@ -31,7 +31,7 @@ import { isCanvasTransferred, WorkerWebGPUBackend } from './worker/WorkerWebGPUB
 import { isWebGpuBackend, type WebGPUBackendApi } from './webgpuBackendApi';
 import type { PassTiming } from './passTimings';
 import type { MultipassGraphDef } from './multipassGraph';
-import { setRuntimeGraph as setRuntimeGraphOverlay } from './runtimeGraphs';
+import { setRuntimeGraph as setRuntimeGraphOverlay, type RuntimeSimRingRequest } from './runtimeGraphs';
 import {
   ShaderLoadMeta,
   addRipple,
@@ -679,13 +679,15 @@ export class RendererManager {
    * even when the renderer runs in the worker, because shader loading and badges
    * resolve graphs on this thread; the backend call then reaches the worker's copy.
    * Pass a fresh graph object per edit: plans are memoised per object.
+   * `simRing` sizes the group-1 ring when one of the graph's group-1 entries next
+   * compiles; entries that do not declare @group(1) never get it bound.
    * Returns false when the active backend cannot run graphs.
    */
-  setRuntimeGraph(id: string, graph: MultipassGraphDef | null): boolean {
+  setRuntimeGraph(id: string, graph: MultipassGraphDef | null, simRing: RuntimeSimRingRequest | null = null): boolean {
     const r = this.shaderRenderer();
     if (!isWebGpuBackend(r)) return false;
-    setRuntimeGraphOverlay(id, graph);
-    r.setRuntimeGraph(id, graph);
+    setRuntimeGraphOverlay(id, graph, simRing);
+    r.setRuntimeGraph(id, graph, simRing);
     return true;
   }
   /** Run an opt-in graph node below full size (TS WebGPU only). Returns the scale in effect. */

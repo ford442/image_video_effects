@@ -5,6 +5,12 @@
  * (renderer/runtimeGraphs.ts) under one fixed id and bound to a slot, so it goes
  * through the same planner, pass budgets, truncation and color-writer rules as
  * any shipped graph — the Lab adds no execution path of its own.
+ *
+ * Sim-ring drafts send their `simRing` request with the graph. The ring itself is
+ * armed only the way a shipped definition arms it: compiling an entry that
+ * declares @group(1) runs SimRing.ensure with resolveSimRingRequest(entry). An
+ * entry that never declares @group(1) keeps the group-0 pipeline and is never
+ * bound to group 1, whatever the toggle says.
  */
 
 import type { GraphRunReport } from '../renderer/GraphRunner';
@@ -13,11 +19,11 @@ import type { PassTiming } from '../renderer/passTimings';
 import type { RendererManager } from '../renderer/RendererManager';
 import { GRAPH_LAB_RUNTIME_ID } from '../renderer/runtimeGraphs';
 import { analyzeGraph } from './graphAnalysis';
-import { GraphDraft, isSimRingDraft } from './graphDraft';
+import { GraphDraft, simRingRequest } from './graphDraft';
 
 export type RunResult =
   | { ok: true; slot: number; entries: string[]; previousShaderId: string | null }
-  | { ok: false; reason: 'invalid' | 'sim-ring' | 'empty' | 'backend' | 'load-failed'; message: string };
+  | { ok: false; reason: 'invalid' | 'empty' | 'backend' | 'load-failed'; message: string };
 
 export interface LiveReading {
   /** The planner's report for the running draft; null until it has compiled a frame. */
@@ -40,13 +46,19 @@ export async function runDraft(
   manager: RendererManager,
   slot: number,
   draft: GraphDraft,
-  options: { knownEntries?: Set<string>; previousShaderId?: string | null } = {},
+  options: {
+    knownEntries?: Set<string>;
+    previousShaderId?: string | null;
+    /**
+     * Recompile every entry of a sim-ring draft so its group-1 entries re-run
+     * SimRing.ensure with the draft's request (and re-seed at frame 0). Set on
+     * Run and when the requested size changes; plain edits keep the ring running.
+     */
+    rearmSimRing?: boolean;
+  } = {},
 ): Promise<RunResult> {
   if (draft.graph.nodes.length === 0) {
     return { ok: false, reason: 'empty', message: 'Add at least one node to run the graph.' };
-  }
-  if (isSimRingDraft(draft)) {
-    return { ok: false, reason: 'sim-ring', message: 'Sim-ring graphs are view-only in the Lab (v1).' };
   }
   const analysis = analyzeGraph(draft.graph, options.knownEntries ? { knownEntries: options.knownEntries } : {});
   if (!analysis.valid) {
@@ -60,20 +72,22 @@ export async function runDraft(
 
   // Registered before loading: loadShader pulls every graph entry through hasGraph / getGraphEntryIds.
   const graph = cloneGraph(draft.graph);
-  if (!manager.setRuntimeGraph(GRAPH_LAB_RUNTIME_ID, graph)) {
+  const simRing = simRingRequest(draft);
+  if (!manager.setRuntimeGraph(GRAPH_LAB_RUNTIME_ID, graph, simRing)) {
     return { ok: false, reason: 'backend', message: 'Graphs run on the TypeScript WebGPU renderer only.' };
   }
 
   const entries = Array.from(new Set(graph.nodes.map((n) => n.entry)));
+  const recompile = !!simRing && !!options.rearmSimRing;
   // The root id needs a compiled pipeline (the planner gates slots on it); the first entry's WGSL serves.
-  if (!manager.isShaderCached(GRAPH_LAB_RUNTIME_ID)) {
+  if (recompile || !manager.isShaderCached(GRAPH_LAB_RUNTIME_ID)) {
     const rootEntry = entries[0];
     if (!rootEntry) return { ok: false, reason: 'empty', message: 'The graph has no entries to compile.' };
     const ok = await manager.loadShader(GRAPH_LAB_RUNTIME_ID, entryUrl(rootEntry));
     if (!ok) return { ok: false, reason: 'load-failed', message: `Could not compile "${rootEntry}".` };
   }
   for (const entry of entries) {
-    if (manager.isShaderCached(entry)) continue;
+    if (!recompile && manager.isShaderCached(entry)) continue;
     const ok = await manager.loadShader(entry, entryUrl(entry));
     if (!ok) return { ok: false, reason: 'load-failed', message: `Could not compile "${entry}".` };
   }

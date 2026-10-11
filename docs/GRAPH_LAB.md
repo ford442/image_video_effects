@@ -12,23 +12,27 @@ The Lab is a side panel, not a tab: switching tabs unmounts the canvas and destr
 
 ## Workflow
 
-1. **Start.** *Start from…* copies a shipped graph (saved under `<id>-lab`, so exporting never silently replaces it), *Import* takes a shader-definition JSON (or a bare `{ maxPassesPerFrame, nodes }`), *New* starts empty. The draft is autosaved to `localStorage`.
+1. **Start.** The Lab opens on a copy of the `wave-tank` flagship (`wave-tank-lab`), a graph that validates and runs. *Start from…* copies another shipped graph (saved under `<id>-lab`, so exporting never silently replaces it), *Import* takes a shader-definition JSON (or a bare `{ maxPassesPerFrame, nodes }`), *New* starts empty. The draft is autosaved to `localStorage`.
 2. **Compose.** Nodes are listed in execution order; the array order *is* the order the passes run in. Add a node by searching entries; reorder, duplicate or remove with the buttons. For the selected node you can set:
    - its entry (a WGSL file stem under `public/shaders/`);
-   - reads `read, dataA, dataB, dataC` and writes `color, dataA, dataB` — the roles with defined behaviour (see [Texture roles](MULTIPASS_GRAPH.md#texture-roles));
+   - reads `read, dataA, dataB, dataC` and writes `color, dataA, dataB` — the roles with defined behaviour (see [Texture roles](MULTIPASS_GRAPH.md#texture-roles)); with the sim ring on, also reads `simState, simIndex` and writes `simState`;
    - `repeat` (1–64);
    - `scalable` + `minScale` (per-node resolution scaling);
+   - its dispatch domain, `pixels` or `simState` (sim ring on only; a `simState` node cannot be scalable);
    - the graph's `maxPassesPerFrame` ceiling.
 
+   The pass budget is the planner's: `min(graph.maxPassesPerFrame, policy.maxPassesPerFrame)`, shown per policy under *Cost*.
+
    Roles outside that set that arrive in an imported graph are kept as they are and shown dashed.
-3. **Read the analysis.**
+3. **Sim ring.** *Use the group-1 sim ring* writes the definition's `simRing` request (`stateCount` from the OOM ladder, 65,536 / 32,768 / 16,384 / 4,096; other `simRing` fields such as `agent` are kept). It cannot be switched off while a node still uses a sim role or a `simState` dispatch. The section states the contract: `simState` + its `simIndex` snapshot (16 B per element each), bound only to entries whose WGSL declares `@group(1)`, and that `?renderer=wasm` refuses the shader. See [How the sim ring is armed](#how-the-sim-ring-is-armed).
+4. **Read the analysis.**
    - *Diagnostics* — every error and warning from `diagnoseGraph` with its code: `dependency`, `cycle`, `missing-entry`, `pass-budget`, … Repeated per-iteration messages are folded into one line.
    - *Dependencies* — each expanded dispatch, where each read comes from (`source image`, `previous frame`, `dataA → dataC (step#2)`, a node dispatch), and the copy barriers the planner inserts before it.
    - *Cost* — passes and copy barriers per node, and for each quality policy (battery / balanced / ultra / auto low-end, mobile, desktop) how many passes run, how many are cut, whether the display pass survives, and the frame budget. While running it adds per-node GPU ms.
-4. **Run.** *Run in slot N* registers the draft as a runtime graph and binds it to the active slot. Edits apply live as long as the graph validates; if an edit makes it invalid, the last valid graph keeps running and the error stays on screen. The live line shows the planner's report (`live: 4 / 5 passes · 1 truncated (cap 4)`). *Stop*, closing the Lab, or the slot being taken over by another shader releases it; the previous shader comes back unless you already picked another one.
-5. **Export.** *Download* or *Copy* the definition. Export is blocked while any error diagnostic exists, if the id is not a valid catalog id, collides with an existing shader, or is the reserved `graphlab-draft`.
+5. **Run.** *Run in slot N* registers the draft as a runtime graph and binds it to the active slot. Edits apply live as long as the graph validates; if an edit makes it invalid, the last valid graph keeps running and the error stays on screen. The live line shows the planner's report (`live: 4 / 5 passes · 1 truncated (cap 4)`). *Stop*, closing the Lab, or the slot being taken over by another shader releases it; the previous shader comes back unless you already picked another one.
+6. **Export.** *Download* or *Copy* the definition. Export is blocked while any error diagnostic exists, if the id is not a valid catalog id, collides with an existing shader, or is the reserved `graphlab-draft`.
 
-Run is disabled (with the reason on hover) for an empty graph, a graph with errors, and sim-ring graphs.
+Run is disabled (with the reason on hover) for an empty graph and a graph with errors; an invalid draft is never registered or compiled.
 
 ## Installing an export
 
@@ -53,9 +57,15 @@ Things the export tells you about:
 
 Each frame the planner resolves `graphlab-draft` like any other graph. Fresh graph objects are essential: plans are memoised per object.
 
+### How the sim ring is armed
+
+The Lab adds no binding and no allocation path. A sim draft's `{ stateCount }` travels with the graph (`setRuntimeGraph(id, graph, simRing)`, to both realms), and the generated `resolveSimRingRequest` answers it for `graphlab-draft` and every entry of the draft. From there it is the shipped path: `WebGPURenderer.loadShader` compiles an entry, and only if its WGSL declares `@group(1)` does it get the two-layout pipeline and call `SimRing.ensure` with that request (OOM ladder, session cap). The frame planner binds group 1 only for those entries (`bindSimRing`). An entry without `@group(1)` keeps the group-0 pipeline whatever the toggle says; a `simState` dispatch of it runs over the element count once some group-1 entry has armed the ring, and is skipped (with a warning) until then.
+
+`SimRing.ensure` runs on compile, so *Run* recompiles every entry of a sim draft (re-seeding the ring at `frame 0`), and so does a change of the element count while running. Other edits keep the ring running. The ring keeps its largest allocation for the session, like a shipped sim shader's.
+
 ## Limits in v1
 
-- **Sim-ring graphs** (`simState` / `simIndex` roles, `dispatch: "simState"`, `simRing` field) are view-only: they are shown, validated and exported unchanged, but not edited or run. They need the group-1 ring armed from a definition.
+- **Sim ring:** the Lab cannot tell from the graph which entries declare `@group(1)`; a draft whose entries never do runs without the ring (its `simState` dispatches are skipped). `?renderer=wasm` refuses sim-ring shaders (the C++ backend has one bind group).
 - One running draft at a time, in the active slot.
 - No undo/redo, no free-form canvas, no editing of `params` or WGSL.
 - Entries come from the shader catalog, the entries of registered graphs and Tier B chain passes. An entry that exists as a file but in none of those can be typed only while the catalog is still loading.
@@ -66,5 +76,7 @@ Each frame the planner resolves `graphlab-draft` like any other graph. Fresh gra
 npm test -- --watchAll=false --ci src/graphLab src/components/graphLab src/renderer/multipassGraph src/renderer/runtimeGraphs src/renderer/worker
 SKIP_WASM_BUILD=1 npm run build && npm run test:engine2 -- tests/graph-lab.swiftshader.spec.ts
 ```
+
+Unit coverage for the issue's contract: an illegal read never reaches `loadShader` (`runDraft.test.ts`, `GraphLabPanel.test.tsx`); a Lab-edited `repeat` expands to the same frame-plan dispatches as the same `repeat` in JSON, and a sim-ring toggle on group-0 entries never sets `bindSimRing` (`runtimeGraphs.test.ts`).
 
 The e2e registers a draft of the shipped `predator-prey-ecology` step → render graph in both render threads and asserts the planner's report, the pass budgets (battery cap, frame budget of one pass keeping the display pass), the refusal of a broken draft, and pixels read back through the renderer. `test:engine2` is not part of CI.

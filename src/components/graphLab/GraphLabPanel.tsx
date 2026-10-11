@@ -2,16 +2,20 @@ import React, { RefObject, useRef, useState } from 'react';
 import {
   addNode,
   duplicateNodeAt,
+  editableRoles,
   moveNode,
   removeNodeAt,
   setMaxPasses,
   setMeta,
+  setNodeDispatch,
   setNodeEntry,
   setNodeId,
   setRepeat,
   setScalable,
+  setSimRing,
   toggleRole,
 } from '../../graphLab/graphDraft';
+import { graphUsesSimRing } from '../../renderer/multipassGraph';
 import type { RendererManager } from '../../renderer/RendererManager';
 import type { ShaderEntry } from '../../renderer/types';
 import { AnalysisTabs } from './AnalysisTabs';
@@ -19,6 +23,7 @@ import { EntryPicker } from './EntryPicker';
 import { ExportPanel } from './ExportPanel';
 import { NodeInspector } from './NodeInspector';
 import { NodeList } from './NodeList';
+import { SimRingSection } from './SimRingSection';
 import { useGraphLab } from './useGraphLab';
 import './graphLab.css';
 
@@ -37,14 +42,13 @@ export interface GraphLabPanelProps {
  */
 export default function GraphLabPanel({ rendererRef, availableModes, activeSlot, onClose, setStatus }: GraphLabPanelProps) {
   const lab = useGraphLab({ rendererRef, availableModes, activeSlot, setStatus });
-  const { draft, setDraft, selected, analysis, readOnly, running, live, entries } = lab;
+  const { draft, setDraft, selected, analysis, simRing, running, live, entries } = lab;
   const node = draft.graph.nodes[selected];
   const [pasted, setPasted] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const runBlock = readOnly
-    ? 'Sim-ring graphs are view-only in v1.'
-    : draft.graph.nodes.length === 0
+  const runBlock =
+    draft.graph.nodes.length === 0
       ? 'Add a node first.'
       : !analysis.valid
         ? `Fix the errors first: ${analysis.errors[0]?.message ?? ''}`
@@ -138,13 +142,6 @@ export default function GraphLabPanel({ rendererRef, availableModes, activeSlot,
         {lab.notice && !lab.runError && <span className="graph-lab__muted">{lab.notice}</span>}
       </div>
 
-      {readOnly && (
-        <p className="graph-lab__banner" data-testid="graph-lab-readonly">
-          This graph uses the sim ring (<code>simState</code> / <code>simIndex</code>). It is shown and validated, and exports
-          unchanged, but cannot be edited or run in the Lab yet.
-        </p>
-      )}
-
       <section aria-labelledby="graph-lab-nodes-h">
         <h3 id="graph-lab-nodes-h" className="graph-lab__section">
           Nodes
@@ -154,7 +151,6 @@ export default function GraphLabPanel({ rendererRef, availableModes, activeSlot,
               type="number"
               min={1}
               value={draft.graph.maxPassesPerFrame}
-              disabled={readOnly}
               data-testid="graph-lab-ceiling"
               onChange={(e) => setDraft((d) => setMaxPasses(d, Number(e.target.value)))}
             />
@@ -163,7 +159,6 @@ export default function GraphLabPanel({ rendererRef, availableModes, activeSlot,
         <NodeList
           nodes={draft.graph.nodes}
           selected={selected}
-          readOnly={readOnly}
           diagnostics={analysis.diagnostics}
           onSelect={lab.setSelected}
           onMove={(from, to) => {
@@ -176,18 +171,16 @@ export default function GraphLabPanel({ rendererRef, availableModes, activeSlot,
           }}
           onRemove={(i) => setDraft((d) => removeNodeAt(d, i))}
         />
-        {!readOnly && (
-          <div className="graph-lab__add">
-            <span>Add node</span>
-            <EntryPicker
-              catalog={entries}
-              onPick={(entry) => {
-                setDraft((d) => addNode(d, entry));
-                lab.setSelected(draft.graph.nodes.length);
-              }}
-            />
-          </div>
-        )}
+        <div className="graph-lab__add">
+          <span>Add node</span>
+          <EntryPicker
+            catalog={entries}
+            onPick={(entry) => {
+              setDraft((d) => addNode(d, entry));
+              lab.setSelected(draft.graph.nodes.length);
+            }}
+          />
+        </div>
       </section>
 
       <section aria-labelledby="graph-lab-inspector-h">
@@ -197,13 +190,28 @@ export default function GraphLabPanel({ rendererRef, availableModes, activeSlot,
         <NodeInspector
           node={node}
           index={selected}
-          readOnly={readOnly}
           catalog={entries}
+          readRoles={editableRoles(draft, 'reads')}
+          writeRoles={editableRoles(draft, 'writes')}
+          simRing={simRing !== null}
           onId={(id) => setDraft((d) => setNodeId(d, selected, id))}
           onEntry={(entry) => setDraft((d) => setNodeEntry(d, selected, entry))}
           onToggleRole={(side, role) => setDraft((d) => toggleRole(d, selected, side, role))}
           onRepeat={(n) => setDraft((d) => setRepeat(d, selected, n))}
           onScalable={(on, min) => setDraft((d) => setScalable(d, selected, on, min))}
+          onDispatch={(domain) => setDraft((d) => setNodeDispatch(d, selected, domain))}
+        />
+      </section>
+
+      <section aria-labelledby="graph-lab-simring-h">
+        <h3 id="graph-lab-simring-h" className="graph-lab__section">
+          Sim ring
+        </h3>
+        <SimRingSection
+          request={simRing}
+          locked={graphUsesSimRing(draft.graph)}
+          onToggle={(on) => setDraft((d) => setSimRing(d, on))}
+          onStateCount={(n) => setDraft((d) => setSimRing(d, true, n))}
         />
       </section>
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { EntryCatalog } from '../../graphLab/entryCatalog';
-import { EDITABLE_READ_ROLES, EDITABLE_WRITE_ROLES, RoleSide } from '../../graphLab/graphDraft';
-import { GraphNodeDef, GraphRole, MAX_REPEAT, NODE_SCALE_LEVELS } from '../../renderer/multipassGraph';
+import { RoleSide } from '../../graphLab/graphDraft';
+import { GraphDispatchDomain, GraphNodeDef, GraphRole, MAX_REPEAT, NODE_SCALE_LEVELS } from '../../renderer/multipassGraph';
 import { EntryPicker } from './EntryPicker';
 
 /** Binding each role maps to (docs/MULTIPASS_GRAPH.md "Texture roles"). */
@@ -11,6 +11,8 @@ const ROLE_HELP: Record<string, string> = {
   dataA: 'Simulation storage A (binding 7)',
   dataB: 'Simulation storage B (binding 8)',
   dataC: 'Previous frame / handoff copy (binding 9)',
+  simState: 'Sim ring agent state (@group(1) binding 0)',
+  simIndex: 'Read-only simState snapshot (@group(1) binding 1, written by the barrier)',
 };
 
 const SCALE_CHOICES = (NODE_SCALE_LEVELS as readonly number[]).filter((n) => n < 1);
@@ -18,26 +20,29 @@ const SCALE_CHOICES = (NODE_SCALE_LEVELS as readonly number[]).filter((n) => n <
 export interface NodeInspectorProps {
   node: GraphNodeDef | undefined;
   index: number;
-  readOnly: boolean;
   catalog: EntryCatalog | null;
+  /** Roles offered per side (graphDraft.editableRoles: texture roles, plus sim roles while the ring is on). */
+  readRoles: readonly GraphRole[];
+  writeRoles: readonly GraphRole[];
+  /** The draft uses the sim ring, so a node may dispatch over simState. */
+  simRing: boolean;
   onId: (id: string) => void;
   onEntry: (entry: string) => void;
   onToggleRole: (side: RoleSide, role: GraphRole) => void;
   onRepeat: (repeat: number) => void;
   onScalable: (scalable: boolean, minScale?: number) => void;
+  onDispatch: (domain: GraphDispatchDomain) => void;
 }
 
 function RoleToggles({
   side,
   node,
   roles,
-  readOnly,
   onToggle,
 }: {
   side: RoleSide;
   node: GraphNodeDef;
   roles: readonly string[];
-  readOnly: boolean;
   onToggle: (side: RoleSide, role: GraphRole) => void;
 }) {
   const current = node[side] ?? [];
@@ -52,7 +57,6 @@ function RoleToggles({
             type="button"
             className={`graph-lab__role${on ? ' is-on' : ''}`}
             aria-pressed={on}
-            disabled={readOnly}
             title={ROLE_HELP[role]}
             data-testid={`role-${side}-${role}`}
             onClick={() => onToggle(side, role as GraphRole)}
@@ -70,29 +74,62 @@ function RoleToggles({
   );
 }
 
-export function NodeInspector({ node, index, readOnly, catalog, onId, onEntry, onToggleRole, onRepeat, onScalable }: NodeInspectorProps) {
+export function NodeInspector({
+  node,
+  index,
+  catalog,
+  readRoles,
+  writeRoles,
+  simRing,
+  onId,
+  onEntry,
+  onToggleRole,
+  onRepeat,
+  onScalable,
+  onDispatch,
+}: NodeInspectorProps) {
   if (!node) return <p className="graph-lab__empty">Select a node to edit it.</p>;
   const repeat = node.repeat ?? 1;
+  const domain = node.dispatch ?? 'pixels';
   return (
     <div className="graph-lab__inspector" data-testid="graph-lab-inspector" aria-label={`Node ${index + 1} settings`}>
       <label className="graph-lab__field">
         <span>Node id</span>
-        <input type="text" value={node.id} disabled={readOnly} data-testid="node-id" onChange={(e) => onId(e.target.value)} />
+        <input type="text" value={node.id} data-testid="node-id" onChange={(e) => onId(e.target.value)} />
       </label>
 
       <div className="graph-lab__field">
         <span>Shader entry</span>
-        <EntryPicker catalog={catalog} value={node.entry} disabled={readOnly} onPick={onEntry} />
+        <EntryPicker catalog={catalog} value={node.entry} onPick={onEntry} />
       </div>
 
       <div className="graph-lab__field">
         <span>Reads</span>
-        <RoleToggles side="reads" node={node} roles={EDITABLE_READ_ROLES} readOnly={readOnly} onToggle={onToggleRole} />
+        <RoleToggles side="reads" node={node} roles={readRoles} onToggle={onToggleRole} />
       </div>
       <div className="graph-lab__field">
         <span>Writes</span>
-        <RoleToggles side="writes" node={node} roles={EDITABLE_WRITE_ROLES} readOnly={readOnly} onToggle={onToggleRole} />
+        <RoleToggles side="writes" node={node} roles={writeRoles} onToggle={onToggleRole} />
       </div>
+
+      {(simRing || domain === 'simState') && (
+        <label className="graph-lab__field graph-lab__field--inline">
+          <span>Dispatch</span>
+          <select
+            value={domain}
+            data-testid="node-dispatch"
+            onChange={(e) => onDispatch(e.target.value as GraphDispatchDomain)}
+          >
+            <option value="pixels">pixels</option>
+            <option value="simState">simState</option>
+          </select>
+          <small>
+            {domain === 'simState'
+              ? 'One invocation per ring element: ceil(stateCount / 64) × 1 workgroups.'
+              : 'One invocation per pixel of the working size.'}
+          </small>
+        </label>
+      )}
 
       <label className="graph-lab__field graph-lab__field--inline">
         <span>Repeat</span>
@@ -102,7 +139,6 @@ export function NodeInspector({ node, index, readOnly, catalog, onId, onEntry, o
           max={MAX_REPEAT}
           step={1}
           value={repeat}
-          disabled={readOnly}
           data-testid="node-repeat"
           onChange={(e) => onRepeat(Number(e.target.value))}
         />
@@ -114,7 +150,7 @@ export function NodeInspector({ node, index, readOnly, catalog, onId, onEntry, o
           <input
             type="checkbox"
             checked={!!node.scalable}
-            disabled={readOnly || node.dispatch === 'simState'}
+            disabled={domain === 'simState'}
             data-testid="node-scalable"
             onChange={(e) => onScalable(e.target.checked)}
           />{' '}
@@ -125,7 +161,6 @@ export function NodeInspector({ node, index, readOnly, catalog, onId, onEntry, o
             min scale{' '}
             <select
               value={node.minScale ?? 0.5}
-              disabled={readOnly}
               onChange={(e) => onScalable(true, Number(e.target.value))}
               aria-label="Lowest resolution scale"
             >

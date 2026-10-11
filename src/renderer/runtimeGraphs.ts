@@ -20,16 +20,45 @@ import type { MultipassGraphDef } from './multipassGraph';
 /** Shader id the Graph Lab runs its draft under (single running draft, stable slot binding). */
 export const GRAPH_LAB_RUNTIME_ID = 'graphlab-draft';
 
-const overlay = new Map<string, MultipassGraphDef>();
+/** A runtime graph's sim-ring request: the definition `simRing` field, as consumed. */
+export interface RuntimeSimRingRequest {
+  stateCount: number;
+}
 
-/** Register (or, with `null`, remove) a graph for `id`. */
-export function setRuntimeGraph(id: string, graph: MultipassGraphDef | null): void {
+const overlay = new Map<string, MultipassGraphDef>();
+const simRingOverlay = new Map<string, RuntimeSimRingRequest>();
+
+/**
+ * Register (or, with `null`, remove) a graph for `id`, with its optional sim-ring
+ * request. The request only sizes the ring when a group-1 entry compiles
+ * (WebGPURenderer.loadShader → SimRing.ensure); it never attaches group 1 itself.
+ */
+export function setRuntimeGraph(
+  id: string,
+  graph: MultipassGraphDef | null,
+  simRing: RuntimeSimRingRequest | null = null,
+): void {
   if (graph) overlay.set(id, graph);
   else overlay.delete(id);
+  if (graph && simRing) simRingOverlay.set(id, { stateCount: simRing.stateCount });
+  else simRingOverlay.delete(id);
 }
 
 export function getRuntimeGraph(id: string): MultipassGraphDef | null {
   return overlay.get(id) ?? null;
+}
+
+/**
+ * Sim-ring element count a runtime graph requests for `shaderId` — the graph's
+ * own id or one of its node entries. Undefined when no runtime graph claims it.
+ */
+export function getRuntimeSimRingRequest(shaderId: string): number | undefined {
+  const direct = simRingOverlay.get(shaderId);
+  if (direct) return direct.stateCount;
+  for (const [ownerId, req] of Array.from(simRingOverlay)) {
+    if (overlay.get(ownerId)?.nodes.some((n) => n.entry === shaderId)) return req.stateCount;
+  }
+  return undefined;
 }
 
 export function listRuntimeGraphIds(): string[] {
@@ -39,4 +68,5 @@ export function listRuntimeGraphIds(): string[] {
 /** Test hook: drop every runtime graph. */
 export function clearRuntimeGraphs(): void {
   overlay.clear();
+  simRingOverlay.clear();
 }
