@@ -1,0 +1,224 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pixelocity.app/contracts/project_file.v1.schema.json",
+  "title": "Pixelocity project file",
+  "description": "A user-owned, local project file for the recoverable parts of a Pixelocity VJ session.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "app", "createdAt", "chain", "activeSlot", "source", "render"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "app": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "const": "pixelocity" },
+        "version": { "type": "string", "minLength": 1, "maxLength": 128 }
+      }
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "chain": { "$ref": "#/$defs/sharedChain" },
+    "activeSlot": { "type": "integer", "minimum": 0, "maximum": 5 },
+    "source": { "$ref": "#/$defs/source" },
+    "render": { "$ref": "#/$defs/render" },
+    "audio": { "$ref": "#/$defs/audio" },
+    "timeline": { "$ref": "#/$defs/vjSetExport" }
+  },
+  "$defs": {
+    "slotParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "zoomParam1": { "type": "number" },
+        "zoomParam2": { "type": "number" },
+        "zoomParam3": { "type": "number" },
+        "zoomParam4": { "type": "number" },
+        "lightStrength": { "type": "number" },
+        "ambient": { "type": "number" },
+        "normalStrength": { "type": "number" },
+        "fogFalloff": { "type": "number" },
+        "depthThreshold": { "type": "number" }
+      }
+    },
+    "sharedChainSlot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["shaderId"],
+      "properties": {
+        "shaderId": { "type": ["string", "null"], "maxLength": 128 },
+        "params": { "$ref": "#/$defs/slotParams" },
+        "enabled": { "type": "boolean" },
+        "mode": { "enum": ["chained", "parallel"] }
+      }
+    },
+    "sharedChain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["v", "slots"],
+      "properties": {
+        "v": { "const": 1 },
+        "slots": {
+          "type": "array",
+          "maxItems": 6,
+          "items": { "$ref": "#/$defs/sharedChainSlot" }
+        }
+      }
+    },
+    "safeRef": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "pattern": "^(?!\\s*(?:data|blob):)(?!.*(?:MediaStream|permission)).+$"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": { "enum": ["image", "video", "webcam", "generative", "stream", "none"] },
+        "ref": { "$ref": "#/$defs/safeRef" },
+        "generativeShaderId": { "type": "string", "minLength": 1, "maxLength": 128 }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "enum": ["image", "video", "stream"] } } },
+          "then": { "required": ["ref"] }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "generative" } } },
+          "then": { "required": ["generativeShaderId"] }
+        }
+      ]
+    },
+    "render": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "renderScale": { "type": "number", "minimum": 0.25, "maximum": 1 },
+        "quality": { "enum": ["battery", "balanced", "ultra", "auto"] }
+      }
+    },
+    "trigger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "id"],
+      "properties": {
+        "source": { "enum": ["midi-cc", "midi-note", "key"] },
+        "id": { "type": "string", "minLength": 1, "maxLength": 64 }
+      }
+    },
+    "action": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "slot", "param"],
+          "properties": {
+            "type": { "const": "setSlotParam" },
+            "slot": { "type": "integer", "minimum": 0, "maximum": 5 },
+            "param": { "type": "string", "minLength": 1, "maxLength": 128 }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "slot"],
+          "properties": {
+            "type": { "const": "randomizeSlot" },
+            "slot": { "type": "integer", "minimum": 0, "maximum": 5 }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": {
+            "type": { "enum": ["randomizeAll", "triggerTransition", "toggleAutoTransition"] }
+          }
+        }
+      ]
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["trigger", "action"],
+      "properties": {
+        "trigger": { "$ref": "#/$defs/trigger" },
+        "action": { "$ref": "#/$defs/action" }
+      }
+    },
+    "audio": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mappings": {
+          "type": "array",
+          "maxItems": 100,
+          "items": { "$ref": "#/$defs/binding" }
+        }
+      }
+    },
+    "timelineEvent": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["t", "slot", "kind", "value"],
+          "properties": {
+            "t": { "type": "number", "minimum": 0 },
+            "slot": { "type": "integer", "minimum": 0, "maximum": 5 },
+            "kind": { "const": "shader" },
+            "value": { "type": "string", "minLength": 1, "maxLength": 128 }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["t", "slot", "kind", "key", "value"],
+          "properties": {
+            "t": { "type": "number", "minimum": 0 },
+            "slot": { "type": "integer", "minimum": 0, "maximum": 5 },
+            "kind": { "const": "param" },
+            "key": { "enum": ["zoomParam1", "zoomParam2", "zoomParam3", "zoomParam4"] },
+            "value": { "type": "number" }
+          }
+        }
+      ]
+    },
+    "vjTimeline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hz", "durationMs", "events"],
+      "properties": {
+        "hz": { "type": "number", "exclusiveMinimum": 0, "maximum": 120 },
+        "durationMs": { "type": "number", "minimum": 0 },
+        "events": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 200000,
+          "items": { "$ref": "#/$defs/timelineEvent" }
+        }
+      }
+    },
+    "vjSetExport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exportVersion", "name", "savedAt", "chain", "chainString"],
+      "properties": {
+        "exportVersion": { "const": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "vibePrompt": { "type": "string" },
+        "savedAt": { "type": "number" },
+        "chain": { "$ref": "#/$defs/sharedChain" },
+        "chainString": { "type": "string", "minLength": 1 },
+        "bindings": {
+          "type": "array",
+          "maxItems": 100,
+          "items": { "$ref": "#/$defs/binding" }
+        },
+        "timeline": { "$ref": "#/$defs/vjTimeline" }
+      }
+    }
+  }
+}
