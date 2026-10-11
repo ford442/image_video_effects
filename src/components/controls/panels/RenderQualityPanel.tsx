@@ -21,6 +21,12 @@ export interface RenderQualityPanelProps {
   sourceAutoExposure?: boolean;
   onSourceAutoExposureChange?: (enabled: boolean) => void;
   sourceAutoExposureDisabled?: boolean;
+  /** Wide-gamut (Display P3) canvas output; default off. */
+  displayP3?: boolean;
+  onDisplayP3Change?: (enabled: boolean) => void;
+  displayP3Disabled?: boolean;
+  /** Applied-state / fallback explanation shown under the toggle. */
+  displayP3Status?: string;
 }
 
 const MODES: Array<{ id: RenderQualityMode; label: string; hint: string }> = [
@@ -49,6 +55,10 @@ export const RenderQualityPanel: React.FC<RenderQualityPanelProps> = ({
   sourceAutoExposure = false,
   onSourceAutoExposureChange,
   sourceAutoExposureDisabled = false,
+  displayP3 = false,
+  onDisplayP3Change,
+  displayP3Disabled = false,
+  displayP3Status,
 }) => (
   <div className="control-group glass-panel" style={{ padding: '12px' }}>
     <div className="gold-section-header" style={{ fontSize: '12px', marginTop: 0 }}>
@@ -110,6 +120,39 @@ export const RenderQualityPanel: React.FC<RenderQualityPanelProps> = ({
         />
         Auto exposure (source)
       </label>
+    )}
+    {onDisplayP3Change && (
+      <>
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginTop: '10px',
+            fontSize: '11px',
+            color: displayP3Disabled ? '#707088' : '#c0c0d0',
+            cursor: displayP3Disabled ? 'not-allowed' : 'pointer',
+          }}
+          title="Wide-gamut canvas output. Affects the on-screen canvas; encoded recordings carry no color metadata."
+        >
+          <input
+            type="checkbox"
+            checked={displayP3}
+            disabled={displayP3Disabled}
+            onChange={(e) => onDisplayP3Change(e.target.checked)}
+            data-testid="display-p3-toggle"
+          />
+          Wide-gamut output (Display P3)
+        </label>
+        {displayP3Status && (
+          <div
+            data-testid="display-p3-status"
+            style={{ fontSize: '10px', color: '#9090a8', marginTop: '2px', lineHeight: 1.4 }}
+          >
+            {displayP3Status}
+          </div>
+        )}
+      </>
     )}
     {maxPassesPerFrame !== undefined && (
       <div style={{ fontSize: '10px', color: '#808098', marginTop: '4px', lineHeight: 1.4 }}>

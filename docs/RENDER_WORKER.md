@@ -27,6 +27,7 @@ the timestamp profiler live in a dedicated worker that owns the canvas through
 - **Images.** Decoded on the page and transferred as `ImageBitmap`s.
 - **Getters.** Synchronous getters (`getFPS`, `getGPUTimings`, pass timings, frame stats, video stats, node scales, …) read the latest snapshot; slot state and params come from an optimistic local shadow.
 - **Capture.** The page cannot read a transferred canvas. `refreshFrameImage` / screenshots / `__pixelocity__.captureCanvasStats` use the `captureFrame` RPC: the worker takes a `VideoFrame` of the next presented frame **in the same task as its submit** (no COPY_SRC needed) and returns a PNG.
+- **Display P3.** The `setDisplayP3` RPC (`{enabled, isHdr}`) re-negotiates the canvas color space on the worker's own device and returns what was applied (`DisplayP3Result`). The page evaluates `(dynamic-range: high)` and passes it as `isHdr`; the worker cannot. The snapshot's `canvasColor` feeds `getDiagnostics().webgpu.canvas`. See `docs/DEVICE_FEATURES.md`.
 - **Recording.** GPU encode (WebCodecs) uses a `worker` frame source: each tick asks the worker for the next presented frame (`grabVideoFrame`) and encodes the transferred `VideoFrame` on the page. MediaRecorder still records `canvas.captureStream()` of the placeholder canvas.
 - **Thumbnails.** The `captureThumbnail` RPC (gpu-chores downsample of the presented texture).
 - **Dev tools.** `ShaderScanner` compiles through `utils/shaderCompileService.ts`: the page device, or the worker's device over the `compileCheck` RPC.

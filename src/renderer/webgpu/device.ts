@@ -6,7 +6,7 @@
  */
 
 import { reportError } from '../ErrorHandling';
-import type { WebGpuProbeHandoff } from '../webgpuBootProbe';
+import type { CanvasColorFallbackReason, WebGpuProbeHandoff } from '../webgpuBootProbe';
 import { publishWebGpuProbe, runWebGpuBootProbe } from '../webgpuBootProbe';
 import { AdapterGpuType, DeviceFormatCapabilities } from '../../config/formatPolicy';
 import type { AdapterIdentity } from '../../config/adapterIdentity';
@@ -30,6 +30,7 @@ export interface WebGPUDeviceInitResult {
   /** Probe result: swapchain accepts COPY_SRC (enables canvas → VideoFrame capture). */
   canvasCopySrc: boolean;
   canvasColorOptIns: Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'>;
+  canvasColorFallback?: CanvasColorFallbackReason;
   /** Removes the boot probe's log-only uncapturederror listener (see WebGpuProbeHandoff). */
   detachUncapturedLog?: () => void;
 }
@@ -61,6 +62,7 @@ function outcomeFromHandoff(handoff: WebGpuProbeHandoff): WebGPUDeviceInitResult
     adapterAttemptLabel: handoff.adapterAttemptLabel,
     canvasCopySrc: handoff.canvasCopySrc,
     canvasColorOptIns: handoff.canvasColorOptIns,
+    canvasColorFallback: handoff.canvasColorFallback,
     detachUncapturedLog: handoff.detachUncapturedLog,
   };
 }
@@ -155,8 +157,9 @@ export function buildCanvasConfigureOptions(
 }
 
 /**
- * Parse the display-p3 opt-in from a URL search string. Extended tone mapping
- * additionally requires an HDR display (`(dynamic-range: high)`).
+ * Resolve the display-p3 opt-in from the URL (`?display_p3=1`) or the persisted
+ * user setting (`stored`); either enables it. Extended tone mapping additionally
+ * requires an HDR display (`(dynamic-range: high)`).
  */
 export function resolveCanvasColorOptIns(
   search: string = typeof window !== 'undefined' ? window.location.search : '',
@@ -164,9 +167,11 @@ export function resolveCanvasColorOptIns(
     typeof window !== 'undefined' &&
     typeof window.matchMedia === 'function' &&
     window.matchMedia(canvasConfigureContract.optIn.extendedToneMapping.requiresMediaQuery).matches,
+  stored = false,
 ): Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'> {
   const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
-  const displayP3 = params.get(canvasConfigureContract.optIn.displayP3.urlParam) === '1';
+  const displayP3 =
+    params.get(canvasConfigureContract.optIn.displayP3.urlParam) === '1' || stored;
   return {
     displayP3,
     extendedToneMapping: displayP3 && isHdrDisplay(),
