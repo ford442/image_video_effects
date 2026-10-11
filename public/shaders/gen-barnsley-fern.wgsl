@@ -2,31 +2,12 @@
 //  Barnsley Fern IFS
 //  Category: generative
 //  Features: barnsley-ifs, audio-reactive, upgraded-rgba, mouse-driven
-//  Upgraded: 2026-09-27
-//  Ideas: last-affine tint (stem vs leaflets); stem-rib density from idx 0; pinna rachis; crozier tip
+//  Upgraded: 2026-10-11
+//  Ideas: last-affine tint (stem vs leaflets); stem-rib density from idx 0; pinna rachis; crozier tip; rachis scales; sori
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -228,6 +209,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   color = mix(color, mix(stemCol, leafletCol, leafletMix), 0.28);
   let pinnaCol = vec3<f32>(0.55, 0.78, 0.16);
   color = mix(color, pinnaCol, pinnaHits * 0.32);
+  // Rachis scales — dark chevrons along the stem.
+  let scaleBand = abs(fract(p.y * 1.7) - 0.5);
+  color = mix(color, vec3<f32>(0.28, 0.16, 0.05), stemHits * (1.0 - smoothstep(0.04, 0.18, scaleBand)) * 0.65);
+  // Sori — brown spore dots on the pinnae.
+  let sori = pinnaHits * step(0.74, hash21(floor(p * 2.8)));
+  color = mix(color, vec3<f32>(0.42, 0.24, 0.08), sori * 0.75);
 
   // Sunlight filtering through fronds
   let sun = 0.3 + 0.7 * smoothstep(0.2, 0.9, density);

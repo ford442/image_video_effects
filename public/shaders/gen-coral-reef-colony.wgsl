@@ -6,31 +6,12 @@
 //  Created: 2026-05-30
 //  Updated: 2026-06-01
 //  By: Kimi Agent (4-Agent Swarm Upgrade)
-//  Upgraded: 2026-09-27
-//  Ideas: coherent forking branches (value-noise fix); C.a skeleton accretion + bleaching memory; star-lobed polyp mouths that retract at the pointer
+//  Upgraded: 2026-10-11
+//  Ideas: coherent forking branches (value-noise fix); C.a skeleton accretion + bleaching memory; star-lobed polyp mouths that retract at the pointer; apical pallor; zooxanthellae speckles
 //  A packing: A.rgb = ACES display colour (temporal history); A.a = skeleton memory stored as skel*0.9 (NOT display alpha); writeTexture.a = semantic alpha
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash21(p: vec2<f32>) -> f32 {
   let h = dot(p, vec2<f32>(127.1, 311.7));
@@ -215,6 +196,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   );
   coral = mix(coral, vec3<f32>(0.1, 0.9, 0.7), spawnPulse * 0.4);
   coral = mix(coral, aragoniteColor(mix(coralDensity, 0.0, bleach)), 0.4 + 0.5 * bleach);
+  // Apical pallor — the fork tips are paler than the trunk.
+  let tipProx = exp(-min(length(nodePos - tipA), length(nodePos - tipB)) * 14.0) * coralDensity;
+  coral = mix(coral, vec3<f32>(0.86, 0.95, 0.82), tipProx * 0.55);
+  // Zooxanthellae speckles — green dots in living tissue, gone where it has bleached.
+  let zoo = step(0.78, hash21(floor(uv * 90.0))) * coralDensity * (1.0 - bleach);
+  coral = mix(coral, vec3<f32>(0.12, 0.52, 0.1), zoo * 0.7);
 
   let sss = smoothstep(0.0, 0.4, body) * 0.35;
   var color = coral * (body * 0.8 + polyp * 1.4 * (1.0 - 0.45 * mouthPit) + sss);

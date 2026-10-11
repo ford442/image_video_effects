@@ -3,31 +3,12 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: reflected hats on odd cells; chevron brim notch; kite notch; metatile outline
+//  Upgraded: 2026-10-11
+//  Ideas: reflected hats on odd cells; chevron brim notch; kite notch; metatile outline; hat crown; substitution tint
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 
@@ -198,6 +179,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var liveRGB = rgb * val + edgeColor;
     liveRGB += vec3<f32>(0.95, 0.88, 0.62) * metaEdge * 0.28;
+    // Hat crown — a button at the center of each hat.
+    let hexQ = p.x * scale * 0.57735 + p.y * scale * 0.33333;
+    let hexR = p.y * scale * 0.66667;
+    let local = vec2<f32>(fract(hexQ) - 0.5, fract(hexR) - 0.5);
+    liveRGB += vec3<f32>(1.0, 0.92, 0.7) * exp(-dot(local, local) * 48.0) * (0.35 + treble * 0.25);
+    // Substitution tint — 2×2 metatile cells share a hue family.
+    let gen = fract(floor(hexQ * 0.5) * 0.17 + floor(hexR * 0.5) * 0.31);
+    liveRGB = mix(liveRGB, hue2rgb(fract(hue + gen)) * val, 0.22);
     var reliefDepth = 0.0;
 
     // A budgeted raymarched relief gives the pattern a real geometric anchor.

@@ -13,7 +13,7 @@
     "caustics",
     "HDR"
   ],
-  "description": "Upgraded coral reef with space colonization branching, DLA patterns, fBm polyp detail, bioluminescent fluorescent proteins, subsurface scattering, caustic light, HDR bloom, and ACES tone mapping. Bass drives nutrient availability, mids steer current, treble triggers spawning. Mouse attracts growth; depth filters water color.",
+  "description": "Upgraded coral reef with space colonization branching, DLA patterns, fBm polyp detail, bioluminescent fluorescent proteins, subsurface scattering, caustic light, HDR bloom, and ACES tone mapping. Bass drives nutrient availability, mids steer current, treble triggers spawning. Mouse attracts growth; depth filters water color. Branch tips are paler, and zooxanthellae speckle the living tissue.",
   "workgroup_size": [
     16,
     16,

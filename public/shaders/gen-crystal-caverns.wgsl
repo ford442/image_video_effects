@@ -7,32 +7,13 @@
 //            upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration
 //  Tags: crystal, gem, caustics, 3d, raymarching, subsurface
 //  Chunks From: gen-protocell-division.wgsl (upgraded-rgba stack)
-//  Upgraded: 2026-09-27
-//  Ideas: phantom growth shell; basal pinacoid
+//  Upgraded: 2026-10-11
+//  Ideas: phantom growth shell; basal pinacoid; prism striations; fluid inclusions
 //  A packing: ACES display RGBA
 //  By: Claude Code Batch 3B
 // ═══════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -195,6 +176,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
       let glow = pow(glowIntensity * 1.5 + sin(time * 8.0 * audioReactivity) * 0.3, 2.0);
       col = vec3<f32>(0.4, 0.8, 1.0) * glow + vec3<f32>(0.6, 0.3, 1.0) * 0.6;
       col = col + sss * 0.4 + vec3<f32>(0.8, 0.9, 1.0) * caustics * 0.5;
+      // Prism striations — lines down the walls, quiet on the flat pinacoid.
+      let wall = 1.0 - smoothstep(0.25, 0.75, abs(n.y));
+      let stripe = 1.0 - smoothstep(0.02, 0.09, abs(fract(p.x * 7.0 + p.z * 5.0) - 0.5));
+      col += vec3<f32>(0.65, 0.85, 1.0) * stripe * wall * 0.28;
+      // Fluid inclusions — pale bubbles caught in the crystal.
+      let incl = step(0.84, fract(sin(dot(floor(p * 6.0), vec3<f32>(12.9, 78.2, 45.1))) * 43758.5));
+      col = mix(col, vec3<f32>(0.88, 0.94, 1.0), incl * 0.45);
     } else {
       let sss = subsurfaceScattering(p, n, lightDir, 0.8, vec3<f32>(0.4, 0.3, 0.2));
       col = vec3<f32>(0.15, 0.1, 0.08) + caustics * vec3<f32>(0.3, 0.25, 0.4) * 0.3;

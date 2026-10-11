@@ -4,31 +4,12 @@
 //  Features: procedural, fractal, apollonian-gasket, circle-inversion,
 //            descartes-theorem, audio-reactive, mouse-driven, aces-tonemap, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: packing rims on seed circles; curvature tint from last inverted k; generation stipple; tangent kisses
+//  Upgraded: 2026-10-11
+//  Ideas: packing rims on seed circles; curvature tint from last inverted k; generation stipple; tangent kisses; interior wash; soddy spark
 //  A packing: linear RGB + alpha (ACES on display)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn circle_inv(p: vec2<f32>, c: vec2<f32>, r: f32) -> vec2<f32> {
   let d = p - c;
@@ -125,6 +106,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   for (var j = 0; j < 5; j = j + 1) {
     packRim += exp(-abs(distance(p, circles[j].xy) - circles[j].z) * 72.0);
   }
+  // Interior wash — faint glass inside each seed circle, stronger in the larger ones.
+  var interior = 0.0;
+  var smallR = 1e9;
+  var smallC = vec2<f32>(0.0);
+  for (var j = 0; j < 5; j = j + 1) {
+    let inside = circles[j].z - distance(p, circles[j].xy);
+    interior += smoothstep(0.0, 0.05, inside) * (0.22 / max(circles[j].z, 0.15));
+    if (circles[j].z < smallR) {
+      smallR = circles[j].z;
+      smallC = circles[j].xy;
+    }
+  }
 
   // Idea 2 — Descartes curvature tint from last inverted k
   let hue = fract(invCount * 0.14 + lastK * 0.08 + length(q) * 0.3 + time * 0.12 + treble * 0.2);
@@ -141,6 +134,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let ring = abs(fract(minDist * ringFreq + time * 2.0) - 0.5);
   color += vec3<f32>(1.0, 0.2, 0.85) * (1.0 - smoothstep(0.0, 0.08, ring)) * 0.35;
   color += vec3<f32>(0.92, 0.88, 0.72) * clamp(packRim, 0.0, 1.0) * 0.32;
+  color += vec3<f32>(0.35, 0.5, 0.7) * clamp(interior, 0.0, 1.0) * 0.28;
+  // Soddy spark — bright center of the smallest seed circle.
+  color += vec3<f32>(1.0, 0.96, 0.82) * exp(-dot(p - smallC, p - smallC) / max(smallR * smallR * 0.08, 1e-4)) * 0.45;
   // Idea 4 — tangent kisses where two seed circles nearly touch
   var kisses = 0.0;
   for (var j = 0; j < 5; j = j + 1) {

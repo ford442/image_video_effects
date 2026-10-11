@@ -3,31 +3,12 @@
 //  Category: generative
 //  Features: mathematical, chaos, visualization, audio-parameter, mouse-exploration, temporal-evolution, density-color
 //  Complexity: Medium
-//  Upgraded: 2026-09-27
-//  Ideas: continuous color-scheme mix; period-window ridges at lyap≈0; transient ghost; cobweb ticks
+//  Upgraded: 2026-10-11
+//  Ideas: continuous color-scheme mix; period-window ridges at lyap≈0; transient ghost; cobweb ticks; period-3 window; superstable points
 //  A packing: HDR density RGB + alpha
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // Logistic map: x_{n+1} = r * x_n * (1 - x_n)
 fn logisticMap(r: f32, x0: f32, iterations: i32) -> f32 {
@@ -253,6 +234,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         cobweb = max(cobweb, exp(-abs(uv.y - cob) * resolution.y * 0.35));
     }
     col += vec3<f32>(0.82, 0.94, 1.0) * cobweb * onColumn * 0.65;
+    // Period-3 window — the classic stable band near r = 3.83.
+    let period3 = exp(-abs(r - 3.828) * 36.0) * density;
+    col += vec3<f32>(1.0, 0.55, 0.16) * period3 * 0.7;
+    // Superstable points — the orbit crossing x = 0.5.
+    let superstable = exp(-abs(targetX - 0.5) * 70.0) * density;
+    col += vec3<f32>(1.0, 0.96, 0.82) * superstable * 0.55;
 
     // A fast chaos scanner races through the parameter axis, illuminating
     // derivative-rich branches without changing the logistic-map geometry.

@@ -12,7 +12,7 @@
     "abstract",
     "prismatic"
   ],
-  "description": "Five nested hypotrochoid curves form a blooming floral mandala. A coarse-plus-refined curve search keeps the petals efficient, the mouse pulls the bloom without an audio gate, clicks send petal waves, and each layer shimmers from its own FFT voice while color feedback burns bright arcs.",
+  "description": "Five nested hypotrochoid curves form a blooming floral mandala. A coarse-plus-refined curve search keeps the petals efficient, the mouse pulls the bloom without an audio gate, clicks send petal waves, and each layer shimmers from its own FFT voice while color feedback burns bright arcs. Cusp sparks knot the petals, and a rolling circle traces the bloom.",
   "workgroup_size": [
     16,
     16,

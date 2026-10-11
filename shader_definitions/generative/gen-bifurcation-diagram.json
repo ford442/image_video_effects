@@ -11,7 +11,7 @@
     "music",
     "reactive"
   ],
-  "description": "A logistic-map bifurcation visualization with density and Lyapunov highlighting plus clearly stylized audio-reactive scanner fronts, mouse exploration, click waves, and derivative-aligned trails.",
+  "description": "A logistic-map bifurcation visualization with density and Lyapunov highlighting plus clearly stylized audio-reactive scanner fronts, mouse exploration, click waves, and derivative-aligned trails. A period-3 window marks r near 3.83, and superstable points glow where the orbit crosses one half.",
   "workgroup_size": [
     16,
     16,

@@ -4,31 +4,12 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
 //  Created: 2026-07-05
-//  Upgraded: 2026-09-10
-//  Ideas: pistil heart (inner ring slower/denser); sphere foreshorten via latitude z-phase
+//  Upgraded: 2026-10-11
+//  Ideas: pistil heart (inner ring slower/denser); sphere foreshorten via latitude z-phase; petal barbs; color break
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.141592653589793;
 const TAU: f32 = 6.283185307179586;
@@ -180,9 +161,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
           let size = (0.005 + jSeed2 * 0.004) * (1.0 + bass * 0.15);
           let glow = softGlow(uv, sp, size, lifeFade * energy * 1.6);
 
-          let sparkCol = chrysanthemumColor(ringT, colorSpread, jSeed, layerAge);
+          var sparkCol = chrysanthemumColor(ringT, colorSpread, jSeed, layerAge);
+          // Color break — outer sparks change hue partway through the burn.
+          let breakAge = 1.05 + jSeed * 0.45;
+          let changed = smoothstep(breakAge, breakAge + 0.18, layerAge) * smoothstep(0.35, 0.7, ringT);
+          sparkCol = mix(sparkCol, chrysanthemumColor(fract(ringT + 0.42), colorSpread, jSeed, layerAge), changed);
           col += sparkCol * glow * (0.85 + treble * 0.5);
           col += sparkCol * streak * energy;
+          // Petal barbs — short side ticks on the outer rays.
+          let barbOff = abs(dot(uv - sp, vec2<f32>(-vDir.y, vDir.x)));
+          let barb = exp(-abs(barbOff - 0.012) * 160.0) * exp(-abs(dot(uv - sp, vDir)) * 36.0) * smoothstep(0.4, 0.75, ringT);
+          col += sparkCol * barb * lifeFade * 0.5;
         }
       }
 

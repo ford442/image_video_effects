@@ -4,29 +4,12 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-07-05
-//  Upgraded: 2026-09-11
-//  Ideas: ion tail along -velocity vs dust gravity-sag trail; coma halo around the head
+//  Upgraded: 2026-10-11
+//  Ideas: ion tail along -velocity vs dust gravity-sag trail; coma halo around the head; disconnection kink; nucleus jets
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 const GRAVITY: f32 = 0.85;
@@ -107,8 +90,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let alongIon = dot(dHead, -ionDir);
     let perpIon = abs(dot(dHead, vec2<f32>(-ionDir.y, ionDir.x)));
     let ionLen = 0.18 + trailLen * 0.22;
-    let ionTail = exp(-perpIon * 95.0) * exp(-abs(alongIon - ionLen * 0.45) * 9.0) * step(0.0, alongIon) * fade * energy;
-    col += vec3<f32>(0.45, 0.78, 1.0) * ionTail * 0.55;
+    // Disconnection kink — the ion tail breaks and shifts along its length.
+    let kink = step(0.62, fract(age * 0.37 + seed)) * 0.07;
+    let alongK = alongIon - kink * step(0.08, alongIon);
+    let ionTail = exp(-perpIon * 95.0) * exp(-abs(alongK - ionLen * 0.45) * 9.0) * step(0.0, alongK) * fade * energy;
+    let gap = exp(-abs(alongIon - 0.08) * 40.0) * exp(-perpIon * 80.0);
+    col += vec3<f32>(0.45, 0.78, 1.0) * ionTail * 0.55 * (1.0 - gap * kink * 8.0);
+    // Nucleus jets — short spikes on the sunward side of the head.
+    let jetAlong = dot(dHead, ionDir);
+    let jet = exp(-abs(jetAlong - 0.035) * 55.0) * exp(-perpIon * 80.0) * step(0.0, jetAlong) * step(jetAlong, 0.07);
+    col += vec3<f32>(1.0, 0.72, 0.32) * jet * fade * energy * 0.8;
 
     let trailSteps = i32(8.0 + trailLen*14.0);
     for (var t = 0; t < trailSteps; t = t + 1) {
