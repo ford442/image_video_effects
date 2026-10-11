@@ -10,7 +10,7 @@
     "audio-reactive",
     "metallic"
   ],
-  "description": "Apollonian circle packing fractal rendered via iterative circle inversion. Descartes-based circle configuration with metallic coloring, rainbow chromatic aberration on inversions, and mouse-driven point inversion.",
+  "description": "Apollonian circle packing fractal rendered via iterative circle inversion. Descartes-based circle configuration with metallic coloring, rainbow chromatic aberration on inversions, and mouse-driven point inversion. Seed circles carry a faint interior wash, and the smallest one holds a Soddy spark.",
   "workgroup_size": [
     16,
     16,

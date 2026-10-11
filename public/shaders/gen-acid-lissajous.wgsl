@@ -5,8 +5,8 @@
 //            luma-spawn, depth-aware, temporal-feedback, chromatic-aberration,
 //            aces-tone-map, emergent-trails
 //  Complexity: Medium
-//  Upgraded: 2026-09-27
-//  Ideas: origin-crossing beads; glow waist when freqX≈freqY; cusp dwell; 2:1 lobe split
+//  Upgraded: 2026-10-11
+//  Ideas: origin-crossing beads; glow waist when freqX≈freqY; cusp dwell; 2:1 lobe split; pen head; beat envelope
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Lissajous figures drawn as glowing neon tubes with acid-trip color
@@ -15,26 +15,7 @@
 //  treble drive scale/morph/sparkle, video luma spawns extra color, and
 //  depth-aware temporal feedback leaves self-advecting dissolving trails.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -222,6 +203,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let twoToOne = 1.0 - smoothstep(0.0, 0.55, abs(abs(freqX - freqY) - 1.0));
     let lobeTint = mix(vec3<f32>(0.25, 0.9, 1.0), vec3<f32>(1.0, 0.4, 0.85), step(0.0, bestCy));
     rgb = mix(rgb, rgb * lobeTint, twoToOne * smoothstep(gwUse * 5.0, 0.0, minDist));
+    // Pen head — the point currently being traced.
+    let nowT = fract(time * speed * 0.17 + sf * 0.13) * TAU;
+    let head = vec2<f32>(sin(freqX * nowT + phase) * ampX, sin(freqY * nowT) * ampY);
+    let headGlow = exp(-dot(p - head, p - head) / max(gwUse * gwUse * 0.35, 1e-6));
+    rgb = rgb + hsv2rgb(vec3<f32>(hueBase, sat, 1.0)) * headGlow * (1.4 + treble * 0.6);
+    // Beat envelope — brightness breathes when the two frequencies are close.
+    let beat = 0.5 + 0.5 * sin(time * max(abs(freqX - freqY), 0.25) * 1.7);
+    rgb = rgb * (1.0 + ratioClose * beat * 0.4);
 
     totalColor = totalColor + rgb;
     totalWeight = totalWeight + glow;

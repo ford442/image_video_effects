@@ -16,7 +16,7 @@
     "music",
     "reactive"
   ],
-  "description": "Infinite procedural cave system with glowing crystals featuring physical light transmission. Crystals have IOR-based Fresnel reflection and variable purity affecting their glow transparency.",
+  "description": "Infinite procedural cave system with glowing crystals featuring physical light transmission. Crystals have IOR-based Fresnel reflection and variable purity affecting their glow transparency. Prism walls carry striations, and fluid inclusions sit inside the crystals.",
   "workgroup_size": [
     16,
     16,

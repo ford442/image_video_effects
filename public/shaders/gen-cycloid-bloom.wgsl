@@ -5,8 +5,8 @@
 //            chromatic-layer-separation, depth-output, upgraded-rgba, aces-tone-map
 //  Complexity: Medium
 //  Created: 2026-05-23
-//  Upgraded: 2026-09-27
-//  Ideas: hypotrochoid parameter vein; origin stamen; epicycloid counter-layer; petal crossings
+//  Upgraded: 2026-10-11
+//  Ideas: hypotrochoid parameter vein; origin stamen; epicycloid counter-layer; petal crossings; cusp sparks; rolling circle
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Nested hypotrochoid and epicycloid curves layered to form a
@@ -14,26 +14,7 @@
 //  each petal glowing with a prismatic hue that shifts with audio
 //  and time. Feedback accumulation burns in bright arcs.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.283185307179586;
 const LAYERS: i32 = 5;
@@ -161,6 +142,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       + mids * 0.2 + spectralVoice * 0.035);
     let sat  = 0.82 + treble * 0.18;
     colorAcc = colorAcc + hsv2rgb(vec3<f32>(hue, sat, 1.0)) * (g + vein * 0.35);
+    // Cusp sparks — bright knots where the curve parameter folds.
+    let cusp = exp(-abs(sin(bestT)) * 6.0) * smoothstep(w * 2.0, 0.0, minDist);
+    colorAcc += vec3<f32>(1.0, 0.95, 0.8) * cusp * 0.45;
     glowAcc  = glowAcc + g + vein * 0.15;
     if (minDist < nearA) {
       nearB = nearA;
@@ -212,6 +196,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let stamG = exp(-distance(p, stam) * 90.0) + exp(-length(p) * 14.0) * 0.35;
   colorAcc += hsv2rgb(vec3<f32>(fract(0.12 + time * 0.08), 0.7, 1.0)) * stamG;
   glowAcc += stamG;
+  // Rolling circle — the faint generator that traces the bloom.
+  let rollR = 0.16 + petalMult * 0.02;
+  let rollCenter = vec2<f32>(cos(time * spinSpeed), sin(time * spinSpeed)) * 0.46;
+  let roll = exp(-abs(distance(p, rollCenter) - rollR) * 42.0);
+  colorAcc += vec3<f32>(0.75, 0.84, 1.0) * roll * (0.28 + mids * 0.15);
+  glowAcc += roll * 0.2;
 
   // Chromatic layer separation: R from outer layers, B from inner
   let chromaR = colorAcc * vec3<f32>(1.1, 0.95, 0.85);

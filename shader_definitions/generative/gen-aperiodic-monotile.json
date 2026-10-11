@@ -14,7 +14,7 @@
     "raymarch",
     "depth"
   ],
-  "description": "A stylized monotile-inspired 2D pattern with animated edge glow, paired with a raymarched geometric relief sculpture. It is an artistic motif rather than a proof-accurate hat tiling; scale, rotation, edge width, saturation, mouse, and audio remain live.",
+  "description": "A stylized monotile-inspired 2D pattern with animated edge glow, paired with a raymarched geometric relief sculpture. It is an artistic motif rather than a proof-accurate hat tiling; scale, rotation, edge width, saturation, mouse, and audio remain live. Each hat has a crown button, and metatile cells share a substitution tint.",
   "workgroup_size": [
     16,
     16,

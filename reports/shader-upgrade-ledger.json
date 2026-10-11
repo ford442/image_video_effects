@@ -1621,8 +1621,17 @@
       "history": []
     },
     "gen-acid-lissajous": {
-      "hash": "b3d74149edf61208",
-      "history": []
+      "hash": "3a9a5432a58bad2f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-11T01:35:49.255Z",
+          "hash": "3a9a5432a58bad2f",
+          "prev_hash": "b3d74149edf61208",
+          "commit": "2c248569",
+          "note": "2026-10-11 mid twelve (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-mid-twelve"
+        }
+      ]
     },
     "gen-aether-forged-nacreous-labyrinth": {
       "hash": "3a758cfb686795c0",
@@ -1658,12 +1667,30 @@
       "history": []
     },
     "gen-aperiodic-monotile": {
-      "hash": "004db0488a000642",
-      "history": []
+      "hash": "7f42181de333775e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-11T01:35:49.255Z",
+          "hash": "7f42181de333775e",
+          "prev_hash": "004db0488a000642",
+          "commit": "2c248569",
+          "note": "2026-10-11 mid twelve (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-mid-twelve"
+        }
+      ]
     },
     "gen-apollonian-gasket": {
-      "hash": "d83973055fa9e1b0",
-      "history": []
+      "hash": "84579a72cfcb6adf",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-11T01:35:49.255Z",
+          "hash": "84579a72cfcb6adf",
+          "prev_hash": "d83973055fa9e1b0",
+          "commit": "2c248569",
+          "note": "2026-10-11 mid twelve (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-mid-twelve"
+        }
+      ]
     },
     "gen-art-deco-sky": {
       "hash": "a98cb4c53106e63b",
@@ -1706,20 +1733,47 @@
       "history": []
     },
     "gen-barnsley-fern": {
-      "hash": "dbd2978774108f19",
-      "history": []
+      "hash": "fae2c4775fa21a31",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-11T01:35:49.255Z",
+          "hash": "fae2c4775fa21a31",
+          "prev_hash": "dbd2978774108f19",
+          "commit": "2c248569",
+          "note": "2026-10-11 mid twelve (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-mid-twelve"
+        }
+      ]
     },
     "gen-belousov-zhabotinsky": {
       "hash": "393ac413af1063d1",
       "history": []
     },
     "gen-bifurcation-diagram": {
-      "hash": "8303176769be1564",
-      "history": []
+      "hash": "1b6c07f1d208a04f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-11T01:35:49.255Z",
+          "hash": "1b6c07f1d208a04f",
+          "prev_hash": "8303176769be1564",
+          "commit": "2c248569",
+          "note": "2026-10-11 mid twelve (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-mid-twelve"
+        }
+      ]
     },
     "gen-bio-luminescent-jelly": {
-      "hash": "c1e8882dd890fd74",
-      "history": []
+      "hash": "9efdb02e5ad790fa",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-11T01:35:49.255Z",
+          "hash": "9efdb02e5ad790fa",
+          "prev_hash": "c1e8882dd890fd74",
+          "commit": "2c248569",
+          "note": "2026-10-11 mid twelve (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-mid-twelve"
+        }
+      ]
     },
     "gen-bioelectric-pulse": {
       "hash": "13c3e55141414e37",
@@ -1898,8 +1952,17 @@
       "history": []
     },
     "gen-coral-reef-colony": {
-      "hash": "76436766b097572a",
-      "history": []
+      "hash": "48566e81eec98e1b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-11T01:35:49.255Z",
+          "hash": "48566e81eec98e1b",
+          "prev_hash": "76436766b097572a",
+          "commit": "2c248569",
+          "note": "2026-10-11 mid twelve (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-mid-twelve"
+        }
+      ]
     },
     "gen-cosmic-clockwork-dyson-sphere": {
       "hash": "8ed79f420f9e9150",
@@ -1922,8 +1985,17 @@
       "history": []
     },
     "gen-crystal-caverns": {
-      "hash": "1ca8bdb74a2a2c63",
-      "history": []
+      "hash": "04dbb8fc0d49191c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-11T01:35:49.255Z",
+          "hash": "04dbb8fc0d49191c",
+          "prev_hash": "1ca8bdb74a2a2c63",
+          "commit": "2c248569",
+          "note": "2026-10-11 mid twelve (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-mid-twelve"
+        }
+      ]
     },
     "gen-crystal-lattice-growth": {
       "hash": "53084e5241867ab5",
@@ -1978,8 +2050,17 @@
       "history": []
     },
     "gen-cycloid-bloom": {
-      "hash": "4c8d71e14afc5d98",
-      "history": []
+      "hash": "2a4c287ae68655c0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-11T01:35:49.255Z",
+          "hash": "2a4c287ae68655c0",
+          "prev_hash": "4c8d71e14afc5d98",
+          "commit": "2c248569",
+          "note": "2026-10-11 mid twelve (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-mid-twelve"
+        }
+      ]
     },
     "gen-cymatic-plasma-mandalas": {
       "hash": "6c7a508284ede7ad",
@@ -2194,8 +2275,17 @@
       "history": []
     },
     "gen-fibonacci-spiral-garden": {
-      "hash": "08419fc65127db98",
-      "history": []
+      "hash": "e5813ac0237f4b84",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-11T01:35:49.255Z",
+          "hash": "e5813ac0237f4b84",
+          "prev_hash": "08419fc65127db98",
+          "commit": "2c248569",
+          "note": "2026-10-11 mid twelve (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-mid-twelve"
+        }
+      ]
     },
     "gen-fireworks-audio-symphony": {
       "hash": "dd35c25c8a81a072",
@@ -2211,12 +2301,30 @@
       ]
     },
     "gen-fireworks-chrysanthemum": {
-      "hash": "34e863d02cb7677a",
-      "history": []
+      "hash": "07110fc711d42b0b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-11T01:35:49.255Z",
+          "hash": "07110fc711d42b0b",
+          "prev_hash": "34e863d02cb7677a",
+          "commit": "2c248569",
+          "note": "2026-10-11 mid twelve (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-mid-twelve"
+        }
+      ]
     },
     "gen-fireworks-comet-trail": {
-      "hash": "4627c9012e4586ca",
-      "history": []
+      "hash": "0f3e0f1c3b0f53d1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-11T01:35:49.255Z",
+          "hash": "0f3e0f1c3b0f53d1",
+          "prev_hash": "4627c9012e4586ca",
+          "commit": "2c248569",
+          "note": "2026-10-11 mid twelve (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-mid-twelve"
+        }
+      ]
     },
     "gen-fireworks-crackle-palm": {
       "hash": "5a4e8a57ffe10b98",

@@ -5,31 +5,13 @@
 //  Complexity: High
 //  Updated: 2026-05-31
 //  By: Grok (visual flourish pass — richer pulsing, color, and atmospheric underwater light)
-//  Upgraded: 2026-09-27
-//  Ideas: jet propulsion (contraction wave stretches tentacles, drift-lag streaming); anatomy (radial canals, margin ring canal, horseshoe gonad, notched lappets); jelly-lit marine snow
+//  Upgraded: 2026-10-11
+//  Ideas: jet propulsion (contraction wave stretches tentacles, drift-lag streaming); anatomy (radial canals, margin ring canal, horseshoe gonad, notched lappets); jelly-lit marine snow; oral arms; bell muscle striations
 //  A packing: raw pulsePhase in A.r (identical at every pixel, read back from C.r), A.g/A.b = 0, A.a = semantic alpha; writeTexture = ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=PulseSpeed, y=TentacleLength, z=GlowIntensity, w=DriftSpeed
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=PulseSpeed, y=TentacleLength, z=GlowIntensity, w=DriftSpeed
 
 // ── Noise & hash ──────────────────────────────────────────────────
 fn hash_j(n: f32) -> f32 {
@@ -219,6 +201,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
 
+  // Oral arms — four short frilled arms under the bell, shorter than the tentacles.
+  var armGlow = 0.0;
+  for (var a = 0; a < 4; a = a + 1) {
+    let af = f32(a);
+    let ang = af * 1.570796 + time * 0.15;
+    let base = jellyPos + vec2<f32>(cos(ang), 0.04) * bellRadius * 0.35 + vec2<f32>(0.0, bellRadius * 0.15);
+    let frill = sin(af * 3.0 + time * pulseSpeed) * 0.04;
+    let tip = base + vec2<f32>(frill, tentacleLen * 0.28);
+    armGlow += glow(sdSegment(p, base, tip), 60.0 * glowIntensity) * 0.7;
+  }
+
   // ── Sparkle particles (treble-driven) ───────────────────────────
   var sparkle = 0.0;
   let numSparkles = i32(trebleSmooth * 20.0 + 5.0);
@@ -268,7 +261,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let gonad = exp(-gr * gr * 400.0) * gonadOpen * (0.8 + 0.2 * cos(ang * 6.0));
     let canalLum = canal * 0.5 + ring * 0.35;
     let gonadLum = gonad * 0.55 * (0.6 + 0.4 * pulse);
+    let muscle = abs(fract(ang * 6.0) - 0.5);
+    let stria = exp(-muscle * 22.0) * smoothstep(0.2, 0.85, rad) * (0.3 + pulsePhase * 0.7);
     anatomy = vec3<f32>(0.35, 0.85, 1.0) * canalLum + vec3<f32>(1.0, 0.5, 0.4) * gonadLum;
+    anatomy += vec3<f32>(0.7, 0.95, 1.0) * stria * 0.22;
     anatomyLum = canalLum + gonadLum;
   }
 
@@ -282,7 +278,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let bioGlow = glowCol * pulseGlow * glowIntensity * (1.0 + bassSmooth * 2.0);
 
   // Tentacle color
-  let tentacleColor = vec3<f32>(0.1, 0.3, 0.4) * tentacleGlow;
+  let tentacleColor = vec3<f32>(0.1, 0.3, 0.4) * tentacleGlow + vec3<f32>(0.45, 0.85, 0.7) * armGlow;
 
   // Combine
   var col = bellColor;

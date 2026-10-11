@@ -17,7 +17,7 @@
     "feedback",
     "depth-aware"
   ],
-  "description": "Reactive neon Lissajous curves that live under your cursor and the music. Mouse gravity bends the strands, click bursts emit shockwaves, bass/mid/treble drive scale/morph/sparkle, video luma spawns extra color, and depth-aware temporal feedback leaves self-advecting acid trails.",
+  "description": "Reactive neon Lissajous curves that live under your cursor and the music. Mouse gravity bends the strands, click bursts emit shockwaves, bass/mid/treble drive scale/morph/sparkle, video luma spawns extra color, and depth-aware temporal feedback leaves self-advecting acid trails. A pen head marks the phase being drawn, and the figure breathes when the two frequencies beat.",
   "workgroup_size": [
     16,
     16,
