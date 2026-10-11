@@ -3,7 +3,7 @@
   "name": "Audio Reactive RGB Dispersion",
   "url": "shaders/audio-reactive-rgb-dispersion.wgsl",
   "category": "post-processing",
-  "description": "Chromatic (RGB) dispersion effect whose offset magnitudes and direction are driven by the spectral centroid of the live 128-bin FFT array. Bass-heavy music produces tight warm dispersion; treble-heavy music produces wide cool dispersion. Compatible with ford442/flac_player FFT wire format (128 bins in extraBuffer[5..132]).",
+  "description": "RGB dispersion driven by the live 128-bin FFT: the spectral centroid steers direction and width, spectral spread turns two crisp fringes into a rainbow smear on broadband sound, and bass pushes a radial lens-like split while treble slides it sideways.",
   "tags": [
     "audio-reactive",
     "chromatic-aberration",

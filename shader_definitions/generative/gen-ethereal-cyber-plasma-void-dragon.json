@@ -27,45 +27,89 @@
     1
   ],
   "params": [
-    { "id": "plasma_intensity", "name": "Plasma Intensity", "default": 1.5, "min": 0, "max": 5, "step": 0.1, "mapping": "zoom_params.x" },
-    { "id": "dragon_undulation_speed", "name": "Dragon Undulation Speed", "default": 1, "min": 0.1, "max": 3, "step": 0.1, "mapping": "zoom_params.y" },
-    { "id": "body_segment_density", "name": "Body Segment Density", "default": 20, "min": 10, "max": 40, "step": 1, "mapping": "zoom_params.z" },
-    { "id": "nebula_density", "name": "Nebula Density", "default": 0.8, "min": 0, "max": 2, "step": 0.05, "mapping": "zoom_params.w" }
-  ],
-  "updatedParams": [
     {
-      "index": 0,
+      "id": "plasma_intensity",
       "name": "Plasma Intensity",
       "default": 1.5,
-      "min": 0.0,
-      "max": 5.0,
-      "step": 0.1
+      "min": 0,
+      "max": 5,
+      "step": 0.1,
+      "mapping": "zoom_params.x"
     },
     {
-      "index": 1,
+      "id": "dragon_undulation_speed",
       "name": "Dragon Undulation Speed",
-      "default": 1.0,
+      "default": 1,
       "min": 0.1,
-      "max": 3.0,
-      "step": 0.1
+      "max": 3,
+      "step": 0.1,
+      "mapping": "zoom_params.y"
     },
     {
-      "index": 2,
+      "id": "body_segment_density",
       "name": "Body Segment Density",
-      "default": 20.0,
-      "min": 10.0,
-      "max": 40.0,
-      "step": 1.0
+      "default": 20,
+      "min": 10,
+      "max": 40,
+      "step": 1,
+      "mapping": "zoom_params.z"
     },
     {
-      "index": 3,
+      "id": "nebula_density",
       "name": "Nebula Density",
       "default": 0.8,
-      "min": 0.0,
-      "max": 2.0,
-      "step": 0.05
+      "min": 0,
+      "max": 2,
+      "step": 0.05,
+      "mapping": "zoom_params.w"
     }
   ],
-  "features": ["audio-reactive", "mouse-driven", "temporal-feedback", "depth-output", "aces-tonemap", "semantic-alpha", "upgraded-rgba"],
-  "feedbackPacking": "A/C = final ACES display RGBA; exact plasma-dragon persistence history"
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "temporal-feedback",
+    "depth-output",
+    "aces-tonemap",
+    "semantic-alpha",
+    "upgraded-rgba"
+  ],
+  "feedbackPacking": "A/C = final ACES display RGBA; exact plasma-dragon persistence history",
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Plasma Intensity",
+          "default": 1.5,
+          "min": 0.0,
+          "max": 5.0,
+          "step": 0.1
+        },
+        {
+          "index": 1,
+          "name": "Dragon Undulation Speed",
+          "default": 1.0,
+          "min": 0.1,
+          "max": 3.0,
+          "step": 0.1
+        },
+        {
+          "index": 2,
+          "name": "Body Segment Density",
+          "default": 20.0,
+          "min": 10.0,
+          "max": 40.0,
+          "step": 1.0
+        },
+        {
+          "index": 3,
+          "name": "Nebula Density",
+          "default": 0.8,
+          "min": 0.0,
+          "max": 2.0,
+          "step": 0.05
+        }
+      ]
+    }
+  }
 }

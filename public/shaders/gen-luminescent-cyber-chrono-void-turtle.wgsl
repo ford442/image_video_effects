@@ -3,31 +3,12 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: chronal plate drift (per-cell lift, bass-kicked); chrono-distortion time dilation in mouse well; scute growth rings; void wake via exact C history
+//  Upgraded: 2026-10-10
+//  Ideas: chronal plate drift (per-cell lift, bass-kicked); chrono-distortion time dilation in mouse well; scute growth rings; void wake via exact C history; fore-flipper power-stroke about the shoulder; seam epibionts (algae/barnacle specks in plate gaps)
 //  A packing: raw linear wake emission RGB (pre-tonemap) + a = wake energy
 // ═══════════════════════════════════════════════════════════════════
-// --- COPY PASTE THIS HEADER ---
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=Time, y=MouseX (uv), z=MouseY (uv, 0=top), w=MouseDown
-    zoom_params: vec4<f32>,  // x=Shell Complexity, y=Plasma Intensity, z=Chrono-Distortion, w=Swim Speed
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Shell Complexity, y=Plasma Intensity, z=Chrono-Distortion, w=Swim Speed
 
 // Math & Noise Functions
 fn rot(a: f32) -> mat2x2<f32> {
@@ -97,6 +78,7 @@ var<private> gPlateF1: f32 = 0.0;
 var<private> gPlateEdge: f32 = 1.0;
 var<private> gPlateId: f32 = 0.0;
 var<private> gDilation: f32 = 0.0;
+var<private> gPBody: vec3<f32> = vec3<f32>(0.0);
 
 fn map(p_in: vec3<f32>) -> f32 {
     var p = p_in;
@@ -150,6 +132,7 @@ fn map(p_in: vec3<f32>) -> f32 {
     gPlateF1 = v.x;
     gPlateEdge = edge;
     gPlateId = v.z;
+    gPBody = pBody;
 
     // Hollow out gaps slightly
     shell = shell + inGap * 0.15;
@@ -183,17 +166,23 @@ fn map(p_in: vec3<f32>) -> f32 {
     pHead.y -= 0.2;
     let head = sdEllipsoid(pHead, vec3<f32>(0.5, 0.4, 0.8));
 
+    // IDEA 4 — flipper power-stroke: both fore-flippers beat together about
+    // the shoulder (inner end of the fin) at Swim Speed. stroke = 0 reproduces
+    // the old rest pose exactly (fin centre stays at x = +-2.2).
+    let stroke = sin(gTime * (1.0 + 2.2 * u.zoom_params.w)) * 0.45;
+    let finRest = 0.5;
+
     var pFinL = pBody;
-    pFinL.x -= 2.2;
+    pFinL.x -= 1.0;
     pFinL.z -= 1.5;
-    let tempL_xy = rot(-0.5) * pFinL.xy;
+    let tempL_xy = rot(-finRest + stroke) * pFinL.xy - rot(-finRest) * vec2<f32>(1.2, 0.0);
     pFinL = vec3<f32>(tempL_xy.x, tempL_xy.y, pFinL.z);
     let finL = sdEllipsoid(pFinL, vec3<f32>(1.2, 0.1, 0.8));
 
     var pFinR = pBody;
-    pFinR.x += 2.2;
+    pFinR.x += 1.0;
     pFinR.z -= 1.5;
-    let tempR_xy = rot(0.5) * pFinR.xy;
+    let tempR_xy = rot(finRest - stroke) * pFinR.xy - rot(finRest) * vec2<f32>(-1.2, 0.0);
     pFinR = vec3<f32>(tempR_xy.x, tempR_xy.y, pFinR.z);
     let finR = sdEllipsoid(pFinR, vec3<f32>(1.2, 0.1, 0.8));
 
@@ -325,6 +314,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                    * smoothstep(0.02, 0.12, plateEdge);
         col *= 1.0 - 0.45 * groove;
         col += vec3<f32>(0.1, 0.8, 1.0) * groove * u.zoom_params.y * 0.06 * (1.0 + mids * 0.6);
+
+        // IDEA 5 — seam epibionts: algae / barnacle specks colonise some plate
+        // seams (per-plate gate), warm against the cold plasma, lit a little by
+        // the seam glow. Small round blobs on a hash lattice, only near gaps.
+        let seam = 1.0 - smoothstep(0.03, 0.22, plateEdge);
+        let colonised = step(0.45, fract(plateId * 7.3));
+        let epiQ = gPBody * 13.0;
+        let epiH = hash33(floor(epiQ));
+        let epiBlob = smoothstep(0.34, 0.08, length(fract(epiQ) - vec3<f32>(0.5) - (epiH - vec3<f32>(0.5)) * 0.4));
+        let epi = epiBlob * step(0.5, epiH.z) * seam * colonised;
+        let epiCol = mix(vec3<f32>(0.85, 0.5, 0.12), vec3<f32>(0.35, 0.65, 0.12), fract(epiH.x * 5.0));
+        col = mix(col, epiCol * (0.35 + diff * 0.6), epi * 0.85);
+        col += epiCol * epi * glow * 0.15;
 
         // Add fake subsurface scattering / ambient based on glow
         col += vec3<f32>(0.1, 0.8, 1.0) * glow * 0.5;

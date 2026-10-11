@@ -1,27 +1,14 @@
-// ----------------------------------------------------------------
-// Aether-Forged Nacreous Labyrinth
-// Category: generative
-// ----------------------------------------------------------------
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Crystal Sharpness, .y = Flow Speed, .z = Aether Density, .w = Iridescence Shift
-  ripples: array<vec4<f32>, 50>,
-};
+// ═══════════════════════════════════════════════════════════════════
+//  Aether-Forged Nacreous Labyrinth
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-10-10
+//  Ideas: nacre film thickness read from the gyroid level-set (colour follows the membrane); periodic KIFS polytypes (z-wrapped lattice, per-cell hash into the fold angle); labyrinth breathing (gyroid bias driven by a slow sine + mids)
+//  A packing: ACES display RGBA (0.8 temporal blend with exact dataTextureC history)
+// ═══════════════════════════════════════════════════════════════════
+#include "_prelude.wgsl"
+// zoom_params: .x = Crystal Sharpness, .y = Flow Speed, .z = Aether Density, .w = Iridescence Shift
 
 const PI: f32 = 3.14159265359;
 
@@ -90,6 +77,11 @@ fn fbm(p: vec3<f32>) -> f32 {
     return v;
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 // Cosine palette for iridescence
 fn pal(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> vec3<f32> {
     return a + b * cos(2.0 * PI * (c * t + d));
@@ -102,7 +94,7 @@ fn sdGyroid(p: vec3<f32>, scale: f32, thickness: f32, bias: f32) -> f32 {
 }
 
 // KIFS fractal lattice
-fn sdKIFS(p: vec3<f32>, sharp: f32) -> f32 {
+fn sdKIFS(p: vec3<f32>, sharp: f32, polytype: f32) -> f32 {
     var q = p;
     let s = 1.2;
     var d = 1000.0;
@@ -113,7 +105,7 @@ fn sdKIFS(p: vec3<f32>, sharp: f32) -> f32 {
         let qxy = rot1 * q.xy;
         q = vec3<f32>(qxy.x, qxy.y, q.z);
 
-        let rot2 = rot(PI / 3.0);
+        let rot2 = rot(PI / 3.0 + polytype * 0.6); // Idea 2: per-cell polytype bends the fold angle
         let qxz = rot2 * vec2<f32>(q.x, q.z);
         q = vec3<f32>(qxz.x, q.y, qxz.y);
 
@@ -124,9 +116,28 @@ fn sdKIFS(p: vec3<f32>, sharp: f32) -> f32 {
 }
 
 
+// Idea 2: periodic KIFS polytypes. The lattice used to drift past the camera at
+// z = -0.5*t*flow; wrap z with period L and hash each cell into its fold angle.
+// min() of the two nearest copies keeps the field continuous across cell faces.
+fn kifsHash(c: f32) -> f32 {
+    return fract(sin(c * 12.9898 + 4.1414) * 43758.5453) - 0.5;
+}
+
+fn sdKIFSPeriodic(p: vec3<f32>, sharp: f32) -> f32 {
+    let L = 4.0;
+    let g = p.z / L + 0.5;
+    let c0 = floor(g);
+    let f = fract(g) - 0.5;
+    let sgn = select(-1.0, 1.0, f >= 0.0);
+    let c1 = c0 + sgn;
+    let d0 = sdKIFS(vec3<f32>(p.x, p.y, f * L), sharp, kifsHash(c0));
+    let d1 = sdKIFS(vec3<f32>(p.x, p.y, (f - sgn) * L), sharp, kifsHash(c1));
+    return min(d0, d1);
+}
+
 // Spatial distortion based on mouse
 fn applyGravityWell(p: vec3<f32>, ro: vec3<f32>) -> vec3<f32> {
-    if (u.zoom_config.w <= 0.0) {
+    if (u.zoom_config.w <= 0.5) {
         return p;
     }
 
@@ -161,7 +172,7 @@ fn applyGravityWell(p: vec3<f32>, ro: vec3<f32>) -> vec3<f32> {
 }
 
 // Scene SDF
-fn map(pos_in: vec3<f32>, ro: vec3<f32>, audio: f32) -> vec2<f32> {
+fn map(pos_in: vec3<f32>, ro: vec3<f32>, audio: f32) -> vec3<f32> {
     var p = applyGravityWell(pos_in, ro);
 
     let time = u.config.x;
@@ -177,10 +188,14 @@ fn map(pos_in: vec3<f32>, ro: vec3<f32>, audio: f32) -> vec2<f32> {
     let p_org = p + curl * 0.2 * aetherDen;
 
     // Organic Labyrinth (Gyroid + fBM)
-    let d_org = sdGyroid(p_org, 2.0, 0.05 + audio * 0.05, 0.0) + fbm(p_org * 4.0) * 0.05;
+    // Idea 3: labyrinth breathing - the hard-wired bias=0 level-set now swells and
+    // shrinks the passages (slow sine) and opens further with mids.
+    let mids = plasmaBuffer[0].y;
+    let bias = 0.22 * sin(time * 0.35) + mids * 0.2;
+    let d_org = sdGyroid(p_org, 2.0, 0.05 + audio * 0.05, bias) + fbm(p_org * 4.0) * 0.05;
 
-    // Rigid KIFS Lattice
-    let d_kifs = sdKIFS(p, sharp);
+    // Rigid KIFS Lattice (Idea 2: periodic polytypes)
+    let d_kifs = sdKIFSPeriodic(p, sharp);
 
     // Blend
     let d_final = smin(d_org, d_kifs, 0.2);
@@ -188,7 +203,13 @@ fn map(pos_in: vec3<f32>, ro: vec3<f32>, audio: f32) -> vec2<f32> {
     // Material ID: 0.0 for organic, 1.0 for crystal
     let mat = smoothstep(0.0, 0.1, d_org - d_kifs);
 
-    return vec2<f32>(d_final, mat);
+    // Idea 1: nacre film thickness = signed gyroid level-set (which face of the
+    // membrane) + a lower-frequency gyroid harmonic, so colour bands follow the sheet.
+    let ps = p_org * 2.0;
+    let pl = p_org * 0.8;
+    let film = (dot(sin(ps), cos(ps.zxy)) + bias) * 2.0 + dot(sin(pl), cos(pl.zxy)) * 0.5;
+
+    return vec3<f32>(d_final, mat, film);
 }
 
 // Normal calculation
@@ -228,8 +249,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     uv.y = -uv.y;
 
     // Audio extraction
-    let bass = extraBuffer[0];
-    let fft_mid = extraBuffer[10];
+    let bass = plasmaBuffer[0].x;
+    let fft_mid = plasmaBuffer[0].y;
 
     // Ray setup
     let ro = vec3<f32>(0.0, 0.0, -3.0);
@@ -239,6 +260,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var t = 0.0;
     var d = 0.0;
     var mat_id = 0.0;
+    var film = 0.0;
     let max_steps = 100;
     let max_dist = 20.0;
 
@@ -251,6 +273,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let res = map(p, ro, bass);
         d = res.x;
         mat_id = res.y;
+        film = res.z;
         if (d < 0.001 || t > max_dist) { break; }
         t += d;
     }
@@ -258,7 +281,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var col = vec3<f32>(0.0);
     var depth = 1.0;
 
-    if (t < max_dist) {
+    // Real hit flag: step-exhausted rays far from a surface are sky, not hits.
+    let hit = d < 0.01 && t < max_dist;
+
+    if (hit) {
         let n = calcNormal(p, ro, bass);
         let v = -rd;
         let l = normalize(vec3<f32>(1.0, 2.0, -2.0));
@@ -276,7 +302,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         if (mat_id < 0.5) {
             // Organic Nacreous
-            let iridescence_t = ndotv + iridescenceShift + p.z * 0.1;
+            let iridescence_t = ndotv + iridescenceShift + p.z * 0.1 + film * 0.5; // Idea 1
             let iri_col = pal(iridescence_t, vec3<f32>(0.5,0.5,0.5), vec3<f32>(0.5,0.5,0.5), vec3<f32>(1.0,1.0,1.0), vec3<f32>(0.0,0.33,0.67));
 
             let diffuse = ndotl * iri_col;
@@ -294,7 +320,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let specular = pow(ndoth, 64.0) * vec3<f32>(1.0, 1.0, 1.0);
 
             // Chromatic aberration at grazing angles
-            let fresnel = pow(1.0 - ndotv, 5.0);
+            let fresnel = pow(clamp(1.0 - ndotv, 0.0, 1.0), 5.0);
             let r = pow(ndoth, 32.0);
             let g = pow(max(dot(n, normalize(l + vec3<f32>(0.1, 0.0, 0.0))), 0.0), 32.0);
             let b = pow(max(dot(n, normalize(l + vec3<f32>(-0.1, 0.0, 0.0))), 0.0), 32.0);
@@ -307,24 +333,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         col *= 1.0 - f32(steps) / f32(max_steps);
 
         // Fog
-        col = mix(col, vec3<f32>(0.02, 0.05, 0.1), 1.0 - exp(-0.05 * t * t));
+        col = mix(col, vec3<f32>(0.05, 0.12, 0.25), 1.0 - exp(-0.05 * t * t));
         depth = t / max_dist;
     } else {
         // Aether Background
         let bg_dir = rd;
-        let bg_noise = fbm(bg_dir * 10.0 + u.config.x * 0.1);
-        col = vec3<f32>(0.02, 0.05, 0.1) * bg_noise * (1.0 + bass);
+        let bg_noise = max(fbm(bg_dir * 10.0 + u.config.x * 0.1), 0.0);
+        col = vec3<f32>(0.05, 0.12, 0.25) * bg_noise * (1.0 + bass);
     }
 
-    // Tonemapping and gamma
-    col = col / (1.0 + col);
-    col = pow(col, vec3<f32>(1.0 / 2.2));
+    // ACES on display RGB (replaces Reinhard + gamma); clamp so no NaN reaches the history blend
+    col = acesToneMap(max(col, vec3<f32>(0.0)) * 1.6);
 
-    let current_frame = vec4<f32>(col, 1.0);
+    let current_frame = vec4<f32>(col, select(0.4, 1.0, hit));
 
     // Temporal blending (history)
     let history_coord = vec2<i32>(coord);
-    let history = textureLoad(readTexture, history_coord, 0);
+    let history = clamp(textureLoad(dataTextureC, history_coord, 0), vec4<f32>(0.0), vec4<f32>(1.0));
     let blend_factor = 0.8;
     let final_color = mix(current_frame, history, blend_factor);
 

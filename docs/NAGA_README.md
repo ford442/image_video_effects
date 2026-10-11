@@ -2,6 +2,11 @@
 
 This directory contains scripts for validating WGSL shaders using [naga](https://github.com/gfx-rs/wgpu/tree/trunk/naga) - the official Rust shader compiler used by wgpu.
 
+> **In-process naga:** CI, `npm run verify:naga-wasm` and the browser now run naga from the committed
+> `public/wasm/naga_wasm.wasm` (see [`tools/naga_wasm/README.md`](../tools/naga_wasm/README.md)), not the CLI below.
+> The same artifact also exports `glsl_to_wgsl`, naga's GLSL 450 front-end + WGSL writer, which the
+> Shadertoy import (`src/services/shadertoyToPixelocity.ts`) uses for GLSL → WGSL.
+
 ## Installation
 
 ```bash

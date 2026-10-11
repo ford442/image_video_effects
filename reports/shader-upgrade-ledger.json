@@ -724,12 +724,30 @@
       "history": []
     },
     "chromatic-crawler": {
-      "hash": "011b8afb7bc196d4",
-      "history": []
+      "hash": "a588e2b84b469310",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:13:55.254Z",
+          "hash": "a588e2b84b469310",
+          "prev_hash": "011b8afb7bc196d4",
+          "commit": "86d8f696",
+          "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        }
+      ]
     },
     "chromatic-focus": {
-      "hash": "15da01520b6816bf",
-      "history": []
+      "hash": "a09ae5b0e5b77fcb",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:13:55.254Z",
+          "hash": "a09ae5b0e5b77fcb",
+          "prev_hash": "15da01520b6816bf",
+          "commit": "86d8f696",
+          "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        }
+      ]
     },
     "chromatic-folds-2": {
       "hash": "ea924ddca5224467",
@@ -740,24 +758,60 @@
       "history": []
     },
     "chromatic-folds": {
-      "hash": "3f9c7941622743a8",
-      "history": []
+      "hash": "ea833c55627bc42d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:13:55.254Z",
+          "hash": "ea833c55627bc42d",
+          "prev_hash": "3f9c7941622743a8",
+          "commit": "86d8f696",
+          "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        }
+      ]
     },
     "chromatic-infection": {
-      "hash": "5d370706de159e4c",
-      "history": []
+      "hash": "7d7bc7150871cd3e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:13:55.254Z",
+          "hash": "7d7bc7150871cd3e",
+          "prev_hash": "5d370706de159e4c",
+          "commit": "86d8f696",
+          "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        }
+      ]
     },
     "chromatic-manifold-2": {
       "hash": "f816450979ed851c",
       "history": []
     },
     "chromatic-manifold": {
-      "hash": "ff68d2c00695adae",
-      "history": []
+      "hash": "800b8c1ac6decfba",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:13:55.254Z",
+          "hash": "800b8c1ac6decfba",
+          "prev_hash": "ff68d2c00695adae",
+          "commit": "86d8f696",
+          "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        }
+      ]
     },
     "chromatic-phase-inversion": {
-      "hash": "9139d6ff94f912c7",
-      "history": []
+      "hash": "e54413627d196886",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:13:55.254Z",
+          "hash": "e54413627d196886",
+          "prev_hash": "9139d6ff94f912c7",
+          "commit": "86d8f696",
+          "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        }
+      ]
     },
     "chromatographic-separation": {
       "hash": "7098c1b7c25d73a7",
@@ -840,8 +894,17 @@
       "history": []
     },
     "iridescent-oil-slick": {
-      "hash": "861cdc2c9968c208",
-      "history": []
+      "hash": "c7865c42f6adf3e0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:13:55.254Z",
+          "hash": "c7865c42f6adf3e0",
+          "prev_hash": "861cdc2c9968c208",
+          "commit": "86d8f696",
+          "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        }
+      ]
     },
     "iso-hills": {
       "hash": "bd53f250446fee08",
@@ -856,8 +919,17 @@
       "history": []
     },
     "liquid-prism-cascade": {
-      "hash": "7ed38a1c6c8a1d01",
-      "history": []
+      "hash": "c92df32d84844700",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:13:55.254Z",
+          "hash": "c92df32d84844700",
+          "prev_hash": "7ed38a1c6c8a1d01",
+          "commit": "86d8f696",
+          "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        }
+      ]
     },
     "luminance-wind": {
       "hash": "545da307c5a1c7e1",
@@ -876,8 +948,17 @@
       "history": []
     },
     "mosaic-reveal": {
-      "hash": "40c13ec64a89e71d",
-      "history": []
+      "hash": "558f300759cc31f2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:37:35.925Z",
+          "hash": "558f300759cc31f2",
+          "prev_hash": "40c13ec64a89e71d",
+          "commit": "0910248e",
+          "note": "2026-10-05 dissolve & reveal ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-dissolve-reveal-ten/"
+        }
+      ]
     },
     "mouse-pixel-sort": {
       "hash": "2931bd1ce6848f9b",
@@ -896,12 +977,30 @@
       "history": []
     },
     "neon-contour-interactive": {
-      "hash": "cc02c1d6952e05f8",
-      "history": []
+      "hash": "68de0eb20631368c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T15:38:36.323Z",
+          "hash": "68de0eb20631368c",
+          "prev_hash": "cc02c1d6952e05f8",
+          "commit": "c9151d6f",
+          "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        }
+      ]
     },
     "neon-edge-diffusion": {
-      "hash": "dd5e5106f7fa5315",
-      "history": []
+      "hash": "0051a11a5bf8ed55",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T15:38:36.323Z",
+          "hash": "0051a11a5bf8ed55",
+          "prev_hash": "dd5e5106f7fa5315",
+          "commit": "c9151d6f",
+          "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        }
+      ]
     },
     "neural-dreamscape": {
       "hash": "6e4f56e5ce4feb03",
@@ -1028,8 +1127,17 @@
       "history": []
     },
     "spirograph-reveal": {
-      "hash": "d01761f40c84b157",
-      "history": []
+      "hash": "03731c8ffbb09ab2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:37:35.925Z",
+          "hash": "03731c8ffbb09ab2",
+          "prev_hash": "d01761f40c84b157",
+          "commit": "0910248e",
+          "note": "2026-10-05 dissolve & reveal ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-dissolve-reveal-ten/"
+        }
+      ]
     },
     "static-reveal": {
       "hash": "bd073c44d04fac9e",
@@ -1060,8 +1168,17 @@
       "history": []
     },
     "vortex-prism": {
-      "hash": "83b5cfe3baa75b38",
-      "history": []
+      "hash": "db7723bbf50aa4e7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:13:55.254Z",
+          "hash": "db7723bbf50aa4e7",
+          "prev_hash": "83b5cfe3baa75b38",
+          "commit": "86d8f696",
+          "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        }
+      ]
     },
     "black-hole": {
       "hash": "86cf4f4ad771bf3d",
@@ -1255,8 +1372,17 @@
       "history": []
     },
     "pixelate-blast": {
-      "hash": "953efd41efff3cdf",
-      "history": []
+      "hash": "a90c1b02c837063e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T22:34:40.747Z",
+          "hash": "a90c1b02c837063e",
+          "prev_hash": "953efd41efff3cdf",
+          "commit": "9cace4aa",
+          "note": null
+        }
+      ]
     },
     "predator-camouflage": {
       "hash": "01305e4831bc18e1",
@@ -1499,8 +1625,17 @@
       "history": []
     },
     "gen-aether-forged-nacreous-labyrinth": {
-      "hash": "114ebd802bd5c49b",
-      "history": []
+      "hash": "3a758cfb686795c0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T22:33:14.684Z",
+          "hash": "3a758cfb686795c0",
+          "prev_hash": "114ebd802bd5c49b",
+          "commit": "d74e665b",
+          "note": "2026-10-10 ethereal/cymatic/labyrinth ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-10-ethereal-cymatic-ten"
+        }
+      ]
     },
     "gen-aethereal-ferrofluid-chrono-core": {
       "hash": "2c7c1652a82d41e2",
@@ -1851,8 +1986,17 @@
       "history": []
     },
     "gen-cymatic-quantum-silk-loom": {
-      "hash": "51c7e9acbb03098e",
-      "history": []
+      "hash": "a3b53d0241c99100",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T22:33:14.684Z",
+          "hash": "a3b53d0241c99100",
+          "prev_hash": "51c7e9acbb03098e",
+          "commit": "d74e665b",
+          "note": "2026-10-10 ethereal/cymatic/labyrinth ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-10-ethereal-cymatic-ten"
+        }
+      ]
     },
     "gen-de-jong-attractor": {
       "hash": "6292238fab199b69",
@@ -1911,12 +2055,30 @@
       "history": []
     },
     "gen-ethereal-anemone-bloom": {
-      "hash": "5769c879b1260c3a",
-      "history": []
+      "hash": "b2ad0acd8c929b11",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T22:33:14.684Z",
+          "hash": "b2ad0acd8c929b11",
+          "prev_hash": "5769c879b1260c3a",
+          "commit": "d74e665b",
+          "note": "2026-10-10 ethereal/cymatic/labyrinth ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-10-ethereal-cymatic-ten"
+        }
+      ]
     },
     "gen-ethereal-aurora-ghost-orchid": {
-      "hash": "a730faa51b03a32f",
-      "history": []
+      "hash": "49b0a437ddc3b55a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T22:33:14.684Z",
+          "hash": "49b0a437ddc3b55a",
+          "prev_hash": "a730faa51b03a32f",
+          "commit": "d74e665b",
+          "note": "2026-10-10 ethereal/cymatic/labyrinth ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-10-ethereal-cymatic-ten"
+        }
+      ]
     },
     "gen-ethereal-bismuth-resonance-void-owl": {
       "hash": "d1a940d53cd57f6b",
@@ -1951,28 +2113,64 @@
       "history": []
     },
     "gen-ethereal-glass-flora-terrarium": {
-      "hash": "31caedcf59774aaf",
-      "history": []
+      "hash": "21f7d2142a07cc71",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T22:33:14.684Z",
+          "hash": "21f7d2142a07cc71",
+          "prev_hash": "31caedcf59774aaf",
+          "commit": "d74e665b",
+          "note": "2026-10-10 ethereal/cymatic/labyrinth ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-10-ethereal-cymatic-ten"
+        }
+      ]
     },
     "gen-ethereal-quantum-glass-nautilus": {
       "hash": "765e0ee65ac98eb9",
       "history": []
     },
     "gen-ethereal-quantum-hologram-bonsai": {
-      "hash": "7891fedf76563226",
-      "history": []
+      "hash": "2c5438fcb7a1df5a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T22:33:14.684Z",
+          "hash": "2c5438fcb7a1df5a",
+          "prev_hash": "7891fedf76563226",
+          "commit": "d74e665b",
+          "note": "2026-10-10 ethereal/cymatic/labyrinth ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-10-ethereal-cymatic-ten"
+        }
+      ]
     },
     "gen-ethereal-quantum-holographic-fractal-coral": {
       "hash": "df8a77e43ce9a036",
       "history": []
     },
     "gen-ethereal-quantum-medusa": {
-      "hash": "3a8ab65131fa3860",
-      "history": []
+      "hash": "e4e5f380f18fd39e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T22:33:14.684Z",
+          "hash": "e4e5f380f18fd39e",
+          "prev_hash": "3a8ab65131fa3860",
+          "commit": "d74e665b",
+          "note": "2026-10-10 ethereal/cymatic/labyrinth ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-10-ethereal-cymatic-ten"
+        }
+      ]
     },
     "gen-ethereal-silk-veil": {
-      "hash": "f863854d74cc4b05",
-      "history": []
+      "hash": "ee8045d626caaf45",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T22:33:14.684Z",
+          "hash": "ee8045d626caaf45",
+          "prev_hash": "f863854d74cc4b05",
+          "commit": "d74e665b",
+          "note": "2026-10-10 ethereal/cymatic/labyrinth ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-10-ethereal-cymatic-ten"
+        }
+      ]
     },
     "gen-evolutionary-cellular-gardens": {
       "hash": "41099d66ecbfdcbc",
@@ -1991,8 +2189,17 @@
       "history": []
     },
     "gen-fireworks-audio-symphony": {
-      "hash": "f26e7eb05680aa91",
-      "history": []
+      "hash": "dd35c25c8a81a072",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T22:33:14.684Z",
+          "hash": "dd35c25c8a81a072",
+          "prev_hash": "f26e7eb05680aa91",
+          "commit": "d74e665b",
+          "note": "2026-10-10 ethereal/cymatic/labyrinth ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-10-ethereal-cymatic-ten"
+        }
+      ]
     },
     "gen-fireworks-chrysanthemum": {
       "hash": "34e863d02cb7677a",
@@ -2055,24 +2262,60 @@
       "history": []
     },
     "gen-flame-fractal-attractor": {
-      "hash": "25fec48bbf9d9451",
-      "history": []
+      "hash": "ce9d0c111ea94ecb",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T22:58:42.638Z",
+          "hash": "ce9d0c111ea94ecb",
+          "prev_hash": "25fec48bbf9d9451",
+          "commit": "f17da9d0",
+          "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
+        }
+      ]
     },
     "gen-flowing-silk-ribbons": {
-      "hash": "c056ddd0c5909704",
-      "history": []
+      "hash": "54c8ee2190fa8133",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T22:58:42.638Z",
+          "hash": "54c8ee2190fa8133",
+          "prev_hash": "c056ddd0c5909704",
+          "commit": "f17da9d0",
+          "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
+        }
+      ]
     },
     "gen-fourier-epicycles": {
       "hash": "2a1fb20c938ccd5b",
       "history": []
     },
     "gen-fractal-bioluminescence-spore-network": {
-      "hash": "ab1a6fc9b6898637",
-      "history": []
+      "hash": "3f7edf38b2175a8b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T22:58:42.638Z",
+          "hash": "3f7edf38b2175a8b",
+          "prev_hash": "ab1a6fc9b6898637",
+          "commit": "f17da9d0",
+          "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
+        }
+      ]
     },
     "gen-fractal-chrono-dendrite-forge": {
-      "hash": "6e46cbc365db917f",
-      "history": []
+      "hash": "5119f37d90a1ecc7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T22:58:42.638Z",
+          "hash": "5119f37d90a1ecc7",
+          "prev_hash": "6e46cbc365db917f",
+          "commit": "f17da9d0",
+          "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
+        }
+      ]
     },
     "gen-fractal-clockwork": {
       "hash": "d285b97cf093c71a",
@@ -2083,36 +2326,90 @@
       "history": []
     },
     "gen-fractal-flame-classic": {
-      "hash": "4940f1cd4f1432eb",
-      "history": []
+      "hash": "bd92ccc6f61ff483",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T22:58:42.638Z",
+          "hash": "bd92ccc6f61ff483",
+          "prev_hash": "4940f1cd4f1432eb",
+          "commit": "f17da9d0",
+          "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
+        }
+      ]
     },
     "gen-fractal-neuro-mycelium-lattice": {
-      "hash": "47edf63c619a1efd",
-      "history": []
+      "hash": "440459aea0cf419e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T22:58:42.638Z",
+          "hash": "440459aea0cf419e",
+          "prev_hash": "47edf63c619a1efd",
+          "commit": "f17da9d0",
+          "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
+        }
+      ]
     },
     "gen-fractal-tree-growth": {
-      "hash": "2de708e2aaae5d20",
-      "history": []
+      "hash": "ed4cbbf64668ffd4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T22:58:42.638Z",
+          "hash": "ed4cbbf64668ffd4",
+          "prev_hash": "2de708e2aaae5d20",
+          "commit": "f17da9d0",
+          "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
+        }
+      ]
     },
     "gen-fractured-monolith": {
       "hash": "1d49d72bf7a5ee3e",
       "history": []
     },
     "gen-galactic-aether-crystal-geode-core": {
-      "hash": "9907e41bb61fae88",
-      "history": []
+      "hash": "21ea4275811141bc",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T22:58:42.638Z",
+          "hash": "21ea4275811141bc",
+          "prev_hash": "9907e41bb61fae88",
+          "commit": "f17da9d0",
+          "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
+        }
+      ]
     },
     "gen-ghost-flame": {
       "hash": "6aaaa38000c73713",
       "history": []
     },
     "gen-glacial-aether-quantum-cavern": {
-      "hash": "b9018d8f053db2ab",
-      "history": []
+      "hash": "17cf492f608aecf5",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T22:58:42.638Z",
+          "hash": "17cf492f608aecf5",
+          "prev_hash": "b9018d8f053db2ab",
+          "commit": "f17da9d0",
+          "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
+        }
+      ]
     },
     "gen-glass-mosaic-liquid-refraction": {
-      "hash": "65c82966bbb1fbab",
-      "history": []
+      "hash": "f9723ffd11440f44",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T22:58:42.638Z",
+          "hash": "f9723ffd11440f44",
+          "prev_hash": "65c82966bbb1fbab",
+          "commit": "f17da9d0",
+          "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
+        }
+      ]
     },
     "gen-gravitational-ferrofluid-singularity-engine": {
       "hash": "4f8fd4a51d914b22",
@@ -2291,36 +2588,108 @@
       "history": []
     },
     "gen-lichen-reaction-diffusion": {
-      "hash": "a9816ccf87abf4a0",
-      "history": []
+      "hash": "03bb9fb3cc2d86a7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T23:11:06.429Z",
+          "hash": "03bb9fb3cc2d86a7",
+          "prev_hash": "a9816ccf87abf4a0",
+          "commit": "cc600bb4",
+          "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        }
+      ]
     },
     "gen-lichtenberg-storm": {
-      "hash": "deada203f38bd4c3",
-      "history": []
+      "hash": "04533de375d0ebc4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T23:11:06.429Z",
+          "hash": "04533de375d0ebc4",
+          "prev_hash": "deada203f38bd4c3",
+          "commit": "cc600bb4",
+          "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        }
+      ]
     },
     "gen-liquid-cathedral-dream": {
-      "hash": "37f9a7f340a1ffa4",
-      "history": []
+      "hash": "92b3e3c8bda2b521",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T23:11:06.429Z",
+          "hash": "92b3e3c8bda2b521",
+          "prev_hash": "37f9a7f340a1ffa4",
+          "commit": "cc600bb4",
+          "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        }
+      ]
     },
     "gen-liquid-crystal-hive-mind": {
-      "hash": "4fae6eb7a7c4732d",
-      "history": []
+      "hash": "894999a66cf032c0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T23:11:06.429Z",
+          "hash": "894999a66cf032c0",
+          "prev_hash": "4fae6eb7a7c4732d",
+          "commit": "cc600bb4",
+          "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        }
+      ]
     },
     "gen-liquid-metal-cymatic-resonator": {
-      "hash": "81cd67ef016c05b7",
-      "history": []
+      "hash": "46ee86a9aa8ed55a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T23:11:06.429Z",
+          "hash": "46ee86a9aa8ed55a",
+          "prev_hash": "81cd67ef016c05b7",
+          "commit": "cc600bb4",
+          "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        }
+      ]
     },
     "gen-liquid-neon-cyber-metropolis": {
-      "hash": "84b4e5600bc9697e",
-      "history": []
+      "hash": "cf01be1185f8f4e4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T23:11:06.429Z",
+          "hash": "cf01be1185f8f4e4",
+          "prev_hash": "84b4e5600bc9697e",
+          "commit": "cc600bb4",
+          "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        }
+      ]
     },
     "gen-liquid-neon-topography": {
-      "hash": "d7ae2e4fe26e2b0b",
-      "history": []
+      "hash": "86bc849e812f6c12",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T23:11:06.429Z",
+          "hash": "86bc849e812f6c12",
+          "prev_hash": "d7ae2e4fe26e2b0b",
+          "commit": "cc600bb4",
+          "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        }
+      ]
     },
     "gen-liquid-rainbow-glass": {
-      "hash": "e2b2dbdc6af13665",
-      "history": []
+      "hash": "c9fd4a8ab74a8cf8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T23:11:06.429Z",
+          "hash": "c9fd4a8ab74a8cf8",
+          "prev_hash": "e2b2dbdc6af13665",
+          "commit": "cc600bb4",
+          "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        }
+      ]
     },
     "gen-live-studio-tab": {
       "hash": "edc06f46b37cca28",
@@ -2335,24 +2704,69 @@
       "history": []
     },
     "gen-luminescent-aether-plasma-astro-axolotl": {
-      "hash": "27d5c63a56153605",
-      "history": []
+      "hash": "ec6c859ef979551b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T23:11:06.429Z",
+          "hash": "ec6c859ef979551b",
+          "prev_hash": "27d5c63a56153605",
+          "commit": "cc600bb4",
+          "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        }
+      ]
     },
     "gen-luminescent-aether-plasma-nebula-koi": {
-      "hash": "e6c67f8bda21ceb4",
-      "history": []
+      "hash": "97f409a9239771c7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T23:11:06.429Z",
+          "hash": "97f409a9239771c7",
+          "prev_hash": "e6c67f8bda21ceb4",
+          "commit": "cc600bb4",
+          "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        }
+      ]
     },
     "gen-luminescent-chrono-fluid-astrolabe": {
-      "hash": "40eed0c1817f7b7e",
-      "history": []
+      "hash": "95038db36f168d9f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T23:27:14.004Z",
+          "hash": "95038db36f168d9f",
+          "prev_hash": "40eed0c1817f7b7e",
+          "commit": "a26af174",
+          "note": "2026-10-10 luminescent/magnetic ten (Claude) — agents/swarm-outputs/claude-2026-10-10-luminescent-magnetic-ten"
+        }
+      ]
     },
     "gen-luminescent-chrono-prism-astro-stag": {
-      "hash": "f39ac44426b1b508",
-      "history": []
+      "hash": "4624a040c000b609",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T23:27:14.004Z",
+          "hash": "4624a040c000b609",
+          "prev_hash": "f39ac44426b1b508",
+          "commit": "a26af174",
+          "note": "2026-10-10 luminescent/magnetic ten (Claude) — agents/swarm-outputs/claude-2026-10-10-luminescent-magnetic-ten"
+        }
+      ]
     },
     "gen-luminescent-cyber-chrono-void-turtle": {
-      "hash": "5b9b3a52de563122",
-      "history": []
+      "hash": "08b06448114592c5",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T23:27:14.004Z",
+          "hash": "08b06448114592c5",
+          "prev_hash": "5b9b3a52de563122",
+          "commit": "a26af174",
+          "note": "2026-10-10 luminescent/magnetic ten (Claude) — agents/swarm-outputs/claude-2026-10-10-luminescent-magnetic-ten"
+        }
+      ]
     },
     "gen-luminescent-nebula-silk-weaver": {
       "hash": "686ac9f9f5df7185",
@@ -2363,16 +2777,34 @@
       "history": []
     },
     "gen-luminescent-quantum-glass-phoenix-egg": {
-      "hash": "babb82a0647f2a8a",
-      "history": []
+      "hash": "663fb2b216240d55",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T23:27:14.004Z",
+          "hash": "663fb2b216240d55",
+          "prev_hash": "babb82a0647f2a8a",
+          "commit": "a26af174",
+          "note": "2026-10-10 luminescent/magnetic ten (Claude) — agents/swarm-outputs/claude-2026-10-10-luminescent-magnetic-ten"
+        }
+      ]
     },
     "gen-luminescent-quantum-silicate-diatom": {
       "hash": "3022faea573b1326",
       "history": []
     },
     "gen-luminescent-quantum-void-anglerfish": {
-      "hash": "9274e94432bdde12",
-      "history": []
+      "hash": "e94d0999ba4cf7a2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T23:27:14.004Z",
+          "hash": "e94d0999ba4cf7a2",
+          "prev_hash": "9274e94432bdde12",
+          "commit": "a26af174",
+          "note": "2026-10-10 luminescent/magnetic ten (Claude) — agents/swarm-outputs/claude-2026-10-10-luminescent-magnetic-ten"
+        }
+      ]
     },
     "gen-luminescent-quantum-void-astral-turtle": {
       "hash": "9084ef9ff39b316b",
@@ -2387,20 +2819,56 @@
       "history": []
     },
     "gen-luminous-fluid-chladni-resonator": {
-      "hash": "fd2398b32910f957",
-      "history": []
+      "hash": "f88cfcca963e70d8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T23:27:14.004Z",
+          "hash": "f88cfcca963e70d8",
+          "prev_hash": "fd2398b32910f957",
+          "commit": "a26af174",
+          "note": "2026-10-10 luminescent/magnetic ten (Claude) — agents/swarm-outputs/claude-2026-10-10-luminescent-magnetic-ten"
+        }
+      ]
     },
     "gen-magnetic-dipole-field": {
-      "hash": "89b978e68de9481d",
-      "history": []
+      "hash": "1783b4c6f62f28c6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T23:27:14.004Z",
+          "hash": "1783b4c6f62f28c6",
+          "prev_hash": "89b978e68de9481d",
+          "commit": "a26af174",
+          "note": "2026-10-10 luminescent/magnetic ten (Claude) — agents/swarm-outputs/claude-2026-10-10-luminescent-magnetic-ten"
+        }
+      ]
     },
     "gen-magnetic-ferrofluid-sculpture": {
-      "hash": "f9f5b3aa6c8d1081",
-      "history": []
+      "hash": "929e27c148425939",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T23:27:14.004Z",
+          "hash": "929e27c148425939",
+          "prev_hash": "f9f5b3aa6c8d1081",
+          "commit": "a26af174",
+          "note": "2026-10-10 luminescent/magnetic ten (Claude) — agents/swarm-outputs/claude-2026-10-10-luminescent-magnetic-ten"
+        }
+      ]
     },
     "gen-magnetic-ferrofluid": {
-      "hash": "7e46bc5b12774a79",
-      "history": []
+      "hash": "ae1eee4bcb552952",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-09T23:27:14.004Z",
+          "hash": "ae1eee4bcb552952",
+          "prev_hash": "7e46bc5b12774a79",
+          "commit": "a26af174",
+          "note": "2026-10-10 luminescent/magnetic ten (Claude) — agents/swarm-outputs/claude-2026-10-10-luminescent-magnetic-ten"
+        }
+      ]
     },
     "gen-magnetic-field-lines": {
       "hash": "32937bb9c54ad531",
@@ -3203,8 +3671,17 @@
       "history": []
     },
     "neon-fern-garden": {
-      "hash": "6b77a62e8196cc04",
-      "history": []
+      "hash": "35cdc041b36f47b2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T15:38:36.323Z",
+          "hash": "35cdc041b36f47b2",
+          "prev_hash": "6b77a62e8196cc04",
+          "commit": "c9151d6f",
+          "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        }
+      ]
     },
     "neural-mandala": {
       "hash": "d2b2dd3da5bf022f",
@@ -3487,8 +3964,17 @@
       "history": []
     },
     "contour-flow": {
-      "hash": "3d05fbba482e7032",
-      "history": []
+      "hash": "3021509be1da9777",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T15:38:36.323Z",
+          "hash": "3021509be1da9777",
+          "prev_hash": "3d05fbba482e7032",
+          "commit": "c9151d6f",
+          "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        }
+      ]
     },
     "conv-anisotropic-diffusion": {
       "hash": "2d305d455de68b90",
@@ -3567,8 +4053,17 @@
       "history": []
     },
     "crystalline-shatter": {
-      "hash": "cacbaf5281016b1e",
-      "history": []
+      "hash": "f62e04844a68cc83",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:37:35.925Z",
+          "hash": "f62e04844a68cc83",
+          "prev_hash": "cacbaf5281016b1e",
+          "commit": "0910248e",
+          "note": "2026-10-05 dissolve & reveal ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-dissolve-reveal-ten/"
+        }
+      ]
     },
     "cyber-halftone-scanner": {
       "hash": "0fa112f2ff329f82",
@@ -3579,8 +4074,17 @@
       "history": []
     },
     "directional-blur-wipe": {
-      "hash": "cb175c8b06fd7470",
-      "history": []
+      "hash": "c8e631d4adcf4d5b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:37:35.925Z",
+          "hash": "c8e631d4adcf4d5b",
+          "prev_hash": "cb175c8b06fd7470",
+          "commit": "0910248e",
+          "note": "2026-10-05 dissolve & reveal ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-dissolve-reveal-ten/"
+        }
+      ]
     },
     "ember-drift-dissolve": {
       "hash": "96bde2f27782461a",
@@ -3603,8 +4107,17 @@
       "history": []
     },
     "fractal-noise-dissolve": {
-      "hash": "73d75bff55bc2b52",
-      "history": []
+      "hash": "8e73e2dd2f4c0b0d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:37:35.925Z",
+          "hash": "8e73e2dd2f4c0b0d",
+          "prev_hash": "73d75bff55bc2b52",
+          "commit": "0910248e",
+          "note": "2026-10-05 dissolve & reveal ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-dissolve-reveal-ten/"
+        }
+      ]
     },
     "frost-reveal": {
       "hash": "2e6f53cd593020de",
@@ -3619,8 +4132,17 @@
       "history": []
     },
     "glitch-reveal": {
-      "hash": "08f986a8dce7c0e5",
-      "history": []
+      "hash": "d4e0aa99fe06bb2e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:37:35.925Z",
+          "hash": "d4e0aa99fe06bb2e",
+          "prev_hash": "08f986a8dce7c0e5",
+          "commit": "0910248e",
+          "note": "2026-10-05 dissolve & reveal ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-dissolve-reveal-ten/"
+        }
+      ]
     },
     "glitch-ripple-drag": {
       "hash": "d31d74b53017bd5f",
@@ -3639,8 +4161,17 @@
       "history": []
     },
     "holographic-shatter": {
-      "hash": "0031047ceb62343b",
-      "history": []
+      "hash": "ea08a1d213ad517d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:37:35.925Z",
+          "hash": "ea08a1d213ad517d",
+          "prev_hash": "0031047ceb62343b",
+          "commit": "0910248e",
+          "note": "2026-10-05 dissolve & reveal ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-dissolve-reveal-ten/"
+        }
+      ]
     },
     "honey-melt": {
       "hash": "70627c97c1e2baee",
@@ -3680,8 +4211,17 @@
       "history": []
     },
     "neon-pulse-dissolve": {
-      "hash": "6b2ad2a973bb774c",
-      "history": []
+      "hash": "4b4bc72e4f74a3d5",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:37:35.925Z",
+          "hash": "4b4bc72e4f74a3d5",
+          "prev_hash": "6b2ad2a973bb774c",
+          "commit": "0910248e",
+          "note": "2026-10-05 dissolve & reveal ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-dissolve-reveal-ten/"
+        }
+      ]
     },
     "neon-pulse-stream": {
       "hash": "d6147ee3846fae7d",
@@ -3704,12 +4244,30 @@
       "history": []
     },
     "pixel-scattering": {
-      "hash": "52b9ddef1b39a664",
-      "history": []
+      "hash": "50886f0b5d1c04b9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T22:34:40.747Z",
+          "hash": "50886f0b5d1c04b9",
+          "prev_hash": "52b9ddef1b39a664",
+          "commit": "9cace4aa",
+          "note": null
+        }
+      ]
     },
     "pixel-stretch-interactive": {
-      "hash": "e99401cccdd38f9a",
-      "history": []
+      "hash": "a5db630615d3955d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T22:34:40.747Z",
+          "hash": "a5db630615d3955d",
+          "prev_hash": "e99401cccdd38f9a",
+          "commit": "9cace4aa",
+          "note": null
+        }
+      ]
     },
     "pixel-tornado": {
       "hash": "18ca8377cec78917",
@@ -3777,8 +4335,17 @@
       "history": []
     },
     "spec-cooperative-edge-linking": {
-      "hash": "e880293e3155df2f",
-      "history": []
+      "hash": "599091d96f2fd316",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T15:38:36.323Z",
+          "hash": "599091d96f2fd316",
+          "prev_hash": "e880293e3155df2f",
+          "commit": "c9151d6f",
+          "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        }
+      ]
     },
     "spec-histogram-equalize": {
       "hash": "556e658fc3aa0fcd",
@@ -4152,8 +4719,17 @@
       "history": []
     },
     "holographic-edge-ripple": {
-      "hash": "66079a07f69ae980",
-      "history": []
+      "hash": "4fb7056af5440f49",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T15:38:36.323Z",
+          "hash": "4fb7056af5440f49",
+          "prev_hash": "66079a07f69ae980",
+          "commit": "c9151d6f",
+          "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        }
+      ]
     },
     "holographic-prism": {
       "hash": "f9392380170a9f3f",
@@ -4345,8 +4921,17 @@
       "history": []
     },
     "luma-echo-warp": {
-      "hash": "9672e97765373ea4",
-      "history": []
+      "hash": "1c7d3e91feaea18e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T22:34:40.747Z",
+          "hash": "1c7d3e91feaea18e",
+          "prev_hash": "9672e97765373ea4",
+          "commit": "9cace4aa",
+          "note": null
+        }
+      ]
     },
     "luma-force": {
       "hash": "39838263ef3e101b",
@@ -4375,8 +4960,17 @@
       ]
     },
     "luma-slice-interactive": {
-      "hash": "f165dab849d4caf4",
-      "history": []
+      "hash": "9ab617cb6eed38d7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T22:34:40.747Z",
+          "hash": "9ab617cb6eed38d7",
+          "prev_hash": "f165dab849d4caf4",
+          "commit": "9cace4aa",
+          "note": null
+        }
+      ]
     },
     "luma-topography": {
       "hash": "215d0be1fe295b06",
@@ -4547,40 +5141,85 @@
       "history": []
     },
     "neon-cursor-trace": {
-      "hash": "2d8ad0c6e4ebc77e",
-      "history": []
+      "hash": "37e688f36ab5e6f0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T15:38:36.323Z",
+          "hash": "37e688f36ab5e6f0",
+          "prev_hash": "2d8ad0c6e4ebc77e",
+          "commit": "c9151d6f",
+          "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        }
+      ]
     },
     "neon-echo": {
       "hash": "48f009fd8cc060fe",
       "history": []
     },
     "neon-edge-radar": {
-      "hash": "1b99af4585ba4dd3",
-      "history": []
+      "hash": "0eee57333425530c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T15:38:36.323Z",
+          "hash": "0eee57333425530c",
+          "prev_hash": "1b99af4585ba4dd3",
+          "commit": "c9151d6f",
+          "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        }
+      ]
     },
     "neon-flashlight": {
       "hash": "67ee96d546613169",
       "history": []
     },
     "neon-fluid-warp": {
-      "hash": "5a93d8a7a754a85c",
-      "history": []
+      "hash": "67036031e29df88c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T15:38:36.323Z",
+          "hash": "67036031e29df88c",
+          "prev_hash": "5a93d8a7a754a85c",
+          "commit": "c9151d6f",
+          "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        }
+      ]
     },
     "neon-pulse": {
       "hash": "bc78a2313b129feb",
       "history": []
     },
     "neon-ripple-split": {
-      "hash": "10bbdb0018309bcb",
-      "history": []
+      "hash": "b7e167212a504ef5",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T15:38:36.323Z",
+          "hash": "b7e167212a504ef5",
+          "prev_hash": "10bbdb0018309bcb",
+          "commit": "c9151d6f",
+          "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        }
+      ]
     },
     "neon-strings": {
       "hash": "b530edf6a70b1036",
       "history": []
     },
     "neon-warp": {
-      "hash": "ac657a8da3222279",
-      "history": []
+      "hash": "2d2ea4bac5879afb",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T15:38:36.323Z",
+          "hash": "2d2ea4bac5879afb",
+          "prev_hash": "ac657a8da3222279",
+          "commit": "c9151d6f",
+          "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        }
+      ]
     },
     "neural-nexus": {
       "hash": "2b3ce2b220d6f57f",
@@ -4679,8 +5318,17 @@
       ]
     },
     "pixel-reveal": {
-      "hash": "6f9bd0e04e269986",
-      "history": []
+      "hash": "bdac5ece68c7c56f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:37:35.925Z",
+          "hash": "bdac5ece68c7c56f",
+          "prev_hash": "6f9bd0e04e269986",
+          "commit": "0910248e",
+          "note": "2026-10-05 dissolve & reveal ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-dissolve-reveal-ten/"
+        }
+      ]
     },
     "pixel-sort-explorer": {
       "hash": "6e067109348ad3e7",
@@ -5023,8 +5671,17 @@
       "history": []
     },
     "x-ray-reveal": {
-      "hash": "7ffa76c6f1af67b2",
-      "history": []
+      "hash": "731f2cff8f750d44",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:37:35.925Z",
+          "hash": "731f2cff8f750d44",
+          "prev_hash": "7ffa76c6f1af67b2",
+          "commit": "0910248e",
+          "note": "2026-10-05 dissolve & reveal ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-dissolve-reveal-ten/"
+        }
+      ]
     },
     "alpha-aurora-bands": {
       "hash": "ec6bea63ebbeaf25",
@@ -5203,8 +5860,17 @@
       "history": []
     },
     "luma-melt-interactive": {
-      "hash": "f12317950bdb781c",
-      "history": []
+      "hash": "661aa9caa4e1c8bf",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T22:34:40.747Z",
+          "hash": "661aa9caa4e1c8bf",
+          "prev_hash": "f12317950bdb781c",
+          "commit": "9cace4aa",
+          "note": null
+        }
+      ]
     },
     "luma-velocity-melt": {
       "hash": "c7ef16954b98e3ee",
@@ -5223,8 +5889,17 @@
       "history": []
     },
     "audio-reactive-rgb-dispersion": {
-      "hash": "e79b1db05095be5a",
-      "history": []
+      "hash": "8ce5140e03df7071",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T13:13:55.254Z",
+          "hash": "8ce5140e03df7071",
+          "prev_hash": "e79b1db05095be5a",
+          "commit": "86d8f696",
+          "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        }
+      ]
     },
     "audio-reactive-temporal-decay": {
       "hash": "0c0e3a44e4d681e5",
@@ -5247,8 +5922,17 @@
       "history": []
     },
     "pixel-depth-sort": {
-      "hash": "b7ad81bf1b55f71a",
-      "history": []
+      "hash": "70618cb76c9da8cb",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T22:34:40.747Z",
+          "hash": "70618cb76c9da8cb",
+          "prev_hash": "b7ad81bf1b55f71a",
+          "commit": "9cace4aa",
+          "note": null
+        }
+      ]
     },
     "pp-bloom": {
       "hash": "3e4a43aed5cf71da",
@@ -5865,16 +6549,34 @@
       "history": []
     },
     "luma-smear-interactive": {
-      "hash": "994aea931fbf212b",
-      "history": []
+      "hash": "654f00414f3668f2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T22:34:40.747Z",
+          "hash": "654f00414f3668f2",
+          "prev_hash": "994aea931fbf212b",
+          "commit": "9cace4aa",
+          "note": null
+        }
+      ]
     },
     "neon-edge-glow": {
       "hash": "1ffd8584fde4b71c",
       "history": []
     },
     "neon-edge-pulse": {
-      "hash": "defc2d6b2a72f688",
-      "history": []
+      "hash": "77449fbc75cff242",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-05T15:38:36.323Z",
+          "hash": "77449fbc75cff242",
+          "prev_hash": "defc2d6b2a72f688",
+          "commit": "c9151d6f",
+          "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        }
+      ]
     },
     "neon-edge-reveal": {
       "hash": "8d9e2fb8f25d2995",
@@ -5962,6 +6664,30 @@
     "zipper-reveal": {
       "hash": "d4a434baa241cb55",
       "history": []
+    },
+    "gen-chromodynamic-glass-labyrinth": {
+      "hash": "8d56e14ec497948a",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-10-09T22:33:14.684Z",
+          "hash": "8d56e14ec497948a",
+          "commit": "d74e665b",
+          "note": "2026-10-10 ethereal/cymatic/labyrinth ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-10-ethereal-cymatic-ten"
+        }
+      ]
+    },
+    "gen-luminescent-singularity-loom": {
+      "hash": "5f53ed2a4b1586b7",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-10-09T23:27:14.004Z",
+          "hash": "5f53ed2a4b1586b7",
+          "commit": "a26af174",
+          "note": "2026-10-10 luminescent/magnetic ten (Claude) — agents/swarm-outputs/claude-2026-10-10-luminescent-magnetic-ten"
+        }
+      ]
     }
   }
 }

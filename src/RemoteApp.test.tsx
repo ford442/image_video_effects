@@ -62,7 +62,7 @@ function fullState(overrides: Partial<FullState> = {}): FullState {
 function connect(overrides: Partial<FullState> = {}) {
   const remote = MockBroadcastChannel.instances[0];
   act(() => {
-    remote.onmessage?.({
+    remote!.onmessage?.({
       data: { type: 'STATE_FULL', payload: fullState(overrides) },
     } as MessageEvent);
   });

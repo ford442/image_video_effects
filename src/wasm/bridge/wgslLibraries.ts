@@ -17,8 +17,10 @@ export const BUNDLED_WGSL_LIBRARIES: Readonly<Record<string, string>> = Object.f
 
 /** Wraps a resolver so bundled libraries never reach the network. */
 export function withBundledLibraries(fallback: WgslIncludeResolver): WgslIncludeResolver {
-  return async (name) =>
-    Object.prototype.hasOwnProperty.call(BUNDLED_WGSL_LIBRARIES, name)
+  return async (name) => {
+    const bundled = Object.prototype.hasOwnProperty.call(BUNDLED_WGSL_LIBRARIES, name)
       ? BUNDLED_WGSL_LIBRARIES[name]
-      : fallback(name);
+      : undefined;
+    return bundled ?? fallback(name);
+  };
 }

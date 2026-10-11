@@ -63,7 +63,11 @@ def ensure_params(data: dict) -> None:
 def main() -> None:
     updated = 0
     for sid in ATTRACT_IDS:
-        path = DEF_DIR / f"{sid}.json"
+        # Legacy underscore stems: the definition file is named after the hyphen id.
+        path = next(
+            (p for p in (DEF_DIR / f"{sid}.json", DEF_DIR / f"{sid.replace('_', '-')}.json") if p.exists()),
+            DEF_DIR / f"{sid}.json",
+        )
         if not path.exists():
             print(f"skip missing {sid}")
             continue

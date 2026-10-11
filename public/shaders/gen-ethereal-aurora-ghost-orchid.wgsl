@@ -3,36 +3,21 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, click-reactive, temporal, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
+//  Upgraded: 2026-10-10
 //  Ideas: spring-eased magnetic pole (extraBuffer 133-136) so the orchid's
 //         field-line spiral lags and overshoots the cursor; persistent bass
 //         bloom envelope (extraBuffer 137) unfurls petals and lifts the red
-//         630 nm oxygen band ceiling; raymarch hit distance written as depth
+//         630 nm oxygen band ceiling; raymarch hit distance written as depth;
+//         2nd pass (2026-10-10): metastable per-channel persistence (630 nm
+//         red lingers, 557 green / 428 blue fade faster); auroral vertical
+//         ray striations that drift with time, density from Petal Complexity
+//         (revives the formerly dead slider)
 //  A packing: ACES display RGB blended with exact C read; alpha = aurora
 //             emission/shock/held coverage (semantic, never 1.0)
 //  Enrichment: aurora altitude physics (557.7 / 630.0 / 427.8 nm bands)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 
@@ -216,7 +201,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             // Purple/blue (427.8 nm): nitrogen at lower altitudes
             let blueNitrogen = vec3<f32>(0.4, 0.2, 1.0);
 
-            let noise_val = snoise(p * petal_complex + vec3<f32>(0.0, -time, 0.0));
+            // Idea 2nd-pass B: auroral ray striations. Noise depends on x/z (and only very
+            // slowly on y), so brightness forms vertical curtains that drift with time.
+            // Petal Complexity sets ray density. Remapped to mean ~1 so default emission stays close.
+            let ray_n = 0.5 + 0.5 * snoise(vec3<f32>(p.x * petal_complex * 1.5 + p.y * 0.15,
+                                                     p.z * petal_complex * 1.5,
+                                                     -time * 0.7));
+            let ray = mix(0.45, 1.6, ray_n * ray_n * (3.0 - 2.0 * ray_n));
 
             // Altitude-based color gradient
             var aurora_col: vec3<f32>;
@@ -236,7 +227,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
             // Solar wind intensity = bass-driven particle density
             let solarWindInt = 1.0 + bass * 3.0;
-            emission += aurora_col * 0.05 * aurora_int * solarWindInt / (1.0 + abs(d) * 10.0);
+            emission += aurora_col * 0.05 * aurora_int * solarWindInt * ray / (1.0 + abs(d) * 10.0);
 
             t += 0.02;
         } else {
@@ -276,7 +267,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Exact feedback on ACES display RGB (A holds display RGBA).
     let prev = textureLoad(dataTextureC, vec2<i32>(id.xy), 0);
     let mapped = acesToneMap(max(col, vec3<f32>(0.0)) * 1.1);
-    let display = clamp(mix(prev.rgb * 0.96, mapped, 0.3), vec3<f32>(0.0), vec3<f32>(1.0));
+    // Idea 2nd-pass A: metastable persistence — 630 nm red lingers (long O(1D) lifetime),
+    // 557.7 nm green and 427.8 nm blue decay faster. Replaces the uniform 0.96.
+    let persist = vec3<f32>(0.985, 0.90, 0.93);
+    let display = clamp(mix(prev.rgb * persist, mapped, 0.3), vec3<f32>(0.0), vec3<f32>(1.0));
     let alpha = clamp(length(emission) * 0.35 + auroraShock * 0.2 + held * 0.08, 0.04, 0.95);
     let outAlpha = clamp(mix(prev.a * 0.96, alpha, 0.3), 0.0, 0.95);
     let depth = select(0.0, clamp(1.0 - hitT / 10.0, 0.0, 1.0), hitT >= 0.0);

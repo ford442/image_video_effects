@@ -105,12 +105,29 @@ python3 scripts/audit_orphan_shader_defs.py
 
 `new_shader.py` creates both WGSL and JSON. Do not use `--skip-json` unless you are adding a deliberate multipass secondary file.
 
+## Definition format
+
+`shader_definitions/<category>/<id>.json` is validated against [`src/contracts/shader_definition.schema.json`](../src/contracts/shader_definition.schema.json) (JSON Schema 2020-12, no unknown top-level keys). The TypeScript type `src/types/ShaderDefinition.ts` and the standalone validator `src/contracts/shaderDefinition.validate.js` are generated from it by `node scripts/generate-shader-definition-types.mjs` and committed.
+
+- **One slider key:** `params[]` = `{ id, name, default, min, max, step?, mapping?, audio?, description?, labels? }`. `mapping` is the WGSL uniform lane (`zoom_params.x`), `audio` is `bass | mid | treble | overall` or `{ "fft": bin }`.
+- **`x-meta`** holds everything that is not shader behaviour: swarm output (`x-meta.upgrade.params`, formerly top-level `updatedParams`), provenance (`seeded_by`, `author`, `target_rating`, …) and verbatim redundant legacy containers (`x-meta.legacy`). The app never reads it and `generate_shader_lists.js` strips it from `public/shader-lists/`.
+- **File name = id.** `category` is optional; when present it must equal the folder. Ids are unique; param ids are unique per shader; `min <= default <= max`.
+- **id vs WGSL stem:** the WGSL file should be named after the id. The exact exceptions live in `scripts/catalog_id_url_allowlist.json` (pinned `id -> stem` pairs, enforced by `scripts/audit_catalog_consistency.py`); do not add new ones.
+
+```bash
+npm run verify:shader-definitions     # schema + cross-field rules, every definition
+npm run verify:generated-sync         # registry / lists / aliases / generated type match a fresh regeneration
+python3 scripts/migrate_shader_definitions.py --write   # fold legacy keys (idempotent; re-run after rebasing)
+```
+
 ## CI gate
 
 `python3 scripts/audit_orphan_shader_defs.py` fails when:
 
 - any definition lacks a local WGSL (`only_def` > 0), or
 - any non-template WGSL lacks a catalog entry (`only_wgsl` > 0)
+
+`python3 scripts/audit_catalog_consistency.py --gate` (blocking) fails on any definition ↔ WGSL ↔ multipass-registry ↔ list drift beyond `reports/catalog_drift_baseline.json`; the baseline may only shrink. A WGSL file named by a multipass `graph.nodes[].entry`, `nextShader` or `passes[].file` is a secondary pass, not an orphan.
 
 Use `scripts/seed_orphan_shader_defs.py --write` to backfill JSON for legacy orphan WGSL (one-time / batch hygiene).
 

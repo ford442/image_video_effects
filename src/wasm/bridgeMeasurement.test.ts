@@ -77,8 +77,9 @@ describe('parsePassTimingsJson', () => {
 
   it("keys the legacy single-shader pass (slot -1) as '-'", () => {
     const [p] = parsePassTimingsJson('[{"slot":-1,"shaderId":"x","label":"x","gpuMs":0,"iterations":1}]');
-    expect(p.slot).toBeUndefined();
-    expect(p.key).toBe('-:x');
+    expect(p).toBeDefined();
+    expect(p!.slot).toBeUndefined();
+    expect(p!.key).toBe('-:x');
   });
 
   it('drops malformed entries and tolerates garbage', () => {

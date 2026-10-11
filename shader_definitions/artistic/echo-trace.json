@@ -34,36 +34,6 @@
       "max": 1
     }
   ],
-  "updatedParams": [
-    {
-      "id": "prediction_horizon",
-      "name": "Prediction Horizon",
-      "default": 0.35,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "velocity_smoothing",
-      "name": "Velocity Smoothing",
-      "default": 0.55,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "trail_deformation",
-      "name": "Trail Deformation",
-      "default": 0.45,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "velocity_threshold",
-      "name": "Velocity Threshold",
-      "default": 0.15,
-      "min": 0,
-      "max": 1
-    }
-  ],
   "features": [
     "mouse-driven",
     "temporal-persistence",
@@ -92,5 +62,39 @@
     "audio-reactive",
     "velocity",
     "motion-blur"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "id": "prediction_horizon",
+          "name": "Prediction Horizon",
+          "default": 0.35,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "id": "velocity_smoothing",
+          "name": "Velocity Smoothing",
+          "default": 0.55,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "id": "trail_deformation",
+          "name": "Trail Deformation",
+          "default": 0.45,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "id": "velocity_threshold",
+          "name": "Velocity Threshold",
+          "default": 0.15,
+          "min": 0,
+          "max": 1
+        }
+      ]
+    }
+  }
 }

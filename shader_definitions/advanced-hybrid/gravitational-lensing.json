@@ -64,15 +64,6 @@
       "description": "Intensity of gravitational redshift"
     }
   ],
-  "chunks_used": [
-    "Schwarzschild metric",
-    "Geodesic raytracing",
-    "Accretion disk rendering",
-    "Doppler beaming"
-  ],
-  "performance_target": "30-45 FPS (GTX 1060)",
-  "created_by": "Agent 3B - Advanced Hybrid Creator",
-  "created_date": "2026-03-22",
   "tags": [
     "interactive",
     "cursor",
@@ -84,46 +75,59 @@
     "lensing",
     "accretion"
   ],
-  "updatedParams": [
-    {
-      "id": "black_hole_mass",
-      "name": "Black Hole Mass",
-      "default": 0.25,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x",
-      "description": "Schwarzschild radius and Einstein ring size; also sets the ISCO."
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "id": "black_hole_mass",
+          "name": "Black Hole Mass",
+          "default": 0.25,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "mapping": "zoom_params.x",
+          "description": "Schwarzschild radius and Einstein ring size; also sets the ISCO."
+        },
+        {
+          "id": "disk_brightness",
+          "name": "Disk Brightness",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "mapping": "zoom_params.y",
+          "description": "Accretion disk emission gain."
+        },
+        {
+          "id": "camera_orbit",
+          "name": "Camera Orbit",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "mapping": "zoom_params.z",
+          "description": "Static offset added to the orbit angle."
+        },
+        {
+          "id": "redshift",
+          "name": "Redshift",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "mapping": "zoom_params.w",
+          "description": "Gravitational redshift applied to the escaping background."
+        }
+      ]
     },
-    {
-      "id": "disk_brightness",
-      "name": "Disk Brightness",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y",
-      "description": "Accretion disk emission gain."
-    },
-    {
-      "id": "camera_orbit",
-      "name": "Camera Orbit",
-      "default": 0,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z",
-      "description": "Static offset added to the orbit angle."
-    },
-    {
-      "id": "redshift",
-      "name": "Redshift",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w",
-      "description": "Gravitational redshift applied to the escaping background."
-    }
-  ]
+    "chunks_used": [
+      "Schwarzschild metric",
+      "Geodesic raytracing",
+      "Accretion disk rendering",
+      "Doppler beaming"
+    ],
+    "performance_target": "30-45 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22"
+  }
 }

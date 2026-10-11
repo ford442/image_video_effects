@@ -111,12 +111,15 @@ export function pickRandomSegment(
 
     let random = Math.random() * totalWeight;
     let chosen = eligible[0];
-    for (let i = 0; i < eligible.length; i++) {
-        random -= weights[i];
+    for (const [i, video] of eligible.entries()) {
+        random -= weights[i] ?? 0;
         if (random <= 0) {
-            chosen = eligible[i];
+            chosen = video;
             break;
         }
+    }
+    if (!chosen) {
+        return null;
     }
 
     const duration = chosen.duration || 0;

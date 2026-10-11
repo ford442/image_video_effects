@@ -39,7 +39,7 @@ describe('variationFavorites', () => {
 
     const favorites = loadFavorites();
     expect(favorites).toHaveLength(1);
-    expect(favorites[0].id).toBe(saved.id);
+    expect(favorites[0]!.id).toBe(saved.id);
   });
 
   it('survives a serialize → localStorage → deserialize cycle', () => {
@@ -51,9 +51,9 @@ describe('variationFavorites', () => {
     // Simulate a fresh load by clearing the in-memory cache (none here) and re-reading.
     const favorites = loadFavorites();
     expect(favorites).toHaveLength(1);
-    expect(favorites[0].name).toBe('Round-trip');
-    expect(favorites[0].chain).toEqual(CHAIN_B);
-    expect(favorites[0].seed).toBe('123');
+    expect(favorites[0]!.name).toBe('Round-trip');
+    expect(favorites[0]!.chain).toEqual(CHAIN_B);
+    expect(favorites[0]!.seed).toBe('123');
   });
 
   it('enforces the max-N cap (50)', () => {
@@ -62,8 +62,8 @@ describe('variationFavorites', () => {
     }
     const favorites = loadFavorites();
     expect(favorites).toHaveLength(50);
-    expect(favorites[0].name).toBe('Favorite 51');
-    expect(favorites[49].name).toBe('Favorite 2');
+    expect(favorites[0]!.name).toBe('Favorite 51');
+    expect(favorites[49]!.name).toBe('Favorite 2');
   });
 
   it('deletes only the targeted favorite', () => {
@@ -101,6 +101,6 @@ describe('variationFavorites', () => {
 
     const favorites = loadFavorites();
     expect(favorites).toHaveLength(1);
-    expect(favorites[0].id).toBe('good-id');
+    expect(favorites[0]!.id).toBe('good-id');
   });
 });

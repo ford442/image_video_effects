@@ -1,5 +1,5 @@
 {
-  "name": "4th of July \u2014 Smoke Bloom",
+  "name": "4th of July — Smoke Bloom",
   "category": "generative",
   "tags": [
     "fireworks",
@@ -22,43 +22,45 @@
     1
   ],
   "params": [
-    { "id": "smokeDensity", "name": "Smoke Density", "default": 0.55, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x", "audio": "bass" },
-    { "id": "bloomStrength", "name": "Bloom Strength", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y", "audio": "mid" },
-    { "id": "burstEnergy", "name": "Burst Energy", "default": 0.7, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z", "audio": "treble" },
-    { "id": "trailDecay", "name": "Trail Decay", "default": 0.65, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w", "audio": "overall" }
-  ],
-  "updatedParams": [
     {
-      "index": 0,
+      "id": "smokeDensity",
       "name": "Smoke Density",
       "default": 0.55,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "audio": "bass"
     },
     {
-      "index": 1,
+      "id": "bloomStrength",
       "name": "Bloom Strength",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "audio": "mid"
     },
     {
-      "index": 2,
+      "id": "burstEnergy",
       "name": "Burst Energy",
       "default": 0.7,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "audio": "treble"
     },
     {
-      "index": 3,
+      "id": "trailDecay",
       "name": "Trail Decay",
       "default": 0.65,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "audio": "overall"
     }
   ],
   "supportsDepth": true,
@@ -70,5 +72,43 @@
     "audio-reactive",
     "mouse-driven",
     "upgraded-rgba"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Smoke Density",
+          "default": 0.55,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Bloom Strength",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Burst Energy",
+          "default": 0.7,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Trail Decay",
+          "default": 0.65,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

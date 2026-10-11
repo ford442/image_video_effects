@@ -1,5 +1,5 @@
 {
-  "name": "4th of July \u2014 Fireworks Nocturne",
+  "name": "4th of July — Fireworks Nocturne",
   "category": "generative",
   "tags": [
     "fireworks",
@@ -22,43 +22,41 @@
     1
   ],
   "params": [
-    { "id": "energy", "name": "Energy", "default": 0.7, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
-    { "id": "tempo", "name": "Tempo", "default": 0.45, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
-    { "id": "density", "name": "Density", "default": 0.6, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
-    { "id": "color-drift", "name": "Color Drift", "default": 0.1, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
-  ],
-  "updatedParams": [
     {
-      "index": 0,
+      "id": "energy",
       "name": "Energy",
       "default": 0.7,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x"
     },
     {
-      "index": 1,
+      "id": "tempo",
       "name": "Tempo",
       "default": 0.45,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y"
     },
     {
-      "index": 2,
+      "id": "density",
       "name": "Density",
       "default": 0.6,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z"
     },
     {
-      "index": 3,
+      "id": "color-drift",
       "name": "Color Drift",
       "default": 0.1,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w"
     }
   ],
   "supportsDepth": true,
@@ -75,5 +73,43 @@
     "aces-tone-map",
     "upgraded-rgba"
   ],
-  "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
+  "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history",
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Energy",
+          "default": 0.7,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Tempo",
+          "default": 0.45,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Density",
+          "default": 0.6,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Color Drift",
+          "default": 0.1,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

@@ -44,7 +44,11 @@ MAPPINGS = ["zoom_params.x", "zoom_params.y", "zoom_params.z", "zoom_params.w"]
 
 
 def audit_shader(shader_id: str) -> dict:
-    path = DEF_DIR / f"{shader_id}.json"
+    # Attract-pool ids are legacy underscore stems; definition files are named after the hyphen id.
+    path = next(
+        (p for p in (DEF_DIR / f"{shader_id}.json", DEF_DIR / f"{shader_id.replace('_', '-')}.json") if p.exists()),
+        DEF_DIR / f"{shader_id}.json",
+    )
     if not path.exists():
         return {"id": shader_id, "ok": False, "error": "missing_json"}
 

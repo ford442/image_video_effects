@@ -54,39 +54,43 @@
       "step": 0.01
     }
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Scan Axis",
-      "default": 0,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Temporal Spread",
-      "default": 1,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Reverse",
-      "default": 0,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 1
-    },
-    {
-      "index": 3,
-      "name": "Original Blend",
-      "default": 0,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+  "updated": true,
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Scan Axis",
+          "default": 0,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Temporal Spread",
+          "default": 1,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Reverse",
+          "default": 0,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 1
+        },
+        {
+          "index": 3,
+          "name": "Original Blend",
+          "default": 0,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
     }
-  ],
-  "updated": true
+  }
 }

@@ -3,18 +3,44 @@
   "name": "Scanline Drift",
   "url": "shaders/scanline-drift.wgsl",
   "description": "Horizontal strip drift with RGB split: strips shear into each other like stretched tape, displaced lines reveal an h-sync blanking porch at the wrap seam, and fast-drifting strips smear along their velocity. Pointer band jitter, held boost, click tears, treble flicker, ACES output.",
-  "workgroup_size": [16, 16, 1],
-  "params": [
-    { "name": "Drift Speed", "id": "zoomParam1", "default": 0.5, "min": 0, "max": 1, "mapping": "zoom_params.x" },
-    { "name": "Line Height", "id": "zoomParam2", "default": 0.1, "min": 0, "max": 1, "mapping": "zoom_params.y" },
-    { "name": "Jitter Amount", "id": "zoomParam3", "default": 0.3, "min": 0, "max": 1, "mapping": "zoom_params.z" },
-    { "name": "Color Shift", "id": "zoomParam4", "default": 0.2, "min": 0, "max": 1, "mapping": "zoom_params.w" }
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "updatedParams": [
-    { "index": 0, "name": "Drift Speed", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
-    { "index": 1, "name": "Line Height", "default": 0.1, "min": 0.0, "max": 1.0, "step": 0.01 },
-    { "index": 2, "name": "Jitter Amount", "default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01 },
-    { "index": 3, "name": "Color Shift", "default": 0.2, "min": 0.0, "max": 1.0, "step": 0.01 }
+  "params": [
+    {
+      "name": "Drift Speed",
+      "id": "zoomParam1",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "name": "Line Height",
+      "id": "zoomParam2",
+      "default": 0.1,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "name": "Jitter Amount",
+      "id": "zoomParam3",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "name": "Color Shift",
+      "id": "zoomParam4",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.w"
+    }
   ],
   "features": [
     "mouse-driven",
@@ -25,6 +51,49 @@
     "spring-cursor",
     "aces-tone-map"
   ],
-  "tags": ["glitch", "retro", "vintage", "vhs"],
-  "updated": true
+  "tags": [
+    "glitch",
+    "retro",
+    "vintage",
+    "vhs"
+  ],
+  "updated": true,
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Drift Speed",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Line Height",
+          "default": 0.1,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Jitter Amount",
+          "default": 0.3,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Color Shift",
+          "default": 0.2,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

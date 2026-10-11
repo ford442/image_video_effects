@@ -32,6 +32,11 @@ export interface RenderWorkerClient {
   send(command: RenderCommand): void;
   rpc<K extends RenderRpc['type']>(body: RpcBody<K> & { type: K }, timeoutMs?: number): Promise<RenderRpcResults[K]>;
   onEvent(listener: (event: RenderEvent) => void): () => void;
+  /**
+   * The worker raised an uncaught error after the handshake. The client treats it as dead
+   * (pending RPCs reject, sends are dropped), and so must its owner: the device went with it.
+   */
+  onDied(listener: (message: string) => void): () => void;
   terminate(): void;
 }
 
@@ -40,6 +45,7 @@ export class RenderWorkerHandshakeError extends Error {}
 /** Wait for the worker's `hello`, then return a connected client. */
 export function connectRenderWorker(worker: WorkerLike, helloTimeoutMs = 3000): Promise<RenderWorkerClient> {
   const listeners = new Set<(event: RenderEvent) => void>();
+  const diedListeners = new Set<(message: string) => void>();
   const pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void }>();
   let nextId = 1;
   let dead: Error | null = null;
@@ -67,9 +73,14 @@ export function connectRenderWorker(worker: WorkerLike, helloTimeoutMs = 3000): 
         resolve(client(data.caps));
         return;
       }
+      if (dead) return;
       if (data.type === 'rpcResult') {
         const entry = pending.get(data.requestId);
-        if (!entry) return;
+        if (!entry) {
+          // Late reply after a timeout: nobody owns a transferred VideoFrame, so close it.
+          if (data.ok) closeIfVideoFrame(data.value);
+          return;
+        }
         pending.delete(data.requestId);
         if (data.ok) entry.resolve(data.value);
         else entry.reject(new Error(data.error));
@@ -78,12 +89,15 @@ export function connectRenderWorker(worker: WorkerLike, helloTimeoutMs = 3000): 
       for (const listener of listeners) listener(data);
     });
     worker.addEventListener('error', (event: Event) => {
+      if (dead) return;
       const message = (event as ErrorEvent).message || 'render worker failed';
       failAll(new Error(message));
       if (!caps) {
         clearTimeout(timer);
         reject(new RenderWorkerHandshakeError(message));
+        return;
       }
+      for (const listener of Array.from(diedListeners)) listener(message);
     });
   });
 
@@ -122,12 +136,21 @@ export function connectRenderWorker(worker: WorkerLike, helloTimeoutMs = 3000): 
         listeners.add(listener);
         return () => listeners.delete(listener);
       },
+      onDied(listener) {
+        diedListeners.add(listener);
+        return () => diedListeners.delete(listener);
+      },
       terminate() {
         failAll(new Error('render worker terminated'));
         listeners.clear();
+        diedListeners.clear();
         worker.terminate?.();
         worker.close?.();
       },
     };
   }
+}
+
+function closeIfVideoFrame(value: unknown): void {
+  if (typeof VideoFrame !== 'undefined' && value instanceof VideoFrame) value.close();
 }

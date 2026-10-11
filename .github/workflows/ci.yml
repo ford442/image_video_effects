@@ -10,6 +10,67 @@ permissions:
   contents: read
 
 jobs:
+  wasm:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+      env:
+        ONNXRUNTIME_NODE_INSTALL_SKIP: "true"
+    
+    - name: Setup Emscripten SDK
+      uses: mymindstorm/setup-emsdk@v14
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        # Pinned — must equal emsdkVersion in src/contracts/wasm_compile_flags.json
+        # (enforced by verify:wasm-invariants and emcc-version-gate.sh). Never `latest`.
+        version: 6.0.9
+        actions-cache-folder: 'emsdk-cache'
+    
+    - name: Build WASM renderer
+      run: npm run wasm:build
+    
+    - name: Validate WASM artifacts
+      run: npm run wasm:validate
+
+    - name: Verify WASM bridge copies match TypeScript SoT
+      run: npm run verify:wasm-bridge-sync
+    
+    - name: Run WASM unit smoke tests
+      run: |
+        echo "WASM Jest gate: testPathPattern=WASM (job fails on any test failure; no || true)"
+        npm test -- --watchAll=false --ci --testPathPattern='WASM'
+      env:
+        CI: true
+    
+    - name: Upload WASM build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: wasm-artifacts
+        path: |
+          public/wasm/pixelocity_wasm.js
+          public/wasm/pixelocity_wasm.wasm
+          public/wasm/wasm_bridge.js
+          public/wasm/wasm_bridge.d.ts
+          public/wasm/bridge
+          src/wasm/wasm_bridge.ts
+          src/wasm/wasm_bridge.d.ts
+        retention-days: 7
+
   test:
     runs-on: ubuntu-latest
     permissions:
@@ -26,6 +87,13 @@ jobs:
     
     - name: Install dependencies
       run: npm ci
+      env:
+        ONNXRUNTIME_NODE_INSTALL_SKIP: "true"
+
+    # Before anything below regenerates them: the committed registry, shader lists, alias
+    # maps, ShaderDefinition type and standalone validator must equal a fresh regeneration.
+    - name: Verify generated files are committed
+      run: npm run verify:generated-sync
 
     - name: Run shader list generation
       run: node scripts/generate_shader_lists.js
@@ -76,6 +144,63 @@ jobs:
     - name: Upload coverage
       uses: codecov/codecov-action@v3
       if: github.event_name == 'pull_request'
+
+  test-wasm-e2e:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    needs: [wasm, test]
+    if: always() && needs.wasm.result == 'success' && needs.test.result == 'success'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+      env:
+        ONNXRUNTIME_NODE_INSTALL_SKIP: "true"
+
+    - name: Download WASM artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: wasm-artifacts
+    
+    - name: Build production app
+      run: npm run build
+      env:
+        SKIP_WASM_BUILD: '1'
+    
+    - name: Install Playwright browsers
+      run: npx playwright install chromium
+    
+    - name: Run WASM Playwright smoke tests
+      run: npx playwright test tests/wasm-renderer.smoke.spec.ts tests/layerChain.smoke.spec.ts --project=chromium
+      env:
+        CI: true
+        WASM_GPU_TESTS: '0'
+    
+    - name: Upload Playwright report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: wasm-playwright-report
+        path: playwright-report/
+        retention-days: 30
+
+    - name: Upload WASM benchmark report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: wasm-benchmark-report
+        path: test-results/wasm-benchmark-report.json
+        retention-days: 30
+        if-no-files-found: warn
 
   wgsl-precommit-gate:
     runs-on: ubuntu-latest
@@ -131,6 +256,12 @@ jobs:
     - name: Run WGSL pre-commit gate on changed files
       run: python3 scripts/wgsl_precommit_gate.py --base origin/main --skip-naga
 
+    # Every shader_definitions/*/*.json against src/contracts/shader_definition.schema.json
+    # (compiled standalone validator, node builtins only) plus id/filename, category/folder,
+    # unique-param-id and default-in-range rules. Legacy keys: scripts/migrate_shader_definitions.py.
+    - name: Validate shader definitions (schema)
+      run: node scripts/validate_shader_definitions.mjs
+
     - name: Audit shader catalog hygiene (defs ↔ WGSL)
       run: python3 scripts/audit_orphan_shader_defs.py --ci-gate
 
@@ -148,6 +279,7 @@ jobs:
         python3 scripts/test_orphan_gate.py
         python3 scripts/test_audit_extrabuffer.py
         python3 scripts/test_audit_dead_sliders.py
+        python3 scripts/test_new_shader.py
         python3 scripts/test_prelude_migration.py
 
     - name: Publish gate summary
@@ -218,35 +350,15 @@ jobs:
       with:
         node-version: '24'
 
-    - name: Report-only expiry check
-      run: |
-        MARKER="# REPORT-ONLY-UNTIL: 2026-10-15"
-        DEADLINE="2026-10-15"
-        TODAY=$(date +%Y-%m-%d)
-        if [ "$TODAY" \> "$DEADLINE" ]; then
-          if grep -Fq "$MARKER" .github/workflows/ci.yml; then
-            echo "Catalog/workgroup audits are still report-only after $DEADLINE."
-            echo "Promote to blocking: drop || true and the REPORT-ONLY-UNTIL marker."
-            exit 1
-          fi
-        fi
-
-    - name: Catalog drift audit (report-only)
-      run: |
-        # REPORT-ONLY-UNTIL: 2026-10-15
-        python3 scripts/audit_catalog_consistency.py --ensure-lists --report || true
-
-    - name: Workgroup size audit (report-only)
-      run: |
-        # REPORT-ONLY-UNTIL: 2026-10-15
-        python3 scripts/wgsl_workgroup_detector.py --report || true
+    - name: Workgroup size audit (blocking)
+      run: python3 scripts/wgsl_workgroup_detector.py --gate
 
     - name: Catalog and workgroup audit unit tests
       run: |
         python3 scripts/test_audit_catalog_consistency.py
         python3 scripts/test_wgsl_workgroup_detector.py
 
-    - name: Catalog drift gate (baseline-decay)
+    - name: Catalog drift gate (blocking, baseline may only shrink)
       run: python3 scripts/audit_catalog_consistency.py --ensure-lists --gate
 
     - name: Publish catalog audit summary
@@ -298,6 +410,8 @@ jobs:
     
     - name: Install dependencies
       run: npm ci
+      env:
+        ONNXRUNTIME_NODE_INSTALL_SKIP: "true"
     
     - name: Run ESLint
       run: npm run lint
@@ -335,6 +449,8 @@ jobs:
 
     - name: Install dependencies
       run: npm ci
+      env:
+        ONNXRUNTIME_NODE_INSTALL_SKIP: "true"
 
     - name: Generate shader lists
       run: node scripts/generate_shader_lists.js
@@ -342,10 +458,13 @@ jobs:
     - name: Regenerate unified shader manifest
       run: npm run build:manifest
 
+    # Blocking since healthy eligible coverage passed 50% (2026-10-05, 91.7%).
+    # pipefail: without it the tee's exit status hides the check's.
     - name: Check thumbnail coverage regression
       id: thumbs
-      continue-on-error: true
-      run: npm run thumbs:check-regression -- --base-ref "origin/${{ github.base_ref }}" 2>&1 | tee /tmp/thumbs-check.txt
+      run: |
+        set -o pipefail
+        npm run thumbs:check-regression -- --base-ref "origin/${{ github.base_ref }}" 2>&1 | tee /tmp/thumbs-check.txt
 
     - name: Report to job summary
       if: always()

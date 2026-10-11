@@ -50,9 +50,9 @@ describe('multipassGraph', () => {
   it('expands repeat nodes and inserts copy barriers', () => {
     const expanded = expandGraph(createWaveTankGraph());
     expect(expanded).toHaveLength(5);
-    expect(expanded[0].entry).toBe('wave-step');
-    expect(expanded[1].copiesBefore.length).toBeGreaterThan(0);
-    expect(expanded[1].copiesBefore[0].from).toBe('dataA');
+    expect(expanded[0]!.entry).toBe('wave-step');
+    expect(expanded[1]!.copiesBefore.length).toBeGreaterThan(0);
+    expect(expanded[1]!.copiesBefore[0]!.from).toBe('dataA');
   });
 
   it('resolves graph for wave-tank from registry', () => {
@@ -75,13 +75,13 @@ describe('multipassGraph', () => {
 
     const expanded = expandGraph(graph!);
     expect(expanded).toHaveLength(7);
-    expect(expanded[0].entry).toBe('ripple-tank-step');
-    expect(expanded[4].entry).toBe('ripple-tank-inject');
-    expect(expanded[5].entry).toBe('ripple-tank-pass2');
-    expect(expanded[6].entry).toBe('ripple-tank-pass3');
-    expect(expanded[1].copiesBefore[0]?.from).toBe('dataA');
-    expect(expanded[4].copiesBefore[0]?.from).toBe('dataA');
-    expect(expanded[5].copiesBefore[0]?.from).toBe('dataA');
+    expect(expanded[0]!.entry).toBe('ripple-tank-step');
+    expect(expanded[4]!.entry).toBe('ripple-tank-inject');
+    expect(expanded[5]!.entry).toBe('ripple-tank-pass2');
+    expect(expanded[6]!.entry).toBe('ripple-tank-pass3');
+    expect(expanded[1]!.copiesBefore[0]?.from).toBe('dataA');
+    expect(expanded[4]!.copiesBefore[0]?.from).toBe('dataA');
+    expect(expanded[5]!.copiesBefore[0]?.from).toBe('dataA');
   });
 
   it('analyzes ripple-tank graph binding usage', () => {
@@ -117,9 +117,10 @@ describe('multipassGraph', () => {
     const expanded = expandGraph(fabric!);
     // Last dispatch is render; must sample positions from A, not tear mask from B
     const render = expanded[expanded.length - 1];
-    expect(render.entry).toBe('fabric-render');
-    expect(render.copiesBefore.some((c) => c.from === 'dataA')).toBe(true);
-    expect(render.copiesBefore.some((c) => c.from === 'dataB')).toBe(false);
+    expect(render).toBeDefined();
+    expect(render!.entry).toBe('fabric-render');
+    expect(render!.copiesBefore.some((c) => c.from === 'dataA')).toBe(true);
+    expect(render!.copiesBefore.some((c) => c.from === 'dataB')).toBe(false);
   });
 
   it('analyzes graph binding usage', () => {
@@ -133,7 +134,7 @@ describe('multipassGraph', () => {
     const graph = createWaveTankGraph();
     const capped = capGraphDispatches(graph, 2);
     expect(capped.map((d) => d.entry)).toEqual(['wave-step', 'wave-render']);
-    expect(capped[capped.length - 1].writes).toContain('color');
+    expect(capped[capped.length - 1]!.writes).toContain('color');
   });
 
   it('reduces Jacobi repeats before dropping inject/render on ripple-tank', () => {
@@ -141,7 +142,7 @@ describe('multipassGraph', () => {
     expect(graph).not.toBeNull();
     const capped = capGraphDispatches(graph!, 4);
     expect(capped).toHaveLength(4);
-    expect(capped[capped.length - 1].entry).toBe('ripple-tank-pass3');
+    expect(capped[capped.length - 1]!.entry).toBe('ripple-tank-pass3');
     expect(capped.filter((d) => d.entry === 'ripple-tank-step')).toHaveLength(1);
   });
 });

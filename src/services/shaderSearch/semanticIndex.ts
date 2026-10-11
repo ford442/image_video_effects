@@ -57,7 +57,7 @@ function base64ToBytes(b64: string): Uint8Array {
 
 function normalizeInPlace(v: Float32Array): Float32Array {
   let n = 0;
-  for (let i = 0; i < v.length; i++) n += v[i] * v[i];
+  for (const x of v) n += x * x;
   n = Math.sqrt(n) || 1;
   for (let i = 0; i < v.length; i++) v[i] /= n;
   return v;
@@ -67,9 +67,9 @@ function normalizeInPlace(v: Float32Array): Float32Array {
 export function centerVector(raw: ArrayLike<number>, mean: Float32Array): Float32Array {
   const out = new Float32Array(mean.length);
   let n = 0;
-  for (let i = 0; i < raw.length; i++) n += raw[i] * raw[i];
+  for (let i = 0; i < raw.length; i++) n += raw[i]! * raw[i]!;
   n = Math.sqrt(n) || 1;
-  for (let i = 0; i < mean.length; i++) out[i] = raw[i] / n - mean[i];
+  for (let i = 0; i < mean.length; i++) out[i] = (raw[i] ?? 0) / n - mean[i]!;
   return normalizeInPlace(out);
 }
 
@@ -124,13 +124,12 @@ export function rankShaderSearch(
 ): ShaderSearchHit[] {
   const q = centerVector(rawQuery, index.mean);
   const hits: ShaderSearchHit[] = [];
-  for (let i = 0; i < index.entries.length; i++) {
-    const entry = index.entries[i];
+  for (const [i, entry] of index.entries.entries()) {
     if (allowIds && !allowIds.has(entry.id)) continue;
     const v = index.vectors[i];
     let score = 0;
     if (v) {
-      for (let j = 0; j < q.length; j++) score += v[j] * q[j];
+      for (let j = 0; j < q.length; j++) score += v[j]! * q[j]!;
     }
     if (queryText && lexicalMatch(entry, queryText)) score += LEXICAL_BONUS;
     if (v || score > 0) hits.push({ id: entry.id, score });

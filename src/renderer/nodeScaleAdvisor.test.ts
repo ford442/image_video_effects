@@ -57,7 +57,7 @@ describe('AdaptivePerformanceController with per-node demotion', () => {
     let scale = 1;
     const nodes = [node()];
     const setScale = jest.fn((s: number) => { scale = s; });
-    const setNodeScale = jest.fn((_slot: number, _id: string, s: number) => { nodes[0].scale = s; });
+    const setNodeScale = jest.fn((_slot: number, _id: string, s: number) => { nodes[0]!.scale = s; });
     const ctl = new AdaptivePerformanceController({
       getFps: () => fps,
       getScale: () => scale,

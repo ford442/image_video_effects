@@ -1,0 +1,110 @@
+{
+  "id": "gen-kimi-crystal",
+  "name": "Kimi Crystal",
+  "url": "shaders/gen_kimi_crystal.wgsl",
+  "description": "Animated crystalline structures growing on a hexagonal grid with physical light transmission. Features ice IOR-based Fresnel reflection, purity-based absorption, and variable crystal thickness.",
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "generative",
+    "geometric",
+    "crystalline",
+    "alpha-transmission",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "density",
+      "name": "Grid Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Density of hexagonal crystal grid",
+      "mapping": "zoom_params.x",
+      "step": 0.01,
+      "audio": "bass"
+    },
+    {
+      "id": "purity",
+      "name": "Crystal Purity",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "description": "Ice crystal clarity: affects transmission and absorption",
+      "mapping": "zoom_params.y",
+      "step": 0.01,
+      "audio": "mid"
+    },
+    {
+      "id": "growth",
+      "name": "Growth Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Animation speed of crystal growth",
+      "mapping": "zoom_params.z",
+      "step": 0.01,
+      "audio": "treble"
+    },
+    {
+      "id": "thickness",
+      "name": "Crystal Thickness",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Physical thickness affecting light path length",
+      "mapping": "zoom_params.w",
+      "step": 0.01,
+      "audio": "overall"
+    }
+  ],
+  "tags": [
+    "procedural",
+    "generative",
+    "crystal",
+    "ice",
+    "hexagonal",
+    "transmission",
+    "physical"
+  ],
+  "updated": true,
+  "category": "generative",
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Grid Density",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Crystal Purity",
+          "default": 0.7,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Growth Speed",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Crystal Thickness",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
+    }
+  }
+}

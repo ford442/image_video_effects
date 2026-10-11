@@ -121,7 +121,7 @@ function pickSameCategoryShader(
     s => s.id !== originalId && s.category === original.category
   );
   if (alternatives.length === 0) return originalId;
-  return alternatives[Math.floor(rng() * alternatives.length)].id;
+  return alternatives[Math.floor(rng() * alternatives.length)]?.id ?? originalId;
 }
 
 // ─── Core variation generator ─────────────────────────────────────────────────
@@ -167,8 +167,8 @@ export function generateChainVariations(
     const modes: Array<string | null> = [];
     const slotParams: SlotParams[] = [];
 
-    for (let slotIndex = 0; slotIndex < baseSlots.length; slotIndex++) {
-      const baseSlot = baseSlots[slotIndex];
+    for (const [slotIndex, baseSlot] of baseSlots.entries()) {
+      const baseSlotParams = baseParams[slotIndex]!;
       const originalId = baseSlot.shaderId;
 
       enabled.push(baseSlot.enabled !== false);
@@ -185,9 +185,9 @@ export function generateChainVariations(
         const randomized = randomizeParamsWithRng([shaderId], catalog, rng)[0] || {};
         const orderedIds = (byId.get(shaderId)?.params || []).map(p => p.id);
         const mapped = mapOrderedParamsToSlotParams(randomized, orderedIds);
-        params = { ...baseParams[slotIndex], ...mapped };
+        params = { ...baseSlotParams, ...mapped };
       } else {
-        params = baseParams[slotIndex];
+        params = baseSlotParams;
       }
       slotParams.push(params);
     }
@@ -293,8 +293,10 @@ export function breedVariations(
     const slotParams: SlotParams[] = [];
 
     for (let slotIndex = 0; slotIndex < slotCount; slotIndex++) {
-      const slotA = slotsA[slotIndex];
-      const slotB = slotsB[slotIndex];
+      const slotA = slotsA[slotIndex]!;
+      const slotB = slotsB[slotIndex]!;
+      const paramsA = expandedA.slotParams[slotIndex]!;
+      const paramsB = expandedB.slotParams[slotIndex]!;
 
       enabled.push(slotA.enabled !== false);
       slotModes.push(slotA.mode === 'parallel' ? 'parallel' : 'chained');
@@ -321,14 +323,14 @@ export function breedVariations(
           for (const param of meta.params) {
             const valA = getParamValueForShader(
               slotA,
-              expandedA.slotParams[slotIndex],
+              paramsA,
               shaderId,
               param.id,
               orderedIds
             );
             const valB = getParamValueForShader(
               slotB,
-              expandedB.slotParams[slotIndex],
+              paramsB,
               shaderId,
               param.id,
               orderedIds
@@ -351,9 +353,9 @@ export function breedVariations(
         }
 
         const mapped = mapOrderedParamsToSlotParams(blended, orderedIds);
-        params = { ...expandedA.slotParams[slotIndex], ...mapped };
+        params = { ...paramsA, ...mapped };
       } else {
-        params = expandedA.slotParams[slotIndex];
+        params = paramsA;
       }
 
       slotParams.push(params);

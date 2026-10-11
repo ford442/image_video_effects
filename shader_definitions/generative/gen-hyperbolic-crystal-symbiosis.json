@@ -11,50 +11,48 @@
     "audio-reactive",
     "mathematical"
   ],
-  "description": "Competing crystal growth in hyperbolic (Poincar\u00e9 disk) geometry. Racing growth-front runners, tile pulse waves, and advected HDR trails. Local curvature influenced by audio and mouse. Iridescent jewel coloring with symmetry-breaking facet borders, hyperbolic growth zoning, symbiotic twin lamellae where rival crystals meet, and hyperboloid-lift relief depth.",
+  "description": "Competing crystal growth in hyperbolic (Poincaré disk) geometry. Racing growth-front runners, tile pulse waves, and advected HDR trails. Local curvature influenced by audio and mouse. Iridescent jewel coloring with symmetry-breaking facet borders, hyperbolic growth zoning, symbiotic twin lamellae where rival crystals meet, and hyperboloid-lift relief depth.",
   "workgroup_size": [
     16,
     16,
     1
   ],
   "params": [
-    {"id": "growthSpeed", "name": "Growth Speed", "default": 0.4, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x"},
-    {"id": "competition", "name": "Competition", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y"},
-    {"id": "curvature", "name": "Curvature", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z"},
-    {"id": "mutation", "name": "Mutation", "default": 0.3, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w"}
-  ],
-  "updatedParams": [
     {
-      "index": 0,
+      "id": "growthSpeed",
       "name": "Growth Speed",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x"
     },
     {
-      "index": 1,
+      "id": "competition",
       "name": "Competition",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y"
     },
     {
-      "index": 2,
+      "id": "curvature",
       "name": "Curvature",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z"
     },
     {
-      "index": 3,
+      "id": "mutation",
       "name": "Mutation",
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w"
     }
   ],
   "supportsDepth": true,
@@ -74,5 +72,43 @@
     "depth-aware",
     "upgraded-rgba"
   ],
-  "feedbackPacking": "A/C = raw HDR crystal and advected trail RGBA history"
+  "feedbackPacking": "A/C = raw HDR crystal and advected trail RGBA history",
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Growth Speed",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Competition",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Curvature",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Mutation",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

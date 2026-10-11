@@ -6,7 +6,6 @@
   "params": [
     {
       "name": "Cell Scale",
-      "type": "float",
       "min": 0,
       "max": 1,
       "default": 0.5,
@@ -14,7 +13,6 @@
     },
     {
       "name": "Chaos Amount",
-      "type": "float",
       "min": 0,
       "max": 1,
       "default": 0.5,
@@ -22,7 +20,6 @@
     },
     {
       "name": "Color Mix",
-      "type": "float",
       "min": 0,
       "max": 1,
       "default": 0,
@@ -30,7 +27,6 @@
     },
     {
       "name": "Center Dot Size",
-      "type": "float",
       "min": 0,
       "max": 1,
       "default": 0.2,
@@ -50,39 +46,43 @@
     "distort",
     "transform"
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Cell Scale",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Chaos Amount",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Color Mix",
-      "default": 0,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Center Dot Size",
-      "default": 0.2,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+  "updated": true,
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Cell Scale",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Chaos Amount",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Color Mix",
+          "default": 0,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Center Dot Size",
+          "default": 0.2,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
     }
-  ],
-  "updated": true
+  }
 }

@@ -53,40 +53,6 @@
       "mapping": "zoom_params.w"
     }
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Base Color Hue",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Fiber Density",
-      "default": 0.5,
-      "min": 0.5,
-      "max": 5,
-      "step": 0.1
-    },
-    {
-      "index": 2,
-      "name": "Pulsation Speed",
-      "default": 0.5,
-      "min": 0.1,
-      "max": 3,
-      "step": 0.1
-    },
-    {
-      "index": 3,
-      "name": "Glow Intensity",
-      "default": 0.5,
-      "min": 0,
-      "max": 3,
-      "step": 0.1
-    }
-  ],
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
@@ -102,5 +68,43 @@
     "aces-tone-mapping",
     "depth-aware"
   ],
-  "feedbackPacking": "A/C = raw HDR display RGBA history"
+  "feedbackPacking": "A/C = raw HDR display RGBA history",
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Base Color Hue",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Fiber Density",
+          "default": 0.5,
+          "min": 0.5,
+          "max": 5,
+          "step": 0.1
+        },
+        {
+          "index": 2,
+          "name": "Pulsation Speed",
+          "default": 0.5,
+          "min": 0.1,
+          "max": 3,
+          "step": 0.1
+        },
+        {
+          "index": 3,
+          "name": "Glow Intensity",
+          "default": 0.5,
+          "min": 0,
+          "max": 3,
+          "step": 0.1
+        }
+      ]
+    }
+  }
 }

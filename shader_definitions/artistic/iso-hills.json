@@ -7,7 +7,6 @@
   "params": [
     {
       "name": "Contour Steps",
-      "type": "f32",
       "min": 0,
       "max": 1,
       "default": 0.3,
@@ -15,7 +14,6 @@
     },
     {
       "name": "Height Scale",
-      "type": "f32",
       "min": 0,
       "max": 1,
       "default": 0.5,
@@ -23,7 +21,6 @@
     },
     {
       "name": "Smoothness",
-      "type": "f32",
       "min": 0,
       "max": 1,
       "default": 0,
@@ -31,7 +28,6 @@
     },
     {
       "name": "Haze Strength",
-      "type": "f32",
       "min": 0,
       "max": 1,
       "default": 0.3,

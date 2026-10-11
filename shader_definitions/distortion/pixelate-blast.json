@@ -3,7 +3,7 @@
   "name": "Pixelate Blast",
   "category": "distortion",
   "url": "shaders/pixelate-blast.wgsl",
-  "description": "Voronoi cellular pixelation with shockwave domain distortion and explosive blast dispersal. Features spring-damper cursor dynamics, Cauchy chromatic aberration along blast normals, multi-ring click ripples, exact-C temporal feedback, and ACES tonemapping.",
+  "description": "Pixel mosaic with Voronoi facets blown out from the pointer: bevelled fragments tilt away from the blast and shatter finer in its core.",
   "features": [
     "mouse-driven",
     "audio-reactive",
@@ -11,7 +11,6 @@
     "depth-aware",
     "voronoi-cells",
     "fast-motion",
-    "spring-cursor",
     "held-drag",
     "bounded-click-ripples",
     "aces-tone-map",
@@ -63,36 +62,6 @@
     16,
     1
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Cell Density",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "index": 1,
-      "name": "Blast Radius",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "index": 2,
-      "name": "Edge Glow Amount",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "index": 3,
-      "name": "Chromatic Amount",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    }
-  ],
   "tags": [
     "distortion",
     "pixelate",
@@ -101,5 +70,39 @@
     "fast-motion",
     "audio-reactive",
     "aces"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Cell Density",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 1,
+          "name": "Blast Radius",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 2,
+          "name": "Edge Glow Amount",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 3,
+          "name": "Chromatic Amount",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        }
+      ]
+    }
+  }
 }

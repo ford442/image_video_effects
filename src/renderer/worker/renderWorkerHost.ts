@@ -13,6 +13,7 @@ import type { RendererError } from '../ErrorHandling';
 import { safeClose, TransferredVideoFrames } from '../media/videoFramePump';
 import { InputRingReader, InputRingSnapshot } from './inputRing';
 import type { RendererConfig } from '../Renderer';
+import { setRuntimeGraph } from '../runtimeGraphs';
 import type { WebGPURenderer } from '../WebGPURenderer';
 import type { WebGpuProbeOptions, WebGpuProbeResult, WebGpuProbeSerializable } from '../webgpuBootProbe';
 import {
@@ -27,6 +28,7 @@ import {
   RenderToWorker,
   transferablesOf,
 } from './protocol';
+import { PHYSICAL_SLOT_LIMIT } from '../slotOrchestrator';
 
 /** The slice of WebGPURenderer the host drives. */
 export type HostedRenderer = Pick<
@@ -88,6 +90,8 @@ export type HostedRenderer = Pick<
   | 'benchmarkUncapped'
   | 'setBeforeFrame'
   | 'getInputEcho'
+  | 'setFatalErrorHandler'
+  | 'simulateDeviceLoss'
 >;
 
 export interface RenderWorkerHostDeps {
@@ -104,12 +108,15 @@ export interface RenderWorkerHostDeps {
   setErrorSink(sink: (error: RendererError) => void): void;
   /** Anchor relative fetches (shaders, includes) at the app root. */
   setFetchBase(url: string): void;
+  /** GPUDevices alive on the worker thread (webgpuBootProbe's counter). */
+  liveDeviceCount?(): number;
+  /** Test hook: raise an uncaught error in the worker scope (a crash, as the page sees it). */
+  crash?(message: string): void;
   /** PNG-encode a presented frame (base64, no prefix); absent → captureFrame answers null. */
   encodeFramePng?(frame: VideoFrame): Promise<string | null>;
   snapshotIntervalMs?: number;
 }
 
-const SLOT_COUNT = 6;
 const MAX_GPU_ERRORS = 16;
 
 type CommandHandlers = { [K in RenderCommand['type']]: (msg: Extract<RenderCommand, { type: K }>) => void };
@@ -126,6 +133,9 @@ export interface RenderWorkerHost {
 
 export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorkerHost {
   let renderer: HostedRenderer | null = null;
+  /** The renderer whose device was lost: no commands or RPCs reach it, only dispose. */
+  let lostRenderer: HostedRenderer | null = null;
+  let detachProbeErrorLog: (() => void) | null = null;
   let video: TransferredVideoFrames | null = null;
   let snapshotTimer: ReturnType<typeof setInterval> | null = null;
   let inputRing: InputRingReader | null = null;
@@ -166,7 +176,7 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
     video: r.getVideoIngestStats(),
     nodeScales: r.getNodeScales(),
     scalableNodes: r.getScalableNodes(),
-    slots: Array.from({ length: SLOT_COUNT }, (_, i) => r.getSlotState(i)),
+    slots: Array.from({ length: PHYSICAL_SLOT_LIMIT }, (_, i) => r.getSlotState(i)),
     graphReport: r.getLastGraphReport(),
     chores: r.getGpuChoresBreadcrumbs(),
     cachedShaderIds: r.getPipelineCacheStats().cachedIds,
@@ -175,6 +185,7 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
     workingSizeCap: r.getWorkingSizeCap(),
     resolution: r.getResolutionScale(),
     gpuErrors: [...gpuErrors],
+    liveGpuDevices: deps.liveDeviceCount?.() ?? 0,
     inputChannel: inputRing ? 'sab' : 'postMessage',
     input: r.getInputEcho(),
   });
@@ -185,6 +196,27 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
 
   const withRenderer = (fn: (r: HostedRenderer) => void) => {
     if (renderer) fn(renderer);
+  };
+
+  const stopSnapshots = () => {
+    if (snapshotTimer !== null) clearInterval(snapshotTimer);
+    snapshotTimer = null;
+  };
+
+  /**
+   * A runtime device loss: one last snapshot (initialized:false), then `deviceLost`. The
+   * page recovers on a new worker; this one only answers dispose from here on.
+   */
+  const onDeviceLost = (r: HostedRenderer, reason: string, message: string) => {
+    if (renderer !== r) return;
+    stopSnapshots();
+    postSnapshot();
+    renderer = null;
+    lostRenderer = r;
+    r.setBeforeFrame(null);
+    video?.detach();
+    video = null;
+    deps.post({ type: 'deviceLost', reason, message });
   };
 
   const commands: CommandHandlers = {
@@ -222,10 +254,18 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
       r.setCanvasCopySrc(enabled);
     }),
     warmShaders: ({ entries }) => withRenderer((r) => r.warmShaders(entries)),
+    simulateDeviceLoss: () => withRenderer((r) => {
+      r.simulateDeviceLoss();
+    }),
+    simulateWorkerCrash: () => deps.crash?.('simulated render worker crash (test hook)'),
+    // Module-level overlay of this realm (runtimeGraphs.ts): applies even before init finishes.
+    setRuntimeGraph: ({ id, graph }) => setRuntimeGraph(id, graph),
   };
 
   const rpcs: RpcHandlers = {
     init: async ({ canvas, config, colorOptIns, appBaseUrl, inputRing: ringBuffer }) => {
+      // One renderer (one GPUDevice) per worker: recovery spawns a new worker.
+      if (renderer || lostRenderer) throw new Error('render worker is already initialized');
       deps.setFetchBase(appBaseUrl);
       const probe = await deps.runProbe(canvas, config.width, config.height, { colorOptIns });
       const breadcrumb = deps.toBreadcrumb(probe);
@@ -233,17 +273,24 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
         return { ok: false, probe: breadcrumb, lastInitError: probe.lastError ?? 'WebGPU boot probe failed' };
       }
       const device = probe.handoff.device;
-      device.addEventListener?.('uncapturederror', (event) => {
+      const logGpuError = (event: Event) => {
         const message = (event as GPUUncapturedErrorEvent).error?.message ?? 'GPU error';
         gpuErrors.push(message);
         if (gpuErrors.length > MAX_GPU_ERRORS) gpuErrors.shift();
-      });
+      };
+      device.addEventListener?.('uncapturederror', logGpuError);
+      detachProbeErrorLog = () => device.removeEventListener?.('uncapturederror', logGpuError);
       const r = deps.createRenderer(config);
       const ok = await r.init(canvas, probe.handoff);
       if (!ok) {
+        detachProbeErrorLog?.();
+        detachProbeErrorLog = null;
         return { ok: false, probe: breadcrumb, lastInitError: 'WebGPU renderer init failed in the render worker' };
       }
       renderer = r;
+      r.setFatalErrorHandler((message, info) => {
+        if (info?.kind === 'device-lost') onDeviceLost(r, info.reason, info.message);
+      });
       if (video) r.setTransferredVideo(video);
       if (ringBuffer) {
         const reader = new InputRingReader(ringBuffer);
@@ -282,19 +329,22 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
       }
     },
     compileCheck: async ({ id, code }) => {
-      if (!renderer) throw new Error('render worker has no renderer');
+      if (!renderer) throw new Error(lostRenderer ? 'render device lost' : 'render worker has no renderer');
       return renderer.compileCheck(id, code);
     },
     benchmarkUncapped: async ({ frames }) => (renderer ? renderer.benchmarkUncapped(frames) : null),
     dispose: async () => {
-      if (snapshotTimer !== null) clearInterval(snapshotTimer);
-      snapshotTimer = null;
-      const r = renderer;
+      stopSnapshots();
+      const r = renderer ?? lostRenderer;
       renderer = null;
+      lostRenderer = null;
       r?.setBeforeFrame(null);
+      r?.setFatalErrorHandler(null);
       inputRing = null;
       video?.detach();
       video = null;
+      detachProbeErrorLog?.();
+      detachProbeErrorLog = null;
       if (r) await r.destroy();
       return true;
     },

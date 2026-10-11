@@ -60,39 +60,43 @@
       "max": 1
     }
   ],
-  "updatedParams": [
-    {
-      "id": "bubble_size",
-      "name": "Bubble Size",
-      "default": 0.45,
-      "min": 0,
-      "max": 1,
-      "description": "Radius of the main bubble."
-    },
-    {
-      "id": "magnification",
-      "name": "Magnification",
-      "default": 0.55,
-      "min": 0,
-      "max": 1,
-      "description": "Lens power of the bubble surface."
-    },
-    {
-      "id": "film_thickness",
-      "name": "Film Thickness",
-      "default": 0.45,
-      "min": 0,
-      "max": 1,
-      "description": "Soap film thickness; sets the interference order."
-    },
-    {
-      "id": "ior",
-      "name": "IOR",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "description": "Refractive index of the film, driving Fresnel and rim."
+  "updated": true,
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "id": "bubble_size",
+          "name": "Bubble Size",
+          "default": 0.45,
+          "min": 0,
+          "max": 1,
+          "description": "Radius of the main bubble."
+        },
+        {
+          "id": "magnification",
+          "name": "Magnification",
+          "default": 0.55,
+          "min": 0,
+          "max": 1,
+          "description": "Lens power of the bubble surface."
+        },
+        {
+          "id": "film_thickness",
+          "name": "Film Thickness",
+          "default": 0.45,
+          "min": 0,
+          "max": 1,
+          "description": "Soap film thickness; sets the interference order."
+        },
+        {
+          "id": "ior",
+          "name": "IOR",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "description": "Refractive index of the film, driving Fresnel and rim."
+        }
+      ]
     }
-  ],
-  "updated": true
+  }
 }

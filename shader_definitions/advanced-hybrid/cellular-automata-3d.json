@@ -17,12 +17,6 @@
     "aces-tone-map",
     "semantic-alpha"
   ],
-  "updatedParams": [
-    { "index": 0, "name": "Evolution Speed", "default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01 },
-    { "index": 1, "name": "Initial Density", "default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01 },
-    { "index": 2, "name": "Color Cycling", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
-    { "index": 3, "name": "Camera Rotation", "default": 0, "min": 0.0, "max": 1.0, "step": 0.01 }
-  ],
   "params": [
     {
       "id": "evolution_speed",
@@ -65,19 +59,57 @@
       "description": "Camera rotation speed"
     }
   ],
-  "chunks_used": [
-    "hash12 (gen_grid.wgsl)",
-    "hash3 (gen-xeno-botanical-synth-flora.wgsl)",
-    "3D CA rules (26 neighbors)",
-    "Volume raymarching",
-    "Transfer function coloring"
-  ],
-  "performance_target": "30-45 FPS (GTX 1060)",
-  "created_by": "Agent 3B - Advanced Hybrid Creator",
-  "created_date": "2026-03-22",
   "tags": [
     "audio",
     "music",
     "reactive"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Evolution Speed",
+          "default": 0.3,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Initial Density",
+          "default": 0.3,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Color Cycling",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Camera Rotation",
+          "default": 0,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
+    },
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "hash3 (gen-xeno-botanical-synth-flora.wgsl)",
+      "3D CA rules (26 neighbors)",
+      "Volume raymarching",
+      "Transfer function coloring"
+    ],
+    "performance_target": "30-45 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22"
+  }
 }

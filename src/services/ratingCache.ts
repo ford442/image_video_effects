@@ -215,14 +215,12 @@ export function markSynced(shaderId: string): void {
 export async function flushDirtyRatings(apiUrl: string): Promise<void> {
   if (isCircuitOpen()) return;
 
-  const dirty = getDirtyRatings();
-  const shaderIds = Object.keys(dirty);
-  if (shaderIds.length === 0) return;
+  const dirtyEntries = Object.entries(getDirtyRatings());
+  if (dirtyEntries.length === 0) return;
 
-  for (const shaderId of shaderIds) {
+  for (const [shaderId, entry] of dirtyEntries) {
     if (isCircuitOpen()) break;
 
-    const entry = dirty[shaderId];
     try {
       // Live API: JSON { rating } — FormData { stars } returns 422.
       await postShaderRating(apiUrl, shaderId, entry.rating, {

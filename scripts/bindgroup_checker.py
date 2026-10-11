@@ -342,7 +342,11 @@ def has_deep_workgroup_marker(filepath: str, content: str) -> bool:
         "/root/image_video_effects/public/shader-lists",
     ]
     for root in search_roots:
-        for json_path in glob.glob(os.path.join(root, "**", f"{shader_id}.json"), recursive=True):
+        json_candidates = {shader_id, shader_id.replace("_", "-")}  # legacy underscore WGSL stems
+        for json_path in (
+            p for name in sorted(json_candidates)
+            for p in glob.glob(os.path.join(root, "**", f"{name}.json"), recursive=True)
+        ):
             try:
                 with open(json_path, 'r', encoding='utf-8') as jf:
                     data = json.load(jf)

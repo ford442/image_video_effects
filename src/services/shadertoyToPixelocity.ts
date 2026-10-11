@@ -3,6 +3,7 @@
  */
 
 import { glslToWgsl } from './shaderApi';
+import { formatNagaError, loadNagaValidator } from '../utils/nagaWasm';
 
 export interface ShadertoyConversionResult {
   wgsl: string;
@@ -31,7 +32,7 @@ export interface ShaderDefinitionDraft {
   }>;
 }
 
-const CANONICAL_HEADER = `// Auto-converted from Shadertoy — Pixelocity canonical 13-binding layout
+const BINDINGS_HEADER = `// Auto-converted from Shadertoy — Pixelocity canonical 13-binding layout
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -52,7 +53,10 @@ struct Uniforms {
   zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
+`;
 
+// Not in BINDINGS_HEADER: translated user GLSL may declare its own PI / TAU.
+const CANONICAL_HEADER = `${BINDINGS_HEADER}
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
 `;
@@ -77,33 +81,48 @@ export function extractMainImageGlsl(glsl: string): { body: string; helpers: str
       /void\s+mainImage\s*\([^)]*\)\s*\{([\s\S]*)\}/
     );
     if (!loose) return null;
-    const body = loose[1];
+    const body = loose[1] ?? '';
     const before = normalized.slice(0, loose.index ?? 0);
     return { body, helpers: before };
   }
-  const body = mainImageMatch[1];
+  const body = mainImageMatch[1] ?? '';
   const before = normalized.slice(0, mainImageMatch.index ?? 0);
   return { body, helpers: before };
 }
 
-/** Build a GLES fragment shader wrapper for TintWASM conversion. */
-export function buildFragmentShaderForTint(helpers: string, mainBody: string): string {
-  return `#version 450
-precision highp float;
+/**
+ * Prepended to the user's Shadertoy source so naga's GLSL front-end (Vulkan GLSL
+ * 450) sees the Shadertoy built-ins. iChannel0 is a separate texture + sampler
+ * because naga has no combined image samplers; `texture()` is routed through an
+ * explicit-LOD helper so the result stays legal in a compute shader, with the y
+ * flip Shadertoy applies to channel inputs.
+ */
+const NAGA_GLSL_PRELUDE = `#version 450
+layout(set = 0, binding = 0) uniform ShadertoyUniforms {
+  vec3 iResolution;
+  float iTime;
+  float iTimeDelta;
+  float iFrameRate;
+  int iFrame;
+  vec4 iMouse;
+};
+layout(set = 0, binding = 1) uniform texture2D st_iChannel0Tex;
+layout(set = 0, binding = 2) uniform sampler st_iChannel0Smp;
+layout(location = 0) out vec4 st_fragColor;
+vec4 st_channel0(vec2 p) {
+  return textureLod(sampler2D(st_iChannel0Tex, st_iChannel0Smp), vec2(p.x, 1.0 - p.y), 0.0);
+}
+#define iChannel0 sampler2D(st_iChannel0Tex, st_iChannel0Smp)
+#define texture(st_c, st_p) st_channel0(st_p)
+`;
 
-uniform vec3 iResolution;
-uniform float iTime;
-uniform vec4 iMouse;
-uniform int iFrame;
-uniform sampler2D iChannel0;
+/** Wrap Shadertoy GLSL (mainImage + helpers, verbatim) as a GLSL 450 fragment shader for naga. */
+export function buildFragmentShaderForNaga(shadertoyGlsl: string): string {
+  return `${NAGA_GLSL_PRELUDE}
+${shadertoyGlsl.replace(/\r\n/g, '\n')}
 
-${helpers}
-
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {${mainBody}}
-
-out vec4 _outColor;
 void main() {
-  mainImage(_outColor, gl_FragCoord.xy);
+  mainImage(st_fragColor, gl_FragCoord.xy);
 }
 `;
 }
@@ -117,53 +136,98 @@ export function detectUnsupportedFeatures(source: string): string[] {
   return found;
 }
 
-/** Post-process Tint WGSL output: map builtins → Pixelocity uniforms. */
-export function rewriteTintWgslToPixelocity(tintWgsl: string): string {
-  let wgsl = tintWgsl;
-
-  // Remove fragment-specific IO if present
-  wgsl = wgsl.replace(/@fragment[\s\S]*?fn\s+main\s*\([^)]*\)[^{]*\{[\s\S]*?\n\}/m, '');
-  wgsl = wgsl.replace(/@vertex[\s\S]*?fn\s+\w+\s*\([^)]*\)[^{]*\{[\s\S]*?\n\}/m, '');
-
-  // Builtin remapping (Tint may emit var<private> or uniforms)
-  wgsl = wgsl.replace(/\biResolution\b/g, 'vec3(u.config.z, u.config.w, 1.0)');
-  wgsl = wgsl.replace(/\biTime\b/g, 'u.config.x');
-  wgsl = wgsl.replace(/\biMouse\b/g, 'vec4(u.zoom_config.y, u.zoom_config.z, 0.0, u.zoom_config.w)');
-  wgsl = wgsl.replace(/\biFrame\b/g, 'i32(u.config.x)');
-  wgsl = wgsl.replace(
-    /textureSample\s*\(\s*iChannel0\s*,\s*(\w+)\s*,/g,
-    'textureSampleLevel(readTexture, u_sampler,'
-  );
-  wgsl = wgsl.replace(
-    /texture\s*\(\s*iChannel0\s*,/g,
-    'textureSampleLevel(readTexture, u_sampler,'
-  );
-
-  // Extract color logic: look for assignment to fragColor or _outColor or return
-  const mainImageFn = wgsl.match(
-    /fn\s+mainImage[^{]*\{([\s\S]*?)\n\}/
-  );
-  let imageLogic = mainImageFn?.[1]?.trim() ?? '';
-
-  if (!imageLogic) {
-    // Fallback: use fragment main body
-    const fragMain = wgsl.match(/fn\s+main\s*\([^)]*\)\s*(?:->\s*[^ {]+)?\s*\{([\s\S]*)\}/);
-    imageLogic = fragMain?.[1]?.trim() ?? 'let outColor = vec4<f32>(0.0, 0.0, 0.0, 1.0);';
+/**
+ * Splits a WGSL module into its top-level declarations (attributes included).
+ * naga's writer emits one declaration per blank-line-separated block, but brace
+ * depth is tracked so a declaration with blank lines inside still stays whole.
+ */
+function splitTopLevelItems(wgsl: string): string[] {
+  const items: string[] = [];
+  let depth = 0;
+  let current = '';
+  for (const ch of wgsl) {
+    current += ch;
+    if (ch === '{') depth++;
+    else if (ch === '}') {
+      depth--;
+      if (depth === 0) {
+        items.push(current.trim());
+        current = '';
+      }
+    } else if (ch === ';' && depth === 0) {
+      items.push(current.trim());
+      current = '';
+    }
   }
-
-  // Normalize output variable
-  imageLogic = imageLogic
-    .replace(/\bfragColor\b/g, 'outColor')
-    .replace(/\b_outColor\b/g, 'outColor');
-
-  if (!/\boutColor\b/.test(imageLogic)) {
-    imageLogic = `var outColor = vec4<f32>(0.0, 0.0, 0.0, 1.0);\n${imageLogic}`;
-  }
-
-  return assembleComputeShader(imageLogic);
+  if (current.trim()) items.push(current.trim());
+  return items.filter(Boolean);
 }
 
-/** Wrap converted image logic in canonical compute entry (testable without Tint). */
+/**
+ * Turn naga's fragment-shader WGSL into a Pixelocity compute shader: drop the
+ * fragment entry point and its IO, rebind iChannel0 to readTexture, make the
+ * Shadertoy uniform block a private struct that `main` fills from `u`, and call
+ * the translated `mainImage` once per pixel.
+ */
+export function rewriteNagaWgslToPixelocity(nagaWgsl: string): string {
+  const items = splitTopLevelItems(nagaWgsl);
+  const uniformItem = items.find((item) => /var<uniform>\s+\w+\s*:\s*ShadertoyUniforms\s*;/.test(item));
+  const uniformName = uniformItem?.match(/var<uniform>\s+(\w+)\s*:/)?.[1];
+  if (!uniformName) {
+    throw new Error('naga output has no ShadertoyUniforms block');
+  }
+  if (!items.some((item) => /^fn\s+mainImage\s*\(/.test(item))) {
+    throw new Error('naga output has no mainImage function');
+  }
+
+  const kept = items
+    .filter((item) => !/^struct\s+FragmentOutput\b/.test(item))
+    .filter((item) => !/^@fragment\b/.test(item))
+    .filter((item) => !/^fn\s+main_\d*\s*\(/.test(item))
+    .filter((item) => !/^var<private>\s+(st_fragColor|gl_FragCoord_?\d*)\s*:/.test(item))
+    .filter((item) => !/\bvar\s+st_iChannel0(Tex|Smp)\s*:/.test(item))
+    .map((item) =>
+      item === uniformItem ? `var<private> ${uniformName}: ShadertoyUniforms;` : item,
+    )
+    .map((item) =>
+      item.replace(/\bst_iChannel0Tex\b/g, 'readTexture').replace(/\bst_iChannel0Smp\b/g, 'u_sampler'),
+    );
+
+  const st = uniformName;
+  return `${BINDINGS_HEADER}
+${kept.join('\n\n')}
+
+@compute @workgroup_size(16, 16, 1)
+fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+  let pixel = vec2<i32>(global_id.xy);
+  let res = vec2<f32>(u.config.zw);
+  if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) {
+    return;
+  }
+
+  // Shadertoy's origin is bottom-left; Pixelocity's (and u.zoom_config's) is top-left.
+  let mousePx = vec2<f32>(u.zoom_config.y, 1.0 - u.zoom_config.z) * res;
+  let mouseDown = select(-1.0, 1.0, u.zoom_config.w > 0.5);
+  ${st}.iResolution = vec3<f32>(res, 1.0);
+  ${st}.iTime = u.config.x;
+  ${st}.iTimeDelta = 1.0 / 60.0;
+  ${st}.iFrameRate = 60.0;
+  ${st}.iFrame = i32(u.config.x * 60.0);
+  ${st}.iMouse = vec4<f32>(mousePx, mousePx * mouseDown);
+
+  let fragCoord = vec2<f32>(f32(global_id.x) + 0.5, res.y - (f32(global_id.y) + 0.5));
+  var outColor = vec4<f32>(0.0, 0.0, 0.0, 1.0);
+  mainImage(&outColor, fragCoord);
+
+  let uv = (vec2<f32>(global_id.xy) + 0.5) / res;
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  textureStore(writeTexture, pixel, outColor);
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
+}
+`;
+}
+
+/** Wrap hand-written WGSL image logic in the canonical compute entry. */
 export function assembleComputeShader(imageLogic: string): string {
   const logic = imageLogic.includes('outColor')
     ? imageLogic
@@ -190,10 +254,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 `;
 }
 
-/** Full async conversion pipeline from Shadertoy GLSL source. */
+/** Validates the assembled WGSL; resolves to an error message, or null when it is valid. */
+export type WgslCheckFn = (wgsl: string) => Promise<string | null>;
+
+/**
+ * Full async conversion pipeline from Shadertoy GLSL source: naga translates the
+ * GLSL to WGSL, the result is rewritten into a Pixelocity compute shader, and
+ * naga validates that before it is returned.
+ */
 export async function convertShadertoyGlsl(
   glsl: string,
-  convertFn: typeof glslToWgsl = glslToWgsl
+  convertFn: typeof glslToWgsl = glslToWgsl,
+  checkFn: WgslCheckFn = checkWgslWithNaga,
 ): Promise<ShadertoyConversionResult> {
   const warnings: string[] = [];
   const errors: string[] = [];
@@ -208,8 +280,7 @@ export async function convertShadertoyGlsl(
     };
   }
 
-  const parsed = extractMainImageGlsl(glsl);
-  if (!parsed) {
+  if (!extractMainImageGlsl(glsl)) {
     return {
       wgsl: '',
       warnings,
@@ -218,20 +289,25 @@ export async function convertShadertoyGlsl(
     };
   }
 
-  const fragmentShader = buildFragmentShaderForTint(parsed.helpers, parsed.body);
-
   try {
-    const tintWgsl = await convertFn(fragmentShader, 'fragment');
-    const wgsl = rewriteTintWgslToPixelocity(tintWgsl);
-    if (!wgsl.includes('@compute')) {
-      warnings.push('Tint output did not produce compute entry; used fallback assembler');
+    const nagaWgsl = await convertFn(buildFragmentShaderForNaga(glsl), 'fragment');
+    const wgsl = rewriteNagaWgslToPixelocity(nagaWgsl);
+    const invalid = await checkFn(wgsl);
+    if (invalid) {
+      errors.push(`Converted WGSL failed validation: ${invalid}`);
+      return { wgsl: '', warnings, errors, unsupportedFeatures };
     }
     return { wgsl, warnings, errors, unsupportedFeatures };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    errors.push(`Tint conversion failed: ${message}`);
+    errors.push(`GLSL conversion failed: ${message}`);
     return { wgsl: '', warnings, errors, unsupportedFeatures };
   }
+}
+
+async function checkWgslWithNaga(wgsl: string): Promise<string | null> {
+  const diag = (await loadNagaValidator()).validate(wgsl);
+  return diag.ok ? null : formatNagaError(diag);
 }
 
 /** Generate catalog JSON draft for an imported shader. */
@@ -266,9 +342,9 @@ export function wrapShadertoyGlsl(glslCode: string): string {
       'outColor = vec4<f32>(uv, 0.5 + 0.5 * sin(u.config.x), 1.0);'
     );
   }
-  // Synchronous fallback without Tint: embed GLSL as comment, placeholder visual
+  // Synchronous placeholder: the real translation is async (naga), see convertShadertoyGlsl.
   const placeholder = `
-  // Original mainImage GLSL preserved below (run full import for Tint conversion)
+  // Run the full import (convertShadertoyGlsl) for the naga translation
   outColor = vec4<f32>(uv, 0.5 + 0.5 * sin(u.config.x), 1.0);
 `;
   return assembleComputeShader(placeholder);

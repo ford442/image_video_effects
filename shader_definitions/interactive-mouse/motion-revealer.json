@@ -48,40 +48,6 @@
       "step": 0.01
     }
   ],
-  "updatedParams": [
-    {
-      "id": "sensitivity",
-      "name": "Motion Sensitivity",
-      "default": 0.4,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "id": "trailLen",
-      "name": "Trail Length",
-      "default": 0.35,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "id": "glowStr",
-      "name": "Glow Strength",
-      "default": 0.4,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "id": "chromaSep",
-      "name": "Chromatic Separation",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
-  ],
   "tags": [
     "mouse-driven",
     "interactive",
@@ -91,5 +57,43 @@
     "motion-trails",
     "chromatic",
     "temporal"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "id": "sensitivity",
+          "name": "Motion Sensitivity",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "id": "trailLen",
+          "name": "Trail Length",
+          "default": 0.35,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "id": "glowStr",
+          "name": "Glow Strength",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "id": "chromaSep",
+          "name": "Chromatic Separation",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

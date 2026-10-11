@@ -4,31 +4,14 @@
 //  Features: procedural, audio-reactive, mouse-driven, temporal, chromatic,
 //            hologram, l-system, quantum, iridescence, curl-noise, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: prune-cut seal rings at terminal branch tips; north-facing moss lichen from bark normal vs up-light
+//  Upgraded: 2026-10-10
+//  Ideas: prune-cut seal rings at terminal branch tips; north-facing moss lichen from bark normal vs up-light;
+//         superposition collapse (per-branch presence flicker that locks inside the cursor well, seal rings and leaves
+//         now sit on the true cylinder end); 3D root-to-tip sap pulse along height + branch reach (replaces screen-space ripple)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-struct Uniforms {
-  config      : vec4<f32>,
-  zoom_config : vec4<f32>,
-  zoom_params : vec4<f32>,
-  ripples     : array<vec4<f32>, 50>,
-};
-
-@group(0) @binding(0) var u_sampler                : sampler;
-@group(0) @binding(1) var readTexture              : texture_2d<f32>;
-@group(0) @binding(2) var writeTexture             : texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u               : Uniforms;
-@group(0) @binding(4) var readDepthTexture         : texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler    : sampler;
-@group(0) @binding(6) var writeDepthTexture        : texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA             : texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB             : texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC             : texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer : array<f32>;
-@group(0) @binding(11) var comparison_sampler      : sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer : array<vec4<f32>>;
+#include "_prelude.wgsl"
 
 const PI : f32 = 3.14159265358979323846;
 const MAX_STEPS : i32 = 80;
@@ -79,11 +62,6 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
   return min(a, b) - h * h * k * 0.25;
 }
 
-fn bass_env(prev: f32, curr: f32, att: f32, rel: f32) -> f32 {
-  if(curr > prev) { return mix(prev, curr, att); }
-  else { return mix(prev, curr, rel); }
-}
-
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -112,6 +90,22 @@ fn bonsaiBranch(p: vec3<f32>, pos: vec3<f32>, dir: vec3<f32>, branchLen: f32, ra
     aligned = rot3D(rotAxis, rotAngle) * local;
   }
   return sdCylinder(aligned, branchLen * 0.5, radius);
+}
+
+// Idea 2nd-pass A: superposition collapse. Each branch drifts between "present" and
+// "partly un-collapsed" in smoothly crossfaded time slots; the cursor well observes
+// (collapses) nearby branches to full presence. Scales branch radius, leaf and seal ring.
+fn branchPresence(level: i32, b: i32, tip: vec3<f32>, time: f32, instability: f32) -> f32 {
+  let slot = time * 0.45 + f32(level * 7 + b) * 0.37;
+  let s0 = floor(slot);
+  let k = smoothstep(0.75, 1.0, fract(slot));
+  let h0 = hash3(vec3<f32>(f32(level), f32(b), s0));
+  let h1 = hash3(vec3<f32>(f32(level), f32(b), s0 + 1.0));
+  let q = mix(h0, h1, k);
+  let absent = smoothstep(0.55, 0.85, q) * clamp(instability * 2.0, 0.0, 1.0) * 0.7;
+  let wellPos = vec3<f32>((u.zoom_config.y - 0.5) * 4.0, u.zoom_config.z * 3.0, 0.0);
+  let observed = smoothstep(1.1, 0.25, length(tip - wellPos));
+  return mix(1.0 - absent, 1.0, observed);
 }
 
 fn bonsaiSDF(p: vec3<f32>, time: f32, complexity: f32, instability: f32) -> f32 {
@@ -145,12 +139,15 @@ fn bonsaiSDF(p: vec3<f32>, time: f32, complexity: f32, instability: f32) -> f32 
       let dir = vec3<f32>(sin(angle) * tilt, cos(tilt), cos(angle) * tilt);
       let pos = vec3<f32>(sin(angle) * 0.1, branchY, cos(angle) * 0.1);
 
-      d = smin(d, bonsaiBranch(pp, pos, dir, branchLen, branchRad), 0.08);
+      // Idea 2nd-pass A: the cylinder is centred on pos, so its real end is pos + 0.5*len*dir
+      let tipPos = pos + normalize(dir) * (branchLen * 0.5);
+      let pres = branchPresence(level, b, tipPos, time, instability);
 
-      // Leaves (quantum droplets)
-      let leafPos = pos + dir * branchLen;
-      let leafSize = 0.04 - lvlF * 0.008;
-      d = smin(d, sdSphere(pp - leafPos, leafSize), 0.04);
+      d = smin(d, bonsaiBranch(pp, pos, dir, branchLen, branchRad * pres), 0.08);
+
+      // Leaves (quantum droplets) - now seated on the true branch end
+      let leafSize = (0.04 - lvlF * 0.008) * pres;
+      d = smin(d, sdSphere(pp - tipPos, leafSize), 0.04);
     }
   }
 
@@ -176,7 +173,7 @@ fn calcNormal(p: vec3<f32>, time: f32, complexity: f32, instability: f32) -> vec
 }
 
 // Prune-cut seal rings at terminal branch tips (concentric cross-section bands).
-fn pruneSealRings(p: vec3<f32>, time: f32, complexity: f32) -> f32 {
+fn pruneSealRings(p: vec3<f32>, time: f32, complexity: f32, instability: f32) -> f32 {
   var rings = 0.0;
   let levels = i32(mix(2.0, 5.0, complexity));
   for (var level = 0; level < levels; level++) {
@@ -190,12 +187,13 @@ fn pruneSealRings(p: vec3<f32>, time: f32, complexity: f32) -> f32 {
       let tilt = 0.3 + lvlF * 0.2;
       let dir = normalize(vec3<f32>(sin(angle) * tilt, cos(tilt), cos(angle) * tilt));
       let pos = vec3<f32>(sin(angle) * 0.1, branchY, cos(angle) * 0.1);
-      let tipPos = pos + dir * branchLen;
+      let tipPos = pos + dir * (branchLen * 0.5);   // Idea 2nd-pass A: true cut end
+      let pres = branchPresence(level, b, tipPos, time, instability);
       let toTip = p - tipPos;
       let distTip = length(toTip);
       let ringBands = 0.5 + 0.5 * sin(distTip * 110.0 - time * 1.4);
       let tipMask = smoothstep(0.14, 0.02, distTip) * smoothstep(0.0, 0.03, distTip);
-      rings = max(rings, tipMask * ringBands);
+      rings = max(rings, tipMask * ringBands * pres);
     }
   }
   return rings;
@@ -217,15 +215,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let instability = clamp(u.zoom_params.y / 2.0, 0.0, 1.0);
   let glow = clamp((u.zoom_params.z - 0.5) / 9.5, 0.0, 1.0);
   let audioReact = clamp(u.zoom_params.w / 3.0, 0.0, 1.0);
-
-  // ═══ CHUNK: bass_env smoothing ═══
-  let hasEnvelope = arrayLength(&extraBuffer) >= 134u;
-  var prevBass = bass;
-  if (hasEnvelope) { prevBass = extraBuffer[133]; }
-  let bassSmooth = bass_env(prevBass, bass, 0.08, 0.02);
-  if (global_id.x == 0u && global_id.y == 0u && hasEnvelope) {
-    extraBuffer[133] = bassSmooth;
-  }
 
   // Camera
   let mouseUV = u.zoom_config.yz;
@@ -304,11 +293,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col += leafGlow;
 
     // Audio holographic shimmer
-    col += vec3<f32>(0.1, 0.2, 0.3) * bassSmooth * audioReact * fresnel;
+    col += vec3<f32>(0.1, 0.2, 0.3) * bass * audioReact * fresnel;
 
     // Prune-cut seal rings at terminal branch tips
-    let pruneRings = pruneSealRings(p, time, complexity);
-    col += vec3<f32>(0.35, 0.18, 0.12) * pruneRings * (0.45 + bassSmooth * 0.2);
+    let pruneRings = pruneSealRings(p, time, complexity, instability);
+    col += vec3<f32>(0.35, 0.18, 0.12) * pruneRings * (0.45 + bass * 0.2);
 
     // North-facing moss lichen (bark normal vs up-light)
     let upLight = normalize(vec3<f32>(0.12, 0.92, -0.28));
@@ -316,6 +305,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mossTex = fbm(p * vec3<f32>(6.0, 4.5, 6.0) + vec3<f32>(0.0, time * 0.04, 0.0));
     let mossCol = vec3<f32>(0.07, 0.24, 0.08) * mossTex;
     col = mix(col, col * 0.68 + mossCol, mossFacing * 0.65);
+
+    // Idea 2nd-pass B: 3D sap pulse. Front travels root tip -> trunk -> branch reach
+    // (height above the root base plus lateral reach), so it follows the wood, not the screen.
+    let sapS = p.y + 2.3 + length(p.xz) * 0.7;
+    let sapFront = fract(time * 0.22) * 6.0 - 0.6;
+    let sapDx = (sapS - sapFront) * 2.6;
+    let sapBand = exp(-sapDx * sapDx);
+    let sapTail = exp(-max(sapFront - sapS, 0.0) * 1.8) * step(sapS, sapFront) * 0.25;
+    let sapAmp = 0.16 + bass * audioReact * 0.55;
+    col += vec3<f32>(0.08, 0.85, 0.55) * (sapBand + sapTail) * sapAmp * (0.4 + fresnel);
 
     // Distance fade
     col *= exp(-t * 0.08);
@@ -328,10 +327,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     uv.y * 0.5 + 0.5
   );
   col = mix(bgGrad, col, smoothstep(MAX_DIST, 0.0, t));
-
-  // Root ripple from bass peaks
-  let rootRipple = sin(uv.x * 10.0 + time * 3.0) * cos(uv.y * 8.0) * bassSmooth * audioReact * 0.1;
-  col += vec3<f32>(0.0, 0.1, 0.2) * max(rootRipple, 0.0);
 
   // Temporal feedback
   let previous = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);

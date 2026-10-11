@@ -1,31 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Chromatic Phase Inversion
 //  Category: artistic
-//  Features: [mouse-driven, audio-reactive]
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-05-23
-//  upgraded-rgba
+//  Upgraded: 2026-10-05
+//  Ideas: Mackie lines (Sabattier); pointer phase-lock; depth parallax ghosts
+//  A packing: (phR, phG, phB, pointer lock weight) phase state — no reader (diagnostic only)
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config:      vec4<f32>, // x=Time, y=MouseClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>, // x=Time, y=MouseX, z=MouseY, w=MouseDown
-    zoom_params: vec4<f32>, // x=PhaseSpeed, y=GhostOff, z=InvDepth, w=Coherence
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=PhaseSpeed, y=GhostOff, z=InvDepth, w=Coherence
 
 const PI:  f32 = 3.14159265358979323846;
 const TAU: f32 = 6.28318530717958647692;
@@ -189,6 +172,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // ── Depth at this pixel ───────────────────────────────────────────────
     let depth     = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    // Idea 3: Depth parallax ghosts — foreground (depth→0 = near) ghosts drift further
+    // than background ones; mid depth reproduces HEAD's offset.
+    let parallax  = mix(0.7, 1.3, clamp(1.0 - depth, 0.0, 1.0));
     let baseColor2 = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let depthPhase = depth * invDepth;
 
@@ -201,18 +187,31 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let freqG = phaseSpeed * 1.00;
     let freqB = phaseSpeed * 1.41;
 
-    let phR = invPhase(t, freqR, depthPhase, spatialPh * coherence);
-    let phG = invPhase(t, freqG, depthPhase, spatialPh * coherence);
-    let phB = invPhase(t, freqB, depthPhase, spatialPh * coherence);
+    // Idea 2: Pointer phase-lock — near the cursor the three detuned oscillators are
+    // pulled to one common phase and the ghosts collapse: holding the mouse locks a spot
+    // at full inversion (a true negative). Hold-only: the renderer parks an idle pointer
+    // at (0.5, 0.5), so a hover lock would sit permanently in the default look.
+    let aspect   = res.x / res.y;
+    let dm       = (uv - u.zoom_config.yz) * vec2<f32>(aspect, 1.0);
+    let held     = u.zoom_config.w > 0.5;
+    let lockFall = exp(-dot(dm, dm) / (0.14 * 0.14));
+    let lockW    = select(0.0, lockFall, held);
+    let lockPh   = select(0.0, 1.0, held);
+    let heldW    = select(0.0, lockFall, held);
+
+    let phR = mix(invPhase(t, freqR, depthPhase, spatialPh * coherence), lockPh, lockW);
+    let phG = mix(invPhase(t, freqG, depthPhase, spatialPh * coherence), lockPh, lockW);
+    let phB = mix(invPhase(t, freqB, depthPhase, spatialPh * coherence), lockPh, lockW);
+    let ghostAmt = ghostOff * parallax * (1.0 - lockW);
 
     // ── Per-channel spatial offsets (ghost displacement) ─────────────────
     let angleR = t * freqR * 0.4 + depthPhase;
     let angleG = t * freqG * 0.4 + depthPhase + 2.094;
     let angleB = t * freqB * 0.4 + depthPhase + 4.189;
 
-    let offR = vec2<f32>(cos(angleR), sin(angleR)) * ghostOff * phR;
-    let offG = vec2<f32>(cos(angleG), sin(angleG)) * ghostOff * phG;
-    let offB = vec2<f32>(cos(angleB), sin(angleB)) * ghostOff * phB;
+    let offR = vec2<f32>(cos(angleR), sin(angleR)) * ghostAmt * phR;
+    let offG = vec2<f32>(cos(angleG), sin(angleG)) * ghostAmt * phG;
+    let offB = vec2<f32>(cos(angleB), sin(angleB)) * ghostAmt * phB;
 
     // ── Ripple ────────────────────────────────────────────────────────────
     let rDisp = rippleDisp(uv, t, u32(u.config.y));
@@ -227,9 +226,29 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let sampB = textureSampleLevel(readTexture, u_sampler, uvB, 0.0);
 
     // ── Phase inversion ───────────────────────────────────────────────────
-    let r = mix(sampR.r, 1.0 - sampR.r, phR * 0.7);
-    let g = mix(sampG.g, 1.0 - sampG.g, phG * 0.5);
-    let b = mix(sampB.b, 1.0 - sampB.b, phB * 0.9);
+    // (Idea 2: a held lock drives every channel to a full negative.)
+    let r = mix(sampR.r, 1.0 - sampR.r, phR * mix(0.7, 1.0, heldW));
+    let g = mix(sampG.g, 1.0 - sampG.g, phG * mix(0.5, 1.0, heldW));
+    let b = mix(sampB.b, 1.0 - sampB.b, phB * mix(0.9, 1.0, heldW));
+
+    // ── Idea 1: Mackie lines (Sabattier) ──────────────────────────────────
+    // Where tone reversal is half done, photographic phase inversion leaves bright
+    // border lines along edges. Per channel: edge magnitude of that channel's own ghost
+    // × (1 − |2·ph − 1|), so coloured outlines flare while a channel passes mid-cycle.
+    let mstep = 1.5 / res;
+    let edR = vec2<f32>(
+        textureSampleLevel(readTexture, u_sampler, clamp(uvR + vec2<f32>(mstep.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r - sampR.r,
+        textureSampleLevel(readTexture, u_sampler, clamp(uvR + vec2<f32>(0.0, mstep.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r - sampR.r);
+    let edG = vec2<f32>(
+        textureSampleLevel(readTexture, u_sampler, clamp(uvG + vec2<f32>(mstep.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g - sampG.g,
+        textureSampleLevel(readTexture, u_sampler, clamp(uvG + vec2<f32>(0.0, mstep.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g - sampG.g);
+    let edB = vec2<f32>(
+        textureSampleLevel(readTexture, u_sampler, clamp(uvB + vec2<f32>(mstep.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b - sampB.b,
+        textureSampleLevel(readTexture, u_sampler, clamp(uvB + vec2<f32>(0.0, mstep.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b - sampB.b);
+    let mackie = vec3<f32>(
+        smoothstep(0.03, 0.22, length(edR)) * (1.0 - abs(2.0 * phR - 1.0)),
+        smoothstep(0.03, 0.22, length(edG)) * (1.0 - abs(2.0 * phG - 1.0)),
+        smoothstep(0.03, 0.22, length(edB)) * (1.0 - abs(2.0 * phB - 1.0)));
 
     // ── HSV-space saturation boost ────────────────────────────────────────
     let hsv  = rgb2hsv(vec3<f32>(r, g, b));
@@ -275,6 +294,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var outG = clamp(haloG + ghostBlend * ghostHue.g, 0.0, 1.0) * scanline;
     var outB = clamp(mix(haloB, lensB, 0.3) + echoB * 0.08 + ghostBlend * ghostHue.b, 0.0, 1.0) * scanline;
 
+    // Idea 1: Mackie lines ride on top of the print (HDR; ACES rolls them off).
+    outR += mackie.r * 0.55 * scanline;
+    outG += mackie.g * 0.55 * scanline;
+    outB += mackie.b * 0.55 * scanline;
+
     // Beat flash on strong beats
     let isBeat = step(0.7, audioBass);
     outR += isBeat * 0.08;
@@ -286,7 +310,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let phaseVar = abs(phR - phB);
     let effectIntensity = clamp(phaseVar * 0.5 + ghostBlend * 2.0, 0.0, 1.0);
     let finalAlpha = mix(baseColor2.a, 1.0, effectIntensity);
-    textureStore(writeTexture, gid.xy, vec4<f32>(aces_tonemap(vec3<f32>(outR, outG, outB)), finalAlpha));
-    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(phR, phG, phB, 1.0));
+    textureStore(writeTexture, gid.xy, vec4<f32>(aces_tonemap(max(vec3<f32>(outR, outG, outB), vec3<f32>(0.0))), finalAlpha));
+    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(phR, phG, phB, lockW));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 1.0));
 }

@@ -123,7 +123,7 @@ export class ShaderWarmupQueue {
       const victimIndex = this.warmed.findIndex((w) => !bound.has(w));
       if (victimIndex < 0) break;
       const [victim] = this.warmed.splice(victimIndex, 1);
-      this.host.evict(victim);
+      if (victim !== undefined) this.host.evict(victim);
     }
   }
 }

@@ -40,12 +40,6 @@
     "depth-aware",
     "upgraded-rgba"
   ],
-  "updatedParams": [
-    { "index": 0, "name": "Dot Scale", "default": 0.5, "min": 0, "max": 1 },
-    { "index": 1, "name": "Contrast", "default": 0.5, "min": 0, "max": 1 },
-    { "index": 2, "name": "Wet Ink Radius", "default": 0.3, "min": 0, "max": 1 },
-    { "index": 3, "name": "Color Reveal", "default": 0.3, "min": 0, "max": 1 }
-  ],
   "tags": [
     "stylized",
     "artistic",
@@ -54,5 +48,39 @@
     "voronoi",
     "cross-hatch",
     "audio-reactive"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Dot Scale",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 1,
+          "name": "Contrast",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 2,
+          "name": "Wet Ink Radius",
+          "default": 0.3,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 3,
+          "name": "Color Reveal",
+          "default": 0.3,
+          "min": 0,
+          "max": 1
+        }
+      ]
+    }
+  }
 }

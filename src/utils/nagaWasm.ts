@@ -16,7 +16,7 @@
 
 export interface NagaDiagnostic {
   ok: boolean;
-  kind?: 'parse' | 'validate' | 'encoding';
+  kind?: 'parse' | 'validate' | 'encoding' | 'write';
   /** Full rendered diagnostic, including the source excerpt and a caret line. */
   message?: string;
   /** 1-based line; 0 when naga could not place the error. */
@@ -29,19 +29,40 @@ export interface NagaValidator {
   validate(wgsl: string): NagaDiagnostic;
 }
 
+/** naga's GLSL 450 front-end + WGSL writer (the Shadertoy import). */
+export interface NagaGlslResult extends NagaDiagnostic {
+  /** The translated module when `ok`. */
+  wgsl?: string;
+}
+
+export interface NagaGlslConverter {
+  glslToWgsl(glsl: string, stage?: 'vertex' | 'fragment' | 'compute'): NagaGlslResult;
+}
+
+type NagaInstance = NagaValidator & NagaGlslConverter;
+
 interface NagaWasmModule {
-  createNagaValidator(options?: { bytes?: BufferSource; url?: string }): Promise<NagaValidator>;
+  createNagaValidator(options?: { bytes?: BufferSource; url?: string }): Promise<NagaInstance>;
 }
 
 const LOADER_URL = '/wasm/naga_wasm.js';
 
-let cached: Promise<NagaValidator> | null = null;
+let cached: Promise<NagaInstance> | null = null;
 
 /**
  * Resolves to a memoized validator. Concurrent callers share one instantiation;
  * a failed load is not cached, so a transient fetch error can be retried.
  */
 export function loadNagaValidator(): Promise<NagaValidator> {
+  return loadNagaInstance();
+}
+
+/** Same memoized instance as loadNagaValidator — one wasm module serves both. */
+export function loadNagaGlslConverter(): Promise<NagaGlslConverter> {
+  return loadNagaInstance();
+}
+
+function loadNagaInstance(): Promise<NagaInstance> {
   if (!cached) {
     cached = (async () => {
       const mod: NagaWasmModule = await import(/* webpackIgnore: true */ LOADER_URL);

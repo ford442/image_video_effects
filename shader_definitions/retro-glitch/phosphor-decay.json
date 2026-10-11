@@ -3,7 +3,11 @@
   "name": "Phosphor Decay",
   "url": "shaders/phosphor-decay.wgsl",
   "description": "Per-channel linear-feedback phosphor persistence with OkLab trail blending, bloom, shadow mask, scanlines and blackbody grading. Ideas: burn-in (a slow luma accumulator in the feedback alpha lowers phosphor efficiency so static content lingers as a dim negative ghost), held static charge (electrostatic crackle sparks at the cursor plus dust specks that cling to the glass and fade after release), and blanking-interval flicker (Scan Blanking drives a per-frame vertical-blank dip on the bottom rows). Cursor glow, capped click blooms, ACES display.",
-  "workgroup_size": [16, 16, 1],
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
   "updated": true,
   "params": [
     {
@@ -35,12 +39,6 @@
       "max": 1
     }
   ],
-  "updatedParams": [
-    { "index": 0, "name": "Decay Rate", "default": 0.5, "min": 0, "max": 1 },
-    { "index": 1, "name": "Bloom Spread", "default": 0.4, "min": 0, "max": 1 },
-    { "index": 2, "name": "Shadow Mask Strength", "default": 0.5, "min": 0, "max": 1 },
-    { "index": 3, "name": "Scan Blanking", "default": 0.3, "min": 0, "max": 1 }
-  ],
   "features": [
     "mouse-driven",
     "audio-reactive",
@@ -68,5 +66,39 @@
     "dithered",
     "temporal-feedback",
     "linear-feedback"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Decay Rate",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 1,
+          "name": "Bloom Spread",
+          "default": 0.4,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 2,
+          "name": "Shadow Mask Strength",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 3,
+          "name": "Scan Blanking",
+          "default": 0.3,
+          "min": 0,
+          "max": 1
+        }
+      ]
+    }
+  }
 }

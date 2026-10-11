@@ -34,36 +34,6 @@
       "max": 1
     }
   ],
-  "updatedParams": [
-    {
-      "id": "slitCount",
-      "name": "Slit Count",
-      "default": 0.3,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "slitWidth",
-      "name": "Slit Width",
-      "default": 0.2,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "slitSpeed",
-      "name": "Slit Speed",
-      "default": 0.3,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "feather",
-      "name": "Feather",
-      "default": 0.3,
-      "min": 0,
-      "max": 1
-    }
-  ],
   "features": [
     "temporal-persistence",
     "audio-reactive",
@@ -86,5 +56,39 @@
     "fractal",
     "temporal",
     "artistic"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "id": "slitCount",
+          "name": "Slit Count",
+          "default": 0.3,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "id": "slitWidth",
+          "name": "Slit Width",
+          "default": 0.2,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "id": "slitSpeed",
+          "name": "Slit Speed",
+          "default": 0.3,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "id": "feather",
+          "name": "Feather",
+          "default": 0.3,
+          "min": 0,
+          "max": 1
+        }
+      ]
+    }
+  }
 }

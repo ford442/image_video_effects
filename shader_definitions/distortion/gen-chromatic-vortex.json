@@ -2,7 +2,7 @@
   "id": "gen-chromatic-vortex",
   "name": "Chromatic Vortex",
   "url": "shaders/gen-chromatic-vortex.wgsl",
-  "description": "Rotates image in polar coordinates with psychedelic color-space warping, chromatic sector dispersion, temporal spiral drift via dataTextureC, and audio-driven YUV hue rotation.",
+  "description": "Rotates image in polar coordinates into mirrored spiral sectors with breathing chromatic dispersion, hue-tinted arms, and audio-driven YUV hue rotation.",
   "features": [
     "mouse-driven",
     "audio-reactive",

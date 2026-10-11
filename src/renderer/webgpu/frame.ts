@@ -25,13 +25,15 @@ import {
 } from './webgpuConstants';
 import { buildGPUTimings } from './WebGPUTiming';
 import { FrameStats, FrameStatsTracker } from './deviceCounters';
+import { createErrorRateLimiter } from './device';
+import { reportError } from '../ErrorHandling';
 
 export {
   createFrameState,
   createRendererFrameHost,
 } from './frameState';
 export type {
-  RendererFrameDeps,
+  FrameContext,
   WebGPUFrameHost,
   WebGPUFrameState,
 } from './frameState';
@@ -45,12 +47,23 @@ export class WebGPUFrameRenderer {
   private slotParamsCapacity = 0;
   private readonly statsTracker = new FrameStatsTracker();
 
+  /** One report per distinct message per window; a throwing frame repeats every tick. */
+  private readonly shouldReportFrameError = createErrorRateLimiter();
+
   startRenderLoop(state: WebGPUFrameState): void {
     const loop = () => {
       if (!state.initialized) return;
       state.currentTime = performance.now() / 1000 - state.startTime;
-      this.renderFrame(state);
-      state.animationId = scheduleFrame(loop);
+      try {
+        this.renderFrame(state);
+      } catch (e) {
+        // A throw must not end the loop: the next frame may succeed (e.g. after a reload).
+        const message = e instanceof Error ? e.message : String(e);
+        if (this.shouldReportFrameError(message)) {
+          reportError({ type: 'render-frame', message, recoverable: true });
+        }
+      }
+      if (state.initialized) state.animationId = scheduleFrame(loop);
     };
     loop();
   }
@@ -211,15 +224,15 @@ export class WebGPUFrameRenderer {
       state.mouseDown ? 1 : 0,
     );
     uniforms.setZoomParams(
-      state.zoomParams[0],
-      state.zoomParams[1],
-      state.zoomParams[2],
-      state.zoomParams[3],
+      state.zoomParams[0] ?? 0.5,
+      state.zoomParams[1] ?? 0.5,
+      state.zoomParams[2] ?? 0.5,
+      state.zoomParams[3] ?? 0.5,
     );
 
     for (let i = 0; i < MAX_RIPPLES; i++) {
-      if (i < state.ripples.length) {
-        const ripple = state.ripples[i];
+      const ripple = state.ripples[i];
+      if (ripple) {
         uniforms.setRipple(i, ripple.x, ripple.y, ripple.startTime);
       } else {
         uniforms.clearRipple(i);

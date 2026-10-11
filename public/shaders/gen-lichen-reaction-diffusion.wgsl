@@ -3,31 +3,12 @@
 //  Category: generative
 //  Features: lichen, reaction-diffusion, organic, audio-reactive, mouse-interactive, semantic-alpha, upgraded-rgba
 //  Complexity: Medium-High
-//  Upgraded: 2026-09-12
-//  Ideas: thallus growth rings around deposits; apothecia cups on dense patches
+//  Upgraded: 2026-10-10
+//  Ideas: thallus growth rings around deposits; apothecia cups on dense patches; prothallus zone lines where colonies meet; soredia dust along patch edges; pointer/click hydration bloom
 //  A packing: display RGB + pattern_density in A.a
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 
@@ -121,6 +102,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bVal = evalLichen(uv - vec2<f32>(caStrength, 0.0), time, p2, pattern_scale, feed, kill);
   var v_chem = vec3<f32>(rVal, gVal, bVal);
 
+  // Idea 3 setup: one-pixel-scale gradient of the green-channel pattern keeps zone lines a constant pixel width
+  let zoneStep = 1.5 / resolution;
+  let gdx = evalLichen(uv + vec2<f32>(zoneStep.x, 0.0), time, p2, pattern_scale, feed, kill) - gVal;
+  let gdy = evalLichen(uv + vec2<f32>(0.0, zoneStep.y), time, p2, pattern_scale, feed, kill) - gVal;
+  let gSlope = abs(gdx) + abs(gdy);
+
   // Mouse deposit (branchless)
   let m_dist = length(uv - mouse);
   let deposit = exp(-m_dist * m_dist * 2000.0) * 0.5 * f32(mouseDown);
@@ -181,6 +168,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let rim = smoothstep(0.04, 0.09, cupR) * smoothstep(0.16, 0.11, cupR);
   color += vec3<f32>(0.55, 0.28, 0.16) * disk * fruiting * 0.55;
   color += vec3<f32>(0.82, 0.72, 0.42) * rim * fruiting * (0.4 + treble * 0.35);
+
+  // Idea 3 — prothallus zone lines: competing crustose thalli fence each other with a thin black line
+  // where their growth fronts meet; drawn at a fixed colony-boundary iso-value, gradient-scaled to stay crisp.
+  let zoneHalf = gSlope * 1.2 + 0.004;
+  let zoneLine = 1.0 - smoothstep(0.0, zoneHalf, abs(pattern_val.g - 0.42));
+  color = mix(color, vec3<f32>(0.07, 0.055, 0.045), zoneLine * 0.78);
+
+  // Idea 4 — soredia: powdery propagule granules crowd the soft edge of each patch (treble glints them)
+  let edgeBand = smoothstep(0.18, 0.34, pattern_density) * (1.0 - smoothstep(0.46, 0.62, pattern_density));
+  let sorGrid = uv * pattern_scale * 7.0;
+  let sorCell = fract(sorGrid) - 0.5;
+  let sorId = floor(sorGrid);
+  let sorHash = hashf(dot(sorId, vec2<f32>(23.7, 41.3)));
+  let sorOff = vec2<f32>(hashf(sorHash * 91.7), hashf(sorHash * 57.3)) * 0.4 - 0.2;
+  let sorDisk = smoothstep(0.17, 0.06, length(sorCell - sorOff)) * step(0.5, sorHash);
+  color += vec3<f32>(0.80, 0.88, 0.64) * sorDisk * edgeBand * (0.4 + treble * 0.7);
+
+  // Idea 5 — hydration bloom: a wetted thallus swells and greens; pointer and fresh clicks wet it, then it relaxes
+  var wet = exp(-m_dist * m_dist * 60.0) * (0.3 + 0.7 * f32(mouseDown));
+  for (var w = 0; w < 3; w++) {
+    let wp = u.ripples[w];
+    let wAge = time - wp.z;
+    let wLive = step(0.001, wp.z) * step(0.0, wAge) * step(wAge, 3.0);
+    wet += exp(-length(uv - wp.xy) * 7.0) * wLive * (1.0 - wAge / 3.0);
+  }
+  wet = clamp(wet, 0.0, 1.0) * smoothstep(0.1, 0.4, pattern_density);
+  let dryLuma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+  color = mix(vec3<f32>(dryLuma), color, 1.0 + wet * 0.9);
+  color += vec3<f32>(-0.02, 0.10, 0.01) * wet;
 
   // Spore dispersal particles
   let spore_time = time * p2 * 0.5;

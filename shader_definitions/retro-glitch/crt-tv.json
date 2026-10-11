@@ -3,19 +3,56 @@
   "name": "CRT TV - Phosphor Physics",
   "url": "shaders/crt-tv.wgsl",
   "description": "Authentic CRT phosphor physics: curved-raster Gaussian scanlines whose beam fattens on bright rows, soft aperture grille, registered halation, barrel distortion inside a rounded-corner faceplate with curved-glass glare, a rolling ground-loop hum bar deepened by mids, held/click bulge, exact C persistence, and three-band audio.",
-  "workgroup_size": [16, 16, 1],
-  "tags": ["crt", "retro", "phosphor", "scanlines", "vintage", "monitor"],
-  "params": [
-    { "id": "scanline_intensity", "name": "Scanline Intensity", "default": 0.7, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
-    { "id": "phosphor_glow", "name": "Phosphor Glow", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
-    { "id": "halation", "name": "Halation Strength", "default": 0.4, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
-    { "id": "barrel_distortion", "name": "Barrel Distortion", "default": 0.3, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "updatedParams": [
-    { "index": 0, "name": "Scanline Intensity", "default": 0.7, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 1, "name": "Phosphor Glow", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 2, "name": "Halation Strength", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 3, "name": "Barrel Distortion", "default": 0.3, "min": 0, "max": 1, "step": 0.01 }
+  "tags": [
+    "crt",
+    "retro",
+    "phosphor",
+    "scanlines",
+    "vintage",
+    "monitor"
+  ],
+  "params": [
+    {
+      "id": "scanline_intensity",
+      "name": "Scanline Intensity",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "phosphor_glow",
+      "name": "Phosphor Glow",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "halation",
+      "name": "Halation Strength",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "barrel_distortion",
+      "name": "Barrel Distortion",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
   ],
   "features": [
     "mouse-driven",
@@ -27,5 +64,43 @@
     "temporal-feedback",
     "upgraded-rgba"
   ],
-  "updated": true
+  "updated": true,
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Scanline Intensity",
+          "default": 0.7,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Phosphor Glow",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Halation Strength",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Barrel Distortion",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

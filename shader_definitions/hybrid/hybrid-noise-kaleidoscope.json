@@ -56,11 +56,13 @@
       "description": "Speed of color cycling"
     }
   ],
-  "chunks_used": [
-    "fbm2 (gen_grid.wgsl)",
-    "kaleidoscope (kaleidoscope.wgsl)",
-    "hueShift (stellar-plasma.wgsl)"
-  ],
-  "created_by": "Agent 2A - Shader Surgeon",
-  "created_date": "2026-03-22"
+  "x-meta": {
+    "chunks_used": [
+      "fbm2 (gen_grid.wgsl)",
+      "kaleidoscope (kaleidoscope.wgsl)",
+      "hueShift (stellar-plasma.wgsl)"
+    ],
+    "created_by": "Agent 2A - Shader Surgeon",
+    "created_date": "2026-03-22"
+  }
 }

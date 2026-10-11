@@ -6,6 +6,7 @@ import type { GraphRunReport } from './GraphRunner';
 import type { FrameStats } from './webgpu/deviceCounters';
 import type { PassTiming } from './passTimings';
 import type { VideoIngestStats } from './media/videoFramePump';
+import type { DeviceRecoveryStatus } from './deviceRecovery';
 
 export interface RendererMetrics {
   fps: number;
@@ -26,6 +27,12 @@ export interface RendererDiagnostics {
   /** Last published boot-probe breadcrumb (also on window.webgpuProbe). */
   webgpuProbe?: WebGpuProbeSerializable;
   wasm?: WASMDiagnostics;
+  /** TS WebGPU device-loss recovery (state, attempts, last loss / failure). */
+  deviceRecovery?: DeviceRecoveryStatus;
+  /** Renderer device registry generation: bumps on every device publish / clear (#1395). */
+  deviceGeneration?: number;
+  /** GPUDevices alive on the page plus in the current render worker; 1 while rendering. */
+  liveGpuDevices?: number;
   webgpu?: {
     initialized: boolean;
     fps: number;

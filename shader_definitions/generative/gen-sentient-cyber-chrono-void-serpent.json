@@ -25,38 +25,42 @@
     16,
     1
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Time Scale",
-      "defaultValue": 1.0,
-      "min": 0.0,
-      "max": 5.0,
-      "step": 0.1
-    },
-    {
-      "index": 1,
-      "name": "Plasma Intensity",
-      "defaultValue": 1.0,
-      "min": 0.0,
-      "max": 3.0,
-      "step": 0.1
-    },
-    {
-      "index": 2,
-      "name": "Void Density",
-      "defaultValue": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.05
-    },
-    {
-      "index": 3,
-      "name": "Fracture Depth",
-      "defaultValue": 2.0,
-      "min": 0.0,
-      "max": 10.0,
-      "step": 0.5
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Time Scale",
+          "defaultValue": 1.0,
+          "min": 0.0,
+          "max": 5.0,
+          "step": 0.1
+        },
+        {
+          "index": 1,
+          "name": "Plasma Intensity",
+          "defaultValue": 1.0,
+          "min": 0.0,
+          "max": 3.0,
+          "step": 0.1
+        },
+        {
+          "index": 2,
+          "name": "Void Density",
+          "defaultValue": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.05
+        },
+        {
+          "index": 3,
+          "name": "Fracture Depth",
+          "defaultValue": 2.0,
+          "min": 0.0,
+          "max": 10.0,
+          "step": 0.5
+        }
+      ]
     }
-  ]
+  }
 }

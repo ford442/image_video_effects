@@ -105,7 +105,7 @@ describe('GpuEncodeRecorder', () => {
 
     const recorder = await GpuEncodeRecorder.start(source, opts, raf);
     expect(recorder).not.toBeNull();
-    expect(mockMuxerInstances[0].options).toMatchObject({ video: { codec: 'V_VP9', width: 64, height: 48 } });
+    expect(mockMuxerInstances[0]!.options).toMatchObject({ video: { codec: 'V_VP9', width: 64, height: 48 } });
 
     await raf.advance(34);
     await raf.advance(10); // under 1/fps — skipped
@@ -113,15 +113,16 @@ describe('GpuEncodeRecorder', () => {
 
     expect(source.grab).toHaveBeenCalledTimes(2);
     const enc = encoders[0];
-    expect(enc.encode).toHaveBeenCalledTimes(2);
-    expect(enc.encode.mock.calls[0][1]).toEqual({ keyFrame: true });
-    expect(enc.encode.mock.calls[1][1]).toEqual({ keyFrame: false });
+    expect(enc).toBeDefined();
+    expect(enc!.encode).toHaveBeenCalledTimes(2);
+    expect(enc!.encode.mock.calls[0]![1]).toEqual({ keyFrame: true });
+    expect(enc!.encode.mock.calls[1]![1]).toEqual({ keyFrame: false });
 
     const blob = await recorder!.stop();
     expect(blob.type).toBe('video/webm');
-    expect(enc.flush).toHaveBeenCalled();
-    expect(mockMuxerInstances[0].finalize).toHaveBeenCalled();
-    expect(mockMuxerInstances[0].addVideoChunk).toHaveBeenCalledTimes(2);
+    expect(enc!.flush).toHaveBeenCalled();
+    expect(mockMuxerInstances[0]!.finalize).toHaveBeenCalled();
+    expect(mockMuxerInstances[0]!.addVideoChunk).toHaveBeenCalledTimes(2);
     expect(getContext).not.toHaveBeenCalled();
   });
 
@@ -135,7 +136,7 @@ describe('GpuEncodeRecorder', () => {
     const source: GpuFrameSource = { kind: 'canvas', grab: () => null };
     const recorder = await GpuEncodeRecorder.start(source, opts, manualRaf());
     await expect(recorder!.stop()).rejects.toThrow('no frames');
-    expect(encoders[0].close).toHaveBeenCalled();
+    expect(encoders[0]!.close).toHaveBeenCalled();
   });
 
   it('readbackFrameSource wraps RGBA readback into an RGBA VideoFrame', async () => {

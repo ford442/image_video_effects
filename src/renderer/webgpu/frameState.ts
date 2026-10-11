@@ -205,8 +205,8 @@ export interface WebGPUFrameHost {
   beforeFrame?: () => void;
 }
 
-/** Dependencies passed from WebGPURenderer to build a frame host. */
-export interface RendererFrameDeps {
+/** The renderer state the frame loop reads and writes; WebGPURenderer.createFrameContext builds it. */
+export interface FrameContext {
   get device(): GPUDevice | null;
   set device(v: GPUDevice | null);
   get context(): GPUCanvasContext | null;
@@ -278,7 +278,7 @@ function simRingBindings(ring: SimRing | undefined): GraphSimRingBindings | null
   };
 }
 
-export function createRendererFrameHost(d: RendererFrameDeps): WebGPUFrameHost {
+export function createRendererFrameHost(d: FrameContext): WebGPUFrameHost {
   return {
     get device() { return d.device; },
     set device(v) { d.device = v; },

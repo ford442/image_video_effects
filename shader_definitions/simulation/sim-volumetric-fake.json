@@ -54,13 +54,15 @@
       "description": "Dust movement speed"
     }
   ],
-  "chunks_used": [
-    "hash12 (gen_grid.wgsl)",
-    "noise",
-    "Radial blur",
-    "Depth-based occlusion"
-  ],
-  "performance_target": "60 FPS (GTX 1060)",
-  "created_by": "Agent 3B - Advanced Hybrid Creator",
-  "created_date": "2026-03-22"
+  "x-meta": {
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "noise",
+      "Radial blur",
+      "Depth-based occlusion"
+    ],
+    "performance_target": "60 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22"
+  }
 }

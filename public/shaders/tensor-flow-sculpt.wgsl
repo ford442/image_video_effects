@@ -1,33 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Tensor Flow Sculpt
 //  Category: distortion
-//  Features: depth-aware, tensor-warp, audio-reactive
+//  Features: depth-aware, tensor-warp, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-05-23
-//  upgraded-rgba
+//  Upgraded: 2026-10-05
+//  Ideas: 1) tensor streamlines (coherence-weighted LIC grain along depth contours) 2) dome/saddle sheen from sign of Gaussian curvature 3) clay creep (exact-C history drifts along the sculpt + downhill)
+//  A packing: ACES display RGBA (C read back as display history, mixed post-ACES)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=FlowStrength, y=MouseX, z=MouseY, w=Persistence
-    zoom_params: vec4<f32>,  // x=SculptDepth, y=FreqSeparation, z=CurvatureScale, w=AnimSpeed
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=SculptDepth, y=FreqSeparation, z=CurvatureScale, w=AnimSpeed
 
 const PI:  f32 = 3.14159265358979323846;
 const TAU: f32 = 6.28318530717958647692;
@@ -57,9 +39,12 @@ fn structureTensor(uv: vec2<f32>, texel: vec2<f32>, radius: f32) -> mat2x2<f32> 
     var Txy = 0.0;
     var Tyy = 0.0;
 
-    let steps = 3;
-    let step = radius * texel;
-    let gaussDenom = radius * radius * 0.5;
+    // Floor: 5×5 strided taps (was 7×7 = 196 depth reads) over the same ±6 px
+    // footprint. HEAD's Gaussian was evaluated in UV units (w ≈ 1 everywhere),
+    // so a near-box weight in pixel units keeps the same response.
+    let steps = 2;
+    let step = radius * 1.5 * texel;
+    let gaussDenom = 2.0 * 6.0 * 6.0;
 
     for (var dy = -steps; dy <= steps; dy++) {
         for (var dx = -steps; dx <= steps; dx++) {
@@ -71,7 +56,8 @@ fn structureTensor(uv: vec2<f32>, texel: vec2<f32>, radius: f32) -> mat2x2<f32> 
             let gy = sampleDepth(pos + vec2<f32>(0.0, texel.y)) - sampleDepth(pos - vec2<f32>(0.0, texel.y));
 
             // Gaussian weight
-            let w = exp(-dot(offset, offset) / gaussDenom);
+            let offPx = vec2<f32>(f32(dx), f32(dy)) * radius * 1.5;
+            let w = exp(-dot(offPx, offPx) / gaussDenom);
 
             Txx += gx * gx * w;
             Txy += gx * gy * w;
@@ -119,6 +105,31 @@ fn depthHessian(uv: vec2<f32>, texel: vec2<f32>) -> vec3<f32> {
     return vec3<f32>(dxx, dyy, dxy);
 }
 
+// Central depth gradient over ±2 px (for the dome normal and downhill creep).
+fn depthGrad(uv: vec2<f32>, texel: vec2<f32>) -> vec2<f32> {
+    let gx = sampleDepth(uv + vec2<f32>(texel.x * 2.0, 0.0)) - sampleDepth(uv - vec2<f32>(texel.x * 2.0, 0.0));
+    let gy = sampleDepth(uv + vec2<f32>(0.0, texel.y * 2.0)) - sampleDepth(uv - vec2<f32>(0.0, texel.y * 2.0));
+    return vec2<f32>(gx, gy) * 0.25;
+}
+
+// Exact bilinear history read (4× textureLoad, no sampler on rgba32float C).
+fn loadHistoryBilinear(pos: vec2<f32>, dims: vec2<f32>) -> vec3<f32> {
+    let maxP = vec2<i32>(dims) - vec2<i32>(1);
+    let p0f = floor(pos - 0.5);
+    let f = pos - 0.5 - p0f;
+    let p0 = clamp(vec2<i32>(p0f), vec2<i32>(0), maxP);
+    let p1 = clamp(vec2<i32>(p0f) + vec2<i32>(1), vec2<i32>(0), maxP);
+    let a = textureLoad(dataTextureC, vec2<i32>(p0.x, p0.y), 0).rgb;
+    let b = textureLoad(dataTextureC, vec2<i32>(p1.x, p0.y), 0).rgb;
+    let c = textureLoad(dataTextureC, vec2<i32>(p0.x, p1.y), 0).rgb;
+    let d = textureLoad(dataTextureC, vec2<i32>(p1.x, p1.y), 0).rgb;
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 //  Gaussian blur approximation for frequency separation
 // ─────────────────────────────────────────────────────────────────────────────
@@ -146,7 +157,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let fragCoord = vec2<f32>(id.xy);
     if (fragCoord.x >= dims.x || fragCoord.y >= dims.y) { return; }
 
-    let uv = fragCoord / dims;
+    let uv = (fragCoord + 0.5) / dims;
     let texel = 1.0 / dims;
     let time = u.config.x;
     let bass = plasmaBuffer[0].x;
@@ -160,8 +171,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let freqSep = u.zoom_params.y * 8.0 + 1.0;
     let curvatureScale = u.zoom_params.z * 5.0 + 0.5;
     let animSpeed = u.zoom_params.w * 2.0 + 0.2;
-    let flowStr = u.zoom_config.x * 2.0 + 0.3;
-    let persistence = u.zoom_config.w * 0.3 + 0.6;
+    // Floor: HEAD read flowStr from zoom_config.x (= TIME → unbounded growth) and
+    // persistence from mouse-down. Both frozen at their t≈0 / mouse-up values.
+    let flowStr = 0.3;
+    let persistence = 0.6;
 
     // ─────────────────────────────────────────────────────────────────────────
     //  Compute structure tensor and extract principal directions
@@ -192,9 +205,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     //  Ripple interaction: local sculpting force
     // ─────────────────────────────────────────────────────────────────────────
     var rippleForce = vec2<f32>(0.0);
-    let rippleCount = u32(u.config.y);
+    let rippleCount = min(u32(u.config.y), 50u);
     for (var i = 0u; i < rippleCount; i++) {
-        let r = u.ripples[min(i, 49u)];
+        let r = u.ripples[i];
         let dist = distance(uv, r.xy);
         let age = time - r.z;
         if (age > 0.0 && age < 5.0) {
@@ -217,7 +230,23 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let lowFreqOriginal = blurSample(uv, texel, freqSep);
     let srcColorFull = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let srcColor = srcColorFull.rgb;
-    let highFreq = srcColor - lowFreqOriginal;
+    var highFreq = srcColor - lowFreqOriginal;
+
+    // Idea 1: tensor streamlines — a short line-integral (LIC) of the source
+    // along perpDir (the depth-contour tangent). Where the tensor is coherent,
+    // the anchored detail layer is replaced by its streamline average, so the
+    // clay's grain is combed along the depth contours. Flat depth → no change.
+    let coherence = clamp(anisotropy, 0.0, 1.0) * smoothstep(2e-6, 5e-5, eigen.z);
+    if (coherence > 0.01) {
+        let licStep = perpDir * texel * (1.0 + freqSep * 0.25);
+        var lic = srcColor;
+        lic += textureSampleLevel(readTexture, u_sampler, clamp(uv + licStep * 1.5, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+        lic += textureSampleLevel(readTexture, u_sampler, clamp(uv - licStep * 1.5, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+        lic += textureSampleLevel(readTexture, u_sampler, clamp(uv + licStep * 3.0, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+        lic += textureSampleLevel(readTexture, u_sampler, clamp(uv - licStep * 3.0, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+        let licHigh = lic * 0.2 - lowFreqOriginal;
+        highFreq = mix(highFreq, licHigh, coherence * 0.75);
+    }
 
     // Recombine: warped bulk + original detail
     var sculptedColor = lowFreqWarped + highFreq;
@@ -241,11 +270,34 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let glowColor = mix(vec3<f32>(0.2, 0.5, 1.0), vec3<f32>(1.0, 0.3, 0.1), step(0.0, meanCurvature));
     sculptedColor += glowColor * ridgeGlow;
 
+    // Idea 2: dome/saddle sheen — sign of Gaussian curvature K. K > 0 (dome or
+    // bowl) catches a soft specular from a depth-derived normal; K < 0 (saddle)
+    // reads as a darkened crease where the clay pinches.
+    let grad = depthGrad(uv, texel);
+    let sheen = smoothstep(0.008, 0.05, sqrt(abs(gaussCurvature)));
+    let n = normalize(vec3<f32>(-grad * 40.0, 1.0));
+    let lightDir = normalize(vec3<f32>(-0.4, -0.5, 0.77));
+    let halfV = normalize(lightDir + vec3<f32>(0.0, 0.0, 1.0));
+    let specLobe = pow(max(dot(n, halfV), 0.0), 24.0);
+    if (gaussCurvature > 0.0) {
+        sculptedColor += vec3<f32>(1.0, 0.95, 0.85) * sheen * (0.12 + specLobe * 0.45) * (1.0 + treble * 0.5);
+    } else {
+        sculptedColor *= 1.0 - sheen * 0.4;
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
-    //  Temporal persistence via feedback
+    //  Temporal persistence via feedback (C = last frame's ACES display RGBA)
     // ─────────────────────────────────────────────────────────────────────────
-    let history = textureSampleLevel(dataTextureC, u_sampler, warpedUV, 0.0).rgb;
-    let finalColor = mix(sculptedColor, history, persistence);
+    // Idea 3: clay creep — read history upstream of the sculpt displacement plus
+    // a slow downhill drift (toward lower depth), so the material keeps sliding
+    // between frames instead of re-sampling in place. Exact bilinear C loads.
+    let downhill = -grad / max(length(grad), 1e-5) * smoothstep(0.0005, 0.01, length(grad));
+    var creepPx = totalDisp * dims * 0.35 + downhill * (0.35 + mids * 0.3);
+    let creepLen = length(creepPx);
+    if (creepLen > 2.0) { creepPx = creepPx * (2.0 / creepLen); }
+    let history = loadHistoryBilinear(fragCoord + 0.5 - creepPx, dims);
+    // Mix post-ACES: history is already tone-mapped display RGB.
+    let finalColor = mix(acesToneMap(max(sculptedColor, vec3<f32>(0.0))), history, persistence);
 
     // ─────────────────────────────────────────────────────────────────────────
     //  Output
@@ -253,20 +305,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let warpDist = length(warpedUV - uv);
     let effectIntensity = clamp(warpDist * 6.0 + persistence * 0.2, 0.0, 1.0);
     let finalAlpha = mix(srcColorFull.a, 1.0, effectIntensity * 0.7);
-    
-    var clickFront = 0.0;
-    let rippleCount = min(u32(u.config.y), 50u);
-    for (var i = 0u; i < rippleCount; i = i + 1u) {
-        let event = u.ripples[i];
-        let age = max(time - event.z, 0.0);
-        clickFront += exp(-age * 1.8) * exp(-abs(length((uv - event.xy) * vec2<f32>(u.config.z/u.config.w, 1.0)) - age * 0.38) * 58.0);
-    }
-    
-    let clockRings = sin(length(uv - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
-    let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
 
-    let __finalRGB = finalColor + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(__finalRGB, finalAlpha));
-    textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(__finalRGB, finalAlpha));
+    // Floor: removed the stamped clockRings / cosine clickFront overlay (and the
+    // reserved `__finalRGB` + duplicate `rippleCount` that broke compilation).
+    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(finalColor, finalAlpha));
+    textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(finalColor, finalAlpha));
     textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(depth, 0.0, 0.0, 1.0));
 }

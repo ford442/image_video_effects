@@ -38,7 +38,7 @@ interface MenuDefinition {
 //  Menu Definitions (The "Lenses")
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const MENUS: MenuDefinition[] = [
+const MENUS: [MenuDefinition, ...MenuDefinition[]] = [
   {
     id: 'by-visual-tempo',
     label: 'By Visual Tempo',
@@ -134,8 +134,10 @@ export const ShaderCoordinateMenu: React.FC<ShaderCoordinateMenuProps> = ({
     }
     
     // Find closest by binary search
-    let closest = shaders[0];
-    let minDiff = Math.abs(shaders[0].coordinate - targetCoord);
+    const first = shaders[0];
+    if (!first) return null;
+    let closest = first;
+    let minDiff = Math.abs(first.coordinate - targetCoord);
     
     for (const shader of shaders) {
       const diff = Math.abs(shader.coordinate - targetCoord);
@@ -145,7 +147,7 @@ export const ShaderCoordinateMenu: React.FC<ShaderCoordinateMenuProps> = ({
       }
     }
     
-    return closest || null;
+    return closest;
   }, [shaders, coordToShaderMap]);
 
   // NEW: Keyboard navigation effect

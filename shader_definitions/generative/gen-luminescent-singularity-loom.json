@@ -11,7 +11,10 @@
     "domain-warping",
     "subsurface-scattering",
     "hdr-bloom",
-    "mouse-interaction"
+    "mouse-interaction",
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
   ],
   "tags": [
     "organic",

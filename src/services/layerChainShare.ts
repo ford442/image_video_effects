@@ -79,7 +79,8 @@ export function buildSharedChain(
         const rawId = modes[i];
         const shaderId = !rawId || rawId === 'none' ? null : rawId;
         const defaults = getDefaultsFor(shaderId, options?.defaultsLookup);
-        const params = shaderId && slotParams[i] ? compactParams(slotParams[i], defaults) : undefined;
+        const rawParams = slotParams[i];
+        const params = shaderId && rawParams ? compactParams(rawParams, defaults) : undefined;
 
         const slot: SharedChainSlot = { shaderId };
         if (params) slot.params = params;

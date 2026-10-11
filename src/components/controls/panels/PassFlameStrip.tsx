@@ -26,7 +26,7 @@ const SLOT_COLORS = ['#f59e0b', '#ef4444', '#22c55e', '#ec4899', '#eab308', '#f9
 
 export function passColor(pass: Pick<PassTiming, 'kind' | 'slot'>): string {
   if (pass.kind !== 'compute') return KIND_COLORS[pass.kind];
-  return SLOT_COLORS[(pass.slot ?? 0) % SLOT_COLORS.length];
+  return SLOT_COLORS[(pass.slot ?? 0) % SLOT_COLORS.length]!;
 }
 
 function describe(pass: PassTiming): string {

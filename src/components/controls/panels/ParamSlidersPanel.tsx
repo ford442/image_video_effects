@@ -85,9 +85,9 @@ export const ParamSlidersPanel: React.FC<ParamSlidersPanelProps> = ({
 
         <div className="params-grid">
             {currentShaderEntry?.params?.map((param, index) => {
-                if (index > 3) return null;
-
                 const paramKey = INDEX_TO_PARAM[index];
+                if (!paramKey) return null;
+
                 const val = currentParams[paramKey];
 
                 return (

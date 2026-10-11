@@ -149,10 +149,10 @@ export function orchestrateSlots(
   // 1. Parallel slots
   for (const slot of parallelSlots) {
     const chain = resolveMultipassChain(slot.shaderId!);
-    for (let p = 0; p < chain.length; p++) {
+    for (const [p, shaderId] of chain.entries()) {
       result.dispatches.push({
         slotIndex: slot.index,
-        shaderId: chain[p],
+        shaderId,
         mode: 'parallel',
         passIndex: p,
         totalPasses: chain.length,
@@ -170,13 +170,12 @@ export function orchestrateSlots(
   }
 
   // 2. Chained slots
-  for (let i = 0; i < chainedSlots.length; i++) {
-    const slot = chainedSlots[i];
+  for (const slot of chainedSlots) {
     const chain = resolveMultipassChain(slot.shaderId!);
-    for (let p = 0; p < chain.length; p++) {
+    for (const [p, shaderId] of chain.entries()) {
       result.dispatches.push({
         slotIndex: slot.index,
-        shaderId: chain[p],
+        shaderId,
         mode: 'chained',
         passIndex: p,
         totalPasses: chain.length,

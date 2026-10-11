@@ -54,18 +54,20 @@
       "description": "Camera orbit position"
     }
   ],
-  "chunks_used": [
-    "sdSphere (gen-xeno-botanical-synth-flora.wgsl)",
-    "sdSmoothUnion (gen-xeno-botanical-synth-flora.wgsl)",
-    "palette (gen-xeno-botanical-synth-flora.wgsl)",
-    "Activation functions (tanh, ReLU, sigmoid)"
-  ],
-  "performance_target": "30-45 FPS (GTX 1060)",
-  "created_by": "Agent 3B - Advanced Hybrid Creator",
-  "created_date": "2026-03-22",
   "tags": [
     "audio",
     "music",
     "reactive"
-  ]
+  ],
+  "x-meta": {
+    "chunks_used": [
+      "sdSphere (gen-xeno-botanical-synth-flora.wgsl)",
+      "sdSmoothUnion (gen-xeno-botanical-synth-flora.wgsl)",
+      "palette (gen-xeno-botanical-synth-flora.wgsl)",
+      "Activation functions (tanh, ReLU, sigmoid)"
+    ],
+    "performance_target": "30-45 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22"
+  }
 }

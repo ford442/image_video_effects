@@ -33,8 +33,9 @@ describe('decodeOscPacket', () => {
   it('decodes a blob and a double', () => {
     const pkt = bytes('/b', [0, 0], ',bd', [0], [0, 0, 0, 3], [1, 2, 3, 0], [0x3f, 0xf0, 0, 0, 0, 0, 0, 0]);
     const [msg] = decodeOscPacket(pkt);
-    expect(Array.from(msg.args[0] as Uint8Array)).toEqual([1, 2, 3]);
-    expect(msg.args[1]).toBe(1);
+    expect(msg).toBeDefined();
+    expect(Array.from(msg!.args[0] as Uint8Array)).toEqual([1, 2, 3]);
+    expect(msg!.args[1]).toBe(1);
   });
 
   it('flattens nested bundles in order', () => {
@@ -47,7 +48,7 @@ describe('decodeOscPacket', () => {
     const msg = encodeOscMessage('/o', [1]);
     const big = new Uint8Array(msg.byteLength + 8);
     big.set(msg, 4);
-    expect(decodeOscPacket(big.subarray(4, 4 + msg.byteLength))[0].address).toBe('/o');
+    expect(decodeOscPacket(big.subarray(4, 4 + msg.byteLength))[0]!.address).toBe('/o');
   });
 
   it.each([

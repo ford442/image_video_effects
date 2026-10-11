@@ -58,38 +58,42 @@
     "paint",
     "feedback"
   ],
-  "updatedParams": [
-    {
-      "id": "strength",
-      "name": "Smear Strength",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "description": "Drag length along the pointer stroke."
-    },
-    {
-      "id": "size",
-      "name": "Brush Size",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "description": "Radius of the drag falloff around the cursor."
-    },
-    {
-      "id": "decay",
-      "name": "Persistence",
-      "default": 0.9,
-      "min": 0,
-      "max": 1,
-      "description": "How much of the smeared field survives each frame."
-    },
-    {
-      "id": "mix",
-      "name": "Mix Strength",
-      "default": 0.1,
-      "min": 0,
-      "max": 1,
-      "description": "Blend of the smeared field over the live plate."
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "id": "strength",
+          "name": "Smear Strength",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "description": "Drag length along the pointer stroke."
+        },
+        {
+          "id": "size",
+          "name": "Brush Size",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "description": "Radius of the drag falloff around the cursor."
+        },
+        {
+          "id": "decay",
+          "name": "Persistence",
+          "default": 0.9,
+          "min": 0,
+          "max": 1,
+          "description": "How much of the smeared field survives each frame."
+        },
+        {
+          "id": "mix",
+          "name": "Mix Strength",
+          "default": 0.1,
+          "min": 0,
+          "max": 1,
+          "description": "Blend of the smeared field over the live plate."
+        }
+      ]
     }
-  ]
+  }
 }

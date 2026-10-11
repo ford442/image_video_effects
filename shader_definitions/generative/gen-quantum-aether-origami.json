@@ -3,7 +3,6 @@
   "url": "shaders/gen-quantum-aether-origami.wgsl",
   "name": "Quantum Aether Origami",
   "category": "generative",
-  "filename": "gen-quantum-aether-origami.wgsl",
   "tags": [
     "generative",
     "origami",
@@ -25,44 +24,49 @@
     16,
     1
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Fold Complexity",
-      "default": 5,
-      "min": 1,
-      "max": 10,
-      "step": 1
-    },
-    {
-      "index": 1,
-      "name": "Crease Glow",
-      "default": 1.5,
-      "min": 0,
-      "max": 5,
-      "step": 0.1
-    },
-    {
-      "index": 2,
-      "name": "Audio Reactivity",
-      "default": 1,
-      "min": 0,
-      "max": 2,
-      "step": 0.1
-    },
-    {
-      "index": 3,
-      "name": "Interference Shift",
-      "default": 0.5,
-      "min": 0,
-      "max": 2,
-      "step": 0.1
-    }
-  ],
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
   "features": [
     "upgraded-rgba"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Fold Complexity",
+          "default": 5,
+          "min": 1,
+          "max": 10,
+          "step": 1
+        },
+        {
+          "index": 1,
+          "name": "Crease Glow",
+          "default": 1.5,
+          "min": 0,
+          "max": 5,
+          "step": 0.1
+        },
+        {
+          "index": 2,
+          "name": "Audio Reactivity",
+          "default": 1,
+          "min": 0,
+          "max": 2,
+          "step": 0.1
+        },
+        {
+          "index": 3,
+          "name": "Interference Shift",
+          "default": 0.5,
+          "min": 0,
+          "max": 2,
+          "step": 0.1
+        }
+      ]
+    },
+    "filename": "gen-quantum-aether-origami.wgsl"
+  }
 }

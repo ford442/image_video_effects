@@ -21,8 +21,9 @@ import { DEFAULT_FORMAT_CAPABILITIES, DeviceFormatCapabilities, InternalColorFor
 import { createDefaultBreadcrumbs } from '../../gpuChores/types';
 import { reportError } from '../ErrorHandling';
 import { VideoFramePump, VideoIngestStats } from '../media/videoFramePump';
+import type { MultipassGraphDef } from '../multipassGraph';
 import type { PassTiming } from '../passTimings';
-import type { GPUTimings, RendererConfig, SlotZoomParamsUpdate, UncappedBenchResult } from '../Renderer';
+import type { DeviceLossInfo, GPUTimings, RendererConfig, SlotZoomParamsUpdate, UncappedBenchResult } from '../Renderer';
 import type { InputSource } from '../types';
 import { createFrameStats, type FrameStats } from '../webgpu/deviceCounters';
 import { resolveCanvasColorOptIns } from '../webgpu/device';
@@ -34,9 +35,10 @@ import { publishWebGpuProbeBreadcrumb } from '../webgpuBootProbe';
 import type { FrameInput, RenderEvent, RenderInitInfo, RenderSnapshot, TestRenderState } from './protocol';
 import { connectRenderWorker, RenderWorkerClient } from './renderWorkerClient';
 import { registerShaderCompileService } from '../../utils/shaderCompileService';
+import { clearRendererDevice, publishRendererDevice } from '../deviceRegistry';
 import { canShareMemory, createInputRingBuffer, InputRingWriter } from './inputRing';
+import { PHYSICAL_SLOT_LIMIT } from '../slotOrchestrator';
 
-const SLOT_COUNT = 6;
 const FFT_BINS = 128;
 
 type SlotShadow = { shaderId: string | null; enabled: boolean; mode: SlotMode };
@@ -99,12 +101,15 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   private info: RenderInitInfo | null = null;
   private snap: RenderSnapshot | null = null;
 
-  private readonly slots: SlotShadow[] = Array.from({ length: SLOT_COUNT }, () => ({
+  private readonly slots: SlotShadow[] = Array.from({ length: PHYSICAL_SLOT_LIMIT }, () => ({
     shaderId: null,
     enabled: false,
     mode: 'chained' as SlotMode,
   }));
-  private readonly slotParams: number[][] = Array.from({ length: SLOT_COUNT }, () => [0.5, 0.5, 0.5, 0.5]);
+  private readonly slotParams: [number, number, number, number][] = Array.from(
+    { length: PHYSICAL_SLOT_LIMIT },
+    (): [number, number, number, number] => [0.5, 0.5, 0.5, 0.5],
+  );
   private readonly dirtySlots = new Set<number>();
   private pending: FrameInput = {};
   private flushScheduled = false;
@@ -120,6 +125,13 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   /** SAB input ring when the page and the worker are cross-origin isolated (#1314 C3). */
   private ring: InputRingWriter | null = null;
   private unregisterCompiler: (() => void) | null = null;
+  private unsubscribeDied: (() => void) | null = null;
+  /** The worker lost its device or died: nothing more is sent, `initialized` stays false. */
+  private lost = false;
+  /** The client was shut down: late events from the old worker are ignored. */
+  private shutdown = false;
+  private fatalErrorHandler: ((message: string, info?: DeviceLossInfo) => void) | null = null;
+  private lastDeviceLoss: DeviceLossInfo | null = null;
 
   constructor(
     private readonly config: RendererConfig,
@@ -184,10 +196,12 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
     }
     if (ringBuffer) this.ring = new InputRingWriter(ringBuffer);
     const client = this.client;
+    this.unsubscribeDied = client.onDied((message) => this.onWorkerDied(message));
     this.unregisterCompiler = registerShaderCompileService({
       supportsSubgroups: !!this.info.supportsSubgroups,
       compile: (id, code) => client.rpc({ type: 'compileCheck', id, code }),
     });
+    publishRendererDevice(null, { supportsSubgroups: !!this.info.supportsSubgroups, thread: 'worker', owner: this });
     console.log('✅ TypeScript WebGPU renderer running in the render worker');
     return true;
   }
@@ -212,9 +226,13 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   }
 
   private shutdownClient(): void {
+    this.shutdown = true;
     this.ring = null;
+    clearRendererDevice('render worker shut down', this);
     this.unregisterCompiler?.();
     this.unregisterCompiler = null;
+    this.unsubscribeDied?.();
+    this.unsubscribeDied = null;
     this.unsubscribe?.();
     this.unsubscribe = null;
     this.client?.terminate();
@@ -222,13 +240,61 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   }
 
   private onEvent(event: RenderEvent): void {
+    if (this.shutdown) return;
     if (event.type === 'snapshot') {
       this.snap = event.snapshot;
-      this.initialized = event.snapshot.initialized;
+      // A lost worker never comes back; only a new backend (new worker) renders again.
+      this.initialized = !this.lost && event.snapshot.initialized;
       for (const id of event.snapshot.cachedShaderIds) this.cachedIds.add(id);
     } else if (event.type === 'error') {
       reportError(event.error);
+    } else if (event.type === 'deviceLost') {
+      this.onDeviceLost(event.reason, event.message);
     }
+  }
+
+  private onDeviceLost(reason: string, message: string): void {
+    this.markLost({ kind: 'device-lost', reason, message, at: Date.now() }, `GPU device lost in the render worker (${reason})`);
+  }
+
+  /** The worker crashed (uncaught error): its device went with it. Recover like a loss (#1395). */
+  private onWorkerDied(message: string): void {
+    if (this.shutdown) return;
+    this.markLost(
+      { kind: 'worker-died', reason: 'render worker crashed', message, at: Date.now() },
+      `Render worker crashed (${message})`,
+    );
+  }
+
+  private markLost(info: DeviceLossInfo, fatalMessage: string): void {
+    if (this.lost) return;
+    this.lost = true;
+    this.initialized = false;
+    this.pump?.detach();
+    this.pump = null;
+    this.ring = null;
+    this.pending = {};
+    this.dirtySlots.clear();
+    clearRendererDevice(info.kind === 'worker-died' ? 'render worker crashed' : 'device lost', this);
+    this.unregisterCompiler?.();
+    this.unregisterCompiler = null;
+    this.lastDeviceLoss = info;
+    this.fatalErrorHandler?.(fatalMessage, info);
+  }
+
+  setFatalErrorHandler(handler: ((message: string, info?: DeviceLossInfo) => void) | null): void {
+    this.fatalErrorHandler = handler;
+  }
+
+  getLastDeviceLoss(): DeviceLossInfo | null {
+    return this.lastDeviceLoss;
+  }
+
+  /** Test hook (?testMode=1): the worker destroys its device and reports a runtime loss. */
+  simulateDeviceLoss(): boolean {
+    if (!this.client || this.lost || !this.initialized) return false;
+    this.client.send({ type: 'simulateDeviceLoss' });
+    return true;
   }
 
   // ── Per-frame input: coalesced, one message per main animation frame ──────
@@ -243,14 +309,15 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   flush(): void {
     this.flushScheduled = false;
     const client = this.client;
-    if (!client) return;
+    if (!client || this.lost) return;
     const input = this.pending;
     this.pending = {};
     if (this.dirtySlots.size > 0) {
-      input.slotParams = Array.from(this.dirtySlots, (slot) => {
+      input.slotParams = [];
+      for (const slot of this.dirtySlots) {
         const p = this.slotParams[slot];
-        return [slot, p[0], p[1], p[2], p[3]] as [number, number, number, number, number];
-      });
+        if (p) input.slotParams.push([slot, p[0], p[1], p[2], p[3]]);
+      }
       this.dirtySlots.clear();
     }
     const pump = this.pump;
@@ -381,9 +448,14 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
     });
   }
 
+  /** The worker realm has its own graph overlay: forward the draft (fresh object per edit). */
+  setRuntimeGraph(id: string, graph: MultipassGraphDef | null): void {
+    this.client?.send({ type: 'setRuntimeGraph', id, graph });
+  }
+
   setActiveShader(id: string): void {
     this.slots[0] = { shaderId: id, enabled: true, mode: 'chained' };
-    for (let i = 1; i < SLOT_COUNT; i++) this.slots[i] = { shaderId: null, enabled: false, mode: 'chained' };
+    for (let i = 1; i < PHYSICAL_SLOT_LIMIT; i++) this.slots[i] = { shaderId: null, enabled: false, mode: 'chained' };
     this.client?.send({ type: 'setActiveShader', id });
   }
 
@@ -395,12 +467,14 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   }
 
   setSlotEnabled(index: number, enabled: boolean): void {
-    if (this.slots[index]) this.slots[index].enabled = enabled;
+    const slot = this.slots[index];
+    if (slot) slot.enabled = enabled;
     this.client?.send({ type: 'setSlotEnabled', index, enabled });
   }
 
   setSlotMode(index: number, mode: SlotMode): void {
-    if (this.slots[index]) this.slots[index].mode = mode;
+    const slot = this.slots[index];
+    if (slot) slot.mode = mode;
     this.client?.send({ type: 'setSlotMode', index, mode });
   }
 
@@ -428,6 +502,11 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   setVideo(video: HTMLVideoElement | undefined): void {
     const next = video ?? null;
     if (this.video === next) return;
+    if (this.lost) {
+      // Remembered for readRendererVideo(); the recovered backend pumps it.
+      this.video = next;
+      return;
+    }
     this.pump?.detach();
     this.pump = null;
     this.video = next;
@@ -673,5 +752,17 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   /** Uncaptured GPU errors seen in the worker (newest last). */
   getGpuErrors(): string[] {
     return [...(this.snap?.gpuErrors ?? [])];
+  }
+
+  /** GPUDevices alive in this backend's worker (0 once it is lost, dead or shut down). */
+  getLiveGpuDevices(): number {
+    return this.lost || this.shutdown ? 0 : this.snap?.liveGpuDevices ?? 0;
+  }
+
+  /** Test hook (?testMode=1): crash the worker with an uncaught error. */
+  simulateWorkerCrash(): boolean {
+    if (!this.client || this.lost) return false;
+    this.client.send({ type: 'simulateWorkerCrash' });
+    return true;
   }
 }

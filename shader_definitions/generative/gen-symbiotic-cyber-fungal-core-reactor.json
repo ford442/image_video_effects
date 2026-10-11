@@ -1,7 +1,6 @@
 {
   "id": "gen-symbiotic-cyber-fungal-core-reactor",
   "name": "Symbiotic Cyber-Fungal Core-Reactor",
-  "author": "Jules",
   "description": "A biomechanical network of luminescent mycelium feeding off the chaotic energy of a fractured quantum singularity. Upgraded with a spring-smoothed mouse gravity-well attractor that steers fungal growth, click-spawned spore-burst shockwaves with bounded energy, hold-to-mutate surges, real audio reactivity (bass/mids/treble plus guarded FFT bins), engine-ripple nutrient rings, temporal feedback memory so growth self-organizes along its own history, generated raymarch depth, semantic alpha, a precessing plasma containment ring around the core, breathing sporangia pods on the mycelium, and a fractured core shell leaking light through Worley cracks.",
   "type": "generative",
   "url": "shaders/gen-symbiotic-cyber-fungal-core-reactor.wgsl",
@@ -12,86 +11,10 @@
     "volumetric",
     "reaction-diffusion"
   ],
-  "controls": {
-    "zoom_params.x": {
-      "type": "slider",
-      "label": "Core Density",
-      "min": 0.1,
-      "max": 5.0,
-      "default": 1.0,
-      "step": 0.1
-    },
-    "zoom_params.y": {
-      "type": "slider",
-      "label": "Mycelium Spread",
-      "min": 0.0,
-      "max": 1.0,
-      "default": 0.5,
-      "step": 0.05
-    },
-    "zoom_params.z": {
-      "type": "slider",
-      "label": "Quantum Noise",
-      "min": 0.0,
-      "max": 1.0,
-      "default": 0.3,
-      "step": 0.01
-    },
-    "zoom_config.w": {
-      "type": "slider",
-      "label": "Mutation Rate",
-      "min": 0.0,
-      "max": 0.5,
-      "default": 0.1,
-      "step": 0.01
-    },
-    "zoom_params.w": {
-      "type": "slider",
-      "label": "Temporal Shift",
-      "min": 0.0,
-      "max": 2.0,
-      "default": 1.0,
-      "step": 0.1
-    }
-  },
   "workgroup_size": [
     16,
     16,
     1
-  ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Core Density",
-      "default": 1.0,
-      "min": 0.1,
-      "max": 5.0,
-      "step": 0.1
-    },
-    {
-      "index": 1,
-      "name": "Mycelium Spread",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.05
-    },
-    {
-      "index": 2,
-      "name": "Quantum Noise",
-      "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Temporal Shift",
-      "default": 1.0,
-      "min": 0.0,
-      "max": 2.0,
-      "step": 0.1
-    }
   ],
   "supportsDepth": true,
   "supportsDof": false,
@@ -109,5 +32,91 @@
     "raymarched",
     "volumetric"
   ],
-  "category": "generative"
+  "category": "generative",
+  "params": [
+    {
+      "id": "core_density",
+      "name": "Core Density",
+      "min": 0.1,
+      "max": 5.0,
+      "default": 1.0,
+      "step": 0.1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "mycelium_spread",
+      "name": "Mycelium Spread",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5,
+      "step": 0.05,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "quantum_noise",
+      "name": "Quantum Noise",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.3,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "mutation_rate",
+      "name": "Mutation Rate",
+      "min": 0.0,
+      "max": 0.5,
+      "default": 0.1,
+      "step": 0.01,
+      "mapping": "zoom_config.w"
+    },
+    {
+      "id": "temporal_shift",
+      "name": "Temporal Shift",
+      "min": 0.0,
+      "max": 2.0,
+      "default": 1.0,
+      "step": 0.1,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Core Density",
+          "default": 1.0,
+          "min": 0.1,
+          "max": 5.0,
+          "step": 0.1
+        },
+        {
+          "index": 1,
+          "name": "Mycelium Spread",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.05
+        },
+        {
+          "index": 2,
+          "name": "Quantum Noise",
+          "default": 0.3,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Temporal Shift",
+          "default": 1.0,
+          "min": 0.0,
+          "max": 2.0,
+          "step": 0.1
+        }
+      ]
+    },
+    "author": "Jules"
+  }
 }

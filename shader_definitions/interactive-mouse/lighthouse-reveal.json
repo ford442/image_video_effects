@@ -47,38 +47,42 @@
     "music",
     "reactive"
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Beam Length",
-      "default": 0.8,
-      "min": 0,
-      "max": 1.5,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Beam Width",
-      "default": 0.2,
-      "min": 0.05,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Edge Softness",
-      "default": 0.1,
-      "min": 0,
-      "max": 0.5,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Ambient Light",
-      "default": 0.1,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Beam Length",
+          "default": 0.8,
+          "min": 0,
+          "max": 1.5,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Beam Width",
+          "default": 0.2,
+          "min": 0.05,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Edge Softness",
+          "default": 0.1,
+          "min": 0,
+          "max": 0.5,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Ambient Light",
+          "default": 0.1,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
     }
-  ]
+  }
 }

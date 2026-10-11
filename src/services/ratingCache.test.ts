@@ -56,9 +56,9 @@ describe('ratingCache', () => {
       setRating('shader-b', 5);
       const dirty = getDirtyRatings();
       expect(Object.keys(dirty).sort()).toEqual(['shader-a', 'shader-b']);
-      expect(dirty['shader-a'].rating).toBe(3);
-      expect(dirty['shader-b'].rating).toBe(5);
-      expect(dirty['shader-a'].dirty).toBe(true);
+      expect(dirty['shader-a']!.rating).toBe(3);
+      expect(dirty['shader-b']!.rating).toBe(5);
+      expect(dirty['shader-a']!.dirty).toBe(true);
     });
 
     it('does not return clean entries', () => {
@@ -70,8 +70,8 @@ describe('ratingCache', () => {
     it('includes an idempotencyKey in each entry', () => {
       setRating('shader-a', 4);
       const dirty = getDirtyRatings();
-      expect(typeof dirty['shader-a'].idempotencyKey).toBe('string');
-      expect(dirty['shader-a'].idempotencyKey.length).toBeGreaterThan(0);
+      expect(typeof dirty['shader-a']!.idempotencyKey).toBe('string');
+      expect(dirty['shader-a']!.idempotencyKey.length).toBeGreaterThan(0);
     });
   });
 

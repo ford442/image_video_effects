@@ -5,9 +5,9 @@ import ShaderScanner from './ShaderScanner';
 import { fetchShaderWgsl } from '../utils/fetchShaderWgsl';
 import { ShaderEntry } from '../renderer/types';
 import {
-  clearAdoptedRendererDevice,
-  registerAdoptedRendererDevice,
-} from '../utils/adoptedGpuDevice';
+  publishRendererDevice,
+  resetRendererDeviceRegistryForTests,
+} from '../renderer/deviceRegistry';
 
 jest.mock('../utils/fetchShaderWgsl', () => ({
   fetchShaderWgsl: jest.fn().mockResolvedValue('@compute @workgroup_size(16, 16) fn main() {}'),
@@ -18,7 +18,7 @@ describe('ShaderScanner device policy', () => {
   const requestDevice = jest.fn();
 
   beforeEach(() => {
-    clearAdoptedRendererDevice();
+    resetRendererDeviceRegistryForTests();
     window.webgpuProbe = {
       ok: true,
       finishedAt: new Date().toISOString(),
@@ -33,7 +33,7 @@ describe('ShaderScanner device policy', () => {
       }),
       features: new Set(['subgroups']),
     } as unknown as GPUDevice;
-    registerAdoptedRendererDevice(mockDevice, true);
+    publishRendererDevice(mockDevice, { supportsSubgroups: true });
 
     const nav = navigator as unknown as {
       gpu?: { requestAdapter: typeof requestAdapter; requestDevice: typeof requestDevice };
@@ -43,10 +43,10 @@ describe('ShaderScanner device policy', () => {
 
   afterEach(() => {
     delete window.webgpuProbe;
-    clearAdoptedRendererDevice();
+    resetRendererDeviceRegistryForTests();
   });
 
-  it('never calls requestAdapter or requestDevice when adopted device exists', async () => {
+  it('never calls requestAdapter or requestDevice when the renderer device is registered', async () => {
     const shaders: ShaderEntry[] = [
       { id: 'test-shader', name: 'Test', url: 'shaders/test.wgsl', category: 'image' },
     ];
@@ -63,6 +63,48 @@ describe('ShaderScanner device policy', () => {
   });
 });
 
+describe('ShaderScanner across a device loss (#1395)', () => {
+  beforeEach(() => {
+    (fetchShaderWgsl as jest.Mock).mockResolvedValue('@compute @workgroup_size(16, 16) fn main() {}');
+    resetRendererDeviceRegistryForTests();
+    window.webgpuProbe = { ok: true, finishedAt: '', userAgent: 'test', userAgentBrands: [], attempts: [] };
+  });
+
+  afterEach(() => {
+    delete window.webgpuProbe;
+    resetRendererDeviceRegistryForTests();
+  });
+
+  const deviceWith = (compile: () => Promise<{ messages: unknown[] }>) =>
+    ({
+      createShaderModule: jest.fn().mockReturnValue({ getCompilationInfo: jest.fn(compile) }),
+      features: new Set<string>(),
+    }) as unknown as GPUDevice & { createShaderModule: jest.Mock };
+
+  it('re-compiles on the recovered device when the device changed mid-compile', async () => {
+    const recovered = deviceWith(async () => ({ messages: [] }));
+    const lost = deviceWith(async () => {
+      // The device is lost and recovery publishes a new one while this compile is in flight.
+      publishRendererDevice(recovered);
+      throw new Error('device lost');
+    });
+    publishRendererDevice(lost);
+
+    render(
+      <ShaderScanner
+        shaders={[{ id: 'test-shader', name: 'Test', url: 'shaders/test.wgsl', category: 'image' }]}
+        isOpen
+        onClose={() => {}}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Start Scan/i }));
+    await waitFor(() => expect(recovered.createShaderModule).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByRole('button', { name: /Start Scan/i })).toBeEnabled());
+    expect(lost.createShaderModule).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(/device lost/)).not.toBeInTheDocument();
+  });
+});
+
 describe('ShaderScanner thumbnail batch', () => {
   const realFetch = global.fetch;
   const shaders: ShaderEntry[] = [
@@ -74,7 +116,7 @@ describe('ShaderScanner thumbnail batch', () => {
   beforeEach(() => {
     // CRA's resetMocks clears the module-factory implementation before each test.
     (fetchShaderWgsl as jest.Mock).mockResolvedValue('@compute @workgroup_size(16, 16) fn main() {}');
-    clearAdoptedRendererDevice();
+    resetRendererDeviceRegistryForTests();
     window.webgpuProbe = {
       ok: true,
       finishedAt: new Date().toISOString(),
@@ -82,12 +124,12 @@ describe('ShaderScanner thumbnail batch', () => {
       userAgentBrands: [],
       attempts: [],
     };
-    registerAdoptedRendererDevice({
+    publishRendererDevice({
       createShaderModule: jest.fn().mockReturnValue({
         getCompilationInfo: jest.fn().mockResolvedValue({ messages: [] }),
       }),
       features: new Set(['subgroups']),
-    } as unknown as GPUDevice, true);
+    } as unknown as GPUDevice, { supportsSubgroups: true });
 
     const files: Record<string, unknown> = {
       './thumbnails/source-hashes.json': {
@@ -111,7 +153,7 @@ describe('ShaderScanner thumbnail batch', () => {
   afterEach(() => {
     global.fetch = realFetch;
     delete window.webgpuProbe;
-    clearAdoptedRendererDevice();
+    resetRendererDeviceRegistryForTests();
   });
 
   it('"changed" scope scans only stale/missing shaders and leaves out skip-allowlisted ids', async () => {

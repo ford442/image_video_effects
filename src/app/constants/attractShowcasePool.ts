@@ -4,6 +4,7 @@ import { ShaderEntry } from '../../renderer/types';
  * Curated generative shaders for attract-mode rotation (≥20).
  * Must not contain ids deferred in reports/thumbnail_deferrals.json (asserted in Jest);
  * re-add molten-gold, spec-quaternion-julia, gen-ethereal-cyber-chrono-nebula-phoenix after a clean capture.
+ * kimi-fractal-dreams was dropped 2026-10-05: it renders a flat white field at its default params.
  */
 export const ATTRACT_SHOWCASE_IDS: string[] = [
   'gen-showcase-nebula-core',
@@ -15,15 +16,14 @@ export const ATTRACT_SHOWCASE_IDS: string[] = [
   'crystalline-veins',
   'chromatic-ghost-tunnel',
   'cosmic-web',
-  'gen_kimi_crystal',
-  'gen_fluffy_raincloud',
-  'gen_grokcf_interference',
+  'gen-kimi-crystal',
+  'gen-fluffy-raincloud',
+  'gen-grokcf-interference',
   'bioluminescent-bloom',
   'cosmic-jellyfish',
   'liquid_magnetic_ferro',
   'lava-lamp-blobs',
-  'kimi_quantum_field',
-  'kimi_fractal_dreams',
+  'kimi-quantum-field',
   'supernova-core',
   'chrono-voronoi-mycelium',
   'bio_lenia_continuous',

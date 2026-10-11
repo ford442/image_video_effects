@@ -1,5 +1,7 @@
 # Multipass Graph Spec (Tier C)
 
+> **Stale — kept for history.** This is the early design sketch. The shipped contract is [`MULTIPASS_GRAPH.md`](MULTIPASS_GRAPH.md): nodes are a flat list with `repeat` (there are no `pass` / `pingPong` / `loop` node types), the display role is `color` (not `write`), and bind groups are never re-created per pass. Authoring tool: [`GRAPH_LAB.md`](GRAPH_LAB.md).
+
 Extends Tier B linear chains ([`multipassRegistry.ts`](../src/renderer/multipassRegistry.ts)) with **intra-frame** texture handoff.
 
 ## Node types

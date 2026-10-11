@@ -54,14 +54,6 @@
       "description": "Volumetric fog density"
     }
   ],
-  "chunks_used": [
-    "Layer accumulation, flow noise (particle_dreams_alpha.wgsl)",
-    "HDR bloom kernel, ACES tone map (alpha-hdr-bloom-chain.wgsl)",
-    "Depth chromatic aberration (particle_dreams_alpha.wgsl)"
-  ],
-  "performance_target": "60 FPS (GTX 1060)",
-  "created_by": "Agent CB-6 - Alpha & Post-Process Enhancer",
-  "created_date": "2026-04-18",
   "tags": [
     "particles",
     "hdr",
@@ -69,5 +61,15 @@
     "depth",
     "dreamy",
     "volumetric"
-  ]
+  ],
+  "x-meta": {
+    "chunks_used": [
+      "Layer accumulation, flow noise (particle_dreams_alpha.wgsl)",
+      "HDR bloom kernel, ACES tone map (alpha-hdr-bloom-chain.wgsl)",
+      "Depth chromatic aberration (particle_dreams_alpha.wgsl)"
+    ],
+    "performance_target": "60 FPS (GTX 1060)",
+    "created_by": "Agent CB-6 - Alpha & Post-Process Enhancer",
+    "created_date": "2026-04-18"
+  }
 }

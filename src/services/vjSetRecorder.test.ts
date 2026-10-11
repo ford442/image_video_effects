@@ -40,8 +40,8 @@ describe('vjSetRecorder', () => {
   it('snapshots are detached copies', () => {
     const params = [{ zoomParam1: 0.2 }];
     const snap = takeSnapshot(['x'], params);
-    params[0].zoomParam1 = 0.9;
-    expect(snap.params[0].zoomParam1).toBe(0.2);
+    params[0]!.zoomParam1 = 0.9;
+    expect(snap.params[0]!.zoomParam1).toBe(0.2);
   });
 
   it('firstEventAfter binary-searches the playback cursor', () => {

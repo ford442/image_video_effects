@@ -16,77 +16,77 @@
     "audio-reactive",
     "upgraded-rgba"
   ],
-  "parameters": [
+  "updated": true,
+  "params": [
     {
+      "id": "zoom_params_x",
       "name": "zoom_params.x",
-      "label": "plasma_intensity",
-      "type": "float",
       "default": 1.0,
       "min": 0.0,
       "max": 2.0,
       "step": 0.01
     },
     {
+      "id": "zoom_params_y",
       "name": "zoom_params.y",
-      "label": "koi_speed",
-      "type": "float",
       "default": 1.0,
       "min": 0.1,
       "max": 5.0,
       "step": 0.1
     },
     {
+      "id": "zoom_params_z",
       "name": "zoom_params.z",
-      "label": "nebula_density",
-      "type": "float",
       "default": 0.5,
       "min": 0.0,
       "max": 1.0,
       "step": 0.01
     },
     {
+      "id": "zoom_params_w",
       "name": "zoom_params.w",
-      "label": "tail_length",
-      "type": "float",
       "default": 1.5,
       "min": 0.5,
       "max": 3.0,
       "step": 0.1
     }
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "plasma_intensity",
-      "default": 1.0,
-      "min": 0.0,
-      "max": 2.0,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "koi_speed",
-      "default": 1.0,
-      "min": 0.1,
-      "max": 5.0,
-      "step": 0.1
-    },
-    {
-      "index": 2,
-      "name": "nebula_density",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "tail_length",
-      "default": 1.5,
-      "min": 0.5,
-      "max": 3.0,
-      "step": 0.1
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "plasma_intensity",
+          "default": 1.0,
+          "min": 0.0,
+          "max": 2.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "koi_speed",
+          "default": 1.0,
+          "min": 0.1,
+          "max": 5.0,
+          "step": 0.1
+        },
+        {
+          "index": 2,
+          "name": "nebula_density",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "tail_length",
+          "default": 1.5,
+          "min": 0.5,
+          "max": 3.0,
+          "step": 0.1
+        }
+      ]
     }
-  ],
-  "updated": true
+  }
 }

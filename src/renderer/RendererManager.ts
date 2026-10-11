@@ -1,4 +1,4 @@
-import { Renderer, RendererConfig, GPUTimings, UncappedBenchResult } from './Renderer';
+import { Renderer, RendererConfig, GPUTimings, UncappedBenchResult, DeviceLossInfo } from './Renderer';
 import { WASMRenderer } from './WASMRenderer';
 import { WebGPURenderer } from './WebGPURenderer';
 import { InputSource, RenderMode, ShaderEntry, SlotParams } from './types';
@@ -27,12 +27,13 @@ import {
   registerFp32Requirement,
   releaseFp32Requirement,
 } from './performanceStatus';
-import { isCanvasTransferred } from './worker/WorkerWebGPUBackend';
+import { isCanvasTransferred, WorkerWebGPUBackend } from './worker/WorkerWebGPUBackend';
 import { isWebGpuBackend, type WebGPUBackendApi } from './webgpuBackendApi';
 import type { PassTiming } from './passTimings';
+import type { MultipassGraphDef } from './multipassGraph';
+import { setRuntimeGraph as setRuntimeGraphOverlay } from './runtimeGraphs';
 import {
   ShaderLoadMeta,
-  SLOT_COUNT,
   addRipple,
   clearRipples,
   firePlasmaOnBackend,
@@ -53,12 +54,30 @@ import { DeviceFormatCapabilities } from '../config/formatPolicy';
 import { RenderQualityMode } from '../config/performancePolicy';
 import { buildRendererDiagnostics } from './rendererDiagnostics';
 import type { RendererDiagnostics, RendererMetrics } from './rendererTypes';
-import { adoptHandoffDeviceIfWebGpu, clearAdoptedRendererDevice, getAdoptedRendererDevice, releaseAdoptedDeviceIfLeavingWebGpu } from '../utils/adoptedGpuDevice';
+import { getDeviceGeneration, getRendererDevice, isRendererDeviceLive } from './deviceRegistry';
+import { getLiveDeviceCount } from './webgpuBootProbe';
+import { DeviceRecoveryController, type DeviceRecoveryStatus } from './deviceRecovery';
+import { PHYSICAL_SLOT_LIMIT } from './slotOrchestrator';
 
 export type { RendererType, RendererInitOptions, WebGpuProbeHandoff };
 export { getRendererTypeFromURL };
 export type { RendererPerformanceStatus, ShaderLoadMeta };
 export type { RendererMetrics, RendererDiagnostics } from './rendererTypes';
+export type { DeviceRecoveryStatus } from './deviceRecovery';
+
+/** The live session a recovered backend replays (same shape as resyncShaderStack's input). */
+export interface ShaderStackSnapshot {
+  modes: RenderMode[];
+  slotParams: SlotParams[];
+  resolveShader: (shaderId: string) => ShaderEntry | undefined;
+  inputSource?: InputSource;
+}
+
+/** switchRenderer knobs. */
+export interface SwitchRendererOptions {
+  /** On failure, re-init the previous backend type (default true). Recovery passes false. */
+  restoreOnFailure?: boolean;
+}
 
 /** Optional RendererManager callbacks. */
 export interface RendererManagerOptions {
@@ -73,6 +92,10 @@ export interface RendererManagerOptions {
    * on the page after a worker failure.
    */
   acquireFreshCanvas?: () => Promise<HTMLCanvasElement>;
+  /** The live shader stack, replayed onto the backend rebuilt after a GPUDevice loss. */
+  getSessionState?: () => ShaderStackSnapshot | null;
+  /** Device-loss recovery state changes (lost → recovering → idle | failed). */
+  onDeviceRecovery?: (status: DeviceRecoveryStatus) => void;
 }
 
 export class RendererManager {
@@ -81,12 +104,11 @@ export class RendererManager {
   private lastFailedWasmRenderer: WASMRenderer | null = null;
   private lastImageUrl: string | null = null;
   private lastInputSource: InputSource = 'image';
-  private lastShaderStack: {
-    modes: RenderMode[];
-    slotParams: SlotParams[];
-    resolveShader: (shaderId: string) => ShaderEntry | undefined;
-    inputSource?: InputSource;
-  } | null = null;
+  private lastShaderStack: ShaderStackSnapshot | null = null;
+  private readonly getSessionState?: RendererManagerOptions['getSessionState'];
+  private readonly deviceRecovery: DeviceRecoveryController;
+  /** Chained/parallel per slot, captured from the lost backend and re-applied after recovery. */
+  private pendingSlotModes: Array<'chained' | 'parallel'> = [];
   private readonly config: RendererConfig;
   private canvas: HTMLCanvasElement | null = null;
   private webGpuHandoff: WebGpuProbeHandoff | undefined;
@@ -110,6 +132,15 @@ export class RendererManager {
     this.onMetricsUpdate = onMetricsUpdate;
     this.onBackendFailure = options.onBackendFailure;
     this.acquireFreshCanvas = options.acquireFreshCanvas;
+    this.getSessionState = options.getSessionState;
+    this.deviceRecovery = new DeviceRecoveryController({
+      recover: () => this.reinitAfterDeviceLoss(),
+      describeFailure: () => (typeof window !== 'undefined' ? window.webgpuProbe?.lastError ?? null : null),
+      onStatus: options.onDeviceRecovery,
+      onFailed: (message) => {
+        if (!this.destroyed) this.onBackendFailure?.('webgpu', message);
+      },
+    });
     this.adaptiveController = new AdaptivePerformanceController({
       getFps: () => this.getCurrentFPS(),
       getScale: () => this.perfState.resolutionScale,
@@ -146,6 +177,14 @@ export class RendererManager {
     }
   }
 
+  /**
+   * Test-mode only: pin the internal resolution scale (adaptive quality off).
+   * Each change reallocates the working textures, so feedback state starts from zero.
+   */
+  setResolutionScaleForTests(scale: number): void {
+    applyResolutionScaleToRenderer(this.perfState, this.shaderRenderer(), scale);
+  }
+
   private slotPolicy() {
     return {
       maxActiveSlots: this.slotCapOverride ?? this.perfState.performancePolicy.maxActiveSlots,
@@ -169,8 +208,13 @@ export class RendererManager {
     };
   }
 
-  private loadShaderBound = (id: string, url: string, meta?: ShaderLoadMeta) =>
-    loadShaderForBackend(this.backend(), this.slotPolicy(), this.slotCallbacks(), id, url, meta);
+  /** Where each loaded shader came from, so a rebuilt backend can load the same WGSL. */
+  private readonly shaderSources = new Map<string, { url: string; meta?: ShaderLoadMeta }>();
+
+  private loadShaderBound = (id: string, url: string, meta?: ShaderLoadMeta) => {
+    this.shaderSources.set(id, { url, meta });
+    return loadShaderForBackend(this.backend(), this.slotPolicy(), this.slotCallbacks(), id, url, meta);
+  };
 
   async init(canvas: HTMLCanvasElement, options?: RendererInitOptions): Promise<boolean> {
     this.canvas = canvas;
@@ -205,7 +249,7 @@ export class RendererManager {
     return false;
   }
 
-  async switchRenderer(type: RendererType): Promise<boolean> {
+  async switchRenderer(type: RendererType, options: SwitchRendererOptions = {}): Promise<boolean> {
     if (!this.canvas) return false;
     // A canvas is bound to its first context type ('webgpu' or '2d') and, once
     // the render worker took it (#1314), to the worker. Switching backend type
@@ -222,6 +266,8 @@ export class RendererManager {
     // A worker-owned canvas forces the old backend out before the new one inits, so
     // performBackendSwitch sees no previous renderer to keep or restore; remember it here.
     let releasedType: RendererType | null = null;
+    // Read the CPU-side still before a transferred-canvas release drops the renderer.
+    const cpuBitmap = inputBridge.readCpuInputBitmap(this.currentRenderer);
     if (this.acquireFreshCanvas && (transferred || changingType)) {
       if (transferred && this.currentRenderer) {
         await releaseRendererGpu(this.currentRenderer);
@@ -231,9 +277,7 @@ export class RendererManager {
       }
       this.canvas = await this.acquireFreshCanvas();
     }
-    const cpuBitmap = inputBridge.readCpuInputBitmap(this.currentRenderer);
     const handoff = type === 'webgpu' ? this.webGpuHandoff : undefined;
-    releaseAdoptedDeviceIfLeavingWebGpu(this.currentType, type);
     if (type === 'wasm') {
       console.warn(
         '[RendererManager] Exclusive JS→WASM switch: hard-reload if this tab already allocated a 2048² historyTex (~512MB) before a second device',
@@ -251,7 +295,6 @@ export class RendererManager {
     if (type === 'webgpu') this.webGpuHandoff = undefined;
 
     if (outcome.success) {
-      adoptHandoffDeviceIfWebGpu(type, handoff);
       this.currentRenderer = outcome.renderer;
       this.currentType = outcome.type;
       this.canvas = outcome.canvas;
@@ -288,6 +331,10 @@ export class RendererManager {
       console.warn(`[RendererManager] Restoring previous renderer '${restoreType}' after ${type} init failure`);
       if (!(await this.switchRenderer(restoreType))) {
         console.warn(`[RendererManager] Restore of '${restoreType}' failed — renderer blocked`);
+    if (outcome.restoreType && options.restoreOnFailure !== false) {
+      console.warn(`[RendererManager] Restoring previous renderer '${outcome.restoreType}' after ${type} init failure`);
+      if (!(await this.switchRenderer(outcome.restoreType))) {
+        console.warn(`[RendererManager] Restore of '${outcome.restoreType}' failed — renderer blocked`);
       }
     } else {
       console.warn(`[RendererManager] switchRenderer('${type}') failed — keeping previous renderer`);
@@ -301,10 +348,100 @@ export class RendererManager {
    */
   private installFatalErrorHandler(renderer: Renderer | null, type: RendererType | null): void {
     if (!renderer?.setFatalErrorHandler || !type) return;
-    renderer.setFatalErrorHandler((message) => {
+    renderer.setFatalErrorHandler((message, info) => {
       if (this.destroyed || this.currentRenderer !== renderer) return;
+      if (type === 'webgpu' && (info?.kind === 'device-lost' || info?.kind === 'worker-died')) {
+        this.handleDeviceLoss(info);
+        return;
+      }
       void this.handleBackendFailure(type, message);
     });
+  }
+
+  /**
+   * A TS WebGPU backend lost its GPUDevice at runtime, or its render worker crashed:
+   * recover it (never fall back). The backend already cleared the device registry.
+   */
+  private handleDeviceLoss(info: DeviceLossInfo): void {
+    console.warn(`[RendererManager] GPU device lost (${info.reason}) — rebuilding the WebGPU renderer`);
+    this.stopMetricsCollection();
+    this.deviceRecovery.handleLoss(info);
+  }
+
+  /**
+   * Rebuild the TS WebGPU backend after a device loss (or retry a failed rebuild). Resolves
+   * true when it renders again with the session's shader stack, params and still image.
+   */
+  recoverFromDeviceLoss(): Promise<boolean> {
+    return this.deviceRecovery.retry();
+  }
+
+  getDeviceRecoveryStatus(): DeviceRecoveryStatus {
+    return this.deviceRecovery.getStatus();
+  }
+
+  /** Test hook (?testMode=1 via __pixelocity__): lose the TS WebGPU device on purpose. */
+  simulateDeviceLoss(): boolean {
+    const r = this.currentRenderer;
+    return isWebGpuBackend(r) ? r.simulateDeviceLoss() : false;
+  }
+
+  /** Test hook (?testMode=1 via __pixelocity__): crash the render worker (worker mode only). */
+  simulateWorkerCrash(): boolean {
+    const r = this.currentRenderer;
+    return r instanceof WorkerWebGPUBackend ? r.simulateWorkerCrash() : false;
+  }
+
+  /**
+   * webgpu → webgpu switch: releases the dead backend (worker: dispose + terminate, then a
+   * fresh canvas and a new worker), reruns the boot probe in the new backend's init, then
+   * replays media + the live shader stack. No other device is requested and no other
+   * backend type is tried.
+   */
+  private async reinitAfterDeviceLoss(): Promise<boolean> {
+    if (this.destroyed) return false;
+    // A failed attempt released the dead backend: keep replaying what was captured from it.
+    const captured = this.captureLiveStack();
+    if (captured) {
+      this.lastShaderStack = captured.stack;
+      this.pendingSlotModes = captured.slotModes;
+    }
+    const ok = await this.switchRenderer('webgpu', { restoreOnFailure: false });
+    if (!ok || this.destroyed) return false;
+    this.pendingSlotModes.forEach((mode, i) => {
+      if (mode === 'parallel') this.setSlotMode(i, mode);
+    });
+    this.pendingSlotModes = [];
+    return true;
+  }
+
+  /**
+   * What the lost backend was rendering: its slot state (the ground truth, whoever set it),
+   * shader URLs as they were loaded, and the host session's slot params. Null when there is
+   * no backend left to read (a retry after a failed attempt reuses the earlier capture).
+   */
+  private captureLiveStack(): { stack: ShaderStackSnapshot; slotModes: Array<'chained' | 'parallel'> } | null {
+    const r = this.currentRenderer;
+    if (!r) return null;
+    const session = this.getSessionState?.() ?? null;
+    const slots = Array.from({ length: PHYSICAL_SLOT_LIMIT }, (_, i) => r.getSlotState?.(i) ?? null);
+    if (!slots.some(Boolean)) {
+      return session ? { stack: { ...session, inputSource: this.lastInputSource }, slotModes: [] } : null;
+    }
+    const resolveShader = (id: string): ShaderEntry | undefined => {
+      const source = this.shaderSources.get(id);
+      if (source) return { id, name: id, url: source.url, category: 'image', ...source.meta } as ShaderEntry;
+      return session?.resolveShader(id);
+    };
+    return {
+      stack: {
+        modes: slots.map((slot) => (slot?.enabled && slot.shaderId ? slot.shaderId : 'none') as RenderMode),
+        slotParams: session?.slotParams ?? [],
+        resolveShader,
+        inputSource: this.lastInputSource,
+      },
+      slotModes: slots.map((slot) => slot?.mode ?? 'chained'),
+    };
   }
 
   private async handleBackendFailure(type: RendererType, message: string): Promise<void> {
@@ -367,7 +504,7 @@ export class RendererManager {
   updateSlotParams(params: import('./Renderer').SlotZoomParamsUpdate, slotIndex = 0): void {
     updateSlotParams(this.backend(), params, slotIndex);
   }
-  syncAllSlotParams(slotParams: SlotParams[], maxSlots = SLOT_COUNT): void {
+  syncAllSlotParams(slotParams: SlotParams[], maxSlots = PHYSICAL_SLOT_LIMIT): void {
     syncAllSlotParams(this.backend(), slotParams, maxSlots);
   }
   async resyncShaderStack(options: {
@@ -421,6 +558,8 @@ export class RendererManager {
     firePlasmaOnBackend(this.currentRenderer, this.backend(), x, y, vx, vy);
   }
   async reloadShader(id: string, url: string): Promise<boolean> {
+    const meta = this.shaderSources.get(id)?.meta;
+    this.shaderSources.set(id, { url, meta });
     return reloadShaderOnBackend(this.currentRenderer, this.backend(), id, url);
   }
   applyTestRenderState(state: Parameters<NonNullable<WebGPURenderer['applyTestRenderState']>>[0]): void {
@@ -428,12 +567,12 @@ export class RendererManager {
   }
   getFrameImage(): string { return this.currentRenderer?.getFrameImage?.() ?? ''; }
   async refreshFrameImage(): Promise<string> {
-    const r = this.currentRenderer as { refreshFrameImage?: () => Promise<string> } | null;
+    const r = this.currentRenderer;
     if (r?.refreshFrameImage) return r.refreshFrameImage();
     return this.canvas ? this.canvas.toDataURL('image/png') : '';
   }
   async takeScreenshot(filename = 'screenshot.png'): Promise<void> {
-    const r = this.currentRenderer as { takeScreenshot?: (f?: string) => Promise<void> } | null;
+    const r = this.currentRenderer;
     if (r?.takeScreenshot) return r.takeScreenshot(filename);
     const dataUrl = await this.refreshFrameImage();
     if (!dataUrl) throw new Error('[RendererManager] Screenshot unavailable — no frame source');
@@ -448,14 +587,13 @@ export class RendererManager {
   setRecordingMode(mode: 'loop' | 'continuous'): void { this.currentRenderer?.setRecordingMode?.(mode); }
   usesInternalRecording(): boolean { return this.isWASM(); }
   startRecording(canvas: HTMLCanvasElement, options?: { durationMs?: number; frameRate?: number; videoBitsPerSecond?: number }): Promise<Blob> {
-    const r = this.currentRenderer as { startRecording?: typeof RendererManager.prototype.startRecording } | null;
+    const r = this.currentRenderer;
     if (r?.startRecording) return r.startRecording(canvas, options);
     return Promise.reject(new Error('[RendererManager] startRecording not supported for active backend'));
   }
   /** Canvas → VideoFrame capture is usable (swapchain accepts COPY_SRC; TS boot probe or C++ init probe). */
   supportsCanvasFrameCapture(): boolean {
-    const r = this.currentRenderer as { supportsCanvasCopySrc?: () => boolean } | null;
-    return !!r?.supportsCanvasCopySrc?.();
+    return !!this.currentRenderer?.supportsCanvasCopySrc?.();
   }
   /**
    * Render worker (#1314): a function returning a VideoFrame of the next
@@ -465,8 +603,7 @@ export class RendererManager {
   getWorkerFrameGrabber(): ((timestampUs: number) => Promise<VideoFrame | null>) | null {
     const r = this.currentRenderer;
     if (!isWebGpuBackend(r) || r.renderThread !== 'worker') return null;
-    const grab = (r as { grabVideoFrame?: (ts: number) => Promise<VideoFrame | null> }).grabVideoFrame;
-    return grab ? (ts) => grab.call(r, ts) : null;
+    return r.grabVideoFrame?.bind(r) ?? null;
   }
   /** Where the TS backend renders (main page or render worker); null for WASM / Canvas2D. */
   getRenderThread(): 'main' | 'worker' | null {
@@ -474,11 +611,10 @@ export class RendererManager {
     return isWebGpuBackend(r) ? r.renderThread : null;
   }
   setCanvasCopySrc(enabled: boolean): boolean {
-    const r = this.currentRenderer as { setCanvasCopySrc?: (e: boolean) => boolean } | null;
-    return r?.setCanvasCopySrc?.(enabled) ?? false;
+    return this.currentRenderer?.setCanvasCopySrc?.(enabled) ?? false;
   }
   stopRendererRecording(): void {
-    (this.currentRenderer as { stopRecording?: () => void } | null)?.stopRecording?.();
+    this.currentRenderer?.stopRecording?.();
   }
   getMetrics(): RendererMetrics {
     this.refreshFps();
@@ -491,17 +627,29 @@ export class RendererManager {
     if (this.backend()) return 'webgpu';
     return 'js';
   }
+  /** The renderer's page-thread device (null in worker mode, on WASM / Canvas2D, or while lost). */
   getDevice(): GPUDevice | null {
-    return this.getActiveRendererType() === 'webgpu' ? getAdoptedRendererDevice() : null;
+    return getRendererDevice();
   }
   getDiagnostics(): RendererDiagnostics {
     this.refreshFps();
-    return buildRendererDiagnostics(
-      this.getActiveRendererType(),
-      this.metrics,
-      this.currentRenderer,
-      this.lastFailedWasmRenderer,
-    );
+    return {
+      ...buildRendererDiagnostics(
+        this.getActiveRendererType(),
+        this.metrics,
+        this.currentRenderer,
+        this.lastFailedWasmRenderer,
+      ),
+      deviceRecovery: this.deviceRecovery.getStatus(),
+      deviceGeneration: getDeviceGeneration(),
+      liveGpuDevices: this.getLiveGpuDevices(),
+    };
+  }
+
+  /** GPUDevices alive on this page and in the current render worker (1 while rendering). */
+  getLiveGpuDevices(): number {
+    const r = this.currentRenderer;
+    return getLiveDeviceCount() + (r instanceof WorkerWebGPUBackend ? r.getLiveGpuDevices() : 0);
   }
   /** Per-frame host tick: uploads video frames on WASM (TS WebGPU drives its own loop). */
   render(): void { if (this.metrics.isWASM) this.updateVideoFrame(); }
@@ -529,17 +677,34 @@ export class RendererManager {
   async benchmarkUncapped(frames: number): Promise<UncappedBenchResult | null> {
     return (await this.shaderRenderer()?.benchmarkUncapped?.(frames)) ?? null;
   }
+  /**
+   * Register (or, with `null`, drop) a runtime Tier C graph under `id` — the Graph
+   * Lab draft (TS WebGPU only; WASM stays frozen). The main-thread overlay is set
+   * even when the renderer runs in the worker, because shader loading and badges
+   * resolve graphs on this thread; the backend call then reaches the worker's copy.
+   * Pass a fresh graph object per edit: plans are memoised per object.
+   * Returns false when the active backend cannot run graphs.
+   */
+  setRuntimeGraph(id: string, graph: MultipassGraphDef | null): boolean {
+    const r = this.shaderRenderer();
+    if (!isWebGpuBackend(r)) return false;
+    setRuntimeGraphOverlay(id, graph);
+    r.setRuntimeGraph(id, graph);
+    return true;
+  }
   /** Run an opt-in graph node below full size (TS WebGPU only). Returns the scale in effect. */
   setNodeScale(slot: number, nodeId: string, scale: number): number {
     const r = this.shaderRenderer();
     return isWebGpuBackend(r) ? r.setNodeScale(slot, nodeId, scale) : 1;
   }
   /**
-   * True while a GPU backend holds a device, on this thread or in the render
-   * worker (where getDevice() is null). Lets depth estimation stay off WebGPU.
+   * True while a TS backend holds a device, on this thread or in the render worker
+   * (where getDevice() is null), and while a lost one is being rebuilt. Lets depth
+   * estimation stay off WebGPU instead of opening a second device in the gap.
    */
   isGpuDeviceActive(): boolean {
-    return !!this.getDevice() || (isWebGpuBackend(this.currentRenderer) && this.currentRenderer.initialized);
+    const recovery = this.deviceRecovery.getStatus().state;
+    return isRendererDeviceLive() || recovery === 'lost' || recovery === 'recovering';
   }
   /** True when the TS backend already holds a compiled pipeline for `id`. */
   isShaderCached(id: string): boolean {
@@ -583,20 +748,21 @@ export class RendererManager {
     );
   }
   getAudioData() {
-    return (this.currentRenderer as { getAudioData?: () => { bass: number; mid: number; treble: number; freqBins: Float32Array } } | null)
-      ?.getAudioData?.() ?? null;
+    return this.currentRenderer?.getAudioData?.() ?? null;
   }
   isRecording(): boolean { return this.currentRenderer?.isRecording?.() ?? false; }
   /** Resolves once the backend has released its GPU device (safe to re-probe after). */
   async destroy(): Promise<void> {
     this.destroyed = true;
+    this.deviceRecovery.dispose();
+    // A recovery mid-switch may still create a backend: release that one, not a stale handle.
+    await this.deviceRecovery.whenSettled();
     this.stopMetricsCollection();
     this.adaptiveController.stop();
     const renderer = this.currentRenderer;
     this.currentRenderer = null;
     this.currentType = null;
     this.metrics.isWASM = false;
-    clearAdoptedRendererDevice();
     if (renderer) await releaseRendererGpu(renderer);
   }
 }

@@ -48,6 +48,7 @@ export class Alucinate {
   // State
   private loopInterval: number | null = null;
   private isRunning = false;
+  private cycleInFlight = false;
   public status: AIStatus = 'idle';
   public statusMessage: string = "AI Not Initialized";
   public onStatusChange: ((status: AIStatus, message: string) => void) | null = null;
@@ -171,7 +172,7 @@ export class Alucinate {
       const promptRegex = /- \*\*Prompt:\*\*\s*"(.*?)"/g;
       let match;
       while ((match = promptRegex.exec(markdown)) !== null) {
-          suggestions.push(match[1]);
+          suggestions.push(match[1] ?? '');
       }
       return suggestions.length > 0 ? suggestions : ["vibrant colorful patterns"];
   }
@@ -200,7 +201,9 @@ export class Alucinate {
 
   public start(): boolean {
     if (this.isRunning) return false;
-    if (this.status !== 'ready') {
+    // 'error' after a failed cycle or vibe still has loaded models and can restart.
+    const modelsLoaded = this.status === 'ready' || (this.status === 'error' && !!this.llm);
+    if (!modelsLoaded) {
         console.warn('Alucinate is not ready. Please initialize models first.');
         this.setStatus('idle', 'Cannot start: AI not initialized.');
         return false;
@@ -238,7 +241,7 @@ export class Alucinate {
                 const s = this.shaderManifest.find(m => m.id === id);
                 return s ? s.name : id;
             }).join(' + ');
-            this.setStatus('generating', `Mixing stack: ${readableStack}`);
+            this.setStatus('ready', `Mixing stack: ${readableStack}`);
             this.activeShaderIds = ids;
             this.onUpdateStack(ids);
             this.currentParams = params.map(p => ({ ...p }));
@@ -259,7 +262,18 @@ export class Alucinate {
   }
 
   private async runCycle() {
-    if (!this.isRunning || this.status !== 'ready') return;
+    // Gate on an in-flight flag, not on status: a failed caption leaves 'error' and a
+    // kept image leaves 'generating', and either used to stop the loop for good (#1395).
+    if (!this.isRunning || this.cycleInFlight || this.status === 'loading-models') return;
+    this.cycleInFlight = true;
+    try {
+      await this.runCycleOnce();
+    } finally {
+      this.cycleInFlight = false;
+    }
+  }
+
+  private async runCycleOnce() {
 
     const { currentImage } = this.getCurrentState();
     if (!currentImage || !currentImage.url) {
@@ -276,7 +290,7 @@ export class Alucinate {
             this.setStatus('error', 'Failed to generate image caption.');
             // Fallback: Random single shader
             const random = this.shaderManifest[Math.floor(Math.random() * this.shaderManifest.length)];
-            this.onUpdateStack([random.id, 'none', 'none']);
+            if (random) this.onUpdateStack([random.id, 'none', 'none']);
             return;
         }
         this.setStatus('generating', `Image caption: "${caption}"`);
@@ -304,7 +318,7 @@ export class Alucinate {
         } else if (this.isRunning) {
             // Fallback
             const random = this.shaderManifest[Math.floor(Math.random() * this.shaderManifest.length)];
-            this.onUpdateStack([random.id, 'none', 'none']);
+            if (random) this.onUpdateStack([random.id, 'none', 'none']);
         }
         
         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -312,10 +326,13 @@ export class Alucinate {
 
         this.setStatus('generating', 'Dreaming up the next scene...');
         // Use the first shader in the stack for context
-        const primaryShaderName = this.shaderManifest.find(s => s.id === (shaderStack ? shaderStack[0].id : ''))?.name || 'effect';
+        const primaryShaderName = this.shaderManifest.find(s => s.id === (shaderStack?.[0]?.id ?? ''))?.name || 'effect';
         
         const nextTheme = await this.getNextImageThemeFromLLM(caption, primaryShaderName);
-        if (!nextTheme) return; // Keep current image if theme fails
+        if (!nextTheme) {
+            this.setStatus('ready', 'Kept the current image.');
+            return;
+        }
         
         this.setStatus('generating', `Next theme: "${nextTheme}"`);
 
@@ -402,7 +419,7 @@ Your Selection:
             temperature: 0.7
         });
         
-        const content = reply.choices[0].message.content || "";
+        const content = reply.choices[0]?.message.content || "";
         console.log("[Alucinate] LLM Raw Reply:", content);
 
         // Try object array format first
@@ -609,7 +626,8 @@ Your Selection:
       const source = params[index] || {};
       const out: ParamMap = {};
       for (const [key, rule] of Object.entries(slotSchema.params)) {
-        const raw = typeof source[key] === 'number' ? source[key] : (rule.min + rule.max) / 2;
+        const value = source[key];
+        const raw = typeof value === 'number' ? value : (rule.min + rule.max) / 2;
         out[key] = Math.max(rule.min, Math.min(rule.max, raw));
       }
       return out;
@@ -649,7 +667,7 @@ Your Selection:
       if (presets.length > 0) {
         for (let i = 0; i < presets.length; i++) {
           const index = (this.presetCursor + i) % presets.length;
-          const preset = presets[index];
+          const preset = presets[index]!;
           if (this.shaderSignature(preset.shaderIds) === signature) {
             this.presetCursor = index + 1;
             return {
@@ -660,7 +678,7 @@ Your Selection:
           }
         }
 
-        const hardPreset = presets[this.presetCursor % presets.length];
+        const hardPreset = presets[this.presetCursor % presets.length]!;
         this.presetCursor += 1;
         this.activeShaderIds = [...hardPreset.shaderIds];
         this.currentParams = hardPreset.params.map((p) => ({ ...p }));
@@ -699,7 +717,7 @@ Next Scene:`;
 
       try {
           const reply = await this.llm.chat.completions.create({ messages: [{ role: "user", content: prompt}]});
-          const choice = reply.choices[0].message.content;
+          const choice = reply.choices[0]?.message.content;
           return choice ? choice.trim() : null;
       } catch (error) {
           console.error('LLM theme suggestion failed:', error);
@@ -734,6 +752,6 @@ Next Scene:`;
           }
       }
 
-      return bestImage || candidates[Math.floor(Math.random() * candidates.length)];
+      return bestImage || candidates[Math.floor(Math.random() * candidates.length)]!;
   }
 }

@@ -25,49 +25,96 @@
     1
   ],
   "params": [
-    { "id": "well-count", "name": "Well Count", "default": 0.4, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
-    { "id": "well-mass", "name": "Well Mass", "default": 0.4, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
-    { "id": "bend-strength", "name": "Bend Strength", "default": 0.4, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
-    { "id": "emission-scale", "name": "Emission Scale", "default": 0.4, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
-  ],
-  "updatedParams": [
     {
-      "index": 0,
+      "id": "well-count",
       "name": "Well Count",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x"
     },
     {
-      "index": 1,
+      "id": "well-mass",
       "name": "Well Mass",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y"
     },
     {
-      "index": 2,
+      "id": "bend-strength",
       "name": "Bend Strength",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z"
     },
     {
-      "index": 3,
+      "id": "emission-scale",
       "name": "Emission Scale",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w"
     }
   ],
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
   "url": "shaders/gen-gravitational-strain.wgsl",
-  "features": ["procedural", "audio-reactive", "mouse-driven", "drag-reactive", "click-reactive", "bounded-raymarch", "semantic-alpha", "generated-depth", "aces-tone-map", "upgraded-rgba"],
-  "feedbackPacking": "dataTextureA/C = potential depth, ray speed, emission energy, semantic alpha"
+  "features": [
+    "procedural",
+    "audio-reactive",
+    "mouse-driven",
+    "drag-reactive",
+    "click-reactive",
+    "bounded-raymarch",
+    "semantic-alpha",
+    "generated-depth",
+    "aces-tone-map",
+    "upgraded-rgba"
+  ],
+  "feedbackPacking": "dataTextureA/C = potential depth, ray speed, emission energy, semantic alpha",
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Well Count",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Well Mass",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Bend Strength",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Emission Scale",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

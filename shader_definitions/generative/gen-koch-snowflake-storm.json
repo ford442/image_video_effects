@@ -17,54 +17,90 @@
     16,
     1
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Turbulence",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Recursion Depth",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Snowflake Count",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Chromatic Dispersion",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
-  ],
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
   "id": "gen-koch-snowflake-storm",
   "url": "shaders/gen-koch-snowflake-storm.wgsl",
   "params": [
-    {"id": "turbulence", "name": "Turbulence", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x"},
-    {"id": "recursionDepth", "name": "Recursion Depth", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y"},
-    {"id": "snowflakeCount", "name": "Snowflake Count", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z"},
-    {"id": "chromaticDispersion", "name": "Chromatic Dispersion", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w"}
+    {
+      "id": "turbulence",
+      "name": "Turbulence",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "recursionDepth",
+      "name": "Recursion Depth",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "snowflakeCount",
+      "name": "Snowflake Count",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "chromaticDispersion",
+      "name": "Chromatic Dispersion",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
   ],
   "features": [
     "audio-reactive",
     "mouse-driven",
     "upgraded-rgba"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Turbulence",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Recursion Depth",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Snowflake Count",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Chromatic Dispersion",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

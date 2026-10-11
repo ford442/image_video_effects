@@ -33,12 +33,6 @@
       "max": 1
     }
   ],
-  "updatedParams": [
-    { "index": 0, "name": "Fog Density", "default": 0.8, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 1, "name": "Fade Speed", "default": 0.2, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 2, "name": "Wipe Radius", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 3, "name": "Blur Amount", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
-  ],
   "feedbackPacking": "A/C = steam density, droplet mass, runoff, wipe memory",
   "updated": true,
   "features": [
@@ -51,5 +45,43 @@
   "tags": [
     "simulation",
     "physics"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Fog Density",
+          "default": 0.8,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Fade Speed",
+          "default": 0.2,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Wipe Radius",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Blur Amount",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

@@ -25,40 +25,44 @@
   ],
   "updated": true,
   "supportsDepth": true,
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Spine Density and Length",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Audio Reactivity Multiplier",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Bioluminescence Color Shift",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Void Fluidity / Distortion",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    }
-  ],
   "id": "gen-quantum-acoustic-bioluminescent-void-urchin",
-  "url": "shaders/gen-quantum-acoustic-bioluminescent-void-urchin.wgsl"
+  "url": "shaders/gen-quantum-acoustic-bioluminescent-void-urchin.wgsl",
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Spine Density and Length",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Audio Reactivity Multiplier",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Bioluminescence Color Shift",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Void Fluidity / Distortion",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

@@ -11,50 +11,48 @@
     "abstract",
     "colorful"
   ],
-  "description": "Heighway dragon curve \u2014 a space-filling fractal created by repeatedly folding a strip of paper in half. Rendered as a glowing neon filament with iteration-depth coloring from red to violet, upgraded with thin-film iridescence, a warm-key / cool-fill two-temperature glow rig, split-tone grading, atmospheric depth haze, and ACES tone mapping. Audio drives fold depth and FFT-shimmered halo, mouse zooms into detail, and depth controls line thickness perspective.",
+  "description": "Heighway dragon curve — a space-filling fractal created by repeatedly folding a strip of paper in half. Rendered as a glowing neon filament with iteration-depth coloring from red to violet, upgraded with thin-film iridescence, a warm-key / cool-fill two-temperature glow rig, split-tone grading, atmospheric depth haze, and ACES tone mapping. Audio drives fold depth and FFT-shimmered halo, mouse zooms into detail, and depth controls line thickness perspective.",
   "workgroup_size": [
     16,
     16,
     1
   ],
   "params": [
-    { "id": "zoom_detail", "name": "Zoom Detail", "default": 0.2, "min": 0.0, "max": 1.0, "step": 0.01, "mapping": "zoom_params.x" },
-    { "id": "neon_glow_width", "name": "Neon Glow Width", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01, "mapping": "zoom_params.y" },
-    { "id": "fold_chromatic_aberration", "name": "Fold Chromatic Aberration", "default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01, "mapping": "zoom_params.z" },
-    { "id": "temporal_feedback", "name": "Temporal Feedback", "default": 0.2, "min": 0.0, "max": 1.0, "step": 0.01, "mapping": "zoom_params.w" }
-  ],
-  "updatedParams": [
     {
-      "index": 0,
+      "id": "zoom_detail",
       "name": "Zoom Detail",
       "default": 0.2,
       "min": 0.0,
       "max": 1.0,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x"
     },
     {
-      "index": 1,
+      "id": "neon_glow_width",
       "name": "Neon Glow Width",
       "default": 0.5,
       "min": 0.0,
       "max": 1.0,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y"
     },
     {
-      "index": 2,
+      "id": "fold_chromatic_aberration",
       "name": "Fold Chromatic Aberration",
       "default": 0.3,
       "min": 0.0,
       "max": 1.0,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z"
     },
     {
-      "index": 3,
+      "id": "temporal_feedback",
       "name": "Temporal Feedback",
       "default": 0.2,
       "min": 0.0,
       "max": 1.0,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w"
     }
   ],
   "supportsDepth": true,
@@ -74,5 +72,43 @@
     "semantic-alpha",
     "upgraded-rgba"
   ],
-  "feedbackPacking": "A/C = final ACES display RGBA; exact dragon-curve persistence history"
+  "feedbackPacking": "A/C = final ACES display RGBA; exact dragon-curve persistence history",
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Zoom Detail",
+          "default": 0.2,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Neon Glow Width",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Fold Chromatic Aberration",
+          "default": 0.3,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Temporal Feedback",
+          "default": 0.2,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

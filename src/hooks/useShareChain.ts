@@ -74,7 +74,8 @@ export function useShareChain({
     const generateShareableLink = useCallback(() => {
         const params = new URLSearchParams();
 
-        params.set('shader', modes[0]);
+        const primaryMode = modes[0];
+        if (primaryMode !== undefined) params.set('shader', primaryMode);
         params.set('slot', activeSlot.toString());
 
         const params1 = slotParams[activeSlot];
@@ -197,7 +198,8 @@ export function useShareChain({
             }
 
             setMode(index, shaderId as RenderMode);
-            updateSlotParam(index, sharedParams[index]);
+            const params = sharedParams[index];
+            if (params) updateSlotParam(index, params);
         });
 
         setStatus('🔗 Shared chain loaded!');

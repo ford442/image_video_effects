@@ -97,8 +97,8 @@ describe('VariationGrid', () => {
     const adopted = onAdopt.mock.calls[0][0] as SharedChain;
     expect(adopted.v).toBe(1);
     expect(adopted.slots).toHaveLength(2);
-    expect(adopted.slots[0].shaderId).toBe('liquid-a');
-    expect(adopted.slots[1].shaderId).toBe('distort-a');
+    expect(adopted.slots[0]!.shaderId).toBe('liquid-a');
+    expect(adopted.slots[1]!.shaderId).toBe('distort-a');
   });
 
   it('toggles A/B selection', () => {
@@ -185,9 +185,9 @@ describe('VariationGrid', () => {
 
     const favorites = loadFavorites();
     expect(favorites).toHaveLength(1);
-    expect(favorites[0].name).toBe('Variation #1');
+    expect(favorites[0]!.name).toBe('Variation #1');
     expect(screen.getByTestId('favorites-strip')).toBeInTheDocument();
-    expect(screen.getByTestId(`favorite-item-${favorites[0].id}`)).toBeInTheDocument();
+    expect(screen.getByTestId(`favorite-item-${favorites[0]!.id}`)).toBeInTheDocument();
   });
 
   it('breeds two selected variations into a new grid', () => {

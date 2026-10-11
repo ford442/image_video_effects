@@ -49,5 +49,7 @@
     "psychedelic",
     "physics"
   ],
-  "target_rating": 4.6
+  "x-meta": {
+    "target_rating": 4.6
+  }
 }

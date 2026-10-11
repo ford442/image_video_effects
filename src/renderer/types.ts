@@ -1,3 +1,5 @@
+import type { ShaderDefinitionParam } from '../types/ShaderDefinition';
+
 export type RenderMode = string;
 
 export type ShaderCategory =
@@ -29,19 +31,8 @@ export type ShaderCategory =
 // Added 'webcam', 'generative', and 'live' (HLS streaming)
 export type InputSource = 'image' | 'video' | 'webcam' | 'generative' | 'live';
 
-export interface ShaderParam {
-    id: string;
-    name: string;
-    default: number;
-    min: number;
-    max: number;
-    step?: number;
-    labels?: string[];
-    /** WGSL uniform field, e.g. zoom_params.x */
-    mapping?: string;
-    /** Audio band driving this param when audio-reactive mode is on */
-    audio?: 'bass' | 'mid' | 'treble' | 'overall' | { fft: number };
-}
+/** One slider; generated from the shader-definition schema (src/contracts/shader_definition.schema.json). */
+export type ShaderParam = ShaderDefinitionParam;
 
 export interface ShaderEntry {
     id: string;
@@ -51,7 +42,6 @@ export interface ShaderEntry {
     description?: string;
     tags?: string[];
     params?: ShaderParam[];
-    advanced_params?: ShaderParam[];
     features?: string[];
     /** When true, shader requires @workgroup_size(16,16,4) = 1024-invocation support. */
     requiresDeepWorkgroup?: boolean;

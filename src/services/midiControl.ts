@@ -46,16 +46,16 @@ function normalizeMIDIData(raw: Uint8Array | number[]): number[] {
 }
 
 export function translateMIDIMessage(data: number[]): ControlEvent | null {
-  if (data.length < 2) return null;
+  const [status, data1, data2] = data;
+  if (status === undefined || data1 === undefined) return null;
 
-  const status = data[0];
   const channel = (status & 0x0f) + 1;
   const messageType = status & 0xf0;
 
   // Control Change
-  if (messageType === 0xb0 && data.length >= 3) {
-    const controller = data[1];
-    const value = data[2] / 127;
+  if (messageType === 0xb0 && data2 !== undefined) {
+    const controller = data1;
+    const value = data2 / 127;
     return {
       source: 'midi-cc',
       id: `ch${channel}/cc${controller}`,
@@ -64,9 +64,9 @@ export function translateMIDIMessage(data: number[]): ControlEvent | null {
   }
 
   // Note On
-  if (messageType === 0x90 && data.length >= 3) {
-    const note = data[1];
-    const velocity = data[2];
+  if (messageType === 0x90 && data2 !== undefined) {
+    const note = data1;
+    const velocity = data2;
     if (velocity === 0) {
       return {
         source: 'midi-note',
@@ -82,8 +82,8 @@ export function translateMIDIMessage(data: number[]): ControlEvent | null {
   }
 
   // Note Off
-  if (messageType === 0x80 && data.length >= 3) {
-    const note = data[1];
+  if (messageType === 0x80 && data2 !== undefined) {
+    const note = data1;
     return {
       source: 'midi-note',
       id: `ch${channel}/note${note}`,
@@ -105,11 +105,12 @@ export class Midi14BitPairer {
   private msb = new Map<string, number>();
 
   translate(data: number[]): ControlEvent | null {
-    const status = data[0];
-    if ((status & 0xf0) !== 0xb0 || data.length < 3) return translateMIDIMessage(data);
+    const [status, controller, data2] = data;
+    if (status === undefined || controller === undefined || data2 === undefined || (status & 0xf0) !== 0xb0) {
+      return translateMIDIMessage(data);
+    }
     const channel = (status & 0x0f) + 1;
-    const controller = data[1];
-    const value = data[2] & 0x7f;
+    const value = data2 & 0x7f;
     if (controller < 32) {
       this.msb.set(`${channel}/${controller}`, value);
       return translateMIDIMessage(data);

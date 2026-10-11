@@ -3,7 +3,6 @@
   "name": "Clean Vortex",
   "url": "shaders/vortex.wgsl",
   "features": [
-    "mouse-driven",
     "audio-reactive",
     "audio-driven",
     "upgraded-rgba"

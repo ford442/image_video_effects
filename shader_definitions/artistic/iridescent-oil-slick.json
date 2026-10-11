@@ -2,7 +2,7 @@
   "id": "iridescent-oil-slick",
   "name": "Iridescent Oil Slick",
   "url": "shaders/iridescent-oil-slick.wgsl",
-  "description": "Mesmerizing thin-film interference simulation that recreates the rainbow patterns of oil on water or soap bubbles. Features flowing organic motion, hexagonal bubble cells, and mouse-reactive disturbances.",
+  "description": "Thin-film interference of oil on water, integrated across the visible spectrum: black film where it thins, gold-magenta-blue first-order bands, pastel thick film. Flowing motion, Marangoni cell ridges, and a finger push (hold the mouse) that clears a black disc which heals with the flow.",
   "tags": [
     "iridescent",
     "oil",
@@ -16,9 +16,11 @@
     "stylized"
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "temporal-persistence",
+    "upgraded-rgba"
   ],
-  "author": "Kimi",
   "params": [
     {
       "id": "filmScale",
@@ -52,5 +54,8 @@
       "max": 1,
       "step": 0.01
     }
-  ]
+  ],
+  "x-meta": {
+    "author": "Kimi"
+  }
 }

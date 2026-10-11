@@ -1,29 +1,23 @@
-// ----------------------------------------------------------------
-// Aethereal Ferrofluid Chrono-Core
-// Category: generative
-// ----------------------------------------------------------------
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>,
-};
+// ═══════════════════════════════════════════════════════════════════
+//  Aethereal Ferrofluid Chrono-Core
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-10-10
+//  Ideas: Rosensweig needle sharpening (spike profile pow-sharpened by magnetic strength × bass); chrono clock ring (12 equatorial tick spikes, the active tick extends and glows amber); seam-routed bioluminescence (cyan glow follows the Voronoi edge distance v.y − v.x)
+//  A packing: ACES display RGBA, a = coverage (hit) / seam halo (background); C unread
+// ═══════════════════════════════════════════════════════════════════
+//  A raymarched ferrofluid sphere whose surface is pushed out into
+//  Voronoi spikes. Viscosity paces the flow, Spike Density sets the cell
+//  frequency, Magnetic Strength sharpens the spikes into needles (and the
+//  held-pointer dipole), Bioluminescence lights the cell seams.
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
+const TAU: f32 = 6.28318530718;
+const FAR: f32 = 20.0;
+const CAM_DIST: f32 = 6.0;
+const MAX_STEPS: i32 = 128;
 
 fn rot2D(a: f32) -> mat2x2<f32> {
     let s = sin(a);
@@ -37,74 +31,51 @@ fn hash33(p3: vec3<f32>) -> vec3<f32> {
     return fract((p.xxy + p.yxx) * p.zyx);
 }
 
-// 4D Simplex noise approximation
-fn hash4(p: vec4<f32>) -> f32 {
-    let p_frac = fract(p * vec4<f32>(0.1031, 0.1030, 0.0973, 0.1099));
-    let h = dot(p_frac, p_frac.wzxy + 33.33);
-    return fract(h * h);
+fn hash31(p: vec3<f32>) -> f32 {
+    return hash33(p).x;
 }
 
-fn snoise4(v: vec4<f32>) -> f32 {
-    let C = vec4<f32>(
-        0.138196601125011,  // (5 - sqrt(5))/20  G4
-        0.276393202250021,  // 2 * G4
-        0.414589803375032,  // 3 * G4
-        -0.447213595499958  // -1 + 4 * G4
-    );
-
-    let i = floor(v + dot(v, vec4<f32>(0.309016994374947))); // (sqrt(5) - 1)/4
-    var x0 = v - i + dot(i, vec4<f32>(C.x));
-
-    let i0 = step(x0.yzwx, x0.xyzw);
-    let i1 = step(x0.wxyz, x0.xyzw);
-    let i2 = step(x0.zwxy, x0.xyzw);
-
-    let j0 = i0 * (1.0 - i1);
-    let j1 = i1 * (1.0 - i2);
-    let j2 = i2 * (1.0 - i0);
-
-    let i3 = clamp(j0 + j1 + j2, vec4<f32>(0.0), vec4<f32>(1.0));
-
-    // this is a simplified noise for performance and aesthetics
-    return fract(sin(dot(v, vec4<f32>(12.9898, 78.233, 45.164, 94.673))) * 43758.5453);
+// Smooth trilinear value noise in [-1, 1]. HEAD used fract(sin(dot)) white
+// noise here, which made every normal grainy.
+fn valueNoise3(p: vec3<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let w = f * f * (3.0 - 2.0 * f);
+    let n000 = hash31(i);
+    let n100 = hash31(i + vec3<f32>(1.0, 0.0, 0.0));
+    let n010 = hash31(i + vec3<f32>(0.0, 1.0, 0.0));
+    let n110 = hash31(i + vec3<f32>(1.0, 1.0, 0.0));
+    let n001 = hash31(i + vec3<f32>(0.0, 0.0, 1.0));
+    let n101 = hash31(i + vec3<f32>(1.0, 0.0, 1.0));
+    let n011 = hash31(i + vec3<f32>(0.0, 1.0, 1.0));
+    let n111 = hash31(i + vec3<f32>(1.0, 1.0, 1.0));
+    let x00 = mix(n000, n100, w.x);
+    let x10 = mix(n010, n110, w.x);
+    let x01 = mix(n001, n101, w.x);
+    let x11 = mix(n011, n111, w.x);
+    return mix(mix(x00, x10, w.y), mix(x01, x11, w.y), w.z) * 2.0 - 1.0;
 }
 
-fn simplex3d(p: vec3<f32>) -> f32 {
-    let i = floor(p + dot(p, vec3<f32>(1.0 / 3.0)));
-    let x0 = p - i + dot(i, vec3<f32>(1.0 / 6.0));
-
-    let g = step(x0.yzx, x0.xyz);
-    let l = 1.0 - g;
-    let i1 = min(g.xyz, l.zxy);
-    let i2 = max(g.xyz, l.zxy);
-
-    let x1 = x0 - i1 + vec3<f32>(1.0 / 6.0);
-    let x2 = x0 - i2 + vec3<f32>(1.0 / 3.0);
-    let x3 = x0 - 1.0 + vec3<f32>(0.5);
-
-    // Smooth
-    return fract(sin(dot(p, vec3<f32>(12.9898, 78.233, 45.164))) * 43758.5453) * 2.0 - 1.0;
-}
-
-// 3D Voronoi for spike placement
+// 3D Voronoi for spike placement: (F1, F2, cell id)
 fn voronoi(x: vec3<f32>) -> vec3<f32> {
     let p = floor(x);
     let f = fract(x);
 
     var res = vec3<f32>(8.0);
 
-    for(var k = -1; k <= 1; k++) {
-        for(var j = -1; j <= 1; j++) {
-            for(var i = -1; i <= 1; i++) {
+    for (var k = -1; k <= 1; k++) {
+        for (var j = -1; j <= 1; j++) {
+            for (var i = -1; i <= 1; i++) {
                 let b = vec3<f32>(f32(i), f32(j), f32(k));
-                let r = b - f + hash33(p + b);
+                let h = hash33(p + b);
+                let r = b - f + h;
                 let d = dot(r, r);
 
-                if(d < res.x) {
+                if (d < res.x) {
                     res.y = res.x;
                     res.x = d;
-                    res.z = hash33(p + b).x;
-                } else if(d < res.y) {
+                    res.z = h.x;
+                } else if (d < res.y) {
                     res.y = d;
                 }
             }
@@ -125,89 +96,143 @@ fn hue2rgb(hue: f32) -> vec3<f32> {
     return saturate(vec3<f32>(R, G, B));
 }
 
-fn map(p: vec3<f32>, time: f32, audio_mod: f32) -> vec2<f32> { // returns vec2(sdf, id)
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+struct Audio {
+    bass: f32,
+    mids: f32,
+    treble: f32,
+};
+
+struct MapHit {
+    d: f32,
+    spike: f32,     // 1 at a spike tip, 0 far from the cell centre
+    seam: f32,      // Voronoi edge distance F2 - F1 (0 on a seam)
+    tick: f32,      // clock-ring membership (1 on a tick spike)
+    litTick: f32,   // 1 on the currently lit tick
+};
+
+// Idea 2: chrono clock ring — which of the 12 ticks is lit, and how hard.
+fn clockState(time: f32) -> vec2<f32> {
+    let rate = 0.6 + u.zoom_params.x * 0.8;
+    let phase = time * rate;
+    let idx = floor(phase) - floor(phase / 12.0) * 12.0;
+    let strike = exp(-fract(phase) * 3.0);
+    return vec2<f32>(idx, strike);
+}
+
+fn map(p: vec3<f32>, time: f32, au: Audio) -> MapHit {
     var d = length(p) - 1.5; // Base sphere
 
     // Viscosity (zoom_params.x) controls temporal speed and noise amplitude
     let viscosity = u.zoom_params.x;
     // Spike Density (zoom_params.y) controls voronoi frequency
     let density = u.zoom_params.y * 5.0 + 1.0;
+    let magnetic_strength = u.zoom_params.z;
 
     // Audio affects temporal flow
-    let t = time * viscosity * (1.0 + audio_mod * 0.5);
+    let t = time * viscosity * (1.0 + au.bass * 0.5);
 
     // Apply Voronoi for spikes
     let v = voronoi(p * density + vec3<f32>(0.0, t * 0.2, 0.0));
 
     // Smooth out the voronoi cells to make spikes
-    let spike_shape = 1.0 - v.x;
+    let spike_shape = clamp(1.0 - v.x, 0.0, 1.0);
 
-    // Apply 4D Simplex noise approximation for flow
-    let flow = simplex3d(p * 2.0 + vec3<f32>(sin(t), cos(t), t * 0.5));
+    // Idea 1: Rosensweig needles — the field sharpens the rounded cell domes
+    // into needles. Exponent and height grow with magnetic strength × (1 + bass).
+    let field = magnetic_strength * (0.6 + au.bass * 1.4);
+    let needle = pow(spike_shape, 1.0 + field * 3.0) * (1.0 + field * 0.7);
 
-    let spike_displacement = (spike_shape * 0.5 + flow * 0.2) * (1.0 - viscosity * 0.5);
+    // Smooth value-noise flow
+    let flow = valueNoise3(p * 2.0 + vec3<f32>(sin(t), cos(t), t * 0.5));
+
+    let spike_displacement = (needle * 0.5 + flow * 0.2) * (1.0 - viscosity * 0.5);
 
     d = d - spike_displacement;
 
-    // Mouse Interaction: Magnetic Dipole
-    var d_final = d;
-    if (u.zoom_config.w > 0.0) {
-        let mouse_uv = u.zoom_config.xy; // 0 to 1
-        // Convert to world space rough approx (depends on camera setup)
+    // Idea 2: chrono clock ring — 12 tapered tick spikes on the equator.
+    // Fold the azimuth into the nearest tick sector and measure a tapered
+    // round cone along the sector axis.
+    let clk = clockState(time);
+    let az = atan2(p.z, p.x);
+    let sector = floor(az / TAU * 12.0 + 0.5);
+    let sectorAngle = sector * TAU / 12.0;
+    let qxz = rot2D(sectorAngle) * p.xz; // rotate tick axis onto +x
+    let q = vec3<f32>(qxz.x, p.y, qxz.y);
+    let sectorIdx = sector - floor(sector / 12.0) * 12.0;
+    let isActive = 1.0 - step(0.5, abs(sectorIdx - clk.x));
+    let tickLen = 0.35 + isActive * clk.y * (0.4 + au.bass * 0.3);
+    let r0 = 1.3;
+    let h = clamp((q.x - r0) / (tickLen + 0.2), 0.0, 1.0);
+    let tickD = length(q - vec3<f32>(r0 + h * (tickLen + 0.2), 0.0, 0.0)) - mix(0.11, 0.015, h);
+    let dRing = smin(d, tickD, 0.12);
+    let tickMask = 1.0 - smoothstep(0.0, 0.12, tickD - d);
+
+    // Mouse Interaction: Magnetic Dipole (held pointer)
+    var d_final = dRing;
+    if (u.zoom_config.w > 0.5) {
+        let mouse_uv = u.zoom_config.yz; // 0 to 1, y=0 top
         let mouse_world = vec3<f32>((mouse_uv.x - 0.5) * 10.0, (0.5 - mouse_uv.y) * 10.0, 0.0);
-
-        let magnetic_strength = u.zoom_params.z;
         let dist_to_mouse = length(p - mouse_world);
-
-        // Create a well towards the mouse
         let pull = exp(-dist_to_mouse * 0.5) * magnetic_strength * 2.0;
-
-        // Stretch geometry towards mouse
         d_final = smin(d_final, dist_to_mouse - pull, 0.8);
     }
 
-    // ID based on spike shape for coloring
-    return vec2<f32>(d_final, spike_shape);
+    var hit: MapHit;
+    hit.d = d_final;
+    hit.spike = spike_shape;
+    hit.seam = v.y - v.x; // Idea 3: carried out for the seam glow
+    hit.tick = tickMask;
+    hit.litTick = tickMask * isActive * clk.y;
+    return hit;
 }
 
-fn get_normal(p: vec3<f32>, time: f32, audio_mod: f32) -> vec3<f32> {
-    let e = vec2<f32>(0.001, 0.0);
+fn get_normal(p: vec3<f32>, time: f32, au: Audio) -> vec3<f32> {
+    let e = vec2<f32>(0.0015, 0.0);
     let n = vec3<f32>(
-        map(p + e.xyy, time, audio_mod).x - map(p - e.xyy, time, audio_mod).x,
-        map(p + e.yxy, time, audio_mod).x - map(p - e.yxy, time, audio_mod).x,
-        map(p + e.yyx, time, audio_mod).x - map(p - e.yyx, time, audio_mod).x
+        map(p + e.xyy, time, au).d - map(p - e.xyy, time, au).d,
+        map(p + e.yxy, time, au).d - map(p - e.yxy, time, au).d,
+        map(p + e.yyx, time, au).d - map(p - e.yyx, time, au).d
     );
-    return normalize(n);
+    return normalize(n + vec3<f32>(1e-6));
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = vec2<f32>(u.config.xy);
+    let resolution = u.config.zw;
     if (f32(global_id.x) >= resolution.x || f32(global_id.y) >= resolution.y) {
         return;
     }
 
-    let fragCoord = vec2<f32>(f32(global_id.x), f32(global_id.y));
-    let uv = (fragCoord - 0.5 * resolution) / resolution.y;
+    let fragCoord = vec2<f32>(f32(global_id.x), f32(global_id.y)) + 0.5;
+    var uv = (fragCoord - 0.5 * resolution) / resolution.y;
+    uv.y = -uv.y; // storage rows run top-down
 
-    let time = u.config.z;
+    let time = u.config.x;
 
-    // Extract Audio
-    let bass = extraBuffer[0];
-    let bassSmooth = extraBuffer[133]; // Using smooth for less flicker
+    var au: Audio;
+    au.bass = plasmaBuffer[0].x;
+    au.mids = plasmaBuffer[0].y;
+    au.treble = plasmaBuffer[0].z;
 
-    // Camera
-    var ro = vec3<f32>(0.0, 0.0, 4.0);
+    // Camera — pulled back from HEAD's 4.0 so the spiked silhouette and the
+    // equatorial clock ring read against the void instead of filling the frame
+    var ro = vec3<f32>(0.0, 0.0, CAM_DIST);
     let target_pt = vec3<f32>(0.0, 0.0, 0.0);
 
-    // Mouse orbit
-    if (u.zoom_config.w > 0.0) {
-        let mouse_orbit_x = (u.zoom_config.x - 0.5) * PI * 2.0;
-        let mouse_orbit_y = (u.zoom_config.y - 0.5) * PI;
+    // Mouse orbit (held pointer)
+    if (u.zoom_config.w > 0.5) {
+        let mouse_orbit_x = (u.zoom_config.y - 0.5) * PI * 2.0;
+        // keep off the poles: cross(ww, up) is zero at ±PI/2
+        let mouse_orbit_y = clamp((u.zoom_config.z - 0.5) * PI, -1.4, 1.4);
         let rotX = rot2D(mouse_orbit_y);
         let rotY = rot2D(-mouse_orbit_x);
 
-        var temp_ro = vec3<f32>(0.0, 0.0, 4.0);
+        var temp_ro = vec3<f32>(0.0, 0.0, CAM_DIST);
         let yz = temp_ro.yz * rotX;
         temp_ro = vec3<f32>(temp_ro.x, yz.x, yz.y);
         let xz = temp_ro.xz * rotY;
@@ -220,32 +245,40 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vv = normalize(cross(uu, ww));
     let rd = normalize(uv.x * uu + uv.y * vv + 1.5 * ww);
 
-    // Raymarching
+    // Raymarching (needles break the unit Lipschitz bound, so under-step)
     var t = 0.0;
-    var d = 0.0;
-    var mat_id = 0.0;
     var p = ro;
-    var steps: i32 = 0;
+    var hitInfo: MapHit;
+    var steps: i32 = MAX_STEPS;
+    var hit = false;
+    var minSeamGlow = 0.0;
 
-    for(var i = 0; i < 100; i++) {
+    for (var i = 0; i < MAX_STEPS; i++) {
         p = ro + rd * t;
-        let res = map(p, time, bassSmooth);
-        d = res.x;
-        mat_id = res.y;
+        hitInfo = map(p, time, au);
+        let d = hitInfo.d;
+        // Idea 3 (halo): near-miss rays pick up the seam glow they graze
+        minSeamGlow = max(minSeamGlow, exp(-max(d, 0.0) * 6.0) * exp(-hitInfo.seam * 10.0));
 
-        if (abs(d) < 0.001 || t > 20.0) {
+        if (abs(d) < 0.001 * (1.0 + t)) {
+            steps = i;
+            hit = true;
+            break;
+        }
+        if (t > FAR) {
             steps = i;
             break;
         }
-        t += d;
+        t += d * 0.55;
     }
 
+    let bioluminescence_intensity = u.zoom_params.w;
     var col = vec3<f32>(0.05, 0.05, 0.08); // Background
-    var depth = 1.0; // Far clip
+    var depth = 0.0; // far
+    var alpha = 0.0;
 
-    if (t < 20.0) {
-        // Hit
-        let n = get_normal(p, time, bassSmooth);
+    if (hit) {
+        let n = get_normal(p, time, au);
 
         // Lighting
         let l = normalize(vec3<f32>(1.0, 1.0, 2.0));
@@ -261,32 +294,40 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let iridescence = hue2rgb(iridescence_hue) * fresnel;
 
         // Fake Ambient Occlusion based on steps
-        let ao = 1.0 - f32(steps) / 100.0;
+        let ao = 1.0 - f32(steps) / f32(MAX_STEPS);
 
         // Base metallic color
-        var mat_col = vec3<f32>(0.1, 0.12, 0.15) * diff + spec * vec3<f32>(1.0) + iridescence * 2.0;
+        let mat_col = vec3<f32>(0.1, 0.12, 0.15) * diff + spec * vec3<f32>(1.0) + iridescence * 2.0;
 
-        // Bioluminescence in the valleys (based on spike shape/id inverted)
-        // High mat_id means spike peak, low means valley
-        let valley = saturate(1.0 - mat_id * 2.0);
-        let bio_color = vec3<f32>(0.0, 0.8, 1.0) * valley; // Cyan glow
-        let bioluminescence_intensity = u.zoom_params.w;
+        // Idea 3: seam-routed bioluminescence. The cyan glow lives on the
+        // Voronoi seams (F2 − F1 → 0) between spikes, pooled in the valleys,
+        // with bands that run outward from each seam, paced by mids.
+        let valley = saturate(1.0 - hitInfo.spike * 2.0);
+        let seamLine = exp(-hitInfo.seam * 14.0);
+        let seamPulse = 0.6 + 0.4 * sin(hitInfo.seam * 30.0 - time * (2.0 + au.mids * 4.0));
+        let bio_color = vec3<f32>(0.0, 0.8, 1.0) * (seamLine * seamPulse + valley * 0.35);
+        let bio = bio_color * bioluminescence_intensity * (1.0 + au.bass * 2.0) * ao;
 
-        // Modulate bio color with audio
-        let bio = bio_color * bioluminescence_intensity * (1.0 + bass * 2.0) * ao;
+        // Idea 2: clock ring — brushed bezel ticks, the active tick strikes amber
+        let tickMetal = vec3<f32>(0.55, 0.5, 0.42) * (diff * 0.6 + spec) * hitInfo.tick;
+        let tickGlow = vec3<f32>(1.0, 0.55, 0.15) * hitInfo.litTick * (2.0 + au.treble * 3.0);
 
-        col = mat_col * ao + bio;
+        col = mat_col * ao + bio + tickMetal * ao + tickGlow;
 
-        // Depth
-        let ndc = vec4<f32>(p, 1.0);
-        depth = (t - 0.1) / (20.0 - 0.1);
+        // Depth: near = 1
+        depth = clamp(1.0 - (t - 0.1) / (FAR - 0.1), 0.0, 1.0);
+        alpha = clamp(1.0 - 0.25 * fresnel, 0.0, 1.0);
+    } else {
+        // Background: faint seam halo around the silhouette
+        let halo = vec3<f32>(0.0, 0.5, 0.7) * minSeamGlow * bioluminescence_intensity * 0.25;
+        col = col + halo;
+        alpha = clamp(minSeamGlow * bioluminescence_intensity * 0.3, 0.0, 0.6);
     }
 
-    // Output
-    let store_coord = vec2<i32>(global_id.xy);
-    textureStore(writeTexture, store_coord, vec4<f32>(col, 1.0));
-    textureStore(writeDepthTexture, store_coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let display = acesToneMap(max(col, vec3<f32>(0.0)));
 
-    // History
-    textureStore(dataTextureA, store_coord, vec4<f32>(col, 1.0));
+    let store_coord = vec2<i32>(global_id.xy);
+    textureStore(writeTexture, store_coord, vec4<f32>(display, alpha));
+    textureStore(writeDepthTexture, store_coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, store_coord, vec4<f32>(display, alpha));
 }

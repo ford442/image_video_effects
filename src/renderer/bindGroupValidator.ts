@@ -61,8 +61,8 @@ export function validateBindGroup(
   };
 
   // 1. Check required bindings
-  for (let binding = 0; binding <= 12; binding++) {
-    const req = REQUIRED_BINDINGS[binding];
+  for (const [key, req] of Object.entries(REQUIRED_BINDINGS)) {
+    const binding = Number(key);
     const bindingRegex = new RegExp(
       `@group\\(0\\)\\s*@binding\\(${binding}\\)`,
       'g'
@@ -98,7 +98,7 @@ export function validateBindGroup(
     result.errors.push("Missing 'struct Uniforms' declaration");
     result.valid = false;
   } else {
-    const body = uniformsMatch[1];
+    const body = uniformsMatch[1]!;
     for (const field of REQUIRED_UNIFORM_FIELDS) {
       if (!body.includes(field)) {
         result.errors.push(`Uniforms struct missing field: ${field}`);
@@ -136,7 +136,7 @@ export function validateBindGroup(
     const maxBinding = Math.max(
       ...extendedBinding.map((b) => {
         const m = b.match(/@binding\((\d+)\)/);
-        return m ? parseInt(m[1], 10) : 0;
+        return m ? parseInt(m[1]!, 10) : 0;
       })
     );
     if (maxBinding > 13) {

@@ -22,58 +22,12 @@
     "aces-tone-map",
     "semantic-alpha"
   ],
-  "description": "Large-scale cosmic structure evolving at speed \u2014 Zel'dovich streaming, Voronoi filaments and Apollonian voids, with caustic striation running along each strand. Stellar populations are graded through a psychedelic spectrum. The spring-smoothed cursor opens a void well that drags the web toward it, holding collapses structure into the well, and clicks send density shocks rippling through the filaments.",
+  "description": "Large-scale cosmic structure evolving at speed — Zel'dovich streaming, Voronoi filaments and Apollonian voids, with caustic striation running along each strand. Stellar populations are graded through a psychedelic spectrum. The spring-smoothed cursor opens a void well that drags the web toward it, holding collapses structure into the well, and clicks send density shocks rippling through the filaments.",
   "workgroup_size": [
     16,
     16,
     1
   ],
-  "params": [
-    { "id": "warp-strength", "name": "Warp Strength", "default": 0.33, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
-    { "id": "filament-density", "name": "Filament Density", "default": 0.4, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
-    { "id": "evolution-speed", "name": "Evolution Speed", "default": 0.35, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
-    { "id": "void-pull", "name": "Void Pull", "default": 0.4, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
-  ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Warp Strength",
-      "default": 0.33,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Filament Density",
-      "default": 0.4,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Evolution Speed",
-      "default": 0.35,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Void Pull",
-      "default": 0.4,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
-  ],
-  "supportsDepth": true,
-  "supportsDof": false,
-  "updated": true,
-  "id": "gen-cosmic-web-filament",
-  "url": "shaders/gen-cosmic-web-filament.wgsl",
-  "features": [],
   "params": [
     {
       "id": "warp_strength",
@@ -111,5 +65,49 @@
       "step": 0.01,
       "mapping": "zoom_params.w"
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-cosmic-web-filament",
+  "url": "shaders/gen-cosmic-web-filament.wgsl",
+  "features": [],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Warp Strength",
+          "default": 0.33,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Filament Density",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Evolution Speed",
+          "default": 0.35,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Void Pull",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

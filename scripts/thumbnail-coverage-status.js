@@ -101,8 +101,11 @@ const healthyEligible = withThumbEligible - flaggedEligible;
 const healthyEligiblePct = eligibleTotal
   ? ((healthyEligible / eligibleTotal) * 100).toFixed(1)
   : '0.0';
-const priorityIds = loadPriorityIds().filter(id => catalog.has(id));
-const priorityThumbs = priorityIds.filter(id => hasThumbFile(id, manifest));
+const allPriorityIds = loadPriorityIds();
+const priorityIds = allPriorityIds.filter(id => catalog.has(id));
+// Attract mode looks ids up in the catalog, so a non-catalog id is silently dropped from rotation.
+const priorityNotInCatalog = allPriorityIds.filter(id => !catalog.has(id));
+const priorityThumbs = priorityIds.filter(id => hasThumbFile(id, manifest) && !flaggedIds.has(id));
 const requirePriority = process.argv.includes('--require-priority');
 
 console.log(`Thumbnail coverage: ${withThumb}/${total} (${pct}%)`);
@@ -129,14 +132,18 @@ if (integrityCurrent) {
 
 if (priorityIds.length > 0) {
   console.log(
-    `Attract / Physics Lab priority coverage: ${priorityThumbs.length}/${priorityIds.length} ` +
+    `Attract / Physics Lab priority coverage (healthy): ${priorityThumbs.length}/${priorityIds.length} ` +
     `(${((priorityThumbs.length / priorityIds.length) * 100).toFixed(1)}%)`,
   );
   if (priorityThumbs.length < priorityIds.length) {
-    const missingPriority = priorityIds.filter(id => !hasThumbFile(id, manifest));
-    console.log(`Priority thumbnails missing: ${missingPriority.join(', ')}`);
+    const missingPriority = priorityIds.filter(id => !priorityThumbs.includes(id));
+    console.log(`Priority thumbnails missing or unhealthy: ${missingPriority.join(', ')}`);
     if (requirePriority) process.exitCode = 1;
   }
+}
+if (priorityNotInCatalog.length > 0) {
+  console.log(`Attract ids not in the catalog (never shown): ${priorityNotInCatalog.join(', ')}`);
+  if (requirePriority) process.exitCode = 1;
 }
 
 if (skipIds.size > 0) {

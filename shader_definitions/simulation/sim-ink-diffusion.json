@@ -54,52 +54,56 @@
       "description": "Color mixing intensity"
     }
   ],
-  "chunks_used": [
-    "hash12 (gen_grid.wgsl)",
-    "Gray-Scott reaction-diffusion",
-    "Multi-channel processing",
-    "Paper texture simulation"
-  ],
-  "wolfram_params": {
-    "coral": "F=0.0545, k=0.062",
-    "fingerprint": "F=0.0545, k=0.063",
-    "spots_waves": "F=0.018, k=0.050"
-  },
-  "performance_target": "60 FPS (GTX 1060)",
-  "created_by": "Agent 3B - Advanced Hybrid Creator",
-  "created_date": "2026-03-22",
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Paper Wetness",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Paper Wetness",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Ink Viscosity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Feed Rate",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Color Mixing",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
     },
-    {
-      "index": 1,
-      "name": "Ink Viscosity",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "Gray-Scott reaction-diffusion",
+      "Multi-channel processing",
+      "Paper texture simulation"
+    ],
+    "performance_target": "60 FPS (GTX 1060)",
+    "wolfram_params": {
+      "coral": "F=0.0545, k=0.062",
+      "fingerprint": "F=0.0545, k=0.063",
+      "spots_waves": "F=0.018, k=0.050"
     },
-    {
-      "index": 2,
-      "name": "Feed Rate",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Color Mixing",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
-  ]
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22"
+  }
 }

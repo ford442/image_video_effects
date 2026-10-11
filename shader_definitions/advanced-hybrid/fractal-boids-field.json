@@ -54,18 +54,20 @@
       "description": "Boid separation distance"
     }
   ],
-  "chunks_used": [
-    "hash12 (gen_grid.wgsl)",
-    "fbm2 (gen_grid.wgsl)",
-    "domainWarp",
-    "Boids separation/alignment/cohesion"
-  ],
-  "performance_target": "45-60 FPS (GTX 1060)",
-  "created_by": "Agent 3B - Advanced Hybrid Creator",
-  "created_date": "2026-03-22",
   "tags": [
     "audio",
     "music",
     "reactive"
-  ]
+  ],
+  "x-meta": {
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "fbm2 (gen_grid.wgsl)",
+      "domainWarp",
+      "Boids separation/alignment/cohesion"
+    ],
+    "performance_target": "45-60 FPS (GTX 1060)",
+    "created_by": "Agent 3B - Advanced Hybrid Creator",
+    "created_date": "2026-03-22"
+  }
 }

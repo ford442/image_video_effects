@@ -24,6 +24,7 @@ import { useCoordinateNavigation } from './hooks/useCoordinateNavigation';
 import { useShaderMenuOptions } from './hooks/useShaderMenuOptions';
 import { useAiVjAutoTransition } from './hooks/useAiVjAutoTransition';
 import type { ControlsProps } from './types';
+import { defaultSlotParams } from '../../app/constants/defaultSlotParams';
 import '../../styles/gold-glass-theme.css';
 
 export const ControlsContainer: React.FC<ControlsProps> = ({
@@ -163,8 +164,8 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
         ratedShaders,
     });
 
-    const currentMode = modes[activeSlot];
-    const currentParams = slotParams[activeSlot];
+    const currentMode = modes[activeSlot] ?? 'none';
+    const currentParams = slotParams[activeSlot] ?? defaultSlotParams;
     const currentShaderEntry = availableModes.find(m => m.id === currentMode);
     const currentCoordinate = getShaderCoordinate(currentMode);
 

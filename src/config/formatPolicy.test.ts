@@ -101,7 +101,7 @@ describe('formatPolicy', () => {
 });
 
 describe('probeFormatCapabilities', () => {
-  it('measures storage formats instead of hardcoding true', () => {
+  it('measures storage formats instead of hardcoding true', async () => {
     const created: GPUTextureFormat[] = [];
     const device = {
       createTexture: jest.fn((desc: GPUTextureDescriptor) => {
@@ -114,14 +114,14 @@ describe('probeFormatCapabilities', () => {
       info: { adapterType: 'integrated' },
     } as unknown as GPUAdapter;
 
-    const caps = probeFormatCapabilities(adapter, { isMobile: false, device });
+    const caps = await probeFormatCapabilities(adapter, { isMobile: false, device });
     expect(caps.supportsRgba32FloatStorage).toBe(true);
     expect(caps.supportsRgba16FloatStorage).toBe(true);
     expect(caps.hasFloat32Filterable).toBe(true);
     expect(created).toEqual(expect.arrayContaining(['rgba16float', 'rgba32float']));
   });
 
-  it('records false when the 1×1 storage create throws', () => {
+  it('records false when the 1×1 storage create throws', async () => {
     const device = {
       createTexture: jest.fn(() => {
         throw new Error('rgba32float storage not supported');
@@ -132,17 +132,31 @@ describe('probeFormatCapabilities', () => {
       info: {},
     } as unknown as GPUAdapter;
 
-    const caps = probeFormatCapabilities(adapter, { device });
+    const caps = await probeFormatCapabilities(adapter, { device });
     expect(caps.supportsRgba32FloatStorage).toBe(false);
     expect(caps.supportsRgba16FloatStorage).toBe(false);
   });
 
-  it('does not assume storage support without a device', () => {
+  it('records false when the create only raises a validation error (#1395)', async () => {
+    const device = {
+      createTexture: jest.fn(() => ({ destroy: jest.fn() })),
+      pushErrorScope: jest.fn(),
+      popErrorScope: jest.fn(async () => ({ message: 'storage format not allowed' })),
+    } as unknown as GPUDevice;
+    const adapter = { features: new Set<GPUFeatureName>(), info: {} } as unknown as GPUAdapter;
+
+    const caps = await probeFormatCapabilities(adapter, { device });
+    expect(caps.supportsRgba32FloatStorage).toBe(false);
+    expect(caps.supportsRgba16FloatStorage).toBe(false);
+    expect(device.pushErrorScope).toHaveBeenCalledWith('validation');
+  });
+
+  it('does not assume storage support without a device', async () => {
     const adapter = {
       features: new Set<GPUFeatureName>(),
       info: {},
     } as unknown as GPUAdapter;
-    const caps = probeFormatCapabilities(adapter, false);
+    const caps = await probeFormatCapabilities(adapter, false);
     expect(caps.supportsRgba32FloatStorage).toBe(false);
     expect(caps.supportsRgba16FloatStorage).toBe(false);
   });

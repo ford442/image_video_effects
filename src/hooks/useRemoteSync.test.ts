@@ -83,7 +83,7 @@ describe('useRemoteSync commands', () => {
 
     const main = MockBroadcastChannel.instances[0];
     act(() => {
-      main.onmessage?.({
+      main!.onmessage?.({
         data: { type: 'CMD_RANDOMIZE_SLOT', payload: 0 },
       } as MessageEvent);
     });
@@ -97,7 +97,7 @@ describe('useRemoteSync commands', () => {
 
     const main = MockBroadcastChannel.instances[0];
     act(() => {
-      main.onmessage?.({
+      main!.onmessage?.({
         data: { type: 'CMD_ROULETTE' },
       } as MessageEvent);
     });
@@ -111,7 +111,7 @@ describe('useRemoteSync commands', () => {
 
     const main = MockBroadcastChannel.instances[0];
     act(() => {
-      main.onmessage?.({
+      main!.onmessage?.({
         data: { type: 'CMD_RANDOMIZE_ALL_SLOTS' },
       } as MessageEvent);
     });
@@ -125,7 +125,7 @@ describe('useRemoteSync commands', () => {
 
     const main = MockBroadcastChannel.instances[0];
     act(() => {
-      main.onmessage?.({
+      main!.onmessage?.({
         data: {
           type: 'CMD_UPDATE_SLOT_PARAM',
           payload: { index: 0, updates: { zoomParam1: 0.42, zoomParam2: 0.8 } },
@@ -142,7 +142,7 @@ describe('useRemoteSync commands', () => {
 
     const main = MockBroadcastChannel.instances[0];
     act(() => {
-      main.onmessage?.({
+      main!.onmessage?.({
         data: { type: 'CMD_UPDATE_SLOT_PARAM', payload: {} },
       } as MessageEvent);
     });
@@ -156,7 +156,7 @@ describe('useRemoteSync commands', () => {
 
     const main = MockBroadcastChannel.instances[0];
     act(() => {
-      main.onmessage?.({
+      main!.onmessage?.({
         data: { type: 'CMD_LOAD_RANDOM_IMAGE' },
       } as MessageEvent);
     });

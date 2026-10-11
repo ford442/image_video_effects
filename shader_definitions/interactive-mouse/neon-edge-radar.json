@@ -45,6 +45,7 @@
   ],
   "features": [
     "upgraded-rgba",
+    "semantic-alpha",
     "mouse-driven",
     "audio-reactive",
     "audio-driven",

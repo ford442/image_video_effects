@@ -61,13 +61,45 @@
       "mapping": "zoom_params.w"
     }
   ],
-  "updatedParams": [
-    { "index": 0, "name": "Magnification", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 1, "name": "Chromatic Dispersion", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 2, "name": "Lens Radius", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 3, "name": "Iridescence / Rim Blur", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
-  ],
   "feedbackPacking": "A/C = display RGBA with chromatic lens magnification and iridescent sheen history",
   "updated": true,
-  "target_rating": 4.8
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Magnification",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Chromatic Dispersion",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Lens Radius",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Iridescence / Rim Blur",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    },
+    "target_rating": 4.8
+  }
 }

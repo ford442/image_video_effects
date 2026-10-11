@@ -97,17 +97,40 @@ export function meetsDeepWorkgroupLimits(limits: Partial<WorkgroupLimits> | unde
  * maxTextureDimension2D (fixed comfortable floor from the contract).
  *
  * Pass `adapterLimits` to also request the deep-workgroup limits when the adapter
- * offers them; WebGPU never grants more than requested, so omitting this caps the
- * device at 256 invocations even on a 1024-capable adapter.
+ * offers them, and the adapter's buffer-size limits. WebGPU never grants more than
+ * requested, so omitting this caps the device at 256 invocations and 256 MiB
+ * buffers even on an adapter that offers more.
  */
 export function buildRequiredLimits(
   _maxCanvasDim?: number,
-  adapterLimits?: Partial<WorkgroupLimits>,
+  adapterLimits?: Partial<WorkgroupLimits & BufferSizeLimits>,
 ): GPUDeviceDescriptor['requiredLimits'] {
   return {
     ...MINIMUM_COMPUTE_LIMITS,
     ...(meetsDeepWorkgroupLimits(adapterLimits) ? DEEP_WORKGROUP_LIMITS : {}),
+    ...bufferSizeRequest(adapterLimits),
   };
+}
+
+/** Floors for the buffer-size limits (spec defaults, webgpu_limits.json bufferSizeLimits). */
+export const BUFFER_SIZE_LIMIT_FLOORS = webgpuLimitsContract.bufferSizeLimits;
+
+type BufferSizeLimits = Pick<GPUSupportedLimits, 'maxBufferSize' | 'maxStorageBufferBindingSize'>;
+
+/**
+ * Request the adapter's own buffer-size limits (never below the spec-default floor).
+ * Without this the device keeps the 256 MiB default and the 2048 working-size gate
+ * (`maxBufferSize >= 1 GiB`, src/config/vramBudget.ts) can never pass.
+ */
+function bufferSizeRequest(
+  adapterLimits: Partial<BufferSizeLimits> | undefined,
+): Partial<Record<keyof BufferSizeLimits, number>> {
+  const out: Partial<Record<keyof BufferSizeLimits, number>> = {};
+  for (const name of ['maxBufferSize', 'maxStorageBufferBindingSize'] as const) {
+    const offered = adapterLimits?.[name];
+    if (typeof offered === 'number' && offered > BUFFER_SIZE_LIMIT_FLOORS[name]) out[name] = offered;
+  }
+  return out;
 }
 
 /**

@@ -8,18 +8,10 @@ export const GPU_LAUNCH_ARGS = buildGpuLaunchArgs(process.platform, GPU_TESTS, i
 /** Desktop Chrome viewport without its spoofed Windows user agent (GPU runs report the real platform). */
 const { userAgent: _spoofedUserAgent, ...desktopChromeNoUa } = devices['Desktop Chrome'];
 
+import { SWIFTSHADER_WEBGPU_ARGS } from './scripts/lib/swiftshaderArgs';
+
 /** Chromium flags that give a working software WebGPU adapter (see tests/engine2.swiftshader.spec.ts). */
-export const SWIFTSHADER_WEBGPU_ARGS = [
-  '--enable-unsafe-webgpu',
-  '--enable-features=Vulkan',
-  '--use-vulkan=swiftshader',
-  '--use-webgpu-adapter=swiftshader',
-  '--enable-unsafe-swiftshader',
-  '--use-angle=swiftshader',
-  '--use-fake-device-for-media-stream',
-  '--use-fake-ui-for-media-stream',
-  '--autoplay-policy=no-user-gesture-required',
-];
+export { SWIFTSHADER_WEBGPU_ARGS };
 
 /**
  * Playwright configuration for smoke tests.

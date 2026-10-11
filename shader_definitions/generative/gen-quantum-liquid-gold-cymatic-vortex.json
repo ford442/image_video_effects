@@ -53,41 +53,45 @@
   "features": [
     "upgraded-rgba"
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Vortex Speed",
-      "default": 1.0,
-      "min": 0.1,
-      "max": 5.0,
-      "step": 0.1
-    },
-    {
-      "index": 1,
-      "name": "Viscosity",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.05
-    },
-    {
-      "index": 2,
-      "name": "Cymatic Intensity",
-      "default": 0.8,
-      "min": 0.0,
-      "max": 2.0,
-      "step": 0.1
-    },
-    {
-      "index": 3,
-      "name": "Gold Purity",
-      "default": 1.0,
-      "min": 0.5,
-      "max": 1.5,
-      "step": 0.05
-    }
-  ],
   "updated": true,
   "supportsDepth": true,
-  "supportsDof": false
+  "supportsDof": false,
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Vortex Speed",
+          "default": 1.0,
+          "min": 0.1,
+          "max": 5.0,
+          "step": 0.1
+        },
+        {
+          "index": 1,
+          "name": "Viscosity",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.05
+        },
+        {
+          "index": 2,
+          "name": "Cymatic Intensity",
+          "default": 0.8,
+          "min": 0.0,
+          "max": 2.0,
+          "step": 0.1
+        },
+        {
+          "index": 3,
+          "name": "Gold Purity",
+          "default": 1.0,
+          "min": 0.5,
+          "max": 1.5,
+          "step": 0.05
+        }
+      ]
+    }
+  }
 }

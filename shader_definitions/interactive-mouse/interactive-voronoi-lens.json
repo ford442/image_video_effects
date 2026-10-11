@@ -4,7 +4,15 @@
   "url": "shaders/interactive-voronoi-lens.wgsl",
   "category": "interactive-mouse",
   "description": "Voronoi cells act as audio-reactive lenses with mouse-driven focus, temporal trail accumulation, depth-aware edge fog, and neon cell-boundary accents.",
-  "tags": ["voronoi", "lens", "distortion", "mouse-driven", "audio-reactive", "temporal-feedback", "depth-aware"],
+  "tags": [
+    "voronoi",
+    "lens",
+    "distortion",
+    "mouse-driven",
+    "audio-reactive",
+    "temporal-feedback",
+    "depth-aware"
+  ],
   "features": [
     "mouse-driven",
     "audio-reactive",
@@ -13,7 +21,11 @@
     "temporal-persistence",
     "depth-aware"
   ],
-  "workgroup_size": [16, 16, 1],
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
   "params": [
     {
       "id": "cell_density",
@@ -22,7 +34,7 @@
       "min": 0.0,
       "max": 1.0,
       "step": 0.01,
-      "param": "zoom_params.x"
+      "mapping": "zoom_params.x"
     },
     {
       "id": "lens_strength",
@@ -31,7 +43,7 @@
       "min": 0.0,
       "max": 1.0,
       "step": 0.01,
-      "param": "zoom_params.y"
+      "mapping": "zoom_params.y"
     },
     {
       "id": "chaos",
@@ -40,7 +52,7 @@
       "min": 0.0,
       "max": 1.0,
       "step": 0.01,
-      "param": "zoom_params.z"
+      "mapping": "zoom_params.z"
     },
     {
       "id": "lens_curve",
@@ -49,7 +61,7 @@
       "min": 0.0,
       "max": 1.0,
       "step": 0.01,
-      "param": "zoom_params.w"
+      "mapping": "zoom_params.w"
     }
   ]
 }

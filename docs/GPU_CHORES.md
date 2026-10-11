@@ -32,14 +32,14 @@ Dispatch ceiling: WebGPU `maxComputeWorkgroupsPerDimension` is **65535**. Chores
 
 - **Single device:** `GpuChoresHost.attach(rendererDevice)` only. No `requestAdapter()` / `requestDevice()`.
 - **Boot probe gate:** chores run only when `window.webgpuProbe.ok === true` (adopt probed device). Probe failure = idle — no silent CPU pre-FX feeding catalog FX.
-- **Shader tools:** `ShaderValidator` and `ShaderScanner` adopt the same boot-probe `GPUDevice` via the adopted-device registry — never `requestAdapter()` / `requestDevice()`.
+- **Shader tools:** `ShaderValidator` and `ShaderScanner` compile on the renderer's `GPUDevice` through `shaderCompileService`, which reads the renderer device registry (`src/renderer/deviceRegistry.ts`; an RPC to the worker in worker mode). They never call `requestAdapter()` / `requestDevice()`. The registry holds the device the renderer actually ended up with, and its `generation` changes on every loss and recovery.
 - **Depth estimation:** while the canvas WebGPU renderer is live, prefer WASM/CPU for `@xenova/transformers` depth (it may allocate its own `GPUDevice` when `device:'webgpu'`).
 - **No dual-hot WebGL + WebGPU** on the same working set. WebGL2 FBO kernels are later, not required here.
-- Backend order: **WebGPU (adopted) → existing WASM/C++ analysis (none yet) → TS** (`?no_gpu_compute` only when probe succeeded).
+- Backend order: **WebGPU (renderer device) → existing WASM/C++ analysis (none yet) → TS** (`?no_gpu_compute` only when probe succeeded).
 - Kill switch: `?no_gpu_compute` (also `=1` / `=true`). Forces TS.
 - Readback is the 256-bin histogram + 16-byte reduce (~1 KiB) plus an optional 64×64 rgba8 classify map for Dev Tools — not a full-frame pixel dump.
 
-ShaderValidator / ShaderScanner compile-check WGSL on the **same adopted renderer device** (not a second device). Depth estimation prefers WASM/CPU while the canvas renderer is active — see `src/services/depthEstimation/loader.ts`.
+ShaderValidator / ShaderScanner compile-check WGSL on the **same renderer device** (not a second device). The exception is the standalone `?validator` page: it has no renderer, so it uses a probe device for the run and destroys it afterwards. gpu-chores belong to each `WebGPURenderer`, so a recovered renderer attaches fresh ones. Depth estimation prefers WASM/CPU while the canvas renderer is active — see `src/services/depthEstimation/loader.ts`.
 
 ## Live pre-FX path
 

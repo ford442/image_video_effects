@@ -3,37 +3,22 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, click-reactive, raymarching, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
+//  Upgraded: 2026-10-10
 //  Ideas: spring-eased current eddy (pointer vortex centre persists in
 //         extraBuffer and lags like water); bass-envelope tentacle
 //         retraction (anemones flinch shorter on hits, relax slowly);
 //         peristaltic feeding pulse of light travelling up each tentacle
 //         (speed from mids, bands from treble)
+//         2nd pass (2026-10-10): helical coil (retraction twists each
+//         tentacle into a spiral about the anemone axis instead of only
+//         shortening it); geometric peristalsis (the feed pulse is now a
+//         physical bulge of base/top radius, phase-locked to the emissive band)
 //  A packing: display RGB history (pre-ACES) + semantic tissue alpha;
 //             read back via exact textureLoad(dataTextureC, coord, 0)
 //  Engine: zoom_config.yz = mouse, zoom_config.w = mouse-down, config.y = ripple count
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // Anemone Tissue Properties
 const TENTACLE_DENSITY: f32 = 1.8;      // Less dense than skin
@@ -158,6 +143,13 @@ fn calculateGelatinousAlpha(thickness: f32, n: vec3<f32>, l: vec3<f32>,
     return clamp(glowAlpha, 0.25, 0.9);
 }
 
+// Idea 2nd-pass B: one shared peristaltic wave. Both the geometry (radius bulge in map)
+// and the emissive feed band (main) read this, so the glow rides a real swelling.
+fn peristalsis(y: f32, t: f32, speed: f32, mid: f32, high: f32) -> f32 {
+    let climb = y * (1.2 + high * 2.5) - t * (1.5 + mid * 4.0) * speed;
+    return pow(max(0.0, sin(climb)), 12.0);
+}
+
 // --- Map Function ---
 
 fn map(p: vec3<f32>) -> vec2<f32> {
@@ -224,9 +216,19 @@ fn map(p: vec3<f32>) -> vec2<f32> {
         let radius = 0.5 + th * 0.5;
         let offset = vec3<f32>(cos(angle)*radius, 0.0, sin(angle)*radius);
 
-        let p_cone = q - offset - vec3<f32>(0.0, height * 0.5, 0.0);
-        let base_r = 0.4 + th * 0.2;
-        let top_r = 0.05;
+        // Idea 2nd-pass A: helical coil. A cone is axially symmetric, so the twist is applied
+        // about the anemone's own axis (before the per-tentacle offset): the tentacle axis
+        // becomes a helix whose winding grows with the bass flinch and with height.
+        let coil = gRetract * (0.35 + th * 0.3) * clamp(q.y, 0.0, 6.0);
+        let q_coil = rot2D(coil) * q.xz;
+        let q_c = vec3<f32>(q_coil.x, q.y, q_coil.y);
+
+        let p_cone = q_c - offset - vec3<f32>(0.0, height * 0.5, 0.0);
+        // Idea 2nd-pass B: peristaltic swell of both radii (mids/treble widen and speed it up)
+        let bulge = 1.0 + (0.05 + audioMid * 0.3 + audioHigh * 0.15) *
+                    peristalsis(p.y, time, current_speed, audioMid, audioHigh);
+        let base_r = (0.4 + th * 0.2) * bulge;
+        let top_r = 0.05 * bulge;
 
         let d = sdCappedCone(p_cone, height * 0.5, base_r, top_r);
         d_tentacles = smin(d_tentacles, d, 0.6);
@@ -269,7 +271,7 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
         let d = res.x;
         mat = res.y;
         if(d < 0.002 || t > 80.0) { break; }
-        t += d;
+        t += d * 0.8; // peristaltic bulge can push the SDF gradient above 1
     }
     return vec2<f32>(t, mat);
 }
@@ -388,8 +390,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Idea 3: peristaltic feeding pulse climbing the tentacle body
         if (mat == 2.0 || mat == 3.0) {
-            let climb = p.y * (1.2 + audioHigh * 2.5) - fullTime * (1.5 + audioMid * 4.0) * u.zoom_params.x;
-            let band = pow(max(0.0, sin(climb)), 12.0);
+            let band = peristalsis(p.y, fullTime, u.zoom_params.x, audioMid, audioHigh);
             let feedCol = vec3<f32>(0.2, 0.95, 0.85) * (0.5 + audioMid);
             emissive += feedCol * band * u.zoom_params.z * 0.35 * (1.0 - fogAmountEarly(t, water_murkiness));
             glowIntensity = max(glowIntensity, band * u.zoom_params.z * 0.4);

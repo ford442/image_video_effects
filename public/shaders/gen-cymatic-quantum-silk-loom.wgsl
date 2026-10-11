@@ -6,28 +6,15 @@
 //            depth-aware, flowing, neon-spectrum
 //  Complexity: Very High
 //  Created: 2026-06-28
+//  Upgraded: 2026-10-10
+//  Ideas: Chladni nodal sand-lines from the plate equation (modes follow cymatic frequency + mids);
+//         Kajiya-Kay anisotropic silk sheen from the ribbon tangent, shifting the iridescence phase;
+//         over/under weft thread woven through the ribbons at the mouse shuttle (the formerly dead frame slot);
+//         luminescence made live as a distance-glow halo accumulated along the march
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ─── Math Helpers ───
 fn sat(x: f32) -> f32 { return clamp(x, 0.0, 1.0); }
@@ -117,6 +104,25 @@ fn iridescence(cosi: f32, d: f32) -> vec3<f32> {
   );
 }
 
+// Idea 1: Chladni plate nodal lines. cos(m x)cos(n y) - cos(n x)cos(m y) = 0 is where sand collects.
+fn chladniLines(p: vec3<f32>, cymFreq: f32, mids: f32) -> f32 {
+  let mm = 1.5 + cymFreq * 1.3;
+  let nn = mm + 1.0 + mids * 2.0;
+  let q = p.xz * 2.4;
+  let f = cos(mm * q.x) * cos(nn * q.y) - cos(nn * q.x) * cos(mm * q.y);
+  return 1.0 - smoothstep(0.03, 0.16, abs(f));
+}
+
+// Idea 2: Kajiya-Kay strand sheen. Highlight lives where the half vector is perpendicular
+// to the strand tangent (sin of the tangent/half angle), plus a shifted secondary lobe.
+fn kajiyaKay(tang: vec3<f32>, n: vec3<f32>, h: vec3<f32>) -> f32 {
+  let t1 = dot(tang, h);
+  let t2 = dot(normalize(tang + n * 0.25), h);
+  let l1 = pow(sqrt(max(1.0 - t1 * t1, 0.0)), 36.0);
+  let l2 = pow(sqrt(max(1.0 - t2 * t2, 0.0)), 12.0);
+  return l1 + 0.4 * l2;
+}
+
 // ─── Silk Ribbon SDF ───
 fn silkRibbon(p: vec3<f32>, ribbonId: f32, time: f32, audio: f32, cymFreq: f32) -> f32 {
   let fi = ribbonId;
@@ -151,6 +157,7 @@ struct MapResult {
   d: f32,
   mat: f32,
   glow: f32,
+  rid: f32,
 };
 
 fn map(p_in: vec3<f32>, time: f32, audio: f32, bass: f32, silkDensity: f32,
@@ -169,25 +176,34 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, bass: f32, silkDensity: f32,
 
   // Multiple silk ribbons
   var silk = 8.0;
+  var nearestD = 8.0;
+  var nearestId = 0.0;
   var numRibbons = i32(silkDensity * 8.0 + 3.0);
   for (var i: i32 = 0; i < numRibbons; i = i + 1) {
     let fi = f32(i);
     let ribbon = silkRibbon(p, fi, time, audio, cymFreq);
+    if (ribbon < nearestD) { nearestD = ribbon; nearestId = fi; }
     silk = smin(silk, ribbon, 0.1);
   }
 
-  // Loom frame (subtle background structure)
-  let frame = sdPlane(p, vec3<f32>(0.0, 0.0, 1.0), -3.0);
+  // Idea 3: over/under weft thread (replaces the dead loom-frame plane). It follows the
+  // shuttle, lifting above then dipping below the ribbon stack along x, tapering to nothing.
+  let weftX = p.x - mousePos.x;
+  let weftPhase = weftX * 6.0 - time * 1.2;
+  let weftY = mousePos.y + 0.12 * sin(weftPhase);
+  let weftR = 0.004 + 0.018 * smoothstep(2.6, 1.6, abs(weftX));
+  let weft = 0.8 * (length(vec2<f32>(p.y - weftY, p.z - mousePos.z)) - weftR)
+             + 2.0 * smoothstep(2.6, 3.4, abs(weftX)); // push the thread out of the scene past the taper
 
-  var d = silk;
-  var mat = 1.0; // silk
+  var d = smin(silk, weft, 0.04);
+  var mat = select(1.0, 2.0, weft < silk); // 1 silk, 2 weft
   var glow = 0.0;
 
   // Silk glow based on cymatic interference
   let glowIntensity = sat(0.0 - silk) * 3.0 * luminescence;
   glow = glowIntensity * (0.5 + bass * 0.5);
 
-  return MapResult(d, mat, glow);
+  return MapResult(d, mat, glow, nearestId);
 }
 
 fn calcNormal(p: vec3<f32>, time: f32, audio: f32, bass: f32, silkDensity: f32,
@@ -220,11 +236,26 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: f32, mids
     if (d < 0.003) {
       hit = true;
       hitGlow = res.glow;
+      let halo = col;
       let n = calcNormal(p, time, audio, bass, silkDensity, cymFreq, luminescence, mousePos);
       let viewAngle = dot(-rd, n);
 
-      // Thin-film iridescence on silk
-      let irid = iridescence(abs(viewAngle), 1.0 + bass * 0.5);
+      // Strand tangent: analytic ribbon centre-line derivative, or the weft's own slope
+      var tang = vec3<f32>(0.0, 0.0, 1.0);
+      if (res.mat > 1.5) {
+        let wph = (p.x - mousePos.x) * 6.0 - time * 1.2;
+        tang = normalize(vec3<f32>(1.0, 0.72 * cos(wph), 0.0));
+      } else {
+        let pathT = p.z * 0.5 + res.rid * 1.7 + time * 0.2;
+        tang = normalize(vec3<f32>(-sin(pathT * 0.7 + res.rid) * 0.105, cos(pathT) * 0.25, 1.0));
+      }
+      // Idea 2: Kajiya-Kay sheen, two-sided (silk is translucent)
+      let keyL = normalize(vec3<f32>(0.5, 0.8, 0.3));
+      let sheen = kajiyaKay(tang, n, normalize(keyL - rd)) * (0.35 + 0.65 * sat(abs(dot(n, keyL))));
+      let sinTV = sqrt(max(1.0 - dot(tang, rd) * dot(tang, rd), 0.0));
+
+      // Thin-film iridescence on silk; phase now follows the strand sheen and tangent/view angle
+      let irid = iridescence(abs(viewAngle) + 0.3 * sheen + 0.12 * sinTV, 1.0 + bass * 0.5);
 
       // Neon spectrum: magenta -> cyan -> gold based on position and audio
       let spectrumPos = sin(p.z * 0.5 + time * 0.3) * 0.5 + 0.5;
@@ -236,6 +267,17 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: f32, mids
 
       // Combine iridescence with neon base
       col = neonCol * (0.5 + irid * 0.5) * (1.0 + hitGlow * 2.0);
+      if (res.mat > 1.5) {
+        // Idea 3: plied gold weft thread
+        let ply = 0.5 + 0.5 * sin((p.x - mousePos.x) * 70.0 + atan2(n.z, n.y + 0.00001) * 3.0);
+        col = mix(vec3<f32>(1.0, 0.82, 0.5), neonCol, 0.25) * (0.55 + 0.45 * ply) * (0.8 + 0.4 * irid);
+      } else {
+        // Idea 1: Chladni sand-lines gathered on the nodal set
+        let sand = chladniLines(p, cymFreq, mids);
+        col = col + vec3<f32>(1.0, 0.92, 0.75) * sand * (0.28 + mids * 0.5);
+      }
+      col = col + mix(vec3<f32>(1.0, 0.95, 0.85), irid, 0.5) * sheen * 0.45;
+      col = col + halo;
 
       // Subsurface scattering (translucent silk glow)
       let sss = pow(sat(-viewAngle), 3.0) * hitGlow * 2.0;
@@ -255,6 +297,11 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: f32, mids
     if (t > 20.0) { break; }
     t = t + d * 0.7;
 
+    // Luminescence made live: distance-glow halo that brightens as the ray skims a ribbon
+    let haloHue = 0.5 + 0.5 * sin(p.z * 0.5 + time * 0.3);
+    let haloCol = mix(vec3<f32>(0.5, 0.1, 0.4), vec3<f32>(0.05, 0.35, 0.5), haloHue);
+    col = col + haloCol * exp(-max(d, 0.0) * 18.0) * luminescence * 0.02 * exp(-t * 0.1);
+
     // Volumetric glow from silk
     if (res.glow > 0.01 && t < 12.0) {
       let volCol = vec3<f32>(0.4, 0.2, 0.6) * res.glow * 0.02 * exp(-t * 0.1);
@@ -264,7 +311,7 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: f32, mids
 
   if (!hit) {
     // Dark loom background with subtle cymatic pattern
-    col = vec3<f32>(0.02, 0.01, 0.03);
+    col = col + vec3<f32>(0.02, 0.01, 0.03);
     let cymBg = sin(rd.x * cymFreq * 3.0 + time) * sin(rd.y * cymFreq * 2.0 + time * 0.7);
     col = col + vec3<f32>(0.1, 0.05, 0.15) * pow(abs(cymBg), 4.0) * (0.1 + bass * 0.1);
     // Distant silk glow

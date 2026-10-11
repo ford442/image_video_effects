@@ -327,7 +327,7 @@ describe('CommunityGallery', () => {
 
     await screen.findByText('Round Trip Pack');
 
-    fireEvent.click(screen.getAllByText('Load Pack')[0]);
+    fireEvent.click(screen.getAllByText('Load Pack')[0]!);
 
     await waitFor(() => expect(onApplySharedChain).toHaveBeenCalledWith(chain));
 

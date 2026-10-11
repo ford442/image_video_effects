@@ -2,7 +2,7 @@
   "id": "neon-cursor-trace",
   "name": "Neon Cursor Trace",
   "url": "shaders/neon-cursor-trace.wgsl",
-  "description": "Spring-mass cursor physics with persistent phosphor trails, gravity-well mouse attraction, click-burst particle spawning, depth-aware compositing, and ACES tone-mapped neon glow.",
+  "description": "Spring-lagged electric bead chain trailing the cursor with forking arcs, white-hot cooling phosphor and overshoot sparks.",
   "params": [
     {
       "id": "intensity",
@@ -37,6 +37,8 @@
     "mouse-driven",
     "temporal-persistence",
     "audio-reactive",
+    "upgraded-rgba",
+    "semantic-alpha",
     "spring-physics",
     "gravity-well",
     "click-burst",

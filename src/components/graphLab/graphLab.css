@@ -1,0 +1,463 @@
+/* Graph Lab (experimental) — loaded with the lazy "graph-lab" chunk only. */
+
+.graph-lab {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 70;
+  width: min(580px, 100vw);
+  overflow-y: auto;
+  padding: 12px 16px 24px;
+  box-sizing: border-box;
+  background: var(--bg-panel, rgba(15, 15, 18, 0.95));
+  border-left: 1px solid var(--glass-border, rgba(255, 215, 0, 0.15));
+  color: var(--text-primary, #f0f0f5);
+  font-size: 13px;
+  line-height: 1.4;
+  backdrop-filter: blur(10px);
+}
+.graph-lab * {
+  box-sizing: border-box;
+}
+.graph-lab code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--gold-light, #ffe55c);
+}
+.graph-lab button,
+.graph-lab select,
+.graph-lab input[type='text'],
+.graph-lab input[type='number'],
+.graph-lab input[type='search'],
+.graph-lab textarea {
+  font: inherit;
+  color: inherit;
+  background: var(--glass-bg-light, rgba(35, 35, 45, 0.7));
+  border: 1px solid var(--glass-border, rgba(255, 215, 0, 0.15));
+  border-radius: 6px;
+  padding: 5px 9px;
+}
+.graph-lab button {
+  cursor: pointer;
+}
+.graph-lab button:hover:not(:disabled),
+.graph-lab button:focus-visible {
+  border-color: var(--glass-border-hover, rgba(255, 215, 0, 0.3));
+}
+.graph-lab button:disabled,
+.graph-lab input:disabled,
+.graph-lab select:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.graph-lab textarea {
+  width: 100%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+.graph-lab__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.graph-lab__header h2 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--text-gold, #ffd700);
+}
+.graph-lab__badge {
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--warning, #ffa502);
+  color: var(--warning, #ffa502);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.graph-lab__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.graph-lab__toolbar .is-run {
+  border-color: var(--success, #2ed573);
+  color: var(--success, #2ed573);
+}
+.graph-lab__toolbar .is-stop {
+  border-color: var(--error, #ff4757);
+  color: var(--error, #ff4757);
+}
+
+.graph-lab__status {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 18px;
+  margin-bottom: 8px;
+}
+.graph-lab__live {
+  color: var(--success, #2ed573);
+}
+.graph-lab__error,
+.graph-lab .is-error {
+  color: var(--error, #ff4757);
+}
+.graph-lab__muted {
+  color: var(--text-secondary, #a0a0b0);
+  font-size: 12px;
+}
+.graph-lab__hint {
+  color: var(--text-muted, #8a8a9a);
+  font-size: 12px;
+  margin-top: 4px;
+}
+.graph-lab__ok {
+  color: var(--success, #2ed573);
+}
+.graph-lab__banner {
+  padding: 8px 10px;
+  border: 1px solid var(--info, #4a9eff);
+  border-radius: 6px;
+  color: var(--info, #4a9eff);
+}
+
+.graph-lab__section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 14px 0 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--glass-border, rgba(255, 215, 0, 0.15));
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold-muted, #d4af37);
+}
+.graph-lab__ceiling {
+  font-weight: 400;
+  color: var(--text-secondary, #a0a0b0);
+  font-size: 12px;
+}
+.graph-lab__ceiling input {
+  width: 64px;
+}
+
+.graph-lab__empty {
+  color: var(--text-secondary, #a0a0b0);
+  margin: 6px 0;
+}
+
+/* Node list */
+.graph-lab__nodes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.graph-lab__node {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--glass-border, rgba(255, 215, 0, 0.15));
+  border-radius: 8px;
+  background: var(--glass-bg-light, rgba(35, 35, 45, 0.7));
+}
+.graph-lab__node.is-selected {
+  border-color: var(--gold-primary, #ffd700);
+}
+.graph-lab__node.has-error {
+  border-color: var(--error, #ff4757);
+}
+.graph-lab .graph-lab__node-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  text-align: left;
+  border: 0;
+  background: transparent;
+}
+.graph-lab__node-index {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  background: var(--gold-pale, rgba(255, 215, 0, 0.1));
+  color: var(--gold-primary, #ffd700);
+  font-size: 11px;
+}
+.graph-lab__node-title {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.graph-lab__node-io {
+  flex-basis: 100%;
+  color: var(--text-secondary, #a0a0b0);
+  font-size: 12px;
+}
+.graph-lab__node-actions {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 3px;
+}
+.graph-lab .graph-lab__node-actions button {
+  padding: 0 7px;
+  line-height: 18px;
+  font-size: 12px;
+}
+.graph-lab__chip {
+  padding: 0 7px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border-hover, rgba(255, 215, 0, 0.3));
+  font-size: 11px;
+}
+.graph-lab__chip--repeat {
+  color: var(--gold-primary, #ffd700);
+}
+.graph-lab__chip--error {
+  border-color: var(--error, #ff4757);
+  color: var(--error, #ff4757);
+}
+
+/* Entry picker */
+.graph-lab__picker input[type='search'] {
+  width: 100%;
+}
+.graph-lab__picker-current {
+  margin-bottom: 4px;
+  color: var(--text-secondary, #a0a0b0);
+}
+.graph-lab__add {
+  margin-top: 8px;
+}
+.graph-lab__add > span {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--text-secondary, #a0a0b0);
+}
+.graph-lab__results {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--glass-border, rgba(255, 215, 0, 0.15));
+  border-radius: 6px;
+}
+.graph-lab .graph-lab__results button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.graph-lab .graph-lab__results button:hover {
+  background: var(--gold-pale, rgba(255, 215, 0, 0.1));
+}
+.graph-lab__result-entry {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+.graph-lab__result-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-secondary, #a0a0b0);
+}
+.graph-lab__tag {
+  margin-left: auto;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: var(--gold-pale, rgba(255, 215, 0, 0.1));
+  color: var(--gold-muted, #d4af37);
+  font-size: 10px;
+  white-space: nowrap;
+}
+.graph-lab__tag--graph-entry,
+.graph-lab__tag--chain-pass {
+  color: var(--info, #4a9eff);
+}
+
+/* Inspector */
+.graph-lab__inspector,
+.graph-lab__meta {
+  display: grid;
+  gap: 10px;
+}
+.graph-lab__field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.graph-lab__field > span {
+  color: var(--text-secondary, #a0a0b0);
+  font-size: 12px;
+}
+.graph-lab__field--inline {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.graph-lab__field--inline small {
+  flex-basis: 100%;
+  color: var(--text-muted, #8a8a9a);
+}
+.graph-lab__roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.graph-lab .graph-lab__role {
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+.graph-lab .graph-lab__role.is-on {
+  background: var(--gold-pale, rgba(255, 215, 0, 0.1));
+  border-color: var(--gold-primary, #ffd700);
+  color: var(--gold-primary, #ffd700);
+}
+.graph-lab .graph-lab__role.is-fixed {
+  border-style: dashed;
+  color: var(--text-secondary, #a0a0b0);
+}
+
+/* Analysis */
+.graph-lab__tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.graph-lab .graph-lab__tabs button.is-active {
+  border-color: var(--gold-primary, #ffd700);
+  color: var(--gold-primary, #ffd700);
+}
+.graph-lab__scroll {
+  overflow-x: auto;
+}
+.graph-lab__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.graph-lab__table th,
+.graph-lab__table td {
+  padding: 4px 6px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--glass-border, rgba(255, 215, 0, 0.15));
+}
+.graph-lab__table th {
+  color: var(--text-secondary, #a0a0b0);
+  font-weight: 500;
+}
+.graph-lab__table .is-warning td {
+  color: var(--warning, #ffa502);
+}
+.graph-lab__summary {
+  margin: 0 0 6px;
+}
+.graph-lab__subhead {
+  margin: 12px 0 4px;
+  font-size: 12px;
+  color: var(--text-secondary, #a0a0b0);
+}
+.graph-lab__bar {
+  display: inline-block;
+  width: 48px;
+  height: 6px;
+  border-radius: 3px;
+  vertical-align: middle;
+  background: var(--glass-bg-light, rgba(35, 35, 45, 0.7));
+}
+.graph-lab__bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--gold-primary, #ffd700);
+}
+.graph-lab__diagnostics {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.graph-lab__diagnostics li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border-left: 3px solid var(--warning, #ffa502);
+  background: var(--glass-bg-light, rgba(35, 35, 45, 0.7));
+}
+.graph-lab__diagnostics li.is-error {
+  border-left-color: var(--error, #ff4757);
+}
+.graph-lab__diagnostics .graph-lab__tag {
+  margin-left: 0;
+  flex: none;
+}
+
+/* Export */
+.graph-lab__blockers {
+  margin: 8px 0;
+  padding: 8px 10px;
+  border: 1px solid var(--error, #ff4757);
+  border-radius: 6px;
+  color: var(--error, #ff4757);
+}
+.graph-lab__blockers ul,
+.graph-lab__notes {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+.graph-lab__notes {
+  color: var(--warning, #ffa502);
+}
+.graph-lab__export-actions {
+  display: flex;
+  gap: 6px;
+  margin: 8px 0;
+}
+.graph-lab__json {
+  max-height: 260px;
+  overflow: auto;
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--bg-darker, #0a0a0c);
+  font-size: 11px;
+}
+.graph-lab__import {
+  margin-top: 14px;
+}
+.graph-lab__import button {
+  margin-top: 6px;
+}
+
+@media (max-width: 640px) {
+  .graph-lab {
+    padding: 10px 12px 20px;
+  }
+}

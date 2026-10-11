@@ -129,6 +129,36 @@ test('ABI: non-ASCII source is measured in bytes, not UTF-16 units', async () =>
   assert.deepEqual(validate(`// ═══ emoji 🎨 ═══\n${VALID_WGSL}`), { ok: true });
 });
 
+test('ABI: glsl_to_wgsl translates GLSL 450 and the output validates', async () => {
+  const { createNagaValidator } = await import(pathToFileURL(path.join(ROOT, CONTRACT.loader)).href);
+  const { validate, glslToWgsl } = await createNagaValidator({
+    bytes: fs.readFileSync(path.join(ROOT, CONTRACT.artifact)),
+  });
+  const glsl = `#version 450
+layout(set = 0, binding = 0) uniform U { float iTime; };
+layout(location = 0) out vec4 color;
+void main() { color = vec4(sin(iTime), 0.0, 0.0, 1.0); }
+`;
+  const result = glslToWgsl(glsl, 'fragment');
+  assert.equal(result.ok, true, result.message);
+  assert.match(result.wgsl, /@fragment/);
+  assert.match(result.wgsl, /sin\(/);
+  assert.deepEqual(validate(result.wgsl), { ok: true });
+});
+
+test('ABI: glsl_to_wgsl reports a placed parse error', async () => {
+  const { createNagaValidator } = await import(pathToFileURL(path.join(ROOT, CONTRACT.loader)).href);
+  const { glslToWgsl } = await createNagaValidator({
+    bytes: fs.readFileSync(path.join(ROOT, CONTRACT.artifact)),
+  });
+  const bad = glslToWgsl('#version 450\nvoid main() { float x = 1.0 }\n', 'fragment');
+  assert.equal(bad.ok, false);
+  assert.equal(bad.kind, 'parse');
+  assert.equal(bad.wgsl, undefined);
+  assert.equal(bad.line, 2);
+  assert.ok(bad.pos > 0, 'expected a column position');
+});
+
 test('gate passes on a valid shader', () => {
   withTempDir((dir) => {
     const file = path.join(dir, 'zz-good.wgsl');

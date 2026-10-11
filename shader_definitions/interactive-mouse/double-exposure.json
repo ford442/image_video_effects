@@ -54,36 +54,6 @@
     16,
     1
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Zoom Level",
-      "default": 0.3,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "index": 1,
-      "name": "Rotation",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "index": 2,
-      "name": "Opacity",
-      "default": 0.6,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "index": 3,
-      "name": "Warp Strength",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    }
-  ],
   "tags": [
     "filter",
     "double-exposure",
@@ -92,5 +62,39 @@
     "fast-motion",
     "audio-reactive",
     "aces"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Zoom Level",
+          "default": 0.3,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 1,
+          "name": "Rotation",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 2,
+          "name": "Opacity",
+          "default": 0.6,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 3,
+          "name": "Warp Strength",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        }
+      ]
+    }
+  }
 }

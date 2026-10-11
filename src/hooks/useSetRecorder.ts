@@ -118,6 +118,7 @@ export function useSetRecorder({ modes, slotParams, setMode, onSetSlotParam }: U
             const end = firstEventAfter(tl.events, t);
             for (; cursor < end; cursor++) {
                 const e = tl.events[cursor];
+                if (!e) break;
                 if (e.kind === 'shader') {
                     if (modesRef.current[e.slot] !== e.value) setModeRef.current(e.slot, e.value);
                 } else if (!isGrabbed(e.slot, e.key) && e.slot < modesRef.current.length) {

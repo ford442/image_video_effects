@@ -132,12 +132,12 @@ export class StorageClient {
     onProgress?: (completed: number, total: number) => void
   ): Promise<StorageSaveResponse[]> {
     const results: StorageSaveResponse[] = [];
-    for (let i = 0; i < files.length; i++) {
+    for (const [i, file] of files.entries()) {
       try {
-        results.push(await this.uploadFile(files[i], type));
+        results.push(await this.uploadFile(file, type));
         onProgress?.(i + 1, files.length);
       } catch (error) {
-        console.error(`Failed to upload ${files[i].name}:`, error);
+        console.error(`Failed to upload ${file.name}:`, error);
       }
     }
     return results;

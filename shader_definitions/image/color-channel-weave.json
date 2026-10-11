@@ -4,8 +4,23 @@
   "url": "shaders/color-channel-weave.wgsl",
   "category": "image",
   "description": "Samples RGB channels from offset positions simulating a woven fabric. Horizontal threads carry red; vertical threads carry blue; green is neutral. Audio shifts thread spacing and chromatic offset. Mouse tilts the warp direction.",
-  "tags": ["weave", "fabric", "threads", "chromatic", "texture", "audio-reactive", "mouse-driven"],
-  "features": ["mouse-driven", "click-reactive", "audio-reactive", "depth-aware", "upgraded-rgba", "semantic-alpha"],
+  "tags": [
+    "weave",
+    "fabric",
+    "threads",
+    "chromatic",
+    "texture",
+    "audio-reactive",
+    "mouse-driven"
+  ],
+  "features": [
+    "mouse-driven",
+    "click-reactive",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba",
+    "semantic-alpha"
+  ],
   "params": [
     {
       "id": "thread_spacing",
@@ -41,11 +56,43 @@
     }
   ],
   "supportsDepth": true,
-  "updatedParams": [
-    { "index": 0, "name": "Thread Spacing", "default": 0.25, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 1, "name": "Weave Angle", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 2, "name": "Shadow Depth", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 3, "name": "Chroma Offset", "default": 0.4, "min": 0, "max": 1, "step": 0.01 }
-  ],
-  "updated": true
+  "updated": true,
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Thread Spacing",
+          "default": 0.25,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Weave Angle",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Shadow Depth",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Chroma Offset",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

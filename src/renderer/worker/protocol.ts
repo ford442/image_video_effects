@@ -19,6 +19,7 @@ import type { GpuChoresBreadcrumbs } from '../../gpuChores';
 import type { RendererError } from '../ErrorHandling';
 import type { GraphRunReport } from '../GraphRunner';
 import type { VideoIngestStats } from '../media/videoFramePump';
+import type { MultipassGraphDef } from '../multipassGraph';
 import type { PassTiming } from '../passTimings';
 import type { GPUTimings, RendererConfig, UncappedBenchResult } from '../Renderer';
 import type { InputSource } from '../types';
@@ -83,7 +84,13 @@ export type RenderCommand =
   | { type: 'setSourceAutoExposure'; enabled: boolean }
   | { type: 'applyTestRenderState'; state: TestRenderState }
   | { type: 'setCanvasCopySrc'; enabled: boolean }
-  | { type: 'warmShaders'; entries: Array<{ id: string; url: string }> };
+  | { type: 'warmShaders'; entries: Array<{ id: string; url: string }> }
+  /** Test hook (?testMode=1): destroy the device but report it as a runtime loss. */
+  | { type: 'simulateDeviceLoss' }
+  /** Test hook: raise an uncaught error in the worker, like a crash (#1395). */
+  | { type: 'simulateWorkerCrash' }
+  /** Graph Lab draft: register (or, with null, drop) a runtime Tier C graph under `id`. */
+  | { type: 'setRuntimeGraph'; id: string; graph: MultipassGraphDef | null };
 
 export interface RenderInitInfo {
   ok: boolean;
@@ -163,6 +170,8 @@ export interface RenderSnapshot {
   resolution: { scale: number; full: { w: number; h: number }; scaled: { w: number; h: number }; pixelReduction: string };
   /** Most recent uncaptured GPU errors in the worker (newest last). */
   gpuErrors: string[];
+  /** GPUDevices alive in this worker (its boot probe's count; 1 while rendering). */
+  liveGpuDevices: number;
   /** How page input reaches the worker. */
   inputChannel: 'sab' | 'postMessage';
   /** The input the worker's renderer currently holds (proves the channel works). */
@@ -173,6 +182,8 @@ export type RenderEvent =
   | { type: 'hello'; caps: RenderWorkerCaps }
   | { type: 'snapshot'; snapshot: RenderSnapshot }
   | { type: 'error'; error: RendererError }
+  /** The worker's GPUDevice was lost at runtime; it renders nothing more (recover on a new worker). */
+  | { type: 'deviceLost'; reason: string; message: string }
   | { type: 'rpcResult'; requestId: number; ok: true; value: unknown }
   | { type: 'rpcResult'; requestId: number; ok: false; error: string };
 
@@ -198,6 +209,9 @@ export const RENDER_COMMAND_TYPES = [
   'applyTestRenderState',
   'setCanvasCopySrc',
   'warmShaders',
+  'simulateDeviceLoss',
+  'simulateWorkerCrash',
+  'setRuntimeGraph',
 ] as const;
 
 export const RENDER_RPC_TYPES = [
@@ -212,7 +226,7 @@ export const RENDER_RPC_TYPES = [
   'dispose',
 ] as const;
 
-export const RENDER_EVENT_TYPES = ['hello', 'snapshot', 'error', 'rpcResult'] as const;
+export const RENDER_EVENT_TYPES = ['hello', 'snapshot', 'error', 'deviceLost', 'rpcResult'] as const;
 
 // Compile-time exhaustiveness: every union member is listed, and nothing else.
 type Exact<A, B> = [A] extends [B] ? ([B] extends [A] ? true : never) : never;

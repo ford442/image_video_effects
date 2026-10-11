@@ -1,7 +1,7 @@
 # WebGPU Shader Effects & Visual Library
 
 <!-- catalog-counts:intro:begin -->
-A React + WebGPU app for real-time GPU shader effects — fluids, generative art, audio-reactive visuals, AI depth estimation, and a catalog of **1,381** compute shaders across 14 categories.
+A React + WebGPU app for real-time GPU shader effects — fluids, generative art, audio-reactive visuals, AI depth estimation, and a catalog of **1,385** compute shaders across 14 categories.
 <!-- catalog-counts:intro:end -->
 
 ## Documentation map
@@ -37,16 +37,22 @@ WASM is **never** an automatic fallback. See [`WASM_BACKEND_POLICY.md`](docs/WAS
 1. **Create WGSL** — `python3 scripts/new_shader.py "My Effect" --category image` writes `public/shaders/my-effect.wgsl`  
    starting with `#include "_prelude.wgsl"`, which declares the 13-binding compute header. Never paste the bindings yourself: CI rejects a pasted copy (see [`docs/SHADER_TEMPLATES.md`](docs/SHADER_TEMPLATES.md); generative helpers in [`docs/agents/WGSL_BUILTINS_GENERATIVE.md`](docs/agents/WGSL_BUILTINS_GENERATIVE.md)).
 
-2. **Register JSON** — `shader_definitions/<category>/my-effect.json`:
+2. **Register JSON** — `shader_definitions/<category>/my-effect.json` (the file is named after the `id`; `new_shader.py` writes it for you). The format is defined by [`src/contracts/shader_definition.schema.json`](src/contracts/shader_definition.schema.json) (TypeScript type: generated `src/types/ShaderDefinition.ts`); sliders live in a single `params` key and authoring metadata goes under `x-meta`:
 
 ```json
 {
   "id": "my-effect",
   "name": "My Effect",
   "url": "shaders/my-effect.wgsl",
-  "category": "image"
+  "description": "One sentence.",
+  "tags": ["image"],
+  "params": [
+    { "id": "amount", "name": "Amount", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" }
+  ]
 }
 ```
+
+`category` is optional (the folder is authoritative; if present it must match). Check it with `npm run verify:shader-definitions`. Definitions with pre-schema keys (`updatedParams`, `parameters`, `controls`, `advanced_params`, `_seeded_by`, …) are fixed by `python3 scripts/migrate_shader_definitions.py --write`.
 
 Canonical categories: `advanced-hybrid`, `artistic`, `distortion`, `generative`, `geometric`, `hybrid`, `image`, `interactive-mouse`, `lighting-effects`, `liquid-effects`, `post-processing`, `retro-glitch`, `simulation`, `visual-effects`.
 
@@ -56,6 +62,8 @@ Canonical categories: `advanced-hybrid`, `artistic`, `distortion`, `generative`,
 node scripts/generate_shader_lists.js && npm run build:manifest
 ```
 
+The generated registry, shader lists and alias maps are committed; CI fails if they differ from a fresh regeneration (`npm run verify:generated-sync`).
+
 4. **Refresh** — `npm start` (or hard-refresh if already running). The shader appears in the picker. No TypeScript recompile needed (Universal BindGroup hot-swap).
 
 More detail: [`docs/SHADER_TEMPLATES.md`](docs/SHADER_TEMPLATES.md) · [`scripts/new_shader.py`](scripts/new_shader.py) scaffolds JSON + WGSL pairs.
@@ -63,7 +71,7 @@ More detail: [`docs/SHADER_TEMPLATES.md`](docs/SHADER_TEMPLATES.md) · [`scripts
 ## Features
 
 <!-- catalog-counts:features:begin -->
-- **1,381 shader effects** — counts from `public/shader-manifest-unified.json` (regenerate: `npm run build:manifest`; gate: `npm run verify:catalog-counts`)
+- **1,385 shader effects** — counts from `public/shader-manifest-unified.json` (regenerate: `npm run build:manifest`; gate: `npm run verify:catalog-counts`)
 <!-- catalog-counts:features:end -->
 - **Dual renderer** — TypeScript WebGPU (default) + experimental C++/WASM backend
 - **Multipass & slot stacks** — chained/parallel layers, ping-pong feedback (`docs/PARALLEL_SLOTS.md`)
@@ -129,7 +137,7 @@ Counts from `npm run build:manifest` → `public/shader-manifest-unified.json`:
 <!-- catalog-counts:table:begin -->
 | Category | Count | Description |
 |----------|------:|-------------|
-| **generative** | 486 | Procedural art, fractals, generative patterns |
+| **generative** | 490 | Procedural art, fractals, generative patterns |
 | **interactive-mouse** | 239 | Mouse and touch-driven interactions |
 | **advanced-hybrid** | 166 | Multi-technique / advanced hybrid stacks |
 | **artistic** | 98 | Creative and artistic visual effects |
@@ -143,7 +151,7 @@ Counts from `npm run build:manifest` → `public/shader-manifest-unified.json`:
 | **hybrid** | 18 | Combined technique shaders |
 | **geometric** | 16 | Geometric patterns and tessellations |
 | **lighting-effects** | 15 | Volumetric lighting and glow |
-| **Total** | **1,381** | 14 canonical categories |
+| **Total** | **1,385** | 14 canonical categories |
 <!-- catalog-counts:table:end -->
 
 Legacy list files (`interactive.json`, `liquid.json`) were removed — use `interactive-mouse.json` and `liquid-effects.json`.
@@ -158,7 +166,7 @@ Legacy list files (`interactive.json`, `liquid.json`) were removed — use `inte
 image_video_effects/
 ├── public/
 <!-- catalog-counts:structure:begin -->
-│   ├── shaders/                    # WGSL compute shaders (1,381 catalog ids; more pass files on disk)
+│   ├── shaders/                    # WGSL compute shaders (1,385 catalog ids; more pass files on disk)
 <!-- catalog-counts:structure:end -->
 │   ├── shader-lists/               # Generated category JSON (14 files)
 │   ├── shader-manifest-unified.json

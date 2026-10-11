@@ -5,9 +5,10 @@
  * Delegates to webgpu/* modules (device, resources, pipeline, frame, audioDepth).
  */
 
-import { Renderer, RendererConfig, ShaderSlotRenderer, GPUTimings, UncappedBenchResult } from './Renderer';
+import { Renderer, RendererConfig, ShaderSlotRenderer, GPUTimings, UncappedBenchResult, DeviceLossInfo } from './Renderer';
 import { Ripple, MAX_RIPPLES } from './UniformBuffer';
 import { PHYSICAL_SLOT_LIMIT, checkPhysicalSlotIndex } from './slotOrchestrator';
+import { clearRendererDevice, publishRendererDevice } from './deviceRegistry';
 import {
   initializeWebGPUDevice,
   attachDeviceLostHandler,
@@ -38,7 +39,7 @@ import {
   createRendererFrameHost,
   computeScaledDimensions,
   WebGPUFrameState,
-  RendererFrameDeps,
+  FrameContext,
 } from './webgpu/frame';
 import {
   createMediaInputState,
@@ -56,14 +57,17 @@ import {
 import { HISTORY_DEPTH, ShaderSlot, SlotMode, WG_SIZE_X, WG_SIZE_Y, WG_SIZE_1D } from './webgpu/webgpuConstants';
 import type { InternalColorFormat } from '../config/formatPolicy';
 import { DEFAULT_FORMAT_CAPABILITIES, DeviceFormatCapabilities, inferRequiresRgba32Float } from '../config/formatPolicy';
+import { UNKNOWN_ADAPTER_IDENTITY, type AdapterIdentity } from '../config/adapterIdentity';
 import { allowsFullWorkingSize, HISTORY_FULL_WORKING_SIZE, HISTORY_SAFE_WORKING_SIZE, persistHistoryOomCap } from '../config/vramBudget';
 import { graphRunner } from './GraphRunner';
 import { GpuChoresHost } from '../gpuChores';
 import type { WebGpuProbeHandoff } from './webgpuBootProbe';
 import { allocateWorkingPool, rungsForRequest } from './webgpu/historyTexProbe';
-import { SimRing } from './webgpu/simRing';
+import { declaresBindGroup1, SimRing } from './webgpu/simRing';
+import { rewriteWgslStorageFormats } from './wgslFormatRewrite';
 import { resolveGraphForShader, resolveSimRingRequest, getGraphEntryIds, resolveMultipassChain } from './multipassRegistry';
-import { graphUsesSimRing } from './multipassGraph';
+import { graphUsesSimRing, type MultipassGraphDef } from './multipassGraph';
+import { setRuntimeGraph as setRuntimeGraphOverlay } from './runtimeGraphs';
 import { instrumentDevice, type FrameStats } from './webgpu/deviceCounters';
 import type { PassTiming } from './passTimings';
 import { ShaderWarmupQueue, type WarmupEntry } from './webgpu/shaderWarmup';
@@ -71,6 +75,8 @@ import { NodeScaleIslands, nodeScaleKey, snapNodeScale } from './webgpu/nodeScal
 import type { FrameIslands } from './webgpu/framePlan';
 import type { TransferredVideoFrames, VideoIngestStats } from './media/videoFramePump';
 import { VideoIngest } from './media/videoIngest';
+import { compileCheckWgsl } from './webgpu/compileCheck';
+import { registerShaderCompileService } from '../utils/shaderCompileService';
 
 /** `?video_ingest=element` forces the pre-#1314 per-rAF element import (A/B, debugging). */
 function videoFrameIngestDisabledByUrl(): boolean {
@@ -152,9 +158,15 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   /** Adapter identity from the init ladder — surfaced in diagnostics for Tier B evidence. */
   private adapterSummary = '';
   private adapterAttemptLabel: string | null = null;
+  private adapterIdentity: AdapterIdentity = UNKNOWN_ADAPTER_IDENTITY;
+  private unregisterCompileService: (() => void) | null = null;
   private formatCapabilities = DEFAULT_FORMAT_CAPABILITIES;
   private releasingDevice = false;
   private detachUncapturedErrors: (() => void) | null = null;
+  /** Set by simulateDeviceLoss(): the next 'destroyed' of this device counts as a loss. */
+  private simulatedLossDevice: GPUDevice | null = null;
+  private fatalErrorHandler: ((message: string, info?: DeviceLossInfo) => void) | null = null;
+  private lastDeviceLoss: DeviceLossInfo | null = null;
 
   readonly gpuChores = new GpuChoresHost();
   /** Opt-in @group(1) sim ring — armed only when a group-1 pipeline compiles. */
@@ -214,11 +226,15 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       this.formatCapabilities = outcome.formatCapabilities;
       this.adapterSummary = outcome.adapterSummary ?? '';
       this.adapterAttemptLabel = outcome.adapterAttemptLabel ?? null;
+      this.adapterIdentity = outcome.adapterIdentity ?? UNKNOWN_ADAPTER_IDENTITY;
 
       const device = outcome.device;
-      attachDeviceLostHandler(device, outcome.context, () => {
+      attachDeviceLostHandler(device, outcome.context, (details) => {
         if (this.releasingDevice || this.device !== device) return;
+        // Only a loss while rendering is a runtime stop; init failures report through init().
+        const wasRendering = this.initialized;
         this.initialized = false;
+        if (this.frameState) this.frameRenderer.stopRenderLoop(this.frameState);
         this.warmup?.stop();
         this.warmup = null;
         this.videoIngest.detach();
@@ -226,6 +242,12 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
         this.timestampRuntime.hasRealGpuTimings = false;
         this.timestampRuntime.readbackPending = false;
         this.gpuChores.detach('device lost');
+        const info: DeviceLossInfo = { kind: 'device-lost', ...details, at: Date.now() };
+        this.lastDeviceLoss = info;
+        clearRendererDevice('device lost', this);
+        if (wasRendering) this.fatalErrorHandler?.(`GPU device lost (${info.reason})`, info);
+      }, {
+        isSimulated: () => this.simulatedLossDevice === device,
       });
 
       outcome.detachUncapturedLog?.();
@@ -236,7 +258,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
         if (resourcesResult === 'lost' && attempt === 0) {
           persistHistoryOomCap();
           this.workingSizeCap = HISTORY_SAFE_WORKING_SIZE;
-          void this.teardownGpuHandles(false);
+          // The next requestDevice must not race the old device's release (backendLifecycle).
+          await this.teardownGpuHandles(true);
           handoff = undefined;
           continue;
         }
@@ -246,8 +269,16 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       }
 
       this.gpuChores.attach(outcome.device, 'no GPUDevice adopted', this.colorFormat);
+      // The device this renderer actually ended up with (after any OOM retry), not the handoff.
+      publishRendererDevice(outcome.device, { supportsSubgroups: this.supportsSubgroups, thread: 'main', owner: this });
+      // Dev tools (ShaderScanner) compile against this renderer's layout, not a bare module check.
+      this.unregisterCompileService?.();
+      this.unregisterCompileService = registerShaderCompileService({
+        supportsSubgroups: this.supportsSubgroups,
+        compile: (id, code) => this.compileCheck(id, code),
+      });
 
-      this.frameState = createFrameState(createRendererFrameHost(this as unknown as RendererFrameDeps));
+      this.frameState = createFrameState(createRendererFrameHost(this.createFrameContext()));
       this.initialized = true;
       this.startTime = performance.now() / 1000;
       this.lastFPSTime = this.startTime;
@@ -351,7 +382,10 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       maxBufferSize: d.limits?.maxBufferSize ?? 0,
       adapterGpuType: this.formatCapabilities.adapterGpuType,
       adapterSummary: this.adapterSummary,
-      isFallbackAdapter: (this.adapterAttemptLabel ?? '').includes('forceFallback'),
+      adapterIdentity: this.adapterIdentity,
+      isFallbackAdapter:
+        this.adapterIdentity.isFallbackAdapter
+        || (this.adapterAttemptLabel ?? '').includes('forceFallback'),
     };
     if (allowsFullWorkingSize(gate)) {
       const upgraded = await this.tryUpgradeToFullWorkingSize(d, colorFormat, allocated.layers);
@@ -446,7 +480,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     }
   }
 
-  /** Adapter identity string (vendor | architecture | device | description), '' before init. */
+  /** Probe summary: attempt, adapter identity, limits, features, formats; '' before init. */
   getAdapterSummary(): string {
     return this.adapterSummary;
   }
@@ -637,6 +671,14 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   }
 
   /**
+   * Register (or, with `null`, drop) a runtime Tier C graph under `id` (Graph Lab
+   * draft; see runtimeGraphs.ts). Takes effect on the next frame's slot plan.
+   */
+  setRuntimeGraph(id: string, graph: MultipassGraphDef | null): void {
+    setRuntimeGraphOverlay(id, graph);
+  }
+
+  /**
    * Run one opt-in graph node below the working size (#1314). Ignored for
    * nodes that are not `scalable`; snapped to 0.25 steps above minScale;
    * 1 restores full size. Returns the scale that will be used.
@@ -681,20 +723,26 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   }
 
   setSlotEnabled(index: number, enabled: boolean): void {
-    if (index >= 0 && index < PHYSICAL_SLOT_LIMIT) this.slots[index].enabled = enabled;
+    if (index < 0 || index >= PHYSICAL_SLOT_LIMIT) return;
+    const slot = this.slots[index];
+    if (slot) slot.enabled = enabled;
   }
 
   setSlotMode(index: number, mode: SlotMode): void {
-    if (index >= 0 && index < PHYSICAL_SLOT_LIMIT) this.slots[index].mode = mode;
+    if (index < 0 || index >= PHYSICAL_SLOT_LIMIT) return;
+    const slot = this.slots[index];
+    if (slot) slot.mode = mode;
   }
 
   getSlotMode(index: number): SlotMode | null {
-    return index >= 0 && index < PHYSICAL_SLOT_LIMIT ? this.slots[index].mode : null;
+    if (index < 0 || index >= PHYSICAL_SLOT_LIMIT) return null;
+    return this.slots[index]?.mode ?? null;
   }
 
   getSlotState(index: number): { shaderId: string | null; enabled: boolean; mode: SlotMode } | null {
     if (index < 0 || index >= PHYSICAL_SLOT_LIMIT) return null;
     const slot = this.slots[index];
+    if (!slot) return null;
     return { shaderId: slot.shaderId, enabled: slot.enabled, mode: slot.mode };
   }
 
@@ -822,6 +870,96 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.scaledH = Math.min(dims.scaledH, cap);
   }
 
+  /**
+   * The frame loop's view of this renderer (#1395): explicit accessors instead of
+   * casting `this`, so the compiler checks every field the frame code reads or writes.
+   */
+  private createFrameContext(): FrameContext {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const r = this;
+    return {
+      get resources() { return r.resources; },
+      get pipeline() { return r.pipeline; },
+      get simRing() { return r.simRing; },
+      get computeBindGroup() { return r.computeBindGroup; },
+      get audioDepth() { return r.audioDepth; },
+      get mediaVideo() { return r.mediaVideo; },
+      get device() { return r.device; },
+      set device(v) { r.device = v; },
+      get context() { return r.context; },
+      set context(v) { r.context = v; },
+      get initialized() { return r.initialized; },
+      set initialized(v) { r.initialized = v; },
+      get startTime() { return r.startTime; },
+      set startTime(v) { r.startTime = v; },
+      get currentTime() { return r.currentTime; },
+      set currentTime(v) { r.currentTime = v; },
+      get animationId() { return r.animationId; },
+      set animationId(v) { r.animationId = v; },
+      get blitReadTex() { return r.blitReadTex; },
+      set blitReadTex(v) { r.blitReadTex = v; },
+      get canvasW() { return r.canvasW; },
+      set canvasW(v) { r.canvasW = v; },
+      get canvasH() { return r.canvasH; },
+      set canvasH(v) { r.canvasH = v; },
+      get scaledW() { return r.scaledW; },
+      set scaledW(v) { r.scaledW = v; },
+      get scaledH() { return r.scaledH; },
+      set scaledH(v) { r.scaledH = v; },
+      get resolutionScale() { return r.resolutionScale; },
+      set resolutionScale(v) { r.resolutionScale = v; },
+      get slots() { return r.slots; },
+      set slots(v) { r.slots = v; },
+      get ripples() { return r.ripples; },
+      set ripples(v) { r.ripples = v; },
+      get mouseX() { return r.mouseX; },
+      set mouseX(v) { r.mouseX = v; },
+      get mouseYShader() { return r.mouseYShader; },
+      set mouseYShader(v) { r.mouseYShader = v; },
+      get mouseDown() { return r.mouseDown; },
+      set mouseDown(v) { r.mouseDown = v; },
+      get zoomParams() { return r.zoomParams; },
+      set zoomParams(v) { r.zoomParams = v; },
+      get inputSource() { return r.inputSource; },
+      set inputSource(v) { r.inputSource = v; },
+      get frameCount() { return r.frameCount; },
+      set frameCount(v) { r.frameCount = v; },
+      get lastFPSTime() { return r.lastFPSTime; },
+      set lastFPSTime(v) { r.lastFPSTime = v; },
+      get fps() { return r.fps; },
+      set fps(v) { r.fps = v; },
+      get adaptiveQuality() { return r.adaptiveQuality; },
+      set adaptiveQuality(v) { r.adaptiveQuality = v; },
+      get targetFPS() { return r.targetFPS; },
+      set targetFPS(v) { r.targetFPS = v; },
+      get lastBlitReadTex() { return r.lastBlitReadTex; },
+      set lastBlitReadTex(v) { r.lastBlitReadTex = v; },
+      get lastBlitScaledW() { return r.lastBlitScaledW; },
+      set lastBlitScaledW(v) { r.lastBlitScaledW = v; },
+      get lastBlitScaledH() { return r.lastBlitScaledH; },
+      set lastBlitScaledH(v) { r.lastBlitScaledH = v; },
+      get supportsTimestampQuery() { return r.supportsTimestampQuery; },
+      set supportsTimestampQuery(v) { r.supportsTimestampQuery = v; },
+      get gpuTimings() { return r.gpuTimings; },
+      set gpuTimings(v) { r.gpuTimings = v; },
+      get timestampRuntime() { return r.timestampRuntime; },
+      set timestampRuntime(v) { r.timestampRuntime = v; },
+      get maxPassesPerFrame() { return r.maxPassesPerFrame; },
+      set maxPassesPerFrame(v) { r.maxPassesPerFrame = v; },
+      get framePassBudget() { return r.framePassBudget; },
+      set framePassBudget(v) { r.framePassBudget = v; },
+      encodeVideoFrame: r.encodeVideoFrame.bind(r),
+      adaptQualityIfNeeded: r.adaptQualityIfNeeded.bind(r),
+      nodeScale: r.nodeScale.bind(r),
+      getIslands: r.getIslands.bind(r),
+      encodePreFxChores: r.encodePreFxChores.bind(r),
+      encodePostFxChores: r.encodePostFxChores.bind(r),
+      afterFrameSubmitChores: r.afterFrameSubmitChores.bind(r),
+      afterFrameSubmit: r.afterFrameSubmit.bind(r),
+      beforeFrame: r.beforeFrame.bind(r),
+    };
+  }
+
   private adaptQualityIfNeeded(): void {
     if (!this.adaptiveQuality) return;
     const ratio = this.fps / this.targetFPS;
@@ -916,9 +1054,12 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   /** WGSL compile check on this renderer's device (ShaderScanner in worker mode). */
   async compileCheck(id: string, code: string): Promise<Array<{ type: GPUCompilationMessageType; lineNum: number; linePos: number; message: string }>> {
     if (!this.device) throw new Error('No GPUDevice');
-    const module = this.device.createShaderModule({ label: id, code });
-    const info = await module.getCompilationInfo();
-    return info.messages.map((m) => ({ type: m.type, lineNum: m.lineNum, linePos: m.linePos, message: m.message }));
+    // As loadShader compiles it: storage formats rewritten to the active tier, then checked
+    // against the catalog layout, so "compiles but does not fit the bind group" fails here too.
+    // @group(1) sim-ring shaders need the two-group layout; those get the module check only.
+    const compiled = rewriteWgslStorageFormats(code, this.colorFormat);
+    const layout = declaresBindGroup1(code) ? undefined : this.pipeline.pipelineLayout;
+    return compileCheckWgsl(this.device, id, compiled, { layout });
   }
 
   /** Render-worker video: frames arrive as transfers (null when the source stops). */
@@ -1064,6 +1205,36 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.framePassBudget = Number.isFinite(budget) && budget >= 1 ? Math.floor(budget) : Number.POSITIVE_INFINITY;
   }
 
+  /** Notified once per device when a runtime GPUDevice loss stops rendering. */
+  setFatalErrorHandler(handler: ((message: string, info?: DeviceLossInfo) => void) | null): void {
+    this.fatalErrorHandler = handler;
+  }
+
+  /** The live device (null until init succeeds and after a loss / teardown). */
+  getGpuDevice(): GPUDevice | null {
+    return this.initialized ? this.device : null;
+  }
+
+  getLastDeviceLoss(): DeviceLossInfo | null {
+    return this.lastDeviceLoss;
+  }
+
+  /**
+   * Test hook (?testMode=1): destroy the live device so it really is dead, but route its
+   * `lost` through the device-loss path instead of the silent intentional-destroy path.
+   */
+  simulateDeviceLoss(): boolean {
+    const device = this.device;
+    if (!device || !this.initialized) return false;
+    this.simulatedLossDevice = device;
+    try {
+      device.destroy();
+    } catch {
+      /* already destroyed */
+    }
+    return true;
+  }
+
   /** Resolves once `device.lost` settles, so a remount can re-probe without racing it. */
   destroy(): Promise<void> {
     return this.teardownGpuHandles(true) ?? Promise.resolve();
@@ -1074,6 +1245,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   }
 
   private teardownGpuHandles(awaitLost: boolean): Promise<void> | void {
+    this.unregisterCompileService?.();
+    this.unregisterCompileService = null;
     if (this.frameState) this.frameRenderer.stopRenderLoop(this.frameState);
     this.warmup?.stop();
     this.warmup = null;
@@ -1096,6 +1269,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     }
     this.detachUncapturedErrors?.();
     this.detachUncapturedErrors = null;
+    clearRendererDevice('renderer released', this);
     const device = this.device;
     this.device = null;
     this.context = null;

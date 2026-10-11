@@ -60,13 +60,45 @@
       "step": 0.01
     }
   ],
-  "updatedParams": [
-    { "index": 0, "name": "Index of Refraction", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 1, "name": "Light Size", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 2, "name": "Chromatic Dispersion", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 3, "name": "Intensity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
-  ],
   "feedbackPacking": "A/C = display RGBA with accumulated photonic caustics and thin-film iridescent sheen",
   "updated": true,
-  "target_rating": 4.8
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Index of Refraction",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Light Size",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Chromatic Dispersion",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Intensity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    },
+    "target_rating": 4.8
+  }
 }

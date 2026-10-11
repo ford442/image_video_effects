@@ -11,7 +11,9 @@ export function withUpdatedSlotParams(
     slotIndex: number,
     updates: Partial<SlotParams>
 ): SlotParams[] {
+    const current = params[slotIndex];
+    if (!current) return params;
     const next = [...params];
-    next[slotIndex] = { ...next[slotIndex], ...updates };
+    next[slotIndex] = { ...current, ...updates };
     return next;
 }

@@ -2,6 +2,8 @@ import { useEffect, RefObject } from 'react';
 import { RendererManager } from '../renderer/RendererManager';
 import { RenderQualityMode } from '../config/performancePolicy';
 import { computeBenchmarkStats, countReadbacks } from '../utils/benchmarkStats';
+import { fetchShaderWgsl } from '../utils/fetchShaderWgsl';
+import { getShaderCompileService } from '../utils/shaderCompileService';
 
 export interface CanvasImageStats {
     width: number;
@@ -39,9 +41,9 @@ function measureCanvasStats(canvas: HTMLCanvasElement): CanvasImageStats {
     let active = 0;
     const pixels = w * h;
     for (let i = 0; i < data.length; i += 4) {
-        const r = data[i] / 255;
-        const g = data[i + 1] / 255;
-        const b = data[i + 2] / 255;
+        const r = data[i]! / 255;
+        const g = data[i + 1]! / 255;
+        const b = data[i + 2]! / 255;
         const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
         lumSum += lum;
         if (lum > 0.05) active++;
@@ -96,6 +98,16 @@ export function useTestHarness({
                     manager.applyTestRenderState(state);
                 },
                 // A render-worker canvas cannot be read on the page (#1314): capture over RPC.
+                // ShaderScanner's compile path, scriptable (#1395 validation-scope e2e).
+                compileCheckShader: async (id: string) => {
+                    const compiler = getShaderCompileService();
+                    if (!compiler) return { ok: false, errors: ['no shader compile service'] };
+                    const code = await fetchShaderWgsl(id, undefined, { primaryOnly: true });
+                    if (!code) return { ok: false, errors: ['fetch failed'] };
+                    const messages = await compiler.compile(id, code);
+                    const errors = messages.filter((m) => m.type === 'error').map((m) => m.message);
+                    return { ok: errors.length === 0, errors };
+                },
                 captureCanvasScreenshot: async () => {
                     if (manager.getRenderThread() === 'worker') return (await manager.refreshFrameImage()) || null;
                     const canvas = document.querySelector('canvas');
@@ -135,6 +147,8 @@ export function useTestHarness({
                     }),
                 /** Lift the quality slot cap so multi-slot stacks run on low-end/SwiftShader adapters. */
                 overrideSlotCap: (cap: number | null) => manager.overrideSlotCapForTests(cap),
+                /** Pin the internal render scale (0.25–1); a change also clears feedback textures. */
+                setRenderScale: (scale: number) => manager.setResolutionScaleForTests(scale),
                 setRenderQuality: (mode: RenderQualityMode) => {
                     manager.setRenderQuality(mode, {
                         supportsDeepWorkgroup: manager.getSupportsDeepWorkgroup(),
@@ -226,6 +240,12 @@ export function useTestHarness({
                 getGPUTimings: () => manager.getGPUTimings(),
                 getPassTimings: () => manager.getPassTimings(),
                 getRenderThread: () => manager.getRenderThread(),
+                /** Destroy the TS WebGPU device but report it as a runtime loss (main + worker). */
+                simulateDeviceLoss: () => manager.simulateDeviceLoss(),
+                /** Worker mode only: an uncaught error in the render worker (#1395). */
+                simulateWorkerCrash: () => manager.simulateWorkerCrash(),
+                getDeviceRecoveryStatus: () => manager.getDeviceRecoveryStatus(),
+                recoverFromDeviceLoss: () => manager.recoverFromDeviceLoss(),
                 /**
                  * Record `ms` through the app's WebCodecs session (worker frame grabs in
                  * worker mode, canvas VideoFrames on the page) and describe the WebM.

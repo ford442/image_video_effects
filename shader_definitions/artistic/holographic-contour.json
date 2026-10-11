@@ -56,40 +56,6 @@
       "max": 1
     }
   ],
-  "updatedParams": [
-    {
-      "id": "threshold",
-      "name": "Halftone Dot Size",
-      "default": 0.1,
-      "min": 0.01,
-      "max": 0.5,
-      "description": "Halftone cell pitch in pixels (maps to zoom_params.x)."
-    },
-    {
-      "id": "glow_strength",
-      "name": "Edge Threshold",
-      "default": 2,
-      "min": 0,
-      "max": 5,
-      "description": "Sobel magnitude required to register a contour (maps to zoom_params.y)."
-    },
-    {
-      "id": "shift_amount",
-      "name": "Posterize Levels",
-      "default": 0.05,
-      "min": 0,
-      "max": 0.2,
-      "description": "Number of quantisation levels for the base colour (maps to zoom_params.z)."
-    },
-    {
-      "id": "dim_bg",
-      "name": "Ink Density",
-      "default": 0.8,
-      "min": 0,
-      "max": 1,
-      "description": "Contour and halftone ink coverage (maps to zoom_params.w)."
-    }
-  ],
   "tags": [
     "stylized",
     "artistic",
@@ -102,5 +68,43 @@
     "interference",
     "line-art"
   ],
-  "description": "Sobel contour extraction cross-modulated with a reference-beam interference plate, so the output is a recorded fringe pattern rather than a flat edge trace. Fringe spacing comes from the eight FFT bins and the reference-beam angle follows the pointer. Contours are extracted at three parallax offsets driven by scene depth, stacking them as plates at different heights. Fixes dead audio (plasmaBuffer was bound but never read despite the audio-reactive tag), a depth clobber, and a dead halftone radius; the transpiler-generated source was rewritten as readable WGSL."
+  "description": "Sobel contour extraction cross-modulated with a reference-beam interference plate, so the output is a recorded fringe pattern rather than a flat edge trace. Fringe spacing comes from the eight FFT bins and the reference-beam angle follows the pointer. Contours are extracted at three parallax offsets driven by scene depth, stacking them as plates at different heights. Fixes dead audio (plasmaBuffer was bound but never read despite the audio-reactive tag), a depth clobber, and a dead halftone radius; the transpiler-generated source was rewritten as readable WGSL.",
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "id": "threshold",
+          "name": "Halftone Dot Size",
+          "default": 0.1,
+          "min": 0.01,
+          "max": 0.5,
+          "description": "Halftone cell pitch in pixels (maps to zoom_params.x)."
+        },
+        {
+          "id": "glow_strength",
+          "name": "Edge Threshold",
+          "default": 2,
+          "min": 0,
+          "max": 5,
+          "description": "Sobel magnitude required to register a contour (maps to zoom_params.y)."
+        },
+        {
+          "id": "shift_amount",
+          "name": "Posterize Levels",
+          "default": 0.05,
+          "min": 0,
+          "max": 0.2,
+          "description": "Number of quantisation levels for the base colour (maps to zoom_params.z)."
+        },
+        {
+          "id": "dim_bg",
+          "name": "Ink Density",
+          "default": 0.8,
+          "min": 0,
+          "max": 1,
+          "description": "Contour and halftone ink coverage (maps to zoom_params.w)."
+        }
+      ]
+    }
+  }
 }

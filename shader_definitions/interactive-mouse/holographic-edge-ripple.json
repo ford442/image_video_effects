@@ -3,7 +3,7 @@
   "name": "Holographic Edge Ripple",
   "url": "shaders/holographic-edge-ripple.wgsl",
   "category": "interactive-mouse",
-  "description": "SDF edge detection with Laplacian zero-crossings, damped wave equation ripples, holographic rainbow diffraction, and Fresnel iridescence with ACES tone mapping.",
+  "description": "Laplacian edge confidence lit as Fresnel iridescence with interference orders and grating streaks across each edge; hold the pointer to drive the damped edge wave, click for fronts.",
   "params": [
     {
       "id": "edge-threshold",
@@ -38,7 +38,8 @@
     "mouse-driven",
     "audio-reactive",
     "depth-aware",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "semantic-alpha"
   ],
   "tags": [
     "holographic",

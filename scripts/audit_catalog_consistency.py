@@ -44,6 +44,24 @@ GENERATE_LISTS = PROJECT_ROOT / "scripts" / "generate_shader_lists.js"
 
 WGSL_IGNORE_PREFIXES = ("_",)
 ALLOWLIST_IDS = frozenset({"gen_capabilities", "wasm-bridge-probe", "cdn-placeholder"})
+ID_URL_ALLOWLIST_JSON = PROJECT_ROOT / "scripts" / "catalog_id_url_allowlist.json"
+
+# WGSL pass files that exist for a planned multipass graph the owning definition does not declare yet.
+# Pinned by filename stem; the owning effect is the reason, so wiring the graph removes the need.
+UNWIRED_PASS_FILES = {
+    "optical-flow-advect": "optical-flow-dream (single-pass definition; advect/grade passes not wired into a multipass graph)",
+    "optical-flow-grade": "optical-flow-dream (single-pass definition; advect/grade passes not wired into a multipass graph)",
+}
+
+
+def load_id_url_allowlist() -> dict[str, str]:
+    """Pinned {id: url_stem} pairs allowed to differ (see catalog_id_url_allowlist.json)."""
+    data = load_json(ID_URL_ALLOWLIST_JSON)
+    pairs: dict[str, str] = {}
+    for group in data.values():
+        if isinstance(group, dict):
+            pairs.update(group.get("pairs") or {})
+    return pairs
 
 
 def _rel(path: Path) -> str:
@@ -209,6 +227,10 @@ def load_shader_list_ids() -> set[str]:
     return ids
 
 
+def _has_wgsl(stem: str) -> bool:
+    return (SHADERS_DIR / f"{stem}.wgsl").exists()
+
+
 def audit_catalog(
     definitions: list[tuple[Path, dict | None]],
     *,
@@ -225,6 +247,7 @@ def audit_catalog(
     referenced_wgsl = referenced_wgsl_filenames(valid_defs)
 
     violations: list[dict[str, Any]] = []
+    id_url_allow = load_id_url_allowlist()
 
     # --- definitions ↔ WGSL ---
     for path, data in valid_defs:
@@ -241,7 +264,7 @@ def audit_catalog(
             # Graph parent catalog ids intentionally differ from pass entry filenames.
             continue
 
-        if wgsl_stem != sid and sid not in secondary_ids:
+        if wgsl_stem != sid and sid not in secondary_ids and id_url_allow.get(sid) != wgsl_stem:
             violations.append({
                 "type": "id-filename-mismatch",
                 "id": sid,
@@ -278,6 +301,8 @@ def audit_catalog(
             stem = wgsl_path.stem
             name = wgsl_path.name
             if any(stem.startswith(p) for p in WGSL_IGNORE_PREFIXES):
+                continue
+            if stem in secondary_ids or stem in UNWIRED_PASS_FILES:
                 continue
             if stem.endswith("-sg") and stem[:-3] in def_stems:
                 continue
@@ -356,7 +381,7 @@ def audit_catalog(
             if not isinstance(node, dict):
                 continue
             entry = node.get("entry")
-            if entry and str(entry) not in def_ids:
+            if entry and str(entry) not in def_ids and not _has_wgsl(str(entry)):
                 violations.append({
                     "type": "orphan-graph-entry",
                     "id": str(entry),
@@ -368,7 +393,7 @@ def audit_catalog(
     # nextShader chain integrity
     for sid, info in expected_mp.items():
         nxt = info.get("nextShader")
-        if nxt and str(nxt) not in def_ids:
+        if nxt and str(nxt) not in def_ids and not _has_wgsl(str(nxt)):
             violations.append({
                 "type": "orphan-graph-entry",
                 "id": str(nxt),
@@ -451,6 +476,15 @@ def evaluate_gate(report: dict, baseline_keys: set[str]) -> tuple[bool, list[dic
     current_count = report.get("violation_count", 0)
     ok = len(new_violations) == 0 and current_count <= baseline_count
     return ok, new_violations
+
+
+def stale_baseline_keys(report: dict, baseline_keys: set[str]) -> list[str]:
+    """Baseline keys that no longer occur — the baseline may only shrink, so these must be removed."""
+    current = {
+        v.get("key") or violation_key(v["type"], v.get("id", ""), v.get("detail", ""))
+        for v in report.get("violations") or []
+    }
+    return sorted(baseline_keys - current)
 
 
 def write_markdown(report: dict, path: Path) -> None:
@@ -557,6 +591,16 @@ def main() -> int:
                 print(f"  • {v['key']}: {v.get('detail')}", file=sys.stderr)
             if len(new_v) > 30:
                 print(f"  … and {len(new_v) - 30} more", file=sys.stderr)
+            return 1
+        stale = stale_baseline_keys(report, baseline_keys)
+        if stale:
+            print(
+                f"GATE FAIL: {len(stale)} baseline key(s) no longer occur — "
+                "run --write-baseline to ratchet the baseline down",
+                file=sys.stderr,
+            )
+            for k in stale[:30]:
+                print(f"  • stale: {k}", file=sys.stderr)
             return 1
         print("GATE PASS: no new catalog drift beyond baseline")
         return 0

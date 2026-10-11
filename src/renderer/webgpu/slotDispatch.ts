@@ -193,7 +193,7 @@ export function dispatchFrameSlots(
 
   state.blitReadTex = framePlan.output === 'writeTex' ? state.writeTex : state.readTex;
   if (framePlan.graphReports.length > 0) {
-    graphRunner.lastReport = framePlan.graphReports[framePlan.graphReports.length - 1];
+    graphRunner.lastReport = framePlan.graphReports[framePlan.graphReports.length - 1]!;
   }
   return result;
 }

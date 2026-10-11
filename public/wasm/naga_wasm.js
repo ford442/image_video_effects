@@ -17,6 +17,18 @@
  * @property {number} [pos]      1-based column.
  */
 
+/**
+ * @typedef {Object} NagaGlslResult
+ * @property {boolean} ok
+ * @property {string} [wgsl]     Translated module when ok.
+ * @property {'parse'|'validate'|'write'|'encoding'} [kind]
+ * @property {string} [message]
+ * @property {number} [line]
+ * @property {number} [pos]
+ */
+
+const GLSL_STAGES = { vertex: 0, fragment: 1, compute: 2 };
+
 const DEFAULT_WASM_URL = '/wasm/naga_wasm.wasm';
 
 /**
@@ -25,7 +37,10 @@ const DEFAULT_WASM_URL = '/wasm/naga_wasm.wasm';
  * @param {Object} [options]
  * @param {BufferSource} [options.bytes]  Pre-read wasm bytes (Node reads the file itself).
  * @param {string} [options.url]          URL to fetch instead; defaults to /wasm/naga_wasm.wasm.
- * @returns {Promise<{ validate: (wgsl: string) => NagaDiagnostic }>}
+ * @returns {Promise<{
+ *   validate: (wgsl: string) => NagaDiagnostic,
+ *   glslToWgsl: (glsl: string, stage?: 'vertex'|'fragment'|'compute') => NagaGlslResult,
+ * }>}
  */
 export async function createNagaValidator(options = {}) {
   const { instance } = options.bytes
@@ -40,16 +55,17 @@ export async function createNagaValidator(options = {}) {
   // can allocate rather than caching a Uint8Array.
   const heap = () => new Uint8Array(wasm.memory.buffer);
 
-  function validate(wgsl) {
-    const bytes = encoder.encode(wgsl);
+  /** Copies `source` into wasm memory, runs `call(ptr, len)`, returns the parsed JSON result. */
+  function run(source, call) {
+    const bytes = encoder.encode(source);
     const ptr = wasm.wgsl_alloc(bytes.length);
     if (!ptr) throw new Error('naga_wasm: allocation failed');
     try {
       heap().set(bytes, ptr);
-      wasm.wgsl_validate(ptr, bytes.length);
+      call(ptr, bytes.length);
       const resultPtr = wasm.wgsl_result_ptr();
       const resultLen = wasm.wgsl_result_len();
-      // slice() copies: the buffer is reused by the next validate().
+      // slice() copies: the buffer is reused by the next call.
       const json = decoder.decode(heap().slice(resultPtr, resultPtr + resultLen));
       return JSON.parse(json);
     } finally {
@@ -57,7 +73,19 @@ export async function createNagaValidator(options = {}) {
     }
   }
 
-  return { validate };
+  function validate(wgsl) {
+    return run(wgsl, (ptr, len) => wasm.wgsl_validate(ptr, len));
+  }
+
+  function glslToWgsl(glsl, stage = 'fragment') {
+    if (typeof wasm.glsl_to_wgsl !== 'function') {
+      throw new Error('naga_wasm: artifact has no glsl_to_wgsl export — rebuild with tools/naga_wasm/build.sh');
+    }
+    const stageId = GLSL_STAGES[stage] ?? GLSL_STAGES.fragment;
+    return run(glsl, (ptr, len) => wasm.glsl_to_wgsl(ptr, len, stageId));
+  }
+
+  return { validate, glslToWgsl };
 }
 
 async function instantiateFromUrl(url) {

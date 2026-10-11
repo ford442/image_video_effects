@@ -6,7 +6,6 @@
     {
       "id": "density",
       "name": "Line Density",
-      "type": "float",
       "default": 0.5,
       "min": 0,
       "max": 1
@@ -14,7 +13,6 @@
     {
       "id": "height",
       "name": "Height Scale",
-      "type": "float",
       "default": 0.5,
       "min": 0,
       "max": 1
@@ -22,7 +20,6 @@
     {
       "id": "mouse",
       "name": "Mouse Force",
-      "type": "float",
       "default": 0.5,
       "min": 0,
       "max": 1
@@ -30,7 +27,6 @@
     {
       "id": "glow",
       "name": "Glow Strength",
-      "type": "float",
       "default": 0.5,
       "min": 0,
       "max": 1
@@ -51,39 +47,43 @@
     "reactive"
   ],
   "name": "Neon Topology",
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Line Density",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Height Scale",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Mouse Force",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Glow Strength",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+  "updated": true,
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Line Density",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Height Scale",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Mouse Force",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Glow Strength",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
     }
-  ],
-  "updated": true
+  }
 }

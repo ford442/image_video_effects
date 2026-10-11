@@ -2,7 +2,7 @@
   "id": "vortex-prism",
   "name": "Vortex Prism",
   "url": "shaders/vortex-prism.wgsl",
-  "description": "Twists the image around the mouse cursor, separating colors like a prism.",
+  "description": "Twists the image around the mouse cursor, fanning colors into smooth rainbow arcs like a prism. Smoothness sets a calm Rankine eye, shear caustics streak the outer band, and bass tightens the twist.",
   "params": [
     {
       "id": "twist",
@@ -37,7 +37,8 @@
     "mouse-driven",
     "distortion",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

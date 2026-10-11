@@ -51,5 +51,7 @@
       "step": 0.01
     }
   ],
-  "target_rating": 4.5
+  "x-meta": {
+    "target_rating": 4.5
+  }
 }
