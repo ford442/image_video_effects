@@ -82,6 +82,19 @@ The OSC decoder ships as a lazy `osc` chunk — it is never in the main bundle (
 - **Share VJ set link** — includes vibe metadata when available.
 - **Export JSON** — full portable file including optional MIDI bindings; use **Import JSON** to restore on another machine.
 
+## Project files
+
+Use **Export project (.pixelocity.json)** to download a user-owned session file; no account or server is involved. **Import project…** validates the complete file before applying any part of it and lists anything that needs attention.
+
+Project schema v1 is an envelope around the existing formats, not another shader-stack model:
+
+- `chain` embeds `SharedChain` unchanged, including its own `v`, ordered slots, compact params, enabled flags, and chain/parallel modes.
+- The envelope adds the active slot, safe image/video/stream references or generative shader id, render quality, MIDI/keyboard mappings, and an optional embedded `VjSetExportPayload` recording.
+- Unknown shader ids become empty slots with a warning. A source that is not in the current media catalog becomes `none` with a relink warning.
+- Media bytes, `data:`/`blob:` URLs, camera or microphone permission state, device/track handles, transient GPU objects, and adaptive render-scale telemetry are never saved. Webcam projects save only the source choice and ask the browser for permission again when applied.
+
+The contract is [`src/contracts/project_file.json`](../src/contracts/project_file.json) (JSON Schema draft 2020-12). Project migrations are explicit one-version steps. Version 0 compatibility accepts a bare `SharedChain` or existing v1 `.vjset.json` and lifts it into project v1; unknown future versions are rejected with a reason. Chain URLs, preset packs, and the older VJ-set export remain separate and backward-compatible.
+
 ## Set recorder
 
 Under **Share & export**: **● Record set** samples every slot's shader and its four sliders at 20 Hz, storing only changes. **▶ Play** replays the recording through the same path as MIDI/OSC.
