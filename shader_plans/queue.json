@@ -651,11 +651,6 @@
       "added": "2026-10-09T15:15:45.639294"
     },
     {
-      "filename": "2026-10-10_liquid-metal-chrono-flora.md",
-      "title": "Liquid-Metal Chrono-Flora",
-      "added": "2026-10-10T15:29:37.370505"
-    },
-    {
       "filename": "2026-10-11_acoustic-obsidian-resonator.md",
       "title": "Acoustic Obsidian Resonator",
       "added": "2026-10-11T17:29:07.940749"
@@ -1297,6 +1292,13 @@
       "added": "2026-10-09T15:15:45.639294",
       "status": "completed",
       "completed_at": "2026-10-10T08:23:58.831840+00:00"
+    },
+    {
+      "filename": "2026-10-10_liquid-metal-chrono-flora.md",
+      "title": "Liquid-Metal Chrono-Flora",
+      "added": "2026-10-10T15:29:37.370505",
+      "status": "completed",
+      "completed_at": "2026-10-11T08:09:04.719922+00:00"
     },
     {
       "filename": "2026-10-10_liquid-metal-chrono-flora.md",
