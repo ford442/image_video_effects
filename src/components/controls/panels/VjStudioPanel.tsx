@@ -12,6 +12,8 @@ import { buildVjSetExport, parseVjSetExport, serializeVjSetExport } from '../../
 import { decodeChain } from '../../../services/layerChainShare';
 import { shouldShowMidiControls } from '../../../utils/deviceCapabilities';
 import type { MyVjSet } from '../../../services/myVjSets';
+import type { UseProjectFileReturn } from '../../../hooks/useProjectFile';
+import { ProjectFilePanel } from './ProjectFilePanel';
 
 export interface VjStudioPanelProps {
     studioOpen: boolean;
@@ -48,6 +50,7 @@ export interface VjStudioPanelProps {
     onUpdateStack?: (ids: string[]) => void;
     onUpdateParams?: (params: Record<string, number>[]) => void;
     onGenerateFromVibe?: (vibe: string) => void;
+    projectFile: UseProjectFileReturn;
 }
 
 function formatDuration(ms: number): string {
@@ -100,6 +103,7 @@ export const VjStudioPanel: React.FC<VjStudioPanelProps> = ({
     onUpdateStack,
     onUpdateParams,
     onGenerateFromVibe,
+    projectFile,
 }) => {
     const [historyOpen, setHistoryOpen] = useState(false);
     const [setsOpen, setSetsOpen] = useState(false);
@@ -389,6 +393,7 @@ export const VjStudioPanel: React.FC<VjStudioPanelProps> = ({
                                         </button>
                                     )}
                                 </div>
+                                <ProjectFilePanel projectFile={projectFile} />
                                 <input ref={fileInputRef} type="file" accept=".json,.vjset.json,application/json" style={{ display: 'none' }} onChange={(e) => {
                                     const f = e.target.files?.[0];
                                     if (f) handleImportJson(f);

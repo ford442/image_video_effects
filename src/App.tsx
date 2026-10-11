@@ -678,6 +678,9 @@ function MainApp() {
                 loadDepthModel={loadDepthModel}
                 isModelLoaded={isModelLoaded}
                 availableModes={availableModes}
+                imageManifest={imageManifest}
+                currentImageUrl={currentImageUrl}
+                handleLoadImage={handleLoadImage}
                 inputSource={inputSource}
                 syncInputSourceToRenderer={syncInputSourceToRenderer}
                 videoList={videoList}

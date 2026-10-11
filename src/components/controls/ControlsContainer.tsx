@@ -20,6 +20,7 @@ import { GenerativeSourcePanel } from './panels/GenerativeSourcePanel';
 import { useLiveControl } from './hooks/useLiveControl';
 import { useOscControl } from './hooks/useOscControl';
 import { useSetRecorder } from '../../hooks/useSetRecorder';
+import { useProjectFile } from '../../hooks/useProjectFile';
 import { useCoordinateNavigation } from './hooks/useCoordinateNavigation';
 import { useShaderMenuOptions } from './hooks/useShaderMenuOptions';
 import { useAiVjAutoTransition } from './hooks/useAiVjAutoTransition';
@@ -38,6 +39,9 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
     autoChangeDelay, setAutoChangeDelay,
     onLoadModel, isModelLoaded,
     availableModes = [],
+    imageManifest = [],
+    currentImageUrl,
+    onLoadProjectImage = async () => {},
     inputSource, setInputSource,
     videoList, selectedVideo, setSelectedVideo,
     videoB3hdMode, setVideoB3hdMode,
@@ -155,6 +159,34 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
     });
 
     const recorder = useSetRecorder({ modes, slotParams, setMode, onSetSlotParam });
+    const projectFile = useProjectFile({
+        modes,
+        slotParams,
+        activeSlot,
+        inputSource,
+        currentImageUrl,
+        imageManifest,
+        selectedVideo,
+        videoList,
+        liveStreamUrl,
+        activeGenerativeShader,
+        renderQualityMode,
+        bindings: liveControl.bindings,
+        timeline: recorder.timeline,
+        recorderState: recorder.recorderState,
+        availableModes,
+        applySharedChain: onApplySharedChain ?? (() => {}),
+        setActiveSlot,
+        setInputSource,
+        setSelectedVideo,
+        setActiveGenerativeShader,
+        startWebcam: onStartWebcam,
+        loadImage: onLoadProjectImage,
+        loadStream: onLiveStreamLoaded,
+        setRenderQuality: onRenderQualityChange,
+        setBindings: liveControl.setBindings,
+        setTimeline: recorder.setTimeline,
+    });
 
     const { shaders: ratedShaders, rateShader } = useShaderRatings();
     const { ratingMap, slotMenuOptions, generativeMenuOptions } = useShaderMenuOptions({
@@ -226,6 +258,7 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                 onUpdateStack={onUpdateStack}
                 onUpdateParams={onUpdateParams}
                 onGenerateFromVibe={onGenerateFromVibe}
+                projectFile={projectFile}
             />
 
             {onRenderQualityChange && performanceHud && (

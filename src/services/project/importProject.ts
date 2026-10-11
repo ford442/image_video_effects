@@ -1,4 +1,4 @@
-import type { SharedChainSlot } from '../layerChainShare';
+import { MAX_SHARED_SLOTS, type SharedChainSlot } from '../layerChainShare';
 import { migrateProjectFile } from './migrate';
 import type {
   ProjectApplyPlan,
@@ -66,7 +66,8 @@ export function createProjectApplyPlan(
   env: ProjectImportEnvironment,
 ): ProjectApplyPlan {
   const warnings: string[] = [];
-  const slots: SharedChainSlot[] = project.chain.slots.map((slot, index) => {
+  const slots: SharedChainSlot[] = Array.from({ length: MAX_SHARED_SLOTS }, (_, index) => {
+    const slot = project.chain.slots[index] ?? { shaderId: null };
     if (!slot.shaderId || env.knownShaderIds.size === 0 || env.knownShaderIds.has(slot.shaderId)) {
       return { ...slot, ...(slot.params ? { params: { ...slot.params } } : {}) };
     }

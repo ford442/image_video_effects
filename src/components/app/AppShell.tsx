@@ -4,7 +4,7 @@ import Controls from '../Controls';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from '../../renderer/types';
 import { RendererManager, RendererType } from '../../renderer/RendererManager';
 import { isWasmForcedByURL } from '../../renderer/rendererUrl';
-import type { AIStatus, AutoTransitionConfig } from '../../types/aiVj';
+import type { AIStatus, AutoTransitionConfig, ImageRecord } from '../../types/aiVj';
 import { VideoRecord } from '../../syncTypes';
 import { VideoSegment } from '../../services/videoSegmentManager';
 import { SharedChain } from '../../services/layerChainShare';
@@ -37,6 +37,9 @@ export interface AppShellProps {
     loadDepthModel: () => void;
     isModelLoaded: boolean;
     availableModes: ShaderEntry[];
+    imageManifest: ImageRecord[];
+    currentImageUrl?: string;
+    handleLoadImage: (url: string) => Promise<void>;
     inputSource: InputSource;
     syncInputSourceToRenderer: (source: InputSource) => void;
     videoList: VideoRecord[];
@@ -171,6 +174,9 @@ export function AppShell(props: AppShellProps) {
         loadDepthModel,
         isModelLoaded,
         availableModes,
+        imageManifest,
+        currentImageUrl,
+        handleLoadImage,
         inputSource,
         syncInputSourceToRenderer,
         videoList,
@@ -351,6 +357,7 @@ export function AppShell(props: AppShellProps) {
                         autoChangeEnabled={autoChangeEnabled} setAutoChangeEnabled={setAutoChangeEnabled}
                         autoChangeDelay={autoChangeDelay} setAutoChangeDelay={setAutoChangeDelay}
                         onLoadModel={loadDepthModel} isModelLoaded={isModelLoaded} availableModes={availableModes}
+                        imageManifest={imageManifest} currentImageUrl={currentImageUrl} onLoadProjectImage={handleLoadImage}
                         inputSource={inputSource} setInputSource={syncInputSourceToRenderer} videoList={videoList}
                         selectedVideo={selectedVideo} setSelectedVideo={setSelectedVideo}
                         videoB3hdMode={videoB3hdMode} setVideoB3hdMode={setVideoB3hdMode}

@@ -91,6 +91,13 @@ describe('project file export/import', () => {
   it('parses legacy exports before producing an apply plan', () => {
     const parsed = parsedProject(JSON.stringify(chain));
     expect(parsed.migrationReason).toMatch(/legacy/i);
-    expect(createProjectApplyPlan(parsed.project, { knownShaderIds: new Set(['known-a', 'known-b']) }).chain).toEqual(chain);
+    const planned = createProjectApplyPlan(parsed.project, { knownShaderIds: new Set(['known-a', 'known-b']) }).chain;
+    expect(planned.slots).toHaveLength(6);
+    expect(planned.slots.slice(0, chain.slots.length)).toEqual(chain.slots);
+    expect(planned.slots.slice(chain.slots.length)).toEqual([
+      { shaderId: null },
+      { shaderId: null },
+      { shaderId: null },
+    ]);
   });
 });
