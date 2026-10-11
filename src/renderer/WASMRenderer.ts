@@ -121,9 +121,16 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
         return false;
       }
 
+      // The bridge resolves true only once C++ Initialize() reached Ready
+      // (isRendererInitialized), so the probe and the render loop never run while
+      // CreateDevice() is still suspended in WaitAny. On failure the TS probe is
+      // left alone: the switch restores the previous backend, and its breadcrumb
+      // still describes what is rendering (failed WASM detail: getDiagnostics()).
       this.initialized = true;
       this.logNextInputUpload = true;
-      void this.publishProbeWhenCppReady();
+      const bridge = WasmBridge.getDiagnostics?.();
+      publishWasmProbeSuccess(bridge?.adapterInfo ?? '', bridge?.canvasCopySrc ?? null);
+      console.log(`[WASM] probe breadcrumb: canvasCopySrc=${bridge?.canvasCopySrc ?? 'unknown'}`);
       this.startTime = performance.now() / 1000;
       if (this.resolutionScale !== 1.0) {
         this.setResolutionScale(this.resolutionScale);
@@ -149,30 +156,6 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
       });
       return false;
     }
-  }
-
-  /**
-   * Publish the WASM window.webgpuProbe breadcrumb (incl. the C++ canvas COPY_SRC
-   * probe) once C++ Initialize() has really finished. The ASYNCIFY init ccall
-   * can return while CreateDevice() is still waiting on the adapter, so this
-   * polls isRendererInitialized; if C++ never gets there, nothing is claimed.
-   */
-  private async publishProbeWhenCppReady(timeoutMs = 15000, pollMs = 100): Promise<boolean> {
-    if (typeof WasmBridge.isCppRendererReady !== 'function') return false;
-    const deadline = performance.now() + timeoutMs;
-    while (this.initialized && performance.now() < deadline) {
-      if (WasmBridge.isCppRendererReady()) {
-        const bridge = WasmBridge.getDiagnostics?.();
-        publishWasmProbeSuccess(bridge?.adapterInfo ?? '', bridge?.canvasCopySrc ?? null);
-        console.log(`[WASM] probe breadcrumb: canvasCopySrc=${bridge?.canvasCopySrc ?? 'unknown'}`);
-        return true;
-      }
-      await new Promise((resolve) => setTimeout(resolve, pollMs));
-    }
-    if (this.initialized) {
-      console.warn('[WASM] C++ Initialize() did not finish; window.webgpuProbe not published');
-    }
-    return false;
   }
 
   /**

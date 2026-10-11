@@ -103,18 +103,12 @@ bash "$REPO_ROOT/scripts/emcc-version-gate.sh"
 # Source files are referenced by absolute path so this script can be run from
 # any CWD (e.g. /content/build_space/) without accidentally picking up stale
 # copies that still use the old WebGPU C++ API or html5_webgpu.h.
+# The TU list is wasm_compile_flags.json `sources` (also read by `npm run wasm:compdb`).
 echo "=== Compiling + linking ==="
-SOURCES=(
-    "$SCRIPT_DIR/main.cpp"
-    "$SCRIPT_DIR/renderer.cpp"
-    "$SCRIPT_DIR/device.cpp"
-    "$SCRIPT_DIR/resources.cpp"
-    "$SCRIPT_DIR/pipeline.cpp"
-    "$SCRIPT_DIR/frame.cpp"
-    "$SCRIPT_DIR/timing.cpp"
-    "$SCRIPT_DIR/audio_depth.cpp"
-    "$SCRIPT_DIR/wasm_internal.cpp"
-)
+SOURCES=()
+while IFS= read -r src; do
+    SOURCES+=("$SCRIPT_DIR/$src")
+done < <(node "$REPO_ROOT/scripts/format-wasm-compile-flags.js" sources)
 echo "Flags: ${COMPILE_FLAGS[*]}"
 em++ "${COMPILE_FLAGS[@]}" \
     "${SOURCES[@]}" \

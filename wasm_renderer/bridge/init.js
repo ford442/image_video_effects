@@ -10,11 +10,57 @@ const SOURCE_MAP = {
   generative: 4,
   live: 5
 };
+const CPP_INIT_TIMEOUT_MS = 2e4;
+const CPP_INIT_POLL_MS = 50;
+const REAP_POLL_MS = 500;
+const REAP_MAX_MS = 5 * 6e4;
+function readCppInitOutcome(mod) {
+  try {
+    if (Number(mod.ccall("isRendererInitialized", "number", [], [])) === 1) return "ready";
+    const stage = Number(mod.ccall("getLastInitErrorStage", "number", [], []) ?? 0);
+    return stage > 0 && stage < 8 ? "failed" : "pending";
+  } catch {
+    return "pending";
+  }
+}
+function waitForCppInit(mod, timeoutMs = CPP_INIT_TIMEOUT_MS) {
+  const deadline = performance.now() + timeoutMs;
+  return new Promise((resolve) => {
+    const poll = () => {
+      const outcome = readCppInitOutcome(mod);
+      if (outcome !== "pending") resolve(outcome);
+      else if (performance.now() >= deadline) resolve("timeout");
+      else setTimeout(poll, CPP_INIT_POLL_MS);
+    };
+    poll();
+  });
+}
+function reapAbandonedInit(mod) {
+  const deadline = performance.now() + REAP_MAX_MS;
+  const poll = () => {
+    if (readCppInitOutcome(mod) !== "pending") {
+      try {
+        mod.ccall("shutdownWasmRenderer", null, [], []);
+        console.log("[WASM] Abandoned init settled; C++ renderer shut down");
+      } catch (err) {
+        console.error("[WASM] Abandoned init shutdown error:", err);
+      }
+      return;
+    }
+    if (performance.now() >= deadline) {
+      console.warn("[WASM] Abandoned init never settled; leaking that module (instance not destroyed)");
+      return;
+    }
+    setTimeout(poll, REAP_POLL_MS);
+  };
+  setTimeout(poll, REAP_POLL_MS);
+}
 async function initWasmRenderer(canvasElement) {
   if (state.initialized) {
     console.warn("[WASM] Renderer already initialized");
     return true;
   }
+  state.initTimedOut = false;
   wasmRef.canvas = canvasElement;
   const sizeCap = 1024;
   state.canvasWidth = Math.min(wasmRef.canvas.width || sizeCap, sizeCap);
@@ -54,9 +100,8 @@ async function initWasmRenderer(canvasElement) {
         const canvasId = ensureWasmCanvasId(canvas);
         const selector = "#" + canvasId;
         console.log(`[WASM] Calling initWasmRenderer( ${state.canvasWidth} , ${state.canvasHeight} , ${selector} )`);
-        let ok = 0;
         try {
-          ok = wasmRef.module.ccall(
+          mod.ccall(
             "initWasmRenderer",
             "number",
             ["number", "number", "string"],
@@ -73,49 +118,62 @@ async function initWasmRenderer(canvasElement) {
           resolve(false);
           return;
         }
-        if (ok) {
-          state.initialized = true;
-          state.initEndTime = performance.now();
-          const elapsed = state.initEndTime - state.initStartTime;
-          console.log(`[WASM] \u2705 Initialization complete in ${elapsed} ms`);
-          const cppFmt = Number(
-            wasmRef.module.ccall("getColorFormat", "number", [], []) ?? 0
-          );
-          const pending = state.colorFormat;
-          if (pending !== 0 && pending !== cppFmt) {
-            wasmRef.module.ccall("setColorFormat", null, ["number"], [pending]);
+        return waitForCppInit(mod).then((outcome) => {
+          if (outcome === "timeout") {
+            state.initTimedOut = true;
+            state.lastLoadError = `C++ Initialize() still pending after ${CPP_INIT_TIMEOUT_MS / 1e3} s (suspended in WaitAny)`;
+            state.loadErrorCount++;
+            state.initEndTime = performance.now();
+            console.error(`[WASM] \u274C ${state.lastLoadError}; abandoning this module`);
+            wasmRef.module = null;
+            wasmRef.canvas = null;
+            reapAbandonedInit(mod);
+            resolve(false);
+            return;
           }
-          const applied = Number(
-            wasmRef.module.ccall("getColorFormat", "number", [], []) ?? cppFmt
-          );
-          state.colorFormat = applied === 1 ? 1 : 0;
-          console.log(
-            `[WASM] colorFormat=${state.colorFormat === 1 ? "rgba16float" : "rgba32float"}`
-          );
-          const mod2 = wasmRef.module;
-          state.maxShaderSlots = typeof mod2._getMaxShaderSlots === "function" ? mod2._getMaxShaderSlots() : null;
-          console.log(`[WASM] maxShaderSlots=${state.maxShaderSlots ?? "unknown (artifact predates export)"}`);
-          promoteWasmCanvasVisible(canvas);
-          if (state.pendingInputSource !== null) {
-            const src = state.pendingInputSource;
-            state.pendingInputSource = null;
-            const sourceInt = typeof src === "string" ? SOURCE_MAP[src] ?? 0 : src;
-            wasmRef.module.ccall("setInputSource", null, ["number"], [sourceInt]);
-            state.inputSource = sourceInt;
+          if (outcome === "ready") {
+            state.initialized = true;
+            state.initEndTime = performance.now();
+            const elapsed = state.initEndTime - state.initStartTime;
+            console.log(`[WASM] \u2705 Initialization complete in ${elapsed} ms`);
+            const cppFmt = Number(
+              mod.ccall("getColorFormat", "number", [], []) ?? 0
+            );
+            const pending = state.colorFormat;
+            if (pending !== 0 && pending !== cppFmt) {
+              mod.ccall("setColorFormat", null, ["number"], [pending]);
+            }
+            const applied = Number(
+              mod.ccall("getColorFormat", "number", [], []) ?? cppFmt
+            );
+            state.colorFormat = applied === 1 ? 1 : 0;
+            console.log(
+              `[WASM] colorFormat=${state.colorFormat === 1 ? "rgba16float" : "rgba32float"}`
+            );
+            state.maxShaderSlots = typeof mod._getMaxShaderSlots === "function" ? mod._getMaxShaderSlots() : null;
+            console.log(`[WASM] maxShaderSlots=${state.maxShaderSlots ?? "unknown (artifact predates export)"}`);
+            promoteWasmCanvasVisible(canvas);
+            if (state.pendingInputSource !== null) {
+              const src = state.pendingInputSource;
+              state.pendingInputSource = null;
+              const sourceInt = typeof src === "string" ? SOURCE_MAP[src] ?? 0 : src;
+              mod.ccall("setInputSource", null, ["number"], [sourceInt]);
+              state.inputSource = sourceInt;
+            }
+            resolve(true);
+          } else {
+            const cppDiag = readCppInitDiagnostics();
+            const failMsg = formatCppInitFailure(cppDiag);
+            console.error(`[WASM] \u274C initWasmRenderer failed: ${failMsg}`);
+            if (cppDiag.adapterSummary) {
+              console.error(`[WASM] GPU Adapter: ${cppDiag.adapterSummary}`);
+            }
+            state.lastLoadError = failMsg;
+            state.loadErrorCount++;
+            state.initEndTime = performance.now();
+            resolve(false);
           }
-          resolve(true);
-        } else {
-          const cppDiag = readCppInitDiagnostics();
-          const failMsg = formatCppInitFailure(cppDiag);
-          console.error(`[WASM] \u274C initWasmRenderer failed: ${failMsg}`);
-          if (cppDiag.adapterSummary) {
-            console.error(`[WASM] GPU Adapter: ${cppDiag.adapterSummary}`);
-          }
-          state.lastLoadError = failMsg;
-          state.loadErrorCount++;
-          state.initEndTime = performance.now();
-          resolve(false);
-        }
+        });
       }).catch((err) => {
         console.error("[WASM] Module instantiation failed:", err);
         state.lastLoadError = err instanceof Error ? err.message : String(err);
@@ -200,6 +258,7 @@ function getPresentCanvasId() {
   return found?.id ?? tagged?.id ?? "";
 }
 export {
+  CPP_INIT_TIMEOUT_MS,
   ensureWasmCanvasId,
   getPresentCanvas,
   getPresentCanvasId,

@@ -37,7 +37,13 @@ const state = {
   /** Slot indexes whose last setSlotShader the module did not accept. */
   droppedSlots: /* @__PURE__ */ new Set(),
   /** MAX_SHADER_SLOTS compiled into the loaded artifact; null = older binary without the export. */
-  maxShaderSlots: null
+  maxShaderSlots: null,
+  /**
+   * The last init gave up while C++ was still suspended in WaitAny (bridge backstop,
+   * init.ts CPP_INIT_TIMEOUT_MS). That module was abandoned to the reaper, so the
+   * C++ stage is unreadable; diagnostics report failedStageName 'Timeout'.
+   */
+  initTimedOut: false
 };
 function isCppRendererReady() {
   const mod = wasmRef.module;

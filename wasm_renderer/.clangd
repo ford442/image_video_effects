@@ -1,0 +1,19 @@
+# clangd config for wasm_renderer/. The compile database is generated, not
+# committed (it embeds this machine's emsdk / EM_CACHE paths):
+#   npm run wasm:build     # once, so EM_CACHE holds the emdawnwebgpu headers
+#   npm run wasm:compdb    # writes wasm_renderer/compile_commands.json
+# Use emsdk's own clangd ($EMSDK/upstream/bin/clangd) so it matches em++.
+#
+# Each entry carries build.sh's full em++ flag list; the em++-only settings
+# (-s…, --use-port=…) mean nothing to clang, so drop them before indexing.
+# One entry per wasm_compile_flags.json sFlags key (verify:wasm-invariants);
+# a bare `-s*` would also strip -std=c++20.
+CompileFlags:
+  Remove:
+    - --use-port=*
+    - -sALLOW_MEMORY_GROWTH*
+    - -sGROWABLE_ARRAYBUFFERS*
+    - -sNO_EXIT_RUNTIME*
+    - -sMODULARIZE*
+    - -sEXPORT_NAME*
+    - -sASYNCIFY*

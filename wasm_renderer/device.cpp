@@ -14,6 +14,17 @@ namespace pixelocity {
 using wasm_internal::MakeStringView;
 using wasm_internal::CheckLimit;
 
+// Finite WaitAny budgets for init. With UINT64_MAX emdawn waits forever, and on
+// SwiftShader the adapter request never resolves in ~1 run of 10: init then hangs
+// inside ASYNCIFY and the JS bridge cannot safely shut the instance down. A timed
+// out request falls through to the normal failure path (failedStage_ + Shutdown()).
+// A future left pending is completed as CallbackCancelled when the instance drops;
+// the callbacks below only write their out-pointer on Success, so the dead stack
+// slot is never touched. Worst case 4 × 3 s + 5 s = 17 s, under the bridge's 20 s
+// backstop (src/wasm/bridge/init.ts CPP_INIT_TIMEOUT_MS).
+constexpr uint64_t kAdapterWaitTimeoutNs = 3'000'000'000ull;
+constexpr uint64_t kDeviceWaitTimeoutNs = 5'000'000'000ull;
+
 
 // ─── JavaScript bridge: create a WebGPU surface from a canvas selector ────────
 //
@@ -177,6 +188,7 @@ bool WebGPURenderer::CreateDevice() {
     constexpr size_t kAdapterAttemptCount = sizeof(adapterAttempts) / sizeof(adapterAttempts[0]);
 
     WGPUAdapter rawAdapter = nullptr;
+    size_t adapterTimeouts = 0;
 
     for (size_t attempt = 0; attempt < kAdapterAttemptCount && rawAdapter == nullptr; ++attempt) {
         WGPUPowerPreference pref = adapterAttempts[attempt].powerPreference;
@@ -230,8 +242,12 @@ bool WebGPURenderer::CreateDevice() {
         WGPUFutureWaitInfo adapterWait = WGPU_FUTURE_WAIT_INFO_INIT;
         adapterWait.future = adapterFuture;
         WGPUWaitStatus waitStatus =
-            wgpuInstanceWaitAny(instance_.get(), 1, &adapterWait, UINT64_MAX);
-        if (waitStatus != WGPUWaitStatus_Success) {
+            wgpuInstanceWaitAny(instance_.get(), 1, &adapterWait, kAdapterWaitTimeoutNs);
+        if (waitStatus == WGPUWaitStatus_TimedOut) {
+            ++adapterTimeouts;
+            printf("[WASM] Adapter request timed out after %llu ms; trying the next option.\n",
+                   (unsigned long long)(kAdapterWaitTimeoutNs / 1000000ull));
+        } else if (waitStatus != WGPUWaitStatus_Success) {
             printf("[WASM] Adapter WaitAny status=%d (1=Success,2=TimedOut,3=Error)\n",
                    (int)waitStatus);
         }
@@ -255,6 +271,10 @@ bool WebGPURenderer::CreateDevice() {
         failedStage_ = InitStage::Adapter;
         lastError_ = "Failed to obtain a WebGPU adapter after all fallback attempts "
                       "(HighPerformance/Undefined/LowPower/forceFallbackAdapter)";
+        if (adapterTimeouts > 0) {
+            lastError_ += "; " + std::to_string(adapterTimeouts) + " of " +
+                          std::to_string(kAdapterAttemptCount) + " requests timed out";
+        }
         return false;
     }
 
@@ -510,7 +530,14 @@ bool WebGPURenderer::CreateDevice() {
     deviceWait.future = deviceFuture;
     {
         WGPUWaitStatus waitStatus =
-            wgpuInstanceWaitAny(instance_.get(), 1, &deviceWait, UINT64_MAX);
+            wgpuInstanceWaitAny(instance_.get(), 1, &deviceWait, kDeviceWaitTimeoutNs);
+        if (waitStatus == WGPUWaitStatus_TimedOut) {
+            printf("❌ Device request timed out after %llu ms.\n",
+                   (unsigned long long)(kDeviceWaitTimeoutNs / 1000000ull));
+            failedStage_ = InitStage::Device;
+            lastError_ = "WebGPU device request timed out (wgpuAdapterRequestDevice never resolved)";
+            return false;
+        }
         if (waitStatus != WGPUWaitStatus_Success) {
             printf("[WASM] Device WaitAny status=%d (need TimedWaitAny on instance)\n",
                    (int)waitStatus);

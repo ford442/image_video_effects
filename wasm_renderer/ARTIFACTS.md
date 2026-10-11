@@ -76,6 +76,25 @@ SKIP_WASM_BUILD=1 npm run build
 
 CI jobs that consume pre-built artifacts from the `wasm` job set this automatically.
 
+### C++ IDE index (clangd)
+
+`build.sh` is the only build. For clangd, generate a compile database from the same
+contract (`src/contracts/wasm_compile_flags.json`: flags and the `sources` TU list):
+
+```bash
+source <emsdk>/emsdk_env.sh   # em++ on PATH, the pinned version
+npm run wasm:build            # once: fetches the emdawnwebgpu headers into EM_CACHE
+npm run wasm:compdb           # writes wasm_renderer/compile_commands.json (gitignored)
+$EMSDK/upstream/bin/clangd --check=wasm_renderer/device.cpp
+```
+
+Each entry is `em++ --cflags` (wasm32 target, EM_CACHE sysroot) plus build.sh's exact
+flag list, `-I` for `wasm_renderer/` and the port headers. `wasm_renderer/.clangd`
+removes the em++-only `-s…` / `--use-port=…` settings. Use emsdk's own clangd so its
+clang matches em++. `verify:wasm-invariants` keeps the database, `.clangd` and build.sh
+on the one flag list and TU list. Do not reintroduce CMake: its two-step emdawn compile
+leaked `-sUSE_WEBGPU=1`.
+
 ## CI pipeline
 
 1. **`wasm` job** — installs emsdk (`mymindstorm/setup-emsdk@v14`), runs `wasm:build`, `wasm:validate`, `verify:wasm-bridge-sync`, WASM Jest smoke tests, freshness check, uploads artifacts.
