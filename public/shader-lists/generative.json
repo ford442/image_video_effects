@@ -2059,44 +2059,11 @@
         "max": 1,
         "step": 0.01
       }
-    ],    "features": [
+    ],
+    "features": [
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Crystal Sharpness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Flow Speed",
-        "default": 1,
-        "min": 0.1,
-        "max": 5,
-        "step": 0.1
-      },
-      {
-        "index": 2,
-        "name": "Aether Density",
-        "default": 0.7,
-        "min": 0.1,
-        "max": 2,
-        "step": 0.05
-      },
-      {
-        "index": 3,
-        "name": "Iridescence Shift",
-        "default": 0,
-        "min": -1,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -6044,44 +6011,11 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ],    "features": [
+    ],
+    "features": [
       "upgraded-rgba",
       "audio-reactive",
       "mouse-driven"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Structural Density",
-        "default": 2,
-        "min": 0.5,
-        "max": 5,
-        "step": 0.1
-      },
-      {
-        "index": 1,
-        "name": "Refraction Index",
-        "default": 1.5,
-        "min": 1,
-        "max": 3,
-        "step": 0.05
-      },
-      {
-        "index": 2,
-        "name": "Dispersion",
-        "default": 0.05,
-        "min": 0,
-        "max": 0.2,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Chromatic Phase",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -10854,7 +10788,7 @@
       "mouse-reactive",
       "shockwave"
     ],
-    "description": "Temporal feedback echo chamber with mouse gravity wells, click shockwaves, fBM domain warp, depth-aware compositing, and psychedelic palette blending",
+    "description": "Temporal feedback echo chamber with mouse gravity wells, click shockwaves, fBM domain warp, depth-aware compositing, and psychedelic palette blending. Early reflections bounce off the frame, and comb-filter notches follow the echo spacing.",
     "workgroup_size": [
       16,
       16,
@@ -11310,7 +11244,7 @@
       "4th-of-july",
       "july-4"
     ],
-    "description": "Multi-stage pyrotechnic shells that bloom in two acts. A primary burst erupts first, then delayed secondary crackle and palm fronds spawn from sub-points along the fading sparks. Treble drives thousands of micro-crackle pops; mids trigger the second-stage palm arms. Bass deepens the initial detonation. Mouse launches a triple-stage command shell at the cursor.",
+    "description": "Multi-stage pyrotechnic shells that bloom in two acts. A primary burst erupts first, then delayed secondary crackle and palm fronds spawn from sub-points along the fading sparks. Treble drives thousands of micro-crackle pops; mids trigger the second-stage palm arms. Bass deepens the initial detonation. Mouse launches a triple-stage command shell at the cursor. Fronds carry a continuous rachis and a hot pistil at each tip.",
     "workgroup_size": [
       16,
       16,
@@ -11386,7 +11320,7 @@
       "generative",
       "4th-of-july"
     ],
-    "description": "Crossette shells that split into four brilliant sub-bursts at the cardinal points. A primary flash blooms, then each arm detonates into its own mini-chrysanthemum. The iconic four-petal pattern creates geometric symmetry in the sky. Mids trigger the split timing, treble crackles each arm. Mouse fires a crossette at the cursor.",
+    "description": "Crossette shells that split into four brilliant sub-bursts at the cardinal points. A primary flash blooms, then each arm detonates into its own mini-chrysanthemum. The iconic four-petal pattern creates geometric symmetry in the sky. Mids trigger the split timing, treble crackles each arm. Mouse fires a crossette at the cursor. Each parent star wears a comet sheath, and the four arms fork a few milliseconds apart.",
     "workgroup_size": [
       16,
       16,
@@ -12448,7 +12382,7 @@
     "id": "gen-fluffy-raincloud",
     "name": "Vorticity Raincloud",
     "url": "shaders/gen_fluffy_raincloud.wgsl",
-    "description": "Audio-reactive cloudscape with curl-noise advection, buoyant thunderheads, Mie silver lining, and rain sheets driven by stored flow.",
+    "description": "Audio-reactive cloudscape with curl-noise advection, buoyant thunderheads, Mie silver lining, and rain sheets driven by stored flow. Mammatus pouches hang under the anvil, and a wind-sheared shelf roll sits at the gust front.",
     "features": [
       "upgraded-rgba",
       "depth-aware",
@@ -12522,7 +12456,7 @@
       "audio-reactive",
       "vj"
     ],
-    "description": "Rotating Fourier epicycle wheels tracing harmonic curves with chromatic separation, metallic rim glow, and temporal trajectory trails. Bass drives rotation speed, mouse reshapes coefficients.",
+    "description": "Rotating Fourier epicycle wheels tracing harmonic curves with chromatic separation, metallic rim glow, and temporal trajectory trails. Bass drives rotation speed, mouse reshapes coefficients. Each wheel carries a phase tick at the rim, and the pen blots when the chain slows into a cusp.",
     "workgroup_size": [
       16,
       16,
@@ -12737,7 +12671,7 @@
       "music",
       "reactive"
     ],
-    "description": "Infinite interlocking brass gears rotating in perfect mechanical sync, stepping one tooth per escapement tick around ruby jewel bearings. Steampunk raymarched masterpiece with metallic PBR shading and mouse orbit control.",
+    "description": "Infinite interlocking brass gears rotating in perfect mechanical sync, stepping one tooth per escapement tick around ruby jewel bearings. Steampunk raymarched masterpiece with metallic PBR shading and mouse orbit control. Oil weeps along the mesh, and a hairspring sits in each axle bore.",
     "workgroup_size": [
       16,
       16,
@@ -12814,7 +12748,7 @@
       "mouse-driven",
       "temporal"
     ],
-    "description": "Hexagonal crystal lattice glowing like hot embers. Mouse click shatters the lattice into rigid shards that fly outward; release to watch them drift back and reform over ~1.5s. Audio drives glow pulse, lattice breathing, spark frequency, and ember beads that crawl along the lattice lines; flying shards cool to deep red and flare as they re-ignite on reform.",
+    "description": "Hexagonal crystal lattice glowing like hot embers. Mouse click shatters the lattice into rigid shards that fly outward; release to watch them drift back and reform over ~1.5s. Audio drives glow pulse, lattice breathing, spark frequency, and ember beads that crawl along the lattice lines; flying shards cool to deep red and flare as they re-ignite on reform. Cooled faces grow oxide scale, and pop-off sparks leave along the shatter.",
     "workgroup_size": [
       16,
       16,
@@ -13088,7 +13022,7 @@
       "music",
       "reactive"
     ],
-    "description": "A massive, ancient monolith floating above a dark liquid sea, fractured into segmented pieces that pulse with an inner, ethereal light that climbs the seams and spills through the cracks onto the water below.",
+    "description": "A massive, ancient monolith floating above a dark liquid sea, fractured into segmented pieces that pulse with an inner, ethereal light that climbs the seams and spills through the cracks onto the water below. Spall chips sit off the shard corners, and crack dust grays the seam light.",
     "workgroup_size": [
       16,
       16,
@@ -13234,7 +13168,7 @@
       "blackbody",
       "ethereal"
     ],
-    "description": "Fluid advection flame simulation with temperature-based alpha translucency. Hot regions are bright and slightly translucent, cool regions fade to transparent. Simplex noise advection with upward velocity and vorticity confinement creates ethereal ghost-fire, with a wick column, blue ignition chemiluminescence, buoyant puffing pinch-off that sheds flame packets, and schlieren heat-haze fringes in the surrounding air.",
+    "description": "Fluid advection flame simulation with temperature-based alpha translucency. Hot regions are bright and slightly translucent, cool regions fade to transparent. Simplex noise advection with upward velocity and vorticity confinement creates ethereal ghost-fire, with a wick column, blue ignition chemiluminescence, buoyant puffing pinch-off that sheds flame packets, and schlieren heat-haze fringes in the surrounding air. An inner blue cone hugs the wick, and soot streaks the aged, spent gas.",
     "workgroup_size": [
       16,
       16,

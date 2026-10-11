@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba, aces-tone-map
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: base wick column; ignition chemiluminescence; buoyant puffing pinch-off; schlieren heat haze
+//  Upgraded: 2026-10-11
+//  Ideas: base wick column; ignition chemiluminescence; buoyant puffing pinch-off; schlieren heat haze; inner cone; soot streak
 //  A packing: raw sim state (temperature, fuel, vx, age); ACES on display only
 //  Description: Fluid advection flame simulation with temperature-based
 //    alpha translucency. Hot regions are bright and slightly translucent,
@@ -12,26 +12,7 @@
 //    the flame with upward velocity and vorticity confinement.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══ CHUNK: hash functions ═══
 fn hash12(p: vec2<f32>) -> f32 {
@@ -304,6 +285,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let igniteEdge = smoothstep(0.08, 0.16, tempNorm) * (1.0 - smoothstep(0.16, 0.32, tempNorm));
   flameColor = flameColor + vec3<f32>(0.22, 0.48, 1.05) * igniteEdge * (0.55 + wick * 0.8);
 
+  // Inner cone — cooler premixed core hugging the wick, inside the ignition band.
+  let coneArg = (uv.x - 0.5) / 0.032;
+  let cone = exp(-coneArg * coneArg) * bottomProximity * (1.0 - smoothstep(0.0, 0.55, tempNorm));
+  flameColor = mix(flameColor, vec3<f32>(0.12, 0.32, 0.95), clamp(cone * (0.35 + fuel * 0.4), 0.0, 1.0));
+
   // Idea 4: schlieren heat haze — temperature gradient from the exact C taps
   // draws pale refraction fringes in the cool air around the flame.
   let tGrad = vec2<f32>(right.r - left.r, up.r - down.r) * 0.5 * (max(res.y, 1.0) / 512.0);
@@ -325,6 +311,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Age adds cyan ghost-trail tint
   let ghostAge = smoothstep(0.5, 3.0, age) * (1.0 - smoothstep(0.5, 1.0, tempNorm));
   flameColor = mix(flameColor, vec3<f32>(0.3, 0.6, 0.9), ghostAge * 0.25);
+  // Soot streak — spent carbon where the gas has aged and the fuel is gone.
+  let soot = smoothstep(1.2, 4.0, age) * smoothstep(0.08, 0.28, tempNorm) * (1.0 - smoothstep(0.28, 0.62, tempNorm)) * (1.0 - clamp(fuel, 0.0, 1.0));
+  flameColor = mix(flameColor, vec3<f32>(0.015, 0.016, 0.02), soot * 0.62 * (0.6 + u.zoom_params.y * 0.4));
 
   flameColor = clamp(flameColor, vec3<f32>(0.0), vec3<f32>(1.5));
 

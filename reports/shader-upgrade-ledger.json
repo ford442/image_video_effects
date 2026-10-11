@@ -2177,8 +2177,17 @@
       "history": []
     },
     "gen-feedback-echo-chamber": {
-      "hash": "93ef230d04260893",
-      "history": []
+      "hash": "997d7e20980b440d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-11T01:02:03.334Z",
+          "hash": "997d7e20980b440d",
+          "prev_hash": "93ef230d04260893",
+          "commit": "3e0dde9d",
+          "note": "2026-10-11 crackle-echo nine (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-crackle-echo-nine"
+        }
+      ]
     },
     "gen-ferrofluid-monolith": {
       "hash": "0f45d0cb63c496b8",
@@ -2210,12 +2219,30 @@
       "history": []
     },
     "gen-fireworks-crackle-palm": {
-      "hash": "c90d7d8b7e2c7479",
-      "history": []
+      "hash": "5a4e8a57ffe10b98",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-11T01:02:03.334Z",
+          "hash": "5a4e8a57ffe10b98",
+          "prev_hash": "c90d7d8b7e2c7479",
+          "commit": "3e0dde9d",
+          "note": "2026-10-11 crackle-echo nine (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-crackle-echo-nine"
+        }
+      ]
     },
     "gen-fireworks-crossette": {
-      "hash": "b0baad7bbcbc6317",
-      "history": []
+      "hash": "7b51d4a4ab3ad058",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-11T01:02:03.334Z",
+          "hash": "7b51d4a4ab3ad058",
+          "prev_hash": "b0baad7bbcbc6317",
+          "commit": "3e0dde9d",
+          "note": "2026-10-11 crackle-echo nine (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-crackle-echo-nine"
+        }
+      ]
     },
     "gen-fireworks-dahlia-burst": {
       "hash": "bda185455e1b35f8",
@@ -2288,8 +2315,17 @@
       ]
     },
     "gen-fourier-epicycles": {
-      "hash": "2a1fb20c938ccd5b",
-      "history": []
+      "hash": "a4d07df44070aff6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-11T01:02:03.334Z",
+          "hash": "a4d07df44070aff6",
+          "prev_hash": "2a1fb20c938ccd5b",
+          "commit": "3e0dde9d",
+          "note": "2026-10-11 crackle-echo nine (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-crackle-echo-nine"
+        }
+      ]
     },
     "gen-fractal-bioluminescence-spore-network": {
       "hash": "3f7edf38b2175a8b",
@@ -2318,12 +2354,30 @@
       ]
     },
     "gen-fractal-clockwork": {
-      "hash": "d285b97cf093c71a",
-      "history": []
+      "hash": "1fdf7b366d1d7b1f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-11T01:02:03.334Z",
+          "hash": "1fdf7b366d1d7b1f",
+          "prev_hash": "d285b97cf093c71a",
+          "commit": "3e0dde9d",
+          "note": "2026-10-11 crackle-echo nine (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-crackle-echo-nine"
+        }
+      ]
     },
     "gen-fractal-ember-lattice": {
-      "hash": "ac467ea29cf9618b",
-      "history": []
+      "hash": "5cf236a9ed262a6b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-11T01:02:03.334Z",
+          "hash": "5cf236a9ed262a6b",
+          "prev_hash": "ac467ea29cf9618b",
+          "commit": "3e0dde9d",
+          "note": "2026-10-11 crackle-echo nine (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-crackle-echo-nine"
+        }
+      ]
     },
     "gen-fractal-flame-classic": {
       "hash": "bd92ccc6f61ff483",
@@ -2365,8 +2419,17 @@
       ]
     },
     "gen-fractured-monolith": {
-      "hash": "1d49d72bf7a5ee3e",
-      "history": []
+      "hash": "da91f0608ab57fc0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-11T01:02:03.334Z",
+          "hash": "da91f0608ab57fc0",
+          "prev_hash": "1d49d72bf7a5ee3e",
+          "commit": "3e0dde9d",
+          "note": "2026-10-11 crackle-echo nine (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-crackle-echo-nine"
+        }
+      ]
     },
     "gen-galactic-aether-crystal-geode-core": {
       "hash": "21ea4275811141bc",
@@ -2382,8 +2445,17 @@
       ]
     },
     "gen-ghost-flame": {
-      "hash": "6aaaa38000c73713",
-      "history": []
+      "hash": "72e69547198a267c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-11T01:02:03.334Z",
+          "hash": "72e69547198a267c",
+          "prev_hash": "6aaaa38000c73713",
+          "commit": "3e0dde9d",
+          "note": "2026-10-11 crackle-echo nine (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-crackle-echo-nine"
+        }
+      ]
     },
     "gen-glacial-aether-quantum-cavern": {
       "hash": "17cf492f608aecf5",
@@ -3507,8 +3579,17 @@
       "history": []
     },
     "gen-fluffy-raincloud": {
-      "hash": "01ad7f5e158950e7",
-      "history": []
+      "hash": "1e032acad10bf754",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-11T01:02:03.334Z",
+          "hash": "1e032acad10bf754",
+          "prev_hash": "01ad7f5e158950e7",
+          "commit": "3e0dde9d",
+          "note": "2026-10-11 crackle-echo nine (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-crackle-echo-nine"
+        }
+      ]
     },
     "gen-grid": {
       "hash": "e7e33359e2a6a58e",

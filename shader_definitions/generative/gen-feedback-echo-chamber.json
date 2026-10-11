@@ -15,7 +15,7 @@
     "mouse-reactive",
     "shockwave"
   ],
-  "description": "Temporal feedback echo chamber with mouse gravity wells, click shockwaves, fBM domain warp, depth-aware compositing, and psychedelic palette blending",
+  "description": "Temporal feedback echo chamber with mouse gravity wells, click shockwaves, fBM domain warp, depth-aware compositing, and psychedelic palette blending. Early reflections bounce off the frame, and comb-filter notches follow the echo spacing.",
   "workgroup_size": [
     16,
     16,
