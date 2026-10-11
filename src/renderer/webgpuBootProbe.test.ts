@@ -7,6 +7,8 @@ import {
   toWebGpuProbeBreadcrumb,
   publishWebGpuProbe,
   collectUserAgentBrands,
+  negotiateCanvasColor,
+  updateWebGpuProbeColor,
 } from './webgpuBootProbe';
 import { ADAPTER_ATTEMPT_LADDER } from './webgpuDevicePolicy';
 
@@ -352,5 +354,61 @@ describe('webgpuBootProbe', () => {
     const crumb = toWebGpuProbeBreadcrumb(result);
     expect(crumb.ok).toBe(true);
     expect(crumb).not.toHaveProperty('handoff');
+  });
+});
+
+describe('negotiateCanvasColor', () => {
+  const device = () => makeMockDevice();
+  const configs = (c: GPUCanvasContext) => (c.configure as jest.Mock).mock.calls.map((x) => x[0]);
+
+  it('reports sRGB/standard and resets the swapchain when nothing is requested', async () => {
+    const context = makeMockContext();
+    const r = await negotiateCanvasColor(device(), context, 'bgra8unorm', { displayP3: false }, true);
+    expect(r).toMatchObject({ colorSpace: 'srgb', toneMapping: 'standard' });
+    expect(r.reason).toBeUndefined();
+    expect(configs(context)[0]).not.toHaveProperty('colorSpace');
+    expect(configs(context)[0].usage).toBe(0x10 | 0x01); // copySrc preserved
+  });
+
+  it('accepts display-p3 + extended tone mapping when the readback agrees', async () => {
+    const context = makeMockContext();
+    Object.assign(context, { getConfiguration: () => ({ colorSpace: 'display-p3', toneMapping: { mode: 'extended' } }) });
+    const r = await negotiateCanvasColor(device(), context, 'bgra8unorm', { displayP3: true, extendedToneMapping: true });
+    expect(r).toMatchObject({ colorSpace: 'display-p3', toneMapping: 'extended' });
+    expect(r.reason).toBeUndefined();
+  });
+
+  it('steps down to p3/standard when extended tone mapping is rejected', async () => {
+    const context = makeMockContext();
+    Object.assign(context, { getConfiguration: () => ({ colorSpace: 'display-p3', toneMapping: { mode: 'standard' } }) });
+    const r = await negotiateCanvasColor(device(), context, 'bgra8unorm', { displayP3: true, extendedToneMapping: true });
+    expect(r).toMatchObject({ colorSpace: 'display-p3', toneMapping: 'standard', reason: 'unsupported-extended-tone-mapping' });
+  });
+
+  it('notes an SDR display when p3 is accepted without extended tone mapping requested', async () => {
+    const r = await negotiateCanvasColor(device(), makeMockContext(), 'bgra8unorm', { displayP3: true, extendedToneMapping: false });
+    expect(r).toMatchObject({ colorSpace: 'display-p3', reason: 'not-hdr-display' });
+  });
+
+  it('falls back to sRGB (never a blank canvas) when configure throws, keeping copySrc', async () => {
+    const context = makeMockContext();
+    (context.configure as jest.Mock).mockImplementation((c: GPUCanvasConfiguration) => {
+      if ('colorSpace' in c) throw new Error('unsupported colorSpace');
+    });
+    const r = await negotiateCanvasColor(device(), context, 'bgra8unorm', { displayP3: true, extendedToneMapping: true }, true);
+    expect(r).toMatchObject({ colorSpace: 'srgb', toneMapping: 'standard', reason: 'unsupported-p3' });
+    const last = configs(context).slice(-1)[0];
+    expect(last).not.toHaveProperty('colorSpace');
+    expect(last.usage).toBe(0x10 | 0x01);
+  });
+
+  it('updateWebGpuProbeColor reflects the live result in window.webgpuProbe', () => {
+    window.webgpuProbe = { ok: true, finishedAt: '', userAgent: '', userAgentBrands: [], attempts: [], canvasColorFallback: 'unsupported-p3' };
+    updateWebGpuProbeColor({
+      requested: { displayP3: true }, applied: { displayP3: true }, colorSpace: 'display-p3', toneMapping: 'standard',
+    });
+    expect(window.webgpuProbe).toMatchObject({ canvasColorSpace: 'display-p3', canvasToneMapping: 'standard' });
+    expect(window.webgpuProbe?.canvasColorFallback).toBeUndefined();
+    window.webgpuProbe = undefined;
   });
 });

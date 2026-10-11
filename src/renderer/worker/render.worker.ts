@@ -62,7 +62,18 @@ const post = (event: RenderEvent, transfer: Transferable[] = []) => scope.postMe
 async function encodeFramePng(frame: VideoFrame): Promise<string | null> {
   const bitmap = await createImageBitmap(frame);
   const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
-  const ctx = canvas.getContext('2d');
+  // A Display P3 swapchain yields smpte432 frames; keep the 2D surface wide-gamut so the
+  // PNG is not clamped to sRGB (fail-soft: browsers without 2D colorSpace use the default).
+  const wide = (frame.colorSpace?.primaries as string | null | undefined) === 'smpte432';
+  let ctx: OffscreenCanvasRenderingContext2D | null = null;
+  if (wide) {
+    try {
+      ctx = canvas.getContext('2d', { colorSpace: 'display-p3' });
+    } catch {
+      ctx = null;
+    }
+  }
+  ctx ??= canvas.getContext('2d');
   if (!ctx) return null;
   ctx.drawImage(bitmap, 0, 0);
   bitmap.close();

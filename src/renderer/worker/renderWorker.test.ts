@@ -106,6 +106,13 @@ function fakeRenderer() {
     getAdapterAttemptLabel: () => 'HighPerformance',
     getSupportsSubgroups: () => true,
     setBeforeFrame: jest.fn(),
+    getCanvasColorState: () => ({ requestedDisplayP3: true, colorSpace: 'display-p3' as const, toneMapping: 'standard' as const, copySrc: false }),
+    setDisplayP3: jest.fn(async (enabled: boolean, isHdr: boolean) => ({
+      requested: { displayP3: enabled, extendedToneMapping: enabled && isHdr },
+      applied: { displayP3: enabled, extendedToneMapping: false },
+      colorSpace: enabled ? 'display-p3' as const : 'srgb' as const,
+      toneMapping: 'standard' as const,
+    })),
     getInputEcho: () => ({ mouse: [0.5, 0.5] as [number, number], mouseDown: false, audio: [0, 0, 0] as [number, number, number], slot0: [0.5, 0.5, 0.5, 0.5] }),
     grabPresentedFrame: jest.fn(async () => null),
     compileCheck: jest.fn(async (_id: string, code: string) =>
@@ -148,7 +155,7 @@ function setup(options: { probeOk?: boolean; post?: (e: RenderEvent) => void } =
       posted.push(event);
       workerPort.postMessage(event);
     },
-    createRenderer: () => fake.r,
+    createRenderer: jest.fn(() => fake.r),
     runProbe: jest.fn(async () => probe(options.probeOk ?? true)),
     toBreadcrumb: (p) => {
       const { handoff: _h, ...rest } = p;
@@ -224,6 +231,19 @@ describe('render worker host ↔ client', () => {
     expect(getRuntimeGraph('graphlab-draft')).toBeNull();
     expect(hasGraph('graphlab-draft')).toBe(false);
     expect(getRuntimeSimRingRequest('graphlab-draft')).toBeUndefined();
+  });
+
+  it('re-negotiates the canvas color space through the setDisplayP3 RPC', async () => {
+    const { mainPort, fake, deps } = setup();
+    const client = await connectRenderWorker(mainPort);
+    await client.rpc({ type: 'init', canvas: {} as OffscreenCanvas, config: CONFIG, colorOptIns: {}, appBaseUrl: 'http://app/' });
+    expect(RENDER_RPC_TYPES).toContain('setDisplayP3');
+    const result = await client.rpc({ type: 'setDisplayP3', enabled: true, isHdr: true });
+    expect(fake.raw.setDisplayP3).toHaveBeenCalledWith(true, true);
+    // Reconfigure only: no second probe (which owns requestDevice) and no second renderer.
+    expect(deps.runProbe).toHaveBeenCalledTimes(1);
+    expect(deps.createRenderer).toHaveBeenCalledTimes(1);
+    expect(result).toMatchObject({ colorSpace: 'display-p3', toneMapping: 'standard' });
   });
 
   it('reports a failed probe without creating a renderer', async () => {

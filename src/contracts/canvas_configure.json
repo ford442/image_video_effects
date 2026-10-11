@@ -15,7 +15,8 @@
     "displayP3": {
       "urlParam": "display_p3",
       "colorSpace": "display-p3",
-      "note": "Never requested at boot by default. Fail-soft to srgb when the browser rejects it or getConfiguration() reports a different colorSpace."
+      "storageKey": "px_display_p3",
+      "note": "Never requested at boot by default. Enabled by ?display_p3=1 (wins) or the persisted Render quality toggle (localStorage storageKey). Fail-soft to srgb when the browser rejects it or getConfiguration() reports a different colorSpace."
     },
     "extendedToneMapping": {
       "urlParam": "display_p3",
