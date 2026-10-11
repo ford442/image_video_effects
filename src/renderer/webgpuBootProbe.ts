@@ -113,6 +113,12 @@ export type WebGpuProbeSerializable = {
   canvasToneMapping?: 'standard' | 'extended';
   /** Why the requested display-p3 / extended tone mapping was narrowed (absent when honored). */
   canvasColorFallback?: CanvasColorFallbackReason;
+  /**
+   * Colour tag of the most recent WebCodecs recording: 'display-p3' when its WebM
+   * Colour element was rewritten to P3 primaries, 'encoder-default' when the file
+   * keeps the encoder's own tag (Chromium: smpte170m). Absent before any take.
+   */
+  recordingColorTag?: 'display-p3' | 'encoder-default';
   formatCapabilities?: Pick<
     DeviceFormatCapabilities,
     | 'adapterGpuType'

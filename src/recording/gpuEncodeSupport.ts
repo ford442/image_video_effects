@@ -6,6 +6,7 @@
  */
 
 import type * as GpuEncoderModule from './gpuEncoder';
+import type { WebmColourTag } from './webmColour';
 
 export const GPU_ENCODE_STORAGE_KEY = 'pixelocity.recording.gpuEncode';
 
@@ -55,6 +56,8 @@ export interface GpuEncodeSession {
   readonly kind: 'canvas' | 'readback' | 'worker';
   /** Frames handed to the encoder so far. */
   readonly framesEncoded: number;
+  /** Colour tag written into the file; final once stop() has resolved. */
+  readonly colorTag: WebmColourTag;
   stop(): Promise<Blob>;
 }
 
@@ -101,8 +104,22 @@ export async function startGpuEncodeSession(
     get framesEncoded() {
       return started.framesEncoded;
     },
-    stop: () => started.stop().finally(restore),
+    get colorTag() {
+      return started.colorTag;
+    },
+    stop: () => started.stop().then(
+      (blob) => {
+        publishRecordingColorTag(started.colorTag);
+        return blob;
+      },
+    ).finally(restore),
   };
+}
+
+/** Surface the last take's colour tag next to the canvas colour state (no-op without a probe). */
+function publishRecordingColorTag(tag: WebmColourTag): void {
+  if (typeof window === 'undefined' || !window.webgpuProbe) return;
+  window.webgpuProbe = { ...window.webgpuProbe, recordingColorTag: tag };
 }
 
 let modulePromise: Promise<typeof GpuEncoderModule> | null = null;

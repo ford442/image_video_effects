@@ -83,16 +83,22 @@ Rejection is fail-soft — it never fails the ladder rung. `encodePresent` (TS) 
 
 #### Display color vs. encoded recording color
 
-These are separate, and enabling the setting does **not** make recordings wide-gamut-tagged.
+The setting changes what the canvas presents; recordings get their own tag. They are separate steps.
 
 | Surface | What the setting changes | Color metadata |
 | --- | --- | --- |
 | On-screen canvas | `GPUCanvasContext` `colorSpace`/`toneMapping` as accepted above | Handled by the browser compositor |
 | PNG screenshot (worker `captureFrame`) | The 2D encode surface is created as `display-p3` when the presented `VideoFrame` reports `smpte432` primaries; otherwise default sRGB | PNG carries no ICC profile from `convertToBlob`; treat as untagged |
-| MediaRecorder / `captureStream` | Whatever the compositor hands the stream | None written by the app |
-| WebCodecs + `webm-muxer` | Frames are built from the canvas, so pixel values are P3 | `VideoEncoderConfig` and the muxer set **no** color space/primaries, so players generally assume BT.709. P3 content can look desaturated in playback |
+| MediaRecorder / `captureStream` | Whatever the compositor hands the stream | None written by the app; the browser's own default |
+| WebCodecs + `webm-muxer` | Frames are built from the canvas, so pixel values are P3 | **Tagged `display-p3`** when every frame reports `smpte432` primaries (see below); otherwise the encoder default |
 
-Adding an encoded colour tag (`VideoEncoderConfig.colorSpace`, muxer colour elements) is separate work and not part of this setting.
+**WebCodecs tag (`src/recording/webmColour.ts`).** Chromium's `VideoEncoder` reports `smpte170m` matrix, primaries and transfer in `decoderConfig.colorSpace` for every input frame, whatever the frame's own color space (checked for VP9, VP8 and AV1). `webm-muxer` copies that into the Matroska Colour element, so *every* WebCodecs take is labelled SMPTE 170M, not BT.709, and a P3 take would play desaturated. `webm-muxer` has no `smpte432` entry, so after `finalize()` the recorder rewrites two 1-byte values inside the fixed-size Colour element: Primaries → 12 (SMPTE EG 432-1) and Transfer → 13 (IEC 61966-2-1 sRGB curve). Matrix and range keep the encoder's own values (`smpte170m`, limited), because that is the conversion the encoder applied. No byte moves.
+
+- The tag applies only when *every* encoded frame reported `smpte432`. A mixed or unreadable take keeps the encoder default and logs `[GPU encode] Display P3 frames … were not tagged`. The recording guard above makes mixed takes unreachable in normal use.
+- sRGB takes are unchanged (still the encoder default). That default is a pre-existing approximation, not a P3 concern.
+- Diagnostics: `GpuEncodeSession.colorTag` / `GpuEncodeRecorder.colorTag` (`'display-p3' | 'encoder-default'`), and `window.webgpuProbe.recordingColorTag` after each take.
+- Verified in Chromium (VP9) by encoding smpte432 frames with the real recorder and decoding the file back through a `<video>` element: the decoded `VideoFrame.colorSpace` is `{ primaries: 'smpte432', transfer: 'iec61966-2-1' }` for the tagged take and `smpte170m` for an sRGB take. This proves the container tag is honored by the demuxer; it says nothing about on-screen appearance on a P3 panel (see the table below).
+- MP4/H.264 is not offered (no MP4 muxer), so nothing else needs tagging.
 
 #### Hardware validation record
 
@@ -105,4 +111,4 @@ Fill one row per tested browser/display. SwiftShader (the cloud VM) has no wide-
 ## Deferred
 
 - **C++ canvas parity:** ~~`COPY_SRC`~~ (done: canvas_configure v2, see above) / `colorSpace` + extended tone mapping on `JS_CreateSurfaceFromCanvas` + `ConfigureSurface()` — after #1080 (TS-first `?display_p3=1`).
-- **Encoded colour metadata** for recordings (see the Display P3 section; the setting only affects the display canvas).
+- **HDR / PQ recording tags:** only the P3 + sRGB-curve tag is written. Extended tone mapping (`toneMapping: 'extended'`) output is not tagged as PQ/HLG.
