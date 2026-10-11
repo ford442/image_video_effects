@@ -327,14 +327,10 @@ export class RendererManager {
 
     const restoreType =
       outcome.restoreType ?? (outcome.renderer === null && releasedType !== type ? releasedType : null);
-    if (restoreType) {
+    if (restoreType && options.restoreOnFailure !== false) {
       console.warn(`[RendererManager] Restoring previous renderer '${restoreType}' after ${type} init failure`);
       if (!(await this.switchRenderer(restoreType))) {
         console.warn(`[RendererManager] Restore of '${restoreType}' failed — renderer blocked`);
-    if (outcome.restoreType && options.restoreOnFailure !== false) {
-      console.warn(`[RendererManager] Restoring previous renderer '${outcome.restoreType}' after ${type} init failure`);
-      if (!(await this.switchRenderer(outcome.restoreType))) {
-        console.warn(`[RendererManager] Restore of '${outcome.restoreType}' failed — renderer blocked`);
       }
     } else {
       console.warn(`[RendererManager] switchRenderer('${type}') failed — keeping previous renderer`);
