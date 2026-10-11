@@ -7,6 +7,8 @@ _Learn about the person you're helping. Update this as you go._
 - **Pronouns:** _(optional)_
 - **Timezone:**
 - **Notes:**
+  - Actively running shader-upgrade batches and sends targeted ID lists.
+  - 2026-10-11: crackle palm through feedback echo chamber (nine; evolutionary cellular gardens already upgraded 2026-10-10 and was skipped).
 
 ## Context
 

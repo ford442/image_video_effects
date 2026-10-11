@@ -3,31 +3,12 @@
 //  Category: generative
 //  Features: upgraded-rgba, depth-aware, audio-reactive, temporal, mouse-driven, feedback-loop
 //  Complexity: Medium
-//  Upgraded: 2026-09-06
-//  Ideas: arm-segment glow hub→next; pen ink into existing C trail pack
+//  Upgraded: 2026-10-11
+//  Ideas: arm-segment glow hub→next; pen ink into existing C trail pack; phase tick; cusp ink
 //  A packing: bassEnv, trail.r, trail.g, alpha
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn acesToneMapping(color: vec3<f32>) -> vec3<f32> {
   let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
@@ -102,6 +83,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   var center = vec2<f32>(0.0);
   var accum = vec3<f32>(0.0);
+  var penSpeed = 0.0;
 
   for (var i: i32 = 1; i <= 12; i = i + 1) {
     if (i > nCycles) { break; }
@@ -126,6 +108,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let ah = clamp(dot(ap, ab) / max(dot(ab, ab), 1e-5), 0.0, 1.0);
     let armDist = length(ap - ab * ah);
     accum = accum + wCol * (0.006 * rimIntensity) / (armDist * armDist + 0.00018);
+    penSpeed = penSpeed + abs(freq) * radius;
+
+    // Phase tick — short radial mark where the arm meets the rim.
+    let armLen = length(ab);
+    let tickDir = ab / max(armLen, 1e-4);
+    let tickA = center + tickDir * radius;
+    let tickB = tickA + tickDir * (0.016 + 0.003 * fi);
+    let tb = tickB - tickA;
+    let tp = p - tickA;
+    let th = clamp(dot(tp, tb) / max(dot(tb, tb), 1e-6), 0.0, 1.0);
+    let tickDist = length(tp - tb * th);
+    accum = accum + wCol * (0.0045 * rimIntensity) / (tickDist * tickDist + 0.00005);
 
     let spokeDist = length(p - nextCenter);
     accum = accum + wCol * 0.004 / (spokeDist * spokeDist + 0.00015);
@@ -142,6 +136,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let penBloom = 0.003 / (penDist * penDist + 0.001);
   var chroma = vec3<f32>(1.0, 0.92, 0.78) * penGlow;
   chroma = chroma + vec3<f32>(0.7, 0.8, 1.0) * penBloom;
+  // Cusp ink — the pen dwells and blots when the chain is barely moving.
+  let cusp = exp(-penSpeed * 2.4);
+  chroma = chroma + vec3<f32>(1.0, 0.96, 0.88) * penGlow * cusp * (0.85 + bassEnv * 0.6);
 
   // Treble sparkle
   let sparkle = hash12(uv * resolution + fract(time * 18.0) * 250.0);

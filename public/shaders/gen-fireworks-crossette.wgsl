@@ -3,28 +3,11 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
-//  Upgraded: 2026-09-10
-//  Ideas: parent star then four-way fork at splitDelay; split-instant X flash
+//  Upgraded: 2026-10-11
+//  Ideas: parent star then four-way fork at splitDelay; split-instant X flash; parent comet sheath; split stagger
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -106,16 +89,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let fade = smoothstep(5.5, 0.3, bAge);
       col += vec3<f32>(1.0)*exp(-bAge*11.0)*energy*2.0*hexBokeh(uv, center, 0.065, 1.0);
 
-      let splitT = splitDly*(0.7+mids*0.3);
-      let armAge = max(0.0, bAge - splitT);
+      let splitBase = splitDly*(0.7+mids*0.3);
       for (var a = 0; a < 4; a = a + 1) {
         let af = f32(a);
+        // Split stagger — each cardinal arm forks a few milliseconds later.
+        let splitT = splitBase + af * 0.05 * (0.65 + seed * 0.5);
+        let armAge = max(0.0, bAge - splitT);
         let armAng = af*PI*0.5 + seed*0.2;
         let armDir = vec2<f32>(cos(armAng), sin(armAng));
         let parentVel = armDir * armSpread * energy * 1.15;
         let parentAge = min(bAge, splitT);
         let parentPos = sparkPos(center, parentVel, parentAge, GRAVITY);
         col += armColor(af, hueShift)*hexBokeh(uv, parentPos, 0.008, fade*energy*1.4*exp(-parentAge*1.2));
+        // Parent comet sheath — stretch the traveling star back along its velocity.
+        let cometTail = parentPos - armDir * min(parentAge, 0.22) * 0.42 * energy;
+        col += armColor(af, hueShift)*hexBokeh(uv, mix(cometTail, parentPos, 0.35), 0.006, fade*energy*0.65);
+        col += armColor(af, hueShift)*hexBokeh(uv, mix(cometTail, parentPos, 0.7), 0.007, fade*energy*0.9);
 
         if (armAge > 0.0) {
           let fork = sparkPos(center, parentVel, splitT, GRAVITY);
@@ -148,20 +137,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mAge = fract(time*0.85)*3.8;
     if (mAge > 0.7) {
       let mb = mAge-0.7;
-      let mSplit = splitDly*(0.7+mids*0.3);
-      let mArmAge = max(0.0, mb - mSplit);
+      let mSplitBase = splitDly*(0.7+mids*0.3);
       for (var a = 0; a < 4; a = a + 1) {
-        let dir = vec2<f32>(cos(f32(a)*PI*0.5), sin(f32(a)*PI*0.5));
+        let af = f32(a);
+        let mSplit = mSplitBase + af * 0.05;
+        let mArmAge = max(0.0, mb - mSplit);
+        let dir = vec2<f32>(cos(af*PI*0.5), sin(af*PI*0.5));
         let parentVel = dir * armSpread * power * 1.15;
-        let parentPos = sparkPos(mouseUV, parentVel, min(mb, mSplit), GRAVITY);
-        col += armColor(f32(a), hueShift)*hexBokeh(uv, parentPos, 0.008, smoothstep(3.0,0.2,mb)*power);
+        let parentAge = min(mb, mSplit);
+        let parentPos = sparkPos(mouseUV, parentVel, parentAge, GRAVITY);
+        col += armColor(af, hueShift)*hexBokeh(uv, parentPos, 0.008, smoothstep(3.0,0.2,mb)*power);
+        let cometTail = parentPos - dir * min(parentAge, 0.22) * 0.42 * power;
+        col += armColor(af, hueShift)*hexBokeh(uv, mix(cometTail, parentPos, 0.55), 0.006, smoothstep(3.0,0.2,mb)*power*0.7);
         if (mArmAge > 0.0) {
           let fork = sparkPos(mouseUV, parentVel, mSplit, GRAVITY);
           col += vec3<f32>(1.0)*exp(-mArmAge*22.0)*power*hexBokeh(uv, fork, 0.03, 1.4);
           for (var j = 0; j < 20; j = j + 1) {
             let ang = f32(a)*PI*0.5 + (f32(j)/20.0-0.5)*1.0;
             let sp = sparkPos(fork, vec2<f32>(cos(ang),sin(ang))*0.5*power, mArmAge, GRAVITY);
-            col += armColor(f32(a), hueShift)*hexBokeh(uv, sp, 0.006, smoothstep(3.0,0.2,mb)*power);
+            col += armColor(af, hueShift)*hexBokeh(uv, sp, 0.006, smoothstep(3.0,0.2,mb)*power);
           }
         }
       }
