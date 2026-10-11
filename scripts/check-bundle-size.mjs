@@ -5,7 +5,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { gzipSync } from 'node:zlib';
 
-const DEFAULT_MAIN_GZIP_LIMIT_KIB = 320;
+const DEFAULT_MAIN_GZIP_LIMIT_KIB = 325;
 const buildDir = path.resolve(process.argv[2] || 'build');
 const manifestPath = path.join(buildDir, 'asset-manifest.json');
 

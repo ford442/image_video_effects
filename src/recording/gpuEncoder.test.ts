@@ -126,6 +126,74 @@ describe('GpuEncodeRecorder', () => {
     expect(getContext).not.toHaveBeenCalled();
   });
 
+  describe('colour tag', () => {
+    class ColourFrame extends FakeVideoFrame {
+      constructor(source: unknown, init: Record<string, unknown>, public colorSpace: { primaries: string | null }) {
+        super(source, init);
+      }
+    }
+    /** Replace the mocked muxer's output with a header that carries a webm-muxer-style Colour element. */
+    function seedColourHeader(): ArrayBuffer {
+      const header = new Uint8Array([
+        0x55, 0xb0, 0x10, 0x00, 0x00, 0x10,
+        0x55, 0xb1, 0x81, 6, 0x55, 0xba, 0x81, 6, 0x55, 0xbb, 0x81, 6, 0x55, 0xb9, 0x81, 1,
+      ]);
+      mockMuxerInstances[0]!.target.buffer = header.buffer as ArrayBuffer;
+      return header.buffer as ArrayBuffer;
+    }
+    async function record(primaries: Array<string | null>) {
+      const raf = manualRaf();
+      let n = 0;
+      const source: GpuFrameSource = {
+        kind: 'canvas',
+        grab: (timestamp: number) =>
+          new ColourFrame('canvas', { timestamp }, { primaries: primaries[n++ % primaries.length]! }) as unknown as VideoFrame,
+      };
+      const recorder = await GpuEncodeRecorder.start(source, opts, raf);
+      const buffer = seedColourHeader();
+      for (let i = 0; i < primaries.length; i++) await raf.advance(34);
+      const blob = await recorder!.stop();
+      return { recorder: recorder!, blob, bytes: new Uint8Array(buffer) };
+    }
+
+    it('tags the file Display P3 when every frame reports smpte432 primaries', async () => {
+      const { recorder, bytes } = await record(['smpte432', 'smpte432']);
+      expect(recorder.colorTag).toBe('display-p3');
+      expect(bytes[17]).toBe(12); // Primaries
+      expect(bytes[13]).toBe(13); // Transfer
+    });
+
+    it('leaves sRGB takes with the encoder default tag', async () => {
+      const { recorder, bytes } = await record(['bt709', 'bt709']);
+      expect(recorder.colorTag).toBe('encoder-default');
+      expect(bytes[17]).toBe(6);
+    });
+
+    it('does not tag a take that mixes color spaces', async () => {
+      const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const { recorder, bytes } = await record(['smpte432', 'bt709']);
+      expect(recorder.colorTag).toBe('encoder-default');
+      expect(bytes[17]).toBe(6);
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('not tagged'));
+      warn.mockRestore();
+    });
+
+    it('warns when P3 frames could not be tagged (no Colour element found)', async () => {
+      const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const raf = manualRaf();
+      const source: GpuFrameSource = {
+        kind: 'canvas',
+        grab: (timestamp: number) => new ColourFrame('c', { timestamp }, { primaries: 'smpte432' }) as unknown as VideoFrame,
+      };
+      const recorder = await GpuEncodeRecorder.start(source, opts, raf);
+      await raf.advance(34);
+      await recorder!.stop();
+      expect(recorder!.colorTag).toBe('encoder-default');
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('not tagged'));
+      warn.mockRestore();
+    });
+  });
+
   it('resolves null when no codec is supported', async () => {
     supportedCodecs = new Set();
     const source: GpuFrameSource = { kind: 'canvas', grab: jest.fn() };
