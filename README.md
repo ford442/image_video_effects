@@ -78,6 +78,7 @@ More detail: [`docs/SHADER_TEMPLATES.md`](docs/SHADER_TEMPLATES.md) · [`scripts
 - **AI depth estimation** — DPT-Hybrid-MIDAS via `@xenova/transformers`
 - **VPS storage** — save/load shaders, configs, assets via typed `StorageClient`
 - **Audio/MIDI reactivity** — generative param mapping, live control bindings
+- **Portable VJ projects** — local `.pixelocity.json` export/import for recoverable session state
 
 ## Prerequisites
 
