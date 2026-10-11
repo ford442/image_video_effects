@@ -8,7 +8,7 @@ import { createPortPair, flushPorts, FakePort } from '../testing/fakePorts';
 import { setRendererErrorHandler } from '../ErrorHandling';
 import { createWaveTankGraph } from '../multipassGraph';
 import { hasGraph } from '../multipassRegistry';
-import { clearRuntimeGraphs, getRuntimeGraph } from '../runtimeGraphs';
+import { clearRuntimeGraphs, getRuntimeGraph, getRuntimeSimRingRequest } from '../runtimeGraphs';
 import type { RendererError } from '../ErrorHandling';
 import {
   PROTOCOL_LISTS_ARE_EXHAUSTIVE,
@@ -214,14 +214,16 @@ describe('render worker host ↔ client', () => {
     const { mainPort } = setup();
     const client = await connectRenderWorker(mainPort);
     const graph = createWaveTankGraph();
-    client.send({ type: 'setRuntimeGraph', id: 'graphlab-draft', graph });
+    client.send({ type: 'setRuntimeGraph', id: 'graphlab-draft', graph, simRing: { stateCount: 4096 } });
     await flushPorts();
     expect(getRuntimeGraph('graphlab-draft')).toEqual(graph);
     expect(hasGraph('graphlab-draft')).toBe(true);
+    expect(getRuntimeSimRingRequest('graphlab-draft')).toBe(4096);
     client.send({ type: 'setRuntimeGraph', id: 'graphlab-draft', graph: null });
     await flushPorts();
     expect(getRuntimeGraph('graphlab-draft')).toBeNull();
     expect(hasGraph('graphlab-draft')).toBe(false);
+    expect(getRuntimeSimRingRequest('graphlab-draft')).toBeUndefined();
   });
 
   it('reports a failed probe without creating a renderer', async () => {
@@ -500,9 +502,11 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
   it('forwards runtime graphs to the worker as a setRuntimeGraph command', async () => {
     const { backend } = await backendWithWorker();
     const graph = createWaveTankGraph();
-    backend.setRuntimeGraph('graphlab-draft', graph);
+    backend.setRuntimeGraph('graphlab-draft', graph, { stateCount: 16384 });
     await flushPorts();
     expect(getRuntimeGraph('graphlab-draft')).toEqual(graph);
+    expect(getRuntimeSimRingRequest('dla-walkers')).toBeUndefined();
+    expect(getRuntimeSimRingRequest('wave-step')).toBe(16384);
     backend.setRuntimeGraph('graphlab-draft', null);
     await flushPorts();
     expect(getRuntimeGraph('graphlab-draft')).toBeNull();

@@ -1,18 +1,22 @@
+import { draftFromRegistryGraph, setNodeDispatch, setRepeat, setSimRing, simRingRequest } from '../graphLab/graphDraft';
 import { createWaveTankGraph, MultipassGraphDef } from './multipassGraph';
 import {
   getGraphEntryIds,
   GRAPH_REGISTRY,
   hasGraph,
   resolveGraphForShader,
+  resolveSimRingRequest,
 } from './multipassRegistry';
 import {
   clearRuntimeGraphs,
   getRuntimeGraph,
+  getRuntimeSimRingRequest,
   GRAPH_LAB_RUNTIME_ID,
   listRuntimeGraphIds,
   setRuntimeGraph,
 } from './runtimeGraphs';
 import { compileFramePlan, FramePlanContext, resetFramePlanWarnings } from './webgpu/framePlan';
+import type { GraphSimRingBindings } from './GraphRunner';
 import type { FrameSlotDispatchPlan } from './webgpu/slotDispatch';
 import { resolveSlotDispatchProgram } from './webgpu/slotDispatch';
 
@@ -56,6 +60,24 @@ describe('runtime graph overlay', () => {
     setRuntimeGraph('wave-tank', null);
     expect(resolveGraphForShader('wave-tank')).toBe(staticGraph);
     expect(getGraphEntryIds('wave-tank')).toEqual(['wave-step', 'wave-inject', 'wave-render']);
+  });
+
+  it('carries a sim-ring request for the graph and its entries, dropped with the graph', () => {
+    setRuntimeGraph(GRAPH_LAB_RUNTIME_ID, draft(), { stateCount: 16384 });
+    expect(getRuntimeSimRingRequest(GRAPH_LAB_RUNTIME_ID)).toBe(16384);
+    expect(getRuntimeSimRingRequest('draft-seed')).toBe(16384);
+    expect(getRuntimeSimRingRequest('plasma')).toBeUndefined();
+    // Overrides a shipped definition's request for a shared entry.
+    expect(resolveSimRingRequest('dla-walkers')).toBe(65536);
+    setRuntimeGraph(GRAPH_LAB_RUNTIME_ID, { maxPassesPerFrame: 4, nodes: [{ id: 'w', entry: 'dla-walkers', reads: ['simState'], writes: ['simState', 'color'] }] }, { stateCount: 4096 });
+    expect(resolveSimRingRequest('dla-walkers')).toBe(4096);
+    setRuntimeGraph(GRAPH_LAB_RUNTIME_ID, null, { stateCount: 4096 });
+    expect(getRuntimeSimRingRequest(GRAPH_LAB_RUNTIME_ID)).toBeUndefined();
+    expect(resolveSimRingRequest('dla-walkers')).toBe(65536);
+    // Re-registering without a request clears the old one.
+    setRuntimeGraph(GRAPH_LAB_RUNTIME_ID, draft(), { stateCount: 4096 });
+    setRuntimeGraph(GRAPH_LAB_RUNTIME_ID, draft());
+    expect(getRuntimeSimRingRequest('draft-seed')).toBeUndefined();
   });
 
   it('leaves ordinary shaders alone', () => {
@@ -129,5 +151,49 @@ describe('runtime graphs through the frame planner', () => {
     };
     setRuntimeGraph(GRAPH_LAB_RUNTIME_ID, edited);
     expect(compileFramePlan(planFor(GRAPH_LAB_RUNTIME_ID), ctx()).graphReports[0]?.requested).toBe(3);
+  });
+
+  const computeOps = (shaderId: string, overrides: Partial<FramePlanContext> = {}) =>
+    compileFramePlan(planFor(shaderId), ctx(overrides)).ops.flatMap((op) =>
+      op.kind === 'compute' ? [{ entry: op.entry, nodeId: op.nodeId, iteration: op.iteration, dispatch: op.dispatch, bindSimRing: op.bindSimRing }] : [],
+    );
+
+  it('expands a repeat edited in the Lab exactly like the same repeat written in JSON', () => {
+    // 6 + inject + render = 8, the graph's own ceiling.
+    const edited = setRepeat(draftFromRegistryGraph('wave-tank', createWaveTankGraph()), 0, 6).graph;
+    setRuntimeGraph(GRAPH_LAB_RUNTIME_ID, edited);
+    const fromLab = computeOps(GRAPH_LAB_RUNTIME_ID);
+
+    const json = JSON.parse(JSON.stringify(createWaveTankGraph())) as MultipassGraphDef;
+    const step = json.nodes.find((n) => n.id === 'step');
+    if (!step) throw new Error('wave-tank has no step node');
+    step.repeat = 6;
+    setRuntimeGraph('wave-tank', json);
+    const fromJson = computeOps('wave-tank');
+
+    expect(fromLab).toEqual(fromJson);
+    expect(fromLab.filter((op) => op.nodeId === 'step').map((op) => op.iteration)).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(fromLab).toHaveLength(8);
+    setRuntimeGraph('wave-tank', null);
+  });
+
+  it('never attaches group 1 to an entry that does not declare it, even with the ring on and armed', () => {
+    let d = setSimRing(draftFromRegistryGraph('wave-tank', createWaveTankGraph()), true, 4096);
+    d = setNodeDispatch(d, 0, 'simState');
+    const request = simRingRequest(d);
+    expect(request).toEqual({ stateCount: 4096 });
+    setRuntimeGraph(GRAPH_LAB_RUNTIME_ID, d.graph, request);
+    const ring = { bindGroup: {}, stateBuffer: {}, indexBuffer: {}, stateCount: 4096, byteSize: 65536 } as unknown as GraphSimRingBindings;
+
+    // wave-* are group-0 WGSL: ShaderManager compiled them with the group-0 layout (usesSimRing false).
+    const armed = computeOps(GRAPH_LAB_RUNTIME_ID, { usesSimRing: () => false, simRing: ring });
+    expect(armed.length).toBeGreaterThan(0);
+    expect(armed.every((op) => op.bindSimRing === false)).toBe(true);
+    expect(armed.filter((op) => op.dispatch === 'simState').map((op) => op.entry)).toEqual(['wave-step', 'wave-step', 'wave-step']);
+
+    // No group-1 entry ever armed the ring: the simState dispatch is skipped, nothing binds group 1.
+    const unarmed = computeOps(GRAPH_LAB_RUNTIME_ID, { usesSimRing: () => false, simRing: null });
+    expect(unarmed.map((op) => op.entry)).toEqual(['wave-inject', 'wave-render']);
+    expect(unarmed.every((op) => op.bindSimRing === false)).toBe(true);
   });
 });

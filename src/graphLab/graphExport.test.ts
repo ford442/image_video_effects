@@ -158,7 +158,7 @@ describe('exportGraphDefinition', () => {
       const dla = draftFromDefinition(JSON.parse(fs.readFileSync(path.join(DEFS, 'artistic', 'dla-crystals.json'), 'utf-8')));
       if (!dla.ok) throw new Error(dla.error);
       const res = ok(dla.draft);
-      expect(res.notes.map((n) => n.code)).toContain('sim-ring-untouched');
+      expect(res.notes.map((n) => n.code)).toContain('sim-ring');
       expect(res.definition.simRing).toBeDefined();
     });
   });

@@ -20,6 +20,7 @@ import type { RendererError } from '../ErrorHandling';
 import type { GraphRunReport } from '../GraphRunner';
 import type { VideoIngestStats } from '../media/videoFramePump';
 import type { MultipassGraphDef } from '../multipassGraph';
+import type { RuntimeSimRingRequest } from '../runtimeGraphs';
 import type { PassTiming } from '../passTimings';
 import type { GPUTimings, RendererConfig, UncappedBenchResult } from '../Renderer';
 import type { InputSource } from '../types';
@@ -89,8 +90,8 @@ export type RenderCommand =
   | { type: 'simulateDeviceLoss' }
   /** Test hook: raise an uncaught error in the worker, like a crash (#1395). */
   | { type: 'simulateWorkerCrash' }
-  /** Graph Lab draft: register (or, with null, drop) a runtime Tier C graph under `id`. */
-  | { type: 'setRuntimeGraph'; id: string; graph: MultipassGraphDef | null };
+  /** Graph Lab draft: register (or, with null, drop) a runtime Tier C graph under `id`, with its sim-ring request. */
+  | { type: 'setRuntimeGraph'; id: string; graph: MultipassGraphDef | null; simRing?: RuntimeSimRingRequest | null };
 
 export interface RenderInitInfo {
   ok: boolean;

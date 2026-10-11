@@ -259,7 +259,7 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
     }),
     simulateWorkerCrash: () => deps.crash?.('simulated render worker crash (test hook)'),
     // Module-level overlay of this realm (runtimeGraphs.ts): applies even before init finishes.
-    setRuntimeGraph: ({ id, graph }) => setRuntimeGraph(id, graph),
+    setRuntimeGraph: ({ id, graph, simRing }) => setRuntimeGraph(id, graph, simRing ?? null),
   };
 
   const rpcs: RpcHandlers = {

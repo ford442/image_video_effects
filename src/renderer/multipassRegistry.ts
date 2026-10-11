@@ -2,7 +2,7 @@
 // Do not edit manually — re-run the script instead.
 
 import type { MultipassGraphDef } from './multipassGraph';
-import { getRuntimeGraph } from './runtimeGraphs';
+import { getRuntimeGraph, getRuntimeSimRingRequest } from './runtimeGraphs';
 
 export interface MultipassInfo {
   pass: number;
@@ -704,9 +704,12 @@ export function hasGraph(shaderId: string): boolean {
 
 /**
  * Requested sim-ring element count for a shader id or one of its graph entries.
+ * A runtime graph's request (Graph Lab draft) wins over the one declared in JSON.
  * Undefined → the ring's contract default (bind_group1.json oom.defaultStateCount).
  */
 export function resolveSimRingRequest(shaderId: string): number | undefined {
+  const runtime = getRuntimeSimRingRequest(shaderId);
+  if (runtime !== undefined) return runtime;
   const direct = SIM_RING_REGISTRY[shaderId];
   if (direct) return direct.stateCount;
   for (const [ownerId, req] of Object.entries(SIM_RING_REGISTRY)) {

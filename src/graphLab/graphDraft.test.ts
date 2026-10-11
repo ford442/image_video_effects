@@ -5,6 +5,7 @@ import {
   draftFromDefinition,
   draftFromRegistryGraph,
   duplicateNodeAt,
+  editableRoles,
   forkDraft,
   GraphDraft,
   isSimRingDraft,
@@ -12,9 +13,12 @@ import {
   newDraft,
   removeNodeAt,
   setMaxPasses,
+  setNodeDispatch,
   setNodeEntry,
   setRepeat,
   setScalable,
+  setSimRing,
+  simRingRequest,
   toggleRole,
   uniqueNodeId,
 } from './graphDraft';
@@ -157,7 +161,7 @@ describe('graphDraft import', () => {
     }
   });
 
-  it('flags sim-ring drafts as view-only', () => {
+  it('recognises sim-ring drafts (sim roles, simState dispatch or a simRing request)', () => {
     expect(isSimRingDraft(waveTank())).toBe(false);
     const dlaGraph = GRAPH_REGISTRY['dla-crystals'];
     if (!dlaGraph) throw new Error('missing dla-crystals graph');
@@ -171,5 +175,61 @@ describe('graphDraft import', () => {
     const fork = forkDraft(waveTank(), 'wave-lab', 'Wave Lab');
     expect(fork).toMatchObject({ id: 'wave-lab', name: 'Wave Lab', sourceId: undefined });
     expect(fork.graph).toEqual(createWaveTankGraph());
+  });
+});
+
+describe('graphDraft sim ring', () => {
+  const dla = (): GraphDraft => {
+    const graph = GRAPH_REGISTRY['dla-crystals'];
+    if (!graph) throw new Error('missing dla-crystals graph');
+    return { ...draftFromRegistryGraph('dla-crystals', graph), envelope: { simRing: { stateCount: 65536, agent: 'walker' } } };
+  };
+
+  it('requests nothing until the ring is on, then the contract default or the chosen ladder rung', () => {
+    const base = waveTank();
+    expect(simRingRequest(base)).toBeNull();
+    const on = setSimRing(base, true);
+    expect(simRingRequest(on)).toEqual({ stateCount: 65536 });
+    expect(on.envelope.simRing).toEqual({ stateCount: 65536 });
+    expect(on.graph).toBe(base.graph);
+    expect(simRingRequest(setSimRing(on, true, 16384))).toEqual({ stateCount: 16384 });
+    // Off-ladder sizes are not stored; the current request stays.
+    expect(simRingRequest(setSimRing(setSimRing(on, true, 16384), true, 1000))).toEqual({ stateCount: 16384 });
+    // A sim graph without an explicit request still gets the default.
+    const { envelope: _e, ...noField } = dla();
+    expect(simRingRequest({ ...noField, envelope: {} })).toEqual({ stateCount: 65536 });
+  });
+
+  it('keeps the other simRing fields and cannot be turned off while a node needs the ring', () => {
+    const d = setSimRing(dla(), true, 4096);
+    expect(d.envelope.simRing).toEqual({ stateCount: 4096, agent: 'walker' });
+    expect(setSimRing(d, false)).toBe(d);
+    const plain = setSimRing(setSimRing(waveTank(), true), false);
+    expect(plain.envelope.simRing).toBeUndefined();
+    expect(simRingRequest(plain)).toBeNull();
+  });
+
+  it('offers the sim roles only while the ring is on (simIndex is never writable)', () => {
+    const plain = waveTank();
+    expect(editableRoles(plain, 'reads')).not.toContain('simState');
+    expect(toggleRole(plain, 0, 'reads', 'simState')).toBe(plain);
+    const on = setSimRing(plain, true);
+    expect(editableRoles(on, 'reads')).toEqual(['read', 'dataA', 'dataB', 'dataC', 'simState', 'simIndex']);
+    expect(editableRoles(on, 'writes')).toEqual(['color', 'dataA', 'dataB', 'simState']);
+    expect(toggleRole(on, 0, 'writes', 'simIndex')).toBe(on);
+    const reading = toggleRole(on, 0, 'reads', 'simState');
+    expect(reading.graph.nodes[0]?.reads).toEqual(['dataC', 'simState']);
+  });
+
+  it('switches a node to a simState dispatch only with the ring on, dropping scalable', () => {
+    const plain = setScalable(waveTank(), 0, true, 0.5);
+    expect(setNodeDispatch(plain, 0, 'simState')).toBe(plain);
+    const on = setNodeDispatch(setSimRing(plain, true), 0, 'simState');
+    expect(on.graph.nodes[0]).toMatchObject({ dispatch: 'simState' });
+    expect(on.graph.nodes[0]?.scalable).toBeUndefined();
+    expect(on.graph.nodes[0]?.minScale).toBeUndefined();
+    expect(validateGraph(on.graph)).toEqual([]);
+    const back = setNodeDispatch(on, 0, 'pixels');
+    expect(back.graph.nodes[0]?.dispatch).toBeUndefined();
   });
 });

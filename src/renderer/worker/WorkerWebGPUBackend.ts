@@ -22,6 +22,7 @@ import { createDefaultBreadcrumbs } from '../../gpuChores/types';
 import { reportError } from '../ErrorHandling';
 import { VideoFramePump, VideoIngestStats } from '../media/videoFramePump';
 import type { MultipassGraphDef } from '../multipassGraph';
+import type { RuntimeSimRingRequest } from '../runtimeGraphs';
 import type { PassTiming } from '../passTimings';
 import type { DeviceLossInfo, GPUTimings, RendererConfig, SlotZoomParamsUpdate, UncappedBenchResult } from '../Renderer';
 import type { InputSource } from '../types';
@@ -449,8 +450,8 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   }
 
   /** The worker realm has its own graph overlay: forward the draft (fresh object per edit). */
-  setRuntimeGraph(id: string, graph: MultipassGraphDef | null): void {
-    this.client?.send({ type: 'setRuntimeGraph', id, graph });
+  setRuntimeGraph(id: string, graph: MultipassGraphDef | null, simRing: RuntimeSimRingRequest | null = null): void {
+    this.client?.send({ type: 'setRuntimeGraph', id, graph, simRing });
   }
 
   setActiveShader(id: string): void {

@@ -67,7 +67,7 @@ import { declaresBindGroup1, SimRing } from './webgpu/simRing';
 import { rewriteWgslStorageFormats } from './wgslFormatRewrite';
 import { resolveGraphForShader, resolveSimRingRequest, getGraphEntryIds, resolveMultipassChain } from './multipassRegistry';
 import { graphUsesSimRing, type MultipassGraphDef } from './multipassGraph';
-import { setRuntimeGraph as setRuntimeGraphOverlay } from './runtimeGraphs';
+import { setRuntimeGraph as setRuntimeGraphOverlay, type RuntimeSimRingRequest } from './runtimeGraphs';
 import { instrumentDevice, type FrameStats } from './webgpu/deviceCounters';
 import type { PassTiming } from './passTimings';
 import { ShaderWarmupQueue, type WarmupEntry } from './webgpu/shaderWarmup';
@@ -672,10 +672,11 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
 
   /**
    * Register (or, with `null`, drop) a runtime Tier C graph under `id` (Graph Lab
-   * draft; see runtimeGraphs.ts). Takes effect on the next frame's slot plan.
+   * draft; see runtimeGraphs.ts). Takes effect on the next frame's slot plan; the
+   * sim-ring request takes effect when a group-1 entry next compiles (loadShader).
    */
-  setRuntimeGraph(id: string, graph: MultipassGraphDef | null): void {
-    setRuntimeGraphOverlay(id, graph);
+  setRuntimeGraph(id: string, graph: MultipassGraphDef | null, simRing: RuntimeSimRingRequest | null = null): void {
+    setRuntimeGraphOverlay(id, graph, simRing);
   }
 
   /**

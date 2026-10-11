@@ -4,7 +4,6 @@ import type { GraphDiagnostic, GraphNodeDef } from '../../renderer/multipassGrap
 export interface NodeListProps {
   nodes: readonly GraphNodeDef[];
   selected: number;
-  readOnly: boolean;
   diagnostics: readonly GraphDiagnostic[];
   onSelect: (index: number) => void;
   onMove: (from: number, to: number) => void;
@@ -13,7 +12,7 @@ export interface NodeListProps {
 }
 
 /** Nodes in execution order (the array order IS the order the passes run in). */
-export function NodeList({ nodes, selected, readOnly, diagnostics, onSelect, onMove, onDuplicate, onRemove }: NodeListProps) {
+export function NodeList({ nodes, selected, diagnostics, onSelect, onMove, onDuplicate, onRemove }: NodeListProps) {
   if (nodes.length === 0) {
     return (
       <p className="graph-lab__empty" data-testid="graph-lab-no-nodes">
@@ -46,6 +45,7 @@ export function NodeList({ nodes, selected, readOnly, diagnostics, onSelect, onM
               </span>
               {repeat > 1 && <span className="graph-lab__chip graph-lab__chip--repeat">×{repeat}</span>}
               {node.scalable && <span className="graph-lab__chip">scalable</span>}
+              {node.dispatch === 'simState' && <span className="graph-lab__chip">simState</span>}
               <span className="graph-lab__node-io">
                 {(node.reads ?? []).join(', ') || '—'} <span aria-hidden="true">→</span> {(node.writes ?? []).join(', ') || '—'}
               </span>
@@ -55,27 +55,25 @@ export function NodeList({ nodes, selected, readOnly, diagnostics, onSelect, onM
                 </span>
               )}
             </button>
-            {!readOnly && (
-              <span className="graph-lab__node-actions">
-                <button type="button" aria-label={`Move ${node.id} up`} disabled={index === 0} onClick={() => onMove(index, index - 1)}>
-                  ↑
-                </button>
-                <button
-                  type="button"
-                  aria-label={`Move ${node.id} down`}
-                  disabled={index === nodes.length - 1}
-                  onClick={() => onMove(index, index + 1)}
-                >
-                  ↓
-                </button>
-                <button type="button" aria-label={`Duplicate ${node.id}`} onClick={() => onDuplicate(index)}>
-                  ⧉
-                </button>
-                <button type="button" aria-label={`Remove ${node.id}`} onClick={() => onRemove(index)}>
-                  ✕
-                </button>
-              </span>
-            )}
+            <span className="graph-lab__node-actions">
+              <button type="button" aria-label={`Move ${node.id} up`} disabled={index === 0} onClick={() => onMove(index, index - 1)}>
+                ↑
+              </button>
+              <button
+                type="button"
+                aria-label={`Move ${node.id} down`}
+                disabled={index === nodes.length - 1}
+                onClick={() => onMove(index, index + 1)}
+              >
+                ↓
+              </button>
+              <button type="button" aria-label={`Duplicate ${node.id}`} onClick={() => onDuplicate(index)}>
+                ⧉
+              </button>
+              <button type="button" aria-label={`Remove ${node.id}`} onClick={() => onRemove(index)}>
+                ✕
+              </button>
+            </span>
           </li>
         );
       })}
