@@ -625,7 +625,8 @@
       "title": "Ethereal Chrono-Flora Loom",
       "added": "2026-10-02T18:49:42.823896"
     },
-    {      "filename": "2026-09-30_stellar-fractal-glass-loom.md",
+    {
+      "filename": "2026-09-30_stellar-fractal-glass-loom.md",
       "title": "Stellar Fractal-Glass Loom",
       "added": "2026-09-30T15:33:09.517021"
     },
@@ -648,11 +649,6 @@
       "filename": "2026-10-09_bismuth-quantum-reef.md",
       "title": "Bismuth Quantum Reef",
       "added": "2026-10-09T15:15:45.639294"
-    },
-    {
-      "filename": "2026-10-10_liquid-metal-chrono-flora.md",
-      "title": "Liquid-Metal Chrono-Flora",
-      "added": "2026-10-10T15:29:37.370505"
     }
   ],
   "current": null,
@@ -1291,6 +1287,13 @@
       "added": "2026-10-09T15:15:45.639294",
       "status": "completed",
       "completed_at": "2026-10-10T08:23:58.831840+00:00"
+    },
+    {
+      "filename": "2026-10-10_liquid-metal-chrono-flora.md",
+      "title": "Liquid-Metal Chrono-Flora",
+      "added": "2026-10-10T15:29:37.370505",
+      "status": "completed",
+      "completed_at": "2026-10-11T08:09:04.719922+00:00"
     }
   ],
   "rejected": [],
