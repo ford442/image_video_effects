@@ -77,7 +77,15 @@ test('WASM renderer initializes (testMode API + diagnostics)', async ({ page }) 
     return (window as any).__pixelocity__?.renderer?.getDiagnostics?.();
   });
 
+
+  if (!diagnostics) {
+    if (!isStrictGpuMode()) {
+       test.skip(true, "diagnostics undefined without GPU");
+       return;
+    }
+  }
   expect(diagnostics).toBeDefined();
+
 
   if (!diagnostics?.wasm) {
     console.log('WASM renderer fell back (expected in CI)');
