@@ -1,4 +1,4 @@
-import { loadDisplayP3, saveDisplayP3 } from './displayP3';
+import { loadDisplayP3, saveDisplayP3, describeDisplayP3Status, isDisplayP3UrlForced } from './displayP3';
 
 describe('displayP3 persistence', () => {
   beforeEach(() => localStorage.clear());
@@ -24,7 +24,7 @@ describe('displayP3 persistence', () => {
   });
 });
 
-import { describeDisplayP3Status, isDisplayP3UrlForced } from './displayP3';
+
 
 describe('displayP3 status + URL override', () => {
   it('detects the URL override', () => {
