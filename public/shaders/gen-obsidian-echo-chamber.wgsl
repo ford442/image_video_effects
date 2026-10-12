@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: conchoidal fracture shells on monolith faces; reverberant echo taps (early reflections + decaying tail)
+//  Upgraded: 2026-10-10
+//  Ideas: conchoidal fracture; reverberant echo taps; flutter echo between parallel faces; flow banding
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=time, y=rippleCount, zw=resolution
-    zoom_config: vec4<f32>,  // x=time, yz=mouse uv, w=mouse down
-    zoom_params: vec4<f32>,  // x=Intensity, y=Speed, z=Scale, w=Mouse Influence
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Intensity, y=Speed, z=Scale, w=Mouse Influence
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51;
@@ -242,6 +224,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let absorbed = mix(rippleColor, vec3<f32>(0.35, 0.05, 0.75), clamp(fk * 0.3 - treble * 0.2, 0.0, 1.0));
             rippleEmission += absorbed * tapBand * tapGain * audioIntensity * 6.0;
         }
+        // Idea: flutter echo — parallel monolith faces return a rapid, evenly spaced train
+        // when the view runs along the corridor.
+        let flutter = exp(-abs(rd.x) * 9.0);
+        let flutterPhase = fract(distFromCam * 0.55 - motionTime * 4.2);
+        let flutterBand = smoothstep(0.94, 1.0, flutterPhase) * flutter;
+        rippleEmission += vec3<f32>(0.45, 0.18, 0.75) * flutterBand * audioIntensity * (2.2 + intensity * 2.0);
 
         // Basic lighting
         let lightDir = normalize(vec3<f32>(0.5, 1.0, -0.5));
@@ -276,9 +264,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Fracture rib crests catch the passing sonar light and treble shimmer.
         let ribGlint = vec3<f32>(0.55, 0.75, 1.0) * fracture.w *
                        (0.04 + baseIntensity * audioIntensity * 0.6 + treble * 0.05) * (0.4 + u.zoom_params.z);
+        // Idea: flow banding — longitudinal streaks in the glass, cut by the fracture shells.
+        let flowBand = pow(max(0.5 + 0.5 * sin(p.y * 22.0 + p.x * 3.1), 0.0), 10.0);
+        let flowSheen = vec3<f32>(0.22, 0.26, 0.32) * flowBand * fresnel * (0.35 + treble * 0.25) * (1.0 - fracture.w);
 
         // Combine material
-        col = albedo * diff + caSpec + fresnelColor * refEnv * u.zoom_params.z + rippleEmission + ribGlint;
+        col = albedo * diff + caSpec + fresnelColor * refEnv * u.zoom_params.z + rippleEmission + ribGlint + flowSheen;
 
         // Volumetric fog blending
         let fogDensity = 0.04;

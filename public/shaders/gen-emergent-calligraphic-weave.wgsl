@@ -3,30 +3,12 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-21
-//  Ideas: over/under weave occlusion at stroke crossings; dry-brush ink starvation into bristle streaks
+//  Upgraded: 2026-10-10
+//  Ideas: over/under weave occlusion at stroke crossings; dry-brush ink starvation into bristle streaks; ink pooling at lane turns; over-strand cast shadow
 //  A packing: raw HDR display RGBA history (C read back as the same)
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>, // x=Stroke Density, y=Flow Speed, z=Ink Width, w=Chromatic Bloom
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Stroke Density, y=Flow Speed, z=Ink Width, w=Chromatic Bloom
 
 fn hash21(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
@@ -76,6 +58,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var strokeVal: array<f32, 10>;
     var hairVal: array<f32, 10>;
     var weaveZ: array<f32, 10>;
+    var poolVal: array<f32, 10>;
+    var shadowVal: array<f32, 10>;
     for (var i = 0; i < 10; i++) {
         if (i >= strokeCount) { break; }
         let fi = f32(i);
@@ -93,21 +77,36 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let starve = smoothstep(0.45, 0.0, load);
         let bristle = noise2(vec2<f32>(p.x * 5.0 + fi * 11.0, (p.y - curve) / max(nib, 0.0005) * 1.6));
         let dryBrush = smoothstep(starve * 0.75 - 0.08, starve * 0.75 + 0.08, bristle);
-        strokeVal[i] = exp(-d * d / max(nib * nib, 0.000001)) * dryBrush;
+        // Idea 3 — ink pooling: where the lane turns (slope ≈ 0) the nib slows and ink pools into a
+        // fuller bead that resists dry-brush starvation
+        let turn = 1.0 - smoothstep(0.0, 0.3, abs(derivative));
+        let poolW = nib * 1.5;
+        poolVal[i] = turn * exp(-d * d / max(poolW * poolW, 0.000001)) * (1.0 - starve * 0.4);
+        strokeVal[i] = max(exp(-d * d / max(nib * nib, 0.000001)) * dryBrush, poolVal[i]);
         hairVal[i] = exp(-abs(d - nib * 1.8) * 180.0) * 0.25;
+        // Idea 4 — over-strand cast shadow: the same stroke profile shifted down-screen, cast on lower strands
+        let ds = abs(p.y - (curve - inkWidth * 1.4 - 0.012));
+        shadowVal[i] = exp(-ds * ds / max(nib * nib * 2.2, 0.000001));
         // Idea 1 — over/under weave: each stroke's height varies along x, so crossings alternate.
         weaveZ[i] = sin(p.x * (3.0 + fi * 0.21) + fi * 2.39 + phase * 0.25);
     }
+    var pooled = 0.0;
     for (var i = 0; i < 10; i++) {
         if (i >= strokeCount) { break; }
         var occluder = 0.0;
+        var shade = 0.0;
         for (var j = 0; j < 10; j++) {
             if (j >= strokeCount) { break; }
-            if (weaveZ[j] > weaveZ[i]) { occluder = max(occluder, strokeVal[j]); }
+            if (weaveZ[j] > weaveZ[i]) {
+                occluder = max(occluder, strokeVal[j]);
+                shade = max(shade, shadowVal[j]);
+            }
         }
         let cover = 1.0 - 0.85 * clamp(occluder * 1.3, 0.0, 1.0);
-        let stroke = strokeVal[i] * cover;
-        let hairline = hairVal[i] * cover;
+        let shadowed = 1.0 - 0.6 * shade;
+        let stroke = strokeVal[i] * cover * shadowed;
+        let hairline = hairVal[i] * cover * shadowed;
+        pooled += poolVal[i] * cover * shadowed;
         ink += stroke;
         fineInk += hairline;
         hueMoment += (stroke + hairline) * (f32(i) / max(f32(strokeCount), 1.0));
@@ -129,6 +128,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let inkColor = palette(hue) * (0.5 + chroma * 1.6 + audio.x * 0.7);
     let bloom = min(ink + fineInk * 0.5, 3.0);
     var hdrColor = paper + inkColor * bloom;
+    // Pooled ink reads denser and more saturated than the running stroke
+    hdrColor += palette(hue + 0.05) * inkColor * min(pooled, 1.5) * (0.35 + chroma * 0.4);
     hdrColor += palette(hue + 0.2) * clickInk * (0.35 + audio.z * 0.8);
     hdrColor += vec3<f32>(0.35, 0.65, 1.1) * fineInk * chroma * (0.25 + audio.z);
 

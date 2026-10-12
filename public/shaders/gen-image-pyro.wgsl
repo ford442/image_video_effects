@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-28
-//  Ideas: drag-damped spark flight; shell types per mortar (peony / willow / ring); crossette split
+//  Upgraded: 2026-10-10
+//  Ideas: drag-damped spark flight; shell types per mortar (peony / willow / ring); crossette split; image-sampled launch-site muzzle flash; delayed secondary peony burst
 //  A packing: ACES display RGBA (rgb = tone-mapped colour, read back from C as trail history; a = semantic glow alpha)
 // ═══════════════════════════════════════════════════════════════════
 //  Created 2026-07-05 (Spark Engine). The loaded image (or video frame)
@@ -24,26 +24,7 @@
 //  launch-brightness probe reads the photo instead of the clamped bottom row.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.141592653589793;
 const TAU: f32 = 6.283185307179586;
@@ -202,6 +183,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let ringTilt = mix(0.25, 1.0, hash1(si * 5.1 + cyc * 1.9));   // ring plane seen edge-on .. face-on
     let ringRoll = (hash1(si * 8.3 + cyc * 2.7) - 0.5) * 1.2;
 
+    // Idea 4 — a brief mortar flash at the visible launch edge, tinted only by
+    // the source image sampled through the existing scene-to-image mapping.
+    if (age < 0.32) {
+      let muzzlePos = vec2<f32>(basePos.x, -0.48);
+      let muzzleCol = sampleImage(muzzlePos, res);
+      let muzzleEnvelope = exp(-age * 15.0);
+      let muzzle = softGlow(uv, muzzlePos, 0.026, shellPow * muzzleEnvelope * 2.2);
+      col += muzzleCol * muzzle + vec3<f32>(1.0, 0.72, 0.28) * muzzle * 0.3;
+      glowAcc += muzzle;
+    }
+
     // Ascent
     if (age < burstDelay) {
       let t = age / burstDelay;
@@ -223,6 +215,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let kDrag = select(2.4, 4.6, shellType == 1);
       let fadeEnd = select(4.3, 5.6, shellType == 1);
       let fade = smoothstep(fadeEnd, 0.5, bAge) * endFade;
+      // Idea 5 — peonies alone echo with a delayed, offset, smaller radial bloom.
+      let secondaryDelay = 0.72 + hash1(si * 12.7 + cyc * 2.23) * 0.28;
+      let secondaryHeading = hash1(si * 23.9 + cyc * 4.31) * TAU;
+      let secondaryCenter = bCenter +
+        vec2<f32>(cos(secondaryHeading), sin(secondaryHeading)) * 0.045;
       for (var j = 0; j < nSparks; j = j + 1) {
         let jf = f32(j);
         let js = hash1(si * 7.0 + jf * 2.3);
@@ -285,8 +282,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
           g = softGlow(uv, sp, rad, amp);
         }
 
-        col += sparkCol * g * (0.9 + treble * 0.7);
-        glowAcc += g;
+        var secondaryG = 0.0;
+        let secondaryAge = bAge - secondaryDelay;
+        if (shellType == 0 && secondaryAge > 0.0 && secondaryAge < 3.1) {
+          let secondaryAng = ang + 0.5 + (js2 - 0.5) * 0.35;
+          let secondaryVel = vec2<f32>(cos(secondaryAng), sin(secondaryAng)) *
+            spd * 0.46;
+          let secondaryPos = sparkPosDrag(
+            secondaryCenter, secondaryVel, secondaryAge, gGrav, kDrag
+          );
+          let secondaryFade = smoothstep(3.1, 0.25, secondaryAge) * endFade;
+          secondaryG = softGlow(
+            uv, secondaryPos, rad * 0.78, secondaryFade * shellPow * 1.05
+          );
+        }
+
+        col += sparkCol * (g + secondaryG) * (0.9 + treble * 0.7);
+        glowAcc += g + secondaryG;
       }
 
       // Quick core flash using image brightness

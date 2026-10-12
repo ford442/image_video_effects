@@ -4,30 +4,12 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-09-14
-//  Ideas: saltatory conduction hopping between nodes of Ranvier on web strands; integrate-and-fire soma spiking with refractory afterglow per neuron
+//  Ideas: saltatory conduction hopping between nodes of Ranvier on web strands; integrate-and-fire soma spiking with refractory afterglow per neuron; activity-dependent pruning where underused web strands dim into shadow gaps; Hebbian reinforcement from feedback where repeatedly active filaments thicken into persistent bright corridors
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-    zoom_params: vec4<f32>,  // x=Network Density, y=Pulse Speed, z=Glow Intensity, w=Connection Thickness
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Network Density, y=Pulse Speed, z=Glow Intensity, w=Connection Thickness
 
 // 3D Hash Function
 fn hash33(p: vec3<f32>) -> vec3<f32> {
@@ -251,9 +233,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let col_neuron_outer = vec3<f32>(0.2, 0.5, 1.0); // Blue outer
     let col_synapse = vec3<f32>(0.1, 0.8, 0.9); // Cyan web
     let bg_col = vec3<f32>(0.02, 0.0, 0.05); // Deep space
+    let prevFrame = textureLoad(dataTextureC, coord, 0);
 
     var surfaceCoverage = 0.0;
     var firing = 0.0;
+    var reinforce = 0.0;
 
     if (hit) {
         var p = camPos + rd * t;
@@ -297,6 +281,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         firing = is_neuron * (iaf.y + iaf.z * 0.8);
         object_col = mix(object_col, col_neuron_core, somaCharge);
         object_col += vec3<f32>(1.0, 0.95, 0.85) * firing * (1.2 + treble * 0.6);
+        // IDEA 3: pruning shadows — chronically weak strands lose conductivity.
+        let activity = pulse_strength * web + salt.x + firing + evoked * 0.4;
+        let prune = smoothstep(0.22, 0.02, activity) * web;
+        object_col = mix(object_col, object_col * 0.45, prune * 0.7);
+        object_col += vec3<f32>(0.45, 0.2, 0.9) * prune * 0.08;
+        // IDEA 4: Hebbian reinforcement keeps repeatedly active strands luminous.
+        reinforce = clamp(prevFrame.a * 0.6 + activity * 0.3, 0.0, 1.0);
 
         col = object_col * diff;
 
@@ -317,6 +308,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let glow_col = vec3<f32>(0.1, 0.2, 0.5) + vec3<f32>(0.1, 0.0, 0.2) * sin(u.config.x);
     col += glow * glow_col;
     col += vec3<f32>(0.25, 0.2, 0.5) * evoked * 0.25 * (1.0 - surfaceCoverage);
+    col = mix(col, max(col, prevFrame.rgb * 0.95), reinforce * 0.22);
 
     // Distance fog
     let fog = 1.0 - exp(-t * 0.1);
@@ -326,7 +318,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Alpha: surface coverage attenuated by fog, plus volumetric glow density.
     let glowDensity = 1.0 - exp(-glow * 0.08);
-    let alpha = clamp(max(surfaceCoverage * (1.0 - fog * 0.6), glowDensity * 0.8) + evoked * 0.1, 0.0, 1.0);
+    let alpha = clamp(max(surfaceCoverage * (1.0 - fog * 0.6), glowDensity * 0.8) + evoked * 0.1 + reinforce * 0.12, 0.0, 1.0);
     let finalColor = vec4<f32>(col, alpha);
 
     textureStore(writeTexture, coord, finalColor);

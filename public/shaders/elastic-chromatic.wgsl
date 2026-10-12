@@ -1,15 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Elastic Chromatic — Interactivist Upgrade
-//  Category: distortion / visual-effects
-//  Features: mouse-driven, depth-aware, audio-reactive, chromatic-aberration,
-//            temporal-feedback, split-tone, blackbody-temperature, aces-tone-map,
-//            ign-dither, premultiplied-alpha, alpha-layered, luminance-key,
-//            accumulative-alpha, spring-damper-mouse, click-shockwave, iq-palette
+//  Elastic Chromatic
+//  Category: visual-effects
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgrade: spring-damper elastic mouse lag (state in extraBuffer) so the
-//           chromatic source overshoots and settles like a damped spring; click
-//           shockwave ring boosts the chromatic split; IQ cosine palette tint
-//           layered at low mix over the blackbody/split-tone grade.
+//  Upgraded: 2026-10-09
+//  Ideas: wavelength-dependent EMA lag; Rayleigh tint on the lag residual
+//  A packing: linear display RGBA in A (C is color history); ACES on writeTexture
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -248,15 +244,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depthMod = (1.0 - depth) * 0.35;
 
     // ── Per-channel elastic lag ────────────────────────────────────
-    let lagR = clamp(elasticity + influence + depthMod + lissInfluence, 0.0, MAX_LAG) * dampLag;
-    let lagB = clamp(elasticity * 0.8 + influence * 0.5 + depthMod * 0.5 + lissInfluence * 0.7, 0.0, MAX_LAG) * dampLag;
+    let lagRRaw = clamp(elasticity + influence + depthMod + lissInfluence, 0.0, MAX_LAG) * dampLag;
+    let lagBRaw = clamp(elasticity * 0.8 + influence * 0.5 + depthMod * 0.5 + lissInfluence * 0.7, 0.0, MAX_LAG) * dampLag;
     let lagG = clamp(elasticity * 0.6 + influence * 0.3, 0.0, MAX_LAG) * dampLag;
+    // Shorter wavelengths catch the live sample. Red keeps the trail.
+    let lagR = clamp(lagRRaw * 1.14, 0.0, MAX_LAG);
+    let lagB = clamp(lagBRaw * 0.58, 0.0, MAX_LAG);
 
     // ── Temporal chromatic accumulation in linear light ────────────
     var color = vec3<f32>(0.0);
     color.r = ema(source.r, prev.r, lagR);
     color.g = ema(source.g, prev.g, lagG);
     color.b = ema(source.b, prev.b, lagB);
+    // Rayleigh tint on the lag residual: blue scatters, red stays in the trail.
+    let residual = color - source;
+    color = color + vec3<f32>(0.12, 0.28, 0.85) * length(residual) * chromaticScale * 1.6;
 
     // ── Audio-reactive split-tone temperature grading ──────────────
     let lumPre = luma(color);

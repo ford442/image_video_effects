@@ -4,31 +4,12 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-09-15
-//  Ideas: peristaltic leviathan armor segments; frozen-time wing lamellae
+//  Ideas: peristaltic leviathan armor segments; frozen-time wing lamellae; electroreceptor antenna arcs; trailing feather-wake vortices
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Wing Span, y=Plasma Intensity, z=Chrono Distortion, w=Nebular Density
-    ripples: array<vec4<f32>, 50>,
-};
-
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=Wing Span, y=Plasma Intensity, z=Chrono Distortion, w=Nebular Density
 
 // ----------------------------------------------------------------
 // Helper functions and Math utilities
@@ -224,6 +205,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let treble = plasmaBuffer[0].z;
     let audio = bass;
     let held = f32(u.zoom_config.w > 0.5);
+    let wingSpan = u.zoom_params.x;
 
     // Camera
     var ro = vec3<f32>(0.0, 1.0, -4.0);
@@ -276,6 +258,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             col += 0.1 * fbm(p * 10.0) * vec3<f32>(0.0, 1.0, 0.5);
             let seam = 0.5 + 0.5 * sin(p.z * 3.2 + time * 1.1 + mids);
             col += vec3<f32>(0.15, 0.85, 0.7) * pow(seam, 8.0) * 0.55;
+            // Idea 3: electroreceptor antenna arcs near the forward snout.
+            let snout = smoothstep(0.2, 1.2, p.z) * exp(-abs(p.x) * 7.0) * exp(-abs(p.y - 0.15) * 10.0);
+            let arc = pow(0.5 + 0.5 * sin(atan2(p.y, p.x + 1e-4) * 12.0 + time * (7.0 + treble * 4.0)), 6.0);
+            col += vec3<f32>(0.55, 0.95, 1.0) * snout * arc * (0.18 + treble * 0.2);
         } else {
             // Wings: Crystalline and refractive
             let l = normalize(vec3<f32>(0.0, -1.0, 0.0));
@@ -325,6 +311,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Mouse click/drag interaction increases dust
         let dustColor = blackbody(max(dustNoise * 2.0 * u.zoom_params.y, 0.0));
         vCol += dustDens * dustColor * 0.2 * (1.0 + held * 1.5 + treble * 0.4);
+        // Idea 4: feather-like wake vortices shed from the trailing wing span.
+        let wakeRadius = length(vp.xy) - (0.35 + wingSpan * 0.2 + 0.12 * sin(vp.z * 2.4 + time * 2.8));
+        let wake = exp(-wakeRadius * wakeRadius * 14.0) * smoothstep(-2.0, 4.0, vp.z);
+        let feather = pow(0.5 + 0.5 * sin(vp.z * 8.0 - time * 6.0 + vp.x * 3.0), 3.0);
+        vCol += vec3<f32>(0.2, 0.75, 1.0) * wake * feather * (0.05 + mids * 0.08);
 
         vT += 0.2 + hash3(vp).x * 0.1; // Dithered stepping
         if (vT > 20.0) { break; }

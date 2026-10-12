@@ -3,31 +3,14 @@
 //  Category: generative
 //  Features: temporal, chromatic, depth-aware, audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: gear-tooth automaton ring (each tooth is a Rule 90 cell, one generation per tooth pitch, the meshing teeth trade bits so sun and planet compute together); capstan wrap (aether threads swirl onto the rotating gear rims along the gear SDF and show wound turns riding the rim)
+//  Upgraded: 2026-10-10
+//  Ideas: differential-cage precession that offsets the planet gear arm over time; bobbin charge knots where wrapped threads graze energized gear rims
 //  A packing: HDR linear RGB (pre-ACES) + semantic alpha; C read back exactly as HDR colour for echo trails and chromatic smear
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=Thread Count, y=Loom Rotation Speed, z=Aether Bloom, w=Temporal Decay
 
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseHeld
-    zoom_params: vec4<f32>,  // x=Thread Count, y=Loom Rotation Speed, z=Aether Bloom, w=Temporal Decay
-    ripples: array<vec4<f32>, 50>,
-};
 // Math and Hash Functions
 fn hash12(p: vec2<f32>) -> f32 {
     let q = vec2<f32>(dot(p, vec2<f32>(127.1, 311.7)), dot(p, vec2<f32>(269.5, 183.3)));
@@ -167,11 +150,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 1 mesh: the planet rides the HEAD arm (same orbit) and now also rolls on the sun without slip
     // (12:8 teeth), phased so its gaps take the sun's teeth; one tooth pitch = one automaton generation.
     let spin2 = 1.5 * (a2 - a1) + PLANET_PHI0;
+    // Idea 3: differential-cage precession slowly shifts the planet-arm anchor.
+    let precess = vec2<f32>(cos(time * 0.37), sin(time * 0.41)) *
+        (0.05 + 0.04 * rotation_speed) * (0.35 + mids * 0.4);
+    let planet_arm = vec2<f32>(1.2, 0.5) + precess;
     let gear_uv = distorted_p * rot2d(a1);
     let d1 = sdGear(gear_uv, 0.8, 12.0, 0.1);
-    let planet_uv = (distorted_p * rot2d(a2) - vec2<f32>(1.2, 0.5)) * rot2d(spin2);
+    let planet_uv = (distorted_p * rot2d(a2) - planet_arm) * rot2d(spin2);
     let d2 = sdGear(planet_uv, 0.5, 8.0, 0.08);
-    let planet_centre = vec2<f32>(1.2, 0.5) * rot2d(-a2);
+    let planet_centre = planet_arm * rot2d(-a2);
 
     // Idea 1: gear-tooth automaton ring. u1 counts sun teeth that have passed the mesh.
     let u1 = (PLANET_BETA - a2 + a1) * 12.0 / TAU;
@@ -210,7 +197,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var tooth_emit = vec3<f32>(1.0, 0.58, 0.2) * (lamp1 + lamp2) * (1.0 + treble * 0.5);
     // Idea 1: the bit handed across the mesh at the last tooth pitch glints at the pitch point.
     let handed = f32((ring_prev.x >> u32(imod(gen - 1, 12))) & 1u);
-    let pitch_pt = planet_centre * (0.8 / 1.3);
+    let pitch_pt = planet_centre * (0.8 / max(length(planet_centre), 1e-3));
     tooth_emit += vec3<f32>(1.0, 0.85, 0.6) * handed * flash * exp(-length(distorted_p - pitch_pt) * 28.0) * 1.2;
 
     // Idea 2: capstan wrap. Threads are looked up in a space swirled about each hub by the gear's own
@@ -261,8 +248,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let halo = exp(-dist_to_spline / (thickness * 8.0));
         let intensity = (core * (0.35 + node_glow) * (0.3 + aether_bloom) + halo * 0.12 * aether_bloom) * capstan_gain;
 
+        // Idea 4: bobbin charge knots where wrapped threads brush energized rims.
+        let knot = core * (band1 + band2) * (0.5 + 0.5 * sin(fi * 5.3 + time * 3.0));
+        let knot_color = vec3<f32>(1.0, 0.9, 0.55) * knot * (0.2 + treble * 0.2);
+
         thread_glow += thread_color * intensity * fade;
-        thread_cov = max(thread_cov, core * fade);
+        thread_glow += knot_color * fade;
+        thread_cov = max(thread_cov, max(core, knot * 0.7) * fade);
     }
 
     // Temporal Echo Trails (Feedback loop for time dilation trails)

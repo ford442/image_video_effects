@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: raymarched, mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: grinding interlock with friction seams; server-core slits with rack LEDs
+//  Upgraded: 2026-10-10
+//  Ideas: grinding interlock with friction seams; server-core slits with rack LEDs;
+//         friction-seam concrete spalling and chips; sparse elevated transit trusses
 //  A packing: ACES display RGBA (C read as colour history)
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-    zoom_params: vec4<f32>,  // x=Block Density, y=Repulsion Radius, z=Neon Intensity, w=Travel Speed
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Block Density, y=Repulsion Radius, z=Neon Intensity, w=Travel Speed
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -41,6 +23,30 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
 fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
     let q = abs(p) - b;
     return length(max(q, vec3<f32>(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0);
+}
+
+fn sdCapsule(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, r: f32) -> f32 {
+    let pa = p - a;
+    let ba = b - a;
+    let h = clamp(dot(pa, ba) / max(dot(ba, ba), 0.0001), 0.0, 1.0);
+    return length(pa - ba * h) - r;
+}
+
+// Idea 4: a single-map transit truss made from a deck, paired rails and crossed braces.
+// It joins the existing distance field, so the main loop does not launch another raymarch.
+fn transitTruss(q: vec3<f32>) -> f32 {
+    let halfSpan = 0.78;
+    let foldedZ = abs(q.z) - 0.20;
+    let sideQ = vec3<f32>(q.x, q.y, foldedZ);
+    let deck = sdBox(q, vec3<f32>(halfSpan, 0.055, 0.28));
+    let topRails = sdBox(sideQ - vec3<f32>(0.0, 0.31, 0.0), vec3<f32>(halfSpan, 0.038, 0.038));
+    let endPosts = sdBox(vec3<f32>(abs(q.x) - 0.70, q.y - 0.17, foldedZ),
+                         vec3<f32>(0.035, 0.17, 0.035));
+    let braceA = sdCapsule(sideQ, vec3<f32>(-0.70, 0.05, 0.0),
+                          vec3<f32>(0.70, 0.29, 0.0), 0.032);
+    let braceB = sdCapsule(sideQ, vec3<f32>(-0.70, 0.29, 0.0),
+                          vec3<f32>(0.70, 0.05, 0.0), 0.032);
+    return min(min(deck, topRails), min(endPosts, min(braceA, braceB)));
 }
 
 fn distributionGGX(N: vec3<f32>, H: vec3<f32>, roughness: f32) -> f32 {
@@ -70,6 +76,15 @@ fn hash13(p3: vec3<f32>) -> f32 {
     var p3_mod = fract(p3 * 0.1031);
     p3_mod += dot(p3_mod, p3_mod.yzx + 33.33);
     return fract((p3_mod.x + p3_mod.y) * p3_mod.z);
+}
+
+// Idea 3: sparse aggregate-sized chips constrained to the moving concrete joint.
+fn seamSpall(pos: vec3<f32>, cell: vec3<f32>, seam: f32) -> f32 {
+    let lattice = pos * 4.5;
+    let chipCell = floor(lattice);
+    let seed = hash13(chipCell + cell * 19.17 + vec3<f32>(3.1, 7.3, 11.9));
+    let chipShape = 1.0 - smoothstep(0.18, 0.48, length(fract(lattice) - 0.5));
+    return seam * step(0.76, seed) * chipShape;
 }
 
 fn buildingParamsFromHash(h: f32) -> vec4<f32> {
@@ -105,8 +120,8 @@ fn grindStroke(h: f32) -> f32 {
     return sin(phase) * (0.35 + bass * 0.15);
 }
 
-// returns (distance, material id = hash + neon*10, friction seam weight)
-fn map(p: vec3<f32>) -> vec3<f32> {
+// returns (distance, material id = hash + neon*10, friction seam weight, spall weight)
+fn map(p: vec3<f32>) -> vec4<f32> {
     var pos = swayed(p);
     let cell = round(pos / SPACING);
     pos = pos - SPACING * cell;
@@ -139,6 +154,38 @@ fn map(p: vec3<f32>) -> vec3<f32> {
         d = smin(b1, b2, 0.6);
         seam = 1.0 - smoothstep(0.0, 0.12, abs(b1 - b2));
     }
+
+    // Concrete is nicked away only along the native grind seam. The small positive
+    // distance perturbation exposes chipped recesses without changing the march count.
+    let spall = seamSpall(pos, cell, seam);
+    let chippedBodyD = d + spall * (0.018 + 0.028 * hash13(floor(pos * 4.5) + cell * 5.7));
+
+    // Sparse edge-owned bridges agree on both sides of a cell boundary. X and Z
+    // candidates alternate independently, creating a repeating elevated transit network.
+    let negX = select(1.0, 0.0, pos.x >= 0.0);
+    let sideX = 1.0 - 2.0 * negX;
+    let ownerX = cell - vec3<f32>(negX, 0.0, 0.0);
+    let bridgeSeedX = hash13(ownerX * 7.13 + vec3<f32>(13.7, 5.1, 2.9));
+    let bridgeRoofX = min(getBuildingParams(ownerX).x,
+                          getBuildingParams(ownerX + vec3<f32>(1.0, 0.0, 0.0)).x);
+    let bridgeHeightX = min(0.75 + bridgeSeedX * 0.85, max(0.65, bridgeRoofX - 0.18));
+    let bridgeX = select(1000.0,
+                         transitTruss(pos - vec3<f32>(sideX * SPACING * 0.5, bridgeHeightX, 0.0)),
+                         bridgeSeedX > 0.84);
+
+    let negZ = select(1.0, 0.0, pos.z >= 0.0);
+    let sideZ = 1.0 - 2.0 * negZ;
+    let ownerZ = cell - vec3<f32>(0.0, 0.0, negZ);
+    let bridgeSeedZ = hash13(ownerZ * 8.47 + vec3<f32>(2.3, 17.1, 9.7));
+    let bridgeRoofZ = min(getBuildingParams(ownerZ).x,
+                          getBuildingParams(ownerZ + vec3<f32>(0.0, 0.0, 1.0)).x);
+    let bridgeHeightZ = min(0.75 + bridgeSeedZ * 0.85, max(0.65, bridgeRoofZ - 0.18));
+    let bridgeZLocal = pos - vec3<f32>(0.0, bridgeHeightZ, sideZ * SPACING * 0.5);
+    let bridgeZ = select(1000.0, transitTruss(bridgeZLocal.zyx), bridgeSeedZ > 0.88);
+    let bridgeD = min(bridgeX, bridgeZ);
+    let surfaceSpall = select(spall, 0.0, bridgeD < chippedBodyD);
+    d = min(chippedBodyD, bridgeD);
+
     let mouseX = (u.zoom_config.y * 2.0 - 1.0) * 10.0;
     let mouseY = (u.zoom_config.z * 2.0 - 1.0) * 10.0;
     // repulsion field rides 15 units ahead of the flying camera so the pointer stays live
@@ -148,7 +195,7 @@ fn map(p: vec3<f32>) -> vec3<f32> {
     if (dist_to_mouse < u.zoom_params.y) {
         d += (u.zoom_params.y - dist_to_mouse) * 0.5;
     }
-    return vec3<f32>(d, hc + neon * 10.0, seam);
+    return vec4<f32>(d, hc + neon * 10.0, seam, surfaceSpall);
 }
 
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
@@ -173,12 +220,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var t = 0.0;
     var mat_id = 0.0;
     var seam = 0.0;
+    var spall = 0.0;
     for(var i = 0; i < 100; i++) {
         let p = ro + rd * t;
         let res = map(p);
         if (res.x < 0.001 || t > 50.0) {
             mat_id = res.y;
             seam = res.z;
+            spall = res.w;
             break;
         }
         t += res.x;
@@ -217,6 +266,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let strokeSpeed = abs(cos(time * (0.35 + cellHash * 0.4) * (0.5 + u.zoom_params.w * 0.25) + cellHash * 6.2831853));
         let friction = seam * (0.35 + 0.65 * strokeSpeed) * (1.0 + bass * 0.6);
         col += vec3<f32>(1.0, 0.42, 0.12) * friction * 1.4;
+
+        // Freshly broken concrete darkens the recess while a few exposed aggregate
+        // facets catch the same moving friction light.
+        let aggregate = pow(hash13(floor(local * 18.0) + vec3<f32>(cellHash * 31.0)), 10.0);
+        col *= 1.0 - spall * 0.32;
+        col += vec3<f32>(0.34, 0.30, 0.25) * spall * aggregate *
+               (0.35 + 0.65 * strokeSpeed);
 
         // Idea 2: server-core slits — horizontal board-form slits on vertical faces of neon
         // buildings let the hidden cyan core show, with rack LEDs blinking along each slit.

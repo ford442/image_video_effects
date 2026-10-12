@@ -4,29 +4,11 @@
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-09-15
-//  Ideas: coherent stellar p/g-mode shells; compression-antinode blackbody heating with traveling highlights
+//  Ideas: coherent stellar p/g-mode shells; compression-antinode blackbody heating with traveling highlights; nodal dislocation seams; coronal loop arc curtains
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Audio Reactivity, .y = Plasma Density, .z = Orbital Speed, .w = Core Temperature
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Audio Reactivity, .y = Plasma Density, .z = Orbital Speed, .w = Core Temperature
 
 const PI: f32 = 3.14159265359;
 
@@ -119,9 +101,11 @@ fn stellarField(p_in: vec3<f32>, audio: vec3<f32>) -> vec4<f32> {
     let gMode = cos(azimuth * 4.0 + cellPhase - time * 0.37)
               * sin(polar * 3.0 + time * 0.21);
     let acousticPressure = pMode * 0.62 + gMode * 0.38;
+    // Idea 3: nodal dislocation seams where phase slips cut across shell modes.
+    let phaseSlip = smoothstep(0.78, 1.0, abs(sin(azimuth * 2.0 - polar * 1.3 + time * 0.6 + cellPhase)));
     let bandEnergy = dot(audio, vec3<f32>(0.5, 0.3, 0.2));
     let modeStrength = 0.045 + bandEnergy * 0.055;
-    let surfaceEmboss = acousticPressure * modeStrength;
+    let surfaceEmboss = acousticPressure * modeStrength + phaseSlip * (0.014 + audio.z * 0.02);
 
     let d = radialDistance - radius + n * 0.28 - surfaceEmboss;
     return vec4<f32>(d * 0.55, cellPhase, acousticPressure, radialDistance);
@@ -207,6 +191,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         hdr = hdr + em_col * (diff * 0.2 + sss * 0.8) * 1.5;
         hdr = hdr + blackbody(min(em_temp + 1200.0, 10000.0))
             * compressionHighlight * (0.35 + audio.y * 0.3);
+        // Idea 4: coronal loop arc curtains tracing field-line canopies above the surface.
+        let rxy = length(p.xz);
+        let arc = pow(max(0.0, sin(atan2(p.z, p.x) * 8.0 + p.y * 6.0 - u.config.x * 2.2)), 6.0)
+                * exp(-abs(rxy - 0.9) * 3.0);
+        hdr = hdr + vec3<f32>(0.4, 0.95, 1.0) * arc * (0.1 + audio.z * 0.2);
     }
 
     let mapped = acesToneMap(max(hdr, vec3<f32>(0.0)));

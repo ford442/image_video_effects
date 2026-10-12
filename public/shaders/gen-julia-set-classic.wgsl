@@ -3,25 +3,12 @@
 //  Category: generative
 //  Features: escape-time, orbit-trap, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: exterior distance estimate; log|z| stripe coloring
+//  Upgraded: 2026-10-10
+//  Ideas: exterior distance estimate; log|z| stripe coloring; spiral orbit traps; pseudo-3D orbit slice twist
 //  A packing: raw HDR display RGBA (ACES on writeTexture)
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>, };
 const TAU: f32 = 6.28318530718;
 fn palette(t: f32) -> vec3<f32> { return vec3<f32>(0.5)+vec3<f32>(0.5)*cos(TAU*(vec3<f32>(t)+vec3<f32>(0.0,0.31,0.67))); }
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> { return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),vec3<f32>(0.0),vec3<f32>(1.0)); }
@@ -70,7 +57,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let y = 2.0 * z.x * z.y + c.y;
     z = vec2<f32>(x, y);
     let r2 = dot(z, z);
-    trap = min(trap, min(abs(z.x), abs(length(z) - 0.5)));
+    
+    // Idea 1: spiral orbit traps instead of simple lines
+    let spiral = abs(sin(atan2(z.y, z.x) * 3.0 + length(z) * 5.0 - time * 2.0));
+    trap = min(trap, min(spiral * 0.3, abs(length(z) - 0.5)));
+    
+    // Idea 2: pseudo-3D orbit slice twist
+    let twist = sin(f32(i) * 0.1 + time) * 0.02;
+    z = vec2<f32>(z.x * cos(twist) - z.y * sin(twist), z.x * sin(twist) + z.y * cos(twist));
+    
     orbit += exp(-abs(length(z) - 1.0) * 8.0) / f32(iterations);
     stripeAcc += 0.5 + 0.5 * sin(log(max(r2, 0.0001)) * 4.2);
     if (r2 > 256.0) { escaped = f32(i); break; }

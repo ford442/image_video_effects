@@ -4,7 +4,7 @@
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-09-27
-//  Ideas: self-assembling sectors (each of the six cubes at its own fractional carve stage); gravitational time dilation (proper-time lag of the twist + assembly clock, dilated fringe frequency); singularity shadow (lensed rays captured inside rs go black)
+//  Ideas: self-assembling sectors (each of the six cubes at its own fractional carve stage); gravitational time dilation (proper-time lag of the twist + assembly clock, dilated fringe frequency); singularity shadow (lensed rays captured inside rs go black); terrace-edge cathodoluminescence; photon-sphere shear arcs
 //  A packing: HDR linear RGB (pre-ACES) + semantic alpha; C read back as HDR trail memory (ACES only on writeTexture)
 // ═══════════════════════════════════════════════════════════════════
 //  Kept from HEAD: six-fold angular repeat, pointer twist/pitch, boolean
@@ -14,26 +14,7 @@
 //  Pointer note: the extraBuffer[133..138] "spring" is inert (the engine
 //  zeroes that scratch every frame), so sm == raw pointer. Left as-is.
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // --- CORE LOGIC ---
 const MAX_STEPS: i32 = 120;
@@ -252,6 +233,9 @@ fn raymarching(ro: vec3<f32>, rd_in: vec3<f32>, sm: vec2<f32>, bassAmp: f32, mid
         ao = 1.0 - f32(iter_count) / f32(MAX_STEPS);
 
         col = base_col * ao;
+        // Idea 4: terrace-edge cathodoluminescence on sharp crystalline breaks.
+        let edge = pow(1.0 - ndotv, 6.0);
+        col += vec3<f32>(0.95, 0.85, 0.55) * edge * (0.08 + trebleAmp * 0.12);
     }
 
     var result: MarchResult;
@@ -343,6 +327,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let graze = smoothstep(rs, rs * 1.35, march.minR);
     let shadowMask = select(graze * (1.0 - march.capturedF), 1.0, march.hitF > 0.5);
     col *= shadowMask;
+    // Idea 5: photon-sphere shear arcs near the horizon boundary.
+    let ringBand = exp(-pow((march.minR - rs * 1.22) * 18.0, 2.0));
+    let ringArc = pow(0.5 + 0.5 * sin(time * 8.0 + uv.x * 26.0 - uv.y * 18.0), 7.0);
+    col += vec3<f32>(0.6, 0.85, 1.0) * ringBand * ringArc * (1.0 - march.hitF) * 0.25;
 
     // --- Emergent gravitational memory: history-dependent glow trails ---
     // The lattice's wake lingers off-surface; bass lengthens persistence;

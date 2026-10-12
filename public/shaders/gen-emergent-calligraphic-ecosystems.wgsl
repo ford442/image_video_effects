@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: upgraded-rgba, temporal, audio-reactive, mouse-driven
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: brush pressure swell along the stroke; prey-predator ink chase along the flow
+//  Upgraded: 2026-10-10
+//  Ideas: brush pressure swell along the stroke; prey-predator ink chase along the flow; paper-fibre ink feathering; glyph death phase (dry, crack, rebirth);
+//         capillary backrun blooms; ligature bridge strokes between nearby glyph clusters
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -70,7 +52,7 @@ fn flowAngle(p: vec2<f32>, t: f32, mids: f32, bass: f32) -> f32 {
 
 // Stroke primitive: a curved brushstroke from a seed
 fn stroke(uv: vec2<f32>, seed: vec2<f32>, t: f32, strokeLen: f32,
-          inkWidth: f32, orientation: f32) -> f32 {
+          inkWidth: f32, orientation: f32, wick: f32) -> f32 {
     let d = uv - seed;
     let along = d.x * cos(orientation) + d.y * sin(orientation);
     let across = -d.x * sin(orientation) + d.y * cos(orientation);
@@ -81,19 +63,29 @@ fn stroke(uv: vec2<f32>, seed: vec2<f32>, t: f32, strokeLen: f32,
     let pressure = 1.0 + 0.38 * sin(along * 16.0 + orientation + t * 0.7);
     let inWidth = smoothstep(inkWidth * pressure, 0.0, abs(across)) * taper;
 
-    return inLength * inWidth;
+    // Idea 3 — ink feathering: wet ink wicks past the edge along anisotropic paper fibres
+    let fibre = smoothNoise(uv * vec2<f32>(310.0, 46.0)) * 0.6 + smoothNoise(uv * vec2<f32>(52.0, 290.0)) * 0.4;
+    let reach = inkWidth * pressure * (1.4 + fibre * 2.2);
+    let feather = smoothstep(reach, inkWidth * pressure, abs(across)) * taper * (0.2 + fibre * 0.3);
+
+    return inLength * max(inWidth, feather * wick);
 }
 
 // Calligraphic glyph cluster: N strokes around a seed, self-organizing into glyphs
 fn glyphCluster(uv: vec2<f32>, clusterSeed: vec2<f32>, t: f32,
                 bass: f32, mids: f32, treble: f32,
-                strokeDensity: f32, inkWidth: f32, chase: f32) -> f32 {
+                strokeDensity: f32, inkWidth: f32, chase: f32, wick: f32) -> vec2<f32> {
     var totalInk = 0.0;
     let numStrokes = i32(clamp(strokeDensity * 6.0 + 3.0, 3.0, 9.0));
     let seedHash = hash22(clusterSeed);
     let clusterBirth = seedHash.x * 5.0;
-    let age = clamp(t * 0.2 - clusterBirth, 0.0, 1.0);
-    if (age <= 0.0) { return 0.0; }
+    let lived = t * 0.2 - clusterBirth;
+    if (lived <= 0.0) { return vec2<f32>(0.0); }
+    // Idea 4 — glyph death phase: each cluster lives a cycle, dries and cracks, then is reborn
+    let lifeSpan = 4.0 + seedHash.y * 3.0;
+    let cycle = fract(lived / lifeSpan);
+    let age = clamp(cycle * lifeSpan, 0.0, 1.0);
+    let death = smoothstep(0.72, 0.98, cycle);
 
     for (var k = 0; k < numStrokes; k++) {
         let kf = f32(k);
@@ -111,9 +103,12 @@ fn glyphCluster(uv: vec2<f32>, clusterSeed: vec2<f32>, t: f32,
         let sWidth = inkWidth * (0.5 + strokeHash.x * 0.5) * (0.8 + mids * 0.4);
 
         let growLen = sLen * smoothstep(0.0, 0.3, age);
-        totalInk += stroke(uv, strokeSeed, t, growLen, sWidth, strokeAngle);
+        totalInk += stroke(uv, strokeSeed, t, growLen, sWidth, strokeAngle, wick);
     }
-    return clamp(totalInk, 0.0, 1.0);
+    // Dried ink cracks into flakes as death advances
+    let crack = smoothNoise(uv * 140.0 + clusterSeed * 31.0) * 0.7 + hash12(floor(uv * 420.0)) * 0.3;
+    let flake = 1.0 - smoothstep(crack - 0.1, crack + 0.05, death * 1.1);
+    return vec2<f32>(clamp(totalInk, 0.0, 1.0) * flake, death);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -169,6 +164,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var totalInk = 0.0;
     var inkColor = vec3<f32>(0.0);
+    var dryAcc = 0.0;
 
     // Check 3x3 neighborhood of clusters (strokes can bleed over cell edges)
     for (var jj: i32 = -1; jj <= 1; jj++) {
@@ -181,8 +177,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let clusterHash0 = hash22(neighbor * 0.1 + 0.5);
             // Flora (low hash) chases predators along the flow; fauna stays put
             let chase = (predatorBloom - 0.5) * 0.028 * (1.0 - clusterHash0.x);
-            let ink = glyphCluster(uvA, clusterSeed, t, bass, mids, treble,
-                                   effectiveDensity, inkWidth, chase);
+            let glyph = glyphCluster(uvA, clusterSeed, t, bass, mids, treble,
+                                     effectiveDensity, inkWidth, chase, 1.0 - neonMode);
+            let ink = glyph.x;
             if (ink > 0.0) {
                 // Ecosystem color driven by Lotka-Volterra cycles
                 // Flora color = green scaled by prey population
@@ -192,10 +189,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 // Mix based on cluster hash for spatial variety
                 let clusterHash = hash22(neighbor * 0.1 + 0.5);
                 let ecosystemMix = clusterHash.x;
-                let clusterCol = mix(floraCol, faunaCol, ecosystemMix);
+                var clusterCol = mix(floraCol, faunaCol, ecosystemMix);
+                let dryGrey = vec3<f32>(dot(clusterCol, vec3<f32>(0.299, 0.587, 0.114))) * 0.55;
+                clusterCol = mix(clusterCol, dryGrey, glyph.y);
 
                 inkColor += clusterCol * ink;
                 totalInk += ink;
+                dryAcc += glyph.y * ink;
             }
         }
     }
@@ -219,8 +219,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (totalInk > 0.0) {
         let normInkColor = inkColor / totalInk;
         color = mix(bgPaper, mix(inkCol, normInkColor * 1.2, neonMode), clamp(totalInk * 2.0, 0.0, 1.0));
+        // Dying glyphs: paper-mode ink dries toward a faded sepia, neon ink dims
+        let dryness = dryAcc / totalInk;
+        let driedPaper = mix(color, bgPaper * vec3<f32>(0.82, 0.74, 0.62), 0.55);
+        color = mix(color, mix(driedPaper, color * 0.45, neonMode), dryness);
         // Neon glow halo
         color += normInkColor * totalInk * neonMode * treble * 0.5;
+
+        // Idea 5: capillary backrun blooms at wet-dry boundaries.
+        let edgeWet = totalInk * (1.0 - clamp(totalInk, 0.0, 1.0));
+        let backrunNoise = 0.5 + 0.5 * smoothNoise(uvA * 120.0 + vec2<f32>(t * 0.4, -t * 0.35));
+        let backrun = edgeWet * backrunNoise;
+        color += mix(vec3<f32>(0.22, 0.12, 0.04), vec3<f32>(0.28, 0.95, 0.75), neonMode) * backrun * (0.18 + held * 0.35);
+
+        // Idea 6: ligature bridges tying neighboring glyph clusters.
+        let bridgeField = pow(max(0.0, sin(flowAngle(uvA * 0.9, t, mids, bass) * 2.0 + uvA.x * 40.0 - uvA.y * 26.0)), 5.0);
+        let bridgeMask = smoothstep(0.05, 0.35, totalInk) * (1.0 - smoothstep(0.65, 0.95, totalInk));
+        let ligature = bridgeField * bridgeMask;
+        color += mix(vec3<f32>(0.05, 0.03, 0.01), vec3<f32>(0.85, 0.5, 1.0), neonMode) * ligature * (0.12 + treble * 0.4);
     }
 
     // Subtle paper texture

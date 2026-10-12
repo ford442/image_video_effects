@@ -2,7 +2,7 @@
   "id": "rgb-glitch-trail",
   "name": "RGB Glitch Trail",
   "url": "shaders/rgb-glitch-trail.wgsl",
-  "description": "Mouse leaves chromatic aberration trails with alpha-channel translucency blending. Uses domain-warped FBM for organic displacement and computes alpha from glitch intensity * temporal persistence.",
+  "description": "Mouse leaves chromatic aberration trails with alpha-channel translucency blending. Uses domain-warped FBM for organic displacement and computes alpha from glitch intensity * temporal persistence. Red and blue lag along the warp, and a comet follows the stored intensity.",
   "params": [
     {
       "id": "decay_rate",

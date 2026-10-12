@@ -1,5 +1,12 @@
-// Data Moshing v3 — Batch 58D raw-offset feedback upgrade
-// A packs accumulated offset.xy, corruption confidence, and age; B is unwritten.
+// ═══════════════════════════════════════════════════════════════════
+//  Data Moshing
+//  Category: retro-glitch
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-10
+//  Ideas: macroblock motion vector; residual spark
+//  A packing: raw sim (offset.xy, confidence, age)
+// ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
 
@@ -87,7 +94,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   age = mix(age, 0.0, clamp(corruptionEvent + clickCorruption, 0.0, 1.0));
   let depth = textureLoad(readDepthTexture, pixel, 0).r;
   offset *= 0.85 + 0.14 * depth;
+  // Idea: macroblockMV — one motion axis per block, not a smooth flow field.
+  let mvSeed = hash22(blockId);
+  let mvAxis = mvSeed - vec2<f32>(0.5);
+  let macroblockMV = mvAxis * (dot(offset, mvAxis) / max(dot(mvAxis, mvAxis), 0.0001));
+  offset = mix(offset, macroblockMV, 0.72);
   offset = clamp(offset, vec2<f32>(-0.4), vec2<f32>(0.4));
+  // Idea: residualSpark — chroma where the stored vector changed this frame.
+  let residualSpark = smoothstep(0.0015, 0.02, length(offset - previous.xy)) * corruption;
   textureStore(dataTextureA, pixel, vec4<f32>(offset, confidence, age));
 
   let distortedUv = clamp(uv - offset, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -101,6 +115,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   hdr.b = textureSampleLevel(readTexture, u_sampler, clamp(distortedUv - chromaOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
   if (quantize > 0.0) { let levels = 18.0 - quantize * 16.0; hdr = floor(hdr * levels) / levels; }
   hdr += vec3<f32>(0.03, 0.015, 0.05) * treble * hash12(vec2<f32>(uv.x * 100.0, floor(uv.y * 8.0 + time)));
+  hdr += vec3<f32>(0.22, 0.04, 0.08) * residualSpark * (0.35 + treble);
   let effectEnergy = clamp(confidence * (0.45 + edge * 0.35) + length(offset) * 1.8 + clickCorruption * 0.3, 0.0, 1.0);
   let alpha = clamp(sample.a + (1.0 - sample.a) * effectEnergy, 0.0, 1.0);
   textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(max(hdr, vec3<f32>(0.0))), alpha));

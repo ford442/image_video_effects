@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: predator-triggered banking agitation waves (dark/light bands propagating through the flock as birds tilt wing-on vs edge-on); marginal-opacity self-regulation (flock optical depth saturates so ~30% of twilight sky transmits through the core)
+//  Upgraded: 2026-10-10
+//  Ideas: banking agitation waves; marginal opacity; scale-free correlated turn; heading-defect eye
 //  A packing: ACES display RGBA in A (alpha = flock sky-coverage 1-T plus glint/scatter;
 //    C.rgb read back as colour history, C.a inverted as approximate trail density)
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Flock Size, .y = Shape Morph, .z = Glint Intensity, .w = Cohesion
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Flock Size, .y = Shape Morph, .z = Glint Intensity, .w = Cohesion
 
 fn h2(p: vec2<f32>) -> f32 {
   let q = fract(p * vec2<f32>(0.1031, 0.1030));
@@ -154,7 +136,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
   }
   var p = (uv - center) / flockSize;
-  let flow = curl(p, t) * 0.4;
+  // Idea: scale-free correlation — one long-wavelength turn shared across the flock.
+  p += curl(p * 0.42 + vec2<f32>(3.2, 1.4), t * 0.45) * (0.10 + cohesion * 0.28);
+  let curlLocal = curl(p, t);
+  let flow = curlLocal * 0.4;
   p += flow;
   p += curl(p * 1.7 + vec2<f32>(1.0), t * 0.8) * 0.2;
   let phi = 1.6180339887;
@@ -177,6 +162,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let agitation = (0.25 + held * 0.75 + waveSeed * 0.6 + bass * 0.2) * exp(-mDist * 1.2) * smoothstep(0.0, 0.05, mask);
   let bank = bankingWave(mDist, t, agitation);
   density *= bank;
+
+  // Idea: heading defect — a clear eye where flock vorticity changes sign.
+  let curlX = curl(p + vec2<f32>(0.06, 0.0), t);
+  let curlY = curl(p + vec2<f32>(0.0, 0.06), t);
+  let vort = (curlY.y - curlLocal.y) / 0.06 - (curlX.x - curlLocal.x) / 0.06;
+  let eye = exp(-vort * vort * 9.0) * mask * smoothstep(0.62, 0.18, radius);
+  density *= 1.0 - eye * (0.55 + cohesion * 0.35);
 
   let ex = 0.01;
   let dx = fbm3(vec3<f32>((p + vec2<f32>(ex, 0.0)) * 3.0, t * 0.2)) * mask -

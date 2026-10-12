@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: iron-filing line-integral convolution along B with chain length ∝ |B|; reconnection X-point null flash with separatrix arms
+//  Upgraded: 2026-10-10
+//  Ideas: iron-filing LIC along B; reconnection X-point; cyclotron gyration helices; magnetic-mirror pile-up
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Field Strength, .y = Particle Speed, .z = Number of Dipoles, .w = Trail Length
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Field Strength, .y = Particle Speed, .z = Number of Dipoles, .w = Trail Length
 
 // Magnetic dipole field: B ∝ (3(m·r)r - m) / |r|³
 fn dipoleField(p: vec2<f32>, dipolePos: vec2<f32>, moment: vec2<f32>, strength: f32) -> vec2<f32> {
@@ -276,12 +258,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let phase = fract(t * particleSpeed * (0.16 + bass * 0.08) + fi * 0.117);
         let particlePos = particleOnFieldLine(phase, dipolePos, moment, radius);
         let flow = dipoleField(particlePos, dipolePos, moment, fieldStrength);
-        let flowDir = flow / max(length(flow), 0.001);
+        let bMagP = length(flow);
+        let flowDir = flow / max(bMagP, 0.001);
         let streakLength = 0.035 + particleSpeed * 0.035 + bass * 0.035;
         let streakDistance = sdSegment(p, particlePos - flowDir * streakLength, particlePos + flowDir * 0.012);
         let streak = exp(-streakDistance * streakDistance * 9000.0) * (0.45 + treble * 0.75);
-        col += mix(vec3<f32>(1.0, 0.45, 0.18), vec3<f32>(0.25, 0.8, 1.4), fract(fi * 0.37)) * streak;
-        particleEnergy = max(particleEnergy, streak);
+
+        // Idea: cyclotron gyration. The charge circles B; the helix tightens where |B| is strong.
+        let gyroR = 0.028 / (0.45 + bMagP);
+        let perp = vec2<f32>(-flowDir.y, flowDir.x);
+        let omega = (3.0 + particleSpeed * 4.0) * (0.6 + bMagP);
+        var helix = 0.0;
+        var prevNode = particlePos;
+        for (var s: i32 = 0; s < 4; s = s + 1) {
+            let sp = fract(phase + (f32(s) - 1.5) * 0.018);
+            let posS = particleOnFieldLine(sp, dipolePos, moment, radius);
+            let node = posS + perp * sin(sp * 48.0 + t * omega + fi) * gyroR;
+            if (s > 0) {
+                let hd = sdSegment(p, prevNode, node);
+                helix = max(helix, exp(-hd * hd * 16000.0));
+            }
+            prevNode = node;
+        }
+
+        // Idea: magnetic mirror. Parallel motion stalls where the line pinches (small r).
+        let lineR = radius * sin(phase * 6.28318) * sin(phase * 6.28318);
+        let mirror = exp(-lineR * 4.5);
+        let mirrored = (streak + helix * (0.55 + treble * 0.35)) * (1.0 + mirror * 1.6);
+        let streakCol = mix(vec3<f32>(1.0, 0.45, 0.18), vec3<f32>(0.25, 0.8, 1.4), fract(fi * 0.37));
+        col += streakCol * mirrored;
+        col += vec3<f32>(0.95, 0.85, 1.0) * mirror * helix * 0.8;
+        particleEnergy = max(particleEnergy, mirrored);
     }
 
     // Clicks emit fast coronal-mass wavefronts through the magnetosphere.

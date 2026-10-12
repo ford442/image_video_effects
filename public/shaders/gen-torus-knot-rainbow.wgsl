@@ -6,29 +6,12 @@
 //            fbm-domain-warp, psychedelic-halo, depth-output, aces-tone-map
 //  Complexity: High
 //  Created: 2026-05-23
-//  Upgraded: 2026-06-29
+//  Upgraded: 2026-10-10
+//  Ideas: Kelvin wave packets along the knot; braid-crossing flare bursts; magnetic flux tube core; plasma pinch instabilities
+//  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -227,6 +210,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var halo = 0.0;
     var bestT = 0.0;
     var bestD = 1e5;
+    var crossing = 0.0;
     let invN = 1.0 / f32(SEGMENTS);
 
     for (var i: i32 = 0; i < SEGMENTS; i = i + 1) {
@@ -243,13 +227,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let dseg = sdSegment(p2d, pa, pb);
 
         // Harmonic tube-radius modulation
-        let rad = baseRad * (1.0 + 0.22 * sin(t0 * 5.0 - time * 0.4) + 0.12 * bass);
+        // Idea 2: plasma pinch instabilities
+        let pinch = 0.5 + 0.5 * cos(t0 * 15.0 - time * 2.0);
+        let rad = baseRad * (1.0 + 0.22 * sin(t0 * 5.0 - time * 0.4) + 0.12 * bass) * (0.8 + 0.4 * pinch);
 
         // Smooth-min union creates a continuous analytic tube
         dMin = smin(dMin, dseg - rad, smoothK);
 
         // Layered halo for glow and depth
         halo += exp(-dseg * (12.0 + treble * 8.0)) * (1.0 + mids * 0.5);
+        crossing += exp(-dseg * 38.0);
 
         // Branchless closest-segment tracking for color mapping
         let closer = dseg < bestD;
@@ -266,10 +253,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let hue = fract(bestT + time * spinSpeed * 0.08 + treble * 0.12 + jTrap * 0.15);
     let sat = clamp(0.78 + mids * 0.2 + jTrap * 0.25, 0.0, 1.0);
     var knotCol = hsv2rgb(vec3<f32>(hue, sat, 1.0));
+    // Idea 1: Kelvin wave packets propagating along the knot arc.
+    let kelvin = pow(0.5 + 0.5 * sin(bestT * TAU * 11.0 - time * (4.0 + bass * 3.2)), 4.0);
+    knotCol += vec3<f32>(0.35, 0.95, 1.0) * kelvin * (0.2 + mids * 0.25);
 
     let haloCol = psychedelicPalette(bestT * 3.0 + time * 0.06 + jTrap);
     let field = exp(-max(dMin, 0.0) * (8.0 + treble * 6.0));
     knotCol = mix(knotCol, haloCol, clamp(jTrap * 2.0 + field * 0.3, 0.0, 0.55));
+    
+    // Idea 1: Magnetic flux tube core
+    let fluxCore = exp(-abs(bestD) * 40.0) * (0.5 + bass);
+    knotCol += vec3<f32>(1.0, 1.0, 1.0) * fluxCore;
 
     // ── Domain-warped background ───────────────────────────────────
     let bgP = domainWarp(uv * 2.5 + vec2<f32>(time * 0.04, time * 0.03), 0.5, 4);
@@ -280,6 +274,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var col = mix(bgCol * 0.25, knotCol, field);
     col = col + bgCol * 0.05 * (1.0 - bgMask);
     col = col + haloCol * halo * 0.03;
+    // Idea 2: braid-crossing flare bursts from local segment crowding.
+    let crossingBurst = smoothstep(3.0, 10.0, crossing);
+    col += vec3<f32>(1.0, 0.82, 0.42) * crossingBurst * (0.15 + treble * 0.25);
 
     // ── Temporal feedback ──────────────────────────────────────────
     let decay = 0.96 - p4 * 0.025;

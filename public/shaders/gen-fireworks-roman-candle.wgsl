@@ -3,28 +3,12 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-10
-//  Ideas: muzzle flash at the tube mouth; per-tube color sequence on starCol
+//  Upgraded: 2026-10-10
+//  Ideas: muzzle flash at the tube mouth; per-tube color sequence on starCol; interstitial gold fountain between shots; burnout gutter flicker
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
 const TAU: f32 = 6.28318530718;
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -81,8 +65,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let energy = (0.7+bass*0.5)*(1.0+seed*0.2);
       let starY = tubeY + age*1.8*energy;
       let starPos = vec2<f32>(tubeX + sin(age*(3.0+mids*1.5)+seed*10.0)*0.02*(1.0+mids), starY);
-      let fade = smoothstep(3.0, 0.1, age);
-      let sz = starSize*(1.0+bass*0.2);
+      // Idea 4 — burnout gutter: late stars flicker and shrink before they die.
+      let gutter = smoothstep(1.8, 2.9, age + hash1(sf * 7.3 + seed) * 0.4);
+      let gutterFlick = 0.5 + 0.5 * sin(age * (38.0 + seed * 20.0) + sf * 3.1);
+      let fade = smoothstep(3.0, 0.1, age) * (1.0 - gutter * (1.0 - gutterFlick * gutterFlick));
+      let sz = starSize*(1.0+bass*0.2)*(1.0 - 0.5 * gutter);
       // Per-tube color sequence: shot 0,1,2 cycle the existing starCol set.
       let seq = f32((shot + i32(seed * 4.0)) % 5) / 4.99;
       let sc = starCol(seq);
@@ -107,6 +94,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
           let bp = burstC + vec2<f32>(cos(ang), sin(ang))*bAge*0.25*energy;
           col += sc*softGlow(uv, bp, sz*0.8, fade*exp(-bAge*2.0)*energy*0.8);
         }
+      }
+    }
+    // Idea 3 — interstitial fountain: gold comp sparks between star ejections.
+    let firing = fract(time / (f32(numShots)*shotInterval + 1.5)) * (f32(numShots)*shotInterval + 1.5) - seed*0.5;
+    let shotPhase = fract(firing / shotInterval);
+    let fountain = smoothstep(0.15, 0.3, shotPhase) * smoothstep(0.95, 0.8, shotPhase)
+      * step(0.0, firing) * step(firing, f32(numShots)*shotInterval);
+    if (fountain > 0.0) {
+      for (var fk = 0; fk < 8; fk = fk + 1) {
+        let fkf = f32(fk);
+        let fh = hash1(tf*13.0 + fkf*7.7);
+        let fAge = fract(time*2.6 + fh) * 0.3;
+        let fAng = (fh - 0.5) * 0.7;
+        let fv = vec2<f32>(sin(fAng), cos(fAng)) * (0.7 + fh*0.5) * (0.8 + bass*0.3);
+        let fp = vec2<f32>(tubeX, tubeY) + fv*fAge - vec2<f32>(0.0, 1.6*fAge*fAge);
+        col += vec3<f32>(1.0,0.72,0.28)*softGlow(uv, fp, starSize*0.35, fountain*(1.0 - fAge*3.0)*0.9);
       }
     }
     // Tube glow at base

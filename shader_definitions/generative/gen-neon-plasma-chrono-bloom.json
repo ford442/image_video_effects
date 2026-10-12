@@ -1,7 +1,7 @@
 {
   "id": "gen-neon-plasma-chrono-bloom",
   "name": "Neon Plasma Chrono-Bloom",
-  "description": "A hyper-vibrant, time-dilated explosion of neon plasma tendrils that bloom and interlace like a digital, cyberpunk flora. The field clock lags with radius so the bloom opens outward from the centre, and white-hot filaments ignite where two plasma sheet families cross. Hold the mouse to pull a gravity well that dilates time under the cursor; bass thickens the plasma, mids widen and treble heats the filaments.",
+  "description": "A hyper-vibrant, time-dilated explosion of neon plasma tendrils that bloom and interlace like a digital, cyberpunk flora. The field clock lags with radius so the bloom opens outward from the centre, and white-hot filaments ignite where two plasma sheet families cross. Hold the mouse to pull a gravity well that dilates time under the cursor; bass thickens the plasma, mids widen and treble heats the filaments. New pass adds phase-slip caustic petals and rotating sepal ribs that brighten as filament heat rises.",
   "category": "generative",
   "type": "generative",
   "url": "shaders/gen-neon-plasma-chrono-bloom.wgsl",

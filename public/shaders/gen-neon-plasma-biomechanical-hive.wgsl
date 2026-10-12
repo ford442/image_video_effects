@@ -4,29 +4,11 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-09-14
-//  Ideas: brood-cell comb — voronoi hive cells read as chitin-walled brood chambers, some wax-capped domes, others open with heartbeat-pulsing larval plasma; peristaltic hemolymph pumping — boluses travel along the strut tubes, bulging the tube SDF and pushing bright plasma through the neon veins
+//  Ideas: brood-cell comb — voronoi hive cells read as chitin-walled brood chambers, some wax-capped domes, others open with heartbeat-pulsing larval plasma; peristaltic hemolymph pumping — boluses travel along the strut tubes, bulging the tube SDF and pushing bright plasma through the neon veins; chitin valve irises — capped brood chambers open/close with a rotating annular shutter under bass/treble pressure; trophallactic plasma bridges — neighbouring open chambers exchange neon hemolymph through pulsing inter-cell conduits
 //  A packing: ACES display RGBA in A (feedback inverts ACES analytically to recover HDR trails)
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=time (s), y=rippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=time, yz=mouse uv (0-1 canvas, y=0 top), w=mouseDown (>0.5 pressed)
-    zoom_params: vec4<f32>,  // x=Hive Breathing Speed, y=Neon Intensity, z=Spore Density, w=Magnetic Pull
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Hive Breathing Speed, y=Neon Intensity, z=Spore Density, w=Magnetic Pull
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -374,8 +356,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let capShade = capped * dome * dome * (0.35 + diff * 0.9);
             let heartbeat = pow(0.5 + 0.5 * sin(time * (2.2 + breathing_speed * 0.8) + bc.z * TAU), 6.0);
             let larva = (1.0 - capped) * exp(-bc.x * bc.x * 9.0) * (0.25 + heartbeat * (0.9 + bass * 0.5));
+            // IDEA 3: valve iris — capped chambers expose a narrow annular shutter
+            // that rotates and opens under high-frequency pressure.
+            let irisPhase = fract(time * (0.35 + mids * 0.2) + bc.z * 1.7);
+            let irisRing = exp(-pow((bc.x - (0.17 + 0.09 * irisPhase)) * 22.0, 2.0));
+            let iris = capped * irisRing * wall * (0.4 + treble * 0.6);
+            // IDEA 4: trophallactic bridge — open neighbouring cells exchange
+            // hemolymph through thin conduits that pulse with the hive beat.
+            let bridge = exp(-pow((bc.y - bc.x) - 0.045, 2.0) * 520.0) * (1.0 - capped);
+            let bridgePulse = 0.5 + 0.5 * sin(time * (3.0 + bass * 2.0) + bc.z * TAU * 2.0);
+            let troph = bridge * bridgePulse * (0.2 + neon_intensity * 0.15);
             let broodCol = vec3<f32>(0.55, 0.36, 0.10) * capShade
                          + vec3<f32>(0.9, 0.35, 1.0) * larva * (0.15 + neon_intensity * 0.12)
+                         + vec3<f32>(0.95, 0.78, 0.42) * iris * 0.35
+                         + vec3<f32>(0.3, 0.9, 1.0) * troph
                          + neon_color * wall * 0.12 * (1.0 + treble * 0.5);
 
             let c_val = base_color * diff + neon_color * vein_glow + broodCol;

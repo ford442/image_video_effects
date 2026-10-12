@@ -1,24 +1,14 @@
-// ── IMMUTABLE 13-BINDING CONTRACT ──────────────────────────────
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+// ═══════════════════════════════════════════════════════════════════
+//  Chromatic Mosaic Projector
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-09
+//  Ideas: cell-boundary diffraction fringe; wavelength step on the projection vector
+//  A packing: pre-ACES display RGBA trail (C is color history)
+// ═══════════════════════════════════════════════════════════════════
 
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -166,16 +156,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let rOff = baseOffset + dir * cellChroma * (1.0 + bass * 0.6);
   let gOff = baseOffset + dir * cellChroma * 0.35;
   let bOff = baseOffset - dir * cellChroma * 0.8;
+  // Wavelength step: red and blue leave the cell at different quantized
+  // distances along the existing projection vector.
+  let stepLen = max(cellChroma, 0.0015);
+  let rOffStepped = rOff + dir * (ceil(dist / stepLen) * stepLen * 0.22);
+  let bOffStepped = bOff - dir * (floor(dist / stepLen) * stepLen * 0.18);
 
   let src = textureSampleLevel(readTexture, u_sampler, uv01, 0.0);
-  let r = textureSampleLevel(readTexture, u_sampler, clamp(warpedUV + rOff, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let r = textureSampleLevel(readTexture, u_sampler, clamp(warpedUV + rOffStepped, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
   let g = textureSampleLevel(readTexture, u_sampler, clamp(warpedUV + gOff, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
-  let b = textureSampleLevel(readTexture, u_sampler, clamp(warpedUV + bOff, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  let b = textureSampleLevel(readTexture, u_sampler, clamp(warpedUV + bOffStepped, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
   var color = vec3<f32>(r, g, b);
 
   // Mosaic edge shaping + radial falloff
   let edgeFade = smoothstep(0.0, 0.18, voro.x);
   color = color * (0.65 + 0.35 * edgeFade);
+  // Diffraction fringe on the existing cell boundary (minDist ring).
+  let fringeEnv = smoothstep(0.06, 0.16, voro.x) * (1.0 - smoothstep(0.28, 0.46, voro.x));
+  let fringePhase = voro.x * 78.0;
+  color.r = color.r + sin(fringePhase) * fringeEnv * cellChroma * 5.5;
+  color.g = color.g + sin(fringePhase + 1.15) * fringeEnv * cellChroma * 5.5;
+  color.b = color.b + sin(fringePhase + 2.35) * fringeEnv * cellChroma * 5.5;
   let beltRunner = pow(0.5 + 0.5 * sin((voro.y + voro.z) * 0.7 - time * 7.0), 10.0);
   color += vec3<f32>(0.12, 0.45, 1.0) * beltRunner * edgeFade * (0.2 + treble * 0.3);
   let falloff = 1.0 / (1.0 + dist * 2.5);

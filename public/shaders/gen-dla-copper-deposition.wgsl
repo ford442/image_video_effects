@@ -4,32 +4,14 @@
 //  Features: persistent-state, mouse-driven, click-seeded, audio-reactive,
 //            upgraded-rgba, semantic-alpha, aces-tone-map
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: tip screening; growth-front sheen
+//  Upgraded: 2026-10-10
+//  Ideas: tip screening; growth-front sheen; dendrite twin; electrolyte meniscus
 //  A packing: raw deposit, depletion, oxidation, activity
 //  Prior: 2026-08-23 persistent DLA, electrodes, oxidation age, tip activity
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
 fn hash22(p: vec2<f32>) -> vec2<f32> {
   var pp = p;
   let k = vec3<f32>(0.3183099, 0.3678794, 0.4342945);
@@ -170,9 +152,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Growth-front sheen: deposit against empty electrolyte. Not the activity spark.
   let front = smoothstep(0.18, 0.5, deposit) * (1.0 - smoothstep(0.08, 0.48, neighborMean));
   metal += vec3<f32>(1.05, 0.62, 0.28) * front * 0.7;
+  // Idea: dendrite twin — a pale ridge on the arm crest this growth already draws.
+  let twin = smoothstep(0.72, 0.96, arms) * deposit * (1.0 - oxidation);
+  metal += vec3<f32>(0.98, 0.8, 0.48) * twin * 0.4;
   metal += vec3<f32>(1.2, 0.72, 0.28) * activity * (0.3 + bass * 0.5);
   metal += vec3<f32>(1.0, 0.9, 0.62) * spark * (0.6 + treble * 2.0);
-  let electrolyteColor = vec3<f32>(0.008, 0.018, 0.025) + vec3<f32>(0.02, 0.08, 0.09) * depletion;
+  var electrolyteColor = vec3<f32>(0.008, 0.018, 0.025) + vec3<f32>(0.02, 0.08, 0.09) * depletion;
+  // Idea: electrolyte meniscus — wet line where depletion is half full, off the metal.
+  let meniscus = exp(-abs(depletion - 0.42) * 14.0) * (1.0 - smoothstep(0.15, 0.65, deposit));
+  electrolyteColor += vec3<f32>(0.28, 0.55, 0.62) * meniscus * 0.55;
   let input = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let effectAlpha = clamp(deposit * 0.9 + activity * 0.25 + spark * 0.2, 0.0, 1.0);
   let hdr = mix(input.rgb, electrolyteColor + metal, clamp(0.35 + effectAlpha * 0.65, 0.0, 1.0));

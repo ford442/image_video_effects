@@ -4,31 +4,12 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-07-05
-//  Upgraded: 2026-09-11
-//  Ideas: altitude shear (higher sparks drift more); leeward streak downwind of each spark
+//  Upgraded: 2026-10-10
+//  Ideas: altitude shear (higher sparks drift more); leeward streak downwind of each spark; travelling gust bands; ripple shock refraction
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.141592653589793;
 const TAU: f32 = 6.283185307179586;
@@ -90,7 +71,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let res = vec2<f32>(u.config.zw);
   if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
 
-  let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);
+  let uvRaw = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);
   let time = u.config.x;
 
   let mouseNorm = u.zoom_config.yz;
@@ -105,10 +86,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let windAngle = time * 0.38 + colorDrift * PI;
   let wind = vec2<f32>(cos(windAngle), sin(windAngle) * 0.35) * (windAmt * 1.4);
+  let windDir = normalize(wind + vec2<f32>(0.001));
 
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
+
+  // Idea 4 — shock refraction: ripple fronts bend the view of the sky behind them.
+  var shockRefract = vec2<f32>(0.0);
+  let shockCount = min(u32(u.config.y), 50u);
+  for (var r: i32 = 0; r < i32(shockCount); r = r + 1) {
+    let ripple = u.ripples[r];
+    let rAge = time - ripple.z;
+    if (rAge < 0.0 || rAge > 1.4 || ripple.w < (1.0 - rippleSens) * 0.6) { continue; }
+    let rCenter = (ripple.xy - vec2<f32>(0.5)) * vec2<f32>(res.x / min(res.x, res.y), 1.0);
+    let d = uvRaw - rCenter;
+    let front = length(d) - rAge * (0.7 + energy * 0.15);
+    let lens = front * exp(-front * front * 700.0) * smoothstep(1.4, 0.1, rAge) * ripple.w;
+    shockRefract -= normalize(d + vec2<f32>(0.0001)) * lens * 0.9;
+  }
+  let uv = uvRaw + shockRefract;
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, vec2<f32>(pixel) / res, 0.0).r;
   let prev = textureLoad(dataTextureC, pixel, 0).rgb;
@@ -157,8 +154,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let ang = (jf / f32(nSparks)) * TAU + (js - 0.5) * 0.7;
         let spd = (0.48 + js2 * 0.55) * shellEnergy;
         let vel = vec2<f32>(cos(ang), sin(ang)) * spd;
-        let estY = center.y + vel.y * burstAge * 0.45;
-        let shearWind = wind * (0.8 + js * 0.4) * altitudeShear(estY);
+        let estP = center + vel * burstAge * 0.45;
+        let estY = estP.y;
+        // Idea 3 — gust bands: travelling gusts along the wind push passing sparks harder.
+        let gustBand = 1.0 + 1.3 * pow(vnoise(vec2<f32>(dot(estP, windDir) * 2.4 - time * 0.9, si * 0.37)), 3.0) * (0.6 + mids * 0.6);
+        let shearWind = wind * (0.8 + js * 0.4) * altitudeShear(estY) * gustBand;
         let sp = sparkPosWind(center, vel, burstAge, 1.05, 0.18, shearWind);
 
         // Comet tail speed lines along wind direction.
@@ -247,7 +247,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let prevHist = textureLoad(dataTextureC, histCoord, 0).rgb;
   col = clamp(col + prevHist * trailLen, vec3<f32>(0.0), vec3<f32>(5.5));
 
-  let vig = 1.0 - dot(uv * 0.7, uv * 0.7);
+  let vig = 1.0 - dot(uvRaw * 0.7, uvRaw * 0.7);
   col *= clamp(vig, 0.15, 1.0) * (0.7 + depth * 0.55);
 
   col = acesToneMap(col * 1.08);

@@ -5,28 +5,13 @@
 //  Upgrade: canonical uniforms fix, slider mapping fix, thin-film
 //           iridescent glass petals, per-petal cell variation, radial
 //           vein inlay, 3-point lighting + Fresnel, ACES, real depth.
+//  Upgraded: 2026-10-10
+//  Ideas: petal torsion chirality bands; photon-sphere shear arcs; quantum fluctuation core; pistil stamen filaments
+//  A packing: raw normal/material fields in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0-1, y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // x=Petal Complexity, y=Singularity Mass, z=Refraction Index, w=Audio Pulse Glow
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Petal Complexity, y=Singularity Mass, z=Refraction Index, w=Audio Pulse Glow
 
 const PI: f32 = 3.14159265359;
 const MAX_STEPS: i32 = 120;
@@ -88,7 +73,9 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
     }
 
     // Central Singularity Sphere
-    let singularity = length(p) - (singularityMass * 0.5);
+    // Idea 1: quantum fluctuation core
+    let quantumFluct = hash31(p * 10.0 + time) * 0.05 * (u.zoom_params.w + 0.1);
+    let singularity = length(p) - (singularityMass * 0.5) + quantumFluct;
 
     // Polar folding for lotus petals
     var a = atan2(p.y, p.x);
@@ -111,6 +98,10 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
         fp.x = abs(fp.x) - 0.5 * scale;
         fp.y = fp.y - 0.2 * scale;
         fp = vec3<f32>(rot(0.2) * fp.xy, fp.z);
+        // Idea 1: alternating chirality torsion along petal depth.
+        let chir = select(-1.0, 1.0, (i & 1) == 0);
+        let twist = chir * fp.z * (0.22 + singularityMass * 0.05);
+        fp = vec3<f32>(rot(twist) * fp.xy, fp.z);
 
         let hw = 0.2 * scale;
         let hl = 0.8 * scale;
@@ -126,8 +117,18 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
     }
 
     let combined = smin(d, singularity, 0.5);
-    let matId = select(1.0, 2.0, singularity < d);
-    return vec2<f32>(combined, matId);
+    
+    // Idea 2: pistil stamen filaments
+    let stamenAng = atan2(p.y, p.x) * 8.0;
+    let stamenRad = length(p.xy);
+    let stamen = max(abs(fract(stamenAng) - 0.5) * 0.1, abs(p.z) - 0.5) + abs(stamenRad - 0.4) * 0.5;
+    
+    let finalDist = min(combined, stamen);
+    var matId = 1.0;
+    if (singularity < d) { matId = 2.0; }
+    if (stamen < combined) { matId = 3.0; }
+    
+    return vec2<f32>(finalDist, matId);
 }
 
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
@@ -206,6 +207,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let mids = plasmaBuffer[0].y;
     let refractionIndex = clamp(u.zoom_params.z, 1.0, 2.5);
     let petalComplexity = clamp(u.zoom_params.x, 1.0, 10.0);
+    let singularityMass = clamp(u.zoom_params.y, 0.1, 5.0);
 
     if (dO < MAX_DIST) {
         let n = calcNormal(p);
@@ -263,6 +265,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             col += vec3<f32>(0.05, 0.0, 0.1) * diffKey; // near-black horizon
             col += vec3<f32>(0.6, 0.3, 1.0) * ring * 2.0 * (0.6 + plasmaBuffer[0].x * 0.6);
             col += vec3<f32>(1.0, 0.9, 0.6) * pow(ring, 6.0) * audioPulseGlow;
+            // Idea 2: photon-sphere shear arcs around the core.
+            let pr = length(p.xy);
+            let phi = atan2(p.y, p.x);
+            let arcBand = exp(-pow((pr - singularityMass * 0.62) * 8.0, 2.0));
+            let shear = pow(0.5 + 0.5 * sin(phi * 12.0 - time * (3.0 + mids * 2.8) + pr * 16.0), 6.0);
+            col += vec3<f32>(0.7, 0.9, 1.0) * arcBand * shear * (0.6 + plasmaBuffer[0].x * 0.5);
         }
 
         depth = clamp(1.0 - dO / MAX_DIST, 0.0, 1.0);

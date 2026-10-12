@@ -11,7 +11,7 @@
     "music",
     "reactive"
   ],
-  "description": "Neural network weight visualization style fractals using sigmoid, tanh, and swish activation functions instead of standard z\u00b2+c iterations",
+  "description": "Neural network weight visualization style fractals using sigmoid, tanh, and swish activation functions instead of standard z\u00b2+c iterations Additional ideas add inhibitory surround rings and Hebbian feedback persistence along active dendrites.",
   "workgroup_size": [
     16,
     16,

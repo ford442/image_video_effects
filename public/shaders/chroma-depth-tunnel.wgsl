@@ -1,25 +1,14 @@
-// Chroma depth tunnel with axial flight, spectral runners, and click shock rings.
+// ═══════════════════════════════════════════════════════════════════
+//  Chroma Depth Tunnel
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-09
+//  Ideas: path-length chroma along tunnel v; throat ring on the center-fade radius
+//  A packing: ACES display RGBA (C is color history)
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn palette(t: f32) -> vec3<f32> {
     return vec3<f32>(0.52, 0.50, 0.50) + vec3<f32>(0.48, 0.45, 0.42) *
@@ -61,9 +50,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let flight = time * speed;
     let helix = sin(angle * (5.0 + density) + inverseRadius * 0.12 - time * (3.0 + audio.y * 2.0));
     let tunnelBase = vec2<f32>(angle / 6.28318 + 0.5 + helix * 0.018, inverseRadius * 0.08 * density + flight * 0.07);
-    let rUV = fract(tunnelBase + vec2<f32>(chroma, 0.0));
+    // Path length along v: violet leads, red trails. Angular chroma stays.
+    let path = chroma * (0.65 + inverseRadius * 0.015);
+    let rUV = fract(tunnelBase + vec2<f32>(chroma, path * 0.7));
     let gUV = fract(tunnelBase);
-    let bUV = fract(tunnelBase - vec2<f32>(chroma, 0.0));
+    let bUV = fract(tunnelBase - vec2<f32>(chroma, path));
     var color = vec3<f32>(
         textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r,
         textureSampleLevel(readTexture, u_sampler, gUV, 0.0).g,
@@ -71,6 +62,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     );
 
     let fog = mix(1.0, smoothstep(0.0, max(centerFade, 0.001), radius), step(0.001, centerFade));
+    let throatRadius = max(centerFade, 0.02) * 0.85;
+    let throat = exp(-pow((radius - throatRadius) / max(throatRadius * 0.18, 0.012), 2.0));
     let ringPhase = inverseRadius * density * 0.45 - flight * 4.0;
     let ribs = pow(0.5 + 0.5 * sin(ringPhase), 10.0);
     let runnerPhase = fract(angle / 6.28318 * (6.0 + density) + inverseRadius * 0.04 - time * (1.8 + abs(speed)));
@@ -91,13 +84,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var hdr = color * (0.65 + fog * 0.38);
     hdr += spectral * ribs * fog * (0.7 + audio.x * 1.2);
     hdr += palette(time * 0.1 + runnerPhase) * runner * (1.0 + audio.z + mouseDown * 0.65);
+    hdr += vec3<f32>(0.72, 0.88, 1.0) * throat * fog * (0.55 + chroma * 6.0);
     hdr += vec3<f32>(0.25, 0.65, 1.0) * shock * 1.2;
     let historyUV = clamp(uv - normalize(p + vec2<f32>(0.0001)) * (0.004 + abs(speed) * 0.0015), vec2<f32>(0.0), vec2<f32>(1.0));
     let history = historyLoadUV(historyUV);
     hdr = mix(hdr, history.rgb, clamp(0.12 + runner * 0.24, 0.0, 0.42));
     let spatialDither = (fract(52.9829189 * fract(dot(vec2<f32>(global_id.xy), vec2<f32>(0.06711056, 0.00583715)))) - 0.5) / 255.0;
     let mapped = clamp(aces(hdr * 1.14) + vec3<f32>(spatialDither), vec3<f32>(0.0), vec3<f32>(1.0));
-    let alpha = clamp(fog * (0.16 + inverseRadius * 0.012 + ribs * 0.35 + runner * 0.25), 0.0, 1.0);
+    let alpha = clamp(fog * (0.16 + inverseRadius * 0.012 + ribs * 0.35 + runner * 0.25) + throat * 0.35, 0.0, 1.0);
     let output = vec4<f32>(mapped * alpha, alpha);
 
     textureStore(writeTexture, coord, output);

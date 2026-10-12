@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: myelination from four-neighbor history; gap-junction co-spike flash
+//  Upgraded: 2026-10-10
+//  Ideas: saltatory conduction leaps across myelinated segments; astrocyte calcium halos around dense synaptic hubs
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-struct Uniforms {
-  config      : vec4<f32>,  // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config : vec4<f32>,  // x=Time, yz=MouseUV, w=MouseDown
-  zoom_params : vec4<f32>,  // x=Growth Rate, y=Pulse Intensity, z=Decay Speed, w=Network Complexity
-  ripples     : array<vec4<f32>, 50>,
-};
-
-@group(0) @binding(0) var u_sampler                : sampler;
-@group(0) @binding(1) var readTexture              : texture_2d<f32>;
-@group(0) @binding(2) var writeTexture             : texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u               : Uniforms;
-@group(0) @binding(4) var readDepthTexture         : texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler    : sampler;
-@group(0) @binding(6) var writeDepthTexture        : texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA             : texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB             : texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC             : texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer : array<f32>;
-@group(0) @binding(11) var comparison_sampler      : sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer : array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=Growth Rate, y=Pulse Intensity, z=Decay Speed, w=Network Complexity
 
 const PI : f32 = 3.14159265358979323846;
 const TAU: f32 = 6.28318530718;
@@ -193,6 +175,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Data pulses racing the high-density trails — treble sets the fire rate
   let pulsePhase = fract(time * (2.4 + treble * 6.0) * pulseIntensity + detailedTrails * 3.0 + mutationSeed);
   let pulse = exp(-pow(pulsePhase - 0.5, 2.0) * 50.0) * pulseIntensity;
+  // Idea — refractory notch: a short dark gap just after the spike.
+  let refractory = smoothstep(0.52, 0.58, pulsePhase) * smoothstep(0.74, 0.62, pulsePhase) * smoothstep(0.28, 0.55, detailedTrails);
+  // Idea — dendritic spines: knobs where the filigree sine peaks.
+  let dendriticSpine = smoothstep(0.84, 0.98, filigree) * smoothstep(0.22, 0.5, detailedTrails);
 
   let audioGrowth = 1.0 + bass * 2.0 + mid * 0.8;
   let totalDensity = detailedTrails * (1.0 + myelin * 0.55) * audioGrowth + mouseAttraction + audioTurbulence * 0.3;
@@ -216,11 +202,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let mouseGlow = mycoPalette(fract(time * 0.5), bass) * mouseAttraction * 0.5;
 
-  var col = bioCol * alive;
+  var col = bioCol * alive * (1.0 - refractory * 0.62);
   col += pulseCol;
+  col += mycoPalette(baseHue + 0.22, 1.0) * dendriticSpine * (0.4 + treble * 0.45);
   col += bioLum;
   col += mouseGlow;
   col += mycoPalette(fract(time * 1.1), 1.0) * burst * 1.2;
+  // Idea 5 — saltatory conduction: pulse energy hops across myelinated sections.
+  let saltatory = pulse * smoothstep(0.35, 0.78, myelin) * smoothstep(0.22, 0.6, trailDensity);
+  col += mycoPalette(baseHue + 0.48, 1.0 + bass) * saltatory * 1.35;
+  // Idea 6 — astrocyte calcium halos around dense hubs.
+  let astro = exp(-mouseDist * 4.0) * (0.5 + 0.5 * sin(time * 2.8 + trailDensity * 20.0));
+  col += mycoPalette(baseHue + 0.9, mid) * astro * 0.42;
   // Idea 2 — gap-junction flash: this pixel and a neighbor both spike (AND, not ridge)
   let gap = pulse * smoothstep(0.42, 0.78, neighborLuma) * smoothstep(0.35, 0.75, pulse);
   col += mycoPalette(baseHue + 0.08, 1.0 + treble) * gap * 1.65;
@@ -255,7 +248,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
   let alpha = clamp(
     clamp(totalDensity * 0.3, 0.0, 0.7) + luma * 0.45 + pulse * 0.2
-      + burst * 0.25 + connectivity * 0.12 + myelin * 0.08 + gap * 0.15 + depthSample * 0.1,
+      + burst * 0.25 + connectivity * 0.12 + myelin * 0.08 + gap * 0.15 + depthSample * 0.1
+      + saltatory * 0.12 + astro * 0.08
+      + dendriticSpine * 0.1,
     0.0, 1.0);
 
   let outColor = vec4<f32>(col, alpha);

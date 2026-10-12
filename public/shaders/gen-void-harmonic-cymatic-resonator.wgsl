@@ -3,30 +3,12 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-15
-//  Ideas: nodal Chladni membranes inside the resonator; continuous adjacent-mode splitting with moving degeneracy seams
+//  Upgraded: 2026-10-10
+//  Ideas: nodal Chladni sheets; mode-split seams; antinode bellies; Helmholtz throat ring
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Frequency, .y = Amplitude, .z = Glow Intensity, .w = Complexity
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Frequency, .y = Amplitude, .z = Glow Intensity, .w = Complexity
 
 const MAX_STEPS: i32 = 100;
 const MAX_DIST: f32 = 20.0;
@@ -180,6 +162,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // thin luminous Chladni sheets rather than only a lit outer shell.
     var membraneGlow = 0.0;
     var seamGlow = 0.0;
+    var antinodeGlow = 0.0;
+    var throatGlow = 0.0;
     let amplitude = max(u.zoom_params.y, 0.2);
     let hitWeight = select(0.0, 1.0, hit);
     for (var j = 0; j < 24; j = j + 1) {
@@ -189,6 +173,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let nodal = exp(-abs(field.y) * 24.0 / amplitude);
         membraneGlow = membraneGlow + nodal * inside * 0.075 * hitWeight;
         seamGlow = seamGlow + field.z * inside * 0.045 * hitWeight;
+        // Idea: antinode bellies — pressure peaks, the complement of the nodal zeros.
+        let anti = exp(-abs(abs(field.y) - 0.72) * 14.0);
+        antinodeGlow = antinodeGlow + anti * inside * 0.04 * hitWeight;
+        // Idea: Helmholtz throat — a bass-flared ring at the shell.
+        let throat = exp(-abs(field.w - 2.85) * 12.0) * exp(-abs(q.y) * 2.4);
+        throatGlow = throatGlow + throat * inside * (0.03 + audio.x * 0.05) * hitWeight;
     }
 
     let glow_intensity = u.zoom_params.z;
@@ -211,6 +201,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     hdr = hdr + glow_col * surfaceGlow * 0.7 * glow_intensity;
     hdr = hdr + vec3<f32>(0.12, 0.75, 1.4) * membraneGlow * glow_intensity;
     hdr = hdr + vec3<f32>(1.25, 0.18, 0.85) * seamGlow * glow_intensity;
+    hdr = hdr + vec3<f32>(0.95, 0.72, 0.35) * antinodeGlow * glow_intensity * amplitude;
+    hdr = hdr + vec3<f32>(0.55, 0.85, 1.0) * throatGlow * glow_intensity;
     let fog = 1.0 - exp(-0.02 * min(dO, MAX_DIST) * min(dO, MAX_DIST));
     hdr = mix(hdr, vec3<f32>(0.0, 0.0, 0.05), fog * 0.65);
 
@@ -219,7 +211,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let displayRgb = mix(mapped, previous.rgb, historyPresent * 0.06);
     let hitCoverage = select(0.0, 0.42, hit);
     let alpha = clamp(
-        hitCoverage + membraneGlow * 0.38 + seamGlow * 0.25 + surfaceGlow * 0.08,
+        hitCoverage + membraneGlow * 0.38 + seamGlow * 0.25 + surfaceGlow * 0.08 + antinodeGlow * 0.2 + throatGlow * 0.15,
         0.0,
         1.0
     );

@@ -1,38 +1,16 @@
-// ----------------------------------------------------------------
-// Cryogenic Frost-Plasma Matrix
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Cryogenic Frost-Plasma Matrix
+//  Category: generative
 //  Features: procedural, audio-reactive, mouse-driven, temporal, chromatic,
 //            volumetric-fog, KIFS-fractal, thermal-plasma, ice-refractive,
 //            upgraded-rgba
-// ----------------------------------------------------------------
-//  Uniforms (std140):
-//    u.config        : vec4(time, audioLevel, resolution.x, resolution.y)
-//    u.zoom_config   : vec4(zoom, mouseX, mouseY, unused)
-//    u.zoom_params   : vec4(param0, param1, param2, param3) – UI sliders
-//    u.ripples       : array<vec4<f32>, 50>
-// ----------------------------------------------------------------
+//  Complexity: High
+//  Upgraded: 2026-10-10
+//  Ideas: rime-plate terracing across frozen shells; plasma-tongue lick fronts around hot fracture edges
+//  A packing: HDR colour in A (C feedback mixes pre-ACES); ACES only on writeTexture
+// ═══════════════════════════════════════════════════════════════════
 
-struct Uniforms {
-  config      : vec4<f32>,
-  zoom_config : vec4<f32>,
-  zoom_params : vec4<f32>,
-  ripples     : array<vec4<f32>, 50>,
-};
-
-@group(0) @binding(0) var u_sampler                : sampler;
-@group(0) @binding(1) var readTexture              : texture_2d<f32>;
-@group(0) @binding(2) var writeTexture             : texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u               : Uniforms;
-@group(0) @binding(4) var readDepthTexture         : texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler    : sampler;
-@group(0) @binding(6) var writeDepthTexture        : texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA             : texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB             : texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC             : texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer : array<f32>;
-@group(0) @binding(11) var comparison_sampler      : sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer : array<vec4<f32>>;
+#include "_prelude.wgsl"
 
 // ═══════════════════════════════════════════════════════════════
 //  CONSTANTS  (workgroup-size = 16×16×1 in .json)
@@ -123,7 +101,23 @@ struct MapResult {
   d: f32,
   mat: f32,   // 0 = ice, 1 = plasma
   glow: f32,
+  iceD: f32,
+  plasmaD: f32,
 };
+
+// Idea 1 — hoarfrost dendrites along the same abs-fold seams the KIFS uses.
+fn hoarfrostDendrites(p: vec3<f32>, fracture: f32) -> f32 {
+  var z = p;
+  var feather = 0.0;
+  for (var i = 0; i < 4; i = i + 1) {
+    z = abs(z);
+    let seam = min(abs(z.x - z.y), min(abs(z.x - z.z), abs(z.y - z.z)));
+    let branch = exp(-seam * mix(48.0, 14.0, clamp(fracture, 0.0, 1.0)));
+    feather = max(feather, branch * (1.0 - f32(i) * 0.2));
+    z = z * 2.15 - vec3<f32>(1.05, 0.92, 1.12);
+  }
+  return feather * clamp(fracture, 0.0, 1.0);
+}
 
 fn map(p: vec3<f32>, time: f32, fracture: f32, plasmaHeat: f32,
        iceDensity: f32, audio: f32) -> MapResult {
@@ -144,7 +138,7 @@ fn map(p: vec3<f32>, time: f32, fracture: f32, plasmaHeat: f32,
   var mat = 0.0;
   if(plasmaDist < kDist) { mat = 1.0; }
 
-  return MapResult(totalDist, mat, plasmaGlow * plasmaHeat);
+  return MapResult(totalDist, mat, plasmaGlow * plasmaHeat, kDist, plasmaDist);
 }
 
 fn calcNormal(p: vec3<f32>, time: f32, fracture: f32, plasmaHeat: f32,
@@ -237,6 +231,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var mat = 0.0;
   var glow = 0.0;
   var hit = false;
+  // Idea 2 — sublimation sheath: vapor where the ice shell and plasma core meet.
+  var sublimationSheath = 0.0;
 
   for(var i = 0; i < MAX_STEPS; i++) {
     let p = ro + rd * t;
@@ -244,6 +240,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     d = res.d;
     mat = res.mat;
     glow = res.glow;
+    let seam = abs(res.iceD - res.plasmaD);
+    sublimationSheath += exp(-seam * (10.0 + fogThickness * 28.0)) * fogThickness * 0.035;
     if(d < SURF_DIST) { hit = true; break; }
     if(t > MAX_DIST) { break; }
     t += d * 0.8;
@@ -265,6 +263,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var col = vec3<f32>(0.0);
   if(t < MAX_DIST) {
     let p = ro + rd * t;
+    let mres = map(p, time, fractureReactive, plasmaReactive, iceDensity, bassSmooth);
     let n = calcNormal(p, time, fractureReactive, plasmaReactive, iceDensity, bassSmooth);
 
     // Lighting
@@ -278,6 +277,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let iceCol = vec3<f32>(0.7, 0.9, 1.0);
       let refractCol = vec3<f32>(0.3, 0.7, 0.9) * fbm(p * 2.0);
       col = iceCol * (diff * 0.5 + 0.3) + spec * vec3<f32>(1.0) * 0.5 + refractCol * fresnel;
+      let frostFeather = hoarfrostDendrites(p * iceDensity, fracture);
+      col += vec3<f32>(0.82, 0.94, 1.0) * frostFeather * (0.55 + fresnel);
+      // Idea 3: rime-plate terracing on frozen shells.
+      let plate = 0.5 + 0.5 * sin(length(p) * 26.0 + fbm(p * 4.0) * 5.0 - time * 0.6);
+      col += vec3<f32>(0.68, 0.9, 1.0) * pow(max(plate, 0.0), 6.0) * (0.22 + fracture * 0.2);
       // Chromatic refraction
       let r_refr = refract(rd, n, 0.95);
       let g_refr = refract(rd, n, 0.97);
@@ -296,14 +300,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       );
       col = plasmaCol * (diff * 0.8 + 0.5) + spec * vec3<f32>(1.0, 0.9, 0.7) * 0.8;
       col += glow * vec3<f32>(2.0, 0.5, 1.0) * plasmaReactive;
+      // Idea 4: plasma tongues licking around fracture edges.
+      let tongue = pow(max(sin(atan2(p.y, p.x) * 8.0 + time * 3.4 + p.z * 2.0), 0.0), 5.0);
+      let seamHot = exp(-abs(mres.iceD - mres.plasmaD) * 7.0);
+      col += vec3<f32>(1.0, 0.46, 0.12) * tongue * seamHot * (0.22 + plasmaHeat * 0.3);
     }
 
     // Distance fade
     col *= exp(-t * 0.03);
   }
 
-  // Add fog
+  // Add fog and the ice/plasma sublimation sheath
   col = mix(col, fogAccum, clamp(length(fogAccum), 0.0, 1.0));
+  col += vec3<f32>(0.45, 0.82, 1.0) * sublimationSheath;
 
   // Audio flash
   col += vec3<f32>(0.1, 0.3, 0.5) * bassSmooth * bassSmooth * 0.5;
@@ -315,7 +324,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col = mix(prevCol, col, 0.3);
   let mapped = acesToneMap(col * 1.15);
   let fogEnergy = clamp(length(fogAccum), 0.0, 1.0);
-  let alpha = clamp(select(0.03, 0.72, hit) + fogEnergy * 0.24 + glow * 0.08 + shock * 0.22, 0.0, 1.0);
+  let alpha = clamp(select(0.03, 0.72, hit) + fogEnergy * 0.24 + glow * 0.08 + shock * 0.22 + sublimationSheath * 0.12, 0.0, 1.0);
 
   // Write
   let outCoords = vec2<i32>(global_id.xy);

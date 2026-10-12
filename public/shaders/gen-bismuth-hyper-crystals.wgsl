@@ -3,30 +3,12 @@
 //  Category: generative
 //  Features: raymarch, audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: nucleation seed under the cursor (fold offset tightens near it, so the crystal is finest where it nucleates); fractional fold growth (fold n and n+1 blended by a growth cycle, new terraces emerge instead of popping); fold-lineage colour (abs-fold sign history offsets the iridescence phase, sibling blocks share a hue family)
+//  Upgraded: 2026-10-10
+//  Ideas: twinning-seam terraces from folded-axis coincidence lines; Bragg scintillation bursts phase-locked to fold-lineage families
 //  A packing: HDR linear RGB (pre-ACES) + semantic alpha; C read back as HDR for a light temporal blend
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Complexity, y=ColorShift, z=GrowthSpeed, w=Specular
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Complexity, y=ColorShift, z=GrowthSpeed, w=Specular
 
 const MAX_STEPS: i32 = 100;
 const SURF_DIST: f32 = 0.001;
@@ -223,6 +205,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let albedo = iridescence(thickness, fft * 0.5);
 
         col = albedo * (diff * 0.5 + 0.5) + vec3<f32>(spec);
+
+        // Idea 4: twinning seams where folded axes nearly coincide.
+        let twinXY = exp(-abs(abs(p.x) - abs(p.y)) * 14.0);
+        let twinYZ = exp(-abs(abs(p.y) - abs(p.z)) * 14.0);
+        let twin = clamp(twinXY + twinYZ, 0.0, 1.0);
+        col += vec3<f32>(0.55, 0.95, 1.2) * twin * (0.16 + fft * 0.14);
+
+        // Idea 5: lineage-coupled Bragg flashes on near-specular glancing angles.
+        let braggPhase = 0.5 + 0.5 * sin(lineage * 6.28318 + u.config.x * 1.2);
+        let bragg = pow(max(dot(n, halfDir), 0.0), 24.0) * braggPhase;
+        col += vec3<f32>(1.25, 1.05, 0.82) * bragg * 0.35;
 
         // Fake AO
         let ao = 1.0 - f32(steps) / f32(MAX_STEPS);

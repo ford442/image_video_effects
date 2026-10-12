@@ -4,28 +4,11 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
 //  Created: 2026-07-05
-//  Upgraded: 2026-09-11
-//  Ideas: peacock eye spots on even fanT; two-row palmette (inner short / outer long)
+//  Upgraded: 2026-10-10
+//  Ideas: peacock eye spots on even fanT; two-row palmette (inner short / outer long); unfolding sweep across the fan; gold guard-stick ribs
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -164,17 +147,35 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let jf = f32(j);
         let js = hash1(si * 67.0 + jf * 3.1);
         let fanT = jf / f32(n) - 0.5;
+        // Idea 3 — unfolding sweep: rays light edge to edge, direction alternates per shell
+        let unfoldSweep = select(fanT + 0.5, 0.5 - fanT, (s % 2) == 1) * (0.25 + 0.2 * fanAngle);
+        let rAge = bAge - unfoldSweep;
+        if (rAge <= 0.0) { continue; }
         let ang = fanT * halfFan * PI + (js - 0.5) * 0.15;
         // Idea 2 — two-row palmette: even j = outer long ray, odd j = inner short
         let palmette = select(0.55, 1.0, (j % 2) == 0);
-        let spd = (0.4 + js * 0.35) * energy * palmette;
+        // Idea 4 — guard-stick ribs: the two outermost rays are heavy gold frame sticks
+        let guardRib = j == 0 || j == n - 1;
+        let spd = (0.4 + js * 0.35) * energy * select(palmette, 1.1, guardRib);
         let vel = vec2<f32>(sin(ang) * spd, cos(ang) * spd * 0.7 + 0.15);
         // drag varies per spark: heavy sparks push through, light ones hang
-        let dragK = 0.08 + js * 0.30;
-        var sp = sparkPos(center, vel, bAge, GRAVITY, dragK);
+        let dragK = select(0.08 + js * 0.30, 0.05, guardRib);
+        var sp = sparkPos(center, vel, rAge, GRAVITY, dragK);
         // temporal-coherent wind advection grows with age^2 (gust integration)
-        sp += wind * windGain * bAge * bAge;
-        sp += flutter(js, bAge) * 0.012 * (0.3 + bAge * 0.4);
+        sp += wind * windGain * rAge * rAge;
+        sp += flutter(js, rAge) * 0.012 * (0.3 + rAge * 0.4);
+
+        if (guardRib) {
+          let ribCol = vec3<f32>(1.0, 0.78, 0.32);
+          for (var k: i32 = 0; k < 6; k = k + 1) {
+            let kAge = max(0.0, rAge - f32(k) * 0.06);
+            var rp = sparkPos(center, vel, kAge, GRAVITY, dragK);
+            rp += wind * windGain * kAge * kAge;
+            let ribGlow = softGlow(uv, rp, 0.006, fade * energy * (1.2 - f32(k) * 0.16));
+            col += ribCol * ribGlow;
+            heat += ribGlow * 0.3;
+          }
+        }
 
         // main spark
         let h = fract(js + hueCycle + time * 0.02);
@@ -184,14 +185,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         heat += glow * 0.35;
 
         // Idea 1 — peacock eye (ocellus): even rays, cooler node at mid-age
-        let eyeGate = select(0.0, 1.0, (j % 2) == 0) * exp(-abs(bAge - 1.8) * 3.0);
+        let eyeGate = select(0.0, 1.0, (j % 2) == 0) * exp(-abs(rAge - 1.8) * 3.0);
         let eyeCol = mix(sc, vec3<f32>(0.32, 0.52, 0.95), 0.7);
         let eyeGlow = softGlow(uv, sp, 0.016, fade * energy * eyeGate * 0.85);
         col += eyeCol * eyeGlow;
         heat += eyeGlow * 0.25;
 
         // faint trailing echo, domain-warped by the same flutter field
-        let echoAge = max(0.0, bAge - 0.08);
+        let echoAge = max(0.0, rAge - 0.08);
         var echo = sparkPos(center, vel, echoAge, GRAVITY, dragK);
         echo += wind * windGain * echoAge * echoAge;
         echo += flutter(js, echoAge) * 0.012 * (0.3 + echoAge * 0.4);

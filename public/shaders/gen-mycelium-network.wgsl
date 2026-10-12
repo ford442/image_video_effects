@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: peripheral growth zone with interior autolysis (only the colony rim behind the growth front stays vital; older hyphae stale, fade and lose tip light); click-inoculated spore germination (germ tubes emerge from the clicked spore with linear apical extension and a Spitzenkörper glow)
+//  Upgraded: 2026-10-10
+//  Ideas: peripheral autolysis; click germination; clamp-connection bypasses; septal cross-walls with guttation
 //  A packing: ACES display RGBA in A (feedback history kept in display space; rgb = max-decayed network light, a = glow mass)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time (seconds), .y = rippleCount, .zw = resolution (width, height)
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0–1 canvas: y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Growth Rate, .y = Branching Factor, .z = Nutrient Density, .w = Bioluminescence
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Growth Rate, .y = Branching Factor, .z = Nutrient Density, .w = Bioluminescence
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -179,6 +161,20 @@ fn generateMycelium(uv: vec2<f32>, t: f32, growthRate: f32, branching: f32, seed
                     data = MycelData(dist, age, isTip, generation, length(currentPos));
                 }
 
+                // Idea: clamp connection — a small bypass at a septum, not a cross-branch fusion.
+                if ((i % 5) == 3) {
+                    let nrm = vec2<f32>(-currentDir.y, currentDir.x);
+                    let clampMid = (currentPos + endPos) * 0.5 + nrm * segLen * 0.55;
+                    let clampDist = min(
+                        distToSegment(uv, currentPos, clampMid),
+                        distToSegment(uv, clampMid, endPos)
+                    );
+                    if (clampDist < minDist) {
+                        minDist = clampDist;
+                        data = MycelData(clampDist, age, isTip * 0.4, generation + 0.2, length(currentPos));
+                    }
+                }
+
                 // Branch probabilistically
                 let branchProb = branching * 0.3 * (1.0 - fi / f32(maxBranches));
                 if (hash21(currentPos + fi) < branchProb) {
@@ -313,6 +309,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let hyphaeMask = smoothstep(thickness * 2.0, 0.0, dist) * grow;
     let hyphaeCore = smoothstep(thickness, 0.0, dist) * grow * mix(0.4, 1.0, vitality);
 
+    // Idea: septal cross-walls, each with a guttation bead.
+    let septaN = 7.0 + branching * 14.0;
+    let septPhase = fract(age * septaN);
+    let septum = smoothstep(0.03, 0.0, min(septPhase, 1.0 - septPhase)) * hyphaeMask;
+    let guttOff = (septPhase - 0.08) * 14.0;
+    let guttation = exp(-guttOff * guttOff) * hyphaeMask * nutrientDensity;
+
     // Bioluminescent tips
     let tipPulse = sin(t * 3.0 + age * 10.0) * 0.5 + 0.5;
     let tipGlow = isTip * exp(-dist * 30.0) * biolumIntensity * (0.5 + tipPulse * 0.5) * grow * vitality * vitality * (1.0 + treble * 0.3);
@@ -340,6 +343,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var col = nutrientCol + mouseCol;
     col = mix(col, hyphaeCol, hyphaeMask);
     col = col + vec3<f32>(0.3, 0.2, 0.15) * hyphaeCore * 0.5;
+    col = mix(col, vec3<f32>(0.04, 0.035, 0.03), septum * 0.75);
+    col = col + vec3<f32>(0.45, 0.75, 0.35) * guttation * biolumIntensity * 0.4;
     col = col + tipCol + pulseCol;
 
     // Age rings chasing the growth front
@@ -394,7 +399,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Semantic alpha: bioluminescent mass of the network (never constant 1.0),
     // persisting with the same decay as the colour history.
-    let glowNow = clamp(hyphaeMask * 0.7 + tipGlow * 0.3 + pulseGlow * 0.4 + burst * 0.3 + germTube * 0.6 + germTip * 0.4 + germBody * 0.3, 0.06, 1.0);
+    let glowNow = clamp(hyphaeMask * 0.7 + tipGlow * 0.3 + pulseGlow * 0.4 + burst * 0.3 + germTube * 0.6 + germTip * 0.4 + germBody * 0.3 + guttation * 0.3 + septum * 0.15, 0.06, 1.0);
     let glowMass = clamp(max(glowNow, clamp(prev.a, 0.0, 1.0) * decay), 0.06, 1.0);
     let finalColor = vec4<f32>(display, glowMass);
 

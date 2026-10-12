@@ -4,7 +4,7 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba, fast-motion
 //  Complexity: High
 //  Upgraded: 2026-09-27
-//  Ideas: shock-front crystal ignition; collapse-deposited agate strata; flash translucency through thin shard walls
+//  Ideas: shock-front crystal ignition; collapse-deposited agate strata; flash translucency through thin shard walls; cavitation pearl chains; piezoelectric twinning glints
 //  A packing: raw HDR history RGB (pre-ACES, clamped <= 5.0) + semantic alpha
 // ═══════════════════════════════════════════════════════════════════
 // Batch 38 (Algorithmist) FAST MOTION layer, kept:
@@ -20,26 +20,8 @@
 //     (swirl-advected, textureLoad only, HDR history clamped <= 5.0)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7)  var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8)  var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9)  var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time (seconds), .y = rippleCount (0-50 active), .zw = resolution (width, height)
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0-1 canvas: y=0 top), .w = mouse_down (>0.5 = pressed)
-  zoom_params: vec4<f32>,  // .x = Intensity, .y = Speed, .z = Scale, .w = Mouse Influence (UI slider order)
-  ripples: array<vec4<f32>, 50>, // .xy = ripple uv, .z = startTime (seconds), .w = padding
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Intensity, .y = Speed, .z = Scale, .w = Mouse Influence (UI slider order)
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -251,6 +233,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Ballistic shockwave shell racing outward from each collapse
         let shellD = abs(length(p_march) - ctx.ringR);
         plasma_acc = plasma_acc + exp(-shellD * 4.0) * ctx.flash * 0.05;
+        // Idea 4: cavitation pearl chains nucleating in the wake of each collapse front.
+        let pearlPhase = fract(length(p_march) * 1.6 - ctx.animTime * (1.2 + bass * 0.8));
+        let pearls = exp(-pow((pearlPhase - 0.5) * 7.0, 2.0))
+                   * exp(-abs(dot(normalize(p_march + vec3<f32>(0.0001)), normalize(vec3<f32>(0.3, 0.7, 0.6)))) * 1.2);
+        plasma_acc = plasma_acc + pearls * ctx.flash * 0.015;
 
         if (dS.x < SURF_DIST) {
             mat_id = dS.y;
@@ -278,6 +265,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         // Iridescence: fast hue sweep driven by eased warp time
         let iridescence = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.0, 4.0) + fresnel * 5.0 + warpTime * 1.5);
+        // Idea 5: piezoelectric twinning glints on preferred crystal planes.
+        let twinA = pow(max(dot(n, normalize(vec3<f32>(0.82, 0.35, 0.44))), 0.0), 18.0);
+        let twinB = pow(max(dot(n, normalize(vec3<f32>(-0.74, 0.28, 0.61))), 0.0), 18.0);
 
         // [Idea 2] Collapse-deposited agate strata: concentric chalcedony
         // bands (noise-waved like real agate) laid around the core. The band
@@ -296,6 +286,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // crosses the crystal wall it burns a hot incandescent band.
         let shellCross = exp(-abs(length(p_surf) - ctx.ringR) * 9.0) * ctx.flash;
         col = col + shellCross * vec3<f32>(1.0, 0.82, 0.62) * (0.8 + 0.8 * intensity);
+        col = col + vec3<f32>(0.65, 0.95, 1.0) * (twinA + twinB) * (0.08 + 0.25 * ctx.flash);
 
         // [Idea 3] Flash translucency through thin shard walls: probe the SDF
         // inward along -n; where the wall ends early (thin shard) the core's

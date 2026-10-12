@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: diocotron-instability ring (azimuthal mode locked to the dihedral petal count, bass-grown); dihedral-symmetric click pulses (each click folded into the fundamental sector so its wave appears in every petal)
+//  Upgraded: 2026-10-10
+//  Ideas: diocotron ring; dihedral click pulses; petal-midline current filaments; Debye sheath gap
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=time, y=rippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Symmetry, y=Spin Speed, z=Zoom, w=Glow Scale
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Symmetry, y=Spin Speed, z=Zoom, w=Glow Scale
 
 // 2D hash
 fn hash21(p: vec2<f32>) -> f32 {
@@ -178,6 +160,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   pulse = min(pulse, 2.0);
 
   col = col * vignette + vec3<f32>(ring_glow * 0.3 * (1.0 + treble * 0.5));
+  // Idea: current filaments down the petal midline (the seam is the mirror edge, folded_angle ≈ 0).
+  let filament = exp(-abs(folded_angle - sector_angle) * 36.0) * smoothstep(0.12, 0.4, r) * exp(-r * 0.35);
+  col += vec3<f32>(0.65, 0.86, 1.0) * filament * (0.18 + treble * 0.35) * glow_scale * 0.22;
+  // Idea: Debye sheath — a dark gap just inside the glow ring.
+  let sheath = exp(-abs(r - (ring_r - 0.055)) * 42.0);
+  col *= 1.0 - sheath * 0.42 * (0.6 + bass * 0.4);
   col += vec3<f32>(1.0, 0.92, 0.85) * seam * 0.28 * (0.6 + treble * 0.4);
   col += vec3<f32>(0.55, 0.85, 1.0) * vortex_core * 0.22 * (0.5 + bass * 0.8) * glow_scale;
   col += (vec3<f32>(1.0) - col * 0.5) * pulse * 0.45 * (0.8 + treble * 0.4);

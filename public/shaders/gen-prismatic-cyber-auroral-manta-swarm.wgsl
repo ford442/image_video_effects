@@ -4,29 +4,11 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-09-14
-//  Ideas: mobuliform chordwise travelling-wave undulation of the pectoral wing disc; manta countershading with dorsal shoulder chevrons and unique ventral spot constellations
+//  Ideas: mobuliform chordwise travelling-wave undulation of the pectoral wing disc; manta countershading with dorsal shoulder chevrons and unique ventral spot constellations; ventral gill-arch bioluminescence; ram-ventilation wake ribbons
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
-struct Uniforms {
-    config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-    zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
-    zoom_params: vec4<f32>,  // .x = Scale (swarm cohesion), .y = Intensity (aurora), .z = Speed, .w = Detail
-    ripples: array<vec4<f32>, 50>,
-};
-
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: .x = Scale (swarm cohesion), .y = Intensity (aurora), .z = Speed, .w = Detail
 
 // PRNG
 fn hash1(n: f32) -> f32 {
@@ -315,6 +297,22 @@ fn mantaSkin(lp: vec3<f32>, n_local: vec3<f32>, id: f32, detail: f32) -> vec4<f3
     return vec4<f32>(col, chevron * dorsal);
 }
 
+// Idea 3: ventral gill arches glowing along the feeding channels.
+fn mantaGillArches(lp: vec3<f32>, n_local: vec3<f32>, detail: f32) -> f32 {
+    let ventral = smoothstep(0.0, 0.55, -n_local.y);
+    let channel = (1.0 - smoothstep(0.12, 0.85, abs(lp.x))) * (1.0 - smoothstep(0.15, 0.9, abs(lp.z - 0.15)));
+    let arch = pow(max(0.5 + 0.5 * sin((lp.x * 8.0 + lp.z * 3.0) * (1.0 + detail * 0.6)), 0.0), 3.0);
+    return ventral * channel * arch;
+}
+
+// Idea 4: luminous wake sheets shed from the trailing manta disc.
+fn mantaWakeRibbon(lp: vec3<f32>, time: f32, audio_react: f32, detail: f32) -> f32 {
+    let trail = smoothstep(0.35, 2.6, lp.z);
+    let sheet = exp(-abs(lp.x) * (2.0 + detail * 2.0)) * exp(-abs(lp.y) * 8.0);
+    let roll = pow(max(0.5 + 0.5 * sin(lp.z * 6.0 - time * (3.5 + audio_react * 4.0) + lp.x * 2.0), 0.0), 2.0);
+    return trail * sheet * roll;
+}
+
 // Calculate normal
 fn calcNormal(p: vec3<f32>, time: f32, audio_react: f32, mouse_pos: vec3<f32>, swarm_cohesion: f32) -> vec3<f32> {
     let e = vec2<f32>(0.01, 0.0);
@@ -457,6 +455,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             sdf_manta(local.xyz + e.yyx, time, audio_react, local.w) - sdf_manta(local.xyz - e.yyx, time, audio_react, local.w)
         ));
         let skin = mantaSkin(local.xyz, n_local, local.w, detail);
+        let gills = mantaGillArches(local.xyz, n_local, detail);
+        let wake = mantaWakeRibbon(local.xyz, time, audio_react, detail);
 
         // Manta Color (glass-like, refractive, glowing edges)
         var manta_col = skin.rgb * (0.35 + diff * 0.65); // Countershaded dark glass
@@ -469,8 +469,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         // Chevrons glow faintly with mids
         let chevron_glow = vec3<f32>(0.4, 0.9, 1.0) * skin.a * (0.15 + mids * 0.5);
+        let gill_glow = vec3<f32>(0.25, 1.0, 0.75) * gills * (0.25 + mids * 0.55);
+        let wake_glow = vec3<f32>(0.3, 0.8, 1.0) * wake * (0.25 + bass * 0.45);
 
-        manta_col += edge_glow + bloom + chevron_glow;
+        manta_col += edge_glow + bloom + chevron_glow + gill_glow + wake_glow;
 
         // Blend solid object with volumetric background based on transmittance
         // The solid object occludes what's behind it, but is dimmed by what's in front

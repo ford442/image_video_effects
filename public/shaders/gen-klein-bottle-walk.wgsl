@@ -4,31 +4,12 @@
 //  Features: generative, audio-reactive, upgraded-rgba
 //  Complexity: High
 //  Created: 2026-05-23
-//  Upgraded: 2026-09-13
-//  Ideas: orientation-reversing glide seam; walker footprint trail from C
+//  Upgraded: 2026-10-10
+//  Ideas: orientation-reversing glide seam; walker footprint trail from C; parametric latitude/longitude chart lines; derivative neck/handle pinch specular
 //  A packing: ACES display RGBA (C read back as colour history)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -114,7 +95,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let walkU = time * walkSpeed + uv.x * 6.283185;
     let walkV = time * walkSpeed * 0.7 + uv.y * 6.283185;
     
-    let kb = kleinBottlePoint(walkU, walkV, 1.0 + bass * 0.3);
+    let bottleRadius = 1.0 + bass * 0.3;
+    let kb = kleinBottlePoint(walkU, walkV, bottleRadius);
     
     // Idea 1: orientation-reversing seam — each wrap of v returns the surface mirror-flipped
     let loopV = walkV / 6.283185;
@@ -128,8 +110,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let surfaceNoise = fbm(texCoord * mix(4.0, 16.0, param2) + vec2<f32>(time * 0.05), 4);
     
     // Curvature approximation for lighting
-    let kb_u = kleinBottlePoint(walkU + 0.01, walkV, 1.0);
-    let kb_v = kleinBottlePoint(walkU, walkV + 0.01, 1.0);
+    let derivativeStep = 0.01;
+    let kb_u = kleinBottlePoint(walkU + derivativeStep, walkV, bottleRadius);
+    let kb_v = kleinBottlePoint(walkU, walkV + derivativeStep, bottleRadius);
     let du = kb_u - kb;
     let dv = kb_v - kb;
     // Idea 1: normal inverted on the flipped sheet — the lit side becomes the far side
@@ -137,19 +120,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     let lightGain = mix(0.4, 1.6, param3);
     let lightDir = normalize(vec3<f32>(sin(time * 0.2), cos(time * 0.15), 0.8));
+    let halfDir = normalize(lightDir + vec3<f32>(0.0, 0.0, 1.0));
     let diffuse = max(dot(normal, lightDir), 0.0) * lightGain;
-    let specular = pow(max(dot(normal, normalize(lightDir + vec3<f32>(0.0, 0.0, 1.0))), 0.0), 32.0) * lightGain;
+    let specular = pow(max(dot(normal, halfDir), 0.0), 32.0) * lightGain;
+
+    // Idea 3: latitude/longitude chart lines live in the surface parameterization.
+    let chartDensity = mix(6.0, 14.0, param2);
+    let latitudeDistance = abs(fract(loopV * floor(chartDensity * 0.75 + 0.5) + 0.5) - 0.5);
+    let longitudeDistance = abs(fract(walkU / 6.283185 * chartDensity + 0.5) - 0.5);
+    let latitudeLine = 1.0 - smoothstep(0.018, 0.055, latitudeDistance);
+    let longitudeLine = 1.0 - smoothstep(0.018, 0.055, longitudeDistance);
+    let chartLines = max(latitudeLine, longitudeLine);
+
+    // Idea 4: the collapsing derivative area identifies the inner neck/handle pinch.
+    let derivativeArea = length(cross(du, dv)) / (derivativeStep * derivativeStep);
+    let innerHandle = 1.0 - smoothstep(0.72, 1.05, length(kb.xy));
+    let pinch = (1.0 - smoothstep(0.32, 0.62, derivativeArea)) * innerHandle;
+    let pinchSpecular = pow(max(dot(normal, halfDir), 0.0), 72.0) * pinch * lightGain;
     
     // Audio-driven color
     let hue = fract(kb.z * 0.3 + surfaceNoise * 0.4 + time * 0.02 + mids * 0.1);
     let sat = mix(0.3, 0.85, param4 + treble * 0.2);
     let val = mix(0.2, 1.0, diffuse + surfaceNoise * 0.3 + bass * 0.2);
     
-    let rgb = hue2rgb(hue) * sat + vec3<f32>(1.0 - sat) * val;
+    var rgb = hue2rgb(hue) * sat + vec3<f32>(1.0 - sat) * val;
+    let chartColor = mix(vec3<f32>(0.08, 0.14, 0.22), hue2rgb(hue + 0.18), longitudeLine);
+    rgb = mix(rgb, chartColor * (0.65 + diffuse * 0.45), chartLines * 0.52);
     let specColor = vec3<f32>(1.0, 0.9, 0.7) * specular * (1.0 + treble);
+    let pinchColor = vec3<f32>(0.72, 0.9, 1.25) * pinchSpecular * (1.0 + treble * 1.4);
     let seamColor = mix(vec3<f32>(1.0, 0.55, 0.2), hue2rgb(hue + 0.5), 0.35) * seamGlow * 1.5;
     
-    let finalRGB = rgb * val + specColor + seamColor;
+    let finalRGB = rgb * val + specColor + pinchColor + seamColor;
     let displayRGB = acesToneMap(finalRGB * 1.1);
     
     // Idea 2: walker footprint trail — highlights from last frame lag behind the scrolling walk
@@ -164,7 +165,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let trailRGB = max(displayRGB, prev.rgb * 0.88 * trailMask);
     let trailAmt = max(max(trailRGB.r, trailRGB.g), trailRGB.b) - max(max(displayRGB.r, displayRGB.g), displayRGB.b);
     
-    let alpha = clamp(diffuse * 0.5 + surfaceNoise * 0.3 + specular * 0.2 + seamGlow * 0.3 + trailAmt * 0.5 + 0.15, 0.0, 1.0);
+    let alpha = clamp(diffuse * 0.5 + surfaceNoise * 0.3 + specular * 0.2 + pinchSpecular * 0.25 + chartLines * 0.08 + seamGlow * 0.3 + trailAmt * 0.5 + 0.15, 0.0, 1.0);
     let finalColor = vec4<f32>(trailRGB, alpha);
     
     let depth = textureLoad(readDepthTexture, vec2<i32>(global_id.xy), 0).r;

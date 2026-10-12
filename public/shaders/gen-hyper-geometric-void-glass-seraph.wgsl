@@ -1,27 +1,19 @@
-// ----------------------------------------------------------------
-// Hyper-Geometric Void-Glass Seraph
-// Category: generative
-// ----------------------------------------------------------------
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+// ═══════════════════════════════════════════════════════════════════
+//  Hyper-Geometric Void-Glass Seraph
+//  Category: generative
+//  Features: upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-10
+//  Ideas: inner void core rotation; chromatic dispersion tied to KIFS iterations
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Folding Scale, .y = Glass Refraction, .z = Singularity Mass, .w = Chromatic Aberration
-  ripples: array<vec4<f32>, 50>,
-};
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// zoom_params: .x = Folding Scale, .y = Glass Refraction, .z = Singularity Mass, .w = Chromatic Aberration
 
 const MAX_STEPS: i32 = 100;
 const SURF_DIST: f32 = 0.001;
@@ -65,8 +57,12 @@ fn map(p_in: vec3<f32>, time: f32) -> vec2<f32> {
     let distToCenter = length(p);
     let warpFactor = 1.0 + (u.zoom_params.z * 0.5) / (distToCenter + 0.1);
 
+    // Idea 1: Inner void core rotation - twist space based on proximity to the singularity
+    let twist = smoothstep(1.5, 0.0, dSing) * time * 2.5;
+    let pRot = rot3D(p, vec2<f32>(-twist, twist * 0.5));
+
     // KIFS Fractal folding
-    var pFold = p * warpFactor;
+    var pFold = pRot * warpFactor;
     let foldScale = u.zoom_params.x;
     var iters = 0.0;
 
@@ -148,14 +144,17 @@ fn renderGlass(ro: vec3<f32>, rd: vec3<f32>, time: f32) -> vec3<f32> {
         let refrIndex = u.zoom_params.y;
         let refrVector = refract(-viewDir, n, 1.0 / (1.0 + refrIndex));
 
-        // Chromatic aberration splits the color slightly based on normal and refrVector
-        let ca = u.zoom_params.w * 0.1;
+        // Idea 2: chromatic dispersion tied to KIFS iterations (fractal depth)
+        let kifsDepth = res.y;
+        let ca = u.zoom_params.w * 0.1 * (1.0 + kifsDepth * 0.8);
 
         let colR = 0.5 + 0.5 * cos(6.28 * (dot(refrVector + vec3<f32>(ca, 0.0, 0.0), vec3<f32>(1.0)) * 0.5 + 0.0));
         let colG = 0.5 + 0.5 * cos(6.28 * (dot(refrVector, vec3<f32>(1.0)) * 0.5 + 0.33));
         let colB = 0.5 + 0.5 * cos(6.28 * (dot(refrVector - vec3<f32>(ca, 0.0, 0.0), vec3<f32>(1.0)) * 0.5 + 0.67));
 
-        let glassBase = vec3<f32>(colR, colG, colB);
+        let rawGlass = vec3<f32>(colR, colG, colB);
+        let deepViolet = vec3<f32>(0.4, 0.0, 0.8);
+        let glassBase = mix(rawGlass, deepViolet, smoothstep(3.0, 6.0, kifsDepth));
 
         // Edge glow based on iteration count (res.y)
         let edgeGlow = smoothstep(5.0, 6.0, res.y) * vec3<f32>(0.0, 1.0, 1.0); // Cyan glow
@@ -193,8 +192,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let col = renderGlass(ro, rd, time);
 
-    // Gamma correction
-    let finalCol = pow(col, vec3<f32>(0.4545));
+    let finalCol = acesToneMap(col);
+    let alpha = clamp(length(col), 0.05, 0.98);
 
-    textureStore(writeTexture, id.xy, vec4<f32>(finalCol, 1.0));
+    textureStore(dataTextureA, id.xy, vec4<f32>(finalCol, alpha));
+    textureStore(writeTexture, id.xy, vec4<f32>(finalCol, alpha));
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(clamp(1.0 - col.g, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

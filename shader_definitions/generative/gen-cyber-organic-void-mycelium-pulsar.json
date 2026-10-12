@@ -4,8 +4,12 @@
   "url": "shaders/gen-cyber-organic-void-mycelium-pulsar.wgsl",
   "type": "generative",
   "category": "generative",
-  "workgroup_size": [16, 16, 1],
-  "description": "A hyper-intricate cybernetic fungal network expanding endlessly through an abyssal void, pulsating with neon bioluminescence and audio-reactive quantum spores.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "description": "A hyper-intricate cybernetic fungal network expanding endlessly through an abyssal void, pulsating with neon bioluminescence and audio-reactive quantum spores. Short anastomosis bridges tie the axis tubes together, and spore pulses run out along each hypha.",
   "features": [
     "raymarching",
     "bioluminescent",

@@ -1,25 +1,8 @@
 // Ring Shell — circular halo/donut burst fireworks
-// Upgraded: 2026-09-10
-// Ideas: Saturn tilt (inclined ellipse); empty core (no inner jewels)
+// Upgraded: 2026-10-10
+// Ideas: Saturn tilt (inclined ellipse); empty core (no inner jewels); per-shell roll of the ring axis; far-side dimming of the back half
 // A packing: ACES display RGBA
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -131,6 +114,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       col += hazeHue * haze * (0.12 + mids*0.08);
       heat += haze * 0.12;
 
+      // Idea 3 — per-shell roll: each ring's tilt axis is rotated its own way.
+      let ringRoll = (hash1(si*13.0 + 5.0) - 0.5) * 1.5;
+      let rollC = cos(ringRoll);
+      let rollS = sin(ringRoll);
       let n = i32(40.0 + count * 50.0);
       for (var j: i32 = 0; j < n; j = j + 1) {
         let jf = f32(j);
@@ -138,7 +125,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let ang = jf / f32(n) * TAU + (js - 0.5)*thick*3.0;
         // Saturn tilt: ring is an inclined ellipse, not a face-on circle.
         let tilt = 0.48;
-        let radial = vec2<f32>(cos(ang), sin(ang) * tilt);
+        let flat = vec2<f32>(cos(ang), sin(ang) * tilt);
+        let radial = vec2<f32>(flat.x * rollC - flat.y * rollS, flat.x * rollS + flat.y * rollC);
         let ringPos = center + radial*expand;
         let vel = radial*(0.15 + js*0.1) + vec2<f32>(0.0, -0.05);
         let sp = sparkPos(ringPos, vel, bAge*0.3, 0.7 + bAge*0.2);
@@ -147,12 +135,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let coreR = max(expand - thick * 1.8, expand * 0.55);
         let onHalo = step(coreR, length(sp - center));
 
+        // Idea 4 — far side: the back half of the inclined ring is dimmer and smaller.
+        let farSide = smoothstep(-0.25, 0.45, sin(ang));
+        let sideGain = mix(1.25, 0.45, farSide);
+
         // main ring spark (Thickness also widens the glow kernel)
-        let onRing = softGlow(uv, sp, (0.005 + js*0.003) * (0.75 + thick*3.0), fade*energy*1.4) * onHalo;
+        let onRing = softGlow(uv, sp, (0.005 + js*0.003) * (0.75 + thick*3.0) * mix(1.0, 0.7, farSide), fade*energy*1.4*sideGain) * onHalo;
         col += palette(js + colorC + time*0.02) * onRing;
         // white-hot HDR spark core: quadratic falloff pushes brights >1.0
         col += vec3<f32>(1.0, 0.96, 0.88) * onRing * onRing * (1.1 + treble*0.5);
-        heat += onRing * 0.35;
+        heat += onRing * mix(0.5, 0.15, farSide);
 
         // faint secondary halo (outside only)
         let halo = softGlow(uv, center + radial*expand*1.25, 0.008, fade*energy*0.25) * onHalo;

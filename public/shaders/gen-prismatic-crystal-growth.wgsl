@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-09-14
-//  Ideas: Cauchy-dispersion facet fire (per-channel refraction IOR n=A+B/lambda^2); oscillatory growth-zone banding seen through the facet
+//  Upgraded: 2026-10-10
+//  Ideas: Cauchy facet fire; growth-zone banding; hopper-face recess; re-entrant twin notch
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Growth Rate, .y = Crystal Density, .z = Prism Intensity, .w = Caustic Strength
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Growth Rate, .y = Crystal Density, .z = Prism Intensity, .w = Caustic Strength
 
 // ═══ CHUNK: hash functions ═══
 fn hash12(p: vec2<f32>) -> f32 {
@@ -358,6 +340,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       // Idea 2: oscillatory growth zoning visible through the facet
       let zoning = growthZoning(p, rd, n, time, storedGrowth, spacing, crystalRand);
       color = color + zoning * 0.22 * (1.0 - fresnelScalar) * (1.0 + mids * 0.4);
+
+      // Idea: hopper faces — centers lag the edges, so the facet middle recesses as growth advances.
+      let hopper = (1.0 - fresnelScalar) * (1.0 - spec) * storedGrowth;
+      color = color * (1.0 - hopper * 0.32);
+      // Idea: re-entrant twin notch — a bright groove where a twin plane meets the facet.
+      let twinAxis = normalize(vec3<f32>(fract(crystalRand * 3.1) - 0.5, 0.15, fract(crystalRand * 7.7) - 0.5) + vec3<f32>(0.05, 0.2, 0.05));
+      let notch = exp(-abs(dot(n, twinAxis)) * 22.0) * fresnelScalar;
+      color = color + vec3<f32>(0.9, 0.96, 1.0) * notch * prismIntensity * (0.35 + treble * 0.2);
 
       // Rim light
       let rim = pow(1.0 - max(dot(n, v), 0.0), 4.0);

@@ -2,7 +2,7 @@
   "id": "datamosh-brush",
   "name": "Datamosh Brush",
   "url": "shaders/datamosh-brush.wgsl",
-  "description": "Interactive MPEG datamosh brush with spring smear vector, macroblock edge geometry, capped click corruption bursts, alpha ghost trails, and three-band audio.",
+  "description": "Interactive MPEG datamosh brush with spring smear vector, macroblock edge geometry, capped click corruption bursts, alpha ghost trails, and three-band audio. Corrupting blocks flatten toward a center sample, and the block edge carries a mosquito ring.",
   "params": [
     {
       "id": "brush_size",

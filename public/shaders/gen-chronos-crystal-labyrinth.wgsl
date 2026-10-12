@@ -3,30 +3,12 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-15
-//  Ideas: refractive time-fault seams; hour-line facet caustics
+//  Upgraded: 2026-10-10
+//  Ideas: refractive time-fault seams; hour-line facet caustics; growth-zoning bands; corridor near-miss glow
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Dispersion, .y = Gravity Strength, .z = Fractal Fold, .w = Glow Intensity
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Dispersion, .y = Gravity Strength, .z = Fractal Fold, .w = Glow Intensity
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -121,14 +103,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var t = 0.0;
     var d = 0.0;
     var fault_seam = 0.0;
+    var corridor = 0.0;
     for(var i = 0; i < 100; i = i + 1) {
         let p = ro + rd * t;
         let res = map(p);
         d = res.x;
         fault_seam = res.y;
         if(d < 0.001 || t > 20.0) { break; }
+        // Idea 4 — corridor near-miss glow: rays grazing crystal walls collect leaked light
+        corridor += exp(-abs(d) * 30.0) * 0.012 / (1.0 + t * 0.15);
         t += d * 0.5; // Step size
     }
+    corridor = min(corridor, 1.5);
 
     var col = vec3<f32>(0.0);
     var alpha = 0.04;
@@ -164,11 +150,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let hour_caustic = pow(1.0 - clamp(hour_phase * 7.0, 0.0, 1.0), 3.0);
         let caustic_color = mix(vec3<f32>(0.15, 0.55, 1.0), vec3<f32>(1.0, 0.65, 0.12), fault_seam);
         col += caustic_color * hour_caustic * (0.3 + glow * 0.15 + audio.z * 0.08);
-        alpha = clamp(0.2 + dif * 0.45 + fault_seam * 0.2 + hour_caustic * 0.25 + glow * 0.08, 0.0, 1.0);
+
+        // Idea 3 — growth zoning: bands parallel to facet edges, like zoned quartz; Fractal Fold sets density
+        var zq = abs(p) - u.zoom_params.z;
+        zq = abs(abs(zq) - u.zoom_params.z * 0.5);
+        let edgeDist = min(zq.x, min(zq.y, zq.z));
+        let bandCount = 5.0 + u.zoom_params.z * 3.0;
+        let zone = fract(edgeDist * bandCount - u.config.x * 0.02);
+        let zoneLine = smoothstep(0.08, 0.0, abs(zone - 0.5) - 0.38);
+        let zoneTint = mix(vec3<f32>(0.75, 0.6, 1.0), vec3<f32>(0.6, 0.95, 1.0), fract(floor(edgeDist * bandCount) * 0.37));
+        col = col * (0.88 + 0.12 * zone) + zoneTint * zoneLine * (0.12 + disp * 0.15 + audio.y * 0.06);
+        alpha = clamp(0.2 + dif * 0.45 + fault_seam * 0.2 + hour_caustic * 0.25 + glow * 0.08 + zoneLine * 0.05, 0.0, 1.0);
     } else {
         // Background
         col = vec3<f32>(0.05, 0.05, 0.1) * (1.0 - length(uv) * 0.5);
     }
+    let corridor_col = mix(vec3<f32>(0.25, 0.5, 1.0), vec3<f32>(0.9, 0.5, 1.0), 0.5 + 0.5 * sin(t * 0.4 + u.config.x * 0.3));
+    col += corridor_col * corridor * u.zoom_params.w * (0.6 + audio.x * 0.4);
+    alpha = clamp(max(alpha, corridor * 0.35), 0.0, 1.0);
 
     col += vec3<f32>(audio.x * 0.08, audio.y * 0.04, audio.z * 0.1) *
         (0.35 + 0.65 * (1.0 - length(base_uv - vec2<f32>(0.5))));

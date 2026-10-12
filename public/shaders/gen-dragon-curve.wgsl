@@ -2,8 +2,8 @@
 //  Heighway Dragon Curve
 //  Category: generative
 //  Features: upgraded-rgba, mouse-driven, audio-reactive, temporal
-//  Upgraded: 2026-09-06
-//  Ideas: paper crease at closest fold; generation thickness (early segments thicker)
+//  Upgraded: 2026-10-10
+//  Ideas: paper crease at closest fold; generation thickness (early segments thicker); paper selvedge; fold-generation bands
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 const PI=3.14159265358979323846; const TAU=6.28318530717958647692;
@@ -11,26 +11,7 @@ const PHI=1.61803398874989484820; const SQRT2=1.41421356237309504880;
 const SQRT3=1.73205080756887729352; const E=2.71828182845904523536;
 const LN2=0.69314718055994530941; const INV_PI=0.31830988618379067154;
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
@@ -233,6 +214,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Idea 1 — paper crease energy at the closest fold vertex
     let crease = select(0.0, 1.0, closestTurn) * exp(-minDist / max(width * 0.45, 0.0008));
     color += neon * crease * (0.85 + bass * 0.35);
+    // Idea: paper selvedge — the other edge of the strip, offset from the fold.
+    let selvedge = exp(-abs(minDist - width * 2.4) / max(width * 0.28, 0.0006));
+    color += neon * selvedge * coolFill * 0.5;
+    // Idea: fold-generation bands — brightness steps at powers of two along the curve.
+    let genBand = fract(log2(f32(closestIdx) + 1.0));
+    color *= 1.0 + (step(0.7, genBand) - 0.5) * 0.22 * saturate(coreGlow);
 
     // Chromatic aberration on tight folds
     let fold = select(0.0, 1.0, t1 != t2) * smoothstep(0.0, width * 3.0, coreGlow);

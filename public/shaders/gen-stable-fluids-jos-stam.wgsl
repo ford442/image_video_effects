@@ -10,30 +10,11 @@
 //  dye advection, and audio-reactive color mapping.
 //  Created: 2026-06-06
 //  Upgraded: 2026-09-27
-//  Ideas: vorticity confinement along the velocity curl; buoyancy lift from the dye field
+//  Ideas: vorticity confinement along the velocity curl; buoyancy lift from the dye field; baroclinic shear jets; enstrophy-cascade shimmer
 //  A packing: raw (vel.x, vel.y, pressure, dye); ACES on display only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.141592653589793;
 const DT: f32 = 0.7;
@@ -166,6 +147,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let gradP = vec2<f32>(pE - pW, pN - pS) * 0.5;
   vel = vel - gradP;
 
+  // Idea 3 — baroclinic shear jets where pressure and dye gradients misalign.
+  let dyeN = sampleC(uv + vec2<f32>(0.0, texel.y), resolution).a;
+  let dyeS = sampleC(uv - vec2<f32>(0.0, texel.y), resolution).a;
+  let dyeE = sampleC(uv + vec2<f32>(texel.x, 0.0), resolution).a;
+  let dyeW = sampleC(uv - vec2<f32>(texel.x, 0.0), resolution).a;
+  let dyeGrad = vec2<f32>(dyeE - dyeW, dyeN - dyeS) * 0.5;
+  let baroclinic = vec2<f32>(-gradP.y, gradP.x) * length(dyeGrad);
+  vel = vel + baroclinic * (0.03 + mids * 0.05);
+
   // Idea 1 — vorticity confinement. Curl Strength keeps eddies from dying into viscosity.
   let wC = vorticityAt(coord, resolution);
   let wE = vorticityAt(coord + vec2<i32>(1, 0), resolution);
@@ -214,6 +204,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // ── Color mapping ──
   let velMag = length(vel);
   let dyeColor = sourceColor * dye * 3.0;
+  let vortMag = abs(vorticityAt(coord, resolution));
 
   // Velocity-based temperature color
   let hotColor = vec3<f32>(1.0, 0.6, 0.2);
@@ -223,6 +214,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   var color = mix(flowColor * 0.15, dyeColor, clamp(dye * 2.0, 0.0, 1.0));
   color = color + flowColor * velMag * dye * 2.0;
+  // Idea 4 — enstrophy-cascade shimmer in high-curl filaments.
+  let enstrophy = smoothstep(0.15, 1.2, vortMag);
+  color = color + vec3<f32>(0.35, 0.9, 1.0) * enstrophy * (0.08 + treble * 0.1);
 
   // Audio reactivity boost
   color = color * (0.9 + bass * 0.2 + treble * 0.1);

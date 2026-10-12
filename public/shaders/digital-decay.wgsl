@@ -1,7 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Digital Decay — Batch 61
-//  Block corruption + ghost persistence: spring hotspot, held burst,
-//  capped ripples, exact C ghost load, bit-flip, ACES + semantic alpha.
+//  Digital Decay
+//  Category: retro-glitch
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-10
+//  Ideas: block tear; stuck row
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -100,6 +104,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   if (blockHash < depthCorrupt * 0.55) {
     glitchUV += (hash22(vec2<f32>(f32(blockUV.x), f32(blockUV.y)) * 99.0 + blockTime) - 0.5) * 0.35;
   }
+  // Idea: blockTear — lower half of a corrupting block slides in x.
+  let blockTear = step(0.5, fract(vec2<f32>(gid.xy) / blockPx).y) * step(blockHash, depthCorrupt * 0.55);
+  glitchUV = glitchUV + vec2<f32>(blockTear * (hash21(vec2<f32>(f32(blockUV.x), blockTime)) - 0.5) * 0.08, 0.0);
   if (blockHash < depthCorrupt * 0.25) {
     glitchUV += (vec2<f32>(hash21(uv * 500.0 + time * 3.0), hash21(uv * 600.0)) - 0.5) / resolution * 18.0;
   }
@@ -125,6 +132,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let ghost = textureLoad(dataTextureC, coord, 0).rgb;
   let ghostBlend = clamp(depthCorrupt * 0.6, 0.0, 0.8);
   outCol = mix(outCol, ghost * ghostDecay, ghostBlend);
+  // Idea: stuckRow — a sparse line latches the ghost. Ghost decay owns the hold.
+  let stuckRow = step(0.86, hash11(floor(f32(gid.y) / 4.0) * 0.17 + floor(time * 0.35)));
+  outCol = mix(outCol, ghost, stuckRow * ghostDecay);
   if (corruptionRate < 0.01) { outCol = src.rgb; }
 
   outCol = acesToneMap(outCol * (0.95 + bass * 0.08 + mids * 0.04));

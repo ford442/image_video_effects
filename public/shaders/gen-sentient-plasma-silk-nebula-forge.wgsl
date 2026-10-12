@@ -1,7 +1,10 @@
-// ----------------------------------------------------------------
-// Sentient Plasma-Silk Nebula Forge
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Sentient Plasma-Silk Nebula Forge
+//  Category: generative
+//  Upgraded: 2026-10-10
+//  Ideas: magnetized silk braid knots; forge-shell ion bloom fronts
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
@@ -21,6 +24,15 @@ fn palette(t: f32) -> vec3<f32> {
     let c = vec3<f32>(1.0, 1.0, 1.0);
     let d = vec3<f32>(0.263, 0.416, 0.557);
     return a + b * cos(TAU * (c * t + d + u.zoom_params.w));
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // SDF
@@ -51,6 +63,11 @@ fn map(p: vec3<f32>) -> vec2<f32> {
         let cyl = length(q.xy) - 0.06 * (fi + 1.0);
         d = min(d, cyl);
     }
+
+    // Idea 1: braid-knot compressions where magnetized plasma filaments twist.
+    let braidPhase = atan2(q.y, q.x) * 6.0 + q.z * 9.0 - time * 2.4;
+    let braid = pow(max(sin(braidPhase), 0.0), 2.0);
+    d -= braid * 0.022 * (0.45 + density * 0.35);
 
     let sphere = length(p) - 0.9;
 
@@ -135,14 +152,19 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     col += vec3<f32>(1.0, 0.4, 0.8) * glow * 0.1; // hot pink glow
+    // Idea 2: expanding ion bloom fronts from the forge shell.
+    let r = length(p);
+    let frontCenter = 0.82 + 0.16 * sin(time * 0.75 + bass * 4.0);
+    let ionFront = exp(-pow((r - frontCenter) * 6.0, 2.0));
+    col += vec3<f32>(0.3, 0.8, 1.0) * ionFront * (0.16 + treble * 0.24);
 
     // Smooth bloom/tonemapping
-    col = col / (1.0 + col);
-    col = pow(col, vec3<f32>(0.4545)); // gamma correction
+    col = acesToneMap(max(col, vec3<f32>(0.0)) * 1.08);
 
     let depth = clamp(1.0 - t/10.0, 0.0, 1.0);
+    let alpha = clamp(select(0.12, 0.62, hit) + glow * 0.025 + ionFront * 0.18, 0.0, 0.96);
 
-    textureStore(writeTexture, coords, vec4<f32>(col, 1.0));
+    textureStore(writeTexture, coords, vec4<f32>(col, alpha));
     textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coords, vec4<f32>(col, 1.0));
+    textureStore(dataTextureA, coords, vec4<f32>(col, alpha));
 }

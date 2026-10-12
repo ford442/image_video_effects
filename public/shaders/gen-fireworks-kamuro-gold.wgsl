@@ -3,28 +3,11 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
-//  Upgraded: 2026-09-10
-//  Ideas: independent twinkle per glitter; hang plateau then resume fall
+//  Upgraded: 2026-10-10
+//  Ideas: independent twinkle per glitter; hang plateau then resume fall; dross fission satellites at twinkle peaks; charcoal cooling after the plateau
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -149,6 +132,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       col += vec3<f32>(1.0, 0.78, 0.35) * haze * (0.12 + density*0.06 + mids*0.05);
       heat += haze * 0.12;
 
+      let plateauEnd = hang * 1.15 + 0.55 + hang * 0.35;
       let n = i32(50.0 + density*80.0 + bass*20.0);
       for (var j: i32 = 0; j < n; j = j + 1) {
         let jf = f32(j);
@@ -158,16 +142,29 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let spd = (0.2 + js2*0.35) * energy;
         let vel = vec2<f32>(cos(ang)*spd*0.5, js2*spd*0.8 + 0.1);
         let sp = kamuroPos(center, vel, bAge, fallSpd, hang);
-        let sz = 0.003 + js*0.003;
+        // Idea 4 — charcoal cooling: after the plateau, glitter cools to dull red and shrinks.
+        let charcoalCool = smoothstep(plateauEnd, plateauEnd + 2.6 + js2, bAge);
+        let sz = (0.003 + js*0.003) * (1.0 - 0.45 * charcoalCool);
 
         // main glitter spark (audio temperature shifts gold <-> silver)
-        let g = softGlow(uv, sp, sz, fade*energy*(0.7 + js2*0.5));
+        let g = softGlow(uv, sp, sz, fade*energy*(0.7 + js2*0.5)*(1.0 - 0.55 * charcoalCool));
         // Independent twinkle per glitter (not one shell pulse).
         let tw = pow(max(0.5 + 0.5 * sin(bAge * mix(7.0, 18.0, js) + js * 17.3), 0.0), 8.0);
-        col += goldCol(goldMix, js, audioTemp) * g * (0.28 + 0.72 * tw) * (0.8 + treble*0.5);
+        let glitterCol = mix(goldCol(goldMix, js, audioTemp), vec3<f32>(0.85, 0.26, 0.05), charcoalCool);
+        col += glitterCol * g * (0.28 + 0.72 * tw) * (0.8 + treble*0.5);
         // white-hot HDR spark core: quadratic falloff pushes brights >1.0
-        col += vec3<f32>(1.0, 0.96, 0.82) * g * g * 0.9;
+        col += vec3<f32>(1.0, 0.96, 0.82) * g * g * 0.9 * (1.0 - charcoalCool);
         heat += g * 0.3;
+
+        // Idea 3 — dross fission: each twinkle peak spits three satellite flitter sparks.
+        if (tw > 0.35 && charcoalCool < 0.9) {
+          let drossFission = (tw - 0.35) * fade * energy * (1.0 - charcoalCool);
+          for (var d: i32 = 0; d < 3; d = d + 1) {
+            let da = js2 * TAU + f32(d) * TAU / 3.0 + bAge * 1.7;
+            let dp = sp + vec2<f32>(cos(da), sin(da)) * (0.006 + tw * 0.012);
+            col += vec3<f32>(1.0, 0.92, 0.7) * softGlow(uv, dp, sz * 0.45, drossFission * 0.9);
+          }
+        }
 
         // micro glitter trail
         if (treble > 0.25) {

@@ -4,33 +4,15 @@
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-09-27
-//  Ideas: escape-time strata (smooth escape-count onion shells, Escape Radius = real bailout); DE soft shadow + 5-tap AO; trap-coloured silhouette halo from closest approach
+//  Ideas: escape-time strata (smooth escape-count onion shells, Escape Radius = real bailout); DE soft shadow + 5-tap AO; trap-coloured silhouette halo from closest approach; cusp-caustic glints; chromatic wedge dispersion
 //  A packing: A.rgb = linear HDR scene colour after trail blend (pre-tint, pre-ACES), A.a = semantic alpha; C read as the same HDR
 //  Fast power morphing, orbit-trap spectra, greebled micro-detail; cursor orbits
 //  the camera, held throttles spin + dollies in, clicks fire shock rings.
 //  Note: extraBuffer[133..138] spring is inert (slots are zeroed every frame).
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,  // x=Iterations, y=Escape Radius, z=Glow, w=Video Blend
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Iterations, y=Escape Radius, z=Glow, w=Video Blend
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -359,6 +341,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         hitFresnel = fresnel_rim(n, viewDir, 2.0 + bass * 2.0);
         col += psychePalette(orbit + 0.4, treble) * hitFresnel * 0.75 * (1.0 + bass);
+        // Idea 4: cusp-caustic glints where tight lobes focus highlights.
+        let cusp = pow(max(0.0, 1.0 - abs(dot(n, normalize(p)))), 8.0);
+        col += vec3<f32>(1.0, 0.96, 0.8) * cusp * (0.12 + spec * 0.25);
 
         depth = clamp(1.0 - t / escapeRadius, 0.0, 1.0);
     } else {
@@ -399,7 +384,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let hdrScene = max(col, vec3<f32>(0.0));
 
     let caStr = 0.004 * (1.0 + bass) + shock * 0.01;
-    col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
+    // Idea 5: chromatic wedge dispersion tied to radial view angle.
+    let wedge = (uv.x * uv.x - uv.y * uv.y);
+    col = vec3<f32>(col.r + caStr * (1.0 + wedge * 0.6), col.g, col.b - caStr * 0.5 * (1.0 - wedge * 0.4));
 
     col = acesToneMap(col * (1.3 + mids * 0.25));
 

@@ -4,29 +4,11 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-09-14
-//  Ideas: kitsune-bi fox-fire flames hovering at the nine tail tips; nine-tail thin-film interference spectrum (each tail a film of different thickness)
+//  Ideas: kitsune-bi fox-fire flames hovering at the nine tail tips; nine-tail thin-film interference spectrum (each tail a film of different thickness); ionized tail-bridge streamers; ring-rune moire gate interference
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time (seconds), .y = rippleCount (0-50 active ripples), .zw = resolution (width, height)
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0–1 canvas: y=0 top), .w = mouse_down (>0.5 = pressed)
-  zoom_params: vec4<f32>,  // .x = Tail Dispersion, .y = Current Warp, .z = Storm Density, .w = Rune Glow
-  ripples: array<vec4<f32>, 50>,  // .xy = ripple uv, .z = startTime (seconds), .w = padding (0)
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Tail Dispersion, .y = Current Warp, .z = Storm Density, .w = Rune Glow
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -206,6 +188,30 @@ fn thinFilm(cosTheta: f32, thicknessNm: f32) -> vec3<f32> {
     return 0.5 + 0.5 * cos(TAU * opd / lambdas + PI);
 }
 
+// Idea 3: ionized streamers arcing between neighboring tail tips.
+fn tailBridgeStreamers(ro: vec3<f32>, rd: vec3<f32>, tMax: f32, t: f32, tail_disp: f32, bass: f32, mids: f32) -> f32 {
+    let tail_origin = vec3<f32>(0.0, -0.1, -1.0);
+    var acc = 0.0;
+    for (var i = 0; i < 9; i++) {
+        let a = tail_origin + normalize(tailDir(i, t, tail_disp)) * length(tailDir(i, t, tail_disp)) * 1.9;
+        let ni = (i + 1) % 9;
+        let b = tail_origin + normalize(tailDir(ni, t, tail_disp)) * length(tailDir(ni, t, tail_disp)) * 1.9;
+        let seg = b - a;
+        let segLen2 = max(dot(seg, seg), 1e-4);
+        let w0 = ro - a;
+        let bdot = dot(rd, seg);
+        let denom = max(segLen2 - bdot * bdot, 1e-4);
+        let s = clamp((bdot * dot(w0, seg) - segLen2 * dot(w0, rd)) / denom, 0.0, tMax);
+        let h = clamp((dot(w0, seg) + bdot * s) / segLen2, 0.0, 1.0);
+        let rayPt = ro + rd * s;
+        let segPt = a + seg * h;
+        let d2 = dot(rayPt - segPt, rayPt - segPt);
+        let pulse = 0.5 + 0.5 * sin(t * (7.0 + mids * 4.0) + f32(i) * 1.9);
+        acc += exp(-d2 * 65.0) * pulse * (0.35 + bass * 0.65);
+    }
+    return acc;
+}
+
 // Distance, Material ID, Glow Intensity — 1 body, 2.x tails (fraction = tail index/10), 3 shard swarm, 4 tail-rings
 fn map(p: vec3<f32>) -> vec3<f32> {
     let p_warp = warpPoint(p);
@@ -359,6 +365,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var hit = false;
     var total_glow = 0.0;
     var fox_fire = 0.0;
+    var tail_bridge = 0.0;
 
     let maxSteps = 80 + min(i32(u.zoom_params.z * 60.0), 40);
     let maxDist = 15.0;
@@ -373,6 +380,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     fox_fire = foxFire(ro, rd, select(maxDist, t_dist, hit), t, tail_disp, bass, treble) * 2.5;
+    tail_bridge = tailBridgeStreamers(ro, rd, select(maxDist, t_dist, hit), t, tail_disp, bass, mids) * 1.8;
 
     var col = vec3<f32>(0.0);
     let storm_density = u.zoom_params.z;
@@ -433,6 +441,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let band = 0.5 + 0.5 * sin(length(p.xz) * 12.0 - t * 5.0);
             let ring_col = mix(vec3<f32>(0.1, 1.0, 0.6), vec3<f32>(0.6, 0.2, 1.0), band);
             col = ring_col * (0.6 + dif * 0.4) * (1.0 + bass) + fre * ring_col;
+            // Idea 4: ring-rune moire gate where ring phase beats against rune cadence.
+            let gate = pow(0.5 + 0.5 * cos(length(p.xz) * 18.0 - t * 4.2 + atan2(p.z, p.x) * 6.0), 4.0);
+            let runeBeat = 0.5 + 0.5 * sin(t * 3.0 + p.y * 7.0 + u.zoom_params.w * 2.5);
+            let moire = gate * runeBeat;
+            col += mix(vec3<f32>(0.8, 0.35, 1.0), vec3<f32>(0.2, 1.0, 0.85), runeBeat) * moire * (0.35 + mids * 0.45);
         }
     } else {
         // Quantum-Storm Void Environment — kaleidoscopically folded volumetric FBM
@@ -460,6 +473,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let ffCore = clamp(fox_fire * 1.5, 0.0, 1.0);
     let ff_col = mix(vec3<f32>(0.35, 0.3, 1.0), vec3<f32>(0.75, 0.95, 1.0), ffCore);
     col += ff_col * fox_fire * (1.4 + treble * 0.6);
+    col += vec3<f32>(0.55, 0.95, 1.0) * tail_bridge * (0.45 + mids * 0.35);
 
     // Click ripples: a fox-fire flare ring bursting from the click point
     let uv01 = vec2<f32>(pixel) / res;
@@ -486,7 +500,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Semantic alpha: solid coverage on SDF hits, emissive density (fox-fire, glow, storm) in the void
     let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-    let emissive = clamp(fox_fire * 0.8 + total_glow * 0.004 + ripple_glow * 0.5, 0.0, 1.0);
+    let emissive = clamp(fox_fire * 0.8 + tail_bridge * 0.6 + total_glow * 0.004 + ripple_glow * 0.5, 0.0, 1.0);
     let alpha = clamp(select(luma * 0.6 + emissive * 0.4, 0.85 + luma * 0.15, hit), 0.0, 1.0);
 
     let finalColor = vec4<f32>(col, alpha);

@@ -13,7 +13,7 @@
     "geometric",
     "chromatic"
   ],
-  "description": "Hopf fibration visualization from S\u00b3 to S\u00b2. Each screen pixel maps to a point on S\u00b2 whose fiber is a circle in S\u00b3, projected via stereographic projection to 2D. Linked circles colored by base-space coordinate with HDR bloom at crossings. Knot-diagram over/under gaps make the linking readable, bass-pumped beads ride each fiber's U(1) phase, and a small base-space S\u00b2 inset shows the fibers' base points.",
+  "description": "Hopf fibration visualization from S\u00b3 to S\u00b2. Each screen pixel maps to a point on S\u00b2 whose fiber is a circle in S\u00b3, projected via stereographic projection to 2D. Linked circles colored by base-space coordinate with HDR bloom at crossings. Knot-diagram over/under gaps make the linking readable, bass-pumped beads ride each fiber's U(1) phase, and a small base-space S\u00b2 inset shows the fibers' base points. A stereographic horizon traces the projection boundary while transverse depth-separated links flare at true crossings.",
   "workgroup_size": [
     16,
     16,

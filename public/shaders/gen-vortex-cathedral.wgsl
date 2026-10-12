@@ -6,31 +6,12 @@
 //            starburst-diffraction, chromatic-aberration, light-attenuation
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-06-06, 2026-06-28, 2026-09-27
-//  Ideas: arch-gated crepuscular shafts; stained-glass sector tint; counter-rotating second vault
+//  Upgraded: 2026-10-10
+//  Ideas: crepuscular shafts; stained-glass piers; second vault; rib groins; rose window
 //  A packing: ACES display RGBA (HEAD stored arches/rings/centerLight but read C back as colour)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.141592653589793;
 const TAU: f32 = 6.283185307179586;
@@ -189,6 +170,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   color = color + mix(vec3<f32>(0.75, 0.55, 0.85), pierGlass, 0.3 * glassFade) * chromaG;
   color = color + vec3<f32>(0.15, 0.3, 0.55) * chromaB;
   color = color + vec3<f32>(0.9, 0.7, 1.0) * centerLight * (0.5 + smoothBass);
+  // Idea: rib groins — stone where adjacent arch sectors meet.
+  let groin = exp(-abs(sector) * 16.0) * smoothstep(0.06, 0.18, r) * (1.0 - centerLight);
+  color = color + vec3<f32>(0.72, 0.68, 0.62) * groin * (0.35 + haze * 0.2);
+  // Idea: rose window — a radial rosette inside the sanctum.
+  let roseR = sanctum * 0.42;
+  let rosePetal = pow(max(0.5 + 0.5 * sin(spinA * archCount), 0.0), 4.0);
+  let rose = exp(-abs(r - roseR) * 22.0) * rosePetal;
+  color = color + pierGlass * rose * (0.55 + treble * 0.25);
 
   // IDEA 3: counter-rotating second vault ring at r ~ 0.6 (half arch density, opposite spin/twist)
   let spinB = a - time * spinRate * 0.7 + r * (1.2 + mids * 0.5);

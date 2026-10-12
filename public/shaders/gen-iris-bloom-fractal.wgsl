@@ -3,25 +3,12 @@
 //  Category: generative
 //  Features: fractal, polar-geometry, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: collarette zigzag; Fuchs crypt pits near the pupil
+//  Upgraded: 2026-10-10
+//  Ideas: collarette zigzag; Fuchs crypt pits near the pupil; ciliary muscle tension ringing; stroma layer parallax
 //  A packing: raw HDR display RGBA (ACES on writeTexture)
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>, };
 const TAU: f32 = 6.28318530718;
 fn palette(t: f32) -> vec3<f32> { return vec3<f32>(0.5) + vec3<f32>(0.5) * cos(TAU * (vec3<f32>(t) + vec3<f32>(0.02, 0.36, 0.68))); }
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> { return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14), vec3<f32>(0.0), vec3<f32>(1.0)); }
@@ -54,10 +41,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   for (var i = 0; i < 6; i++) {
     if (f32(i) >= bloomDepth) { break; }
     let fi = f32(i);
+    // Idea 2: stroma layer parallax - offset deeper iterations by mouse
+    let q_layer = q - mouse * held * 0.05 * fi;
+    let r_layer = length(q_layer);
+    let angle_layer = atan2(q_layer.y, q_layer.x);
     let ringR = aperture + 0.07 + fi * 0.085;
-    let lobe = cos(angle * (petalCount + fi * 2.0) + time * (0.08 + fi * 0.025) + mids * 0.18);
+    let lobe = cos(angle_layer * (petalCount + fi * 2.0) + time * (0.08 + fi * 0.025) + mids * 0.18);
     let contour = ringR + lobe * (0.035 + fi * 0.006);
-    let layer = exp(-abs(r - contour) * (52.0 - fi * 4.0));
+    let layer = exp(-abs(r_layer - contour) * (52.0 - fi * 4.0));
     petals += layer / (1.0 + fi * 0.28);
     recursive += layer * (fi + 1.0) / 6.0;
   }
@@ -71,6 +62,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let collarette = exp(-abs(r - collZig) * 88.0) * irisMask;
   let cryptRing = smoothstep(aperture, aperture * 1.45, r) * (1.0 - smoothstep(aperture * 1.7, aperture * 2.15, r));
   let crypts = pow(0.5 + 0.5 * cos(angle * petalCount + r * 38.0), 16.0) * cryptRing * irisMask;
+  
+  // Idea 1: ciliary muscle tension ringing - radial contraction waves
+  let tensionRings = max(0.0, cos((r - aperture) * 110.0 - time * 3.0)) * exp(-abs(r - aperture * 1.1) * 25.0) * held * irisMask;
 
   var clickBloom = 0.0;
   let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
@@ -88,6 +82,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   raw += palette(hue + 0.27) * veins * (0.55 + treble * 0.8);
   raw += vec3<f32>(0.95, 0.72, 0.42) * collarette * (0.55 + mids * 0.2);
   raw += vec3<f32>(0.22, 0.58, 1.25) * limbal * (0.6 + mids * 0.3);
+  raw += vec3<f32>(0.8, 0.7, 0.4) * tensionRings * 0.45;
   raw += palette(colorCycle + clickBloom * 0.2) * clickBloom * 0.7;
   raw *= 1.0 - crypts * 0.62;
   raw *= 1.0 - pupil * 0.94;

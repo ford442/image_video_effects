@@ -1,5 +1,5 @@
 {
-  "name": "4th of July — Roman Candle",
+  "name": "4th of July \u2014 Roman Candle",
   "category": "generative",
   "tags": [
     "fireworks",
@@ -11,7 +11,7 @@
     "generative",
     "4th-of-july"
   ],
-  "description": "Classic roman candles firing rapid star bursts from fixed launch tubes along the horizon. Bass enlarges launches, treble adds trail and burst detail, held mouse fire follows the normalized cursor, and each click launches a discrete personal candle. Bright shells produce luminance-derived depth.",
+  "description": "Classic roman candles firing rapid star bursts from fixed launch tubes along the horizon. Bass enlarges launches, treble adds trail and burst detail, held mouse fire follows the normalized cursor, and each click launches a discrete personal candle. Bright shells produce luminance-derived depth. Between star ejections each tube spits a short gold fountain, and late stars gutter and flicker before dying.",
   "workgroup_size": [
     16,
     16,

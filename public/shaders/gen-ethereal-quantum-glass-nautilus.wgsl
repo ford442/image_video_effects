@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: chamber septa walls between adjacent spiral chambers; pearl nacre luster on inner chamber ridges
+//  Upgraded: 2026-10-10
+//  Ideas: chamber septa walls between adjacent spiral chambers; pearl nacre luster on inner chamber ridges; siphuncle canal; aperture lip on the outer chamber; bioluminescent siphon jet; abyssal pressure fractures
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Refraction Index, .y = Spiral Tightness, .z = Iridescence Shift, .w = Audio Reactivity
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Refraction Index, .y = Spiral Tightness, .z = Iridescence Shift, .w = Audio Reactivity
 
 const MAX_STEPS: i32 = 100;
 const MAX_DIST: f32 = 20.0;
@@ -103,6 +85,16 @@ fn map(p_in: vec3<f32>, audioReactive: f32, spiralTightness: f32) -> f32 {
     let radialWall = nearSeptum * r * 7.5;
     let septaPlane = length(vec2<f32>(radialWall, p.y * 0.55)) - 0.035;
     d = min(d, septaPlane);
+
+    // Idea — siphuncle: a thin canal along the spiral centerline.
+    let rSip = exp((nf + a / TAU) * b) * 0.22;
+    let siphuncle = length(vec2<f32>(r - rSip, p.y)) - 0.018;
+    d = min(d, siphuncle);
+
+    // Idea — aperture lip: a thicker rim on the outer chamber's leading edge.
+    let apertureGate = smoothstep(0.62, 0.88, chamberFrac);
+    let apertureLip = length(vec2<f32>(r - r1, p.y)) - r1 * 0.5;
+    d = min(d, mix(8.0, apertureLip, apertureGate));
 
     let vNoise = voronoi(p * 20.0);
     d += vNoise * 0.02;
@@ -220,6 +212,25 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         let edge = 1.0 - NdotV;
         col += vec3<f32>(edge * 0.5, edge * 0.2, 0.0);
+
+        let aP = atan2(p.z, p.x);
+        let rP = length(p.xz);
+        let thetaP = log(max(rP, 0.001)) / max(spiralTightness, 0.05);
+        let chamberP = fract(thetaP - aP / TAU);
+        let rOuter = exp((floor(thetaP - aP / TAU) + 1.0 + aP / TAU) * spiralTightness);
+        let onLip = smoothstep(0.62, 0.9, chamberP) * smoothstep(0.22, 0.0, abs(rP - rOuter) / max(rOuter, 0.001));
+        col += vec3<f32>(0.75, 0.9, 1.0) * edge * onLip * refrIndex * 0.18;
+        
+        // Idea 1: Bioluminescent siphon jet (glowing particles emitting from the nautilus opening)
+        let siphonDist = length(p - vec3<f32>(1.5, 0.0, 0.0));
+        let siphonNoise = voronoi(p * 50.0 - vec3<f32>(time * 5.0, 0.0, 0.0));
+        let siphonJet = smoothstep(0.5, 0.0, siphonDist) * siphonNoise;
+        col += vec3<f32>(0.2, 0.9, 1.0) * siphonJet * (1.0 + treble * 2.0);
+
+        // Idea 2: Abyssal pressure fractures (crack lines on the outer shell)
+        let fracNoise = voronoi(p * 10.0);
+        let fracture = smoothstep(0.03, 0.0, abs(fracNoise - 0.5));
+        col += vec3<f32>(1.0, 0.2, 0.6) * fracture * (0.2 + bass * 0.8) * NdotV;
 
         depth = clamp(1.0 - d / MAX_DIST, 0.0, 1.0);
         alpha = clamp(diffuse * 0.55 + NdotV * 0.25 + length(nacre) * 0.2, 0.0, 1.0);

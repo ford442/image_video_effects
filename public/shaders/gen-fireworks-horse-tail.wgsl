@@ -3,28 +3,11 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
-//  Upgraded: 2026-09-10
-//  Ideas: brocade pinch then parallel rain; tip spark-out (gold cuts off)
+//  Upgraded: 2026-10-10
+//  Ideas: brocade pinch then parallel rain; tip spark-out (gold cuts off); tail swish wave down each streamer; gold dock knot at the burst
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -160,6 +143,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       col += vec3<f32>(1.0, 0.9, 0.5) * flash;
       heat += flash * 0.8;
 
+      // Idea 4 — dock knot: slow-fading gold knot the streamers hang from.
+      let knotLife = exp(-bAge * 0.55) * smoothstep(0.0, 0.25, bAge);
+      let dockKnot = hexBokeh(uv, center - vec2<f32>(0.0, bAge * 0.015), 0.022, knotLife * energy * gold);
+      col += goldPalette(gold, 0.15) * dockKnot * 1.4;
+      heat += dockKnot * 0.5;
+
       let n = i32(35.0 + energy * 45.0);
       for (var j: i32 = 0; j < n; j = j + 1) {
         let js = hash1(si*79.0 + f32(j)*3.3);
@@ -174,7 +163,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
           let tAge = max(0.0, bAge - tf * 1.2);
           let parallel = smoothstep(0.0, 1.35, tAge);
           let rainDir = vec2<f32>(dir.x * (1.0 - parallel * 0.82), dir.y);
-          let sp = tailPos(center, rainDir, tAge, fall, spread, js, gust);
+          var sp = tailPos(center, rainDir, tAge, fall, spread, js, gust);
+          // Idea 3 — tail swish: a flick travels down the streamer, widest at the tip.
+          let tailSwish = sin(tf * TAU * 1.1 - bAge * 2.6 + js2 * TAU) * tf * tf;
+          sp.x += tailSwish * (0.02 + spread * 0.3) * smoothstep(0.3, 1.5, bAge) * (1.0 + mids * 0.5);
           let tFade = fade * (1.0 - tf * 0.6) * (0.5 + js2 * 0.5);
           // Tip spark-out: gold cuts off at the streamer end.
           let sparkOut = smoothstep(0.88, 0.58, tf);
