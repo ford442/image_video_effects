@@ -54,9 +54,16 @@ export function useShaderBoot({
         if (initialMode && initialMode !== 'none') {
             setMode(0, initialMode);
         } else {
-            setStatus('Ready. Select a shader from Slot 1 to get started.');
+            // Default startup shader: Liquid (Interactive) — matches prior live behavior at go.1ink.us/pixelocity
+            const liquidShader = availableModes.find(s => s.id === 'liquid');
+            if (liquidShader) {
+                setMode(0, 'liquid' as RenderMode);
+                setStatus('Started with Liquid (Interactive).');
+            } else {
+                setStatus('Ready. Select a shader from Slot 1 to get started.');
+            }
         }
-    }, [rendererReady, shadersReady, modes, setMode, setStatus]);
+    }, [rendererReady, shadersReady, modes, setMode, setStatus, availableModes]);
 
     useEffect(() => {
         if (!rendererReady || imageManifest.length === 0 || currentImageUrl) return;
