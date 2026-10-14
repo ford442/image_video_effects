@@ -9,30 +9,13 @@
 //  Updated: 2026-06-01
 //  Upgraded: 2026-09-27
 //  Ideas: relativistic beaming + gravitational redshift on the disk; log-spiral
-//         density-wave arms; precessing helical jet riding the knot cadence
+//         density-wave arms; precessing helical jet riding the knot cadence;
+//         frame-drag nodal precession ripples; photon-ring caustic scintillation
 //  A packing: raw HDR rgb + semantic alpha (ACES only on writeTexture)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-    zoom_params: vec4<f32>,  // x=Disk Density, y=Jet Intensity, z=Gravity Warp, w=Time Dilation
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Disk Density, y=Jet Intensity, z=Gravity Warp, w=Time Dilation
 
 // --- UTILS ---
 fn rotate2D(angle: f32) -> mat2x2<f32> {
@@ -159,9 +142,16 @@ fn marchRay(ro: vec3<f32>, rd: vec3<f32>, time: f32, dd: f32, ji: f32, gw: f32, 
                 let armPhase = 3.0 * diskAngle + 9.0 * log(max(diskDist, 0.2)) - time * (7.0 + dd * 2.0) * 0.2;
                 let arm = 0.5 + 0.5 * sin(armPhase);
                 let shear = 0.24 + 0.76 * arm * arm;
+                // Idea 4: frame-drag nodal precession ripples across the arm lattice.
+                let ltPrecess = 0.5 + 0.5 * sin(diskAngle * 2.0 + log(max(diskDist, 0.2)) * 6.0 + time * (0.8 + gw * 0.6));
                 let ts = beamTint.y;
                 let shift = vec3<f32>(1.0 - 0.3 * ts, 1.0, 1.0 + 0.4 * ts);
                 col = mix(vec3<f32>(0.8, 0.2, 0.0), vec3<f32>(0.8, 0.9, 1.0), heat) * heat * (1.4 + shear) * shift * beamTint.x;
+                col *= 0.9 + ltPrecess * 0.4;
+                // Idea 5: scintillating photon-ring caustics near the innermost stable orbit.
+                let photonRing = exp(-pow((diskDist - 1.6) * 10.0, 2.0));
+                let scint = pow(0.5 + 0.5 * sin(time * 9.0 + diskAngle * 18.0 + n * 10.0), 6.0);
+                col += vec3<f32>(1.0, 0.92, 0.75) * photonRing * scint * (0.3 + treble * 0.25);
             }
             break;
         }

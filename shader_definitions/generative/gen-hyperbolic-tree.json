@@ -11,7 +11,7 @@
     "audio",
     "music"
   ],
-  "description": "Recursive tree fractal rendered in hyperbolic Poincare disk. Branches sway with audio, leaves glow with treble. M\u00f6bius-transformed space.",
+  "description": "Recursive tree fractal rendered in hyperbolic Poincare disk. Branches sway with audio, leaves glow with treble. M\u00f6bius-transformed space. Metric-thinning branches recede toward the rim while faint horocycles fill the tree's negative space.",
   "workgroup_size": [
     16,
     16,

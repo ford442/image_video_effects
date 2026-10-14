@@ -5,29 +5,11 @@
 //            audio-reactive, mouse-driven, click-reactive, upgraded-rgba,
 //            depth-aware, flowing, neon-spectrum
 //  Complexity: Very High
-//  Created: 2026-06-28
+//  Upgraded: 2026-10-10
+//  Ideas: Chladni plate nodal nodes; quantum interference fringe
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ─── Math Helpers ───
 fn sat(x: f32) -> f32 { return clamp(x, 0.0, 1.0); }
@@ -247,6 +229,16 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: f32, mids
       // Treble sparkles on silk edges
       let sparkle = pow(sat(1.0 - abs(viewAngle)), 8.0) * treble * 2.0;
       col = col + vec3<f32>(1.0, 0.9, 0.7) * sparkle;
+      
+      // Idea 1: Chladni plate nodal nodes
+      let cymaticValue = sin(p.x * cymFreq * 5.0 + time * 2.0) * cos(p.y * cymFreq * 3.0 + time * 1.5);
+      let nodalNode = smoothstep(0.05, 0.0, abs(cymaticValue)) * exp(-abs(p.z) * 2.0);
+      col += vec3<f32>(1.0, 0.9, 0.4) * nodalNode * hitGlow * (2.0 + treble * 4.0);
+
+      // Idea 2: Quantum interference fringe
+      let fringe = sin(p.z * 20.0 - time * 5.0) * bass * 0.2;
+      col.r += fringe;
+      col.b -= fringe;
 
       alpha = sat(0.4 + hitGlow * 0.4);
       break;

@@ -3,32 +3,12 @@
 //  Category: generative
 //  Features: generative, mouse-driven, audio-reactive, temporal, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: petal-fold veins along KIFS abs planes; nectary corona at the core/petal smin
+//  Upgraded: 2026-10-10
+//  Ideas: petal-fold veins along KIFS abs planes; nectary corona at the core/petal smin; wavelength-separated chromatic gravity streaks; treble-driven core-to-fold plasma filaments
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Rotation Speed, y=Complexity, z=Bloom Intensity, w=Gravity Well Strength
-    ripples: array<vec4<f32>, 50>,
-};
-
+#include "_prelude.wgsl"
+// zoom_params: x=Rotation Speed, y=Complexity, z=Bloom Intensity, w=Gravity Well Strength
 
 // Helper: 3D Rotation Matrix
 fn rot(a: f32) -> mat2x2<f32> {
@@ -143,6 +123,18 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let gravity_strength = u.zoom_params.w;
     rd_uv += (mouse - uv) / max(dist_to_mouse, 0.001) * (gravity_strength / (dist_to_mouse * 10.0 + 1.0));
 
+    // Idea 3 — wavelength-separated streaks belong only to the existing gravity well.
+    let gravityVector = uv - mouse;
+    let gravityAngle = atan2(gravityVector.y, gravityVector.x);
+    let gravityEnvelope = (1.0 - smoothstep(0.08, 0.95, dist_to_mouse))
+        * smoothstep(0.0, 0.35, abs(gravity_strength));
+    let gravityPhase = gravityAngle * 8.0 + u.config.x * 0.7;
+    let redStreak = pow(max(cos(gravityPhase - dist_to_mouse * 23.0), 0.0), 10.0);
+    let greenStreak = pow(max(cos(gravityPhase - dist_to_mouse * 28.0 + 0.7), 0.0), 10.0);
+    let blueStreak = pow(max(cos(gravityPhase - dist_to_mouse * 34.0 + 1.4), 0.0), 10.0);
+    let gravityStreakRGB = vec3<f32>(redStreak, greenStreak, blueStreak)
+        * gravityEnvelope * (0.16 + min(abs(gravity_strength), 1.5) * 0.24);
+
     let uv01 = (vec2<f32>(id.xy) + vec2<f32>(0.5)) / res;
     var clickGravity = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
@@ -200,10 +192,21 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         var qN = p;
         qN.x += sin(qN.z * 2.0 + foldTime) * 0.2;
         qN.y += cos(qN.x * 2.0 + foldTime) * 0.2;
-        let dPetal = length(fold(qN, foldTime)) - 0.3 * u.zoom_params.y;
+        let foldedBridge = fold(qN, foldTime);
+        let dPetal = length(foldedBridge) - 0.3 * u.zoom_params.y;
         let dCore = length(p) - 0.5;
         let nectar = 1.0 - clamp(abs(dPetal - dCore) / 0.22, 0.0, 1.0);
         col += vec3<f32>(1.0, 0.55, 0.88) * nectar * (0.18 + bass * 0.32);
+
+        // Idea 4 — treble filaments bridge the core/petal transition along fold planes.
+        let foldPlaneDistance = min(abs(foldedBridge.x), min(abs(foldedBridge.y), abs(foldedBridge.z)));
+        let foldGuide = 1.0 - smoothstep(0.025, 0.13, foldPlaneDistance);
+        let bridgeBand = exp(-abs(dPetal - dCore) * 8.0);
+        let filamentPhase = atan2(p.y, p.x) * 13.0 + length(foldedBridge) * 27.0 - time * 3.2;
+        let filamentThread = pow(0.5 + 0.5 * cos(filamentPhase), 9.0);
+        let filament = filamentThread * bridgeBand * (0.3 + foldGuide * 0.7);
+        col += mix(vec3<f32>(1.15, 0.16, 0.72), vec3<f32>(0.18, 0.95, 1.3), foldGuide)
+            * filament * (0.04 + treble * 0.9);
 
         // Apply Bloom
         col += vec3<f32>(1.0, 0.5, 0.8) * (0.12 + rim * 0.35) * u.zoom_params.z;
@@ -212,13 +215,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col = vec3<f32>(0.01, 0.01, 0.03); // Deep space background
     }
 
+    col += gravityStreakRGB * (0.8 + treble * 0.35);
     col += vec3<f32>(0.4, 0.7, 1.3) * clickGravity * (0.45 + treble * 0.25);
     let prev = textureLoad(dataTextureC, vec2<i32>(id.xy), 0);
     col = mix(col, prev.rgb * 0.9, clamp(0.025 + bass * 0.01, 0.0, 0.07));
     col = acesToneMap(max(col, vec3<f32>(0.0)));
     let _luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     let hit = d < 30.0;
-    let _alpha = clamp(select(0.0, 0.35, hit) + _luma * 0.55 + clickGravity * 0.25, 0.0, 0.97);
+    let gravityStreakAlpha = max(gravityStreakRGB.r, max(gravityStreakRGB.g, gravityStreakRGB.b));
+    let _alpha = clamp(select(0.0, 0.35, hit) + _luma * 0.55 + clickGravity * 0.25 + gravityStreakAlpha * 0.25, 0.0, 0.97);
     let outColor = vec4<f32>(col, _alpha);
     textureStore(writeTexture, vec2<i32>(id.xy), outColor);
     let _depth = select(0.0, clamp(1.0-d/30.0, 0.0, 1.0), hit);

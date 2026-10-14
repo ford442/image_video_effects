@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { InputSource } from '../renderer/types';
 import { VideoRecord } from '../syncTypes';
-import { VideoSegment, pickRandomSegment } from '../services/videoSegmentManager';
+import { VideoSegment, hydrateDurations, mergeDurations, pickRandomSegment } from '../services/videoSegmentManager';
 
 export interface UseB3hdModeOptions {
     videoB3hdMode: boolean;
@@ -11,6 +11,8 @@ export interface UseB3hdModeOptions {
     b3hdIntervalSeconds: number;
     setCurrentSegment: React.Dispatch<React.SetStateAction<VideoSegment | null>>;
     setSelectedVideo: React.Dispatch<React.SetStateAction<string>>;
+    /** Receives probed durations; without it B3HD only uses durations already known. */
+    setVideoList?: React.Dispatch<React.SetStateAction<VideoRecord[]>>;
 }
 
 export function useB3hdMode({
@@ -21,11 +23,34 @@ export function useB3hdMode({
     b3hdIntervalSeconds,
     setCurrentSegment,
     setSelectedVideo,
+    setVideoList,
 }: UseB3hdModeOptions): void {
     const b3hdTimerRef = useRef<NodeJS.Timeout | null>(null);
     const b3hdRecentHistoryRef = useRef<string[]>([]);
     const videoListRef = useRef<VideoRecord[]>(videoList);
     videoListRef.current = videoList;
+
+    // Segments need durations, which are no longer probed at boot. Probe them
+    // (bounded, once per URL) the first time B3HD is switched on.
+    const needsDurations = videoList.some((v) => !(typeof v.duration === 'number' && v.duration > 0));
+    const b3hdActive = videoB3hdMode && inputSource === 'video';
+    useEffect(() => {
+        if (!b3hdActive || !needsDurations || !setVideoList) return;
+        const controller = new AbortController();
+        hydrateDurations(videoListRef.current, { signal: controller.signal })
+            .then((hydrated) => {
+                if (controller.signal.aborted) return;
+                setVideoList((current) => mergeDurations(current, hydrated));
+            })
+            .catch((e) => console.warn('Failed to hydrate video durations:', e));
+        return () => controller.abort();
+    }, [b3hdActive, needsDurations, setVideoList]);
+
+    // Re-plan once the first eligible video appears (durations arrive after
+    // the list length has already settled).
+    const hasEligible = videoList.some(
+        (v) => typeof v.duration === 'number' && v.duration > b3hdSegmentLength
+    );
 
     useEffect(() => {
         if (b3hdTimerRef.current) {
@@ -35,6 +60,11 @@ export function useB3hdMode({
 
         if (!videoB3hdMode || inputSource !== 'video' || videoList.length === 0) {
             setCurrentSegment(null);
+            return;
+        }
+
+        if (!hasEligible) {
+            // Durations are still being probed (or none qualifies).
             return;
         }
 
@@ -69,5 +99,5 @@ export function useB3hdMode({
                 b3hdTimerRef.current = null;
             }
         };
-    }, [videoB3hdMode, inputSource, b3hdSegmentLength, b3hdIntervalSeconds, videoList.length, setCurrentSegment, setSelectedVideo]);
+    }, [videoB3hdMode, inputSource, b3hdSegmentLength, b3hdIntervalSeconds, videoList.length, hasEligible, setCurrentSegment, setSelectedVideo]);
 }

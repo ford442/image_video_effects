@@ -3,31 +3,12 @@
 //  Category: generative
 //  Alpha Mode: Depth-Layered Alpha + Physical Transmittance
 //  Features: advanced-alpha, botanical, generative, depth-aware, l-system, mouse-driven, audio-reactive, temporal, upgraded-rgba
-//  Upgraded: 2026-09-27
-//  Ideas: leaf midrib and lateral veins; treble conductive filaments on branch ridges; held phototropism and click spore spray
+//  Upgraded: 2026-10-10
+//  Ideas: leaf veins; conductive filaments; phototropism and spores; stomata; branch prickles
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══ ADVANCED ALPHA FUNCTIONS ═══
 
@@ -211,6 +192,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     floraColorBase = floraColorBase + vec3<f32>(0.15, 0.85, 0.35) * veins;
     floraColorBase = floraColorBase + vec3<f32>(0.25, 0.85, 1.0) * filament;
     floraColorBase = floraColorBase + vec3<f32>(0.85, 1.0, 0.45) * spore * (0.6 + treble);
+    // Idea: stomata — pores on the blade, off the veins.
+    let stoma = leafMask * (1.0 - veins) * step(0.965, hash(floor(leafUV * 22.0)));
+    // Idea: prickles on the branch ridge, separate from the conductive filament.
+    let prickle = ridge * (1.0 - smoothstep(0.2, 0.8, filament)) * step(0.92, hash(floor(uv * 36.0))) * growth;
+    floraColorBase = floraColorBase + vec3<f32>(0.15, 0.45, 0.18) * stoma * (0.6 + glowSpread);
+    floraColorBase = floraColorBase + vec3<f32>(0.75, 0.9, 0.4) * prickle;
 
     // Blend with input image (layer chain compatibility)
     let inputCol = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
@@ -220,7 +207,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     floraColor = mix(floraColor, prev, 0.06);
 
     let feather = glowSpread * 0.5 + 0.05;
-    let coverage = max(combinedFlora, max(veins, max(filament, spore)));
+    let coverage = max(combinedFlora, max(veins, max(filament, max(spore, max(stoma, prickle)))));
     let alpha = volumetricAlpha(coverage, 1.0) * depthLayeredAlpha(floraColorBase, uv, depthWeight) * smoothstep(0.0, feather, coverage);
 
     let outColor = vec4<f32>(acesToneMap(floraColor), alpha);

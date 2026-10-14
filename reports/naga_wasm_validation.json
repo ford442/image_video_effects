@@ -1,10 +1,10 @@
 {
   "nagaCratePin": "30.0",
-  "generatedAt": "2026-10-04",
-  "total": 1429,
-  "valid": 1392,
-  "invalid": 37,
-  "known": 37,
+  "generatedAt": "2026-10-09",
+  "total": 1434,
+  "valid": 1400,
+  "invalid": 34,
+  "known": 34,
   "new": 0,
   "failures": [
     {
@@ -44,12 +44,6 @@
       "error": "redefinition of `aspect`"
     },
     {
-      "id": "crystal-refraction",
-      "kind": "parse",
-      "line": 141,
-      "error": "Identifier starts with a reserved prefix: `__finalRGB`"
-    },
-    {
       "id": "crystalline-fracture",
       "kind": "parse",
       "line": 82,
@@ -60,12 +54,6 @@
       "kind": "parse",
       "line": 273,
       "error": "redefinition of `aspect`"
-    },
-    {
-      "id": "data-moshing-diffusion",
-      "kind": "parse",
-      "line": 48,
-      "error": "too many arguments passed to `max`"
     },
     {
       "id": "electric-eel-storm",
@@ -210,12 +198,6 @@
       "kind": "parse",
       "line": 189,
       "error": "no definition in scope for identifier: `u_zoom_dummy`"
-    },
-    {
-      "id": "temporal-feedback-zoom-tracer",
-      "kind": "parse",
-      "line": 173,
-      "error": "Identifier starts with a reserved prefix: `__finalRGB`"
     },
     {
       "id": "tensor-flow-sculpt",

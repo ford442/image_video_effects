@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, temporal, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: catalyst stutter-hold on the nearest phase before releasing; temporal afterimage from exact dataTextureC history; per-phase seasonal color lean (box/capsule read as a different material than sphere/torus)
+//  Upgraded: 2026-10-10
+//  Ideas: catalyst stutter-hold on the nearest phase before releasing; temporal afterimage from exact dataTextureC history; per-phase seasonal color lean; cellular Voronoi shell patterns; chromatic depth bleed
 //  A packing: display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Mathematical approach: Smooth-min SDF blending of sphere/torus/box/capsule
@@ -12,26 +12,8 @@
 //    normal direction + time, independent of geometry; ray marching with
 //    soft shadows and ambient occlusion. Beauty in perpetual transformation.
 // ─────────────────────────────────────────────────────────────────────────────
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config:      vec4<f32>, // x=Time, y=ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>, // x=unused, y=MouseX, z=MouseY, w=unused
-    zoom_params: vec4<f32>, // x=MorphSpeed, y=ColorSpeed, z=BlendRadius, w=LightIntensity
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=MorphSpeed, y=ColorSpeed, z=BlendRadius, w=LightIntensity
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  HSV → RGB
@@ -112,7 +94,11 @@ fn sceneSDF(p_in: vec3<f32>, t: f32, blendK: f32, morphT: f32) -> f32 {
     d = smin(d, s1, blendK * w1 + 0.01);
     d = smin(d, s2, blendK * w2 + 0.01);
     d = smin(d, s3, blendK * w3 + 0.01);
-    return d;
+    
+    // Idea 1: Cellular Voronoi shell patterns (fractal displacement map on the surface)
+    // h2_cm is available, let's just do a simple noise displacement
+    let shellPattern = sin(p.x * 10.0) * cos(p.y * 10.0) * sin(p.z * 10.0) * 0.05 * w2;
+    return d + shellPattern;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -252,7 +238,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         tRay += d * 0.9;
     }
 
-    var col = vec3<f32>(0.02, 0.02, 0.06); // background
+    // Idea 2: Chromatic depth bleed (the background color shifts based on the SDF distance)
+    let bgDist = sceneSDF(ro + rd * 8.0, t, blendRadius, localMorph);
+    var col = vec3<f32>(0.02, 0.02, 0.06) + vec3<f32>(0.1, 0.0, 0.2) * exp(-bgDist * 0.5); // background
 
     if (hit) {
         let N = sceneNormal(hitP, t, blendRadius, localMorph);

@@ -9,6 +9,13 @@ import type { PassTiming } from './renderer/passTimings';
 import type { ImageRecord } from './types/aiVj';
 import { isRenderQualityMode, loadRenderQualityMode, saveRenderQualityMode } from './services/renderQuality';
 import { loadSourceAutoExposure, saveSourceAutoExposure } from './services/sourceAutoExposure';
+import {
+    describeDisplayP3Status,
+    isDisplayP3UrlForced,
+    isHdrDisplay,
+    loadDisplayP3,
+    saveDisplayP3,
+} from './services/displayP3';
 import { RendererManager } from './renderer/RendererManager';
 import { VideoRecord } from './syncTypes';
 import { VideoSegment } from './services/videoSegmentManager';
@@ -27,6 +34,7 @@ import {
     useWebcam,
     useShareChain,
     useB3hdMode,
+    useSelectedVideoDuration,
     useRoulette,
     useGenerativeShowcase,
     useRecording,
@@ -38,6 +46,7 @@ import { useShaderWarmup } from './hooks/useShaderWarmup';
 import { WEBCAM_FUN_SHADERS, getShaderDefaults } from './app/constants/shaderDefaults';
 import { defaultSlotParams } from './app/constants/defaultSlotParams';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
+import type { WebGpuProbeSerializable } from './renderer/webgpuBootProbe';
 import { touch as touchAudioParam } from './services/audioParamHold';
 import './styles/index.css';
 
@@ -57,6 +66,10 @@ function MainApp() {
     const [autoChangeEnabled, setAutoChangeEnabled] = useState(false);
     const [autoChangeDelay, setAutoChangeDelay] = useState(10);
     const [status, setStatus] = useState('Ready.');
+    const [probeFailure, setProbeFailure] = useState<WebGpuProbeSerializable | null>(null);
+    const rendererBlockedMessage = probeFailure
+        ? `Renderer unavailable: ${probeFailure.lastError ?? 'WebGPU initialization failed'} (${probeFailure.failedStage ?? 'unknown stage'} failed)`
+        : null;
     const [slotShaderStatus, setSlotShaderStatus] = useState<Array<'idle' | 'loading' | 'error'>>(['idle', 'idle', 'idle', 'idle', 'idle', 'idle']);
     const [imageManifest, setImageManifest] = useState<ImageRecord[]>([]);
     const [videoList, setVideoList] = useState<VideoRecord[]>([]);
@@ -88,6 +101,9 @@ function MainApp() {
         return loadRenderQualityMode();
     });
     const [sourceAutoExposure, setSourceAutoExposure] = useState(() => loadSourceAutoExposure());
+    const [displayP3, setDisplayP3] = useState(() => loadDisplayP3() || isDisplayP3UrlForced());
+    const [displayP3Status, setDisplayP3Status] = useState('');
+    const displayP3AppliedRef = useRef<boolean | null>(null);
     const [performanceHud, setPerformanceHud] = useState<{
         internalWidth: number;
         internalHeight: number;
@@ -341,7 +357,10 @@ function MainApp() {
         b3hdIntervalSeconds,
         setCurrentSegment,
         setSelectedVideo,
+        setVideoList,
     });
+
+    useSelectedVideoDuration({ inputSource, selectedVideo, videoList, setVideoList });
 
     const { hasHealthyThumbnail } = useThumbnailManifest();
 
@@ -512,6 +531,41 @@ function MainApp() {
         setSourceAutoExposure(enabled);
         saveSourceAutoExposure(enabled);
         rendererRef.current?.setSourceAutoExposure(enabled);
+    }, []);
+
+    const refreshDisplayP3Status = useCallback((requested: boolean, deferred = false) => {
+        const base = describeDisplayP3Status(requested, window.webgpuProbe);
+        setDisplayP3Status(deferred ? 'Display P3 change applies after recording stops' : base);
+    }, []);
+
+    // Apply the requested wide-gamut state on the live canvas (same device). While a
+    // recording runs the change is held so one file never mixes color spaces.
+    useEffect(() => {
+        if (!rendererReady) return;
+        const manager = rendererRef.current;
+        if (!manager) return;
+        // Boot already honored the saved setting / URL; only later changes need a live reconfigure.
+        if (displayP3AppliedRef.current === null) displayP3AppliedRef.current = displayP3;
+        if (isRecording) {
+            if (displayP3AppliedRef.current !== displayP3) refreshDisplayP3Status(displayP3, true);
+            return;
+        }
+        if (displayP3AppliedRef.current === displayP3) {
+            refreshDisplayP3Status(displayP3);
+            return;
+        }
+        let cancelled = false;
+        void manager.setDisplayP3(displayP3, isHdrDisplay()).then((result) => {
+            if (cancelled) return;
+            if (result && !result.deferred) displayP3AppliedRef.current = displayP3;
+            refreshDisplayP3Status(displayP3, result?.deferred === true);
+        });
+        return () => { cancelled = true; };
+    }, [rendererReady, displayP3, isRecording, refreshDisplayP3Status]);
+
+    const handleDisplayP3Change = useCallback((enabled: boolean) => {
+        setDisplayP3(enabled);
+        saveDisplayP3(enabled);
     }, []);
 
     const handleSetSlotParam = useCallback((slot: number, param: string, value: number) => {
@@ -755,6 +809,8 @@ function MainApp() {
                 webgpuCanvasRef={webgpuCanvasRef}
                 videoElementRef={videoElementRef}
                 status={status}
+                rendererBlockedMessage={rendererBlockedMessage}
+                onProbeFailure={setProbeFailure}
                 generativeShowcaseActive={generativeShowcaseActive}
                 generativeShowcaseLocked={generativeShowcaseLocked}
                 generativeShowcaseDelay={generativeShowcaseDelay}
@@ -770,6 +826,9 @@ function MainApp() {
                 onRenderQualityChange={handleRenderQualityChange}
                 sourceAutoExposure={sourceAutoExposure}
                 onSourceAutoExposureChange={handleSourceAutoExposureChange}
+                displayP3={displayP3}
+                onDisplayP3Change={handleDisplayP3Change}
+                displayP3Status={displayP3Status}
                 performanceHud={performanceHud}
             />
 

@@ -1,6 +1,7 @@
 {
   "id": "gen-ethereal-quantum-glass-nautilus",
   "name": "Ethereal Quantum-Glass Nautilus",
+  "description": "A log-spiral glass nautilus with chamber septa and pearl nacre on the inner ridges. A siphuncle canal runs the spiral, and the outer chamber wears a thickened aperture lip.",
   "url": "/shaders/gen-ethereal-quantum-glass-nautilus.wgsl",
   "category": "generative",
   "params": [

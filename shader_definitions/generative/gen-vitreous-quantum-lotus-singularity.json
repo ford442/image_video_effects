@@ -4,7 +4,7 @@
   "category": "generative",
   "url": "shaders/gen-vitreous-quantum-lotus-singularity.wgsl",
   "tags": ["organic", "quantum", "cosmic", "fractal", "flower", "refraction", "audio-reactive", "sdf", "raymarched", "thin-film", "iridescent"],
-  "description": "A hyper-dimensional, translucent crystalline lotus flower continuously blooming and fracturing around a gravitational singularity. Upgraded with thin-film iridescence on the vitreous petals, per-petal cell color variation, symmetry-folded radial vein inlays pulsing with the music, an event-horizon core with photon ring, 3-point lighting with ambient occlusion, chromatic dispersion, ACES filmic tonemapping and real depth output.",
+  "description": "A hyper-dimensional vitreous lotus blooming around a gravitational singularity, with thin-film petals, torsion chirality bands, radial vein inlays, and photon-sphere shear arcs around the event-horizon core.",
   "complexity": "High",
   "workgroup_size": [16, 16, 1],
   "updated": true,

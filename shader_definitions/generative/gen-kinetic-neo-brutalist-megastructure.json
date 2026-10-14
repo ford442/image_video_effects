@@ -8,7 +8,7 @@
     "audio-reactive",
     "raymarching"
   ],
-  "description": "An endlessly shifting, gravity-defying neo-brutalist megastructure of colossal floating concrete blocks that grind and interlock, revealing glowing, audio-reactive server cores hidden within.",
+  "description": "An endlessly shifting, gravity-defying neo-brutalist megastructure of colossal floating concrete blocks that grind and interlock, revealing glowing, audio-reactive server cores hidden within. Friction spalls the concrete beside moving seams while sparse transit trusses bridge neighboring cells.",
   "workgroup_size": [
     16,
     16,

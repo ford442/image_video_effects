@@ -164,6 +164,15 @@ describe('AppShell chrome', () => {
     render(<AppShell {...baseProps()} />);
     expect(screen.getByRole('button', { name: /open remote/i })).toBeInTheDocument();
   });
+
+  it('shows the blocked renderer message as an error instead of the status text', () => {
+    render(<AppShell {...baseProps({ status: 'Ready.', rendererBlockedMessage: 'Renderer unavailable: no WebGPU adapter (requestAdapter failed)' })} />);
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent(/Renderer unavailable: no WebGPU adapter \(requestAdapter failed\)/);
+    expect(screen.queryByText('Ready.')).not.toBeInTheDocument();
+    // eslint-disable-next-line testing-library/no-node-access -- asserting CSS state class
+    expect(document.querySelector('.status-bar--error')).toBeTruthy();
+  });
 });
 
 describe('AppShell renderer pill (WASM frozen R&D, #1080)', () => {

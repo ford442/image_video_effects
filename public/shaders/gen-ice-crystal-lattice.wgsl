@@ -3,28 +3,11 @@
 //  Category: generative
 //  Features: procedural, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: secondary dendrite teeth on hex arms; plate vs needle habit
+//  Upgraded: 2026-10-10
+//  Ideas: secondary dendrite teeth on hex arms; plate vs needle habit; hoarfrost rime; thermal melt pooling
 //  A packing: raw HDR display RGBA (ACES on writeTexture)
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -58,13 +41,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let growthSpeed = mix(0.08, 0.55, clamp(u.zoom_params.z, 0.0, 1.0));
   let frostGlow = mix(0.35, 2.8, clamp(u.zoom_params.w, 0.0, 1.0));
 
+  // Idea 1: hoarfrost rime — high frequency noise displacement along the lattice edges
+  let rime = (sin(p.x * density * 8.0 + time) * cos(p.y * density * 8.0 - time)) * 0.02;
+  let rimeP = p + vec2<f32>(rime, rime * 0.5);
+
   let n0 = vec2<f32>(1.0, 0.0);
   let n1 = vec2<f32>(0.5, 0.8660254);
   let n2 = vec2<f32>(-0.5, 0.8660254);
   let width = mix(0.055, 0.018, clamp(u.zoom_params.x, 0.0, 1.0));
-  let l0 = latticeLine(p, n0, density, width);
-  let l1 = latticeLine(p, n1, density, width);
-  let l2 = latticeLine(p, n2, density, width);
+  let l0 = latticeLine(rimeP, n0, density, width);
+  let l1 = latticeLine(rimeP, n1, density, width);
+  let l2 = latticeLine(rimeP, n2, density, width);
   let hexWeb = max(l0, max(l1, l2));
   let radius = length(p);
   let angle = atan2(p.y, p.x);
@@ -102,7 +89,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   raw += vec3<f32>(0.85, 1.05, 1.45) * plateFill * (0.7 + frostGlow * 0.2);
   raw += vec3<f32>(0.7 + bass * 0.2, 1.15 + mids * 0.28, 1.7 + treble * 0.6) * fresnelFrost * frostGlow;
   let prev = textureLoad(dataTextureC, pixel, 0);
-  raw = clamp(mix(prev.rgb * 0.945, raw, 0.24 + growthSpeed * 0.12), vec3<f32>(0.0), vec3<f32>(7.0));
+  
+  // Idea 2: thermal melt pooling — slow decay and downward flow in the history buffer
+  let meltDown = textureLoad(dataTextureC, pixel + vec2<i32>(0, 1), 0).rgb;
+  let pooledHistory = mix(prev.rgb, meltDown, 0.15 * clamp(u.zoom_params.w, 0.0, 1.0)) * 0.94;
+  
+  raw = clamp(mix(pooledHistory, raw, 0.24 + growthSpeed * 0.12), vec3<f32>(0.0), vec3<f32>(7.0));
   let alpha = clamp(0.03 + crystal * 0.62 + fresnelFrost * 0.22 + plateFill * 0.12, 0.03, 0.98);
   let depth = clamp(crystal * 0.55 + fresnelFrost * 0.32, 0.0, 1.0);
   textureStore(dataTextureA, pixel, vec4<f32>(raw, alpha));

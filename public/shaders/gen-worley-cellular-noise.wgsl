@@ -3,31 +3,12 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba, depth-aware, temporal-feedback
 //  Complexity: High
-//  Upgraded: 2026-09-28
-//  Ideas: real membrane aberration (R/B resampled along the F2−F1 wall gradient); bass turgor pulse (swollen bright domes, thinned walls); triple-junction vertices (F3≈F2≈F1 nodes)
+//  Upgraded: 2026-10-10
+//  Ideas: membrane aberration; turgor domes; triple junctions; nucleus disk; plasmodesmata pores
 //  A packing: (f1 + drift, F2−F1 boundary + drift, wall scatter, alpha) fields; C read back with exact textureLoad, .g feeds the organic drift
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // Stable per-cell seed: feature points are hashed from the integer cell id only.
 const CELL_SEED = vec2<f32>(41.3, 17.9);
@@ -180,6 +161,12 @@ fn shadeTissue(w: CellField, drift: f32, org: f32, organic: f32,
   let gap3 = (w.f3 - w.f1) / (0.075 / (1.0 + 0.5 * turgor));
   let node = exp(-gap3 * gap3);
   color = color + vec3<f32>(1.0, 0.86, 0.72) * node * (1.1 + treble * 0.8 + mids * 0.3);
+  // Idea: nucleus — a dark disk at the feature point, inside the dome.
+  let nucleus = exp(-f1 * f1 * 90.0);
+  color = mix(color, tissue * 0.32, nucleus * 0.65);
+  // Idea: plasmodesmata — organic noise opens pores through the wall.
+  let pore = smoothstep(0.62, 0.88, org) * exp(-wallB * 3.5);
+  color = color + ivory * pore * organic * 0.4;
 
   var s: TissueShade;
   s.hdr = color;

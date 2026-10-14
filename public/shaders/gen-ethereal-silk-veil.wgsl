@@ -4,31 +4,12 @@
 //  Features: generative, audio-reactive, mouse-driven, temporal, depth-aware,
 //            upgraded-rgba, aces-tone-map, chromatic-aberration
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: selvage fray noise along ribbon width edges; held-crease memory blended from exact C when mouse down
+//  Upgraded: 2026-10-10
+//  Ideas: selvage fray noise along ribbon width edges; held-crease memory blended from exact C when mouse down; silk moire interference; warp thread glints
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
@@ -154,6 +135,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let sheenMask = pow(smoothstep(0.4, 0.6, foldDepth), 3.0) * sheenAmount;
     layerColor = mix(layerColor, goldSheen, sheenMask * (0.5 + bass * 0.3));
     layerColor += goldSheen * selvageZone * 0.22;
+    
+    // Idea 1: Silk moire interference
+    let moire = sin((uv.x - gatherX) * 200.0 + uv.y * 50.0) * sin((uv.x - gatherX) * 150.0 - uv.y * 100.0);
+    layerColor += layerColor * moire * 0.15 * (1.0 + treble);
+
+    // Idea 2: Warp thread glints
+    let warpThreads = pow(max(0.0, sin(distToRibbon * 300.0)), 12.0);
+    layerColor += goldSheen * warpThreads * sheenMask * 0.8 * (0.5 + mids);
 
     // Held-crease color memory when mouse down
     let heldCrease = smoothstep(0.035, 0.0, abs(uv.x - gatherX)) * mouseDown * ribbonMask;

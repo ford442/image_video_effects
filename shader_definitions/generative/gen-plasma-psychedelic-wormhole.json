@@ -13,7 +13,7 @@
     "blackbody",
     "physics"
   ],
-  "description": "A wildly colorful tunnel/wormhole effect with swirling rainbow plasma patterns spiraling inward. Bright saturated colors cycling through the full spectrum. Multi-octave fBm noise creates organic flowing patterns. Stars and particles stream past the edges as you travel through the cosmic vortex. Mouse controls tunnel curvature and travel speed. Blackbody peak wavelength drives plasma color transitions.",
+  "description": "A wildly colorful tunnel/wormhole with swirling rainbow plasma, transient click-lensing masses, photon-sphere subrings, ergosphere-like frame-drag shear, and Kelvin-Helmholtz wall billows as stars stream through the vortex.",
   "workgroup_size": [
     16,
     16,

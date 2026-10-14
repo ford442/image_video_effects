@@ -10,10 +10,10 @@
     "audio",
     "music"
   ],
-  "description": "Parametric walk across a Klein bottle surface with FBM texture, diffuse/specular lighting, and audio-reactive color modulation.",
+  "description": "Parametric walk across a Klein bottle surface with FBM texture, diffuse/specular lighting, and audio-reactive color modulation. Parametric chart lines expose the non-orientable surface while a sharp pinch highlight defines the neck and handle.",
   "workgroup_size": [
-    8,
-    8,
+    16,
+    16,
     1
   ],
   "updatedParams": [

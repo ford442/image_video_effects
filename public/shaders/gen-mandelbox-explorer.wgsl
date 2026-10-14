@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: running-derivative distance estimate with 3D gradient-normal metallic lighting; fold-itinerary coloring (box reflections vs sphere inversions)
+//  Upgraded: 2026-10-10
+//  Ideas: distance-estimate lighting; fold itinerary; space-diagonal orbit trap; bounded glassy interior
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=time, y=rippleCount, zw=resolution
-  zoom_config: vec4<f32>,  // x=time, yz=mouse uv, w=mouse down
-  zoom_params: vec4<f32>,  // x=Box Scale, y=Iterations, z=Slice Thickness, w=Specular
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Box Scale, y=Iterations, z=Slice Thickness, w=Specular
 
 // Mandelbox: boxFold + sphereFold + scale, typical scale ≈ 2.5
 fn boxFold(v: vec3<f32>) -> vec3<f32> {
@@ -131,6 +113,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var shellInversions = 0.0;
   var coreScalings = 0.0;
   var itersRun = 0.0;
+  var diagMin = 1e9;
 
   for (var i = 0; i < maxIter; i = i + 1) {
     // IDEA 2 bookkeeping: which folds actually fired this iteration
@@ -150,6 +133,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let lz = length(z);
     orbitMin = min(orbitMin, lz);
     orbitAvg = orbitAvg + lz;
+    // Idea: space-diagonal trap — closest approach of this orbit to the (1,1,1) axis.
+    let axis = vec3<f32>(0.57735027, 0.57735027, 0.57735027);
+    let axial = dot(z, axis);
+    diagMin = min(diagMin, length(z - axis * axial));
     if (dot(z, z) > 10000.0) { break; }
   }
   orbitAvg = orbitAvg / f32(maxIter);
@@ -177,6 +164,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let itinCol = steel * wBox + gold * wShell + violet * wCore;
   let itinShift = 0.35 + mids * 0.15;
   color = mix(color, color * itinCol * 1.6, itinShift);
+  let spine = exp(-diagMin * diagMin * 18.0) * (0.25 + specular * 0.55);
+  color = color + vec3<f32>(0.72, 0.84, 1.0) * spine * (0.35 + treble * 0.25);
+  // Idea: bounded interior — orbits that never escape read as glassy volume.
+  let interior = step(f32(maxIter) - 0.5, itersRun);
+  color = mix(color, color * vec3<f32>(0.62, 0.74, 0.92) + vec3<f32>(0.05, 0.07, 0.12), interior * (0.45 + specular * 0.2));
   // escape speed banding: orbits that escaped early carry a fine iso-band
   let escapeBand = smoothstep(0.35, 0.5, abs(fract(itersRun * 0.5 + fdim) - 0.5)) * step(itersRun, f32(maxIter) - 0.5);
   color = color * (1.0 - escapeBand * 0.18);

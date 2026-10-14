@@ -4,31 +4,12 @@
 //  Features: procedural, audio-reactive, mouse-driven, temporal, chromatic,
 //            hologram, l-system, quantum, iridescence, curl-noise, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: prune-cut seal rings at terminal branch tips; north-facing moss lichen from bark normal vs up-light
+//  Upgraded: 2026-10-10
+//  Ideas: prune-cut seal rings at terminal branch tips; north-facing moss lichen from bark normal vs up-light; hologram scan-line glitches; falling quantum leaves
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-struct Uniforms {
-  config      : vec4<f32>,
-  zoom_config : vec4<f32>,
-  zoom_params : vec4<f32>,
-  ripples     : array<vec4<f32>, 50>,
-};
-
-@group(0) @binding(0) var u_sampler                : sampler;
-@group(0) @binding(1) var readTexture              : texture_2d<f32>;
-@group(0) @binding(2) var writeTexture             : texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u               : Uniforms;
-@group(0) @binding(4) var readDepthTexture         : texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler    : sampler;
-@group(0) @binding(6) var writeDepthTexture        : texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA             : texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB             : texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC             : texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer : array<f32>;
-@group(0) @binding(11) var comparison_sampler      : sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer : array<vec4<f32>>;
+#include "_prelude.wgsl"
 
 const PI : f32 = 3.14159265358979323846;
 const MAX_STEPS : i32 = 80;
@@ -319,6 +300,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Distance fade
     col *= exp(-t * 0.08);
+
+    // Idea 1: Hologram scan-line glitches (horizontal bands of noise)
+    let scanLine = step(0.98, sin(uv.y * 150.0 + time * 20.0)) * instability;
+    col += vec3<f32>(0.2, 0.8, 0.6) * scanLine * (0.5 + treble);
+    col.r += scanLine * 0.2;
+    col.b -= scanLine * 0.2;
   }
 
   // Ambient glow / background
@@ -332,6 +319,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Root ripple from bass peaks
   let rootRipple = sin(uv.x * 10.0 + time * 3.0) * cos(uv.y * 8.0) * bassSmooth * audioReact * 0.1;
   col += vec3<f32>(0.0, 0.1, 0.2) * max(rootRipple, 0.0);
+
+  // Idea 2: Falling quantum leaves (detached particles fluttering downward)
+  let leafUV = uv * vec2<f32>(10.0, 5.0) - vec2<f32>(0.0, time * 0.5);
+  let leafCell = floor(leafUV);
+  let leafFract = fract(leafUV);
+  let leafHash = hash3(vec3<f32>(leafCell, 0.0));
+  let isLeaf = step(0.98, leafHash) * smoothstep(0.2, 0.0, length(leafFract - vec2<f32>(0.5)));
+  col += vec3<f32>(0.1, 0.8, 0.4) * isLeaf * (1.0 + mid * 2.0);
 
   // Temporal feedback
   let previous = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);

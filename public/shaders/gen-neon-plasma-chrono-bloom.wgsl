@@ -4,7 +4,7 @@
 //  Features: raymarched, volumetric, audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-09-28
-//  Ideas: radial time lag (the bloom opens from the centre); sheet-intersection filaments
+//  Ideas: radial time lag (the bloom opens from the centre); sheet-intersection filaments; phase-slip caustic petals where delayed shell fronts fold over themselves; rotating sepal ribs that ride each shell and brighten under filament heat
 //  A packing: ACES display RGBA (rgb = toned + gamma-encoded colour, a = density/filament coverage); C not read
 // ═══════════════════════════════════════════════════════════════════
 //  Kept verbatim: 64-step march through the unbounded, domain-warped 3-octave simplex field
@@ -21,26 +21,8 @@
 //  ±2.25*aspect z=2 plane; audio read extraBuffer[133] (always 0); Reinhard -> ACES; alpha
 //  1.0 -> coverage; depth + dataTextureA now written.
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Intensity, .y = Distortion Speed, .z = Bloom Threshold, .w = Hue Shift
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Intensity, .y = Distortion Speed, .z = Bloom Threshold, .w = Hue Shift
 
 const MAX_STEPS = 64;
 const MAX_DIST = 10.0;
@@ -123,8 +105,8 @@ fn snoise(v: vec3<f32>) -> f32 {
     return 42.0 * dot(m * m, vec4<f32>(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
 }
 
-// Returns (sheet distance, filament strength).
-fn map(p: vec3<f32>, t: f32, filWidth: f32) -> vec2<f32> {
+// Returns (sheet distance, filament strength, chrono-caustic strength).
+fn map(p: vec3<f32>, t: f32, filWidth: f32) -> vec3<f32> {
     let intensity = u.zoom_params.x;
     let distortionSpeed = u.zoom_params.y;
 
@@ -186,7 +168,16 @@ fn map(p: vec3<f32>, t: f32, filWidth: f32) -> vec2<f32> {
     let n2 = snoise(q.yzx * 1.0 + vec3<f32>(3.7, 1.9, 5.3) - baseTime * 0.9) * 0.5 - fine;
     let fil = exp(-(d * d + n2 * n2) / (filWidth * filWidth));
 
-    return vec2<f32>(tendrils - baseRadius, fil);
+    // IDEA 3: phase-slip caustics from delayed shell fronts that fold over.
+    let shell = tendrils - baseRadius;
+    let phaseSlip = abs(fract(rBloom * (0.45 + distortionSpeed * 0.25) - localT * 0.12) - 0.5);
+    let caustic = exp(-phaseSlip * phaseSlip * 180.0) * exp(-abs(shell) * 14.0);
+    // IDEA 4: rotating sepal ribs around the bloom axis, brightest near sheet fronts.
+    let theta = atan2(localP.y, localP.x);
+    let ribs = pow(0.5 + 0.5 * cos(theta * 12.0 + localT * 0.8), 5.0) * exp(-abs(shell) * 10.0);
+    let chrono = (caustic * 0.7 + ribs * 0.5) * (1.0 + fil * 0.5);
+
+    return vec3<f32>(shell, fil, chrono);
 }
 
 // Palette for neon colors
@@ -247,6 +238,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var accumulatedDensity = 0.0;
     var emissiveGlow = 0.0;
     var filamentGlow = 0.0;
+    var chronoGlow = 0.0;
     var firstHit = MAX_DIST;
 
     let bloomThreshold = u.zoom_params.z;
@@ -273,6 +265,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // Idea 2: filament ignition, front-to-back weighted so filaments behind
             // an already-dense sheet stay hidden.
             filamentGlow += m.y * 0.05 * filHeat * max(1.0 - accumulatedDensity, 0.0);
+            // Ideas 3-4: fold caustics and sepal ribs bloom where shell timing slips.
+            chronoGlow += m.z * 0.04 * (0.8 + mids * 0.4);
 
             // Step forward by a small amount to march through the volume
             totalDist += 0.02;
@@ -300,6 +294,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // half a cycle on, pushed toward white-hot.
     let filCol = mix(palette(colorT + 0.5), vec3<f32>(1.0, 0.96, 1.0), 0.45);
     col += filCol * filamentGlow * FIL_GAIN;
+    let chronoCol = mix(palette(colorT - 0.35), vec3<f32>(1.0, 0.78, 0.98), 0.4);
+    col += chronoCol * chronoGlow * 2.1;
 
     // Background fade (fog)
     let fog = 1.0 - exp(-0.1 * totalDist);
@@ -310,7 +306,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col = pow(max(col, vec3<f32>(0.0)), vec3<f32>(1.0 / 2.2));
 
     // Semantic alpha: plasma coverage along the ray plus filament glow.
-    let alpha = clamp(accumulatedDensity * 1.05 + filamentGlow * 0.5, 0.1, 1.0);
+    let alpha = clamp(accumulatedDensity * 1.05 + filamentGlow * 0.5 + chronoGlow * 0.35, 0.1, 1.0);
     // Depth: near = 1 at the first sheet entry, 0 where the ray found nothing.
     let depth = 1.0 - clamp(firstHit / MAX_DIST, 0.0, 1.0);
 

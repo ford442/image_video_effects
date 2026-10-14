@@ -40,6 +40,7 @@ export type { UseWebcamOptions, UseWebcamReturn } from './useWebcam';
 
 export { useB3hdMode } from './useB3hdMode';
 export type { UseB3hdModeOptions } from './useB3hdMode';
+export { useSelectedVideoDuration } from './useSelectedVideoDuration';
 
 export { useRoulette } from './useRoulette';
 export type { UseRouletteOptions, UseRouletteReturn } from './useRoulette';

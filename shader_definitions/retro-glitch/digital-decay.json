@@ -2,7 +2,7 @@
   "id": "digital-decay",
   "name": "Digital Decay",
   "url": "shaders/digital-decay.wgsl",
-  "description": "Data corruption with spring hotspot, held burst, capped ripples, exact C ghost frames, block displacement, chromatic jitter, and ACES semantic alpha.",
+  "description": "Data corruption with spring hotspot, held burst, capped ripples, exact C ghost frames, block displacement, chromatic jitter, and ACES semantic alpha. Corrupting blocks tear on their lower half, and sparse rows stick to the ghost.",
   "workgroup_size": [16, 16, 1],
   "features": [
     "audio-reactive",

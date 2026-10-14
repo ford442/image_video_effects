@@ -4,7 +4,7 @@
   "url": "shaders/gen-kinetic-bioluminescent-obsidian-coral-reactor.wgsl",
   "type": "generative",
   "category": "generative",
-  "description": "A mesmerizing descent through a brutalist lattice of jet-black obsidian that is continuously overgrown and consumed by a pulsing, bioluminescent cyan and magenta \"coral\" energy-fluid.",
+  "description": "A mesmerizing descent through a brutalist lattice of jet-black obsidian that is continuously overgrown and consumed by a pulsing, bioluminescent cyan and magenta \"coral\" energy-fluid. Branching coral veins and a bright contact meniscus reveal where the living reactor consumes the obsidian.",
   "tags": [
     "organic",
     "brutalist",
@@ -17,8 +17,14 @@
   "features": [
     "audio-reactive",
     "mouse-control",
+    "mouse-driven",
     "volumetric",
-    "raymarching"
+    "raymarching",
+    "generated-depth",
+    "semantic-alpha",
+    "aces-tone-map",
+    "temporal-feedback",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -46,7 +52,7 @@
       "min": 0.0,
       "max": 3.0,
       "step": 0.05,
-      "mapping": "speed_params.x"
+      "mapping": "zoom_params.z"
     },
     {
       "id": "lattice_complexity",
@@ -55,7 +61,7 @@
       "min": 1.0,
       "max": 5.0,
       "step": 1.0,
-      "mapping": "speed_params.y"
+      "mapping": "zoom_params.w"
     },
     {
       "id": "glow_intensity",
@@ -126,5 +132,8 @@
       "step": 0.05
     }
   ],
+  "workgroup_size": [16, 16, 1],
+  "supportsDepth": true,
+  "supportsDof": false,
   "updated": true
 }

@@ -2,30 +2,13 @@
 //  gen-celestial-prism-orchid
 //  Category: generative
 //  Features: prism-orchid, celestial-floral, audio-light, mouse-pollinator, depth-petals, iridescent-bloom, semantic-alpha
-//  Ideas: Cauchy prismatic petal-edge dispersion, micro-venation bioluminescent nutrient flow, starlight corona diffraction starburst
+//  Upgraded: 2026-10-10
+//  Ideas: Cauchy prismatic petal-edge dispersion, micro-venation bioluminescent nutrient flow, starlight corona diffraction starburst; starlight stamen dust; chromatic petal veining
 //  A packing: display RGBA (RGB=ACES tone-mapped orchid bloom, A=semantic petal transmission)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Bloom Complexity, y=Refractive Index, z=Core Intensity, w=Cosmic Wind Speed
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Bloom Complexity, y=Refractive Index, z=Core Intensity, w=Cosmic Wind Speed
 
 fn rot(a: f32) -> mat2x2<f32> {
     let s = sin(a);
@@ -365,6 +348,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
             let core_illum = vec3<f32>(1.0, 0.6, 0.2) * (1.0 / (1.0 + dist_to_core * dist_to_core)) * coreIntensity;
             col += core_illum * (0.5 + bass * 0.4 + shimmer * 0.3);
+            
+            // Idea 1: Starlight stamen dust (sparkling particles near core)
+            let stamenNoise = hash31(floor(p * 10.0 + time));
+            let stamenSparkle = step(0.98, stamenNoise) * exp(-dist_to_core * 5.0);
+            col += vec3<f32>(1.0, 0.9, 0.5) * stamenSparkle * (2.0 + treble * 3.0);
+            
+            // Idea 2: Chromatic petal veining (fractal noise lines along the petals)
+            let veinNoise = fbm(p * 5.0 + vec3<f32>(0.0, time * 0.2, 0.0));
+            let veinLines = smoothstep(0.48, 0.5, veinNoise) * smoothstep(0.52, 0.5, veinNoise);
+            col += vec3<f32>(0.3, 0.8, 1.2) * veinLines * (0.5 + mids);
         }
     }
 

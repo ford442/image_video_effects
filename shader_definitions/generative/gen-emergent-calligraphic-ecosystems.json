@@ -64,5 +64,5 @@
   "updated": true,
   "id": "gen-emergent-calligraphic-ecosystems",
   "url": "shaders/gen-emergent-calligraphic-ecosystems.wgsl",
-  "features": ["upgraded-rgba"]
+  "features": ["upgraded-rgba", "audio-reactive", "mouse-driven"]
 }

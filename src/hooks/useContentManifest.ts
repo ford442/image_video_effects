@@ -3,7 +3,6 @@ import { RendererManager } from '../renderer/RendererManager';
 import type { ImageRecord } from '../types/aiVj';
 import { VideoRecord } from '../syncTypes';
 import { fetchContentManifest } from '../services/contentLoader';
-import { hydrateDurations } from '../services/videoSegmentManager';
 import { FALLBACK_IMAGES, FALLBACK_VIDEOS } from '../app/constants/fallbackContent';
 
 export interface UseContentManifestOptions {
@@ -25,9 +24,9 @@ export function useContentManifest({
         const fetchManifests = async () => {
             let content;
             try {
-                content = await fetchContentManifest();
+                content = await fetchContentManifest({ signal: controller.signal });
             } catch (error) {
-                if ((error as Error).name === 'AbortError') return;
+                if (controller.signal.aborted || (error as Error).name === 'AbortError') return;
                 console.warn("Failed to fetch manifests:", error);
                 content = {
                     manifest: FALLBACK_IMAGES.map(url => ({
@@ -39,17 +38,15 @@ export function useContentManifest({
                 };
             }
 
+            if (controller.signal.aborted) return;
+
             setImageManifest(content.manifest);
             setVideoList(content.videos);
             setStatus(`Loaded ${content.manifest.length} images, ${content.videos.length} videos`);
 
-            if (content.videos.length > 0) {
-                hydrateDurations(content.videos).then((hydrated) => {
-                    setVideoList(hydrated);
-                }).catch((e) => {
-                    console.warn("Failed to hydrate video durations:", e);
-                });
-            }
+            // Durations are intentionally not probed here: each probe is a
+            // cross-origin media request. They are filled in on demand
+            // (B3HD mode, video selection) by the hooks that need them.
 
             if (rendererRef.current) {
                 rendererRef.current.setImageList(content.manifest.map(m => m.url));

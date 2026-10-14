@@ -3,31 +3,12 @@
 //  Category: generative
 //  Features: kaleidoscope, electric, storm, audio-reactive, mouse-driven, semantic-alpha, upgraded-rgba
 //  Complexity: Medium-High
-//  Upgraded: 2026-09-09
-//  Ideas: Lichtenberg afterimage from exact C along the bolt; leader vs return-stroke
+//  Upgraded: 2026-10-10
+//  Ideas: Lichtenberg afterimage from exact C along the bolt; leader vs return-stroke; mirror-seam arcing; bolt-tip corona bulbs; leader pause beads; ground streamers
 //  A packing: HDR trail RGB in A; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.141592653589793;
 const TAU: f32 = 6.283185307179586;
@@ -132,7 +113,16 @@ fn branchingBolt(
             *color += branchCol * bolt * (0.5 + 0.5 * flicker);
         }
 
-        totalIntensity += bolt * weight;
+        // Idea 4 — bolt-tip corona bulb: brush discharge where each segment's leader stalls
+        let tipD = uv - end;
+        let tipBulb = exp(-dot(tipD, tipD) * 2600.0) * 0.9 + exp(-dot(tipD, tipD) * 420.0) * 0.18;
+        *color += vec3<f32>(0.75, 0.6, 1.0) * tipBulb * step(0.3, flicker);
+        // Idea: leader pause bead — a knot halfway along the segment, where the stepped leader hesitates.
+        let mid = (curStart + end) * 0.5;
+        let pauseBead = exp(-dot(uv - mid, uv - mid) * 2200.0);
+        *color += vec3<f32>(1.0, 0.94, 0.72) * pauseBead * 0.7;
+
+        totalIntensity += (bolt + tipBulb * 0.6 + pauseBead * 0.35) * weight;
 
         // Branch (single chain)
         if (curDepth <= 0) { break; }
@@ -245,6 +235,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Fold into kaleidoscope
     let kp = kaleidoscopeFold(uv, sectorCount, rot);
+
+    // Idea 3 — mirror-seam arcing: corona crawls along the sector edges and mirror lines where folded halves meet
+    let seamSector = TAU / sectorCount;
+    let seamA = atan2(uv.y, uv.x) + rot;
+    let seamFold = fract(seamA / seamSector) * seamSector;
+    let seamR = length(uv);
+    let seamGap = min(min(seamFold, seamSector - seamFold), abs(seamFold - seamSector * 0.5)) * seamR;
+    let seamId = floor(seamA / (seamSector * 0.5));
+    let seamNoise = noise(vec2<f32>(seamR * 26.0 - time * (6.0 + speed * 8.0), floor(time * 14.0) * 3.1 + seamId * 7.7));
+    let seamArc = exp(-seamGap * seamGap * 4200.0) * smoothstep(0.55, 0.8, seamNoise)
+                * smoothstep(0.03, 0.1, seamR) * exp(-seamR * 1.6);
     
     // Dark background with subtle radial gradient
     var col = vec3<f32>(0.01, 0.005, 0.015);
@@ -311,6 +312,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let ringGlow = rings * exp(-centerDist * 3.0) * 0.2;
     col += vec3<f32>(0.2, 0.5, 0.8) * ringGlow * audioIntensity;
     col += electricColor(fract(colorShift + time * 0.08)) * shock * (0.8 + treble * 1.4);
+    col += mix(vec3<f32>(0.85, 0.9, 1.0), electricColor(fract(colorShift + 0.5)), 0.4) * seamArc * audioIntensity * (1.2 + treble * 1.5);
+    // Idea: ground streamers — faint spikes at the outer radius, reaching toward the folded storm.
+    let streamAng = atan2(uv.y, uv.x) + rot;
+    let streamPhase = min(fract(streamAng * sectorCount / TAU), 1.0 - fract(streamAng * sectorCount / TAU));
+    let streamer = exp(-abs(length(uv) - 0.82) * 28.0) * exp(-streamPhase * 16.0);
+    col += electricColor(fract(colorShift + 0.62)) * streamer * audioIntensity * (0.45 + bass * 0.35);
+    boltEnergy += seamArc * 0.5;
     
     // Random electric sparks
     let sparkSeed = floor(time * 8.0);

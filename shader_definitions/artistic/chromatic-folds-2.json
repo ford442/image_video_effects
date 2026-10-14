@@ -4,7 +4,9 @@
   "url": "shaders/chromatic-folds-2.wgsl",
   "description": "Enhanced geometric color folding with improved warping.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

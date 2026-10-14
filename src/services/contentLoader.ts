@@ -29,13 +29,24 @@ export interface LoadedContent {
     videos: VideoRecord[];
 }
 
-export async function fetchContentManifest(): Promise<LoadedContent> {
+export interface FetchContentOptions {
+    /** Cancels the manifest fetches; an aborted call rejects with AbortError. */
+    signal?: AbortSignal;
+}
+
+function isAbortError(error: unknown): boolean {
+    return (error as { name?: string } | null)?.name === 'AbortError';
+}
+
+export async function fetchContentManifest(
+    { signal }: FetchContentOptions = {}
+): Promise<LoadedContent> {
     let manifest: ImageRecord[] = [];
     let videos: VideoRecord[] = [];
 
     // 1. Fetch images from API
     try {
-        const response = await fetch(IMAGE_MANIFEST_URL);
+        const response = await fetch(IMAGE_MANIFEST_URL, { signal });
         if (response.ok) {
             const responseData = await response.json();
             
@@ -56,12 +67,13 @@ export async function fetchContentManifest(): Promise<LoadedContent> {
             }));
         }
     } catch (error) {
+        if (isAbortError(error)) throw error;
         console.warn('Backend API failed, trying local manifest...', error);
     }
 
     // 2. Fetch videos from API
     try {
-        const response = await fetch(VIDEO_MANIFEST_URL);
+        const response = await fetch(VIDEO_MANIFEST_URL, { signal });
         if (response.ok) {
             const data = await response.json() as any[];
             if (Array.isArray(data) && data.length > 0) {
@@ -85,13 +97,14 @@ export async function fetchContentManifest(): Promise<LoadedContent> {
             }
         }
     } catch (error) {
+        if (isAbortError(error)) throw error;
         console.warn('Video manifest API failed, will try local manifest...', error);
     }
 
     // 3. Try Local Manifest (Bucket Images & Videos) if API Empty OR Videos Missing
     if (manifest.length === 0 || videos.length === 0) {
         try {
-            const response = await fetch(LOCAL_MANIFEST_URL);
+            const response = await fetch(LOCAL_MANIFEST_URL, { signal });
             if (response.ok) {
                 const data = await response.json() as LocalManifestResponse;
 
@@ -118,6 +131,7 @@ export async function fetchContentManifest(): Promise<LoadedContent> {
                 console.log('Loaded local manifest. Total:', manifest.length, 'images,', videos.length, 'videos');
             }
         } catch (error) {
+            if (isAbortError(error)) throw error;
             console.warn('Failed to load local manifest:', error);
         }
     }

@@ -4,7 +4,7 @@
   "url": "shaders/gen-sentient-plasma-silk-nebula-forge.wgsl",
   "category": "generative",
   "type": "generative",
-  "description": "A hyper-dimensional nebula forge that weaves luminous, reactive threads of plasma silk around a cosmic spindle. Features an ethereal plasma-silk web generated via domain warping and 3D noise.",
+  "description": "A hyper-dimensional nebula forge weaving reactive plasma-silk filaments with magnetized braid-knot compressions and expanding ion-bloom fronts around a cosmic spindle.",
   "features": [
     "organic",
     "cosmic",

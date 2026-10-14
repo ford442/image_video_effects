@@ -1,7 +1,7 @@
 {
   "id": "gen-prismatic-cyber-aurora-astral-dragonfly",
   "name": "Prismatic Cyber-Aurora Astral-Dragonfly",
-  "description": "A majestic, hyper-organic biomechanical dragonfly forged from liquid auroral plasma and shattered chromatic crystal.",
+  "description": "A biomechanical auroral dragonfly with chitin thin-film wings, anatomical venation, leading-edge vortex sheets, and abdominal bioluminescent segment pulses.",
   "category": "generative",
   "url": "shaders/gen-prismatic-cyber-aurora-astral-dragonfly.wgsl",
   "uniforms": [

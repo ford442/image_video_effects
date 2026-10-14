@@ -3,30 +3,12 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-15
-//  Ideas: vertebral phase-lag undulation; auroral vortex wake
+//  Upgraded: 2026-10-10
+//  Ideas: pectoral fin-membrane flutter blended into the leviathan hull; electroreceptor ampullae sparks clustered around the snout
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-    zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-    zoom_params: vec4<f32>,  // .x = Time Offset, .y = Audio Reactivity, .z = Aurora, .w = Evolution Speed
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Time Offset, .y = Audio Reactivity, .z = Aurora, .w = Evolution Speed
 
 // --- GLOBALS & MATH ---
 const PI = 3.14159265359;
@@ -153,6 +135,12 @@ fn map(p_in: vec3<f32>, time: f32) -> f32 {
     // Combine with smin to integrate ribs organically
     d = smin(d, ribs, 0.2);
 
+    // Idea 3: paired pectoral membrane fins flutter with the swim phase.
+    let finP = vec3<f32>(abs(p.x), p.y, p.z);
+    let finFlap = sin(time * 2.6 + p.z * 2.8) * 0.24;
+    let fin = sdCapsule(finP, vec3<f32>(0.9, 0.15, 1.9), vec3<f32>(1.75, 0.25 + finFlap, 0.4), 0.13);
+    d = smin(d, fin, 0.22);
+
     // 3. Temporal wake (KIFS fractals) trailing behind
     if (p_in.z < -2.0) {
         var fractP = p_in;
@@ -177,7 +165,11 @@ fn map_glow(p_in: vec3<f32>, time: f32) -> f32 {
      let p = swimDistortion(p_in, time);
      var ribP = p;
      ribP.z = (fract(ribP.z * 1.5) - 0.5) / 1.5;
-     return sdCapsule(ribP, vec3<f32>(0.0, -1.2, 0.0), vec3<f32>(0.0, 1.2, 0.0), 0.1);
+     let ribGlow = sdCapsule(ribP, vec3<f32>(0.0, -1.2, 0.0), vec3<f32>(0.0, 1.2, 0.0), 0.1);
+     let finP = vec3<f32>(abs(p.x), p.y, p.z);
+     let finFlap = sin(time * 2.6 + p.z * 2.8) * 0.24;
+     let finGlow = sdCapsule(finP, vec3<f32>(0.9, 0.15, 1.9), vec3<f32>(1.75, 0.25 + finFlap, 0.4), 0.16);
+     return min(ribGlow, finGlow);
 }
 
 fn map_wake_glow(p: vec3<f32>, time: f32) -> f32 {
@@ -307,6 +299,14 @@ fn main(@builtin(global_invocation_id) GlobalInvocationID: vec3<u32>) {
     let wakeCol = mix(vec3<f32>(0.1, 0.65, 1.0), vec3<f32>(0.9, 0.12, 1.0),
         0.5 + 0.5 * sin(time * 0.7));
     col += wakeCol * res.wake_glow * 0.022 * (1.0 + audio.y * 0.6 + audio.z * 0.35) * brightness;
+
+    // Idea 4: electroreceptor ampullae sparks around the snout pores.
+    if (res.hit) {
+        let pHit = ro + rd * res.dist;
+        let snout = exp(-length(pHit - vec3<f32>(0.0, 0.1, 4.6)) * 8.0);
+        let pore = pow(max(cos(atan2(pHit.y, pHit.x) * 16.0 + pHit.z * 6.0), 0.0), 12.0);
+        col += vec3<f32>(0.18, 1.0, 0.72) * snout * pore * (0.22 + audio.z * 0.2);
+    }
 
     // Atmospheric fog
     col = mix(col, vec3<f32>(0.01, 0.02, 0.03), 1.0 - exp(-0.02 * res.dist));

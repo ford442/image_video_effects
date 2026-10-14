@@ -1,30 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Data Moshing Diffusion — Batch 67
-//  fp128 offset integration, anisotropic diffusion, racing stream
-//  packets, exact C advection, capped click fronts, held swirl, ACES.
-//  dataTextureA = SIM STATE (UV offset.xy, _, alpha diagnostic).
+//  Data Moshing Diffusion
+//  Category: retro-glitch
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-10
+//  Ideas: tangent diffusion; packet wake
+//  A packing: raw sim (offset.xy, unused, alpha)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 struct Fp128Vec2 {
   base: vec2<f32>,
@@ -45,7 +29,7 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 }
 
 fn stream_packet(uv: vec2<f32>, time: f32, treble: f32) -> f32 {
-  return pow(max(0.0, sin(uv.y * 48.0 + uv.x * 17.0 - time * (14.0 + treble * 6.0)), 0.0), 12.0);
+  return pow(max(0.0, sin(uv.y * 48.0 + uv.x * 17.0 - time * (14.0 + treble * 6.0))), 12.0);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -120,10 +104,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let gradER = length(vec3<f32>(e.rgb - vec3<f32>(currentR, currentG, currentB)));
     let gradWR = length(vec3<f32>(w.rgb - vec3<f32>(currentR, currentG, currentB)));
 
-    let cN = diffusionCoefficient(gradNR, kappa * (1.0 + bass * 0.1));
-    let cS = diffusionCoefficient(gradSR, kappa * (1.0 + mids * 0.1));
-    let cE = diffusionCoefficient(gradER, kappa * (1.0 + treble * 0.1));
-    let cW = diffusionCoefficient(gradWR, kappa);
+    var cN = diffusionCoefficient(gradNR, kappa * (1.0 + bass * 0.1));
+    var cS = diffusionCoefficient(gradSR, kappa * (1.0 + mids * 0.1));
+    var cE = diffusionCoefficient(gradER, kappa * (1.0 + treble * 0.1));
+    var cW = diffusionCoefficient(gradWR, kappa);
+    // Idea: tangentDiffusion — smear runs along the contour, kappa still sets the base.
+    let gradVec = vec2<f32>(gradER - gradWR, gradNR - gradSR);
+    let tangentDiffusion = abs(gradVec.y) / max(length(gradVec), 0.001);
+    let acrossEdge = 1.0 - tangentDiffusion;
+    cE = cE * (1.0 + tangentDiffusion * 1.4);
+    cW = cW * (1.0 + tangentDiffusion * 1.4);
+    cN = cN * (1.0 + acrossEdge * 1.4);
+    cS = cS * (1.0 + acrossEdge * 1.4);
     let mouseBoost = 1.0 + exp(-mouseDist * mouseDist * 10.0) * smearStrength * 5.0;
 
     currentR += dt * mouseBoost * (cN * (n.r - currentR) + cS * (s.r - currentR) + cE * (e.r - currentR) + cW * (w.r - currentR)) * (1.0 + bass * 0.1);
@@ -140,14 +132,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let trailUV = clamp(uv - offset * 1.65, vec2<f32>(0.0), vec2<f32>(1.0));
   let trailColor = textureSampleLevel(readTexture, u_sampler, trailUV, 0.0).rgb;
-  let prevDisplay = textureLoad(dataTextureC, coord, 0);
-  finalColor = mix(finalColor, mix(trailColor, prevDisplay.rgb * 0.9, packet * 0.15), 0.08 + smearStrength * 0.12);
+  finalColor = mix(finalColor, trailColor, (0.08 + smearStrength * 0.12) * (1.0 - packet * 0.45));
+  // Idea: packetWake — pull a sample upstream of the racing packet. C stays the offset field.
+  let wakeUv = clamp(distortedUV - vec2<f32>(0.02, -0.008) * (0.35 + packet * 3.0), vec2<f32>(0.0), vec2<f32>(1.0));
+  let packetWake = textureSampleLevel(readTexture, u_sampler, wakeUv, 0.0).rgb;
+  finalColor = mix(finalColor, packetWake, packet * 0.55);
   finalColor = acesToneMap(clamp(finalColor, vec3<f32>(0.0), vec3<f32>(4.0)));
 
   let depth = textureLoad(readDepthTexture, coord, 0).r;
   let alpha = clamp(avgCoeff + length(offset) * 2.0 + bass * 0.05 + packet * 0.1, 0.06, 0.98);
 
-  textureStore(dataTextureA, coord, vec4<f32>(offset, alpha));
+  textureStore(dataTextureA, coord, vec4<f32>(offset, 0.0, alpha));
   textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

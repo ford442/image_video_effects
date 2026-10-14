@@ -2,7 +2,7 @@
   "id": "gen-bioluminescent-chrono-plasma-astro-owl",
   "name": "Bioluminescent Chrono-Plasma Astro-Owl",
   "url": "shaders/gen-bioluminescent-chrono-plasma-astro-owl.wgsl",
-  "description": "A hyper-dimensional, cyber-organic celestial owl forged from liquid chrono-plasma and shattered quantum-glass \u2014 raymarched SDF plumage folded by live FFT bands, deformed by click ripples, orbited by the mouse, and backed by a kaleidoscopic chrono-tessellation nebula.",
+  "description": "A cyber-organic chrono-plasma astro-owl with frame-dragged nebula sky, lattice plumage etching, facial-disk diffraction rings, and wingtip plasma-vortex shedding under FFT-reactive folds.",
   "category": "generative",
   "tags": [
     "organic",

@@ -132,6 +132,12 @@ export const LiveControlPanel: React.FC<LiveControlPanelProps> = ({
                 </div>
             )}
 
+            {showMidi && !midiEnabled && (
+                <div style={{ fontSize: '10px', color: '#a0a0b0' }}>
+                    Arm MIDI is disabled until "Enable MIDI" is on (requires Web MIDI support and permission).
+                </div>
+            )}
+
             {learnTarget === 'param' && armed && (
                 <div style={{ fontSize: '12px', color: '#FFD700', textAlign: 'center', padding: '8px', background: 'rgba(255,215,0,0.08)', borderRadius: '6px' }}>
                     Move a MIDI knob or press a key to map <strong>{describeAction(pendingAction)}</strong>
@@ -149,6 +155,7 @@ export const LiveControlPanel: React.FC<LiveControlPanelProps> = ({
                                 setLearnedTrigger(null);
                             }}
                             disabled={!midiEnabled}
+                            title={midiEnabled ? 'Arm MIDI learn: move a knob or press a pad to bind it' : 'Turn on "Enable MIDI" first (needs Web MIDI support and permission)'}
                         >
                             {armed === 'midi' ? ' Armed MIDI' : 'Arm MIDI'}
                         </button>

@@ -4,7 +4,7 @@
   "url": "shaders/gen-quantum-resonance-lattice.wgsl",
   "type": "generative",
   "category": "generative",
-  "description": "A highly ordered lattice of vibrating quantum nodes that spontaneously shatters and reconstitutes in rhythmic waves.",
+  "description": "A highly ordered lattice of vibrating quantum nodes with resonant band-splitting halos and standing nodal-wave sheets that shatter and reconstitute in rhythmic waves.",
   "tags": [
     "quantum",
     "lattice",

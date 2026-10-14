@@ -4,7 +4,7 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-09-27
-//  Ideas: refraction through the plasma core (gears and pillar seen bent through the furnace); meshing gear train (gears turn on their axles, fold-mirrored neighbours and alternate KIFS levels counter-rotate); piston-chuff exhaust (pillar always streams and puffs 4x per gear revolution)
+//  Ideas: refraction through the plasma core (gears and pillar seen bent through the furnace); meshing gear train (gears turn on their axles, fold-mirrored neighbours and alternate KIFS levels counter-rotate); piston-chuff exhaust (pillar always streams and puffs 4x per gear revolution); tooth-root heat-check crazing; anvil spark shower
 //  A packing: raw HDR trail RGB (pre-ACES, clamped 0..64) + semantic alpha; C read back as HDR
 // ═══════════════════════════════════════════════════════════════════
 // KIFS gear-train around a plasma furnace, run hot and fast:
@@ -16,27 +16,8 @@
 //           the engine zeroes extraBuffer[133..] every frame, so the cursor is raw.
 // ----------------------------------------------------------------
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=Time, yz=MouseUV, w=MouseDown
-    zoom_params: vec4<f32>,  // x=Gear Complexity, y=Plasma Intensity, z=Refraction Index, w=Emission Threshold
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Gear Complexity, y=Plasma Intensity, z=Refraction Index, w=Emission Threshold
 
 // --- Math & Noise Helpers ---
 
@@ -270,6 +251,9 @@ fn shadeBrass(p: vec3<f32>, n: vec3<f32>, rd: vec3<f32>, hue: f32, refIndex: f32
     // Idea 2: read the local (turning) gear angle so the stripes ride the teeth
     let band = 0.5 + 0.5 * sin(gearAng * 26.0);
     col *= 0.82 + band * 0.36;
+    // Idea 4: tooth-root heat-check crazing etched into loaded metal.
+    let craze = pow(0.5 + 0.5 * sin(gearAng * 52.0 + p.y * 40.0), 9.0);
+    col += vec3<f32>(1.0, 0.45, 0.22) * craze * (0.06 + g_bass * 0.08);
 
     let ao = clamp(1.0 - iterFrac, 0.0, 1.0);
     col *= ao;
@@ -491,6 +475,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Volumetric exhaust glow
     let glowColor = furnacePalette(fract(time * 0.25 + totalGlow * 0.3), 1.0 + g_treble);
     col += glowColor * totalGlow * step(emissionThresh, totalGlow);
+    // Idea 5: anvil spark shower around the furnace throat.
+    let sparkPhi = atan2(uv.y, uv.x);
+    let sparkRing = exp(-pow((length(uv) - 0.28) * 8.0, 2.0));
+    let sparks = pow(0.5 + 0.5 * sin(sparkPhi * 30.0 - time * 18.0 + g_treble * 6.0), 10.0);
+    col += vec3<f32>(1.0, 0.82, 0.45) * sparkRing * sparks * (0.08 + plasmaIntensity * 0.12);
 
     // Detonation flash + cursor magnetic halo
     col += furnacePalette(fract(time * 1.1), 1.0) * blast * 1.5;

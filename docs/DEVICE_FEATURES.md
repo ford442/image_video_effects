@@ -71,13 +71,38 @@ Rejection is fail-soft — it never fails the ladder rung. `encodePresent` (TS) 
 
 ### Opt-in: Display P3 / extended tone mapping (default off)
 
-- `?display_p3=1` requests `colorSpace: 'display-p3'`. It is **never** requested at boot by default (Pascal-era GPUs, cheap panels, screenshot mismatch).
-- `toneMapping: { mode: 'extended' }` is only tried behind the same opt-in **and** when `matchMedia('(dynamic-range: high)')` matches. Format stays `getPreferredCanvasFormat()`.
-- Ladder: p3+extended → p3+standard → default srgb. A configure throw, a validation-scope error, or a `getConfiguration()` readback that doesn't match counts as rejected.
-- Applied values: `window.webgpuProbe.canvasColorSpace` / `canvasToneMapping`.
-- TS-first; the WASM path stays srgb/standard. A Controls → Render quality → **Display P3** toggle is a follow-up (needs a live reconfigure).
+**User setting.** Controls → Render Quality → **Wide-gamut output (Display P3)** (`data-testid="display-p3-toggle"`). The choice persists in `localStorage` under `px_display_p3` (`canvas_configure.json` `optIn.displayP3.storageKey`, service `src/services/displayP3.ts`). `?display_p3=1` still works and wins: either source enables the opt-in, so a URL-forced page turns P3 back on at the next load whatever the saved value. The default is unchanged: off, srgb/standard, nothing written to `configure`.
+
+- Requests `colorSpace: 'display-p3'`. Never requested at boot unless the setting or URL opts in (Pascal-era GPUs, cheap panels, screenshot mismatch).
+- `toneMapping: { mode: 'extended' }` is only tried behind the same opt-in **and** when `matchMedia('(dynamic-range: high)')` matches. The page evaluates the media query (a worker cannot see it) and passes it to the renderer. Format stays `getPreferredCanvasFormat()`.
+- Negotiation (`negotiateCanvasColor`): p3+extended → p3+standard → default srgb. A configure throw, a validation-scope error, or a `getConfiguration()` readback that doesn't match counts as rejected. A rejection leaves the default sRGB swapchain configured, so the canvas never goes blank.
+- **Live toggle** (`WebGPURenderer.setDisplayP3`, worker RPC `setDisplayP3`): re-runs the negotiation on the existing `GPUDevice`/context — no second device — and preserves the current `COPY_SRC` bit. Capture (`setCanvasCopySrc`) spreads the stored `canvasColorOptIns`, so a P3 canvas stays P3 through capture and restore.
+- **Recording guard:** while the swapchain holds `COPY_SRC` for a GPU-encode take, or the page is recording, the toggle is *deferred* (`deferred: true`, nothing reconfigured). The UI says "applies after recording stops" and applies it when recording ends, so one file never mixes color spaces.
+- **Diagnostics:** the applied values are in `window.webgpuProbe.canvasColorSpace` / `canvasToneMapping`, plus `canvasColorFallback` when the request was narrowed (`unsupported-p3`, `unsupported-extended-tone-mapping`, `not-hdr-display`). Both boot and live changes update it. `getDiagnostics().webgpu.canvas` carries `{ requestedDisplayP3, colorSpace, toneMapping, copySrc, fallbackReason }`. The Controls panel shows `Applied: display-p3 / extended` or `Using sRGB: <reason>`.
+- TS-first. The WASM path stays srgb/standard (Tier B freeze); the toggle is disabled there.
+
+#### Display color vs. encoded recording color
+
+These are separate, and enabling the setting does **not** make recordings wide-gamut-tagged.
+
+| Surface | What the setting changes | Color metadata |
+| --- | --- | --- |
+| On-screen canvas | `GPUCanvasContext` `colorSpace`/`toneMapping` as accepted above | Handled by the browser compositor |
+| PNG screenshot (worker `captureFrame`) | The 2D encode surface is created as `display-p3` when the presented `VideoFrame` reports `smpte432` primaries; otherwise default sRGB | PNG carries no ICC profile from `convertToBlob`; treat as untagged |
+| MediaRecorder / `captureStream` | Whatever the compositor hands the stream | None written by the app |
+| WebCodecs + `webm-muxer` | Frames are built from the canvas, so pixel values are P3 | `VideoEncoderConfig` and the muxer set **no** color space/primaries, so players generally assume BT.709. P3 content can look desaturated in playback |
+
+Adding an encoded colour tag (`VideoEncoderConfig.colorSpace`, muxer colour elements) is separate work and not part of this setting.
+
+#### Hardware validation record
+
+Fill one row per tested browser/display. SwiftShader (the cloud VM) has no wide-gamut display, so it only exercises the sRGB fallback path. `tests/display-p3.swiftshader.spec.ts` (`npm run test:engine2 -- -g "Display P3"`) toggles P3 live in both render threads and asserts the canvas still presents, GPU errors stay empty, and a rejection lands on sRGB with `canvasColorFallback`.
+
+| Browser / OS | Display | `color-gamut` | `dynamic-range` | Applied color space | Applied tone mapping | Fallback reason | Date / tester |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| _pending real hardware_ | | | | | | | |
 
 ## Deferred
 
 - **C++ canvas parity:** ~~`COPY_SRC`~~ (done: canvas_configure v2, see above) / `colorSpace` + extended tone mapping on `JS_CreateSurfaceFromCanvas` + `ConfigureSurface()` — after #1080 (TS-first `?display_p3=1`).
-- **Controls toggle** for Display P3 (URL opt-in only today).
+- **Encoded colour metadata** for recordings (see the Display P3 section; the setting only affects the display canvas).

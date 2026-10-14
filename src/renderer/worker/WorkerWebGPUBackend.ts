@@ -17,6 +17,7 @@
  *    optimistic local shadow (slots, params, input source).
  */
 
+import { loadDisplayP3 } from '../../services/displayP3';
 import { DEFAULT_FORMAT_CAPABILITIES, DeviceFormatCapabilities, InternalColorFormat } from '../../config/formatPolicy';
 import { createDefaultBreadcrumbs } from '../../gpuChores/types';
 import { reportError } from '../ErrorHandling';
@@ -30,7 +31,12 @@ import { snapNodeScale } from '../webgpu/nodeScale';
 import type { SlotMode } from '../webgpu/webgpuConstants';
 import type { WebGPUBackendApi } from '../webgpuBackendApi';
 import type { WebGpuProbeHandoff } from '../webgpuBootProbe';
-import { publishWebGpuProbeBreadcrumb } from '../webgpuBootProbe';
+import {
+  publishWebGpuProbeBreadcrumb,
+  updateWebGpuProbeColor,
+  type CanvasColorState,
+  type DisplayP3Result,
+} from '../webgpuBootProbe';
 import type { FrameInput, RenderEvent, RenderInitInfo, RenderSnapshot, TestRenderState } from './protocol';
 import { connectRenderWorker, RenderWorkerClient } from './renderWorkerClient';
 import { registerShaderCompileService } from '../../utils/shaderCompileService';
@@ -165,7 +171,7 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
         type: 'init',
         canvas: offscreen,
         config: this.config,
-        colorOptIns: resolveCanvasColorOptIns(),
+        colorOptIns: resolveCanvasColorOptIns(undefined, undefined, loadDisplayP3()),
         appBaseUrl: absoluteUrl('.'),
         ...(ringBuffer ? { inputRing: ringBuffer } : {}),
       });
@@ -548,6 +554,18 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
     if (enabled && !this.supportsCanvasCopySrc()) return false;
     this.client?.send({ type: 'setCanvasCopySrc', enabled });
     return true;
+  }
+
+  /** Live Display P3 toggle; the worker re-negotiates on its own device and reports what applied. */
+  async setDisplayP3(enabled: boolean, isHdr: boolean): Promise<DisplayP3Result | null> {
+    if (!this.client) return null;
+    const result = await this.client.rpc({ type: 'setDisplayP3', enabled, isHdr });
+    if (!result.deferred) updateWebGpuProbeColor(result);
+    return result;
+  }
+
+  getCanvasColorState(): CanvasColorState | null {
+    return this.snap?.canvasColor ?? null;
   }
 
   /** VideoFrame of the next presented frame, transferred from the worker (recording). */

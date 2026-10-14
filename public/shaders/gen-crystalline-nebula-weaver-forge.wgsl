@@ -1,7 +1,12 @@
-// ----------------------------------------------------------------
-// Crystalline Nebula-Weaver Forge
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Crystalline Nebula-Weaver Forge
+//  Category: generative
+//  Features: raymarched, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-10-10
+//  Ideas: forge-jet plasma plumes from the crucible core; loom-shuttle filaments weaving across crystal fold planes
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 // zoom_params: .x = Folding Complexity, .y = Nebula Density, .z = Crystal Refraction, .w = Core Pulse Speed
 
@@ -9,6 +14,10 @@ const PI: f32 = 3.14159265359;
 const MAX_STEPS: i32 = 80;
 const SURF_DIST: f32 = 0.001;
 const MAX_DIST: f32 = 20.0;
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn rot2D(a: f32) -> mat2x2<f32> {
     let s = sin(a);
@@ -91,6 +100,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (f32(global_id.x) >= res.x || f32(global_id.y) >= res.y) {
         return;
     }
+    let coord = vec2<i32>(global_id.xy);
 
     let uv = (vec2<f32>(global_id.xy) - 0.5 * res) / res.y;
 
@@ -116,7 +126,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let glow_color = vec3<f32>(0.2, 0.5, 1.0) * mix(0.1, 1.0, u.zoom_params.w);
 
     var p = ro + rd * t;
-    if (t < MAX_DIST) {
+    let hit = t < MAX_DIST;
+    if (hit) {
         let n = getNormal(p);
 
         // Lighting
@@ -132,6 +143,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         color = diff * vec3<f32>(0.8, 0.9, 1.0) * 0.1 + spec * vec3<f32>(1.0) + fresnel * iridescence;
         color = mix(color, glow_color, 0.3); // Mix with internal glow
+
+        // Idea 1: forge-jet plumes punching out of the core.
+        let jet = exp(-length(p.xy) * 2.8) * (0.5 + 0.5 * sin(p.z * 10.0 - u.config.x * 3.5));
+        color += vec3<f32>(1.0, 0.52, 0.2) * jet * (0.35 + u.zoom_params.y * 0.25);
+
+        // Idea 2: loom-shuttle filaments crossing fold planes.
+        let shuttle = pow(max(cos((p.x + p.y) * 5.5 + u.config.x * 2.0), 0.0), 8.0) * exp(-abs(p.z) * 1.2);
+        color += vec3<f32>(0.2, 0.78, 1.0) * shuttle * (0.2 + u.zoom_params.z * 0.3);
     } else {
         // Deep space background with slight gradient
         color = vec3<f32>(0.02, 0.01, 0.05) + length(uv) * vec3<f32>(0.05, 0.02, 0.1);
@@ -141,9 +160,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color += glow_color * nebula_glow;
 
     // Output mapping
-    let out_color = vec4<f32>(color, 1.0);
+    let mapped = acesToneMap(max(color, vec3<f32>(0.0)));
+    let alpha = clamp(select(0.06, 0.62, hit) + nebula_glow * 0.22, 0.0, 1.0);
+    let out_color = vec4<f32>(mapped, alpha);
+    let depth = select(0.0, clamp(1.0 - t / MAX_DIST, 0.0, 1.0), hit);
 
-    textureStore(writeTexture, global_id.xy, out_color);
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(p.xyz, f32(i))); // Store positions and steps for debug/post
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(t / MAX_DIST));
+    textureStore(writeTexture, coord, out_color);
+    textureStore(dataTextureA, coord, out_color);
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

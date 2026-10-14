@@ -11,7 +11,7 @@
     "temporal",
     "depth-aware"
   ],
-  "description": "A raymarched KIFS plasma lotus with sprung gravitational lensing, bounded click pulses, multi-band iridescent lighting, temporal petal echoes, and real hit depth.",
+  "description": "A raymarched KIFS plasma lotus with sprung gravitational lensing, bounded click pulses, multi-band iridescent lighting, temporal petal echoes, and real hit depth. Local chromatic gravity streaks frame the lens while treble-lit plasma filaments bridge the core and folded petals.",
   "workgroup_size": [
     16,
     16,
@@ -57,12 +57,16 @@
   "id": "gen-graviton-plasma-lotus",
   "url": "shaders/gen-graviton-plasma-lotus.wgsl",
   "features": [
+    "audio-reactive",
+    "mouse-driven",
     "kifs-lotus-sdf",
     "sprung-gravity-lens",
     "click-gravity-pulses",
     "multi-band-iridescence",
     "temporal-feedback",
     "depth-output",
+    "semantic-alpha",
+    "aces-tone-map",
     "upgraded-rgba"
   ]
 }

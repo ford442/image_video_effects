@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: breath plasma jet cone along spine tangent; per-segment scale overlap parallax
+//  Upgraded: 2026-10-10
+//  Ideas: breath plasma jet cone along spine tangent; per-segment scale overlap parallax;
+//         dorsal spine plasma pennants; jawline arc-weld filaments
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time (seconds), .y = rippleCount (0-50 active ripples), .zw = resolution (width, height)
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0–1 canvas: y=0 top), .w = mouse_down (>0.5 = pressed)
-  zoom_params: vec4<f32>,  // .xyzw = user params p1…p4 (mapped from UI sliders)
-  ripples: array<vec4<f32>, 50>,  // .xy = ripple uv, .z = startTime (seconds), .w = padding (0)
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -279,6 +261,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
     let audio = plasmaBuffer[0].x; // bass 20-200 Hz
     let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     // Sliders: x Plasma Intensity, y Undulation Speed, z Segment Density, w Nebula Density
     let params = u.zoom_params;
@@ -365,6 +348,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 scaleParallax = max(scaleParallax, scaleOverlapParallax(p, segMid, viewDir, fi, time));
             }
             col += vec3<f32>(0.15, 0.55, 0.75) * scaleParallax * (0.35 + audio * 0.5);
+
+            // Idea 3: dorsal spine plasma pennants lashing over the back ridge.
+            let dorsalPennants = pow(max(0.0, sin((p.z + time * 2.0) * 10.0 + p.y * 8.0)), 5.0)
+                * smoothstep(0.35, 1.3, p.y);
+            col += vec3<f32>(0.9, 0.3, 1.0) * dorsalPennants * (0.18 + treble * 0.55);
+
+            // Idea 4: jawline arc-weld filaments around the dragon head.
+            let jawRing = length(vec2<f32>(length(p.xz - headPos.xz) - 0.45, p.y - headPos.y + 0.25));
+            let jawArcs = exp(-jawRing * 12.0) * (0.4 + 0.6 * sin(time * 4.0 + p.x * 6.0));
+            col += vec3<f32>(0.2, 1.0, 0.9) * jawArcs * (0.14 + audio * 0.45);
             let inner_glow = vec3<f32>(0.0, 0.8, 1.0) * glow * (1.0 + audio * 1.5);
             col = col + inner_glow;
 

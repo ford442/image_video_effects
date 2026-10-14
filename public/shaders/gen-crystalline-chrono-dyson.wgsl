@@ -3,31 +3,12 @@
 //  Category: generative
 //  Features: raymarched, audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-09-27
-//  Ideas: statite swarm (Swarm Count = number of golden-phased octahedron statites on the satellite orbit, core-lit sails); power-grid packets (emissive packets run quasar -> spoke -> torus conduit as one harvest circuit, packet speed = Flux Speed); louvred panels (each shell plate tilts open on its own phase and throws core light outward)
+//  Upgraded: 2026-10-10
+//  Ideas: chronometer tick-crowns around the shell azimuth; quartz twinning seams crossing the crystalline panel interiors
 //  A packing: clamped HDR linear RGB (pre-ACES) + semantic alpha; C read back exactly as HDR for chromatic feedback
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Panel Density, y=Quasar Glow, z=Flux Speed, w=Swarm Count
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Panel Density, y=Quasar Glow, z=Flux Speed, w=Swarm Count
 
 const PI: f32 = 3.141592653589793;
 const TAU: f32 = 6.283185307179586;
@@ -298,6 +279,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let onShell = 1.0 - smoothstep(0.1, 0.16, abs(dist_to_center - 2.0));
         let louvre = louvreOpen(floor(q * u.zoom_params.x), tD);
         col += vec3<f32>(1.0, 0.8, 0.45) * onShell * louvre * (0.25 + abs(dot(n, coreDir))) * quasar_glow * 0.45;
+
+        // Idea 4: chronometer tick-crowns circling the Dyson shell.
+        let lon = atan2(q.z, q.x);
+        let tickBand = exp(-abs(dist_to_center - 2.0) * 14.0);
+        let ticks = pow(max(cos(lon * 48.0 - tD * 0.5), 0.0), 10.0);
+        col += vec3<f32>(1.0, 0.88, 0.52) * tickBand * ticks * (0.2 + quasar_glow * 0.16);
+
+        // Idea 5: quartz twinning seams through panel interiors.
+        let twin = exp(-abs(abs(q.x) - abs(q.y)) * 9.0) + exp(-abs(abs(q.y) - abs(q.z)) * 9.0);
+        col += vec3<f32>(0.58, 0.92, 1.0) * twin * (0.12 + treble * 0.14);
     } else {
         // FIX: HEAD hash3(rd).x was per-pixel static crawling with the camera — sparse fixed stars instead
         let sc = hash3(floor(rd * 260.0) + 11.0);

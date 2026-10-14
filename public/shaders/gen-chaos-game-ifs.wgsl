@@ -4,31 +4,12 @@
 //  Features: generative, audio-reactive, upgraded-rgba, temporal-ghosting, chromatic-attractors,
 //            bass-scale-pulse, upgraded-rgba, aces-tone-map
 //  Complexity: Medium
-//  Upgraded: 2026-09-27
-//  Ideas: last-vertex occupancy tint; Sierpinski hole; iterate age; median scaffold
+//  Upgraded: 2026-10-10
+//  Ideas: last-vertex occupancy tint; Sierpinski hole; iterate age; median scaffold; fixed-point glints; contraction echo
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 
@@ -227,6 +208,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let tri = (uv - 0.5) * vec2<f32>(resolution.x / max(resolution.y, 1.0), 1.0);
     let scaffold = exp(-min(sdSeg2(tri, v1, v2), min(sdSeg2(tri, v2, v3), sdSeg2(tri, v3, v1))) * 95.0);
     finalRGB += vec3<f32>(0.72, 0.84, 1.0) * scaffold * 0.38;
+    // Idea: fixed-point glints at the three vertices the scaffold already draws.
+    let glint = exp(-length(tri - v1) * 70.0) + exp(-length(tri - v2) * 70.0) + exp(-length(tri - v3) * 70.0);
+    finalRGB += vec3<f32>(1.0, 0.86, 0.45) * glint * 0.55;
+    // Idea: contraction echo — the previous scale step, twice the last-iterate radius.
+    let echo = 1.0 / (1.0 + (d_g * 2.0) * (d_g * 2.0) * mix(4.0, 20.0, param2));
+    finalRGB += hue2rgb(fract(hue + 0.08)) * echo * 0.22 * (0.35 + settle);
 
     // Raymarched orbit sculpture layered over the 2D chaos-game field.
     let aspect = resolution.x / resolution.y;

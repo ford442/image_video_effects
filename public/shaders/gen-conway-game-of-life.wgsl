@@ -4,31 +4,12 @@
 //  Features: cellular-automata, neon, audio-reactive, mouse-interactive,
 //    depth-aware, temporal-feedback, aces-tone-map, chromatic-aberration, generation-counter, hue-preserve-clamp, ign-dither
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: neighbor-count heat; still-life amber on low-activity survivors; split deaths; glider lean
+//  Upgraded: 2026-10-10
+//  Ideas: neighbor-count heat; still-life amber on low-activity survivors; split deaths; glider lean; cell bezel; oscillator strobe
 //  A packing: raw alive, generation, activity, alpha
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
@@ -170,6 +151,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let fadeColor = prev.rgb * fadeDecay;
   color = max(color, fadeColor);
 
+  // Idea: cell bezel — a dark inset so a live cell reads as a tile.
+  let origin = cell * cellSize;
+  let local = vec2<f32>(pixel - origin) / f32(max(cellSize, 1));
+  let edgeDist = min(min(local.x, 1.0 - local.x), min(local.y, 1.0 - local.y));
+  let bezel = smoothstep(0.0, 0.14, edgeDist);
+  color = mix(color, color * bezel, newState);
+
   let bloom = birthEvent * 0.25 * (1.0 + bass);
   color += vec3<f32>(0.6, 0.9, 1.0) * bloom;
 
@@ -180,6 +168,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let prevGen = prev.g;
   // Increment generation when alive, reset to 0 when dead
   let generation = select(0.0, min(prevGen + 1.0 / 255.0, 1.0), newState > 0.5);
+  // Idea: oscillator strobe — young survivors blink; still lifes stay amber.
+  let young = survival * (1.0 - smoothstep(0.02, 0.14, generation));
+  let strobe = 0.55 + 0.45 * sin(time * 16.0 + hashf(f32(cell.x * 13 + cell.y)));
+  color += vec3<f32>(0.4, 0.95, 0.72) * young * strobe * 0.4;
   // Age tint: older cells shift toward warm amber
   let ageTint = vec3<f32>(1.0 + generation * 0.4, 1.0 - generation * 0.15, 1.0 - generation * 0.35);
   color *= mix(vec3<f32>(1.0), ageTint, survival * 0.6);

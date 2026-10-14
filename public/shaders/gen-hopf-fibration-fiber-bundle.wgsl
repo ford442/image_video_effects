@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-09-13
-//  Ideas: knot-diagram over/under gaps; U(1) fiber-phase beads; base-space S2 inset
+//  Upgraded: 2026-10-10
+//  Ideas: knot-diagram over/under gaps; U(1) fiber-phase beads; base-space S2 inset; stereographic denominator horizon; linking-aware hot crossings
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
 const PI: f32 = 3.14159265;
 
 fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
@@ -86,6 +68,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var restAcc = vec3<f32>(0.0);
   var frontZ = -1.0;
   var frontD = 1.0e3;
+  // Keep the two closest distinct fibers so transverse, depth-ordered links can flare.
+  var nearestD = 1.0e3;
+  var secondD = 1.0e3;
+  var nearestDir = vec2<f32>(1.0, 0.0);
+  var secondDir = vec2<f32>(1.0, 0.0);
+  var nearestZ = -1.0;
+  var secondZ = -1.0;
   let gapRadius = fiberThick * 2.6;
   // Idea 3: base-space S2 inset placement (lower-left, aspect-corrected).
   let aspect = res.x / max(res.y, 1.0);
@@ -114,6 +103,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var fiberAcc = vec3<f32>(0.0);
     var fiberMinD = 1.0e3;
     var fiberZ = -1.0;
+    var fiberDir = vec2<f32>(1.0, 0.0);
     let beadPhase = time * beadSpeed + fi * 0.73;
 
     // Idea 3: plot this fiber's base point on the rotating S2 inset.
@@ -168,6 +158,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
           if (d < fiberMinD) {
             fiberMinD = d;
             fiberZ = depth4;
+            fiberDir = seg;
           }
           alphaAcc += glow * depthFade;
           maxDepth = max(maxDepth, depthFade * glow);
@@ -177,6 +168,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       }
       prevProj = proj2;
       prevW = wCoord;
+    }
+
+    // One update per fiber; angle/depth work happens after the 40x32 traversal.
+    let unitFiberDir = normalize(fiberDir + vec2<f32>(1.0e-7, 0.0));
+    if (fiberMinD < nearestD) {
+      secondD = nearestD;
+      secondDir = nearestDir;
+      secondZ = nearestZ;
+      nearestD = fiberMinD;
+      nearestDir = unitFiberDir;
+      nearestZ = fiberZ;
+    } else if (fiberMinD < secondD) {
+      secondD = fiberMinD;
+      secondDir = unitFiberDir;
+      secondZ = fiberZ;
     }
 
     // Idea 1: nearest strand (largest depth4) near this pixel becomes the over-strand.
@@ -193,6 +199,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Idea 1: cut a knot-diagram gap in under-strands around the over-strand.
   let gapMask = exp(-frontD * frontD / (gapRadius * gapRadius * 0.55));
   accum = frontAcc + restAcc * (1.0 - gapMask * mix(0.45, 0.9, p3));
+
+  // Idea 5: only transverse, depth-ordered encounters read as hot linked crossings.
+  let crossingAngle = abs(nearestDir.x * secondDir.y - nearestDir.y * secondDir.x);
+  let crossingDepth = abs(nearestZ - secondZ);
+  let crossingNear = exp(-(nearestD * nearestD + secondD * secondD) /
+    max(gapRadius * gapRadius * 1.35, 1.0e-7));
+  let linkHot = crossingNear * smoothstep(0.32, 0.9, crossingAngle) *
+    smoothstep(0.015, 0.11, crossingDepth);
+  accum += vec3<f32>(1.0, 0.38, 0.08) * linkHot *
+    mix(0.35, 1.55, p3) * (0.75 + treble * 0.7);
+  alphaAcc += linkHot * 0.55;
+  maxDepth = max(maxDepth, linkHot * 0.8);
+
+  // Idea 4: the finite cutoff of the stereographic denominator marks the
+  // compactification horizon. The ring follows d = 2 / (1 + r^2), not a decal.
+  let stereoRadius = length(screenP) / 0.14;
+  let projectedDenom = 2.0 / (1.0 + stereoRadius * stereoRadius);
+  let horizonCut = 0.22 + 0.012 * sin(rot4D * 0.7);
+  let horizonDelta = (projectedDenom - horizonCut) / 0.018;
+  let horizonRing = exp(-horizonDelta * horizonDelta) * select(1.0, 0.0, inInset);
+  accum += vec3<f32>(0.34, 0.42, 0.7) * horizonRing * (0.07 + mids * 0.025);
+  alphaAcc += horizonRing * 0.035;
 
   // Idea 3: inset sphere limb + base-point dots.
   if (inInset) {

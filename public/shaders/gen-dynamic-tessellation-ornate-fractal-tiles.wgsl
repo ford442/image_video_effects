@@ -4,29 +4,14 @@
 //  Features: audio-reactive, fractal, tiled, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-05-10
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-10-10
+//  Ideas: corner rosettes; equipotential contours
+//  A packing: HDR in A; ACES on writeTexture
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=Fractal Detail, y=Motion Speed, z=Tile Density, w=Mouse Warp
 
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, yz=MouseUV, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Fractal Detail, y=Motion Speed, z=Tile Density, w=Mouse Warp
-  ripples: array<vec4<f32>, 50>,
-};
 fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
   let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
   let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
@@ -131,6 +116,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let grout = smoothstep(0.08, 0.02, min(1.0 - abs(tile_local.x), 1.0 - abs(tile_local.y)));
     var col = mixOkLab(cool, warm, f_val) * (0.5 + f_val * f_val * 3.2);
     col += vec3<f32>(0.15, 0.35, 0.8) * grout * (0.25 + mids * 0.6);
+    // Idea: corner rosettes — an ornament inside each corner the grout already frames.
+    let rosette = exp(-length(abs(tile_local) - vec2<f32>(0.72)) * 16.0);
+    col += warm * rosette * (0.35 + treble * 0.25);
+    // Idea: equipotential contours of this tile's own iteration count.
+    let contourPhase = min(fract(f_val * 4.0), 1.0 - fract(f_val * 4.0));
+    let contour = (1.0 - smoothstep(0.0, 0.06, contourPhase)) * (1.0 - grout);
+    col += vec3<f32>(1.0, 0.9, 0.72) * contour * 0.28;
 
     var clickFront = 0.0;
     let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);

@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: Rayleigh droplet shape-oscillation modes (l=2,3, ω∝√(l(l−1)(l+2))) excited by bass/treble and click impulses; Rayleigh–Plateau varicose beading on stretched necks between merging bodies
+//  Upgraded: 2026-10-10
+//  Ideas: Rayleigh shape modes; neck beading; meniscus thin-film; nephroid caustic crescent
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Ball Count, .y = Surface Roughness, .z = Metal Hue, .w = Caustic Strength
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Ball Count, .y = Surface Roughness, .z = Metal Hue, .w = Caustic Strength
 
 // Per-pixel precomputed body state (centres/radii/mode amplitudes depend only
 // on time, audio, mouse and clicks — not on p — so they are evaluated once and
@@ -251,6 +233,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Rayleigh–Plateau satellite glints: bead crests on a thinning neck.
   let beadGlint = max(bead, 0.0) * surfaceMask * 2.2;
 
+  // Idea: meniscus thin-film — soap-film color along the bead the neck already carries.
+  let film = abs(bead) * surfaceMask * (1.0 - roughness * 0.45);
+  let filmCol = 0.5 + 0.5 * cos(vec3<f32>(1.0, 1.35, 1.75) * (abs(bead) * 22.0 + 1.7 + metalShift * 3.0));
+  // Idea: nephroid caustic — a crescent just inside the silhouette, scaled by Caustic Strength.
+  let facing = dot(normal, lightDir);
+  let faceOff = facing - 0.2;
+  let nephroid = exp(-faceOff * faceOff * 55.0) * fresnel * insideMask * causticStr;
+
   // Treble sparkle on surface
   let sparkle = hash12(uv * resolution + fract(time * 12.0) * 200.0);
   let trebleSpark = step(0.96 - treble * 0.1, sparkle) * treble * surfaceMask;
@@ -263,6 +253,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   generatedColor = generatedColor + caustic;
   generatedColor = generatedColor + mergeGlow;
   generatedColor = generatedColor + vec3<f32>(0.6, 0.85, 1.0) * beadGlint;
+  generatedColor = generatedColor + filmCol * film * 0.55;
+  generatedColor = generatedColor + vec3<f32>(0.75, 0.92, 1.0) * nephroid * (0.85 + treble * 0.35);
   generatedColor = generatedColor + vec3<f32>(0.5, 0.7, 0.9) * rippleRing * 0.25;
   generatedColor = generatedColor + vec3<f32>(0.9, 0.95, 1.0) * trebleSpark;
 

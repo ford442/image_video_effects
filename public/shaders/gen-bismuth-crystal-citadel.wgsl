@@ -3,31 +3,12 @@
 //  Category: generative
 //  Features: raymarch, audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: molten melt-pool bands in the tier gaps that underlight the tiers; axial beacon column mirrored in every face via Schlick metal Fresnel
+//  Upgraded: 2026-10-10
+//  Ideas: hopper growth striae marching by terrace index and radius; spire-pinnacle cathodoluminescent arcs locked to sixfold citadel symmetry
 //  A packing: HDR linear RGB (pre-ACES) + semantic alpha; C read back as HDR for a light rising trail
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const IOR_BISMUTH: f32 = 1.8;
 const TIER_SPACING: f32 = 4.0;
@@ -365,6 +346,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
                          + poolSeen(p + n * 0.01, refl, clock, bass) * 0.5
                          + skyRefl;
             litColor += mirrored * metalFresnel;
+
+            // Idea 3: hopper growth striae — stepwise growth bands wrap each terrace ring.
+            let growthStep = floor((p.y + TIER_SPACING * 0.5) / max(stepSize, 0.05));
+            let striae = 0.5 + 0.5 * sin(growthStep * 1.7 + radius * 8.0 - clock * 0.8);
+            litColor *= 0.9 + 0.22 * striae;
+
+            // Idea 4: cathodoluminescent pinnacle arcs at sixfold corner crowns.
+            let pinnacle = exp(-abs(radius - 1.5) * 8.0) * pow(max(cos(atan2(p.z, p.x) * 6.0), 0.0), 7.0);
+            litColor += vec3<f32>(0.9, 1.0, 1.18) * pinnacle * (0.18 + treble * 0.2);
 
             col = litColor;
 

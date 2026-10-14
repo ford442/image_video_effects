@@ -1,7 +1,12 @@
-// ----------------------------------------------------------------
-// Quantum Resonance Lattice
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Quantum Resonance Lattice
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-10-10
+//  Ideas: resonant band-splitting halos around octahedral nodes; nodal-plane standing-wave sheets; probability wave interference; Planck-scale lattice dislocation
+//  A packing: ACES display RGBA in A
+// ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 
 // Helper for 3D rotation
@@ -15,6 +20,11 @@ fn rot3D(axis: vec3<f32>, angle: f32) -> mat3x3<f32> {
         oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,
         oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c
     );
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // SDF for Octahedron
@@ -39,6 +49,10 @@ fn map(p: vec3<f32>, audioReactive: f32) -> vec2<f32> {
     let audioWave = audioReactive * 2.0 * sin(cell.y * 1.5 - t);
 
     q += vec3<f32>(0.0, wave + audioWave, 0.0);
+    
+    // Idea 2: Planck-scale lattice dislocation
+    let dislocation = step(0.9, fract(cell.y * 0.3 + t * 0.2)) * 0.15;
+    q += vec3<f32>(dislocation, 0.0, -dislocation);
 
     // Chaos rotation
     let chaos = u.zoom_params.w;
@@ -71,6 +85,28 @@ fn map(p: vec3<f32>, audioReactive: f32) -> vec2<f32> {
     return vec2<f32>(d, 1.0);
 }
 
+// Idea 1: local mode splitting around each octahedral node adds halo bands that
+// breathe at slightly different rates (like coupled resonators splitting lines).
+fn resonanceHalo(p: vec3<f32>, t: f32, spacing: f32, bass: f32, mids: f32) -> f32 {
+    let cell = floor(p / spacing + 0.5);
+    let q = p - cell * spacing;
+    let r = length(q);
+    let bandA = exp(-pow((r - 0.58) * 8.5, 2.0));
+    let bandB = exp(-pow((r - 0.74) * 8.0, 2.0));
+    let beat = 0.5 + 0.5 * sin(t * (3.0 + bass * 4.0) + dot(cell, vec3<f32>(1.1, 0.9, 1.3)));
+    let split = 0.5 + 0.5 * sin(t * (3.35 + mids * 3.4) + dot(cell, vec3<f32>(1.7, 0.7, 1.5)));
+    return (bandA * beat + bandB * split) * (0.25 + bass * 0.45);
+}
+
+// Idea 2: standing nodal sheets crossing the lattice volume.
+fn nodalSheets(p: vec3<f32>, t: f32, amp: f32, treble: f32) -> f32 {
+    let s = abs(sin(p.x * 1.3 + t * (0.8 + amp * 0.3)))
+          * abs(sin(p.y * 1.1 - t * (0.7 + amp * 0.25)))
+          * abs(sin(p.z * 1.25 + t * (0.9 + amp * 0.35)));
+    let plane = smoothstep(0.97 - treble * 0.12, 1.0, s);
+    return plane * (0.18 + treble * 0.3);
+}
+
 // Normal calculation
 fn calcNormal(p: vec3<f32>, audioReactive: f32) -> vec3<f32> {
     let e = vec2<f32>(1.0, -1.0) * 0.5773 * 0.0005;
@@ -89,8 +125,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let uv = (vec2<f32>(coord) - 0.5 * res) / res.y;
 
     // Audio reactivity
-    let bass = extraBuffer[0];
-    let mid = extraBuffer[1];
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mid = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
+    let spacing = u.zoom_params.x * 2.5 + 0.5;
+    let amp = u.zoom_params.y * 3.0;
 
     // Ray setup
     // Moving camera
@@ -105,6 +144,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Chromatic dispersion parameters
     let dispersion = 0.02 * (u.zoom_params.w + bass); // chaos increases dispersion
     var col = vec3<f32>(0.0);
+    var sheetGlow = 0.0;
 
     // Render 3 channels slightly offset
     for(var c = 0; c < 3; c++) {
@@ -120,6 +160,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             p = ro + shake + rd_off * t;
             let res2 = map(p, bass);
             d = res2.x;
+            sheetGlow += nodalSheets(p, u.config.x, amp, treble) * exp(-t * 0.03);
             if (d < 0.001) {
                 hit = true;
                 break;
@@ -149,8 +190,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
             // Subsurface scattering fake
             let sss = exp(-d * 5.0) * 0.5 * mid;
+            let halo = resonanceHalo(p, u.config.x, spacing, bass, mid);
 
-            channelCol = (finalL * ambientCol[c] + sss) * ao;
+            // Idea 1: Probability wave interference
+            let probInterference = 0.5 + 0.5 * sin(dot(p, vec3<f32>(1.0, 2.0, 3.0)) * 5.0 - u.config.x * 10.0);
+            
+            channelCol = (finalL * ambientCol[c] + sss + halo) * ao * (0.8 + 0.4 * probInterference);
 
             // Distance fog
             channelCol = mix(channelCol, 0.0, smoothstep(20.0, 60.0, t));
@@ -161,8 +206,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         if (c == 2) { col.z = channelCol; }
     }
 
+    col += vec3<f32>(0.35, 0.75, 1.0) * sheetGlow * 0.015;
+    col = acesToneMap(col * (1.05 + bass * 0.15));
+    let alpha = clamp(0.15 + dot(col, vec3<f32>(0.2126, 0.7152, 0.0722)) * 0.8 + sheetGlow * 0.01, 0.0, 0.98);
+
     // Output
-    textureStore(writeTexture, coord, vec4<f32>(col, 1.0));
+    textureStore(writeTexture, coord, vec4<f32>(col, alpha));
 
     // Depth output (using first channel hit roughly)
     var depth = 100.0;
@@ -175,6 +224,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         t_depth += d_d * 0.8;
     }
 
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coord, vec4<f32>(col, 1.0));
+    let depth01 = clamp(1.0 - depth / 60.0, 0.0, 1.0);
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth01, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, vec4<f32>(col, alpha));
 }

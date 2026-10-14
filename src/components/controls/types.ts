@@ -103,6 +103,9 @@ export interface ControlsProps {
     onRenderQualityChange?: (mode: RenderQualityMode) => void;
     sourceAutoExposure?: boolean;
     onSourceAutoExposureChange?: (enabled: boolean) => void;
+    displayP3?: boolean;
+    onDisplayP3Change?: (enabled: boolean) => void;
+    displayP3Status?: string;
     maxActiveSlots?: number;
     performanceHud?: {
         internalWidth: number;

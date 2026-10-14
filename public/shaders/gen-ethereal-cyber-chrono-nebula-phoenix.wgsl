@@ -3,29 +3,12 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: wing feather filaments along SDF edge; tail ember convection streaks
+//  Upgraded: 2026-10-10
+//  Ideas: wing feather filaments along SDF edge; tail ember convection streaks;
+//         crest-crown ion arcs; talon wake contrails
 //  A packing: raw telemetry in A (trap, d, nebula, alpha) — C reads fields
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>,
-};
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 const PI: f32 = 3.14159265359;
 // Persistent halo-spring state. extraBuffer layout contract:
 //   [0..132] engine-owned; this effect uses only shader state [133..137].
@@ -243,6 +226,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let emberStreaks = tailEmberConvection(p, time, bass);
     phoenixColor += vec3<f32>(1.0, 0.35, 0.05) * emberStreaks * plasma * (0.5 + bass);
+
+    // Idea 3: crest-crown ion arcs over the phoenix head.
+    let crestArc = exp(-length(p - vec2<f32>(0.0, 0.32)) * 22.0) * (0.5 + 0.5 * sin(time * 6.0 + trap * 12.0));
+    phoenixColor += vec3<f32>(0.65, 0.9, 1.0) * crestArc * (0.22 + treble * 0.6);
+
+    // Idea 4: talon wake contrails beneath the body.
+    let talonWake = pow(max(0.0, sin((p.y + 0.22) * 18.0 - abs(p.x) * 7.0 - time * 3.0)), 4.0)
+        * smoothstep(0.12, 0.65, abs(p.x)) * smoothstep(-0.5, -0.08, p.y);
+    phoenixColor += vec3<f32>(1.0, 0.55, 0.25) * talonWake * (0.2 + bass * 0.5);
 
     // Spring-eased phoenix attention halo (was a snap-to-mouse glow).
     let mouseDist = length(uv01 - mouse);

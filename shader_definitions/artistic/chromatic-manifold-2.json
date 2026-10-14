@@ -4,7 +4,8 @@
   "url": "shaders/chromatic-manifold-2.wgsl",
   "description": "Enhanced 4D topological color manifold.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

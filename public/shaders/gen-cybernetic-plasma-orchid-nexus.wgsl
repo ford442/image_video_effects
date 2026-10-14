@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-28
-//  Ideas: zygomorphic labellum with nectar-well glow; column with bass-pulsed pollinia
+//  Upgraded: 2026-10-10
+//  Ideas: anther-filament whiskers tethering pollinia to the column; serrated petal-edge corona around the bloom ring
 //  A packing: ACES display RGBA (rgb = tone-mapped colour, a = surface/glow coverage); C is not read
 // ═══════════════════════════════════════════════════════════════════
 //  A raymarched plasma core (sphere smin spinning torus) inside a polar
@@ -23,26 +23,8 @@
 //  Audio: bass -> core swell / spin kick / pollinia pulse; mids -> nectar well.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Petal Complexity, .y = Plasma Intensity, .z = Distortion Strength, .w = Bloom Spread
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Petal Complexity, .y = Plasma Intensity, .z = Distortion Strength, .w = Bloom Spread
 
 // Per-frame scene constants (hoisted out of map()).
 struct Scene {
@@ -259,12 +241,26 @@ fn map(p: vec3<f32>, sc: Scene) -> vec4<f32> {
         length(p_mod - (bead_c - perp * 0.085))
     ) - bead_r;
 
+    // Idea — dorsal sepal: one cooler hood opposite the lip, outside the polar repeat.
+    let up = -sc.lab.xy;
+    let uc = vec2<f32>(dot(p_mod.xy, up), dot(p_mod.xy, vec2<f32>(-up.y, up.x)));
+    let sepal_len = PETAL_LEN * 1.28;
+    let ss = clamp(uc.x / sepal_len, 0.0, 1.0);
+    let sepal_half = mix(0.1, 0.36, smoothstep(0.0, 0.65, ss)) * (1.0 - 0.4 * smoothstep(0.78, 1.0, ss));
+    let qs = vec3<f32>(
+        abs(uc.x - 0.55 * sepal_len) - 0.48 * sepal_len,
+        abs(uc.y) - sepal_half,
+        abs(p_mod.z + 0.16) - 0.018
+    );
+    let dorsalSepal = sdBoxQ(qs);
+
     // Material resolve (min with ids)
     var res = vec2<f32>(core_dist, 1.0);
     if (petal_dist < res.x) { res = vec2<f32>(petal_dist, 2.0); }
     if (lip_dist < res.x) { res = vec2<f32>(lip_dist, 3.0); }
     if (column < res.x) { res = vec2<f32>(column, 4.0); }
     if (pollen_d < res.x) { res = vec2<f32>(pollen_d, 5.0); }
+    if (dorsalSepal < res.x) { res = vec2<f32>(dorsalSepal, 6.0); }
     return vec4<f32>(res, throat_d, pollen_d);
 }
 
@@ -392,6 +388,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let light_dir = normalize(vec3<f32>(1.0, 1.0, -1.0));
         let diff = max(dot(n, light_dir), 0.0);
         let amb = 0.2;
+        let p_mod = flowerSpace(p, sc);
 
         if (m < 1.5) { // Core
             // Sub-surface scattering approximation
@@ -403,6 +400,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let view_angle_color = paletteCA(fresnel + time * 0.2, pk); // shifts purple to gold
             col = view_angle_color * (diff + amb) + fresnel * vec3<f32>(1.0, 0.8, 0.2);
             col *= 0.5; // Petals are slightly darker than the core
+            // Idea — petal veins follow the blade's radial coordinate.
+            let petalSpace = flowerSpace(p, sc);
+            let veinFreq = mix(14.0, 40.0, clamp(distortion * 0.5, 0.0, 1.0));
+            let petalVeins = pow(0.5 + 0.5 * sin(length(petalSpace.xy) * veinFreq - time * 0.6), 12.0);
+            col += vec3<f32>(1.0, 0.86, 0.95) * petalVeins * (0.14 + distortion * 0.1);
+            // Idea 4: serrated edge corona at petal rims.
+            let edgeCorona = exp(-abs(length(p_mod.xy) - PETAL_LEN * 0.92) * 14.0) *
+                (0.5 + 0.5 * sin(atan2(p_mod.y, p_mod.x) * 52.0 + time * 2.4));
+            col += vec3<f32>(0.9, 0.65, 1.0) * edgeCorona * (0.14 + mids * 0.1);
         } else if (m < 3.5) { // Labellum: petal iridescence + nectar glow flowing out of the throat
             let lc = lipCoords(flowerSpace(p, sc), sc);
             let throat_fall = exp(-max(lc.x - LIP_START, 0.0) * 2.2);
@@ -413,9 +419,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         } else if (m < 4.5) { // Column: waxy, lit from within by the core
             let sss = smoothstep(0.0, 1.0, 0.5 + 0.5 * ndv);
             col = vec3<f32>(0.62, 0.8, 0.7) * (diff + amb) * 0.6 + paletteCA(time + 0.2, pk) * sss * 0.25;
-        } else { // Pollinia: emissive beads
+        } else if (m < 5.5) { // Pollinia: emissive beads
             col = pollen_col * (0.6 + 0.4 * ndv) * pollen_pulse * plasma_intensity;
+        } else { // Dorsal sepal: cool hood behind the ring
+            col = vec3<f32>(0.42, 0.68, 0.95) * (diff + amb) * 0.6 + fresnel * vec3<f32>(0.55, 0.85, 1.0) * 0.45;
         }
+
+        // Idea 5: anther-filament whiskers from the column to each pollinium bead.
+        let col_tip = vec3<f32>(sc.lab.xy * 0.2, -0.82);
+        let perp = vec3<f32>(-sc.lab.y, sc.lab.x, 0.0);
+        let bead_c = col_tip + vec3<f32>(sc.lab.xy * 0.03, -0.05);
+        let whiskA = sdCapsule(p_mod, col_tip + vec3<f32>(sc.lab.xy * 0.015, -0.03), bead_c + perp * 0.085, 0.018);
+        let whiskB = sdCapsule(p_mod, col_tip + vec3<f32>(sc.lab.xy * 0.015, -0.03), bead_c - perp * 0.085, 0.018);
+        let whisker = exp(-abs(min(whiskA, whiskB)) * 35.0);
+        col += vec3<f32>(1.0, 0.92, 0.66) * whisker * (0.16 + bass * 0.18);
     }
 
     // Add glow (HEAD colour); nectar + pollinia halos

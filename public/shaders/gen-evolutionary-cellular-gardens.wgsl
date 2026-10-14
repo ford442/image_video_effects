@@ -4,31 +4,12 @@
 //  Features: audio-reactive, mouse-driven, click-reactive, temporal-feedback,
 //            generated-depth, semantic-alpha, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: scale-mismatch sporulation where fine lives and coarse is dead; nutrient-facing rhizoids toward the spring well
+//  Upgraded: 2026-10-10
+//  Ideas: scale-mismatch sporulation where fine lives and coarse is dead; nutrient-facing rhizoids toward the spring well; cell-wall membranes between differing fine cells; colony growth rings from A.a age
 //  A packing: trail RGB + colonyAge in A.a; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -270,6 +251,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rhizoid = exp(-acrossN * 72.0) * smoothstep(-0.02, 0.18, -alongN)
                 * colonyAge * invasiveForce * (0.45 + bass * 0.35);
     color += vec3<f32>(0.18, 0.72, 0.32) * rhizoid;
+
+    // Idea 3 — cell-wall membranes: walls on fine-cell edges where the neighbour across the edge
+    // is in a different state (same rule set as the fine layer in cellularGarden)
+    let fineScale = cellScale * 20.0;
+    let fineCell = floor(uvA * fineScale);
+    let fineF = fract(uvA * fineScale) - 0.5;
+    let stepX = select(-1.0, 1.0, fineF.x > 0.0);
+    let stepY = select(-1.0, 1.0, fineF.y > 0.0);
+    let fbLow = 2.5 + localBassBoost * 1.5;
+    let fbHigh = 3.5 + localBassBoost * 1.0;
+    let fsLow = 2.0 + localMidsBoost * 1.0;
+    let fsHigh = 4.0 - localTreble * 1.5;
+    let nX = cellularState((fineCell + vec2<f32>(stepX, 0.0) + 0.5) / fineScale, fineScale, t,
+                           fbLow, fbHigh, fsLow, fsHigh, localEvolution * 3.0);
+    let nY = cellularState((fineCell + vec2<f32>(0.0, stepY) + 0.5) / fineScale, fineScale, t,
+                           fbLow, fbHigh, fsLow, fsHigh, localEvolution * 3.0);
+    let edgeX = smoothstep(0.36, 0.5, abs(fineF.x));
+    let edgeY = smoothstep(0.36, 0.5, abs(fineF.y));
+    let membrane = max(edgeX * abs(fine - nX), edgeY * abs(fine - nY));
+    color += vec3<f32>(0.55, 0.85, 0.75) * membrane * (0.12 + mid * 0.1 + treble * 0.15) * (0.6 + glow * 0.2);
+
+    // Idea 4 — colony growth rings: established colonies band like lichen as colonyAge crosses ring levels
+    let ringPhase = fract(colonyAge * 9.0);
+    let growthRing = (1.0 - smoothstep(0.0, 0.09, abs(ringPhase - 0.5))) * smoothstep(0.2, 0.45, colonyAge);
+    color = color * (1.0 - growthRing * 0.18) + vec3<f32>(0.85, 0.65, 0.3) * growthRing * clamp(organic, 0.0, 1.0) * 0.16;
 
     // Coarse structure silhouette shading
     let shadowEdge = smoothstep(0.4, 0.6, coarse) - smoothstep(0.6, 0.8, coarse);

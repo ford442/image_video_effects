@@ -61,7 +61,18 @@
   "updated": true,
   "id": "gen-chronos-monolith-resonator",
   "url": "shaders/gen-chronos-monolith-resonator.wgsl",
-  "features": [],
+  "features": [
+    "raymarched",
+    "audio-reactive",
+    "mouse-driven",
+    "click-reactive",
+    "held-interactive",
+    "temporal-feedback",
+    "semantic-alpha",
+    "aces-tone-mapping",
+    "depth-aware",
+    "upgraded-rgba"
+  ],
   "params": [
     {
       "id": "temporal_flow_speed",

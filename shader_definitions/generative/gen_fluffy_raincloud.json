@@ -2,7 +2,7 @@
   "id": "gen-fluffy-raincloud",
   "name": "Vorticity Raincloud",
   "url": "shaders/gen_fluffy_raincloud.wgsl",
-  "description": "Audio-reactive cloudscape with curl-noise advection, buoyant thunderheads, Mie silver lining, and rain sheets driven by stored flow.",
+  "description": "Audio-reactive cloudscape with curl-noise advection, buoyant thunderheads, Mie silver lining, and rain sheets driven by stored flow. Mammatus pouches hang under the anvil, and a wind-sheared shelf roll sits at the gust front.",
   "features": [
     "upgraded-rgba",
     "depth-aware",

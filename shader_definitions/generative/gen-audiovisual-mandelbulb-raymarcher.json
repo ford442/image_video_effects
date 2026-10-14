@@ -16,7 +16,7 @@
     "aces-tone-map",
     "semantic-alpha"
   ],
-  "description": "A Mandelbulb raymarched at speed: the fractal exponent morphs several times a second under bass, orbit-trap coloring races through a full psychedelic spectrum with treble, and a greebled ridge shell carves micro-detail into every surface. The cursor orbits the camera, holding the button throttles the spin and dollies in, and clicks fire shock rings that deform the bulb and flash the palette. Upgraded: the surface is terraced into escape-time strata (smooth escape-count onion shells with hue-stepped contours) whose shells the Escape Radius bailout slides, lobes cast DE soft shadows and ambient occlusion into their crevices, and rays grazing the bulb leave a silhouette halo coloured by the orbit trap at their closest approach (scaled by Glow).",
+  "description": "A fast audiovisual Mandelbulb with escape-time strata, soft-shadowed lobe relief, trap-colored silhouette halos, cusp-caustic glints, and chromatic wedge dispersion under audio-driven exponent morphing.",
   "workgroup_size": [
     16,
     16,

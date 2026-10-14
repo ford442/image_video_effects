@@ -1,29 +1,14 @@
-// ═══════════════════════════════════════════════════════════════
-//  Datamosh Brush — Batch 60
-//  Interactive MPEG smear: spring brush, held smear vector, capped
-//  click ripples, macroblock geometry, exact C feedback, ACES + audio.
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Datamosh Brush
+//  Category: retro-glitch
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-10
+//  Ideas: DC hold; mosquito ring
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 
@@ -143,6 +128,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let glitchSample = textureSampleLevel(readTexture, u_sampler, offsetUV, 0.0);
       let channelSwap = vec3<f32>(glitchSample.g, glitchSample.b, glitchSample.r);
       blendedColor = mix(glitchSample.rgb, channelSwap, mids * 0.25);
+      // Idea: dcHold — the corrupting block flattens toward its center sample.
+      let dcUv = clamp((blockID + vec2<f32>(0.5)) * max(blockSize, 0.001), vec2<f32>(0.0), vec2<f32>(1.0));
+      let dcHold = textureSampleLevel(readTexture, u_sampler, dcUv, 0.0).rgb;
+      blendedColor = mix(blendedColor, dcHold, 0.35 + alphaGhost * 0.4);
       blendedAlpha = glitchSample.a * 0.75 + 0.12;
     } else {
       blendedColor = prevColor;
@@ -158,6 +147,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     let edge = macroblockEdge(uv, blockSize);
     blendedColor = mix(blendedColor, blendedColor * vec3<f32>(1.2, 0.9, 1.3), edge * mids * 0.4);
+    // Idea: mosquitoRing — high-frequency flicker on the macroblock edge.
+    let cell = fract(uv / max(blockSize, 0.001));
+    let mosquitoRing = sin(cell.x * 36.0) * sin(cell.y * 36.0) * edge;
+    blendedColor = blendedColor + vec3<f32>(0.12, -0.03, 0.06) * mosquitoRing * (0.25 + mids);
   }
 
   blendedAlpha = clamp(blendedAlpha, 0.0, 1.0);

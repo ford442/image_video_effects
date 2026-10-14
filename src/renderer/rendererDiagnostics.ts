@@ -31,6 +31,7 @@ export function buildRendererDiagnostics(
     getNodeScales?: () => Record<string, number>;
     getVideoIngestStats?: () => import('./media/videoFramePump').VideoIngestStats;
     getGpuErrors?: () => string[];
+    getCanvasColorState?: () => import('./webgpuBootProbe').CanvasColorState | null;
     getInputEcho?: () => NonNullable<RendererDiagnostics['webgpu']>['input'];
     renderThread?: 'main' | 'worker';
     inputChannel?: 'sab' | 'postMessage';
@@ -57,6 +58,7 @@ export function buildRendererDiagnostics(
         timing: active.getTimingInfo?.(),
         nodeScales: active.getNodeScales?.(),
         video: active.getVideoIngestStats?.(),
+        ...(active.getCanvasColorState ? { canvas: active.getCanvasColorState() } : {}),
         ...(active.getGpuErrors ? { gpuErrors: active.getGpuErrors() } : {}),
         ...(active.getInputEcho ? { input: active.getInputEcho() } : {}),
       },

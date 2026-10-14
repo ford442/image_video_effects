@@ -4,31 +4,12 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
 //  Created: 2026-07-05
-//  Upgraded: 2026-09-10
-//  Ideas: crackle born on primary spark positions; opposite leaflet pairs on fronds
+//  Upgraded: 2026-10-11
+//  Ideas: crackle born on primary spark positions; opposite leaflet pairs on fronds; rachis filament; frond-tip pistil
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.141592653589793;
 const TAU: f32 = 6.283185307179586;
@@ -117,6 +98,7 @@ fn addPalmFrond(
   let frondLen = 8;
   let dir = vec2<f32>(cos(armAngle), sin(armAngle) * 0.3 - 0.7);
   let side = vec2<f32>(-dir.y, dir.x) * spread * 0.15;
+  var prevPos = origin;
 
   for (var f = 0; f < frondLen; f = f + 1) {
     let ff = f32(f) / f32(frondLen);
@@ -128,12 +110,23 @@ fn addPalmFrond(
     let fade = smoothstep(3.5, 0.2, localAge) * (1.0 - ff * 0.5);
     let g = softGlow(uv, pos, 0.005 + ff * 0.003, fade * energy);
     *col += shellColor(hue + ff * 0.15, 1.0 - ff) * g;
+    // Rachis filament — continuous midrib between frond samples.
+    let rib = pos - prevPos;
+    let ribRel = uv - prevPos;
+    let ribH = clamp(dot(ribRel, rib) / max(dot(rib, rib), 1e-6), 0.0, 1.0);
+    let ribDist = length(ribRel - rib * ribH);
+    *col += shellColor(hue + ff * 0.08, 0.7) * exp(-ribDist * ribDist / 0.000012) * fade * energy * 0.85;
+    prevPos = pos;
     // Opposite leaflet pairs on each rachis sample.
     let leaf = side * (0.55 + ff * 0.8);
     let leafFade = fade * energy * 0.7 * (1.0 - ff * 0.35);
     *col += shellColor(hue + ff * 0.15, 0.35) * softGlow(uv, pos + leaf, 0.0035 + ff * 0.002, leafFade);
     *col += shellColor(hue + ff * 0.15, 0.35) * softGlow(uv, pos - leaf, 0.0035 + ff * 0.002, leafFade);
   }
+  // Frond-tip pistil — hotter spark at the end of the rachis.
+  let tipFade = smoothstep(3.5, 0.4, localAge);
+  *col += vec3<f32>(1.0, 0.96, 0.82) * softGlow(uv, prevPos, 0.009, tipFade * energy * 1.6);
+  *col += shellColor(hue + 0.2, 1.0) * softGlow(uv, prevPos + vec2<f32>(0.0, -0.012), 0.004, tipFade * energy);
 }
 
 @compute @workgroup_size(16, 16, 1)

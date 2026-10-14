@@ -59,7 +59,15 @@ import { DEFAULT_FORMAT_CAPABILITIES, DeviceFormatCapabilities, inferRequiresRgb
 import { allowsFullWorkingSize, HISTORY_FULL_WORKING_SIZE, HISTORY_SAFE_WORKING_SIZE, persistHistoryOomCap } from '../config/vramBudget';
 import { graphRunner } from './GraphRunner';
 import { GpuChoresHost } from '../gpuChores';
-import type { WebGpuProbeHandoff } from './webgpuBootProbe';
+import {
+  negotiateCanvasColor,
+  updateWebGpuProbeColor,
+  type CanvasColorFallbackReason,
+  type CanvasColorOptIns,
+  type CanvasColorState,
+  type DisplayP3Result,
+  type WebGpuProbeHandoff,
+} from './webgpuBootProbe';
 import { allocateWorkingPool, rungsForRequest } from './webgpu/historyTexProbe';
 import { SimRing } from './webgpu/simRing';
 import { resolveGraphForShader, resolveSimRingRequest, getGraphEntryIds, resolveMultipassChain } from './multipassRegistry';
@@ -93,6 +101,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private canvasCopySrcSupported = false;
   private canvasCopySrcActive = false;
   private canvasColorOptIns: Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'> = {};
+  private canvasColorRequested = false;
+  private canvasColorFallback: CanvasColorFallbackReason | undefined;
 
   readonly resources = new WebGPUResourcePool();
   readonly pipeline = new WebGPUPipelineModule();
@@ -206,6 +216,9 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       this.canvasCopySrcSupported = outcome.canvasCopySrc ?? false;
       this.canvasCopySrcActive = false;
       this.canvasColorOptIns = outcome.canvasColorOptIns ?? {};
+      this.canvasColorRequested =
+        !!outcome.canvasColorOptIns?.displayP3 || outcome.canvasColorFallback === 'unsupported-p3';
+      this.canvasColorFallback = outcome.canvasColorFallback;
       this.canvasW = outcome.canvasW;
       this.canvasH = outcome.canvasH;
       this.supportsSubgroups = outcome.supportsSubgroups;
@@ -444,6 +457,44 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       if (enabled) this.canvasCopySrcSupported = false;
       return false;
     }
+  }
+
+  /**
+   * Live Display P3 toggle (Render quality → Display P3). Re-negotiates on the
+   * existing device/context (no second device), preserving the COPY_SRC bit.
+   * `isHdr` is evaluated by the page (a worker cannot see the media query).
+   * Deferred, with nothing changed, while a GPU-encode capture holds COPY_SRC so
+   * one recording never mixes color spaces.
+   */
+  async setDisplayP3(enabled: boolean, isHdr: boolean): Promise<DisplayP3Result> {
+    const requested: CanvasColorOptIns = { displayP3: enabled, extendedToneMapping: enabled && isHdr };
+    const current = (): DisplayP3Result => ({
+      requested,
+      applied: this.canvasColorOptIns,
+      colorSpace: this.canvasColorOptIns.displayP3 ? 'display-p3' : 'srgb',
+      toneMapping: this.canvasColorOptIns.extendedToneMapping ? 'extended' : 'standard',
+      ...(this.canvasColorFallback ? { reason: this.canvasColorFallback } : {}),
+    });
+    if (!this.device || !this.context) return { ...current(), deferred: true };
+    if (this.canvasCopySrcActive) return { ...current(), deferred: true };
+    const result = await negotiateCanvasColor(
+      this.device, this.context, this.canvasFormat, requested, this.canvasCopySrcActive,
+    );
+    this.canvasColorOptIns = result.applied;
+    this.canvasColorRequested = enabled;
+    this.canvasColorFallback = result.reason;
+    updateWebGpuProbeColor(result);
+    return result;
+  }
+
+  getCanvasColorState(): CanvasColorState {
+    return {
+      requestedDisplayP3: this.canvasColorRequested,
+      colorSpace: this.canvasColorOptIns.displayP3 ? 'display-p3' : 'srgb',
+      toneMapping: this.canvasColorOptIns.extendedToneMapping ? 'extended' : 'standard',
+      copySrc: this.canvasCopySrcActive,
+      ...(this.canvasColorFallback ? { fallbackReason: this.canvasColorFallback } : {}),
+    };
   }
 
   /** Adapter identity string (vendor | architecture | device | description), '' before init. */

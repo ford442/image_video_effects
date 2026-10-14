@@ -11,9 +11,7 @@
     "reactive"
   ],
   "features": [
-    "mouse-driven",
-    "audio-reactive",
-    "audio-driven"
+    "upgraded-rgba"
   ],
   "params": [
     {

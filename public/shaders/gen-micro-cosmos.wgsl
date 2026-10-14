@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: Zernike phase-contrast imaging from optical path through each cell (halo + thin-specimen interference tint), mouse-held condenser swaps to darkfield; binary-fission cell cycle with smooth cleavage-furrow pinch
+//  Upgraded: 2026-10-10
+//  Ideas: Zernike phase contrast; binary fission; metachronal cilia; contractile vacuole
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, yz=MouseUV, w=MouseDown
-    zoom_params: vec4<f32>,  // x=Population Density, y=Fluid Activity, z=Membrane Glow, w=Color Shift
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Population Density, y=Fluid Activity, z=Membrane Glow, w=Color Shift
 
 var<private> g_audio: vec3<f32>;
 var<private> g_minD: f32;
@@ -287,6 +269,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let membraneRunner = pow(max(0.0, sin(atan2(p.y, p.x) * 7.0 + p.z * 9.0 - time * (15.0 + flowSpeed * 3.0))), 10.0);
         cellCol += vec3<f32>(0.2, 0.9, 1.0) * membraneRunner * (0.15 + bass * 0.4) * glowIntensity;
 
+        // Idea: metachronal cilia — strokes travel around the rim the microscope already lights.
+        let ciliumAng = atan2(n.y, n.x);
+        let cilium = pow(max(0.5 + 0.5 * sin(ciliumAng * 12.0 - time * (7.0 + flowSpeed * 9.0)), 0.0), 8.0) * rim;
+        cellCol += vec3<f32>(0.65, 0.95, 0.75) * cilium * glowIntensity * (0.35 + mids * 0.25);
+
+        // Idea: contractile vacuole — a clear vesicle fills, then systole collapses it.
+        let vacSeed = hash(vec3<f32>(floor(p.x * 2.0), floor(p.y * 2.0), floor(p.z * 2.0)));
+        let vacPhase = fract(time * (0.12 + flowSpeed * 0.08) + vacSeed * 3.0);
+        let vacFill = smoothstep(0.05, 0.62, vacPhase) * (1.0 - smoothstep(0.72, 0.84, vacPhase));
+        let vacDir = normalize(vec3<f32>(fract(vacSeed * 17.0), fract(vacSeed * 43.0), fract(vacSeed * 9.0)) - vec3<f32>(0.5));
+        let vacuole = exp(-pow(1.0 - max(dot(n, vacDir), 0.0), 2.0) * 28.0) * vacFill * (1.0 - rim);
+        cellCol += vec3<f32>(0.82, 0.94, 1.0) * vacuole * glowIntensity * 0.65;
+
         // Cleavage furrow glow on dividing cells (division progress in mat fraction).
         let divide = clamp((mat - 1.0) * 2.0, 0.0, 1.0);
         cellCol += vec3<f32>(1.0, 0.75, 0.45) * divide * rim * 0.35 * glowIntensity;
@@ -300,7 +295,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Distance Fog (Fluid density)
         let fogAmount = 1.0 - exp(-t * 0.08);
         color = mix(cellCol, color, fogAmount);
-        coverage = (1.0 - fogAmount) * clamp(0.45 + thick * 0.25 + rim * 0.3, 0.0, 1.0);
+        coverage = (1.0 - fogAmount) * clamp(0.45 + thick * 0.25 + rim * 0.3 + cilium * 0.15 + vacuole * 0.12, 0.0, 1.0);
     }
 
     // Smooth traveling marine snow with fixed particle identities.

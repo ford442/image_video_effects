@@ -11,8 +11,8 @@
 //            aces-tone-map, upgraded-rgba, depth-aware, temporal-feedback, chromatic-aberration,
 //            hue-preserve-clamp, ign-dither, distance-lod
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: stair nosing on each tread; shift-ghost smear of the previous cell pose
+//  Upgraded: 2026-10-10
+//  Ideas: stair nosing on each tread; shift-ghost smear of the previous cell pose; worn treads; rift limb
 //  A packing: rift echo, depth, material, alpha
 //  Created: 2026-05-10
 //  By: Claude Sonnet 4.6 (swarm optimization pass 2026-05-31; F1 flagship deep upgrade 2026-06-07)
@@ -38,28 +38,8 @@
 //  - huePreserveClamp before ACES — keeps rift cyan/turquoise saturated at peak brightness
 //  - Chromatic aberration on rift glow — RGB channel offset scaled by mid-band energy
 
-// --- STANDARD HEADER ---
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-// ---------------------------------------------------
-struct Uniforms {
-    config: vec4<f32>, // x=Time, y=MouseClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>, // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>, // x=Labyrinth Complexity, y=Shift Speed, z=Temporal Rifts, w=Atmospheric Perspective
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Labyrinth Complexity, y=Shift Speed, z=Temporal Rifts, w=Atmospheric Perspective
 
 // Parameters (accessed via u.zoom_params.x etc. inside functions)
 // Constants
@@ -491,6 +471,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             if (mat > 1.1 && mat < 1.4) {
                 let lip = smoothstep(0.35, 0.7, n.y) * smoothstep(0.35, 0.75, length(n.xz));
                 base_color *= 1.0 - lip * 0.5;
+                // Idea: worn tread — a pale centerline on the upward face.
+                let tread = smoothstep(0.55, 0.92, n.y);
+                let centerline = exp(-abs(fract(p.x * 0.7 + p.z * 0.3) - 0.5) * 14.0);
+                base_color = mix(base_color, vec3<f32>(0.72, 0.68, 0.58), tread * centerline * 0.5);
             }
 
             roughness = mix(0.9, 0.1, material_blend); // Stone rough, obsidian smooth
@@ -531,6 +515,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let rift_colors = chronoPalette(riftHue, 1.0 + mid);
             let pulse = 0.7 + 0.3 * sin(time * (9.0 + treble * 12.0));
             color = rift_colors * (2.0 + pulse + mid * 0.5 + shock * 1.2) * u.zoom_params.z;
+            // Idea: rift limb — a bright grazing shell, separate from the fill.
+            color += vec3<f32>(0.85, 0.95, 1.0) * fresnel * (0.7 + treble) * u.zoom_params.z;
             riftGlowNow = dot(color, vec3<f32>(0.333));
         } else {
             // Standard material — ao folds in diffuse shadow role

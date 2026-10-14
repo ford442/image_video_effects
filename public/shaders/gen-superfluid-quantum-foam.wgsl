@@ -4,29 +4,10 @@
 //  Features: mouse-driven, audio-reactive, raymarched, temporal, chromatic, depth-aware, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-09-27
-//  Ideas: coalescing bubble necks (8-neighbour smooth-min); film-drainage black-film pop (burst shells); Kelvin-wave vortex filament (hollow core + 1/r swirl)
+//  Ideas: coalescing bubble necks (8-neighbour smooth-min); film-drainage black-film pop (burst shells); Kelvin-wave vortex filament (hollow core + 1/r swirl); second-sound thermal fronts; vortex reconnection sparks
 //  A packing: ACES display RGBA, premultiplied (col*alpha, alpha) - unchanged; C read back as colour history
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash13(p3: vec3<f32>) -> f32 {
   var p = fract(p3 * 0.1031);
@@ -87,6 +68,9 @@ fn map(p: vec3<f32>) -> vec4<f32> {
   let bass = plasmaBuffer[0].x;
   let env = 1.0 + bass * 2.0;
   var pos = p + curlNoise(p * 0.5 + t * 0.1) * 0.3 * env;
+  // Idea 4: second-sound fronts as propagating thermal-density waves.
+  let secondSound = sin(length(pos) * 2.8 - t * (3.0 + plasmaBuffer[0].y * 2.0));
+  pos += normalize(pos + vec3<f32>(0.001)) * secondSound * 0.06 * (0.3 + plasmaBuffer[0].y * 0.4);
   
   let mouse = select(clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0)), vec2<f32>(extraBuffer[133], extraBuffer[134]), extraBuffer[137] > 0.5);
   let m = vec3<f32>((mouse.x * 2.0 - 1.0) * 10.0, (mouse.y * 2.0 - 1.0) * 5.0, 0.0);
@@ -259,6 +243,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let vrM = u.zoom_params.y;
   var sheath = 0.0;
   var hollow = 0.0;
+  var reconSpark = 0.0;
   if (vrM > 0.0) {
     let tf = t * (0.15 + u.zoom_params.w * 0.35);
     let mW = vec3<f32>((mouse.x * 2.0 - 1.0) * 10.0, (mouse.y * 2.0 - 1.0) * 5.0, 0.0);
@@ -274,6 +259,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let hx = dl / 0.07;
     sheath = exp(-sx * sx) * vis;
     hollow = exp(-hx * hx) * vis;
+    // Idea 5: quantized vortex reconnection sparks near the core overlap radius.
+    let reconBand = exp(-pow((dl - 0.11) / 0.025, 2.0));
+    let reconPulse = pow(0.5 + 0.5 * sin(tf * 11.0 + yS * 8.0), 6.0);
+    reconSpark = reconBand * reconPulse * vis;
   }
 
   let flash = vec3<f32>(0.8, 0.1, 1.0) * glow * env;
@@ -282,7 +271,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let burstC = clamp(burstGlow, 0.0, 2.0) * (0.35 + 0.65 * u.zoom_params.z);
   col += vec3<f32>(1.0, 0.78, 0.45) * burstC;
   col = col * (1.0 - 0.85 * hollow) + vec3<f32>(0.35, 0.85, 1.3) * sheath * 0.9;
+  col += vec3<f32>(1.0, 0.95, 0.7) * reconSpark * (0.3 + treble * 0.4);
   alpha = max(alpha, glow * 0.5 + clickCavitation * 0.45 + burstC * 0.5 + sheath * 0.7);
+  alpha = clamp(alpha + reconSpark * 0.22, 0.0, 0.96);
   
   let lum = dot(col, vec3<f32>(0.299, 0.587, 0.114));
   col = max(col, vec3<f32>(0.0));

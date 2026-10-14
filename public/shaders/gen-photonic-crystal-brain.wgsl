@@ -4,29 +4,12 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-09-14
-//  Ideas: Bragg-reflection structural color (lambda = 2 n d cos theta from lattice spacing); line-defect waveguide spikes (photon packets travelling along sparse firing rods)
+//  Ideas: Bragg-reflection structural color (lambda = 2 n d cos theta from lattice spacing); line-defect waveguide spikes (photon packets travelling along sparse firing rods); defect-cavity resonator blooms; synaptic junction avalanche flashes
 //  A packing: ACES display RGBA in A (C unused)
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: .x = Intensity, .y = Speed, .z = Scale, .w = Mouse Influence
 
-struct Uniforms {
-    config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-    zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
-    zoom_params: vec4<f32>,  // .x = Intensity, .y = Speed, .z = Scale, .w = Mouse Influence
-    ripples: array<vec4<f32>, 50>,
-};
 fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
   let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
   let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
@@ -198,6 +181,37 @@ fn waveguideSpike(p: vec3<f32>, t: f32, mids: f32) -> f32 {
     return packet * 0.004 / (radial * radial + 0.004);
 }
 
+// Idea 3: sparse defect cavities trap standing modes; bass/mids lift the Q and
+// brighten localized resonators in selected lattice cells.
+fn cavityResonance(p: vec3<f32>, t: f32, bass: f32, mids: f32) -> f32 {
+    let wp = crystalWarp(p);
+    let spacing = crystalSpacing();
+    let cid = floor(wp / spacing);
+    let q = fract(wp / spacing) * spacing - spacing * 0.5;
+    let h = hash3(cid + vec3<f32>(19.7, 5.3, 11.1));
+    if (h.x < 0.72) { return 0.0; }
+    let r = length(q);
+    let r0 = 0.11 + 0.05 * h.y;
+    let shell = exp(-pow((r - r0) * 24.0, 2.0));
+    let mode = 0.5 + 0.5 * sin(t * (2.0 + mids * 1.7) + dot(cid, vec3<f32>(0.7, 1.1, 1.3)));
+    return shell * pow(mode, 2.2) * (0.45 + bass * 0.75);
+}
+
+// Idea 4: when multiple rod packets coincide at a node, the junction avalanches
+// with a brief excitatory flash concentrated near the 3-axis crossing.
+fn junctionAvalanche(p: vec3<f32>, t: f32, mids: f32, treble: f32) -> f32 {
+    let wp = crystalWarp(p);
+    let spacing = crystalSpacing();
+    let cid = floor(wp / spacing);
+    let q = fract(wp / spacing) * spacing - spacing * 0.5;
+    let node = exp(-dot(q, q) * 120.0);
+    let axisTube = min(min(length(q.yz), length(q.xz)), length(q.xy));
+    let conduit = exp(-axisTube * axisTube * 140.0);
+    let coincidence = pow(0.5 + 0.5 * sin(t * (5.0 + treble * 4.0) + dot(cid, vec3<f32>(1.9, 1.3, 0.8))), 6.0);
+    let recruit = 0.5 + 0.5 * sin(t * (1.7 + mids * 1.6) + cid.z * 0.9);
+    return node * conduit * coincidence * recruit;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let res = vec2<f32>(u.config.z, u.config.w);
@@ -234,6 +248,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         glow += glowColor * (0.01 / (d * d + 0.01)) * pulse * audioPulse * glowIntens;
         if (d < 0.3) {
             glow += spikeCol * waveguideSpike(p, u.config.x, mids) * 0.35 * (0.5 + glowIntens) * (1.0 + treble * 0.3);
+            let cavity = cavityResonance(p, u.config.x, bass, mids);
+            let avalanche = junctionAvalanche(p, u.config.x, mids, treble);
+            glow += vec3<f32>(0.55, 0.95, 1.0) * cavity * 0.18;
+            glow += vec3<f32>(1.0, 0.78, 0.46) * avalanche * (0.08 + glowIntens * 0.12);
             var fire = 0.0;
             for (var r = 0u; r < nRip; r++) {
                 let rip = u.ripples[r];

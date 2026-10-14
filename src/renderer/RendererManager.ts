@@ -53,6 +53,7 @@ import { DeviceFormatCapabilities } from '../config/formatPolicy';
 import { RenderQualityMode } from '../config/performancePolicy';
 import { buildRendererDiagnostics } from './rendererDiagnostics';
 import type { RendererDiagnostics, RendererMetrics } from './rendererTypes';
+import type { DisplayP3Result } from './webgpuBootProbe';
 import { adoptHandoffDeviceIfWebGpu, clearAdoptedRendererDevice, getAdoptedRendererDevice, releaseAdoptedDeviceIfLeavingWebGpu } from '../utils/adoptedGpuDevice';
 
 export type { RendererType, RendererInitOptions, WebGpuProbeHandoff };
@@ -469,6 +470,16 @@ export class RendererManager {
   setCanvasCopySrc(enabled: boolean): boolean {
     const r = this.currentRenderer as { setCanvasCopySrc?: (e: boolean) => boolean } | null;
     return r?.setCanvasCopySrc?.(enabled) ?? false;
+  }
+  /**
+   * Live Display P3 toggle. Null when the active backend has no TS canvas to
+   * reconfigure (WASM / Canvas2D — the color opt-in is TS-first, Tier B freeze).
+   */
+  async setDisplayP3(enabled: boolean, isHdr: boolean): Promise<DisplayP3Result | null> {
+    const r = this.currentRenderer as {
+      setDisplayP3?: (e: boolean, hdr: boolean) => Promise<DisplayP3Result | null>;
+    } | null;
+    return (await r?.setDisplayP3?.(enabled, isHdr)) ?? null;
   }
   stopRendererRecording(): void {
     (this.currentRenderer as { stopRecording?: () => void } | null)?.stopRecording?.();

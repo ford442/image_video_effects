@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, upgraded-rgba, mouse-driven, click-reactive, held-drag, raymarched, depth-aware
 //  Complexity: High
-//  Upgraded: 2026-09-28
-//  Ideas: eclosion seam (smin-lipped dorsal split); cremaster thread + silk girdle pendulum sway; defensive click wriggle
+//  Upgraded: 2026-10-10
+//  Ideas: eclosion seam (smin-lipped dorsal split); cremaster thread + silk girdle pendulum sway; defensive click wriggle; core-backlit wing-case venation; abdominal segments with breathing spiracles
 //  A packing: raw HDR display RGB + semantic alpha (C read back as colour history)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY (0 = top), w=Held
-    zoom_params: vec4<f32>,  // x=Chrysalis Complexity, y=Rotation Speed, z=Shell Hole Width, w=Color Shift
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Chrysalis Complexity, y=Rotation Speed, z=Shell Hole Width, w=Color Shift
 
 // Scene layout (world units). The camera sees half-height 4 at z=0, the HEAD spindle spans +-5.9 body
 // units, so the body is scaled to +-2.95 and hung slightly low to leave the upper frame for the thread.
@@ -340,6 +322,35 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let along = 1.0 - smoothstep(3.0, 3.6, abs(pb.y + 1.2));
             let spill = exp(-max(lip, 0.0) * 14.0) * smoothstep(-0.1, 0.3, pb.z) * along;
             col += coreCol * spill * (0.25 + pose.gape * 4.0) * (0.6 + audio.x * 0.8);
+
+            // Body-surface coordinates: theta = 0 on the ventral midline (-z), arc length along the girth.
+            let theta = atan2(pb.x, -pb.z);
+            let girth = theta * 1.4;
+
+            // Idea 4 — wing-case venation: the folded wing pads on the ventral shell, veins fanning from
+            // the wing base and backlit by the core.
+            let wingMask = smoothstep(1.45, 1.2, abs(theta)) * smoothstep(0.05, 0.25, abs(theta))
+                         * smoothstep(-4.4, -3.8, pb.y) * smoothstep(1.1, 0.5, pb.y);
+            let fromBase = vec2<f32>(abs(girth) - 0.6, pb.y - 0.9);
+            let fan = atan2(fromBase.x, -fromBase.y);
+            let vein = 1.0 - smoothstep(0.0, 0.07, abs(fract(fan * 3.2 + 0.5) - 0.5));
+            let crossVein = 1.0 - smoothstep(0.0, 0.05, abs(fract(length(fromBase) * 0.8) - 0.5) - 0.42);
+            let padEdge = 1.0 - smoothstep(0.0, 0.06, abs(abs(theta) - 1.25));
+            let venation = clamp(max(vein * 0.9, crossVein * 0.5) + padEdge * 0.6, 0.0, 1.0) * wingMask;
+            col += mix(coreCol, fiberCol, 0.25) * venation * (0.22 + audio.x * 0.5 + pose.gape * 1.5);
+
+            // Idea 5 — abdominal segments + spiracles: grooved rings toward the cremaster end, with a
+            // breathing spiracle on each flank of every segment.
+            let abdomen = smoothstep(0.9, 1.6, pb.y) * smoothstep(5.4, 4.6, pb.y);
+            let segCoord = pb.y * 1.15;
+            let segIdx = floor(segCoord);
+            let groove = 1.0 - smoothstep(0.0, 0.06, abs(fract(segCoord) - 0.5) - 0.42);
+            col *= 1.0 - groove * abdomen * 0.6;
+            let flank = abs(abs(theta) - 1.5708) * 1.4;
+            let spDist = length(vec2<f32>(flank, (fract(segCoord) - 0.5) / 1.15));
+            let breathe = 0.5 + 0.5 * sin(time * 2.2 - segIdx * 0.7);
+            let spiracle = exp(-spDist * spDist * 90.0) * abdomen;
+            col += mix(fiberCol, vec3<f32>(1.0, 0.55, 0.2), 0.5) * spiracle * breathe * (0.35 + audio.x * 1.4);
         } else if (m == 2.0) { // Core (should be occluded by shell, but just in case)
             col = vec3<f32>(1.0) * diff;
         } else if (m == 3.0) { // Fibres: lit teal strands with an emissive floor

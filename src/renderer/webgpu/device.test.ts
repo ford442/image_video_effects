@@ -197,6 +197,20 @@ describe('resolveCanvasColorOptIns', () => {
     });
     expect(resolveCanvasColorOptIns('?display_p3=0', () => true).extendedToneMapping).toBe(false);
   });
+
+  it('honors the persisted setting without a URL param', () => {
+    expect(resolveCanvasColorOptIns('', () => false, true)).toEqual({ displayP3: true, extendedToneMapping: false });
+    expect(resolveCanvasColorOptIns('', () => true, true)).toEqual({ displayP3: true, extendedToneMapping: true });
+  });
+
+  it('keeps a stored-off setting off, and lets the URL force it on', () => {
+    expect(resolveCanvasColorOptIns('', () => true, false).displayP3).toBe(false);
+    expect(resolveCanvasColorOptIns('?display_p3=1', () => false, false).displayP3).toBe(true);
+  });
+
+  it('declares the storage key in the contract', () => {
+    expect(canvasConfigureContract.optIn.displayP3.storageKey).toBe('px_display_p3');
+  });
 });
 
 describe('appendAdapterSummaryFields', () => {

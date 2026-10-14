@@ -38,6 +38,8 @@ interface WebGPUCanvasProps {
     liveStreamUrl?: string; // NEW: HLS live stream URL
     // Expose the canvas element to the parent (e.g. for recording)
     onCanvasRef?: (canvas: HTMLCanvasElement | null) => void;
+    /** Fires with the probe record when the renderer is blocked, and null when cleared. */
+    onProbeFailure?: (probe: WebGpuProbeSerializable | null) => void;
     /** Shader catalog for interactive-feature detection (from App manifest). */
     shaderCatalog?: ShaderEntry[];
     // B3HD segment
@@ -72,6 +74,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     webcamVideoElement,
     liveStreamUrl,
     onCanvasRef,
+    onProbeFailure,
     shaderCatalog = [],
     segment,
 }) => {
@@ -93,6 +96,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     // Track when RendererManager finished init so input-source sync runs once
     const [managerReady, setManagerReady] = useState(false);
     const [probeFailure, setProbeFailure] = useState<WebGpuProbeSerializable | null>(null);
+    useEffect(() => { onProbeFailure?.(probeFailure); }, [probeFailure, onProbeFailure]);
 
     // Track if there are active interactive/mouse-driven effects
     const [hasInteractiveEffects, setHasInteractiveEffects] = useState(false);

@@ -57,7 +57,15 @@
   "updated": true,
   "id": "gen-chrono-mycelial-tapestry",
   "url": "shaders/gen-chrono-mycelial-tapestry.wgsl",
-  "features": [],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "temporal-feedback",
+    "semantic-alpha",
+    "aces-tone-mapping",
+    "depth-aware",
+    "upgraded-rgba"
+  ],
   "params": [
     {
       "id": "growth_rate",

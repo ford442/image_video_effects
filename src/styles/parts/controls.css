@@ -183,6 +183,12 @@ hr {
     z-index: 20;
 }
 
+.status-bar--error {
+    background-color: rgba(120, 0, 0, 0.85);
+    color: #ffd0d0;
+    font-weight: 600;
+}
+
 /* Renderer backend badge shown in the status bar (display-only; WASM is ?renderer=wasm only, #1080) */
 .renderer-badge {
     margin-left: auto;

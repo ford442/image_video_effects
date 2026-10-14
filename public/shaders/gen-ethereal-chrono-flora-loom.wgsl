@@ -1,29 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Ethereal Chrono-Flora Loom
 //  Category: generative
-//  Features: audio-reactive, mouse-driven
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-10
+//  Ideas: warp-thread helices along the loom axis; weft shuttle bead at flow speed; chrono-petal clock face; temporal gear-tooth rims
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Density, .y = Flow Speed, .z = Glow Intensity, .w = Color Shift
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Density, .y = Flow Speed, .z = Glow Intensity, .w = Color Shift
 
 // --- CONSTANTS ---
 const MAX_STEPS: i32 = 100;
@@ -50,13 +36,25 @@ fn palette(t: f32) -> vec3<f32> {
     return a + b * cos(6.28318 * (c * t + d));
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn shuttlePos(flowTime: f32) -> vec3<f32> {
+    let ang = flowTime * 1.4;
+    return vec3<f32>(cos(ang) * 0.9, sin(ang) * 0.9, sin(flowTime * 0.35) * 2.2);
+}
+
 // --- SDF ---
+// Returns (distance, material). 1 stem/orb, 2 warp thread, 3 weft shuttle.
 fn map(p: vec3<f32>) -> vec2<f32> {
     var p_mod = p;
 
-    // Audio modulation for speed
-    let audioBass = extraBuffer[0] * 0.5;
-    let t = u.config.x * u.zoom_params.y * (1.0 + audioBass);
+    let audioBass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let flow = max(u.zoom_params.y, 0.0);
+    let t = u.config.x * flow * (1.0 + audioBass * 0.5);
+    let density = clamp(u.zoom_params.x, 0.1, 5.0);
 
     // Twist based on height and time
     let pxy = p_mod.xy * rot2D(p_mod.z * 0.2 + t * 0.5);
@@ -67,22 +65,52 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     let radius = length(p_mod.xy);
     let petals = 6.0;
     let sector = 6.28318 / petals;
-    let id = floor(angle / sector);
+    let petalId = floor(angle / sector);
     let local_angle = (fract(angle / sector) - 0.5) * sector;
 
     let p_folded = vec3<f32>(cos(local_angle)*radius, sin(local_angle)*radius, p_mod.z);
 
-    let fft_mod = extraBuffer[4u + u32(abs(id) % 10.0)] * 0.5;
+    let fft_mod = mids * (0.5 + 0.5 * sin(petalId * 1.7));
 
+    // Idea 2: Temporal gear-tooth rims
+    let gearTeeth = abs(sin(p_mod.z * 10.0 - t * 2.0)) * 0.03 * density;
+    
     // Flora structure (capsule/cylinder)
-    let d_stem = length(p_folded.xy - vec2<f32>(0.5, 0.0)) - 0.1 * u.zoom_params.x * (1.0 + fft_mod);
+    let d_stem = length(p_folded.xy - vec2<f32>(0.5, 0.0)) - (0.1 * density * (1.0 + fft_mod) + gearTeeth);
 
     // Central glowing orb
     let d_orb = length(p) - 1.0;
 
-    let d = smin(d_stem, d_orb, 0.5);
+    // Idea 1 — warp threads: two helices running the length of the loom.
+    let threadR = 0.03 * density;
+    let helixA = vec2<f32>(cos(p_mod.z * 2.4 + t), sin(p_mod.z * 2.4 + t)) * 1.15;
+    let helixB = vec2<f32>(cos(p_mod.z * 2.4 + t + 3.14159), sin(p_mod.z * 2.4 + t + 3.14159)) * 1.15;
+    let d_warp = min(length(p_mod.xy - helixA), length(p_mod.xy - helixB)) - threadR;
 
-    return vec2<f32>(d, 1.0);
+    // Idea 1: Chrono-petal clock face
+    let clockRadius = length(p_mod.xy);
+    let clockAngle = atan2(p_mod.y, p_mod.x);
+    let clockTicks = abs(sin(clockAngle * 6.0)) * 0.1;
+    let d_clock = max(abs(clockRadius - 2.0) - 0.05, -clockTicks);
+
+    var d = smin(d_stem, d_orb, 0.5);
+    d = smin(d, d_warp, 0.22);
+    d = smin(d, d_clock, 0.15);
+
+    // Idea 2 — weft shuttle riding the twist at Flow Speed.
+    let d_shuttle = length(p - shuttlePos(t)) - 0.07;
+
+    var mat = 1.0;
+    if (d_shuttle < d) {
+        d = d_shuttle;
+        mat = 3.0;
+    } else if (d_clock < d_stem && d_clock < d_orb && d_clock < d_warp && d_clock < d_shuttle) {
+        mat = 4.0;
+    } else if (d_warp < d_stem && d_warp < d_orb) {
+        mat = 2.0;
+    }
+
+    return vec2<f32>(d, mat);
 }
 
 fn getNormal(p: vec3<f32>) -> vec3<f32> {
@@ -108,27 +136,42 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var ro = vec3<f32>(0.0, 0.0, -5.0);
     var rd = normalize(vec3<f32>(uv, 1.0));
 
-    // Mouse Interaction
-    if (u.zoom_config.w > 0.0) {
-        let mouse_uv = (u.zoom_config.yz - 0.5 * res) / res.y;
-        let pxy = ro.xy * rot2D(mouse_uv.x * 3.14);
+    // Mouse orbit. zoom_config.yz is 0–1, not pixels.
+    if (u.zoom_config.w > 0.5) {
+        let ang = (u.zoom_config.y - 0.5) * 3.14159;
+        let spin = rot2D(ang);
+        let pxy = spin * ro.xy;
         ro = vec3<f32>(pxy, ro.z);
-        let rdxy = rd.xy * rot2D(mouse_uv.x * 3.14);
+        let rdxy = spin * rd.xy;
         rd = vec3<f32>(rdxy, rd.z);
     }
 
+    let audioBass = plasmaBuffer[0].x;
+    let flow = max(u.zoom_params.y, 0.0);
+    let flowTime = u.config.x * flow * (1.0 + audioBass * 0.5);
+    let shuttle = shuttlePos(flowTime);
+    let glowAmt = u.zoom_params.z;
+
     var t = 0.0;
     var glow = 0.0;
+    var weftGlow = 0.0;
     var hit = false;
     var steps_taken: i32 = 0;
+    var mat = 1.0;
 
     for (var i = 0; i < MAX_STEPS; i++) {
         let p = ro + rd * t;
         let d = map(p);
+        mat = d.y;
 
-        let audioBass = extraBuffer[0];
+        glow += 0.01 / (0.01 + abs(d.x)) * glowAmt * (1.0 + audioBass * 0.5);
 
-        glow += 0.01 / (0.01 + abs(d.x)) * u.zoom_params.z * (1.0 + audioBass*0.5);
+        let ang = atan2(p.y, p.x);
+        let shuttleAng = atan2(shuttle.y, shuttle.x);
+        var dang = ang - shuttleAng;
+        dang = dang - 6.28318 * round(dang / 6.28318);
+        let weftArc = exp(-abs(dang) * 7.0) * exp(-abs(length(p.xy) - 0.9) * 10.0) * exp(-abs(p.z - shuttle.z) * 1.4);
+        weftGlow += weftArc * glowAmt * 0.015;
 
         if (abs(d.x) < SURF_DIST) {
             hit = true;
@@ -154,15 +197,26 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let baseCol = palette(length(p) * 0.1 + u.zoom_params.w);
         col = baseCol * dif * amb;
 
+        if (mat > 3.5) {
+            col += vec3<f32>(0.5, 0.8, 1.0) * (0.8 + audioBass);
+        } else if (mat > 2.5) {
+            col += vec3<f32>(1.0, 0.92, 0.75) * (1.2 + audioBass);
+        } else if (mat > 1.5) {
+            col += palette(u.zoom_params.w + 0.35) * 0.45;
+        }
+
         // Fake AO from step count
         col *= 1.0 - f32(steps_taken) / f32(MAX_STEPS);
     }
 
-    // Add glow
+    // Add glow and the weft arc the shuttle is laying down
     col += palette(u.config.x * 0.1) * glow * 0.05;
+    col += vec3<f32>(1.0, 0.86, 0.55) * weftGlow;
 
-    // Output
-    textureStore(writeTexture, id.xy, vec4<f32>(col, 1.0));
-    textureStore(writeDepthTexture, id.xy, vec4<f32>(t / MAX_DIST, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, id.xy, vec4<f32>(col, 1.0));
+    let mapped = acesToneMap(col * 1.15);
+    let alpha = clamp(select(0.04, 0.72, hit) + glow * 0.08 + weftGlow * 0.35, 0.0, 1.0);
+    let depth = clamp(1.0 - t / MAX_DIST, 0.0, 1.0);
+    textureStore(writeTexture, id.xy, vec4<f32>(mapped, alpha));
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, id.xy, vec4<f32>(mapped, alpha));
 }

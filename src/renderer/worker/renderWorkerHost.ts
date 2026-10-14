@@ -58,6 +58,8 @@ export type HostedRenderer = Pick<
   | 'setSourceAutoExposure'
   | 'applyTestRenderState'
   | 'setCanvasCopySrc'
+  | 'setDisplayP3'
+  | 'getCanvasColorState'
   | 'warmShaders'
   | 'loadShader'
   | 'loadImageBitmap'
@@ -174,6 +176,7 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
     historyLayers: r.getHistoryLayers(),
     workingSizeCap: r.getWorkingSizeCap(),
     resolution: r.getResolutionScale(),
+    canvasColor: r.getCanvasColorState(),
     gpuErrors: [...gpuErrors],
     inputChannel: inputRing ? 'sab' : 'postMessage',
     input: r.getInputEcho(),
@@ -272,6 +275,10 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
     },
     captureThumbnail: async ({ size }) => (renderer ? renderer.captureChoresThumbnailPng(size) : null),
     grabVideoFrame: async ({ timestampUs }) => (renderer ? renderer.grabPresentedFrame(timestampUs) : null),
+    setDisplayP3: async ({ enabled, isHdr }) => {
+      if (!renderer) throw new Error('render worker has no renderer');
+      return renderer.setDisplayP3(enabled, isHdr);
+    },
     captureFrame: async () => {
       const frame = renderer ? await renderer.grabPresentedFrame(0) : null;
       if (!frame) return null;

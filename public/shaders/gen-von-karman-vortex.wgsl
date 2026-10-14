@@ -12,31 +12,13 @@
 //    and brightness pulses; mids morph separation and color cycling;
 //    treble adds high-frequency sparkle. Mouse positions the obstacle.
 // ═══════════════════════════════════════════════════════════════════
-//  Upgraded: 2026-09-27
-//  Ideas: wake deficit between the vortex rows; alternating core pulse at the shedding rate
+//  Upgraded: 2026-10-10
+//  Ideas: wake deficit; alternating core pulse; boundary-layer skin; recirculation bubble
 //  A packing: display RGBA (trail blend)
 //  zoom_params: x=flow_speed, y=vortex_separation, z=vortex_spacing, w=hue
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config:      vec4<f32>,  // x=time, y=rippleCount, z=resX, w=resY
-  zoom_config: vec4<f32>,  // x=time, y=mouseX, z=mouseY, w=mouseDown
-  zoom_params: vec4<f32>,  // x=speed, y=separation, z=spacing, w=hue
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=speed, y=separation, z=spacing, w=hue
 
 const PI: f32      = 3.14159265359;
 const TAU: f32     = 6.28318530718;
@@ -231,6 +213,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let pulse = core_pulse(warpedPos, time, U, h, spacing, obst);
     col += vec3<f32>(0.82, 0.90, 1.0) * clamp(pulse, 0.0, 1.2) * 0.5;
+    // Idea: boundary-layer skin on the cylinder.
+    let skin = exp(-abs(obstDist - 0.075) * 48.0);
+    col += vec3<f32>(0.72, 0.86, 1.0) * skin * (0.35 + u.zoom_params.x * 0.3);
+    // Idea: recirculation bubble just downstream of the obstacle, before the far wake.
+    let bubbleX = downX - 0.22;
+    let bubble = exp(-bubbleX * bubbleX / 0.012) * exp(-acrossY * acrossY / max(h * h * 2.2, 0.008)) * smoothstep(0.02, 0.12, downX);
+    col += vec3<f32>(0.35, 0.62, 0.95) * bubble * 0.45;
 
     // Speed halo around vortex cores, pulsed by envelope bass
     let speedHalo = clamp(spd * 0.12, 0.0, 1.0);

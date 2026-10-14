@@ -4,31 +4,12 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
 //  Created: 2026-07-05
-//  Upgraded: 2026-09-11
-//  Ideas: muzzle flash at launchPos; even/odd round-burst vs droop habits
+//  Upgraded: 2026-10-10
+//  Ideas: muzzle flash at launchPos; even/odd round-burst vs droop habits; aerial perspective per shell; color-changing stars
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.141592653589793;
 const TAU: f32 = 6.283185307179586;
@@ -187,6 +168,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let shellEnergy = energy * (0.75 + bass * 0.9);
     // Idea 2 — even shells stay round; odd shells droop
     let droopHabit = (s % 2) == 1;
+    // Idea 3 — aerial perspective: 0 = near shell, 1 = far shell
+    let aerialDepth = hash1(si * 7.7 + 1.0);
+    let farScale = mix(1.0, 0.58, aerialDepth);
+    let farDim = mix(1.0, 0.5, aerialDepth);
+    let farHaze = vec3<f32>(0.42, 0.5, 0.78);
+    // Idea 4 — color-changing stars: burst hue jumps at a per-shell age
+    let changeAge = 1.0 + seed2 * 0.9;
 
     // Idea 1 — muzzle flash at the mortar mouth
     if (age < 0.12) {
@@ -231,21 +219,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let vyScale = select(1.0, 0.55, droopHabit);
         let gravBoost = select(0.0, 0.45, droopHabit);
 
-        let vel = vec2<f32>(cos(angle), sin(angle) * vyScale) * speed;
-        let grav = 1.15 + shellEnergy * 0.15 + gravBoost;   // gravity strength
+        let vel = vec2<f32>(cos(angle), sin(angle) * vyScale) * speed * farScale;
+        let grav = (1.15 + shellEnergy * 0.15 + gravBoost) * farScale;   // gravity strength
         let drag = 0.18;
 
         let sp = sparkPos(burstCenter, vel, burstAge, grav, drag);
 
         // Lifetime fade + distance fade
         let lifeFade = smoothstep(4.8, 0.6, burstAge) * (0.6 + jSeed * 0.4);
-        let size = (0.0065 + jSeed2 * 0.005) * (1.0 + bass * 0.2) * (1.0 - burstAge * 0.07);
+        let size = (0.0065 + jSeed2 * 0.005) * (1.0 + bass * 0.2) * (1.0 - burstAge * 0.07) * farScale;
 
-        let glow = softGlow(uv, sp, size, lifeFade * shellEnergy * 1.8);
+        let glow = softGlow(uv, sp, size, lifeFade * shellEnergy * 1.8 * farDim);
 
-        let hue = fract(burstHueBase + jSeed * 0.35 + colorDrift);
+        let colorChange = smoothstep(changeAge, changeAge + 0.12, burstAge);
+        let hue = fract(burstHueBase + jSeed * 0.35 + colorDrift + colorChange * 0.45);
         let temp = smoothstep(0.0, 0.6, 1.0 - burstAge * 0.18); // hot at birth
-        let sparkCol = fireworkColor(hue, temp);
+        let changeFlash = exp(-abs(burstAge - changeAge - 0.06) * 30.0) * 0.5;
+        let sparkCol = mix(fireworkColor(hue, temp + changeFlash), farHaze, aerialDepth * 0.35);
 
         col += sparkCol * glow * (0.85 + treble * 0.6);
       }
@@ -277,15 +267,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let ef = f32(e);
         let eSeed = hash1(si * 63.0 + ef * 5.3);
         let eAngle = eSeed * TAU + (eSeed - 0.5) * 1.6;
-        let eVel = vec2<f32>(cos(eAngle), sin(eAngle) * select(0.6, 0.32, droopHabit)) * (0.28 + eSeed * 0.25);
-        let emberGrav = select(0.72, 1.05, droopHabit);
+        let eVel = vec2<f32>(cos(eAngle), sin(eAngle) * select(0.6, 0.32, droopHabit)) * (0.28 + eSeed * 0.25) * farScale;
+        let emberGrav = select(0.72, 1.05, droopHabit) * farScale;
         let emberPos = sparkPos(burstCenter, eVel, burstAge * 0.9, emberGrav, 0.05);
 
         let eAge = burstAge - 0.7;
         let eFade = smoothstep(5.8, 1.2, eAge);
-        let eg = softGlow(uv, emberPos, 0.0055, eFade * 0.9 * shellEnergy * 0.7);
+        let eg = softGlow(uv, emberPos, 0.0055 * farScale, eFade * 0.9 * shellEnergy * 0.7 * farDim);
 
-        let emberCol = mix(vec3<f32>(1.0, 0.55, 0.15), vec3<f32>(0.9, 0.3, 0.1), eAge * 0.12);
+        let emberCol = mix(mix(vec3<f32>(1.0, 0.55, 0.15), vec3<f32>(0.9, 0.3, 0.1), eAge * 0.12), farHaze, aerialDepth * 0.35);
         col += emberCol * eg;
       }
     }

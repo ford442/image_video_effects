@@ -44,6 +44,9 @@
   "features": [
     "audio-reactive",
     "mouse-driven",
-    "upgraded-rgba"
-  ]
+    "upgraded-rgba",
+    "polar-cap-spark-carousel",
+    "striped-current-sheet"
+  ],
+  "description": "A relativistic neutron-star scene where twisted dipole field lines, pulsar beams, and accretion structures react to audio while the camera orbits under mouse control. This pass adds polar-cap spark carousels and striped equatorial current sheets beyond the light cylinder."
 }

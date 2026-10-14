@@ -10,7 +10,7 @@
     "volumetric",
     "raymarched"
   ],
-  "description": "A majestic, hyper-organic lotus flower suspended in zero-gravity, blooming endlessly with translucent liquid-neon neuro-fluid petals that ripple with bioluminescent plasma in sync with ambient cosmic frequencies.",
+  "description": "A majestic, hyper-organic lotus flower suspended in zero-gravity, blooming endlessly with translucent liquid-neon neuro-fluid petals that ripple with bioluminescent plasma in sync with ambient cosmic frequencies. The second pass adds capillary petal venation and click-driven magnetic-reconnection plume bursts.",
   "workgroup_size": [
     16,
     16,
@@ -96,6 +96,8 @@
   "features": [
     "audio-reactive",
     "mouse-driven",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "capillary-venation",
+    "reconnection-plumes"
   ]
 }

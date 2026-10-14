@@ -101,6 +101,9 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
     onRenderQualityChange,
     sourceAutoExposure = false,
     onSourceAutoExposureChange,
+    displayP3 = false,
+    onDisplayP3Change,
+    displayP3Status,
     maxActiveSlots = 3,
     performanceHud,
     rendererDiagnostics,
@@ -233,6 +236,10 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                     onQualityChange={onRenderQualityChange}
                     sourceAutoExposure={sourceAutoExposure}
                     onSourceAutoExposureChange={onSourceAutoExposureChange}
+                    displayP3={displayP3}
+                    onDisplayP3Change={onDisplayP3Change}
+                    displayP3Status={displayP3Status}
+                    displayP3Disabled={activeRendererType !== 'webgpu'}
                     sourceAutoExposureDisabled={
                         activeRendererType !== 'webgpu' || rendererDiagnostics?.gpuComputeAvailable === false
                     }

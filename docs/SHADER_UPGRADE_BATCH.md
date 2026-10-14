@@ -300,8 +300,11 @@ HEAD packing wins when it is already consistent. If HEAD stored a mask in A and 
 ## 8b. Record the batch (required, last step before commit)
 
 ```bash
-npm run upgrades:record -- --note="<date> <batch name> (<model>) — <batch notes file>"
+npm run upgrades:record -- --ids=<id1>,<id2>,… --note="<date> <batch name> (<model>) — <batch notes file>"
 ```
+
+Always pass `--ids`. Without it the script records every changed shader in the
+working tree, including other agents' uncommitted batches, under your note.
 
 This logs every changed shader in `reports/shader-upgrade-ledger.json` and marks
 its thumbnail stale. Use `--event=hygiene` for plumbing-only passes so they are

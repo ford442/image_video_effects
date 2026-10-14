@@ -2,30 +2,13 @@
 //  gen-celestial-glass-tornado
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, spring-dynamics, depth-aware
-//  Ideas: Cauchy prismatic facet TIR glints, helical plasma funnel discharge arcs, centrifugal glass dust accretion disk
+//  Upgraded: 2026-10-10
+//  Ideas: Cauchy prismatic facet TIR glints, helical plasma funnel discharge arcs, centrifugal glass dust accretion disk; meteor streak impacts; plasma confinement rings
 //  A packing: display RGBA (RGB=ACES tone-mapped glass tornado, A=glow opacity)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-    zoom_params: vec4<f32>,  // x=Vortex Twist, y=Debris Density, z=Chromatic Split, w=Audio Reactivity
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Vortex Twist, y=Debris Density, z=Chromatic Split, w=Audio Reactivity
 
 fn rot(a: f32) -> mat2x2<f32> {
     let c = cos(a); let s = sin(a);
@@ -198,6 +181,18 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let helicalArc = sin(funnelAngle * 3.0 + funnelRadius * 20.0 - time * 8.0);
     let arcDischarge = pow(max(helicalArc, 0.0), 16.0) * exp(-funnelRadius * 2.5) * bass * u.zoom_params.w;
     col += vec3<f32>(0.4, 0.85, 1.4) * arcDischarge * 2.0;
+
+    // IDEA 1: Meteor streak impacts (falling radially)
+    let meteorDist = length(nuv);
+    let meteorAngle = atan2(nuv.y, nuv.x);
+    let meteorTrail = smoothstep(0.95, 1.0, fract(meteorAngle * 4.0 - time * 5.0 + meteorDist * 2.0));
+    let meteorFlash = meteorTrail * exp(-abs(meteorDist - fract(time * 3.0)) * 20.0);
+    col += vec3<f32>(1.0, 0.8, 0.5) * meteorFlash * (1.0 + treble * 2.0);
+
+    // IDEA 2: Plasma confinement rings (horizontal glowing rings wrapping the tornado)
+    let confinement = smoothstep(0.05, 0.0, abs(fract(nuv.y * 10.0 + time) - 0.5));
+    let ringMask = exp(-abs(length(nuv.x) - (0.2 - nuv.y * 0.1)) * 30.0);
+    col += vec3<f32>(0.2, 1.0, 0.8) * confinement * ringMask * (0.5 + bass);
 
     // IDEA 3: Centrifugal glass dust accretion disk
     // Equatorial disc at the bottom of the vortex scattering starlight

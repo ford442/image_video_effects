@@ -12,7 +12,7 @@
     "generative",
     "abstract"
   ],
-  "description": "Simulates a multi-slit diffraction grating where separate red, green, and blue wavelengths produce offset interference fringe patterns. Six-fold rotational symmetry creates a spectral starburst. Slit orientation and frequency pulse to audio for reactive prism effects.",
+  "description": "Simulates a multi-slit RGB diffraction grating with single-slit envelope shaping, blaze-angle steering, Talbot-style self-imaging replicas, and order-selective lobe rolloff for reactive spectral starbursts.",
   "workgroup_size": [
     16,
     16,

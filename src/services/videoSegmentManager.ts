@@ -7,77 +7,160 @@ export interface VideoSegment {
 }
 
 const DURATION_CACHE = new Map<string, number>();
+const IN_FLIGHT = new Map<string, Promise<number | undefined>>();
+const PROBE_TIMEOUT_MS = 15000;
+const DEFAULT_PROBE_CONCURRENCY = 3;
+
+let gateLogged = false;
 
 /**
- * Probe a video's duration by loading it into a hidden <video> element.
- * Cached per-URL for the session.
+ * Media probing is only allowed once the WebGPU boot probe has succeeded.
+ * With no adapter the "WebGPU required" overlay is up and nothing can use the
+ * video, so we must not spend ~2 range requests per file finding out how long
+ * it is. A missing `window.webgpuProbe` (jsdom, SSR) counts as blocked.
  */
-export async function probeVideoDuration(url: string): Promise<number | undefined> {
-    const cached = DURATION_CACHE.get(url);
-    if (cached !== undefined) {
-        return cached;
+function isProbeAllowed(): boolean {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return false;
+    if (window.webgpuProbe?.ok === true) return true;
+    if (!gateLogged) {
+        gateLogged = true;
+        console.info('Video duration probing skipped: WebGPU renderer is not available.');
     }
+    return false;
+}
 
+function loadDuration(url: string): Promise<number | undefined> {
     return new Promise((resolve) => {
         const video = document.createElement('video');
         video.preload = 'metadata';
         video.muted = true;
         video.crossOrigin = 'anonymous';
 
-        const cleanup = () => {
+        let done = false;
+        let timer: ReturnType<typeof setTimeout> | undefined;
+
+        const settle = (duration: number | undefined) => {
+            if (done) return;
+            done = true;
+            if (timer !== undefined) clearTimeout(timer);
             video.removeEventListener('loadedmetadata', onLoaded);
             video.removeEventListener('error', onError);
-            video.src = '';
-            video.load();
+            // Drop the source so the browser abandons any remaining range
+            // request; only meaningful if a src was ever assigned.
+            if (video.hasAttribute('src')) {
+                video.removeAttribute('src');
+                video.load();
+            }
+            if (duration !== undefined) DURATION_CACHE.set(url, duration);
+            resolve(duration);
         };
 
         const onLoaded = () => {
-            const duration = video.duration;
-            if (duration && !isNaN(duration) && isFinite(duration)) {
-                DURATION_CACHE.set(url, duration);
-                cleanup();
-                resolve(duration);
-            } else {
-                cleanup();
-                resolve(undefined);
-            }
+            const d = video.duration;
+            settle(d && !isNaN(d) && isFinite(d) ? d : undefined);
         };
-
-        const onError = () => {
-            cleanup();
-            resolve(undefined);
-        };
-
-        // Time out after 15 seconds
-        setTimeout(() => {
-            cleanup();
-            resolve(undefined);
-        }, 15000);
+        const onError = () => settle(undefined);
 
         video.addEventListener('loadedmetadata', onLoaded);
         video.addEventListener('error', onError);
+        timer = setTimeout(() => settle(undefined), PROBE_TIMEOUT_MS);
         video.src = url;
     });
 }
 
 /**
- * Ensure all videos in the list have a known duration.
- * Missing durations are probed and cached.
+ * Probe a video's duration by loading it into a hidden <video> element.
+ * Cached per-URL for the session; concurrent callers share one element.
+ * Never rejects: every failure resolves `undefined`.
  */
-export async function hydrateDurations(videos: VideoRecord[]): Promise<VideoRecord[]> {
-    const results = await Promise.all(
-        videos.map(async (v) => {
-            if (typeof v.duration === 'number' && v.duration > 0) {
-                return v;
-            }
-            const probed = await probeVideoDuration(v.url);
-            if (probed !== undefined) {
-                return { ...v, duration: probed };
-            }
-            return v;
-        })
-    );
+export function probeVideoDuration(url: string): Promise<number | undefined> {
+    const cached = DURATION_CACHE.get(url);
+    if (cached !== undefined) {
+        return Promise.resolve(cached);
+    }
+    const pending = IN_FLIGHT.get(url);
+    if (pending) {
+        return pending;
+    }
+    if (!isProbeAllowed()) {
+        return Promise.resolve(undefined);
+    }
+
+    const promise = loadDuration(url).finally(() => {
+        IN_FLIGHT.delete(url);
+    });
+    IN_FLIGHT.set(url, promise);
+    return promise;
+}
+
+export interface ProbeOptions {
+    /** Max elements loading at once. Default 3. */
+    concurrency?: number;
+    /** Stop starting new probes once aborted (in-flight ones finish). */
+    signal?: AbortSignal;
+}
+
+/**
+ * Probe many URLs with bounded concurrency. Results align with `urls`.
+ */
+export async function probeVideoDurations(
+    urls: string[],
+    { concurrency = DEFAULT_PROBE_CONCURRENCY, signal }: ProbeOptions = {}
+): Promise<(number | undefined)[]> {
+    const results: (number | undefined)[] = new Array(urls.length).fill(undefined);
+    let next = 0;
+    const worker = async () => {
+        while (next < urls.length && !signal?.aborted) {
+            const i = next++;
+            results[i] = await probeVideoDuration(urls[i]);
+        }
+    };
+    const workers = Math.min(Math.max(1, Math.floor(concurrency)), urls.length);
+    await Promise.all(Array.from({ length: workers }, worker));
     return results;
+}
+
+/**
+ * Ensure all videos in the list have a known duration.
+ * Missing durations are probed (bounded) and cached.
+ */
+export async function hydrateDurations(
+    videos: VideoRecord[],
+    options?: ProbeOptions
+): Promise<VideoRecord[]> {
+    const missing = videos.filter((v) => !(typeof v.duration === 'number' && v.duration > 0));
+    if (missing.length === 0) return videos;
+
+    const probed = await probeVideoDurations(missing.map((v) => v.url), options);
+    const byUrl = new Map<string, number>();
+    missing.forEach((v, i) => {
+        const d = probed[i];
+        if (d !== undefined) byUrl.set(v.url, d);
+    });
+    return videos.map((v) => {
+        const d = byUrl.get(v.url);
+        return d === undefined ? v : { ...v, duration: d };
+    });
+}
+
+/**
+ * Copy durations from `hydrated` onto `current` by URL, leaving records that
+ * already have a duration (and any entries added since) untouched. Returns
+ * `current` itself when nothing changed so React can bail out.
+ */
+export function mergeDurations(current: VideoRecord[], hydrated: VideoRecord[]): VideoRecord[] {
+    const byUrl = new Map<string, number>();
+    for (const v of hydrated) {
+        if (typeof v.duration === 'number' && v.duration > 0) byUrl.set(v.url, v.duration);
+    }
+    let changed = false;
+    const merged = current.map((v) => {
+        const d = byUrl.get(v.url);
+        if (d === undefined || (typeof v.duration === 'number' && v.duration > 0)) return v;
+        changed = true;
+        return { ...v, duration: d };
+    });
+    return changed ? merged : current;
 }
 
 /**

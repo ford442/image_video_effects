@@ -11,7 +11,7 @@ Static analysis cannot prove the index stays in the safe zone; human triage acce
 ## Baseline sections (`extrabuffer_write_audit_baseline.json`)
 
 - **engine_owned** — 1 file(s): FFT-zone writes documented as engine/audio coupling. Do not add entries.
-- **shader_bug** — 43 file(s): persistent state in reserved/FFT zone; remap to `[133..255]` when rewritten.
+- **shader_bug** — 42 file(s): persistent state in reserved/FFT zone; remap to `[133..255]` when rewritten.
 
 ## Per-file dynamic writes
 
@@ -26,25 +26,25 @@ Static analysis cannot prove the index stays in the safe zone; human triage acce
 
 | Line | Expression | Triage |
 |-----:|------------|--------|
-| 138 | `agentIdx * 4u + 0u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
-| 139 | `agentIdx * 4u + 1u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
-| 140 | `agentIdx * 4u + 2u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
-| 141 | `agentIdx * 4u + 3u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
-| 191 | `agentIdx * 4u + 0u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
-| 192 | `agentIdx * 4u + 1u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
-| 193 | `agentIdx * 4u + 2u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
+| 120 | `agentIdx * 4u + 0u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
+| 121 | `agentIdx * 4u + 1u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
+| 122 | `agentIdx * 4u + 2u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
+| 123 | `agentIdx * 4u + 3u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
+| 173 | `agentIdx * 4u + 0u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
+| 174 | `agentIdx * 4u + 1u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
+| 175 | `agentIdx * 4u + 2u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
 
 ### `public/shaders/gen-wasm-hls-physarum-swarm.wgsl`
 
 | Line | Expression | Triage |
 |-----:|------------|--------|
-| 97 | `bufBase + 0u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
-| 98 | `bufBase + 1u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
-| 99 | `bufBase + 2u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
-| 100 | `bufBase + 3u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
-| 152 | `bufBase + 0u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
-| 153 | `bufBase + 1u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
-| 154 | `bufBase + 2u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
+| 78 | `bufBase + 0u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
+| 79 | `bufBase + 1u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
+| 80 | `bufBase + 2u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
+| 81 | `bufBase + 3u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
+| 133 | `bufBase + 0u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
+| 134 | `bufBase + 1u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
+| 135 | `bufBase + 2u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
 
 ### `public/shaders/neon-cursor-trace.wgsl`
 

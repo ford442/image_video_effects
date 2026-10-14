@@ -4,30 +4,12 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-09-14
-//  Ideas: hopper terrace ledges (concentric square step grooves on each skeletal box face); oxide tarnish-order thin film (Bi2O3 thickness grows toward outer terraces, RGB wavelengths, clicks launch oxidation fronts)
+//  Ideas: hopper terrace ledges (concentric square step grooves on each skeletal box face); oxide tarnish-order thin film (Bi2O3 thickness grows toward outer terraces, RGB wavelengths, clicks launch oxidation fronts); screw-dislocation terrace spirals; Kikuchi-like diffraction bands
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Complexity, .y = Iridescence, .z = Crystal Scale, .w = Fog Density
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Complexity, .y = Iridescence, .z = Crystal Scale, .w = Fog Density
 
 const PI: f32 = 3.14159265359;
 
@@ -250,6 +232,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Hopper terraces in the winning box's local frame.
         let local = bismuthLocal(pos, time, bass);
         let terrace = hopperTerrace(local);
+        // Idea 3: screw-dislocation terrace spirals twisting around local growth axes.
+        let spiralR = length(local.xy);
+        let screwPhase = atan2(local.y, local.x) * 4.0 + local.z * 7.0 - time * (1.0 + bass * 1.2);
+        let screw = exp(-pow((spiralR - 0.18) * 8.0, 2.0)) * (0.5 + 0.5 * sin(screwPhase));
+        // Idea 4: Kikuchi-like diffraction bands from broad crystal-face orientation response.
+        let zoneAxis = normalize(vec3<f32>(0.62, 0.44, 0.65));
+        let orient = abs(dot(normal, zoneAxis));
+        let kikuchi = exp(-pow((orient - (0.52 + 0.06 * sin(time * 0.25 + id))) * 16.0, 2.0));
 
         let thickness = (5.0 + id * 2.0 + mids * 5.0) * (0.5 + irid) + oxFront * 6.0; // Audio-reactive iridescent thickness
         let iridColor = iridescence(thickness, normal, -rd);
@@ -263,11 +253,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let ledgeGlint = terrace.x * specular * 2.0 + terrace.x * treble * 0.25;
         let shadedColor = filmColor * (diffuse + 0.2) * ledgeShade
             + vec3<f32>(1.0) * specular * (1.0 + treble * 0.4) + vec3<f32>(ledgeGlint);
+        let dislocationTint = vec3<f32>(0.85, 0.55, 1.0) * screw * (0.25 + mids * 0.25);
+        let kikuchiTint = vec3<f32>(0.75, 0.92, 1.0) * kikuchi * (0.2 + treble * 0.2);
+        let growthMod = 1.0 + screw * 0.22;
+        let crystalColor = shadedColor * growthMod + dislocationTint + kikuchiTint;
 
         let fogStart = clamp(7.0 - fogDensity * 10.0, 0.5, 9.0); // default 0.2 -> 5.0
         let hitAlpha = 1.0 - smoothstep(fogStart, 10.0, t);
 
-        finalRGB = mix(inputColor.rgb, shadedColor, hitAlpha);
+        finalRGB = mix(inputColor.rgb, crystalColor, hitAlpha);
         coverage = hitAlpha;
         depth = clamp(1.0 - t / 10.0, 0.0, 1.0);
     }

@@ -12,7 +12,7 @@
     "mouse-driven",
     "temporal"
   ],
-  "description": "Classic stable fluids solver with pressure projection. Velocity advection, force application, divergence estimation, Jacobi pressure solve, gradient subtraction, dye advection, and audio-reactive color mapping.",
+  "description": "Classic stable-fluids projection with advection/diffusion, baroclinic shear jets, vorticity confinement, buoyancy lift, and enstrophy-cascade shimmer in an audio-reactive dye field.",
   "workgroup_size": [
     16,
     16,

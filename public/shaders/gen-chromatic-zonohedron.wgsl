@@ -5,31 +5,12 @@
 //            wireframe, mouse warp, audio pulse, upgraded-rgba
 //  Complexity: High
 //  Created: 2026-07-12
-//  Upgraded: 2026-09-27
-//  Ideas: fourth golden-ratio generator; generator-axis dichroism; generator-pair face IDs; 3-space vertex stars; zone belts; Minkowski inset
+//  Upgraded: 2026-10-10
+//  Ideas: fourth golden-ratio generator; generator-axis dichroism; generator-pair face IDs; 3-space vertex stars; zone belts; Minkowski inset; rhomb diagonal; zone-axis shade
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -93,6 +74,27 @@ fn zonoInset(p: vec2<f32>, scale: f32) -> f32 {
     }
   }
   return bestInset;
+}
+
+// Idea — short diagonal of the winning rhomb. The inset is the inner rhomb; this is the other line.
+fn zonoDiagonal(p: vec2<f32>, scale: f32) -> vec2<f32> {
+  let w = scale * 0.22;
+  var bestCell = 1e9;
+  var diag = 1e9;
+  var idx = 0.0;
+  for (var i = 0; i < 4; i = i + 1) {
+    let axis = zonoAxis(i);
+    let n = vec2<f32>(-axis.y, axis.x);
+    let cellU = fract(dot(p, axis) / w + 0.5) - 0.5;
+    let cellV = fract(dot(p, n) / w + 0.5) - 0.5;
+    let cell = max(abs(cellU), abs(cellV)) * w;
+    if (cell < bestCell) {
+      bestCell = cell;
+      diag = abs(cellU - cellV) * w;
+      idx = f32(i);
+    }
+  }
+  return vec2<f32>(diag, idx);
 }
 
 fn zonoFacet(p: vec2<f32>, axis: vec2<f32>, width: f32) -> f32 {
@@ -174,10 +176,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let edgeLine = smoothstep(edgeWidth, 0.0, z.y) * (1.0 - facetFill * 0.3);
   let facetCol = spectral(hue) * facetFill;
   let edgeCol = spectral(hue + 0.5) * edgeLine * (1.5 + bass * 0.5);
+  // Idea: zone-axis shade — a face darkens when its generator lies across the screen.
+  let diagInfo = zonoDiagonal(p, facetScale);
+  let winAxis = zonoAxis(i32(diagInfo.y + 0.5));
+  let axisShade = 0.62 + 0.38 * abs(winAxis.x);
 
   // Prismatic background gradient
   let bg = spectral(length(p) * 0.15 + time * 0.03) * 0.08;
-  var color = bg + facetCol * 0.85 + edgeCol;
+  var color = bg + facetCol * axisShade * 0.85 + edgeCol;
 
   // Facet shimmer
   let shimmer = hash21(floor(p * facetScale * 8.0)) * treble * 0.2;
@@ -197,11 +203,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let insetLine = smoothstep(edgeWidth * 0.55, 0.0, inset);
   color += spectral(hue + 0.18) * insetLine * 0.38;
 
+  let diagLine = smoothstep(edgeWidth * 0.45, 0.0, diagInfo.x);
+  color += spectral(hue + 0.42) * diagLine * facetFill * 0.32;
+
   let prev = textureLoad(dataTextureC, pixel, 0);
   color = mix(color, prev.rgb, 0.03);
   color = acesToneMap(color * (1.2 + mids * 0.15));
 
-  let alpha = clamp(facetFill * 0.7 + edgeLine * 0.9 + star * 0.35 + zoneLine * 0.2 + insetLine * 0.15 + 0.05, 0.0, 1.0);
+  let alpha = clamp(facetFill * 0.7 + edgeLine * 0.9 + star * 0.35 + zoneLine * 0.2 + insetLine * 0.15 + diagLine * 0.12 + 0.05, 0.0, 1.0);
   let depthOut = clamp(facetFill * 0.5 + edgeLine * 0.3 + star * 0.2 + insetLine * 0.1, 0.0, 1.0);
   let outCol = vec4<f32>(color, alpha);
 

@@ -6,28 +6,12 @@
 //            depth-aware, aces-tone-map, volumetric-ribbons
 //  Complexity: Very High
 //  Created: 2026-06-28
+//  Upgraded: 2026-10-10
+//  Ideas: Chladni node lines on obsidian faces; ribbon time-echo wakes; fracture core-leak; fold seams; braid knots
+//  A packing: HDR display RGB + semantic alpha (C read back as colour history); ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ─── Math Helpers ───
 fn sat(x: f32) -> f32 { return clamp(x, 0.0, 1.0); }
@@ -168,25 +152,7 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, complexity: f32,
 
   // Temporal plasma ribbons - orbiting around monolith
   let orbitSpeed = time * 0.5 + audio * 0.3;
-  let ribbon1 = sdCapsule(
-    p,
-    vec3<f32>(cos(orbitSpeed) * 1.5, sin(orbitSpeed * 1.3) * 0.5, sin(orbitSpeed) * 1.5),
-    vec3<f32>(cos(orbitSpeed + 1.0) * 1.8, sin(orbitSpeed * 1.3 + 2.0) * 0.8, sin(orbitSpeed + 1.0) * 1.8),
-    0.05 + audio * 0.02
-  );
-  let ribbon2 = sdCapsule(
-    p,
-    vec3<f32>(sin(orbitSpeed * 0.7) * 2.0, cos(orbitSpeed * 1.1) * 1.0, cos(orbitSpeed * 0.7) * 2.0),
-    vec3<f32>(sin(orbitSpeed * 0.7 + 1.5) * 2.2, cos(orbitSpeed * 1.1 + 2.5) * 1.3, cos(orbitSpeed * 0.7 + 1.5) * 2.2),
-    0.04 + audio * 0.015
-  );
-  let ribbon3 = sdCapsule(
-    p,
-    vec3<f32>(cos(orbitSpeed * 0.4 + 3.0) * 1.2, sin(orbitSpeed * 0.6) * 1.5, sin(orbitSpeed * 0.4 + 3.0) * 1.2),
-    vec3<f32>(cos(orbitSpeed * 0.4 + 4.0) * 1.5, sin(orbitSpeed * 0.6 + 2.0) * 1.8, sin(orbitSpeed * 0.4 + 4.0) * 1.5),
-    0.03 + audio * 0.01
-  );
-  let ribbons = min(min(ribbon1, ribbon2), ribbon3);
+  let ribbons = ribbonField(p, orbitSpeed, audio);
 
   // Combine scene
   var d = smin(monolith, ribbons, 0.1);
@@ -211,6 +177,34 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, complexity: f32,
   }
 
   return MapResult(d, mat, glow);
+}
+
+// The three orbit capsules at a given orbit phase (map uses the live phase, idea 2 earlier ones).
+fn ribbonTrio(p: vec3<f32>, orbitSpeed: f32, audio: f32) -> vec3<f32> {
+  let ribbon1 = sdCapsule(
+    p,
+    vec3<f32>(cos(orbitSpeed) * 1.5, sin(orbitSpeed * 1.3) * 0.5, sin(orbitSpeed) * 1.5),
+    vec3<f32>(cos(orbitSpeed + 1.0) * 1.8, sin(orbitSpeed * 1.3 + 2.0) * 0.8, sin(orbitSpeed + 1.0) * 1.8),
+    0.05 + audio * 0.02
+  );
+  let ribbon2 = sdCapsule(
+    p,
+    vec3<f32>(sin(orbitSpeed * 0.7) * 2.0, cos(orbitSpeed * 1.1) * 1.0, cos(orbitSpeed * 0.7) * 2.0),
+    vec3<f32>(sin(orbitSpeed * 0.7 + 1.5) * 2.2, cos(orbitSpeed * 1.1 + 2.5) * 1.3, cos(orbitSpeed * 0.7 + 1.5) * 2.2),
+    0.04 + audio * 0.015
+  );
+  let ribbon3 = sdCapsule(
+    p,
+    vec3<f32>(cos(orbitSpeed * 0.4 + 3.0) * 1.2, sin(orbitSpeed * 0.6) * 1.5, sin(orbitSpeed * 0.4 + 3.0) * 1.2),
+    vec3<f32>(cos(orbitSpeed * 0.4 + 4.0) * 1.5, sin(orbitSpeed * 0.6 + 2.0) * 1.8, sin(orbitSpeed * 0.4 + 4.0) * 1.5),
+    0.03 + audio * 0.01
+  );
+  return vec3<f32>(ribbon1, ribbon2, ribbon3);
+}
+
+fn ribbonField(p: vec3<f32>, orbitSpeed: f32, audio: f32) -> f32 {
+  let ribbons = ribbonTrio(p, orbitSpeed, audio);
+  return min(ribbons.x, min(ribbons.y, ribbons.z));
 }
 
 fn calcNormal(p: vec3<f32>, time: f32, audio: f32, complexity: f32,
@@ -328,6 +322,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       // Fresnel edge
       let fresnel = pow(1.0 - nDotV, 4.0);
       col = col + vec3<f32>(0.05, 0.04, 0.08) * fresnel * 0.3;
+
+      // Idea 1 — Chladni node lines: a standing-wave plate pattern on whichever face the normal picks
+      let an = abs(n);
+      var face = hitPos.xy;
+      if (an.x >= an.y && an.x >= an.z) { face = hitPos.yz; }
+      else if (an.y >= an.z) { face = hitPos.xz; }
+      let modeN = 2.0 + floor(monolithComplexity);
+      let modeM = modeN + 1.0 + floor(bass * 2.0);
+      let fk = face * 2.4 + vec2<f32>(sin(time * 0.13), cos(time * 0.11)) * 0.15;
+      let plate = cos(modeN * fk.x) * cos(modeM * fk.y) - cos(modeM * fk.x) * cos(modeN * fk.y);
+      let nodal = 1.0 - smoothstep(0.0, 0.07 + bass * 0.04, abs(plate));
+      col = col + vec3<f32>(0.35, 0.55, 1.0) * nodal * (coreResonance * 0.5 + bass * 0.45 + shock * 0.3);
+      // Idea: fold seam — crease where the absolute sum meets the KIFS fold limit.
+      let foldLimit = 1.0 + monolithComplexity * 0.5;
+      let foldSum = abs(hitPos.x) + abs(hitPos.y) + abs(hitPos.z);
+      let seam = exp(-abs(foldSum - foldLimit) * 9.0);
+      col = col + vec3<f32>(0.55, 0.72, 1.0) * seam * (0.28 + coreResonance * 0.55);
     } else if (hitMat < 1.5) {
       // Temporal plasma ribbon - cyan, violet, gold
       let ribbonPhase = hitPos.x * 2.0 + time * 2.0;
@@ -351,6 +362,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       // Fracture - revealing core
       let fractureCol = vec3<f32>(0.15, 0.05, 0.2) * (0.5 + hitGlow * 2.0);
       col = fractureCol + vec3<f32>(0.3, 0.2, 0.5) * spec * 0.3;
+      // Idea 3 — fracture core-leak: cracks nearer the inner core spill its light
+      let coreNear = exp(-max(length(hitPos) - 0.8, 0.0) * 2.5);
+      col = col + vec3<f32>(0.2, 0.5, 0.8) * coreNear * (0.25 + coreResonance * 1.4) * (0.8 + mids * 0.4);
     }
 
     // Ambient occlusion
@@ -383,6 +397,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       );
       volGlow = volGlow + vCol * falloff * 0.02 * (0.5 + audio * 0.5);
     }
+    // Idea 2 — ribbon time-echo: the same ribbons at earlier orbit phases leave fading wakes
+    let liveOrbit = time * 0.5 + audio * 0.3;
+    for (var k: i32 = 1; k <= 3; k = k + 1) {
+      let lag = f32(k) * (0.22 + temporalFlow * 0.1);
+      let dEcho = ribbonField(vPos, liveOrbit - lag, audio);
+      let echoPhase = vPos.x * 2.0 + (time - lag * 2.0) * 2.0;
+      let eCol = vec3<f32>(0.1 + 0.1 * sin(echoPhase), 0.15 + 0.12 * sin(echoPhase + 2.09), 0.3 + 0.1 * sin(echoPhase + 4.18));
+      volGlow = volGlow + eCol * exp(-dEcho * 9.0) * exp(-vt * 0.1) * plasmaDensity * 0.035 / f32(k);
+    }
+    // Idea: braid knot — gold where two of the live ribbons pass close.
+    let trio = ribbonTrio(vPos, liveOrbit, audio);
+    let knot = exp(-trio.x * 8.0) * exp(-trio.y * 8.0)
+      + exp(-trio.y * 8.0) * exp(-trio.z * 8.0)
+      + exp(-trio.z * 8.0) * exp(-trio.x * 8.0);
+    volGlow = volGlow + vec3<f32>(1.0, 0.82, 0.35) * knot * plasmaDensity * 0.09;
   }
   col = col + volGlow;
 
@@ -394,16 +423,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Temporal persistence
   let prev = textureLoad(dataTextureC, coord, 0);
-  col = mix(col, prev.rgb * 0.92, 0.03);
+  let hdr = clamp(mix(col, prev.rgb * 0.92, 0.03), vec3<f32>(0.0), vec3<f32>(8.0));
 
-  // Tone map
-  col = acesToneMap(col * 1.3);
+  // Tone map (display only; A keeps HDR history)
+  let display = acesToneMap(hdr * 1.3);
 
   let hitSignal = select(0.0, 1.0, hit);
   let alpha = clamp(hitSignal * 0.72 + length(volGlow) * 0.9 + harmonic * coreResonance * 0.18 + shock * 0.25, 0.02, 1.0);
   let finalDepth = sat(0.95 - depth * 0.03);
 
-  textureStore(writeTexture, coord, vec4<f32>(col, alpha));
+  textureStore(writeTexture, coord, vec4<f32>(display, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 1.0));
-  textureStore(dataTextureA, coord, vec4<f32>(col.r, col.g, col.b, alpha));
+  textureStore(dataTextureA, coord, vec4<f32>(hdr, alpha));
 }

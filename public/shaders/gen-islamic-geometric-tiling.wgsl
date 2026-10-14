@@ -3,25 +3,12 @@
 //  Category: generative
 //  Features: star-polygons, rosette, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: over-under strap shadow at crossings; half-angle girih dart
+//  Upgraded: 2026-10-10
+//  Ideas: over-under strap shadow at crossings; half-angle girih dart; gold leaf specular glints; ceramic tile glaze imperfections
 //  A packing: raw HDR display RGBA (ACES on writeTexture)
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>, };
 const TAU: f32 = 6.28318530718;
 fn rotate2(p: vec2<f32>, a: f32) -> vec2<f32> { let c=cos(a); let s=sin(a); return vec2<f32>(c*p.x-s*p.y,s*p.x+c*p.y); }
 fn palette(t: f32) -> vec3<f32> { return vec3<f32>(0.5)+vec3<f32>(0.5)*cos(TAU*(vec3<f32>(t)+vec3<f32>(0.08,0.38,0.7))); }
@@ -61,6 +48,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dart = exp(-abs(radius - dartR) / max(lineWidth * 0.85, 0.0015));
   let overlap = starLine * interlace;
   let underShadow = overlap * crossingMask;
+  
+  // Idea 1: gold leaf specular glints at star vertices
+  let vertexPhase = cos(angle * points);
+  let glint = smoothstep(0.96, 1.0, vertexPhase) * exp(-abs(radius - starRadius) / max(lineWidth * 0.5, 0.001));
+  
+  // Idea 2: ceramic tile glaze imperfections
+  let glazeNoise = (sin(grid.x * 4.1 + time * 0.2) * cos(grid.y * 3.7 - time * 0.15)) * 0.5 + 0.5;
+  let glaze = glazeNoise * 0.08;
 
   var rosette = 0.0;
   var depthMoment = 0.0;
@@ -87,15 +82,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let laceUnder = interlace * (1.0 - crossingMask * 0.55);
   let geometry = clamp(starOver + laceUnder * (1.0 - crossingMask * 0.3) + rosette * 0.68 + dart * 0.72, 0.0, 2.5);
   let hue = floor(grid.x + grid.y) * 0.071 + angle / TAU + mids * 0.08;
-  var raw = vec3<f32>(0.012, 0.018, 0.035);
+  var raw = vec3<f32>(0.012, 0.018, 0.035) + glaze * vec3<f32>(0.1, 0.15, 0.2);
   raw += palette(hue) * geometry * (0.55 + bass * 0.3);
-  raw += vec3<f32>(1.65 + bass * 0.25, 0.92 + mids * 0.22, 0.25 + treble * 0.15) * (starLine * 0.45 + gildedWave * 1.15);
+  raw += vec3<f32>(1.65 + bass * 0.25, 0.92 + mids * 0.22, 0.25 + treble * 0.15) * (starLine * 0.45 + gildedWave * 1.15 + glint * 2.5);
   raw += palette(hue + 0.42) * interlace * treble * 0.48;
   raw += vec3<f32>(1.55, 1.05, 0.32) * dart * 0.38;
   raw *= 1.0 - underShadow * 0.42;
   let prev = textureLoad(dataTextureC, pixel, 0);
   raw = clamp(mix(prev.rgb * 0.94, raw, 0.28 + u.zoom_params.w * 0.06), vec3<f32>(0.0), vec3<f32>(7.0));
-  let alpha = clamp(0.035 + geometry * 0.5 + dart * 0.12 + gildedWave * 0.2, 0.035, 0.98);
+  let alpha = clamp(0.035 + geometry * 0.5 + dart * 0.12 + gildedWave * 0.2 + glint * 0.2 + glaze, 0.035, 0.98);
   let depth = clamp(geometry * 0.34 + depthMoment * 0.34 + dart * 0.12 + gildedWave * 0.18, 0.0, 1.0);
   textureStore(dataTextureA, pixel, vec4<f32>(raw, alpha));
   textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(raw * 1.08), alpha));

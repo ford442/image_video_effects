@@ -3,31 +3,12 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: axon runner fronts; counter-rotating dendrite web; refractory wake; cleft vesicle release
+//  Upgraded: 2026-10-10
+//  Ideas: axon runner fronts; counter-rotating dendrite web; myelin sheath insulation; astrocyte glia network
 //  A packing: ACES display RGBA (C read as colour history)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -86,6 +67,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let behindFront = select(0.0, runnerPhase / 0.5, runnerPhase < 0.5);
     let refractory = 1.0 - 0.65 * pow(behindFront, 2.0 + audio.x * 2.0) * (1.0 - runner);
     let nodes = (pow(axon, 12.0) * (0.35 + branch * 1.8) + branch * (0.18 + runner * 1.5)) * refractory;
+    
+    // Idea 1: myelin sheath insulation (beaded structures on axon)
+    let myelinPhase = fract(radius * 12.0 - time * pulseSpeed * 0.5);
+    let myelin = smoothstep(0.4, 0.6, abs(myelinPhase - 0.5) * 2.0) * branch * exp(-radius * 3.0);
     // Idea 2 (existing): a counter-rotating dendrite web keeps the second pass visually independent
     // from the radial axon runner instead of merely brightening it.
     let counterPhase = angle * (sectors + 3.0) - log(radius + 0.025) * (7.0 + neuralWarp * 7.0) + pulse * 0.72;
@@ -103,6 +88,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let fromCenter = fract(cleftCells) - 0.5 - drift;
     let quantum = exp(-dot(fromCenter, fromCenter) * (70.0 - release * 30.0));
     let vesicles = quantum * release * clamp(dendrites * 1.6 + synapseBridge * 2.0, 0.0, 1.0) * (1.0 + audio.z * 1.5);
+    
+    // Idea 2: astrocyte glia network (secondary support background)
+    let gliaPhase = angle * (sectors * 0.5) + radius * 5.0 + time * 0.1;
+    let astrocyte = pow(0.5 + 0.5 * sin(gliaPhase) * cos(gliaPhase * 2.3), 14.0) * 0.25;
 
     var clickBloom = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
@@ -122,6 +111,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     hdr += palette(time * 0.1 + clickBloom) * clickBloom * 1.8;
     hdr += palette(hue + 0.18) * vesicles * (1.6 + colorFlux);
     hdr += palette(hue + 0.6) * dragMask * (0.5 + neuralWarp * 1.5);
+    hdr += vec3<f32>(0.2, 0.8, 0.4) * myelin * 1.5;
+    hdr += vec3<f32>(0.1, 0.1, 0.3) * astrocyte * (0.5 + audio.y);
     let historyUV = clamp(uv - normalize(p + vec2<f32>(0.0001)) * (0.003 + pulseSpeed * 0.008), vec2<f32>(0.0), vec2<f32>(1.0));
     let history = historyLoadUV(historyUV);
     hdr = mix(hdr, history.rgb, clamp(0.12 + neuralWarp * 0.16 + dragMask * 0.16, 0.0, 0.42));

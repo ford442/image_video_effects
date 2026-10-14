@@ -187,11 +187,19 @@ export const VjStudioPanel: React.FC<VjStudioPanelProps> = ({
                                     key={i}
                                     type="button"
                                     className={`gold-outline-btn ${activeSlot === i ? 'gold-active' : ''}`}
-                                    style={{ fontSize: '10px', padding: '4px 8px' }}
+                                    style={{
+                                        fontSize: '10px',
+                                        padding: '4px 8px',
+                                        maxWidth: '100%',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                    }}
                                     onClick={() => setActiveSlot(i)}
-                                    title={mode || 'empty'}
+                                    title={`Slot ${i + 1}: ${mode || 'empty'}`}
+                                    aria-label={`Slot ${i + 1}: ${mode || 'empty'}`}
                                 >
-                                    {i + 1}: {(mode || '—').slice(0, 12)}
+                                    {i + 1}: {mode || '—'}
                                 </button>
                             ))}
                         </div>
@@ -365,7 +373,7 @@ export const VjStudioPanel: React.FC<VjStudioPanelProps> = ({
                                 )}
                                 <div style={{ display: 'flex', gap: '8px' }}>
                                     <input type="text" className="glass-input" placeholder="Set name for export…" value={vjSetName} onChange={(e) => setVjSetName(e.target.value)} style={{ flex: 1, fontSize: '11px' }} />
-                                    <button type="button" className="gold-outline-btn" style={{ fontSize: '11px' }} onClick={handleExportJson} disabled={!getCurrentChain}>
+                                    <button type="button" className="gold-outline-btn" style={{ fontSize: '11px' }} onClick={handleExportJson} disabled={!getCurrentChain} title={getCurrentChain ? undefined : 'Renderer unavailable — no active shader chain to export'}>
                                         Export JSON
                                     </button>
                                 </div>
@@ -379,6 +387,7 @@ export const VjStudioPanel: React.FC<VjStudioPanelProps> = ({
                                             className="gold-outline-btn"
                                             style={{ flex: 1, fontSize: '11px' }}
                                             disabled={!vjSetName.trim()}
+                                            title={vjSetName.trim() ? 'Save this set to My Sets' : 'Enter a set name above to enable saving'}
                                             onClick={() => {
                                                 onSaveVjSet(vjSetName.trim());
                                                 setMyVjSets(loadMyVjSets());
@@ -394,6 +403,9 @@ export const VjStudioPanel: React.FC<VjStudioPanelProps> = ({
                                     if (f) handleImportJson(f);
                                     e.target.value = '';
                                 }} />
+                                {onSaveVjSet && !vjSetName.trim() && (
+                                    <div style={{ fontSize: '10px', color: '#a0a0b0' }}>Enter a set name to enable Save to My Sets.</div>
+                                )}
                                 {importStatus && <div style={{ fontSize: '10px', color: '#a0a0b0' }}>{importStatus}</div>}
                             </div>
                         )}

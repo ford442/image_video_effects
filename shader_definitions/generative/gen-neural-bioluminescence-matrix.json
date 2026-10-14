@@ -8,7 +8,7 @@
     "bioluminescence",
     "neural"
   ],
-  "description": "A pulsing, infinite organic matrix of glowing synthetic neurons firing quantum light impulses across a void, merging biological growth with cybernetic circuitry.",
+  "description": "A pulsing, infinite organic matrix of glowing synthetic neurons firing quantum light impulses across a void, merging biological growth with cybernetic circuitry. Second pass layers in astrocytic calcium tides and vesicle-bouton scintillation around firing tracts.",
   "workgroup_size": [
     16,
     16,
@@ -56,7 +56,9 @@
   "features": [
     "audio-reactive",
     "mouse-driven",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "astrocyte-calcium-tide",
+    "vesicle-bouton-scintillation"
   ],
   "params": [
     {

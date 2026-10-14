@@ -4,8 +4,8 @@
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, depth-aware, temporal
 //  Complexity: Medium
 //  Created: 2026-05-10
-//  Upgraded: 2026-07-22 (swarm b11, Algorithmist), 2026-09-27
-//  Ideas: dispersive biharmonic (short ripples outrun long swells); bathymetric refraction (speed follows depth)
+//  Upgraded: 2026-10-10
+//  Ideas: dispersive biharmonic; bathymetric refraction; crest caustics; whitecaps
 //  A packing: raw sim (height, velocity, energy, waveIntensity); ACES on the display mix only
 //    - FIXED feedback-state bug: the solver reads (height, velocity)
 //      from dataTextureC.rg but previously wrote finalColor into
@@ -18,26 +18,7 @@
 //      edge (tracked via extraBuffer[133]) instead of continuous forcing.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,  // xy=ripple uv, z=time_created, w=strength
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -207,8 +188,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Crest/trough relief shading from the isotropic Laplacian
     let relief = clamp(laplacian * 4.0, -0.5, 0.5);
     let shaded = waterColor * (1.0 + relief);
-    let generatedColor = mix(shaded, kinkColor, wallGlow * nonlinear)
+    var generatedColor = mix(shaded, kinkColor, wallGlow * nonlinear)
                        + vec3<f32>(1.0, 0.8, 0.4) * energyBright * 0.4;
+    // Idea: crest caustics — focus lines under steep crests. Display only.
+    let crestGate = smoothstep(0.05, 0.45, height);
+    let caustic = exp(-laplacian * laplacian * 48.0) * crestGate;
+    generatedColor = generatedColor + vec3<f32>(0.65, 0.88, 1.0) * caustic * (0.22 + scaleParam * 0.35);
+    // Idea: whitecaps where height and speed are both large.
+    let steep = abs(velocity) * (0.35 + abs(laplacian));
+    let foam = smoothstep(0.12, 0.42, steep) * smoothstep(0.0, 0.25, height);
+    generatedColor = mix(generatedColor, vec3<f32>(0.9, 0.95, 1.0), foam * (0.25 + speedParam * 0.35));
 
     // Alpha derived from wave intensity and energy (no hardcoded 1.0)
     let waveIntensity = clamp(abs(height) + abs(velocity) * 2.0 + energy, 0.0, 1.0);

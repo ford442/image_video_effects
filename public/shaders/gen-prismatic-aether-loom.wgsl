@@ -4,29 +4,11 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-09-14
-//  Ideas: plain-weave over-under interlacing (weft and warp threads bob past each other at every crossing); Snell-refracted thin-film thread sheath at true RGB wavelengths
+//  Ideas: plain-weave over-under interlacing (weft and warp threads bob past each other at every crossing); Snell-refracted thin-film thread sheath at true RGB wavelengths; twill-diagonal shuttle drift; selvedge knot sparks at crossing edges
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-    zoom_params: vec4<f32>,  // x=Thread Density, y=Braid Complexity, z=Cosmic Wind, w=Chromatic Shift
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Thread Density, y=Braid Complexity, z=Cosmic Wind, w=Chromatic Shift
 
 // --- UTILS ---
 fn rotate2D(angle: f32) -> mat2x2<f32> {
@@ -250,6 +232,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let ao = 0.68 + 0.32 * diff;
 
         col = (interference * diff + vec3<f32>(spec)) * ao;
+        // Idea 3: twill-diagonal shuttle drift across the woven lattice.
+        let spacing = 100.0 / max(u.zoom_params.x, 1.0);
+        let cx = mod_f32(p.x + p.z * 0.35, spacing) / spacing;
+        let cy = mod_f32(p.y - p.z * 0.35, spacing) / spacing;
+        let twillPhase = (cx + cy) * 3.0 + time * (0.35 + u.zoom_params.y * 0.2);
+        let twill = smoothstep(0.45, 0.08, abs(fract(twillPhase) - 0.5));
+        col += vec3<f32>(0.22, 0.55, 1.0) * twill * (0.16 + mids * 0.18);
+        // Idea 4: selvedge knot sparks where crossing boundaries tighten.
+        let edge = min(min(cx, 1.0 - cx), min(cy, 1.0 - cy));
+        let knot = exp(-edge * 45.0) * pow(0.5 + 0.5 * sin(time * 8.0 + p.z * 4.0), 5.0);
+        col += vec3<f32>(1.0, 0.78, 0.35) * knot * (0.08 + treble * 0.12);
 
         // Bioluminescent bloom mapped to audio
         let bloom = interference * audio * 2.0;

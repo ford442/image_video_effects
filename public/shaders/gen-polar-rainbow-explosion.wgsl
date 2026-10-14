@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-14
-//  Ideas: Cauchy-dispersed click shock rings (n = A + B/lambda^2, red leads violet); Descartes primary/secondary rainbow bows with Alexander's dark band
+//  Upgraded: 2026-10-10
+//  Ideas: Cauchy click shocks; Descartes bows and Alexander band; supernumerary fringes; ray-bow knots
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 //  Shock front propagates radially: r_shock = r0 + speed*time
@@ -12,26 +12,8 @@
 //  High-frequency ripple: sin(r*50 - time*10) * treble
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Intensity, .y = Speed, .z = Scale, .w = Color Shift
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Intensity, .y = Speed, .z = Scale, .w = Color Shift
 
 const PI: f32 = 3.141592653589793;
 const TAU: f32 = 6.283185307179586;
@@ -194,6 +176,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let rayColor = neonSpectrum(hue);
 
         col += vec3<f32>(rayColor.r * rayMaskR, rayColor.g * rayMask, rayColor.b * rayMaskB) * pulse * intensity * 2.5;
+        // Idea: bow knots — rays brighten where they cross the primary Descartes bow.
+        let bowKnot = exp(-abs(radius - 0.442) * 48.0);
+        col += rayColor * rayMask * bowKnot * intensity * 1.1;
         col += rayColor * shockIntensity * radialFalloff * mix(0.35, 1.15, behind);
         col += vec3<f32>(0.55, 0.75, 1.0) * shockIntensity * ahead * radialFalloff * 0.28;
     }
@@ -282,6 +267,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let insideGlow = smoothstep(primR.b, primR.b - 0.25, radius) * 0.06;
     col *= 1.0 - alexander * 0.3 * (0.4 + mids * 0.6);
     col += (primBow + secBow) * bowGain + vec3<f32>(insideGlow) * bowGain;
+    // Idea: supernumerary fringes — Airy bands tucked inside the primary violet edge.
+    var superN = 0.0;
+    for (var sn = 1; sn <= 4; sn = sn + 1) {
+        let fringeR = primR.b - f32(sn) * 0.016;
+        superN = superN + exp(-abs(radius - fringeR) * 150.0) / f32(sn);
+    }
+    col += vec3<f32>(0.72, 0.86, 1.0) * superN * bowGain * 0.55;
 
     // Mouse interaction - extra burst from cursor
     if (mouseDown > 0.5) {

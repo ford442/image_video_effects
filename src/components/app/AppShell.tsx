@@ -10,6 +10,7 @@ import { VideoSegment } from '../../services/videoSegmentManager';
 import { SharedChain } from '../../services/layerChainShare';
 import { STORAGE_API_URL } from '../../config/appConfig';
 import { RenderQualityMode } from '../../config/performancePolicy';
+import type { WebGpuProbeSerializable } from '../../renderer/webgpuBootProbe';
 import { isPublicPixelocityHost } from '../../utils/publicHost';
 
 const LiveStudioTab = lazy(() => import(/* webpackChunkName: "live-studio" */ '../LiveStudioTab'));
@@ -114,6 +115,9 @@ export interface AppShellProps {
     videoElementRef: RefObject<HTMLVideoElement | null>;
     // Status bar
     status: string;
+    /** Set when the renderer is blocked (no WebGPU); shown in the status bar as an error. */
+    rendererBlockedMessage?: string | null;
+    onProbeFailure?: (probe: WebGpuProbeSerializable | null) => void;
     generativeShowcaseActive: boolean;
     generativeShowcaseLocked: boolean;
     generativeShowcaseDelay: number;
@@ -129,6 +133,9 @@ export interface AppShellProps {
     onRenderQualityChange: (mode: RenderQualityMode) => void;
     sourceAutoExposure: boolean;
     onSourceAutoExposureChange: (enabled: boolean) => void;
+    displayP3: boolean;
+    onDisplayP3Change: (enabled: boolean) => void;
+    displayP3Status: string;
     performanceHud: {
         internalWidth: number;
         internalHeight: number;
@@ -246,6 +253,8 @@ export function AppShell(props: AppShellProps) {
         webgpuCanvasRef,
         videoElementRef,
         status,
+        rendererBlockedMessage,
+        onProbeFailure,
         generativeShowcaseActive,
         generativeShowcaseLocked,
         generativeShowcaseDelay,
@@ -261,6 +270,9 @@ export function AppShell(props: AppShellProps) {
         onRenderQualityChange,
         sourceAutoExposure,
         onSourceAutoExposureChange,
+        displayP3,
+        onDisplayP3Change,
+        displayP3Status,
         performanceHud,
         rendererDiagnostics,
     } = props;
@@ -408,6 +420,9 @@ export function AppShell(props: AppShellProps) {
                         onRenderQualityChange={onRenderQualityChange}
                         sourceAutoExposure={sourceAutoExposure}
                         onSourceAutoExposureChange={onSourceAutoExposureChange}
+                        displayP3={displayP3}
+                        onDisplayP3Change={onDisplayP3Change}
+                        displayP3Status={displayP3Status}
                         performanceHud={performanceHud}
                         rendererDiagnostics={rendererDiagnostics}
                         maxActiveSlots={performanceHud.maxActiveSlots}
@@ -446,10 +461,15 @@ export function AppShell(props: AppShellProps) {
                         isWebcamActive={isWebcamActive}
                         webcamVideoElement={videoElementRef.current}
                         onCanvasRef={(el) => { webgpuCanvasRef.current = el; }}
+                        onProbeFailure={onProbeFailure}
                         shaderCatalog={availableModes}
                     />
-                    <div className="status-bar">
-                        <span>{isAiVjMode ? `[AI VJ]: ${aiVjMessage}` : status}</span>
+                    <div className={rendererBlockedMessage ? 'status-bar status-bar--error' : 'status-bar'}>
+                        <span role={rendererBlockedMessage ? 'alert' : undefined}>
+                            {rendererBlockedMessage
+                                ? `❌ ${rendererBlockedMessage}`
+                                : isAiVjMode ? `[AI VJ]: ${aiVjMessage}` : status}
+                        </span>
                         {generativeShowcaseActive && (
                             <span style={{ color: '#00d4ff', marginLeft: '12px', fontWeight: 600 }}>
                                 🎨 Attract {generativeShowcaseLocked ? '🔒 LOCKED' : '● AUTO'}

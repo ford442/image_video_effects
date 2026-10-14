@@ -42,6 +42,8 @@ export interface RendererDiagnostics {
     nodeScales?: Record<string, number>;
     /** Video ingest path + counters (#1314 WP-2). */
     video?: VideoIngestStats;
+    /** Applied canvas color state (requested vs. accepted color space / tone mapping). */
+    canvas?: import('./webgpuBootProbe').CanvasColorState | null;
     /** Uncaptured GPU errors in the render worker (page hooks cannot see that device). */
     gpuErrors?: string[];
     /** Input currently held by the renderer (worker mode; proves the input channel). */

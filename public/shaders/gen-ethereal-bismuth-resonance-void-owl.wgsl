@@ -2,38 +2,21 @@
 //  Ethereal Bismuth-Resonance Void-Owl
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, click-reactive, raymarched, upgraded-rgba
-//  Upgraded: 2026-09-13
+//  Upgraded: 2026-10-10
 //  Ideas: spring-eased gravitational singularity (lens + gaze follow the
 //         pointer with inertia); persistent bass resonance envelope that
 //         sweeps oxide growth bands outward across the bismuth shell film;
 //         stepped hopper-crystal owl eyes flanking the core, pupils tracking
-//         the eased singularity and flaring with the envelope
+//         the eased singularity and flaring with the envelope;
+//         facial-disk diffraction rings; auricular notch glints on tuft edges
 //  A packing: HDR display history RGB (tonemapped on output) + semantic
 //             alpha (surface/luma/shock coverage); exact C read feedback
 //  State: extraBuffer[133..134] eased mouse, [135..136] velocity,
 //         [137] init flag, [138] resonance envelope — written at (0,0) only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0-1, y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // x=Crystal Complexity, y=Audio Reactivity, z=Iridescence Shift, w=Debris Density
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Crystal Complexity, y=Audio Reactivity, z=Iridescence Shift, w=Debris Density
 
 const PI: f32 = 3.14159265359;
 const MAX_DIST: f32 = 20.0;
@@ -407,6 +390,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             // Fresnel rim
             let rim = 1.0 - dot_nv;
             col += vec3<f32>(0.5, 1.0, 1.0) * pow(rim, 4.0) * (0.5 + audioMids * 0.3);
+
+            // Idea 4: concentric facial-disk rings around the owl mask
+            let facialR = length(vec2<f32>(p.x, p.y - 1.0));
+            let facialDisk = exp(-abs(facialR - 1.0) * 14.0) * (0.5 + 0.5 * sin(facialR * 42.0 - time * 2.4));
+            col += vec3<f32>(0.45, 0.9, 1.0) * facialDisk * (0.22 + audioMids * 0.4);
+
+            // Idea 5: auricular notch glints riding the ear-tuft silhouette
+            let auricleNotches = pow(max(0.0, sin(abs(p.x) * 18.0 + p.y * 6.0 - time * 1.1)), 4.0)
+                * smoothstep(1.6, 2.25, p.y);
+            col += vec3<f32>(1.0, 0.35, 0.9) * auricleNotches * (0.18 + spectralSpark * 0.25);
         } else if (matId == 2.0) {
             // Core singularity: hot pulsing heart with Fresnel halo
             let pulse = 0.5 + 0.5 * sin(time * 5.0);

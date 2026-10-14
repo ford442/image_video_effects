@@ -3,31 +3,12 @@
 //  Category: feedback/temporal
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: harmonic echo ladder at integer 2x spacing taps; standing-wave nodal interference from echo-count phase field
+//  Upgraded: 2026-10-11
+//  Ideas: harmonic echo ladder at integer 2x spacing taps; standing-wave nodal interference from echo-count phase field; early wall reflections; comb-filter notches
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -184,6 +165,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     totalWeight += harmonicWeight;
 
+    // Early wall reflections — one mirror tap off each frame edge, dimmer than the delay ladder.
+    let wallGain = decayRate * 0.28 * (0.7 + bass * 0.4);
+    let mirrorL = fract(vec2<f32>(-warpedUV.x, warpedUV.y) + vec2<f32>(echoSpacing, 0.0) + wobble);
+    let mirrorR = fract(vec2<f32>(2.0 - warpedUV.x, warpedUV.y) - vec2<f32>(echoSpacing, 0.0) + wobble);
+    let mirrorT = fract(vec2<f32>(warpedUV.x, -warpedUV.y) + vec2<f32>(0.0, echoSpacing) + wobble);
+    let mirrorB = fract(vec2<f32>(warpedUV.x, 2.0 - warpedUV.y) - vec2<f32>(0.0, echoSpacing) + wobble);
+    echoAccum += loadHistoryExact(mirrorL) * wallGain;
+    echoAccum += loadHistoryExact(mirrorR) * wallGain;
+    echoAccum += loadHistoryExact(mirrorT) * wallGain * 0.85;
+    echoAccum += loadHistoryExact(mirrorB) * wallGain * 0.85;
+    totalWeight += wallGain * 3.7;
+
     let echo = echoAccum / max(totalWeight, 0.0001);
 
     // Psychedelic generative color (reuses cached drift noise)
@@ -201,6 +194,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     blended = mix(blended, echo.rgb * (1.0 - nodalMask * 0.35), nodalMask * 0.28);
     var color = mix(blended, video.rgb, 0.15 + fog * 0.35);
     color += genColor * nodalMask * 0.1 * (1.0 + bass * 0.25);
+
+    // Comb-filter notches — dark bands whose spacing follows the echo-spacing slider.
+    let combFreq = TAU / max(echoSpacing * 40.0, 0.08);
+    let comb = 0.5 + 0.5 * cos(warpedUV.x * combFreq + time * (0.4 + mids * 0.6));
+    let notch = 1.0 - smoothstep(0.08, 0.28, comb);
+    color = color * (1.0 - notch * 0.42 * (0.35 + treble * 0.4));
 
     // Click shockwave burst
     let clickDist = length(uv01 - mouse);

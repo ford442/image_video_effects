@@ -5,22 +5,15 @@
 //           upgraded-rgba, aces-tone-map, temporal-feedback, gravity-wells,
 //           mouse-attractors, feedback-accumulation, chromatic-aberration
 // Chunks From: gen-protocell-division.wgsl (upgraded-rgba stack)
-// Upgraded: 2026-09-27
-// Ideas: anastomosis bridges between fold branches; septal rings; click inoculation thickening
+// Upgraded: 2026-10-10
+// Ideas: anastomosis bridges; septal rings; click thickening; hyphal medulla; spitzenkörper tip
 // A packing: ACES display RGBA
 // Kept: 2026-06-28 gravity well and feedback accumulation
 // ----------------------------------------------------------------
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+#include "_prelude.wgsl"
+// zoom_params: x=Repetition, y=BranchSize, z=Hue, w=PulseSpeed
 
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-    zoom_params: vec4<f32>,  // x=Repetition, y=BranchSize, z=Hue, w=PulseSpeed
-    ripples: array<vec4<f32>, 50>,
-}
 fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
   let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
   let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
@@ -34,16 +27,6 @@ fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
 
 const PI:  f32 = 3.14159265358979323846;
 const TAU: f32 = 6.28318530717958647692;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 // --- SHADER LOGIC ---
 
@@ -213,6 +196,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         glow = pow(pulse, 4.0) * (0.5 + bass * 2.0);
 
         col = base_col * (0.2 + glow);
+        // Idea: medulla — darker core where the view looks through the tube middle.
+        let fres = pow(1.0 - max(dot(n, -rd), 0.0), 2.0);
+        col = mix(col, col * vec3<f32>(0.35, 0.5, 0.32), (1.0 - fres) * 0.4);
+        // Idea: spitzenkörper — a bright tip facing out along the fold.
+        let tip = pow(max(dot(n, normalize(p + vec3<f32>(0.001))), 0.0), 10.0);
+        col = col + vec3<f32>(0.45, 1.0, 0.55) * tip * (0.35 + glow * 0.4);
 
         // Basic lighting
         let lightDir = normalize(vec3<f32>(1.0, 1.0, -1.0));

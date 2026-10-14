@@ -8,7 +8,7 @@
     "audio-reactive",
     "geometry"
   ],
-  "description": "A liquid-gold lotus with rapid petal torque waves, audio-driven plasma runners, click-launched blossom shocks, direct saved-control behavior, and bounded rotational trails.",
+  "description": "A liquid-gold lotus with rapid petal torque waves, audio-driven plasma runners, click-launched blossom shocks, direct saved-control behavior, and bounded rotational trails. Second pass contributes capillary rivulets and Kelvin-Helmholtz shear rolls in the plasma runners.",
   "workgroup_size": [
     16,
     16,
@@ -102,7 +102,9 @@
     "semantic-alpha",
     "aces-tonemap",
     "conductor-fresnel-gold",
-    "phyllotaxis-florets"
+    "phyllotaxis-florets",
+    "capillary-rivulets",
+    "kelvin-helmholtz-shear-rolls"
   ],
   "feedbackPacking": "A/C = ACES display RGBA; rgb = max(ACES(frame), exact torque-advected C load * decay), a = semantic coverage"
 }

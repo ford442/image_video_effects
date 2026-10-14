@@ -2694,7 +2694,7 @@
   {
     "id": "gen-abyssal-plasma-void-medusa",
     "name": "Abyssal Plasma Void-Medusa",
-    "description": "A majestic, deep-space biomechanical entity undulating through a quantum fluidic void, driven by audio-reactive bioluminescent plasma nodes.",
+    "description": "A deep-space biomechanical void-medusa with plasma root lanterns, nematocyst strobe ringlets, and ciliary bell-rim sparkles drifting through warped abyssal currents.",
     "category": "generative",
     "url": "shaders/gen-abyssal-plasma-void-medusa.wgsl",
     "features": [
@@ -2800,7 +2800,7 @@
     "tags": [
       "generative"
     ],
-    "description": "A colossal undulating leviathan skeleton prowling the abyss, its quantum marrow glowing through the bones. Fast-motion upgrade: whip-amplified traveling-wave spine kinematics, ballistic lunge surges with bass-transient kicks, high-speed anisotropically-stretched aether-current speed streaks, and velocity-advected motion-blur trails. 2026-09-27: the violet marrow canal now rides the displaced spine core and pinches at rib joints, the tension flank of each tight bend glows emerald bending-strain bioluminescence that travels with the wave, and the streak currents part around the swaying bones with a brightened bow on the leading flank.",
+    "description": "A colossal undulating leviathan skeleton in abyssal currents, with displaced-spine marrow glow, vertebral electroplate ladders, and caudal vortex-bead shedding over fast whip-wave kinematics and lunge surges.",
     "workgroup_size": [
       16,
       16,
@@ -3957,7 +3957,7 @@
     "name": "Astral Plasma Accretion Forge",
     "category": "generative",
     "url": "/shaders/gen-astral-plasma-accretion-forge.wgsl",
-    "description": "A noisy, Keplerian-twisted accretion disk of blackbody plasma with pole flares around a small black horizon. Upgrade: cool midplane dust lanes absorb the plasma behind them (Core Density sets extinction, Core Temp sets the dust sublimation radius); Keplerian differential rotation (Omega ~ r^-1.5) shears plasma and dust into trailing spiral lanes; gravitational redshift cools and dims the inner rim toward the well. Drag to orbit; bass/mids raise the pole flares.",
+    "description": "A Keplerian-twisted astral accretion forge with dust-lane absorption, gravitational redshift, Rossby-vortex eye knots in the disk, and polar reconnection flare knots around the horizon.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -4261,7 +4261,7 @@
       "aces-tone-map",
       "semantic-alpha"
     ],
-    "description": "A brass KIFS gear-train run hot and fast around a quantum plasma furnace, with cut teeth and rivet rows carved into every gear and exhaust streaming through a psychedelic spectrum. Every gear turns on its own axle and meshes counter-rotating with its fold-mirrored neighbours, the machine is seen bent through the plasma core by true refraction (Refraction Index), and the exhaust pillar chuffs four puffs per gear revolution. The cursor warps a magnetic well through the machine, holding overdrives the spin and pulls the camera in, and clicks touch off detonation rings. Audio comes from the three plasmaBuffer bands.",
+    "description": "A hot-running astro-mechanical quantum furnace with meshing KIFS gears, refracted core views, piston-chuff exhaust, tooth-root heat-check crazing, and anvil spark showers around a magnetic cursor well.",
     "workgroup_size": [
       16,
       16,
@@ -4474,7 +4474,7 @@
       "aces-tone-map",
       "semantic-alpha"
     ],
-    "description": "A Mandelbulb raymarched at speed: the fractal exponent morphs several times a second under bass, orbit-trap coloring races through a full psychedelic spectrum with treble, and a greebled ridge shell carves micro-detail into every surface. The cursor orbits the camera, holding the button throttles the spin and dollies in, and clicks fire shock rings that deform the bulb and flash the palette. Upgraded: the surface is terraced into escape-time strata (smooth escape-count onion shells with hue-stepped contours) whose shells the Escape Radius bailout slides, lobes cast DE soft shadows and ambient occlusion into their crevices, and rays grazing the bulb leave a silhouette halo coloured by the orbit trap at their closest approach (scaled by Glow).",
+    "description": "A fast audiovisual Mandelbulb with escape-time strata, soft-shadowed lobe relief, trap-colored silhouette halos, cusp-caustic glints, and chromatic wedge dispersion under audio-driven exponent morphing.",
     "workgroup_size": [
       16,
       16,
@@ -4787,7 +4787,7 @@
       "audio-reactive",
       "collapse"
     ],
-    "description": "A colossal liquid-metal monolith whose surface forms readable magnetic glyphs under strong bass, then collapses into chaotic auroral breakup on treble. Mouse drag rotates an external magnetic field that sculpts the ferrofluid in real time. The aurora clings to the spiked surface as a sheath, co-winds with the Magnetic Twist and gathers at the mouse pole, and spike crests throw an aurora-tinted corona.",
+    "description": "A liquid-metal ferrofluid monolith with bass-formed glyph spikes wrapped in aurora sheaths, cusp-knot magnetic whorls, and substorm breakup arc curtains that intensify around the mouse pole.",
     "workgroup_size": [
       16,
       16,
@@ -5612,7 +5612,7 @@
     "id": "gen-bioluminescent-chrono-plasma-astro-owl",
     "name": "Bioluminescent Chrono-Plasma Astro-Owl",
     "url": "shaders/gen-bioluminescent-chrono-plasma-astro-owl.wgsl",
-    "description": "A hyper-dimensional, cyber-organic celestial owl forged from liquid chrono-plasma and shattered quantum-glass — raymarched SDF plumage folded by live FFT bands, deformed by click ripples, orbited by the mouse, and backed by a kaleidoscopic chrono-tessellation nebula.",
+    "description": "A cyber-organic chrono-plasma astro-owl with frame-dragged nebula sky, lattice plumage etching, facial-disk diffraction rings, and wingtip plasma-vortex shedding under FFT-reactive folds.",
     "category": "generative",
     "tags": [
       "organic",
@@ -5716,7 +5716,7 @@
     "id": "gen-bioluminescent-cyber-aether-void-seahorse",
     "name": "Bioluminescent Cyber-Aether Void-Seahorse",
     "url": "/shaders/gen-bioluminescent-cyber-aether-void-seahorse.wgsl",
-    "description": "A hyper-majestic, biomechanical void-seahorse woven from shattered liquid-aether and pulsing cybernetic bioluminescence, drifting gracefully through a chaotic, fluid-dynamic quantum reef. Upgraded 2026-08-05: capsule-chain spine anatomy with smooth-union SDF composition, dorsal-fin membrane, tail orbit-trap filaments, domain-warped FBM bioluminescence and void nebula, tetrahedral SDF normals, temporal history feedback and generated relief depth.",
+    "description": "A biomechanical void-seahorse with sagittal fin-ray membrane undulation, fold-tree chromatophore cascades, electroreceptor snout whiskers, and brood-pouch pulse bloom in a warped quantum reef.",
     "tags": [
       "organic",
       "quantum",
@@ -6644,7 +6644,7 @@
       "audio-reactive",
       "bismuth"
     ],
-    "description": "A hyper-dimensional, continually self-assembling bismuth crystal matrix orbiting a microscopic gravitational singularity, its iridescent geometric steps carving sharp staircases into the fabric of spacetime. The scene blends hard-edged, prismatic synthetic-architecture with chaotic fluid distortions driven by an intense sub-bass core. Each of the six cubes runs its own assembly clock, carving from seed block to terraced shards to dust; clocks near the singularity run slow, shearing the weave and broadening its fringes, and rays that fall inside the horizon leave a black shadow at the core.",
+    "description": "A self-assembling bismuth singularity loom with per-sector carve clocks, relativistic time-shear, terrace-edge cathodoluminescence, and photon-sphere shear arcs around a black core shadow.",
     "url": "shaders/gen-bismuth-singularity-loom-engine.wgsl",
     "workgroup_size": [
       16,
@@ -8795,7 +8795,7 @@
       "music",
       "reactive"
     ],
-    "description": "A hyper-speed journey down an infinite magnetic containment tunnel where sub-atomic particles collide and shatter into vibrant, audio-reactive showers of exotic matter. Bunches colliding at the containment rings flash magenta debris shells, the beam is steered toward the magnetic anomaly while it betatron-wobbles through the ring apertures, and the tunnel's bends split it into dispersed colour fringes.",
+    "description": "A chromodynamic plasma collider tunnel with bunch-crossing ring bursts, steered betatron beam wobble, bend-dispersion color splitting, synchrotron sideband combs, and Cherenkov-like wake cones.",
     "workgroup_size": [
       16,
       16,
@@ -9097,7 +9097,15 @@
     "updated": true,
     "id": "gen-chrono-mycelial-tapestry",
     "url": "shaders/gen-chrono-mycelial-tapestry.wgsl",
-    "features": [],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
     "params": [
       {
         "id": "growth_rate",
@@ -9568,6 +9576,40 @@
         "max": 3,
         "step": 0.1
       }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Dispersion",
+        "default": 1.2,
+        "min": 0.5,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "index": 1,
+        "name": "Gravity Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "index": 2,
+        "name": "Fractal Fold",
+        "default": 2,
+        "min": 1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "index": 3,
+        "name": "Glow Intensity",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      }
     ]
   },
   {
@@ -9778,7 +9820,18 @@
     "updated": true,
     "id": "gen-chronos-monolith-resonator",
     "url": "shaders/gen-chronos-monolith-resonator.wgsl",
-    "features": []
+    "features": [
+      "raymarched",
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "held-interactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "depth-aware",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Conway Game of Life",
@@ -10413,7 +10466,7 @@
       "raymarching",
       "audio-reactive"
     ],
-    "description": "An infinitely shattering and reforming matrix of absolute-zero hyper-fractals that bleed iridescent thermal plasma when fractured by heavy bass frequencies.",
+    "description": "An infinitely shattering and reforming matrix of absolute-zero hyper-fractals that bleed iridescent thermal plasma when fractured by heavy bass frequencies. Hoarfrost dendrites trace the fracture seams, and a cyan sublimation sheath marks where ice meets plasma.",
     "workgroup_size": [
       16,
       16,
@@ -10496,7 +10549,11 @@
     "updated": true,
     "id": "gen-cryogenic-frost-plasma-matrix",
     "url": "shaders/gen-cryogenic-frost-plasma-matrix.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Crystal Caverns",
@@ -11244,7 +11301,9 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tone-mapping",
-      "depth-aware"
+      "depth-aware",
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = raw HDR display RGBA history"
   },
@@ -11259,13 +11318,48 @@
       16,
       1
     ],
-    "description": "A hyper-intricate cybernetic fungal network expanding endlessly through an abyssal void, pulsating with neon bioluminescence and audio-reactive quantum spores.",
+    "description": "A hyper-intricate cybernetic fungal network expanding endlessly through an abyssal void, pulsating with neon bioluminescence and audio-reactive quantum spores. Short anastomosis bridges tie the axis tubes together, and spore pulses run out along each hypha.",
     "features": [
       "raymarching",
       "bioluminescent",
       "mouse-interactive",
       "audio-reactive",
-      "volumetric-glow"
+      "volumetric-glow",
+      "upgraded-rgba"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Density",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.05
+      },
+      {
+        "index": 1,
+        "name": "Spore Glow",
+        "default": 1.5,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "index": 2,
+        "name": "Twist",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Fog",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      }
     ],
     "tags": [
       "organic",
@@ -11869,7 +11963,7 @@
       "aces-tone-map",
       "semantic-alpha"
     ],
-    "description": "A bio-mechanical mycelial net streaming and firing fast. Hyphal filigree carves branching detail over the trails, data pulses race at a treble-driven rate, and the whole net is graded through a psychedelic neon spectrum. The spring-smoothed cursor is an attractor whose whip speed mutates the growth, holding blooms the well, and clicks fire mutation bursts. Persistent state now lives only in the extraBuffer safe zone.",
+    "description": "A bio-mechanical mycelial net streaming and firing fast. Hyphal filigree carves branching detail over the trails, data pulses race at a treble-driven rate, and the whole net is graded through a psychedelic neon spectrum. The spring-smoothed cursor is an attractor whose whip speed mutates the growth, holding blooms the well, and clicks fire mutation bursts. Persistent state now lives only in the extraBuffer safe zone. Dendritic spines bud on filigree peaks, and each spike is followed by a short refractory dark.",
     "workgroup_size": [
       16,
       16,
@@ -11968,7 +12062,7 @@
     "name": "Cybernetic Plasma-Orchid Nexus",
     "url": "shaders/gen-cybernetic-plasma-orchid-nexus.wgsl",
     "category": "generative",
-    "description": "A hyper-stylized digital flora ecosystem where crystalline petals of plasma bloom from a glowing cybernetic core, pulsating with neon chromatic aberration. The lowest petal is a cupped orchid lip with a plasma nectar well glowing in its throat, and a central column carries two pollinia beads that pulse with the bass.",
+    "description": "A hyper-stylized digital flora ecosystem where crystalline petals of plasma bloom from a glowing cybernetic core, pulsating with neon chromatic aberration. The lowest petal is a cupped orchid lip with a plasma nectar well glowing in its throat, and a central column carries two pollinia beads that pulse with the bass. A cooler dorsal sepal hoods the top of the flower, and veins run out along each petal blade.",
     "features": [
       "raymarching",
       "domain-warping",
@@ -13518,7 +13612,9 @@
     "id": "gen-emergent-calligraphic-ecosystems",
     "url": "shaders/gen-emergent-calligraphic-ecosystems.wgsl",
     "features": [
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
     ]
   },
   {
@@ -14207,7 +14303,7 @@
       16,
       1
     ],
-    "description": "A mesmerizing, luminescent botanical matrix that weaves organic fractal geometry with time-dilating quantum energy threads, invoking the feeling of an alien greenhouse frozen in a dimension of light.",
+    "description": "A mesmerizing, luminescent botanical matrix that weaves organic fractal geometry with time-dilating quantum energy threads, invoking the feeling of an alien greenhouse frozen in a dimension of light. Warp-thread helices run the length of the loom, and a weft shuttle lays a bright arc at the flow speed.",
     "tags": [
       "organic",
       "botanical",
@@ -14217,7 +14313,42 @@
     ],
     "features": [
       "audio-reactive",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Density",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "index": 1,
+        "name": "Flow Speed",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "index": 2,
+        "name": "Glow Intensity",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "index": 3,
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ],
     "params": [
       {
@@ -14268,7 +14399,7 @@
     "url": "shaders/gen-ethereal-chrono-fluid-symbiote.wgsl",
     "type": "generative",
     "category": "generative",
-    "description": "A flowing, temporal liquid entity that responds dynamically to audio and mouse interactions, weaving through dimensions of time and space in a continuous symbiotic dance.",
+    "description": "A flowing, temporal liquid entity that responds dynamically to audio and mouse interactions, weaving through dimensions of time and space in a continuous symbiotic dance. A meniscus film traces the seam between fluid and crystal, and Chrono Warp smears the fluid against the previous frame.",
     "workgroup_size": [
       16,
       16,
@@ -14311,6 +14442,45 @@
         "step": 0.1,
         "mapping": "zoom_params.w"
       }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Density",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "index": 1,
+        "name": "Fluid Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Chrono Warp",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "index": 3,
+        "name": "Symbiote Glow",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      }
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "supportsDepth": true
   },
@@ -14449,7 +14619,7 @@
       "plasma",
       "quantum"
     ],
-    "description": "A hyper-fast, biomechanical hummingbird woven from liquid auroral plasma and shattered quantum glass, hovering within a massive chrono-distortion flower.",
+    "description": "A hyper-fast, biomechanical hummingbird woven from liquid auroral plasma and shattered quantum glass, hovering within a massive chrono-distortion flower. A gorget plate on the throat splits hue with the view angle, and two tail ribbons stream behind the body.",
     "workgroup_size": [
       16,
       16,
@@ -14679,7 +14849,7 @@
       "void",
       "volumetric"
     ],
-    "description": "A colossal, slow-moving biomechanical space leviathan swimming gracefully through a dense volumetric plasma-ocean, whose transparent cyber-skeletal ribs refract and ripple with shifting temporal energy streams.",
+    "description": "A colossal, slow-moving biomechanical space leviathan swimming gracefully through a dense volumetric plasma-ocean, whose transparent cyber-skeletal ribs refract and ripple with shifting temporal energy streams. Flukes spread from the tail of the spine, and a bass-gated blow mist rises above the core.",
     "workgroup_size": [
       16,
       16,
@@ -14994,6 +15164,7 @@
   {
     "id": "gen-ethereal-quantum-glass-nautilus",
     "name": "Ethereal Quantum-Glass Nautilus",
+    "description": "A log-spiral glass nautilus with chamber septa and pearl nacre on the inner ridges. A siphuncle canal runs the spiral, and the outer chamber wears a thickened aperture lip.",
     "url": "/shaders/gen-ethereal-quantum-glass-nautilus.wgsl",
     "category": "generative",
     "params": [
@@ -15623,7 +15794,7 @@
       "mouse-reactive",
       "shockwave"
     ],
-    "description": "Temporal feedback echo chamber with mouse gravity wells, click shockwaves, fBM domain warp, depth-aware compositing, and psychedelic palette blending",
+    "description": "Temporal feedback echo chamber with mouse gravity wells, click shockwaves, fBM domain warp, depth-aware compositing, and psychedelic palette blending. Early reflections bounce off the frame, and comb-filter notches follow the echo spacing.",
     "workgroup_size": [
       16,
       16,
@@ -16283,7 +16454,7 @@
       "4th-of-july",
       "july-4"
     ],
-    "description": "Multi-stage pyrotechnic shells that bloom in two acts. A primary burst erupts first, then delayed secondary crackle and palm fronds spawn from sub-points along the fading sparks. Treble drives thousands of micro-crackle pops; mids trigger the second-stage palm arms. Bass deepens the initial detonation. Mouse launches a triple-stage command shell at the cursor.",
+    "description": "Multi-stage pyrotechnic shells that bloom in two acts. A primary burst erupts first, then delayed secondary crackle and palm fronds spawn from sub-points along the fading sparks. Treble drives thousands of micro-crackle pops; mids trigger the second-stage palm arms. Bass deepens the initial detonation. Mouse launches a triple-stage command shell at the cursor. Fronds carry a continuous rachis and a hot pistil at each tip.",
     "workgroup_size": [
       16,
       16,
@@ -16393,7 +16564,7 @@
       "generative",
       "4th-of-july"
     ],
-    "description": "Crossette shells that split into four brilliant sub-bursts at the cardinal points. A primary flash blooms, then each arm detonates into its own mini-chrysanthemum. The iconic four-petal pattern creates geometric symmetry in the sky. Mids trigger the split timing, treble crackles each arm. Mouse fires a crossette at the cursor.",
+    "description": "Crossette shells that split into four brilliant sub-bursts at the cardinal points. A primary flash blooms, then each arm detonates into its own mini-chrysanthemum. The iconic four-petal pattern creates geometric symmetry in the sky. Mids trigger the split timing, treble crackles each arm. Mouse fires a crossette at the cursor. Each parent star wears a comet sheath, and the four arms fork a few milliseconds apart.",
     "workgroup_size": [
       16,
       16,
@@ -16505,7 +16676,7 @@
       "generative",
       "4th-of-july"
     ],
-    "description": "Flat dahlia-disk shells that bloom into layered rows of radial petals — warm coral cores fading to gold tips across concentric petal rings. Unlike spherical chrysanthemums, dahlia bursts spread in a wide flat disk before petals curl and fall. Bass expands disk radius, mids stagger petal-row timing, treble adds micro-petals. Mouse detonates a personal dahlia at the cursor.",
+    "description": "Flat dahlia-disk shells that bloom into layered rows of radial petals — warm coral cores fading to gold tips across concentric petal rings. Unlike spherical chrysanthemums, dahlia bursts spread in a wide flat disk before petals curl and fall. Bass expands disk radius, mids stagger petal-row timing, treble adds micro-petals. Mouse detonates a personal dahlia at the cursor. Aging rows hook into an involute curl, and a pistil disk of short florets sits inside the first row.",
     "workgroup_size": [
       16,
       16,
@@ -16615,7 +16786,7 @@
       "generative",
       "4th-of-july"
     ],
-    "description": "Wide fan shells that burst into a sweeping hemisphere of colored sparks, like a peacock tail opening in the sky. Sparks spread in a broad arc with strong horizontal bias before falling. Mids widen the fan angle, bass deepens the colors. Mouse opens a personal fan at the cursor.",
+    "description": "Wide fan shells that burst into a sweeping hemisphere of colored sparks, like a peacock tail opening in the sky. Sparks spread in a broad arc with strong horizontal bias before falling. Mids widen the fan angle, bass deepens the colors. Mouse opens a personal fan at the cursor. Rays now ignite edge to edge as the fan unfolds, framed by two heavy gold guard-stick ribs.",
     "workgroup_size": [
       16,
       16,
@@ -16727,7 +16898,7 @@
       "generative",
       "4th-of-july"
     ],
-    "description": "Classic horse tail and brocade shells rain long, straight golden streamers from a single burst point. Each spark traces a tight gravity arc with minimal spread, creating luminous waterfalls of light. Bass lengthens the tails, treble adds silver micro-dust along the streams. Mouse launches a personal brocade cascade.",
+    "description": "Classic horse tail and brocade shells rain long, straight golden streamers from a single burst point. Each spark traces a tight gravity arc with minimal spread, creating luminous waterfalls of light. Bass lengthens the tails, treble adds silver micro-dust along the streams. Mouse launches a personal brocade cascade. A swish wave now travels down each streamer, and a slow-fading gold dock knot marks where the tail hangs from.",
     "workgroup_size": [
       16,
       16,
@@ -16839,7 +17010,7 @@
       "generative",
       "4th-of-july"
     ],
-    "description": "Dense kamuro shells rain slow-falling gold and silver glitter like a luminous snowstorm. Thousands of tiny sparks hang in the air before drifting down, creating thick clouds of metallic shimmer. Perfect July 4th brocade feel. Bass thickens the cloud, treble adds micro-sparkle. Mouse releases a golden kamuro shower at the cursor. Upgraded with HDR white-gold burst cores, audio-reactive color temperature (bass deepens amber, treble shifts silver), golden atmospheric haze with depth fog, split-tone grading (cool shadows, warm highlights), and real generated depth from glitter heat.",
+    "description": "Dense kamuro shells rain slow-falling gold and silver glitter like a luminous snowstorm. Thousands of tiny sparks hang in the air before drifting down, creating thick clouds of metallic shimmer. Perfect July 4th brocade feel. Bass thickens the cloud, treble adds micro-sparkle. Mouse releases a golden kamuro shower at the cursor. Upgraded with HDR white-gold burst cores, audio-reactive color temperature (bass deepens amber, treble shifts silver), golden atmospheric haze with depth fog, split-tone grading (cool shadows, warm highlights), and real generated depth from glitter heat. Twinkle peaks spit tiny dross satellites, and after the hang the glitter cools to dull charcoal red.",
     "workgroup_size": [
       16,
       16,
@@ -16955,7 +17126,7 @@
       "4th-of-july",
       "july-4"
     ],
-    "description": "A living fireworks display over a dark velvet night. Multiple mortar shells launch, burst in jewel and gold colors with realistic gravity arcs and lingering ember trails. Bass detonates bigger shells and richer bursts, treble crackles extra sparks. Mouse click or hold launches a personal command shell at the cursor. Temporal glow and soft smoke persist between explosions for cinematic long-exposure feel.",
+    "description": "A living fireworks display over a dark velvet night. Multiple mortar shells launch, burst in jewel and gold colors with realistic gravity arcs and lingering ember trails. Bass detonates bigger shells and richer bursts, treble crackles extra sparks. Mouse click or hold launches a personal command shell at the cursor. Temporal glow and soft smoke persist between explosions for cinematic long-exposure feel. Each shell has its own distance, so far bursts open smaller and hazier, and stars switch to a second jewel colour mid-flight.",
     "workgroup_size": [
       16,
       16,
@@ -17063,7 +17234,7 @@
       "generative",
       "4th-of-july"
     ],
-    "description": "Perfect ring and halo shells that bloom as luminous donuts in the night sky. Sparks launch outward along a crisp circular front then cascade downward with gravity. Classic Saturn-ring pyrotechnics with jewel-tone cycling. Bass widens the ring, treble adds inner sparkle. Mouse launches a personal halo at the cursor. Upgraded with HDR overbright burst cores, audio-reactive color temperature (bass warms, treble cools), atmospheric burst haze with depth fog, and real generated depth from spark heat.",
+    "description": "Perfect ring and halo shells that bloom as luminous donuts in the night sky. Sparks launch outward along a crisp circular front then cascade downward with gravity. Classic Saturn-ring pyrotechnics with jewel-tone cycling. Bass widens the ring, treble adds inner sparkle. Mouse launches a personal halo at the cursor. Upgraded with HDR overbright burst cores, audio-reactive color temperature (bass warms, treble cools), atmospheric burst haze with depth fog, and real generated depth from spark heat. Each ring rolls to its own axis, and the far half of the tilted ring burns dimmer than the near half.",
     "workgroup_size": [
       16,
       16,
@@ -17175,7 +17346,7 @@
       "generative",
       "4th-of-july"
     ],
-    "description": "Classic roman candles firing rapid star bursts from fixed launch tubes along the horizon. Bass enlarges launches, treble adds trail and burst detail, held mouse fire follows the normalized cursor, and each click launches a discrete personal candle. Bright shells produce luminance-derived depth.",
+    "description": "Classic roman candles firing rapid star bursts from fixed launch tubes along the horizon. Bass enlarges launches, treble adds trail and burst detail, held mouse fire follows the normalized cursor, and each click launches a discrete personal candle. Bright shells produce luminance-derived depth. Between star ejections each tube spits a short gold fountain, and late stars gutter and flicker before dying.",
     "workgroup_size": [
       16,
       16,
@@ -17289,7 +17460,7 @@
       "4th-of-july",
       "july-4"
     ],
-    "description": "Soft volumetric smoke gathers around bursts and along falling sparks, while a feedback light bloom adds luminous halos to the brightest areas. Bass swells the smoky glow, mids add secondary burst layers, and treble scatters micro-sparks. Mouse launches a smoky peony at the cursor.",
+    "description": "Soft volumetric smoke gathers around bursts and along falling sparks, while a feedback light bloom adds luminous halos to the brightest areas. Bass swells the smoky glow, mids add secondary burst layers, and treble scatters micro-sparks. Mouse launches a smoky peony at the cursor. Rising puffs hollow into vortex smoke rings, and sparks seen through the smoke dim and redden.",
     "workgroup_size": [
       16,
       16,
@@ -17397,7 +17568,7 @@
       "psychedelic",
       "4th-of-july"
     ],
-    "description": "Hypnotic strobe shells that flash multiple times before dissolving into falling sparks. Each burst pulses with rhythmic white-hot flashes synced to the beat, then blooms into color. Treble drives flash rate, bass amplifies each pulse. A psychedelic July 4th finale feel. Mouse triggers a strobe barrage at the cursor.",
+    "description": "Hypnotic strobe shells that flash multiple times before dissolving into falling sparks. Each burst pulses with rhythmic white-hot flashes synced to the beat, then blooms into color. Treble drives flash rate, bass amplifies each pulse. A psychedelic July 4th finale feel. Mouse triggers a strobe barrage at the cursor. Past flashes leave a faint dotted path, and each shell's pulse lights a wide veil of sky.",
     "workgroup_size": [
       16,
       16,
@@ -17507,7 +17678,7 @@
       "4th-of-july",
       "july-4"
     ],
-    "description": "Classic willow-style fireworks with long, drooping golden and silver trails. Velocity-stretched droop streaks, wind-advected embers, and advected HDR trails. Bass deepens the droop, treble adds silver micro-sparkle along the trails. Mouse launches a personal willow shell at the cursor.",
+    "description": "Classic willow-style fireworks with long, drooping golden and silver trails. Velocity-stretched droop streaks, wind-advected embers, and advected HDR trails. Bass deepens the droop, treble adds silver micro-sparkle along the trails. Mouse launches a personal willow shell at the cursor. The ascent lingers as a gold willow trunk, and beads drip from the strand tips.",
     "workgroup_size": [
       16,
       16,
@@ -17618,7 +17789,7 @@
       "4th-of-july",
       "july-4"
     ],
-    "description": "Sparks drift on a fast time-varying wind while ripple events ignite shock-front barrages. Comet-tail speed lines, wind conveyors, and advected HDR trails. Bass deepens the shells, mids add secondary gusts, treble scatters silver micro-sparkle. Mouse launches a personal wind-swept shell at the cursor.",
+    "description": "Sparks drift on a fast time-varying wind while ripple events ignite shock-front barrages. Comet-tail speed lines, wind conveyors, and advected HDR trails. Bass deepens the shells, mids add secondary gusts, treble scatters silver micro-sparkle. Mouse launches a personal wind-swept shell at the cursor. Travelling gust bands push passing sparks harder, and ripple shock fronts refract the sky behind them.",
     "workgroup_size": [
       16,
       16,
@@ -17940,7 +18111,7 @@
       "audio-reactive",
       "vj"
     ],
-    "description": "Rotating Fourier epicycle wheels tracing harmonic curves with chromatic separation, metallic rim glow, and temporal trajectory trails. Bass drives rotation speed, mouse reshapes coefficients.",
+    "description": "Rotating Fourier epicycle wheels tracing harmonic curves with chromatic separation, metallic rim glow, and temporal trajectory trails. Bass drives rotation speed, mouse reshapes coefficients. Each wheel carries a phase tick at the rim, and the pen blots when the chain slows into a cusp.",
     "workgroup_size": [
       16,
       16,
@@ -18258,7 +18429,7 @@
       "music",
       "reactive"
     ],
-    "description": "Infinite interlocking brass gears rotating in perfect mechanical sync, stepping one tooth per escapement tick around ruby jewel bearings. Steampunk raymarched masterpiece with metallic PBR shading and mouse orbit control.",
+    "description": "Infinite interlocking brass gears rotating in perfect mechanical sync, stepping one tooth per escapement tick around ruby jewel bearings, with oil weeping at the mesh and a hairspring in each axle bore. Steampunk raymarched masterpiece with metallic PBR shading and mouse orbit control.",
     "workgroup_size": [
       16,
       16,
@@ -18369,7 +18540,7 @@
       "mouse-driven",
       "temporal"
     ],
-    "description": "Hexagonal crystal lattice glowing like hot embers. Mouse click shatters the lattice into rigid shards that fly outward; release to watch them drift back and reform over ~1.5s. Audio drives glow pulse, lattice breathing, spark frequency, and ember beads that crawl along the lattice lines; flying shards cool to deep red and flare as they re-ignite on reform.",
+    "description": "Hexagonal crystal lattice glowing like hot embers. Mouse click shatters the lattice into rigid shards that fly outward; release to watch them drift back and reform over ~1.5s. Audio drives glow pulse, lattice breathing, spark frequency, and ember beads that crawl along the lattice lines; flying shards cool to deep red and flare as they re-ignite on reform. Cooled faces grow oxide scale, and pop-off sparks leave along the shatter.",
     "workgroup_size": [
       16,
       16,
@@ -18745,7 +18916,7 @@
       "music",
       "reactive"
     ],
-    "description": "A massive, ancient monolith floating above a dark liquid sea, fractured into segmented pieces that pulse with an inner, ethereal light that climbs the seams and spills through the cracks onto the water below.",
+    "description": "A massive, ancient monolith floating above a dark liquid sea, fractured into segmented pieces that pulse with an inner, ethereal light that climbs the seams and spills through the cracks onto the water below. Spall chips sit off the shard corners, and crack dust grays the seam light where the spread opens.",
     "workgroup_size": [
       16,
       16,
@@ -18959,7 +19130,7 @@
       "blackbody",
       "ethereal"
     ],
-    "description": "Fluid advection flame simulation with temperature-based alpha translucency. Hot regions are bright and slightly translucent, cool regions fade to transparent. Simplex noise advection with upward velocity and vorticity confinement creates ethereal ghost-fire, with a wick column, blue ignition chemiluminescence, buoyant puffing pinch-off that sheds flame packets, and schlieren heat-haze fringes in the surrounding air.",
+    "description": "Fluid advection flame simulation with temperature-based alpha translucency. Hot regions are bright and slightly translucent, cool regions fade to transparent. Simplex noise advection with upward velocity and vorticity confinement creates ethereal ghost-fire, with a wick column, blue ignition chemiluminescence, buoyant puffing pinch-off that sheds flame packets, and schlieren heat-haze fringes in the surrounding air. An inner blue cone hugs the wick, and soot streaks the aged, spent gas.",
     "workgroup_size": [
       16,
       16,
@@ -19627,7 +19798,7 @@
       "temporal",
       "depth-aware"
     ],
-    "description": "A raymarched KIFS plasma lotus with sprung gravitational lensing, bounded click pulses, multi-band iridescent lighting, temporal petal echoes, and real hit depth.",
+    "description": "A raymarched KIFS plasma lotus with sprung gravitational lensing, bounded click pulses, multi-band iridescent lighting, temporal petal echoes, and real hit depth. Local chromatic gravity streaks frame the lens while treble-lit plasma filaments bridge the core and folded petals.",
     "workgroup_size": [
       16,
       16,
@@ -19673,12 +19844,16 @@
     "id": "gen-graviton-plasma-lotus",
     "url": "shaders/gen-graviton-plasma-lotus.wgsl",
     "features": [
+      "audio-reactive",
+      "mouse-driven",
       "kifs-lotus-sdf",
       "sprung-gravity-lens",
       "click-gravity-pulses",
       "multi-band-iridescence",
       "temporal-feedback",
       "depth-output",
+      "semantic-alpha",
+      "aces-tone-map",
       "upgraded-rgba"
     ]
   },
@@ -20457,7 +20632,7 @@
       "geometric",
       "chromatic"
     ],
-    "description": "Hopf fibration visualization from S³ to S². Each screen pixel maps to a point on S² whose fiber is a circle in S³, projected via stereographic projection to 2D. Linked circles colored by base-space coordinate with HDR bloom at crossings. Knot-diagram over/under gaps make the linking readable, bass-pumped beads ride each fiber's U(1) phase, and a small base-space S² inset shows the fibers' base points.",
+    "description": "Hopf fibration visualization from S³ to S². Each screen pixel maps to a point on S² whose fiber is a circle in S³, projected via stereographic projection to 2D. Linked circles colored by base-space coordinate with HDR bloom at crossings. Knot-diagram over/under gaps make the linking readable, bass-pumped beads ride each fiber's U(1) phase, and a small base-space S² inset shows the fibers' base points. A stereographic horizon traces the projection boundary while transverse depth-separated links flare at true crossings.",
     "workgroup_size": [
       16,
       16,
@@ -21495,7 +21670,7 @@
       "audio",
       "music"
     ],
-    "description": "Recursive tree fractal rendered in hyperbolic Poincare disk. Branches sway with audio, leaves glow with treble. Möbius-transformed space.",
+    "description": "Recursive tree fractal rendered in hyperbolic Poincare disk. Branches sway with audio, leaves glow with treble. Möbius-transformed space. Metric-thinning branches recede toward the rim while faint horocycles fill the tree's negative space.",
     "workgroup_size": [
       16,
       16,
@@ -21552,6 +21727,7 @@
     "name": "Hyperdimensional Bismuth Lattice",
     "category": "generative",
     "url": "/shaders/gen-hyperdimensional-bismuth-lattice.wgsl",
+    "description": "Basal cleavage sheen now catches the broad crystal faces while treble micro-serrations sharpen the later hopper-fold generations.",
     "params": [
       {
         "id": "complexity",
@@ -21652,7 +21828,7 @@
       "strands",
       "raymarching"
     ],
-    "description": "A mesmerizing tangle of iridescent energy threads weaving themselves into complex, higher-dimensional geometric topologies, creating the illusion of cosmic fabric being spun in real-time. Each thread is the slice of a 4D hypertube by a moving hyperplane, so strands swell, pinch and vanish in a wave across the lattice, while current packets race in opposite directions along the paired helices and flash where they meet. Mids lengthen the packets, treble brightens them, bass thickens the weave; hold the mouse to pull the weave toward the cursor.",
+    "description": "A mesmerizing tangle of iridescent energy threads weaving themselves into complex, higher-dimensional geometric topologies, creating the illusion of cosmic fabric being spun in real-time. Each thread is the slice of a 4D hypertube by a moving hyperplane, so strands swell, pinch and vanish in a wave across the lattice, while current packets race in opposite directions along the paired helices and flash where they meet. Mids lengthen the packets, treble brightens them, bass thickens the weave; hold the mouse to pull the weave toward the cursor. Packet-wake comets trail the moving charges while beat-timed weft bridges briefly join opposing threads.",
     "workgroup_size": [
       16,
       16,
@@ -21964,7 +22140,7 @@
       "4th-of-july",
       "july-4"
     ],
-    "description": "Your image detonates from within. Bright pixels and edges become launch cores — each spark lifts a fragment of the source photo into gravity arcs, recoloring and fading as it falls. Foreground depth elements launch higher and faster. The picture progressively dissolves into its own celebratory fireworks while revealing ghostly trails of what was there. Bass triggers larger detonations, treble adds pixel crackle. Mouse ignites a focused pixel barrage at the cursor.",
+    "description": "Your image detonates from within. Bright pixels and edges become launch cores — each spark lifts a fragment of the source photo into gravity arcs, recoloring and fading as it falls. Foreground depth elements launch higher and faster. The picture progressively dissolves into its own celebratory fireworks while revealing ghostly trails of what was there. Bass triggers larger detonations, treble adds pixel crackle. Mouse ignites a focused pixel barrage at the cursor. Expanding pressure rings mark each blast while source depth staggers foreground launches ahead of the background.",
     "workgroup_size": [
       16,
       16,
@@ -22009,7 +22185,15 @@
     "updated": true,
     "id": "gen-image-pixel-detonation",
     "url": "shaders/gen-image-pixel-detonation.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal-feedback",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "4th of July — Image Pyro",
@@ -22027,7 +22211,7 @@
       "4th-of-july",
       "july-4"
     ],
-    "description": "Your photo or video frame becomes the fuel for a fireworks show. Bright regions of the image launch colored mortar shells and sparks that inherit the source hues. Explosions paint over the image with gravity arcs and glowing trails while the original image provides the palette. Bass triggers larger detonations, treble adds crackling highlights. Mouse directs a focused barrage.",
+    "description": "Your photo or video frame becomes the fuel for a fireworks show. Bright regions of the image launch colored mortar shells and sparks that inherit the source hues. Explosions paint over the image with gravity arcs and glowing trails while the original image provides the palette. Bass triggers larger detonations, treble adds crackling highlights. Mouse directs a focused barrage. Image-tinted muzzle flashes ignite each mortar and peony shells answer with a smaller delayed bloom.",
     "workgroup_size": [
       16,
       16,
@@ -22075,6 +22259,10 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
+      "temporal-feedback",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map",
       "upgraded-rgba"
     ]
   },
@@ -22812,7 +23000,7 @@
     "url": "shaders/gen-kinetic-bioluminescent-obsidian-coral-reactor.wgsl",
     "type": "generative",
     "category": "generative",
-    "description": "A mesmerizing descent through a brutalist lattice of jet-black obsidian that is continuously overgrown and consumed by a pulsing, bioluminescent cyan and magenta \"coral\" energy-fluid.",
+    "description": "A mesmerizing descent through a brutalist lattice of jet-black obsidian that is continuously overgrown and consumed by a pulsing, bioluminescent cyan and magenta \"coral\" energy-fluid. Branching coral veins and a bright contact meniscus reveal where the living reactor consumes the obsidian.",
     "tags": [
       "organic",
       "brutalist",
@@ -22825,8 +23013,14 @@
     "features": [
       "audio-reactive",
       "mouse-control",
+      "mouse-driven",
       "volumetric",
-      "raymarching"
+      "raymarching",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map",
+      "temporal-feedback",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -22854,7 +23048,7 @@
         "min": 0,
         "max": 3,
         "step": 0.05,
-        "mapping": "speed_params.x"
+        "mapping": "zoom_params.z"
       },
       {
         "id": "lattice_complexity",
@@ -22863,7 +23057,7 @@
         "min": 1,
         "max": 5,
         "step": 1,
-        "mapping": "speed_params.y"
+        "mapping": "zoom_params.w"
       },
       {
         "id": "glow_intensity",
@@ -22934,6 +23128,13 @@
         "step": 0.05
       }
     ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
     "updated": true
   },
   {
@@ -22946,7 +23147,7 @@
       "audio-reactive",
       "raymarching"
     ],
-    "description": "An endlessly shifting, gravity-defying neo-brutalist megastructure of colossal floating concrete blocks that grind and interlock, revealing glowing, audio-reactive server cores hidden within.",
+    "description": "An endlessly shifting, gravity-defying neo-brutalist megastructure of colossal floating concrete blocks that grind and interlock, revealing glowing, audio-reactive server cores hidden within. Friction spalls the concrete beside moving seams while sparse transit trusses bridge neighboring cells.",
     "workgroup_size": [
       16,
       16,
@@ -23009,10 +23210,10 @@
       "audio",
       "music"
     ],
-    "description": "Parametric walk across a Klein bottle surface with FBM texture, diffuse/specular lighting, and audio-reactive color modulation.",
+    "description": "Parametric walk across a Klein bottle surface with FBM texture, diffuse/specular lighting, and audio-reactive color modulation. Parametric chart lines expose the non-orientable surface while a sharp pinch highlight defines the neck and handle.",
     "workgroup_size": [
-      8,
-      8,
+      16,
+      16,
       1
     ],
     "updatedParams": [
@@ -27908,7 +28109,7 @@
       "audio-reactive",
       "cyberpunk"
     ],
-    "description": "A hyper-organic, biomechanical labyrinth of pulsing neon circuitry and breathing metallic tissue that spawns luminescent plasma-spores reacting to ambient cosmic frequencies. Upgraded (fast-motion batch): the spores now swarm at speed with spring-damped cursor pursuit and velocity lead, bass kicks and clicks fire bounded shockwaves that whip the hive, and velocity-advected HDR feedback trails streak the fast flythrough.",
+    "description": "A hyper-organic, biomechanical labyrinth of pulsing neon circuitry and breathing metallic tissue that spawns luminescent plasma-spores reacting to ambient cosmic frequencies. Upgraded (fast-motion batch): the spores now swarm at speed with spring-damped cursor pursuit and velocity lead, bass kicks and clicks fire bounded shockwaves that whip the hive, and velocity-advected HDR feedback trails streak the fast flythrough. Second pass: brood chambers now breathe with chitin valve irises and exchange charge through trophallactic plasma bridges.",
     "workgroup_size": [
       16,
       16,
@@ -27968,7 +28169,9 @@
       "semantic-alpha",
       "depth-output",
       "mouse-driven",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "valve-iris-brood-cells",
+      "trophallactic-plasma-bridges"
     ],
     "params": [
       {
@@ -28013,7 +28216,7 @@
     "id": "gen-neon-plasma-chrono-bloom",
     "name": "Neon Plasma Chrono-Bloom",
     "author": "Jules",
-    "description": "A hyper-vibrant, time-dilated explosion of neon plasma tendrils that bloom and interlace like a digital, cyberpunk flora. The field clock lags with radius so the bloom opens outward from the centre, and white-hot filaments ignite where two plasma sheet families cross. Hold the mouse to pull a gravity well that dilates time under the cursor; bass thickens the plasma, mids widen and treble heats the filaments.",
+    "description": "A hyper-vibrant, time-dilated explosion of neon plasma tendrils that bloom and interlace like a digital, cyberpunk flora. The field clock lags with radius so the bloom opens outward from the centre, and white-hot filaments ignite where two plasma sheet families cross. Hold the mouse to pull a gravity well that dilates time under the cursor; bass thickens the plasma, mids widen and treble heats the filaments. New pass adds phase-slip caustic petals and rotating sepal ribs that brighten as filament heat rises.",
     "category": "generative",
     "type": "generative",
     "url": "shaders/gen-neon-plasma-chrono-bloom.wgsl",
@@ -28022,7 +28225,9 @@
       "audio-reactive",
       "raymarched",
       "volumetric",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "phase-slip-caustics",
+      "sepal-ribs"
     ],
     "params": [
       {
@@ -28384,7 +28589,7 @@
       "bioluminescence",
       "neural"
     ],
-    "description": "A pulsing, infinite organic matrix of glowing synthetic neurons firing quantum light impulses across a void, merging biological growth with cybernetic circuitry.",
+    "description": "A pulsing, infinite organic matrix of glowing synthetic neurons firing quantum light impulses across a void, merging biological growth with cybernetic circuitry. Second pass layers in astrocytic calcium tides and vesicle-bouton scintillation around firing tracts.",
     "workgroup_size": [
       16,
       16,
@@ -28432,7 +28637,9 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "astrocyte-calcium-tide",
+      "vesicle-bouton-scintillation"
     ],
     "params": [
       {
@@ -28595,7 +28802,7 @@
       "music",
       "reactive"
     ],
-    "description": "Neural network weight visualization style fractals using sigmoid, tanh, and swish activation functions instead of standard z²+c iterations",
+    "description": "Neural network weight visualization style fractals using sigmoid, tanh, and swish activation functions instead of standard z²+c iterations Additional ideas add inhibitory surround rings and Hebbian feedback persistence along active dendrites.",
     "workgroup_size": [
       16,
       16,
@@ -28681,7 +28888,9 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "inhibitory-surround",
+      "hebbian-feedback-memory"
     ]
   },
   {
@@ -28696,7 +28905,7 @@
       "feedback",
       "trails"
     ],
-    "description": "Render a glowing neural mesh and drive action-potential pulses with audio, creating a living synapse network that lights up in layers.",
+    "description": "Render a glowing neural mesh and drive action-potential pulses with audio, creating a living synapse network that lights up in layers. This upgrade adds conduction-delay ladders per synaptic cell and astrocytic uptake halos around transmitter-rich nodes.",
     "workgroup_size": [
       16,
       16,
@@ -28782,7 +28991,9 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "conduction-delay-ladders",
+      "astrocytic-uptake-halo"
     ]
   },
   {
@@ -28801,7 +29012,7 @@
       "procedural",
       "generative"
     ],
-    "description": "A mesmerizing 3D generative visualization of a structure that visually bridges the gap between a biological neural network and the cosmic web of the universe.",
+    "description": "A mesmerizing 3D generative visualization of a structure that visually bridges the gap between a biological neural network and the cosmic web of the universe. New behavior introduces activity-based pruning shadows and Hebbian strand reinforcement from temporal feedback.",
     "workgroup_size": [
       16,
       16,
@@ -28887,7 +29098,9 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "activity-pruning",
+      "hebbian-reinforcement"
     ]
   },
   {
@@ -28902,7 +29115,7 @@
       "volumetric",
       "raymarched"
     ],
-    "description": "A majestic, hyper-organic lotus flower suspended in zero-gravity, blooming endlessly with translucent liquid-neon neuro-fluid petals that ripple with bioluminescent plasma in sync with ambient cosmic frequencies.",
+    "description": "A majestic, hyper-organic lotus flower suspended in zero-gravity, blooming endlessly with translucent liquid-neon neuro-fluid petals that ripple with bioluminescent plasma in sync with ambient cosmic frequencies. The second pass adds capillary petal venation and click-driven magnetic-reconnection plume bursts.",
     "workgroup_size": [
       16,
       16,
@@ -28988,7 +29201,9 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "capillary-venation",
+      "reconnection-plumes"
     ]
   },
   {
@@ -29002,7 +29217,7 @@
       "raymarching",
       "volumetric"
     ],
-    "description": "A vast, deep-sea garden of biomechanical, neon-veined flora that dynamically uncoils and pulses with quantum energy, its tendrils whipping and synchronizing to the rhythm of sound.",
+    "description": "A vast, deep-sea garden of biomechanical, neon-veined flora that dynamically uncoils and pulses with quantum energy, its tendrils whipping and synchronizing to the rhythm of sound. Additional structure adds myelin pearling instability and synaptic bouton crowns at branch terminals.",
     "workgroup_size": [
       16,
       16,
@@ -29097,7 +29312,9 @@
       "depth-output",
       "dendritic-bifurcation",
       "saltatory-action-potentials",
-      "aces-tonemap"
+      "aces-tonemap",
+      "myelin-pearling",
+      "synaptic-boutons"
     ]
   },
   {
@@ -29110,7 +29327,7 @@
       "audio-reactive",
       "geometry"
     ],
-    "description": "A liquid-gold lotus with rapid petal torque waves, audio-driven plasma runners, click-launched blossom shocks, direct saved-control behavior, and bounded rotational trails.",
+    "description": "A liquid-gold lotus with rapid petal torque waves, audio-driven plasma runners, click-launched blossom shocks, direct saved-control behavior, and bounded rotational trails. Second pass contributes capillary rivulets and Kelvin-Helmholtz shear rolls in the plasma runners.",
     "workgroup_size": [
       16,
       16,
@@ -29204,7 +29421,9 @@
       "semantic-alpha",
       "aces-tonemap",
       "conductor-fresnel-gold",
-      "phyllotaxis-florets"
+      "phyllotaxis-florets",
+      "capillary-rivulets",
+      "kelvin-helmholtz-shear-rolls"
     ],
     "feedbackPacking": "A/C = ACES display RGBA; rgb = max(ACES(frame), exact torque-advected C load * decay), a = semantic coverage"
   },
@@ -29254,8 +29473,11 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
-      "upgraded-rgba"
-    ]
+      "upgraded-rgba",
+      "polar-cap-spark-carousel",
+      "striped-current-sheet"
+    ],
+    "description": "A relativistic neutron-star scene where twisted dipole field lines, pulsar beams, and accretion structures react to audio while the camera orbits under mouse control. This pass adds polar-cap spark carousels and striped equatorial current sheets beyond the light cylinder."
   },
   {
     "id": "gen-newton-fractal",
@@ -29791,7 +30013,7 @@
       "audio-reactive",
       "raymarching"
     ],
-    "description": "An infinite, glowing network of hyper-refractive crystal neurons that fire iridescent plasma pulses in sync with audio frequencies, generating volumetric glowing synapses within a dark cosmic void.",
+    "description": "An infinite, glowing network of hyper-refractive crystal neurons that fire iridescent plasma pulses with Bragg coloration, defect-cavity resonator blooms, and junction-avalanche flashes inside a dark cosmic void.",
     "workgroup_size": [
       16,
       16,
@@ -30201,7 +30423,7 @@
       "blackbody",
       "physics"
     ],
-    "description": "A wildly colorful tunnel/wormhole effect with swirling rainbow plasma patterns spiraling inward. Bright saturated colors cycling through the full spectrum. Multi-octave fBm noise creates organic flowing patterns. Stars and particles stream past the edges as you travel through the cosmic vortex. Mouse controls tunnel curvature and travel speed. Blackbody peak wavelength drives plasma color transitions.",
+    "description": "A wildly colorful tunnel/wormhole with swirling rainbow plasma, transient click-lensing masses, photon-sphere subrings, ergosphere-like frame-drag shear, and Kelvin-Helmholtz wall billows as stars stream through the vortex.",
     "workgroup_size": [
       16,
       16,
@@ -30515,7 +30737,7 @@
       "iridescent",
       "audio-reactive"
     ],
-    "description": "A warp-flight weaving machine of iridescent light, velocity-aligned spectral threads, click-launched shuttle waves, and bounded radial braid trails.",
+    "description": "A warp-flight weaving machine of iridescent light with plain-weave interlacing, thin-film thread sheen, twill-diagonal shuttle drift, selvedge knot sparks, and bounded radial braid trails.",
     "workgroup_size": [
       16,
       16,
@@ -30622,7 +30844,7 @@
       "audio",
       "music"
     ],
-    "description": "Endlessly folding hyper-geometric expanse of iridescent bismuth crystals with physical light transmission. Features thin-film interference, metallic Fresnel reflection, and oxide layer transmission.",
+    "description": "Endlessly folding iridescent bismuth hopper crystals with terrace grooves, oxide thin-film transmission, screw-dislocation spiral growth accents, and Kikuchi-like diffraction banding.",
     "workgroup_size": [
       16,
       16,
@@ -30832,7 +31054,7 @@
       "kaleidoscopic",
       "geometry"
     ],
-    "description": "A hyper-majestic cybernetic celestial kitsune of shattered prismatic glass and liquid quantum-aether, hex-rune-etched armor and octahedral shoulder crystals, orbited by a prismatic shard swarm and stacked auroral torus rings, its nine radiant tails carving rifts into a kaleidoscopically folded volumetric particle-storm.",
+    "description": "A hyper-majestic cybernetic celestial kitsune of shattered prismatic glass and liquid quantum-aether, with nine-tail thin-film spectra, fox-fire tips, ionized tail-bridge streamers, and ring-rune moire gates inside a kaleidoscopic particle storm.",
     "url": "shaders/gen-prismatic-cyber-aether-void-kitsune.wgsl",
     "updated": true,
     "supportsDepth": true,
@@ -30923,7 +31145,7 @@
   {
     "id": "gen-prismatic-cyber-aurora-astral-dragonfly",
     "name": "Prismatic Cyber-Aurora Astral-Dragonfly",
-    "description": "A majestic, hyper-organic biomechanical dragonfly forged from liquid auroral plasma and shattered chromatic crystal.",
+    "description": "A biomechanical auroral dragonfly with chitin thin-film wings, anatomical venation, leading-edge vortex sheets, and abdominal bioluminescent segment pulses.",
     "category": "generative",
     "url": "shaders/gen-prismatic-cyber-aurora-astral-dragonfly.wgsl",
     "uniforms": [
@@ -31054,7 +31276,7 @@
       "plasma",
       "audio-reactive"
     ],
-    "description": "A majestic, hyper-dimensional ocean of auroral plasma where a synchronized swarm of glowing, cyber-organic manta rays glide and ripple in perfect unison with deep ambient acoustic bass drops.",
+    "description": "A hyper-dimensional auroral ocean where a synchronized manta swarm shows chordwise wing waves, countershaded chevrons and spot constellations, ventral gill-arch bioluminescence, and ram-ventilation wake ribbons.",
     "workgroup_size": [
       16,
       16,
@@ -31147,7 +31369,7 @@
     "id": "gen-prismatic-cyber-chrono-nebula-peacock",
     "name": "Prismatic Cyber-Chrono Nebula-Peacock",
     "category": "generative",
-    "description": "A hyper-majestic, biomechanical celestial peacock woven from shattered quantum glass and glowing liquid-aurora.",
+    "description": "A biomechanical celestial peacock woven from quantum glass and aurora, with barbule thin-film iridescence, zoned ocelli, rachis-barb shaft branching, and chrono-precessing ocellus halos.",
     "author": "Jules",
     "url": "shaders/gen-prismatic-cyber-chrono-nebula-peacock.wgsl",
     "tags": [
@@ -31257,7 +31479,7 @@
       "audio-reactive",
       "volumetric"
     ],
-    "description": "A hyper-majestic, nine-tailed cybernetic space-fox woven from shattering prismatic quantum glass and glowing liquid-aurora.",
+    "description": "A nine-tailed cybernetic void-kitsune of prismatic glass and liquid aurora, with kitsunebi wisps, Cauchy-dispersed armor refraction, caudal-band tail caustics, and helical rift current sheets.",
     "params": [
       {
         "id": "tailDispersion",
@@ -31356,7 +31578,7 @@
       "hex-grid",
       "depth-aware"
     ],
-    "description": "A colossal biomechanical cosmic tortoise raymarched from smooth-union SDF anatomy — ellipsoid body, six capsule limbs with a swimming gait, head and tail — fused to a chrono-glass shell intersected with a distance-LOD KIFS pocket dimension. The shell carries a hex-scute tessellation whose seams burn with treble-fed prismatic emissive, growth annuli and hawksbill amber mottling, while the abyssal quantum sea below drifts with mote fields and engine ripple rings. Time slider sets the chrono phase, Evolution Speed scales the march budget and time, Audio Reactivity drives breath/gait/emissive from live plasma bands, Brightness is the ACES exposure. Real depth, soft shadows, semantic alpha.",
+    "description": "A colossal biomechanical cosmic tortoise raymarched from smooth-union SDF anatomy and a chrono-glass shell with hex-scute annuli, hawksbill amber mottling, triradiate osteoderm sutures, and abyssal magnetotactic plankton lanes over quantum sea motes and ripple rings.",
     "workgroup_size": [
       16,
       16,
@@ -33565,7 +33787,7 @@
     "url": "shaders/gen-quantum-resonance-lattice.wgsl",
     "type": "generative",
     "category": "generative",
-    "description": "A highly ordered lattice of vibrating quantum nodes that spontaneously shatters and reconstitutes in rhythmic waves.",
+    "description": "A highly ordered lattice of vibrating quantum nodes with resonant band-splitting halos and standing nodal-wave sheets that shatter and reconstitute in rhythmic waves.",
     "tags": [
       "quantum",
       "lattice",
@@ -33941,7 +34163,7 @@
       "audio-reactive",
       "organic"
     ],
-    "description": "A hyper-organic, infinitely spiraling nautilus shell forged from refractive chrono-glass and glowing liquid-plasma.",
+    "description": "A hyper-organic, infinitely spiraling chrono-glass nautilus with scalloped septal sutures, nacre growth striae, siphuncle plasma conduit flow, and chamber-sequenced radiant tides.",
     "workgroup_size": [
       16,
       16,
@@ -35433,7 +35655,7 @@
       "generative",
       "abstract"
     ],
-    "description": "Simulates a multi-slit diffraction grating where separate red, green, and blue wavelengths produce offset interference fringe patterns. Six-fold rotational symmetry creates a spectral starburst. Slit orientation and frequency pulse to audio for reactive prism effects.",
+    "description": "Simulates a multi-slit RGB diffraction grating with single-slit envelope shaping, blaze-angle steering, Talbot-style self-imaging replicas, and order-selective lobe rolloff for reactive spectral starbursts.",
     "workgroup_size": [
       16,
       16,
@@ -36021,7 +36243,7 @@
     "url": "shaders/gen-sentient-holographic-neuro-lace-matrix.wgsl",
     "type": "generative",
     "category": "generative",
-    "description": "Fly down a channel of an endless teal holographic gyroid lace. A breathing lace wave swells the sheets in bass-driven crests that roll away down the flight axis, bioluminescent depth fog dissolves distant lace into haze lit by how many strands each ray grazed, and the pointer gathers the lace toward a node that travels with the camera; holding the mouse blooms it into a glowing neuron that lights the surrounding strands.",
+    "description": "Fly down an endless holographic gyroid lace where bass-driven breathing waves, bioluminescent depth fog, re-entrant synaptic vortex loops, and myelin-like conduction bead trains gather around a held-mouse neuron node.",
     "features": [
       "audio-reactive",
       "raymarching",
@@ -36091,7 +36313,7 @@
       "neon",
       "plasma"
     ],
-    "description": "A stylized liquid-neon fractal heart with live-audio contractions, traveling artery pulses, click shocks processed outside the march, bounded plasma-flow trails, a lub-dub double beat, a systolic pressure wavefront, and an oxygenation gradient from magenta core to cyan rim.",
+    "description": "A liquid-neon fractal heart with lub-dub contractions, systolic pressure waves, oxygenation gradients, Purkinje-like conduction flashes, and diastolic refill glow over bounded plasma-flow trails.",
     "workgroup_size": [
       16,
       16,
@@ -36152,7 +36374,7 @@
     "url": "shaders/gen-sentient-plasma-silk-nebula-forge.wgsl",
     "category": "generative",
     "type": "generative",
-    "description": "A hyper-dimensional nebula forge that weaves luminous, reactive threads of plasma silk around a cosmic spindle. Features an ethereal plasma-silk web generated via domain warping and 3D noise.",
+    "description": "A hyper-dimensional nebula forge weaving reactive plasma-silk filaments with magnetized braid-knot compressions and expanding ion-bloom fronts around a cosmic spindle.",
     "features": [
       "organic",
       "cosmic",
@@ -36267,7 +36489,7 @@
       "mechanical",
       "audio-reactive"
     ],
-    "description": "A majestic, colossal cybernetic space moth floating through a deep-space nebula, its wings woven from crystalline threads of frozen time and quantum aether-plasma that softly pulse and ripple in sync with ambient cosmic acoustics.",
+    "description": "A colossal cybernetic leviathan-moth in deep nebulae, with frozen-time wing lamellae, electroreceptor antenna arcs, and trailing feather-wake vortices pulsing with cosmic acoustics.",
     "workgroup_size": [
       16,
       16,
@@ -37007,7 +37229,7 @@
       "music",
       "reactive"
     ],
-    "description": "A gravity-warped stellar forge with relativistic accretion shear, ballistic jet knots, mouse lensing, and bounded angular light trails driven by live audio.",
+    "description": "A gravity-warped stellar forge with relativistic accretion shear, frame-drag precession ripples, photon-ring caustic scintillation, helical jet knots, and bounded angular light trails.",
     "workgroup_size": [
       16,
       16,
@@ -37240,7 +37462,7 @@
       "temporal",
       "audio-reactive"
     ],
-    "description": "A colossal, infinitely shattering crystalline geode that fractures to reveal a violently erupting sonoluminescent plasma core. Fast-motion upgrade: closed-form orbital camera with eased time-warp spin, sonoluminescent flash-burst physics (bubble-collapse cycles with ballistic shockwave shells), bass kick bursts, and swirl-advected motion-blur trails. 2026-09-27: the shock front ignites and jolts the crystal walls as it passes, each collapse deposits a new agate stratum in the geode, and the core flash bleeds through thin shard walls.",
+    "description": "A colossal chrono-geode with sonoluminescent collapse bursts, shock-front crystal ignition, agate strata deposition, cavitation pearl chains, and piezoelectric twinning glints in flash-lit shard walls.",
     "workgroup_size": [
       16,
       16,
@@ -37312,7 +37534,7 @@
       "translucent",
       "field-lines"
     ],
-    "description": "Magnetic ferrofluid simulation with field-strength alpha translucency and audio-reactive spikes. Mouse acts as a magnetic source while temporal feedback creates organic fluid memory.",
+    "description": "Magnetic ferrofluid with field-strength translucency, Rosensweig crown ringlets, Barkhausen jump flicker, audio-reactive spikes, and temporal magnetic memory around mouse-driven dipoles.",
     "workgroup_size": [
       16,
       16,
@@ -37377,7 +37599,7 @@
       "mouse-driven",
       "temporal"
     ],
-    "description": "Classic stable fluids solver with pressure projection. Velocity advection, force application, divergence estimation, Jacobi pressure solve, gradient subtraction, dye advection, and audio-reactive color mapping.",
+    "description": "Classic stable-fluids projection with advection/diffusion, baroclinic shear jets, vorticity confinement, buoyancy lift, and enstrophy-cascade shimmer in an audio-reactive dye field.",
     "workgroup_size": [
       16,
       16,
@@ -37577,6 +37799,7 @@
         "step": 100
       }
     ],
+    "description": "A repeated stellar resonance manifold with coherent p/g-mode shells, compression-heated blackbody highlights, nodal dislocation seams, and coronal loop arc curtains driven by audio bands.",
     "updatedParams": [
       {
         "index": 0,
@@ -37618,7 +37841,7 @@
     "tags": [
       "generative"
     ],
-    "description": "An infinite, self-consuming mechanical serpent made of fractured glass scales and stellar plasma.",
+    "description": "An infinite stellar plasma ouroboros of hinged glass scales, seam-light leakage, charged edge sputter aurora, and magnetotail streamer ribbons driven by audio-reactive flow.",
     "workgroup_size": [
       16,
       16,
@@ -37926,7 +38149,7 @@
       "temporal",
       "depth-aware"
     ],
-    "description": "A mesmerizing, hyper-turbulent ocean of boiling quantum probability foam, where iridescent hyper-bubbles merge and burst in sync with audio frequencies, releasing flashes of raw cosmic energy.",
+    "description": "A hyper-turbulent quantum-foam ocean with coalescing bubble necks, second-sound thermal fronts, Kelvin-wave vortex filaments, and reconnection sparks from bursting iridescent bubbles.",
     "workgroup_size": [
       16,
       16,
@@ -38638,7 +38861,7 @@
       "contour",
       "heatmap"
     ],
-    "description": "Topographic terrain visualization with thermal imaging color grading. Contour lines with neon glow trace evolving mountainous terrain rendered in a bright rainbow thermal palette from black through blue, cyan, green, yellow, red to white. Mouse creates glowing hot spots on the landscape. Upgraded (Batch 36): domain-warped FBM geological strata, curl-noise advected thermal currents, Worley micro thermal cells, feedback-based thermal diffusion of the height field, guarded FFT-bin shimmer, and click-ripple heat rings.",
+    "description": "Topographic thermal rainbow terrain with contour neon relief, diffusion memory, watershed drainage channels, saddle-point eddy blooms, curl-driven thermal currents, and ripple-reactive hotspot heating.",
     "workgroup_size": [
       16,
       16,
@@ -38965,7 +39188,7 @@
       "domain-warp",
       "fbm"
     ],
-    "description": "An algorithmically deep (p,q) torus knot rendered as an analytic smooth-union SDF of capsules. Tube radius harmonically modulates with FBM domain warp, while a multi-orbit Julia trap adds iridescent halo detail. Audio drives the wind modulation, spin, and glow intensity; temporal feedback leaves rainbow trails. Depth-aware output and ACES tone mapping keep it compositing-friendly.",
+    "description": "An analytic (p,q) torus-knot tube with rainbow/fractal halo detail, Kelvin wave packets traveling along the arc, and braid-crossing flare bursts over audio-driven spin and temporal trails.",
     "workgroup_size": [
       16,
       16,
@@ -39008,7 +39231,11 @@
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Translucent Nebula",
@@ -39021,7 +39248,7 @@
       "translucent",
       "worley-noise"
     ],
-    "description": "Volumetric gas clouds with density-based alpha translucency. FBM and Worley noise create organic nebula structure where dense cores are opaque and edges fade to transparent. Star sparkle reacts to treble and nebula pulses with bass.",
+    "description": "Volumetric translucent nebula clouds with FBM+Worley structure, Rayleigh-Taylor plume fingers, ionization-front shell bands, and treble-reactive star sparkle over bass-pulsed gas.",
     "workgroup_size": [
       16,
       16,
@@ -39066,7 +39293,12 @@
     "updated": true,
     "id": "gen-translucent-nebula",
     "url": "shaders/gen-translucent-nebula.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal-feedback",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Turing Morphogenesis",
@@ -39353,7 +39585,7 @@
       "music",
       "reactive"
     ],
-    "description": "An infinite, abyssal cavern illuminated by a colossal, self-assembling chandelier of hyper-refractive glass chimes and glowing quantum pendulums that shatter and reform to the rhythm of time and sound.",
+    "description": "An abyssal cavern lit by a self-assembling chandelier of refractive glass chimes with phase-locked pendular clusters and a floor-bound caustic web lattice pulsing to time and sound.",
     "workgroup_size": [
       16,
       16,
@@ -39398,7 +39630,11 @@
     "updated": true,
     "id": "gen-vitreous-chrono-chandelier",
     "url": "shaders/gen-vitreous-chrono-chandelier.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "id": "gen-vitreous-quantum-lotus-singularity",
@@ -39418,7 +39654,7 @@
       "thin-film",
       "iridescent"
     ],
-    "description": "A hyper-dimensional, translucent crystalline lotus flower continuously blooming and fracturing around a gravitational singularity. Upgraded with thin-film iridescence on the vitreous petals, per-petal cell color variation, symmetry-folded radial vein inlays pulsing with the music, an event-horizon core with photon ring, 3-point lighting with ambient occlusion, chromatic dispersion, ACES filmic tonemapping and real depth output.",
+    "description": "A hyper-dimensional vitreous lotus blooming around a gravitational singularity, with thin-film petals, torsion chirality bands, radial vein inlays, and photon-sphere shear arcs around the event-horizon core.",
     "complexity": "High",
     "workgroup_size": [
       16,
@@ -39736,7 +39972,7 @@
       "music",
       "reactive"
     ],
-    "description": "Animated Voronoi crystal growth with sprung seed refraction, audio-driven iridescence, click-fractured facets, temporal polish, and generated relief depth.",
+    "description": "Animated Voronoi crystal growth with sprung seed refraction, dislocation glide lines, annealing-front blooms, click-fractured facets, temporal polish, and generated relief depth.",
     "workgroup_size": [
       16,
       16,
@@ -40368,7 +40604,7 @@
     "id": "gen-fluffy-raincloud",
     "name": "Vorticity Raincloud",
     "url": "shaders/gen_fluffy_raincloud.wgsl",
-    "description": "Audio-reactive cloudscape with curl-noise advection, buoyant thunderheads, Mie silver lining, and rain sheets driven by stored flow.",
+    "description": "Audio-reactive cloudscape with curl-noise advection, buoyant thunderheads, Mie silver lining, and rain sheets driven by stored flow. Mammatus pouches hang under the anvil, and a wind-sheared shelf roll sits at the gust front.",
     "features": [
       "upgraded-rgba",
       "depth-aware",

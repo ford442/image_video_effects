@@ -1,6 +1,9 @@
 // ----------------------------------------------------------------
 // Chromodynamic Glass Labyrinth
 // Category: generative
+// Upgraded: 2026-10-10
+// Ideas: Labyrinth pulse-waves; Fracture fault-lines
+// A packing: display RGBA
 // ----------------------------------------------------------------
 
 #include "_prelude.wgsl"
@@ -33,6 +36,10 @@ fn map(p_in: vec3<f32>) -> f32 {
     }
 
     // Spatial folding
+    // Idea 2: Fracture fault-lines (hard UV shifts simulating glass cracks)
+    let fault = step(0.0, sin(p.x * 2.0 + p.z * 1.5)) * 0.15;
+    p.y += fault;
+
     let s_density = u.zoom_params.x;
     let cell_size = 4.0 / s_density;
     p.x = (fract(p.x / cell_size + 0.5) - 0.5) * cell_size;
@@ -135,7 +142,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Simulating internal refraction color lookup
         let refl = reflect(rd, n);
 
-        let mat_color = palette(length(p) * 0.1 + u.config.x * 0.5);
+        // Idea 1: Labyrinth pulse-waves (a spherical wave of color sweeping through)
+        let pulseWave = smoothstep(0.1, 0.0, abs(fract(length(p) * 0.5 - u.config.x * 0.8) - 0.5));
+        let mat_color = palette(length(p) * 0.1 + u.config.x * 0.5) + vec3<f32>(1.0, 0.5, 0.8) * pulseWave * audio_val;
 
         // Caustic highlight approx
         let spec = pow(max(dot(refl, normalize(vec3<f32>(1.0, 1.0, -1.0))), 0.0), 32.0);

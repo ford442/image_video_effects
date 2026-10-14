@@ -3,32 +3,12 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: per-shard identity tint; fracture-plane glints; seam light pool on the liquid; rising seam pulse
+//  Upgraded: 2026-10-11
+//  Ideas: per-shard identity tint; fracture-plane glints; seam light pool on the liquid; rising seam pulse; spall chips; crack dust
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Fracture Spread, y=Levitation Speed, z=Glow Intensity, w=Rotation Speed
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Fracture Spread, y=Levitation Speed, z=Glow Intensity, w=Rotation Speed
 
 // --- Helper Functions ---
 
@@ -147,6 +127,15 @@ fn map(p: vec3<f32>) -> vec3<f32> {
         mat = 2.0; // Monolith material
     }
 
+    // Spall chips — small stones knocked off the shard corner, same drift as the cell.
+    let chipHash = hash31(cellId + vec3<f32>(4.2, 1.7, 0.3));
+    let chipOff = dir * (0.22 + chipHash * 0.18) + vec3<f32>(0.0, 0.18 + chipHash * 0.12, 0.0);
+    let chip = sdBox(fp - cellCenter - chipOff, vec3<f32>(0.11, 0.08, 0.1));
+    if (chip < d && chipHash > 0.62) {
+        d = chip;
+        mat = 3.0;
+    }
+
     // Inner Glow accumulation in cracks
     // When inside the bounding box but outside shards
     if (baseBox < 0.5 && shardDist > 0.05) {
@@ -156,6 +145,8 @@ fn map(p: vec3<f32>) -> vec3<f32> {
         let pulseBand = exp(-abs(bp.y - pulsePos) * 2.5);
         let seamPulse = 1.0 + pulseBand * (0.8 + audioBass * 2.0);
         glow += 0.01 / (0.01 + abs(shardDist)) * u.zoom_params.z * (1.0 + audioHigh * 0.45) * seamPulse;
+        // Crack dust — a wider gray veil where fracture spread opens the slab.
+        glow += exp(-abs(shardDist) * 5.0) * spread * 0.015;
     }
 
     return vec3<f32>(d, mat, glow);
@@ -272,12 +263,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             // Idea 2 — glint on fracture planes (crack noise already carves the SDF)
             let crackGlint = noise(p * 3.0);
             col += vec3<f32>(0.55, 0.82, 1.0) * pow(fre, 2.2) * crackGlint * (0.35 + u.zoom_params.z * 0.4);
+        } else if (m == 3.0) {
+            col = vec3<f32>(0.16, 0.15, 0.14) * dif + fre * vec3<f32>(0.35, 0.4, 0.45);
         }
     }
 
     // Add Core Glow
     let glowColor = vec3<f32>(0.1, 0.5, 1.0); // Cyan/Blue glow
     col += accumGlow * glowColor * 0.02;
+    col += accumGlow * vec3<f32>(0.55, 0.52, 0.48) * u.zoom_params.x * 0.01;
 
     // Subtle vignette
     col *= 1.0 - 0.3 * length(uv);

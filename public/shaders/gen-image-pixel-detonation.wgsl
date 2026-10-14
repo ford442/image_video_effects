@@ -6,28 +6,12 @@
 //            temporal trails, aces-tone-map, semantic alpha
 //  Complexity: Medium-High
 //  Created: 2026-07-05
+//  Upgraded: 2026-10-10
+//  Ideas: timed burst shock rings; foreground-led depth-staggered launches
+//  A packing: ACES display RGBA (rgb = tone-mapped trail history; a = visual coverage)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.141592653589793;
 const TAU: f32 = 6.283185307179586;
@@ -55,14 +39,13 @@ fn softGlow(uv: vec2<f32>, c: vec2<f32>, r: f32, i: f32) -> f32 {
   return (exp(-d * d / (r * r * 0.5)) + 0.28 * exp(-d / (r * 3.0))) * i;
 }
 
-fn sampleImg(uv: vec2<f32>) -> vec3<f32> {
-  let p = clamp(uv * 0.5 + 0.5, vec2<f32>(0.0), vec2<f32>(1.0));
+// Scene uv is y-up with the short axis spanning [-0.5, 0.5]; sample the
+// full source frame with y=0 at the top, matching Image Pyro.
+fn sampleImage(uv: vec2<f32>, res: vec2<f32>) -> vec3<f32> {
+  let m = min(res.x, res.y);
+  let q = vec2<f32>(uv.x * m / res.x + 0.5, 0.5 - uv.y * m / res.y);
+  let p = clamp(q, vec2<f32>(0.0), vec2<f32>(1.0));
   return textureSampleLevel(readTexture, u_sampler, p, 0.0).rgb;
-}
-
-fn sampleDepth(uv: vec2<f32>) -> f32 {
-  let p = clamp(uv * 0.5 + 0.5, vec2<f32>(0.0), vec2<f32>(1.0));
-  return textureSampleLevel(readDepthTexture, non_filtering_sampler, p, 0.0).r;
 }
 
 fn sparkPos(o: vec2<f32>, v: vec2<f32>, age: f32, g: f32) -> vec2<f32> {
@@ -72,9 +55,9 @@ fn sparkPos(o: vec2<f32>, v: vec2<f32>, age: f32, g: f32) -> vec2<f32> {
 // Edge detection via finite differences on image luma
 fn edgeStrength(uv: vec2<f32>, res: vec2<f32>) -> f32 {
   let eps = 1.5 / min(res.x, res.y);
-  let l0 = dot(sampleImg(uv), vec3<f32>(0.299, 0.587, 0.114));
-  let lx = dot(sampleImg(uv + vec2<f32>(eps, 0.0)), vec3<f32>(0.299, 0.587, 0.114));
-  let ly = dot(sampleImg(uv + vec2<f32>(0.0, eps)), vec3<f32>(0.299, 0.587, 0.114));
+  let l0 = dot(sampleImage(uv, res), vec3<f32>(0.299, 0.587, 0.114));
+  let lx = dot(sampleImage(uv + vec2<f32>(eps, 0.0), res), vec3<f32>(0.299, 0.587, 0.114));
+  let ly = dot(sampleImage(uv + vec2<f32>(0.0, eps), res), vec3<f32>(0.299, 0.587, 0.114));
   return length(vec2<f32>(lx - l0, ly - l0)) * 4.0;
 }
 
@@ -84,12 +67,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let res = vec2<f32>(u.config.zw);
   if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
 
-  let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);
+  let minRes = min(res.x, res.y);
+  let uv = vec2<f32>(f32(pixel.x) - res.x * 0.5, res.y * 0.5 - f32(pixel.y)) / minRes;
   let time = u.config.x;
 
   let mouse = vec2<f32>(u.zoom_config.yz);
   let mouseDown = u.zoom_config.w;
-  let mUV = (mouse - res * 0.5) / min(res.x, res.y);
+  let mUV = vec2<f32>((mouse.x - 0.5) * res.x, (0.5 - mouse.y) * res.y) / minRes;
 
   let power = mix(0.35, 1.8, u.zoom_params.x);
   let ignition = mix(0.15, 0.85, u.zoom_params.y);
@@ -100,11 +84,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, vec2<f32>(pixel) / res, 0.0).r;
+  let depth = textureLoad(readDepthTexture, pixel, 0).r;
   let prev = textureLoad(dataTextureC, pixel, 0).rgb;
 
   // Base image — progressively dissolving
-  let imgCol = sampleImg(uv);
+  let imgCol = sampleImage(uv, res);
   let lum = dot(imgCol, vec3<f32>(0.299, 0.587, 0.114));
   let edge = edgeStrength(uv, res);
 
@@ -115,6 +99,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Dark sky fill in dissolved areas
   col = mix(vec3<f32>(0.015, 0.012, 0.03), col, 1.0 - dissolve * 0.3);
+  var glowAcc = 0.0;
 
   // Detonation cores — bright pixels + edges launch fireworks
   let numCores = 8;
@@ -125,20 +110,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Probe position biased to image features
     let probeUV = vec2<f32>((seed - 0.5) * 1.6, (seed2 - 0.5) * 1.2);
-    let probeCol = sampleImg(probeUV);
+    let probeCol = sampleImage(probeUV, res);
     let probeLum = dot(probeCol, vec3<f32>(0.299, 0.587, 0.114));
     let probeEdge = edgeStrength(probeUV, res);
-    let probeDepth = sampleDepth(probeUV);
+    let probeTexUV = clamp(
+      vec2<f32>(probeUV.x * minRes / res.x + 0.5, 0.5 - probeUV.y * minRes / res.y),
+      vec2<f32>(0.0), vec2<f32>(1.0)
+    );
+    let probeDepth = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, probeTexUV, 0.0).r, 0.0, 1.0);
 
     let igniteScore = smoothstep(ignition * 0.4, ignition, probeLum) + probeEdge * 0.5;
     if (igniteScore < 0.25) { continue; }
 
     let cycle = 2.4 / (0.6 + ignition * 0.5);
-    let birth = floor((time * (0.65 + mids * 0.2) + seed * 1.8) / cycle) * cycle - seed * 1.8;
-    let age = time - birth;
+    let launchRate = 0.65 + mids * 0.2;
+    // Idea 2 — foreground source depth leads the launch clock, so nearer
+    // features ignite first while retaining the existing mortar cadence.
+    let depthLead = probeDepth * (0.35 + pixelLift * 0.35);
+    let period = cycle * 3.0;
+    let launchClock = (time + depthLead) * launchRate + seed * period;
+    let age = (launchClock - floor(launchClock / period) * period) / launchRate;
     if (age < 0.0 || age > 6.0) { continue; }
 
-    // Depth: foreground launches higher
+    // Idea 2 — the same foreground ordering also gives nearer shells a higher apogee.
     let depthBoost = 0.7 + probeDepth * 0.8;
     let basePos = probeUV + vec2<f32>(0.0, -0.08 * depthBoost);
     let burstDelay = 0.9 + seed * 0.5;
@@ -150,8 +144,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let t = age / burstDelay;
       let y = mix(basePos.y, basePos.y + 0.9 * depthBoost, t * t);
       let pos = vec2<f32>(basePos.x, y);
-      col += probeCol * softGlow(uv, pos, 0.01, shellPow * 2.0);
-      col += vec3<f32>(1.0, 0.9, 0.6) * softGlow(uv, pos, 0.006, shellPow);
+      let ascentGlow = softGlow(uv, pos, 0.01, shellPow * 2.0);
+      let ascentCore = softGlow(uv, pos, 0.006, shellPow);
+      col += probeCol * ascentGlow;
+      col += vec3<f32>(1.0, 0.9, 0.6) * ascentCore;
+      glowAcc += ascentGlow + ascentCore;
     }
 
     // Pixel burst — sparks carry source colors, recolor over time
@@ -160,7 +157,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let fade = smoothstep(4.2, 0.3, bAge);
 
       // Core flash from source pixel color
-      col += probeCol * exp(-bAge * 10.0) * shellPow * 2.0 * softGlow(uv, bCenter, 0.05, 1.0);
+      let coreGlow = exp(-bAge * 10.0) * shellPow * 2.0 * softGlow(uv, bCenter, 0.05, 1.0);
+      col += probeCol * coreGlow;
+      glowAcc += coreGlow;
+
+      // Idea 1 — timed pressure fronts expand from the existing burst centre.
+      // A delayed echo makes the detonation read as concentric shock rings,
+      // without replacing the source-coloured ballistic sparks.
+      let centerDist = length(uv - bCenter);
+      let ringRadius = bAge * (0.16 + shellPow * 0.025);
+      let ringWidth = 0.007 + 0.004 * clamp(bAge, 0.0, 1.0);
+      let ringDelta = (centerDist - ringRadius) / ringWidth;
+      let primaryRing = exp(-ringDelta * ringDelta) * exp(-bAge * 1.35);
+      let echoAge = max(bAge - 0.18, 0.0);
+      let echoRadius = echoAge * (0.13 + shellPow * 0.018);
+      let echoDelta = (centerDist - echoRadius) / (ringWidth * 0.8);
+      let echoRing = select(0.0, exp(-echoDelta * echoDelta) * exp(-echoAge * 1.65), bAge > 0.18);
+      let shockRing = (primaryRing + echoRing * 0.55) * shellPow;
+      let ringCol = mix(probeCol, vec3<f32>(1.0, 0.88, 0.62), 0.45);
+      col += ringCol * shockRing;
+      glowAcc += shockRing;
 
       let nSparks = i32(20.0 + power * 35.0 + mids * 12.0);
       for (var j = 0; j < nSparks; j = j + 1) {
@@ -175,7 +191,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Sample image at spark's origin pixel (pixel flight)
         let originUV = mix(probeUV, sp * 0.3 + probeUV * 0.7, pixelLift * 0.5);
-        var sparkCol = sampleImg(originUV);
+        var sparkCol = sampleImage(originUV, res);
 
         // Recolor over time: hot white → source → cooled ember
         let hot = smoothstep(0.8, 0.0, bAge);
@@ -185,6 +201,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         let g = softGlow(uv, sp, 0.006 + js * 0.004, fade * shellPow * 1.5);
         col += sparkCol * g * (0.85 + treble * 0.6);
+        glowAcc += g;
       }
 
       // Edge-ignited micro sparks (treble crackle along contours)
@@ -193,18 +210,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let mf = f32(m);
         let ms = hash1(si * 51.0 + mf * 9.0);
         let edgeUV = probeUV + vec2<f32>(cos(ms * TAU), sin(ms * TAU)) * 0.05;
-        let eCol = sampleImg(edgeUV);
+        let eCol = sampleImage(edgeUV, res);
         let eAng = ms * TAU + time;
         let eVel = vec2<f32>(cos(eAng), sin(eAng)) * (0.2 + ms * 0.25);
         let ePos = sparkPos(bCenter, eVel, bAge * 0.6, 0.6);
-        col += eCol * softGlow(uv, ePos, 0.003, fade * treble * 0.7);
+        let microGlow = softGlow(uv, ePos, 0.003, fade * treble * 0.7);
+        col += eCol * microGlow;
+        glowAcc += microGlow;
       }
     }
   }
 
   // Mouse pixel barrage
   if (mouseDown > 0.45) {
-    let mCol = sampleImg(mUV);
+    let mCol = sampleImage(mUV, res);
     let mLum = dot(mCol, vec3<f32>(0.3, 0.6, 0.1));
     let mPow = power * (1.2 + mLum + bass);
     let mAge = fract(time * 1.2) * 3.2;
@@ -218,8 +237,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let ka = (f32(k) / f32(mn)) * TAU + ks * 1.5;
         let kv = vec2<f32>(cos(ka), sin(ka)) * (0.45 + ks * 0.7) * pixelLift;
         let kp = sparkPos(mC, kv, mbAge, 0.95);
-        let kc = mix(sampleImg(mUV * 0.5 + kp * 0.5), mCol, 0.6);
-        col += kc * softGlow(uv, kp, 0.0055, mFade * mPow);
+        let kc = mix(sampleImage(mUV * 0.5 + kp * 0.5, res), mCol, 0.6);
+        let mouseGlow = softGlow(uv, kp, 0.0055, mFade * mPow);
+        col += kc * mouseGlow;
+        glowAcc += mouseGlow;
       }
     }
   }
@@ -236,10 +257,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col *= clamp(vig * 1.1 + 0.15, 0.2, 1.1) * (0.65 + depth * 0.5);
 
   col = acesToneMap(col * 1.05);
-  let alpha = clamp(length(col) * 1.1 + 0.15, 0.12, 0.96);
+  let fireworkCoverage = 1.0 - exp(-glowAcc * 0.65);
+  let imageCoverage = clamp(lum * (0.8 - dissolvePhase * dissolve * 0.25) + 0.12, 0.0, 0.92);
+  let alpha = clamp(max(imageCoverage, fireworkCoverage), 0.08, 0.98);
 
-  textureStore(dataTextureB, pixel, vec4<f32>(col * 0.5 + prev * 0.42, 1.0));
-  textureStore(dataTextureA, pixel, vec4<f32>(col, 1.0));
+  // A is the exact ACES display history consumed from C on the next frame.
+  textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
   textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
-  textureStore(writeDepthTexture, pixel, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+  // Preserve source depth; luminous ballistic material pulls toward the viewer.
+  let fireworkDepth = 0.1 + 0.88 * (1.0 - exp(-glowAcc * 1.25));
+  let outDepth = max(clamp(depth, 0.0, 1.0), fireworkDepth * fireworkCoverage);
+  textureStore(writeDepthTexture, pixel, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
 }

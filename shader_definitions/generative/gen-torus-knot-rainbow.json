@@ -22,7 +22,7 @@
     "domain-warp",
     "fbm"
   ],
-  "description": "An algorithmically deep (p,q) torus knot rendered as an analytic smooth-union SDF of capsules. Tube radius harmonically modulates with FBM domain warp, while a multi-orbit Julia trap adds iridescent halo detail. Audio drives the wind modulation, spin, and glow intensity; temporal feedback leaves rainbow trails. Depth-aware output and ACES tone mapping keep it compositing-friendly.",
+  "description": "An analytic (p,q) torus-knot tube with rainbow/fractal halo detail, Kelvin wave packets traveling along the arc, and braid-crossing flare bursts over audio-driven spin and temporal trails.",
   "workgroup_size": [16, 16, 1],
   "updatedParams": [
     {
@@ -61,5 +61,9 @@
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ]
 }

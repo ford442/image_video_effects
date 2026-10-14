@@ -3,6 +3,7 @@
  * Breadcrumb: window.webgpuProbe (serializable slice without GPU handles).
  */
 
+import { loadDisplayP3 } from '../services/displayP3';
 import { reportError, getBrowserWarning } from './ErrorHandling';
 import {
   ADAPTER_ATTEMPT_LADDER,
@@ -74,6 +75,8 @@ export type WebGpuProbeHandoff = {
   canvasCopySrc: boolean;
   /** Color opt-ins actually applied to the live configure; rebuild configs with these. */
   canvasColorOptIns: Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'>;
+  /** Why the requested color opt-in was narrowed at boot (absent when honored). */
+  canvasColorFallback?: CanvasColorFallbackReason;
   /**
    * Removes the probe's log-only `uncapturederror` listener. The renderer calls it when it
    * adopts the device and installs its own routed listener.
@@ -100,6 +103,8 @@ export type WebGpuProbeSerializable = {
   canvasColorSpace?: PredefinedColorSpace;
   /** Applied canvas tone mapping mode ('standard' unless extended was accepted). */
   canvasToneMapping?: 'standard' | 'extended';
+  /** Why the requested display-p3 / extended tone mapping was narrowed (absent when honored). */
+  canvasColorFallback?: CanvasColorFallbackReason;
   formatCapabilities?: Pick<
     DeviceFormatCapabilities,
     | 'adapterGpuType'
@@ -218,25 +223,80 @@ async function tryConfigure(
   return !threw && !scopeError;
 }
 
+export type CanvasColorOptIns = Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'>;
+
+/** Why the applied canvas color differs from (or is narrower than) what was asked for. */
+export type CanvasColorFallbackReason =
+  | 'unsupported-p3'
+  | 'unsupported-extended-tone-mapping'
+  | 'not-hdr-display';
+
+export interface CanvasColorNegotiation {
+  requested: CanvasColorOptIns;
+  applied: CanvasColorOptIns;
+  colorSpace: PredefinedColorSpace;
+  toneMapping: 'standard' | 'extended';
+  /** Set when the request was narrowed; absent when fully honored (or nothing requested). */
+  reason?: CanvasColorFallbackReason;
+}
+
+/** Result of a live toggle; `deferred` means nothing changed (capture in progress). */
+export interface DisplayP3Result extends CanvasColorNegotiation {
+  deferred?: boolean;
+}
+
+/** Live canvas color state for diagnostics. */
+export interface CanvasColorState {
+  requestedDisplayP3: boolean;
+  colorSpace: PredefinedColorSpace;
+  toneMapping: 'standard' | 'extended';
+  copySrc: boolean;
+  fallbackReason?: CanvasColorFallbackReason;
+}
+
+export function describeCanvasColorFallback(reason: CanvasColorFallbackReason): string {
+  switch (reason) {
+    case 'unsupported-p3':
+      return 'this browser/display rejected Display P3';
+    case 'unsupported-extended-tone-mapping':
+      return 'extended tone mapping was rejected';
+    case 'not-hdr-display':
+      return 'not an HDR display, extended tone mapping skipped';
+  }
+}
+
 /**
- * Apply ?display_p3=1 (and extended tone mapping on HDR displays) fail-soft.
- * Leaves the context configured with whatever was accepted.
+ * Negotiate display-p3 (and extended tone mapping on HDR displays) fail-soft and
+ * report what was actually accepted. Leaves the context configured with the
+ * accepted options (default sRGB configure when everything is rejected).
  */
-export async function applyCanvasColorOptIns(
+export async function negotiateCanvasColor(
   device: GPUDevice,
   context: GPUCanvasContext,
   format: GPUTextureFormat,
-  requested: Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'>,
-): Promise<Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'>> {
+  requested: CanvasColorOptIns,
+  copySrc = false,
+): Promise<CanvasColorNegotiation> {
+  const result = (applied: CanvasColorOptIns, reason?: CanvasColorFallbackReason): CanvasColorNegotiation => ({
+    requested,
+    applied,
+    colorSpace: applied.displayP3 ? 'display-p3' : 'srgb',
+    toneMapping: applied.extendedToneMapping ? 'extended' : 'standard',
+    ...(reason ? { reason } : {}),
+  });
   const none = { displayP3: false, extendedToneMapping: false };
-  if (!requested.displayP3) return none;
+  if (!requested.displayP3) {
+    // Switching back to default: reconfigure only if a previous call left p3 on.
+    context.configure(buildCanvasConfigureOptions(device, format, { copySrc }));
+    return result(none);
+  }
 
   const ladder = requested.extendedToneMapping
     ? [{ displayP3: true, extendedToneMapping: true }, { displayP3: true, extendedToneMapping: false }]
     : [{ displayP3: true, extendedToneMapping: false }];
 
   for (const optIns of ladder) {
-    if (!(await tryConfigure(device, context, buildCanvasConfigureOptions(device, format, optIns)))) {
+    if (!(await tryConfigure(device, context, buildCanvasConfigureOptions(device, format, { ...optIns, copySrc })))) {
       continue;
     }
     const readback = readCanvasConfiguration(context);
@@ -247,12 +307,29 @@ export async function applyCanvasColorOptIns(
     console.log(
       `[WebGPU Probe] canvas colorSpace=display-p3 toneMapping=${optIns.extendedToneMapping ? 'extended' : 'standard'}`,
     );
-    return optIns;
+    const reason = requested.extendedToneMapping && !optIns.extendedToneMapping
+      ? 'unsupported-extended-tone-mapping'
+      : !requested.extendedToneMapping ? 'not-hdr-display' : undefined;
+    return result(optIns, reason);
   }
 
   console.warn('[WebGPU Probe] display-p3 opt-in rejected; keeping srgb canvas');
-  context.configure(buildCanvasConfigureOptions(device, format));
-  return none;
+  context.configure(buildCanvasConfigureOptions(device, format, { copySrc }));
+  return result(none, 'unsupported-p3');
+}
+
+/**
+ * Apply ?display_p3=1 / the persisted setting fail-soft. Boot-time wrapper over
+ * negotiateCanvasColor that returns only the accepted opt-ins.
+ */
+export async function applyCanvasColorOptIns(
+  device: GPUDevice,
+  context: GPUCanvasContext,
+  format: GPUTextureFormat,
+  requested: CanvasColorOptIns,
+): Promise<CanvasColorOptIns> {
+  if (!requested.displayP3) return { displayP3: false, extendedToneMapping: false };
+  return (await negotiateCanvasColor(device, context, format, requested)).applied;
 }
 
 /**
@@ -448,14 +525,18 @@ export async function runWebGpuBootProbe(
     // Opt-ins are fail-soft: a rejection restores the default configure and
     // never fails the rung. A throw from the restore itself is a configure failure.
     let canvasColorOptIns: Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'>;
+    let canvasColorFallback: CanvasColorFallbackReason | undefined;
     let canvasCopySrc: boolean;
     try {
-      canvasColorOptIns = await applyCanvasColorOptIns(
-        device,
-        context,
-        canvasFormat,
-        probeOptions.colorOptIns ?? resolveCanvasColorOptIns(),
-      );
+      const requestedColor =
+        probeOptions.colorOptIns ?? resolveCanvasColorOptIns(undefined, undefined, loadDisplayP3());
+      if (requestedColor.displayP3) {
+        const negotiated = await negotiateCanvasColor(device, context, canvasFormat, requestedColor);
+        canvasColorOptIns = negotiated.applied;
+        canvasColorFallback = negotiated.reason;
+      } else {
+        canvasColorOptIns = { displayP3: false, extendedToneMapping: false };
+      }
       canvasCopySrc = await probeCanvasCopySrc(device, context, canvasFormat, canvasColorOptIns);
     } catch (e) {
       record.error = e instanceof Error ? e.message : String(e);
@@ -507,7 +588,8 @@ export async function runWebGpuBootProbe(
       + ` f32filter=${formatCapabilities.hasFloat32Filterable ? 'yes' : 'no'}`
       + ` f32blend=${formatCapabilities.hasFloat32Blendable ? 'yes' : 'no'}`
       + ` | canvas: copySrc=${canvasCopySrc ? 'yes' : 'no'}`
-      + ` colorSpace=${canvasColorOptIns.displayP3 ? 'display-p3' : 'srgb'}`;
+      + ` colorSpace=${canvasColorOptIns.displayP3 ? 'display-p3' : 'srgb'}`
+      + ` toneMapping=${canvasColorOptIns.extendedToneMapping ? 'extended' : 'standard'}`;
 
     const logUncaptured = (ev: Event) => {
       console.error('[WebGPU] Uncaptured error:', (ev as GPUUncapturedErrorEvent).error);
@@ -527,6 +609,7 @@ export async function runWebGpuBootProbe(
       canvasCopySrc,
       canvasColorSpace: canvasColorOptIns.displayP3 ? 'display-p3' : 'srgb',
       canvasToneMapping: canvasColorOptIns.extendedToneMapping ? 'extended' : 'standard',
+      ...(canvasColorFallback ? { canvasColorFallback } : {}),
       formatCapabilities,
     });
     serializable.ok = true;
@@ -548,6 +631,7 @@ export async function runWebGpuBootProbe(
         adapterAttemptLabel: attempt.label,
         canvasCopySrc,
         canvasColorOptIns,
+        canvasColorFallback,
         detachUncapturedLog,
       },
     };
@@ -586,6 +670,18 @@ export function publishWebGpuProbe(result: WebGpuProbeResult): void {
 export function publishWebGpuProbeBreadcrumb(breadcrumb: WebGpuProbeSerializable): void {
   if (typeof window === 'undefined') return;
   window.webgpuProbe = breadcrumb;
+}
+
+/** Reflect a live color renegotiation in window.webgpuProbe (no-op before the first publish). */
+export function updateWebGpuProbeColor(result: CanvasColorNegotiation): void {
+  if (typeof window === 'undefined' || !window.webgpuProbe) return;
+  const { canvasColorFallback: _drop, ...rest } = window.webgpuProbe;
+  window.webgpuProbe = {
+    ...rest,
+    canvasColorSpace: result.colorSpace,
+    canvasToneMapping: result.toneMapping,
+    ...(result.reason ? { canvasColorFallback: result.reason } : {}),
+  };
 }
 
 /**

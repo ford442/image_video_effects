@@ -4,29 +4,11 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-09-27
-//  Ideas: plasma node lanterns at the tentacle roots (SDF bulbs + volumetric halo); bell shell-thickness translucency (Beer-Lambert lantern light through the outer/inner shell gap); void-current filaments (iso-lines of the map() warp noise, dragged by the mouse)
+//  Ideas: plasma node lanterns at the tentacle roots (SDF bulbs + volumetric halo); bell shell-thickness translucency (Beer-Lambert lantern light through the outer/inner shell gap); void-current filaments (iso-lines of the map() warp noise, dragged by the mouse); nematocyst strobe ringlets; bell-rim ciliary fringe sparkles
 //  A packing: HDR linear RGB (pre-ACES, with short C light-wake) + semantic alpha (body 1, glow coverage elsewhere)
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = bioluminescence, .y = fluid distortion, .z = tentacle length, .w = plasma hue
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = bioluminescence, .y = fluid distortion, .z = tentacle length, .w = plasma hue
 
 // --- SHADER START ---
 
@@ -344,6 +326,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col += lanternCol * lan * (1.0 - bellMask) * (0.25 + 0.35 * max(dot(n, -rd), 0.0));
         let core = 1.0 - smoothstep(LANTERN_R * 0.7, LANTERN_R * 1.4, m.z);
         col += mix(lanternCol, vec3<f32>(1.0), 0.5) * core * (0.3 + 1.4 * biolum) * 2.5;
+
+        // Idea 4: nematocyst strobe ringlets around tentacle-root collars.
+        let rootR = length(q.xz);
+        let rootBand = exp(-pow((rootR - 0.82) * 8.0, 2.0)) * exp(-pow((q.y - LANTERN_Y) * 4.5, 2.0));
+        let rootPulse = pow(0.5 + 0.5 * sin(atan2(q.z, q.x) * 10.0 + time * (4.0 + audio.x * 3.0)), 6.0);
+        col += vec3<f32>(0.9, 0.95, 1.0) * rootBand * rootPulse * (0.14 + audio.z * 0.22);
+
+        // Idea 5: ciliary fringe sparkles along the bell rim.
+        let rimBand = exp(-pow((abs(length(bellP) - bellRad)) * 18.0, 2.0)) * smoothstep(-0.05, 0.12, bellP.y);
+        let cilia = pow(0.5 + 0.5 * sin(atan2(bellP.z, bellP.x) * 34.0 - time * 10.0), 8.0);
+        col += vec3<f32>(0.45, 0.85, 1.0) * rimBand * cilia * (0.12 + biolum * 0.2);
 
         // Falloff into void (hits only; HEAD also zeroed every miss because dO > MAX_DIST)
         col *= exp(-dO * 0.05);

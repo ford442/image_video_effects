@@ -9,7 +9,7 @@
     "raymarching",
     "audio-reactive"
   ],
-  "description": "An infinitely shattering and reforming matrix of absolute-zero hyper-fractals that bleed iridescent thermal plasma when fractured by heavy bass frequencies.",
+  "description": "An infinitely shattering and reforming matrix of absolute-zero hyper-fractals that bleed iridescent thermal plasma when fractured by heavy bass frequencies. Hoarfrost dendrites trace the fracture seams, and a cyan sublimation sheath marks where ice meets plasma.",
   "workgroup_size": [
     16,
     16,
@@ -60,7 +60,7 @@
   "updated": true,
   "id": "gen-cryogenic-frost-plasma-matrix",
   "url": "shaders/gen-cryogenic-frost-plasma-matrix.wgsl",
-  "features": [],
+  "features": ["audio-reactive", "mouse-driven", "upgraded-rgba"],
   "params": [
     {
       "id": "fracture_intensity",

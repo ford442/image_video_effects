@@ -11,7 +11,7 @@
     "music",
     "reactive"
   ],
-  "description": "An infinite, abyssal cavern illuminated by a colossal, self-assembling chandelier of hyper-refractive glass chimes and glowing quantum pendulums that shatter and reform to the rhythm of time and sound.",
+  "description": "An abyssal cavern lit by a self-assembling chandelier of refractive glass chimes with phase-locked pendular clusters and a floor-bound caustic web lattice pulsing to time and sound.",
   "workgroup_size": [
     16,
     16,
@@ -56,5 +56,9 @@
   "updated": true,
   "id": "gen-vitreous-chrono-chandelier",
   "url": "shaders/gen-vitreous-chrono-chandelier.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ]
 }

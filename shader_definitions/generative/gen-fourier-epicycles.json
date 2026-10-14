@@ -11,7 +11,7 @@
     "audio-reactive",
     "vj"
   ],
-  "description": "Rotating Fourier epicycle wheels tracing harmonic curves with chromatic separation, metallic rim glow, and temporal trajectory trails. Bass drives rotation speed, mouse reshapes coefficients.",
+  "description": "Rotating Fourier epicycle wheels tracing harmonic curves with chromatic separation, metallic rim glow, and temporal trajectory trails. Bass drives rotation speed, mouse reshapes coefficients. Each wheel carries a phase tick at the rim, and the pen blots when the chain slows into a cusp.",
   "workgroup_size": [
     16,
     16,

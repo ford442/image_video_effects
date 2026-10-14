@@ -14,7 +14,7 @@
     "procedural",
     "generative"
   ],
-  "description": "A mesmerizing 3D generative visualization of a structure that visually bridges the gap between a biological neural network and the cosmic web of the universe.",
+  "description": "A mesmerizing 3D generative visualization of a structure that visually bridges the gap between a biological neural network and the cosmic web of the universe. New behavior introduces activity-based pruning shadows and Hebbian strand reinforcement from temporal feedback.",
   "workgroup_size": [
     16,
     16,
@@ -100,6 +100,8 @@
   "features": [
     "audio-reactive",
     "mouse-driven",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "activity-pruning",
+    "hebbian-reinforcement"
   ]
 }

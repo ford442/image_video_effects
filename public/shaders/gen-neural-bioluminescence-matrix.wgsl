@@ -4,30 +4,12 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-09-14
-//  Ideas: saltatory action potentials hopping node-of-Ranvier to node along each axon with depolarization spike and refractory undershoot; aequorin-to-GFP energy transfer where calcium flashes (spikes, click calcium waves) emit 469nm blue that lingers as 509nm green fluorescence in the trail
+//  Ideas: saltatory action potentials hopping node-of-Ranvier to node along each axon with depolarization spike and refractory undershoot; aequorin-to-GFP energy transfer where calcium flashes (spikes, click calcium waves) emit 469nm blue that lingers as 509nm green fluorescence in the trail; astrocytic calcium tide that forms a slower turquoise support glow around active tracts; vesicle-quantal bouton scintillation that adds amber puncta at firing synaptic boutons
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-    zoom_params: vec4<f32>,  // x=Node Density, y=Pulse Speed, z=Audio Reactivity, w=Bio-Glow Intensity
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Node Density, y=Pulse Speed, z=Audio Reactivity, w=Bio-Glow Intensity
 
 // Persistent state (extraBuffer safe zone, pixel (0,0) writes only)
 // 133 = bass envelope, 134 = mid envelope, 135 = treble envelope,
@@ -287,6 +269,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var p = ro;
     var glow = 0.0;
     var spikeGlow = 0.0;
+    var gliaGlow = 0.0;
+    var vesicleGlow = 0.0;
 
     for (var i = 0; i < 80; i++) {
         p = ro + rd * t;
@@ -300,6 +284,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Refractory undershoot dims the ambient pulse; depolarization flashes
         glow += proximity * max(pulseIntensity * (1.0 + ap * 0.8), 0.0) * u.zoom_params.w; // Bio-Glow Intensity
         spikeGlow += proximity * max(ap, 0.0) * (1.0 + bassSmooth * 0.4) * u.zoom_params.w;
+        // IDEA 3: astrocytic calcium tide, phase-locked to stimulation waves.
+        let gliaWave = 0.5 + 0.5 * sin(dot(p, vec3<f32>(0.31, 0.27, 0.23)) - time * 0.7 + calcium * 2.0);
+        gliaGlow += proximity * pow(gliaWave, 3.0) * (0.35 + midSmooth * 0.4);
+        // IDEA 4: vesicle bouton scintillation at active synapses.
+        let vesicle = proximity * max(ap, 0.0) * pow(0.5 + 0.5 * sin(dot(p.xy, vec2<f32>(7.0, 9.0)) + time * 5.5), 4.0);
+        vesicleGlow += vesicle * (0.4 + trebleSmooth * 0.5);
 
         if (d < 0.01 || t > 50.0) { break; }
         t += d * 0.7;
@@ -329,6 +319,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // and along calcium wavefronts from clicks.
     let flash = spikeGlow * 0.06 * fog + calcium * (0.4 + treble * 0.3) * (0.3 + u.zoom_params.w * 0.15);
     color += AEQUORIN_BLUE * flash;
+    color += vec3<f32>(0.18, 0.95, 0.62) * gliaGlow * 0.04 * fog;
+    color += vec3<f32>(1.0, 0.78, 0.35) * vesicleGlow * 0.03;
 
     color = mix(color, vec3<f32>(0.01, 0.01, 0.02), 1.0 - exp(-t * 0.02));
 
@@ -350,7 +342,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Alpha: neural tissue coverage + emitted bioluminescence density
     let tissue = select(0.0, exp(-t * 0.03), hit);
-    let alphaNow = clamp(tissue * 0.6 + min(glow * 0.02, 1.0) * 0.25 + min(flash, 1.0) * 0.3, 0.02, 1.0);
+    let alphaNow = clamp(tissue * 0.6 + min(glow * 0.02, 1.0) * 0.25 + min(flash, 1.0) * 0.3 + min(gliaGlow * 0.015 + vesicleGlow * 0.012, 0.28), 0.02, 1.0);
     let alpha = clamp(mix(prevData.a * 0.95, alphaNow, max(feedbackMix, 0.35)), 0.02, 1.0);
     let outColor = vec4<f32>(display, alpha);
     textureStore(writeTexture, id.xy, outColor);

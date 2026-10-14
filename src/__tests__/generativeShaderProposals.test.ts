@@ -29,6 +29,8 @@ describe('generative shader proposals', () => {
     const shader = fs.readFileSync(shaderPath, 'utf8');
     expect(shader).toContain('@compute');
     expect(shader).toContain('fn main(');
-    expect(shader).toContain('@group(0) @binding(12)');
+    expect(
+      shader.includes('@group(0) @binding(12)') || shader.includes('#include "_prelude.wgsl"'),
+    ).toBe(true);
   });
 });

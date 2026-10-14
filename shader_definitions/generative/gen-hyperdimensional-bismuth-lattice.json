@@ -3,6 +3,7 @@
   "name": "Hyperdimensional Bismuth Lattice",
   "category": "generative",
   "url": "/shaders/gen-hyperdimensional-bismuth-lattice.wgsl",
+  "description": "Basal cleavage sheen now catches the broad crystal faces while treble micro-serrations sharpen the later hopper-fold generations.",
   "params": [
     {
       "id": "complexity",

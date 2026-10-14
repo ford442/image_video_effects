@@ -1,29 +1,14 @@
-// ═══════════════════════════════════════════════════════════════
-//  Digital Waves — Batch 61
-//  Interference wave field: spring cursor vortex, held amplify,
-//  capped ripples, hex quantize, RGB split, ACES + audio bands.
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Digital Waves
+//  Category: retro-glitch
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-10
+//  Ideas: standing nodes; crest scanlines
+//  A packing: raw diagnostic (wave, depth, ripple, alpha)
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 
@@ -41,19 +26,23 @@ fn cyberPalette(t: f32) -> vec3<f32> {
   return vec3<f32>(0.5) + vec3<f32>(0.5) * cos(6.28318 * (vec3<f32>(1.0) * t + vec3<f32>(0.0, 0.33, 0.67)));
 }
 
-fn digitalWavePattern(uv: vec2<f32>, time: f32, depth: f32, scale: f32, detail: f32) -> f32 {
+fn digitalWavePattern(uv: vec2<f32>, time: f32, depth: f32, scale: f32, detail: f32) -> vec2<f32> {
   let waveFreq = mix(8.0, 28.0, scale) + depth * 10.0 * detail;
   let waveSpeed = mix(1.0, 4.0, detail);
-  var pattern = 0.0;
-  pattern += sin(uv.x * waveFreq + time * waveSpeed) * 0.5;
-  pattern += sin(uv.y * waveFreq * 0.82 - time * waveSpeed * 0.7) * 0.3;
-  pattern += sin((uv.x + uv.y) * waveFreq * 0.55 + time * waveSpeed * 1.15) * 0.2;
-  return pattern;
+  let waveA = sin(uv.x * waveFreq + time * waveSpeed);
+  let waveB = sin(uv.y * waveFreq * 0.82 - time * waveSpeed * 0.7);
+  let waveC = sin((uv.x + uv.y) * waveFreq * 0.55 + time * waveSpeed * 1.15);
+  let pattern = waveA * 0.5 + waveB * 0.3 + waveC * 0.2;
+  // Idea: standingNodes — dark where the three sines cancel.
+  let standingNodes = smoothstep(0.22, 0.0, abs(pattern)) * (abs(waveA) + abs(waveB) + abs(waveC)) * 0.33;
+  return vec2<f32>(pattern, standingNodes);
 }
 
-fn scanlines(uv: vec2<f32>, time: f32, intensity: f32) -> f32 {
-  let line = sin((uv.y * 300.0 + time * 50.0) * PI);
-  return 1.0 - pow(abs(line), 0.5) * intensity;
+fn scanlines(uv: vec2<f32>, time: f32, intensity: f32, crest: f32) -> f32 {
+  // Idea: crestScan — pitch bunches on the wave crests.
+  let crestScan = 1.0 + max(crest, 0.0) * 0.35;
+  let line = sin((uv.y * 300.0 * crestScan + time * 50.0) * PI);
+  return 1.0 - pow(abs(line), 0.5) * intensity * (0.65 + max(crest, 0.0) * 0.7);
 }
 
 fn glitchBlocks(uv: vec2<f32>, time: f32, amt: f32) -> vec2<f32> {
@@ -108,7 +97,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   let depth = textureLoad(readDepthTexture, coord, 0).r;
-  let wavePattern = digitalWavePattern(uv, time * speed, depth, scale, detail);
+  let waveField = digitalWavePattern(uv, time * speed, depth, scale, detail);
+  let wavePattern = waveField.x;
+  let standingNodes = waveField.y;
 
   let uvAspect = uv * vec2<f32>(aspect, 1.0);
   let mouseAspect = vec2<f32>(smoothMouse.x * aspect, smoothMouse.y);
@@ -146,7 +137,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureSampleLevel(readTexture, u_sampler, clamp(displacedUV - offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b
   );
 
-  color *= scanlines(uv, time, 0.12 + intensity * 0.08);
+  color *= scanlines(uv, time, 0.12 + intensity * 0.08, wavePattern);
+  color = color * (1.0 - standingNodes * 0.55 * intensity);
   color += hash21(uv * resolution + time * 10.0) * 0.04 * intensity;
   color = floor(color * mix(8.0, 24.0, detail)) / mix(8.0, 24.0, detail);
   color += cyberPalette(wavePattern * 0.5 + time * 0.05) * abs(sin(time * 2.0)) * intensity * 0.08;

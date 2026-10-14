@@ -3,31 +3,12 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-09-11
-//  Ideas: condensation droplet beads on terrarium glass shell; dew meniscus highlights on leaf-tip normals
+//  Upgraded: 2026-10-10
+//  Ideas: condensation droplet beads on terrarium glass shell; dew meniscus highlights on leaf-tip normals; terrarium base moss; firefly spark swarms
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ─── Math Helpers ───
 fn sat(x: f32) -> f32 { return clamp(x, 0.0, 1.0); }
@@ -377,6 +358,19 @@ fn raymarchChromatic(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: 
   let condense = condensationDroplets(shellProbe, time);
   col += vec3<f32>(0.75, 0.92, 1.0) * condense * (0.2 + mids * 0.15);
   alpha = sat(alpha + condense * 0.12);
+  
+  // Idea 1: Terrarium base moss: Green fuzzy noise texture along the bottom of the glass sphere.
+  let mossDist = max(0.0, -shellProbe.y - 2.5);
+  let mossNoise = fbm3(shellProbe * 5.0, 4);
+  let moss = smoothstep(0.0, 1.0, mossDist * mossNoise * 4.0);
+  col = mix(col, vec3<f32>(0.1, 0.6, 0.2), moss * 0.8);
+  alpha = sat(alpha + moss);
+  
+  // Idea 2: Firefly spark swarms: Bright glowing dots drifting inside the terrarium space.
+  let fireflyP = shellProbe * 3.0 + vec3<f32>(time, sin(time)*0.5, time * 0.5);
+  let fireflyNoise = hash3(floor(fireflyP));
+  let firefly = step(0.995, fireflyNoise) * exp(-length(fract(fireflyP) - 0.5) * 10.0) * (1.0 - smoothstep(3.5, 4.0, length(shellProbe)));
+  col += vec3<f32>(1.0, 0.9, 0.4) * firefly * (2.0 + treble * 5.0);
 
   return vec4<f32>(col, alpha);
 }

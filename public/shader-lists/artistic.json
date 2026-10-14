@@ -1120,7 +1120,9 @@
     "url": "shaders/chromatic-folds-2.wgsl",
     "description": "Enhanced geometric color folding with improved warping.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -1168,7 +1170,8 @@
     "description": "An advanced geometric color folding and warping effect with dynamic, time-driven animation, fractal layering, and interactive, mouse-driven vortex manipulation.",
     "features": [
       "mouse-driven",
-      "time-driven"
+      "time-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -1215,7 +1218,8 @@
     "url": "shaders/chromatic-folds.wgsl",
     "description": "Geometric color folding and warping effects.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -1309,7 +1313,8 @@
     "url": "shaders/chromatic-manifold-2.wgsl",
     "description": "Enhanced 4D topological color manifold.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -1363,9 +1368,7 @@
       "reactive"
     ],
     "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "audio-driven"
+      "upgraded-rgba"
     ],
     "params": [
       {
