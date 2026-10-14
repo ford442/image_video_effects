@@ -1,6 +1,14 @@
 {
   "entries": [
     {
+      "id": "gen-acoustic-obsidian-resonator",
+      "added_by": "Jules",
+      "deferred_at": "2026-10-12",
+      "expires": "2026-11-11",
+      "reason": "other",
+      "failure_note": "Needs WebGPU to render"
+    },
+    {
       "id": "emergent-calligraphic-weave",
       "added_by": "thumbnail-campaign",
       "deferred_at": "2026-09-26",
