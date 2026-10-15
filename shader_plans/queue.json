@@ -664,11 +664,6 @@
       "filename": "2026-10-12_neon-geode-crystallization.md",
       "title": "Neon Geode Crystallization",
       "added": "2026-10-12T15:20:48.948810"
-    },
-    {
-      "filename": "2026-10-14_aetheric-tachyon-lattice.md",
-      "title": "Aetheric Tachyon Lattice",
-      "added": "2026-10-14T15:38:03.754329"
     }
   ],
   "current": null,
@@ -1335,6 +1330,11 @@
       "added": "2026-10-12T15:20:48.948810",
       "status": "completed",
       "completed_at": "2026-10-14T08:03:32.975443+00:00"
+    },
+    {
+      "file": "2026-10-14_aetheric-tachyon-lattice.md",
+      "status": "completed",
+      "completed_at": "2026-10-15T08:08:18.877033+00:00"
     }
   ],
   "rejected": [],
