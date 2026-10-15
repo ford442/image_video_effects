@@ -649,6 +649,26 @@
       "filename": "2026-10-09_bismuth-quantum-reef.md",
       "title": "Bismuth Quantum Reef",
       "added": "2026-10-09T15:15:45.639294"
+    },
+    {
+      "filename": "2026-10-11_acoustic-obsidian-resonator.md",
+      "title": "Acoustic Obsidian Resonator",
+      "added": "2026-10-11T17:29:07.940749"
+    },
+    {
+      "filename": "2026-10-13_chrono-luminescent-voxel-citadel.md",
+      "title": "Chrono-Luminescent Voxel Citadel",
+      "added": "2026-10-13T15:37:53.256987"
+    },
+    {
+      "filename": "2026-10-12_neon-geode-crystallization.md",
+      "title": "Neon Geode Crystallization",
+      "added": "2026-10-12T15:20:48.948810"
+    },
+    {
+      "filename": "2026-10-14_aetheric-tachyon-lattice.md",
+      "title": "Aetheric Tachyon Lattice",
+      "added": "2026-10-14T15:38:03.754329"
     }
   ],
   "current": null,
@@ -1307,7 +1327,7 @@
       "title": "Acoustic Obsidian Resonator",
       "added": "2026-10-11T17:29:07.940749",
       "status": "completed",
-      "completed_at": "2026-10-12T08:12:54.128179+00:00"
+      "completed_at": "2026-10-13T08:20:08.492767+00:00"
     }
   ],
   "rejected": [],

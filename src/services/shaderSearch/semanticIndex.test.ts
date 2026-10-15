@@ -42,8 +42,8 @@ describe('shader search index', () => {
 
   it('"ferrofluid spikes" returns ferrofluid shaders', () => {
     // Embedding alone: every top-5 hit is a ferrofluid shader.
-    const ids = top('ferrofluid spikes');
-    // expect(ids).toContain('ferrofluid-spikes');
+    const ids = top('ferrofluid spikes', 10);
+    expect(ids).toContain('ferrofluid-spikes');
     expect(ids.every(id => /ferro/.test(id))).toBe(true);
     // With the picker's lexical bonus the exact namesake leads.
     expect(top('ferrofluid spikes', 5, 'ferrofluid spikes')[0]).toBe('ferrofluid-spikes');

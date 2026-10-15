@@ -29,6 +29,8 @@ describe('generative shader proposals', () => {
     const shader = fs.readFileSync(shaderPath, 'utf8');
     expect(shader).toContain('@compute');
     expect(shader).toContain('fn main(');
-    // expect(shader).toContain('@group(0) @binding(12)');
+    const usesPrelude = shader.includes('#include "_prelude.wgsl"');
+    const hasPlasmaBinding = shader.includes('@group(0) @binding(12)');
+    expect(usesPrelude || hasPlasmaBinding).toBe(true);
   });
 });

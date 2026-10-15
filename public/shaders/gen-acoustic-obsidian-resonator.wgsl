@@ -26,7 +26,7 @@ fn map(pos: vec3<f32>) -> f32 {
     var p = pos;
 
     // Mouse distortion
-    if (u.zoom_config.w > 0.0) {
+    if (u.zoom_config.w > 0.5) {
         let mouse_uv = u.zoom_config.yz * 2.0 - 1.0;
         let dist = length(p.xy - mouse_uv * 10.0);
         let pull = exp(-dist * 0.5) * u.zoom_params.y;
@@ -66,7 +66,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var rd = normalize(vec3<f32>(uv, 1.0));
 
     var t = 0.0;
-    var steps: i32 = 0; // Fix block-scoped steps variable for WGSL
+    var steps = 0;
     for (var i = 0; i < 100; i++) {
         let p = ro + rd * t;
         let d = map(p);
