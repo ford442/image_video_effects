@@ -660,9 +660,15 @@
       "title": "Chrono-Luminescent Voxel Citadel",
       "added": "2026-10-13T15:37:53.256987"
     },
-    {      "filename": "2026-10-12_neon-geode-crystallization.md",
+    {
+      "filename": "2026-10-12_neon-geode-crystallization.md",
       "title": "Neon Geode Crystallization",
       "added": "2026-10-12T15:20:48.948810"
+    },
+    {
+      "filename": "2026-10-14_aetheric-tachyon-lattice.md",
+      "title": "Aetheric Tachyon Lattice",
+      "added": "2026-10-14T15:38:03.754329"
     }
   ],
   "current": null,
