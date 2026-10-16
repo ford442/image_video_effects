@@ -1,5 +1,6 @@
 {
   "id": "gen-synaptic-void-weaver",
+  "category": "generative",
   "name": "Synaptic Void-Weaver",
   "url": "shaders/gen-synaptic-void-weaver.wgsl",
   "description": "A biomechanical abyss where luminescent neural tendrils pulse with electric thoughts, weaving through an endless, shifting dark matter fractal.",
