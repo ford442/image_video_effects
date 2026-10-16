@@ -212,7 +212,9 @@
     "features": [
       "mouse-driven",
       "alpha-transmission",
-      "iridescence"
+      "iridescence",
+      "upgraded-rgba",
+      "audio-reactive"
     ],
     "tags": [
       "crystal",
@@ -3030,7 +3032,8 @@
       "pbr-chrome",
       "capillary-waves",
       "chromatic-dispersion",
-      "aces-tone-map"
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",

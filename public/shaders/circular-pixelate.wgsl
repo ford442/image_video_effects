@@ -1,5 +1,12 @@
-// Circular Pixelate — hexagonal compound lenslets with chromatic apertures.
-// A/C stores tone-mapped display RGBA. B and extraBuffer are intentionally unused.
+// ═══════════════════════════════════════════════════════════════════
+//  Circular Pixelate
+//  Category: image
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-16
+//  Ideas: hex diaphragm on the round lenslet; grout seam between cells
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
 
@@ -41,6 +48,22 @@ fn historyAt(uv: vec2<f32>, resolution: vec2<f32>) -> vec4<f32> {
 
 fn spectrum(t: f32) -> vec3<f32> {
   return 0.55 + 0.45 * cos(TAU * (vec3<f32>(0.02, 0.35, 0.68) + t));
+}
+
+fn hexBlade(local: vec2<f32>) -> f32 {
+  let d0 = abs(local.x);
+  let d1 = abs(local.x * 0.5 + local.y * 0.8660254);
+  let d2 = abs(local.x * 0.5 - local.y * 0.8660254);
+  return max(d0, max(d1, d2));
+}
+
+fn hexSeam(p: vec2<f32>) -> f32 {
+  let centerA = round(p / HEX_SIZE);
+  let centerB = round((p - HEX_SIZE * 0.5) / HEX_SIZE) + 0.5;
+  let offA = p - centerA * HEX_SIZE;
+  let offB = p - centerB * HEX_SIZE;
+  let gap = abs(dot(offA, offA) - dot(offB, offB));
+  return 1.0 - smoothstep(0.0, 0.06, gap);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -87,9 +110,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let apertureRadius = clamp(0.10 + radiusParam * 0.46 + heldDilation * 0.13 +
                              bass * 0.035 + clickWave * 0.04, 0.045, 0.62);
   let distanceToCenter = length(local) * 1.15;
+  // Idea 1 — hex diaphragm clips the round dome.
+  let stopDist = mix(distanceToCenter, hexBlade(local) * 1.35, 0.72);
   let edgeWidth = mix(0.10, 0.008, hardness);
   let aperture = 1.0 - smoothstep(max(apertureRadius - edgeWidth, 0.0),
-                                  apertureRadius + edgeWidth, distanceToCenter);
+                                  apertureRadius + edgeWidth, stopDist);
   let normalizedLocal = local / max(apertureRadius, 0.001);
   let lensZ = sqrt(max(1.0 - dot(normalizedLocal, normalizedLocal), 0.0));
   let lensNormal = normalize(vec3<f32>(normalizedLocal, lensZ + 0.001));
@@ -109,7 +134,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let apertureAngle = atan2(local.y, local.x);
   let glintDirection = vec2<f32>(cos(time * 0.7 + mids), sin(time * 0.7 + mids));
   let glint = pow(max(dot(lensNormal.xy, glintDirection), 0.0), 18.0) * aperture * (0.25 + treble * 1.2);
-  let rim = smoothstep(apertureRadius - edgeWidth * 3.0, apertureRadius, distanceToCenter) * aperture;
+  let rim = smoothstep(apertureRadius - edgeWidth * 3.0, apertureRadius, stopDist) * aperture;
   let cellHue = hash12(cellId + 0.37) + apertureAngle / TAU + time * 0.025;
   let prism = spectrum(cellHue + mids * 0.12);
   var hdr = vec3<f32>(red, green, blue);
@@ -117,6 +142,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   hdr += prism * glint * (0.35 + treble * 0.5);
   hdr += prism * rim * (0.08 + mids * 0.18);
   hdr += spectrum(cellHue + 0.33) * abs(clickWave) * aperture * 0.16;
+  // Idea 2 — grout where two hex cells meet, outside the aperture.
+  let seam = hexSeam(uv * gridScale);
+  hdr = mix(hdr, hdr * vec3<f32>(0.12, 0.13, 0.15), seam * (1.0 - aperture));
   let lensDisplay = aces(max(hdr, vec3<f32>(0.0)));
   let effectAlpha = clamp(sampled.a * aperture + rim * 0.18 + glint * 0.16, 0.0, 1.0);
   let lenslet = vec4<f32>(lensDisplay, effectAlpha);

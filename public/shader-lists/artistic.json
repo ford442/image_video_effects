@@ -3709,7 +3709,8 @@
     "features": [
       "audio-reactive",
       "audio-driven",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -3784,7 +3785,8 @@
     "features": [
       "interactive",
       "mathematical",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "geometric",
@@ -3980,7 +3982,8 @@
     "features": [
       "audio-reactive",
       "audio-driven",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {

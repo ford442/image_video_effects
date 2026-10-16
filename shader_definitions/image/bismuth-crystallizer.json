@@ -40,7 +40,9 @@
   "features": [
     "mouse-driven",
     "alpha-transmission",
-    "iridescence"
+    "iridescence",
+    "upgraded-rgba",
+    "audio-reactive"
   ],
   "tags": [
     "crystal",
@@ -50,5 +52,39 @@
     "metallic",
     "transmission",
     "physical"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Crystal Depth",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 1,
+          "name": "Hopper Offset",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 2,
+          "name": "Iridescence Freq",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 3,
+          "name": "Metallic / Mix",
+          "default": 0.7,
+          "min": 0,
+          "max": 1
+        }
+      ]
+    }
+  }
 }

@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Spectral Mesh v2
+//  Spectral Mesh
 //  Category: image
-//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Chunks From: spectral-mesh
-//  Created: 2026-05-30
-//  By: 4-Agent Shader Upgrade Swarm
+//  Upgraded: 2026-10-16
+//  Ideas: junction beads at wire crossings; grating fringe along the wire normal
+//  A packing: A stores (line, triLine, pull, alpha); C is not read as color
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -102,6 +102,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let bloom = glow * glow * vec3<f32>(0.45, 0.55, 0.75);
   finalColor = finalColor + bloom;
+
+  // Idea 1 — junction beads where the two wire axes cross.
+  let junction = (1.0 - smoothstep(0.0, lineWidth * 1.4, grid.x))
+               * (1.0 - smoothstep(0.0, lineWidth * 1.4, grid.y));
+  finalColor += spectral * junction * (0.55 + audio.y * 0.35);
+
+  // Idea 2 — grating fringe: R and B leave the wire along its normal.
+  let wireNormal = select(vec2<f32>(0.0, 1.0), vec2<f32>(1.0, 0.0), grid.x < grid.y);
+  let fringePx = (0.0015 + audio.z * 0.002) * line;
+  let fringeR = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV + wireNormal * fringePx, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let fringeB = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV - wireNormal * fringePx, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  finalColor = mix(finalColor, vec3<f32>(fringeR, baseColor.g, fringeB), line * 0.45);
 
   finalColor = acesFilm(finalColor * 1.08);
 

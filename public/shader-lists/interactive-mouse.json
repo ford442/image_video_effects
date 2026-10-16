@@ -10823,7 +10823,8 @@
     "features": [
       "mouse-driven",
       "depth-aware",
-      "temporal"
+      "temporal",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
