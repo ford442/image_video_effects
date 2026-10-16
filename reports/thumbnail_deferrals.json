@@ -405,6 +405,14 @@
       "expires": "2026-11-10",
       "reason": "gpu-capture-pending",
       "failure_note": "New shader requires GPU capture for thumbnail"
+    },
+    {
+      "id": "gen-aetheric-tachyon-lattice",
+      "added_by": "Jules",
+      "deferred_at": "2026-10-15",
+      "expires": "2026-11-14",
+      "reason": "other",
+      "failure_note": "Needs WebGPU to render"
     }
   ]
 }

@@ -1,0 +1,54 @@
+{
+  "id": "gen-aetheric-tachyon-lattice",
+  "name": "Aetheric Tachyon Lattice",
+  "url": "shaders/gen-aetheric-tachyon-lattice.wgsl",
+  "category": "generative",
+  "description": "A high-energy, multidimensional lattice of glowing tachyon streams, oscillating and folding through a non-Euclidean void.",
+  "features": [
+    "lattice",
+    "tachyon",
+    "energy",
+    "folded-space",
+    "audio-reactive"
+  ],
+  "tags": [
+    "lattice",
+    "tachyon",
+    "energy",
+    "folded-space",
+    "audio-reactive"
+  ],
+  "workgroup_size": [16, 16, 1],
+  "params": [
+    {
+      "id": "foldCount",
+      "name": "Fold Count",
+      "default": 3.0,
+      "min": 1.0,
+      "max": 6.0,
+      "step": 1.0,
+      "mapping": "zoom_params.x",
+      "description": "Number of spatial folds"
+    },
+    {
+      "id": "tachyonSpeed",
+      "name": "Tachyon Speed",
+      "default": 2.0,
+      "min": 0.1,
+      "max": 10.0,
+      "step": 0.1,
+      "mapping": "zoom_params.y",
+      "description": "Speed of tachyon streams"
+    },
+    {
+      "id": "latticeThickness",
+      "name": "Lattice Thickness",
+      "default": 0.05,
+      "min": 0.01,
+      "max": 0.2,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Thickness of the structural elements"
+    }
+  ]
+}
