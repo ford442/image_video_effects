@@ -1,26 +1,19 @@
-// Hyperbolic Tiling - Poincaré Disk Geometry
-// Projects image onto hyperbolic plane with Möbius transformations
+// ═══════════════════════════════════════════════════════════════════
+//  Hyperbolic Tiling
+//  Category: artistic
+//  Features: mouse-driven, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-16
+//  Ideas: geodesic ink on the sector boundary; vertex cusps where q-rays meet the rim
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=unused
-  zoom_params: vec4<f32>,  // x=Curvature, y=Symmetry, z=AnimSpeed, w=TileScale
-  ripples: array<vec4<f32>, 50>,
-};
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+// zoom_params: x=Curvature, y=Symmetry, z=AnimSpeed, w=TileScale
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -169,9 +162,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var r = length(z);
   
   if (r >= 1.0) {
-    // Outside disk - show gradient background
-    let edgeColor = vec3<f32>(0.05, 0.05, 0.1);
-    textureStore(writeTexture, vec2<i32>(coord), vec4<f32>(edgeColor, 1.0));
+    let edgeColor = aces(vec3<f32>(0.05, 0.05, 0.1));
+    let outside = vec4<f32>(edgeColor, 0.4);
+    textureStore(writeTexture, vec2<i32>(coord), outside);
+    textureStore(dataTextureA, vec2<i32>(coord), outside);
     textureStore(writeDepthTexture, vec2<i32>(coord), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     return;
   }
@@ -273,7 +267,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Add subtle glow at center
   let centerGlow = exp(-r * 3.0) * 0.2;
   finalColor = finalColor + vec3<f32>(centerGlow);
-  
-  textureStore(writeTexture, vec2<i32>(coord), vec4<f32>(finalColor, 1.0));
+
+  // Idea 1 — geodesic ink on the sector boundary.
+  let ink = 1.0 - smoothstep(0.0, 0.008, boundaryDist);
+  finalColor = mix(finalColor, vec3<f32>(0.03, 0.04, 0.07), ink * 0.85);
+
+  // Idea 2 — vertex cusps: q-fold rays brighten where they meet the disk rim.
+  let diskAngle = atan2(z.y, z.x);
+  let qCount = max(q, 3.0);
+  let qStep = TAU / qCount;
+  let qSpoke = abs(fract((diskAngle + 0.5 * qStep) / qStep) - 0.5);
+  let cusp = smoothstep(0.045, 0.0, qSpoke) * smoothstep(0.78, 0.98, r);
+  finalColor = finalColor + vec3<f32>(0.75, 0.84, 1.0) * cusp;
+
+  let alpha = clamp(sourceColor.a * boundary * 0.7 + ink * 0.35 + cusp * 0.45 + 0.12, 0.0, 1.0);
+  let display = aces(max(finalColor, vec3<f32>(0.0)));
+  let outColor = vec4<f32>(display, alpha);
+  textureStore(writeTexture, vec2<i32>(coord), outColor);
+  textureStore(dataTextureA, vec2<i32>(coord), outColor);
   textureStore(writeDepthTexture, vec2<i32>(coord), vec4<f32>(depth * edgeDarken, 0.0, 0.0, 0.0));
 }

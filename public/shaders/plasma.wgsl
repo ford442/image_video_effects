@@ -1,23 +1,14 @@
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+// ═══════════════════════════════════════════════════════════════════
+//  Plasma Ball
+//  Category: artistic
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-16
+//  Ideas: arc filaments between orbs; luma corona on the photo
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
-struct Uniforms {
-  config: vec4<f32>,              // time, audioOverall, resolutionX, resolutionY
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const BALL_COUNT: u32 = 8u;
 
@@ -55,9 +46,14 @@ fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
     return v * mix(vec3<f32>(1.0), clamp(p - vec3<f32>(1.0), vec3<f32>(0.0), vec3<f32>(1.0)), s);
 }
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
   let uv = vec2<f32>(global_id.xy) / resolution;
 
   // Evaluate UI params
@@ -69,19 +65,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Sample original image
   let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
-  // Audio reactivity from canonical plasmaBuffer
-  var audioOverall = u.config.y;
-  var audioBass = audioOverall * 1.2;
-  var audioMid = audioOverall;
-  var audioHigh = audioOverall;
-  if (arrayLength(&plasmaBuffer) > 0u) {
-    let audio = plasmaBuffer[0];
-    audioBass = audio.x;
-    audioMid = audio.y;
-    audioHigh = audio.z;
-    audioOverall = (audio.x + audio.y + audio.z) * 0.3333;
-  }
-  let audioReactivity = 1.0 + audioOverall * 0.5;
+  let audioBass = plasmaBuffer[0].x;
+  let audioMid = plasmaBuffer[0].y;
+  let audioHigh = plasmaBuffer[0].z;
+  let audioReactivity = 1.0 + (audioBass + audioMid + audioHigh) * 0.17;
 
   // Plasma Calculation
   var plasmaField = 0.0;
@@ -91,19 +78,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let time = u.config.x;
   let aspect = resolution.x / resolution.y;
 
-  // Iterate procedural plasma balls
+  // Iterate procedural plasma balls. The cluster orbits the pointer.
+  var orbPos: array<vec2<f32>, 8>;
+  var orbCol: array<vec3<f32>, 8>;
+  let origin = mix(vec2<f32>(0.5), clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0)), 0.72);
   for (var i = 0u; i < BALL_COUNT; i = i + 1u) {
       let fi = f32(i);
       // Procedural orbital motion
       let angle = time * (0.1 + u.zoom_params.y * 0.4) + fi * 0.785398;
       let radiusOrbit = (0.25 + 0.12 * sin(time * 0.17 + fi * 0.63)) * (0.5 + u.zoom_params.x);
-      var pos = vec2<f32>(
-          0.5 + radiusOrbit * cos(angle),
-          0.5 + radiusOrbit * sin(angle) * 0.6
-      );
+      var pos = origin + vec2<f32>(radiusOrbit * cos(angle), radiusOrbit * sin(angle) * 0.6);
+      orbPos[i] = pos;
       // Audio reactive pulse
       let radius = (0.045 + 0.025 * sin(time * 1.5 + fi) + 0.015 * audioBass) * (0.5 + u.zoom_params.x * 0.5);
       let ballColor = hsv2rgb(fract(0.12 * fi + time * 0.05), 0.85, 1.0);
+      orbCol[i] = ballColor;
 
       if (radius > 0.0) {
           // Correct aspect ratio for distance
@@ -111,13 +100,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
           let dist = length(dvec);
 
           // Velocity-derived trail direction
-          let nextPos = vec2<f32>(
-              0.5 + radiusOrbit * cos(angle + 0.01),
-              0.5 + radiusOrbit * sin(angle + 0.01) * 0.6
+          let nextPos = origin + vec2<f32>(
+              radiusOrbit * cos(angle + 0.01),
+              radiusOrbit * sin(angle + 0.01) * 0.6
           );
           let vel = nextPos - pos;
           let velDir = normalize(vel + vec2<f32>(0.0001));
-          let speed = length(vel);
 
           // Wisp/Noise distortion
           let noiseVal = fbm(uv * 20.0 - vel * time * 8.0 * audioReactivity + vec2<f32>(fi * 12.34));
@@ -137,7 +125,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
           plasmaColor += ballColor * influence * 1.5;
 
           // Shadow logic
-          let lightDir = normalize(vec2<f32>(-1.0, -1.0));
           let shadowOffset = vec2<f32>(0.01, 0.01);
           let shadowUV = uv - shadowOffset;
           let dvecShadow = (shadowUV - pos) * vec2<f32>(aspect, 1.0);
@@ -161,7 +148,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
       // Add core glow
       let core = smoothstep(0.8, 2.0, plasmaField);
-      let edge = smoothstep(0.1, 0.8, plasmaField);
 
       let wispColor = renderColor;
       let coreColor = vec3<f32>(1.0, 1.0, 1.0);
@@ -172,9 +158,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       finalColor = mix(finalColor, plasmaFinal, alpha * u.zoom_params.z);
   }
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
+  // Idea 1 — arc filaments between consecutive orbs.
+  var filament = 0.0;
+  var filamentColor = vec3<f32>(0.0);
+  let aspectVec = vec2<f32>(aspect, 1.0);
+  for (var j = 0u; j < BALL_COUNT; j = j + 1u) {
+      let a = orbPos[j];
+      let b = orbPos[(j + 1u) % BALL_COUNT];
+      let pa = (uv - a) * aspectVec;
+      let ba = (b - a) * aspectVec;
+      let along = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-5), 0.0, 1.0);
+      let strand = exp(-dot(pa - ba * along, pa - ba * along) / 0.00009);
+      filament += strand;
+      filamentColor += (orbCol[j] + orbCol[(j + 1u) % BALL_COUNT]) * 0.5 * strand;
+  }
+  let filamentMask = clamp(filament, 0.0, 1.0);
+  finalColor += (filamentColor / max(filament, 0.001)) * filamentMask * (0.45 + audioMid * 0.2) * int_eval;
 
-  // Preserve depth
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0));
+  // Idea 2 — luma corona: the field lights the bright parts of the photo.
+  let photoLuma = dot(baseColor.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let corona = plasmaField * smoothstep(0.08, 0.85, photoLuma);
+  let coronaColor = plasmaColor / max(plasmaField, 0.001);
+  finalColor += coronaColor * corona * (0.16 + audioHigh * 0.08) * int_eval;
+
+  let coverage = clamp(plasmaField * 0.35 + filamentMask * 0.4, 0.0, 1.0);
+  let alphaOut = clamp(baseColor.a * (1.0 - coverage * 0.35) + coverage, 0.0, 1.0);
+  let display = aces(max(finalColor, vec3<f32>(0.0)));
+  let pixel = vec2<i32>(global_id.xy);
+  textureStore(writeTexture, pixel, vec4<f32>(display, alphaOut));
+  textureStore(dataTextureA, pixel, vec4<f32>(display, alphaOut));
+
+  let sceneDepth = textureLoad(readDepthTexture, pixel, 0).r;
+  let relief = clamp(plasmaField * 0.15 + filamentMask * 0.2, 0.0, 1.0);
+  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(mix(sceneDepth, relief, 0.4), 0.0, 0.0, 0.0));
 }

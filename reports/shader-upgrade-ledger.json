@@ -1074,12 +1074,30 @@
       "history": []
     },
     "plasma": {
-      "hash": "55e6641df8187e8f",
-      "history": []
+      "hash": "7316b578e6f06306",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-16T00:57:41.033Z",
+          "hash": "7316b578e6f06306",
+          "prev_hash": "55e6641df8187e8f",
+          "commit": "bda9710d",
+          "note": "2026-10-16 photo-plane ten (Grok 4.7) — docs/agents/swarm-outputs/cursor-2026-10-16-photo-plane-ten"
+        }
+      ]
     },
     "poincare-tile": {
-      "hash": "3e824f0e1be886c3",
-      "history": []
+      "hash": "91a14018d043134c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-16T00:57:41.033Z",
+          "hash": "91a14018d043134c",
+          "prev_hash": "3e824f0e1be886c3",
+          "commit": "bda9710d",
+          "note": "2026-10-16 photo-plane ten (Grok 4.7) — docs/agents/swarm-outputs/cursor-2026-10-16-photo-plane-ten"
+        }
+      ]
     },
     "polka-dot-reveal": {
       "hash": "725240508ca98242",
@@ -1094,8 +1112,17 @@
       "history": []
     },
     "quantum-fractal": {
-      "hash": "33cf9465c17f4d4f",
-      "history": []
+      "hash": "c53d97147ffb0e81",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-16T00:57:41.033Z",
+          "hash": "c53d97147ffb0e81",
+          "prev_hash": "33cf9465c17f4d4f",
+          "commit": "bda9710d",
+          "note": "2026-10-16 photo-plane ten (Grok 4.7) — docs/agents/swarm-outputs/cursor-2026-10-16-photo-plane-ten"
+        }
+      ]
     },
     "quantum-smear": {
       "hash": "658b58985a64f9d9",
@@ -5689,8 +5716,17 @@
       "history": []
     },
     "bismuth-crystallizer": {
-      "hash": "f2059cf8d91a4152",
-      "history": []
+      "hash": "2c955d60d96cd46a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-16T00:57:41.033Z",
+          "hash": "2c955d60d96cd46a",
+          "prev_hash": "f2059cf8d91a4152",
+          "commit": "bda9710d",
+          "note": "2026-10-16 photo-plane ten (Grok 4.7) — docs/agents/swarm-outputs/cursor-2026-10-16-photo-plane-ten"
+        }
+      ]
     },
     "chroma-threads": {
       "hash": "24ac9b4f3dd6adb7",
@@ -5701,8 +5737,17 @@
       "history": []
     },
     "circular-pixelate": {
-      "hash": "903f25d64f839c19",
-      "history": []
+      "hash": "6671303743cc4138",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-16T00:57:41.033Z",
+          "hash": "6671303743cc4138",
+          "prev_hash": "903f25d64f839c19",
+          "commit": "bda9710d",
+          "note": "2026-10-16 photo-plane ten (Grok 4.7) — docs/agents/swarm-outputs/cursor-2026-10-16-photo-plane-ten"
+        }
+      ]
     },
     "color-blindness": {
       "hash": "bfcfdaddeb738ab0",
@@ -5794,8 +5839,17 @@
       "history": []
     },
     "cross-conv-mouse-bilateral": {
-      "hash": "aed0c68fa7905005",
-      "history": []
+      "hash": "cd457f4bea1c5933",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-16T00:57:41.033Z",
+          "hash": "cd457f4bea1c5933",
+          "prev_hash": "aed0c68fa7905005",
+          "commit": "bda9710d",
+          "note": "2026-10-16 photo-plane ten (Grok 4.7) — docs/agents/swarm-outputs/cursor-2026-10-16-photo-plane-ten"
+        }
+      ]
     },
     "crt-scanline-damage": {
       "hash": "04bcecbfc58bfa97",
@@ -5939,8 +5993,17 @@
       "history": []
     },
     "liquid-chrome-ripple": {
-      "hash": "493660c96ba20e53",
-      "history": []
+      "hash": "b40f179898d383fe",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-16T00:57:41.033Z",
+          "hash": "b40f179898d383fe",
+          "prev_hash": "493660c96ba20e53",
+          "commit": "bda9710d",
+          "note": "2026-10-16 photo-plane ten (Grok 4.7) — docs/agents/swarm-outputs/cursor-2026-10-16-photo-plane-ten"
+        }
+      ]
     },
     "luma-refraction": {
       "hash": "4f609f3498a5c3d2",
@@ -6105,8 +6168,17 @@
       "history": []
     },
     "spectral-mesh": {
-      "hash": "6abc35cd74a32eae",
-      "history": []
+      "hash": "f09f9e84faf414ca",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-16T00:57:41.033Z",
+          "hash": "f09f9e84faf414ca",
+          "prev_hash": "6abc35cd74a32eae",
+          "commit": "bda9710d",
+          "note": "2026-10-16 photo-plane ten (Grok 4.7) — docs/agents/swarm-outputs/cursor-2026-10-16-photo-plane-ten"
+        }
+      ]
     },
     "steampunk-gear-lens": {
       "hash": "ec0599463e27b011",
@@ -6806,8 +6878,17 @@
       "history": []
     },
     "molten-glass": {
-      "hash": "91d25fe096eafcf1",
-      "history": []
+      "hash": "65a9817901024a1f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-16T00:57:41.033Z",
+          "hash": "65a9817901024a1f",
+          "prev_hash": "91d25fe096eafcf1",
+          "commit": "bda9710d",
+          "note": "2026-10-16 photo-plane ten (Grok 4.7) — docs/agents/swarm-outputs/cursor-2026-10-16-photo-plane-ten"
+        }
+      ]
     },
     "motion-heatmap": {
       "hash": "7329b26ce44948ad",
@@ -7264,8 +7345,17 @@
       "history": []
     },
     "selective-color": {
-      "hash": "2a9e410068b696ee",
-      "history": []
+      "hash": "97911e61de4baf93",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-16T00:57:41.033Z",
+          "hash": "97911e61de4baf93",
+          "prev_hash": "2a9e410068b696ee",
+          "commit": "bda9710d",
+          "note": "2026-10-16 photo-plane ten (Grok 4.7) — docs/agents/swarm-outputs/cursor-2026-10-16-photo-plane-ten"
+        }
+      ]
     },
     "sequin-flip": {
       "hash": "71f2d7f7e9e35100",

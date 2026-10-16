@@ -1,6 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Liquid Chrome Ripple — capillary sheet, caustics, RGB reflection
-//  A owns HDR display history; C is exact previous display state.
+//  Liquid Chrome Ripple
+//  Category: image
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-10-16
+//  Ideas: crest beads on local height maxima; trough meniscus in the valleys
+//  A packing: HDR display history in A; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -110,6 +115,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     + vec3<f32>(1.05, 0.98, 0.86) * specKey * (1.1 + bass * 0.5)
     + vec3<f32>(0.48, 0.72, 1.0) * specFill * 0.45
     + thinFilm * caustic * (0.18 + mids * 0.28);
+
+  // Idea 1 — crest beads. Idea 2 — trough meniscus.
+  let sheet = waveHeight(p, mouse, time, frequency, flow) * held;
+  let neighborHigh = max(max(hL, hR), max(hD, hU)) * held;
+  let neighborLow = min(min(hL, hR), min(hD, hU)) * held;
+  let crest = smoothstep(0.015, 0.12, sheet - neighborHigh);
+  let trough = smoothstep(0.015, 0.12, neighborLow - sheet);
+  live += vec3<f32>(1.15, 1.05, 0.92) * crest * (0.28 + treble * 0.2);
+  live *= mix(vec3<f32>(1.0), vec3<f32>(0.62, 0.70, 0.78), trough * 0.55);
 
   // Advected display persistence gives ripples a chrome afterimage without
   // turning the buffer into an undocumented simulation state.
