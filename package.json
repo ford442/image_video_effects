@@ -33,6 +33,7 @@
     "eject": "craco eject",
     "wasm:build": "bash wasm_renderer/build.sh",
     "wasm:compdb": "node scripts/format-wasm-compile-flags.js compdb",
+    "gen:canvas-configure": "node scripts/gen-canvas-configure-header.js",
     "wasm:validate": "node scripts/validate_wasm_artifacts.js",
     "wasm:clean": "rm -rf wasm_renderer/build public/wasm",
     "test:wasm:unit": "craco test --watchAll=false --ci --testPathPattern=WASM",

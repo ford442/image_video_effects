@@ -276,6 +276,7 @@ function verifyCanvasConfigure() {
   if (c.optIn?.extendedToneMapping?.toneMappingMode !== 'extended') {
     fail(`${file} optIn.extendedToneMapping.toneMappingMode must be 'extended'`);
   }
+  verifyCanvasCapabilities(c, file);
 
   // ── TS: buildCanvasConfigureOptions reads the contract ───────────────────
   const tsFile = 'src/renderer/webgpu/device.ts';
@@ -306,6 +307,14 @@ function verifyCanvasConfigure() {
     if (/format:\s*['"]/.test(body)) {
       fail(`${tsFile} buildCanvasConfigureOptions must not hardcode a canvas format`);
     }
+    for (const cap of Object.keys(c.optIn || {})) {
+      if (!body.includes(`optIns.${cap}`)) {
+        fail(`${tsFile} buildCanvasConfigureOptions must read capability optIns.${cap} (canvas_configure.json optIn)`);
+      }
+    }
+  }
+  if (!/TEXTURE_USAGE_FALLBACK[^=]*=\s*canvasConfigureContract\.usageBits/.test(ts)) {
+    fail(`${tsFile} TEXTURE_USAGE_FALLBACK must come from canvasConfigureContract.usageBits`);
   }
 
   const probeFile = 'src/renderer/webgpuBootProbe.ts';
@@ -325,16 +334,8 @@ function verifyCanvasConfigure() {
     fail(`device.cpp ${c.cpp.jsConfigureFunction} ctx.configure({...}) not found`);
   } else {
     const body = jsCfg[1];
-    if (!new RegExp(`alphaMode:\\s*'${c.alphaMode}'`).test(body)) {
-      fail(`device.cpp ${c.cpp.jsConfigureFunction} alphaMode must be '${c.alphaMode}'`);
-    }
-    const usage = body.match(/usage:\s*([^,\n}]+)/);
-    const jsUsage = usage
-      ? usage[1].split('|').map((u) => u.trim().replace(/^GPUTextureUsage\./, '')).sort()
-      : [];
-    if (JSON.stringify(jsUsage) !== JSON.stringify([...c.usage].sort())) {
-      fail(`device.cpp ${c.cpp.jsConfigureFunction} usage must be ${c.usage.join('|')} (got ${jsUsage.join('|') || 'missing'})`);
-    }
+    verifyEmJsConfigureFromHeader(c.cpp.jsConfigureFunction, body, /usage:\s*usage\s*>>>\s*0/);
+    verifyHeaderCallSite(cpp, c.cpp.jsConfigureFunction, 'kUsage');
     if (!/format:\s*preferredFormat/.test(body)) {
       fail(`device.cpp ${c.cpp.jsConfigureFunction} format must be getPreferredCanvasFormat() (preferredFormat)`);
     }
@@ -348,19 +349,16 @@ function verifyCanvasConfigure() {
     fail(`device.cpp WebGPURenderer::${c.cpp.surfaceConfigureFunction}() not found`);
   } else {
     const body = surf[0];
-    const usage = body.match(/config\.usage\s*=\s*([^;]+);/);
-    const cppUsage = usage ? usage[1].split('|').map((u) => u.trim()).sort() : [];
-    const wantUsage = c.usage.map((u) => c.cpp.usageEnums[u]).sort();
-    if (JSON.stringify(cppUsage) !== JSON.stringify(wantUsage)) {
-      fail(`device.cpp ${c.cpp.surfaceConfigureFunction} usage must be ${wantUsage.join(' | ')} (got ${cppUsage.join(' | ') || 'missing'})`);
+    const code = stripCppComments(body);
+    if (!/config\.alphaMode\s*=\s*canvas_configure::kAlphaMode;/.test(code)) {
+      fail(`device.cpp ${c.cpp.surfaceConfigureFunction} alphaMode must be canvas_configure::kAlphaMode`);
     }
-    const alpha = c.cpp.alphaModeEnums[c.alphaMode];
-    if (!new RegExp(`config\\.alphaMode\\s*=\\s*${alpha}\\b`).test(body)) {
-      fail(`device.cpp ${c.cpp.surfaceConfigureFunction} alphaMode must be ${alpha}`);
+    if (!/config\.presentMode\s*=\s*canvas_configure::kPresentMode;/.test(code)) {
+      fail(`device.cpp ${c.cpp.surfaceConfigureFunction} presentMode must be canvas_configure::kPresentMode`);
     }
-    const present = c.cpp.presentModeEnums[c.presentModeWasm];
-    if (!new RegExp(`config\\.presentMode\\s*=\\s*${present}\\b`).test(body)) {
-      fail(`device.cpp ${c.cpp.surfaceConfigureFunction} presentMode must be ${present}`);
+    const literal = code.match(/\b(WGPUTextureUsage_\w+|WGPUCompositeAlphaMode_\w+|WGPUPresentMode_\w+)/);
+    if (literal) {
+      fail(`device.cpp ${c.cpp.surfaceConfigureFunction} must take usage/alphaMode/presentMode from canvas_configure.h (found ${literal[1]})`);
     }
     if (!/config\.width\s*=/.test(body) || !/config\.height\s*=/.test(body)) {
       fail(`device.cpp ${c.cpp.surfaceConfigureFunction} must set explicit width/height`);
@@ -381,10 +379,91 @@ function verifyCanvasConfigure() {
 }
 
 /**
+ * canvas_configure.json optIn is the capabilities object: each entry names the
+ * configure keys it controls and the backends that implement it. The C++
+ * header is generated from the same JSON and must be current.
+ */
+function verifyCanvasCapabilities(c, file) {
+  const known = new Set(['usage', 'colorSpace', 'toneMapping']);
+  const caps = c.optIn || {};
+  for (const [name, cap] of Object.entries(caps)) {
+    const backends = cap.backends || [];
+    if (!backends.includes('ts') || backends.some((b) => b !== 'ts' && b !== 'wasm')) {
+      fail(`${file} optIn.${name}.backends must include "ts" and only name "ts" / "wasm" (got ${JSON.stringify(cap.backends)})`);
+    }
+    const keys = cap.configureKeys || [];
+    if (keys.length === 0 || keys.some((k) => !known.has(k))) {
+      fail(`${file} optIn.${name}.configureKeys must be a non-empty subset of ${[...known].join(', ')}`);
+    }
+    if (cap.requires !== undefined && !caps[cap.requires]) {
+      fail(`${file} optIn.${name}.requires names unknown capability '${cap.requires}'`);
+    }
+    if (backends.includes('wasm') && !c.cpp?.[name]) {
+      fail(`${file} optIn.${name} lists backend "wasm" but has no cpp.${name} block`);
+    }
+  }
+  for (const name of Object.keys(c.usageBits || {})) {
+    if (!c.cpp?.usageEnums?.[name]) fail(`${file} usageBits.${name} has no cpp.usageEnums entry`);
+  }
+
+  // The WASM configures may only write keys of capabilities that list "wasm".
+  const cppSrc = stripCppComments(fs.readFileSync(CPP_DEVICE, 'utf8'));
+  const configures = [...cppSrc.matchAll(/ctx\.configure\(\{([\s\S]*?)\}\)/g)].map((m) => m[1]);
+  for (const [name, cap] of Object.entries(caps)) {
+    if ((cap.backends || []).includes('wasm')) continue;
+    for (const key of (cap.configureKeys || []).filter((k) => k !== 'usage')) {
+      if (configures.some((body) => new RegExp(`\\b${key}\\s*:`).test(body))) {
+        fail(`device.cpp ctx.configure sets ${key}, but optIn.${name} does not list backend "wasm"`);
+      }
+    }
+  }
+
+  const gen = require('./gen-canvas-configure-header.js');
+  const headerFile = gen.headerPath(c);
+  const have = fs.existsSync(headerFile) ? fs.readFileSync(headerFile, 'utf8') : '';
+  let want = null;
+  try {
+    want = gen.renderHeader(c);
+  } catch (err) {
+    fail(`${c.cpp.header} cannot be generated: ${err.message}`);
+  }
+  if (want !== null && have !== want) {
+    fail(`${c.cpp.header} is stale or missing; run: npm run gen:canvas-configure`);
+  }
+  if (!/#include "canvas_configure\.h"/.test(fs.readFileSync(CPP_DEVICE, 'utf8'))) {
+    fail('device.cpp must #include "canvas_configure.h"');
+  }
+}
+
+/** An EM_JS ctx.configure body takes usage / alphaMode from its parameters, never literals. */
+function verifyEmJsConfigureFromHeader(fn, body, usageRe) {
+  if (!usageRe.test(body) || /GPUTextureUsage\./.test(body)) {
+    fail(`device.cpp ${fn} usage must be the passed canvas_configure.h value, not a GPUTextureUsage literal`);
+  }
+  if (!/alphaMode:\s*UTF8ToString\(alphaModePtr\)/.test(body)) {
+    fail(`device.cpp ${fn} alphaMode must be UTF8ToString(alphaModePtr) (canvas_configure::kAlphaModeJs)`);
+  }
+}
+
+/** Every call of an EM_JS configure passes the canvas_configure.h usage constant and kAlphaModeJs. */
+function verifyHeaderCallSite(cpp, fn, usageConst) {
+  const calls = [...stripCppComments(cpp).matchAll(new RegExp(`=\\s*${fn}\\(([^;]*)\\);`, 'g'))];
+  if (calls.length === 0) {
+    fail(`device.cpp ${fn}() call not found`);
+    return;
+  }
+  for (const [, args] of calls) {
+    if (!args.includes(`canvas_configure::${usageConst}`) || !args.includes('canvas_configure::kAlphaModeJs')) {
+      fail(`device.cpp ${fn}() must be called with canvas_configure::${usageConst} and canvas_configure::kAlphaModeJs`);
+    }
+  }
+}
+
+/**
  * C++ canvas COPY_SRC opt-in (canvas_configure.json cpp.copySrc):
  * probe EM_JS uses exactly optIn.copySrc.usage inside a validation error scope,
- * ConfigureSurface() restores render-only after it, the opt-in bits map through
- * cpp.usageEnums and are gated on the flag, and only the setter assigns the flag.
+ * ConfigureSurface() restores render-only after it, the opt-in usage comes from
+ * canvas_configure.h and is gated on the flag, and only the setter assigns the flag.
  */
 function verifyCanvasCopySrcCpp(c, cpp, surfBody) {
   const cs = c.cpp.copySrc;
@@ -400,15 +479,13 @@ function verifyCanvasCopySrcCpp(c, cpp, surfBody) {
     fail(`device.cpp ${cs.probeFunction} ctx.configure({...}) not found`);
   } else {
     const body = probeCfg[1];
-    const usage = body.match(/usage:\s*([^,\n}]+)/);
-    const jsUsage = usage
-      ? usage[1].split('|').map((u) => u.trim().replace(/^GPUTextureUsage\./, '')).sort()
-      : [];
-    if (JSON.stringify(jsUsage) !== JSON.stringify([...optUsage].sort())) {
-      fail(`device.cpp ${cs.probeFunction} usage must be ${optUsage.join('|')} (got ${jsUsage.join('|') || 'missing'})`);
+    verifyEmJsConfigureFromHeader(cs.probeFunction, body, /usage:\s*want\b/);
+    verifyHeaderCallSite(cpp, cs.probeFunction, 'kCopySrcUsage');
+    if (!/var want = usage\s*>>>\s*0;/.test(probeFn[0]) || !/\(readback\.usage & want\) !== want/.test(probeFn[0])) {
+      fail(`device.cpp ${cs.probeFunction} must configure and read back the passed usage (want = usage >>> 0)`);
     }
-    if (!new RegExp(`alphaMode:\\s*'${c.alphaMode}'`).test(body) || !/format:\s*preferredFormat/.test(body)) {
-      fail(`device.cpp ${cs.probeFunction} must keep alphaMode '${c.alphaMode}' and format preferredFormat`);
+    if (!/format:\s*preferredFormat/.test(body)) {
+      fail(`device.cpp ${cs.probeFunction} must keep format preferredFormat`);
     }
     if (/colorSpace|toneMapping/.test(body)) {
       fail(`device.cpp ${cs.probeFunction} must not set colorSpace/toneMapping (opt-in is TS-first)`);
@@ -436,16 +513,13 @@ function verifyCanvasCopySrcCpp(c, cpp, surfBody) {
     }
   }
 
-  // ConfigureSurface: opt-in bits (optIn.copySrc.usage minus default usage) via cpp.usageEnums, gated on the flag.
-  const extra = optUsage.filter((u) => !c.usage.includes(u));
-  const wantEnums = extra.map((u) => c.cpp.usageEnums[u]);
-  if (wantEnums.some((e) => !e)) {
-    fail(`canvas_configure.json cpp.usageEnums missing an entry for ${extra.join(', ')}`);
+  // ConfigureSurface: kCopySrcUsage (optIn.copySrc.usage) only while the flag is set, else kUsage.
+  const wantLine = new RegExp(`config\\.usage\\s*=\\s*${cs.flag}\\s*\\?\\s*canvas_configure::kCopySrcUsage\\s*:\\s*canvas_configure::kUsage;`);
+  if (!wantLine.test(surfBody)) {
+    fail(`device.cpp ${c.cpp.surfaceConfigureFunction} must have 'config.usage = ${cs.flag} ? canvas_configure::kCopySrcUsage : canvas_configure::kUsage;'`);
   }
-  const optLine = surfBody.match(new RegExp(`if\\s*\\(\\s*${cs.flag}\\s*\\)\\s*config\\.usage\\s*\\|=\\s*([^;]+);`));
-  const gotEnums = optLine ? optLine[1].split('|').map((u) => u.trim()).sort() : [];
-  if (JSON.stringify(gotEnums) !== JSON.stringify([...wantEnums].sort())) {
-    fail(`device.cpp ${c.cpp.surfaceConfigureFunction} must have 'if (${cs.flag}) config.usage |= ${wantEnums.join(' | ')};' (got ${gotEnums.join(' | ') || 'missing'})`);
+  if (optUsage.some((u) => !c.cpp.usageEnums[u])) {
+    fail(`canvas_configure.json cpp.usageEnums missing an entry for one of ${optUsage.join(', ')}`);
   }
 
   // Flag is assigned only in the setter; header defaults both flags to false.
