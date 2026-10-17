@@ -1555,12 +1555,30 @@
       "history": []
     },
     "vortex-pass1": {
-      "hash": "d7b2d8da315a16a0",
-      "history": []
+      "hash": "b0bab03494aceb5e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T20:13:41.284Z",
+          "hash": "b0bab03494aceb5e",
+          "prev_hash": "d7b2d8da315a16a0",
+          "commit": "8fc34b84",
+          "note": "2026-10-17 cursor batch-02 (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-batch-02"
+        }
+      ]
     },
     "vortex-pass2": {
-      "hash": "e134cd0a31356e64",
-      "history": []
+      "hash": "3c2e43717e1133da",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T20:13:41.284Z",
+          "hash": "3c2e43717e1133da",
+          "prev_hash": "e134cd0a31356e64",
+          "commit": "8fc34b84",
+          "note": "2026-10-17 cursor batch-02 (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-batch-02"
+        }
+      ]
     },
     "vortex-warp": {
       "hash": "35d75bd5f03c791b",
@@ -1744,8 +1762,17 @@
       ]
     },
     "gen-aethereal-ferrofluid-chrono-core": {
-      "hash": "2c7c1652a82d41e2",
-      "history": []
+      "hash": "0d899838459c6b0c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T20:13:41.284Z",
+          "hash": "0d899838459c6b0c",
+          "prev_hash": "2c7c1652a82d41e2",
+          "commit": "8fc34b84",
+          "note": "2026-10-17 cursor batch-02 (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-batch-02"
+        }
+      ]
     },
     "gen-aetherial-plasma-loom": {
       "hash": "92a4d26065dedf42",
@@ -5157,7 +5184,7 @@
       ]
     },
     "gen-spectral-ferrofluid": {
-      "hash": "511f51dfad243bf4",
+      "hash": "a2af6a9f2885233b",
       "history": [
         {
           "event": "upgraded",
@@ -5166,6 +5193,14 @@
           "prev_hash": "d2ea445b9dddafb2",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T20:13:41.284Z",
+          "hash": "a2af6a9f2885233b",
+          "prev_hash": "511f51dfad243bf4",
+          "commit": "8fc34b84",
+          "note": "2026-10-17 cursor batch-02 (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-batch-02"
         }
       ]
     },
@@ -7996,12 +8031,30 @@
       "history": []
     },
     "liquid-pass1": {
-      "hash": "801237ad232b6e57",
-      "history": []
+      "hash": "597449b10448b1ee",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T20:13:41.284Z",
+          "hash": "597449b10448b1ee",
+          "prev_hash": "801237ad232b6e57",
+          "commit": "8fc34b84",
+          "note": "2026-10-17 cursor batch-02 (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-batch-02"
+        }
+      ]
     },
     "liquid-pass2": {
-      "hash": "88da735bea7b415e",
-      "history": []
+      "hash": "73c171402efb3e29",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T20:13:41.284Z",
+          "hash": "73c171402efb3e29",
+          "prev_hash": "88da735bea7b415e",
+          "commit": "8fc34b84",
+          "note": "2026-10-17 cursor batch-02 (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-batch-02"
+        }
+      ]
     },
     "liquid-perspective": {
       "hash": "190954c12e873fb4",
@@ -8463,8 +8516,17 @@
       "history": []
     },
     "chromatographic-fluid": {
-      "hash": "6a6c9f845e029843",
-      "history": []
+      "hash": "ccb2f69c5d256f2b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T20:13:41.284Z",
+          "hash": "ccb2f69c5d256f2b",
+          "prev_hash": "6a6c9f845e029843",
+          "commit": "8fc34b84",
+          "note": "2026-10-17 cursor batch-02 (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-batch-02"
+        }
+      ]
     },
     "cymatic-sand": {
       "hash": "cab2cc0b5ac885fd",
@@ -8565,12 +8627,30 @@
       ]
     },
     "quantum-foam-pass2": {
-      "hash": "094605c513add360",
-      "history": []
+      "hash": "5874fe515b30cc05",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T20:13:41.284Z",
+          "hash": "5874fe515b30cc05",
+          "prev_hash": "094605c513add360",
+          "commit": "8fc34b84",
+          "note": "2026-10-17 cursor batch-02 (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-batch-02"
+        }
+      ]
     },
     "quantum-foam-pass3": {
-      "hash": "9d536ace635b5e65",
-      "history": []
+      "hash": "04de1fad01c1d8cc",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T20:13:41.284Z",
+          "hash": "04de1fad01c1d8cc",
+          "prev_hash": "9d536ace635b5e65",
+          "commit": "8fc34b84",
+          "note": "2026-10-17 cursor batch-02 (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-batch-02"
+        }
+      ]
     },
     "rd-on-video-pass1": {
       "hash": "77a3ba592fd783b5",
@@ -8601,8 +8681,17 @@
       "history": []
     },
     "sim-fluid-feedback-field": {
-      "hash": "2c33f11dc783131e",
-      "history": []
+      "hash": "803efa73b6e8de06",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T20:13:41.284Z",
+          "hash": "803efa73b6e8de06",
+          "prev_hash": "2c33f11dc783131e",
+          "commit": "8fc34b84",
+          "note": "2026-10-17 cursor batch-02 (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-batch-02"
+        }
+      ]
     },
     "sim-heat-haze-field": {
       "hash": "6f771f13fa594303",

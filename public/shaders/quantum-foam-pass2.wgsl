@@ -6,34 +6,17 @@
 //  Chunks From: aurora-rift-pass2.wgsl (chromatic dispersion), gen-quantum-foam-alpha.wgsl (voronoi)
 //  Created: 2026-05-31
 //  By: Claude Sonnet 4.6 (swarm optimization pass)
-//  upgraded-rgba
+//  Upgraded: 2026-10-17
+//  Ideas: curl comet along the flow; film scintillation on cell boundaries
+//  A packing: finalColor.rgb + emission (dataB and dataA; pass 3 reads B)
 // ═══════════════════════════════════════════════════════════════════
 //  Pass graph: Pass 2 reads the field from dataTextureC (copy of Pass 1's
 //              dataTextureA), advects particles through it, and writes
-//              particle RGBA to dataTextureB and temporal history to
-//              dataTextureA.
+//              particle RGBA to dataTextureB and the same pack to dataTextureA.
 //  Inputs:  dataTextureC (field from Pass 1)
-//  Outputs: dataTextureB (particle RGBA), dataTextureA (history)
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config:      vec4<f32>,       // x=time, y=globalIntensity, z=resX, w=resY
-    zoom_config: vec4<f32>,       // x=rotationSpeed, y=depthParallax, z=emissionThreshold, w=chromaticSpread
-    zoom_params: vec4<f32>,       // x=foamScale, y=flowSpeed, z=diffusionRate, w=octaveCount
-    ripples:     array<vec4<f32>, 50>,
-};
+//  Outputs: dataTextureB / dataTextureA (color.rgb, emission)
+#include "_prelude.wgsl"
+// zoom_params: x=foamScale, y=flowSpeed, z=diffusionRate, w=octaveCount
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  Hash functions
@@ -142,21 +125,20 @@ fn spectralPower(color: vec3<f32>, pattern: f32) -> vec3<f32> {
 // ═══════════════════════════════════════════════════════════════════════════
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-  let unused_x = u.zoom_params.x;
-  let unused_y = u.zoom_params.y;
-  let unused_z = u.zoom_params.z;
-  let unused_w = u.zoom_params.w;
     let dims = u.config.zw;
+    if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) { return; }
     let uv = vec2<f32>(gid.xy) / dims;
     let coord = vec2<i32>(gid.xy);
+    let resI = vec2<i32>(dims);
     let texel = 1.0 / dims;
     let time = u.config.x;
     let globalIntensity = u.config.y;
+    let bass = plasmaBuffer[0].x;
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
-    // Read field from Pass 1 (via dataTextureC which has Pass 1's dataTextureA content)
-    let field = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    // Field from Pass 1, copied into C before this dispatch.
+    let field = textureLoad(dataTextureC, coord, 0);
     let warp = field.xy;
     let pattern = field.z;
     let cellBoundary = field.w;
@@ -192,14 +174,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
     let dispersedColor = vec3<f32>(r, g, b);
 
-    // Emissive quantum foam at cell boundaries
-    let emission = smoothstep(emissionThreshold, 1.0, cellBoundary * pattern * luminance);
+    // Idea 1 — curl comet: head at the dispersed sample, tail one step upstream.
+    let flow = curl + warp;
+    let flowDir = flow / max(length(flow), 0.0001);
+    let tailUv = clamp(uv - flowDir * (0.004 + chromaticSpread * 0.003), vec2<f32>(0.0), vec2<f32>(1.0));
+    let tailPx = clamp(vec2<i32>(tailUv * dims), vec2<i32>(0), resI - vec2<i32>(1));
+    let tailCol = textureLoad(readTexture, tailPx, 0).rgb;
+    let comet = mix(tailCol, dispersedColor, 0.62);
+
+    // Idea 2 — film scintillation on the cell boundary (bass quickens the twinkle).
+    let spark = 0.5 + 0.5 * sin(time * (5.0 + bass * 3.0) + pattern * 21.0 + cellBoundary * 14.0);
+    let emission = smoothstep(emissionThreshold, 1.0, cellBoundary * pattern * luminance) * (0.35 + 0.65 * spark);
     let plasmaColor = hsv2rgb(fract(time * 0.05 + pattern), 0.9, 1.0);
-    let emissiveColor = mix(dispersedColor, plasmaColor, emission * 0.5);
+    let emissiveColor = mix(comet, plasmaColor, emission * 0.5);
 
     // Temporal anisotropic diffusion
     let historyUV = clamp(uv + warp * 0.3, vec2<f32>(0.0), vec2<f32>(1.0));
-    let history = textureSampleLevel(dataTextureC, u_sampler, historyUV, 0.0).rgb;
+    let historyPx = clamp(vec2<i32>(historyUV * dims), vec2<i32>(0), resI - vec2<i32>(1));
+    let history = textureLoad(dataTextureC, historyPx, 0).rgb;
     // Note: history reads from dataTextureC for temporal feedback effect
     let flowDirection = normalize(warp + curl + vec2<f32>(0.001));
     let anisotropicFactor = 1.0 - abs(dot(flowDirection, normalize(uv - 0.5 + vec2<f32>(0.001)))) * 0.3;
@@ -211,15 +203,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Final intensity modulation
     let finalColor = mix(src.rgb, spectralColor, globalIntensity);
 
-    // Pack particle data for Pass 3
-    // RGB = final color, A = emission intensity for glow
+    // RGB = final color, A = scintillating emission for pass 3's glow.
     let particles = vec4<f32>(finalColor, emission);
-
-    // Store for Pass 3
     textureStore(dataTextureB, coord, particles);
-
-    // Update history buffer (via dataTextureA)
-    textureStore(dataTextureA, coord, vec4<f32>(anisotropicBlend, 1.0));
+    textureStore(dataTextureA, coord, particles);
 
     // Pass-through color with preserved alpha (Pass 3 will do final compositing)
     textureStore(writeTexture, coord, vec4<f32>(src.rgb, src.a));

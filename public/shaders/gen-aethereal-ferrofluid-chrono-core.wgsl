@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: Rosensweig needle sharpening (spike profile pow-sharpened by magnetic strength × bass); chrono clock ring (12 equatorial tick spikes, the active tick extends and glows amber); seam-routed bioluminescence (cyan glow follows the Voronoi edge distance v.y − v.x)
+//  Upgraded: 2026-10-17
+//  Ideas: Rosensweig needle sharpening; chrono clock ring; seam-routed bioluminescence; tip bulbs on the needles; equatorial current sheet between the ticks
 //  A packing: ACES display RGBA, a = coverage (hit) / seam halo (background); C unread
 // ═══════════════════════════════════════════════════════════════════
 //  A raymarched ferrofluid sphere whose surface is pushed out into
@@ -153,6 +153,10 @@ fn map(p: vec3<f32>, time: f32, au: Audio) -> MapHit {
     let spike_displacement = (needle * 0.5 + flow * 0.2) * (1.0 - viscosity * 0.5);
 
     d = d - spike_displacement;
+
+    // Idea — tip bulbs: the sharpened needles end in a small droplet.
+    let bulb = smoothstep(0.78, 0.98, spike_shape) * 0.065 * (0.65 + magnetic_strength);
+    d = d - bulb;
 
     // Idea 2: chrono clock ring — 12 tapered tick spikes on the equator.
     // Fold the azimuth into the nearest tick sector and measure a tapered
@@ -313,6 +317,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let tickGlow = vec3<f32>(1.0, 0.55, 0.15) * hitInfo.litTick * (2.0 + au.treble * 3.0);
 
         col = mat_col * ao + bio + tickMetal * ao + tickGlow;
+
+        // Idea — equatorial current sheet in the gaps between clock ticks.
+        let equator = exp(-p.y * p.y * 90.0) * (1.0 - hitInfo.tick);
+        col += vec3<f32>(0.55, 0.9, 1.0) * equator * (0.18 + au.mids * 0.12) * (0.4 + fresnel);
 
         // Depth: near = 1
         depth = clamp(1.0 - (t - 0.1) / (FAR - 0.1), 0.0, 1.0);

@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: Archimedean flux spirals from the four poles' stream functions woven across the iso-|B| bands; Cotton-Mouton birefringence (Michel-Levy tint + Maltese-cross isogyres from fieldDir); pole meniscus mounds with analytic specular normals; Rosensweig crown ringlets; Barkhausen jump flicker
+//  Upgraded: 2026-10-17
+//  Ideas: Archimedean flux spirals; Cotton-Mouton birefringence; pole meniscus mounds; Rosensweig crown ringlets; Barkhausen jump flicker; magnetic-mirror beads; Bloch domain wall
 //  A packing: raw field state (fMag*0.25, fieldDir.x, fieldDir.y, alpha) — C read as fields
 //  Description: Magnetic ferrofluid simulation with field-strength alpha
 //    translucency. Field lines react to mouse as a magnetic source while
@@ -296,6 +296,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col = col * (1.0 - 0.35 * moundMask)                     // glossy black body
       + vec3<f32>(1.0, 0.96, 0.9) * moundSpec * 1.2        // shoulder ring glint
       + ferroPalette(spectralT + 0.15) * moundFres * 1.5;  // Fresnel rim
+
+  // Idea — magnetic-mirror beads on the inner shoulder, inside the Rosensweig crown.
+  let beadAng = atan2(p.y - mPos.y, p.x - mPos.x);
+  let beadPhase = fract(beadAng * 8.0 / 6.2831853 + time * 0.05);
+  let mirrorBead = exp(-abs(rm - 0.11) * 55.0) * smoothstep(0.55, 0.92, beadPhase);
+  let beadAng1 = atan2(p.y - sec1.y, p.x - sec1.x);
+  let bead1 = exp(-abs(r1 - 0.09) * 50.0) * smoothstep(0.6, 0.9, fract(beadAng1 * 6.0 / 6.2831853));
+  col += vec3<f32>(1.0, 0.94, 0.82) * (mirrorBead + bead1 * 0.55) * (0.45 + bassSmooth * 0.5);
+
+  // Idea — Bloch wall where this frame's field direction flips against the stored one.
+  let align = dot(fieldDir, prevFieldDir);
+  let wall = smoothstep(0.15, -0.55, align) * smoothstep(0.02, 0.08, prevStrength);
+  col = col * (1.0 - wall * 0.65) + vec3<f32>(0.9, 0.95, 1.0) * wall * lineSharp * 0.4;
 
   // Vignette
   let vignette = 1.0 - length(uv - 0.5) * 0.4;
