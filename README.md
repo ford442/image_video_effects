@@ -138,7 +138,7 @@ Counts from `npm run build:manifest` → `public/shader-manifest-unified.json`:
 <!-- catalog-counts:table:begin -->
 | Category | Count | Description |
 |----------|------:|-------------|
-| **generative** | 495 | Procedural art, fractals, generative patterns |
+| **generative** | 496 | Procedural art, fractals, generative patterns |
 | **interactive-mouse** | 239 | Mouse and touch-driven interactions |
 | **advanced-hybrid** | 166 | Multi-technique / advanced hybrid stacks |
 | **artistic** | 98 | Creative and artistic visual effects |
