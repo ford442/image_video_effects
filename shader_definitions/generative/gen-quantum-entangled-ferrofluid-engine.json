@@ -13,7 +13,7 @@
     "neon",
     "abstract"
   ],
-  "description": "A quantum-mechanically enriched ferrofluid visualization. Wavefunction \u03c8(x,t) interference patterns drive ferrofluid spike formation. Probability density |\u03c8|\u00b2 modulates glow intensity. Bass triggers wavefunction collapse probability. Mouse acts as a quantum measurement device, collapsing superposition and sharpening the interference pattern. Features double-slit interference, entanglement glow, and metallic PBR rendering.",
+  "description": "A quantum-mechanically enriched ferrofluid visualization. Wavefunction \u03c8(x,t) interference patterns drive ferrofluid spike formation. Probability density |\u03c8|\u00b2 modulates glow intensity. Bass triggers wavefunction collapse probability. Mouse acts as a quantum measurement device, collapsing superposition and sharpening the interference pattern. Features double-slit interference, entanglement glow, and metallic PBR rendering. The pointer leaves a measurement scar, and entangled satellites share a neck meniscus.",
   "workgroup_size": [
     16,
     16,
