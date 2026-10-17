@@ -4,8 +4,9 @@
  * Idle-time pipeline warm-up for shaders the user is about to pick (#1314 WP-3).
  * The gallery reports what is on screen; this queue compiles those pipelines
  * with bounded concurrency so a click hits the pipeline cache instead of
- * stalling on createComputePipelineAsync. Warmed-but-unused pipelines live in
- * a small LRU so browsing 1,380 shaders cannot grow the cache without bound.
+ * stalling on createComputePipelineAsync. Eviction is the host's job (the
+ * shader manager's single pipeline LRU bounds warmed and browsed pipelines
+ * alike); `lruSize` is an optional extra, queue-local cap on warmed ids.
  */
 
 export interface WarmupEntry {
@@ -26,6 +27,7 @@ export interface ShaderWarmupHost {
 
 export interface ShaderWarmupOptions {
   concurrency?: number;
+  /** Evict warmed ids beyond this many; unset leaves eviction to the host. */
   lruSize?: number;
   /** Defer each job to idle time; defaults to requestIdleCallback / setTimeout. */
   schedule?: (job: () => void) => void;
@@ -46,12 +48,12 @@ export class ShaderWarmupQueue {
   private generation = 0;
   private stopped = false;
   private readonly concurrency: number;
-  private readonly lruSize: number;
+  private readonly lruSize: number | undefined;
   private readonly schedule: (job: () => void) => void;
 
   constructor(private readonly host: ShaderWarmupHost, options: ShaderWarmupOptions = {}) {
     this.concurrency = Math.max(1, options.concurrency ?? 2);
-    this.lruSize = Math.max(1, options.lruSize ?? 24);
+    this.lruSize = options.lruSize === undefined ? undefined : Math.max(1, options.lruSize);
     this.schedule = options.schedule ?? defaultSchedule;
   }
 
@@ -118,6 +120,11 @@ export class ShaderWarmupQueue {
   private touch(id: string): void {
     this.warmed = this.warmed.filter((w) => w !== id);
     this.warmed.push(id);
+    if (this.lruSize === undefined) {
+      // Host-managed eviction: just forget ids the host no longer caches.
+      this.warmed = this.warmed.filter((w) => w === id || this.host.isCached(w));
+      return;
+    }
     const bound = this.host.boundIds();
     while (this.warmed.length > this.lruSize) {
       const victimIndex = this.warmed.findIndex((w) => !bound.has(w));

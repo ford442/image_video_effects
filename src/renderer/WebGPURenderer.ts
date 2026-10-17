@@ -195,7 +195,9 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   /** WebCodecs VideoFrame ingest (element path as fallback). */
   private readonly videoIngest = new VideoIngest(videoFrameIngestDisabledByUrl());
 
-  constructor(private config: RendererConfig) {}
+  constructor(private config: RendererConfig) {
+    this.pipeline.shaderManager.setBoundIdsProvider(() => this.boundShaderIds());
+  }
 
   getSupportsDeepWorkgroup(): boolean { return this.supportsDeepWorkgroup; }
   getSupportsSubgroups(): boolean { return this.supportsSubgroups; }
