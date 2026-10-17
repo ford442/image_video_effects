@@ -2,7 +2,7 @@
 //  Ethereal Chrono-Plasma Void-Manta
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, click-reactive, upgraded-rgba
-//  Upgraded: 2026-10-10
+//  Upgraded: 2026-10-17
 //  Ideas: manta banking (wings roll/yaw toward the pointer through a smooth
 //         cubic, stateless, plus a slow glide sway); bass-pumped wing flap
 //         amplitude via plasmaBuffer, bounded by a span falloff; treble
@@ -10,7 +10,11 @@
 //         2nd pass: manta planform (diamond wings + cephalic fins + whip tail
 //         cut from the wing slab); wingtip vortex wakes (counter-rotating
 //         spiral filaments shed from the tips, phased by the flap); ventral
-//         counter-shading with breathing gill-slit rows on the underside
+//         counter-shading with breathing gill-slit rows on the underside.
+//         3rd pass: cephalic fin unfurl (horn-curled fins splay into feeding
+//         paddles on a slow cycle, opened further by mids); filter-feeding
+//         plankton funnel (dark-matter motes spiral down a cone into the
+//         mouth, only while the fins are unfurled)
 //  A packing: ACES display RGBA (hue-preserving clamp before tonemap;
 //             alpha = manta/sss or fog coverage; matches exact C read)
 // ═══════════════════════════════════════════════════════════════════
@@ -29,6 +33,7 @@ const TIP_Z: f32 = 0.3;    // z of the wingtips (head is toward -z)
 
 var<private> g_audio: f32 = 0.0;
 var<private> g_bank: vec2<f32> = vec2<f32>(0.0);
+var<private> g_unfurl: f32 = 0.0;
 
 fn rot(a: f32) -> mat2x2<f32> {
     let s = sin(a);
@@ -167,7 +172,11 @@ fn planform(q: vec2<f32>) -> f32 {
     let zc = q.y - TIP_Z;
     let b = vec2<f32>(SPAN, select(1.8, 2.0, zc < 0.0));
     let wings = sdRhombus(vec2<f32>(q.x, zc), b) - 0.04;
-    let fins = sdSeg2(vec2<f32>(abs(q.x), q.y), vec2<f32>(0.42, -1.35), vec2<f32>(0.55, -2.25)) - 0.12;
+    // Idea: cephalic fin unfurl — at 0 the curled horn of HEAD; at 1 a wider
+    // paddle splayed outward to scoop water toward the mouth.
+    let finTip = mix(vec2<f32>(0.55, -2.25), vec2<f32>(0.95, -2.05), g_unfurl);
+    let finW = mix(0.12, 0.17, g_unfurl);
+    let fins = sdSeg2(vec2<f32>(abs(q.x), q.y), vec2<f32>(0.42, -1.35), finTip) - finW;
     return smin(wings, fins, 0.15);
 }
 
@@ -245,6 +254,38 @@ fn wingtipWakes(ro_m: vec3<f32>, rd_m: vec3<f32>, tHit: f32, mantaTime: f32) -> 
     return acc;
 }
 
+// Idea: filter-feeding plankton funnel. Motes stream down a cone along the
+// manta's axis (ahead of the head, -z) and spiral into the mouth. Evaluated at
+// the ray's closest approach to the axis (manta frame), like the wakes.
+fn planktonFunnel(ro_m: vec3<f32>, rd_m: vec3<f32>, tHit: f32, mantaTime: f32) -> vec3<f32> {
+    let denom = 1.0 - rd_m.z * rd_m.z;
+    if (denom < 1e-4 || g_unfurl < 0.02) { return vec3<f32>(0.0); }
+    let L0 = vec3<f32>(0.0, -0.05, 0.0);
+    let w0 = ro_m - L0;
+    let dd = dot(rd_m, w0);
+    let t = (rd_m.z * w0.z - dd) / denom;
+    let s = (w0.z - rd_m.z * dd) / denom;
+    let ahead = -2.0 - s;                     // distance in front of the mouth
+    if (t <= 0.0 || t > tHit || ahead < -0.1 || ahead > 6.0) { return vec3<f32>(0.0); }
+    let P = ro_m + rd_m * t;
+    let off = vec2<f32>(P.x, P.y + 0.05);
+    let R = 0.15 + max(ahead, 0.0) * 0.32;    // cone widens away from the mouth
+    let rho = length(off) / R;
+    if (rho > 1.3) { return vec3<f32>(0.0); }
+    // Flow coordinate runs toward the mouth; the angle winds tighter near it.
+    let flow = ahead + mantaTime * 0.9;
+    let ang = atan2(off.y, off.x) / (2.0 * PI) + 0.5 + ahead * 0.22;
+    let g = vec2<f32>(flow * 3.0, ang * 9.0);
+    let cell = floor(g);
+    let f = fract(g) - 0.5;
+    let h = hash(vec3<f32>(cell, 7.3));
+    let rTarget = 0.25 + 0.7 * hash(vec3<f32>(cell, 1.9));
+    let sprite = exp(-dot(f, f) * 40.0) * exp(-(rho - rTarget) * (rho - rTarget) * 60.0) * step(0.45, h);
+    let gulp = 1.0 + 2.0 * (1.0 - smoothstep(0.0, 0.6, ahead));  // flash as they are swallowed
+    let fade = 1.0 - smoothstep(3.5, 6.0, ahead);
+    return vec3<f32>(0.55, 1.0, 0.85) * sprite * gulp * fade * g_unfurl;
+}
+
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     let e = vec2<f32>(1.0, -1.0) * 0.5773 * 0.0005;
     return normalize( e.xyy*map( p + e.xyy ).x +
@@ -282,6 +323,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let sway = sin(mantaTime * 0.5) * 0.08;
     g_bank = vec2<f32>(clamp(-shaped * 0.55 + sway, -0.9, 0.9),
                        clamp(shaped * 0.4, -1.2, 1.2));
+    // Slow curl/unfurl cycle (stateless), mids open the paddles further.
+    g_unfurl = clamp(smoothstep(0.1, 0.9, 0.5 + 0.5 * sin(mantaTime * 0.3)) + mids * 0.35, 0.0, 1.0);
 
     // Exact previous-frame display history.
     let prev = textureLoad(dataTextureC, coords, 0);
@@ -421,6 +464,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Wingtip vortex wakes, in the same void as the fog
     let wakes = wingtipWakes(toManta(ro), toManta(rd), t, mantaTime);
     col += wakes * bio * (0.35 + bass * 0.8);
+
+    let plankton = planktonFunnel(toManta(ro), toManta(rd), t, mantaTime);
+    col += plankton * bio * (0.6 + treble * 0.9);
 
     // Audio bloom on hit distance
     col += vec3<f32>(0.2, 0.5, 1.0) * audio * bio * (1.0 / (1.0 + t * t * 0.05));
