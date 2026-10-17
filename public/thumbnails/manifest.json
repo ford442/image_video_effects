@@ -311,14 +311,14 @@
   },
   "gen-art-deco-sky": {
     "thumbnail_url": "thumbnails/gen-art-deco-sky.png",
-    "generated_at": "2026-10-17T11:39:14.521Z",
+    "generated_at": "2026-10-17T20:24:43.908Z",
     "params_snapshot": [
       0.5,
       1,
       1,
       0.5
     ],
-    "source_hash": "24bab07a05ae1bb2",
+    "source_hash": "689dc5c74e826d5f",
     "capture_host": "swiftshader"
   },
   "gen-astral-silk-chrono-weaver-arachnid": {
@@ -4073,14 +4073,14 @@
   },
   "gen-ethereal-bismuth-resonance-void-owl": {
     "thumbnail_url": "thumbnails/gen-ethereal-bismuth-resonance-void-owl.png",
-    "generated_at": "2026-10-17T11:16:00.284Z",
+    "generated_at": "2026-10-17T20:16:36.761Z",
     "params_snapshot": [
       0.5,
       0.5,
       0.5,
       0.5
     ],
-    "source_hash": "4c7bc324647d8667",
+    "source_hash": "761ec2d3ff78e965",
     "capture_host": "swiftshader"
   },
   "gen-ethereal-chrono-fluid-symbiote": {
@@ -4913,14 +4913,14 @@
   },
   "gen-hyper-dimensional-bismuth-matrix": {
     "thumbnail_url": "thumbnails/gen-hyper-dimensional-bismuth-matrix.png",
-    "generated_at": "2026-10-17T11:46:56.114Z",
+    "generated_at": "2026-10-17T20:18:15.858Z",
     "params_snapshot": [
       0.42,
       0.5,
       0.3,
       0.2
     ],
-    "source_hash": "ac1f7e3cd7de7691",
+    "source_hash": "22787d077ced4352",
     "capture_host": "swiftshader"
   },
   "gen-sentient-aether-plasma-nebula-moth": {

@@ -265,8 +265,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uu = normalize(cross(ww, vec3<f32>(0.0, 1.0, 0.0)));
     let vv = normalize(cross(uu, ww));
 
-    // Pixel rows grow downward and uu points screen-left: negate both so the
-    // frame is the scene rotated upright (HEAD rendered it 180 degrees turned).
+    // Pixel rows grow downward and uu = cross(ww, Y) points screen-right:
+    // negate only the vertical term so the scene renders upright, unmirrored.
     let rd = normalize(uv.x * uu - uv.y * vv + 1.5 * ww);
 
     // Raymarch
@@ -398,12 +398,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Height Fog / City Glow
         // Simulate glow from the city below
-        let height_fog = exp(-p.y * 0.1) * 0.5;
+        // capped: below y=0 the exponential grew without bound and washed the
+        // frame out to cream after ACES
+        let height_fog = min(exp(-p.y * 0.1), 1.6) * 0.5;
         color += lightColor1 * height_fog * fogDensity;
     } else {
         // Sky / Void
         // Add a vertical gradient for city glow
-        let sky_glow = exp(-rd.y * 4.0) * 0.5;
+        let sky_glow = exp(-max(rd.y, -0.3) * 4.0) * 0.5;
         color += lightColor1 * sky_glow * fogDensity;
         // Idea 3 — stepped zenith sunburst: the tower's verticals converge on
         // the zenith, so the sky carries the deco crown motif there — gold rays
@@ -450,7 +452,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // ACES filmic tone mapping (replaces Reinhard — gold accents keep their warmth)
     color = acesToneMapping(temporal);
-    color = pow(color, vec3<f32>(1.0 / 2.2)); // Gamma correction
+    // (no extra pow(1/2.2): the presenter already treats output as display
+    // values, and the second gamma lifted the night palette to a cream wash)
 
     // IGN dither — suppresses banding in the dark night-sky gradient
     let ign = fract(52.9829189 * fract(dot(vec2<f32>(global_id.xy), vec2<f32>(0.06711056, 0.00583715))));

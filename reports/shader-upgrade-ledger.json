@@ -1790,7 +1790,7 @@
       ]
     },
     "gen-art-deco-sky": {
-      "hash": "24bab07a05ae1bb2",
+      "hash": "689dc5c74e826d5f",
       "history": [
         {
           "event": "upgraded",
@@ -1799,6 +1799,14 @@
           "prev_hash": "a98cb4c53106e63b",
           "commit": "96263e0a",
           "note": "2026-10-17 opus/batch-02 (claude opus): 2 native ideas each, cards in agents/swarm-outputs/claude-2026-10-17-opus-batch-02"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T20:24:45.202Z",
+          "hash": "689dc5c74e826d5f",
+          "prev_hash": "24bab07a05ae1bb2",
+          "commit": "0681f787",
+          "note": "2026-10-17 opus/batch-02 round 2: bismuth-matrix grey-wash rescue, owl head swivel replaces duplicate membrane, art-deco double gamma + unbounded glow"
         }
       ]
     },
@@ -2909,7 +2917,7 @@
       ]
     },
     "gen-ethereal-bismuth-resonance-void-owl": {
-      "hash": "4c7bc324647d8667",
+      "hash": "761ec2d3ff78e965",
       "history": [
         {
           "event": "upgraded",
@@ -2918,6 +2926,14 @@
           "prev_hash": "d1a940d53cd57f6b",
           "commit": "96263e0a",
           "note": "2026-10-17 opus/batch-02 (claude opus): 2 native ideas each, cards in agents/swarm-outputs/claude-2026-10-17-opus-batch-02"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T20:24:45.202Z",
+          "hash": "761ec2d3ff78e965",
+          "prev_hash": "4c7bc324647d8667",
+          "commit": "0681f787",
+          "note": "2026-10-17 opus/batch-02 round 2: bismuth-matrix grey-wash rescue, owl head swivel replaces duplicate membrane, art-deco double gamma + unbounded glow"
         }
       ]
     },
@@ -3667,7 +3683,7 @@
       ]
     },
     "gen-hyper-dimensional-bismuth-matrix": {
-      "hash": "ac1f7e3cd7de7691",
+      "hash": "22787d077ced4352",
       "history": [
         {
           "event": "upgraded",
@@ -3684,6 +3700,14 @@
           "prev_hash": "790c6c1c16b973ea",
           "commit": "96263e0a",
           "note": "2026-10-17 opus/batch-02 (claude opus): 2 native ideas each, cards in agents/swarm-outputs/claude-2026-10-17-opus-batch-02"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T20:24:45.202Z",
+          "hash": "22787d077ced4352",
+          "prev_hash": "ac1f7e3cd7de7691",
+          "commit": "0681f787",
+          "note": "2026-10-17 opus/batch-02 round 2: bismuth-matrix grey-wash rescue, owl head swivel replaces duplicate membrane, art-deco double gamma + unbounded glow"
         }
       ]
     },

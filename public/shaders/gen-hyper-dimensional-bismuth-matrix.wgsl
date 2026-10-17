@@ -127,8 +127,13 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, complexity: f32,
   let mDist = length(md);
   if (mDist < disruptionRadius * 3.0) {
     let disrupt = (1.0 - mDist / (disruptionRadius * 3.0));
-    let noiseDisrupt = hash3(p * 5.0 + time) * 2.0 - 1.0;
-    p = p + md / max(mDist, 1e-4) * disrupt * noiseDisrupt * 0.4;
+    // Smooth scatter: per-sample hash noise made the SDF white noise inside the
+    // zone (the idle pointer sits on the lattice centre), so the view rendered
+    // as a flat grey wash. A low-frequency wobble stays marchable.
+    let wob = vec3<f32>(sin(p.y * 2.3 + time * 1.7),
+                        sin(p.z * 2.1 + time * 1.3 + 1.7),
+                        sin(p.x * 2.7 + time * 1.9 + 3.1));
+    p = p + wob * disrupt * 0.3;
   }
 
   // Domain repetition grid
