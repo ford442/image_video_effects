@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-09-14
-//  Ideas: leaky integrate-and-fire neurons (closed-form interspike interval τ·ln(I/(I−θ)) + absolute refractory period) driving spike flashes and membrane-potential glow; saltatory conduction along myelinated axons (action potential hops node-of-Ranvier to node-of-Ranvier, launched at the presynaptic spike)
+//  Upgraded: 2026-10-17
+//  Ideas: leaky integrate-and-fire neurons (closed-form interspike interval τ·ln(I/(I−θ)) + absolute refractory period) driving spike flashes and membrane-potential glow; saltatory conduction along myelinated axons (action potential hops node-of-Ranvier to node-of-Ranvier, launched at the presynaptic spike); synaptic boutons at each axon terminal that flash on AP arrival and puff a transmitter cloud across the cleft toward the postsynaptic soma; spike-timing-dependent plasticity (pre-before-post coincidences potentiate an edge white-cyan and thicken it, post-before-pre depress it to a dim ember)
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -19,6 +19,7 @@ const LIF_TAU: f32 = 0.22;      // membrane time constant (s)
 const LIF_THETA: f32 = 1.0;     // firing threshold
 const LIF_REFRACT: f32 = 0.12;  // absolute refractory period (s)
 const INTERNODE: f32 = 0.045;   // myelin internode length (network units)
+const STDP_TAU: f32 = 0.05;     // STDP coincidence window (s)
 
 // ═══ CHUNK: acesToneMap (canonical ACES) ═══
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -98,6 +99,15 @@ fn lifNeuron(I: f32, seed: f32, time: f32) -> vec4<f32> {
     return vec4<f32>(since, period, clamp(v / LIF_THETA, 0.0, 1.0), 1.0);
 }
 
+// Tonic drive and phase seed of neuron (layer, idx) — shared so a synapse can
+// evaluate its postsynaptic cell with the same closed-form LIF.
+fn neuronDrive(layer: i32, idx: i32, intensity: f32) -> vec2<f32> {
+    let weight = hash1(f32(layer) * 17.0 + f32(idx) * 31.0 + 0.5);
+    let bias = hash1(f32(layer) * 53.0 + f32(idx) * 19.0 + 0.3) * 0.2 - 0.1;
+    let seed = hash1(f32(layer) * 91.0 + f32(idx) * 7.0 + 2.1);
+    return vec2<f32>(0.75 + weight * (0.9 + intensity * 0.8) + bias, seed);
+}
+
 // Node structure - concentric ring layers
 fn getNodePos(layer: i32, idx: i32, totalLayers: i32, time: f32) -> vec2<f32> {
     let fi = f32(idx);
@@ -131,8 +141,8 @@ fn segmentH(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
 }
 
 // Signal pulse along an edge
-fn signalPulse(edgeLen: f32, edgeIdx: f32, time: f32, speed: f32) -> f32 {
-    let pulsePos = fract(time * speed * 0.3 + edgeIdx * 0.17);
+fn signalPulse(edgeLen: f32, edgeIdx: f32, time: f32, speed: f32, phaseKick: f32) -> f32 {
+    let pulsePos = fract(time * speed * 0.3 + edgeIdx * 0.17 + phaseKick);
     let pulseWidth = 0.08;
     let d = abs(pulsePos * edgeLen - 0.5 * edgeLen);
     return exp(-d * d / (pulseWidth * pulseWidth));
@@ -162,8 +172,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
     let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
-    // Bass drives input layer activation intensity
-    let audioSpeed = speed * (0.85 + bass * 0.4);
     // Mids control synaptic connection strength
     let synapticStrength = 0.5 + mids * 0.8;
     
@@ -178,7 +186,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let cursorRadius = 0.04 * (0.8 + cursorPulse * 0.3);
 
     // Axonal conduction velocity (network units / s), set by Signal Speed
-    let condVel = 0.25 + audioSpeed * 1.6;
+    // (bass no longer rescales it: front = since·v made APs leap on every beat)
+    let condVel = 0.25 + speed * 0.85 * 1.6;
     
     // Background grid glow
     let gridDist = min(
@@ -249,13 +258,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                     stim += 1.5 * exp(-front * front * 40.0) * exp(-age * 1.5);
                 }
             }
-            let nodeSeed = hash1(f32(layer) * 91.0 + f32(ni) * 7.0 + 2.1);
+            let drive = neuronDrive(layer, ni, intensity);
             // Tonic drive sets the interspike interval. It is kept time-invariant
             // (synaptic weight + Intensity) so the closed-form phase stays
             // coherent; fast inputs (ReLU activation, cursor, electrodes)
             // depolarise the membrane on top and can force extra spikes.
-            let I = 0.75 + weight * (0.9 + intensity * 0.8) + bias;
-            let lif = lifNeuron(I, nodeSeed, time);
+            let lif = lifNeuron(drive.x, drive.y, time);
             // Action potential: sharp spike, then refractory undershoot
             let spike = max(exp(-lif.x * 28.0) * lif.w, clamp(stim, 0.0, 1.0));
             let refractoryDim = select(1.0, 0.55, lif.w > 0.5 && lif.x < LIF_REFRACT);
@@ -288,7 +296,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                         
                         // Tonic signal pulses along edges
                         let edgeLen = length(nextNodePos - nodePos);
-                        let pulse = signalPulse(edgeLen, edgeIndex, time, audioSpeed * 2.0 + 0.5);
+                        let pulse = signalPulse(edgeLen, edgeIndex, time, speed * 0.85 * 2.0 + 0.5, bass * 0.12);
                         let pulseGlow = exp(-edgeDist * edgeDist / (edgeWidth * edgeWidth * 6.0)) * pulse;
                         let sigHue = fract(edgeIndex * 0.15 + time * 0.08 + colorShift);
                         signalGlow += neonColor(sigHue) * pulseGlow * intensity * 0.6;
@@ -302,14 +310,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                             let h = segmentH(p, nodePos, nextNodePos);
                             let s = h * edgeLen;                          // arc length from soma
                             let sNode = floor(s / INTERNODE + 0.5) * INTERNODE; // nearest node to pixel
-                            let atNode = exp(-pow((s - sNode) / (INTERNODE * 0.14), 2.0));
+                            let an = (s - sNode) / (INTERNODE * 0.14);
+                            let atNode = exp(-an * an);
                             var flash = 0.0;
                             // Spike train: the current AP and the two before it
                             for (var k = 0; k < 3; k++) {
                                 let front = (lif.x + f32(k) * lif.y) * condVel;      // continuous AP front
                                 let hopNode = floor(front / INTERNODE) * INTERNODE; // last regenerated node
                                 let hopAge = (front - hopNode) / INTERNODE;         // 0..1 within a hop
-                                let isCurrent = exp(-pow((sNode - hopNode) / (INTERNODE * 0.5), 2.0));
+                                let ic = (sNode - hopNode) / (INTERNODE * 0.5);
+                                let isCurrent = exp(-ic * ic);
                                 let alive = step(sNode, edgeLen) * step(front, edgeLen + INTERNODE);
                                 flash += atNode * isCurrent * exp(-hopAge * 3.0) * alive;
                             }
@@ -319,9 +329,53 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                             signalGlow += neonColor(sigHue) * axon * (flash * intensity * 3.2 + sheath) * synapticStrength;
                             ranvierGlow += axon * flash;
                         }
+
+                        // ── IDEA 3: synaptic bouton + transmitter release ──
+                        // The terminal swelling just short of the postsynaptic soma
+                        // flashes when the AP arrives (conduction delay edgeLen/v)
+                        // and releases a transmitter puff that crosses the cleft.
+                        let delay = edgeLen / condVel;
+                        var arrAgo = lif.x - delay;
+                        arrAgo = arrAgo + ceil(max(-arrAgo, 0.0) / lif.y) * lif.y;
+                        let toPost = normalize(nextNodePos - nodePos);
+                        let bouton = nextNodePos - toPost * 0.045;
+                        let bd = length(p - bouton);
+                        if (lif.w > 0.5 && bd < 0.07) {
+                            let arrive = exp(-arrAgo * 9.0);
+                            let knob = exp(-bd * bd / (0.0075 * 0.0075));
+                            // Transmitter cloud: centre slides across the cleft, spreads, fades
+                            let cleftC = bouton + toPost * min(arrAgo * 0.18, 0.025);
+                            let cd = length(p - cleftC);
+                            let spread = 0.006 + arrAgo * 0.05;
+                            let puff = exp(-cd * cd / (spread * spread)) * exp(-arrAgo * 5.0) * step(0.0, dot(p - bouton, toPost));
+                            let bCol = mix(edgeCol, vec3<f32>(1.0, 0.95, 0.8), 0.5);
+                            signalGlow += bCol * (knob * (0.25 + arrive * 2.2) + puff * 0.9) * intensity * synapticStrength;
+                            spikeEnergy += knob * arrive * 0.5 + puff * 0.3;
+                        }
+
+                        // ── IDEA 4: spike-timing-dependent plasticity ──
+                        // Δt = t_post − t_pre(arrival). Post firing within ~STDP_TAU
+                        // after the arrival potentiates (LTP); firing just before it
+                        // depresses (LTD). The edge shows the coincidence as it happens
+                        // and the C feedback trail carries the after-image.
+                        if (eGlow > 1e-3) {
+                            let post = neuronDrive(layer + 1, nj, intensity);
+                            let postLif = lifNeuron(post.x, post.y, time);
+                            if (lif.w > 0.5 && postLif.w > 0.5) {
+                                let dt = arrAgo - postLif.x;                     // > 0: post after pre
+                                let recent = exp(-min(arrAgo, postLif.x) * 4.0);
+                                let ltp = exp(-max(dt, 0.0) / STDP_TAU) * step(0.0, dt) * recent;
+                                let ltd = exp(min(dt, 0.0) / STDP_TAU) * step(dt, 0.0) * recent;
+                                let wide = exp(-edgeDist * edgeDist / (edgeWidth * edgeWidth * 30.0));
+                                signalGlow += vec3<f32>(0.75, 1.0, 1.0) * wide * ltp * 0.9 * intensity * synapticStrength;
+                                signalGlow -= edgeCol * eGlow * ltd * 0.18 * intensity;
+                                backpropGlow += vec3<f32>(0.6, 0.12, 0.05) * eGlow * ltd * 0.35;
+                                spikeEnergy += wide * ltp * 0.4;
+                            }
+                        }
                         
                         // ═══ Treble-driven backpropagation "error glow" ═══
-                        let errorSignal = hash1(edgeIndex * 73.0 + time * 0.1) * treble * 1.2;
+                        let errorSignal = hash1(edgeIndex * 73.0 + floor(time * 6.0) * 0.37) * treble * 1.2;
                         let errorGlow = exp(-edgeDist * edgeDist / (edgeWidth * edgeWidth * 3.0)) * errorSignal;
                         backpropGlow += vec3<f32>(1.0, 0.2, 0.1) * errorGlow * 0.4;
                         
@@ -379,12 +433,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col = max(col, vec3<f32>(0.0));
     
     // ═══ Temporal Feedback (exact load of last frame's display RGBA) ═══
+    // Trail lives in display space: C holds ACES output, and re-feeding it into
+    // HDR before a second ACES made a bistable latch (dim glow snapped to ~0.66).
     let maxC = vec2<i32>(i32(dims.x) - 1, i32(dims.y) - 1);
     let prev = textureLoad(dataTextureC, clamp(pixel, vec2<i32>(0), maxC), 0);
-    col = mix(prev.rgb * 0.96, col, 0.25);
     
     // ═══ ACES Tone Map + Semantic Alpha ═══
-    let display = acesToneMap(col * (1.1 + bass * 0.1));
+    let display = mix(acesToneMap(col * (1.1 + bass * 0.1)), prev.rgb * 0.96, 0.72);
     // Alpha = neural activity coverage: axons, spiking somata, AP hops, stimulus fronts
     let alpha = clamp(edgeGlow * 0.8 + spikeEnergy * 0.6 + ranvierGlow * 0.5 + coreGlow * 0.4
                       + stimRing * 0.3 + cursorGlow * 0.3 + prev.a * 0.15, 0.04, 0.95);

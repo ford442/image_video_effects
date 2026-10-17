@@ -8661,7 +8661,7 @@
       "iridescent",
       "silk"
     ],
-    "description": "A majestic hyper-dimensional loom weaving luminescent quantum silk into cymatic mandalas driven by cosmic audio frequencies, with iridescent neon color shifting.",
+    "description": "A majestic hyper-dimensional loom weaving luminescent quantum silk into cymatic mandalas driven by cosmic audio frequencies, with iridescent neon color shifting. Each ribbon vibrates like a plucked string with fixed glowing nodes (clicks pluck harder), and the silk carries a woven twill whose diagonal flips along the Chladni sand-lines like damask.",
     "workgroup_size": [
       16,
       16,
@@ -15698,7 +15698,7 @@
       "strands",
       "raymarching"
     ],
-    "description": "A mesmerizing tangle of iridescent energy threads weaving themselves into complex, higher-dimensional geometric topologies, creating the illusion of cosmic fabric being spun in real-time. Each thread is the slice of a 4D hypertube by a moving hyperplane, so strands swell, pinch and vanish in a wave across the lattice, while current packets race in opposite directions along the paired helices and flash where they meet. Mids lengthen the packets, treble brightens them, bass thickens the weave; hold the mouse to pull the weave toward the cursor. Packet-wake comets trail the moving charges while beat-timed weft bridges briefly join opposing threads.",
+    "description": "A mesmerizing tangle of iridescent energy threads weaving themselves into complex, higher-dimensional geometric topologies, creating the illusion of cosmic fabric being spun in real-time. Each thread is the slice of a 4D hypertube by a moving hyperplane, so strands swell, pinch and vanish in a wave across the lattice, while current packets race in opposite directions along the paired helices and flash where they meet. Mids lengthen the packets, treble brightens them, bass thickens the weave; hold the mouse to pull the weave toward the cursor. Packet-wake comets trail the moving charges while beat-timed weft bridges briefly join opposing threads. Current packets now kink their strands into a travelling corkscrew, and each strand's film shifts ochre or cyan by which side of the slicing hyperplane its 4D centre lies.",
     "workgroup_size": [
       16,
       16,
@@ -19369,7 +19369,7 @@
       "music",
       "reactive"
     ],
-    "description": "Growing network patterns resembling fungal mycelium with diffusion-limited aggregation branching and bioluminescent tips Batch 38 FAST MOTION upgrade: bioluminescent signal pulses race along the hyphae (closed-form traveling wave), the growth front uses fast-in/smooth-out time-warp easing, bass transients fire expanding spore-burst shockwaves via a frame-rate-independent rising-edge detector (persistent state in extraBuffer[133..135]), and the branch traversal is coarse-culled with bounding-box pruning before every segment SDF evaluation. Feedback accumulation is HDR-clamped (<=4.0) so growth can never saturate the screen.",
+    "description": "Growing network patterns resembling fungal mycelium with diffusion-limited aggregation branching and bioluminescent tips. Batch 38 FAST MOTION upgrade: bioluminescent signal pulses race along the hyphae (closed-form traveling wave), the growth front uses fast-in/smooth-out time-warp easing, bass transients fire expanding spore-burst shockwaves, and the branch traversal is coarse-culled with bounding-box pruning before every segment SDF evaluation. Feedback accumulation is HDR-clamped (<=4.0) so growth can never saturate the screen. Third pass: a fairy ring of gilled, glow-rimmed mushroom caps fruits just inside the advancing margin, and the substrate is visibly drained around every hypha and digested inside the colony.",
     "workgroup_size": [
       16,
       16,
@@ -20025,7 +20025,7 @@
       "audio-reactive",
       "cyberpunk"
     ],
-    "description": "A hyper-organic, biomechanical labyrinth of pulsing neon circuitry and breathing metallic tissue that spawns luminescent plasma-spores reacting to ambient cosmic frequencies. Upgraded (fast-motion batch): the spores now swarm at speed with spring-damped cursor pursuit and velocity lead, bass kicks and clicks fire bounded shockwaves that whip the hive, and velocity-advected HDR feedback trails streak the fast flythrough. Second pass: brood chambers now breathe with chitin valve irises and exchange charge through trophallactic plasma bridges.",
+    "description": "A hyper-organic, biomechanical labyrinth of pulsing neon circuitry and breathing metallic tissue that spawns luminescent plasma-spores reacting to ambient cosmic frequencies. Upgraded (fast-motion batch): the spores now swarm at speed with spring-damped cursor pursuit and velocity lead, bass kicks and clicks fire bounded shockwaves that whip the hive, and velocity-advected HDR feedback trails streak the fast flythrough. Second pass: brood chambers now breathe with chitin valve irises and exchange charge through trophallactic plasma bridges. Third pass: struts are ringed into sclerite segments whose membranes leak neon as the bolus passes, and toothed gear collars counter-rotate where each strut enters a node.",
     "workgroup_size": [
       16,
       16,

@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: glow-discharge tube anatomy on every ring (cathode negative glow, Faraday dark space, drifting positive-column striations, Ne/Ar-Hg emission lines); click ionization strike fronts that re-ignite rings with recombination afterglow, mouse-held raises discharge current
+//  Upgraded: 2026-10-17
+//  Ideas: glow-discharge tube anatomy on every ring (cathode negative glow, Faraday dark space, drifting positive-column striations, Ne/Ar-Hg emission lines); click ionization strike fronts that re-ignite rings with recombination afterglow, mouse-held raises discharge current; padma lotus-petal tubes bridging the inter-ring gaps (Fibonacci 8/13/21 petals, a staggered back row, mids open the tips); tube ageing (sputter-blackened electrode ends, intermittent drop-out flicker on worn rings that bass surges and strike fronts re-light)
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -53,7 +53,8 @@ fn noise(p: vec2<f32>) -> f32 {
 // from the tube's cathode (0..TAU), `circ` the tube circumference.
 fn dischargeProfile(arc: f32, circ: f32, time: f32, drift: f32, current: f32) -> f32 {
     let arcLen = arc / TAU * circ;
-    let negGlow = exp(-pow((arcLen - 0.012) / 0.006, 2.0)) * 1.6;
+    let ng = (arcLen - 0.012) / 0.006;
+    let negGlow = exp(-ng * ng) * 1.6;
     let faraday = smoothstep(0.02, 0.06, arcLen);
     let striLen = 0.035;
     let nStri = max(floor(circ / striLen), 3.0);
@@ -67,6 +68,35 @@ fn dischargeProfile(arc: f32, circ: f32, time: f32, drift: f32, current: f32) ->
 // vapour (436 nm blue / 546 nm green) fills, alternating per tube.
 fn gasLine(i: i32) -> vec3<f32> {
     return select(vec3<f32>(0.30, 0.52, 1.0), vec3<f32>(1.0, 0.32, 0.07), i % 2 == 0);
+}
+
+// ─── IDEA 3: padma (lotus) petal ring ───
+// Lotus petals bridge one ring's outer edge to the next ring's inner edge.
+// Half-width follows sin(PI·sqrt(t)): round at the base, pointed at the tip.
+// Returns (outline tube glow, interior fill).
+fn padmaPetals(p: vec2<f32>, r0: f32, r1: f32, n: f32, phase: f32) -> vec2<f32> {
+    let d = length(p);
+    let t = (d - r0) / max(r1 - r0, 1e-4);
+    if (t < -0.1 || t > 1.1) { return vec2<f32>(0.0); }
+    let sector = TAU / n;
+    let a = atan2(p.y, p.x);
+    let ao = abs(fract(a / sector + phase) - 0.5) * sector;
+    let tc = clamp(t, 0.0, 1.0);
+    let halfW = sector * 0.46 * sin(PI * sqrt(tc));
+    let edge = (ao - halfW) * d;                       // arc distance to the petal edge
+    let baseCap = (r0 - d) * step(t, 0.0);             // closes the round base
+    let od = select(edge, max(abs(edge), baseCap), t < 0.0);
+    let outline = exp(-od * od * 90000.0) * step(t, 1.0);
+    let fill = smoothstep(0.004, -0.004, edge) * step(0.0, t) * step(t, 1.0) * (1.0 - tc) * 0.35;
+    return vec2<f32>(outline, fill);
+}
+
+// ─── IDEA 4: tube ageing ───
+// Fixed wear per ring (deterministic, not a GPU-precision hash): worn tubes
+// show sputtered-metal blackening near both electrodes and drop out briefly.
+fn tubeAge(i: i32) -> f32 {
+    let ages = array<f32, 6>(0.10, 0.85, 0.30, 0.72, 0.20, 0.45);
+    return ages[clamp(i, 0, 5)];
 }
 
 // Rainbow palette
@@ -205,7 +235,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     let ignition = 1.0 + reignite * 2.2;
 
-    let audioSpeed = speed * (0.9 + bass * 0.5);
     let audioIntensity = intensity * (0.85 + treble * 0.6);
     let audioColor = colorShift + mids * 0.2;
     
@@ -230,8 +259,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     );
     
     // Rotation speed from mouse X and speed param + bass rotation
-    let rotSpeed = (mousePos.x * 0.5 + 0.5) * 0.3 + audioSpeed * 0.5 + bass * 0.15;
-    let rotAngle = time * rotSpeed + mouseRot * 0.2 + bass * 0.3;
+    // Base rate × time; mouse X and bass are bounded phase offsets (scaling
+    // absolute time by them made the whole mandala jump on every beat/move).
+    let rotSpeed = 0.15 + speed * 0.45;
+    let rotAngle = time * rotSpeed + mousePos.x * 0.9 + mouseRot * 0.2 + bass * 0.3 + mids * 0.12;
     let cos_r = cos(rotAngle);
     let sin_r = sin(rotAngle);
     let rotMat = mat2x2<f32>(cos_r, -sin_r, sin_r, cos_r);
@@ -273,7 +304,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let tubeCirc = TAU * (innerR + outerR) * 0.5;
         let discharge = dischargeProfile(tubeArc, tubeCirc, time, stripeDrift * contra, current);
         let gasTint = mix(vec3<f32>(1.0), gasLine(i) * 1.6, 0.35 + treble * 0.15);
-        col += ringCol * gasTint * discharge * ignition * sqrt(current) * intensity * 2.0;
+        // Ageing: blackened glass within ~4 cm of either electrode, and worn
+        // tubes drop out for an eighth of a second at a time. A bass surge or
+        // a passing strike front supplies enough voltage to hold them lit.
+        let wear = tubeAge(i);
+        let arcFromEnd = (1.0 - tubeArc / TAU) * tubeCirc;
+        let arcFromCath = tubeArc / TAU * tubeCirc;
+        let soot = wear * 0.8 * (exp(-max(arcFromEnd - 0.004, 0.0) * 55.0) + exp(-max(arcFromCath - 0.028, 0.0) * 70.0) * step(0.02, arcFromCath));
+        let flickWin = floor(time * 8.0 + fi * 3.1);
+        let flickRoll = hash2(vec2<f32>(flickWin, fi * 7.3 + 1.0));
+        let restrike = clamp(bass * 1.6 + reignite * 2.0 + held, 0.0, 1.0);
+        let dropout = step(flickRoll, max(wear - 0.55, 0.0) * 0.5) * (1.0 - restrike);
+        let tubeLife = (1.0 - clamp(soot, 0.0, 0.85)) * (1.0 - dropout * 0.82);
+        col += ringCol * gasTint * discharge * tubeLife * ignition * sqrt(current) * intensity * 2.0;
+
+        // Padma petals in the gap out to the next ring (gaps 1..3 are on screen)
+        if (i >= 1 && i <= 3) {
+            let nPad = f32(fibPetals[i]);
+            let r0 = outerR + 0.004;
+            let r1 = innerR * PHI - 0.004;
+            let tip = 0.82 + mids * 0.18;
+            let front = padmaPetals(layerP, r0, mix(r0, r1, tip), nPad, 0.0);
+            let back = padmaPetals(layerP, r0, mix(r0, r1, tip * 0.68), nPad, 0.5);
+            let petalHue = ringHue + 0.12 + angle / TAU * 0.5;
+            let petalCol = neonRainbow(petalHue) * mix(vec3<f32>(1.0), gasLine(i + 1) * 1.4, 0.3);
+            let lit = front.x + back.x * 0.45 * (1.0 - clamp(front.y * 3.0, 0.0, 1.0));
+            col += petalCol * (lit * 0.9 + front.y * 0.5) * ignition * sqrt(current) * intensity;
+        }
         
         // Add geometric shapes on some rings using Fibonacci petal counts
         if (i % 2 == 0) {
