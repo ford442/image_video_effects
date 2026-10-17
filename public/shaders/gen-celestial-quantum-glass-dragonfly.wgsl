@@ -2,33 +2,15 @@
 //  gen-celestial-quantum-glass-dragonfly
 //  Category: generative
 //  Features: dragonfly, quantum, fractal, audio-reactive, mouse-driven, raymarching, crystalline, upgraded-rgba
-//  Upgraded: 2026-09-27
+//  Upgraded: 2026-10-10
 //  Ideas: Cauchy thin-film wing iridescence, quantum glass caustic core & photon emission,
 //         acoustic wing-tip vortex trails; velocity-banked flight roll from the spring's
-//         own momentum; vortex-synced wingtip flutter in the wing SDF
+//         own momentum; vortex-synced wingtip flutter in the wing SDF; hexagonal compound eye lattice; quantum decoherence static
 //  A packing: display RGBA (RGB=ACES tone-mapped dragonfly scene, A=semantic wing/body alpha)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Wing Frequency, y=Fractal Density, z=Refraction Index, w=Glow Intensity
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Wing Frequency, y=Fractal Density, z=Refraction Index, w=Glow Intensity
 
 fn rot3x(a: f32) -> mat3x3<f32> {
     let s = sin(a); let c = cos(a);
@@ -331,7 +313,18 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let lum = vec3<f32>(0.1, 0.85, 1.1) * pulse * audio * glow_int * smoothstep(0.3, 1.0, abs(p.z));
         let eyeGlow = vec3<f32>(1.2, 0.3, 0.9) * smoothstep(0.8, 1.1, p.z) * glow_int;
 
-        col = mat_col * (dif1 * vec3<f32>(1.0) + dif2 * vec3<f32>(0.2, 0.3, 0.5)) + spec + lum + eyeGlow;
+        // Idea 1: Hexagonal compound eye lattice (hex pattern over the head)
+        let hexUv = vec2<f32>(p.x, p.y) * 20.0;
+        let hexGrid = abs(sin(hexUv.x) + sin(hexUv.x * 0.5 + hexUv.y * 0.866) + sin(hexUv.x * 0.5 - hexUv.y * 0.866));
+        let hexPattern = smoothstep(2.0, 2.5, hexGrid) * smoothstep(0.7, 1.1, p.z);
+        let compoundEye = vec3<f32>(0.5, 1.0, 0.2) * hexPattern * (1.0 + treble);
+
+        // Idea 2: Quantum decoherence static (noise on the tail)
+        let tailMask = smoothstep(0.5, -1.0, p.z);
+        let staticNoise = hash3(p * 50.0 + time).x;
+        let decoherence = vec3<f32>(0.1, 0.8, 1.0) * staticNoise * tailMask * bass * 0.5;
+
+        col = mat_col * (dif1 * vec3<f32>(1.0) + dif2 * vec3<f32>(0.2, 0.3, 0.5)) + spec + lum + eyeGlow + compoundEye + decoherence;
         col = mix(col, fog_col, smoothstep(6.0, 15.0, t));
 
         semanticAlpha = mix(0.95, 0.65, hitMat); // Body is solid 0.95, wing is glass 0.65

@@ -3,33 +3,14 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-27
+//  Upgraded: 2026-10-10
 //  Ideas: pulse-swim contraction with thrust/coast surge; pupils track the pointer and
 //         blink on seeded schedules; tentacle-anchored luminous wake from a second
-//         history sample; click-triggered startle contraction spike; audio-linked pupil dilation
+//         history sample; click-triggered startle contraction spike; audio-linked pupil dilation; oracle synapse sparks; bioluminescent bell-edge frills
 //  A packing: ACES display RGBA (read back as colour history)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -111,7 +92,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     local.y += (smoothstep(0.0, 0.45, swimPhase) - swimPhase) * (0.10 + tentacleCurl * 0.06);
     let bellDistance = length(vec2<f32>(local.x * 1.05 * (1.0 + contraction * 0.38), max(local.y + 0.08, 0.0) * 1.5 * (1.0 - contraction * 0.22)));
     let bell = smoothstep(0.42, 0.25, bellDistance) * smoothstep(0.32, -0.22, local.y);
-    let rim = exp(-abs(bellDistance - 0.34) * (35.0 + swarmDensity * 25.0)) * smoothstep(0.30, -0.12, local.y);
+    // Idea 2: Bioluminescent bell-edge frills
+    let frillWave = abs(sin(atan2(local.y, local.x) * 20.0 + time * 5.0)) * 0.02;
+    let rim = exp(-abs(bellDistance - 0.34 - frillWave) * (35.0 + swarmDensity * 25.0)) * smoothstep(0.30, -0.12, local.y);
     // Idea 2 — watching eye: the pupil turns toward the pointer inside the iris; a seeded eyelid blinks.
     let blinkPhase = fract(time * 0.23 + seed * 7.13);
     let lid = smoothstep(0.0, 0.022, blinkPhase) * (1.0 - smoothstep(0.034, 0.06, blinkPhase));
@@ -127,6 +110,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pupil = exp(-pupilDistance * max(65.0 + oracleChroma * 45.0 - audio.x * 35.0, 12.0)) * (1.0 - lid) * bell;
     let tentaclePhase = local.x * (18.0 + tentacleCurl * 30.0) + sin(local.y * 12.0 - drift * 3.0) * (1.0 + tentacleCurl * 3.0) * (1.0 - contraction * 0.5);
     let tentacles = pow(0.5 + 0.5 * cos(tentaclePhase), 12.0) * smoothstep(-0.08, 0.48 + contraction * 0.22, local.y) * exp(-abs(local.x) * 2.2);
+
+    // Idea 1: Oracle synapse sparks (flashes on the tentacles)
+    let sparkHash = hash21(floor(local * 20.0 + time));
+    let synapseSparks = tentacles * step(0.99, sparkHash) * (1.0 + audio.z * 2.0);
     let oracleAngle = atan2(local.y + 0.07, local.x);
     let oracleSigil = pow(0.5 + 0.5 * cos(oracleAngle * (7.0 + floor(swarmDensity * 6.0)) + drift * 2.0), 14.0) *
         exp(-abs(eyeDistance - 0.15) * (45.0 + oracleChroma * 25.0));
@@ -134,7 +121,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let hue = seed + oracleChroma * 0.55 + local.y * 0.35 + time * (0.04 + driftSpeed * 0.10);
     var hdr = palette(hue) * bell * (0.6 + oracleChroma * 2.1 + audio.y);
-    hdr += palette(hue + 0.34) * (rim * 1.7 + tentacles * (0.7 + audio.z));
+    hdr += palette(hue + 0.34) * (rim * 1.7 + tentacles * (0.7 + audio.z)) + vec3<f32>(1.0, 0.9, 0.5) * synapseSparks * 3.0;
     hdr += vec3<f32>(1.0, 0.85, 0.40) * eye * (0.6 + audio.x) - vec3<f32>(0.3, 0.05, 0.45) * pupil;
     hdr += palette(hue + 0.48) * (oracleSigil * 1.2 + deepBell * 0.42) * (0.5 + audio.z);
     hdr += palette(hue + 0.68) * (clickOracle * 1.8 + dragMask * 0.9);

@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, temporal-feedback, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-28
-//  Ideas: moving hyperplane slice (strands are 4D hypertube cross-sections); counter-propagating current packets
+//  Upgraded: 2026-10-10
+//  Ideas: moving hyperplane slice (strands are 4D hypertube cross-sections); counter-propagating current packets; packet-wake comets along helix phase; brief beat weft bridges between opposing threads
 //  A packing: rgb = pre-tonemap HDR radiance (trail-blended), a = coverage; C read back as HDR colour history
 // ═══════════════════════════════════════════════════════════════════
 //  Twisted xy-repeated cells of counter-rotating helical tubes with
@@ -16,28 +16,12 @@
 //  - Current packets: emissive packets run +z on helix 1 and -z on
 //    helix 2; where they overlap they flash, hardest when the helices
 //    touch. Mids lengthen packets, treble brightens them.
+//  - Packet wakes: asymmetric tails follow those same signed helix phases.
+//  - Beat weft: short-lived crossbars join each cell's opposing threads.
 //  Mouse: hold to pull the weave toward the cursor (no pull on hover).
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Weave Density, .y = Thread Thickness, .z = Plasma Intensity, .w = Time Speed
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Weave Density, .y = Thread Thickness, .z = Plasma Intensity, .w = Time Speed
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -115,9 +99,31 @@ fn packet(ph: f32, sharp: f32) -> f32 {
     return exp(-x * x);
 }
 
-// Map returning (distance, material_id, nearest-strand packet emission, packet-crossing flash)
+// IDEA 3 — asymmetric comet tail behind a packet in its direction of travel.
+// Uses fract/smoothstep rather than another exponential in the hot map path.
+fn packetWake(behind: f32, mid: f32) -> f32 {
+    let wakeLength = mix(0.22, 0.42, clamp(mid, 0.0, 1.0));
+    return smoothstep(0.005, 0.04, behind)
+        * (1.0 - smoothstep(0.03, wakeLength, behind));
+}
+
+fn sdSegment2(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
+    let ba = b - a;
+    let h = clamp(dot(p - a, ba) / max(dot(ba, ba), 1e-5), 0.0, 1.0);
+    return length(p - (a + ba * h));
+}
+
+struct LoomMapResult {
+    d: f32,
+    material: f32,
+    packet: f32,
+    flash: f32,
+    wake: f32,
+    bridge: f32,
+};
+
 fn map(p_in: vec3<f32>, time: f32, m_world: vec3<f32>, pull_str: f32, cam_off: vec2<f32>,
-       bass: f32, mid: f32) -> vec4<f32> {
+       bass: f32, mid: f32) -> LoomMapResult {
     let t = time * u.zoom_params.w * 0.5;
     let p = warpRotate(p_in, t, m_world, pull_str);
 
@@ -153,7 +159,8 @@ fn map(p_in: vec3<f32>, time: f32, m_world: vec3<f32>, pull_str: f32, cam_off: v
 
     // Strand 1
     var s1_p = r;
-    let r1 = rot2D(s1_p.z * 2.0 + t * 2.0);
+    let angle1 = s1_p.z * 2.0 + t * 2.0;
+    let r1 = rot2D(angle1);
     let s1_xy = r1 * s1_p.xy;
     s1_p.x = s1_xy.x; s1_p.y = s1_xy.y;
     s1_p.x += spacing * 0.2;
@@ -161,7 +168,8 @@ fn map(p_in: vec3<f32>, time: f32, m_world: vec3<f32>, pull_str: f32, cam_off: v
 
     // Strand 2
     var s2_p = r;
-    let r2 = rot2D(s2_p.z * 2.0 - t * 2.5 + PI);
+    let angle2 = s2_p.z * 2.0 - t * 2.5 + PI;
+    let r2 = rot2D(angle2);
     let s2_xy = r2 * s2_p.xy;
     s2_p.x = s2_xy.x; s2_p.y = s2_xy.y;
     s2_p.x += spacing * 0.2;
@@ -183,24 +191,56 @@ fn map(p_in: vec3<f32>, time: f32, m_world: vec3<f32>, pull_str: f32, cam_off: v
     let sharp = mix(11.0, 5.5, clamp(mid, 0.0, 1.0));
     let pf = 0.55;
     let pv = 0.9;
-    let pk1 = packet(fract(r.z * pf - t * pv + h1), sharp) * smoothstep(0.0, 0.35 * R1, rad1);
-    let pk2 = packet(fract(r.z * pf + t * pv + h2), sharp) * smoothstep(0.0, 0.35 * R2, rad2);
+    let ph1 = fract(r.z * pf - t * pv + h1);
+    let ph2 = fract(r.z * pf + t * pv + h2);
+    let present1 = smoothstep(0.0, 0.35 * R1, rad1);
+    let present2 = smoothstep(0.0, 0.35 * R2, rad2);
+    let pk1 = packet(ph1, sharp) * present1;
+    let pk2 = packet(ph2, sharp) * present2;
+    // Pointable Idea 3: helix 1 moves +z, so lower phase trails it; helix 2
+    // moves -z, so higher phase trails it. The old packet phases are unchanged.
+    let wake1 = packetWake(fract(0.5 - ph1), mid) * present1;
+    let wake2 = packetWake(fract(ph2 - 0.5), mid) * present2;
     // Crossing flash: both packets at the same z in the same cell; strongest when
     // the two helices' angular gap (4.5t - PI, z-independent) closes.
     let cg = 0.5 + 0.5 * cos(4.5 * t - PI);
     let flash = pk1 * pk2 * (0.3 + 0.7 * cg * cg * cg);
     let pk_near = select(pk2, pk1, d1 < d2);
+    let wake_near = select(wake2, wake1, d1 < d2);
 
-    return vec4<f32>(d, mat, pk_near, flash);
+    // Pointable Idea 4: a brief beat closes a weft segment between the two
+    // opposing helix centres. Sparse z bands keep the crossbars loom-like.
+    let centre1 = transpose(r1) * vec2<f32>(-spacing * 0.2, 0.0);
+    let centre2 = transpose(r2) * vec2<f32>(-spacing * 0.2, 0.0);
+    let beatPhase = fract(t * 0.42 + h1 * 0.31 + h2 * 0.19);
+    let beatDistance = min(beatPhase, 1.0 - beatPhase);
+    let beat = (1.0 - smoothstep(0.045, 0.15, beatDistance)) * (0.72 + 0.28 * bass);
+    let weftBand = 1.0 - smoothstep(
+        0.07,
+        0.18,
+        abs(fract(r.z * 0.24 + h1 * 0.5 - t * 0.08) - 0.5)
+    );
+    let bridgeGate = beat * weftBand * present1 * present2;
+    var bridgeSignal = 0.0;
+    if (bridgeGate > 0.04) {
+        let bridgeRadius = thickness * 0.30 * smoothstep(0.04, 0.72, bridgeGate);
+        let bridgeD = sdSegment2(r.xy, centre1, centre2) - bridgeRadius;
+        bridgeSignal = bridgeGate
+            * (1.0 - smoothstep(0.0, max(thickness * 1.4, 0.001), abs(bridgeD)));
+        if (bridgeD < d) { mat = 2.0; }
+        d = smin(d, bridgeD, 12.0);
+    }
+
+    return LoomMapResult(d, mat, pk_near, flash, wake_near, bridgeSignal);
 }
 
 fn calcNormal(p: vec3<f32>, time: f32, m_world: vec3<f32>, pull_str: f32, cam_off: vec2<f32>,
               bass: f32, mid: f32) -> vec3<f32> {
     let e = vec2<f32>(0.001, 0.0);
-    let d = map(p, time, m_world, pull_str, cam_off, bass, mid).x;
-    let nx = map(p + e.xyy, time, m_world, pull_str, cam_off, bass, mid).x - d;
-    let ny = map(p + e.yxy, time, m_world, pull_str, cam_off, bass, mid).x - d;
-    let nz = map(p + e.yyx, time, m_world, pull_str, cam_off, bass, mid).x - d;
+    let d = map(p, time, m_world, pull_str, cam_off, bass, mid).d;
+    let nx = map(p + e.xyy, time, m_world, pull_str, cam_off, bass, mid).d - d;
+    let ny = map(p + e.yxy, time, m_world, pull_str, cam_off, bass, mid).d - d;
+    let nz = map(p + e.yyx, time, m_world, pull_str, cam_off, bass, mid).d - d;
     return normalize(vec3<f32>(nx, ny, nz) + vec3<f32>(0.0, 0.0, 1e-7));
 }
 
@@ -266,26 +306,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var t_dist = NEAR_T;
     let max_d = 20.0;
     var col = vec3<f32>(0.0);
-    var d = vec4<f32>(0.0);
+    var d = LoomMapResult(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
     var p = ro;
     var hit = false;
 
     // Glow accumulation (plasma haze + packet beads)
     var glow = 0.0;
     var glow_pk = 0.0;
+    var glow_bridge = 0.0;
 
     for (var i = 0; i < 100; i++) {
         p = ro + rd * t_dist;
         d = map(p, time, m_world, pull_str, cam_off, bass, mid);
 
         // Accumulate glow based on proximity to threads
-        glow += 0.01 / (0.01 + abs(d.x));
-        glow_pk += (d.z + d.w * 2.5) * 0.004 / (0.004 + abs(d.x));
+        glow += 0.01 / (0.01 + abs(d.d));
+        glow_pk += (d.packet + d.flash * 2.5 + d.wake * 0.85) * 0.004
+            / (0.004 + abs(d.d));
+        glow_bridge += d.bridge * 0.003 / (0.004 + abs(d.d));
 
         // Only a converged step is a hit; step exhaustion is a miss.
-        if (d.x < 0.001 * (1.0 + t_dist * 0.5)) { hit = true; break; }
+        if (d.d < 0.001 * (1.0 + t_dist * 0.5)) { hit = true; break; }
         if (t_dist > max_d) { break; }
-        t_dist += d.x * 0.7; // step slightly smaller for safety with domain warping
+        t_dist += d.d * 0.7; // step slightly smaller for safety with domain warping
     }
 
     let intensity = u.zoom_params.z;
@@ -305,7 +348,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let fresnel = pow(max(1.0 - max(dot(n, view_dir), 0.0), 0.0), 3.0);
 
         // Material color base
-        let irid_color = iridescence(p.z * 0.1 + fresnel + time * 0.2 + d.y * 0.3);
+        let irid_color = iridescence(p.z * 0.1 + fresnel + time * 0.2 + d.material * 0.3);
 
         // Ambient + Diffuse
         let ambient = vec3<f32>(0.05, 0.0, 0.1);
@@ -317,8 +360,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         col += vec3<f32>(1.0) * spec * fresnel;
 
         // IDEA 2 at the surface: packet bead on its own helix + crossing flash
-        col += pk_col * d.z * 1.6 * pk_gain;
-        col += vec3<f32>(1.0, 0.95, 0.88) * d.w * 5.0 * pk_gain;
+        col += pk_col * d.packet * 1.6 * pk_gain;
+        col += vec3<f32>(1.0, 0.95, 0.88) * d.flash * 5.0 * pk_gain;
+        // IDEA 3 at the surface: lower-energy radiance tapers behind the head.
+        col += mix(pk_col, irid_color, 0.42) * d.wake * 0.72 * pk_gain;
+        // IDEA 4 at the surface: beat wefts flash warm against the cool plasma.
+        col += vec3<f32>(1.0, 0.72, 0.42) * d.bridge * 2.4 * intensity;
 
         // Distance fog
         col = mix(col, vec3<f32>(0.0, 0.0, 0.02), smoothstep(10.0, max_d, t_dist));
@@ -328,6 +375,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let plasma_color = iridescence(time * 0.5 + mid * 2.0);
     col += plasma_color * glow * 0.02 * intensity;
     col += pk_col * glow_pk * 0.03 * pk_gain;
+    col += vec3<f32>(1.0, 0.58, 0.30) * glow_bridge * 0.045 * intensity;
 
     // Temporal trail: exact previous-frame HDR radiance from C (our own A).
     let prev_raw = textureLoad(dataTextureC, coords, 0).rgb;

@@ -3,31 +3,12 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: log-depth seam walls; even/odd contra-rotate
+//  Upgraded: 2026-10-10
+//  Ideas: log-depth seam walls; even/odd contra-rotate; event horizon shear; accretion disk glow
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
@@ -89,7 +70,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let pv = p - vp;
 
   let r = length(pv);
-  let theta = atan2(pv.y, pv.x);
+  let theta_orig = atan2(pv.y, pv.x);
+
+  // Idea 1: event horizon shear (tear tunnel walls near the center)
+  let shearAmount = exp(-r * 8.0) * sin(t * 5.0) * 0.5;
+  let theta = theta_orig + shearAmount;
 
   let zBase = -log(max(r / zoom, 0.001)) + t * 0.5 * (1.0 + bass * 0.2);
 
@@ -103,6 +88,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let iris = 1.0 - smoothstep(0.0, 0.06, r);
   col = mix(col, vec3<f32>(0.0), iris);
+
+  // Idea 2: accretion disk glow (bright rim light at the tunnel boundary)
+  let diskGlow = exp(-abs(r - 0.06) * 40.0) * (0.5 + 0.5 * sin(theta * 10.0 - t * 8.0));
+  col += vec3<f32>(1.0, 0.4, 0.1) * diskGlow * (1.0 + bass);
 
   col *= 1.0 - smoothstep(0.8 * zoom, 1.4 * zoom, r);
 

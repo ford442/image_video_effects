@@ -3,31 +3,12 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-15
-//  Ideas: Keplerian astrolabe gearing; over-under plasma shuttle
+//  Upgraded: 2026-10-10
+//  Ideas: escapement ratchet sparks at meshing tooth contacts; catenary plasma-bay sag between over-under loom threads
 //  A packing: ACES display RGBA with exact-C temporal blend
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn rot(a: f32) -> mat2x2<f32> {
     let s = sin(a);
@@ -73,6 +54,7 @@ struct Context {
     glow: f32,
     mat_id: f32, // 1.0: gears, 2.0: plasma, 3.0: singularity
     shuttle: f32,
+    spark: f32,
 }
 
 var<private> ctx: Context;
@@ -143,6 +125,12 @@ fn map(p_in: vec3<f32>) -> f32 {
         // Carve teeth
         ring_d = max(ring_d, -tooth_d);
 
+        // Idea 3: ratchet sparks where meshing tooth crowns scrape past each other.
+        let tooth_tip = exp(-abs(ring_d) * 38.0);
+        let ratchet_phase = pow(max(cos(polar_angle * teeth_count - ring_phase * 2.2), 0.0), 10.0);
+        let ratchet = tooth_tip * ratchet_phase * (0.4 + treble * audioReact * 0.6);
+        ctx.spark = max(ctx.spark, ratchet);
+
         d_gears = min(d_gears, ring_d);
     }
 
@@ -154,10 +142,13 @@ fn map(p_in: vec3<f32>) -> f32 {
     let weave_count = mix(3.0, 7.0, gearComplex);
     let weave_lift = sin(plasma_angle * weave_count - time * (0.7 + rotSpeed * 2.0)) *
         (0.12 + audioReact * 0.18);
+    // Idea 4: catenary sag in the bays between adjacent weave crossings.
+    let bay = abs(sin(plasma_angle * weave_count * 0.5));
+    let sag = bay * bay * (0.08 + 0.14 * audioReact) * (1.0 + bass * 0.35);
     let thread_radius = 3.0 + sin(time) * 0.5;
     let thread_width = 0.13 + bass * audioReact * 0.18;
-    let thread_a = sdTorus(p - vec3<f32>(0.0, weave_lift, 0.0), vec2<f32>(thread_radius, thread_width));
-    let thread_b = sdTorus(p + vec3<f32>(0.0, weave_lift, 0.0), vec2<f32>(thread_radius, thread_width));
+    let thread_a = sdTorus(p - vec3<f32>(0.0, weave_lift - sag, 0.0), vec2<f32>(thread_radius, thread_width));
+    let thread_b = sdTorus(p + vec3<f32>(0.0, weave_lift + sag, 0.0), vec2<f32>(thread_radius, thread_width));
     let d_plasma = min(thread_a, thread_b) + plasma_noise * 0.9 * (0.45 + audioReact);
     let shuttle_phase = 0.5 + 0.5 * cos(plasma_angle - time * (1.2 + rotSpeed * 3.0) - mids * 0.2);
     let shuttle = pow(shuttle_phase, 14.0) * exp(-abs(d_plasma) * 20.0);
@@ -223,6 +214,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     ctx.glow = 0.0;
     ctx.mat_id = 0.0;
     ctx.shuttle = 0.0;
+    ctx.spark = 0.0;
 
     // Camera setup
     let ro = vec3<f32>(0.0, 0.0, -8.0);
@@ -266,6 +258,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let edge_emit = vec3<f32>(1.0, 0.7, 0.2) * fre * 2.0;
 
             col = base_col * dif + ref_col * 0.5 + edge_emit;
+            col += vec3<f32>(1.0, 0.62, 0.18) * ctx.spark * 1.8;
         } else if (mat == 2.0) {
             // Plasma Threads
             let base_col = vec3<f32>(1.0, 0.4, 0.1); // Searing solar orange
@@ -286,6 +279,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bloom_col_core = vec3<f32>(0.5, 0.7, 1.0);
 
     col += ctx.glow * 0.1 * mix(bloom_col_plasma, bloom_col_core, clamp(ctx.shuttle, 0.0, 1.0));
+    col += vec3<f32>(1.0, 0.65, 0.25) * ctx.spark * 0.4;
 
     // ACES tone mapping
     let a = 2.51;
@@ -301,7 +295,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let historyDecay = 0.94;
     let color = mix(history.rgb, col, historyBlend);
     let has_hit = t < max_dist;
-    let current_alpha = clamp(select(0.04, 0.28, has_hit) + ctx.glow * 0.015 + ctx.shuttle * 0.45, 0.0, 1.0);
+    let current_alpha = clamp(select(0.04, 0.28, has_hit) + ctx.glow * 0.015 + ctx.shuttle * 0.45 + ctx.spark * 0.18, 0.0, 1.0);
     let alpha = max(history.a * historyDecay, current_alpha);
     let depth = select(0.0, clamp(1.0 - t / max_dist, 0.0, 1.0), has_hit);
 

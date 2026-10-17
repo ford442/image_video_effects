@@ -5,30 +5,11 @@
 //  Complexity: High
 //  Created: 2026-05-23
 //  Upgraded: 2026-09-27
-//  Ideas: aurora sheath hugging the spike SDF; co-wound field aurora pinched toward the mouse pole; aurora-tinted spike-tip corona
+//  Ideas: aurora sheath hugging the spike SDF; co-wound field aurora pinched toward the mouse pole; aurora-tinted spike-tip corona; cusp-knot aurora whorls; substorm breakup arc curtains
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=ClickCount (NOT audio), z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-    zoom_params: vec4<f32>,  // x=Spike Length, y=Aurora Intensity, z=Magnetic Twist, w=Fluid Metallic
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Spike Length, y=Aurora Intensity, z=Magnetic Twist, w=Fluid Metallic
 
 // Utils
 fn rot(a: f32) -> mat2x2<f32> {
@@ -179,12 +160,14 @@ fn mapAurora(p_in: vec3<f32>) -> f32 {
 
     let density = smoothstep(0.4, 0.8, f1 * f2);
     let falloff = smoothstep(2.0, 0.0, dBox);
+    // Idea 4: cusp-knot whorls near magnetic-pole cusp lines.
+    let cusp = exp(-abs(length(p.xz) - 1.1) * 3.5) * pow(0.5 + 0.5 * sin(atan2(p.z, p.x) * 9.0 + u.config.x * 2.8), 6.0);
 
     // Idea 1: aurora sheath — the curtain clings to the spiked surface (x2 at the SDF, ~x0.5 one unit out)
     let dMono = map(p_in).x;
     let sheath = 0.3 + 1.7 * exp(-max(dMono, 0.0) * 2.2);
 
-    return density * falloff * sheath * poleGlow * u.zoom_params.y;
+    return (density + cusp * 0.35) * falloff * sheath * poleGlow * u.zoom_params.y;
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -295,6 +278,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         if(den > 0.01) {
             // Color gradient based on height and density
             aurCol += auroraTint(p) * den * stepSize * 2.0;
+            // Idea 5: substorm breakup arc curtains (rapidly brightening bands).
+            let breakup = pow(0.5 + 0.5 * sin(p.y * 7.0 - u.config.x * (6.0 + bass * 5.0)), 7.0);
+            aurCol += vec3<f32>(0.95, 0.45, 1.0) * breakup * den * stepSize * 0.35;
             aurDepth += den * stepSize * 2.0;
         }
 

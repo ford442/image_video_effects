@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-15
-//  Ideas: triple-junction grain corners; L∞ facet flats
+//  Upgraded: 2026-10-10
+//  Ideas: triple-junction grain corners; L∞ facet flats; dislocation glide lines; annealing front bloom; crystalline structural faults; piezoelectric charge flashes
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+const TAU: f32 = 6.28318530718;
 
 // Hash function for pseudo-random values
 fn hash21(p: vec2<f32>) -> f32 {
@@ -129,6 +111,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aspect = resolution.x / resolution.y;
     var p = uv * vec2<f32>(aspect, 1.0);
 
+    // Idea 1: crystalline structural faults (diagonal coordinate shift)
+    let fault = step(0.0, p.x + p.y - 1.0) * 0.1;
+    p += vec2<f32>(fault, -fault);
+
     let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
     var mouseUv = vec2<f32>(extraBuffer[133], extraBuffer[134]);
     var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
@@ -161,6 +147,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let edgeMask = smoothstep(0.15, 0.0, edge);
     // Idea 1 — triple-junction vertices where three crystals meet.
     let triple = 1.0 - smoothstep(0.0, 0.07, (f2 - f1) + (f3 - f2));
+    // Idea 3 — dislocation glide lines crossing selected grains.
+    let dislocAngle = cellHash * TAU;
+    let dislocAxis = vec2<f32>(cos(dislocAngle), sin(dislocAngle));
+    let dislocCoord = dot(p * crystalCount, dislocAxis);
+    let dislocation = smoothstep(0.08, 0.015, abs(fract(dislocCoord * 0.35 + t * (0.15 + bass * 0.12)) - 0.5));
+    // Idea 4 — annealing front where facets briefly brighten/smooth.
+    let annealBand = smoothstep(0.09, 0.01, abs(fract(length(p) * 0.85 - t * 0.12 + cellHash * 0.2) - 0.5));
     
     // Crystal depth simulation (cell age/size)
     let cellAge = fract(cellHash + t * 0.05);
@@ -191,6 +184,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Add depth shading
     col = col * (0.7 + 0.3 * depth);
     
+    // Idea 2: piezoelectric charge flashes (bright flashes on random cells)
+    let flash = step(0.98, fract(cellHash * 100.0 + t * 5.0)) * interior * (1.0 + treble);
+    col += vec3<f32>(0.8, 0.9, 1.0) * flash * 2.0;
+
     // Internal structure (growth rings)
     let rings = sin(f1 * 20.0 + cellAge * 6.28);
     let ringMask = smoothstep(0.0, 0.1, rings) * smoothstep(0.3, 0.0, f1);
@@ -219,12 +216,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
     col += vec3<f32>(0.55, 0.9, 1.3) * clickCrack * (0.65 + treble * 0.3);
+    col += vec3<f32>(0.95, 0.62, 0.25) * dislocation * 0.18 * (0.4 + mids * 0.5);
+    col = mix(col, col * vec3<f32>(1.08, 1.03, 0.95), annealBand * 0.35);
     let coord = vec2<i32>(global_id.xy);
     let prev = textureLoad(dataTextureC, coord, 0);
     col = mix(col, prev.rgb * 0.9, clamp(0.02 + mids * 0.008, 0.0, 0.05));
     col = acesToneMap(max(col, vec3<f32>(0.0)) * 1.08);
-    let reliefDepth = clamp(0.18 + edgeMask * 0.58 + specular * 0.18 + clickCrack * 0.06 + triple * 0.12, 0.0, 1.0);
-    let alpha = clamp(0.22 + edgeMask * 0.58 + specular * 0.15 + clickCrack * 0.15 + triple * 0.12, 0.0, 0.96);
+    let reliefDepth = clamp(0.18 + edgeMask * 0.58 + specular * 0.18 + clickCrack * 0.06 + triple * 0.12 + annealBand * 0.08, 0.0, 1.0);
+    let alpha = clamp(0.22 + edgeMask * 0.58 + specular * 0.15 + clickCrack * 0.15 + triple * 0.12 + dislocation * 0.08 + annealBand * 0.08, 0.0, 0.96);
     let outColor = vec4<f32>(col, alpha);
     textureStore(writeTexture, coord, outColor);
     textureStore(writeDepthTexture, coord, vec4<f32>(reliefDepth, 0.0, 0.0, 0.0));

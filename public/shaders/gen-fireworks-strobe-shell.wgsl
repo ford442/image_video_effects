@@ -3,28 +3,11 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
-//  Upgraded: 2026-09-10
-//  Ideas: per-spark flash phase; true dark interval (pulse can hit 0)
+//  Upgraded: 2026-10-10
+//  Ideas: per-spark flash phase; true dark interval (pulse can hit 0); stroboscopic dotted path of past flashes; sky strobe veil
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -111,16 +94,31 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let pulse = strobePulse(bAge, flashRate, bass, 0.0);
       let flash = pulse * energy * (1.0 + treble * 0.5);
       col += flashColor(seed, colorFlash, flash) * hexBokeh(uv, center, 0.05 + pulse * 0.04, 2.0);
+      // Idea 4 — sky strobe: the shell pulse lights a wide veil of sky around it.
+      let skyStrobe = pulse * fade * energy * exp(-length(uv - center) * 3.2) * 0.14;
+      col += flashColor(seed, colorFlash * 0.5, 1.0) * skyStrobe;
 
+      let strobeFreq = 4.0 + flashRate * 12.0 + bass * 4.0;
       let n = i32(22.0 + energy * 28.0 + mids * 10.0);
       for (var j: i32 = 0; j < n; j = j + 1) {
         let jf = f32(j);
         let js = hash1(si*83.0+jf*3.7);
         let ang = jf/f32(n)*TAU + (js-0.5)*0.5;
         let spd = (0.35+js*0.45)*energy;
-        let sp = sparkPos(center, vec2<f32>(cos(ang),sin(ang))*spd, bAge, GRAVITY);
+        let vel = vec2<f32>(cos(ang),sin(ang))*spd;
+        let sp = sparkPos(center, vel, bAge, GRAVITY);
         let sparkFlash = strobePulse(bAge, flashRate, bass, js * TAU);
         col += flashColor(js+time*0.05, colorFlash, sparkFlash) * hexBokeh(uv, sp, 0.005+js*0.003, fade*energy);
+
+        // Idea 3 — stroboscopic dotted path: faint dots where the last flashes fired.
+        let lastPeak = floor(bAge * strobeFreq + js - 0.25);
+        for (var m: i32 = 1; m <= 3; m = m + 1) {
+          let tk = (lastPeak - f32(m) + 1.25 - js) / strobeFreq;
+          if (tk <= 0.0) { continue; }
+          let dotAge = bAge - tk;
+          let strobeDots = fade * energy * exp(-dotAge * 2.2) * (0.45 - f32(m) * 0.1);
+          col += flashColor(js+time*0.05, colorFlash, 1.0) * softGlow(uv, sparkPos(center, vel, tk, GRAVITY), 0.003+js*0.002, strobeDots);
+        }
       }
 
       if (bAge > 1.5) {

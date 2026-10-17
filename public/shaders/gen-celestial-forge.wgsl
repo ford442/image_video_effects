@@ -4,34 +4,15 @@
 //  A stellar engine hammering at speed: contra-rotating greebled rings,
 //  psychedelic plasma spectra, spring-cursor orbit, held forge surge,
 //  capped click hammer-strike shockwaves.
-//  Upgraded: 2026-09-27
-//  Ideas: temper gradient by ring index; hammer flats on the tube
+//  Upgraded: 2026-10-10
+//  Ideas: temper gradient by ring index; hammer flats on the tube; hammer scale; quench collar
 //  A packing: ACES display RGBA
 //  Contract: 13 bindings, ACES, semantic alpha, dataTextureA writeback only,
 //            exact textureLoad from dataTextureC, plasmaBuffer three-band audio,
 //            bounded extraBuffer[133..138] state.
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=Time, yz=MouseUV, w=MouseDown
-    zoom_params: vec4<f32>,  // x=Rotation Speed, y=Complexity, z=Ring Scale, w=Core Intensity
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Rotation Speed, y=Complexity, z=Ring Scale, w=Core Intensity
 
 const TAU: f32 = 6.28318530718;
 
@@ -416,6 +397,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let band = 0.5 + 0.5 * sin(atan2(p.z, p.x) * 24.0 + p.y * 30.0);
             col *= 0.82 + band * 0.36;
 
+            // Idea: hammer scale — oxide flakes on the cooler outer rings, bright when struck.
+            let flake = hash31(floor(p * 18.0));
+            let scaleFlake = smoothstep(0.82, 0.93, flake) * smoothstep(0.25, 0.9, ringT);
+            col = col * (1.0 - scaleFlake * 0.5);
+            col += vec3<f32>(1.0, 0.72, 0.35) * scaleFlake * g_strike * 1.6;
+
             if (matId == 3.0) {
                 col += forgePalette(hue + 0.55, 1.0) * (0.6 + g_treble * 0.8) * coreIntensity;
             }
@@ -423,6 +410,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         } else if (matId == 4.0) {
             col = forgePalette(hue + 0.7, 1.0 + g_treble) * coreIntensity * 3.2;
         }
+
+        // Idea: quench collar — pale steam just outside the core.
+        let coreR = 0.85 * u.zoom_params.z + 0.15;
+        let collar = exp(-abs(distToCore - coreR) * 7.0);
+        col += vec3<f32>(0.72, 0.82, 0.9) * collar * (0.12 + coreIntensity * 0.28);
 
         col += accumEmission * forgePalette(time * 0.3, g_mids) * 0.05;
         col = mix(col, vec3<f32>(0.005, 0.01, 0.02), 1.0 - exp(-0.08 * t));

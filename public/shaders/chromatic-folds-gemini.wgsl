@@ -1,31 +1,14 @@
-// ────────────────────────────────────────────────────────────────────────────────
-//  Chromatic Folds Gemini – Fractalized Psychedelic Topology
-//  Multi-layered folding, vortex manipulation, and enhanced color dynamics.
-// ────────────────────────────────────────────────────────────────────────────────
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture:    texture_2d<f32>;
-@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
+// ═══════════════════════════════════════════════════════════════════
+//  Chromatic Folds Gemini
+//  Category: artistic
+//  Features: mouse-driven, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-09
+//  Ideas: branch-cut hue jump where the fold wraps; darkening at fold zeros
+//  A packing: pre-ACES display RGB in A (C is color history)
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
-
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB:   texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ────────────────────────────────────────────────────────────────────────────────
-
-struct Uniforms {
-  config:      vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples:     array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // --- (RGB/HSV, hash, mod functions - unchanged) ---
 fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
@@ -79,11 +62,21 @@ fn applyVortex(uv: vec2<f32>, center: vec2<f32>, strength: f32, time: f32) -> ve
 // ───────────────────────────────────────────────────────────────────────────────
 //  Main compute entry point
 // ───────────────────────────────────────────────────────────────────────────────
-const PI = 3.14159265359;
+const PI: f32 = 3.14159265359;
+
+fn aces_tonemap(color: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dims = u.config.zw;
+  if (f32(gid.x) >= dims.x || f32(gid.y) >= dims.y) { return; }
   var uv = vec2<f32>(gid.xy) / dims;
   let time = u.config.x;
   
@@ -127,7 +120,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   totalDisp += noiseDisp;
   
   // Enhanced ripple effect
-  let rippleCount = u32(u.config.y);
+  let rippleCount = min(u32(u.config.y), 50u);
   for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
     var r = u.ripples[i];
     let dist = distance(work_uv, r.xy);
@@ -145,16 +138,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let displacedColor = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
   
   var hsv = rgb2hsv(displacedColor);
-  hsv.x = foldHue(hsv.x, pivotHue, foldStrength);
-  // ✨ GEMINI UPGRADE: Secondary color shift
-  hsv.x = fract(hsv.x + sin(time * 0.1) * 0.1);
+  let wrapped = foldHue(hsv.x, pivotHue, foldStrength);
+  // Branch cut: the existing wrap jumps hue where it crosses an integer.
+  let cutDist = min(wrapped, 1.0 - wrapped);
+  let branch = smoothstep(0.07, 0.0, cutDist);
+  hsv.x = fract(wrapped + branch * 0.5 + sin(time * 0.1) * 0.1);
+  // Darken where this fold's displacement collapses.
+  let foldMag = length(totalDisp);
+  let zeroDark = smoothstep(0.02, 0.0, foldMag);
+  hsv.z = hsv.z * (1.0 - zeroDark * 0.7);
   hsv.y = clamp(hsv.y * satScale, 0.0, 1.0);
   let foldedColor = hsv2rgb(hsv.x, hsv.y, hsv.z);
 
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+  let histSize = vec2<i32>(textureDimensions(dataTextureC));
+  let prev = textureLoad(dataTextureC, clamp(vec2<i32>(gid.xy), vec2<i32>(0), histSize - vec2<i32>(1)), 0).rgb;
   let finalColor = mix(foldedColor, prev, feedbackStrength);
-  
-  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+  let foldAlpha = clamp(0.3 + foldMag * 6.0 + branch * 0.4, 0.0, 1.0);
+
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(aces_tonemap(finalColor), foldAlpha));
   textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthVal, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(finalColor, foldAlpha));
 }

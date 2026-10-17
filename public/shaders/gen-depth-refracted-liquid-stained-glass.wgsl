@@ -4,32 +4,13 @@
 //  Features: facet-refraction, depth-aware, chromatic-aberration, upgraded-rgba,
 //            temporal-rotation, audio-refraction, chromatic-edge-dispersion
 //  Complexity: High
-//  Upgraded: 2026-09-27
+//  Upgraded: 2026-10-10
 //  Ideas: leaded-came specular highlight along facet seams; depth-driven caustic
-//         focus glow where steep bevels concentrate the refraction
+//         focus glow where steep bevels concentrate the refraction; lead came structural lattice; solder joint nodes
 //  A packing: A/C = final ACES display RGBA; exact stained-glass tint history
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 
@@ -204,9 +185,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col += film * abs(clickWave) * (0.12 + treble * 0.18);
     col *= 1.0 - ornament.x * 0.18;
 
+    let seamKey = max(dot(normal, normalize(vec3<f32>(0.55, 0.75, 0.8))), 0.0);
+
+    // Idea 3: Lead came structural lattice: Thick dark borders drawn between Voronoi cells.
+    let cameLattice = smoothstep(0.012, 0.0, edgeDistance);
+    col *= 1.0 - cameLattice;
+    // Idea 4: Solder joint nodes: Small circular metallic blobs at the intersections
+    let nodeDist = length(fract(vec2<f32>(sector * facetCount, r * (4.0 + facetCount * 0.45))) - 0.5);
+    let solderNode = smoothstep(0.12, 0.08, nodeDist) * cameLattice;
+    col += vec3<f32>(0.6, 0.65, 0.7) * solderNode * (0.5 + seamKey * 0.5);
+
     // Idea 1 — leaded-came highlight: a sharp specular line right on the facet
     // seam, brighter where the key light grazes it, like metal holding the glass.
-    let seamKey = max(dot(normal, normalize(vec3<f32>(0.55, 0.75, 0.8))), 0.0);
     let leadHighlight = pow(edgeFactor, 3.0) * pow(seamKey, 2.0);
     col += vec3<f32>(1.0, 0.97, 0.85) * leadHighlight * (0.35 + bass * 0.25);
 

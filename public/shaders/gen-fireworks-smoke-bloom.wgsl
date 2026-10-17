@@ -4,31 +4,12 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
 //  Created: 2026-07-05
-//  Upgraded: 2026-09-11
-//  Ideas: buoyancy (smoke rises as sparks fall); burst-lit smoke from local flash
+//  Upgraded: 2026-10-10
+//  Ideas: buoyancy (smoke rises as sparks fall); burst-lit smoke from local flash; vortex-ring smoke cap; smoke extinction of sparks behind the puff
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.141592653589793;
 const TAU: f32 = 6.283185307179586;
@@ -148,9 +129,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       col += vec3<f32>(1.0, 0.96, 0.85) * exp(-burstAge * 9.0) * shellEnergy * 2.2 * softGlow(uv, center, 0.07, 1.0);
       // Idea 1 — buoyancy: puff lifts while sparks fall
       let puffCenter = center + vec2<f32>(0.0, burstAge * 0.12);
-      let smoke = smokePuff(uv, puffCenter, burstAge, smokeDensity * (0.6 + bass * 0.4), time);
+      let puffBody = smokePuff(uv, puffCenter, burstAge, smokeDensity * (0.6 + bass * 0.4), time);
+      // Idea 3 — vortex-ring cap: the rising puff hollows into a side-on smoke torus
+      let vortexRing = smoothstep(0.6, 3.0, burstAge);
+      let torusR = 0.04 + burstAge * 0.035;
+      let torusD = length((uv - puffCenter) * vec2<f32>(1.0, 1.9)) - torusR;
+      let torus = exp(-torusD * torusD * 220.0);
+      let smoke = puffBody * mix(1.0, 0.2 + 1.7 * torus, vortexRing);
       // Idea 2 — burst-lit smoke: puff brightness from the local flash
       col += vec3<f32>(0.12, 0.1, 0.14) * smoke * fade * shellEnergy * (0.35 + flashLit * 1.45);
+      // Idea 4 — smoke extinction: this shell's sparks dim and redden through its puff
+      let extinction = exp(-smoke * 2.6 * fade);
+      let extinctTint = mix(vec3<f32>(1.0, 0.62, 0.45), vec3<f32>(1.0), extinction) * extinction;
 
       // Primary sparks
       let nSparks = i32(28.0 + energy * 42.0 + mids * 12.0);
@@ -164,7 +154,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let sp = sparkPos(center, vel, burstAge, 1.0, 0.2);
         let sz = 0.006 + js * 0.004;
         let g = softGlow(uv, sp, sz, fade * shellEnergy * 1.5);
-        col += shellColor(hue + js * 0.25, smoothstep(0.5, 0.0, burstAge * 0.2)) * g;
+        col += shellColor(hue + js * 0.25, smoothstep(0.5, 0.0, burstAge * 0.2)) * g * extinctTint;
 
         // Trail smoke behind bright sparks
         if (js2 > 0.65) {
@@ -190,7 +180,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
           let vel = vec2<f32>(cos(ang), sin(ang)) * (0.35 + ks * 0.35) * shellEnergy;
           let sp = sparkPos(secCenter, vel, secAge, 0.9, 0.28);
           let g = softGlow(uv, sp, 0.005, smoothstep(3.2, 0.2, secAge) * shellEnergy);
-          col += shellColor(hue + ks * 0.3 + sf * 0.1, 0.3) * g;
+          col += shellColor(hue + ks * 0.3 + sf * 0.1, 0.3) * g * extinctTint;
         }
       }
 

@@ -1,29 +1,15 @@
-// ----------------------------------------------------------------
-// Cyber-Organic Void-Mycelium Pulsar
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Cyber-Organic Void-Mycelium Pulsar
+//  Category: generative
+//  Features: raymarching, bioluminescent, mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-10-10
+//  Ideas: rhizomorphic root-fan branches sprouting from each node; electroplaque ring discharges around pulsing spores
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, yz=MouseUV, w=MouseDown
-    zoom_params: vec4<f32>,  // x=Density, y=Spore Glow, z=Twist, w=Fog
-    ripples: array<vec4<f32>, 50>,
-};
-
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=Density, y=Spore Glow, z=Twist, w=Fog
 
 const MAX_STEPS: i32 = 100;
 const SURF_DIST: f32 = 0.001;
@@ -47,18 +33,40 @@ fn hash3(p: vec3<f32>) -> vec3<f32> {
     return -1.0 + 2.0 * fract(sin(p2) * 43758.5453123);
 }
 
-fn map(p: vec3<f32>, time: f32, bass: f32, density: f32, twist_str: f32) -> vec2<f32> {
+fn sdCapsule(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, r: f32) -> f32 {
+    let pa = p - a;
+    let ba = b - a;
+    let h = clamp(dot(pa, ba) / max(dot(ba, ba), 0.0001), 0.0, 1.0);
+    return length(pa - ba * h) - r;
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Idea 2 — a bead running out from the node along each axis tube.
+fn sporePulse(q: vec3<f32>, time: f32, mids: f32) -> f32 {
+    let reach = fract(time * (0.35 + mids * 1.35)) * 1.7;
+    let beadX = exp(-abs(abs(q.x) - reach) * 16.0) * exp(-length(q.yz) * 12.0);
+    let beadY = exp(-abs(abs(q.y) - reach) * 16.0) * exp(-length(q.xz) * 12.0);
+    let beadZ = exp(-abs(abs(q.z) - reach) * 16.0) * exp(-length(q.xy) * 12.0);
+    return beadX + beadY + beadZ;
+}
+
+fn map(p: vec3<f32>, time: f32, bass: f32, mids: f32, density: f32, twist_str: f32) -> vec3<f32> {
     var q = p;
 
     // Domain repetition / Grid
-    let cell_size = 4.0 / density;
-    let grid_id = floor(q / cell_size);
+    let cell_size = 4.0 / max(density, 0.1);
     q = (fract(q / cell_size) - 0.5) * cell_size;
 
-    // Twisting
+    // Twist — a real 2D rotation (the old second row read the updated q.x).
     let angle = length(p.xy) * twist_str * 0.1 + time * 0.2;
-    q.x = q.x * cos(angle) - q.y * sin(angle);
-    q.y = q.y * cos(angle) + q.x * sin(angle);
+    let cs = cos(angle);
+    let sn = sin(angle);
+    let qx = q.x * cs - q.y * sn;
+    let qy = q.x * sn + q.y * cs;
+    q = vec3<f32>(qx, qy, q.z);
 
     // Mycelium branches (cylinders)
     let r1 = length(q.xy) - 0.1 - bass * 0.05;
@@ -66,6 +74,22 @@ fn map(p: vec3<f32>, time: f32, bass: f32, density: f32, twist_str: f32) -> vec2
     let r3 = length(q.xz) - 0.1 - bass * 0.05;
     var d = smin(r1, r2, 0.5);
     d = smin(d, r3, 0.5);
+
+    // Idea 1 — anastomosis: short bridges tying the three axis tubes into one junction.
+    let anastomosis = min(
+        sdCapsule(q, vec3<f32>(0.55, 0.0, 0.0), vec3<f32>(0.0, 0.55, 0.0), 0.04),
+        min(
+            sdCapsule(q, vec3<f32>(0.55, 0.0, 0.0), vec3<f32>(0.0, 0.0, 0.55), 0.04),
+            sdCapsule(q, vec3<f32>(0.0, 0.55, 0.0), vec3<f32>(0.0, 0.0, 0.55), 0.04)
+        )
+    );
+    d = smin(d, anastomosis, 0.18);
+
+    // Idea 3 — rhizomorphic root-fan side branches.
+    let rootA = sdCapsule(q, vec3<f32>(0.0, -0.2, 0.0), vec3<f32>(0.95, -1.05, 0.55), 0.035);
+    let rootB = sdCapsule(q, vec3<f32>(0.0, -0.2, 0.0), vec3<f32>(-0.95, -1.05, -0.55), 0.035);
+    let rootC = sdCapsule(q, vec3<f32>(0.0, -0.2, 0.0), vec3<f32>(0.6, -1.0, -0.95), 0.03);
+    d = smin(d, min(rootA, min(rootB, rootC)), 0.14);
 
     // Nodes (spheres)
     let node_dist = length(q) - (0.3 + bass * 0.2);
@@ -77,16 +101,17 @@ fn map(p: vec3<f32>, time: f32, bass: f32, density: f32, twist_str: f32) -> vec2
 
     // Distinguish materials: 1.0 for branch, 2.0 for node
     let mat = select(1.0, 2.0, node_dist < d + 0.1);
+    let pulse = sporePulse(q, time, mids);
 
-    return vec2<f32>(d, mat);
+    return vec3<f32>(d, mat, pulse);
 }
 
-fn getNormal(p: vec3<f32>, time: f32, bass: f32, density: f32, twist_str: f32) -> vec3<f32> {
+fn getNormal(p: vec3<f32>, time: f32, bass: f32, mids: f32, density: f32, twist_str: f32) -> vec3<f32> {
     let e = vec2<f32>(0.001, 0.0);
     let n = vec3<f32>(
-        map(p + e.xyy, time, bass, density, twist_str).x - map(p - e.xyy, time, bass, density, twist_str).x,
-        map(p + e.yxy, time, bass, density, twist_str).x - map(p - e.yxy, time, bass, density, twist_str).x,
-        map(p + e.yyx, time, bass, density, twist_str).x - map(p - e.yyx, time, bass, density, twist_str).x
+        map(p + e.xyy, time, bass, mids, density, twist_str).x - map(p - e.xyy, time, bass, mids, density, twist_str).x,
+        map(p + e.yxy, time, bass, mids, density, twist_str).x - map(p - e.yxy, time, bass, mids, density, twist_str).x,
+        map(p + e.yyx, time, bass, mids, density, twist_str).x - map(p - e.yyx, time, bass, mids, density, twist_str).x
     );
     return normalize(n);
 }
@@ -101,7 +126,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv = (vec2<f32>(coords) - 0.5 * res) / res.y;
     let time = u.config.x;
 
-    let bass = extraBuffer[0];
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
 
     let density = u.zoom_params.x;
     let spore_glow = u.zoom_params.y;
@@ -140,12 +166,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var mat: f32 = 0.0;
     var steps: i32 = 0;
     var min_dist_to_spore: f32 = 1000.0;
+    var pulseAccum = 0.0;
 
     for (var i = 0; i < MAX_STEPS; i++) {
         p = ro + rd * dO;
-        let map_res = map(p, time, bass, density, twist_str);
+        let map_res = map(p, time, bass, mids, density, twist_str);
         dS = map_res.x;
         mat = map_res.y;
+        pulseAccum = max(pulseAccum, map_res.z * exp(-dS * 6.0));
 
         // Track closest distance to nodes (spores) for glow
         if (mat == 2.0) {
@@ -163,7 +191,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depth = dO;
 
     if (dO < MAX_DIST) {
-        let n = getNormal(p, time, bass, density, twist_str);
+        let n = getNormal(p, time, bass, mids, density, twist_str);
 
         // Lighting
         let lightDir = normalize(vec3<f32>(1.0, 2.0, -1.0));
@@ -188,6 +216,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
              // Boost emission on bass
              col += emit_color * (1.0 + bass * 2.0) * spore_glow;
         }
+
+        // Idea 4 — electroplaque discharge rings around pulsing nodes.
+        let cell_size = 4.0 / max(density, 0.1);
+        var qn = p;
+        qn = (fract(qn / cell_size) - 0.5) * cell_size;
+        let ring = exp(-abs(length(qn) - 0.45) * 22.0) * pow(max(sin(time * 6.0 + qn.y * 9.0), 0.0), 7.0);
+        col += vec3<f32>(0.16, 0.85, 1.0) * ring * (0.22 + bass * 0.25);
     }
 
     // Subspace fog (dark abyssal purple/blue)
@@ -197,10 +232,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Volumetric Spore Bloom
     let bloomCol = vec3<f32>(0.0, 1.0, 0.5); // Toxic green
-    let bloom = exp(-min_dist_to_spore * 2.0) * spore_glow * bass;
+    let bloom = exp(-min_dist_to_spore * 2.0) * spore_glow * (0.35 + bass);
     col += bloomCol * bloom;
+    col += vec3<f32>(0.45, 1.0, 0.72) * pulseAccum * spore_glow;
 
-    textureStore(writeTexture, coords, vec4<f32>(col, 1.0));
-    textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coords, vec4<f32>(col, 1.0));
+    let hit = dO < MAX_DIST;
+    col = acesToneMap(col * 1.15);
+    let alpha = clamp(select(0.04, 0.7, hit) + bloom * 0.2 + pulseAccum * spore_glow * 0.15, 0.0, 1.0);
+    let depthOut = select(0.0, clamp(1.0 - depth / MAX_DIST, 0.0, 1.0), hit);
+    let outColor = vec4<f32>(col, alpha);
+    textureStore(writeTexture, coords, outColor);
+    textureStore(writeDepthTexture, coords, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coords, outColor);
 }

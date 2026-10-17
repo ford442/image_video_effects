@@ -1,7 +1,7 @@
 {
   "id": "gen-abyssal-plasma-void-medusa",
   "name": "Abyssal Plasma Void-Medusa",
-  "description": "A majestic, deep-space biomechanical entity undulating through a quantum fluidic void, driven by audio-reactive bioluminescent plasma nodes.",
+  "description": "A deep-space biomechanical void-medusa with plasma root lanterns, nematocyst strobe ringlets, and ciliary bell-rim sparkles drifting through warped abyssal currents.",
   "category": "generative",
   "url": "shaders/gen-abyssal-plasma-void-medusa.wgsl",
   "features": [

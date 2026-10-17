@@ -3,30 +3,12 @@
 //  Category: generative
 //  Features: raymarch, audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: V8 firing-order crank (each cell is a cylinder of a two-bank 1-8-4-3-6-5-7-2 crankshaft, the camera flies down the vee between the banks); compression ignition (the plunging piston crushes the KIFS core and the core flashes diesel-orange at firing TDC, decaying over the power stroke); ignition heat shimmer (combustion heat along the ray wobbles the exact C chrome-trail fetch, rising like hot air)
+//  Upgraded: 2026-10-10
+//  Ideas: camshaft lobe timing notches stamped into the chrome flow; exhaust-manifold blueing bands around heated outer shells
 //  A packing: HDR linear RGB (pre-ACES) + semantic alpha; C read back as HDR for the advected chrome smear
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-    zoom_params: vec4<f32>,  // x=Intensity, y=Speed, z=Scale, w=Mouse Influence
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Intensity, y=Speed, z=Scale, w=Mouse Influence
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51;
@@ -274,6 +256,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let nearCore = clamp((4.0 - length(local)) / 3.0, 0.0, 1.0);
         surfaceHeat = hitFlash * nearCore;
         col += vec3<f32>(1.0, 0.45, 0.12) * surfaceHeat * (0.9 + intensity * 0.6) * (0.5 + 0.5 * diff);
+
+        // Idea 4: camshaft timing notches carved into the chrome stream.
+        let camNotch = pow(max(cos(local.z * 0.785 - tMap * 1.5), 0.0), 10.0) *
+            exp(-abs(length(local.xy) - 1.1) * 6.0);
+        col -= vec3<f32>(0.11) * camNotch;
+        col += vec3<f32>(1.0, 0.84, 0.58) * camNotch * 0.16;
+
+        // Idea 5: exhaust-manifold blueing around hot outer shell bands.
+        let manifold = exp(-abs(abs(local.y) - 2.0) * 4.0) * exp(-abs(length(local.xz) - 2.6) * 2.4);
+        col += vec3<f32>(0.2, 0.45, 1.0) * manifold * (0.14 + treble * 0.16);
     }
 
     // Iridescent plasma glow with chromatic dispersion

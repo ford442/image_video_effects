@@ -4,8 +4,8 @@
 //  Features: upgraded-rgba, temporal, audio-reactive, mouse-driven,
 //    islamic, star, rose, geometric, girih, tessellation
 //  Complexity: Very High
-//  Upgraded: 2026-09-13
-//  Ideas: nested φ pentagrams; 10-fold rose from 36° sectors
+//  Upgraded: 2026-10-10
+//  Ideas: nested φ pentagrams; 10-fold rose from 36° sectors; overlapping star point shadows; central rose bloom
 //  A packing: ACES display RGBA
 //  Wolfram Data: Regular pentagon — interior angle 108° = 3π/5 rad;
 //    central angle 72° = 2π/5 rad; diagonal/edge ratio φ = (1+√5)/2 ≈ 1.618;
@@ -13,26 +13,7 @@
 //    star polygon {n/k} where k=2 for pentagram
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 
@@ -269,7 +250,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Mouse is already 0–1 UV (y=0 top). Morph amount from distance to center.
   let mouseMorph = length(mouse - vec2<f32>(0.5));
-  let roseDist = sd_pentagon_rosette(ruv, 0.12 * zoom * (1.0 + mouseMorph * 2.0));
+  // Idea 2: central rose bloom - pulse expansion on bass
+  let roseDist = sd_pentagon_rosette(ruv, 0.12 * zoom * (1.0 + mouseMorph * 2.0 + bass * 0.6));
   let roseEdge = smoothstep(0.04, 0.0, abs(roseDist));
   color += vec3<f32>(0.75, 0.55, 0.15) * roseEdge * 0.4 * mouseMorph;
 
@@ -283,6 +265,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Background pattern (subtle repeating motif)
   let bg_pattern = sin(p_uv.x * 20.0) * sin(p_uv.y * 20.0) * 0.5 + 0.5;
   color += vec3<f32>(0.03, 0.05, 0.08) * bg_pattern * 0.1;
+
+  // Idea 1: overlapping star point shadows - using the edge_dist gradient
+  let shadowOffset = vec2<f32>(0.02, 0.03) * zoom;
+  let shadow = smoothstep(0.0, 0.08, edge_dist - 0.015);
+  color *= 0.65 + 0.35 * shadow;
 
   // Rotation shimmer with treble
   color *= 1.0 + sin(time * p2 * 0.3 + treble * 2.0) * 0.02;

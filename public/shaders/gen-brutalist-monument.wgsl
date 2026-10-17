@@ -2,31 +2,13 @@
 //  Brutalist Monument - Generative Shader
 //  Category: Generative
 //  Description: Massive concrete architecture in an atmospheric void.
-//  Upgraded: 2026-09-27
-//  Ideas: board-form lines and tie holes on concrete; ledge drip stains
+//  Upgraded: 2026-10-10
+//  Ideas: board-form lines and tie holes on concrete; ledge drip stains; pour joints; aggregate pop-out
 //  A packing: pre-ACES display RGBA; ACES on writeTexture
 // ═══════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=SunAngle, y=FogDensity, z=ArtifactScale, w=Complexity
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=SunAngle, y=FogDensity, z=ArtifactScale, w=Complexity
 
 // --- SDF Primitives ---
 
@@ -279,6 +261,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
              let streak = noise(vec2<f32>(p.x * 7.0 + p.z * 7.0, p.y * 0.25));
              let underLedge = verticalFace * smoothstep(0.58, 0.86, streak) * (0.3 + 0.5 * max(sun_dir.y, 0.0));
              albedo = albedo * (1.0 - underLedge * 0.5);
+             // Idea: pour joints — cold seams between lifts of this board-formed pour.
+             let lift = abs(fract(p.y * 0.35) - 0.5);
+             let pourJoint = smoothstep(0.46, 0.5, lift) * verticalFace;
+             albedo = albedo * (1.0 - pourJoint * 0.45);
+             // Idea: aggregate pop-out — pale stones and dark pits in the mix.
+             let agg = noise(p.xz * 9.0 + vec2<f32>(p.y * 3.0, p.y * 5.0));
+             let pit = smoothstep(0.82, 0.92, agg) * verticalFace;
+             let fleck = (1.0 - smoothstep(0.08, 0.18, agg)) * verticalFace;
+             albedo = albedo * (1.0 - pit * 0.55) + vec3<f32>(0.45, 0.43, 0.4) * fleck * 0.35;
         }
 
         // Specular

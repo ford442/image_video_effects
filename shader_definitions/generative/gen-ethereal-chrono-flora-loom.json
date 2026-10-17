@@ -4,8 +4,12 @@
   "url": "shaders/gen-ethereal-chrono-flora-loom.wgsl",
   "category": "generative",
   "type": "generative",
-  "workgroup_size": [16, 16, 1],
-  "description": "A mesmerizing, luminescent botanical matrix that weaves organic fractal geometry with time-dilating quantum energy threads, invoking the feeling of an alien greenhouse frozen in a dimension of light.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "description": "A mesmerizing, luminescent botanical matrix that weaves organic fractal geometry with time-dilating quantum energy threads, invoking the feeling of an alien greenhouse frozen in a dimension of light. Warp-thread helices run the length of the loom, and a weft shuttle lays a bright arc at the flow speed.",
   "tags": [
     "organic",
     "botanical",

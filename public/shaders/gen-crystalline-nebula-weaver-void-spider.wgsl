@@ -3,30 +3,11 @@
 //  Category: generative
 //  Features: raymarched, audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: nebula-condensed web nodes (lattice nodes only crystallise where the same fbm that paints the nebula is dense); metachronal eight-leg tetrapod gait (two-segment knee-bent legs, L1-R2-L3-R4 vs R1-L2-R3-L4); spinneret dragline sagging under gravity
+//  Upgraded: 2026-10-10
+//  Ideas: orb-web spoke lattice with capture-spiral highlights; dewdrop caustic beads along the sagging dragline
 //  A packing: HDR linear RGB (pre-ACES) + semantic alpha; C read back exactly as HDR history
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>
-}
+#include "_prelude.wgsl"
 
 // ----------------------------------------------------------------
 // Real hash-based value noise + fbm (replaces fake sin-dot field)
@@ -327,9 +308,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         surf += vec3<f32>(1.0, 0.2, 0.8) * audioBass * (0.4 + fres);
 
         // Treble glint: sparkle hugging the web threads near the hit
-        let webD = sdWeb(displace(hitP, time, mouse), time, mouse);
+        let displaced = displace(hitP, time, mouse);
+        let webD = sdWeb(displaced, time, mouse);
         let sparkle = pow(vnoise(hitP * 24.0 + vec3<f32>(time * 3.0)), 8.0);
         surf += vec3<f32>(0.9, 0.95, 1.0) * sparkle * audioTreble * exp(-max(webD, 0.0) * 24.0) * 6.0;
+
+        // Idea 4: orb-web spokes and capture spirals laid over the lattice.
+        let ang = atan2(displaced.y, displaced.x);
+        let rad = length(displaced.xy);
+        let spokes = pow(max(cos(ang * 8.0), 0.0), 9.0) * exp(-abs(rad - 2.2) * 2.2);
+        let spiral = 0.5 + 0.5 * cos(rad * 18.0 - ang * 6.0 - time * 1.4);
+        surf += vec3<f32>(0.22, 0.82, 1.0) * spokes * spiral * (0.18 + audioTreble * 0.18);
+
+        // Idea 5: dewdrop caustic beads running on the dragline.
+        let silkD = sdDragline(displaced, 0.03 / max(u.zoom_params.x, 0.1));
+        let dew = exp(-abs(silkD) * 34.0) * pow(max(sin(displaced.y * 18.0 + time * 2.6), 0.0), 8.0);
+        surf += vec3<f32>(0.95, 1.0, 1.0) * dew * (0.22 + audioBass * 0.18);
 
         col += surf * plasma_intensity;
     }

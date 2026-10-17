@@ -3,32 +3,12 @@
 //  Category: generative
 //  Features: thermal, topography, rainbow, audio-reactive, mouse-interactive, semantic-alpha, aces-tone-mapping, chromatic-aberration, temporal-feedback, depth-aware, domain-warped-fbm, curl-noise-flow, worley-cells, thermal-diffusion, ripple-reactive
 //  Complexity: Medium
-//  Created: 2026-05-31
-//  Updated: 2026-08-05 (Batch 36 — Algorithmist: domain-warped FBM strata, curl-noise
-//           flow, Worley micro cells, feedback thermal diffusion, FFT bins, ripple heat rings)
+//  Upgraded: 2026-10-10
+//  Ideas: watershed drainage channels; saddle-point thermal eddy blooms; magma caldera sinks; tectonic fault-line shears
 //  By: Kimi Agent (Bright batch)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // --- Simplex noise (2D) ---
 fn mod289_2(v: vec2<f32>) -> vec2<f32> { return v - floor(v * (1.0 / 289.0)) * 289.0; }
@@ -161,7 +141,12 @@ fn sampleTerrain(uv: vec2<f32>, res: vec2<f32>, time: f32, params: vec4<f32>, mo
     let centeredUV = vec2<f32>((uv.x - 0.5) * aspect, uv.y - 0.5);
     let terrainScale = 2.0 + scale * 4.0;
     let warpAmt = 0.35 + scale * 0.9;
-    let tp = centeredUV * terrainScale * (1.0 + audio.x * 0.15);
+
+    // Idea 2: Tectonic fault-line shears
+    let fault = step(0.0, centeredUV.x + centeredUV.y * 0.5) * 0.1;
+    let shearedUV = centeredUV + vec2<f32>(fault, -fault);
+
+    let tp = shearedUV * terrainScale * (1.0 + audio.x * 0.15);
     let t = time * (0.1 + speed * 0.8);
     let h = terrainHeight(tp, t, warpAmt) * (1.0 + depth * 0.4);
     let heightRaw = h * 0.5 + 0.5;
@@ -174,6 +159,7 @@ fn sampleTerrain(uv: vec2<f32>, res: vec2<f32>, time: f32, params: vec4<f32>, mo
     let hD = terrainHeight(tp + vec2<f32>(0.0, -0.01), t, warpAmt);
     let hU = terrainHeight(tp + vec2<f32>(0.0, 0.01), t, warpAmt);
     let slope = length(vec2<f32>(hR - hL, hU - hD)) * 0.5;
+    let lap = (hL + hR + hU + hD - 4.0 * heightRaw);
     let contourInterval = 0.06 + scale * 0.08;
     let contourRaw = abs(fract(heightNorm / contourInterval) - 0.5) * 2.0;
     let contour = 1.0 - smoothstep(0.0, 0.08 + slope * 0.3, contourRaw);
@@ -183,7 +169,13 @@ fn sampleTerrain(uv: vec2<f32>, res: vec2<f32>, time: f32, params: vec4<f32>, mo
     let mouseUV = vec2<f32>((mousePos.x - 0.5) * aspect, mousePos.y - 0.5);
     let mouseDist = length(centeredUV - mouseUV);
     let hotSpot = exp(-mouseDist * 10.0) * 0.4 * select(0.5, 1.5, mouseDown > 0.5) * (1.0 + audio.x * 0.5);
-    let heightWithHotspot = heightNorm + hotSpot + rippleHeat * 0.25;
+
+    // Idea 1: Magma caldera sinks (dark center, hot rim)
+    let calderaDist = length(tp - vec2<f32>(2.0, 2.0));
+    let calderaRim = exp(-abs(calderaDist - 1.0) * 5.0) * 0.5;
+    let calderaSink = -exp(-calderaDist * 3.0) * 0.5;
+
+    let heightWithHotspot = heightNorm + hotSpot + rippleHeat * 0.25 + calderaRim + calderaSink;
     let midsPulse = 1.0 + audio.y * 0.8;
     let elevationGlow = smoothstep(0.7, 1.0, heightWithHotspot) * intensity;
     var color = neonThermalColor(heightWithHotspot, (contour * 0.5 + majorContour * 0.5) * midsPulse, colorShift);
@@ -206,6 +198,14 @@ fn sampleTerrain(uv: vec2<f32>, res: vec2<f32>, time: f32, params: vec4<f32>, mo
     color += vec3<f32>(1.0, 0.95, 0.8) * hotGlow * intensity;
     color += vec3<f32>(1.0, 0.5, 0.0) * hotGlow * 0.5 * intensity;
     color += vec3<f32>(0.9, 0.4, 0.1) * rippleHeat * 0.6 * intensity;
+    // Idea 1: watershed drainage channels traced by convergent curvature.
+    let channel = smoothstep(0.02, 0.12, -lap) * smoothstep(0.08, 0.45, slope);
+    color = mix(color, color * vec3<f32>(0.65, 0.78, 0.95), channel * 0.45);
+    color += vec3<f32>(0.12, 0.55, 0.9) * channel * (0.25 + audio.x * 0.35);
+    // Idea 2: thermal saddle eddies at passes (low slope, near-zero curvature).
+    let saddle = exp(-abs(lap) * 12.0) * exp(-slope * 7.0) * (contour * 0.6 + majorContour * 0.4);
+    let eddy = saddle * (0.5 + 0.5 * sin(t * 2.2 + tp.x * 5.0 - tp.y * 4.0));
+    color += vec3<f32>(0.95, 0.35, 1.0) * eddy * (0.12 + audio.y * 0.22);
     color *= 1.0 + intensity * 1.0;
     let contourDensity = contour * 0.5 + majorContour * 0.5;
     return vec4<f32>(color, contourDensity);

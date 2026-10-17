@@ -3,34 +3,16 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-09-27
-//  Ideas: Voronoi plasma conduits fed by the core; Beer-Lambert chromatic transmittance through the plasma; core as the light source (brass f0, radial lattice shadows)
+//  Upgraded: 2026-10-10
+//  Ideas: eclipse-shutter panel crowns marching around the shell longitude; meridian radiator fins with polar blueing over the brass lattice
 //  A packing: ACES display RGBA (C read as display history, blended after tone-map)
 //  A camera orbits a 5-fold KIFS brass lattice of boxes, tori and struts carved
 //  around a Voronoi-roughened plasma core. Domain-warped FBM weathering,
 //  Fresnel-Schlick brass, stepped clockwork rotation, click shock gear ticks.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Mechanical Complexity, y=Clock Speed, z=Plasma Intensity, w=Gear Ratio
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Mechanical Complexity, y=Clock Speed, z=Plasma Intensity, w=Gear Ratio
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -451,6 +433,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let conduitHeat = clamp(feed * (0.35 + 0.65 * pulse), 0.0, 1.0);
         let conduitGlow = conduit * (0.3 + 0.7 * pulse) * (0.4 + 0.6 * feed) * plasmaDrive * 3.2;
         color += getPlasmaColor(conduitHeat, time) * conduitGlow * mix(0.6, 1.0, ao);
+
+        // Idea 4: eclipse-shutter crowns around shell longitude.
+        let lon = atan2(p.z, p.x);
+        let shellBand = exp(-abs(length(p) - 2.0) * 10.0);
+        let shutter = pow(max(cos(lon * 14.0 - time * 1.1), 0.0), 8.0);
+        color += vec3<f32>(1.0, 0.82, 0.35) * shellBand * shutter * 0.25;
+
+        // Idea 5: meridian radiator fins with cooler polar tinting.
+        let lat = atan2(p.y, max(length(p.xz), 1e-4));
+        let fin = pow(max(cos(lat * 12.0 + time * 0.6), 0.0), 9.0) * shellBand;
+        color += vec3<f32>(0.32, 0.75, 1.0) * fin * (0.12 + treble * 0.12);
 
         // Idea 2: brass seen through the plasma is dimmed and reddened.
         color *= trans;

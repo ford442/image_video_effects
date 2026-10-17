@@ -123,6 +123,62 @@ describe('WebGPURenderer lifecycle', () => {
     expect(errors.some((e) => e.type === 'device-lost')).toBe(true);
   });
 
+  describe('setDisplayP3', () => {
+    async function ready(copySrcSupported = false) {
+      const device = makeDevice();
+      const out = outcomeFor(device);
+      (out as { canvasCopySrc: boolean }).canvasCopySrc = copySrcSupported;
+      (initializeWebGPUDevice as jest.Mock).mockClear();
+      (initializeWebGPUDevice as jest.Mock).mockResolvedValueOnce(out);
+      setupSpy.mockResolvedValueOnce('ok');
+      const wgpu = createWebGpu();
+      await wgpu.init(document.createElement('canvas'));
+      return { wgpu, context: out.context as unknown as { configure: jest.Mock } };
+    }
+
+    it('reconfigures the same context without requesting a second device', async () => {
+      const { wgpu, context } = await ready();
+      context.configure.mockClear();
+      const r = await wgpu.setDisplayP3(true, false);
+      expect(r.colorSpace).toBe('display-p3');
+      expect(context.configure).toHaveBeenCalledWith(expect.objectContaining({ colorSpace: 'display-p3' }));
+      expect(initializeWebGPUDevice).toHaveBeenCalledTimes(1);
+      expect(wgpu.getCanvasColorState()).toMatchObject({ requestedDisplayP3: true, colorSpace: 'display-p3' });
+    });
+
+    it('retains the applied color through COPY_SRC capture reconfigures and back to sRGB', async () => {
+      const { wgpu, context } = await ready(true);
+      await wgpu.setDisplayP3(true, false);
+      context.configure.mockClear();
+      expect(wgpu.setCanvasCopySrc(true)).toBe(true);
+      expect(context.configure).toHaveBeenLastCalledWith(
+        expect.objectContaining({ colorSpace: 'display-p3', usage: 0x10 | 0x01 }),
+      );
+      // A toggle during capture is deferred: nothing is reconfigured.
+      context.configure.mockClear();
+      const deferred = await wgpu.setDisplayP3(false, false);
+      expect(deferred.deferred).toBe(true);
+      expect(context.configure).not.toHaveBeenCalled();
+      expect(wgpu.getCanvasColorState().colorSpace).toBe('display-p3');
+      wgpu.setCanvasCopySrc(false);
+      const off = await wgpu.setDisplayP3(false, false);
+      expect(off).toMatchObject({ colorSpace: 'srgb', toneMapping: 'standard' });
+      expect(context.configure).toHaveBeenLastCalledWith(expect.not.objectContaining({ colorSpace: 'display-p3' }));
+    });
+
+    it('reports an sRGB fallback with a reason when the browser rejects display-p3', async () => {
+      const { wgpu, context } = await ready();
+      context.configure.mockImplementation((c: { colorSpace?: string }) => {
+        if (c.colorSpace) throw new Error('rejected');
+      });
+      const r = await wgpu.setDisplayP3(true, true);
+      expect(r).toMatchObject({ colorSpace: 'srgb', reason: 'unsupported-p3' });
+      expect(wgpu.getCanvasColorState()).toMatchObject({
+        requestedDisplayP3: true, colorSpace: 'srgb', fallbackReason: 'unsupported-p3',
+      });
+    });
+  });
+
   it('releases the device when init fails after acquiring it', async () => {
     const device = makeDevice();
     (initializeWebGPUDevice as jest.Mock).mockResolvedValueOnce(outcomeFor(device));

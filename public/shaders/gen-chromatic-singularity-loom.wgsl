@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: raymarched, mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: tidal spaghettification (thread radius necks thin and striations stretch with the local 1/r^2 pull); mirror-parity warp/weft families (fold-reflection determinant splits the threads into two complementary chromatic families); orbital infall trail (exact C history advected around and into the projected singularity)
+//  Upgraded: 2026-10-10
+//  Ideas: ergosphere shear bands wrapped around the singularity azimuth; photon-ring caustic shell riding the mass-scaled critical radius
 //  A packing: HDR linear RGB (pre-ACES) + semantic alpha; C read exactly, rotated/infalling around the singularity
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>
-};
 fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
   let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
   let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
@@ -220,6 +202,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         }
 
         col = c_shift * body * (1.0 / (1.0 + dO * dO * 0.1)) + glowTint * bloom;
+
+        // Idea 4: azimuthal ergosphere shear bands around the projected center.
+        let az = atan2(hit_p.z - center.z, hit_p.x - center.x);
+        let shear = 0.5 + 0.5 * sin(az * 12.0 - time * (1.2 + bass * 0.4));
+        col += vec3<f32>(0.2, 0.62, 1.0) * shear * exp(-dist_center * 1.1) * 0.32;
+
+        // Idea 5: mass-scaled photon-ring caustic shell.
+        let photonRadius = 1.1 + 0.18 * mass;
+        let photon = exp(-abs(dist_center - photonRadius) * 18.0);
+        col += vec3<f32>(1.0, 0.78, 0.32) * photon * (0.3 + treble * 0.22);
     }
 
     // Idea 3: orbital infall trail — exact C history read at a pixel rotated backwards around the

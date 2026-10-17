@@ -4,7 +4,7 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-09-27
-//  Ideas: sagittal fin-ray membrane with a travelling undulation wave; fold-tree chromatophore cascade through the fractal tail beads
+//  Ideas: sagittal fin-ray membrane with a travelling undulation wave; fold-tree chromatophore cascade through the fractal tail beads; electroreceptor snout whiskers; brood-pouch pulse bloom
 //  A packing: HDR linear RGB (pre-ACES) + semantic alpha; C read back as HDR history
 // ═══════════════════════════════════════════════════════════════════
 //  History: 2026-08-05 Algorithmist b35 (capsule-chain spine anatomy,
@@ -17,27 +17,7 @@
 //  now real (min SDF along missed rays); miss depth = 0; screen-top = +y
 //  so the seahorse stands head-up.
 // ═══════════════════════════════════════════════════════════════════
-// --- COPY PASTE THIS HEADER ---
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time (seconds), .y = rippleCount (0-50 active ripples), .zw = resolution (width, height)
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0–1 canvas: y=0 top), .w = mouse_down (>0.5 = pressed)
-  zoom_params: vec4<f32>,  // .xyzw = user params p1…p4 (mapped from UI sliders)
-  ripples: array<vec4<f32>, 50>,  // .xy = ripple uv, .z = startTime (seconds), .w = padding (0)
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -348,6 +328,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let cascadePh = fract(t * 0.25 - foldId);
         let flash = pow(max(1.0 - cascadePh, 0.0), 10.0);
         col += bioPalette(foldId * 0.7 + 0.15, phase) * flash * isTail * (1.4 + audio.x * 0.8);
+        // Idea 3: electroreceptor whisker filaments around the snout.
+        let snoutP = p - vec3<f32>(0.92, 0.66, 0.0);
+        let whisk = exp(-length(snoutP.xy) * 9.0) * pow(0.5 + 0.5 * sin(atan2(snoutP.y, snoutP.x) * 16.0 - t * 8.0), 7.0);
+        col += vec3<f32>(0.8, 0.95, 1.0) * whisk * (0.06 + audio.z * 0.15);
+        // Idea 4: brood-pouch pulse bloom under the belly.
+        let pouch = exp(-dot((p - vec3<f32>(-0.18, -0.42, 0.0)) * vec3<f32>(1.7, 2.4, 2.0), (p - vec3<f32>(-0.18, -0.42, 0.0)) * vec3<f32>(1.7, 2.4, 2.0)));
+        let pouchPulse = 0.5 + 0.5 * sin(t * (2.2 + audio.x * 1.8));
+        col += vec3<f32>(0.95, 0.55, 0.85) * pouch * pouchPulse * (0.08 + audio.y * 0.12);
 
         // Fresnel rim + treble glints = the "cyber" sheen
         col += vec3<f32>(0.5, 0.3, 1.0) * fres * (0.6 + audio.z * 0.6);

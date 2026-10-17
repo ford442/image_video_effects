@@ -4,28 +4,12 @@
 //  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
 //  Complexity: High
 //  Created: 2026-05-31
+//  Upgraded: 2026-10-10
+//  Ideas: anastomosis knots where generations cross; cytoplasmic streaming beads root-to-tip
+//  A packing: HDR display RGB + coverage alpha (C read back as the max-trail); ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══ Hash / Noise Utilities ═══
 fn hash21(p: vec2<f32>) -> f32 {
@@ -99,7 +83,7 @@ fn myceliumLayer(p: vec2<f32>, t: f32, timeScale: f32, seed: f32, growthParam: f
             let h = clamp(dot(pa, ba) / (dot(ba, ba) + 0.0001), 0.0, 1.0);
             let dist = length(pa - ba * h);
 
-            let age = fi / f32(segments);
+            let age = (fi + h) / f32(segments);
             let tipness = 1.0 - age;
 
             if (dist < minDist) {
@@ -175,10 +159,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mousePos = u.zoom_config.yz;
 
     // Smooth audio
-    var prevBass = extraBuffer[0];
+    let prevBass = extraBuffer[133];
     let smoothBass = bassEnv(prevBass, bass, 0.15, 0.02);
     if (gid.x == 0u && gid.y == 0u) {
-      extraBuffer[0] = smoothBass;
+      extraBuffer[133] = smoothBass;
     }
 
     // Aspect ratio correction
@@ -250,6 +234,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     col += midCol * tint;
     col += freshCol * tint;
 
+    // Idea 1 — anastomosis: where filaments of two generations cross, hyphae fuse into a bright knot
+    let knot = ancientMask * midMask + midMask * freshMask + ancientMask * freshMask * 0.7;
+    col += vec3<f32>(1.0, 0.82, 0.5) * tint * knot * glowIntensity * (0.7 + smoothBass * 0.5);
+
+    // Idea 2 — cytoplasmic streaming: beads ride each filament from root (age 0) toward the tips
+    let streamRate = 0.5 + mids * 1.6;
+    let beadA = exp(-pow((fract(ancient.y * 5.0 - time * streamRate * 0.15) - 0.5) * 9.0, 2.0)) * ancientMask;
+    let beadM = exp(-pow((fract(middle.y * 7.0 - time * streamRate * 0.4) - 0.5) * 10.0, 2.0)) * midMask;
+    let beadF = exp(-pow((fract(fresh.y * 9.0 - time * streamRate) - 0.5) * 11.0, 2.0)) * freshMask;
+    col += vec3<f32>(1.0, 0.9, 0.62) * tint * (beadA * 0.25 + beadM * 0.45 + beadF * 0.7) * (0.4 + glowIntensity * 0.4);
+
     // Audio pulse on overall brightness
     col *= 1.0 + smoothBass * 0.2 + mids * 0.1;
 
@@ -264,23 +259,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Temporal feedback: blend with previous frame for persistence
     let prev = textureLoad(dataTextureC, coord, 0).rgb;
     let decayRate = 0.92 + temporalDepth * 0.05;
-    col = max(col, prev * decayRate);
+    let hdr = clamp(max(col, prev * decayRate), vec3<f32>(0.0), vec3<f32>(6.0));
 
     // Chromatic aberration
     let caStr = 0.003 * (1.0 + smoothBass) + ancient.x * 0.001;
-    col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
+    var display = vec3<f32>(hdr.r + caStr, hdr.g, hdr.b - caStr * 0.5);
 
-    // ACES tone mapping
-    col = acesToneMap(col);
+    // ACES tone mapping (display only; A keeps the HDR trail that C feeds back)
+    display = acesToneMap(display);
 
     // Vignette
     let vignette = 1.0 - length(uv - 0.5) * 0.6;
-    col *= vignette;
+    display *= vignette;
 
     // Alpha: denser areas more opaque (for compositing)
-    let alpha = clamp(ancientAlpha + midAlpha + freshAlpha + sporeBurst * 0.3, 0.0, 1.0);
+    let alpha = clamp(ancientAlpha + midAlpha + freshAlpha + knot * 0.4 + sporeBurst * 0.3, 0.0, 1.0);
 
-    textureStore(dataTextureA, coord, vec4<f32>(col, alpha));
-    textureStore(writeTexture, coord, vec4<f32>(col, alpha));
+    textureStore(dataTextureA, coord, vec4<f32>(hdr, alpha));
+    textureStore(writeTexture, coord, vec4<f32>(display, alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(ancient.y * 0.3 + middle.y * 0.3 + fresh.y * 0.4, 0.0, 0.0, 0.0));
 }

@@ -4,30 +4,12 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-09-14
-//  Ideas: dendritic bifurcation (tertiary spine forks off every side-branch tip); saltatory action potentials hopping node-to-node along the axon
+//  Ideas: dendritic bifurcation (tertiary spine forks off every side-branch tip); saltatory action potentials hopping node-to-node along the axon; myelin pearling instability that swells/relaxes the trunk radius in bead trains; synaptic bouton crowns at branch terminals
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=Time, yz=MouseUV, w=MouseDown
-    zoom_params: vec4<f32>,  // x=Bloom Extension, y=Repulsion Radius, z=Vein Glow, w=Camera Zoom
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Bloom Extension, y=Repulsion Radius, z=Vein Glow, w=Camera Zoom
 
 fn rot(a: f32) -> mat2x2<f32> {
     let s = sin(a);
@@ -81,7 +63,10 @@ fn map(p: vec3<f32>, sprung_mouse: vec2<f32>, held: f32) -> vec3<f32> {
     }
 
     let branch_length = 3.0 + sin(u.config.x * 0.7 + mids * 4.0) * u.zoom_params.x * (1.0 + mids * 0.4);
-    let d_branch = sdCapsule(pos, vec3<f32>(0.0, 0.0, -branch_length), vec3<f32>(0.0, 0.0, branch_length), 0.3);
+    // IDEA 3: myelin pearling instability along the trunk.
+    let pearling = pow(0.5 + 0.5 * cos(pos.z * 8.0 - u.config.x * (2.0 + bass * 1.5)), 3.0);
+    let trunkRadius = 0.24 + pearling * 0.1;
+    let d_branch = sdCapsule(pos, vec3<f32>(0.0, 0.0, -branch_length), vec3<f32>(0.0, 0.0, branch_length), trunkRadius);
     let sideA = sdCapsule(pos, vec3<f32>(0.0), vec3<f32>(branch_length * 0.65, branch_length * 0.25, 0.0), 0.18);
     let sideB = sdCapsule(pos, vec3<f32>(0.0), vec3<f32>(-branch_length * 0.65, -branch_length * 0.2, 0.0), 0.18);
 
@@ -95,7 +80,11 @@ fn map(p: vec3<f32>, sprung_mouse: vec2<f32>, held: f32) -> vec3<f32> {
     let spineB1 = sdCapsule(pos, tipB, tipB + vec3<f32>(-forkLen * 0.8, -forkLen * 0.5, forkLen * 0.6), 0.1);
     let spineB2 = sdCapsule(pos, tipB, tipB + vec3<f32>(-forkLen * 0.8, -forkLen * 0.3, -forkLen * 0.6), 0.1);
     let spines = min(min(spineA1, spineA2), min(spineB1, spineB2));
-    let bloomBranch = min(min(d_branch, min(sideA, sideB)), spines);
+    // IDEA 4: synaptic boutons — bulbous neurotransmitter terminals at branch tips.
+    let boutonA = length(pos - tipA) - 0.15;
+    let boutonB = length(pos - tipB) - 0.15;
+    let boutons = min(boutonA, boutonB);
+    let bloomBranch = min(min(min(d_branch, min(sideA, sideB)), spines), boutons);
 
     // Native idea 2: saltatory conduction — a spike front sweeps the axon but only
     // lights up at discrete nodes of Ranvier, so the glow hops node to node.

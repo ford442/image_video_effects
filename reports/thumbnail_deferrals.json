@@ -1,14 +1,12 @@
 {
   "entries": [
     {
-      "id": "bubble-chamber",
-      "added_by": "thumbnail-campaign",
-      "deferred_at": "2026-09-26",
-      "expires": "2026-10-26",
-      "reason": "gpu-capture-pending",
-      "renewals": 1,
-      "renewed_at": "2026-09-26",
-      "failure_note": "no self-hosted gpu runner registered (gpu-required.yml / thumbs-capture-farm.yml); next capture wave"
+      "id": "gen-acoustic-obsidian-resonator",
+      "added_by": "Jules",
+      "deferred_at": "2026-10-12",
+      "expires": "2026-11-11",
+      "reason": "other",
+      "failure_note": "Needs WebGPU to render"
     },
     {
       "id": "emergent-calligraphic-weave",
@@ -399,6 +397,14 @@
       "renewals": 1,
       "renewed_at": "2026-09-26",
       "failure_note": "no self-hosted gpu runner registered (gpu-required.yml / thumbs-capture-farm.yml); next capture wave"
+    },
+    {
+      "id": "gen-liquid-metal-chrono-flora",
+      "added_by": "Jules",
+      "deferred_at": "2026-10-11",
+      "expires": "2026-11-10",
+      "reason": "gpu-capture-pending",
+      "failure_note": "New shader requires GPU capture for thumbnail"
     }
   ]
 }

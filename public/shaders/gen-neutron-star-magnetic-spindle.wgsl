@@ -4,30 +4,12 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-09-14
-//  Ideas: dipole field lines (r = L sin^2 theta) inside the light cylinder, coloured by curvature radiation; oblique-rotator pulsar beams with lighthouse pulse flash
+//  Ideas: dipole field lines (r = L sin^2 theta) inside the light cylinder, coloured by curvature radiation; oblique-rotator pulsar beams with lighthouse pulse flash; polar-cap spark carousel producing drifting subpulse knots around each magnetic pole; striped equatorial current sheet beyond the light cylinder
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Core Density, .y = Spin Rate, .z = Jet Intensity, .w = Disk Scale
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Core Density, .y = Spin Rate, .z = Jet Intensity, .w = Disk Scale
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -208,9 +190,20 @@ fn magnetosphere(pw: vec3<f32>, phase: f32, time: f32, core_r: f32, r_lc: f32, l
     let axial = exp(-sin2 * 10.0);
     let beam = open * axial * exp(-r * 0.3) * beam_gain;
     let beamCol = vec3<f32>(0.55, 0.72, 1.0) * beam;
+    // IDEA 3: Ruderman-Sutherland-like polar-cap spark carousel.
+    let polarCap = exp(-sin2 * 18.0) * exp(-pow((r - core_r * 1.6) * 2.2, 2.0));
+    let carousel = pow(0.5 + 0.5 * cos(phiM * 10.0 - time * (2.2 + beam_gain * 3.0)), 8.0);
+    let spark = polarCap * carousel * (0.4 + open * 0.6) * beam_gain;
+    let sparkCol = vec3<f32>(1.0, 0.82, 0.6) * spark;
+    // IDEA 4: striped equatorial current sheet beyond the light cylinder.
+    let beyond = smoothstep(r_lc, r_lc * 1.7, r);
+    let sheetPlane = exp(-pm.y * pm.y * 16.0);
+    let stripes = pow(0.5 + 0.5 * sin((r - r_lc) * 12.0 - time * 6.0 + phiM * 2.0), 6.0);
+    let sheet = beyond * sheetPlane * stripes * line_gain * 0.6;
+    let sheetCol = vec3<f32>(0.45, 0.68, 1.0) * sheet;
 
-    let glow = clamp(tube * closed * fieldB * 0.5 + beam, 0.0, 1.0);
-    return vec4<f32>(lineCol + beamCol, glow);
+    let glow = clamp(tube * closed * fieldB * 0.5 + beam + spark * 0.8 + sheet * 0.9, 0.0, 1.0);
+    return vec4<f32>(lineCol + beamCol + sparkCol + sheetCol, glow);
 }
 
 @compute @workgroup_size(16, 16, 1)

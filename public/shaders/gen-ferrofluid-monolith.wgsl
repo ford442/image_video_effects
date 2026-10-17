@@ -3,30 +3,12 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-21
-//  Ideas: Rosensweig cone lattice (counter-helix breaks ridges into peaks); chrome reflects the core beam
+//  Upgraded: 2026-10-10
+//  Ideas: Rosensweig cone lattice (counter-helix breaks ridges into peaks); chrome reflects the core beam; pointer-magnet spike growth; iron-filing dipole field lines
 //  A packing: raw HDR display RGBA history (C read back as the same)
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>, // x=Monolith Height, y=Spike Strength, z=Field Speed, w=Core Glow
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Monolith Height, y=Spike Strength, z=Field Speed, w=Core Glow
 
 fn rot(a: f32) -> mat2x2<f32> {
     let c = cos(a); let s = sin(a);
@@ -42,7 +24,7 @@ fn hash31(p: vec3<f32>) -> f32 {
     return fract(sin(dot(p, vec3<f32>(127.1, 311.7, 74.7))) * 43758.5453);
 }
 
-fn mapScene(pIn: vec3<f32>, time: f32, audio: vec3<f32>, height: f32, spikes: f32) -> vec2<f32> {
+fn mapScene(pIn: vec3<f32>, time: f32, audio: vec3<f32>, height: f32, spikes: f32, magnet: vec4<f32>) -> vec2<f32> {
     var p = pIn;
     let twist = time * 0.18 + p.y * (0.14 + audio.y * 0.08);
     let twistedXZ = rot(twist) * p.xz;
@@ -55,7 +37,12 @@ fn mapScene(pIn: vec3<f32>, time: f32, audio: vec3<f32>, height: f32, spikes: f3
     // Idea 1 — Rosensweig cone lattice: a counter-helix gates the ridges into discrete peaks,
     // the crossed normal-field instability pattern real ferrofluid forms.
     let crossHelix = 0.5 + 0.5 * sin(angle * lobes - p.y * 4.5 + time * 1.3);
-    let field = helix * (0.3 + 0.7 * crossHelix * crossHelix);
+    var field = helix * (0.3 + 0.7 * crossHelix * crossHelix);
+    // Idea 3 — pointer magnet: spikes on the side facing the pointer magnet grow (world frame, pre-twist)
+    let outward = normalize(vec3<f32>(pIn.x, 0.0, pIn.z) + vec3<f32>(0.0001, 0.0, 0.0));
+    let toMagnet = normalize(magnet.xyz - pIn + vec3<f32>(0.0, 0.0001, 0.0));
+    let pull = pow(max(dot(outward, toMagnet), 0.0), 2.0) * exp(-abs(pIn.y - magnet.y) * 0.45);
+    field = field * (1.0 + pull * magnet.w * 1.3);
     let taper = smoothstep(height + 0.25, 0.0, abs(p.y));
     let spikeShell = radial - (0.72 + field * spikes * taper * (0.45 + audio.x));
     let cap = abs(p.y) - height;
@@ -66,12 +53,12 @@ fn mapScene(pIn: vec3<f32>, time: f32, audio: vec3<f32>, height: f32, spikes: f3
     return vec2<f32>(d, material);
 }
 
-fn normalAt(p: vec3<f32>, time: f32, audio: vec3<f32>, height: f32, spikes: f32) -> vec3<f32> {
+fn normalAt(p: vec3<f32>, time: f32, audio: vec3<f32>, height: f32, spikes: f32, magnet: vec4<f32>) -> vec3<f32> {
     let e = vec2<f32>(0.0015, 0.0);
     return normalize(vec3<f32>(
-        mapScene(p + e.xyy, time, audio, height, spikes).x - mapScene(p - e.xyy, time, audio, height, spikes).x,
-        mapScene(p + e.yxy, time, audio, height, spikes).x - mapScene(p - e.yxy, time, audio, height, spikes).x,
-        mapScene(p + e.yyx, time, audio, height, spikes).x - mapScene(p - e.yyx, time, audio, height, spikes).x
+        mapScene(p + e.xyy, time, audio, height, spikes, magnet).x - mapScene(p - e.xyy, time, audio, height, spikes, magnet).x,
+        mapScene(p + e.yxy, time, audio, height, spikes, magnet).x - mapScene(p - e.yxy, time, audio, height, spikes, magnet).x,
+        mapScene(p + e.yyx, time, audio, height, spikes, magnet).x - mapScene(p - e.yyx, time, audio, height, spikes, magnet).x
     ));
 }
 
@@ -108,6 +95,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let right = normalize(cross(forward, vec3<f32>(0.0, 1.0, 0.0)));
     let up = cross(right, forward);
     let rd = normalize(uv.x * right + uv.y * up + 1.35 * forward);
+    // Idea 3 — the pointer is a magnet hovering in front of the obelisk; idle centre pointer exerts no pull
+    let magnetPos = lookAt + right * mouse.x * 3.0 + up * mouse.y * 3.0 - forward * 1.5;
+    let magnetStrength = (0.35 + 0.65 * held) * smoothstep(0.03, 0.25, length(mouse));
+    let magnet = vec4<f32>(magnetPos, magnetStrength);
 
     var travel = 0.0;
     var material = 0.0;
@@ -116,7 +107,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var hitPos = ro;
     for (var i = 0; i < 84; i++) {
         hitPos = ro + rd * travel;
-        let scene = mapScene(hitPos, time * fieldSpeed, audio, height, spikes);
+        let scene = mapScene(hitPos, time * fieldSpeed, audio, height, spikes, magnet);
         material = scene.y;
         glow += 0.006 / (0.025 + abs(scene.x)) * (0.3 + audio.x * 0.7);
         if (scene.x < 0.0015) { hit = true; break; }
@@ -126,7 +117,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     var hdrColor = vec3<f32>(0.008, 0.012, 0.025) + vec3<f32>(0.03, 0.02, 0.05) * (1.0 - length(uv));
     if (hit) {
-        let n = normalAt(hitPos, time * fieldSpeed, audio, height, spikes);
+        let n = normalAt(hitPos, time * fieldSpeed, audio, height, spikes, magnet);
         let view = -rd;
         let light = normalize(vec3<f32>(0.7, 0.9, -0.5));
         let diffuse = max(dot(n, light), 0.0);
@@ -146,6 +137,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         hdrColor = select(chromeLit, core, material > 1.5);
     }
     hdrColor += vec3<f32>(0.08, 0.35, 0.9) * min(glow, 5.0) * 0.08 * coreGlow;
+
+    // Idea 4 — iron-filing dipole field lines: r = L·sin²θ lines of the obelisk's vertical dipole,
+    // drawn as a grainy filing texture behind it
+    let fr = max(length(uv), 0.0001);
+    let sinT = abs(uv.x) / fr;
+    let shellL = fr / max(sinT * sinT, 0.0004);
+    let lineCoord = log(shellL) * 5.0 - time * fieldSpeed * 0.15;
+    let fieldLine = 1.0 - smoothstep(0.0, 0.12, abs(fract(lineCoord) - 0.5) - 0.3);
+    let filing = step(0.45, hash31(vec3<f32>(floor(uv * 260.0), 1.0)));
+    let fieldMask = smoothstep(0.12, 0.3, abs(uv.x)) * exp(-fr * 1.4) * select(1.0, 0.0, hit);
+    hdrColor += vec3<f32>(0.25, 0.35, 0.5) * fieldLine * filing * fieldMask * (0.25 + spikes * 0.5 + audio.x * 0.5);
 
     var clickField = 0.0;
     let aspect = res.x / max(res.y, 1.0);

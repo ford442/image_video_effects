@@ -27,7 +27,7 @@ import type { InputSource } from '../types';
 import type { FrameStats } from '../webgpu/deviceCounters';
 import type { CanvasConfigureOptIns } from '../webgpu/device';
 import type { SlotMode } from '../webgpu/webgpuConstants';
-import type { WebGpuProbeSerializable } from '../webgpuBootProbe';
+import type { CanvasColorState, DisplayP3Result, WebGpuProbeSerializable } from '../webgpuBootProbe';
 
 /** What the worker scope supports (sent once, before init). */
 export interface RenderWorkerCaps {
@@ -124,6 +124,8 @@ export type RenderRpc =
   | { type: 'grabVideoFrame'; requestId: number; timestampUs: number }
   /** PNG (base64, no data: prefix) of the next presented frame (screenshots, tests). */
   | { type: 'captureFrame'; requestId: number }
+  /** Re-negotiate the canvas color space live (Display P3); result is what was applied. */
+  | { type: 'setDisplayP3'; requestId: number; enabled: boolean; isHdr: boolean }
   /** Compile WGSL on the worker's device and return its compilation messages. */
   | { type: 'compileCheck'; requestId: number; id: string; code: string }
   /** Bench only (#1080): N frames without rAF, timed in the worker to GPU idle. */
@@ -145,6 +147,7 @@ export interface RenderRpcResults {
   captureThumbnail: string | null;
   grabVideoFrame: VideoFrame | null;
   captureFrame: string | null;
+  setDisplayP3: DisplayP3Result;
   compileCheck: CompileMessage[];
   benchmarkUncapped: UncappedBenchResult | null;
   dispose: true;
@@ -173,6 +176,8 @@ export interface RenderSnapshot {
   gpuErrors: string[];
   /** GPUDevices alive in this worker (its boot probe's count; 1 while rendering). */
   liveGpuDevices: number;
+  /** Applied canvas color state (Display P3 toggle / diagnostics). */
+  canvasColor?: CanvasColorState;
   /** How page input reaches the worker. */
   inputChannel: 'sab' | 'postMessage';
   /** The input the worker's renderer currently holds (proves the channel works). */
@@ -222,6 +227,7 @@ export const RENDER_RPC_TYPES = [
   'captureThumbnail',
   'grabVideoFrame',
   'captureFrame',
+  'setDisplayP3',
   'compileCheck',
   'benchmarkUncapped',
   'dispose',

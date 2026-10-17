@@ -1,8 +1,12 @@
-// ═══════════════════════════════════════════════════════════════
-//  Datamosh Brush — Batch 60
-//  Interactive MPEG smear: spring brush, held smear vector, capped
-//  click ripples, macroblock geometry, exact C feedback, ACES + audio.
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Datamosh Brush
+//  Category: retro-glitch
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-10
+//  Ideas: DC hold; mosquito ring
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
 
@@ -124,6 +128,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let glitchSample = textureSampleLevel(readTexture, u_sampler, offsetUV, 0.0);
       let channelSwap = vec3<f32>(glitchSample.g, glitchSample.b, glitchSample.r);
       blendedColor = mix(glitchSample.rgb, channelSwap, mids * 0.25);
+      // Idea: dcHold — the corrupting block flattens toward its center sample.
+      let dcUv = clamp((blockID + vec2<f32>(0.5)) * max(blockSize, 0.001), vec2<f32>(0.0), vec2<f32>(1.0));
+      let dcHold = textureSampleLevel(readTexture, u_sampler, dcUv, 0.0).rgb;
+      blendedColor = mix(blendedColor, dcHold, 0.35 + alphaGhost * 0.4);
       blendedAlpha = glitchSample.a * 0.75 + 0.12;
     } else {
       blendedColor = prevColor;
@@ -139,6 +147,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     let edge = macroblockEdge(uv, blockSize);
     blendedColor = mix(blendedColor, blendedColor * vec3<f32>(1.2, 0.9, 1.3), edge * mids * 0.4);
+    // Idea: mosquitoRing — high-frequency flicker on the macroblock edge.
+    let cell = fract(uv / max(blockSize, 0.001));
+    let mosquitoRing = sin(cell.x * 36.0) * sin(cell.y * 36.0) * edge;
+    blendedColor = blendedColor + vec3<f32>(0.12, -0.03, 0.06) * mosquitoRing * (0.25 + mids);
   }
 
   blendedAlpha = clamp(blendedAlpha, 0.0, 1.0);

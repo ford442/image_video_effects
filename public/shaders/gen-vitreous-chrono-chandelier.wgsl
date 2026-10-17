@@ -5,31 +5,13 @@
 //            upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration
 //  Complexity: High
 //  Chunks From: gen-protocell-division.wgsl (upgraded-rgba stack)
-//  Upgraded: 2026-06-14
+//  Upgraded: 2026-10-10
+//  Ideas: pendular phase-locked chime clusters; floor-bound caustic web lattice; chronometric tick-marks; crystal cleavage planes
+//  A packing: ACES display RGBA
 //  By: Claude Code Batch 3B
 // ═══════════════════════════════════════════════════════════════════
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Shatter Threshold, y=Chime Density, z=Refraction Index, w=Transmission
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Shatter Threshold, y=Chime Density, z=Refraction Index, w=Transmission
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -88,7 +70,10 @@ fn sceneSDF(p: vec3<f32>, time: f32, chimeDensity: f32, audioBass: f32) -> f32 {
     let len = 1.0 + h.x * 2.0;
     let damping = 0.1 + h.y * 0.2;
     let theta0 = 0.3 + h.z * 0.4;
-    let angle = pendulumAngle(theta0, time + cellX * 0.5 + cellZ * 0.3, len, damping);
+    var angle = pendulumAngle(theta0, time + cellX * 0.5 + cellZ * 0.3, len, damping);
+    // Idea 1: neighboring chimes phase-lock and drift apart in clusters.
+    let cluster = sin((cellX + cellZ) * 0.75 + time * (0.5 + audioBass * 0.6));
+    angle += 0.14 * cluster * (0.3 + audioBass * 0.7);
     let swingX = sin(angle) * len;
     let swingZ = cos(angle) * len * 0.3;
     var crystalPos = q - vec3<f32>(swingX, -1.5, swingZ);
@@ -96,9 +81,17 @@ fn sceneSDF(p: vec3<f32>, time: f32, chimeDensity: f32, audioBass: f32) -> f32 {
     var mountPos = q - vec3<f32>(0.0, 0.8, 0.0);
     let mount = sdTorus(mountPos, vec2<f32>(0.3, 0.06));
     let linkBox = sdRoundedBox(q - vec3<f32>(0.0, 0.4, 0.0), vec3<f32>(0.04, 0.15, 0.04), 0.01);
-    let d1 = min(crystal, mount);
+    // Idea 2: crystal cleavage planes
+    let cleavage = dot(crystalPos, normalize(vec3<f32>(1.0, 1.0, 1.0))) - 0.2;
+    let facetedCrystal = max(crystal, cleavage);
+
+    // Idea 1: chronometric tick-marks floating around chimes
+    let tickRot = p.x * 2.0 + p.y * 5.0 + time;
+    let tickMarks = max(length(vec2<f32>(p.x, p.z)) - 0.6, abs(fract(tickRot) - 0.5) - 0.05);
+
+    let d1 = min(facetedCrystal, mount);
     let d2 = min(d1, linkBox);
-    return d2 - audioBass * 0.02;
+    return min(d2 - audioBass * 0.02, max(tickMarks, abs(p.y) - 0.02));
 }
 
 fn calcNormal(p: vec3<f32>, time: f32, chimeDensity: f32, audioBass: f32) -> vec3<f32> {
@@ -174,6 +167,18 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         colR = bgGlow.r;
         colG = bgGlow.g;
         colB = bgGlow.b;
+    }
+    // Idea 2: refracted caustic web projected onto an abyssal floor plane.
+    if (rd.y < -0.02) {
+        let floorY = -2.6;
+        let tf = (floorY - ro.y) / rd.y;
+        if (tf > 0.0) {
+            let fp = ro + rd * tf;
+            let web = pow(causticPattern(fp * 0.85 + vec3<f32>(0.0, 0.0, time * 0.25), time * 1.2), 3.0);
+            colR += web * 0.22 * (0.5 + audioBass * 0.4);
+            colG += web * 0.45 * (0.5 + audioBass * 0.4);
+            colB += web * 0.75 * (0.5 + audioBass * 0.4);
+        }
     }
     colR = clamp(colR, 0.0, 1.0);
     colG = clamp(colG, 0.0, 1.0);

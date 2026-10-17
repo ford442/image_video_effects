@@ -3,30 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: aeolian impact ripples (asymmetric stoss/lee wind-ripple lamination migrating downwind, with defect bifurcations); quartz saltation glints (hopping grains on windward stoss slopes flash Cauchy-dispersed spectral sparkle, lee slip faces shadowed)
+//  Upgraded: 2026-10-10
+//  Ideas: impact ripples; saltation glints; slip-face avalanche tongue; grainfall bedding
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-struct Uniforms {
-    config: vec4<f32>, // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>, // x=ZoomTime, yz=MouseUV, w=MouseDown
-    zoom_params: vec4<f32>, // .x = Dune Complexity, .y = Prism Dispersion, .z = Geyser Height, .w = Wind Speed
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Dune Complexity, .y = Prism Dispersion, .z = Geyser Height, .w = Wind Speed
 
 // --- UTILS ---
 fn rotate2D(angle: f32) -> mat2x2<f32> {
@@ -276,6 +259,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let cauchyHue = fract(gSeed + dot(rd, n) * dispersion * 0.35);
             let glintCol = mix(vec3<f32>(1.0, 0.95, 0.85), spectrum(cauchyHue), clamp(dispersion * 0.4, 0.0, 1.0));
             col += glintCol * grainOn * hopLift * stoss * (0.25 + glintSpec * 1.5) * clamp(windSpeed, 0.0, 1.5) * 0.6;
+            // Idea: slip-face avalanche — a sand tongue running down the lee slope.
+            let avalCell = floor(p.xz * 1.7);
+            let avalPhase = fract(time * (0.12 + windSpeed * 0.2) + hash21(avalCell));
+            let downslope = abs(fract(dot(p.xz, windN) * 0.55) - avalPhase);
+            let avalanche = leeShade * smoothstep(0.12, 0.0, downslope) * step(0.62, hash21(avalCell + vec2<f32>(4.0, 1.0)));
+            col += vec3<f32>(0.95, 0.82, 0.55) * avalanche * 0.4 * clamp(windSpeed, 0.15, 1.6);
+            // Idea: grainfall bedding — fine layers on the same lee face.
+            let bedding = leeShade * (0.5 + 0.5 * sin(p.y * 46.0 + dot(p.xz, windN) * 3.0));
+            col = mix(col, col * vec3<f32>(0.78, 0.68, 0.52), bedding * 0.45);
         } else {
             // Prismatic crystal geyser
             let base = vec3<f32>(0.15, 0.75, 1.0) * (1.0 + bass * 0.5 + audio * 0.4);

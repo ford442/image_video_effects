@@ -4,30 +4,12 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-09-14
-//  Ideas: kitsunebi fox-fire wisps riding each of the nine tails (occluded, treble flicker); Cauchy-dispersed quantum-glass armour (per-wavelength refraction)
+//  Ideas: kitsunebi fox-fire wisps riding each of the nine tails (occluded, treble flicker); Cauchy-dispersed quantum-glass armour (per-wavelength refraction); caudal-band tail caustics; helical rift current sheets
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount (click count), z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=Time, y=MouseX (uv), z=MouseY (uv), w=MouseDown
-    zoom_params: vec4<f32>,  // x=Tail Dispersion, y=Rift Density, z=Rune Intensity, w=Glass Refraction
-    ripples: array<vec4<f32>, 50>,
-};
-
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=Tail Dispersion, y=Rift Density, z=Rune Intensity, w=Glass Refraction
 
 // ----------------------------------------------------------------
 // Helper functions and Math utilities
@@ -278,7 +260,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         // Volumetric accumulation for rift
         if (m == 3.0) {
-            density += 0.05 * rift_density_param / (1.0 + d*d);
+            // Idea 4: helical current sheets wrapped around the void tunnel.
+            let phi = atan2(p.y, p.x);
+            let sheet = pow(0.5 + 0.5 * sin(phi * 6.0 + p.z * 1.9 - time * (2.0 + rift_density_param * 2.5)), 3.0);
+            density += 0.05 * rift_density_param / (1.0 + d*d) * (0.55 + sheet * 1.1);
         }
 
         t += d * 0.5; // conservative step
@@ -327,6 +312,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             // Tails (Liquid neon)
             let tail_glow = vec3<f32>(0.1, 0.8, 1.0) * (0.5 + audio + mids * 0.3);
             col = tail_glow * (diff + fre);
+            // Idea 3: caudal-band caustic packets racing down each tail.
+            let band = pow(0.5 + 0.5 * sin(p.z * 8.0 - time * (6.0 + mids * 3.0) + atan2(p.y, p.x) * 5.0), 4.0);
+            let caustic = band * exp(-abs(length(p.xy) - 0.24) * 8.0);
+            col += vec3<f32>(1.0, 0.72, 0.25) * caustic * (0.25 + treble * 0.4);
 
         } else if (m == 4.0) {
             // Dust

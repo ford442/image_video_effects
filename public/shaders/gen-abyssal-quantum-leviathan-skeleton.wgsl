@@ -4,7 +4,7 @@
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
 //  Complexity: High
 //  Upgraded: 2026-09-27
-//  Ideas: marrow canal riding the displaced spine core (pinches at rib joints); bending-strain bioluminescence on the tension flank of the traveling wave; bow-wave current parting around the swaying bones
+//  Ideas: marrow canal riding the displaced spine core (pinches at rib joints); bending-strain bioluminescence on the tension flank of the traveling wave; bow-wave current parting around the swaying bones; vertebral electroplate ladders; caudal vortex-bead shedding
 //  A packing: HDR history RGB (clamped <= 6) + semantic alpha; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 // History —
@@ -28,26 +28,8 @@
 //   Note: kick state in extraBuffer[133..135] is zeroed by the host every
 //   frame and raced by other threads — left as HEAD, nothing new built on it.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // .x = time (seconds), .y = rippleCount (0-50 active), .zw = resolution (width, height)
-    zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0-1 canvas: y=0 top), .w = mouse_down (>0.5 = pressed)
-    zoom_params: vec4<f32>,  // .x = Bone Density, .y = Marrow Glow, .z = Current Turbulence, .w = Audio Reactivity
-    ripples: array<vec4<f32>, 50>, // .xy = ripple uv, .z = startTime (seconds), .w = padding
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Bone Density, .y = Marrow Glow, .z = Current Turbulence, .w = Audio Reactivity
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -332,6 +314,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let compress = smoothstep(0.25, 1.4, -strain);
         color *= 1.0 - 0.3 * compress;
         color += vec3<f32>(0.35, 1.0, 0.45) * tension * (0.35 + 0.65 * pow(rim, 1.5));
+        // Idea 4: vertebral electroplate ladders running segment-to-segment.
+        let vertebra = pow(0.5 + 0.5 * sin(res2.w * 8.8 + animTime * 5.5), 10.0);
+        color += vec3<f32>(0.85, 0.95, 1.0) * vertebra * (0.08 + mids * 0.18) * (0.4 + tension * 0.6);
 
         // Simple fog
         color = mix(color, vec3<f32>(0.0, 0.02, 0.05), smoothstep(10.0, MAX_D, t));
@@ -362,6 +347,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let n_val = noise3(sp);
             let n_det = noise3(sp * 2.3 + vec3<f32>(0.0, animTime * flowSpeed * 0.35, 0.0));
             vol_acc += smoothstep(0.15, 0.45, n_val + 0.4 * n_det) * 0.06 * bow;
+            // Idea 5: caudal vortex-bead shedding in the wake train.
+            let bead = pow(0.5 + 0.5 * sin(vp.z * 9.0 - animTime * 7.5 + vp.x * 2.0), 7.0)
+                     * exp(-abs(length(vp.xy) - 1.2) * 3.5);
+            vol_acc += bead * 0.03 * (0.4 + treble * 0.8);
             vol_t += step_size;
             if (vol_t > MAX_D) { break; }
         }

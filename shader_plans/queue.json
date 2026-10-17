@@ -625,7 +625,8 @@
       "title": "Ethereal Chrono-Flora Loom",
       "added": "2026-10-02T18:49:42.823896"
     },
-    {      "filename": "2026-09-30_stellar-fractal-glass-loom.md",
+    {
+      "filename": "2026-09-30_stellar-fractal-glass-loom.md",
       "title": "Stellar Fractal-Glass Loom",
       "added": "2026-09-30T15:33:09.517021"
     },
@@ -650,9 +651,24 @@
       "added": "2026-10-09T15:15:45.639294"
     },
     {
-      "filename": "2026-10-10_liquid-metal-chrono-flora.md",
-      "title": "Liquid-Metal Chrono-Flora",
-      "added": "2026-10-10T15:29:37.370505"
+      "filename": "2026-10-11_acoustic-obsidian-resonator.md",
+      "title": "Acoustic Obsidian Resonator",
+      "added": "2026-10-11T17:29:07.940749"
+    },
+    {
+      "filename": "2026-10-13_chrono-luminescent-voxel-citadel.md",
+      "title": "Chrono-Luminescent Voxel Citadel",
+      "added": "2026-10-13T15:37:53.256987"
+    },
+    {
+      "filename": "2026-10-12_neon-geode-crystallization.md",
+      "title": "Neon Geode Crystallization",
+      "added": "2026-10-12T15:20:48.948810"
+    },
+    {
+      "filename": "2026-10-14_aetheric-tachyon-lattice.md",
+      "title": "Aetheric Tachyon Lattice",
+      "added": "2026-10-14T15:38:03.754329"
     }
   ],
   "current": null,
@@ -1291,6 +1307,34 @@
       "added": "2026-10-09T15:15:45.639294",
       "status": "completed",
       "completed_at": "2026-10-10T08:23:58.831840+00:00"
+    },
+    {
+      "filename": "2026-10-10_liquid-metal-chrono-flora.md",
+      "title": "Liquid-Metal Chrono-Flora",
+      "added": "2026-10-10T15:29:37.370505",
+      "status": "completed",
+      "completed_at": "2026-10-11T08:09:04.719922+00:00"
+    },
+    {
+      "filename": "2026-10-10_liquid-metal-chrono-flora.md",
+      "title": "Liquid-Metal Chrono-Flora",
+      "added": "2026-10-10T15:29:37.370505",
+      "status": "completed",
+      "completed_at": "2026-10-11T08:09:04.719922+00:00"
+    },
+    {
+      "filename": "2026-10-11_acoustic-obsidian-resonator.md",
+      "title": "Acoustic Obsidian Resonator",
+      "added": "2026-10-11T17:29:07.940749",
+      "status": "completed",
+      "completed_at": "2026-10-13T08:20:08.492767+00:00"
+    },
+    {
+      "filename": "2026-10-12_neon-geode-crystallization.md",
+      "title": "Neon Geode Crystallization",
+      "added": "2026-10-12T15:20:48.948810",
+      "status": "completed",
+      "completed_at": "2026-10-14T08:03:32.975443+00:00"
     }
   ],
   "rejected": [],

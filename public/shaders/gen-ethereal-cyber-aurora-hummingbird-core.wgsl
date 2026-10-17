@@ -2,34 +2,14 @@
 //  Ethereal Cyber-Aurora Hummingbird-Core
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, click-reactive, upgraded-rgba
-//  Upgraded: 2026-09-13
-//  Ideas: spring-eased hover target (bird drifts toward mouse, banks with
-//         spring velocity); bass-envelope nectar bloom opening the
-//         chrono-flower and pulsing the beak; treble-keyed wingbeat
-//         afterimage persistence in the exact dataTextureC feedback
+//  Upgraded: 2026-10-10
+//  Ideas: spring-eased hover target; bass nectar bloom; treble wingbeat
+//         afterimage; gorget plate split by Aberration; forked tail ribbons
 //  A packing: ACES display RGB; alpha = hit coverage + glow/shock energy
 //  State: extraBuffer[133..134] pos, [135..136] vel, [137] bass env, [138] init
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Flutter Speed, y=Aura Intensity, z=Pollen Density, w=Aberration
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Flutter Speed, y=Aura Intensity, z=Pollen Density, w=Aberration
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -126,6 +106,15 @@ fn map(p_in: vec3<f32>, t: f32, audio: f32, flutter: f32, hover: vec4<f32>) -> v
     var body = smin(body_base, head, 0.2);
     body = smin(body, beak, 0.1);
 
+    // Idea — gorget: a small throat plate in front of the head.
+    let gorget = sdEllipsoid(p_body - vec3<f32>(0.0, 0.14, 0.9), vec3<f32>(0.09, 0.055, 0.02));
+
+    // Idea — forked tail ribbons behind the body.
+    let tailRibbon = min(
+        sdEllipsoid(p_body - vec3<f32>(0.14, -0.02, -1.0), vec3<f32>(0.03, 0.015, 0.55)),
+        sdEllipsoid(p_body - vec3<f32>(-0.14, -0.02, -1.0), vec3<f32>(0.03, 0.015, 0.55))
+    );
+
     // Add auroral plasma texture displacement
     body -= simplex(p_body * 5.0 + vec3<f32>(t, 0.0, t)) * 0.05 * audio;
 
@@ -176,6 +165,14 @@ fn map(p_in: vec3<f32>, t: f32, audio: f32, flutter: f32, hover: vec4<f32>) -> v
     if (flower < d) {
         d = flower;
         mat_id = 3.0; // Flower
+    }
+    if (gorget < d) {
+        d = gorget;
+        mat_id = 4.0; // Gorget
+    }
+    if (tailRibbon < d) {
+        d = tailRibbon;
+        mat_id = 5.0; // Tail ribbons
     }
 
     return vec2<f32>(d, mat_id);
@@ -348,6 +345,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
                 col += vec3<f32>(0.8, 0.0, 1.0) * fresnel;
                 // Nectar bloom: warm glow rising from petal rims on bass
                 col += vec3<f32>(1.0, 0.55, 0.9) * fresnel * nectar * aura_intensity * 1.5;
+            } else if (m == 4.0) {
+                // Gorget: view angle splits emerald and magenta. Aberration owns the split.
+                let ndv = max(dot(n, -cur_rd), 0.0);
+                let split = clamp(0.5 + aberration * (ndv * 2.0 - 1.0), 0.0, 1.0);
+                col = mix(vec3<f32>(0.1, 0.9, 0.55), vec3<f32>(1.0, 0.12, 0.62), split);
+                col *= diff + 0.35;
+                col += vec3<f32>(1.0, 0.85, 0.95) * fresnel * (0.3 + aberration);
+            } else if (m == 5.0) {
+                col = vec3<f32>(0.15, 0.85, 1.0) * (0.4 + fresnel * 1.6) * aura_intensity;
+                col += vec3<f32>(0.9, 0.3, 1.0) * fresnel * (0.3 + audio);
             }
         }
 

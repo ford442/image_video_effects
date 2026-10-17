@@ -3,25 +3,12 @@
 //  Category: generative
 //  Features: analytic-lines, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: 6.8% density detune beat; two-source Young path-difference
+//  Upgraded: 2026-10-10
+//  Ideas: 6.8% density detune beat; two-source Young path-difference; polarization color banding; sub-wavelength micro-fringes
 //  A packing: raw HDR display RGBA (ACES on writeTexture)
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>, };
 const TAU: f32 = 6.28318530718;
 
 fn rotate2(p: vec2<f32>, a: f32) -> vec2<f32> {
@@ -69,6 +56,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let srcB = mix(vec2<f32>(0.18, 0.0), mouse, held);
   let young = 0.5 + 0.5 * cos((length(p) - length(p - srcB)) * density * 0.32);
 
+  // Idea 1: polarization color banding - shift colors tightly based on local phase difference
+  let phaseDiff = abs(lineA - lineB);
+  let polarization = palette(phaseDiff * 2.5 + colorPhase);
+
+  // Idea 2: sub-wavelength micro-fringes - dense interference when main ridges overlap
+  let microFringes = sin(q1.x * density * 5.0) * sin(q2.x * density * 5.0) * smoothstep(0.7, 1.0, abs(crossed));
+
   var pulse = 0.0;
   let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
   for (var ri = 0u; ri < rippleCount; ri++) {
@@ -80,10 +74,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
   let circular = sin(length(p - mouse * held) * density * 0.55 - time * 1.2) * pointerWarp;
-  var raw = palette(crossed * 0.18 + colorPhase + time * 0.025 + pulse * 0.12) * (0.16 + ridges * 1.25);
+  var raw = polarization * (0.16 + ridges * 1.25);
   raw += palette(beat * 0.2 + colorPhase + 0.32) * beat * (0.18 + treble * 0.22);
   raw += palette(colorPhase + 0.55) * abs(detuneBeat) * 0.42;
   raw += palette(colorPhase + 0.08) * young * (0.16 + held * 0.12 + treble * 0.08);
+  raw += vec3<f32>(1.0, 1.5, 2.0) * microFringes * 0.35;
   raw += vec3<f32>(1.3 + bass * 0.3, 0.55 + mids * 0.25, 1.6 + treble * 0.45) * (pulse + abs(circular) * 0.28);
   let prev = textureLoad(dataTextureC, pixel, 0);
   raw = clamp(mix(prev.rgb * 0.93, raw, 0.31 + warpStrength * 0.08), vec3<f32>(0.0), vec3<f32>(7.0));

@@ -1,33 +1,15 @@
-// ===============================================================
-// Chromatic Folds 2 – Color as Physical Dimension
-// The image becomes a higher-dimensional manifold where RGB
-// channels exist as spatial coordinates that can be folded,
-// twisted, and bent through topological transformations.
-// Implements Möbius, Klein, and Hyperbolic fold types.
-// ===============================================================
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture:    texture_2d<f32>;
-@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
-
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
-
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB:   texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-   config:      vec4<f32>,       // x=time, y=frame, z=resX, w=resY
-   zoom_params: vec4<f32>,       // x=globalIntensity, y=hyperFactor, z=twistRate, w=chromaticScale
-   zoom_config: vec4<f32>,       // x=depthInfluence, y=foldSharpness, z=rotationSpeed, w=dimensionalFold
-   ripples:     array<vec4<f32>, 50>, // Used as folds: x, y, foldType, phase
-};
+// ═══════════════════════════════════════════════════════════════════
+//  Chromatic Folds V2
+//  Category: artistic
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-10-09
+//  Ideas: Klein orientation seam; Möbius fiber twist
+//  A packing: pre-ACES display RGB in A (C is color history)
+// ═══════════════════════════════════════════════════════════════════
+// Field order used to list zoom_params before zoom_config, so those
+// names read the other uniform. Reads below stay on the same bytes.
+#include "_prelude.wgsl"
 
 // ---------------------------------------------------------------
 // Möbius strip fold - twists color space with half-turn inversion
@@ -44,6 +26,15 @@ fn mobiusFold(pos: vec3<f32>, uv: vec2<f32>, center: vec2<f32>, strength: f32) -
    outPos.x = mix(pos.x, pos.y, twist);
    outPos.y = mix(pos.y, 1.0 - pos.x, twist);
    outPos.z = mix(pos.z, pos.x, twist * 0.7);
+
+   // Fiber twist around the existing channel swap (half-turn with angle).
+   let fiber = angle * 0.5 * strength;
+   let cs = cos(fiber);
+   let sn = sin(fiber);
+   let gy = outPos.y * cs - outPos.z * sn;
+   let bz = outPos.y * sn + outPos.z * cs;
+   outPos.y = gy;
+   outPos.z = bz;
    
    return outPos;
 }
@@ -70,6 +61,11 @@ fn kleinFold(pos: vec3<f32>, uv: vec2<f32>, center: vec2<f32>, strength: f32) ->
    // Self-intersection region creates color singularities
    let singularity = 1.0 - smoothstep(0.0, 0.2, abs(radius - 0.5));
    outPos = outPos + vec3<f32>(singularity * fold * 0.3);
+
+   // Orientation seam: the Klein join flips color where the angle crosses zero.
+   let orient = sin(atan2(localUV.y, localUV.x));
+   let seam = smoothstep(0.14, 0.0, abs(orient)) * fold;
+   outPos = mix(outPos, vec3<f32>(1.0) - outPos, seam * 0.85);
    
    return outPos;
 }
@@ -129,9 +125,19 @@ fn chromaticAberration(uv: vec2<f32>, foldStrength: f32, chromaticScale: f32) ->
 // ---------------------------------------------------------------
 // Main Compute Shader
 // ---------------------------------------------------------------
+fn aces_tonemap(color: vec3<f32>) -> vec3<f32> {
+   let a = 2.51;
+   let b = 0.03;
+   let c = 2.43;
+   let d = 0.59;
+   let e = 0.14;
+   return clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dims = u.config.zw;
+  if (f32(gid.x) >= dims.x || f32(gid.y) >= dims.y) { return; }
 
    var uv = vec2<f32>(gid.xy) / dims;
    let time = u.config.x;
@@ -149,14 +155,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
    // ──────────────────────────────────────────────────────────────────────────
    //  Parameters
    // ──────────────────────────────────────────────────────────────────────────
-   let globalIntensity = u.zoom_params.x;
-   let hyperFactor = u.zoom_params.y;
-   let twistRate = u.zoom_params.z;
-   let chromaticScale = u.zoom_params.w * 2.0;
-   let depthInfluence = u.zoom_config.x;
-   let foldSharpness = u.zoom_config.y;
-   let rotationSpeed = u.zoom_config.z * 2.0;
-   let dimensionalFold = u.zoom_config.w;
+   let globalIntensity = u.zoom_config.x;
+   let hyperFactor = u.zoom_config.y;
+   let twistRate = u.zoom_config.z;
+   let chromaticScale = u.zoom_config.w * 2.0;
+   let depthInfluence = u.zoom_params.x;
+   let foldSharpness = u.zoom_params.y;
+   let rotationSpeed = u.zoom_params.z * 2.0;
+   let dimensionalFold = u.zoom_params.w;
    
    // Depth-modulated fold intensity (foreground folds more)
    let depthFoldBoost = 1.0 + (1.0 - depth) * depthInfluence * 2.0;
@@ -258,8 +264,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
    // ──────────────────────────────────────────────────────────────────────────
    //  Output
    // ──────────────────────────────────────────────────────────────────────────
-   textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
-   textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+   let foldAlpha = clamp(0.28 + totalFoldStrength * 0.45, 0.0, 1.0);
+   textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(aces_tonemap(finalColor), foldAlpha));
+   textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(finalColor, foldAlpha));
    
    // Update depth texture with fold-distorted depth
    let foldDepthOffset = totalFoldStrength * 0.1;

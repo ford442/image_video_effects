@@ -1,29 +1,16 @@
-// ----------------------------------------------------------------
-// Ethereal Chrono-Fluid Symbiote
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Ethereal Chrono-Fluid Symbiote
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-10-10
+//  Ideas: meniscus film on the fluid-crystal seam; chrono smear from previous frame;
+//         peristaltic vein bands in the fluid mantle; crystal twinning shear planes
+//  A packing: ACES display RGBA; C is the previous display frame
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, yz=MouseUV, w=MouseDown
-    zoom_params: vec4<f32>,  // x=Density, y=Fluid Viscosity, z=Chrono Warp, w=Symbiote Glow
-    ripples: array<vec4<f32>, 50>,
-};
-
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=Density, y=Fluid Viscosity, z=Chrono Warp, w=Symbiote Glow
 
 const MAX_STEPS: i32 = 100;
 const SURF_DIST: f32 = 0.001;
@@ -82,6 +69,11 @@ struct MapResult {
     dist: f32,
     matId: f32, // 0.0 = fluid, 1.0 = crystal
     glow: f32,
+    seam: f32,
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 var<private> global_glow: f32 = 0.0;
@@ -130,6 +122,10 @@ fn map(p: vec3<f32>, time: f32, audioBass: f32, audioHigh: f32, mousePos: vec2<f
 
     let crystalBase = length(max(abs(q) - vec3<f32>(0.2, 0.2, 1.0), vec3<f32>(0.0))) - 0.05;
 
+    // Idea 1 — meniscus: the symbiotic film where fluid and crystal distances meet.
+    let meniscus = exp(-abs(dFluid - crystalBase) * 16.0) * symbioteGlow;
+    res.seam = meniscus;
+
     // Combine
     res.dist = smin(dFluid, crystalBase, 0.5);
 
@@ -142,7 +138,7 @@ fn map(p: vec3<f32>, time: f32, audioBass: f32, audioHigh: f32, mousePos: vec2<f
         res.glow = exp(-abs(crystalBase) * 5.0) * symbioteGlow * (1.0 + audioBass * 3.0);
     }
 
-    global_glow += res.glow * 0.02; // Accumulate for bloom
+    global_glow += res.glow * 0.02 + meniscus * 0.015;
 
     return res;
 }
@@ -168,8 +164,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // Audio Reactivity
-    let bass = extraBuffer[0];
-    let high = extraBuffer[100]; // Assuming some high freq bin
+    let bass = plasmaBuffer[0].x;
+    let high = plasmaBuffer[0].z;
 
     let time = u.config.x;
     let mouseUV = u.zoom_config.yz;
@@ -226,24 +222,40 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // Fresnel
             let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
             col += vec3<f32>(0.5, 0.8, 1.0) * fresnel;
+            let seam = map(p, time, bass, high, mouseUV).seam;
+            col += vec3<f32>(0.65, 1.0, 0.78) * seam;
+            let veinBands = pow(max(0.0, sin((p.z + p.x) * 7.0 - time * 3.4)), 4.0) * (0.3 + bass * 0.7);
+            col += vec3<f32>(0.2, 0.95, 0.72) * veinBands * 0.25;
 
         } else { // Crystal
             let refl = reflect(rd, n);
             let spec = pow(max(dot(refl, l), 0.0), 32.0);
             var crystalCol = vec3<f32>(0.7, 0.2, 0.9);
-            col = crystalCol * dif + vec3<f32>(1.0) * spec; // Metallic sheen
+            col = crystalCol * dif + vec3<f32>(1.0) * spec;
+            let seam = map(p, time, bass, high, mouseUV).seam;
+            col += vec3<f32>(0.75, 0.95, 1.0) * seam * 0.65;
+            let twinningPlanes = exp(-abs(sin((p.x - p.y) * 14.0 + time * 1.2)) * 6.0);
+            col += vec3<f32>(0.95, 0.72, 1.0) * twinningPlanes * (0.1 + high * 0.35);
         }
 
         depthOut = t_dist / MAX_DIST;
     }
 
     // Bloom / Ethereal Glow
-    col += vec3<f32>(0.1, 0.9, 0.4) * global_glow * 2.0; // Bioluminescent green
+    col += vec3<f32>(0.1, 0.9, 0.4) * global_glow * 2.0;
 
-    // Tone mapping
-    col = col / (1.0 + col);
+    // Idea 2 — chrono smear: Chrono Warp leans this frame on the previous display.
+    let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
+    let chronoWarp = u.zoom_params.z;
+    let smear = clamp(chronoWarp / 5.0, 0.0, 1.0) * 0.5;
+    let fluidWeight = select(0.12, 0.8, t_dist < MAX_DIST && finalMatId < 0.5);
+    col = mix(col, prev.rgb, smear * fluidWeight);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
+    col = acesToneMap(col * 1.2);
+    let hit = t_dist < MAX_DIST;
+    let alpha = clamp(select(0.05, 0.74, hit) + global_glow * 0.2 + smear * 0.08, 0.0, 1.0);
+    let outColor = vec4<f32>(col, alpha);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), outColor);
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), outColor);
 }

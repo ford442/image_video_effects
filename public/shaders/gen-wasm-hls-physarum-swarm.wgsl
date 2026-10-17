@@ -5,34 +5,14 @@
 //            upgraded-rgba, temporal-feedback, chromatic-trails
 //  Complexity: High
 //  Created: 2026-06-28
-//  Upgraded: 2026-09-27  (RESCUED: HEAD kept agent state in extraBuffer, which the runtime
+//  Upgraded: 2026-10-10  (RESCUED: HEAD kept agent state in extraBuffer, which the runtime
 //            re-uploads every frame, so every agent re-seeded and the sim was static noise)
-//  Ideas: peristaltic cytoplasm streaming pulses along vein heading; tube-shaded veins
-//         (trail-gradient normal + specular) with a foraging-front colour where mass > trail
+//  Ideas: peristaltic streaming; tube-shaded veins and foraging front; fusion knots; spent sheath
 //  A packing: raw sim state (trail, mx, my, hue); ACES on writeTexture only
 //  Rescue: Eulerian agents. |m| = agent mass, m/|m| = heading. No extraBuffer use.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const FLOOR: f32 = 0.07;   // RESCUE: mass floor / re-inflation (opposing streams never annihilate the field)
 const CAP: f32 = 0.6;
@@ -250,6 +230,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let baseCol = paletteChromatic(hueNew + trailNew * 2.0, bass);
   var tube = baseCol * (0.3 + 0.9 * diff) * streak + vec3<f32>(spec * 0.6);
   tube = mix(tube, vec3<f32>(1.0, 0.78, 0.28) * (0.6 + 0.8 * diff), front * 0.85);
+  // Idea: fusion knots — thick trail where headings cancel.
+  let knot = (1.0 - coherence) * smoothstep(0.22, 0.55, trailNew);
+  tube = tube + vec3<f32>(1.0, 0.9, 0.62) * knot * 0.4;
+  // Idea: spent sheath — older trail behind the foraging front goes dull.
+  let spent = smoothstep(0.18, 0.5, trailNew) * (1.0 - smoothstep(0.04, 0.22, massNew));
+  tube = mix(tube, tube * vec3<f32>(0.42, 0.48, 0.52), spent * 0.6);
   let cov2 = max(cov, front * 0.8);
 
   let uv = pos / res;

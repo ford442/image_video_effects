@@ -4,7 +4,7 @@
 //  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-09-27
-//  Ideas: Archimedean flux spirals from the four poles' stream functions woven across the iso-|B| bands; Cotton-Mouton birefringence (Michel-Levy tint + Maltese-cross isogyres from fieldDir); pole meniscus mounds with analytic specular normals
+//  Ideas: Archimedean flux spirals from the four poles' stream functions woven across the iso-|B| bands; Cotton-Mouton birefringence (Michel-Levy tint + Maltese-cross isogyres from fieldDir); pole meniscus mounds with analytic specular normals; Rosensweig crown ringlets; Barkhausen jump flicker
 //  A packing: raw field state (fMag*0.25, fieldDir.x, fieldDir.y, alpha) — C read as fields
 //  Description: Magnetic ferrofluid simulation with field-strength alpha
 //    translucency. Field lines react to mouse as a magnetic source while
@@ -13,26 +13,8 @@
 //    normals produce a living magnetic fluid aesthetic.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=FieldStrength, y=Viscosity, z=SpikeHeight, w=Turbulence
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=FieldStrength, y=Viscosity, z=SpikeHeight, w=Turbulence
 
 // ── Noise helpers ─────────────────────────────────────────────────
 fn hash2(p: vec2<f32>) -> f32 {
@@ -210,6 +192,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   fMag += turbNoise * turbulence * (1.0 + rmsSmooth);
   fMag += turbNoise2 * turbulence * 0.3 * mids;
 
+  // Idea 4: Rosensweig crown ringlets around each pole's meniscus shoulder.
+  let rm = length(p - mPos);
+  let r1 = length(p - sec1);
+  let r2 = length(p - sec2);
+  let r3 = length(p - sec3);
+  let crown = exp(-abs(rm - 0.23) * 22.0)
+            + 0.55 * exp(-abs(r1 - 0.18) * 20.0)
+            + 0.45 * exp(-abs(r2 - 0.16) * 20.0)
+            + 0.35 * exp(-abs(r3 - 0.20) * 20.0);
+  let crownPhase = 0.5 + 0.5 * sin((rm + r1 + r2 + r3) * 85.0 - time * (4.0 + bassSmooth * 3.0));
+  fMag += crown * crownPhase * (0.06 + bassSmooth * 0.08);
+
   // Temporal fluid memory - blend with previous frame
   let memoryBlend = viscosity * 0.3;
   fMag = mix(fMag, prevStrength * 4.0, memoryBlend);
@@ -228,6 +222,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let spectralT = fMag * 0.3 + trebleSmooth * 0.2 + time * 0.03;
   var col = ferroPalette(spectralT) * (0.3 + lineSharp * 0.7);
   col += spikePalette(spectralT + 0.5) * lineDetailSharp;
+  // Idea 5: Barkhausen micro-jumps as stochastic magnetic domain flips.
+  let barkhausen = step(0.82, fract(vnoise(p * 42.0 + vec2<f32>(time * 9.0, -time * 7.0)) + fMag * 0.31));
+  col += vec3<f32>(1.0, 0.75, 0.4) * barkhausen * (0.05 + trebleSmooth * 0.12);
 
   // ── Idea 2: Cotton-Mouton birefringence (Michel-Levy tint + isogyres) ──
   // Field-induced delta-n ~ B^2 (Langevin-saturated) -> optical path difference.
@@ -326,6 +323,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   alpha = mix(alpha, clamp(prevField.a * 1.1, 0.0, 1.0), memoryBlend * 0.2);
   // Idea 3: heaped fluid over the poles is opaque; glints read as solid
   alpha = clamp(max(alpha, moundMask * 0.85) + moundSpec * 0.3, 0.0, 1.0);
+  alpha = clamp(alpha + barkhausen * 0.04, 0.0, 1.0);
 
   let outCol = vec4<f32>(acesToneMap(col * 1.1), alpha);
   textureStore(writeTexture, gid.xy, outCol);

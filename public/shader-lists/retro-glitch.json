@@ -565,7 +565,7 @@
     "name": "Data Moshing Diffusion",
     "url": "shaders/data-moshing-diffusion.wgsl",
     "category": "retro-glitch",
-    "description": "Anisotropic data-mosh diffusion with exact packed-state advection, rapid chromatic stream packets, held-pointer swirl, and click-launched smear fronts.",
+    "description": "Anisotropic data-mosh diffusion with exact packed-state advection, rapid chromatic stream packets, held-pointer swirl, and click-launched smear fronts. Diffusion runs along image contours, and each packet leaves a wake. A stores the offset field, not color.",
     "tags": [
       "glitch",
       "data-mosh",
@@ -627,7 +627,7 @@
     "name": "Data Moshing",
     "url": "shaders/data-moshing.wgsl",
     "category": "retro-glitch",
-    "description": "Raw accumulated offset state in authoritative A drives motion-compensated macroblock smearing, sprung pointer scrubbing, bounded click corruption, three-band audio, ACES output, and semantic corruption alpha.",
+    "description": "Raw accumulated offset state in authoritative A drives motion-compensated macroblock smearing, sprung pointer scrubbing, bounded click corruption, three-band audio, ACES output, and semantic corruption alpha. Each block shares one motion vector, and a residual spark marks where that vector changed.",
     "tags": [
       "glitch",
       "data-mosh",
@@ -687,7 +687,7 @@
     "id": "datamosh-brush",
     "name": "Datamosh Brush",
     "url": "shaders/datamosh-brush.wgsl",
-    "description": "Interactive MPEG datamosh brush with spring smear vector, macroblock edge geometry, capped click corruption bursts, alpha ghost trails, and three-band audio.",
+    "description": "Interactive MPEG datamosh brush with spring smear vector, macroblock edge geometry, capped click corruption bursts, alpha ghost trails, and three-band audio. Corrupting blocks flatten toward a center sample, and the block edge carries a mosquito ring.",
     "params": [
       {
         "id": "brush_size",
@@ -750,7 +750,7 @@
     "id": "digital-decay",
     "name": "Digital Decay",
     "url": "shaders/digital-decay.wgsl",
-    "description": "Data corruption with spring hotspot, held burst, capped ripples, exact C ghost frames, block displacement, chromatic jitter, and ACES semantic alpha.",
+    "description": "Data corruption with spring hotspot, held burst, capped ripples, exact C ghost frames, block displacement, chromatic jitter, and ACES semantic alpha. Corrupting blocks tear on their lower half, and sparse rows stick to the ghost.",
     "workgroup_size": [
       16,
       16,
@@ -959,7 +959,7 @@
     "id": "digital-waves",
     "name": "Digital Waves",
     "url": "shaders/digital-waves.wgsl",
-    "description": "Cyber wave interference with hex quantization, spring cursor focus, held boost, capped ripples, regional FFT bins, and ACES tone map.",
+    "description": "Cyber wave interference with hex quantization, spring cursor focus, held boost, capped ripples, regional FFT bins, and ACES tone map. Standing nodes darken where the sines cancel, and scanlines bunch on the crests.",
     "workgroup_size": [
       16,
       16,
@@ -1432,7 +1432,7 @@
       "aces-tone-map",
       "temporal-feedback"
     ],
-    "description": "Multi-layer parallax matrix rain with spring repulsion, held burst, capped ripples, exact C trail fade, and three-band audio.",
+    "description": "Multi-layer parallax matrix rain with spring repulsion, held burst, capped ripples, exact C trail fade, and three-band audio. Drops leave a glyph tail, and rare columns blank back to the photo.",
     "params": [
       {
         "id": "speed",
@@ -1604,7 +1604,7 @@
     "id": "rgb-glitch-trail",
     "name": "RGB Glitch Trail",
     "url": "shaders/rgb-glitch-trail.wgsl",
-    "description": "Mouse leaves chromatic aberration trails with alpha-channel translucency blending. Uses domain-warped FBM for organic displacement and computes alpha from glitch intensity * temporal persistence.",
+    "description": "Mouse leaves chromatic aberration trails with alpha-channel translucency blending. Uses domain-warped FBM for organic displacement and computes alpha from glitch intensity * temporal persistence. Red and blue lag along the warp, and a comet follows the stored intensity.",
     "params": [
       {
         "id": "decay_rate",
@@ -1858,7 +1858,7 @@
       "temporal",
       "aces-tone-map"
     ],
-    "description": "Brightness-gated spectral sorting with a guarded sprung epicenter, bounded click tears, read-only FFT block voices, and exact-C trails persisted through authoritative A display history.",
+    "description": "Brightness-gated spectral sorting with a guarded sprung epicenter, bounded click tears, read-only FFT block voices, and exact-C trails persisted through authoritative A display history. A short walk keeps the brighter sample, and red and blue take opposite extra steps.",
     "params": [
       {
         "id": "strength",

@@ -3,31 +3,14 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: baleen comb striations across rib openings; bass sonar ping rings from core
+//  Upgraded: 2026-10-10
+//  Ideas: baleen comb striations across rib openings; bass sonar ping rings from core; tail flukes; bass blow mist above the core;
+//         pectoral fin-ray fans; ventral throat-pleat shimmer
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Plasma Density, y=Temporal Glitch, z=Refraction Index, w=Core Bloom
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Plasma Density, y=Temporal Glitch, z=Refraction Index, w=Core Bloom
 
 fn rot(a: f32) -> mat2x2<f32> {
     let s = sin(a);
@@ -140,8 +123,16 @@ fn map(p: vec3<f32>, time: f32, glitch: f32) -> MapResult {
         d_ribs = smin(d_ribs, rib_final, 0.1);
     }
 
-    // Combine bone structure
-    let d_bone = smin(d_spine, d_ribs, 0.2);
+    // Idea — flukes at the tail end of the spine, same bone material.
+    let flukes = min(
+        sdCapsule(spine_p, vec3<f32>(-0.05, 0.0, -2.65), vec3<f32>(-0.95, 0.08, -3.45), 0.07),
+        sdCapsule(spine_p, vec3<f32>(0.05, 0.0, -2.65), vec3<f32>(0.95, 0.08, -3.45), 0.07)
+    );
+    let pectorals = min(
+        sdCapsule(spine_p, vec3<f32>(-0.18, -0.08, 0.75), vec3<f32>(-1.25, -0.45, 1.55), 0.08),
+        sdCapsule(spine_p, vec3<f32>(0.18, -0.08, 0.75), vec3<f32>(1.25, -0.45, 1.55), 0.08)
+    );
+    let d_bone = smin(smin(smin(d_spine, d_ribs, 0.2), flukes, 0.18), pectorals, 0.16);
 
     // Temporal Streams (Energy around the whale)
     let stream_noise = fbm(p * 2.0 - vec3<f32>(0.0, 0.0, time * 2.0));
@@ -261,6 +252,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     var vol_plasma = 0.0;
     var sonarGlow = 0.0;
+    var blowMist = 0.0;
 
     for (var i = 0; i < 100; i++) {
         p = ro + rd * t;
@@ -270,6 +262,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let ocean_density = fbm(p * 0.5 + vec3<f32>(time * 0.1));
         vol_plasma += ocean_density * plasmaDensity * (0.02 + bass * 0.008);
         sonarGlow += bassSonarPings(p, time, bass) * 0.015;
+        // Idea — blow mist: a vertical puff above the core, not a horizontal sonar ring.
+        let blowCenter = vec3<f32>(0.0, 1.15, 1.05);
+        blowMist += exp(-length(p - blowCenter) * 2.4) * bass * 0.018;
 
         if (m.dist < 0.01) {
             hit = true;
@@ -284,6 +279,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var col = vec3<f32>(0.01, 0.03, 0.1); // Deep abyss background
     col += vec3<f32>(0.1, 0.5, 0.8) * vol_plasma; // Add volumetric plasma
     col += vec3<f32>(0.2, 0.85, 1.0) * sonarGlow * coreBloom;
+    col += vec3<f32>(0.72, 0.88, 1.0) * blowMist * (0.55 + coreBloom * 0.35);
 
     if (hit) {
         let n = calcNormal(p, time, temporalGlitch);
@@ -300,6 +296,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             bone_col += vec3<f32>(0.1, 0.8, 1.0) * fresnel * refractionIndex;
             let baleen = baleenStriations(p, time);
             bone_col += vec3<f32>(0.15, 0.95, 0.85) * baleen * (0.25 + mids * 0.35);
+            let finRays = pow(max(0.0, sin(abs(p.x) * 35.0 + p.z * 8.0)), 5.0)
+                * smoothstep(0.25, 1.4, abs(p.x)) * smoothstep(0.2, 1.8, p.z);
+            bone_col += vec3<f32>(0.25, 0.8, 0.95) * finRays * (0.1 + treble * 0.3);
+            let throatPleats = pow(max(0.0, sin((p.z + 2.2) * 26.0 + p.y * 18.0 - time * 1.8)), 4.0)
+                * smoothstep(-0.65, -0.1, p.y) * smoothstep(-0.3, 1.6, p.z);
+            bone_col += vec3<f32>(0.55, 0.9, 1.0) * throatPleats * (0.18 + mids * 0.4);
             col = mix(col, bone_col, 0.9);
         } else if (m.mat == 2.0) {
             // Core
@@ -346,7 +348,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let previous = textureLoad(dataTextureC, coord, 0);
     col = mix(col, previous.rgb * 0.94, 0.04 + mids * 0.025);
     let hitSignal = select(0.0, 1.0, hit);
-    let alpha = clamp(hitSignal * 0.72 + vol_plasma * 0.18 + length(col) * 0.08 + clickEnergy * 0.15, 0.0, 1.0);
+    let alpha = clamp(hitSignal * 0.72 + vol_plasma * 0.18 + length(col) * 0.08 + clickEnergy * 0.15 + blowMist * 0.2, 0.0, 1.0);
     let inputDepth = textureLoad(readDepthTexture, coord, 0).r;
     let rayDepth = select(inputDepth, clamp(1.0 - t / 20.0, 0.0, 1.0), hit);
     let finalColor = vec4<f32>(acesToneMap(col * (1.05 + bass * 0.2)), alpha);

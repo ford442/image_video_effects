@@ -6,31 +6,13 @@
 //  Complexity: High
 //  Chunks From: gen-protocell-division.wgsl (upgraded-rgba stack)
 //  Upgraded: 2026-09-27
-//  Ideas: bunch-crossing bursts at the ring planes; magnetic beam steering + betatron wobble; momentum dispersion in the bends
+//  Ideas: bunch-crossing bursts at the ring planes; magnetic beam steering + betatron wobble; momentum dispersion in the bends; synchrotron sideband comb; Cherenkov wake cones
 //  A packing: HDR linear radiance RGB (pre-ACES) + semantic alpha; C read back as HDR history
 //  By: Claude Code Batch 3B
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-    zoom_params: vec4<f32>,  // x=Ring Density, y=Collision Rate, z=Anomaly Pull, w=Tunnel Warp
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Ring Density, y=Collision Rate, z=Anomaly Pull, w=Tunnel Warp
 
 fn rotate2D(angle: f32) -> mat2x2<f32> {
     let c = cos(angle);
@@ -245,6 +227,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                                   select(0.0, 1.0, length(beamRel + disp) < 1.0));
              let chromatic = vec3<f32>(1.0, 0.2, 0.8) * burst * gate; // Magenta/Cyan dispersion
              plasma += chromatic * (1.0 + audio * 2.0) * 0.05;
+             // Idea 4: synchrotron sideband comb around the carrier burst.
+             let sideband = 0.5 + 0.5 * sin((vp.z - time * 20.0) * 3.6 + dist_to_center * 14.0);
+             plasma += vec3<f32>(0.45, 0.9, 1.0) * sideband * burst * 0.018;
         }
 
         // Glowing containment fields
@@ -282,6 +267,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let burst3 = exp(-r3 * r3 * 3.0) * exp(-ev.y * 22.0) * 0.9
                        + exp(-abs(r3 - vec3<f32>(shellR)) * 7.0) * exp(-ev.y * 9.0) * 0.4;
             plasma += vec3<f32>(1.0, 0.2, 0.8) * burst3 * atten * (1.0 + audio * 2.0) * 0.5;
+            // Idea 5: Cherenkov-like wake cones trailing each crossing flash.
+            let wake = exp(-abs(length(rel) - (ev.y * 9.0 + 0.35)) * 4.5) * exp(-ev.y * 6.5);
+            plasma += vec3<f32>(0.25, 0.85, 1.0) * wake * atten * 0.22;
         }
     }
 

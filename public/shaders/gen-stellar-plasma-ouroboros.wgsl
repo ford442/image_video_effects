@@ -7,30 +7,13 @@
 // Upgraded: 2026-06-28 — Visualist Batch (OkLab + blackbody + Fresnel)
 // Upgraded: 2026-09-27
 // Ideas: peristaltic plasma bolus hinging the scale plates outward;
-//        seam light leaking through the hex gaps, gated by the bolus phase
+//        seam light leaking through the hex gaps, gated by the bolus phase;
+//        scale-edge sputter aurora; magnetotail streamer ribbons
 // A packing: display RGBA (ACES)
 // ----------------------------------------------------------------
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Scale Density, y=Plasma Intensity, z=Anomaly Gravity, w=Time Warp
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Scale Density, y=Plasma Intensity, z=Anomaly Gravity, w=Time Warp
 
 // --- UTILS ---
 fn rotate2D(angle: f32) -> mat2x2<f32> {
@@ -249,6 +232,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let seamAmp = 0.25 + 1.6 * bolus;
             let seamCol = blackbody(0.75 + 0.25 * bolus) * (0.6 + 0.8 * n_fbm);
             col += seamCol * seamGate * seamAmp * (plasmaIntensity * 0.4) * (1.0 + treble * 0.5);
+            // IDEA 3: sputter aurora from charged scale edges.
+            let edgeSpark = pow(1.0 - smoothstep(0.0, 0.1, abs(hexD)), 2.0);
+            let sputter = pow(0.5 + 0.5 * sin(p.z * 18.0 - time * 11.0 + n_fbm * 5.0), 4.0);
+            col += vec3<f32>(0.32, 0.9, 1.0) * edgeSpark * sputter * (0.22 + treble * 0.28);
             seamCov = seamGate * clamp(seamAmp, 0.0, 1.0);
             hitSurface = true;
             hitT = t;
@@ -263,6 +250,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let n_plasma = fbm(p * 5.0 - vec3<f32>(0.0, 0.0, time * 5.0 + audioReactivity * 10.0));
             let plasmaBB = blackbody(0.4 + n_plasma * 0.6);
             glow += plasmaBB * (0.05 * plasmaIntensity) / (abs(innerPlasma - n_plasma) + 0.05);
+            // IDEA 4: magnetotail streamers running along the inner plasma river.
+            let tail = smoothstep(0.7, 4.0, abs(p.z)) * exp(-abs(length(p.xy) - 1.8) * 8.0);
+            let streamer = pow(0.5 + 0.5 * sin(p.z * 6.0 + atan2(p.y, p.x) * 5.0 - time * 5.0), 3.0);
+            glow += vec3<f32>(0.25, 0.55, 1.0) * tail * streamer * 0.02 * (1.0 + audioReactivity * 0.8);
         }
 
         t += d * 0.5;

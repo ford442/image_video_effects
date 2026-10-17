@@ -3,32 +3,13 @@
 //  Category: generative
 //  Features: raymarching, audio-reactive, mouse-driven, held-drag, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-28
-//  Ideas: breathing lace wave (bass-driven thickness swell travelling down the flight axis); bioluminescent depth fog (step-count-lit haze); held-mouse neuron bloom (camera-borne pull node with glow)
+//  Upgraded: 2026-10-10
+//  Ideas: breathing lace wave (bass-driven thickness swell travelling down the flight axis); bioluminescent depth fog (step-count-lit haze); held-mouse neuron bloom (camera-borne pull node with glow); re-entrant synaptic vortex loops; myelin-like conduction bead trains; cybernetic grid scanning line; data corruption block glitches
 //  A packing: ACES display RGBA (alpha = fogged lace coverage raised by node glow); C is not read
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, yz=MouseUV (y=0 top), w=MouseDown
-    zoom_params: vec4<f32>,  // x=Complexity, y=ColorShift, z=GrowthSpeed, w=Specular
-    ripples: array<vec4<f32>, 50>,
-};
-
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=Complexity, y=ColorShift, z=GrowthSpeed, w=Specular
 
 const MAX_STEPS: i32 = 120;
 const SURF_DIST: f32 = 0.001;
@@ -108,6 +89,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let res = vec2<f32>(dimensions);
     let uv = (vec2<f32>(id.xy) - 0.5 * res) / res.y;
     let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
 
     // Camera setup (screen y grows downward -> flip for a y-up scene)
     let ro = vec3<f32>(0.0, 0.0, -3.0 - u.config.x * u.zoom_params.z * 0.5);
@@ -115,7 +97,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Idea 3 — held-mouse neuron bloom: the pull node sits under the cursor, PULL_DEPTH
     // ahead of the camera, so it travels with the flight instead of receding.
-    let mUv = vec2<f32>((u.zoom_config.y - 0.5) * res.x / res.y, 0.5 - u.zoom_config.z);
+    // Idea 2: data corruption block glitches (shift UV periodically)
+    let glitch = step(0.98, fract(u.config.x * 5.0 + uv.y * 10.0)) * 0.1 * step(0.9, fract(u.config.x * 12.0));
+    let mUv = vec2<f32>((u.zoom_config.y - 0.5) * res.x / res.y, 0.5 - u.zoom_config.z) + vec2<f32>(glitch, 0.0);
+
     let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
     let pullC = ro + normalize(vec3<f32>(mUv, 1.0)) * PULL_DEPTH;
     let pull = vec4<f32>(pullC, 0.5 + 0.5 * held);
@@ -160,6 +145,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let toNode = pullC - p;
         let nodeLight = exp(-dot(toNode, toNode) * 0.7) * (0.3 + 0.7 * max(dot(n, normalize(toNode + vec3<f32>(1e-5))), 0.0));
         col += nodeCol * held * (0.5 + bass) * nodeLight;
+        // Idea 4 — re-entrant synaptic vortex loops around the active node.
+        let rel = p - pullC;
+        let loopRing = exp(-pow((length(rel.xy) - 0.42) * 5.5, 2.0)) * exp(-rel.z * rel.z * 4.5);
+        let loopSpin = 0.5 + 0.5 * sin(atan2(rel.y, rel.x) * 9.0 + u.config.x * (5.0 + bass * 3.0));
+        col += nodeCol.brg * held * loopRing * loopSpin * (0.2 + 0.35 * bass);
+        // Idea 5 — myelin-like conduction bead trains flowing down lace channels.
+        let beads = pow(0.5 + 0.5 * sin(p.z * 16.0 - u.config.x * (4.0 + bass * 2.5)), 6.0);
+        let strand = exp(-abs(map(p, pull)) * 60.0);
+        col += vec3<f32>(1.0, 0.9, 0.55) * beads * strand * (0.1 + mids * 0.2);
     } else {
         // Background glow
         col = vec3<f32>(0.01, 0.02, 0.05);
@@ -181,6 +175,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Post-processing (holographic scanlines)
     col *= 0.9 + 0.1 * sin(uv.y * 100.0 + u.config.x * 5.0);
+
+    // Idea 1: cybernetic grid scanning line
+    let scanline = smoothstep(0.95, 1.0, fract(uv.y * 2.0 - u.config.x * 1.5)) * 0.5;
+    col += vec3<f32>(0.2, 0.8, 1.0) * scanline * (1.0 + bass);
 
     let outCol = acesFilm(max(col, vec3<f32>(0.0)));
     let coverage = select(0.0, 1.0 - fog, hit);

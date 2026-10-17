@@ -4,31 +4,13 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-09-27
-//  Ideas: frame-dragged sky (core gravity twist swirls nebula + lattice); lattice plumage (sky lattice etched on the owl); nebula-dissolve fog (distance + silhouette melt into the real sky)
+//  Ideas: frame-dragged sky (core gravity twist swirls nebula + lattice); lattice plumage (sky lattice etched on the owl); nebula-dissolve fog (distance + silhouette melt into the real sky); facial-disk diffraction rings; wingtip plasma-vortex shed
 //  A packing: HDR linear RGB (pre-ACES echo history) + semantic alpha; C read back as HDR
 // ═══════════════════════════════════════════════════════════════════
 // History: 2026-08-03 Interactivist b31 — mouse-orbit camera, click-ripple
 // SDF deformation, FFT wing fold, tessellation layer, real depth + alpha.
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, yz=MouseUV (0-1, y=0 top), w=MouseDown
-    zoom_params: vec4<f32>,  // x=Wing Plasma Distortion, y=Core Gravity Intensity, z=Nebula Particle Density, w=Temporal Echo Fade
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Wing Plasma Distortion, y=Core Gravity Intensity, z=Nebula Particle Density, w=Temporal Echo Fade
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -378,6 +360,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let plume = chronoLattice(plume_dir.xy * 1.35, time, snd);
             let plume_glow = 0.55 + 0.45 * (1.0 - diff) + snd.w * 0.9;
             col += vec3<f32>(0.05, 0.3, 0.45) * plume * plume_glow;
+            // Idea 4: facial-disk diffraction rings around the owl's face.
+            let headLocal = p - vec3<f32>(0.0, 0.9, 0.1);
+            let ringR = length(headLocal.xy);
+            let disk = exp(-pow((ringR - 0.34) * 9.0, 2.0)) * (0.5 + 0.5 * sin(ringR * 36.0 - time * 4.0));
+            col += vec3<f32>(0.95, 0.85, 0.55) * disk * (0.08 + mids * 0.15);
         }
 
         // Bloom from core gravity well
@@ -397,6 +384,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         depth = clamp(1.0 - t / MAX_DIST, 0.0, 1.0);
     } else {
         col = sky;
+        // Idea 5: wingtip plasma-vortex shedding trails into background sky.
+        let vortex = pow(0.5 + 0.5 * sin(rd_sky.x * 18.0 + rd_sky.y * 14.0 - time * 5.0), 6.0)
+                   * exp(-abs(length(rd_sky.xy) - 0.75) * 5.0);
+        col += vec3<f32>(0.25, 0.75, 1.0) * vortex * (0.1 + treble * 0.16);
     }
 
     // Temporal Echo Fade slider: feedback from last frame's HDR history.

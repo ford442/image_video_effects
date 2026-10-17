@@ -10,7 +10,7 @@
     "feedback",
     "trails"
   ],
-  "description": "Render a glowing neural mesh and drive action-potential pulses with audio, creating a living synapse network that lights up in layers.",
+  "description": "Render a glowing neural mesh and drive action-potential pulses with audio, creating a living synapse network that lights up in layers. This upgrade adds conduction-delay ladders per synaptic cell and astrocytic uptake halos around transmitter-rich nodes.",
   "workgroup_size": [
     16,
     16,

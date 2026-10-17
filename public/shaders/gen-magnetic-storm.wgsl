@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: Alfvén-wave kinks travelling along field lines at v_A ∝ √|B|; storm-expanded auroral oval (557.7 nm green base, 630 nm red crown) with ray striations
+//  Upgraded: 2026-10-10
+//  Ideas: Alfvén kinks; auroral oval; whistler-chorus rising tones; plasmapause density step
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=rippleCount, zw=resolution
-  zoom_config: vec4<f32>,  // x=Time, yz=mouse uv, w=mouse down
-  zoom_params: vec4<f32>,  // x=Field Scale, y=Flow Speed, z=Line Density, w=Storm Power
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Field Scale, y=Flow Speed, z=Line Density, w=Storm Power
 
 // Hash functions
 fn hash12(p: vec2<f32>) -> f32 {
@@ -174,8 +156,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let kink_amp = (0.08 + mids * 0.12) * (0.4 + u.zoom_params.w * 0.6);
   let kink = sin(along * k_par * 6.2831 - t * flow_speed * v_alfven * 3.0) * kink_amp;
 
-  let band_coord = dot(p, perp) * line_density + t * flow_speed * 0.3 + kink + shock_shift;
+  // Idea: plasmapause — cold plasma inside this radius bunches the field lines.
+  let pauseR = 0.62 + (1.0 - u.zoom_params.w) * 0.25;
+  let insidePause = smoothstep(pauseR + 0.05, pauseR - 0.03, pole_dist);
+  let bunch = 1.0 + insidePause * (0.25 + storm_power * 0.12);
+  let band_coord = dot(p, perp) * line_density * bunch + t * flow_speed * 0.3 + kink + shock_shift;
   let field_line = smoothstep(0.3, 0.0, abs(fract(band_coord) - 0.5));
+  let pauseLedge = exp(-abs(pole_dist - pauseR) * 36.0);
+
+  // Idea: whistler chorus — a rising-tone packet of beads riding along B.
+  let chirp = fract(t * (0.12 + flow_speed * 0.18));
+  let tone = abs(fract(along * mix(1.5, 11.0, chirp) * 0.35 - chirp * 5.0) - 0.5);
+  let chirpOff = (chirp - 0.35) * 3.2;
+  let packet = exp(-chirpOff * chirpOff);
+  let chorus = exp(-tone * 26.0) * field_line * packet * (0.35 + treble * 0.9);
 
   // Corona glow around the pole
   let corona = exp(-pole_dist * 3.0) * (1.0 + bass * 0.5) * (0.8 + held * 0.5);
@@ -197,6 +191,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let spark = hash12(uv + fract(vec2<f32>(t * 0.003))) * treble * 0.2 * field_line;
 
   var col = line_col + corona_col * 0.6 + ring_col * 0.5 + spark;
+  col += vec3<f32>(0.55, 0.82, 1.15) * chorus;
+  col += vec3<f32>(0.45, 0.55, 0.95) * pauseLedge * field_line * (0.35 + mids * 0.4);
 
   // ── IDEA 2: storm-expanded auroral oval ──
   // Precipitating particles light an oval around the pole; storm intensity

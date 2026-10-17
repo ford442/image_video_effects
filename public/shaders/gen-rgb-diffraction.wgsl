@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, psychedelic, procedural, temporal, chromatic, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-05-31, 2026-09-15
-//  Ideas: single-slit diffraction envelope over the multi-slit fringes; blaze-angle steering of principal maxima by mouse
+//  Upgraded: 2026-10-10
+//  Ideas: single-slit diffraction envelope over the multi-slit fringes; blaze-angle steering of principal maxima by mouse; Talbot self-imaging replicas; order-selective grating lobes; hexagonal diffraction grating; zero-order central bright spot
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Simulates a diffraction grating: multiple virtual slits produce
@@ -13,26 +13,7 @@
 //  lengths create vivid spectral splitting. Rotational symmetry
 //  applied 6-fold produces a kaleidoscopic star burst.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.283185307179586;
 const SLITS: i32 = 6;
@@ -95,6 +76,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var p = (uv - 0.5) * vec2<f32>(aspect, 1.0) * 2.0;
   p = applySymmetry(p, SYMMETRY);
 
+  // Idea 1: hexagonal diffraction grating mask
+  let hexMask = 0.8 + 0.2 * sin(p.x * 50.0) * sin((p.x * 0.5 + p.y * 0.866) * 50.0) * sin((p.x * 0.5 - p.y * 0.866) * 50.0);
+  p *= hexMask;
+
   // Wavelengths for R G B (relative)
   let lambdaR = 1.0 * chromAb;
   let lambdaG = 0.82 * chromAb;
@@ -145,6 +130,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let shimHue = fract(time * speed * 0.04 + treble * 0.2);
   let shimRgb = hsv2rgb(vec3<f32>(shimHue, 0.4, 1.0));
   color = color + shimRgb * 0.08;
+
+  // Idea 3 — Talbot self-imaging: near-field recurrence bands where fringe
+  // packets replicate at periodic radial intervals.
+  let talbotPhase = fract(axisRad * (freq * 0.9) - time * speed * 0.08);
+  let talbot = exp(-pow((talbotPhase - 0.5) * 8.0, 2.0)) * exp(-axisRad * 1.6);
+  color += hsv2rgb(vec3<f32>(fract(shimHue + axisRad * 0.12), 0.75, 1.0)) * talbot * (0.22 + mids * 0.25);
+
+  // Idea 2: Zero-order central bright spot (intense bloom at origin)
+  let zeroOrder = exp(-axisRad * 40.0) * 2.5 * (1.0 + bass);
+  color += vec3<f32>(1.0, 0.9, 0.8) * zeroOrder;
+
+  // Idea 4 — order-selective grating lobes with rolloff by order index.
+  var lobes = 0.0;
+  for (var m = 1; m <= 4; m = m + 1) {
+    let mf = f32(m);
+    let rm = mf * (0.08 + 0.02 * chromAb) * (1.1 + 0.4 / max(freq, 1.0));
+    lobes += exp(-pow((axisRad - rm) * 24.0, 2.0)) / (1.0 + mf * 0.8);
+  }
+  color += hsv2rgb(vec3<f32>(fract(shimHue + 0.27), 0.65, 1.0)) * lobes * (0.18 + treble * 0.22);
 
   // Vignette
   let vign  = 1.0 - smoothstep(0.6, 1.2, length(p * 0.5));

@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: raymarch, audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: body-as-prism tail spectrum (each tail one discrete spectral band, the body rim disperses into the band behind it); heartbeat transfer (the body's lub-dub swell runs out along every tail); tail unfurl (fractional Tail Count grows the next tail out of the fan)
+//  Upgraded: 2026-10-10
+//  Ideas: body-as-prism tail spectrum; heartbeat transfer; tail unfurl; kitsune spirit fireballs; prismatic temporal shockwaves
 //  A packing: HDR linear RGB (pre-ACES) + semantic alpha; C read exactly as HDR radial echo
 // ═══════════════════════════════════════════════════════════════════
 // Optimizer pass (Batch 37): bounding-sphere early-out, tetrahedral
@@ -13,26 +13,7 @@
 // 2026-09-27 fixes: tails splay outward (at HEAD the whole fan hid behind
 //           the body: 0 tail hits in a numpy port), upright image, depth
 //           near=1/miss=0, step exhaustion no longer shaded as a hit.
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time (seconds), .y = rippleCount (0-50 active ripples), .zw = resolution (width, height)
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0–1 canvas: y=0 top), .w = mouse_down (>0.5 = pressed)
-  zoom_params: vec4<f32>,  // .xyzw = user params p1…p4 (mapped from UI sliders)
-  ripples: array<vec4<f32>, 50>,  // .xy = ripple uv, .z = startTime (seconds), .w = padding (0)
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -170,8 +151,16 @@ fn mapKitsune(p: vec3<f32>, time: f32, tail_full: i32, tail_grow: f32, weave: f3
         d_tails = smin(d_tails, d_i, TAIL_SMIN);
     }
 
-    let is_body = d_body < d_tails;
-    return vec4<f32>(smin(d_body, d_tails, BODY_SMIN), select(2.0, 1.0, is_body), best_band, best_pulse);
+    // Idea 1: Kitsune spirit fireballs (floating orbs revolving around the body)
+    var orbP = p - BODY_POS;
+    let orbRot = rot2(time * 2.0);
+    let rotatedOrb = orbRot * orbP.xz;
+orbP = vec3<f32>(rotatedOrb.x, orbP.y, rotatedOrb.y);
+    let d_orbs = length(orbP - vec3<f32>(3.0, 0.0, 0.0)) - 0.5;
+
+    let d_all = smin(smin(d_body, d_tails, BODY_SMIN), d_orbs, 0.2);
+    let is_body = d_body < d_tails && d_body < d_orbs;
+    return vec4<f32>(d_all, select(2.0, 1.0, is_body), best_band, best_pulse);
 }
 
 // Tetrahedral normal — 4 SDF taps instead of the 6-tap central difference.
@@ -322,6 +311,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let glow_col = vec3<f32>(0.5 + 0.5 * sin(hue_glow * TAU + vec3<f32>(0.0, 2.0, 4.0)));
     let glow_mix = glow_col * glow * 0.25 + glow_rgb * 0.75; // Idea 1: spectral fan halo
     col += glow_mix * (1.5 + treble * 0.8 + fft * 0.4);
+
+    // Idea 2: Prismatic temporal shockwaves (expanding rings from the tail roots)
+    let shockDist = length(p.xy - vec2<f32>(BODY_POS.x, BODY_POS.y));
+    let shockRing = exp(-abs(shockDist - fract(time * 0.5) * 20.0) * 5.0) * (0.5 + bass);
+    col += spectralBand(fract(shockDist * 0.1 - time)) * shockRing * 0.5;
 
     // ── Temporal ping-pong feedback (HDR, textureLoad-only) ─────
     let tex_uv = (vec2<f32>(pixel) + 0.5) / res;

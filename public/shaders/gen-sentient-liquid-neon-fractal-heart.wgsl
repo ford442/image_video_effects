@@ -4,31 +4,12 @@
 //  Features: audio-reactive, mouse-driven, click-reactive, temporal, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-09-27
-//  Ideas: lub-dub double beat; systolic pressure wavefront through the tissue; oxygenation gradient (magenta core to cyan rim)
+//  Ideas: lub-dub double beat; systolic pressure wavefront through the tissue; oxygenation gradient (magenta core to cyan rim); Purkinje conduction flashes; diastolic refill glow wash
 //  A packing: raw HDR display history (bounded 0..5) in A.rgb, coverage in A.a; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, yz=MouseUV, w=MouseDown
-    zoom_params: vec4<f32>,  // x=Fractal Complexity, y=Pulse Intensity, z=Neon Saturation, w=Bioluminescent Fog
-    ripples: array<vec4<f32>, 50>,
-};
-
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=Fractal Complexity, y=Pulse Intensity, z=Neon Saturation, w=Bioluminescent Fog
 
 const PI: f32 = 3.14159265359;
 
@@ -263,6 +244,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             col += neonColor * min(glow, 4.0) * 0.1;
         }
         col += wavefront;
+        // Idea 4: Purkinje-like conduction flashes branching through tissue.
+        let theta = atan2(p.y, p.x);
+        let branch = pow(max(0.0, cos(theta * 9.0 + pr * 7.0 - time * 12.0)), 10.0) * exp(-pr * 0.9);
+        col += vec3<f32>(0.9, 1.0, 0.7) * branch * (0.12 + g_audio.z * 0.22);
+        // Idea 5: diastolic refill glow wash between contractions.
+        let refill = smoothstep(0.45, 0.8, ageS1) * (1.0 - smoothstep(0.82, 1.0, ageS1));
+        col += vec3<f32>(0.15, 0.55, 0.95) * refill * (0.1 + u.zoom_params.w * 0.2);
     } else {
         // Void (Bioluminescent Fog)
         col = vec3<f32>(0.05, 0.0, 0.1) * min(glow, 4.0) * u.zoom_params.w;

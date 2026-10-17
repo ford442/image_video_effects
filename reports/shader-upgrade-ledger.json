@@ -750,15 +750,33 @@
       ]
     },
     "chromatic-folds-2": {
-      "hash": "ea924ddca5224467",
-      "history": []
+      "hash": "361355635a1070ad",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "361355635a1070ad",
+          "prev_hash": "ea924ddca5224467",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "chromatic-folds-gemini": {
-      "hash": "5ebe7556db31d0ba",
-      "history": []
+      "hash": "25916e631eb0d76f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "25916e631eb0d76f",
+          "prev_hash": "5ebe7556db31d0ba",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "chromatic-folds": {
-      "hash": "ea833c55627bc42d",
+      "hash": "771910dd82fc5d24",
       "history": [
         {
           "event": "upgraded",
@@ -767,6 +785,14 @@
           "prev_hash": "3f9c7941622743a8",
           "commit": "86d8f696",
           "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "771910dd82fc5d24",
+          "prev_hash": "ea833c55627bc42d",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
         }
       ]
     },
@@ -784,11 +810,20 @@
       ]
     },
     "chromatic-manifold-2": {
-      "hash": "f816450979ed851c",
-      "history": []
+      "hash": "2e3932901681a303",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "2e3932901681a303",
+          "prev_hash": "f816450979ed851c",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "chromatic-manifold": {
-      "hash": "800b8c1ac6decfba",
+      "hash": "227e55b4e9f90edc",
       "history": [
         {
           "event": "upgraded",
@@ -797,6 +832,14 @@
           "prev_hash": "ff68d2c00695adae",
           "commit": "86d8f696",
           "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "227e55b4e9f90edc",
+          "prev_hash": "800b8c1ac6decfba",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
         }
       ]
     },
@@ -1609,12 +1652,30 @@
       "history": []
     },
     "gen-abyssal-plasma-void-medusa": {
-      "hash": "e9fbe9f3745e0872",
-      "history": []
+      "hash": "f2993d56e24e5367",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "f2993d56e24e5367",
+          "prev_hash": "e9fbe9f3745e0872",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-abyssal-quantum-leviathan-skeleton": {
-      "hash": "d313c3977fe7d3c4",
-      "history": []
+      "hash": "279952f3abeb3885",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "279952f3abeb3885",
+          "prev_hash": "d313c3977fe7d3c4",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-abyssal-silicate-geode-weaver": {
       "hash": "3a8d081ac5cd49f0",
@@ -1697,8 +1758,17 @@
       "history": []
     },
     "gen-astral-plasma-accretion-forge": {
-      "hash": "974ea92dda137039",
-      "history": []
+      "hash": "1743fdb76b90c339",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "1743fdb76b90c339",
+          "prev_hash": "974ea92dda137039",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-astral-silk-chrono-weaver-arachnid": {
       "hash": "452c8b3179d4ed1c",
@@ -1709,16 +1779,34 @@
       "history": []
     },
     "gen-astro-mechanical-quantum-furnace-engine": {
-      "hash": "e5f7f4ae316da07b",
-      "history": []
+      "hash": "98dad714280eeda1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "98dad714280eeda1",
+          "prev_hash": "e5f7f4ae316da07b",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-audio-spirograph": {
       "hash": "b4c502269011f10c",
       "history": []
     },
     "gen-audiovisual-mandelbulb-raymarcher": {
-      "hash": "376faf1c38a33ada",
-      "history": []
+      "hash": "2893c8bc618a9901",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "2893c8bc618a9901",
+          "prev_hash": "376faf1c38a33ada",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-aurora-borealis-synthesis": {
       "hash": "b18db4f5ce10be56",
@@ -1729,8 +1817,17 @@
       "history": []
     },
     "gen-auroral-ferrofluid-monolith": {
-      "hash": "3d8cf45e90c84133",
-      "history": []
+      "hash": "8764cac3c01751b4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "8764cac3c01751b4",
+          "prev_hash": "3d8cf45e90c84133",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-barnsley-fern": {
       "hash": "fae2c4775fa21a31",
@@ -1788,12 +1885,30 @@
       "history": []
     },
     "gen-bioluminescent-chrono-plasma-astro-owl": {
-      "hash": "f936d7c94d440c32",
-      "history": []
+      "hash": "87fdc6434b7748dd",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "87fdc6434b7748dd",
+          "prev_hash": "f936d7c94d440c32",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-bioluminescent-cyber-aether-void-seahorse": {
-      "hash": "8e616b2e39fe8115",
-      "history": []
+      "hash": "53a444787b36c242",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "53a444787b36c242",
+          "prev_hash": "8e616b2e39fe8115",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-bioluminescent-neural-lattice-weaver": {
       "hash": "455fdf79252c3c96",
@@ -1816,140 +1931,437 @@
       "history": []
     },
     "gen-bismuth-crystal-citadel": {
-      "hash": "14ef76b86e54d688",
-      "history": []
+      "hash": "afbe2d62dda7a709",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "afbe2d62dda7a709",
+          "prev_hash": "14ef76b86e54d688",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-bismuth-hyper-crystals": {
-      "hash": "c99e827b6645aae3",
-      "history": []
+      "hash": "fa622f1f6df8a89e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "fa622f1f6df8a89e",
+          "prev_hash": "c99e827b6645aae3",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-bismuth-singularity-loom-engine": {
-      "hash": "16fef9c9b92eae96",
-      "history": []
+      "hash": "2c2634edc161e578",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "2c2634edc161e578",
+          "prev_hash": "16fef9c9b92eae96",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-brutalist-monument": {
-      "hash": "da17f8b06f07590c",
-      "history": []
+      "hash": "c0ed71d02b1dc37e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "c0ed71d02b1dc37e",
+          "prev_hash": "da17f8b06f07590c",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-buddhabrot-aura": {
-      "hash": "3e3fdf3efbb32b66",
-      "history": []
+      "hash": "34b0e56b8e864efc",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "34b0e56b8e864efc",
+          "prev_hash": "3e3fdf3efbb32b66",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-celestial-aether-seraphim-wings": {
-      "hash": "c936d56ef03009e0",
-      "history": []
+      "hash": "e0317d227de2cc79",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "e0317d227de2cc79",
+          "prev_hash": "c936d56ef03009e0",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-celestial-clockwork-plasma-loom": {
-      "hash": "51859f320986e47e",
-      "history": []
+      "hash": "a1771e4363b9e9c2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "a1771e4363b9e9c2",
+          "prev_hash": "51859f320986e47e",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-celestial-forge": {
-      "hash": "c884732707752b94",
-      "history": []
+      "hash": "ebb82f6f630d9d14",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "ebb82f6f630d9d14",
+          "prev_hash": "c884732707752b94",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-celestial-glass-tornado": {
-      "hash": "9bcfd28c59fea70f",
-      "history": []
+      "hash": "13075fcce29f59a7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "13075fcce29f59a7",
+          "prev_hash": "9bcfd28c59fea70f",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-celestial-nanite-swarm-nebula": {
-      "hash": "d4aa35307ccb1001",
-      "history": []
+      "hash": "42574b110b365642",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "42574b110b365642",
+          "prev_hash": "d4aa35307ccb1001",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-celestial-prism-orchid": {
-      "hash": "def7821e64bb462f",
-      "history": []
+      "hash": "e74f1ad06190290b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "e74f1ad06190290b",
+          "prev_hash": "def7821e64bb462f",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-celestial-quantum-glass-dragonfly": {
-      "hash": "5f547d1287769ecc",
-      "history": []
+      "hash": "8b2b89a679967b80",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "8b2b89a679967b80",
+          "prev_hash": "5f547d1287769ecc",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-celestial-weave": {
-      "hash": "48cd4045f7f8373d",
-      "history": []
+      "hash": "1a6b656b33ad41d8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "1a6b656b33ad41d8",
+          "prev_hash": "48cd4045f7f8373d",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-celestial-yggdrasil-matrix": {
-      "hash": "7c5531c2a8233664",
-      "history": []
+      "hash": "bfb11cf2083f0a75",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "bfb11cf2083f0a75",
+          "prev_hash": "7c5531c2a8233664",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-cellular-automata-tapestry": {
-      "hash": "5aa2c44d80befa03",
-      "history": []
+      "hash": "38da9e9a15b5d63f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "38da9e9a15b5d63f",
+          "prev_hash": "5aa2c44d80befa03",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-chaos-game-ifs": {
-      "hash": "da01a03d79012904",
-      "history": []
+      "hash": "3953d2c4dfa3b50b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "3953d2c4dfa3b50b",
+          "prev_hash": "da01a03d79012904",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-chromatic-acid-drip": {
-      "hash": "7529df3940c01d2c",
-      "history": []
+      "hash": "8f6b2c69f5035b7b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "8f6b2c69f5035b7b",
+          "prev_hash": "7529df3940c01d2c",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-chromatic-glass-lattice": {
-      "hash": "920c1ae5aec66a9e",
-      "history": []
+      "hash": "b2e83f31e39ee0a8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "b2e83f31e39ee0a8",
+          "prev_hash": "920c1ae5aec66a9e",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-chromatic-metamorphosis": {
-      "hash": "64703557e58d5a64",
-      "history": []
+      "hash": "04960e866a3d9efe",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "04960e866a3d9efe",
+          "prev_hash": "64703557e58d5a64",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-chromatic-oracle-jelly": {
-      "hash": "8f34f41ef2e92b88",
-      "history": []
+      "hash": "26b84e6c8fb64a09",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "26b84e6c8fb64a09",
+          "prev_hash": "8f34f41ef2e92b88",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-chromatic-singularity-loom": {
-      "hash": "cff9439be811c775",
-      "history": []
+      "hash": "a7c071ac1a2a89ab",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "a7c071ac1a2a89ab",
+          "prev_hash": "cff9439be811c775",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-chromatic-zonohedron": {
-      "hash": "07c8b0105b13d9b2",
-      "history": []
+      "hash": "da4673fde79e4f13",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "da4673fde79e4f13",
+          "prev_hash": "07c8b0105b13d9b2",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-chromodynamic-plasma-collider": {
-      "hash": "05413bf6650000b2",
-      "history": []
+      "hash": "1191e6634dca45ee",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "1191e6634dca45ee",
+          "prev_hash": "05413bf6650000b2",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-chrono-kinetic-fractal-engine": {
-      "hash": "a57e8595da4112fb",
-      "history": []
+      "hash": "01c86642fd5a01e7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "01c86642fd5a01e7",
+          "prev_hash": "a57e8595da4112fb",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-chrono-kitsune-prism-weaver": {
-      "hash": "18f6986affda13b0",
-      "history": []
+      "hash": "4a62b63839756820",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "4a62b63839756820",
+          "prev_hash": "18f6986affda13b0",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-chrono-mycelial-tapestry": {
-      "hash": "956ad4cc99e91372",
-      "history": []
+      "hash": "2460bc9e04f89c5f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "2460bc9e04f89c5f",
+          "prev_hash": "956ad4cc99e91372",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-chrono-voronoi-mycelium": {
       "hash": "f353bed8ddfc4699",
       "history": []
     },
     "gen-chronodynamic-aether-weaver-automata": {
-      "hash": "a2134034b8408a36",
-      "history": []
+      "hash": "d5741326bae270f6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "d5741326bae270f6",
+          "prev_hash": "a2134034b8408a36",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-chronomorphic-glass-tesseract": {
-      "hash": "c82d225226aaa2c9",
-      "history": []
+      "hash": "bedd9047f6bc23fb",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "bedd9047f6bc23fb",
+          "prev_hash": "c82d225226aaa2c9",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-chronos-biomechanical-void-leviathan": {
-      "hash": "0adac1fc449a8821",
-      "history": []
+      "hash": "1ca3b29aaeea62cd",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "1ca3b29aaeea62cd",
+          "prev_hash": "0adac1fc449a8821",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-chronos-crystal-labyrinth": {
-      "hash": "2ad79ccfb0b94eed",
-      "history": []
+      "hash": "61219acdf8b3a8d2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "61219acdf8b3a8d2",
+          "prev_hash": "2ad79ccfb0b94eed",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-chronos-labyrinth": {
-      "hash": "91ca2a5241e200ea",
-      "history": []
+      "hash": "5f049f3ec0cb422d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "5f049f3ec0cb422d",
+          "prev_hash": "91ca2a5241e200ea",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-chronos-monolith-resonator": {
-      "hash": "ee173222e8a03bdf",
-      "history": []
+      "hash": "9d661b6542ff9b76",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "9d661b6542ff9b76",
+          "prev_hash": "ee173222e8a03bdf",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-conway-game-of-life": {
-      "hash": "b953cf253f5447d3",
-      "history": []
+      "hash": "0ca5d753e615c513",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "0ca5d753e615c513",
+          "prev_hash": "b953cf253f5447d3",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-coral-reef-colony": {
       "hash": "48566e81eec98e1b",
@@ -1965,8 +2377,17 @@
       ]
     },
     "gen-cosmic-clockwork-dyson-sphere": {
-      "hash": "8ed79f420f9e9150",
-      "history": []
+      "hash": "565a8f154bcbb9e3",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "565a8f154bcbb9e3",
+          "prev_hash": "8ed79f420f9e9150",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-cosmic-slime-mold": {
       "hash": "2fe282783033a086",
@@ -1981,8 +2402,17 @@
       "history": []
     },
     "gen-cryogenic-frost-plasma-matrix": {
-      "hash": "c7a30f5f91be4ebb",
-      "history": []
+      "hash": "b600103ca617bf51",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "b600103ca617bf51",
+          "prev_hash": "c7a30f5f91be4ebb",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-crystal-caverns": {
       "hash": "04dbb8fc0d49191c",
@@ -2002,52 +2432,133 @@
       "history": []
     },
     "gen-crystalline-chrono-dyson": {
-      "hash": "97d5e5eeaf669f22",
-      "history": []
+      "hash": "b258ad9e557906b6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "b258ad9e557906b6",
+          "prev_hash": "97d5e5eeaf669f22",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-crystalline-mandala-bloom": {
       "hash": "2c025410c0c54b33",
       "history": []
     },
     "gen-crystalline-nebula-weaver-void-spider": {
-      "hash": "c34772a104adedb7",
-      "history": []
+      "hash": "193f71a54eef2c7e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "193f71a54eef2c7e",
+          "prev_hash": "c34772a104adedb7",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-cyber-organic-liquid-neon-pulsar": {
-      "hash": "34984b936a8c178f",
-      "history": []
+      "hash": "74e9005ab9afef1b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "74e9005ab9afef1b",
+          "prev_hash": "34984b936a8c178f",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-cyber-organic-void-mycelium-pulsar": {
-      "hash": "62535b270d140810",
-      "history": []
+      "hash": "a64450434e8ea870",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "a64450434e8ea870",
+          "prev_hash": "62535b270d140810",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-cyber-terminal": {
       "hash": "f58abb7383eef873",
       "history": []
     },
     "gen-cybernetic-aether-moth-chrysalis": {
-      "hash": "c92369108f460881",
-      "history": []
+      "hash": "24271f7c494bfba1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "24271f7c494bfba1",
+          "prev_hash": "c92369108f460881",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-cybernetic-crystalline-neuro-lattice": {
-      "hash": "3af0419762ed9e94",
-      "history": []
+      "hash": "c3cb77d0ebdf6f66",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "c3cb77d0ebdf6f66",
+          "prev_hash": "3af0419762ed9e94",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-cybernetic-ferro-coral": {
       "hash": "503f68791d28a96a",
       "history": []
     },
     "gen-cybernetic-liquid-chrome-engine": {
-      "hash": "86d87d4d842d73a7",
-      "history": []
+      "hash": "9db1f6f42e9c984d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "9db1f6f42e9c984d",
+          "prev_hash": "86d87d4d842d73a7",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-cybernetic-mycelium-neural-web": {
-      "hash": "0caf8cefa81bb71d",
-      "history": []
+      "hash": "babe6394b1f5fc32",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "babe6394b1f5fc32",
+          "prev_hash": "0caf8cefa81bb71d",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-cybernetic-plasma-orchid-nexus": {
-      "hash": "f35ec7c9691c7f4f",
-      "history": []
+      "hash": "43bba7c406298470",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "43bba7c406298470",
+          "prev_hash": "f35ec7c9691c7f4f",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-cycloid-bloom": {
       "hash": "2a4c287ae68655c0",
@@ -2063,8 +2574,17 @@
       ]
     },
     "gen-cymatic-plasma-mandalas": {
-      "hash": "6c7a508284ede7ad",
-      "history": []
+      "hash": "a43091e254b58f84",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "a43091e254b58f84",
+          "prev_hash": "6c7a508284ede7ad",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-cymatic-quantum-silk-loom": {
       "hash": "a3b53d0241c99100",
@@ -2080,32 +2600,95 @@
       ]
     },
     "gen-de-jong-attractor": {
-      "hash": "6292238fab199b69",
-      "history": []
+      "hash": "50facdf77b23800e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "50facdf77b23800e",
+          "prev_hash": "6292238fab199b69",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-depth-refracted-liquid-stained-glass": {
-      "hash": "11ec3092bb2f64f1",
-      "history": []
+      "hash": "725ff255c9063ba1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "725ff255c9063ba1",
+          "prev_hash": "11ec3092bb2f64f1",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-dla-copper-deposition": {
-      "hash": "78be4c24b3b1183f",
-      "history": []
+      "hash": "5c5b218f052fc98a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "5c5b218f052fc98a",
+          "prev_hash": "78be4c24b3b1183f",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-dmt-fractal-zoom": {
-      "hash": "eedb2cf5c9aee98f",
-      "history": []
+      "hash": "c6872886eaf7e723",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "c6872886eaf7e723",
+          "prev_hash": "eedb2cf5c9aee98f",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-dragon-curve": {
-      "hash": "50809a2de500b562",
-      "history": []
+      "hash": "9cc7d0b81f1ce141",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "9cc7d0b81f1ce141",
+          "prev_hash": "50809a2de500b562",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-dynamic-tessellation-ornate-fractal-tiles": {
-      "hash": "76feddc5e292212d",
-      "history": []
+      "hash": "56510b33201b1d95",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "56510b33201b1d95",
+          "prev_hash": "76feddc5e292212d",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-echo-dunes": {
-      "hash": "efb69c649baf2bd5",
-      "history": []
+      "hash": "ee6c95260c106e9e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "ee6c95260c106e9e",
+          "prev_hash": "efb69c649baf2bd5",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-eldritch-quantum-fractal-eye": {
       "hash": "056894bfd79e0c98",
@@ -2116,24 +2699,69 @@
       "history": []
     },
     "gen-electric-kaleidoscope-storm": {
-      "hash": "5588f2aae3a3fd3e",
-      "history": []
+      "hash": "88aec2664fa62144",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "88aec2664fa62144",
+          "prev_hash": "5588f2aae3a3fd3e",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-emergent-calligraphic-ecosystems": {
-      "hash": "57750b9a8a30dbf6",
-      "history": []
+      "hash": "1e37889504ded387",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "1e37889504ded387",
+          "prev_hash": "57750b9a8a30dbf6",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-emergent-calligraphic-weave": {
-      "hash": "a77c52152b23780b",
-      "history": []
+      "hash": "2330b73a4489e4e3",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "2330b73a4489e4e3",
+          "prev_hash": "a77c52152b23780b",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-emergent-script-gardens": {
-      "hash": "a1fd38de1aa29c58",
-      "history": []
+      "hash": "bd2a9060bcc9e595",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "bd2a9060bcc9e595",
+          "prev_hash": "a1fd38de1aa29c58",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-erosion-strata": {
-      "hash": "28eda5a5eefc61c8",
-      "history": []
+      "hash": "96a33e8d331d537f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "96a33e8d331d537f",
+          "prev_hash": "28eda5a5eefc61c8",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-ethereal-anemone-bloom": {
       "hash": "b2ad0acd8c929b11",
@@ -2166,28 +2794,64 @@
       "history": []
     },
     "gen-ethereal-chrono-flora-loom": {
-      "hash": "8d0be3af33990fb2",
-      "history": []
+      "hash": "54ec52afeabdd2c3",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "54ec52afeabdd2c3",
+          "prev_hash": "8d0be3af33990fb2",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-ethereal-chrono-fluid-symbiote": {
-      "hash": "065d209fa8473c1d",
-      "history": []
+      "hash": "968ded45c3ec5018",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "968ded45c3ec5018",
+          "prev_hash": "065d209fa8473c1d",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-ethereal-chrono-plasma-void-manta": {
       "hash": "4a792abead30416e",
       "history": []
     },
     "gen-ethereal-cyber-aurora-hummingbird-core": {
-      "hash": "c73c028e3dea865a",
-      "history": []
+      "hash": "b9f293b4c5c1e360",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "b9f293b4c5c1e360",
+          "prev_hash": "c73c028e3dea865a",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-ethereal-cyber-chrono-nebula-phoenix": {
       "hash": "af0b647152975ed5",
       "history": []
     },
     "gen-ethereal-cyber-chrono-void-whale": {
-      "hash": "c81ddb8bbcbf7a59",
-      "history": []
+      "hash": "08c3e51cbddc848f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "08c3e51cbddc848f",
+          "prev_hash": "c81ddb8bbcbf7a59",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-ethereal-cyber-plasma-void-dragon": {
       "hash": "65c461b768ee9e89",
@@ -2207,8 +2871,17 @@
       ]
     },
     "gen-ethereal-quantum-glass-nautilus": {
-      "hash": "765e0ee65ac98eb9",
-      "history": []
+      "hash": "ec12c46902b4216e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "ec12c46902b4216e",
+          "prev_hash": "765e0ee65ac98eb9",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-ethereal-quantum-hologram-bonsai": {
       "hash": "2c5438fcb7a1df5a",
@@ -2254,8 +2927,17 @@
       ]
     },
     "gen-evolutionary-cellular-gardens": {
-      "hash": "41099d66ecbfdcbc",
-      "history": []
+      "hash": "7b50c8b74b5ac2ef",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "7b50c8b74b5ac2ef",
+          "prev_hash": "41099d66ecbfdcbc",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-feedback-echo-chamber": {
       "hash": "997d7e20980b440d",
@@ -2271,8 +2953,17 @@
       ]
     },
     "gen-ferrofluid-monolith": {
-      "hash": "0f45d0cb63c496b8",
-      "history": []
+      "hash": "e8085d451e7b1f2c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "e8085d451e7b1f2c",
+          "prev_hash": "0f45d0cb63c496b8",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-fibonacci-spiral-garden": {
       "hash": "e5813ac0237f4b84",
@@ -2353,48 +3044,147 @@
       ]
     },
     "gen-fireworks-dahlia-burst": {
-      "hash": "bda185455e1b35f8",
-      "history": []
+      "hash": "818041a63129701f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "818041a63129701f",
+          "prev_hash": "bda185455e1b35f8",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-fireworks-fan-shell": {
-      "hash": "faa1f04d1d8afcac",
-      "history": []
+      "hash": "ab3c13369f14d193",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "ab3c13369f14d193",
+          "prev_hash": "faa1f04d1d8afcac",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-fireworks-horse-tail": {
-      "hash": "60f6fbf91a2d69a1",
-      "history": []
+      "hash": "97cff2e30bc91983",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "97cff2e30bc91983",
+          "prev_hash": "60f6fbf91a2d69a1",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-fireworks-kamuro-gold": {
-      "hash": "34e28de68566a392",
-      "history": []
+      "hash": "334db82d76713bc1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "334db82d76713bc1",
+          "prev_hash": "34e28de68566a392",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-fireworks-nocturne": {
-      "hash": "ff746aef82a7860b",
-      "history": []
+      "hash": "13c245e74c6ef3ef",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "13c245e74c6ef3ef",
+          "prev_hash": "ff746aef82a7860b",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-fireworks-ring-shell": {
-      "hash": "69ca200e9c51b298",
-      "history": []
+      "hash": "74471540654f4d7e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "74471540654f4d7e",
+          "prev_hash": "69ca200e9c51b298",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-fireworks-roman-candle": {
-      "hash": "dbdea4af24a96a4c",
-      "history": []
+      "hash": "ba7efab1d5413990",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "ba7efab1d5413990",
+          "prev_hash": "dbdea4af24a96a4c",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-fireworks-smoke-bloom": {
-      "hash": "2d57b805f8f3eed1",
-      "history": []
+      "hash": "6f336b9d5b2e8375",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "6f336b9d5b2e8375",
+          "prev_hash": "2d57b805f8f3eed1",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-fireworks-strobe-shell": {
-      "hash": "72cf04922043beac",
-      "history": []
+      "hash": "bd52d087c307dff5",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "bd52d087c307dff5",
+          "prev_hash": "72cf04922043beac",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-fireworks-willow-cascade": {
-      "hash": "8ebd9f134078b275",
-      "history": []
+      "hash": "0fbdcbfb45d3ad00",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "0fbdcbfb45d3ad00",
+          "prev_hash": "8ebd9f134078b275",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-fireworks-wind-ripple": {
-      "hash": "86d486408380ea0e",
-      "history": []
+      "hash": "de336876fa47798c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "de336876fa47798c",
+          "prev_hash": "86d486408380ea0e",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-flame-fractal-attractor": {
       "hash": "ce9d0c111ea94ecb",
@@ -2604,8 +3394,17 @@
       "history": []
     },
     "gen-graviton-plasma-lotus": {
-      "hash": "df4de80f78750626",
-      "history": []
+      "hash": "8f41dead067066f3",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "8f41dead067066f3",
+          "prev_hash": "df4de80f78750626",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-holographic-bismuth-core-reactor": {
       "hash": "00e96a2671f1329c",
@@ -2636,8 +3435,17 @@
       "history": []
     },
     "gen-hopf-fibration-fiber-bundle": {
-      "hash": "49d07ae1aef88042",
-      "history": []
+      "hash": "faf12ed7b3b306c8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "faf12ed7b3b306c8",
+          "prev_hash": "49d07ae1aef88042",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-hyper-bismuth-clockwork": {
       "hash": "0b4863cfe887c706",
@@ -2652,8 +3460,17 @@
       "history": []
     },
     "gen-hyper-geometric-void-glass-seraph": {
-      "hash": "6172ad20a640c7c2",
-      "history": []
+      "hash": "66fbeddfddff80e2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "66fbeddfddff80e2",
+          "prev_hash": "6172ad20a640c7c2",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-hyper-labyrinth": {
       "hash": "a5c0e2d402bcc72d",
@@ -2676,80 +3493,233 @@
       "history": []
     },
     "gen-hyperbolic-tree": {
-      "hash": "5ce34ad422401914",
-      "history": []
+      "hash": "b77ae6d04938d3ec",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "b77ae6d04938d3ec",
+          "prev_hash": "5ce34ad422401914",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-hyperdimensional-bismuth-lattice": {
-      "hash": "9436aebf5110da2c",
-      "history": []
+      "hash": "00b5348ad0f1d2fe",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "00b5348ad0f1d2fe",
+          "prev_hash": "9436aebf5110da2c",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-hyperdimensional-plasma-loom": {
-      "hash": "b8d95c922317a57d",
-      "history": []
+      "hash": "72709d6fd1e01fd1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "72709d6fd1e01fd1",
+          "prev_hash": "b8d95c922317a57d",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-hypnotic-vortex-tunnel": {
-      "hash": "dabe26da4cc4ea0b",
-      "history": []
+      "hash": "63c9d4a4cf876934",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "63c9d4a4cf876934",
+          "prev_hash": "dabe26da4cc4ea0b",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-ice-crystal-lattice": {
-      "hash": "660e7551c11a95fd",
-      "history": []
+      "hash": "dd5bfd09ac18d99b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "dd5bfd09ac18d99b",
+          "prev_hash": "660e7551c11a95fd",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-ifs-fractal-flame": {
       "hash": "3879a9202c41d646",
       "history": []
     },
     "gen-image-pixel-detonation": {
-      "hash": "a16e5963af0c66f9",
-      "history": []
+      "hash": "6c9eb2578ae4e25f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "6c9eb2578ae4e25f",
+          "prev_hash": "a16e5963af0c66f9",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-image-pyro": {
-      "hash": "a5e896603a2c9c98",
-      "history": []
+      "hash": "b7a25474ecd2eb56",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "b7a25474ecd2eb56",
+          "prev_hash": "a5e896603a2c9c98",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-interference-moire-field": {
-      "hash": "91183e21324cfabc",
-      "history": []
+      "hash": "6329ce19570c22fd",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "6329ce19570c22fd",
+          "prev_hash": "91183e21324cfabc",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-inverse-mandelbrot": {
       "hash": "8c3d9bedccdc16ed",
       "history": []
     },
     "gen-iris-bloom-fractal": {
-      "hash": "14b7d8cbb0e49900",
-      "history": []
+      "hash": "8941e611467c94cc",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "8941e611467c94cc",
+          "prev_hash": "14b7d8cbb0e49900",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-islamic-geometric-tiling": {
-      "hash": "f19a8b19c6b2120e",
-      "history": []
+      "hash": "a39ba619e72640bb",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "a39ba619e72640bb",
+          "prev_hash": "f19a8b19c6b2120e",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-islamic-star-rose": {
-      "hash": "7f5d0e8f85f598ae",
-      "history": []
+      "hash": "574bf24109aa374d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "574bf24109aa374d",
+          "prev_hash": "7f5d0e8f85f598ae",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-isometric-city": {
-      "hash": "40e63fea7a97cc73",
-      "history": []
+      "hash": "8c8834d8fca87451",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "8c8834d8fca87451",
+          "prev_hash": "40e63fea7a97cc73",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-julia-set-classic": {
-      "hash": "465a1af35499ca3d",
-      "history": []
+      "hash": "7fd8ef6a771c856e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "7fd8ef6a771c856e",
+          "prev_hash": "465a1af35499ca3d",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-kaleidoscopic-synapse-bloom": {
-      "hash": "d7bde138ef61172f",
-      "history": []
+      "hash": "f8c246c570feb170",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "f8c246c570feb170",
+          "prev_hash": "d7bde138ef61172f",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-kinetic-bioluminescent-obsidian-coral-reactor": {
-      "hash": "bf50dff3dd1543f8",
-      "history": []
+      "hash": "ba5d5b10d138d127",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "ba5d5b10d138d127",
+          "prev_hash": "bf50dff3dd1543f8",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-kinetic-neo-brutalist-megastructure": {
-      "hash": "a5a5e1ea4cbdc123",
-      "history": []
+      "hash": "3079a1ba57efd2e9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "3079a1ba57efd2e9",
+          "prev_hash": "a5a5e1ea4cbdc123",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-klein-bottle-walk": {
-      "hash": "dbbc7cce2b7dfe94",
-      "history": []
+      "hash": "aa837493bf4e7f72",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "aa837493bf4e7f72",
+          "prev_hash": "dbbc7cce2b7dfe94",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-koch-snowflake-storm": {
       "hash": "19eedeadc073dfd5",
@@ -3051,32 +4021,86 @@
       ]
     },
     "gen-magnetic-field-lines": {
-      "hash": "32937bb9c54ad531",
-      "history": []
+      "hash": "2fa8f57f988b043e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "2fa8f57f988b043e",
+          "prev_hash": "32937bb9c54ad531",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-magnetic-field-warp": {
       "hash": "892e9fc1d33cff47",
       "history": []
     },
     "gen-magnetic-kelp": {
-      "hash": "f6a8cd450881b4f0",
-      "history": []
+      "hash": "0d2eefe0f7fd367a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "0d2eefe0f7fd367a",
+          "prev_hash": "f6a8cd450881b4f0",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-magnetic-storm": {
-      "hash": "46fa2647ffc8dfd2",
-      "history": []
+      "hash": "4fe401a816a674d0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "4fe401a816a674d0",
+          "prev_hash": "46fa2647ffc8dfd2",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-mandelbox-explorer": {
-      "hash": "9ac2c042a6450b3f",
-      "history": []
+      "hash": "ad93a9d8b888c398",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "ad93a9d8b888c398",
+          "prev_hash": "9ac2c042a6450b3f",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-metaball-soft-body": {
-      "hash": "117cc4a5558da6b4",
-      "history": []
+      "hash": "8948866e16fa5954",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "8948866e16fa5954",
+          "prev_hash": "117cc4a5558da6b4",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-micro-cosmos": {
-      "hash": "a340d5258089cf85",
-      "history": []
+      "hash": "760e50b43c06c4cd",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "760e50b43c06c4cd",
+          "prev_hash": "a340d5258089cf85",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-minimal-surface-soap-iridescence": {
       "hash": "20e7ebf3c542519a",
@@ -3091,16 +4115,43 @@
       "history": []
     },
     "gen-murmuration-phantom": {
-      "hash": "6390ad73a49d41eb",
-      "history": []
+      "hash": "0cc2f130f8996d9b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "0cc2f130f8996d9b",
+          "prev_hash": "6390ad73a49d41eb",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-mushroom-mandala-garden": {
-      "hash": "d89bd3131371ad4a",
-      "history": []
+      "hash": "5477d8da46c13f49",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "5477d8da46c13f49",
+          "prev_hash": "d89bd3131371ad4a",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-mycelium-network": {
-      "hash": "68b72b60e45c6687",
-      "history": []
+      "hash": "e8dc7970c8247a37",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "e8dc7970c8247a37",
+          "prev_hash": "68b72b60e45c6687",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-navier-stokes-ink": {
       "hash": "75668d4056237b98",
@@ -3115,8 +4166,17 @@
       "history": []
     },
     "gen-neon-acid-geometry": {
-      "hash": "7cfbfe1d904cdaad",
-      "history": []
+      "hash": "a928b154039ce431",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "a928b154039ce431",
+          "prev_hash": "7cfbfe1d904cdaad",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-neon-cyber-mandala": {
       "hash": "5af8b90b5c56a6f4",
@@ -3131,8 +4191,17 @@
       "history": []
     },
     "gen-neon-plasma-biomechanical-hive": {
-      "hash": "a3a04a6a25463ec1",
-      "history": []
+      "hash": "ab605e174c229775",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "ab605e174c229775",
+          "prev_hash": "a3a04a6a25463ec1",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-neon-plasma-chrono-bloom": {
       "hash": "6ba4ecaf5061e935",
@@ -3151,128 +4220,380 @@
       "history": []
     },
     "gen-neural-bioluminescence-matrix": {
-      "hash": "ca26a9fe49f7f9c7",
-      "history": []
+      "hash": "94f863635f348099",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "94f863635f348099",
+          "prev_hash": "ca26a9fe49f7f9c7",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-neural-dust": {
       "hash": "c0eafe0f7c0399f2",
       "history": []
     },
     "gen-neural-fractal": {
-      "hash": "7538e7afbdbbb5df",
-      "history": []
+      "hash": "b2f223738e0471d8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "b2f223738e0471d8",
+          "prev_hash": "7538e7afbdbbb5df",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-neural-network-glow-synaptic-pulse": {
-      "hash": "e56510894989fe28",
-      "history": []
+      "hash": "e10fe9250f31b4a9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "e10fe9250f31b4a9",
+          "prev_hash": "e56510894989fe28",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-neuro-cosmos": {
-      "hash": "3f50fb4e001cdadc",
-      "history": []
+      "hash": "d6700305bbeb5307",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "d6700305bbeb5307",
+          "prev_hash": "3f50fb4e001cdadc",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-neuro-fluid-plasma-lotus": {
-      "hash": "085146279b59adda",
-      "history": []
+      "hash": "b7af488b9f60cc28",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "b7af488b9f60cc28",
+          "prev_hash": "085146279b59adda",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-neuro-kinetic-bloom": {
-      "hash": "f54113019852c226",
-      "history": []
+      "hash": "eba2ba1455d09c02",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "eba2ba1455d09c02",
+          "prev_hash": "f54113019852c226",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-neuro-kinetic-liquid-gold-lotus": {
-      "hash": "c8867e6a54015281",
-      "history": []
+      "hash": "0c213000f73bf69b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "0c213000f73bf69b",
+          "prev_hash": "c8867e6a54015281",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-neutron-star-magnetic-spindle": {
-      "hash": "fe894121b8e77a43",
-      "history": []
+      "hash": "836e8da6e203c6df",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "836e8da6e203c6df",
+          "prev_hash": "fe894121b8e77a43",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-newton-fractal": {
       "hash": "2ad0c280677f8a84",
       "history": []
     },
     "gen-obsidian-echo-chamber": {
-      "hash": "cd5982cc8dec73db",
-      "history": []
+      "hash": "87de278f6dc3cf5d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "87de278f6dc3cf5d",
+          "prev_hash": "cd5982cc8dec73db",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-opal-circuit": {
-      "hash": "6e9f3a61e61eadf9",
-      "history": []
+      "hash": "04578554fd90e30b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "04578554fd90e30b",
+          "prev_hash": "6e9f3a61e61eadf9",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-percolation-threshold": {
       "hash": "dfee3247a61cd0c5",
       "history": []
     },
     "gen-phase-transition-memory-weave": {
-      "hash": "7960716a36a39a77",
-      "history": []
+      "hash": "c20cd8b4a5e0a45d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "c20cd8b4a5e0a45d",
+          "prev_hash": "7960716a36a39a77",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-photonic-crystal-brain": {
-      "hash": "b1ee8066ae3c4122",
-      "history": []
+      "hash": "b1584dff44374310",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "b1584dff44374310",
+          "prev_hash": "b1ee8066ae3c4122",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-phyllotaxis-galaxy-spiral": {
-      "hash": "71fd8d044a289185",
-      "history": []
+      "hash": "754366ed2509b87f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "754366ed2509b87f",
+          "prev_hash": "71fd8d044a289185",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-physarum-sacred-geometry": {
-      "hash": "002680e44e5bc3b8",
-      "history": []
+      "hash": "f9d1bd40183b10c0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "f9d1bd40183b10c0",
+          "prev_hash": "002680e44e5bc3b8",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-plasma-mandala": {
-      "hash": "0a4744d534e9ee73",
-      "history": []
+      "hash": "4d7939ab4b3d200c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "4d7939ab4b3d200c",
+          "prev_hash": "0a4744d534e9ee73",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-plasma-psychedelic-wormhole": {
-      "hash": "e7ac65f538997293",
-      "history": []
+      "hash": "3fd8867f1f22631d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "3fd8867f1f22631d",
+          "prev_hash": "e7ac65f538997293",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-polar-rainbow-explosion": {
-      "hash": "3da43c2869de63a2",
-      "history": []
+      "hash": "ca36d8abd1477a6e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "ca36d8abd1477a6e",
+          "prev_hash": "3da43c2869de63a2",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-prism-tide": {
-      "hash": "75d69e7ef19b7ee1",
-      "history": []
+      "hash": "e88eabca93c64d94",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "e88eabca93c64d94",
+          "prev_hash": "75d69e7ef19b7ee1",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-prismatic-aether-loom": {
-      "hash": "cbc218b5368e897f",
-      "history": []
+      "hash": "b34c760d1362b1eb",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "b34c760d1362b1eb",
+          "prev_hash": "cbc218b5368e897f",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-prismatic-bismuth-lattice": {
-      "hash": "0890dc7636bbabcb",
-      "history": []
+      "hash": "304a6dc8d23806b6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "304a6dc8d23806b6",
+          "prev_hash": "0890dc7636bbabcb",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-prismatic-crystal-growth": {
-      "hash": "6fb48b2cbab01354",
-      "history": []
+      "hash": "8c3f6654df202eb3",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "8c3f6654df202eb3",
+          "prev_hash": "6fb48b2cbab01354",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-prismatic-cyber-aether-void-kitsune": {
-      "hash": "a5af9378e93a59b6",
-      "history": []
+      "hash": "10b0c8910a0de6a0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "10b0c8910a0de6a0",
+          "prev_hash": "a5af9378e93a59b6",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-prismatic-cyber-aurora-astral-dragonfly": {
-      "hash": "778d910567fa4969",
-      "history": []
+      "hash": "5dcce45572fc5843",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "5dcce45572fc5843",
+          "prev_hash": "778d910567fa4969",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-prismatic-cyber-auroral-manta-swarm": {
-      "hash": "f94552e98bf5186e",
-      "history": []
+      "hash": "104353fa848f5df9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "104353fa848f5df9",
+          "prev_hash": "f94552e98bf5186e",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-prismatic-cyber-chrono-nebula-peacock": {
-      "hash": "882923fe271af8aa",
-      "history": []
+      "hash": "e18b576aa64d69ec",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "e18b576aa64d69ec",
+          "prev_hash": "882923fe271af8aa",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-prismatic-cyber-chrono-void-kitsune": {
-      "hash": "9b61d2224374da0f",
-      "history": []
+      "hash": "030252f5bfb2bf8f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "030252f5bfb2bf8f",
+          "prev_hash": "9b61d2224374da0f",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-prismatic-cyber-chrono-void-tortoise": {
-      "hash": "5304e5f4362050e9",
-      "history": []
+      "hash": "baebe06d2f1602b3",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "baebe06d2f1602b3",
+          "prev_hash": "5304e5f4362050e9",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-prismatic-fractal-dunes": {
-      "hash": "a623126f12fc6606",
-      "history": []
+      "hash": "3508ec1c5cac759c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "3508ec1c5cac759c",
+          "prev_hash": "a623126f12fc6606",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-prismatic-ion-cascade": {
       "hash": "9081f401ad94ef38",
@@ -3383,8 +4704,17 @@
       "history": []
     },
     "gen-radiant-chrono-glass-nautilus": {
-      "hash": "bbefa72172b774d4",
-      "history": []
+      "hash": "91720900e88a5be9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "91720900e88a5be9",
+          "prev_hash": "bbefa72172b774d4",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-radiant-cyber-bismuth-nebula-colossus": {
       "hash": "1d95026037f63ba7",
@@ -3443,8 +4773,17 @@
       "history": []
     },
     "gen-rgb-diffraction": {
-      "hash": "eabc1d575ff631d7",
-      "history": []
+      "hash": "80eac095055f5c20",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "80eac095055f5c20",
+          "prev_hash": "eabc1d575ff631d7",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-sentient-aether-flora-biosphere": {
       "hash": "6e050ba49d0d31bb",
@@ -3471,16 +4810,43 @@
       "history": []
     },
     "gen-sentient-holographic-neuro-lace-matrix": {
-      "hash": "4b01f71ea9bf2735",
-      "history": []
+      "hash": "36fa4dbb9c364d26",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "36fa4dbb9c364d26",
+          "prev_hash": "4b01f71ea9bf2735",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-sentient-liquid-neon-fractal-heart": {
-      "hash": "13f2b4a4ef54eabc",
-      "history": []
+      "hash": "421d7200137b0f28",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "421d7200137b0f28",
+          "prev_hash": "13f2b4a4ef54eabc",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-sentient-quantum-chrono-leviathan-moth": {
-      "hash": "3339c54ab8edbfb7",
-      "history": []
+      "hash": "47e9db30d3610b4b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "47e9db30d3610b4b",
+          "prev_hash": "3339c54ab8edbfb7",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-sentient-void-silk-nebula": {
       "hash": "6baa42941ce69b7e",
@@ -3507,8 +4873,17 @@
       "history": []
     },
     "gen-singularity-forge": {
-      "hash": "7c24f437188e1a41",
-      "history": []
+      "hash": "065eb14bba3f5b3c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "065eb14bba3f5b3c",
+          "prev_hash": "7c24f437188e1a41",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-solar-wind-ribbons": {
       "hash": "ed997ebf089a2023",
@@ -3519,28 +4894,73 @@
       "history": []
     },
     "gen-sonoluminescent-chrono-geode-matrix": {
-      "hash": "d3b60ac5cc8b96c5",
-      "history": []
+      "hash": "ff7be263af71c41e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "ff7be263af71c41e",
+          "prev_hash": "d3b60ac5cc8b96c5",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-spectral-ferrofluid": {
-      "hash": "d2ea445b9dddafb2",
-      "history": []
+      "hash": "511f51dfad243bf4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "511f51dfad243bf4",
+          "prev_hash": "d2ea445b9dddafb2",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-stable-fluids-jos-stam": {
-      "hash": "0b8d2deb44cc34b5",
-      "history": []
+      "hash": "3268066e58182c78",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "3268066e58182c78",
+          "prev_hash": "0b8d2deb44cc34b5",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-stardust-nebula": {
       "hash": "c4c6d0049e00074c",
       "history": []
     },
     "gen-stellar-acoustic-resonance-manifold": {
-      "hash": "1cb7cfd251644f3f",
-      "history": []
+      "hash": "6abf4e1cebf94b86",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "6abf4e1cebf94b86",
+          "prev_hash": "1cb7cfd251644f3f",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-stellar-plasma-ouroboros": {
-      "hash": "0a18c40a117bdd6a",
-      "history": []
+      "hash": "25af580b41795831",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "25af580b41795831",
+          "prev_hash": "0a18c40a117bdd6a",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-stellar-web-loom": {
       "hash": "ca771165d30f91c1",
@@ -3555,8 +4975,17 @@
       "history": []
     },
     "gen-superfluid-quantum-foam": {
-      "hash": "43471b59f4b76768",
-      "history": []
+      "hash": "c933e25e41f8b5fa",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "c933e25e41f8b5fa",
+          "prev_hash": "43471b59f4b76768",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-supernova-remnant": {
       "hash": "862b6298703ba7b6",
@@ -3595,8 +5024,17 @@
       "history": []
     },
     "gen-thermal-rainbow-topography": {
-      "hash": "9ddce466174ac937",
-      "history": []
+      "hash": "e315d0343dbef74a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "e315d0343dbef74a",
+          "prev_hash": "9ddce466174ac937",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-topological-acoustic-knots": {
       "hash": "5d0174ea94a20002",
@@ -3611,12 +5049,30 @@
       "history": []
     },
     "gen-torus-knot-rainbow": {
-      "hash": "7aec3bccf6dc8bd6",
-      "history": []
+      "hash": "93a5e792781cc65e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "93a5e792781cc65e",
+          "prev_hash": "7aec3bccf6dc8bd6",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-translucent-nebula": {
-      "hash": "e4e48849a407695b",
-      "history": []
+      "hash": "ad9481e124b2dcc1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "ad9481e124b2dcc1",
+          "prev_hash": "e4e48849a407695b",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-turing-morphogenesis": {
       "hash": "8ea8d2e6b0241caf",
@@ -3631,52 +5087,160 @@
       "history": []
     },
     "gen-vitreous-chrono-chandelier": {
-      "hash": "3b6f2154ede55274",
-      "history": []
+      "hash": "7215ffc90758e004",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "7215ffc90758e004",
+          "prev_hash": "3b6f2154ede55274",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-vitreous-quantum-lotus-singularity": {
-      "hash": "16a346dcc3ffa78d",
-      "history": []
+      "hash": "370f4ae091c7bd0e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "370f4ae091c7bd0e",
+          "prev_hash": "16a346dcc3ffa78d",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-void-harmonic-cymatic-resonator": {
-      "hash": "dc94690f161c01c8",
-      "history": []
+      "hash": "4fa7a7207914291f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "4fa7a7207914291f",
+          "prev_hash": "dc94690f161c01c8",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-volcanic-ink": {
-      "hash": "115ec9f666966acb",
-      "history": []
+      "hash": "1c8003278a223f00",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "1c8003278a223f00",
+          "prev_hash": "115ec9f666966acb",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-von-karman-vortex": {
-      "hash": "3e60fdd96dbf903e",
-      "history": []
+      "hash": "83d56eda921f31db",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "83d56eda921f31db",
+          "prev_hash": "3e60fdd96dbf903e",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-voronoi-crystal": {
-      "hash": "97220364e86388c0",
-      "history": []
+      "hash": "70d1b0245a7a3e71",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "70d1b0245a7a3e71",
+          "prev_hash": "97220364e86388c0",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-vortex-cathedral": {
-      "hash": "00058833539275b2",
-      "history": []
+      "hash": "aeac42830f85077f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "aeac42830f85077f",
+          "prev_hash": "00058833539275b2",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-wasm-hls-physarum-swarm": {
-      "hash": "4cbd2e11ac2f4e42",
-      "history": []
+      "hash": "afc1184fae4851ee",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "afc1184fae4851ee",
+          "prev_hash": "4cbd2e11ac2f4e42",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-worley-cellular-noise": {
-      "hash": "7702c0404a52012a",
-      "history": []
+      "hash": "1c5d05e130372ceb",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "1c5d05e130372ceb",
+          "prev_hash": "7702c0404a52012a",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-xeno-botanical-synth-flora": {
-      "hash": "b34e597a3457a04b",
-      "history": []
+      "hash": "2f26650b6ecad30a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "2f26650b6ecad30a",
+          "prev_hash": "b34e597a3457a04b",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-xeno-mycelial-resonance-web": {
-      "hash": "bb889930e1b6e90d",
-      "history": []
+      "hash": "751433e9f39610ab",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "751433e9f39610ab",
+          "prev_hash": "bb889930e1b6e90d",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-zeta-function-landscape": {
-      "hash": "28438f83fb9a75f2",
-      "history": []
+      "hash": "930b8c82f1e62b1b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "930b8c82f1e62b1b",
+          "prev_hash": "28438f83fb9a75f2",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "gen-capabilities": {
       "hash": "d21faf28c380d2bd",
@@ -4642,8 +6206,17 @@
       "history": []
     },
     "chroma-depth-tunnel": {
-      "hash": "2a19385a44c40c38",
-      "history": []
+      "hash": "ca085c4c059a4e06",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "ca085c4c059a4e06",
+          "prev_hash": "2a19385a44c40c38",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "chroma-kinetic": {
       "hash": "30995a3debd9dd33",
@@ -4667,8 +6240,17 @@
       "history": []
     },
     "chromatic-mosaic-projector": {
-      "hash": "7c7648e09fc33d1b",
-      "history": []
+      "hash": "b0dd85d7317f866b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "b0dd85d7317f866b",
+          "prev_hash": "7c7648e09fc33d1b",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "chromatic-shockwave": {
       "hash": "8ab26aed93ac0816",
@@ -6236,20 +7818,56 @@
       "history": []
     },
     "data-moshing-diffusion": {
-      "hash": "5ad8e61a8034cf08",
-      "history": []
+      "hash": "d0bd773aa6cd70e3",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "d0bd773aa6cd70e3",
+          "prev_hash": "5ad8e61a8034cf08",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "data-moshing": {
-      "hash": "296caa2448d1c360",
-      "history": []
+      "hash": "5036b79df2797cb4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "5036b79df2797cb4",
+          "prev_hash": "296caa2448d1c360",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "datamosh-brush": {
-      "hash": "f46a1f3fd422ba4a",
-      "history": []
+      "hash": "e7a312d4457664d6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "e7a312d4457664d6",
+          "prev_hash": "f46a1f3fd422ba4a",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "digital-decay": {
-      "hash": "2e0f509efc8cd0ea",
-      "history": []
+      "hash": "fe1f5dc6ef92c80a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "fe1f5dc6ef92c80a",
+          "prev_hash": "2e0f509efc8cd0ea",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "digital-glitch-pass1": {
       "hash": "c048226b7d9cfe4b",
@@ -6264,8 +7882,17 @@
       "history": []
     },
     "digital-waves": {
-      "hash": "d552abd25c054ae0",
-      "history": []
+      "hash": "a39352294985085f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "a39352294985085f",
+          "prev_hash": "d552abd25c054ae0",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "film-gate-weave": {
       "hash": "7ac58675f138a427",
@@ -6292,8 +7919,17 @@
       "history": []
     },
     "pixel-rain": {
-      "hash": "ebc7faf7e26b6ec1",
-      "history": []
+      "hash": "5752fae4783e7f07",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "5752fae4783e7f07",
+          "prev_hash": "ebc7faf7e26b6ec1",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "pixelation-drift": {
       "hash": "43a24815ed648653",
@@ -6304,8 +7940,17 @@
       "history": []
     },
     "rgb-glitch-trail": {
-      "hash": "b363cd588994386b",
-      "history": []
+      "hash": "9cc599b50f38bfb1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "9cc599b50f38bfb1",
+          "prev_hash": "b363cd588994386b",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "scan-distort": {
       "hash": "d94339f2d95c5421",
@@ -6320,8 +7965,17 @@
       "history": []
     },
     "spectral-glitch-sort": {
-      "hash": "abe2160a79aff765",
-      "history": []
+      "hash": "e890aad641e0b3d4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "e890aad641e0b3d4",
+          "prev_hash": "abe2160a79aff765",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "spectrum-bleed": {
       "hash": "d80f70852a0c2737",
@@ -6676,8 +8330,17 @@
       "history": []
     },
     "elastic-chromatic": {
-      "hash": "68cf7cd085e5bd54",
-      "history": []
+      "hash": "553ba8b7246795e1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "553ba8b7246795e1",
+          "prev_hash": "68cf7cd085e5bd54",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
     },
     "electric-contours": {
       "hash": "3fac35fa96caf69c",
@@ -6875,6 +8538,42 @@
           "hash": "5f53ed2a4b1586b7",
           "commit": "a26af174",
           "note": "2026-10-10 luminescent/magnetic ten (Claude) — agents/swarm-outputs/claude-2026-10-10-luminescent-magnetic-ten"
+        }
+      ]
+    },
+    "gen-quantum-resonance-lattice": {
+      "hash": "980942bea701ebbe",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "980942bea701ebbe",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
+    },
+    "gen-sentient-plasma-silk-nebula-forge": {
+      "hash": "d88bbfdc13aa2658",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "d88bbfdc13aa2658",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
+    },
+    "gen_wave_equation": {
+      "hash": "c627cd41a16b1825",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-10-12T01:35:22.876Z",
+          "hash": "c627cd41a16b1825",
+          "commit": "7090e0e2",
+          "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
         }
       ]
     }

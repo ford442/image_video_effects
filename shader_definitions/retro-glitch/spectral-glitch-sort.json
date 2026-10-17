@@ -11,7 +11,7 @@
     "temporal",
     "aces-tone-map"
   ],
-  "description": "Brightness-gated spectral sorting with a guarded sprung epicenter, bounded click tears, read-only FFT block voices, and exact-C trails persisted through authoritative A display history.",
+  "description": "Brightness-gated spectral sorting with a guarded sprung epicenter, bounded click tears, read-only FFT block voices, and exact-C trails persisted through authoritative A display history. A short walk keeps the brighter sample, and red and blue take opposite extra steps.",
   "params": [
     {
       "id": "strength",

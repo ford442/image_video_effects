@@ -18,7 +18,7 @@
     "aces-tone-map",
     "temporal-feedback"
   ],
-  "description": "Multi-layer parallax matrix rain with spring repulsion, held burst, capped ripples, exact C trail fade, and three-band audio.",
+  "description": "Multi-layer parallax matrix rain with spring repulsion, held burst, capped ripples, exact C trail fade, and three-band audio. Drops leave a glyph tail, and rare columns blank back to the photo.",
   "params": [
     {
       "id": "speed",
