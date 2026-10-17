@@ -8,7 +8,7 @@
 import { Renderer, RendererConfig, ShaderSlotRenderer, GPUTimings, UncappedBenchResult, DeviceLossInfo } from './Renderer';
 import { Ripple, MAX_RIPPLES } from './UniformBuffer';
 import { PHYSICAL_SLOT_LIMIT, checkPhysicalSlotIndex } from './slotOrchestrator';
-import { clearRendererDevice, publishRendererDevice } from './deviceRegistry';
+import { clearRendererDevice, publishRendererDevice, type RendererDeviceThread } from './deviceRegistry';
 import {
   initializeWebGPUDevice,
   attachDeviceLostHandler,
@@ -94,6 +94,11 @@ function videoFrameIngestDisabledByUrl(): boolean {
   } catch {
     return false;
   }
+}
+
+export interface WebGPURendererOptions {
+  /** The thread the renderer runs on; defaults to 'main'. */
+  thread?: RendererDeviceThread;
 }
 
 export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
@@ -195,7 +200,13 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   /** WebCodecs VideoFrame ingest (element path as fallback). */
   private readonly videoIngest = new VideoIngest(videoFrameIngestDisabledByUrl());
 
-  constructor(private config: RendererConfig) {}
+  /**
+   * `thread` says which thread this renderer runs on, for the device registry.
+   * Only the host knows (the render worker entry passes 'worker'); the page default is 'main'.
+   */
+  constructor(private config: RendererConfig, private readonly options: WebGPURendererOptions = {}) {
+    this.pipeline.shaderManager.setBoundIdsProvider(() => this.boundShaderIds());
+  }
 
   getSupportsDeepWorkgroup(): boolean { return this.supportsDeepWorkgroup; }
   getSupportsSubgroups(): boolean { return this.supportsSubgroups; }
@@ -283,7 +294,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
 
       this.gpuChores.attach(outcome.device, 'no GPUDevice adopted', this.colorFormat);
       // The device this renderer actually ended up with (after any OOM retry), not the handoff.
-      publishRendererDevice(outcome.device, { supportsSubgroups: this.supportsSubgroups, thread: 'main', owner: this });
+      publishRendererDevice(outcome.device, { supportsSubgroups: this.supportsSubgroups, thread: this.options.thread ?? 'main', owner: this });
       // Dev tools (ShaderScanner) compile against this renderer's layout, not a bare module check.
       this.unregisterCompileService?.();
       this.unregisterCompileService = registerShaderCompileService({
@@ -402,7 +413,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     };
     if (allowsFullWorkingSize(gate)) {
       const upgraded = await this.tryUpgradeToFullWorkingSize(d, colorFormat, allocated.layers);
-      if (upgraded === 'lost') return 'lost';
+      if (upgraded === 'lost' || upgraded === 'oom') return upgraded;
     }
 
     this.rebuildComputeBindGroup();
@@ -422,7 +433,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     device: GPUDevice,
     colorFormat: InternalColorFormat,
     bootLayers: number,
-  ): Promise<'ok' | 'lost' | 'kept'> {
+  ): Promise<'ok' | 'lost' | 'oom' | 'kept'> {
     const full = HISTORY_FULL_WORKING_SIZE;
     console.log(`[WebGPU] attempting ${full} working-pool upgrade (fat discrete adapter)`);
     this.resources.destroyWorkingTextures();
@@ -445,7 +456,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       device, this.canvasW, this.canvasH, HISTORY_SAFE_WORKING_SIZE, bootLayers, colorFormat,
     );
     if (restore.deviceLost) return 'lost';
-    if (!restore.ok || !restore.set) return 'lost';
+    // Only an actual device loss forces a new device; a failed restore on a live device is plain OOM.
+    if (!restore.ok || !restore.set) return 'oom';
     this.scaledW = HISTORY_SAFE_WORKING_SIZE;
     this.scaledH = HISTORY_SAFE_WORKING_SIZE;
     this.resources.applyTextureSet(restore.set);
@@ -1312,8 +1324,9 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     destroyTimestampQueries(this.timestampRuntime);
     this.supportsTimestampQuery = false;
     this.pipeline.clear();
-    this.resources.destroyWorkingTextures();
-    this.resources.destroyBuffers();
+    // Buffers and samplers belong to the device being released; the OOM retry
+    // (and any re-init) must allocate them again on the next device.
+    this.resources.resetForDevice();
     try {
       this.context?.unconfigure();
     } catch {

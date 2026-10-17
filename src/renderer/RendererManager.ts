@@ -1,5 +1,6 @@
 import { Renderer, RendererConfig, GPUTimings, UncappedBenchResult, DeviceLossInfo } from './Renderer';
-import { WASMRenderer } from './WASMRenderer';
+import type { WASMRenderer } from './WASMRenderer';
+import { isWasmBackend } from './wasmBackend';
 import { WebGPURenderer } from './WebGPURenderer';
 import { InputSource, RenderMode, ShaderEntry, SlotParams } from './types';
 import { AdaptivePerformanceController } from './adaptivePerformance';
@@ -160,7 +161,7 @@ export class RendererManager {
 
   private shaderRenderer(): WebGPUBackendApi | WASMRenderer | null {
     const r = this.currentRenderer;
-    return isWebGpuBackend(r) || r instanceof WASMRenderer ? r : null;
+    return isWebGpuBackend(r) || isWasmBackend(r) ? r : null;
   }
 
   private backend() {
@@ -677,7 +678,7 @@ export class RendererManager {
   getPassTimings(): PassTiming[] {
     const r = this.shaderRenderer();
     if (isWebGpuBackend(r)) return r.getPassTimings();
-    if (r instanceof WASMRenderer) return r.getPassTimings();
+    if (isWasmBackend(r)) return r.getPassTimings();
     return [];
   }
   /** Bench only (#1080): vsync-free ms/frame from the active TS or C++ backend. */

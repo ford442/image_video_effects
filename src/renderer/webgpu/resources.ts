@@ -370,9 +370,30 @@ export class WebGPUResourcePool {
     return textures;
   }
 
+  /**
+   * Destroys the uniform/extra/plasma buffers and clears the fields, so
+   * `ensureSamplersAndBuffers` allocates fresh ones instead of handing out
+   * destroyed buffers.
+   */
   destroyBuffers(): void {
     for (const b of [this.uniformBuf, this.extraBuf, this.plasmaBuf]) {
       b?.destroy();
     }
+    this.uniformBuf = undefined as unknown as GPUBuffer;
+    this.extraBuf = undefined as unknown as GPUBuffer;
+    this.plasmaBuf = undefined as unknown as GPUBuffer;
+  }
+
+  /**
+   * Drops everything bound to the current device: working textures, buffers and
+   * samplers (samplers have no destroy(); they just must not outlive their
+   * device). Call before a pool is reused on a different GPUDevice.
+   */
+  resetForDevice(): void {
+    this.destroyWorkingTextures();
+    this.destroyBuffers();
+    this.filterSampler = undefined as unknown as GPUSampler;
+    this.nearestSampler = undefined as unknown as GPUSampler;
+    this.compSampler = undefined as unknown as GPUSampler;
   }
 }
