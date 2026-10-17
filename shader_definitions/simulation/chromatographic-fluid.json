@@ -2,7 +2,7 @@
   "id": "chromatographic-fluid",
   "name": "Chromatographic Fluid",
   "url": "shaders/chromatographic-force.wgsl",
-  "description": "Physics Lab — RGB dyes with distinct viscosity in a shared wind field. Hold to paint, click solvent splashes, audio gusts. graph · 7 passes · rgba32float.",
+  "description": "Physics Lab \u2014 RGB dyes with distinct viscosity in a shared wind field. Red lags and blue leads along the wind, and a pale solvent front marks the downwind edge. Hold to paint, click solvent splashes, audio gusts. graph \u00b7 7 passes \u00b7 rgba32float.",
   "requiresRgba32Float": true,
   "multipass": {
     "graph": {
@@ -82,7 +82,7 @@
       "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
-      "description": "R sticky vs B runny — how hard the dyes chromatograph apart"
+      "description": "R sticky vs B runny \u2014 how hard the dyes chromatograph apart"
     },
     {
       "id": "wind",
@@ -102,7 +102,7 @@
       "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
-      "description": "Phase change — evaporate hot dye, condense cool solvent"
+      "description": "Phase change \u2014 evaporate hot dye, condense cool solvent"
     },
     {
       "id": "dyeInject",

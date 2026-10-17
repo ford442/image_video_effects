@@ -761,7 +761,7 @@
     "id": "liquid-pass1",
     "name": "Liquid (Pass 1)",
     "url": "shaders/liquid-pass1.wgsl",
-    "description": "Capillary wave physics pass: surface tension simulation with Laplacian and biharmonic operators, gravity waves, ripple sources, and ambient micro-ripples. Outputs persistent height field to dataTextureA.",
+    "description": "Capillary wave physics pass: surface tension simulation with Laplacian and biharmonic operators, gravity waves, ripple sources, and ambient micro-ripples. Crests lean down the height slope, and Color Shift adds a faster capillary fringe. Outputs persistent height field to dataTextureA.",
     "tags": [
       "liquid",
       "capillary-waves",
