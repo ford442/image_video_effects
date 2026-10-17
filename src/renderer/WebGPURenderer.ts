@@ -402,7 +402,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     };
     if (allowsFullWorkingSize(gate)) {
       const upgraded = await this.tryUpgradeToFullWorkingSize(d, colorFormat, allocated.layers);
-      if (upgraded === 'lost') return 'lost';
+      if (upgraded === 'lost' || upgraded === 'oom') return upgraded;
     }
 
     this.rebuildComputeBindGroup();
@@ -422,7 +422,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     device: GPUDevice,
     colorFormat: InternalColorFormat,
     bootLayers: number,
-  ): Promise<'ok' | 'lost' | 'kept'> {
+  ): Promise<'ok' | 'lost' | 'oom' | 'kept'> {
     const full = HISTORY_FULL_WORKING_SIZE;
     console.log(`[WebGPU] attempting ${full} working-pool upgrade (fat discrete adapter)`);
     this.resources.destroyWorkingTextures();
@@ -445,7 +445,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       device, this.canvasW, this.canvasH, HISTORY_SAFE_WORKING_SIZE, bootLayers, colorFormat,
     );
     if (restore.deviceLost) return 'lost';
-    if (!restore.ok || !restore.set) return 'lost';
+    // Only an actual device loss forces a new device; a failed restore on a live device is plain OOM.
+    if (!restore.ok || !restore.set) return 'oom';
     this.scaledW = HISTORY_SAFE_WORKING_SIZE;
     this.scaledH = HISTORY_SAFE_WORKING_SIZE;
     this.resources.applyTextureSet(restore.set);
