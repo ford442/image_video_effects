@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: procedural, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-10
-//  Ideas: secondary dendrite teeth on hex arms; plate vs needle habit; hoarfrost rime; thermal melt pooling
+//  Upgraded: 2026-10-17
+//  Ideas: secondary dendrite teeth on hex arms; plate vs needle habit; hoarfrost rime; thermal melt pooling; basal-facet stepped hopper terraces; cross-polarized birefringence interference tints
 //  A packing: raw HDR display RGBA (ACES on writeTexture)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -63,6 +63,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let plateFill = hexInterior * plateHabit * (0.22 + frostGlow * 0.06);
   let growthFront = 1.0 - smoothstep(0.0, 0.085, abs(radius - fract(time * growthSpeed + bass * 0.06) * 0.9));
 
+  // Idea 3: basal-facet stepped hopper terraces recessed inside each hexagonal crystal cell
+  let cellD0 = abs(fract(dot(rimeP, n0) * density + 0.5) - 0.5);
+  let cellD1 = abs(fract(dot(rimeP, n1) * density + 0.5) - 0.5);
+  let cellD2 = abs(fract(dot(rimeP, n2) * density + 0.5) - 0.5);
+  let hexCellCoord = min(cellD0, min(cellD1, cellD2)) * 2.0;
+  let stepFreq = 3.0 + round(branching * 3.0);
+  let hopperRiser = smoothstep(0.14, 0.02, abs(fract(hexCellCoord * stepFreq) - 0.5)) * hexInterior;
+  let hopperTerraces = hopperRiser * (0.28 + plateHabit * 0.35);
+
   let mouse = (u.zoom_config.yz - vec2<f32>(0.5)) * vec2<f32>(aspect, 1.0);
   let held = clamp(u.zoom_config.w, 0.0, 1.0);
   let nucleation = exp(-distance(p, mouse) * (10.0 + density * 0.45)) * held;
@@ -82,16 +91,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
 
-  let crystal = clamp(hexWeb * (0.35 + branchNeedles * branching) + dendrite * 0.55 + plateFill + growthFront * hexWeb * 0.55 + nucleation + localBranches + fracture, 0.0, 2.0);
-  let fresnelFrost = pow(clamp(hexWeb * 0.65 + branchNeedles * 0.25 + dendrite * 0.2 + fracture * 0.5, 0.0, 1.0), 1.5);
+  let crystal = clamp(hexWeb * (0.35 + branchNeedles * branching) + dendrite * 0.55 + plateFill + hopperTerraces * 0.45 + growthFront * hexWeb * 0.55 + nucleation + localBranches + fracture, 0.0, 2.0);
+  let fresnelFrost = pow(clamp(hexWeb * 0.65 + branchNeedles * 0.25 + dendrite * 0.2 + hopperTerraces * 0.3 + fracture * 0.5, 0.0, 1.0), 1.5);
+
+  // Idea 4: cross-polarized uniaxial birefringence interference tints across plates and stressed seams
+  let retardance = (hexCellCoord * 1.8 + rime * 18.0 + fracture * 0.9) * (1.0 + mids * 0.35) + cos(angle * 2.0) * 0.35;
+  let birefColor = vec3<f32>(0.5) + vec3<f32>(0.5) * cos(TAU * (vec3<f32>(retardance) + vec3<f32>(0.08, 0.36, 0.68)));
+  let birefMask = clamp(plateFill * 1.6 + hopperTerraces * 0.8 + fracture * 0.6, 0.0, 1.0);
+
   var raw = vec3<f32>(0.008, 0.025, 0.05);
   raw += palette(radius * 0.25 + mids * 0.08) * crystal * (0.45 + frostGlow * 0.7);
-  raw += vec3<f32>(0.85, 1.05, 1.45) * plateFill * (0.7 + frostGlow * 0.2);
+  raw += vec3<f32>(0.85, 1.05, 1.45) * (plateFill + hopperTerraces * 0.4) * (0.7 + frostGlow * 0.2);
+  raw += birefColor * birefMask * (0.26 + frostGlow * 0.22 + treble * 0.25);
   raw += vec3<f32>(0.7 + bass * 0.2, 1.15 + mids * 0.28, 1.7 + treble * 0.6) * fresnelFrost * frostGlow;
   let prev = textureLoad(dataTextureC, pixel, 0);
   
   // Idea 2: thermal melt pooling — slow decay and downward flow in the history buffer
-  let meltDown = textureLoad(dataTextureC, pixel + vec2<i32>(0, 1), 0).rgb;
+  let meltCoord = vec2<i32>(pixel.x, min(pixel.y + 1, i32(res.y) - 1));
+  let meltDown = textureLoad(dataTextureC, meltCoord, 0).rgb;
   let pooledHistory = mix(prev.rgb, meltDown, 0.15 * clamp(u.zoom_params.w, 0.0, 1.0)) * 0.94;
   
   raw = clamp(mix(pooledHistory, raw, 0.24 + growthSpeed * 0.12), vec3<f32>(0.0), vec3<f32>(7.0));

@@ -5256,7 +5256,7 @@
       "iridescent",
       "atmospheric"
     ],
-    "description": "An infinite expanse of refractive crystalline petals with Cauchy edge dispersion, micro-venation bioluminescent nutrient flow, starlight corona diffraction starbursts, and pollinator spring dynamics.",
+    "description": "An infinite expanse of refractive crystalline petals with Cauchy edge dispersion, micro-venation bioluminescent nutrient flow, starlight corona diffraction starbursts, labellum UV-to-gold nectar-guide chevrons, five-fold floral column caustics, and golden pollinia pollinator tethers.",
     "workgroup_size": [
       16,
       16,
@@ -5279,7 +5279,8 @@
       "raymarching",
       "semantic-alpha",
       "aces-tone-mapping",
-      "generated-depth"
+      "generated-depth",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -10413,7 +10414,7 @@
       "refraction",
       "terrarium"
     ],
-    "description": "A translucent macroscopic greenhouse where impossible glass botanicals bloom with neon nectar flowing through crystalline stems, surrounded by gravity-defying pollen particles.",
+    "description": "A translucent macroscopic greenhouse where impossible glass botanicals bloom with capillary neon nectar lumens, pinnate leaf-blade venation, bioluminescent stomatal spore-pores, and swirling pollen inside a geodesic condensation-beaded glass terrarium dome.",
     "workgroup_size": [
       16,
       16,
@@ -10468,7 +10469,8 @@
       "temporal-feedback",
       "depth-output",
       "aces-tonemap",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = final ACES display RGBA; exact glass-flora persistence history"
   },
@@ -14311,7 +14313,7 @@
       "audio",
       "music"
     ],
-    "description": "An infinite journey through a quantum lattice of glowing data nodes, smooth scan packets, pointer beams, and click-launched data rings with bounded display history.",
+    "description": "An infinite journey through a quantum lattice of glowing data nodes, smooth scan packets, pointer beams, and click-launched data rings with bounded display history. Corner-cube retroreflector bevels, bus-junction standing-wave nodes, inner-core Bragg memory-page strata, and Pepper's-ghost beamsplitter parallax reflections glint across active cells.",
     "workgroup_size": [
       16,
       16,
@@ -14380,7 +14382,7 @@
     "name": "Holographic Fracture",
     "category": "generative",
     "url": "shaders/gen-holographic-fracture.wgsl",
-    "description": "Iridescent cracked planes with SDF fracture lines and thin-film holographic shards. Audio drives crack glow, and mouse interaction spawns new radial cracks.",
+    "description": "Iridescent cracked planes with SDF fracture lines and thin-film holographic shards. Audio drives crack glow, mouse interaction spawns new radial cracks, and Wallner stress-wave hackle arcs with photoelastic isochromatic fringes ripple across stressed shards.",
     "features": [
       "generative",
       "sdf",
@@ -14463,7 +14465,7 @@
       "holographic",
       "matrix"
     ],
-    "description": "Generate a matrix of holographic lens flares that follow motion in the video or a synthetic flow field.",
+    "description": "Generate a matrix of holographic lens flares that follow motion in the video or a synthetic flow field. Achromatic doublet cemented-interface halos and micro-lenticular sensor-grid satellite dots surround each flare cell.",
     "workgroup_size": [
       16,
       16,
@@ -14536,7 +14538,7 @@
       "translucent",
       "interference"
     ],
-    "description": "Thin-film interference membrane that undulates with depth-based alpha translucency. Audio drives vibration and iridescence; mouse controls viewing angle for rainbow interference patterns.",
+    "description": "Thin-film interference membrane that undulates with depth-based alpha translucency. Audio drives vibration and iridescence; mouse controls viewing angle for rainbow interference patterns, with Newton black-film drainage islets in deep troughs and Plateau-border capillary veins along wave saddles.",
     "workgroup_size": [
       16,
       16,
@@ -14608,7 +14610,7 @@
       "holographic",
       "raymarching"
     ],
-    "description": "A hyper-dimensional geode cracked open to reveal a swirling, audio-reactive core of liquid plasma and holographic fractal crystals.",
+    "description": "A hyper-dimensional geode cracked open to reveal a swirling, audio-reactive core of liquid plasma and holographic fractal crystals, lined with a druzy quartz micro-sparkle collar and piezoelectric phantom zoning.",
     "workgroup_size": [
       16,
       16,
@@ -14685,7 +14687,7 @@
       "thin-film",
       "interference"
     ],
-    "description": "A liquid holographic surface with iridescent rainbow colors driven by thin-film interference physics. Prismatic diffraction highlights, spectral color separation based on surface normals, temporal feedback trails, chromatic aberration, and audio-reactive film thickness modulation create a scientifically-grounded chromatic light simulation. Mouse tilts the interference plane.",
+    "description": "A liquid holographic surface with iridescent rainbow colors driven by thin-film interference physics. Prismatic diffraction highlights, spectral color separation based on surface normals, temporal feedback trails, chromatic aberration, and audio-reactive film thickness modulation create a scientifically-grounded chromatic light simulation. Mouse tilts the interference plane, while Rayleigh-Plateau ridge pearl beads and Brewster-angle polarization extinction bands sculpt the crests.",
     "workgroup_size": [
       16,
       16,
@@ -15055,6 +15057,22 @@
     "type": "generative",
     "category": "generative",
     "url": "shaders/gen-hyper-geometric-void-glass-seraph.wgsl",
+    "description": "A raymarched KIFS void-glass seraph folded around a gravitational singularity with inner void core twist, iteration-scaled chromatic dispersion, six-wing feather-vane facets, and an Einstein-ring gravitational lensing halo.",
+    "tags": [
+      "3d",
+      "raymarching",
+      "kifs",
+      "glass",
+      "refraction",
+      "singularity",
+      "seraph",
+      "audio-reactive"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "params": [
       {
         "id": "folding_scale",
@@ -15092,7 +15110,21 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ]
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "raymarched",
+      "audio-reactive",
+      "mouse-driven",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tonemap",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
+    "feedbackPacking": "A/C = exact ACES display RGBA history"
   },
   {
     "name": "Hyper Labyrinth",
@@ -15187,7 +15219,7 @@
       "fluid-dynamics",
       "rankine"
     ],
-    "description": "A multi-layered chromatic vortex enriched with Wolfram Rankine fluid dynamics: solid-body rotation inside a bass-reactive core and irrotational flow outside. Angular velocity modulated by mids. Feedback history is advected by the Rankine differential rotation, and the cyclostrophic pressure well condenses a striated funnel haze. Mouse spawns secondary vortices. Full upgraded-rgba stack with ACES tone mapping, temporal feedback, chromatic aberration, and semantic alpha.",
+    "description": "A multi-layered chromatic vortex enriched with Wolfram Rankine fluid dynamics: solid-body rotation inside a bass-reactive core and irrotational flow outside. Angular velocity modulated by mids. Feedback history is advected by the Rankine differential rotation, the cyclostrophic pressure well condenses a striated funnel haze, and Kelvin-Helmholtz eyewall shear vortices with Ekman boundary-layer inflow streaks ring the core.",
     "workgroup_size": [
       16,
       16,
@@ -15262,7 +15294,7 @@
       "raymarch",
       "audio-reactive"
     ],
-    "description": "A raymarched refractive rain matrix with viscous drop merging, pointer repulsion, audio-driven caustics, bass-triggered lightning strobes, prismatic RGB dispersion on drop rims, and fall-aligned HDR rain streaks.",
+    "description": "A raymarched refractive rain matrix with viscous drop merging, pointer repulsion, audio-driven caustics, bass-triggered lightning strobes, prismatic RGB dispersion on drop rims, and fall-aligned HDR rain streaks. Villermaux-Bossa basal flattening and Descartes secondary internal-reflection rainbow glints illuminate each drop.",
     "workgroup_size": [
       16,
       16,
@@ -15756,7 +15788,7 @@
       "branching",
       "audio-reactive"
     ],
-    "description": "Hexagonal ice branches advance through luminous frost fronts, pointer-seeded nucleation, Fresnel-like rims, and click-launched fracture waves.",
+    "description": "Hexagonal ice branches advance through luminous frost fronts, pointer-seeded nucleation, Fresnel-like rims, and click-launched fracture waves, with basal-facet stepped hopper terraces and cross-polarized birefringence interference tints.",
     "workgroup_size": [
       16,
       16,
@@ -17320,7 +17352,7 @@
       "oil",
       "swirl"
     ],
-    "description": "Simulates looking through liquid rainbow glass - thick translucent layers of flowing color with refraction-like effects. Colors blend and swirl like oil in water but extremely bright and saturated. Chromatic dispersion at edges. Mouse stirs the liquid creating swirling vortices.",
+    "description": "Simulates looking through liquid rainbow glass — thick translucent layers of flowing color with meniscus rainbow rims, hand-blown murrine glass-cane striae, dichroic gold-ruby to cyan-violet angle shifts, rising micro-bubbles, and click-dropped molten glass gathers.",
     "workgroup_size": [
       16,
       16,
@@ -18976,7 +19008,7 @@
       "split-tone",
       "chromatic-aberration"
     ],
-    "description": "Parametric minimal surfaces morphing between catenoid and helicoid via Bonnet rotation, now with cinematic HDR lighting: view-dependent thin-film interference, Fresnel rim, roughness-aware specular, subsurface scattering glow, HDR bloom, ACES tone mapping, dynamic color temperature, split-tone shadows/highlights, volumetric fog, and chromatic aberration. Audio-reactive curvature and temporal trails preserve the living soap-film soul.",
+    "description": "Parametric minimal surfaces morphing between catenoid and helicoid via Bonnet rotation, with gravity drainage, Marangoni plumes, Newton black film, Culick click-rupture holes, Bonnet-rotated asymptotic geodesic surfactant webs, and multi-bounce Airy finesse interference.",
     "workgroup_size": [
       16,
       16,
@@ -22054,7 +22086,7 @@
       "kaleidoscopic",
       "geometry"
     ],
-    "description": "A hyper-majestic cybernetic celestial kitsune of shattered prismatic glass and liquid quantum-aether, hex-rune-etched armor and octahedral shoulder crystals, orbited by a prismatic shard swarm and stacked auroral torus rings, its nine radiant tails carving rifts into a kaleidoscopically folded volumetric particle-storm.",
+    "description": "A cybernetic celestial kitsune of prismatic glass and liquid quantum-aether with hex-rune-etched armor, kabuki cyber-visor eye markings, a levitating Hoshi-no-tama star-ball jewel ahead of its snout, dispersive 3-channel octahedral shard facets, stacked auroral torus rings, and nine thin-film tails with kitsune-bi fox-fire tips.",
     "url": "shaders/gen-prismatic-cyber-aether-void-kitsune.wgsl",
     "updated": true,
     "supportsDepth": true,
@@ -28982,7 +29014,7 @@
     "id": "liquid_crystal_birefringence",
     "name": "Liquid Crystal",
     "url": "shaders/liquid_crystal_birefringence.wgsl",
-    "description": "Twisted-nematic cell between crossed polarizers. The analyzer now obeys Malus's law and rotates toward a held pointer, producing the dark extinction brushes real liquid-crystal microscopy shows — previously no analyzer existed at all, so the effect's most recognisable feature could not appear. Transmitted light relaxes through dataTextureC with an asymmetric Frederiks time constant. Scene depth is preserved (it was previously overwritten with polarization alpha).",
+    "description": "Twisted-nematic cell between crossed polarizers with Malus's-law analyzer extinction brushes, extraordinary-ray birefringent double-refraction walk-off, conoscopic Maltese-cross isogyres and melatope rings around the defect core, and asymmetric Frederiks relaxation lag in dataTextureC.",
     "tags": [
       "interactive",
       "cursor",

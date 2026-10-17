@@ -10,7 +10,9 @@
 //    - Caustic highlights
 //  
 //  Target: 4.8★ rating
-//  Upgraded: 2026-08-23 (Batch 64)
+//  Upgraded: 2026-10-17
+//  Ideas: Cauchy dispersion n(lambda) = A + B/lambda^2; per-band FFT caustic focusing; exit-interface secondary refraction & critical-angle TIR bevel corona; smooth-union neck photoelastic stress birefringence
+//  A packing: ACES display RGBA in A (surface normal + interiorPath in B)
 //
 //  FIXED IN THIS PASS — fake audio. `plasmaBuffer` was bound at binding 12 and
 //  never read, while a variable literally named `audioPulse` was assigned
@@ -25,42 +27,18 @@
 //  rather than the distance through the glass. The march now finds the exit and
 //  Beer-Lambert runs over the real interior path.
 //
-//  TWO NEW STRUCTURES
+//  FOUR STRUCTURES
 //
-//    1. Cauchy dispersion — the chromatic split perturbed eta by a flat
-//       ±dispersion*0.02 per channel, which splits the channels but gets the
-//       physics backwards: real glass has n(λ) = A + B/λ², so blue refracts
-//       hardest and the spread is set by the material's B coefficient. Each
-//       channel now gets its own Cauchy index, so the fringe fans the correct
-//       way and its width tracks the true index spread.
-//
-//    2. Per-band caustic focusing — light converging through the glass focuses
-//       into caustics where the refracted rays bunch. The caustic intensity is
-//       computed from the divergence of the refracted direction field and
-//       modulated per FFT band, so the bright filaments pulse with the spectrum
-//       instead of the whole surface brightening uniformly.
+//    1. Cauchy dispersion — n(λ) = A + B/λ² per channel.
+//    2. Per-band caustic focusing — convergence of refracted rays modulated per FFT band.
+//    3. Exit-interface secondary refraction & critical-angle TIR bevel corona —
+//       evaluates the outward back-wall normal at exitT for two-surface lens bending
+//       and wavelength-split total-internal-reflection rim arcs.
+//    4. Smooth-union neck photoelastic stress birefringence — cross-polarized
+//       stress-retardation fringes inside the coalescing bridges between glass blobs.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const ETA: f32 = 1.5; // Glass refractive index
@@ -68,16 +46,6 @@ const ETA: f32 = 1.5; // Glass refractive index
 // SDF primitives
 fn sdSphere(p: vec3<f32>, r: f32) -> f32 {
     return length(p) - r;
-}
-
-fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
-    let d = abs(p) - b;
-    return length(max(d, vec3<f32>(0.0))) + min(max(d.x, max(d.y, d.z)), 0.0);
-}
-
-fn sdRoundBox(p: vec3<f32>, b: vec3<f32>, r: f32) -> f32 {
-    let q = abs(p) - b + r;
-    return length(max(q, vec3<f32>(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0) - r;
 }
 
 // Smooth union for glass blobs
@@ -94,6 +62,17 @@ fn map(p: vec3<f32>, time: f32) -> f32 {
     let blob3 = sdSphere(p - vec3<f32>(0.0, cos(time * 0.6) * 0.15, sin(time * 0.5) * 0.1), 0.18);
     
     return smoothUnion(smoothUnion(blob1, blob2, 0.1), blob3, 0.08);
+}
+
+// Coalescing neck stress where smooth-union glass bridges meet
+fn blobNeckStress(p: vec3<f32>, time: f32) -> f32 {
+    let blob1 = sdSphere(p - vec3<f32>(sin(time * 0.5) * 0.2, 0.0, 0.0), 0.25);
+    let blob2 = sdSphere(p - vec3<f32>(cos(time * 0.3) * 0.2, sin(time * 0.4) * 0.15, 0.1), 0.2);
+    let blob3 = sdSphere(p - vec3<f32>(0.0, cos(time * 0.6) * 0.15, sin(time * 0.5) * 0.1), 0.18);
+    let s12 = exp(-abs(blob1 - blob2) * 16.0) * smoothstep(0.14, -0.02, max(blob1, blob2));
+    let s23 = exp(-abs(blob2 - blob3) * 16.0) * smoothstep(0.14, -0.02, max(blob2, blob3));
+    let s13 = exp(-abs(blob1 - blob3) * 16.0) * smoothstep(0.14, -0.02, max(blob1, blob3));
+    return clamp(s12 + s23 + s13, 0.0, 1.5);
 }
 
 // Calculate normal
@@ -248,11 +227,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let bassSwell = bass * 0.08;
 
         let eta = 1.0 / (nG + bassSwell);
-        let refracted = refractRay(rd, normal, eta);
+        let dirInR = refractRay(rd, normal, 1.0 / (nR + bassSwell));
+        let dirInG = refractRay(rd, normal, eta);
+        let dirInB = refractRay(rd, normal, 1.0 / (nB + bassSwell));
 
-        let refractR = refractRay(rd, normal, 1.0 / (nR + bassSwell)).xy;
-        let refractG = refractRay(rd, normal, eta).xy;
-        let refractB = refractRay(rd, normal, 1.0 / (nB + bassSwell)).xy;
+        // ── Structure 3: Exit-interface secondary refraction & TIR bevel corona ──
+        let exitPos = ro + rd * exitT;
+        let exitNormal = calcNormal(exitPos, time);
+        let exitRefrR = refractRay(dirInR, -exitNormal, nR + bassSwell);
+        let exitRefrG = refractRay(dirInG, -exitNormal, nG + bassSwell);
+        let exitRefrB = refractRay(dirInB, -exitNormal, nB + bassSwell);
+
+        let refractR = mix(dirInR.xy, exitRefrR.xy, step(0.01, length(exitRefrR)) * 0.38);
+        let refractG = mix(dirInG.xy, exitRefrG.xy, step(0.01, length(exitRefrG)) * 0.38);
+        let refractB = mix(dirInB.xy, exitRefrB.xy, step(0.01, length(exitRefrB)) * 0.38);
+
+        let cosExit = abs(dot(dirInG, -exitNormal));
+        let sin2Exit = max(1.0 - cosExit * cosExit, 0.0);
+        let kExitR = 1.0 - (nR + bassSwell) * (nR + bassSwell) * sin2Exit;
+        let kExitG = 1.0 - (nG + bassSwell) * (nG + bassSwell) * sin2Exit;
+        let kExitB = 1.0 - (nB + bassSwell) * (nB + bassSwell) * sin2Exit;
+        let tirCorona = vec3<f32>(
+            smoothstep(0.28, -0.05, kExitR),
+            smoothstep(0.28, -0.05, kExitG),
+            smoothstep(0.28, -0.05, kExitB)
+        ) * (0.42 + treble * 0.55);
+
+        // ── Structure 4: Smooth-union neck photoelastic stress birefringence ──
+        let midPos = ro + rd * (enterT + interiorPath * 0.5);
+        let neckStress = blobNeckStress(midPos, time);
+        let stressOPD = neckStress * interiorPath * (1.4 + dispersion * 9.0 + bass * 0.6);
+        let stressFringe = 0.5 + 0.5 * cos(stressOPD * vec3<f32>(9.6, 11.8, 14.2) + vec3<f32>(0.0, 2.094, 4.188));
 
         // ── Structure 2: per-band caustic focusing ───────────────────────────
         // Caustics form where the refracted direction field converges. The
@@ -277,8 +282,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let viewDotNormal = dot(-rd, normal);
         let fresnelFactor = fresnel(viewDotNormal, eta);
         
-        // Glass tint (subtle color)
-        let glassTint = vec3<f32>(0.95, 0.98, 1.0);
+        // Glass tint (subtle color) modulated by photoelastic neck stress
+        let glassTint = mix(vec3<f32>(0.95, 0.98, 1.0), stressFringe, clamp(neckStress * 0.48, 0.0, 0.65));
         
         // Beer-Lambert over the REAL interior path (see header: exitT was never
         // written, so this used the distance to the surface).
@@ -287,8 +292,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         
         // Combine reflection and refraction
         finalRGB = mix(refractColor * absorption * glassTint, bgColor, fresnelFactor * 0.3);
-        // Caustic filaments where the refracted rays converge.
-        finalRGB += vec3<f32>(1.0, 0.94, 0.82) * caustic * 0.55;
+        // Caustic filaments where the refracted rays converge + critical-angle TIR bevel corona
+        finalRGB += vec3<f32>(1.0, 0.94, 0.82) * caustic * 0.55 + tirCorona * 0.36 + stressFringe * neckStress * 0.18;
         
         // Specular highlight
         let lightDir = normalize(vec3<f32>(0.5, 1.0, 0.5));

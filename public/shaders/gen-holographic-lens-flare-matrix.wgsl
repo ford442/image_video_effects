@@ -3,31 +3,12 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, click-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-06
-//  Ideas: conjugate optical reflection ghosts; 6-blade hexagonal iris diffraction; Newton-ring interference fringes
+//  Upgraded: 2026-10-17
+//  Ideas: conjugate optical reflection ghosts; 6-blade hexagonal iris diffraction; Newton-ring interference fringes; achromatic doublet cemented-interface halo; micro-lenticular sensor-grid satellite dots
 //  A packing: raw sim state (persistentDensity, persistentStreak, persistentDistance, stateAlpha)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI:  f32 = 3.14159265358979323846;
 const TAU: f32 = 6.28318530717958647692;
@@ -154,7 +135,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         0.5 + 0.5 * cos(ringPhase + 4.189)
     ) * ringIntensity;
 
-    var density = core * starMod + streak * (0.3 + mids * 0.18) + irisDiffraction + ghostTotal + clickBurst * 0.75;
+    // ─── Idea 4: Achromatic doublet cemented-interface halo ───
+    // Annular Petzval caustic ring with red-inward / blue-outward chromatic edge splitting
+    let haloRadius = size * 2.25;
+    let haloR = exp(-pow((dist - haloRadius * 0.94) * 34.0, 2.0));
+    let haloG = exp(-pow((dist - haloRadius) * 34.0, 2.0));
+    let haloB = exp(-pow((dist - haloRadius * 1.06) * 34.0, 2.0));
+    let doubletHalo = vec3<f32>(haloR * 1.15, haloG * 0.95, haloB * 1.25) * (0.24 + mids * 0.25);
+
+    // ─── Idea 5: Micro-lenticular sensor-grid satellite dots ───
+    // Periodic CMOS grating diffraction orders flanking the horizontal & vertical sensor axes
+    let axisMaskX = exp(-flarePos.y * flarePos.y * 950.0) * exp(-abs(flarePos.x) * 8.5) * smoothstep(size * 0.7, size * 1.5, abs(flarePos.x));
+    let axisMaskY = exp(-flarePos.x * flarePos.x * 950.0) * exp(-abs(flarePos.y) * 8.5) * smoothstep(size * 0.7, size * 1.5, abs(flarePos.y));
+    let gratingComb = pow(0.5 + 0.5 * cos(max(abs(flarePos.x), abs(flarePos.y)) * 56.0 - phaseTime * 1.2), 10.0);
+    let sensorSatellites = (axisMaskX + axisMaskY * 0.65) * gratingComb * (0.42 + treble * 0.55);
+    let satPhase = max(abs(flarePos.x), abs(flarePos.y)) * 28.0;
+    let satColor = (0.5 + 0.5 * cos(vec3<f32>(satPhase, satPhase + 2.094, satPhase + 4.189))) * sensorSatellites;
+
+    var density = core * starMod + streak * (0.3 + mids * 0.18) + irisDiffraction + ghostTotal + haloG * 0.22 + sensorSatellites * 0.35 + clickBurst * 0.75;
 
     // Chromatic dispersion per flare: RGB stars at different angular offsets
     let chromaOff = 0.04 + treble * 0.22;
@@ -162,16 +160,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let angleB = angle - chromaOff;
     let starR = 0.5 + 0.5 * fastSin(angleR * 4.0 + time * 5.0);
     let starB = 0.5 + 0.5 * fastSin(angleB * 4.0 + time * 5.0);
-    let densityR = core * starR + streak * 0.4 + ghost1 * 1.2;
+    let densityR = core * starR + streak * 0.4 + ghost1 * 1.2 + haloR * 0.28;
     let densityG = density;
-    let densityB = core * starB + streak * 0.4 + ghost2 * 1.2;
+    let densityB = core * starB + streak * 0.4 + ghost2 * 1.2 + haloB * 0.28;
 
     // Fast plasma color lookup with blue noise jitter
     let plasmaIdx = u32(abs(fract(bn + time * 0.1)) * 256.0);
     let pColor = plasmaBuffer[plasmaIdx % 256u].rgb;
     let brightness = mix(0.55, 2.4, intensityControl) * (1.0 + bass * 0.45);
     var col = vec3<f32>(pColor.r * densityR, pColor.g * densityG, pColor.b * densityB) * brightness;
-    col += newtonColor * brightness * 0.8;
+    col += (newtonColor * 0.8 + doubletHalo + satColor * 0.9) * brightness;
 
     let motion = textureLoad(readTexture, coords, 0).rgb;
     col = motion * (1.0 - density * 0.6) + col;

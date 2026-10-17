@@ -560,8 +560,17 @@
       "history": []
     },
     "photonic-caustics-iridescence": {
-      "hash": "084b92899f074552",
-      "history": []
+      "hash": "d1a0955ce887becc",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T10:58:39.221Z",
+          "hash": "d1a0955ce887becc",
+          "prev_hash": "084b92899f074552",
+          "commit": "8fc34b84",
+          "note": "2026-10-17 Gemini Argon4 (argon4/batch-01 + optical-glass-ten): idea cards in docs/agents/swarm-outputs/gemini-2026-10-17-*"
+        }
+      ]
     },
     "predator-prey-rgba": {
       "hash": "5eef2cddf7925537",
@@ -909,8 +918,17 @@
       "history": []
     },
     "glass_refraction_alpha": {
-      "hash": "2ec2b6647fb3c086",
-      "history": []
+      "hash": "446955bf3ee7ead0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T10:58:39.221Z",
+          "hash": "446955bf3ee7ead0",
+          "prev_hash": "2ec2b6647fb3c086",
+          "commit": "8fc34b84",
+          "note": "2026-10-17 Gemini Argon4 (argon4/batch-01 + optical-glass-ten): idea cards in docs/agents/swarm-outputs/gemini-2026-10-17-*"
+        }
+      ]
     },
     "green-tracer": {
       "hash": "f0f713d68a4d2d7f",
@@ -937,7 +955,7 @@
       "history": []
     },
     "iridescent-oil-slick": {
-      "hash": "c7865c42f6adf3e0",
+      "hash": "9a3f2aabed95d066",
       "history": [
         {
           "event": "upgraded",
@@ -946,6 +964,14 @@
           "prev_hash": "861cdc2c9968c208",
           "commit": "86d8f696",
           "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T10:58:39.221Z",
+          "hash": "9a3f2aabed95d066",
+          "prev_hash": "c7865c42f6adf3e0",
+          "commit": "8fc34b84",
+          "note": "2026-10-17 Gemini Argon4 (argon4/batch-01 + optical-glass-ten): idea cards in docs/agents/swarm-outputs/gemini-2026-10-17-*"
         }
       ]
     },
@@ -2114,7 +2140,7 @@
       ]
     },
     "gen-celestial-prism-orchid": {
-      "hash": "e74f1ad06190290b",
+      "hash": "35ccebe7e904dbaf",
       "history": [
         {
           "event": "upgraded",
@@ -2123,6 +2149,14 @@
           "prev_hash": "def7821e64bb462f",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T10:58:39.221Z",
+          "hash": "35ccebe7e904dbaf",
+          "prev_hash": "e74f1ad06190290b",
+          "commit": "8fc34b84",
+          "note": "2026-10-17 Gemini Argon4 (argon4/batch-01 + optical-glass-ten): idea cards in docs/agents/swarm-outputs/gemini-2026-10-17-*"
         }
       ]
     },
@@ -2935,7 +2969,7 @@
       "history": []
     },
     "gen-ethereal-glass-flora-terrarium": {
-      "hash": "21f7d2142a07cc71",
+      "hash": "9c23052033f0c232",
       "history": [
         {
           "event": "upgraded",
@@ -2944,6 +2978,14 @@
           "prev_hash": "31caedcf59774aaf",
           "commit": "d74e665b",
           "note": "2026-10-10 ethereal/cymatic/labyrinth ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-10-ethereal-cymatic-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T10:58:39.221Z",
+          "hash": "9c23052033f0c232",
+          "prev_hash": "21f7d2142a07cc71",
+          "commit": "8fc34b84",
+          "note": "2026-10-17 Gemini Argon4 (argon4/batch-01 + optical-glass-ten): idea cards in docs/agents/swarm-outputs/gemini-2026-10-17-*"
         }
       ]
     },
@@ -3540,28 +3582,82 @@
       ]
     },
     "gen-holographic-data-core": {
-      "hash": "d690397c28dfe6fa",
-      "history": []
+      "hash": "1788b956f5bf9a7e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T10:58:39.221Z",
+          "hash": "1788b956f5bf9a7e",
+          "prev_hash": "d690397c28dfe6fa",
+          "commit": "8fc34b84",
+          "note": "2026-10-17 Gemini Argon4 (argon4/batch-01 + optical-glass-ten): idea cards in docs/agents/swarm-outputs/gemini-2026-10-17-*"
+        }
+      ]
     },
     "gen-holographic-fracture": {
-      "hash": "39dfcfdd839600cb",
-      "history": []
+      "hash": "f39f69e1e9fbbfe8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T10:58:39.221Z",
+          "hash": "f39f69e1e9fbbfe8",
+          "prev_hash": "39dfcfdd839600cb",
+          "commit": "8fc34b84",
+          "note": "2026-10-17 Gemini Argon4 (argon4/batch-01 + optical-glass-ten): idea cards in docs/agents/swarm-outputs/gemini-2026-10-17-*"
+        }
+      ]
     },
     "gen-holographic-lens-flare-matrix": {
-      "hash": "3a1f01de6dad01e2",
-      "history": []
+      "hash": "c1677626d579f53d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T10:58:39.221Z",
+          "hash": "c1677626d579f53d",
+          "prev_hash": "3a1f01de6dad01e2",
+          "commit": "8fc34b84",
+          "note": "2026-10-17 Gemini Argon4 (argon4/batch-01 + optical-glass-ten): idea cards in docs/agents/swarm-outputs/gemini-2026-10-17-*"
+        }
+      ]
     },
     "gen-holographic-membrane": {
-      "hash": "90d900b18da59353",
-      "history": []
+      "hash": "a1225727a22fc31f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T10:58:39.221Z",
+          "hash": "a1225727a22fc31f",
+          "prev_hash": "90d900b18da59353",
+          "commit": "8fc34b84",
+          "note": "2026-10-17 Gemini Argon4 (argon4/batch-01 + optical-glass-ten): idea cards in docs/agents/swarm-outputs/gemini-2026-10-17-*"
+        }
+      ]
     },
     "gen-holographic-plasma-geode": {
-      "hash": "5bbc0f452f5ff874",
-      "history": []
+      "hash": "da9eb132b773daca",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T10:58:39.221Z",
+          "hash": "da9eb132b773daca",
+          "prev_hash": "5bbc0f452f5ff874",
+          "commit": "8fc34b84",
+          "note": "2026-10-17 Gemini Argon4 (argon4/batch-01 + optical-glass-ten): idea cards in docs/agents/swarm-outputs/gemini-2026-10-17-*"
+        }
+      ]
     },
     "gen-holographic-rainbow-surface": {
-      "hash": "7362c18c1c0bdb7b",
-      "history": []
+      "hash": "3d8f820a81680f04",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T10:58:39.221Z",
+          "hash": "3d8f820a81680f04",
+          "prev_hash": "7362c18c1c0bdb7b",
+          "commit": "8fc34b84",
+          "note": "2026-10-17 Gemini Argon4 (argon4/batch-01 + optical-glass-ten): idea cards in docs/agents/swarm-outputs/gemini-2026-10-17-*"
+        }
+      ]
     },
     "gen-hopf-fibration-fiber-bundle": {
       "hash": "ceada5d264d28730",
@@ -3624,7 +3720,7 @@
       ]
     },
     "gen-hyper-geometric-void-glass-seraph": {
-      "hash": "66fbeddfddff80e2",
+      "hash": "8680283a13e63037",
       "history": [
         {
           "event": "upgraded",
@@ -3633,6 +3729,14 @@
           "prev_hash": "6172ad20a640c7c2",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T10:58:39.221Z",
+          "hash": "8680283a13e63037",
+          "prev_hash": "66fbeddfddff80e2",
+          "commit": "8fc34b84",
+          "note": "2026-10-17 Gemini Argon4 (argon4/batch-01 + optical-glass-ten): idea cards in docs/agents/swarm-outputs/gemini-2026-10-17-*"
         }
       ]
     },
@@ -3650,12 +3754,30 @@
       ]
     },
     "gen-hyper-rainbow-vortex": {
-      "hash": "e1092ba2b11849d2",
-      "history": []
+      "hash": "42b255d901459ae9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T10:58:39.221Z",
+          "hash": "42b255d901459ae9",
+          "prev_hash": "e1092ba2b11849d2",
+          "commit": "8fc34b84",
+          "note": "2026-10-17 Gemini Argon4 (argon4/batch-01 + optical-glass-ten): idea cards in docs/agents/swarm-outputs/gemini-2026-10-17-*"
+        }
+      ]
     },
     "gen-hyper-refractive-rain-matrix": {
-      "hash": "6481063aa1fa3129",
-      "history": []
+      "hash": "8bcc6bd9f21d543a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T10:58:39.221Z",
+          "hash": "8bcc6bd9f21d543a",
+          "prev_hash": "6481063aa1fa3129",
+          "commit": "8fc34b84",
+          "note": "2026-10-17 Gemini Argon4 (argon4/batch-01 + optical-glass-ten): idea cards in docs/agents/swarm-outputs/gemini-2026-10-17-*"
+        }
+      ]
     },
     "gen-hyperbolic-crystal-symbiosis": {
       "hash": "4ab931adec898655",
@@ -3734,7 +3856,7 @@
       ]
     },
     "gen-ice-crystal-lattice": {
-      "hash": "dd5bfd09ac18d99b",
+      "hash": "383ce53bbb8c6575",
       "history": [
         {
           "event": "upgraded",
@@ -3743,6 +3865,14 @@
           "prev_hash": "660e7551c11a95fd",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T10:58:39.221Z",
+          "hash": "383ce53bbb8c6575",
+          "prev_hash": "dd5bfd09ac18d99b",
+          "commit": "8fc34b84",
+          "note": "2026-10-17 Gemini Argon4 (argon4/batch-01 + optical-glass-ten): idea cards in docs/agents/swarm-outputs/gemini-2026-10-17-*"
         }
       ]
     },
@@ -4018,7 +4148,7 @@
       ]
     },
     "gen-liquid-rainbow-glass": {
-      "hash": "c9fd4a8ab74a8cf8",
+      "hash": "8f687e5b6a805fbc",
       "history": [
         {
           "event": "upgraded",
@@ -4027,6 +4157,14 @@
           "prev_hash": "e2b2dbdc6af13665",
           "commit": "cc600bb4",
           "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T10:58:39.221Z",
+          "hash": "8f687e5b6a805fbc",
+          "prev_hash": "c9fd4a8ab74a8cf8",
+          "commit": "8fc34b84",
+          "note": "2026-10-17 Gemini Argon4 (argon4/batch-01 + optical-glass-ten): idea cards in docs/agents/swarm-outputs/gemini-2026-10-17-*"
         }
       ]
     },
@@ -4300,8 +4438,17 @@
       ]
     },
     "gen-minimal-surface-soap-iridescence": {
-      "hash": "20e7ebf3c542519a",
-      "history": []
+      "hash": "450de54a6c906933",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T10:58:39.221Z",
+          "hash": "450de54a6c906933",
+          "prev_hash": "20e7ebf3c542519a",
+          "commit": "8fc34b84",
+          "note": "2026-10-17 Gemini Argon4 (argon4/batch-01 + optical-glass-ten): idea cards in docs/agents/swarm-outputs/gemini-2026-10-17-*"
+        }
+      ]
     },
     "gen-molten-planetary-core": {
       "hash": "dec6656d109d51b7",
@@ -4719,7 +4866,7 @@
       ]
     },
     "gen-prismatic-cyber-aether-void-kitsune": {
-      "hash": "10b0c8910a0de6a0",
+      "hash": "6ddd172a8cd88184",
       "history": [
         {
           "event": "upgraded",
@@ -4728,6 +4875,14 @@
           "prev_hash": "a5af9378e93a59b6",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T10:58:39.221Z",
+          "hash": "6ddd172a8cd88184",
+          "prev_hash": "10b0c8910a0de6a0",
+          "commit": "8fc34b84",
+          "note": "2026-10-17 Gemini Argon4 (argon4/batch-01 + optical-glass-ten): idea cards in docs/agents/swarm-outputs/gemini-2026-10-17-*"
         }
       ]
     },
@@ -5723,8 +5878,17 @@
       "history": []
     },
     "liquid_crystal_birefringence": {
-      "hash": "81cfd6450ee1f36c",
-      "history": []
+      "hash": "f9d9e7b696313fb4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T10:58:39.221Z",
+          "hash": "f9d9e7b696313fb4",
+          "prev_hash": "81cfd6450ee1f36c",
+          "commit": "8fc34b84",
+          "note": "2026-10-17 Gemini Argon4 (argon4/batch-01 + optical-glass-ten): idea cards in docs/agents/swarm-outputs/gemini-2026-10-17-*"
+        }
+      ]
     },
     "liquid_magnetic_ferro": {
       "hash": "4b29cd63d152efc6",

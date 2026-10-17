@@ -16,7 +16,7 @@
     "kaleidoscopic",
     "geometry"
   ],
-  "description": "A hyper-majestic cybernetic celestial kitsune of shattered prismatic glass and liquid quantum-aether, hex-rune-etched armor and octahedral shoulder crystals, orbited by a prismatic shard swarm and stacked auroral torus rings, its nine radiant tails carving rifts into a kaleidoscopically folded volumetric particle-storm.",
+  "description": "A cybernetic celestial kitsune of prismatic glass and liquid quantum-aether with hex-rune-etched armor, kabuki cyber-visor eye markings, a levitating Hoshi-no-tama star-ball jewel ahead of its snout, dispersive 3-channel octahedral shard facets, stacked auroral torus rings, and nine thin-film tails with kitsune-bi fox-fire tips.",
   "url": "shaders/gen-prismatic-cyber-aether-void-kitsune.wgsl",
   "updated": true,
   "supportsDepth": true,
