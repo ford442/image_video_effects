@@ -72,7 +72,7 @@
     "depth-aware",
     "upgraded-rgba"
   ],
-  "feedbackPacking": "A/C = exact ACES display RGBA; guarded bass envelope uses extraBuffer[133]",
+  "feedbackPacking": "A/C = exact ACES display RGBA; stateless bass (no extraBuffer state)",
   "x-meta": {
     "upgrade": {
       "params": [

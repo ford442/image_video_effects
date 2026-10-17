@@ -8,31 +8,12 @@
 //  Wolfram: Blackbody radiation (3000K–10000K) for accretion disk colors.
 //           Gravitational lensing Einstein radius ~3.6 arcsec for cluster.
 //  Complexity: Medium-High
-//  Upgraded: 2026-09-13
-//  Ideas: relativistic beaming crescent on the approaching disk limb; phononic spiral density waves
+//  Upgraded: 2026-10-17
+//  Ideas: relativistic beaming crescent on the approaching disk limb; phononic spiral density waves; Roche-lobe mass-transfer bridges between neighbouring bodies; Keplerian hot spots (omega ~ r^-1.5) with a mids-driven QPO flicker
 //  A packing: tone-mapped temporal display RGB + semantic alpha
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -120,6 +101,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let densityAmt   = u.zoom_params.w * 1.5 + 0.5;
 
     let mousePos = vec2<f32>(u.zoom_config.y * aspect, u.zoom_config.z);
+    let mouseDown = u.zoom_config.w > 0.5;
 
     // Temporal feedback
     let prev = textureLoad(dataTextureC, coord, 0);
@@ -145,7 +127,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         lensDisplace += gravitationalLens(uvA, bodyPos, bodyMass);
     }
 
-    let mouseMass = massScale * bass * 0.8 * lensStrength;
+    // Held pointer adds mass even in silence (was bass-only, so the mouse was dead without audio).
+    let mouseMass = massScale * (bass * 0.8 + select(0.0, 0.6, mouseDown)) * lensStrength;
     lensDisplace += gravitationalLens(uvA, mousePos, mouseMass);
 
     let lensedUV = uvA + lensDisplace * 20.0;
@@ -161,6 +144,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var accretion = 0.0;
     var totalMass = 0.0;
     var accretionColor = vec3<f32>(0.0);
+    var hotSpots = vec3<f32>(0.0);
+    var bodyPositions: array<vec2<f32>, 6>;
+    var bodyMasses: array<f32, 6>;
 
     for (var i = 0; i < nBodies; i++) {
         let fi = f32(i);
@@ -175,6 +161,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let dist = length(uvA - bodyPos);
         let bodyMass = massScale * (0.3 + audioAmp * 0.7);
         totalMass += bodyMass;
+        bodyPositions[i] = bodyPos;
+        bodyMasses[i] = bodyMass;
 
         let diskInner = 0.02 + audioAmp * 0.01;
         let diskOuter = 0.15 + audioAmp * 0.08;
@@ -184,7 +172,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let angle = atan2(uvA.y - bodyPos.y, uvA.x - bodyPos.x);
         let shear = sin(angle * 3.0 + t * (1.0 + fi * 0.3) + audioAmp * PI) * 0.5 + 0.5;
         // Idea 1 — relativistic beaming: brighter on the orbital approaching limb
-        let tangent = vec2<f32>(-sin(t * orbitSpd + bodySeed.y * TAU), cos(t * orbitSpd * 0.7 + bodySeed.x * TAU));
+        // True orbital velocity direction of the elliptical path (was un-normalized, mixed frequencies).
+        let tangent = normalize(vec2<f32>(-sin(t * orbitSpd + bodySeed.y * TAU),
+                                          0.42 * cos(t * orbitSpd * 0.7 + bodySeed.x * TAU)) + vec2<f32>(1e-5));
         let radial = (uvA - bodyPos) / max(dist, 0.0001);
         let approach = clamp(dot(radial, tangent), 0.0, 1.0);
         let beaming = 0.55 + approach * 0.9;
@@ -196,6 +186,44 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let diskVal = diskProfile * bodyMass * shear * densityAmt * beaming;
         accretion += diskVal;
         accretionColor += diskBB * diskVal;
+
+        // Idea 4 — Keplerian hot spots: three clumps per disk at fixed radii, each orbiting at
+        // omega ~ r^-1.5 (inner laps outer), flickering quasi-periodically with mids.
+        for (var k = 0; k < 3; k++) {
+            let fk = f32(k);
+            let rK = mix(diskInner * 2.2, diskOuter * 0.72, fk * 0.5);
+            let omega = 1.1 * pow(0.045 / rK, 1.5);
+            let spotAng = t * omega + bodySeed.y * TAU + fk * 2.1;
+            let spotPos = bodyPos + rK * vec2<f32>(cos(spotAng), sin(spotAng));
+            let sd = uvA - spotPos;
+            let blob = exp(-dot(sd, sd) / (0.012 * 0.012));
+            let qpo = 0.75 + 0.25 * sin(t * omega * 3.0 + fk) * (0.4 + mids * 1.2);
+            hotSpots += blackbodyColor(mix(9000.0, 5000.0, fk * 0.5)) * blob * bodyMass * qpo * 0.9;
+        }
+    }
+
+    // Idea 3 — Roche-lobe mass-transfer bridges: when neighbouring bodies swing close, a bowed
+    // gas stream flows along the segment from the lighter body into the heavier one.
+    var bridgeColor = vec3<f32>(0.0);
+    for (var i = 0; i < nBodies - 1; i++) {
+        let pA = bodyPositions[i];
+        let pB = bodyPositions[i + 1];
+        let ab = pB - pA;
+        let sep = length(ab);
+        let proximity = 1.0 - smoothstep(0.22, 0.55, sep);
+        if (proximity > 0.0) {
+            let s = clamp(dot(uvA - pA, ab) / max(dot(ab, ab), 1e-5), 0.0, 1.0);
+            let perp = vec2<f32>(-ab.y, ab.x) / max(sep, 1e-4);
+            let bow = sin(s * PI) * 0.035 * sin(t * 0.5 + f32(i) * 1.7);
+            let dd = length(uvA - (pA + ab * s + perp * bow));
+            let w = 0.008 + 0.006 * densityAmt;
+            let tube = exp(-dd * dd / (w * w));
+            let flowDir = select(-1.0, 1.0, bodyMasses[i + 1] >= bodyMasses[i]);
+            let flow = fbmDensity(vec2<f32>(s * 7.0 - t * 0.9 * flowDir, f32(i) * 3.1), 3);
+            let streamAmt = tube * proximity * (0.25 + flow * 0.75) * densityAmt
+                          * min(bodyMasses[i], bodyMasses[i + 1]) * 0.6;
+            bridgeColor += blackbodyColor(4200.0 + flow * 2000.0) * streamAmt;
+        }
     }
 
     // Base color: dark cosmic void
@@ -211,6 +239,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (accretion > 0.001) {
         color += accretionColor * densityB * 0.8;
     }
+
+    color += bridgeColor + hotSpots;
 
     // Lensing artifacts: bright arcs
     let lensArc = length(lensDisplace) * 200.0;

@@ -14294,7 +14294,7 @@
       "generated-depth",
       "upgraded-rgba"
     ],
-    "feedbackPacking": "A/C = ACES display RGBA history; exact same-pixel temporal load"
+    "feedbackPacking": "A/C = HDR RGBA history before primary controls; display = ACES(controls(A)); exact same-pixel temporal load"
   },
   {
     "name": "Holographic Data Core",
@@ -14974,7 +14974,7 @@
       "depth-aware",
       "upgraded-rgba"
     ],
-    "feedbackPacking": "A/C = exact ACES display RGBA; guarded bass envelope uses extraBuffer[133]"
+    "feedbackPacking": "A/C = exact ACES display RGBA; stateless bass (no extraBuffer state)"
   },
   {
     "name": "Hyper-Dimensional Tesseract-Labyrinth",
@@ -15643,7 +15643,7 @@
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
-    "description": "Basal cleavage sheen now catches the broad crystal faces while treble micro-serrations sharpen the later hopper-fold generations."
+    "description": "Basal cleavage sheen now catches the broad crystal faces while treble micro-serrations sharpen the later hopper-fold generations. Upper ledges cast step shadows down the stairs, and fresh-cleave fronts sweep past, stripping the oxide to bare silver before the film regrows."
   },
   {
     "name": "Hyperdimensional Plasma Loom",
