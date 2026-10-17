@@ -67,7 +67,7 @@
     "generated-depth",
     "upgraded-rgba"
   ],
-  "feedbackPacking": "A/C = ACES display RGBA history; exact same-pixel temporal load",
+  "feedbackPacking": "A/C = HDR RGBA history before primary controls; display = ACES(controls(A)); exact same-pixel temporal load",
   "x-meta": {
     "upgrade": {
       "params": [

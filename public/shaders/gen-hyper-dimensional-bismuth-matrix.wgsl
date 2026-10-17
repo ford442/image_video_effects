@@ -6,8 +6,10 @@
 //            depth-aware, chromatic, volumetric-fog
 //  Complexity: Very High
 //  Created: 2026-06-28
-//  Upgraded: 2026-09-13
-//  Ideas: twin-boundary misfit where hopper≈KIFS; stair-riser rainbow film thickness
+//  Upgraded: 2026-10-17
+//  Ideas: twin-boundary misfit where hopper≈KIFS; stair-riser rainbow film thickness;
+//         crucible melt line (liquid bismuth plane the lattice grows out of, with a
+//         hot meniscus where crystals pierce it); cooling-melt glow in hopper hollows
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -101,7 +103,13 @@ struct MapResult {
   ao: f32,
   twin: f32,
   riser: f32,
+  hollow: f32,
 };
+
+// Idea 3 — slow rise/fall of the crucible melt the lattice is pulled from
+fn meltLevel(time: f32) -> f32 {
+  return -2.2 + 0.25 * sin(time * 0.11);
+}
 
 fn map(p_in: vec3<f32>, time: f32, audio: f32, complexity: f32,
        growthRate: f32, gridDensity: f32, disruptionRadius: f32,
@@ -163,9 +171,21 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, complexity: f32,
     mat = 0.5; // disrupted zone
   }
 
+  // Idea 4 — hollowness: surface points deep inside the hopper's outer cube are
+  // the drained cavity walls (weighted by the hopper being the nearest surface)
+  let outer = sdBox(rq, vec3<f32>(crystalSize));
+  let hollow = sat(-outer / (crystalSize * 0.6)) * sat(1.0 - (bismuth - d) / 0.05);
+
+  // Idea 3 — liquid bismuth plane; crystals below it are submerged
+  let dMelt = p_in.y - meltLevel(time);
+  if (dMelt < d) {
+    d = dMelt;
+    mat = 2.0;
+  }
+
   let ao = sat(0.6 + 0.4 * hash3(cellId + vec3<f32>(0.5)));
 
-  return MapResult(d, mat, ao, twin, riser);
+  return MapResult(d, mat, ao, twin, riser, hollow);
 }
 
 fn calcNormal(p: vec3<f32>, time: f32, audio: f32, complexity: f32,
@@ -210,15 +230,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mid = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
-  // Guarded bass envelope state lives outside engine FFT slots.
-  var bassEnv = bass;
-  let hasBassState = arrayLength(&extraBuffer) > 133u;
-  if (hasBassState) {
-    bassEnv = mix(extraBuffer[133], bass, select(0.035, 0.16, bass > extraBuffer[133]));
-  }
-  if (hasBassState && gid.x == 0u && gid.y == 0u) {
-    extraBuffer[133] = bassEnv;
-  }
+  // extraBuffer is re-uploaded every frame, so a stored envelope never
+  // persisted (it read back 0 and raced the (0,0) writer). Stateless bass.
+  let bassEnv = bass;
 
   // Parameters
   let complexity = mix(1.5, 5.0, clamp(u.zoom_params.x, 0.0, 1.0));
@@ -261,7 +275,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let center = (ripple.xy - 0.5) * vec2<f32>(aspect, 1.0) * 2.0;
     let delta = p - center;
     let radius = age * (0.24 + growthRate * 0.22);
-    crystalShock += exp(-pow((length(delta) - radius) * 20.0, 2.0)) * exp(-age * 0.78);
+    let ring = (length(delta) - radius) * 20.0;
+    crystalShock += exp(-ring * ring) * exp(-age * 0.78);
   }
   let effectiveDisruption = disruptionRadius * (1.0 + crystalShock * 1.2 + select(0.0, 0.65, mouseDown));
   let rd = normalize(p.x * uu + p.y * vv + 2.5 * ww);
@@ -275,6 +290,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var hitAo = 1.0;
   var hitTwin = 0.0;
   var hitRiser = 0.0;
+  var hitHollow = 0.0;
   var depth = 0.0;
 
   for (var i: i32 = 0; i < 120; i = i + 1) {
@@ -287,6 +303,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       hitAo = res.ao;
       hitTwin = res.twin;
       hitRiser = res.riser;
+      hitHollow = res.hollow;
       depth = t;
       break;
     }
@@ -314,7 +331,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let fresnel = pow(1.0 - nDotV, 5.0);
 
-    if (hitMat < 0.5) {
+    let melt = meltLevel(time);
+    if (hitMat > 1.5) {
+      // Idea 3 — liquid bismuth: dark pinkish mirror with bass capillary rings
+      let rel = hitPos.xz - vec2<f32>(mousePos.x, 0.0);
+      let r = length(rel);
+      let ripple = sin(r * 9.0 - time * 3.0) * (0.15 + bass * 0.6) / (1.0 + r * 0.4);
+      let rdir = rel / max(r, 1e-3);
+      let mn = normalize(vec3<f32>(rdir.x * ripple * 0.08, 1.0, rdir.y * ripple * 0.08));
+      let mv = sat(dot(mn, viewDir));
+      let mSpec = pow(sat(dot(mn, normalize(lightDir - rd))), 90.0) + pow(sat(dot(mn, normalize(lightDir2 - rd))), 60.0) * 0.5;
+      let mFres = 0.06 + 0.94 * pow(1.0 - mv, 5.0);
+      let sheen = iridescent(mv, time * 0.2 + 1.3, audio) * iridescence * 0.12;
+      col = vec3<f32>(0.11, 0.09, 0.1) + sheen + vec3<f32>(0.9, 0.85, 0.95) * mSpec * 0.8 + vec3<f32>(0.25, 0.3, 0.4) * mFres * 0.5;
+    } else if (hitMat < 0.75 && mouseDown) {
       // Disrupted zone - scattered crystalline chaos
       let chaosCol = iridescent(nDotV, time * 0.5 + bass * 3.0, mid) * 2.0;
       col = chaosCol * (0.5 + diff * 0.3) + vec3<f32>(0.8, 0.6, 0.4) * spec * 0.5;
@@ -345,12 +375,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       col += iridescent(nDotV, time + crystalShock * 2.0, treble) * crystalShock * (0.7 + mid * 0.5);
     }
 
-    // Ambient occlusion
-    col = col * (0.4 + 0.6 * hitAo);
+    if (hitMat < 1.5) {
+      // Ambient occlusion
+      col = col * (0.4 + 0.6 * hitAo);
 
-    // Deep shadows in crevices (valleys between stair steps)
-    let cavity = pow(1.0 - nDotV, 2.0) * 0.4;
-    col = col * (1.0 - cavity);
+      // Deep shadows in crevices (valleys between stair steps)
+      let cavity = pow(1.0 - nDotV, 2.0) * 0.4;
+      col = col * (1.0 - cavity);
+
+      // Idea 3 — hot meniscus where the crystal pierces the melt
+      let above = hitPos.y - melt;
+      let meniscus = exp(-above * above * 60.0);
+      col += vec3<f32>(1.0, 0.55, 0.2) * meniscus * (0.6 + bass * 0.8);
+
+      // Idea 4 — residual melt still glowing in the drained hopper hollows,
+      // hotter for crystals close to the crucible
+      let heat = exp(-max(above, 0.0) * 0.45);
+      col += vec3<f32>(1.0, 0.36, 0.08) * hitHollow * hitHollow * heat * (0.35 + bass * 0.6);
+    }
 
     // Depth fog - ethereal glow in abyssal chasms
     col = mix(col, vec3<f32>(0.02, 0.03, 0.05), 1.0 - exp(-0.015 * depth));

@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: generative, mouse-driven, audio-reactive, temporal, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: petal-fold veins along KIFS abs planes; nectary corona at the core/petal smin; wavelength-separated chromatic gravity streaks; treble-driven core-to-fold plasma filaments
+//  Upgraded: 2026-10-17
+//  Ideas: petal-fold veins along KIFS abs planes; nectary corona at the core/petal smin; wavelength-separated chromatic gravity streaks; treble-driven core-to-fold plasma filaments; volumetric plasma sheath from near-miss march steps; gravitational blueshift tint following the well potential
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -68,18 +68,22 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     return vec2<f32>(d, mat);
 }
 
-// Raymarching
-fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
+// Raymarching — .z accumulates the plasma sheath: rays that graze the lotus without
+// landing pick up glow from every close step (Idea 5).
+fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec3<f32> {
     var dO = 0.0;
     var mat = 0.0;
+    var sheath = 0.0;
     for(var i = 0; i < 80; i++) {
         let p = ro + rd * dO;
         let dS = map(p);
+        let gap = max(dS.x, 0.0);
+        sheath += 0.015 / (1.0 + gap * gap * 400.0);
         dO += max(dS.x * 0.85, 0.002);
         mat = dS.y;
         if(dO > 30.0 || abs(dS.x) < 0.001) { break; }
     }
-    return vec2<f32>(dO, mat);
+    return vec3<f32>(dO, mat, sheath);
 }
 
 // Normal Calculation
@@ -102,19 +106,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     if (f32(id.x) >= res.x || f32(id.y) >= res.y) { return; }
 
-    let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
-    var mouseUv = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[137] < 0.5) { mouseUv = rawMouse; mouseVelocity = vec2<f32>(0.0); }
-    let springDt = select(0.016, clamp(u.config.x - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
-    let springOmega = 8.0;
-    mouseVelocity += ((rawMouse - mouseUv) * springOmega * springOmega - mouseVelocity * 2.0 * springOmega) * springDt;
-    mouseUv += mouseVelocity * springDt;
-    if (id.x == 0u && id.y == 0u && arrayLength(&extraBuffer) > 138u) {
-        extraBuffer[133] = mouseUv.x; extraBuffer[134] = mouseUv.y;
-        extraBuffer[135] = mouseVelocity.x; extraBuffer[136] = mouseVelocity.y;
-        extraBuffer[137] = 1.0; extraBuffer[138] = u.config.x;
-    }
+    // extraBuffer is re-uploaded every frame, so the old [133..138] spring never persisted
+    // (it always reset to the raw mouse); use the raw mouse directly.
+    let mouseUv = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
 
     // Mouse Interaction (Gravity Well Distortion), normalized and aspect-correct.
     let mouse = (mouseUv - vec2<f32>(0.5)) * vec2<f32>(2.0 * res.x / res.y, 2.0);
@@ -154,6 +148,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let rm = raymarch(ro, rd);
     let d = rm.x;
     let mat = rm.y;
+    let sheath = min(rm.z, 1.5);
 
     var col = vec3<f32>(0.0);
 
@@ -214,6 +209,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     } else {
         col = vec3<f32>(0.01, 0.01, 0.03); // Deep space background
     }
+
+    // Idea 5 — volumetric plasma sheath hugging the silhouettes (strongest on near misses).
+    let sheathWeight = select(1.0, 0.35, d < 30.0);
+    col += mix(vec3<f32>(0.9, 0.25, 0.75), vec3<f32>(0.3, 0.75, 1.2), clamp(sheath * 0.8, 0.0, 1.0))
+        * sheath * sheathWeight * (0.35 + mids * 0.4) * (0.6 + u.zoom_params.z * 0.4);
+
+    // Idea 6 — gravitational blueshift: light falling into the well picks up a cool tint that
+    // follows the same potential the lens uses; zero strength leaves the colour untouched.
+    let wellPotential = gravity_strength / (dist_to_mouse * 10.0 + 1.0);
+    let blueshift = clamp(wellPotential * 1.2, 0.0, 0.6) * 0.6;
+    col *= mix(vec3<f32>(1.0), vec3<f32>(0.8, 0.97, 1.28), blueshift);
 
     col += gravityStreakRGB * (0.8 + treble * 0.35);
     col += vec3<f32>(0.4, 0.7, 1.3) * clickGravity * (0.45 + treble * 0.25);

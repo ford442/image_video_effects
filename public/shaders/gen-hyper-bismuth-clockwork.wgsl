@@ -6,8 +6,8 @@
 //            aces-tone-map, ambient-occlusion
 //  Complexity: Very High
 //  Created: 2026-06-28
-//  Upgraded: 2026-09-13
-//  Ideas: hopper terrace ridges on step-cuts; escapement mesh flash at gearPhase crests
+//  Upgraded: 2026-10-17
+//  Ideas: hopper terrace ridges on step-cuts; escapement mesh flash at gearPhase crests; mainspring wind-down with ratchet rewind flash; polished brass seams where gear teeth bite the crystal
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -113,7 +113,17 @@ struct MapResult {
   ao: f32,
   terrace: f32,
   mesh: f32,
+  contact: f32,
 };
+
+// Idea 3 — mainspring power reserve: the movement runs down from full speed
+// to half over WIND_PERIOD seconds, then the ratchet rewinds it. Clock time is
+// the analytic integral of that speed, so motion never jumps.
+const WIND_PERIOD: f32 = 24.0;
+fn mainspringTime(t: f32) -> f32 {
+  let f = fract(t / WIND_PERIOD);
+  return WIND_PERIOD * (floor(t / WIND_PERIOD) * 0.75 + f - 0.25 * f * f);
+}
 
 fn map(p_in: vec3<f32>, time: f32, audio: f32, complexity: f32,
        clockSpeed: f32, gridDensity: f32, mousePos: vec3<f32>) -> MapResult {
@@ -158,6 +168,8 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, complexity: f32,
     cos(gearPhase * 0.7) * cell * 0.12
   );
   let gear = sdBox(q - gearOffset, vec3<f32>(cell * 0.05, cell * 0.15, cell * 0.05));
+  // Idea 4 — tooth bite: where the tooth and crystal surfaces meet
+  let contact = (1.0 - sat(abs(d - gear) / max(cell * 0.045, 1e-4))) * (1.0 - sat(min(d, gear) / max(cell * 0.06, 1e-4)));
   d = smin(d, gear, 0.05);
 
   // Idea 2 — escapement mesh: flash when neighboring teeth crest
@@ -169,14 +181,14 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, complexity: f32,
 
   // Material
   var mat = 1.0; // crystal
-  if (mDist < magRadius * 0.5) {
-    mat = 0.5; // molten core
+  if (mDist < magRadius * 0.5 && u.zoom_config.w > 0.5) {
+    mat = 0.5; // molten core (only while the singularity is held)
   }
 
   // Ambient occlusion proxy
   let ao = sat(0.7 + 0.3 * hash3(cellId + vec3<f32>(0.5)));
 
-  return MapResult(d, mat, ao, hopper.y, mesh);
+  return MapResult(d, mat, ao, hopper.y, mesh, contact);
 }
 
 fn calcNormal(p: vec3<f32>, time: f32, audio: f32, complexity: f32,
@@ -261,10 +273,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let d = length(delta);
     let radius = age * (0.28 + clockSpeed * 0.14);
     let teeth = 0.55 + 0.45 * cos(atan2(delta.y, delta.x) * mix(8.0, 22.0, complexityControl));
-    gearShock += exp(-pow((d - radius) * 22.0, 2.0)) * exp(-age * 0.9) * teeth;
+    let ring = (d - radius) * 22.0;
+    gearShock += exp(-ring * ring) * exp(-age * 0.9) * teeth;
   }
   let effectiveClockSpeed = clamp(clockSpeed + heldTorque * 0.45 + gearShock * 0.75, 0.05, 4.0);
   let rd = normalize(p.x * uu + p.y * vv + 2.5 * ww);
+
+  let clockTime = mainspringTime(time);
+  let springPhase = fract(time / WIND_PERIOD);
+  let reserve = 1.0 - springPhase;
+  let ratchetFlash = exp(-springPhase * WIND_PERIOD * 2.5);
 
   // Raymarch
   var t = 0.0;
@@ -275,11 +293,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var hitAo = 1.0;
   var hitTerrace = 0.0;
   var hitMesh = 0.0;
+  var hitContact = 0.0;
   var depth = 0.0;
 
   for (var i: i32 = 0; i < 100; i = i + 1) {
     let pos = ro + rd * t;
-    let res = map(pos, time, audio, complexity, effectiveClockSpeed, gridDensity, mousePos);
+    let res = map(pos, clockTime, audio, complexity, effectiveClockSpeed, gridDensity, mousePos);
 
     if (res.d < 0.005) {
       hit = true;
@@ -288,6 +307,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       hitAo = res.ao;
       hitTerrace = res.terrace;
       hitMesh = res.mesh;
+      hitContact = res.contact;
       depth = t;
       break;
     }
@@ -297,7 +317,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   if (hit) {
-    let n = calcNormal(hitPos, time, audio, complexity, effectiveClockSpeed, gridDensity, mousePos);
+    let n = calcNormal(hitPos, clockTime, audio, complexity, effectiveClockSpeed, gridDensity, mousePos);
     let viewDir = -rd;
     let nDotV = sat(dot(n, viewDir));
 
@@ -309,7 +329,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let spec = pow(sat(dot(reflect(-lightDir, n), viewDir)), 32.0);
     let spec2 = pow(sat(dot(reflect(-lightDir2, n), viewDir)), 64.0) * 0.5;
 
-    if (hitMat < 0.5) {
+    if (hitMat < 0.75) {
       // Molten core
       let coreCol = vec3<f32>(1.0, 0.9, 0.7) * (1.0 + audio * 2.0);
       let innerGlow = vec3<f32>(0.8, 0.4, 0.1) * (1.0 - nDotV) * 2.0;
@@ -329,7 +349,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       col = metal * (0.3 + diff * 0.5 + diff2 * 0.2);
       col = col + vec3<f32>(0.6, 0.7, 0.8) * (spec + spec2) * 0.5;
       // Idea 2 — escapement mesh flash at tooth crest
-      col = col + vec3<f32>(1.0, 0.78, 0.38) * hitMesh * (spec + 0.18) * 0.85;
+      // (flash strength follows mainspring tension; ratchet rewind flashes every crest)
+      col = col + vec3<f32>(1.0, 0.78, 0.38) * (hitMesh * (0.45 + 0.55 * reserve) + ratchetFlash * 0.6) * (spec + 0.18) * 0.85;
+      // Idea 4 — burnished brass where teeth wear against the step-cuts
+      col = col + vec3<f32>(1.0, 0.8, 0.48) * hitContact * (0.12 + diff * 0.25 + (spec + spec2) * 1.4);
 
       // Audio-reactive shimmer
       col = col + ired * bass * 0.2;

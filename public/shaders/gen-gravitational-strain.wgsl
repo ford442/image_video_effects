@@ -6,8 +6,8 @@
 //  Rays traced along geodesics via RK4 integration of dv/ds = -∇Φ.
 //  Lensed image sampled from procedural star field with domain-warped nebula.
 //  Tidal forces emit where |∇²Φ| is large (field gradient maxima).
-//  Upgraded: 2026-09-13
-//  Ideas: photon-sphere caustic at 1.5 Rs; tidal stretch of the background star field along ∇Φ
+//  Upgraded: 2026-10-17
+//  Ideas: photon-sphere caustic at 1.5 Rs; tidal stretch of the background star field along ∇Φ; Tissot strain-ellipse lattice from the tidal Hessian; binary quadrupole wave arms that tighten as the pointer well and its partner close
 //  A packing: potential depth, ray speed, emission energy, semantic alpha
 // ─────────────────────────────────────────────────────────────────────────────
 #include "_prelude.wgsl"
@@ -274,7 +274,25 @@ fn photonSphereGlow(p: vec2<f32>, wellPos: vec2<f32>, mass: f32) -> f32 {
     let rs = mass * 2.0;
     let photonR = rs * 1.5;
     let w = 0.0035 + mass * 0.0025;
-    return exp(-pow((d - photonR) / max(w, 0.0001), 2.0)) * mass * 6.0;
+    let x = (d - photonR) / max(w, 0.0001);
+    return exp(-x * x) * mass * 6.0;
+}
+
+// ── Tidal Hessian ∂²Φ (xx, yy, xy) by central differences ──
+fn gravHessian(p: vec2<f32>, wells: array<vec3<f32>, 6>, n: i32) -> vec3<f32> {
+    let e = 0.01;
+    let c  = gravPotential(p, wells, n);
+    let xp = gravPotential(p + vec2<f32>(e, 0.0), wells, n);
+    let xm = gravPotential(p - vec2<f32>(e, 0.0), wells, n);
+    let yp = gravPotential(p + vec2<f32>(0.0, e), wells, n);
+    let ym = gravPotential(p - vec2<f32>(0.0, e), wells, n);
+    let pp = gravPotential(p + vec2<f32>(e, e), wells, n);
+    let mm = gravPotential(p - vec2<f32>(e, e), wells, n);
+    let pm = gravPotential(p + vec2<f32>(e, -e), wells, n);
+    let mp = gravPotential(p + vec2<f32>(-e, e), wells, n);
+    return vec3<f32>((xp + xm - 2.0 * c) / (e * e),
+                     (yp + ym - 2.0 * c) / (e * e),
+                     (pp + mm - pm - mp) / (4.0 * e * e));
 }
 
 // ── Einstein ring glow with Fresnel falloff ──
@@ -370,7 +388,32 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let tidalDir = gravGrad(p, wells, wellCount);
     let tidalLen = max(length(tidalDir), 0.0001);
     let tidalStretch = (tidalDir / tidalLen) * clamp(tidalLen * 0.12, 0.0, 0.05);
-    let lensedUV = (rayPos / vec2<f32>(aspect, 1.0) + 0.5) + tidalStretch / vec2<f32>(aspect, 1.0);
+    // Idea 4 — binary quadrupole wave: the pointer well and its orbiting
+    // partner radiate two-armed h+ strain. Arm phase follows the binary's own
+    // orbital angle, and the arms tighten (higher wavenumber) as the pair
+    // closes — a spatial chirp. The strain squeezes/stretches the sky sample
+    // along the wave's polarisation axes.
+    var gwStrain = 0.0;
+    var gwCrest = 0.0;
+    if (wellCount >= 2) {
+        let m0 = wells[0].z;
+        let m1 = wells[1].z;
+        let sep = wells[1].xy - wells[0].xy;
+        let sepLen = max(length(sep), 0.02);
+        let bary = (wells[0].xy * m0 + wells[1].xy * m1) / max(m0 + m1, 0.0001);
+        let rel = p - bary;
+        let r = max(length(rel), 0.0001);
+        let orbAng = atan2(sep.y, sep.x);
+        let waveK = clamp(14.0 * pow(0.25 / sepLen, 1.5), 6.0, 60.0);
+        let gwPhase = 2.0 * (atan2(rel.y, rel.x) - orbAng) - r * waveK;
+        let envelope = smoothstep(sepLen * 0.5, sepLen * 1.2, r) / (1.0 + r * 4.0);
+        let massRatio = clamp((m0 * m1) / max(wellMass * wellMass, 1e-6), 0.0, 3.0);
+        gwStrain = cos(gwPhase) * envelope * massRatio * (0.4 + u.zoom_params.z * 0.6);
+        let crest = clamp(cos(gwPhase), 0.0, 1.0);
+        gwCrest = crest * crest * crest * crest * envelope * massRatio;
+    }
+    let gwDisp = gwStrain * 0.02 * vec2<f32>(p.x - wells[0].x, -(p.y - wells[0].y));
+    let lensedUV = (rayPos / vec2<f32>(aspect, 1.0) + 0.5) + (tidalStretch + gwDisp) / vec2<f32>(aspect, 1.0);
     let stars    = starField(lensedUV, t);
 
     // ── Tidal emission ──
@@ -401,6 +444,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // ── Compose ──
     var col = stars * darkening + emission + ripEmission;
+    col += hsv2rgb(fract(0.62 + t * 0.02 + mids * 0.1), 0.55, 1.0) * gwCrest * 0.08 * emScale * darkening;
+
+    // Idea 3 — Tissot strain ellipses: a lattice of unit circles pulled back
+    // through the local tidal tensor I + kH, so each ring becomes the ellipse
+    // the field would stretch it into (long axis = tidal stretch direction).
+    let tissotN = 14.0;
+    let cellUV = p * tissotN;
+    let cellC = (floor(cellUV) + 0.5) / tissotN;
+    let hess = gravHessian(cellC, wells, wellCount);
+    let hessMag = sqrt(hess.x * hess.x + hess.y * hess.y + 2.0 * hess.z * hess.z) + 1e-5;
+    let kTidal = min(0.25 * bendStrength, 0.65 / hessMag);
+    let sT = hess * kTidal;
+    let local = cellUV - floor(cellUV) - 0.5;
+    let q = local + vec2<f32>(sT.x * local.x + sT.z * local.y, sT.z * local.x + sT.y * local.y);
+    let ringD = abs(length(q) - 0.3);
+    let tissotLine = exp(-ringD * ringD * 900.0);
+    let strainAmt = clamp(hessMag * kTidal, 0.0, 1.0);
+    let tissotHue = fract(0.55 + (sT.x + sT.y) * 0.6 + t * 0.01);
+    col += hsv2rgb(tissotHue, 0.65, 1.0) * tissotLine * (0.02 + strainAmt * 0.18) * emScale * darkening;
 
     // A held pointer spins a closed-form strain runner around the local well.
     let mouseDelta = p - mouseWell;

@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: fold-generation hopper terraces; alternating-parity twin-boundary seams; basal cleavage sheen from fold faces; treble micro-serration on later folds
+//  Upgraded: 2026-10-17
+//  Ideas: fold-generation hopper terraces; alternating-parity twin-boundary seams; basal cleavage sheen from fold faces; treble micro-serration on later folds; ledge-cast step shadows down the hopper stairs; fresh-cleave silver fronts that strip and regrow the oxide film
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -147,6 +147,20 @@ fn map(p: vec3<f32>) -> MapResult {
     return MapResult(distance, terraceSignal, twinSignal, cleavageSignal, serrationSignal);
 }
 
+// Idea 5 — short soft-shadow march toward the key light, so each upper
+// hopper ledge throws a crisp step shadow onto the terrace below it.
+fn ledgeShadow(ro: vec3<f32>, rd: vec3<f32>) -> f32 {
+    var res = 1.0;
+    var t = 0.02;
+    for (var i = 0; i < 10; i++) {
+        let h = map(ro + rd * t).d;
+        res = min(res, 10.0 * h / t);
+        t += clamp(h, 0.015, 0.16);
+        if (res < 0.02 || t > 1.6) { break; }
+    }
+    return clamp(res, 0.0, 1.0);
+}
+
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     let e = vec2<f32>(0.001, 0.0);
     let n = vec3<f32>(
@@ -223,11 +237,20 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let h = normalize(lightDir + v);
         let spec = pow(max(dot(n, h), 0.0), 32.0);
 
+        // Idea 6 — fresh-cleave fronts: periodic slabs sweep toward the
+        // camera; just behind each front the oxide is stripped to bare
+        // silver-pink bismuth, and the film (and its interference order)
+        // regrows with age until the next front arrives. Bass widens the cleave.
+        let oxideAge = fract(p.z * 0.2 + t * 0.09);
+        let filmGrowth = smoothstep(0.0, 0.16, oxideAge);
+        let freshEdge = 1.0 - smoothstep(0.0, 0.05 + clamp(plasmaBuffer[0].x, 0.0, 1.0) * 0.03, oxideAge);
+        let bareMetal = vec3<f32>(0.86, 0.78, 0.80);
+
         // Iridescent coloring
         let iridescence = clamp(u.zoom_params.y, 0.0, 1.0);
         // Base color based on normal, view, and depth
-        let phase = ndotv * 2.0 + length(p) * 0.1;
-        let albedo = palette(phase, iridescence);
+        let phase = ndotv * 2.0 + length(p) * 0.1 + oxideAge * 0.18;
+        let albedo = mix(bareMetal, palette(phase, iridescence), filmGrowth);
         let terraceFilm = palette(
             phase + surface.terrace * 0.17 + plasmaBuffer[0].y * 0.08,
             iridescence
@@ -241,7 +264,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let aoStep = 0.1;
         let ao = clamp(map(p + n * aoStep).d / aoStep, 0.0, 1.0);
 
-        col = albedo * (ndotl * 0.8 + 0.2) * ao + vec3<f32>(spec) * 0.5;
+        // Pointable Idea 5: ledge-cast step shadows on the direct light only.
+        var lit = 1.0;
+        if (ndotl > 0.0) { lit = ledgeShadow(p + n * 0.004, lightDir); }
+        let stepShadow = mix(0.35, 1.0, lit);
+        col = albedo * (ndotl * 0.8 * stepShadow + 0.2) * ao + vec3<f32>(spec) * 0.5 * stepShadow;
         // Pointable Idea 1: broad outer-generation hopper ledges catch film.
         col += terraceFilm * surface.terrace * (0.3 + spec * 0.65);
         // Pointable Idea 2: alternating fold domains share spectral seams.
@@ -254,6 +281,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col += mix(vec3<f32>(0.72, 0.82, 0.92), terraceFilm, 0.42) * cleavageLobe * 0.62;
         // Pointable Idea 4: treble-cut late-generation teeth catch a fine rim.
         col += twinFilm * surface.serration * (0.08 + 0.22 * plasmaBuffer[0].z);
+        // Pointable Idea 6: film terms fade in with oxide age; the cleave
+        // edge itself catches a bright bare-metal glint.
+        col = mix(albedo * (ndotl * 0.8 * stepShadow + 0.2) * ao + vec3<f32>(spec) * 0.5 * stepShadow,
+                  col, filmGrowth);
+        col += bareMetal * freshEdge * (0.18 + spec * 0.8) * stepShadow;
 
         // Fog
         col = mix(col, vec3<f32>(0.05, 0.05, 0.1), 1.0 - exp(-0.02 * d0 * d0));
