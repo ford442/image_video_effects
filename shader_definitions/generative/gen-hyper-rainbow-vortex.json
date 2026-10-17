@@ -11,7 +11,7 @@
     "fluid-dynamics",
     "rankine"
   ],
-  "description": "A multi-layered chromatic vortex enriched with Wolfram Rankine fluid dynamics: solid-body rotation inside a bass-reactive core and irrotational flow outside. Angular velocity modulated by mids. Feedback history is advected by the Rankine differential rotation, and the cyclostrophic pressure well condenses a striated funnel haze. Mouse spawns secondary vortices. Full upgraded-rgba stack with ACES tone mapping, temporal feedback, chromatic aberration, and semantic alpha.",
+  "description": "A multi-layered chromatic vortex enriched with Wolfram Rankine fluid dynamics: solid-body rotation inside a bass-reactive core and irrotational flow outside. Angular velocity modulated by mids. Feedback history is advected by the Rankine differential rotation, the cyclostrophic pressure well condenses a striated funnel haze, and Kelvin-Helmholtz eyewall shear vortices with Ekman boundary-layer inflow streaks ring the core.",
   "workgroup_size": [
     16,
     16,

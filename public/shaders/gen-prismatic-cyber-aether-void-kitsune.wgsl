@@ -3,9 +3,9 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: kitsune-bi fox-fire flames hovering at the nine tail tips; nine-tail thin-film interference spectrum (each tail a film of different thickness); ionized tail-bridge streamers; ring-rune moire gate interference
-//  A packing: ACES display RGBA in A
+//  Upgraded: 2026-10-17
+//  Ideas: kitsune-bi fox-fire flames hovering at the nine tail tips; nine-tail thin-film interference spectrum (each tail a film of different thickness); ionized tail-bridge streamers; ring-rune moire gate interference; levitating Hoshi-no-tama star-ball prism orb & kabuki cyber-visor eye markings; dispersive 3-channel shard-facet laser diffraction & temporal aether wake in C
+//  A packing: ACES display RGBA in A (read back from C for temporal aether spirit-wake)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 // zoom_params: .x = Tail Dispersion, .y = Current Warp, .z = Storm Density, .w = Rune Glow
@@ -313,15 +313,21 @@ fn map(p: vec3<f32>) -> vec3<f32> {
         d_rings = min(d_rings, sdTorus(pRing, vec2<f32>(0.5 + fj * 0.35 + bass * 0.2, 0.03 + treble * 0.03)));
     }
 
+    // 5. Idea 5: Levitating Hoshi-no-tama (star-ball jewel) ahead of the snout (matID 5)
+    let p_orb = p_body - vec3<f32>(0.0, 0.36 + sin(t * 2.8) * 0.05, 2.48);
+    let d_orb = sdSphere(p_orb, 0.14 + bass * 0.03);
+    let orb_glow = (0.04 / (0.008 + d_orb * d_orb)) * (0.6 + u.zoom_params.w * 0.5);
+
     // Combine
     var d_final = d_body;
-    var mat_id = 1.0; // 1 = Body, 2 = Tails, 3 = Shards, 4 = Rings
+    var mat_id = 1.0; // 1 = Body, 2 = Tails, 3 = Shards, 4 = Rings, 5 = Hoshi-no-tama Orb
 
     if (d_tails < d_final) { d_final = d_tails; mat_id = 2.0 + tail_idx * 0.1; }
     if (d_shards < d_final) { d_final = d_shards; mat_id = 3.0; }
     if (d_rings < d_final) { d_final = d_rings; mat_id = 4.0; }
+    if (d_orb < d_final) { d_final = d_orb; mat_id = 5.0; }
 
-    return vec3<f32>(d_final, mat_id, max(rune_glow, tail_glow));
+    return vec3<f32>(d_final, mat_id, max(max(rune_glow, tail_glow), orb_glow));
 }
 
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
@@ -414,6 +420,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // Hex runes
             col += vec3<f32>(0.0, 0.8, 1.0) * res_map.z; // Cyan glow
 
+            // Idea 5b: Kabuki cyber-visor eye-slits & facial crest markings on p_head
+            let p_face = warpPoint(p) + vec3<f32>(0.0, sin(t * 1.5) * 0.1 - 0.4, -1.5);
+            let eyeSlit = exp(-pow((abs(p_face.x) - 0.11) * 28.0, 2.0)) * exp(-pow((p_face.y - 0.05 - abs(p_face.x) * 0.45) * 32.0, 2.0)) * smoothstep(0.1, 0.35, p_face.z);
+            let browCrest = exp(-pow(abs(p_face.x) * 18.0 - max(p_face.y - 0.08, 0.0) * 14.0, 2.0)) * smoothstep(0.05, 0.32, p_face.y) * smoothstep(0.0, 0.3, p_face.z);
+            col += (vec3<f32>(1.3, 0.18, 0.45) * eyeSlit * 2.2 + vec3<f32>(0.2, 1.1, 1.35) * browCrest * 1.1) * (0.8 + u.zoom_params.w * 0.6 + bass * 0.8);
+
         } else if (matI < 2.5) {
             // Tails - Aether Plasma
             let plasma_col = mix(
@@ -431,10 +443,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let film = thinFilm(clamp(dot(n, v), 0.0, 1.0), filmNm);
             col = mix(col, film * (0.45 + amb * 0.4) + spec * 0.3, 0.35 + fre * 0.4);
 
-        } else if (res_map.y == 3.0) {
-            // Prismatic shards — glassy rainbow fresnel
+        } else if (res_map.y == 3.0 || res_map.y == 5.0) {
+            // Idea 6: Dispersive 3-channel shard-facet laser diffraction & Hoshi-no-tama star-ball orb
             let shard_col = 0.5 + 0.5 * cos(t * 2.0 + p.x * 4.0 + vec3<f32>(0.0, 2.1, 4.2));
-            col = shard_col * (dif * 0.5 + 0.3) + shard_col * fre * 1.5 + spec * 0.6;
+            let reflR = reflect(-l, normalize(n + vec3<f32>(0.09, -0.04, 0.05)));
+            let reflG = reflect(-l, n);
+            let reflB = reflect(-l, normalize(n - vec3<f32>(0.09, -0.04, 0.05)));
+            let dispBeam = vec3<f32>(
+                pow(max(dot(reflR, v), 0.0), 20.0),
+                pow(max(dot(reflG, v), 0.0), 20.0),
+                pow(max(dot(reflB, v), 0.0), 20.0)
+            ) * (1.35 + treble * 1.1);
+            let isOrb = select(0.0, 1.0, res_map.y == 5.0);
+            let orbCore = vec3<f32>(0.95, 0.88, 1.35) * (1.2 + bass * 0.9) * isOrb;
+            col = shard_col * (dif * 0.5 + 0.3) + shard_col * fre * 1.5 + spec * 0.6 + dispBeam + orbCore;
 
         } else {
             // Auroral torus rings — spectral band emission
@@ -495,13 +517,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col = acesToneMap(col * (1.25 + bass * 0.2));
     col = pow(col, vec3<f32>(0.4545));
 
+    // Temporal aether spirit-wake persistence from dataTextureC
+    let prevWake = textureLoad(dataTextureC, pixel, 0);
+    col = mix(prevWake.rgb * 0.92, col, 0.72);
+
     // Real depth: normalized ray distance on hit
     let depth = select(0.0, clamp(1.0 - t_dist / maxDist, 0.0, 1.0), hit);
 
     // Semantic alpha: solid coverage on SDF hits, emissive density (fox-fire, glow, storm) in the void
     let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     let emissive = clamp(fox_fire * 0.8 + tail_bridge * 0.6 + total_glow * 0.004 + ripple_glow * 0.5, 0.0, 1.0);
-    let alpha = clamp(select(luma * 0.6 + emissive * 0.4, 0.85 + luma * 0.15, hit), 0.0, 1.0);
+    let alpha = clamp(max(select(luma * 0.6 + emissive * 0.4, 0.85 + luma * 0.15, hit), prevWake.a * 0.88), 0.0, 1.0);
 
     let finalColor = vec4<f32>(col, alpha);
     textureStore(writeTexture, pixel, finalColor);

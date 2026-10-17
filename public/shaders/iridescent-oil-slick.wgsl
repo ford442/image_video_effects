@@ -3,9 +3,9 @@
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, temporal-persistence, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-05
-//  Ideas: spectral Newton series (8-wavelength film, black film); finger push with memory; Marangoni cell ridges + bass thickening
-//  A packing: rgb = display RGB (pre-ACES), a = 4 + finger-push disturbance 0..1 (raw, sentinel offset; C alpha outside [4,5] reads as 0)
+//  Upgraded: 2026-10-17
+//  Ideas: spectral Newton series (8-wavelength film, black film); finger push with memory; Marangoni cell ridges + bass thickening; Ostwald-ripened dewetting oil microlenses ("eyes") inside hex cells; click surfactant spreading fronts & upstream RGB sheen advection
+//  A packing: rgb = display RGB (pre-ACES, advected), a = 4 + finger-push disturbance 0..1 (raw, sentinel offset; C alpha outside [4,5] reads as 0)
 //  Description: Creates mesmerizing oil-on-water interference patterns
 //               with flowing organic motion and rainbow color shifts.
 // ═══════════════════════════════════════════════════════════════
@@ -218,6 +218,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w > 0.5;
     let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     // Parameters
     let filmScale = mix(2.0, 8.0, u.zoom_params.x);      // Film thickness scale
@@ -254,13 +256,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let hex = hexPattern(flowUV * 2.0);
     let cellVariation = smoothstep(0.3, 0.0, hex) * 0.2;
 
+    // Idea 4: Ostwald-ripened dewetting oil microlenses ("eyes") inside hex cells
+    let lensNorm = clamp(hex / 0.24, 0.0, 1.0);
+    let lensDome = pow(1.0 - lensNorm * lensNorm, 2.0) * 0.42;
+    let lensMoat = exp(-pow((hex - 0.26) / 0.045, 2.0)) * 0.16;
+
     // Idea 3: Marangoni cells — surface-tension flow piles oil up against the cell walls,
     // so each wall is a thickness ridge that carries its own interference bands.
     let wall = 1.0 - smoothstep(0.0, 0.16, hexWall(flowUV * 2.0));
     let ridge = wall * 0.22;
 
+    // Idea 5: Click-triggered surfactant spreading fronts
+    var surfactantCollar = 0.0;
+    var surfactantThin = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri: u32 = 0u; ri < rippleCount; ri = ri + 1u) {
+        let rp = u.ripples[ri];
+        let age = time - rp.z;
+        if (age > 0.0 && age < 3.2) {
+            let rpPos = (rp.xy - 0.5) * vec2<f32>(aspect, 1.0);
+            let rd = length(p - rpPos);
+            let radius = age * 0.24;
+            let fade = 1.0 - smoothstep(2.0, 3.2, age);
+            let collar = exp(-pow((rd - radius) / 0.028, 2.0)) * fade;
+            let interior = smoothstep(radius, radius - 0.04, rd) * fade;
+            surfactantCollar += collar * 0.38;
+            surfactantThin = max(surfactantThin, interior * 0.48);
+        }
+    }
+
     // Final thickness with all contributions; bass slightly thickens the film.
-    let finalThickness = (thickness * (1.0 + cellVariation) + mouseInfluence * 0.3 + ridge) * (1.0 + bass * 0.15);
+    let finalThickness = max(0.0, (thickness * (1.0 + cellVariation) + mouseInfluence * 0.3 + ridge + lensDome - lensMoat + surfactantCollar) * (1.0 - surfactantThin) * (1.0 + bass * 0.15));
 
     // Idea 2: Finger push with memory. Holding the mouse pushes the oil outward: a
     // black-film disc under the finger and a thickened rainbow rim. The disturbance lives
@@ -271,9 +297,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // (and float round-down at zero drift) to the previous texel → 1 px/frame creep.
     let upPix = (uv + 0.5 / resolution - drift) * vec2<f32>(dimsC);
     let upCoord = clamp(vec2<i32>(floor(upPix)), vec2<i32>(0), dimsC - vec2<i32>(1));
-    let prevRaw = textureLoad(dataTextureC, upCoord, 0).a - PUSH_SENTINEL;
+    let prevSample = textureLoad(dataTextureC, upCoord, 0);
+    let prevRaw = prevSample.a - PUSH_SENTINEL;
+    let validHistory = (prevRaw >= 0.0) && (prevRaw <= 1.0);
     // All-zero C (first frame) or another shader's alpha after a switch decode as no push.
-    let prevPush = select(0.0, prevRaw, (prevRaw >= 0.0) && (prevRaw <= 1.0));
+    let prevPush = select(0.0, prevRaw, validHistory);
     let fingerR = 0.06;
     let disc = select(0.0, smoothstep(fingerR, fingerR * 0.35, mouseDist), mouseDown);
     let push = clamp(max(prevPush * 0.992, disc), 0.0, 1.0);
@@ -301,9 +329,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     );
     color = hueMatrix * color;
 
-    // Add specular highlight for wet/oily look
+    // Add specular highlight for wet/oily look + microlens crown pinpoint
     let highlightPos = rotateUV(p, time * flowSpeed * 0.1) * 2.0;
-    let highlight = pow(max(0.0, 1.0 - length(highlightPos)), 3.0) * 0.3;
+    let highlight = pow(max(0.0, 1.0 - length(highlightPos)), 3.0) * 0.3 + pow(max(0.0, 1.0 - hex * 4.5), 6.0) * (0.18 + treble * 0.22);
     color += vec3<f32>(highlight);
 
     // Add subtle vignette
@@ -314,6 +342,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Floor fix: the hue matrix produces negatives and pow(negative, 0.8) is NaN — clamp first.
     color = pow(max(color, vec3<f32>(0.0)), vec3<f32>(0.8));
     color = color * 1.2;
+
+    // Upstream RGB sheen advection from C.rgb when history is valid
+    let advectedColor = select(color, mix(color, prevSample.rgb, 0.22 + mids * 0.08), validHistory);
+    color = advectedColor;
 
     // A: display RGB (pre-ACES) + raw finger-push disturbance for next frame.
     textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(color, PUSH_SENTINEL + push));

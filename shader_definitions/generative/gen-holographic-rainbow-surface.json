@@ -12,7 +12,7 @@
     "thin-film",
     "interference"
   ],
-  "description": "A liquid holographic surface with iridescent rainbow colors driven by thin-film interference physics. Prismatic diffraction highlights, spectral color separation based on surface normals, temporal feedback trails, chromatic aberration, and audio-reactive film thickness modulation create a scientifically-grounded chromatic light simulation. Mouse tilts the interference plane.",
+  "description": "A liquid holographic surface with iridescent rainbow colors driven by thin-film interference physics. Prismatic diffraction highlights, spectral color separation based on surface normals, temporal feedback trails, chromatic aberration, and audio-reactive film thickness modulation create a scientifically-grounded chromatic light simulation. Mouse tilts the interference plane, while Rayleigh-Plateau ridge pearl beads and Brewster-angle polarization extinction bands sculpt the crests.",
   "workgroup_size": [
     16,
     16,

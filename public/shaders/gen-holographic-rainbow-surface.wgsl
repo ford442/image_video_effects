@@ -3,31 +3,12 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, click-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-06
-//  Ideas: Marangoni stress flow advection; drainage-gradient multilayer interference; anisotropic micro-groove diffraction
+//  Upgraded: 2026-10-17
+//  Ideas: Marangoni stress flow advection; drainage-gradient multilayer interference; anisotropic micro-groove diffraction; Rayleigh-Plateau ridge pearl beads; Brewster-angle polarization extinction band
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530717958647692;
 
@@ -235,7 +216,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let grooveRainbow = holographicColor(groovePhase * 0.25, time * 0.2 + colorShift);
     let grooveSheen = grooveRainbow * grooveDiffraction * fresnel * 1.6 * intensity;
 
+    // ─── Idea 4: Rayleigh-Plateau ridge pearl beads ───
+    // Surface tension pinches high, low-slope crests into periodic micro-convex lens beads
+    let crestRidge = smoothstep(0.46, 0.74, h) * smoothstep(0.32, 0.04, length(normal.xy));
+    let beadLattice = pow(0.5 + 0.5 * cos(dot(scaledP, vec2<f32>(14.0, 11.0)) + t * 1.6), 10.0);
+    let ridgePearls = vec3<f32>(1.05, 0.96, 0.82) * crestRidge * beadLattice * (1.2 + treble * 1.4) * intensity;
+
+    // ─── Idea 5: Brewster-angle polarization extinction band ───
+    // Where viewAngle crosses the soap-film Brewster angle (~0.925 rad), p-polarized glare extinguishes
+    let brewsterDelta = viewAngle - 0.925;
+    let brewsterNull = exp(-pow(brewsterDelta * 16.0, 2.0));
+    let brewsterWing = exp(-pow((abs(brewsterDelta) - 0.075) * 24.0, 2.0));
+    let brewsterFringe = holographicColor(viewAngle * 3.0, colorShift + 0.35 + mids * 0.2) * brewsterWing * 0.85 * intensity;
+
     var color = baseColor * (NdotL1 * 0.5 + NdotL2 * 0.3 + NdotL3 * 0.2 + 0.3);
+    color = mix(color, color * vec3<f32>(0.22, 0.18, 0.52), brewsterNull * 0.55);
     color += diffraction1 * intensity * 1.5;
     color += diffraction2 * intensity * 0.8;
     color += highlight1 * intensity * 1.2;
@@ -244,6 +239,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color += mouseColor;
     color += rippleColor;
     color += grooveSheen;
+    color += ridgePearls;
+    color += brewsterFringe;
 
     let microDetail = fbm(scaledP * 20.0 + t * 0.5, 3);
     color += holographicColor(microDetail, time * 0.1 + colorShift) * microDetail * 0.15 * intensity;
