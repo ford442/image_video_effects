@@ -20,7 +20,7 @@
     "chromatic-aberration",
     "fluid-simulation"
   ],
-  "description": "RK4 semi-Lagrangian flow combines exact-load state with an analytic pointer Jacobian. A finite-time Cauchy-Green tensor now yields rotation-invariant principal stretch, anisotropic chromatic spread, and near-singular fold caustics; bounded click rings inject vorticity.",
+  "description": "RK4 semi-Lagrangian flow combines exact-load state with an analytic pointer Jacobian. A finite-time Cauchy-Green tensor now yields rotation-invariant principal stretch, anisotropic chromatic spread, and near-singular fold caustics; bounded click rings inject vorticity. Stretch threads follow the principal axis, and high vorticity darkens a vortex eye.",
   "params": [
     {
       "id": "radius",

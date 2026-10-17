@@ -1041,7 +1041,7 @@
     "name": "Ferrofluid Spikes",
     "category": "simulation",
     "url": "shaders/ferrofluid-spikes.wgsl",
-    "description": "A classic Rosensweig ferrofluid lattice with bounded magnet inertia, held polarity strength, click-launched spike fronts, exact-load viscous persistence, three-band response, honest depth, and studio-lit anisotropic GGX metal.",
+    "description": "A classic Rosensweig ferrofluid lattice with bounded magnet inertia, held polarity strength, click-launched spike fronts, exact-load viscous persistence, three-band response, honest depth, and studio-lit anisotropic GGX metal. Lattice valleys pool darker, and the tallest peaks carry a chrome tip bead.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -2197,7 +2197,7 @@
     "id": "quantum-foam-pass1",
     "name": "Quantum Foam (Pass 1: Field Generation)",
     "url": "shaders/quantum-foam-pass1.wgsl",
-    "description": "Generates quantum probability field with curl noise and FBM. First pass of 3-pass system.",
+    "description": "Generates quantum probability field with curl noise and FBM. First pass of 3-pass system. Diffusion Rate opens voids at cell centers, and three-wave crossings raise foam ridges.",
     "features": [
       "multi-pass-1",
       "compute-shader",

@@ -2,7 +2,7 @@
   "id": "gen-rainbow-smoke",
   "name": "Rainbow Smoke with Dual Scattering",
   "url": "shaders/gen_rainbow_smoke.wgsl",
-  "description": "Multi-scale rainbow smoke with vorticity confinement, buoyancy, Rayleigh edge glow, and Mie-lit cores driven by bass and treble.",
+  "description": "Multi-scale rainbow smoke with vorticity confinement, buoyancy, Rayleigh edge glow, and Mie-lit cores driven by bass and treble. Hot smoke caps with soot, and cooled density falls out as ash.",
   "features": [
     "upgraded-rgba",
     "depth-aware",

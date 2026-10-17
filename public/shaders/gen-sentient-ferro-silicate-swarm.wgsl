@@ -5,31 +5,12 @@
 //            particle-swarm, SDF-attraction, liquid-chrome, iridescence,
 //            upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: world-scale silicate assembly breath; quartz facet crystallization of locked beads; Si-O bond struts between locked neighbours; curl-advected wake in the temporal smear
+//  Upgraded: 2026-10-17
+//  Ideas: assembly breath; quartz facets; Si-O struts; curl wake; fluid inclusions; shatter dust
 //  A packing: ACES display RGBA (alpha = swarm occupancy); C read back as display RGB
 // ═══════════════════════════════════════════════════════════════════
 
-struct Uniforms {
-  config      : vec4<f32>,
-  zoom_config : vec4<f32>,
-  zoom_params : vec4<f32>,
-  ripples     : array<vec4<f32>, 50>,
-};
-
-@group(0) @binding(0) var u_sampler                : sampler;
-@group(0) @binding(1) var readTexture              : texture_2d<f32>;
-@group(0) @binding(2) var writeTexture             : texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u               : Uniforms;
-@group(0) @binding(4) var readDepthTexture         : texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler    : sampler;
-@group(0) @binding(6) var writeDepthTexture        : texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA             : texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB             : texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC             : texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer : array<f32>;
-@group(0) @binding(11) var comparison_sampler      : sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer : array<vec4<f32>>;
+#include "_prelude.wgsl"
 
 const PI : f32 = 3.14159265358979323846;
 
@@ -285,6 +266,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // little of the oil-spill dispersion.
   col = mix(col, col * vec3<f32>(0.82, 0.9, 1.0), lock * 0.6);
   col += facetGlint * mix(vec3<f32>(0.85, 0.95, 1.0), oilCol, iridescence * 0.5) * 0.9;
+  // Idea 5 — fluid inclusion: a dark bubble trapped inside a locked bead
+  let inclusion = exp(-dot(cellFract - beadCentre * 0.35, cellFract - beadCentre * 0.35) * 90.0) * lock;
+  col = mix(col, col * vec3<f32>(0.35, 0.42, 0.5), inclusion * 0.75);
+  // Idea 6 — shatter dust when bass unlocks a cell
+  let dust = hash2(cellId + floor(time * 3.0)) * shatter * (1.0 - lock);
+  col += vec3<f32>(0.72, 0.66, 0.55) * step(0.72, dust) * 0.45;
 
   // ── Idea 3: Si-O bond struts between locked 4-neighbours ──
   // Each cell draws its half of the strut from its lattice site to each locked

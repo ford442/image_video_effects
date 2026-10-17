@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: raymarched, volumetric, audio-reactive, temporal, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-28
-//  Ideas: light-echo shell; absorbing dense cores; warp-flight star streaks
+//  Upgraded: 2026-10-17
+//  Ideas: light-echo shell; absorbing cores; star streaks; silver lining; virga
 //  A packing: ACES display RGBA (rgb = trail colour, a = cloud coverage alpha) — C read as colour history
 // ═══════════════════════════════════════════════════════════════════
 //  Kept verbatim: fbm cloudDensity, cosine nebulaColor, Beer-Lambert raymarch integration,
@@ -17,26 +17,7 @@
 //  Stars: HEAD hashed a continuously scrolling coordinate, so the "stars" were per-frame snow.
 //  They are now fixed sky cells seen through the real orbit camera (Idea 3).
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // Physical constants for nebula clouds
 const SIGMA_T_NEBULA: f32 = 1.2;        // Nebula extinction
@@ -185,6 +166,13 @@ fn raymarchVolumetric(ro: vec3<f32>, rd: vec3<f32>, time: f32, densityScale: f32
             // Accumulate in-scattered light
             // L += T * emission * (1 - T_step)
             accumulatedColor += transmittance * (cloudEmission + echoLight) * (1.0 - stepTransmittance) * SIGMA_S_NEBULA * albedo;
+            // Idea 4 — silver lining on the medium-density edge of a knot
+            let lining = smoothstep(0.02, 0.1, density) * (1.0 - smoothstep(0.12, 0.4, density));
+            accumulatedColor += transmittance * vec3<f32>(1.0, 0.96, 0.88) * lining * 0.09;
+            // Idea 5 — virga: dense gas sheds a faint veil below the knot
+            let virga = smoothstep(0.32, 0.7, density) * smoothstep(0.15, -0.9, p.y);
+            let virgaStripe = 0.65 + 0.35 * sin(p.x * 16.0 + p.z * 11.0);
+            accumulatedColor += transmittance * vec3<f32>(0.42, 0.36, 0.55) * virga * virgaStripe * 0.06;
 
             // Update transmittance
             transmittance *= stepTransmittance;

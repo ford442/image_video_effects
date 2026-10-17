@@ -6,31 +6,15 @@
 //  Chunks From: aurora-rift-pass1.wgsl (curl/fbm pattern), gen-quantum-foam-alpha.wgsl (voronoi)
 //  Created: 2026-05-31
 //  By: Claude Sonnet 4.6 (swarm optimization pass)
-//  upgraded-rgba
+//  Upgraded: 2026-10-17
+//  Ideas: diffused voids at cell centers; wavefront ridges on constructive interference
+//  A packing: raw warpX, warpY, pattern, cellBoundary
 // ═══════════════════════════════════════════════════════════════════
 //  Pass graph: Pass 1 samples the input image and depth, generates the
 //              quantum warp field, and writes it to dataTextureA.
 //  Outputs: dataTextureA (vec4: warpX, warpY, pattern, cellBoundary)
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config:      vec4<f32>,       // x=time, y=globalIntensity, z=resX, w=resY
-    zoom_config: vec4<f32>,       // x=rotationSpeed, y=depthParallax, z=emissionThreshold, w=chromaticSpread
-    zoom_params: vec4<f32>,       // x=foamScale, y=flowSpeed, z=diffusionRate, w=octaveCount
-    ripples:     array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=foamScale, y=flowSpeed, z=diffusionRate, w=octaveCount
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  Hash functions
@@ -147,6 +131,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Parameters
     let foamScale = clamp(u.zoom_params.x, 0.0, 1.0) * 3.0 + 1.0;
     let flowSpeed = clamp(u.zoom_params.y, 0.0, 1.0);
+    let diffusion = clamp(u.zoom_params.z, 0.0, 1.0);
     let octaveCount = i32(clamp(u.zoom_params.w, 0.0, 1.0) * 4.0 + 3.0);
     let depthParallax = u.zoom_config.y * 0.2;
 
@@ -210,10 +195,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let depthWeight = 1.0 + (1.0 - depth) * 2.0;
     let bassBoost = 1.0 + bass * 0.7;
     let edgeSharp = 1.0 + treble * 0.4; // treble sharpens cell boundaries
-    let pattern = (hybridPattern * 0.4 * edgeSharp + interference * 0.3 + hyperNoise * 0.3) * depthWeight * bassBoost;
+    var pattern = (hybridPattern * 0.4 * edgeSharp + interference * 0.3 + hyperNoise * 0.3) * depthWeight * bassBoost;
+    // Idea 1 — voids at cell centers; Diffusion Rate sets the hole radius
+    let voidR = mix(40.0, 8.0, diffusion);
+    let foamVoid = exp(-cell.x * cell.x * voidR);
+    pattern *= 1.0 - foamVoid * 0.85;
+    // Idea 2 — three-wave crossings become foam ridges in the cell boundary
+    var ridgeBoundary = cellBoundary;
+    let waveRidge = smoothstep(0.72, 0.95, interference);
+    ridgeBoundary = clamp(ridgeBoundary + waveRidge * (0.35 + diffusion * 0.25), 0.0, 1.0);
+    totalWarp *= mix(1.0, 0.55, diffusion);
 
     // Pack field data: RGB = warp/direction + pattern, A = cell data
-    let field = vec4<f32>(totalWarp.x, totalWarp.y, pattern, cellBoundary);
+    let field = vec4<f32>(totalWarp.x, totalWarp.y, pattern, ridgeBoundary);
 
     // Store field for Pass 2
     textureStore(dataTextureA, coord, field);

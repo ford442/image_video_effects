@@ -18334,7 +18334,7 @@
       "iridescent",
       "mouse-driven"
     ],
-    "description": "A hyper-reflective, organic-mechanical mass of magnetic liquid that constantly shifts and forms razor-sharp crystalline spikes, rippling with fluid dynamics and metallic peaks driven by audio frequencies.",
+    "description": "A hyper-reflective, organic-mechanical mass of magnetic liquid that constantly shifts and forms razor-sharp crystalline spikes, rippling with fluid dynamics and metallic peaks driven by audio frequencies. Spikes meet the bulk in a contact meniscus, and magnetite grains speckle the metal.",
     "workgroup_size": [
       16,
       16,
@@ -20670,7 +20670,7 @@
       "volumetric",
       "raymarched"
     ],
-    "description": "A majestic, hyper-organic lotus flower suspended in zero-gravity, blooming endlessly with translucent liquid-neon neuro-fluid petals that ripple with bioluminescent plasma in sync with ambient cosmic frequencies. The second pass adds capillary petal venation and click-driven magnetic-reconnection plume bursts.",
+    "description": "A majestic, hyper-organic lotus flower suspended in zero-gravity, blooming endlessly with translucent liquid-neon neuro-fluid petals that ripple with bioluminescent plasma in sync with ambient cosmic frequencies. The second pass adds capillary petal venation and click-driven magnetic-reconnection plume bursts. Pollen sits between florets, and the eight petal crests scallop.",
     "workgroup_size": [
       16,
       16,
@@ -23136,7 +23136,7 @@
       "neon",
       "abstract"
     ],
-    "description": "A quantum-mechanically enriched ferrofluid visualization. Wavefunction ψ(x,t) interference patterns drive ferrofluid spike formation. Probability density |ψ|² modulates glow intensity. Bass triggers wavefunction collapse probability. Mouse acts as a quantum measurement device, collapsing superposition and sharpening the interference pattern. Features double-slit interference, entanglement glow, and metallic PBR rendering.",
+    "description": "A quantum-mechanically enriched ferrofluid visualization. Wavefunction ψ(x,t) interference patterns drive ferrofluid spike formation. Probability density |ψ|² modulates glow intensity. Bass triggers wavefunction collapse probability. Mouse acts as a quantum measurement device, collapsing superposition and sharpening the interference pattern. Features double-slit interference, entanglement glow, and metallic PBR rendering. The pointer leaves a measurement scar, and entangled satellites share a neck meniscus.",
     "workgroup_size": [
       16,
       16,
@@ -24511,7 +24511,7 @@
     "id": "gen-rainbow-smoke",
     "name": "Rainbow Smoke with Dual Scattering",
     "url": "shaders/gen_rainbow_smoke.wgsl",
-    "description": "Multi-scale rainbow smoke with vorticity confinement, buoyancy, Rayleigh edge glow, and Mie-lit cores driven by bass and treble.",
+    "description": "Multi-scale rainbow smoke with vorticity confinement, buoyancy, Rayleigh edge glow, and Mie-lit cores driven by bass and treble. Hot smoke caps with soot, and cooled density falls out as ash.",
     "features": [
       "upgraded-rgba",
       "depth-aware",
@@ -25396,7 +25396,7 @@
       "fluid-dynamics",
       "fractal"
     ],
-    "description": "A hyper-dynamic, liquid-metal particle swarm that self-assembles into brutalist geometric architectures before dissolving back into a chaotic, churning ferro-fluid storm.",
+    "description": "A hyper-dynamic, liquid-metal particle swarm that self-assembles into brutalist geometric architectures before dissolving back into a chaotic, churning ferro-fluid storm. Locked beads trap fluid inclusions, and a shatter throws silicate dust.",
     "workgroup_size": [
       16,
       16,
@@ -31126,7 +31126,7 @@
     "id": "volumetric-cloud-nebula",
     "name": "Volumetric Cloud Nebula",
     "url": "shaders/volumetric-cloud-nebula.wgsl",
-    "description": "Raymarched volumetric clouds with nebula coloring. Warp-flight orbital camera, fast cloud advection, treble ionization flashes, advected colour trails, a periodic central flash whose light echo sweeps outward through the gas as a white-blue shell, dark absorbing cores inside bright envelopes, and background stars that streak along the orbit. Bass/mids/treble drive orbit speed, flash brightness, height and sparkle. Extinction slider controls optical depth per march step.",
+    "description": "Raymarched volumetric clouds with nebula coloring. Warp-flight orbital camera, fast cloud advection, treble ionization flashes, advected colour trails, a periodic central flash whose light echo sweeps outward through the gas as a white-blue shell, dark absorbing cores inside bright envelopes, and background stars that streak along the orbit. Bass/mids/treble drive orbit speed, flash brightness, height and sparkle. Extinction slider controls optical depth per march step. Medium-density gas takes a silver lining, and dense knots shed virga.",
     "tags": [
       "generative",
       "nebula",

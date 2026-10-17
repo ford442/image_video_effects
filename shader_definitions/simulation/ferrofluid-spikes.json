@@ -3,7 +3,7 @@
   "name": "Ferrofluid Spikes",
   "category": "simulation",
   "url": "shaders/ferrofluid-spikes.wgsl",
-  "description": "A classic Rosensweig ferrofluid lattice with bounded magnet inertia, held polarity strength, click-launched spike fronts, exact-load viscous persistence, three-band response, honest depth, and studio-lit anisotropic GGX metal.",
+  "description": "A classic Rosensweig ferrofluid lattice with bounded magnet inertia, held polarity strength, click-launched spike fronts, exact-load viscous persistence, three-band response, honest depth, and studio-lit anisotropic GGX metal. Lattice valleys pool darker, and the tallest peaks carry a chrome tip bead.",
   "features": [
     "mouse-driven",
     "audio-reactive",

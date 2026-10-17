@@ -4126,7 +4126,7 @@
       ]
     },
     "gen-magnetic-ferrofluid-sculpture": {
-      "hash": "929e27c148425939",
+      "hash": "5ea5d06297409de8",
       "history": [
         {
           "event": "upgraded",
@@ -4135,6 +4135,14 @@
           "prev_hash": "f9f5b3aa6c8d1081",
           "commit": "a26af174",
           "note": "2026-10-10 luminescent/magnetic ten (Claude) — agents/swarm-outputs/claude-2026-10-10-luminescent-magnetic-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T08:13:27.098Z",
+          "hash": "5ea5d06297409de8",
+          "prev_hash": "929e27c148425939",
+          "commit": "18f29dbd",
+          "note": "2026-10-17 ferrofluid-volume ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-ferrofluid-volume-ten"
         }
       ]
     },
@@ -4407,7 +4415,7 @@
       ]
     },
     "gen-neuro-fluid-plasma-lotus": {
-      "hash": "b7af488b9f60cc28",
+      "hash": "2575430a34ab17cc",
       "history": [
         {
           "event": "upgraded",
@@ -4416,6 +4424,14 @@
           "prev_hash": "085146279b59adda",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T08:13:27.098Z",
+          "hash": "2575430a34ab17cc",
+          "prev_hash": "b7af488b9f60cc28",
+          "commit": "18f29dbd",
+          "note": "2026-10-17 ferrofluid-volume ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-ferrofluid-volume-ten"
         }
       ]
     },
@@ -4779,8 +4795,17 @@
       "history": []
     },
     "gen-quantum-entangled-ferrofluid-engine": {
-      "hash": "e1931891524e0df5",
-      "history": []
+      "hash": "eacde14b54724516",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T08:13:27.098Z",
+          "hash": "eacde14b54724516",
+          "prev_hash": "e1931891524e0df5",
+          "commit": "18f29dbd",
+          "note": "2026-10-17 ferrofluid-volume ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-ferrofluid-volume-ten"
+        }
+      ]
     },
     "gen-quantum-fluorescent-aether-moth-swarm": {
       "hash": "b5a01cfcf749b8c6",
@@ -4937,8 +4962,17 @@
       "history": []
     },
     "gen-sentient-ferro-silicate-swarm": {
-      "hash": "fe8dc1e4b705eae9",
-      "history": []
+      "hash": "c5aa9f0a3333d62b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T08:13:27.098Z",
+          "hash": "c5aa9f0a3333d62b",
+          "prev_hash": "fe8dc1e4b705eae9",
+          "commit": "18f29dbd",
+          "note": "2026-10-17 ferrofluid-volume ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-ferrofluid-volume-ten"
+        }
+      ]
     },
     "gen-sentient-holographic-neuro-lace-matrix": {
       "hash": "36fa4dbb9c364d26",
@@ -5527,8 +5561,17 @@
       "history": []
     },
     "gen-rainbow-smoke": {
-      "hash": "f74e2c90a5d52cf1",
-      "history": []
+      "hash": "861ed28401b85fe6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T08:13:27.098Z",
+          "hash": "861ed28401b85fe6",
+          "prev_hash": "f74e2c90a5d52cf1",
+          "commit": "18f29dbd",
+          "note": "2026-10-17 ferrofluid-volume ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-ferrofluid-volume-ten"
+        }
+      ]
     },
     "gen-reaction-diffusion": {
       "hash": "961c268545ad250c",
@@ -5736,8 +5779,17 @@
       "history": []
     },
     "volumetric-cloud-nebula": {
-      "hash": "f904e444ec253920",
-      "history": []
+      "hash": "7a97cac3c3ae69d0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T08:13:27.098Z",
+          "hash": "7a97cac3c3ae69d0",
+          "prev_hash": "f904e444ec253920",
+          "commit": "18f29dbd",
+          "note": "2026-10-17 ferrofluid-volume ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-ferrofluid-volume-ten"
+        }
+      ]
     },
     "wolfram-data-demo": {
       "hash": "e8a1f8c434a0e390",
@@ -6936,8 +6988,17 @@
       "history": []
     },
     "liquid-warp": {
-      "hash": "58f7453c99e2befb",
-      "history": []
+      "hash": "58c4ec749a2835f4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T08:13:27.098Z",
+          "hash": "58c4ec749a2835f4",
+          "prev_hash": "58f7453c99e2befb",
+          "commit": "18f29dbd",
+          "note": "2026-10-17 ferrofluid-volume ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-ferrofluid-volume-ten"
+        }
+      ]
     },
     "luma-echo-warp": {
       "hash": "1c7d3e91feaea18e",
@@ -7680,8 +7741,17 @@
       ]
     },
     "volumetric-depth-zoom": {
-      "hash": "1db18de6b4e7fb18",
-      "history": []
+      "hash": "a066ff970e7ef5d7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T08:13:27.098Z",
+          "hash": "a066ff970e7ef5d7",
+          "prev_hash": "1db18de6b4e7fb18",
+          "commit": "18f29dbd",
+          "note": "2026-10-17 ferrofluid-volume ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-ferrofluid-volume-ten"
+        }
+      ]
     },
     "volumetric-god-rays": {
       "hash": "37950296f86bb55a",
@@ -8324,8 +8394,17 @@
       "history": []
     },
     "ferrofluid-spikes": {
-      "hash": "e06ba54f4690e55b",
-      "history": []
+      "hash": "d5f50ea62ca35574",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T08:13:27.098Z",
+          "hash": "d5f50ea62ca35574",
+          "prev_hash": "e06ba54f4690e55b",
+          "commit": "18f29dbd",
+          "note": "2026-10-17 ferrofluid-volume ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-ferrofluid-volume-ten"
+        }
+      ]
     },
     "flow-sort": {
       "hash": "c97f2d85942163ce",
@@ -8388,8 +8467,17 @@
       "history": []
     },
     "quantum-foam-pass1": {
-      "hash": "2312633417ad7370",
-      "history": []
+      "hash": "88067e6b4f51bd0c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T08:13:27.098Z",
+          "hash": "88067e6b4f51bd0c",
+          "prev_hash": "2312633417ad7370",
+          "commit": "18f29dbd",
+          "note": "2026-10-17 ferrofluid-volume ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-ferrofluid-volume-ten"
+        }
+      ]
     },
     "quantum-foam-pass2": {
       "hash": "094605c513add360",

@@ -12,6 +12,7 @@ _Learn about the person you're helping. Update this as you go._
   - 2026-10-11: asked for another twelve, chosen as a mid set (acid Lissajous through the hat monotile).
   - 2026-10-16: asked to choose 10 shaders and upgrade them. Photo-plane ten (bismuth crystallizer through liquid chrome ripple).
   - 2026-10-17: sent a numbered batch of ten generative ids (gen-grid through gen-hyper-warp) to upgrade in place.
+  - 2026-10-17: sent a second batch named Cursor batch-01 (ferrofluid-spikes through volumetric-depth-zoom).
 
 ## Context
 
