@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { usePersistedToggle } from '../../../hooks/usePersistedToggle';
 
 export function useAiVjAutoTransition() {
-    const [autoTransitionOpen, setAutoTransitionOpen] = useState(false);
+    const [autoTransitionOpen, setAutoTransitionOpen] = usePersistedToggle('vj.autoTransition', false);
     const [autoTransitionEnabled, setAutoTransitionEnabled] = useState(false);
     const [autoTransitionSource, setAutoTransitionSource] = useState<'timer' | 'beat'>('timer');
     const [autoTransitionIntervalMs, setAutoTransitionIntervalMs] = useState(8000);
