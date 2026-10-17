@@ -3506,7 +3506,7 @@
       "history": []
     },
     "gen-hopf-fibration-fiber-bundle": {
-      "hash": "faf12ed7b3b306c8",
+      "hash": "ceada5d264d28730",
       "history": [
         {
           "event": "upgraded",
@@ -3515,6 +3515,14 @@
           "prev_hash": "49d07ae1aef88042",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T05:46:12.935Z",
+          "hash": "ceada5d264d28730",
+          "prev_hash": "faf12ed7b3b306c8",
+          "commit": "52029017",
+          "note": "2026-10-17 grid-hyper ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-grid-hyper-ten"
         }
       ]
     },
@@ -3571,8 +3579,17 @@
       ]
     },
     "gen-hyper-labyrinth": {
-      "hash": "a5c0e2d402bcc72d",
-      "history": []
+      "hash": "7fcb70b338148bd6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T05:46:12.935Z",
+          "hash": "7fcb70b338148bd6",
+          "prev_hash": "a5c0e2d402bcc72d",
+          "commit": "52029017",
+          "note": "2026-10-17 grid-hyper ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-grid-hyper-ten"
+        }
+      ]
     },
     "gen-hyper-rainbow-vortex": {
       "hash": "e1092ba2b11849d2",
@@ -5378,36 +5395,108 @@
       ]
     },
     "gen-grid": {
-      "hash": "e7e33359e2a6a58e",
-      "history": []
+      "hash": "c54887fdf083d8b8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T05:46:12.935Z",
+          "hash": "c54887fdf083d8b8",
+          "prev_hash": "e7e33359e2a6a58e",
+          "commit": "52029017",
+          "note": "2026-10-17 grid-hyper ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-grid-hyper-ten"
+        }
+      ]
     },
     "gen-grok41-mandelbrot": {
-      "hash": "f44ea4fd11d33074",
-      "history": []
+      "hash": "f708347e267f72d9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T05:46:12.935Z",
+          "hash": "f708347e267f72d9",
+          "prev_hash": "f44ea4fd11d33074",
+          "commit": "52029017",
+          "note": "2026-10-17 grid-hyper ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-grid-hyper-ten"
+        }
+      ]
     },
     "gen-grok41-plasma": {
-      "hash": "d2240b4a9c2e1a49",
-      "history": []
+      "hash": "8c38c58587eb0b58",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T05:46:12.935Z",
+          "hash": "8c38c58587eb0b58",
+          "prev_hash": "d2240b4a9c2e1a49",
+          "commit": "52029017",
+          "note": "2026-10-17 grid-hyper ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-grid-hyper-ten"
+        }
+      ]
     },
     "gen-grok4-life": {
-      "hash": "f16093d6c1910123",
-      "history": []
+      "hash": "bbfe5c70e172d3ba",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T05:46:12.935Z",
+          "hash": "bbfe5c70e172d3ba",
+          "prev_hash": "f16093d6c1910123",
+          "commit": "52029017",
+          "note": "2026-10-17 grid-hyper ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-grid-hyper-ten"
+        }
+      ]
     },
     "gen-grok4-perlin": {
-      "hash": "d2db9d22dd8b7292",
-      "history": []
+      "hash": "b2820793f6725b88",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T05:46:12.935Z",
+          "hash": "b2820793f6725b88",
+          "prev_hash": "d2db9d22dd8b7292",
+          "commit": "52029017",
+          "note": "2026-10-17 grid-hyper ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-grid-hyper-ten"
+        }
+      ]
     },
     "gen-grokcf-interference": {
-      "hash": "b318d4c636e114e4",
-      "history": []
+      "hash": "28f93d088aadfa05",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T05:46:12.935Z",
+          "hash": "28f93d088aadfa05",
+          "prev_hash": "b318d4c636e114e4",
+          "commit": "52029017",
+          "note": "2026-10-17 grid-hyper ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-grid-hyper-ten"
+        }
+      ]
     },
     "gen-grokcf-voronoi": {
-      "hash": "9bb0db0d1145c06a",
-      "history": []
+      "hash": "4a0207dfd8604ca7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T05:46:12.935Z",
+          "hash": "4a0207dfd8604ca7",
+          "prev_hash": "9bb0db0d1145c06a",
+          "commit": "52029017",
+          "note": "2026-10-17 grid-hyper ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-grid-hyper-ten"
+        }
+      ]
     },
     "gen-hyper-warp": {
-      "hash": "04fa734e0ef66371",
-      "history": []
+      "hash": "c9c6fbe5aa1277eb",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T05:46:12.935Z",
+          "hash": "c9c6fbe5aa1277eb",
+          "prev_hash": "04fa734e0ef66371",
+          "commit": "52029017",
+          "note": "2026-10-17 grid-hyper ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-grid-hyper-ten"
+        }
+      ]
     },
     "gen-julia-set": {
       "hash": "7a030bb5c0f7981c",

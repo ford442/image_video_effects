@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-10-10
-//  Ideas: knot-diagram over/under gaps; U(1) fiber-phase beads; base-space S2 inset; stereographic denominator horizon; linking-aware hot crossings
+//  Upgraded: 2026-10-17
+//  Ideas: knot gaps; U(1) beads; S2 inset; stereo horizon; hot crossings; equatorial generator; longitudinal phase seam
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -105,6 +105,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var fiberZ = -1.0;
     var fiberDir = vec2<f32>(1.0, 0.0);
     let beadPhase = time * beadSpeed + fi * 0.73;
+    // Idea 6 — fiber over the S2 equator is the brighter Hopf-link generator
+    let eqBoost = 1.0 + exp(-theta * theta * 22.0) * 1.35;
 
     // Idea 3: plot this fiber's base point on the rotating S2 inset.
     if (inInset) {
@@ -153,7 +155,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
           let depthFade = smoothstep(-1.0, 1.0, wCoord) * 0.5 + 0.5;
           // Idea 2: bead riding the U(1) circle action at its own psi phase.
           let bead = pow(0.5 + 0.5 * cos(tt - beadPhase), 28.0);
-          fiberAcc += fiberColor * glow * depthFade;
+          // Idea 7 — double-angle stripe so each circle reads as a ruled tube
+          let seam = pow(0.5 + 0.5 * cos(psi * 2.0 + fi * 0.5), 8.0);
+          fiberAcc += fiberColor * glow * depthFade * eqBoost;
+          fiberAcc += vec3<f32>(1.0, 0.78, 0.32) * glow * depthFade * (eqBoost - 1.0) * 0.8;
+          fiberAcc += fiberColor * glow * seam * depthFade * 0.65;
           fiberAcc += vec3<f32>(1.0, 0.96, 0.88) * glow * bead * depthFade * (0.7 + bass * 1.3);
           if (d < fiberMinD) {
             fiberMinD = d;

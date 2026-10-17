@@ -4,31 +4,12 @@
 //  Features: upgraded-rgba, aces-tone-map, depth-aware, audio-reactive, procedural, mouse-driven, temporal
 //  Complexity: Very High
 //  Scientific: Sediment-transport terrain with hydraulic incision, wind abrasion, layered hardness, seismic uplift, and reflective water-table basins
-//  Upgraded: 2026-09-06
-//  Ideas: bedding-plane terraces (display); shoreline foam at waterMask × slope
+//  Upgraded: 2026-10-17
+//  Ideas: bedding terraces; shoreline foam; talus apron; drainage rills
 //  A packing: raw erosion, sediment, water, uplift
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn clampCoord(p: vec2<i32>, size: vec2<i32>) -> vec2<i32> {
   return clamp(p, vec2<i32>(0, 0), size - vec2<i32>(1, 1));
@@ -243,6 +224,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   landColor = mix(landColor, vec3<f32>(0.92, 0.94, 0.98), smoothstep(0.82, 0.98, heightLook));
   landColor += vec3<f32>(0.10, 0.08, 0.05) * (strata - 0.5) * 0.55;
   landColor += vec3<f32>(0.08, 0.07, 0.05) * shelf * 0.35;
+  // Idea 3 — talus apron: deposited sediment skirts the foot of steep slopes
+  let talus = smoothstep(0.06, 0.16, slope) * (1.0 - smoothstep(0.18, 0.42, slope)) * newSediment;
+  landColor += vec3<f32>(0.34, 0.26, 0.18) * talus * 1.1;
+  // Idea 4 — drainage rills follow the downhill gradient
+  let downhill = gradient / max(slope, 1e-4);
+  let across = vec2<f32>(-downhill.y, downhill.x);
+  let rillPhase = fract(dot(uv, across) * mix(36.0, 84.0, erosionControl) + fbm(uv * 6.0, 2) * 0.35);
+  let rillDist = min(rillPhase, 1.0 - rillPhase);
+  let rill = (1.0 - smoothstep(0.0, 0.045, rillDist)) * smoothstep(0.05, 0.16, slope) * (1.0 - waterMask);
+  landColor = landColor * (1.0 - rill * 0.42);
   landColor += vec3<f32>(0.20, 0.14, 0.09) * windAbrasion * 1.8;
   landColor += vec3<f32>(0.12, 0.09, 0.05) * newSediment * (0.5 + mids * 0.8);
 

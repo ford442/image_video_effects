@@ -3,31 +3,12 @@
 //  Category: generative
 //  Features: upgraded-rgba, depth-aware, audio-reactive, mouse-driven,
 //            temporal, procedural, animated-accumulation
-//  Upgraded: 2026-09-06
-//  Ideas: Mandelbrot body under escaping orbits; dwell iso-bands on c_pixel
+//  Upgraded: 2026-10-17
+//  Ideas: Mandelbrot body; dwell iso-bands; slow-escape comet; antenna tip
 //  A packing: linear RGB accumulation + presence (ACES display only)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash2(p: vec2<f32>) -> vec2<f32> {
     let p2 = vec2<f32>(dot(p, vec2<f32>(127.1, 311.7)), dot(p, vec2<f32>(269.5, 183.3)));
@@ -179,6 +160,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sample_count: u32 = 16u + u32(round(bass * 24.0));
     var density: f32 = 0.0;
     var rainbow: vec3<f32> = vec3<f32>(0.0);
+    var comet: vec3<f32> = vec3<f32>(0.0);
     let pixel_seed = vec2<f32>(f32(global_id.x), f32(global_id.y));
 
     for (var s: u32 = 0u; s < 40u; s = s + 1u) {
@@ -214,6 +196,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                     0.5 + 0.5 * cos(hue + 4.188)
                 );
                 rainbow = rainbow + band * contribution;
+                // Idea 3 — long orbits leave a warm comet along the filament
+                let slowEscape = smoothstep(28.0, 58.0, f32(orbit_len));
+                comet = comet + vec3<f32>(1.0, 0.62, 0.28) * contribution * slowEscape * (0.25 + orbitT);
             }
         }
     }
@@ -246,6 +231,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = color + rainbow * 0.6;
     color = mix(color, vec3<f32>(0.04, 0.02, 0.08), setBody * 0.55);
     color = color + vec3<f32>(0.08, 0.18, 0.32) * dwellBand * select(0.22, 0.0, !escapedPix) * (0.4 + mids * 0.4);
+    color = color + comet / max(f32(sample_count), 1.0) * 0.85;
+    // Idea 4 — antenna tip anchors the real-axis spike of the silhouette
+    let antenna = exp(-length(c_pixel - vec2<f32>(-1.75, 0.0)) * 22.0);
+    color = color + vec3<f32>(0.95, 0.84, 0.52) * antenna * (0.45 + treble * 0.25);
 
     // ─── Spectral stars: per-bin FFT drives star density per band ───
     // Each star is assigned one of 8 spectrum bands (plasmaBuffer[1..8]);

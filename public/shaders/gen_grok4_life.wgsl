@@ -18,31 +18,13 @@
 //                the Lotka-Volterra coupling (bass zone / mid zone / treble zone)
 //              - Age-based prey ramp: young colonies cyan-white → old deep green
 //              - Extinction bloom pulse when smoothed global population crashes
-//  Upgraded: 2026-09-06
-//  Ideas: hunt fronts on predator gradient; prey-edge activity flash
+//  Upgraded: 2026-10-17
+//  Ideas: hunt fronts; prey-edge flash; carrying dimple; phase-portrait tint
 //  A packing: raw prey/predator/age/activity (never ACES)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0)  var u_sampler: sampler;
-@group(0) @binding(1)  var readTexture: texture_2d<f32>;
-@group(0) @binding(2)  var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3)  var<uniform> u: Uniforms;
-@group(0) @binding(4)  var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5)  var non_filtering_sampler: sampler;
-@group(0) @binding(6)  var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7)  var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8)  var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9)  var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config:      vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,  // x=TimeStep, y=Sharpness, z=ColorSpeed, w=InitDensity
-    ripples:     array<vec4<f32>, 50>,
-}
+#include "_prelude.wgsl"
+// zoom_params: x=TimeStep, y=Sharpness, z=ColorSpeed, w=InitDensity
 
 fn smooth_interval(x: f32, a: f32, b: f32, sharp: f32) -> f32 {
     return smoothstep(a - sharp, a + sharp, x) * (1.0 - smoothstep(b - sharp, b + sharp, x));
@@ -277,6 +259,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Combined peak → yellow-white
     let coExist = newA * newB;
     color = mix(color, vec3<f32>(1.0, 1.0, 0.7), smoothstep(0.4, 0.9, coExist));
+    // Idea 3 — carrying dimple: dense prey interiors hollow where the inner average nears capacity
+    let carrying = smoothstep(0.55, 0.9, nA) * newA * (1.0 - smoothstep(0.15, 0.55, newB));
+    color = mix(color, color * vec3<f32>(0.42, 0.58, 0.48), carrying * 0.55);
+    // Idea 4 — phase portrait: coexistence hue follows the (prey, predator) angle
+    let phase = atan2(newB - 0.35, newA - 0.35);
+    let phaseTint = vec3<f32>(
+        0.55 + 0.4 * cos(phase),
+        0.42 + 0.35 * cos(phase + 2.094),
+        0.28 + 0.4 * cos(phase + 4.188)
+    );
+    color = mix(color, phaseTint, coExist * 0.42);
     color += actColor;
     color += vec3<f32>(1.0, 0.95, 0.55) * smoothstep(0.04, 0.18, edgeFlash) * 0.28;
     // Extinction bloom: brief global warm flash when population crashes

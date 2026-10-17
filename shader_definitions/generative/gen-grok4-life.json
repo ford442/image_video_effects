@@ -2,7 +2,7 @@
   "id": "gen-grok4-life",
   "name": "SmoothLife Predator-Prey",
   "url": "shaders/gen_grok4_life.wgsl",
-  "description": "Two-species SmoothLife cellular automaton with Lotka-Volterra predator-prey dynamics. Species A (green prey) uses Rafler 2011 birth/survival rules; species B (red predator) grows on prey density and decays without it. Audio bass drives prey birth-rate, treble drives predator decay, mids control coupling strength.",
+  "description": "Two-species SmoothLife cellular automaton with Lotka-Volterra predator-prey dynamics. Species A (green prey) uses Rafler 2011 birth/survival rules; species B (red predator) grows on prey density and decays without it. Audio bass drives prey birth-rate, treble drives predator decay, mids control coupling strength. Dense prey interiors dimple at carrying capacity, and coexistence hue follows the local phase portrait.",
   "features": [
     "mouse-driven",
     "audio-reactive",

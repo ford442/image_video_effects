@@ -2,7 +2,7 @@
   "id": "gen-grok41-plasma",
   "name": "Spherical Harmonics Plasma",
   "url": "shaders/gen_grok41_plasma.wgsl",
-  "description": "Audio-reactive 3D gas giant using Y(l,m) spherical harmonics with HDR ACES tone mapping, Rayleigh limb scattering, mouse-driven light, and treble-triggered lightning tendrils.",
+  "description": "Audio-reactive 3D gas giant using Y(l,m) spherical harmonics with HDR ACES tone mapping, Rayleigh limb scattering, mouse-driven light, and treble-triggered lightning tendrils. A polar hood caps high latitudes, and jet zero-crossings darken into belt edges.",
   "features": [
     "mouse-driven",
     "depth-aware",
