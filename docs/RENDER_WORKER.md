@@ -45,7 +45,8 @@ A runtime `GPUDevice` loss is recovered without a page reload. The flow is the s
 3. **Recover.** The lost backend has already cleared the device registry (`deviceRegistry.ts`). `DeviceRecoveryController` (`deviceRecovery.ts`) moves `lost → recovering` and runs one automatic attempt. The attempt is `switchRenderer('webgpu', { restoreOnFailure: false })`:
    - The dead backend is released. In worker mode that means `dispose` + terminate, then a fresh `<canvas>` and a **new worker**.
    - The new backend's `init` reruns the boot probe, then publishes its device (a new registry generation).
-   - The lost backend's own slot state is replayed (shader per slot, enabled, chained/parallel), with each shader loaded from the URL it was originally loaded from. Slot params come from the host's `getSessionState()`, and the manager's last input source is reused. So is the CPU-side still (read *before* the release) or else the last image URL. The `<video>` element re-attaches on the next page frame.
+   - The page's runtime graphs (the Graph Lab draft, `runtimeGraphs.ts`) are re-sent to the new backend **before** the stack is replayed. The page overlay survives a backend switch, but a new worker's realm starts empty, and a slot holding `graphlab-draft` only compiles when its graph is registered.
+   - The lost backend's own slot state is replayed (shader per slot, enabled, chained/parallel), for all `PHYSICAL_SLOT_LIMIT` (6) slots, with each shader loaded from the URL it was originally loaded from. Slot params come from the host's `getSessionState()`, and the manager's last input source is reused. So is the CPU-side still (read *before* the release) or else the last image URL. The `<video>` element re-attaches on the next page frame.
 4. **Fail.** If the attempt fails, the state goes to `failed`. `WebGPUCanvas` shows `WebGpuProbeFailureOverlay` with the new probe diagnostics and a **Retry** button (`recoverFromDeviceLoss()`). A second loss within 30 s of a recovery skips the automatic attempt and goes straight to `failed`.
 
 Not replayed: depth map, source auto-exposure, node scales, ripples. Quality, resolution scale and pass budgets come back through the manager's performance policy, as on any backend switch.
@@ -56,7 +57,9 @@ Status is reported in `getDiagnostics().deviceRecovery` and `__pixelocity__.getD
 - `__pixelocity__.simulateDeviceLoss()` destroys the live device and reports it as a loss (`reason: 'simulated'`).
 - `__pixelocity__.simulateWorkerCrash()` (worker mode) throws an uncaught error in the worker.
 
-`tests/engine2-device-loss.swiftshader.spec.ts` runs the loss in both threads, the worker crash, and a failed attempt followed by Retry.
+**Device generations.** Each `WorkerWebGPUBackend` claims a generation (`claimDeviceGeneration()` in `deviceRegistry.ts`, monotonic per page). The proxy sends it in the `init` RPC and `renderWorkerClient` stamps it as `gen` on every later message. Once `init` bound the worker to a generation, `renderWorkerHost` drops any message whose `gen` differs or is missing (closing transferred frames and answering a stale RPC with `stale device generation`), so a superseded proxy can never drive the renderer of a newer device. An `init` without a generation disables the check.
+
+`tests/engine2-device-loss.swiftshader.spec.ts` runs the loss in both threads, a full six-slot stack, the Graph Lab draft, the worker crash, and a failed attempt followed by Retry.
 
 ## Not in the worker
 
@@ -90,6 +93,6 @@ Side effects of isolation:
 
 ## Testing
 
-- Jest: `src/renderer/worker/renderWorker.test.ts` (protocol contract, host ↔ client over an in-memory port with a fake renderer, proxy coalescing and getters, device loss and stale worker messages). Recovery sequencing: `src/renderer/deviceRecovery.test.ts`, `src/__tests__/RendererManager.test.ts`.
+- Jest: `src/renderer/worker/renderWorker.test.ts` (protocol contract, host ↔ client over an in-memory port with a fake renderer, proxy coalescing and getters, device loss, stale worker messages and stale device generations). Recovery sequencing: `src/renderer/deviceRecovery.test.ts`, `src/__tests__/RendererManager.test.ts`.
 - Real (software) device: `npm run test:engine2` (`swiftshader` Playwright project). The core tests run with `?renderer=main` and with `?renderer=worker`. `npm run test:engine2:isolated` runs the same suite cross-origin isolated (SAB channel). `tests/engine2-isolation.swiftshader.spec.ts` checks the SAB path end to end. `npm run test:engine2:smoke` runs the renderer smoke + layer-chain specs on SwiftShader in both modes (`PX_RENDER_THREAD=main|worker`).
 - Real-GPU gate (not runnable on the Cloud VM): main-thread idle trace during a 6-slot 1080p stack, 4K30 HLS throughput, hardware pixel diffs.

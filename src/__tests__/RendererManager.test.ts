@@ -4,6 +4,8 @@ import { WASMRenderer } from '../renderer/WASMRenderer';
 import { JSRenderer } from '../renderer/JSRenderer';
 import { DEFAULT_CONFIG } from '../renderer/Renderer';
 import { SlotParams } from '../renderer/types';
+import { createWaveTankGraph } from '../renderer/multipassGraph';
+import { clearRuntimeGraphs, GRAPH_LAB_RUNTIME_ID } from '../renderer/runtimeGraphs';
 
 jest.mock('../renderer/WebGPURenderer');
 jest.mock('../renderer/WASMRenderer');
@@ -1012,6 +1014,71 @@ describe('RendererManager device-loss recovery', () => {
     expect(second.setSlotShader).toHaveBeenCalledWith(0, '');
     expect(second.setSlotMode).toHaveBeenCalledWith(1, 'parallel');
     expect(second.setInputSource).toHaveBeenLastCalledWith('generative');
+  });
+
+  it('restores all six slots, their modes and params — slots 3–5 are not dropped (#1425)', async () => {
+    const ids = ['s0', 's1', 's2', 's3', 's4', 's5'];
+    const modes = ['chained', 'parallel', 'chained', 'parallel', 'chained', 'parallel'] as const;
+    const first = lossAwareWebGPU();
+    (first as unknown as { getSlotState: jest.Mock }).getSlotState = jest.fn((i: number) =>
+      i < ids.length ? { shaderId: ids[i], enabled: true, mode: modes[i] } : null);
+    const second = lossAwareWebGPU();
+    const sixParams = ids.map((_, i) => ({ ...defaultSlotParams, zoomParam1: 0.1 * (i + 1) }));
+    const { manager, statuses } = await bootWith(first, {
+      getSessionState: () => ({ ...rainStack, modes: ['none', 'none', 'none'], slotParams: sixParams }),
+    });
+    manager.overrideSlotCapForTests(6); // the cap override outlives the backend, as in the harness / VJ
+    for (const id of ids) await manager.loadShader(id, `/${id}.wgsl`);
+    (WebGPURenderer as jest.Mock).mockImplementation(() => second);
+
+    first.fatal!('lost', loss());
+    await settle();
+
+    expect(statuses).toEqual(['lost', 'recovering', 'idle']);
+    ids.forEach((id, i) => {
+      expect(second.loadShader).toHaveBeenCalledWith(id, `/${id}.wgsl`);
+      expect(second.setSlotShader).toHaveBeenCalledWith(i, id);
+    });
+    expect((second.setSlotMode as jest.Mock).mock.calls).toEqual([[1, 'parallel'], [3, 'parallel'], [5, 'parallel']]);
+    for (const slot of [3, 4, 5]) {
+      expect(second.updateSlotParams).toHaveBeenCalledWith(
+        expect.objectContaining({ zoomParam1: sixParams[slot]!.zoomParam1 }),
+        slot,
+      );
+    }
+  });
+
+  it('re-sends the Graph Lab draft to the rebuilt backend before the shader stack (#1418)', async () => {
+    const graph = createWaveTankGraph();
+    const first = lossAwareWebGPU();
+    const second = lossAwareWebGPU();
+    for (const r of [first, second]) {
+      Object.assign(r, {
+        backendKind: 'webgpu',
+        setRuntimeGraph: jest.fn(),
+        setResolutionScale: jest.fn(),
+        setAdaptiveQuality: jest.fn(),
+        setMaxPassesPerFrame: jest.fn(),
+        setFramePassBudget: jest.fn(),
+        setColorFormat: jest.fn(),
+      });
+    }
+    (first as unknown as { getSlotState: jest.Mock }).getSlotState = jest.fn((i: number) =>
+      i === 0 ? { shaderId: GRAPH_LAB_RUNTIME_ID, enabled: true, mode: 'chained' } : null);
+    const { manager } = await bootWith(first);
+    await manager.loadShader(GRAPH_LAB_RUNTIME_ID, '/graphlab-draft.wgsl');
+    expect(manager.setRuntimeGraph(GRAPH_LAB_RUNTIME_ID, graph, { stateCount: 4096 })).toBe(true);
+    (WebGPURenderer as jest.Mock).mockImplementation(() => second);
+
+    first.fatal!('lost', loss());
+    await settle();
+
+    const setGraph = second.setRuntimeGraph as unknown as jest.Mock;
+    expect(setGraph).toHaveBeenCalledTimes(1);
+    expect(setGraph).toHaveBeenCalledWith(GRAPH_LAB_RUNTIME_ID, graph, { stateCount: 4096 });
+    expect(setGraph.mock.invocationCallOrder[0]).toBeLessThan((second.loadShader as jest.Mock).mock.invocationCallOrder[0]!);
+    expect(setGraph.mock.invocationCallOrder[0]).toBeLessThan((second.setSlotShader as jest.Mock).mock.invocationCallOrder[0]!);
+    clearRuntimeGraphs();
   });
 
   it('a non-loss fatal error keeps the existing backend-failure path', async () => {
