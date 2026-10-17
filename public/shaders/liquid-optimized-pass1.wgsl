@@ -2,6 +2,9 @@
 //  Liquid Optimized – Pass 1: Physics Simulation
 //  Category: liquid-effects
 //  Features: multi-pass-1, capillary waves, Laplace pressure, ripple propagation
+//  Upgraded: 2026-10-17
+//  Ideas: seiche beat on the ambient ripples; shore set-down from radiation stress
+//  A packing: raw (h_prev, h_curr, velocity, age)
 //  Outputs: dataTextureA (h_prev, h_curr, velocity, age)
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -66,7 +69,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let surfaceTension = u.zoom_params.x * 0.5 + 0.1;
   let gravityScale = u.zoom_params.y * 2.0 + 0.5;
-  let damping = u.zoom_params.z * 0.15 + 0.02;
+  // Turbidity (default 0) adds drag so the slider is live on this pass.
+  let turbidity = u.zoom_params.w;
+  let damping = (u.zoom_params.z * 0.15 + 0.02) * (1.0 + turbidity * 0.85);
   let density = 1.0;
   let dt = 0.016;
 
@@ -115,7 +120,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let phase = dist * waveNumber - timeSinceClick * capillarySpeed * 3.0;
     let packetWidth = 0.3 + timeSinceClick * 0.1;
     let envelope = exp(-(dist * dist) / (packetWidth * packetWidth));
-    let attenuation = 1.0 - smoothstep(0.0, 1.0, timeSinceClick / 2.5);
+    let attenuation = (1.0 - smoothstep(0.0, 1.0, timeSinceClick / 2.5)) * (1.0 - turbidity * 0.4);
     let capillaryAmp = 0.5 * 0.02 * mix(0.3, 1.0, rippleOriginDepth);
 
     sourceHeight += sin(phase) * envelope * attenuation * capillaryAmp * contribMask;
@@ -130,10 +135,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let wave3 = sin((uv.x + uv.y) * ambientFreq * 0.5 + t * 1.3);
   let microRipple = (wave1 + wave2 + wave3) / 3.0;
   let microEnvelope = smoothstep(0.0, 0.3, backgroundFactor);
-  let ambientHeight = microRipple * 0.003 * microEnvelope * surfaceTension * ambientMask;
+  // Idea 1: seiche beat. The basin amplitude breathes instead of a fixed shimmer.
+  let seiche = 0.62 + 0.38 * sin(currentTime * 0.31);
+  let ambientHeight = microRipple * 0.003 * microEnvelope * surfaceTension * ambientMask * seiche;
 
   newHeight += sourceHeight + ambientHeight;
   newVelocity += sourceVelocity;
+  // Idea 2: shore set-down. Radiation stress lowers the waterline on the depth contact band.
+  let shore = smoothstep(0.0, 0.08, depth) * (1.0 - smoothstep(0.08, 0.22, depth));
+  newHeight -= shore * newVelocity * newVelocity * (0.12 + turbidity * 0.05);
 
   let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   textureStore(writeTexture, global_id.xy, inputColor);

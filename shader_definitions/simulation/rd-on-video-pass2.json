@@ -2,11 +2,12 @@
   "id": "rd-on-video-pass2",
   "name": "RD on Video (Pass 2: Turing Color Map)",
   "url": "shaders/rd-on-video-pass2.wgsl",
-  "description": "Color-maps reaction-diffusion chemistry into vivid Turing pattern fields.",
+  "description": "Color-maps reaction-diffusion chemistry into vivid Turing pattern fields, with isochrone threads and a cooler substrate core inside high-V spots.",
   "features": [
     "multi-pass-2",
     "temporal",
-    "color-map"
+    "color-map",
+    "upgraded-rgba"
   ],
   "multipass": {
     "pass": 2,
@@ -53,5 +54,43 @@
       "max": 1,
       "step": 0.01
     }
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "id": "param1",
+          "name": "Pattern Gamma",
+          "default": 0.45,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "id": "param2",
+          "name": "Edge Gain",
+          "default": 0.35,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "id": "param3",
+          "name": "Seed Gain",
+          "default": 0.45,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "id": "param4",
+          "name": "Hue Shift",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

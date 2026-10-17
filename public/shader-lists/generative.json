@@ -3286,7 +3286,7 @@
       "audio-reactive",
       "collapse"
     ],
-    "description": "A colossal liquid-metal monolith whose surface forms readable magnetic glyphs under strong bass, then collapses into chaotic auroral breakup on treble. Mouse drag rotates an external magnetic field that sculpts the ferrofluid in real time. The aurora clings to the spiked surface as a sheath, co-winds with the Magnetic Twist and gathers at the mouse pole, and spike crests throw an aurora-tinted corona.",
+    "description": "A colossal liquid-metal monolith whose surface forms readable magnetic glyphs under strong bass, then collapses into chaotic auroral breakup on treble. Mouse drag rotates an external magnetic field that sculpts the ferrofluid in real time. The aurora clings to the spiked surface as a sheath, co-winds with the Magnetic Twist and gathers at the mouse pole, and spike crests throw an aurora-tinted corona. A stable red arc sits at one latitude, and black-aurora lanes cut through the curtains.",
     "workgroup_size": [
       16,
       16,
@@ -17611,7 +17611,7 @@
       "holographic",
       "audio-reactive"
     ],
-    "description": "A hyper-intricate, multi-dimensional astrolabe forged from flowing liquid-gold plasma and hard-light holograms, endlessly spinning and realigning its cosmic rings in perfect synchronization with audio frequencies.",
+    "description": "A hyper-intricate, multi-dimensional astrolabe forged from flowing liquid-gold plasma and hard-light holograms, endlessly spinning and realigning its cosmic rings in perfect synchronization with audio frequencies. Unequal-hour arcs cross the rete, and the alidade casts a shadow on the chart.",
     "workgroup_size": [
       16,
       16,
@@ -18445,7 +18445,7 @@
       "audio",
       "music"
     ],
-    "description": "A raymarched metallic ferrofluid mass with density-driven volume and spikes, sprung orbit control, audio-excited iridescence, click magnetic shells, temporal polish, and real hit depth.",
+    "description": "A raymarched metallic ferrofluid mass with density-driven volume and spikes, sprung orbit control, audio-excited iridescence, click magnetic shells, temporal polish, and real hit depth. Above the critical field the hex peaks bifurcate, and magnetite chains streak along the applied field.",
     "workgroup_size": [
       16,
       16,
@@ -19453,7 +19453,7 @@
       "interactive",
       "depth"
     ],
-    "description": "A single-pass fluid-inspired ink field with semi-Lagrangian advection and local pressure approximation, extended by raymarched vortex tubes and a tessellated emitter corona. Mouse input, bounded click ripples, audio, and FFT energy shape the motion and geometry.",
+    "description": "A single-pass fluid-inspired ink field with semi-Lagrangian advection and local pressure approximation, extended by raymarched vortex tubes and a tessellated emitter corona. Mouse input, bounded click ripples, audio, and FFT energy shape the motion and geometry. Ink skims outward by Marangoni stress and leaves a coffee-ring rim.",
     "workgroup_size": [
       16,
       16,
@@ -27040,7 +27040,7 @@
       "voronoi",
       "raymarched"
     ],
-    "description": "A violently shifting landscape of cooling obsidian geometric slabs floating on a turbulent, audio-reactive ocean of blinding-hot plasma magma that constantly fractures, erupts, and reshapes itself.",
+    "description": "A violently shifting landscape of cooling obsidian geometric slabs floating on a turbulent, audio-reactive ocean of blinding-hot plasma magma that constantly fractures, erupts, and reshapes itself. Pillow rind lines the thermal margin, and strike-slip striae scratch along the plate-slip direction.",
     "workgroup_size": [
       16,
       16,
