@@ -3,10 +3,12 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
+//  Upgraded: 2026-10-17
 //  Ideas: breath plasma jet cone out of the mouth; per-segment scale overlap parallax;
 //         2nd pass: dorsal fin blades growing with treble; sequential halo sigil chase
-//         (bass kicks the comet forward and fires a fast second chaser)
+//         (bass kicks the comet forward and fires a fast second chaser);
+//         3rd pass: flaming pearl the dragon chases at the pointer (flame-tongue
+//         corona, mids lick); swept-back twin horns on the head (treble tip sparks)
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -153,6 +155,39 @@ fn kaleido(p: vec2<f32>, folds: f32) -> vec2<f32> {
 // gChain[0] is the head; gChain[i]..gChain[i+1] is segment i.
 const MAX_SEGMENTS: i32 = 40;
 var<private> gChain: array<vec3<f32>, 41>;
+// Idea: flaming pearl — the lure the head wanders around (= the pointer target).
+var<private> gPearl: vec4<f32>;           // xyz centre, w radius
+// Idea: twin horns — root, knee, tip per side, built in the head frame.
+var<private> gHorn: array<vec3<f32>, 6>;  // [0..2] left, [3..5] right
+
+// Head frame from the real chain: fwd = out of the mouth, up = world-up
+// orthogonalised, side = cross(fwd, up). Horns sweep back over the neck.
+fn buildHorns(headR: f32) {
+    let head = gChain[0];
+    let fwd = normalize(gChain[0] - gChain[1]);
+    let upRaw = vec3<f32>(0.0, 1.0, 0.0) - fwd * fwd.y;
+    let up = upRaw / max(length(upRaw), 1e-3);
+    let side = cross(fwd, up);
+    for (var k = 0; k < 2; k = k + 1) {
+        let sgn = select(-1.0, 1.0, k == 1);
+        let root = head + up * (headR * 0.7) + side * (sgn * headR * 0.45) - fwd * (headR * 0.1);
+        let knee = root + up * 0.55 - fwd * 0.55 + side * (sgn * 0.28);
+        let tip = knee + up * 0.12 - fwd * 0.75 + side * (sgn * 0.08);
+        gHorn[k * 3] = root;
+        gHorn[k * 3 + 1] = knee;
+        gHorn[k * 3 + 2] = tip;
+    }
+}
+
+fn sdHorns(p: vec3<f32>) -> f32 {
+    var d = 1000.0;
+    for (var k = 0; k < 2; k = k + 1) {
+        let a = sdCapsule(p, gHorn[k * 3], gHorn[k * 3 + 1], 0.11);
+        let b = sdCapsule(p, gHorn[k * 3 + 1], gHorn[k * 3 + 2], 0.055);
+        d = min(d, smin(a, b, 0.06));
+    }
+    return d;
+}
 
 fn buildChain(time: f32, audio: f32, mouseTarget: vec3<f32>, params: vec4<f32>) {
     let t = time * params.y;
@@ -247,7 +282,14 @@ fn map(p: vec3<f32>, time: f32, audio: f32, params: vec4<f32>) -> vec2<f32> {
         d = smin(d, seg_geo + scale_disp, 0.8);
     }
 
+    // Horns fuse into the head (body material).
+    d = smin(d, sdHorns(p), 0.12);
+
     matID = 1.0;
+
+    // Flaming pearl at the pointer target (material 4).
+    let pearl_d = sdSphere(p - gPearl.xyz, gPearl.w);
+    if (pearl_d < d) { d = pearl_d; matID = 4.0; }
 
     // Torus halo around the dragon's head — bass-pulsed plasma crown
     let haloLocal = rotX(sin(t * 0.8) * 0.6) * rotY(t * 0.9) * (p - dragon_head);
@@ -329,6 +371,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let headFwd = normalize(gChain[0] - gChain[1]);
     let headR = max(0.8 + sin(time * params.y * 3.0) * 0.1, 0.1);
     let mouthPos = headPos + headFwd * headR;
+    buildHorns(headR);
+    gPearl = vec4<f32>(mouseTarget, 0.42 + audio * 0.08);
 
     // Camera
     let ro = vec3<f32>(0.0, 0.0, -15.0);
@@ -361,6 +405,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             glow = glow + 0.1 / (1.0 + d * d * 5.0) * audio;
         } else if (matID == 3.0) { // Halo glow
             glow = glow + 0.08 / (1.0 + d * d * 20.0) * (0.5 + audio * 2.0);
+        } else if (matID == 4.0) { // Pearl glow
+            glow = glow + 0.06 / (1.0 + d * d * 12.0) * (0.6 + mids);
         }
 
         p = p + rd * d;
@@ -431,7 +477,38 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let starFill = 1.0 - smoothstep(-0.05, 0.05, star_d);
             col += halo_col * starLine * (0.5 + audio) * (0.35 + 0.65 * chaseLit);
             col += vec3<f32>(1.0, 0.85, 1.0) * starFill * chaseLit * (0.6 + audio);
+        } else if (matID == 4.0) { // Flaming pearl: nacre-white core, swirling plasma bands
+            let pl = normalize(p - gPearl.xyz);
+            let swirl = 0.5 + 0.5 * sin(atan2(pl.z, pl.x) * 3.0 + pl.y * 6.0 - time * 2.5);
+            let nacre = 0.5 + 0.5 * cos(fresnel * 5.0 + time * 0.7 + vec3<f32>(0.0, 2.0, 4.0));
+            col = mix(vec3<f32>(1.0, 0.96, 0.9), nacre, 0.35) * (0.9 + diff * 0.4)
+                + vec3<f32>(0.3, 0.9, 1.0) * swirl * 0.6 + spec;
+            col *= 1.0 + mids * 0.8;
         }
+
+        // Horn tips: treble sparks at the ends of the swept-back horns.
+        if (matID == 1.0) {
+            let tipD = min(length(p - gHorn[2]), length(p - gHorn[5]));
+            let tipGlow = exp(-tipD * 9.0) * (0.3 + clamp(plasmaBuffer[0].z, 0.0, 1.0) * 1.6);
+            col += vec3<f32>(0.55, 0.95, 1.0) * tipGlow * params.x * 0.6;
+        }
+    }
+
+    // Pearl corona: flame tongues licking out around the pearl, from the
+    // ray's closest approach (behind hits is occluded).
+    let pc = gPearl.xyz - ro;
+    let tPearl = dot(pc, rd);
+    let pearlVisible = tPearl > 0.0 && (!hit || tPearl < total_dist + gPearl.w);
+    if (pearlVisible) {
+        let off = pc - rd * tPearl;
+        let rr = length(off) / gPearl.w;
+        let ang = atan2(dot(off, cross(rd, vec3<f32>(0.0, 1.0, 0.0))), off.y);
+        let tongues = fbm(vec3<f32>(cos(ang) * 2.0, sin(ang) * 2.0, time * 1.3 - rr * 1.5));
+        let reach = 1.0 + (0.6 + mids * 0.9) * tongues * 2.2;
+        let flame = smoothstep(max(reach, 1.001), 1.0, rr) * step(1.0, rr);
+        let halo = exp(-max(rr - 1.0, 0.0) * 1.6) * 0.25;
+        col += mix(vec3<f32>(1.0, 0.45, 0.85), vec3<f32>(0.3, 0.9, 1.0), clamp(rr - 1.0, 0.0, 1.0))
+            * (flame * 0.9 + halo) * params.x * 0.55;
     }
 
     // Breath plasma jet out of the mouth, integrated along the view ray over

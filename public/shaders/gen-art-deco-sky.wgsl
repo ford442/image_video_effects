@@ -3,31 +3,15 @@
 //  Category: generative
 //  Features: raymarching, architectural, audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: ziggurat setbacks; casement mullions
+//  Upgraded: 2026-10-17
+//  Ideas: ziggurat setbacks; casement mullions; stepped zenith sunburst sky
+//         (tiered gold rays fanning from the tower's vanishing point);
+//         elevator cabs climbing a lit shaft behind each facade's glass
 //  A packing: pre-ACES history RGB (ACES on display)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=City Density, y=Ascent Speed, z=Gold Glow, w=Fog Density
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=City Density, y=Ascent Speed, z=Gold Glow, w=Fog Density
 
 // --- SDF Functions ---
 
@@ -74,14 +58,22 @@ fn acesToneMapping(color: vec3<f32>) -> vec3<f32> {
     return clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+// Every vertical period in the scene (ziggurat 80, floors 10, bg floors 15,
+// motif 2, mullions 1/0.55) divides 240, so the ascent wraps there seamlessly.
+const ASCENT_WRAP: f32 = 240.0;
+
+// Building-frame ascent offset, wrapped so f32 precision (and calcNormal's
+// 0.001 epsilon) holds over long sessions.
+fn ascentOffset() -> f32 {
+    return fract(u.config.x * u.zoom_params.y * 5.0 / ASCENT_WRAP) * ASCENT_WRAP;
+}
+
 // --- Scene Mapping ---
 
 fn map(p: vec3<f32>) -> vec2<f32> {
     // Parameters
     let density = u.zoom_params.x; // 0..1
-    var time = u.config.x;
-    var ascentSpeed = u.zoom_params.y; // 0..5
-    var y_offset = time * ascentSpeed * 5.0; // Global Y movement
+    var y_offset = ascentOffset(); // Global Y movement (Ascent Speed, wrapped)
 
     // We will apply the offset to p.y before mapping
     var pos = vec3<f32>(p.x, p.y + y_offset, p.z);
@@ -262,7 +254,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Orbit camera based on mouse
     let cam_radius = 20.0 + (mouse.y - 0.5) * 10.0 - mouseDown * 3.0;
-    let cam_angle = (mouse.x - 0.5) * 6.28 + time * (0.05 + mouseDown * 0.08);
+    let cam_angle = (mouse.x - 0.5) * 6.28 + time * 0.05 + mouseDown * 0.4;
 
     // Look slightly up
     let ro = vec3<f32>(sin(cam_angle) * cam_radius, -5.0, cos(cam_angle) * cam_radius);
@@ -273,7 +265,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uu = normalize(cross(ww, vec3<f32>(0.0, 1.0, 0.0)));
     let vv = normalize(cross(uu, ww));
 
-    let rd = normalize(uv.x * uu + uv.y * vv + 1.5 * ww);
+    // Pixel rows grow downward and uu points screen-left: negate both so the
+    // frame is the scene rotated upright (HEAD rendered it 180 degrees turned).
+    let rd = normalize(uv.x * uu - uv.y * vv + 1.5 * ww);
 
     // Raymarch
     var res = raymarch(ro, rd);
@@ -289,8 +283,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var coverage = 0.16;
 
     // Global Y offset for materials that depend on world pos
-    var ascentSpeed = u.zoom_params.y;
-    var y_offset = time * ascentSpeed * 5.0;
+    var y_offset = ascentOffset();
 
     if (t < 200.0) {
         var p = ro + rd * t;
@@ -322,14 +315,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
             // Window lights (randomly lit)
             // Determine grid cell for window
-            let win_cell = floor(world_p.y / 1.0) * 10.0 + floor(world_p.x / 1.0) + floor(world_p.z / 1.0);
-            var h = hash(vec2<f32>(win_cell, floor(world_p.y / 10.0))); // change per floor block too
+            // Seeded on the wrapped height so lit windows do not reshuffle at the wrap
+            let wy = world_p.y - ASCENT_WRAP * floor(world_p.y / ASCENT_WRAP);
+            let win_cell = floor(wy) * 10.0 + floor(world_p.x) + floor(world_p.z);
+            var h = hash(vec2<f32>(win_cell, floor(wy / 10.0))); // change per floor block too
 
             if (h > 0.6) {
                 // Lit window
                 emission = vec3<f32>(1.0, 0.8, 0.4) * goldGlow * 1.5;
                 // Flicker — mid-range audio modulates window twinkle
                 emission *= 0.8 + 0.2 * sin(time * 5.0 + h * 100.0) + mid * 0.25;
+            }
+            // Idea 4 — elevator cabs: on the central tower, a lit car rides a shaft
+            // behind the middle of each facade's glass. Cars climb in the building
+            // frame (two per ziggurat cycle, phase per face), so they overtake or
+            // fall behind the camera's own ascent.
+            if (max(abs(world_p.x), abs(world_p.z)) < 7.0) {
+                let xFace = abs(world_p.x) > abs(world_p.z);
+                let along = select(world_p.x, world_p.z, xFace);
+                let faceId = select(0.0, 1.0, xFace) + select(0.0, 2.0, select(world_p.z, world_p.x, xFace) < 0.0);
+                let cabY = fract((wy - time * 3.2 - faceId * 17.0) / 40.0) * 40.0;
+                let cabBody = smoothstep(0.0, 0.4, cabY) * (1.0 - smoothstep(2.6, 3.2, cabY));
+                let shaft = 1.0 - smoothstep(0.7, 1.1, abs(along));
+                let cab = cabBody * shaft;
+                // the shaft itself is a faint lit slot; the car is a warm box of light
+                emission += vec3<f32>(1.0, 0.86, 0.6) * (shaft * 0.12 + cab * (1.6 + mid * 0.6)) * (0.4 + goldGlow * 0.6);
             }
             // Idea 2 — casement mullions over the glass
             let mullion = max(
@@ -395,7 +405,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Add a vertical gradient for city glow
         let sky_glow = exp(-rd.y * 4.0) * 0.5;
         color += lightColor1 * sky_glow * fogDensity;
-        coverage = 0.14 + sky_glow * fogDensity * 0.2;
+        // Idea 3 — stepped zenith sunburst: the tower's verticals converge on
+        // the zenith, so the sky carries the deco crown motif there — gold rays
+        // fanning by azimuth, narrowing in stepped tiers as they climb, thinned
+        // by fog. World-fixed, so the orbiting camera sweeps through the fan.
+        let az = atan2(rd.z, rd.x) / 6.2831853 + 0.5;
+        let tier = floor(clamp(rd.y, 0.0, 0.999) * 4.0);
+        let rayW = 0.34 - tier * 0.07;
+        let rayF = abs(fract(az * 24.0) - 0.5);
+        let ray = 1.0 - smoothstep(rayW - 0.03, rayW, 0.5 - rayF);
+        let tierEdge = 1.0 - smoothstep(0.0, 0.012, abs(fract(rd.y * 4.0) - 0.02));
+        let burst = (ray * 0.16 + tierEdge * ray * 0.25) * smoothstep(0.05, 0.3, rd.y)
+                  * goldGlow * (1.0 - fogDensity * 0.6) * (0.85 + bass * 0.3);
+        color += vec3<f32>(1.0, 0.72, 0.3) * burst;
+        coverage = 0.14 + sky_glow * fogDensity * 0.2 + burst * 0.3;
     }
 
     // Post processing / Vignette

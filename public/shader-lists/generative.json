@@ -2662,7 +2662,7 @@
       "audio",
       "music"
     ],
-    "description": "Infinite vertical ascent up a monumental Art Deco tower with gold fluting, drag-steered searchlights, click-launched skyline halos, and bounded display history.",
+    "description": "Infinite vertical ascent up a monumental Art Deco tower with gold fluting, drag-steered searchlights, click-launched skyline halos, a stepped sunburst sky, climbing elevator cabs, and bounded display history.",
     "workgroup_size": [
       16,
       16,
@@ -5056,7 +5056,7 @@
       "aces-tone-map",
       "semantic-alpha"
     ],
-    "description": "A stellar engine hammering at speed: contra-rotating rings carry hull plating and rivet greeble, the core pulses on the beat, and plasma arcs fire through a psychedelic molten spectrum. The spring-smoothed cursor orbits the forge, holding pulls the camera into the furnace, and clicks land hammer strikes that swell the core and blast shock rings outward.",
+    "description": "A stellar engine hammering at speed: contra-rotating rings carry hull plating and rivet greeble, the core pulses on the beat, and plasma arcs fire through a psychedelic molten spectrum. The cursor orbits the forge, holding pulls the camera into the furnace, and clicks land hammer strikes that swell the core and blast shock rings outward; the struck heat runs ring to ring and cools through the blackbody colours.",
     "workgroup_size": [
       16,
       16,
@@ -6857,7 +6857,17 @@
     "updated": true,
     "id": "gen-chronos-monolith-resonator",
     "url": "shaders/gen-chronos-monolith-resonator.wgsl",
-    "features": []
+    "features": [
+      "raymarched",
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tone-map",
+      "depth-aware",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Conway Game of Life",
@@ -8364,7 +8374,7 @@
     "name": "Cybernetic Plasma-Orchid Nexus",
     "url": "shaders/gen-cybernetic-plasma-orchid-nexus.wgsl",
     "category": "generative",
-    "description": "A hyper-stylized digital flora ecosystem where crystalline petals of plasma bloom from a glowing cybernetic core, pulsating with neon chromatic aberration. The lowest petal is a cupped orchid lip with a plasma nectar well glowing in its throat, and a central column carries two pollinia beads that pulse with the bass. A cooler dorsal sepal hoods the top of the flower, and veins run out along each petal blade.",
+    "description": "A hyper-stylized digital flora ecosystem where crystalline petals of plasma bloom from a glowing cybernetic core, pulsating with neon chromatic aberration. The lowest petal is a cupped orchid lip with a plasma nectar well glowing in its throat, and a central column carries two pollinia beads that pulse with the bass. A cooler dorsal sepal hoods the top of the flower, and veins run out along each petal blade. Freckled nectar guides mark the lip; hold the pointer to pull the pollinia.",
     "features": [
       "raymarching",
       "domain-warping",
@@ -9889,7 +9899,7 @@
       "tessellation",
       "audio-reactive"
     ],
-    "description": "A hyper-dimensional avian entity forged from iridescent bismuth lattices, suspended in a zero-gravity quantum field. Upgraded with thin-film interference on the stepped bismuth shell, per-facet crystal color variation, 3-point lighting with soft shadows and AO, horn-like stepped ear tufts, a tessellated hopper-crystal inlay glowing in the void ether, ACES filmic tonemapping and real depth output. Second pass: hopper-terrace film steps, a stepped facial-disc ruff and lattice-snapped debris with hopper tips.",
+    "description": "A hyper-dimensional avian entity forged from iridescent bismuth lattices, suspended in a zero-gravity quantum field. Upgraded with thin-film interference on the stepped bismuth shell, per-facet crystal color variation, 3-point lighting with soft shadows and AO, horn-like stepped ear tufts, a tessellated hopper-crystal inlay glowing in the void ether, ACES filmic tonemapping and real depth output. Second pass: hopper-terrace film steps, a stepped facial-disc ruff and lattice-snapped debris with hopper tips. Third pass: a hopper-stair wing mantle and a thin-film nictitating blink.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -10341,7 +10351,7 @@
       "kaleidoscopic",
       "geometry"
     ],
-    "description": "A majestic hyper-dimensional cyber-dragon of flowing quantum plasma with octahedral crystal scale-shards, box-ribbed spine segments and a bass-pulsed torus halo engraved with rotating star sigils, soaring through a kaleidoscopically folded dark-matter nebula veined with Voronoi energy circuits.",
+    "description": "A majestic hyper-dimensional cyber-dragon of flowing quantum plasma with octahedral crystal scale-shards, box-ribbed spine segments and a bass-pulsed torus halo engraved with rotating star sigils, soaring through a kaleidoscopically folded dark-matter nebula veined with Voronoi energy circuits. It chases a flaming pearl at the pointer and wears swept-back horns.",
     "url": "shaders/gen-ethereal-cyber-plasma-void-dragon.wgsl",
     "updated": true,
     "supportsDepth": true,
@@ -22170,7 +22180,7 @@
       "plasma",
       "audio-reactive"
     ],
-    "description": "A hyper-dimensional auroral ocean where a synchronized manta swarm shows chordwise wing waves, countershaded chevrons and spot constellations, ventral gill-arch bioluminescence, and ram-ventilation wake ribbons.",
+    "description": "A hyper-dimensional auroral ocean where a synchronized manta swarm shows chordwise wing waves, countershaded chevrons and spot constellations, ventral gill-arch bioluminescence, ram-ventilation wake ribbons, a barrel-roll wave through the school, and aurora-lit dorsal dapple.",
     "workgroup_size": [
       16,
       16,

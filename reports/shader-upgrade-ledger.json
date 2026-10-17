@@ -1790,8 +1790,17 @@
       ]
     },
     "gen-art-deco-sky": {
-      "hash": "a98cb4c53106e63b",
-      "history": []
+      "hash": "24bab07a05ae1bb2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T11:47:20.808Z",
+          "hash": "24bab07a05ae1bb2",
+          "prev_hash": "a98cb4c53106e63b",
+          "commit": "96263e0a",
+          "note": "2026-10-17 opus/batch-02 (claude opus): 2 native ideas each, cards in agents/swarm-outputs/claude-2026-10-17-opus-batch-02"
+        }
+      ]
     },
     "gen-astral-plasma-accretion-forge": {
       "hash": "1743fdb76b90c339",
@@ -2075,7 +2084,7 @@
       ]
     },
     "gen-celestial-forge": {
-      "hash": "ebb82f6f630d9d14",
+      "hash": "0fd663b2065f41d6",
       "history": [
         {
           "event": "upgraded",
@@ -2084,6 +2093,14 @@
           "prev_hash": "c884732707752b94",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T11:47:20.808Z",
+          "hash": "0fd663b2065f41d6",
+          "prev_hash": "ebb82f6f630d9d14",
+          "commit": "96263e0a",
+          "note": "2026-10-17 opus/batch-02 (claude opus): 2 native ideas each, cards in agents/swarm-outputs/claude-2026-10-17-opus-batch-02"
         }
       ]
     },
@@ -2399,7 +2416,7 @@
       ]
     },
     "gen-chronos-monolith-resonator": {
-      "hash": "9d661b6542ff9b76",
+      "hash": "77873e03e608288f",
       "history": [
         {
           "event": "upgraded",
@@ -2408,6 +2425,14 @@
           "prev_hash": "ee173222e8a03bdf",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T11:47:20.808Z",
+          "hash": "77873e03e608288f",
+          "prev_hash": "9d661b6542ff9b76",
+          "commit": "96263e0a",
+          "note": "2026-10-17 opus/batch-02 (claude opus): 2 native ideas each, cards in agents/swarm-outputs/claude-2026-10-17-opus-batch-02"
         }
       ]
     },
@@ -2617,7 +2642,7 @@
       ]
     },
     "gen-cybernetic-plasma-orchid-nexus": {
-      "hash": "43bba7c406298470",
+      "hash": "7be9491a8649c1c3",
       "history": [
         {
           "event": "upgraded",
@@ -2626,6 +2651,14 @@
           "prev_hash": "f35ec7c9691c7f4f",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T11:47:20.808Z",
+          "hash": "7be9491a8649c1c3",
+          "prev_hash": "43bba7c406298470",
+          "commit": "96263e0a",
+          "note": "2026-10-17 opus/batch-02 (claude opus): 2 native ideas each, cards in agents/swarm-outputs/claude-2026-10-17-opus-batch-02"
         }
       ]
     },
@@ -2764,8 +2797,17 @@
       "history": []
     },
     "gen-eldritch-tesseract-hive-mind": {
-      "hash": "6c302dbcc173df6a",
-      "history": []
+      "hash": "49ab115c2f0d0c9f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T11:47:20.808Z",
+          "hash": "49ab115c2f0d0c9f",
+          "prev_hash": "6c302dbcc173df6a",
+          "commit": "96263e0a",
+          "note": "2026-10-17 opus/batch-02 (claude opus): 2 native ideas each, cards in agents/swarm-outputs/claude-2026-10-17-opus-batch-02"
+        }
+      ]
     },
     "gen-electric-kaleidoscope-storm": {
       "hash": "88aec2664fa62144",
@@ -2867,8 +2909,17 @@
       ]
     },
     "gen-ethereal-bismuth-resonance-void-owl": {
-      "hash": "d1a940d53cd57f6b",
-      "history": []
+      "hash": "4c7bc324647d8667",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T11:47:20.808Z",
+          "hash": "4c7bc324647d8667",
+          "prev_hash": "d1a940d53cd57f6b",
+          "commit": "96263e0a",
+          "note": "2026-10-17 opus/batch-02 (claude opus): 2 native ideas each, cards in agents/swarm-outputs/claude-2026-10-17-opus-batch-02"
+        }
+      ]
     },
     "gen-ethereal-chrono-flora-loom": {
       "hash": "54ec52afeabdd2c3",
@@ -2897,8 +2948,17 @@
       ]
     },
     "gen-ethereal-chrono-plasma-void-manta": {
-      "hash": "4a792abead30416e",
-      "history": []
+      "hash": "767e0d6d23410593",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T11:47:20.808Z",
+          "hash": "767e0d6d23410593",
+          "prev_hash": "4a792abead30416e",
+          "commit": "96263e0a",
+          "note": "2026-10-17 opus/batch-02 (claude opus): 2 native ideas each, cards in agents/swarm-outputs/claude-2026-10-17-opus-batch-02"
+        }
+      ]
     },
     "gen-ethereal-cyber-aurora-hummingbird-core": {
       "hash": "b9f293b4c5c1e360",
@@ -2931,8 +2991,17 @@
       ]
     },
     "gen-ethereal-cyber-plasma-void-dragon": {
-      "hash": "65c461b768ee9e89",
-      "history": []
+      "hash": "819022895e72ecbb",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T11:47:20.808Z",
+          "hash": "819022895e72ecbb",
+          "prev_hash": "65c461b768ee9e89",
+          "commit": "96263e0a",
+          "note": "2026-10-17 opus/batch-02 (claude opus): 2 native ideas each, cards in agents/swarm-outputs/claude-2026-10-17-opus-batch-02"
+        }
+      ]
     },
     "gen-ethereal-glass-flora-terrarium": {
       "hash": "21f7d2142a07cc71",
@@ -3598,7 +3667,7 @@
       ]
     },
     "gen-hyper-dimensional-bismuth-matrix": {
-      "hash": "790c6c1c16b973ea",
+      "hash": "ac1f7e3cd7de7691",
       "history": [
         {
           "event": "upgraded",
@@ -3607,6 +3676,14 @@
           "prev_hash": "b55b86668a5ffe61",
           "commit": "4653c738",
           "note": null
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T11:47:20.808Z",
+          "hash": "ac1f7e3cd7de7691",
+          "prev_hash": "790c6c1c16b973ea",
+          "commit": "96263e0a",
+          "note": "2026-10-17 opus/batch-02 (claude opus): 2 native ideas each, cards in agents/swarm-outputs/claude-2026-10-17-opus-batch-02"
         }
       ]
     },
@@ -4745,7 +4822,7 @@
       ]
     },
     "gen-prismatic-cyber-auroral-manta-swarm": {
-      "hash": "104353fa848f5df9",
+      "hash": "415e7c6fceb51689",
       "history": [
         {
           "event": "upgraded",
@@ -4754,6 +4831,14 @@
           "prev_hash": "f94552e98bf5186e",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T11:47:20.808Z",
+          "hash": "415e7c6fceb51689",
+          "prev_hash": "104353fa848f5df9",
+          "commit": "96263e0a",
+          "note": "2026-10-17 opus/batch-02 (claude opus): 2 native ideas each, cards in agents/swarm-outputs/claude-2026-10-17-opus-batch-02"
         }
       ]
     },
