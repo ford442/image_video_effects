@@ -11,6 +11,7 @@ import {
 } from '../config/performancePolicy';
 import type { InternalColorFormat } from '../config/formatPolicy';
 import { getHistoryWorkingSizeCap } from '../config/vramBudget';
+import { startGpuEncodeSession } from '../recording/gpuEncodeSupport';
 
 type SlotMode = 'chained' | 'parallel';
 
@@ -40,6 +41,8 @@ export interface WASMDiagnostics {
   initTime: string;
   /** One-line "ready / partial / failed at <stage> · adapter: …" summary for the debug panel. */
   initSummary: string;
+  /** Swapchain COPY_SRC probe from C++ init (null = pending or pre-v2 binary). */
+  canvasCopySrc: boolean | null;
 }
 
 export class WASMRenderer implements Renderer, ShaderSlotRenderer {
@@ -157,6 +160,7 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
       loadErrorCount: bridge?.loadErrorCount ?? 0,
       lastLoadError: bridge?.lastLoadError ?? null,
       initTime: bridge?.initTime ?? 'pending',
+      canvasCopySrc: bridge?.canvasCopySrc ?? null,
       initSummary: summarizeWasmInitState({
         initialized: this.initialized,
         failedStage: bridge?.failedStage,
@@ -350,7 +354,27 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     canvasElement: HTMLCanvasElement,
     options?: { durationMs?: number; frameRate?: number; videoBitsPerSecond?: number }
   ): Promise<Blob> {
-    return WasmBridge.startRecording(canvasElement, options);
+    // Recording 2.0 (WebCodecs) by default; the bridge only falls back to its
+    // MediaRecorder pump without VideoEncoder or with ?record=mediarecorder.
+    return WasmBridge.startRecording(canvasElement, {
+      ...options,
+      gpuEncode: (capture, opts) => startGpuEncodeSession({
+        canvas: WasmBridge.getPresentCanvas() ?? canvasElement,
+        supportsCanvasCopySrc: () => this.supportsCanvasCopySrc(),
+        setCanvasCopySrc: (enabled) => this.setCanvasCopySrc(enabled),
+        readback: capture,
+      }, opts),
+    });
+  }
+
+  /** C++ init probe saw the swapchain accept COPY_SRC and the binary can reconfigure it. */
+  supportsCanvasCopySrc(): boolean {
+    return WasmBridge.supportsCanvasCopySrc();
+  }
+
+  /** Reconfigure the C++ swapchain with (or without) COPY_SRC for a GPU-encode take. */
+  setCanvasCopySrc(enabled: boolean): boolean {
+    return WasmBridge.setCanvasCopySrc(enabled);
   }
 
   /** Stop an in-progress recording immediately. */

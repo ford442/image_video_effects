@@ -244,6 +244,13 @@ int isRecording() {
     return (g_renderer && g_renderer->IsRecording()) ? 1 : 0;
 }
 
+// Swapchain COPY_SRC opt-in for canvas → VideoFrame capture during a take.
+// Returns 1 when the surface was (re)configured, 0 when there is no surface.
+EMSCRIPTEN_KEEPALIVE
+int setCanvasCopySrc(int enabled) {
+    return (g_renderer && g_renderer->SetCanvasCopySrc(enabled != 0)) ? 1 : 0;
+}
+
 // Human-readable adapter/device/limits/format summary, built during
 // CreateDevice(). Returns an empty string if not yet initialized.
 EMSCRIPTEN_KEEPALIVE

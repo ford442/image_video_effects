@@ -15,11 +15,14 @@ import {
   shutdownWasmRenderer,
 } from './init.js';
 import {
+  getCanvasCopySrcProbe,
   isRecordingActive,
   recordAndDownload,
+  setCanvasCopySrc,
   setRecording,
   startRecording,
   stopRecording,
+  supportsCanvasCopySrc,
 } from './recording.js';
 import {
   getSlotState,
@@ -96,6 +99,9 @@ const wasmBridge = {
   startRecording,
   stopRecording,
   recordAndDownload,
+  getCanvasCopySrcProbe,
+  supportsCanvasCopySrc,
+  setCanvasCopySrc,
 };
 
 export default wasmBridge;

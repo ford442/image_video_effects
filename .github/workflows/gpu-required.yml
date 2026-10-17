@@ -26,6 +26,7 @@ on:
           - format-tier-bench
           - wasm-benchmark
           - renderer-parity
+          - wasm-recording
       runner_label:
         description: Runner label with a real GPU (self-hosted)
         type: string
@@ -93,6 +94,13 @@ jobs:
           CI: true
           WASM_GPU_TESTS: ${{ inputs.strict && '1' || '0' }}
 
+      - name: Run WASM recording (2s WebCodecs WebM)
+        if: inputs.suite == 'wasm-recording'
+        run: npx playwright test tests/wasm-recording.gpu.spec.ts --project=chromium
+        env:
+          CI: true
+          WASM_GPU_TESTS: ${{ inputs.strict && '1' || '0' }}
+
       - name: Upload reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -102,6 +110,7 @@ jobs:
             reports/format-tier-bench-*.md
             test-results/format-tier-bench.json
             test-results/wasm-benchmark-report.json
+            test-results/wasm-recording-report.json
             playwright-report/
           retention-days: 30
           if-no-files-found: warn

@@ -31,6 +31,7 @@
     "_getGPUTimings",
     "_setRecording",
     "_isRecording",
+    "_setCanvasCopySrc",
     "_getAdapterSummary",
     "_getLastInitErrorStage",
     "_getLastInitErrorMessage",

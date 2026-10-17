@@ -65,7 +65,9 @@ After the default configure, `runWebGpuBootProbe()` calls `probeCanvasCopySrc()`
 - `WebGpuProbeHandoff.canvasCopySrc` (plus `canvasColorOptIns` so callers can rebuild the exact live config)
 - `adapterSummary … | canvas: copySrc=yes|no colorSpace=…`
 
-Rejection is fail-soft — it never fails the ladder rung. `encodePresent` (TS) and `PresentToSurface` (C++) remain blit-to-swapchain. Capture code (WebCodecs / lossless PNG) reconfigures with `buildCanvasConfigureOptions(device, format, { ...canvasColorOptIns, copySrc: true })` only when the flag is true; it does not create a second device. C++ `COPY_SRC` is a parity follow-up (WASM feature freeze until #1080).
+Rejection is fail-soft — it never fails the ladder rung. `encodePresent` (TS) and `PresentToSurface` (C++) remain blit-to-swapchain. Capture code (WebCodecs / lossless PNG) reconfigures with `buildCanvasConfigureOptions(device, format, { ...canvasColorOptIns, copySrc: true })` only when the flag is true; it does not create a second device.
+
+**C++ parity (canvas_configure v2).** `JS_CreateSurfaceFromCanvas(selector, device, copySrc)` runs the same probe *before* its contract configure (validation error scope + `getConfiguration().usage`) and publishes the result on `Module.pixelocityCanvasCopySrc` → `WasmBridge.getDiagnostics().canvasCopySrc` / `WASMRenderer.getDiagnostics().canvasCopySrc` (`null` while pending or on a pre-v2 binary). Boot still passes `copySrc = 0` and `canvasCopySrc_` defaults to `false`, so both configures (JS + C++ Fifo/width/height) stay render-only. For a GPU-encode take, `WasmBridge.setCanvasCopySrc(true)` calls the `_setCanvasCopySrc` export → `SetCanvasCopySrc()` → `ConfigureSurface()` with `RenderAttachment | CopySrc`, but only when the probe was green; it checks `getConfiguration()` afterwards and backs out if the bit was dropped. `verify:device-policy` asserts the default and opt-in usage enums on both configures, the probe scope, the `canvasCopySrc_` default, and that `ConfigureSurface()` still follows the JS configure.
 
 ### Opt-in: Display P3 / extended tone mapping (default off)
 
@@ -77,5 +79,5 @@ Rejection is fail-soft — it never fails the ladder rung. `encodePresent` (TS) 
 
 ## Deferred
 
-- **C++ canvas parity:** `COPY_SRC` / `colorSpace` on `JS_CreateSurfaceFromCanvas` + `ConfigureSurface()` — after #1080.
+- **C++ Display P3 / extended tone mapping:** the C++ configures never write `colorSpace` / `toneMapping` (TS-first, URL opt-in). C++ `COPY_SRC` landed in canvas_configure v2 (above); it takes effect once `public/wasm` is rebuilt with emcc 6.0.9.
 - **Controls toggle** for Display P3 (URL opt-in only today).

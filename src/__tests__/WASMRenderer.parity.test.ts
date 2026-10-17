@@ -88,7 +88,11 @@ describe('WASMRenderer Phase 3 parity methods', () => {
   it('delegates startRecording and stopRecording to the bridge', async () => {
     const canvas = document.createElement('canvas');
     await renderer.startRecording(canvas, { durationMs: 5000 });
-    expect(WasmBridge.startRecording).toHaveBeenCalledWith(canvas, { durationMs: 5000 });
+    // Recording 2.0: WebCodecs encoder is always injected; the bridge decides MediaRecorder fallback.
+    expect(WasmBridge.startRecording).toHaveBeenCalledWith(canvas, {
+      durationMs: 5000,
+      gpuEncode: expect.any(Function),
+    });
 
     renderer.stopRecording();
     expect(WasmBridge.stopRecording).toHaveBeenCalled();

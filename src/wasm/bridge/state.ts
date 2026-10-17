@@ -13,6 +13,10 @@ export interface EmscriptenModule {
   stringToUTF8(str: string, ptr: number, maxBytes: number): void;
   HEAPU8: Uint8Array;
   HEAPF32: Float32Array;
+  /** Swapchain COPY_SRC probe from JS_CreateSurfaceFromCanvas; undefined while pending or on older binaries. */
+  pixelocityCanvasCopySrc?: boolean;
+  /** Present only on binaries built with the canvas_configure v2 export. */
+  _setCanvasCopySrc?: (enabled: number) => number;
 }
 
 export type PixelocityWasmFactory = (opts: {

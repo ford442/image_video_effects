@@ -39,7 +39,9 @@ function getDiagnostics() {
     failedStage: cpp.stage,
     failedStageName: cpp.stageName,
     lastInitError: cpp.message,
-    adapterInfo: cpp.adapterSummary
+    adapterInfo: cpp.adapterSummary,
+    /** Swapchain COPY_SRC probe (canvas_configure optIn.copySrc); null = pending or pre-v2 binary. */
+    canvasCopySrc: typeof wasmRef.module?.pixelocityCanvasCopySrc === "boolean" ? wasmRef.module.pixelocityCanvasCopySrc : null
   };
 }
 export {

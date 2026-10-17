@@ -30,6 +30,71 @@ export function writeGpuEncodePreference(enabled: boolean): void {
   }
 }
 
+/** `?record=mediarecorder` forces the legacy MediaRecorder path on every backend. */
+export function forcesMediaRecorder(
+  search: string = typeof window !== 'undefined' ? window.location.search : '',
+): boolean {
+  return new URLSearchParams(search).get('record') === 'mediarecorder';
+}
+
+/** Where a GPU-encode take gets its frames from (TS canvas and/or WASM readback). */
+export interface GpuEncodeFrames {
+  canvas: HTMLCanvasElement;
+  /** Swapchain can take COPY_SRC (boot / WASM init probe was green). */
+  supportsCanvasCopySrc(): boolean;
+  /** Reconfigure the swapchain for the take; false when refused. */
+  setCanvasCopySrc(enabled: boolean): boolean;
+  /** RGBA8 readback (WASM beginFrameCapture), null when unavailable. */
+  readback: (() => Promise<ImageData>) | null;
+}
+
+/** One WebCodecs take for either backend. stop() also restores the render-only swapchain. */
+export interface GpuEncodeSession {
+  readonly kind: 'canvas' | 'readback';
+  stop(): Promise<Blob>;
+}
+
+/**
+ * Start Recording 2.0 on whichever frame source the backend offers: the canvas
+ * VideoFrame when COPY_SRC is available, else the RGBA readback. Resolves null
+ * when there is no source or no supported WebM codec (caller falls back to
+ * MediaRecorder).
+ */
+export async function startGpuEncodeSession(
+  frames: GpuEncodeFrames,
+  opts: GpuEncoderModule.GpuEncodeOptions,
+): Promise<GpuEncodeSession | null> {
+  const { GpuEncodeRecorder, canvasFrameSource, readbackFrameSource } = await loadGpuEncoder();
+  let source: GpuEncoderModule.GpuFrameSource;
+  if (frames.supportsCanvasCopySrc() && frames.setCanvasCopySrc(true)) {
+    source = canvasFrameSource(frames.canvas);
+  } else if (frames.readback) {
+    source = readbackFrameSource(frames.readback);
+  } else {
+    return null;
+  }
+  const restore = () => {
+    if (source.kind === 'canvas') frames.setCanvasCopySrc(false);
+  };
+
+  let recorder: GpuEncoderModule.GpuEncodeRecorder | null;
+  try {
+    recorder = await GpuEncodeRecorder.start(source, opts);
+  } catch (e) {
+    restore();
+    throw e;
+  }
+  if (!recorder) {
+    restore();
+    return null;
+  }
+  const started = recorder;
+  return {
+    kind: source.kind,
+    stop: () => started.stop().finally(restore),
+  };
+}
+
 let modulePromise: Promise<typeof GpuEncoderModule> | null = null;
 
 export function loadGpuEncoder(): Promise<typeof GpuEncoderModule> {

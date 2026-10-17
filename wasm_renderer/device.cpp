@@ -22,7 +22,17 @@ using wasm_internal::CheckLimit;
 //
 // Returns the WASM surface handle (pointer-sized integer) on success, 0 on failure.
 // The caller must cast the return value to WGPUSurface.
-EM_JS(uint32_t, JS_CreateSurfaceFromCanvas, (const char* selectorPtr, WGPUDevice deviceHandle), {
+//
+// copySrc mirrors the TS buildCanvasConfigureOptions({ copySrc }) opt-in
+// (src/contracts/canvas_configure.json optIn.copySrc). Boot passes 0: the
+// default swapchain stays render-only.
+//
+// Before the contract configure, this also probes RENDER_ATTACHMENT|COPY_SRC
+// inside a validation error scope (mirror of probeCanvasCopySrc() in
+// src/renderer/webgpuBootProbe.ts) and publishes the result on
+// Module.pixelocityCanvasCopySrc (undefined until the scope resolves, then
+// true/false). Fail-soft: a rejected probe never fails surface creation.
+EM_JS(uint32_t, JS_CreateSurfaceFromCanvas, (const char* selectorPtr, WGPUDevice deviceHandle, int copySrc), {
     var selector = UTF8ToString(selectorPtr);
     var canvasEl = document.querySelector(selector);
     if (!canvasEl) {
@@ -43,17 +53,50 @@ EM_JS(uint32_t, JS_CreateSurfaceFromCanvas, (const char* selectorPtr, WGPUDevice
         console.error('[WASM] Device JS object not found at handle', deviceHandle);
         return 0;
     }
+    Module.pixelocityCanvasCopySrc = undefined;
     try {
-        // Matches TS buildCanvasConfigureOptions default path
+        var scoped = typeof jsDevice.pushErrorScope === 'function' &&
+                     typeof jsDevice.popErrorScope === 'function';
+        if (scoped) jsDevice.pushErrorScope('validation');
+        var probeAccepted = true;
+        try {
+            ctx.configure({
+                device: jsDevice,
+                format: preferredFormat,
+                alphaMode: 'opaque',
+                usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC
+            });
+            var readback = typeof ctx.getConfiguration === 'function' ? ctx.getConfiguration() : null;
+            if (readback && typeof readback.usage === 'number' &&
+                !(readback.usage & GPUTextureUsage.COPY_SRC)) {
+                probeAccepted = false;
+            }
+        } catch (probeErr) {
+            probeAccepted = false;
+        }
+        var scopePromise = scoped ? jsDevice.popErrorScope() : Promise.resolve(null);
+        scopePromise.then(function (err) {
+            Module.pixelocityCanvasCopySrc = probeAccepted && !err;
+            console.log('[WASM Probe] canvasCopySrc=' + Module.pixelocityCanvasCopySrc);
+        }, function () {
+            Module.pixelocityCanvasCopySrc = false;
+        });
+    } catch (scopeErr) {
+        Module.pixelocityCanvasCopySrc = false;
+    }
+    try {
+        // Matches TS buildCanvasConfigureOptions
         // (src/contracts/canvas_configure.json; verify:device-policy). Do NOT drop this configure
         // as a "simplification": importJsSurface needs a configured context.
         // ConfigureSurface() below is a second configure (Fifo + width/height)
         // — both are required; omitting the C++ pass can yield a black canvas.
+        var usage = GPUTextureUsage.RENDER_ATTACHMENT;
+        if (copySrc) usage = GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC;
         ctx.configure({
             device: jsDevice,
             format: preferredFormat,
             alphaMode: 'opaque',
-            usage: GPUTextureUsage.RENDER_ATTACHMENT
+            usage: usage
         });
     } catch (err) {
         console.error('[WASM] Canvas context configure failed:', err);
@@ -636,7 +679,7 @@ bool WebGPURenderer::CreateDevice() {
         printf("[WASM] Negotiated canvas format: %s\n", fmt == 1 ? "rgba8unorm" : "bgra8unorm");
 
         uint32_t surfHandle = JS_CreateSurfaceFromCanvas(
-            canvasSelector_.c_str(), device_.get());
+            canvasSelector_.c_str(), device_.get(), canvasCopySrc_ ? 1 : 0);
         if (!surfHandle) {
             // Surface creation failed (no canvas at selector / getContext('webgpu')
             // failed / ctx.configure threw). Without a surface there is no way to
@@ -681,17 +724,29 @@ void WebGPURenderer::ConfigureSurface() {
     // Intentional second configure after JS_CreateSurfaceFromCanvas.
     // JS path matches TS { alphaMode: opaque, usage: RENDER_ATTACHMENT }.
     // C++ adds swapchain size + presentMode Fifo. Keep both.
+    // canvasCopySrc_ is the canvas_configure.json optIn.copySrc usage, set by
+    // SetCanvasCopySrc() for a GPU-encode take (JS gates it on the probe).
     WGPUSurfaceConfiguration config = {};
     config.device      = device_.get();
     config.format      = surfaceFormat_;          // negotiated via JS_GetPreferredCanvasFormat()
     config.usage       = WGPUTextureUsage_RenderAttachment;
+    if (canvasCopySrc_) config.usage = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;
     config.alphaMode   = WGPUCompositeAlphaMode_Opaque;
     config.width       = static_cast<uint32_t>(canvasWidth_);
     config.height      = static_cast<uint32_t>(canvasHeight_);
     config.presentMode = WGPUPresentMode_Fifo;
 
     wgpuSurfaceConfigure(surface_.get(), &config);
-    printf("✅ WebGPU surface configured (%dx%d)\n", canvasWidth_, canvasHeight_);
+    printf("✅ WebGPU surface configured (%dx%d%s)\n", canvasWidth_, canvasHeight_,
+           canvasCopySrc_ ? ", copySrc" : "");
+}
+
+bool WebGPURenderer::SetCanvasCopySrc(bool enabled) {
+    if (!surface_.get() || !device_.get() || deviceLost_) return false;
+    if (canvasCopySrc_ == enabled) return true;
+    canvasCopySrc_ = enabled;
+    ConfigureSurface();
+    return true;
 }
 
 // ─── Present to canvas ────────────────────────────────────────────────────────

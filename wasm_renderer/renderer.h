@@ -272,6 +272,12 @@ public:
     void SetRecording(bool recording);
     bool IsRecording() const { return isRecording_; }
 
+    // Reconfigure the swapchain with (or without) COPY_SRC for a GPU-encode take
+    // (canvas_configure.json optIn.copySrc). JS only enables it when the
+    // init-time probe (Module.pixelocityCanvasCopySrc) was green.
+    bool SetCanvasCopySrc(bool enabled);
+    bool IsCanvasCopySrc() const { return canvasCopySrc_; }
+
     /** Internal: device-lost callback entry (called from device.cpp). */
     static void MarkDeviceLostFromCallback(void* userdata);
 
@@ -490,6 +496,7 @@ private:
     bool tsChainedStartWritten_ = false;
 
     bool isRecording_ = false;
+    bool canvasCopySrc_ = false;
 
     // ═══════════════════════════════════════════════════════════════════════════
     // PERSISTENT STAGING BUFFER (avoids per-frame heap allocation)

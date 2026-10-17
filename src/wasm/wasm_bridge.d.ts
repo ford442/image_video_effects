@@ -20,6 +20,8 @@ export interface WasmBridgeDiagnostics {
   lastInitError: string;
   /** Adapter/device/limits summary from C++ CreateDevice(). */
   adapterInfo: string;
+  /** Swapchain COPY_SRC probe from JS_CreateSurfaceFromCanvas; null = pending or pre-v2 binary. */
+  canvasCopySrc: boolean | null;
 }
 
 export interface GPUTimings {
@@ -100,10 +102,25 @@ export function captureFrame(): Promise<ImageData>;
 export function captureFrameDataUrl(): Promise<string>;
 export function takeScreenshot(filename?: string): Promise<void>;
 
+export interface WasmEncodeSession {
+  stop(): Promise<Blob>;
+}
+
+/** Recording 2.0 (WebCodecs) starter; resolves null when no WebM codec is supported. */
+export type WasmGpuEncodeStarter = (
+  capture: () => Promise<ImageData>,
+  opts: { width: number; height: number; fps: number; bitrate: number }
+) => Promise<WasmEncodeSession | null>;
+
 export interface RecordingOptions {
   durationMs?: number;
   frameRate?: number;
   videoBitsPerSecond?: number;
+  fps?: number;
+  bitrate?: number;
+  mimeType?: string;
+  /** WebCodecs encoder; used whenever VideoEncoder exists unless ?record=mediarecorder. */
+  gpuEncode?: WasmGpuEncodeStarter;
 }
 
 export function startRecording(
@@ -114,8 +131,14 @@ export function stopRecording(): void;
 export function recordAndDownload(
   canvasElement: HTMLCanvasElement,
   durationMs?: number,
-  filename?: string
+  filename?: string,
+  gpuEncode?: WasmGpuEncodeStarter
 ): Promise<void>;
+/** Swapchain COPY_SRC probe result (null = pending or pre-v2 binary). */
+export function getCanvasCopySrcProbe(): boolean | null;
+export function supportsCanvasCopySrc(): boolean;
+/** Reconfigure the C++ swapchain with (or without) COPY_SRC (canvas_configure optIn.copySrc). */
+export function setCanvasCopySrc(enabled: boolean): boolean;
 
 export interface WasmRenderer {
   getDiagnostics(): WasmBridgeDiagnostics;
@@ -162,7 +185,15 @@ export interface WasmRenderer {
   takeScreenshot(filename?: string): Promise<void>;
   startRecording(canvasElement: HTMLCanvasElement, options?: RecordingOptions): Promise<Blob>;
   stopRecording(): void;
-  recordAndDownload(canvasElement: HTMLCanvasElement, durationMs?: number, filename?: string): Promise<void>;
+  recordAndDownload(
+    canvasElement: HTMLCanvasElement,
+    durationMs?: number,
+    filename?: string,
+    gpuEncode?: WasmGpuEncodeStarter
+  ): Promise<void>;
+  getCanvasCopySrcProbe(): boolean | null;
+  supportsCanvasCopySrc(): boolean;
+  setCanvasCopySrc(enabled: boolean): boolean;
 }
 
 declare const wasmRenderer: WasmRenderer;

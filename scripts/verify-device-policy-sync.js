@@ -256,27 +256,66 @@ function verifyCanvasConfigure() {
 
   // ── C++: JS_CreateSurfaceFromCanvas + ConfigureSurface ──────────────────
   const cpp = fs.readFileSync(CPP_DEVICE, 'utf8');
-  const jsFn = cpp.match(new RegExp(`EM_JS\\([^,]+,\\s*${c.cpp.jsConfigureFunction}[\\s\\S]*?\\n\\}\\);`));
-  const jsCfg = jsFn && jsFn[0].match(/ctx\.configure\(\{([\s\S]*?)\}\)/);
-  if (!jsCfg) {
-    fail(`device.cpp ${c.cpp.jsConfigureFunction} ctx.configure({...}) not found`);
+  const jsFnName = c.cpp.jsConfigureFunction;
+  const jsFn = cpp.match(new RegExp(`EM_JS\\([^,]+,\\s*${jsFnName}\\s*,\\s*\\(([^)]*)\\)[\\s\\S]*?\\n\\}\\);`));
+  const jsUsageNames = (expr) =>
+    expr.split('|').map((u) => u.trim().replace(/^GPUTextureUsage\./, '')).sort();
+  const sameSet = (a, b) => JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
+  if (!jsFn) {
+    fail(`device.cpp ${jsFnName} EM_JS not found`);
   } else {
-    const body = jsCfg[1];
-    if (!new RegExp(`alphaMode:\\s*'${c.alphaMode}'`).test(body)) {
-      fail(`device.cpp ${c.cpp.jsConfigureFunction} alphaMode must be '${c.alphaMode}'`);
+    const fnBody = jsFn[0];
+    if (!new RegExp(`\\bint\\s+${c.cpp.copySrc.jsParam}\\b`).test(jsFn[1])) {
+      fail(`device.cpp ${jsFnName} must take an int ${c.cpp.copySrc.jsParam} opt-in parameter`);
     }
-    const usage = body.match(/usage:\s*([^,\n}]+)/);
-    const jsUsage = usage
-      ? usage[1].split('|').map((u) => u.trim().replace(/^GPUTextureUsage\./, '')).sort()
-      : [];
-    if (JSON.stringify(jsUsage) !== JSON.stringify([...c.usage].sort())) {
-      fail(`device.cpp ${c.cpp.jsConfigureFunction} usage must be ${c.usage.join('|')} (got ${jsUsage.join('|') || 'missing'})`);
+    const configures = [...fnBody.matchAll(/ctx\.configure\(\{([\s\S]*?)\}\)/g)];
+    if (configures.length < 2) {
+      fail(`device.cpp ${jsFnName} must run the COPY_SRC probe configure and then the contract configure`);
     }
-    if (!/format:\s*preferredFormat/.test(body)) {
-      fail(`device.cpp ${c.cpp.jsConfigureFunction} format must be getPreferredCanvasFormat() (preferredFormat)`);
+    for (const cfg of configures) {
+      if (/colorSpace|toneMapping/.test(cfg[1])) {
+        fail(`device.cpp ${jsFnName} must not set colorSpace/toneMapping (display-p3 opt-in is TS-first)`);
+      }
+      if (!/format:\s*preferredFormat/.test(cfg[1])) {
+        fail(`device.cpp ${jsFnName} format must be getPreferredCanvasFormat() (preferredFormat)`);
+      }
+      if (!new RegExp(`alphaMode:\\s*'${c.alphaMode}'`).test(cfg[1])) {
+        fail(`device.cpp ${jsFnName} alphaMode must be '${c.alphaMode}'`);
+      }
     }
-    if (/colorSpace|toneMapping/.test(body)) {
-      fail(`device.cpp ${c.cpp.jsConfigureFunction} must not set colorSpace/toneMapping (opt-in is TS-first)`);
+
+    // Probe: RENDER_ATTACHMENT|COPY_SRC inside a validation scope, result on Module, before the contract configure.
+    if (configures.length >= 2) {
+      const probeCfg = configures[0];
+      const probeUsage = probeCfg[1].match(/usage:\s*([^,\n}]+)/);
+      if (!probeUsage || !sameSet(jsUsageNames(probeUsage[1]), c.optIn.copySrc.usage)) {
+        fail(`device.cpp ${jsFnName} probe configure usage must be ${c.optIn.copySrc.usage.join('|')}`);
+      }
+      const iPush = fnBody.indexOf("pushErrorScope('validation')");
+      const iPop = fnBody.indexOf('popErrorScope()');
+      if (iPush < 0 || iPop < 0 || !(iPush < probeCfg.index && probeCfg.index < iPop)) {
+        fail(`device.cpp ${jsFnName} COPY_SRC probe must run inside a validation error scope (mirror probeCanvasCopySrc)`);
+      }
+      if (!fnBody.includes(`Module.${c.cpp.copySrc.probeModuleField} =`)) {
+        fail(`device.cpp ${jsFnName} must publish the probe result on Module.${c.cpp.copySrc.probeModuleField}`);
+      }
+
+      // Contract configure: the last one in the function, usage from the opt-in parameter.
+      const contractCfg = configures[configures.length - 1];
+      if (!/usage:\s*usage\b/.test(contractCfg[1])) {
+        fail(`device.cpp ${jsFnName} contract configure must use the computed usage (default or ${c.cpp.copySrc.jsParam} opt-in)`);
+      }
+      const defaultUsage = fnBody.match(/var usage\s*=\s*([^;]+);/);
+      if (!defaultUsage || !sameSet(jsUsageNames(defaultUsage[1]), c.usage)) {
+        fail(`device.cpp ${jsFnName} default usage must be ${c.usage.join('|')} (got ${defaultUsage ? defaultUsage[1] : 'missing'})`);
+      }
+      const optUsage = fnBody.match(new RegExp(`if \\(${c.cpp.copySrc.jsParam}\\) usage\\s*=\\s*([^;]+);`));
+      if (!optUsage || !sameSet(jsUsageNames(optUsage[1]), c.optIn.copySrc.usage)) {
+        fail(`device.cpp ${jsFnName} ${c.cpp.copySrc.jsParam} usage must be ${c.optIn.copySrc.usage.join('|')}`);
+      }
+      if (fnBody.lastIndexOf('importJsSurface') < contractCfg.index) {
+        fail(`device.cpp ${jsFnName} must importJsSurface after the contract configure`);
+      }
     }
   }
 
@@ -285,11 +324,18 @@ function verifyCanvasConfigure() {
     fail(`device.cpp WebGPURenderer::${c.cpp.surfaceConfigureFunction}() not found`);
   } else {
     const body = surf[0];
-    const usage = body.match(/config\.usage\s*=\s*([^;]+);/);
-    const cppUsage = usage ? usage[1].split('|').map((u) => u.trim()).sort() : [];
+    const cppUsageNames = (expr) => expr.split('|').map((u) => u.trim()).sort();
+    const usage = body.match(/\n\s*config\.usage\s*=\s*([^;]+);/);
+    const cppUsage = usage ? cppUsageNames(usage[1]) : [];
     const wantUsage = c.usage.map((u) => c.cpp.usageEnums[u]).sort();
     if (JSON.stringify(cppUsage) !== JSON.stringify(wantUsage)) {
       fail(`device.cpp ${c.cpp.surfaceConfigureFunction} usage must be ${wantUsage.join(' | ')} (got ${cppUsage.join(' | ') || 'missing'})`);
+    }
+    const flag = c.cpp.copySrc.flag;
+    const optUsage = body.match(new RegExp(`if \\(${flag}\\) config\\.usage\\s*=\\s*([^;]+);`));
+    const wantOptUsage = c.optIn.copySrc.usage.map((u) => c.cpp.usageEnums[u]).sort();
+    if (!optUsage || JSON.stringify(cppUsageNames(optUsage[1])) !== JSON.stringify(wantOptUsage)) {
+      fail(`device.cpp ${c.cpp.surfaceConfigureFunction} must set ${wantOptUsage.join(' | ')} when ${flag} (canvas_configure optIn.copySrc)`);
     }
     const alpha = c.cpp.alphaModeEnums[c.alphaMode];
     if (!new RegExp(`config\\.alphaMode\\s*=\\s*${alpha}\\b`).test(body)) {
@@ -309,9 +355,33 @@ function verifyCanvasConfigure() {
 
   // Both configures are required: JS configure → importJsSurface → ConfigureSurface().
   const iImport = cpp.search(new RegExp(`=\\s*${c.cpp.jsConfigureFunction}\\(`));
-  const afterImport = iImport >= 0 ? cpp.slice(iImport) : '';
+  // Only the rest of the function that creates the surface counts (SetCanvasCopySrc also calls it).
+  const afterImport = iImport >= 0 ? cpp.slice(iImport).split(/\n\}\n/)[0] : '';
   if (!new RegExp(`\\n\\s*${c.cpp.surfaceConfigureFunction}\\(\\);`).test(afterImport)) {
     fail(`device.cpp must call ${c.cpp.surfaceConfigureFunction}() after ${c.cpp.jsConfigureFunction} (second configure; black canvas without it)`);
+  }
+  const call = cpp.match(new RegExp(`=\\s*${c.cpp.jsConfigureFunction}\\(([\\s\\S]*?)\\);`));
+  if (!call || !new RegExp(`${c.cpp.copySrc.flag}\\s*\\?\\s*1\\s*:\\s*0`).test(call[1])) {
+    fail(`device.cpp must pass ${c.cpp.copySrc.flag} to ${c.cpp.jsConfigureFunction} (same opt-in for both configures)`);
+  }
+
+  // Default boot is render-only: the flag starts false and only the setter flips it.
+  const header = fs.readFileSync(path.join(ROOT, 'wasm_renderer/renderer.h'), 'utf8');
+  if (!new RegExp(`bool\\s+${c.cpp.copySrc.flag}\\s*=\\s*false;`).test(header)) {
+    fail(`renderer.h ${c.cpp.copySrc.flag} must default to false (boot swapchain stays render-only)`);
+  }
+  const setter = cpp.match(new RegExp(`bool WebGPURenderer::${c.cpp.copySrc.setter}\\([^)]*\\)\\s*\\{[\\s\\S]*?\\n\\}`));
+  if (!setter || !new RegExp(`\\n\\s*${c.cpp.surfaceConfigureFunction}\\(\\);`).test(setter[0])) {
+    fail(`device.cpp ${c.cpp.copySrc.setter}() must reconfigure through ${c.cpp.surfaceConfigureFunction}()`);
+  }
+  const assigns = [...cpp.matchAll(new RegExp(`\\b${c.cpp.copySrc.flag}\\s*=(?!=)`, 'g'))];
+  const inSetter = (i) => !!setter && i >= setter.index && i < setter.index + setter[0].length;
+  if (assigns.length !== 1 || !inSetter(assigns[0].index)) {
+    fail(`device.cpp may only assign ${c.cpp.copySrc.flag} inside ${c.cpp.copySrc.setter}()`);
+  }
+  const exportsJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/contracts/wasm_exports.json'), 'utf8'));
+  if (!exportsJson.exportedFunctions.includes(c.cpp.copySrc.export)) {
+    fail(`wasm_exports.json must export ${c.cpp.copySrc.export} (canvas_configure cpp.copySrc.export)`);
   }
 }
 
