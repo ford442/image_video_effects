@@ -2,7 +2,7 @@
   "id": "gen-grok4-perlin",
   "name": "Stratified Erosion Terrain",
   "url": "shaders/gen_grok4_perlin.wgsl",
-  "description": "Depth-aware terrain with sediment transport, layered rock hardness, reflective valley water tables, wind abrasion, and bass-driven seismic uplift.",
+  "description": "Depth-aware terrain with sediment transport, layered rock hardness, reflective valley water tables, wind abrasion, and bass-driven seismic uplift. Talus skirts steep slopes, and drainage rills follow the downhill gradient.",
   "features": [
     "upgraded-rgba",
     "depth-aware",

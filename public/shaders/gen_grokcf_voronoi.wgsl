@@ -3,31 +3,12 @@
 //  Category: generative
 //  Features: upgraded-rgba, depth-aware, audio-reactive, procedural,
 //            organic-cellular, animated
-//  Upgraded: 2026-09-06
-//  Ideas: cell nucleus at primary F1; F2−F1 crack ridge
+//  Upgraded: 2026-10-17
+//  Ideas: cell nucleus; F2−F1 crack; site comet; triple junctions
 //  A packing: cell id xy, edge mask, F1 (telemetry)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash2(p: vec2<f32>) -> vec2<f32> {
     let h = vec2<f32>(
@@ -53,6 +34,7 @@ fn hash1(p: vec2<f32>) -> f32 {
 struct WorleyResult {
     f1: f32,
     f2: f32,
+    f3: f32,
     cell_id: vec2<f32>,
     cell_index: vec2<f32>,
 };
@@ -64,6 +46,7 @@ fn worley_noise(uv: vec2<f32>, scale: f32, time: f32, drift_speed: f32) -> Worle
 
     var f1 = 1e10;
     var f2 = 1e10;
+    var f3 = 1e10;
     var cell_id = vec2<f32>(0.0);
     var cell_index = cell;
 
@@ -81,16 +64,20 @@ fn worley_noise(uv: vec2<f32>, scale: f32, time: f32, drift_speed: f32) -> Worle
             let dist = length(diff);
 
             if (dist < f1) {
+                f3 = f2;
                 f2 = f1;
                 f1 = dist;
                 cell_id = hash_val;
                 cell_index = current_cell;
             } else if (dist < f2) {
+                f3 = f2;
                 f2 = dist;
+            } else if (dist < f3) {
+                f3 = dist;
             }
         }
     }
-    return WorleyResult(f1, f2, cell_id, cell_index);
+    return WorleyResult(f1, f2, f3, cell_id, cell_index);
 }
 
 fn fbm_worley(uv: vec2<f32>, time: f32, base_scale: f32, octaves: i32) -> vec3<f32> {
@@ -224,6 +211,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 2 — crack ridge from true F2−F1 (Voronoi wall)
     let crack = smoothstep(0.06, 0.0, abs((primary.f2 - primary.f1) - 0.03));
     final_color = final_color + edge_color * crack * (0.35 + edgeGlowP * 0.25);
+
+    // Idea 3 — comet behind the drifting feature point (velocity of its existing offset)
+    let st = uv1 * density;
+    let neighbor = cell_index - floor(st);
+    let phaseX = time * 0.05 + cell_hash.x * 6.28318;
+    let phaseY = time * 0.05 + cell_hash.y * 6.28318;
+    let siteDrift = vec2<f32>(sin(phaseX), cos(phaseY)) * 0.3;
+    let siteVel = vec2<f32>(cos(phaseX), -sin(phaseY));
+    let toSite = neighbor + cell_hash + siteDrift - fract(st);
+    let behind = dot(normalize(toSite + vec2<f32>(1e-4, 0.0)), siteVel / max(length(siteVel), 1e-3));
+    let siteComet = smoothstep(0.35, 0.92, behind) * exp(-primary.f1 * 7.0) * (1.0 - edge_mask);
+    final_color = final_color + inner_color * siteComet * 0.85;
+    // Idea 4 — triple junction: three sites nearly equidistant, brighter than the wall
+    let triple = smoothstep(0.09, 0.0, primary.f2 - primary.f1) * smoothstep(0.14, 0.015, primary.f3 - primary.f1);
+    final_color = final_color + vec3<f32>(1.0, 0.92, 0.78) * triple * (0.45 + edgeGlowP * 0.35);
 
     // ─── Creative: micro-cosmic starfield inside each cell ───
     // Independent rotation per cell, hashed offset

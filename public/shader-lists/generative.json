@@ -13772,7 +13772,7 @@
     "id": "gen-grid",
     "name": "Domain-Warped FBM Grid",
     "url": "shaders/gen_grid.wgsl",
-    "description": "Audio-reactive domain-warped FBM grid with mouse gravity well, recursive moiré sub-grids, chromatic dispersion edges, and temporal motion blur.",
+    "description": "Audio-reactive domain-warped FBM grid with mouse gravity well, recursive moiré sub-grids, chromatic dispersion edges, and temporal motion blur. Lattice cells hold a stable interior wash, and Jacobian creases brighten where the warp folds.",
     "features": [
       "mouse-driven",
       "depth-aware",
@@ -13837,7 +13837,7 @@
     "id": "gen-grok4-life",
     "name": "SmoothLife Predator-Prey",
     "url": "shaders/gen_grok4_life.wgsl",
-    "description": "Two-species SmoothLife cellular automaton with Lotka-Volterra predator-prey dynamics. Species A (green prey) uses Rafler 2011 birth/survival rules; species B (red predator) grows on prey density and decays without it. Audio bass drives prey birth-rate, treble drives predator decay, mids control coupling strength.",
+    "description": "Two-species SmoothLife cellular automaton with Lotka-Volterra predator-prey dynamics. Species A (green prey) uses Rafler 2011 birth/survival rules; species B (red predator) grows on prey density and decays without it. Audio bass drives prey birth-rate, treble drives predator decay, mids control coupling strength. Dense prey interiors dimple at carrying capacity, and coexistence hue follows the local phase portrait.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -13895,7 +13895,7 @@
     "id": "gen-grok4-perlin",
     "name": "Stratified Erosion Terrain",
     "url": "shaders/gen_grok4_perlin.wgsl",
-    "description": "Depth-aware terrain with sediment transport, layered rock hardness, reflective valley water tables, wind abrasion, and bass-driven seismic uplift.",
+    "description": "Depth-aware terrain with sediment transport, layered rock hardness, reflective valley water tables, wind abrasion, and bass-driven seismic uplift. Talus skirts steep slopes, and drainage rills follow the downhill gradient.",
     "features": [
       "upgraded-rgba",
       "depth-aware",
@@ -13960,7 +13960,7 @@
     "id": "gen-grok41-mandelbrot",
     "name": "Buddhabrot Nebula",
     "url": "shaders/gen_grok41_mandelbrot.wgsl",
-    "description": "Audio-reactive Buddhabrot orbit accumulation with bass-breathing sample count, mids hue shift, treble sparkle stars, mouse-driven panning, orbital rainbow trails, and ACES temporal accumulation.",
+    "description": "Audio-reactive Buddhabrot orbit accumulation with bass-breathing sample count, mids hue shift, treble sparkle stars, mouse-driven panning, orbital rainbow trails, and ACES temporal accumulation. Long orbits leave warm comets, and the real-axis antenna tip anchors the silhouette.",
     "features": [
       "mouse-driven",
       "depth-aware",
@@ -14025,7 +14025,7 @@
     "id": "gen-grok41-plasma",
     "name": "Spherical Harmonics Plasma",
     "url": "shaders/gen_grok41_plasma.wgsl",
-    "description": "Audio-reactive 3D gas giant using Y(l,m) spherical harmonics with HDR ACES tone mapping, Rayleigh limb scattering, mouse-driven light, and treble-triggered lightning tendrils.",
+    "description": "Audio-reactive 3D gas giant using Y(l,m) spherical harmonics with HDR ACES tone mapping, Rayleigh limb scattering, mouse-driven light, and treble-triggered lightning tendrils. A polar hood caps high latitudes, and jet zero-crossings darken into belt edges.",
     "features": [
       "mouse-driven",
       "depth-aware",
@@ -14091,7 +14091,7 @@
     "id": "gen-grokcf-interference",
     "name": "Cylindrical Drum Modes",
     "url": "shaders/gen_grokcf_interference.wgsl",
-    "description": "Vibrating circular membrane Bessel function modal synthesis: u_{mn} = J_m(α_{mn}·r/R)·cos(mφ)·cos(ω_{mn}·t). GPU polynomial Bessel J₀–J₃ (Abramowitz & Stegun). Audio bands activate mode families (bass→radial, mids→azimuthal, treble→higher-order). Chladni node-line colouring.",
+    "description": "Vibrating circular membrane Bessel function modal synthesis: u_{mn} = J_m(α_{mn}·r/R)·cos(mφ)·cos(ω_{mn}·t). GPU polynomial Bessel J₀–J₃ (Abramowitz & Stegun). Audio bands activate mode families (bass→radial, mids→azimuthal, treble→higher-order). Chladni node-line colouring, antinode disks, and a radial beat between the first two circular zeros.",
     "features": [
       "upgraded-rgba",
       "depth-aware",
@@ -14163,7 +14163,7 @@
     "id": "gen-grokcf-voronoi",
     "name": "Worley Cellular",
     "url": "shaders/gen_grokcf_voronoi.wgsl",
-    "description": "Audio-reactive Worley cellular fields with thin-film interference edge glow and micro-cosmic starfields hidden inside each cell.",
+    "description": "Audio-reactive Worley cellular fields with thin-film interference edge glow and micro-cosmic starfields hidden inside each cell. Drifting sites leave comets, and triple junctions flare where three cells meet.",
     "features": [
       "mouse-driven",
       "depth-aware",
@@ -14762,7 +14762,7 @@
       "geometric",
       "chromatic"
     ],
-    "description": "Hopf fibration visualization from S³ to S². Each screen pixel maps to a point on S² whose fiber is a circle in S³, projected via stereographic projection to 2D. Linked circles colored by base-space coordinate with HDR bloom at crossings. Knot-diagram over/under gaps make the linking readable, bass-pumped beads ride each fiber's U(1) phase, and a small base-space S² inset shows the fibers' base points. A stereographic horizon traces the projection boundary while transverse depth-separated links flare at true crossings.",
+    "description": "Hopf fibration visualization from S³ to S². Each screen pixel maps to a point on S² whose fiber is a circle in S³, projected via stereographic projection to 2D. Linked circles colored by base-space coordinate with HDR bloom at crossings. Knot-diagram over/under gaps make the linking readable, bass-pumped beads ride each fiber's U(1) phase, and a small base-space S² inset shows the fibers' base points. A stereographic horizon traces the projection boundary while transverse depth-separated links flare at true crossings. The equatorial fiber is the brighter Hopf generator, and a double-angle seam rules each circle.",
     "workgroup_size": [
       16,
       16,
@@ -15109,7 +15109,7 @@
       "audio",
       "music"
     ],
-    "description": "A 4D maze visualization with neon aesthetics and evolving geometry. Use mouse to orbit the hyper-structure.",
+    "description": "A 4D maze visualization with neon aesthetics and evolving geometry. Use mouse to orbit the hyper-structure. Cul-de-sac chambers warm where the gyroid gradient vanishes, and world-up faces wear into floor treads.",
     "workgroup_size": [
       16,
       16,
@@ -15330,7 +15330,7 @@
     "id": "gen-hyper-warp",
     "name": "Hyper Warp",
     "url": "shaders/gen_hyper_warp.wgsl",
-    "description": "Advanced domain warping with fractal noise, etched warped contour lines, and flow-dispersed prismatic reaction-diffusion feedback.",
+    "description": "Advanced domain warping with fractal noise, etched warped contour lines, and flow-dispersed prismatic reaction-diffusion feedback. Radial flux brightens outflow, and the finest noise octave grains the field.",
     "features": [
       "aces-tone-map",
       "audio-reactive",

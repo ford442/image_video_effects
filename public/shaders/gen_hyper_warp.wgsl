@@ -6,32 +6,13 @@
 //  Complexity: High
 //  Created: 2026-05-30
 //  Optimized: 2026-07-22 — feedback stabilization + real slider wiring
-//  Upgraded: 2026-09-13
-//  Ideas: first-warp fold caustics; second-layer flow stretch;
-//         warped level-set etching; flow-dispersed feedback trails
+//  Upgraded: 2026-10-17
+//  Ideas: fold caustics; flow stretch; level-set etching; prismatic trails; radial flux; octave grit
 //  A packing: raw HDR history RGBA (pre-ACES chromatic color, coverage alpha)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(7) var dataTextureA : texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC : texture_2d<f32>;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,              // time, rippleCount, resolutionX, resolutionY
-  zoom_config: vec4<f32>,         // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
   let b = 0.03;
@@ -214,6 +195,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let isoLip = smoothstep(isoWidth, isoWidth * 2.2, isoDist) * (1.0 - smoothstep(isoWidth * 2.2, isoWidth * 3.4, isoDist));
     let etchAmt = 0.25 + 0.35 * intensity;
     color = color * (1.0 - isoLine * etchAmt) + color2 * isoLip * etchAmt * (0.35 + 0.4 * foldAmt + 0.3 * mid);
+    // Idea 5 — radial flux: outflow along the warp flow brightens, inflow darkens
+    let flux = dot(flowVec, p) / max(length(p), 0.08);
+    color = color * (1.0 + smoothstep(0.15, 1.4, flux) * 0.16 - smoothstep(0.15, 1.4, -flux) * 0.2);
+    // Idea 6 — finest octave of the warped field as surface grain
+    let grit = noise((p + r) * 28.0) - 0.5;
+    color = color + vec3<f32>(grit * 0.055);
 
     // Boost brightness and contrast for intensity
     color = pow(color, vec3<f32>(0.8)) * 1.5;
