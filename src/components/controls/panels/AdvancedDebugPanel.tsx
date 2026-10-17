@@ -3,6 +3,7 @@ import { classifyBandsToRgba } from '../../../gpuChores/lut';
 import type { PassTiming } from '../../../renderer/passTimings';
 import { isWasmForcedByURL } from '../../../renderer/rendererUrl';
 import { PassFlameStrip } from './PassFlameStrip';
+import { usePersistedToggle } from '../../../hooks/usePersistedToggle';
 
 // The GLSL→WGSL importer (and its converter) loads only when the debug panel opens it.
 const ShadertoyImportPanel = lazy(() => import(/* webpackChunkName: "shadertoy-import" */ './ShadertoyImportPanel'));
@@ -59,7 +60,7 @@ export const AdvancedDebugPanel: React.FC<AdvancedDebugPanelProps> = ({
     onImportStatus,
     diagnostics,
 }) => {
-    const [devToolsOpen, setDevToolsOpen] = useState(false);
+    const [devToolsOpen, setDevToolsOpen] = usePersistedToggle('advanced.devTools', false);
     const [lutPreviewOpen, setLutPreviewOpen] = useState(false);
 
     const lutPreview = useMemo(() => {
