@@ -1312,8 +1312,9 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     destroyTimestampQueries(this.timestampRuntime);
     this.supportsTimestampQuery = false;
     this.pipeline.clear();
-    this.resources.destroyWorkingTextures();
-    this.resources.destroyBuffers();
+    // Buffers and samplers belong to the device being released; the OOM retry
+    // (and any re-init) must allocate them again on the next device.
+    this.resources.resetForDevice();
     try {
       this.context?.unconfigure();
     } catch {

@@ -3,6 +3,7 @@ import { DEFAULT_CONFIG } from './Renderer';
 import { initializeWebGPUDevice } from './webgpu/device';
 import { setRendererErrorHandler as setErrorSink } from './ErrorHandling';
 import { createFrameState } from './webgpu/frame';
+import type { WebGPUResourcePool } from './webgpu/resources';
 import {
   getDeviceGeneration,
   getRendererDevice,
@@ -27,6 +28,11 @@ jest.mock('./webgpu/frame', () => {
     },
   };
 });
+
+// Jest has no WebGPU globals; the retry test runs the real buffer allocation.
+(global as unknown as { GPUBufferUsage: Record<string, number> }).GPUBufferUsage = {
+  UNIFORM: 0x40, COPY_DST: 0x08, STORAGE: 0x80,
+};
 
 type FakeDevice = GPUDevice & {
   loseUnexpectedly: () => void;
@@ -176,6 +182,58 @@ describe('WebGPURenderer lifecycle', () => {
       expect(wgpu.getCanvasColorState()).toMatchObject({
         requestedDisplayP3: true, colorSpace: 'srgb', fallbackReason: 'unsupported-p3',
       });
+    });
+  });
+
+  it('gives the retry device fresh buffers and samplers instead of the destroyed ones', async () => {
+    const withAllocators = (d: FakeDevice) => {
+      const created = { buffers: [] as GPUBuffer[], samplers: [] as GPUSampler[] };
+      Object.assign(d, {
+        createBuffer: jest.fn(() => {
+          const b = { destroy: jest.fn() } as unknown as GPUBuffer;
+          created.buffers.push(b);
+          return b;
+        }),
+        createSampler: jest.fn(() => {
+          const sampler = {} as GPUSampler;
+          created.samplers.push(sampler);
+          return sampler;
+        }),
+      });
+      return created;
+    };
+    const first = makeDevice();
+    const second = makeDevice();
+    const firstCreated = withAllocators(first);
+    const secondCreated = withAllocators(second);
+    (initializeWebGPUDevice as jest.Mock)
+      .mockResolvedValueOnce(outcomeFor(first))
+      .mockResolvedValueOnce(outcomeFor(second));
+    // Stand-in for setupGpuResources: only the part that touches the pool's buffers/samplers.
+    setupSpy.mockImplementation(async function (this: WebGPURenderer) {
+      const pool = (this as unknown as { resources: { ensureSamplersAndBuffers(d: GPUDevice): void } }).resources;
+      pool.ensureSamplersAndBuffers((this as unknown as { device: GPUDevice }).device);
+      return setupSpy.mock.calls.length === 1 ? 'lost' : 'ok';
+    });
+
+    const wgpu = createWebGpu();
+    expect(await wgpu.init(document.createElement('canvas'))).toBe(true);
+
+    expect(first.createBuffer).toHaveBeenCalledTimes(3);
+    expect(first.createSampler).toHaveBeenCalledTimes(3);
+    expect(second.createBuffer).toHaveBeenCalledTimes(3);
+    expect(second.createSampler).toHaveBeenCalledTimes(3);
+    firstCreated.buffers.forEach((b) => expect(b.destroy).toHaveBeenCalledTimes(1));
+
+    const pool = (wgpu as unknown as { resources: WebGPUResourcePool }).resources;
+    const live = [pool.uniformBuf, pool.extraBuf, pool.plasmaBuf];
+    live.forEach((b) => {
+      expect(secondCreated.buffers).toContain(b);
+      expect(firstCreated.buffers).not.toContain(b);
+    });
+    [pool.filterSampler, pool.nearestSampler, pool.compSampler].forEach((sampler) => {
+      expect(secondCreated.samplers).toContain(sampler);
+      expect(firstCreated.samplers).not.toContain(sampler);
     });
   });
 

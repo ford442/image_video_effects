@@ -32,6 +32,54 @@ function makeMockDevice(): GPUDevice {
 }
 
 describe('WebGPUResourcePool', () => {
+  describe('device reset (OOM retry)', () => {
+    it('destroyBuffers clears the fields so ensureSamplersAndBuffers allocates again', () => {
+      const device = makeMockDevice();
+      const pool = new WebGPUResourcePool();
+      pool.ensureSamplersAndBuffers(device);
+      const first = [pool.uniformBuf, pool.extraBuf, pool.plasmaBuf];
+
+      pool.destroyBuffers();
+      first.forEach((b) => expect(b.destroy).toHaveBeenCalledTimes(1));
+
+      pool.ensureSamplersAndBuffers(device);
+      const second = [pool.uniformBuf, pool.extraBuf, pool.plasmaBuf];
+      second.forEach((b) => expect(first).not.toContain(b));
+    });
+
+    it('a fresh device gets fresh buffers and samplers after resetForDevice', () => {
+      const first = makeMockDevice();
+      const second = makeMockDevice();
+      const pool = new WebGPUResourcePool();
+
+      pool.setup(first, 1920, 1080, 960, 540);
+      const oldBuffers = [pool.uniformBuf, pool.extraBuf, pool.plasmaBuf];
+      const oldSamplers = [pool.filterSampler, pool.nearestSampler, pool.compSampler];
+      const oldRead = pool.readTex;
+
+      pool.resetForDevice();
+      expect(oldRead.destroy).toHaveBeenCalled();
+      oldBuffers.forEach((b) => expect(b.destroy).toHaveBeenCalledTimes(1));
+
+      pool.ensureSamplersAndBuffers(second);
+      expect(second.createBuffer).toHaveBeenCalledTimes(3);
+      expect(second.createSampler).toHaveBeenCalledTimes(3);
+      const bufs = pool.getBufferSet();
+      const samplers = pool.getSamplerSet();
+      Object.values(bufs).forEach((b) => expect(oldBuffers).not.toContain(b));
+      Object.values(samplers).forEach((s) => expect(oldSamplers).not.toContain(s));
+    });
+
+    it('ensureSamplersAndBuffers still reuses live resources on the same device', () => {
+      const device = makeMockDevice();
+      const pool = new WebGPUResourcePool();
+      pool.ensureSamplersAndBuffers(device);
+      pool.ensureSamplersAndBuffers(device);
+      expect(device.createBuffer).toHaveBeenCalledTimes(3);
+      expect(device.createSampler).toHaveBeenCalledTimes(3);
+    });
+  });
+
   it('recreateScaleTextures destroys old textures and creates new ones', () => {
     const device = makeMockDevice();
     const pool = new WebGPUResourcePool();
