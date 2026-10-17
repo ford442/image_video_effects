@@ -1,5 +1,6 @@
 import { WebGPURenderer } from './WebGPURenderer';
 import { DEFAULT_CONFIG } from './Renderer';
+import { createWorkerRenderer } from './worker/workerRenderer';
 import { initializeWebGPUDevice } from './webgpu/device';
 import { setRendererErrorHandler as setErrorSink } from './ErrorHandling';
 import { createFrameState } from './webgpu/frame';
@@ -234,6 +235,26 @@ describe('WebGPURenderer lifecycle', () => {
     [pool.filterSampler, pool.nearestSampler, pool.compSampler].forEach((sampler) => {
       expect(secondCreated.samplers).toContain(sampler);
       expect(firstCreated.samplers).not.toContain(sampler);
+    });
+  });
+
+  describe('published device thread', () => {
+    beforeEach(() => resetRendererDeviceRegistryForTests());
+
+    async function initAndReadThread(renderer: WebGPURenderer) {
+      jest.spyOn(renderer.gpuChores, 'attach').mockImplementation(() => undefined as never);
+      (initializeWebGPUDevice as jest.Mock).mockResolvedValueOnce(outcomeFor(makeDevice()));
+      setupSpy.mockResolvedValueOnce('ok');
+      expect(await renderer.init(document.createElement('canvas'))).toBe(true);
+      return getRendererDeviceEntry().thread;
+    }
+
+    it("reports 'main' on the page by default", async () => {
+      expect(await initAndReadThread(new WebGPURenderer(DEFAULT_CONFIG))).toBe('main');
+    });
+
+    it("reports 'worker' when the render worker hosts the renderer", async () => {
+      expect(await initAndReadThread(createWorkerRenderer(DEFAULT_CONFIG))).toBe('worker');
     });
   });
 

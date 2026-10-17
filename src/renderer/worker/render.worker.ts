@@ -8,7 +8,7 @@
  */
 
 import { setRendererErrorHandler } from '../ErrorHandling';
-import { WebGPURenderer } from '../WebGPURenderer';
+import { createWorkerRenderer } from './workerRenderer';
 import { getLiveDeviceCount, runWebGpuBootProbe, toWebGpuProbeBreadcrumb } from '../webgpuBootProbe';
 import { createRenderWorkerHost } from './renderWorkerHost';
 import type { RenderEvent, RenderToWorker, RenderWorkerCaps } from './protocol';
@@ -86,7 +86,7 @@ async function encodeFramePng(frame: VideoFrame): Promise<string | null> {
 const host = createRenderWorkerHost({
   encodeFramePng,
   post,
-  createRenderer: (config) => new WebGPURenderer(config),
+  createRenderer: createWorkerRenderer,
   runProbe: (canvas, width, height, options) => runWebGpuBootProbe(canvas, width, height, options),
   liveDeviceCount: getLiveDeviceCount,
   crash: (message) => {
