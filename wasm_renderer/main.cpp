@@ -38,16 +38,22 @@ void shutdownWasmRenderer() {
 
 // ─── Shader management ────────────────────────────────────────────────────────
 
+// wgslCode is already expanded and storage-format rewritten by the bridge;
+// workgroupX/Y and bindingUsage (binding_table.json shaderUsageFlags) come from
+// its one WGSL analysis (src/wasm/bridge/wgslAnalysis.ts). Suspends (async export).
 EMSCRIPTEN_KEEPALIVE
-int loadShader(const char* id, const char* wgslCode) {
+int loadShader(const char* id, const char* wgslCode,
+               uint32_t workgroupX, uint32_t workgroupY, uint32_t bindingUsage) {
     if (!g_renderer || !id || !wgslCode) return 0;
-    return g_renderer->LoadShader(id, wgslCode) ? 1 : 0;
+    return g_renderer->LoadShader(id, wgslCode, workgroupX, workgroupY, bindingUsage) ? 1 : 0;
 }
 
+// Compiles before replacing: a failed reload keeps the previous pipeline.
 EMSCRIPTEN_KEEPALIVE
-int reloadShader(const char* id, const char* wgslCode) {
+int reloadShader(const char* id, const char* wgslCode,
+                 uint32_t workgroupX, uint32_t workgroupY, uint32_t bindingUsage) {
     if (!g_renderer || !id || !wgslCode) return 0;
-    return g_renderer->ReloadShader(id, wgslCode) ? 1 : 0;
+    return g_renderer->ReloadShader(id, wgslCode, workgroupX, workgroupY, bindingUsage) ? 1 : 0;
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -96,7 +102,7 @@ int getColorFormat() {
 
 EMSCRIPTEN_KEEPALIVE
 void loadImageData(const uint8_t* data, int width, int height) {
-    if (g_renderer) {
+    if (g_renderer && data) {
         g_renderer->LoadImage(data, width, height);
     }
 }
@@ -111,9 +117,17 @@ int loadImageExternal(int width, int height) {
 
 EMSCRIPTEN_KEEPALIVE
 void uploadVideoFrame(const uint8_t* data, int width, int height) {
-    if (g_renderer) {
+    if (g_renderer && data) {
         g_renderer->UpdateVideoFrame(data, width, height);
     }
+}
+
+// GPU video ingest (same hand-off as loadImageExternal; the bridge parks the
+// video element on Module.pixelocityPendingImage). 1 on success, 0 means the
+// caller falls back to uploadVideoFrame.
+EMSCRIPTEN_KEEPALIVE
+int uploadVideoExternal(int width, int height) {
+    return (g_renderer && g_renderer->UpdateVideoFrameExternal(width, height)) ? 1 : 0;
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -124,9 +138,13 @@ void updateDepthMap(const float* data, int width, int height) {
 }
 
 // Set the active input source (0=none, 1=image, 2=video, 3=webcam, 4=generative, 5=live).
-// Generative clears readTexture_ to black.
+// Generative clears readTexture_ to black. Out-of-range values are ignored.
 EMSCRIPTEN_KEEPALIVE
 void setInputSource(int source) {
+    if (source < static_cast<int>(InputSource::None) || source > static_cast<int>(InputSource::Live)) {
+        printf("[WASM] setInputSource(%d) ignored: not an InputSource\n", source);
+        return;
+    }
     if (g_renderer) {
         g_renderer->SetInputSource(static_cast<InputSource>(source));
     }
@@ -339,13 +357,13 @@ const char* getLastInitErrorMessage() {
 
 // ─── Phase 2: Canvas resize ───────────────────────────────────────────────────
 
-// Resize the canvas and recreate all size-dependent GPU resources.
-// Safe to call at any time after initialization.
+// Resize the canvas and recreate all size-dependent GPU resources. Suspends
+// (async export: the history-texture OOM probe waits on an error scope).
+// 1 when the textures exist afterwards; 0 when they could not be rebuilt
+// (rendering pauses until a later resize succeeds).
 EMSCRIPTEN_KEEPALIVE
-void resizeCanvas(int newWidth, int newHeight) {
-    if (g_renderer) {
-        g_renderer->ResizeCanvas(newWidth, newHeight);
-    }
+int resizeCanvas(int newWidth, int newHeight) {
+    return (g_renderer && g_renderer->ResizeCanvas(newWidth, newHeight)) ? 1 : 0;
 }
 
 // ─── Phase 2: Frame capture (screenshot readback) ────────────────────────────

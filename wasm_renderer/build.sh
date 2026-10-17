@@ -1,14 +1,31 @@
 #!/bin/bash
+# Usage: bash wasm_renderer/build.sh [--if-requested]
+#   WASM_PROFILE=release|debug   which wasm_compile_flags.json profile to build
+#                                (debug → pixelocity_wasm.debug.{js,wasm}, gitignored)
+#   --if-requested               `npm run build` (prebuild) mode: regenerate the
+#                                contracts and the bridge, but only compile when
+#                                WASM_BUILD=1. The backend is frozen R&D, so the
+#                                committed public/wasm/ artifacts are the default.
 set -euo pipefail
 echo "=== Building Pixelocity WASM Renderer (2026 version) ==="
 
 # Resolve the repo's wasm_renderer directory (always relative to this script,
 # regardless of where the script is invoked from).
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 echo "Source directory: $SCRIPT_DIR"
+WASM_PROFILE="${WASM_PROFILE:-release}"
 
+# Contracts first: the bridge wrappers and wasm_renderer/generated/contracts.h
+# both come from src/contracts/*.json (no emcc required).
+node "$REPO_ROOT/scripts/emit-wasm-contracts.mjs"
 # Always sync JS bridge from src/wasm/bridge/*.ts (no emcc required).
 bash "$SCRIPT_DIR/concat_bridge.sh"
+
+if [ "${1:-}" = "--if-requested" ] && [ "${WASM_BUILD:-}" != "1" ]; then
+    echo "[INFO] Using the committed public/wasm/ artifacts (set WASM_BUILD=1 to compile)."
+    exit 0
+fi
 
 # Source Emscripten from wherever emsdk lives
 CANDIDATES=(
@@ -46,29 +63,35 @@ if [ "${SKIP_WASM_BUILD:-}" = "1" ]; then
     exit 0
 fi
 
-# Set writable cache location for TOT emscripten
-
-export EM_CACHE=/tmp/emscripten_cache
+# Ports (emdawnwebgpu) and LTO system libraries are cached in EM_CACHE. Keep an
+# EM_CACHE the caller set (CI points it at a directory actions/cache restores);
+# otherwise emcc uses its own default, <emsdk>/upstream/emscripten/cache.
+if [ -n "${EM_CACHE:-}" ]; then
+    export EM_CACHE
+fi
+# --emit-tsd runs tsc; use the repo's TypeScript.
+export PATH="$REPO_ROOT/node_modules/.bin:$PATH"
 
 # Print diagnostics
 em++ --version | head -1
-echo "EM_CACHE: $EM_CACHE"
+echo "EM_CACHE: ${EM_CACHE:-$(em-config CACHE 2>/dev/null || echo '<emcc default>')}"
+echo "Profile: $WASM_PROFILE"
 echo "EMCC_CFLAGS: ${EMCC_CFLAGS:-<unset>}"
 
 # Clear any legacy EMCC_CFLAGS that might carry -sUSE_WEBGPU=1 forward from
 # older emsdk installs.
 unset EMCC_CFLAGS
 
-BUILD_DIR="$SCRIPT_DIR/build"
+BUILD_DIR="$SCRIPT_DIR/build/$WASM_PROFILE"
 mkdir -p "$BUILD_DIR"
 
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Export lists live in src/contracts/wasm_exports.json — do not hardcode them here.
 EXPORTED="$(node "$REPO_ROOT/scripts/format-wasm-exports.js" functions)"
 RUNTIME_METHODS="$(node "$REPO_ROOT/scripts/format-wasm-exports.js" runtime)"
 # Toolchain pin + std/opt/port/-s flags live in src/contracts/wasm_compile_flags.json.
-mapfile -t COMPILE_FLAGS < <(node "$REPO_ROOT/scripts/format-wasm-compile-flags.js" args)
-JS_OUTPUT_NAME="$(node "$REPO_ROOT/scripts/format-wasm-compile-flags.js" output)"
+mapfile -t COMPILE_FLAGS < <(node "$REPO_ROOT/scripts/format-wasm-compile-flags.js" args "--profile=$WASM_PROFILE")
+mapfile -t LINK_FLAGS < <(node "$REPO_ROOT/scripts/format-wasm-compile-flags.js" link "--profile=$WASM_PROFILE")
+JS_OUTPUT_NAME="$(node "$REPO_ROOT/scripts/format-wasm-compile-flags.js" output "--profile=$WASM_PROFILE")"
 WASM_OUTPUT_NAME="${JS_OUTPUT_NAME%.js}.wasm"
 
 bash "$REPO_ROOT/scripts/emcc-version-gate.sh"
@@ -109,19 +132,29 @@ SOURCES=()
 while IFS= read -r src; do
     SOURCES+=("$SCRIPT_DIR/$src")
 done < <(node "$REPO_ROOT/scripts/format-wasm-compile-flags.js" sources)
-echo "Flags: ${COMPILE_FLAGS[*]}"
-em++ "${COMPILE_FLAGS[@]}" \
+echo "Flags: ${COMPILE_FLAGS[*]} ${LINK_FLAGS[*]}"
+LINK_LOG="$BUILD_DIR/em++.log"
+em++ "${COMPILE_FLAGS[@]}" "${LINK_FLAGS[@]}" \
     "${SOURCES[@]}" \
     "-I$SCRIPT_DIR" \
     -sEXPORTED_FUNCTIONS="${EXPORTED}" \
     -sEXPORTED_RUNTIME_METHODS="${RUNTIME_METHODS}" \
-    -o "$BUILD_DIR/$JS_OUTPUT_NAME"
+    -o "$BUILD_DIR/$JS_OUTPUT_NAME" > "$LINK_LOG" 2>&1 || { cat "$LINK_LOG"; exit 1; }
+grep -v 'can change the state' "$LINK_LOG" || true
+
+# The exports Emscripten says can suspend must be exactly the contract's async ones.
+if grep -q 'emwgpuWaitAny is an import that can change the state' "$LINK_LOG"; then
+    node "$REPO_ROOT/scripts/check-asyncify-exports.mjs" "$LINK_LOG"
+fi
 
 # Copy output to public folder (repo-relative path)
 PUBLIC_WASM="$REPO_ROOT/public/wasm"
 mkdir -p "$PUBLIC_WASM"
 cp "$BUILD_DIR/$JS_OUTPUT_NAME" "$BUILD_DIR/$WASM_OUTPUT_NAME" "$PUBLIC_WASM/"
-echo "✅ WASM build complete!"
-echo "   Emscripten output: public/wasm/pixelocity_wasm.{js,wasm}"
-echo "   Bridge copies:     public/wasm/wasm_bridge.js, src/wasm/wasm_bridge.js"
-echo "   Edit JS bridge:    src/wasm/bridge/*.js (sync via concat_bridge.sh)"
+for extra in "$WASM_OUTPUT_NAME.map" "${JS_OUTPUT_NAME%.js}.d.ts"; do
+    if [ -f "$BUILD_DIR/$extra" ]; then cp "$BUILD_DIR/$extra" "$PUBLIC_WASM/"; fi
+done
+echo "✅ WASM build complete ($WASM_PROFILE)!"
+echo "   Emscripten output: public/wasm/${JS_OUTPUT_NAME%.js}.{js,wasm}"
+echo "   Bridge copies:     public/wasm/wasm_bridge.js, public/wasm/bridge/"
+echo "   Edit JS bridge:    src/wasm/bridge/*.ts (sync via concat_bridge.sh)"

@@ -28,6 +28,7 @@ const NO_USAGE: ShaderBindingUsage = {
   writesDataB: false,
   readsDataC: false,
   usesHistory: false,
+  writesDepth: false,
 };
 
 export function createFakeFrameState(

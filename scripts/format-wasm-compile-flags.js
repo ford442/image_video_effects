@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 /**
  * Print toolchain pin / compile flags from src/contracts/wasm_compile_flags.json.
- * Usage: node scripts/format-wasm-compile-flags.js [args|emsdk|output|sources|compdb]
- *   args    — one em++ argument per line (std, opt, use-port, -s flags, extraFlags)
+ * Usage: node scripts/format-wasm-compile-flags.js <kind> [--profile=release|debug]
+ *   args    — one em++ argument per line (std, opt, use-port, -s flags, extraFlags,
+ *             plus the profile's additions)
+ *   link    — link-only arguments, one per line (--emit-tsd for the release profile)
  *   emsdk   — pinned emsdk/emcc version
- *   output  — Emscripten JS output file name
+ *   output  — Emscripten JS output file name for the profile
+ *   profiles — profile names, one per line
  *   sources — translation units (relative to wasm_renderer/), one per line
  *   compdb  — write wasm_renderer/compile_commands.json for clangd (gitignored;
  *             needs em++ on PATH). IDE index only: build.sh stays the one build.
@@ -17,22 +20,53 @@ const ROOT = path.join(__dirname, '..');
 const CONTRACT_PATH = path.join(ROOT, 'src', 'contracts', 'wasm_compile_flags.json');
 const RENDERER_DIR = path.join(ROOT, 'wasm_renderer');
 const COMPDB_PATH = path.join(RENDERER_DIR, 'compile_commands.json');
-// Same default as build.sh (export EM_CACHE=/tmp/emscripten_cache).
-const DEFAULT_EM_CACHE = '/tmp/emscripten_cache';
 
 function loadContract(file = CONTRACT_PATH) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
+/** The profile's additions; `release` is the top-level contract alone. */
+function profileOf(contract, profile = 'release') {
+  if (profile === 'release') return { sFlags: [], extraFlags: [], jsOutputName: contract.jsOutputName };
+  const p = contract.profiles && contract.profiles[profile];
+  if (!p) throw new Error(`wasm_compile_flags.json has no profile "${profile}"`);
+  return { sFlags: p.sFlags || [], extraFlags: p.extraFlags || [], jsOutputName: p.jsOutputName };
+}
+
 /** The exact em++ flag list build.sh passes (before sources, -I and exports). */
-function emccArgs(contract) {
+function emccArgs(contract, profile = 'release') {
+  const extra = profileOf(contract, profile);
   return [
     `-std=${contract.std}`,
     contract.opt,
     `--use-port=${contract.usePort}`,
     ...contract.sFlags.map((f) => `-s${f}`),
+    ...extra.sFlags.map((f) => `-s${f}`),
     ...(contract.extraFlags || []),
+    ...extra.extraFlags,
   ];
+}
+
+/**
+ * Release-only link arguments: the module .d.ts the bridge contract is diffed
+ * against, and ASYNCIFY_ADVISE (report only; build.sh checks it).
+ */
+function linkArgs(contract, profile = 'release') {
+  if (profile !== 'release') return [];
+  return [
+    ...(contract.emitTsd ? [`--emit-tsd=${contract.emitTsd}`] : []),
+    ...(contract.linkSFlags || []).map((f) => `-s${f}`),
+  ];
+}
+
+/** Where emcc keeps ports and system libraries: $EM_CACHE, else `em-config CACHE`. */
+function resolveEmCache() {
+  if (process.env.EM_CACHE) return process.env.EM_CACHE;
+  try {
+    return execFileSync('em-config', ['CACHE'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  } catch {
+    return null;
+  }
 }
 
 /** Header dir of the emdawnwebgpu port inside EM_CACHE (populated by the first wasm:build). */
@@ -76,7 +110,11 @@ function compileCommands(contract, { cflags, emCache, rendererDir = RENDERER_DIR
 }
 
 function writeCompdb(contract) {
-  const emCache = process.env.EM_CACHE || DEFAULT_EM_CACHE;
+  const emCache = resolveEmCache();
+  if (!emCache) {
+    console.error('❌ EM_CACHE is unset and em-config is not on PATH; source <emsdk>/emsdk_env.sh first');
+    process.exit(1);
+  }
   let raw;
   try {
     raw = execFileSync('em++', ['--cflags'], {
@@ -106,25 +144,34 @@ module.exports = {
   COMPDB_PATH,
   loadContract,
   emccArgs,
+  linkArgs,
+  profileOf,
   parseEmccCflags,
   compileCommands,
 };
 
 if (require.main === module) {
   const kind = process.argv[2] || 'args';
+  const profileArg = process.argv.find((a) => a.startsWith('--profile='));
+  const profile = profileArg ? profileArg.slice('--profile='.length) : 'release';
   const contract = loadContract();
   if (kind === 'args') {
-    process.stdout.write(`${emccArgs(contract).join('\n')}\n`);
+    process.stdout.write(`${emccArgs(contract, profile).join('\n')}\n`);
+  } else if (kind === 'link') {
+    const args = linkArgs(contract, profile);
+    if (args.length) process.stdout.write(`${args.join('\n')}\n`);
   } else if (kind === 'emsdk') {
     process.stdout.write(contract.emsdkVersion);
   } else if (kind === 'output') {
-    process.stdout.write(contract.jsOutputName);
+    process.stdout.write(profileOf(contract, profile).jsOutputName);
+  } else if (kind === 'profiles') {
+    process.stdout.write(`${['release', ...Object.keys(contract.profiles || {})].join('\n')}\n`);
   } else if (kind === 'sources') {
     process.stdout.write(`${contract.sources.join('\n')}\n`);
   } else if (kind === 'compdb') {
     writeCompdb(contract);
   } else {
-    console.error('Usage: format-wasm-compile-flags.js [args|emsdk|output|sources|compdb]');
+    console.error('Usage: format-wasm-compile-flags.js [args|link|emsdk|output|profiles|sources|compdb] [--profile=release|debug]');
     process.exit(1);
   }
 }

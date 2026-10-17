@@ -34,7 +34,8 @@ Full snapshot: [`STATUS.md`](./STATUS.md) · gaps: [`WASM_RENDERER_GAP_ANALYSIS.
 | `frame.cpp` | Multi-slot `Render()`, uniforms flush, async frame capture |
 | `timing.cpp` | GPU timestamp queries: one begin/end pair per slot compute pass, resolve/readback, `getGPUTimings` phases + `getPassTimingsJson` (#1314 D) |
 | `audio_depth.cpp` | Image/video upload, depth map, audio FFT bins |
-| `wasm_internal.cpp/h` | Shared helpers (`CheckLimit`, `ParseWorkgroupSize`, …) |
+| `wasm_internal.cpp/h` | Shared helpers (`CheckLimit`, `#include` guard, JSON appends, …) |
+| `generated/contracts.h` | Limits, binding table, slot ceiling, uniforms layout from `src/contracts/*.json` (`npm run wasm:contracts`; do not edit) |
 | `src/wasm/bridge/*.ts` | **Hand-edited TypeScript glue** (edit here; webpack compiles `src/wasm/wasm_bridge.ts`) |
 | `wasm_bridge.js` (generated) | ESM copies in `wasm_renderer/` + `public/wasm/` — do not edit |
 | `build.sh` | **The only build** — single-pass `emcc` + emdawnwebgpu. Flags from `src/contracts/wasm_compile_flags.json`, exports from `wasm_exports.json`. |
@@ -145,7 +146,7 @@ cd wasm_renderer
 ./build.sh
 ```
 
-`SKIP_WASM_BUILD=1` skips when `emcc` is missing (uses committed `public/wasm/` artifacts).
+`SKIP_WASM_BUILD=1` skips the compile (uses committed `public/wasm/` artifacts); `npm run build` does that by default unless `WASM_BUILD=1`.
 
 #### Compile flags (reviewed July 2026)
 
@@ -391,7 +392,7 @@ hardened the init/format/limits handshake:
 - Promotion gates — [`WASM_PROMOTION_TRACKING.md`](../docs/WASM_PROMOTION_TRACKING.md)
 - Edge-GPU manual verification
 - Visual pixel-diff automation
-- `build.sh` requires `emcc` unless `SKIP_WASM_BUILD=1` (see [`ARTIFACTS.md`](./ARTIFACTS.md))
+- `build.sh` requires `emcc` unless `SKIP_WASM_BUILD=1`, or it runs as `--if-requested` (the `prebuild` hook) without `WASM_BUILD=1` (see [`ARTIFACTS.md`](./ARTIFACTS.md))
 
 Full tracking: [`WASM_RENDERER_GAP_ANALYSIS.md`](../docs/WASM_RENDERER_GAP_ANALYSIS.md) · [`STATUS.md`](./STATUS.md)
 

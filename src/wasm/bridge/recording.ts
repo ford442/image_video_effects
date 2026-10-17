@@ -1,3 +1,5 @@
+import * as cpp from './_generated.js';
+import { hasExport } from './call.js';
 import { captureFrame } from './capture.js';
 import { readCanvasCopySrc, state, wasmRef } from './state.js';
 
@@ -110,17 +112,18 @@ function startGpuReadbackPump(drawCanvas: HTMLCanvasElement): void {
 
 export function setRecording(active: boolean): void {
   if (!state.initialized || !wasmRef.module) return;
-  wasmRef.module.ccall('setRecording', null, ['number'], [active ? 1 : 0]);
+  cpp.setRecording(wasmRef.module, active ? 1 : 0);
 }
 
 export function isRecordingActive(): boolean {
   if (!state.initialized || !wasmRef.module) return false;
-  return Boolean(wasmRef.module.ccall('isRecording', 'number', [], []));
+  return cpp.isRecording(wasmRef.module) !== 0;
 }
 
 /** Loaded artifact probed canvas COPY_SRC as supported and exports the setter. */
 export function supportsCanvasCopySrc(): boolean {
-  return typeof wasmRef.module?._setCanvasCopySrc === 'function' && readCanvasCopySrc() === true;
+  const mod = wasmRef.module;
+  return !!mod && hasExport(mod, 'setCanvasCopySrc') && readCanvasCopySrc() === true;
 }
 
 /**
@@ -130,10 +133,10 @@ export function supportsCanvasCopySrc(): boolean {
  */
 export function setCanvasCopySrc(enabled: boolean): boolean {
   const mod = wasmRef.module;
-  if (!state.initialized || !mod || typeof mod._setCanvasCopySrc !== 'function') return false;
+  if (!state.initialized || !mod || !hasExport(mod, 'setCanvasCopySrc')) return false;
   if (enabled && readCanvasCopySrc() !== true) return false;
   try {
-    if (!mod._setCanvasCopySrc(enabled ? 1 : 0)) return false;
+    if (!cpp.setCanvasCopySrc(mod, enabled ? 1 : 0)) return false;
   } catch (err) {
     console.warn('[WASM] canvas COPY_SRC reconfigure failed:', err);
     return false;
@@ -147,7 +150,7 @@ export function setCanvasCopySrc(enabled: boolean): boolean {
   const copySrcBit = typeof GPUTextureUsage !== 'undefined' ? GPUTextureUsage.COPY_SRC : 0x01;
   if (cfg && typeof cfg.usage === 'number' && !(cfg.usage & copySrcBit)) {
     console.warn('[WASM] canvas COPY_SRC dropped by getConfiguration(); restoring render-only');
-    mod._setCanvasCopySrc(0);
+    cpp.setCanvasCopySrc(mod, 0);
     return false;
   }
   return true;

@@ -1,3 +1,5 @@
+import * as cpp from './_generated.js';
+import { isBusy, runWhenIdle } from './call.js';
 import { state, wasmRef } from './state.js';
 
 export type GPUTimings = {
@@ -42,12 +44,7 @@ export function setSlotParams(slotIndex: number, p1: number, p2: number, p3: num
   if (slotIndex === 0) {
     state.zoomParams = [p1, p2, p3, p4];
   }
-  wasmRef.module.ccall(
-    'setSlotParams',
-    null,
-    ['number', 'number', 'number', 'number', 'number'],
-    [slotIndex, p1, p2, p3, p4],
-  );
+  cpp.setSlotParams(wasmRef.module, slotIndex, p1, p2, p3, p4);
 }
 
 export function updateSlotParams(slotIndex: number, params: SlotZoomParamsUpdate & { p1?: number; p2?: number; p3?: number; p4?: number }): void {
@@ -80,16 +77,14 @@ function applyUniformState(
   state.mouseDown = mouseDown;
   state.zoomParams = [zoomP1, zoomP2, zoomP3, zoomP4];
 
-  wasmRef.module.ccall('setTime', null, ['number'], [time]);
-  wasmRef.module.ccall('updateMousePos', null, ['number', 'number'], [mouseX, mouseY]);
-  wasmRef.module.ccall('setMouseDown', null, ['number'], [mouseDown ? 1 : 0]);
-  wasmRef.module.ccall(
-    'setZoomParams',
-    null,
-    ['number', 'number', 'number', 'number'],
-    [zoomP1, zoomP2, zoomP3, zoomP4],
-  );
-  wasmRef.module.ccall('updateUniforms', null, [], []);
+  const mod = wasmRef.module;
+  cpp.setTime(mod, time);
+  cpp.updateMousePos(mod, mouseX, mouseY);
+  cpp.setMouseDown(mod, mouseDown ? 1 : 0);
+  cpp.setZoomParams(mod, zoomP1, zoomP2, zoomP3, zoomP4);
+  // Render() is skipped while a resize / format change / shader compile is
+  // suspended: size-dependent textures may be null until it returns.
+  cpp.updateUniforms(mod);
   return true;
 }
 
@@ -124,10 +119,10 @@ export function updateMousePos(x: number, y: number, down?: boolean): void {
   if (!state.initialized || !wasmRef.module) return;
   state.mouseX = x;
   state.mouseY = y;
-  wasmRef.module.ccall('updateMousePos', null, ['number', 'number'], [x, y]);
+  cpp.updateMousePos(wasmRef.module, x, y);
   if (down !== undefined) {
     state.mouseDown = down;
-    wasmRef.module.ccall('setMouseDown', null, ['number'], [down ? 1 : 0]);
+    cpp.setMouseDown(wasmRef.module, down ? 1 : 0);
   }
 }
 
@@ -138,22 +133,14 @@ export function updateAudioData(
 ): void {
   if (!state.initialized || !wasmRef.module) return;
   if (typeof bassOrData === 'number') {
-    wasmRef.module.ccall(
-      'updateAudioData',
-      null,
-      ['number', 'number', 'number'],
-      [bassOrData, mid ?? 0, treble ?? 0],
-    );
+    cpp.updateAudioData(wasmRef.module, bassOrData, mid ?? 0, treble ?? 0);
     return;
   }
-  const bass = Number(bassOrData[0] ?? 0);
-  const midVal = Number(bassOrData[1] ?? 0);
-  const trebleVal = Number(bassOrData[2] ?? 0);
-  wasmRef.module.ccall(
-    'updateAudioData',
-    null,
-    ['number', 'number', 'number'],
-    [bass, midVal, trebleVal],
+  cpp.updateAudioData(
+    wasmRef.module,
+    Number(bassOrData[0] ?? 0),
+    Number(bassOrData[1] ?? 0),
+    Number(bassOrData[2] ?? 0),
   );
 }
 
@@ -168,28 +155,37 @@ export function updateAudioFrequencyBins(
     updateAudioFrequencyBins(new Float32Array([binsOrBass, mid ?? 0, treble ?? 0, energy ?? 0]));
     return;
   }
+  const mod = wasmRef.module;
   const count = binsOrBass.length;
-  const bytes = count * 4;
-  const ptr = wasmRef.module._malloc(bytes);
-  wasmRef.module.HEAPF32.set(binsOrBass, ptr / 4);
-  wasmRef.module.ccall('updateAudioFrequencyBins', null, ['number', 'number'], [ptr, count]);
-  wasmRef.module._free(ptr);
+  const ptr = mod._malloc(count * 4);
+  try {
+    mod.HEAPF32.set(binsOrBass, ptr / 4);
+    cpp.updateAudioFrequencyBins(mod, ptr, count);
+  } finally {
+    mod._free(ptr);
+  }
 }
 
 export function updateDepthMap(depthData: Float32Array | Uint8Array, width = 256, height = 256): void {
-  if (!state.initialized || !wasmRef.module) return;
+  const mod = wasmRef.module;
+  if (!state.initialized || !mod) return;
   const floats = depthData instanceof Float32Array
     ? depthData
     : new Float32Array(depthData.buffer, depthData.byteOffset, depthData.byteLength / 4);
-  const ptr = wasmRef.module._malloc(floats.byteLength);
-  wasmRef.module.HEAPF32.set(floats, ptr / 4);
-  wasmRef.module.ccall(
-    'updateDepthMap',
-    null,
-    ['number', 'number', 'number'],
-    [ptr, width, height],
-  );
-  wasmRef.module._free(ptr);
+  const upload = (data: Float32Array) => {
+    if (wasmRef.module !== mod) return;
+    const ptr = mod._malloc(data.byteLength);
+    try {
+      mod.HEAPF32.set(data, ptr / 4);
+      cpp.updateDepthMap(mod, ptr, width, height);
+    } finally {
+      mod._free(ptr);
+    }
+  };
+  // A depth map is not re-sent every frame: run it after a suspended resize
+  // instead of letting the `skip` export drop it. The copy outlives the caller.
+  if (isBusy(mod)) void runWhenIdle(mod, () => upload(floats.slice()));
+  else upload(floats);
 }
 
 export function setInputSource(
@@ -205,42 +201,51 @@ export function setInputSource(
     return;
   }
   state.inputSource = sourceInt;
-  wasmRef.module.ccall('setInputSource', null, ['number'], [sourceInt]);
+  cpp.setInputSource(wasmRef.module, sourceInt);
 }
 
 export function addRipple(x: number, y: number, _amplitude = 1.0, _wavelength = 0.05): void {
   if (!state.initialized || !wasmRef.module) return;
-  wasmRef.module.ccall('addRipple', null, ['number', 'number'], [x, y]);
+  cpp.addRipple(wasmRef.module, x, y);
 }
 
 export function clearRipples(): void {
   if (!state.initialized || !wasmRef.module) return;
-  wasmRef.module.ccall('clearRipples', null, [], []);
+  cpp.clearRipples(wasmRef.module);
 }
 
 export function getFPS(): number {
   if (!state.initialized || !wasmRef.module) return 0;
-  return Number(wasmRef.module.ccall('getFPS', 'number', [], []) ?? 0);
+  return cpp.getFPS(wasmRef.module);
 }
 
 export function getSupportsDeepWorkgroup(): boolean {
   if (!state.initialized || !wasmRef.module) return true;
-  return Boolean(wasmRef.module.ccall('getSupportsDeepWorkgroup', 'number', [], []));
+  return cpp.getSupportsDeepWorkgroup(wasmRef.module) !== 0;
 }
 
 export function getColorFormat(): 0 | 1 {
   if (state.initialized && wasmRef.module) {
-    const v = Number(wasmRef.module.ccall('getColorFormat', 'number', [], []) ?? state.colorFormat);
-    state.colorFormat = v === 1 ? 1 : 0;
+    state.colorFormat = cpp.getColorFormat(wasmRef.module) === 1 ? 1 : 0;
   }
   return state.colorFormat;
 }
 
-export function setColorFormat(format: 0 | 1 | number): void {
+/**
+ * Async export (RecreateTextures can suspend). Resolves once C++ has switched,
+ * or fell back to rgba32float when the rgba16float probe failed; state then
+ * holds what C++ actually uses.
+ */
+export async function setColorFormat(format: 0 | 1 | number): Promise<void> {
   state.colorFormat = format === 1 ? 1 : 0;
-  if (state.initialized && wasmRef.module) {
-    wasmRef.module.ccall('setColorFormat', null, ['number'], [state.colorFormat]);
+  const mod = wasmRef.module;
+  if (!state.initialized || !mod) return;
+  try {
+    await cpp.setColorFormat(mod, state.colorFormat);
+  } catch (err) {
+    console.error('[WASM] setColorFormat failed:', err);
   }
+  if (wasmRef.module === mod) state.colorFormat = cpp.getColorFormat(mod) === 1 ? 1 : 0;
 }
 
 function unavailableGPUTimings(): GPUTimings {
@@ -264,12 +269,7 @@ export function getGPUTimings(): GPUTimings {
   if (!ptr) return unavailableGPUTimings();
 
   try {
-    m.ccall(
-      'getGPUTimings',
-      null,
-      ['number', 'number', 'number', 'number'],
-      [ptr, ptr + 4, ptr + 8, ptr + 12],
-    );
+    cpp.getGPUTimings(m, ptr, ptr + 4, ptr + 8, ptr + 12);
     const parallelTime = m.getValue(ptr, 'float');
     const chainedTime = m.getValue(ptr + 4, 'float');
     const totalTime = m.getValue(ptr + 8, 'float');
@@ -290,15 +290,15 @@ export function getGPUTimings(): GPUTimings {
 
 export function getAdapterSummary(): string {
   if (!wasmRef.module || typeof wasmRef.module.ccall !== 'function') return '';
-  return String(wasmRef.module.ccall('getAdapterSummary', 'string', [], []) ?? '');
+  return cpp.getAdapterSummary(wasmRef.module);
 }
 
 export function getLastInitErrorStage(): number {
   if (!wasmRef.module || typeof wasmRef.module.ccall !== 'function') return 0;
-  return Number(wasmRef.module.ccall('getLastInitErrorStage', 'number', [], []) ?? 0);
+  return cpp.getLastInitErrorStage(wasmRef.module);
 }
 
 export function getLastInitErrorMessage(): string {
   if (!wasmRef.module || typeof wasmRef.module.ccall !== 'function') return '';
-  return String(wasmRef.module.ccall('getLastInitErrorMessage', 'string', [], []) ?? '');
+  return cpp.getLastInitErrorMessage(wasmRef.module);
 }

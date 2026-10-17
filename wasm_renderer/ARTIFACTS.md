@@ -53,28 +53,24 @@ tools/naga_wasm/src/lib.rs                       ← separate crate, separate ar
 - CI `setup-emsdk` `version:` must equal `emsdkVersion` (`npm run verify:wasm-invariants` fails otherwise). Never `latest`.
 - `build.sh` runs `scripts/emcc-version-gate.sh` before `em++` and refuses a mismatched emcc. The minified glue does **not** embed the emcc version, so the gate is on the toolchain, not the artifact.
 - `build.sh` reads the flag JSON and may not hardcode `-s` flags or `--use-port` (enforced by `verify:wasm-invariants`). It is the only build; `CMakeLists.txt` was removed.
-- Cloud VMs / Jules: keep `SKIP_WASM_BUILD=1`. Never commit artifacts from a non-pinned emcc (e.g. 3.1.x). `ALLOW_EMCC_VERSION_MISMATCH=1` exists for local experiments only.
+- Cloud VMs / Jules: plain `npm run build` uses the committed artifacts. Never commit artifacts from a non-pinned emcc (e.g. 3.1.x). `ALLOW_EMCC_VERSION_MISMATCH=1` exists for local experiments only.
 - Bumping the pin: change `emsdkVersion` and `.github/workflows/wasm.yml` together, rebuild, commit artifacts in the same PR.
 
 ## Build commands
 
 ```bash
-npm run wasm:build      # Requires emsdk; fails if emcc missing
+npm run wasm:build      # Requires emsdk; fails if emcc missing. Also writes pixelocity_wasm.d.ts
+npm run wasm:build:debug  # ASSERTIONS=2 + DWARF → pixelocity_wasm.debug.* (gitignored; ?wasm_debug=1)
+npm run wasm:contracts  # Regenerate bridge wrappers + generated/contracts.h (no emcc)
 npm run wasm:validate   # Checks sizes, magic, exports, generated-copy equality
 npm run verify:wasm-bridge-sync  # TypeScript SoT vs generated JS
 npm run wasm:clean      # Remove build/ and public/wasm/
 ```
 
 ### Skipping WASM build intentionally
-`SKIP_WASM_BUILD=1` still runs bridge concat, then skips emcc.
-
-Headless dev VMs without Emscripten can use committed artifacts:
-
-```bash
-SKIP_WASM_BUILD=1 npm run build
-```
-
-CI jobs that consume pre-built artifacts from the `wasm` job set this automatically.
+`npm run build` never compiles unless `WASM_BUILD=1`: its `prebuild` runs
+`build.sh --if-requested`, which regenerates the contracts and bridge copies and then uses
+the committed artifacts. `SKIP_WASM_BUILD=1 npm run wasm:build` likewise only syncs.
 
 ### C++ IDE index (clangd)
 
@@ -97,8 +93,8 @@ leaked `-sUSE_WEBGPU=1`.
 
 ## CI pipeline
 
-1. **`wasm` job** — installs emsdk (`mymindstorm/setup-emsdk@v14`), runs `wasm:build`, `wasm:validate`, `verify:wasm-bridge-sync`, WASM Jest smoke tests, freshness check, uploads artifacts.
-2. **`test` job** — downloads WASM artifacts, runs full unit tests + CRA build with `SKIP_WASM_BUILD=1`, re-validates artifacts (`verify:toolchain-foundation` includes bridge sync).
-3. **`test-wasm-e2e` job** — downloads artifacts, production build, Playwright smoke tests (`tests/wasm-renderer.smoke.spec.ts`).
+1. **`wasm` job** (`wasm.yml`) — installs emsdk (`mymindstorm/setup-emsdk@v14`), restores EM_CACHE, builds release (ASYNCIFY_ADVISE gate) and debug profiles, `wasm:validate`, blocking byte-equality with the committed `.wasm`/`.js`/`.d.ts`, `verify:wasm-bridge-sync`, WASM Jest suites, uploads artifacts.
+2. **`test` job** (`ci.yml`) — unit tests + CRA build against the committed artifacts, re-validates them (`verify:toolchain-foundation` includes bridge sync).
+3. **`test-wasm-e2e` job** (`wasm.yml`) — downloads artifacts, production build, Playwright smoke on SwiftShader for the release and the debug profile.
 
 See [`WASM_BUILD_CI_GUIDE.md`](../docs/WASM_BUILD_CI_GUIDE.md) for troubleshooting.

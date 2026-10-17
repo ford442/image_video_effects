@@ -44,12 +44,11 @@
     "wasmPrefersAfterSuccessfulProbe": "rgba16float",
     "rewriteStorageDeclsToActiveColorFormat": true,
     "tsFile": "src/renderer/wgslFormatRewrite.ts",
-    "cppRewriteFile": "wasm_renderer/wasm_internal.cpp",
+    "bridgeRewriteFile": "src/wasm/bridge/wgslFormat.ts",
+    "bridgeLoadFile": "src/wasm/bridge/shader.ts",
     "cppProbeFile": "wasm_renderer/device.cpp",
     "pipelineFile": "wasm_renderer/pipeline.cpp",
-    "bglStorageFormatPattern": "\\{\\s*(?:2|7|8),\\s*BindingKind::StorageRgba,",
-    "bglStorageBindingCount": 3,
-    "loadShaderRewriteCall": "RewriteWgslStorageFormats\\s*\\(",
+    "bindingTableFile": "src/contracts/binding_table.json",
     "loadShaderErrorScope": "wgpuDevicePushErrorScope",
     "loadShaderSkipHadError": "pop.hadError",
     "loadShaderWaitAnyFailSoft": "waitFailed",
@@ -62,7 +61,7 @@
     "depthFeedbackGateCount": 2,
     "issue": 1205,
     "tracker": "memory/2026-08-31.md",
-    "rationale": "BGL RGBA32Float vs rewritten shader RGBA16Float produced an invalid pipeline submitted every frame. Catalog WGSL stays rgba32float; LoadShader rewrites storage decls. Depth write must include CopySrc because Feedback Encoder copies it to depth read. The copy is gated on a pass writing binding 6 (both Render paths): TS has no depthWrite→depthRead copy, and an unconditional copy clobbered depth maps uploaded via UpdateDepthMap after one frame."
+    "rationale": "BGL RGBA32Float vs rewritten shader RGBA16Float produced an invalid pipeline submitted every frame. Catalog WGSL stays rgba32float; The bridge rewrites storage decls to the format C++ reports right before loadShader (src/wasm/bridge/shader.ts prepareShader; C++ has no second rewrite since #1400). Depth write must include CopySrc because Feedback Encoder copies it to depth read. The copy is gated on a pass writing binding 6 (both Render paths): TS has no depthWrite→depthRead copy, and an unconditional copy clobbered depth maps uploaded via UpdateDepthMap after one frame."
   },
   "maxComputeWorkgroupsPerDimension": {
     "value": 65535,

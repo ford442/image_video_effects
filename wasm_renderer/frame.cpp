@@ -17,7 +17,6 @@ namespace pixelocity {
 using wasm_internal::MakeStringView;
 using wasm_internal::AlignUp;
 using wasm_internal::CheckLimit;
-using wasm_internal::ParseWorkgroupSize;
 
 static void CopyTex(WGPUCommandEncoder enc,
                     WGPUTexture src, WGPUTexture dst,
@@ -138,7 +137,9 @@ void WebGPURenderer::UpdateUniformBuffer(bool includeHistoryHead) {
 
 // Helper: copy one texture to another within an already-open encoder.
 void WebGPURenderer::Render() {
-    if (!initialized_ || deviceLost_ || !device_.get() || !queue_.get()) return;
+    // texturesReady_ is false while (or after a failed) RecreateTextures: the
+    // size-dependent textures are null and must not reach a bind group.
+    if (!initialized_ || deviceLost_ || !texturesReady_ || !device_.get() || !queue_.get()) return;
 
     const double renderStartMs = emscripten_get_now();
     lastParallelTimeMs_ = 0.0f;
@@ -486,10 +487,11 @@ int WebGPURenderer::ReadCapturedFrame(uint8_t* outRGBA8, int maxBytes) {
                 const float* px = reinterpret_cast<const float*>(rowSrc + static_cast<size_t>(x) * bpp);
                 r = px[0]; g = px[1]; b = px[2]; a = px[3];
             }
-            rowDst[x * 4 + 0] = static_cast<uint8_t>(std::min(1.0f, std::max(0.0f, r)) * 255.0f);
-            rowDst[x * 4 + 1] = static_cast<uint8_t>(std::min(1.0f, std::max(0.0f, g)) * 255.0f);
-            rowDst[x * 4 + 2] = static_cast<uint8_t>(std::min(1.0f, std::max(0.0f, b)) * 255.0f);
-            rowDst[x * 4 + 3] = static_cast<uint8_t>(std::min(1.0f, std::max(0.0f, a)) * 255.0f);
+            // Round to nearest (truncation darkened every channel by up to 1/255).
+            rowDst[x * 4 + 0] = static_cast<uint8_t>(std::min(1.0f, std::max(0.0f, r)) * 255.0f + 0.5f);
+            rowDst[x * 4 + 1] = static_cast<uint8_t>(std::min(1.0f, std::max(0.0f, g)) * 255.0f + 0.5f);
+            rowDst[x * 4 + 2] = static_cast<uint8_t>(std::min(1.0f, std::max(0.0f, b)) * 255.0f + 0.5f);
+            rowDst[x * 4 + 3] = static_cast<uint8_t>(std::min(1.0f, std::max(0.0f, a)) * 255.0f + 0.5f);
         }
     }
     return required;

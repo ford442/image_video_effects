@@ -22,6 +22,7 @@ const TRACKED = [
   'src/renderer/UniformBuffer.ts',
   'src/renderer/types.ts',
   'wasm_renderer/renderer.h',
+  'wasm_renderer/generated/contracts.h',
   'wasm_renderer/frame.cpp',
   'src/renderer/ShaderCompilation.ts',
   'public/shaders/_prelude.wgsl',

@@ -52,10 +52,10 @@ describe('WASM bridge — group-1 refusal', () => {
   it.each([
     ['loadShader', loadShader],
     ['reloadShader', reloadShader],
-  ])('%s skips @group(1) WGSL without calling into the module', (op, fn) => {
+  ])('%s skips @group(1) WGSL without calling into the module', async (op, fn) => {
     const module = wasmRef.module as ReturnType<typeof mockModule>;
     const errorsBefore = state.loadErrorCount;
-    expect(fn('dla-walkers', DLA_WALKERS)).toBe(false);
+    await expect(fn('dla-walkers', DLA_WALKERS)).resolves.toBe(false);
     expect(module.ccall).not.toHaveBeenCalled();
     expect(state.lastLoadError).toMatch(/@group\(1\)/);
     expect(state.loadErrorCount).toBe(errorsBefore + 1);
@@ -69,15 +69,21 @@ describe('WASM bridge — group-1 refusal', () => {
         '@compute @workgroup_size(64, 1, 1) fn main() {}',
       'zz-ring.wgsl',
     );
-    expect(loadShader('zz-ring', wgsl)).toBe(false);
+    await expect(loadShader('zz-ring', wgsl)).resolves.toBe(false);
     expect(module.ccall).not.toHaveBeenCalled();
     expect(state.lastLoadError).toMatch(/@group\(1\)/);
   });
 
-  it('still loads group-0 shaders (a commented @group(1) does not opt in)', () => {
+  it('still loads group-0 shaders (a commented @group(1) does not opt in)', async () => {
     const module = wasmRef.module as ReturnType<typeof mockModule>;
     const wgsl = '// @group(1) is TS-only\n@compute @workgroup_size(16, 16, 1) fn main() {}';
-    expect(loadShader('plain', wgsl)).toBe(true);
-    expect(module.ccall).toHaveBeenCalledWith('loadShader', 'number', ['number', 'number'], expect.any(Array));
+    await expect(loadShader('plain', wgsl)).resolves.toBe(true);
+    expect(module.ccall).toHaveBeenCalledWith(
+      'loadShader',
+      'number',
+      ['number', 'number', 'number', 'number', 'number'],
+      expect.any(Array),
+      { async: true },
+    );
   });
 });

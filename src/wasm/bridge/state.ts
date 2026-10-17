@@ -1,33 +1,30 @@
-/** Minimal Emscripten module surface used by the WASM JS glue. */
+import * as cpp from './_generated.js';
+
+/**
+ * Emscripten runtime surface the bridge uses (wasm_exports.json
+ * exportedRuntimeMethods + the heap). Exports are never called through this
+ * type: every call goes through the generated wrappers in _generated.ts, whose
+ * signatures come from the contract and are diffed against the --emit-tsd
+ * output (public/wasm/pixelocity_wasm.d.ts) by verify:wasm-bridge-sync.
+ */
 export interface EmscriptenModule {
   ccall(
     ident: string,
     returnType: string | null,
     argTypes: string[],
     args: unknown[],
+    opts?: { async?: boolean },
   ): unknown;
   _malloc(size: number): number;
   _free(ptr: number): void;
   getValue(ptr: number, type: string): number;
-  lengthBytesUTF8?(str: string): number;
+  lengthBytesUTF8(str: string): number;
   stringToUTF8(str: string, ptr: number, maxBytes: number): void;
+  UTF8ToString?(ptr: number): string;
   HEAPU8: Uint8Array;
   HEAPF32: Float32Array;
   /** Hand-off slot read (and cleared) by the C++ JS_CopyExternalImageToTexture EM_JS. */
   pixelocityPendingImage?: unknown;
-  /** Present only in artifacts built with canvas COPY_SRC parity (older binaries lack them). */
-  _getCanvasCopySrcSupported?: () => number;
-  _setCanvasCopySrc?: (enabled: number) => number;
-  _getMaxShaderSlots?: () => number;
-  /** Exported runtime method (wasm_exports.json exportedRuntimeMethods). */
-  UTF8ToString?(ptr: number): string;
-  /** Measurement exports (#1314 D); artifacts built before them lack these. Return C-string pointers. */
-  _getPassTimingsJson?: () => number;
-  _getLastError?: () => number;
-  _getErrorRingJson?: () => number;
-  _clearErrorRing?: () => void;
-  /** Bench export (#1080): queues onSubmittedWorkDone → __pxWorkDone(ok). 1 when queued. */
-  _requestWorkDoneMark?: () => number;
   /** Set by awaitSubmittedWorkDone(); called from the C++ work-done callback. */
   __pxWorkDone?: (ok: number) => void;
 }
@@ -42,11 +39,13 @@ declare global {
   }
 }
 
+/**
+ * Bytes for `str` plus its NUL. lengthBytesUTF8 is an exported runtime method
+ * (wasm_exports.json). Never feature-test an unexported one with `typeof`: under
+ * ASSERTIONS (the debug profile) Emscripten's stub getter aborts the module.
+ */
 export function utf8ByteLength(module: EmscriptenModule, str: string): number {
-  if (typeof module.lengthBytesUTF8 === 'function') {
-    return module.lengthBytesUTF8(str) + 1;
-  }
-  return new TextEncoder().encode(str).length + 1;
+  return module.lengthBytesUTF8(str) + 1;
 }
 
 export const wasmRef: {
@@ -95,16 +94,14 @@ export const state = {
 };
 
 /**
- * C++ finished Initialize() (device + surface). The init ccall can return
- * before that while CreateDevice() is suspended on the adapter/device request,
- * so anything C++ decides during init (the canvas COPY_SRC probe) must be read
- * after this is true.
+ * C++ finished Initialize() (device + surface). Anything C++ decides during
+ * init (the canvas COPY_SRC probe) is only meaningful once this is true.
  */
 export function isCppRendererReady(): boolean {
   const mod = wasmRef.module;
   if (!state.initialized || !mod) return false;
   try {
-    return Number(mod.ccall('isRendererInitialized', 'number', [], [])) === 1;
+    return cpp.isRendererInitialized(mod) === 1;
   } catch {
     return false;
   }
@@ -116,9 +113,9 @@ export function isCppRendererReady(): boolean {
  */
 export function readCanvasCopySrc(): boolean | null {
   const mod = wasmRef.module;
-  if (!mod || typeof mod._getCanvasCopySrcSupported !== 'function') return null;
-  if (!isCppRendererReady()) return null;
-  return mod._getCanvasCopySrcSupported() === 1;
+  if (!mod || !isCppRendererReady()) return null;
+  const supported = cpp.getCanvasCopySrcSupported(mod);
+  return supported === null ? null : supported === 1;
 }
 
 export const INIT_STAGE_NAMES: Record<number, string> = {

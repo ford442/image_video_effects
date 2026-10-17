@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "description": "The @group(0) compute bind group every catalog shader sees (bindings 0-13). Source of truth for wasm_renderer/generated/contracts.h (kComputeBindings, the per-stage limit floors it implies, shaderUsageFlags) and for the bridge's loadShader bindingUsage bits (src/wasm/bridge/_generated.ts). Prose: docs/BINDING_CONTRACT.md. Regenerate with npm run wasm:contracts.",
+  "group": 0,
+  "kinds": {
+    "filteringSampler": "sampler, filtering",
+    "nonFilteringSampler": "sampler, non-filtering",
+    "comparisonSampler": "sampler_comparison",
+    "sampledRgba": "texture_2d<f32>, tier rgba format",
+    "sampledRgbaArray": "texture_2d_array<f32>, tier rgba format",
+    "sampledR32": "texture_2d<f32>, r32float",
+    "storageRgba": "texture_storage_2d<tier rgba, write>",
+    "storageR32": "texture_storage_2d<r32float, write>",
+    "uniformBuffer": "var<uniform>",
+    "storageBuffer": "var<storage, read_write>",
+    "readOnlyStorageBuffer": "var<storage, read>"
+  },
+  "bindings": [
+    { "binding": 0, "wgslName": "u_sampler", "kind": "filteringSampler", "resource": "filteringSampler" },
+    { "binding": 1, "wgslName": "readTexture", "kind": "sampledRgba", "resource": "input" },
+    { "binding": 2, "wgslName": "writeTexture", "kind": "storageRgba", "resource": "output" },
+    { "binding": 3, "wgslName": "u", "kind": "uniformBuffer", "resource": "uniforms" },
+    { "binding": 4, "wgslName": "readDepthTexture", "kind": "sampledR32", "resource": "depthRead" },
+    { "binding": 5, "wgslName": "non_filtering_sampler", "kind": "nonFilteringSampler", "resource": "nonFilteringSampler" },
+    { "binding": 6, "wgslName": "writeDepthTexture", "kind": "storageR32", "resource": "depthWrite" },
+    { "binding": 7, "wgslName": "dataTextureA", "kind": "storageRgba", "resource": "dataA" },
+    { "binding": 8, "wgslName": "dataTextureB", "kind": "storageRgba", "resource": "dataB" },
+    { "binding": 9, "wgslName": "dataTextureC", "kind": "sampledRgba", "resource": "dataC" },
+    { "binding": 10, "wgslName": "extraBuffer", "kind": "storageBuffer", "resource": "extra" },
+    { "binding": 11, "wgslName": "comparison_sampler", "kind": "comparisonSampler", "resource": "comparisonSampler" },
+    { "binding": 12, "wgslName": "plasmaBuffer", "kind": "readOnlyStorageBuffer", "resource": "plasma" },
+    { "binding": 13, "wgslName": "historyTexture", "kind": "sampledRgbaArray", "resource": "history" }
+  ],
+  "shaderUsageFlags": {
+    "description": "Which optional per-frame copies a shader needs, sent with loadShader as one bitmask. A flag is set when the shader references the binding's variable beyond its declaration (aliased names are resolved; unparseable declarations count as used).",
+    "flags": [
+      { "name": "writesDataA", "bit": 1, "binding": 7 },
+      { "name": "writesDataB", "bit": 2, "binding": 8 },
+      { "name": "readsDataC", "bit": 4, "binding": 9 },
+      { "name": "usesHistory", "bit": 8, "binding": 13 },
+      { "name": "writesDepth", "bit": 16, "binding": 6 }
+    ]
+  }
+}

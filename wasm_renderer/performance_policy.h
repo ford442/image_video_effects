@@ -1,12 +1,13 @@
 #pragma once
 
 #include <cstdint>
+#include "generated/contracts.h"
 
 // Keep in sync with src/config/performancePolicy.ts and src/config/formatPolicy.ts
 namespace pixelocity::policy {
 
 constexpr int kInternalRenderResolution = 2048;
-constexpr int kRenderWorkgroupSize      = 16;
+constexpr int kRenderWorkgroupSize      = static_cast<int>(contracts::kWorkgroupFallbackX);  // workgroup_dispatch.json
 
 constexpr float kMinRenderScale = 0.25f;
 constexpr float kMaxRenderScale = 1.0f;

@@ -7,15 +7,52 @@
 CRA copies `public/` into the output **during** `craco build`, so WASM artifacts must exist **before** that step. The `prebuild` hook runs this sequence **once**:
 
 ```
-wasm:build → generate_shader_lists → build:manifest → craco build
+build.sh --if-requested → generate_shader_lists → build:manifest → craco build
 ```
 
-`npm run build` invokes `craco build` only — it does **not** call `wasm:build` again. A second compile would be redundant: artifacts are already in `public/wasm/` and are copied into `build/wasm/` by CRA.
+The backend is frozen R&D (#1080), so `prebuild` uses the **committed** `public/wasm/`
+artifacts by default (#1400). `build.sh --if-requested` regenerates the contract files
+and the bridge copies (no emcc needed) and compiles only when `WASM_BUILD=1`:
 
 ```bash
-npm run build                    # full path (requires emsdk, or see SKIP below)
-SKIP_WASM_BUILD=1 npm run build  # headless VMs: skip emcc, use committed public/wasm/
+npm run build                  # any machine, no emsdk, no env var: committed public/wasm/
+WASM_BUILD=1 npm run build     # compile first (pinned emsdk required)
 ```
+
+`SKIP_WASM_BUILD=1` is still honoured by `npm run wasm:build` (bridge sync only).
+
+### Generated contract files (`npm run wasm:contracts`)
+
+`scripts/emit-wasm-contracts.mjs` writes, from `src/contracts/*.json`:
+
+| File | From | Used by |
+|------|------|---------|
+| `src/wasm/bridge/_generated.ts` | `wasm_exports.json` `exports` (returns, args, async, whileSuspended) | every bridge call into the module (no hand-written `ccall`) |
+| `src/wasm/bridge/_contracts.ts` | `binding_table.json`, `workgroup_dispatch.json` | `wgslAnalysis.ts` (shared by both backends) |
+| `wasm_renderer/generated/contracts.h` | `webgpu_limits.json`, `webgpu_optional_features.json`, `binding_table.json`, `slot_limits.json`, `uniforms_layout.json`, `workgroup_dispatch.json` | `device.cpp` limits/features, `pipeline.cpp` binding table, `renderer.h` slots/uniforms |
+
+`build.sh` runs it first; `verify:wasm-bridge-sync` and `verify:device-policy` fail when a
+committed copy is stale. The generator refuses limit floors below what the binding table
+needs (that is how `maxSampledTexturesPerShaderStage` 3 → 4 was caught).
+
+### Async exports
+
+Exports marked `async` in `wasm_exports.json` can reach `wgpuInstanceWaitAny`, which
+suspends under ASYNCIFY. The generated wrappers ccall them with `{ async: true }` and
+return a Promise; `src/wasm/bridge/call.ts` runs them one at a time per module and applies
+each sync export's `whileSuspended` policy (`call` / `queue` / `skip`) meanwhile. The release
+build links with `-sASYNCIFY_ADVISE` (byte-identical output) and
+`scripts/check-asyncify-exports.mjs` fails the build if the exports that can suspend are not
+exactly the `async` ones.
+
+### Debug profile (`npm run wasm:build:debug`)
+
+`wasm_compile_flags.json` `profiles.debug`: the release flags plus `-sASSERTIONS=2 -g
+-gsource-map --profiling-funcs`, written to `public/wasm/pixelocity_wasm.debug.{js,wasm,wasm.map}`
+(gitignored). Load it with `?renderer=wasm&wasm_debug=1`. A suspending export called
+without `{ async: true }`, or a `typeof` probe of an unexported runtime method, throws
+there instead of misbehaving silently. `npm run test:wasm:debug` runs the WASM smoke spec
+on SwiftShader against it and fails on any Emscripten assertion.
 
 ### WASM-only compile (`npm run wasm:build`)
 
@@ -58,28 +95,27 @@ ABI of `public/wasm/pixelocity_wasm.{js,wasm}`.
 - **CI:** `setup-emsdk` `version:` must equal the pin; `npm run verify:wasm-invariants` fails on drift or on `-s` flags hardcoded in `build.sh`/CMake.
 - **Local gate:** `build.sh` runs `scripts/emcc-version-gate.sh`; a mismatched emcc fails the build. Emscripten 6.x glue does not embed its version, so `wasm:validate` can only check the pin exists (and would fail if a future glue embeds a mismatched version).
 - **Beware stale SDKs:** `build.sh` sources the first `emsdk_env.sh` it finds (`$REPO_ROOT/emsdk`, `~/emsdk`, …), which can override an already-activated emsdk. The gate catches this.
-- **Cloud VMs / Jules:** `SKIP_WASM_BUILD=1`. Do not compile with 3.1.x.
+- **Cloud VMs / Jules:** plain `npm run build` uses the committed artifacts. Do not compile with 3.1.x.
+- **EM_CACHE:** `build.sh` keeps an `EM_CACHE` you set and otherwise uses emcc's default (`<emsdk>/upstream/emscripten/cache`). CI points it at `.emscripten-cache` and restores it with `actions/cache`, so the port and LTO system libraries are not rebuilt every run.
 - **Bumping:** edit the JSON + `.github/workflows/wasm.yml` together, rebuild, commit artifacts in the same PR, note size deltas in `wasm_renderer/BUILD_FLAG_EXPERIMENTS.md`.
 
 ## Build Failures: CI vs Local
 
-**CI — `wasm` job (`wasm.yml`):** installs emsdk, runs `npm run wasm:build` **once**, then
-`npm run wasm:validate`, WASM Jest smoke tests, and uploads artifacts.
+**CI — `wasm` job (`wasm.yml`):** installs emsdk, builds the release and debug profiles,
+runs `npm run wasm:validate`, requires the fresh release `.wasm`/`.js`/`.d.ts` to equal the
+committed ones byte for byte, runs `verify:wasm-bridge-sync` and the WASM Jest suites, and
+uploads artifacts.
 
-**CI — `test-wasm-e2e` job (`wasm.yml`):** downloads the `wasm` job's artifacts, sets
-`SKIP_WASM_BUILD=1`, then runs `npm run build`. `prebuild` sees the skip and does not
-recompile; the downloaded `public/wasm/` is copied into `build/` by CRA.
+**CI — `test-wasm-e2e` job (`wasm.yml`):** downloads the `wasm` job's artifacts, runs
+`npm run build` (prebuild uses them as-is), then the WASM Playwright smoke specs on
+SwiftShader (`--project=swiftshader-smoke`) for the release build and again for the debug
+profile (`npm run test:wasm:debug`).
 
-**CI — `test` job (`ci.yml`, every PR):** builds with `SKIP_WASM_BUILD=1` against the
-**committed** `public/wasm/` artifacts and runs `npm run wasm:validate` on them. It does not
-compile WASM.
+**CI — `test` job (`ci.yml`, every PR):** builds against the **committed** `public/wasm/`
+artifacts and runs `npm run wasm:validate` on them. It does not compile WASM.
 
-**Local:** `wasm_renderer/build.sh` **fails (exit 1) when `emcc` is missing**. Install emsdk
-or use committed artifacts with an explicit skip:
-
-```bash
-SKIP_WASM_BUILD=1 npm run build   # headless VMs without emsdk
-```
+**Local:** `npm run wasm:build` **fails (exit 1) when `emcc` is missing** (unless
+`SKIP_WASM_BUILD=1`); `npm run build` never needs emcc.
 
 ### When `wasm:validate` runs
 
@@ -144,7 +180,7 @@ See [`wasm_renderer/ARTIFACTS.md`](../wasm_renderer/ARTIFACTS.md) for the full a
 
 WASM is frozen R&D (#1080), so the `wasm` job lives in [`.github/workflows/wasm.yml`](../.github/workflows/wasm.yml) and runs only:
 
-- on pull requests to `main` that touch `wasm_renderer/**`, `public/wasm/**`, `tests/wasm-*` or `wasm.yml` itself;
+- on pull requests to `main` that touch the WASM tree or anything it is built from: `wasm_renderer/**`, `public/wasm/**`, `src/wasm/**`, `WASMRenderer.ts`, the contracts the generator reads (`src/contracts/wasm_*.json`, `binding_table.json`, the limits/slots/uniforms/workgroup contracts), the build scripts (`format-wasm-*`, `emit-wasm-*`, `emcc-version-gate.sh`, `check-asyncify-exports.mjs`), the WASM specs, or `wasm.yml` itself (#1400 H3);
 - weekly on `main` (Monday 06:17 UTC);
 - on demand (`workflow_dispatch`).
 
@@ -216,7 +252,8 @@ Tracking table:
 - **Build command**: `npm run wasm:build` (requires emsdk; fails without it)
 - **Validation**: `npm run wasm:validate`
 - **CI** (`wasm.yml`, WASM-path PRs + weekly): `wasm` job builds + validates + Jest smoke; `test-wasm-e2e` runs Playwright smoke
-- **Skip (explicit)**: `SKIP_WASM_BUILD=1` for machines without emsdk using committed artifacts
+- **App build**: `npm run build` uses committed artifacts; `WASM_BUILD=1` compiles first
+- **Debug profile**: `npm run wasm:build:debug`, then `?renderer=wasm&wasm_debug=1` / `npm run test:wasm:debug`
 - **Artifact layout**: [`wasm_renderer/ARTIFACTS.md`](../wasm_renderer/ARTIFACTS.md)
 - **Roadmap**: See [`WASM_RENDERER_GAP_ANALYSIS.md`](./WASM_RENDERER_GAP_ANALYSIS.md) and [#799 roadmap comment](https://github.com/ford442/image_video_effects/issues/799#issuecomment-4678258584)
 

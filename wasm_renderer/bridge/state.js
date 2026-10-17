@@ -1,10 +1,8 @@
 // GENERATED — do not edit. Source: src/wasm/ (concat_bridge.sh / emit-wasm-bridge.mjs)
 
+import * as cpp from "./_generated.js";
 function utf8ByteLength(module, str) {
-  if (typeof module.lengthBytesUTF8 === "function") {
-    return module.lengthBytesUTF8(str) + 1;
-  }
-  return new TextEncoder().encode(str).length + 1;
+  return module.lengthBytesUTF8(str) + 1;
 }
 const wasmRef = {
   module: null,
@@ -49,16 +47,16 @@ function isCppRendererReady() {
   const mod = wasmRef.module;
   if (!state.initialized || !mod) return false;
   try {
-    return Number(mod.ccall("isRendererInitialized", "number", [], [])) === 1;
+    return cpp.isRendererInitialized(mod) === 1;
   } catch {
     return false;
   }
 }
 function readCanvasCopySrc() {
   const mod = wasmRef.module;
-  if (!mod || typeof mod._getCanvasCopySrcSupported !== "function") return null;
-  if (!isCppRendererReady()) return null;
-  return mod._getCanvasCopySrcSupported() === 1;
+  if (!mod || !isCppRendererReady()) return null;
+  const supported = cpp.getCanvasCopySrcSupported(mod);
+  return supported === null ? null : supported === 1;
 }
 const INIT_STAGE_NAMES = {
   0: "None",

@@ -83,7 +83,7 @@ More detail: [`docs/SHADER_TEMPLATES.md`](docs/SHADER_TEMPLATES.md) · [`scripts
 
 - **WebGPU browser** — Chrome 113+, Edge 113+, or Firefox Nightly with WebGPU enabled
 - **Node.js 16+** and npm
-- **Optional:** Emscripten (`emcc`) for WASM rebuilds; headless VMs can use `SKIP_WASM_BUILD=1`
+- **Optional:** Emscripten (`emcc`) for WASM rebuilds; `npm run build` uses the committed `public/wasm/` artifacts without it
 
 ## Installation
 
@@ -98,7 +98,7 @@ Opens at `http://localhost:3000`. Use `BROWSER=none npm start` in headless envir
 
 ### Headless / Cloud VM contributors
 
-Cursor Cloud and similar VMs **lack a GPU adapter** — the WebGPU boot probe fails and the canvas shows a **blocking failure overlay** with full attempt logs (`window.webgpuProbe`). There is no automatic Canvas2D fallback. Validate shader/renderer work via **Jest** (`npm test`) and **build** (`SKIP_WASM_BUILD=1 npm run build`), not by eyeballing the canvas.
+Cursor Cloud and similar VMs **lack a GPU adapter** — the WebGPU boot probe fails and the canvas shows a **blocking failure overlay** with full attempt logs (`window.webgpuProbe`). There is no automatic Canvas2D fallback. Validate shader/renderer work via **Jest** (`npm test`) and **build** (`npm run build`), not by eyeballing the canvas.
 
 Outbound requests to `storage.noahcohn.com`, `storage.googleapis.com`, and Unsplash may be **network-blocked** — use local `public/` assets. See [`AGENTS.md`](AGENTS.md) Cloud VM section.
 
@@ -215,7 +215,7 @@ See [`docs/APP_STRUCTURE.md`](docs/APP_STRUCTURE.md) for panel/hook detail.
 | Goal | Command |
 |------|---------|
 | Dev | `BROWSER=none npm start` |
-| Prod JS (no emcc) | `SKIP_WASM_BUILD=1 npm run build` |
+| Prod JS (no emcc) | `npm run build` (committed WASM artifacts; `WASM_BUILD=1` compiles) |
 | WASM artifacts | `npm run wasm:build` (needs `emcc` + emdawn) |
 | Typecheck | `npm run typecheck` |
 | Device policy sync | `npm run verify:device-policy` |
@@ -235,7 +235,7 @@ See [`docs/TOOLCHAIN_DECISION.md`](docs/TOOLCHAIN_DECISION.md) for CRA + CRACO r
 | `npm test` | Jest unit tests (~250) |
 | `bash scripts/jules-setup.sh` | Agent/headless setup (`npm ci`, skip WASM compile) |
 
-Production path: `wasm:build` runs **once** in `prebuild`, not again in `build`. No emcc: `SKIP_WASM_BUILD=1 npm run build`. Details: [`WASM_BUILD_CI_GUIDE.md`](docs/WASM_BUILD_CI_GUIDE.md).
+Production path: `prebuild` uses the committed `public/wasm/` artifacts and compiles only with `WASM_BUILD=1` (WASM is frozen R&D). Details: [`WASM_BUILD_CI_GUIDE.md`](docs/WASM_BUILD_CI_GUIDE.md).
 
 ### Shader list URLs (local vs deploy)
 
@@ -353,7 +353,7 @@ There is no Controls toggle (removed in #1329).
 
 **Limitations while Tier B:** best-effort parity with TS WebGPU; WASM GPU timings are wall-clock only; Playwright GPU tests require a real WebGPU adapter (`WASM_GPU_TESTS=1`). See policy doc before treating WASM as production-ready.
 
-**Build WASM locally:** `npm run wasm:build` (requires [Emscripten](https://emscripten.org/)). In CI/headless VMs without emsdk: `SKIP_WASM_BUILD=1 npm run build` uses committed artifacts in `public/wasm/`.
+**Build WASM locally:** `npm run wasm:build` (requires [Emscripten](https://emscripten.org/)); `npm run wasm:build:debug` for the ASSERTIONS=2 debug profile (`?renderer=wasm&wasm_debug=1`). Without emsdk, `npm run build` uses the committed artifacts in `public/wasm/`.
 - **Pipeline:** Ping-pong textures; compute shaders read prior frame, write next
 - **Uniforms:** Shared 13-binding compute contract, from `#include "_prelude.wgsl"` (see `docs/BINDING_CONTRACT.md`)
 - **Depth:** AI depth maps drive parallax and depth-aware effects

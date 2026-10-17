@@ -99,12 +99,16 @@ Measured with the source of the WP-B correctness branch. All variants pass `wasm
 No JSPI spike was run: it needs a real GPU + Chrome (#1080 hardware) and none was
 available. **ASYNCIFY stays the committed default.** Before anyone attempts the spike:
 
-- `wgpuInstanceWaitAny(..., UINT64_MAX)` blocks in three places in `device.cpp`: adapter
-  request, device request, **and** the `LoadShader` error-scope pop. Under `-sJSPI` every export
-  that can reach one of them (`_initWasmRenderer`, `_loadShader`, `_reloadShader`, and anything
-  that calls into them) must be listed in `JSPI_EXPORTS` and becomes **promise-returning**. The
-  bridge `ccall`s in `src/wasm/bridge/*.ts` would need `{async: true}` + `await`. That is an ABI
-  change, not a flag flip.
+- `wgpuInstanceWaitAny` suspends in seven places: the adapter and device requests, the two
+  storage-format probes and the canvas COPY_SRC probe (all `device.cpp`), the
+  `CompileShaderPipeline` error-scope pop (`pipeline.cpp`) and the history-texture OOM probe
+  `TryCreateHistoryTexture` (`resources.cpp`, reached from `CreateResources` and
+  `RecreateTextures`). Five exports reach them: `_initWasmRenderer`, `_loadShader`,
+  `_reloadShader`, `_resizeCanvas`, `_setColorFormat` (`wasm_exports.json` marks them `async`;
+  the release build checks that with `-sASYNCIFY_ADVISE`, see the 2026-10-11 section). Under
+  `-sJSPI` they would be listed in `JSPI_EXPORTS`. The bridge already calls them through
+  `{ async: true }` wrappers and awaits them (#1400), so JSPI is no longer a bridge ABI change.
+  *(Corrected 2026-10-11: this said three places, all in `device.cpp`.)*
 - `TimedWaitAny` on the instance must stay either way.
 - Gate for merging: `CreateDevice()` succeeds with `-sJSPI` and no `-sASYNCIFY` on ≥1 real GPU;
   import table still has no `wgpuSurfacePresent`; Safari/Firefox either support JSPI or load a

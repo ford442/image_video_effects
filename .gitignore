@@ -69,3 +69,8 @@ tests/smoke/.bundle/
 
 # Generated in prestart/prebuild by scripts/build-shader-source-hashes.js
 public/thumbnails/source-hashes.json
+
+# Debug WASM profile (npm run wasm:build:debug; ?renderer=wasm&wasm_debug=1). Not committed.
+public/wasm/pixelocity_wasm.debug.js
+public/wasm/pixelocity_wasm.debug.wasm
+public/wasm/pixelocity_wasm.debug.wasm.map

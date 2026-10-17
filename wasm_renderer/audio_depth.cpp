@@ -44,7 +44,6 @@ EM_JS(int, JS_CopyExternalImageToTexture,
 using wasm_internal::MakeStringView;
 using wasm_internal::AlignUp;
 using wasm_internal::CheckLimit;
-using wasm_internal::ParseWorkgroupSize;
 
 void WebGPURenderer::SetInputSource(InputSource source) {
     inputSource_ = source;
@@ -55,6 +54,7 @@ void WebGPURenderer::SetInputSource(InputSource source) {
 }
 
 void WebGPURenderer::LoadImage(const uint8_t* data, int width, int height) {
+    if (!data || width <= 0 || height <= 0) return;
     printf("📷 Loading image: %dx%d\n", width, height);
     UploadRGBA8ToReadTexture(data, width, height);
 }
@@ -66,26 +66,34 @@ bool WebGPURenderer::LoadImageExternal(int width, int height) {
     const int copyW = std::min(width, canvasWidth_);
     const int copyH = std::min(height, canvasHeight_);
     if (copyW <= 0 || copyH <= 0) return false;
-    // Same geometry as UploadRGBA8ToReadTexture: top-left, black outside the image.
-    if (copyW < canvasWidth_ || copyH < canvasHeight_) ClearReadTexture();
+    // Same geometry as UploadRGBA8ToReadTexture: top-left, black outside the
+    // image. Clear only when an earlier upload may have left pixels outside it.
+    if (copyW < readTextureDirtyW_ || copyH < readTextureDirtyH_) ClearReadTexture();
     if (!JS_CopyExternalImageToTexture(queue_.get(), readTexture_.get(), copyW, copyH)) {
         return false;
     }
-    printf("📷 Loading image (GPU copy): %dx%d\n", width, height);
+    readTextureDirtyW_ = copyW;
+    readTextureDirtyH_ = copyH;
     return true;
 }
 
+static bool IsVideoLikeSource(InputSource source) {
+    return source == InputSource::Video || source == InputSource::Webcam || source == InputSource::Live;
+}
+
+bool WebGPURenderer::UpdateVideoFrameExternal(int width, int height) {
+    if (!IsVideoLikeSource(inputSource_)) return true;  // not an error: nothing to feed
+    return LoadImageExternal(width, height);
+}
+
 void WebGPURenderer::UpdateVideoFrame(const uint8_t* data, int width, int height) {
-    if (inputSource_ != InputSource::Video &&
-        inputSource_ != InputSource::Webcam &&
-        inputSource_ != InputSource::Live) {
-        return;
-    }
+    if (!IsVideoLikeSource(inputSource_)) return;
     UploadRGBA8ToReadTexture(data, width, height);
 }
 
 void WebGPURenderer::UpdateDepthMap(const float* data, int width, int height) {
     if (!queue_.get() || !depthTextureRead_.get() || !data || deviceLost_) return;
+    if (width <= 0 || height <= 0) return;
 
     // Depth stays r32float (not colorFormat_). bytesPerRow is width * sizeof(float).
     // RGBA color uploads use QueueWriteRgba / format_pack in resources.cpp.
@@ -96,12 +104,12 @@ void WebGPURenderer::UpdateDepthMap(const float* data, int width, int height) {
     const int copyW = (width  < dstW) ? width  : dstW;
     const int copyH = (height < dstH) ? height : dstH;
 
-    // Build a full-size float buffer (zeros for any uncovered region).
-    std::vector<float> buf(static_cast<size_t>(dstW) * dstH, 0.0f);
+    // Full-size float buffer (zeros for any uncovered region), reused across
+    // calls like videoStagingBuffer_ instead of allocated per depth map.
+    std::vector<float>& buf = depthStagingBuffer_;
+    buf.assign(static_cast<size_t>(dstW) * dstH, 0.0f);
     for (int y = 0; y < copyH; y++) {
-        for (int x = 0; x < copyW; x++) {
-            buf[y * dstW + x] = data[y * width + x];
-        }
+        std::copy_n(data + static_cast<size_t>(y) * width, copyW, buf.begin() + static_cast<std::ptrdiff_t>(y) * dstW);
     }
 
     WGPUTexelCopyTextureInfo dest = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;

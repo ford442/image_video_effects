@@ -13,8 +13,15 @@ import {
 } from './bridge/diagnostics';
 import { EmscriptenModule, wasmRef } from './bridge/state';
 
-/** Fake heap: each C string lives at a pointer; UTF8ToString looks it up. */
-function mockModule(strings: Partial<Record<'pass' | 'ring' | 'last', string>>, withExports = true) {
+type ExportName = '_getPassTimingsJson' | '_getErrorRingJson' | '_getLastError' | '_clearErrorRing';
+type MockModule = EmscriptenModule & Partial<Record<ExportName, jest.Mock>>;
+
+/**
+ * Fake heap: each C string lives at a pointer; UTF8ToString looks it up. ccall
+ * behaves like Emscripten's: it calls Module['_' + ident] and decodes a 'string'
+ * return with UTF8ToString.
+ */
+function mockModule(strings: Partial<Record<'pass' | 'ring' | 'last', string>>, withExports = true): MockModule {
   const heap = new Map<number, string>();
   let next = 64;
   const put = (s: string) => {
@@ -23,24 +30,27 @@ function mockModule(strings: Partial<Record<'pass' | 'ring' | 'last', string>>, 
     heap.set(ptr, s);
     return ptr;
   };
-  const base: EmscriptenModule = {
-    ccall: jest.fn(),
+  const mod: MockModule = {
+    ccall: jest.fn((ident: string, returnType: string | null, _types: string[], args: unknown[]) => {
+      const fn = (mod as unknown as Record<string, (...a: unknown[]) => unknown>)[`_${ident}`];
+      const r = fn!(...args);
+      return returnType === 'string' ? mod.UTF8ToString!(r as number) : r;
+    }),
     _malloc: jest.fn(() => 16),
     _free: jest.fn(),
     getValue: jest.fn(() => 0),
+    lengthBytesUTF8: (s: string) => s.length,
     stringToUTF8: jest.fn(),
     HEAPU8: new Uint8Array(1),
     HEAPF32: new Float32Array(1),
     UTF8ToString: jest.fn((ptr: number) => heap.get(ptr) ?? ''),
   };
-  if (!withExports) return base;
-  return {
-    ...base,
-    _getPassTimingsJson: jest.fn(() => put(strings.pass ?? '[]')),
-    _getErrorRingJson: jest.fn(() => put(strings.ring ?? '{"count":0,"messages":[]}')),
-    _getLastError: jest.fn(() => put(strings.last ?? '')),
-    _clearErrorRing: jest.fn(),
-  };
+  if (!withExports) return mod;
+  mod._getPassTimingsJson = jest.fn(() => put(strings.pass ?? '[]'));
+  mod._getErrorRingJson = jest.fn(() => put(strings.ring ?? '{"count":0,"messages":[]}'));
+  mod._getLastError = jest.fn(() => put(strings.last ?? ''));
+  mod._clearErrorRing = jest.fn();
+  return mod;
 }
 
 describe('parsePassTimingsJson', () => {

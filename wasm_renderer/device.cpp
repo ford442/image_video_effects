@@ -1,5 +1,6 @@
 #include "renderer.h"
 #include "wasm_internal.h"
+#include "generated/contracts.h"
 #include <webgpu/webgpu.h>
 #include <emscripten/emscripten.h>
 #include <emscripten/em_js.h>
@@ -28,12 +29,11 @@ constexpr uint64_t kDeviceWaitTimeoutNs = 5'000'000'000ull;
 
 // ─── JavaScript bridge: create a WebGPU surface from a canvas selector ────────
 //
-// Runs inside the WASM module's JS scope, so it has access to the internal
-// WebGPU object (which manages JS↔WASM handle mapping).
+// Runs inside the WASM module's JS scope, so it has the emdawn WebGPU object
+// (JS↔WASM handle mapping; public API only: getJsObject / importJsSurface).
 //
-// Returns the WASM surface handle (pointer-sized integer) on success, 0 on failure.
-// The caller must cast the return value to WGPUSurface.
-EM_JS(uint32_t, JS_CreateSurfaceFromCanvas, (const char* selectorPtr, WGPUDevice deviceHandle), {
+// Returns the new surface handle, or null on failure.
+EM_JS(WGPUSurface, JS_CreateSurfaceFromCanvas, (const char* selectorPtr, WGPUDevice deviceHandle), {
     var selector = UTF8ToString(selectorPtr);
     var canvasEl = document.querySelector(selector);
     if (!canvasEl) {
@@ -49,7 +49,7 @@ EM_JS(uint32_t, JS_CreateSurfaceFromCanvas, (const char* selectorPtr, WGPUDevice
                            typeof navigator.gpu.getPreferredCanvasFormat === 'function')
         ? navigator.gpu.getPreferredCanvasFormat()
         : 'bgra8unorm';
-    var jsDevice = WebGPU.Internals.jsObjects[deviceHandle >>> 0];
+    var jsDevice = WebGPU.getJsObject(deviceHandle);
     if (!jsDevice) {
         console.error('[WASM] Device JS object not found at handle', deviceHandle);
         return 0;
@@ -220,12 +220,17 @@ bool WebGPURenderer::CreateDevice() {
 
         WGPUAdapter adapterFromCallback = nullptr;
 
+        // WaitAnyOnly: this runs inside the WaitAny below, or with CallbackCancelled
+        // when a timed-out future is dropped with the instance (out-pointer dead by
+        // then, so it is only written on Success). Any adapter handed over on a
+        // non-Success path is released rather than leaked.
         auto adapterCallback = [](WGPURequestAdapterStatus status, WGPUAdapter adapter,
                                    WGPUStringView message, void* userdata1, void* /*userdata2*/) {
             auto* outAdapter = static_cast<WGPUAdapter*>(userdata1);
             if (status == WGPURequestAdapterStatus_Success && adapter) {
                 *outAdapter = adapter;
             } else {
+                if (adapter) wgpuAdapterRelease(adapter);
                 printf("❌ Adapter request failed (status=%d)\n", (int)status);
                 if (message.data && message.length > 0) {
                     printf("   Message: %.*s\n", (int)message.length, message.data);
@@ -282,7 +287,10 @@ bool WebGPURenderer::CreateDevice() {
     // Logs vendor/architecture/device/description so "works on my machine"
     // reports are diagnosable from console output alone.
     WGPUAdapterInfo adapterInfo = WGPU_ADAPTER_INFO_INIT;
-    wgpuAdapterGetInfo(adapter_.get(), &adapterInfo);
+    if (wgpuAdapterGetInfo(adapter_.get(), &adapterInfo) != WGPUStatus_Success) {
+        // Fields stay at their INIT values (empty strings, Unknown types).
+        printf("[WASM] wgpuAdapterGetInfo failed; adapter details unknown\n");
+    }
 
     const char* backendStr = "Unknown";
     switch (adapterInfo.backendType) {
@@ -318,33 +326,26 @@ bool WebGPURenderer::CreateDevice() {
     // adapter fails here with an actionable message instead of deep inside
     // CreateResources() with a cryptic bind-group-layout error.
     //
-    // maxTextureDimension2D need is the named comfortable floor (8192), matching
-    // src/contracts/webgpu_limits.json — NOT canvas max(w,h), NOT maxBufferSize,
-    // NOT pixel count / width*height, and NOT a mis-ordered init heap pointer.
+    // The floors are webgpu_limits.json minimumComputeLimits (generated/contracts.h);
+    // the generator fails if they drop below what binding_table.json declares.
+    // maxTextureDimension2D is a named comfortable floor — NOT canvas max(w,h),
+    // NOT maxBufferSize, NOT pixel count, NOT a mis-ordered init heap pointer.
     WGPULimits limits = WGPU_LIMITS_INIT;
     wgpuAdapterGetLimits(adapter_.get(), &limits);
 
     bool limitsOk = true;
-    // 8192 = webgpu_limits.json minimumComputeLimits.maxTextureDimension2D (comfortable floor).
-    printf("[WASM] Adapter limits (validating against 14-entry compute contract):\n");
-    CheckLimit("maxTextureDimension2D",              limits.maxTextureDimension2D,              8192, limitsOk);
-    CheckLimit("maxBindingsPerBindGroup",            limits.maxBindingsPerBindGroup,            14,  limitsOk);
-    CheckLimit("maxSampledTexturesPerShaderStage",   limits.maxSampledTexturesPerShaderStage,    3,  limitsOk);
-    CheckLimit("maxSamplersPerShaderStage",          limits.maxSamplersPerShaderStage,           3,  limitsOk);
-    CheckLimit("maxStorageTexturesPerShaderStage",   limits.maxStorageTexturesPerShaderStage,    4,  limitsOk);
-    CheckLimit("maxStorageBuffersPerShaderStage",    limits.maxStorageBuffersPerShaderStage,     2,  limitsOk);
-    CheckLimit("maxUniformBuffersPerShaderStage",    limits.maxUniformBuffersPerShaderStage,     1,  limitsOk);
-    CheckLimit("maxComputeWorkgroupSizeX",           limits.maxComputeWorkgroupSizeX,            16, limitsOk);
-    CheckLimit("maxComputeWorkgroupSizeY",           limits.maxComputeWorkgroupSizeY,            16, limitsOk);
-    CheckLimit("maxComputeInvocationsPerWorkgroup",  limits.maxComputeInvocationsPerWorkgroup,   256, limitsOk);
+    printf("[WASM] Adapter limits (validating against the 14-entry compute contract):\n");
+#define PIXELOCITY_CHECK_ADAPTER_LIMIT(field, need) CheckLimit(#field, limits.field, need, limitsOk);
+    PIXELOCITY_MIN_COMPUTE_LIMITS(PIXELOCITY_CHECK_ADAPTER_LIMIT)
+#undef PIXELOCITY_CHECK_ADAPTER_LIMIT
 
     // Deep workgroup (webgpu_limits.json deepWorkgroupLimits): requested below
-    // only when the adapter offers all three. supportsDeepWorkgroup_ is set from
+    // only when the adapter offers all of them. supportsDeepWorkgroup_ is set from
     // the *device* limits after creation, since that is what shaders get.
-    const bool adapterDeepWorkgroup =
-        limits.maxComputeWorkgroupSizeX >= 32 &&
-        limits.maxComputeWorkgroupSizeY >= 32 &&
-        limits.maxComputeInvocationsPerWorkgroup >= 1024;
+    bool adapterDeepWorkgroup = true;
+#define PIXELOCITY_ADAPTER_HAS_DEEP(field, need) adapterDeepWorkgroup = adapterDeepWorkgroup && limits.field >= need;
+    PIXELOCITY_DEEP_WORKGROUP_LIMITS(PIXELOCITY_ADAPTER_HAS_DEEP)
+#undef PIXELOCITY_ADAPTER_HAS_DEEP
     printf("[WASM] Adapter limits: maxTex2D=%u, storageTex=%u, sampledTex=%u, computeInvocations=%u (%s)\n",
            limits.maxTextureDimension2D, limits.maxStorageTexturesPerShaderStage,
            limits.maxSampledTexturesPerShaderStage, limits.maxComputeInvocationsPerWorkgroup,
@@ -355,20 +356,20 @@ bool WebGPURenderer::CreateDevice() {
     // ── Feature checks ────────────────────────────────────────────────────
     // rgba32float storage textures (bindings 2/7/8) require float32-filterable/
     // blendable support on some backends; log so it's visible in diagnostics.
-    bool hasFloat32Filterable = wgpuAdapterHasFeature(adapter_.get(), WGPUFeatureName_Float32Filterable);
-    bool hasFloat32Blendable  = wgpuAdapterHasFeature(adapter_.get(), WGPUFeatureName_Float32Blendable);
-    bool hasBGRA8Storage      = wgpuAdapterHasFeature(adapter_.get(), WGPUFeatureName_BGRA8UnormStorage);
     // WGPUFeatureName_* are enum members, not macros: never guard them with
     // #ifdef (that compiled timestamp-query and subgroups out entirely).
-    // emdawnwebgpu has no chromium-experimental-subgroups member.
-    bool hasTimestampQuery    = wgpuAdapterHasFeature(adapter_.get(), WGPUFeatureName_TimestampQuery);
-    bool hasSubgroups         = wgpuAdapterHasFeature(adapter_.get(), WGPUFeatureName_Subgroups);
-    printf("[WASM] Adapter features: Float32Filterable=%s Float32Blendable=%s BGRA8UnormStorage=%s TimestampQuery=%s Subgroups=%s\n",
+    const bool hasFloat32Filterable = wgpuAdapterHasFeature(adapter_.get(), WGPUFeatureName_Float32Filterable);
+    const bool hasFloat32Blendable  = wgpuAdapterHasFeature(adapter_.get(), WGPUFeatureName_Float32Blendable);
+    const bool hasBGRA8Storage      = wgpuAdapterHasFeature(adapter_.get(), WGPUFeatureName_BGRA8UnormStorage);
+    printf("[WASM] Adapter features: Float32Filterable=%s Float32Blendable=%s BGRA8UnormStorage=%s",
            hasFloat32Filterable ? "yes" : "no",
            hasFloat32Blendable  ? "yes" : "no",
-           hasBGRA8Storage      ? "yes" : "no",
-           hasTimestampQuery    ? "yes" : "no",
-           hasSubgroups ? "yes" : "no");
+           hasBGRA8Storage      ? "yes" : "no");
+#define PIXELOCITY_LOG_FEATURE(feature, name) \
+    printf(" %s=%s", name, wgpuAdapterHasFeature(adapter_.get(), feature) ? "yes" : "no");
+    PIXELOCITY_OPTIONAL_FEATURES(PIXELOCITY_LOG_FEATURE)
+#undef PIXELOCITY_LOG_FEATURE
+    printf("\n");
 
     if (!limitsOk) {
         printf("❌ Adapter does not meet the minimum WebGPU limits required by Pixelocity's\n");
@@ -401,48 +402,34 @@ bool WebGPURenderer::CreateDevice() {
     wgpuAdapterInfoFreeMembers(adapterInfo);
 
     // ── Required limits ──────────────────────────────────────────────────
-    // Explicitly request the minimums this renderer needs (see the
-    // CheckLimit() table above) instead of leaving requiredLimits null.
-    // All other fields stay WGPU_LIMIT_*_UNDEFINED (via WGPU_LIMITS_INIT) so
-    // we don't over-request anything the adapter doesn't already offer.
+    // Explicitly request the minimums this renderer needs (the same table the
+    // adapter was checked against) instead of leaving requiredLimits null: a
+    // null requiredLimits yields spec-default (lower) device limits. All other
+    // fields stay WGPU_LIMIT_*_UNDEFINED (via WGPU_LIMITS_INIT).
+    static_assert(sizeof(Uniforms) <= contracts::kUniformsSizeBytes,
+                  "maxUniformBufferBindingSize floor must cover the Uniforms struct");
     WGPULimits requiredLimits = WGPU_LIMITS_INIT;
-    requiredLimits.maxTextureDimension2D             = 8192; // webgpu_limits.json comfortable floor
-    requiredLimits.maxBindingsPerBindGroup           = 14;
-    requiredLimits.maxSampledTexturesPerShaderStage  = 3;
-    requiredLimits.maxSamplersPerShaderStage         = 3;
-    requiredLimits.maxStorageTexturesPerShaderStage  = 4;
-    requiredLimits.maxStorageBuffersPerShaderStage   = 2;
-    requiredLimits.maxUniformBuffersPerShaderStage   = 1;
-    requiredLimits.maxUniformBufferBindingSize       = sizeof(Uniforms);
-    requiredLimits.maxComputeWorkgroupSizeX          = 16;
-    requiredLimits.maxComputeWorkgroupSizeY          = 16;
-    requiredLimits.maxComputeInvocationsPerWorkgroup = 256;
+#define PIXELOCITY_REQUIRE_LIMIT(field, need) requiredLimits.field = need;
+    PIXELOCITY_MIN_COMPUTE_LIMITS(PIXELOCITY_REQUIRE_LIMIT)
     if (adapterDeepWorkgroup) {
-        // webgpu_limits.json deepWorkgroupLimits — mirrors buildRequiredLimits(adapterLimits).
-        requiredLimits.maxComputeWorkgroupSizeX          = 32;
-        requiredLimits.maxComputeWorkgroupSizeY          = 32;
-        requiredLimits.maxComputeInvocationsPerWorkgroup = 1024;
+        // Mirrors buildRequiredLimits(adapterLimits) in webgpuDevicePolicy.ts.
+        PIXELOCITY_DEEP_WORKGROUP_LIMITS(PIXELOCITY_REQUIRE_LIMIT)
     }
+#undef PIXELOCITY_REQUIRE_LIMIT
 
-    // Optional features: same order as collectOptionalDeviceFeatures() in
-    // src/renderer/webgpu/device.ts — float32-filterable, timestamp-query
-    // (#1007 always-on when available), then one subgroup variant.
-    // requiredFeatures[3] is a contract: do not shrink. Dropping a slot
-    // silently omits timestamp-query when float32 + subgroups are both present.
-    WGPUFeatureName requiredFeatures[3] = {};
+    // Optional features, in webgpu_optional_features.json requestOrder (same as
+    // collectOptionalDeviceFeatures() in src/renderer/webgpu/device.ts):
+    // float32-filterable, timestamp-query (#1007 always-on when available), then
+    // the subgroup variant. The array holds every one of them.
+    WGPUFeatureName requiredFeatures[contracts::kOptionalFeatureCount] = {};
     size_t requiredFeatureCount = 0;
-    if (hasFloat32Filterable) {
-        requiredFeatures[requiredFeatureCount++] = WGPUFeatureName_Float32Filterable;
-        printf("[WASM] Requesting device feature: Float32Filterable\n");
+#define PIXELOCITY_REQUEST_FEATURE(feature, name)                         \
+    if (wgpuAdapterHasFeature(adapter_.get(), feature)) {                 \
+        requiredFeatures[requiredFeatureCount++] = feature;               \
+        printf("[WASM] Requesting device feature: %s\n", name);          \
     }
-    if (hasTimestampQuery) {
-        requiredFeatures[requiredFeatureCount++] = WGPUFeatureName_TimestampQuery;
-        printf("[WASM] Requesting device feature: TimestampQuery\n");
-    }
-    if (hasSubgroups) {
-        requiredFeatures[requiredFeatureCount++] = WGPUFeatureName_Subgroups;
-        printf("[WASM] Requesting device feature: Subgroups\n");
-    }
+    PIXELOCITY_OPTIONAL_FEATURES(PIXELOCITY_REQUEST_FEATURE)
+#undef PIXELOCITY_REQUEST_FEATURE
 
     // Request device using callback-based API
     WGPUDeviceDescriptor deviceDesc = WGPU_DEVICE_DESCRIPTOR_INIT;
@@ -564,12 +551,9 @@ bool WebGPURenderer::CreateDevice() {
             enabled += name;
             first = false;
         };
-        appendFeat(wgpuDeviceHasFeature(device_.get(), WGPUFeatureName_Float32Filterable),
-                   "float32-filterable");
-        appendFeat(wgpuDeviceHasFeature(device_.get(), WGPUFeatureName_TimestampQuery),
-                   "timestamp-query");
-        appendFeat(wgpuDeviceHasFeature(device_.get(), WGPUFeatureName_Subgroups),
-                   "subgroups");
+#define PIXELOCITY_APPEND_FEATURE(feature, name) appendFeat(wgpuDeviceHasFeature(device_.get(), feature), name);
+        PIXELOCITY_OPTIONAL_FEATURES(PIXELOCITY_APPEND_FEATURE)
+#undef PIXELOCITY_APPEND_FEATURE
         enabled += "]";
         adapterSummary_ += " | ";
         adapterSummary_ += enabled;
@@ -651,29 +635,26 @@ bool WebGPURenderer::CreateDevice() {
     // Re-check against the same minimums as the adapter. deviceDesc.requiredLimits
     // IS seeded above from webgpu_limits.json, so a conforming implementation
     // should never return less; this is a belt-and-braces diagnostic for clamping
-    // bugs. Do NOT drop the explicit requiredLimits as a "simplification" —
-    // a null requiredLimits yields spec-default (lower) device limits.
+    // bugs.
     {
         WGPULimits deviceLimits = WGPU_LIMITS_INIT;
         wgpuDeviceGetLimits(device_.get(), &deviceLimits);
         bool deviceLimitsOk = true;
         printf("[WASM] Device limits (post-creation, catches clamping):\n");
-        CheckLimit("maxTextureDimension2D",             deviceLimits.maxTextureDimension2D,             8192, deviceLimitsOk);
-        CheckLimit("maxBindingsPerBindGroup",           deviceLimits.maxBindingsPerBindGroup,           14,  deviceLimitsOk);
-        CheckLimit("maxSampledTexturesPerShaderStage",  deviceLimits.maxSampledTexturesPerShaderStage,  3,   deviceLimitsOk);
-        CheckLimit("maxSamplersPerShaderStage",         deviceLimits.maxSamplersPerShaderStage,         3,   deviceLimitsOk);
-        CheckLimit("maxStorageTexturesPerShaderStage",  deviceLimits.maxStorageTexturesPerShaderStage,  4,   deviceLimitsOk);
-        CheckLimit("maxStorageBuffersPerShaderStage",   deviceLimits.maxStorageBuffersPerShaderStage,   2,   deviceLimitsOk);
-        CheckLimit("maxUniformBuffersPerShaderStage",   deviceLimits.maxUniformBuffersPerShaderStage,   1,   deviceLimitsOk);
-        CheckLimit("maxComputeInvocationsPerWorkgroup", deviceLimits.maxComputeInvocationsPerWorkgroup, 256, deviceLimitsOk);
+#define PIXELOCITY_CHECK_DEVICE_LIMIT(field, need) CheckLimit(#field, deviceLimits.field, need, deviceLimitsOk);
+        PIXELOCITY_MIN_COMPUTE_LIMITS(PIXELOCITY_CHECK_DEVICE_LIMIT)
+#undef PIXELOCITY_CHECK_DEVICE_LIMIT
         if (!deviceLimitsOk) {
             printf("⚠️  Device limits were clamped below the adapter's reported limits and no\n");
             printf("   longer meet the 14-entry compute contract minimums. Rendering may fail.\n");
         }
         maxComputeInvocations_ = deviceLimits.maxComputeInvocationsPerWorkgroup;
-        supportsDeepWorkgroup_ = deviceLimits.maxComputeInvocationsPerWorkgroup >= 1024
-            && deviceLimits.maxComputeWorkgroupSizeX >= 32
-            && deviceLimits.maxComputeWorkgroupSizeY >= 32;
+        maxComputeWorkgroupSizeX_ = deviceLimits.maxComputeWorkgroupSizeX;
+        maxComputeWorkgroupSizeY_ = deviceLimits.maxComputeWorkgroupSizeY;
+        supportsDeepWorkgroup_ = true;
+#define PIXELOCITY_DEVICE_HAS_DEEP(field, need) supportsDeepWorkgroup_ = supportsDeepWorkgroup_ && deviceLimits.field >= need;
+        PIXELOCITY_DEEP_WORKGROUP_LIMITS(PIXELOCITY_DEVICE_HAS_DEEP)
+#undef PIXELOCITY_DEVICE_HAS_DEEP
         printf("[WASM] Device deep-workgroup (32x32, 1024 invocations): %s\n",
                supportsDeepWorkgroup_ ? "granted" : "not granted");
     }
@@ -689,9 +670,8 @@ bool WebGPURenderer::CreateDevice() {
                                      : WGPUTextureFormat_BGRA8Unorm; // default + unknown
         printf("[WASM] Negotiated canvas format: %s\n", fmt == 1 ? "rgba8unorm" : "bgra8unorm");
 
-        uint32_t surfHandle = JS_CreateSurfaceFromCanvas(
-            canvasSelector_.c_str(), device_.get());
-        if (!surfHandle) {
+        WGPUSurface surface = JS_CreateSurfaceFromCanvas(canvasSelector_.c_str(), device_.get());
+        if (!surface) {
             // Surface creation failed (no canvas at selector / getContext('webgpu')
             // failed / ctx.configure threw). Without a surface there is no way to
             // present, so treat this as a fatal init failure instead of silently
@@ -706,7 +686,7 @@ bool WebGPURenderer::CreateDevice() {
             lastError_ = adapterSummary_;
             return false;
         }
-        surface_.reset(reinterpret_cast<WGPUSurface>(surfHandle));
+        surface_.reset(surface);
 
         // COPY_SRC opt-in probe (canvas_configure.json optIn.copySrc). Same
         // validation-scope + WaitAny pattern as the storage-format probe above.
@@ -811,16 +791,9 @@ void WebGPURenderer::PresentToSurface() {
     // We own the returned reference on every status, so release it on every path.
     WGPUTextureHandle swapTexture(surfaceTex.texture);
 
-    // Accept both SuccessOptimal (emdawnwebgpu ≥ 2024) and SuccessSuboptimal.
-    // Older emdawnwebgpu headers use the single WGPUSurfaceGetCurrentTextureStatus_Success
-    // enum value (= 0) instead; the #else branch handles that case by name so the code
-    // compiles correctly with either header generation.
-#if defined(WGPU_SURFACE_TEXTURE_INIT)
+    // The pinned emdawnwebgpu (6.0.9) reports SuccessOptimal or SuccessSuboptimal.
     const bool ok = (surfaceTex.status == WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal ||
                      surfaceTex.status == WGPUSurfaceGetCurrentTextureStatus_SuccessSuboptimal);
-#else
-    const bool ok = (surfaceTex.status == WGPUSurfaceGetCurrentTextureStatus_Success);
-#endif
     if (!ok) {
         presentFailureCount_++;
         if (presentFailureCount_ <= 5) {

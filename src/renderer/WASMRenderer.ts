@@ -311,7 +311,9 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
    * Call this when the display canvas dimensions change.
    */
   resizeCanvas(newWidth: number, newHeight: number): void {
-    WasmBridge.resizeCanvas(newWidth, newHeight);
+    // Async export (RecreateTextures can suspend); frames skip until it returns.
+    // Never rejects: a failed rebuild is logged and resolves false.
+    void WasmBridge.resizeCanvas(newWidth, newHeight);
   }
 
   /**
@@ -358,7 +360,8 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
 
   setColorFormat(format: InternalColorFormat): void {
     const wasmFormat = format === 'rgba32float' ? 0 : 1;
-    WasmBridge.setColorFormat(wasmFormat);
+    // Async export; never rejects. state.colorFormat follows what C++ applied.
+    void WasmBridge.setColorFormat(wasmFormat);
   }
 
   getColorFormat(): InternalColorFormat {
@@ -454,6 +457,16 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     const h = this.video.videoHeight;
 
     if (w === 0 || h === 0) return;
+
+    // GPU ingest first (copyExternalImageToTexture, like stills); the Canvas2D
+    // readback + CPU upload below is the fallback.
+    if (WasmBridge.uploadVideoSource(this.video, w, h)) {
+      if (this.logNextInputUpload) {
+        console.log(`[WASM] Input upload ran: ${w}×${h} (video, GPU copy)`);
+        this.logNextInputUpload = false;
+      }
+      return;
+    }
 
     // Lazily create / resize the offscreen canvas
     if (!this.offscreenCanvas || this.offscreenCanvas.width !== w || this.offscreenCanvas.height !== h) {

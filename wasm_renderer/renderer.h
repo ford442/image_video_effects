@@ -1,7 +1,9 @@
 #pragma once
 
 #include "performance_policy.h"
+#include "generated/contracts.h"
 #include <webgpu/webgpu.h>
+#include <cstddef>
 #include <array>
 #include <vector>
 #include <string>
@@ -15,10 +17,11 @@ namespace pixelocity {
 // ═══════════════════════════════════════════════════════════════════════════════
 // This is the C++/WASM WebGPU renderer for Pixelocity.
 //
-// Status (Phase 3):
+// Frozen as Tier B R&D (docs/WASM_BACKEND_POLICY.md). Contract constants
+// (limits, binding table, slot ceiling) come from generated/contracts.h.
 //   ✅ Single shader execution
 //   ✅ Image/video upload
-//   ✅ Multi-slot shader pipeline (3 slots, chained/parallel)
+//   ✅ Multi-slot shader pipeline (MAX_SHADER_SLOTS, chained/parallel)
 //   ✅ Audio integration (bass/mid/treble -> extraBuffer + plasmaBuffer)
 //   ✅ Depth map integration
 //   ✅ Generative shader support
@@ -168,21 +171,23 @@ struct ShaderSlot {
     SlotMode    mode = SlotMode::Chained;
 };
 
-// Uniform structure matching the WGSL shaders
-// PERF: MEDIUM - Structure is 848 bytes (212 floats). Consider alignment hints
-// to ensure GPU layout matches exactly. Add static_assert for size validation.
+// Uniform structure matching the WGSL shaders (binding 3).
 // Field-by-field meanings: src/contracts/uniforms_layout.json (verified by
 // `npm run verify:uniforms`). config[1] is rippleCount — NOT delta time, audio or click count.
 struct Uniforms {
     float config[4];       // time, rippleCount, resolutionX, resolutionY
     float zoom_config[4];  // time, mouseX, mouseY (canvas UV, 0 = top), mouseDown
     float zoom_params[4];  // param1, param2, param3, param4
-    float ripples[50][4];  // x, y, startTime, padding (always 0)
+    float ripples[contracts::kMaxRipples][4];  // x, y, startTime, padding (always 0)
 };
 
-// Must match UNIFORM_BUFFER_LAYOUT.TOTAL_SIZE (src/renderer/types.ts) and
-// uniforms_layout.json totalSizeBytes.
-static_assert(sizeof(Uniforms) == 848, "Uniforms must stay 848 bytes (212 floats) — see src/contracts/uniforms_layout.json");
+// Layout is uniforms_layout.json (via generated/contracts.h); TS mirrors it in
+// UNIFORM_BUFFER_LAYOUT (src/renderer/types.ts).
+static_assert(sizeof(Uniforms) == contracts::kUniformsSizeBytes, "Uniforms size must match uniforms_layout.json totalSizeBytes");
+static_assert(offsetof(Uniforms, config) == contracts::kUniformsOffset_config, "uniforms_layout.json config offset");
+static_assert(offsetof(Uniforms, zoom_config) == contracts::kUniformsOffset_zoom_config, "uniforms_layout.json zoom_config offset");
+static_assert(offsetof(Uniforms, zoom_params) == contracts::kUniformsOffset_zoom_params, "uniforms_layout.json zoom_params offset");
+static_assert(offsetof(Uniforms, ripples) == contracts::kUniformsOffset_ripples, "uniforms_layout.json ripples offset");
 
 struct RipplePoint {
     float x, y;
@@ -195,11 +200,10 @@ struct ShaderPipeline {
     WGPUComputePipelineHandle pipeline;
     std::string id;
     std::string name;
-    // Workgroup dimensions parsed from @workgroup_size in WGSL source.
-    // Defaults to (16, 16) to match the TypeScript renderer.
-    uint32_t workgroupX = 16;
-    uint32_t workgroupY = 16;
-    // Per-shader binding usage (mirrors TS analyzeShaderBindings).
+    // `main` dispatch size, resolved by the bridge (src/wasm/bridge/wgslAnalysis.ts).
+    uint32_t workgroupX = contracts::kWorkgroupFallbackX;
+    uint32_t workgroupY = contracts::kWorkgroupFallbackY;
+    // Per-shader binding usage (loadShader bindingUsage bits, binding_table.json).
     bool writesDataA = false;
     bool writesDataB = false;
     bool readsDataC = false;
@@ -246,13 +250,17 @@ public:
     // SHADER MANAGEMENT
     // ═══════════════════════════════════════════════════════════════════════════
 
-    // Compile and load a WGSL shader into memory.
+    // Compile and load a WGSL shader. The bridge has already expanded includes,
+    // rewritten storage formats to colorFormat_, and resolved the `main`
+    // workgroup size and binding usage bits (src/wasm/bridge/wgslAnalysis.ts).
     // Retrieves and logs compilation messages via wgpuShaderModuleGetCompilationInfo.
-    // @workgroup_size is parsed from wgslCode for correct dispatch.
-    bool LoadShader(const char* id, const char* wgslCode);
+    bool LoadShader(const char* id, const char* wgslCode,
+                    uint32_t workgroupX, uint32_t workgroupY, uint32_t bindingUsage);
 
-    // Recompile an existing shader (or load if new). Used for dev hot-reload.
-    bool ReloadShader(const char* id, const char* wgslCode);
+    // Recompile a shader (or load it if new); the old pipeline stays until the
+    // new one compiles. Used for dev hot-reload.
+    bool ReloadShader(const char* id, const char* wgslCode,
+                      uint32_t workgroupX, uint32_t workgroupY, uint32_t bindingUsage);
 
     // Set the active shader for single-shader (legacy) rendering.
     // Also enables slot 0 with this shader for backwards compatibility.
@@ -273,8 +281,14 @@ public:
     // Upload a static image (RGBA8) to the GPU.
     void LoadImage(const uint8_t* data, int width, int height);
 
-    // Upload a video frame (RGBA8) to the GPU (call every frame).
+    // Upload a video frame (RGBA8) to the GPU (call every frame). CPU fallback
+    // for UpdateVideoFrameExternal.
     void UpdateVideoFrame(const uint8_t* data, int width, int height);
+
+    // GPU video ingest: same as LoadImageExternal (the bridge parks the
+    // HTMLVideoElement / VideoFrame on Module.pixelocityPendingImage), gated on a
+    // video-like input source. No CPU conversion. Returns false on failure.
+    bool UpdateVideoFrameExternal(int width, int height);
 
     // Upload a depth map (R32Float, one float per pixel) from the AI model.
     void UpdateDepthMap(const float* data, int width, int height);
@@ -289,12 +303,12 @@ public:
     // Set global time (seconds) for time-based shader animations.
     void SetTime(float time);
 
-    // Dynamic resolution changes are not yet supported (fixed at init).
     void SetResolution(float width, float height);  // delegates to ResizeCanvas
 
-    // Phase 2: Dynamically resize the canvas and recreate all size-dependent GPU resources.
-    // Safe to call at any time after Initialize(); no-op if dimensions are unchanged.
-    void ResizeCanvas(int newWidth, int newHeight);
+    // Resize the canvas and recreate all size-dependent GPU resources. Safe at
+    // any time after Initialize(); no-op if dimensions are unchanged. Returns
+    // false (renderer no longer initialized) when the textures cannot be rebuilt.
+    bool ResizeCanvas(int newWidth, int newHeight);
 
     // Update mouse position and button state for interactive shaders.
     void SetMouse(float x, float y, bool down);
@@ -355,7 +369,7 @@ public:
     bool IsRecording() const { return isRecording_; }
 
     /** Internal: device-lost callback entry (called from device.cpp). */
-    static void MarkDeviceLostFromCallback(void* userdata);
+    static void MarkDeviceLostFromCallback(WebGPURenderer* self);
 
     // ═══════════════════════════════════════════════════════════════════════════
     // RENDERING
@@ -440,9 +454,15 @@ private:
     void PresentToSurface();
     void UpdateUniformBuffer(bool includeHistoryHead = false);
 
-    // Release and recreate all canvas-size-dependent textures.
-    // Called by ResizeCanvas().
-    void RecreateTextures();
+    // Release and recreate all canvas-size-dependent textures. Called by
+    // ResizeCanvas() and SetColorFormat(). False when the history texture could
+    // not be allocated; the size-dependent textures are then all null.
+    bool RecreateTextures();
+
+    // Shared by LoadShader / ReloadShader: build module + pipeline into `out`.
+    bool CompileShaderPipeline(const char* id, const char* wgslCode,
+                               uint32_t workgroupX, uint32_t workgroupY,
+                               uint32_t bindingUsage, ShaderPipeline& out);
 
     // Create a temporary compute bind group that uses the supplied read/write
     // textures for bindings 1 and 2; all other bindings are shared globals.
@@ -459,14 +479,14 @@ private:
 
     // Dispatch one compute pass using the given pipeline, bind group, and
     // texture dimensions.  The caller owns encoder/bind-group lifetime.
-    // workgroupX/Y default to 16 (parsed from WGSL source in LoadShader).
+    // workgroupX/Y come from the shader's ShaderPipeline (never 0: LoadShader rejects it).
     // Timestamp indices (-1 = none) go into the pass descriptor's
     // timestampWrites; pick them with PickComputeTimestampWrites.
     void DispatchComputePass(WGPUCommandEncoder encoder,
                              WGPUComputePipeline pipeline,
                              WGPUBindGroup bindGroup,
-                             uint32_t workgroupX = 16,
-                             uint32_t workgroupY = 16,
+                             uint32_t workgroupX = contracts::kWorkgroupFallbackX,
+                             uint32_t workgroupY = contracts::kWorkgroupFallbackY,
                              int32_t timestampBeginIndex = -1,
                              int32_t timestampEndIndex = -1);
 
@@ -581,6 +601,8 @@ private:
 
     // Adapter capability (set during CreateDevice)
     uint32_t maxComputeInvocations_ = 256;
+    uint32_t maxComputeWorkgroupSizeX_ = contracts::kWorkgroupFallbackX;
+    uint32_t maxComputeWorkgroupSizeY_ = contracts::kWorkgroupFallbackY;
     bool     supportsDeepWorkgroup_ = false;
     bool     supportsRgba32FloatStorage_ = false;
     bool     supportsRgba16FloatStorage_ = false;
@@ -632,6 +654,13 @@ private:
     // Reused across frames for UploadRGBA8ToReadTexture().
     // Grows on demand but never shrinks.
     std::vector<float> videoStagingBuffer_;
+    std::vector<float> depthStagingBuffer_;   // UpdateDepthMap, canvas-sized, reused
+    // Size-dependent textures exist (false during / after a failed RecreateTextures).
+    bool texturesReady_ = false;
+    // Top-left region of readTexture_ that may hold non-black pixels. An external
+    // copy that covers it needs no clear first (video: no per-frame clear).
+    int readTextureDirtyW_ = 0;
+    int readTextureDirtyH_ = 0;
     // Packed texel bytes for rgba16float (and rgba32float copies) queue writes.
     std::vector<uint8_t> packedUploadBuffer_;
 
@@ -654,9 +683,9 @@ private:
     std::unordered_map<std::string, ShaderPipeline> shaders_;
     std::string activeShaderId_;  // legacy single-shader mode
 
-    // Multi-slot state. Must equal maxPhysicalSlots in src/contracts/slot_limits.json
-    // (TS PHYSICAL_SLOT_LIMIT). Enforced by verify:device-policy.
-    static constexpr int MAX_SHADER_SLOTS = 6;
+    // Multi-slot state: maxPhysicalSlots from src/contracts/slot_limits.json
+    // (TS PHYSICAL_SLOT_LIMIT reads the same file).
+    static constexpr int MAX_SHADER_SLOTS = contracts::kMaxPhysicalSlots;
     ShaderSlot slots_[MAX_SHADER_SLOTS];
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -701,7 +730,7 @@ private:
     double lastFrameTime_ = 0.0;  // seconds; double so long sessions keep precision
     int    frameCount_    = 0;
 
-    static constexpr int MAX_RIPPLES     = 50;
+    static constexpr int MAX_RIPPLES     = contracts::kMaxRipples;
     static constexpr int MAX_PLASMA_BALLS = 50;
 };
 

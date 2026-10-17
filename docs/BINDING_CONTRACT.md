@@ -130,7 +130,7 @@ Total size **848 bytes** (212 floats) — matches `UNIFORM_BUFFER_LAYOUT.TOTAL_S
 - **CPU:** `historyHead` written to `extraBuffer[4]` when any enabled shader uses binding 13
 - **GPU:** after each frame, copy presented color into `historyTexture[historyHead]`, then `historyHead = (historyHead + 1) % 8`
 - Shaders that sample `@binding(13) var historyTexture` must declare the binding; others omit it
-- Copy is gated by static analysis (`analyzeShaderBindings` / C++ `AnalyzeShaderBindings`) — skipped when no shader references binding 13
+- Copy is gated by static analysis (`analyzeShaderBindings`, `src/wasm/bridge/wgslAnalysis.ts`; the WASM bridge sends the result to C++ as `loadShader` bindingUsage bits) — skipped when no shader references binding 13
 
 ## Sim ring (opt-in `@group(1)`, TS renderer only)
 
@@ -169,7 +169,7 @@ Both backends validate adapter limits before device creation and request explici
 |-------|----------|-------|
 | `maxTextureDimension2D` | **8192** | Comfortable floor (`webgpu_limits.json`). Never canvas max(w,h), maxBufferSize, pixel count, or a mis-ordered init pointer. |
 | `maxBindingsPerBindGroup` | 14 | 14-entry layout (0–13) |
-| `maxSampledTexturesPerShaderStage` | 3 | readTexture, dataTextureC, historyTexture |
+| `maxSampledTexturesPerShaderStage` | 4 | readTexture, readDepthTexture, dataTextureC, historyTexture |
 | `maxSamplersPerShaderStage` | 3 | filtering, non-filtering, comparison |
 | `maxStorageTexturesPerShaderStage` | 4 | write, depth write, data A/B |
 | `maxStorageBuffersPerShaderStage` | 2 | extraBuffer, plasmaBuffer |
@@ -181,7 +181,7 @@ Both backends validate adapter limits before device creation and request explici
 
 ### Canonical dispatch
 
-The engine's standard 2D compute dispatch is **16×16×1**. When a shader's `@workgroup_size` cannot be parsed, both TypeScript (`parseWorkgroupSize`) and C++ WASM (`ParseWorkgroupSize`) fall back to **16×16** — see [`src/contracts/workgroup_dispatch.json`](../src/contracts/workgroup_dispatch.json). The same contract's `emptyPlaceholder` is **r32float**, **4 bytes/row** for the 1×1 unused-slot texture (TS `emptyTex` / C++ `emptyTexture_`). CI enforces both via `npm run verify:device-policy`.
+The engine's standard 2D compute dispatch is **16×16×1**. When a shader's `@workgroup_size` cannot be parsed, the one parser (`src/wasm/bridge/wgslAnalysis.ts`, used by TypeScript `parseWorkgroupSize` and sent to C++ WASM with `loadShader`) falls back to **16×16** — see [`src/contracts/workgroup_dispatch.json`](../src/contracts/workgroup_dispatch.json). The same contract's `emptyPlaceholder` is **r32float**, **4 bytes/row** for the 1×1 unused-slot texture (TS `emptyTex` / C++ `emptyTexture_`). CI enforces both via `npm run verify:device-policy`.
 
 Documented exceptions in that contract:
 

@@ -1,13 +1,16 @@
 // GENERATED — do not edit. Source: src/wasm/ (concat_bridge.sh / emit-wasm-bridge.mjs)
 
+import * as cpp from "./_generated.js";
+import { getSeamDiagnostics, hasExport } from "./call.js";
 import { INIT_STAGE_NAMES, readCanvasCopySrc, state, wasmRef } from "./state.js";
 function readCppInitDiagnostics() {
   if (!wasmRef.module || typeof wasmRef.module.ccall !== "function") {
     return { stage: 0, stageName: "None", message: "", adapterSummary: "" };
   }
-  const stage = Number(wasmRef.module.ccall("getLastInitErrorStage", "number", [], []) ?? 0);
-  const message = String(wasmRef.module.ccall("getLastInitErrorMessage", "string", [], []) ?? "");
-  const adapterSummary = String(wasmRef.module.ccall("getAdapterSummary", "string", [], []) ?? "");
+  const mod = wasmRef.module;
+  const stage = cpp.getLastInitErrorStage(mod);
+  const message = cpp.getLastInitErrorMessage(mod);
+  const adapterSummary = cpp.getAdapterSummary(mod);
   return {
     stage,
     stageName: INIT_STAGE_NAMES[stage] ?? `Stage${stage}`,
@@ -15,17 +18,17 @@ function readCppInitDiagnostics() {
     adapterSummary
   };
 }
-function formatCppInitFailure(cpp = readCppInitDiagnostics()) {
-  if (cpp.message) {
-    return `[${cpp.stageName}] ${cpp.message}`;
+function formatCppInitFailure(cpp2 = readCppInitDiagnostics()) {
+  if (cpp2.message) {
+    return `[${cpp2.stageName}] ${cpp2.message}`;
   }
-  if (cpp.stage > 0 && cpp.stage < 8) {
-    return `C++ initWasmRenderer failed at stage ${cpp.stageName} (no detailed message)`;
+  if (cpp2.stage > 0 && cpp2.stage < 8) {
+    return `C++ initWasmRenderer failed at stage ${cpp2.stageName} (no detailed message)`;
   }
   return "C++ initWasmRenderer returned 0";
 }
 function getDiagnostics() {
-  const cpp = readCppInitDiagnostics();
+  const cpp2 = readCppInitDiagnostics();
   const initMs = state.initEndTime ? state.initEndTime - state.initStartTime : null;
   return {
     initialized: state.initialized,
@@ -36,22 +39,23 @@ function getDiagnostics() {
     loadErrorCount: state.loadErrorCount,
     lastLoadError: state.lastLoadError,
     initTime: initMs === null ? "pending" : `${Math.round(initMs)}ms`,
-    failedStage: cpp.stage,
-    failedStageName: state.initTimedOut ? "Timeout" : cpp.stageName,
-    lastInitError: state.initTimedOut ? state.lastLoadError ?? "" : cpp.message,
-    adapterInfo: cpp.adapterSummary,
+    failedStage: cpp2.stage,
+    failedStageName: state.initTimedOut ? "Timeout" : cpp2.stageName,
+    lastInitError: state.initTimedOut ? state.lastLoadError ?? "" : cpp2.message,
+    adapterInfo: cpp2.adapterSummary,
     /** C++ canvas COPY_SRC probe; null while C++ init runs or when the artifact predates it. */
     canvasCopySrc: readCanvasCopySrc(),
     /** MAX_SHADER_SLOTS in the loaded artifact; null when it predates the export. */
-    maxShaderSlots: state.maxShaderSlots
+    maxShaderSlots: state.maxShaderSlots,
+    /** Suspended async export, queued calls and sync calls dropped mid-suspend. */
+    suspend: getSeamDiagnostics(wasmRef.module)
   };
 }
-function readCStringExport(name) {
+function readCString(read) {
   const mod = wasmRef.module;
-  const fn = mod?.[name];
-  if (!mod || typeof fn !== "function" || typeof mod.UTF8ToString !== "function") return null;
+  if (!mod) return null;
   try {
-    return mod.UTF8ToString(fn());
+    return read(mod);
   } catch {
     return null;
   }
@@ -102,24 +106,23 @@ function parseErrorRingJson(json, last = null) {
   };
 }
 function readPassTimings() {
-  return parsePassTimingsJson(readCStringExport("_getPassTimingsJson"));
+  return parsePassTimingsJson(readCString(cpp.getPassTimingsJson));
 }
 function readErrorRing() {
-  return parseErrorRingJson(readCStringExport("_getErrorRingJson"), readCStringExport("_getLastError"));
+  return parseErrorRingJson(readCString(cpp.getErrorRingJson), readCString(cpp.getLastError));
 }
 function clearErrorRing() {
-  const fn = wasmRef.module?._clearErrorRing;
-  if (typeof fn !== "function") return false;
+  const mod = wasmRef.module;
+  if (!mod) return false;
   try {
-    fn();
-    return true;
+    return cpp.clearErrorRing(mod) !== null;
   } catch {
     return false;
   }
 }
 function awaitSubmittedWorkDone(timeoutMs = 6e4) {
   const mod = wasmRef.module;
-  if (!mod || typeof mod._requestWorkDoneMark !== "function") return null;
+  if (!mod || !hasExport(mod, "requestWorkDoneMark")) return null;
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       mod.__pxWorkDone = void 0;
@@ -130,7 +133,7 @@ function awaitSubmittedWorkDone(timeoutMs = 6e4) {
       mod.__pxWorkDone = void 0;
       resolve(ok !== 0);
     };
-    if (mod._requestWorkDoneMark() !== 1) {
+    if (cpp.requestWorkDoneMark(mod) !== 1) {
       clearTimeout(timer);
       mod.__pxWorkDone = void 0;
       resolve(false);

@@ -4,8 +4,11 @@
  * Soft mode (default CI): verifies production build loads, test API works, no crash.
  * Strict mode (WASM_GPU_TESTS=1): requires real ?renderer=wasm backend, FPS health,
  * and exercises the full parity matrix (fluid, RD, audio, generative, interactive).
+ * Debug mode (WASM_DEBUG=1): every page loads the ASSERTIONS=2 debug artifact
+ * (?wasm_debug=1) and any Emscripten assertion fails the spec (#1400).
  *
  *   npm run build && WASM_GPU_TESTS=1 npm run test:wasm:e2e
+ *   npm run wasm:build:debug && npm run build && npm run test:wasm:debug   # SwiftShader
  */
 
 import { test, expect } from '@playwright/test';
@@ -23,6 +26,8 @@ import {
   captureCanvasStats,
   getRendererFps,
   isStrictGpuMode,
+  isWasmDebugMode,
+  EMSCRIPTEN_ASSERTION_PATTERN,
   MIN_WASM_FPS,
   installGpuUncapturedErrorHook,
   readGpuUncapturedErrors,
@@ -188,6 +193,9 @@ test('WASM multi-slot stack (fluid + generative)', async ({ page }) => {
     { ...PARITY_MATRIX[0], slot: 0 },
     { ...PARITY_MATRIX[3], slot: 1 },
   ];
+  // A software adapter (SwiftShader) lands in the 1-slot quality tier; this spec
+  // is about the WASM multi-slot path, not the tier cap.
+  await page.evaluate((n) => (window as any).__pixelocity__?.overrideSlotCap?.(n), stack.length);
 
   for (const shader of stack) {
     const loaded = await page.evaluate(
@@ -329,4 +337,62 @@ test('JS→WASM switch rebinds input so the photo is not empty (skip without ada
 
   const gpuErrors = await readGpuUncapturedErrors(page);
   expect(gpuErrors.filter((e) => e.type === 'GPUValidationError')).toEqual([]);
+});
+
+test('WASM debug profile: every async export runs with zero Emscripten assertions', async ({ page }) => {
+  test.skip(!isWasmDebugMode(), 'Debug profile only (WASM_DEBUG=1 after npm run wasm:build:debug)');
+  const assertions: string[] = [];
+  page.on('console', (m) => { if (process.env.PW_ECHO) console.log(`[browser:${m.type()}] ${m.text()}`); });
+  page.on('console', (msg) => {
+    if (EMSCRIPTEN_ASSERTION_PATTERN.test(msg.text())) assertions.push(msg.text());
+  });
+  page.on('pageerror', (err) => {
+    if (EMSCRIPTEN_ASSERTION_PATTERN.test(err.message)) assertions.push(err.message);
+  });
+  const loadedArtifacts: string[] = [];
+  page.on('response', (res) => {
+    if (/pixelocity_wasm[^/]*\.wasm$/.test(res.url())) loadedArtifacts.push(res.url());
+  });
+
+  await page.goto(buildAppUrl('wasm'), { waitUntil: 'networkidle' });
+  await waitForTestApi(page);
+  const active = await getActiveBackend(page);
+  if (active !== 'wasm') {
+    if (isStrictGpuMode()) expect(active).toBe('wasm');
+    test.skip(true, `WASM backend unavailable (active=${active})`);
+    return;
+  }
+  expect(loadedArtifacts.some((u) => u.endsWith('pixelocity_wasm.debug.wasm'))).toBe(true);
+
+  // initWasmRenderer already ran. Now loadShader, reloadShader, resizeCanvas (via
+  // the render scale), setColorFormat (via the quality preset: ultra is
+  // rgba32float, battery rgba16float) and a capture, while frames keep calling Render().
+  const [first, second] = [PARITY_MATRIX[0]!, PARITY_MATRIX[3]!];
+  const result = await page.evaluate(
+    async ({ a, b }) => {
+      const api = (window as any).__pixelocity__;
+      api.setInputSource('generative');
+      const loadedA = await api.loadShader(a.id, a.url);
+      api.setSlotShader(0, a.id);
+      const loadedB = await api.loadShader(b.id, b.url);
+      api.setSlotShader(1, b.id);
+      api.setRenderScale(0.5);
+      await api.waitFrames(5);
+      api.setRenderScale(1);
+      const reloaded = await api.reloadShader(a.id, a.url);
+      await api.waitFrames(10);
+      api.setRenderQuality('ultra');
+      await api.waitFrames(5);
+      api.setRenderQuality('battery');
+      await api.waitFrames(5);
+      const png = await api.captureThumbnailPng(64);
+      return { loadedA, loadedB, reloaded, captured: typeof png === 'string' && png.length > 0 };
+    },
+    { a: first, b: second },
+  );
+  console.log(`[debug-profile] ${JSON.stringify(result)}`);
+  expect(result.loadedA).toBe(true);
+  expect(result.loadedB).toBe(true);
+  expect(result.reloaded).toBe(true);
+  expect(assertions).toEqual([]);
 });

@@ -6,6 +6,11 @@
  */
 
 import workgroupDispatchContract from '../contracts/workgroup_dispatch.json';
+import {
+  analyzeShaderBindings,
+  resolveWorkgroupSize,
+  type ShaderBindingUsage,
+} from '../wasm/bridge/wgslAnalysis';
 import { validateBindGroup } from './bindGroupValidator';
 import { reportError } from './ErrorHandling';
 import { withValidationScope } from './webgpu/validationScope';
@@ -37,37 +42,16 @@ export function hashWgsl(code: string): string {
  * file (a 1D helper kernel like `@workgroup_size(64, 1, 1) fn update_boids`
  * would otherwise corrupt the 2D dispatch of `main`). Falls back to the first
  * match if the requested entry point is not found, then to canonical 16×16 from
- * workgroup_dispatch.json.
+ * workgroup_dispatch.json. Literals may carry an i/u suffix, a missing y is 1, and
+ * module-scope `const` / `override` names resolve. The parser is shared with the
+ * WASM bridge (src/wasm/bridge/wgslAnalysis.ts), which sends its result to C++.
  */
 export function parseWorkgroupSize(
   wgslSource: string,
   entryPoint: string = 'main',
 ): { x: number; y: number } {
-  // Per-entry-point scan: @compute @workgroup_size(x, y[, z]) fn <name>(
-  const entryRe =
-    /@compute\s+@workgroup_size\(\s*(\d+)\s*,\s*(\d+)[^)]*\)\s*fn\s+([A-Za-z_][A-Za-z0-9_]*)/g;
-  let firstMatch: RegExpExecArray | null = null;
-  let m: RegExpExecArray | null;
-  while ((m = entryRe.exec(wgslSource)) !== null) {
-    if (!firstMatch) firstMatch = m;
-    if (m[3] === entryPoint) {
-      return { x: parseInt(m[1]!, 10), y: parseInt(m[2]!, 10) };
-    }
-  }
-  if (firstMatch) {
-    return { x: parseInt(firstMatch[1]!, 10), y: parseInt(firstMatch[2]!, 10) };
-  }
-
-  // Fallback: search for @workgroup_size anywhere after @compute
-  const computeIdx = wgslSource.indexOf('@compute');
-  if (computeIdx !== -1) {
-    const afterCompute = wgslSource.slice(computeIdx);
-    const match2 = afterCompute.match(/@workgroup_size\(\s*(\d+)\s*,\s*(\d+)/);
-    if (match2) {
-      return { x: parseInt(match2[1]!, 10), y: parseInt(match2[2]!, 10) };
-    }
-  }
-
+  const size = resolveWorkgroupSize(wgslSource, entryPoint);
+  if (size) return size;
   console.warn('[WebGPU] Could not parse workgroup_size from shader, defaulting to 16x16');
   return {
     x: workgroupDispatchContract.unparsedFallback.x,
@@ -75,17 +59,12 @@ export function parseWorkgroupSize(
   };
 }
 
+export type { ShaderBindingUsage };
 /**
- * Which optional per-frame texture copies a shader actually needs.
- * Drives skipping of dataTexA/B→C feedback copies and the history-ring copy
- * in the render loop when the bound shader never touches those resources.
+ * Which optional per-frame texture copies a shader actually needs (dataTexA/B→C
+ * feedback, the history ring, depth write). Shared with the WASM bridge.
  */
-export interface ShaderBindingUsage {
-  writesDataA: boolean;
-  writesDataB: boolean;
-  readsDataC: boolean;
-  usesHistory: boolean;
-}
+export { analyzeShaderBindings };
 
 /** Conservative usage assumed when a shader's source was never analyzed. */
 export const CONSERVATIVE_BINDING_USAGE: ShaderBindingUsage = {
@@ -93,39 +72,8 @@ export const CONSERVATIVE_BINDING_USAGE: ShaderBindingUsage = {
   writesDataB: true,
   readsDataC: true,
   usesHistory: true,
+  writesDepth: true,
 };
-
-function bindingVarName(wgsl: string, binding: number): string | null {
-  const m = wgsl.match(
-    new RegExp(`@group\\(0\\)\\s*@binding\\(${binding}\\)\\s*var(?:<[^>]*>)?\\s+([A-Za-z_][A-Za-z0-9_]*)`),
-  );
-  return m?.[1] ?? null;
-}
-
-function usedBeyondDeclaration(wgsl: string, binding: number): boolean {
-  const hasBinding = new RegExp(`@group\\(0\\)\\s*@binding\\(${binding}\\)`).test(wgsl);
-  if (!hasBinding) return false;
-  const name = bindingVarName(wgsl, binding);
-  // Declared but unparseable name: assume used (conservative).
-  if (!name) return true;
-  const refs = wgsl.match(new RegExp(`\\b${name}\\b`, 'g'));
-  return (refs?.length ?? 0) > 1;
-}
-
-/**
- * Statically determine which feedback resources a shader uses, by variable
- * name bound at each binding slot (names may be aliased, so the declaration
- * is parsed rather than assuming canonical names). Errs on the side of
- * "used" whenever the source is ambiguous.
- */
-export function analyzeShaderBindings(wgsl: string): ShaderBindingUsage {
-  return {
-    writesDataA: usedBeyondDeclaration(wgsl, 7),
-    writesDataB: usedBeyondDeclaration(wgsl, 8),
-    readsDataC: usedBeyondDeclaration(wgsl, 9),
-    usesHistory: usedBeyondDeclaration(wgsl, 13),
-  };
-}
 
 /**
  * Fallback compute shader used when the requested shader fails to compile

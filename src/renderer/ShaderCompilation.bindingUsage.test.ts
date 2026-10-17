@@ -35,6 +35,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       writesDataB: false,
       readsDataC: false,
       usesHistory: false,
+      writesDepth: false,
     });
   });
 
@@ -132,12 +133,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       writesDataB: true,
       readsDataC: true,
       usesHistory: true,
+      writesDepth: true,
     });
   });
 });
 
 describe('analyzeShaderBindings against real catalog patterns', () => {
-  it('canonical template neither writes data textures nor uses history', () => {
+  it('canonical template writes depth but no data textures or history', () => {
     // Mirrors public/shaders/_template_canonical_compute.wgsl
     const wgsl = `${CANONICAL_DECLS}
 @compute @workgroup_size(16, 16, 1)
@@ -154,6 +156,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       writesDataB: false,
       readsDataC: false,
       usesHistory: false,
+      writesDepth: true,
     });
   });
 });

@@ -220,15 +220,19 @@ describe('WASM bridge recording', () => {
 
     /**
      * probe: C++ canvasCopySrcSupported_ (undefined = artifact without the export);
-     * ready: isRendererInitialized (the init ccall can return before C++ finishes).
+     * ready: isRendererInitialized.
      */
     function withModule(probe: boolean | undefined, extra: Record<string, unknown>, ready = true) {
-      const readyCcall = jest.fn((name: string) => (name === 'isRendererInitialized' ? (ready ? 1 : 0) : 0));
-      bridgeState.wasmRef.module = {
-        ccall: readyCcall,
+      const mod: Record<string, unknown> = {
+        _isRendererInitialized: () => (ready ? 1 : 0),
         ...(probe === undefined ? {} : { _getCanvasCopySrcSupported: () => (probe ? 1 : 0) }),
         ...extra,
-      } as never;
+      };
+      // Like Emscripten's ccall: dispatch to Module['_' + ident].
+      mod.ccall = jest.fn((name: string, _ret: unknown, _types: unknown, args: unknown[]) =>
+        (mod[`_${name}`] as (...a: unknown[]) => unknown)(...args),
+      );
+      bridgeState.wasmRef.module = mod as never;
     }
 
     afterEach(() => {

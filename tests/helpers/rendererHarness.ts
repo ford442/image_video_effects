@@ -141,6 +141,8 @@ export function buildAppUrl(
   const params = new URLSearchParams({
     renderer,
     testMode: '1',
+    // WASM_DEBUG=1: load the debug profile (npm run wasm:build:debug), Emscripten ASSERTIONS=2.
+    ...(isWasmDebugMode() ? { wasm_debug: '1' } : {}),
     ...extraParams,
   });
   return `http://localhost:${port}/?${params.toString()}`;
@@ -191,6 +193,19 @@ export async function stopStaticServer(): Promise<void> {
   }
 }
 
+/** Specs run against pixelocity_wasm.debug.{js,wasm} (?wasm_debug=1). */
+export function isWasmDebugMode(): boolean {
+  return process.env.WASM_DEBUG === '1';
+}
+
+/**
+ * Emscripten runtime assertions / aborts. ASSERTIONS=2 (debug profile) throws
+ * "The call to X is running asynchronously" when a suspending export is called
+ * without { async: true } (#1400 H1); a release build aborts or misbehaves silently.
+ */
+export const EMSCRIPTEN_ASSERTION_PATTERN =
+  /Assertion failed|Aborted\(|is running asynchronously|async operation (?:when one is already|in flight)|stack overflow|RuntimeError: /i;
+
 export function attachConsoleCollector(page: Page): {
   criticalErrors: string[];
   consoleErrors: string[];
@@ -203,6 +218,10 @@ export function attachConsoleCollector(page: Page): {
     const type = msg.type();
     if (type === 'error') {
       consoleErrors.push(text);
+    }
+    if (EMSCRIPTEN_ASSERTION_PATTERN.test(text)) {
+      criticalErrors.push(`[emscripten] ${text}`);
+      return;
     }
     if (
       (type === 'error' &&

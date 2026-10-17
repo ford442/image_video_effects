@@ -13,15 +13,6 @@ static constexpr uint32_t WGPU_DEPTH_SLICE_UNDEFINED = 0xFFFFFFFFu;
 namespace pixelocity {
 namespace wasm_internal {
 
-/** Which optional per-frame texture copies a shader needs (mirrors TS ShaderBindingUsage). */
-struct ShaderBindingUsage {
-    bool writesDataA = false;
-    bool writesDataB = false;
-    bool readsDataC = false;
-    bool usesHistory = false;
-    bool writesDepth = false;  // binding 6 (depth write); gates depthWrite → depthRead feedback
-};
-
 // Timestamp query indices (keep in sync with timing.cpp / WebGPURenderer.ts).
 constexpr int32_t kTsFrameStart    = 0;
 constexpr int32_t kTsComputeEnd    = 1;
@@ -46,10 +37,6 @@ constexpr uint32_t kTsQueryCapacity = kTsPhaseQueryCount + 2 * kMaxProfiledSlotP
 WGPUStringView MakeStringView(const char* str);
 uint32_t AlignUp(uint32_t value, uint32_t align);
 bool CheckLimit(const char* name, uint64_t have, uint64_t need, bool& ok);
-void ParseWorkgroupSize(const char* wgslCode, uint32_t& x, uint32_t& y);
-ShaderBindingUsage AnalyzeShaderBindings(const char* wgslCode);
-/** Force write-only rgba storage decls onto the allocated BGL format (rgba16float or rgba32float). */
-std::string RewriteWgslStorageFormats(const char* wgsl, const char* colorFormat);
 /**
  * True when a live (non-commented) `#include` directive survived expansion.
  * Detection only — expansion belongs to src/wasm/bridge/wgslInclude.ts, the one

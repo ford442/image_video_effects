@@ -1,3 +1,4 @@
+import * as cpp from './_generated.js';
 import { formatCppInitFailure, readCppInitDiagnostics } from './diagnostics.js';
 import { state, wasmRef, type EmscriptenModule } from './state.js';
 
@@ -11,76 +12,58 @@ const SOURCE_MAP: Record<string, number> = {
 };
 
 /**
- * Bridge backstop for C++ Initialize(). The ASYNCIFY init ccall returns as soon as
- * CreateDevice() suspends in wgpuInstanceWaitAny, so the bridge polls C++ instead
- * of trusting that return value. C++ times its own adapter/device waits out
- * (device.cpp: 4 × 3 s + 5 s = 17 s); this only fires if C++ is still suspended.
+ * Bridge backstop for C++ Initialize(). initWasmRenderer is an async export:
+ * the generated wrapper ccalls it with { async: true }, so its promise settles
+ * only when Initialize() really returns. C++ times its own adapter/device waits
+ * out (device.cpp: 4 × 3 s + 5 s = 17 s); this only fires if C++ is still
+ * suspended after that.
  */
 export const CPP_INIT_TIMEOUT_MS = 20_000;
-const CPP_INIT_POLL_MS = 50;
-/** How long an abandoned (timed-out) init is watched before it is left to leak. */
-const REAP_POLL_MS = 500;
-const REAP_MAX_MS = 5 * 60_000;
 
-type CppInitOutcome = 'ready' | 'failed' | 'pending';
+type CppInitOutcome = 'ready' | 'failed' | 'timeout';
 
-/**
- * Plain getters only (no ASYNCIFY), so they are safe while Initialize() is
- * suspended. Never call shutdown / anything that touches the instance until this
- * is no longer 'pending': destroying the instance mid-WaitAny crashes the tab.
- */
-function readCppInitOutcome(mod: EmscriptenModule): CppInitOutcome {
-  try {
-    if (Number(mod.ccall('isRendererInitialized', 'number', [], [])) === 1) return 'ready';
-    const stage = Number(mod.ccall('getLastInitErrorStage', 'number', [], []) ?? 0);
-    // 0 = None (still running), 8 = Ready; anything else is a stage C++ failed at
-    // after running its own Shutdown().
-    return stage > 0 && stage < 8 ? 'failed' : 'pending';
-  } catch {
-    return 'pending';
-  }
-}
-
-function waitForCppInit(
-  mod: EmscriptenModule,
-  timeoutMs = CPP_INIT_TIMEOUT_MS,
-): Promise<CppInitOutcome | 'timeout'> {
-  const deadline = performance.now() + timeoutMs;
-  return new Promise((resolve) => {
-    const poll = () => {
-      const outcome = readCppInitOutcome(mod);
-      if (outcome !== 'pending') resolve(outcome);
-      else if (performance.now() >= deadline) resolve('timeout');
-      else setTimeout(poll, CPP_INIT_POLL_MS);
-    };
-    poll();
+function awaitCppInit(call: Promise<number>, timeoutMs = CPP_INIT_TIMEOUT_MS): Promise<CppInitOutcome> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => resolve('timeout'), timeoutMs);
+    call.then(
+      (ok) => {
+        clearTimeout(timer);
+        resolve(ok === 1 ? 'ready' : 'failed');
+      },
+      (err: unknown) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
   });
 }
 
 /**
- * Shut a timed-out init down the way a failed init is: once C++ settles (ready, or
- * failed after its own Shutdown()), release the renderer. A WaitAny that never
- * returns leaks this one module rather than destroying the instance under it.
+ * A timed-out init is shut down the way a failed one is, once its Initialize()
+ * call finally returns. One that never returns leaks this module rather than
+ * destroying the instance under a suspended WaitAny (that crashes the tab).
  */
-function reapAbandonedInit(mod: EmscriptenModule): void {
-  const deadline = performance.now() + REAP_MAX_MS;
-  const poll = () => {
-    if (readCppInitOutcome(mod) !== 'pending') {
+function reapAbandonedInit(mod: EmscriptenModule, call: Promise<number>): void {
+  call.then(
+    () => {
       try {
-        mod.ccall('shutdownWasmRenderer', null, [], []);
+        cpp.shutdownWasmRenderer(mod);
         console.log('[WASM] Abandoned init settled; C++ renderer shut down');
       } catch (err) {
         console.error('[WASM] Abandoned init shutdown error:', err);
       }
-      return;
-    }
-    if (performance.now() >= deadline) {
-      console.warn('[WASM] Abandoned init never settled; leaking that module (instance not destroyed)');
-      return;
-    }
-    setTimeout(poll, REAP_POLL_MS);
-  };
-  setTimeout(poll, REAP_POLL_MS);
+    },
+    (err: unknown) => console.error('[WASM] Abandoned init rejected:', err),
+  );
+}
+
+/**
+ * `?wasm_debug=1` loads the debug profile (npm run wasm:build:debug;
+ * wasm_compile_flags.json profiles.debug): Emscripten ASSERTIONS=2, DWARF and a
+ * source map. Same factory name, so nothing else changes. Not deployed.
+ */
+export function wasmArtifactName(search = typeof window === 'undefined' ? '' : window.location.search): string {
+  return new URLSearchParams(search).get('wasm_debug') === '1' ? 'pixelocity_wasm.debug.js' : 'pixelocity_wasm.js';
 }
 
 export async function initWasmRenderer(canvasElement: HTMLCanvasElement): Promise<boolean> {
@@ -102,10 +85,8 @@ export async function initWasmRenderer(canvasElement: HTMLCanvasElement): Promis
   return new Promise((resolve) => {
     const pathname = window.location.pathname;
     const isUnderSubpath = pathname.startsWith('/image_video_effects/');
-    const wasmJsPath = isUnderSubpath
-      ? '/image_video_effects/wasm/pixelocity_wasm.js'
-      : '/wasm/pixelocity_wasm.js';
-
+    const artifact = wasmArtifactName();
+    const wasmJsPath = (isUnderSubpath ? '/image_video_effects/wasm/' : '/wasm/') + artifact;
     console.log(`[WASM] Loading from: ${wasmJsPath}`);
     console.log(`[WASM] Canvas size: ${state.canvasWidth}x${state.canvasHeight}`);
 
@@ -150,29 +131,27 @@ export async function initWasmRenderer(canvasElement: HTMLCanvasElement): Promis
         // maxTextureDimension2D CheckLimit treated that pointer as need → false INSUFFICIENT.
         console.log(`[WASM] Calling initWasmRenderer( ${state.canvasWidth} , ${state.canvasHeight} , ${selector} )`);
 
+        let initCall: Promise<number>;
         try {
-          // The return value is not trusted: under ASYNCIFY this returns when
-          // CreateDevice() suspends on the adapter request, long before C++ is
-          // done. waitForCppInit() below decides the outcome.
-          mod.ccall(
-            'initWasmRenderer',
-            'number',
-            ['number', 'number', 'string'],
-            [state.canvasWidth, state.canvasHeight, selector],
-          );
+          initCall = cpp.initWasmRenderer(mod, state.canvasWidth, state.canvasHeight, selector);
         } catch (callErr: unknown) {
-          console.error('[WASM] ccall initWasmRenderer threw:', callErr);
-          const cppDiag = readCppInitDiagnostics();
-          const detail = formatCppInitFailure(cppDiag);
-          const message = callErr instanceof Error ? callErr.message : String(callErr);
-          state.lastLoadError = `ccall exception: ${message} (${detail})`;
-          state.loadErrorCount++;
-          state.initEndTime = performance.now();
-          resolve(false);
-          return;
+          initCall = Promise.reject(callErr);
         }
 
-        return waitForCppInit(mod).then((outcome) => {
+        return awaitCppInit(initCall).catch((callErr: unknown) => {
+          console.error('[WASM] initWasmRenderer threw:', callErr);
+          const detail = formatCppInitFailure(readCppInitDiagnostics());
+          const message = callErr instanceof Error ? callErr.message : String(callErr);
+          state.lastLoadError = `ccall exception: ${message} (${detail})`;
+          return 'threw' as const;
+        }).then((outcome) => {
+          if (outcome === 'threw') {
+            state.loadErrorCount++;
+            state.initEndTime = performance.now();
+            resolve(false);
+            return;
+          }
+
           if (outcome === 'timeout') {
             state.initTimedOut = true;
             state.lastLoadError =
@@ -183,50 +162,50 @@ export async function initWasmRenderer(canvasElement: HTMLCanvasElement): Promis
             // Drop every bridge path into the suspended module; only the reaper keeps it.
             wasmRef.module = null;
             wasmRef.canvas = null;
-            reapAbandonedInit(mod);
+            reapAbandonedInit(mod, initCall);
             resolve(false);
             return;
           }
 
-          if (outcome === 'ready') {
+          if (outcome === 'ready' && cpp.isRendererInitialized(mod) === 1) {
             state.initialized = true;
             state.initEndTime = performance.now();
             const elapsed = state.initEndTime - state.initStartTime;
             console.log(`[WASM] ✅ Initialization complete in ${elapsed} ms`);
 
-            const cppFmt = Number(
-              mod.ccall('getColorFormat', 'number', [], []) ?? 0,
-            );
+            // setColorFormat is async (RecreateTextures can suspend): finish it
+            // before reporting ready, so the first loadShader sees the final format.
+            const cppFmt = cpp.getColorFormat(mod);
             const pending = state.colorFormat;
-            if (pending !== 0 && pending !== cppFmt) {
-              mod.ccall('setColorFormat', null, ['number'], [pending]);
-            }
-            const applied = Number(
-              mod.ccall('getColorFormat', 'number', [], []) ?? cppFmt,
-            );
-            state.colorFormat = applied === 1 ? 1 : 0;
-            console.log(
-              `[WASM] colorFormat=${state.colorFormat === 1 ? 'rgba16float' : 'rgba32float'}`,
-            );
+            const formatApplied =
+              pending !== 0 && pending !== cppFmt
+                ? cpp.setColorFormat(mod, pending).catch((err: unknown) => {
+                    console.error('[WASM] setColorFormat after init failed:', err);
+                  })
+                : Promise.resolve();
+            return formatApplied.then(() => {
+              state.colorFormat = cpp.getColorFormat(mod) === 1 ? 1 : 0;
+              console.log(
+                `[WASM] colorFormat=${state.colorFormat === 1 ? 'rgba16float' : 'rgba32float'}`,
+              );
 
-            // Compile-time constant. The canvas COPY_SRC probe is read live via
-            // readCanvasCopySrc().
-            state.maxShaderSlots = typeof mod._getMaxShaderSlots === 'function'
-              ? mod._getMaxShaderSlots()
-              : null;
-            console.log(`[WASM] maxShaderSlots=${state.maxShaderSlots ?? 'unknown (artifact predates export)'}`);
+              // Compile-time constant. The canvas COPY_SRC probe is read live via
+              // readCanvasCopySrc().
+              state.maxShaderSlots = cpp.getMaxShaderSlots(mod);
+              console.log(`[WASM] maxShaderSlots=${state.maxShaderSlots ?? 'unknown (artifact predates export)'}`);
 
-            promoteWasmCanvasVisible(canvas);
+              promoteWasmCanvasVisible(canvas);
 
-            if (state.pendingInputSource !== null) {
-              const src = state.pendingInputSource;
-              state.pendingInputSource = null;
-              const sourceInt = typeof src === 'string' ? (SOURCE_MAP[src] ?? 0) : src;
-              mod.ccall('setInputSource', null, ['number'], [sourceInt]);
-              state.inputSource = sourceInt;
-            }
+              if (state.pendingInputSource !== null) {
+                const src = state.pendingInputSource;
+                state.pendingInputSource = null;
+                const sourceInt = typeof src === 'string' ? (SOURCE_MAP[src] ?? 0) : src;
+                cpp.setInputSource(mod, sourceInt);
+                state.inputSource = sourceInt;
+              }
 
-            resolve(true);
+              resolve(true);
+            });
           } else {
             const cppDiag = readCppInitDiagnostics();
             const failMsg = formatCppInitFailure(cppDiag);
@@ -276,7 +255,8 @@ export function shutdownWasmRenderer(): void {
   }
 
   try {
-    wasmRef.module.ccall('shutdownWasmRenderer', null, [], []);
+    // Queued behind any suspended call: destroying the instance mid-WaitAny crashes the tab.
+    cpp.shutdownWasmRenderer(wasmRef.module);
   } catch (err) {
     console.error('[WASM] Shutdown error:', err);
   }

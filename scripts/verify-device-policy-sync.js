@@ -2,18 +2,20 @@
 /**
  * verify-device-policy-sync.js
  *
- * CI check: webgpu_limits.json ↔ TS policy ↔ device.cpp CheckLimit/requiredLimits;
- * optional feature order ↔ device.ts / device.cpp;
+ * CI check: webgpu_limits.json ↔ TS policy; C++ ↔ wasm_renderer/generated/contracts.h
+ * (current, and consumed instead of local copies of limits / features / binding table);
+ * optional feature order ↔ device.ts;
  * slot_limits.json ↔ PHYSICAL_SLOT_LIMIT / MAX_SHADER_SLOTS;
  * canvas_configure.json ↔ buildCanvasConfigureOptions / JS_CreateSurfaceFromCanvas / ConfigureSurface; wasm_exports.json ↔ KEEPALIVE /
  * build.sh (no hardcoded export lists; build.sh is the only build, CMakeLists.txt was removed);
- * workgroup_dispatch.json ↔ ShaderCompilation.ts ↔ wasm_internal.cpp ParseWorkgroupSize;
+ * workgroup_dispatch.json ↔ ShaderCompilation.ts ↔ bridge wgslAnalysis.ts (C++ parses no WGSL);
  * emptyPlaceholder (r32float 1×1, 4 B/row) ↔ resources.ts emptyTex ↔ resources.cpp emptyTexture_;
  * bind_group1.json ↔ simRing.ts layout ↔ group-1 limits policy ↔ WASM group-1 refusal.
  */
 
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
 const CONTRACT = path.join(ROOT, 'src/contracts/webgpu_limits.json');
@@ -51,80 +53,73 @@ function extractTsLimits() {
   return out;
 }
 
-function extractCppRequiredLimits() {
-  const src = fs.readFileSync(CPP_DEVICE, 'utf8');
-  const out = {};
-  for (const key of Object.keys(EXPECTED_LIMITS)) {
-    if (key === 'maxUniformBufferBindingSize') {
-      if (!/requiredLimits\.maxUniformBufferBindingSize\s*=\s*sizeof\(Uniforms\)/.test(src)) {
-        throw new Error('requiredLimits.maxUniformBufferBindingSize = sizeof(Uniforms) not found in device.cpp');
-      }
-      out[key] = EXPECTED_LIMITS[key];
-      continue;
-    }
-    const m = src.match(new RegExp(`requiredLimits\\.${key}\\s*=\\s*(\\d+)`));
-    if (!m) throw new Error(`requiredLimits.${key} not found in device.cpp`);
-    out[key] = parseInt(m[1], 10);
-  }
-  return out;
-}
-
-function extractCppCheckLimits() {
-  const src = fs.readFileSync(CPP_DEVICE, 'utf8');
-  const adapterBlock = src.match(
-    /Adapter limits \(validating against 14-entry compute contract\):[\s\S]*?maxComputeInvocationsPerWorkgroup,\s*(\d+)/,
-  );
-  if (!adapterBlock) {
-    throw new Error('Adapter CheckLimit block not found in device.cpp');
-  }
-  const block = adapterBlock[0];
-  const out = {};
-  for (const [key, expected] of Object.entries(EXPECTED_LIMITS)) {
-    if (key === 'maxUniformBufferBindingSize') {
-      // CheckLimit table validates compute limits only; uniform size is in requiredLimits
-      out[key] = expected;
-      continue;
-    }
-    const m = block.match(
-      new RegExp(`CheckLimit\\("${key}",\\s*limits\\.${key},\\s*(\\d+)`),
-    );
-    if (!m) throw new Error(`CheckLimit("${key}", ...) not found in adapter block`);
-    out[key] = parseInt(m[1], 10);
-    if (out[key] !== expected) {
-      throw new Error(`CheckLimit ${key} need=${m[1]} does not match contract ${expected}`);
-    }
-  }
-  return out;
-}
-
 const ONLY_WASM_INVARIANTS = process.argv.includes('--wasm-invariants');
 
 let failed = false;
 
-if (!ONLY_WASM_INVARIANTS) {
-  const ts = extractTsLimits();
-  const cppRequired = extractCppRequiredLimits();
-  const cppCheck = extractCppCheckLimits();
-
-  for (const [key, expected] of Object.entries(EXPECTED_LIMITS)) {
-    if (ts[key] !== expected) {
-      console.error(`TS ${key}: expected ${expected}, got ${ts[key]}`);
-      failed = true;
-    }
-    if (cppRequired[key] !== expected) {
-      console.error(`C++ requiredLimits.${key}: expected ${expected}, got ${cppRequired[key]}`);
-      failed = true;
-    }
-    if (cppCheck[key] !== expected && key !== 'maxUniformBufferBindingSize') {
-      console.error(`C++ CheckLimit ${key}: expected ${expected}, got ${cppCheck[key]}`);
-      failed = true;
-    }
-  }
-}
-
 function fail(msg) {
   console.error(msg);
   failed = true;
+}
+
+if (!ONLY_WASM_INVARIANTS) {
+  const ts = extractTsLimits();
+  for (const [key, expected] of Object.entries(EXPECTED_LIMITS)) {
+    if (ts[key] !== expected) fail(`TS ${key}: expected ${expected}, got ${ts[key]}`);
+  }
+}
+
+/**
+ * C++ reads every contract number from wasm_renderer/generated/contracts.h
+ * (scripts/emit-wasm-contracts.mjs). Check that the header is current and that
+ * the C++ consumes it instead of carrying its own copies.
+ */
+function verifyCppGeneratedContracts() {
+  const header = path.join(ROOT, 'wasm_renderer/generated/contracts.h');
+  const gen = spawnSync(process.execPath, [path.join(ROOT, 'scripts/emit-wasm-contracts.mjs'), '--check'], {
+    encoding: 'utf8',
+  });
+  if (gen.status !== 0) {
+    fail(`wasm_renderer/generated/contracts.h / bridge _generated.ts are stale or invalid: ${(gen.stderr || gen.stdout).trim()}`);
+  }
+  if (!fs.existsSync(header)) return;
+
+  const strip = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+  const device = strip(fs.readFileSync(CPP_DEVICE, 'utf8'));
+  if (!fs.readFileSync(CPP_DEVICE, 'utf8').includes('#include "generated/contracts.h"')) {
+    fail('device.cpp must #include "generated/contracts.h"');
+  }
+  const uses = (macro) => (device.match(new RegExp(`\\b${macro}\\(`, 'g')) || []).length;
+  // Adapter check, requiredLimits, device re-check.
+  if (uses('PIXELOCITY_MIN_COMPUTE_LIMITS') < 3) {
+    fail('device.cpp must expand PIXELOCITY_MIN_COMPUTE_LIMITS for the adapter check, requiredLimits and the device re-check');
+  }
+  if (uses('PIXELOCITY_DEEP_WORKGROUP_LIMITS') < 3) {
+    fail('device.cpp must expand PIXELOCITY_DEEP_WORKGROUP_LIMITS for the adapter gate, requiredLimits and supportsDeepWorkgroup_');
+  }
+  if (uses('PIXELOCITY_OPTIONAL_FEATURES') < 1 || !/requiredFeatures\[contracts::kOptionalFeatureCount\]/.test(device)) {
+    fail('device.cpp must request PIXELOCITY_OPTIONAL_FEATURES into requiredFeatures[contracts::kOptionalFeatureCount]');
+  }
+  const limitKeys = [...Object.keys(EXPECTED_LIMITS), ...Object.keys(contract.deepWorkgroupLimits || {})];
+  for (const key of new Set(limitKeys)) {
+    if (new RegExp(`(?:requiredLimits|limits|deviceLimits)\\.${key}\\s*(?:=|>=)\\s*\\d`).test(device)) {
+      fail(`device.cpp hard-codes a ${key} number; it comes from generated/contracts.h`);
+    }
+  }
+  if (/CheckLimit\(\s*"/.test(device)) {
+    fail('device.cpp must not call CheckLimit with literal names/numbers; expand PIXELOCITY_MIN_COMPUTE_LIMITS');
+  }
+
+  const pipeline = strip(fs.readFileSync(path.join(ROOT, 'wasm_renderer/pipeline.cpp'), 'utf8'));
+  if (/kComputeBindings\[\]\s*=/.test(pipeline) || /enum class BindingKind/.test(pipeline)) {
+    fail('pipeline.cpp must use contracts::kComputeBindings (binding_table.json), not its own table');
+  }
+  const internal = fs.readFileSync(path.join(ROOT, 'wasm_renderer/wasm_internal.cpp'), 'utf8');
+  for (const fn of ['ParseWorkgroupSize', 'AnalyzeShaderBindings', 'RewriteWgslStorageFormats']) {
+    if (new RegExp(`\\b${fn}\\s*\\(`).test(internal)) {
+      fail(`wasm_internal.cpp must not define ${fn}: the bridge's wgslAnalysis.ts / wgslFormat.ts is the one WGSL analysis`);
+    }
+  }
 }
 
 // deepWorkgroupLimits: requested only when the adapter offers all three. Both
@@ -133,19 +128,7 @@ function fail(msg) {
 function verifyDeepWorkgroupLimits() {
   const deep = contract.deepWorkgroupLimits;
   if (!deep) return;
-  const cpp = fs.readFileSync(CPP_DEVICE, 'utf8');
-  const gate = cpp.match(/const bool adapterDeepWorkgroup\s*=([^;]+);/);
-  const block = cpp.match(/if \(adapterDeepWorkgroup\) \{([^}]+)\}/);
-  if (!gate) fail('device.cpp: const bool adapterDeepWorkgroup = ... not found (deepWorkgroupLimits)');
-  if (!block) fail('device.cpp: if (adapterDeepWorkgroup) { requiredLimits... } not found (deepWorkgroupLimits)');
-  for (const [key, value] of Object.entries(deep)) {
-    if (gate && !new RegExp(`limits\\.${key}\\s*>=\\s*${value}\\b`).test(gate[1])) {
-      fail(`device.cpp adapterDeepWorkgroup must test limits.${key} >= ${value} (webgpu_limits.json deepWorkgroupLimits)`);
-    }
-    if (block && !new RegExp(`requiredLimits\\.${key}\\s*=\\s*${value}\\s*;`).test(block[1])) {
-      fail(`device.cpp deep requiredLimits.${key} must be ${value} (webgpu_limits.json deepWorkgroupLimits)`);
-    }
-  }
+  // C++: PIXELOCITY_DEEP_WORKGROUP_LIMITS (verifyCppGeneratedContracts).
   const ts = fs.readFileSync(TS_POLICY, 'utf8');
   if (!/webgpuLimitsContract\.deepWorkgroupLimits/.test(ts)
       || !/meetsDeepWorkgroupLimits\(adapterLimits\)\s*\?\s*DEEP_WORKGROUP_LIMITS/.test(ts)) {
@@ -172,6 +155,7 @@ function verifyBufferSizeLimits() {
 }
 
 if (!ONLY_WASM_INVARIANTS) {
+  verifyCppGeneratedContracts();
   verifyDeepWorkgroupLimits();
   verifyBufferSizeLimits();
 }
@@ -201,29 +185,13 @@ function verifyOptionalFeatures() {
     fail('webgpu_optional_features.json must keep timestampQueryAlwaysOnWhenAvailable true (#1007)');
   }
 
-  const cpp = fs.readFileSync(CPP_DEVICE, 'utf8');
-  const arr = cpp.match(/WGPUFeatureName requiredFeatures\[(\d+)\]/);
-  if (!arr || parseInt(arr[1], 10) < feat.requiredFeaturesArrayMin) {
-    fail(
-      `device.cpp requiredFeatures[] must be >= ${feat.requiredFeaturesArrayMin} (got ${arr ? arr[1] : 'missing'})`,
-    );
+  // C++ requests PIXELOCITY_OPTIONAL_FEATURES, generated in requestOrder.
+  const order = feat.requestOrder || [];
+  if (order.join(',') !== 'float32-filterable,timestamp-query,subgroups') {
+    fail('webgpu_optional_features.json requestOrder must be float32-filterable → timestamp-query → subgroups');
   }
-  const optBlock = cpp.match(/Optional features:[\s\S]*?deviceDesc\.requiredFeatureCount/);
-  if (!optBlock) {
-    fail('device.cpp optional-features request block not found');
-    return;
-  }
-  const block = optBlock[0];
-  const pF32 = block.indexOf('WGPUFeatureName_Float32Filterable');
-  const pTs = block.indexOf('WGPUFeatureName_TimestampQuery');
-  const pSg = block.indexOf('WGPUFeatureName_Subgroups');
-  if (pF32 < 0 || pTs < 0 || pSg < 0) {
-    fail('device.cpp must request Float32Filterable, TimestampQuery, and Subgroups');
-  } else if (!(pF32 < pTs && pTs < pSg)) {
-    fail('device.cpp feature request order must be float32 → timestamp-query → subgroups');
-  }
-  if (pSg >= 0 && pTs >= 0 && pSg < pTs) {
-    fail('device.cpp must not request subgroups before timestamp-query');
+  if (order.length < feat.requiredFeaturesArrayMin) {
+    fail(`webgpu_optional_features.json requestOrder must list >= ${feat.requiredFeaturesArrayMin} features`);
   }
 
   // WGPUFeatureName_* / WGPUDeviceLostReason_* are enum members, not macros:
@@ -680,28 +648,16 @@ function verifyWorkgroupDispatch() {
     fail('ShaderCompilation.ts must not return hardcoded 8x8 unparsed fallback');
   }
 
-  const cppInternal = fs.readFileSync(
-    path.join(ROOT, wgContract.cppReferences.file),
-    'utf8',
-  );
-  const fnBlock = cppInternal.match(
-    /void ParseWorkgroupSize\([\s\S]*?\n\}/,
-  );
-  if (!fnBlock) {
-    fail('ParseWorkgroupSize not found in wasm_internal.cpp');
-    return;
+  // WASM: the bridge resolves the size (wgslAnalysis.ts, shared with
+  // ShaderCompilation.ts) and passes it to loadShader; C++ parses no WGSL.
+  const bridgeRef = wgContract.bridgeReferences;
+  const analysis = fs.readFileSync(path.join(ROOT, bridgeRef.file), 'utf8');
+  if (!new RegExp(`export function ${bridgeRef.function}\\(`).test(analysis)
+      || !analysis.includes('WORKGROUP_UNPARSED_FALLBACK')) {
+    fail(`${bridgeRef.file} ${bridgeRef.function} must fall back to WORKGROUP_UNPARSED_FALLBACK (generated from workgroup_dispatch.json)`);
   }
-  const init = fnBlock[0].match(/x\s*=\s*(\d+);\s*\n\s*y\s*=\s*(\d+);/);
-  if (!init) {
-    fail('ParseWorkgroupSize default x/y assignment not found in wasm_internal.cpp');
-  } else {
-    const cppX = parseInt(init[1], 10);
-    const cppY = parseInt(init[2], 10);
-    if (cppX !== fallback.x || cppY !== fallback.y) {
-      fail(
-        `wasm_internal.cpp ParseWorkgroupSize default: expected ${fallback.x}x${fallback.y}, got ${cppX}x${cppY}`,
-      );
-    }
+  if (!/resolveWorkgroupSize\(/.test(tsShader)) {
+    fail('ShaderCompilation.ts parseWorkgroupSize must use the shared resolveWorkgroupSize (src/wasm/bridge/wgslAnalysis.ts)');
   }
 
   const shadersDir = path.join(ROOT, 'public/shaders');
@@ -815,12 +771,10 @@ function verifySlotLimits() {
   }
 
   // ── C++: MAX_SHADER_SLOTS equals the contract ────────────────────────────
+  // contracts::kMaxPhysicalSlots is generated from this file (verifyCppGeneratedContracts).
   const header = fs.readFileSync(path.join(ROOT, c.cpp.file), 'utf8');
-  const m = header.match(new RegExp(`static\\s+constexpr\\s+int\\s+${c.cpp.constant}\\s*=\\s*(\\d+)\\s*;`));
-  if (!m) {
-    fail(`${c.cpp.file} ${c.cpp.constant} not found`);
-  } else if (parseInt(m[1], 10) !== n) {
-    fail(`${c.cpp.file} ${c.cpp.constant} = ${m[1]} but ${file} maxPhysicalSlots = ${n} (TS ${c.ts.constant})`);
+  if (!new RegExp(`static\\s+constexpr\\s+int\\s+${c.cpp.constant}\\s*=\\s*contracts::kMaxPhysicalSlots\\s*;`).test(header)) {
+    fail(`${c.cpp.file} ${c.cpp.constant} must be contracts::kMaxPhysicalSlots (generated from ${file})`);
   }
 
   // Per-index output tables only cover as many slots as they list; the frame
@@ -934,12 +888,17 @@ function verifyBindGroup1() {
   }
   const bridgeFile = 'src/wasm/bridge/shader.ts';
   const bridge = fs.readFileSync(path.join(ROOT, bridgeFile), 'utf8');
+  // loadShader and reloadShader both go through compileShader → cpp[op](...).
+  const refuser = bridge.match(/function refuseBeforeCompile\([\s\S]*?\n\}/);
+  const compile = bridge.match(/async function compileShader\([\s\S]*?\n\}/);
+  const refuse = compile ? compile[0].indexOf('refuseBeforeCompile(') : -1;
+  const call = compile ? compile[0].indexOf('cpp[op](') : -1;
+  if (!refuser || !refuser[0].includes('declaresBindGroup1(') || refuse < 0 || call < 0 || refuse > call) {
+    fail(`${bridgeFile} compileShader must refuse @group(1) WGSL (refuseBeforeCompile) before calling loadShader/reloadShader`);
+  }
   for (const fnName of ['loadShader', 'reloadShader']) {
-    const body = bridge.match(new RegExp(`export function ${fnName}\\([\\s\\S]*?\\n\\}`));
-    const refuse = body ? body[0].indexOf('declaresBindGroup1(') : -1;
-    const ccall = body ? body[0].indexOf(`ccall('${fnName}'`) : -1;
-    if (refuse < 0 || ccall < 0 || refuse > ccall) {
-      fail(`${bridgeFile} ${fnName} must refuse @group(1) WGSL before ccall('${fnName}')`);
+    if (!new RegExp(`export async function ${fnName}\\([^)]*\\)[^{]*\\{\\s*const outcome = await compileShader\\('${fnName}'`).test(bridge)) {
+      fail(`${bridgeFile} ${fnName} must go through compileShader('${fnName}', ...)`);
     }
   }
 
@@ -1157,32 +1116,31 @@ function verifyWasmRuntimeInvariants() {
     if (!tsRewrite.includes(fmt.catalogWgslFormat)) {
       fail(`${fmt.tsFile} must keep catalog authored format ${fmt.catalogWgslFormat}`);
     }
-    const cppRewrite = fs.readFileSync(path.join(ROOT, fmt.cppRewriteFile), 'utf8');
-    if (!/\bRewriteWgslStorageFormats\s*\(/.test(cppRewrite)) {
-      fail(`${fmt.cppRewriteFile} must define RewriteWgslStorageFormats`);
+    // The bridge rewrites storage decls to the format C++ allocated, right
+    // before loadShader (one rewrite; C++ no longer has its own).
+    const bridgeRewrite = fs.readFileSync(path.join(ROOT, fmt.bridgeRewriteFile), 'utf8');
+    if (!/export function rewriteWgslStorageFormats\(/.test(bridgeRewrite) || !bridgeRewrite.includes('texture_storage_2d')) {
+      fail(`${fmt.bridgeRewriteFile} must rewrite texture_storage_2d declarations to the active colour format`);
+    }
+    const bridgeLoad = fs.readFileSync(path.join(ROOT, fmt.bridgeLoadFile), 'utf8');
+    const prepare = bridgeLoad.match(/function prepareShader\([\s\S]*?\n\}/);
+    if (!prepare || !/cpp\.getColorFormat\(/.test(prepare[0]) || !/rewriteWgslStorageFormats\(/.test(prepare[0])) {
+      fail(`${fmt.bridgeLoadFile} prepareShader must rewrite with the format C++ reports (cpp.getColorFormat) before loadShader`);
     }
     const cppProbe = fs.readFileSync(path.join(ROOT, fmt.cppProbeFile), 'utf8');
     if (!cppProbe.includes('InternalColorFormat::Rgba16Float')) {
       fail(`${fmt.cppProbeFile} must prefer rgba16float (Rgba16Float) after a successful storage probe`);
     }
-    if (fmt.rewriteStorageDeclsToActiveColorFormat && !cppRewrite.includes('texture_storage_2d')) {
-      fail(`${fmt.cppRewriteFile} must rewrite texture_storage_2d declarations to the active colour format`);
-    }
 
+    const bindingTable = JSON.parse(fs.readFileSync(path.join(ROOT, fmt.bindingTableFile), 'utf8'));
+    const storageRgba = bindingTable.bindings.filter((b) => b.kind === 'storageRgba').map((b) => b.binding);
+    if (storageRgba.join(',') !== '2,7,8') {
+      fail(`${fmt.bindingTableFile} must declare bindings 2/7/8 (only) as storageRgba, the tier format the rewrite targets; got ${storageRgba.join('/')}`);
+    }
     const pipelineFile = fmt.pipelineFile || 'wasm_renderer/pipeline.cpp';
     const pipelineCpp = fs.readFileSync(path.join(ROOT, pipelineFile), 'utf8');
-    const bglPat = new RegExp(fmt.bglStorageFormatPattern || 'RgbaStorageFormat\\(colorFormat_\\)', 'g');
-    const bglHits = pipelineCpp.match(bglPat) || [];
-    const wantBgl = fmt.bglStorageBindingCount != null ? fmt.bglStorageBindingCount : 3;
-    if (bglHits.length < wantBgl) {
-      fail(
-        `${pipelineFile} kComputeBindings must declare bindings 2/7/8 as BindingKind::StorageRgba ` +
-          `(layout format = RgbaStorageFormat(colorFormat_)); found ${bglHits.length} of ${wantBgl}`,
-      );
-    }
-    const rewriteCall = new RegExp(fmt.loadShaderRewriteCall || 'RewriteWgslStorageFormats\\s*\\(');
-    if (!rewriteCall.test(pipelineCpp)) {
-      fail(`${pipelineFile} LoadShader must call RewriteWgslStorageFormats`);
+    if (!/case BindingKind::StorageRgba:[\s\S]*?RgbaStorageFormat\(colorFormat_\)/.test(pipelineCpp)) {
+      fail(`${pipelineFile} CreateBindGroupLayout must give BindingKind::StorageRgba the RgbaStorageFormat(colorFormat_) layout`);
     }
     if (fmt.loadShaderErrorScope && !pipelineCpp.includes(fmt.loadShaderErrorScope)) {
       fail(`${pipelineFile} LoadShader must PushErrorScope around CreateComputePipeline`);

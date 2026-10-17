@@ -218,9 +218,13 @@ function checkCpp() {
   checkCppComment(headerRel, header, /float\s+zoom_config\[4\];\s*\/\/([^\n]*)/, 'zoom_config');
   checkCppComment(headerRel, header, /float\s+zoom_params\[4\];\s*\/\/([^\n]*)/, 'zoom_params');
 
-  const rippleDecl = header.match(/float\s+ripples\[(\d+)\]\[4\];/);
-  if (!rippleDecl || parseInt(rippleDecl[1], 10) !== contract.maxRipples) {
-    fail(`${headerRel}: struct Uniforms ripples[] must be [${contract.maxRipples}][4]`);
+  // The count comes from wasm_renderer/generated/contracts.h (kMaxRipples, emitted
+  // from this contract; emit-wasm-contracts.mjs --check keeps it current).
+  const rippleDecl = header.match(/float\s+ripples\[(\d+|contracts::kMaxRipples)\]\[4\];/);
+  const generated = read('wasm_renderer/generated/contracts.h').match(/constexpr int kMaxRipples = (\d+);/);
+  const rippleCount = rippleDecl && (rippleDecl[1] === 'contracts::kMaxRipples' ? generated && generated[1] : rippleDecl[1]);
+  if (!rippleCount || parseInt(rippleCount, 10) !== contract.maxRipples) {
+    fail(`${headerRel}: struct Uniforms ripples[] must be [${contract.maxRipples}][4] (or [contracts::kMaxRipples][4])`);
   }
 
   const frameRel = 'wasm_renderer/frame.cpp';

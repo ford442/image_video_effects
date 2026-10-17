@@ -1,6 +1,7 @@
 #include "renderer.h"
 #include "performance_policy.h"
 #include "wasm_internal.h"
+#include "generated/contracts.h"
 #include <webgpu/webgpu.h>
 #include <emscripten/emscripten.h>
 #include <cstdio>
@@ -19,10 +20,12 @@ namespace pixelocity {
 using wasm_internal::MakeStringView;
 using wasm_internal::AlignUp;
 using wasm_internal::CheckLimit;
-using wasm_internal::ParseWorkgroupSize;
-using wasm_internal::AnalyzeShaderBindings;
-using wasm_internal::RewriteWgslStorageFormats;
 using wasm_internal::ContainsWgslIncludeDirective;
+using contracts::BindingKind;
+using contracts::BindingResource;
+using contracts::ComputeBinding;
+using contracts::kComputeBindings;
+using contracts::kComputeBindingCount;
 
 namespace {
 WGPUTextureFormat RgbaStorageFormat(policy::InternalColorFormat fmt) {
@@ -33,52 +36,8 @@ WGPUTextureFormat RgbaStorageFormat(policy::InternalColorFormat fmt) {
 
 // ─── Compute binding table (group 0, bindings 0–13) ──────────────────────────
 // One table drives both the bind group layout and every compute bind group,
-// so the two can no longer drift. Authoritative list: docs/BINDING_CONTRACT.md.
-enum class BindingKind : uint8_t {
-    FilteringSampler,
-    NonFilteringSampler,
-    ComparisonSampler,
-    SampledRgba,       // texture_2d<f32>, tier rgba format
-    SampledRgbaArray,  // texture_2d_array<f32>, tier rgba format
-    SampledR32,        // texture_2d<f32>, r32float
-    StorageRgba,       // texture_storage_2d<tier rgba, write>
-    StorageR32,        // texture_storage_2d<r32float, write>
-    UniformBuffer,
-    StorageBuffer,
-    ReadOnlyStorageBuffer,
-};
-
-// Which renderer object fills the binding. Input/Output are per-pass (the
-// slot's read/write textures); everything else is a shared global.
-enum class BindingResource : uint8_t {
-    FilteringSampler, NonFilteringSampler, ComparisonSampler,
-    Input, Output, Uniforms, DepthRead, DepthWrite,
-    DataA, DataB, DataC, Extra, Plasma, History,
-};
-
-struct ComputeBinding {
-    uint32_t binding;
-    BindingKind kind;
-    BindingResource resource;
-};
-
-constexpr ComputeBinding kComputeBindings[] = {
-    {  0, BindingKind::FilteringSampler,      BindingResource::FilteringSampler },
-    {  1, BindingKind::SampledRgba,           BindingResource::Input },
-    {  2, BindingKind::StorageRgba,           BindingResource::Output },
-    {  3, BindingKind::UniformBuffer,         BindingResource::Uniforms },
-    {  4, BindingKind::SampledR32,            BindingResource::DepthRead },
-    {  5, BindingKind::NonFilteringSampler,   BindingResource::NonFilteringSampler },
-    {  6, BindingKind::StorageR32,            BindingResource::DepthWrite },
-    {  7, BindingKind::StorageRgba,           BindingResource::DataA },
-    {  8, BindingKind::StorageRgba,           BindingResource::DataB },
-    {  9, BindingKind::SampledRgba,           BindingResource::DataC },
-    { 10, BindingKind::StorageBuffer,         BindingResource::Extra },
-    { 11, BindingKind::ComparisonSampler,     BindingResource::ComparisonSampler },
-    { 12, BindingKind::ReadOnlyStorageBuffer, BindingResource::Plasma },
-    { 13, BindingKind::SampledRgbaArray,      BindingResource::History },
-};
-constexpr size_t kComputeBindingCount = std::size(kComputeBindings);
+// so the two can no longer drift. Generated from src/contracts/binding_table.json
+// (generated/contracts.h); prose in docs/BINDING_CONTRACT.md.
 static_assert(kComputeBindingCount == 14, "compute bind group contract is bindings 0-13");
 
 constexpr bool BindingsAreDense() {
@@ -460,13 +419,14 @@ void WebGPURenderer::DispatchComputePass(WGPUCommandEncoder encoder,
     wgpuComputePassEncoderEnd(cp);
 }
 
-bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
-    if (!device_.get() || deviceLost_) return false;
-
-    // Check if already loaded
-    if (shaders_.find(id) != shaders_.end()) {
-        return true;
-    }
+// WGSL arrives from src/wasm/bridge/shader.ts already expanded, with storage
+// formats rewritten to colorFormat_ and analysed (wgslAnalysis.ts): the bridge
+// passes the `main` dispatch size and the binding_table.json usage bits. C++
+// parses no WGSL; it only refuses a #include that survived expansion.
+bool WebGPURenderer::CompileShaderPipeline(const char* id, const char* wgslCode,
+                                           uint32_t workgroupX, uint32_t workgroupY,
+                                           uint32_t bindingUsage, ShaderPipeline& out) {
+    if (!device_.get() || deviceLost_ || !id || !wgslCode) return false;
 
     // C++ deliberately has no #include parser: every byte of WGSL arrives here
     // from src/wasm/bridge/shader.ts, which already expanded it. Growing a
@@ -478,17 +438,22 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
         return false;
     }
 
-    const char* fmtName = colorFormat_ == policy::InternalColorFormat::Rgba16Float
-        ? "rgba16float"
-        : "rgba32float";
-    const std::string rewritten = RewriteWgslStorageFormats(wgslCode, fmtName);
-    const char* compiledWgsl = rewritten.empty() ? wgslCode : rewritten.c_str();
+    // DispatchComputePass divides by these; the device caps them.
+    if (workgroupX == 0 || workgroupY == 0
+        || workgroupX > maxComputeWorkgroupSizeX_ || workgroupY > maxComputeWorkgroupSizeY_
+        || static_cast<uint64_t>(workgroupX) * workgroupY > maxComputeInvocations_) {
+        printf("❌ Shader '%s': workgroup %ux%u outside the device limits (%ux%u, %u invocations)\n",
+               id, workgroupX, workgroupY, maxComputeWorkgroupSizeX_, maxComputeWorkgroupSizeY_,
+               maxComputeInvocations_);
+        lastError_ = std::string("invalid workgroup size for shader: ") + id;
+        return false;
+    }
 
     // Create shader module
     WGPUShaderSourceWGSL wgslSource = WGPU_SHADER_SOURCE_WGSL_INIT;
     wgslSource.chain.next = nullptr;
     wgslSource.chain.sType = WGPUSType_ShaderSourceWGSL;
-    wgslSource.code = MakeStringView(compiledWgsl);
+    wgslSource.code = MakeStringView(wgslCode);
 
     WGPUShaderModuleDescriptor shaderDesc = WGPU_SHADER_MODULE_DESCRIPTOR_INIT;
     shaderDesc.nextInChain = reinterpret_cast<WGPUChainedStruct*>(&wgslSource);
@@ -505,8 +470,8 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
     // hard errors.  We use WGPUCallbackMode_AllowSpontaneous so the messages
     // arrive whenever the browser processes them.
     //
-    // `id` is borrowed from the JS bridge, which frees it as soon as the
-    // loadShader ccall returns, so the callback gets its own heap copy.
+    // `id` is borrowed from the JS bridge, which frees it once loadShader
+    // returns; the callback can fire later, so it gets its own heap copy.
     // WebGPU invokes every callback exactly once (with a cancelled status on
     // teardown), so the callback is the sole owner and frees it.
     auto* ownedLabel = new std::string(id);
@@ -598,34 +563,48 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
         return false;
     }
 
-    ShaderPipeline sp;
-    sp.module   = std::move(module);
-    sp.pipeline = std::move(pipeline);
-    sp.id       = id;
-    sp.name     = id;
-    ParseWorkgroupSize(compiledWgsl, sp.workgroupX, sp.workgroupY);
-    const auto usage = AnalyzeShaderBindings(compiledWgsl);
-    sp.writesDataA = usage.writesDataA;
-    sp.writesDataB = usage.writesDataB;
-    sp.readsDataC = usage.readsDataC;
-    sp.usesHistory = usage.usesHistory;
-    sp.writesDepth = usage.writesDepth;
-    shaders_[id] = std::move(sp);
-
-    printf("✅ Loaded shader: %s (workgroup: %ux%u)\n", id,
-           shaders_[id].workgroupX, shaders_[id].workgroupY);
+    out.module   = std::move(module);
+    out.pipeline = std::move(pipeline);
+    out.id       = id;
+    out.name     = id;
+    out.workgroupX = workgroupX;
+    out.workgroupY = workgroupY;
+    out.writesDataA = (bindingUsage & contracts::kUsageWritesDataA) != 0;
+    out.writesDataB = (bindingUsage & contracts::kUsageWritesDataB) != 0;
+    out.readsDataC  = (bindingUsage & contracts::kUsageReadsDataC) != 0;
+    out.usesHistory = (bindingUsage & contracts::kUsageUsesHistory) != 0;
+    out.writesDepth = (bindingUsage & contracts::kUsageWritesDepth) != 0;
     return true;
 }
 
-bool WebGPURenderer::ReloadShader(const char* id, const char* wgslCode) {
+bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode,
+                                uint32_t workgroupX, uint32_t workgroupY, uint32_t bindingUsage) {
+    if (!device_.get() || deviceLost_ || !id || !wgslCode) return false;
+    if (shaders_.find(id) != shaders_.end()) return true;  // already loaded
+
+    ShaderPipeline sp;
+    if (!CompileShaderPipeline(id, wgslCode, workgroupX, workgroupY, bindingUsage, sp)) return false;
+    shaders_[id] = std::move(sp);
+    printf("✅ Loaded shader: %s (workgroup: %ux%u)\n", id, workgroupX, workgroupY);
+    return true;
+}
+
+// Compile first, swap after: a failed hot reload keeps the pipeline every slot
+// using this id is drawing with.
+bool WebGPURenderer::ReloadShader(const char* id, const char* wgslCode,
+                                  uint32_t workgroupX, uint32_t workgroupY, uint32_t bindingUsage) {
     if (!device_.get() || deviceLost_ || !id || !wgslCode) return false;
 
-    auto it = shaders_.find(id);
-    if (it != shaders_.end()) {
-        printf("♻️  Reloading shader: %s\n", id);
-        shaders_.erase(it);
+    ShaderPipeline sp;
+    if (!CompileShaderPipeline(id, wgslCode, workgroupX, workgroupY, bindingUsage, sp)) {
+        if (shaders_.find(id) != shaders_.end()) {
+            printf("⚠️  Reload of '%s' failed; keeping the previous pipeline\n", id);
+        }
+        return false;
     }
-    return LoadShader(id, wgslCode);
+    printf("♻️  Reloaded shader: %s (workgroup: %ux%u)\n", id, workgroupX, workgroupY);
+    shaders_[id] = std::move(sp);
+    return true;
 }
 
 

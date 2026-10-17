@@ -2,16 +2,36 @@ name: WASM (R&D)
 
 # WASM is Tier B, frozen R&D as of 2026-09-27 (#1080; evidence:
 # reports/wasm-promotion-evidence-2026-09-27.md). These jobs no longer run on
-# every PR: only when a PR touches the WASM tree, weekly on main, or on demand.
-# Moving them out of ci.yml reset the Gate 4 "4 consecutive green weeks" clock.
+# every PR: only when a PR touches the WASM tree or its inputs, weekly on main,
+# or on demand. Moving them out of ci.yml reset the Gate 4 "4 consecutive green
+# weeks" clock.
 
 on:
   pull_request:
     branches: [ main ]
+    # Everything the build, the generated bridge/header or the e2e specs read (#1400 H3).
     paths:
       - 'wasm_renderer/**'
       - 'public/wasm/**'
+      - 'src/wasm/**'
+      - 'src/renderer/WASMRenderer.ts'
+      - 'src/__tests__/WASM*'
+      - 'src/contracts/wasm_*.json'
+      - 'src/contracts/binding_table.json'
+      - 'src/contracts/webgpu_limits.json'
+      - 'src/contracts/webgpu_optional_features.json'
+      - 'src/contracts/slot_limits.json'
+      - 'src/contracts/uniforms_layout.json'
+      - 'src/contracts/workgroup_dispatch.json'
+      - 'scripts/format-wasm-*.js'
+      - 'scripts/emit-wasm-*.mjs'
+      - 'scripts/emcc-version-gate.sh'
+      - 'scripts/check-asyncify-exports.mjs'
+      - 'scripts/verify-wasm-bridge-sync.mjs'
+      - 'scripts/validate_wasm_artifacts.js'
       - 'tests/wasm-*'
+      - 'tests/layerChain.smoke.spec.ts'
+      - 'tests/helpers/rendererHarness.ts'
       - '.github/workflows/wasm.yml'
   schedule:
     # Weekly, Monday 06:17 UTC. Scheduled runs always use the default branch (main).
@@ -26,21 +46,27 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    
+    env:
+      # Ports (emdawnwebgpu) and LTO system libs. setup-emsdk caches the SDK right
+      # after installing it, before any build, so this cache is separate.
+      EM_CACHE: ${{ github.workspace }}/.emscripten-cache
+
     steps:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
-    
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '24'
         cache: 'npm'
-    
+
     - name: Install dependencies
       run: npm ci
-    
+      env:
+        ONNXRUNTIME_NODE_INSTALL_SKIP: "true"
+
     - name: Setup Emscripten SDK
       uses: mymindstorm/setup-emsdk@v14
       env:
@@ -50,36 +76,48 @@ jobs:
         # (enforced by verify:wasm-invariants and emcc-version-gate.sh). Never `latest`.
         version: 6.0.9
         actions-cache-folder: 'emsdk-cache'
-    
-    - name: Build WASM renderer
+
+    - name: Cache EM_CACHE (ports + system libraries)
+      uses: actions/cache@v4
+      with:
+        path: .emscripten-cache
+        key: em-cache-6.0.9-${{ hashFiles('src/contracts/wasm_compile_flags.json') }}
+        restore-keys: em-cache-6.0.9-
+
+    - name: Build WASM renderer (release; ASYNCIFY_ADVISE gate)
       run: npm run wasm:build
-    
+
+    - name: Build WASM renderer (debug profile, ASSERTIONS=2)
+      run: npm run wasm:build:debug
+
     - name: Validate WASM artifacts
       run: npm run wasm:validate
 
-    # Committed artifact must match a fresh pinned build (replaces the old mtime
-    # heuristic). Report-only until the 6-slot artifact (#1339) lands on main.
+    # A fresh pinned build must reproduce the committed artifact byte for byte.
     - name: Compare built WASM to committed artifact
-      continue-on-error: true
       run: |
-        built=$(sha256sum public/wasm/pixelocity_wasm.wasm | cut -d' ' -f1)
-        committed=$(git show HEAD:public/wasm/pixelocity_wasm.wasm | sha256sum | cut -d' ' -f1)
-        echo "built=$built committed=$committed"
-        if [ "$built" != "$committed" ]; then
-          echo "::warning file=public/wasm/pixelocity_wasm.wasm::Committed WASM artifact is stale; rebuild with emsdk 6.0.9 (npm run wasm:build) and commit public/wasm/."
-          exit 1
-        fi
+        status=0
+        for f in pixelocity_wasm.wasm pixelocity_wasm.js pixelocity_wasm.d.ts; do
+          built=$(sha256sum "public/wasm/$f" | cut -d' ' -f1)
+          committed=$(git show "HEAD:public/wasm/$f" | sha256sum | cut -d' ' -f1)
+          echo "$f built=$built committed=$committed"
+          if [ "$built" != "$committed" ]; then
+            echo "::error file=public/wasm/$f::Committed $f is stale; rebuild with emsdk 6.0.9 (npm run wasm:build) and commit public/wasm/."
+            status=1
+          fi
+        done
+        exit $status
 
-    - name: Verify WASM bridge copies match TypeScript SoT
+    - name: Verify bridge, generated contracts and emitted typings
       run: npm run verify:wasm-bridge-sync
-    
+
     - name: Run WASM unit smoke tests
       run: |
         echo "WASM Jest gate: testPathPattern=WASM (job fails on any test failure; no || true)"
-        npm test -- --watchAll=false --ci --testPathPattern='WASM'
+        npm test -- --watchAll=false --ci --testPathPattern='WASM|src/wasm/'
       env:
         CI: true
-    
+
     - name: Upload WASM build artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -87,6 +125,10 @@ jobs:
         path: |
           public/wasm/pixelocity_wasm.js
           public/wasm/pixelocity_wasm.wasm
+          public/wasm/pixelocity_wasm.d.ts
+          public/wasm/pixelocity_wasm.debug.js
+          public/wasm/pixelocity_wasm.debug.wasm
+          public/wasm/pixelocity_wasm.debug.wasm.map
           public/wasm/wasm_bridge.js
           public/wasm/wasm_bridge.d.ts
           public/wasm/bridge
@@ -99,38 +141,47 @@ jobs:
     permissions:
       contents: read
     needs: wasm
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '24'
         cache: 'npm'
-    
+
     - name: Install dependencies
       run: npm ci
+      env:
+        ONNXRUNTIME_NODE_INSTALL_SKIP: "true"
 
     - name: Download WASM artifacts
       uses: actions/download-artifact@v4
       with:
         name: wasm-artifacts
-    
+
+    # prebuild uses the downloaded public/wasm/ artifacts (compiles only with WASM_BUILD=1).
     - name: Build production app
       run: npm run build
-      env:
-        SKIP_WASM_BUILD: '1'
-    
+
     - name: Install Playwright browsers
       run: npx playwright install chromium
-    
-    - name: Run WASM Playwright smoke tests
-      run: npx playwright test tests/wasm-renderer.smoke.spec.ts tests/layerChain.smoke.spec.ts --project=chromium
+
+    # SwiftShader gives headless Chromium a real (software) WebGPU adapter, so the
+    # WASM backend initializes and the parity shaders actually load.
+    - name: Run WASM Playwright smoke tests (release, SwiftShader)
+      run: npx playwright test tests/wasm-renderer.smoke.spec.ts tests/layerChain.smoke.spec.ts --project=swiftshader-smoke
       env:
         CI: true
         WASM_GPU_TESTS: '0'
-    
+
+    - name: Run WASM Playwright smoke tests (debug profile, ASSERTIONS=2)
+      run: npm run test:wasm:debug
+      env:
+        CI: true
+        WASM_GPU_TESTS: '0'
+
     - name: Upload Playwright report
       if: always()
       uses: actions/upload-artifact@v4

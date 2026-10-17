@@ -9,14 +9,12 @@ Full automated testing for the C++ WASM renderer path — parity with the TypeSc
 1. **Build WASM + production app** (requires [Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html)):
 
    ```bash
-   npm run wasm:build
+   npm run wasm:build          # optional: npm run build alone uses the committed artifacts
    npm run build
-   # or on machines without emsdk:
-   SKIP_WASM_BUILD=1 npm run build
    npm run wasm:validate
    ```
 
-2. **WebGPU-capable browser** (Chrome/Chromium with GPU). Headless CI VMs often lack a GPU adapter — GPU tests auto-skip when backends fall back.
+2. **WebGPU-capable browser** (Chrome/Chromium with GPU). Headless VMs have no GPU adapter, but the `swiftshader-smoke` Playwright project launches Chromium with SwiftShader WebGPU, so the WASM backend initializes and shaders load there.
 
 3. **Install Playwright** (once):
 
@@ -30,6 +28,7 @@ Full automated testing for the C++ WASM renderer path — parity with the TypeSc
 |---------|----------------|
 | `npm run test:wasm:unit` | Jest — bridge API + RendererManager parity mocks |
 | `npm run test:wasm:e2e` | Playwright — init, multi-shader, error checks |
+| `npm run test:wasm:debug` | The WASM smoke spec on SwiftShader against the ASSERTIONS=2 debug build (`npm run wasm:build:debug` + `npm run build` first); any Emscripten assertion fails it |
 | `npm run test:wasm:parity` | Playwright — WASM vs WebGPU statistical parity matrix |
 | `npm run test:wasm:bench` | Playwright — FPS + `getGPUTimings()` benchmark report |
 | `npm run test:wasm` | All of the above (unit + full Playwright suite) |
@@ -102,14 +101,15 @@ See [`WASM_SMOKE_TEST.md`](./WASM_SMOKE_TEST.md) for browser DevTools checks whe
 
 ## CI
 
-The `test-wasm-e2e` job in [`.github/workflows/wasm.yml`](../.github/workflows/wasm.yml) runs only on PRs touching `wasm_renderer/**`, `public/wasm/**` or `tests/wasm-*`, weekly on `main`, or on demand (WASM is frozen R&D, #1080):
+The `test-wasm-e2e` job in [`.github/workflows/wasm.yml`](../.github/workflows/wasm.yml) runs only on PRs touching the WASM tree or its build inputs (see the `paths:` filter), weekly on `main`, or on demand (WASM is frozen R&D, #1080):
 
-1. Downloads WASM artifacts from the `wasm` job
-2. Builds production app (`SKIP_WASM_BUILD=1`)
-3. Runs `tests/wasm-renderer.smoke.spec.ts` + `tests/layerChain.smoke.spec.ts` (soft, `WASM_GPU_TESTS=0`)
-4. Uploads Playwright HTML report
+1. Downloads WASM artifacts (release + debug profile) from the `wasm` job
+2. Builds the production app (`prebuild` uses the downloaded artifacts)
+3. Runs `tests/wasm-renderer.smoke.spec.ts` + `tests/layerChain.smoke.spec.ts` on SwiftShader (`--project=swiftshader-smoke`, soft `WASM_GPU_TESTS=0`)
+4. Runs `npm run test:wasm:debug` (same smoke spec, ASSERTIONS=2 build)
+5. Uploads Playwright HTML report
 
-The `wasm` job runs Jest unit smoke (`--testPathPattern=WASM`).
+The `wasm` job runs the WASM Jest suites (`--testPathPattern='WASM|src/wasm/'`).
 
 ## Troubleshooting
 

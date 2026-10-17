@@ -14,7 +14,10 @@ const srcWasm = path.join(repoRoot, 'src', 'wasm');
 const bridgeDir = path.join(srcWasm, 'bridge');
 
 export const BRIDGE_MODULES = [
+  '_contracts.js',
+  '_generated.js',
   'api.js',
+  'call.js',
   'capture.js',
   'diagnostics.js',
   'init.js',
@@ -22,6 +25,7 @@ export const BRIDGE_MODULES = [
   'shader.js',
   'state.js',
   'uniforms.js',
+  'wgslAnalysis.js',
   'wgslFormat.js',
   'wgslInclude.js',
   'wgslLibraries.js',

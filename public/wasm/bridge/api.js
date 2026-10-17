@@ -7,7 +7,8 @@ import {
   takeScreenshot,
   uploadImageData,
   uploadImageSource,
-  uploadVideoFrame
+  uploadVideoFrame,
+  uploadVideoSource
 } from "./capture.js";
 import { clearErrorRing, getDiagnostics, readErrorRing, readPassTimings } from "./diagnostics.js";
 import {
@@ -97,6 +98,7 @@ const wasmBridge = {
   uploadImageData,
   uploadImageSource,
   uploadVideoFrame,
+  uploadVideoSource,
   resizeCanvas,
   setColorFormat,
   captureFrame,

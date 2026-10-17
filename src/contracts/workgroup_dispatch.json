@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Canonical 2D compute dispatch when @workgroup_size cannot be parsed. Keep in sync with ShaderCompilation.ts and wasm_internal.cpp ParseWorkgroupSize.",
+  "description": "Canonical 2D compute dispatch when @workgroup_size cannot be resolved. One parser: src/wasm/bridge/wgslAnalysis.ts (ShaderCompilation.ts delegates to it; the WASM bridge sends its result to C++ loadShader, which parses no WGSL).",
   "canonicalDefault": { "x": 16, "y": 16, "z": 1 },
   "unparsedFallback": { "x": 16, "y": 16 },
   "oneDHelperExceptions": [
@@ -32,9 +32,10 @@
     "file": "src/renderer/ShaderCompilation.ts",
     "function": "parseWorkgroupSize"
   },
-  "cppReferences": {
-    "file": "wasm_renderer/wasm_internal.cpp",
-    "function": "ParseWorkgroupSize"
+  "bridgeReferences": {
+    "file": "src/wasm/bridge/wgslAnalysis.ts",
+    "function": "parseWorkgroupSize",
+    "generatedFallback": "src/wasm/bridge/_contracts.ts WORKGROUP_UNPARSED_FALLBACK"
   },
   "emptyPlaceholder": {
     "format": "r32float",

@@ -1,5 +1,5 @@
 {
-  "description": "Single source of truth for Emscripten EXPORTED_FUNCTIONS and EXPORTED_RUNTIME_METHODS. The only compile path is wasm_renderer/build.sh (npm run wasm:build); do not hand-copy the list. _main/_malloc/_free are Emscripten runtime symbols, not EMSCRIPTEN_KEEPALIVE.",
+  "description": "Single source of truth for Emscripten EXPORTED_FUNCTIONS / EXPORTED_RUNTIME_METHODS and for every export's call signature. The only compile path is wasm_renderer/build.sh (npm run wasm:build); do not hand-copy the list. _main/_malloc/_free are Emscripten runtime symbols, not EMSCRIPTEN_KEEPALIVE. `exports` drives src/wasm/bridge/_generated.ts (npm run wasm:bridge:gen; the bridge has no hand-written ccall) and is diffed against the emitted public/wasm/pixelocity_wasm.d.ts by verify:wasm-bridge-sync.",
   "exportedFunctions": [
     "_main",
     "_initWasmRenderer",
@@ -46,6 +46,7 @@
     "_loadImageData",
     "_loadImageExternal",
     "_uploadVideoFrame",
+    "_uploadVideoExternal",
     "_resizeCanvas",
     "_beginFrameCapture",
     "_getFrameCaptureState",
@@ -62,9 +63,300 @@
     "getValue",
     "setValue",
     "UTF8ToString",
+    "lengthBytesUTF8",
     "stringToUTF8",
     "HEAPU8",
     "HEAPF32"
   ],
-  "runtimeOnlyExports": ["_main", "_malloc", "_free"]
+  "runtimeOnlyExports": ["_main", "_malloc", "_free"],
+  "exportsSchema": {
+    "returns": "void | number | string (string = const char* read with UTF8ToString)",
+    "args": "\"name:type\", type = number | string (ccall stack copy; keep short) | pointer (caller-owned heap address)",
+    "async": "true when the call can reach wgpuInstanceWaitAny. Under ASYNCIFY it then suspends, so the bridge must ccall it with { async: true } and await it; the bridge runs these one at a time per module.",
+    "whileSuspended": "sync exports only, what the bridge does when called while an async export is suspended: call (plain CPU state, always safe), queue (void; runs in order once the suspended call returns; no pointer args), skip (dropped; returns 0 / \"\" / undefined).",
+    "optional": "artifacts built before the export lack it; the wrapper returns null instead of throwing."
+  },
+  "exports": {
+    "initWasmRenderer": {
+      "returns": "number",
+      "args": ["width:number", "height:number", "canvasSelector:string"],
+      "async": true,
+      "note": "CreateDevice: adapter/device requests + error-scope pops (device.cpp), CreateTextures → TryCreateHistoryTexture (resources.cpp)."
+    },
+    "shutdownWasmRenderer": {
+      "returns": "void",
+      "args": [],
+      "whileSuspended": "queue",
+      "note": "Destroying the instance under a suspended WaitAny crashes the tab, so it runs after the in-flight call."
+    },
+    "loadShader": {
+      "returns": "number",
+      "args": ["id:pointer", "wgslCode:pointer", "workgroupX:number", "workgroupY:number", "bindingUsage:number"],
+      "async": true,
+      "note": "CreateComputePipeline error-scope pop (pipeline.cpp). The bridge keeps id/wgslCode allocated until the promise settles. workgroupX/Y and bindingUsage come from src/wasm/bridge/wgslAnalysis.ts (bindingUsage bits: binding_table.json shaderUsageFlags)."
+    },
+    "reloadShader": {
+      "returns": "number",
+      "args": ["id:pointer", "wgslCode:pointer", "workgroupX:number", "workgroupY:number", "bindingUsage:number"],
+      "async": true,
+      "note": "Same as loadShader; the old pipeline stays live until the new one compiles."
+    },
+    "setActiveShader": {
+      "returns": "void",
+      "args": ["id:string"],
+      "whileSuspended": "queue"
+    },
+    "setSlotShader": {
+      "returns": "void",
+      "args": ["slotIndex:number", "id:string"],
+      "whileSuspended": "queue",
+      "note": "Looks the id up in the pipeline map, so it must land after a queued loadShader of that id."
+    },
+    "setSlotParams": {
+      "returns": "void",
+      "args": ["slotIndex:number", "p1:number", "p2:number", "p3:number", "p4:number"],
+      "whileSuspended": "call"
+    },
+    "setSlotMode": {
+      "returns": "void",
+      "args": ["slotIndex:number", "mode:number"],
+      "whileSuspended": "call"
+    },
+    "setColorFormat": {
+      "returns": "void",
+      "args": ["format:number"],
+      "async": true,
+      "note": "RecreateTextures → TryCreateHistoryTexture (resources.cpp)."
+    },
+    "getColorFormat": {
+      "returns": "number",
+      "args": [],
+      "whileSuspended": "call"
+    },
+    "updateUniforms": {
+      "returns": "void",
+      "args": [],
+      "whileSuspended": "skip",
+      "note": "Render(): size-dependent textures are null while RecreateTextures is suspended."
+    },
+    "updateMousePos": {
+      "returns": "void",
+      "args": ["x:number", "y:number"],
+      "whileSuspended": "call"
+    },
+    "setMouseDown": {
+      "returns": "void",
+      "args": ["down:number"],
+      "whileSuspended": "call"
+    },
+    "updateAudioData": {
+      "returns": "void",
+      "args": ["bass:number", "mid:number", "treble:number"],
+      "whileSuspended": "call"
+    },
+    "updateAudioFrequencyBins": {
+      "returns": "void",
+      "args": ["bins:pointer", "count:number"],
+      "whileSuspended": "call"
+    },
+    "updateDepthMap": {
+      "returns": "void",
+      "args": ["data:pointer", "width:number", "height:number"],
+      "whileSuspended": "skip",
+      "note": "The bridge defers a depth map that arrives mid-suspend (runWhenIdle)."
+    },
+    "setInputSource": {
+      "returns": "void",
+      "args": ["source:number"],
+      "whileSuspended": "queue"
+    },
+    "addRipple": {
+      "returns": "void",
+      "args": ["x:number", "y:number"],
+      "whileSuspended": "call"
+    },
+    "clearRipples": {
+      "returns": "void",
+      "args": [],
+      "whileSuspended": "call"
+    },
+    "setTime": {
+      "returns": "void",
+      "args": ["time:number"],
+      "whileSuspended": "call"
+    },
+    "setZoomParams": {
+      "returns": "void",
+      "args": ["p1:number", "p2:number", "p3:number", "p4:number"],
+      "whileSuspended": "call"
+    },
+    "getFPS": {
+      "returns": "number",
+      "args": [],
+      "whileSuspended": "call"
+    },
+    "getSupportsDeepWorkgroup": {
+      "returns": "number",
+      "args": [],
+      "whileSuspended": "call"
+    },
+    "getSlotShaderId": {
+      "returns": "string",
+      "args": ["slotIndex:number"],
+      "whileSuspended": "call"
+    },
+    "getSlotEnabled": {
+      "returns": "number",
+      "args": ["slotIndex:number"],
+      "whileSuspended": "call"
+    },
+    "getSlotMode": {
+      "returns": "number",
+      "args": ["slotIndex:number"],
+      "whileSuspended": "call"
+    },
+    "getMaxShaderSlots": {
+      "returns": "number",
+      "args": [],
+      "whileSuspended": "call",
+      "optional": true
+    },
+    "getCanvasCopySrcSupported": {
+      "returns": "number",
+      "args": [],
+      "whileSuspended": "call",
+      "optional": true
+    },
+    "setCanvasCopySrc": {
+      "returns": "number",
+      "args": ["enabled:number"],
+      "whileSuspended": "call",
+      "optional": true
+    },
+    "getGPUTimings": {
+      "returns": "void",
+      "args": ["parallelMs:pointer", "chainedMs:pointer", "totalMs:pointer", "available:pointer"],
+      "whileSuspended": "call"
+    },
+    "getPassTimingsJson": {
+      "returns": "string",
+      "args": [],
+      "whileSuspended": "call",
+      "optional": true
+    },
+    "requestWorkDoneMark": {
+      "returns": "number",
+      "args": [],
+      "whileSuspended": "skip",
+      "optional": true
+    },
+    "getLastError": {
+      "returns": "string",
+      "args": [],
+      "whileSuspended": "call",
+      "optional": true
+    },
+    "getErrorRingJson": {
+      "returns": "string",
+      "args": [],
+      "whileSuspended": "call",
+      "optional": true
+    },
+    "clearErrorRing": {
+      "returns": "void",
+      "args": [],
+      "whileSuspended": "call",
+      "optional": true
+    },
+    "setRecording": {
+      "returns": "void",
+      "args": ["recording:number"],
+      "whileSuspended": "call"
+    },
+    "isRecording": {
+      "returns": "number",
+      "args": [],
+      "whileSuspended": "call"
+    },
+    "getAdapterSummary": {
+      "returns": "string",
+      "args": [],
+      "whileSuspended": "call"
+    },
+    "getLastInitErrorStage": {
+      "returns": "number",
+      "args": [],
+      "whileSuspended": "call"
+    },
+    "getLastInitErrorMessage": {
+      "returns": "string",
+      "args": [],
+      "whileSuspended": "call"
+    },
+    "isRendererInitialized": {
+      "returns": "number",
+      "args": [],
+      "whileSuspended": "call"
+    },
+    "loadImageData": {
+      "returns": "void",
+      "args": ["data:pointer", "width:number", "height:number"],
+      "whileSuspended": "skip",
+      "note": "The bridge defers an image that arrives mid-suspend (runWhenIdle)."
+    },
+    "loadImageExternal": {
+      "returns": "number",
+      "args": ["width:number", "height:number"],
+      "whileSuspended": "skip"
+    },
+    "uploadVideoFrame": {
+      "returns": "void",
+      "args": ["data:pointer", "width:number", "height:number"],
+      "whileSuspended": "skip",
+      "note": "Per frame; a dropped frame is replaced by the next one."
+    },
+    "uploadVideoExternal": {
+      "returns": "number",
+      "args": ["width:number", "height:number"],
+      "whileSuspended": "skip",
+      "note": "GPU video ingest (copyExternalImageToTexture of Module.pixelocityPendingImage); 0 = fall back to uploadVideoFrame."
+    },
+    "resizeCanvas": {
+      "returns": "number",
+      "args": ["width:number", "height:number"],
+      "async": true,
+      "note": "RecreateTextures → TryCreateHistoryTexture (resources.cpp). 1 when the textures exist afterwards, 0 when they could not be rebuilt (rendering pauses)."
+    },
+    "beginFrameCapture": {
+      "returns": "void",
+      "args": [],
+      "whileSuspended": "skip",
+      "note": "Encodes a copy from writeTexture_; captureFrame waits for idle first."
+    },
+    "getFrameCaptureState": {
+      "returns": "number",
+      "args": [],
+      "whileSuspended": "call"
+    },
+    "readCapturedFrame": {
+      "returns": "number",
+      "args": ["out:pointer", "maxBytes:number"],
+      "whileSuspended": "call"
+    },
+    "endFrameCapture": {
+      "returns": "void",
+      "args": [],
+      "whileSuspended": "call"
+    },
+    "getCanvasWidth": {
+      "returns": "number",
+      "args": [],
+      "whileSuspended": "call"
+    },
+    "getCanvasHeight": {
+      "returns": "number",
+      "args": [],
+      "whileSuspended": "call"
+    }
+  }
 }

@@ -60,7 +60,13 @@ describe('WASM bridge — #include on the URL load path', () => {
     await expect(loadShaderFromURL('zz-includes', SHADER_URL)).resolves.toBe(true);
 
     expect(fetched).toEqual([SHADER_URL]);
-    expect(module.ccall).toHaveBeenCalledWith('loadShader', 'number', ['number', 'number'], expect.any(Array));
+    expect(module.ccall).toHaveBeenCalledWith(
+      'loadShader',
+      'number',
+      ['number', 'number', 'number', 'number', 'number'],
+      expect.any(Array),
+      { async: true },
+    );
     const sources = module.stringToUTF8.mock.calls.map((call) => String(call[0]));
     const code = sources.find((s) => s.includes('fn main()'));
     expect(code).toContain('@group(0) @binding(3) var<uniform> u: Uniforms;');

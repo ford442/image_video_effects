@@ -1,3 +1,5 @@
+import * as cpp from './_generated.js';
+import { getSeamDiagnostics, hasExport } from './call.js';
 import { INIT_STAGE_NAMES, readCanvasCopySrc, state, wasmRef } from './state.js';
 
 export interface CppInitDiagnostics {
@@ -12,9 +14,10 @@ export function readCppInitDiagnostics(): CppInitDiagnostics {
     return { stage: 0, stageName: 'None', message: '', adapterSummary: '' };
   }
 
-  const stage = Number(wasmRef.module.ccall('getLastInitErrorStage', 'number', [], []) ?? 0);
-  const message = String(wasmRef.module.ccall('getLastInitErrorMessage', 'string', [], []) ?? '');
-  const adapterSummary = String(wasmRef.module.ccall('getAdapterSummary', 'string', [], []) ?? '');
+  const mod = wasmRef.module;
+  const stage = cpp.getLastInitErrorStage(mod);
+  const message = cpp.getLastInitErrorMessage(mod);
+  const adapterSummary = cpp.getAdapterSummary(mod);
 
   return {
     stage,
@@ -54,6 +57,8 @@ export function getDiagnostics() {
     canvasCopySrc: readCanvasCopySrc(),
     /** MAX_SHADER_SLOTS in the loaded artifact; null when it predates the export. */
     maxShaderSlots: state.maxShaderSlots,
+    /** Suspended async export, queued calls and sync calls dropped mid-suspend. */
+    suspend: getSeamDiagnostics(wasmRef.module),
   };
 }
 
@@ -86,15 +91,12 @@ export interface WasmErrorRing {
   recent: string[];
 }
 
-type CStringExport = '_getPassTimingsJson' | '_getLastError' | '_getErrorRingJson';
-
-/** UTF8ToString of a const char* export; null when the module or export is missing. */
-function readCStringExport(name: CStringExport): string | null {
+/** A const char* export read through its wrapper; null when the module or export is missing. */
+function readCString(read: (mod: NonNullable<typeof wasmRef.module>) => string | null): string | null {
   const mod = wasmRef.module;
-  const fn = mod?.[name];
-  if (!mod || typeof fn !== 'function' || typeof mod.UTF8ToString !== 'function') return null;
+  if (!mod) return null;
   try {
-    return mod.UTF8ToString(fn());
+    return read(mod);
   } catch {
     return null;
   }
@@ -155,21 +157,20 @@ export function parseErrorRingJson(json: string | null, last: string | null = nu
 
 /** Smoothed per-pass C++ GPU timings; [] until timestamps resolve or on artifacts without the export. */
 export function readPassTimings(): WasmPassTiming[] {
-  return parsePassTimingsJson(readCStringExport('_getPassTimingsJson'));
+  return parsePassTimingsJson(readCString(cpp.getPassTimingsJson));
 }
 
 /** C++ uncaptured-error ring; empty on artifacts without the export. Readable before init / after shutdown. */
 export function readErrorRing(): WasmErrorRing {
-  return parseErrorRingJson(readCStringExport('_getErrorRingJson'), readCStringExport('_getLastError'));
+  return parseErrorRingJson(readCString(cpp.getErrorRingJson), readCString(cpp.getLastError));
 }
 
 /** Drop the held error messages (the count keeps counting). False when the artifact lacks the export. */
 export function clearErrorRing(): boolean {
-  const fn = wasmRef.module?._clearErrorRing;
-  if (typeof fn !== 'function') return false;
+  const mod = wasmRef.module;
+  if (!mod) return false;
   try {
-    fn();
-    return true;
+    return cpp.clearErrorRing(mod) !== null;
   } catch {
     return false;
   }
@@ -182,7 +183,7 @@ export function clearErrorRing(): boolean {
  */
 export function awaitSubmittedWorkDone(timeoutMs = 60_000): Promise<boolean> | null {
   const mod = wasmRef.module;
-  if (!mod || typeof mod._requestWorkDoneMark !== 'function') return null;
+  if (!mod || !hasExport(mod, 'requestWorkDoneMark')) return null;
   return new Promise<boolean>((resolve, reject) => {
     const timer = setTimeout(() => {
       mod.__pxWorkDone = undefined;
@@ -193,7 +194,8 @@ export function awaitSubmittedWorkDone(timeoutMs = 60_000): Promise<boolean> | n
       mod.__pxWorkDone = undefined;
       resolve(ok !== 0);
     };
-    if (mod._requestWorkDoneMark!() !== 1) {
+    // `skip` while a resize is suspended: resolves false (nothing was queued).
+    if (cpp.requestWorkDoneMark(mod) !== 1) {
       clearTimeout(timer);
       mod.__pxWorkDone = undefined;
       resolve(false);

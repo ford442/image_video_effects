@@ -62,7 +62,7 @@ describe('webgpuDevicePolicy', () => {
       expect(limits).toMatchObject({
         maxTextureDimension2D: 8192,
         maxBindingsPerBindGroup: 14,
-        maxSampledTexturesPerShaderStage: 3,
+        maxSampledTexturesPerShaderStage: 4,
         maxSamplersPerShaderStage: 3,
         maxStorageTexturesPerShaderStage: 4,
         maxStorageBuffersPerShaderStage: 2,

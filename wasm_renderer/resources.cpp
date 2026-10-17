@@ -17,7 +17,6 @@ namespace pixelocity {
 using wasm_internal::MakeStringView;
 using wasm_internal::AlignUp;
 using wasm_internal::CheckLimit;
-using wasm_internal::ParseWorkgroupSize;
 
 namespace {
 WGPUTextureFormat RgbaStorageFormat(policy::InternalColorFormat fmt) {
@@ -272,13 +271,18 @@ bool WebGPURenderer::CreateResources() {
 
     CreateTimestampQueries();
 
+    texturesReady_ = true;
     return true;
 }
 
-void WebGPURenderer::RecreateTextures() {
+bool WebGPURenderer::RecreateTextures() {
     // Release size-dependent textures using RAII handles.
     // Size-independent objects (samplers, uniform/extra/plasma buffers, 1×1 emptyTexture_)
-    // do NOT need to be recreated.
+    // do NOT need to be recreated. Render() and the uploads skip while
+    // texturesReady_ is false (the history probe below can suspend in WaitAny).
+    texturesReady_ = false;
+    readTextureDirtyW_ = 0;
+    readTextureDirtyH_ = 0;
     readTexture_.reset();
     writeTexture_.reset();
     pingPong0_.reset();
@@ -292,7 +296,9 @@ void WebGPURenderer::RecreateTextures() {
 
     if (!CreateHistoryTextureFailSoft()) {
         printf("❌ RecreateTextures: historyTex allocation failed\n");
-        return;
+        lastError_ = "RecreateTextures: history texture allocation failed (GPUOutOfMemory); rendering paused";
+        ErrorRing().Push("RecreateTextures", lastError_.c_str(), lastError_.size());
+        return false;
     }
 
     // Create new textures at the current canvas dimensions.
@@ -346,14 +352,16 @@ void WebGPURenderer::RecreateTextures() {
     if (surface_.get()) {
         ConfigureSurface();
     }
+    texturesReady_ = true;
+    return true;
 }
 
-void WebGPURenderer::ResizeCanvas(int newWidth, int newHeight) {
-    if (newWidth <= 0 || newHeight <= 0) return;
+bool WebGPURenderer::ResizeCanvas(int newWidth, int newHeight) {
+    if (newWidth <= 0 || newHeight <= 0) return texturesReady_;
     // Compare with the last request, not canvasWidth_: after a fail-soft
     // shrink those differ and every repeat call would rebuild all textures.
-    if (newWidth == requestedWidth_ && newHeight == requestedHeight_) return;
-    if (!initialized_ || deviceLost_) return;
+    if (newWidth == requestedWidth_ && newHeight == requestedHeight_) return texturesReady_;
+    if (!initialized_ || deviceLost_) return false;
 
     printf("🔄 Resizing canvas: %dx%d → %dx%d\n",
            canvasWidth_, canvasHeight_, newWidth, newHeight);
@@ -363,8 +371,13 @@ void WebGPURenderer::ResizeCanvas(int newWidth, int newHeight) {
     canvasWidth_  = newWidth;
     canvasHeight_ = newHeight;
 
-    // Recreate all size-dependent GPU resources.
-    RecreateTextures();
+    // Recreate all size-dependent GPU resources. On failure every one of them is
+    // null and Render() skips; forget the request so the same size can retry.
+    const bool ok = RecreateTextures();
+    if (!ok) {
+        requestedWidth_ = 0;
+        requestedHeight_ = 0;
+    }
 
     // Invalidate the persistent staging buffer so it gets resized on next upload.
     videoStagingBuffer_.clear();
@@ -386,7 +399,8 @@ void WebGPURenderer::ResizeCanvas(int newWidth, int newHeight) {
     // A resize gives presentation a fresh start at the new size.
     presentFailureCount_ = 0;
 
-    printf("✅ Canvas resized successfully\n");
+    if (ok) printf("✅ Canvas resized successfully\n");
+    return ok;
 }
 
 void WebGPURenderer::ClearReadTexture() {
@@ -405,6 +419,8 @@ void WebGPURenderer::ClearReadTexture() {
 
     QueueWriteRgba(queue_.get(), readTexture_.get(), videoStagingBuffer_.data(),
                    canvasWidth_, canvasHeight_, colorFormat_, packedUploadBuffer_);
+    readTextureDirtyW_ = 0;
+    readTextureDirtyH_ = 0;
 }
 
 void WebGPURenderer::SetColorFormat(int formatEnum) {
@@ -446,13 +462,19 @@ void WebGPURenderer::SetColorFormat(int formatEnum) {
         return;
     }
 
-    RecreateTextures();
+    if (!RecreateTextures()) {
+        // Let the next resize, even to the same size, try again.
+        requestedWidth_ = 0;
+        requestedHeight_ = 0;
+        printf("❌ SetColorFormat: textures could not be rebuilt; rendering paused until a resize succeeds\n");
+    }
 }
 
 // ─── CreateComputeBindGroup ───────────────────────────────────────────────────
 
 void WebGPURenderer::UploadRGBA8ToReadTexture(const uint8_t* data, int width, int height) {
     if (!queue_.get() || !readTexture_.get() || deviceLost_) return;
+    if (!data || width <= 0 || height <= 0) return;
 
     // Convert uint8 RGBA to float RGBA, fitting within canvas bounds.
     // Pixels outside the source image remain black.
@@ -503,6 +525,9 @@ void WebGPURenderer::UploadRGBA8ToReadTexture(const uint8_t* data, int width, in
 
     QueueWriteRgba(queue_.get(), readTexture_.get(), videoStagingBuffer_.data(),
                    dstW, dstH, colorFormat_, packedUploadBuffer_);
+    // The full canvas was written: black outside copyW x copyH.
+    readTextureDirtyW_ = copyW;
+    readTextureDirtyH_ = copyH;
 }
 
 

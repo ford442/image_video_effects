@@ -8,6 +8,7 @@ jest.mock('../wasm/wasm_bridge', () => ({
   shutdownWasmRenderer: jest.fn(),
   setInputSource: jest.fn(),
   uploadVideoFrame: jest.fn(),
+  uploadVideoSource: jest.fn().mockReturnValue(false),
   uploadImageData: jest.fn(),
   // GPU still ingest unavailable by default so the CPU fallback path is exercised.
   uploadImageSource: jest.fn().mockReturnValue(false),
@@ -66,8 +67,15 @@ describe('WASMRenderer input sources', () => {
       jest.clearAllMocks();
       renderer.setInputSource(source);
       renderer.updateVideoFrame();
+      // GPU ingest first; the getImageData upload is the fallback when it declines.
+      expect(WasmBridge.uploadVideoSource).toHaveBeenCalledWith(video, 640, 480);
       expect(WasmBridge.uploadVideoFrame).toHaveBeenCalledWith(fakeImageData, 640, 480);
     }
+
+    (WasmBridge.uploadVideoSource as jest.Mock).mockReturnValueOnce(true);
+    jest.clearAllMocks();
+    renderer.updateVideoFrame();
+    expect(WasmBridge.uploadVideoFrame).not.toHaveBeenCalled();
   });
 
   it('loadImageFromURL uploads decoded RGBA pixels via the bridge', async () => {

@@ -1,22 +1,32 @@
 /**
  * @jest-environment jsdom
  *
- * The ASYNCIFY init ccall returns while C++ CreateDevice() is still suspended in
- * wgpuInstanceWaitAny. The bridge must not report ready (or let anyone shut the
- * instance down) until C++ itself settles: ready, failed at a stage, or the
- * bridge backstop times out and hands the module to the reaper.
+ * initWasmRenderer is an async export: under ASYNCIFY, CreateDevice() suspends
+ * in wgpuInstanceWaitAny and a plain ccall hands back Emscripten's Promise as
+ * if it were the result (truthy, so "ready" with no device). The bridge must
+ * ccall it with { async: true }, report ready only when that promise resolves
+ * to 1, and never shut the instance down while it is still suspended.
  */
 
 type CppState = { initialized: number; stage: number };
 
+function deferred<T>() {
+  let resolve!: (v: T) => void;
+  const promise = new Promise<T>((r) => { resolve = r; });
+  return { promise, resolve };
+}
+
 function fakeModule(cpp: CppState) {
   const calls: string[] = [];
+  const initCall = deferred<number>();
+  const opts: unknown[] = [];
   const mod = {
-    ccall: jest.fn((name: string) => {
+    ccall: jest.fn((name: string, _ret: unknown, _types: unknown, _args: unknown, o?: unknown) => {
       calls.push(name);
       switch (name) {
         case 'initWasmRenderer':
-          return 1; // what an unwound ASYNCIFY export hands back: meaningless
+          opts.push(o);
+          return initCall.promise; // what Emscripten's ccall returns once the export suspends
         case 'isRendererInitialized':
           return cpp.initialized;
         case 'getLastInitErrorStage':
@@ -27,24 +37,24 @@ function fakeModule(cpp: CppState) {
           return '';
         case 'getColorFormat':
           return 0;
+        case 'getMaxShaderSlots':
+          return 6;
         default:
           return 0;
       }
     }),
     _getMaxShaderSlots: () => 6,
   };
-  return { mod, calls };
+  return { mod, calls, initCall, opts };
 }
-
-const POLLS = new Set(['isRendererInitialized', 'getLastInitErrorStage']);
 
 async function loadBridge(cpp: CppState) {
   jest.resetModules();
-  const { mod, calls } = fakeModule(cpp);
-  (window as any).PixelocityWASM = jest.fn(() => Promise.resolve(mod));
+  const fake = fakeModule(cpp);
+  (window as any).PixelocityWASM = jest.fn(() => Promise.resolve(fake.mod));
   const init = await import('../wasm/bridge/init');
   const diagnostics = await import('../wasm/bridge/diagnostics');
-  return { init, diagnostics, calls };
+  return { init, diagnostics, ...fake };
 }
 
 function canvas(): HTMLCanvasElement {
@@ -55,14 +65,16 @@ function canvas(): HTMLCanvasElement {
   return c;
 }
 
-/** Advance fake time in poll-sized steps, flushing the promise chain between them (Jest 27). */
+async function flushMicrotasks() {
+  for (let i = 0; i < 20; i++) await Promise.resolve(); // eslint-disable-line no-await-in-loop
+}
+
+/** Advance fake time in steps, flushing the promise chain between them (Jest 27). */
 async function advance(ms: number) {
   for (let t = 0; t < ms; t += 50) {
-    // eslint-disable-next-line no-await-in-loop
-    await Promise.resolve();
+    await flushMicrotasks(); // eslint-disable-line no-await-in-loop
     jest.advanceTimersByTime(50);
-    // eslint-disable-next-line no-await-in-loop
-    await Promise.resolve();
+    await flushMicrotasks(); // eslint-disable-line no-await-in-loop
   }
 }
 
@@ -80,18 +92,21 @@ describe('WASM bridge init gate', () => {
     delete (window as any).PixelocityWASM;
   });
 
-  it('resolves true only once C++ reports Ready', async () => {
+  it('ccalls init with { async: true } and is ready only when it resolves to 1', async () => {
     const cpp = { initialized: 0, stage: 0 };
-    const { init } = await loadBridge(cpp);
+    const { init, opts, initCall } = await loadBridge(cpp);
     let settled: boolean | null = null;
     void init.initWasmRenderer(canvas()).then((ok) => { settled = ok; });
 
     await advance(1_000);
+    expect(opts).toEqual([{ async: true }]);
+    // The pending promise is truthy; the old sync ccall treated it as success.
     expect(settled).toBeNull();
     expect(init.isInitialized()).toBe(false);
 
     cpp.initialized = 1;
     cpp.stage = 8;
+    initCall.resolve(1);
     await advance(100);
     expect(settled).toBe(true);
     expect(init.isInitialized()).toBe(true);
@@ -99,47 +114,47 @@ describe('WASM bridge init gate', () => {
 
   it('resolves false at the C++ failure stage without calling shutdown', async () => {
     const cpp = { initialized: 0, stage: 0 };
-    const { init, diagnostics, calls } = await loadBridge(cpp);
+    const { init: bridge, diagnostics, calls, initCall } = await loadBridge(cpp);
     let settled: boolean | null = null;
-    void init.initWasmRenderer(canvas()).then((ok) => { settled = ok; });
+    void bridge.initWasmRenderer(canvas()).then((ok) => { settled = ok; });
 
     await advance(500);
-    cpp.stage = 2; // C++ Adapter WaitAny timed out on every attempt → its own Shutdown()
+    cpp.stage = 2; // every adapter WaitAny timed out → C++ ran its own Shutdown()
+    initCall.resolve(0);
     await advance(100);
     expect(settled).toBe(false);
-    expect(init.isInitialized()).toBe(false);
+    expect(bridge.isInitialized()).toBe(false);
     expect(calls).not.toContain('shutdownWasmRenderer');
     const d = diagnostics.getDiagnostics();
     expect(d.failedStageName).toBe('Adapter');
     expect(d.lastInitError).toContain('timed out');
   });
 
-  it('times out without touching the suspended module, then reaps it once C++ settles', async () => {
+  it('times out without touching the suspended module, then reaps it once init returns', async () => {
     const cpp = { initialized: 0, stage: 0 };
-    const { init, diagnostics, calls } = await loadBridge(cpp);
+    const { init: bridge, diagnostics, calls, initCall } = await loadBridge(cpp);
     let settled: boolean | null = null;
-    void init.initWasmRenderer(canvas()).then((ok) => { settled = ok; });
+    void bridge.initWasmRenderer(canvas()).then((ok) => { settled = ok; });
 
-    await advance(init.CPP_INIT_TIMEOUT_MS + 100);
+    await advance(bridge.CPP_INIT_TIMEOUT_MS + 100);
     expect(settled).toBe(false);
-    expect(init.isInitialized()).toBe(false);
+    expect(bridge.isInitialized()).toBe(false);
     const d = diagnostics.getDiagnostics();
     expect(d.failedStageName).toBe('Timeout');
     expect(d.hasModule).toBe(false);
     expect(d.lastInitError).toMatch(/still pending/);
-    // Only plain getters ever reached C++ while it was suspended.
-    expect(calls.filter((c) => c !== 'initWasmRenderer' && !POLLS.has(c))).toEqual([]);
+    // Nothing but the init call itself reached C++ while it was suspended.
+    expect(calls).toEqual(['initWasmRenderer']);
 
     // Bridge-level shutdown is a no-op: nothing was initialized.
-    init.shutdownWasmRenderer();
-    expect(calls).not.toContain('shutdownWasmRenderer');
-
+    bridge.shutdownWasmRenderer();
     await advance(5_000);
     expect(calls).not.toContain('shutdownWasmRenderer');
 
     cpp.initialized = 1; // the WaitAny finally resolved
     cpp.stage = 8;
-    await advance(1_000);
+    initCall.resolve(1);
+    await advance(100);
     expect(calls.filter((c) => c === 'shutdownWasmRenderer')).toHaveLength(1);
   });
 });

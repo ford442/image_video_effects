@@ -14,10 +14,8 @@ namespace pixelocity {
 
 WebGPURenderer::WebGPURenderer() = default;
 
-void WebGPURenderer::MarkDeviceLostFromCallback(void* userdata) {
-    if (userdata) {
-        static_cast<WebGPURenderer*>(userdata)->deviceLost_ = true;
-    }
+void WebGPURenderer::MarkDeviceLostFromCallback(WebGPURenderer* self) {
+    if (self) self->deviceLost_ = true;
 }
 
 WebGPURenderer::~WebGPURenderer() {

@@ -1,5 +1,5 @@
 {
-  "description": "Single source of truth for the Emscripten toolchain pin and compile/link flags. Consumed by wasm_renderer/build.sh (via scripts/format-wasm-compile-flags.js; the only build), scripts/emcc-version-gate.sh and the CI wasm job (setup-emsdk version must equal emsdkVersion). Export lists live in wasm_exports.json. ASYNCIFY is required by device.cpp WaitAny init \u2014 see wasm_renderer/BUILD_FLAG_EXPERIMENTS.md before touching it. GROWABLE_ARRAYBUFFERS=0 is deliberate (TextDecoder + resizable heap); do not flip without a Dawn re-test. extraFlags are plain em++ args (compile + link); -flto adopted 2026-10 (-12.5 KB .wasm). -sENVIRONMENT=web and -msimd128 were measured and rejected; see BUILD_FLAG_EXPERIMENTS.md. `sources` is the one translation-unit list (build.sh and `npm run wasm:compdb` both read it).",
+  "description": "Single source of truth for the Emscripten toolchain pin and compile/link flags. Consumed by wasm_renderer/build.sh (via scripts/format-wasm-compile-flags.js; the only build), scripts/emcc-version-gate.sh and the CI wasm job (setup-emsdk version must equal emsdkVersion). Export lists live in wasm_exports.json. ASYNCIFY is required by device.cpp WaitAny init \u2014 see wasm_renderer/BUILD_FLAG_EXPERIMENTS.md before touching it. GROWABLE_ARRAYBUFFERS=0 is deliberate (TextDecoder + resizable heap); do not flip without a Dawn re-test. extraFlags are plain em++ args (compile + link); -flto adopted 2026-10 (-12.5 KB .wasm). -sENVIRONMENT=web and -msimd128 were measured and rejected; see BUILD_FLAG_EXPERIMENTS.md. `sources` is the one translation-unit list (build.sh and `npm run wasm:compdb` both read it). `profiles.debug` adds -sASSERTIONS=2 + DWARF/source maps for `npm run wasm:build:debug` (output pixelocity_wasm.debug.{js,wasm}, gitignored, loaded by ?renderer=wasm&wasm_debug=1); an async export reached by a plain ccall throws there instead of returning a Promise. `emitTsd` and `linkSFlags` are release-only link args: ASYNCIFY_ADVISE prints which functions can suspend without changing the binary, and build.sh fails unless those exports are exactly the `async` ones in wasm_exports.json (scripts/check-asyncify-exports.mjs). the release build writes the module typings that verify:wasm-bridge-sync diffs against wasm_exports.json.",
   "emsdkVersion": "6.0.9",
   "std": "c++20",
   "opt": "-O2",
@@ -26,5 +26,15 @@
     "audio_depth.cpp",
     "wasm_internal.cpp"
   ],
-  "jsOutputName": "pixelocity_wasm.js"
+  "jsOutputName": "pixelocity_wasm.js",
+  "emitTsd": "pixelocity_wasm.d.ts",
+  "linkSFlags": ["ASYNCIFY_ADVISE"],
+  "profiles": {
+    "debug": {
+      "description": "Same code and flags as release plus Emscripten runtime assertions (ASSERTIONS=2 throws on a suspending export called without { async: true }), DWARF and a source map, and readable function names in stack traces.",
+      "jsOutputName": "pixelocity_wasm.debug.js",
+      "sFlags": ["ASSERTIONS=2"],
+      "extraFlags": ["-g", "-gsource-map", "--profiling-funcs"]
+    }
+  }
 }
