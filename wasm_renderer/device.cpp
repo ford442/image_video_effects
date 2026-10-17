@@ -1,5 +1,6 @@
 #include "renderer.h"
 #include "wasm_internal.h"
+#include "canvas_configure.h"
 #include <webgpu/webgpu.h>
 #include <emscripten/emscripten.h>
 #include <emscripten/em_js.h>
@@ -33,7 +34,9 @@ constexpr uint64_t kDeviceWaitTimeoutNs = 5'000'000'000ull;
 //
 // Returns the WASM surface handle (pointer-sized integer) on success, 0 on failure.
 // The caller must cast the return value to WGPUSurface.
-EM_JS(uint32_t, JS_CreateSurfaceFromCanvas, (const char* selectorPtr, WGPUDevice deviceHandle), {
+// usage / alphaModePtr come from canvas_configure.h (kUsage / kAlphaModeJs).
+EM_JS(uint32_t, JS_CreateSurfaceFromCanvas, (const char* selectorPtr, WGPUDevice deviceHandle,
+                                             uint32_t usage, const char* alphaModePtr), {
     var selector = UTF8ToString(selectorPtr);
     var canvasEl = document.querySelector(selector);
     if (!canvasEl) {
@@ -63,8 +66,8 @@ EM_JS(uint32_t, JS_CreateSurfaceFromCanvas, (const char* selectorPtr, WGPUDevice
         ctx.configure({
             device: jsDevice,
             format: preferredFormat,
-            alphaMode: 'opaque',
-            usage: GPUTextureUsage.RENDER_ATTACHMENT
+            alphaMode: UTF8ToString(alphaModePtr),
+            usage: usage >>> 0
         });
     } catch (err) {
         console.error('[WASM] Canvas context configure failed:', err);
@@ -92,11 +95,12 @@ EM_JS(int, JS_GetPreferredCanvasFormat, (), {
 // ─── JavaScript bridge: canvas COPY_SRC opt-in probe ───────────────────────────────────────────
 //
 // Mirrors TS probeCanvasCopySrc() (webgpuBootProbe.ts): configure with the
-// canvas_configure.json optIn.copySrc usage and read it back. The caller wraps
-// this in a validation error scope and then calls ConfigureSurface() to restore
-// the render-only default, so the live swapchain never keeps COPY_SRC from here.
-// Returns 1 when the configure was accepted with the COPY_SRC bit, 0 otherwise.
-EM_JS(int, JS_ProbeCanvasCopySrc, (const char* selectorPtr, WGPUDevice deviceHandle), {
+// canvas_configure.json optIn.copySrc usage (kCopySrcUsage) and read it back. The
+// caller wraps this in a validation error scope and then calls ConfigureSurface()
+// to restore the render-only default, so the live swapchain never keeps COPY_SRC
+// from here. Returns 1 when the configure was accepted with every usage bit, 0 otherwise.
+EM_JS(int, JS_ProbeCanvasCopySrc, (const char* selectorPtr, WGPUDevice deviceHandle,
+                                   uint32_t usage, const char* alphaModePtr), {
     var canvasEl = document.querySelector(UTF8ToString(selectorPtr));
     var ctx = canvasEl ? canvasEl.getContext('webgpu') : null;
     var jsDevice = WebGPU.getJsObject(deviceHandle);
@@ -104,15 +108,16 @@ EM_JS(int, JS_ProbeCanvasCopySrc, (const char* selectorPtr, WGPUDevice deviceHan
     var preferredFormat = (navigator.gpu && navigator.gpu.getPreferredCanvasFormat)
         ? navigator.gpu.getPreferredCanvasFormat() : 'bgra8unorm';
     try {
+        var want = usage >>> 0;
         ctx.configure({
             device: jsDevice,
             format: preferredFormat,
-            alphaMode: 'opaque',
-            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC
+            alphaMode: UTF8ToString(alphaModePtr),
+            usage: want
         });
         var readback = typeof ctx.getConfiguration === 'function' ? ctx.getConfiguration() : null;
         if (readback && typeof readback.usage === 'number'
-            && !(readback.usage & GPUTextureUsage.COPY_SRC)) {
+            && (readback.usage & want) !== want) {
             return 0;
         }
         return 1;
@@ -690,7 +695,8 @@ bool WebGPURenderer::CreateDevice() {
         printf("[WASM] Negotiated canvas format: %s\n", fmt == 1 ? "rgba8unorm" : "bgra8unorm");
 
         uint32_t surfHandle = JS_CreateSurfaceFromCanvas(
-            canvasSelector_.c_str(), device_.get());
+            canvasSelector_.c_str(), device_.get(),
+            static_cast<uint32_t>(canvas_configure::kUsage), canvas_configure::kAlphaModeJs);
         if (!surfHandle) {
             // Surface creation failed (no canvas at selector / getContext('webgpu')
             // failed / ctx.configure threw). Without a surface there is no way to
@@ -713,7 +719,9 @@ bool WebGPURenderer::CreateDevice() {
         // Never fails init; ConfigureSurface() below restores render-only.
         {
             wgpuDevicePushErrorScope(device_.get(), WGPUErrorFilter_Validation);
-            const int accepted = JS_ProbeCanvasCopySrc(canvasSelector_.c_str(), device_.get());
+            const int accepted = JS_ProbeCanvasCopySrc(
+                canvasSelector_.c_str(), device_.get(),
+                static_cast<uint32_t>(canvas_configure::kCopySrcUsage), canvas_configure::kAlphaModeJs);
             bool hadError = false;
             WGPUFuture popFuture = wgpuDevicePopErrorScope(device_.get(), WGPUPopErrorScopeCallbackInfo{
                 nullptr, WGPUCallbackMode_WaitAnyOnly,
@@ -766,20 +774,19 @@ void WebGPURenderer::ConfigureSurface() {
     if (!surface_.get() || !device_.get()) return;
 
     // Intentional second configure after JS_CreateSurfaceFromCanvas.
-    // JS path matches TS { alphaMode: opaque, usage: RENDER_ATTACHMENT }.
-    // C++ adds swapchain size + presentMode Fifo. Keep both.
+    // Both read canvas_configure.h (same JSON as TS buildCanvasConfigureOptions).
+    // C++ adds swapchain size + presentMode. Keep both.
     WGPUSurfaceConfiguration config = WGPU_SURFACE_CONFIGURATION_INIT;
     config.device      = device_.get();
     config.format      = surfaceFormat_;          // negotiated via JS_GetPreferredCanvasFormat()
-    config.usage       = WGPUTextureUsage_RenderAttachment;
     // Capture opt-in (canvas_configure.json optIn.copySrc). Only SetCanvasCopySrc()
     // turns this on, and only after the boot probe said yes; kept in a member
     // so a resize reconfigure does not drop it mid-recording.
-    if (canvasCopySrc_) config.usage |= WGPUTextureUsage_CopySrc;
-    config.alphaMode   = WGPUCompositeAlphaMode_Opaque;
+    config.usage       = canvasCopySrc_ ? canvas_configure::kCopySrcUsage : canvas_configure::kUsage;
+    config.alphaMode   = canvas_configure::kAlphaMode;
     config.width       = static_cast<uint32_t>(canvasWidth_);
     config.height      = static_cast<uint32_t>(canvasHeight_);
-    config.presentMode = WGPUPresentMode_Fifo;
+    config.presentMode = canvas_configure::kPresentMode;
 
     wgpuSurfaceConfigure(surface_.get(), &config);
     printf("✅ WebGPU surface configured (%dx%d%s)\n", canvasWidth_, canvasHeight_,

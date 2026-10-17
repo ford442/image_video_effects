@@ -174,6 +174,40 @@ describe('canvas_configure.json contract', () => {
       toneMapping: 'standard',
     });
   });
+
+  it('usageBits match the WebGPU spec GPUTextureUsage bits', () => {
+    for (const [name, bit] of Object.entries(canvasConfigureContract.usageBits)) {
+      expect(TU[name as keyof typeof TU]).toBe(bit);
+    }
+  });
+
+  it('declares backends for every capability (copySrc on both, color TS-only)', () => {
+    const backends = Object.fromEntries(
+      Object.entries(canvasConfigureContract.optIn).map(([k, v]) => [k, v.backends]),
+    );
+    expect(backends).toEqual({
+      copySrc: ['ts', 'wasm'],
+      displayP3: ['ts'],
+      extendedToneMapping: ['ts'],
+    });
+    expect(canvasConfigureContract.optIn.extendedToneMapping.requires).toBe('displayP3');
+  });
+
+  it('keeps the generated C++ header in sync with the JSON', () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const gen = require('../../../scripts/gen-canvas-configure-header.js') as {
+      renderHeader: (c: unknown) => string;
+      headerPath: (c: unknown) => string;
+    };
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const fs = require('fs') as typeof import('fs');
+    const header = gen.renderHeader(canvasConfigureContract);
+    expect(fs.readFileSync(gen.headerPath(canvasConfigureContract), 'utf8')).toBe(header);
+    expect(header).toContain('kUsage = WGPUTextureUsage_RenderAttachment;');
+    expect(header).toContain('kCopySrcUsage = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;');
+    expect(header).toContain('kAlphaModeJs = "opaque";');
+    expect(header).toContain('kPresentMode = WGPUPresentMode_Fifo;');
+  });
 });
 
 describe('resolveCanvasColorOptIns', () => {
