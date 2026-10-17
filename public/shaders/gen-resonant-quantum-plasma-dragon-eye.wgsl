@@ -6,8 +6,8 @@
 //            mouse-driven, upgraded-rgba, depth-aware, aces-tone-map
 //  Complexity: Very High
 //  Created: 2026-06-28
-//  Upgraded: 2026-09-27
-//  Ideas: dilator-fibre stroma with guanine iridophore flecks; hippus-breathing slit coupled to fibre crimp; corneal dome (Fresnel plasma sheen, Purkinje catchlight, refraction parallax); tapetum eyeshine lighting the plasma as a gaze shaft
+//  Upgraded: 2026-10-17
+//  Ideas: dilator-fibre stroma with guanine iridophore flecks; hippus-breathing slit coupled to fibre crimp; corneal dome (Fresnel plasma sheen, Purkinje catchlight, refraction parallax); tapetum eyeshine lighting the plasma as a gaze shaft; nictitating membrane sweeping the window with a wet meniscus edge; keeled imbricate scutes ringing the orbit
 //  A packing: ACES display RGBA (C persistence mixed in display space)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -110,12 +110,14 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 // ─── Global State ───
 var<private> g_time: f32;
 var<private> g_audio: f32;
+var<private> g_mids: f32;
 var<private> g_mouse: vec2<f32>;
 var<private> g_pupilDilation: f32;
 var<private> g_pupilW: f32;     // current slit half-width  (eye space)
 var<private> g_pupilH: f32;     // current slit half-height (eye space)
 var<private> g_pupilN: f32;     // slit superellipse exponent (Pupil Sharpness; 2 = HEAD ellipse)
 var<private> g_hitT: f32;       // ray distance of the eye hit (1e9 on miss)
+var<private> g_blink: f32;      // nictitating membrane closure, 0 = open, 1 = fully drawn
 
 // Superellipse radius: 1.0 on the slit margin. n = 2 reproduces length().
 fn superR(a: vec2<f32>, n: f32) -> f32 {
@@ -312,11 +314,28 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, plasmaDensity: f32, irisComplexity: f3
       } else if (matId < 3.5) {
         // Scales: bioluminescent subsurface scattering
         let scalePat = fbm3(p * 5.0) * 0.5 + 0.5;
-        let scaleCol = mix(
+        var scaleCol = mix(
           vec3<f32>(0.05, 0.15, 0.1),
           vec3<f32>(0.1, 0.4, 0.3),
           scalePat
         );
+        // Idea 6: keeled imbricate scutes — rows of overlapping shields ringing the eye
+        // (latitude from the gaze axis), each tucked under its inner neighbour with a
+        // dark crevice and a raised keel that catches the light. Brick-offset per row.
+        let qs = normalize(q + vec3<f32>(0.0, 0.0, 1e-5));
+        let lat = acos(clamp(-qs.z, -1.0, 1.0));
+        let rowF = lat * 9.0;
+        let row = floor(rowF);
+        let nC = max(6.0, floor(sin((row + 0.5) / 9.0) * 30.0));
+        let colF = (atan2(qs.y, qs.x) / (2.0 * PI) + 0.5) * nC + 0.5 * (row - 2.0 * floor(row * 0.5));
+        let lx = fract(colF) - 0.5;
+        let ly = fract(rowF);
+        let crevice = smoothstep(0.0, 0.14, ly) * (1.0 - smoothstep(0.38, 0.5, abs(lx)));
+        let keel = exp(-abs(lx) * 16.0) * smoothstep(0.15, 0.7, ly);
+        let hS = hash21(vec2<f32>(floor(colF), row));
+        scaleCol *= (0.35 + 0.65 * crevice) * (0.85 + 0.3 * hS);
+        let keelSpec = pow(max(dot(reflect(-v, n), lightDir), 0.0), 8.0);
+        scaleCol += vec3<f32>(0.25, 0.6, 0.45) * keel * (0.08 + keelSpec * 0.5) * (1.0 + g_mids * 0.8);
         let sss = pow(max(1.0 - cosi, 0.0), 2.0) * 0.8;
         col = scaleCol * (diff + 0.2) + vec3<f32>(0.0, 0.3, 0.2) * sss;
         alpha = 0.8;
@@ -374,6 +393,22 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, plasmaDensity: f32, irisComplexity: f3
         let purkinje = pow(spec, 240.0) * 8.0 + pow(spec, 24.0) * 0.2;  // catchlight + halo
         let limbus = 1.0 - smoothstep(0.85, 0.98, length(q.xy));
         col = mix(col, env, fres * limbus * 0.8) + vec3<f32>(1.0, 0.96, 0.88) * purkinje * limbus;
+      }
+
+      // ── Idea 5: nictitating membrane — the reptile third eyelid sweeps across the
+      // window (nasal -x to +x, curved leading edge) every ~9 s, milky and veined,
+      // muting the eyeshine; a wet meniscus glints on its leading edge.
+      if (matId < 2.5 || matId > 3.5) {
+        if (g_blink > 0.001) {
+          let edgeX = mix(-1.25, 1.25, g_blink) + 0.22 * q.y * q.y;
+          let cover = 1.0 - smoothstep(edgeX - 0.05, edgeX + 0.05, q.x);
+          let vein = fbm3(vec3<f32>(q.x * 2.0, q.y * 9.0, q.z * 2.0));
+          let memCol = vec3<f32>(0.6, 0.68, 0.55) * (diff * 0.7 + 0.35)
+                     + vec3<f32>(0.35, 0.05, 0.25) * smoothstep(0.55, 0.75, vein) * 0.4;
+          col = mix(col, memCol, cover * 0.72);
+          let ex = (q.x - edgeX) / 0.035;
+          col += vec3<f32>(0.85, 0.95, 1.0) * exp(-ex * ex) * sat(g_blink * 8.0) * (0.35 + diff * 0.5);
+        }
       }
       break;
     }
@@ -435,10 +470,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Mouse
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
   let mouseUV = u.zoom_config.yz;
-  g_mouse = vec2<f32>((mouseUV.x - 0.5) * 2.0 * aspect, (0.5 - mouseUV.y) * 2.0);
+  // The ray is flipped to world-up = screen-up, so mouse y must not be inverted
+  // again here, or the eye looks away from the cursor vertically.
+  g_mouse = vec2<f32>((mouseUV.x - 0.5) * 2.0 * aspect, (mouseUV.y - 0.5) * 2.0);
 
   g_time = time;
   g_audio = smoothBass;
+  g_mids = max(mids, 0.0);
+  // Idea 5: blink envelope — close in ~0.45 s, brief hold, open in ~0.6 s; period 9 s
+  let blinkPh = fract(time / 9.0 + 0.3);
+  g_blink = smoothstep(0.0, 0.05, blinkPh) * (1.0 - smoothstep(0.07, 0.14, blinkPh));
 
   // Camera
   let camDist = 5.0;
@@ -453,6 +494,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Ray direction
   var p = uv * 2.0 - 1.0;
   p.x = p.x * aspect;
+  // Bug fix: uv.y grows downward (gid.y), so HEAD rendered the eye upside down (key light from below,
+  // Purkinje catchlight under the slit). Screen-up = +vv.
+  p.y = -p.y;
   let rd = normalize(p.x * uu + p.y * vv + 2.5 * ww);
 
   // Raymarch
@@ -492,7 +536,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       }
     }
   }
-  gaze *= (0.16 + smoothBass * 0.12) * (0.3 + plasmaDensity);
+  gaze *= (0.16 + smoothBass * 0.12) * (0.3 + plasmaDensity) * (1.0 - 0.75 * g_blink);
 
   col = col + plasmaGlow + gaze;
 

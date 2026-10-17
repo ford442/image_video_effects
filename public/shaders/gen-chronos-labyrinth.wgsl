@@ -6,13 +6,13 @@
 //  held time-dilation, capped click chronal shockwaves.
 //  Contract: 13 bindings, ACES, semantic alpha, dataTextureA writeback only,
 //            exact textureLoad from dataTextureC, plasmaBuffer three-band audio,
-//            bounded extraBuffer[133..138] state.
+//            stateless cursor (no extraBuffer state).
 //  Features: raymarching, impossible-geometry, temporal-rifts, mouse-driven, audio-reactive,
 //            aces-tone-map, upgraded-rgba, depth-aware, temporal-feedback, chromatic-aberration,
 //            hue-preserve-clamp, ign-dither, distance-lod
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: stair nosing on each tread; shift-ghost smear of the previous cell pose; worn treads; rift limb
+//  Upgraded: 2026-10-17
+//  Ideas: stair nosing on each tread; shift-ghost smear of the previous cell pose; worn treads; rift limb; Relativity gravity tint (faces coloured by which local axis is 'down' in their spinning cell); isochrone rings etched into walls around a firing rift
 //  A packing: rift echo, depth, material, alpha
 //  Created: 2026-05-10
 //  By: Claude Sonnet 4.6 (swarm optimization pass 2026-05-31; F1 flagship deep upgrade 2026-06-07)
@@ -45,14 +45,6 @@
 // Constants
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
-
-// Bounded interaction state — safe zone only
-const SPRING_X: i32 = 133;
-const SPRING_Y: i32 = 134;
-const SPRING_VX: i32 = 135;
-const SPRING_VY: i32 = 136;
-const SPRING_T: i32 = 137;
-const SPRING_INIT: i32 = 138;
 
 var<private> g_bass: f32;
 var<private> g_mid: f32;
@@ -189,12 +181,48 @@ fn structureDist(rq: vec3<f32>, structure_type: f32, cell_hash: f32) -> f32 {
     return d;
 }
 
+// Repetition size from Labyrinth Complexity. HEAD used mix(4, 1.5, x) over the
+// whole 0.5..3 slider range, which hits cell_size = 0 at x = 1.6 (divide by zero in
+// opRepId) and goes negative past it. Below 1 the old ramp is kept verbatim; above 1
+// the cells keep tightening, but bounded.
+fn cellSize() -> f32 {
+    let cx = u.zoom_params.x;
+    if (cx <= 1.0) { return mix(4.0, 1.5, cx); }
+    return mix(1.5, 1.05, clamp((cx - 1.0) * 0.5, 0.0, 1.0));
+}
+
+// Per-cell rotation angle of the shifting maze (shared by map() and shading).
+fn cellShiftTime(cell_hash: f32) -> f32 {
+    // Time-based shifting rotation — Batch 63 runs the maze several times faster,
+    // with bass on the throttle and a held cursor cranking it further.
+    let shiftRate = u.zoom_params.y * (3.4 + g_bass * 2.8 + g_held * 1.6 + g_shock * 2.0);
+    return u.config.x * shiftRate * (0.5 + cell_hash);
+}
+
+// Temporal rift of a cell, in its unrotated local frame q.
+// x = rift SDF, y = 1 while the rift is firing, z = distance to the rift centre.
+fn riftField(q: vec3<f32>, cell_id: f32) -> vec3<f32> {
+    let time = u.config.x;
+    let rift_intensity = u.zoom_params.z * (1.0 + g_bass * 0.5 + g_treble * 0.4 + g_shock * 0.8);
+    if (rift_intensity <= 0.01) { return vec3<f32>(1e3, 0.0, 1e3); }
+    let rift_hash = hash1(cell_id * 3.14159);
+    let rift_time = time * (2.2 + rift_hash * 2.4 + g_treble * 2.0);
+    let rift_pulse = sin(rift_time) * 0.5 + 0.5;
+    // Only show rift based on intensity and timing
+    if (rift_pulse >= rift_intensity * 0.5) { return vec3<f32>(1e3, 0.0, 1e3); }
+    let rift_pos = vec3<f32>(
+        sin(rift_hash * 6.28) * 0.8,
+        cos(rift_hash * 4.13) * 0.5,
+        sin(rift_hash * 2.71) * 0.8
+    );
+    let rift_size = 0.2 + rift_pulse * 0.3;
+    let rc = length(q - rift_pos);
+    return vec3<f32>(rc - rift_size, 1.0, rc);
+}
+
 fn map(p: vec3<f32>) -> vec2<f32> {
-    var time = u.config.x;
-    let bass = g_bass;
-    
     // Base repetition size based on complexity
-    let cell_size = mix(4.0, 1.5, u.zoom_params.x);
+    let cell_size = cellSize();
     
     // Get cell repetition
     let rep = opRepId(p, vec3<f32>(cell_size));
@@ -202,10 +230,7 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     let cell_id = rep.w;
     let cell_hash = hash1(cell_id);
     
-    // Time-based shifting rotation — Batch 63 runs the maze several times faster,
-    // with bass on the throttle and a held cursor cranking it further.
-    let shiftRate = u.zoom_params.y * (3.4 + g_bass * 2.8 + g_held * 1.6 + g_shock * 2.0);
-    let shift_time = time * shiftRate * (0.5 + cell_hash);
+    let shift_time = cellShiftTime(cell_hash);
     var rq = rotY(q, shift_time + cell_hash * 6.28);
     rq = rotX(rq, shift_time * 0.7);
     
@@ -238,27 +263,12 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     }
     
     // Temporal Rifts - glowing anomalies
-    let rift_intensity = u.zoom_params.z * (1.0 + bass * 0.5 + g_treble * 0.4 + g_shock * 0.8);
-    if (rift_intensity > 0.01) {
-        let rift_hash = hash1(cell_id * 3.14159);
-        let rift_time = time * (2.2 + rift_hash * 2.4 + g_treble * 2.0);
-        let rift_pulse = sin(rift_time) * 0.5 + 0.5;
-        
-        // Only show rift based on intensity and timing
-        if (rift_pulse < rift_intensity * 0.5) {
-            let rift_pos = vec3<f32>(
-                sin(rift_hash * 6.28) * 0.8,
-                cos(rift_hash * 4.13) * 0.5,
-                sin(rift_hash * 2.71) * 0.8
-            );
-            let rift_size = 0.2 + rift_pulse * 0.3;
-            let rift = sdSphere(q - rift_pos, rift_size);
-            
-            // Blend rift with geometry using smooth min
-            d = smin(d, rift, 0.3);
-            if (rift < d + 0.1) {
-                mat_id = 2.0; // Rift material
-            }
+    let rf = riftField(q, cell_id);
+    if (rf.y > 0.5) {
+        // Blend rift with geometry using smooth min
+        d = smin(d, rf.x, 0.3);
+        if (rf.x < d + 0.1) {
+            mat_id = 2.0; // Rift material
         }
     }
     
@@ -355,33 +365,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let held = u.zoom_config.w > 0.5;
     g_held = select(0.0, 1.0, held);
 
-    // ── spring cursor (extraBuffer[133..138] only) ──────────────────────
-    var mouse = rawMouse;
-    let hasSpring = arrayLength(&extraBuffer) > 138u;
-    if (hasSpring && extraBuffer[SPRING_INIT] > 0.5) {
-        mouse = vec2<f32>(extraBuffer[SPRING_X], extraBuffer[SPRING_Y]);
-    }
-    if (hasSpring && global_id.x == 0u && global_id.y == 0u) {
-        var springPos = mouse;
-        var springVel = vec2<f32>(extraBuffer[SPRING_VX], extraBuffer[SPRING_VY]);
-        if (extraBuffer[SPRING_INIT] <= 0.5) {
-            springPos = rawMouse;
-            springVel = vec2<f32>(0.0);
-        } else {
-            let dt = clamp(time - extraBuffer[SPRING_T], 0.001, 0.05);
-            let omega = 9.0;
-            let accel = (rawMouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
-            springVel += accel * dt;
-            springPos += springVel * dt;
-        }
-        extraBuffer[SPRING_X] = springPos.x;
-        extraBuffer[SPRING_Y] = springPos.y;
-        extraBuffer[SPRING_VX] = springVel.x;
-        extraBuffer[SPRING_VY] = springVel.y;
-        extraBuffer[SPRING_T] = time;
-        extraBuffer[SPRING_INIT] = 1.0;
-        mouse = springPos;
-    }
+    // Raw cursor. HEAD ran a spring in extraBuffer[133..138], but extraBuffer is
+    // re-uploaded every frame, so the spring never kept its state (and pixel (0,0)
+    // raced every other reader). The output was the raw cursor anyway.
+    let mouse = rawMouse;
 
     // ── click chronal shockwaves (capped, bounded) ─────────────────────
     var shock = 0.0;
@@ -447,6 +434,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Materials
         var base_color: vec3<f32>;
         var roughness: f32;
+        var isoGlow = vec3<f32>(0.0);
         let material_blend = 0.5;
 
         if (mat < 1.5) {
@@ -475,6 +463,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 let tread = smoothstep(0.55, 0.92, n.y);
                 let centerline = exp(-abs(fract(p.x * 0.7 + p.z * 0.3) - 0.5) * 14.0);
                 base_color = mix(base_color, vec3<f32>(0.72, 0.68, 0.58), tread * centerline * 0.5);
+            }
+
+            // Recover this hit's cell frame (same repetition + rotation as map()).
+            let hitRep = opRepId(p, vec3<f32>(cellSize()));
+            let hitHash = hash1(hitRep.w);
+            let hitShift = cellShiftTime(hitHash);
+            let nLocal = rotX(rotY(n, hitShift + hitHash * 6.28), hitShift * 0.7);
+
+            // Idea: Relativity gravity tint — as in Escher's Relativity, each face
+            // belongs to one of three gravities: the local axis its normal points
+            // along inside the spinning cell. As a cell turns, its faces hand
+            // "down" to a new gravity and change tint.
+            var gw = abs(nLocal);
+            gw = gw * gw;
+            gw = gw * gw;
+            gw = gw / max(gw.x + gw.y + gw.z, 1e-4);
+            let gravityTint = gw.x * vec3<f32>(1.08, 0.86, 0.72)
+                            + gw.y * vec3<f32>(0.80, 1.02, 0.90)
+                            + gw.z * vec3<f32>(0.78, 0.84, 1.12);
+            base_color *= mix(vec3<f32>(1.0), gravityTint, 0.55 + mid * 0.2);
+
+            // Idea: isochrone rings — a firing rift etches equal-time rings into
+            // the masonry of its own cell, sweeping outward from the anomaly.
+            let hitRift = riftField(hitRep.xyz, hitRep.w);
+            if (hitRift.y > 0.5) {
+                let iso = abs(fract(hitRift.z * 5.0 - time * (1.6 + treble * 2.0)) - 0.5);
+                let ring = exp(-iso * 22.0) * (1.0 - smoothstep(0.25, 1.6, hitRift.z));
+                isoGlow = chronoPalette(fract(hitRift.z * 0.4 + time * 0.3), 1.0 + mid)
+                        * ring * 0.9 * min(u.zoom_params.z, 1.2) * (1.0 + bass * 0.4);
             }
 
             roughness = mix(0.9, 0.1, material_blend); // Stone rough, obsidian smooth
@@ -523,6 +540,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let amb = 0.15 * ao;
             color = base_color * (amb + diff * ao * 0.7) + rim_col * fresnel * (0.3 + material_blend);
             color += vec3<f32>(spec);
+            // Isochrone rings are emissive: they glow through AO and shadow.
+            color += isoGlow;
         }
 
         // Fog — bass thickens the atmosphere for punchier low-end response
