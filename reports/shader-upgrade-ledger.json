@@ -1603,8 +1603,17 @@
       "history": []
     },
     "gen-bioluminescent-abyss": {
-      "hash": "3793032a8681ec39",
-      "history": []
+      "hash": "1ac74b34142e44a0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T08:16:22.364Z",
+          "hash": "1ac74b34142e44a0",
+          "prev_hash": "3793032a8681ec39",
+          "commit": "4f75bdb6",
+          "note": null
+        }
+      ]
     },
     "bioluminescent-bloom": {
       "hash": "36631e62e53a0494",
@@ -1806,7 +1815,7 @@
       "history": []
     },
     "gen-astro-mechanical-quantum-furnace-engine": {
-      "hash": "98dad714280eeda1",
+      "hash": "59e2fa71e1708cb6",
       "history": [
         {
           "event": "upgraded",
@@ -1815,6 +1824,14 @@
           "prev_hash": "e5f7f4ae316da07b",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T08:16:22.364Z",
+          "hash": "59e2fa71e1708cb6",
+          "prev_hash": "98dad714280eeda1",
+          "commit": "4f75bdb6",
+          "note": null
         }
       ]
     },
@@ -1938,8 +1955,17 @@
       ]
     },
     "gen-bioluminescent-neural-lattice-weaver": {
-      "hash": "455fdf79252c3c96",
-      "history": []
+      "hash": "a3cf7c4a66c1a194",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T08:16:22.364Z",
+          "hash": "a3cf7c4a66c1a194",
+          "prev_hash": "455fdf79252c3c96",
+          "commit": "4f75bdb6",
+          "note": null
+        }
+      ]
     },
     "gen-bioluminescent-neural-lattice": {
       "hash": "6d752a757d35f45a",
@@ -2352,7 +2378,7 @@
       ]
     },
     "gen-chronos-labyrinth": {
-      "hash": "5f049f3ec0cb422d",
+      "hash": "ec96926412a8d942",
       "history": [
         {
           "event": "upgraded",
@@ -2361,6 +2387,14 @@
           "prev_hash": "91ca2a5241e200ea",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T08:16:22.364Z",
+          "hash": "ec96926412a8d942",
+          "prev_hash": "5f049f3ec0cb422d",
+          "commit": "4f75bdb6",
+          "note": null
         }
       ]
     },
@@ -2404,7 +2438,7 @@
       ]
     },
     "gen-cosmic-clockwork-dyson-sphere": {
-      "hash": "565a8f154bcbb9e3",
+      "hash": "46c4356bc7282798",
       "history": [
         {
           "event": "upgraded",
@@ -2413,6 +2447,14 @@
           "prev_hash": "8ed79f420f9e9150",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T08:16:22.364Z",
+          "hash": "46c4356bc7282798",
+          "prev_hash": "565a8f154bcbb9e3",
+          "commit": "4f75bdb6",
+          "note": null
         }
       ]
     },
@@ -2791,7 +2833,7 @@
       ]
     },
     "gen-ethereal-anemone-bloom": {
-      "hash": "b2ad0acd8c929b11",
+      "hash": "c8b8bb32731ef13b",
       "history": [
         {
           "event": "upgraded",
@@ -2800,6 +2842,14 @@
           "prev_hash": "5769c879b1260c3a",
           "commit": "d74e665b",
           "note": "2026-10-10 ethereal/cymatic/labyrinth ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-10-ethereal-cymatic-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T08:16:22.364Z",
+          "hash": "c8b8bb32731ef13b",
+          "prev_hash": "b2ad0acd8c929b11",
+          "commit": "4f75bdb6",
+          "note": null
         }
       ]
     },
@@ -3422,7 +3472,7 @@
       ]
     },
     "gen-gravitational-strain": {
-      "hash": "7140f50be9374814",
+      "hash": "a85a7039d6c31755",
       "history": [
         {
           "event": "upgraded",
@@ -3430,6 +3480,14 @@
           "hash": "7140f50be9374814",
           "prev_hash": "3f5d48786d584621",
           "commit": "4653c738",
+          "note": null
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T08:16:22.364Z",
+          "hash": "a85a7039d6c31755",
+          "prev_hash": "7140f50be9374814",
+          "commit": "4f75bdb6",
           "note": null
         }
       ]
@@ -4355,8 +4413,17 @@
       "history": []
     },
     "gen-neon-tropical-paradise": {
-      "hash": "5aaa02cde95426fd",
-      "history": []
+      "hash": "2290bcd2d5d4adfa",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T08:16:22.364Z",
+          "hash": "2290bcd2d5d4adfa",
+          "prev_hash": "5aaa02cde95426fd",
+          "commit": "4f75bdb6",
+          "note": null
+        }
+      ]
     },
     "gen-neural-bioluminescence-matrix": {
       "hash": "94f863635f348099",
@@ -4925,8 +4992,17 @@
       "history": []
     },
     "gen-resonant-quantum-plasma-dragon-eye": {
-      "hash": "aedc7f1405a84267",
-      "history": []
+      "hash": "9f7f319d2600b419",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T08:16:22.364Z",
+          "hash": "9f7f319d2600b419",
+          "prev_hash": "aedc7f1405a84267",
+          "commit": "4f75bdb6",
+          "note": null
+        }
+      ]
     },
     "gen-rgb-diffraction": {
       "hash": "80eac095055f5c20",
@@ -4942,8 +5018,17 @@
       ]
     },
     "gen-sentient-aether-flora-biosphere": {
-      "hash": "6e050ba49d0d31bb",
-      "history": []
+      "hash": "63f9d06b1674b45d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T08:16:22.364Z",
+          "hash": "63f9d06b1674b45d",
+          "prev_hash": "6e050ba49d0d31bb",
+          "commit": "4f75bdb6",
+          "note": null
+        }
+      ]
     },
     "gen-sentient-aether-plasma-nebula-moth": {
       "hash": "5701f8fbb9c2e520",

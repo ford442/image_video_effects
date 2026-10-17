@@ -6,15 +6,21 @@
 //   self-organizing fast growth fronts along feedback history,
 //   velocity-advected HDR trails, audio-reactive, mouse-driven,
 //   upgraded-rgba, generated depth, semantic alpha
-// Upgraded: 2026-09-27
+// Upgraded: 2026-10-17
 // Ideas: (1) asynchronous per-cell bud->open blossoming with 5-fold scalloped
 //   corollas; (2) stamen crown - six splayed filaments with glowing gold anthers
-//   (material 3); (3) phototropic stem bow toward the key light with per-cell sway
+//   (material 3); (3) phototropic stem bow toward the key light with per-cell sway;
+//   (4) UV nectar-guide veins - ten radial violet stripes converge on the stamen
+//   crown, deepening as the flower opens and glowing on treble; (5) anther-shed
+//   gold haze columns rising above open flowers, fading with height
 // A packing: raw HDR history (A = hdr.rgb capped 6.0, alpha); C read as colour /
 //   growth luma; ACES on writeTexture only. New ideas are stateless, write nothing to A.
 // Silent bug fixed: click ring used pow(negative, 2.0) -> NaN inside the ring.
-// Note: HEAD's extraBuffer[133..137] state is zeroed per frame (kick / smoothed
-//   cursor never persist); left as-is, no new idea depends on it.
+// 2026-10-17 fixes: the extraBuffer[133..137] kick/cursor state never persisted
+//   (re-uploaded every frame), so kicks never fired and the zeroed "smoothed"
+//   cursor fed a fake lead; now stateless (bass-threshold kick, raw cursor).
+//   The camera ray used screen uv.y (grows downward) as world +y, so the flora
+//   hung from the top of the frame; the ray / cursor y are now flipped.
 // Interactivist pass (batch 38, FAST MOTION): fixed uniform-truth
 //   violations (click count was used as an audio proxy; p1/p2 sliders
 //   were declared but never used), wired all 4 sliders live, spores
@@ -23,26 +29,8 @@
 //   that propagate fast along their own feedback history, real depth
 //   + semantic alpha.
 // ----------------------------------------------------------------
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=time (s), y=rippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=time, yz=mouse uv (0-1 canvas, y=0 top), w=mouseDown (>0.5 pressed)
-  zoom_params: vec4<f32>,  // x=Intensity, y=Speed, z=Scale, w=Mouse Influence
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Intensity, y=Speed, z=Scale, w=Mouse Influence
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -121,16 +109,13 @@ fn floraCell(pos: vec3<f32>, ctx: FloraCtx) -> vec4<f32> {
     return vec4<f32>(h, open);
 }
 
-// --- Raymarching ---
-// map(pos): returns vec2 (distance, material_id)
-fn map(pos: vec3<f32>, ctx: FloraCtx) -> vec2<f32> {
+// Cell-local, phototropically bowed frame shared by map() and the shading-time
+// ideas (nectar guides, pollen haze) so they sit exactly on the bent plant.
+fn floraLocal(pos: vec3<f32>, ctx: FloraCtx) -> vec3<f32> {
     // Domain Repetition (Scale slider governs flora density)
     let c = vec3<f32>(ctx.spacing, 0.0, ctx.spacing);
     let rep_pos = vec3<f32>(pos.x - c.x * floor(pos.x / c.x), pos.y, pos.z - c.z * floor(pos.z / c.z)) - vec3<f32>(c.x * 0.5, 0.0, c.z * 0.5);
-
-    let cellH = floraCell(pos, ctx);
-    let ch = cellH.xyz;
-    let open = cellH.w;
+    let ch = floraCell(pos, ctx).xyz;
 
     // [Idea 3] Phototropic bow: each stem leans toward the key light (horizontal of
     // l = (1,2,-1)) with a hashed deviation and slow independent sway; the head,
@@ -142,6 +127,16 @@ fn map(pos: vec3<f32>, ctx: FloraCtx) -> vec2<f32> {
     let bow = bowDir * (bowAmp * ly * ly);
     q.x -= bow.x;
     q.z -= bow.y;
+    return q;
+}
+
+// --- Raymarching ---
+// map(pos): returns vec2 (distance, material_id)
+fn map(pos: vec3<f32>, ctx: FloraCtx) -> vec2<f32> {
+    let cellH = floraCell(pos, ctx);
+    let ch = cellH.xyz;
+    let open = cellH.w;
+    let q = floraLocal(pos, ctx);
 
     // Flora stems (twisted cylinders) — fast whip sway
     let twisted_pos = opTwist(q, ctx.twist_k);
@@ -238,35 +233,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouseC = (u.zoom_config.yz - 0.5) * 2.0;
     let mouseDown = u.zoom_config.w > 0.5;
 
-    // ── Persistent state (extraBuffer[133..137], single writer) ───
-    // [133] bass envelope   [134] last kick time
-    // [135..136] spring-smoothed cursor   [137] prev time (dt)
-    var bassEnv = bass;
-    var lastKick = time - 10.0;
-    var smoothMouse = mouseC;
-    var dt = 0.016;
-    if (arrayLength(&extraBuffer) >= 139u) {
-        bassEnv = extraBuffer[133];
-        lastKick = extraBuffer[134];
-        smoothMouse = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-        dt = clamp(time - extraBuffer[137], 0.001, 0.1);
-        if (global_id.x == 0u && global_id.y == 0u) {
-            var be = bassEnv;
-            be = mix(be, bass, select(0.06, 0.4, bass > be));
-            var lk = lastKick;
-            if (bass > be * 1.25 + 0.12 && time - lk > 0.3) { lk = time; }
-            let sm = mix(smoothMouse, mouseC, vec2<f32>(1.0 - exp(-dt * 12.0)));
-            extraBuffer[133] = be;
-            extraBuffer[134] = lk;
-            extraBuffer[135] = sm.x;
-            extraBuffer[136] = sm.y;
-            extraBuffer[137] = time;
-        }
-    }
+    // ── Stateless kick / cursor (extraBuffer does not persist across frames) ──
+    let smoothMouse = mouseC;
+    let dt = 0.016;
 
-    // ── Bass-kick bloom shockwave (bounded exp decay) ─────────────
-    let kickAge = time - lastKick;
-    let kickEnv = exp(-kickAge * 2.5);
+    // ── Bass-kick bloom shockwave (stateless threshold on the live bass) ──
+    let kickEnv = smoothstep(0.45, 0.9, bass);
 
     // ── Cursor pursuit with velocity lead (clamped) ───────────────
     var mVel = (mouseC - smoothMouse) / dt;
@@ -326,8 +298,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         2.0 + sin(time * 1.3) * 0.3 * (0.5 + speed),
         time * camSpeed - 5.0
     );
-    ro += vec3<f32>(shockVec * 0.4, 0.0);
-    var rd = normalize(vec3<f32>(uv + shockVec * 0.2, 1.0));
+    // screen uv.y grows downward; world +y is up, so flip y for the ray
+    ro += vec3<f32>(shockVec.x * 0.4, -shockVec.y * 0.4, 0.0);
+    let rUv = uv + shockVec * 0.2;
+    var rd = normalize(vec3<f32>(rUv.x, -rUv.y, 1.0));
 
     // camera pitch from cursor (Mouse Influence scales the look range)
     let rot = rotate2D(chaseC.y * (0.25 + mouseInf * 0.75));
@@ -369,6 +343,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             base_color = vec3<f32>(1.0, 0.72, 0.2); // [Idea 2] gold anther
         }
 
+        // [Idea 4] UV nectar guides: ten radial stripes about the crown axis, strongest
+        // near the stamens and only once the corolla has opened.
+        var guide = 0.0;
+        if (mat_id == 2.0) {
+            let hq = floraLocal(p, ctx) - vec3<f32>(0.0, 3.9, 0.0);
+            let ga = atan2(hq.z, hq.x) + cellHit.x * TAU;
+            let vein = smoothstep(0.72, 0.97, 0.5 + 0.5 * cos(10.0 * ga));
+            let gr = length(hq.xz);
+            guide = vein * (1.0 - smoothstep(0.3, 1.5, gr)) * smoothstep(0.2, 0.8, cellHit.w);
+            base_color = mix(base_color, vec3<f32>(0.22, 0.04, 0.5), guide * 0.7);
+        }
+
         // subsurface scattering approximation
         let sss_sample_dist = 0.5;
         let sss_d = map(p + rd * sss_sample_dist, ctx).x;
@@ -387,6 +373,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Bloom flash: petals glow hot on kicks / growth fronts
         let bloomGlow = (bloomImpulse + growthEnergy * 0.4) * intensity;
         color += vec3<f32>(0.9, 0.4, 1.0) * bloomGlow * select(0.15, 0.6, mat_id == 2.0);
+
+        // [Idea 4] guide veins fluoresce violet, sharper and brighter on treble
+        color += vec3<f32>(0.5, 0.25, 1.0) * guide * (0.15 + treble * 0.8) * (0.4 + intensity);
 
         // [Idea 2] anthers glow hotter the more open the flower is
         if (mat_id == 3.0) {
@@ -408,11 +397,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let spore_freq = mix(1.2, 3.5, scaleP); // p3 scales spore field too
     // Cursor gravity well rides ahead of the camera at the pursuit point
-    let mouse_pos_3d = ro + normalize(vec3<f32>(chaseC * vec2<f32>(res.x / res.y, 1.0), 1.2)) * 5.0;
+    let mouse_pos_3d = ro + normalize(vec3<f32>(chaseC.x * res.x / res.y, -chaseC.y, 1.2)) * 5.0;
     let chaseAmt = 0.25 + mouseInf * 0.75 + select(0.0, 0.4, mouseDown);
+    var pollen = vec3<f32>(0.0);
     var st = 0.0;
     for(var j = 0; j < 20; j++) {
         let sp = ro + rd * st;
+
+        // [Idea 5] anther-shed haze: a soft column above each crown (bowed frame),
+        // widening and fading with height; only open flowers shed, occluded past t.
+        if (st < t) {
+            let pq = floraLocal(sp, ctx);
+            let above = pq.y - 4.3;
+            if (above > 0.0 && above < 3.0) {
+                let pOpen = floraCell(sp, ctx).w;
+                let pr2 = dot(pq.xz, pq.xz);
+                let shimmer = 0.6 + 0.4 * sin(above * 6.0 - time * 3.0 + pq.x * 2.0);
+                let haze = exp(-pr2 * 6.0 / (1.0 + above)) * smoothstep(0.0, 0.3, above)
+                    * (1.0 - above / 3.0) * pOpen * pOpen * pOpen * shimmer;
+                pollen += vec3<f32>(1.0, 0.72, 0.25) * haze;
+            }
+        }
         let csp = vec3<f32>(spore_freq);
         let cell3 = floor(sp / csp);
         let h = hash3(cell3);
@@ -445,6 +450,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     color += spore_color;
+    color += pollen * 0.08 * (0.4 + mids) * (0.5 + intensity);
     color = max(color, vec3<f32>(0.0));
 
     // 5. Velocity-advected HDR feedback trails (bounded energy)

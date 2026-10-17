@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-10-10
-//  Ideas: eclipse-shutter panel crowns marching around the shell longitude; meridian radiator fins with polar blueing over the brass lattice
+//  Upgraded: 2026-10-17
+//  Ideas: eclipse-shutter panel crowns marching around the shell longitude; meridian radiator fins with polar blueing over the brass lattice; cogged gear rings that index one tooth pitch per clock tick; core-facing brass heat-soak glow (blackbody, cooler under weathering)
 //  A packing: ACES display RGBA (C read as display history, blended after tone-map)
 //  A camera orbits a 5-fold KIFS brass lattice of boxes, tori and struts carved
 //  around a Voronoi-roughened plasma core. Domain-warped FBM weathering,
@@ -142,6 +142,20 @@ fn sdTorus(p: vec3<f32>, t: vec2<f32>) -> f32 {
     return length(q) - t.y;
 }
 
+// Idea 6: cogged ring. The torus grows square-ish teeth on its OUTER rim
+// only (q.x > 0), so the ring reads as a spur gear. Tooth count follows the
+// ring radius (constant pitch, so neighbouring rings mesh), and the teeth
+// index by exactly one pitch per clock tick (same stepped clock as the
+// lattice) instead of drifting.
+fn sdCogRing(p: vec3<f32>, R: f32, r: f32, tick: f32) -> f32 {
+    let q = vec2<f32>(length(p.xz) - R, p.y);
+    let teeth = max(floor(R * 18.0), 8.0);
+    let ang = atan2(p.z, p.x) / TAU * teeth + tick;
+    let tooth = 1.0 - smoothstep(0.12, 0.38, abs(fract(ang) - 0.5)); // wide flanks keep the SDF ~1-Lipschitz
+    let outer = clamp(q.x / r, 0.0, 1.0);
+    return length(q) - r - r * 0.55 * tooth * outer;
+}
+
 // ── Fresnel-Schlick ──
 fn fresnelSchlick(cosTheta: f32, f0: vec3<f32>) -> vec3<f32> {
     return f0 + (vec3<f32>(1.0) - f0) * pow(1.0 - cosTheta, 5.0);
@@ -179,9 +193,11 @@ fn mapFull(pos: vec3<f32>, complex: f32, gearRatio: f32, t: f32) -> vec2<f32> {
     let noiseDetail = fbm_dw3(p * 3.0, t) * 0.05;
     let box = sdBox(p, vec3<f32>(0.2 + noiseDetail, 1.0 + noiseDetail, 0.2 + noiseDetail));
 
-    // Gear rings (toroidal)
-    let gearRing1 = sdTorus(p * rotY(t * 0.2), vec2<f32>(1.2 + gearRatio, 0.08));
-    let gearRing2 = sdTorus(p * rotZ(t * 0.15), vec2<f32>(0.8 + gearRatio * 0.5, 0.06));
+    // Gear rings (toroidal). Idea 6: rings 1 and 2 are cogged; ring 2 turns
+    // the other way, as a meshed gear would.
+    let tick = floor(t) + smoothstep(0.8, 1.0, fract(t));
+    let gearRing1 = sdCogRing(p * rotY(t * 0.2), 1.2 + gearRatio, 0.08, tick);
+    let gearRing2 = sdCogRing(p * rotZ(t * 0.15), 0.8 + gearRatio * 0.5, 0.06, -tick);
     let gearRing3 = sdTorus(p * rotX(t * 0.1), vec2<f32>(0.5 + gearRatio * 0.3, 0.04));
 
     // Cylindrical struts
@@ -444,6 +460,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let lat = atan2(p.y, max(length(p.xz), 1e-4));
         let fin = pow(max(cos(lat * 12.0 + time * 0.6), 0.0), 9.0) * shellBand;
         color += vec3<f32>(0.32, 0.75, 1.0) * fin * (0.12 + treble * 0.12);
+
+        // Idea 7: heat soak. Brass close to the singularity, and facing it,
+        // incandesces with a blackbody ramp (dull red -> orange -> straw).
+        // Weathered patches (the fbm above) run cooler. Bass feeds the heat.
+        let heat = plasmaDrive * (1.0 + bass * 0.4) * exp(-max(rC - 0.5, 0.0) * 1.6)
+            * (0.4 + 0.6 * coreDiff) * (1.0 - weather * 0.45);
+        let glowAmt = smoothstep(0.06, 0.55, heat);
+        let blackbody = mix(mix(vec3<f32>(0.55, 0.04, 0.0), vec3<f32>(1.0, 0.38, 0.05), smoothstep(0.1, 0.45, heat)),
+                            vec3<f32>(1.0, 0.85, 0.55), smoothstep(0.45, 0.9, heat));
+        color += blackbody * glowAmt * 1.3;
 
         // Idea 2: brass seen through the plasma is dimmed and reddened.
         color *= trans;

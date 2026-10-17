@@ -3,33 +3,15 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: charged cage-core lanterns fed by the membrane; click spin cascade through the cage
+//  Upgraded: 2026-10-17
+//  Ideas: charged cage-core lanterns fed by the membrane; click spin cascade through the cage; octant-coded cage facets (each of the 8 octahedral faces takes its own hue step, so cage turns visibly reshuffle the colours); basket-weave membrane fibres (over-under warp and weft threads, triplanar along the lattice axes)
 //  A packing: HDR linear RGB (pre-ACES, post-feedback) + semantic alpha
 // ═══════════════════════════════════════════════════════════════════
 // Octahedral lattice woven through an organic neural field: hollow-shell
 // greeble, cursor gravity well (held deepens it), click synapse bursts.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,  // x=Synapse Density, y=Growth Speed, z=Lattice Hardness, w=Bioluminescence
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Synapse Density, y=Growth Speed, z=Lattice Hardness, w=Bioluminescence
 
 const TAU: f32 = 6.28318530718;
 const HALF_PI: f32 = 1.57079632679;
@@ -126,6 +108,7 @@ struct MapResult {
   d: f32,
   mat_id: i32,     // 0 = lattice, 1 = neural
   energy: f32,
+  octant: f32,     // Idea 3: which of the 8 octahedral faces (0..7, cell frame)
 }
 
 // Growth phase: slider-scaled time only. Audio used to multiply time here,
@@ -239,6 +222,8 @@ fn map(p: vec3<f32>) -> MapResult {
   res.energy = energy;
   res.d = d_combined;
   res.mat_id = select(1, 0, d_lattice < d_neural);
+  // Idea 3: face index in the rotated cell frame, so it turns with the cage
+  res.octant = step(0.0, p_lattice.x) + 2.0 * step(0.0, p_lattice.y) + 4.0 * step(0.0, p_lattice.z);
 
   return res;
 }
@@ -271,6 +256,25 @@ fn cameraRay(ro: vec3<f32>, uv: vec2<f32>) -> vec3<f32> {
   let cu = normalize(cross(cw, vec3<f32>(0.0, 1.0, 0.0)));
   let cv = normalize(cross(cu, cw));
   return normalize(uv.x * cu + uv.y * cv + 1.2 * cw);
+}
+
+// Idea 4: basket-weave fibres. One planar over-under weave: in each pi x pi
+// tile either the warp (x) or the weft (y) thread is on top; returns the
+// thread's rounded cross-section height 0..1.
+fn weavePlane(a: vec2<f32>) -> f32 {
+  let cell = floor(a / 3.14159265);
+  let f = fract(a / 3.14159265) * 2.0 - 1.0;
+  let warpOver = (i32(cell.x + cell.y) & 1) == 0;
+  let across = select(f.x, f.y, warpOver);
+  return 1.0 - across * across;
+}
+
+// Triplanar along the (world-aligned) lattice axes of the well-distorted frame.
+fn basketWeave(q: vec3<f32>, n: vec3<f32>, k: f32) -> f32 {
+  var w = abs(n);
+  w = w * w * w * w;
+  w = w / max(w.x + w.y + w.z, 1e-4);
+  return weavePlane(q.yz * k) * w.x + weavePlane(q.zx * k) * w.y + weavePlane(q.xy * k) * w.z;
 }
 
 fn cellHue(cell_id: vec3<f32>) -> f32 {
@@ -439,10 +443,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     if (res.mat_id == 0) {
       // Crystalline lattice: metallic, specular, spectrally graded
-      let albedo = bioPalette(hue, g_mids) * 0.45;
+      // Idea 3: octant-coded facets — a hue step and a slight value step per face
+      let hue_f = fract(hue + res.octant * 0.083);
+      let albedo = bioPalette(hue_f, g_mids) * 0.45 * (0.85 + 0.3 * fract(res.octant * 0.618));
       let refl = reflect(rd, n);
       let spec = pow(max(0.0, dot(refl, l1)), 32.0);
-      col = albedo * (dif1 * 0.8 + 0.2) + bioPalette(hue + 0.3, g_treble) * spec;
+      col = albedo * (dif1 * 0.8 + 0.2) + bioPalette(hue_f + 0.3, g_treble) * spec;
       // Strut banding — surfaces the carved greeble
       let band = 0.5 + 0.5 * sin(dot(p, vec3<f32>(22.0)) - time * 4.0);
       col *= 0.8 + band * 0.4;
@@ -453,6 +459,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
       rim_power = pow(max(rim, 0.0), 3.0);
       let sss = max(0.0, dot(n, l1)) * 0.5 + 0.5;
       col = albedo * (dif1 * 0.5 + sss * 0.5) + bioPalette(hue + 0.15, g_mids) * rim_power;
+      // Idea 4: basket-weave fibres — threads darken their gaps and catch a sheen
+      // on their crowns; denser synapses weave finer cloth.
+      let thread = basketWeave(wellDistort(p), n, 18.0 + synapse_density * 6.0);
+      col *= 0.7 + 0.45 * thread;
+      col += bioPalette(hue + 0.6, g_mids) * pow(thread, 6.0) * (0.06 + g_mids * 0.08);
     }
 
     col += bioPalette(hue + res.energy * 0.2, 1.0 + g_bass) * res.energy * biolum_intensity;

@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-14
-//  Ideas: underwater caustic net from wave-lens focusing (Jacobian of the refracted light map, depth-attenuated); Noctiluca dinoflagellate mechanical-stress flashes where click ripples, the held mouse and breaking surf shear the water
+//  Upgraded: 2026-10-17
+//  Ideas: underwater caustic net from wave-lens focusing (Jacobian of the refracted light map, depth-attenuated); Noctiluca dinoflagellate mechanical-stress flashes where click ripples, the held mouse and breaking surf shear the water; streaked aurora reflections stretched down the lagoon; travelling trade-wind gusts that bend the palms in sequence and roughen a dark ruffled patch on the water
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=time, y=rippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Intensity, y=Speed, z=Scale, w=Color Shift
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Intensity, y=Speed, z=Scale, w=Color Shift
 
 const PI: f32 = 3.14159265;
 const TAU: f32 = 6.28318530718;
@@ -136,11 +118,11 @@ fn palmFrond(uv: vec2<f32>, tipX: f32, tipY: f32, baseX: f32, baseY: f32, spread
 }
 
 // Full palm tree
-fn palmTree(uv: vec2<f32>, xPos: f32, time: f32, swayAmt: f32, scale: f32) -> vec3<f32> {
+fn palmTree(uv: vec2<f32>, xPos: f32, time: f32, swayAmt: f32, scale: f32, gustBend: f32) -> vec3<f32> {
   let treeColor = vec3<f32>(0.15, 0.6, 0.2) * 1.5;
   let trunkColor = vec3<f32>(0.4, 0.25, 0.15);
 
-  let sway = sin(time * 0.8) * swayAmt;
+  let sway = sin(time * 0.8) * swayAmt + gustBend;
   let h = 0.45 * scale;
   let topY = 0.3 + h * 0.5;
   let trunk = palmTrunk(uv, xPos, sway * 0.5, h);
@@ -314,6 +296,13 @@ fn bioWater(uv: vec2<f32>, time: f32, mouseNorm: vec2<f32>, mouseDown: f32, inte
   return vec4<f32>(color, emission);
 }
 
+// Idea 4: a trade-wind gust is a pulse travelling left -> right across the
+// scene (one at a time, ~8 s apart at default Speed). 1 at the gust core.
+fn gustAt(x: f32, t: f32) -> f32 {
+  let ph = fract(x * 0.35 - t * 0.4) - 0.5;
+  return exp(-ph * ph * 49.0);
+}
+
 // ---- MAIN ----
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -326,12 +315,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   let fragCoord = vec2<f32>(pixel);
-  let uv = fragCoord / res;
+  // Fix: the scene is authored y-up (sand at y < 0.32, stars at y > 0.5) but
+  // pixel rows grow downward, so HEAD rendered it upside down. Flip once
+  // here, and flip the pointer / ripple y to match.
+  let uv = vec2<f32>(fragCoord.x / res.x, 1.0 - fragCoord.y / res.y);
   let uvAspect = vec2<f32>((uv.x - 0.5) * aspect + 0.5, uv.y);
 
   let time = u.config.x;
   // zoom_config.yz is normalized uv; move into the aspect-corrected scene space
-  let mouseNorm = vec2<f32>((u.zoom_config.y - 0.5) * aspect + 0.5, u.zoom_config.z);
+  let mouseNorm = vec2<f32>((u.zoom_config.y - 0.5) * aspect + 0.5, 1.0 - u.zoom_config.z);
   let mouseDown = u.zoom_config.w;
 
   let intensity = u.zoom_params.x;
@@ -349,6 +341,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let audioColor = colorShift + mids * 0.2;
 
   let t = time * audioSpeed;
+  // Gust clock: constant rate + bounded audio offset. Scaling absolute time by
+  // bass (as t does) would jump the gust phase on every bass change.
+  let tGust = time * speed * 0.85 + bass * 0.3;
 
   // ---- CLICK RIPPLES ---- rings spreading over the lagoon (shear stress)
   var rippleStress: f32 = 0.0;
@@ -358,7 +353,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rp = u.ripples[i];
     let age = time - rp.z;
     if (age >= 0.0 && age < 3.0) {
-      let rpos = vec2<f32>((rp.x - 0.5) * aspect + 0.5, rp.y);
+      let rpos = vec2<f32>((rp.x - 0.5) * aspect + 0.5, 1.0 - rp.y);
       let rd = length((uvAspect - rpos) * vec2<f32>(1.0, 2.2)); // foreshortened water plane
       let front = rd - age * 0.35;
       let env = exp(-front * front * 900.0) * exp(-age * 1.2);
@@ -416,13 +411,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let sway = sin(t * 0.8) * 0.015 * audioIntensity;
   let treeScale = 0.8 + scale * 0.4;
 
-  let tree1 = palmTree(uvAspect, 0.15, time, 0.015, treeScale);
+  // Idea 4: each palm bends downwind as the gust reaches its x; bass gusts harder.
+  let gustAmp = 0.045 * (0.6 + bass * 0.8);
+  let tree1 = palmTree(uvAspect, 0.15, time, 0.015, treeScale, gustAt(0.15, tGust) * gustAmp);
   color += tree1;
 
-  let tree2 = palmTree(uvAspect, 0.82, time + 1.0, 0.012, treeScale * 0.85);
+  let tree2 = palmTree(uvAspect, 0.82, time + 1.0, 0.012, treeScale * 0.85, gustAt(0.82, tGust) * gustAmp);
   color += tree2;
 
-  let tree3 = palmTree(uvAspect, 0.5, time + 2.5, 0.018, treeScale * 0.65);
+  let tree3 = palmTree(uvAspect, 0.5, time + 2.5, 0.018, treeScale * 0.65, gustAt(0.5, tGust) * gustAmp);
   color += tree3;
   let foliageCov = clamp(dot(tree1 + tree2 + tree3, vec3<f32>(0.5)), 0.0, 1.0);
 
@@ -442,6 +439,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color += water.rgb;
   let waterCov = smoothstep(0.32 + 0.08, 0.32 - 0.03, uvAspect.y);
   color += vec3<f32>(0.3, 0.8, 1.0) * rippleLight * 0.35 * waterCov * (0.5 + audioIntensity);
+
+  // Idea 4: cat's-paw. Under the gust the lagoon roughens: it darkens and
+  // breaks into fine glints, and (below) it stops mirroring the sky.
+  // Masked to the lagoon band only (bioWater is empty below y=0.27); waterCov
+  // alone also covers the sand, flowers and palm bases.
+  let paw = gustAt(uvAspect.x, tGust) * waterCov * smoothstep(0.25, 0.29, uvAspect.y);
+  let pawGlint = smoothstep(0.82, 0.95, noise2d(vec2<f32>(uvAspect.x * 140.0 - tGust * 6.0, uv.y * 260.0)));
+  color = color * (1.0 - paw * 0.28) + vec3<f32>(0.5, 0.85, 1.0) * pawGlint * paw * 0.35;
+
+  // Idea 3: aurora reflections. Below the horizon the water mirrors the
+  // aurora bands, stretched ~12x vertically (rippled water smears a
+  // reflection into long streaks) and wobbled sideways by the same waves.
+  let belowHorizon = smoothstep(groundY + 0.005, groundY - 0.02, uv.y) * step(groundY - 0.06, uv.y);
+  if (belowHorizon * waterCov > 0.01) {
+    let mirY = groundY + (groundY - uv.y) * 12.0;
+    let wob = sin(uv.y * 180.0 + t * 3.0) * 0.012 + sin(uv.y * 77.0 - t * 1.7) * 0.008;
+    var refl = vec3<f32>(0.0);
+    for (var i: i32 = 0; i < 5; i = i + 1) {
+      let bandY = 0.55 + f32(i) * 0.08 + sin(t * 0.2 + f32(i)) * 0.03;
+      let width = 0.04 + f32(i) * 0.005;
+      refl += auroraBand(uvAspect.x + wob, mirY, bandY, width, t, audioColor + f32(i) * 0.2);
+    }
+    let mirrorAmt = belowHorizon * waterCov * (1.0 - paw * 0.75) * 0.45;
+    color += refl * audioIntensity * vec3<f32>(0.7, 0.9, 1.0) * mirrorAmt;
+  }
 
   // ---- FLOATING PARTICLES ----
   for (var i: i32 = 0; i < 12; i = i + 1) {
