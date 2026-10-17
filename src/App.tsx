@@ -339,6 +339,7 @@ function MainApp() {
         b3hdIntervalSeconds,
         setCurrentSegment,
         setSelectedVideo,
+        setVideoList,
     });
 
     const { hasHealthyThumbnail } = useThumbnailManifest();
