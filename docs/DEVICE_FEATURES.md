@@ -23,16 +23,29 @@ Feature collection lives in `collectOptionalDeviceFeatures()` — order is `floa
 
 ## Canvas configure contract
 
-Source of truth: [`src/contracts/canvas_configure.json`](../src/contracts/canvas_configure.json). `npm run verify:device-policy` asserts that `buildCanvasConfigureOptions()` (TS), the `ctx.configure` in `JS_CreateSurfaceFromCanvas`, and `ConfigureSurface()` (C++) all match it — `alphaMode`, `usage`, preferred format, `presentModeWasm = fifo`, explicit width/height, and that `ConfigureSurface()` is still called after surface import.
+Source of truth: [`src/contracts/canvas_configure.json`](../src/contracts/canvas_configure.json) (v3). Both renderers read it:
 
-| Key | Default (v1) | Owner |
+- **TS** imports the JSON. `buildCanvasConfigureOptions()` takes `alphaMode`, `usage` and every opt-in value from it, and the GPUTextureUsage fallback bits come from `usageBits`.
+- **C++** includes [`wasm_renderer/canvas_configure.h`](../wasm_renderer/canvas_configure.h), which is generated from the JSON by `npm run gen:canvas-configure` (`scripts/gen-canvas-configure-header.js`) and committed. `JS_CreateSurfaceFromCanvas` and `JS_ProbeCanvasCopySrc` get `usage` and `alphaMode` as arguments (`kUsage` / `kCopySrcUsage`, `kAlphaModeJs`). `ConfigureSurface()` uses `kUsage` / `kCopySrcUsage`, `kAlphaMode` and `kPresentMode`. The header `static_assert`s each `WGPUTextureUsage_*` against `usageBits`, so the number passed to JS is the matching `GPUTextureUsage` bit.
+
+`npm run verify:device-policy` fails when the header is stale (it re-renders it and compares) or when `device.cpp` hardcodes a contracted value: a `GPUTextureUsage.*` or quoted `alphaMode` in an EM_JS configure, a `WGPUTextureUsage_*` / `WGPUCompositeAlphaMode_*` / `WGPUPresentMode_*` literal in `ConfigureSurface()`, or a call site that doesn't pass the header constants. It also still checks preferred format, explicit width/height, and that `ConfigureSurface()` is called after surface import. `build.sh` runs the generator with `--check` before `em++`.
+
+**Capabilities.** Each `optIn` entry is one capability: `copySrc`, `displayP3`, `extendedToneMapping`. Every entry lists `configureKeys` (the configure fields it changes), `backends` (`ts`, optionally `wasm`), and optionally `requires` (`extendedToneMapping` requires `displayP3`). The rules:
+
+- The TS `CanvasConfigureOptIns` type must have exactly the `optIn` keys; a compile-time check fails otherwise. `buildCanvasConfigureOptions` must read every one of them.
+- A capability that lists `wasm` needs a `cpp.<name>` block.
+- No `ctx.configure` in `device.cpp` may set a key that belongs only to a capability without `wasm`. Today that means `colorSpace` and `toneMapping` stay TS-only.
+
+**Adding a capability** (for example, C++ Display P3): add `"wasm"` to its `backends`, add the `cpp.<name>` block and any constants the header needs, run `npm run gen:canvas-configure`, and implement it in `device.cpp` using the header values. `verify:device-policy` reports anything still missing.
+
+| Key | Default | Owner |
 |-----|--------------|-------|
 | `alphaMode` | `opaque` | TS + JS configure + C++ |
 | `usage` | `RENDER_ATTACHMENT` | TS + JS configure + C++ |
 | `format` | `getPreferredCanvasFormat()` | TS + JS configure (C++ mirrors via `JS_GetPreferredCanvasFormat`) |
 | `presentModeWasm` | `fifo` | C++ `ConfigureSurface()` only — TS never sets a presentMode |
-| `colorSpace` | `srgb` (browser default, not written) | opt-in only, TS-first |
-| `toneMapping` | `standard` (browser default, not written) | opt-in only, TS-first |
+| `colorSpace` | `srgb` (browser default, not written) | opt-in only (`displayP3`, backends `ts`) |
+| `toneMapping` | `standard` (browser default, not written) | opt-in only (`extendedToneMapping`, backends `ts`) |
 
 Both paths negotiate the swapchain via the browser's preferred format:
 
@@ -45,9 +58,9 @@ context.configure({
 });
 ```
 
-WASM equivalent: `JS_CreateSurfaceFromCanvas` in `device.cpp` (same `alphaMode`, `usage`, and `getPreferredCanvasFormat()`).
+WASM equivalent: `JS_CreateSurfaceFromCanvas` in `device.cpp` (same `getPreferredCanvasFormat()`; `alphaMode` and `usage` passed in from `canvas_configure.h`).
 
-That JS `ctx.configure` is **not** the only configure. Immediately after `importJsSurface`, C++ `ConfigureSurface()` runs a second configure with `presentMode = Fifo` and the canvas width/height. Both are required: the JS pass matches TypeScript and lets emdawn import the surface; the C++ pass sizes the swapchain. Do not delete the C++ call as a “simplification” — present can stay black.
+That JS `ctx.configure` is **not** the only configure. Immediately after `importJsSurface`, C++ `ConfigureSurface()` runs a second configure with `presentMode = kPresentMode` (Fifo) and the canvas width/height. Both are required: the JS pass matches TypeScript and lets emdawn import the surface; the C++ pass sizes the swapchain. Do not delete the C++ call as a “simplification” — present can stay black.
 
 ### Present pipeline
 
@@ -67,7 +80,7 @@ After the default configure, `runWebGpuBootProbe()` calls `probeCanvasCopySrc()`
 
 Rejection is fail-soft — it never fails the ladder rung. `encodePresent` (TS) and `PresentToSurface` (C++) remain blit-to-swapchain. Capture code (WebCodecs recording) reconfigures with `buildCanvasConfigureOptions(device, format, { ...canvasColorOptIns, copySrc: true })` only when the flag is true; it does not create a second device.
 
-**C++ parity (canvas_configure v2).** The WASM path keeps both default configures (`JS_CreateSurfaceFromCanvas` render-only, then `ConfigureSurface()`). Right after surface creation, `CreateDevice()` runs `JS_ProbeCanvasCopySrc` (configure `RENDER_ATTACHMENT | COPY_SRC`, `getConfiguration()` readback) between `wgpuDevicePushErrorScope(Validation)` and `wgpuDevicePopErrorScope` + `WaitAny`, which is the same pattern as the rgba16/32 storage probe. It stores `canvasCopySrcSupported_`, and `ConfigureSurface()` then restores render-only. `ConfigureSurface()` adds `WGPUTextureUsage_CopySrc` only while `canvasCopySrc_` is set, and only `SetCanvasCopySrc()` (export `_setCanvasCopySrc`) sets it. It refuses when the probe said no, and resize reconfigures keep it. The result is published as `window.webgpuProbe` `{ backend: 'wasm', ok: true, canvasCopySrc }` (`publishWasmProbeSuccess`, since `?renderer=wasm` skips the TS probe), `getDiagnostics().wasm.canvasCopySrc`, and `adapterSummary … | canvasCopySrc=yes|no`. `verify:device-policy` checks the probe usage, the scope ordering, the `if (canvasCopySrc_) config.usage |= …` enums against `cpp.usageEnums`, and setter-only assignment. WASM PNG capture does not need `COPY_SRC`: `captureFrame()` reads the internal `writeTexture_` back losslessly.
+**C++ parity (canvas_configure v2+).** The WASM path keeps both default configures (`JS_CreateSurfaceFromCanvas` render-only, then `ConfigureSurface()`). Right after surface creation, `CreateDevice()` runs `JS_ProbeCanvasCopySrc` (configure `RENDER_ATTACHMENT | COPY_SRC`, `getConfiguration()` readback) between `wgpuDevicePushErrorScope(Validation)` and `wgpuDevicePopErrorScope` + `WaitAny`, which is the same pattern as the rgba16/32 storage probe. It stores `canvasCopySrcSupported_`, and `ConfigureSurface()` then restores render-only. `ConfigureSurface()` uses `canvas_configure::kCopySrcUsage` instead of `kUsage` only while `canvasCopySrc_` is set, and only `SetCanvasCopySrc()` (export `_setCanvasCopySrc`) sets it. It refuses when the probe said no, and resize reconfigures keep it. The result is published as `window.webgpuProbe` `{ backend: 'wasm', ok: true, canvasCopySrc }` (`publishWasmProbeSuccess`, since `?renderer=wasm` skips the TS probe), `getDiagnostics().wasm.canvasCopySrc`, and `adapterSummary … | canvasCopySrc=yes|no`. `verify:device-policy` checks that the probe is called with `kCopySrcUsage` and reads back the same bits, the scope ordering, the `config.usage = canvasCopySrc_ ? kCopySrcUsage : kUsage` line, and setter-only assignment. WASM PNG capture does not need `COPY_SRC`: `captureFrame()` reads the internal `writeTexture_` back losslessly.
 
 ### Opt-in: Display P3 / extended tone mapping (default off)
 
@@ -110,5 +123,5 @@ Fill one row per tested browser/display. SwiftShader (the cloud VM) has no wide-
 
 ## Deferred
 
-- **C++ canvas parity:** ~~`COPY_SRC`~~ (done: canvas_configure v2, see above) / `colorSpace` + extended tone mapping on `JS_CreateSurfaceFromCanvas` + `ConfigureSurface()` — after #1080 (TS-first `?display_p3=1`).
+- **C++ canvas parity:** ~~`COPY_SRC`~~ (done: canvas_configure v2, see above) / `colorSpace` + extended tone mapping on `JS_CreateSurfaceFromCanvas` + `ConfigureSurface()` — after #1080 (TS-first `?display_p3=1`). Route it through the capabilities flow above: add `"wasm"` to `optIn.displayP3.backends`, then regenerate the header.
 - **HDR / PQ recording tags:** only the P3 + sRGB-curve tag is written. Extended tone mapping (`toneMapping: 'extended'`) output is not tagged as PQ/HLG.

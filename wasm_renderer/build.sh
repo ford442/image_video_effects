@@ -72,6 +72,8 @@ JS_OUTPUT_NAME="$(node "$REPO_ROOT/scripts/format-wasm-compile-flags.js" output)
 WASM_OUTPUT_NAME="${JS_OUTPUT_NAME%.js}.wasm"
 
 bash "$REPO_ROOT/scripts/emcc-version-gate.sh"
+# canvas_configure.h is generated from src/contracts/canvas_configure.json (committed).
+node "$REPO_ROOT/scripts/gen-canvas-configure-header.js" --check
 
 # Single-pass compile+link via emcc.
 # --use-port=emdawnwebgpu runs emdawnwebgpu.py's process_args() exactly once
