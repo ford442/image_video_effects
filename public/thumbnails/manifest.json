@@ -311,13 +311,15 @@
   },
   "gen-art-deco-sky": {
     "thumbnail_url": "thumbnails/gen-art-deco-sky.png",
-    "generated_at": "2026-06-14T06:41:32.890Z",
+    "generated_at": "2026-10-17T11:39:14.521Z",
     "params_snapshot": [
       0.5,
       1,
       1,
       0.5
-    ]
+    ],
+    "source_hash": "24bab07a05ae1bb2",
+    "capture_host": "swiftshader"
   },
   "gen-astral-silk-chrono-weaver-arachnid": {
     "thumbnail_url": "thumbnails/gen-astral-silk-chrono-weaver-arachnid.png",
@@ -531,13 +533,15 @@
   },
   "gen-celestial-forge": {
     "thumbnail_url": "thumbnails/gen-celestial-forge.png",
-    "generated_at": "2026-06-14T06:41:40.063Z",
+    "generated_at": "2026-10-17T11:40:51.017Z",
     "params_snapshot": [
       1,
       0.5,
       1,
       1
-    ]
+    ],
+    "source_hash": "0fd663b2065f41d6",
+    "capture_host": "swiftshader"
   },
   "gen-celestial-glass-tornado": {
     "thumbnail_url": "thumbnails/gen-celestial-glass-tornado.png",
@@ -935,14 +939,14 @@
   },
   "gen-eldritch-tesseract-hive-mind": {
     "thumbnail_url": "thumbnails/gen-eldritch-tesseract-hive-mind.png",
-    "generated_at": "2026-10-05T16:07:50.407Z",
+    "generated_at": "2026-10-17T11:41:56.290Z",
     "params_snapshot": [
       0.5,
       1,
       0.5,
       0.5
     ],
-    "source_hash": "6c302dbcc173df6a",
+    "source_hash": "49ab115c2f0d0c9f",
     "capture_host": "swiftshader"
   },
   "gen-electric-kaleidoscope-storm": {
@@ -1989,13 +1993,15 @@
   },
   "gen-prismatic-cyber-auroral-manta-swarm": {
     "thumbnail_url": "thumbnails/gen-prismatic-cyber-auroral-manta-swarm.png",
-    "generated_at": "2026-06-14T06:42:36.080Z",
+    "generated_at": "2026-10-17T11:28:56.462Z",
     "params_snapshot": [
       0.5,
       0.5,
-      0.5,
+      0.3,
       0.5
-    ]
+    ],
+    "source_hash": "415e7c6fceb51689",
+    "capture_host": "swiftshader"
   },
   "gen-prismatic-fractal-dunes": {
     "thumbnail_url": "thumbnails/gen-prismatic-fractal-dunes.png",
@@ -3863,14 +3869,14 @@
   },
   "gen-chronos-monolith-resonator": {
     "thumbnail_url": "thumbnails/gen-chronos-monolith-resonator.png",
-    "generated_at": "2026-10-05T11:08:04.892Z",
+    "generated_at": "2026-10-17T11:10:35.015Z",
     "params_snapshot": [
       0.27,
       0.33,
       0.5,
       0.25
     ],
-    "source_hash": "ee173222e8a03bdf",
+    "source_hash": "77873e03e608288f",
     "capture_host": "swiftshader"
   },
   "gen-bismuth-hyper-crystals": {
@@ -3995,14 +4001,14 @@
   },
   "gen-cybernetic-plasma-orchid-nexus": {
     "thumbnail_url": "thumbnails/gen-cybernetic-plasma-orchid-nexus.png",
-    "generated_at": "2026-10-05T11:14:11.826Z",
+    "generated_at": "2026-10-17T11:12:32.388Z",
     "params_snapshot": [
       3,
       1.5,
       0.5,
       0.8
     ],
-    "source_hash": "f35ec7c9691c7f4f",
+    "source_hash": "7be9491a8649c1c3",
     "capture_host": "swiftshader"
   },
   "gen-cyber-organic-liquid-neon-pulsar": {
@@ -4067,14 +4073,14 @@
   },
   "gen-ethereal-bismuth-resonance-void-owl": {
     "thumbnail_url": "thumbnails/gen-ethereal-bismuth-resonance-void-owl.png",
-    "generated_at": "2026-10-05T11:17:17.597Z",
+    "generated_at": "2026-10-17T11:16:00.284Z",
     "params_snapshot": [
       0.5,
       0.5,
       0.5,
       0.5
     ],
-    "source_hash": "d1a940d53cd57f6b",
+    "source_hash": "4c7bc324647d8667",
     "capture_host": "swiftshader"
   },
   "gen-ethereal-chrono-fluid-symbiote": {
@@ -4103,14 +4109,14 @@
   },
   "gen-ethereal-chrono-plasma-void-manta": {
     "thumbnail_url": "thumbnails/gen-ethereal-chrono-plasma-void-manta.png",
-    "generated_at": "2026-10-05T11:19:30.633Z",
+    "generated_at": "2026-10-17T11:45:10.825Z",
     "params_snapshot": [
       1,
       1,
       2,
       1
     ],
-    "source_hash": "4a792abead30416e",
+    "source_hash": "767e0d6d23410593",
     "capture_host": "swiftshader"
   },
   "gen-chromatic-glass-lattice": {
@@ -4487,14 +4493,14 @@
   },
   "gen-ethereal-cyber-plasma-void-dragon": {
     "thumbnail_url": "thumbnails/gen-ethereal-cyber-plasma-void-dragon.png",
-    "generated_at": "2026-10-05T11:41:44.201Z",
+    "generated_at": "2026-10-17T11:23:13.183Z",
     "params_snapshot": [
       1.5,
       1,
       20,
       0.8
     ],
-    "source_hash": "65c461b768ee9e89",
+    "source_hash": "819022895e72ecbb",
     "capture_host": "swiftshader"
   },
   "gen-fractal-tree-growth": {
@@ -4907,14 +4913,14 @@
   },
   "gen-hyper-dimensional-bismuth-matrix": {
     "thumbnail_url": "thumbnails/gen-hyper-dimensional-bismuth-matrix.png",
-    "generated_at": "2026-10-05T12:01:17.122Z",
+    "generated_at": "2026-10-17T11:46:56.114Z",
     "params_snapshot": [
       0.42,
       0.5,
       0.3,
       0.2
     ],
-    "source_hash": "b55b86668a5ffe61",
+    "source_hash": "ac1f7e3cd7de7691",
     "capture_host": "swiftshader"
   },
   "gen-sentient-aether-plasma-nebula-moth": {
