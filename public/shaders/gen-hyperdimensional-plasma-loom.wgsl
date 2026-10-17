@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, temporal-feedback, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: moving hyperplane slice (strands are 4D hypertube cross-sections); counter-propagating current packets; packet-wake comets along helix phase; brief beat weft bridges between opposing threads
+//  Upgraded: 2026-10-17
+//  Ideas: moving hyperplane slice (strands are 4D hypertube cross-sections); counter-propagating current packets; packet-wake comets along helix phase; brief beat weft bridges between opposing threads; pinch-neck current crowding where the slice thins a strand; dashed w-ghosts tracing strands that have left the slice
 //  A packing: rgb = pre-tonemap HDR radiance (trail-blended), a = coverage; C read back as HDR colour history
 // ═══════════════════════════════════════════════════════════════════
 //  Twisted xy-repeated cells of counter-rotating helical tubes with
@@ -18,6 +18,10 @@
 //    touch. Mids lengthen packets, treble brightens them.
 //  - Packet wakes: asymmetric tails follow those same signed helix phases.
 //  - Beat weft: short-lived crossbars join each cell's opposing threads.
+//  - Pinch necks: the same current through a shrinking cross-section
+//    crowds into a white-hot neck just before a strand leaves the slice.
+//  - w-ghosts: a strand that has left the slice still leaves a faint
+//    dashed outline where its hypertube passes outside this w-plane.
 //  Mouse: hold to pull the weave toward the cursor (no pull on hover).
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -120,6 +124,8 @@ struct LoomMapResult {
     flash: f32,
     wake: f32,
     bridge: f32,
+    neck: f32,
+    ghost: f32,
 };
 
 fn map(p_in: vec3<f32>, time: f32, m_world: vec3<f32>, pull_str: f32, cam_off: vec2<f32>,
@@ -208,6 +214,23 @@ fn map(p_in: vec3<f32>, time: f32, m_world: vec3<f32>, pull_str: f32, cam_off: v
     let pk_near = select(pk2, pk1, d1 < d2);
     let wake_near = select(wake2, wake1, d1 < d2);
 
+    // Pointable Idea 5: pinch-neck current crowding. Current density goes
+    // as 1/area, so a strand whose slice radius is collapsing (but still
+    // present) glows hottest at the neck before it vanishes.
+    let neck1 = smoothstep(0.0, 0.08 * R1, rad1) * (1.0 - smoothstep(0.18 * R1, 0.55 * R1, rad1));
+    let neck2 = smoothstep(0.0, 0.08 * R2, rad2) * (1.0 - smoothstep(0.18 * R2, 0.55 * R2, rad2));
+    let neck_near = select(neck2, neck1, d1 < d2);
+
+    // Pointable Idea 6: w-ghosts. Once |w| > R the strand is off-slice; its
+    // hypertube still passes nearby in w, drawn as a thin dashed shell at the
+    // full radius that fades as the hyperplane moves further away.
+    let dash = smoothstep(0.25, 0.45, abs(fract(r.z * 2.5 - t * 0.6) - 0.5));
+    let off1 = 1.0 - smoothstep(0.0, 0.2 * R1, rad1);
+    let off2 = 1.0 - smoothstep(0.0, 0.2 * R2, rad2);
+    let shell1 = 1.0 - smoothstep(0.0, R1 * 0.35 + 0.004, abs(length(s1_p.xy) - R1));
+    let shell2 = 1.0 - smoothstep(0.0, R2 * 0.35 + 0.004, abs(length(s2_p.xy) - R2));
+    let ghost = max(off1 * shell1, off2 * shell2) * dash;
+
     // Pointable Idea 4: a brief beat closes a weft segment between the two
     // opposing helix centres. Sparse z bands keep the crossbars loom-like.
     let centre1 = transpose(r1) * vec2<f32>(-spacing * 0.2, 0.0);
@@ -231,7 +254,7 @@ fn map(p_in: vec3<f32>, time: f32, m_world: vec3<f32>, pull_str: f32, cam_off: v
         d = smin(d, bridgeD, 12.0);
     }
 
-    return LoomMapResult(d, mat, pk_near, flash, wake_near, bridgeSignal);
+    return LoomMapResult(d, mat, pk_near, flash, wake_near, bridgeSignal, neck_near, ghost);
 }
 
 fn calcNormal(p: vec3<f32>, time: f32, m_world: vec3<f32>, pull_str: f32, cam_off: vec2<f32>,
@@ -306,7 +329,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var t_dist = NEAR_T;
     let max_d = 20.0;
     var col = vec3<f32>(0.0);
-    var d = LoomMapResult(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    var d = LoomMapResult(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
     var p = ro;
     var hit = false;
 
@@ -314,6 +337,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var glow = 0.0;
     var glow_pk = 0.0;
     var glow_bridge = 0.0;
+    var glow_ghost = 0.0;
 
     for (var i = 0; i < 100; i++) {
         p = ro + rd * t_dist;
@@ -321,9 +345,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Accumulate glow based on proximity to threads
         glow += 0.01 / (0.01 + abs(d.d));
-        glow_pk += (d.packet + d.flash * 2.5 + d.wake * 0.85) * 0.004
+        glow_pk += (d.packet + d.flash * 2.5 + d.wake * 0.85 + d.neck * 0.6) * 0.004
             / (0.004 + abs(d.d));
         glow_bridge += d.bridge * 0.003 / (0.004 + abs(d.d));
+        glow_ghost += d.ghost * clamp(abs(d.d) * 5.0, 0.0, 1.0); // step-weighted: dense regions don't over-count
 
         // Only a converged step is a hit; step exhaustion is a miss.
         if (d.d < 0.001 * (1.0 + t_dist * 0.5)) { hit = true; break; }
@@ -366,6 +391,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         col += mix(pk_col, irid_color, 0.42) * d.wake * 0.72 * pk_gain;
         // IDEA 4 at the surface: beat wefts flash warm against the cool plasma.
         col += vec3<f32>(1.0, 0.72, 0.42) * d.bridge * 2.4 * intensity;
+        // IDEA 5 at the surface: crowded current at a collapsing neck.
+        col += vec3<f32>(0.85, 0.92, 1.0) * d.neck * (1.1 + treble * 1.6) * intensity;
 
         // Distance fog
         col = mix(col, vec3<f32>(0.0, 0.0, 0.02), smoothstep(10.0, max_d, t_dist));
@@ -376,6 +403,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col += plasma_color * glow * 0.02 * intensity;
     col += pk_col * glow_pk * 0.03 * pk_gain;
     col += vec3<f32>(1.0, 0.58, 0.30) * glow_bridge * 0.045 * intensity;
+    // IDEA 6: off-slice strands remain as faint violet dashed outlines.
+    col += vec3<f32>(0.45, 0.30, 1.0) * min(glow_ghost, 12.0) * 0.012 * intensity;
 
     // Temporal trail: exact previous-frame HDR radiance from C (our own A).
     let prev_raw = textureLoad(dataTextureC, coords, 0).rgb;

@@ -3409,19 +3409,46 @@
       ]
     },
     "gen-gravitational-ferrofluid-singularity-engine": {
-      "hash": "4f8fd4a51d914b22",
-      "history": []
+      "hash": "dd8d51700f8a179d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T05:34:28.802Z",
+          "hash": "dd8d51700f8a179d",
+          "prev_hash": "4f8fd4a51d914b22",
+          "commit": "4653c738",
+          "note": null
+        }
+      ]
     },
     "gen-gravitational-strain": {
-      "hash": "3f5d48786d584621",
-      "history": []
+      "hash": "7140f50be9374814",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T05:34:28.802Z",
+          "hash": "7140f50be9374814",
+          "prev_hash": "3f5d48786d584621",
+          "commit": "4653c738",
+          "note": null
+        }
+      ]
     },
     "gen-gravito-phononic-accretion": {
-      "hash": "6bd8be64b51a49a0",
-      "history": []
+      "hash": "b4db06da770bc2a9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T05:34:28.802Z",
+          "hash": "b4db06da770bc2a9",
+          "prev_hash": "6bd8be64b51a49a0",
+          "commit": "4653c738",
+          "note": null
+        }
+      ]
     },
     "gen-graviton-plasma-lotus": {
-      "hash": "8f41dead067066f3",
+      "hash": "26ee87d8663a8316",
       "history": [
         {
           "event": "upgraded",
@@ -3430,12 +3457,29 @@
           "prev_hash": "df4de80f78750626",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T05:34:28.802Z",
+          "hash": "26ee87d8663a8316",
+          "prev_hash": "8f41dead067066f3",
+          "commit": "4653c738",
+          "note": null
         }
       ]
     },
     "gen-holographic-bismuth-core-reactor": {
-      "hash": "00e96a2671f1329c",
-      "history": []
+      "hash": "a24d0410c42e345e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T05:34:28.802Z",
+          "hash": "a24d0410c42e345e",
+          "prev_hash": "00e96a2671f1329c",
+          "commit": "4653c738",
+          "note": null
+        }
+      ]
     },
     "gen-holographic-data-core": {
       "hash": "d690397c28dfe6fa",
@@ -3475,16 +3519,43 @@
       ]
     },
     "gen-hyper-bismuth-clockwork": {
-      "hash": "0b4863cfe887c706",
-      "history": []
+      "hash": "d4a89f3a0080cd8a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T05:34:28.802Z",
+          "hash": "d4a89f3a0080cd8a",
+          "prev_hash": "0b4863cfe887c706",
+          "commit": "4653c738",
+          "note": null
+        }
+      ]
     },
     "gen-hyper-dimensional-bismuth-matrix": {
-      "hash": "b55b86668a5ffe61",
-      "history": []
+      "hash": "790c6c1c16b973ea",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T05:34:28.802Z",
+          "hash": "790c6c1c16b973ea",
+          "prev_hash": "b55b86668a5ffe61",
+          "commit": "4653c738",
+          "note": null
+        }
+      ]
     },
     "gen-hyper-dimensional-tesseract-labyrinth": {
-      "hash": "6ce6088c58721e75",
-      "history": []
+      "hash": "7954629c7fd6d77d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T05:34:28.802Z",
+          "hash": "7954629c7fd6d77d",
+          "prev_hash": "6ce6088c58721e75",
+          "commit": "4653c738",
+          "note": null
+        }
+      ]
     },
     "gen-hyper-geometric-void-glass-seraph": {
       "hash": "66fbeddfddff80e2",
@@ -3533,7 +3604,7 @@
       ]
     },
     "gen-hyperdimensional-bismuth-lattice": {
-      "hash": "00b5348ad0f1d2fe",
+      "hash": "ee84169c64a2e8bc",
       "history": [
         {
           "event": "upgraded",
@@ -3542,11 +3613,19 @@
           "prev_hash": "9436aebf5110da2c",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T05:34:28.802Z",
+          "hash": "ee84169c64a2e8bc",
+          "prev_hash": "00b5348ad0f1d2fe",
+          "commit": "4653c738",
+          "note": null
         }
       ]
     },
     "gen-hyperdimensional-plasma-loom": {
-      "hash": "72709d6fd1e01fd1",
+      "hash": "cdf28769b4b55ae1",
       "history": [
         {
           "event": "upgraded",
@@ -3555,6 +3634,14 @@
           "prev_hash": "b8d95c922317a57d",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T05:34:28.802Z",
+          "hash": "cdf28769b4b55ae1",
+          "prev_hash": "72709d6fd1e01fd1",
+          "commit": "4653c738",
+          "note": null
         }
       ]
     },
