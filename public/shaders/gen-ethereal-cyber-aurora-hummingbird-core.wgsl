@@ -2,11 +2,15 @@
 //  Ethereal Cyber-Aurora Hummingbird-Core
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, click-reactive, upgraded-rgba
-//  Upgraded: 2026-10-10
+//  Upgraded: 2026-10-18
 //  Ideas: spring-eased hover target; bass nectar bloom; treble wingbeat
-//         afterimage; gorget plate split by Aberration; forked tail ribbons
-//  A packing: ACES display RGB; alpha = hit coverage + glow/shock energy
-//  State: extraBuffer[133..134] pos, [135..136] vel, [137] bass env, [138] init
+//         afterimage; gorget plate split by Aberration; forked tail ribbons;
+//         figure-eight hover stroke (fore-aft sweep at half the flap rate,
+//         wing pitch flips at each stroke reversal); lapping forked tongue
+//         (licks out of the beak tip, reach swells with the nectar envelope)
+//  A packing: HDR display RGB (ACES on output); alpha = hit coverage +
+//             glow/shock energy. Texels (0,0) and (1,0) hold hover state:
+//             (0,0) = eased.xy, vel.xy; (1,0) = nectar env, marker 7.25
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 // zoom_params: x=Flutter Speed, y=Aura Intensity, z=Pollen Density, w=Aberration
@@ -75,6 +79,13 @@ fn sdEllipsoid(p: vec3<f32>, r: vec3<f32>) -> f32 {
     return k0 * (k0 - 1.0) / k1;
 }
 
+fn sdCapsule(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, r: f32) -> f32 {
+    let pa = p - a;
+    let ba = b - a;
+    let h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-6), 0.0, 1.0);
+    return length(pa - ba * h) - r;
+}
+
 fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
     let d = abs(p) - b;
     return length(max(d, vec3<f32>(0.0))) + min(max(d.x, max(d.y, d.z)), 0.0);
@@ -115,12 +126,32 @@ fn map(p_in: vec3<f32>, t: f32, audio: f32, flutter: f32, hover: vec4<f32>) -> v
         sdEllipsoid(p_body - vec3<f32>(-0.14, -0.02, -1.0), vec3<f32>(0.03, 0.015, 0.55))
     );
 
+    // Idea — lapping tongue: a forked tongue flicks out of the beak tip three
+    // times a second; reach swells with the nectar envelope (hover.w).
+    let lick = sin(PI * fract(t * 3.0));
+    let reach = lick * lick * (0.06 + hover.w * 0.16);
+    let beakTip = vec3<f32>(0.0, 0.2, 1.38 + hover.w * 0.08);
+    let tongueEnd = beakTip + vec3<f32>(0.0, -0.25 * reach, reach);
+    let fork = 0.035 * lick;
+    var tongue = sdCapsule(p_body, beakTip, tongueEnd, 0.011);
+    tongue = min(tongue, sdCapsule(p_body, tongueEnd, tongueEnd + vec3<f32>(fork, -0.01, fork * 1.2), 0.008));
+    tongue = min(tongue, sdCapsule(p_body, tongueEnd, tongueEnd + vec3<f32>(-fork, -0.01, fork * 1.2), 0.008));
+    // Hidden inside the beak when retracted.
+    tongue = select(tongue, MAX_DIST, reach < 0.004);
+
     // Add auroral plasma texture displacement
     body -= simplex(p_body * 5.0 + vec3<f32>(t, 0.0, t)) * 0.05 * audio;
 
     // Wings
     var p_wing = p;
     p_wing.x = abs(p_wing.x) - 0.4; // mirror
+
+    // Idea — figure-eight hover stroke: the stroke plane sweeps fore-aft at
+    // half the flap rate, so each tip traces an 8 (vertical 2f, horizontal f).
+    let sweep = rot(0.45 * sin(wing_time * 0.5));
+    let p_wing_xz_sweep = sweep * p_wing.xz;
+    p_wing.x = p_wing_xz_sweep.x;
+    p_wing.z = p_wing_xz_sweep.y;
 
     // Flapping rotation
     let flap_angle = sin(wing_time) * 1.5;
@@ -131,7 +162,8 @@ fn map(p_in: vec3<f32>, t: f32, audio: f32, flutter: f32, hover: vec4<f32>) -> v
     p_wing.x = p_wing_xy_rot.x;
     p_wing.y = p_wing_xy_rot.y;
 
-    let rot_pitch = rot(0.5);
+    // Wing pitch flips through the stroke reversal (supination on the back-sweep).
+    let rot_pitch = rot(0.5 * cos(wing_time * 0.5));
     let p_wing_zy_rot = rot_pitch * p_wing.zy;
     p_wing.z = p_wing_zy_rot.x;
     p_wing.y = p_wing_zy_rot.y;
@@ -173,6 +205,10 @@ fn map(p_in: vec3<f32>, t: f32, audio: f32, flutter: f32, hover: vec4<f32>) -> v
     if (tailRibbon < d) {
         d = tailRibbon;
         mat_id = 5.0; // Tail ribbons
+    }
+    if (tongue < d) {
+        d = tongue;
+        mat_id = 6.0; // Tongue
     }
 
     return vec2<f32>(d, mat_id);
@@ -226,27 +262,23 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
     let m_uv = (mouse - 0.5) * PI * 2.0;
 
-    // Spring-eased hover target + bass nectar envelope (persistent state).
-    let rawTarget = (mouse - 0.5) * vec2<f32>(0.9, -0.6);
+    // Spring-eased hover target + bass nectar envelope, persisted in A texels
+    // (0,0)/(1,0) and read back from C. World +X is screen-left, +Y screen-up.
+    let rawTarget = (mouse - 0.5) * vec2<f32>(-0.9, -0.6);
     var eased = rawTarget;
     var vel = vec2<f32>(0.0);
     var env = bass;
-    let hasState = arrayLength(&extraBuffer) > 138u;
-    if (hasState && extraBuffer[138] > 0.5) {
-        eased = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-        vel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    let s0 = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+    let s1 = textureLoad(dataTextureC, vec2<i32>(1, 0), 0);
+    if (abs(s1.y - 7.25) < 0.01) {
+        eased = clamp(s0.xy, vec2<f32>(-1.0), vec2<f32>(1.0));
+        vel = clamp(s0.zw, vec2<f32>(-0.5), vec2<f32>(0.5));
         vel = (vel + (rawTarget - eased) * 0.12) * 0.78;
         eased += vel;
-        env = max(bass, extraBuffer[137] * 0.94);
+        env = max(bass, clamp(s1.x, 0.0, 2.0) * 0.94);
     }
-    if (hasState && id.x == 0u && id.y == 0u) {
-        extraBuffer[133] = eased.x;
-        extraBuffer[134] = eased.y;
-        extraBuffer[135] = vel.x;
-        extraBuffer[136] = vel.y;
-        extraBuffer[137] = env;
-        extraBuffer[138] = 1.0;
-    }
+    let isState0 = id.x == 0u && id.y == 0u;
+    let isState1 = id.x == 1u && id.y == 0u;
     let nectar = clamp(env, 0.0, 1.5);
     let hover = vec4<f32>(eased, clamp(-vel.x * 6.0, -0.6, 0.6), nectar);
 
@@ -265,7 +297,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     ro.y = ro_yz_rot.x;
     ro.z = ro_yz_rot.y;
 
-    var rd = normalize(vec3<f32>(uv, 1.0));
+    // uv.y grows downward; negate both axes so world +Y is screen-up (a 180°
+    // turn — flipping only y would mirror left/right).
+    var rd = normalize(vec3<f32>(-uv.x, -uv.y, 1.0));
     let rd_xz_rot = rot_x * rd.xz;
     rd.x = rd_xz_rot.x;
     rd.z = rd_xz_rot.y;
@@ -355,6 +389,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             } else if (m == 5.0) {
                 col = vec3<f32>(0.15, 0.85, 1.0) * (0.4 + fresnel * 1.6) * aura_intensity;
                 col += vec3<f32>(0.9, 0.3, 1.0) * fresnel * (0.3 + audio);
+            } else if (m == 6.0) {
+                // Tongue: wet nectar-pink, glowing with the nectar envelope.
+                col = vec3<f32>(1.0, 0.42, 0.62) * (0.35 + diff * 0.65);
+                col += vec3<f32>(1.0, 0.75, 0.9) * (fresnel + nectar * 0.8) * (0.5 + aura_intensity);
             }
         }
 
@@ -376,7 +414,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     final_color += vec3<f32>(0.25, 0.8, 1.0) * shock * (0.45 + treble * 0.8);
-    let prev = textureLoad(dataTextureC, vec2<i32>(id.xy), 0);
+    // Wing stripes swing negative; ACES maps negatives to bright, so clamp.
+    final_color = max(final_color, vec3<f32>(0.0));
+    var prev = textureLoad(dataTextureC, vec2<i32>(id.xy), 0);
+    if (isState0 || isState1) { prev = vec4<f32>(0.0); }
     // Wingbeat afterimage: treble + flutter lengthen persistence of trails
     let persist = clamp(0.9 + treble * 0.06 + flutter * 0.006, 0.85, 0.97);
     let hdr = mix(prev.rgb * persist, final_color, 0.3 + bass * 0.03);
@@ -384,5 +425,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let alpha = clamp(coverage * 0.68 + length(hdr) * 0.12 + shock * 0.22, 0.03, 1.0);
     textureStore(writeTexture, id.xy, vec4<f32>(mapped, alpha));
     textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(1.0 - clamp(final_depth / MAX_DIST, 0.0, 1.0), 0.0, 0.0, 1.0));
-    textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(hdr, alpha));
+    var outA = vec4<f32>(hdr, alpha);
+    if (isState0) { outA = vec4<f32>(eased, vel); }
+    if (isState1) { outA = vec4<f32>(env, 7.25, 0.0, 0.0); }
+    textureStore(dataTextureA, vec2<i32>(id.xy), outA);
 }

@@ -5,8 +5,13 @@
 //            mouse-driven, upgraded-rgba, depth-aware, oceanic
 //  Complexity: Very High
 //  Created: 2026-06-28
-//  Upgraded: 2026-09-27
-//  Ideas: symbiotic dock-and-pulse (entity flares a coral branch, light climbs it); caustic dapples by height; Reef Density = branch count
+//  Upgraded: 2026-10-18
+//  Ideas: symbiotic dock-and-pulse (entity flares a coral branch, light climbs it); caustic dapples by height; Reef Density = branch count;
+//    mass spawning (gamete bundles drift up off every branch tip, buoyant wobble, bass-lit, hit-occluded);
+//    spectral water absorption (Beer-Lambert by ray distance, red dies first so far coral turns blue-green; Fog Density = turbidity)
+//  Fixes 2026-10-18: dock flare read dockMin before the entity loop set it (always 0) -> entities first;
+//    camera basis was rotated 180 deg (seabed at screen top) -> right = cross(ww, Y), screen rows flipped,
+//    mouse-y re-aligned; background pow(sin*sin, 2.0) NaN on negative base -> squared
 //  A packing: display RGBA (ACES colour, alpha = hit/glow coverage)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -156,27 +161,6 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, bass: f32, reefDensity: f32,
   let axis = nearPos + vec3<f32>(sin(nearSeed * 3.0) * 0.5, nearSeed * 0.8, cos(nearSeed * 2.7) * 0.5);
   var dockMin = 8.0;
 
-  // Combine terrain and coral
-  var d = smin(terrain, coral, 0.4);
-  var mat = 1.0; // coral
-  var glow = 0.0;
-  var dock = 0.0;
-
-  if (coral < terrain) {
-    // Coral glow
-    let distToCoral = coral;
-    glow = sat((0.0 - distToCoral) * 2.0) * glowIntensity;
-    // Breathing expansion
-    let breath = sin(time * 1.5 + p.y * 3.0) * 0.5 + 0.5;
-    glow = glow * (0.5 + breath * 0.5 + bass * 0.5);
-    // IDEA 1: dock-and-pulse - branch flares while an entity is near its axis; a pulse climbs base -> tip
-    let dockAmt = 1.0 - smoothstep(0.35, 1.0, dockMin);
-    let yl = p.y - (axis.y - 0.5);
-    let ph = fract(time * 0.55 + nearSeed * 0.37) * 1.5 - 0.25;
-    let pulse = exp(-28.0 * (yl - ph) * (yl - ph));
-    dock = dockAmt * (0.35 + 1.4 * pulse);
-  }
-
   // Bioluminescent entities (procedural particles via SDF)
   var entityDist = 8.0;
   let numEntities = 8;
@@ -201,6 +185,27 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, bass: f32, reefDensity: f32,
     let dy = max(abs(ePos.y - axis.y) - 0.5, 0.0) * 0.5;
     dockMin = min(dockMin, length(vec2<f32>(dxz, dy)));
   }
+  // Combine terrain and coral
+  var d = smin(terrain, coral, 0.4);
+  var mat = 1.0; // coral
+  var glow = 0.0;
+  var dock = 0.0;
+
+  if (coral < terrain) {
+    // Coral glow
+    let distToCoral = coral;
+    glow = sat((0.0 - distToCoral) * 2.0) * glowIntensity;
+    // Breathing expansion
+    let breath = sin(time * 1.5 + p.y * 3.0) * 0.5 + 0.5;
+    glow = glow * (0.5 + breath * 0.5 + bass * 0.5);
+    // IDEA 1: dock-and-pulse - branch flares while an entity is near its axis; a pulse climbs base -> tip
+    let dockAmt = 1.0 - smoothstep(0.35, 1.0, dockMin);
+    let yl = p.y - (axis.y - 0.5);
+    let ph = fract(time * 0.55 + nearSeed * 0.37) * 1.5 - 0.25;
+    let pulse = exp(-28.0 * (yl - ph) * (yl - ph));
+    dock = dockAmt * (0.35 + 1.4 * pulse);
+  }
+
   if (entityDist < d) {
     d = entityDist;
     mat = 2.0; // entity
@@ -224,9 +229,38 @@ fn calcNormal(p: vec3<f32>, time: f32, audio: f32, bass: f32, reefDensity: f32,
 }
 
 // ─── Raymarch ───
+// IDEA 4: mass spawning — each branch tip releases a few gamete bundles that rise
+// with buoyant wobble; summed as ray/point closest-approach glow, clipped at tHit
+fn spawnGlow(ro: vec3<f32>, rd: vec3<f32>, tHit: f32, time: f32, bass: f32,
+             reefDensity: f32) -> vec3<f32> {
+  let branchCount = clamp(i32(floor(reefDensity * 9.0 + 0.5)), 3, 9);
+  var acc = vec3<f32>(0.0);
+  for (var i: i32 = 0; i < 9; i = i + 1) {
+    if (i >= branchCount) { break; }
+    let fi = f32(i);
+    let seed = fi + 0.5;
+    let pos = vec3<f32>(sin(fi * 2.1) * 2.0, -1.0 + fi * 0.2, cos(fi * 1.7) * 2.0);
+    let tip = pos + vec3<f32>(sin(seed * 3.0) * 0.5, seed * 0.8 + 0.5, cos(seed * 2.7) * 0.5);
+    for (var k: i32 = 0; k < 4; k = k + 1) {
+      let h = hash21(vec2<f32>(fi, f32(k) * 7.3));
+      let life = fract(time * 0.09 + h);
+      let rise = life * 2.6;
+      let wob = vec3<f32>(sin(time * 0.9 + h * 31.0), 0.0, cos(time * 0.7 + h * 17.0)) * (0.08 + rise * 0.12);
+      let q = tip + vec3<f32>(0.0, rise, 0.0) + wob;
+      let tc = clamp(dot(q - ro, rd), 0.0, tHit);
+      let dd = length(ro + rd * tc - q);
+      let fade = smoothstep(0.0, 0.08, life) * (1.0 - smoothstep(0.6, 1.0, life));
+      let r = 0.035 + 0.01 * h;
+      acc = acc + mix(vec3<f32>(1.0, 0.45, 0.35), vec3<f32>(1.0, 0.75, 0.3), h)
+          * exp(-dd * dd / (r * r)) * fade * (0.55 + bass * 0.8);
+    }
+  }
+  return acc;
+}
+
 fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: f32, mids: f32,
             treble: f32, reefDensity: f32, swarmSize: f32, glowIntensity: f32,
-            mousePos: vec3<f32>) -> vec4<f32> {
+            mousePos: vec3<f32>, tOut: ptr<function, f32>) -> vec4<f32> {
   var t = 0.0;
   var col = vec3<f32>(0.0);
   var alpha = 0.0;
@@ -292,13 +326,15 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: f32, mids
     // Deep ocean background
     col = vec3<f32>(0.0, 0.01, 0.03);
     // Caustic light from above
-    let caustic = pow(sin(rd.x * 10.0 + time) * sin(rd.y * 8.0 + time * 0.7), 2.0);
+    let cs = sin(rd.x * 10.0 + time) * sin(rd.y * 8.0 + time * 0.7);
+    let caustic = cs * cs; // pow(negative, 2.0) is NaN
     col = col + vec3<f32>(0.0, 0.1, 0.15) * caustic * (0.1 + bass * 0.1) * max(-rd.y, 0.0);
     // Distant bioluminescent haze
     col = col + vec3<f32>(0.1, 0.0, 0.2) * (0.05 + bass * 0.05) * sat(0.3 / (abs(rd.y) + 0.1));
     alpha = 0.0;
   }
 
+  *tOut = select(25.0, t, hit);
   return vec4<f32>(col, alpha);
 }
 
@@ -325,10 +361,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Mouse handling: screen top = UP in 3D
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
   let mouseUV = u.zoom_config.yz;
-  let mouseY = mouseUV.y; // Flip Y
+  let mouseY = 1.0 - mouseUV.y; // 1 = screen top
   let mousePos = vec3<f32>(
     (mouseUV.x * 2.0 - 1.0) * 3.0 * aspect,
-    (mouseUV.y * 2.0 - 1.0) * 3.0,
+    (1.0 - mouseUV.y * 2.0) * 3.0, // screen top = world up
     0.0
   );
 
@@ -339,18 +375,33 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let ro = vec3<f32>(cos(camAng) * camDist, camHeight, sin(camAng) * camDist);
   let ta = vec3<f32>(0.0, -0.5, 0.0);
   let ww = normalize(ta - ro);
-  let uu = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), ww));
-  let vv = cross(ww, uu);
+  let uu = normalize(cross(ww, vec3<f32>(0.0, 1.0, 0.0))); // screen-right
+  let vv = cross(uu, ww);                                     // screen-up
 
   // Ray direction
   var p = uv * 2.0 - 1.0;
   p.x = p.x * aspect;
+  p.y = -p.y; // rows grow downward
   let rd = normalize(p.x * uu + p.y * vv + 2.5 * ww);
 
   // Raymarch
-  let result = raymarch(ro, rd, time, audio, bass, mids, treble, reefDensity, swarmSize, glowIntensity, mousePos);
+  var tHit = 25.0;
+  let result = raymarch(ro, rd, time, audio, bass, mids, treble, reefDensity, swarmSize, glowIntensity, mousePos, &tHit);
   var col = result.rgb;
   var alpha = result.a;
+
+  // IDEA 5: spectral water absorption — Beer-Lambert per channel over the hit
+  // distance (red absorbed first); Fog Density = turbidity. Gamete bundles sit
+  // in the same water so they are attenuated too.
+  let sigma = vec3<f32>(0.075, 0.028, 0.018) * (0.4 + fogDensity * 1.5);
+  if (alpha > 0.0) {
+    let trans = exp(-sigma * min(tHit, 14.0));
+    let scatterCol = vec3<f32>(0.0, 0.035, 0.07) * (1.0 + bass * 0.2);
+    col = col * trans + scatterCol * (1.0 - trans);
+    alpha = alpha * (0.4 + 0.6 * dot(trans, vec3<f32>(0.3333)));
+  }
+  // Bundles drift ~a camera distance away: attenuate at that range
+  col = col + spawnGlow(ro, rd, tHit, time, bass, reefDensity) * exp(-sigma * camDist);
 
   // Ocean volumetric fog
   let fog = exp(-alpha * 0.3 * fogDensity);

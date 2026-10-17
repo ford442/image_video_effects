@@ -6,8 +6,8 @@
 //  the extra two dimensions. Audio affects fractal parameters.
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: Julia DE filaments on the true set boundary; hypercube fold-crease lattice coloured by fold count; 4D-space weave skewed by the rotations
+//  Upgraded: 2026-10-18
+//  Ideas: Julia DE filaments on the true set boundary; hypercube fold-crease lattice coloured by fold count; 4D-space weave skewed by the rotations; stereo hyperslice fringes (filaments of the two neighbouring slices along the 4D slice normal, warm behind / cool ahead); S3 orbit-trap veins in the interior hued by the quaternion imaginary axis
 //  A packing: raw HDR peak-hold history RGB, a = coverage (C.a unread; ACES on display only)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -19,6 +19,15 @@ const TAU: f32 = 6.28318530718;
 // Palette escape budget stays maxIter; the DE orbit keeps going to this depth.
 const JULIA_DE_ITERS: i32 = 20;
 const JULIA_DE_BAIL: f32 = 64.0;
+// Idea 5: orbit trap on the 3-sphere |z| = TRAP_R (numpy: interior median
+// distance ~0.05-0.1 at default, so 1/30 widths give veins, not a wash).
+const TRAP_R: f32 = 0.5;
+
+struct JuliaOut {
+    res: vec4<f32>,    // (palette iter, palette r, DE in 4D units, escaped)
+    trap: f32,         // min | |z| - TRAP_R | over the palette budget
+    axis: vec3<f32>,   // imaginary direction of z at the trap
+};
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
@@ -79,16 +88,18 @@ fn rot4XY(v: vec4<f32>, angle: f32) -> vec4<f32> {
 }
 
 // 4D Mandelbulb-like iteration (quaternion julia variant projected from 4D)
-// Returns (palette iter, palette r, DE in 4D units, 1 if the DE orbit escaped).
-// .xy are exactly HEAD's result: iteration of the first r > 4 inside maxIter,
+// .res = (palette iter, palette r, DE in 4D units, 1 if the DE orbit escaped).
+// .res.xy are exactly HEAD's result: iteration of the first r > 4 inside maxIter,
 // or (maxIter, |z| after maxIter steps).
-fn julia4D(c4: vec4<f32>, z0: vec4<f32>, maxIter: i32) -> vec4<f32> {
+fn julia4D(c4: vec4<f32>, z0: vec4<f32>, maxIter: i32) -> JuliaOut {
     var z = z0;
     var dz = 1.0;
     var palIter = f32(maxIter);
     var palR = -1.0;
     var de = 1e3;
     var escaped = 0.0;
+    var trap = 1e3;
+    var axis = vec3<f32>(0.0, 0.0, 1.0);
     let total = max(maxIter, JULIA_DE_ITERS);
 
     for (var i = 0; i < total; i++) {
@@ -98,6 +109,13 @@ fn julia4D(c4: vec4<f32>, z0: vec4<f32>, maxIter: i32) -> vec4<f32> {
                 palIter = f32(i); palR = r;
             } else if (i == maxIter) {
                 palR = r;
+            } else {
+                // Idea 5: trap only while the palette orbit is still bounded.
+                let dS = abs(r - TRAP_R);
+                if (dS < trap) {
+                    trap = dS;
+                    axis = z.yzw / max(length(z.yzw), 1e-5);
+                }
             }
         }
         // Idea 1: Julia DE filaments. The same orbit runs past the palette
@@ -128,7 +146,7 @@ fn julia4D(c4: vec4<f32>, z0: vec4<f32>, maxIter: i32) -> vec4<f32> {
         de = 0.5 * rEnd * log(rEnd) / dz;
         escaped = 1.0;
     }
-    return vec4<f32>(palIter, palR, de, escaped);
+    return JuliaOut(vec4<f32>(palIter, palR, de, escaped), trap, axis);
 }
 
 struct HyperFold {
@@ -275,12 +293,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     );
 
     let maxIter = i32(4.0 + detailLevel * 8.0 + bass * 2.0);
-    let juliaResult = julia4D(juliaC, p4, maxIter);
+    let juliaOut = julia4D(juliaC, p4, maxIter);
+    let juliaResult = juliaOut.res;
     let juliaIter = juliaResult.x;
     let juliaR    = juliaResult.y;
     // Idea 1: DE converted to screen units (rotations are isometries).
     let juliaDE   = juliaResult.z * zoomLevel;
     let filament  = exp(-juliaDE / 0.004) * juliaResult.w;
+
+    // Idea 4: stereo hyperslice fringes. e_z rotated by the same chain is a
+    // unit 4D normal to the screen slice (rotChain is orthogonal), so p4 +- n*d
+    // are the two neighbouring parallel slices. Their filaments are drawn as
+    // warm (behind) / cool (ahead) fringes: where the set boundary moves fast
+    // through the 4th dimension the fringes split away from the white edge.
+    let n4 = rotChain(vec4<f32>(0.0, 0.0, 1.0, 0.0), aXW, aYZ, aZW, aXY);
+    let sliceGap = 0.05 + bass * 0.03;
+    let ghostBack = julia4D(juliaC, p4 - n4 * sliceGap, maxIter).res;
+    let ghostFwd  = julia4D(juliaC, p4 + n4 * sliceGap, maxIter).res;
+    let fringeBack = exp(-ghostBack.z * zoomLevel / 0.005) * ghostBack.w * (1.0 - filament);
+    let fringeFwd  = exp(-ghostFwd.z * zoomLevel / 0.005) * ghostFwd.w * (1.0 - filament);
 
     // Hypercube fractal for structural detail
     let hcScale = 0.5 + treble * 0.2;
@@ -301,6 +332,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (juliaIter >= f32(maxIter)) {
         let innerGlow = exp(-length(p4) * 2.0) * (0.3 + bass * 0.4);
         color = vec3<f32>(0.05, 0.02, 0.08) + vec3<f32>(0.2, 0.1, 0.5) * innerGlow;
+        // Idea 5: S3 orbit-trap veins. Where the bounded orbit grazes the
+        // 3-sphere |z| = TRAP_R the interior lights a vein; its hue is the
+        // quaternion's imaginary axis at that moment (a Hopf-style direction
+        // colour), so the veins show how the orbit turns inside the set.
+        let vein = exp(-juliaOut.trap * 30.0);
+        let axisCol = 0.5 + 0.5 * juliaOut.axis;
+        let veinCol = mix(vec3<f32>(0.35, 0.25, 0.8), axisCol, 0.75);
+        color += veinCol * vein * (0.28 + mids * 0.25);
     }
 
     // Hypercube structural overlay
@@ -347,6 +386,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 1: HEAD's smoothstep(maxIter-1.5, maxIter-0.5, iter) was 1 on every
     // interior pixel (flat cream interior); the DE filament hugs the real edge.
     color += vec3<f32>(1.0, 0.95, 0.8) * filament * (0.9 + mids * 0.4);
+    color += (vec3<f32>(1.0, 0.42, 0.15) * fringeBack + vec3<f32>(0.2, 0.6, 1.0) * fringeFwd) * (0.45 + treble * 0.35);
 
     // Exact history load at the advected texel (HEAD filtered rgba32float).
     let historyUV = clamp(uv - velocityDir * (0.004 + rotSpeed * 0.008), vec2<f32>(0.002), vec2<f32>(0.998));
@@ -358,7 +398,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Semantic alpha: slice coverage (set interior, filament, creases) plus
     // how slowly the exterior escaped; far W haze thins it.
     let interiorMask = select(0.0, 1.0, juliaIter >= f32(maxIter));
-    let coverage = max(max(interiorMask, filament), structuralLine);
+    let coverage = max(max(max(interiorMask, filament), structuralLine), max(fringeBack, fringeFwd) * 0.7);
     let alpha = clamp((coverage + clamp(normIter, 0.0, 1.0) * 0.65 + latticeTrail * 0.1) * (1.0 - dimFog * 0.25), 0.15, 1.0);
     textureStore(dataTextureA, global_id.xy, vec4<f32>(temporal, alpha));
 
