@@ -3,7 +3,7 @@
   "name": "Cybernetic Plasma-Orchid Nexus",
   "url": "shaders/gen-cybernetic-plasma-orchid-nexus.wgsl",
   "category": "generative",
-  "description": "A hyper-stylized digital flora ecosystem where crystalline petals of plasma bloom from a glowing cybernetic core, pulsating with neon chromatic aberration. The lowest petal is a cupped orchid lip with a plasma nectar well glowing in its throat, and a central column carries two pollinia beads that pulse with the bass. A cooler dorsal sepal hoods the top of the flower, and veins run out along each petal blade.",
+  "description": "A hyper-stylized digital flora ecosystem where crystalline petals of plasma bloom from a glowing cybernetic core, pulsating with neon chromatic aberration. The lowest petal is a cupped orchid lip with a plasma nectar well glowing in its throat, and a central column carries two pollinia beads that pulse with the bass. A cooler dorsal sepal hoods the top of the flower, and veins run out along each petal blade. Freckled nectar guides mark the lip; hold the pointer to pull the pollinia.",
   "features": [
     "raymarching",
     "domain-warping",

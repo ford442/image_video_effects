@@ -7,12 +7,17 @@
 //            audio-reactive, aces-tone-map, semantic-alpha, generated-depth,
 //            fast-motion, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
+//  Upgraded: 2026-10-17
 //  Ideas: W-cell hive lattice along unused W; sentinel pheromone lanes on radial
 //         spokes. 2nd pass: 4D hypercube wire glow (slice edges from the 2-faces,
 //         sparks where the 32 edges pierce the slice); W-depth film phase (the
 //         rotated W of each hit point shifts the thin-film hue); sentinels orbit
-//         the projected centres of the 8 cubic cells + hive cell
+//         the projected centres of the 8 cubic cells + hive cell. 3rd pass:
+//         W-approach ghost (the hive cell's 3D shadow glows in before it
+//         crosses the slice, brighter the nearer it is in W); hive-mind
+//         command tethers (bowed arcs from the hive centre to the 8 cells,
+//         packets running outward, dimmed by each cell's W distance and
+//         hidden behind the solid slice)
 //  A packing: raw HDR peak-hold trail RGB (steady state = current frame) +
 //             depth (near = 1) in A.a, except A(0,0).a = fract(time) (trail dt);
 //             ACES on writeTexture only. No extraBuffer state.
@@ -158,6 +163,18 @@ fn map(p: vec3<f32>, time: f32, bass: f32) -> vec2<f32> {
     return vec2<f32>(d1, 1.0);
 }
 
+// W-approach ghost: the hive cell's 3D shadow (its xyz box, ignoring W) and how
+// near it is to the slice along W (1 = touching). Not part of map().
+fn hiveGhost(p: vec3<f32>, time: f32) -> vec2<f32> {
+    let q = tessP4(p, time) - vec4<f32>(0.0, 0.0, 0.0, HIVE_W);
+    let dg = sdBox3(q.xyz, vec3<f32>(HIVE_HALF)) - 0.08;
+    let wGap = max(abs(q.w) - HIVE_HALF, 0.0);
+    return vec2<f32>(dg, exp(-wGap * 2.5));
+}
+
+var<private> ghostMin: f32 = 1e3;
+var<private> ghostNear: f32 = 0.0;
+
 // Raymarching
 fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, bass: f32) -> vec2<f32> {
     var dO: f32 = 0.0;
@@ -165,6 +182,8 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, bass: f32) -> vec2<f32> {
     var converged = false;
     for(var i = 0; i < MAX_STEPS; i++) {
         let p = ro + rd * vec3<f32>(dO);
+        let gh = hiveGhost(p, time);
+        if (gh.x < ghostMin) { ghostMin = gh.x; ghostNear = gh.y; }
         let dS = map(p, time, bass);
         dO += dS.x;
         mat_id = dS.y;
@@ -268,7 +287,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var ro = vec3<f32>(0.0, 0.0, -3.0);
     let roxz = camR * ro.xz;
     ro = vec3<f32>(roxz.x, 0.0, roxz.y);
-    var rd = normalize(vec3<f32>(uv.x, uv.y, 1.0));
+    // uv.y grows downward: negate so world +y (the key light) is screen-up
+    var rd = normalize(vec3<f32>(uv.x, -uv.y, 1.0));
     let rdxz = camR * rd.xz;
     rd = normalize(vec3<f32>(rdxz.x, rd.y, rdxz.y));
 
@@ -340,13 +360,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // perspective by W distance from the slice, then the camera projection.
     // (HEAD streamed them around the screen centre with dot(uv, tangential),
     //  which is identically 0, so they were flickering concentric rings.)
-    let swarmSpeed = 4.0 + rotation_speed * 4.0 + bass * 5.0;
+    let swarmSpeed = 4.0 + rotation_speed * 4.0;
+    let swarmKick = bass * 1.5; // phase kick, not a time multiplier
     let thresh = 0.94 - swarm_density * 0.055;
     let w_off = (u.zoom_config.z - 0.5) * 2.0;
     var swarm_val = 0.0;
     var bestR = 1e3;
     var bestLoc = vec2<f32>(0.0);
     var bestRk = 1.0;
+    // projected centres (uv.xy, camera depth; depth < 0 = behind) + W persp
+    var cellUV: array<vec3<f32>, 9>;
+    var cellW: array<f32, 9>;
     for (var k = 0; k < 9; k++) {
         var o = vec4<f32>(0.0, 0.0, 0.0, HIVE_W);
         if (k < 8) {
@@ -361,8 +385,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // world -> camera (transpose of camR on xz)
         let lz = -camR[0][1] * rel.x + camR[1][1] * rel.z;
         let lx = camR[0][0] * rel.x - camR[1][0] * rel.z;
+        cellW[k] = persp;
+        cellUV[k] = vec3<f32>(0.0, 0.0, -1.0);
         if (lz < 0.2) { continue; }
-        let suv = vec2<f32>(lx, rel.y) / lz;
+        let suv = vec2<f32>(lx, -rel.y) / lz; // matches rd's flipped y
+        cellUV[k] = vec3<f32>(suv, lz);
         let rk = 0.75 * persp / lz; // projected cell radius
         let loc = uv - suv;
         let r = length(loc);
@@ -370,7 +397,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         if (rn < bestR) { bestR = rn; bestLoc = loc; bestRk = rk; }
         let fk = f32(k);
         // Kepler-ish angular speed: inner orbits are faster
-        let a = atan2(loc.y, loc.x) - warpT * swarmSpeed * 0.07 / (rn + 0.35);
+        let a = atan2(loc.y, loc.x) - (warpT * swarmSpeed + swarmKick) * 0.07 / (rn + 0.35);
         let n1 = vnoise3(vec3<f32>(cos(a) * 2.2 + fk * 5.1, sin(a) * 2.2, rn * 9.0 + warpT * 0.7));
         let n2 = vnoise3(vec3<f32>(cos(a) * 5.5 + 31.7 + fk * 3.3, sin(a) * 5.5 + 11.3, rn * 18.0 + warpT * 1.3));
         let swarmNoise = n1 * 0.65 + n2 * 0.35;
@@ -386,11 +413,43 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 2 — sentinel pheromone lanes: radial spokes streaming outward from
     // the nearest projected cell centre, beside the orbiting streaks
     let a0 = atan2(bestLoc.y, bestLoc.x);
-    let alongRad = bestR * 3.5 - warpT * swarmSpeed * 0.12;
+    let alongRad = bestR * 3.5 - (warpT * swarmSpeed + swarmKick) * 0.12;
     let nPhero = vnoise3(vec3<f32>(cos(a0) * 6.0, sin(a0) * 6.0, alongRad));
     let phero = smoothstep(0.90, 0.97, nPhero) * depth_mask * exp(-bestR * 0.5)
               * clamp(swarm_density * 0.15, 0.0, 0.8);
     col += vec3<f32>(0.08, 0.55, 0.28) * tempTint * vec3<f32>(phero * (1.2 + burst));
+
+    // Idea 3 (3rd pass) — W-approach ghost: before the hive cell slides into
+    // the slice its 3D shadow glows in place, a violet film that brightens as
+    // its W gap closes; once it is sliced the solid cell takes over.
+    let ghostRim = exp(-max(ghostMin, 0.0) * 14.0) * (1.0 - smoothstep(0.85, 1.0, ghostNear));
+    col += vec3<f32>(0.55, 0.3, 1.0) * tempTint * vec3<f32>(ghostRim * ghostNear * (0.45 + mids * 0.3));
+
+    // Idea 4 (3rd pass) — hive-mind command tethers: the hive cell commands the
+    // eight cubic cells through bowed arcs with packets running outward. Each
+    // tether dims with its cell's W distance and hides behind the solid slice.
+    let hc = cellUV[8];
+    if (hc.z > 0.0) {
+        let viewLen = length(vec3<f32>(uv, 1.0));
+        for (var k = 0; k < 8; k++) {
+            let cc = cellUV[k];
+            if (cc.z <= 0.0) { continue; }
+            let ab = cc.xy - hc.xy;
+            let L2 = max(dot(ab, ab), 1e-5);
+            let tS = clamp(dot(uv - hc.xy, ab) / L2, 0.0, 1.0);
+            let nrm = vec2<f32>(-ab.y, ab.x) * inverseSqrt(L2);
+            let fk = f32(k);
+            let bow = sin(tS * 3.14159) * (0.05 + 0.02 * sin(warpT * 1.3 + fk * 2.1));
+            let dist = length(uv - (hc.xy + ab * tS + nrm * bow));
+            let tetherZ = mix(hc.z, cc.z, tS) * viewLen;
+            let visible = smoothstep(-0.1, 0.1, d - tetherZ);
+            let link = cellW[k] * cellW[8];
+            let pkt = exp(-abs(fract(tS - warpT * 0.7 + fk * 0.137) - 0.5) * 24.0);
+            let line = exp(-dist * 260.0) * (0.25 + mids * 0.45) + exp(-dist * 90.0) * pkt * (0.6 + burst * 0.5);
+            col += vec3<f32>(0.35, 0.9, 1.0) * tempTint * vec3<f32>(line * link * visible);
+        }
+    }
+
     col += iridescence(vec3<f32>(0.0, 0.0, 1.0), normalize(vec3<f32>(uv, 1.0)), iridescence_shift + time * 0.1)
          * shock * (0.8 + treble * 1.2);
 
