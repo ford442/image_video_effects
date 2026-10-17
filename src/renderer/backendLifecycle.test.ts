@@ -180,6 +180,38 @@ describe('backendLifecycle', () => {
       expect(order.indexOf('wasm.init')).toBeGreaterThan(order.indexOf('webgpu.lost'));
     });
 
+    it('reports a failed switch (and restores the previous backend) when the WASM renderer cannot be created', async () => {
+      const canvas = document.createElement('canvas');
+      const webgpu = {
+        init: jest.fn().mockResolvedValue(true),
+        destroy: jest.fn(),
+        releaseExclusiveGpu: jest.fn().mockResolvedValue(undefined),
+        setVideo: jest.fn(),
+      };
+      (WebGPURenderer as jest.Mock).mockImplementation(() => webgpu);
+      (WASMRenderer as jest.Mock).mockImplementation(() => {
+        throw new Error('Loading chunk wasm-renderer failed');
+      });
+      jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+      const result = await performBackendSwitch({
+        targetType: 'wasm',
+        canvas,
+        config: DEFAULT_CONFIG,
+        previousType: 'webgpu',
+        previousRenderer: webgpu as never,
+      });
+
+      expect(result).toMatchObject({
+        success: false,
+        renderer: null,
+        type: null,
+        isWASM: false,
+        failedWasmRenderer: null,
+        restoreType: 'webgpu',
+      });
+    });
+
     it('blocks wasm after a historyTex OOM this tab', async () => {
       sessionStorage.setItem('px_webgpu_oom_block_wasm', '1');
       const canvas = document.createElement('canvas');
@@ -261,14 +293,14 @@ describe('backendLifecycle', () => {
   });
 
   describe('createRendererForType', () => {
-    it('instantiates the three backend classes', () => {
+    it('instantiates the three backend classes (WASM through its lazy chunk)', async () => {
       (WebGPURenderer as jest.Mock).mockImplementation(() => ({ tag: 'webgpu' }));
       (WASMRenderer as jest.Mock).mockImplementation(() => ({ tag: 'wasm' }));
       (JSRenderer as jest.Mock).mockImplementation(() => ({ tag: 'js' }));
 
-      expect(createRendererForType('webgpu', DEFAULT_CONFIG)).toEqual({ tag: 'webgpu' });
-      expect(createRendererForType('wasm', DEFAULT_CONFIG)).toEqual({ tag: 'wasm' });
-      expect(createRendererForType('js', DEFAULT_CONFIG)).toEqual({ tag: 'js' });
+      expect(await createRendererForType('webgpu', DEFAULT_CONFIG)).toEqual({ tag: 'webgpu' });
+      expect(await createRendererForType('wasm', DEFAULT_CONFIG)).toEqual({ tag: 'wasm' });
+      expect(await createRendererForType('js', DEFAULT_CONFIG)).toEqual({ tag: 'js' });
     });
   });
 });
