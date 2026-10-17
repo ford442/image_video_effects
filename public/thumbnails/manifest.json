@@ -1665,13 +1665,15 @@
   },
   "gen-mycelium-network": {
     "thumbnail_url": "thumbnails/gen-mycelium-network.png",
-    "generated_at": "2026-06-14T06:42:21.287Z",
+    "generated_at": "2026-10-17T21:30:52.173Z",
     "params_snapshot": [
       0.6,
       0.5,
       0.7,
       0.8
-    ]
+    ],
+    "source_hash": "cfcff2a4bc96c786",
+    "capture_host": "swiftshader"
   },
   "gen-navier-stokes-ink": {
     "thumbnail_url": "thumbnails/gen-navier-stokes-ink.png",
@@ -1717,13 +1719,15 @@
   },
   "gen-neon-cyber-mandala": {
     "thumbnail_url": "thumbnails/gen-neon-cyber-mandala.png",
-    "generated_at": "2026-06-14T06:42:23.077Z",
+    "generated_at": "2026-10-17T21:05:17.175Z",
     "params_snapshot": [
       0.7,
       0.25,
       0.4,
       0
-    ]
+    ],
+    "source_hash": "541cb83f1c1e6616",
+    "capture_host": "swiftshader"
   },
   "gen-neon-lotus": {
     "thumbnail_url": "thumbnails/gen-neon-lotus.png",
@@ -3785,14 +3789,14 @@
   },
   "gen-bioluminescent-chrono-plasma-astro-owl": {
     "thumbnail_url": "thumbnails/gen-bioluminescent-chrono-plasma-astro-owl.png",
-    "generated_at": "2026-10-05T11:04:31.625Z",
+    "generated_at": "2026-10-17T20:50:56.490Z",
     "params_snapshot": [
       1,
       0.5,
       0.8,
       0.2
     ],
-    "source_hash": "f936d7c94d440c32",
+    "source_hash": "55f42bda1bc40020",
     "capture_host": "swiftshader"
   },
   "gen-aetherial-plasma-loom": {
@@ -4661,14 +4665,14 @@
   },
   "gen-luminescent-quantum-void-astral-turtle": {
     "thumbnail_url": "thumbnails/gen-luminescent-quantum-void-astral-turtle.png",
-    "generated_at": "2026-10-05T11:46:20.389Z",
+    "generated_at": "2026-10-17T21:28:17.563Z",
     "params_snapshot": [
       3,
       1.5,
       0.8,
       1
     ],
-    "source_hash": "9084ef9ff39b316b",
+    "source_hash": "4f4176106cfa6c52",
     "capture_host": "swiftshader"
   },
   "gen-fireworks-dahlia-burst": {
@@ -4709,14 +4713,14 @@
   },
   "gen-hyperdimensional-plasma-loom": {
     "thumbnail_url": "thumbnails/gen-hyperdimensional-plasma-loom.png",
-    "generated_at": "2026-10-05T11:47:15.325Z",
+    "generated_at": "2026-10-17T21:25:17.761Z",
     "params_snapshot": [
       2,
       0.05,
       1,
       1
     ],
-    "source_hash": "b8d95c922317a57d",
+    "source_hash": "e8538bb59bf7aee7",
     "capture_host": "swiftshader"
   },
   "gen-prismatic-cyber-chrono-nebula-peacock": {
@@ -5597,14 +5601,14 @@
   },
   "gen-radiant-cyber-chrono-void-stag": {
     "thumbnail_url": "thumbnails/gen-radiant-cyber-chrono-void-stag.png",
-    "generated_at": "2026-10-05T12:31:54.584Z",
+    "generated_at": "2026-10-17T21:43:38.840Z",
     "params_snapshot": [
       1,
       3,
       0.5,
       1
     ],
-    "source_hash": "eef293580ba80e72",
+    "source_hash": "577c9ec2dcfbb633",
     "capture_host": "swiftshader"
   },
   "hybrid-chromatic-liquid": {
@@ -14393,14 +14397,14 @@
   },
   "gen-luminescent-quantum-void-anglerfish": {
     "thumbnail_url": "thumbnails/gen-luminescent-quantum-void-anglerfish.png",
-    "generated_at": "2026-10-05T18:14:55.928Z",
+    "generated_at": "2026-10-17T21:26:12.183Z",
     "params_snapshot": [
       0.5,
       1,
       0.8,
       0.5
     ],
-    "source_hash": "9274e94432bdde12",
+    "source_hash": "e858b56ff3331f4d",
     "capture_host": "swiftshader"
   },
   "gen-neon-stellated-octahedron": {
