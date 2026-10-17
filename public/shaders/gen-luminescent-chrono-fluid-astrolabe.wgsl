@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: engraved limb graduations on every ring; geared outer mater + radius-ratio gear train; rete star-chart plate (almucantars, azimuths, sidereal stars); ecliptic circle with 12 sign ticks + riding sun bead; cursor-led alidade sight-line that flares crossed stars
+//  Upgraded: 2026-10-17
+//  Ideas: limb graduations; geared mater; rete plate; ecliptic and sun bead; alidade sight-line; unequal-hour arcs; alidade shadow
 //  A packing: ACES display RGBA (C read back as colour history, exact textureLoad)
 // ═══════════════════════════════════════════════════════════════════
 // Batch 36 (Optimizer) base kept: coarse->refined SDF (fluid noise culled
@@ -229,11 +229,14 @@ fn retePlate(uv: vec2<f32>, ctx: SceneCtx, time: f32, mids: f32) -> vec3<f32> {
     let mw = ctx.mouseWorld;
     let aliAng = select(ctx.animTime * 0.12, atan2(mw.y, mw.x), length(mw) > 0.15);
     let aliDir = vec2<f32>(cos(aliAng), sin(aliAng));
-    let aliPerp = abs(dot(pu, vec2<f32>(-aliDir.y, aliDir.x)));
+    let signedPerp = dot(pu, vec2<f32>(-aliDir.y, aliDir.x));
+    let aliPerp = abs(signedPerp);
     let aliAlong = dot(pu, aliDir);
     let aliMask = smoothstep(-2.0, -1.7, aliAlong) * (1.0 - smoothstep(1.7, 2.0, aliAlong));
     let flare = exp(-aliPerp * aliPerp * 220.0) * aliMask;
     let rule = exp(-aliPerp * 260.0) * aliMask * (0.5 + 0.5 * step(0.0, aliAlong));
+    // Idea: alidade shadow. A soft dark band sits just off the rule, so the bar reads above the chart.
+    let shadow = exp(-(signedPerp - 0.07) * (signedPerp - 0.07) * 70.0) * aliMask;
 
     let star = step(0.9, h) * exp(-sd * sd * 60.0) * twinkle * (1.0 + 3.5 * flare);
 
@@ -252,11 +255,22 @@ fn retePlate(uv: vec2<f32>, ctx: SceneCtx, time: f32, mids: f32) -> vec3<f32> {
     let sunBead = exp(-sunD * sunD * 900.0) + 0.25 * exp(-sunD * 12.0);
     let ecl = (eclBand * 0.45 + signTick * 0.9) * (1.0 - smoothstep(1.4, 2.0, rPlate));
 
-    return (vec3<f32>(0.85, 0.62, 0.25) * lines * 0.22
+    // Idea: unequal hours. Seasonal hour arcs, centers walked along the east-west line.
+    var hours = 0.0;
+    for (var hourIdx = 1; hourIdx <= 5; hourIdx = hourIdx + 1) {
+        let ht = f32(hourIdx) / 6.0;
+        let hc = vec2<f32>(mix(-1.6, 1.6, ht), 0.15);
+        let hr = 0.55 + abs(ht - 0.5) * 1.4;
+        let hd = abs(length(pu - hc) - hr);
+        hours = max(hours, exp(-hd * 90.0) * smoothstep(0.25, 0.55, rPlate));
+    }
+
+    let chart = (vec3<f32>(0.85, 0.62, 0.25) * (lines * 0.22 + hours * 0.16)
           + vec3<f32>(0.75, 0.9, 1.2) * star * 0.9
           + vec3<f32>(1.0, 0.72, 0.3) * ecl * 0.32
-          + vec3<f32>(1.2, 0.95, 0.5) * sunBead * 0.9
-          + vec3<f32>(0.55, 0.8, 1.2) * rule * 0.28) * plateMask;
+          + vec3<f32>(1.2, 0.95, 0.5) * sunBead * 0.9) * plateMask;
+    let ruled = vec3<f32>(0.55, 0.8, 1.2) * rule * 0.28 * plateMask;
+    return chart * (1.0 - shadow * 0.75) + ruled;
 }
 
 @compute @workgroup_size(16, 16, 1)

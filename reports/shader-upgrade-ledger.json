@@ -1931,7 +1931,7 @@
       "history": []
     },
     "gen-auroral-ferrofluid-monolith": {
-      "hash": "8764cac3c01751b4",
+      "hash": "de4aaeeeeabdb1e3",
       "history": [
         {
           "event": "upgraded",
@@ -1940,6 +1940,14 @@
           "prev_hash": "3d8cf45e90c84133",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T22:24:11.251Z",
+          "hash": "de4aaeeeeabdb1e3",
+          "prev_hash": "8764cac3c01751b4",
+          "commit": "327946b4",
+          "note": "2026-10-17 cursor batch-03 — docs/agents/swarm-outputs/cursor-2026-10-17-batch-03/"
         }
       ]
     },
@@ -4335,7 +4343,7 @@
       ]
     },
     "gen-luminescent-chrono-fluid-astrolabe": {
-      "hash": "95038db36f168d9f",
+      "hash": "8e42c4bc0242f9df",
       "history": [
         {
           "event": "upgraded",
@@ -4344,6 +4352,14 @@
           "prev_hash": "40eed0c1817f7b7e",
           "commit": "a26af174",
           "note": "2026-10-10 luminescent/magnetic ten (Claude) — agents/swarm-outputs/claude-2026-10-10-luminescent-magnetic-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T22:24:11.251Z",
+          "hash": "8e42c4bc0242f9df",
+          "prev_hash": "95038db36f168d9f",
+          "commit": "327946b4",
+          "note": "2026-10-17 cursor batch-03 — docs/agents/swarm-outputs/cursor-2026-10-17-batch-03/"
         }
       ]
     },
@@ -4471,7 +4487,7 @@
       ]
     },
     "gen-magnetic-ferrofluid": {
-      "hash": "ae1eee4bcb552952",
+      "hash": "3b7bfc44d8a4f922",
       "history": [
         {
           "event": "upgraded",
@@ -4480,6 +4496,14 @@
           "prev_hash": "7e46bc5b12774a79",
           "commit": "a26af174",
           "note": "2026-10-10 luminescent/magnetic ten (Claude) — agents/swarm-outputs/claude-2026-10-10-luminescent-magnetic-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T22:24:11.251Z",
+          "hash": "3b7bfc44d8a4f922",
+          "prev_hash": "ae1eee4bcb552952",
+          "commit": "327946b4",
+          "note": "2026-10-17 cursor batch-03 — docs/agents/swarm-outputs/cursor-2026-10-17-batch-03/"
         }
       ]
     },
@@ -4626,8 +4650,17 @@
       ]
     },
     "gen-navier-stokes-ink": {
-      "hash": "75668d4056237b98",
-      "history": []
+      "hash": "c8405823f5642d4a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T22:24:11.251Z",
+          "hash": "c8405823f5642d4a",
+          "prev_hash": "75668d4056237b98",
+          "commit": "327946b4",
+          "note": "2026-10-17 cursor batch-03 — docs/agents/swarm-outputs/cursor-2026-10-17-batch-03/"
+        }
+      ]
     },
     "gen-nebula-light-trail-swarm": {
       "hash": "ebb0dfcd7a4c1de6",
@@ -5565,8 +5598,17 @@
       "history": []
     },
     "gen-tectonic-plasma-crucible": {
-      "hash": "a55591cffe1f5ae4",
-      "history": []
+      "hash": "9ff2421ef47d446e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T22:24:11.251Z",
+          "hash": "9ff2421ef47d446e",
+          "prev_hash": "a55591cffe1f5ae4",
+          "commit": "327946b4",
+          "note": "2026-10-17 cursor batch-03 — docs/agents/swarm-outputs/cursor-2026-10-17-batch-03/"
+        }
+      ]
     },
     "gen-temporal-motion-smear": {
       "hash": "2e575897d664dc0f",
@@ -8292,12 +8334,30 @@
       "history": []
     },
     "liquid-optimized-pass1": {
-      "hash": "2c70cc7d3a52c2e7",
-      "history": []
+      "hash": "47483d93ddb397e8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T22:24:11.251Z",
+          "hash": "47483d93ddb397e8",
+          "prev_hash": "2c70cc7d3a52c2e7",
+          "commit": "327946b4",
+          "note": "2026-10-17 cursor batch-03 — docs/agents/swarm-outputs/cursor-2026-10-17-batch-03/"
+        }
+      ]
     },
     "liquid-optimized-pass2": {
-      "hash": "1c5d6b5fd74beba5",
-      "history": []
+      "hash": "226ecf106d9e69d2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T22:24:11.251Z",
+          "hash": "226ecf106d9e69d2",
+          "prev_hash": "1c5d6b5fd74beba5",
+          "commit": "327946b4",
+          "note": "2026-10-17 cursor batch-03 — docs/agents/swarm-outputs/cursor-2026-10-17-batch-03/"
+        }
+      ]
     },
     "liquid-optimized": {
       "hash": "d7c9dad4dd6a5cd5",
@@ -8926,16 +8986,43 @@
       ]
     },
     "rd-on-video-pass1": {
-      "hash": "77a3ba592fd783b5",
-      "history": []
+      "hash": "0e81383d21494a83",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T22:24:11.251Z",
+          "hash": "0e81383d21494a83",
+          "prev_hash": "77a3ba592fd783b5",
+          "commit": "327946b4",
+          "note": "2026-10-17 cursor batch-03 — docs/agents/swarm-outputs/cursor-2026-10-17-batch-03/"
+        }
+      ]
     },
     "rd-on-video-pass2": {
-      "hash": "bf8e0c0e0b82371c",
-      "history": []
+      "hash": "149d805b9964a02a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T22:24:11.251Z",
+          "hash": "149d805b9964a02a",
+          "prev_hash": "bf8e0c0e0b82371c",
+          "commit": "327946b4",
+          "note": "2026-10-17 cursor batch-03 — docs/agents/swarm-outputs/cursor-2026-10-17-batch-03/"
+        }
+      ]
     },
     "rd-on-video-pass3": {
-      "hash": "e132a598bea19f69",
-      "history": []
+      "hash": "9310f89ea696e844",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-17T22:24:11.251Z",
+          "hash": "9310f89ea696e844",
+          "prev_hash": "e132a598bea19f69",
+          "commit": "327946b4",
+          "note": "2026-10-17 cursor batch-03 — docs/agents/swarm-outputs/cursor-2026-10-17-batch-03/"
+        }
+      ]
     },
     "ripple-tank": {
       "hash": "88d9a913e8d5608a",
