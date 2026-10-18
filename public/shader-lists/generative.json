@@ -13514,7 +13514,7 @@
     "name": "Gravitational Ferrofluid Singularity-Engine",
     "url": "shaders/gen-gravitational-ferrofluid-singularity-engine.wgsl",
     "category": "generative",
-    "description": "A stylized ferrofluid singularity with rotating magnetic domains, orbiting spike fronts, accelerating droplets, click shocks, and bounded horizon-aligned light trails driven by live audio.",
+    "description": "A stylized ferrofluid singularity with rotating magnetic domains, frame-dragged inner spikes, an ISCO hot ring outside the photon sheen, accelerating droplets, click shocks, and bounded horizon-aligned light trails driven by live audio.",
     "features": [
       "ferrofluid",
       "singularity",
@@ -26620,7 +26620,7 @@
       "temporal",
       "depth-aware"
     ],
-    "description": "A mesmerizing, hyper-turbulent ocean of boiling quantum probability foam, where iridescent hyper-bubbles merge and burst in sync with audio frequencies, releasing flashes of raw cosmic energy.",
+    "description": "A raymarched superfluid foam: bubbles neck and pop, a Kelvin vortex line carries second sound, Abrikosov dimples dent the films, and an Andreev sheen rims the silhouette.",
     "workgroup_size": [
       16,
       16,

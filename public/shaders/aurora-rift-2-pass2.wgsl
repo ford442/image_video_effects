@@ -2,31 +2,11 @@
 //  aurora-rift-2-pass2 - Aurora Rift 2 Pass 2: Atmospheric Scattering
 //  Category: lighting-effects
 //  Features: upgraded-rgba, depth-aware, multi-pass-2, atmospheric
-//  Upgraded: 2026-03-22
+//  Upgraded: 2026-10-18
+//  Ideas: STEVE mauve arc; nitrogen pink lower border
+//  A packing: A echoes volumetric (aurora color, density). Display ACES is writeTexture only.
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var videoSampler: sampler;
-@group(0) @binding(1) var videoTex:    texture_2d<f32>;
-@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
-
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var depthTex:   texture_2d<f32>;
-@group(0) @binding(5) var depthSampler: sampler;
-@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
-
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB:  texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config:      vec4<f32>,       // x=time, y=globalIntensity, z=resX, w=resY
-    zoom_params: vec4<f32>,       // x=scale, y=flowSpeed, z=diffusionRate, w=fbmOctaves
-    zoom_config: vec4<f32>,       // x=rotationSpeed, y=depthParallax, z=emitThresh, w=chromaticSpread
-    ripples:     array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  Tone mapping
@@ -146,100 +126,76 @@ fn applyVignette(color: vec3<f32>, uv: vec2<f32>, intensity: f32) -> vec3<f32> {
 // ═══════════════════════════════════════════════════════════════════════════
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    let unused_x = u.zoom_params.x;
-    let unused_y = u.zoom_params.y;
-    let unused_z = u.zoom_params.z;
-    let unused_w = u.zoom_params.w;
     let dims = u.config.zw;
+    if (f32(gid.x) >= dims.x || f32(gid.y) >= dims.y) { return; }
+    let coord = vec2<i32>(gid.xy);
     let uv = (vec2<f32>(gid.xy) + 0.5) / dims;
     let texel = 1.0 / dims;
     let time = u.config.x;
-    let globalIntensity = 1.0;
-    
-    // Enhanced parameters for version 2
-    let dummySliders = u.zoom_params.x * u.zoom_params.y * u.zoom_params.w * 0.0001; // Consume unused sliders in pass 2
-    let chromaSpread = u.zoom_config.w * 0.4 + 0.1;
+
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+
+    let scale = u.zoom_params.x;
+    let flow = u.zoom_params.y;
+    let octaves = u.zoom_params.w;
+    let chromaSpread = octaves * 0.4 + 0.1;
     let diffusionRate = u.zoom_params.z * 0.8 + 0.1;
-    let rotSpeed = u.zoom_config.x * 2.0 + 0.1 + u.zoom_params.x * 0.0 + u.zoom_params.y * 0.0 + u.zoom_params.w * 0.0;
-    
-    // Sample source color & depth
-    let srcCol = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
-    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
-    
-    // Read volumetric data from Pass 1 (via dataTextureC which has Pass 1's content)
-    let volumetric = textureSampleLevel(dataTextureC, videoSampler, uv, 0.0);
+    let rotSpeed = 0.2 + mids * 0.35;
+
+    let srcCol = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
+    let volumetric = textureLoad(dataTextureC, coord, 0);
     let auroraColor = volumetric.rgb;
     let density = volumetric.a;
-    
-    // Early exit for minimal effect areas
-    if (density < 0.001) {
-        let luma = dot(srcCol, vec3<f32>(0.299, 0.587, 0.114));
-        let alpha = mix(0.7, 1.0, luma);
-        let depthAlpha = mix(0.6, 1.0, depth);
-        let finalAlpha = (alpha + depthAlpha) * 0.5;
-        textureStore(writeTexture, gid.xy, vec4<f32>(srcCol, finalAlpha));
-        textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
-        return;
-    }
-    
-    // Calculate warp from density gradient
+    let cover = clamp(density, 0.0, 1.0);
+
     let warp = vec2<f32>(
-        sin(uv.y * 10.0 + time) * 0.01,
-        cos(uv.x * 10.0 + time) * 0.01
+        sin(uv.y * 10.0 + time * (0.6 + flow)) * 0.01,
+        cos(uv.x * 10.0 + time * (0.6 + flow)) * 0.01
     ) * density;
-    
-    // Curl approximation
+
     let curl = vec2<f32>(
         sin(uv.x * 8.0 + time * 0.5),
         cos(uv.y * 8.0 + time * 0.5)
     ) * 0.01 * density;
-    
-    // Chromatic dispersion
-    let dispersed = applyChromaticDispersion(uv, warp, curl, density * chromaSpread, texel, videoTex, videoSampler);
-    
-    // Quaternion rotation of aurora color
+
+    let dispersed = applyChromaticDispersion(uv, warp, curl, density * chromaSpread, texel, readTexture, u_sampler);
+
     let axis = normalize(srcCol + vec3<f32>(0.15, 0.08, 0.12));
     let angle = time * rotSpeed + density * 3.5;
     let quatCol = quaternionRotate(auroraColor, angle, axis);
-    
-    // Enhanced blend with more aurora contribution
-    let blended = mix(dispersed, quatCol, density * 0.75);
-    
-    // Anisotropic diffusion (temporal blur)
+    let blended = mix(dispersed, quatCol, clamp(density * 0.75, 0.0, 1.0));
+
     let historyUV = clamp(uv + warp * 0.3, vec2<f32>(0.0), vec2<f32>(1.0));
-    let history = textureSampleLevel(dataTextureC, videoSampler, historyUV, 0.0).rgb;
-    // Note: history reads from dataTextureC for temporal feedback effect
+    let historyPx = clamp(vec2<i32>(historyUV * dims), vec2<i32>(0), vec2<i32>(dims) - vec2<i32>(1));
+    let history = textureLoad(dataTextureC, historyPx, 0).rgb;
     let flowDir = normalize(warp + curl + vec2<f32>(0.001));
     let anisotropy = 1.0 - abs(dot(flowDir, normalize(uv - 0.5 + vec2<f32>(0.001)))) * 0.3;
     let diffused = mix(blended, history, diffusionRate * anisotropy);
-    
-    // Spectral power distribution
-    let spectral = spectralPower(diffused, density);
-    
-    // Enhanced atmospheric scattering
+
+    let spectral = spectralPower(diffused, cover);
     let withAtmosphere = atmosphericScattering(spectral, uv, depth, time);
-    
-    // Enhanced color grading
-    let graded = colorGrade(withAtmosphere, globalIntensity);
-    
-    // Apply vignette
-    let withVignette = applyVignette(graded, uv, globalIntensity);
-    
-    // Tone mapping
-    let toneMapped = acesToneMapping(withVignette);
-    
-    // Final intensity blend
-    let finalCol = mix(srcCol, toneMapped, globalIntensity);
-    
-    // Update history buffer (via dataTextureA)
-    textureStore(dataTextureA, gid.xy, vec4<f32>(diffused, 1.0));
-    
-    // Output final color with luminance-based alpha
+    let graded = colorGrade(withAtmosphere, 1.0);
+    var withVignette = applyVignette(graded, uv, 1.0);
+
+    // Idea: STEVE arc — narrow mauve east-west ribbon. Scale sets the width, Flow Speed the drift.
+    let steveY = 0.36 + sin(time * (0.06 + flow * 0.18)) * 0.035;
+    let steveW = 0.006 + scale * 0.012;
+    let steve = exp(-pow((uv.y - steveY) / max(steveW, 0.003), 2.0));
+    withVignette += vec3<f32>(0.72, 0.25, 0.58) * steve * (0.42 + mids * 0.35);
+
+    // Idea: nitrogen pink border — 427.8 nm fringe where density meets the lower sky.
+    let pink = smoothstep(0.5, 0.82, uv.y) * smoothstep(0.05, 0.28, cover);
+    withVignette += vec3<f32>(0.95, 0.28, 0.48) * pink * (0.28 + bass * 0.2);
+
+    let toneMapped = acesToneMapping(max(withVignette, vec3<f32>(0.0)));
+    let finalCol = mix(srcCol, toneMapped, 0.3 + cover * 0.7);
     let finalLuma = dot(finalCol, vec3<f32>(0.299, 0.587, 0.114));
-    let finalAlpha = mix(0.7, 1.0, finalLuma * (1.0 + density * 0.3));
-    let depthAlpha = mix(0.6, 1.0, depth);
-    let finalCompositeAlpha = (finalAlpha + depthAlpha) * 0.5;
-    
-    textureStore(writeTexture, gid.xy, vec4<f32>(finalCol, finalCompositeAlpha));
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let finalAlpha = clamp(mix(0.5, 0.92, finalLuma) * (0.72 + cover * 0.28) + steve * 0.22 + pink * 0.12, 0.0, 1.0);
+
+    textureStore(dataTextureA, coord, vec4<f32>(auroraColor, density));
+    textureStore(writeTexture, coord, vec4<f32>(finalCol, finalAlpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

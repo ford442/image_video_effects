@@ -2,7 +2,7 @@
   "id": "liquid-viscous",
   "name": "Liquid Viscous",
   "url": "shaders/liquid-viscous.wgsl",
-  "description": "A persistent 2D fluid state with midpoint semi-Lagrangian transport, streamline-aligned viscosity, Reynolds-number turbulence transition, shared-stencil vorticity confinement, a convergent local Jacobi projection, continuously drifting audio vortices, and per-band dye injection.",
+  "description": "A persistent 2D fluid state with midpoint semi-Lagrangian transport, streamline-aligned viscosity, an Ekman veer with depth, Rayleigh–Plateau beads on quiet dye threads, Reynolds-number turbulence transition, shared-stencil vorticity confinement, a convergent local Jacobi projection, continuously drifting audio vortices, and per-band dye injection.",
   "tags": [
     "filter",
     "image-processing",

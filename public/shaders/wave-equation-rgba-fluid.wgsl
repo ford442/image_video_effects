@@ -3,31 +3,12 @@
 //  Category: advanced-hybrid
 //  Features: mouse-driven, temporal, rgba-state-machine, physics, audio-reactive, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-09-12
-//  Ideas: breaking-wave foam on downhill steep slopes; dye stretch along fluidVel
+//  Upgraded: 2026-10-18
+//  Ideas: breaking-wave foam on downhill steep slopes; dye stretch along fluidVel; Stokes drift of the dye; capillary precursors on the uphill face
 //  A packing: raw (height, velocity, pressure, dye)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══ CHUNK: hsv2rgb (from alpha-fluid-simulation-paint.wgsl) ═══
 fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
@@ -129,7 +110,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     fluidVel = clamp(fluidVel, vec2<f32>(-0.5), vec2<f32>(0.5));
 
     // Advect dye with combined fluid+wave velocity (bilinear reconstructed from exact loads)
-    let advectUV = clamp(uv - fluidVel * 0.016, vec2<f32>(0.0), vec2<f32>(1.0));
+    // Idea: Stokes drift — second-order mass transport along the wave.
+    let stokes = fluidVel * height * height * 0.35;
+    let advectUV = clamp(uv - (fluidVel + stokes) * 0.016, vec2<f32>(0.0), vec2<f32>(1.0));
     let advected = stateLinear(advectUV, res);
     dye = advected.a;
 
@@ -166,6 +149,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let downhill = max(dot(fluidVel, slope) / max(slopeLen, 0.0001), 0.0);
     let breaking = pow(clamp(slopeLen * 3.2, 0.0, 1.0), 1.6) * downhill;
     dye += breaking * 0.05;
+    // Idea: capillary precursors — short ripples on the uphill face, ahead of the break.
+    let crestPhase = dot(slope, uv) * (46.0 + audio.z * 18.0);
+    let capillary = sin(crestPhase) * slopeLen * (1.0 - downhill) * 0.012;
+    height = clamp(height + capillary, -2.0, 2.0);
 
     // === MOUSE WAVE INJECTION ===
     let mousePos = u.zoom_config.yz;
@@ -249,11 +236,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     finalColor = finalColor + vec3<f32>(caustic * 0.2);
     finalColor = finalColor + vec3<f32>(1.05, 0.98, 0.88) * breaking * 0.35;
     finalColor = finalColor + vec3<f32>(0.2, 0.55, 0.85) * stretch * 0.8;
+    finalColor = finalColor + vec3<f32>(0.72, 0.84, 1.0) * abs(capillary) * 14.0;
 
     finalColor = aces(max(finalColor, vec3<f32>(0.0)));
 
     // Alpha = wave amplitude + dye density (meaningful)
-    let outputAlpha = min(amplitude * 0.5 + dye * 0.2 + breaking * 0.2 + stretch * 0.15, 1.0);
+    let outputAlpha = min(amplitude * 0.5 + dye * 0.2 + breaking * 0.2 + stretch * 0.15 + abs(capillary) * 4.0, 1.0);
     textureStore(writeTexture, coord, vec4<f32>(finalColor, outputAlpha));
 
     // Depth pass-through
