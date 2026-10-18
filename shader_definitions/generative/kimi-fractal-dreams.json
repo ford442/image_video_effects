@@ -1,0 +1,100 @@
+{
+  "id": "kimi-fractal-dreams",
+  "name": "Kimi Fractal Dreams",
+  "url": "shaders/kimi_fractal_dreams.wgsl",
+  "description": "Multi-layer fractal with orbit traps, burning ship variant, and smooth color cycling.",
+  "features": [
+    "mouse-driven",
+    "generative",
+    "fractal",
+    "julia-set",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "procedural",
+    "generative"
+  ],
+  "params": [
+    {
+      "id": "intensity",
+      "name": "Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "audio": "bass"
+    },
+    {
+      "id": "speed",
+      "name": "Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "audio": "mid"
+    },
+    {
+      "id": "scale",
+      "name": "Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "audio": "treble"
+    },
+    {
+      "id": "detail",
+      "name": "Detail",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "audio": "overall"
+    }
+  ],
+  "updated": true,
+  "category": "generative",
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Intensity",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Speed",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Scale",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Detail",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
+    }
+  }
+}

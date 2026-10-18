@@ -100,11 +100,26 @@ fn vs(@builtin(vertex_index) idx: u32) -> VSOut {
 
 @group(0) @binding(0) var src: texture_2d<f32>;
 
+fn tap(p: vec2i, maxP: vec2i) -> vec4f {
+  return textureLoad(src, clamp(p, vec2i(0), maxP), 0);
+}
+
 @fragment
 fn fs(in: VSOut) -> @location(0) vec4f {
-  let dim   = vec2i(textureDimensions(src));
-  let coord = clamp(vec2i(in.uv * vec2f(dim)), vec2i(0), dim - 1);
-  let c     = textureLoad(src, coord, 0);
+  // Manual bilinear (textureLoad, so unfilterable rgba32float works too). The
+  // working texture is often smaller than the canvas (resolution scale, 1024
+  // working cap); at equal sizes p lands on texel centres and this is exact.
+  let dim  = vec2i(textureDimensions(src));
+  let p    = in.uv * vec2f(dim) - 0.5;
+  let base = floor(p);
+  let f    = p - base;
+  let p0   = vec2i(base);
+  let maxP = dim - vec2i(1);
+  let c = mix(
+    mix(tap(p0, maxP), tap(p0 + vec2i(1, 0), maxP), f.x),
+    mix(tap(p0 + vec2i(0, 1), maxP), tap(p0 + vec2i(1, 1), maxP), f.x),
+    f.y,
+  );
   // Gamma encode: linear → sRGB (γ = 2.2 approximation)
   let rgb   = pow(clamp(c.rgb, vec3f(0.0), vec3f(1.0)), vec3f(1.0 / 2.2));
   return vec4f(rgb, 1.0);

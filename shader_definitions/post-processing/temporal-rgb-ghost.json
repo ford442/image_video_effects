@@ -2,7 +2,7 @@
   "id": "temporal-rgb-ghost",
   "name": "Temporal RGB Ghost",
   "url": "shaders/temporal-rgb-ghost.wgsl",
-  "description": "Per-channel temporal displacement: R=current, G=N frames ago, B=M frames ago. Moving objects leave vivid rainbow comet tails as each color channel trails a different distance behind. Static areas appear normal.",
+  "description": "Per-channel temporal displacement: R=current, G=N frames ago, B=M frames ago. Moving objects leave vivid rainbow comet tails as each color channel trails a different distance behind. Static areas appear normal. The blue trail now integrates every frame between the two delays into a continuous comet streak, displacement only shimmers where something moved, and the G delay glides between frames.",
   "tags": [
     "temporal",
     "ghost",

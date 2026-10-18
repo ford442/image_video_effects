@@ -1,4 +1,17 @@
 import { defineConfig, devices } from '@playwright/test';
+import { buildGpuLaunchArgs, isBenchDevFeaturesEnabled } from './src/utils/gpuLaunchArgs';
+
+/** Real-GPU runs (WASM_GPU_TESTS=1, #1357): GPU flags + new headless on the chromium project. */
+const GPU_TESTS = process.env.WASM_GPU_TESTS === '1';
+export const GPU_LAUNCH_ARGS = buildGpuLaunchArgs(process.platform, GPU_TESTS, isBenchDevFeaturesEnabled());
+
+/** Desktop Chrome viewport without its spoofed Windows user agent (GPU runs report the real platform). */
+const { userAgent: _spoofedUserAgent, ...desktopChromeNoUa } = devices['Desktop Chrome'];
+
+import { SWIFTSHADER_WEBGPU_ARGS } from './scripts/lib/swiftshaderArgs';
+
+/** Chromium flags that give a working software WebGPU adapter (see tests/engine2.swiftshader.spec.ts). */
+export { SWIFTSHADER_WEBGPU_ARGS };
 
 /**
  * Playwright configuration for smoke tests.
@@ -49,18 +62,39 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
 
-  // Define projects
+  // Chromium only: every npm script and CI job passes --project=chromium.
+  // Specs start their own servers, so there is no webServer block.
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      testIgnore: '**/*.swiftshader.spec.ts',
+      // channel 'chromium' = new headless (full browser); headless-shell disables GPU compositing.
+      use: GPU_TESTS
+        ? { ...desktopChromeNoUa, channel: 'chromium', launchOptions: { args: GPU_LAUNCH_ARGS } }
+        : { ...devices['Desktop Chrome'] },
     },
     {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
+      // Software WebGPU on GPU-less hosts (Cloud VM, CI). SwiftShader via Vulkan;
+      // without --use-angle=swiftshader canvas presentation drops the Dawn instance.
+      // Compositor screenshots stay blank: read pixels back through the renderer.
+      name: 'swiftshader',
+      testMatch: '**/*.swiftshader.spec.ts',
+      timeout: 120 * 1000,
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: { args: SWIFTSHADER_WEBGPU_ARGS },
+      },
+    },
+    {
+      // The existing renderer smoke suites on the software device. Run once per
+      // render thread: PX_RENDER_THREAD=main|worker (default worker, #1314).
+      name: 'swiftshader-smoke',
+      testMatch: ['**/wasm-renderer.smoke.spec.ts', '**/layerChain.smoke.spec.ts'],
+      timeout: 120 * 1000,
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: { args: SWIFTSHADER_WEBGPU_ARGS },
+      },
     },
   ],
-
-  // Global setup/teardown (optional)
-  webServer: undefined, // We start servers manually in tests
 });

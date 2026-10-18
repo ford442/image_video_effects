@@ -1,8 +1,23 @@
 # Pixelocity Glitch & Retro Shader Upgrade Plan
 
+> **Upgrade law (live):** [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md)
+> An upgrade **adds 2–4 named, effect-native visual ideas** to the existing picture.
+> Bindings / ACES / alpha / sliders / `updatedParams` / naga / springs-for-completeness
+> are the **floor**, not the upgrade. Size tiers and science lists below only decide
+> *which ideas to add* and *in what order*. They are not a completeness checklist.
+> Hygiene-only = not upgraded. Rewrite-as-new-motif = not upgraded (that is a new shader).
+
+> **Reading the per-shader entries:** every "Upgrade Concept", "→ New Name",
+> "Transform …", "Replace …" or "Upgrade to simulate …" line below is a **candidate
+> idea to add**, not a target the file must be rebuilt into. Read it as *"add X as 1–2
+> native ideas; keep the effect's identity, kernel, modes and saved params."* Pick 2–4
+> per file for its Idea Card. Do not stamp the same concept across a whole batch.
+> Parameter lists name quantities an idea *may* drive — map them onto the file's existing
+> param roles; saved `params` stay byte-exact (no renames, no re-defaults).
+
 ## Executive Summary
 
-Analysis of 29 glitch/retro shaders reveals strong artistic foundations with significant opportunities for scientific authenticity upgrades. Current implementations excel at visual appeal but miss key computational behaviors of real signal degradation systems.
+Analysis of 29 glitch/retro shaders reveals strong artistic foundations with significant opportunities for scientific authenticity upgrades. Current implementations excel at visual appeal; the "Missing Science" columns below are a pool of real signal-degradation behaviors to **add** as native ideas, not gaps every file must close.
 
 ---
 
@@ -348,6 +363,8 @@ Analysis of 29 glitch/retro shaders reveals strong artistic foundations with sig
 
 ## New Shader Proposals
 
+> These are **new shader** ideas, not upgrades. Build them as new catalog entries.
+
 ### 1. `quantization-error-diffusion`
 **Scientific Basis:** Floyd-Steinberg, Jarvis-Judice-Ninke dithering
 **Technique:** Error diffusion dithering with adjustable kernel
@@ -393,7 +410,10 @@ Current shaders use dataTextureA/B/C for persistence. Upgrades should leverage:
 - Blue noise: Precomputed texture, not procedural generation
 - Motion estimation: Simplified block matching, not full ME
 
-### Parameter Mapping Standardization
+### Parameter Mapping (new shaders only)
+
+Existing files keep saved `params` byte-exact. This mapping is a default for **new** glitch shaders, not a standard to retrofit:
+
 ```
 zoom_params.x: Effect intensity/strength
 zoom_params.y: Temporal/speed factor
@@ -406,7 +426,7 @@ zoom_config.yz: Mouse position for localized effects
 
 ## Artistic Vision Statement
 
-The goal of these upgrades is not merely technical accuracy, but **amplified aesthetic through understanding**. Each scientific phenomenon encodes a visual poetry:
+The goal of these ideas is not technical accuracy or completeness, but **amplified aesthetic through understanding** — each added to a glitch that stays recognizably itself. Each scientific phenomenon encodes a visual poetry:
 
 - Phosphor persistence speaks to memory and fading
 - Bit corruption embodies digital fragility

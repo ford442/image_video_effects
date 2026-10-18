@@ -3,31 +3,12 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-15
-//  Ideas: crystal tine bifurcation; segmented chrono hoof wakes
+//  Upgraded: 2026-10-17
+//  Ideas: crystal tine bifurcation; segmented chrono hoof wakes; antler growth rings; leap afterimage; heartbeat conduits (core pulse runs up circuit veins in the exoskeleton); antler charge-fill (the same heartbeat climbs each antler base-to-tip)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Stag Scale, y=Antler Complexity, z=Nebula Density, w=Core Pulse Intensity
-    ripples: array<vec4<f32>, 50>,
-};
-
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=Stag Scale, y=Antler Complexity, z=Nebula Density, w=Core Pulse Intensity
 
 // ----------------------------------------------------------------
 // Parameters (for UI sliders)
@@ -114,10 +95,21 @@ struct MapResult {
     d: f32,
     mat: i32,  // 0=bg, 1=body, 2=antlers, 3=core, 4=hoof_trails
     glow: vec3<f32>,
+    lp: vec3<f32>,  // stag-local position (after scale/mouse/leap transforms)
+    aux: f32,       // antlers: 0 at base .. 1 at tip
+}
+
+// One heartbeat clock shared by the core conduits and the antler fill.
+const CORE_POS = vec3<f32>(0.0, 0.2, 0.5);
+const ANTLER_BASE_DIST = 1.92; // |antler base - core| in stag-local units
+const PULSE_REACH = 3.4;       // how far the heartbeat front travels per beat
+
+fn heartPhase(time: f32) -> f32 {
+    return fract(time * 0.75);
 }
 
 fn map(pos_in: vec3<f32>) -> MapResult {
-    var res = MapResult(MAX_DIST, 0, vec3<f32>(0.0));
+    var res = MapResult(MAX_DIST, 0, vec3<f32>(0.0), vec3<f32>(0.0), 0.0);
     var p = pos_in;
     let time = u.config.x;
     let audio = plasmaBuffer[0].x;
@@ -129,7 +121,8 @@ fn map(pos_in: vec3<f32>) -> MapResult {
     // Global transform via mouse (normalized UV, y=0 top)
     let mx = (u.zoom_config.y - 0.5) * 6.0;
     let my = (u.zoom_config.z - 0.5) * 6.0;
-    let p_xz_tmp = rot(-mx) * p.xz;
+    // +0.9 rad idle yaw: three-quarter view instead of the stag's rump.
+    let p_xz_tmp = rot(-mx + 0.9) * p.xz;
 p.x = p_xz_tmp.x;
 p.z = p_xz_tmp.y;
     let p_yz_tmp = rot(-my) * p.yz;
@@ -207,15 +200,30 @@ p_antler.y = p_antler_xy_tmp.y;
     var branch_r = 0.08;
     var branch_len = 0.6;
     var tine_d = MAX_DIST;
+    var seg_best = MAX_DIST;
+    var antler_s = 0.0;
+    let seg_count = f32(complexity);
 
     for (var i = 0; i < 5; i++) {
         if (i >= complexity) { break; }
         let segment_d = sdCapsule(branch_p, vec3<f32>(0.0), vec3<f32>(0.0, branch_len, 0.0), branch_r);
+        // Antler charge-fill: remember how far along the antler the nearest segment sits.
+        if (segment_d < seg_best) {
+            seg_best = segment_d;
+            antler_s = (f32(i) + clamp(branch_p.y / branch_len, 0.0, 1.0)) / seg_count;
+        }
         antler_d = smin(antler_d, segment_d, 0.05);
+        // Antler growth rings: ridges along this segment. Complexity still sets the segment count.
+        let rings = sin(branch_p.y * (28.0 + f32(i) * 6.0)) * 0.012;
+        antler_d += rings;
         // Crystal tine bifurcation: one bounded lateral child per enabled segment
         let childEnd = vec3<f32>(branch_len * 0.55, branch_len * 0.25, 0.12);
         let child_d = sdCapsule(branch_p, vec3<f32>(0.0, branch_len * 0.35, 0.0), childEnd, branch_r * 0.55);
         tine_d = min(tine_d, child_d);
+        if (child_d < seg_best) {
+            seg_best = child_d;
+            antler_s = (f32(i) + 0.6) / seg_count;
+        }
 
         branch_p.y -= branch_len;
         let branch_xy_tmp = rot(0.4 + sin(time)*0.1) * branch_p.xy;
@@ -236,6 +244,7 @@ branch_p.z = branch_yz_tmp.y;
     if (antler_d < res.d) {
         res.d = antler_d;
         res.mat = 2;
+        res.aux = antler_s;
     }
 
     // --- Acoustic Resonance Core (Heart) ---
@@ -285,6 +294,7 @@ branch_p.z = branch_yz_tmp.y;
         res.mat = 4;
     }
 
+    res.lp = p;
     res.d *= scale; // Scale back the distance
     return res;
 }
@@ -300,7 +310,7 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
 
 fn rayMarch(ro: vec3<f32>, rd: vec3<f32>) -> MapResult {
     var dO = 0.0;
-    var res = MapResult(MAX_DIST, 0, vec3<f32>(0.0));
+    var res = MapResult(MAX_DIST, 0, vec3<f32>(0.0), vec3<f32>(0.0), 0.0);
     var total_glow = vec3<f32>(0.0);
 
     for (var i = 0; i < MAX_STEPS; i++) {
@@ -334,11 +344,13 @@ fn getNebula(ro: vec3<f32>, rd: vec3<f32>) -> vec3<f32> {
 
     for (var i = 0; i < 20; i++) {
         let p = ro + rd * t;
-        let d = fbm(p * 0.5 + u.config.x * 0.2);
+        // fbm is centred on 0 (p99.9 ~ 0.19), so the old raw 0.4 cut never fired and the
+        // void was black. Lift it so ~25% of samples are cloud; gain keeps it a dim void.
+        let d = fbm(p * 0.5 + u.config.x * 0.2) + 0.35;
         if (d > 0.4) {
-            let local_density = (d - 0.4) * nebula_density_factor;
+            let local_density = (d - 0.4) * nebula_density_factor * 3.0;
             density += local_density;
-            let star_glow = pow(noise3(p * 10.0), 10.0) * 5.0; // Stardust
+            let star_glow = pow(max(noise3(p * 10.0), 0.0), 10.0) * 5.0; // Stardust
             col += mix(vec3<f32>(0.1, 0.0, 0.2), vec3<f32>(0.8, 0.2, 0.6), d) * local_density + star_glow * vec3<f32>(1.0, 0.9, 0.5) * local_density;
         }
         t += step_size;
@@ -359,11 +371,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let uv = (vec2<f32>(f32(id.x), f32(id.y)) - 0.5 * vec2<f32>(resX, resY)) / resY;
 
-    var ro = vec3<f32>(0.0, 0.0, -8.0);
-    let rd = normalize(vec3<f32>(uv.x, uv.y, 1.0));
+    var ro = vec3<f32>(0.0, 0.0, -5.5); // closer: at -8 the stag filled <8% of the frame
+    // Pixel rows grow downward: negate so stag-local +Y (antlers) is screen-up.
+    let rd = normalize(vec3<f32>(uv.x, -uv.y, 1.0));
 
     let map_res = rayMarch(ro, rd);
     var col = vec3<f32>(0.0);
+
+    let audio_bass = plasmaBuffer[0].x;
+    let beat = heartPhase(u.config.x);
+    let front_r = beat * PULSE_REACH;
+    let pulse_gain = u.zoom_params.w * (0.6 + audio_bass * 0.5);
 
     if (map_res.d < MAX_DIST) {
         let p = ro + rd * map_res.d;
@@ -378,6 +396,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         if (map_res.mat == 1) { // Body
             let baseColor = vec3<f32>(0.05, 0.05, 0.08); // Dark metallic
             col = baseColor * diff + vec3<f32>(0.8, 0.9, 1.0) * spec + vec3<f32>(0.2, 0.1, 0.3) * fresnel;
+            // Heartbeat conduits: the zero-set of two noises is a vein network in the
+            // exoskeleton; each beat a cyan front leaves the core and runs outward along it.
+            let lp = map_res.lp;
+            let vein = 1.0 - smoothstep(0.0, 0.035, abs(noise3(lp * 3.0) - noise3(lp * 3.0 + vec3<f32>(17.0, 5.0, 11.0))));
+            let dc = length(lp - CORE_POS);
+            let fr = dc - front_r;
+            let front = exp(-fr * fr * 30.0);
+            col += vec3<f32>(0.0, 0.8, 1.0) * vein * (0.12 + 1.6 * front) * pulse_gain;
         } else if (map_res.mat == 2) { // Antlers (Crystal)
             // Faux Refraction
             let refr_rd = refract(rd, n, 0.8);
@@ -388,6 +414,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             col += vec3<f32>(0.0, 0.8, 1.0) * glow_intensity * 0.5;
             // Tine facet catchlights from bifurcation
             col += vec3<f32>(0.7, 0.95, 1.0) * pow(spec, 2.0) * 0.35;
+            // Antler charge-fill: once the heartbeat front reaches the antler base it
+            // climbs base-to-tip, leaving the crystal charged until the beat ends.
+            let fill = (front_r - ANTLER_BASE_DIST) / (PULSE_REACH - ANTLER_BASE_DIST);
+            let s_ant = map_res.aux;
+            let sd = s_ant - fill;
+            let charged = smoothstep(0.02, -0.1, sd) * (1.0 - smoothstep(0.85, 1.0, beat));
+            let crest = exp(-sd * sd * 100.0) * step(0.0, fill);
+            col += vec3<f32>(0.6, 0.95, 1.0) * (charged * 0.35 + crest * 1.4) * pulse_gain;
 
         } else if (map_res.mat == 3) { // Core
             col = vec3<f32>(0.0, 0.8, 1.0) * 2.0; // Neon Cyan
@@ -407,6 +441,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let alpha = clamp(select(0.14, 0.5, hit) + length(map_res.glow) * 0.2, 0.08, 0.96);
     let depth = select(0.0, clamp(1.0 - map_res.d / MAX_DIST, 0.0, 1.0), hit);
     let pix = vec2<i32>(id.xy);
+    // Leap afterimage: previous display, offset along the leap tangent, trail and miss only.
+    let leapV = vec2<f32>(cos(u.config.x * 2.0) * 0.15, sin(u.config.x * 2.0));
+    let shift = vec2<i32>(i32(leapV.x * 14.0), i32(leapV.y * 18.0));
+    let maxPix = vec2<i32>(i32(resX) - 1, i32(resY) - 1);
+    let ghost = textureLoad(dataTextureC, clamp(pix + shift, vec2<i32>(0), maxPix), 0).rgb;
+    let showGhost = select(1.0, select(0.0, 1.0, map_res.mat == 4), hit);
+    col = mix(col, ghost, showGhost * 0.22);
     let outCol = vec4<f32>(col, alpha);
     textureStore(writeTexture, pix, outCol);
     textureStore(writeDepthTexture, pix, vec4<f32>(depth, 0.0, 0.0, 0.0));

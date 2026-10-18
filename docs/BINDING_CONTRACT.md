@@ -9,14 +9,21 @@ Single source of truth for the Pixelocity compute bind group layout and device p
 - Device limits: [`src/contracts/webgpu_limits.json`](../src/contracts/webgpu_limits.json) ↔ [`src/renderer/webgpuDevicePolicy.ts`](../src/renderer/webgpuDevicePolicy.ts) ↔ [`wasm_renderer/device.cpp`](../wasm_renderer/device.cpp)
 - Optional features: [`src/contracts/webgpu_optional_features.json`](../src/contracts/webgpu_optional_features.json) ↔ [`collectOptionalDeviceFeatures`](../src/renderer/webgpu/device.ts) ↔ `device.cpp` `requiredFeatures[3]`
 - WASM exports: [`src/contracts/wasm_exports.json`](../src/contracts/wasm_exports.json) (build.sh + CMake)
-- WGSL authoring: [`agents/WGSL_BUILTINS_GENERATIVE.md`](../agents/WGSL_BUILTINS_GENERATIVE.md)
+- WGSL authoring: [`docs/agents/WGSL_BUILTINS_GENERATIVE.md`](agents/WGSL_BUILTINS_GENERATIVE.md)
 - Shader **upgrades** (ideas, not hygiene): [`docs/SHADER_UPGRADE_BATCH.md`](SHADER_UPGRADE_BATCH.md)
 - Uniforms layout: [`src/contracts/uniforms_layout.json`](../src/contracts/uniforms_layout.json) ↔ [`src/renderer/UniformBuffer.ts`](../src/renderer/UniformBuffer.ts) ↔ [`wasm_renderer/renderer.h`](../wasm_renderer/renderer.h)
 - CI sync checks: `npm run verify:device-policy`, `npm run verify:uniforms`
 - Pre-FX analysis (not this bind group): [`docs/GPU_CHORES.md`](GPU_CHORES.md) — Tier 4b gpu-chores on the **same** `GPUDevice`
 - Boot probe / hard-fail (WebGPU required, no WebGL fallback): [`docs/WEBGPU_BOOT_PROBE.md`](WEBGPU_BOOT_PROBE.md)
 
-**One renderer `GPUDevice`:** the boot probe owns the sole `requestAdapter`/`requestDevice` for catalog rendering, gpu-chores, ShaderValidator, and ShaderScanner. Lazy depth (`@xenova/transformers`) prefers WASM/CPU while that device is live — Transformers may still allocate internally when `device:'webgpu'` is selected.
+**One renderer `GPUDevice`:** the boot probe owns the sole `requestAdapter`/`requestDevice` for catalog rendering, gpu-chores, ShaderValidator, and ShaderScanner. Lazy depth (`@huggingface/transformers`) prefers WASM/CPU while that device is live — Transformers may still allocate internally when `device:'webgpu'` is selected.
+
+**Device owner registry (#1395):** [`src/renderer/deviceRegistry.ts`](../src/renderer/deviceRegistry.ts) records which backend owns the live device. The page `WebGPURenderer` publishes the device it *ended up with* after setup — after any OOM retry, never the probe handoff it may have destroyed. The render-worker proxy publishes `{ device: null, thread: 'worker' }`. The owner clears the entry on device loss, worker crash and teardown, and only the current owner can clear it. Every publish and clear bumps `generation`. Consumers read or subscribe and never cache a device across a generation change:
+- `RendererManager.getDevice()` / `isGpuDeviceActive()`
+- `shaderCompileService` (ShaderScanner resolves it per shader and retries once when the generation changed mid-compile)
+- depth estimation (through `isGpuDeviceActive()`, which also stays true while a lost device is being rebuilt)
+
+The standalone `?validator` page has no renderer, so its probe device stays local to the run and is destroyed afterwards. `getDiagnostics().liveGpuDevices` counts every device the boot probe created whose `lost` has not settled, on the page plus in the current render worker. It is 1 while rendering, including after a recovery.
 
 ## Naming
 
@@ -118,12 +125,33 @@ Total size **848 bytes** (212 floats) — matches `UNIFORM_BUFFER_LAYOUT.TOTAL_S
 ## History ring (binding 13)
 
 - **Depth:** 8 layers (`HISTORY_DEPTH`) is the **maximum**. Runtime may allocate 8, 4, or 1 after a `historyTex` VRAM probe (#1204). Bind-group `arrayLayerCount` must match the allocated texture. At 1 layer the ring copy is skipped (fail-soft graph history).
-- **VRAM:** Default working size is **1024**. 2048² × 8 × rgba32float is ~512 MiB — Pascal/Chrome D3D12 often OOMs, so 2048 is an upgrade only after a discrete + `maxBufferSize >= 1 GiB` + non-Pascal gate and a full-pool allocate. On `GPUOutOfMemoryError` stay at 1024 and **do not retry 2048** this tab. JS→WASM must `device.destroy()` and **await** `device.lost` before the next `requestDevice`.
+- **VRAM:** Default working size is **1024**. 2048² × 8 × rgba32float is ~512 MiB — Pascal/Chrome D3D12 often OOMs, so 2048 is an upgrade only after a discrete + `maxBufferSize >= 1 GiB` + non-Pascal gate and a full-pool allocate. The device requests the adapter's `maxBufferSize` (`bufferSizeLimits`), and discrete / Pascal come from `adapter.info` — see [FORMAT_TIERS.md](./FORMAT_TIERS.md#what-the-2048-gate-reads-1395). On `GPUOutOfMemoryError` stay at 1024 and **do not retry 2048** this tab. JS→WASM must `device.destroy()` and **await** `device.lost` before the next `requestDevice`.
 - **Catalog metadata:** `requiresHistoryRing: true` in shader JSON for temporal effects
 - **CPU:** `historyHead` written to `extraBuffer[4]` when any enabled shader uses binding 13
 - **GPU:** after each frame, copy presented color into `historyTexture[historyHead]`, then `historyHead = (historyHead + 1) % 8`
 - Shaders that sample `@binding(13) var historyTexture` must declare the binding; others omit it
 - Copy is gated by static analysis (`analyzeShaderBindings` / C++ `AnalyzeShaderBindings`) — skipped when no shader references binding 13
+
+## Sim ring (opt-in `@group(1)`, TS renderer only)
+
+Group 0 is at the contract ceiling (bindings 0–13, 2 storage buffers, 4 storage textures), so indexable agents (particles, walkers, photons) live in an opt-in second bind group. Source of truth: [`src/contracts/bind_group1.json`](../src/contracts/bind_group1.json); TS: `src/renderer/webgpu/simRing.ts`.
+
+| Binding | Name | Type |
+|--------:|------|------|
+| 0 | `simState` | `var<storage, read_write> simState: array<vec4<f32>>` |
+| 1 | `simIndex` | `var<storage, read> simIndex: array<u32>` — snapshot of simState (4 words / element, `bitcast<vec4<f32>>` to read) |
+| 2 | `simParams` | `var<uniform> simParams: SimParams` — `{ stateCount, indexCount, frame, truncated }`, all `u32` |
+
+- **Opt-in:** a shader that never writes `@group(1)` compiles against the single-layout pipeline exactly as before. Declaring any group-1 binding selects the `[group0, group1]` layout; a shader may declare a subset (e.g. only `simParams`).
+- **Barrier:** a graph node that reads `simIndex` after a `simState` write (or first in the frame) gets `copyBufferToBuffer(simState → simIndex)` — the buffer twin of `dataA → dataC`. `simIndex` is never a write role.
+- **Dispatch:** graph nodes take `"dispatch": "pixels"` (default) or `"simState"` (`ceil(stateCount / 64) × 1 × 1`, `@workgroup_size(64, 1, 1)`).
+- **Limits:** group-1 pipelines need `maxStorageBuffersPerShaderStage ≥ 4`, `maxUniformBuffersPerShaderStage ≥ 2`, `maxBindGroups ≥ 2` — all within the WebGPU base limits (8 / 12 / 4). They are checked against `device.limits` when the first group-1 pipeline compiles and are **never** added to catalog-wide `requiredLimits`.
+- **VRAM / OOM:** default 65536 elements (1 MiB state + 1 MiB snapshot). OOM ladder `65536 → 32768 → 16384 → 4096`; each failed rung writes the next rung to sessionStorage `px_simring_oom_cap`, same discipline as `px_history_oom_cap`. `simParams.truncated = 1` when the ladder stepped down. `simParams.frame` restarts at 0 when a slot switches to a sim shader, so shaders seed on `frame == 0u`.
+- **Catalog metadata:** `"simRing": { "stateCount": N }` in shader JSON; at least one graph node must `dispatch` over `simState` (checked by `verify:device-policy`).
+- **WASM:** feature freeze — `pipeline.cpp` keeps `bindGroupLayoutCount = 1` and `src/wasm/bridge/shader.ts` refuses group-1 WGSL before `LoadShader` (logged skip).
+- **Never** park persistent agents in `extraBuffer[0..]` or steal group-0 bindings.
+
+Flagship: `dla-crystals` (`dla-walkers` over simState → `dla-render` over pixels).
 
 ### Runtime format tiers (#1008)
 
@@ -132,6 +160,8 @@ WGSL sources remain authored as **rgba32float** canonical. At pipeline compile t
 ## Device policy
 
 Both backends validate adapter limits before device creation and request explicit `requiredLimits`.
+
+**Error scopes (#1395).** A GPU call whose failure we act on runs through `withErrorScope` / `withValidationScope` / `withOutOfMemoryScope` ([`src/renderer/webgpu/validationScope.ts`](../src/renderer/webgpu/validationScope.ts)), never a hand-rolled `pushErrorScope` block. The scope covers only the callback's synchronous part and is popped before any returned promise is awaited, so frame-loop errors are never captured or hidden. Async creates (`createComputePipelineAsync`) report through their own rejection. Shader compile checks (renderer `compileCheck`, ShaderScanner, ShaderValidator) all go through `compileCheckWgsl` ([`compileCheck.ts`](../src/renderer/webgpu/compileCheck.ts)): the module is scoped, and with the renderer's pipeline layout a shader that compiles but does not fit the bind group is reported too. Nothing in these paths should reach `uncapturederror`; `tests/engine2-validation-scope.swiftshader.spec.ts` checks that.
 
 ### Limits table (must match TS ↔ C++)
 
@@ -163,9 +193,10 @@ Documented exceptions in that contract:
 
 | Concern | TypeScript | C++ WASM |
 |---------|------------|----------|
-| Adapter ladder | `requestAdapterWithFallback` / `ADAPTER_ATTEMPT_LADDER` | `ADAPTER_ATTEMPT_LADDER` in `device.cpp` |
+| Adapter ladder | `ADAPTER_ATTEMPT_LADDER` (consumed by `runWebGpuBootProbe`) | `ADAPTER_ATTEMPT_LADDER` in `device.cpp` |
 | Limit validation | `assertAdapterMeetsContract` | `CheckLimit` table in `device.cpp` |
 | Device limits | `buildRequiredLimits` | `requiredLimits` on `wgpuAdapterRequestDevice` |
+| Buffer-size limits (`bufferSizeLimits`) | `buildRequiredLimits` requests the adapter value | not mirrored (`cppMirror: false`, WASM R&D freeze) |
 | Feature logging | `logAdapterFeatures` | adapter feature `printf` block |
 
 ### Optional features

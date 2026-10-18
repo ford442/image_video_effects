@@ -1,13 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Aurora Borealis Loom
 //  Category: generative
-//  Features: generative, audio-reactive, temporal, chromatic, mouse-driven
+//  Features: generative, audio-reactive, temporal, chromatic, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Description: Aurora curtains woven like fabric on a celestial loom.
-//               Threads of light interlace with weft and warp patterns.
-//               Bass swells the weave, mids shift hue, treble adds
-//               bead-like ionization nodes. Mouse pulls the fabric.
+//  Upgraded: 2026-09-28
+//  Ideas: fell line + reed beat-up; slub yarn light pools; pulsating aurora patches
+//  A packing: ACES display RGBA (HEAD) — C read back as colour trails
 // ═══════════════════════════════════════════════════════════════════
+//  Aurora curtains woven like fabric on a celestial loom. Bass swells the
+//  weave and drives the reed beat, mids shift hue, treble adds ion beads
+//  and streaks. Mouse pulls the fabric. Curtain Flow also advances the fell.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -121,6 +123,42 @@ fn hueToRGB(hue: f32) -> vec3<f32> {
   return clamp(h - vec3<f32>(1.0), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+// Idea 2 — Slub yarn: hand-spun thickness along one thread (1-D noise along
+// the thread, independent per row/column lane). 0 = spun thin, 1 = thick slub.
+fn slubAmount(along: f32, lane: f32) -> f32 {
+  let n = noise2(vec2<f32>(along, lane * 17.0)) * 0.65
+        + noise2(vec2<f32>(along * 2.3 + 5.0, lane * 17.0 + 3.0)) * 0.35;
+  return smoothstep(0.42, 0.78, n);
+}
+
+// Idea 2 — one thread whose half-width swells with its slub (0.7x .. 2.2x base).
+fn slubThread(across: f32, baseWidth: f32, slub: f32) -> f32 {
+  let w = baseWidth * (0.7 + 1.5 * slub);
+  return smoothstep(w, 0.0, abs(fract(across) - 0.5));
+}
+
+// Idea 3 — Pulsating aurora: each patch cell blinks on its own quasi-period
+// (3..12 s) and phase; on/off shaped like real pulsating aurora.
+fn cellPulse(cell: vec2<f32>, time: f32) -> f32 {
+  let h1 = hash21(cell + vec2<f32>(13.7, 5.1));
+  let h2 = hash21(cell + vec2<f32>(2.3, 41.9));
+  let period = 3.0 + 9.0 * h1;
+  let s = 0.5 + 0.5 * sin(TAU * (time / period + h2));
+  return smoothstep(0.3, 0.8, s);
+}
+
+// Idea 3 — soft cellular patches: smooth blend of the four nearest cell pulses.
+fn pulsatingPatches(p: vec2<f32>, time: f32) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let w = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(cellPulse(i, time), cellPulse(i + vec2<f32>(1.0, 0.0), time), w.x),
+    mix(cellPulse(i + vec2<f32>(0.0, 1.0), time), cellPulse(i + vec2<f32>(1.0, 1.0), time), w.x),
+    w.y
+  );
+}
+
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
   let b = 0.03;
@@ -192,13 +230,51 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Normalize curtain color
   curtainCol = select(curtainCol / max(curtains, 0.001), vec3<f32>(0.0), curtains < 0.001);
 
-  // Weave pattern overlay
+  // Idea 3 — Pulsating aurora patches ride the curtain conveyor (scrolled uv).
+  let patchLvl = pulsatingPatches(uv * vec2<f32>(6.0, 4.0), time);
+  let patchGain = mix(0.5, 1.3, patchLvl);
+
+  // Weave pattern overlay (HEAD functions, verbatim)
   let weft = weftPattern(uv, weaveDensity, time);
   let warp = warpPattern(uv, weaveDensity * 0.8, time);
-  let weave = max(weft, warp * 0.7);
+
+  // Idea 2 — Slub yarn: per-row weft slubs along x, per-column warp slubs along y.
+  let warpDensity = weaveDensity * 0.8;
+  let sWeft = slubAmount(uv.x * weaveDensity * 0.25, floor(uv.y * weaveDensity));
+  let sWarp = slubAmount(uv.y * warpDensity * 0.25 + 50.0, floor(uv.x * warpDensity));
+  let weftSlub = slubThread(uv.y * weaveDensity, 0.15, sWeft);
+  let warpSlub = slubThread(uv.x * warpDensity, 0.10, sWarp);
+  let thinWeft = mix(0.7, 1.0, sWeft);
+  let thinWarp = mix(0.7, 1.0, sWarp);
+
+  // Idea 1 — Fell line: the cloth ends at a fell that advances down the frame
+  // with Curtain Flow and wraps. fellD = how far above the fell this row is
+  // (0 = newest pick). Rows within 0.7 of the frame above it are woven; below
+  // it only bare warp threads are strung.
+  let reedPhase = fract(time * 0.9);
+  let reedBeat = exp(-reedPhase * 7.0);                 // sharp attack per beat
+  let fellY = fract(warpT * curtainFlow * 0.07) + reedBeat * 0.004;
+  let fellD = fract(fellY - uv.y);
+  let woven = smoothstep(0.8, 0.7, fellD);
+  let fellDist = min(fellD, 1.0 - fellD);
+
+  let wovenWeave = max(max(weft * thinWeft, warp * 0.7 * thinWarp),
+                       max(weftSlub, warpSlub * 0.7));
+  let bareWarp = smoothstep(0.1, 0.0, abs(fract(uv.x * warpDensity) - 0.5)) * thinWarp;
+  let bareWeave = max(bareWarp, warpSlub) * 0.7;
+  let weave = mix(bareWeave, wovenWeave, woven);
 
   // Weave glow tinted by curtain color
-  let weaveCol = curtainCol * weave * 0.5;
+  var weaveCol = curtainCol * weave * 0.5;
+  // Idea 2 — aurora light pools in the thick slubs.
+  let pool = weftSlub * sWeft * woven + warpSlub * sWarp * 0.7;
+  weaveCol += curtainCol * pool * curtains * patchGain * 0.6;
+
+  // Idea 1 — Reed beat-up: bright compaction band on the newest pick, stronger on bass.
+  let band = exp(-(fellDist * fellDist) / (0.012 * 0.012));
+  let bandCol = mix(vec3<f32>(0.5, 0.82, 1.0), curtainCol, clamp(curtains * 2.0, 0.0, 1.0)) * 0.8
+              + vec3<f32>(0.2);
+  let reedGlow = bandCol * band * (0.12 + 0.55 * reedBeat) * (1.0 + 1.5 * bass);
 
   // Ionization nodes from treble
   let nodes = ionizationNodes(uv, time, treble * ionization);
@@ -211,14 +287,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Combine
   var col = bg;
-  col += curtainCol * curtains * 0.8;
+  col += curtainCol * curtains * 0.8 * patchGain;          // Idea 3
   col += weaveCol * swell;
   col += nodeCol;
   col += vec3<f32>(0.4, 0.85, 1.0) * ionStreaks * 0.6;
+  col += reedGlow;                                         // Idea 1
 
   // Atmospheric noise
   let atmos = fbm2(uv * 4.0 + time * 0.05, 3) * 0.1;
-  col += vec3<f32>(0.1, 0.2, 0.3) * atmos * curtains;
+  col += vec3<f32>(0.1, 0.2, 0.3) * atmos * curtains * patchGain;
 
   // Advected HDR curtain trails (textureLoad only, bounded).
   let flowDir = vec2<f32>(curtainFlow * 0.5, sin(warpT * 0.6) * 0.2);
@@ -228,7 +305,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var fbCol = clamp(col + prev * (0.85 + bass * 0.03), vec3<f32>(0.0), vec3<f32>(5.5));
 
   // Semantic alpha: based on curtain intensity and weave presence
-  let alpha = clamp(curtains * 0.8 + weave * 0.3 + nodes * 0.5, 0.0, 1.0);
+  let alpha = clamp(curtains * 0.8 * patchGain + weave * 0.3 + nodes * 0.5 + band * 0.3, 0.0, 1.0);
 
   // Depth: curtains in front, stars behind
   let depth = clamp(0.8 - curtains * 0.5 + weave * 0.1, 0.0, 1.0);

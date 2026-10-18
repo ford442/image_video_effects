@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: Nakaya crystal habit per snow column (hexagonal plates <-> stellar dendrites with 60-degree side branches, mids = supersaturation pushes toward dendrites); habit-dependent fall dynamics (plates sink fast and flutter-tilt with a specular basal-face glint as they swing level, dendrites drift slowly), click = radial wind gust, mouse-held = eddy
+//  Upgraded: 2026-09-27
+//  Ideas: Nakaya crystal habit per snow column (hexagonal plates <-> stellar dendrites with 60-degree side branches, mids = supersaturation pushes toward dendrites); habit-dependent fall dynamics (plates sink fast and flutter-tilt with a specular basal-face glint as they swing level, dendrites drift slowly), click = radial wind gust, mouse-held = eddy; riming to graupel toward the bottom (wet-growth lumps); snowbank from C history with gust lean
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -244,6 +244,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       flake = mix(core, max(crystal, core * 0.35), detail);
     }
 
+    // Idea 1 — riming → graupel: dendrites plump into lumpy spheres toward
+    // the wet lower frame (uv.y grows downward in canvas space).
+    let riming = smoothstep(0.45, 0.94, uv.y);
+    let lump = 0.7 + 0.3 * hash21(cell + vec2<f32>(19.0, layerSeed));
+    let gR = R * mix(0.55, 1.2, lump);
+    let graupel = exp(-dot(q0, q0) / max(gR * gR * 0.22, 1e-6));
+    flake = mix(flake, max(flake * 0.35, graupel), riming * habit);
+
     // Basal-face glint: plates fall face-level, and flash as the flutter swings
     // them through horizontal (tilt ~ lateral velocity crossing zero).
     let tilt = latVel / max(flutterA * flutterW, 1e-4);
@@ -286,6 +294,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let cc = clamp(coord, vec2<i32>(0), vec2<i32>(dims) - vec2<i32>(1));
   let prev = textureLoad(dataTextureC, cc, 0);
   color = mix(color, prev.rgb * 0.92, totalTrail * 0.08 + smoothBass * 0.01);
+
+  // Idea 2 — snowbank: C history piles at the bottom, leaned by the gust.
+  let bankY = smoothstep(0.86, 0.995, uv.y);
+  let lean = clamp(gust.x * 10.0, -0.06, 0.06);
+  let bankCoord = clamp(
+    coord + vec2<i32>(i32(lean * f32(dims.x)), 0),
+    vec2<i32>(0),
+    vec2<i32>(dims) - vec2<i32>(1)
+  );
+  let bankPrev = textureLoad(dataTextureC, bankCoord, 0);
+  color = mix(color, max(color, bankPrev.rgb * 0.90), bankY * 0.58);
 
   let display = acesToneMap(max(color, vec3<f32>(0.0)) * 1.1);
 

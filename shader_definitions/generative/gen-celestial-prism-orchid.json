@@ -11,45 +11,11 @@
     "iridescent",
     "atmospheric"
   ],
-  "description": "An infinite expanse of refractive crystalline petals with Cauchy edge dispersion, micro-venation bioluminescent nutrient flow, starlight corona diffraction starbursts, and pollinator spring dynamics.",
+  "description": "An infinite expanse of refractive crystalline petals with Cauchy edge dispersion, micro-venation bioluminescent nutrient flow, starlight corona diffraction starbursts, labellum UV-to-gold nectar-guide chevrons, five-fold floral column caustics, and golden pollinia pollinator tethers.",
   "workgroup_size": [
     16,
     16,
     1
-  ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Bloom Complexity",
-      "default": 1.5,
-      "min": 0.1,
-      "max": 5,
-      "step": 0.1
-    },
-    {
-      "index": 1,
-      "name": "Refractive Index",
-      "default": 1.2,
-      "min": 1,
-      "max": 2.5,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Core Intensity",
-      "default": 2,
-      "min": 0,
-      "max": 5,
-      "step": 0.1
-    },
-    {
-      "index": 3,
-      "name": "Cosmic Wind Speed",
-      "default": 0.5,
-      "min": 0,
-      "max": 2,
-      "step": 0.05
-    }
   ],
   "supportsDepth": true,
   "supportsDof": false,
@@ -68,7 +34,8 @@
     "raymarching",
     "semantic-alpha",
     "aces-tone-mapping",
-    "generated-depth"
+    "generated-depth",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -107,5 +74,43 @@
       "step": 0.05,
       "mapping": "zoom_params.w"
     }
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Bloom Complexity",
+          "default": 1.5,
+          "min": 0.1,
+          "max": 5,
+          "step": 0.1
+        },
+        {
+          "index": 1,
+          "name": "Refractive Index",
+          "default": 1.2,
+          "min": 1,
+          "max": 2.5,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Core Intensity",
+          "default": 2,
+          "min": 0,
+          "max": 5,
+          "step": 0.1
+        },
+        {
+          "index": 3,
+          "name": "Cosmic Wind Speed",
+          "default": 0.5,
+          "min": 0,
+          "max": 2,
+          "step": 0.05
+        }
+      ]
+    }
+  }
 }

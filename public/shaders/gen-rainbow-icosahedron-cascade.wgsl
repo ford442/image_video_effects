@@ -4,9 +4,9 @@
 //  Features: nested icosahedral shells, spectral facet coloring, orbit-trap
 //            edges, audio-reactive scale, mouse orbit, temporal feedback
 //  Complexity: High
-//  Upgraded: 2026-09-09
-//  Ideas: silhouette orbit-trap on edges; golden-angle yaw offset per shell
-//  A packing: ACES display RGBA (HEAD telemetry packing lie fixed)
+//  Upgraded: 2026-09-27
+//  Ideas: silhouette orbit-trap on edges; golden-angle yaw offset per shell; dual dodeca vertices (20 triangle-centroid sparks per shell); click shell pulse (ripple age breathes radius/thickness)
+//  A packing: linear HDR history in A; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -91,6 +91,19 @@ fn icosaEdges() -> array<vec2<i32>, 30> {
   );
 }
 
+// 20 triangular faces of the regular icosahedron (dual = dodeca vertices).
+fn icosaFaces() -> array<vec3<i32>, 20> {
+  return array<vec3<i32>, 20>(
+    vec3<i32>(0, 4, 8), vec3<i32>(0, 8, 2), vec3<i32>(0, 2, 9), vec3<i32>(0, 9, 6), vec3<i32>(0, 6, 4),
+    vec3<i32>(3, 5, 10), vec3<i32>(3, 10, 1), vec3<i32>(3, 1, 11), vec3<i32>(3, 11, 7), vec3<i32>(3, 7, 5),
+    vec3<i32>(4, 8, 10), vec3<i32>(4, 10, 1), vec3<i32>(4, 1, 6),
+    vec3<i32>(6, 1, 11), vec3<i32>(6, 9, 11),
+    vec3<i32>(8, 2, 5), vec3<i32>(8, 5, 10),
+    vec3<i32>(9, 2, 7), vec3<i32>(9, 7, 11),
+    vec3<i32>(5, 2, 7)
+  );
+}
+
 fn icosaShellSDF(p: vec3<f32>, scale: f32, thick: f32) -> f32 {
   let verts = icosaVerts();
   let edges = icosaEdges();
@@ -134,11 +147,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var facetHue = 0.0;
 
   let baseScale = 0.55 + bass * 0.15;
+  let verts = icosaVerts();
+  let faces = icosaFaces();
+  let rippleCount = min(u32(u.config.y), 50u);
 
   for (var s = 0; s < shellCount; s = s + 1) {
     let sf = f32(s);
-    let scale = baseScale + sf * shellGap * (1.0 + mids * 0.2);
-    let thick = edgeGlow * (1.0 - sf * 0.08);
+    // Idea 2 — click shell pulse: each shell breathes as the ripple front
+    // reaches a staggered radius (mouse orbit unchanged).
+    var clickPulse = 0.0;
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+      let rp = u.ripples[ri];
+      let age = time - rp.z;
+      if (age >= 0.0 && age < 2.4) {
+        let shellReach = 0.12 + sf * 0.14;
+        clickPulse += exp(-abs(age * 0.55 - shellReach) * 9.0) * exp(-age * 1.15);
+      }
+    }
+    let scale = (baseScale + sf * shellGap * (1.0 + mids * 0.2)) * (1.0 + clickPulse * 0.22);
+    let thick = edgeGlow * (1.0 - sf * 0.08) * (1.0 + clickPulse * 0.45);
     let pShell = rotY(p, sf * GOLDEN_ANGLE);
     let d = icosaShellSDF(pShell, scale, thick);
     minDist = min(minDist, d);
@@ -149,10 +176,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let spec = spectral(hue + treble * 0.1);
     let sil = 1.0 - abs(pShell.z / max(length(pShell), 0.001));
 
+    // Idea 1 — dual dodeca vertices: triangle centroids of the icosa faces.
+    var dualGlow = 0.0;
+    for (var fi = 0; fi < 20; fi = fi + 1) {
+      let fa = faces[fi];
+      let centroid = verts[fa.x] + verts[fa.y] + verts[fa.z];
+      let dualP = normalize(centroid) * scale;
+      let dd = length(pShell - dualP);
+      dualGlow += exp(-dd * dd * 420.0);
+    }
+
     color += spec * edge * (1.2 + bass * 0.5) * (0.55 + sil * 0.9);
     color += spec * facet * 0.25 * (0.6 + mids * 0.4);
+    color += spec * dualGlow * (0.28 + treble * 0.22) * (1.0 + clickPulse);
     facetHue = mix(facetHue, hue, edge);
-    alpha = max(alpha, edge * (0.7 - sf * 0.08));
+    alpha = max(alpha, max(edge * (0.7 - sf * 0.08), dualGlow * 0.35));
   }
 
   // Inner glow core

@@ -33,6 +33,11 @@ const PI: f32 = 3.141592653589793;
 const TAU: f32 = 6.283185307179586;
 const PHI: f32 = 1.618033988749895;
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn rot(a: f32) -> mat2x2<f32> { let s = sin(a); let c = cos(a); return mat2x2<f32>(c, -s, s, c); }
 
 fn hash1(p: vec3<f32>) -> f32 { return fract(sin(dot(p, vec3<f32>(127.1, 311.7, 74.7))) * 43758.5453); }
@@ -216,19 +221,37 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Fog with Beer-Lambert attenuation
     let fog = 1.0 - exp(-0.05 * t);
     color = mix(color, vec4<f32>(0.0, 0.0, 0.02, color.a), fog);
+    // Idea 1: Quantum superposition tearing (temporal jitter on fold planes)
+    let jitterPhase = u.config.x * 20.0 + f32(id.x + id.y);
+    let jitter = (hash1(vec3<f32>(f32(id.x), f32(id.y), u.config.x)) - 0.5) * bass * 0.05;
+    
     // Temporal feedback via dataTextureC
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-    color = mix(color, vec4<f32>(prev.rgb * 0.95, prev.a * 0.95), 0.02 + bass * 0.015);
+    let prev = textureLoad(dataTextureC, vec2<i32>(id.xy), 0);
+    color = mix(color, vec4<f32>(prev.rgb * 0.95, prev.a * 0.95), clamp(0.02 + bass * 0.015 + jitter, 0.0, 1.0));
     // Curl-noise aether drift on background
     if (!hit) {
         let drift = curl(vec3<f32>(uv * 3.0, u.config.x * 0.1), u.config.x * 0.2);
         let drift_col = color.rgb + vec3<f32>(0.02, 0.01, 0.03) * drift.z * (0.5 + mids * 0.5);
         color = vec4<f32>(drift_col, color.a);
     }
-    color.a = 1.0;
-    textureStore(writeTexture, id.xy, color);
+    
+    // Idea 2: Chromatic fold creases (RGB split based on normal)
+    if (hit) {
+        let n_split = normalize(vec3<f32>(sin(t), cos(t), sin(t*0.5)));
+        let split_factor = max(dot(getNormal(p), n_split), 0.0) * zparams.y * bass;
+        color.r += split_factor * 0.5;
+        color.b -= split_factor * 0.3;
+    }
+    
+    let displayColor = acesToneMap(color.rgb * 1.05);
+    // Semantic alpha: depth or intensity
+    let outAlpha = clamp(color.a * 1.5, 0.1, 0.95);
+    
+    let outRgba = vec4<f32>(displayColor, outAlpha);
+    textureStore(writeTexture, id.xy, outRgba);
     let d_uv = clamp(vec2<f32>(id.xy) / vec2<f32>(u.config.z, u.config.w), vec2<f32>(0.0), vec2<f32>(1.0));
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, d_uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, vec2<i32>(id.xy), color);
+    let finalDepth = select(depth, clamp(1.0 - t/15.0, 0.0, 1.0), hit);
+    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(finalDepth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(id.xy), outRgba);
 }

@@ -13,7 +13,7 @@ export class BeatDetector {
 
   private analyser: AnalyserNode;
   private onBeat: (timestamp: number) => void;
-  private buffer: Uint8Array;
+  private buffer: Uint8Array<ArrayBuffer>;
   private rafId: number | null = null;
   private running = false;
   private energyAverage = 0;
@@ -50,7 +50,7 @@ export class BeatDetector {
     const lowBandEnd = Math.max(1, Math.floor(this.buffer.length * BeatDetector.LOW_BAND_RATIO));
     let energy = 0;
     for (let i = 0; i < lowBandEnd; i++) {
-      energy += this.buffer[i] / 255;
+      energy += (this.buffer[i] ?? 0) / 255;
     }
     energy /= lowBandEnd;
 

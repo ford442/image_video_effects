@@ -18,7 +18,7 @@ describe('TransitionOrchestrator', () => {
 
     expect(result).not.toBeNull();
     expect(result!.progress).toBeCloseTo(0.6, 5);
-    expect(result!.params[0].a).toBeLessThanOrEqual(1);
+    expect(result!.params[0]!.a).toBeLessThanOrEqual(1);
   });
 
   test('schema change mid-transition rebases safely with no NaN', async () => {
@@ -29,9 +29,10 @@ describe('TransitionOrchestrator', () => {
     const at40 = await orchestrator.update(400);
     expect(at40).not.toBeNull();
 
-    const rebasedStart = at40!.params[0].a;
+    const rebasedStart = at40!.params[0]!.a;
+    expect(rebasedStart).toBeDefined();
     orchestrator.setBaseline({
-      params: [{ b: rebasedStart }],
+      params: [{ b: rebasedStart! }],
       schema: schemaB,
       shaderSignature: 'stack-b',
     });
@@ -40,8 +41,8 @@ describe('TransitionOrchestrator', () => {
     const rebased = await orchestrator.update(800);
 
     expect(rebased).not.toBeNull();
-    expect(Number.isNaN(rebased!.params[0].b)).toBe(false);
-    expect(rebased!.params[0].a).toBeUndefined();
+    expect(Number.isNaN(rebased!.params[0]!.b)).toBe(false);
+    expect(rebased!.params[0]!.a).toBeUndefined();
   });
 
   test('rapid toggle on/off/on keeps exactly one active orchestrator lifecycle', async () => {
@@ -56,8 +57,9 @@ describe('TransitionOrchestrator', () => {
     for (let i = 1; i <= 100; i++) {
       const tick = await orchestrator.update(i * 10);
       if (!tick) continue;
-      expect(tick.params[0].a).toBeGreaterThanOrEqual(previous);
-      previous = tick.params[0].a;
+      const a = tick.params[0]!.a;
+      expect(a).toBeGreaterThanOrEqual(previous);
+      previous = a!;
     }
     expect(orchestrator.getState()).not.toBe('IDLE');
   });
@@ -71,10 +73,10 @@ describe('TransitionOrchestrator', () => {
     for (let i = 1; i <= 1000; i++) {
       const tick = await orchestrator.update(i);
       if (!tick) continue;
-      const value = tick.params[0].a;
+      const value = tick.params[0]!.a;
       expect(value).toBeGreaterThanOrEqual(0);
       expect(value).toBeLessThanOrEqual(1);
-      final = value;
+      final = value!;
     }
     expect(final).toBe(1);
   });

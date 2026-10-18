@@ -3,7 +3,7 @@
   "name": "Holographic Glitch",
   "category": "retro-glitch",
   "url": "shaders/holographic-glitch.wgsl",
-  "description": "Continuous holographic scan and phase corruption with chromatic peel interaction, click desynchronization fronts, and channel-separated exact-history trails.",
+  "description": "Continuous holographic scan and phase corruption with chromatic peel interaction, click desynchronization fronts, and channel-separated exact-history trails. Upgraded 2026-09-28: emitter flicker (random blackouts and slow luminance sag on the Flicker slider); grating-order ghosts (hue-split ±1-order copies along the shear axis, scaled by Holographic Intensity); peel shadow cast by the folded crest onto the image beneath.",
   "workgroup_size": [
     16,
     16,
@@ -47,41 +47,7 @@
       "mapping": "zoom_params.w"
     }
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Glitch Intensity",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Holographic Intensity",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "RGB Shift",
-      "default": 0.6,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Flicker",
-      "default": 0.4,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
-  ],
-  "feedbackPacking": "A/C = final tone-mapped display RGBA with bounded exact channel-separated trails; B is unused",
+  "feedbackPacking": "A/C = pre-ACES linear display RGB + transmission alpha with bounded exact channel-separated trails; B is unused; ACES on writeTexture only",
   "features": [
     "upgraded-rgba",
     "depth-aware",
@@ -89,14 +55,8 @@
     "chromatic-aberration",
     "sci-fi",
     "audio-reactive",
-    "audio-driven",
     "mouse-driven",
     "aces-tone-map",
-    "ign-dither",
-    "fresnel-rim",
-    "split-tone",
-    "film-grain",
-    "hue-preserve-clamp",
     "exact-history",
     "three-band-audio",
     "held-pointer",
@@ -109,5 +69,43 @@
     "audio",
     "music",
     "reactive"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Glitch Intensity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Holographic Intensity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "RGB Shift",
+          "default": 0.6,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Flicker",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

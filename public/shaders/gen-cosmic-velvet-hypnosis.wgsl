@@ -3,8 +3,9 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-21
-//  Ideas: crushed-velvet pile patches under a turning light; nested log-octave wells sinking inward
+//  Upgraded: 2026-09-27
+//  Ideas: crushed-velvet pile patches under a turning light; nested log-octave wells sinking inward;
+//         counter-runner comet crossing the primary runner; seam glints where a runner crosses a plush well
 //  A packing: ACES display RGBA (read back as colour history)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -112,6 +113,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let seam = 1.0 - smoothstep(0.0, 0.09, min(octaveF, 1.0 - octaveF));
     let seamLip = exp(-pow((octaveF - 0.13) / 0.035, 2.0));
 
+    // Idea 3 — counter-runner: a second comet travels the counter-spiral's
+    // opposite winding; where the two runners meet, a bright collision flash marks it.
+    let counterPhase = fract(-angle / TAU * (arms + 2.0) + radius * (3.0 + spiralArms * 7.0) + time * (0.6 + spinRate * 3.0));
+    let runner2 = exp(-pow((counterPhase - 0.5) / 0.07, 2.0)) * counterSpiral;
+    let runnerCollision = runner * runner2 * 6.0;
+
+    // Idea 4 — seam glint: either runner crossing a nested-octave seam sparks
+    // a brief glint, tying the velvet pile and the sinking wells together.
+    let seamGlint = (runner + runner2) * seamLip * 2.2;
+
     var clickHalo = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
     for (var i = 0u; i < rippleCount; i = i + 1u) {
@@ -133,11 +144,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     hdr += palette(hue + 0.68) * clickHalo * 1.9;
     hdr += vec3<f32>(0.85, 0.25, 1.0) * (core * (0.7 + audio.x) + dragMask * 0.9);
     hdr = hdr * (1.0 - seam * 0.6) + palette(hue + 0.9) * seamLip * (0.18 + velvet * 0.3);
+    hdr += palette(hue + 0.82) * runner2 * (0.3 + audio.z * 0.9);
+    hdr += vec3<f32>(1.4, 1.1, 1.6) * runnerCollision * (0.6 + audio.x * 0.6);
+    hdr += palette(hue + 0.24) * seamGlint * (0.5 + audio.z * 0.7);
     let radialDirection = p / radius;
     let historyUV = clamp(uv - vec2<f32>(radialDirection.x / max(aspect, 0.001), radialDirection.y) * (0.003 + spinRate * 0.007) + vec2<f32>(-radialDirection.y / max(aspect, 0.001), radialDirection.x) * 0.002, vec2<f32>(0.0), vec2<f32>(1.0));
     let history = historyLoadUV(historyUV);
     hdr = mix(hdr, history.rgb, clamp(0.10 + velvetSoftness * 0.19 + dragMask * 0.12, 0.0, 0.42));
-    let structure = clamp(velvet * 0.7 + counterSpiral * 0.28 + rings * 0.35 + runner + velvetWeave * 0.32 + clickHalo * 0.45 + core * 0.4, 0.0, 1.0);
+    let structure = clamp(velvet * 0.7 + counterSpiral * 0.28 + rings * 0.35 + runner + runner2 * 0.6 + velvetWeave * 0.32 + clickHalo * 0.45 + core * 0.4 + runnerCollision * 0.5 + seamGlint * 0.4, 0.0, 1.0);
     let output = vec4<f32>(acesToneMap(hdr), clamp(0.12 + structure * 0.86, 0.0, 1.0));
     textureStore(writeTexture, coord, output);
     textureStore(dataTextureA, coord, output);

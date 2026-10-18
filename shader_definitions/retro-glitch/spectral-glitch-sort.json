@@ -11,7 +11,7 @@
     "temporal",
     "aces-tone-map"
   ],
-  "description": "Brightness-gated spectral sorting with a guarded sprung epicenter, bounded click tears, read-only FFT block voices, and exact-C trails persisted through authoritative A display history.",
+  "description": "Brightness-gated spectral sorting with a guarded sprung epicenter, bounded click tears, read-only FFT block voices, and exact-C trails persisted through authoritative A display history. A short walk keeps the brighter sample, and red and blue take opposite extra steps.",
   "params": [
     {
       "id": "strength",
@@ -47,39 +47,43 @@
     "retro",
     "vintage"
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Sort Length",
-      "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Luma Threshold",
-      "default": 0.4,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Direction",
-      "default": 0,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Digital Noise",
-      "default": 0.2,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+  "updated": true,
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Sort Length",
+          "default": 0.3,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Luma Threshold",
+          "default": 0.4,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Direction",
+          "default": 0,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Digital Noise",
+          "default": 0.2,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
     }
-  ],
-  "updated": true
+  }
 }

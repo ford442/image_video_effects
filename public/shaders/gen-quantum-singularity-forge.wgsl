@@ -1,33 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Quantum Singularity-Forge
 //  Category: generative
-//  Features: raymarched, chromatic-dispersion, audio-reactive,
-//            mouse-driven, gravitational-lensing, upgraded-rgba,
-//            depth-aware, aces-tone-map, cosmic-forge
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Very High
-//  Created: 2026-06-28
+//  Upgraded: 2026-10-18
+//  Ideas: photon ring + lensed starfield (Lensing Intensity); relativistic Doppler beaming on the disk; Shakura–Sunyaev thermal ladder (T ∝ r^-3/4 (1-√(r_in/r))^1/4, luminosity T^4); plunging-region streamers (log-spiral infall inside the disk's inner edge, gravitationally redshifted at the horizon)
+//  A packing: ACES display RGBA, alpha = coverage
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ─── Math Helpers ───
 fn sat(x: f32) -> f32 { return clamp(x, 0.0, 1.0); }
@@ -213,7 +194,8 @@ fn heatGradient(t: f32) -> vec3<f32> {
 
 // ─── Raymarch ───
 fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: f32, mids: f32,
-            gravity: f32, accretionSpeed: f32, ejectionRate: f32, mousePos: vec3<f32>) -> vec4<f32> {
+            gravity: f32, accretionSpeed: f32, ejectionRate: f32, mousePos: vec3<f32>,
+            lensIntensity: f32) -> vec4<f32> {
   var t = 0.0;
   var col = vec3<f32>(0.0);
   var alpha = 0.0;
@@ -246,7 +228,7 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: f32, mids
           0.5 + 0.5 * cos(viewAngle * 8.0 + 4.2)
         );
         col = irid * (1.0 + bass * 2.0) * 0.8;
-        col = col + vec3<f32>(0.8, 0.9, 1.0) * pow(viewAngle, 3.0) * 0.5;
+        col = col + vec3<f32>(0.8, 0.9, 1.0) * pow(max(viewAngle, 0.0), 3.0) * 0.5;
         alpha = 0.9;
       } else {
         // Accretion disk - heat gradient
@@ -255,6 +237,30 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: f32, mids
         // Add emissive swirl
         let swirl = sin(p.x * 3.0 + time * 2.0 + p.z * 2.0) * 0.5 + 0.5;
         col = col + vec3<f32>(0.2, 0.4, 0.8) * swirl * bass * 0.3;
+
+        // Idea 3: Shakura–Sunyaev thermal ladder. A thin accretion disk's
+        // effective temperature runs T ∝ r^-3/4 (1 - sqrt(r_in/r))^1/4; the
+        // inner flank of the tube glows white-cyan, the outer flank cools to
+        // indigo, and brightness follows Stefan–Boltzmann (T^4). Applied before
+        // the Doppler factor so beaming acts on the thermal light too.
+        let xr = max(length(p.xz) / 0.6, 1.0);
+        let ssProfile = pow(xr, -0.75) * pow(max(1.0 - inverseSqrt(xr), 1e-6), 0.25) / 0.488;
+        let ssT = sat(ssProfile) * (1.0 + bass * 0.12);
+        let ssLum = ssT * ssT * ssT * ssT;
+        let ssCol = heatGradient(0.35 + 0.6 * sat((ssT - 0.78) / 0.22));
+        col = col + ssCol * ssLum * 0.9;
+
+        // Idea 2: relativistic Doppler beaming. The side of the disk moving
+        // toward the camera brightens and blue-shifts; the receding side dims
+        // and reddens. Faster accretion = higher orbital beta.
+        let orbitDir = normalize(vec3<f32>(p.z, 0.0, -p.x) + vec3<f32>(1e-4, 0.0, 0.0));
+        let beta = clamp(0.18 + accretionSpeed * 0.16, 0.0, 0.6);
+        let cosT = dot(orbitDir, -rd);
+        let dopp = sqrt(1.0 - beta * beta) / (1.0 - beta * cosT);
+        let beaming = clamp(dopp * dopp * dopp, 0.25, 3.5);
+        col = col * beaming;
+        col = mix(col, col * vec3<f32>(0.65, 0.9, 1.35), sat(dopp - 1.0) * 1.5);
+        col = mix(col, col * vec3<f32>(1.35, 0.7, 0.45), sat(1.0 - dopp) * 1.5);
         alpha = sat(0.3 + hitGlow * 0.7);
       }
       break;
@@ -271,15 +277,58 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: f32, mids
     }
   }
 
+  // Idea 4: plunging-region streamers. Inside the disk's inner edge gas
+  // stops orbiting and spirals into the hole along log-spiral lanes. The
+  // ray is intersected once with the disk plane (y = 0); the lanes show
+  // wherever that crossing lies in front of the first surface hit, and dim
+  // with the Schwarzschild redshift sqrt(1 - r_s/r) as they reach the horizon.
+  if (abs(rd.y) > 1e-4) {
+    let tp = -ro.y / rd.y;
+    if (tp > 0.0 && (!hit || tp < t)) {
+      let pp = ro + rd * tp;
+      let r = length(pp.xz);
+      let bhR = 0.3 + audio * 0.05;
+      let window = smoothstep(bhR, bhR * 1.5, r) * (1.0 - smoothstep(0.7, 0.98, r));
+      if (window > 0.0) {
+        let phase = 2.0 * atan2(pp.z, pp.x) + 6.0 * log(r) - time * accretionSpeed * 2.0;
+        let lane = 0.5 + 0.5 * cos(phase);
+        let lane2 = lane * lane;
+        let lanes = lane2 * lane2 * lane2;
+        let redshift = sqrt(max(1.0 - bhR / r, 0.0));
+        let heat = sat((0.98 - r) / (0.98 - bhR));
+        let graze = min(1.0 / max(abs(rd.y), 0.2), 3.0);
+        let stream = lanes * window * redshift * graze * (0.35 + bass * 0.5);
+        col = col + heatGradient(0.55 + 0.4 * heat) * stream * 0.6;
+        alpha = max(alpha, sat(stream * 0.5));
+      }
+    }
+  }
+
   if (!hit) {
-    // Starfield background with gravitational lensing
+    // Idea 1: gravitational lensing of the sky. The impact parameter b of the
+    // missed ray bends it toward the hole (∝ Lensing Intensity / b), and a thin
+    // photon ring sits at the critical impact parameter.
+    let along = dot(-ro, rd);
+    let closest = ro + rd * max(along, 0.0);
+    let b = max(length(closest), 0.05);
+    let bhR = 0.3 + audio * 0.05;
+    let inFront = step(0.0, along);
+    let deflect = min(lensIntensity * bhR * 0.45 / b, 1.2) * inFront;
+    let rdL = normalize(rd - closest / b * deflect);
+    let bCrit = bhR * 2.6;
+    let ringW = 0.035 + bass * 0.01;
+    let ringX = (b - bCrit) / ringW;
+    let ring = exp(-ringX * ringX) * inFront * (0.35 + 0.45 * lensIntensity);
+
+    // Starfield background, sampled along the lensed ray
     var bg = vec3<f32>(0.0, 0.0, 0.01);
-    let starfield = fbm3(rd * 5.0 + time * 0.05, 4);
-    bg = bg + vec3<f32>(0.8, 0.85, 1.0) * pow(starfield, 4.0) * 0.3;
+    let starfield = fbm3(rdL * 5.0 + time * 0.05, 4);
+    bg = bg + vec3<f32>(0.8, 0.85, 1.0) * pow(starfield, 4.0) * 0.3 * (1.0 + deflect * 2.0);
     // Distant nebula glow
-    bg = bg + vec3<f32>(0.05, 0.0, 0.1) * (0.1 + bass * 0.1) * sat(0.5 / (abs(rd.y) + 0.1));
+    bg = bg + vec3<f32>(0.05, 0.0, 0.1) * (0.1 + bass * 0.1) * sat(0.5 / (abs(rdL.y) + 0.1));
+    bg = bg + vec3<f32>(1.0, 0.82, 0.55) * ring * (1.2 + bass * 0.8);
     col = bg;
-    alpha = 0.0;
+    alpha = sat(ring * 0.7);
   }
 
   return vec4<f32>(col, alpha);
@@ -305,33 +354,34 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let ejectionRate = mix(0.0, 1.0, zparams.z);
   let lensIntensity = mix(0.5, 2.0, zparams.w);
 
-  // Mouse handling: screen top = UP in 3D
+  // Camera orbiting the singularity (mouse up = camera up)
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
   let mouseUV = u.zoom_config.yz;
-  let mouseY = mouseUV.y; // Flip Y
-  let mousePos = vec3<f32>(
-    (mouseUV.x * 2.0 - 1.0) * 3.0 * aspect,
-    (mouseUV.y * 2.0 - 1.0) * 3.0,
-    0.0
-  );
-
-  // Camera orbiting the singularity
   let camDist = 4.0 + sin(time * 0.15) * 0.3;
   let camAng = time * 0.2 + mouseUV.x * 0.5;
-  let camHeight = mouseY * 1.0 - 0.5;
+  // Lifted 0.6 above the disk plane at idle: an exactly edge-on camera made
+  // every ray's disk-plane crossing tp = 0, hiding the plunging streamers.
+  let camHeight = 0.6 + (0.5 - mouseUV.y);
   let ro = vec3<f32>(cos(camAng) * camDist, camHeight, sin(camAng) * camDist);
   let ta = vec3<f32>(0.0, 0.0, 0.0);
   let ww = normalize(ta - ro);
+  // uu = cross(Y, ww) is screen-LEFT and vv is up, while uv.y grows down:
+  // rays use (-p.x, -p.y) so the picture is not rotated 180°.
   let uu = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), ww));
   let vv = cross(ww, uu);
+
+  // Gravity well under the pointer, on the focal plane through the hole
+  // (idle 0.5,0.5 = the hole itself, as before).
+  let focal = camDist / 2.5;
+  let mousePos = (-uu * (mouseUV.x * 2.0 - 1.0) * aspect + vv * (1.0 - 2.0 * mouseUV.y)) * focal;
 
   // Ray direction
   var p = uv * 2.0 - 1.0;
   p.x = p.x * aspect;
-  let rd = normalize(p.x * uu + p.y * vv + 2.5 * ww);
+  let rd = normalize(-p.x * uu - p.y * vv + 2.5 * ww);
 
   // Raymarch
-  let result = raymarch(ro, rd, time, audio, bass, mids, gravity, accretionSpeed, ejectionRate, mousePos);
+  let result = raymarch(ro, rd, time, audio, bass, mids, gravity, accretionSpeed, ejectionRate, mousePos, lensIntensity);
   var col = result.rgb;
   var alpha = result.a;
 
@@ -339,16 +389,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col = col + vec3<f32>(0.0, 0.2, 0.4) * bass * 0.15;
   col = col + vec3<f32>(0.3, 0.1, 0.5) * mids * 0.1;
 
-  // Temporal persistence using extraBuffer
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  // Temporal persistence from the previous frame (exact load)
+  let prev = textureLoad(dataTextureC, coord, 0);
   col = mix(col, prev.rgb * 0.92, 0.05);
 
   // Tone map
-  col = acesToneMap(col * 1.5);
+  col = acesToneMap(max(col, vec3<f32>(0.0)) * 1.5);
 
   let finalDepth = sat(0.95 - alpha * 0.3);
+  // Semantic alpha: surface/ring coverage plus emitted light (void stays thin).
+  let outAlpha = clamp(alpha + dot(col, vec3<f32>(0.2126, 0.7152, 0.0722)) * 0.3, 0.04, 1.0);
 
-  textureStore(writeTexture, coord, vec4<f32>(col, 1.0));
+  textureStore(writeTexture, coord, vec4<f32>(col, outAlpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 1.0));
-  textureStore(dataTextureA, coord, vec4<f32>(col.r, col.g, col.b, 1.0));
+  textureStore(dataTextureA, coord, vec4<f32>(col, outAlpha));
 }

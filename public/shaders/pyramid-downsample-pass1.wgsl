@@ -1,10 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════════════
-//  Gaussian-Laplacian Pyramid — Pass 1: Separable Gaussian Downsample
+//  Gaussian-Laplacian Pyramid — Pass 1: Bilateral Gaussian Base
 //  Category: image
 //  Features: multi-pass-1, shared-memory, gaussian-blur, temporal-feedback
 //  Complexity: Medium
-//  Part of chain: pyramid-downsample-pass1 → pyramid-bandprocess-pass2 → pyramid-composite-pass3
-//
+//  Upgraded: 2026-10-18
+//  Ideas: bilateral range weight; low-band settle
+//  A packing: B = (bilateral blur RGB, range agreement). Not display.
+// ═══════════════════════════════════════════════════════════════════════════
 //  This pass computes a separable 7-tap Gaussian blur of the input image using
 //  an 18×18 shared-memory tile (16×16 threads + 1-pixel halo on each side).
 //  The blurred image is stored in dataTextureB so that the post-slot copy
@@ -19,26 +21,8 @@
 //    u.zoom_params.w = ROI radius (pass 3 uses it)
 // ═══════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config:      vec4<f32>,   // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,   // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,   // x=HighFreqAmp, y=MidFreqAmp, z=LowFreqAmp, w=ROIRadius
-  ripples:     array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=HighFreqAmp, y=MidFreqAmp, z=LowFreqAmp, w=ROIRadius
 
 // ─── Shared-memory tile setup ────────────────────────────────────────────────
 // Workgroup: 16×16 threads processing a 16×16 block of output pixels.
@@ -62,9 +46,8 @@ var<workgroup> tile: array<array<vec3<f32>, 18>, 18>;  // [row][col]
 // The combined 2D blur with two 3-tap passes gives a smooth low-pass.
 const K0: f32 = 0.375;   // centre weight
 const K1: f32 = 0.25;    // ±1 neighbour weight
-const K2: f32 = 0.0625;  // ±2 neighbour weight  (clamped to ±1 in shared tile)
-// Pre-computed normalization: (K1+K0+K1)^2 = 0.875^2 = 0.765625
-const NORM_FACTOR: f32 = 0.765625;
+// 2D binomial weights. Centre K0, neighbour K1. Their product is the
+// old separable kernel when the range weight is 1.
 
 // Load one vec3 pixel from readTexture using integer coords (fast path).
 fn loadPixelRGB(coord: vec2<i32>) -> vec3<f32> {
@@ -128,18 +111,36 @@ fn tileAt(lid: vec3<u32>, dx: i32, dy: i32) -> vec3<f32> {
   return tile[clamp(y, 0, 17)][clamp(x, 0, 17)];
 }
 
-// 3×3 separable Gaussian blur from shared tile (radius-1 per axis).
-// X-pass: K1*left + K0*centre + K1*right (then repeat Y).
-// Equivalent to a 3×3 tent filter, which is a good approximation to a 2D Gaussian.
-fn gaussBlur(lid: vec3<u32>) -> vec3<f32> {
-  // Row blur (X direction): 3 taps per row, 3 rows
-  let r0 = K1 * tileAt(lid, -1, -1) + K0 * tileAt(lid, 0, -1) + K1 * tileAt(lid, 1, -1);
-  let r1 = K1 * tileAt(lid, -1,  0) + K0 * tileAt(lid, 0,  0) + K1 * tileAt(lid, 1,  0);
-  let r2 = K1 * tileAt(lid, -1,  1) + K0 * tileAt(lid, 0,  1) + K1 * tileAt(lid, 1,  1);
-  // Column blur (Y direction) over the 3 row results
-  let blur = K1 * r0 + K0 * r1 + K1 * r2;
-  // Re-normalize (sum of weights in 2D: (K1+K0+K1)^2 = 0.875^2 = NORM_FACTOR)
-  return blur / NORM_FACTOR;
+fn luma3(c: vec3<f32>) -> f32 {
+  return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+}
+
+// 3×3 binomial blur with a luma range weight. When every tap agrees, the
+// weights collapse to the old separable kernel.
+fn bilateralBlur(lid: vec3<u32>, rangeSigma: f32) -> vec4<f32> {
+  let center = tileAt(lid, 0, 0);
+  let lc = luma3(center);
+  let sig2 = max(rangeSigma * rangeSigma, 1e-4);
+  var acc = vec3<f32>(0.0);
+  var wsum = 0.0;
+  var agree = 0.0;
+  for (var dy: i32 = -1; dy <= 1; dy = dy + 1) {
+    for (var dx: i32 = -1; dx <= 1; dx = dx + 1) {
+      let tap = tileAt(lid, dx, dy);
+      let wx = select(K1, K0, dx == 0);
+      let wy = select(K1, K0, dy == 0);
+      let spatial = wx * wy;
+      let lt = luma3(tap);
+      let diff = lt - lc;
+      let range = exp(-(diff * diff) / sig2);
+      let w = spatial * range;
+      acc = acc + tap * w;
+      wsum = wsum + w;
+      agree = agree + range;
+    }
+  }
+  let rgb = acc / max(wsum, 1e-4);
+  return vec4<f32>(rgb, clamp(agree / 9.0, 0.0, 1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -154,33 +155,35 @@ fn main(
   // participate in the workgroupBarrier and tile fill.
   let inBounds = gid.x < resU.x && gid.y < resU.y;
 
-  // Evaluate unused parameters
-  let unused_x = u.zoom_params.x;
-  let unused_y = u.zoom_params.y;
-  let unused_z = u.zoom_params.z;
-  let unused_w = u.zoom_params.w;
+  // High Freq Amp tightens the range weight. Mid stays with pass 2.
+  // Low Freq Amp is the base's temporal inertia. ROI radius is pass 3.
+  let highAmp = clamp(u.zoom_params.x, 0.0, 2.0);
+  let midAmp = u.zoom_params.y;
+  let lowAmp = clamp(u.zoom_params.z, 0.0, 2.0);
+  let roiRadius = u.zoom_params.w;
+  let chainKeep = (midAmp + roiRadius) * 0.0;
 
   // ── Step 1: Cooperatively fill the shared-memory tile ──────────────────
   fillTile(gid, lid);
 
   if (!inBounds) { return; }
 
-  // ── Step 2: Compute separable Gaussian blur from the tile ──────────────
-  let blurRGB = gaussBlur(lid);
+  // ── Idea 1: bilateral range weight ──────────────────────────────────
+  let rangeSigma = mix(0.42, 0.07, highAmp * 0.5);
+  let blur = bilateralBlur(lid, rangeSigma);
 
-  // ── Step 3: Write outputs ───────────────────────────────────────────────
-  // dataTextureB stores the Gaussian blur for temporal reference.
-  // The renderer's post-slot copy (dataTexB → dataTexC) makes the blur
-  // available as dataTextureC in the NEXT frame for pass 2 and pass 3.
-  textureStore(dataTextureB, gid.xy, vec4<f32>(blurRGB, 1.0));
+  // ── Idea 2: low-band settle ─────────────────────────────────────────
+  // The base eases toward last frame's blur so the Laplacian does not
+  // tick. A black history (first frame) is ignored.
+  let prevBlur = textureLoad(dataTextureC, vec2<i32>(gid.xy), 0).rgb;
+  let prevOk = f32(dot(prevBlur, prevBlur) > 1e-4);
+  let settle = (0.12 + 0.38 * (lowAmp * 0.5)) * prevOk;
+  let blurRGB = mix(blur.rgb, prevBlur, settle);
 
-  // Dummy read to consume dead sliders assigned to this pass
-  let dummy = u.zoom_params.x * u.zoom_params.y * u.zoom_params.z * u.zoom_params.w * 0.0001;
+  textureStore(dataTextureB, gid.xy, vec4<f32>(blurRGB, blur.a));
 
-  // Pass the original image through writeTexture so the slot pipeline
-  // has a valid image even if the chain does not run to completion.
   let origRGB = tileAt(lid, 0, 0);
-  textureStore(writeTexture, gid.xy, vec4<f32>(origRGB + vec3<f32>(dummy), 1.0));
+  textureStore(writeTexture, gid.xy, vec4<f32>(origRGB, 1.0 + chainKeep));
   let uv = vec2<f32>(gid.xy) / vec2<f32>(textureDimensions(readTexture));
   let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));

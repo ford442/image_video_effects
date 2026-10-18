@@ -45,17 +45,7 @@ export function useShaderCatalogLoad({
                         id: shader.id,
                         requiresRgba32Float: shader.requiresRgba32Float === true,
                     }),
-                    params: (shader.params || []).map((p: { id?: string; name?: string; label?: string; default?: number; min?: number; max?: number; step?: number; labels?: string[]; mapping?: string; audio?: string | { fft: number } }, idx: number) => ({
-                        id: p.id || p.name || `param${idx + 1}`,
-                        name: p.label || p.name || `Parameter ${idx + 1}`,
-                        default: p.default ?? 0.5,
-                        min: p.min ?? 0,
-                        max: p.max ?? 1,
-                        step: p.step ?? 0.01,
-                        labels: p.labels,
-                        mapping: p.mapping,
-                        audio: p.audio as import('../renderer/types').ShaderParam['audio'],
-                    })),
+                    params: shader.params ?? [],
                 }));
 
                 setAvailableModes(entries);
@@ -68,7 +58,7 @@ export function useShaderCatalogLoad({
             }
         };
 
-        loadShaders();
+        void loadShaders();
         return () => { isMounted = false; };
     }, [setAvailableModes, setShadersReady, setStatus]);
 

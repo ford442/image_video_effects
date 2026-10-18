@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-09-15
-//  Ideas: Nebulabrot early/mid/late escape channels; anti-Buddhabrot interior dust
+//  Upgraded: 2026-10-10
+//  Ideas: Nebulabrot early/mid/late escape channels; anti-Buddhabrot interior dust; min-distance orbit spine; escape-argument streaks; main-cardioid limb; period-2 bulb; dwell isochrones
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
-  zoom_params: vec4<f32>,  // x=Orbit Threshold, y=Density Scale, z=Mouse Zoom, w=Aura Intensity
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Orbit Threshold, y=Density Scale, z=Mouse Zoom, w=Aura Intensity
 
 fn hash22(p: vec2<f32>) -> vec2<f32> {
   let h = vec2<f32>(dot(p, vec2<f32>(127.1, 311.7)), dot(p, vec2<f32>(269.5, 183.3)));
@@ -77,6 +59,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var bloom = vec3<f32>(0.0);
   var nebulaRGB = vec3<f32>(0.0);
   var interior = 0.0;
+  var spine = 0.0;
+  var escArg = vec3<f32>(0.0);
+  var dwell = 0.0;
 
   let samples = 4u;
   let h0 = hash22(vec2<f32>(f32(global_id.x), f32(global_id.y)) + fract(time) * 13.37);
@@ -103,11 +88,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var z = vec2<f32>(0.0);
     var orbit = vec3<f32>(0.0);
     var escaped = false;
+    var minTrap = 4.0;
+    let trapC = vec2<f32>(0.35, 0.12);
 
     for (var i: i32 = 0; i < baseIter; i = i + 1) {
       z = vec2<f32>(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + c;
       let dist = dot(z, z);
-      orbit += orbitTrapColor(z, vec2<f32>(0.35, 0.12));
+      orbit += orbitTrapColor(z, trapC);
+      // Idea: min-distance spine along the existing trap.
+      minTrap = min(minTrap, length(z - trapC));
 
       if (dist > 4.0) {
         escaped = true;
@@ -121,9 +110,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let mid   = smoothstep(0.22, 0.38, tEsc) * (1.0 - smoothstep(0.58, 0.78, tEsc));
         let late  = smoothstep(0.58, 0.78, tEsc);
         nebulaRGB += vec3<f32>(early, mid, late) * esc;
+        // Idea: escape argument — angular streak, separate from the time bins.
+        let argHue = atan2(z.y, z.x) / 6.2831853 + 0.5;
+        escArg += vec3<f32>(
+          0.5 + 0.5 * cos(6.2831853 * argHue),
+          0.5 + 0.5 * cos(6.2831853 * argHue + 2.094395),
+          0.5 + 0.5 * cos(6.2831853 * argHue + 4.188790)
+        ) * esc;
+        // Idea: dwell isochrones — thin rings of escape time, separate from the RGB bins.
+        let dwellPhase = abs(fract(esc * 8.0) - 0.5);
+        dwell += (1.0 - smoothstep(0.42, 0.5, dwellPhase)) * esc;
         break;
       }
     }
+    spine += exp(-minTrap * 18.0);
     orbitColor += orbit * (1.0 / f32(baseIter));
     // Idea 2 — anti-Buddhabrot interior dust for orbits that never escape.
     interior += select(1.0, 0.0, escaped);
@@ -135,6 +135,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   bloom = bloom / f32(samples);
   nebulaRGB = nebulaRGB / f32(samples);
   interior = interior / f32(samples);
+  spine = spine / f32(samples);
+  escArg = escArg / f32(samples);
+  dwell = dwell / f32(samples);
 
   let dMap = density * densityScale * 3.0;
   let nebula = vec3<f32>(
@@ -147,6 +150,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color += bloom * aura * 2.5;
   color += nebulaRGB * vec3<f32>(1.15, 0.85, 1.35) * aura * 1.4;
   color += vec3<f32>(0.18, 0.10, 0.28) * interior * aura * (0.7 + mids * 0.4);
+  color += vec3<f32>(1.0, 0.92, 0.75) * spine * aura * 0.85;
+  color += escArg * aura * 0.55;
+  color += vec3<f32>(0.9, 0.95, 1.0) * dwell * aura * 0.4;
+  // Idea: main cardioid and the period-2 bulb, the set these orbits sample.
+  let cx = center.x;
+  let cy = center.y;
+  let cardQ = (cx - 0.25) * (cx - 0.25) + cy * cy;
+  let card = cardQ * (cardQ + (cx - 0.25)) - 0.25 * cy * cy;
+  let limb = exp(-abs(card) * 36.0);
+  let bulb = abs(length(center - vec2<f32>(-1.0, 0.0)) - 0.25);
+  let bulbLine = exp(-bulb * 22.0);
+  color += vec3<f32>(0.9, 0.78, 0.42) * limb * aura * 0.55;
+  color += vec3<f32>(0.45, 0.72, 1.0) * bulbLine * aura * 0.5;
 
   let centerGlow = length(uv - mouseC * 0.25);
   color += vec3<f32>(0.2, 0.15, 0.35) * smoothstep(0.9, 0.15, centerGlow) * aura * (0.6 + bass * 0.4);

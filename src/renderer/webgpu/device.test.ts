@@ -2,16 +2,21 @@
  * device.test.ts — optional feature collection, canvas configure, init paths.
  */
 
+import type { Mock } from 'vitest';
 import {
   appendAdapterSummaryFields,
+  attachUncapturedErrorRouter,
   buildCanvasConfigureOptions,
   collectOptionalDeviceFeatures,
+  createErrorRateLimiter,
   formatEnabledDeviceFeatures,
   initializeWebGPUDevice,
   resolveCanvasColorOptIns,
   resolveSubgroupFeatureName,
+  attachDeviceLostHandler,
 } from './device';
 import canvasConfigureContract from '../../contracts/canvas_configure.json';
+import { setRendererErrorHandler, type RendererError } from '../ErrorHandling';
 import { UNIFORM_BUFFER_LAYOUT } from '../types';
 
 const TU = {
@@ -51,7 +56,7 @@ function makeAdapter(
     limits: makeLimits(limits),
     features: new Set(featureNames),
     info: { adapterType: 'discrete' } as unknown as GPUAdapterInfo,
-    requestDevice: jest.fn(),
+    requestDevice: vi.fn(),
   } as unknown as GPUAdapter;
 }
 
@@ -59,12 +64,12 @@ function makeDevice(featureNames: GPUFeatureName[] = []): GPUDevice {
   return {
     features: new Set(featureNames),
     limits: makeLimits({ maxTextureDimension2D: 4096, maxComputeInvocationsPerWorkgroup: 256 }),
-    addEventListener: jest.fn(),
-    destroy: jest.fn(),
+    addEventListener: vi.fn(),
+    destroy: vi.fn(),
     lost: Promise.resolve({ reason: 'destroyed', message: '' }),
-    createShaderModule: jest.fn().mockReturnValue({}),
-    createComputePipeline: jest.fn().mockReturnValue({}),
-    createTexture: jest.fn(() => ({ destroy: jest.fn() })),
+    createShaderModule: vi.fn().mockReturnValue({}),
+    createComputePipeline: vi.fn().mockReturnValue({}),
+    createTexture: vi.fn(() => ({ destroy: vi.fn() })),
   } as unknown as GPUDevice;
 }
 
@@ -170,6 +175,40 @@ describe('canvas_configure.json contract', () => {
       toneMapping: 'standard',
     });
   });
+
+  it('usageBits match the WebGPU spec GPUTextureUsage bits', () => {
+    for (const [name, bit] of Object.entries(canvasConfigureContract.usageBits)) {
+      expect(TU[name as keyof typeof TU]).toBe(bit);
+    }
+  });
+
+  it('declares backends for every capability (copySrc on both, color TS-only)', () => {
+    const backends = Object.fromEntries(
+      Object.entries(canvasConfigureContract.optIn).map(([k, v]) => [k, v.backends]),
+    );
+    expect(backends).toEqual({
+      copySrc: ['ts', 'wasm'],
+      displayP3: ['ts'],
+      extendedToneMapping: ['ts'],
+    });
+    expect(canvasConfigureContract.optIn.extendedToneMapping.requires).toBe('displayP3');
+  });
+
+  it('keeps the generated C++ header in sync with the JSON', () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const gen = require('../../../scripts/gen-canvas-configure-header.js') as {
+      renderHeader: (c: unknown) => string;
+      headerPath: (c: unknown) => string;
+    };
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const fs = require('fs') as typeof import('fs');
+    const header = gen.renderHeader(canvasConfigureContract);
+    expect(fs.readFileSync(gen.headerPath(canvasConfigureContract), 'utf8')).toBe(header);
+    expect(header).toContain('kUsage = WGPUTextureUsage_RenderAttachment;');
+    expect(header).toContain('kCopySrcUsage = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;');
+    expect(header).toContain('kAlphaModeJs = "opaque";');
+    expect(header).toContain('kPresentMode = WGPUPresentMode_Fifo;');
+  });
 });
 
 describe('resolveCanvasColorOptIns', () => {
@@ -193,6 +232,20 @@ describe('resolveCanvasColorOptIns', () => {
       extendedToneMapping: true,
     });
     expect(resolveCanvasColorOptIns('?display_p3=0', () => true).extendedToneMapping).toBe(false);
+  });
+
+  it('honors the persisted setting without a URL param', () => {
+    expect(resolveCanvasColorOptIns('', () => false, true)).toEqual({ displayP3: true, extendedToneMapping: false });
+    expect(resolveCanvasColorOptIns('', () => true, true)).toEqual({ displayP3: true, extendedToneMapping: true });
+  });
+
+  it('keeps a stored-off setting off, and lets the URL force it on', () => {
+    expect(resolveCanvasColorOptIns('', () => true, false).displayP3).toBe(false);
+    expect(resolveCanvasColorOptIns('?display_p3=1', () => false, false).displayP3).toBe(true);
+  });
+
+  it('declares the storage key in the contract', () => {
+    expect(canvasConfigureContract.optIn.displayP3.storageKey).toBe('px_display_p3');
   });
 });
 
@@ -220,46 +273,43 @@ describe('initializeWebGPUDevice', () => {
       configurable: true,
       value: originalGpu,
     });
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('returns ok:false when navigator.gpu is missing', async () => {
     Object.defineProperty(navigator, 'gpu', { configurable: true, value: undefined });
     const canvas = document.createElement('canvas');
     const result = await initializeWebGPUDevice(canvas, 800, 600);
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.adapterSummary).toBe('');
-    }
+    expect(result).toMatchObject({ ok: false, adapterSummary: '' });
   });
 
   it('returns ok:false when adapter ladder fails', async () => {
-    const requestAdapter = jest.fn().mockResolvedValue(null);
+    const requestAdapter = vi.fn().mockResolvedValue(null);
     Object.defineProperty(navigator, 'gpu', {
       configurable: true,
       value: { requestAdapter, getPreferredCanvasFormat: () => 'bgra8unorm' },
     });
     const canvas = document.createElement('canvas');
     const result = await initializeWebGPUDevice(canvas, 800, 600);
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.lastInitError).toMatch(/Failed to obtain a WebGPU adapter/);
-    }
+    expect(result).toMatchObject({
+      ok: false,
+      lastInitError: expect.stringMatching(/Failed to obtain a WebGPU adapter/),
+    });
   });
 
   it('requests timestamp-query when adapter offers it', async () => {
     const mockDevice = makeDevice(['float32-filterable', 'timestamp-query']);
     const adapter = makeAdapter(['float32-filterable', 'timestamp-query']);
-    (adapter.requestDevice as jest.Mock).mockResolvedValue(mockDevice);
+    (adapter.requestDevice as Mock).mockResolvedValue(mockDevice);
 
-    const configure = jest.fn();
+    const configure = vi.fn();
     const canvas = {
       width: 800,
       height: 600,
-      getContext: jest.fn().mockReturnValue({ configure, unconfigure: jest.fn() }),
+      getContext: vi.fn().mockReturnValue({ configure, unconfigure: vi.fn() }),
     } as unknown as HTMLCanvasElement;
 
-    const requestAdapter = jest.fn().mockResolvedValue(adapter);
+    const requestAdapter = vi.fn().mockResolvedValue(adapter);
     Object.defineProperty(navigator, 'gpu', {
       configurable: true,
       value: { requestAdapter, getPreferredCanvasFormat: () => 'bgra8unorm' },
@@ -276,25 +326,24 @@ describe('initializeWebGPUDevice', () => {
         }),
       }),
     );
-    if (result.ok) {
-      expect(result.adapterSummary).toContain('features=[float32-filterable,timestamp-query]');
-      expect(result.adapterSummary).toContain('surfaceFormat=bgra8unorm');
-    }
+    const summary = result.ok ? result.adapterSummary : '';
+    expect(summary).toContain('features=[float32-filterable,timestamp-query]');
+    expect(summary).toContain('surfaceFormat=bgra8unorm');
   });
 
   it('omits timestamp-query and still succeeds when adapter lacks it', async () => {
     const mockDevice = makeDevice(['float32-filterable']);
     const adapter = makeAdapter(['float32-filterable']);
-    (adapter.requestDevice as jest.Mock).mockResolvedValue(mockDevice);
+    (adapter.requestDevice as Mock).mockResolvedValue(mockDevice);
 
-    const configure = jest.fn();
+    const configure = vi.fn();
     const canvas = {
       width: 800,
       height: 600,
-      getContext: jest.fn().mockReturnValue({ configure, unconfigure: jest.fn() }),
+      getContext: vi.fn().mockReturnValue({ configure, unconfigure: vi.fn() }),
     } as unknown as HTMLCanvasElement;
 
-    const requestAdapter = jest.fn().mockResolvedValue(adapter);
+    const requestAdapter = vi.fn().mockResolvedValue(adapter);
     Object.defineProperty(navigator, 'gpu', {
       configurable: true,
       value: { requestAdapter, getPreferredCanvasFormat: () => 'bgra8unorm' },
@@ -314,5 +363,94 @@ describe('initializeWebGPUDevice', () => {
         format: 'bgra8unorm',
       }),
     );
+  });
+});
+
+describe('uncaptured error routing', () => {
+  it('rate limits per message and per minute', () => {
+    let now = 0;
+    const allow = createErrorRateLimiter(() => now, { perMessageMs: 5000, maxPerMinute: 3 });
+    expect(allow('a')).toBe(true);
+    expect(allow('a')).toBe(false);
+    now = 5000;
+    expect(allow('a')).toBe(true);
+    expect(allow('b')).toBe(true);
+    expect(allow('c')).toBe(false); // 3 per minute reached
+    now = 61_000;
+    expect(allow('c')).toBe(true);
+  });
+
+  it('sends OOM to onOom and validation errors to reportError, and detaches', () => {
+    const reported: RendererError[] = [];
+    setRendererErrorHandler((e) => reported.push(e));
+    let listener: ((ev: Event) => void) | null = null;
+    const device = {
+      addEventListener: vi.fn((_t: string, fn: (ev: Event) => void) => { listener = fn; }),
+      removeEventListener: vi.fn(() => { listener = null; }),
+    } as unknown as GPUDevice;
+    const onOom = vi.fn();
+    const detach = attachUncapturedErrorRouter(device, { onOom });
+
+    listener!({ error: { name: 'GPUOutOfMemoryError', message: 'oom' } } as unknown as Event);
+    listener!({ error: { name: 'GPUValidationError', message: 'bad layout' } } as unknown as Event);
+    expect(onOom).toHaveBeenCalledTimes(1);
+    expect(reported).toEqual([
+      { type: 'gpu-validation', message: 'GPUValidationError: bad layout', recoverable: true },
+    ]);
+
+    detach();
+    expect(listener).toBeNull();
+    setRendererErrorHandler((e) => console.error(e));
+  });
+});
+
+describe('attachDeviceLostHandler', () => {
+  const errors: RendererError[] = [];
+  beforeEach(() => {
+    errors.length = 0;
+    setRendererErrorHandler((e) => errors.push(e));
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    setRendererErrorHandler((e) => console.error(e));
+  });
+
+  function lostDevice(info: { reason: string; message: string }) {
+    return { lost: Promise.resolve(info) } as unknown as GPUDevice;
+  }
+  const ctx = () => ({ unconfigure: vi.fn() }) as unknown as GPUCanvasContext & { unconfigure: Mock };
+  const settle = () => new Promise((r) => setTimeout(r, 0));
+
+  it('a real loss is reported as recoverable, unconfigures and calls onLost once', async () => {
+    const context = ctx();
+    const onLost = vi.fn();
+    attachDeviceLostHandler(lostDevice({ reason: 'unknown', message: 'driver reset' }), context, onLost);
+    await settle();
+    expect(onLost).toHaveBeenCalledTimes(1);
+    expect(onLost).toHaveBeenCalledWith({ reason: 'unknown', message: 'driver reset' });
+    expect(context.unconfigure).toHaveBeenCalled();
+    expect(errors).toEqual([expect.objectContaining({ type: 'device-lost', recoverable: true })]);
+    expect(errors[0]!.message).not.toMatch(/reload/i);
+  });
+
+  it('a destroy is silent and leaves the (possibly reused) context alone', async () => {
+    const context = ctx();
+    const onLost = vi.fn();
+    attachDeviceLostHandler(lostDevice({ reason: 'destroyed', message: '' }), context, onLost);
+    await settle();
+    expect(onLost).not.toHaveBeenCalled();
+    expect(context.unconfigure).not.toHaveBeenCalled();
+    expect(errors).toEqual([]);
+  });
+
+  it('a simulated loss (test hook destroy) takes the loss path', async () => {
+    const onLost = vi.fn();
+    attachDeviceLostHandler(lostDevice({ reason: 'destroyed', message: '' }), ctx(), onLost, {
+      isSimulated: () => true,
+    });
+    await settle();
+    expect(onLost).toHaveBeenCalledWith(expect.objectContaining({ reason: 'simulated' }));
+    expect(errors).toHaveLength(1);
   });
 });

@@ -3,6 +3,10 @@
 //  Category: distortion
 //  Features: mouse-driven, audio-reactive, upgraded-rgba,
 //            fresnel, beer-lambert, luminescent-glow, semantic-alpha, ACES
+//  Ideas:    1. Fresnel bevel rim — each tile's chamfered edge reflects its own flipped
+//               image at grazing angles (Fresnel used to reach alpha only)
+//            2. internal luminescence — light trapped in bright tiles escapes at edges
+//            3. Beer-Lambert body tint — thick, strongly magnified tiles turn cold cyan
 //  Complexity: High
 // ═══════════════════════════════════════════════════════════════════
 
@@ -47,36 +51,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
-  // Critically damped spring cursor in extraBuffer[133..138]
-  let isWriter = (global_id.x == 0u && global_id.y == 0u);
-  let hasState = (arrayLength(&extraBuffer) > 138u);
-
-  var mouse = rawMouse;
-  if (hasState && extraBuffer[138] > 0.5) {
-    mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  }
-
-  if (isWriter && hasState) {
-    let lastTime = extraBuffer[137];
-    let dt = clamp(time - lastTime, 0.0, 0.05);
-    var sPos = mouse;
-    var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[138] < 0.5) {
-      sPos = rawMouse;
-      sVel = vec2<f32>(0.0);
-    }
-    let stiffness = 45.0;
-    let damping = 13.416; // 2 * sqrt(45)
-    let accel = (rawMouse - sPos) * stiffness - sVel * damping;
-    sVel += accel * dt;
-    sPos += sVel * dt;
-    extraBuffer[133] = sPos.x;
-    extraBuffer[134] = sPos.y;
-    extraBuffer[135] = sVel.x;
-    extraBuffer[136] = sVel.y;
-    extraBuffer[137] = time;
-    extraBuffer[138] = 1.0;
-  }
+  // Raw pointer: the old extraBuffer[133..138] spring raced (pixel (0,0) wrote
+  // while every other pixel read) and the buffer is re-uploaded each frame.
+  let mouse = rawMouse;
 
   // Exact parameter contracts
   let density = max(u.zoom_params.x * 50.0 * (1.0 + bass * 0.15), 1.0);
@@ -113,7 +90,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   var distUV = cellUV - 0.5;
-  var scale = 1.0 - (luma * refractStr * 2.0);
+  // Clamped so very bright tiles stop at a strong lens instead of flipping.
+  var scale = max(1.0 - (luma * refractStr * 2.0), 0.12);
 
   if (mouseFactor > 0.0 || abs(rippleTwist) > 0.01) {
     scale = scale * (1.0 - mouseFactor * turbulence);
@@ -159,18 +137,40 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     transmission = transmission * 0.5;
   }
 
-  var color = src * glassColor;
+  // Idea 3: Beer-Lambert body tint. The light path grows with tile thickness
+  // (strongly magnified tiles are thick lenses), and the glass absorbs red
+  // first, so thick tiles cool toward cyan. Turbulence sets the glass density.
+  let lensDepth = 1.0 - scale;
+  let bodyTint = exp(-vec3<f32>(0.9, 0.25, 0.0) * lensDepth * glassDensity * 0.5);
+  var color = src * glassColor * bodyTint;
+
+  // Idea 1: Fresnel bevel rim. The outer band of each tile is a chamfer seen at
+  // a grazing angle, so it reflects strongly (Schlick), mirroring the tile's own
+  // flipped image as glass edges do.
+  let tileEdge = max(abs(cellUV.x - 0.5), abs(cellUV.y - 0.5));
+  let chamfer = smoothstep(0.36, 0.47, tileEdge);
+  let bevelCos = mix(1.0, 0.25, chamfer);
+  let bevelFresnel = max(fresnel, R0 + (1.0 - R0) * pow(1.0 - bevelCos, 5.0)) * chamfer;
+  let mirrorUV = clamp(cellCenterUV + (vec2<f32>(0.5) - cellUV) * 0.8 / vec2<f32>(density * aspect, density),
+                       vec2<f32>(0.001), vec2<f32>(0.999));
+  let reflected = textureSampleLevel(readTexture, u_sampler, mirrorUV, 0.0).rgb;
+  color = mix(color, reflected * 1.15 + vec3<f32>(0.04, 0.05, 0.06), clamp(bevelFresnel * 1.6, 0.0, 0.7));
+
+  // Idea 2: internal luminescence. Light from a bright tile bounces inside the
+  // glass and leaks out at its edges, so bright tiles glow along their rims in
+  // their own colour, and bass pumps the glow.
+  let leak = luma * luma * smoothstep(0.30, 0.49, tileEdge) * (0.5 + refractStr);
+  color += centerColor.rgb * leak * (0.45 + bass * 0.35);
+
   let glow = luma * (0.2 + bass * 0.12) * mouseFactor;
   color += vec3<f32>(glow) + vec3<f32>(0.3, 0.6, 1.0) * abs(rippleTwist) * 0.3;
 
-  // Exact dataTextureC persistence
+  // Exact dataTextureC persistence, blended in display space (C holds ACES output).
   let prevC = textureLoad(dataTextureC, pixel, 0).rgb;
-  color = mix(color, prevC, 0.07);
-
-  let finalRGB = aces(color);
+  let finalRGB = mix(aces(color), prevC, 0.07);
 
   let depth = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, finalUV, 0.0).r + fresnel * 0.03, 0.0, 1.0);
-  let alpha = clamp(transmission + glow * 0.5 + mouseFactor * 0.15, 0.1, 1.0);
+  let alpha = clamp(transmission + glow * 0.5 + leak * 0.3 + bevelFresnel * 0.2 + mouseFactor * 0.15, 0.1, 1.0);
   let finalPixel = vec4<f32>(finalRGB, alpha);
 
   textureStore(writeTexture, pixel, finalPixel);

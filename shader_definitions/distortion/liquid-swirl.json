@@ -56,40 +56,44 @@
     "music",
     "reactive"
   ],
-  "updatedParams": [
-    {
-      "id": "strength",
-      "name": "Circulation",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "description": "Circulation of the primary and paired vortices."
-    },
-    {
-      "id": "radius",
-      "name": "Vortex Core Radius",
-      "default": 0.4,
-      "min": 0,
-      "max": 1,
-      "description": "Finite viscous-core radius and satellite orbit scale."
-    },
-    {
-      "id": "smoothness",
-      "name": "Fluid Smoothness",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "description": "Pointer spring stiffness and temporal sheen persistence."
-    },
-    {
-      "id": "rotation",
-      "name": "Pair Rotation",
-      "default": 0.2,
-      "min": 0,
-      "max": 1,
-      "description": "Signed orbital speed of the counter-rotating vortex pair."
-    }
-  ],
   "name": "Liquid Swirl",
-  "feedbackPacking": "A/C = ACES display RGBA; B unwritten; spring cursor extraBuffer[133..136]"
+  "feedbackPacking": "A/C = ACES display RGBA; B unwritten; spring cursor extraBuffer[133..136]",
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "id": "strength",
+          "name": "Circulation",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "description": "Circulation of the primary and paired vortices."
+        },
+        {
+          "id": "radius",
+          "name": "Vortex Core Radius",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "description": "Finite viscous-core radius and satellite orbit scale."
+        },
+        {
+          "id": "smoothness",
+          "name": "Fluid Smoothness",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "description": "Pointer spring stiffness and temporal sheen persistence."
+        },
+        {
+          "id": "rotation",
+          "name": "Pair Rotation",
+          "default": 0.2,
+          "min": 0,
+          "max": 1,
+          "description": "Signed orbital speed of the counter-rotating vortex pair."
+        }
+      ]
+    }
+  }
 }

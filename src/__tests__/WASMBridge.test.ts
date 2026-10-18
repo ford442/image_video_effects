@@ -1,57 +1,54 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-//  WASM Bridge & useWASM Hook Tests
+//  WASM Bridge Tests
 //
 //  These tests verify:
 //  1. wasm_bridge.js API surface: all exported functions have the right types
 //     and return the right value types.
-//  2. useWASM hook: initial state and safe no-op behaviour before initialization.
+//  2. Bridge calls are safe no-ops before initialization.
 // ═══════════════════════════════════════════════════════════════════════════════
-
-import { renderHook, act } from '@testing-library/react';
-import { useWASM } from '../hooks/useWASM';
 
 // ── Mock the src/wasm/wasm_bridge module ─────────────────────────────────────
 //
 // We don't have an Emscripten binary available in Jest, so we mock the bridge.
 // The mock verifies the API surface that TypeScript consumers rely on.
-jest.mock('../wasm/wasm_bridge', () => {
+vi.mock('../wasm/wasm_bridge', () => {
   const bridge = {
-    initWasmRenderer: jest.fn().mockResolvedValue(false),
-    shutdownWasmRenderer: jest.fn(),
-    loadShader: jest.fn().mockReturnValue(false),
-    reloadShader: jest.fn().mockReturnValue(false),
-    loadShaderFromURL: jest.fn().mockResolvedValue(false),
-    reloadShaderFromURL: jest.fn().mockResolvedValue(false),
-    setActiveShader: jest.fn(),
-    setSlotShader: jest.fn(),
-    setSlotParams: jest.fn(),
-    updateSlotParams: jest.fn(),
-    setSlotMode: jest.fn(),
-    updateUniforms: jest.fn(),
-    updateMousePos: jest.fn(),
-    setMouseDown: jest.fn(),
-    updateAudioData: jest.fn(),
-    updateAudioFrequencyBins: jest.fn(),
-    updateDepthMap: jest.fn(),
-    setInputSource: jest.fn(),
-    addRipple: jest.fn(),
-    clearRipples: jest.fn(),
-    getFPS: jest.fn().mockReturnValue(0),
-    getSupportsDeepWorkgroup: jest.fn().mockReturnValue(false),
-    getSlotState: jest.fn().mockReturnValue({ shaderId: null, enabled: false, mode: 'chained' }),
-    getGPUTimings: jest.fn().mockReturnValue({ parallelTime: 0, chainedTime: 0, totalTime: 0, available: false, timingSource: 'unavailable' }),
-    setRecording: jest.fn(),
-    isRecordingActive: jest.fn().mockReturnValue(false),
-    captureFrameDataUrl: jest.fn().mockResolvedValue(''),
-    isInitialized: jest.fn().mockReturnValue(false),
-    uploadImageData: jest.fn(),
-    uploadVideoFrame: jest.fn(),
-    resizeCanvas: jest.fn(),
-    captureFrame: jest.fn().mockResolvedValue(null),
-    takeScreenshot: jest.fn().mockResolvedValue(undefined),
-    startRecording: jest.fn().mockResolvedValue(null),
-    stopRecording: jest.fn(),
-    recordAndDownload: jest.fn().mockResolvedValue(undefined),
+    initWasmRenderer: vi.fn().mockResolvedValue(false),
+    shutdownWasmRenderer: vi.fn(),
+    loadShader: vi.fn().mockReturnValue(false),
+    reloadShader: vi.fn().mockReturnValue(false),
+    loadShaderFromURL: vi.fn().mockResolvedValue(false),
+    reloadShaderFromURL: vi.fn().mockResolvedValue(false),
+    setActiveShader: vi.fn(),
+    setSlotShader: vi.fn(),
+    setSlotParams: vi.fn(),
+    updateSlotParams: vi.fn(),
+    setSlotMode: vi.fn(),
+    updateUniforms: vi.fn(),
+    updateMousePos: vi.fn(),
+    setMouseDown: vi.fn(),
+    updateAudioData: vi.fn(),
+    updateAudioFrequencyBins: vi.fn(),
+    updateDepthMap: vi.fn(),
+    setInputSource: vi.fn(),
+    addRipple: vi.fn(),
+    clearRipples: vi.fn(),
+    getFPS: vi.fn().mockReturnValue(0),
+    getSupportsDeepWorkgroup: vi.fn().mockReturnValue(false),
+    getSlotState: vi.fn().mockReturnValue({ shaderId: null, enabled: false, mode: 'chained' }),
+    getGPUTimings: vi.fn().mockReturnValue({ parallelTime: 0, chainedTime: 0, totalTime: 0, available: false, timingSource: 'unavailable' }),
+    setRecording: vi.fn(),
+    isRecordingActive: vi.fn().mockReturnValue(false),
+    captureFrameDataUrl: vi.fn().mockResolvedValue(''),
+    isInitialized: vi.fn().mockReturnValue(false),
+    uploadImageData: vi.fn(),
+    uploadVideoFrame: vi.fn(),
+    resizeCanvas: vi.fn(),
+    captureFrame: vi.fn().mockResolvedValue(null),
+    takeScreenshot: vi.fn().mockResolvedValue(undefined),
+    startRecording: vi.fn().mockResolvedValue(null),
+    stopRecording: vi.fn(),
+    recordAndDownload: vi.fn().mockResolvedValue(undefined),
   };
   return { __esModule: true, default: bridge, ...bridge };
 });
@@ -63,42 +60,42 @@ jest.mock('../wasm/wasm_bridge', () => {
 /** Build a fresh mock bridge with default return values. */
 function makeMockBridge() {
   return {
-    initWasmRenderer: jest.fn().mockResolvedValue(false),
-    shutdownWasmRenderer: jest.fn(),
-    loadShader: jest.fn().mockReturnValue(false),
-    reloadShader: jest.fn().mockReturnValue(false),
-    loadShaderFromURL: jest.fn().mockResolvedValue(false),
-    reloadShaderFromURL: jest.fn().mockResolvedValue(false),
-    setActiveShader: jest.fn(),
-    setSlotShader: jest.fn(),
-    setSlotParams: jest.fn(),
-    updateSlotParams: jest.fn(),
-    setSlotMode: jest.fn(),
-    updateUniforms: jest.fn(),
-    updateMousePos: jest.fn(),
-    setMouseDown: jest.fn(),
-    updateAudioData: jest.fn(),
-    updateAudioFrequencyBins: jest.fn(),
-    updateDepthMap: jest.fn(),
-    setInputSource: jest.fn(),
-    addRipple: jest.fn(),
-    clearRipples: jest.fn(),
-    getFPS: jest.fn().mockReturnValue(0),
-    getSupportsDeepWorkgroup: jest.fn().mockReturnValue(false),
-    getSlotState: jest.fn().mockReturnValue({ shaderId: null, enabled: false, mode: 'chained' }),
-    getGPUTimings: jest.fn().mockReturnValue({ parallelTime: 0, chainedTime: 0, totalTime: 0, available: false, timingSource: 'unavailable' }),
-    setRecording: jest.fn(),
-    isRecordingActive: jest.fn().mockReturnValue(false),
-    captureFrameDataUrl: jest.fn().mockResolvedValue(''),
-    isInitialized: jest.fn().mockReturnValue(false),
-    uploadImageData: jest.fn(),
-    uploadVideoFrame: jest.fn(),
-    resizeCanvas: jest.fn(),
-    captureFrame: jest.fn().mockResolvedValue(null),
-    takeScreenshot: jest.fn().mockResolvedValue(undefined),
-    startRecording: jest.fn().mockResolvedValue(null),
-    stopRecording: jest.fn(),
-    recordAndDownload: jest.fn().mockResolvedValue(undefined),
+    initWasmRenderer: vi.fn().mockResolvedValue(false),
+    shutdownWasmRenderer: vi.fn(),
+    loadShader: vi.fn().mockReturnValue(false),
+    reloadShader: vi.fn().mockReturnValue(false),
+    loadShaderFromURL: vi.fn().mockResolvedValue(false),
+    reloadShaderFromURL: vi.fn().mockResolvedValue(false),
+    setActiveShader: vi.fn(),
+    setSlotShader: vi.fn(),
+    setSlotParams: vi.fn(),
+    updateSlotParams: vi.fn(),
+    setSlotMode: vi.fn(),
+    updateUniforms: vi.fn(),
+    updateMousePos: vi.fn(),
+    setMouseDown: vi.fn(),
+    updateAudioData: vi.fn(),
+    updateAudioFrequencyBins: vi.fn(),
+    updateDepthMap: vi.fn(),
+    setInputSource: vi.fn(),
+    addRipple: vi.fn(),
+    clearRipples: vi.fn(),
+    getFPS: vi.fn().mockReturnValue(0),
+    getSupportsDeepWorkgroup: vi.fn().mockReturnValue(false),
+    getSlotState: vi.fn().mockReturnValue({ shaderId: null, enabled: false, mode: 'chained' }),
+    getGPUTimings: vi.fn().mockReturnValue({ parallelTime: 0, chainedTime: 0, totalTime: 0, available: false, timingSource: 'unavailable' }),
+    setRecording: vi.fn(),
+    isRecordingActive: vi.fn().mockReturnValue(false),
+    captureFrameDataUrl: vi.fn().mockResolvedValue(''),
+    isInitialized: vi.fn().mockReturnValue(false),
+    uploadImageData: vi.fn(),
+    uploadVideoFrame: vi.fn(),
+    resizeCanvas: vi.fn(),
+    captureFrame: vi.fn().mockResolvedValue(null),
+    takeScreenshot: vi.fn().mockResolvedValue(undefined),
+    startRecording: vi.fn().mockResolvedValue(null),
+    stopRecording: vi.fn(),
+    recordAndDownload: vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -165,56 +162,7 @@ describe('WASMBridge API surface', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Section 2: useWASM hook
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('useWASM hook', () => {
-  it('starts with isLoaded=false and isWASM=false', () => {
-    const { result } = renderHook(() => useWASM());
-    expect(result.current.isLoaded).toBe(false);
-    expect(result.current.isWASM).toBe(false);
-  });
-
-  it('exposes the required API functions', () => {
-    const { result } = renderHook(() => useWASM());
-    expect(typeof result.current.loadWASM).toBe('function');
-    expect(typeof result.current.initRenderer).toBe('function');
-    expect(typeof result.current.shutdown).toBe('function');
-    expect(typeof result.current.updateAudio).toBe('function');
-    expect(typeof result.current.updateMouse).toBe('function');
-    expect(typeof result.current.updateDepthMap).toBe('function');
-    expect(typeof result.current.getBridge).toBe('function');
-  });
-
-  it('getBridge() returns null before loadWASM()', () => {
-    const { result } = renderHook(() => useWASM());
-    expect(result.current.getBridge()).toBeNull();
-  });
-
-  it('updateAudio() is a no-op when bridge is not loaded', () => {
-    const { result } = renderHook(() => useWASM());
-    expect(() => result.current.updateAudio(0.1, 0.2, 0.3)).not.toThrow();
-  });
-
-  it('updateMouse() is a no-op when bridge is not loaded', () => {
-    const { result } = renderHook(() => useWASM());
-    expect(() => result.current.updateMouse(0.5, 0.5)).not.toThrow();
-  });
-
-  it('updateDepthMap() is a no-op when bridge is not loaded', () => {
-    const { result } = renderHook(() => useWASM());
-    expect(() => result.current.updateDepthMap(new Float32Array(4), 2, 2)).not.toThrow();
-  });
-
-  it('shutdown() is a safe no-op when bridge has not been loaded', async () => {
-    const { result } = renderHook(() => useWASM());
-    await act(async () => { result.current.shutdown(); });
-    expect(result.current.isWASM).toBe(false);
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Section 3: Bridge safe call verification
+// Section 2: Bridge safe call verification
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('Bridge call safety', () => {

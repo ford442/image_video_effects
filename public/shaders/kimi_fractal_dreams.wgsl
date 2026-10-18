@@ -3,10 +3,10 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-07-26 (Batch 15)
-//   - NaN-guarded cdiv; spring-damped Julia morph (extraBuffer[133..136])
-//   - Click-ripple zoom pulses; IQ orbit-trap palette; per-bin treble filaments
-//   - Honest slider side-effects (labels now match real visual controls)
+//  Upgraded: 2026-09-27
+//  Ideas: interior lake persisted from C; fold-crease highlights on the ship axes
+//  A packing: ACES display RGBA
+//  Kept: 2026-07-26 spring c, click zoom pulses, IQ trap palette, treble filaments
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -175,6 +175,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Multiple fractal layers
     var col = vec3<f32>(0.0);
     var totalWeight = 0.0;
+    var interiorWeight = 0.0;
 
     let layers = 3;
     for (var layer = 0; layer < layers; layer++) {
@@ -185,12 +186,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         var orbitTrap = 1000.0;
         var minRadius = 1000.0;
+        var crease = 0.0;
+        var escaped = false;
 
         let layerIter = iterations + layer * 20;
         // Per-bin treble: each layer listens to its own high-frequency bin
         let binGlow = plasmaBuffer[1u + u32(layer)].x;
 
         for (var i = 0; i < layerIter; i++) {
+            // Fold creases: the ship reflects across both axes. Orbits that
+            // pass those axes leave a bright seam.
+            crease = max(crease, exp(-abs(z.x) * 36.0) + exp(-abs(z.y) * 36.0));
             // Burning Ship variant with Julia
             z = vec2<f32>(abs(z.x), abs(z.y));
             z = cmul(z, z) + layerC;
@@ -206,6 +212,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             minRadius = min(minRadius, r);
 
             if (r > 4.0) {
+                escaped = true;
                 // Smooth coloring
                 let smoothIter = f32(i) - log2(log2(r)) + 4.0;
 
@@ -230,11 +237,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 layerCol += iqCosinePalette(fi * 0.21 + time * 0.03) * filament
                           * (0.25 + treble * 1.2 + binGlow * 2.0) * glowGain;
 
+                layerCol = layerCol + vec3<f32>(1.0, 0.92, 0.75) * crease * 0.22 * glowGain;
+
                 let weight = 1.0 / (1.0 + fi);
                 col += layerCol * weight;
                 totalWeight += weight;
                 break;
             }
+        }
+
+        // Interior lake: points that never escape, colored by the final argument.
+        if (!escaped) {
+            let lakeArg = atan2(z.y, z.x) / 6.28318;
+            let lake = hslToRgb(fract(lakeArg + time * 0.04 + fi * 0.2), 0.55, 0.28 + bass * 0.08);
+            let weight = 1.0 / (1.0 + fi);
+            col += (lake + vec3<f32>(0.9, 0.85, 0.7) * crease * 0.12) * weight;
+            totalWeight += weight;
+            interiorWeight += weight;
         }
 
         // Rotation for next layer (1.047 rad / 0.8 scale signature preserved;
@@ -252,6 +271,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     } else {
         col = vec3<f32>(0.02, 0.0, 0.05);
     }
+
+    // Interior persistence: exact load of the previous display, stronger in the lake.
+    let prev = textureLoad(dataTextureC, coord, 0).rgb;
+    let lakeShare = interiorWeight / max(totalWeight, 1e-3);
+    col = mix(col, prev, 0.04 + lakeShare * 0.4);
 
     // Mouse glow
     let dist = length(uv - mouse);

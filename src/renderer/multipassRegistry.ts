@@ -2,6 +2,7 @@
 // Do not edit manually — re-run the script instead.
 
 import type { MultipassGraphDef } from './multipassGraph';
+import { getRuntimeGraph, getRuntimeSimRingRequest } from './runtimeGraphs';
 
 export interface MultipassInfo {
   pass: number;
@@ -147,7 +148,9 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
         "reads": [],
         "writes": [
           "dataA"
-        ]
+        ],
+        "scalable": true,
+        "minScale": 0.5
       },
       {
         "id": "filter",
@@ -178,10 +181,13 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
       {
         "id": "walkers",
         "entry": "dla-walkers",
+        "dispatch": "simState",
         "reads": [
-          "dataC"
+          "dataC",
+          "simState"
         ],
         "writes": [
+          "simState",
           "dataA"
         ]
       },
@@ -642,6 +648,13 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
   }
 };
 
+/** Opt-in @group(1) sim-ring requests (shader_definitions `simRing` field). */
+export const SIM_RING_REGISTRY: Record<string, { stateCount: number }> = {
+  "dla-crystals": {
+    "stateCount": 65536
+  }
+};
+
 /** Get the next shader in a multipass chain, if any. */
 export function getNextPass(shaderId: string): string | null {
   return MULTIPASS_REGISTRY[shaderId]?.nextShader ?? null;
@@ -666,14 +679,17 @@ export function resolveMultipassChain(startId: string): string[] {
   return chain;
 }
 
-/** Resolve Tier C graph for a shader id, if declared in JSON. */
+/**
+ * Resolve the Tier C graph for a shader id: a runtime graph (the Graph Lab draft,
+ * renderer/runtimeGraphs.ts) wins over the one declared in JSON.
+ */
 export function resolveGraphForShader(shaderId: string): MultipassGraphDef | null {
-  return GRAPH_REGISTRY[shaderId] ?? null;
+  return getRuntimeGraph(shaderId) ?? GRAPH_REGISTRY[shaderId] ?? null;
 }
 
 /** All unique WGSL entry ids referenced by a graph shader. */
 export function getGraphEntryIds(shaderId: string): string[] {
-  const graph = GRAPH_REGISTRY[shaderId];
+  const graph = resolveGraphForShader(shaderId);
   if (!graph) return [];
   const ids = new Set<string>();
   for (const node of graph.nodes) {
@@ -683,5 +699,21 @@ export function getGraphEntryIds(shaderId: string): string[] {
 }
 
 export function hasGraph(shaderId: string): boolean {
-  return shaderId in GRAPH_REGISTRY;
+  return resolveGraphForShader(shaderId) !== null;
+}
+
+/**
+ * Requested sim-ring element count for a shader id or one of its graph entries.
+ * A runtime graph's request (Graph Lab draft) wins over the one declared in JSON.
+ * Undefined → the ring's contract default (bind_group1.json oom.defaultStateCount).
+ */
+export function resolveSimRingRequest(shaderId: string): number | undefined {
+  const runtime = getRuntimeSimRingRequest(shaderId);
+  if (runtime !== undefined) return runtime;
+  const direct = SIM_RING_REGISTRY[shaderId];
+  if (direct) return direct.stateCount;
+  for (const [ownerId, req] of Object.entries(SIM_RING_REGISTRY)) {
+    if (GRAPH_REGISTRY[ownerId]?.nodes.some((n) => n.entry === shaderId)) return req.stateCount;
+  }
+  return undefined;
 }

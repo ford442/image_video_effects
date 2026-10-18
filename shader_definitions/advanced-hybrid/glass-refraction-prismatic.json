@@ -66,13 +66,45 @@
       "description": "Surface roughness affecting specular highlights"
     }
   ],
-  "updatedParams": [
-    { "index": 0, "name": "Transparency", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 1, "name": "Cauchy B Coefficient", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 2, "name": "Thickness Scale", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 3, "name": "Surface Roughness", "default": 0, "min": 0, "max": 1, "step": 0.01 }
-  ],
   "feedbackPacking": "A/C = display RGBA with spectrally refracted raymarched prism transmission",
   "updated": true,
-  "target_rating": 4.8
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Transparency",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Cauchy B Coefficient",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Thickness Scale",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Surface Roughness",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    },
+    "target_rating": 4.8
+  }
 }

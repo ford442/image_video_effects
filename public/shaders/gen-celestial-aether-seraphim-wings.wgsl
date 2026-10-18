@@ -1,36 +1,21 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Celestial Aether-Seraphim Wings
 //  Category: generative
-//  Features: upgraded-rgba, temporal, audio-reactive, mouse-driven, raymarched
+//  Features: upgraded-rgba, temporal-feedback, audio-reactive, mouse-driven, raymarched
 //  Complexity: High
 //  Enrichment: Aerodynamic lift (Wolfram Alpha)
 //    C_L = 2πα (thin airfoil, small angle α in radians)
 //    Stall angle: ~15° (0.262 rad)
 //    C_D ≈ C_D0 + C_L²/(π A R e)
 //    Lift drives brightness; stall = turbulent breakdown
-//  Created: 2026-06-07
+//  Upgraded: 2026-10-10
+//  Ideas: stall-vortex shedding perturbs the feather fold geometry past the
+//         stall angle (turbulent breakup, not just a color tint); lift-direction
+//         hue shift tints the leading edge warm/cool by the sign of AOA; aether plumage contour lines; angelic halo refraction
+//  A packing: display RGBA (same as writeTexture), exact history read fixed
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // --- ACES Filmic Tone Mapping ---
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -82,6 +67,12 @@ fn map(pos: vec3<f32>) -> f32 {
   let time = u.config.x * 0.5;
   let beat = sin(time * 3.14 + bass * 2.0) * 0.2;
 
+  // Idea: stall-vortex shedding. Reuses the same lift-model angle of attack as
+  // the main() shading pass so the geometry itself breaks up past stall, not
+  // just the color. Below stall this term is ~0 and the fold is untouched.
+  let alphaAOA_map = (u.zoom_config.z - 0.5) * 0.5;
+  let stallAmt = smoothstep(0.2, 0.25, abs(alphaAOA_map));
+
   for (var i = 0; i < 5; i++) {
     p.x = abs(p.x) - u.zoom_params.x * 1.5;
     p.y = abs(p.y) - 0.5;
@@ -95,9 +86,19 @@ fn map(pos: vec3<f32>) -> f32 {
     p.y = pYZ.x;
     p.z = pYZ.y;
 
+    // Vortex shedding: a per-fold-iteration swirl phase so the turbulence
+    // reads as a traveling vortex street along the wing rather than uniform jitter
+    let shedPhase = time * 6.0 + f32(i) * 2.4 + bass * 4.0;
+    let vortex = vec2<f32>(sin(shedPhase), cos(shedPhase * 1.3)) * stallAmt * 0.06;
+    p.x += vortex.x;
+    p.z += vortex.y;
+
     // Wing feather structures
     let feather = length(p.xz) - u.zoom_params.y * (1.0 - f32(i) * 0.15);
-    d = smin(d, feather, 0.3);
+    
+    // Idea 1: Aether plumage contour lines
+    let contour = abs(fract(feather * 10.0 - time * 2.0) - 0.5) * 0.1;
+    d = smin(d, max(feather, -contour), 0.3);
   }
 
   // Audio reactive fracturing
@@ -184,8 +185,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let viewDir = normalize(ro - p);
     let fresnel = pow(1.0 - max(dot(n, viewDir), 0.0), 3.0);
 
-    // Thin-film interference iridescence
-    let hue = fract(u.zoom_params.z + t * 0.1 + fresnel * 0.5);
+    // Thin-film interference iridescence, biased by lift direction: positive
+    // AOA (climbing) warms the leading edge, negative AOA cools it — ties the
+    // palette to the same Wolfram lift model that already drives brightness
+    let liftHueShift = sign(alphaAOA) * clamp(abs(cl) * 0.08, 0.0, 0.15);
+    let hue = fract(u.zoom_params.z + t * 0.1 + fresnel * 0.5 + liftHueShift);
     let base_col = vec3<f32>(0.5) + vec3<f32>(0.5) * cos(6.28318 * (vec3<f32>(hue) + vec3<f32>(0.0, 0.33, 0.67)));
 
     col = base_col * (0.2 + fresnel * 0.8) * liftBright;
@@ -207,6 +211,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let glowCol = vec3<f32>(0.5) + vec3<f32>(0.5) * cos(6.28318 * (vec3<f32>(u.zoom_params.z) + vec3<f32>(0.5, 0.0, 0.2)));
   col += vec3<f32>(glow * 0.015) * glowCol;
 
+  // Idea 2: Angelic halo refraction (a giant floating ring above)
+  let haloDist = length(uv - vec2<f32>(0.0, 0.6)) - 0.5;
+  let haloRing = smoothstep(0.05, 0.0, abs(haloDist));
+  col += vec3<f32>(1.0, 0.9, 0.4) * haloRing * (0.5 + treble);
+
   // Atmospheric Fog
   col = mix(col, vec3<f32>(0.01, 0.02, 0.05), 1.0 - exp(-0.05 * t));
 
@@ -218,13 +227,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   col = acesToneMap(col * 1.1);
   let alpha = clamp(length(col) * 1.2, 0.2, 0.95);
 
-  // Temporal feedback
-  let uvScreen = vec2<f32>(coords) / res;
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uvScreen, 0.0);
+  // Temporal feedback — exact texel load (plumbing fix: was a filtering
+  // textureSampleLevel against an rgba32float history, which the binding
+  // contract forbids)
+  let prev = textureLoad(dataTextureC, coords, 0);
   col = mix(prev.rgb * 0.96, col, 0.25);
 
   let outColor = vec4<f32>(col, alpha);
   textureStore(writeTexture, coords, outColor);
   textureStore(dataTextureA, coords, outColor);
-    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+
+  // Real depth (plumbing fix: was hardcoded to zero despite supportsDepth: true)
+  let depthNorm = clamp(t / max_t, 0.0, 1.0);
+  textureStore(writeDepthTexture, id.xy, vec4<f32>(depthNorm, 0.0, 0.0, 0.0));
 }

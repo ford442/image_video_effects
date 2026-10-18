@@ -6,9 +6,10 @@
  * optional feature order ↔ device.ts / device.cpp;
  * slot_limits.json ↔ PHYSICAL_SLOT_LIMIT / MAX_SHADER_SLOTS;
  * canvas_configure.json ↔ buildCanvasConfigureOptions / JS_CreateSurfaceFromCanvas / ConfigureSurface; wasm_exports.json ↔ KEEPALIVE /
- * build.sh / CMakeLists (no hardcoded export lists);
+ * build.sh (no hardcoded export lists; build.sh is the only build, CMakeLists.txt was removed);
  * workgroup_dispatch.json ↔ ShaderCompilation.ts ↔ wasm_internal.cpp ParseWorkgroupSize;
- * emptyPlaceholder (r32float 1×1, 4 B/row) ↔ resources.ts emptyTex ↔ resources.cpp emptyTexture_.
+ * emptyPlaceholder (r32float 1×1, 4 B/row) ↔ resources.ts emptyTex ↔ resources.cpp emptyTexture_;
+ * bind_group1.json ↔ simRing.ts layout ↔ group-1 limits policy ↔ WASM group-1 refusal.
  */
 
 const fs = require('fs');
@@ -50,6 +51,9 @@ function extractTsLimits() {
   return out;
 }
 
+/** webgpu_limits.json key -> the generated C++ constant name (kMaxTextureDimension2D). */
+const cppConst = (key, ns = 'webgpu_limits') => `${ns}::${require('./gen-webgpu-limits-header.js').constName(key)}`;
+
 function extractCppRequiredLimits() {
   const src = fs.readFileSync(CPP_DEVICE, 'utf8');
   const out = {};
@@ -58,12 +62,20 @@ function extractCppRequiredLimits() {
       if (!/requiredLimits\.maxUniformBufferBindingSize\s*=\s*sizeof\(Uniforms\)/.test(src)) {
         throw new Error('requiredLimits.maxUniformBufferBindingSize = sizeof(Uniforms) not found in device.cpp');
       }
+      if (!/static_assert\(sizeof\(Uniforms\)\s*==\s*webgpu_limits::kMaxUniformBufferBindingSize/.test(src)) {
+        throw new Error('device.cpp must static_assert(sizeof(Uniforms) == webgpu_limits::kMaxUniformBufferBindingSize)');
+      }
       out[key] = EXPECTED_LIMITS[key];
       continue;
     }
-    const m = src.match(new RegExp(`requiredLimits\\.${key}\\s*=\\s*(\\d+)`));
+    // The value comes from webgpu_limits.h (checked against the JSON below); a
+    // literal here is the drift this header exists to remove.
+    const m = src.match(new RegExp(`requiredLimits\\.${key}\\s*=\\s*([^;]+);`));
     if (!m) throw new Error(`requiredLimits.${key} not found in device.cpp`);
-    out[key] = parseInt(m[1], 10);
+    if (m[1].trim() !== cppConst(key)) {
+      throw new Error(`device.cpp requiredLimits.${key} must be ${cppConst(key)} (found '${m[1].trim()}')`);
+    }
+    out[key] = EXPECTED_LIMITS[key];
   }
   return out;
 }
@@ -71,7 +83,7 @@ function extractCppRequiredLimits() {
 function extractCppCheckLimits() {
   const src = fs.readFileSync(CPP_DEVICE, 'utf8');
   const adapterBlock = src.match(
-    /Adapter limits \(validating against 14-entry compute contract\):[\s\S]*?maxComputeInvocationsPerWorkgroup,\s*(\d+)/,
+    /Adapter limits \(validating against 14-entry compute contract\):[\s\S]*?maxComputeInvocationsPerWorkgroup,\s*[^,]+,/,
   );
   if (!adapterBlock) {
     throw new Error('Adapter CheckLimit block not found in device.cpp');
@@ -85,13 +97,13 @@ function extractCppCheckLimits() {
       continue;
     }
     const m = block.match(
-      new RegExp(`CheckLimit\\("${key}",\\s*limits\\.${key},\\s*(\\d+)`),
+      new RegExp(`CheckLimit\\("${key}",\\s*limits\\.${key},\\s*([^,]+),`),
     );
     if (!m) throw new Error(`CheckLimit("${key}", ...) not found in adapter block`);
-    out[key] = parseInt(m[1], 10);
-    if (out[key] !== expected) {
-      throw new Error(`CheckLimit ${key} need=${m[1]} does not match contract ${expected}`);
+    if (m[1].trim() !== cppConst(key)) {
+      throw new Error(`device.cpp CheckLimit ${key} must use ${cppConst(key)} (found '${m[1].trim()}')`);
     }
+    out[key] = expected;
   }
   return out;
 }
@@ -124,6 +136,71 @@ if (!ONLY_WASM_INVARIANTS) {
 function fail(msg) {
   console.error(msg);
   failed = true;
+}
+
+// deepWorkgroupLimits: requested only when the adapter offers all three. Both
+// C++ (adapterDeepWorkgroup threshold + requiredLimits block) and TS
+// (buildRequiredLimits spreading the contract block) must mirror the JSON.
+function verifyDeepWorkgroupLimits() {
+  const deep = contract.deepWorkgroupLimits;
+  if (!deep) return;
+  const cpp = fs.readFileSync(CPP_DEVICE, 'utf8');
+  const gate = cpp.match(/const bool adapterDeepWorkgroup\s*=([^;]+);/);
+  const block = cpp.match(/if \(adapterDeepWorkgroup\) \{([^}]+)\}/);
+  if (!gate) fail('device.cpp: const bool adapterDeepWorkgroup = ... not found (deepWorkgroupLimits)');
+  if (!block) fail('device.cpp: if (adapterDeepWorkgroup) { requiredLimits... } not found (deepWorkgroupLimits)');
+  for (const key of Object.keys(deep)) {
+    const want = cppConst(key, 'webgpu_limits::deep');
+    if (gate && !new RegExp(`limits\\.${key}\\s*>=\\s*${want}\\b`).test(gate[1])) {
+      fail(`device.cpp adapterDeepWorkgroup must test limits.${key} >= ${want} (webgpu_limits.json deepWorkgroupLimits)`);
+    }
+    if (block && !new RegExp(`requiredLimits\\.${key}\\s*=\\s*${want}\\s*;`).test(block[1])) {
+      fail(`device.cpp deep requiredLimits.${key} must be ${want} (webgpu_limits.json deepWorkgroupLimits)`);
+    }
+  }
+  const ts = fs.readFileSync(TS_POLICY, 'utf8');
+  if (!/webgpuLimitsContract\.deepWorkgroupLimits/.test(ts)
+      || !/meetsDeepWorkgroupLimits\(adapterLimits\)\s*\?\s*DEEP_WORKGROUP_LIMITS/.test(ts)) {
+    fail('webgpuDevicePolicy.ts buildRequiredLimits must spread webgpuLimitsContract.deepWorkgroupLimits when meetsDeepWorkgroupLimits(adapterLimits)');
+  }
+}
+
+// bufferSizeLimits: TS requests the adapter's value above the floor so the 2048
+// working-size gate (maxBufferSize >= 1 GiB) can pass. C++ deliberately does not
+// mirror it (WASM R&D freeze); the contract must say so explicitly.
+function verifyBufferSizeLimits() {
+  const floors = contract.bufferSizeLimits;
+  if (!floors) return;
+  if (contract.cppMirror?.bufferSizeLimits !== false || !contract.notes?.bufferSizeLimits) {
+    fail('webgpu_limits.json bufferSizeLimits needs cppMirror.bufferSizeLimits: false and a notes.bufferSizeLimits reason');
+  }
+  const ts = fs.readFileSync(TS_POLICY, 'utf8');
+  if (!/webgpuLimitsContract\.bufferSizeLimits/.test(ts) || !/\.\.\.bufferSizeRequest\(adapterLimits\)/.test(ts)) {
+    fail('webgpuDevicePolicy.ts buildRequiredLimits must spread bufferSizeRequest(adapterLimits) built from webgpuLimitsContract.bufferSizeLimits');
+  }
+  for (const key of Object.keys(floors)) {
+    if (!ts.includes(`'${key}'`)) fail(`webgpuDevicePolicy.ts bufferSizeRequest must request ${key}`);
+  }
+}
+
+// wasm_renderer/webgpu_limits.h is generated from webgpu_limits.json; device.cpp
+// must include it (the constants are what extractCpp*Limits above verify).
+function verifyLimitsHeader() {
+  const gen = require('./gen-webgpu-limits-header.js');
+  const headerFile = gen.headerPath(contract);
+  const have = fs.existsSync(headerFile) ? fs.readFileSync(headerFile, 'utf8') : '';
+  if (have !== gen.renderHeader(contract)) {
+    fail(`${contract.cpp.header} is stale or missing; run: npm run gen:webgpu-limits`);
+  }
+  if (!/#include "webgpu_limits\.h"/.test(fs.readFileSync(CPP_DEVICE, 'utf8'))) {
+    fail('device.cpp must #include "webgpu_limits.h"');
+  }
+}
+
+if (!ONLY_WASM_INVARIANTS) {
+  verifyLimitsHeader();
+  verifyDeepWorkgroupLimits();
+  verifyBufferSizeLimits();
 }
 
 function verifyOptionalFeatures() {
@@ -176,6 +253,18 @@ function verifyOptionalFeatures() {
     fail('device.cpp must not request subgroups before timestamp-query');
   }
 
+  // WGPUFeatureName_* / WGPUDeviceLostReason_* are enum members, not macros:
+  // an #ifdef on them is always false and silently compiles the feature out
+  // (timestamp-query and subgroups were dead in every artifact until 2026-10).
+  const cppDir = path.join(ROOT, 'wasm_renderer');
+  for (const f of fs.readdirSync(cppDir).filter((n) => /\.(cpp|h)$/.test(n))) {
+    const src = fs.readFileSync(path.join(cppDir, f), 'utf8');
+    const m = src.match(/#\s*if(?:n?def|\s+defined\s*\(?)\s*(WGPU(?:FeatureName|DeviceLostReason)_\w+)/);
+    if (m) {
+      fail(`wasm_renderer/${f}: preprocessor guard on enum member ${m[1]} is always false; test it at runtime instead`);
+    }
+  }
+
   const scanner = path.join(ROOT, 'src/utils/requestPixelocityDevice.ts');
   if (fs.existsSync(scanner)) {
     const src = fs.readFileSync(scanner, 'utf8');
@@ -214,6 +303,7 @@ function verifyCanvasConfigure() {
   if (c.optIn?.extendedToneMapping?.toneMappingMode !== 'extended') {
     fail(`${file} optIn.extendedToneMapping.toneMappingMode must be 'extended'`);
   }
+  verifyCanvasCapabilities(c, file);
 
   // ── TS: buildCanvasConfigureOptions reads the contract ───────────────────
   const tsFile = 'src/renderer/webgpu/device.ts';
@@ -244,6 +334,14 @@ function verifyCanvasConfigure() {
     if (/format:\s*['"]/.test(body)) {
       fail(`${tsFile} buildCanvasConfigureOptions must not hardcode a canvas format`);
     }
+    for (const cap of Object.keys(c.optIn || {})) {
+      if (!body.includes(`optIns.${cap}`)) {
+        fail(`${tsFile} buildCanvasConfigureOptions must read capability optIns.${cap} (canvas_configure.json optIn)`);
+      }
+    }
+  }
+  if (!/TEXTURE_USAGE_FALLBACK[^=]*=\s*canvasConfigureContract\.usageBits/.test(ts)) {
+    fail(`${tsFile} TEXTURE_USAGE_FALLBACK must come from canvasConfigureContract.usageBits`);
   }
 
   const probeFile = 'src/renderer/webgpuBootProbe.ts';
@@ -263,16 +361,8 @@ function verifyCanvasConfigure() {
     fail(`device.cpp ${c.cpp.jsConfigureFunction} ctx.configure({...}) not found`);
   } else {
     const body = jsCfg[1];
-    if (!new RegExp(`alphaMode:\\s*'${c.alphaMode}'`).test(body)) {
-      fail(`device.cpp ${c.cpp.jsConfigureFunction} alphaMode must be '${c.alphaMode}'`);
-    }
-    const usage = body.match(/usage:\s*([^,\n}]+)/);
-    const jsUsage = usage
-      ? usage[1].split('|').map((u) => u.trim().replace(/^GPUTextureUsage\./, '')).sort()
-      : [];
-    if (JSON.stringify(jsUsage) !== JSON.stringify([...c.usage].sort())) {
-      fail(`device.cpp ${c.cpp.jsConfigureFunction} usage must be ${c.usage.join('|')} (got ${jsUsage.join('|') || 'missing'})`);
-    }
+    verifyEmJsConfigureFromHeader(c.cpp.jsConfigureFunction, body, /usage:\s*usage\s*>>>\s*0/);
+    verifyHeaderCallSite(cpp, c.cpp.jsConfigureFunction, 'kUsage');
     if (!/format:\s*preferredFormat/.test(body)) {
       fail(`device.cpp ${c.cpp.jsConfigureFunction} format must be getPreferredCanvasFormat() (preferredFormat)`);
     }
@@ -286,19 +376,16 @@ function verifyCanvasConfigure() {
     fail(`device.cpp WebGPURenderer::${c.cpp.surfaceConfigureFunction}() not found`);
   } else {
     const body = surf[0];
-    const usage = body.match(/config\.usage\s*=\s*([^;]+);/);
-    const cppUsage = usage ? usage[1].split('|').map((u) => u.trim()).sort() : [];
-    const wantUsage = c.usage.map((u) => c.cpp.usageEnums[u]).sort();
-    if (JSON.stringify(cppUsage) !== JSON.stringify(wantUsage)) {
-      fail(`device.cpp ${c.cpp.surfaceConfigureFunction} usage must be ${wantUsage.join(' | ')} (got ${cppUsage.join(' | ') || 'missing'})`);
+    const code = stripCppComments(body);
+    if (!/config\.alphaMode\s*=\s*canvas_configure::kAlphaMode;/.test(code)) {
+      fail(`device.cpp ${c.cpp.surfaceConfigureFunction} alphaMode must be canvas_configure::kAlphaMode`);
     }
-    const alpha = c.cpp.alphaModeEnums[c.alphaMode];
-    if (!new RegExp(`config\\.alphaMode\\s*=\\s*${alpha}\\b`).test(body)) {
-      fail(`device.cpp ${c.cpp.surfaceConfigureFunction} alphaMode must be ${alpha}`);
+    if (!/config\.presentMode\s*=\s*canvas_configure::kPresentMode;/.test(code)) {
+      fail(`device.cpp ${c.cpp.surfaceConfigureFunction} presentMode must be canvas_configure::kPresentMode`);
     }
-    const present = c.cpp.presentModeEnums[c.presentModeWasm];
-    if (!new RegExp(`config\\.presentMode\\s*=\\s*${present}\\b`).test(body)) {
-      fail(`device.cpp ${c.cpp.surfaceConfigureFunction} presentMode must be ${present}`);
+    const literal = code.match(/\b(WGPUTextureUsage_\w+|WGPUCompositeAlphaMode_\w+|WGPUPresentMode_\w+)/);
+    if (literal) {
+      fail(`device.cpp ${c.cpp.surfaceConfigureFunction} must take usage/alphaMode/presentMode from canvas_configure.h (found ${literal[1]})`);
     }
     if (!/config\.width\s*=/.test(body) || !/config\.height\s*=/.test(body)) {
       fail(`device.cpp ${c.cpp.surfaceConfigureFunction} must set explicit width/height`);
@@ -313,6 +400,190 @@ function verifyCanvasConfigure() {
   const afterImport = iImport >= 0 ? cpp.slice(iImport) : '';
   if (!new RegExp(`\\n\\s*${c.cpp.surfaceConfigureFunction}\\(\\);`).test(afterImport)) {
     fail(`device.cpp must call ${c.cpp.surfaceConfigureFunction}() after ${c.cpp.jsConfigureFunction} (second configure; black canvas without it)`);
+  }
+
+  verifyCanvasCopySrcCpp(c, cpp, surf ? surf[0] : '');
+}
+
+/**
+ * canvas_configure.json optIn is the capabilities object: each entry names the
+ * configure keys it controls and the backends that implement it. The C++
+ * header is generated from the same JSON and must be current.
+ */
+function verifyCanvasCapabilities(c, file) {
+  const known = new Set(['usage', 'colorSpace', 'toneMapping']);
+  const caps = c.optIn || {};
+  for (const [name, cap] of Object.entries(caps)) {
+    const backends = cap.backends || [];
+    if (!backends.includes('ts') || backends.some((b) => b !== 'ts' && b !== 'wasm')) {
+      fail(`${file} optIn.${name}.backends must include "ts" and only name "ts" / "wasm" (got ${JSON.stringify(cap.backends)})`);
+    }
+    const keys = cap.configureKeys || [];
+    if (keys.length === 0 || keys.some((k) => !known.has(k))) {
+      fail(`${file} optIn.${name}.configureKeys must be a non-empty subset of ${[...known].join(', ')}`);
+    }
+    if (cap.requires !== undefined && !caps[cap.requires]) {
+      fail(`${file} optIn.${name}.requires names unknown capability '${cap.requires}'`);
+    }
+    if (backends.includes('wasm') && !c.cpp?.[name]) {
+      fail(`${file} optIn.${name} lists backend "wasm" but has no cpp.${name} block`);
+    }
+  }
+  for (const name of Object.keys(c.usageBits || {})) {
+    if (!c.cpp?.usageEnums?.[name]) fail(`${file} usageBits.${name} has no cpp.usageEnums entry`);
+  }
+
+  // The WASM configures may only write keys of capabilities that list "wasm".
+  const cppSrc = stripCppComments(fs.readFileSync(CPP_DEVICE, 'utf8'));
+  const configures = [...cppSrc.matchAll(/ctx\.configure\(\{([\s\S]*?)\}\)/g)].map((m) => m[1]);
+  for (const [name, cap] of Object.entries(caps)) {
+    if ((cap.backends || []).includes('wasm')) continue;
+    for (const key of (cap.configureKeys || []).filter((k) => k !== 'usage')) {
+      if (configures.some((body) => new RegExp(`\\b${key}\\s*:`).test(body))) {
+        fail(`device.cpp ctx.configure sets ${key}, but optIn.${name} does not list backend "wasm"`);
+      }
+    }
+  }
+
+  const gen = require('./gen-canvas-configure-header.js');
+  const headerFile = gen.headerPath(c);
+  const have = fs.existsSync(headerFile) ? fs.readFileSync(headerFile, 'utf8') : '';
+  let want = null;
+  try {
+    want = gen.renderHeader(c);
+  } catch (err) {
+    fail(`${c.cpp.header} cannot be generated: ${err.message}`);
+  }
+  if (want !== null && have !== want) {
+    fail(`${c.cpp.header} is stale or missing; run: npm run gen:canvas-configure`);
+  }
+  if (!/#include "canvas_configure\.h"/.test(fs.readFileSync(CPP_DEVICE, 'utf8'))) {
+    fail('device.cpp must #include "canvas_configure.h"');
+  }
+}
+
+/** An EM_JS ctx.configure body takes usage / alphaMode from its parameters, never literals. */
+function verifyEmJsConfigureFromHeader(fn, body, usageRe) {
+  if (!usageRe.test(body) || /GPUTextureUsage\./.test(body)) {
+    fail(`device.cpp ${fn} usage must be the passed canvas_configure.h value, not a GPUTextureUsage literal`);
+  }
+  if (!/alphaMode:\s*UTF8ToString\(alphaModePtr\)/.test(body)) {
+    fail(`device.cpp ${fn} alphaMode must be UTF8ToString(alphaModePtr) (canvas_configure::kAlphaModeJs)`);
+  }
+}
+
+/** Every call of an EM_JS configure passes the canvas_configure.h usage constant and kAlphaModeJs. */
+function verifyHeaderCallSite(cpp, fn, usageConst) {
+  const calls = [...stripCppComments(cpp).matchAll(new RegExp(`=\\s*${fn}\\(([^;]*)\\);`, 'g'))];
+  if (calls.length === 0) {
+    fail(`device.cpp ${fn}() call not found`);
+    return;
+  }
+  for (const [, args] of calls) {
+    if (!args.includes(`canvas_configure::${usageConst}`) || !args.includes('canvas_configure::kAlphaModeJs')) {
+      fail(`device.cpp ${fn}() must be called with canvas_configure::${usageConst} and canvas_configure::kAlphaModeJs`);
+    }
+  }
+}
+
+/**
+ * C++ canvas COPY_SRC opt-in (canvas_configure.json cpp.copySrc):
+ * probe EM_JS uses exactly optIn.copySrc.usage inside a validation error scope,
+ * ConfigureSurface() restores render-only after it, the opt-in usage comes from
+ * canvas_configure.h and is gated on the flag, and only the setter assigns the flag.
+ */
+function verifyCanvasCopySrcCpp(c, cpp, surfBody) {
+  const cs = c.cpp.copySrc;
+  if (!cs) {
+    fail('canvas_configure.json cpp.copySrc block missing (C++ COPY_SRC opt-in contract)');
+    return;
+  }
+  const optUsage = c.optIn.copySrc.usage;
+
+  const probeFn = cpp.match(new RegExp(`EM_JS\\([^,]+,\\s*${cs.probeFunction}[\\s\\S]*?\\n\\}\\);`));
+  const probeCfg = probeFn && probeFn[0].match(/ctx\.configure\(\{([\s\S]*?)\}\)/);
+  if (!probeCfg) {
+    fail(`device.cpp ${cs.probeFunction} ctx.configure({...}) not found`);
+  } else {
+    const body = probeCfg[1];
+    verifyEmJsConfigureFromHeader(cs.probeFunction, body, /usage:\s*want\b/);
+    verifyHeaderCallSite(cpp, cs.probeFunction, 'kCopySrcUsage');
+    if (!/var want = usage\s*>>>\s*0;/.test(probeFn[0]) || !/\(readback\.usage & want\) !== want/.test(probeFn[0])) {
+      fail(`device.cpp ${cs.probeFunction} must configure and read back the passed usage (want = usage >>> 0)`);
+    }
+    if (!/format:\s*preferredFormat/.test(body)) {
+      fail(`device.cpp ${cs.probeFunction} must keep format preferredFormat`);
+    }
+    if (/colorSpace|toneMapping/.test(body)) {
+      fail(`device.cpp ${cs.probeFunction} must not set colorSpace/toneMapping (opt-in is TS-first)`);
+    }
+  }
+
+  // Probe call: push scope → probe → pop scope → ConfigureSurface() (restore render-only).
+  const iCall = cpp.search(new RegExp(`=\\s*${cs.probeFunction}\\(`));
+  if (iCall < 0) {
+    fail(`device.cpp must call ${cs.probeFunction}() at surface creation`);
+  } else {
+    const before = cpp.slice(0, iCall);
+    const after = cpp.slice(iCall);
+    const iPush = before.lastIndexOf('wgpuDevicePushErrorScope(');
+    if (iPush < 0 || !/WGPUErrorFilter_Validation/.test(before.slice(iPush, iPush + 120))) {
+      fail(`device.cpp ${cs.probeFunction}() must run inside wgpuDevicePushErrorScope(..., WGPUErrorFilter_Validation)`);
+    }
+    const iPop = after.indexOf('wgpuDevicePopErrorScope(');
+    const iRestore = after.search(new RegExp(`\\n\\s*${c.cpp.surfaceConfigureFunction}\\(\\);`));
+    if (iPop < 0 || iRestore < 0 || iRestore < iPop) {
+      fail(`device.cpp ${cs.probeFunction}() must be followed by wgpuDevicePopErrorScope then ${c.cpp.surfaceConfigureFunction}() (restore render-only)`);
+    }
+    if (!new RegExp(`${cs.supportedFlag}\\s*=`).test(after.slice(0, iRestore > 0 ? iRestore : undefined))) {
+      fail(`device.cpp must record the probe result in ${cs.supportedFlag} before ${c.cpp.surfaceConfigureFunction}()`);
+    }
+  }
+
+  // ConfigureSurface: kCopySrcUsage (optIn.copySrc.usage) only while the flag is set, else kUsage.
+  const wantLine = new RegExp(`config\\.usage\\s*=\\s*${cs.flag}\\s*\\?\\s*canvas_configure::kCopySrcUsage\\s*:\\s*canvas_configure::kUsage;`);
+  if (!wantLine.test(surfBody)) {
+    fail(`device.cpp ${c.cpp.surfaceConfigureFunction} must have 'config.usage = ${cs.flag} ? canvas_configure::kCopySrcUsage : canvas_configure::kUsage;'`);
+  }
+  if (optUsage.some((u) => !c.cpp.usageEnums[u])) {
+    fail(`canvas_configure.json cpp.usageEnums missing an entry for one of ${optUsage.join(', ')}`);
+  }
+
+  // Flag is assigned only in the setter; header defaults both flags to false.
+  const header = fs.readFileSync(path.join(ROOT, 'wasm_renderer/renderer.h'), 'utf8');
+  for (const flag of [cs.flag, cs.supportedFlag]) {
+    if (!new RegExp(`bool\\s+${flag}\\s*=\\s*false;`).test(header)) {
+      fail(`renderer.h must declare 'bool ${flag} = false;'`);
+    }
+  }
+  const setter = cpp.match(new RegExp(`bool WebGPURenderer::${cs.setter}\\([^)]*\\)\\s*\\{[\\s\\S]*?\\n\\}`));
+  if (!setter) {
+    fail(`device.cpp WebGPURenderer::${cs.setter}() not found`);
+  } else {
+    if (!new RegExp(`${c.cpp.surfaceConfigureFunction}\\(\\);`).test(setter[0])) {
+      fail(`device.cpp ${cs.setter}() must call ${c.cpp.surfaceConfigureFunction}()`);
+    }
+    if (!new RegExp(`!\\s*${cs.supportedFlag}`).test(setter[0])) {
+      fail(`device.cpp ${cs.setter}() must refuse enabling when ${cs.supportedFlag} is false`);
+    }
+  }
+  const assignRe = new RegExp(`\\b${cs.flag}\\s*=(?!=)`, 'g');
+  const outsideSetter = setter ? cpp.replace(setter[0], '') : cpp;
+  const stray = [...stripCppComments(outsideSetter).matchAll(assignRe)].length;
+  const wasmSources = walkCppFiles(path.join(ROOT, 'wasm_renderer'))
+    .filter((f) => f !== CPP_DEVICE && !f.endsWith('renderer.h'));
+  const strayElsewhere = wasmSources.filter(
+    (f) => [...stripCppComments(fs.readFileSync(f, 'utf8')).matchAll(assignRe)].length > 0,
+  );
+  if (stray > 0 || strayElsewhere.length > 0) {
+    fail(`${cs.flag} may only be assigned inside ${cs.setter}() (found ${stray} in device.cpp, files: ${strayElsewhere.map((f) => path.relative(ROOT, f)).join(', ') || 'none'})`);
+  }
+
+  const exportsJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/contracts/wasm_exports.json'), 'utf8'));
+  for (const name of cs.exports || []) {
+    if (!exportsJson.exportedFunctions.includes(name)) {
+      fail(`wasm_exports.json must export ${name} (canvas_configure.json cpp.copySrc.exports)`);
+    }
   }
 }
 
@@ -340,15 +611,16 @@ function verifyWasmExports() {
   }
 
   const buildSh = fs.readFileSync(path.join(ROOT, 'wasm_renderer/build.sh'), 'utf8');
-  const cmake = fs.readFileSync(path.join(ROOT, 'wasm_renderer/CMakeLists.txt'), 'utf8');
   if (/_initWasmRenderer,_shutdownWasmRenderer/.test(buildSh)) {
     fail('build.sh must not hardcode EXPORTED_FUNCTIONS; use format-wasm-exports.js');
   }
   if (!buildSh.includes('format-wasm-exports.js')) {
     fail('build.sh must invoke scripts/format-wasm-exports.js');
   }
-  if (/_initWasmRenderer,_shutdownWasmRenderer/.test(cmake)) {
-    fail('CMakeLists.txt must not hardcode EXPORTED_FUNCTIONS; it wraps build.sh');
+  // build.sh is the only build. A second build file must not come back with
+  // its own export/flag lists to keep in sync.
+  if (fs.existsSync(path.join(ROOT, 'wasm_renderer/CMakeLists.txt'))) {
+    fail('wasm_renderer/CMakeLists.txt was removed: build.sh is the only WASM build (keep one flag/export path)');
   }
 }
 
@@ -357,11 +629,30 @@ function verifyWasmCompileFlags() {
     fs.readFileSync(path.join(ROOT, 'src/contracts/wasm_compile_flags.json'), 'utf8'),
   );
   const buildSh = fs.readFileSync(path.join(ROOT, 'wasm_renderer/build.sh'), 'utf8');
-  const cmake = fs.readFileSync(path.join(ROOT, 'wasm_renderer/CMakeLists.txt'), 'utf8');
-  const ci = fs.readFileSync(path.join(ROOT, '.github/workflows/ci.yml'), 'utf8');
+  // The emsdk build lives in wasm.yml (path-filtered + weekly since WASM froze as R&D, #1080).
+  const ci = fs.readFileSync(path.join(ROOT, '.github/workflows/wasm.yml'), 'utf8');
 
   if (!/^\d+\.\d+\.\d+$/.test(flags.emsdkVersion || '')) {
     fail(`wasm_compile_flags.json emsdkVersion must be an exact x.y.z pin, got "${flags.emsdkVersion}"`);
+  }
+  for (const f of flags.extraFlags || []) {
+    if (typeof f !== 'string' || !f.startsWith('-') || f.startsWith('-s')) {
+      fail(`wasm_compile_flags.json extraFlags entry "${f}" must be a plain em++ flag (put -s settings in sFlags)`);
+    }
+  }
+  // Profiles layer on the release flags; the debug build must stay out of public/wasm/.
+  for (const [name, p] of Object.entries(flags.profiles || {})) {
+    for (const f of [...(p.extraFlags || []), ...(p.asan?.extraFlags || [])]) {
+      if (typeof f !== 'string' || !f.startsWith('-') || f.startsWith('-s')) {
+        fail(`wasm_compile_flags.json profiles.${name} extraFlags entry "${f}" must be a plain em++ flag (put -s settings in sFlags)`);
+      }
+    }
+    for (const f of p.dropExtraFlags || []) {
+      if (!(flags.extraFlags || []).includes(f)) fail(`profiles.${name}.dropExtraFlags "${f}" is not a release extraFlags entry`);
+    }
+    if (p.outDir && (path.isAbsolute(p.outDir) || p.outDir.includes('..') || !p.outDir.startsWith('build/'))) {
+      fail(`profiles.${name}.outDir must be under wasm_renderer/build/ (never public/wasm/), got "${p.outDir}"`);
+    }
   }
   if (!flags.sFlags.includes('GROWABLE_ARRAYBUFFERS=0')) {
     fail('wasm_compile_flags.json must keep GROWABLE_ARRAYBUFFERS=0 (TextDecoder + resizable heap; re-test Dawn first)');
@@ -369,41 +660,28 @@ function verifyWasmCompileFlags() {
 
   // CI setup-emsdk must use the pin, not `latest`.
   const emsdkStep = ci.match(/uses:\s*mymindstorm\/setup-emsdk@[^\n]*[\s\S]*?version:\s*['"]?([^'"\s]+)/g) || [];
-  if (emsdkStep.length === 0) fail('ci.yml: setup-emsdk step with version: not found');
+  if (emsdkStep.length === 0) fail('wasm.yml: setup-emsdk step with version: not found');
   for (const step of emsdkStep) {
     const v = step.match(/version:\s*['"]?([^'"\s]+)/)[1];
     if (v !== flags.emsdkVersion) {
-      fail(`ci.yml setup-emsdk version "${v}" must equal wasm_compile_flags.json emsdkVersion "${flags.emsdkVersion}"`);
+      fail(`wasm.yml setup-emsdk version "${v}" must equal wasm_compile_flags.json emsdkVersion "${flags.emsdkVersion}"`);
     }
   }
 
-  // build.sh / CMake must read the JSON, not hand-copy -s flags.
+  // build.sh must read the JSON, not hand-copy -s flags.
   if (!buildSh.includes('format-wasm-compile-flags.js')) {
     fail('build.sh must read flags via scripts/format-wasm-compile-flags.js');
   }
   if (!buildSh.includes('emcc-version-gate.sh')) {
     fail('build.sh must run scripts/emcc-version-gate.sh before compiling');
   }
-  // CMake is a thin wrapper around build.sh: it must not be able to produce a
-  // third flag set (no executable target, no link options).
-  const cmakeCode = cmake.split('\n').filter((l) => !/^\s*#/.test(l)).join('\n');
-  if (/\badd_executable\s*\(/.test(cmakeCode) || /\btarget_link_options\s*\(/.test(cmakeCode)) {
-    fail('CMakeLists.txt must not add_executable / target_link_options — it is a thin wrapper around build.sh');
-  }
-  if (!/add_custom_target\s*\([\s\S]*?build\.sh/.test(cmakeCode)) {
-    fail('CMakeLists.txt must invoke build.sh via add_custom_target');
-  }
-
   verifyWasmBuildVariants(flags);
-  verifyWasmCompileSources(flags, buildSh);
 
-  // Async mode (ASYNCIFY / JSPI) lives only in the contract. Nothing that drives
-  // a build may spell it: build.sh, CMake, CI, npm scripts.
+  // Async mode (ASYNCIFY / JSPI) lives only in the contract.
   const pkg = fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8');
   for (const [name, src, comment] of [
     ['build.sh', buildSh, /^\s*#/],
-    ['CMakeLists.txt', cmake, /^\s*#/],
-    ['ci.yml', ci, /^\s*#/],
+    ['wasm.yml', ci, /^\s*#/],
     ['package.json', pkg, null],
   ]) {
     const code = comment ? src.split('\n').filter((l) => !comment.test(l)).join('\n') : src;
@@ -413,7 +691,7 @@ function verifyWasmCompileFlags() {
     }
   }
 
-  for (const [name, src] of [['build.sh', buildSh], ['CMakeLists.txt', cmake]]) {
+  for (const [name, src] of [['build.sh', buildSh]]) {
     const code = src.split('\n').filter((l) => !/^\s*#/.test(l)).join('\n');
     for (const f of flags.sFlags) {
       const key = f.split('=')[0];
@@ -424,69 +702,86 @@ function verifyWasmCompileFlags() {
     if (/--use-port=emdawnwebgpu/.test(code)) {
       fail(`${name} hardcodes --use-port; it belongs in wasm_compile_flags.json`);
     }
+    for (const f of flags.extraFlags || []) {
+      if (code.split(/\s+/).includes(f)) {
+        fail(`${name} hardcodes ${f}; it belongs in wasm_compile_flags.json extraFlags`);
+      }
+    }
+    // No second -s list at all: only the export lists (from wasm_exports.json) are spelled here.
+    for (const m of code.matchAll(/(?:^|[\s"'])-s([A-Z][A-Z0-9_]*)/g)) {
+      if (m[1] !== 'EXPORTED_FUNCTIONS' && m[1] !== 'EXPORTED_RUNTIME_METHODS') {
+        fail(`${name} hardcodes -s${m[1]}; -s settings belong in wasm_compile_flags.json sFlags`);
+      }
+    }
   }
+
+  verifyWasmCompileSources(flags, buildSh);
 }
 
 /**
- * One TU list: the contract's `sources` must equal the tracked wasm_renderer/*.cpp
- * set, build.sh must read it rather than list .cpp files, and the committed
- * human dump (reports/wasm_compile_line.txt) must match what the contract renders.
+ * One TU list (wasm_compile_flags.json `sources`) feeds build.sh and the clangd
+ * compile database; the database carries build.sh's exact flag list. CMake was
+ * removed on purpose (its two-step emdawn compile leaked -sUSE_WEBGPU=1).
  */
 function verifyWasmCompileSources(flags, buildSh) {
-  const { compileLineReport, COMPILE_LINE_PATH } = require('./format-wasm-compile-flags.js');
-  if (!Array.isArray(flags.sources) || flags.sources.length === 0) {
-    fail('wasm_compile_flags.json must list `sources` (translation units relative to wasm_renderer/)');
-    return;
-  }
-  const onDisk = fs
-    .readdirSync(path.join(ROOT, 'wasm_renderer'))
-    .filter((f) => f.endsWith('.cpp') && isGitTracked(`wasm_renderer/${f}`))
-    .sort();
-  const listed = [...flags.sources].sort();
-  if (JSON.stringify(onDisk) !== JSON.stringify(listed)) {
-    fail(
-      `wasm_compile_flags.json sources must equal tracked wasm_renderer/*.cpp.\n  on disk ${JSON.stringify(onDisk)}\n  listed  ${JSON.stringify(listed)}`,
-    );
+  const { compileCommands, emccArgs } = require('./format-wasm-compile-flags.js');
+  const rendererDir = path.join(ROOT, 'wasm_renderer');
+  const onDisk = fs.readdirSync(rendererDir).filter((f) => f.endsWith('.cpp')).sort();
+  const sources = Array.isArray(flags.sources) ? flags.sources : [];
+  if (JSON.stringify([...sources].sort()) !== JSON.stringify(onDisk)) {
+    fail(`wasm_compile_flags.json sources [${sources.join(', ')}] must equal wasm_renderer/*.cpp [${onDisk.join(', ')}]`);
   }
   const code = buildSh.split('\n').filter((l) => !/^\s*#/.test(l)).join('\n');
-  if (/\w+\.cpp\b/.test(code)) {
-    fail('build.sh hardcodes a .cpp source; translation units belong in wasm_compile_flags.json sources');
+  if (!/format-wasm-compile-flags\.js"?\s+sources/.test(code)) {
+    fail('build.sh must read its TU list via `format-wasm-compile-flags.js sources`');
   }
-  let committed = null;
-  try {
-    committed = fs.readFileSync(COMPILE_LINE_PATH, 'utf8');
-  } catch {
-    fail('reports/wasm_compile_line.txt missing — run npm run wasm:compile-commands');
+  if (/\b[\w/$.{}-]+\.cpp\b/.test(code)) {
+    fail('build.sh must not list .cpp files; add them to wasm_compile_flags.json sources');
   }
-  if (committed !== null && committed !== compileLineReport(flags)) {
-    fail('reports/wasm_compile_line.txt is stale — run npm run wasm:compile-commands');
+  for (const cm of ['CMakeLists.txt', 'wasm_renderer/CMakeLists.txt']) {
+    if (fs.existsSync(path.join(ROOT, cm))) {
+      fail(`${cm} must not exist: build.sh is the only WASM build (compile_commands.json comes from npm run wasm:compdb)`);
+    }
   }
 
-  // compile_commands.json is gitignored, so gate what it would contain: one entry
-  // per source, each indexed as wasm (not host) code with the emdawn headers.
-  const { compileCommands } = require('./format-wasm-compile-flags.js');
-  const cmds = compileCommands(flags, '/EM_CACHE');
-  const indexed = cmds.map((c) => path.relative(path.join(ROOT, 'wasm_renderer'), c.file)).sort();
-  if (JSON.stringify(indexed) !== JSON.stringify(listed)) {
-    fail(`compile_commands.json must index every source.\n  indexed ${JSON.stringify(indexed)}\n  sources ${JSON.stringify(listed)}`);
+  const stubCflags = ['--target=wasm32-unknown-emscripten', '--sysroot=/stub/sysroot'];
+  const cmds = compileCommands(flags, { cflags: stubCflags, emCache: '/stub/cache', rendererDir });
+  const expected = emccArgs(flags);
+  const files = cmds.map((c) => path.basename(c.file)).sort();
+  if (JSON.stringify(files) !== JSON.stringify([...sources].sort())) {
+    fail(`compile_commands.json must have one entry per TU; got [${files.join(', ')}]`);
   }
-  const emdawnInclude = `-I/EM_CACHE/ports/${flags.usePort}/${flags.usePort}_pkg/webgpu/include`;
   for (const c of cmds) {
-    for (const need of ['--target=wasm32-unknown-emscripten', '--sysroot=/EM_CACHE/sysroot', '-iwithsysroot/include/compat', emdawnInclude]) {
-      if (!c.arguments.includes(need)) fail(`compile_commands.json entry ${c.file} is missing ${need}`);
+    if (!path.isAbsolute(c.file) || !path.isAbsolute(c.directory)) {
+      fail(`compile_commands.json entry for ${c.file} must use absolute paths`);
     }
-    if (c.arguments.some((a) => a.startsWith('--use-port') || /^-s[A-Z]/.test(a))) {
-      fail(`compile_commands.json entry ${c.file} carries --use-port or -s flags; those are link-time only (USE_WEBGPU leak)`);
+    const missing = expected.filter((a) => !c.arguments.includes(a));
+    if (missing.length) {
+      fail(`compile_commands.json ${path.basename(c.file)} is missing build flags: ${missing.join(' ')}`);
+    }
+    if (!c.arguments.includes(`-I${rendererDir}`)) {
+      fail(`compile_commands.json ${path.basename(c.file)} must include -I${rendererDir}`);
+    }
+    if (!stubCflags.every((a) => c.arguments.includes(a))) {
+      fail(`compile_commands.json ${path.basename(c.file)} must carry em++ --cflags (target / sysroot)`);
     }
   }
-  let clangd = '';
-  try {
-    clangd = fs.readFileSync(path.join(ROOT, '.clangd'), 'utf8');
-  } catch {
-    fail('.clangd missing — clangd / Cursor needs it to find the generated compile_commands.json');
+  const clangdPath = path.join(rendererDir, '.clangd');
+  if (!fs.existsSync(clangdPath)) {
+    fail('wasm_renderer/.clangd must exist (strips -s / --use-port from the compile database)');
+  } else {
+    const clangd = fs.readFileSync(clangdPath, 'utf8');
+    for (const f of flags.sFlags) {
+      const key = f.split('=')[0];
+      if (!clangd.includes(`- -s${key}*`)) {
+        fail(`wasm_renderer/.clangd Remove must list -s${key}* (one entry per wasm_compile_flags.json sFlags key)`);
+      }
+    }
+    if (/-\s+-s\*\s*$/m.test(clangd)) fail('wasm_renderer/.clangd must not Remove a bare -s* (it strips -std=c++20)');
   }
-  if (clangd && !/^\s*CompilationDatabase:\s*\.\s*$/m.test(clangd)) {
-    fail('.clangd must set CompileFlags.CompilationDatabase: . (repo-root compile_commands.json)');
+  const gitignore = fs.readFileSync(path.join(ROOT, '.gitignore'), 'utf8');
+  if (!/^wasm_renderer\/compile_commands\.json$/m.test(gitignore)) {
+    fail('.gitignore must list wasm_renderer/compile_commands.json (it embeds the machine emsdk path)');
   }
 }
 
@@ -765,8 +1060,130 @@ function verifySlotLimits() {
   }
 }
 
+/**
+ * bind_group1.json (opt-in @group(1) sim ring) ↔ simRing.ts layout ↔ limits
+ * policy ↔ WASM refusal. The group-1 limits must never leak into the
+ * catalog-wide requiredLimits, and the C++ pipeline stays group-0 only.
+ */
+function verifyBindGroup1() {
+  const contractPath = path.join(ROOT, 'src/contracts/bind_group1.json');
+  const c = JSON.parse(fs.readFileSync(contractPath, 'utf8'));
+  const expected = [
+    { binding: 0, name: 'simState', bufferType: 'storage' },
+    { binding: 1, name: 'simIndex', bufferType: 'read-only-storage' },
+    { binding: 2, name: 'simParams', bufferType: 'uniform' },
+  ];
+  if (c.group !== 1) fail('bind_group1.json group must be 1');
+  if (!Array.isArray(c.bindings) || c.bindings.length !== expected.length) {
+    fail(`bind_group1.json must declare exactly ${expected.length} bindings`);
+    return;
+  }
+  expected.forEach((e, i) => {
+    const b = c.bindings[i];
+    if (b.binding !== e.binding || b.name !== e.name || b.bufferType !== e.bufferType) {
+      fail(`bind_group1.json binding ${i} must be ${e.name} (${e.bufferType}) at @binding(${e.binding})`);
+    }
+  });
+  if (c.bindings[0].elementBytes !== 16) fail('simState elementBytes must be 16 (vec4<f32>)');
+  const fields = c.bindings[2].fields || [];
+  if (fields.join(',') !== 'stateCount,indexCount,frame,truncated') {
+    fail('simParams fields must be [stateCount, indexCount, frame, truncated]');
+  }
+  if (c.bindings[2].sizeBytes !== fields.length * 4) fail('simParams sizeBytes must be 4 × fields');
+  if (c.barrier?.from !== 'simState' || c.barrier?.to !== 'simIndex' || c.barrier?.kind !== 'copyBufferToBuffer') {
+    fail('bind_group1.json barrier must be copyBufferToBuffer simState → simIndex');
+  }
+  const wg = c.dispatch?.simStateWorkgroupSize || [];
+  if (wg.join(',') !== '64,1,1') fail('simStateWorkgroupSize must be [64, 1, 1]');
+  if ((c.dispatch?.domains || []).join(',') !== 'pixels,simState') {
+    fail('dispatch.domains must be [pixels, simState]');
+  }
+
+  // TS layout ↔ JSON (binding order + buffer types).
+  const tsFile = 'src/renderer/webgpu/simRing.ts';
+  const ts = fs.readFileSync(path.join(ROOT, tsFile), 'utf8');
+  const bgl = ts.match(/export function createSimRingBindGroupLayout[\s\S]*?\n\}/);
+  if (!bgl) {
+    fail(`${tsFile} must export createSimRingBindGroupLayout`);
+  } else {
+    const entries = [...bgl[0].matchAll(/\{\s*binding:\s*(\d+)[^}]*buffer:\s*\{\s*type:\s*'([a-z-]+)'\s*\}/g)];
+    if (entries.length !== expected.length) {
+      fail(`${tsFile} createSimRingBindGroupLayout declares ${entries.length} entries, contract has ${expected.length}`);
+    }
+    entries.forEach((m, i) => {
+      const e = expected[i];
+      if (!e || parseInt(m[1], 10) !== e.binding || m[2] !== e.bufferType) {
+        fail(`${tsFile} layout entry ${i} is binding ${m[1]} '${m[2]}', contract wants ${e ? `${e.binding} '${e.bufferType}'` : 'nothing'}`);
+      }
+    });
+  }
+  if (!/import bindGroup1Contract from '..\/..\/contracts\/bind_group1\.json'/.test(ts)) {
+    fail(`${tsFile} must import bind_group1.json (ladder, key and limits come from the contract)`);
+  }
+  if (!/bindGroupLayouts:\s*\[group0,\s*group1\]/.test(ts)) {
+    fail(`${tsFile} createSimRingPipelineLayout must be [group0, group1]`);
+  }
+
+  // OOM ladder discipline.
+  const ladder = c.oom?.ladder || [];
+  if (ladder.join(',') !== '65536,32768,16384,4096') fail('sim-ring OOM ladder must be 65536 → 32768 → 16384 → 4096');
+  if (c.oom?.defaultStateCount !== ladder[0]) fail('oom.defaultStateCount must be the top ladder rung');
+  if (c.oom?.sessionStorageKey !== 'px_simring_oom_cap') fail('oom.sessionStorageKey must be px_simring_oom_cap');
+
+  // Group-1 limits: within WebGPU base limits, and never catalog-wide.
+  const base = c.webgpuBaseLimits || {};
+  for (const [key, need] of Object.entries(c.group1RequiredLimits || {})) {
+    if (!(key in base)) fail(`webgpuBaseLimits missing ${key}`);
+    else if (need > base[key]) fail(`group1RequiredLimits.${key}=${need} exceeds WebGPU base ${base[key]}`);
+  }
+  const g0 = EXPECTED_LIMITS;
+  if ('maxBindGroups' in g0) fail('webgpu_limits.json must not require maxBindGroups (group 1 is opt-in)');
+  if (g0.maxStorageBuffersPerShaderStage >= c.group1RequiredLimits.maxStorageBuffersPerShaderStage) {
+    fail('webgpu_limits.json maxStorageBuffersPerShaderStage was raised to the group-1 value — keep it catalog-minimal');
+  }
+  const policy = fs.readFileSync(TS_POLICY, 'utf8');
+  if (/bind_group1|GROUP1_REQUIRED_LIMITS/.test(policy)) {
+    fail('webgpuDevicePolicy.ts must not fold group-1 limits into requiredLimits');
+  }
+
+  // WASM: C++ stays single-layout; bridge refuses group-1 WGSL before LoadShader.
+  const pipelineCpp = fs.readFileSync(path.join(ROOT, 'wasm_renderer/pipeline.cpp'), 'utf8');
+  if (!/bindGroupLayoutCount\s*=\s*1\s*;/.test(pipelineCpp)) {
+    fail('wasm_renderer/pipeline.cpp must keep bindGroupLayoutCount = 1 (feature freeze)');
+  }
+  const bridgeFile = 'src/wasm/bridge/shader.ts';
+  const bridge = fs.readFileSync(path.join(ROOT, bridgeFile), 'utf8');
+  for (const fnName of ['loadShader', 'reloadShader']) {
+    const body = bridge.match(new RegExp(`export function ${fnName}\\([\\s\\S]*?\\n\\}`));
+    const refuse = body ? body[0].indexOf('declaresBindGroup1(') : -1;
+    const ccall = body ? body[0].indexOf(`ccall('${fnName}'`) : -1;
+    if (refuse < 0 || ccall < 0 || refuse > ccall) {
+      fail(`${bridgeFile} ${fnName} must refuse @group(1) WGSL before ccall('${fnName}')`);
+    }
+  }
+
+  // Definitions that opt into the ring must dispatch at least one simState node.
+  const defsDir = path.join(ROOT, 'shader_definitions');
+  const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+    e.isDirectory() ? walk(path.join(dir, e.name)) : e.name.endsWith('.json') ? [path.join(dir, e.name)] : []);
+  for (const file of walk(defsDir)) {
+    let def;
+    try { def = JSON.parse(fs.readFileSync(file, 'utf8')); } catch { continue; }
+    if (!def.simRing) continue;
+    const nodes = def.multipass?.graph?.nodes || [];
+    if (!nodes.some((n) => n.dispatch === 'simState')) {
+      fail(`${path.relative(ROOT, file)} declares simRing but no graph node dispatches simState`);
+    }
+    const n = def.simRing.stateCount;
+    if (!Number.isInteger(n) || n < 1 || n > ladder[0]) {
+      fail(`${path.relative(ROOT, file)} simRing.stateCount must be 1–${ladder[0]}`);
+    }
+  }
+}
+
 if (!ONLY_WASM_INVARIANTS) {
   verifyOptionalFeatures();
+  verifyBindGroup1();
   verifyCanvasConfigure();
   verifySlotLimits();
   verifyWasmExports();
@@ -781,7 +1198,7 @@ if (failed) {
 }
 
 console.log(
-  '✅ Device policy sync OK (limits + optional features + canvas_configure + slot_limits + wasm_exports + wasm_compile_flags + workgroup_dispatch + emptyPlaceholder + wasm_runtime_invariants ↔ TS/C++/shaders/wasm)',
+  '✅ Device policy sync OK (limits + optional features + canvas_configure + slot_limits + wasm_exports + wasm_compile_flags + workgroup_dispatch + emptyPlaceholder + bind_group1 + wasm_runtime_invariants ↔ TS/C++/shaders/wasm)',
 );
 
 /** True when `rel` is tracked by git (a committed artifact, not a fresh CI build). */
@@ -930,6 +1347,18 @@ function verifyWasmRuntimeInvariants() {
       if (!/function getHistoryWorkingSizeCap[\s\S]*return HISTORY_SAFE_WORKING_SIZE/.test(vram)) {
         fail('vramBudget.ts getHistoryWorkingSizeCap() must default to HISTORY_SAFE_WORKING_SIZE (1024)');
       }
+      // The WASM bridge is emitted unbundled and cannot import vramBudget.ts, so its
+      // first-commit size cap is a literal that must track the contract.
+      const bridgeInit = fs.readFileSync(path.join(ROOT, 'src/wasm/bridge/init.ts'), 'utf8');
+      const bridgeCap = bridgeInit.match(/const\s+sizeCap\s*=\s*(\d+)/);
+      if (!bridgeCap || parseInt(bridgeCap[1], 10) !== ladder.defaultWorkingSize) {
+        fail(
+          `src/wasm/bridge/init.ts sizeCap ${bridgeCap && bridgeCap[1]} must equal historyTexLadder.defaultWorkingSize ${ladder.defaultWorkingSize}`,
+        );
+      }
+      if (bridgeInit.includes(`'${ladder.sessionStorageKey}'`)) {
+        fail(`src/wasm/bridge/init.ts must not hardcode '${ladder.sessionStorageKey}' (owned by vramBudget.ts)`);
+      }
     }
     if (ladder.minMaxBufferSizeForFull != null) {
       const minBuf = vram.match(/MIN_MAX_BUFFER_SIZE_FOR_FULL\s*=\s*(\d+)/);
@@ -989,8 +1418,8 @@ function verifyWasmRuntimeInvariants() {
     const wantBgl = fmt.bglStorageBindingCount != null ? fmt.bglStorageBindingCount : 3;
     if (bglHits.length < wantBgl) {
       fail(
-        `${pipelineFile} must set storage texture format via RgbaStorageFormat(colorFormat_) ` +
-          `at least ${wantBgl} times (bindings 2/7/8); found ${bglHits.length}`,
+        `${pipelineFile} kComputeBindings must declare bindings 2/7/8 as BindingKind::StorageRgba ` +
+          `(layout format = RgbaStorageFormat(colorFormat_)); found ${bglHits.length} of ${wantBgl}`,
       );
     }
     const rewriteCall = new RegExp(fmt.loadShaderRewriteCall || 'RewriteWgslStorageFormats\\s*\\(');
@@ -1035,6 +1464,15 @@ function verifyWasmRuntimeInvariants() {
     const copyPat = new RegExp(fmt.depthFeedbackCopyPattern || 'CopyTex\\s*\\([^;]*depthTextureWrite_');
     if (!copyPat.test(frameCpp)) {
       fail(`${frameFile} must CopyTex depthTextureWrite_ → depthTextureRead_ (keep in sync with CopySrc on the write texture)`);
+    }
+    if (fmt.depthFeedbackGatePattern) {
+      const gatePat = new RegExp(fmt.depthFeedbackGatePattern, 'g');
+      const gated = (frameCpp.match(gatePat) || []).length;
+      const ungated = (frameCpp.match(new RegExp(copyPat.source, 'g')) || []).length;
+      const want = fmt.depthFeedbackGateCount ?? 1;
+      if (gated < want || ungated !== gated) {
+        fail(`${frameFile} must gate every depthTextureWrite_ → depthTextureRead_ copy on anyWritesDepth (found ${gated} gated of ${ungated}, want ${want}); an ungated copy clobbers uploaded depth maps`);
+      }
     }
   }
 

@@ -2,7 +2,7 @@
   "id": "wave-equation-rgba-fluid",
   "name": "Wave Equation RGBA Fluid",
   "url": "shaders/wave-equation-rgba-fluid.wgsl",
-  "description": "Coupled wave equation and incompressible fluid simulation packed into RGBA32FLOAT. Wave height and velocity drive fluid motion while fluid pressure dampens waves. Dye advection visualizes the combined flow field with rainbow phase coloring.",
+  "description": "Coupled wave equation and dye packed into RGBA32FLOAT. Waves break downhill, dye stretches and Stokes-drifts with the amplitude, and capillary ripples run ahead of the crest.",
   "tags": [
     "wave",
     "fluid",
@@ -28,12 +28,6 @@
     "semantic-alpha"
   ],
   "feedbackPacking": "A/C = wave height, velocity, pressure, dye; raw coupled-wave state via exact bounded loads",
-  "updatedParams": [
-    { "index": 0, "name": "Wave Speed", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 1, "name": "Wave Damping", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 2, "name": "Fluid Viscosity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 3, "name": "Source Strength", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
-  ],
   "params": [
     {
       "id": "waveSpeed",
@@ -67,5 +61,43 @@
       "max": 1,
       "step": 0.01
     }
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Wave Speed",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Wave Damping",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Fluid Viscosity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Source Strength",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

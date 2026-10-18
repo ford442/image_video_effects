@@ -8,4 +8,4 @@
 # port headers (webgpu/webgpu.h). Use emsdk's own clangd
 # ($EMSDK/upstream/bin/clangd) so the clang version matches em++.
 CompileFlags:
-  CompilationDatabase: .
+  CompilationDatabase: wasm_renderer

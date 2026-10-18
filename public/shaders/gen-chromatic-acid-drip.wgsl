@@ -4,31 +4,12 @@
 //  Features: acid, chromatic, drip, audio-reactive, mouse-interactive,
 //            semantic-alpha, upgraded-rgba, temporal, chromatic-aberration
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: meniscus coffee-ring on metaball isosurface; gravity-biased blob fall
+//  Upgraded: 2026-10-10
+//  Ideas: meniscus coffee-ring on metaball isosurface; gravity-biased blob fall; Plateau-Rayleigh drip neck; channel lag down-gravity; pendant beads; etch scars
 //  A packing: HDR display RGBA in A; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // --- Simplex noise helpers (3D) ---
 fn mod289_3(v: vec3<f32>) -> vec3<f32> { return v - floor(v * (1.0 / 289.0)) * 289.0; }
@@ -137,7 +118,13 @@ fn metaballField(p: vec2<f32>, time: f32, gravity: f32) -> f32 {
         let bpos = vec2<f32>(bx, by);
         let r = 0.06 + 0.04 * sin(phase * 1.5);
         let d = length(p - bpos);
-        field += r / (d + 0.005);
+        // Idea: drip neck — a thinner waist just above the blob, up-gravity.
+        let up = bpos.y - p.y;
+        let neck = exp(-((up - 0.055) * (up - 0.055)) * 900.0) * exp(-((p.x - bx) * (p.x - bx)) * 420.0);
+        field += (r / (d + 0.005)) * (1.0 - neck * 0.62);
+        // Idea: pendant bead — a satellite just down-gravity of the neck.
+        let dropD = length(p - (bpos + vec2<f32>(0.0, 0.16)));
+        field += (0.45 * r) / (dropD + 0.007) * smoothstep(0.05, 0.12, d);
     }
 
     for (var i: i32 = 7; i < 12; i = i + 1) {
@@ -148,7 +135,11 @@ fn metaballField(p: vec2<f32>, time: f32, gravity: f32) -> f32 {
         let bpos = vec2<f32>(bx, by);
         let r = 0.04 + 0.02 * sin(phase * 2.0);
         let d = length(p - bpos);
-        field += r * r / (d * d + 0.001);
+        let up = bpos.y - p.y;
+        let neck = exp(-((up - 0.04) * (up - 0.04)) * 1100.0) * exp(-((p.x - bx) * (p.x - bx)) * 520.0);
+        field += (r * r / (d * d + 0.001)) * (1.0 - neck * 0.55);
+        let dropD = length(p - (bpos + vec2<f32>(0.0, 0.12)));
+        field += (0.35 * r) / (dropD + 0.006) * smoothstep(0.04, 0.1, d);
     }
 
     return field;
@@ -166,7 +157,10 @@ fn chromaticDrip(uv: vec2<f32>, time: f32, offset: f32, colorShift: f32, phCycle
     let flowSpeed = 0.3 + 0.2 * sin(uv.x * 6.28318530718 + offset) + mids * 0.5;
     let dripLine = uv.y + noiseY * 0.3 - time * flowSpeed;
     let drip = fract(dripLine);
-    let dripIntensity = smoothstep(0.0, 0.15, drip) * smoothstep(0.85, 0.5, drip);
+    // Idea: channel lag — R slips furthest down-gravity, B less, G stays.
+    let lag = 0.028 + mids * 0.02;
+    let dripR = fract(dripLine + lag);
+    let dripB = fract(dripLine + lag * 0.45);
 
     let flowNoise = fbm3(vec3<f32>(uv * 2.0 + offset, time * 0.3), 3);
     let flowDistort = flowNoise * 0.15;
@@ -174,14 +168,20 @@ fn chromaticDrip(uv: vec2<f32>, time: f32, offset: f32, colorShift: f32, phCycle
     // pH changes as drip falls (lower in frame = more acidic, higher = more basic)
     let fallPH = mix(2.0, 12.0, drip) + phCycle;
     let chromaticAmount = 0.03 + 0.02 * sin(time + offset);
-    let dripCoord = drip + flowDistort;
+
+    let iR = smoothstep(0.0, 0.15, dripR) * smoothstep(0.85, 0.5, dripR);
+    let iG = smoothstep(0.0, 0.15, drip) * smoothstep(0.85, 0.5, drip);
+    let iB = smoothstep(0.0, 0.15, dripB) * smoothstep(0.85, 0.5, dripB);
 
     var col = vec3<f32>(0.0);
-    col.r = phDripColor(dripCoord + chromaticAmount, time, colorShift, fallPH * 0.1).r;
-    col.g = phDripColor(dripCoord, time, colorShift + 0.1, fallPH * 0.1).g;
-    col.b = phDripColor(dripCoord - chromaticAmount, time, colorShift + 0.2, fallPH * 0.1).b;
+    col.r = phDripColor(dripR + flowDistort + chromaticAmount, time, colorShift, fallPH * 0.1).r * iR;
+    col.g = phDripColor(drip + flowDistort, time, colorShift + 0.1, fallPH * 0.1).g * iG;
+    col.b = phDripColor(dripB + flowDistort - chromaticAmount, time, colorShift + 0.2, fallPH * 0.1).b * iB;
 
-    col *= dripIntensity * (1.0 + flowNoise * 0.5);
+    col *= (1.0 + flowNoise * 0.5);
+    // Idea: etch scar — the trailing edge of the drip bites the glass.
+    let scar = smoothstep(0.72, 0.94, drip) * (1.0 - iG);
+    col = col * (1.0 - scar * 0.55) + vec3<f32>(0.02, 0.0, 0.03) * scar * 0.35;
     return col;
 }
 

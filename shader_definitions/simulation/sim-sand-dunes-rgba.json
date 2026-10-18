@@ -22,7 +22,6 @@
     {
       "id": "gravity",
       "name": "Gravity",
-      "type": "float",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -31,7 +30,6 @@
     {
       "id": "wind",
       "name": "Wind",
-      "type": "float",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -40,7 +38,6 @@
     {
       "id": "moisture",
       "name": "Moisture",
-      "type": "float",
       "default": 0.3,
       "min": 0,
       "max": 1,
@@ -49,7 +46,6 @@
     {
       "id": "dustiness",
       "name": "Dustiness",
-      "type": "float",
       "default": 0.3,
       "min": 0,
       "max": 1,
@@ -57,10 +53,42 @@
     }
   ],
   "updated": true,
-  "updatedParams": [
-    { "id": "param1", "name": "Gravity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "param2", "name": "Wind", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "param3", "name": "Moisture", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "param4", "name": "Dustiness", "default": 0.3, "min": 0, "max": 1, "step": 0.01 }
-  ]
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "id": "param1",
+          "name": "Gravity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "id": "param2",
+          "name": "Wind",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "id": "param3",
+          "name": "Moisture",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "id": "param4",
+          "name": "Dustiness",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

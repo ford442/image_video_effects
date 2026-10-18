@@ -7,6 +7,9 @@
 //  Created: 2024-01-01
 //  Upgraded: 2026-06-28
 //  Rewired: 2026-07-30 (Batch 17 - honest slider semantics, click-stamp blooms, paint/erase mode)
+//  Upgraded: 2026-10-04
+//  Ideas: chronophotograph shutter stamps; thaw drip of fading frozen paint
+//  A packing: raw feedback RGBA (never tonemapped); .a = paint freshness (decays with history)
 // ═══════════════════════════════════════════════════════════════════
 //  Slider contract (labels now tell the truth):
 //    x = Brush Size         -> brush radius (audio-boosted via bass_env)
@@ -35,6 +38,10 @@ struct Uniforms {
   zoom_params: vec4<f32>,  // x=BrushSize, y=FreezeDecay, z=TimeEdgeDistort, w=Mode
   ripples: array<vec4<f32>, 50>, // xy=click UV, z=click time, w=unused
 };
+
+fn hash11(n: f32) -> f32 {
+  return fract(sin(n * 127.1) * 43758.5453);
+}
 
 fn bass_env(bass: f32, mids: f32) -> f32 {
   return 1.0 + bass * 0.5 + mids * 0.2;
@@ -87,7 +94,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     ) * wobbleAmp * 0.5;
     let historyUV = clamp(uv + wobble, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    let historyColor = textureSampleLevel(dataTextureC, u_sampler, historyUV, 0.0);
+    // Exact history loads (rgba32float history must not go through a filtering sampler).
+    let maxCoord = vec2<i32>(resolution) - vec2<i32>(1);
+    let historyCoord = clamp(vec2<i32>(historyUV * resolution), vec2<i32>(0), maxCoord);
+    let heldColor = textureLoad(dataTextureC, historyCoord, 0);
+
+    // Idea 2 — thaw drip: frozen paint that has faded (low freshness in .a) slides down
+    // a pixel per frame, column-jittered, so old time melts and runs before it vanishes.
+    let above = textureLoad(dataTextureC, clamp(historyCoord - vec2<i32>(0, 1), vec2<i32>(0), maxCoord), 0);
+    let aboveLuma = dot(above.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let columnJitter = 0.4 + 0.6 * hash11(f32(global_id.x) + floor(time * 0.5) * 17.0);
+    let notFresher = step(heldColor.a, above.a + 0.05);
+    let thaw = smoothstep(0.75, 0.2, above.a) * smoothstep(0.01, 0.06, aboveLuma) * columnJitter * notFresher * (1.0 - freezeDecay * freezeDecay * 0.6);
+    let historyColor = mix(heldColor, above, clamp(thaw * 0.5, 0.0, 1.0));
     let liveColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
     // Chromatic brush: cycle HSL hue per click via time (legacy 0.45 rate).
@@ -119,8 +138,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         stamp = max(stamp, bloom * exp(-age * 2.0));
     }
 
+    // Idea 1 — chronophotograph shutter: the brush exposes at full strength only on
+    // shutter ticks (8 Hz; bass holds the shutter open longer), so a drag leaves a
+    // Marey-style row of frozen frames and a resting brush shows the live feed stepping.
+    // The rate stays fixed: scaling `time` by an audio term would jump the phase at large t.
+    let shutterOpen = select(0.18, 1.0, fract(time * 8.0) < 0.22 + bass * 0.18);
+    let shutter = select(shutterOpen, 1.0, eraseMode);
+
     // Click blooms merge with the drag stroke into one paint mask.
-    let brushMask = max(brush, stamp);
+    let brushMask = max(brush * shutter, stamp);
 
     // ── History update (RAW feedback - never tonemapped) ────────────
     let decay = 1.0 - (1.0 - freezeDecay) * 0.25 * (1.0 - bass * 0.03);

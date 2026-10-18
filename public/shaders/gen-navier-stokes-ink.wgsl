@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: vorticity confinement (Fedkiw: eps * (N x omega) from |curl| gradient) re-injects the small eddies advection smears out; negative-buoyancy Boussinesq ink (dense ink sinks, click drops splash in and fall as plume fingers)
+//  Upgraded: 2026-10-17
+//  Ideas: vorticity confinement (Fedkiw); negative-buoyancy Boussinesq ink; Marangoni skim from dense ink toward clear water; coffee-ring pigment rim
 //  A packing: raw sim state (vel.x px/frame, vel.y px/frame, ink density, coverage alpha) — C feeds back as velocity/dye; ACES display RGBA on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Injection Rate, .y = Viscosity, .z = Dispersion, .w = Vorticity Scale
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Injection Rate, .y = Viscosity, .z = Dispersion, .w = Vorticity Scale
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -202,6 +184,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let buoyG = 0.22 * (1.0 + mids * 0.3) * (0.6 + (1.0 - viscosity) * 1.2);
   newVel.y = newVel.y + (inkSat - avgInkSat * 0.6) * buoyG * dt;
 
+  // Idea: Marangoni skim. Ink lowers surface tension, so the surface is
+  // pulled from dense ink toward clear water (force opposes grad ink).
+  let inkGrad = vec2<f32>(ve.b - vw.b, vn.b - vs.b);
+  let marangoni = 0.16 * (0.7 + treble * 0.5);
+  newVel = newVel - inkGrad * marangoni * dt;
+
   newInk = newInk * (0.992 - dispersion * 0.02);
   // Stability bound on the carried velocity (px/frame)
   let vLen = length(newVel);
@@ -275,6 +263,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let chromaR = newInk * (1.0 + shear * 0.5);
   let chromaB = newInk * (1.0 - shear * 0.3);
   col = col + vec3<f32>(chromaR * 0.15, 0.0, chromaB * 0.2) * shear;
+
+  // Idea: coffee-ring rim. Pigment gathers where the ink gradient is steep
+  // and the drop is not yet a solid fill.
+  let inkEdge = length(inkGrad);
+  let ring = smoothstep(0.015, 0.12, inkEdge) * smoothstep(0.7, 0.12, newInk);
+  col = col + vec3<f32>(0.22, 0.16, 0.1) * ring * (0.6 + mids * 0.3);
 
   // ═══ b32: 3D geometry shading — filament glow + solid tube/corona hits ═══
   var depth3d = 0.0;

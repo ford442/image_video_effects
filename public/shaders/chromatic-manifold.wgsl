@@ -1,35 +1,14 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Chromatic Manifold - Color-as-dimension topology with wavelength-alpha
+// ═══════════════════════════════════════════════════════════════════
+//  Chromatic Manifold
 //  Category: artistic
-//  Features: 4d-manifold, hue-topology, wavelength-dependent-alpha
-//
-//  SCIENTIFIC MODEL:
-//  - Manifold curvature affects dispersion and alpha per channel
-//  - Beer-Lambert law: alpha = exp(-thickness * absorption)
-//  - Red (650nm): lowest absorption, highest transmission
-//  - Blue (450nm): highest absorption, lowest transmission
-// ═══════════════════════════════════════════════════════════════════════════════
+//  Features: upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-10-09
+//  Ideas: hue-distance neighbor weights; Beer-Lambert thickness follows warp length
+//  A packing: pre-ACES display RGB in A (C is color history); wavelength alpha is coverage
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  SPECTRAL PHYSICS CONSTANTS
@@ -81,6 +60,7 @@ fn aces_tonemap(color: vec3<f32>) -> vec3<f32> {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var dims = u.config.zw;
     let gid = global_id.xy;
+    if (f32(gid.x) >= dims.x || f32(gid.y) >= dims.y) { return; }
 
     var uv = vec2<f32>(f32(gid.x) / dims.x, f32(gid.y) / dims.y);
 
@@ -171,11 +151,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         var nUV = vec2<f32>(neighbors[i].x, neighbors[i].y);
         let nh = neighbors[i].w;
         var d = nUV - uv;
-        sumXX = sumXX + d.x * d.x;
-        sumYY = sumYY + d.y * d.y;
-        sumXY = sumXY + d.x * d.y;
-        sumXH = sumXH + d.x * nh;
-        sumYH = sumYH + d.y * nh;
+        // Nearer hues weigh the existing regression more.
+        let centerHue = hue * (1.0 + sat * u.zoom_params.x);
+        let wHue = exp(-abs(nh - centerHue) * (3.0 + u.zoom_params.x * 5.0));
+        sumXX = sumXX + d.x * d.x * wHue;
+        sumYY = sumYY + d.y * d.y * wHue;
+        sumXY = sumXY + d.x * d.y * wHue;
+        sumXH = sumXH + d.x * nh * wHue;
+        sumYH = sumYH + d.y * nh * wHue;
     }
     var grad : vec2<f32> = vec2<f32>(0.0, 0.0);
     let det = sumXX * sumYY - sumXY * sumXY;
@@ -188,10 +171,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // warp UV using hue gradient
     let warpStrength = clamp(u.zoom_params.y, 0.0, 1.0);
-    let warpedUV = uv + grad * (warpStrength * 0.1);
+    let warpedUV = clamp(uv + grad * (warpStrength * 0.1), vec2<f32>(0.0), vec2<f32>(1.0));
 
     // sample previous frame feedback
-    var prevColor = textureLoad(dataTextureC, vec2<i32>((warpedUV) * vec2<f32>(textureDimensions(dataTextureC))), 0);
+    let histSize = vec2<i32>(textureDimensions(dataTextureC));
+    var prevColor = textureLoad(dataTextureC, clamp(vec2<i32>(warpedUV * vec2<f32>(histSize)), vec2<i32>(0), histSize - vec2<i32>(1)), 0);
 
     // color debt for shadows
     var outColor = src;
@@ -203,7 +187,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let tearThreshold = mix(1.2, 3.0, clamp(u.zoom_params.z, 0.0, 1.0));
     if (maxRGB > tearThreshold) {
         let smear = normalize(grad + vec2<f32>(0.0001, 0.0)) * radiusScale * 0.02;
-        let smearUV = uv + smear;
+        let smearUV = clamp(uv + smear, vec2<f32>(0.0), vec2<f32>(1.0));
         let smearCol = textureSampleLevel(readTexture, u_sampler, smearUV, 0.0);
         outColor = mix(outColor, smearCol, 0.6);
         outColor = vec4<f32>(outColor.rgb + (maxRGB - 1.0) * 0.5, outColor.a);
@@ -217,7 +201,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     //  WAVELENGTH-DEPENDENT ALPHA
     //  Thickness derived from manifold curvature and HDR
     // ═══════════════════════════════════════════════════════════════════════════════
-    let manifoldThickness = curvature * 0.5 + (maxRGB - 1.0) * 0.5;
+    let warpLen = length(grad) * warpStrength;
+    let manifoldThickness = curvature * 0.35 + warpLen * 2.4 + max(maxRGB - 1.0, 0.0) * 0.5;
     let dispersionThickness = manifoldThickness;
     
     let alphaR = calculateChannelAlpha(dispersionThickness, WAVELENGTH_RED);

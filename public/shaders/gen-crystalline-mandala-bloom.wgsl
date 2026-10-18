@@ -1,9 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Crystalline Mandala Bloom
 //  Category: generative
-//  Features: mouse-driven, audio-reactive, upgraded-rgba, aces-tone-map
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, aces-tone-map, temporal-feedback
 //  Complexity: Medium
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-09-27
+//  Ideas: per-facet static refraction offset (each kaleidoscope segment samples
+//         a slightly different angle, like a cut gem's facets); treble sparkle
+//         locked to petal edges instead of the generic screen-space star field
+//  A packing: raw HDR display RGBA history (unchanged)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -87,8 +91,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Kaleidoscopic symmetry
     let k = kaleido(p, segments);
 
+    // Idea: per-facet refraction offset. Each of the `segments` wedges gets a
+    // small, stable static offset (like a real cut gem, where every facet
+    // bends light at a slightly different angle) instead of every segment
+    // sampling the exact same folded coordinate.
+    let segAngle = 6.28318530718 / max(segments, 1.0);
+    let facetAngle = atan2(p.y, p.x);
+    let segIndex = floor(facetAngle / segAngle + 0.5);
+    let facetHash = hash21(vec2<f32>(segIndex, 3.1));
+    let facetOffset = (facetHash - 0.5) * 0.03;
+    let kFaceted = k + vec2<f32>(cos(facetHash * 6.28318530718), sin(facetHash * 6.28318530718)) * facetOffset;
+
     // Sample original image through the folded coordinate (technique 2: image-into-mandala)
-    let sampleUV = clamp(k * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+    let sampleUV = clamp(kFaceted * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
     let folded = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
 
     // Radial crystalline facets (technique 3: SDF petals)
@@ -133,6 +148,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let starSeed = hash21(floor(k * 60.0));
     let star = step(0.992, starSeed) * (0.6 + treble * 1.2);
     rgb += vec3<f32>(star);
+
+    // Idea: treble facet sparkle — a prismatic glint locked to the petal edge
+    // (where a real crystal facet would catch the light), distinct from the
+    // generic screen-space star field above and from the bass-driven rings
+    let edgeProximity = 1.0 - smoothstep(0.0, 0.05, abs(r - petalRadius));
+    let facetSparkle = edgeProximity * treble * (0.5 + facetHash * 0.5);
+    rgb += crystalCold * facetSparkle * 1.2;
 
     // Click-ripple blooms follow the engine's ripple timestamps.
     var clickBloom = 0.0;

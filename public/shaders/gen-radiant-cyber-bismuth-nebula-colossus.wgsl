@@ -1,8 +1,12 @@
-// Radiant Cyber-Bismuth Nebula-Colossus — Category: generative
-// Upgraded 2026-08-03 (swarm b31, optimizer): canonical uniforms verified,
-// dead sliders (Nebula Density, Iridiscent Shift) wired LIVE, hopper-crystal
-// octahedron smooth-union into the IFS bismuth lattice, kaleidoscopic
-// symmetry-fold star field + volumetric nebula, adaptive steps/LOD, real depth.
+// ═══════════════════════════════════════════════════════════════════
+//  Radiant Cyber-Bismuth Nebula-Colossus
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-27
+//  Ideas: hopper terrace stairs; terrace-lip emissive; nebula residue from C.a
+//  A packing: A.rgb ACES display; A.a raw nebula (not tone-mapped)
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -72,9 +76,32 @@ fn map(pos: vec3<f32>, folds: i32, foldScale: f32, wobble: f32) -> f32 {
         p = p * rotX(u.config.x * 0.1 + wobble) * rotY(u.config.x * 0.15);
     }
     let boxD = length(max(abs(p) - vec3<f32>(BOX_B), vec3<f32>(0.0))) - 0.2;
-    // Bismuth hopper crystals: octahedra nested in the folded frame
-    let octD = sdOctahedron(p * 0.7, 0.9) - 0.05;
+    // Bismuth hopper crystals: octahedra nested in the folded frame.
+    // Hopper terrace stairs: concentric inward steps, phase from Iridiscent Shift.
+    let terrace = u.zoom_params.w;
+    let q = abs(p * 0.7);
+    let qsum = q.x + q.y + q.z;
+    let steps = 5.0 + terrace * 7.0;
+    let band = fract(qsum * steps);
+    let stair = (band - 0.5) * 0.05 * (0.35 + terrace);
+    let octD = sdOctahedron(p * 0.7, 0.9) - 0.05 + stair;
     return smin(boxD, octD, SMIN_K);
+}
+
+// Terrace lip: bright only on the outer edge of each hopper stair.
+fn hopperLip(pos: vec3<f32>, folds: i32, foldScale: f32, wobble: f32, terrace: f32) -> f32 {
+    var p = pos;
+    let mouse = (u.zoom_config.yz - 0.5) * 2.0;
+    p = p - vec3<f32>(mouse, 0.0);
+    for (var i = 0; i < folds; i++) {
+        p = abs(p) - vec3<f32>(0.5, 0.8, 0.5) * foldScale;
+        p = p * rotX(u.config.x * 0.1 + wobble) * rotY(u.config.x * 0.15);
+    }
+    let q = abs(p * 0.7);
+    let sum = q.x + q.y + q.z;
+    let steps = 5.0 + terrace * 7.0;
+    let band = fract(sum * steps);
+    return smoothstep(0.78, 0.97, band);
 }
 
 fn calcNormal(p: vec3<f32>, folds: i32, foldScale: f32, wobble: f32) -> vec3<f32> {
@@ -155,16 +182,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         irid = mix(irid, irid.bgr, fre * 0.6); // thin-film hue flip at grazing angles
         col = irid * (0.2 + dif * shadow * 0.9);
         col += vec3<f32>(1.0, 0.2, 0.8) * bass * audioReact * 0.6 * (0.3 + fre); // auroral emissive
+        // Terrace-lip emissive: bass lights stair edges only.
+        let lip = hopperLip(p, folds, foldScale, wobble, iridShift);
+        col += vec3<f32>(0.95, 0.55, 1.0) * lip * bass * audioReact * 0.85;
     }
 
     // Quantum-particle storm: kaleidoscopic star field + nebula haze (Nebula Density)
     let kp = kaleido(uv * 3.0 + vec2<f32>(0.0, time * 0.05), 6.0);
     let stars = starField(kp * 2.0) * (0.4 + treble * audioReact * 0.3);
-    var fft = 0.0;
-    if (arrayLength(&extraBuffer) > 40u) { fft = extraBuffer[5u + (gid.x + gid.y) % 32u]; }
-    let nebCol = mix(vec3<f32>(0.05, 0.02, 0.12), vec3<f32>(0.4, 0.1, 0.6), nebula * 0.6 + fft * 0.2);
+    let nebCol = mix(vec3<f32>(0.05, 0.02, 0.12), vec3<f32>(0.4, 0.1, 0.6), nebula * 0.6 + treble * audioReact * 0.15);
     col += (nebCol * nebula * (1.0 + mids * audioReact * 0.4) + vec3<f32>(0.8, 0.9, 1.0) * stars * nebDensity) * select(1.0, 0.4, hit);
     col += vec3<f32>(0.05, 0.02, 0.1) * (1.0 - length(uv)) * 0.5; // deep-space backdrop
+
+    // Nebula residue: previous-frame accumulation stored in C.a.
+    let residue = textureLoad(dataTextureC, pixel, 0).a;
+    col += vec3<f32>(0.28, 0.08, 0.36) * residue * nebDensity * select(0.62, 0.16, hit);
 
     col = acesToneMap(col * 1.25);
     let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));

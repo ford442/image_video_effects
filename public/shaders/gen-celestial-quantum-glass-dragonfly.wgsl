@@ -1,31 +1,16 @@
 // ═══════════════════════════════════════════════════════════════════
 //  gen-celestial-quantum-glass-dragonfly
 //  Category: generative
-//  Features: dragonfly, quantum, fractal, audio-reactive, raymarching, crystalline
-//  Ideas: Cauchy thin-film wing iridescence, quantum glass caustic core & photon emission, acoustic wing-tip vortex trails
+//  Features: dragonfly, quantum, fractal, audio-reactive, mouse-driven, raymarching, crystalline, upgraded-rgba
+//  Upgraded: 2026-10-10
+//  Ideas: Cauchy thin-film wing iridescence, quantum glass caustic core & photon emission,
+//         acoustic wing-tip vortex trails; velocity-banked flight roll from the spring's
+//         own momentum; vortex-synced wingtip flutter in the wing SDF; hexagonal compound eye lattice; quantum decoherence static
 //  A packing: display RGBA (RGB=ACES tone-mapped dragonfly scene, A=semantic wing/body alpha)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Wing Frequency, y=Fractal Density, z=Refraction Index, w=Glow Intensity
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Wing Frequency, y=Fractal Density, z=Refraction Index, w=Glow Intensity
 
 fn rot3x(a: f32) -> mat3x3<f32> {
     let s = sin(a); let c = cos(a);
@@ -96,7 +81,7 @@ fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
     return length(max(d, vec3<f32>(0.0))) + min(max(d.x, max(d.y, d.z)), 0.0);
 }
 
-fn mapWings(p: vec3<f32>, audio_mod: f32) -> f32 {
+fn mapWings(p: vec3<f32>, audio_mod: f32, treble: f32) -> f32 {
     var p_w = p;
     let wing_freq = u.zoom_params.x;
     let time = u.config.x * wing_freq * (1.0 + audio_mod * 0.5);
@@ -118,7 +103,15 @@ fn mapWings(p: vec3<f32>, audio_mod: f32) -> f32 {
     let base_wing = sdBox(p_w, vec3<f32>(2.5, 0.02, 0.6));
     let venation = sdBox(p_f, vec3<f32>(1.5, 0.1, 1.0)) / scale;
 
-    return max(base_wing, -venation * fractal_density * 0.5);
+    // IDEA 5 — vortex-synced wingtip flutter: the same distance/time-driven wave
+    // shape that drives the background wingtip vortex (fog loop below) is echoed
+    // here at the wing's trailing edge, so the physical wing surface visibly
+    // flutters in sync with the vortex it emits into the fog.
+    let vortexPhase = sin(length(p_w.xz) * 4.0 - time * 8.0);
+    let trailingEdge = smoothstep(0.8, 2.5, abs(p_w.x));
+    let vortexFlutter = pow(max(vortexPhase, 0.0), 6.0) * (0.015 + treble * 0.05) * trailingEdge;
+
+    return max(base_wing, -venation * fractal_density * 0.5) - vortexFlutter;
 }
 
 fn mapBody(p: vec3<f32>, audio_mod: f32) -> f32 {
@@ -140,7 +133,7 @@ fn mapBody(p: vec3<f32>, audio_mod: f32) -> f32 {
     return body;
 }
 
-fn mapScene(p: vec3<f32>, mouse_pos: vec3<f32>, audio: f32) -> vec2<f32> {
+fn mapScene(p: vec3<f32>, mouse_pos: vec3<f32>, audio: f32, bank: f32, treble: f32) -> vec2<f32> {
     var p_mod = p;
     let time = u.config.x;
 
@@ -150,7 +143,10 @@ fn mapScene(p: vec3<f32>, mouse_pos: vec3<f32>, audio: f32) -> vec2<f32> {
         p_mod -= normalize(p_mod - mouse_pos) * exp(-dist_mouse * 2.0) * vortex_strength;
     }
 
-    p_mod = rot3x(-0.3 + sin(time * 0.5) * 0.1) * rot3y(sin(time * 0.2) * 0.2) * p_mod;
+    // IDEA 4 — velocity-banked flight roll: the spring already computes the
+    // cursor's own momentum (mouseVel) every frame; feed it into a small extra
+    // roll so the dragonfly visibly banks into turns instead of just following.
+    p_mod = rot3z(bank) * rot3x(-0.3 + sin(time * 0.5) * 0.1) * rot3y(sin(time * 0.2) * 0.2) * p_mod;
 
     let body = mapBody(p_mod, audio);
 
@@ -159,20 +155,20 @@ fn mapScene(p: vec3<f32>, mouse_pos: vec3<f32>, audio: f32) -> vec2<f32> {
     var p_wings2 = p_mod;
     p_wings2.z += 0.4;
 
-    let wings1 = mapWings(p_wings1, audio);
-    let wings2 = mapWings(p_wings2, audio * 0.8);
+    let wings1 = mapWings(p_wings1, audio, treble);
+    let wings2 = mapWings(p_wings2, audio * 0.8, treble);
     let wings = min(wings1, wings2);
 
     let isWing = select(0.0, 1.0, wings < body);
     return vec2<f32>(min(body, wings), isWing);
 }
 
-fn getNormal(p: vec3<f32>, mouse_pos: vec3<f32>, audio: f32) -> vec3<f32> {
+fn getNormal(p: vec3<f32>, mouse_pos: vec3<f32>, audio: f32, bank: f32, treble: f32) -> vec3<f32> {
     let e = vec2<f32>(0.001, 0.0);
     return normalize(vec3<f32>(
-        mapScene(p + e.xyy, mouse_pos, audio).x - mapScene(p - e.xyy, mouse_pos, audio).x,
-        mapScene(p + e.yxy, mouse_pos, audio).x - mapScene(p - e.yxy, mouse_pos, audio).x,
-        mapScene(p + e.yyx, mouse_pos, audio).x - mapScene(p - e.yyx, mouse_pos, audio).x
+        mapScene(p + e.xyy, mouse_pos, audio, bank, treble).x - mapScene(p - e.xyy, mouse_pos, audio, bank, treble).x,
+        mapScene(p + e.yxy, mouse_pos, audio, bank, treble).x - mapScene(p - e.yxy, mouse_pos, audio, bank, treble).x,
+        mapScene(p + e.yyx, mouse_pos, audio, bank, treble).x - mapScene(p - e.yyx, mouse_pos, audio, bank, treble).x
     ));
 }
 
@@ -225,6 +221,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let my = (sprungMouse.y - 0.5) * 4.0;
     let mouse_pos = vec3<f32>(mx, my, 0.0);
 
+    // IDEA 4 — velocity-banked flight roll: derive a bounded bank angle from the
+    // spring's own momentum (mouseVel), computed once above, consumed here.
+    let bank = clamp(mouseVel.x * 0.35, -0.5, 0.5);
+
     // Camera setup
     var ro = vec3<f32>(0.0, 0.0, -5.0);
     let rd = normalize(vec3<f32>(uv, 1.0));
@@ -260,7 +260,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     for (var i = 0; i < max_steps; i = i + 1) {
         p = ro + rd * t;
-        let res = mapScene(p, mouse_pos, audio);
+        let res = mapScene(p, mouse_pos, audio, bank, treble);
         let d = res.x;
         if (d < 0.001) { hit = true; hitMat = res.y; break; }
         if (t > 15.0) { break; }
@@ -271,7 +271,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var semanticAlpha = 0.0;
 
     if (hit) {
-        let n = getNormal(p, mouse_pos, audio);
+        let n = getNormal(p, mouse_pos, audio, bank, treble);
         let v = -rd;
 
         let l1 = normalize(vec3<f32>(1.0, 1.0, -1.0));
@@ -312,8 +312,19 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let pulse = sin(p.z * 6.0 - time * 12.0 * u.zoom_params.x) * 0.5 + 0.5;
         let lum = vec3<f32>(0.1, 0.85, 1.1) * pulse * audio * glow_int * smoothstep(0.3, 1.0, abs(p.z));
         let eyeGlow = vec3<f32>(1.2, 0.3, 0.9) * smoothstep(0.8, 1.1, p.z) * glow_int;
+        
+        // Idea 1: Hexagonal compound eye lattice (hex pattern over the head)
+        let hexUv = vec2<f32>(p.x, p.y) * 20.0;
+        let hexGrid = abs(sin(hexUv.x) + sin(hexUv.x * 0.5 + hexUv.y * 0.866) + sin(hexUv.x * 0.5 - hexUv.y * 0.866));
+        let hexPattern = smoothstep(2.0, 2.5, hexGrid) * smoothstep(0.7, 1.1, p.z);
+        let compoundEye = vec3<f32>(0.5, 1.0, 0.2) * hexPattern * (1.0 + treble);
 
-        col = mat_col * (dif1 * vec3<f32>(1.0) + dif2 * vec3<f32>(0.2, 0.3, 0.5)) + spec + lum + eyeGlow;
+        // Idea 2: Quantum decoherence static (noise on the tail)
+        let tailMask = smoothstep(0.5, -1.0, p.z);
+        let staticNoise = hash3(p * 50.0 + time).x;
+        let decoherence = vec3<f32>(0.1, 0.8, 1.0) * staticNoise * tailMask * bass * 0.5;
+
+        col = mat_col * (dif1 * vec3<f32>(1.0) + dif2 * vec3<f32>(0.2, 0.3, 0.5)) + spec + lum + eyeGlow + compoundEye + decoherence;
         col = mix(col, fog_col, smoothstep(6.0, 15.0, t));
 
         semanticAlpha = mix(0.95, 0.65, hitMat); // Body is solid 0.95, wing is glass 0.65

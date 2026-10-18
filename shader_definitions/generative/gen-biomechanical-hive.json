@@ -12,52 +12,24 @@
     "audio",
     "music"
   ],
-  "description": "An infinite, claustrophobic structure of hexagonal cells blending industrial machinery with organic tissue. Features pulsating lights, rhythmic breathing, and slimy metallic textures.",
+  "description": "An infinite, claustrophobic structure of hexagonal cells blending industrial machinery with organic tissue. Heartbeats relay cell to cell, each glowing core lighting its own chamber of slimy metallic chitin.",
   "workgroup_size": [
     16,
     16,
     1
-  ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Cell Density",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.1
-    },
-    {
-      "index": 1,
-      "name": "Pulse Speed",
-      "default": 0.5,
-      "min": 0,
-      "max": 2,
-      "step": 0.1
-    },
-    {
-      "index": 2,
-      "name": "Biomass",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "step": 0.1
-    },
-    {
-      "index": 3,
-      "name": "Hue Shift",
-      "default": 0,
-      "min": 0,
-      "max": 1,
-      "step": 0.05
-    }
   ],
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
   "id": "gen-biomechanical-hive",
   "url": "shaders/gen-biomechanical-hive.wgsl",
-  "features": [],
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "temporal-feedback",
+    "upgraded-rgba"
+  ],
+  "feedbackPacking": "A/C = raw HDR display RGBA history (pre-ACES); growth-memory afterglow",
   "params": [
     {
       "id": "cell_density",
@@ -95,5 +67,43 @@
       "step": 0.05,
       "mapping": "zoom_params.w"
     }
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Cell Density",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.1
+        },
+        {
+          "index": 1,
+          "name": "Pulse Speed",
+          "default": 0.5,
+          "min": 0,
+          "max": 2,
+          "step": 0.1
+        },
+        {
+          "index": 2,
+          "name": "Biomass",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.1
+        },
+        {
+          "index": 3,
+          "name": "Hue Shift",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 0.05
+        }
+      ]
+    }
+  }
 }

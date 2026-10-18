@@ -3,7 +3,7 @@
   "name": "Audio Reactive Pyramid",
   "url": "shaders/audio-reactive-pyramid.wgsl",
   "category": "post-processing",
-  "description": "Three-level Laplacian-style sharpening pyramid whose band intensities are driven by matching FFT frequency bands: coarse detail by bass bins (0\u201312), mid detail by mid bins (13\u201350), fine detail by treble bins (51\u2013127). Compatible with the ford442/flac_player FFT wire format (128 bins in extraBuffer[5..132]).",
+  "description": "Three-level Laplacian-style sharpening pyramid whose band intensities are driven by matching FFT frequency bands: coarse detail by bass bins (0\u201312), mid detail by mid bins (13\u201350), fine detail by treble bins (51\u2013127). A small silence floor from the gain sliders keeps it a gentle detail enhancer without audio. Depth-routed bands: with a depth map, near subjects take the fine-detail boost while distant areas get gentle coarse softening (aerial perspective); a flat or missing depth map falls back to the plain pyramid. Per-band chroma split: added coarse-band halos lean warm and added fine-band edges lean cool, leaving flat neutral areas neutral. Compatible with the ford442/flac_player FFT wire format (128 bins in extraBuffer[5..132]).",
   "tags": [
     "audio-reactive",
     "sharpening",
@@ -15,7 +15,8 @@
   ],
   "features": [
     "audio-reactive",
-    "fft-bins"
+    "fft-bins",
+    "depth-aware"
   ],
   "params": [
     {

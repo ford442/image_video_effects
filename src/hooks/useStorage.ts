@@ -110,7 +110,7 @@ export function useStorage(customClient?: StorageClient): UseStorageReturn {
   }, []);
 
   useEffect(() => {
-    checkConnection();
+    void checkConnection();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

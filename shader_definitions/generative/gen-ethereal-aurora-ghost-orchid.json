@@ -19,43 +19,41 @@
     1
   ],
   "params": [
-    { "id": "petal-complexity", "name": "Petal Complexity", "default": 3, "min": 1, "max": 10, "step": 0.1, "mapping": "zoom_params.x" },
-    { "id": "aurora-intensity", "name": "Aurora Intensity", "default": 2, "min": 0.5, "max": 5, "step": 0.1, "mapping": "zoom_params.y" },
-    { "id": "audio-reactivity", "name": "Audio Reactivity", "default": 1.5, "min": 0, "max": 3, "step": 0.1, "mapping": "zoom_params.z" },
-    { "id": "pollen-density", "name": "Pollen Density", "default": 5, "min": 0, "max": 10, "step": 0.5, "mapping": "zoom_params.w" }
-  ],
-  "updatedParams": [
     {
-      "index": 0,
+      "id": "petal-complexity",
       "name": "Petal Complexity",
       "default": 3,
       "min": 1,
       "max": 10,
-      "step": 0.1
+      "step": 0.1,
+      "mapping": "zoom_params.x"
     },
     {
-      "index": 1,
+      "id": "aurora-intensity",
       "name": "Aurora Intensity",
       "default": 2,
       "min": 0.5,
       "max": 5,
-      "step": 0.1
+      "step": 0.1,
+      "mapping": "zoom_params.y"
     },
     {
-      "index": 2,
+      "id": "audio-reactivity",
       "name": "Audio Reactivity",
       "default": 1.5,
       "min": 0,
       "max": 3,
-      "step": 0.1
+      "step": 0.1,
+      "mapping": "zoom_params.z"
     },
     {
-      "index": 3,
+      "id": "pollen-density",
       "name": "Pollen Density",
       "default": 5,
       "min": 0,
       "max": 10,
-      "step": 0.5
+      "step": 0.5,
+      "mapping": "zoom_params.w"
     }
   ],
   "supportsDepth": true,
@@ -67,5 +65,43 @@
     "mouse-driven",
     "audio-reactive",
     "upgraded-rgba"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Petal Complexity",
+          "default": 3,
+          "min": 1,
+          "max": 10,
+          "step": 0.1
+        },
+        {
+          "index": 1,
+          "name": "Aurora Intensity",
+          "default": 2,
+          "min": 0.5,
+          "max": 5,
+          "step": 0.1
+        },
+        {
+          "index": 2,
+          "name": "Audio Reactivity",
+          "default": 1.5,
+          "min": 0,
+          "max": 3,
+          "step": 0.1
+        },
+        {
+          "index": 3,
+          "name": "Pollen Density",
+          "default": 5,
+          "min": 0,
+          "max": 10,
+          "step": 0.5
+        }
+      ]
+    }
+  }
 }

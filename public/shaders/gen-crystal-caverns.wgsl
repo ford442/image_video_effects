@@ -7,30 +7,13 @@
 //            upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration
 //  Tags: crystal, gem, caustics, 3d, raymarching, subsurface
 //  Chunks From: gen-protocell-division.wgsl (upgraded-rgba stack)
-//  Upgraded: 2026-06-14
+//  Upgraded: 2026-10-11
+//  Ideas: phantom growth shell; basal pinacoid; prism striations; fluid inclusions
+//  A packing: ACES display RGBA
 //  By: Claude Code Batch 3B
 // ═══════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -103,10 +86,24 @@ fn map(p: vec3<f32>, scale: f32, pulse: f32, time: f32, audioReactivity: f32) ->
   var q = ps - cell * 1.25;
   let tmod = sin(time * pulse * audioReactivity * 8.0 + length(cell)) * 0.3;
   let id = (cell.x + cell.y + cell.z) % 3.0;
-  var crystal: f32;
-  if (id < 1.0) { crystal = sdOctahedron(q + vec3<f32>(0.0, tmod, 0.0), 0.5); }
-  else if (id < 2.0) { crystal = sdHexPrism(q + vec3<f32>(0.0, tmod, 0.0), vec2<f32>(0.35, 0.5)); }
-  else { crystal = sdPyramid(q + vec3<f32>(0.0, tmod, 0.0), 0.5); }
+  let qCrystal = q + vec3<f32>(0.0, tmod, 0.0);
+  var habit: f32;
+  if (id < 1.0) { habit = sdOctahedron(qCrystal, 0.5); }
+  else if (id < 2.0) { habit = sdHexPrism(qCrystal, vec2<f32>(0.35, 0.5)); }
+  else { habit = sdPyramid(qCrystal, 0.5); }
+  // Basal pinacoid: flat face so each habit sits instead of floating.
+  habit = max(habit, -0.2 - qCrystal.y);
+  // Phantom shell: smaller, earlier-time copy. Stronger when purity is low.
+  let purity = clamp((pulse - 0.2) / 0.8, 0.0, 1.0);
+  let tEarly = sin((time - 1.6) * pulse * audioReactivity * 8.0 + length(cell)) * 0.3;
+  let qPhantom = q * 1.42 + vec3<f32>(0.0, tEarly, 0.0);
+  var inner: f32;
+  if (id < 1.0) { inner = sdOctahedron(qPhantom, 0.5); }
+  else if (id < 2.0) { inner = sdHexPrism(qPhantom, vec2<f32>(0.35, 0.5)); }
+  else { inner = sdPyramid(qPhantom, 0.5); }
+  let shell = abs(inner) - mix(0.022, 0.0, purity);
+  let withPhantom = min(habit, max(shell, habit));
+  let crystal = mix(withPhantom, habit, purity);
   let finalD = min(d, crystal * (1.0 + id * 0.2));
   return vec2<f32>(finalD, 2.0);
 }
@@ -179,6 +176,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
       let glow = pow(glowIntensity * 1.5 + sin(time * 8.0 * audioReactivity) * 0.3, 2.0);
       col = vec3<f32>(0.4, 0.8, 1.0) * glow + vec3<f32>(0.6, 0.3, 1.0) * 0.6;
       col = col + sss * 0.4 + vec3<f32>(0.8, 0.9, 1.0) * caustics * 0.5;
+      // Prism striations — lines down the walls, quiet on the flat pinacoid.
+      let wall = 1.0 - smoothstep(0.25, 0.75, abs(n.y));
+      let stripe = 1.0 - smoothstep(0.02, 0.09, abs(fract(p.x * 7.0 + p.z * 5.0) - 0.5));
+      col += vec3<f32>(0.65, 0.85, 1.0) * stripe * wall * 0.28;
+      // Fluid inclusions — pale bubbles caught in the crystal.
+      let incl = step(0.84, fract(sin(dot(floor(p * 6.0), vec3<f32>(12.9, 78.2, 45.1))) * 43758.5));
+      col = mix(col, vec3<f32>(0.88, 0.94, 1.0), incl * 0.45);
     } else {
       let sss = subsurfaceScattering(p, n, lightDir, 0.8, vec3<f32>(0.4, 0.3, 0.2));
       col = vec3<f32>(0.15, 0.1, 0.08) + caustics * vec3<f32>(0.3, 0.25, 0.4) * 0.3;

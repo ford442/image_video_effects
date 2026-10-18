@@ -2,7 +2,7 @@
   "id": "photonic-caustics-iridescence",
   "name": "Photonic Caustics Iridescence",
   "url": "shaders/photonic-caustics-iridescence.wgsl",
-  "description": "Backward photon-traced caustics combined with thin-film optical iridescence. High-energy caustic focal concentrations illuminate an iridescent surface layer with chromatic dispersion, Fresnel reflections, and exact temporal feedback.",
+  "description": "Backward photon-traced caustics combined with thin-film optical iridescence, catastrophe-optics fold and Pearcey cusp Airy supernumerary fringes, and subsurface depth-bounce secondary caustic aureoles.",
   "tags": [
     "caustics",
     "iridescence",
@@ -24,7 +24,8 @@
     "audio-reactive",
     "exact-feedback",
     "temporal-state",
-    "ACES-tonemapped"
+    "ACES-tonemapped",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -60,13 +61,45 @@
       "step": 0.01
     }
   ],
-  "updatedParams": [
-    { "index": 0, "name": "Index of Refraction", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 1, "name": "Light Size", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 2, "name": "Chromatic Dispersion", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 3, "name": "Intensity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
-  ],
   "feedbackPacking": "A/C = display RGBA with accumulated photonic caustics and thin-film iridescent sheen",
   "updated": true,
-  "target_rating": 4.8
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Index of Refraction",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Light Size",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Chromatic Dispersion",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Intensity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    },
+    "target_rating": 4.8
+  }
 }

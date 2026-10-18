@@ -2,31 +2,12 @@
 //  Barnsley Fern IFS
 //  Category: generative
 //  Features: barnsley-ifs, audio-reactive, upgraded-rgba, mouse-driven
-//  Upgraded: 2026-09-06
-//  Ideas: last-affine tint (stem vs leaflets); stem-rib density from idx 0
+//  Upgraded: 2026-10-11
+//  Ideas: last-affine tint (stem vs leaflets); stem-rib density from idx 0; pinna rachis; crozier tip; rachis scales; sori
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -179,6 +160,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let numPaths = i32(mix(2.0, 5.0, depth + bass * 0.3));
   var density = 0.0;
   var stemHits = 0.0;
+  var pinnaHits = 0.0;
   var leafletMix = 0.0;
 
   for (var path = 0; path < numPaths; path = path + 1) {
@@ -194,10 +176,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
     density += valid;
     stemHits += valid * select(0.0, 1.0, lastIdx == 0);
+    pinnaHits += valid * select(0.0, 1.0, lastIdx == 2 || lastIdx == 3);
     leafletMix += valid * f32(lastIdx) / 3.0;
   }
   density /= f32(numPaths);
   stemHits /= max(f32(numPaths), 1.0);
+  pinnaHits /= max(f32(numPaths), 1.0);
   leafletMix /= max(f32(numPaths), 1.0);
 
   // Multi-scale detail noise modulated by treble
@@ -205,6 +189,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   density = saturate(density * (1.0 + detail) - detail * 0.3);
   // Idea 2 — stem rib from the stem affine
   density = saturate(density + stemHits * 0.22);
+  // Idea 3 — pinna rachis on the side-leaflet affines
+  density = saturate(density + pinnaHits * 0.1);
+  // Idea 4 — fiddlehead crozier at the high-y tip
+  let tipRadius = length(vec2<f32>(p.x * 1.6, p.y - 8.8));
+  let crozier = exp(-abs(tipRadius - 0.7) * 4.5) * smoothstep(6.2, 8.0, p.y) * density;
+  density = saturate(density + crozier * 0.85);
 
   // SDF vignette mask — preserves semantic alpha falloff at edges
   let vignette = 1.0 - smoothstep(0.35, 0.85, length(uv));
@@ -217,6 +207,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let stemCol = vec3<f32>(0.22, 0.14, 0.04);
   let leafletCol = vec3<f32>(0.12, 0.55, 0.18);
   color = mix(color, mix(stemCol, leafletCol, leafletMix), 0.28);
+  let pinnaCol = vec3<f32>(0.55, 0.78, 0.16);
+  color = mix(color, pinnaCol, pinnaHits * 0.32);
+  // Rachis scales — dark chevrons along the stem.
+  let scaleBand = abs(fract(p.y * 1.7) - 0.5);
+  color = mix(color, vec3<f32>(0.28, 0.16, 0.05), stemHits * (1.0 - smoothstep(0.04, 0.18, scaleBand)) * 0.65);
+  // Sori — brown spore dots on the pinnae.
+  let sori = pinnaHits * step(0.74, hash21(floor(p * 2.8)));
+  color = mix(color, vec3<f32>(0.42, 0.24, 0.08), sori * 0.75);
 
   // Sunlight filtering through fronds
   let sun = 0.3 + 0.7 * smoothstep(0.2, 0.9, density);

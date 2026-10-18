@@ -4,8 +4,8 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba, procedural
 //  Complexity: Medium-High
 //  Created: 2026-05-30
-//  Upgraded: 2026-09-15
-//  Ideas: twin-boundary mirror on odd arms; hopper inner-edge on each segment
+//  Upgraded: 2026-09-27
+//  Ideas: twin-boundary mirror on odd arms; hopper inner-edge on each segment; growth striae; faceted nucleation core
 //  A packing: raw HDR display RGBA in A; ACES on writeTexture
 //  Mineral dendrites crystallise from a nucleation seed, each
 //  branch angle tuned to the golden ratio. Bass pulses growth.
@@ -65,6 +65,12 @@ fn crystalBranch(
     let n = nrm / nLen;
     let hop = sdSeg(p, o + n * thk * 2.4, tip + n * thk * 2.4);
     glow += exp(-hop * hop / (thk * thk * 2.0)) * 0.42 * (1.0 - f32(i) * 0.15);
+
+    // Idea 3 — growth striae: lines along the segment, inside the arm.
+    let across = abs(dot(p - o, n));
+    let stria = abs(fract(across / max(thk, 1.0e-4) * 2.6) - 0.5);
+    let onArm = exp(-dist * dist / (thk * thk * 2.0));
+    glow += exp(-stria * stria * 46.0) * onArm * 0.22 * (1.0 - f32(i) * 0.12);
 
     // Branch: two children at ±golden angle
     let goldenAngle = 2.399963;  // ~137.5 degrees in radians
@@ -131,6 +137,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let qp = select(p, p - 2.0 * twinN * dot(p, twinN), isTwin);
     totalGlow += crystalBranch(qp, vec2<f32>(0.0), armDir, branchLen, depth, t, bass, thickness);
   }
+
+  // Idea 4 — faceted nucleation seed the arms leave.
+  let coreR = length(p);
+  let coreN = f32(max(symCount, 3));
+  let coreAng = abs(fract(atan2(p.y, p.x) * coreN / 6.2831853 + 0.5) - 0.5);
+  let coreFace = 1.0 - smoothstep(0.08, 0.22, coreAng);
+  let core = exp(-coreR * coreR / 0.0022) * (0.45 + 0.55 * coreFace);
+  totalGlow += core * (1.15 + bass * 0.35);
 
   // Clicks seed short-lived secondary crystallisation fronts.
   var clickFront = 0.0;

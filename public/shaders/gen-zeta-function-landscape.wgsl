@@ -3,31 +3,12 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-15
-//  Ideas: known Riemann-zero rails; |ζ|=1 iso-contours
+//  Upgraded: 2026-10-10
+//  Ideas: Riemann-zero rails; |ζ|=1 contours; critical sheen; argument ticks; Re/Im nodal walls; prime beat
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const LN2: f32 = 0.6931471805599453;
 
@@ -141,21 +122,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let iso = abs(fract(log(1.0 + z_mag) * 2.4) - 0.5);
     let isoContour = 1.0 - smoothstep(0.0, 0.06, iso);
     
-    // Chromatic zeros: near zeros shift color toward cyan/purple
-    // Eight horizontal regions each listen to one FFT bin (extraBuffer[5..12]).
+    // Chromatic zeros: near zeros shift color toward cyan/purple.
+    // Eight horizontal regions each listen to one plasmaBuffer bin (not extraBuffer).
     let region = min(u32(clamp(landscapeUV.x, 0.0, 0.999) * 8.0), 7u);
-    var spectralVoice = 0.0;
-    if (arrayLength(&extraBuffer) > (5u + region)) {
-        spectralVoice = extraBuffer[5u + region];
-    }
+    let spectralVoice = plasmaBuffer[1u + region].x;
+
+    // Idea 3 — critical-line sheen. A slight real-part tilt across height
+    // crosses σ=1/2 as a band, separate from the ordinate rails.
+    let sigmaY = sigma + (landscapeUV.y - 0.5) * 0.35;
+    let critSheen = exp(-(sigmaY - 0.5) * (sigmaY - 0.5) * 220.0);
+
+    // Idea 4 — argument-winding ticks where arg(ζ) steps.
+    let argIso = abs(fract(z_arg * 6.0) - 0.5);
+    let argTick = 1.0 - smoothstep(0.0, 0.035, argIso);
     let hue = fract(z_arg + time * 0.02 + mids * 0.1 + landscapeUV.x * 0.2 + spectralVoice * 0.08);
     let zeroHue = mix(hue, 0.5 + treble * 0.2, zeroProximity * 0.5);
     let sat = clamp(mix(0.5, 1.0, ridge + bass * 0.3 + spectralVoice * 0.08), 0.0, 1.0);
     let val = clamp(mix(0.2, 1.0, height + zeroProximity * 0.5 + spectralVoice * 0.10), 0.0, 1.5);
     
     let rgb = hue2rgb(zeroHue) * sat + vec3<f32>(1.0 - sat) * val;
+    // Idea: Re(ζ)=0 and Im(ζ)=0 nodal walls. They cross on the zeros.
+    let reWall = exp(-z.x * z.x * 6.0);
+    let imWall = exp(-z.y * z.y * 6.0);
+    // Idea: prime beat — the first Euler factor, cos(t ln 2).
+    let primeBeat = 0.5 + 0.5 * cos(t * 0.693147);
     let rgbRails = rgb + vec3<f32>(0.95, 0.82, 0.45) * zeroRail * 0.85
-                 + vec3<f32>(0.35, 0.75, 1.0) * isoContour * 0.35 * (0.4 + treble * 0.4);
+                 + vec3<f32>(0.25, 0.5, 0.95) * reWall * 0.16
+                 + vec3<f32>(0.95, 0.32, 0.38) * imWall * 0.16
+                 + vec3<f32>(0.55, 0.38, 0.18) * primeBeat * 0.07 * (0.4 + param4)
+                 + vec3<f32>(0.35, 0.75, 1.0) * isoContour * 0.35 * (0.4 + treble * 0.4)
+                 + vec3<f32>(0.82, 0.78, 1.0) * critSheen * 0.55
+                 + vec3<f32>(1.0, 0.95, 0.85) * argTick * 0.28 * (0.5 + mids * 0.4);
     
     // Temporal smoothing: previous frame averages for landscape stability
     let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).rgb;

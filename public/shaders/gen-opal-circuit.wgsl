@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: Bragg play-of-colour from silica-sphere opal domains; Manhattan-routed signal edges with transmission-line ringing
+//  Upgraded: 2026-10-10
+//  Ideas: Bragg play-of-colour; Manhattan signal edges; solder-mask windows; bond-wire arcs
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=time, y=rippleCount, zw=resolution
-  zoom_config: vec4<f32>,  // x=time, yz=mouse uv, w=mouse down
-  zoom_params: vec4<f32>,  // x=Trace Scale, y=Pulse Rate, z=Iridescence, w=Bloom
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Trace Scale, y=Pulse Rate, z=Iridescence, w=Bloom
 
 fn sat(x: f32) -> f32 {
   return clamp(x, 0.0, 1.0);
@@ -208,6 +190,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let vLine = smoothstep(0.09, 0.01, abs(gl.x)) * step(rnd, 0.65);
   let vias = exp(-dot(gl, gl) * 60.0) * step(0.7, rnd);
   let traces = max(max(hLine, vLine), vias);
+  // Idea: solder-mask windows — green mask between copper, open on traces and vias.
+  let maskOpen = max(traces, smoothstep(0.22, 0.12, length(gl)) * step(0.55, rnd));
+  // Idea: bond-wire arc — a gold parabola leaving a via toward the next pad.
+  let bx = gl.x + 0.5;
+  let bow = 0.28 * bx * (1.0 - bx);
+  let by = gl.y - bow;
+  let bond = exp(-by * by * 900.0) * smoothstep(0.02, 0.12, bx) * smoothstep(1.05, 0.82, bx) * step(0.78, rnd);
 
   let signal = 0.5 + 0.5 * sin(time * pulseRate * (1.0 + smoothBass * 0.8) + (gc.x + gc.y) * 0.7);
 
@@ -267,6 +256,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let substrate = iridescentSubstrate(uv * 0.7, time, iridescence);
 
   var color = vec3<f32>(0.02, 0.02, 0.03) + substrate * 0.35;
+  color = mix(color, vec3<f32>(0.012, 0.085, 0.035), (1.0 - maskOpen) * 0.55);
+  color += vec3<f32>(0.95, 0.78, 0.28) * bond * bloom * (0.7 + treble * 0.4);
   color += braggFlash * iridescence * 0.4 * (1.0 - traces * 0.7);
   color += traceOpal * traces * iridescence;
   color += vec3<f32>(0.9, 0.95, 1.0) * vias * bloom * (0.5 + treble);
@@ -281,7 +272,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   color = acesToneMap(color * 1.1);
 
   // Alpha = copper coverage + live signal energy + diffraction flash.
-  let alpha = clamp(0.16 + traces * 0.5 + packets * 0.18 + busGlow * 0.3 + length(braggFlash) * 0.12 + hexEdge * 0.05, 0.0, 1.0);
+  let alpha = clamp(0.16 + traces * 0.5 + packets * 0.18 + busGlow * 0.3 + length(braggFlash) * 0.12 + hexEdge * 0.05 + bond * 0.35, 0.0, 1.0);
   // Depth: copper traces and vias stand proud of the opal substrate.
   let depth = clamp(0.2 + traces * 0.45 + vias * 0.25, 0.0, 1.0);
   let finalColor = vec4<f32>(color, alpha);

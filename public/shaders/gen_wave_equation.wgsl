@@ -4,7 +4,9 @@
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, depth-aware, temporal
 //  Complexity: Medium
 //  Created: 2026-05-10
-//  Upgraded: 2026-07-22 (swarm b11, Algorithmist)
+//  Upgraded: 2026-10-10
+//  Ideas: dispersive biharmonic; bathymetric refraction; crest caustics; whitecaps
+//  A packing: raw sim (height, velocity, energy, waveIntensity); ACES on the display mix only
 //    - FIXED feedback-state bug: the solver reads (height, velocity)
 //      from dataTextureC.rg but previously wrote finalColor into
 //      dataTextureA, so the feedback loop carried color, not state.
@@ -16,26 +18,7 @@
 //      edge (tracked via extraBuffer[133]) instead of continuous forcing.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,  // xy=ripple uv, z=time_created, w=strength
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -88,7 +71,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Wave physics parameters — each slider drives a real solver constant
     let damping    = mix(0.96, 0.999, detailParam);              // Detail: trail persistence
-    let wave_speed = max(mix(0.1, 1.0, speedParam), 0.001);      // Speed: propagation rate
+    // Idea 2 — bathymetric refraction: shallower photo depth slows the wave.
+    let bathy      = mix(0.55, 1.0, clamp(inputDepth, 0.0, 1.0));
+    let wave_speed = max(mix(0.1, 1.0, speedParam) * bathy, 0.001);
     let tension    = max(mix(0.001, 0.05, scaleParam), 0.0001);  // Scale: restoring force
     let dropletAmp = mix(0.6, 3.0, intensity);                   // Intensity: pulse energy
 
@@ -121,14 +106,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sw = sampleHeight(px + vec2<i32>(-1, -1), maxCoord);
     // Weights: 1.0 orthogonal, 0.5 diagonal; total neighbor weight = 6.0
     let laplacian = ((n + s + e + w) + 0.5 * (ne + nw + se + sw) - 6.0 * height) * (1.0 / 6.0);
+    // Idea 1 — dispersive biharmonic. Scale (restoring force) stiffens short waves.
+    let n2 = sampleHeight(px + vec2<i32>( 0,  2), maxCoord);
+    let s2 = sampleHeight(px + vec2<i32>( 0, -2), maxCoord);
+    let e2 = sampleHeight(px + vec2<i32>( 2,  0), maxCoord);
+    let w2 = sampleHeight(px + vec2<i32>(-2,  0), maxCoord);
+    let lapWide = (n2 + s2 + e2 + w2) * 0.25 - height;
+    let biharmonic = lapWide - laplacian;
+    let dispersion = scaleParam * 0.45;
 
     // ── Click droplets: rising-edge gaussian height pulses ─────────
     let mouse     = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
     let mouseDown = u.zoom_config.w > 0.5;
     let wasDown   = extraBuffer[133] > 0.5;
     let clickEdge = f32(mouseDown) * (1.0 - f32(wasDown));
+    let prevBass  = extraBuffer[134];
+    let bassKick  = max(bass - prevBass, 0.0);
     if (global_id.x == 0u && global_id.y == 0u) {
         extraBuffer[133] = f32(mouseDown);  // single writer; read by all next frame
+        extraBuffer[134] = bass;
     }
     let dropSigma = mix(0.025, 0.060, scaleParam);
     let dm      = distance(uv, mouse);
@@ -146,9 +142,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // Audio rain: strong bass transients seed small ambient droplets
-    let beatSeed  = floor(time * 8.0);
+    let beatSeed  = floor(time * 4.0);
     let beatPos   = hash22(vec2<f32>(beatSeed, beatSeed * 1.37 + 7.7));
-    let beatForce = max(bass - 1.0, 0.0) * intensity * 0.6;
+    let beatForce = bassKick * intensity * 3.0;
     let db        = distance(uv, beatPos);
     let rainDrop  = exp(-(db * db) / (0.02 * 0.02)) * beatForce;
 
@@ -162,7 +158,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let audioBoost = 1.0 + bass * detailParam * 2.0;
 
     // ── Wave equation integration with nonlinear term ──────────────
-    let acceleration = laplacian * wave_speed * wave_speed + nonlinTerm;
+    let acceleration = (laplacian - biharmonic * dispersion) * wave_speed * wave_speed + nonlinTerm;
     velocity = velocity * damping + acceleration;
     height   = height + velocity + (droplet + ripplePulse + rainDrop) * audioBoost;
 
@@ -192,8 +188,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Crest/trough relief shading from the isotropic Laplacian
     let relief = clamp(laplacian * 4.0, -0.5, 0.5);
     let shaded = waterColor * (1.0 + relief);
-    let generatedColor = mix(shaded, kinkColor, wallGlow * nonlinear)
+    var generatedColor = mix(shaded, kinkColor, wallGlow * nonlinear)
                        + vec3<f32>(1.0, 0.8, 0.4) * energyBright * 0.4;
+    // Idea: crest caustics — focus lines under steep crests. Display only.
+    let crestGate = smoothstep(0.05, 0.45, height);
+    let caustic = exp(-laplacian * laplacian * 48.0) * crestGate;
+    generatedColor = generatedColor + vec3<f32>(0.65, 0.88, 1.0) * caustic * (0.22 + scaleParam * 0.35);
+    // Idea: whitecaps where height and speed are both large.
+    let steep = abs(velocity) * (0.35 + abs(laplacian));
+    let foam = smoothstep(0.12, 0.42, steep) * smoothstep(0.0, 0.25, height);
+    generatedColor = mix(generatedColor, vec3<f32>(0.9, 0.95, 1.0), foam * (0.25 + speedParam * 0.35));
 
     // Alpha derived from wave intensity and energy (no hardcoded 1.0)
     let waveIntensity = clamp(abs(height) + abs(velocity) * 2.0 + energy, 0.0, 1.0);

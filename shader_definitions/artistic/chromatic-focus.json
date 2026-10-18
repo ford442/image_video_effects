@@ -3,7 +3,7 @@
   "name": "Chromatic Focus",
   "category": "artistic",
   "url": "shaders/chromatic-focus.wgsl",
-  "description": "Breathing spectral focus keeps the cursor region crisp while the outer image blooms into colorful chromatic bokeh. Enhanced with OkLab mixing, iridescent thin-film interference, Mie scattering haze, split-tone grading, and ACES filmic tone mapping.",
+  "description": "Breathing spectral focus keeps the cursor region crisp while the outer image blooms into chromatic bokeh: highlights swell into rimmed discs that turn cat's-eye toward the frame edges, with magenta/green fringes keyed to the depth under the cursor. OkLab split-tone, thin-film halo, ACES.",
   "features": [
     "mouse-driven",
     "audio-reactive",

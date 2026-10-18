@@ -8,7 +8,7 @@
     "raymarching",
     "holographic"
   ],
-  "description": "A hyper-dimensional, endlessly unfolding bismuth core reactor, merging metallic stepped-fractals with liquid-holographic interference patterns.",
+  "description": "A hyper-dimensional KIFS bismuth core reactor with fold-generation stepped oxide thin-film terraces, 4-tap cavity AO, criticality-throttled Cherenkov phase-cone radiation, and control-rod coolant wake rings.",
   "workgroup_size": [
     16,
     16,
@@ -52,45 +52,58 @@
       "mapping": "zoom_params.w"
     }
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Intensity",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Speed",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Scale",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Mouse Influence",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
-  ],
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
   "id": "gen-holographic-bismuth-core-reactor",
   "url": "shaders/gen-holographic-bismuth-core-reactor.wgsl",
-  "features": ["audio-reactive", "mouse-driven", "click-reactive", "temporal", "semantic-alpha", "aces-tonemap", "generated-depth", "upgraded-rgba"],
-  "feedbackPacking": "A/C = ACES display RGBA history; exact same-pixel temporal load"
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "click-reactive",
+    "temporal",
+    "semantic-alpha",
+    "aces-tonemap",
+    "generated-depth",
+    "upgraded-rgba"
+  ],
+  "feedbackPacking": "A/C = HDR RGBA history before primary controls; display = ACES(controls(A)); exact same-pixel temporal load",
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Intensity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Speed",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Scale",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Mouse Influence",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

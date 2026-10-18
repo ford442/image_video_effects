@@ -10,6 +10,8 @@
  *   supports the feature — no separate variant files are loaded.
  */
 
+import { declaresBindGroup1, validateGroup1Declarations } from './webgpu/simRing';
+
 export interface BindGroupValidationResult {
   valid: boolean;
   shaderId: string;
@@ -59,8 +61,8 @@ export function validateBindGroup(
   };
 
   // 1. Check required bindings
-  for (let binding = 0; binding <= 12; binding++) {
-    const req = REQUIRED_BINDINGS[binding];
+  for (const [key, req] of Object.entries(REQUIRED_BINDINGS)) {
+    const binding = Number(key);
     const bindingRegex = new RegExp(
       `@group\\(0\\)\\s*@binding\\(${binding}\\)`,
       'g'
@@ -96,7 +98,7 @@ export function validateBindGroup(
     result.errors.push("Missing 'struct Uniforms' declaration");
     result.valid = false;
   } else {
-    const body = uniformsMatch[1];
+    const body = uniformsMatch[1]!;
     for (const field of REQUIRED_UNIFORM_FIELDS) {
       if (!body.includes(field)) {
         result.errors.push(`Uniforms struct missing field: ${field}`);
@@ -134,11 +136,19 @@ export function validateBindGroup(
     const maxBinding = Math.max(
       ...extendedBinding.map((b) => {
         const m = b.match(/@binding\((\d+)\)/);
-        return m ? parseInt(m[1], 10) : 0;
+        return m ? parseInt(m[1]!, 10) : 0;
       })
     );
     if (maxBinding > 13) {
       result.warnings.push(`Uses unexpected extended binding(s) beyond 13: ${maxBinding}`);
+    }
+  }
+
+  // 6. Opt-in @group(1) sim ring — must match src/contracts/bind_group1.json.
+  if (declaresBindGroup1(wgsl)) {
+    for (const err of validateGroup1Declarations(wgsl)) {
+      result.errors.push(err);
+      result.valid = false;
     }
   }
 

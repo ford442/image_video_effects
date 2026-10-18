@@ -20,43 +20,41 @@
     1
   ],
   "params": [
-    { "id": "stroke-density", "name": "Stroke Density", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
-    { "id": "ink-width", "name": "Ink Width", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
-    { "id": "complexity", "name": "Complexity", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
-    { "id": "neon-mode", "name": "Neon Mode", "default": 0, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
-  ],
-  "updatedParams": [
     {
-      "index": 0,
+      "id": "stroke-density",
       "name": "Stroke Density",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x"
     },
     {
-      "index": 1,
+      "id": "ink-width",
       "name": "Ink Width",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y"
     },
     {
-      "index": 2,
+      "id": "complexity",
       "name": "Complexity",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z"
     },
     {
-      "index": 3,
+      "id": "neon-mode",
       "name": "Neon Mode",
       "default": 0,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w"
     }
   ],
   "supportsDepth": true,
@@ -64,5 +62,45 @@
   "updated": true,
   "id": "gen-emergent-calligraphic-ecosystems",
   "url": "shaders/gen-emergent-calligraphic-ecosystems.wgsl",
-  "features": ["upgraded-rgba"]
+  "features": [
+    "upgraded-rgba"
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Stroke Density",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Ink Width",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Complexity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Neon Mode",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

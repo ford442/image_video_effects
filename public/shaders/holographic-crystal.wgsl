@@ -4,6 +4,9 @@
 //  Features: procedural, audio-reactive, mouse-driven, temporal, chromatic,
 //            upgraded-rgba, depth-aware, aces-tone-map, continuous-geometry
 //  Complexity: High
+//  Upgraded: 2026-09-27
+//  Ideas: facet grooves at integer crystalR; stepped diffraction orders
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -147,12 +150,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let local_t = time * 0.5 + s_bass * 0.5;
     let edge_mask = smoothstep(0.7, 0.65, crystalShape);
+
+    // Facet grooves: dark cuts on the integer boundaries of crystalR.
+    let groove = 1.0 - smoothstep(0.0, 0.045, abs(fract(crystalR) - 0.0));
+    let order = floor(crystalR);
     
-    // Truthful three-band audio + bins reactivity integration
-    let phase = crystalR * PI - local_t * 8.0 + clickFront * 8.0;
+    // Truthful three-band audio + bins reactivity integration.
+    // Diffraction orders step with facet index; Dispersion spreads each order.
+    let phase = order * PI - local_t * 8.0 + clickFront * 8.0;
     let dither = (hash21(vec2<f32>(gid.xy) + time) - 0.5) * 0.1;
     
-    let c_spread = dispersion * 2.0;
+    let c_spread = dispersion * (1.0 + order * 0.18);
     let phase_r = phase + dither;
     let phase_g = phase + c_spread * 2.094 + dither;
     let phase_b = phase + c_spread * 4.188 + dither;
@@ -161,7 +169,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let g = 0.5 + 0.5 * cos(phase_g + s_mid * 2.0);
     let b = 0.5 + 0.5 * cos(phase_b + s_bass * 2.0);
 
-    var holo_color = vec3<f32>(r, g, b) * interference;
+    var holo_color = vec3<f32>(r, g, b) * interference * (1.0 - groove * 0.72);
     
     // High-end optical specular
     let grad_x = sin(crystal_p.x * 30.0 + time);

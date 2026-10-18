@@ -1,27 +1,14 @@
-// Pixel Rain — Composer batch cyber/digital/glitch
-// Multi-layer parallax matrix rain: spring cursor, held repulsion,
-// capped ripples, exact C trail fade, three-band audio, ACES + semantic alpha.
+// ═══════════════════════════════════════════════════════════════════
+//  Pixel Rain
+//  Category: retro-glitch
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-10
+//  Ideas: glyph tail; column blank
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash21(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
@@ -40,8 +27,12 @@ fn rainLayer(uv: vec2<f32>, time: f32, density: f32, speed: f32, depthT: f32, se
   let head = smoothstep(0.0, 0.04, phase) * exp(-phase * 5.0);
   let flick = step(0.35, fract(sin(cell * 1.7 + colIndex * 4.1 + floor(time * 6.0) * 0.13) * 9999.0));
   let bright = mix(0.18, 1.0, depthT) * head * flick;
+  // Idea: glyphTail — dimmer hashed cells behind the drop head.
+  let glyphTail = smoothstep(0.42, 0.06, phase) * step(0.04, phase);
+  let glyph = step(0.62, fract(sin(cell * 2.3 + colIndex * 5.7) * 43758.5453));
+  let tailBright = mix(0.05, 0.45, depthT) * glyphTail * glyph;
   let tint = mix(vec3<f32>(0.0, 0.5, 0.45), vec3<f32>(0.3, 1.0, 0.4), depthT);
-  return tint * bright;
+  return tint * (bright + tailBright);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -134,6 +125,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color += rainLayer(uv, time, density * 0.6, speed * 1.4 * fallBoost, 1.0, 3.0);
   color += vec3<f32>(0.2, 0.2, 0.5) * mouseForce * 0.35;
   color += vec3<f32>(0.15, 0.9, 0.35) * rippleSplash * 0.4;
+  // Idea: columnBlank — a rare column drops back to the photo. Glitch owns the mix.
+  let columnBlank = step(0.96, hash21(vec2<f32>(colIndex, floor(time * 2.5))));
+  color = mix(color, baseSample.rgb, columnBlank * glitchIntensity);
 
   let prev = textureLoad(dataTextureC, coord, 0).rgb;
   color = mix(color, prev, mix(0.08, 0.55, trailFade));

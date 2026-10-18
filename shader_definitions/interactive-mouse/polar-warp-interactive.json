@@ -18,40 +18,6 @@
     "bounded-click-ripples",
     "held-drag"
   ],
-  "updatedParams": [
-    {
-      "id": "param1",
-      "name": "Warp Strength",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "id": "param2",
-      "name": "Spiral Amount",
-      "default": 0,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "id": "param3",
-      "name": "Ripple Decay",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "id": "param4",
-      "name": "Pinch/Expand",
-      "default": 0,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
-  ],
   "params": [
     {
       "id": "warp_strength",
@@ -94,5 +60,43 @@
     "warp",
     "audio-reactive",
     "temporal-feedback"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "id": "param1",
+          "name": "Warp Strength",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "id": "param2",
+          "name": "Spiral Amount",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "id": "param3",
+          "name": "Ripple Decay",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "id": "param4",
+          "name": "Pinch/Expand",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

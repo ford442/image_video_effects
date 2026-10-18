@@ -16,5 +16,7 @@
     "LIC"
   ],
   "params": [],
-  "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  "x-meta": {
+    "seeded_by": "scripts/seed_orphan_shader_defs.py"
+  }
 }

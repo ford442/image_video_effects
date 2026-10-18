@@ -4,30 +4,12 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-09-14
-//  Ideas: barbule thin-film interference (keratin film, per-wavelength phase) on feather vanes; zoned ocellus eye-spots (pupil / cobalt / bronze / teal / gold halo)
+//  Ideas: barbule thin-film interference (keratin film, per-wavelength phase) on feather vanes; zoned ocellus eye-spots (pupil / cobalt / bronze / teal / gold halo); rachis-barb branching shafts; chrono-precession ocellus halos
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount (click count), z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=Time, y=MouseX (uv), z=MouseY (uv), w=MouseDown
-    zoom_params: vec4<f32>,  // x=Plumage Spread, y=Quantum Glass Refraction, z=Nebula Density, w=Audio Reactivity
-    ripples: array<vec4<f32>, 50>,
-};
-
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=Plumage Spread, y=Quantum Glass Refraction, z=Nebula Density, w=Audio Reactivity
 
 // ----------------------------------------------------------------
 // CONSTANTS & HELPERS
@@ -219,6 +201,25 @@ fn ocellusZones(foldP: vec3<f32>, audio: f32) -> vec4<f32> {
     return vec4<f32>(c, mask);
 }
 
+// Idea 3: central rachis with branching barbs across each folded feather vane.
+fn rachisBarbs(foldP: vec3<f32>, time: f32) -> f32 {
+    let rachis = smoothstep(0.055, 0.012, abs(foldP.x));
+    let barbCarrier = foldP.x - 0.16 * sin(foldP.y * 15.0 + time * 0.6);
+    let barbs = smoothstep(0.06, 0.016, abs(barbCarrier)) * smoothstep(0.18, 1.35, abs(foldP.y));
+    return max(rachis, barbs * 0.75);
+}
+
+// Idea 4: ocellus halo precession rotating around each eye-spot.
+fn ocellusHalo(foldP: vec3<f32>, time: f32, audio: f32) -> vec3<f32> {
+    let center = vec2<f32>(foldP.x, (foldP.y - 0.5) * 0.55);
+    let radius = length(center);
+    let angle = atan2(center.y, center.x);
+    let ring = exp(-pow((radius - 0.078) * 95.0, 2.0));
+    let precess = 0.5 + 0.5 * cos(angle * 7.0 - time * (1.4 + audio * 2.2));
+    let haloCol = mix(vec3<f32>(0.15, 0.95, 0.85), vec3<f32>(1.0, 0.72, 0.25), precess);
+    return haloCol * ring * (0.35 + audio * 0.4);
+}
+
 // ----------------------------------------------------------------
 // NEBULA / VOLUMETRICS
 // ----------------------------------------------------------------
@@ -369,12 +370,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
             let foldP = featherFold(gravityWarp(p), shiver);
             let film = barbuleThinFilm(foldP, n, v, mids);
+            let shafts = rachisBarbs(foldP, time);
+            let halo = ocellusHalo(foldP, time, audio);
             let structural = mix(baseCol, film * vec3<f32>(0.6, 0.95, 1.0), 0.5);
 
             col = structural * diff + spec * vec3<f32>(1.0, 0.8, 0.4) + fresnel * film;
+            col = mix(col, col * vec3<f32>(0.6, 0.75, 0.55), shafts * 0.35);
+            col += vec3<f32>(0.95, 0.82, 0.35) * shafts * 0.12;
 
             let oc = ocellusZones(foldP, audio);
             col = mix(col, oc.rgb * (0.35 + diff * 0.9) + fresnel * oc.rgb, oc.a * 0.85);
+            col += halo;
             alpha = clamp(0.7 + diff * 0.2 + oc.a * 0.1, 0.0, 1.0);
         }
         depth = clamp(1.0 - t / MAX_DIST, 0.0, 1.0);

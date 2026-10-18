@@ -13,45 +13,11 @@
     "temporal",
     "depth-aware"
   ],
-  "description": "A mesmerizing, hyper-turbulent ocean of boiling quantum probability foam, where iridescent hyper-bubbles merge and burst in sync with audio frequencies, releasing flashes of raw cosmic energy.",
+  "description": "A raymarched superfluid foam: bubbles neck and pop, a Kelvin vortex line carries second sound, Abrikosov dimples dent the films, and an Andreev sheen rims the silhouette.",
   "workgroup_size": [
     16,
     16,
     1
-  ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Boiling Volatility",
-      "default": 0.5,
-      "min": 0,
-      "max": 2,
-      "step": 0.05
-    },
-    {
-      "index": 1,
-      "name": "Vortex Radius",
-      "default": 4,
-      "min": 0,
-      "max": 10,
-      "step": 0.1
-    },
-    {
-      "index": 2,
-      "name": "Radiation Glow",
-      "default": 1,
-      "min": 0,
-      "max": 5,
-      "step": 0.1
-    },
-    {
-      "index": 3,
-      "name": "Current Speed",
-      "default": 0.5,
-      "min": 0,
-      "max": 3,
-      "step": 0.1
-    }
   ],
   "supportsDepth": true,
   "supportsDof": false,
@@ -64,6 +30,47 @@
     "sprung-mouse-camera",
     "click-cavitation-shells",
     "temporal-feedback",
-    "depth-output"
-  ]
+    "depth-output",
+    "upgraded-rgba",
+    "audio-reactive",
+    "mouse-driven"
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Boiling Volatility",
+          "default": 0.5,
+          "min": 0,
+          "max": 2,
+          "step": 0.05
+        },
+        {
+          "index": 1,
+          "name": "Vortex Radius",
+          "default": 4,
+          "min": 0,
+          "max": 10,
+          "step": 0.1
+        },
+        {
+          "index": 2,
+          "name": "Radiation Glow",
+          "default": 1,
+          "min": 0,
+          "max": 5,
+          "step": 0.1
+        },
+        {
+          "index": 3,
+          "name": "Current Speed",
+          "default": 0.5,
+          "min": 0,
+          "max": 3,
+          "step": 0.1
+        }
+      ]
+    }
+  }
 }

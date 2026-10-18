@@ -4,7 +4,12 @@
 //  Features: mouse-driven, audio-reactive, chromatic-aberration,
 //            temporal-lens-rotation, chromatic-angular-dispersion,
 //            depth-magnification, spectral-wavelength-sampling,
-//            lens-distortion, semantic-alpha, ACES
+//            lens-distortion, fresnel-rim, semantic-alpha, ACES
+//  Ideas:    1. white-balanced spectrum — 7 taps over 400–700 nm, each channel normalised
+//               by its summed weight, so white stays white (HEAD summed to a red cast)
+//            2. Cauchy fan — the tap offset follows n(λ) ∝ 1/λ², so blue bends hardest and
+//               the fan's anamorphic axis turns with Rotation Speed
+//            3. Fresnel lens rim — grazing reflection at the lens edge (replaces cosine palette)
 //  Complexity: High
 // ═══════════════════════════════════════════════════════════════════
 
@@ -28,12 +33,6 @@ struct Uniforms {
   zoom_params: vec4<f32>,  // x=ZoomAmount, y=ChromaticAmount, z=RotationSpeed, w=DepthWeight
   ripples: array<vec4<f32>, 50>,
 };
-
-const TAU: f32 = 6.283185307179586;
-
-fn hash11(p: f32) -> f32 {
-  return fract(sin(p * 12.9898) * 43758.5453);
-}
 
 fn lensDistort(uv: vec2<f32>, center: vec2<f32>, k1: f32, k2: f32) -> vec2<f32> {
   let d = uv - center;
@@ -60,14 +59,25 @@ fn wavelengthToRGB(lambda: f32) -> vec3<f32> {
 
 fn sampleSpectral(uv: vec2<f32>, dir: vec2<f32>, dispersion: f32) -> vec3<f32> {
   var acc = vec3<f32>(0.0);
+  var wsum = vec3<f32>(0.0);
   for (var i = 0; i < 7; i = i + 1) {
     let t = f32(i) / 6.0;
-    let lambda = 380.0 + t * 400.0;
-    let shift = dir * (lambda - 550.0) * dispersion;
+    // Idea 1: 400–700 nm and per-channel normalisation. A flat white input
+    // comes out white, where the old 380–780 nm sum came out (0.72, 0.31, 0.29).
+    let lambda = 400.0 + t * 300.0;
+    // Idea 2: Cauchy fan. n(λ) − n(550) ∝ 550²/λ² − 1, so violet swings about
+    // three times further than deep red, as through real glass. The sign keeps
+    // HEAD's orientation (blue toward −dir); the scale matches its blue extreme.
+    let cauchy = 302500.0 / (lambda * lambda) - 1.0;
+    let shift = -dir * cauchy * 155.0 * dispersion;
     let sample = textureSampleLevel(readTexture, u_sampler, clamp(uv + shift, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
-    acc += sample * wavelengthToRGB(lambda);
+    // Trim the violet red lobe so red swings opposite blue (a rainbow fan).
+    var w = wavelengthToRGB(lambda);
+    if (lambda < 440.0) { w.r *= 0.3; }
+    acc += sample * w;
+    wsum += w;
   }
-  return acc / 7.0;
+  return acc / max(wsum, vec3<f32>(1e-3));
 }
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
@@ -91,36 +101,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let rawMouse = u.zoom_config.yz;
   let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
 
-  // Critically damped spring cursor in extraBuffer[133..138]
-  let isWriter = (global_id.x == 0u && global_id.y == 0u);
-  let hasState = (arrayLength(&extraBuffer) > 138u);
-
-  var mouse = rawMouse;
-  if (hasState && extraBuffer[138] > 0.5) {
-    mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  }
-
-  if (isWriter && hasState) {
-    let lastTime = extraBuffer[137];
-    let dt = clamp(time - lastTime, 0.0, 0.05);
-    var sPos = mouse;
-    var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[138] < 0.5) {
-      sPos = rawMouse;
-      sVel = vec2<f32>(0.0);
-    }
-    let stiffness = 45.0;
-    let damping = 13.416; // 2 * sqrt(45)
-    let accel = (rawMouse - sPos) * stiffness - sVel * damping;
-    sVel += accel * dt;
-    sPos += sVel * dt;
-    extraBuffer[133] = sPos.x;
-    extraBuffer[134] = sPos.y;
-    extraBuffer[135] = sVel.x;
-    extraBuffer[136] = sVel.y;
-    extraBuffer[137] = time;
-    extraBuffer[138] = 1.0;
-  }
+  // Raw pointer: the old extraBuffer[133..138] spring raced (pixel (0,0) wrote
+  // while every other pixel read) and the buffer is re-uploaded each frame.
+  let mouse = rawMouse;
 
   // Exact parameter contracts
   let nParams = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
@@ -149,9 +132,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   p += rippleWarp;
 
   let len = length(p);
-  let angle = atan2(p.y, p.x);
 
-  let rotAngle = angle + time * rotationSpeed * 0.5 + held * 0.3;
+  // HEAD rotated each pixel by −(angle + t), which maps every pixel at a given
+  // radius to the same point and collapses the image into concentric rings.
+  // Now the lens sways by a bounded angle that fades out with radius.
+  let lensFalloff = 1.0 - smoothstep(0.0, 0.6, len);
+  let rotAngle = (sin(time * rotationSpeed * 0.5) * 0.35 + held * 0.3) * lensFalloff;
   let cosR = cos(rotAngle);
   let sinR = sin(rotAngle);
   var rotated = vec2<f32>(cosR * p.x + sinR * p.y, -sinR * p.x + cosR * p.y);
@@ -159,34 +145,43 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var rotatedUV = rotated + mouse;
 
   let z = len * zoomAmount * (1.0 + depth * depthWeight * 0.5) * (1.0 + bass * 0.25);
-  let zoomedUV = mouse + (rotatedUV - mouse) * (1.0 - z);
+  let zoomedUV = mouse + (rotatedUV - mouse) * max(1.0 - z, 0.05);
 
   let k1 = (zoomAmount - 0.5) * 0.3;
   let k2 = -zoomAmount * 0.1;
   let lensedUV = lensDistort(zoomedUV, mouse, k1, k2);
 
+  // Anamorphic stretch of the dispersion fan along an axis that turns with
+  // Rotation Speed (chromatic rotation).
   var dispDir = normalize(p + vec2<f32>(1e-4));
-  dispDir.x *= aspect;
-  dispDir = normalize(dispDir);
-  dispDir.x *= (1.0 + chromaticAmount * 3.0);
+  let fanAngle = time * rotationSpeed * 0.5;
+  let anaAxis = vec2<f32>(cos(fanAngle), sin(fanAngle));
+  dispDir = dispDir + anaAxis * dot(dispDir, anaAxis) * chromaticAmount * 3.0;
+  dispDir.x /= aspect;
 
   let dispersion = chromaticAmount * 0.00008 * (1.0 + treble * 0.4);
   var color = sampleSpectral(lensedUV, dispDir, dispersion);
 
   let baseColor = textureSampleLevel(readTexture, u_sampler, clamp(lensedUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
 
-  let edgeDist = len;
-  let edgeGlow = smoothstep(0.5, 0.0, edgeDist) * smoothstep(0.2, 0.5, zoomAmount);
+  // Idea 3: Fresnel lens rim. The lens is a glass dome whose radius follows
+  // Zoom Amount. Toward its edge the view becomes grazing, so Schlick
+  // reflectance climbs and the rim mirrors the scene outside the lens.
+  let lensR = 0.25 + zoomAmount * 0.25;
+  let rr = len / lensR;
+  let inLens = 1.0 - smoothstep(0.96, 1.04, rr);
+  let cosV = sqrt(max(1.0 - rr * rr, 0.0));
+  let rimF = (0.04 + 0.96 * pow(1.0 - cosV, 5.0)) * inLens;
+  // Mirror across the rim: a point at radius r samples the scene at 2R − r.
+  let outsideUV = clamp(mouse + (uv - mouse) * ((2.0 - rr) / max(rr, 0.05)),
+                        vec2<f32>(0.0), vec2<f32>(1.0));
+  let rimRefl = textureSampleLevel(readTexture, u_sampler, outsideUV, 0.0).rgb;
+  let edgeGlow = rimF * smoothstep(0.2, 0.5, zoomAmount);
+  color = mix(color, rimRefl * (1.1 + bass * 0.3) + vec3<f32>(0.04, 0.05, 0.07), edgeGlow * (0.4 + chromaticAmount * 0.5));
 
-  let phase = time + hash11(len * 100.0 + bass * 10.0) * TAU;
-  let edgeColor = 0.5 + 0.5 * cos(vec3<f32>(phase, phase + 2.094, phase + 4.188));
-  color = mix(color, edgeColor, edgeGlow * chromaticAmount * 0.5);
-
-  // Exact dataTextureC persistence
+  // Exact dataTextureC persistence, blended in display space (C holds ACES output).
   let prevC = textureLoad(dataTextureC, pixel, 0).rgb;
-  color = mix(color, prevC, 0.08);
-
-  let finalRGB = aces(color);
+  let finalRGB = mix(aces(color), prevC, 0.08);
   let finalAlpha = clamp(mix(baseColor.a, 1.0, edgeGlow * 0.5 + len * 0.1) + held * 0.1, 0.15, 1.0);
   let finalPixel = vec4<f32>(finalRGB, finalAlpha);
 

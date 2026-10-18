@@ -86,7 +86,9 @@ fi
 validate_syntax_basic() {
     local file="$1"
     local content
-    content=$(cat "$file")
+    # Check what the GPU compiles: a shader that includes _prelude.wgsl has its
+    # bindings only after expansion. Fall back to the raw text if expansion fails.
+    content=$(python3 "$(dirname "${BASH_SOURCE[0]}")/wgsl_include.py" "$file" 2>/dev/null || cat "$file")
     local errors=()
     local line_num=0
 

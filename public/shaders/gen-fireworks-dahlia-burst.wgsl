@@ -4,31 +4,12 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
 //  Created: 2026-07-12
-//  Upgraded: 2026-09-10
-//  Ideas: even-row imbrication (half-petal offset); midrib along each petal dir
+//  Upgraded: 2026-10-10
+//  Ideas: even-row imbrication (half-petal offset); midrib along each petal dir; involute curl as rows age; pistil disk inside the first row
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -128,6 +109,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
       col += vec3<f32>(1.0) * exp(-bAge * 9.0) * energy * hexBokeh(uv, center, 0.06, 1.4);
 
+      // Idea — pistil disk: short central florets, count from Petal Count.
+      let florets = i32(clamp(petalCount * 0.45, 6.0, 18.0));
+      for (var f = 0; f < florets; f = f + 1) {
+        let ff = f32(f);
+        let fa = ff / f32(florets) * TAU + seed * 2.0;
+        let fr = energy * (0.035 + hash1(ff * 9.1 + seed) * 0.03);
+        let pistilDisk = center + vec2<f32>(cos(fa), sin(fa)) * fr;
+        let pistilCol = dahliaColor(0.12, 0.0, seed + ff * 0.02 + hueCycle);
+        col += pistilCol * hexBokeh(uv, pistilDisk, 0.0032, fade * energy * 0.85);
+      }
+
       for (var row = 0; row < rows; row = row + 1) {
         let rf = f32(row);
         let rowDelay = rf * 0.08 * (1.0 + mids * 0.2);
@@ -149,8 +141,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
           // Flat disk petal: elongate along radial direction
           let along = rowRadius * (0.6 + ps * 0.4);
           let across = petalWidth * 0.04 * energy;
-          let petalCenter = center + dir * along * 0.5;
-          let tipPos = center + dir * along + perp * across * (ps - 0.5);
+          // Idea — involute curl: the tip hooks sideways as the row ages, then falls.
+          let involuteCurl = smoothstep(0.3, 2.2, rowAge) * (0.22 + rf * 0.06);
+          let hook = perp * sin(pf * 0.7 + rowAge) * along * involuteCurl;
+          let petalCenter = center + dir * along * 0.5 + hook * 0.35;
+          let tipPos = center + dir * along + perp * across * (ps - 0.5) + hook;
           let fallPos = sparkPos(tipPos, dir * 0.08 + vec2<f32>(0.0, -0.05), rowAge * 0.5, GRAVITY * 0.3);
 
           let petalT = along / max(energy * 0.7, 0.01);

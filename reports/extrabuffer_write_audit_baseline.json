@@ -6,7 +6,7 @@
     "shader_bug": "Persistent simulation state incorrectly mapped to reserved/FFT zone. Remap to extraBuffer[133..255] when the shader is next upgraded.",
     "triaged_dynamic": "Dynamic-index writes where static analysis cannot prove the bound, but manual review confirms safety or documents the needed rewrite."
   },
-  "dynamic_index_triage": "reports/extrabuffer_dynamic_index_baseline.json (32 sites) \u2014 see reports/extrabuffer_dynamic_index_triage.md",
+  "dynamic_index_triage": "reports/extrabuffer_dynamic_index_baseline.json (29 sites) \u2014 see reports/extrabuffer_dynamic_index_triage.md",
   "engine_owned": {
     "description": "FFT-zone writes used as documented engine/audio coupling. Do not add new entries.",
     "entries": [
@@ -345,20 +345,6 @@
         "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
       },
       {
-        "file": "public/shaders/mouse-ink-bleed.wgsl",
-        "indices": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7
-        ],
-        "reason": "persistent state in reserved/FFT zone; remap to extraBuffer[133..255]"
-      },
-      {
         "file": "public/shaders/oscilloscope-overlay.wgsl",
         "indices": [
           0
@@ -508,31 +494,31 @@
       },
       {
         "file": "public/shaders/neon-cursor-trace.wgsl",
-        "line": 113,
+        "line": 94,
         "expr": "bufOff",
         "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
       },
       {
         "file": "public/shaders/neon-cursor-trace.wgsl",
-        "line": 114,
+        "line": 95,
         "expr": "bufOff + 1u",
         "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
       },
       {
         "file": "public/shaders/neon-cursor-trace.wgsl",
-        "line": 115,
+        "line": 96,
         "expr": "bufOff + 2u",
         "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
       },
       {
         "file": "public/shaders/neon-cursor-trace.wgsl",
-        "line": 116,
+        "line": 97,
         "expr": "bufOff + 3u",
         "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
       },
       {
         "file": "public/shaders/neon-cursor-trace.wgsl",
-        "line": 117,
+        "line": 98,
         "expr": "bufOff + 4u",
         "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
       },
@@ -582,24 +568,6 @@
         "file": "public/shaders/physarum-grokcf1.wgsl",
         "line": 161,
         "expr": "idx * 4u + 3u",
-        "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
-      },
-      {
-        "file": "public/shaders/physarum.wgsl",
-        "line": 131,
-        "expr": "idx * 3u + 0u",
-        "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
-      },
-      {
-        "file": "public/shaders/physarum.wgsl",
-        "line": 132,
-        "expr": "idx * 3u + 1u",
-        "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
-      },
-      {
-        "file": "public/shaders/physarum.wgsl",
-        "line": 133,
-        "expr": "idx * 3u + 2u",
         "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
       }
     ]

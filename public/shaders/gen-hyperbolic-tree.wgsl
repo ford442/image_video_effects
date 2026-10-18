@@ -5,31 +5,13 @@
 //            bass-growth-speed, aces-tone-map
 //  Complexity: High
 //  Created: 2026-05-23
-//  Upgraded: 2026-09-21 (was 2026-06-06)
-//  Ideas: terminal leaf discs at every tip; rotating ideal-polygon geodesics of the Poincaré disk
+//  Upgraded: 2026-10-10
+//  Ideas: terminal leaf discs at every tip; rotating ideal-polygon geodesics of the Poincaré disk;
+//         Poincaré metric-thinning branch strokes; negative-space horocycle rings
 //  A packing: ACES display RGBA (read back as colour history)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -74,7 +56,11 @@ fn hyperbolicTree(p: vec2<f32>, time: f32, bass: f32, mids: f32, depth: i32, bra
                                   dir.x * sin(-branchAngle + sway) + dir.y * cos(-branchAngle + sway));
         
         let nextPos = pos + dir * len;
-        d = min(d, sdSegment(mobius, pos, nextPos) - len * 0.08);
+        // Idea 3 — Poincaré metric thinning: equal hyperbolic branch widths occupy
+        // progressively fewer Euclidean pixels as their segment approaches the rim.
+        let segMid = (pos + nextPos) * 0.5;
+        let metricThin = clamp(1.0 - dot(segMid, segMid), 0.08, 1.0);
+        d = min(d, sdSegment(mobius, pos, nextPos) - len * 0.08 * metricThin);
         
         // Descend into the child whose half-plane holds this point (HEAD used per-pixel hash noise
         // here, so every pixel walked a random path and the tree rendered as speckle).
@@ -99,6 +85,21 @@ fn idealPolygonDist(p: vec2<f32>, n: f32, rot: f32) -> f32 {
     let q = length(p) * vec2<f32>(cos(af), sin(af));
     let halfA = 3.14159265359 / n;
     return abs(length(q - vec2<f32>(1.0 / cos(halfA), 0.0)) - tan(halfA));
+}
+
+// Idea 4 — horocycles: Euclidean circles internally tangent to the Poincaré rim.
+// Their sparse, drifting ideal points leave them as quiet rings in the tree's negative space.
+fn horocycleDist(p: vec2<f32>, time: f32) -> f32 {
+    var d = 1000.0;
+    for (var i: i32 = 0; i < 5; i = i + 1) {
+        let fi = f32(i);
+        let angle = fi * 2.39996323 + time * (0.008 + fi * 0.0015);
+        let anchor = vec2<f32>(cos(angle), sin(angle));
+        let radius = 0.11 + 0.055 * fract(fi * 0.61803399 + 0.17);
+        let center = anchor * (1.0 - radius);
+        d = min(d, abs(length(p - center) - radius));
+    }
+    return d;
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -162,11 +163,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let geoLine = smoothstep(geoWidth, 0.0, geoD) * (1.0 - diskEdge) * (1.0 - branchGlow) * step(r, 1.0);
     let geoColor = hue2rgb(leafHue + 0.5) * geoLine * 0.28;
 
+    // Horocycles remain subordinate to the tree and geodesic lattice by yielding wherever
+    // occupied structure is present; the Poincaré factor keeps their rim contact delicate.
+    let horoWidth = 0.001 + 0.0025 * max(1.0 - r * r, 0.0);
+    let negativeSpace = 1.0 - clamp(branchGlow + leafGlow * 0.8 + tipLeaf + geoLine, 0.0, 1.0);
+    let horoRing = smoothstep(horoWidth, 0.0, horocycleDist(p, time)) *
+                   negativeSpace * (1.0 - diskEdge) * step(r, 1.0);
+    let horoColor = hue2rgb(leafHue + 0.18) * horoRing * (0.08 + mids * 0.035);
+
     // Temporal branch glow persistence (exact load; HEAD filtered an rgba32float history)
     let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).rgb;
-    let finalRGB = mix(rgb * val + leafColor + tipColor + geoColor, prev * 0.92, 0.05 + bass * 0.02);
+    let finalRGB = mix(rgb * val + leafColor + tipColor + geoColor + horoColor, prev * 0.92, 0.05 + bass * 0.02);
     
-    let alpha = clamp(val * 0.6 + branchGlow * 0.3 + leafGlow * 0.2 + tipLeaf * 0.3 + geoLine * 0.15 + 0.1 + bass * 0.05, 0.0, 1.0) * (1.0 - diskEdge);
+    let alpha = clamp(val * 0.6 + branchGlow * 0.3 + leafGlow * 0.2 + tipLeaf * 0.3 +
+                      geoLine * 0.15 + horoRing * 0.04 + 0.1 + bass * 0.05, 0.0, 1.0) *
+                (1.0 - diskEdge);
     let finalColor = vec4<f32>(acesToneMap(finalRGB * 1.1), alpha);
     
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);

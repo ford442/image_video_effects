@@ -2,7 +2,7 @@
   "id": "crt-scanline-damage",
   "name": "CRT Scanline Damage",
   "url": "shaders/crt-scanline-damage.wgsl",
-  "description": "Damaged CRT monitor simulation with barrel distortion, RGB phosphor mask, scanlines, temporal phosphor decay via dataTextureC, audio-driven chromatic barrel separation, depth-aware distortion, and occasional vertical roll.",
+  "description": "Damaged CRT monitor simulation with depth-aware barrel distortion, RGB phosphor triad mask, a real raster of scanlines, flicker, temporal phosphor decay via dataTextureC, treble snow and scar rows, occasional dark-band fault, and click degauss rings. Upgraded with a misconvergence swirl (degauss rings pull the R/G/B rasters apart radially with a rotating magenta/green purity blotch that settles), flyback retrace lines during the dark-band fault, and a radial chromatic barrel (the RGB split grows toward the tube edges).",
   "tags": [
     "crt",
     "scanline",
@@ -23,7 +23,6 @@
     "glitch",
     "audio-reactive",
     "depth-aware",
-    "mouse-driven",
     "click-reactive"
   ],
   "params": [
@@ -60,39 +59,43 @@
       "step": 0.01
     }
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Scanline Intensity",
-      "default": 0.8,
-      "min": 0.0,
-      "max": 1.5,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Distortion Amount",
-      "default": 0.15,
-      "min": 0.0,
-      "max": 0.5,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Flicker Speed",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 2.0,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "RGB Separation",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 2.0,
-      "step": 0.01
+  "updated": true,
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Scanline Intensity",
+          "default": 0.8,
+          "min": 0.0,
+          "max": 1.5,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Distortion Amount",
+          "default": 0.15,
+          "min": 0.0,
+          "max": 0.5,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Flicker Speed",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 2.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "RGB Separation",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 2.0,
+          "step": 0.01
+        }
+      ]
     }
-  ],
-  "updated": true
+  }
 }

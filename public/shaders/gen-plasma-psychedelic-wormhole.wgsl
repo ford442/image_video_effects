@@ -4,30 +4,12 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-09-14
-//  Ideas: photon-sphere subrings at the wormhole throat (nested lensed images shrinking by e^-pi); click-spawned transient lensing masses (point-mass deflection + Einstein ring) bending the tunnel coordinates
+//  Ideas: photon-sphere subrings at the wormhole throat (nested lensed images shrinking by e^-pi); click-spawned transient lensing masses (point-mass deflection + Einstein ring) bending the tunnel coordinates; ergosphere frame-drag shear near throat; Kelvin-Helmholtz wall billow rolls
 //  A packing: ACES display RGBA in A (feedback recovers HDR trail via analytic inverse ACES)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=time, y=rippleCount, zw=resolution
-  zoom_config: vec4<f32>,  // x=time, yz=mouse uv, w=mouse down
-  zoom_params: vec4<f32>,  // x=Brightness, y=Travel Speed, z=Tunnel Scale, w=Color Shift
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Brightness, y=Travel Speed, z=Tunnel Scale, w=Color Shift
 
 const PI: f32 = 3.141592653589793;
 const TAU: f32 = 6.283185307179586;
@@ -179,10 +161,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let r = length(p);
     let theta = atan2(p.y, p.x);
+    // Idea 3 — frame-dragging: strongest azimuthal shear near the throat, where
+    // rotating plasma drags local inertial frames around the axis.
+    let dragShear = exp(-r * 7.0) * (0.25 + bass * 0.5) * (1.0 + speed * 0.8);
+    let draggedTheta = theta + dragShear * (0.7 + 0.3 * sin(time * 2.2 + r * 11.0));
 
     // Wormhole tunnel coordinates
     let tunnelDepth = 1.0 / (r + 0.05);
-    let spiralTheta = theta + time * (0.3 + speed * 0.7);
+    let spiralTheta = draggedTheta + time * (0.3 + speed * 0.7);
     let spiralU = tunnelDepth * (0.5 + scale * 0.5) + time * (0.5 + speed);
     let spiralV = spiralTheta / TAU * 6.0 + tunnelDepth * 0.3;
 
@@ -222,6 +208,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let arms = 4.0 + floor(scale * 8.0);
     let armPattern = sin(spiralTheta * arms + tunnelDepth * 4.0 - time * (1.0 + speed)) * 0.5 + 0.5;
     plasmaVal += armPattern * 0.2;
+    // Idea 4 — Kelvin-Helmholtz shear billows rolling along the tunnel wall.
+    let wallMask = smoothstep(0.2, 0.85, r);
+    let billowRoll = sin(theta * 13.0 - tunnelDepth * 2.3 + time * (2.8 + speed * 2.1));
+    let billowNoise = fbm(vec2<f32>(theta * 5.2, tunnelDepth * 0.85), time * (0.2 + mids * 0.25));
+    let billows = pow(max(0.5 + 0.5 * billowRoll, 0.0), 3.0) * wallMask * (0.6 + 0.4 * billowNoise);
+    plasmaVal += billows * (0.18 + mids * 0.14 + treble * 0.1);
 
     // Bass drives plasma temperature (3000K .. 10000K)
     let plasmaTemp = mix(3000.0, 10000.0, bass);
@@ -236,6 +228,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let col2 = hotPlasmaPalette(hue2, plasmaTemp);
 
     var col = mix(col1, col2, plasmaVal);
+    col += plasmaPalette(fract(theta / TAU + tunnelDepth * 0.15 + time * 0.06), plasmaTemp)
+         * billows * 0.28 * (0.7 + mids * 0.6);
 
     // Center glow — hotter with bass
     let centerGlow = exp(-r * r * 12.0) * (0.5 + 0.5 * sin(time * 2.0));

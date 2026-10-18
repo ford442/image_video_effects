@@ -183,7 +183,7 @@ hr {
     z-index: 20;
 }
 
-/* Renderer backend badge shown in the status bar */
+/* Renderer backend badge shown in the status bar (display-only; WASM is ?renderer=wasm only, #1080) */
 .renderer-badge {
     margin-left: auto;
     font-size: 10px;
@@ -191,12 +191,22 @@ hr {
     border-radius: 8px;
     font-family: monospace;
     letter-spacing: 0.05em;
-    cursor: pointer;
     pointer-events: auto;
     user-select: none;
     transition: opacity 0.15s ease;
 }
-.renderer-badge:hover { opacity: 0.8; }
+
+/* "Experimental (R&D)" chip — shown only when WASM is forced via ?renderer=wasm */
+.renderer-badge__rnd {
+    margin-left: 6px;
+    padding: 0 5px;
+    border-radius: 6px;
+    font-size: 9px;
+    text-transform: uppercase;
+    background: rgba(212, 175, 55, 0.25);
+    color: var(--color-gold-light, #D4AF37);
+    border: 1px solid rgba(212, 175, 55, 0.5);
+}
 
 /* WebGPU (TypeScript native) — full gold: this is the recommended default */
 .renderer-badge--webgpu {
@@ -323,4 +333,127 @@ hr {
 .toggle-sidebar-btn:hover {
     color: #fff;
     border-color: #666;
+}
+
+/* Sidebar top-level groups + filter box */
+.sidebar-search {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    margin: -20px -20px 0; /* cancel .controls padding so the box sits flush at the top */
+    padding: 12px 20px 10px;
+    background: rgba(15, 15, 20, 0.97);
+    border-bottom: 1px solid rgba(255, 215, 0, 0.12);
+}
+
+.sidebar-search-field {
+    position: relative;
+}
+
+.sidebar-search-field .glass-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding-right: 32px;
+}
+
+.sidebar-search-clear {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 12px;
+    padding: 4px 6px;
+}
+
+.sidebar-search-clear:hover {
+    color: var(--gold-primary);
+}
+
+.sidebar-search-results {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.sidebar-search-results-title {
+    flex: 0 0 100%;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.sidebar-search-result {
+    background: rgba(255, 215, 0, 0.08);
+    border: 1px solid rgba(255, 215, 0, 0.25);
+    border-radius: 12px;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 11px;
+    padding: 3px 10px;
+}
+
+.sidebar-search-result:hover,
+.sidebar-search-result:focus-visible {
+    background: rgba(255, 215, 0, 0.2);
+    border-color: var(--gold-primary);
+    outline: none;
+}
+
+.sidebar-search-empty {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-style: italic;
+    text-align: center;
+    padding: 12px 0;
+}
+
+.sidebar-group {
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.sidebar-group-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: none;
+    border: none;
+    color: var(--gold-primary);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    padding: 10px 12px;
+    text-transform: uppercase;
+}
+
+.sidebar-group-header:focus-visible {
+    outline: 2px solid var(--gold-primary);
+    outline-offset: -2px;
+    border-radius: 10px;
+}
+
+.sidebar-group-chevron {
+    font-size: 10px;
+    transition: transform 0.2s;
+    transform: rotate(-90deg);
+}
+
+.sidebar-group.open .sidebar-group-chevron {
+    transform: rotate(0deg);
+}
+
+.sidebar-group-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 0 12px 12px;
 }

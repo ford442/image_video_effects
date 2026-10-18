@@ -11,20 +11,15 @@ describe('getShaderDefaults', () => {
 
     it('appends .wgsl when lookup key includes extension', () => {
         const withExt = Object.keys(SHADER_DEFAULTS).find((k) => k.endsWith('.wgsl'));
-        if (withExt) {
-            const base = withExt.replace(/\.wgsl$/, '');
-            expect(getShaderDefaults(base, 4)).toEqual(SHADER_DEFAULTS[withExt]);
-        } else {
-            expect(getShaderDefaults('liquid.wgsl', 4)).toEqual(SHADER_DEFAULTS.liquid);
-        }
+        const lookup = withExt ? withExt.replace(/\.wgsl$/, '') : 'liquid.wgsl';
+        const expected = withExt ? SHADER_DEFAULTS[withExt] : SHADER_DEFAULTS.liquid;
+        expect(getShaderDefaults(lookup, 4)).toEqual(expected);
     });
 
     it('normalizes kebab-case to snake_case', () => {
-        const kebabKey = Object.keys(SHADER_DEFAULTS).find((k) => k.includes('-'));
-        if (kebabKey) {
-            const snake = kebabKey.replace(/-/g, '_');
-            expect(getShaderDefaults(snake, 4)).toEqual(SHADER_DEFAULTS[kebabKey]);
-        }
+        const kebabKey = Object.keys(SHADER_DEFAULTS).find((k) => k.includes('-')) ?? 'liquid-chrome-ripple';
+        const snake = kebabKey.replace(/-/g, '_');
+        expect(getShaderDefaults(snake, 4)).toEqual(SHADER_DEFAULTS[kebabKey]);
     });
 
     it('normalizes snake_case to kebab-case', () => {

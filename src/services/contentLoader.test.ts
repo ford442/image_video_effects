@@ -8,17 +8,17 @@ import {
 } from '../config/appConfig';
 
 describe('fetchContentManifest', () => {
-    const fetchMock = jest.fn();
+    const fetchMock = vi.fn();
 
     beforeEach(() => {
         fetchMock.mockReset();
         global.fetch = fetchMock as unknown as typeof fetch;
-        jest.spyOn(console, 'log').mockImplementation(() => undefined);
-        jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+        vi.spyOn(console, 'log').mockImplementation(() => undefined);
+        vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     });
 
     afterEach(() => {
-        jest.restoreAllMocks();
+        vi.restoreAllMocks();
     });
 
     it('prefers the API manifest when it is available', async () => {

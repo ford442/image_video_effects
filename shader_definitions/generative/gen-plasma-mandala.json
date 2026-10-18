@@ -18,40 +18,6 @@
     16,
     1
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Symmetry",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Spin Speed",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Zoom",
-      "default": 0.4,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Glow Scale",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
-  ],
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
@@ -63,9 +29,79 @@
     "upgraded-rgba"
   ],
   "params": [
-    { "id": "symmetry", "name": "Symmetry", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
-    { "id": "spin_speed", "name": "Spin Speed", "default": 0.3, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
-    { "id": "zoom", "name": "Zoom", "default": 0.4, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
-    { "id": "glow_scale", "name": "Glow Scale", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
-  ]
+    {
+      "id": "symmetry",
+      "name": "Symmetry",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "spin_speed",
+      "name": "Spin Speed",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "zoom",
+      "name": "Zoom",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "glow_scale",
+      "name": "Glow Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Symmetry",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Spin Speed",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Zoom",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Glow Scale",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

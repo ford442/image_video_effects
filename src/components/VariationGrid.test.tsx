@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { VariationGrid } from './VariationGrid';
@@ -45,8 +44,8 @@ describe('VariationGrid', () => {
         catalog={CATALOG}
         count={4}
         options={{ paramJitter: true, shaderSwap: 'none', seed: 'grid' }}
-        onAdopt={jest.fn()}
-        onClose={jest.fn()}
+        onAdopt={vi.fn()}
+        onClose={vi.fn()}
       />
     );
 
@@ -64,8 +63,8 @@ describe('VariationGrid', () => {
         catalog={CATALOG}
         count={2}
         options={{ paramJitter: true, shaderSwap: 'none', seed: 'summary' }}
-        onAdopt={jest.fn()}
-        onClose={jest.fn()}
+        onAdopt={vi.fn()}
+        onClose={vi.fn()}
       />
     );
 
@@ -80,7 +79,7 @@ describe('VariationGrid', () => {
   });
 
   it('calls onAdopt with the selected variation chain when Adopt is clicked', () => {
-    const onAdopt = jest.fn();
+    const onAdopt = vi.fn();
     render(
       <VariationGrid
         baseChain={BASE_CHAIN}
@@ -88,17 +87,17 @@ describe('VariationGrid', () => {
         count={3}
         options={{ paramJitter: true, shaderSwap: 'none', seed: 'adopt' }}
         onAdopt={onAdopt}
-        onClose={jest.fn()}
+        onClose={vi.fn()}
       />
     );
 
     fireEvent.click(screen.getByTestId('adopt-variation-1'));
     expect(onAdopt).toHaveBeenCalledTimes(1);
-    const adopted = onAdopt.mock.calls[0][0] as SharedChain;
+    const adopted = onAdopt.mock.calls[0]![0] as SharedChain;
     expect(adopted.v).toBe(1);
     expect(adopted.slots).toHaveLength(2);
-    expect(adopted.slots[0].shaderId).toBe('liquid-a');
-    expect(adopted.slots[1].shaderId).toBe('distort-a');
+    expect(adopted.slots[0]!.shaderId).toBe('liquid-a');
+    expect(adopted.slots[1]!.shaderId).toBe('distort-a');
   });
 
   it('toggles A/B selection', () => {
@@ -108,8 +107,8 @@ describe('VariationGrid', () => {
         catalog={CATALOG}
         count={3}
         options={{ paramJitter: false, shaderSwap: 'none', seed: 'ab' }}
-        onAdopt={jest.fn()}
-        onClose={jest.fn()}
+        onAdopt={vi.fn()}
+        onClose={vi.fn()}
       />
     );
 
@@ -126,14 +125,14 @@ describe('VariationGrid', () => {
   });
 
   it('calls onClose when the close button is clicked', () => {
-    const onClose = jest.fn();
+    const onClose = vi.fn();
     render(
       <VariationGrid
         baseChain={BASE_CHAIN}
         catalog={CATALOG}
         count={2}
         options={{ paramJitter: false, shaderSwap: 'none', seed: 'close' }}
-        onAdopt={jest.fn()}
+        onAdopt={vi.fn()}
         onClose={onClose}
       />
     );
@@ -149,8 +148,8 @@ describe('VariationGrid', () => {
         catalog={CATALOG}
         count={2}
         options={{ paramJitter: true, shaderSwap: 'none', seed: 'seeded' }}
-        onAdopt={jest.fn()}
-        onClose={jest.fn()}
+        onAdopt={vi.fn()}
+        onClose={vi.fn()}
       />
     );
 
@@ -174,8 +173,8 @@ describe('VariationGrid', () => {
         catalog={CATALOG}
         count={2}
         options={{ paramJitter: false, shaderSwap: 'none', seed: 'star' }}
-        onAdopt={jest.fn()}
-        onClose={jest.fn()}
+        onAdopt={vi.fn()}
+        onClose={vi.fn()}
       />
     );
 
@@ -185,9 +184,9 @@ describe('VariationGrid', () => {
 
     const favorites = loadFavorites();
     expect(favorites).toHaveLength(1);
-    expect(favorites[0].name).toBe('Variation #1');
+    expect(favorites[0]!.name).toBe('Variation #1');
     expect(screen.getByTestId('favorites-strip')).toBeInTheDocument();
-    expect(screen.getByTestId(`favorite-item-${favorites[0].id}`)).toBeInTheDocument();
+    expect(screen.getByTestId(`favorite-item-${favorites[0]!.id}`)).toBeInTheDocument();
   });
 
   it('breeds two selected variations into a new grid', () => {
@@ -197,8 +196,8 @@ describe('VariationGrid', () => {
         catalog={CATALOG}
         count={4}
         options={{ paramJitter: true, shaderSwap: 'none', seed: 'breed-ui' }}
-        onAdopt={jest.fn()}
-        onClose={jest.fn()}
+        onAdopt={vi.fn()}
+        onClose={vi.fn()}
       />
     );
 
@@ -227,8 +226,8 @@ describe('VariationGrid', () => {
         catalog={CATALOG}
         count={2}
         options={{ paramJitter: true, shaderSwap: 'none', seed: 'reseed' }}
-        onAdopt={jest.fn()}
-        onClose={jest.fn()}
+        onAdopt={vi.fn()}
+        onClose={vi.fn()}
       />
     );
 

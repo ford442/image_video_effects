@@ -13,8 +13,8 @@ const path = require('path');
 
 const SHADERS_DIR = path.join(__dirname, '..', 'public', 'shaders');
 const DEFINITIONS_DIR = path.join(__dirname, '..', 'shader_definitions');
-const PHASE_B_TARGETS = path.join(__dirname, '..', 'swarm-tasks', 'phase-b', 'phase-b-upgrade-targets.json');
-const OUTPUT_PATH = path.join(__dirname, '..', 'swarm-outputs', 'audit-results.json');
+const PHASE_B_TARGETS = path.join(__dirname, '..', 'agents', 'swarm-tasks', 'phase-b', 'phase-b-upgrade-targets.json');
+const OUTPUT_PATH = path.join(__dirname, '..', 'agents', 'swarm-outputs', 'audit-results.json');
 
 // Feature detection patterns
 const PATTERNS = {

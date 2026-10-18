@@ -1,8 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Fluid Lens Dynamics — Batch 58E
-//  Keeps Kelvin-Voigt droplet + capillary waves + exact C state.
-//  Adds held meniscus pinch, oil-slick thin-film rim, traveling
-//  caustic runners, bounded splash fronts. A remains [h, v, nx, ny].
+//  Fluid Lens Dynamics (interactive-fisheye)
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-10-04
+//  Ideas: refraction from the simulated surface (exact C neighbour gradient); caustic focusing from the height Laplacian
+//  A packing: raw sim state [h, v, nx, ny] (normal is now the blended sim normal); display is ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -18,6 +21,7 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
 
 struct Uniforms {
   config: vec4<f32>,
@@ -113,7 +117,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let h_d = droplet_shape((uv - vec2<f32>(0.0, eps)) * aspect_vec, mouse_corr, lens_radius, stretch_dir, stretch_mag);
   let dn_dx = (h_r - h_l) / (2.0 * eps);
   let dn_dy = (h_u - h_d) / (2.0 * eps);
-  let normal = normalize(vec3<f32>(-dn_dx * (0.8 + 0.4 * surface_tension), -dn_dy * (0.8 + 0.4 * surface_tension), 1.0));
+
+  // Idea 1: refract through the surface the solver actually simulated. The
+  // neighbours' last-frame heights (exact C loads) carry the overshoot,
+  // jiggle and capillary ripples that the analytic target shape never had.
+  let maxc = vec2<i32>(res) - vec2<i32>(1);
+  let s_l = textureLoad(dataTextureC, clamp(coord - vec2<i32>(1, 0), vec2<i32>(0), maxc), 0).r;
+  let s_r = textureLoad(dataTextureC, clamp(coord + vec2<i32>(1, 0), vec2<i32>(0), maxc), 0).r;
+  let s_d = textureLoad(dataTextureC, clamp(coord - vec2<i32>(0, 1), vec2<i32>(0), maxc), 0).r;
+  let s_u = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, 1), vec2<i32>(0), maxc), 0).r;
+  let px = 1.0 / res.y; // one pixel in aspect-corrected units
+  let sim_dx = (s_r - s_l) / (2.0 * px);
+  let sim_dy = (s_u - s_d) / (2.0 * px);
+  let grad_x = mix(dn_dx, sim_dx, 0.8);
+  let grad_y = mix(dn_dy, sim_dy, 0.8);
+  let normal = normalize(vec3<f32>(-grad_x * (0.8 + 0.4 * surface_tension), -grad_y * (0.8 + 0.4 * surface_tension), 1.0));
+
+  // Idea 2: caustics. A convex droplet focuses light (negative Laplacian of
+  // the simulated height brightens its body) and the steep meniscus bends
+  // light away, leaving a darker ring.
+  let lap = (s_l + s_r + s_d + s_u - 4.0 * prev_h) / (px * px);
+  let focus = clamp(-lap * 0.015, 0.0, 0.5);
+  let meniscus = smoothstep(2.0, 6.0, length(vec2<f32>(grad_x, grad_y))) * 0.35;
 
   var splash_disp = vec2<f32>(0.0);
   var click = 0.0;
@@ -139,7 +164,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let c_g = textureSampleLevel(readTexture, u_sampler, uv_g, 0.0).g;
   let c_b = textureSampleLevel(readTexture, u_sampler, uv_b, 0.0).b;
   let src_alpha = textureSampleLevel(readTexture, u_sampler, uv_g, 0.0).a;
-  let refracted = vec3<f32>(c_r, c_g, c_b);
+  let refracted = vec3<f32>(c_r, c_g, c_b) * (1.0 + focus * (0.8 + bass * 0.4) - meniscus);
 
   let light_dir = normalize(vec3<f32>(mouse_pos.x - 0.5, mouse_pos.y - 0.5, 0.8));
   let view_dir = vec3<f32>(0.0, 0.0, 1.0);

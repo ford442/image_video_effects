@@ -6,28 +6,12 @@
 //  Complexity: High
 //  Created: 2026-05-31
 //  Updated: 2026-06-07
+//  Upgraded: 2026-10-18
+//  Ideas: true line-integral convolution along the director; +1/2 comet / -1/2 trefoil glyphs; order parameter drives thread coherence; anisotropic Frank elasticity (K1 != K3 bends each core: theta = s(phi + eps sin 2(1-s)phi), mids soften bend); splay/bend energy decomposition (n x grad-theta splits the elastic energy into gold splay and violet bend birefringence)
+//  A packing: (ACES display RGBA)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ---- ACES TONE MAPPING ----
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -60,9 +44,21 @@ fn noise(p: vec2<f32>) -> f32 {
 }
 
 // ═══ Director Field (nematic angle) ═══
-// Computes the local nematic director angle at position p given defect configuration
-fn directorField(p: vec2<f32>, time: f32, defectDensity: f32, mobility: f32, mousePos: vec2<f32>, mouseDown: f32) -> f32 {
+// Returns (angle, d angle/dx, d angle/dy). The gradient of atan2 is (-dy, dx)/r^2, so the
+// LIC below gets a cheap local director (Taylor step) without re-running the 8 atan2s.
+// IDEA 4: the plain charge * atan2 sum is the one-constant (K1 = K3) solution. With unequal
+// splay/bend constants the first-order correction is theta = s * (phi + eps * sin(2(1-s)phi)):
+// +1/2 comets close into a U, -1/2 trefoil arms curve. sin(2(1-s)phi) is continuous across the
+// atan2 cut for s = +-1/2 (sin(phi), sin(3phi)), so no new seams.
+fn frankTerm(charge: f32, ang: f32, eps: f32) -> vec2<f32> {
+    let m = 2.0 * (1.0 - charge);
+    // (theta contribution, d theta / d phi)
+    return vec2<f32>(charge * (ang + eps * sin(m * ang)), charge * (1.0 + eps * m * cos(m * ang)));
+}
+
+fn directorFieldG(p: vec2<f32>, time: f32, defectDensity: f32, mobility: f32, mousePos: vec2<f32>, mouseDown: f32, eps: f32) -> vec3<f32> {
     var angle = 0.0;
+    var grad = vec2<f32>(0.0);
     let numDefects = 8;
 
     for (var i: i32 = 0; i < numDefects; i++) {
@@ -80,7 +76,9 @@ fn directorField(p: vec2<f32>, time: f32, defectDensity: f32, mobility: f32, mou
 
         let dp = p - defectPos;
         let defectAngle = atan2(dp.y, dp.x);
-        angle += charge * defectAngle;
+        let ft = frankTerm(charge, defectAngle, eps);
+        angle += ft.x;
+        grad += ft.y * vec2<f32>(-dp.y, dp.x) / max(dot(dp, dp), 1e-4);
     }
 
     // Mouse creates topological defect when down
@@ -88,19 +86,59 @@ fn directorField(p: vec2<f32>, time: f32, defectDensity: f32, mobility: f32, mou
         let mdp = p - mousePos;
         let mouseAngle = atan2(mdp.y, mdp.x);
         angle += 0.5 * mouseAngle;
+        grad += 0.5 * vec2<f32>(-mdp.y, mdp.x) / max(dot(mdp, mdp), 1e-4);
     }
 
     // Add smooth background field from noise
     angle += noise(p * 2.0 + time * 0.05) * 0.5;
 
-    return angle;
+    return vec3<f32>(angle, grad);
+}
+
+// Scalar-angle form kept from the original layout.
+fn directorField(p: vec2<f32>, time: f32, defectDensity: f32, mobility: f32, mousePos: vec2<f32>, mouseDown: f32) -> f32 {
+    return directorFieldG(p, time, defectDensity, mobility, mousePos, mouseDown, 0.0).x;
+}
+
+// IDEA 1: line-integral convolution. Integrates a noise texture along the streamline of the
+// director (5 steps each way, triangle kernel). Each step's direction is jittered by
+// (1 - cohere) so a disordered field smears into isotropic speckle (IDEA 3).
+fn licConvolve(p: vec2<f32>, theta0: f32, g: vec2<f32>, cohere: f32, licScale: f32, time: f32) -> f32 {
+    let ns = licScale * 3.0;
+    let h = 0.9 / ns;
+    let drift = vec2<f32>(time * 0.1, time * 0.07);
+    var acc = noise(p * ns + drift);
+    var wsum = 1.0;
+    for (var s: i32 = 0; s < 2; s++) {
+        let sgn = select(-1.0, 1.0, s == 1);
+        var q = p;
+        for (var k: i32 = 0; k < 5; k++) {
+            let dth = clamp(dot(g, q - p), -1.4, 1.4);
+            let jit = (hash21(q * ns * 1.7 + vec2<f32>(f32(k) * 3.1 + sgn, sgn)) - 0.5) * 3.1416 * (1.0 - cohere);
+            let th = theta0 + dth + jit;
+            q += vec2<f32>(cos(th), sin(th)) * h * sgn;
+            let w = 1.0 - f32(k + 1) / 6.0;
+            acc += noise(q * ns + drift) * w;
+            wsum += w;
+        }
+    }
+    return acc / wsum;
 }
 
 // ═══ Defect proximity (singularity detector) ═══
-fn defectProximity(p: vec2<f32>, time: f32, defectDensity: f32, mobility: f32, mousePos: vec2<f32>, mouseDown: f32) -> vec4<f32> {
+struct DefectInfo {
+    minDist: f32,
+    charge: f32,
+    totalCharge: f32,
+    eulerChar: f32,
+    rel: vec2<f32>,
+};
+
+fn defectProximity(p: vec2<f32>, time: f32, defectDensity: f32, mobility: f32, mousePos: vec2<f32>, mouseDown: f32) -> DefectInfo {
     var minDist = 100.0;
     var charge = 0.0;
     var totalCharge = 0.0;
+    var rel = vec2<f32>(0.0);
     let numDefects = 8;
 
     for (var i: i32 = 0; i < numDefects; i++) {
@@ -115,6 +153,7 @@ fn defectProximity(p: vec2<f32>, time: f32, defectDensity: f32, mobility: f32, m
         let dist = length(p - defectPos);
         if (dist < minDist) {
             minDist = dist;
+            rel = p - defectPos;
             charge = select(-0.5, 0.5, i % 2 == 0);
         }
         totalCharge += select(-0.5, 0.5, i % 2 == 0);
@@ -125,6 +164,7 @@ fn defectProximity(p: vec2<f32>, time: f32, defectDensity: f32, mobility: f32, m
         let mouseDist = length(p - mousePos);
         if (mouseDist < minDist) {
             minDist = mouseDist;
+            rel = p - mousePos;
             charge = 0.5;
         }
         totalCharge += 0.5;
@@ -134,7 +174,7 @@ fn defectProximity(p: vec2<f32>, time: f32, defectDensity: f32, mobility: f32, m
     // Torus: chi = 0, Sphere: chi = 2
     let eulerChar = totalCharge * 2.0;
 
-    return vec4<f32>(minDist, charge, totalCharge, eulerChar);
+    return DefectInfo(minDist, charge, totalCharge, eulerChar, rel);
 }
 
 // ═══ Iridescent color mapping (oil-slick) ═══
@@ -148,14 +188,6 @@ fn iridescent(angle: f32, proximity: f32, time: f32) -> vec3<f32> {
     let b = 0.5 + 0.5 * cos(6.2832 * (film + 0.67));
 
     return vec3<f32>(r, g, b);
-}
-
-// ═══ Smooth bass envelope ═══
-fn bassEnv(prev: f32, current: f32, attack: f32, release: f32) -> f32 {
-    if (current > prev) {
-        return mix(prev, current, attack);
-    }
-    return mix(prev, current, release);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -180,12 +212,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mousePos = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
 
-    // Smooth audio
-    var prevBass = extraBuffer[0];
-    let smoothBass = bassEnv(prevBass, bass, 0.15, 0.02);
-    if (gid.x == 0u && gid.y == 0u) {
-      extraBuffer[0] = smoothBass;
-    }
+    // Stateless: HEAD's extraBuffer[0] "prevBass" was the raw uploaded bass (smoothing was a no-op
+    // and thread (0,0) raced the audio slot), so the effective value was always bass itself.
+    let smoothBass = bass;
 
     // Phase transition order parameter: 0 = disordered, 1 = ordered
     let orderParam = smoothstep(0.2, 0.8, smoothBass);
@@ -203,7 +232,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mp = (mousePos - 0.5) * vec2<f32>(aspect, 1.0) * 2.0;
 
     // ═══ DIRECTOR FIELD COMPUTATION ═══
-    let angle = directorField(p, time, dynDensity, dynMobility, mp, mouseDown);
+    // Elastic anisotropy: a constant splay-soft offset plus mids, so it reads at audio = 0.
+    let frankEps = 0.22 + mids * 0.12;
+    let dfg = directorFieldG(p, time, dynDensity, dynMobility, mp, mouseDown, frankEps);
+    let angle = dfg.x;
 
     // Add high-frequency treble perturbation
     let perturbAngle = angle + noise(p * 10.0 + time * 2.0) * dynPerturb * 0.5;
@@ -212,22 +244,34 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mouseAttract = exp(-length(p - mp) * 4.0) * 0.8;
     let finalAngle = mix(perturbAngle, atan2(p.y - mp.y, p.x - mp.x), mouseAttract);
 
+    // ═══ DEFECT VISUALIZATION ═══
+    let defect = defectProximity(p, time, dynDensity, dynMobility, mp, mouseDown);
+    let defectDist = defect.minDist;
+    let defectCharge = defect.charge;
+    let totalCharge = defect.totalCharge;
+    let eulerChar = defect.eulerChar;
+
     // ═══ FIELD VISUALIZATION ═══
     // Director vector
     let director = vec2<f32>(cos(finalAngle), sin(finalAngle));
 
-    // Line-integral convolution style: streak pattern along director
-    let licScale = 8.0 + dynPerturb * 4.0;
-    let streak = noise(p * licScale + director * 2.0 + time * 0.1);
-    let streak2 = noise(p * licScale * 0.5 - director * 1.5 + time * 0.07);
-    let fieldVis = streak * 0.6 + streak2 * 0.4;
+    // IDEA 3: order parameter -> director coherence. Autonomous breathing domains keep it
+    // visible at audio = 0; bass (orderParam), the mouse pin and distance from cores raise it.
+    let domain = noise(p * 1.3 + vec2<f32>(time * 0.03, -time * 0.02));
+    let breath = 0.5 + 0.5 * sin(time * 0.2 + domain * 5.0);
+    let autoOrder = 0.15 + 0.7 * smoothstep(0.25, 0.75, breath);
+    var cohere = mix(autoOrder, 1.0, orderParam);
+    cohere = max(cohere, mouseAttract);
+    cohere *= mix(0.55, 1.0, smoothstep(0.0, 0.3, defectDist));
+    cohere = clamp(cohere, 0.0, 1.0);
 
-    // ═══ DEFECT VISUALIZATION ═══
-    let defect = defectProximity(p, time, dynDensity, dynMobility, mp, mouseDown);
-    let defectDist = defect.x;
-    let defectCharge = defect.y;
-    let totalCharge = defect.z;
-    let eulerChar = defect.w;
+    // IDEA 1: true LIC along the streamline (Taylor director from the analytic gradient)
+    let licScale = 8.0 + dynPerturb * 4.0;
+    let mrel = p - mp;
+    let gPin = vec2<f32>(-mrel.y, mrel.x) / max(dot(mrel, mrel), 1e-4);
+    let gEff = mix(dfg.yz, gPin, mouseAttract);
+    let lic = licConvolve(p, finalAngle, gEff, cohere, licScale, time);
+    let fieldVis = clamp(0.5 + (lic - 0.5) * mix(2.2, 3.4, cohere), 0.0, 1.0);
 
     // Singularity glow
     let singularityGlow = exp(-defectDist * 15.0) * 1.5;
@@ -242,7 +286,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let iridescentBase = iridescent(finalAngle, defectDist, time);
 
     // Brush-stroke pattern from field
-    let brushIntensity = smoothstep(0.3, 0.7, fieldVis);
+    let brushHalf = mix(0.3, 0.16, cohere);   // crisp threads when ordered, soft speckle when not
+    let brushIntensity = smoothstep(0.5 - brushHalf, 0.5 + brushHalf, fieldVis);
 
     // Phase transition color shift:
     // Disordered (low bass) = warm colors (high entropy)
@@ -255,12 +300,40 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var col = iridescentBase * brushIntensity * colorSaturation;
     col = mix(col, col * phaseCol * 2.0, orderParam * 0.6 + 0.2);
 
+    // IDEA 5: splay / bend decomposition of the Frank energy. With n = (cos t, sin t),
+    // div n = n_perp . grad(t) (splay) and |curl n| = n . grad(t) (bend). The comet head and the
+    // gaps between trefoil arms are splay, comet tails and arm flanks bend. Energy saturates
+    // ~0.1 from a core; the tint is a birefringence colour shift, scaled multiplicatively so the
+    // dark background stays dark.
+    let gradT = gEff;
+    let splayE = dot(vec2<f32>(-director.y, director.x), gradT);
+    let bendE = dot(director, gradT);
+    let elastic = dot(gradT, gradT);
+    let strain = elastic / (elastic + 25.0);
+    let splayFrac = splayE * splayE / (splayE * splayE + bendE * bendE + 1e-5);
+    let splayCol = vec3<f32>(1.25, 0.95, 0.35);   // gold
+    let bendCol = vec3<f32>(0.75, 0.45, 1.35);    // violet
+    col *= mix(vec3<f32>(1.0), mix(bendCol, splayCol, splayFrac), strain * 0.7);
+
     // Add defect singularity highlights
     col += defectCol;
 
     // Nematic order parameter visualization: darker near defect cores
     let localOrder = smoothstep(0.0, 0.15, defectDist);
     col *= localOrder * 0.8 + 0.2;
+
+    // IDEA 2: defect glyphs. Radial alignment cos^2(theta - phi) about the nearest core is one
+    // wedge for a +1/2 (comet tail; theta-phi = c - phi/2) and three lobes for a -1/2 (trefoil;
+    // theta-phi = c - 3phi/2). Warm comet, cool trefoil, drawn after the core darkening.
+    let isPos = defectCharge > 0.0;
+    let dphi = atan2(defect.rel.y, defect.rel.x);
+    let radial = cos(angle - dphi);
+    let radial2 = radial * radial;
+    let glyphShape = select(pow(radial2, 5.0) * exp(-defectDist * 8.0) * (1.0 - smoothstep(0.2, 0.35, defectDist)),
+                            pow(radial2, 6.0) * exp(-defectDist * 5.0) * (1.0 - smoothstep(0.3, 0.5, defectDist)),
+                            isPos);
+    let glyph = glyphShape * smoothstep(0.0, 0.04, defectDist);
+    col += select(negativeCol, positiveCol, isPos) * glyph * (0.4 + 0.6 * colorSaturation) * (0.7 + 0.6 * fieldVis);
 
     // Background: very dark with subtle field texture
     let bgField = fieldVis * 0.08;

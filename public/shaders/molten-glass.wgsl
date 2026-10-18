@@ -1,29 +1,19 @@
-// ═══════════════════════════════════════════════════════════════
-// Molten Glass - Stylized glass transmission with Beer-Lambert absorption
-// Category: distortion
-// Features: heat simulation, melting distortion, physically-based alpha
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Molten Glass
+//  Category: distortion
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-16
+//  Ideas: cooling crust where heat falls; drip thread on the convection packet
+//  A packing: raw heat in A.r (C.r is heat). ACES on writeTexture only
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=HeatRadius, y=Viscosity, z=Refraction, w=CoolingRate
-  ripples: array<vec4<f32>, 50>,
-};
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+// zoom_params: x=HeatRadius, y=Viscosity, z=Refraction, w=CoolingRate
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -139,7 +129,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let gloss = smoothstep(0.8, 1.0, heat) * 0.2;
     color = vec4<f32>(clamp(color.rgb + vec3<f32>(gloss), vec3<f32>(0.0), vec3<f32>(4.0)), color.a);
 
-    textureStore(writeTexture, coord, color);
+    // Idea 1 — cooling crust. Idea 2 — the convection packet drawn as a drip.
+    let crust = smoothstep(0.0, 0.12, prevColor.r - heat) * (1.0 - heat);
+    let drip = convectionPacket * heat;
+    let body = color.rgb * mix(vec3<f32>(1.0), vec3<f32>(0.55, 0.62, 0.70), crust)
+        + vec3<f32>(1.0, 0.78, 0.42) * drip * (0.55 + bass * 0.2);
+    let display = aces(max(body, vec3<f32>(0.0)));
+    textureStore(writeTexture, coord, vec4<f32>(display, color.a));
 
     // Depth pass-through, brought slightly forward where glass is hottest
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

@@ -2,6 +2,7 @@ import { callSuspending } from './call.js';
 import { state, utf8ByteLength, wasmRef } from './state.js';
 import { rewriteWgslStorageFormats } from './wgslFormat.js';
 import { expandWgslIncludes, hasWgslInclude } from './wgslInclude.js';
+import { withBundledLibraries } from './wgslLibraries.js';
 
 export interface SlotState {
   shaderId: string | null;
@@ -23,8 +24,9 @@ function writeUtf8(id: string): { ptr: number; free: () => void } | null {
  *
  * This is the only place WGSL crosses into the WASM module, so it is also the
  * only place that needs an include expander — the C++ side never parses one,
- * it just refuses source that still contains a directive. Libraries resolve as
- * siblings of the shader URL.
+ * it just refuses source that still contains a directive. `_prelude.wgsl` comes
+ * from the bundled copy (wgslLibraries.ts); other libraries resolve as siblings
+ * of the shader URL.
  */
 async function fetchAndExpand(id: string, url: string): Promise<string> {
   const response = await fetch(url);
@@ -37,12 +39,35 @@ async function fetchAndExpand(id: string, url: string): Promise<string> {
   const baseUrl = url.slice(0, url.lastIndexOf('/') + 1);
   return expandWgslIncludes(
     wgslCode,
-    async (name) => {
+    withBundledLibraries(async (name) => {
       const res = await fetch(`${baseUrl}${name}`);
       return res.ok ? res.text() : null;
-    },
+    }),
     `${id}.wgsl`,
   );
+}
+
+/**
+ * Opt-in @group(1) sim ring (src/contracts/bind_group1.json) is TypeScript-only
+ * under the WASM_BACKEND_POLICY.md feature freeze: pipeline.cpp keeps
+ * bindGroupLayoutCount = 1, so a group-1 shader would fail pipeline creation
+ * inside emdawn. Refuse it here, before LoadShader, as a logged skip.
+ * Kept inline (not imported from src/renderer) because the bridge is emitted
+ * module-by-module without bundling.
+ */
+function declaresBindGroup1(wgslCode: string): boolean {
+  const stripped = wgslCode.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+  return /@group\(\s*1\s*\)/.test(stripped);
+}
+
+function refuseBindGroup1(id: string, op: 'loadShader' | 'reloadShader'): false {
+  const message =
+    `Shader ${id} declares @group(1) (sim ring) — WASM backend is group-0 only ` +
+    '(feature freeze); skipped. Use the WebGPU (TS) renderer for sim-ring shaders.';
+  console.warn(`[WASM] ${op}: ${message}`);
+  state.lastLoadError = message;
+  state.loadErrorCount++;
+  return false;
 }
 
 export async function loadShader(id: string, wgslCode: string): Promise<boolean> {
@@ -60,6 +85,8 @@ export async function loadShader(id: string, wgslCode: string): Promise<boolean>
     state.loadErrorCount++;
     return false;
   }
+
+  if (declaresBindGroup1(wgslCode)) return refuseBindGroup1(id, 'loadShader');
 
   const rewritten = rewriteWgslStorageFormats(wgslCode, state.colorFormat);
   const idBuf = writeUtf8(id);
@@ -100,6 +127,8 @@ export async function reloadShader(id: string, wgslCode: string): Promise<boolea
     state.loadErrorCount++;
     return false;
   }
+
+  if (declaresBindGroup1(wgslCode)) return refuseBindGroup1(id, 'reloadShader');
 
   const rewritten = rewriteWgslStorageFormats(wgslCode, state.colorFormat);
   const idBuf = writeUtf8(id);

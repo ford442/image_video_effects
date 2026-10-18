@@ -6,31 +6,13 @@
 //            aces-tone-map, ambient-occlusion
 //  Complexity: Very High
 //  Created: 2026-06-28
-//  Upgraded: 2026-09-13
-//  Ideas: hopper terrace ridges on step-cuts; escapement mesh flash at gearPhase crests
-//  A packing: ACES display RGBA
+//  Upgraded: 2026-10-18
+//  Ideas: hopper terrace ridges on step-cuts; escapement mesh flash at gearPhase crests; mainspring wind-down with ratchet rewind flash; polished brass seams where gear teeth bite the crystal; blued-steel hairspring coiled round each crystal, breathing with the balance swing; guilloché engine-turned rosette engraving on the crystal faces (petal count follows Complexity)
+//  A packing: ACES display RGBA; texel (0,0) = torque state
+//             (eased torque, marker 7.25, accumulated torque phase, 0)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ─── Math Helpers ───
 fn sat(x: f32) -> f32 { return clamp(x, 0.0, 1.0); }
@@ -132,7 +114,48 @@ struct MapResult {
   ao: f32,
   terrace: f32,
   mesh: f32,
+  contact: f32,
+  guilloche: f32,
 };
+
+// Idea 5 — balance hairspring: flat Archimedean coil in the cell's xz plane.
+// Returns distance to the wire; pitch breathes and the coil turns with the swing.
+fn sdHairspring(q: vec3<f32>, cell: f32, swing: f32) -> f32 {
+  let c = cos(swing * 0.6); let sn = sin(swing * 0.6);
+  let xz = vec2<f32>(c * q.x - sn * q.z, sn * q.x + c * q.z);
+  let r = length(xz);
+  let a = atan2(xz.y, xz.x);
+  let rIn = cell * 0.2;
+  let rOut = cell * 0.47;
+  let pitch = cell * 0.068 * (1.0 + 0.14 * swing);
+  let u = (r - rIn) / pitch - a / 6.2831853;
+  let fu = fract(u);
+  let dr = min(fu, 1.0 - fu) * pitch;
+  let radial = max(dr, max(rIn - r, r - rOut));
+  return length(vec2<f32>(radial, q.y)) - cell * 0.012;
+}
+
+// Idea 6 — guilloché: rose-engine wave lines on the face the hit lands on.
+fn guillocheLines(rq: vec3<f32>, size: f32, petals: f32) -> f32 {
+  let aq = abs(rq);
+  var f = rq.xy;
+  if (aq.x > aq.y && aq.x > aq.z) { f = rq.yz; }
+  else if (aq.y > aq.z) { f = rq.xz; }
+  let rho = length(f) / max(size, 1e-4);
+  let phi = atan2(f.y, f.x);
+  let wave = rho + 0.045 * sin(phi * petals);
+  let line = abs(sin(wave * 54.0));
+  return 1.0 - smoothstep(0.0, 0.35, line);
+}
+
+// Idea 3 — mainspring power reserve: the movement runs down from full speed
+// to half over WIND_PERIOD seconds, then the ratchet rewinds it. Clock time is
+// the analytic integral of that speed, so motion never jumps.
+const WIND_PERIOD: f32 = 24.0;
+fn mainspringTime(t: f32) -> f32 {
+  let f = fract(t / WIND_PERIOD);
+  return WIND_PERIOD * (floor(t / WIND_PERIOD) * 0.75 + f - 0.25 * f * f);
+}
 
 fn map(p_in: vec3<f32>, time: f32, audio: f32, complexity: f32,
        clockSpeed: f32, gridDensity: f32, mousePos: vec3<f32>) -> MapResult {
@@ -177,7 +200,13 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, complexity: f32,
     cos(gearPhase * 0.7) * cell * 0.12
   );
   let gear = sdBox(q - gearOffset, vec3<f32>(cell * 0.05, cell * 0.15, cell * 0.05));
+  // Idea 4 — tooth bite: where the tooth and crystal surfaces meet
+  let contact = (1.0 - sat(abs(d - gear) / max(cell * 0.045, 1e-4))) * (1.0 - sat(min(d, gear) / max(cell * 0.06, 1e-4)));
   d = smin(d, gear, 0.05);
+
+  // Idea 5 — the balance hairspring swings once per escapement crest pair.
+  let spring = sdHairspring(q, cell, sin(gearPhase));
+  d = min(d, spring);
 
   // Idea 2 — escapement mesh: flash when neighboring teeth crest
   let mesh = pow(0.5 + 0.5 * cos(gearPhase * 2.0), 18.0);
@@ -188,14 +217,19 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, complexity: f32,
 
   // Material
   var mat = 1.0; // crystal
-  if (mDist < magRadius * 0.5) {
-    mat = 0.5; // molten core
+  if (spring <= d + 1e-4) {
+    mat = 2.0; // blued-steel hairspring
+  }
+  if (mDist < magRadius * 0.5 && u.zoom_config.w > 0.5) {
+    mat = 0.5; // molten core (only while the singularity is held)
   }
 
   // Ambient occlusion proxy
   let ao = sat(0.7 + 0.3 * hash3(cellId + vec3<f32>(0.5)));
 
-  return MapResult(d, mat, ao, hopper.y, mesh);
+  let guilloche = guillocheLines(rq, cell * 0.35, floor(4.0 + complexity * 2.0));
+
+  return MapResult(d, mat, ao, hopper.y, mesh, contact, guilloche);
 }
 
 fn calcNormal(p: vec3<f32>, time: f32, audio: f32, complexity: f32,
@@ -246,12 +280,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Mouse position in 3D
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
   let mouseUV = u.zoom_config.yz;
-  let mouseY = mouseUV.y;  // Flip Y: screen top = up
-  let mousePos = vec3<f32>(
-    (mouseUV.x * 2.0 - 1.0) * 3.0 * aspect,
-    (mouseUV.y * 2.0 - 1.0) * 3.0,  // 3D position: screen top = +Y (up)
-    0.0
-  );
+  let mouseY = mouseUV.y;
 
   // Camera - orbiting through the clockwork
   let camDist = 4.0 + sin(time * 0.1) * 0.5;
@@ -262,6 +291,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let ww = normalize(ta - ro);
   let uu = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), ww));
   let vv = cross(ww, uu);
+  // uu = cross(Y, ww) is screen-LEFT and vv is up while uv.y grows downward,
+  // so rays use (-p.x, -p.y): a 180° turn (flipping one axis would mirror).
+  // Singularity cursor lies on the focal plane through the target, under the pointer.
+  let mousePos = ta - uu * (mouseUV.x * 2.0 - 1.0) * aspect * camDist / 2.5
+                    + vv * (1.0 - mouseUV.y * 2.0) * camDist / 2.5;
 
   var p = uv * 2.0 - 1.0;
   p.x = p.x * aspect;
@@ -280,10 +314,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let d = length(delta);
     let radius = age * (0.28 + clockSpeed * 0.14);
     let teeth = 0.55 + 0.45 * cos(atan2(delta.y, delta.x) * mix(8.0, 22.0, complexityControl));
-    gearShock += exp(-pow((d - radius) * 22.0, 2.0)) * exp(-age * 0.9) * teeth;
+    let ring = (d - radius) * 22.0;
+    gearShock += exp(-ring * ring) * exp(-age * 0.9) * teeth;
   }
-  let effectiveClockSpeed = clamp(clockSpeed + heldTorque * 0.45 + gearShock * 0.75, 0.05, 4.0);
-  let rd = normalize(p.x * uu + p.y * vv + 2.5 * ww);
+  // Torque and shocks are bounded phase pushes, not speed multipliers on absolute time.
+  // Held torque eases in/out and integrates into a phase that is kept on
+  // release (A texel (0,0), read back from C) — no step on press or release.
+  let st = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+  let stOk = abs(st.y - 7.25) < 0.01;
+  let prevTorque = select(0.0, clamp(st.x, -2.0, 2.0), stOk);
+  let prevTorquePhase = select(0.0, st.z, stOk && abs(st.z) < 1.0e5);
+  let torque = mix(prevTorque, heldTorque, 0.08);
+  let torquePhase = prevTorquePhase + torque * 0.03;
+  let torquePush = (torquePhase + gearShock * 1.2) / clockSpeed;
+  let effectiveClockSpeed = clockSpeed;
+  let rd = normalize(-p.x * uu - p.y * vv + 2.5 * ww);
+
+  let clockTime = mainspringTime(time) + torquePush;
+  let springPhase = fract(time / WIND_PERIOD);
+  let reserve = 1.0 - springPhase;
+  let ratchetFlash = exp(-springPhase * WIND_PERIOD * 2.5);
 
   // Raymarch
   var t = 0.0;
@@ -294,11 +344,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var hitAo = 1.0;
   var hitTerrace = 0.0;
   var hitMesh = 0.0;
+  var hitContact = 0.0;
+  var hitGuilloche = 0.0;
   var depth = 0.0;
 
   for (var i: i32 = 0; i < 100; i = i + 1) {
     let pos = ro + rd * t;
-    let res = map(pos, time, audio, complexity, effectiveClockSpeed, gridDensity, mousePos);
+    let res = map(pos, clockTime, audio, complexity, effectiveClockSpeed, gridDensity, mousePos);
 
     if (res.d < 0.005) {
       hit = true;
@@ -307,6 +359,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       hitAo = res.ao;
       hitTerrace = res.terrace;
       hitMesh = res.mesh;
+      hitContact = res.contact;
+      hitGuilloche = res.guilloche;
       depth = t;
       break;
     }
@@ -316,7 +370,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   if (hit) {
-    let n = calcNormal(hitPos, time, audio, complexity, effectiveClockSpeed, gridDensity, mousePos);
+    let n = calcNormal(hitPos, clockTime, audio, complexity, effectiveClockSpeed, gridDensity, mousePos);
     let viewDir = -rd;
     let nDotV = sat(dot(n, viewDir));
 
@@ -328,7 +382,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let spec = pow(sat(dot(reflect(-lightDir, n), viewDir)), 32.0);
     let spec2 = pow(sat(dot(reflect(-lightDir2, n), viewDir)), 64.0) * 0.5;
 
-    if (hitMat < 0.5) {
+    if (hitMat > 1.5) {
+      // Idea 5 — blued-steel hairspring: deep temper blue with a cool sheen,
+      // brightening at the escapement crest the coil is swinging through.
+      let blued = vec3<f32>(0.05, 0.12, 0.42) + vec3<f32>(0.1, 0.25, 0.6) * pow(1.0 - nDotV, 3.0);
+      col = blued * (0.35 + diff * 0.65 + diff2 * 0.3) + vec3<f32>(0.55, 0.7, 1.0) * (spec + spec2) * 0.9;
+      col += vec3<f32>(0.3, 0.55, 1.0) * hitMesh * (0.2 + mids * 0.3);
+    } else if (hitMat < 0.75) {
       // Molten core
       let coreCol = vec3<f32>(1.0, 0.9, 0.7) * (1.0 + audio * 2.0);
       let innerGlow = vec3<f32>(0.8, 0.4, 0.1) * (1.0 - nDotV) * 2.0;
@@ -344,11 +404,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       metal = metal + ired * edge * 0.4;
       // Idea 1 — hopper terrace ridges catch extra film color
       metal = metal + ired * hitTerrace * 0.55;
+      // Idea 6 — guilloché engraving: cut grooves shift the film and catch a
+      // fine specular line; fades with distance before it can alias.
+      let engrave = hitGuilloche * sat(1.0 - depth / 9.0);
+      metal = mix(metal, iridescent(nDotV, time * 0.5 + complexity + 1.4) * iridescence * 0.85 + baseMetal, engrave * 0.45);
 
       col = metal * (0.3 + diff * 0.5 + diff2 * 0.2);
-      col = col + vec3<f32>(0.6, 0.7, 0.8) * (spec + spec2) * 0.5;
+      col = col + vec3<f32>(0.6, 0.7, 0.8) * (spec + spec2) * (0.5 + engrave * 0.8);
       // Idea 2 — escapement mesh flash at tooth crest
-      col = col + vec3<f32>(1.0, 0.78, 0.38) * hitMesh * (spec + 0.18) * 0.85;
+      // (flash strength follows mainspring tension; ratchet rewind flashes every crest)
+      col = col + vec3<f32>(1.0, 0.78, 0.38) * (hitMesh * (0.45 + 0.55 * reserve) + ratchetFlash * 0.6) * (spec + 0.18) * 0.85;
+      // Idea 4 — burnished brass where teeth wear against the step-cuts
+      col = col + vec3<f32>(1.0, 0.8, 0.48) * hitContact * (0.12 + diff * 0.25 + (spec + spec2) * 1.4);
 
       // Audio-reactive shimmer
       col = col + ired * bass * 0.2;
@@ -371,7 +438,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // A/C owns exact ACES display history; do not re-tone-map prior frames.
   let currentDisplay = acesToneMap(col * 1.2);
-  let prev = textureLoad(dataTextureC, coord, 0);
+  let isState = gid.x == 0u && gid.y == 0u;
+  let prev = select(textureLoad(dataTextureC, coord, 0), vec4<f32>(0.0), isState);
   col = mix(prev.rgb * 0.95, currentDisplay, 0.24 + bass * 0.035);
 
   let finalDepth = sat(0.95 - depth * 0.04);
@@ -381,5 +449,5 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   textureStore(writeTexture, coord, vec4<f32>(col, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 1.0));
-  textureStore(dataTextureA, coord, vec4<f32>(col, alpha));
+  textureStore(dataTextureA, coord, select(vec4<f32>(col, alpha), vec4<f32>(torque, 7.25, torquePhase, 0.0), isState));
 }

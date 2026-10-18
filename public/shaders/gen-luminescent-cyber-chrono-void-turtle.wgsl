@@ -3,31 +3,12 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: chronal plate drift (per-cell lift, bass-kicked); chrono-distortion time dilation in mouse well; scute growth rings; void wake via exact C history
+//  Upgraded: 2026-10-18
+//  Ideas: chronal plate drift (per-cell lift, bass-kicked); chrono-distortion time dilation in mouse well; scute growth rings; void wake via exact C history; fore-flipper power-stroke about the shoulder; seam epibionts (algae/barnacle specks in plate gaps); leatherback dorsal keels (seven ridges along the carapace, plates ride over them); carapace hour-hand sweep (a dilated-time meridian circles the shell, igniting the seams it crosses with a fading gold comet trail)
 //  A packing: raw linear wake emission RGB (pre-tonemap) + a = wake energy
 // ═══════════════════════════════════════════════════════════════════
-// --- COPY PASTE THIS HEADER ---
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=Time, y=MouseX (uv), z=MouseY (uv, 0=top), w=MouseDown
-    zoom_params: vec4<f32>,  // x=Shell Complexity, y=Plasma Intensity, z=Chrono-Distortion, w=Swim Speed
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Shell Complexity, y=Plasma Intensity, z=Chrono-Distortion, w=Swim Speed
 
 // Math & Noise Functions
 fn rot(a: f32) -> mat2x2<f32> {
@@ -97,6 +78,8 @@ var<private> gPlateF1: f32 = 0.0;
 var<private> gPlateEdge: f32 = 1.0;
 var<private> gPlateId: f32 = 0.0;
 var<private> gDilation: f32 = 0.0;
+var<private> gPBody: vec3<f32> = vec3<f32>(0.0);
+var<private> gKeel: f32 = 0.0;
 
 fn map(p_in: vec3<f32>) -> f32 {
     var p = p_in;
@@ -126,7 +109,19 @@ fn map(p_in: vec3<f32>) -> f32 {
     let temp_xz = bodyRot * pBody.xz;
     pBody = vec3<f32>(temp_xz.x, pBody.y, temp_xz.y);
 
-    let baseShell = sdEllipsoid(pBody, vec3<f32>(2.0, 1.0, 2.5));
+    var baseShell = sdEllipsoid(pBody, vec3<f32>(2.0, 1.0, 2.5));
+
+    // IDEA 7 — leatherback dorsal keels: seven longitudinal ridges fanned
+    // around the body's long axis over the dorsal half. Angular spacing makes
+    // them converge toward head and tail as the shell narrows, like a real
+    // leatherback carapace; the Voronoi plates are extruded on top of them.
+    let keelK = atan2(pBody.x, pBody.y) / 0.42;
+    let keelRow = abs(keelK - round(keelK));
+    let keel = (1.0 - smoothstep(0.0, 0.2, keelRow))
+             * step(abs(round(keelK)), 3.0)
+             * (1.0 - smoothstep(1.6, 2.5, abs(pBody.z)));
+    gKeel = keel;
+    baseShell -= keel * 0.07;
 
     // Shell Complexity (Voronoi Plates)
     let complexity = u.zoom_params.x * 5.0 + 2.0;
@@ -150,6 +145,7 @@ fn map(p_in: vec3<f32>) -> f32 {
     gPlateF1 = v.x;
     gPlateEdge = edge;
     gPlateId = v.z;
+    gPBody = pBody;
 
     // Hollow out gaps slightly
     shell = shell + inGap * 0.15;
@@ -183,17 +179,23 @@ fn map(p_in: vec3<f32>) -> f32 {
     pHead.y -= 0.2;
     let head = sdEllipsoid(pHead, vec3<f32>(0.5, 0.4, 0.8));
 
+    // IDEA 4 — flipper power-stroke: both fore-flippers beat together about
+    // the shoulder (inner end of the fin) at Swim Speed. stroke = 0 reproduces
+    // the old rest pose exactly (fin centre stays at x = +-2.2).
+    let stroke = sin(gTime * (1.0 + 2.2 * u.zoom_params.w)) * 0.45;
+    let finRest = 0.5;
+
     var pFinL = pBody;
-    pFinL.x -= 2.2;
+    pFinL.x -= 1.0;
     pFinL.z -= 1.5;
-    let tempL_xy = rot(-0.5) * pFinL.xy;
+    let tempL_xy = rot(-finRest + stroke) * pFinL.xy - rot(-finRest) * vec2<f32>(1.2, 0.0);
     pFinL = vec3<f32>(tempL_xy.x, tempL_xy.y, pFinL.z);
     let finL = sdEllipsoid(pFinL, vec3<f32>(1.2, 0.1, 0.8));
 
     var pFinR = pBody;
-    pFinR.x += 2.2;
+    pFinR.x += 1.0;
     pFinR.z -= 1.5;
-    let tempR_xy = rot(0.5) * pFinR.xy;
+    let tempR_xy = rot(finRest - stroke) * pFinR.xy - rot(finRest) * vec2<f32>(-1.2, 0.0);
     pFinR = vec3<f32>(tempR_xy.x, tempR_xy.y, pFinR.z);
     let finR = sdEllipsoid(pFinR, vec3<f32>(1.2, 0.1, 0.8));
 
@@ -256,7 +258,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Camera setup
     var ro = vec3<f32>(0.0, 2.0, -8.0);
-    var rd = normalize(vec3<f32>(uv, 1.0));
+    // uv.y grows down the screen; world Y is up
+    var rd = normalize(vec3<f32>(uv.x, -uv.y, 1.0));
 
     // Slow rotation of camera
     let camRot = rot(sin(gTime * 0.1) * 0.2);
@@ -266,10 +269,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let temp_rd_xz = camRot * rd.xz;
     rd = vec3<f32>(temp_rd_xz.x, rd.y, temp_rd_xz.y);
 
-    let rot_x = rot(0.2);
+    // Elevate the camera 0.2 rad and pitch the view a further atan(2/8) down so
+    // it looks straight at the turtle from above (carapace in frame centre)
+    let rot_x = rot(-0.2);
     let temp_ro_yz = rot_x * ro.yz;
     ro = vec3<f32>(ro.x, temp_ro_yz.x, temp_ro_yz.y);
-    let temp_rd_yz = rot_x * rd.yz;
+    let temp_rd_yz = rot(-0.445) * rd.yz;
     rd = vec3<f32>(rd.x, temp_rd_yz.x, temp_rd_yz.y);
 
     var t = 0.0;
@@ -319,12 +324,41 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // IDEA 3 — scute growth rings: concentric annuli around each plate
         // centre, grooved into the obsidian; ring phase creeps outward with
         // (dilated) chronal time so older rings feel like accumulated epochs
-        let ringTime = gTime * (1.0 - 0.75 * gDilation) * 0.15;
+        let ringTime = gTime * 0.15 - 0.6 * gDilation; // bounded dilation lag, not a per-pixel time scale
         let ringPhase = plateF1 * (18.0 + 10.0 * u.zoom_params.x) - ringTime + plateId * TAU;
         let groove = smoothstep(0.75, 1.0, 0.5 + 0.5 * cos(ringPhase))
                    * smoothstep(0.02, 0.12, plateEdge);
         col *= 1.0 - 0.45 * groove;
         col += vec3<f32>(0.1, 0.8, 1.0) * groove * u.zoom_params.y * 0.06 * (1.0 + mids * 0.6);
+
+        // IDEA 5 — seam epibionts: algae / barnacle specks colonise some plate
+        // seams (per-plate gate), warm against the cold plasma, lit a little by
+        // the seam glow. Small round blobs on a hash lattice, only near gaps.
+        let seam = 1.0 - smoothstep(0.03, 0.22, plateEdge);
+        let colonised = step(0.45, fract(plateId * 7.3));
+        let epiQ = gPBody * 13.0;
+        let epiH = hash33(floor(epiQ));
+        let epiBlob = smoothstep(0.34, 0.08, length(fract(epiQ) - vec3<f32>(0.5) - (epiH - vec3<f32>(0.5)) * 0.4));
+        let epi = epiBlob * step(0.5, epiH.z) * seam * colonised;
+        let epiCol = mix(vec3<f32>(0.85, 0.5, 0.12), vec3<f32>(0.35, 0.65, 0.12), fract(epiH.x * 5.0));
+        col = mix(col, epiCol * (0.35 + diff * 0.6), epi * 0.85);
+        col += epiCol * epi * glow * 0.15;
+
+        // IDEA 7 — keel crests catch a cold sheen along their spines
+        col += vec3<f32>(0.1, 0.8, 1.0) * gKeel * (0.04 + spec * 0.3) * u.zoom_params.y;
+
+        // IDEA 8 — carapace hour-hand sweep: a meridian circles the shell about
+        // the body's vertical axis on chronal time (≈12.6 s per turn; it
+        // lags behind inside the mouse well). Seams it has just crossed burn
+        // gold and fade behind it like a comet tail; sharp leading edge.
+        let handAng = gTime * 0.5 - 2.0 * gDilation; // bounded lag: per-pixel time scaling spiralled the hand
+        let azim = atan2(gPBody.x, gPBody.z);
+        let lag = fract((handAng - azim) / TAU);
+        let trail = exp(-lag * 9.0);
+        let dorsal = smoothstep(-0.2, 0.4, gPBody.y);
+        let handSeam = 1.0 - smoothstep(0.02, 0.15, plateEdge);
+        let handCol = vec3<f32>(1.0, 0.72, 0.28);
+        col += handCol * trail * dorsal * (handSeam * 0.9 + 0.08) * u.zoom_params.y * (0.7 + mids * 0.5);
 
         // Add fake subsurface scattering / ambient based on glow
         col += vec3<f32>(0.1, 0.8, 1.0) * glow * 0.5;

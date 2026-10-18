@@ -7,6 +7,7 @@ We use **CI-built, committed baseline**:
 | Artifact | Location | Role |
 |----------|----------|------|
 | C++ sources | `wasm_renderer/*.cpp`, `*.h` | Source of truth for renderer logic |
+| Canvas configure header | `wasm_renderer/canvas_configure.h` | **Generated** from `src/contracts/canvas_configure.json` by `npm run gen:canvas-configure`; committed; do not edit |
 | JS bridge (TypeScript) | `src/wasm/bridge/*.ts`, `src/wasm/wasm_bridge.ts` | **Hand-edited SoT — edit here only. Never edit `public/wasm/bridge/*.js`.** |
 | Bridge types | `src/wasm/wasm_bridge.d.ts` | Public contract for generated ESM |
 | Emscripten output | `public/wasm/pixelocity_wasm.{js,wasm}` | ASYNCIFY fallback build (every browser) |
@@ -74,39 +75,28 @@ exports that can reach `wgpuInstanceWaitAny` (`jspi.jspiExports`) always go thro
 ## C++ IDE index (clangd / Cursor)
 
 `compile_commands.json` is **generated, not committed**, because its paths are
-machine-absolute. The committed contract is `reports/wasm_compile_line.txt`.
-
-```bash
-npm run wasm:build              # once, so EM_CACHE holds the emdawnwebgpu port headers
-npm run wasm:compile-commands   # → ./compile_commands.json (gitignored)
-```
-
-The file is rendered from `wasm_compile_flags.json` `sources`, one entry per TU. Each entry
-has `--target=wasm32-unknown-emscripten`, the EM_CACHE sysroot, the compat include dir and
-the emdawnwebgpu `webgpu/include` dir. No entry carries `--use-port` or `-s` flags, since a
-per-TU `--use-port` is the historic `-sUSE_WEBGPU=1` leak. The repo-root `.clangd` points at
-the file. Use emsdk's own `upstream/bin/clangd` so the clang version matches. CI uploads the
-file as the `wasm-compile-commands` artifact. `verify:wasm-invariants` gates the committed
-compile line, the per-TU flags and `.clangd`.
+machine-absolute. Generate it with `npm run wasm:compdb` (see the clangd section below).
+`wasm:compile-commands` is the same command.
 
 ## Toolchain pin
 
 | What | Value | Where |
 |------|-------|-------|
-| emsdk / emcc | **6.0.9** | `src/contracts/wasm_compile_flags.json` → `emsdkVersion` |
-| std / opt / port / `-s` flags | one list | same JSON (`std`, `opt`, `usePort`, `sFlags`, `jsOutputName`) |
+| emsdk / emcc | **6.0.12** | `src/contracts/wasm_compile_flags.json` → `emsdkVersion` |
+| std / opt / port / `-s` flags | two graphs | same JSON: top-level `sFlags` is ASYNCIFY; `jspi` swaps in JSPI. `extraFlags` (`-flto`, `-fno-rtti`) apply to both |
 | Exports | — | `src/contracts/wasm_exports.json` |
 
 - CI `setup-emsdk` `version:` must equal `emsdkVersion` (`npm run verify:wasm-invariants` fails otherwise). Never `latest`.
 - `build.sh` runs `scripts/emcc-version-gate.sh` before `em++` and refuses a mismatched emcc. The minified glue does **not** embed the emcc version, so the gate is on the toolchain, not the artifact.
-- `build.sh` and `CMakeLists.txt` both read the flag JSON; neither may hardcode `-s` flags or `--use-port` (enforced by `verify:wasm-invariants`).
+- `build.sh` reads the flag JSON and may not hardcode `-s` flags or `--use-port` (enforced by `verify:wasm-invariants`). It is the only build; `CMakeLists.txt` was removed.
 - Cloud VMs / Jules: keep `SKIP_WASM_BUILD=1`. Never commit artifacts from a non-pinned emcc (e.g. 3.1.x). `ALLOW_EMCC_VERSION_MISMATCH=1` exists for local experiments only.
-- Bumping the pin: change `emsdkVersion` and `ci.yml` together, rebuild, commit artifacts in the same PR.
+- Bumping the pin: change `emsdkVersion` and `.github/workflows/wasm.yml` together, rebuild, commit artifacts in the same PR.
 
 ## Build commands
 
 ```bash
-npm run wasm:build      # Requires emsdk; fails if emcc missing
+npm run wasm:build      # Requires emsdk; fails if emcc missing (or if canvas_configure.h is stale)
+npm run gen:canvas-configure     # Regenerate wasm_renderer/canvas_configure.h after editing canvas_configure.json
 npm run wasm:validate   # Checks sizes, magic, exports, generated-copy equality
 npm run verify:wasm-bridge-sync  # TypeScript SoT vs generated JS
 npm run wasm:clean      # Remove build/ and public/wasm/
@@ -123,10 +113,29 @@ SKIP_WASM_BUILD=1 npm run build
 
 CI jobs that consume pre-built artifacts from the `wasm` job set this automatically.
 
+### C++ IDE index (clangd)
+
+`build.sh` is the only build. For clangd, generate a compile database from the same
+contract (`src/contracts/wasm_compile_flags.json`: flags and the `sources` TU list):
+
+```bash
+source <emsdk>/emsdk_env.sh   # em++ on PATH, the pinned version
+npm run wasm:build            # once: fetches the emdawnwebgpu headers into EM_CACHE
+npm run wasm:compdb           # writes wasm_renderer/compile_commands.json (gitignored)
+$EMSDK/upstream/bin/clangd --check=wasm_renderer/device.cpp
+```
+
+Each entry is `em++ --cflags` (wasm32 target, EM_CACHE sysroot) plus build.sh's exact
+flag list, `-I` for `wasm_renderer/` and the port headers. `wasm_renderer/.clangd`
+removes the em++-only `-s…` / `--use-port=…` settings. Use emsdk's own clangd so its
+clang matches em++. `verify:wasm-invariants` keeps the database, `.clangd` and build.sh
+on the one flag list and TU list. Do not reintroduce CMake: its two-step emdawn compile
+leaked `-sUSE_WEBGPU=1`.
+
 ## CI pipeline
 
 1. **`wasm` job** — installs emsdk (`mymindstorm/setup-emsdk@v14`), runs `wasm:build`, `wasm:validate`, `verify:wasm-bridge-sync`, WASM Jest smoke tests, freshness check, uploads artifacts.
 2. **`test` job** — downloads WASM artifacts, runs full unit tests + CRA build with `SKIP_WASM_BUILD=1`, re-validates artifacts (`verify:toolchain-foundation` includes bridge sync).
 3. **`test-wasm-e2e` job** — downloads artifacts, production build, Playwright smoke tests (`tests/wasm-renderer.smoke.spec.ts`).
 
-See [`WASM_BUILD_CI_GUIDE.md`](../WASM_BUILD_CI_GUIDE.md) for troubleshooting.
+See [`WASM_BUILD_CI_GUIDE.md`](../docs/WASM_BUILD_CI_GUIDE.md) for troubleshooting.

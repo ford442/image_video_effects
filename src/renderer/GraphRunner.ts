@@ -3,17 +3,20 @@
  *
  * Intra-frame multipass graph executor with texture handoff between passes.
  * Tier C: enables same-frame pass-to-pass reads (unlike linear multipassRegistry).
+ *
+ * Since #1314 a graph is not executed on its own inside the frame: its nodes
+ * compile into the frame plan (webgpu/framePlan.ts) next to linear slots, and
+ * one executor encodes the whole frame. `runGraph` remains as the stand-alone
+ * entry (tests, tools) built on the same compile + execute path.
  */
 
+import { expandGraph, MultipassGraphDef } from './multipassGraph';
 import {
-  ExpandedDispatch,
-  MultipassGraphDef,
-  capGraphDispatches,
-  countGraphPasses,
-  expandGraph,
-  validateGraph,
-} from './multipassGraph';
-import { CopyBarrier } from './multipassGraph';
+  compileGraphOps,
+  executeFramePlan,
+  FrameOp,
+  FramePlanContext,
+} from './webgpu/framePlan';
 
 export interface GraphRoleBindings {
   read: GPUTexture;
@@ -32,17 +35,38 @@ export interface GraphRunReport {
   errors: string[];
 }
 
+/** Group-1 sim ring handed to the graph (src/contracts/bind_group1.json). */
+export interface GraphSimRingBindings {
+  bindGroup: GPUBindGroup;
+  stateBuffer: GPUBuffer;
+  indexBuffer: GPUBuffer;
+  /** Allocated vec4 elements (post OOM ladder). */
+  stateCount: number;
+  /** stateCount × 16 bytes. */
+  byteSize: number;
+}
+
 export interface GraphRunnerContext {
   device: GPUDevice;
   pipelineLayout: GPUPipelineLayout;
   getPipeline: (shaderId: string) => GPUComputePipeline | undefined;
   getWorkgroupSize: (shaderId: string) => { x: number; y: number };
   createBindGroupForRoles: (roles: GraphRoleBindings) => GPUBindGroup;
+  /**
+   * Bind group already built for `textures` (the renderer's cached compute
+   * group). When present no group is created; roles never change inside a
+   * run, so every pass of the graph binds the same group.
+   */
+  bindGroup?: GPUBindGroup;
   textures: GraphRoleBindings;
   scaledW: number;
   scaledH: number;
   maxPassesPerFrame: number;
   shaderId?: string;
+  /** True when the entry's pipeline was built against the group-1 layout. */
+  usesSimRing?: (shaderId: string) => boolean;
+  /** Armed sim ring, or null/undefined when none is allocated. */
+  simRing?: GraphSimRingBindings | null;
   /**
    * Optional: return timestampWrites for the Nth compute dispatch in this graph run
    * (0-based among successfully encoded compute passes). Interior passes may return undefined.
@@ -53,134 +77,88 @@ export interface GraphRunnerContext {
   ) => GPUComputePassTimestampWrites | undefined;
 }
 
-function encodeCopy(
-  encoder: GPUCommandEncoder,
-  ctx: GraphRunnerContext,
-  copy: CopyBarrier,
-): void {
-  const fromTex = copy.from === 'dataA' ? ctx.textures.dataA : ctx.textures.dataB;
-  encoder.copyTextureToTexture(
-    { texture: fromTex },
-    { texture: ctx.textures.dataC },
-    [ctx.scaledW, ctx.scaledH, 1],
-  );
-}
-
-function emptyReport(partial: Partial<GraphRunReport>): GraphRunReport {
-  return {
-    shaderId: partial.shaderId ?? null,
-    requested: partial.requested ?? 0,
-    executed: partial.executed ?? 0,
-    truncated: partial.truncated ?? 0,
-    cap: partial.cap ?? 0,
-    errors: partial.errors ?? [],
-  };
-}
-
 export class GraphRunner {
   lastReport: GraphRunReport | null = null;
 
   runGraph(encoder: GPUCommandEncoder, graph: MultipassGraphDef, ctx: GraphRunnerContext): GraphRunReport {
-    const shaderId = ctx.shaderId ?? null;
-    const errors = validateGraph(graph);
-    if (errors.length > 0) {
-      console.warn('[GraphRunner] Invalid graph:', errors);
-      const report = emptyReport({
-        shaderId,
-        requested: countGraphPasses(graph),
-        cap: Math.min(graph.maxPassesPerFrame || 0, ctx.maxPassesPerFrame),
-        errors,
-      });
-      this.lastReport = report;
-      return report;
-    }
-
-    const cap = Math.min(graph.maxPassesPerFrame, ctx.maxPassesPerFrame);
-    const requested = countGraphPasses(graph);
-    let expanded = capGraphDispatches(graph, ctx.maxPassesPerFrame);
-
-    const truncated = Math.max(0, requested - expanded.length);
-    if (truncated > 0) {
-      console.warn(
-        `[GraphRunner] Pass cap ${cap} — truncated ${truncated} dispatch(es) (kept color write)`,
-      );
-    }
-
-    // Resolve pipelines once (avoids double getPipeline side effects in tests/callers).
-    const prepared = expanded.map((dispatch) => ({
-      dispatch,
-      pipeline: ctx.getPipeline(dispatch.entry),
-    }));
-    const dispatchCount = prepared.filter((p) => !!p.pipeline).length;
-    let encodedIndex = 0;
-
-    for (const { dispatch, pipeline } of prepared) {
-      if (this.runDispatch(encoder, dispatch, pipeline, ctx, encodedIndex, dispatchCount)) {
-        encodedIndex++;
-      }
-    }
-
-    const report = emptyReport({
-      shaderId,
-      requested,
-      executed: encodedIndex,
-      truncated,
-      cap,
-      errors: [],
-    });
+    // Resolve each pipeline once (callers may count getPipeline side effects).
+    const resolved = new Map<string, GPUComputePipeline | undefined>();
+    const planCtx: FramePlanContext = {
+      getPipeline: (id) => {
+        if (!resolved.has(id)) resolved.set(id, ctx.getPipeline(id));
+        return resolved.get(id);
+      },
+      getWorkgroupSize: ctx.getWorkgroupSize,
+      usesSimRing: (id) => !!ctx.usesSimRing?.(id),
+      simRing: ctx.simRing ?? null,
+      maxPassesPerFrame: ctx.maxPassesPerFrame,
+      framePassBudget: Number.POSITIVE_INFINITY,
+    };
+    const ops: FrameOp[] = [];
+    const report = compileGraphOps(
+      ops,
+      graph,
+      0,
+      ctx.shaderId ?? null,
+      'chained',
+      ctx.maxPassesPerFrame,
+      planCtx,
+    );
     this.lastReport = report;
+    if (report.errors.length > 0) return report;
+
+    const getTimestampWrites = ctx.getTimestampWrites;
+    executeFramePlan(
+      encoder,
+      {
+        ops,
+        computeCount: report.executed,
+        output: 'writeTex',
+        graphReports: [report],
+      },
+      {
+        textures: {
+          readTex: ctx.textures.read,
+          writeTex: ctx.textures.color,
+          dataTexA: ctx.textures.dataA,
+          dataTexB: ctx.textures.dataB,
+          dataTexC: ctx.textures.dataC,
+        },
+        computeBindGroup: ctx.bindGroup ?? ctx.createBindGroupForRoles(ctx.textures),
+        simRing: ctx.simRing ?? null,
+        scaledW: ctx.scaledW,
+        scaledH: ctx.scaledH,
+      },
+      {
+        timestampWrites: getTimestampWrites
+          ? (_op, index, count) => getTimestampWrites(index, count)
+          : undefined,
+      },
+    );
     return report;
-  }
-
-  private runDispatch(
-    encoder: GPUCommandEncoder,
-    dispatch: ExpandedDispatch,
-    pipeline: GPUComputePipeline | undefined,
-    ctx: GraphRunnerContext,
-    dispatchIndex: number,
-    dispatchCount: number,
-  ): boolean {
-    for (const copy of dispatch.copiesBefore) {
-      encodeCopy(encoder, ctx, copy);
-    }
-
-    if (!pipeline) {
-      console.warn(`[GraphRunner] Pipeline missing for "${dispatch.entry}"`);
-      return false;
-    }
-
-    const bindGroup = ctx.createBindGroupForRoles(ctx.textures);
-    const wg = ctx.getWorkgroupSize(dispatch.entry);
-
-    const label = `graph-${dispatch.nodeId}-${dispatch.iteration}-${dispatch.entry}`;
-    const timestampWrites = ctx.getTimestampWrites?.(dispatchIndex, dispatchCount);
-    const pass = encoder.beginComputePass(
-      timestampWrites ? { label, timestampWrites } : { label },
-    );
-    pass.setPipeline(pipeline);
-    pass.setBindGroup(0, bindGroup);
-    pass.dispatchWorkgroups(
-      Math.ceil(ctx.scaledW / wg.x),
-      Math.ceil(ctx.scaledH / wg.y),
-      1,
-    );
-    pass.end();
-    return true;
   }
 }
 
 export const graphRunner = new GraphRunner();
 
-/** Summarize graph binding usage for frame feedback gating. */
-export function analyzeGraphBindingUsage(graph: MultipassGraphDef): {
+export interface GraphBindingUsage {
   writesDataA: boolean;
   writesDataB: boolean;
   readsDataC: boolean;
-} {
+}
+
+const graphUsage = new WeakMap<MultipassGraphDef, GraphBindingUsage>();
+
+/** Summarize graph binding usage for frame feedback gating (memoized per graph def). */
+export function analyzeGraphBindingUsage(graph: MultipassGraphDef): GraphBindingUsage {
+  const cached = graphUsage.get(graph);
+  if (cached) return cached;
   const expanded = expandGraph(graph);
-  return {
+  const usage = {
     writesDataA: expanded.some((d) => d.writes.includes('dataA')),
     writesDataB: expanded.some((d) => d.writes.includes('dataB')),
     readsDataC: expanded.some((d) => d.reads.includes('dataC')),
   };
+  graphUsage.set(graph, usage);
+  return usage;
 }

@@ -17,44 +17,88 @@
     16,
     1
   ],
-  "updatedParams": [
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-prismatic-quantum-fractal-nautilus-engine",
+  "url": "shaders/gen-prismatic-quantum-fractal-nautilus-engine.wgsl",
+  "features": [
+    "upgraded-rgba"
+  ],
+  "params": [
     {
-      "index": 0,
+      "id": "aura_intensity",
       "name": "Aura Intensity",
+      "mapping": "zoom_params.x",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "index": 1,
+      "id": "spiral_expansion",
       "name": "Spiral Expansion",
+      "mapping": "zoom_params.y",
       "default": 0.44,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "index": 2,
+      "id": "fractal_depth",
       "name": "Fractal Depth",
+      "mapping": "zoom_params.z",
       "default": 0.4,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "index": 3,
+      "id": "audio_reactivity",
       "name": "Audio Reactivity",
+      "mapping": "zoom_params.w",
       "default": 0.4,
       "min": 0,
       "max": 1,
       "step": 0.01
     }
   ],
-  "supportsDepth": true,
-  "supportsDof": false,
-  "updated": true,
-  "id": "gen-prismatic-quantum-fractal-nautilus-engine",
-  "url": "shaders/gen-prismatic-quantum-fractal-nautilus-engine.wgsl",
-  "features": []
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Aura Intensity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Spiral Expansion",
+          "default": 0.44,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Fractal Depth",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Audio Reactivity",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

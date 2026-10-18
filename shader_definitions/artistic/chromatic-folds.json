@@ -2,9 +2,11 @@
   "id": "chromatic-folds",
   "name": "Chromatic Folds",
   "url": "shaders/chromatic-folds.wgsl",
-  "description": "Geometric color folding and warping effects.",
+  "description": "Geometric color folding and warping effects. Visible fold creases at the pivot hue, history re-folded each frame into nested bands, and the cursor pinches the pivot to the hue beneath it; bass breathes the fold.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

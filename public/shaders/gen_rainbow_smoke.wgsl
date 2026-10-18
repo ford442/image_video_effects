@@ -4,29 +4,12 @@
 //  Features: upgraded-rgba, depth-aware, audio-reactive, mouse-driven, temporal
 //  Complexity: Very High
 //  Scientific: Multi-scale curl-noise smoke with vorticity confinement, buoyancy, Rayleigh edge scattering, and Mie forward glow
-//  Upgraded: 2026-07-26 (Batch 18: CFL velocity clamp, spectral FFT emitters, click bursts, spring mouse)
+//  Upgraded: 2026-10-17
+//  Ideas: CFL clamp; spectral emitters; vortex rings; KH billows; soot cap; ash fall
+//  A packing: raw (velocity.xy, density, temperature) in A; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 
@@ -231,10 +214,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let multiCurl = curl1 + curl2 * 0.5 + curl3 * 0.25;
   velocity += multiCurl * (0.0015 + turbulenceControl * 0.011);
 
-  let vN = textureLoad(dataTextureC, clampCoord(coord + vec2<i32>(0, -1), size), 0).rg;
-  let vS = textureLoad(dataTextureC, clampCoord(coord + vec2<i32>(0, 1), size), 0).rg;
-  let vE = textureLoad(dataTextureC, clampCoord(coord + vec2<i32>(1, 0), size), 0).rg;
-  let vW = textureLoad(dataTextureC, clampCoord(coord + vec2<i32>(-1, 0), size), 0).rg;
+  let vNtex = textureLoad(dataTextureC, clampCoord(coord + vec2<i32>(0, -1), size), 0);
+  let vStex = textureLoad(dataTextureC, clampCoord(coord + vec2<i32>(0, 1), size), 0);
+  let vEtex = textureLoad(dataTextureC, clampCoord(coord + vec2<i32>(1, 0), size), 0);
+  let vWtex = textureLoad(dataTextureC, clampCoord(coord + vec2<i32>(-1, 0), size), 0);
+  let vN = vNtex.rg;
+  let vS = vStex.rg;
+  let vE = vEtex.rg;
+  let vW = vWtex.rg;
   let omega = (vE.y - vW.y) - (vN.x - vS.x);
   let gradAbsOmega = vec2<f32>(abs(vE.y) - abs(vW.y), abs(vN.x) - abs(vS.x));
   let confDir = safeNormalize2(gradAbsOmega, vec2<f32>(0.0, 1.0));
@@ -243,6 +230,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   velocity += mouseDir * mouseMask * 0.008;
   velocity.y -= mouseMask * 0.005;
   velocity.y -= 0.0015 + temperature * 0.014 + density * 0.004;
+
+  // Idea 2 — Kelvin-Helmholtz billows: shear along the interface wrinkles
+  // the smoke/air edge (vorticity magnitude * interface tangent).
+  let shear = abs(vE.x - vW.x) + abs(vN.y - vS.y);
+  let densGrad = vec2<f32>(vEtex.b - vWtex.b, vNtex.b - vStex.b);
+  let khTangent = safeNormalize2(vec2<f32>(-densGrad.y, densGrad.x), vec2<f32>(1.0, 0.0));
+  let kh = sin(dot(uv, khTangent) * 52.0 + time * 4.2 + omega * 6.0)
+         * shear * (0.00035 + turbulenceControl * 0.0028);
+  velocity += khTangent * kh;
 
   // Click smoke bursts: each recorded click injects a radial velocity pulse
   // plus density/temperature impulses that decay over ~3 seconds.
@@ -261,6 +257,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       velocity += burstDir * ring * decay * 0.02;
       clickDensity += ring * decay * 0.45;
       clickHeat += ring * decay * 0.35;
+      // Idea 1 — vortex-ring clicks: toroidal swirl around the expanding
+      // ring radius, on top of the existing radial burst.
+      let ringR = 0.045 + clickAge * 0.075;
+      let ringBand = exp(-abs(clickDist - ringR) * 30.0) * decay;
+      let tang = safeNormalize2(vec2<f32>(-toPixel.y, toPixel.x), vec2<f32>(1.0, 0.0));
+      velocity += tang * ringBand * 0.018;
+      velocity += burstDir * ringBand * 0.007;
+      clickDensity += ringBand * 0.18;
+      clickHeat += ringBand * 0.12;
     }
   }
 
@@ -277,7 +282,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let densityE = sampleState(uv + vec2<f32>(pixel * 2.0, 0.0), resolution, size).b;
   let densityW = sampleState(uv + vec2<f32>(-pixel * 2.0, 0.0), resolution, size).b;
   let gradient = vec2<f32>(densityE - densityW, densityN - densityS);
-  let edge = smoothstep(0.015, 0.14, length(gradient));
+  let khVis = 0.5 + 0.5 * sin(dot(uv, safeNormalize2(vec2<f32>(-gradient.y, gradient.x), vec2<f32>(1.0, 0.0))) * 40.0 + time * 3.1);
+  let edge = smoothstep(0.015, 0.14, length(gradient)) * mix(1.0, khVis, 0.4);
 
   let spectralPhase = fract(time * 0.045 + density * 0.22 + uv.x * 0.25 + uv.y * 0.18 + treble * 0.25);
   let rainbow = 0.55 + 0.45 * cos(6.28318 * vec3<f32>(spectralPhase, spectralPhase + 0.33, spectralPhase + 0.67));
@@ -297,7 +303,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bodyColor = albedo * density * (0.35 + scatteringControl * 0.55);
 
   let alpha = 1.0 - exp(-density * (1.8 + scatteringControl * 2.2));
-  let generatedColor = acesToneMap(mieColor + rayleighColor + bodyColor + coreGlow);
+  // Idea 3 — soot cap on hot smoke at the top of the rising plume (velocity.y is upward)
+  var plume = mieColor + rayleighColor + bodyColor + coreGlow;
+  let sootCap = smoothstep(0.55, 0.95, temperature) * smoothstep(0.5, 0.08, uv.y) * density;
+  plume *= 1.0 - sootCap * 0.48;
+  // Idea 4 — cooled density settles as ash on the downward side
+  let ashFall = (1.0 - temperature) * smoothstep(0.55, 0.95, uv.y) * density * (1.0 - edge);
+  plume += vec3<f32>(0.24, 0.22, 0.2) * ashFall * 0.4;
+  let generatedColor = acesToneMap(plume);
   let background = mix(vec3<f32>(0.02, 0.02, 0.03), inputColor.rgb, 0.35);
   let finalColor = mix(background, generatedColor, alpha);
   let finalAlpha = max(inputColor.a, alpha);

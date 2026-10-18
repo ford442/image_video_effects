@@ -90,5 +90,5 @@ Name (default, min, max, step)
 - Create shader file `public/shaders/gen-abyssal-quantum-crystal-void-manta.wgsl`
 - Create JSON definition `shader_definitions/generative/gen-abyssal-quantum-crystal-void-manta.json`
 - Run `node scripts/generate_shader_lists.js`
-- Upload via storage manager `python scripts/sync_shaders_to_storage.py`
+- Upload via storage manager `python3 tools/deploy/sync_shaders_to_storage.py`
 - Complete pre-commit steps to ensure proper testing, verification, review, and reflection are done.

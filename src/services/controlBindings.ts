@@ -4,6 +4,8 @@
 //  Pure registry + dispatcher; hardware adapters produce normalized ControlEvents.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import slotLimitsContract from '../contracts/slot_limits.json';
+
 export type ControlSource = 'midi-cc' | 'midi-note' | 'key';
 
 export type ControlEventCallback = (event: ControlEvent) => void;
@@ -47,7 +49,8 @@ const STORAGE_KEY = 'vj_control_bindings';
 const MAX_ENTRIES = 100;
 const MAX_TRIGGER_ID_LENGTH = 64;
 const MAX_PARAM_LENGTH = 128;
-const MAX_SLOT_INDEX = 2;
+// Physical slot cap shared with the renderers (slot_limits.json → 0..5).
+const MAX_SLOT_INDEX = slotLimitsContract.maxPhysicalSlots - 1;
 
 function triggerKey(trigger: ControlTrigger): string {
   return `${trigger.source}::${trigger.id}`;

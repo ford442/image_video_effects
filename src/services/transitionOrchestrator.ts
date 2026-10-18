@@ -206,7 +206,7 @@ export class TransitionOrchestrator {
   private consumeBeatInWindow(windowStart: number, windowEnd: number): boolean {
     let consumed = false;
     while (this.beats.length > 0) {
-      const beatTs = this.beats[0];
+      const beatTs = this.beats[0]!;
       if (beatTs < windowStart) {
         this.beats.shift();
         continue;

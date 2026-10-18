@@ -52,48 +52,6 @@
       "description": "Octave count and emission detail"
     }
   ],
-  "advanced_params": [
-    {
-      "id": "bilateral_spatial",
-      "name": "Bilateral Spatial",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_config.x",
-      "description": "Spatial sigma of bilateral filter"
-    },
-    {
-      "id": "bilateral_color",
-      "name": "Bilateral Color",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_config.y",
-      "description": "Color sigma of bilateral filter"
-    },
-    {
-      "id": "bilateral_blend",
-      "name": "Bilateral Blend",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_config.z",
-      "description": "Blend between original foam and smoothed result"
-    }
-  ],
-  "chunks_used": [
-    "hash3 (quantum-foam.wgsl)",
-    "fbm (quantum-foam.wgsl)",
-    "curlNoise (quantum-foam.wgsl)",
-    "voronoi (quantum-foam.wgsl)",
-    "bilateral filter (conv-bilateral-dream.wgsl)"
-  ],
-  "performance_target": "25-35 FPS (GTX 1060)",
-  "created_by": "Agent CB-3 — Convolution Post-Processor",
-  "created_date": "2026-04-18",
   "tags": [
     "quantum",
     "foam",
@@ -101,5 +59,51 @@
     "edge-preserving",
     "chromatic",
     "abstract"
-  ]
+  ],
+  "x-meta": {
+    "legacy": {
+      "advanced_params": [
+        {
+          "id": "bilateral_spatial",
+          "name": "Bilateral Spatial",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "mapping": "zoom_config.x",
+          "description": "Spatial sigma of bilateral filter"
+        },
+        {
+          "id": "bilateral_color",
+          "name": "Bilateral Color",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "mapping": "zoom_config.y",
+          "description": "Color sigma of bilateral filter"
+        },
+        {
+          "id": "bilateral_blend",
+          "name": "Bilateral Blend",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "mapping": "zoom_config.z",
+          "description": "Blend between original foam and smoothed result"
+        }
+      ]
+    },
+    "chunks_used": [
+      "hash3 (quantum-foam.wgsl)",
+      "fbm (quantum-foam.wgsl)",
+      "curlNoise (quantum-foam.wgsl)",
+      "voronoi (quantum-foam.wgsl)",
+      "bilateral filter (conv-bilateral-dream.wgsl)"
+    ],
+    "performance_target": "25-35 FPS (GTX 1060)",
+    "created_by": "Agent CB-3 — Convolution Post-Processor",
+    "created_date": "2026-04-18"
+  }
 }

@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Quantum Superposition Lattice
 //  Category: generative
-//  Features: mouse-driven, audio-reactive, audio-driven, upgraded-rgba
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Created: 2026-03-14
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-09-27
+//  Ideas: coherent interference term (|Σψ|² − Σ|ψ|², phase-hued); detector-screen hit buildup
+//  A packing: rgb = ACES display, a = detector hit accumulator (read back from C)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -109,6 +110,12 @@ fn fringeColor(pathDiff: f32, t: f32) -> vec3<f32> {
     let phase  = pathDiff * 12.0;
     let bright = pow(cos(phase) * 0.5 + 0.5, 3.0);
     return hsv2rgb(fract(phase * 0.08 + t * 0.05), 0.9, bright);
+}
+
+fn hashPix(p: vec2<f32>) -> f32 {
+    var q = fract(p * vec2<f32>(0.1031, 0.1030));
+    q = q + dot(q, q.yx + 33.33);
+    return fract((q.x + q.y) * q.x);
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -234,13 +241,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vacEnergy = fbm_qs(p * 8.0 + t * 0.05) * 0.04;
     col += hsv2rgb(fract(t * 0.06 + length(p)), 0.4, vacEnergy);
 
+    // Idea 1: the coherent sum. |Σψ|² − Σ|ψ|² is the cross (interference)
+    // term the ghosts share; bright where in phase, dark where cancelling.
+    // Decoherence washes it out toward the incoherent picture.
+    let coherentProb = totalRe * totalRe + totalIm * totalIm;
+    let crossTerm = (coherentProb - totalProb) * collapse * rippleCollapse;
+    let coherence = 1.0 - u.zoom_params.y * 0.85;
+    let phaseHue = atan2(totalIm, totalRe) / TAU + 0.5;
+    col += hsv2rgb(fract(phaseHue + t * 0.02), 0.85, clamp(crossTerm * 2.5, 0.0, 0.9)) * coherence;
+    col *= 1.0 - clamp(-crossTerm * 2.0, 0.0, 0.55) * coherence;
+
+    // Idea 2: detector screen. Each frame a pixel registers a hit with
+    // probability ∝ |ψ|²; hits persist in A.a (exact C load) and slowly fade,
+    // so the distribution builds up dot by dot.
+    let coord = vec2<i32>(global_id.xy);
+    let prevHits = textureLoad(dataTextureC, coord, 0).a;
+    let roll = hashPix(vec2<f32>(coord) + fract(t * 7.31) * vec2<f32>(1733.0, 977.0));
+    let hitP = clamp(normalizedProb, 0.0, 1.0) * (0.006 + treble * 0.02);
+    let hitNow = select(0.0, 1.0, roll < hitP);
+    let hits = clamp(prevHits * 0.994 + hitNow, 0.0, 4.0);
+    col += vec3<f32>(0.85, 1.0, 0.8) * min(hits, 1.5) * 0.3;
+
     col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let alpha = clamp(normalizedProb * 4.0 * waveOpacity + trebleSparkle, 0.0, 1.0);
+    let depth = textureLoad(readDepthTexture, coord, 0).r;
+    let alpha = clamp(normalizedProb * 4.0 * waveOpacity + trebleSparkle + min(hits, 1.0) * 0.3, 0.0, 1.0);
     let finalColor = vec4<f32>(acesToneMap(col * 1.1), alpha);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
-    textureStore(dataTextureA, global_id.xy, finalColor);
+    textureStore(writeTexture, coord, finalColor);
+    textureStore(dataTextureA, coord, vec4<f32>(finalColor.rgb, hits));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

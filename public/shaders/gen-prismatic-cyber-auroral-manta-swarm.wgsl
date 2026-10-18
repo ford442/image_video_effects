@@ -3,30 +3,12 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: mobuliform chordwise travelling-wave undulation of the pectoral wing disc; manta countershading with dorsal shoulder chevrons and unique ventral spot constellations
+//  Upgraded: 2026-10-17
+//  Ideas: mobuliform chordwise travelling-wave undulation of the pectoral wing disc; manta countershading with dorsal shoulder chevrons and unique ventral spot constellations; ventral gill-arch bioluminescence; ram-ventilation wake ribbons; school barrel-roll wave (a full roll about the swim axis passes manta to manta through the formation); aurora-lit dorsal dapple (the aurora volume's own density lights the disc in its palette)
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
-struct Uniforms {
-    config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-    zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
-    zoom_params: vec4<f32>,  // .x = Scale (swarm cohesion), .y = Intensity (aurora), .z = Speed, .w = Detail
-    ripples: array<vec4<f32>, 50>,
-};
-
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: .x = Scale (swarm cohesion), .y = Intensity (aurora), .z = Speed, .w = Detail
 
 // PRNG
 fn hash1(n: f32) -> f32 {
@@ -116,6 +98,15 @@ fn rotZ(a: f32) -> mat3x3<f32> {
     return mat3x3<f32>(c, -s, 0.0, s, c, 0.0, 0.0, 0.0, 1.0);
 }
 
+// Idea 5: school barrel-roll wave. Every ~12 s a full roll about the swim
+// axis passes through the formation one manta after another; returns the
+// roll as (cos, sin) for manta fi.
+fn schoolRoll(time: f32, fi: f32) -> vec2<f32> {
+    let wave = fract(time * 0.085) * 8.0 - fi;
+    let a = smoothstep(0.0, 1.0, clamp(wave, 0.0, 1.0)) * 6.2831853;
+    return vec2<f32>(cos(a), sin(a));
+}
+
 // Smooth min/max
 fn smin(a: f32, b: f32, k: f32) -> f32 {
     let h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
@@ -127,16 +118,19 @@ fn sdf_manta(p_in: vec3<f32>, time: f32, audio_react: f32, id: f32) -> f32 {
     var p = p_in;
 
     // Wing flapping animation based on time, position, and audio
-    let flap_speed = 2.0 + audio_react * 2.0 + hash1(id) * 1.5;
+    // Base rate times time, audio as a bounded phase kick (scaling absolute
+    // time by audio made the flap jump on every beat).
+    let flap_speed = 2.0 + hash1(id) * 1.5;
+    let flap_kick = audio_react * 1.5;
     let flap_amp = 0.3 + audio_react * 0.2;
 
     // Flapping (spanwise wave out to the wingtips)
-    let flap = sin(time * flap_speed - abs(p.x) * 2.0) * flap_amp * p.x * p.x;
+    let flap = sin(time * flap_speed + flap_kick - abs(p.x) * 2.0) * flap_amp * p.x * p.x;
     p.y -= flap;
 
     // Idea 1: mobuliform chordwise travelling wave - the pectoral disc ripples from
     // leading edge to trailing edge with a phase lag, amplitude growing toward the tips.
-    let chord_phase = time * flap_speed * 1.3 - p.z * 3.2 - abs(p.x) * 1.1;
+    let chord_phase = (time * flap_speed + flap_kick) * 1.3 - p.z * 3.2 - abs(p.x) * 1.1;
     let tip_w = smoothstep(0.4, 2.3, abs(p.x));
     p.y -= sin(chord_phase) * (0.06 + audio_react * 0.05) * tip_w;
 
@@ -152,7 +146,7 @@ fn sdf_manta(p_in: vec3<f32>, time: f32, audio_react: f32, id: f32) -> f32 {
 
     // Swept back wing shape
     var wp = p;
-    wp.z += abs(wp.x) * 0.5; // Sweep back
+    wp.z -= abs(wp.x) * 0.5; // Sweep back (local +z is aft)
 
     // Wing bounding box/shape
     let d_x = abs(wp.x) - wing_w;
@@ -167,7 +161,7 @@ fn sdf_manta(p_in: vec3<f32>, time: f32, audio_react: f32, id: f32) -> f32 {
     var tp = p;
     tp.z -= 1.0; // Start at back of body
     // Tail whipping
-    tp.x += sin(time * flap_speed * 1.5 + tp.z * 2.0) * 0.1 * tp.z;
+    tp.x += sin((time * flap_speed + flap_kick) * 1.5 + tp.z * 2.0) * 0.1 * tp.z;
 
     // Tail cylinder
     let d_tx = abs(tp.x) - tail_t;
@@ -226,12 +220,16 @@ fn map(p_in: vec3<f32>, time: f32, audio_react: f32, mouse_pos: vec3<f32>, swarm
         let pull_dir_next = normalize(mouse_pos - next_pos);
         next_pos = next_pos + pull_dir_next * m_pull_next * 0.5 - next_pos * swarm_cohesion * 0.1;
 
-        let vel = normalize(next_pos - pos);
+        // Local +z is aft (tail, wake), so the frame's z axis points against travel
+        let vel = normalize(pos - next_pos);
 
         // Create rotation matrix to align with velocity
         let up = vec3<f32>(0.0, 1.0, 0.0);
-        let right = normalize(cross(up, vel));
-        let new_up = cross(vel, right);
+        let right0 = normalize(cross(up, vel));
+        let up0 = cross(vel, right0);
+        let roll = schoolRoll(time, fi);
+        let right = right0 * roll.x + up0 * roll.y;
+        let new_up = up0 * roll.x - right0 * roll.y;
         let rot = mat3x3<f32>(right, new_up, vel);
 
         // Transform point to manta local space
@@ -278,9 +276,12 @@ fn nearestMantaLocal(p_in: vec3<f32>, time: f32, audio_react: f32, mouse_pos: ve
         let m_dist_next = length(mouse_pos - next_pos);
         let m_pull_next = 1.0 / (m_dist_next * m_dist_next + 1.0) * 10.0 * held_gain;
         next_pos = next_pos + normalize(mouse_pos - next_pos) * m_pull_next * 0.5 - next_pos * swarm_cohesion * 0.1;
-        let vel = normalize(next_pos - pos);
-        let right = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), vel));
-        let new_up = cross(vel, right);
+        let vel = normalize(pos - next_pos);
+        let right0 = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), vel));
+        let up0 = cross(vel, right0);
+        let roll = schoolRoll(time, fi);
+        let right = right0 * roll.x + up0 * roll.y;
+        let new_up = up0 * roll.x - right0 * roll.y;
         let d_vec = p_in - pos;
         let lp = vec3<f32>(dot(right, d_vec), dot(new_up, d_vec), dot(vel, d_vec));
         let d = sdf_manta(lp, time, audio_react, fi);
@@ -298,7 +299,7 @@ fn mantaSkin(lp: vec3<f32>, n_local: vec3<f32>, id: f32, detail: f32) -> vec4<f3
     let dorsal = smoothstep(-0.25, 0.25, n_local.y);
     // Dorsal shoulder chevrons: two pale bands sweeping back from the head toward the wing roots
     let ax = abs(lp.x);
-    let chevron_line = abs((lp.z + 0.1) - (0.9 - ax * 0.75));
+    let chevron_line = abs((0.1 - lp.z) - (0.9 - ax * 0.75));
     let chevron = smoothstep(0.28, 0.08, chevron_line) * smoothstep(0.2, 0.5, ax) * smoothstep(1.6, 1.0, ax);
     // Ventral spot constellation seeded by manta id (between the gill slits, on the belly)
     let spot_scale = 2.5 + detail * 3.0;
@@ -313,6 +314,22 @@ fn mantaSkin(lp: vec3<f32>, n_local: vec3<f32>, id: f32, detail: f32) -> vec4<f3
     let ventral_col = mix(vec3<f32>(0.35, 0.42, 0.5), vec3<f32>(0.03, 0.04, 0.08), spot * belly);
     let col = mix(ventral_col, dorsal_col, dorsal);
     return vec4<f32>(col, chevron * dorsal);
+}
+
+// Idea 3: ventral gill arches glowing along the feeding channels.
+fn mantaGillArches(lp: vec3<f32>, n_local: vec3<f32>, detail: f32) -> f32 {
+    let ventral = smoothstep(0.0, 0.55, -n_local.y);
+    let channel = (1.0 - smoothstep(0.12, 0.85, abs(lp.x))) * (1.0 - smoothstep(0.15, 0.9, abs(lp.z + 0.15)));
+    let arch = pow(max(0.5 + 0.5 * sin((lp.x * 8.0 + lp.z * 3.0) * (1.0 + detail * 0.6)), 0.0), 3.0);
+    return ventral * channel * arch;
+}
+
+// Idea 4: luminous wake sheets shed from the trailing manta disc.
+fn mantaWakeRibbon(lp: vec3<f32>, time: f32, audio_react: f32, detail: f32) -> f32 {
+    let trail = smoothstep(0.35, 2.6, lp.z);
+    let sheet = exp(-abs(lp.x) * (2.0 + detail * 2.0)) * exp(-abs(lp.y) * 8.0);
+    let roll = pow(max(0.5 + 0.5 * sin(lp.z * 6.0 - (time * 3.5 + audio_react * 1.5) + lp.x * 2.0), 0.0), 2.0);
+    return trail * sheet * roll;
 }
 
 // Calculate normal
@@ -358,13 +375,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let age = u.config.x - rp.z;
         if (age < 0.0 || age > 3.0) { continue; }
         let rdist = length((uv01 - rp.xy) * vec2<f32>(res.x / res.y, 1.0));
-        breach += exp(-pow((rdist - age * 0.35) * 18.0, 2.0)) * (1.0 - age / 3.0);
+        let rr = (rdist - age * 0.35) * 18.0;
+        breach += exp(-rr * rr) * (1.0 - age / 3.0);
     }
     breach = clamp(breach, 0.0, 1.5);
 
     // Camera
     let ro = vec3<f32>(0.0, 0.0, -10.0);
-    var rd = normalize(vec3<f32>(uv, 1.0));
+    // Pixel rows grow downward; flip so world +y is screen-up
+    var rd = normalize(vec3<f32>(uv.x, -uv.y, 1.0));
 
     // Slight camera drift
     let cam_rot = rotY(sin(time * 0.1) * 0.2) * rotX(cos(time * 0.15) * 0.1);
@@ -386,7 +405,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         var density = fbmOct(p * 0.2 + vec3<f32>(time * 0.1, 0.0, time * 0.2), aurora_oct) * 2.0 - 1.0;
 
         // Modulate with audio
-        density += fbm(p * 0.5 - vec3<f32>(0.0, time * audio_react * 0.5, 0.0)) * audio_react * 0.5;
+        density += fbm(p * 0.5 - vec3<f32>(0.0, time * 0.1 + audio_react * 0.8, 0.0)) * audio_react * 0.5;
         density += breach * 0.35;
 
         // Confine to a band
@@ -457,6 +476,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             sdf_manta(local.xyz + e.yyx, time, audio_react, local.w) - sdf_manta(local.xyz - e.yyx, time, audio_react, local.w)
         ));
         let skin = mantaSkin(local.xyz, n_local, local.w, detail);
+        let gills = mantaGillArches(local.xyz, n_local, detail);
+        let wake = mantaWakeRibbon(local.xyz, time, audio_react, detail);
 
         // Manta Color (glass-like, refractive, glowing edges)
         var manta_col = skin.rgb * (0.35 + diff * 0.65); // Countershaded dark glass
@@ -469,8 +490,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         // Chevrons glow faintly with mids
         let chevron_glow = vec3<f32>(0.4, 0.9, 1.0) * skin.a * (0.15 + mids * 0.5);
+        let gill_glow = vec3<f32>(0.25, 1.0, 0.75) * gills * (0.25 + mids * 0.55);
+        let wake_glow = vec3<f32>(0.3, 0.8, 1.0) * wake * (0.25 + bass * 0.45);
 
-        manta_col += edge_glow + bloom + chevron_glow;
+        // Idea 6: aurora-lit dorsal dapple - the same drifting aurora density
+        // field, sampled at the hit, lights the upper disc in the aurora's own
+        // indigo->cyan palette, so each manta carries the sky it swims through.
+        let sky_d = max(0.0, fbm(p * 0.2 + vec3<f32>(time * 0.1, 0.0, time * 0.2)) * 2.0 - 0.6);
+        let sky_col = mix(vec3<f32>(0.1, 0.0, 0.8), vec3<f32>(0.0, 0.8, 0.6), smoothstep(-2.0, 2.0, p.y + sky_d));
+        let dapple = sky_col * sky_d * smoothstep(-0.1, 0.6, n_local.y) * (0.2 + diff * 0.5) * aurora_intensity * 2.0;
+
+        manta_col += edge_glow + bloom + chevron_glow + gill_glow + wake_glow + dapple;
 
         // Blend solid object with volumetric background based on transmittance
         // The solid object occludes what's behind it, but is dimmed by what's in front

@@ -3,7 +3,6 @@ import { RendererManager } from '../renderer/RendererManager';
 import type { ImageRecord } from '../types/aiVj';
 import { VideoRecord } from '../syncTypes';
 import { fetchContentManifest } from '../services/contentLoader';
-import { hydrateDurations } from '../services/videoSegmentManager';
 import { FALLBACK_IMAGES, FALLBACK_VIDEOS } from '../app/constants/fallbackContent';
 
 export interface UseContentManifestOptions {
@@ -43,19 +42,15 @@ export function useContentManifest({
             setVideoList(content.videos);
             setStatus(`Loaded ${content.manifest.length} images, ${content.videos.length} videos`);
 
-            if (content.videos.length > 0) {
-                hydrateDurations(content.videos).then((hydrated) => {
-                    setVideoList(hydrated);
-                }).catch((e) => {
-                    console.warn("Failed to hydrate video durations:", e);
-                });
-            }
+            // Durations are probed lazily by useB3hdMode, the only consumer that
+            // needs them; probing the whole manifest at boot wasted a metadata
+            // request per video, even behind the WebGPU-required overlay (#1404).
 
             if (rendererRef.current) {
                 rendererRef.current.setImageList(content.manifest.map(m => m.url));
             }
         };
-        fetchManifests();
+        void fetchManifests();
         return () => controller.abort();
     }, [rendererRef, setImageManifest, setVideoList, setStatus]);
 }

@@ -10,7 +10,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { pipeline, env, RawImage } from '@xenova/transformers';
+import { pipeline, env, RawImage } from '@huggingface/transformers';
 import { assertDepthOutput, DEPTH_MODEL_ID, DEPTH_PIPELINE_TASK } from './depthEstimationConfig.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

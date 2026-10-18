@@ -2,7 +2,7 @@
   "id": "virtual-lens",
   "name": "Virtual Lens",
   "url": "shaders/virtual-lens.wgsl",
-  "description": "A virtual magnifying glass with alpha translucency blending. Single magnification displacement plus spectral tint via mix. Alpha driven by lens edge falloff and Fresnel reflectance with depth-aware attenuation.",
+  "description": "A virtual magnifying glass focused on whatever is under the cursor: magnified content at other depths falls out of focus, and the glass reflects a mirrored, softened view of the surroundings toward its rim. Spectral tint, double-glass inner ring and Fresnel/depth-aware alpha.",
   "params": [
     {
       "id": "mag",
@@ -37,6 +37,7 @@
     "mouse-driven",
     "chromatic-aberration",
     "audio-reactive",
+    "depth-aware",
     "upgraded-rgba"
   ],
   "tags": [

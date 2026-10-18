@@ -3,33 +3,15 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: voronoi shell cracks leaking ember light; glass caustic threads; ember afterglow memory from exact C
+//  Upgraded: 2026-10-18
+//  Ideas: voronoi shell cracks leaking ember light; glass caustic threads; ember afterglow memory from exact C; hatching pip (bass-shivered shell + white-hot hole); feather-barb filaments in the core volume; anisotropic Henyey-Greenstein embryo scattering & twisted chalaza suspension cords (§12.2F Henyey–Greenstein phase); 5-tap eggshell crevice AO & blunt-end air-cell meniscus (§12.2E 5-tap AO)
 //  A packing: raw fields — x=ember heat (decayed, read back from C.x), y=core density, z=fog accum, w=alpha (not tone-mapped)
 // ═══════════════════════════════════════════════════════════════════
 // History: Visualist upgrade — multi-source lighting, volumetric internal
 // plasma fog, iridescent glass shell, Fresnel rim, god rays, ACES + hue clamp + IGN dither.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=rippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=Time, yz=mouse uv 0..1 (y=0 top), w=mouse down
-    zoom_params: vec4<f32>,  // x=Plasma Hue, y=Core Activity, z=Glass Refraction, w=Glow Intensity
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Plasma Hue, y=Core Activity, z=Glass Refraction, w=Glow Intensity
 
 const PI: f32 = 3.14159265359;
 
@@ -151,13 +133,20 @@ fn causticThreads(p: vec3<f32>, time: f32) -> f32 {
     return line * line * line * line;
 }
 
+// Idea 4: hatching pip. One fixed point on the shell (egg space) where the
+// chick is breaking out: the shell shivers around it on bass and a white-hot
+// hole opens with Core Activity.
+const PIP_DIR: vec3<f32> = vec3<f32>(0.29, -0.10, 0.95);
+
 // Egg outer shell SDF
 fn mapEgg(p: vec3<f32>) -> f32 {
     var p2 = p;
     p2.y *= 1.0 - 0.2 * p.y;
     let base = length(p2) - 1.5;
     let noise = snoise(p * vec3<f32>(5.0)) * 0.05;
-    return base + noise;
+    let pipNear = smoothstep(0.55, 0.98, dot(normalize(p + vec3<f32>(1e-5)), normalize(PIP_DIR)));
+    let tremor = clamp(plasmaBuffer[0].x, 0.0, 1.0) * 0.02 * sin(p.y * 14.0 + p.x * 9.0 + u.config.x * 26.0) * pipNear;
+    return base + noise + tremor;
 }
 
 // Inner plasma core SDF
@@ -177,6 +166,25 @@ fn getNormalEgg(p: vec3<f32>) -> vec3<f32> {
         mapEgg(p + e.yyx) - mapEgg(p - e.yyx)
     );
     return normalize(n);
+}
+
+// ── Idea 6 helper: Henyey-Greenstein phase function (§12.2F Henyey–Greenstein phase) ──
+fn hgPhase(cosTheta: f32, g: f32) -> f32 {
+    let g2 = g * g;
+    return (1.0 - g2) / (12.56637 * pow(max(1.0 + g2 - 2.0 * g * cosTheta, 1e-3), 1.5));
+}
+
+// ── Idea 7 helper: 5-Tap Eggshell Crevice AO (§12.2E 5-tap AO) ──
+fn calcEggAO(p: vec3<f32>, n: vec3<f32>) -> f32 {
+    var occ = 0.0;
+    var w = 1.0;
+    for (var i = 1; i <= 5; i++) {
+        let h = 0.025 * f32(i);
+        let d = mapEgg(p + n * h);
+        occ += (h - d) * w;
+        w *= 0.65;
+    }
+    return clamp(1.0 - 2.5 * occ, 0.25, 1.0);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -255,6 +263,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Glass Refraction slider -> IOR 1.0..1.6 (old eta >1 hit total internal reflection)
         let rdIn = refract(rd, n, 1.0 / (1.0 + clamp(refr, 0.0, 1.0) * 0.6));
 
+        // ── Idea 6: Anisotropic Henyey-Greenstein Embryo Scattering & Twisted Chalaza Suspension Cords (§12.2F Henyey–Greenstein phase) ──
+        let coreHG = 0.65 + 2.2 * hgPhase(dot(rdIn, keyLight), 0.58);
+
         // Volumetric inner core raymarch
         var tIn = 0.1;
         var colCore = vec3<f32>(0.0);
@@ -267,8 +278,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             if(dCore < 0.0) {
                 density += 0.04 * glow;
                 let coreCol = hsv2rgb(vec3<f32>(hue + fbm(pIn)*0.2, 0.85, 1.0));
-                colCore += coreCol * 0.06 * glow;
+                colCore += coreCol * 0.06 * glow * coreHG;
+                // Idea 5: feather barbs. Radial filaments sweep the core volume
+                let barbAng = atan2(pIn.y, pIn.x);
+                let barbR = length(pIn);
+                let barb = pow(abs(sin(barbAng * 14.0 + barbR * 18.0 - time * 1.4)), 10.0)
+                         * smoothstep(0.0, 0.6, -dCore + 0.05);
+                colCore += hsv2rgb(vec3<f32>(fract(hue + 0.09), 0.65, 1.0)) * barb * 0.07 * glow * coreHG;
+                density += barb * 0.012 * glow;
             }
+
+            // Twisted polar chalaza suspension cords anchoring embryo along Y axis
+            let chalazaHelix = vec2<f32>(cos(pIn.y * 8.0 + time * 0.9), sin(pIn.y * 8.0 + time * 0.9)) * 0.12;
+            let dChalaza = min(length(pIn.xz - chalazaHelix), length(pIn.xz + chalazaHelix));
+            let chalazaCord = exp(-dChalaza * 18.0) * smoothstep(0.35, 1.15, abs(pIn.y));
+            colCore += vec3<f32>(1.0, 0.92, 0.82) * chalazaCord * 0.035 * glow;
+            density += chalazaCord * 0.01 * glow;
 
             // Tendril emissive surface
             let tendril = max(0.0, 0.025 - abs(dCore)) * 0.6 * glow;
@@ -283,13 +308,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 5.0);
         let iris = iridescent_shell(fresnel, hue, time) * fresnel * 2.5;
 
+        // ── Idea 7: 5-Tap Eggshell Crack Crevice AO & Blunt-End Air-Cell Meniscus (§12.2E 5-tap AO) ──
+        let eggAO = calcEggAO(p, n);
+        let airCellMeniscus = exp(-abs(p.y - 0.86) * 26.0) * (0.4 + 0.6 * fresnel);
+
         // External lighting on shell
         let diffKey = max(dot(n, keyLight), 0.0);
         let diffFill = max(dot(n, fillLight), 0.0) * 0.5;
         let rim = pow(1.0 - max(dot(n, rimLightDir), 0.0), 3.0);
 
-        let shellLit = vec3<f32>(0.05, 0.08, 0.15) * (keyColor * diffKey + fillColor * diffFill)
-                     + rimColor * rim * 1.5;
+        let shellLit = (vec3<f32>(0.05, 0.08, 0.15) * (keyColor * diffKey + fillColor * diffFill)
+                     + rimColor * rim * 1.5) * eggAO;
 
         // Idea 1 — voronoi cracks: seams open with Core Activity + bass (+ held mouse),
         // shell darkens along the fracture and ember light from the core leaks out.
@@ -305,9 +334,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let caustic = causticThreads(p, time) * (1.0 - fresnel) * (0.3 + density) * glow * (0.7 + mids * 0.5);
         let causticCol = mix(hsv2rgb(vec3<f32>(hue, 0.5, 1.0)), vec3<f32>(1.0, 0.95, 0.85), 0.5);
 
-        col = colCore * (1.0 - crack * 0.25) + shellLit * (1.0 - crack * 0.7) + iris * (1.0 + treble * 0.3)
-            + ember * leak + causticCol * caustic * 1.4;
-        emission = density + fresnel * 1.5 + leak * 0.8 + caustic * 0.5;
+        // Idea 4: the pip. Angular radius grows with Core Activity and bass;
+        // the shell is knocked out inside it and the core burns through.
+        let pipCos = dot(normalize(p), normalize(PIP_DIR));
+        let pipAng = acos(clamp(pipCos, -1.0, 1.0));
+        let pipR = 0.06 + 0.09 * clamp(act, 0.0, 1.5) * (1.0 + bass * 0.6) + held * 0.05;
+        let pipHole = 1.0 - smoothstep(pipR * 0.55, pipR, pipAng);
+        let pipRim = exp(-abs(pipAng - pipR) * 40.0);
+        let pipHot = vec3<f32>(1.6, 1.15, 0.8) * (pipHole * (1.0 + density) + pipRim * 0.5) * glow;
+        let shellKeep = 1.0 - pipHole;
+
+        col = colCore * (1.0 - crack * 0.25) + (shellLit * (1.0 - crack * 0.7) + iris * (1.0 + treble * 0.3) + vec3<f32>(0.85, 0.92, 1.0) * airCellMeniscus * 0.55) * shellKeep
+            + ember * leak + causticCol * caustic * 1.4 * shellKeep + pipHot;
+        emission = density + fresnel * 1.5 * shellKeep + leak * 0.8 + caustic * 0.5 + pipHole * 0.8 + airCellMeniscus * 0.3;
     }
 
     // Background cosmic dust + god rays

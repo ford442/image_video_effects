@@ -1,32 +1,17 @@
 // ----------------------------------------------------------------
 // Sentient Cyber-Chrono Void-Serpent
 // Category: generative
-// Upgraded 2026-08-03 (batch b31, algorithmist):
+// Features: audio-reactive, mouse-driven, upgraded-rgba
+// Upgraded: 2026-10-18
+// Ideas: chrono echoes (translucent phase-lagged spine afterimages); scale-glint facets (per-hex tilted specular); rift isochrones (Julia trap contour strata); swallowed-shard bulge (a peristaltic prey swelling travels down the spine, scales part over it and the eaten chrono-glass glows through the stretched interskin); ecdysis peel front (a crinkled rolled-back skin lip travels the body, milky slough sleeve behind it, fresh iridescent skin ahead)
+// A packing: ACES display RGBA (post-tonemap col, luma alpha); no C read, no state
+// Earlier: 2026-08-03 (batch b31, algorithmist):
 //   - Bounds guard from u.config.zw; mouse handled as 0-1 (y=0 top), no flip/re-normalization
 //   - Full 3D SDF library; torus chrono-rings + octahedral chrono-glass shards (matID 3/4)
 //   - 2D geometric layer: hex-tessellated scale armor + Julia orbit-trap temporal rift backdrop
 //   - Adaptive raymarch, real depth, semantic alpha, dataTextureA output
 // ----------------------------------------------------------------
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time (seconds), .y = rippleCount (0-50 active ripples), .zw = resolution (width, height)
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0–1 canvas: y=0 top), .w = mouse_down (>0.5 = pressed)
-  zoom_params: vec4<f32>,  // .xyzw = user params p1…p4 (mapped from UI sliders)
-  ripples: array<vec4<f32>, 50>,  // .xy = ripple uv, .z = startTime (seconds), .w = padding (0)
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -123,6 +108,10 @@ fn juliaTrap(p: vec2<f32>, c: vec2<f32>) -> f32 {
     return trap;
 }
 
+// Spine-local state at the last map() evaluation (read after the hit for shading)
+var<private> gBulge: f32 = 0.0;
+var<private> gShed: f32 = 0.5;
+
 // vec2(dist, matID) — 1 serpent, 2 void rift, 3 chrono-rings, 4 glass shards
 fn map(pos: vec3<f32>) -> vec2<f32> {
     var p = pos;
@@ -157,7 +146,21 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
     let disp = noise3D(q * 5.0 + t) * 0.1 * fracture;
 
     let serpent_thickness = 0.4 + bass * 0.3;
-    let core_dist = length(q.xy) - serpent_thickness + disp;
+
+    // [Idea 4] swallowed-shard bulge: a prey swelling every 12 units of spine,
+    // pushed tailward by peristalsis (gaussian, slope <= 0.23 so the march stays safe)
+    let bz = (fract((q.z - t * 1.2) / 12.0 + 0.5) - 0.5) * 12.0;
+    let bulge = exp(-bz * bz * 0.6);
+    gBulge = bulge;
+
+    // [Idea 5] ecdysis peel front: phase along the spine; the wrap (ph = 0/1) is
+    // the rolled-back lip, crinkled around the body
+    let ph = fract((q.z + t * 0.9) / 16.0);
+    gShed = ph;
+    let lip = max(exp(-ph * 30.0), exp(-(1.0 - ph) * 30.0));
+    let crinkle = 0.5 + 0.5 * sin(atan2(q.y, q.x) * 9.0 + q.z * 4.0);
+
+    let core_dist = length(q.xy) - serpent_thickness - 0.35 * bulge - 0.06 * lip * crinkle + disp;
     // Chrono-glass scale shard: octahedron instead of sphere, fracture expands it
     let shardLocal = rotY(q.z * 3.0 + t) * scale_p;
     let scale_dist = sdOctahedron(shardLocal, 0.3 + disp * 2.0);
@@ -171,7 +174,7 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
     let ring_rot = rot(q.z * 1.5 - t * 0.8);
     let ring_xy = ring_rot * ring_p.xy;
     let ring_dist = sdTorus(vec3<f32>(ring_xy.x, ring_p.z, ring_xy.y),
-                            vec2<f32>(serpent_thickness + 0.25 + bass * 0.2, 0.03 + treble * 0.03));
+                            vec2<f32>(serpent_thickness + 0.35 * bulge + 0.25 + bass * 0.2, 0.03 + treble * 0.03));
 
     // Free-floating chrono-glass shards in the rift (matID 4)
     let glassGrid = floor(p / 3.0);
@@ -186,13 +189,37 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
     var void_p = p;
     void_p.z = void_p.z + t * 2.0;
     let void_noise = noise3D(void_p * 2.0) * 0.5 + noise3D(void_p * 4.0) * 0.25;
-    let void_dist = -void_p.y + void_noise * u.zoom_params.z * 2.0;
+    // Floor below the serpent (world Y up). HEAD had the solid half-space at y > 0
+    // through the camera height, so it sliced the serpent and swallowed the camera.
+    let void_dist = (void_p.y + 2.8) + void_noise * u.zoom_params.z * 2.0;
 
     var res = vec2<f32>(serpent_dist, 1.0);
     if (ring_dist < res.x) { res = vec2<f32>(ring_dist, 3.0); }
     if (glass_dist < res.x) { res = vec2<f32>(glass_dist, 4.0); }
     if (void_dist < res.x) { res = vec2<f32>(void_dist, 2.0); }
     return res;
+}
+
+// [Idea 1] Chrono echoes: distance to the hollow skin of the serpent's spine as it was
+// `lag` phase-units ago (same undulation as map(), same mouse pull). Stateless.
+fn echoSkin(pos: vec3<f32>, phase: f32, r: f32) -> f32 {
+    var e = pos;
+    e.x = e.x + sin(e.z * 0.5 + phase) * 1.5;
+    e.y = e.y + cos(e.z * 0.4 + phase * 1.2) * 1.5;
+    return abs(length(e.xy) - r);
+}
+fn echoField(pos: vec3<f32>) -> vec2<f32> {
+    let t = u.config.x * u.zoom_params.x * 0.5;
+    let mUv = u.zoom_config.yz;
+    let mouse_pos = vec3<f32>((mUv.x - 0.5) * 6.0, (0.5 - mUv.y) * 6.0, 0.0);
+    let pull = 1.0 - smoothstep(0.0, 2.0, length(pos - mouse_pos));
+    let p = mix(pos, mouse_pos, pull * 0.5);
+    let bass = plasmaBuffer[0].x * u.zoom_params.y;
+    let r = (0.4 + bass * 0.3) * 0.95;
+    return vec2<f32>(echoSkin(p, t - 0.9, r), echoSkin(p, t - 1.8, r));
+}
+fn echoDensity(d: f32) -> f32 {
+    return 0.5 * exp(-d * 12.0) + 0.15 * exp(-d * 3.0);
 }
 
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
@@ -221,12 +248,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bass = plasmaBuffer[0].x * u.zoom_params.y;
 
     var ro = vec3<f32>(0.0, 0.0, -4.0);
-    var rd = normalize(vec3<f32>(uv, 1.0));
+    // uv.y grows down the screen; world Y is up
+    var rd = normalize(vec3<f32>(uv.x, -uv.y, 1.0));
 
     // Camera orbit from mouse (0-1, y=0 top -> centered, y-up world)
     let mC = (u.zoom_config.yz - vec2<f32>(0.5)) * 2.0;
     let cam_rot_y = rot(mC.x * PI);
-    let cam_rot_x = rot(mC.y * PI * 0.5);
+    // pitch clamped so the orbit never dips the camera into the floor (y = -2.8)
+    let cam_rot_x = rot(clamp(mC.y * PI * 0.5, -1.2, 0.4));
     ro = vec3<f32>(cam_rot_y[0].x * ro.x + cam_rot_y[1].x * ro.z, ro.y, cam_rot_y[0].y * ro.x + cam_rot_y[1].y * ro.z);
     rd = vec3<f32>(cam_rot_y[0].x * rd.x + cam_rot_y[1].x * rd.z, rd.y, cam_rot_y[0].y * rd.x + cam_rot_y[1].y * rd.z);
     ro = vec3<f32>(ro.x, cam_rot_x[0].x * ro.y + cam_rot_x[1].x * ro.z, cam_rot_x[0].y * ro.y + cam_rot_x[1].y * ro.z);
@@ -238,8 +267,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var hit_id = 0.0;
     var glow = 0.0;
     var hit = false;
+    var echoA = 0.0;
+    var echoB = 0.0;
 
-    let maxSteps = 80 + min(i32(u.zoom_params.w * 5.0), 40);
+    let maxSteps = 96 + min(i32(u.zoom_params.w * 5.0), 40);
     let maxDist = 20.0;
 
     for (var i = 0; i < maxSteps; i = i + 1) {
@@ -247,7 +278,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let dS = map(p);
         if (dS.x < 0.001) { hit_id = dS.y; hit = true; break; }
         if (dO > maxDist) { break; }
-        dO += dS.x;
+        // [Idea 1] step-limit near echo skins and integrate their soft rim glow along the ray
+        let ef = echoField(p);
+        let stepLen = min(dS.x, max(min(ef.x, ef.y) * 0.8, 0.06));
+        echoA += stepLen * echoDensity(ef.x);
+        echoB += stepLen * echoDensity(ef.y) * 0.7;
+        dO += stepLen;
         if (dS.y == 1.0 || dS.y == 3.0) {
             glow += 0.01 / (0.01 + abs(dS.x)) * (0.5 + bass * 0.5);
         }
@@ -275,6 +311,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let hexEdge = smoothstep(0.4, 0.48, hexDist(hc.xy));
             let hexPulse = 0.5 + 0.5 * sin(t * 4.0 + dot(hc.zw, vec2<f32>(2.1, 1.3)));
             col += spine_col * hexEdge * hexPulse * (0.3 + bass * 0.4);
+            // [Idea 2] scale-glint facets: each hex cell is a tilted scale with its own thin-film glint
+            let cellH = hash21(hc.zw);
+            let tilt = (vec3<f32>(cellH, hash21(hc.zw + vec2<f32>(17.3, 5.1)), hash21(hc.zw + vec2<f32>(3.1, 29.7))) - vec3<f32>(0.5)) * 0.7;
+            let ns = normalize(n + tilt * (1.0 - hexEdge));
+            let glint = pow(max(dot(reflect(rd, ns), l), 0.0), 24.0);
+            let sweep = 0.35 + 0.65 * smoothstep(0.55, 1.0, 0.5 + 0.5 * sin(p.z * 1.1 - t * 1.6 + cellH * 1.2));
+            let film = 0.5 + 0.5 * cos(TAU * (vec3<f32>(0.0, 0.33, 0.67) + cellH * 0.6 + fres * 0.8 + t * 0.05));
+            col += film * glint * sweep * 1.6;
+
+            // [Idea 4] parted scales over the bulge: interskin opens between the hexes
+            // and the swallowed chrono-glass shines through (shard prism colour)
+            let preyCol = 0.5 + 0.5 * cos(t * 0.7 + vec3<f32>(0.0, 2.1, 4.2));
+            let interskin = smoothstep(0.42 - 0.3 * gBulge, 0.48, hexDist(hc.xy)) * gBulge;
+            col += preyCol * (interskin * 1.4 + gBulge * (0.15 + fres * 0.5)) * (0.8 + bass * 0.4);
+
+            // [Idea 5] ecdysis: milky translucent slough sleeve behind the lip (hex
+            // pattern embossed as pale ridges), vivid fresh skin just ahead of it
+            let sleeve = smoothstep(0.0, 0.03, gShed) * (1.0 - smoothstep(0.25, 0.35, gShed));
+            let milky = vec3<f32>(0.55, 0.6, 0.72) * (0.25 + 0.5 * diff) + vec3<f32>(0.8) * hexEdge * 0.15 + spec * 0.4;
+            col = mix(col, milky, 0.5 * sleeve);
+            let fresh = smoothstep(0.8, 1.0, gShed);
+            col += film * fresh * 0.3 * (0.5 + fres);
         } else if (hit_id == 2.0) {
             col = vec3<f32>(0.1, 0.02, 0.2) * (diff + amb);
         } else if (hit_id == 3.0) {
@@ -299,12 +357,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                                vec3<f32>(1.0, 1.0, 1.0),
                                vec3<f32>(0.0, 0.33, 0.67));
         col += rift_col * trapGlow * u.zoom_params.z;
+        // [Idea 3] rift isochrones: time-strata contour lines of the orbit trap, flowing outward
+        let isoD = abs(fract(trap * 5.0 - t * 0.15) - 0.5);
+        let isoLine = 1.0 - smoothstep(0.0, 0.08, isoD);
+        let isoWeight = 1.0 - smoothstep(0.0, 1.2, trap);
+        let iso_col = palette(trap * 3.0 - t * 0.2,
+                              vec3<f32>(0.3, 0.2, 0.4), vec3<f32>(0.3, 0.3, 0.3),
+                              vec3<f32>(1.0, 1.0, 1.0), vec3<f32>(0.5, 0.2, 0.0));
+        col += iso_col * isoLine * isoWeight * 0.35 * u.zoom_params.z * (0.6 + bass * 0.4);
     }
 
     let fog = 1.0 - exp(-0.05 * dO);
     col = mix(col, vec3<f32>(0.02, 0.0, 0.05) + vec3<f32>(0.1, 0.05, 0.2) * glow * 0.2 * u.zoom_params.z, fog);
 
-    // ACES-ish tone map
+    // [Idea 1] echo rim glow (added after fog so the afterimages stay luminous), scaled by Plasma Intensity
+    col += (vec3<f32>(0.1, 0.8, 1.0) * echoA + vec3<f32>(1.0, 0.35, 0.9) * echoB) * 3.0 * u.zoom_params.y;
+
+    // ACES-ish tone map (the rift palette dips below 0; ACES needs >= 0)
+    col = max(col, vec3<f32>(0.0));
     let a = 2.51;
     let b = 0.03;
     let c = 2.43;

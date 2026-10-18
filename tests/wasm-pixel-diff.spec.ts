@@ -38,8 +38,10 @@ const SETTLE_MS = 1200;
 const REPORT_ONLY = true;
 
 test.beforeAll(async () => {
+  // beforeAll takes no timeout argument; set it inside the hook.
+  test.setTimeout(60000);
   await startStaticServer();
-}, 60000);
+});
 
 test.afterAll(async () => {
   await stopStaticServer();
@@ -85,7 +87,7 @@ test('pixel diff: WASM vs WebGPU on frozen seeds', async ({ page, browser }) => 
     for (let i = 0; i < FROZEN_TIMES.length; i++) {
       const frozen = {
         ...(shaderCase.testState ?? { mouseX: 0.5, mouseY: 0.5 }),
-        time: FROZEN_TIMES[i],
+        time: FROZEN_TIMES[i] ?? 0,
       };
 
       await applyTestState(wasmPage, frozen);

@@ -41,36 +41,6 @@
       "max": 1
     }
   ],
-  "updatedParams": [
-    {
-      "id": "strength",
-      "name": "Vortex Strength",
-      "default": 0.5,
-      "min": -1,
-      "max": 1
-    },
-    {
-      "id": "radius",
-      "name": "Event Horizon",
-      "default": 0.3,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "darkness",
-      "name": "Void Darkness",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "audioReact",
-      "name": "Audio Reactivity",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    }
-  ],
   "tags": [
     "filter",
     "image-processing",
@@ -81,5 +51,39 @@
     "relativistic",
     "black-hole",
     "temporal"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "id": "strength",
+          "name": "Vortex Strength",
+          "default": 0.5,
+          "min": -1,
+          "max": 1
+        },
+        {
+          "id": "radius",
+          "name": "Event Horizon",
+          "default": 0.3,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "id": "darkness",
+          "name": "Void Darkness",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "id": "audioReact",
+          "name": "Audio Reactivity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        }
+      ]
+    }
+  }
 }

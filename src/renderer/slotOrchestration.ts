@@ -12,8 +12,8 @@ import { InputSource, RenderMode, ShaderEntry, SlotParams } from './types';
 import { getGraphEntryIds, hasGraph } from './multipassRegistry';
 import { resolveShaderUrl } from '../utils/resolveShaderUrl';
 import { resolveShaderId } from '../utils/resolveShaderId';
+import { PHYSICAL_SLOT_LIMIT } from './slotOrchestrator';
 
-export const SLOT_COUNT = 3;
 
 export interface ShaderLoadMeta {
   requiresDeepWorkgroup?: boolean;
@@ -94,12 +94,12 @@ export function updateSlotParams(
 export function syncAllSlotParams(
   backend: ShaderSlotRenderer | null,
   slotParams: SlotParams[],
-  maxSlots = SLOT_COUNT,
+  maxSlots = PHYSICAL_SLOT_LIMIT,
 ): void {
   if (!backend || slotParams.length === 0) return;
   const count = Math.min(maxSlots, slotParams.length);
   for (let i = 0; i < count; i++) {
-    const p = slotParams[i];
+    const p = slotParams[i]!;
     updateSlotParams(
       backend,
       {
@@ -158,8 +158,8 @@ export async function loadShaderForBackend(
 
 export async function loadShadersForBackend(
   backend: ShaderSlotRenderer | null,
-  policy: SlotOrchestrationPolicy,
-  callbacks: SlotOrchestrationCallbacks,
+  _policy: SlotOrchestrationPolicy,
+  _callbacks: SlotOrchestrationCallbacks,
   shaders: ShaderEntry[],
   loadOne: (id: string, url: string, meta?: ShaderLoadMeta) => Promise<boolean>,
 ): Promise<void> {
@@ -184,7 +184,7 @@ export async function loadShadersForBackend(
 export async function resyncShaderStack(
   backend: ShaderSlotRenderer | null,
   policy: SlotOrchestrationPolicy,
-  callbacks: SlotOrchestrationCallbacks,
+  _callbacks: SlotOrchestrationCallbacks,
   loadOne: (id: string, url: string, meta?: ShaderLoadMeta) => Promise<boolean>,
   setInputSource: (source: InputSource) => void,
   options: {
@@ -203,7 +203,9 @@ export async function resyncShaderStack(
   let loaded = 0;
   let attempted = 0;
 
-  for (let i = 0; i < Math.min(SLOT_COUNT, options.modes.length); i++) {
+  // Every physical slot the caller sends: a 6-slot stack (cap override, VJ, recovery replay)
+  // used to be cut to the 3-slot UI default here.
+  for (let i = 0; i < Math.min(PHYSICAL_SLOT_LIMIT, options.modes.length); i++) {
     const mode = options.modes[i];
     if (!mode || mode === 'none') {
       setSlotShader(backend, policy, i, '');

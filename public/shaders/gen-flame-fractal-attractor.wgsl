@@ -3,30 +3,12 @@
 //  Category: generative
 //  Features: fractal, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: abs-fold crease specular; even/odd iteration ember bands
+//  Upgraded: 2026-10-10
+//  Ideas: orbit-capture contour filaments (smooth iteration count at which the orbit falls inside a trap radius, drawn as thin contour lines); rising-ember advection (history read from the pixel below with a curl wobble so filaments leave upward ember trails); kept: abs-fold crease specular; even/odd iteration ember bands
 //  A packing: raw HDR display RGBA (ACES on writeTexture)
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>, // x=Attractor Strength, y=Orbit Speed, z=Curl, w=Ember Bloom
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Attractor Strength, y=Orbit Speed, z=Curl, w=Ember Bloom
 
 fn rot(a: f32) -> mat2x2<f32> {
     let c = cos(a); let s = sin(a);
@@ -70,6 +52,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var evenDen = 0.0;
     var oddDen = 0.0;
     var creaseAcc = 0.0;
+    var capture = 0.0;
+    var captured = false;
     for (var i = 0; i < 36; i++) {
         let fi = f32(i);
         let r2 = max(dot(z, z), 0.0005);
@@ -81,6 +65,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         z = rot(0.72 + sin(time * 0.11) * 0.08) * folded * (0.84 + strength * 0.045) +
             vec2<f32>(-0.16, 0.09 + sin(fi * 1.7) * 0.025);
         let centerTrap = exp(-length(z) * (4.5 + audio.x * 2.0));
+        // Idea 1 - orbit-capture time: first iteration the orbit falls inside the trap radius (smoothed)
+        if (!captured && length(z) < 0.9) {
+            capture = fi + clamp((0.9 - length(z)) / 0.4, 0.0, 1.0);
+            captured = true;
+        }
         let filament = exp(-abs(z.x * z.y) * (24.0 + audio.z * 16.0)) / (1.0 + r2 * 1.8);
         let evenW = select(0.0, 1.0, (u32(i) & 1u) == 0u);
         evenDen += centerTrap * evenW / (1.0 + fi * 0.08);
@@ -112,10 +101,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     hdrColor += vec3<f32>(1.2, 0.42 + audio.y * 0.25, 0.06 + audio.z * 0.25) * lineTrap * emberBloom;
     hdrColor += vec3<f32>(1.45, 0.95, 0.35) * creaseAcc * (0.28 + emberBloom * 0.12);
     hdrColor += vec3<f32>(1.0, 0.24, 0.65 + audio.z * 0.5) * clickEmber * 0.42;
-    let history = textureLoad(dataTextureC, coord, 0);
-    hdrColor = clamp(mix(hdrColor, history.rgb, 0.055 + audio.x * 0.07), vec3<f32>(0.0), vec3<f32>(8.0));
+    // Idea 1 - contour filaments at integer-ish capture counts
+    let contour = select(0.0, smoothstep(0.1, 0.0, abs(fract(capture * 0.5) - 0.5)), captured);
+    hdrColor += vec3<f32>(1.5, 0.55, 0.12) * contour * emberBloom * 0.16 * (1.0 + audio.z * 0.4);
+    // Idea 2 - rising embers: read C from the pixel below with a curl wobble (exact load, clamped)
+    let wobble = i32(round(sin(f32(coord.y) * 0.045 + time * 1.3) * 1.5));
+    let riseCoord = clamp(coord + vec2<i32>(wobble, 2), vec2<i32>(0), vec2<i32>(dims) - vec2<i32>(1));
+    let history = textureLoad(dataTextureC, riseCoord, 0);
+    hdrColor = clamp(mix(hdrColor, history.rgb, (0.055 + audio.x * 0.07) * (0.8 + 0.25 * emberBloom)), vec3<f32>(0.0), vec3<f32>(8.0));
     let mapped = acesToneMap(hdrColor);
-    let alpha = clamp(density * 0.42 + lineTrap * 0.25 + creaseAcc * 0.12 + clickEmber * 0.1, 0.02, 0.98);
+    let alpha = clamp(density * 0.42 + lineTrap * 0.25 + creaseAcc * 0.12 + contour * 0.06 + clickEmber * 0.1, 0.02, 0.98);
     let depth = clamp(density * 0.22 + orbitDensity * 0.035 + creaseAcc * 0.08, 0.0, 1.0);
 
     textureStore(writeTexture, coord, vec4<f32>(mapped, alpha));

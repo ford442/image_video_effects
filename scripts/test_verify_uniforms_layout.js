@@ -23,6 +23,8 @@ const TRACKED = [
   'src/renderer/types.ts',
   'wasm_renderer/renderer.h',
   'wasm_renderer/frame.cpp',
+  'src/renderer/ShaderCompilation.ts',
+  'public/shaders/_prelude.wgsl',
   ...contract.authoringComment.trackedFiles,
 ];
 
@@ -107,14 +109,27 @@ check('C++ comment drift', (dir) =>
 check('agent brief reintroduces config.y = delta_time', (dir) =>
   patch(
     dir,
-    'agents/WGSL_BUILTINS_GENERATIVE.md',
-    '.y = rippleCount (0-50 active ripples)',
-    '.y = delta_time',
+    'docs/agents/WGSL_BUILTINS_GENERATIVE.md',
+    '`u.config` = (time s, rippleCount 0–50, resolution w, h)',
+    'config.y = delta_time',
   ),
 );
 
 check('BINDING_CONTRACT drops a documented field', (dir) =>
   patch(dir, 'docs/BINDING_CONTRACT.md', '| `zoom_config.z` | 24 |', '| `zoomconfig.z` | 24 |'),
+);
+
+check('FALLBACK_WGSL Uniforms drifts from contract', (dir) =>
+  patch(dir, 'src/renderer/ShaderCompilation.ts', 'ripples: array<vec4<f32>, 50>,', 'ripples: array<vec4<f32>, 32>,'),
+);
+
+check('FALLBACK_WGSL binding drifts from prelude', (dir) =>
+  patch(
+    dir,
+    'src/renderer/ShaderCompilation.ts',
+    '@group(0) @binding(1) var readTexture: texture_2d<f32>;',
+    '@group(0) @binding(1) var inputTexture: texture_2d<f32>;',
+  ),
 );
 
 if (failures) {

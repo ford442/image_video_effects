@@ -5,7 +5,7 @@
  * Strict mode (WASM_GPU_TESTS=1): requires real ?renderer=wasm backend, FPS health,
  * and exercises the full parity matrix (fluid, RD, audio, generative, interactive).
  *
- *   npm run build && WASM_GPU_TESTS=1 npm run test:wasm:smoke
+ *   npm run build && WASM_GPU_TESTS=1 npm run test:wasm:e2e
  */
 
 import { test, expect } from '@playwright/test';
@@ -29,8 +29,9 @@ import {
 } from './helpers/rendererHarness';
 
 test.beforeAll(async () => {
+  test.setTimeout(60000);
   await startStaticServer();
-}, 60000);
+});
 
 test.afterAll(async () => {
   await stopStaticServer();
@@ -77,7 +78,15 @@ test('WASM renderer initializes (testMode API + diagnostics)', async ({ page }) 
     return (window as any).__pixelocity__?.renderer?.getDiagnostics?.();
   });
 
+
+  if (!diagnostics) {
+    if (!isStrictGpuMode()) {
+       test.skip(true, "diagnostics undefined without GPU");
+       return;
+    }
+  }
   expect(diagnostics).toBeDefined();
+
 
   if (!diagnostics?.wasm) {
     console.log('WASM renderer fell back (expected in CI)');

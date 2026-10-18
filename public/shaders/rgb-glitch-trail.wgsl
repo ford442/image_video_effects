@@ -1,29 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
-//  RGB Glitch Trail — Batch 61
-//  textureLoad C persistence, A=(intensity, trailHue.rg, persistence),
-//  held widens radius, click ripples, 3-band audio, ACES display.
+//  RGB Glitch Trail
+//  Category: retro-glitch
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-10
+//  Ideas: channel lag; persistence comet
+//  A packing: raw sim (intensity, trailHue.rg, persistence)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash21(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3(p.x, p.y, p.x) * vec3(0.1031, 0.1030, 0.0973));
@@ -140,7 +125,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let spectralTint = wavelengthToRGB(time * 0.5 + chaos * 3.14 + warp * 2.0);
   let tintStrength = chaos * intensity;
-  var color = mix(baseColor, baseColor * spectralTint, alpha * tintStrength);
+  // Idea: channelLag — R and B sample further along the existing warp.
+  let channelLag = warpDir * shift * (0.35 + chaos);
+  let lagR = textureSampleLevel(readTexture, u_sampler, clamp(displacedUV + channelLag, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let lagB = textureSampleLevel(readTexture, u_sampler, clamp(displacedUV - channelLag * 0.65, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  var color = vec3<f32>(lagR, baseColor.g, lagB);
+  color = mix(color, color * spectralTint, alpha * tintStrength * 0.45);
 
   if (chaos > 0.0 && intensity > 0.5) {
      let seed = uv.y * 100.0 + time;
@@ -155,6 +145,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let trailHue = mix(vec3<f32>(1.0, 0.0, 0.5), vec3<f32>(0.0, 1.0, 1.0), chaos);
   let blendedHue = mix(prevHue, trailHue.xy, 0.15);
   let persistence = clamp(intensity * decayRate, 0.0, 1.0);
+  // Idea: persistenceComet — dim streak from intensity stored upstream.
+  let cometCoord = clamp(coord - vec2<i32>(i32(warpDir.x * 8.0), i32(warpDir.y * 8.0)), vec2<i32>(0), maxCoord);
+  let persistenceComet = textureLoad(dataTextureC, cometCoord, 0).r * persistence;
+  color = color + vec3<f32>(blendedHue, 0.55) * persistenceComet * 0.22;
 
   textureStore(dataTextureA, coord, vec4<f32>(intensity, blendedHue, persistence));
 

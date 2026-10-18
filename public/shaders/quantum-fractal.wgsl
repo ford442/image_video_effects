@@ -1,28 +1,18 @@
-// Quantum Fractal Entanglement Shader
-// Adapted for Immutable Renderer Infrastructure
+// ═══════════════════════════════════════════════════════════════════
+//  Quantum Fractal
+//  Category: artistic
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-10-16
+//  Ideas: phase fringes of the first wavefunction; photo pulled by the second phase
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Scale, y=Iterations, z=Entanglement, w=Unused
-  ripples: array<vec4<f32>, 50>,
-};
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 struct WaveFunction {
   real: f32,
@@ -96,9 +86,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var uv = vec2<f32>(global_id.xy) / resolution;
   let aspect = resolution.x / resolution.y;
   let time = u.config.x;
-  // ═══ AUDIO REACTIVITY ═══
-  let audioOverall = u.zoom_config.x;
-  let audioBass = audioOverall * 1.5;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
   // Parameters
   let scale = u.zoom_params.x; // Default ~3.0
@@ -113,6 +103,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     sin(time * 0.23 * u.zoom_params.w) * 0.3,
     cos(time * 0.31 * u.zoom_params.w) * 0.3
   );
+  let pointer = (clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0)) - vec2<f32>(0.5)) * 0.45;
+  center = center + pointer;
   
   // Create multiple entangled fractal points
   let c1 = vec2<f32>(
@@ -157,11 +149,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Add temporal evolution
   let evolution = sin(time * 2.0 * zoom_params_w + probability * 10.0) * 0.1;
   
-  // Sample previous frame for feedback (Simulated with source image + noise since no feedback)
-  // We use the source image as a "base reality" that gets entangled
-  let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+  // Idea 2 — the photo is sampled along the second wavefunction's phase.
+  let phase2 = atan2(psi2.imaginary, psi2.real);
+  let pull = vec2<f32>(cos(phase2), sin(phase2)) * entanglementStrength * 0.02 * (1.0 + mids * 0.25);
+  let src = textureSampleLevel(readTexture, u_sampler, clamp(uv + pull, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
   
-  // Quantum decoherence effect
+  // Quantum decoherence effect, folded into the phase fringe below.
   let decoherence = 0.05 * sin(time * 0.7 * zoom_params_w + uv.x * 10.0) * cos(time * 0.9 * zoom_params_w + uv.y * 10.0);
   
   // Final color with quantum effects
@@ -177,8 +170,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Apply colormap based on probability
   color = mix(color, colormap(probability * 0.5), 0.3);
   
+  // Idea 1 — phase fringes from the argument of the first wavefunction.
+  let phase1 = atan2(psi1.imaginary, psi1.real);
+  let fringe = 0.5 + 0.5 * cos(phase1 * 8.0);
+  let fringeMix = clamp(fringe * (0.28 + treble * 0.12 + decoherence), 0.0, 1.0);
+  color = mix(color, color * vec3<f32>(0.72, 0.88, 1.2), fringeMix);
+
   // Mix with source image (instead of feedback) to ground it
-  color = mix(color, src, 0.2);
+  color = mix(color, src, 0.2 + bass * 0.04);
   
   // Output with HDR for glow effects
   color = color * (1.5 + sin(time * 0.5 * zoom_params_w) * 0.2);
@@ -188,8 +187,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let regress = textureSampleLevel(readTexture, u_sampler, regressUV, 0.0).rgb * 0.1;
   color = color + regress;
   
-  // Update depth for next frame (required)
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(probability, 0.0, 0.0, 0.0));
-  
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
+  let alpha = clamp(0.35 + fringe * 0.25 + clamp(probability, 0.0, 1.0) * 0.3 + entanglementStrength * 0.1, 0.0, 1.0);
+  let display = aces(max(color, vec3<f32>(0.0)));
+  let pixel = vec2<i32>(global_id.xy);
+  textureStore(writeTexture, pixel, vec4<f32>(display, alpha));
+  textureStore(dataTextureA, pixel, vec4<f32>(display, alpha));
+
+  let sceneDepth = textureLoad(readDepthTexture, pixel, 0).r;
+  let relief = clamp(probability * 0.12, 0.0, 1.0);
+  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(mix(sceneDepth, relief, 0.35), 0.0, 0.0, 0.0));
 }

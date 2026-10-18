@@ -2,7 +2,7 @@
   "id": "kimi_flock_symphony",
   "name": "Kimi Flock Symphony",
   "url": "shaders/kimi_flock_symphony.wgsl",
-  "description": "Advanced particle flocking simulation with musical visualization, featuring separation, alignment, cohesion, and mouse interaction.",
+  "description": "Audio-driven boid flock (separation, alignment, cohesion, mouse spiral) drawn as soft coloured glows. Real trails: each glow leaves decaying history in the feedback texture (Trail Length = decay). Orchestra sections: boid quartiles are bass/mid/mid/treble voices - bass voices large, slow and warm, treble voices small, darting and cool - each sized and sped by its own audio band. Tutti swell: bass widens the separation radius so the whole flock breathes outward on hits. Section strings: same-section neighbours are joined by thin filaments that brighten when their headings agree. Solo spotlight: the section whose band dominates the mix plays louder while the rest drop back. ACES tone map.",
   "tags": [
     "boids",
     "flocking",
@@ -13,9 +13,10 @@
     "procedural"
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
-  "author": "Kimi",
   "params": [
     {
       "id": "trail_length",
@@ -58,40 +59,45 @@
       "description": "Controls mouse-driven or secondary variation influence."
     }
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Trail Length",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Glow Radius",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Color Shift",
-      "default": 0,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Particle Density",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    }
-  ],
   "updated": true,
-  "category": "generative"
+  "category": "generative",
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Trail Length",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Glow Radius",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Color Shift",
+          "default": 0,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Particle Density",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
+    },
+    "author": "Kimi"
+  }
 }

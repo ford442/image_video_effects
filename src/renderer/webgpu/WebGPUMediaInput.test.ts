@@ -1,6 +1,7 @@
 /**
- * @jest-environment jsdom
+ * @vitest-environment jsdom
  */
+import type { Mock } from 'vitest';
 import {
   createMediaInputState,
   uploadRGBA8,
@@ -20,11 +21,11 @@ function makeCtx(overrides: Partial<{
   colorFormat: WebGPUMediaInputContext['colorFormat'];
 }> = {}): {
   ctx: WebGPUMediaInputContext;
-  writeTexture: jest.Mock;
+  writeTexture: Mock;
   sourceTex: GPUTexture;
   readTex: GPUTexture;
 } {
-  const writeTexture = jest.fn();
+  const writeTexture = vi.fn();
   const sourceTex = { width: overrides.canvasW ?? 64, height: overrides.canvasH ?? 48 } as unknown as GPUTexture;
   const readTex = {
     width: overrides.readW ?? overrides.canvasW ?? 64,
@@ -58,8 +59,8 @@ describe('WebGPUMediaInput', () => {
     uploadSourceRGBA8(ctx, pixels, 64, 48);
 
     expect(writeTexture).toHaveBeenCalledTimes(1);
-    expect(writeTexture.mock.calls[0][0].texture).toBe(sourceTex);
-    expect(writeTexture.mock.calls[0][0].texture).not.toBe(readTex);
+    expect(writeTexture.mock.calls[0]![0].texture).toBe(sourceTex);
+    expect(writeTexture.mock.calls[0]![0].texture).not.toBe(readTex);
   });
 
   it('uploadSourceRGBA8 packs rgba16float with 8 bytes per pixel', () => {
@@ -70,8 +71,8 @@ describe('WebGPUMediaInput', () => {
     uploadSourceRGBA8(ctx, pixels, 64, 48);
 
     expect(writeTexture).toHaveBeenCalledTimes(1);
-    expect(writeTexture.mock.calls[0][2].bytesPerRow).toBe(64 * 8);
-    expect(writeTexture.mock.calls[0][1].byteLength).toBe(64 * 48 * 8);
+    expect(writeTexture.mock.calls[0]![2].bytesPerRow).toBe(64 * 8);
+    expect(writeTexture.mock.calls[0]![1].byteLength).toBe(64 * 48 * 8);
   });
 
   it('uploadRGBA8 skips readTex when it is resolution-scaled', () => {
@@ -86,7 +87,7 @@ describe('WebGPUMediaInput', () => {
     uploadRGBA8(ctx, pixels, 64, 48);
 
     expect(writeTexture).toHaveBeenCalledTimes(1);
-    expect(writeTexture.mock.calls[0][0].texture).toBe(sourceTex);
+    expect(writeTexture.mock.calls[0]![0].texture).toBe(sourceTex);
     expect(writeTexture.mock.calls.every((c) => c[0].texture !== readTex)).toBe(true);
   });
 
@@ -97,8 +98,8 @@ describe('WebGPUMediaInput', () => {
     uploadRGBA8(ctx, pixels, 64, 48);
 
     expect(writeTexture).toHaveBeenCalledTimes(2);
-    expect(writeTexture.mock.calls[0][0].texture).toBe(sourceTex);
-    expect(writeTexture.mock.calls[1][0].texture).toBe(readTex);
+    expect(writeTexture.mock.calls[0]![0].texture).toBe(sourceTex);
+    expect(writeTexture.mock.calls[1]![0].texture).toBe(readTex);
   });
 
   it('restoreSourceFromOffscreen re-uploads after texture recreate', () => {
@@ -115,7 +116,7 @@ describe('WebGPUMediaInput', () => {
     canvas.width = 64;
     canvas.height = 48;
     const offCtx = {
-      getImageData: jest.fn(() => ({ data: pixels, width: 64, height: 48 })),
+      getImageData: vi.fn(() => ({ data: pixels, width: 64, height: 48 })),
     } as unknown as CanvasRenderingContext2D;
     state.offscreen = canvas;
     state.offCtx = offCtx;
@@ -123,9 +124,9 @@ describe('WebGPUMediaInput', () => {
     expect(restoreSourceFromOffscreen(ctx, state)).toBe(true);
     expect(offCtx.getImageData).toHaveBeenCalledWith(0, 0, 64, 48);
     expect(writeTexture).toHaveBeenCalledTimes(1);
-    expect(writeTexture.mock.calls[0][0].texture).toBe(sourceTex);
+    expect(writeTexture.mock.calls[0]![0].texture).toBe(sourceTex);
 
-    const floats = writeTexture.mock.calls[0][1] as Float32Array;
+    const floats = writeTexture.mock.calls[0]![1] as Float32Array;
     expect(floats[0]).toBeCloseTo(10 / 255, 5);
     expect(floats[1]).toBeCloseTo(20 / 255, 5);
     expect(floats[2]).toBeCloseTo(30 / 255, 5);
@@ -142,7 +143,7 @@ describe('WebGPUMediaInput', () => {
     canvas.height = 16;
     state.offscreen = canvas;
     state.offCtx = {
-      getImageData: jest.fn(),
+      getImageData: vi.fn(),
     } as unknown as CanvasRenderingContext2D;
     expect(restoreSourceFromOffscreen(ctx, state)).toBe(false);
     expect(writeTexture).not.toHaveBeenCalled();
@@ -150,17 +151,17 @@ describe('WebGPUMediaInput', () => {
 
   describe('copyExternalImageToTexture still path', () => {
     function withCopyExternal(ctx: WebGPUMediaInputContext, impl?: () => void) {
-      const copyExternalImageToTexture: jest.Mock = jest.fn(impl);
-      const pass = { end: jest.fn() };
+      const copyExternalImageToTexture: Mock = vi.fn(impl);
+      const pass = { end: vi.fn() };
       const device = ctx.device as unknown as Record<string, unknown>;
       (device.queue as Record<string, unknown>).copyExternalImageToTexture = copyExternalImageToTexture;
-      (device.queue as Record<string, unknown>).submit = jest.fn();
-      device.createCommandEncoder = jest.fn(() => ({
-        beginRenderPass: jest.fn(() => pass),
-        finish: jest.fn(),
+      (device.queue as Record<string, unknown>).submit = vi.fn();
+      device.createCommandEncoder = vi.fn(() => ({
+        beginRenderPass: vi.fn(() => pass),
+        finish: vi.fn(),
       }));
-      (ctx.sourceTex as unknown as Record<string, unknown>).createView = jest.fn();
-      (ctx.readTex as unknown as Record<string, unknown>).createView = jest.fn();
+      (ctx.sourceTex as unknown as Record<string, unknown>).createView = vi.fn();
+      (ctx.readTex as unknown as Record<string, unknown>).createView = vi.fn();
       return copyExternalImageToTexture;
     }
 
@@ -178,9 +179,9 @@ describe('WebGPUMediaInput', () => {
 
       expect(writeTexture).not.toHaveBeenCalled();
       expect(copy).toHaveBeenCalledTimes(2);
-      expect(copy.mock.calls[0][1]).toMatchObject({ texture: sourceTex, origin: [0, 8], premultipliedAlpha: false });
-      expect(copy.mock.calls[1][1].texture).toBe(readTex);
-      expect(copy.mock.calls[0][2]).toEqual([64, 32]);
+      expect(copy.mock.calls[0]![1]).toMatchObject({ texture: sourceTex, origin: [0, 8], premultipliedAlpha: false });
+      expect(copy.mock.calls[1]![1].texture).toBe(readTex);
+      expect(copy.mock.calls[0]![2]).toEqual([64, 32]);
     });
 
     it('copyExternalToSource skips scaled readTex', () => {
@@ -188,14 +189,14 @@ describe('WebGPUMediaInput', () => {
       const copy = withCopyExternal(ctx);
       copyExternalToSource(ctx, {} as ImageBitmap, 64, 48);
       expect(copy).toHaveBeenCalledTimes(1);
-      expect(copy.mock.calls[0][1].texture).toBe(sourceTex);
+      expect(copy.mock.calls[0]![1].texture).toBe(sourceTex);
     });
 
     it('copyExternalToSource returns false when the API is missing or throws', () => {
       const { ctx } = makeCtx();
       expect(copyExternalToSource(ctx, {} as ImageBitmap, 64, 48)).toBe(false);
 
-      const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       withCopyExternal(ctx, () => { throw new Error('tainted'); });
       expect(copyExternalToSource(ctx, {} as ImageBitmap, 64, 48)).toBe(false);
       warn.mockRestore();
@@ -215,7 +216,7 @@ describe('WebGPUMediaInput', () => {
     describe('loadImage', () => {
       const realImage = global.Image;
       const realCreateImageBitmap = (global as { createImageBitmap?: unknown }).createImageBitmap;
-      let offCtx: { fillRect: jest.Mock; drawImage: jest.Mock; getImageData: jest.Mock; fillStyle: string };
+      let offCtx: { fillRect: Mock; drawImage: Mock; getImageData: Mock; fillStyle: string };
 
       beforeEach(() => {
         class FakeImage {
@@ -229,25 +230,25 @@ describe('WebGPUMediaInput', () => {
         (global as unknown as { Image: unknown }).Image = FakeImage;
         offCtx = {
           fillStyle: '',
-          fillRect: jest.fn(),
-          drawImage: jest.fn(),
-          getImageData: jest.fn(() => ({ data: new Uint8ClampedArray(64 * 48 * 4) })),
+          fillRect: vi.fn(),
+          drawImage: vi.fn(),
+          getImageData: vi.fn(() => ({ data: new Uint8ClampedArray(64 * 48 * 4) })),
         };
-        jest.spyOn(HTMLCanvasElement.prototype, 'getContext')
+        vi.spyOn(HTMLCanvasElement.prototype, 'getContext')
           .mockImplementation((() => offCtx) as unknown as HTMLCanvasElement['getContext']);
       });
 
       afterEach(() => {
         (global as unknown as { Image: unknown }).Image = realImage;
         (global as { createImageBitmap?: unknown }).createImageBitmap = realCreateImageBitmap;
-        jest.restoreAllMocks();
+        vi.restoreAllMocks();
       });
 
       it('uses copyExternalImageToTexture when available (no getImageData)', async () => {
         const { ctx, writeTexture } = makeCtx();
         const copy = withCopyExternal(ctx);
-        const bitmap = { width: 64, height: 32, close: jest.fn() };
-        const createBitmap = jest.fn(async () => bitmap);
+        const bitmap = { width: 64, height: 32, close: vi.fn() };
+        const createBitmap = vi.fn(async () => bitmap);
         (global as { createImageBitmap?: unknown }).createImageBitmap = createBitmap;
         const state = createMediaInputState();
 
@@ -264,9 +265,30 @@ describe('WebGPUMediaInput', () => {
         expect(state.still?.bitmap).toBe(bitmap);
       });
 
+      it('re-reads the context after the decode await (textures recreated mid-load)', async () => {
+        const before = makeCtx();
+        const after = makeCtx();
+        const staleCopy = withCopyExternal(before.ctx);
+        const liveCopy = withCopyExternal(after.ctx);
+        let current = before.ctx;
+        const bitmap = { width: 64, height: 32, close: vi.fn() };
+        (global as { createImageBitmap?: unknown }).createImageBitmap = vi.fn(async () => {
+          // A resolution-scale change lands while the bitmap decodes.
+          current = after.ctx;
+          return bitmap;
+        });
+        const state = createMediaInputState();
+
+        await loadImage(() => current, state, 'img.png');
+
+        expect(staleCopy).not.toHaveBeenCalled();
+        expect(liveCopy).toHaveBeenCalled();
+        expect(liveCopy.mock.calls[0]![1].texture).toBe(after.sourceTex);
+      });
+
       it('falls back to the 2D upload when copyExternalImageToTexture is missing', async () => {
         const { ctx, writeTexture } = makeCtx();
-        (global as { createImageBitmap?: unknown }).createImageBitmap = jest.fn();
+        (global as { createImageBitmap?: unknown }).createImageBitmap = vi.fn();
         const state = createMediaInputState();
 
         await loadImage(ctx, state, 'img.png');

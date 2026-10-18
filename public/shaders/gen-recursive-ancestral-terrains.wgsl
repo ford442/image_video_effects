@@ -8,6 +8,9 @@
 //            temporal, semantic-alpha, chromatic
 //  Complexity: High
 //  Math: Golden Ratio φ=1.6180339887, Koch D=1.2619, Sierpinski D=1.585
+//  Upgraded: 2026-09-27
+//  Ideas: unconformity terraces; valley sediment
+//  A packing: A.rgb ACES display; A.a raw height (not tone-mapped)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -68,8 +71,11 @@ fn smoothNoise(p: vec2<f32>) -> f32 {
 
 // ─── Fractal-dimension FBM with phi persistence ───
 fn ancestralFbm(p: vec2<f32>, generations: i32, mutationRate: f32,
-                lineageSelector: f32, t: f32, fractalDim: f32) -> f32 {
+                lineageSelector: f32, t: f32, fractalDim: f32) -> vec3<f32> {
+    // .x height, .y parent sum before the last octave, .z last-octave contribution
     var value = 0.0;
+    var parent = 0.0;
+    var child = 0.0;
     var amplitude = 0.5;
     var pos = p;
     var freq = 1.0;
@@ -99,13 +105,15 @@ fn ancestralFbm(p: vec2<f32>, generations: i32, mutationRate: f32,
         let sample = smoothNoise(rotPos * mutFreq + vec2<f32>(gf * 1.3, t * 0.05));
 
         // Geological warping: higher generations fold the terrain
-        value += amplitude * sample;
+        parent = value;
+        child = amplitude * sample;
+        value += child;
         pos += vec2<f32>(cos(sample * TAU), sin(sample * TAU)) * 0.1 * mutationRate;
 
         amplitude *= persistence;
         freq = mutFreq;
     }
-    return value;
+    return vec3<f32>(value, parent, child);
 }
 
 // Simple atmospheric fog based on height and distance
@@ -171,8 +179,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let clampedGen = clamp(numGen, 3, 8);
 
     // Terrain height from ancestral fractal with fractal dimension
-    let height = ancestralFbm(uvA * 2.0, clampedGen, audioMutation, lineageSelector, t, fractalDim);
-    let scaledHeight = height * heightScale;
+    let ancestry = ancestralFbm(uvA * 2.0, clampedGen, audioMutation, lineageSelector, t, fractalDim);
+    let height = ancestry.x;
+    // Unconformity terraces: flatten where the child octave disagrees with its parent.
+    let pers = 1.0 / PHI;
+    let gens = f32(clampedGen);
+    let lastAmp = 0.5 * pow(pers, max(gens - 1.0, 0.0));
+    let parentAmp = 0.5 * (1.0 - pow(pers, max(gens - 1.0, 0.0))) / max(1.0 - pers, 0.001);
+    let childN = ancestry.z / max(lastAmp, 0.001);
+    let parentN = ancestry.y / max(parentAmp, 0.001);
+    let disagree = abs(childN - parentN);
+    let terraceSteps = mix(3.0, 9.0, generBlend);
+    let unconform = smoothstep(0.12, 0.38, disagree) * generBlend;
+    let heightCut = mix(height, floor(height * terraceSteps + 0.001) / max(terraceSteps, 0.001), unconform);
+    let scaledHeight = heightCut * heightScale;
 
     // ─── Mouse carves river channels ───
     let riverCarve = smoothstep(0.15, 0.0, mouseDist) * 0.25 * (1.0 + bass * 0.5);
@@ -180,8 +200,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Approximate surface normal via finite differences
     let eps = 0.003;
-    let hx = ancestralFbm((uvA + vec2<f32>(eps, 0.0)) * 2.0, clampedGen, audioMutation, lineageSelector, t, fractalDim);
-    let hy = ancestralFbm((uvA + vec2<f32>(0.0, eps)) * 2.0, clampedGen, audioMutation, lineageSelector, t, fractalDim);
+    let hx = ancestralFbm((uvA + vec2<f32>(eps, 0.0)) * 2.0, clampedGen, audioMutation, lineageSelector, t, fractalDim).x;
+    let hy = ancestralFbm((uvA + vec2<f32>(0.0, eps)) * 2.0, clampedGen, audioMutation, lineageSelector, t, fractalDim).x;
     let nx = (hx - height) / eps;
     let ny = (hy - height) / eps;
     let nz = 1.0;
@@ -220,15 +240,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let caStr = 0.003 * (1.0 + bass);
     color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
 
+    // Valley sediment: previous raw height (C.a) settles into lows; Erosion drains it.
+    let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
+    let prevH = clamp(prev.a, 0.0, 1.0);
+    let valley = smoothstep(0.42, 0.08, clamp(eroded, 0.0, 1.0));
+    let silt = valley * prevH * (1.0 - clamp(erosionAmt, 0.0, 1.0) * 0.85);
+    color = mix(color, color * vec3<f32>(0.78, 0.66, 0.42) + vec3<f32>(0.12, 0.08, 0.03), silt);
+
     // ─── ACES tone mapping + semantic alpha ───
     color = acesToneMap(color * 1.1);
     let alpha = clamp(length(color) * 1.2, 0.2, 0.95);
-
-    // ─── Temporal feedback: sediment layers ───
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-    let sediment = mix(prev.rgb * 0.96, color, 0.25);
+    let rawHeight = clamp(eroded, 0.0, 1.0);
 
     textureStore(writeTexture, global_id.xy, vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(1.0 - eroded));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(sediment, 1.0));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(color, rawHeight));
 }

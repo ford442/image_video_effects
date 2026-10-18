@@ -1,13 +1,16 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Morphogenic Resonance
 //  Category: generative
-//  Features: generative, audio-reactive, temporal, chromatic, mouse-driven
+//  Features: generative, audio-reactive, mouse-driven, temporal, chromatic, upgraded-rgba
 //  Complexity: High
-//  Description: Organic shapes morph between geometric and biological
-//               forms via sinusoidal interpolation. Bass drives morph
-//               speed, mids add surface ripple resonance, treble
-//               creates edge discharge. Mouse warps the morph field.
+//  Upgraded: 2026-09-28
+//  Ideas: travelling morph front (morphogen wave from pointer); crystalline facet spokes; veins conduct the discharge
+//  A packing: ACES display RGBA (rgb = toned colour incl. CA, a = edge/interior coverage); C read as colour history
 // ═══════════════════════════════════════════════════════════════════
+//  Organic shapes morph between geometric and biological forms via
+//  sinusoidal interpolation. Bass drives morph speed, mids add surface
+//  ripple resonance, treble creates edge discharge. Mouse warps the
+//  morph field and is the source of the morphogen wave.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -84,17 +87,48 @@ fn sdOrganic(p: vec2<f32>, time: f32, seed: f32) -> f32 {
   return d;
 }
 
+// Idea 2 — crystalline facet spokes: same sector math as sdPolygon.
+// x = centre-to-vertex bevel line (1 on the spoke), y = facet shade 0..1
+// (each triangular facet lit by its own normal angle, like a cut stone).
+fn polyFacet(p: vec2<f32>, n: f32, pxW: f32) -> vec2<f32> {
+  let angle = atan2(p.y, p.x);
+  let sector = TAU / n;
+  let a = abs(fract(angle / sector + 0.5) - 0.5) * sector;
+  let d = length(p);
+  // perpendicular distance to the nearest vertex ray (vertices sit at a = sector/2)
+  let spokeD = d * sin(sector * 0.5 - a);
+  let spoke = (1.0 - smoothstep(0.0, pxW, spokeD)) * smoothstep(0.0, 0.03, d);
+  let k = floor(angle / sector + 0.5);
+  let shade = 0.5 + 0.5 * cos(k * sector - 0.785398);
+  return vec2<f32>(spoke, shade);
+}
+
+struct MorphSample {
+  dist: f32,
+  phase: f32,   // per-cell (wave-lagged) morph phase 0..1
+  interp: f32,  // per-cell geo->bio blend 0..1
+  spoke: f32,   // facet spoke line, already faded by organic-ness
+  facet: f32,   // facet shade, already faded by organic-ness (signed, 0 = neutral)
+  vein: f32,    // vein band 0..1, weighted by organic-ness
+};
+
 // Morph field value
-fn morphField(uv: vec2<f32>, time: f32, morphSpeed: f32, geoBias: f32) -> f32 {
+fn morphField(uv: vec2<f32>, time: f32, morphSpeed: f32, geoBias: f32, waveOrigin: vec2<f32>, pxW: f32) -> MorphSample {
   let t = time * morphSpeed;
-  let morphPhase = sin(t) * 0.5 + 0.5;
-  let phase = mix(morphPhase, smoothstep(0.0, 1.0, morphPhase), geoBias);
 
   // Grid of shapes
   let gridScale = 3.0 + geoBias * 2.0;
   let gp = uv * gridScale;
   let cell = floor(gp);
   let local = fract(gp) - 0.5;
+
+  // Idea 1 — travelling morph front: each cell's morph clock lags by the
+  // distance of its centre from the pointer, so the geo->bio change sweeps
+  // outward as a morphogen wave (HEAD: every cell in lockstep off sin(t)).
+  let cellCentre = (cell + vec2<f32>(0.5)) / gridScale;
+  let waveLag = length(cellCentre - waveOrigin) * 5.0;
+  let morphPhase = sin(t - waveLag) * 0.5 + 0.5;
+  let phase = mix(morphPhase, smoothstep(0.0, 1.0, morphPhase), geoBias);
 
   let seed = hash21(cell);
   let nSides = 3.0 + floor(seed * 5.0);
@@ -111,14 +145,21 @@ fn morphField(uv: vec2<f32>, time: f32, morphSpeed: f32, geoBias: f32) -> f32 {
   let smoothInterp = interp * interp * (3.0 - 2.0 * interp);
   var dist = mix(geoDist, bioDist, smoothInterp);
 
+  // Idea 2 — facets are bright while geometric, dissolve as the cell turns organic.
+  let geoAmt = clamp(1.0 - smoothInterp, 0.0, 1.0);
+  let fac = polyFacet(rotLocal, nSides, pxW);
+
   // Add internal vein structure when biological
+  var veinBand = 0.0;
   if (smoothInterp > 0.4) {
     let veinNoise = fbm2(local * 8.0 + vec2<f32>(t * 0.1), 3);
     let vein = smoothstep(0.35, 0.45, veinNoise) * smoothstep(0.65, 0.55, veinNoise);
     dist = dist - vein * 0.03 * smoothInterp;
+    veinBand = vein * clamp(smoothInterp, 0.0, 1.0);
   }
 
-  return dist;
+  return MorphSample(dist, morphPhase, clamp(smoothInterp, 0.0, 1.0),
+                     fac.x * geoAmt, (fac.y - 0.5) * geoAmt, veinBand);
 }
 
 fn hueShiftRGB(hue: f32) -> vec3<f32> {
@@ -171,7 +212,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let ringFront = smoothstep(0.55, 1.0, ringPhase) * rippleIntensity * 0.035;
 
   // Calculate morph field
-  var dist = morphField(warpedUV, warpT, morphSpeed * 1.35, geoBias);
+  // Idea 1 — wave origin: the pointer carried into morph-field space by the
+  // same conveyor that moves the cells, so the front stays centred on it.
+  let waveOrigin = mouse + vec2<f32>(warpT * morphSpeed * 0.22,
+                                     sin(warpT * 0.7 + mouse.x * 2.0) * morphSpeed * 0.08);
+  let gridScale = 3.0 + geoBias * 2.0;
+  let pxW = 1.5 * gridScale / res.y + 0.004; // ~1.5 px spoke half-width in cell units
+  let ms = morphField(warpedUV, warpT, morphSpeed * 1.35, geoBias, waveOrigin, pxW);
+  var dist = ms.dist;
   dist -= ringFront;
 
   // Bass-driven morph acceleration (temporal warp)
@@ -188,7 +236,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Treble edge discharge — smooth noise, no per-frame hash strobing.
   let dischargeNoise = noise2(warpedUV * 24.0 + vec2<f32>(warpT * 2.5, 0.0));
-  let discharge = treble * dischargeNoise * edge * 2.2;
+  // Idea 3 — veins conduct the discharge: in organic cells the treble arc runs
+  // along the vein fbm band inside the body; geometric cells keep HEAD's edge arc.
+  let edgeArc = dischargeNoise * edge;
+  let veinArc = ms.vein * interior * (0.55 + 0.45 * dischargeNoise) + edgeArc * 0.3;
+  let discharge = treble * mix(edgeArc, veinArc, ms.interp) * 2.2;
 
   // Color based on morph phase and audio
   let hue = colorShift + bass * 0.1 + interior * 0.15 + time * 0.02;
@@ -197,9 +249,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Geometric forms lean toward cyan/blue, biological toward warm organic
   let geoColor = vec3<f32>(0.3, 0.7, 0.9);
   let bioColor = vec3<f32>(0.9, 0.5, 0.3);
-  let morphPhase = sin(time * morphSpeed) * 0.5 + 0.5;
-  let formColor = mix(geoColor, bioColor, morphPhase);
+  // Idea 1 — tint follows the per-cell (wave-lagged) phase, so colour and
+  // shape change together as the front passes.
+  let formColor = mix(geoColor, bioColor, ms.phase);
   col = mix(col, formColor, 0.4);
+
+  // Idea 2 — crystalline facet spokes: faceted bevel shading plus bright
+  // centre-to-vertex ridge lines while the cell is geometric.
+  col += geoColor * ms.facet * 0.35 * interior;
+  col += vec3<f32>(0.8, 0.95, 1.0) * ms.spoke * interior * (0.55 + treble * 0.4);
 
   // Interior fill with organic texture
   let interiorTex = fbm2(warpedUV * 6.0 + time * 0.1, 4) * interior;

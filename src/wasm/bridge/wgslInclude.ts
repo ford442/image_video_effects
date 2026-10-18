@@ -127,14 +127,14 @@ export async function expandWgslIncludes(
     const blanked = stripComments(text).split('\n');
     const out: string[] = [];
 
-    for (let i = 0; i < lines.length; i += 1) {
+    for (const [i, line] of lines.entries()) {
       const match = blanked[i]?.match(INCLUDE_RE);
       if (!match) {
-        out.push(lines[i]);
+        out.push(line);
         continue;
       }
 
-      const name = match[1];
+      const name = match[1]!;
       const lineNo = i + 1;
       validateName(name, file);
 

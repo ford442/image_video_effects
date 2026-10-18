@@ -9,28 +9,12 @@
 //  Jacobi pressure solve (warm-started), gradient subtraction,
 //  dye advection, and audio-reactive color mapping.
 //  Created: 2026-06-06
+//  Upgraded: 2026-09-27, 2026-10-18
+//  Ideas: vorticity confinement along the velocity curl; buoyancy lift from the dye field; baroclinic shear jets; enstrophy-cascade shimmer; MacCormack dye; no-slip walls
+//  A packing: raw (vel.x, vel.y, pressure, dye); ACES on display only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.141592653589793;
 const DT: f32 = 0.7;
@@ -44,6 +28,30 @@ fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
   p3 = p3 + dot(p3, p3.yzx + 33.33);
   return fract((p3.x + p3.y) * p3.z);
+}
+
+fn loadC(p: vec2<i32>, res: vec2<f32>) -> vec4<f32> {
+  let hi = vec2<i32>(max(i32(res.x) - 1, 0), max(i32(res.y) - 1, 0));
+  return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), hi), 0);
+}
+
+fn sampleC(uv: vec2<f32>, res: vec2<f32>) -> vec4<f32> {
+  let p = clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * max(res, vec2<f32>(1.0)) - vec2<f32>(0.5);
+  let i = vec2<i32>(floor(p));
+  let f = fract(p);
+  let c00 = loadC(i, res);
+  let c10 = loadC(i + vec2<i32>(1, 0), res);
+  let c01 = loadC(i + vec2<i32>(0, 1), res);
+  let c11 = loadC(i + vec2<i32>(1, 1), res);
+  return mix(mix(c00, c10, f.x), mix(c01, c11, f.x), f.y);
+}
+
+fn vorticityAt(p: vec2<i32>, res: vec2<f32>) -> f32 {
+  let vE = loadC(p + vec2<i32>(1, 0), res).rg;
+  let vW = loadC(p + vec2<i32>(-1, 0), res).rg;
+  let vN = loadC(p + vec2<i32>(0, 1), res).rg;
+  let vS = loadC(p + vec2<i32>(0, -1), res).rg;
+  return (vE.y - vW.y - (vN.x - vS.x)) * 0.5;
 }
 
 fn curlNoise(p: vec2<f32>) -> vec2<f32> {
@@ -78,14 +86,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let colorIntensity = u.zoom_params.w;
 
   // ── Read previous state (RG=velocity, B=pressure, A=dye) ──
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  let prev = sampleC(uv, resolution);
   var vel = prev.rg;
   let prevPressure = prev.b;
   var dye = prev.a;
 
   // ── Velocity advection (semi-Lagrangian backtrace) ──
   let backUV = uv - vel * texel * DT;
-  let advected = textureSampleLevel(dataTextureC, u_sampler, backUV, 0.0);
+  let advected = sampleC(backUV, resolution);
   vel = advected.rg;
   dye = advected.a;
 
@@ -118,10 +126,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
                          cos(time * 1.7 + treble * PI) * treble * 0.02);
 
   // ── Diffusion via neighbour averaging ──
-  let vN = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(0.0, texel.y), 0.0).rg;
-  let vS = textureSampleLevel(dataTextureC, u_sampler, uv - vec2<f32>(0.0, texel.y), 0.0).rg;
-  let vE = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).rg;
-  let vW = textureSampleLevel(dataTextureC, u_sampler, uv - vec2<f32>(texel.x, 0.0), 0.0).rg;
+  let vN = sampleC(uv + vec2<f32>(0.0, texel.y), resolution).rg;
+  let vS = sampleC(uv - vec2<f32>(0.0, texel.y), resolution).rg;
+  let vE = sampleC(uv + vec2<f32>(texel.x, 0.0), resolution).rg;
+  let vW = sampleC(uv - vec2<f32>(texel.x, 0.0), resolution).rg;
   let avgVel = (vN + vS + vE + vW) * 0.25;
   vel = mix(vel, avgVel, 1.0 - viscosity);
 
@@ -129,19 +137,58 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let div = (vE.x - vW.x + vN.y - vS.y) * 0.5;
 
   // ── Pressure solve (1 Jacobi step, warm-started) ──
-  let pN = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(0.0, texel.y), 0.0).b;
-  let pS = textureSampleLevel(dataTextureC, u_sampler, uv - vec2<f32>(0.0, texel.y), 0.0).b;
-  let pE = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).b;
-  let pW = textureSampleLevel(dataTextureC, u_sampler, uv - vec2<f32>(texel.x, 0.0), 0.0).b;
+  let pN = sampleC(uv + vec2<f32>(0.0, texel.y), resolution).b;
+  let pS = sampleC(uv - vec2<f32>(0.0, texel.y), resolution).b;
+  let pE = sampleC(uv + vec2<f32>(texel.x, 0.0), resolution).b;
+  let pW = sampleC(uv - vec2<f32>(texel.x, 0.0), resolution).b;
   let pressure = (div + pN + pS + pE + pW) * 0.25;
 
   // ── Project velocity (subtract pressure gradient) ──
   let gradP = vec2<f32>(pE - pW, pN - pS) * 0.5;
   vel = vel - gradP;
 
+  // Idea 3 — baroclinic shear jets where pressure and dye gradients misalign.
+  let dyeN = sampleC(uv + vec2<f32>(0.0, texel.y), resolution).a;
+  let dyeS = sampleC(uv - vec2<f32>(0.0, texel.y), resolution).a;
+  let dyeE = sampleC(uv + vec2<f32>(texel.x, 0.0), resolution).a;
+  let dyeW = sampleC(uv - vec2<f32>(texel.x, 0.0), resolution).a;
+  let dyeGrad = vec2<f32>(dyeE - dyeW, dyeN - dyeS) * 0.5;
+  let baroclinic = vec2<f32>(-gradP.y, gradP.x) * length(dyeGrad);
+  vel = vel + baroclinic * (0.03 + mids * 0.05);
+
+  // Idea 1 — vorticity confinement. Curl Strength keeps eddies from dying into viscosity.
+  let wC = vorticityAt(coord, resolution);
+  let wE = vorticityAt(coord + vec2<i32>(1, 0), resolution);
+  let wW = vorticityAt(coord + vec2<i32>(-1, 0), resolution);
+  let wN = vorticityAt(coord + vec2<i32>(0, 1), resolution);
+  let wS = vorticityAt(coord + vec2<i32>(0, -1), resolution);
+  let eta = vec2<f32>(abs(wE) - abs(wW), abs(wN) - abs(wS));
+  let nEta = eta / max(length(eta), 1e-4);
+  vel = vel + vec2<f32>(nEta.y, -nEta.x) * wC * curlStrength * 0.35;
+  // Idea 2 — buoyancy. Dye is density; positive vel.y backtraces downward, so lift is negative.
+  vel.y = vel.y - dye * 0.18;
+
+  // ── Idea: no-slip walls ─────────────────────────────────────────────
+  // The box has edges. Viscosity sticks the fluid to the frame.
+  let wall = smoothstep(0.10, 0.0, min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y)));
+  vel = vel * (1.0 - wall * mix(0.25, 0.85, u.zoom_params.x));
+
   // ── Dye advection through projected velocity ──
   let dyeBackUV = uv - vel * texel * DT;
-  dye = textureSampleLevel(dataTextureC, u_sampler, dyeBackUV, 0.0).a;
+  dye = sampleC(dyeBackUV, resolution).a;
+
+  // ── Idea: MacCormack dye ────────────────────────────────────────────
+  // One correction step on the same backtrace, clamped to the
+  // neighborhood so the dye cannot ring.
+  let velBack = sampleC(dyeBackUV, resolution).rg;
+  let forthUV = clamp(dyeBackUV + velBack * texel * DT, vec2<f32>(0.0), vec2<f32>(1.0));
+  let dyeForth = sampleC(forthUV, resolution).a;
+  let dyeMac = dye + 0.5 * (prev.a - dyeForth);
+  let dNb = sampleC(dyeBackUV + vec2<f32>(0.0, texel.y), resolution).a;
+  let dSb = sampleC(dyeBackUV - vec2<f32>(0.0, texel.y), resolution).a;
+  let dEb = sampleC(dyeBackUV + vec2<f32>(texel.x, 0.0), resolution).a;
+  let dWb = sampleC(dyeBackUV - vec2<f32>(texel.x, 0.0), resolution).a;
+  dye = clamp(dyeMac, min(dye, min(dNb, min(dSb, min(dEb, dWb)))), max(dye, max(dNb, max(dSb, max(dEb, dWb)))));
 
   // ── Dye sources ──
   let hue = fract(time * 0.08 + colorIntensity * 0.2 + bass * 0.1);
@@ -175,6 +222,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // ── Color mapping ──
   let velMag = length(vel);
   let dyeColor = sourceColor * dye * 3.0;
+  let vortMag = abs(vorticityAt(coord, resolution));
 
   // Velocity-based temperature color
   let hotColor = vec3<f32>(1.0, 0.6, 0.2);
@@ -184,6 +232,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   var color = mix(flowColor * 0.15, dyeColor, clamp(dye * 2.0, 0.0, 1.0));
   color = color + flowColor * velMag * dye * 2.0;
+  // Idea 4 — enstrophy-cascade shimmer in high-curl filaments.
+  let enstrophy = smoothstep(0.15, 1.2, vortMag);
+  color = color + vec3<f32>(0.35, 0.9, 1.0) * enstrophy * (0.08 + treble * 0.1);
 
   // Audio reactivity boost
   color = color * (0.9 + bass * 0.2 + treble * 0.1);

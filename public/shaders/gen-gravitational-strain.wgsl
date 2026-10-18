@@ -6,30 +6,12 @@
 //  Rays traced along geodesics via RK4 integration of dv/ds = -∇Φ.
 //  Lensed image sampled from procedural star field with domain-warped nebula.
 //  Tidal forces emit where |∇²Φ| is large (field gradient maxima).
-//  Upgraded: 2026-09-13
-//  Ideas: photon-sphere caustic at 1.5 Rs; tidal stretch of the background star field along ∇Φ
+//  Upgraded: 2026-10-17
+//  Ideas: photon-sphere caustic at 1.5 Rs; tidal stretch of the background star field along ∇Φ; Tissot strain-ellipse lattice from the tidal Hessian; binary quadrupole wave arms that tighten as the pointer well and its partner close; tidal disruption streams (shredded-star debris spirals with Keplerian winding and a pericentre flare); Trojan dust tadpoles librating at the binary's L4/L5 points
 //  A packing: potential depth, ray speed, emission energy, semantic alpha
 // ─────────────────────────────────────────────────────────────────────────────
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config:      vec4<f32>, // x=Time, y=MouseClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>, // x=Time, y=MouseX, z=MouseY, w=MouseDown
-    zoom_params: vec4<f32>, // x=WellCount(1-6), y=WellMass, z=BendStrength, w=EmissionScale
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=WellCount(1-6), y=WellMass, z=BendStrength, w=EmissionScale
 
 const PI:    f32 = 3.14159265358979323846;
 const TAU:   f32 = 6.28318530717958647692;
@@ -292,7 +274,25 @@ fn photonSphereGlow(p: vec2<f32>, wellPos: vec2<f32>, mass: f32) -> f32 {
     let rs = mass * 2.0;
     let photonR = rs * 1.5;
     let w = 0.0035 + mass * 0.0025;
-    return exp(-pow((d - photonR) / max(w, 0.0001), 2.0)) * mass * 6.0;
+    let x = (d - photonR) / max(w, 0.0001);
+    return exp(-x * x) * mass * 6.0;
+}
+
+// ── Tidal Hessian ∂²Φ (xx, yy, xy) by central differences ──
+fn gravHessian(p: vec2<f32>, wells: array<vec3<f32>, 6>, n: i32) -> vec3<f32> {
+    let e = 0.01;
+    let c  = gravPotential(p, wells, n);
+    let xp = gravPotential(p + vec2<f32>(e, 0.0), wells, n);
+    let xm = gravPotential(p - vec2<f32>(e, 0.0), wells, n);
+    let yp = gravPotential(p + vec2<f32>(0.0, e), wells, n);
+    let ym = gravPotential(p - vec2<f32>(0.0, e), wells, n);
+    let pp = gravPotential(p + vec2<f32>(e, e), wells, n);
+    let mm = gravPotential(p - vec2<f32>(e, e), wells, n);
+    let pm = gravPotential(p + vec2<f32>(e, -e), wells, n);
+    let mp = gravPotential(p + vec2<f32>(-e, e), wells, n);
+    return vec3<f32>((xp + xm - 2.0 * c) / (e * e),
+                     (yp + ym - 2.0 * c) / (e * e),
+                     (pp + mm - pm - mp) / (4.0 * e * e));
 }
 
 // ── Einstein ring glow with Fresnel falloff ──
@@ -388,7 +388,32 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let tidalDir = gravGrad(p, wells, wellCount);
     let tidalLen = max(length(tidalDir), 0.0001);
     let tidalStretch = (tidalDir / tidalLen) * clamp(tidalLen * 0.12, 0.0, 0.05);
-    let lensedUV = (rayPos / vec2<f32>(aspect, 1.0) + 0.5) + tidalStretch / vec2<f32>(aspect, 1.0);
+    // Idea 4 — binary quadrupole wave: the pointer well and its orbiting
+    // partner radiate two-armed h+ strain. Arm phase follows the binary's own
+    // orbital angle, and the arms tighten (higher wavenumber) as the pair
+    // closes — a spatial chirp. The strain squeezes/stretches the sky sample
+    // along the wave's polarisation axes.
+    var gwStrain = 0.0;
+    var gwCrest = 0.0;
+    if (wellCount >= 2) {
+        let m0 = wells[0].z;
+        let m1 = wells[1].z;
+        let sep = wells[1].xy - wells[0].xy;
+        let sepLen = max(length(sep), 0.02);
+        let bary = (wells[0].xy * m0 + wells[1].xy * m1) / max(m0 + m1, 0.0001);
+        let rel = p - bary;
+        let r = max(length(rel), 0.0001);
+        let orbAng = atan2(sep.y, sep.x);
+        let waveK = clamp(14.0 * pow(0.25 / sepLen, 1.5), 6.0, 60.0);
+        let gwPhase = 2.0 * (atan2(rel.y, rel.x) - orbAng) - r * waveK;
+        let envelope = smoothstep(sepLen * 0.5, sepLen * 1.2, r) / (1.0 + r * 4.0);
+        let massRatio = clamp((m0 * m1) / max(wellMass * wellMass, 1e-6), 0.0, 3.0);
+        gwStrain = cos(gwPhase) * envelope * massRatio * (0.4 + u.zoom_params.z * 0.6);
+        let crest = clamp(cos(gwPhase), 0.0, 1.0);
+        gwCrest = crest * crest * crest * crest * envelope * massRatio;
+    }
+    let gwDisp = gwStrain * 0.02 * vec2<f32>(p.x - wells[0].x, -(p.y - wells[0].y));
+    let lensedUV = (rayPos / vec2<f32>(aspect, 1.0) + 0.5) + (tidalStretch + gwDisp) / vec2<f32>(aspect, 1.0);
     let stars    = starField(lensedUV, t);
 
     // ── Tidal emission ──
@@ -419,6 +444,86 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // ── Compose ──
     var col = stars * darkening + emission + ripEmission;
+    col += hsv2rgb(fract(0.62 + t * 0.02 + mids * 0.1), 0.55, 1.0) * gwCrest * 0.08 * emScale * darkening;
+
+    // Idea 5 — tidal disruption streams: every ~7 s per well a star strays
+    // inside the tidal radius and is shredded. Its debris winds into a single
+    // spiral stream whose inner parts lap the outer ones (Keplerian winding,
+    // angle offset ∝ r^-1.5) and lengthens outward with age; a short flare
+    // marks the pericentre passage. Bounded: 4 s lifetime, one stream/well.
+    var tdeLight = vec3<f32>(0.0);
+    for (var i = 0; i < wellCount; i++) {
+        let fi = f32(i);
+        let period = 6.0 + h1(fi * 3.1 + 0.7) * 3.0;
+        let age = fract((t + h1(fi * 5.3) * period) / period) * period;
+        if (age < 4.0) {
+            let wpos = wells[i].xy;
+            let rsT = max(wells[i].z * 2.0, 0.005);
+            let rel = p - wpos;
+            let r = max(length(rel), 0.0001);
+            let ang0 = h1(fi * 7.9 + floor((t + h1(fi * 5.3) * period) / period)) * TAU;
+            let rPeri = rsT * 1.6;
+            let rTip = rPeri + age * 0.07;
+            let wind = age * 2.2 * pow(rPeri / max(r, rPeri), 1.5);
+            let x = atan2(rel.y, rel.x) - ang0 - wind;
+            let wrapped = x - TAU * round(x / TAU);
+            let radial = smoothstep(rPeri * 0.8, rPeri * 1.2, r) * (1.0 - smoothstep(rTip * 0.8, rTip, r));
+            let thick = 0.12 + 0.25 * (r - rPeri) / max(rTip - rPeri, 0.01);
+            let strand = exp(-wrapped * wrapped / (thick * thick)) * radial;
+            let fade = (1.0 - smoothstep(2.5, 4.0, age)) * smoothstep(0.0, 0.15, age);
+            let clump = 0.6 + 0.4 * vnoise(vec2<f32>(r * 90.0 - age * 4.0, fi * 11.0));
+            let fx = (r - rPeri) / rsT;
+            let flare = exp(-age * 7.0) * exp(-fx * fx) * 1.8; // pericentre ring flash, outside the dark core
+            let heat = clamp(1.0 - (r - rPeri) / max(rTip - rPeri, 0.01), 0.0, 1.0);
+            tdeLight += mix(vec3<f32>(1.0, 0.35, 0.12), vec3<f32>(0.85, 0.9, 1.0), heat)
+                * (strand * clump * fade * 0.55 + flare) * (1.0 + bass * 0.6);
+        }
+    }
+    col += tdeLight * (0.4 + emScale * 0.4) * darkening;
+
+    // Idea 6 — Trojan dust at L4/L5: the pointer well and its orbiting partner
+    // hold two leading/trailing dust clouds at the equilateral Lagrange points,
+    // stretched into tadpoles along the shared orbit and librating ±15°.
+    var trojanLight = 0.0;
+    if (wellCount >= 2) {
+        let sepT = wells[1].xy - wells[0].xy;
+        let sepLenT = max(length(sepT), 0.02);
+        let dirT = sepT / sepLenT;
+        for (var k = 0; k < 2; k++) {
+            let sgn = select(-1.0, 1.0, k == 0);
+            let lib = sgn * PI / 3.0 + 0.26 * sin(t * 0.35 + f32(k) * 2.1);
+            let cl = cos(lib); let sl = sin(lib);
+            let lpt = wells[0].xy + vec2<f32>(dirT.x * cl - dirT.y * sl, dirT.x * sl + dirT.y * cl) * sepLenT;
+            // tadpole long axis = tangent of the circle around wells[0]
+            let radial = normalize(lpt - wells[0].xy + vec2<f32>(1e-5, 0.0));
+            let tang = vec2<f32>(-radial.y, radial.x);
+            let lq = p - lpt;
+            let along = dot(lq, tang) / (sepLenT * 0.38);
+            let across = dot(lq, radial) / (sepLenT * 0.09);
+            let blob = exp(-(along * along + across * across));
+            let grain = vnoise(lq * 140.0 + vec2<f32>(t * 0.3, f32(k) * 17.0));
+            trojanLight += blob * (0.35 + 0.65 * grain * grain);
+        }
+    }
+    col += vec3<f32>(0.95, 0.68, 0.36) * trojanLight * (0.05 + mids * 0.05) * emScale * darkening;
+
+    // Idea 3 — Tissot strain ellipses: a lattice of unit circles pulled back
+    // through the local tidal tensor I + kH, so each ring becomes the ellipse
+    // the field would stretch it into (long axis = tidal stretch direction).
+    let tissotN = 14.0;
+    let cellUV = p * tissotN;
+    let cellC = (floor(cellUV) + 0.5) / tissotN;
+    let hess = gravHessian(cellC, wells, wellCount);
+    let hessMag = sqrt(hess.x * hess.x + hess.y * hess.y + 2.0 * hess.z * hess.z) + 1e-5;
+    let kTidal = min(0.25 * bendStrength, 0.65 / hessMag);
+    let sT = hess * kTidal;
+    let local = cellUV - floor(cellUV) - 0.5;
+    let q = local + vec2<f32>(sT.x * local.x + sT.z * local.y, sT.z * local.x + sT.y * local.y);
+    let ringD = abs(length(q) - 0.3);
+    let tissotLine = exp(-ringD * ringD * 900.0);
+    let strainAmt = clamp(hessMag * kTidal, 0.0, 1.0);
+    let tissotHue = fract(0.55 + (sT.x + sT.y) * 0.6 + t * 0.01);
+    col += hsv2rgb(tissotHue, 0.65, 1.0) * tissotLine * (0.02 + strainAmt * 0.18) * emScale * darkening;
 
     // A held pointer spins a closed-form strain runner around the local well.
     let mouseDelta = p - mouseWell;
@@ -476,7 +581,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // ── Alpha: emission energy + lens arc + ring intensity ──
     let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-    let emEnergy = length(emission) + length(ripEmission) + length(arcColor) + strainRunner;
+    let emEnergy = length(emission) + length(ripEmission) + length(arcColor) + strainRunner + length(tdeLight) * 0.5;
     let alpha = clamp(0.4 + luma * 0.3 + emEnergy * 0.15 + depthOut * 0.2, 0.0, 1.0);
 
     textureStore(writeTexture, gid.xy, vec4<f32>(col, alpha));

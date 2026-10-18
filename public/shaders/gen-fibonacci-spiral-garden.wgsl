@@ -3,30 +3,12 @@
 //  Category: generative
 //  Features: audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: √n disk packing; 8- and 13-family parastichy ridges
+//  Upgraded: 2026-10-11
+//  Ideas: √n disk packing; 8- and 13-family parastichy ridges; floret age; involucre bracts
 //  A packing: raw HDR display RGBA (ACES on writeTexture)
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>, // x=Spiral Scale, y=Growth Cycle, z=Petal Size, w=Bloom
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Spiral Scale, y=Growth Cycle, z=Petal Size, w=Bloom
 
 const GOLDEN_ANGLE: f32 = 2.39996323;
 
@@ -69,6 +51,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var paraRidge = 0.0;
     var hueSum = 0.0;
     var nearDepth = 0.0;
+    var ageMass = 0.0;
     for (var i = 0; i < 96; i++) {
         let fi = f32(i);
         let normalizedIndex = (fi + 0.5) / 96.0;
@@ -92,6 +75,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         leaf += halo;
         paraRidge += halo * para * 0.85 + petal * para * 0.22;
         hueSum += (petal + halo) * normalizedIndex;
+        ageMass += petal * normalizedIndex;
         nearDepth = max(nearDepth, petal * (1.0 - normalizedIndex * 0.55));
     }
 
@@ -111,6 +95,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var hdrColor = background + palette(hue) * flower * (0.65 + bloomStrength + audio.x * 0.7);
     hdrColor += palette(hue + 0.3) * leaf * bloomStrength * (0.5 + audio.z);
     hdrColor += palette(hue + 0.12) * paraRidge * (0.55 + bloomStrength * 0.25);
+    // Floret age — outer disks leave the meristem and turn ochre.
+    hdrColor = mix(hdrColor, vec3<f32>(0.86, 0.52, 0.12), clamp(ageMass, 0.0, 1.0) * 0.38);
+    // Involucre bracts — a pointed ring outside the head.
+    let bractAng = atan2(p.y, p.x);
+    let bract = exp(-abs(length(p) - spiralScale * 1.08) * 28.0) * pow(saturate(0.5 + 0.5 * cos(bractAng * 13.0)), 8.0);
+    hdrColor += vec3<f32>(0.12, 0.32, 0.08) * bract * bloomStrength;
     hdrColor += vec3<f32>(0.45, 0.85 + audio.y * 0.3, 0.3 + audio.z * 0.5) * clickBloom * 0.42;
     let history = textureLoad(dataTextureC, coord, 0);
     hdrColor = clamp(mix(hdrColor, history.rgb, 0.045 + audio.x * 0.06), vec3<f32>(0.0), vec3<f32>(7.0));

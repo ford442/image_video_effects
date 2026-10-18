@@ -52,38 +52,42 @@
       "step": 0.01
     }
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Diffusion A",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Diffusion B",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Feed Rate",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Mouse Influence",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Diffusion A",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Diffusion B",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Feed Rate",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Mouse Influence",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
     }
-  ]
+  }
 }

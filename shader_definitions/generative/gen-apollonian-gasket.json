@@ -10,45 +10,11 @@
     "audio-reactive",
     "metallic"
   ],
-  "description": "Apollonian circle packing fractal rendered via iterative circle inversion. Descartes-based circle configuration with metallic coloring, rainbow chromatic aberration on inversions, and mouse-driven point inversion.",
+  "description": "Apollonian circle packing fractal rendered via iterative circle inversion. Descartes-based circle configuration with metallic coloring, rainbow chromatic aberration on inversions, and mouse-driven point inversion. Seed circles carry a faint interior wash, and the smallest one holds a Soddy spark.",
   "workgroup_size": [
     16,
     16,
     1
-  ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Recursion Depth",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Inversion Intensity",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Circle Size",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Rainbow Aberration",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
   ],
   "supportsDepth": true,
   "supportsDof": false,
@@ -98,5 +64,43 @@
       "step": 0.01,
       "mapping": "zoom_params.w"
     }
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Recursion Depth",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Inversion Intensity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Circle Size",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Rainbow Aberration",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

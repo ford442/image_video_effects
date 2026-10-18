@@ -103,7 +103,7 @@ export class ShaderRatingService {
       this.lastFetch = Date.now();
       
       return ratings;
-    } catch (error) {
+    } catch {
       console.warn('[ShaderRatingService] fetchAllRatings: using in-memory cache (offline?)');
       // Return whatever we have in the in-memory cache from this session
       return [...this.cache.values()];
@@ -158,7 +158,7 @@ export class ShaderRatingService {
       this.lastFetch = 0;
 
       return updated;
-    } catch (error) {
+    } catch {
       console.warn('[ShaderRatingService] rateShader: offline, queued for sync:', shaderId);
 
       // Return an optimistic result so the UI reflects the user's choice
@@ -339,6 +339,9 @@ export function useShaderRatings() {
   useEffect(() => {
     service.enrichWithRatings().then(data => {
       setShaders(data);
+      setLoading(false);
+    }).catch((err) => {
+      console.warn('[Ratings] Failed to enrich shaders with ratings:', err);
       setLoading(false);
     });
   }, [service]);

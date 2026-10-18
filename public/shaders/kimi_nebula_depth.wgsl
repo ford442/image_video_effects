@@ -1,5 +1,9 @@
 // ============================================================================
-// Kimi Nebula Depth — halftone dot + Sobel ink-stipple (upgraded, Batch 18)
+// Kimi Nebula Depth — halftone dot + Sobel ink-stipple
+// Upgraded: 2026-09-27
+// Ideas: rosette screen angle; wet-ink bleed from C; click screen misregister
+// A packing: ACES display RGBA. Alpha is ink coverage.
+// Kept: Batch 18 Sobel loop, bass dot pulse, spring vignette. Not a nebula.
 //
 // Despite the legacy name there is no nebula or raymarch here: this is a
 // posterized-luma halftone renderer with Sobel ink outlines, paper grain,
@@ -55,6 +59,15 @@ fn getLuma(color_1: vec3<f32>) -> f32 {
     return dot(color_1, vec3<f32>(0.299, 0.587, 0.114));
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn hash12_(p: vec2<f32>) -> f32 {
     var p3_: vec3<f32>;
 
@@ -108,6 +121,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pulseWave = (0.6 + (0.4 * sin(((time * 6.0) + (bass * 3.0)))));
     let dotPulse = (1.0 + ((bass * 0.35) * pulseWave));
     let dotSize = (dotSizeBase * dotPulse);
+    let mids = select(0.0, plasmaBuffer[0].y, hasAudio);
+    let treble = select(0.0, plasmaBuffer[0].z, hasAudio);
+
+    // Click misregister: the halftone screen shifts locally for the ripple age.
+    var misreg = vec2<f32>(0.0);
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+        let rp = u.ripples[ri];
+        let age = time - rp.z;
+        if (age > 0.0 && age < 2.2) {
+            let delta = uv - rp.xy;
+            let dist = length(delta);
+            let life = exp(-age * 1.8) * exp(-dist * 8.0);
+            misreg = misreg + vec2<f32>(delta.y, -delta.x) * life * 0.35;
+        }
+    }
 
     // ── Spring-damped vignette center (single writer, read by all) ──────
     let hasState = (arrayLength(&extraBuffer) > 138u);
@@ -226,7 +255,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = _e151.xyz;
     let _e154 = color;
     let _e155 = getLuma(_e154);
-    let gridPos = (vec2<f32>(global_id.xy) / vec2(dotSize));
+    // Rosette: rotate the existing dot grid so the screen is not axis-aligned.
+    let screen = (vec2<f32>(global_id.xy) / vec2(dotSize)) + misreg * 18.0;
+    let rosette = 0.26;
+    let gridPos = vec2<f32>(
+        screen.x * cos(rosette) - screen.y * sin(rosette),
+        screen.x * sin(rosette) + screen.y * cos(rosette)
+    );
     let gridCenter = (floor(gridPos) + vec2(0.5));
     let dist = length((gridPos - gridCenter));
     let _e169 = color;
@@ -268,6 +303,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let _e241 = ink_alpha;
     ink_alpha = (_e241 * paper_tex);
     finalColor = (finalColor * (0.97 + (0.03 * _e236)));
+    finalColor = finalColor + vec3<f32>(0.04, 0.02, 0.0) * mids * paper_tex;
+    finalColor = finalColor + vec3<f32>(paper_tex - 0.97) * treble * 0.15;
+
+    // Wet-ink bleed: previous ink alpha feathers into the paper.
+    let prevInk = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).a;
+    let bleed = prevInk * (1.0 - ink_alpha) * (0.22 + bass * 0.2);
+    finalColor = mix(finalColor, vec3<f32>(0.06, 0.05, 0.07), bleed * inkDensity);
+    ink_alpha = max(ink_alpha, bleed * 0.65);
 
     // ── Mouse vignette (always on; damped center never pops at edges) ───
     let dVec = (uv - vigCenter);
@@ -279,12 +322,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     ink_alpha = mix(_e260, min(1.0, (_e260 * 1.2)), (vignette * 0.5));
 
     // ── Outputs (written every frame) ───────────────────────────────────
-    let _e272 = finalColor;
+    let _e272 = acesToneMap(finalColor);
     let _e273 = ink_alpha;
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(_e272, _e273));
     let _e277 = ink_alpha;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(_e277, 0.0, 0.0, _e277));
     // Aux buffer: composited stipple color + ink alpha for downstream passes.
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalColor, ink_alpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(_e272, ink_alpha));
     return;
 }

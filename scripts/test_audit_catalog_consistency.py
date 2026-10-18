@@ -12,6 +12,7 @@ sys.path.insert(0, str(_SCRIPTS))
 from audit_catalog_consistency import (  # noqa: E402
     audit_catalog,
     evaluate_gate,
+    stale_baseline_keys,
     violation_key,
 )
 
@@ -132,6 +133,67 @@ def test_gate_fails_new_violation():
     assert not ok and len(new) == 1
 
 
+def _run_audit(root: Path):
+    import audit_catalog_consistency as mod
+
+    old = mod.DEFINITIONS_DIR, mod.SHADERS_DIR, mod.SHADER_LISTS_DIR, mod.MULTIPASS_REGISTRY_TS
+    mod.DEFINITIONS_DIR = root / "shader_definitions"
+    mod.SHADERS_DIR = root / "public" / "shaders"
+    mod.SHADER_LISTS_DIR = root / "public" / "shader-lists"
+    mod.MULTIPASS_REGISTRY_TS = root / "nonexistent.ts"
+    try:
+        loaded = mod.load_definitions_parallel(mod.discover_definition_paths())
+        return mod.audit_catalog(loaded, lists_regenerated=False)
+    finally:
+        mod.DEFINITIONS_DIR, mod.SHADERS_DIR, mod.SHADER_LISTS_DIR, mod.MULTIPASS_REGISTRY_TS = old
+
+
+def test_graph_node_pass_shader_is_secondary_not_orphan():
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        defs = root / "shader_definitions" / "simulation"
+        shaders = root / "public" / "shaders"
+        (root / "public" / "shader-lists").mkdir(parents=True)
+        defs.mkdir(parents=True)
+        shaders.mkdir(parents=True)
+        graph = {"maxPassesPerFrame": 2, "nodes": [
+            {"id": "a", "entry": "tank-step", "reads": [], "writes": []},
+            {"id": "b", "entry": "tank-missing", "reads": [], "writes": []},
+        ]}
+        (defs / "tank.json").write_text(json.dumps(
+            {"id": "tank", "url": "shaders/tank.wgsl", "multipass": {"graph": graph}}))
+        (shaders / "tank.wgsl").write_text("fn main() {}\n")
+        (shaders / "tank-step.wgsl").write_text("fn main() {}\n")
+        report = _run_audit(root)
+        orphans = {v["id"] for v in report["violations"] if v["type"] == "orphan-graph-entry"}
+        assert "tank-step" not in orphans, "graph pass with a WGSL file is a secondary pass"
+        assert "tank-missing" in orphans, "graph entry with no WGSL file is still an orphan"
+        assert not [v for v in report["violations"] if v["type"] == "wgsl-without-definition"]
+
+
+def test_id_url_allowlist_is_pinned_to_the_exact_pair():
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        defs = root / "shader_definitions" / "generative"
+        shaders = root / "public" / "shaders"
+        (root / "public" / "shader-lists").mkdir(parents=True)
+        defs.mkdir(parents=True)
+        shaders.mkdir(parents=True)
+        # gen-grid -> gen_grid is pinned in catalog_id_url_allowlist.json; gen-grid -> other is not.
+        (defs / "gen-grid.json").write_text(json.dumps({"id": "gen-grid", "url": "shaders/gen_grid.wgsl"}))
+        (shaders / "gen_grid.wgsl").write_text("fn main() {}\n")
+        assert not [v for v in _run_audit(root)["violations"] if v["type"] == "id-filename-mismatch"]
+        (defs / "gen-grid.json").write_text(json.dumps({"id": "gen-grid", "url": "shaders/other.wgsl"}))
+        (shaders / "other.wgsl").write_text("fn main() {}\n")
+        assert [v for v in _run_audit(root)["violations"] if v["type"] == "id-filename-mismatch"]
+
+
+def test_stale_baseline_keys_detected():
+    report = {"violations": [{"type": "t", "id": "x", "detail": "d", "key": "t|x|d"}]}
+    assert stale_baseline_keys(report, {"t|x|d"}) == []
+    assert stale_baseline_keys(report, {"t|x|d", "t|gone|d"}) == ["t|gone|d"]
+
+
 def main() -> int:
     tests = [
         test_violation_key_stable,
@@ -139,6 +201,9 @@ def main() -> int:
         test_graph_parent_skips_id_filename_mismatch,
         test_gate_baseline_accepts_known,
         test_gate_fails_new_violation,
+        test_graph_node_pass_shader_is_secondary_not_orphan,
+        test_id_url_allowlist_is_pinned_to_the_exact_pair,
+        test_stale_baseline_keys_detected,
     ]
     failed = 0
     for t in tests:

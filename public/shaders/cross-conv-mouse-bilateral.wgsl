@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Crossover: Convolution + Mouse — Bilateral Paint
+//  Bilateral Paint
 //  Category: image
-//  Features: crossover, mouse-driven, advanced-convolution, audio-reactive, upgraded-rgba
-//  Crosses: conv-bilateral-dream (1C) + mouse-paint-splatter (2C)
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Created: 2026-04-19
-//  By: Agent 5C — Phase C Crossover Integration
+//  Upgraded: 2026-10-16
+//  Ideas: range coring so noise smooths and edges stay; wet edge on the brush
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //
 //  The mouse acts as a brush that paints bilateral-filter smoothness.
@@ -15,26 +15,7 @@
 //
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn sampleColor(uv: vec2<f32>) -> vec3<f32> {
     return textureSampleLevel(readTexture, u_sampler, clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
@@ -46,6 +27,10 @@ fn gaussSpatial(dist2: f32, sigma: f32) -> f32 {
 
 fn gaussRange(diff: f32, sigma: f32) -> f32 {
     return exp(-(diff * diff) / (2.0 * sigma * sigma));
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -90,7 +75,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (localStrength < 0.01) {
         // Untouched region: alpha marks zero filter coverage
         let col = sampleColor(uv);
-        let passthrough = vec4<f32>(col, 0.0);
+        let passthrough = vec4<f32>(aces(max(col, vec3<f32>(0.0))), 0.0);
         textureStore(writeTexture, global_id.xy, passthrough);
         textureStore(dataTextureA, vec2<i32>(global_id.xy), passthrough);
         let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
@@ -116,8 +101,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             
             let spatialDist2 = dot(offset, offset);
             let rangeDiff = sLuma - centerLuma;
+            // Idea 1 — range coring: gaps smaller than the core are sensor noise.
+            let core = 0.012 + edgePreserve * 0.04;
+            let cored = sign(rangeDiff) * max(abs(rangeDiff) - core, 0.0);
             
-            let w = gaussSpatial(spatialDist2, sigmaS) * gaussRange(rangeDiff, sigmaR);
+            let w = gaussSpatial(spatialDist2, sigmaS) * gaussRange(cored, sigmaR);
             sumColor = sumColor + sCol * w;
             sumWeight = sumWeight + w;
         }
@@ -130,9 +118,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sheen = clamp(localStrength, 0.0, 1.0) * bass;
     finalColor = clamp(finalColor + vec3<f32>(0.4, 0.55, 0.8) * (sheen + clickFront * 0.4) * 0.25, vec3<f32>(0.0), vec3<f32>(4.0));
 
+    // Idea 2 — wet edge where brush coverage falls off.
+    let wet = smoothstep(0.12, 0.32, brushFalloff) * (1.0 - smoothstep(0.48, 0.78, brushFalloff));
+    finalColor = finalColor * (1.0 - wet * 0.22);
+
     // Alpha carries filter coverage — how much this pixel was actually smoothed
     let alpha = clamp(localStrength, 0.0, 1.0);
-    let outColor = vec4<f32>(finalColor, alpha);
+    let outColor = vec4<f32>(aces(max(finalColor, vec3<f32>(0.0))), alpha);
 
     textureStore(writeTexture, global_id.xy, outColor);
     textureStore(dataTextureA, vec2<i32>(global_id.xy), outColor);

@@ -6,6 +6,9 @@
 // normals (4 taps vs 6), spring-smoothed void well + bounded click
 // surge, real audio + FFT reactivity, HDR + ACES, semantic alpha,
 // generated hit depth, temporal history smoothing.
+// Upgraded: 2026-09-27
+// Ideas: void tether energy beams; subsurface iridescent dark-matter scales
+// A packing: ACES display RGBA
 // ----------------------------------------------------------------
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -242,17 +245,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let viewDir = normalize(ro - p);
         let spec = pow(max(dot(viewDir, reflect(-l, n)), 0.0), 32.0);
 
-        // Chromatic dispersion color
-        let matCol = vec3<f32>(
-            0.5 + 0.5 * sin(time + p.x * 2.0 + 0.0),
-            0.5 + 0.5 * sin(time + p.y * 2.0 + 2.0),
-            0.5 + 0.5 * sin(time + p.z * 2.0 + 4.0)
-        ) * 0.8 + vec3<f32>(0.2);
+        // Idea 2: Subsurface iridescent dark-matter scales
+        let scaleIridescence = vec3<f32>(
+            0.5 + 0.5 * sin(time * 0.8 + p.y * 3.0 + 0.0),
+            0.5 + 0.5 * sin(time * 0.9 + p.z * 3.0 + 2.0),
+            0.5 + 0.5 * sin(time * 1.0 + p.x * 3.0 + 4.0)
+        );
+        let matCol = mix(vec3<f32>(0.05, 0.0, 0.1), scaleIridescence, clamp(diff * 1.2, 0.0, 1.0)) * 0.8 + vec3<f32>(0.1);
 
         // Dark matter core darkening
         let darkMatter = clamp(length(p.xz) - 1.5, 0.0, 1.0);
 
         col = matCol * diff * darkMatter + spec * vec3<f32>(0.8, 0.9, 1.0);
+
+        // Idea 1: Void tether energy beams connecting torus to the void well
+        let tetherDist = length(p - ctx.voidCenter);
+        let tetherBeam = clamp(cos(tetherDist * 8.0 - time * 5.0) * exp(-tetherDist * 1.5), 0.0, 1.0) * u.zoom_params.y * (0.5 + bass);
+        col += vec3<f32>(0.4, 0.1, 0.9) * tetherBeam * 2.0;
+
 
         // Plasma aura (band energy drives scale emission, FFT adds shimmer)
         let emission = clamp(fbm(p * 5.0 - vec3<f32>(time)), 0.0, 1.0)

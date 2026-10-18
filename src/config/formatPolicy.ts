@@ -3,6 +3,8 @@
  * Keep numeric / enum mapping in sync with wasm_renderer/performance_policy.h.
  */
 
+import { inferAdapterGpuType, readAdapterIdentity } from './adapterIdentity';
+import { scopeFailed, withValidationScope } from '../renderer/webgpu/validationScope';
 import type { RenderQualityMode } from './performancePolicy';
 
 export type InternalColorFormat = 'rgba32float' | 'rgba16float';
@@ -41,7 +43,7 @@ export function floatToHalfBits(value: number): number {
   const f32 = new Float32Array(1);
   const u32 = new Uint32Array(f32.buffer);
   f32[0] = value;
-  const x = u32[0];
+  const x = u32[0]!;
   const sign = (x >>> 16) & 0x8000;
   const exp = (x >>> 23) & 0xff;
   const mant = x & 0x7fffff;
@@ -74,23 +76,23 @@ export function packRgbaUploadData(
   width: number,
   height: number,
   format: InternalColorFormat,
-): { data: ArrayBufferView; bytesPerRow: number; rowsPerImage: number } {
+): { data: ArrayBufferView<ArrayBuffer>; bytesPerRow: number; rowsPerImage: number } {
   const bytesPerRow = width * bytesPerPixel(format);
   if (format === 'rgba32float') {
-    return { data: floats, bytesPerRow, rowsPerImage: height };
+    return { data: floats as Float32Array<ArrayBuffer>, bytesPerRow, rowsPerImage: height };
   }
-  const Float16Ctor = (globalThis as unknown as { Float16Array?: new (n: number) => ArrayBufferView }).Float16Array;
+  const Float16Ctor = (globalThis as unknown as { Float16Array?: new (n: number) => ArrayBufferView<ArrayBuffer> }).Float16Array;
   if (Float16Ctor) {
     const f16 = new Float16Ctor(floats.length);
     const f16View = f16 as unknown as { length: number; [i: number]: number };
     for (let i = 0; i < floats.length; i++) {
-      f16View[i] = floats[i];
+      f16View[i] = floats[i]!;
     }
     return { data: f16, bytesPerRow, rowsPerImage: height };
   }
   const packed = new Uint16Array(floats.length);
   for (let i = 0; i < floats.length; i++) {
-    packed[i] = floatToHalfBits(floats[i]);
+    packed[i] = floatToHalfBits(floats[i]!);
   }
   return { data: packed, bytesPerRow, rowsPerImage: height };
 }
@@ -111,66 +113,54 @@ export function estimateInternalTextureMiB(
   return Math.round((bytes / (1024 * 1024)) * 10) / 10;
 }
 
-export function parseAdapterGpuType(
-  adapterType: string | undefined,
-): AdapterGpuType {
-  switch (adapterType) {
-    case 'discrete':
-    case 'DiscreteGPU':
-      return 'discrete';
-    case 'integrated':
-    case 'IntegratedGPU':
-      return 'integrated';
-    case 'cpu':
-    case 'CPU':
-      return 'cpu';
-    default:
-      return 'unknown';
-  }
-}
-
 export interface FormatProbeOptions {
   isMobile?: boolean;
   /** Boot-probe GPUDevice — same requestDevice; never a second device. */
   device?: GPUDevice | null;
 }
 
-function probeStorageTexture(
+/**
+ * 1×1 STORAGE_BINDING create inside a validation scope. An illegal storage format
+ * usually yields an invalid texture plus an async validation error rather than a
+ * throw, so the scope is what makes this probe able to say no (#1395).
+ */
+async function probeStorageTexture(
   device: GPUDevice | null | undefined,
   format: GPUTextureFormat,
-): boolean {
+): Promise<boolean> {
   if (!device || typeof device.createTexture !== 'function') return false;
   const usage: GPUTextureUsageFlags = typeof GPUTextureUsage !== 'undefined'
     ? GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.TEXTURE_BINDING
     : 0x0e;
+  const result = await withValidationScope(device, () =>
+    device.createTexture({ label: `format-probe-${format}`, size: [1, 1], format, usage }),
+  );
   try {
-    const tex = device.createTexture({
-      label: `format-probe-${format}`,
-      size: [1, 1],
-      format,
-      usage,
-    });
-    tex.destroy();
-    return true;
+    result.value?.destroy();
   } catch {
-    return false;
+    /* invalid texture */
   }
+  return !scopeFailed(result);
 }
 
-export function probeFormatCapabilities(
+export async function probeFormatCapabilities(
   adapter: GPUAdapter,
   isMobileOrOptions: boolean | FormatProbeOptions = false,
-): DeviceFormatCapabilities {
+): Promise<DeviceFormatCapabilities> {
   const options: FormatProbeOptions = typeof isMobileOrOptions === 'boolean'
     ? { isMobile: isMobileOrOptions }
     : isMobileOrOptions;
   const isMobile = options.isMobile ?? false;
   const features = adapter?.features;
   const hasFloat32Filterable = !!features?.has('float32-filterable');
-  const hasFloat32Blendable = !!features?.has('float32-blendable' as GPUFeatureName);
+  // The device is never asked for float32-blendable, so with a device in hand report what it
+  // was granted; the adapter's offer only counts for an adapter-only (pre-device) probe.
+  const hasFloat32Blendable = options.device
+    ? !!options.device.features?.has('float32-blendable' as GPUFeatureName)
+    : !!features?.has('float32-blendable' as GPUFeatureName);
   const float16 = hasFloat16Array();
-  const supportsRgba16FloatStorage = probeStorageTexture(options.device, 'rgba16float');
-  const supportsRgba32FloatStorage = probeStorageTexture(options.device, 'rgba32float');
+  const supportsRgba16FloatStorage = await probeStorageTexture(options.device, 'rgba16float');
+  const supportsRgba32FloatStorage = await probeStorageTexture(options.device, 'rgba32float');
 
   if (!float16) {
     console.warn(
@@ -180,9 +170,7 @@ export function probeFormatCapabilities(
   }
 
   return {
-    adapterGpuType: parseAdapterGpuType(
-      (adapter.info as GPUAdapterInfo & { adapterType?: string })?.adapterType,
-    ),
+    adapterGpuType: inferAdapterGpuType(readAdapterIdentity(adapter)),
     isMobile,
     supportsRgba32FloatStorage,
     supportsRgba16FloatStorage,

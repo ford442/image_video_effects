@@ -23,7 +23,7 @@ Phase 1 hygiene (#1013) implemented without GPU:
 | 1 Performance | **OPEN** | [`wasm-benchmark-report-stub-2026-07-26.json`](./wasm-benchmark-report-stub-2026-07-26.json) — backends missing |
 | 2 Reliability (2 GPUs) | **OPEN** | Parity 6/7 skipped, 1 failed (no adapter) — VM run 2026-07-26 |
 | 3 Manual smoke | **OPEN** | Blocked in Cloud VM — requires GPU browser without `testMode` |
-| 4 Ops (4-week CI) | **OPEN** | See [`WASM_PROMOTION_TRACKING.md`](../WASM_PROMOTION_TRACKING.md) weekly table |
+| 4 Ops (4-week CI) | **OPEN** | See [`WASM_PROMOTION_TRACKING.md`](../docs/WASM_PROMOTION_TRACKING.md) weekly table |
 
 ## VM run commands (2026-07-26)
 

@@ -8,6 +8,9 @@
 //  warm-key/cool-fill relief lighting, HDR flow lines + critical
 //  point glow (bloom-ready), valley haze, ACES grade, audio-
 //  reactive energy, bounded mouse stir, semantic alpha.
+//  Upgraded: 2026-09-27
+//  Ideas: Morse index from the Hessian determinant; separatrix whiskers on saddles
+//  A packing: linear/HDR history in A; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -95,17 +98,17 @@ fn gradient(p: vec2<f32>, complexity: f32, t: f32) -> vec2<f32> {
     return vec2<f32>((hx - h) / eps, (hy - h) / eps);
 }
 
-// Detect critical points (where gradient is near zero)
-fn detectCritical(grad: vec2<f32>, secondDeriv: f32) -> i32 {
+// Morse index. det > 0 and trace < 0 is a peak, det > 0 and trace > 0 a valley, det < 0 a saddle.
+fn detectCritical(grad: vec2<f32>, traceH: f32, detH: f32) -> i32 {
     let gradMag = length(grad);
-
-    if (gradMag < 0.05) {
-        // Max, min, or saddle based on second derivative
-        if (secondDeriv < -0.1) { return 1; } // Maximum (peak)
-        else if (secondDeriv > 0.1) { return 2; } // Minimum (valley)
-        else { return 3; } // Saddle point
+    if (gradMag < 0.08 && detH > 0.02) {
+        if (traceH < 0.0) { return 1; }
+        return 2;
     }
-    return 0; // Not critical
+    if (gradMag < 0.12 && detH < -0.02) {
+        return 3;
+    }
+    return 0;
 }
 
 // Split-toned relief palette: abyssal indigo valleys, verdant mids,
@@ -136,13 +139,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
-    var fftShimmer = 0.0;
-    if (arrayLength(&extraBuffer) > 13u) {
-        for (var k = 1u; k <= 8u; k = k + 1u) {
-            fftShimmer += extraBuffer[5u + k];
-        }
-        fftShimmer = clamp(fftShimmer * 0.125, 0.0, 1.5);
-    }
 
     // Parameters - safe randomization (all four sliders live)
     let flowSpeed = mix(0.2, 2.0, u.zoom_params.x) * (1.0 + mids * 0.45);
@@ -164,10 +160,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let hR = heightField(p + vec2<f32>(eps, 0.0), complexity, t);
     let hD = heightField(p - vec2<f32>(0.0, eps), complexity, t);
     let hU = heightField(p + vec2<f32>(0.0, eps), complexity, t);
-    let laplacian = (hL + hR + hD + hU - 4.0 * h) / (eps * eps);
-
-    // Detect critical points
-    let critical = detectCritical(grad, laplacian);
+    let hxx = (hL + hR - 2.0 * h) / (eps * eps);
+    let hyy = (hD + hU - 2.0 * h) / (eps * eps);
+    let hPP = heightField(p + vec2<f32>(eps, eps), complexity, t);
+    let hPM = heightField(p + vec2<f32>(eps, -eps), complexity, t);
+    let hMP = heightField(p + vec2<f32>(-eps, eps), complexity, t);
+    let hMM = heightField(p + vec2<f32>(-eps, -eps), complexity, t);
+    let hxy = (hPP - hPM - hMP + hMM) / (4.0 * eps * eps);
+    // Idea 1 — real Morse index from the Hessian determinant.
+    let detH = hxx * hyy - hxy * hxy;
+    let traceH = hxx + hyy;
+    let critical = detectCritical(grad, traceH, detH);
+    let diffE = hxx - hyy;
+    let disc = sqrt(max(diffE * diffE + 4.0 * hxy * hxy, 0.0));
+    let lUnstable = 0.5 * (traceH + disc);
+    var axis = vec2<f32>(hxy, lUnstable - hxx);
+    if (length(axis) < 1e-4) { axis = vec2<f32>(1.0, 0.0); }
+    axis = normalize(axis);
 
     // === BOUNDED MOUSE STIR (finite, spatially local bump + lantern glow) ===
     let mDown = select(0.0, 1.0, u.zoom_config.w > 0.5);
@@ -237,7 +246,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let contour = abs(fract(h * 10.0) - 0.5);
     let contourMask = smoothstep(0.02, 0.0, contour);
     col = mix(col, col * 0.65, contourMask * 0.5);
-    col += vec3<f32>(0.90, 0.95, 1.10) * contourMask * fftShimmer * 0.35;
+    col += vec3<f32>(0.90, 0.95, 1.10) * contourMask * treble * 0.35;
+
+    // Idea 2 — separatrix whiskers. Near a saddle, glow where the gradient lies on the unstable axis.
+    let transAxis = vec2<f32>(-axis.y, axis.x);
+    let transDeriv = dot(grad, transAxis);
+    let whisker = exp(-transDeriv * transDeriv * 40.0)
+        * (1.0 - smoothstep(-0.08, 0.0, detH))
+        * smoothstep(0.4, 0.05, length(grad));
+    col += vec3<f32>(1.0, 0.92, 0.55) * whisker * 0.85;
 
     // Soft local lantern glow around the cursor
     col += vec3<f32>(0.90, 0.75, 0.50) * stir * (0.10 + 0.25 * mDown);

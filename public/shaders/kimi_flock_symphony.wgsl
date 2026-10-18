@@ -1,7 +1,12 @@
-// ═══════════════════════════════════════════════════════════════
-//  Kimi Flock Symphony with Alpha Scattering
-//  Advanced particle flocking with musical visualization
-//  With Physical Light Transport and Cumulative Alpha
+// ═══════════════════════════════════════════════════════════════════
+//  Kimi Flock Symphony
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-10-18
+//  Ideas: real trails (decaying splat history in A rows >= 1, trail_length = decay); orchestra sections (index quartiles = bass/mid/mid/treble voices with own size, speed, warmth); tutti swell (bass widens the separation radius); section strings (bowed filaments between same-section neighbours inside the perception radius, bright when their headings agree); solo spotlight (the section whose band carries the largest share of the mix plays louder while the others drop back)
+//  A packing: row 0 x<256 = boid state (pos.xy, vel.xy) read back from C row 0; rows >= 1 = pre-tonemap boid-splat HDR RGB + splat coverage density, read back from C at the same texel as trail history
+// ═══════════════════════════════════════════════════════════════════
 //
 //  Dataflow (single-pass feedback sim):
 //  The renderer only ever dispatches entry point `main`, so the
@@ -15,29 +20,12 @@
 //  derived from speed plus the audio bands in plasmaBuffer[0]
 //  (bass / mids / treble). The first BOID_COUNT flattened
 //  invocations integrate one boid each; ALL invocations then
-//  splat the boids read from dataTextureC.
-// ═══════════════════════════════════════════════════════════════
+//  splat the boids read from dataTextureC. Display pixels in rows
+//  >= 1 also keep their splat history in A (row 0 is boid state,
+//  so row-0 display pixels show no trail).
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
 fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
   let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
   let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
@@ -53,6 +41,61 @@ const BOID_COUNT: u32 = 256u;
 const MAX_SPEED: f32 = 0.30;          // normalized units per second
 const PERCEPTION_RADIUS: f32 = 0.06;  // normalized
 const DT: f32 = 0.016;                // fixed integration step (60 fps)
+const SECTION_SIZE: u32 = 64u;
+const STRING_CAP: i32 = 16;           // Idea 4: string candidates kept per pixel        // BOID_COUNT / 4 — one orchestra section per index quartile
+
+// ═══ Idea 2: orchestra sections ═══
+// Boid index quartiles are sections of the orchestra:
+//   0 = bass (large, slow, warm), 1 & 2 = mids, 3 = treble (small, darting, cool).
+// sectionT runs 0 (bass) → 1 (treble) and drives size / speed / wander / warmth.
+fn sectionT(idx: u32) -> f32 {
+    return f32(min(idx / SECTION_SIZE, 3u)) / 3.0;
+}
+
+// Each section listens to its own plasmaBuffer[0] band.
+fn sectionBand(idx: u32, bass: f32, mids: f32, treble: f32) -> f32 {
+    let sec = min(idx / SECTION_SIZE, 3u);
+    var band = mids;
+    if (sec == 0u) { band = bass; }
+    if (sec == 3u) { band = treble; }
+    return clamp(band, 0.0, 1.0);
+}
+
+// Glow size multiplier: bass voices are big, treble voices are small; swells with the section's band.
+fn sectionSize(idx: u32, band: f32) -> f32 {
+    return mix(1.35, 0.7, sectionT(idx)) * (1.0 + band * 0.5);
+}
+
+// Top-speed multiplier: bass voices cruise, treble voices dart; pumped by the section's band.
+fn sectionSpeed(idx: u32, band: f32) -> f32 {
+    return mix(0.8, 1.3, sectionT(idx)) * (1.0 + band * 0.8);
+}
+
+// Home hue per section: warm (orange-red) for bass through to cool (blue) for treble.
+fn sectionHue(idx: u32) -> f32 {
+    return mix(0.02, 0.62, sectionT(idx));
+}
+
+// ═══ Idea 5: solo spotlight ═══
+// Each section's share of the mix (bass + 2·mids + treble, the four sections'
+// bands) decides who has the solo: share 1/4 = tutti (gain 1), a dominant band
+// lifts its section and the others drop back. Silence → every gain is 1.
+fn soloGain(idx: u32, bass: f32, mids: f32, treble: f32) -> f32 {
+    let b = clamp(bass, 0.0, 1.0);
+    let m = clamp(mids, 0.0, 1.0);
+    let tr = clamp(treble, 0.0, 1.0);
+    let total = b + 2.0 * m + tr;
+    let share = sectionBand(idx, bass, mids, treble) / (total + 0.05);
+    let presence = smoothstep(0.05, 0.4, total);
+    return clamp(1.0 + (share * 4.0 - 1.0) * 0.6 * presence, 0.45, 1.9);
+}
+
+// Pixel distance to segment a→b (both relative to the pixel)
+fn segDist(a: vec2<f32>, b: vec2<f32>) -> f32 {
+    let ab = b - a;
+    let h = clamp(dot(-a, ab) / max(dot(ab, ab), 1e-5), 0.0, 1.0);
+    return length(a + ab * h);
+}
 
 // Soft particle alpha
 fn softParticleAlpha(dist: f32, radius: f32) -> f32 {
@@ -114,11 +157,16 @@ fn seedBoid(i: u32) -> vec4<f32> {
     return vec4<f32>(pos, vel);
 }
 
-// First frame / corrupted feedback detection (NaN, out of range, all-zero)
+// First frame / corrupted feedback detection (NaN, out of range, all-zero,
+// impossible speed). HEAD fix: a boid's speed is always clamped into
+// [0.15, 1.3 * 1.8] * MAX_SPEED, so a previous shader's row 0 (display RGBA with
+// alpha ~1 → |vel| >= 1) is rejected instead of being adopted as flock state.
 fn stateInvalid(s: vec4<f32>) -> bool {
     if (s.x != s.x || s.y != s.y || s.z != s.z || s.w != s.w) { return true; }
     if (s.x < 0.0 || s.x > 1.0 || s.y < 0.0 || s.y > 1.0) { return true; }
     if (all(s == vec4<f32>(0.0))) { return true; }
+    let spd = length(s.zw);
+    if (spd < MAX_SPEED * 0.1 || spd > MAX_SPEED * 3.0) { return true; }
     return false;
 }
 
@@ -134,7 +182,7 @@ fn safeNormalize(v: vec2<f32>) -> vec2<f32> {
 }
 
 // Flocking integration for boid `idx`; writes new state to dataTextureA.
-fn updateBoid(idx: u32, bass: f32, mids: f32) {
+fn updateBoid(idx: u32, bass: f32, mids: f32, treble: f32) {
     var state = textureLoad(dataTextureC, vec2<i32>(i32(idx), 0), 0);
     if (stateInvalid(state)) { state = seedBoid(idx); }
     var pos = state.xy;
@@ -146,6 +194,14 @@ fn updateBoid(idx: u32, bass: f32, mids: f32) {
     var ali = vec2<f32>(0.0);
     var coh = vec2<f32>(0.0);
     var count: f32 = 0.0;
+    var sepCount: f32 = 0.0;
+
+    // ═══ Idea 3: tutti swell ═══
+    // Bass widens the separation radius (and firms the push) for the whole
+    // flock, so every section breathes outward together on a hit. At bass = 0
+    // the separation set equals the HEAD perception set exactly.
+    let swell = clamp(bass, 0.0, 1.5);
+    let sep_radius = PERCEPTION_RADIUS * (1.0 + swell * 1.2);
 
     for (var j: u32 = 0u; j < BOID_COUNT; j = j + 1u) {
         if (j == idx) { continue; }
@@ -155,17 +211,24 @@ fn updateBoid(idx: u32, bass: f32, mids: f32) {
         let diff = wrapDelta(pos - other.xy);
         let d = length(diff);
 
-        if (d < PERCEPTION_RADIUS && d > 0.0001) {
-            sep += diff / (d * d);
-            ali += other.zw;
-            coh += diff;
-            count += 1.0;
+        if (d > 0.0001) {
+            if (d < sep_radius) {
+                sep += diff / (d * d);
+                sepCount += 1.0;
+            }
+            if (d < PERCEPTION_RADIUS) {
+                ali += other.zw;
+                coh += diff;
+                count += 1.0;
+            }
         }
     }
 
     var acc = vec2<f32>(0.0);
+    if (sepCount > 0.0) {
+        acc += safeNormalize(sep) * 0.8 * (1.0 + swell * 0.5);
+    }
     if (count > 0.0) {
-        acc += safeNormalize(sep) * 0.8;
         acc += safeNormalize(ali / count - vel) * 0.5;
         // Mids drive how strongly the flock pulls together
         acc -= safeNormalize(coh / count) * (0.25 + mids * 0.5);
@@ -182,16 +245,22 @@ fn updateBoid(idx: u32, bass: f32, mids: f32) {
     acc += mouse_dir * 0.3 * smoothstep(0.7, 0.05, dist_to_mouse) + spiral_force * 0.4;
 
     // ═══ Noise wandering (agitated by bass) ═══
-    let noise_force = vec2<f32>(
-        noise(pos * 10.0 + time),
-        noise(pos * 10.0 + time + 100.0)
-    ) * (0.4 + bass * 1.2);
+    // HEAD fix: noise() is 0..1, so the raw value was a constant +x/+y push
+    // (the flock drifted down-right). Centred to -1..1 → zero-mean wander.
+    // Idea 2: treble section wanders harder (darting), bass section less.
+    let wander = vec2<f32>(
+        noise(pos * 10.0 + time) - 0.5,
+        noise(pos * 10.0 + time + 100.0) - 0.5
+    ) * 2.0;
+    let noise_force = wander * (0.4 + bass * 1.2) * mix(0.75, 1.45, sectionT(idx));
     acc += noise_force;
 
     // ═══ Integrate ═══
     vel += acc * 1.4 * DT;
-    // Bass pumps the flock's top speed
-    let max_speed = MAX_SPEED * (1.0 + bass * 0.8);
+    // Idea 2: each section's own band pumps its top speed (bass section
+    // slow, treble section fast); replaces HEAD's flock-wide bass pump.
+    let band = sectionBand(idx, bass, mids, treble);
+    let max_speed = MAX_SPEED * sectionSpeed(idx, band);
     let speed = length(vel);
     if (speed > max_speed) {
         vel = vel / speed * max_speed;
@@ -201,6 +270,11 @@ fn updateBoid(idx: u32, bass: f32, mids: f32) {
     pos = fract(pos + vel * DT);
 
     textureStore(dataTextureA, vec2<i32>(i32(idx), 0), vec4<f32>(pos, vel));
+}
+
+// ACES filmic tone map (display RGB only)
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -219,7 +293,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ═══ Phase 1: sim update — one boid per flattened invocation ═══
     let flat = global_id.y * dim.x + global_id.x;
     if (flat < BOID_COUNT && flat < dim.x) {
-        updateBoid(flat, bass, mids);
+        updateBoid(flat, bass, mids, treble);
     }
 
     if (global_id.x >= dim.x || global_id.y >= dim.y) { return; }
@@ -231,10 +305,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let color_shift = u.zoom_params.z + treble * 0.25;
     let density = u.zoom_params.w;
     let particle_opacity = 0.6;
+    // Largest per-boid radius any section can reach (size 1.35 × band swell 1.5)
+    let max_radius = glow_radius * 1.35 * 1.5;
 
     var accumulated_color = vec3<f32>(0.0);
     var accumulated_density: f32 = 0.0;
     var total_energy: f32 = 0.0;
+
+    // Idea 4: the nearest STRING_CAP boids within the perception radius of this
+    // pixel (torus-wrapped normalized distance, same metric as the sim). Empty
+    // slots hold 1e3 so they fill in order 0, 1, 2, ... A cap of 16 keeps a
+    // string's endpoints in the set along its length even inside dense clusters
+    // (~3 boids per radius on average); pair cost only scales with nearCount.
+    var nearRel: array<vec2<f32>, 16>;
+    var nearVel: array<vec2<f32>, 16>;
+    var nearIdx: array<u32, 16>;
+    var nearD: array<f32, 16>;
+    for (var k = 0; k < STRING_CAP; k++) { nearD[k] = 1e3; nearIdx[k] = 0u; nearRel[k] = vec2<f32>(0.0); nearVel[k] = vec2<f32>(0.0); }
+    var nearCount = 0;
 
     // Sample boids
     for (var i: u32 = 0u; i < BOID_COUNT; i = i + 1u) {
@@ -250,43 +338,113 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let wrap_delta = raw_delta - floor(raw_delta / resolution + vec2<f32>(0.5)) * resolution;
         var d = length(wrap_delta);
 
-        if (d < glow_radius) {
-            // Speed (normalized units/sec) for energy and emission
-            let speed = length(vel);
-            let speed_norm = clamp(speed / MAX_SPEED, 0.0, 1.5);
-            // Musical energy: smoothed speed plus bass pulse
-            let b_energy = clamp(speed_norm * 0.7 + bass * 0.5, 0.05, 1.5);
+        // Idea 4: gather string candidates (replace the farthest kept one)
+        let dn = length(wrap_delta / resolution);
+        if (dn < PERCEPTION_RADIUS) {
+            var far = 0;
+            for (var k = 1; k < STRING_CAP; k++) { if (nearD[k] > nearD[far]) { far = k; } }
+            if (dn < nearD[far]) {
+                nearD[far] = dn;
+                nearRel[far] = -wrap_delta;
+                nearVel[far] = vel;
+                nearIdx[far] = i;
+                nearCount = min(nearCount + 1, STRING_CAP);
+            }
+        }
 
-            // Soft particle alpha
-            let alpha = softParticleAlpha(d, glow_radius) * particle_opacity * b_energy;
+        if (d < max_radius) {
+            // Idea 2: section glow size follows the section's own band
+            let band = sectionBand(i, bass, mids, treble);
+            let radius = glow_radius * sectionSize(i, band);
+            if (d < radius) {
+                // Speed (normalized units/sec) for energy and emission
+                let speed = length(vel);
+                let speed_norm = clamp(speed / MAX_SPEED, 0.0, 1.5);
+                // Musical energy: smoothed speed plus bass pulse
+                let b_energy = clamp(speed_norm * 0.7 + bass * 0.5, 0.05, 1.5);
 
-            // Per-boid hue is a deterministic "instrument voice", swept by
-            // time, treble, and the user's color-shift control
-            let b_hue = fract(hash(f32(i) * 1.61803398875 + 200.0) + time * 0.03 + speed_norm * 0.05);
+                // Soft particle alpha
+                let alpha = softParticleAlpha(d, radius) * particle_opacity * b_energy * soloGain(i, bass, mids, treble);
 
-            // HSL color with shift
-            var rgb = hsl_to_rgb(fract(b_hue + color_shift), 0.8, 0.5);
+                // Per-boid hue is a deterministic "instrument voice", swept by
+                // time, treble, and the user's color-shift control
+                let voice_hue = fract(hash(f32(i) * 1.61803398875 + 200.0) + time * 0.03 + speed_norm * 0.05);
+                // Idea 2: pull each voice halfway (around the hue circle) toward its
+                // section's home hue — bass warm, treble cool, mids in between
+                let home = sectionHue(i);
+                let b_hue = fract(voice_hue + (fract(home - voice_hue + 0.5) - 0.5) * 0.5);
 
-            // HDR emission based on energy and speed
-            let emission = 1.0 + b_energy * 2.0 + speed_norm * 0.5;
-            let hdr_rgb = hdrEmission(rgb, emission);
+                // HSL color with shift
+                var rgb = hsl_to_rgb(fract(b_hue + color_shift), 0.8, 0.5);
 
-            // Accumulate
-            accumulated_color += hdr_rgb * alpha * density;
-            accumulated_density += alpha;
-            total_energy += alpha * emission;
+                // HDR emission based on energy and speed
+                let emission = 1.0 + b_energy * 2.0 + speed_norm * 0.5;
+                let hdr_rgb = hdrEmission(rgb, emission);
+
+                // Accumulate
+                accumulated_color += hdr_rgb * alpha * density;
+                accumulated_density += alpha;
+                total_energy += alpha * emission;
+            }
         }
     }
 
-    // Center glow at mouse (pulses with bass)
+    // ═══ Idea 1: real trails ═══
+    // Rows >= 1 keep the pre-tonemap splat colour + coverage in A; next frame
+    // reads it back through exact C. trail_length is the decay. The update is
+    // bounded: max(current, mix(current, prev, decay)) never exceeds the larger
+    // of this frame and the stored history, so the head of each glow is exactly
+    // HEAD brightness and the tail relaxes back toward the live splat field.
+    // Row 0 holds boid state, so row-0 display pixels show no trail.
+    if (coord.y >= 1) {
+        var prev = textureLoad(dataTextureC, coord, 0);
+        // Guard against NaN / negative history (e.g. another shader's A on switch)
+        if (!all(prev == prev)) { prev = vec4<f32>(0.0); }
+        prev = clamp(prev, vec4<f32>(0.0), vec4<f32>(1024.0));
+        let decay = 0.96 * sqrt(clamp(u.zoom_params.x, 0.0, 1.0));
+        accumulated_color = max(accumulated_color, mix(accumulated_color, prev.rgb, decay));
+        accumulated_density = max(accumulated_density, mix(accumulated_density, prev.a, decay));
+        textureStore(dataTextureA, coord, vec4<f32>(accumulated_color, accumulated_density));
+    }
+
+    // ═══ Idea 4: section strings ═══
+    // Same-section neighbours that the sim couples (normalized distance <
+    // PERCEPTION_RADIUS) are joined by a thin bowed filament. Brightness
+    // follows heading agreement (alignment = the section "in tune"), the
+    // section's band and its solo gain; it fades as the pair drifts apart.
+    // Drawn after the trail store so the strings stay crisp, not smeared.
+    let stringW = 0.9 + glow_radius * 0.08;
+    for (var a = 0; a < STRING_CAP - 1; a++) {
+        if (a >= nearCount) { break; }
+        for (var c = a + 1; c < STRING_CAP; c++) {
+            if (c >= nearCount) { break; }
+            let ia = nearIdx[a];
+            let ic = nearIdx[c];
+            if (ia / SECTION_SIZE != ic / SECTION_SIZE) { continue; }
+            let pairD = length((nearRel[c] - nearRel[a]) / resolution);
+            if (pairD >= PERCEPTION_RADIUS) { continue; }
+            let line = 1.0 - smoothstep(0.0, stringW, segDist(nearRel[a], nearRel[c]));
+            if (line <= 0.0) { continue; }
+            let agree = 0.5 + 0.5 * dot(safeNormalize(nearVel[a]), safeNormalize(nearVel[c]));
+            let band = sectionBand(ia, bass, mids, treble);
+            let fade = 1.0 - pairD / PERCEPTION_RADIUS;
+            let strength = line * fade * agree * agree * (0.35 + band * 0.6) * soloGain(ia, bass, mids, treble);
+            let scol = hsl_to_rgb(fract(sectionHue(ia) + color_shift), 0.6, 0.62);
+            accumulated_color += hdrEmission(scol, 0.6) * strength * density;
+            accumulated_density += strength * 0.5;
+        }
+    }
+
+    // Center glow at mouse (pulses with bass) — added after the trail so the
+    // wide pointer halo is never smeared into history
     var mouse = u.zoom_config.yz * resolution;
     let mouse_dist = distance(vec2<f32>(f32(coord.x), f32(coord.y)), mouse);
     let mouse_alpha = softParticleAlpha(mouse_dist, 100.0) * (0.3 + bass * 0.4);
     accumulated_color += vec3<f32>(1.0, 0.9, 0.7) * mouse_alpha;
     accumulated_density += mouse_alpha;
 
-    // Tone mapping
-    accumulated_color = accumulated_color / (1.0 + accumulated_color);
+    // Tone mapping (HEAD fix: Reinhard → ACES on display RGB only; A keeps HDR)
+    accumulated_color = acesToneMap(accumulated_color);
     accumulated_color = pow(accumulated_color, vec3<f32>(0.8));
 
     // Cumulative alpha using exponential transmittance

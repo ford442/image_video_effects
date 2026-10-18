@@ -1,0 +1,51 @@
+{
+  "_comment": "Pinned id -> WGSL url-stem pairs that are allowed to differ. Shared by scripts/audit_catalog_consistency.py and scripts/validate_shader_definitions.mjs. A pair only exempts that exact (id, stem); changing either side fails the gate. Do not add entries for new shaders: name the WGSL after the id.",
+  "legacy_underscore_wgsl": {
+    "reason": "Id was hyphenated but the WGSL filename kept its underscores. Renaming the file would break remote storage keys (.deploy_manifest.json) and prelude/naga ratchet entries, so the id stays.",
+    "pairs": {
+      "gen-capabilities": "gen_capabilities",
+      "gen-cyclic-automaton": "gen_cyclic_automaton",
+      "gen-fluffy-raincloud": "gen_fluffy_raincloud",
+      "gen-grid": "gen_grid",
+      "gen-grok4-life": "gen_grok4_life",
+      "gen-grok4-perlin": "gen_grok4_perlin",
+      "gen-grok41-mandelbrot": "gen_grok41_mandelbrot",
+      "gen-grok41-plasma": "gen_grok41_plasma",
+      "gen-grokcf-interference": "gen_grokcf_interference",
+      "gen-grokcf-voronoi": "gen_grokcf_voronoi",
+      "gen-hyper-warp": "gen_hyper_warp",
+      "gen-julia-set": "gen_julia_set",
+      "gen-kimi-crystal": "gen_kimi_crystal",
+      "gen-kimi-nebula": "gen_kimi_nebula",
+      "gen-orb": "gen_orb",
+      "gen-psychedelic-spiral": "gen_psychedelic_spiral",
+      "gen-rainbow-smoke": "gen_rainbow_smoke",
+      "gen-reaction-diffusion": "gen_reaction_diffusion",
+      "gen-trails": "gen_trails",
+      "gen-wave-equation": "gen_wave_equation",
+      "graphic-novel": "graphic_novel",
+      "kimi-chromatic-warp": "kimi_chromatic_warp",
+      "kimi-fractal-dreams": "kimi_fractal_dreams",
+      "kimi-liquid-glass": "kimi_liquid_glass",
+      "kimi-nebula-depth": "kimi_nebula_depth",
+      "kimi-quantum-field": "kimi_quantum_field",
+      "kimi-ripple-touch": "kimi_ripple_touch",
+      "kimi-spotlight": "kimi_spotlight",
+      "kinetic-tiles": "kinetic_tiles",
+      "ring-slicer": "ring_slicer",
+      "warp-drive": "warp_drive"
+    }
+  },
+  "renamed_wgsl": {
+    "reason": "WGSL file was renamed or is the first pass of a multi-file effect; the catalog id is the stable public name (share links, presets).",
+    "pairs": {
+      "galaxy-sim": "galaxy",
+      "gen-lorenz-attractor-flow": "lorenz-attractor-flow",
+      "interactive-frost": "frost-reveal",
+      "optical-flow-dream": "optical-flow-estimate",
+      "psy-swirls": "generative-psy-swirls",
+      "sim-fluid-feedback-field": "sim-fluid-feedback-field-pass1",
+      "turing-veins": "generative-turing-veins"
+    }
+  }
+}

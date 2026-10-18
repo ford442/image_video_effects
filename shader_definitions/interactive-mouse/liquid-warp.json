@@ -20,7 +20,7 @@
     "chromatic-aberration",
     "fluid-simulation"
   ],
-  "description": "RK4 semi-Lagrangian flow combines exact-load state with an analytic pointer Jacobian. A finite-time Cauchy-Green tensor now yields rotation-invariant principal stretch, anisotropic chromatic spread, and near-singular fold caustics; bounded click rings inject vorticity.",
+  "description": "RK4 semi-Lagrangian flow combines exact-load state with an analytic pointer Jacobian. A finite-time Cauchy-Green tensor now yields rotation-invariant principal stretch, anisotropic chromatic spread, and near-singular fold caustics; bounded click rings inject vorticity. Stretch threads follow the principal axis, and high vorticity darkens a vortex eye.",
   "params": [
     {
       "id": "radius",
@@ -59,38 +59,42 @@
     "vorticity",
     "simulation"
   ],
-  "updatedParams": [
-    {
-      "id": "radius",
-      "name": "Warp Scale",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "description": "Pointer envelope tightness and swirl gain (maps to zoom_params.x)."
-    },
-    {
-      "id": "strength",
-      "name": "Turbulence",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "description": "Curl-noise octave amplitude and radial pull gain (maps to zoom_params.y)."
-    },
-    {
-      "id": "decay",
-      "name": "Principal Stretch",
-      "default": 0.9,
-      "min": 0,
-      "max": 1,
-      "description": "Blend toward the Cauchy-Green tensor's dominant principal stretch (maps to zoom_params.z)."
-    },
-    {
-      "id": "swirl",
-      "name": "Chromatic Spread",
-      "default": 0.2,
-      "min": 0,
-      "max": 1,
-      "description": "Width of the velocity-aligned channel split (maps to zoom_params.w)."
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "id": "radius",
+          "name": "Warp Scale",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "description": "Pointer envelope tightness and swirl gain (maps to zoom_params.x)."
+        },
+        {
+          "id": "strength",
+          "name": "Turbulence",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "description": "Curl-noise octave amplitude and radial pull gain (maps to zoom_params.y)."
+        },
+        {
+          "id": "decay",
+          "name": "Principal Stretch",
+          "default": 0.9,
+          "min": 0,
+          "max": 1,
+          "description": "Blend toward the Cauchy-Green tensor's dominant principal stretch (maps to zoom_params.z)."
+        },
+        {
+          "id": "swirl",
+          "name": "Chromatic Spread",
+          "default": 0.2,
+          "min": 0,
+          "max": 1,
+          "description": "Width of the velocity-aligned channel split (maps to zoom_params.w)."
+        }
+      ]
     }
-  ]
+  }
 }

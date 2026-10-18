@@ -1,11 +1,12 @@
-// ----------------------------------------------------------------
-// Raptor Mini - Territorial Predator Simulation
-// Category: generative
-// Upgrade (batch 35 / Interactivist): sprung mouse pack-leader,
-// velocity-aware pursuit, real bass/mids/treble + FFT reactivity,
-// click strike shockwaves, emergent scent-memory feedback trails,
-// generated relief depth.
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Raptor Mini
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-27
+//  Ideas: claw-rake triad; tail counterphase
+//  A packing: pre-ACES display/scent history in A; ACES on writeTexture only
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -94,6 +95,10 @@ fn grayScottRD(uv: vec2<f32>, feed: f32, kill: f32) -> vec2<f32> {
     let du = 0.2 * laplacian - reaction + feed * (1.0 - uChem);
     let dv = 0.1 * laplacian + reaction - (feed + kill) * vChem;
     return vec2<f32>(clamp(du + uChem, 0.0, 1.0), clamp(dv + vChem, 0.0, 1.0));
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn pursuitVector(predator: vec2<f32>, prey: vec2<f32>, speed: f32) -> vec2<f32> {
@@ -193,6 +198,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let capsuleA = vec2<f32>(-0.15, 0.0);
     let capsuleB = vec2<f32>(0.15, 0.0);
     let capsuleDist = sdCapsule(f, capsuleA, capsuleB, bodyRadius * 0.6);
+    // Tail counterphase: the tail sits opposite the pursuit direction so a turn reads as a raptor.
+    let tailTip = -dirToMouse * (0.22 + velMag * 0.15);
+    let tailDist = sdCapsule(f, vec2<f32>(0.0), tailTip, bodyRadius * 0.22);
 
     let pursuit = pursuitVector(uv, mouse, maxSpeed);
     let chaseIntensity = smoothstep(0.5, 0.0, length(pursuit) * 0.1) * (1.0 + velMag * 0.5);
@@ -207,9 +215,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var age = 0.0;
     var reproCooldown = 0.0;
 
-    if (capsuleDist < 0.0) {
+    let onBody = capsuleDist < 0.0 || tailDist < 0.0;
+    if (onBody) {
         territorialIntensity = 0.6 + rage * 0.4 + rng.x * 0.3 + preyField * 0.2 + chaseIntensity * 0.3 + strike * 0.5;
         energy = 0.8 + scent * 0.5 + rdEnergy * 0.3 + chaseIntensity * 0.4 + sparkle * 0.6;
+        energy += select(0.0, 0.28, tailDist < 0.0);
         age = fract(time * 0.05 + rng.y * 10.0);
         reproCooldown = 1.0;
     } else {
@@ -229,6 +239,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let scaleTex = fract(length(f * rageDuration * 10.0));
     col *= 0.7 + 0.3 * scaleTex;
 
+    // Claw-rake triad: three short streaks along pursuit velocity, gated by the existing strike.
+    let velDir = dirToMouse;
+    let tangent = vec2<f32>(-velDir.y, velDir.x);
+    var rake = 0.0;
+    for (var k = 0; k < 3; k = k + 1) {
+        let off = (f32(k) - 1.0) * 0.045;
+        let across = abs(dot(f, tangent) - off);
+        let along = abs(dot(f, velDir));
+        rake = max(rake, exp(-across * 90.0) * exp(-along * 14.0));
+    }
+    col += vec3<f32>(1.0, 0.32, 0.12) * rake * clamp(strike, 0.0, 1.0) * (0.45 + treble * 0.35);
+    col = mix(col, col * vec3<f32>(0.75, 0.55, 0.4), select(0.0, 0.45, tailDist < 0.0 && capsuleDist >= 0.0));
+
     // --- Emergent scent-memory: history-dependent feedback trails ---
     // Fast pointer + rage lengthen persistence; a strike wipes the local memory.
     let prev = textureLoad(dataTextureC, coords, 0);
@@ -238,12 +261,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let alpha = clamp(reproCooldown + strike * 0.25 + persistence * 0.3, 0.05, 0.95);
     let outColor = vec4<f32>(col, alpha);
+    let display = vec4<f32>(acesToneMap(col), alpha);
 
     // Generated relief depth: body near (1), territory mid, open field far (0)
     let relief = clamp(1.0 - capsuleDist * 2.0, 0.0, 1.0);
     let depth = clamp(relief * 0.8 + territoryBoundary * 0.25 + strike * 0.3, 0.0, 1.0);
 
-    textureStore(writeTexture, coords, outColor);
+    textureStore(writeTexture, coords, display);
     textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, coords, outColor);
 }

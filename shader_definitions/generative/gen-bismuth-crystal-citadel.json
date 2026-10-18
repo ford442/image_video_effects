@@ -10,57 +10,26 @@
     "metallic",
     "iridescent",
     "geometry",
-    "fractal",
     "alpha-transmission",
     "audio",
     "music"
   ],
-  "description": "Endless procedural canyon of iridescent bismuth crystals with physical light transmission. Features metallic Fresnel reflection, thin-film interference, and oxide layer transmission.",
+  "description": "Endless procedural canyon of iridescent bismuth crystals with SDF-curvature oxide thickness shifting, {110} polysynthetic twin lamellae, solidifying 6-fold hopper rafts on molten tier-gap pools, and an axial beacon column.",
   "workgroup_size": [
     16,
     16,
     1
-  ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Terrace Step Size",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Ascension Speed",
-      "default": 0.5,
-      "min": 0,
-      "max": 2,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Metallic Shine",
-      "default": 0.8,
-      "min": 0,
-      "max": 2,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Iridescence Shift",
-      "default": 1,
-      "min": 0,
-      "max": 5,
-      "step": 0.1
-    }
   ],
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
   "id": "gen-bismuth-crystal-citadel",
   "url": "shaders/gen-bismuth-crystal-citadel.wgsl",
-  "features": [],
+  "features": [
+    "upgraded-rgba",
+    "audio-reactive",
+    "mouse-driven"
+  ],
   "params": [
     {
       "id": "terrace_step_size",
@@ -98,5 +67,43 @@
       "step": 0.1,
       "mapping": "zoom_params.w"
     }
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Terrace Step Size",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Ascension Speed",
+          "default": 0.5,
+          "min": 0,
+          "max": 2,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Metallic Shine",
+          "default": 0.8,
+          "min": 0,
+          "max": 2,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Iridescence Shift",
+          "default": 1,
+          "min": 0,
+          "max": 5,
+          "step": 0.1
+        }
+      ]
+    }
+  }
 }

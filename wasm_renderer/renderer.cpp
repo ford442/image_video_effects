@@ -30,12 +30,18 @@ bool WebGPURenderer::Initialize(int canvasWidth, int canvasHeight,
     
     canvasWidth_ = canvasWidth;
     canvasHeight_ = canvasHeight;
+    requestedWidth_ = canvasWidth;
+    requestedHeight_ = canvasHeight;
     if (canvasSelector && *canvasSelector) {
         canvasSelector_ = canvasSelector;
     }
 
     failedStage_ = InitStage::None;
     lastError_.clear();
+
+    // Fresh liveness token for this device's spontaneous callbacks.
+    callbackToken_ = std::make_shared<CallbackToken>();
+    callbackToken_->renderer = this;
 
     // ARCH: [Low] Using printf for logging. Consider abstracting behind
     // a Logger interface to allow different output targets (console, file, etc.)
@@ -58,6 +64,14 @@ bool WebGPURenderer::Initialize(int canvasWidth, int canvasHeight,
         printf("❌ Failed to create resources\n");
         Shutdown();
         return false;
+    }
+
+    // CreateDevice() configured the swapchain at the requested size; the
+    // historyTex fail-soft may since have shrunk the canvas. The present blit
+    // is a 1:1 textureLoad, so the swapchain must match or the frame crops.
+    if (surface_.get() &&
+        (canvasWidth_ != requestedWidth_ || canvasHeight_ != requestedHeight_)) {
+        ConfigureSurface();
     }
 
     if (!CreateBindGroupLayout()) {
@@ -86,6 +100,8 @@ bool WebGPURenderer::Initialize(int canvasWidth, int canvasHeight,
 
     initialized_ = true;
     failedStage_ = InitStage::Ready;
+    frameCount_ = 0;
+    lastFrameTime_ = emscripten_get_now() / 1000.0;  // first FPS window starts now, not at 0
     printf("✅ WebGPU Renderer initialized successfully\n");
     return true;
 }
@@ -96,10 +112,20 @@ void WebGPURenderer::Shutdown() {
     // failed). All .reset() calls below are null-safe, so running this on a
     // partially-initialized (or already-shutdown) renderer is harmless.
 
-    // Cancel any in-progress frame capture before releasing the readback buffer.
-    if (readbackBuffer_.get() && captureState_ == CaptureState::Pending) {
+    // Detach every in-flight spontaneous callback (map, device lost) first:
+    // releasing the device and buffers below can fire them, and so can the
+    // browser after `delete`.
+    if (callbackToken_) {
+        callbackToken_->renderer = nullptr;
+        callbackToken_.reset();
+    }
+
+    // Cancel a pending map or drop a mapped-but-unread capture.
+    if (readbackBuffer_.get() &&
+        (captureState_ == CaptureState::Pending || captureState_ == CaptureState::Ready)) {
         wgpuBufferUnmap(readbackBuffer_.get());
     }
+    captureGeneration_++;
     captureState_        = CaptureState::Idle;
     readbackBufferSize_  = 0;
     readbackBytesPerRow_ = 0;
@@ -109,13 +135,22 @@ void WebGPURenderer::Shutdown() {
 
     // All other GPU objects are RAII handles — they release on assignment/destruction.
     // Explicit reset in reverse-creation order ensures proper GPU object lifetime.
-    computeBindGroup_.reset();
     renderBindGroup_.reset();
     renderPipeline_.reset();
     computePipelineLayout_.reset();
     computeBindGroupLayout_.reset();
 
     readbackBuffer_.reset();
+    timestampReadbackBuffer_.reset();
+    timestampResolveBuffer_.reset();
+    timestampQuerySet_.reset();
+    timestampReadbackPending_ = false;
+    supportsTimestampQuery_ = false;
+    gpuTimingsResolved_ = false;
+    tsFramePasses_.clear();
+    readbackPasses_.clear();
+    readbackQueryCount_ = 0;
+    passTimings_.clear();
     uniformBuffer_.reset();
     extraBuffer_.reset();
     plasmaBuffer_.reset();
@@ -131,6 +166,7 @@ void WebGPURenderer::Shutdown() {
     dataTextureA_.reset();
     dataTextureB_.reset();
     dataTextureC_.reset();
+    historyTexture_.reset();
     depthTextureRead_.reset();
     depthTextureWrite_.reset();
     emptyTexture_.reset();
@@ -224,6 +260,11 @@ void WebGPURenderer::SetMouse(float x, float y, bool down) {
     mouseDown_ = down;
 }
 
+void WebGPURenderer::SetMousePos(float x, float y) {
+    mouseX_ = x;
+    mouseY_ = y;
+}
+
 void WebGPURenderer::SetMouseDown(bool down) {
     mouseDown_ = down;
 }
@@ -272,6 +313,77 @@ void WebGPURenderer::GetGPUTimings(float* parallelMs, float* chainedMs, float* t
 
 void WebGPURenderer::SetRecording(bool recording) {
     isRecording_ = recording;
+}
+
+// ─── Uncaptured-error ring (#1314 D, diagnostics only) ───────────────────────
+
+void GpuErrorRing::Push(const char* prefix, const char* message, size_t length) {
+    // memcpy, not snprintf: snprintf would pull this (and the WebGPU error
+    // callback) under ASYNCIFY instrumentation. See wasm_internal.cpp.
+    char* slot = messages[total % kCapacity];
+    const size_t cap = kMessageBytes - 1;
+    size_t pos = 0;
+    bool truncated = false;
+    auto put = [&](const char* s, size_t n) {
+        if (n > cap - pos) {
+            n = cap - pos;
+            truncated = true;
+        }
+        memcpy(slot + pos, s, n);
+        pos += n;
+    };
+    const char* p = prefix ? prefix : "Error";
+    put(p, strlen(p));
+    put(": ", 2);
+    // A WebGPU string view may be NUL-terminated (length == WGPU_STRLEN).
+    if (message) put(message, strnlen(message, length));
+    slot[pos] = '\0';
+    if (truncated) {
+        // Drop a trailing partial UTF-8 sequence so the JSON stays clean.
+        size_t lead = pos;
+        while (lead > 0 && (static_cast<unsigned char>(slot[lead - 1]) & 0xC0) == 0x80) lead--;
+        if (lead > 0) {
+            const unsigned char c = static_cast<unsigned char>(slot[lead - 1]);
+            const size_t need = c >= 0xF0 ? 4 : c >= 0xE0 ? 3 : c >= 0xC0 ? 2 : 1;
+            if (pos - (lead - 1) < need) slot[lead - 1] = '\0';
+        }
+    }
+    total++;
+    if (stored < kCapacity) stored++;
+}
+
+const char* GpuErrorRing::Last() const {
+    return stored > 0 ? messages[(total - 1) % kCapacity] : "";
+}
+
+const char* GpuErrorRing::At(uint32_t i) const {
+    if (i >= stored) return "";
+    return messages[(total - stored + i) % kCapacity];
+}
+
+void GpuErrorRing::Clear() {
+    stored = 0;
+    for (auto& m : messages) m[0] = '\0';
+}
+
+GpuErrorRing& WebGPURenderer::ErrorRing() {
+    static GpuErrorRing ring;
+    return ring;
+}
+
+const char* WebGPURenderer::ErrorRingJson() {
+    static std::string json;
+    const GpuErrorRing& ring = ErrorRing();
+    json.clear();
+    wasm_internal::AppendLit(json, "{\"count\":");
+    wasm_internal::AppendUInt(json, ring.total);
+    wasm_internal::AppendLit(json, ",\"messages\":[");
+    for (uint32_t i = 0; i < ring.stored; ++i) {
+        if (i > 0) wasm_internal::AppendLit(json, ",");
+        wasm_internal::AppendJsonString(json, ring.At(i));
+    }
+    wasm_internal::AppendLit(json, "]}");
+    return json.c_str();
 }
 
 } // namespace pixelocity

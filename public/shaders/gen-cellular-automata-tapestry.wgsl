@@ -3,32 +3,14 @@
 //  Category: generative
 //  Features: multi-state-ca, evolving-rules, audio-mutation, mouse-nutrient, tapestry-weave, depth-pattern, temporal-texture, organic-evolution, semantic-alpha, temporal, chromatic, depth-aware, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-05-31, 2026-09-15
-//  Ideas: kill-rate contour banding on the growth front; slow-rotating diffusion-anisotropy striping
+//  Upgraded: 2026-10-10
+//  Ideas: kill-rate contour banding on the growth front; slow-rotating diffusion-anisotropy striping; spot nucleus; substrate halo; weft threads; apoptosis pits
 //  A packing: raw sim (nextA, nextB, 0, 1)
 //  By: Grok (deep visual/audio flourish — seasonal plasma color climate, stronger mouse nutrient injector, semantic alpha from chemical energy + glow, richer final glaze)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=diffA, y=diffB, z=feed, w=kill
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=diffA, y=diffB, z=feed, w=kill
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
@@ -105,8 +87,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     feed += (luminance * 0.02 - 0.01);
     kill -= (luminance * 0.01);
 
-    // Modulate speed by audio
-    let dt = 1.0 + u.config.y * 0.5;
+    // Timestep is a solver constant. u.config.y is the ripple count, not dt.
+    let dt = 1.0;
 
     let A = currentCenter.x;
     let B = currentCenter.y;
@@ -140,12 +122,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ═══ Deep seasonal plasma + semantic alpha (visual/audio flourish) ═══
     let season = fract(u.config.x * 0.018 + bass * 0.6); // slow evolving climate
 
-    // Richer color: seasonal tint + audio energy on the chemical B
-    let plasmaIdx = min(u32(nextB * 255.0), 255u);
-    var mappedColor = plasmaBuffer[plasmaIdx].rgb;
-    // Seasonal hue rotation + mids/treble for liveliness
+    // Chemical stain from A/B. Audio is plasmaBuffer[0] only — not a 256-bin LUT.
+    let stain = vec3<f32>(
+        0.08 + nextB * 0.75,
+        0.12 + nextB * 0.28 + (1.0 - nextA) * 0.22,
+        0.22 + (1.0 - nextA) * 0.5
+    );
     let seasonTint = vec3<f32>(0.6 + season * 0.5, 0.7 - season * 0.3, 0.9 - mids * 0.2);
-    mappedColor = mix(mappedColor, mappedColor * seasonTint, 0.35 + treble * 0.25);
+    var mappedColor = mix(stain, stain * seasonTint, 0.35 + treble * 0.25);
 
     // Composite with audio-reactive weight
     let energy = nextB * (0.9 + bass * 0.4 + treble * 0.25);
@@ -159,9 +143,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bandEdge = smoothstep(0.0, 0.10, bandF) * smoothstep(1.0, 0.90, bandF);
     outColor = outColor + vec3<f32>(0.10, 0.14, 0.20) * (1.0 - bandEdge) * energy;
 
-    // ═══ Temporal feedback (exact load: C is rgba32float history) ═══
-    let prev = textureLoad(dataTextureC, coord, 0);
-    outColor = mix(outColor, prev.rgb * 0.9, 0.03 + bass * 0.01);
+    // Idea: spot nucleus — local B maximum (negative laplacian), not an isochrone.
+    let nucleus = smoothstep(0.42, 0.82, nextB) * smoothstep(-0.01, -0.09, sumB);
+    outColor = outColor + vec3<f32>(0.95, 0.82, 0.45) * nucleus * 0.55;
+
+    // Idea: substrate halo — depleted A ringing each colony, outside the core.
+    let halo = smoothstep(0.9, 0.55, nextA) * smoothstep(0.12, 0.48, nextB) * (1.0 - smoothstep(0.62, 0.9, nextB));
+    outColor = mix(outColor, vec3<f32>(0.55, 0.28, 0.08), halo * 0.5);
+
+    // Idea: weft — threads across the anisotropy grain the solver already has.
+    let weftAxis = vec2<f32>(-sin(anisoPh), cos(anisoPh));
+    let weft = sin(dot(uv * vec2<f32>(f32(res.x), f32(res.y)), weftAxis) * 0.35);
+    let weftLine = smoothstep(0.86, 0.97, abs(weft));
+    outColor = outColor + vec3<f32>(0.55, 0.42, 0.28) * weftLine * energy * 0.4;
+
+    // Idea: apoptosis pit — B falling while A recovers, a dark hole in the colony.
+    let dying = smoothstep(0.0, 0.08, B - nextB) * smoothstep(0.0, 0.06, nextA - A);
+    outColor = mix(outColor, vec3<f32>(0.02, 0.01, 0.03), dying * 0.7);
 
     // Semantic alpha: chemical concentration + audio "glow" gives transparent background areas
     let semantic_alpha = clamp(0.35 + energy * 0.7 + mids * 0.15, 0.25, 1.0);

@@ -1,28 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Liquid Chrome Ripple — capillary sheet, caustics, RGB reflection
-//  A owns HDR display history; C is exact previous display state.
+//  Liquid Chrome Ripple
+//  Category: image
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-10-16
+//  Ideas: crest beads on local height maxima; trough meniscus in the valleys
+//  A packing: HDR display history in A; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -129,6 +115,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     + vec3<f32>(1.05, 0.98, 0.86) * specKey * (1.1 + bass * 0.5)
     + vec3<f32>(0.48, 0.72, 1.0) * specFill * 0.45
     + thinFilm * caustic * (0.18 + mids * 0.28);
+
+  // Idea 1 — crest beads. Idea 2 — trough meniscus.
+  let sheet = waveHeight(p, mouse, time, frequency, flow) * held;
+  let neighborHigh = max(max(hL, hR), max(hD, hU)) * held;
+  let neighborLow = min(min(hL, hR), min(hD, hU)) * held;
+  let crest = smoothstep(0.015, 0.12, sheet - neighborHigh);
+  let trough = smoothstep(0.015, 0.12, neighborLow - sheet);
+  live += vec3<f32>(1.15, 1.05, 0.92) * crest * (0.28 + treble * 0.2);
+  live *= mix(vec3<f32>(1.0), vec3<f32>(0.62, 0.70, 0.78), trough * 0.55);
 
   // Advected display persistence gives ripples a chrome afterimage without
   // turning the buffer into an undocumented simulation state.

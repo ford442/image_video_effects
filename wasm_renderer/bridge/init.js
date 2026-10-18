@@ -11,22 +11,61 @@ const SOURCE_MAP = {
   generative: 4,
   live: 5
 };
+const CPP_INIT_TIMEOUT_MS = 2e4;
+const CPP_INIT_POLL_MS = 50;
+const REAP_POLL_MS = 500;
+const REAP_MAX_MS = 5 * 6e4;
+function readCppInitOutcome(mod) {
+  try {
+    if (Number(mod.ccall("isRendererInitialized", "number", [], [])) === 1) return "ready";
+    const stage = Number(mod.ccall("getLastInitErrorStage", "number", [], []) ?? 0);
+    return stage > 0 && stage < 8 ? "failed" : "pending";
+  } catch {
+    return "pending";
+  }
+}
+function waitForCppInit(mod, timeoutMs = CPP_INIT_TIMEOUT_MS) {
+  const deadline = performance.now() + timeoutMs;
+  return new Promise((resolve) => {
+    const poll = () => {
+      const outcome = readCppInitOutcome(mod);
+      if (outcome !== "pending") resolve(outcome);
+      else if (performance.now() >= deadline) resolve("timeout");
+      else setTimeout(poll, CPP_INIT_POLL_MS);
+    };
+    poll();
+  });
+}
+function reapAbandonedInit(mod) {
+  const deadline = performance.now() + REAP_MAX_MS;
+  const poll = () => {
+    if (readCppInitOutcome(mod) !== "pending") {
+      try {
+        mod.ccall("shutdownWasmRenderer", null, [], []);
+        console.log("[WASM] Abandoned init settled; C++ renderer shut down");
+      } catch (err) {
+        console.error("[WASM] Abandoned init shutdown error:", err);
+      }
+      return;
+    }
+    if (performance.now() >= deadline) {
+      console.warn("[WASM] Abandoned init never settled; leaking that module (instance not destroyed)");
+      return;
+    }
+    setTimeout(poll, REAP_POLL_MS);
+  };
+  setTimeout(poll, REAP_POLL_MS);
+}
 async function initWasmRenderer(canvasElement) {
   if (state.initialized) {
     console.warn("[WASM] Renderer already initialized");
     return true;
   }
+  state.initTimedOut = false;
   wasmRef.canvas = canvasElement;
-  const sizeFallback = 1024;
-  let cap = sizeFallback;
-  try {
-    if (typeof sessionStorage !== "undefined" && sessionStorage.getItem("px_history_oom_cap") === "1024") {
-      cap = 1024;
-    }
-  } catch {
-  }
-  state.canvasWidth = Math.min(wasmRef.canvas.width || sizeFallback, cap);
-  state.canvasHeight = Math.min(wasmRef.canvas.height || sizeFallback, cap);
+  const sizeCap = 1024;
+  state.canvasWidth = Math.min(wasmRef.canvas.width || sizeCap, sizeCap);
+  state.canvasHeight = Math.min(wasmRef.canvas.height || sizeCap, sizeCap);
   state.initStartTime = performance.now();
   const base = window.location.pathname.startsWith("/image_video_effects/") ? "/image_video_effects/wasm/" : "/wasm/";
   console.log(`[WASM] Canvas size: ${state.canvasWidth}x${state.canvasHeight}`);
@@ -49,15 +88,35 @@ async function initWasmRenderer(canvasElement) {
   console.log(`[WASM] Calling initWasmRenderer( ${state.canvasWidth} , ${state.canvasHeight} , ${selector} )`);
   let ok = 0;
   try {
-    ok = Number(
-      await callSuspending(
+    const raced = await Promise.race([
+      callSuspending(
         mod,
         "initWasmRenderer",
         "number",
         ["number", "number", "string"],
         [state.canvasWidth, state.canvasHeight, selector]
-      )
-    );
+      ).then((value) => ({ tag: "call", value })),
+      waitForCppInit(mod).then((outcome) => ({ tag: "poll", outcome }))
+    ]);
+    if (raced.tag === "poll" && raced.outcome === "timeout") {
+      state.initTimedOut = true;
+      state.lastLoadError = `C++ Initialize() still pending after ${CPP_INIT_TIMEOUT_MS / 1e3} s (suspended in WaitAny)`;
+      state.loadErrorCount++;
+      state.initEndTime = performance.now();
+      console.error(`[WASM] \u274C ${state.lastLoadError}; abandoning this module`);
+      wasmRef.module = null;
+      wasmRef.canvas = null;
+      reapAbandonedInit(mod);
+      return false;
+    }
+    if (raced.tag === "poll") {
+      ok = raced.outcome === "ready" ? 1 : 0;
+    } else {
+      ok = Number(raced.value);
+      const settled = readCppInitOutcome(mod);
+      if (settled === "failed") ok = 0;
+      else if (settled === "ready") ok = 1;
+    }
   } catch (callErr) {
     console.error("[WASM] ccall initWasmRenderer threw:", callErr);
     const cppDiag = readCppInitDiagnostics();
@@ -84,6 +143,8 @@ async function initWasmRenderer(canvasElement) {
   state.initEndTime = performance.now();
   const elapsed = state.initEndTime - state.initStartTime;
   console.log(`[WASM] \u2705 Initialization complete in ${elapsed} ms (${state.wasmArtifact ?? "preloaded"} build)`);
+  state.maxShaderSlots = typeof mod._getMaxShaderSlots === "function" ? mod._getMaxShaderSlots() : null;
+  console.log(`[WASM] maxShaderSlots=${state.maxShaderSlots ?? "unknown (artifact predates export)"}`);
   const cppFmt = Number(mod.ccall("getColorFormat", "number", [], []) ?? 0);
   const pending = state.colorFormat;
   if (pending !== 0 && pending !== cppFmt) {
@@ -173,6 +234,7 @@ function shutdownWasmRenderer() {
   state.initialized = false;
   state.activeShader = null;
   state.droppedSlots.clear();
+  state.maxShaderSlots = null;
   wasmRef.module = null;
   wasmRef.canvas = null;
   console.log("[WASM] Shutdown complete");
@@ -218,6 +280,7 @@ function getPresentCanvasId() {
   return found?.id ?? tagged?.id ?? "";
 }
 export {
+  CPP_INIT_TIMEOUT_MS,
   WASM_ARTIFACT_JS,
   ensureWasmCanvasId,
   getPresentCanvas,

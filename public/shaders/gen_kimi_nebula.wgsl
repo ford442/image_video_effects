@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: Stromgren-sphere ionization stratification around the mouse O-star (R_s ~ (Q/n^2)^(1/3); [OIII] core, H-alpha shell, [SII] front, n^2 recombination glow); interstellar dust lanes with 1/lambda extinction that redden background stars plus photoevaporated bright rims on globule faces toward the star
+//  Upgraded: 2026-09-27
+//  Ideas: Stromgren-sphere ionization stratification around the mouse O-star (R_s ~ (Q/n^2)^(1/3); [OIII] core, H-alpha shell, [SII] front, n^2 recombination glow); interstellar dust lanes with 1/lambda extinction that redden background stars plus photoevaporated bright rims on globule faces toward the star; PDR skin (UV/PAH layer just outside R_s); EGGs / cometary globules with tails pointing away from the star
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 //
@@ -243,9 +243,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     emission += vec3<f32>(1.0, 0.55, 0.45) * rimFace * 0.8 * (1.0 + bass * 0.3);
     emission += (oiii * 0.6 + hAlpha * 0.4) * shellGlow * 0.9;
 
+    // Idea 1 — PDR skin: thin UV/PAH layer just outside the Stromgren radius.
+    let pdrX = (dist - Rs) / max(Rs * 0.055, 0.001);
+    let pdr = exp(-pdrX * pdrX) * (1.0 - ionized);
+    let pah = vec3<f32>(0.55, 0.22, 0.95);
+    emission += pah * pdr * nLocal * 0.75 * (0.7 + treble * 0.4);
+
+    // Idea 2 — EGGs / cometary globules: dense knots with tails AWAY from the star.
+    let away = (p - mousePos) / max(dist, 1e-3);
+    let knot = smoothstep(0.68, 0.90, dustRaw);
+    let tailDust = dustField(noisePos - vec3<f32>(away * 0.09 * ctl.spatialScale, 0.0), time);
+    let eggTail = knot * smoothstep(0.52, 0.78, tailDust) * (1.0 - ionized);
+
     // Gas and emission behind the lane are extinguished (partially: lanes
     // are mixed in depth with the gas).
     color = color * mix(vec3<f32>(1.0), extinction, 0.7) + emission * mix(vec3<f32>(1.0), extinction, 0.5);
+    color = color * (1.0 - eggTail * 0.28) + vec3<f32>(0.32, 0.16, 0.10) * eggTail * 0.4;
 
     // Add stars — Detail slider sets the hash cutoff: higher Detail means
     // a higher threshold, i.e. fewer but crisper star points.
@@ -287,7 +300,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let emissionLum = dot(emission, vec3<f32>(0.333));
     let dustOpacity = 1.0 - dot(extinction, vec3<f32>(0.333));
     let alpha = clamp(nebulaDensity * 0.6 + emissionLum * 0.5 + dustOpacity * 0.35
-                      + star * 0.6 + shellGlow * 0.3, 0.02, 1.0);
+                      + star * 0.6 + shellGlow * 0.3 + pdr * 0.2 + eggTail * 0.25, 0.02, 1.0);
 
     let outRGBA = vec4<f32>(display, alpha);
     textureStore(writeTexture, px, outRGBA);

@@ -55,40 +55,44 @@
       "step": 0.01
     }
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Ribbon Count",
-      "default": 0.4,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Flow Speed",
-      "default": 0.4,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Ribbon Width",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Iridescence",
-      "default": 0.7,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
-  ],
   "feedbackPacking": "A/C = ACES display RGBA for atmospheric luminescence persistence; B is unused; depth passes through source depth.",
-  "target_rating": 4.9
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Ribbon Count",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Flow Speed",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Ribbon Width",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Iridescence",
+          "default": 0.7,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    },
+    "target_rating": 4.9
+  }
 }

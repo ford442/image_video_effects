@@ -3,14 +3,14 @@ name = "naga_wasm"
 version = "0.1.0"
 edition = "2021"
 publish = false
-description = "GPU-less WGSL validation for the catalog, built to wasm32 so Node and the browser can run the same naga the CI gate runs."
+description = "GPU-less WGSL validation for the catalog, plus GLSL to WGSL translation for the Shadertoy import, built to wasm32 so Node and the browser can run the same naga the CI gate runs."
 
 [dependencies]
 # Pinned to the same minor the host CLI gate installs
 # (.github/workflows/ci.yml previously: cargo install naga-cli --version 30.0.0).
 # Bumping this minor can change which catalog shaders parse — see
 # src/contracts/wgsl_validation.json `nagaVersion` and the known-failure ratchet.
-naga = { version = "30.0", features = ["wgsl-in"] }
+naga = { version = "30.0", features = ["wgsl-in", "glsl-in", "wgsl-out"] }
 
 [lib]
 crate-type = ["cdylib"]

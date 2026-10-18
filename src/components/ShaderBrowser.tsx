@@ -85,7 +85,7 @@ export const ShaderBrowser: React.FC<{
   const { manifest } = useThumbnailManifest();
   const [shaders, setShaders] = useState<ShaderMeta[]>([]);
   const [searchText, setSearchText] = useState('');
-  const [filter, setFilter] = useState('');
+  const [filter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [category, setCategory] = useState('');
   const [multipassOnly, setMultipassOnly] = useState(false);
@@ -96,7 +96,6 @@ export const ShaderBrowser: React.FC<{
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDesc, setEditDesc] = useState('');
   const [editTags, setEditTags] = useState('');
-  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
 
   // Defer filter state so the input stays responsive at large list sizes
   const deferredSearchQuery = useDeferredValue(searchQuery);
@@ -105,7 +104,7 @@ export const ShaderBrowser: React.FC<{
   const deferredPhysicsLabOnly = useDeferredValue(physicsLabOnly);
 
   useEffect(() => {
-    loadShaders();
+    void loadShaders();
   }, [category]);
 
   useEffect(() => {
@@ -186,7 +185,7 @@ export const ShaderBrowser: React.FC<{
         desc,
         tags
       );
-      loadShaders();
+      void loadShaders();
     } catch (err) {
       alert('Upload failed: ' + err);
     }

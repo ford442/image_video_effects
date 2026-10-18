@@ -33,40 +33,6 @@
       "max": 1
     }
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Tile Density",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Neon Glow Width",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Depth Parallax",
-      "default": 0.4,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Brightness",
-      "default": 0.6,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
-  ],
   "features": [
     "mouse-driven",
     "audio-reactive",
@@ -83,5 +49,43 @@
     "penrose",
     "tiling",
     "metallic"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Tile Density",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Neon Glow Width",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Depth Parallax",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Brightness",
+          "default": 0.6,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

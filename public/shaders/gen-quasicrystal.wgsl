@@ -1,11 +1,11 @@
-// ═══ gen-quasicrystal — Audio-Reactivity Phase B Upgrade ═══════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Quasicrystal
 //  Category: generative
-//  Features: quasicrystal, n-fold symmetry, projection-method,
-//            domain-warped FBM, Voronoi texture, audio-reactive,
-//            envelope-smoothing, bass-pulse, mids-morph, treble-sparkle,
-//            temporal-feedback, Fresnel gem surfaces, anti-moire,
-//            neon-glow, chromatic-aberration, aces-tone-map, semantic-alpha
-//  Upgraded: 2026-07-08 by Audio-Reactivity Specialist
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-27
+//  Ideas: phason strain field (pointer-pushed tile flips); Ammann bars (Fibonacci line grids)
+//  A packing: rgb = display trail, a = bass envelope (B = pre-trail colour + bloom)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -99,21 +99,47 @@ fn bass_env(prev: f32, bass: f32) -> f32 {
     return mix(prev, bass, k);
 }
 // ── Enhanced Quasicrystal with n-fold symmetry ──
-fn quasicrystal(uv: vec2<f32>, n: i32, t: f32, angle: f32, warp: f32) -> f32 {
+// Phason: each plane wave i gets an extra phase from the perpendicular-space
+// displacement `ph`, projected on the perp star direction (angle doubled).
+// Smooth `ph` = strain; where it varies, tiles locally flip.
+fn quasicrystal(uv: vec2<f32>, n: i32, t: f32, angle: f32, warp: f32, ph: vec2<f32>) -> f32 {
     var value = 0.0;
     let invN = 1.0 / f32(n);
     for (var i: i32 = 0; i < n; i = i + 1) {
         let theta = angle + TAU * f32(i) * invN;
         let freq = 10.0 + warp * sin(t * 0.1 + f32(i) * 0.5);
-        value += cos(dot(uv, vec2<f32>(cos(theta), sin(theta))) * freq + t * (1.0 + f32(i) * 0.1));
+        let phason = dot(ph, vec2<f32>(cos(theta * 2.0), sin(theta * 2.0)));
+        value += cos(dot(uv, vec2<f32>(cos(theta), sin(theta))) * freq + t * (1.0 + f32(i) * 0.1) + phason);
     }
     return value * invN;
 }
-fn quasicrystal2(uv: vec2<f32>, n: i32, t: f32, angle: f32) -> f32 {
-    let q1 = quasicrystal(uv, n, t, angle, 1.0);
-    let q2 = quasicrystal(uv * 1.618, n, t * 0.7, angle + PI * 0.1, 0.5);
-    let q3 = quasicrystal(uv * 0.618, n, t * 1.3, angle - PI * 0.05, 0.3);
+fn quasicrystal2(uv: vec2<f32>, n: i32, t: f32, angle: f32, ph: vec2<f32>) -> f32 {
+    let q1 = quasicrystal(uv, n, t, angle, 1.0, ph);
+    let q2 = quasicrystal(uv * 1.618, n, t * 0.7, angle + PI * 0.1, 0.5, ph * 1.618);
+    let q3 = quasicrystal(uv * 0.618, n, t * 1.3, angle - PI * 0.05, 0.3, ph * 0.618);
     return q1 * 0.6 + q2 * 0.3 + q3 * 0.1;
+}
+// Ammann bars: along each of the n directions, lines at the Fibonacci-chain
+// positions x_k = k + floor(k/φ + α)/φ (long/short spacings in golden order).
+// α is the same perp-space offset as the phason, so bars jump when tiles flip.
+fn ammannBars(p: vec2<f32>, n: i32, angle: f32, ph: vec2<f32>) -> f32 {
+    let invPhi = 0.61803398875;
+    var bars = 0.0;
+    let invN = 1.0 / f32(n);
+    for (var i: i32 = 0; i < n; i = i + 1) {
+        let theta = angle + TAU * f32(i) * invN;
+        let s = dot(p, vec2<f32>(cos(theta), sin(theta))) * 0.8;
+        let alpha = fract(dot(ph, vec2<f32>(cos(theta * 2.0), sin(theta * 2.0))) * 0.16 + f32(i) * invPhi);
+        let k0 = floor(s / 1.381966);
+        var best = 9.0;
+        for (var j: i32 = -1; j <= 2; j = j + 1) {
+            let k = k0 + f32(j);
+            let xk = k + floor(k * invPhi + alpha) * invPhi;
+            best = min(best, abs(s - xk));
+        }
+        bars = max(bars, smoothstep(0.03, 0.0, best));
+    }
+    return bars;
 }
 // Branchless tri-color metallic cycle with audio reactivity
 fn metallicColor(pattern: f32, t: f32, bass: f32) -> vec3<f32> {
@@ -150,7 +176,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Audio decomposition + envelope smoothing
     let rawBass = plasmaBuffer[0].x; let mids = plasmaBuffer[0].y; let treble = plasmaBuffer[0].z;
-    let bass = bass_env(prev.r, rawBass);
+    let bass = bass_env(prev.a, rawBass);
     let beatPulse = 1.0 + bass * 0.5;
 
     // Mouse Y-flip: screen-top = +Y/up
@@ -176,10 +202,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bgWarp = fbm_dw(p * 2.0 + time * 0.02, time);
     p += bgWarp * 0.05;
 
+    // Idea 1: phason strain field — slow noise strain plus a pointer-pushed
+    // bump (stronger while held, bass-kicked) in perpendicular space.
+    let aspectVec = res / min(res.x, res.y);
+    let mUV = (mousePos - 0.5) * aspectVec;
+    let toM = uv - mUV;
+    let mFall = exp(-dot(toM, toM) / 0.03);
+    let held = select(0.35, 1.0, u.zoom_config.w > 0.5);
+    let phason = (vec2<f32>(vnoise2(uv * 2.2 + time * 0.05), vnoise2(uv * 2.2 + vec2<f32>(5.2, 1.3) - time * 0.04)) - 0.5) * 2.5
+               + toM / max(length(toM), 0.001) * mFall * 3.0 * held * (1.0 + bass * 0.6);
+
     // Primary + secondary quasicrystal layers
-    let qc = quasicrystal2(p * beatPulse, symmetry, time * 0.2, projAngle);
+    let qc = quasicrystal2(p * beatPulse, symmetry, time * 0.2, projAngle, phason);
     let pattern = smoothstep(-0.2, 0.2, qc);
-    let qc2 = quasicrystal2(p * 1.5 + 0.5, symmetry, time * 0.15, projAngle + 0.1);
+    let qc2 = quasicrystal2(p * 1.5 + 0.5, symmetry, time * 0.15, projAngle + 0.1, phason * 0.5);
     let pattern2 = smoothstep(-0.1, 0.1, qc2);
 
     // Metallic base with audio reactivity and gem-like Fresnel
@@ -217,6 +253,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let voroSurface = voronoi(p * 3.0 + time * 0.02);
     col += smoothstep(0.05, 0.0, voroSurface.x) * 0.1 * vec3<f32>(0.9, 0.85, 0.7);
 
+    // Idea 2: Ammann bars — faint gold Fibonacci line grids, one per direction.
+    let bars = ammannBars(p * beatPulse, symmetry, projAngle, phason);
+    col += vec3<f32>(1.0, 0.82, 0.42) * bars * (0.16 + mids * 0.08);
+
     // Vignette
     col *= 1.0 - length(uv01 - 0.5) * 0.5;
 
@@ -235,6 +275,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     textureStore(writeTexture, pixel, vec4<f32>(trail, alpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, pixel, vec4<f32>(bass, trail.g, trail.b, alpha));
+    textureStore(dataTextureA, pixel, vec4<f32>(trail, bass));
     textureStore(dataTextureB, pixel, vec4<f32>(col, bloom));
 }

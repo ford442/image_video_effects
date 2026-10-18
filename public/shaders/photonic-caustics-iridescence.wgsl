@@ -2,8 +2,11 @@
 //  Photonic Caustics Iridescence
 //  Category: advanced-hybrid
 //  Features: depth-aware, temporal, spectral-render, caustics,
-//            audio-reactive, mouse-driven, exact-feedback
+//            audio-reactive, mouse-driven, exact-feedback, upgraded-rgba
 //  Complexity: Very High
+//  Upgraded: 2026-10-17
+//  Ideas: catastrophe-optics fold & Pearcey cusp Airy supernumerary fringes; subsurface depth-bounce secondary caustic aureole
+//  A packing: ACES display RGBA in A (with accumulated photonic caustics and thin-film sheen)
 // ═══════════════════════════════════════════════════════════════════
 //  Backward photon-traced caustics combined with thin-film
 //  optical iridescence. High-energy caustic focal concentrations
@@ -11,26 +14,8 @@
 //  Fresnel reflections, and exact temporal feedback.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, zw=Resolution
-    zoom_config: vec4<f32>,  // x=Time, yz=MouseUV, w=MouseDown
-    zoom_params: vec4<f32>,  // x=IOR, y=LightSize, z=Dispersion, w=Intensity
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=IOR, y=LightSize, z=Dispersion, w=Intensity
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -266,6 +251,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let accumulatedCaustic = mix(prevCaustic, causticAccum, 0.16 + mids * 0.08);
     let causticLuma = dot(accumulatedCaustic, vec3<f32>(0.2126, 0.7152, 0.0722));
 
+    // ── Idea 1: Catastrophe-optics fold & Pearcey cusp Airy supernumerary fringes ──
+    let foldBand = smoothstep(0.08, 0.48, causticLuma) * (1.0 - smoothstep(0.52, 1.35, causticLuma));
+    let airyArg = causticLuma * (26.0 + dispersion * 140.0) + dot(surfaceNormal.xy, vec2<f32>(14.0, -11.0));
+    let airySupernumerary = vec3<f32>(
+        pow(max(0.0, cos(airyArg * 0.92 - 0.785)), 2.0),
+        pow(max(0.0, cos(airyArg * 1.00 - 0.785)), 2.0),
+        pow(max(0.0, cos(airyArg * 1.10 - 0.785)), 2.0)
+    ) * foldBand * intensity * (0.38 + treble * 0.35);
+
     // Thin-film iridescence
     let filmThicknessBase = mix(220.0, 750.0, u.zoom_params.x);
     let filmIOR = mix(1.2, 2.4, u.zoom_params.y);
@@ -285,6 +279,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sourceColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
+    // ── Idea 2: Subsurface depth-bounce secondary caustic aureole ──
+    let bounceOffset = surfaceNormal.xy * (0.032 * (0.4 + depth * 0.8) / baseIOR);
+    let bouncePix = clamp(vec2<i32>((uv + bounceOffset) * res), vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1));
+    let subsurfaceBounce = textureLoad(dataTextureC, bouncePix, 0).rgb * exp(-vec3<f32>(0.35, 0.18, 0.08) * (1.0 + depth * 1.5)) * (0.28 + bass * 0.22);
+
     let refractDisplace = surfaceNormal.xy * (0.02 + holdEffect * 0.02);
     let colR = textureSampleLevel(readTexture, u_sampler, clamp(uv + refractDisplace + vec2<f32>(dispersion * 0.015, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
     let colG = textureSampleLevel(readTexture, u_sampler, clamp(uv + refractDisplace, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
@@ -292,7 +291,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let refractedChromatic = vec3<f32>(colR, colG, colB);
 
     var finalColor = mix(sourceColor, refractedChromatic, 0.45);
-    finalColor = finalColor + accumulatedCaustic;
+    finalColor = finalColor + accumulatedCaustic + airySupernumerary + subsurfaceBounce;
     finalColor = mix(finalColor, iridescent, fresnelBlend * 0.65 * clamp(causticLuma * 1.5, 0.0, 1.0));
 
     // Specular highlight

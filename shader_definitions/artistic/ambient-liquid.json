@@ -80,46 +80,50 @@
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
-  "updatedParams": [
-    {
-      "id": "viscosity",
-      "name": "Flow Viscosity",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x",
-      "description": "Curl displacement scale; higher damps the flow (zoom_params.x)."
-    },
-    {
-      "id": "turbulence",
-      "name": "Turbulence",
-      "default": 0.4,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y",
-      "description": "Noise frequency of the curl and FBM fields (zoom_params.y)."
-    },
-    {
-      "id": "ripple_strength",
-      "name": "Ripple / Feed",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z",
-      "description": "Click ripple strength; also biases the Gray-Scott feed rate (zoom_params.z)."
-    },
-    {
-      "id": "color_shift",
-      "name": "Hue / Kill",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w",
-      "description": "Hue rotation; also biases the Gray-Scott kill rate (zoom_params.w)."
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "id": "viscosity",
+          "name": "Flow Viscosity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "mapping": "zoom_params.x",
+          "description": "Curl displacement scale; higher damps the flow (zoom_params.x)."
+        },
+        {
+          "id": "turbulence",
+          "name": "Turbulence",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "mapping": "zoom_params.y",
+          "description": "Noise frequency of the curl and FBM fields (zoom_params.y)."
+        },
+        {
+          "id": "ripple_strength",
+          "name": "Ripple / Feed",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "mapping": "zoom_params.z",
+          "description": "Click ripple strength; also biases the Gray-Scott feed rate (zoom_params.z)."
+        },
+        {
+          "id": "color_shift",
+          "name": "Hue / Kill",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "mapping": "zoom_params.w",
+          "description": "Hue rotation; also biases the Gray-Scott kill rate (zoom_params.w)."
+        }
+      ]
     }
-  ]
+  }
 }

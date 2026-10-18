@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: septate rings along cylinder axis; neighbor-cell fusion bridges
+//  Upgraded: 2026-09-27
+//  Ideas: septate rings along cylinder axis; neighbor-cell fusion bridges; cytoplasmic streaming granules; melanized wound rim
 //  A packing: ACES display RGBA (C unused)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -82,6 +82,9 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 var<private> g_time: f32;
 var<private> g_mouse: vec2<f32>;
 var<private> g_audio: f32;
+var<private> g_mouse3D: vec3<f32>;
+var<private> g_granule: f32;
+var<private> g_wound: f32;
 
 // returns (sdf, septum, threadCenterDist)
 fn map(p: vec3<f32>) -> vec3<f32> {
@@ -135,10 +138,24 @@ fn map(p: vec3<f32>) -> vec3<f32> {
     let dBridge = sdCapsule(q, vec3<f32>(0.0), toFace, radius * 0.55);
     d = smin(d, dBridge, 0.22);
 
-    let mouse3D = vec3<f32>(g_mouse.x * 10.0, -g_mouse.y * 10.0, 5.0);
-    let mouseDist = length(bp - mouse3D);
+    // Idea 3 — cytoplasmic streaming: organelle beads flow along the thread
+    // axis (q.y) at Pulse Speed and pile up against each septum wall.
+    let flowY = q.y * septFreq * 3.0 - g_time * u.zoom_params.z * 1.2;
+    let beadCell = floor(flowY);
+    let beadLocal = fract(flowY) - 0.5;
+    let beadOn = step(0.45, fract(sin(beadCell * 91.7 + dot(round(bp / cell), vec3<f32>(3.1, 7.7, 11.3))) * 43758.5));
+    let bead = exp(-beadLocal * beadLocal * 60.0) * beadOn;
+    let pileUp = smoothstep(0.28, 0.06, ring) * (1.0 - septum);
+    g_granule = bead * (1.0 - septum) + pileUp * 0.7;
+
+    // Cursor repulsion sphere, tethered to the flying camera so it stays under
+    // the pointer (HEAD pinned it at world z=5, which the camera left behind).
+    let mouseDist = length(bp - g_mouse3D);
     let repulsionSphere = mouseDist - 2.5;
     d = smin(d, repulsionSphere + 2.0, 1.0);
+    // Idea 4 — melanized wound: where the sphere cuts a thread (the carve term
+    // wins the max), the cut face darkens.
+    g_wound = exp(-abs(repulsionSphere) * 7.0) * step(d, -repulsionSphere + 0.002);
     d = max(d, -repulsionSphere);
 
     return vec3<f32>(d, septum, threadCenterDist);
@@ -177,6 +194,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     ro = vec3<f32>(ro.x + g_mouse.x * 2.0, ro.y - g_mouse.y * 2.0, ro.z);
 
     let rd = normalize(vec3<f32>(uv, 1.0));
+    // Point 5 units ahead along the cursor's own view ray.
+    g_mouse3D = ro + vec3<f32>(g_mouse.x * (dims.x / dims.y), g_mouse.y, 1.0) * 5.0;
 
     var t = 0.0;
     var d = 0.0;
@@ -206,6 +225,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let p = ro + rd * t;
         let n = calcNormal(p);
         let res = map(p);
+        let granule = g_granule;
+        let wound = g_wound;
         let distToThread = res.z;
         let edgeSoftness = max(u.zoom_params.w * 0.5, 0.001);
         alpha = 1.0 - smoothstep(0.0, edgeSoftness, distToThread);
@@ -230,6 +251,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col += fre * vec3<f32>(0.5, 0.7, 1.0) * 0.5;
         // Septum emission — pearly rings, not a pulse clone
         col += vec3<f32>(0.95, 0.85, 0.55) * septumLit * (0.55 + mids * 0.35);
+        // Streaming granules glow through the translucent flesh (SSS-weighted).
+        col += vec3<f32>(1.0, 0.72, 0.42) * granule * (0.35 + sss * 1.2) * (1.0 + bass * 0.4);
+        // Melanin: cut faces brown to dark amber with a thin hot rim.
+        col = mix(col, vec3<f32>(0.22, 0.10, 0.03) * (0.6 + dif), wound * 0.8);
+        col += vec3<f32>(1.0, 0.45, 0.1) * wound * (1.0 - wound) * 1.6;
 
         let fog = 1.0 - exp(-t * 0.15);
         col = mix(col, vec3<f32>(0.02, 0.01, 0.05), fog);

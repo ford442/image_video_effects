@@ -1,11 +1,12 @@
-// ----------------------------------------------------------------
-// Radiant Cyber-Plasma Astro-Griffin  (visualist upgrade b31)
-// Category: generative
-// Upgrade: material-ID palette split (wings/body/core), per-feather
-//          facet variation, tri-tessellated chrono-prism inlay,
-//          3-point lighting + Fresnel rim, ACES tonemap, real depth
-//          + data outputs, plasmaBuffer[0] audio contract fix.
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Radiant Cyber-Plasma Astro-Griffin
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-27
+//  Ideas: primary-feather slots; beak shear glint; flap ghost
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 // --- CANONICAL HEADER (bindings 0-12) ---
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -87,7 +88,9 @@ fn wingFeathers(p: vec3<f32>, span: f32) -> vec2<f32> {
     let width = 0.1 + span * 0.1;
     let spanLen = 0.5 + span * 0.5;
 
-    let d = abs(q) - vec3<f32>(width, 0.02, spanLen);
+    // Primary-feather slots: each cell stops short of its neighbor so a dark gap remains.
+    let slot = 0.74;
+    let d = abs(q) - vec3<f32>(width * slot, 0.02, spanLen * slot);
     let dist = length(max(d, vec3<f32>(0.0))) + min(max(d.x, max(d.y, d.z)), 0.0);
     return vec2<f32>(dist, hash21(vec2<f32>(cellX, cellZ)));
 }
@@ -227,13 +230,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     var col = vec3<f32>(0.0);
     var depth = 0.0;
-    var nrm = vec3<f32>(0.0);
     var matTag = 0.0;
 
     if (t > 0.0) {
         let p = ro + rd * t;
         let n = calcNormal(p);
-        nrm = n;
         let v = -rd;
         let dot_nv = clamp(dot(n, v), 0.0, 1.0);
         let matId = hit.y;
@@ -282,6 +283,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let rim = 1.0 - dot_nv;
         col += glowCol * pow(rim, 3.0) * plasma_glow_multiplier;
 
+        // Beak shear glint: treble specular on the head, biased along the beak-forward normal.
+        let beakForward = clamp(dot(n, vec3<f32>(0.0, -0.15, -1.0)), 0.0, 1.0);
+        let beakGlint = spec * treble * beakForward * select(0.0, 1.0, matId == 3.0);
+        col += vec3<f32>(1.0, 0.92, 0.62) * beakGlint;
+
         // Distance fog into the rift
         col = mix(col, vec3<f32>(0.02, 0.0, 0.05), 1.0 - exp(-0.05 * t * t));
 
@@ -294,11 +300,18 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col = acesToneMap(col * 1.2);
     col = pow(col, vec3<f32>(1.0 / 2.2));
 
+    // Flap ghost: previous display shifted along the flap axis, wings only.
+    let flapShift = i32(sin(time * 2.0) * 12.0);
+    let maxPix = vec2<i32>(i32(res.x) - 1, i32(res.y) - 1);
+    let ghost = textureLoad(dataTextureC, clamp(pixel + vec2<i32>(0, flapShift), vec2<i32>(0), maxPix), 0).rgb;
+    let wingHit = select(0.0, 1.0, t > 0.0 && matTag == 1.0);
+    col = mix(col, ghost, wingHit * 0.16);
+
     // Semantic alpha: rift background stays translucent, the griffin is solid
     let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(luma * 0.7 + select(0.1, 0.55, t > 0.0), 0.0, 1.0);
 
     textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, pixel, vec4<f32>(nrm * 0.5 + 0.5, matTag * 0.25));
+    textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
 }

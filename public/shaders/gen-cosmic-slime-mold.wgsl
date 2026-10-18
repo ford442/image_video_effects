@@ -1,33 +1,25 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Cosmic Slime Mold
 //  Category: generative
-//  Features: slime-mold, cosmic, organic, audio-reactive, mouse-interactive, semantic-alpha
+//  Features: slime-mold, cosmic, organic, audio-reactive, mouse-interactive,
+//             semantic-alpha, temporal-feedback, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-05-31
-//  Updated: 2026-06-01
-//  By: Kimi Agent (Bright batch)
+//  Upgraded: 2026-10-18
+//  Ideas: persistent growth memory (single cell: A(0,0).a = 7 + memory,
+//         read back from exact C; untagged values from a previous shader read
+//         as 0) — a well-fed colony stays visibly larger after the pointer
+//         lifts; per-frame decay, half-life ~1400 frames (~23 s at 60 fps); mature-colony core glow lights thick
+//         trunks once memory crosses a threshold; fan-shaped reticulated
+//         advancing front (the plasmodium sheet that resolves into veins
+//         behind it, steered outward / toward the feeder); extracellular slime
+//         memory (aged trail loses its neon and settles to a pale mucus sheen)
+//  A packing: exact HDR temporal history in rgb; alpha = semantic alpha,
+//             except texel (0,0).a = 7.0 + growth memory (0..1) tag
 // ═══════════════════════════════════════════════════════════════════
+//  History: Kimi Agent (Bright batch, 2026-06-01)
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.141592653589793;
 const TAU: f32 = 6.283185307179586;
@@ -199,6 +191,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let scale = u.zoom_params.z;
     let colorShift = u.zoom_params.w;
 
+    // Idea: persistent growth memory. Texel (0,0) alpha of the exact A/C
+    // history is a single-writer accumulator (written below) that rises while
+    // the colony is fed and decays slowly otherwise. (extraBuffer is
+    // re-uploaded every frame, so it can't hold this.)
+    // Stored as 7 + memory so a previous shader's alpha (0..1) can't seed it.
+    let memRaw = textureLoad(dataTextureC, vec2<i32>(0, 0), 0).a;
+    let growthMemory = select(0.0, clamp(memRaw - 7.0, 0.0, 1.0), memRaw >= 7.0 && memRaw <= 8.0);
+
     var col = vec3<f32>(0.0);
 
     // Dark cosmic background
@@ -238,7 +238,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let growthPhase = fract(time * 0.06 * speed + fv * 0.17);
         let growthPulse = smoothstep(0.0, 0.3, growthPhase) * (1.0 - smoothstep(0.7, 1.0, growthPhase));
         let extraGrowth = mouseDown * 0.5 * (1.0 + 0.5 * sin(time * 4.0 * speed));
-        let growth = growthPhase + extraGrowth;
+        let growth = growthPhase + extraGrowth + growthMemory * 0.25;
 
         // Vein distance field
         let vDist = veinStructure(scaledP, seed, scale, time);
@@ -269,9 +269,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         col += veinColor * combinedMask * intensity * 2.0;
         col += tipColor * tipMask * intensity * 1.5 * (1.0 + treble * 2.0);
 
+        // Fan-shaped advancing front: the plasmodium advances as a continuous
+        // reticulated sheet that resolves into discrete veins behind it. It
+        // fans outward from the colony centre, or toward the feeder when held.
+        var heading = seedPos / max(length(seedPos), 1e-3);
+        if (mouseDown > 0.5) {
+            let toFeed = mouseNorm - seedPos;
+            heading = toFeed / max(length(toFeed), 1e-3);
+        }
+        let dirP = localP / max(distFromSeed, 1e-3);
+        let fanSector = smoothstep(0.15, 0.65, dot(dirP, heading));
+        let behind = tipRadius - distFromSeed;
+        let sheet = smoothstep(-0.02, 0.01, behind) * (1.0 - smoothstep(0.02, 0.13, behind));
+        let reticulum = smoothstep(0.55, 0.85, ridgedNoise(localP * 46.0 + seed))
+                      + 0.35 * smoothstep(0.5, 0.9, ridgedNoise(localP * 90.0 - seed));
+        let fanMask = sheet * fanSector * clamp(0.25 + reticulum, 0.0, 1.0) * step(0.05, tipRadius);
+        col += mix(veinColor, tipColor, 0.35) * fanMask * intensity * 0.7;
+
         // Glow around veins
         let glowMask = smoothstep(veinWidth * 4.0, 0.0, vDist) * growth * 0.3;
         col += veinColor * glowMask * intensity * 0.8;
+
+        // Idea (continued): mature-colony core glow — once growth memory
+        // crosses a threshold, thick trunks pick up a warm established-colony
+        // glow distinct from the cool neon vein palette
+        let matureGlow = smoothstep(0.4, 0.9, growthMemory) * smoothstep(veinWidth * 2.5, 0.0, vDist) * 0.4;
+        col += vec3<f32>(1.0, 0.85, 0.5) * matureGlow * intensity;
     }
 
     // ---- FEEDER ZONES AT MOUSE ----
@@ -315,12 +338,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Exact temporal feedback in HDR, followed by ACES display mapping.
     let prev = textureLoad(dataTextureC, pixel, 0);
     let decay = 0.96;
-    let temporal = mix(prev.rgb * decay, col, 0.25 + treble * 0.03);
+    // Extracellular slime memory: Physarum leaves a translucent mucus where it
+    // has been. Each generation the trail loses a little neon chroma toward a
+    // pale gold sheen, so old ground reads as spent slime, not as live veins.
+    let prevLuma = dot(prev.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let mucus = vec3<f32>(1.0, 0.93, 0.72) * prevLuma;
+    let aged = max(mix(prev.rgb, mucus, 0.05), vec3<f32>(0.0));
+    let temporal = mix(aged * decay, col, 0.25 + treble * 0.03);
     let mapped = pow(acesToneMap(temporal), vec3<f32>(0.9));
 
     // Semantic alpha follows living trail energy and click-fed expansion.
     let alpha = clamp(length(temporal) * 0.42 + clickFeed * 0.22 + starMask * 0.08, 0.04, 0.96);
-    textureStore(dataTextureA, pixel, vec4<f32>(temporal, alpha));
+    // Single-writer growth-memory cell: texel (0,0) alpha of A (rgb stays history).
+    var storedAlpha = alpha;
+    if (global_id.x == 0u && global_id.y == 0u) {
+        let feed = select(0.0, 0.004, mouseDown > 0.5);
+        // Per-frame (no dt uniform): half-life ~1400 frames, ~23 s at 60 fps.
+        storedAlpha = 7.0 + clamp(growthMemory * 0.9995 + feed, 0.0, 1.0);
+    }
+    textureStore(dataTextureA, pixel, vec4<f32>(temporal, storedAlpha));
 
     textureStore(writeTexture, pixel, vec4<f32>(mapped, alpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(clamp(1.0 - alpha * 0.8, 0.0, 1.0), 0.0, 0.0, 0.0));

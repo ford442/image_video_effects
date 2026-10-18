@@ -2,44 +2,33 @@
 //  Ethereal Bismuth-Resonance Void-Owl
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, click-reactive, raymarched, upgraded-rgba
-//  Upgraded: 2026-09-13
-//  Ideas: spring-eased gravitational singularity (lens + gaze follow the
-//         pointer with inertia); persistent bass resonance envelope that
-//         sweeps oxide growth bands outward across the bismuth shell film;
-//         stepped hopper-crystal owl eyes flanking the core, pupils tracking
-//         the eased singularity and flaring with the envelope
+//  Upgraded: 2026-10-17
+//  Ideas: gravitational singularity under the pointer (smooth-falloff lens
+//         twist centred on it + gaze follow); bass resonance (stateless,
+//         scaled by Audio Reactivity) sweeps oxide growth bands outward across
+//         the bismuth shell film; stepped hopper-crystal owl eyes flanking the
+//         core, pupils tracking the singularity and flaring with resonance.
+//         2nd pass: hopper terraces (film thickness quantized into hard stair
+//         steps with bright risers); facial-disc ruff (concave stepped nested
+//         rings around the eyes, own film phase); lattice-snapped debris
+//         (90-degree locked tumbling, hopper tips that grow with resonance).
+//         3rd pass: hopper-stair wing mantle (folded primaries as stacked
+//         recessed bismuth plates that fan open with the resonance);
+//         owl head swivel (facial disc snaps toward the pointer and to idle
+//         glance angles, then holds)
 //  A packing: HDR display history RGB (tonemapped on output) + semantic
 //             alpha (surface/luma/shock coverage); exact C read feedback
-//  State: extraBuffer[133..134] eased mouse, [135..136] velocity,
-//         [137] init flag, [138] resonance envelope — written at (0,0) only
+//  State: none (no extraBuffer persistence)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0-1, y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // x=Crystal Complexity, y=Audio Reactivity, z=Iridescence Shift, w=Debris Density
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Crystal Complexity, y=Audio Reactivity, z=Iridescence Shift, w=Debris Density
 
 const PI: f32 = 3.14159265359;
 const MAX_DIST: f32 = 20.0;
 
 // Per-frame values shared with sdf() (set once in main before marching)
-var<private> gEasedMouse: vec2<f32> = vec2<f32>(0.5, 0.5);
+var<private> gMouse: vec2<f32> = vec2<f32>(0.5, 0.5);
 var<private> gResonance: f32 = 0.0;
 
 fn rot(a: f32) -> mat2x2<f32> {
@@ -91,6 +80,37 @@ fn thinFilm(dot_nv: f32, film: f32, shift: f32) -> vec3<f32> {
     return mix(vec3<f32>(r, g, b), vec3<f32>(1.0, 0.25, 0.85), 0.25) * vec3<f32>(0.85, 1.0, 1.25);
 }
 
+// Idea 1 lens twist, shared by sdf() and the surface-pattern lookups so
+// eye/ruff patterns stay registered on the twisted geometry.
+fn lensP(p_in: vec3<f32>) -> vec3<f32> {
+    var p = p_in;
+    let sing = vec2<f32>(gMouse.x * 2.0 - 1.0, 1.0 - gMouse.y * 2.0) * 5.0;
+    let toSing = p.xy - sing;
+    let mouseDist = length(toSing);
+    if (mouseDist < 3.0) {
+        let fall = 1.0 - mouseDist / 3.0;
+        let twistAmount = fall * fall * (0.5 + gResonance * 0.4);
+        p = vec3<f32>(sing + rot(twistAmount) * toSing, p.z);
+    }
+    return p;
+}
+
+// Idea: owl head swivel. The facial disc (eyes, pupils, ruff) turns about the
+// vertical axis in quick snaps and long holds: it follows the pointer in
+// coarse steps and, between moves, glances to a new random angle every ~6 s.
+fn hash11(x: f32) -> f32 { return fract(sin(x * 127.1) * 43758.5453); }
+fn headP(p: vec3<f32>) -> vec3<f32> {
+    let time = u.config.x;
+    let st = 0.32;
+    let mx = clamp(gMouse.x - 0.5, -0.5, 0.5) * 2.4 / st;
+    let follow = (floor(mx) + smoothstep(0.7, 1.0, fract(mx))) * st;
+    let gph = time * 0.17;
+    let k = floor(gph);
+    let glance = mix(hash11(k) - 0.5, hash11(k + 1.0) - 0.5, smoothstep(0.88, 1.0, fract(gph))) * 1.1;
+    let a = follow + glance;
+    return vec3<f32>(rot(a) * p.xz, p.y).xzy;
+}
+
 fn sdf(p_in: vec3<f32>) -> vec2<f32> {
     var p = p_in;
     let time = u.config.x;
@@ -99,14 +119,11 @@ fn sdf(p_in: vec3<f32>) -> vec2<f32> {
     let complexity = u.zoom_params.x;          // Crystal Complexity (fold iterations)
     let audioReactivityScale = u.zoom_params.y; // Audio Reactivity Scale
 
-    let mouse = gEasedMouse; // Idea 1: spring-eased singularity
-    let mouseDist = length(p.xy - (mouse * 2.0 - 1.0) * 5.0);
-
-    // Gravitational lens distortion around mouse (the singularity)
-    if (mouseDist < 3.0) {
-        let twistAmount = (3.0 - mouseDist) * 0.5;
-        p = vec3<f32>(rot(twistAmount) * p.xy, p.z);
-    }
+    // Idea 1: gravitational singularity under the pointer (mouse y=0 is the
+    // top, world +y is up, so y is flipped). The lens twist now rotates about
+    // the singularity itself with a smooth quadratic falloff (HEAD twisted
+    // about the world origin by up to 1.5 rad).
+    p = lensP(p);
 
     var d = 1000.0;
     var matId = 0.0;
@@ -123,7 +140,23 @@ fn sdf(p_in: vec3<f32>) -> vec2<f32> {
 
     let hashDebris = hash31(id_debris);
     if (hashDebris > 0.8 - debrisDensity * 0.3) {
-        let debris_d = box(p_debris, vec3<f32>(0.2, 0.8, 0.2));
+        // Idea: lattice-snapped debris. Each monolith tumbles in 90-degree
+        // steps of the bismuth lattice (quick turn, long hold), and grows
+        // stepped hopper tips on both ends with the resonance.
+        let ph = time * 0.25 + hashDebris * 7.0;
+        let snapA = (floor(ph) + smoothstep(0.8, 1.0, fract(ph))) * (PI * 0.5);
+        let ph2 = time * 0.17 + hashDebris * 13.0;
+        let snapB = (floor(ph2) + smoothstep(0.85, 1.0, fract(ph2))) * (PI * 0.5);
+        var q = p_debris;
+        q = vec3<f32>(rot(snapA) * q.xy, q.z);
+        q = vec3<f32>(q.x, rot(snapB) * q.yz);
+        var debris_d = box(q, vec3<f32>(0.2, 0.8, 0.2));
+        // tips top out at 1.0 so they stay inside the densest (2.0) cell
+        let tipG = 0.55 + clamp(gResonance, 0.0, 1.0) * 0.45;
+        let qy = vec3<f32>(q.x, abs(q.y), q.z);
+        let tip1 = box(qy - vec3<f32>(0.0, 0.8 + 0.07 * tipG, 0.0), vec3<f32>(0.15, 0.07, 0.15) * tipG);
+        let tip2 = box(qy - vec3<f32>(0.0, 0.8 + 0.16 * tipG, 0.0), vec3<f32>(0.09, 0.04, 0.09) * tipG);
+        debris_d = min(debris_d, min(tip1, tip2));
         if (debris_d < d) {
             d = debris_d;
             matId = 3.0; // Debris material
@@ -143,8 +176,26 @@ fn sdf(p_in: vec3<f32>) -> vec2<f32> {
 
     // Idea 3: stepped hopper-crystal eyes flanking the core; pupils glance
     // toward the eased singularity and swell with the resonance envelope.
-    let gaze = clamp((gEasedMouse - 0.5) * vec2<f32>(0.24, -0.18), vec2<f32>(-0.12), vec2<f32>(0.12));
-    var p_eye = vec3<f32>(abs(p_owl.x), p_owl.y, p_owl.z) - vec3<f32>(0.62, 1.15, 0.55);
+    // Gaze x is mirrored with the eye so both pupils look the same way.
+    let gazeRaw = clamp((gMouse - 0.5) * vec2<f32>(0.24, -0.18), vec2<f32>(-0.12), vec2<f32>(0.12));
+    let p_face = headP(p_owl);
+    let gaze = vec2<f32>(gazeRaw.x * select(-1.0, 1.0, p_face.x >= 0.0), gazeRaw.y);
+    var p_eye = vec3<f32>(abs(p_face.x), p_face.y, p_face.z) - vec3<f32>(0.62, 1.15, 0.55);
+
+    // Idea: facial-disc ruff. A plate behind each eye with a stepped concave
+    // funnel subtracted (three nested square rings, deeper toward the eye),
+    // notched around the heart so the core stays visible. matId 4 = ruff.
+    let plate = box(p_eye - vec3<f32>(0.0, 0.0, -0.05), vec3<f32>(0.6, 0.6, 0.14));
+    let step1 = box(p_eye - vec3<f32>(0.0, 0.0, 1.03), vec3<f32>(0.5, 0.5, 1.0));
+    let step2 = box(p_eye - vec3<f32>(0.0, 0.0, 0.97), vec3<f32>(0.39, 0.39, 1.0));
+    let step3 = box(p_eye - vec3<f32>(0.0, 0.0, 0.91), vec3<f32>(0.29, 0.29, 1.0));
+    let funnel = min(step1, min(step2, step3));
+    let heartNotch = length(p_face.xy - vec2<f32>(0.0, 1.0)) - 0.38;
+    let ruff = max(max(plate, -funnel), -heartNotch);
+    if (ruff < d) {
+        d = ruff;
+        matId = 4.0;
+    }
     let socketOuter = box(p_eye, vec3<f32>(0.26, 0.26, 0.08));
     let socketStep = box(p_eye - vec3<f32>(0.0, 0.0, 0.05), vec3<f32>(0.17, 0.17, 0.08));
     let socket = max(socketOuter, -socketStep);
@@ -162,7 +213,8 @@ fn sdf(p_in: vec3<f32>) -> vec2<f32> {
     p_owl.x = abs(p_owl.x);
 
     // Horn-like ear tufts: tapered stepped pyramids above the brow
-    var p_tuft = p_owl - vec3<f32>(0.55, 2.0, 0.0);
+    // tufts sit on the head, so they turn with the swivel
+    var p_tuft = vec3<f32>(abs(p_face.x), p_face.y, p_face.z) - vec3<f32>(0.55, 2.0, 0.0);
     p_tuft = vec3<f32>(rot(-0.45) * p_tuft.xy, p_tuft.z);
     var tuftD = 1000.0;
     var tScale = 1.0;
@@ -179,6 +231,31 @@ fn sdf(p_in: vec3<f32>) -> vec2<f32> {
     if (tuftD < d) {
         d = tuftD;
         matId = 1.0; // Tufts share the bismuth shell material
+    }
+
+    // Idea: hopper-stair wing mantle. Five folded primaries hang from each
+    // shoulder as stacked plates, each a recessed hopper frame, stepping
+    // outward/back like bismuth stairs; the resonance mantles them open.
+    let wingBound = box(p_owl - vec3<f32>(1.9, -0.35, -0.35), vec3<f32>(1.3, 1.9, 0.85));
+    if (wingBound < d) {
+        let shoulder = vec3<f32>(1.3, 0.95, -0.1);
+        let spread = 0.16 + clamp(gResonance, 0.0, 1.5) * 0.16;
+        var wingD = 1000.0;
+        for (var k = 0; k < 5; k++) {
+            let fk = f32(k);
+            var q = p_owl - shoulder - vec3<f32>(fk * 0.06, 0.0, -fk * 0.13);
+            q = vec3<f32>(rot(spread + fk * 0.09) * q.xy, q.z);
+            let len = 0.55 + fk * 0.1;
+            q.y += len + 0.15;
+            let wdt = 0.36 - fk * 0.03;
+            let plate = box(q, vec3<f32>(0.05, len, wdt));
+            let recess = box(q - vec3<f32>(0.05, 0.0, 0.0), vec3<f32>(0.025, len - 0.09, wdt - 0.08));
+            wingD = min(wingD, max(plate, -recess));
+        }
+        if (wingD < d) {
+            d = wingD;
+            matId = 1.0; // primaries share the bismuth film + terraces
+        }
     }
 
     let iterations = i32(mix(2.0, 6.0, complexity));
@@ -273,7 +350,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
 
     let time = u.config.x;
-    let uv = (vec2<f32>(id.xy) * 2.0 - res) / min(res.x, res.y);
+    // Pixel-centre uv with +y up (pixel rows grow downward)
+    let uvRaw = ((vec2<f32>(id.xy) + 0.5) * 2.0 - res) / min(res.x, res.y);
+    let uv = vec2<f32>(uvRaw.x, -uvRaw.y);
 
     // Audio
     let audioBass = plasmaBuffer[0].x * 0.5 + 0.5;
@@ -281,43 +360,28 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let audioTreble = plasmaBuffer[0].z;
     let audioReactivityScale = u.zoom_params.y;
 
-    // Idea 1+2 state: spring-damped singularity + bass resonance envelope.
-    var easedMouse = u.zoom_config.yz;
-    var mouseVel = vec2<f32>(0.0);
-    var resonance = clamp(plasmaBuffer[0].x, 0.0, 1.5);
-    let hasState = arrayLength(&extraBuffer) > 138u;
-    if (hasState && extraBuffer[137] > 0.5) {
-        easedMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-        mouseVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-        mouseVel = (mouseVel + (u.zoom_config.yz - easedMouse) * 0.09) * 0.8;
-        easedMouse += mouseVel;
-        // fast attack, slow decay: the crystal keeps ringing after a hit
-        let prevRes = extraBuffer[138];
-        let target_res = clamp(plasmaBuffer[0].x, 0.0, 1.5) * audioReactivityScale * 2.0;
-        resonance = select(prevRes * 0.965, mix(prevRes, target_res, 0.35), target_res > prevRes);
-    }
-    if (hasState && id.x == 0u && id.y == 0u) {
-        extraBuffer[133] = easedMouse.x;
-        extraBuffer[134] = easedMouse.y;
-        extraBuffer[135] = mouseVel.x;
-        extraBuffer[136] = mouseVel.y;
-        extraBuffer[137] = 1.0;
-        extraBuffer[138] = resonance;
-    }
-    gEasedMouse = easedMouse;
-    gResonance = resonance;
+    // Idea 1+2 (stateless): HEAD kept a spring + envelope in extraBuffer
+    // [133..138], which the engine re-uploads every frame, so it never ran.
+    // The singularity follows the pointer directly; resonance is the bass
+    // scaled by Audio Reactivity.
+    gMouse = u.zoom_config.yz;
+    gResonance = clamp(plasmaBuffer[0].x, 0.0, 1.5) * audioReactivityScale * 2.0;
 
     let spectralSpark = clamp(audioTreble * 0.75 + audioMids * 0.25, 0.0, 2.0);
 
     // Pointer-orbit camera; held input moves into the resonance field.
-    let mouseOrbit = (u.zoom_config.yz - 0.5) * vec2<f32>(6.28318, 1.6);
+    // Pointer up raises the camera (mouse y=0 is the top of the canvas).
+    let mouseOrbit = vec2<f32>(u.zoom_config.y - 0.5, 0.5 - u.zoom_config.z) * vec2<f32>(6.28318, 1.6);
     let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
     let camRadius = 8.0 - held * 1.1;
     let camPos = vec3<f32>(sin(mouseOrbit.x) * cos(mouseOrbit.y), sin(mouseOrbit.y), cos(mouseOrbit.x) * cos(mouseOrbit.y)) * camRadius;
     let lookAt = vec3<f32>(0.0, 0.0, 0.0);
     let fw = normalize(lookAt - camPos);
-    let ri = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), fw));
-    let up = cross(fw, ri);
+    // Right-handed basis: at the default view (camera on +z) right = +x and
+    // up = +y, so the ear tufts point up (HEAD had ri = -x with screen y down,
+    // which rendered the owl rotated 180 degrees).
+    let ri = normalize(cross(fw, vec3<f32>(0.0, 1.0, 0.0)));
+    let up = cross(ri, fw);
     let rd = normalize(uv.x * ri + uv.y * up + 1.5 * fw);
     let ro = camPos;
 
@@ -337,7 +401,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         if (d < 0.5) {
             let g = 0.02 / (0.01 + d * d);
             glow += select(vec3<f32>(0.0), vec3<f32>(0.1, 0.8, 1.0) * g * 0.1, matId == 2.0);
-            glow += select(vec3<f32>(0.0), vec3<f32>(1.0, 0.2, 0.8) * g * 0.02, matId == 1.0);
+            glow += select(vec3<f32>(0.0), vec3<f32>(1.0, 0.2, 0.8) * g * 0.02, matId == 1.0 || matId == 4.0);
             glow += select(vec3<f32>(0.0), vec3<f32>(0.9, 0.8, 0.2) * g * 0.05, matId == 3.0);
         }
         t += d;
@@ -379,7 +443,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let coreR = length(p - vec3<f32>(0.0, 1.0, 0.0));
         let band = floor((coreR * 3.0 - time * 0.4 - gResonance * 2.5) * 2.0) / 2.0;
         let growth = fract(band * 0.37) * (0.35 + gResonance * 0.9);
-        let filmThickness = 0.5 + facetSeed * 1.5 + growth;
+        // Idea: hopper terraces. Chebyshev distance from the owl's core is
+        // cut into hard square stair steps; film thickness is quantized per
+        // step, and each riser gets a bright gold edge.
+        let cheb = max(max(abs(p.x), abs(p.y - 0.4) * 0.8), abs(p.z) * 1.2);
+        let terrF = cheb * 5.0 - gResonance * 0.5;
+        let terrStep = floor(terrF);
+        let riser = 1.0 - smoothstep(0.0, 0.07, fract(terrF));
+        let filmThickness = floor((0.5 + facetSeed * 1.5 + growth + terrStep * 0.22) * 4.0) / 4.0;
 
         // 3-point lighting rig
         let keyL = normalize(vec3<f32>(1.0, 1.0, 1.0));
@@ -391,12 +462,21 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let diffFill = clamp(dot(n, fillL), 0.0, 1.0) * ao;
         let diffBack = clamp(dot(n, backL), 0.0, 1.0) * ao;
 
-        if (matId == 1.0) {
-            // Bismuth shell: thin-film iridescence modulated per facet
-            let film = thinFilm(dot_nv, filmThickness, shift);
+        if (matId == 1.0 || matId == 4.0) {
+            // Bismuth shell: thin-film iridescence modulated per facet. The
+            // ruff (matId 4) uses its own phase per nested ring.
+            var filmT = filmThickness;
+            if (matId == 4.0) {
+                let pl = headP(lensP(p));
+                let pe = vec2<f32>(abs(pl.x) - 0.62, pl.y - 1.15);
+                let ring = floor(max(abs(pe.x), abs(pe.y)) / 0.11);
+                filmT = 1.7 + ring * 0.31 + gResonance * 0.2;
+            }
+            let film = thinFilm(dot_nv, filmT, shift);
             col += film * diffKey * 0.85;                          // key (warm sheen)
             col += film.zyx * diffFill * 0.30;                     // fill (swapped channels)
             col += vec3<f32>(1.0, 0.85, 0.4) * diffBack * 0.20;    // golden back scatter
+            col += vec3<f32>(1.0, 0.8, 0.35) * riser * select(0.35, 0.0, matId == 4.0) * (0.4 + diffKey); // terrace risers
             // Facet-edge sparkle driven by FFT band
             let edge = smoothstep(0.75, 0.95, facetSeed);
             col += vec3<f32>(0.9, 1.0, 1.0) * edge * spectralSpark * audioReactivityScale * 0.6;
@@ -420,6 +500,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             col += vec3<f32>(1.0, 0.5, 0.0) * pow(1.0 - dot_nv, 2.0);
         }
 
+
         depth = clamp(1.0 - t / MAX_DIST, 0.0, 1.0);
     }
 
@@ -433,7 +514,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let age = time - rp.z;
         if (age > 0.0 && age < 3.0) {
             let ringR = age * 0.6;
-            let rpUv = (rp.xy * 2.0 - 1.0) * vec2<f32>(res.x / res.y, 1.0);
+            let rpUv = vec2<f32>(rp.x * 2.0 - 1.0, 1.0 - rp.y * 2.0) * vec2<f32>(res.x / res.y, 1.0);
             let ringD = abs(length(uv - rpUv) - ringR);
             let ringGlow = (1.0 - smoothstep(0.0, 0.08, ringD)) * (1.0 - age / 3.0);
             shock = max(shock, ringGlow);
@@ -443,7 +524,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Exact display-history feedback; A owns the same HDR history C reads.
     let prev = textureLoad(dataTextureC, pixel, 0);
-    let hdr = mix(prev.rgb * 0.93, col, 0.28 + audioTreble * 0.03);
+    let hdr = max(mix(prev.rgb * 0.93, col, 0.28 + audioTreble * 0.03), vec3<f32>(0.0));
     col = acesToneMap(hdr * 1.25);
     col = pow(col, vec3<f32>(1.0 / 2.2));
 

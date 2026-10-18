@@ -11,7 +11,7 @@
     "music",
     "reactive"
   ],
-  "description": "Growing network patterns resembling fungal mycelium with diffusion-limited aggregation branching and bioluminescent tips Batch 38 FAST MOTION upgrade: bioluminescent signal pulses race along the hyphae (closed-form traveling wave), the growth front uses fast-in/smooth-out time-warp easing, bass transients fire expanding spore-burst shockwaves via a frame-rate-independent rising-edge detector (persistent state in extraBuffer[133..135]), and the branch traversal is coarse-culled with bounding-box pruning before every segment SDF evaluation. Feedback accumulation is HDR-clamped (<=4.0) so growth can never saturate the screen.",
+  "description": "Growing network patterns resembling fungal mycelium with diffusion-limited aggregation branching and bioluminescent tips. Batch 38 FAST MOTION upgrade: bioluminescent signal pulses race along the hyphae (closed-form traveling wave), the growth front uses fast-in/smooth-out time-warp easing, bass transients fire expanding spore-burst shockwaves, and the branch traversal is coarse-culled with bounding-box pruning before every segment SDF evaluation. Feedback accumulation is HDR-clamped (<=4.0) so growth can never saturate the screen. Third pass: a fairy ring of gilled, glow-rimmed mushroom caps fruits just inside the advancing margin, and the substrate is visibly drained around every hypha and digested inside the colony.",
   "workgroup_size": [
     16,
     16,
@@ -55,40 +55,6 @@
       "mapping": "zoom_params.w"
     }
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Growth Rate",
-      "default": 0.6,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Branching Factor",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Nutrient Density",
-      "default": 0.7,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Bioluminescence",
-      "default": 0.8,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
-  ],
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
@@ -109,5 +75,43 @@
     "upgraded-rgba",
     "mouse-driven",
     "click-reactive"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Growth Rate",
+          "default": 0.6,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Branching Factor",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Nutrient Density",
+          "default": 0.7,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Bioluminescence",
+          "default": 0.8,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

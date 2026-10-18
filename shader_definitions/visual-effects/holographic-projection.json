@@ -2,7 +2,7 @@
   "id": "holographic-projection",
   "name": "Holo Projector",
   "url": "shaders/holographic-projection.wgsl",
-  "description": "Transforms the image into a flickering hologram. Move mouse to focus and stabilize the projection.",
+  "description": "Hologram projection with laser speckle, rainbow Bragg colour that shifts with viewing angle, and a rolling refresh band. Move the mouse to focus and stabilize it.",
   "features": [
     "mouse-driven",
     "audio-reactive",
@@ -49,38 +49,42 @@
     "reactive"
   ],
   "updated": true,
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Scan Speed",
-      "default": 1.0,
-      "min": 0.0,
-      "max": 5.0,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Glitch Amount",
-      "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Holo Tint",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Focus Strength",
-      "default": 0.8,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Scan Speed",
+          "default": 1.0,
+          "min": 0.0,
+          "max": 5.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Glitch Amount",
+          "default": 0.3,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Holo Tint",
+          "default": 0.0,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Focus Strength",
+          "default": 0.8,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
     }
-  ]
+  }
 }

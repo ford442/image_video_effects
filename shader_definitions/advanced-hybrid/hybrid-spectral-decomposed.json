@@ -54,13 +54,6 @@
       "description": "Color shift based on frequency band"
     }
   ],
-  "chunks_used": [
-    "hash12 (gen_grid.wgsl)",
-    "palette (gen-xeno-botanical-synth-flora.wgsl)",
-    "hueShift (stellar-plasma.wgsl)",
-    "4-band decomposition (alpha-spectral-decompose)",
-    "pixel sorting (hybrid-spectral-sorting)"
-  ],
   "tags": [
     "spectral",
     "decomposition",
@@ -69,6 +62,15 @@
     "frequency",
     "equalizer"
   ],
-  "created_by": "Agent CB-7 - Flow & Multi-Pass Enhancer",
-  "created_date": "2026-04-18"
+  "x-meta": {
+    "chunks_used": [
+      "hash12 (gen_grid.wgsl)",
+      "palette (gen-xeno-botanical-synth-flora.wgsl)",
+      "hueShift (stellar-plasma.wgsl)",
+      "4-band decomposition (alpha-spectral-decompose)",
+      "pixel sorting (hybrid-spectral-sorting)"
+    ],
+    "created_by": "Agent CB-7 - Flow & Multi-Pass Enhancer",
+    "created_date": "2026-04-18"
+  }
 }

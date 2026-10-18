@@ -1,6 +1,15 @@
 // ----------------------------------------------------------------
 // Abyssal Leviathan-Scales — Batch 63
 // Category: generative
+// Features: mouse-driven, audio-reactive, click-reactive, upgraded-rgba
+// Complexity: High
+// Upgraded: 2026-09-27
+// Ideas: chromatic dispersion split on the thin-film sheen at grazing
+//        fresnel angles; fading molt-scar crack glow on scales recently
+//        crossed by a breach ring (exact dataTextureC history + per-cell
+//        hash); held-flare micro-ridging that sharpens keel/facet
+//        frequency under the cursor while held
+// A packing: display RGBA (temporal-blended color + scar-carrying alpha)
 // A hexagonal scale conveyor over a fissured plasma bed, driven at
 // speed: psychedelic thin-film spectra, greebled scale ridging,
 // spring-cursor repulsion wake, held flare, capped click breach rings.
@@ -126,8 +135,11 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
     // Scale SDF with concentric keel ridging (geometric detail)
     let size = vec2<f32>(spacing * 0.45, 0.05);
     var dScale = sdScale(q, size);
-    let keel = sin(length(q.xz) * 34.0 - g_time * 5.0) * 0.006;
-    let facets = sin(atan2(q.z, q.x) * 12.0) * 0.004;
+    // Held-flare micro-ridging: sharper, taller keel/facet frequency under the
+    // held cursor, using the repulsion field already computed above.
+    let ridgeBoost = 1.0 + repel * g_held * 1.8;
+    let keel = sin(length(q.xz) * 34.0 * ridgeBoost - g_time * 5.0) * 0.006 * ridgeBoost;
+    let facets = sin(atan2(q.z, q.x) * 12.0 * ridgeBoost) * 0.004 * ridgeBoost;
     dScale -= keel + facets;
 
     // Plasma bed, domain-warped and fissured
@@ -242,6 +254,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let coreHeat = u.zoom_params.w;
     let audioPulse = 1.0 + g_audio.x * 1.5;
 
+    // Exact previous-frame state, read early so scars can decay from it.
+    let prev = textureLoad(dataTextureC, coord, 0);
+    let scarDecay = clamp(prev.a * 0.955 - 0.01, 0.0, 1.5);
+    let scarEnergy = clamp(max(scarDecay, breach), 0.0, 1.5);
+
     if (t < maxT) {
         let p = ro + rd * t;
         let n = calcNormal(p);
@@ -256,7 +273,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             fres = pow(1.0 - max(dot(n, v), 0.0), 5.0);
 
             let filmT = fres * 2.4 + g_time * (0.25 + g_audio.z * 0.9) + p.z * 0.05;
-            let sheen = scalePalette(filmT, g_audio.y * 1.4);
+            // Chromatic dispersion: split the thin-film phase per channel,
+            // scaled by fresnel so grazing angles separate like real oil-slick
+            // spectra instead of one locked-phase cosine palette.
+            let dispersion = fres * 0.35;
+            let sheen = vec3<f32>(
+                scalePalette(filmT - dispersion, g_audio.y * 1.4).x,
+                scalePalette(filmT, g_audio.y * 1.4).y,
+                scalePalette(filmT + dispersion, g_audio.y * 1.4).z
+            );
             let diff = vec3<f32>(0.05, 0.05, 0.06) * ndotl;
             let spec = sheen * pow(ndoth, 32.0) * 0.85;
 
@@ -269,6 +294,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             // Plasma bleed from below
             let plasmaProximity = exp(-p.y * 2.0);
             col += scalePalette(filmT + 0.45, 1.0) * plasmaProximity * 0.35 * plasmaIntensity * audioPulse;
+
+            // Molt scar: a scale recently crossed by a breach ring keeps a
+            // fading glowing crack, carried across frames via the exact
+            // dataTextureC alpha history and varied per scale by the same
+            // hex-grid hash used for the scale layout.
+            let spacingM = 10.0 / max(1.0, u.zoom_params.x);
+            let cellHashScar = hash21(floor(p.xz / spacingM));
+            let scarGlow = scarEnergy * ridge * mix(0.6, 1.4, cellHashScar);
+            col += scalePalette(filmT + 0.15, 1.0) * scarGlow * 0.7;
 
         } else if (m == 2.0) {
             // Quantum fusion core — fast runners across the fissures
@@ -293,15 +327,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     col = acesToneMap(col * (1.1 + g_audio.y * 0.25));
 
-    // Semantic alpha: surface presence + plasma energy
+    // Semantic alpha: surface presence + plasma energy + persistent molt scar
     let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(
         select(0.0, 0.45 + fres * 0.3, t < maxT)
-        + luma * 0.45 + min(glow, 2.0) * 0.15 + breach * 0.3,
+        + luma * 0.45 + min(glow, 2.0) * 0.15 + scarEnergy * 0.3,
         0.0, 1.0);
 
-    // Exact previous-frame state — no filtering
-    let prev = textureLoad(dataTextureC, coord, 0);
+    // (prev already exact-loaded above for scar decay — reused here, no filtering)
     let temporal = clamp(max(col, prev.rgb * 0.9), vec3<f32>(0.0), vec3<f32>(5.0));
     let depth = select(1.0, clamp(t / maxT, 0.0, 0.995), t < maxT);
 

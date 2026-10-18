@@ -82,6 +82,9 @@ export function useThumbnailManifest(): UseThumbnailManifestResult {
       if (!cancelled) {
         setState({ manifest: data, unhealthy: flags, loading: false });
       }
+    }).catch((err) => {
+      console.warn('[Thumbnails] Failed to load thumbnail assets:', err);
+      if (!cancelled) setState((s) => ({ ...s, loading: false }));
     });
     return () => {
       cancelled = true;

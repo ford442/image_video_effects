@@ -3,30 +3,12 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-15
-//  Ideas: 4D face-crossing caustics; temporal birefringence
-//  A packing: ACES display RGBA
+//  Upgraded: 2026-10-10, 2026-10-18
+//  Ideas: schlieren stress-line striation from hyperglass shear; corner total-internal-reflection flashes at tesseract edge intersections; Schlegel 4D wireframe struts, recessed glass panes & inner hypercube core (§12.2E); 16-vertex Airy-disc diffraction flares & chronomorphic C-history echo (§12.2F)
+//  A packing: ACES display RGBA in A; C read back as chronomorphic W-phase trail
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Fold Speed, .y = Dispersion, .z = Refraction IOR, .w = Gravity
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Fold Speed, .y = Dispersion, .z = Refraction IOR, .w = Gravity
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -115,32 +97,56 @@ fn rotateTesseractPoint(p3: vec3<f32>, time: f32) -> vec4<f32> {
     return p;
 }
 
+// ── Idea 2 (helper): Polynomial Bessel J1 Airy disc (2*J1(x)/x)^2 (§12.2F) ──
+fn airyDisc(x: f32) -> f32 {
+    let xs = clamp(abs(x), 1e-4, 7.5);
+    let x2 = xs * xs;
+    let j1 = xs * (0.5 - x2 * (0.0625 - x2 * (0.0026042 - x2 * 0.0000543)));
+    let v = 2.0 * j1 / xs;
+    return v * v * exp(-xs * 0.18);
+}
+
 // Tesseract SDF
 fn sdf_tesseract(p3: vec3<f32>, time: f32) -> f32 {
     let p = rotateTesseractPoint(p3, time);
+    let q = abs(p);
     // Base size
     let s = 1.0;
 
-    // Distance to hypercube edges/faces
-    let d = abs(p) - vec4<f32>(s);
+    // Distance to outer hypercube faces
+    let d = q - vec4<f32>(s);
+    let distOuter = length(max(d, vec4<f32>(0.0))) + min(max(max(d.x, d.y), max(d.z, d.w)), 0.0);
 
-    // Approximate distance
-    let dist4d = length(max(d, vec4<f32>(0.0))) + min(max(max(d.x, d.y), max(d.z, d.w)), 0.0);
+    // ── Idea 1: Schlegel 4D wireframe struts, recessed glass panes & inner hypercube core (§12.2E) ──
+    // Pairwise maxima identify the 2-faces so panes recess slightly behind the 32 wireframe struts
+    let mxy = min(abs(q.x - s), abs(q.y - s));
+    let mzw = min(abs(q.z - s), abs(q.w - s));
+    let paneInset = smoothstep(0.08, 0.28, min(mxy, mzw)) * 0.045;
+    // Inner W-projected cube + 8 diagonal vertex connector struts
+    let dInner = q - vec4<f32>(0.48);
+    let distInner = length(max(dInner, vec4<f32>(0.0))) + min(max(max(dInner.x, dInner.y), max(dInner.z, dInner.w)), 0.0) - 0.05;
+    let diagProj = clamp((q.x + q.y + q.z + q.w) * 0.25, 0.45, 1.0);
+    let distDiag = length(q - vec4<f32>(diagProj)) - 0.095;
+    let frameCarve = min(distOuter + paneInset, min(distInner, distDiag));
 
     // Add chronomorphic distortion (ripples)
     let ripple1 = sin(p3.x * 3.0 + time) * sin(p3.y * 2.5 - time * 1.2) * sin(p3.z * 3.5 + time * 0.8);
     let ripple2 = cos(length(p3) * 4.0 - time * 2.0);
     let chronomorph = (ripple1 * 0.08 + ripple2 * 0.05);
 
-    return dist4d - 0.1 + chronomorph; // slight rounding
+    return max(distOuter - 0.1, frameCarve - 0.08) + chronomorph; // slight rounding
 }
 
-fn tesseractSliceMetrics(p3: vec3<f32>, time: f32) -> vec2<f32> {
+fn tesseractSliceMetrics(p3: vec3<f32>, time: f32) -> vec4<f32> {
     let p4 = rotateTesseractPoint(p3, time);
+    let q = abs(p4);
     // Idea 1: measure when hidden W faces cross the rendered 3D slice.
-    let face_distance = abs(abs(p4.w) - 1.0);
+    let face_distance = abs(q.w - 1.0);
     let face_caustic = 1.0 - smoothstep(0.035, 0.2, face_distance);
-    return vec2<f32>(face_caustic, p4.w);
+    // Strut highlight along the 32 wireframe edges & 8 diagonal vertex connectors
+    let edgeProx = 1.0 - smoothstep(0.04, 0.18, min(min(abs(q.x - 1.0), abs(q.y - 1.0)), min(abs(q.z - 1.0), abs(q.w - 1.0))));
+    let vertexDist4D = length(q - vec4<f32>(1.0));
+    return vec4<f32>(face_caustic, p4.w, edgeProx, vertexDist4D);
 }
 
 // Map scene
@@ -233,7 +239,7 @@ fn render(ro: vec3<f32>, rd: vec3<f32>, uv: vec2<f32>, aspect: f32) -> RenderRes
         let refractColor = vec3<f32>(envR.x, envG.y, envB.z) * 1.5;
 
         // Fresnel / Iridescence
-        let fresnel = pow(1.0 - max(dot(n, v), 0.0), 4.0);
+        let fresnel = pow(clamp(1.0 - max(dot(n, v), 0.0), 0.0, 1.0), 4.0);
 
         // Iridescent pearlescent color based on normal
         let iridescence = 0.5 + 0.5 * cos(TAU * (n.x * 2.0 + u.config.x * 0.2 + vec3<f32>(0.0, 0.33, 0.67)));
@@ -250,14 +256,32 @@ fn render(ro: vec3<f32>, rd: vec3<f32>, uv: vec2<f32>, aspect: f32) -> RenderRes
         let spec = pow(max(dot(n, h), 0.0), 32.0) * 1.0;
         col += vec3<f32>(spec);
 
-        // Idea 1: W-face crossings focus paired cyan/gold caustic sheets.
+        // Idea 1: W-face crossings focus paired cyan/gold caustic sheets + Schlegel strut sheen (§12.2E)
         let caustic_color = mix(vec3<f32>(0.2, 0.8, 1.0), vec3<f32>(1.0, 0.55, 0.15),
             0.5 + 0.5 * sin(slice_metrics.y * TAU + u.config.x * 0.4));
-        col += caustic_color * slice_metrics.x * (0.65 + audio.z * 0.18);
+        col += caustic_color * (slice_metrics.x * (0.65 + audio.z * 0.18) + slice_metrics.z * 0.28);
+
+        // Idea 3: schlieren-like stress lines from 4D shear in the refractive body.
+        let stress = 0.5 + 0.5 * sin((p.x + p.y - p.z) * 12.0 + slice_metrics.y * TAU - u.config.x);
+        col *= 0.86 + 0.22 * stress;
+
+        // Idea 4: corner TIR flashes where edge intersections graze the view.
+        let corner_metric = max(abs(p.x), max(abs(p.y), abs(p.z)));
+        let corner_flash = exp(-abs(corner_metric - 1.0) * 18.0) * pow(max(dot(n, v), 0.0), 6.0);
+        col += vec3<f32>(1.0, 0.95, 0.82) * corner_flash * (0.35 + audioPulse * 0.4);
+
+        // ── Idea 2: 16-vertex Airy-disc diffraction flares (§12.2F) ──
+        let vArg = slice_metrics.w * 9.5;
+        let vertexAiryGlint = vec3<f32>(
+            airyDisc(vArg * 0.88),
+            airyDisc(vArg * 1.00),
+            airyDisc(vArg * 1.14)
+        ) * (0.55 + dispersion * 4.0 + audio.z * 0.4);
+        col += vertexAiryGlint;
 
         // Attenuate by distance
         col *= exp(-0.1 * dO);
-        alpha = clamp(0.2 + fresnel * 0.45 + spec * 0.2 + slice_metrics.x * 0.35, 0.0, 1.0);
+        alpha = clamp(0.2 + fresnel * 0.45 + spec * 0.2 + slice_metrics.x * 0.35 + dot(vertexAiryGlint, vec3<f32>(0.2)), 0.0, 1.0);
     }
 
     let depth = select(0.0, clamp(1.0 - dO / max_dist, 0.0, 1.0), hit);
@@ -324,12 +348,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Apply gravity warp to ray direction
     rd = normalize(rd + rd_warp);
 
-    // Render
+    // Render + exact C history chronomorphic persistence (§12.2F)
     let rendered = render(ro, rd, uv, aspect);
     let coord = vec2<i32>(x, y);
     let source_depth = textureLoad(readDepthTexture, coord, 0).r;
     let depth = select(source_depth, rendered.depth, rendered.hit);
-    let display = vec4<f32>(acesToneMap(max(rendered.color, vec3<f32>(0.0))), rendered.alpha);
+    let prev = textureLoad(dataTextureC, coord, 0);
+    let toneMapped = acesToneMap(max(rendered.color, vec3<f32>(0.0)));
+    let chronoHistory = mix(toneMapped, prev.rgb, 0.12);
+    let display = vec4<f32>(chronoHistory, max(rendered.alpha, prev.a * 0.12));
     textureStore(writeTexture, coord, display);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, coord, display);

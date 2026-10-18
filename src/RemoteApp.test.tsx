@@ -1,10 +1,10 @@
-import React from 'react';
+import type { MockInstance } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import RemoteApp from './RemoteApp';
 import { FullState } from './syncTypes';
 
-jest.mock('./components/Controls', () => {
+vi.mock('./components/Controls', () => {
   const React = require('react');
   return {
     __esModule: true,
@@ -62,7 +62,7 @@ function fullState(overrides: Partial<FullState> = {}): FullState {
 function connect(overrides: Partial<FullState> = {}) {
   const remote = MockBroadcastChannel.instances[0];
   act(() => {
-    remote.onmessage?.({
+    remote!.onmessage?.({
       data: { type: 'STATE_FULL', payload: fullState(overrides) },
     } as MessageEvent);
   });
@@ -84,19 +84,19 @@ function setSearch(search: string, hash = '') {
 describe('RemoteApp chrome', () => {
   const originalLocation = window.location;
   const originalBC = global.BroadcastChannel;
-  let replaceState: jest.SpyInstance;
+  let replaceState: MockInstance;
 
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     MockBroadcastChannel.instances = [];
     // @ts-expect-error test mock
     global.BroadcastChannel = MockBroadcastChannel;
     setSearch('?mode=remote');
-    replaceState = jest.spyOn(window.history, 'replaceState').mockImplementation(() => {});
+    replaceState = vi.spyOn(window.history, 'replaceState').mockImplementation(() => {});
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
     replaceState.mockRestore();
     global.BroadcastChannel = originalBC;
     Object.defineProperty(window, 'location', { value: originalLocation, configurable: true });
@@ -108,6 +108,7 @@ describe('RemoteApp chrome', () => {
     expect(screen.getByRole('heading', { name: /remote control/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /random image/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /show controls/i })).not.toBeInTheDocument();
+    // eslint-disable-next-line testing-library/no-node-access -- asserting CSS state classes, no accessible query exists
     expect(document.querySelector('.show-controls-overlay')).toBeNull();
   });
 
@@ -119,6 +120,7 @@ describe('RemoteApp chrome', () => {
     expect(screen.queryByRole('button', { name: /random image/i })).not.toBeInTheDocument();
     const strip = screen.getByRole('button', { name: /show controls/i });
     expect(strip).toHaveClass('remote-chrome-restore');
+    // eslint-disable-next-line testing-library/no-node-access -- asserting CSS state classes, no accessible query exists
     expect(document.querySelector('.remote-app.chrome-hidden')).toBeTruthy();
   });
 

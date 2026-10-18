@@ -4,29 +4,11 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-09-14
-//  Ideas: dendritic arborization stalk-trap with advancing growth cone; activation-saturation firing-rate glow
+//  Ideas: dendritic arborization stalk-trap with advancing growth cone; activation-saturation firing-rate glow; inhibitory surround ring that suppresses over-fired branch pockets; Hebbian potentiation memory that reinforces repeatedly active dendritic corridors through feedback
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Zoom Level, .y = Color Cycling, .z = Iteration Depth, .w = Mutation Factor
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Zoom Level, .y = Color Cycling, .z = Iteration Depth, .w = Mutation Factor
 
 // --- Color Science: OkLab ---
 fn srgb_to_linear(c: vec3<f32>) -> vec3<f32> {
@@ -137,6 +119,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coord = vec2<i32>(global_id.xy);
     let uv = vec2<f32>(global_id.xy) / resolution;
     let t = u.config.x;
+    let prevData = textureLoad(dataTextureC, coord, 0);
     let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
     let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
     let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
@@ -245,6 +228,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let spikeTrain = pow(0.5 + 0.5 * sin(t * (5.0 + treble * 9.0) + trap1 * 25.0 + trap2 * 13.0), 6.0);
     let fireGlow = firing * (0.08 + spikeTrain * (0.15 + treble * 0.35) + stimulus * 0.2);
     col += oklab_mix(vec3<f32>(0.2, 0.8, 1.0), vec3<f32>(1.0, 0.3, 0.8), spikeTrain) * fireGlow;
+    // IDEA 3: inhibitory surround suppresses branch pockets around over-active loci.
+    let inhibitoryRing = exp(-pow((dendTrap - 0.08) * 22.0, 2.0)) * smoothstep(0.2, 0.8, fireRate);
+    col = col * (1.0 - inhibitoryRing * 0.22) + vec3<f32>(0.15, 0.42, 1.0) * inhibitoryRing * 0.09;
+    // IDEA 4: Hebbian potentiation from exact C feedback: repeatedly active paths persist.
+    let hebbian = clamp(firing * 0.7 + dendrite * 0.6, 0.0, 1.0);
+    col = mix(col, max(col, prevData.rgb * 0.96), 0.16 * hebbian);
 
     // Vignette
     let vignette = 1.0 - length(uv - 0.5) * 0.8;
@@ -254,7 +243,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col = acesToneMap(col * (1.0 + bass * 0.3));
 
     // Alpha = neural activation density: orbit-trap glow + dendrite coverage + firing
-    let alpha = clamp(0.12 + (glow1 + glow2) * 0.6 + dendrite * 0.5 + fireGlow * 0.6 + (1.0 - iterRatio) * 0.1, 0.0, 1.0) * clamp(vignette + 0.3, 0.0, 1.0);
+    let alpha = clamp(0.12 + (glow1 + glow2) * 0.6 + dendrite * 0.5 + fireGlow * 0.6 + hebbian * 0.18 + (1.0 - iterRatio) * 0.1, 0.0, 1.0) * clamp(vignette + 0.3, 0.0, 1.0);
     let finalColor = vec4<f32>(col, clamp(alpha, 0.0, 1.0));
     let depth = clamp(1.0 - iterRatio * 0.8 - dendrite * 0.1, 0.0, 1.0);
     textureStore(writeTexture, coord, finalColor);

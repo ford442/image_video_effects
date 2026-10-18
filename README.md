@@ -1,7 +1,7 @@
 # WebGPU Shader Effects & Visual Library
 
 <!-- catalog-counts:intro:begin -->
-A React + WebGPU app for real-time GPU shader effects — fluids, generative art, audio-reactive visuals, AI depth estimation, and a catalog of **1,370** compute shaders across 14 categories.
+A React + WebGPU app for real-time GPU shader effects — fluids, generative art, audio-reactive visuals, AI depth estimation, and a catalog of **1,391** compute shaders across 14 categories.
 <!-- catalog-counts:intro:end -->
 
 ## Documentation map
@@ -9,11 +9,15 @@ A React + WebGPU app for real-time GPU shader effects — fluids, generative art
 | Doc | Purpose |
 |-----|---------|
 | [**Add a shader (5 min)**](#quick-start-add-a-shader-5-minutes) | Below — WGSL + JSON + manifest |
-| [`WASM_BACKEND_POLICY.md`](WASM_BACKEND_POLICY.md) | **Dual-renderer policy** — TS Tier A vs WASM Tier B |
+| [`WASM_BACKEND_POLICY.md`](docs/WASM_BACKEND_POLICY.md) | **Dual-renderer policy** — TS Tier A vs WASM Tier B |
 | [`docs/SHADER_TEMPLATES.md`](docs/SHADER_TEMPLATES.md) | JSON/WGSL conventions, multipass, `-sg` variants |
 | [`docs/SHADER_UPGRADE_BATCH.md`](docs/SHADER_UPGRADE_BATCH.md) | **Batch upgrades** — incremental ideas, not rewrites / not hygiene-only |
-| [`agents/WGSL_BUILTINS_GENERATIVE.md`](agents/WGSL_BUILTINS_GENERATIVE.md) | Agent preamble — bindings, naga-safe builtins |
-| [`notes/CREATIVE_VISION.md`](notes/CREATIVE_VISION.md) | Artistic direction (psychedelic / beautiful / strange) |
+| [`docs/agents/WGSL_BUILTINS_GENERATIVE.md`](docs/agents/WGSL_BUILTINS_GENERATIVE.md) | Agent preamble — bindings, naga-safe builtins |
+| [`docs/agents/`](docs/agents/) | Agent prompts, role templates, historical swarm plans |
+| [`docs/AUTHORING.md`](docs/AUTHORING.md) | Shader scaffold, pre-commit gates, audits |
+| [`docs/NAGA_README.md`](docs/NAGA_README.md) | naga WGSL validation tooling |
+| [`docs/WASM_BUILD_CI_GUIDE.md`](docs/WASM_BUILD_CI_GUIDE.md) | WASM build + CI path |
+| [`docs/CREATIVE_VISION.md`](docs/CREATIVE_VISION.md) | Artistic direction (psychedelic / beautiful / strange) |
 | [`docs/APP_STRUCTURE.md`](docs/APP_STRUCTURE.md) | App, Controls panels, hook map |
 | [`docs/STORAGE_API.md`](docs/STORAGE_API.md) | VPS storage client contract |
 | [`AGENTS.md`](AGENTS.md) | AI agent workspace rules + canonical WGSL header |
@@ -23,26 +27,32 @@ A React + WebGPU app for real-time GPU shader effects — fluids, generative art
 | Tier | Backend | Default? | Notes |
 |------|---------|----------|-------|
 | **A — Production** | TypeScript `WebGPURenderer` | ✅ Yes | Full Controls parity; recommended for all work |
-| **B — Experimental** | C++ WASM (`?renderer=wasm`) | Opt-in only | Labeled **Experimental** in UI; must not crash app |
+| **B — Frozen R&D** | C++ WASM (`?renderer=wasm`) | URL only, no UI toggle | **Experimental (R&D)** badge; parity bugs only |
 | Dev escape | Canvas2D `JSRenderer` (`?renderer=js`) | Explicit only | No GPU shaders; not auto-fallback |
 
-WASM is **never** an automatic fallback. See [`WASM_BACKEND_POLICY.md`](WASM_BACKEND_POLICY.md) for promotion gates, CI expectations, and engineering rules.
+WASM is **never** an automatic fallback. See [`WASM_BACKEND_POLICY.md`](docs/WASM_BACKEND_POLICY.md) for promotion gates, CI expectations, and engineering rules.
 
 ## Quick start: add a shader (5 minutes)
 
-1. **Create WGSL** — `public/shaders/my-effect.wgsl`  
-   Copy the 13-binding compute header from [`AGENTS.md`](AGENTS.md) (or [`agents/WGSL_BUILTINS_GENERATIVE.md`](agents/WGSL_BUILTINS_GENERATIVE.md) for generative shaders).
+1. **Create WGSL** — `python3 scripts/new_shader.py "My Effect" --category image` writes `public/shaders/my-effect.wgsl`  
+   starting with `#include "_prelude.wgsl"`, which declares the 13-binding compute header. Never paste the bindings yourself: CI rejects a pasted copy (see [`docs/SHADER_TEMPLATES.md`](docs/SHADER_TEMPLATES.md); generative helpers in [`docs/agents/WGSL_BUILTINS_GENERATIVE.md`](docs/agents/WGSL_BUILTINS_GENERATIVE.md)).
 
-2. **Register JSON** — `shader_definitions/<category>/my-effect.json`:
+2. **Register JSON** — `shader_definitions/<category>/my-effect.json` (the file is named after the `id`; `new_shader.py` writes it for you). The format is defined by [`src/contracts/shader_definition.schema.json`](src/contracts/shader_definition.schema.json) (TypeScript type: generated `src/types/ShaderDefinition.ts`); sliders live in a single `params` key and authoring metadata goes under `x-meta`:
 
 ```json
 {
   "id": "my-effect",
   "name": "My Effect",
   "url": "shaders/my-effect.wgsl",
-  "category": "image"
+  "description": "One sentence.",
+  "tags": ["image"],
+  "params": [
+    { "id": "amount", "name": "Amount", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" }
+  ]
 }
 ```
+
+`category` is optional (the folder is authoritative; if present it must match). Check it with `npm run verify:shader-definitions`. Definitions with pre-schema keys (`updatedParams`, `parameters`, `controls`, `advanced_params`, `_seeded_by`, …) are fixed by `python3 scripts/migrate_shader_definitions.py --write`.
 
 Canonical categories: `advanced-hybrid`, `artistic`, `distortion`, `generative`, `geometric`, `hybrid`, `image`, `interactive-mouse`, `lighting-effects`, `liquid-effects`, `post-processing`, `retro-glitch`, `simulation`, `visual-effects`.
 
@@ -52,6 +62,8 @@ Canonical categories: `advanced-hybrid`, `artistic`, `distortion`, `generative`,
 node scripts/generate_shader_lists.js && npm run build:manifest
 ```
 
+The generated registry, shader lists and alias maps are committed; CI fails if they differ from a fresh regeneration (`npm run verify:generated-sync`).
+
 4. **Refresh** — `npm start` (or hard-refresh if already running). The shader appears in the picker. No TypeScript recompile needed (Universal BindGroup hot-swap).
 
 More detail: [`docs/SHADER_TEMPLATES.md`](docs/SHADER_TEMPLATES.md) · [`scripts/new_shader.py`](scripts/new_shader.py) scaffolds JSON + WGSL pairs.
@@ -59,13 +71,14 @@ More detail: [`docs/SHADER_TEMPLATES.md`](docs/SHADER_TEMPLATES.md) · [`scripts
 ## Features
 
 <!-- catalog-counts:features:begin -->
-- **1,370 shader effects** — counts from `public/shader-manifest-unified.json` (regenerate: `npm run build:manifest`; gate: `npm run verify:catalog-counts`)
+- **1,391 shader effects** — counts from `public/shader-manifest-unified.json` (regenerate: `npm run build:manifest`; gate: `npm run verify:catalog-counts`)
 <!-- catalog-counts:features:end -->
 - **Dual renderer** — TypeScript WebGPU (default) + experimental C++/WASM backend
 - **Multipass & slot stacks** — chained/parallel layers, ping-pong feedback (`docs/PARALLEL_SLOTS.md`)
-- **AI depth estimation** — DPT-Hybrid-MIDAS via `@xenova/transformers`
+- **AI depth estimation** — DPT-Hybrid-MIDAS via `@huggingface/transformers`
 - **VPS storage** — save/load shaders, configs, assets via typed `StorageClient`
 - **Audio/MIDI reactivity** — generative param mapping, live control bindings
+- **Portable VJ projects** — local `.pixelocity.json` export/import for recoverable session state
 
 ## Prerequisites
 
@@ -125,7 +138,7 @@ Counts from `npm run build:manifest` → `public/shader-manifest-unified.json`:
 <!-- catalog-counts:table:begin -->
 | Category | Count | Description |
 |----------|------:|-------------|
-| **generative** | 475 | Procedural art, fractals, generative patterns |
+| **generative** | 496 | Procedural art, fractals, generative patterns |
 | **interactive-mouse** | 239 | Mouse and touch-driven interactions |
 | **advanced-hybrid** | 166 | Multi-technique / advanced hybrid stacks |
 | **artistic** | 98 | Creative and artistic visual effects |
@@ -139,7 +152,7 @@ Counts from `npm run build:manifest` → `public/shader-manifest-unified.json`:
 | **hybrid** | 18 | Combined technique shaders |
 | **geometric** | 16 | Geometric patterns and tessellations |
 | **lighting-effects** | 15 | Volumetric lighting and glow |
-| **Total** | **1,370** | 14 canonical categories |
+| **Total** | **1,391** | 14 canonical categories |
 <!-- catalog-counts:table:end -->
 
 Legacy list files (`interactive.json`, `liquid.json`) were removed — use `interactive-mouse.json` and `liquid-effects.json`.
@@ -154,7 +167,7 @@ Legacy list files (`interactive.json`, `liquid.json`) were removed — use `inte
 image_video_effects/
 ├── public/
 <!-- catalog-counts:structure:begin -->
-│   ├── shaders/                    # WGSL compute shaders (1,370 catalog ids; more pass files on disk)
+│   ├── shaders/                    # WGSL compute shaders (1,391 catalog ids; more pass files on disk)
 <!-- catalog-counts:structure:end -->
 │   ├── shader-lists/               # Generated category JSON (14 files)
 │   ├── shader-manifest-unified.json
@@ -182,12 +195,16 @@ image_video_effects/
 │   ├── device.cpp, frame.cpp, …    # Split modules
 │   └── STATUS.md                   # Current WASM state (not *_ANALYSIS.md)
 ├── storage_manager/                # FastAPI VPS backend (Python)
-├── agents/                         # WGSL agent docs, swarm prompts
-├── scripts/                        # Manifest, deploy, audit, sync tools
-├── docs/                           # Architecture, templates, plans
+├── scripts/                        # Manifest, audit, gate, thumbnail tools
+├── tools/deploy/                   # SFTP deploy + shader sync (npm run deploy / sync:shaders)
+├── docs/                           # Architecture, templates, plans, WASM_*.md policy docs
+│   └── agents/                     # WGSL agent docs, swarm prompts (tracked)
+├── shader_plans/                   # New-shader plan queue (queue.json, bot-maintained)
 ├── tests/                          # Playwright smoke / parity / bench
-├── AGENTS.md
-└── WASM_BACKEND_POLICY.md          # Dual-renderer one-pager
+└── AGENTS.md                       # Agent workspace rules + canonical WGSL header
+
+Local-only (gitignored): agent memory (`MEMORY.md`, `memory/`, `notes/`, …) and
+swarm state (`agents/swarm-tasks/`, `agents/swarm-outputs/`).
 ```
 
 See [`docs/APP_STRUCTURE.md`](docs/APP_STRUCTURE.md) for panel/hook detail.
@@ -206,20 +223,20 @@ See [`docs/APP_STRUCTURE.md`](docs/APP_STRUCTURE.md) for panel/hook detail.
 | Uniforms layout | `npm run verify:uniforms` |
 | Foundation gates | `npm run verify:toolchain-foundation` |
 
-See [`docs/TOOLCHAIN_DECISION.md`](docs/TOOLCHAIN_DECISION.md) for CRA + CRACO rationale and dependency boundaries.
+See [`docs/TOOLCHAIN_DECISION.md`](docs/TOOLCHAIN_DECISION.md) for the Vite/Vitest toolchain rationale and dependency boundaries.
 
 ### Dev & build
 
 | Command | Purpose |
 |---------|---------|
 | `npm start` | Dev server (prestart: shader lists + manifest, relative URLs) |
-| `npm run build` | Production build (`prebuild`: wasm → lists → manifest → craco; relative URLs unless `SHADER_LIST_BASE_URL` is set) |
+| `npm run build` | Production build (`prebuild`: wasm → lists → manifest → vite build; relative URLs unless `SHADER_LIST_BASE_URL` is set) |
 | `npm run build:manifest` | Regenerate `shader-manifest-unified.json` from category lists |
 | `npm run verify:toolchain-foundation` | Bundle budget, dependency boundaries, shader-list URL policy, catalog count SoT |
-| `npm test` | Jest unit tests (~250) |
+| `npm test` | Vitest unit tests (watch mode; `npm run test:ci` for a single run) |
 | `bash scripts/jules-setup.sh` | Agent/headless setup (`npm ci`, skip WASM compile) |
 
-Production path: `wasm:build` runs **once** in `prebuild`, not again in `build`. No emcc: `SKIP_WASM_BUILD=1 npm run build`. Details: [`WASM_BUILD_CI_GUIDE.md`](WASM_BUILD_CI_GUIDE.md).
+Production path: `wasm:build` runs **once** in `prebuild`, not again in `build`. No emcc: `SKIP_WASM_BUILD=1 npm run build`. Details: [`WASM_BUILD_CI_GUIDE.md`](docs/WASM_BUILD_CI_GUIDE.md).
 
 ### Shader list URLs (local vs deploy)
 
@@ -254,16 +271,14 @@ scripts no longer prompt when that file is present. An authorized `DEPLOY_KEY`
 CI enforces relative URLs via `npm run verify:shader-list-urls` (part of
 `verify:toolchain-foundation`). `build:manifest` rejects absolute URLs unless a base-url env is set.
 
-The production `main.js` budget is **320 KiB gzip**. `npm run verify:bundle-size` reads CRA's
-`build/asset-manifest.json`, measures only the main entry chunk, and separately asserts that
+The production `main.js` budget is **320 KiB gzip**. `npm run verify:bundle-size` reads
+`build/asset-manifest.json` (emitted in CRA's shape by `scripts/vite/assetManifestPlugin.ts`), measures only the main entry chunk, and separately asserts that
 `auto-dj`, `transformers`, and `web-llm` remain lazy chunks. The current baseline is about
 **252 KiB gzip**; AI chunks are deliberately excluded from that budget. Run the production
 build before this check.
 
-TypeScript **5.4.5** is the locked compiler and CI runs a full `tsc --noEmit` plus the CRA/craco
-production build. CRA 5's unmaintained peer metadata still declares TypeScript support only
-through 4.x; this repository tests the working TS 5 combination directly, but removing that
-metadata mismatch is one reason the optional Vite migration remains a separate follow-up.
+TypeScript is pinned to the 5.9 line (`~5.9.3`); CI runs `tsc --noEmit` for `src/`, `scripts/` and the
+Playwright specs, then the Vite production build. Node 24 (`.nvmrc`) everywhere.
 
 ### WASM (Tier B)
 
@@ -272,7 +287,7 @@ metadata mismatch is one reason the optional Vite migration remains a separate f
 | `npm run wasm:build` | Compile C++ → `public/wasm/` |
 | `npm run wasm:validate` | Check committed artifacts |
 | `npm run wasm:clean` | Remove build + public wasm |
-| `npm run test:wasm:unit` | Jest WASM bridge tests |
+| `npm run test:wasm:unit` | Vitest WASM bridge tests |
 | `npm run test:wasm:e2e` | Playwright smoke (layer chain) |
 | `npm run test:wasm:parity` | Renderer parity (needs GPU) |
 | `npm run test:wasm:bench` | WASM benchmark (needs GPU) |
@@ -304,8 +319,8 @@ See [`docs/THUMBNAIL_PIPELINE.md`](docs/THUMBNAIL_PIPELINE.md). CI: **Generate T
 |---------|---------|
 | `npm run bucket:sync` | Sync GCS bucket (simple watcher) |
 | `npm run bucket:watch` | Watch mode |
-| `npm run sync:shaders` | Push shaders to VPS storage |
-| `npm run deploy` / `deploy:app` / `deploy:full` | Deploy scripts (SFTP; reads gitignored `.env.deploy`) |
+| `npm run sync:shaders` | Push shaders to VPS storage (`tools/deploy/sync_shaders_to_storage.py`) |
+| `npm run deploy` / `deploy:app` / `deploy:full` | Deploy scripts in `tools/deploy/` (SFTP; reads gitignored `.env.deploy`) |
 | `npm run audit:shaders` | WGSL audit swarm |
 | `npm run swarm:upgrade` | Shader upgrade swarm runner |
 
@@ -319,27 +334,27 @@ See [`docs/THUMBNAIL_PIPELINE.md`](docs/THUMBNAIL_PIPELINE.md). CI: **Generate T
 
 ## Experimental C++ WASM Renderer (Tier B)
 
-An optional **C++ Emscripten** backend can be enabled for performance experiments. It is **not** the production default and is labeled **Experimental** in the UI.
+An optional **C++ Emscripten** backend can be enabled for performance experiments. It is **not** the production default: it was frozen as R&D on 2026-09-27 (#1080) and is reachable only through the URL, where the status pill shows an **Experimental (R&D)** badge.
 
 ```
 http://localhost:3000/?renderer=wasm
 ```
 
-Or use the **Renderer** switcher in Controls.
+There is no Controls toggle (removed in #1329).
 
 | Topic | Document |
 |-------|----------|
-| Policy & promotion gates | [`WASM_BACKEND_POLICY.md`](./WASM_BACKEND_POLICY.md) |
-| Promotion checklist + evidence | [`WASM_PROMOTION_TRACKING.md`](./WASM_PROMOTION_TRACKING.md) |
-| Gap analysis | [`WASM_RENDERER_GAP_ANALYSIS.md`](./WASM_RENDERER_GAP_ANALYSIS.md) |
-| How to test | [`WASM_TESTING.md`](./WASM_TESTING.md), [`WASM_TEST_SUITE.md`](./WASM_TEST_SUITE.md) |
+| Policy & promotion gates | [`WASM_BACKEND_POLICY.md`](docs/WASM_BACKEND_POLICY.md) |
+| Promotion checklist + evidence | [`WASM_PROMOTION_TRACKING.md`](docs/WASM_PROMOTION_TRACKING.md) |
+| Gap analysis | [`WASM_RENDERER_GAP_ANALYSIS.md`](docs/WASM_RENDERER_GAP_ANALYSIS.md) |
+| How to test | [`WASM_TESTING.md`](docs/WASM_TESTING.md), [`WASM_TEST_SUITE.md`](docs/WASM_TEST_SUITE.md) |
 | Implementation status | [`wasm_renderer/STATUS.md`](./wasm_renderer/STATUS.md) |
 
 **Limitations while Tier B:** best-effort parity with TS WebGPU; WASM GPU timings are wall-clock only; Playwright GPU tests require a real WebGPU adapter (`WASM_GPU_TESTS=1`). See policy doc before treating WASM as production-ready.
 
 **Build WASM locally:** `npm run wasm:build` (requires [Emscripten](https://emscripten.org/)). In CI/headless VMs without emsdk: `SKIP_WASM_BUILD=1 npm run build` uses committed artifacts in `public/wasm/`.
 - **Pipeline:** Ping-pong textures; compute shaders read prior frame, write next
-- **Uniforms:** Shared 13-binding compute contract (see `AGENTS.md`)
+- **Uniforms:** Shared 13-binding compute contract, from `#include "_prelude.wgsl"` (see `docs/BINDING_CONTRACT.md`)
 - **Depth:** AI depth maps drive parallax and depth-aware effects
 - **Multipass:** Linear chains today; graph runner planned — [`docs/plans/PLAN-ADVANCED-EFFECTS.md`](docs/plans/PLAN-ADVANCED-EFFECTS.md)
 

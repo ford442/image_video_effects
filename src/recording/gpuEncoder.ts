@@ -7,9 +7,10 @@
  */
 
 import { ArrayBufferTarget, Muxer } from 'webm-muxer';
+import { tagWebmDisplayP3, type WebmColourTag } from './webmColour';
 
 export interface GpuFrameSource {
-  readonly kind: 'canvas' | 'readback';
+  readonly kind: 'canvas' | 'readback' | 'worker';
   /** Snapshot the current output as a VideoFrame at `timestampUs`; null skips the tick. */
   grab(timestampUs: number): VideoFrame | null | Promise<VideoFrame | null>;
 }
@@ -40,6 +41,11 @@ export function canvasFrameSource(canvas: HTMLCanvasElement): GpuFrameSource {
     kind: 'canvas',
     grab: (timestamp) => new VideoFrame(canvas, { timestamp, alpha: 'discard' }),
   };
+}
+
+/** Render worker (#1314): the worker grabs each presented frame and transfers it. */
+export function workerFrameSource(grab: (timestampUs: number) => Promise<VideoFrame | null>): GpuFrameSource {
+  return { kind: 'worker', grab };
 }
 
 /** RGBA8 readback (WASM beginFrameCapture) wrapped directly into a VideoFrame. */
@@ -102,7 +108,15 @@ export class GpuEncodeRecorder {
   private lastFrameMs = -Infinity;
   private startMs = 0;
   private encodeError: Error | null = null;
+  private wideFrames = 0;
+  private narrowFrames = 0;
   framesEncoded = 0;
+  /**
+   * What the finished file's Colour element says. 'display-p3' only after stop()
+   * when every frame reported smpte432 primaries and the in-place tag took;
+   * otherwise the encoder's own tag stands (Chromium writes smpte170m).
+   */
+  colorTag: WebmColourTag = 'encoder-default';
 
   private constructor(
     private readonly source: GpuFrameSource,
@@ -164,6 +178,8 @@ export class GpuEncodeRecorder {
             if (keyFrame) this.lastKeyUs = timestampUs;
             this.encoder.encode(frame, { keyFrame });
             this.framesEncoded++;
+            if ((frame.colorSpace?.primaries as string | null | undefined) === 'smpte432') this.wideFrames++;
+            else this.narrowFrames++;
           }
         } finally {
           frame.close();
@@ -194,6 +210,15 @@ export class GpuEncodeRecorder {
     await this.encoder.flush();
     this.encoder.close();
     this.muxer.finalize();
-    return new Blob([this.muxer.target.buffer], { type: 'video/webm' });
+    const buffer = this.muxer.target.buffer;
+    if (this.wideFrames > 0 && this.narrowFrames === 0 && tagWebmDisplayP3(buffer)) {
+      this.colorTag = 'display-p3';
+    } else if (this.wideFrames > 0) {
+      console.warn(
+        `[GPU encode] Display P3 frames (${this.wideFrames}/${this.wideFrames + this.narrowFrames}) `
+        + 'were not tagged; players will assume the encoder default (smpte170m).',
+      );
+    }
+    return new Blob([buffer], { type: 'video/webm' });
   }
 }

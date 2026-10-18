@@ -10,58 +10,24 @@
     "veins",
     "dendritic"
   ],
-  "description": "Simulation of slime mold growth with vivid psychedelic coloring. Branching veins of bright neon spread across the screen in organic dendritic patterns. Colors shift from deep purple to hot pink to electric cyan. Mouse feeds the slime causing rapid growth pulses.",
+  "description": "Psychedelic slime mold growth: neon dendritic veins behind a reticulated fan-shaped front, trails settling to pale mucus. Mouse feeds the colony, which stays larger for a while after feeding.",
   "workgroup_size": [
     16,
     16,
     1
-  ],
-  "params": [
-    { "id": "intensity", "name": "Intensity", "default": 0.8, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
-    { "id": "speed", "name": "Speed", "default": 0.3, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
-    { "id": "scale", "name": "Scale", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
-    { "id": "color-shift", "name": "Color Shift", "default": 0, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
-  ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Intensity",
-      "default": 0.8,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Speed",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Scale",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Color Shift",
-      "default": 0,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
   ],
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
   "id": "gen-cosmic-slime-mold",
   "url": "shaders/gen-cosmic-slime-mold.wgsl",
-  "features": [],
+  "features": [
+    "audio-reactive",
+    "mouse-interactive",
+    "semantic-alpha",
+    "temporal-feedback",
+    "upgraded-rgba"
+  ],
   "params": [
     {
       "id": "intensity",
@@ -99,5 +65,43 @@
       "step": 0.01,
       "mapping": "zoom_params.w"
     }
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Intensity",
+          "default": 0.8,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Speed",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Scale",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Color Shift",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

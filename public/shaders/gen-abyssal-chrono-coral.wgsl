@@ -1,49 +1,39 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Abyssal Chrono-Coral — Batch 63
 //  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Deep-time coral growth accelerated into a fast abyssal current:
 //  psychedelic bioluminescent spectra, polyp-level geometric detail,
-//  spring-cursor time-dilation well, held bloom, capped click sediment rings.
+//  cursor time-dilation well, held bloom, capped click sediment rings.
+//  Upgraded: 2026-10-18
+//  Ideas: growth-band strata carved along each branch (age faster in the well); gravitational red-shift in the well + blue Einstein-ring rim; travelling budding front swelling tip nodes; hexameral corallite cups with 6+6 septa pitted into each branch (oral discs glow); tip-node light spill onto nearby branches (energy accounting)
+//  A packing: ACES display RGBA (prev.rgb*0.94 trail, read back as colour)
 //  Contract: 13 bindings, ACES, semantic alpha, dataTextureA writeback only,
-//            exact textureLoad from dataTextureC, plasmaBuffer three-band audio,
-//            bounded extraBuffer[133..138] state.
+//            exact textureLoad from dataTextureC, plasmaBuffer three-band audio.
+//            (The old extraBuffer[133..138] cursor spring was a no-op - the
+//            buffer is zeroed every frame - and has been removed.)
+//  Rescue (2026-10-18): HEAD rendered stars + overlay only — camera y drifted
+//  out of the reef, fbm3 was uninterpolated white noise (speckle warp), the
+//  well offset time by 12 s (shredded spiral) with the raw slider as radius.
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=Time, yz=MouseUV, w=MouseDown
-    zoom_params: vec4<f32>,  // x=Coral Density, y=Branch Complexity, z=Bioluminescence Intensity, w=Time Dilation Field
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Coral Density, y=Branch Complexity, z=Bioluminescence Intensity, w=Time Dilation Field
 
 const TAU: f32 = 6.28318530718;
-
-const SPRING_X: i32 = 133;
-const SPRING_Y: i32 = 134;
-const SPRING_VX: i32 = 135;
-const SPRING_VY: i32 = 136;
-const SPRING_T: i32 = 137;
-const SPRING_INIT: i32 = 138;
 
 var<private> g_bass: f32;
 var<private> g_mids: f32;
 var<private> g_treble: f32;
 var<private> g_bloom: f32;
 var<private> g_held: f32;
+// IDEA 1/3 side channels written by map() for the surface shader:
+// g_band.x = stratum height 0..1 (ledge -> taper), g_band.y = sharp ledge line; g_bud = budding-front strength 0..1
+var<private> g_band: vec2<f32>;
+var<private> g_bud: f32;
+// IDEA 4/5 side channels: g_local = folded branch-space point of the closest branch,
+// g_node = distance to the tip-node surface (world units)
+var<private> g_local: vec3<f32>;
+var<private> g_node: f32;
 
 fn rotate2D(angle: f32) -> mat2x2<f32> {
     let c = cos(angle);
@@ -57,13 +47,30 @@ fn hash3(p: vec3<f32>) -> vec3<f32> {
     return fract((q.xxy + q.yxx) * q.zyx);
 }
 
+// Trilinear value noise. HEAD summed raw hash3(x) — uninterpolated white noise — so the
+// ±1 domain warp in map() moved every sample to a random place: per-pixel speckle.
+fn vnoise3(p: vec3<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let w = f * f * (3.0 - 2.0 * f);
+    let n000 = hash3(i).x;
+    let n100 = hash3(i + vec3<f32>(1.0, 0.0, 0.0)).x;
+    let n010 = hash3(i + vec3<f32>(0.0, 1.0, 0.0)).x;
+    let n110 = hash3(i + vec3<f32>(1.0, 1.0, 0.0)).x;
+    let n001 = hash3(i + vec3<f32>(0.0, 0.0, 1.0)).x;
+    let n101 = hash3(i + vec3<f32>(1.0, 0.0, 1.0)).x;
+    let n011 = hash3(i + vec3<f32>(0.0, 1.0, 1.0)).x;
+    let n111 = hash3(i + vec3<f32>(1.0, 1.0, 1.0)).x;
+    return mix(mix(mix(n000, n100, w.x), mix(n010, n110, w.x), w.y),
+               mix(mix(n001, n101, w.x), mix(n011, n111, w.x), w.y), w.z);
+}
+
 fn fbm3(p: vec3<f32>) -> f32 {
     var f = 0.0;
     var x = p;
     var a = 0.5;
     for(var i = 0; i < 4; i++) {
-        let h = hash3(x);
-        f += a * (h.x + h.y + h.z) / 3.0;
+        f += a * vnoise3(x);
         x *= 2.0;
         a *= 0.5;
     }
@@ -104,8 +111,43 @@ fn polypDetail(p: vec3<f32>, t: f32) -> f32 {
     return c * 0.012;
 }
 
+// IDEA 1 - growth-band strata: sawtooth accretion ledges along the branch axis.
+// Sharp step out at the ledge, slow taper back, phase running on the (well-dilated) clock.
+fn strata(axis: f32, t: f32) -> vec3<f32> {
+    let f = fract(axis * 1.6 - t * 0.28);
+    let step_up = smoothstep(0.0, 0.08, f);
+    let h = step_up * (1.0 - f);
+    let line = exp(-f * 22.0);
+    return vec3<f32>(h, line, h - 0.5);
+}
+
+// ── Idea 4: corallite cups. Scleractinian (hexacoral) skeleton: each polyp sits in a cup
+// (calyx) on the branch wall, ribbed by 6 primary + 6 secondary radial septa. Laid out on the
+// branch's own cylinder (angle around p.xz, length along p.y) in offset rows, jittered.
+// Returns x = pit depth 0..1, y = septal ridge 0..1, z = oral-disc centre 0..1.
+fn corallite(lp: vec3<f32>) -> vec3<f32> {
+    let ang = atan2(lp.z, lp.x) / TAU;            // -0.5..0.5 around the branch
+    var cell = vec2<f32>(ang * 9.0, lp.y * 3.2);
+    let row = floor(cell.y);
+    cell.x += 0.5 * (row - 2.0 * floor(row * 0.5)); // brick-offset rows -> hex-like packing
+    let id = floor(cell);
+    let jit = hash3(vec3<f32>(id, 7.0)).xy - 0.5;
+    let lc = (fract(cell) - 0.5 - jit * 0.18) * vec2<f32>(1.0, 1.15);
+    let r = length(lc) / 0.44;
+    let a = atan2(lc.y, lc.x);
+    let pit = 1.0 - smoothstep(0.55, 1.0, r);
+    let ring = smoothstep(0.18, 0.3, r) * (1.0 - smoothstep(0.85, 1.0, r));
+    let s1 = pow(abs(cos(3.0 * a)), 10.0);        // 6 primary septa
+    let s2 = pow(abs(cos(6.0 * a + 1.5708)), 14.0) * 0.5; // 6 shorter secondaries
+    let septa = max(s1, s2 * smoothstep(0.45, 0.6, r)) * ring;
+    let disc = 1.0 - smoothstep(0.0, 0.22, r);
+    return vec3<f32>(pit, septa, disc);
+}
+
 fn map(pos_in: vec3<f32>, time: f32) -> vec2<f32> {
     var p = pos_in;
+    g_band = vec2<f32>(0.5, 0.0);
+    g_local = vec3<f32>(0.0);
 
     // Domain repetition
     p.x = (fract(p.x / 10.0 + 0.5) - 0.5) * 10.0;
@@ -135,13 +177,22 @@ fn map(pos_in: vec3<f32>, time: f32) -> vec2<f32> {
         p *= 1.2;
 
         let ringMod = growthRings(p, time, audioPulse);
-        var branch = (length(p.xz) - u.zoom_params.x * (1.0 + g_bass * 0.4 + ringMod * 0.3)) / s;
+        // IDEA 1: radius steps out at each accretion ledge along this branch's own axis (p.y)
+        let band = strata(p.y, time);
+        let radius = u.zoom_params.x * (1.0 + g_bass * 0.4 + ringMod * 0.3) * (1.0 + 0.16 * band.z);
+        var branch = (length(p.xz) - radius) / s;
         branch -= polypDetail(p, time) / s;
+        if (branch < d) { g_band = band.xy; g_local = p; }
         d = smin(d, branch, 0.2);
     }
 
     // Bioluminescent nodes at tips
-    let node_d = length(p) / s - (0.18 + audioPulse * 0.24 + g_held * 0.06);
+    // IDEA 3: budding front - a travelling wave along tip depth, sharp leading edge, slow decay
+    let budPhase = fract(length(p) * 0.5 - time * 0.8);
+    let bud = smoothstep(0.0, 0.15, budPhase) * (1.0 - smoothstep(0.15, 0.7, budPhase));
+    g_bud = bud;
+    let node_d = length(p) / s - (0.18 + audioPulse * 0.24 + g_held * 0.06) * (1.0 + 0.7 * bud);
+    g_node = node_d;
 
     if (node_d < d) {
         return vec2<f32>(node_d, 2.0);
@@ -180,33 +231,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let held = u.zoom_config.w > 0.5;
     g_held = select(0.0, 1.0, held);
 
-    // ── spring cursor (extraBuffer[133..138] only) ──────────────────────
-    var smoothMouse = mouse;
-    let hasSpring = arrayLength(&extraBuffer) > 138u;
-    if (hasSpring && extraBuffer[SPRING_INIT] > 0.5) {
-        smoothMouse = vec2<f32>(extraBuffer[SPRING_X], extraBuffer[SPRING_Y]);
-    }
-    if (hasSpring && global_id.x == 0u && global_id.y == 0u) {
-        var springPos = smoothMouse;
-        var springVel = vec2<f32>(extraBuffer[SPRING_VX], extraBuffer[SPRING_VY]);
-        if (extraBuffer[SPRING_INIT] <= 0.5) {
-            springPos = mouse;
-            springVel = vec2<f32>(0.0);
-        } else {
-            let dt = clamp(time - extraBuffer[SPRING_T], 0.001, 0.05);
-            let omega = 9.0;
-            let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
-            springVel += accel * dt;
-            springPos += springVel * dt;
-        }
-        extraBuffer[SPRING_X] = springPos.x;
-        extraBuffer[SPRING_Y] = springPos.y;
-        extraBuffer[SPRING_VX] = springVel.x;
-        extraBuffer[SPRING_VY] = springVel.y;
-        extraBuffer[SPRING_T] = time;
-        extraBuffer[SPRING_INIT] = 1.0;
-        smoothMouse = springPos;
-    }
+    let smoothMouse = mouse;
 
     // ── click sediment blooms — real ripple slots, capped and bounded ────
     var sediment = 0.0;
@@ -227,11 +252,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let base_time = time * (1.4 + g_mids * 0.6);
 
     let dist_to_mouse = length((uv01 - smoothMouse) * aspect);
-    let dilation_strength = max(u.zoom_params.w, 0.02);
-    let dilation = smoothstep(dilation_strength, 0.0, dist_to_mouse) * 12.0 * (1.0 + g_held);
+    // Well radius in screen units. HEAD used the raw slider as the radius, so mid values
+    // covered the whole frame; 0.04..0.34 keeps it a lens around the cursor.
+    let dilation_strength = 0.04 + 0.3 * clamp(u.zoom_params.w, 0.0, 1.0);
+    let well = smoothstep(dilation_strength, 0.0, dist_to_mouse);
+    // HEAD offset local time by up to 12 s: the KIFS fold angles and the warp are fast
+    // functions of time, so neighbouring pixels saw unrelated geometry (shredded spiral).
+    // A ~2 s lead still visibly ages the coral inside the well while staying coherent.
+    let dilation = well * 2.0 * (1.0 + g_held);
     let local_time = base_time + dilation;
 
-    var ro = vec3<f32>(0.0, base_time * driftSpeed * 0.9, base_time * driftSpeed);
+    // The field repeats only in x/z, so an unbounded y drift (HEAD: y = t·speed·0.9) carried
+    // the camera above the reef within seconds and frames showed only stars. Bob instead.
+    var ro = vec3<f32>(0.0, sin(base_time * 0.23) * 1.2, base_time * driftSpeed);
     var rd = normalize(vec3<f32>(uv, 1.0));
 
     // Camera bank — cursor steers it, current rolls it
@@ -275,10 +308,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (t < 22.0) {
         let p = ro + rd * t;
         let n = calcNormal(p, local_time);
+        // refresh the strata / bud side channels at the exact hit point (calcNormal leaves them at an offset probe)
+        _ = map(p, local_time);
+        let strat = g_band;
+        let bud = g_bud;
+        let lp = g_local;
+        let nodeD = max(g_node, 0.0);
         let l = normalize(vec3<f32>(1.0, 1.0, -1.0));
 
         let diff = max(dot(n, l), 0.0);
-        fres = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
+        fres = pow(max(1.0 - max(dot(n, -rd), 0.0), 0.0), 3.0);
 
         // Hue races along the branch with treble and the sediment bloom
         let hue = fract(length(p) * 0.12 + time * (0.25 + g_treble * 0.8) + sediment * 0.5);
@@ -294,13 +333,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // Corrugation shading — makes the polyp micro-detail read as geometry
             let corr = 0.5 + 0.5 * sin(dot(p, vec3<f32>(28.0)) + time * 2.0);
             col *= 0.8 + corr * 0.4;
+            // IDEA 1 shading: each stratum is lighter on its ledge, and the ledge line glows
+            col *= 0.78 + 0.44 * strat.x;
+            col += strat.y * abyssPalette(hue + 0.3, g_mids) * 0.3 * (0.5 + well);
+            // ── Idea 4: corallite cups — dark calyx pits ribbed by bright septa, the polyp's
+            // oral disc glowing faintly at each centre (scaled by Bioluminescence)
+            let cup = corallite(lp);
+            let cupFade = exp(-0.06 * t); // fine detail resolves only up close
+            col *= 1.0 - 0.5 * cup.x * (1.0 - cup.y) * cupFade;
+            col += cup.y * branchTint * 0.35 * diff * cupFade;
+            col += cup.z * abyssPalette(hue + 0.15, 1.0 + g_bass) * (0.25 + 0.5 * g_mids) * u.zoom_params.z * cupFade;
+            // ── Idea 5: tip-node light spill. The tip nodes are the only light sources in the
+            // abyss; branches near a node catch its colour with inverse-square falloff, hotter
+            // while the node is swelling on the budding front.
+            let nodeCol = abyssPalette(hue + 0.15, 1.0 + g_bass) * (1.6 + (g_mids + g_treble) * 1.5 + sediment * 2.2);
+            let spill = u.zoom_params.z * (1.0 + 0.6 * bud) / (1.0 + nodeD * nodeD * 40.0);
+            col += nodeCol * spill * (0.18 + 0.14 * (1.0 - cup.x));
         } else {
             let bloomAmt = 1.6 + (g_mids + g_treble) * 1.5 + sediment * 2.2;
-            col = abyssPalette(hue + 0.15, 1.0 + g_bass) * bloomAmt
+            // IDEA 3: a swelling bud burns hotter
+            col = abyssPalette(hue + 0.15, 1.0 + g_bass) * bloomAmt * (1.0 + 0.6 * bud)
                 + abyssPalette(hue + 0.6, g_treble) * fres * 0.9;
         }
     } else {
-        let stars = pow(hash3(rd * 110.0).x, 48.0);
+        // Sparse cell stars (HEAD's pow(hash(rd*110),48) lit ~1 pixel in 10: speckle)
+        let stars = smoothstep(0.994, 1.0, hash3(floor(rd * 160.0) + 17.0).x);
         col += stars * vec3<f32>(0.9, 0.95, 1.0);
         col += abyssPalette(time * 0.05 + length(uv) * 0.3, g_mids) * 0.03;
     }
@@ -315,6 +372,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Ambient abyssal fog
     col = mix(col, vec3<f32>(0.0, 0.04, 0.09), 1.0 - exp(-0.018 * t));
 
+    // IDEA 2: gravitational shift. Light climbing out of the well is red-shifted (spectral matrix,
+    // not a palette swap); a thin blue-shifted Einstein ring sits at the well rim and brightens
+    // where coral / glow lies behind it. Uses the saved well radius (Time Dilation Field).
+    let pre_luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let redshift = vec3<f32>(
+        col.r + 0.55 * col.g + 0.15 * col.b,
+        0.45 * col.g + 0.10 * col.b,
+        0.15 * col.b);
+    col = mix(col, redshift * 1.1, well * 0.75);
+    let rim_w = 0.006 + 0.03 * dilation_strength;
+    let rim_d = (dist_to_mouse - dilation_strength * 0.9) / rim_w;
+    let einstein = exp(-rim_d * rim_d);
+    let blueshift = vec3<f32>(0.25 * col.r, 0.6 * col.g + 0.2 * col.r, col.b + 0.5 * col.g);
+    col = mix(col, blueshift, einstein * 0.5);
+    col += einstein * vec3<f32>(0.4, 0.75, 1.5) * (0.10 + 0.35 * min(acc_glow, 1.5) + 0.3 * pre_luma) * (1.0 + g_held * 0.5);
+
     col *= 1.0 + g_bass * 0.22 + sediment * 0.8;
 
     col = acesToneMap(col * (1.05 + g_mids * 0.2));
@@ -323,7 +396,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     let bioIntensity = min(acc_glow, 2.0) * 0.4 + (g_mids + g_treble) * 0.3;
     let alpha = clamp(
-        select(0.0, 0.4 + fres * 0.3, t < 22.0)
+        // The abyss is part of the scene: misses at alpha ~0 composited onto the page
+        // and read as a white wash. Water floor 0.8; coral/glow push it to 1.
+        select(0.8, 0.85 + fres * 0.15, t < 22.0)
         + luma * 0.45 + bioIntensity * 0.35 + sediment * 0.3,
         0.0, 1.0);
 

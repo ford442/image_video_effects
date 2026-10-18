@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: Sersic bulge + exponential-disk unresolved starlight; density-wave arm crests with trailing dust lanes and HII emission knots
+//  Upgraded: 2026-10-10
+//  Ideas: Sersic bulge and disk; dust lanes and HII knots; flat-curve shear; parastichy sheen
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Star Spread, .y = Star Size, .z = Disk Rotation, .w = Wave Density
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Star Spread, .y = Star Size, .z = Disk Rotation, .w = Wave Density
 
 const PHI: f32 = 2.39996323; // golden angle in radians
 const TAU: f32 = 6.283185307;
@@ -114,8 +96,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   for (var i: i32 = 1; i <= starCount; i = i + 1) {
     let n = f32(i);
-    let theta = n * PHI + time * 0.03 * (1.0 + hash11(n) * 0.5);
     let r = c * sqrt(n);
+    // Idea: flat rotation curve — inner florets lap the outer ones. Disk rotation still scales the spin.
+    let theta = n * PHI + time * (0.012 + 0.028 / (0.18 + r)) * (diskRotation / 0.3) * (1.0 + hash11(n) * 0.5);
 
     // Lin-Shu density wave perturbation
     let wave = sin(theta * 2.0 + r * 40.0) * densityWaveAmp;
@@ -167,7 +150,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Idea 1: bulge + disk starlight.
   let diffuse = diffuseStarlight(sampleUV, armCrest, waveGain);
+  // Idea: parastichy sheen — the two spiral families of the same golden angle, in the unresolved disk.
+  let parA = abs(fract(pAng / PHI - pr * 7.0) - 0.5);
+  let parB = abs(fract(pAng / PHI * 1.618034 - pr * 11.0) - 0.5);
+  let parastichy = (exp(-parA * 26.0) + exp(-parB * 34.0) * 0.65) * exp(-pr * 1.15) * smoothstep(0.02, 0.08, pr);
   accum += diffuse * (1.0 + mids * 0.3);
+  accum += vec3<f32>(0.55, 0.68, 0.95) * parastichy * (0.035 + p1 * 0.04);
 
   // Idea 2: trailing dust lane (just upstream of the crest, where gas is
   // shocked) absorbs; HII knots glow pink-red on the crest itself.

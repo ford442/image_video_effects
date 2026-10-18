@@ -8,6 +8,10 @@
 //           curl of a scalar potential (~4.5x noise-eval reduction),
 //           dead-code removal, named constants, HDR feedback chain,
 //           fixed mouse/audio uniform truth, clamped advection fetch.
+//  Upgraded: 2026-09-27
+//  Ideas: wingbeat flutter + cyan/magenta wing sheen; flight-aligned wing smear;
+//         lantern orbit around the mouse; idle roost mandala (audio-free)
+//  A packing: raw HDR RGB + semantic alpha (C read back as HDR trail; ACES on writeTexture only)
 // ----------------------------------------------------------------
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -48,6 +52,12 @@ const SCATTER_PUSH: f32 = -2.5;    // repulsion on mouse-down
 const MANDALA_RINGS: f32 = 20.0;
 const MANDALA_ARMS: f32 = 8.0;
 const HDR_CEIL: f32 = 6.0;         // keep HDR feedback bounded
+const WING_RATE: f32 = 11.0;       // [idea 1] wingbeat angular rate (rad/s)
+const SMEAR_MAX: f32 = 1.6;        // [idea 2] extra streak stretch along heading at full speed
+const ORBIT_SWIRL: f32 = 1.6;      // [idea 3] tangential / radial force ratio around the lantern
+const LURE_RADIUS: f32 = 4.0;      // [idea 3] lure falloff (1/radius²-ish, uv² units)
+const ROOST_RATE: f32 = 0.4;       // [idea 4] idle mandala breathing rate (rad/s, ~16 s period)
+const ROOST_SPIN: f32 = 0.12;      // [idea 4] mandala arm rotation (rad/s)
 
 // ── 3D simplex noise (canonical Ashima form) ────────────────────
 fn mod289(x: vec3<f32>) -> vec3<f32> {
@@ -193,7 +203,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let force_mag = MOUSE_FORCE / dist_sq;
     let scatter = select(1.0, SCATTER_PUSH, mouse_down);
 
-    let vel = vec3<f32>(flow + force_dir * force_mag * scatter, wobble * 0.25);
+    // [idea 3] Lantern orbit: moths circle the gravity node (tangent = perp of force_dir);
+    // the swirl reverses and weakens on mouse-down while scatter keeps repelling.
+    let orbit_dir = vec2<f32>(-force_dir.y, force_dir.x);
+    let orbit = orbit_dir * force_mag * ORBIT_SWIRL * select(1.0, -0.5, mouse_down);
+
+    let vel = vec3<f32>(flow + force_dir * force_mag * scatter + orbit, wobble * 0.25);
 
     // ── Advected trails (textureLoad feedback, clamped fetch) ───
     let advect_uv = (uv + vel.xy * ADVECT_SCALE) * 0.5 + vec2<f32>(0.5);
@@ -201,14 +216,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let trail = textureLoad(dataTextureC, advect_px, 0).rgb;
 
     // ── Moth spawn field (noise threshold, density slider) ──────
-    let particle_noise = snoise(vec3<f32>(uv_scaled * SPAWN_FREQ * swarm_density, time));
+    // [idea 2] Flight-aligned wing smear: compress the spawn domain along the local heading
+    // so blobs stretch into streaks with the flight direction (identity when speed -> 0;
+    // symmetric in +-heading so no seam where the flow reverses).
+    let vspeed = length(vel.xy);
+    let heading = vel.xy / max(vspeed, 1e-4);
+    let stretch = 1.0 + SMEAR_MAX * saturate(vspeed * 0.5);
+    let sp = uv_scaled * SPAWN_FREQ * swarm_density;
+    let sp_smear = sp + heading * (dot(sp, heading) * (1.0 / stretch - 1.0));
+
+    // [idea 3] Lantern lure: spawn threshold drops near the mouse so moths crowd the lamp
+    // (off while held: scatter).
+    let lure = exp(-dot(to_mouse, to_mouse) * LURE_RADIUS) * select(1.0, 0.0, mouse_down);
+
+    let particle_noise = snoise(vec3<f32>(sp_smear, time)) + lure * 0.3;
     var spawn = smoothstep(SPAWN_LO, SPAWN_HI, particle_noise);
 
     // Audio-driven mandala assembly (branchless gate, bass+mids energy)
     let audio_energy = bass + mids * 0.5;
-    let gate = smoothstep(0.15, 0.7, audio_energy) * audio_sens;
+    let gate_audio = smoothstep(0.15, 0.7, audio_energy) * audio_sens;
+    // [idea 4] Idle roost: slow breathing gate assembles the mandala with audio = 0;
+    // arms rotate slowly. Audio gate (audio_sens) kept and combined with max().
+    let roost = smoothstep(0.55, 0.95, 0.5 + 0.5 * sin(time * ROOST_RATE)) * 0.6;
+    let gate = max(gate_audio, roost);
     let mandala = sin(length(uv_scaled) * MANDALA_RINGS - time * 5.0)
-                * cos(atan2(uv_scaled.y, uv_scaled.x) * MANDALA_ARMS);
+                * cos((atan2(uv_scaled.y, uv_scaled.x) + time * ROOST_SPIN) * MANDALA_ARMS);
     spawn += smoothstep(0.8, 1.0, mandala) * gate;
 
     // ── Fluorescent color mapping ───────────────────────────────
@@ -221,8 +253,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let shimmer = 1.0 + treble * 0.6 + fft * 0.4; // quantum fluorescence flicker
 
     // ── HDR compose + bounded feedback ──────────────────────────
+    // [idea 1] Wingbeat flutter: per-moth phase from the wobble + spawn-noise fields;
+    // wing snaps open (w -> 1) with a cyan -> magenta sheen. Mean gain ~0.85 keeps level.
+    let wing_phase = wobble * 6.0 + particle_noise * 9.0;
+    let wing_open = 0.5 + 0.5 * sin(time * WING_RATE + wing_phase);
+    let flutter = mix(0.4, 1.6, wing_open * wing_open);
+    let wing_sheen = mix(col1, col2, wing_open) * (0.3 * wing_open);
+
     var hdr = trail * TRAIL_DECAY;
-    hdr += vel_color * spawn * glow_strength * shimmer;
+    hdr += (vel_color + wing_sheen) * spawn * flutter * glow_strength * shimmer;
+    // [idea 3] warm lantern halo at the mouse (fades out when held)
+    hdr += vec3<f32>(1.0, 0.85, 0.55) * (lure * lure * lure) * 0.35;
     hdr = min(hdr, vec3<f32>(HDR_CEIL));
 
     // ── Real generated depth: dense moth clusters sit closer ────

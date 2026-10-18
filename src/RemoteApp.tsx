@@ -140,7 +140,9 @@ const RemoteApp: React.FC = () => {
 
     const handleUpdateSlotParam = (index: number, updates: Partial<SlotParams>) => {
         const newParams = [...slotParams];
-        newParams[index] = { ...newParams[index], ...updates };
+        const current = newParams[index];
+        if (!current) return;
+        newParams[index] = { ...current, ...updates };
         setSlotParams(newParams);
         sendMessage('CMD_UPDATE_SLOT_PARAM', { index, updates });
     };

@@ -6,6 +6,7 @@ import { ShaderThumbPlaceholder } from './ShaderThumbPlaceholder';
 import { useThumbnailManifest } from '../hooks/useThumbnailManifest';
 import { useSemanticShaderSearch } from '../hooks/useSemanticShaderSearch';
 import { substringFilter } from '../services/shaderSearch/semanticIndex';
+import { requestShaderWarmup } from '../renderer/shaderWarmupSink';
 import './ShaderGallery.css';
 
 export interface ShaderGalleryProps {
@@ -21,6 +22,9 @@ export interface ShaderGalleryProps {
 
 /** Number of grid items rendered initially / per "load more" batch. */
 const BATCH_SIZE = 60;
+
+/** Leading tiles whose pipelines are pre-compiled in idle time (#1314). */
+const WARM_TILES = 8;
 
 /** Author-only filter for shaders without a healthy thumbnail (see docs/THUMBNAIL_PIPELINE.md). */
 const SHOW_NEEDS_THUMB_FILTER = process.env.NODE_ENV !== 'production';
@@ -62,6 +66,14 @@ export const ShaderGallery: React.FC<ShaderGalleryProps> = ({ options, value, on
   useEffect(() => {
     setVisibleCount(BATCH_SIZE);
   }, [search, category, previewOnly, needsThumbOnly, semantic.hits]);
+
+  // Pre-compile what the user sees first; hovering a tile moves it to the front.
+  useEffect(() => {
+    requestShaderWarmup(filtered.slice(0, WARM_TILES).map(o => o.id));
+  }, [filtered]);
+  const warmHovered = useCallback((id: string) => {
+    requestShaderWarmup([id, ...filtered.slice(0, WARM_TILES).map(o => o.id)]);
+  }, [filtered]);
 
   const visible = filtered.slice(0, visibleCount);
   const hasMore = visibleCount < filtered.length;
@@ -163,6 +175,7 @@ export const ShaderGallery: React.FC<ShaderGalleryProps> = ({ options, value, on
                   key={opt.id}
                   className={`shader-gallery-card${opt.id === value ? ' selected' : ''}`}
                   onClick={() => onSelect(opt.id)}
+                  onMouseEnter={() => warmHovered(opt.id)}
                   title={opt.name}
                 >
                   <div className="shader-gallery-thumb-wrap">

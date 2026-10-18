@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: esca symbiotic-bacteria colony pulse with quorum-sensing sync; bioluminescent lateral-line photophore wave
+//  Upgraded: 2026-10-17
+//  Ideas: esca symbiotic-bacteria colony pulse with quorum-sensing sync; bioluminescent lateral-line photophore wave; dorsal illicium rod arching to the esca (bass sway); marine-snow parallax flakes lit from the projected lure; fused parasitic dwarf males hanging from the belly; esca as a true point light (inverse-square cyan on body/jaw, glassy tooth glints)
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-    zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
-    zoom_params: vec4<f32>,  // .x = Jaw Rotation, .y = Lure Intensity, .z = Void Density, .w = Fractal Rust
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Jaw Rotation, .y = Lure Intensity, .z = Void Density, .w = Fractal Rust
 
 // Per-frame audio / interaction state shared with map()
 var<private> g_bass: f32 = 0.0;
@@ -118,6 +100,90 @@ fn lateralLinePhotophores(pb: vec3<f32>, t: f32) -> f32 {
 }
 
 // ----------------------------------------------------------------
+// Native idea 3: illicium. The esca hangs from a real dorsal rod (the first
+// spine of the dorsal fin) that arches forward over the snout and sways with
+// the bass, instead of floating free in front of the head.
+// ----------------------------------------------------------------
+fn illiciumRod(pBody: vec3<f32>, lureC: vec3<f32>, t: f32) -> f32 {
+    let sway = sin(t * 0.9) * 0.25 * (1.0 + g_bass * 0.8);
+    let rootP = vec3<f32>(0.0, 1.35, -0.3);
+    let arch = vec3<f32>(sway, 2.75 + g_bass * 0.12, -1.35);
+    let a = sdCapsule(pBody, rootP, arch, 0.05);
+    let b = sdCapsule(pBody, arch, lureC, 0.032);
+    return smin(a, b, 0.08);
+}
+
+// Esca centre in world space (undoing the gaze rotation applied to the body).
+fn lureWorldPos(t: f32, gx: f32, gy: f32) -> vec3<f32> {
+    let lureC = vec3<f32>(0.0, 2.0 + sin(t) * 0.2, -2.5);
+    let yz = rot(gy) * vec2<f32>(lureC.y, lureC.z);
+    let xz = rot(gx) * vec2<f32>(lureC.x, yz.y);
+    return vec3<f32>(xz.x, yz.x, xz.y);
+}
+
+// Project the esca back to the screen (also undoing the camera ray rotation)
+// so the marine snow can be lit from it. Returns screen uv (y down).
+fn lureScreenUV(t: f32, gx: f32, gy: f32) -> vec2<f32> {
+    var dir = lureWorldPos(t, gx, gy) - vec3<f32>(0.0, 0.0, -8.0);
+    let dxz = rot(-gx) * vec2<f32>(dir.x, dir.z);
+    dir.x = dxz.x;
+    dir.z = dxz.y;
+    let dyz = rot(gy) * vec2<f32>(dir.y, dir.z);
+    dir.y = dyz.x;
+    dir.z = dyz.y;
+    let camXY = dir.xy / max(dir.z, 0.1) * 1.5;
+    return vec2<f32>(camXY.x, -camXY.y); // camera space is y-up, uv is y-down
+}
+
+// Native idea 4: marine snow. Three parallax layers of sinking detritus in the
+// void; each flake is lit by its distance to the esca, so the lure carves a
+// pool of light out of the dark.
+fn marineSnow(uv: vec2<f32>, lureUV: vec2<f32>, t: f32, gaze: vec2<f32>) -> f32 {
+    var acc = 0.0;
+    for (var L = 0; L < 3; L = L + 1) {
+        let fl = f32(L);
+        let scale = 9.0 + fl * 9.0;
+        let q = uv * scale - vec2<f32>(0.0, t * (0.35 + fl * 0.25)) - gaze * (0.6 + fl * 0.6) * scale * 0.1;
+        let cell = floor(q);
+        let h = hash33(vec3<f32>(cell, fl * 7.0));
+        let c = fract(q) - vec2<f32>(0.5) - (h.xy - vec2<f32>(0.5)) * 0.6;
+        let flake = smoothstep(0.09 + 0.04 * h.z, 0.0, length(c)) * step(0.45, h.z);
+        // flake centre back in uv space for the lure-distance lighting
+        let centreUV = (cell + vec2<f32>(0.5) + (h.xy - vec2<f32>(0.5)) * 0.6 + vec2<f32>(0.0, t * (0.35 + fl * 0.25)) + gaze * (0.6 + fl * 0.6) * scale * 0.1) / scale;
+        let dl = length(centreUV - lureUV);
+        let lit = 0.12 + exp(-dl * dl * 5.0);
+        acc = acc + flake * lit * (1.0 - fl * 0.25);
+    }
+    return acc;
+}
+
+// ----------------------------------------------------------------
+// Native idea 5: parasitic dwarf males. Ceratioid anglerfish males fuse
+// to the female for life and dwindle to a sac hanging from her belly. Two
+// small tapered bodies hang from the ventral rear, snouts merged into the
+// hull (smin), tails slowly flicking out of phase.
+// ----------------------------------------------------------------
+fn parasiticMales(pBody: vec3<f32>, t: f32) -> f32 {
+    var d = 1e10;
+    for (var k = 0; k < 2; k = k + 1) {
+        let sx = select(-1.0, 1.0, k == 0);
+        let ph = f32(k) * 2.1;
+        // hung low and long so they clear the head silhouette at the idle view
+        let a = vec3<f32>(sx * 0.7, -1.3, 0.3 + f32(k) * 0.35);
+        let flick = vec3<f32>(sin(t * 1.3 + ph) * 0.08, 0.0, cos(t * 1.3 + ph) * 0.05);
+        let b = a + vec3<f32>(sx * 0.25, -1.0, 0.15) + flick;
+        let pa = pBody - a;
+        let ba = b - a;
+        let h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+        // plump head tapering to the tail
+        let r = mix(0.14, 0.05, h);
+        let fin = sdCapsule(pBody, b, b + vec3<f32>(sx * 0.05, -0.12, 0.1) + flick * 1.5, 0.025);
+        d = min(d, min(length(pa - ba * h) - r, fin));
+    }
+    return d;
+}
+
+// ----------------------------------------------------------------
 // Procedural Geometries
 // ----------------------------------------------------------------
 
@@ -155,6 +221,12 @@ fn map(pos: vec3<f32>) -> MapData {
     let rustParam = u.zoom_params.w;
     let rustDisp = (sin(pBody.x * 20.0) * sin(pBody.y * 20.0) * sin(pBody.z * 20.0)) * 0.05 * rustParam;
     dBody += rustDisp;
+
+    // Native idea 3: dorsal rod carrying the esca (same tarnished body material)
+    let lureC = vec3<f32>(0.0, 2.0 + sin(t) * 0.2, -2.5);
+    dBody = smin(dBody, illiciumRod(pBody, lureC, t), 0.12);
+    // Native idea 5: fused males (same hull material, merged at the snout)
+    dBody = smin(dBody, parasiticMales(pBody, t), 0.15);
 
     res.d = dBody;
     res.mat_id = 0;
@@ -283,7 +355,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Ray setup
     let ro = vec3<f32>(0.0, 0.0, -8.0);
-    var rd = normalize(vec3<f32>(uv, 1.5));
+    // uv.y grows down the screen; camera space is y-up
+    var rd = normalize(vec3<f32>(uv.x, -uv.y, 1.5));
 
     // Mouse camera rotation
     let mx = (u.zoom_config.y * 2.0 - 1.0) * 0.5;
@@ -347,6 +420,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         col = matCol * diff + spec * 0.5;
         col += m.emis;
 
+        // Native idea 6: the esca is a real light. Inverse-square cyan falloff
+        // on hull/jaw/fins; the glassy teeth catch a sharp glint from it.
+        if (m.mat_id == 0 || m.mat_id == 2 || m.mat_id == 4) {
+            let gz = vec2<f32>((u.zoom_config.y * 2.0 - 1.0) * 0.5, (u.zoom_config.z * 2.0 - 1.0) * 0.5);
+            let Lw = lureWorldPos(time, gz.x, gz.y) - p;
+            let Ld = normalize(Lw);
+            let att = 1.0 / (1.0 + dot(Lw, Lw) * 0.8);
+            let lureLvl = u.zoom_params.y * (0.85 + g_bass * 0.35 + g_shock * 0.5);
+            let lureDiff = max(dot(n, Ld), 0.0);
+            var lureLit = vec3<f32>(0.1, 0.85, 1.0) * lureDiff * att * 0.55;
+            if (m.mat_id == 2) {
+                lureLit += vec3<f32>(0.7, 1.0, 1.0) * pow(max(dot(refl, Ld), 0.0), 48.0) * att * 2.5;
+            }
+            col += lureLit * lureLvl;
+        }
+
         // Lateral-line photophores on the body flanks
         if (m.mat_id == 0) {
             let photo = lateralLinePhotophores(m.bp, time);
@@ -364,6 +453,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col += accumEmis;
     col += vec3<f32>(0.1, 0.6, 0.8) * ringGlow * 0.35 * (0.5 + u.zoom_params.y * 0.3);
 
+    // Native idea 4: marine snow, lit from the projected esca; void only
+    let gazeXY = vec2<f32>((u.zoom_config.y * 2.0 - 1.0) * 0.5, (u.zoom_config.z * 2.0 - 1.0) * 0.5);
+    let lureUV = lureScreenUV(time, gazeXY.x, gazeXY.y);
+    let snow = marineSnow(uv, lureUV, time, gazeXY) * select(1.0, 0.0, hit);
+    col += vec3<f32>(0.25, 0.85, 1.0) * snow * 0.5 * (0.4 + u.zoom_params.y * 0.6) * (1.0 + g_treble * 0.3);
+
     // Bioluminescent afterglow: exact previous-frame load
     let dims = vec2<i32>(textureDimensions(dataTextureC));
     let pc = clamp(coord, vec2<i32>(0), dims - vec2<i32>(1));
@@ -371,7 +466,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col = max(col, previous.rgb * (0.82 + g_mids * 0.06) * 0.35);
 
     col = acesToneMap(col * (1.0 + g_bass * 0.2));
-    let glowAlpha = clamp(dot(accumEmis, vec3<f32>(0.3, 0.5, 0.2)) + ringGlow * 0.3, 0.0, 1.0);
+    let glowAlpha = clamp(dot(accumEmis, vec3<f32>(0.3, 0.5, 0.2)) + ringGlow * 0.3 + snow * 0.2, 0.0, 1.0);
     let finalAlpha = clamp(alpha * (1.0 - absorb * 0.5) + glowAlpha, 0.0, 1.0);
     let finalColor = vec4<f32>(col, finalAlpha);
 

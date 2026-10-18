@@ -2,18 +2,74 @@
   "id": "chromatographic-fluid",
   "name": "Chromatographic Fluid",
   "url": "shaders/chromatographic-force.wgsl",
-  "description": "Physics Lab — RGB dyes with distinct viscosity in a shared wind field. Hold to paint, click solvent splashes, audio gusts. graph · 7 passes · rgba32float.",
+  "description": "Physics Lab \u2014 RGB dyes with distinct viscosity in a shared wind field. Red lags and blue leads along the wind, and a pale solvent front marks the downwind edge. Hold to paint, click solvent splashes, audio gusts. graph \u00b7 7 passes \u00b7 rgba32float.",
   "requiresRgba32Float": true,
   "multipass": {
     "graph": {
       "maxPassesPerFrame": 8,
       "nodes": [
-        { "id": "force", "entry": "chromatographic-force", "reads": ["dataC"], "writes": ["dataA"] },
-        { "id": "advect", "entry": "chromatographic-advect", "reads": ["dataC"], "writes": ["dataA"] },
-        { "id": "diffuse", "entry": "chromatographic-diffuse", "reads": ["dataC"], "writes": ["dataA"], "repeat": 2 },
-        { "id": "interact", "entry": "chromatographic-interact", "reads": ["dataC"], "writes": ["dataA"] },
-        { "id": "phase", "entry": "chromatographic-phase", "reads": ["dataC"], "writes": ["dataA"] },
-        { "id": "render", "entry": "chromatographic-render", "reads": ["dataC"], "writes": ["color", "dataA"] }
+        {
+          "id": "force",
+          "entry": "chromatographic-force",
+          "reads": [
+            "dataC"
+          ],
+          "writes": [
+            "dataA"
+          ]
+        },
+        {
+          "id": "advect",
+          "entry": "chromatographic-advect",
+          "reads": [
+            "dataC"
+          ],
+          "writes": [
+            "dataA"
+          ]
+        },
+        {
+          "id": "diffuse",
+          "entry": "chromatographic-diffuse",
+          "reads": [
+            "dataC"
+          ],
+          "writes": [
+            "dataA"
+          ],
+          "repeat": 2
+        },
+        {
+          "id": "interact",
+          "entry": "chromatographic-interact",
+          "reads": [
+            "dataC"
+          ],
+          "writes": [
+            "dataA"
+          ]
+        },
+        {
+          "id": "phase",
+          "entry": "chromatographic-phase",
+          "reads": [
+            "dataC"
+          ],
+          "writes": [
+            "dataA"
+          ]
+        },
+        {
+          "id": "render",
+          "entry": "chromatographic-render",
+          "reads": [
+            "dataC"
+          ],
+          "writes": [
+            "color",
+            "dataA"
+          ]
+        }
       ]
     }
   },
@@ -26,7 +82,7 @@
       "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
-      "description": "R sticky vs B runny — how hard the dyes chromatograph apart"
+      "description": "R sticky vs B runny \u2014 how hard the dyes chromatograph apart"
     },
     {
       "id": "wind",
@@ -46,7 +102,7 @@
       "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
-      "description": "Phase change — evaporate hot dye, condense cool solvent"
+      "description": "Phase change \u2014 evaporate hot dye, condense cool solvent"
     },
     {
       "id": "dyeInject",
@@ -59,12 +115,6 @@
       "description": "Hold-paint and click-splash amount"
     }
   ],
-  "updatedParams": [
-    { "index": 0, "name": "Viscosity Split", "default": 0.55, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 1, "name": "Wind", "default": 0.45, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 2, "name": "Temperature", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 3, "name": "Dye Inject", "default": 0.6, "min": 0, "max": 1, "step": 0.01 }
-  ],
   "feedbackPacking": "A/C = separated dye RGB and solvent temperature; all seven graph dispatches hand off through A only",
   "features": [
     "simulation",
@@ -73,7 +123,13 @@
     "physics",
     "mouse-driven",
     "audio-reactive",
-    "interactive", "exact-load-feedback", "a-only-feedback", "held-drag", "click-reactive", "aces-tone-map", "semantic-alpha"
+    "interactive",
+    "exact-load-feedback",
+    "a-only-feedback",
+    "held-drag",
+    "click-reactive",
+    "aces-tone-map",
+    "semantic-alpha"
   ],
   "tags": [
     "fluid",
@@ -81,5 +137,43 @@
     "simulation",
     "physics",
     "showcase"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Viscosity Split",
+          "default": 0.55,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Wind",
+          "default": 0.45,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Temperature",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Dye Inject",
+          "default": 0.6,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

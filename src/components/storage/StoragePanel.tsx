@@ -43,7 +43,7 @@ export const StoragePanel: React.FC<StorageBrowserProps> = ({
   const handleShaderRate = useShaderRating(storage.rateShader, storage.refreshShaders);
 
   useEffect(() => {
-    if (storage.isConnected) storage.refreshAll();
+    if (storage.isConnected) void storage.refreshAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storage.isConnected]);
 

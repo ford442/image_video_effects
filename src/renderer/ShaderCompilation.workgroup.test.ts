@@ -76,13 +76,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {}
   });
 
   it('defaults to 16x16 when no workgroup size can be parsed', () => {
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     expect(parseWorkgroupSize('fn main() {}')).toEqual({ x: 16, y: 16 });
     warn.mockRestore();
   });
 
   it('unparsed fallback matches workgroup_dispatch.json contract', () => {
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     expect(parseWorkgroupSize('fn main() {}')).toEqual(workgroupDispatchContract.unparsedFallback);
     warn.mockRestore();
   });

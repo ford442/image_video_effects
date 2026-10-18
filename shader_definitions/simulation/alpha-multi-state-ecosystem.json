@@ -23,7 +23,6 @@
     {
       "id": "growthRate1",
       "name": "Species 1 Growth",
-      "type": "float",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -32,7 +31,6 @@
     {
       "id": "growthRate2",
       "name": "Species 2 Growth",
-      "type": "float",
       "default": 0.4,
       "min": 0,
       "max": 1,
@@ -41,7 +39,6 @@
     {
       "id": "diffusion",
       "name": "Diffusion Rate",
-      "type": "float",
       "default": 0.3,
       "min": 0,
       "max": 1,
@@ -50,41 +47,6 @@
     {
       "id": "toxinStrength",
       "name": "Toxin Strength",
-      "type": "float",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
-  ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Species 1 Growth",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Species 2 Growth",
-      "default": 0.4,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Diffusion Rate",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Toxin Strength",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -92,5 +54,43 @@
     }
   ],
   "feedbackPacking": "A/C = species one, species two, shared resource, toxin",
-  "updated": true
+  "updated": true,
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Species 1 Growth",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Species 2 Growth",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Diffusion Rate",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Toxin Strength",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

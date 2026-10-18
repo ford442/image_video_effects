@@ -15,46 +15,17 @@
     16,
     1
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Weave Scale",
-      "default": 0.46,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Twist",
-      "default": 0.4,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Shimmer",
-      "default": 0.55,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Void Depth",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
-  ],
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
   "id": "gen-celestial-weave",
   "url": "shaders/gen-celestial-weave.wgsl",
-  "features": [],
+  "features": [
+    "audio-reactive",
+    "temporal",
+    "depth-aware",
+    "upgraded-rgba"
+  ],
   "params": [
     {
       "id": "weave_scale",
@@ -92,5 +63,43 @@
       "step": 0.01,
       "mapping": "zoom_params.w"
     }
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Weave Scale",
+          "default": 0.46,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Twist",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Shimmer",
+          "default": 0.55,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Void Depth",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

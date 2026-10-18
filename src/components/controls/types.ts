@@ -3,6 +3,7 @@ import type { AIStatus, AutoTransitionConfig } from '../../types/aiVj';
 import { VideoRecord } from '../../syncTypes';
 import type { SharedChain } from '../../services/layerChainShare';
 import type { RenderQualityMode } from '../../config/performancePolicy';
+import type { ImageRecord } from '../../types/aiVj';
 
 export interface ShaderCoordData {
     coordinate: number;
@@ -30,6 +31,9 @@ export interface ControlsProps {
     onLoadModel: () => void;
     isModelLoaded: boolean;
     availableModes: ShaderEntry[];
+    imageManifest?: ImageRecord[];
+    currentImageUrl?: string;
+    onLoadProjectImage?: (url: string) => Promise<void>;
     inputSource: InputSource;
     setInputSource: (source: InputSource) => void;
     videoList: VideoRecord[];

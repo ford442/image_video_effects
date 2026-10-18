@@ -3,30 +3,12 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-15
-//  Ideas: fold-generation hopper terraces; alternating-parity twin-boundary seams
+//  Upgraded: 2026-10-17
+//  Ideas: fold-generation hopper terraces; alternating-parity twin-boundary seams; basal cleavage sheen from fold faces; treble micro-serration on later folds; ledge-cast step shadows down the hopper stairs; fresh-cleave silver fronts that strip and regrow the oxide film
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Complexity, .y = Iridescence, .z = Twist, .w = Speed
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Complexity, .y = Iridescence, .z = Twist, .w = Speed
 
 const PI: f32 = 3.14159265359;
 const MAX_STEPS: i32 = 100;
@@ -50,6 +32,8 @@ struct MapResult {
     d: f32,
     terrace: f32,
     twin: f32,
+    cleavage: f32,
+    serration: f32,
 };
 
 // Fractal folding space
@@ -61,6 +45,7 @@ fn map(p: vec3<f32>) -> MapResult {
     // Canonical three-band audio; no reserved extraBuffer pseudo-audio.
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
     let audioMod = 1.0 + bass * 0.32 + mids * 0.12;
 
     if (twist > 0.0) {
@@ -84,6 +69,8 @@ fn map(p: vec3<f32>) -> MapResult {
     var scale = 1.0;
     var terraceDistance = MAX_DIST;
     var twinSignal = 0.0;
+    var cleavageSignal = 0.0;
+    var serrationSignal = 0.0;
 
     // Bismuth-like folding
     for (var i = 0; i < 8; i++) {
@@ -117,8 +104,38 @@ fn map(p: vec3<f32>) -> MapResult {
         let ledgeWidth = mix(0.105, 0.026, generation);
         let outer = sdBox(pos, vec3<f32>(0.5 + ledgeWidth));
         let inner = sdBox(pos, vec3<f32>(max(0.08, 0.5 - ledgeWidth * 0.62)));
-        let ledge = max(outer, -inner) / scale;
+        let faceAbs = abs(pos);
+        let faceMax = max(faceAbs.x, max(faceAbs.y, faceAbs.z));
+        let faceMin = min(faceAbs.x, min(faceAbs.y, faceAbs.z));
+        let faceMid = faceAbs.x + faceAbs.y + faceAbs.z - faceMax - faceMin;
+
+        // Idea 4 — later fold generations grow tiny saw teeth along their
+        // edges. Early generations skip the work; a triangle wave avoids
+        // another transcendental in this hot map.
+        var lateFold = 0.0;
+        var edgeBand = 0.0;
+        var tooth = 0.0;
+        var serratedShell = max(outer, -inner);
+        if (i >= 4) {
+            lateFold = smoothstep(0.42, 1.0, generation);
+            edgeBand = smoothstep(0.27, 0.48, faceMid);
+            tooth = 1.0 - abs(fract(dot(pos, vec3<f32>(1.0, 1.0, -1.0)) * 23.0
+                                    + f32(i) * 0.37) * 2.0 - 1.0);
+            let toothDepth = mix(0.010, 0.032, clamp(treble, 0.0, 1.0));
+            serratedShell -= toothDepth * lateFold * edgeBand * tooth;
+        }
+        let ledge = serratedShell / scale;
         terraceDistance = min(terraceDistance, ledge);
+
+        // Idea 3 geometry — broad fold-face interiors identify basal cleavage
+        // planes; the view/light-dependent sheen itself is applied in shading.
+        let faceInterior = smoothstep(0.045, 0.22, faceMax - faceMid);
+        let onLedge = 1.0 - smoothstep(0.002, 0.024, abs(ledge));
+        cleavageSignal = max(cleavageSignal, faceInterior * onLedge);
+        serrationSignal = max(
+            serrationSignal,
+            lateFold * edgeBand * tooth * onLedge * (0.35 + 0.65 * clamp(treble, 0.0, 1.0))
+        );
 
         pos = pos * 2.0;
         scale = scale * 2.0;
@@ -127,7 +144,21 @@ fn map(p: vec3<f32>) -> MapResult {
     let coreDistance = sdBox(pos, vec3<f32>(0.5)) / scale;
     let distance = min(coreDistance, terraceDistance);
     let terraceSignal = 1.0 - smoothstep(0.002, 0.022, abs(terraceDistance));
-    return MapResult(distance, terraceSignal, twinSignal);
+    return MapResult(distance, terraceSignal, twinSignal, cleavageSignal, serrationSignal);
+}
+
+// Idea 5 — short soft-shadow march toward the key light, so each upper
+// hopper ledge throws a crisp step shadow onto the terrace below it.
+fn ledgeShadow(ro: vec3<f32>, rd: vec3<f32>) -> f32 {
+    var res = 1.0;
+    var t = 0.02;
+    for (var i = 0; i < 10; i++) {
+        let h = map(ro + rd * t).d;
+        res = min(res, 10.0 * h / t);
+        t += clamp(h, 0.015, 0.16);
+        if (res < 0.02 || t > 1.6) { break; }
+    }
+    return clamp(res, 0.0, 1.0);
 }
 
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
@@ -206,11 +237,20 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let h = normalize(lightDir + v);
         let spec = pow(max(dot(n, h), 0.0), 32.0);
 
+        // Idea 6 — fresh-cleave fronts: periodic slabs sweep toward the
+        // camera; just behind each front the oxide is stripped to bare
+        // silver-pink bismuth, and the film (and its interference order)
+        // regrows with age until the next front arrives. Bass widens the cleave.
+        let oxideAge = fract(p.z * 0.2 + t * 0.09);
+        let filmGrowth = smoothstep(0.0, 0.16, oxideAge);
+        let freshEdge = 1.0 - smoothstep(0.0, 0.05 + clamp(plasmaBuffer[0].x, 0.0, 1.0) * 0.03, oxideAge);
+        let bareMetal = vec3<f32>(0.86, 0.78, 0.80);
+
         // Iridescent coloring
         let iridescence = clamp(u.zoom_params.y, 0.0, 1.0);
         // Base color based on normal, view, and depth
-        let phase = ndotv * 2.0 + length(p) * 0.1;
-        let albedo = palette(phase, iridescence);
+        let phase = ndotv * 2.0 + length(p) * 0.1 + oxideAge * 0.18;
+        let albedo = mix(bareMetal, palette(phase, iridescence), filmGrowth);
         let terraceFilm = palette(
             phase + surface.terrace * 0.17 + plasmaBuffer[0].y * 0.08,
             iridescence
@@ -224,17 +264,35 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let aoStep = 0.1;
         let ao = clamp(map(p + n * aoStep).d / aoStep, 0.0, 1.0);
 
-        col = albedo * (ndotl * 0.8 + 0.2) * ao + vec3<f32>(spec) * 0.5;
+        // Pointable Idea 5: ledge-cast step shadows on the direct light only.
+        var lit = 1.0;
+        if (ndotl > 0.0) { lit = ledgeShadow(p + n * 0.004, lightDir); }
+        let stepShadow = mix(0.35, 1.0, lit);
+        col = albedo * (ndotl * 0.8 * stepShadow + 0.2) * ao + vec3<f32>(spec) * 0.5 * stepShadow;
         // Pointable Idea 1: broad outer-generation hopper ledges catch film.
         col += terraceFilm * surface.terrace * (0.3 + spec * 0.65);
         // Pointable Idea 2: alternating fold domains share spectral seams.
         col += twinFilm * surface.twin * (0.22 + pow(1.0 - ndotv, 3.0));
+        // Pointable Idea 3: basal cleavage sheen follows broad fold faces,
+        // brightening only where the geometric normal resolves to one face.
+        let foldFace = smoothstep(0.68, 0.96, max(abs(n.x), max(abs(n.y), abs(n.z))));
+        let cleavageLobe = surface.cleavage * foldFace
+            * (0.35 * pow(1.0 - ndotv, 2.0) + 0.65 * pow(max(dot(n, h), 0.0), 12.0));
+        col += mix(vec3<f32>(0.72, 0.82, 0.92), terraceFilm, 0.42) * cleavageLobe * 0.62;
+        // Pointable Idea 4: treble-cut late-generation teeth catch a fine rim.
+        col += twinFilm * surface.serration * (0.08 + 0.22 * plasmaBuffer[0].z);
+        // Pointable Idea 6: film terms fade in with oxide age; the cleave
+        // edge itself catches a bright bare-metal glint.
+        col = mix(albedo * (ndotl * 0.8 * stepShadow + 0.2) * ao + vec3<f32>(spec) * 0.5 * stepShadow,
+                  col, filmGrowth);
+        col += bareMetal * freshEdge * (0.18 + spec * 0.8) * stepShadow;
 
         // Fog
         col = mix(col, vec3<f32>(0.05, 0.05, 0.1), 1.0 - exp(-0.02 * d0 * d0));
         depth = clamp(1.0 - d0 / MAX_DIST, 0.0, 1.0);
         alpha = clamp(
-            0.58 + depth * 0.28 + surface.terrace * 0.08 + surface.twin * 0.06,
+            0.58 + depth * 0.28 + surface.terrace * 0.08 + surface.twin * 0.06
+                + surface.cleavage * 0.025 + surface.serration * 0.025,
             0.0,
             1.0
         );

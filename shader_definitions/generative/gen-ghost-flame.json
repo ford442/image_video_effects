@@ -9,50 +9,48 @@
     "blackbody",
     "ethereal"
   ],
-  "description": "Fluid advection flame simulation with temperature-based alpha translucency. Hot regions are bright and slightly translucent, cool regions fade to transparent. Simplex noise advection with upward velocity and vorticity confinement creates ethereal ghost-fire, with a wick column, blue ignition chemiluminescence, buoyant puffing pinch-off that sheds flame packets, and schlieren heat-haze fringes in the surrounding air.",
+  "description": "Fluid advection flame simulation with temperature-based alpha translucency. Hot regions are bright and slightly translucent, cool regions fade to transparent. Simplex noise advection with upward velocity and vorticity confinement creates ethereal ghost-fire, with a wick column, blue ignition chemiluminescence, buoyant puffing pinch-off that sheds flame packets, and schlieren heat-haze fringes in the surrounding air. An inner blue cone hugs the wick, and soot streaks the aged, spent gas.",
   "workgroup_size": [
     16,
     16,
     1
   ],
   "params": [
-    { "id": "flame-height", "name": "Flame Height", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
-    { "id": "turbulence", "name": "Turbulence", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
-    { "id": "cooling-rate", "name": "Cooling Rate", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
-    { "id": "diffusion", "name": "Diffusion", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
-  ],
-  "updatedParams": [
     {
-      "index": 0,
+      "id": "flame-height",
       "name": "Flame Height",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x"
     },
     {
-      "index": 1,
+      "id": "turbulence",
       "name": "Turbulence",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y"
     },
     {
-      "index": 2,
+      "id": "cooling-rate",
       "name": "Cooling Rate",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z"
     },
     {
-      "index": 3,
+      "id": "diffusion",
       "name": "Diffusion",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w"
     }
   ],
   "supportsDepth": true,
@@ -70,5 +68,43 @@
     "semantic-alpha",
     "aces-tone-map"
   ],
-  "feedbackPacking": "dataTextureA/C = temperature, fuel, horizontal velocity, age; extraBuffer[133..134] = smoothed bass/RMS envelopes"
+  "feedbackPacking": "dataTextureA/C = temperature, fuel, horizontal velocity, age; extraBuffer[133..134] = smoothed bass/RMS envelopes",
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Flame Height",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Turbulence",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Cooling Rate",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Diffusion",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

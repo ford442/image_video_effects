@@ -17,43 +17,41 @@
     1
   ],
   "params": [
-    { "id": "bolt-intensity", "name": "Bolt Intensity", "default": 0.75, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x" },
-    { "id": "flicker-speed", "name": "Flicker Speed", "default": 0.4, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y" },
-    { "id": "symmetry", "name": "Symmetry", "default": 0.5, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z" },
-    { "id": "color-shift", "name": "Color Shift", "default": 0, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w" }
-  ],
-  "updatedParams": [
     {
-      "index": 0,
+      "id": "bolt-intensity",
       "name": "Bolt Intensity",
       "default": 0.75,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x"
     },
     {
-      "index": 1,
+      "id": "flicker-speed",
       "name": "Flicker Speed",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y"
     },
     {
-      "index": 2,
+      "id": "symmetry",
       "name": "Symmetry",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z"
     },
     {
-      "index": 3,
+      "id": "color-shift",
       "name": "Color Shift",
       "default": 0,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w"
     }
   ],
   "supportsDepth": true,
@@ -65,5 +63,43 @@
     "audio-reactive",
     "mouse-driven",
     "upgraded-rgba"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Bolt Intensity",
+          "default": 0.75,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Flicker Speed",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Symmetry",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Color Shift",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

@@ -4,8 +4,8 @@
 //  Features: sierpinski, chaos-game, 3d-fractal, audio-reactive, mouse-interactive, semantic-alpha, upgraded-rgba
 //  Complexity: Medium-High
 //  Created: 2026-05-31 — Kimi Agent (Bright batch)
-//  Upgraded: 2026-09-15
-//  Ideas: attractor-biased chaos; repeat-vertex corner flares; iteration-age hue; opposite-face chroma
+//  Upgraded: 2026-09-15, 2026-09-27
+//  Ideas: attractor-biased chaos; repeat-vertex corner flares; iteration-age hue; opposite-face chroma; midpoint cavity; edge filament
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -228,10 +228,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     farIdx = select(farIdx, 3u, dv3 > farD);
     let age = f32(i) / max(f32(numPoints), 1.0);
     let hue = fract(f32(vi) * 0.12 + f32(farIdx) * 0.25 + hueBase + rp.y * 0.15 + age * 0.18);
+    // Idea: midpoint cavity — the chaos game never fills the tet hole.
+    // Nearly equal distances to all four vertices is that open center.
+    let dMean = (dv0 + dv1 + dv2 + dv3) * 0.25;
+    let spread = abs(dv0 - dMean) + abs(dv1 - dMean) + abs(dv2 - dMean) + abs(dv3 - dMean);
+    let cavity = smoothstep(0.55, 0.08, spread);
+    // Idea: edge filament — two vertices close, the other two far.
+    let edge01 = exp(-((dv0 + dv1) * 2.5)) * smoothstep(0.2, 0.9, min(dv2, dv3));
+    let edge23 = exp(-((dv2 + dv3) * 2.5)) * smoothstep(0.2, 0.9, min(dv0, dv1));
+    let edge02 = exp(-((dv0 + dv2) * 2.5)) * smoothstep(0.2, 0.9, min(dv1, dv3));
+    let edge13 = exp(-((dv1 + dv3) * 2.5)) * smoothstep(0.2, 0.9, min(dv0, dv2));
+    let edge03 = exp(-((dv0 + dv3) * 2.5)) * smoothstep(0.2, 0.9, min(dv1, dv2));
+    let edge12 = exp(-((dv1 + dv2) * 2.5)) * smoothstep(0.2, 0.9, min(dv0, dv3));
+    let edgeFil = max(edge01, max(edge23, max(edge02, max(edge13, max(edge03, edge12)))));
+    let shade = (1.0 - cavity * 0.72) * (1.0 + edgeFil * 1.6);
     // Point twinkle keeps the cloud from looking like flat splats.
     let twinkle = 0.85 + 0.3 * hashf(f32(seedU) + f32(i) * 3.7);
-    acc += palette(hue) * (depthWeight * influence * twinkle * (1.0 + repeatCorner * 2.2));
-    glowAcc += depthWeight * influence * (1.0 + repeatCorner);
+    acc += palette(hue) * (depthWeight * influence * twinkle * (1.0 + repeatCorner * 2.2) * shade);
+    glowAcc += depthWeight * influence * (1.0 + repeatCorner) * shade;
     count += influence;
     nearestZ = min(nearestZ, projZ);
   }

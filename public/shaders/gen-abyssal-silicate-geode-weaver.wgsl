@@ -1,7 +1,12 @@
-// ----------------------------------------------------------------
-// Abyssal Silicate Geode-Weaver
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Abyssal Silicate Geode-Weaver
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, click-reactive, temporal, depth-aware, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-27
+//  Ideas: agate banding from Voronoi F1 rings; dew-bead knots strung on the threads; thread thickness feeds thin-film phase
+//  A packing: HDR history RGB (max(col, prev*0.9)) + semantic alpha; ACES on writeTexture only
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -62,6 +67,31 @@ fn voronoi(x: vec3<f32>) -> vec2<f32> {
     return m;
 }
 
+// IDEA 1 helper: same F1/F2 search as voronoi(), plus a hash of the nearest cell.
+fn voronoiCell(x: vec3<f32>) -> vec3<f32> {
+    let n = floor(x);
+    let f = fract(x);
+    var m = vec2<f32>(8.0);
+    var cellId = 0.0;
+    for(var k = -1; k <= 1; k = k + 1) {
+        for(var j = -1; j <= 1; j = j + 1) {
+            for(var i = -1; i <= 1; i = i + 1) {
+                let g = vec3<f32>(f32(i), f32(j), f32(k));
+                let o = hash33(n + g);
+                let d = g + o - f;
+                let d2 = dot(d, d);
+                if(d2 < m.x) {
+                    m = vec2<f32>(d2, m.x);
+                    cellId = o.x;
+                } else if(d2 < m.y) {
+                    m.y = d2;
+                }
+            }
+        }
+    }
+    return vec3<f32>(m.x, m.y, cellId);
+}
+
 fn smin(a: f32, b: f32, k: f32) -> f32 {
     let h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
     return mix(b, a, h) - k * h * (1.0 - h);
@@ -71,15 +101,20 @@ fn gyroid(p: vec3<f32>) -> f32 {
     return dot(sin(p), cos(p.yzx));
 }
 
-fn map(p: vec3<f32>, time: f32, mouse_pos: vec3<f32>) -> vec2<f32> {
-    let threadDensity = u.zoom_params.x; // mapped: (1.0, 0.1, 3.0) default 1.0
-    let geodeScale = u.zoom_params.y;    // mapped: (2.5, 0.5, 5.0) default 2.5
+fn gyroidGrad(p: vec3<f32>) -> vec3<f32> {
+    let s = sin(p);
+    let c = cos(p);
+    return vec3<f32>(
+        c.x * c.y - s.z * s.x,
+        c.y * c.z - s.x * s.y,
+        c.z * c.x - s.y * s.z
+    );
+}
 
-    // Outer Geode Cavity
-    let v = voronoi(p * geodeScale);
-    let crystalDist = (v.y - v.x) * 0.5 - 0.1;
-    let sphereDist = length(p) - 2.5;
-    let geodeDist = max(sphereDist, -crystalDist);
+// Warped / rotating domain in which the gyroid threads are static. Shared by
+// map() and the IDEA 2 bead lattice so pearls ride the threads.
+fn threadDomain(p: vec3<f32>, time: f32, mouse_pos: vec3<f32>) -> vec3<f32> {
+    let threadDensity = u.zoom_params.x;
 
     // Silicate Threads (domain-warped gyroid)
     var thread_p = p * threadDensity;
@@ -97,8 +132,21 @@ fn map(p: vec3<f32>, time: f32, mouse_pos: vec3<f32>) -> vec2<f32> {
     thread_p.x = rotatedXZ.x;
     thread_p.z = rotatedXZ.y;
     thread_p = thread_p + vec3<f32>(sin(time * 2.2), cos(time * 1.7), -time * 3.2) * 0.55;
+    return thread_p;
+}
 
-    var threadDist = (abs(gyroid(thread_p)) - 0.05) / threadDensity;
+fn map(p: vec3<f32>, time: f32, mouse_pos: vec3<f32>) -> vec2<f32> {
+    let threadDensity = u.zoom_params.x; // mapped: (1.0, 0.1, 3.0) default 1.0
+    let geodeScale = u.zoom_params.y;    // mapped: (2.5, 0.5, 5.0) default 2.5
+
+    // Outer Geode Cavity
+    let v = voronoi(p * geodeScale);
+    let crystalDist = (v.y - v.x) * 0.5 - 0.1;
+    let sphereDist = length(p) - 2.5;
+    let geodeDist = max(sphereDist, -crystalDist);
+
+    let thread_p = threadDomain(p, time, mouse_pos);
+    let threadDist = (abs(gyroid(thread_p)) - 0.05) / threadDensity;
 
     // Combine and identify material (1 = geode, 2 = threads)
     let k = 0.2;
@@ -127,6 +175,15 @@ fn getPalette(t: f32) -> vec3<f32> {
     let c = vec3<f32>(1.0, 1.0, 1.0);
     let d = vec3<f32>(0.263, 0.416, 0.557);
     return a + b * cos(TAU * (c * t + d));
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -186,6 +243,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     var col = vec3<f32>(0.01, 0.02, 0.05); // Background
+    var alphaCover = 0.2; // void haze floor; surfaces raise it
 
     if (t < 20.0) {
         let n = calcNormal(p, time, mouse_pos);
@@ -204,14 +262,52 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let pulse = ((sin(time * 5.0 - p.y * 2.0) * 0.5 + 0.5) * audio + shardPulse * (0.25 + audioBands.z)) * acousticGlow;
 
             col = baseCol + edgeGlow + sss + pulse * vec3<f32>(0.2, 0.6, 1.0);
+
+            // IDEA 1: agate / chalcedony banding. Rings are contours of the
+            // Voronoi nearest-seed distance F1 (F2-F1 is pinned by the SDF),
+            // phase-offset per cell, colour-zoned blue at the seed -> rose at the rim.
+            let vc = voronoiCell(p * u.zoom_params.y);
+            let seedR = sqrt(max(vc.x, 0.0));
+            let bandPhase = seedR * 11.0 + vc.z * TAU;
+            let bandRing = smoothstep(0.35, 0.85, 0.5 + 0.5 * sin(bandPhase));
+            let zoneCol = mix(vec3<f32>(0.05, 0.16, 0.36), vec3<f32>(0.62, 0.20, 0.36), smoothstep(0.1, 0.75, seedR));
+            col = mix(col, col * 0.55 + zoneCol * 0.9, bandRing * 0.75);
+            alphaCover = 0.55 + 0.25 * bandRing;
         } else {
             // Silicate threads
             let runner = sin(p.z * 9.0 - time * 18.0 + gyroid(p * 2.0));
-            let iridescenceCol = getPalette(fresnel + time * 0.2 + p.z * 0.1 + runner * 0.12);
+            // IDEA 2: dew-bead knots on a jittered lattice in the thread's own
+            // (rotating, warped) domain, so pearls ride the threads.
+            let tp = threadDomain(p, time, mouse_pos);
+            let bq = tp * 1.6;
+            let bcell = hash33(floor(bq));
+            let bf = fract(bq) - 0.5 - (bcell - 0.5) * 0.3;
+            let bRad = 0.17 + 0.12 * bcell.x;
+            let bDist = length(bf);
+            let bead = 1.0 - smoothstep(bRad * 0.55, bRad, bDist);
+
+            // IDEA 3: physical sheet thickness (0.1 / |grad gyroid|) plus bead swell
+            // feeds the thin-film phase.
+            let thickness = 0.1 / max(length(gyroidGrad(tp)), 0.25) + bead * 0.12;
+
+            let iridescenceCol = getPalette(fresnel + time * 0.2 + p.z * 0.1 + runner * 0.12 + thickness * 2.2);
             let baseCol = vec3<f32>(0.8, 0.9, 1.0);
 
             col = mix(baseCol, iridescenceCol, iridescence);
             col = col + fresnel * 0.5;
+
+            // Pearl dome normal (bead-space offset rotated back into world), then specular.
+            var bw = bf;
+            let unrot = rot2D(-time * 1.35) * bw.xz;
+            bw = vec3<f32>(unrot.x, bw.y, unrot.y);
+            let dome = (bw - n * dot(bw, n)) / max(bRad, 0.05);
+            let nb = normalize(n + dome * 0.9 * bead);
+            let lightDir = normalize(vec3<f32>(0.4, 0.7, 0.6));
+            let halfV = normalize(lightDir + view_dir);
+            let spec = pow(max(dot(nb, halfV), 0.0), 48.0);
+            let pearlCol = vec3<f32>(0.85, 0.93, 1.0) * (0.3 + 1.6 * spec) + iridescenceCol * 0.25 * iridescence;
+            col = mix(col, pearlCol, bead * 0.8);
+            alphaCover = 0.8 + 0.2 * bead;
         }
 
         // Fog
@@ -237,10 +333,24 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let centered = screenUV - 0.5;
     let tangent = vec2<f32>(-centered.y, centered.x);
     let historyUV = clamp(screenUV - tangent * 0.014 - normalize(centered + vec2<f32>(0.0001)) * 0.003, vec2<f32>(0.002), vec2<f32>(0.998));
-    let previous = textureSampleLevel(dataTextureC, u_sampler, historyUV, 0.0).rgb;
+    // Exact bilinear history read (rgba32float is not filterable): 4 clamped textureLoads.
+    let cDim = textureDimensions(dataTextureC);
+    let cMax = vec2<i32>(i32(cDim.x) - 1, i32(cDim.y) - 1);
+    let hp = historyUV * vec2<f32>(f32(cDim.x), f32(cDim.y)) - vec2<f32>(0.5);
+    let hi = vec2<i32>(floor(hp));
+    let hf = fract(hp);
+    let c00 = textureLoad(dataTextureC, clamp(hi, vec2<i32>(0), cMax), 0).rgb;
+    let c10 = textureLoad(dataTextureC, clamp(hi + vec2<i32>(1, 0), vec2<i32>(0), cMax), 0).rgb;
+    let c01 = textureLoad(dataTextureC, clamp(hi + vec2<i32>(0, 1), vec2<i32>(0), cMax), 0).rgb;
+    let c11 = textureLoad(dataTextureC, clamp(hi + vec2<i32>(1, 1), vec2<i32>(0), cMax), 0).rgb;
+    let previous = mix(mix(c00, c10, hf.x), mix(c01, c11, hf.x), hf.y);
     let temporal = clamp(max(col, previous * 0.9), vec3<f32>(0.0), vec3<f32>(5.0));
     let generatedDepth = select(1.0, clamp(t / 20.0, 0.0, 0.995), t < 20.0);
-    textureStore(dataTextureA, id.xy, vec4<f32>(temporal, 1.0));
-    textureStore(writeTexture, id.xy, vec4<f32>(temporal, 1.0));
+    // Semantic alpha: surface coverage (geode / thread / pearl) plus click emission.
+    let alpha = clamp(alphaCover + clickWave * 0.5, 0.0, 1.0);
+    // A keeps the HDR history; ACES applies to the display copy only.
+    let display = acesToneMap(temporal);
+    textureStore(dataTextureA, id.xy, vec4<f32>(temporal, alpha));
+    textureStore(writeTexture, id.xy, vec4<f32>(display, alpha));
     textureStore(writeDepthTexture, id.xy, vec4<f32>(generatedDepth, 0.0, 0.0, 0.0));
 }

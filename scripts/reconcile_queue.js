@@ -1,10 +1,10 @@
 const fs = require('fs');
 
 // Load queue
-const queue = JSON.parse(fs.readFileSync('swarm-tasks/upgrade-queue.json', 'utf8'));
+const queue = JSON.parse(fs.readFileSync('agents/swarm-tasks/upgrade-queue.json', 'utf8'));
 
 // Load weekly completed list from weekly_upgrade_swarm.md
-const weekly = fs.readFileSync('agents/weekly_upgrade_swarm.md', 'utf8');
+const weekly = fs.readFileSync('docs/agents/weekly_upgrade_swarm.md', 'utf8');
 const completedIds = new Set();
 
 // Extract IDs from 'Recently Completed' tables
@@ -16,7 +16,7 @@ while ((m = idRegex.exec(weekly)) !== null) {
 
 // Also check progress file
 try {
-  const progress = JSON.parse(fs.readFileSync('swarm-outputs/upgrade-progress.json', 'utf8'));
+  const progress = JSON.parse(fs.readFileSync('agents/swarm-outputs/upgrade-progress.json', 'utf8'));
   if (progress.upgraded_shaders) {
     progress.upgraded_shaders.forEach(s => completedIds.add(s.id));
   }
@@ -48,7 +48,7 @@ queue.items.forEach(item => {
   }
 });
 
-fs.writeFileSync('swarm-tasks/upgrade-queue.json', JSON.stringify(queue, null, 2));
+fs.writeFileSync('agents/swarm-tasks/upgrade-queue.json', JSON.stringify(queue, null, 2));
 console.log('Updated', updated, 'items to completed');
 console.log('Pending now:', queue.items.filter(i => i.status === 'pending').length);
 console.log('Completed now:', queue.items.filter(i => i.status === 'completed').length);

@@ -66,7 +66,9 @@ export function checkWgslGatePreview(content: string): WgslGatePreviewResult {
   let match: RegExpExecArray | null;
   const bindingRe = new RegExp(BINDING_PATTERN.source, 'g');
   while ((match = bindingRe.exec(content)) !== null) {
-    foundBindings.set(parseInt(match[1], 10), match[4].trim());
+    const [, bindingNum, , , bindingType] = match;
+    if (bindingNum === undefined || bindingType === undefined) continue;
+    foundBindings.set(parseInt(bindingNum, 10), bindingType.trim());
   }
 
   for (let i = 0; i <= 12; i++) {
@@ -85,12 +87,12 @@ export function checkWgslGatePreview(content: string): WgslGatePreviewResult {
     }
   }
 
-  const uniformsMatch = content.match(/struct\s+Uniforms\s*\{([^}]+)\}/);
-  if (!uniformsMatch) {
+  const uniformsBody = content.match(/struct\s+Uniforms\s*\{([^}]+)\}/)?.[1];
+  if (uniformsBody === undefined) {
     errors.push('Missing Uniforms struct');
   } else {
     for (const field of UNIFORMS_FIELDS) {
-      if (!uniformsMatch[1].includes(field)) {
+      if (!uniformsBody.includes(field)) {
         errors.push(`Uniforms missing field: ${field}`);
       }
     }
@@ -100,7 +102,7 @@ export function checkWgslGatePreview(content: string): WgslGatePreviewResult {
   let wgFound = false;
   while ((match = wgRe.exec(stripped)) !== null) {
     wgFound = true;
-    const argCount = countWorkgroupArgs(match[1]);
+    const argCount = countWorkgroupArgs(match[1] ?? '');
     if (argCount < 2) {
       errors.push(`@workgroup_size needs at least 2 dimensions: ${match[0]}`);
     } else if (argCount === 1) {

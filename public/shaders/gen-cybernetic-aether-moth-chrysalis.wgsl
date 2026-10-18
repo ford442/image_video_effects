@@ -1,27 +1,33 @@
-// ----------------------------------------------------------------
-// Cybernetic Aether-Moth Chrysalis
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Cybernetic Aether-Moth Chrysalis
+//  Category: generative
+//  Features: audio-reactive, upgraded-rgba, mouse-driven, click-reactive, held-drag, raymarched, depth-aware
+//  Complexity: High
+//  Upgraded: 2026-10-18
+//  Ideas: eclosion seam (smin-lipped dorsal split); cremaster thread + silk girdle pendulum sway; defensive click wriggle; core-backlit wing-case venation; abdominal segments with breathing spiracles; pharate wing pattern show-through (discal lunule window + postmedial zig-zag, matures with the gape); bipectinate antenna sheaths along the wing-pad edges (treble-sheened barbs)
+//  A packing: raw HDR display RGB + semantic alpha (C read back as colour history)
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=Chrysalis Complexity, y=Rotation Speed, z=Shell Hole Width, w=Color Shift
 
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Point Density, y=Rotation Speed, z=Point Size, w=Color Shift
-    ripples: array<vec4<f32>, 50>,
+// Scene layout (world units). The camera sees half-height 4 at z=0, the HEAD spindle spans +-5.9 body
+// units, so the body is scaled to +-2.95 and hung slightly low to leave the upper frame for the thread.
+const BODY_SCALE: f32 = 0.5;
+const BODY_Y: f32 = -0.45;
+const ANCHOR_Y: f32 = 4.9;      // cremaster anchor, just above the top edge of the frame
+const TIP_Y: f32 = 5.55;        // body-unit height where the silk leaves the shell tip
+
+// Per-pixel-uniform pose, built once in main() and shared by map(), getNormal() and shading.
+struct Pose {
+    yaw: mat2x2<f32>,     // mouse orbit around the hanging axis
+    pitch: mat2x2<f32>,   // mouse camera elevation
+    swayX: mat2x2<f32>,   // idea 2: lateral pendulum sway about the anchor
+    swayZ: mat2x2<f32>,   // idea 2: fore-aft pendulum sway about the anchor
+    spin: f32,            // Rotation Speed: spin about the body's long axis
+    twist: f32,           // idea 3: wriggle twist (rad at the free tip)
+    gape: f32,            // idea 1: seam half-width (body units)
+    pad: f32,
 };
 
 // ----------------------------------------------------------------
@@ -43,7 +49,6 @@ fn hash3(p: vec3<f32>) -> vec3<f32> {
 fn voronoi(x: vec3<f32>) -> vec2<f32> {
     let n = floor(x);
     let f = fract(x);
-    var m = vec3<f32>(8.0);
     var res = vec2<f32>(8.0);
 
     for(var k = -1; k <= 1; k++) {
@@ -84,67 +89,117 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
     return min(a, b) - h * h * h * k * (1.0 / 6.0);
 }
 
+// World -> pendulum frame: mouse orbit, then the pendulum swing about the cremaster anchor.
+fn toHang(pos: vec3<f32>, pose: Pose) -> vec3<f32> {
+    var q = pos;
+    let xz = pose.yaw * q.xz;
+    q = vec3<f32>(xz.x, q.y, xz.y);
+    q = vec3<f32>(q.x, pose.pitch * q.yz);
+    // Idea 2: pendulum sway — rotate about the anchor, so the thread stays taut and the free tip swings most.
+    var s = q - vec3<f32>(0.0, ANCHOR_Y, 0.0);
+    s = vec3<f32>(pose.swayX * s.xy, s.z);
+    s = vec3<f32>(s.x, pose.swayZ * s.yz);
+    return s + vec3<f32>(0.0, ANCHOR_Y, 0.0);
+}
+
+// Pendulum frame -> body frame (body units): wriggle twist about the long axis + Rotation Speed spin.
+fn toBody(q: vec3<f32>, pose: Pose) -> vec3<f32> {
+    let p = (q - vec3<f32>(0.0, BODY_Y, 0.0)) / BODY_SCALE;
+    // Idea 3: the attached top stays put, the twist grows toward the free (head) end.
+    let ang = pose.spin + pose.twist * clamp((5.9 - p.y) / 11.8, 0.0, 1.0);
+    let xz = rot(ang) * p.xz;
+    return vec3<f32>(xz.x, p.y, xz.y);
+}
+
+// Idea 1: seam half-width along the body — widest at the head/thorax end (bottom), closing toward the top.
+fn seamWidth(y: f32, gape: f32) -> f32 {
+    return gape * (0.35 + 0.65 * (1.0 - smoothstep(-3.0, 2.2, y)));
+}
+
+// Dorsal slot (+z side of the body frame), y in [-4.6, 2.2].
+fn seamSlot(p: vec3<f32>, gape: f32) -> f32 {
+    let w = seamWidth(p.y, gape);
+    return max(max(abs(p.x) - w, -p.z), abs(p.y + 1.2) - 3.4);
+}
+
 // ----------------------------------------------------------------
-// Map Function
+// Map Function — returns (step distance in world units, material)
+// mat: 1 shell, 2 core, 3 fibres, 4 silk
 // ----------------------------------------------------------------
-fn map(pos: vec3<f32>) -> vec2<f32> {
-    var p = pos;
+fn map(pos: vec3<f32>, pose: Pose) -> vec2<f32> {
     let t = u.config.x;
-
-    // Mouse Interaction
-    let mouse = (u.zoom_config.yz * 2.0 - 1.0) * vec2<f32>(3.14, 1.57);
-    p = vec3<f32>(rot(-mouse.y) * p.xy, p.z);
-    p = vec3<f32>(p.x, rot(mouse.x) * p.yz);
-
-    let rotSpeed = u.zoom_params.y * 2.0;
-    p = vec3<f32>(rot(t * rotSpeed) * p.xy, p.z);
-
-    // Core Capsule
-    let coreH = 2.5;
-    let coreR = 1.0 + sin(t) * 0.1;
-    let coreY = p.y - clamp(p.y, -coreH, coreH);
-    let dCoreCapsule = length(vec2<f32>(p.x, p.z)) - coreR + p.y*p.y*0.05; // Tapered
-
-    // Three-band audio reactivity comes from the engine audio buffer.
     let audio = plasmaBuffer[0].xyz;
+    let q = toHang(pos, pose);
 
-    // Core Displacement
-    let coreNoise = fbm(p * 2.0 - vec3<f32>(0.0, t * 1.5, 0.0)) * 0.5;
-    let dCore = dCoreCapsule + coreNoise - audio.x * 0.3;
+    // Idea 2: cremaster silk — cheap analytic SDFs, evaluated outside the voronoi path.
+    let tipW = BODY_Y + TIP_Y * BODY_SCALE;
+    let ty = clamp(q.y, tipW, ANCHOR_Y + 1.0);
+    let dThread = length(vec3<f32>(q.x, q.y - ty, q.z)) - 0.02;
+    let dButton = length(q - vec3<f32>(0.0, tipW + 0.1, 0.0)) - 0.055;
+    var dSilk = smin(dThread, dButton, 0.08);
 
-    // Shell
-    let complexity = u.zoom_params.x * 5.0 + 3.0;
-    let thickness = u.zoom_params.z * 0.3 + 0.1;
+    // Body frame before spin/twist (radially symmetric quantities only).
+    let pr = (q - vec3<f32>(0.0, BODY_Y, 0.0)) / BODY_SCALE;
+    let coreR = 1.0 + sin(t) * 0.1;
     let shellR = coreR + 0.4;
-    let shellY = p.y - clamp(p.y, -coreH - 0.2, coreH + 0.2);
-    let dShellBase = length(vec2<f32>(p.x, p.z)) - shellR + p.y*p.y*0.04;
+    let rr = length(pr.xz);
+    let dShellBase = rr - shellR + pr.y * pr.y * 0.04;
 
-    let v = voronoi(p * complexity + vec3<f32>(0.0, t * 0.2, 0.0));
-    let cellEdge = v.y - v.x;
-    let dShell = max(dShellBase, -(cellEdge - thickness - audio.y * 0.04));
+    // Idea 2: silk girdle — the curve where a tilted plane cuts a slightly inflated shell, tubed.
+    let gPlane = dot(pr - vec3<f32>(0.0, 2.0, 0.0), normalize(vec3<f32>(0.0, 1.0, 0.32)));
+    let dGirdle = length(vec2<f32>(dShellBase - 0.05, gPlane)) - 0.05;
+    dSilk = min(dSilk, dGirdle * BODY_SCALE);
 
-    // Fiber Optics (Audio Reactive)
-    let dFibers = length(vec2<f32>(p.x, p.z)) - (coreR + audio.x * 1.2) + abs(sin(p.y * (10.0 + audio.z * 4.0) - t * 5.0)) * 0.1;
+    // Conservative bound: every body surface lies inside the shell base (core is >= 0.4 deeper,
+    // audio can pull it out by 0.3*bass). Far from the body, skip the five voronoi evaluations.
+    let bound = dShellBase - max(audio.x * 0.3 - 0.4, 0.0);
+    var dBody = bound;
+    var mat = 1.0;
+    if (bound < 0.35) {
+        let p = toBody(q, pose);
 
-    var d = min(dCore, dShell);
-    d = min(d, max(dFibers, dCoreCapsule));
+        // Core Capsule
+        let dCoreCapsule = length(vec2<f32>(p.x, p.z)) - coreR + p.y * p.y * 0.05; // Tapered
 
-    var mat = 1.0; // Shell
-    if (d == dCore) { mat = 2.0; } // Core
-    else if (d == max(dFibers, dCoreCapsule)) { mat = 3.0; } // Fibers
+        // Core Displacement
+        let coreNoise = fbm(p * 2.0 - vec3<f32>(0.0, t * 1.5, 0.0)) * 0.5;
+        let dCore = dCoreCapsule + coreNoise - audio.x * 0.3;
 
-    return vec2<f32>(d * 0.5, mat);
+        // Shell
+        let complexity = u.zoom_params.x * 5.0 + 3.0;
+        let thickness = u.zoom_params.z * 0.3 + 0.1;
+        let v = voronoi(p * complexity + vec3<f32>(0.0, t * 0.2, 0.0));
+        let cellEdge = v.y - v.x;
+        var dShell = max(dShellBase, -(cellEdge - thickness - audio.y * 0.04));
+
+        // Idea 1: eclosion seam — smooth subtraction via smin rounds the split lips.
+        dShell = -smin(-dShell, seamSlot(p, pose.gape), 0.12);
+
+        // Fiber Optics (Audio Reactive)
+        let dFibers = length(vec2<f32>(p.x, p.z)) - (coreR + audio.x * 1.2) + abs(sin(p.y * (10.0 + audio.z * 4.0) - t * 5.0)) * 0.1;
+        let dFib = max(dFibers, dCoreCapsule);
+
+        dBody = min(min(dCore, dShell), dFib);
+        if (dBody == dCore) { mat = 2.0; }
+        else if (dBody == dFib) { mat = 3.0; }
+    }
+
+    let dB = dBody * BODY_SCALE;
+    if (dSilk < dB) {
+        return vec2<f32>(dSilk * 0.9, 4.0);
+    }
+    return vec2<f32>(dB * 0.5, mat);
 }
 
 // ----------------------------------------------------------------
 // Lighting & Shading
 // ----------------------------------------------------------------
-fn getNormal(p: vec3<f32>) -> vec3<f32> {
+fn getNormal(p: vec3<f32>, pose: Pose) -> vec3<f32> {
     let e = vec2<f32>(0.001, 0.0);
     return normalize(vec3<f32>(
-        map(p + e.xyy).x - map(p - e.xyy).x,
-        map(p + e.yxy).x - map(p - e.yxy).x,
-        map(p + e.yyx).x - map(p - e.yyx).x
+        map(p + e.xyy, pose).x - map(p - e.xyy, pose).x,
+        map(p + e.yxy, pose).x - map(p - e.yxy, pose).x,
+        map(p + e.yyx, pose).x - map(p - e.yyx, pose).x
     ));
 }
 
@@ -162,8 +217,48 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         return;
     }
 
+    let time = u.config.x;
+    let audio = plasmaBuffer[0].xyz;
+    let colorShift = u.zoom_params.w;
+    let held = u.zoom_config.w > 0.5;
+
     var uv = vec2<f32>(id.xy) / res;
-    let p = (uv * 2.0 - 1.0) * vec2<f32>(res.x / res.y, 1.0);
+    // Screen y=0 is the top; the scene is y-up, so flip pixel y.
+    let p = vec2<f32>(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0) * vec2<f32>(res.x / res.y, 1.0);
+
+    // Click fronts (HEAD) + idea 3 wriggle impulses, one pass over the capped ripple list.
+    var clickGlow = 0.0;
+    var twist = 0.0;
+    let uv01 = (vec2<f32>(id.xy) + vec2<f32>(0.5)) / res;
+    let aspect = res.x / max(res.y, 1.0);
+    let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+    for (var i = 0u; i < rippleCount; i++) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age > 0.0 && age < 3.0) {
+            let delta = vec2<f32>((uv01.x - ripple.x) * aspect, uv01.y - ripple.y);
+            clickGlow += exp(-abs(length(delta) - age * 0.2) * 70.0) * exp(-age * 1.4);
+            // Idea 3: defensive wriggle — a damped torsional kick; clicks left/right of centre twist opposite ways.
+            let dir = select(-1.0, 1.0, ripple.x >= 0.5);
+            twist += dir * sin(age * 9.0) * exp(-age * 1.8) * 1.2;
+        }
+    }
+
+    // Mouse orbit (idle 0.5,0.5 = no orbit): x yaws around the hanging axis, y tilts the view.
+    let ms = u.zoom_config.yz * 2.0 - 1.0;
+    // Idea 2: gentle two-frequency pendulum sway about the anchor.
+    let swayA = 0.06 * sin(time * 0.8) + 0.02 * sin(time * 2.1 + 1.3);
+    let swayB = 0.04 * sin(time * 0.63 + 0.5);
+    var pose: Pose;
+    pose.yaw = rot(ms.x * 3.14);
+    pose.pitch = rot(ms.y * 0.45);
+    pose.swayX = rot(swayA);
+    pose.swayZ = rot(swayB);
+    pose.spin = time * u.zoom_params.y * 2.0;
+    pose.twist = clamp(twist, -1.6, 1.6);
+    // Idea 1: hairline at rest, gapes with bass and with a held pointer.
+    pose.gape = 0.05 + audio.x * 0.28 + select(0.0, 0.35, held);
+    pose.pad = 0.0;
 
     let ro = vec3<f32>(0.0, 0.0, 6.0);
     let ta = vec3<f32>(0.0, 0.0, 0.0);
@@ -173,17 +268,18 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let cv = cross(cu, cw);
     let rd = normalize(p.x * cu + p.y * cv + 1.5 * cw);
 
+    let coreCol = vec3<f32>(0.1, 0.6, 1.0) * (1.0 - colorShift) + vec3<f32>(0.8, 0.1, 1.0) * colorShift;
+    let fiberCol = vec3<f32>(0.2, 1.0, 0.8);
+    let fiberDrive = 0.35 + audio.x + audio.z * 0.8; // non-zero floor at silence
+
     var t = 0.0;
     var m = -1.0;
     var glow = vec3<f32>(0.0);
     var p_current = ro;
 
-    let audio = plasmaBuffer[0].xyz;
-    let colorShift = u.zoom_params.w;
-
     for (var i = 0; i < 120; i++) {
         p_current = ro + rd * t;
-        let d = map(p_current);
+        let d = map(p_current, pose);
 
         if (abs(d.x) < 0.001 || t > 20.0) {
             m = d.y;
@@ -192,63 +288,123 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         t += d.x;
 
-        // Accumulate Glow
+        // Accumulate Glow (distance in HEAD body units so the glow falloff survives the rescale)
+        let dg = abs(d.x) / BODY_SCALE;
         if (d.y == 2.0) { // Core
-            let c = vec3<f32>(0.1, 0.6, 1.0) * (1.0 - colorShift) + vec3<f32>(0.8, 0.1, 1.0) * colorShift;
-            glow += c * 0.02 / (0.1 + abs(d.x)) * (0.5 + audio.x * 1.5 + audio.y * 0.4);
+            glow += coreCol * 0.02 / (0.1 + dg) * (0.5 + audio.x * 1.5 + audio.y * 0.4);
         } else if (d.y == 3.0) { // Fibers
-            glow += vec3<f32>(0.2, 1.0, 0.8) * 0.03 / (0.05 + abs(d.x)) * (audio.x + audio.z * 0.8);
+            glow += fiberCol * 0.03 / (0.05 + dg) * fiberDrive;
         }
     }
 
     var col = vec3<f32>(0.02, 0.03, 0.05) * (1.0 - length(p)*0.3); // Background
 
-    if (t < 20.0) {
-        let n = getNormal(p_current);
+    // A march that runs out of steps (m = -1) is a grazing miss, not a hit.
+    let hit = t < 20.0 && m > 0.0;
+    if (hit) {
+        let n = getNormal(p_current, pose);
         let l = normalize(vec3<f32>(1.0, 1.0, 1.0));
         let diff = max(dot(n, l), 0.0);
+        let rim = 1.0 - max(dot(n, -rd), 0.0);
+        let h = normalize(l - rd);
 
         if (m == 1.0) { // Shell
             col = vec3<f32>(0.05, 0.05, 0.06);
 
             // Rim light
-            let rim = 1.0 - max(dot(n, -rd), 0.0);
             col += vec3<f32>(0.1, 0.4, 0.8) * pow(rim, 4.0);
 
             // Specular
-            let h = normalize(l - rd);
             let spec = pow(max(dot(n, h), 0.0), 32.0);
             col += vec3<f32>(0.5) * spec;
+
+            // Idea 1: core light spilling over the seam lips, scaled by how far the split gapes.
+            let pb = toBody(toHang(p_current, pose), pose);
+            let lip = abs(pb.x) - seamWidth(pb.y, pose.gape);
+            let along = 1.0 - smoothstep(3.0, 3.6, abs(pb.y + 1.2));
+            let spill = exp(-max(lip, 0.0) * 14.0) * smoothstep(-0.1, 0.3, pb.z) * along;
+            col += coreCol * spill * (0.25 + pose.gape * 4.0) * (0.6 + audio.x * 0.8);
+
+            // Body-surface coordinates: theta = 0 on the ventral midline (-z), arc length along the girth.
+            let theta = atan2(pb.x, -pb.z);
+            let girth = theta * 1.4;
+
+            // Idea 4 — wing-case venation: the folded wing pads on the ventral shell, veins fanning from
+            // the wing base and backlit by the core.
+            let wingMask = smoothstep(1.45, 1.2, abs(theta)) * smoothstep(0.05, 0.25, abs(theta))
+                         * smoothstep(-4.4, -3.8, pb.y) * smoothstep(1.1, 0.5, pb.y);
+            let fromBase = vec2<f32>(abs(girth) - 0.6, pb.y - 0.9);
+            let fan = atan2(fromBase.x, -fromBase.y);
+            let vein = 1.0 - smoothstep(0.0, 0.07, abs(fract(fan * 3.2 + 0.5) - 0.5));
+            let crossVein = 1.0 - smoothstep(0.0, 0.05, abs(fract(length(fromBase) * 0.8) - 0.5) - 0.42);
+            let padEdge = 1.0 - smoothstep(0.0, 0.06, abs(abs(theta) - 1.25));
+            let venation = clamp(max(vein * 0.9, crossVein * 0.5) + padEdge * 0.6, 0.0, 1.0) * wingMask;
+            col += mix(coreCol, fiberCol, 0.25) * venation * (0.22 + audio.x * 0.5 + pose.gape * 1.5);
+
+            // Idea 6 — pharate wing pattern: before eclosion the pupal cuticle clears and the adult's wing
+            // markings show through the pads. Maturity follows the seam gape (bass / held pointer).
+            let maturity = clamp(0.3 + pose.gape * 1.6 + audio.x * 0.25, 0.0, 1.0);
+            // Discal lunule: a dark-ringed disc with a clear crescent window that lets the core shine out.
+            let lun = vec2<f32>((abs(girth) - 1.05) / 0.3, (pb.y + 1.7) / 0.5);
+            let lunR = length(lun);
+            let lunDisc = smoothstep(1.0, 0.85, lunR);
+            let lunWindow = lunDisc * smoothstep(0.55, 0.8, length(lun - vec2<f32>(-0.4, 0.2)));
+            let lunRing = 1.0 - smoothstep(0.0, 0.12, abs(lunR - 0.92));
+            // Postmedial zig-zag line at a fixed distance out from the wing base, crossing every vein.
+            let zig = (abs(fract(fan * 4.0) - 0.5) * 2.0 - 0.5) * 0.2;
+            let pmLine = 1.0 - smoothstep(0.03, 0.08, abs(length(fromBase) - 3.0 - zig));
+            let pigment = mix(vec3<f32>(0.9, 0.5, 0.18), vec3<f32>(0.75, 0.3, 0.9), colorShift);
+            let showThrough = wingMask * maturity;
+            col = mix(col, col * 0.35, (lunRing + pmLine * 0.7) * showThrough);
+            col += pigment * (lunDisc - lunWindow) * 0.18 * showThrough;
+            col += coreCol * lunWindow * showThrough * (0.5 + audio.x * 0.9);
+
+            // Idea 7 — antenna sheaths: the bipectinate (feathered) antenna cases of a moth pupa lie along the
+            // inner edge of each wing pad, from the head end up to the wing base; the barbs sheen with treble.
+            let shaft = abs(abs(girth) - 0.32);
+            let antW = 0.06 + 0.09 * smoothstep(-4.3, -1.5, pb.y) * smoothstep(0.7, -0.6, pb.y);
+            let antMask = smoothstep(antW + 0.03, antW, shaft)
+                        * smoothstep(-4.45, -4.15, pb.y) * smoothstep(0.75, 0.45, pb.y);
+            let barb = 1.0 - smoothstep(0.0, 0.35, abs(fract((pb.y + shaft * 1.6) * 8.0) - 0.5) * 2.0);
+            let rachis = 1.0 - smoothstep(0.012, 0.03, shaft);
+            col *= 1.0 - antMask * (1.0 - barb) * 0.45;
+            col += mix(fiberCol, vec3<f32>(0.9, 0.85, 0.7), 0.4) * antMask * (barb * 0.5 + rachis * 0.6)
+                 * (0.12 + audio.z * 0.7 + spec * 0.8);
+
+            // Idea 5 — abdominal segments + spiracles: grooved rings toward the cremaster end, with a
+            // breathing spiracle on each flank of every segment.
+            let abdomen = smoothstep(0.9, 1.6, pb.y) * smoothstep(5.4, 4.6, pb.y);
+            let segCoord = pb.y * 1.15;
+            let segIdx = floor(segCoord);
+            let groove = 1.0 - smoothstep(0.0, 0.06, abs(fract(segCoord) - 0.5) - 0.42);
+            col *= 1.0 - groove * abdomen * 0.6;
+            let flank = abs(abs(theta) - 1.5708) * 1.4;
+            let spDist = length(vec2<f32>(flank, (fract(segCoord) - 0.5) / 1.15));
+            let breathe = 0.5 + 0.5 * sin(time * 2.2 - segIdx * 0.7);
+            let spiracle = exp(-spDist * spDist * 90.0) * abdomen;
+            col += mix(fiberCol, vec3<f32>(1.0, 0.55, 0.2), 0.5) * spiracle * breathe * (0.35 + audio.x * 1.4);
         } else if (m == 2.0) { // Core (should be occluded by shell, but just in case)
             col = vec3<f32>(1.0) * diff;
+        } else if (m == 3.0) { // Fibres: lit teal strands with an emissive floor
+            col = mix(fiberCol, coreCol, 0.35) * (0.15 + 0.55 * diff) + fiberCol * 0.2 * fiberDrive;
+        } else if (m == 4.0) { // Silk thread / girdle / cremaster pad
+            let sheen = pow(max(dot(n, h), 0.0), 24.0);
+            col = vec3<f32>(0.78, 0.76, 0.7) * (0.1 + 0.5 * diff) + vec3<f32>(0.1, 0.3, 0.5) * pow(rim, 3.0) + vec3<f32>(0.4) * sheen;
         }
     }
 
     col += glow;
 
     // Click fronts make the chrysalis flare without changing its raymarched silhouette.
-    var clickGlow = 0.0;
-    let uv01 = (vec2<f32>(id.xy) + vec2<f32>(0.5)) / res;
-    let aspect = res.x / max(res.y, 1.0);
-    let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
-    for (var i = 0u; i < rippleCount; i++) {
-        let ripple = u.ripples[i];
-        let age = u.config.x - ripple.z;
-        if (age > 0.0 && age < 3.0) {
-            let delta = vec2<f32>((uv01.x - ripple.x) * aspect, uv01.y - ripple.y);
-            clickGlow += exp(-abs(length(delta) - age * 0.2) * 70.0) * exp(-age * 1.4);
-        }
-    }
     col += mix(vec3<f32>(0.15, 0.8, 1.2), vec3<f32>(1.0, 0.2, 1.1), colorShift) * clickGlow * (0.25 + audio.z * 0.65);
 
     // Add some noise/dust
-    col += hash3(vec3<f32>(p_current.xy * 100.0, u.config.x)).x * 0.03;
+    col += hash3(vec3<f32>(p_current.xy * 100.0, time)).x * 0.03;
 
     let coord = vec2<i32>(id.xy);
     let history = textureLoad(dataTextureC, coord, 0);
     let hdrColor = clamp(mix(col, history.rgb, 0.06 + audio.x * 0.08), vec3<f32>(0.0), vec3<f32>(7.0));
     let mappedColor = acesToneMap(hdrColor);
-    let hit = t < 20.0;
     let alpha = clamp(select(0.03, 0.32 + length(mappedColor) * 0.32, hit) + clickGlow * 0.12, 0.02, 0.98);
     let depth = select(0.0, clamp(1.0 - t / 20.0, 0.0, 1.0), hit);
 

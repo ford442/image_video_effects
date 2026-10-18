@@ -6,7 +6,6 @@
 export { useStorage } from './useStorage';
 export type { UseStorageReturn } from './useStorage';
 
-export { useWASM } from './useWASM';
 export { useAudioAnalyzer } from './useAudioAnalyzer';
 export { usePerformanceMonitor } from './usePerformanceMonitor';
 

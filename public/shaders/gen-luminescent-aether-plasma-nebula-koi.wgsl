@@ -3,33 +3,16 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
+//  Upgraded: 2026-10-10
 //  Ideas: tail-fin Karman wake shed into the volumetric nebula (phase-locked to tail, bass);
 //         half-offset scale rows with head-to-tail turning flash (mids) and rim sparkle (treble);
-//         exact dataTextureC persistence that lingers longer inside the wake
+//         exact dataTextureC persistence that lingers longer inside the wake;
+//         kohaku plasma hi-patches with a hot edge line on the body (koi markings);
+//         pectoral fin flutter, swim-phased stroke and ripple
 //  A packing: ACES display RGBA (read back from C as display history)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 
@@ -96,7 +79,13 @@ fn mapKoi(p_in: vec3<f32>, time: f32, koi_speed: f32, tail_length: f32) -> f32 {
     let d_body = length(vec2<f32>(p_body.x, p_body.y)) - body_radius + dz*dz;
 
     // Fins
-    let fin_p = vec3<f32>(abs(p.x) - body_radius - 0.1, p.y, p.z);
+    // Idea 5: pectoral fin flutter — the fin strokes in/out and a ripple runs along it, phased with the swim
+    let fin_beat = time * koi_speed * 4.0;
+    let fin_p = vec3<f32>(
+        abs(p.x) - body_radius - 0.1 + sin(fin_beat) * 0.06,
+        p.y + sin(fin_beat - p.z * 5.0) * 0.10,
+        p.z
+    );
     var d_fins = length(vec2<f32>(fin_p.x, fin_p.y)) - 0.02;
     d_fins = max(d_fins, abs(p.z) - 0.5);
 
@@ -302,6 +291,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             + rimColor * rim * 1.6
             + iris
             + glow_col * sss * 0.5;
+
+        // Idea 4: kohaku plasma markings — sharp-edged hot "hi" patches glow over the blue body like koi
+        // colour blocks; the patch field is anchored in body-local space so it travels with the swim wave.
+        let body_wave = sin(p.z * 2.0 - time * koi_speed * 3.0) * 0.5;
+        let hi_q = vec3<f32>(p.x + body_wave, p.y, p.z);
+        let hi_f = fbm(hi_q * 1.1 + vec3<f32>(9.0, 2.0, 5.0));
+        let hi_mask = smoothstep(0.07, 0.12, hi_f);
+        let hi_edge = 1.0 - smoothstep(0.0, 0.06, abs(hi_f - 0.095));
+        let hi_col = vec3<f32>(1.0, 0.35, 0.22) * (0.5 + diffKey) * (0.7 + plasma_intensity * 0.5) + glow_col * 0.25;
+        col = mix(col, hi_col, hi_mask * 0.7);
+        col += vec3<f32>(1.0, 0.8, 0.6) * hi_edge * (0.25 + clamp(treble, 0.0, 1.5) * 0.4);
     }
 
     // Nebula Background (volumetric)

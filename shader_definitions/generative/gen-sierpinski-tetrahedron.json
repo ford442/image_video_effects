@@ -16,40 +16,6 @@
     16,
     1
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Recursion Depth",
-      "default": 0.45,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Rotation Speed",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Perspective",
-      "default": 0.4,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Chromatic Aberration",
-      "default": 0.25,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
-  ],
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
@@ -61,9 +27,79 @@
     "upgraded-rgba"
   ],
   "params": [
-    {"id": "recursion_depth", "name": "Recursion Depth", "mapping": "zoom_params.x", "default": 0.45, "min": 0, "max": 1, "step": 0.01},
-    {"id": "rotation_speed", "name": "Rotation Speed", "mapping": "zoom_params.y", "default": 0.3, "min": 0, "max": 1, "step": 0.01},
-    {"id": "perspective", "name": "Perspective", "mapping": "zoom_params.z", "default": 0.4, "min": 0, "max": 1, "step": 0.01},
-    {"id": "chromatic_aberration", "name": "Chromatic Aberration", "mapping": "zoom_params.w", "default": 0.25, "min": 0, "max": 1, "step": 0.01}
-  ]
+    {
+      "id": "recursion_depth",
+      "name": "Recursion Depth",
+      "mapping": "zoom_params.x",
+      "default": 0.45,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "rotation_speed",
+      "name": "Rotation Speed",
+      "mapping": "zoom_params.y",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "perspective",
+      "name": "Perspective",
+      "mapping": "zoom_params.z",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "chromatic_aberration",
+      "name": "Chromatic Aberration",
+      "mapping": "zoom_params.w",
+      "default": 0.25,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Recursion Depth",
+          "default": 0.45,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Rotation Speed",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Perspective",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Chromatic Aberration",
+          "default": 0.25,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

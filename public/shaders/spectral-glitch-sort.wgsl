@@ -1,26 +1,14 @@
-// Spectral Glitch Sort — Batch 58D canonical temporal upgrade
-// A owns exact display RGBA history; B is intentionally unwritten.
+// ═══════════════════════════════════════════════════════════════════
+//  Spectral Glitch Sort
+//  Category: retro-glitch
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-10
+//  Ideas: sort walk; chroma sort
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -117,10 +105,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let offset = -dir * localStrength * sortable * mix(1.0, voicedNoise * 2.0, noiseAmount);
   let sortedUv = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
 
-  var hdr = textureSampleLevel(readTexture, u_sampler, sortedUv, 0.0).rgb;
+  // Idea: sortWalk — four steps along the sort axis, keeping the brighter sample.
+  var walkUv = sortedUv;
+  var walkLuma = luma(textureSampleLevel(readTexture, u_sampler, sortedUv, 0.0).rgb);
+  let stepLen = localStrength * sortable * 0.25;
+  for (var sortStep = 1; sortStep <= 4; sortStep = sortStep + 1) {
+    let stepUv = clamp(uv + dir * stepLen * f32(sortStep), vec2<f32>(0.0), vec2<f32>(1.0));
+    let stepLuma = luma(textureSampleLevel(readTexture, u_sampler, stepUv, 0.0).rgb);
+    let takeStep = stepLuma > walkLuma && stepLuma > threshold;
+    walkUv = select(walkUv, stepUv, takeStep);
+    walkLuma = select(walkLuma, stepLuma, takeStep);
+  }
+
+  var hdr = textureSampleLevel(readTexture, u_sampler, walkUv, 0.0).rgb;
   let split = smoothstep(0.004, 0.04, length(offset));
-  hdr.r = mix(hdr.r, textureSampleLevel(readTexture, u_sampler, clamp(sortedUv + dir * 0.003, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r, split);
-  hdr.b = mix(hdr.b, textureSampleLevel(readTexture, u_sampler, clamp(sortedUv - dir * 0.003, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b, split);
+  // Idea: chromaSort — R and B take opposite extra steps. Noise owns the distance.
+  let chromaSort = dir * (0.002 + noiseAmount * 0.006) * sortable;
+  let sortR = textureSampleLevel(readTexture, u_sampler, clamp(walkUv + chromaSort, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let sortB = textureSampleLevel(readTexture, u_sampler, clamp(walkUv - chromaSort, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  hdr = vec3<f32>(mix(hdr.r, sortR, split), hdr.g, mix(hdr.b, sortB, split));
 
   let trailUv = clamp(uv - dir * (0.008 + tearBoost * 0.025), vec2<f32>(0.0), vec2<f32>(1.0));
   let previous = textureLoad(dataTextureC, historyCoord(trailUv, dims), 0);

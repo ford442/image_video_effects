@@ -92,7 +92,7 @@ export function updateDepthMap(
   const buf = new Float32Array(dstW * dstH);
   for (let y = 0; y < copyH; y++) {
     for (let x = 0; x < copyW; x++) {
-      buf[y * dstW + x] = data[y * width + x];
+      buf[y * dstW + x] = data[y * width + x]!;
     }
   }
 

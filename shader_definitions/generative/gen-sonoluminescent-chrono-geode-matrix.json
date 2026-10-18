@@ -8,45 +8,11 @@
     "temporal",
     "audio-reactive"
   ],
-  "description": "A colossal, infinitely shattering crystalline geode that fractures to reveal a violently erupting sonoluminescent plasma core. Fast-motion upgrade: closed-form orbital camera with eased time-warp spin, sonoluminescent flash-burst physics (bubble-collapse cycles with ballistic shockwave shells), bass-transient kick bursts, and swirl-advected motion-blur trails.",
+  "description": "A colossal, infinitely shattering crystalline geode that fractures to reveal a violently erupting sonoluminescent plasma core. Fast-motion upgrade: closed-form orbital camera with eased time-warp spin, sonoluminescent flash-burst physics (bubble-collapse cycles with ballistic shockwave shells), bass kick bursts, and swirl-advected motion-blur trails. 2026-09-27: the shock front ignites and jolts the crystal walls as it passes, each collapse deposits a new agate stratum in the geode, and the core flash bleeds through thin shard walls.",
   "workgroup_size": [
     16,
     16,
     1
-  ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Intensity",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Speed",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Scale",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Mouse Influence",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
   ],
   "supportsDepth": true,
   "supportsDof": false,
@@ -59,11 +25,51 @@
     "time-warp-easing",
     "orbital-camera",
     "motion-blur-trails",
-    "bass-transient-kick",
+    "bass-kick",
     "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba",
     "temporal-feedback",
     "aces-tone-map",
     "semantic-alpha",
     "generated-depth"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Intensity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Speed",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Scale",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Mouse Influence",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

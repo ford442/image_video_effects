@@ -6,7 +6,7 @@
     "upgraded-rgba"
   ],
   "url": "shaders/rgb-distance-split.wgsl",
-  "description": "Chromatic aberration that intensifies with distance from the mouse.",
+  "description": "RGB split that grows with distance from the cursor: a 7-wavelength rainbow fringe plus faint diffraction-grating ghosts far from the pointer.",
   "params": [
     {
       "id": "split",

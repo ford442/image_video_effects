@@ -37,8 +37,31 @@ const state = {
   /** Slot indexes whose last setSlotShader the module did not accept. */
   droppedSlots: /* @__PURE__ */ new Set(),
   /** null until a build is instantiated by init.ts (or a preloaded factory was reused). */
-  wasmArtifact: null
+  wasmArtifact: null,
+  /** MAX_SHADER_SLOTS compiled into the loaded artifact; null = older binary without the export. */
+  maxShaderSlots: null,
+  /**
+   * The last init gave up while C++ was still suspended in WaitAny (bridge backstop,
+   * init.ts CPP_INIT_TIMEOUT_MS). That module was abandoned to the reaper, so the
+   * C++ stage is unreadable; diagnostics report failedStageName 'Timeout'.
+   */
+  initTimedOut: false
 };
+function isCppRendererReady() {
+  const mod = wasmRef.module;
+  if (!state.initialized || !mod) return false;
+  try {
+    return Number(mod.ccall("isRendererInitialized", "number", [], [])) === 1;
+  } catch {
+    return false;
+  }
+}
+function readCanvasCopySrc() {
+  const mod = wasmRef.module;
+  if (!mod || typeof mod._getCanvasCopySrcSupported !== "function") return null;
+  if (!isCppRendererReady()) return null;
+  return mod._getCanvasCopySrcSupported() === 1;
+}
 const INIT_STAGE_NAMES = {
   0: "None",
   1: "Instance",
@@ -52,6 +75,8 @@ const INIT_STAGE_NAMES = {
 };
 export {
   INIT_STAGE_NAMES,
+  isCppRendererReady,
+  readCanvasCopySrc,
   state,
   utf8ByteLength,
   wasmRef

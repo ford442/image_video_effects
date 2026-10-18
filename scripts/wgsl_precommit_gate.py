@@ -18,7 +18,7 @@ Usage:
     python scripts/wgsl_precommit_gate.py --fix   # local only: literal (int,int)->(int,int,1)
     python scripts/wgsl_precommit_gate.py --json
 
-For local pre-commit hook setup, see scripts/AUTHORING.md.
+For local pre-commit hook setup, see docs/AUTHORING.md.
 """
 
 import argparse
@@ -34,6 +34,8 @@ from pathlib import Path
 _SCRIPTS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(_SCRIPTS_DIR))
 from audit_extrabuffer import load_baseline, scan_shader  # noqa: E402
+import check_prelude_migration  # noqa: E402
+import prelude_header  # noqa: E402
 from bindgroup_checker import (  # noqa: E402
     TEMPLATE_FILES,
     check_workgroup_size_convention,
@@ -79,7 +81,12 @@ def load_workgroup_grace_allowlist() -> set[str]:
 
 
 def discover_changed_files(base_ref: str) -> list[Path]:
-    """Return .wgsl files changed against base_ref."""
+    """
+    Return catalog .wgsl files (public/shaders/) changed against base_ref.
+
+    Fixtures under scripts/fixtures/ are deliberately broken or partial and have
+    their own unit tests; verify-naga-wasm.mjs applies the same filter.
+    """
     result = subprocess.run(
         ["git", "diff", "--name-only", "--diff-filter=ACMRT", base_ref],
         cwd=PROJECT_ROOT,
@@ -90,9 +97,40 @@ def discover_changed_files(base_ref: str) -> list[Path]:
     files = []
     for line in result.stdout.splitlines():
         p = PROJECT_ROOT / line.strip()
-        if p.suffix == ".wgsl" and p.exists():
+        if p.suffix == ".wgsl" and p.parent == SHADERS_DIR and p.exists():
             files.append(p)
-    return files
+    return with_library_dependents(files)
+
+
+_INCLUDE_LINE_RE = re.compile(r'^[ \t]*#include[ \t]+"([^"]+)"[ \t]*$', re.MULTILINE)
+
+
+def with_library_dependents(files: list[Path]) -> list[Path]:
+    """
+    Add every shader that includes a changed `_` library. Editing _prelude.wgsl
+    changes every file that includes it, so a changed-files run must check them
+    too. Repeats until no new library joins, for libraries that include others.
+    """
+    libraries = {p.name for p in files if p.parent == SHADERS_DIR and p.name.startswith("_")}
+    if not libraries or not SHADERS_DIR.exists():
+        return files
+    result = list(files)
+    seen = set(files)
+    sources = {p: p.read_text(encoding="utf-8") for p in sorted(SHADERS_DIR.glob("*.wgsl"))}
+    grew = True
+    while grew:
+        grew = False
+        for path, text in sources.items():
+            if path in seen:
+                continue
+            if not libraries.intersection(_INCLUDE_LINE_RE.findall(text)):
+                continue
+            result.append(path)
+            seen.add(path)
+            if path.name.startswith("_"):
+                libraries.add(path.name)
+            grew = True
+    return result
 
 
 def discover_all_shader_files() -> list[Path]:
@@ -186,18 +224,34 @@ def _new_extrabuffer_violations(scan: dict, baseline: dict[str, list[int]]) -> l
     return [v for v in scan.get("violations", []) if v.get("index") not in known_idx]
 
 
+def _prelude_context():
+    """(tracker, reference) for the prelude checks, or None before the tracker exists."""
+    tracker = check_prelude_migration.load_tracker()
+    if tracker is None:
+        return None
+    return tracker, prelude_header.prelude_reference()
+
+
 def run_gate(
     paths: list[Path],
     *,
     skip_naga: bool = False,
     grace_allowlist: set[str] | None = None,
     extrabuffer_baseline: dict[str, list[int]] | None = None,
+    prelude_changed: bool = False,
 ) -> dict:
-    """Run naga + bindgroup + workgroup checks on the given paths."""
+    """
+    Run naga + bindgroup + workgroup + prelude checks on the given paths.
+
+    `prelude_changed` marks the paths as edited in this change (--base/--files),
+    which turns on R7: an edited shader still pending as `eligible` must be
+    migrated to `#include "_prelude.wgsl"` in the same change.
+    """
     if grace_allowlist is None:
         grace_allowlist = load_workgroup_grace_allowlist()
     if extrabuffer_baseline is None:
         extrabuffer_baseline = load_baseline()
+    prelude_ctx = _prelude_context()
 
     report = {
         "timestamp": datetime.now().isoformat(),
@@ -211,6 +265,7 @@ def run_gate(
         "workgroup_warnings": 0,
         "workgroup_grace_skipped": 0,
         "extrabuffer_violations": 0,
+        "prelude_violations": 0,
         "results": [],
     }
 
@@ -232,6 +287,8 @@ def run_gate(
             "workgroup_warnings": [],
             "workgroup_grace": False,
             "extrabuffer_violations": [],
+            "prelude_errors": [],
+            "prelude_warnings": [],
             "ok": False,
         }
 
@@ -294,11 +351,22 @@ def run_gate(
         if eb_new:
             report["extrabuffer_violations"] += len(eb_new)
 
+        # Catalog shaders take their header from _prelude.wgsl (#1313); a pasted
+        # copy fails with the one-command fix. Fixtures and `_` files are exempt.
+        if prelude_ctx is not None and path.parent.resolve() == SHADERS_DIR.resolve() and not path.name.startswith("_"):
+            tracker, ref = prelude_ctx
+            for v in check_prelude_migration.file_violations(
+                path, content, tracker, ref, changed=prelude_changed, root=PROJECT_ROOT
+            ):
+                entry["prelude_errors" if v["severity"] == "error" else "prelude_warnings"].append(v)
+            report["prelude_violations"] += len(entry["prelude_errors"])
+
         workgroup_ok = len(wg_blocking) == 0 and len(wg_warnings) == 0
         bindgroup_ok = bg.get("status") == "compatible"
         extrabuffer_ok = len(eb_new) == 0
+        prelude_ok = len(entry["prelude_errors"]) == 0
 
-        if naga_ok and bindgroup_ok and workgroup_ok and extrabuffer_ok:
+        if naga_ok and bindgroup_ok and workgroup_ok and extrabuffer_ok and prelude_ok:
             entry["ok"] = True
             report["passed"] += 1
         else:
@@ -330,7 +398,8 @@ def print_report(report: dict) -> None:
         f"Files checked: {total}  |  Passed: {passed}  |  Failed: {failed}  |  "
         f"Skipped: {skipped}  |  Workgroup errors: {wg_blocking}  |  "
         f"Workgroup warnings: {wg_warnings}  |  Grace: {wg_grace}  |  "
-        f"extraBuffer violations: {eb_violations}"
+        f"extraBuffer violations: {eb_violations}  |  "
+        f"Pasted headers: {report.get('prelude_violations', 0)}"
     )
 
     for entry in report["results"]:
@@ -356,6 +425,9 @@ def print_report(report: dict) -> None:
                 f"(need 3 explicit dims): {wg['match']}"
             )
 
+        for v in entry.get("prelude_warnings", []):
+            print(f"  [WARN] {v['message']}")
+
         if entry["ok"]:
             naga_note = "naga skipped" if entry.get("naga_skipped") else "naga OK"
             grace_note = " (workgroup grace)" if entry.get("workgroup_grace") else ""
@@ -371,7 +443,13 @@ def print_report(report: dict) -> None:
             details.append(f"bindgroup {entry['bindgroup_status']}")
         if entry.get("extrabuffer_violations"):
             details.append("extraBuffer [0..132] write")
+        if entry.get("prelude_errors"):
+            details.append("pasted binding header")
         print(f"  ❌ {file} — {', '.join(details) or 'failed'}")
+        for v in entry.get("prelude_errors", []):
+            print(f"      • {v['rule']} {v['message']}")
+            if v.get("fix"):
+                print(f"         Fix: {v['fix']}")
         for v in entry.get("extrabuffer_violations", []):
             print(
                 f"      • extraBuffer[{v.get('expr', '?')}] {v.get('op', '=')} "
@@ -483,7 +561,7 @@ def main() -> int:
             file=sys.stderr,
         )
 
-    report = run_gate(paths, skip_naga=skip_naga)
+    report = run_gate(paths, skip_naga=skip_naga, prelude_changed=not args.full_tree)
 
     REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(REPORT_PATH, "w", encoding="utf-8") as f:

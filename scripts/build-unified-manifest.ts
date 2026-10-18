@@ -25,7 +25,6 @@ interface ShaderEntry {
   tags?: string[];
   features?: string[];
   params?: ShaderParam[];
-  advanced_params?: ShaderParam[];
   performance_target?: string;
   [key: string]: unknown;
 }

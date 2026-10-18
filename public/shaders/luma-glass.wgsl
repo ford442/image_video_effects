@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Luma Glass — Luminance-Driven Refraction & Sellmeier Dispersion
 //  Category: distortion
-//  Features: mouse-driven, audio-reactive, depth-thickness,
-//            sellmeier-dispersion, caustic-trace, fresnel, semantic-alpha, ACES
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba, temporal
 //  Complexity: High
+//  Upgraded: 2026-09-28
+//  Ideas: honest spectral dispersion (7 wavelength taps weighted by a per-channel-normalised wavelength->RGB response, Cauchy delta scaled by Refraction Depth); Laplacian caustic network (luma-height curvature focuses the pointer light, replaces the N.L caustic)
+//  A packing: ACES display RGB + semantic alpha; C read back at exact texel as colour, mixed at 0.08
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -33,6 +35,19 @@ fn aces(x: vec3<f32>) -> vec3<f32> {
 
 fn luminance(c: vec3<f32>) -> f32 {
   return dot(c, vec3<f32>(0.299, 0.587, 0.114));
+}
+
+// Idea 1 helper: CIE-ish wavelength -> RGB response (Gaussian fit per channel,
+// red keeps the small x-bar blue lobe so violet reads purple, not blue).
+fn gauss(x: f32) -> f32 {
+  return exp(-x * x);
+}
+
+fn spectralResponse(wl: f32) -> vec3<f32> {
+  let r = gauss((wl - 600.0) / 45.0) + 0.30 * gauss((wl - 442.0) / 22.0);
+  let g = gauss((wl - 550.0) / 42.0);
+  let b = gauss((wl - 452.0) / 35.0);
+  return vec3<f32>(r, g, b);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -131,7 +146,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   ));
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  let glassThickness = depth * (0.5 + refractBase);
+  // Floor fix: HEAD scaled the slab by raw depth, so a flat/empty depth map
+  // (depth = 0) gave zero refraction, caustic and SSS. Minimum slab 0.35;
+  // identical to HEAD wherever depth >= 0.35.
+  let slabDepth = max(depth, 0.35);
+  let glassThickness = slabDepth * (0.5 + refractBase);
   let nGlass = 1.45 + lumaT * 0.35 + bass * 0.1;
   let nAir = 1.0;
 
@@ -139,16 +158,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let wavelengths = array<f32, 7>(650.0, 610.0, 570.0, 530.0, 470.0, 440.0, 400.0);
   let spectralWeights = array<f32, 7>(0.10, 0.13, 0.16, 0.18, 0.16, 0.15, 0.12);
 
+  // Idea 1: honest spectral dispersion. Cauchy term n(l) = n550 + B*(1/l^2 - 1/0.55^2)
+  // with an artistic B (um^2) driven by Refraction Depth, so the 400..650 nm taps
+  // land a few texels apart on steep luma edges. Each tap feeds R/G/B through
+  // spectralResponse(); per-channel weight sums normalise so flat grey stays grey.
+  let cauchyB = 0.03 + 0.10 * refractBase;
+  var channelWeight = vec3<f32>(0.0);
   for (var i: i32 = 0; i < 7; i = i + 1) {
     let wl = wavelengths[i];
-    let nDisp = nGlass + 0.02 * (1.0 - wl / 550.0);
+    let wlUm = wl * 0.001;
+    let nDisp = nGlass + 0.02 * (1.0 - wl / 550.0) + cauchyB * (1.0 / (wlUm * wlUm) - 1.0 / (0.55 * 0.55));
     let etaDisp = nAir / nDisp;
     let refractDir = refract(vec3<f32>(0.0, 0.0, -1.0), surfaceNormal, etaDisp);
     let offset = refractDir.xy * refractBase * 0.06 * glassThickness;
     let sampleUV = clamp(deformUV + offset, vec2<f32>(0.001), vec2<f32>(0.999));
     let samp = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
-    spectralColor += samp * spectralWeights[i];
+    let wRGB = spectralResponse(wl) * spectralWeights[i];
+    spectralColor += samp * wRGB;
+    channelWeight += wRGB;
   }
+  spectralColor = spectralColor / max(channelWeight, vec3<f32>(1e-4));
 
   let pixelPos = vec3<f32>(uv.x * aspect, uv.y, 0.0);
   let lightPos = vec3<f32>(mouse.x * aspect, mouse.y, 0.25 + lightDistance * 1.2);
@@ -158,7 +187,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let specular = pow(max(dot(surfaceNormal, halfDir), 0.0), mix(12.0, 96.0, specularShine));
   let fresnel = pow(1.0 - max(dot(surfaceNormal, viewDir), 0.0), 3.0);
 
-  let caustic = pow(max(dot(surfaceNormal, lightDir), 0.0), 4.0) * glassThickness * (0.3 + bass * 0.3);
+  // Idea 2: Laplacian caustic network. The luma height field's curvature decides
+  // where the slab focuses the pointer light: convex crests (negative Laplacian)
+  // converge it into bright filaments, flat/concave areas get nothing. A coarse
+  // ring (radius grows with Surface Smoothness) plus the existing fine taps.
+  let cUV = clamp(deformUV, vec2<f32>(0.001), vec2<f32>(0.999));
+  let lumaC = luminance(textureSampleLevel(readTexture, u_sampler, cUV, 0.0).rgb);
+  let lapFine = lumaT + lumaB + lumaL + lumaR - 4.0 * lumaC;
+  let ringR = texel * mix(2.0, 5.0, smoothness);
+  let lcT = luminance(textureSampleLevel(readTexture, u_sampler, clamp(deformUV - vec2<f32>(0.0, ringR.y), vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb);
+  let lcB = luminance(textureSampleLevel(readTexture, u_sampler, clamp(deformUV + vec2<f32>(0.0, ringR.y), vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb);
+  let lcL = luminance(textureSampleLevel(readTexture, u_sampler, clamp(deformUV - vec2<f32>(ringR.x, 0.0), vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb);
+  let lcR = luminance(textureSampleLevel(readTexture, u_sampler, clamp(deformUV + vec2<f32>(ringR.x, 0.0), vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb);
+  let lapCoarse = lcT + lcB + lcL + lcR - 4.0 * lumaC;
+  let lap = lapCoarse + 0.5 * lapFine;
+  // Thin-lens intensity ratio 1/(1 + k*lap): > 1 where rays converge.
+  let focusK = 8.0 * (nGlass - 1.0) * glassThickness;
+  let focus = clamp(1.0 / max(1.0 + focusK * lap, 0.3) - 1.0, 0.0, 2.33);
+  let irradiance = max(lightDir.z, 0.0); // point light: strongest under the pointer
+  let causticTint = mix(vec3<f32>(1.0, 0.96, 0.88), spectralColor / max(lumaC, 0.05), 0.35);
+  let caustic = clamp(causticTint, vec3<f32>(0.0), vec3<f32>(2.0)) * focus * irradiance * (0.3 + bass * 0.3);
   let sss = vec3<f32>(0.15, 0.35, 0.65) * glassThickness * lumaT * 0.25;
 
   let lumaBase = luminance(spectralColor);

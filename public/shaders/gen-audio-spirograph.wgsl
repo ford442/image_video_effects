@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, procedural, epitrochoid curves
 //  Complexity: Medium
-//  Upgraded: 2026-09-06
-//  Ideas: additive gear glow (all curves); rolling-center hubs
+//  Upgraded: 2026-09-27
+//  Ideas: additive gear glow (all curves); rolling-center hubs; stator ghost; cusp flash
 //  A packing: history RGB + coverage
 // ═══════════════════════════════════════════════════════════════════
 
@@ -141,6 +141,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var curveColor = vec3<f32>(0.0);
     var totalIntensity = 0.0;
     var hubGlow = 0.0;
+    var stator = 0.0;
+    var cuspFlash = 0.0;
     
     // Generate multiple spirograph curves
     for (var i: i32 = 0; i < 5; i++) {
@@ -154,16 +156,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let speed = 0.5 + f32(i) * 0.1;
         let time = t * speed;
         let sweep = 6.28318 * mix(0.2, 1.0, trailLength);
-        var prevPos = rot(t * 0.08 + f32(i) * 0.16) * epitrochoid(time, R, r, d);
+        let gearRot = rot(t * 0.08 + f32(i) * 0.16);
+        var prevPos = gearRot * epitrochoid(time, R, r, d);
+        var prevTan = vec2<f32>(0.0);
         var dist = 1000.0;
         var segmentFade = 1.0;
         for (var j: i32 = 1; j <= 12; j = j + 1) {
             let jf = f32(j) / 12.0;
-            let pos = rot(t * 0.08 + f32(i) * 0.16) * epitrochoid(time - sweep * jf, R, r, d);
+            let pos = gearRot * epitrochoid(time - sweep * jf, R, r, d);
             let segDist = distToSegment(uv, prevPos, pos);
             if (segDist < dist) { dist = segDist; segmentFade = 1.0 - jf * 0.65; }
+            let tan = pos - prevPos;
+            let prevLen = length(prevTan);
+            let rev = dot(tan, prevTan) / max(length(tan) * prevLen, 1e-6);
+            let flip = smoothstep(0.2, -0.45, rev) * step(1e-4, prevLen);
+            cuspFlash = max(cuspFlash, exp(-dot(uv - prevPos, uv - prevPos) / max(lineThickness * lineThickness * 10.0, 1e-8)) * flip);
+            prevTan = tan;
             prevPos = pos;
         }
+        // Idea 3 — stator ghost of the fixed circle
+        stator += exp(-abs(length(uv) - R) * 78.0) * 0.42;
         
         let hue = fract(f32(i) * 0.2 + t * 0.14 + treble * 0.2);
         let sat = 0.7 + audio * 0.3;
@@ -190,16 +202,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         
         let time = -t * (0.3 + f32(i) * 0.1);
         let sweep = 6.28318 * mix(0.2, 0.9, trailLength);
-        var prevPos = rot(-t * 0.06) * hypotrochoid(time, R, r, d);
+        let gearRot = rot(-t * 0.06);
+        var prevPos = gearRot * hypotrochoid(time, R, r, d);
+        var prevTan = vec2<f32>(0.0);
         var dist = 1000.0;
         var segmentFade = 1.0;
         for (var j: i32 = 1; j <= 10; j = j + 1) {
             let jf = f32(j) / 10.0;
-            let pos = rot(-t * 0.06) * hypotrochoid(time - sweep * jf, R, r, d);
+            let pos = gearRot * hypotrochoid(time - sweep * jf, R, r, d);
             let segDist = distToSegment(uv, prevPos, pos);
             if (segDist < dist) { dist = segDist; segmentFade = 1.0 - jf * 0.6; }
+            let tan = pos - prevPos;
+            let prevLen = length(prevTan);
+            let rev = dot(tan, prevTan) / max(length(tan) * prevLen, 1e-6);
+            let flip = smoothstep(0.2, -0.45, rev) * step(1e-4, prevLen);
+            cuspFlash = max(cuspFlash, exp(-dot(uv - prevPos, uv - prevPos) / max(lineThickness * lineThickness * 10.0, 1e-8)) * flip);
+            prevTan = tan;
             prevPos = pos;
         }
+        stator += exp(-abs(length(uv) - R) * 78.0) * 0.28;
         let hue = fract(0.5 + f32(i) * 0.15 - t * 0.03);
         let col = hsl2rgb(hue, 0.8, 0.6);
         let add = exp(-dist * dist / max(lineThickness * lineThickness * 36.0, 1e-8)) * 0.7 * segmentFade;
@@ -215,6 +236,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Final color
     var col = curveColor * glow * (1.0 + mids * 0.35) + vec3<f32>(1.0) * core * (0.45 + treble * 0.35);
     col += vec3<f32>(1.0, 0.92, 0.75) * clamp(hubGlow, 0.0, 1.2);
+    col += vec3<f32>(0.55, 0.78, 1.0) * clamp(stator, 0.0, 0.85);
+    col += vec3<f32>(1.0, 0.96, 0.72) * clamp(cuspFlash, 0.0, 1.4) * 0.75;
 
     let uv01 = (vec2<f32>(global_id.xy) + vec2<f32>(0.5)) / resolution;
     var clickChime = 0.0;

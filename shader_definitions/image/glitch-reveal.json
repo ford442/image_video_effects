@@ -1,16 +1,19 @@
 {
   "id": "glitch-reveal",
   "name": "Glitch Reveal",
-  "description": "Chaotic block-scatter noise field stabilized by a sprung cursor reveal window; held widens radius, clicks add capped ripples, exact C feedback, ACES composite.",
+  "description": "Chaotic block-scatter glitch with datamosh holds and tear bands, stabilized by a block-snapped cursor reveal window; held widens it, clicks punch clear holes.",
   "url": "shaders/glitch-reveal.wgsl",
-  "workgroup_size": [16, 16, 1],
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
   "features": [
     "mouse-driven",
     "audio-reactive",
     "click-reactive",
     "held-drag",
     "upgraded-rgba",
-    "spring-cursor",
     "aces-tone-map"
   ],
   "params": [
@@ -47,18 +50,49 @@
       "mapping": "zoom_params.w"
     }
   ],
-  "updatedParams": [
-    { "index": 0, "name": "Block Size", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 1, "name": "Scatter Amount", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 2, "name": "Reveal Radius", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 3, "name": "Jitter Speed", "default": 0.2, "min": 0, "max": 1, "step": 0.01 }
-  ],
   "tags": [
     "filter",
     "image-processing",
     "glitch",
-    "reveal",
-    "spring-cursor"
+    "reveal"
   ],
-  "updated": true
+  "updated": true,
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Block Size",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Scatter Amount",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Reveal Radius",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Jitter Speed",
+          "default": 0.2,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

@@ -11,6 +11,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Dict, Any, Tuple
 
+from wgsl_include import read_expanded_or_raw  # bindings may come from _prelude.wgsl
+
 SHADERS_DIR = Path("/root/image_video_effects/public/shaders")
 OUTPUT_FILE = Path("/root/image_video_effects/reports/wgsl_syntax_report.json")
 
@@ -50,9 +52,8 @@ class WGSLValidator:
     def load(self) -> bool:
         """Load the shader file."""
         try:
-            with open(self.filepath, 'r', encoding='utf-8') as f:
-                self.content = f.read()
-                self.lines = self.content.split('\n')
+            self.content = read_expanded_or_raw(self.filepath)
+            self.lines = self.content.split('\n')
             return True
         except Exception as e:
             self.errors.append({

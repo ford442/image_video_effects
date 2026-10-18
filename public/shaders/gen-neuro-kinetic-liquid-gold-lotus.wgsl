@@ -4,30 +4,12 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-09-14
-//  Ideas: conductor Fresnel on liquid gold (spectral F0 tint at normal, white at grazing); golden-angle phyllotaxis stamen florets firing in spiral order on the core
+//  Ideas: conductor Fresnel on liquid gold (spectral F0 tint at normal, white at grazing); golden-angle phyllotaxis stamen florets firing in spiral order on the core; capillary rivulets running down petal blades as brighter gold channels; Kelvin-Helmholtz shear rolls modulating plasma runners along torque-driven petal flow
 //  A packing: ACES display RGBA in A (rgb = max(ACES(frame), torque-advected C history * decay), a = semantic coverage)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=Time, yz=MouseUV, w=MouseDown
-    zoom_params: vec4<f32>,  // x=Bloom Radius, y=Plasma Intensity, z=Gold Smoothness, w=Mouse Influence
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Bloom Radius, y=Plasma Intensity, z=Gold Smoothness, w=Mouse Influence
 
 fn rotX(angle: f32) -> mat3x3<f32> {
     let s = sin(angle); let c = cos(angle);
@@ -292,7 +274,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Plasma veins logic using fbm
         let vein_noise = fbm(p * 5.0 + vec3<f32>(time * 4.0));
         let runner = pow(max(0.0, sin(atan2(p.z, p.x) * 8.0 + length(p.xz) * 12.0 - time * 22.0)), 10.0);
-        let plasma_factor = clamp((smoothstep(0.4, 0.6, vein_noise) * (0.2 + audio_val) + runner * (0.15 + audioBands.z)) * plasma_int, 0.0, 2.5);
+        // IDEA 4: shear-roll packets ride the torque field and modulate runners.
+        let shearRoll = pow(0.5 + 0.5 * sin(p.y * 20.0 - atan2(p.z, p.x) * 7.0 - time * (8.0 + audioBands.y * 5.0)), 4.0);
+        let plasma_factor = clamp((smoothstep(0.4, 0.6, vein_noise) * (0.2 + audio_val) + runner * (0.15 + audioBands.z) + shearRoll * (0.12 + audioBands.y * 0.1)) * plasma_int, 0.0, 2.5);
         let plasma_col = vec3<f32>(0.0, 1.0, 1.0) * plasma_factor; // Cyan plasma
         let plasma_col2 = vec3<f32>(1.0, 0.0, 1.0) * plasma_factor; // Magenta plasma
         let mixed_plasma = mix(plasma_col, plasma_col2, sin(time)*0.5+0.5);
@@ -300,6 +284,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Combine lighting and material
         // Metals have no diffuse-white highlight: specular and rim are Fresnel-tinted.
         col = base_gold * (diff * 0.5 + 0.2) + fresnel * spec * (1.0 + audioBands.z * 0.3) + fresnel * rim * 0.5 * (0.6 + gold_smooth * 0.5);
+        // IDEA 3: capillary rivulets on petal blades.
+        let rivulet = pow(0.5 + 0.5 * sin(atan2(p.z, p.x) * 20.0 + p.y * 26.0 + time * (4.0 + audioBands.y * 3.0)), 5.0) * smoothstep(0.35, 1.4, length(p.xz));
+        col += vec3<f32>(0.95, 0.68, 0.22) * rivulet * (0.18 + gold_smooth * 0.12);
 
         // Stamen florets on the upper core, firing one after another in spiral (k) order.
         let florets = phyllotaxisFlorets(p);

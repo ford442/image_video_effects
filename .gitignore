@@ -9,8 +9,10 @@ venv/
 .venv/
 emsdk
 
-# clangd / CLion index — regenerate with `npm run wasm:compile-commands`
+# clangd index (machine-absolute paths) — `npm run wasm:compdb`
+# (`wasm:compile-commands` is the same command)
 /compile_commands.json
+wasm_renderer/compile_commands.json
 wasm_renderer/build-ide/
 wasm_renderer/build-cmake/
 .cache/clangd/
@@ -35,3 +37,41 @@ test-results/
 
 # Rust build output for tools/naga_wasm (the wasm artifact is committed to public/wasm/)
 tools/naga_wasm/target/
+
+# Local agent memory / swarm state (kept on disk, never committed).
+# Agent docs that ARE tracked live in docs/agents/; the Jules plan queue stays in shader_plans/.
+/MEMORY.md
+/USER.md
+/SOUL.md
+/IDENTITY.md
+/HEARTBEAT.md
+/TOOLS.md
+/CLAIMS.md
+/grok.md
+/composer.md
+/weekly_plan.md
+/weekly_dispatch.md
+/.swarm-state.md
+/memory/
+/memory_consolidation/
+/memorized_diary/
+/notes/
+/agents/
+/swarm-tasks
+/swarm-outputs
+/.openclaw/
+/.playwright-mcp/
+/.idea/
+
+# Generated / scratch
+tests/smoke/.bundle/
+/temp/
+# Regenerated audit outputs (rerun the script instead of committing)
+/reports/fix_*.json
+/reports/prelude_migration_run*.json
+/reports/phase-f-audit-report.*
+
+# Generated in prestart/prebuild by scripts/build-shader-source-hashes.js
+public/thumbnails/source-hashes.json
+
+coverage/

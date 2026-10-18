@@ -1,5 +1,6 @@
 import { STORAGE_API_URL } from '../config/appConfig';
 import { expandWgslIncludes, hasWgslInclude } from '../wasm/bridge/wgslInclude';
+import { withBundledLibraries } from '../wasm/bridge/wgslLibraries';
 import { resolveShaderUrl } from './resolveShaderUrl';
 
 export interface FetchShaderWgslOptions {
@@ -68,27 +69,45 @@ export async function fetchShaderWgsl(
     if (!candidate || seen.has(candidate)) continue;
     seen.add(candidate);
     const wgsl = await tryFetchWgsl(candidate);
-    if (wgsl) return expandIncludes(wgsl, id, candidate);
+    if (!wgsl) continue;
+    // A copy whose includes cannot be resolved is no better than a missing one:
+    // try the next host rather than give up on the shader.
+    const expanded = await expandIncludes(wgsl, id, candidate);
+    if (expanded !== null) return expanded;
   }
 
   return null;
 }
 
 /**
- * Expand `#include` before the source reaches ShaderCompilation, which receives
- * a finished string and has no way to fetch a library.
+ * Expand `#include` in WGSL fetched from `sourceUrl`. Throws WgslIncludeError
+ * when a library is missing or the include graph is invalid.
  *
- * Libraries resolve as siblings of the file that included them, so a shader
- * served from the CDN pulls its prelude from the CDN too rather than silently
- * mixing sources. A file with no directive is returned untouched — all 1417 of
- * them today.
+ * `_prelude.wgsl` comes from the bundle (wgslLibraries.ts): it describes this
+ * bundle's bind-group layout, and the app deploy does not ship public/shaders,
+ * so a sibling fetch would fail for shaders served from the storage API or a
+ * blob: URL. Every other library resolves as a sibling of the file that
+ * included it, so a shader served from the CDN pulls it from the CDN too.
+ */
+export async function expandFetchedWgsl(wgsl: string, id: string, sourceUrl: string): Promise<string> {
+  const baseUrl = sourceUrl.slice(0, sourceUrl.lastIndexOf('/') + 1);
+  return expandWgslIncludes(
+    wgsl,
+    withBundledLibraries((name) => tryFetchWgsl(`${baseUrl}${name}`)),
+    `${id}.wgsl`,
+  );
+}
+
+/**
+ * Expand `#include` before the source reaches ShaderCompilation, which receives
+ * a finished string and has no way to fetch a library. A file with no directive
+ * is returned untouched; a failed expansion logs and returns null.
  */
 async function expandIncludes(wgsl: string, id: string, sourceUrl: string): Promise<string | null> {
   if (!hasWgslInclude(wgsl)) return wgsl;
 
-  const baseUrl = sourceUrl.slice(0, sourceUrl.lastIndexOf('/') + 1);
   try {
-    return await expandWgslIncludes(wgsl, (name) => tryFetchWgsl(`${baseUrl}${name}`), `${id}.wgsl`);
+    return await expandFetchedWgsl(wgsl, id, sourceUrl);
   } catch (err) {
     console.error(`[fetchShaderWgsl] ${id}: ${(err as Error).message}`);
     return null;

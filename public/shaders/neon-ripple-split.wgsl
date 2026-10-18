@@ -1,43 +1,22 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Neon Ripple Split - Alpha Translucency Edition
+//  Neon Ripple Split
 //  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba, semantic-alpha
 //  Complexity: Medium
-//  Transform: Replaced per-channel RGB sampling with unified
-//             displacement field + spectral tint via mix().
-//             Alpha encodes ripple displacement * bass pulse.
-//             Added gravityWell mouse attraction and temporal feedback.
+//  Upgraded: 2026-10-05
+//  Ideas: crest RGB split along the shear axis; neon seam lines at shear zero crossings (alpha = max(displacement, seam))
+//  A packing: linear pre-ACES RGBA (12% feedback, exact C load); (0,0) = bass env + sentinel -7 in .w
+// ═══════════════════════════════════════════════════════════════════
+//  A sine shear runs down the screen and displaces the image in x; pink
+//  neon and a spectral tint light up where the displacement peaks. Hold the
+//  mouse for a gravity well, click for ripples.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=SplitAmount, y=RippleSpeed, z=Intensity, w=SplitCount
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Shear Amount, y=Ripple Speed, z=Glow Intensity, w=Frequency (spatial, mix(8,40,w))
 
 const TAU: f32 = 6.28318530717958647692;
-
-// Fast approximate sin via parabolic min-max.
-fn fastSin(x: f32) -> f32 {
-    let x_red = x - TAU * floor((x + 3.14159265) / TAU);
-    let xa = abs(x_red);
-    return x_red * (1.0 - 0.21 * xa) - 0.063 * x_red * xa;
-}
+const STATE_SENTINEL: f32 = -7.0;
 
 // ═══ Audio envelope (smooth attack/release) ═══
 fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
@@ -49,7 +28,7 @@ fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
 fn gravityWell(pos: vec2<f32>, wellPos: vec2<f32>, strength: f32) -> vec2<f32> {
     let d = wellPos - pos;
     let dist2 = dot(d, d) + 0.01;
-    return normalize(d) * strength / dist2;
+    return (d / max(length(d), 1e-4)) * strength / dist2;
 }
 
 // ═══ Tent alpha curve ═══
@@ -66,6 +45,14 @@ fn wavelengthToRGB(offset: f32) -> vec3<f32> {
     return vec3<f32>(r, g, b);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn safeRGB(v: vec3<f32>) -> vec3<f32> {
+    return clamp(select(vec3<f32>(0.0), v, v == v), vec3<f32>(0.0), vec3<f32>(16.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -77,18 +64,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let isMouseDown = u.zoom_config.w > 0.5;
     let bass = plasmaBuffer[0].x;
 
-    // ─── Audio envelope with attack/release, persisted in dataTextureA ───
-    var prevEnv = 0.0;
-    if (global_id.x == 0u && global_id.y == 0u) {
-        prevEnv = textureSampleLevel(dataTextureC, u_sampler, vec2<f32>(0.0), 0.0).r;
-    }
+    // ─── Audio envelope with attack/release, persisted in the (0,0) state texel ───
+    // FIX: every pixel reads the env from C(0,0); valid only behind the sentinel.
+    let stateRaw = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+    let stateOk = stateRaw.w == STATE_SENTINEL && stateRaw.r == stateRaw.r;
+    let prevEnv = select(0.0, clamp(stateRaw.r, 0.0, 4.0), stateOk);
     let env = bass_env(prevEnv, bass, 0.8, 0.15);
 
     // ─── Parameters ───
     let splitAmount = u.zoom_params.x * 0.1 * (1.0 + env * 0.3);
     let rippleSpeed = u.zoom_params.y * 5.0;
     let intensity   = u.zoom_params.z * 2.0;
-    let splitCount  = u.zoom_params.w * 5.0 + 2.0;
+    // FIX: w is the spatial frequency of the shear (default 0.5 → 20, HEAD's
+    // constant) and no longer multiplies the amplitude.
+    let frequency   = mix(8.0, 32.0, u.zoom_params.w);
 
     // Mouse X modulates ripple speed, Mouse Y drives spectral phase
     let mouseSpeedMod = 1.0 + mousePos.x * 0.5;
@@ -104,7 +93,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // ─── Ripple system integration ───
     var rippleSum = 0.0;
-    let rippleCount = u32(u.config.y);
+    let rippleCount = min(u32(u.config.y), 50u);
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
         let rPos = ripple.xy;
@@ -112,23 +101,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let rElapsed = time - rStart;
         if (rElapsed > 0.0 && rElapsed < 3.0) {
             let rDist = distance(uv, rPos);
-            let rWave = fastSin(rDist * 40.0 - rElapsed * 8.0) * exp(-rElapsed * 1.5);
-            rippleSum = rippleSum + rWave * smoothstep(0.3, 0.0, rDist);
+            let rWave = sin(rDist * 40.0 - rElapsed * 8.0) * exp(-rElapsed * 1.5);
+            rippleSum = rippleSum + rWave * (1.0 - smoothstep(0.0, 0.3, rDist));
         }
     }
 
     // ─── Single smooth displacement field (NO per-channel UVs) ───
-    let baseRipple = fastSin(uv.y * 20.0 - time * effectiveRippleSpeed) * splitAmount;
-    let dx = (baseRipple * splitCount + rippleSum) * (1.0 + depth * 0.5);
+    let shearPhase = uv.y * frequency - time * effectiveRippleSpeed;
+    let shearWave = sin(shearPhase);
+    let baseRipple = shearWave * splitAmount;
+    let dx = (baseRipple + rippleSum) * (1.0 + depth * 0.5);
     let smoothOffset = vec2<f32>(dx, 0.0) + gravityOffset;
     let displacedUV = clamp(uv + smoothOffset, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // Single sample from unified UV
-    let baseColor = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
+    // ── Idea 1: crest RGB split — at the crests of the shear (|sin| → 1) the
+    // R and B channels sample ±dx*0.15 apart along the shear (x) axis, G stays
+    // on the unified UV. Zero at the zero crossings, so flat regions stay clean.
+    let crest = smoothstep(0.45, 1.0, abs(shearWave));
+    let splitOff = vec2<f32>(dx * 0.15 * crest, 0.0);
+    let sampleG = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
+    let sampleR = textureSampleLevel(readTexture, u_sampler, clamp(displacedUV + splitOff, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let sampleB = textureSampleLevel(readTexture, u_sampler, clamp(displacedUV - splitOff, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+    let baseColor = vec3<f32>(sampleR, sampleG.g, sampleB);
 
-    // ─── Temporal feedback via dataTextureC ───
+    // ─── Temporal feedback via dataTextureC (exact load; C holds linear colour) ───
     let displacementMagnitude = length(smoothOffset);
-    let prevColor = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+    let prevColor = safeRGB(textureLoad(dataTextureC, coord, 0).rgb);
     let feedbackMix = tentAlpha(displacementMagnitude * 2.0) * 0.12;
     let feedbackColor = mix(baseColor, prevColor, feedbackMix);
 
@@ -141,21 +139,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Neon emission proportional to displacement magnitude
     let absRipple = abs(baseRipple) + abs(rippleSum) * 0.5;
     let neon = vec3<f32>(1.0, 0.5, 0.8) * absRipple * 10.0 * intensity;
-    let finalColor = tintedColor + neon;
 
-    // ─── Alpha = ripple displacement * bass pulse + neon emission ───
+    // ── Idea 2: neon seam lines — a thin horizontal seam where the shear
+    // crosses zero (|sin| < ~0.12 → ~6 px at 1080p for frequency 20), lit in
+    // the pink neon mixed with the spectral tint and pumped by the bass env.
+    let seam = pow(1.0 - smoothstep(0.0, 0.12, abs(shearWave)), 2.0);
+    let seamColor = mix(vec3<f32>(1.0, 0.5, 0.8), spectralTint * 1.5, 0.5) * seam * intensity * (0.5 + env * 0.6) * 0.8;
+    let finalColor = tintedColor + neon + seamColor;
+
+    // ─── Alpha = max(ripple displacement * bass pulse + neon emission, seam) ───
     let bassPulse = 0.3 + env * 0.7;
     let neonAlpha = absRipple * 0.4 * intensity;
-    let alpha = clamp(displacementMagnitude * bassPulse * 3.0 + neonAlpha, 0.0, 1.0);
+    let seamAlpha = seam * clamp(intensity, 0.0, 1.0) * 0.9;
+    let alpha = clamp(max(displacementMagnitude * bassPulse * 10.0 + neonAlpha, seamAlpha), 0.0, 1.0);
 
-    textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
+    let display = acesToneMap(max(finalColor, vec3<f32>(0.0)));
+    textureStore(writeTexture, coord, vec4<f32>(display, alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 
-    // Persist env at (0,0), color everywhere else in dataTextureA
+    // Persist env at (0,0) (single writer, sentinel in .w); linear colour everywhere else
     if (coord.x == 0 && coord.y == 0) {
-        textureStore(dataTextureA, coord, vec4<f32>(env, 0.0, 0.0, 0.0));
+        textureStore(dataTextureA, coord, vec4<f32>(env, 0.0, 0.0, STATE_SENTINEL));
     } else {
-        textureStore(dataTextureA, coord, vec4<f32>(finalColor, alpha));
+        textureStore(dataTextureA, coord, vec4<f32>(max(finalColor, vec3<f32>(0.0)), alpha));
     }
-    textureStore(dataTextureB, coord, vec4<f32>(finalColor, alpha));
 }

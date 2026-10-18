@@ -1,37 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Elastic Chromatic — Interactivist Upgrade
-//  Category: distortion / visual-effects
-//  Features: mouse-driven, depth-aware, audio-reactive, chromatic-aberration,
-//            temporal-feedback, split-tone, blackbody-temperature, aces-tone-map,
-//            ign-dither, premultiplied-alpha, alpha-layered, luminance-key,
-//            accumulative-alpha, spring-damper-mouse, click-shockwave, iq-palette
+//  Elastic Chromatic
+//  Category: visual-effects
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgrade: spring-damper elastic mouse lag (state in extraBuffer) so the
-//           chromatic source overshoots and settles like a damped spring; click
-//           shockwave ring boosts the chromatic split; IQ cosine palette tint
-//           layered at low mix over the blackbody/split-tone grade.
+//  Upgraded: 2026-10-09
+//  Ideas: wavelength-dependent EMA lag; Rayleigh tint on the lag residual
+//  A packing: linear display RGBA in A (C is color history); ACES on writeTexture
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Elasticity, y=Damping, z=ShockwaveBoost, w=PaletteMix
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Elasticity, y=Damping, z=ShockwaveBoost, w=PaletteMix
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -266,15 +244,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depthMod = (1.0 - depth) * 0.35;
 
     // ── Per-channel elastic lag ────────────────────────────────────
-    let lagR = clamp(elasticity + influence + depthMod + lissInfluence, 0.0, MAX_LAG) * dampLag;
-    let lagB = clamp(elasticity * 0.8 + influence * 0.5 + depthMod * 0.5 + lissInfluence * 0.7, 0.0, MAX_LAG) * dampLag;
+    let lagRRaw = clamp(elasticity + influence + depthMod + lissInfluence, 0.0, MAX_LAG) * dampLag;
+    let lagBRaw = clamp(elasticity * 0.8 + influence * 0.5 + depthMod * 0.5 + lissInfluence * 0.7, 0.0, MAX_LAG) * dampLag;
     let lagG = clamp(elasticity * 0.6 + influence * 0.3, 0.0, MAX_LAG) * dampLag;
+    // Shorter wavelengths catch the live sample. Red keeps the trail.
+    let lagR = clamp(lagRRaw * 1.14, 0.0, MAX_LAG);
+    let lagB = clamp(lagBRaw * 0.58, 0.0, MAX_LAG);
 
     // ── Temporal chromatic accumulation in linear light ────────────
     var color = vec3<f32>(0.0);
     color.r = ema(source.r, prev.r, lagR);
     color.g = ema(source.g, prev.g, lagG);
     color.b = ema(source.b, prev.b, lagB);
+    // Rayleigh tint on the lag residual: blue scatters, red stays in the trail.
+    let residual = color - source;
+    color = color + vec3<f32>(0.12, 0.28, 0.85) * length(residual) * chromaticScale * 1.6;
 
     // ── Audio-reactive split-tone temperature grading ──────────────
     let lumPre = luma(color);

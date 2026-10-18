@@ -61,38 +61,42 @@
     "thermal",
     "grid"
   ],
-  "updatedParams": [
-    {
-      "id": "strength",
-      "name": "Grid Density",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "description": "Number of plasma cells across the frame (maps to zoom_params.x)."
-    },
-    {
-      "id": "speed",
-      "name": "Base Temperature",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "description": "Cell base temperature in Kelvin, 800-12000 K (maps to zoom_params.y)."
-    },
-    {
-      "id": "glow",
-      "name": "Audio Heat Gain",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "description": "How much spectrum energy adds to cell temperature (maps to zoom_params.z)."
-    },
-    {
-      "id": "radius",
-      "name": "Glow Width",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "description": "Gaussian hotspot sigma; hotter cells glow wider (maps to zoom_params.w)."
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "id": "strength",
+          "name": "Grid Density",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "description": "Number of plasma cells across the frame (maps to zoom_params.x)."
+        },
+        {
+          "id": "speed",
+          "name": "Base Temperature",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "description": "Cell base temperature in Kelvin, 800-12000 K (maps to zoom_params.y)."
+        },
+        {
+          "id": "glow",
+          "name": "Audio Heat Gain",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "description": "How much spectrum energy adds to cell temperature (maps to zoom_params.z)."
+        },
+        {
+          "id": "radius",
+          "name": "Glow Width",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "description": "Gaussian hotspot sigma; hotter cells glow wider (maps to zoom_params.w)."
+        }
+      ]
     }
-  ]
+  }
 }

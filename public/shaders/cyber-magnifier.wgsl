@@ -1,14 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Cyber Magnifier
 //  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: Medium
-//  Chunks From: cyber-magnifier
-//  Upgraded: 2026-05-30
-//  Batch 17 upgrade (Algorithmist): hue-preserving HDR clamp on the
-//  additive HUD glow, spring-damper lens glide (extraBuffer[133..134]),
-//  and click-driven lens flares with a magnification pulse.
+//  Upgraded: 2026-10-04
+//  Ideas: digital-zoom texel grid at high magnification; sweep-traced Sobel outlines; depth rangefinder arc
+//  A packing: masks (inLens, border, sweep, alpha); texel (0,0) = (glide.x, glide.y, 7 marker, 1) lens state
 // ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -23,6 +22,7 @@
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
+
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
@@ -33,6 +33,10 @@ struct Uniforms {
 // Hue-preserving highlight clamp: scales rgb toward a peak ceiling while
 // keeping channel ratios (and therefore hue) intact. Tames the additive
 // HUD glow stack before the border/vignette mixes push cyan into clip.
+fn lumaOf(c: vec3<f32>) -> f32 {
+    return dot(c, vec3<f32>(0.299, 0.587, 0.114));
+}
+
 fn huePreserveClamp(rgb: vec3<f32>, ceiling: f32) -> vec3<f32> {
     let peak = max(rgb.r, max(rgb.g, rgb.b));
     if (peak > ceiling) {
@@ -53,19 +57,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aspect = resolution.x / resolution.y;
     let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // ── Spring-damper lens glide ─────────────────────────────────────
-    // Persistent eased lens center lives in extraBuffer[133..134]. The raw
-    // mouse is the spring target each frame; the lens glides toward it with
-    // a critically-damped style exponential approach (no overshoot).
-    var lensCenter = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    if ((lensCenter.x == 0.0 && lensCenter.y == 0.0) && time < 2.0) {
-        lensCenter = rawMouse; // first frames: snap, no fly-in from origin
-    }
+    // ── Lens glide ───────────────────────────────────────────────────
+    // HEAD kept the eased centre in extraBuffer[133..134], written by every
+    // pixel. The host re-uploads extraBuffer each frame, so after 2 s the lens
+    // sat at 0.16 x mouse. The centre now lives in A texel (0,0) and is read
+    // back with an exact C load: every pixel computes the same glide from last
+    // frame's value, and only (0,0) stores it.
+    let glideState = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+    let hasGlide = abs(glideState.z - 7.0) < 0.01;
+    let lensCenter = select(rawMouse, glideState.xy, hasGlide);
     let glide = lensCenter + (rawMouse - lensCenter) * 0.16;
-    extraBuffer[133] = glide.x;
-    extraBuffer[134] = glide.y;
     let mouse = glide;
-
     // ── Slider-driven constants (u.zoom_params.x/y/z/w) ──────────────
     let baseMagnification = mix(1.0, 4.0, u.zoom_params.x);
     let radius = mix(0.1, 0.45, u.zoom_params.y);
@@ -114,12 +116,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rUV = clamp(uvZoomed - aberrationOffset, vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
     let gUV = uvZoomed;
     let bUV = clamp(uvZoomed + aberrationOffset, vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
-    let lensColor = vec4<f32>(
+    let smoothLens = vec3<f32>(
         textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r,
         textureSampleLevel(readTexture, u_sampler, gUV, 0.0).g,
-        textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b,
-        1.0
+        textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b
     );
+    // Idea 1: digital zoom. Past ~2.5x the magnifier stops interpolating and
+    // shows the source texels themselves, each one outlined by the texel grid.
+    let texRes = vec2<f32>(textureDimensions(readTexture));
+    let pixAmt = smoothstep(2.2, 3.6, magnification);
+    let snapR = (floor(rUV * texRes) + vec2<f32>(0.5)) / texRes;
+    let snapG = (floor(gUV * texRes) + vec2<f32>(0.5)) / texRes;
+    let snapB = (floor(bUV * texRes) + vec2<f32>(0.5)) / texRes;
+    let blockLens = vec3<f32>(
+        textureSampleLevel(readTexture, u_sampler, snapR, 0.0).r,
+        textureSampleLevel(readTexture, u_sampler, snapG, 0.0).g,
+        textureSampleLevel(readTexture, u_sampler, snapB, 0.0).b
+    );
+    let texelLocal = abs(fract(gUV * texRes) - 0.5);
+    let texelLine = smoothstep(0.42, 0.5, max(texelLocal.x, texelLocal.y)) * pixAmt;
+    let lensColor = vec4<f32>(mix(smoothLens, blockLens, pixAmt) * (1.0 - texelLine * 0.45), 1.0);
     let bgColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     var finalColor = mix(bgColor, lensColor, inLens);
 
@@ -127,11 +143,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let gridUV = distVecAspect * (18.0 + mids * 18.0);
     let gridLines = abs(fract(gridUV - 0.5) - 0.5);
     let lineMask = smoothstep(0.48, 0.43, min(gridLines.x, gridLines.y));
-    let ringPhase = abs(fract(length(gridUV) - time * (0.8 + bass * 2.0)) - 0.5);
-    let ringMask = smoothstep(0.18, 0.04, ringPhase);
+    // Fixed rates: scaling time by live audio made rings and sweep jump phase.
+    // Audio now widens and brightens them instead.
+    let ringPhase = abs(fract(length(gridUV) - time * 0.8) - 0.5);
+    let ringMask = smoothstep(0.18 + bass * 0.08, 0.04, ringPhase);
     let scanAngle = atan2(distVecAspect.y, distVecAspect.x);
-    let sweep = smoothstep(0.82, 0.99, cos(scanAngle - time * (1.6 + treble * 3.0)));
-    let hudGlow = vec4<f32>(0.0, 1.0, 1.0, 1.0) * (lineMask * 0.18 + ringMask * 0.12 + sweep * 0.2) * gridOpacity * inLens;
+    let sweepPhase = time * 1.6;
+    let sweep = smoothstep(0.82 - treble * 0.12, 0.99, cos(scanAngle - sweepPhase));
+
+    // Idea 2: sweep-traced outlines. Sobel edges of the magnified image light
+    // up as the radar beam passes over them and fade out behind it.
+    let zt = vec2<f32>(1.0) / texRes / magnification * 1.5;
+    let gx = lumaOf(textureSampleLevel(readTexture, u_sampler, clamp(gUV + vec2<f32>(zt.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb)
+           - lumaOf(textureSampleLevel(readTexture, u_sampler, clamp(gUV - vec2<f32>(zt.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb);
+    let gy = lumaOf(textureSampleLevel(readTexture, u_sampler, clamp(gUV + vec2<f32>(0.0, zt.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb)
+           - lumaOf(textureSampleLevel(readTexture, u_sampler, clamp(gUV - vec2<f32>(0.0, zt.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb);
+    let edge = smoothstep(0.06, 0.3, length(vec2<f32>(gx, gy)));
+    let behind = fract((sweepPhase - scanAngle) / 6.28318530718);
+    let traced = edge * exp(-behind * 5.0) * inLens;
+
+    let hudGlow = vec4<f32>(0.0, 1.0, 1.0, 1.0) * ((lineMask * 0.18 + ringMask * 0.12 + sweep * 0.2) * gridOpacity * inLens + traced * (0.25 + gridOpacity * 0.45));
     finalColor = finalColor + hudGlow;
 
     // Tame the stacked additive glow BEFORE the border/vignette mixes so
@@ -145,6 +176,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     finalColor = vec4<f32>(finalColor.rgb + vec3<f32>(0.2, 0.9, 1.0) * flareGlow * (0.6 + bass * 0.4), finalColor.a);
     finalColor = vec4<f32>(huePreserveClamp(finalColor.rgb, 1.2), finalColor.a);
 
+    // Idea 3: rangefinder. An arc of ticks outside the border fills clockwise
+    // from 12 o'clock in proportion to the depth under the lens centre.
+    let centreDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, mouse, 0.0).r;
+    let arcBand = 1.0 - smoothstep(0.003, 0.006, abs(dist - (radius + 0.018)));
+    let arcAngle = fract((scanAngle + 1.5707963) / 6.28318530718);
+    let arcFill = 1.0 - step(centreDepth * 0.75, arcAngle);
+    let tick = 1.0 - smoothstep(0.08, 0.2, abs(fract(arcAngle * 36.0) - 0.5) * 2.0);
+    let rangeMark = arcBand * mix(tick * 0.25, 0.4 + tick * 0.6, arcFill);
+    finalColor = vec4<f32>(finalColor.rgb + vec3<f32>(0.35, 1.0, 0.95) * rangeMark * (0.5 + gridOpacity * 0.5), finalColor.a);
+
     let vignette = smoothstep(radius, radius + 0.2, dist);
     finalColor = mix(finalColor, finalColor * (0.65 - mids * 0.08), vignette * 0.55);
 
@@ -155,5 +196,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(writeTexture, vec2<i32>(global_id.xy), outPixel);
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
     // dataTextureA packing: (inLens, border, sweep, alpha) mask data — not color.
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(inLens, border, sweep, alpha));
+    var aOut = vec4<f32>(inLens, border, sweep, alpha);
+    if (global_id.x == 0u && global_id.y == 0u) {
+        aOut = vec4<f32>(glide, 7.0, 1.0);
+    }
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), aOut);
 }

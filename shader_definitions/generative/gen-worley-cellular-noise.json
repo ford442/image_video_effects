@@ -10,50 +10,58 @@
     "abstract",
     "natural"
   ],
-  "description": "Worley cellular noise generating organic tissue-like patterns. Computes F1, F2, and cell boundaries with time-varying feature points, fBm variation, and subsurface scattering simulation.",
+  "description": "Worley cellular noise growing a living, soft-walled tissue: F1/F2 cells in pink, coral and ivory with subsurface-scattered walls, fBm variation and organic temporal drift. Feature points orbit smoothly per cell. Membranes act as thin lenses: the Chromatic Aberration slider splits red and blue by resampling the tissue along the wall gradient. Bass raises turgor pressure so cells swell into bright domes and their walls thin, and bright nodes mark every triple junction where three cells meet. The pointer pans the tissue; holding the mouse pushes the cells outward and flares the walls.",
   "workgroup_size": [
     16,
     16,
     1
-  ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Cell Scale",
-      "default": 0.4,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Animation Speed",
-      "default": 0.25,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Chromatic Aberration",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Organic Variation",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
   ],
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
   "id": "gen-worley-cellular-noise",
   "url": "shaders/gen-worley-cellular-noise.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Cell Scale",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Animation Speed",
+          "default": 0.25,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Chromatic Aberration",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Organic Variation",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

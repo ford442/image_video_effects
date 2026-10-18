@@ -5,7 +5,9 @@
 //  Complexity: High
 //  Chunks From: previous aurora work + improved spectral layering
 //  Created: 2026-05-23
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-06-06, 2026-09-27
+//  Ideas: curtain rays along the curl; greener lower border on each band
+//  A packing: pre-ACES display RGBA; ACES on writeTexture
 //  Updated: 2026-05-31
 //  By: Grok (visual flourish pass — richer color, motion, and atmospheric depth)
 // ═══════════════════════════════════════════════════════════════════
@@ -178,11 +180,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let altitudeShift = (0.5 - mousePos.y) * 0.4;
   let tempShift = mousePos.x * 0.2;
 
-  // Smooth bass for audio reactivity
-  var prevBass = extraBuffer[0];
+  // Smooth bass for audio reactivity. extraBuffer[133] only, one writer.
+  var prevBass = extraBuffer[133];
   let smoothBass = bass_env(prevBass, bass, 0.15, 0.02);
   if (gid.x == 0u && gid.y == 0u) {
-    extraBuffer[0] = smoothBass;
+    extraBuffer[133] = smoothBass;
   }
 
   // Temporal feedback: read previous frame state
@@ -222,6 +224,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let bandWidth = mix(0.06, 0.14, bandT + smoothBass * 0.2);
     let bandProfile = exp(-(bandY * bandY) / (bandWidth * bandWidth));
 
+    // Idea: curtain rays — vertical striations, stronger on the curl's vertical component.
+    let rayCol = abs(fract(uv.x * 46.0 + curl.x * 2.0) - 0.5);
+    let rays = smoothstep(0.22, 0.02, rayCol);
+    let rayAmp = rays * (0.25 + abs(curl.y) * 1.6) * bandProfile;
+
     // FBM detail adds fine structure within bands
     let detailNoise = dwfbm3(
       vec3<f32>(uv.x * 6.0 + motionX * 2.0, uv.y * 4.0, time * 0.2 + f32(b)),
@@ -232,6 +239,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Band intensity modulated by audio
     let audioBoost = 1.0 + smoothBass * 0.6 + mids * 0.3 * bandT;
     var bandIntensity = bandProfile * detailMask * audioBoost * densityParam;
+    bandIntensity = bandIntensity * (1.0 + rayAmp);
+
+    // Idea: lower border — a sharp green hem under the Gaussian. The top stays the soft tail.
+    let hemArg = (bandY - bandWidth * 0.9) / max(bandWidth * 0.22, 0.001);
+    let hem = exp(-(hemArg * hemArg));
+    let hemCol = vec3<f32>(0.12, 0.92, 0.42) * hem * bandProfile * densityParam * (0.6 + smoothBass * 0.35);
 
     // Exponential falloff toward top and bottom of screen for atmospheric perspective
     let atmoFalloff = exp(-abs(uv.y - 0.5) * 2.5);
@@ -257,7 +270,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let bandDensity = clamp(bandIntensity, 0.0, 1.0);
     let bandAlpha = bandDensity * (0.4 + bandT * 0.3);
 
-    accumulatedColor = accumulatedColor + bandColor * bandDensity * glowParam;
+    accumulatedColor = accumulatedColor + bandColor * bandDensity * glowParam + hemCol;
     accumulatedDensity = accumulatedDensity + bandDensity;
     accumulatedAlpha = accumulatedAlpha + bandAlpha;
   }

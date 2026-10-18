@@ -40,27 +40,45 @@ export function parseAudioSource(raw: unknown): AudioSource | null {
 }
 
 export function mappingToSlotParamKey(mapping: string | undefined, index: number): keyof SlotParams | null {
-  if (mapping && ZOOM_MAPPING_TO_SLOT[mapping]) {
-    return ZOOM_MAPPING_TO_SLOT[mapping];
+  const mapped = mapping ? ZOOM_MAPPING_TO_SLOT[mapping] : undefined;
+  if (mapped) {
+    return mapped;
   }
   return SLOT_KEYS[index] ?? null;
 }
 
+export interface ResolveAudioTargetsOptions {
+  /**
+   * Only return params with explicit `audio` metadata (no positional fallback,
+   * no synthetic targets). Defaults to true for every category except
+   * `generative`, which keeps its historical positional-band behaviour.
+   */
+  requireExplicit?: boolean;
+}
+
 /**
- * Resolve audio-reactive targets for a generative shader.
- * Uses param `mapping` + `audio` metadata; falls back to positional bands.
+ * Resolve audio-reactive targets for a shader.
+ * Uses param `mapping` + `audio` metadata. Generative shaders fall back to
+ * positional bands; other categories (simulation, interactive-mouse, graphs)
+ * only map params that declare `audio`.
  */
-export function resolveAudioTargets(shaderEntry: ShaderEntry | undefined): AudioParamTarget[] {
+export function resolveAudioTargets(
+  shaderEntry: ShaderEntry | undefined,
+  options: ResolveAudioTargetsOptions = {},
+): AudioParamTarget[] {
+  const requireExplicit = options.requireExplicit ?? (shaderEntry?.category !== 'generative');
   const params = shaderEntry?.params ?? [];
   const targets: AudioParamTarget[] = [];
 
-  for (let i = 0; i < Math.min(4, params.length); i++) {
-    const param = params[i];
+  for (const [i, param] of params.slice(0, 4).entries()) {
     const slotKey = mappingToSlotParamKey(param.mapping, i);
     if (!slotKey) continue;
 
+    const explicit = parseAudioSource(param.audio);
+    if (requireExplicit && !explicit) continue;
+
     const audioSource =
-      parseAudioSource(param.audio) ??
+      explicit ??
       FALLBACK_BANDS[i] ??
       'overall';
 
@@ -73,10 +91,10 @@ export function resolveAudioTargets(shaderEntry: ShaderEntry | undefined): Audio
     });
   }
 
-  if (targets.length === 0) {
+  if (targets.length === 0 && !requireExplicit) {
     return SLOT_KEYS.map((slotParamKey, i) => ({
       slotParamKey,
-      audioSource: FALLBACK_BANDS[i],
+      audioSource: FALLBACK_BANDS[i] ?? 'overall',
       min: 0,
       max: 1,
       default: 0.5,
@@ -107,4 +125,60 @@ export function sampleAudioSource(
     default:
       return bands.overall;
   }
+}
+
+export type AudioBands = { bass: number; mid: number; treble: number; overall: number };
+
+export interface AudioSlotInput {
+  slot: number;
+  targets: AudioParamTarget[];
+  /** Fallback base per target index (shader defaults) when no performer base exists. */
+  defaults: number[];
+}
+
+export interface ComputeAudioSlotUpdatesInput {
+  slots: AudioSlotInput[];
+  bands: AudioBands;
+  fftBins: Float32Array | number[] | null;
+  amount: number;
+  /** EMA state keyed `${slot}:${slotParamKey}`; mutated in place. */
+  smoothed: Record<string, number>;
+  isHeld: (slot: number, key: string) => boolean;
+  baseFor: (slot: number, key: string) => number | undefined;
+  smoothing?: number;
+}
+
+/**
+ * Pure per-frame host audio mapping across every active slot. Held params are
+ * skipped entirely (their smoothing state is left alone so release is seamless).
+ */
+export function computeAudioSlotUpdates({
+  slots,
+  bands,
+  fftBins,
+  amount,
+  smoothed,
+  isHeld,
+  baseFor,
+  smoothing = 0.15,
+}: ComputeAudioSlotUpdatesInput): Array<{ slot: number; updates: Partial<SlotParams> }> {
+  const out: Array<{ slot: number; updates: Partial<SlotParams> }> = [];
+  for (const { slot, targets, defaults } of slots) {
+    const updates: Partial<SlotParams> = {};
+    let any = false;
+    targets.forEach((target, idx) => {
+      const key = target.slotParamKey;
+      if (isHeld(slot, key)) return;
+      const raw = sampleAudioSource(target.audioSource, bands, fftBins);
+      const sk = `${slot}:${key}`;
+      const prev = smoothed[sk] ?? raw;
+      const s = prev + (raw - prev) * smoothing;
+      smoothed[sk] = s;
+      const base = baseFor(slot, key) ?? defaults[idx] ?? target.default;
+      updates[key] = Math.max(target.min, Math.min(target.max, base + (s - 0.5) * amount));
+      any = true;
+    });
+    if (any) out.push({ slot, updates });
+  }
+  return out;
 }

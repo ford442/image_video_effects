@@ -12,50 +12,52 @@
     "generative",
     "4th-of-july"
   ],
-  "description": "Perfect ring and halo shells that bloom as luminous donuts in the night sky. Sparks launch outward along a crisp circular front then cascade downward with gravity. Classic Saturn-ring pyrotechnics with jewel-tone cycling. Bass widens the ring, treble adds inner sparkle. Mouse launches a personal halo at the cursor. Upgraded with HDR overbright burst cores, audio-reactive color temperature (bass warms, treble cools), atmospheric burst haze with depth fog, and real generated depth from spark heat.",
+  "description": "Perfect ring and halo shells that bloom as luminous donuts in the night sky. Sparks launch outward along a crisp circular front then cascade downward with gravity. Classic Saturn-ring pyrotechnics with jewel-tone cycling. Bass widens the ring, treble adds inner sparkle. Mouse launches a personal halo at the cursor. Upgraded with HDR overbright burst cores, audio-reactive color temperature (bass warms, treble cools), atmospheric burst haze with depth fog, and real generated depth from spark heat. Each ring rolls to its own axis, and the far half of the tilted ring burns dimmer than the near half.",
   "workgroup_size": [
     16,
     16,
     1
   ],
   "params": [
-    { "id": "ringRadius", "name": "Ring Radius", "default": 0.65, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.x", "audio": "bass" },
-    { "id": "thickness", "name": "Thickness", "default": 0.45, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.y", "audio": "mid" },
-    { "id": "sparkCount", "name": "Spark Count", "default": 0.6, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.z", "audio": "treble" },
-    { "id": "colorCycle", "name": "Color Cycle", "default": 0.3, "min": 0, "max": 1, "step": 0.01, "mapping": "zoom_params.w", "audio": "overall" }
-  ],
-  "updatedParams": [
     {
-      "index": 0,
+      "id": "ringRadius",
       "name": "Ring Radius",
       "default": 0.65,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "audio": "bass"
     },
     {
-      "index": 1,
+      "id": "thickness",
       "name": "Thickness",
       "default": 0.45,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "audio": "mid"
     },
     {
-      "index": 2,
+      "id": "sparkCount",
       "name": "Spark Count",
       "default": 0.6,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "audio": "treble"
     },
     {
-      "index": 3,
+      "id": "colorCycle",
       "name": "Color Cycle",
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "audio": "overall"
     }
   ],
   "supportsDepth": true,
@@ -73,5 +75,43 @@
     "aces-tone-map",
     "semantic-alpha",
     "upgraded-rgba"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Ring Radius",
+          "default": 0.65,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Thickness",
+          "default": 0.45,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Spark Count",
+          "default": 0.6,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Color Cycle",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

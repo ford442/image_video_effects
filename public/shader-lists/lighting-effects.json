@@ -22,7 +22,6 @@
       {
         "id": "intensity",
         "name": "Aurora Intensity",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -31,7 +30,6 @@
       {
         "id": "curtainFreq",
         "name": "Curtain Frequency",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -40,7 +38,6 @@
       {
         "id": "turbulence",
         "name": "Turbulence",
-        "type": "float",
         "default": 0.3,
         "min": 0,
         "max": 1,
@@ -49,42 +46,7 @@
       {
         "id": "speed",
         "name": "Wind Speed",
-        "type": "float",
         "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Aurora Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Curtain Frequency",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Turbulence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Wind Speed",
-        "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
@@ -96,7 +58,7 @@
     "id": "aurora-rift-2-pass1",
     "name": "Aurora Rift 2 (Pass 1: Enhanced Volumetric)",
     "url": "shaders/aurora-rift-2-pass1.wgsl",
-    "description": "Enhanced volumetric aurora with Birkeland plasma vortex tubes, ionospheric geomagnetic substorm flash bursts, and multi-scale temporal diffusion. First pass of 2-pass system.",
+    "description": "Enhanced volumetric aurora with Birkeland plasma vortex tubes, an omega-band tongue, a poleward picket fence, ionospheric substorm flashes, and multi-scale temporal diffusion. First pass of 2-pass system.",
     "workgroup_size": [
       16,
       16,
@@ -109,7 +71,8 @@
       "raymarch",
       "plasma-vortex",
       "substorm-flashes",
-      "temporal-diffusion"
+      "temporal-diffusion",
+      "audio-reactive"
     ],
     "multipass": {
       "pass": 1,
@@ -121,40 +84,6 @@
       "volumetric",
       "lighting",
       "enhanced"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Flow Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Diffusion Rate",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "FBM Octaves",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ],
     "params": [
       {
@@ -195,7 +124,7 @@
     "id": "aurora-rift-pass1",
     "name": "Aurora Rift (Pass 1: Volumetric)",
     "url": "shaders/aurora-rift-pass1.wgsl",
-    "description": "Raymarches volumetric aurora with curl-driven flow, geomagnetic Birkeland curtain folds, discrete atmospheric spectral emission, and temporal diffusion. First pass of 2-pass system.",
+    "description": "Raymarches volumetric aurora with curl-driven flow, geomagnetic Birkeland curtain folds, rayed beads, a dark gap under the curtain, discrete atmospheric spectral emission, and temporal diffusion. First pass of 2-pass system.",
     "workgroup_size": [
       16,
       16,
@@ -208,7 +137,8 @@
       "raymarch",
       "birkeland-currents",
       "spectral-emission",
-      "temporal-diffusion"
+      "temporal-diffusion",
+      "audio-reactive"
     ],
     "multipass": {
       "pass": 1,
@@ -220,40 +150,6 @@
       "volumetric",
       "lighting",
       "atmospheric"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Flow Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Diffusion Rate",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "FBM Octaves",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ],
     "params": [
       {
@@ -344,40 +240,6 @@
         "step": 0.1
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Num Ribbons",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Flow Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Ribbon Width",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Glow Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = ACES display RGBA for continuous atmospheric luminescence persistence; B is unused; depth passes through source depth."
   },
   {
@@ -426,40 +288,6 @@
         "max": 1
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Flare Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Streak Length",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Chromatic Shift",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Bloom Threshold",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = ACES display RGBA for continuous persistence of vision; B is unused; depth passes through source depth.",
     "tags": [
       "lens-flare",
@@ -483,40 +311,6 @@
       16,
       16,
       1
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Ray Intensity",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Ray Decay",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Ray Density",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Brightness Filter",
-        "default": 0.45,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ],
     "params": [
       {
@@ -610,40 +404,6 @@
         "max": 1
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Ray Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Ray Decay",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Ray Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Brightness Filter",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = ACES display RGBA for smooth volumetric beam persistence; B is unused; depth passes through source depth.",
     "tags": [
       "filter",
@@ -696,40 +456,6 @@
         "max": 1
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Flare Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Brightness Filter",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Ghost Spread",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Ghost Count",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
     "feedbackPacking": "A/C = ACES display RGBA for continuous phosphor persistence; B is unused; depth passes through source depth.",
     "tags": [
       "filter",
@@ -754,7 +480,6 @@
     "params": [
       {
         "name": "Threshold",
-        "type": "float",
         "default": 0.8,
         "min": 0.5,
         "max": 1,
@@ -762,7 +487,6 @@
       },
       {
         "name": "Intensity",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -770,7 +494,6 @@
       },
       {
         "name": "Stretch",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -778,45 +501,10 @@
       },
       {
         "name": "Color Shift",
-        "type": "float",
         "default": 0.2,
         "min": 0,
         "max": 1,
         "id": "color_shift"
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Threshold",
-        "default": 0.8,
-        "min": 0.5,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Stretch",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Color Shift",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
       }
     ],
     "feedbackPacking": "A/C = ACES display RGBA for continuous brush trail persistence; B is unused; depth passes through source depth.",
@@ -881,8 +569,7 @@
         "max": 1,
         "step": 0.1
       }
-    ],
-    "target_rating": 4.6
+    ]
   },
   {
     "id": "neon-light",
@@ -933,40 +620,6 @@
       "audio",
       "blackbody",
       "fresnel"
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Base Temperature",
-        "default": 0.45,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Edge Heating",
-        "default": 0.55,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Emission Gain",
-        "default": 0.65,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
-        "name": "Thermal Fog",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -1007,40 +660,6 @@
       },
       {
         "id": "color_cycle_rate",
-        "name": "Color Cycle Rate",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Edge Threshold",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Glow Radius",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Pulse Speed",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
         "name": "Color Cycle Rate",
         "default": 0.5,
         "min": 0,
@@ -1122,17 +741,7 @@
       "volumetric",
       "god-rays",
       "electromagnetic"
-    ],
-    "chunks_used": [
-      "hash12 (gen_grid.wgsl)",
-      "noise",
-      "Radial blur",
-      "electricField (mouse-electromagnetic-aurora.wgsl)",
-      "magneticField (mouse-electromagnetic-aurora.wgsl)"
-    ],
-    "performance_target": "45-60 FPS (GTX 1060)",
-    "created_by": "Agent CB-4 - Mouse Physics Injector",
-    "created_date": "2026-04-18"
+    ]
   },
   {
     "id": "temporal_echo",
@@ -1187,40 +796,6 @@
       },
       {
         "id": "depth_influence",
-        "name": "Depth Influence",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Decay Rate",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 1,
-        "name": "Hue Shift Speed",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 2,
-        "name": "Chroma Spread",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "index": 3,
         "name": "Depth Influence",
         "default": 0.5,
         "min": 0,
@@ -1290,41 +865,6 @@
         "step": 0.1
       }
     ],
-    "updatedParams": [
-      {
-        "index": 0,
-        "name": "Wave Scale",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "index": 1,
-        "name": "Caustic Intensity",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "index": 2,
-        "name": "Depth",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      },
-      {
-        "index": 3,
-        "name": "Clarity",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.1
-      }
-    ],
-    "feedbackPacking": "A/C = ACES display RGBA for caustic persistence; B is unused; effect depth stores caustic and volume coverage.",
-    "target_rating": 4.7
+    "feedbackPacking": "A/C = ACES display RGBA for caustic persistence; B is unused; effect depth stores caustic and volume coverage."
   }
 ]

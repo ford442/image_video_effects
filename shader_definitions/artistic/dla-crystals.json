@@ -2,7 +2,7 @@
   "id": "dla-crystals",
   "name": "DLA Crystal Growth",
   "url": "shaders/dla-walkers.wgsl",
-  "description": "Physics Lab \u2014 diffusion-limited aggregation walkers freeze into fractal crystals. Click seeds, bass stickiness. graph \u00b7 2 passes \u00b7 rgba32float.",
+  "description": "Physics Lab \u2014 diffusion-limited aggregation: sim-ring walkers (up to 65k agents) drift, stick and freeze into fractal crystals. Click to seed, bass stickiness. graph \u00b7 2 passes \u00b7 @group(1) sim ring.",
   "params": [
     {
       "id": "walkerSpeed",
@@ -41,7 +41,9 @@
     "interactive",
     "mouse-driven",
     "multi-pass",
+    "particles",
     "physics",
+    "sim-ring",
     "simulation",
     "temporal-persistence"
   ],
@@ -63,10 +65,13 @@
         {
           "id": "walkers",
           "entry": "dla-walkers",
+          "dispatch": "simState",
           "reads": [
-            "dataC"
+            "dataC",
+            "simState"
           ],
           "writes": [
+            "simState",
             "dataA"
           ]
         },
@@ -83,5 +88,10 @@
         }
       ]
     }
+  },
+  "simRing": {
+    "stateCount": 65536,
+    "agent": "walker",
+    "packing": "xy position (px), z hue seed, w alive"
   }
 }

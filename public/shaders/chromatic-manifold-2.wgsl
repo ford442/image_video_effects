@@ -1,38 +1,15 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Chromatic Manifold 2 - Enhanced Color-as-Dimension Topology with Wavelength-Alpha
-//  4-D space (x, y, depth, hue) with Möbius-like hue folding,
-//  depth curvature tensor, and growing feedback folds over time.
-//
-//  SCIENTIFIC MODEL:
-//  - Fold strength affects dispersion and alpha per channel
-//  - Beer-Lambert law: alpha = exp(-thickness * absorption)
-//  - Red (650nm): lowest absorption, highest transmission
-//  - Blue (450nm): highest absorption, lowest transmission
-// ═══════════════════════════════════════════════════════════════════════════════
-
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture:    texture_2d<f32>;
-@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
-
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
-
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB:   texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config:      vec4<f32>,
-  zoom_params: vec4<f32>,
-  zoom_config: vec4<f32>,
-  ripples:     array<vec4<f32>, 50>,
-};
+// ═══════════════════════════════════════════════════════════════════
+//  Chromatic Manifold V2
+//  Category: artistic
+//  Features: mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-10-09
+//  Ideas: laplacian smooth of curvature; C.a fold memory
+//  A packing: A.rgb pre-ACES display color; A.a raw curvature memory
+// ═══════════════════════════════════════════════════════════════════
+// Field order used to list zoom_params before zoom_config, so those
+// names read the other uniform. Reads below stay on the same bytes.
+#include "_prelude.wgsl"
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  SPECTRAL PHYSICS CONSTANTS
@@ -102,23 +79,33 @@ fn hash2(p: vec2<f32>) -> f32 {
     return fract(p2.x * p2.y);
 }
 
+fn aces_tonemap(color: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = u.config.zw;
+    if (f32(gid.x) >= dims.x || f32(gid.y) >= dims.y) { return; }
 
     var uv = vec2<f32>(gid.xy) / dims;
     let texel = 1.0 / dims;
     let time = u.config.x;
 
     // Parameters
-    let foldStrength = u.zoom_params.x * 2.0 + 0.5;
-    let pivotHue = u.zoom_params.y;
-    let satScale = u.zoom_params.z * 0.5 + 0.75;
-    let depthInfluence = u.zoom_params.w;
-    let noiseAmount = u.zoom_config.x * 0.003;
-    let feedbackPersist = u.zoom_config.y * 0.1 + 0.9;
-    let rippleAmp = u.zoom_config.z * 0.015;
-    let curvePower = u.zoom_config.w * 2.0 + 1.0;
+    let foldStrength = u.zoom_config.x * 2.0 + 0.5;
+    let pivotHue = u.zoom_config.y;
+    let satScale = u.zoom_config.z * 0.5 + 0.75;
+    let depthInfluence = u.zoom_config.w;
+    let noiseAmount = u.zoom_params.x * 0.003;
+    let feedbackPersist = u.zoom_params.y * 0.1 + 0.9;
+    let rippleAmp = u.zoom_params.z * 0.015;
+    let curvePower = u.zoom_params.w * 2.0 + 1.0;
 
     // Read source color & depth
     let srcColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
@@ -136,11 +123,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let gradY = wrapMod(hU - hD + 1.5, 1.0) - 0.5;
     let hueGrad = vec2<f32>(gradX, gradY);
 
-    // Depth curvature tensor
-    let curvature = pow(depthVal, curvePower) * depthInfluence;
+    // Depth curvature, smoothed by one 5-tap laplacian (not a Ricci flow).
+    let px = vec2<i32>(gid.xy);
+    let resi = vec2<i32>(max(dims, vec2<f32>(1.0)));
+    let curveHere = pow(max(depthVal, 0.0), curvePower) * depthInfluence;
+    let depthL = textureLoad(readDepthTexture, clamp(px + vec2<i32>(-1, 0), vec2<i32>(0), resi - vec2<i32>(1)), 0).r;
+    let depthR = textureLoad(readDepthTexture, clamp(px + vec2<i32>(1, 0), vec2<i32>(0), resi - vec2<i32>(1)), 0).r;
+    let depthU = textureLoad(readDepthTexture, clamp(px + vec2<i32>(0, -1), vec2<i32>(0), resi - vec2<i32>(1)), 0).r;
+    let depthD = textureLoad(readDepthTexture, clamp(px + vec2<i32>(0, 1), vec2<i32>(0), resi - vec2<i32>(1)), 0).r;
+    let curvature = (curveHere
+        + pow(max(depthL, 0.0), curvePower) * depthInfluence
+        + pow(max(depthR, 0.0), curvePower) * depthInfluence
+        + pow(max(depthU, 0.0), curvePower) * depthInfluence
+        + pow(max(depthD, 0.0), curvePower) * depthInfluence) * 0.2;
 
-    // Calculate fold displacement
-    let dispBase = hueGrad * foldStrength * 0.05 * (1.0 + curvature);
+    // C.a is yesterday's curvature. High memory folds this pixel harder.
+    let histSize = vec2<i32>(textureDimensions(dataTextureC));
+    let prev = textureLoad(dataTextureC, clamp(px, vec2<i32>(0), histSize - vec2<i32>(1)), 0);
+    let foldMemory = clamp(prev.a, 0.0, 1.0);
+
+    let dispBase = hueGrad * foldStrength * (1.0 + foldMemory * 0.85) * 0.05 * (1.0 + curvature);
 
     // Add temporal noise
     let noise = hash2(uv * 100.0 + time);
@@ -152,7 +154,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var totalDisp = dispBase + noiseDisp;
 
     // Mouse-driven ripples
-    let rippleCount = u32(u.config.y);
+    let rippleCount = min(u32(u.config.y), 50u);
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let r = u.ripples[min(i, 49u)];
         let t = time - r.z;
@@ -176,15 +178,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let displacedUV = clamp(uv + totalDisp, vec2<f32>(0.0), vec2<f32>(1.0));
     let displacedColor = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
 
-    // Fold the hue (Möbius-like effect)
+    let foldStrengthMem = foldStrength * (1.0 + foldMemory * 0.85);
+
+    // Fold the hue (Möbius-like effect), harder where curvature was high last frame.
     var hsv = rgb2hsv(displacedColor);
-    hsv.x = foldHue(hsv.x, pivotHue, foldStrength);
+    hsv.x = foldHue(hsv.x, pivotHue, foldStrengthMem);
     hsv.y = clamp(hsv.y * satScale, 0.0, 1.0);
     let foldedColor = hsv2rgb(hsv.x, hsv.y, hsv.z);
 
-    // Feedback: blend with previous frame
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
-    let finalColor = mix(foldedColor, prev, feedbackPersist);
+    let finalColor = mix(foldedColor, prev.rgb, feedbackPersist);
 
     // ═══════════════════════════════════════════════════════════════════════════════
     //  WAVELENGTH-DEPENDENT ALPHA
@@ -206,8 +208,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         finalColor.b * alphaB
     );
 
-    // Write outputs
-    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(alphaModulatedColor, finalAlpha));
+    // A.rgb is pre-ACES display color. A.a is raw curvature, not tone-mapped.
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(aces_tonemap(alphaModulatedColor), finalAlpha));
     textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthVal, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(alphaModulatedColor, finalAlpha));
+    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(alphaModulatedColor, clamp(curvature, 0.0, 1.0)));
 }

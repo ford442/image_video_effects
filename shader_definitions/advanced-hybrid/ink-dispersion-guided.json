@@ -54,14 +54,6 @@
       "description": "Density of ink lines and dots"
     }
   ],
-  "chunks_used": [
-    "Guided filter linear model (conv-guided-filter-depth.wgsl)",
-    "Halftone dot rendering (ink_dispersion_alpha.wgsl)",
-    "Mouse aperture modulation (conv-guided-filter-depth.wgsl)"
-  ],
-  "performance_target": "60 FPS (GTX 1060)",
-  "created_by": "Agent CB-6 - Alpha & Post-Process Enhancer",
-  "created_date": "2026-04-18",
   "tags": [
     "ink",
     "halftone",
@@ -69,5 +61,15 @@
     "depth",
     "artistic",
     "paper"
-  ]
+  ],
+  "x-meta": {
+    "chunks_used": [
+      "Guided filter linear model (conv-guided-filter-depth.wgsl)",
+      "Halftone dot rendering (ink_dispersion_alpha.wgsl)",
+      "Mouse aperture modulation (conv-guided-filter-depth.wgsl)"
+    ],
+    "performance_target": "60 FPS (GTX 1060)",
+    "created_by": "Agent CB-6 - Alpha & Post-Process Enhancer",
+    "created_date": "2026-04-18"
+  }
 }

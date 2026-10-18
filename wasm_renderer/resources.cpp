@@ -38,18 +38,18 @@ void QueueWriteRgba(
     if (!queue || !texture || !rgba || width <= 0 || height <= 0) return;
     const size_t floatCount = static_cast<size_t>(width) * static_cast<size_t>(height) * 4u;
 
-    WGPUTexelCopyTextureInfo dest = {};
+    WGPUTexelCopyTextureInfo dest = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
     dest.texture = texture;
     dest.mipLevel = 0;
     dest.origin = {0, 0, 0};
     dest.aspect = WGPUTextureAspect_All;
 
-    WGPUTexelCopyBufferLayout layout = {};
+    WGPUTexelCopyBufferLayout layout = WGPU_TEXEL_COPY_BUFFER_LAYOUT_INIT;
     layout.offset = 0;
     layout.bytesPerRow = format_pack::BytesPerRow(width, fmt);
     layout.rowsPerImage = static_cast<uint32_t>(height);
 
-    WGPUExtent3D extent = {};
+    WGPUExtent3D extent = WGPU_EXTENT_3D_INIT;
     extent.width = static_cast<uint32_t>(width);
     extent.height = static_cast<uint32_t>(height);
     extent.depthOrArrayLayers = 1;
@@ -69,7 +69,7 @@ bool WebGPURenderer::TryCreateHistoryTexture(uint32_t width, uint32_t height, ui
 
     wgpuDevicePushErrorScope(device_.get(), WGPUErrorFilter_OutOfMemory);
 
-    WGPUTextureDescriptor texDesc = {};
+    WGPUTextureDescriptor texDesc = WGPU_TEXTURE_DESCRIPTOR_INIT;
     texDesc.nextInChain = nullptr;
     texDesc.dimension = WGPUTextureDimension_2D;
     texDesc.size = {width, height, layers};
@@ -97,7 +97,7 @@ bool WebGPURenderer::TryCreateHistoryTexture(uint32_t width, uint32_t height, ui
     WGPUFuture popFuture = wgpuDevicePopErrorScope(device_.get(), WGPUPopErrorScopeCallbackInfo{
         nullptr, WGPUCallbackMode_WaitAnyOnly, popCb, &pop, nullptr
     });
-    WGPUFutureWaitInfo popWait = {};
+    WGPUFutureWaitInfo popWait = WGPU_FUTURE_WAIT_INFO_INIT;
     popWait.future = popFuture;
     wgpuInstanceWaitAny(instance_.get(), 1, &popWait, UINT64_MAX);
 
@@ -121,6 +121,7 @@ bool WebGPURenderer::CreateHistoryTextureFailSoft() {
     };
     for (const auto& rung : rungs) {
         if (rung.size > current) continue;
+        if (historySizeCap_ != 0 && rung.size > historySizeCap_) continue;  // OOMed before
         historyTexture_.reset();
         if (TryCreateHistoryTexture(rung.size, rung.size, rung.layers)) {
             if (rung.size < current) {
@@ -128,6 +129,7 @@ bool WebGPURenderer::CreateHistoryTextureFailSoft() {
                        current, rung.size, rung.layers);
                 canvasWidth_ = static_cast<int>(rung.size);
                 canvasHeight_ = static_cast<int>(rung.size);
+                historySizeCap_ = rung.size;
             } else if (rung.layers < HISTORY_DEPTH) {
                 printf("[WASM] historyTex fail-soft: layers %u (size %u)\n", rung.layers, rung.size);
             }
@@ -144,7 +146,7 @@ bool WebGPURenderer::CreateResources() {
     // canvasWidth_/canvasHeight_ are set at init; defaults align with policy::kInternalRenderResolution.
     (void)policy::kInternalRenderResolution;
     // Create samplers
-    WGPUSamplerDescriptor samplerDesc = {};
+    WGPUSamplerDescriptor samplerDesc = WGPU_SAMPLER_DESCRIPTOR_INIT;
     samplerDesc.nextInChain = nullptr;
     // Dawn rejects maxAnisotropy < 1 (C++ {} leaves 0). Spec/JS default is 1.
     samplerDesc.maxAnisotropy = 1;
@@ -172,7 +174,7 @@ bool WebGPURenderer::CreateResources() {
     //   [12..211] = 200 floats: 50 ripples × 4 floats each
     constexpr size_t UNIFORM_BASE_FLOATS = 12;
     constexpr size_t uniformSize = sizeof(float) * (UNIFORM_BASE_FLOATS + MAX_RIPPLES * 4);
-    WGPUBufferDescriptor bufferDesc = {};
+    WGPUBufferDescriptor bufferDesc = WGPU_BUFFER_DESCRIPTOR_INIT;
     bufferDesc.nextInChain = nullptr;
     bufferDesc.label = MakeStringView("Uniform Buffer");
     bufferDesc.size = uniformSize;
@@ -201,7 +203,7 @@ bool WebGPURenderer::CreateResources() {
     }
 
     // Create remaining textures at (possibly fail-soft) canvas size
-    WGPUTextureDescriptor texDesc = {};
+    WGPUTextureDescriptor texDesc = WGPU_TEXTURE_DESCRIPTOR_INIT;
     texDesc.nextInChain = nullptr;
     texDesc.dimension = WGPUTextureDimension_2D;
     texDesc.size = {static_cast<uint32_t>(canvasWidth_), static_cast<uint32_t>(canvasHeight_), 1};
@@ -211,8 +213,12 @@ bool WebGPURenderer::CreateResources() {
     // Ping-pong textures (tier-selected rgba format)
     texDesc.format = RgbaStorageFormat(colorFormat_);
     texDesc.usage = WGPUTextureUsage_CopyDst | WGPUTextureUsage_StorageBinding | WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopySrc;
+    // readTexture_ alone also needs RenderAttachment: it is the destination of
+    // queue.copyExternalImageToTexture (LoadImageExternal, GPU still ingest).
+    texDesc.usage |= WGPUTextureUsage_RenderAttachment;
     texDesc.label = MakeStringView("Read Texture");
     readTexture_.reset(wgpuDeviceCreateTexture(device_.get(), &texDesc));
+    texDesc.usage &= ~WGPUTextureUsage_RenderAttachment;
     texDesc.label = MakeStringView("Write Texture");
     writeTexture_.reset(wgpuDeviceCreateTexture(device_.get(), &texDesc));
     texDesc.label = MakeStringView("Ping-Pong 0");
@@ -247,26 +253,22 @@ bool WebGPURenderer::CreateResources() {
     // Initialize empty texture to black (one r32float pixel)
     float black = 0.0f;
 
-    WGPUTexelCopyTextureInfo emptyDest = {};
+    WGPUTexelCopyTextureInfo emptyDest = WGPU_TEXEL_COPY_TEXTURE_INFO_INIT;
     emptyDest.texture = emptyTexture_.get();
     emptyDest.mipLevel = 0;
     emptyDest.origin = {0, 0, 0};
     emptyDest.aspect = WGPUTextureAspect_All;
 
-    WGPUTexelCopyBufferLayout emptyDataLayout = {};
+    WGPUTexelCopyBufferLayout emptyDataLayout = WGPU_TEXEL_COPY_BUFFER_LAYOUT_INIT;
     emptyDataLayout.offset = 0;
     emptyDataLayout.bytesPerRow = sizeof(float);  // 4 bytes — one r32float pixel
     emptyDataLayout.rowsPerImage = 1;
 
     wgpuQueueWriteTexture(queue_.get(), &emptyDest, &black, sizeof(black), &emptyDataLayout, &texDesc.size);
 
-    // Initialize data texture C and readTexture_ to zeros (avoids uninitialised GPU memory).
-    // bytesPerRow must match the allocated colorFormat_ (rgba16float is 8 B/px, not 16).
-    std::vector<float> zeros(static_cast<size_t>(canvasWidth_) * canvasHeight_ * 4, 0.0f);
-    QueueWriteRgba(queue_.get(), dataTextureC_.get(), zeros.data(),
-                   canvasWidth_, canvasHeight_, colorFormat_, packedUploadBuffer_);
-    QueueWriteRgba(queue_.get(), readTexture_.get(), zeros.data(),
-                   canvasWidth_, canvasHeight_, colorFormat_, packedUploadBuffer_);
+    // No zero-fill for dataTextureC_/readTexture_: WebGPU zero-initialises
+    // every new texture, so the old full-canvas upload (64 MB at 2048²
+    // rgba32float) only cost bandwidth.
 
     CreateTimestampQueries();
 
@@ -288,16 +290,13 @@ void WebGPURenderer::RecreateTextures() {
     depthTextureRead_.reset();
     depthTextureWrite_.reset();
 
-    // Release old bind group — it holds views into the old textures.
-    computeBindGroup_.reset();
-
     if (!CreateHistoryTextureFailSoft()) {
         printf("❌ RecreateTextures: historyTex allocation failed\n");
         return;
     }
 
     // Create new textures at the current canvas dimensions.
-    WGPUTextureDescriptor texDesc = {};
+    WGPUTextureDescriptor texDesc = WGPU_TEXTURE_DESCRIPTOR_INIT;
     texDesc.nextInChain = nullptr;
     texDesc.dimension = WGPUTextureDimension_2D;
     texDesc.size = {static_cast<uint32_t>(canvasWidth_), static_cast<uint32_t>(canvasHeight_), 1};
@@ -308,8 +307,11 @@ void WebGPURenderer::RecreateTextures() {
     texDesc.format = RgbaStorageFormat(colorFormat_);
     texDesc.usage = WGPUTextureUsage_CopyDst | WGPUTextureUsage_StorageBinding
                   | WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopySrc;
+    // RenderAttachment on readTexture_ only: copyExternalImageToTexture destination.
+    texDesc.usage |= WGPUTextureUsage_RenderAttachment;
     texDesc.label = MakeStringView("Read Texture");
     readTexture_.reset(wgpuDeviceCreateTexture(device_.get(), &texDesc));
+    texDesc.usage &= ~WGPUTextureUsage_RenderAttachment;
     texDesc.label = MakeStringView("Write Texture");
     writeTexture_.reset(wgpuDeviceCreateTexture(device_.get(), &texDesc));
     texDesc.label = MakeStringView("Ping-Pong 0");
@@ -334,21 +336,7 @@ void WebGPURenderer::RecreateTextures() {
     texDesc.label = MakeStringView("Depth Texture Write");
     depthTextureWrite_.reset(wgpuDeviceCreateTexture(device_.get(), &texDesc));
 
-    // Zero-initialise textures that must start black.
-    // Reuse videoStagingBuffer_ (rgba32float sized) to avoid a separate allocation.
-    const size_t floatCount = static_cast<size_t>(canvasWidth_) * canvasHeight_ * 4;
-    if (videoStagingBuffer_.size() < floatCount) {
-        videoStagingBuffer_.assign(floatCount, 0.0f);
-    } else {
-        std::fill(videoStagingBuffer_.begin(),
-                  videoStagingBuffer_.begin() + static_cast<std::ptrdiff_t>(floatCount),
-                  0.0f);
-    }
-
-    QueueWriteRgba(queue_.get(), dataTextureC_.get(), videoStagingBuffer_.data(),
-                   canvasWidth_, canvasHeight_, colorFormat_, packedUploadBuffer_);
-    QueueWriteRgba(queue_.get(), readTexture_.get(), videoStagingBuffer_.data(),
-                   canvasWidth_, canvasHeight_, colorFormat_, packedUploadBuffer_);
+    // New textures are zero-initialised by WebGPU; no explicit clear needed.
 
     // Rebuild the bind groups with the new texture views.
     // CreateBindGroups() already calls CreateRenderBindGroup() internally.
@@ -362,12 +350,16 @@ void WebGPURenderer::RecreateTextures() {
 
 void WebGPURenderer::ResizeCanvas(int newWidth, int newHeight) {
     if (newWidth <= 0 || newHeight <= 0) return;
-    if (newWidth == canvasWidth_ && newHeight == canvasHeight_) return;
+    // Compare with the last request, not canvasWidth_: after a fail-soft
+    // shrink those differ and every repeat call would rebuild all textures.
+    if (newWidth == requestedWidth_ && newHeight == requestedHeight_) return;
     if (!initialized_ || deviceLost_) return;
 
     printf("🔄 Resizing canvas: %dx%d → %dx%d\n",
            canvasWidth_, canvasHeight_, newWidth, newHeight);
 
+    requestedWidth_ = newWidth;
+    requestedHeight_ = newHeight;
     canvasWidth_  = newWidth;
     canvasHeight_ = newHeight;
 
@@ -378,14 +370,17 @@ void WebGPURenderer::ResizeCanvas(int newWidth, int newHeight) {
     videoStagingBuffer_.clear();
 
     // Release the readback buffer; it will be recreated at the new size on next capture.
+    // Unmap cancels a pending map (its callback then sees a stale generation)
+    // or drops a mapped-but-unread capture.
     if (readbackBuffer_.get()) {
-        if (captureState_ == CaptureState::Pending) {
+        if (captureState_ == CaptureState::Pending || captureState_ == CaptureState::Ready) {
             wgpuBufferUnmap(readbackBuffer_.get());
         }
         readbackBuffer_.reset();
         readbackBufferSize_  = 0;
         readbackBytesPerRow_ = 0;
     }
+    captureGeneration_++;
     captureState_ = CaptureState::Idle;
 
     // A resize gives presentation a fresh start at the new size.
@@ -425,13 +420,29 @@ void WebGPURenderer::SetColorFormat(int formatEnum) {
 
     printf("[WASM] Switching internal color format to %s\n",
            fmt == policy::InternalColorFormat::Rgba16Float ? "rgba16float" : "rgba32float");
+    const auto previousFormat = colorFormat_;
     colorFormat_ = fmt;
+
+    // Every pipeline was built against the old layout. Drop them and clear
+    // the slots that referenced them, so Render() skips cleanly until the
+    // bridge reloads the stack (instead of looking up ids that are gone).
     shaders_.clear();
+    activeShaderId_.clear();
+    for (auto& slot : slots_) {
+        slot.shaderId.clear();
+        slot.enabled = false;
+    }
 
     computeBindGroupLayout_.reset();
     computePipelineLayout_.reset();
     if (!CreateBindGroupLayout()) {
-        printf("❌ SetColorFormat: CreateBindGroupLayout failed\n");
+        printf("❌ SetColorFormat: CreateBindGroupLayout failed — restoring previous format\n");
+        colorFormat_ = previousFormat;
+        computeBindGroupLayout_.reset();
+        computePipelineLayout_.reset();
+        if (!CreateBindGroupLayout()) {
+            printf("❌ SetColorFormat: previous layout also failed\n");
+        }
         return;
     }
 

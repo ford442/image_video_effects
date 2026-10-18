@@ -79,3 +79,12 @@ CATEGORY_GROUPS = {
     "liquid": {"label": "💧 Liquid", "description": "Fluid, water, oil, viscous effects", "subcategories": ["liquid", "liquid-effects"]},
     "other": {"label": "🔧 Other", "description": "Miscellaneous and specialized", "subcategories": ["transition", "feedback", "shader", "reactive"]}
 }
+
+# --- OSC RELAY (VJ Studio, opt-in) ---
+# UDP OSC → WebSocket relay at /osc/ws. Off by default; meant for a local
+# storage_manager on the performer's machine, never a public deployment.
+OSC_RELAY_ENABLED = os.environ.get("OSC_RELAY_ENABLED", "").strip().lower() in ("1", "true", "yes", "on")
+OSC_UDP_HOST = os.environ.get("OSC_UDP_HOST", "127.0.0.1")
+OSC_UDP_PORT = int(os.environ.get("OSC_UDP_PORT", "9000"))
+# Extra browser origins allowed to open the relay socket (comma-separated).
+OSC_ALLOWED_ORIGINS = [o.strip() for o in os.environ.get("OSC_ALLOWED_ORIGINS", "").split(",") if o.strip()]

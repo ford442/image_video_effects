@@ -3,12 +3,18 @@ import { RenderMode, SlotParams } from '../../../renderer/types';
 import { SharedChain } from '../../../services/layerChainShare';
 import { UseLiveControlReturn } from '../hooks/useLiveControl';
 import { LiveControlPanel } from './LiveControlPanel';
+import { OscPanel } from './OscPanel';
+import type { UseOscControlReturn } from '../hooks/useOscControl';
+import type { UseSetRecorderReturn } from '../../../hooks/useSetRecorder';
 import { loadMyVjSets, deleteMyVjSet, mergeMyVjSets } from '../../../services/myVjSets';
 import { loadVJHistory, clearVJHistory, VJHistoryEntry } from '../../../services/vjHistory';
 import { buildVjSetExport, parseVjSetExport, serializeVjSetExport } from '../../../services/vjSetExport';
 import { decodeChain } from '../../../services/layerChainShare';
 import { shouldShowMidiControls } from '../../../utils/deviceCapabilities';
 import type { MyVjSet } from '../../../services/myVjSets';
+import type { UseProjectFileReturn } from '../../../hooks/useProjectFile';
+import { ProjectFilePanel } from './ProjectFilePanel';
+import { usePersistedToggle } from '../../../hooks/usePersistedToggle';
 
 export interface VjStudioPanelProps {
     studioOpen: boolean;
@@ -18,6 +24,8 @@ export interface VjStudioPanelProps {
     activeSlot: number;
     setActiveSlot: (index: number) => void;
     liveControl: UseLiveControlReturn;
+    osc?: UseOscControlReturn;
+    recorder?: UseSetRecorderReturn;
     isAiVjMode: boolean;
     autoTransitionOpen: boolean;
     setAutoTransitionOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -43,6 +51,12 @@ export interface VjStudioPanelProps {
     onUpdateStack?: (ids: string[]) => void;
     onUpdateParams?: (params: Record<string, number>[]) => void;
     onGenerateFromVibe?: (vibe: string) => void;
+    projectFile: UseProjectFileReturn;
+}
+
+function formatDuration(ms: number): string {
+    const total = Math.floor(ms / 1000);
+    return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
 }
 
 function formatRelativeTime(timestamp: number): string {
@@ -59,10 +73,11 @@ export const VjStudioPanel: React.FC<VjStudioPanelProps> = ({
     studioOpen,
     setStudioOpen,
     modes,
-    slotParams,
     activeSlot,
     setActiveSlot,
     liveControl,
+    osc,
+    recorder,
     isAiVjMode,
     autoTransitionOpen,
     setAutoTransitionOpen,
@@ -87,16 +102,19 @@ export const VjStudioPanel: React.FC<VjStudioPanelProps> = ({
     getCurrentChain,
     onUpdateStack,
     onUpdateParams,
-    onGenerateFromVibe,
+    projectFile,
 }) => {
-    const [historyOpen, setHistoryOpen] = useState(false);
-    const [setsOpen, setSetsOpen] = useState(false);
-    const [shareOpen, setShareOpen] = useState(true);
-    const [midiOpen, setMidiOpen] = useState(true);
-    const [history, setHistory] = useState<VJHistoryEntry[]>([]);
-    const [myVjSets, setMyVjSets] = useState<MyVjSet[]>([]);
+    const [historyOpen, setHistoryOpen] = usePersistedToggle('vj.history', false);
+    const [setsOpen, setSetsOpen] = usePersistedToggle('vj.sets', false);
+    const [shareOpen, setShareOpen] = usePersistedToggle('vj.share', true);
+    const [midiOpen, setMidiOpen] = usePersistedToggle('vj.midi', true);
+    const [oscOpen, setOscOpen] = usePersistedToggle('vj.osc', () => osc?.oscEnabled ?? false);
+    // A section restored as open never fires its open handler, so seed its data here.
+    const [history, setHistory] = useState<VJHistoryEntry[]>(() => (historyOpen ? loadVJHistory() : []));
+    const [myVjSets, setMyVjSets] = useState<MyVjSet[]>(() => (setsOpen ? loadMyVjSets() : []));
     const [vjSetName, setVjSetName] = useState('');
     const [importStatus, setImportStatus] = useState<string | null>(null);
+    const [includeTimeline, setIncludeTimeline] = useState(true);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
     const showMidi = shouldShowMidiControls();
@@ -107,8 +125,10 @@ export const VjStudioPanel: React.FC<VjStudioPanelProps> = ({
             setImportStatus('No chain to export');
             return;
         }
+        const timeline = includeTimeline && recorder?.recorderState !== 'recording' ? recorder?.timeline ?? undefined : undefined;
         const payload = buildVjSetExport(vjSetName.trim() || 'VJ Set', chain, {
             bindings: liveControl.bindings,
+            timeline,
         });
         const blob = new Blob([serializeVjSetExport(payload)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -132,6 +152,9 @@ export const VjStudioPanel: React.FC<VjStudioPanelProps> = ({
             if (parsed.bindings?.length) {
                 liveControl.setBindings(parsed.bindings);
             }
+            if (parsed.timeline) {
+                recorder?.setTimeline(parsed.timeline);
+            }
             const imported: MyVjSet = {
                 id: crypto.randomUUID(),
                 name: parsed.name,
@@ -141,7 +164,7 @@ export const VjStudioPanel: React.FC<VjStudioPanelProps> = ({
             };
             mergeMyVjSets([imported]);
             setMyVjSets(loadMyVjSets());
-            setImportStatus(`Imported "${parsed.name}"`);
+            setImportStatus(`Imported "${parsed.name}"${parsed.timeline ? ` (+ ${formatDuration(parsed.timeline.durationMs)} recording)` : ''}`);
         };
         reader.readAsText(file);
     };
@@ -270,6 +293,21 @@ export const VjStudioPanel: React.FC<VjStudioPanelProps> = ({
                         )}
                     </div>
 
+                    {/* OSC */}
+                    {osc && (
+                        <div>
+                            <div
+                                className="gold-section-header"
+                                style={{ fontSize: '11px', marginTop: 0, cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}
+                                onClick={() => setOscOpen(o => !o)}
+                            >
+                                <span>OSC{osc.oscStatus === 'open' ? ' ●' : ''}</span>
+                                <span>{oscOpen ? '▼' : '▶'}</span>
+                            </div>
+                            {oscOpen && <OscPanel osc={osc} />}
+                        </div>
+                    )}
+
                     {/* Share & export */}
                     <div>
                         <div
@@ -291,6 +329,43 @@ export const VjStudioPanel: React.FC<VjStudioPanelProps> = ({
                                     <button type="button" className="gold-outline-btn" style={{ width: '100%', fontSize: '11px' }} onClick={onShareVjSet}>
                                         Share VJ set link
                                     </button>
+                                )}
+                                {recorder && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '6px', background: 'rgba(20,20,30,0.5)', borderRadius: '4px' }}>
+                                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                            {recorder.recorderState === 'recording' ? (
+                                                <button type="button" className="gold-outline-btn gold-active" style={{ flex: 1, fontSize: '11px' }} onClick={recorder.stopRecording}>
+                                                    ■ Stop recording
+                                                </button>
+                                            ) : (
+                                                <button type="button" className="gold-outline-btn" style={{ flex: 1, fontSize: '11px' }} onClick={recorder.startRecording} disabled={recorder.recorderState === 'playing'}>
+                                                    ● Record set
+                                                </button>
+                                            )}
+                                            {recorder.recorderState === 'playing' ? (
+                                                <button type="button" className="gold-outline-btn gold-active" style={{ flex: 1, fontSize: '11px' }} onClick={recorder.stopPlayback}>
+                                                    ■ Stop
+                                                </button>
+                                            ) : (
+                                                <button type="button" className="gold-outline-btn" style={{ flex: 1, fontSize: '11px' }} onClick={recorder.startPlayback} disabled={!recorder.timeline || recorder.recorderState === 'recording'}>
+                                                    ▶ Play
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div style={{ fontSize: '10px', color: '#a0a0b0' }}>
+                                            {recorder.recorderState === 'recording' && `Recording ${formatDuration(recorder.elapsedMs)} · ${recorder.timeline?.events.length ?? 0} events`}
+                                            {recorder.recorderState === 'playing' && recorder.timeline && `Playing ${formatDuration(recorder.elapsedMs)} / ${formatDuration(recorder.timeline.durationMs)} — grab a slider to override it`}
+                                            {recorder.recorderState === 'idle' && (recorder.timeline
+                                                ? `Recording: ${formatDuration(recorder.timeline.durationMs)} · ${recorder.timeline.events.length} events${recorder.hitCap ? ' (stopped at size cap)' : ''}`
+                                                : 'Record slot shaders + sliders, then play back or export with the set.')}
+                                        </div>
+                                        {recorder.timeline && (
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px' }}>
+                                                <input type="checkbox" checked={includeTimeline} onChange={(e) => setIncludeTimeline(e.target.checked)} />
+                                                <span>Include recording in Export JSON</span>
+                                            </label>
+                                        )}
+                                    </div>
                                 )}
                                 <div style={{ display: 'flex', gap: '8px' }}>
                                     <input type="text" className="glass-input" placeholder="Set name for export…" value={vjSetName} onChange={(e) => setVjSetName(e.target.value)} style={{ flex: 1, fontSize: '11px' }} />
@@ -318,6 +393,7 @@ export const VjStudioPanel: React.FC<VjStudioPanelProps> = ({
                                         </button>
                                     )}
                                 </div>
+                                <ProjectFilePanel projectFile={projectFile} />
                                 <input ref={fileInputRef} type="file" accept=".json,.vjset.json,application/json" style={{ display: 'none' }} onChange={(e) => {
                                     const f = e.target.files?.[0];
                                     if (f) handleImportJson(f);

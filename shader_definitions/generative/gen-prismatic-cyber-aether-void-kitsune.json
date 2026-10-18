@@ -16,7 +16,7 @@
     "kaleidoscopic",
     "geometry"
   ],
-  "description": "A hyper-majestic cybernetic celestial kitsune of shattered prismatic glass and liquid quantum-aether, hex-rune-etched armor and octahedral shoulder crystals, orbited by a prismatic shard swarm and stacked auroral torus rings, its nine radiant tails carving rifts into a kaleidoscopically folded volumetric particle-storm.",
+  "description": "A cybernetic celestial kitsune of prismatic glass and liquid quantum-aether with hex-rune-etched armor, kabuki cyber-visor eye markings, a levitating Hoshi-no-tama star-ball jewel ahead of its snout, dispersive 3-channel octahedral shard facets, stacked auroral torus rings, and nine thin-film tails with kitsune-bi fox-fire tips.",
   "url": "shaders/gen-prismatic-cyber-aether-void-kitsune.wgsl",
   "updated": true,
   "supportsDepth": true,
@@ -25,40 +25,6 @@
     16,
     16,
     1
-  ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Tail Dispersion",
-      "default": 1.0,
-      "min": 0.1,
-      "max": 3.0,
-      "step": 0.05
-    },
-    {
-      "index": 1,
-      "name": "Current Warp",
-      "default": 0.6,
-      "min": 0.0,
-      "max": 2.0,
-      "step": 0.05
-    },
-    {
-      "index": 2,
-      "name": "Storm Density",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Rune Glow",
-      "default": 1.2,
-      "min": 0.0,
-      "max": 3.0,
-      "step": 0.1
-    }
   ],
   "params": [
     {
@@ -102,5 +68,43 @@
     "audio-reactive",
     "mouse-driven",
     "upgraded-rgba"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Tail Dispersion",
+          "default": 1.0,
+          "min": 0.1,
+          "max": 3.0,
+          "step": 0.05
+        },
+        {
+          "index": 1,
+          "name": "Current Warp",
+          "default": 0.6,
+          "min": 0.0,
+          "max": 2.0,
+          "step": 0.05
+        },
+        {
+          "index": 2,
+          "name": "Storm Density",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Rune Glow",
+          "default": 1.2,
+          "min": 0.0,
+          "max": 3.0,
+          "step": 0.1
+        }
+      ]
+    }
+  }
 }

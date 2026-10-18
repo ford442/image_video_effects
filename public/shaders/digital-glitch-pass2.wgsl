@@ -1,29 +1,14 @@
 // ═══════════════════════════════════════════════════════════════
-//  Digital Glitch Pass 2 — Batch 60
-//  Error propagation compositing: exact C field load, depth tears,
-//  held intensify, capped ripples, ACES + semantic alpha.
+//  Digital Glitch Pass 2
+//  Category: retro-glitch
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-10-18
+//  Ideas: chroma delay line; block residual quantization
+//  A packing: does not write A. C is pass 1's field. Display ACES on writeTexture.
 // ═══════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash21(p: vec2<f32>) -> f32 {
   var n = dot(p, vec2<f32>(127.1, 311.7));
@@ -60,6 +45,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mouse = u.zoom_config.yz;
 
   let bass = plasmaBuffer[0].x;
+  let corruption = clamp(u.zoom_params.x, 0.0, 1.0);
+  let bitManipulation = clamp(u.zoom_params.y, 0.0, 1.0);
   let errorPropagation = u.zoom_params.z;
   let decayRate = u.zoom_params.w;
 
@@ -92,7 +79,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     for (var channel: i32 = 0; channel < 3; channel = channel + 1) {
       var byteVal = floatToByte(color[channel]);
       let channelSeed = hash21(uv + vec2<f32>(f32(channel) * 100.0, time));
-      let flipProb = effectiveIntensity * 0.2 * (1.0 + sin(time * 3.0 + uv.y * 10.0) * 0.3);
+      let flipProb = effectiveIntensity * (0.12 + corruption * 0.22) * (1.0 + sin(time * 3.0 + uv.y * 10.0) * 0.3);
       byteVal = select(byteVal, byteVal ^ (1u << (u32(channelSeed * 1000.0) % 8u)), channelSeed < flipProb);
       color[channel] = byteToFloat(byteVal);
     }
@@ -127,11 +114,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
   }
 
+  // ── Idea 2: block residual quantization ─────────────────────────────
+  // DC is the local mean. Bit Manipulation steps the residual, the way a
+  // codec quantizes a block and leaves the average alone.
+  let qL = textureLoad(readTexture, clamp(texelCoord + vec2<i32>(-1, 0), vec2<i32>(0), dims - vec2<i32>(1)), 0).rgb;
+  let qR = textureLoad(readTexture, clamp(texelCoord + vec2<i32>(1, 0), vec2<i32>(0), dims - vec2<i32>(1)), 0).rgb;
+  let qU = textureLoad(readTexture, clamp(texelCoord + vec2<i32>(0, -1), vec2<i32>(0), dims - vec2<i32>(1)), 0).rgb;
+  let qD = textureLoad(readTexture, clamp(texelCoord + vec2<i32>(0, 1), vec2<i32>(0), dims - vec2<i32>(1)), 0).rgb;
+  let dc = (color + qL + qR + qU + qD) * 0.2;
+  let qStep = max(mix(48.0, 6.0, bitManipulation), 1.0);
+  color = dc + round((color - dc) * qStep) / qStep;
+
   let chromaStrength = effectiveIntensity * 0.035 * (1.0 + bass * 0.2);
   let rOffset = vec2<f32>(chromaStrength * (1.0 + sin(time * 2.0) * 0.5), 0.0);
   let bOffset = vec2<f32>(-chromaStrength * (1.0 + cos(time * 1.5) * 0.5), 0.0);
   color.r = mix(color.r, textureSampleLevel(readTexture, u_sampler, clamp(displacedUV + rOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r, 0.5 + effectiveIntensity * 0.3);
   color.b = mix(color.b, textureSampleLevel(readTexture, u_sampler, clamp(displacedUV + bOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b, 0.5 + effectiveIntensity * 0.3);
+
+  // ── Idea 1: chroma delay line ───────────────────────────────────────
+  // Luma stays on the pixel. Chroma is sampled late along x. Error
+  // Propagation is how many pixels the colour trails the detail.
+  let lumaW = vec3<f32>(0.299, 0.587, 0.114);
+  let yNow = dot(color, lumaW);
+  let delayPx = clamp(errorPropagation, 0.0, 1.0) * 7.0;
+  let laggedUV = clamp(displacedUV - vec2<f32>(delayPx / resolution.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+  let lagged = textureSampleLevel(readTexture, u_sampler, laggedUV, 0.0).rgb;
+  let yLag = dot(lagged, lumaW);
+  color = vec3<f32>(yNow) + mix(color - vec3<f32>(yNow), lagged - vec3<f32>(yLag), clamp(errorPropagation, 0.0, 1.0));
 
   let blockCoord = floor(uv * mix(8.0, 64.0, effectiveIntensity));
   let invertSeed = hash21(blockCoord + vec2<f32>(time * 0.5, 100.0));

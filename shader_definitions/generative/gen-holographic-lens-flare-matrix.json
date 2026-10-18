@@ -6,7 +6,7 @@
     "holographic",
     "matrix"
   ],
-  "description": "Generate a matrix of holographic lens flares that follow motion in the video or a synthetic flow field.",
+  "description": "Generate a matrix of holographic lens flares that follow motion in the video or a synthetic flow field. Achromatic doublet cemented-interface halos and micro-lenticular sensor-grid satellite dots surround each flare cell.",
   "workgroup_size": [
     16,
     16,
@@ -50,40 +50,6 @@
       "mapping": "zoom_params.w"
     }
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Intensity",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Speed",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Scale",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Mouse Influence",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
-  ],
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
@@ -100,5 +66,43 @@
     "depth-aware",
     "upgraded-rgba"
   ],
-  "feedbackPacking": "A/C = raw flare density, anamorphic streak, nearest flare distance, semantic alpha; raw state is never tone-mapped"
+  "feedbackPacking": "A/C = raw flare density, anamorphic streak, nearest flare distance, semantic alpha; raw state is never tone-mapped",
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Intensity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Speed",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Scale",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Mouse Influence",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

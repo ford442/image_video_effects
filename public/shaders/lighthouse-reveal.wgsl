@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Lighthouse Reveal
-//  Category: lighting-effects
-//  Features: mouse-driven, reveal, beam, audio-sweep, depth-atmosphere
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: Medium
-//  Updated: 2026-05-31 — Grok (audio-reactive sweep + depth atmosphere)
+//  Upgraded: 2026-09-28
+//  Ideas: Fresnel lens panel bands + group flash when a panel faces the viewer; depth-occluded shaft (shadow streaks)
+//  A packing: ACES display RGB (straight) + beam/halo/flash coverage alpha; C is not read
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -119,6 +121,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let softness = u.zoom_params.z;
     let ambient = u.zoom_params.w;
     let time = u.config.x;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
     let dist = distance(uv_aspect, mouse_aspect);
     let angle = atan2(uv_aspect.y - mouse_aspect.y, uv_aspect.x - mouse_aspect.x);
@@ -126,8 +129,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Grok: Bass pulses the reveal strength (dramatic sweeps)
     let revealPulse = 1.0 + bass * 0.6;
 
-    // Rotation speed with audio reactivity
-    let rotation = time * 2.0 * (1.0 + bass * 0.5);
+    // Rotation with audio reactivity. HEAD fix: `time * 2.0 * (1.0 + bass * 0.5)` scaled the
+    // whole phase by bass, so the beam teleported by time*bass rad on every hit; bass now kicks
+    // the phase forward by a bounded amount instead (identical when bass = 0).
+    let rotation = time * 2.0 + bass * 0.5;
 
     // Normalize angle difference to -PI to PI
     var angle_diff = angle - rotation;
@@ -141,18 +146,60 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Radial falloff
     let radial_mask = 1.0 - smoothstep(radius, radius + softness + 0.01, dist);
 
+    // ── Idea 1: Fresnel lens panel flashes ─────────────────────────────
+    // The lamp is a bull's-eye lens of PANELS panels that rotates with the beam; the beam's
+    // angular width is spanned by the panels. Across the shaft each panel is bright at its
+    // axis and dark at the seams (bands fixed in the beam frame, so they sweep with it).
+    let PANELS = 3.0;
+    let beam_half = beam_width * pi * 0.5;
+    let panel_span = max(2.0 * beam_half / PANELS, 1e-3);
+    let panel_seam = abs(fract((angle_diff + beam_half) / panel_span) - 0.5) * 2.0; // 0 axis, 1 seam
+    let panelBand = mix(1.08, 0.5, panel_seam * panel_seam);
+    // Flash: a panel faces the viewer (who stands at the bottom edge of the frame, +y) when its
+    // axis crosses that direction. Wrapped angle difference — no atan2 seam. One sweep past the
+    // viewer yields a group of PANELS flashes (a Fl(3) lighthouse character).
+    let viewer_angle = pi * 0.5;
+    let view_off = (fract((viewer_angle - rotation) / (2.0 * pi) + 0.5) - 0.5) * 2.0 * pi;
+    let flash_sigma = panel_span * 0.32;
+    var flash = 0.0;
+    for (var k = 0; k < 3; k = k + 1) {
+        let panel_axis = -beam_half + (f32(k) + 0.5) * panel_span;
+        let e = (view_off - panel_axis) / flash_sigma;
+        flash = flash + exp(-e * e);
+    }
+    // HEAD fix: revealPulse (bass) was declared but unused — it now drives the flash strength
+    // and the reveal strength of the beam (below).
+    flash = flash * revealPulse;
+
+    // ── Idea 2: depth-occluded shaft ───────────────────────────────────
+    // March from the lamp toward this pixel; a sample nearer than the pixel (near-is-one depth)
+    // blocks the beam, so objects in the shaft throw radial shadow streaks behind them.
+    // Relative test: a flat / missing depth map occludes nothing.
+    var shaftTrans = 1.0;
+    if (angle_mask * radial_mask > 0.002) {
+        let jit = ign(vec2<f32>(global_id.xy) + vec2<f32>(17.0, 5.0));
+        var occl = 0.0;
+        for (var i = 0; i < 6; i = i + 1) {
+            let t = 0.08 + (f32(i) + jit) / 6.0 * 0.82;   // skip the lamp and the receiver itself
+            let sp = mix(mouse, uv, t);
+            let sd = textureSampleLevel(readDepthTexture, non_filtering_sampler, sp, 0.0).r;
+            occl = max(occl, smoothstep(0.04, 0.14, sd - depth) * (1.0 - t * 0.25));
+        }
+        shaftTrans = 1.0 - occl * 0.8;
+    }
+
     let dust = fbm(uv_aspect * 4.5 + vec2<f32>(time * 0.08, -time * 0.03));
-    let shaft = pow(angle_mask, 2.2) * radial_mask * (0.55 + dust * 0.75);
+    let shaft = pow(angle_mask, 2.2) * radial_mask * (0.55 + dust * 0.75)
+        * panelBand * shaftTrans;                                   // Idea 1 bands, Idea 2 shadows
     let halo = exp(-dist * 5.5) * (0.45 + bass * 0.45);
     let mist = smoothstep(0.12, 0.92, dust) * pow(radial_mask, 1.6);
 
     // Combined mask
-    let mask = clamp(angle_mask * radial_mask + halo * 0.45, 0.0, 1.0);
+    let mask = clamp(angle_mask * radial_mask * mix(1.0, shaftTrans, 0.6) + halo * 0.45, 0.0, 1.0);
 
     // Apply lighting preserving alpha
     let texColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let visibility = mix(ambient * 0.55, 1.0, mask);
+    let visibility = mix(ambient * 0.55, 1.0, clamp(mask * revealPulse, 0.0, 1.0));
     let lampColor = blackbodyRGB(2600.0 + bass * 1800.0 + treble * 900.0);
     let fogColor = mix(vec3<f32>(0.05, 0.07, 0.11), vec3<f32>(0.52, 0.62, 0.78), mist);
     let depthFog = 1.0 - exp(-max(depth, 0.02) * (0.85 + mids * 0.5));
@@ -160,15 +207,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     hdr = mix(hdr, fogColor, clamp(depthFog * (1.0 - mask) * 0.32, 0.0, 0.55));
     hdr = hdr + lampColor * shaft * (1.35 + bass * 1.1);
     hdr = hdr + lampColor * halo * 0.85;
+    // Idea 1: the flash — lens glare at the lamp plus a brief lift of the whole scene
+    let flashGlare = flash * (exp(-dist * 3.2) * 1.6 + 0.08);
+    hdr = hdr + lampColor * flashGlare;
 
     let radial = length(uv - vec2<f32>(0.5)) * 1.414;
     hdr = hdr * mix(1.0, 0.62, smoothstep(0.55, 1.0, radial));
     let dither = (ign(vec2<f32>(global_id.xy) + time * 23.0) - 0.5) / 255.0;
     let finalRGB = clamp(aces(hdr * 1.12) + vec3<f32>(dither), vec3<f32>(0.0), vec3<f32>(1.0));
-    let luma = dot(hdr, vec3<f32>(0.2126, 0.7152, 0.0722));
-    let finalAlpha = clamp(0.12 + pow(max(0.0, luma - 0.45), 2.0) * 2.5 + shaft * 0.28, 0.0, 1.0);
+    // HEAD fix: RGB was stored premultiplied by an alpha that sat at ~0.12 outside the beam, but
+    // the present blit ignores alpha (opaque canvas), so the frame was dimmed twice. RGB is now
+    // straight (ambient keeps controlling outside-beam brightness through `visibility`) and alpha
+    // is the light's coverage: beam + halo + flash glare.
+    let finalAlpha = clamp(mask + shaft * 0.25 + flashGlare * 0.5, 0.0, 1.0);
+    let outColor = vec4<f32>(finalRGB, finalAlpha);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB * finalAlpha, finalAlpha));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), outColor);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), outColor);
 
     // Depth pass-through
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

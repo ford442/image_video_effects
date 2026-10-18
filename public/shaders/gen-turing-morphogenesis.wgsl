@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-15
-//  Ideas: inhibitor halo around spots; chemical-front ridges where activator ≈ scaled inhibitor
+//  Upgraded: 2026-09-15, 2026-09-27
+//  Ideas: inhibitor halo around spots; chemical-front ridges where activator ≈ scaled inhibitor; stripe coat-grain along the activator gradient; slow domain patches
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -96,6 +96,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let feed = 0.03 + p1 * 0.05 + sin(time * speed * 0.1) * 0.008 + bass * 0.02;
   let kill = 0.055 + p1 * 0.03 + cos(time * speed * 0.12) * 0.005 - bass * 0.01;
   let fk = kill - feed;
+  // Idea 4 — slow domain patches. A large inhibitor scale shifts the existing regime locally.
+  let domain = vnoise(uv * scale * 0.35 - vec2<f32>(time * 0.01, time * 0.008));
+  let fkLocal = fk + (domain - 0.5) * 0.014;
+  // Idea 3 — coat grain. Stripe direction follows the activator gradient.
+  let aXp = activatorInhibitor(uv + vec2<f32>(0.02, 0.0), scale, time).x;
+  let aXm = activatorInhibitor(uv - vec2<f32>(0.02, 0.0), scale, time).x;
+  let aYp = activatorInhibitor(uv + vec2<f32>(0.0, 0.02), scale, time).x;
+  let aYm = activatorInhibitor(uv - vec2<f32>(0.0, 0.02), scale, time).x;
+  let gA = vec2<f32>(aXp - aXm, aYp - aYm);
+  let tangent = vec2<f32>(-gA.y, gA.x);
+  let along = dot(uv * scale, tangent / max(length(tangent), 0.001));
+  let grain = smoothstep(0.2, 0.8, 0.5 + 0.5 * sin(along * 14.0));
 
   let caStr = 0.003 * (1.0 + bass) * depthScale;
   let rAI = activatorInhibitor(uv + vec2<f32>(caStr, 0.0), scale, time);
@@ -108,11 +120,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let ai = select(select(bAI, gAI, ch == 1), rAI, ch == 0);
     let diff = ai.x - ai.y * (kill / max(feed, 0.001));
     let spots = smoothstep(0.15, 0.35, diff) * (1.0 - smoothstep(0.35, 0.6, diff));
-    let stripes = smoothstep(0.05, 0.25, diff) * (1.0 - smoothstep(0.25, 0.45, diff)) * 0.7;
+    let stripes = smoothstep(0.05, 0.25, diff) * (1.0 - smoothstep(0.25, 0.45, diff)) * 0.7 * mix(0.3, 1.0, grain);
     let labyrinth = smoothstep(-0.1, 0.1, diff) * (1.0 - smoothstep(0.1, 0.3, diff)) * 0.5;
-    let c1 = step(fk, 0.01);
-    let c2 = step(0.01, fk) * step(fk, 0.02);
-    let c3 = step(0.02, fk);
+    let c1 = step(fkLocal, 0.01);
+    let c2 = step(0.01, fkLocal) * step(fkLocal, 0.02);
+    let c3 = step(0.02, fkLocal);
     let pat = spots * c1 + stripes * c2 + labyrinth * c3;
     pattern[ch] = pat;
     curvature[ch] = abs(diff - vnoise(uv * scale * 3.0 + f32(ch) * 1.7));

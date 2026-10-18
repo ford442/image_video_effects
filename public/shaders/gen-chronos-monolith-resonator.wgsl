@@ -6,28 +6,13 @@
 //            depth-aware, aces-tone-map, volumetric-ribbons
 //  Complexity: Very High
 //  Created: 2026-06-28
+//  Upgraded: 2026-10-17
+//  Ideas: Chladni node lines on obsidian faces; ribbon time-echo wakes; fracture core-leak; fold seams; braid knots;
+//         ribbon spill-light painting the obsidian faces; core standing-wave nodal shells in the volume
+//  A packing: HDR display RGB + semantic alpha (C read back as colour history); ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ─── Math Helpers ───
 fn sat(x: f32) -> f32 { return clamp(x, 0.0, 1.0); }
@@ -159,8 +144,10 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, complexity: f32,
 
   // Fractures that shift over time
   let fractureNoise = fbm(p * 3.0 + vec3<f32>(time * 0.2, time * 0.15, time * 0.1));
-  let fractures = monolith + fractureNoise * 0.1;
-  let isFractured = select(0.0, 1.0, fractureNoise < 0.0);
+  // fbm lies in [0,1), so the old `fractureNoise < 0.0` test never fired and the
+  // fracture material (and its core-leak) was unreachable: cracks are the thin
+  // iso-band where the drifting noise crosses its midpoint.
+  let isFractured = select(0.0, 1.0, abs(fractureNoise - 0.5) < 0.022);
 
   // Inner crystal core (visible through fractures)
   let core = sdSphere(p, 0.8 + sin(time * 0.5) * 0.1);
@@ -168,25 +155,7 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, complexity: f32,
 
   // Temporal plasma ribbons - orbiting around monolith
   let orbitSpeed = time * 0.5 + audio * 0.3;
-  let ribbon1 = sdCapsule(
-    p,
-    vec3<f32>(cos(orbitSpeed) * 1.5, sin(orbitSpeed * 1.3) * 0.5, sin(orbitSpeed) * 1.5),
-    vec3<f32>(cos(orbitSpeed + 1.0) * 1.8, sin(orbitSpeed * 1.3 + 2.0) * 0.8, sin(orbitSpeed + 1.0) * 1.8),
-    0.05 + audio * 0.02
-  );
-  let ribbon2 = sdCapsule(
-    p,
-    vec3<f32>(sin(orbitSpeed * 0.7) * 2.0, cos(orbitSpeed * 1.1) * 1.0, cos(orbitSpeed * 0.7) * 2.0),
-    vec3<f32>(sin(orbitSpeed * 0.7 + 1.5) * 2.2, cos(orbitSpeed * 1.1 + 2.5) * 1.3, cos(orbitSpeed * 0.7 + 1.5) * 2.2),
-    0.04 + audio * 0.015
-  );
-  let ribbon3 = sdCapsule(
-    p,
-    vec3<f32>(cos(orbitSpeed * 0.4 + 3.0) * 1.2, sin(orbitSpeed * 0.6) * 1.5, sin(orbitSpeed * 0.4 + 3.0) * 1.2),
-    vec3<f32>(cos(orbitSpeed * 0.4 + 4.0) * 1.5, sin(orbitSpeed * 0.6 + 2.0) * 1.8, sin(orbitSpeed * 0.4 + 4.0) * 1.5),
-    0.03 + audio * 0.01
-  );
-  let ribbons = min(min(ribbon1, ribbon2), ribbon3);
+  let ribbons = ribbonField(p, orbitSpeed, audio);
 
   // Combine scene
   var d = smin(monolith, ribbons, 0.1);
@@ -211,6 +180,34 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, complexity: f32,
   }
 
   return MapResult(d, mat, glow);
+}
+
+// The three orbit capsules at a given orbit phase (map uses the live phase, idea 2 earlier ones).
+fn ribbonTrio(p: vec3<f32>, orbitSpeed: f32, audio: f32) -> vec3<f32> {
+  let ribbon1 = sdCapsule(
+    p,
+    vec3<f32>(cos(orbitSpeed) * 1.5, sin(orbitSpeed * 1.3) * 0.5, sin(orbitSpeed) * 1.5),
+    vec3<f32>(cos(orbitSpeed + 1.0) * 1.8, sin(orbitSpeed * 1.3 + 2.0) * 0.8, sin(orbitSpeed + 1.0) * 1.8),
+    0.05 + audio * 0.02
+  );
+  let ribbon2 = sdCapsule(
+    p,
+    vec3<f32>(sin(orbitSpeed * 0.7) * 2.0, cos(orbitSpeed * 1.1) * 1.0, cos(orbitSpeed * 0.7) * 2.0),
+    vec3<f32>(sin(orbitSpeed * 0.7 + 1.5) * 2.2, cos(orbitSpeed * 1.1 + 2.5) * 1.3, cos(orbitSpeed * 0.7 + 1.5) * 2.2),
+    0.04 + audio * 0.015
+  );
+  let ribbon3 = sdCapsule(
+    p,
+    vec3<f32>(cos(orbitSpeed * 0.4 + 3.0) * 1.2, sin(orbitSpeed * 0.6) * 1.5, sin(orbitSpeed * 0.4 + 3.0) * 1.2),
+    vec3<f32>(cos(orbitSpeed * 0.4 + 4.0) * 1.5, sin(orbitSpeed * 0.6 + 2.0) * 1.8, sin(orbitSpeed * 0.4 + 4.0) * 1.5),
+    0.03 + audio * 0.01
+  );
+  return vec3<f32>(ribbon1, ribbon2, ribbon3);
+}
+
+fn ribbonField(p: vec3<f32>, orbitSpeed: f32, audio: f32) -> f32 {
+  let ribbons = ribbonTrio(p, orbitSpeed, audio);
+  return min(ribbons.x, min(ribbons.y, ribbons.z));
 }
 
 fn calcNormal(p: vec3<f32>, time: f32, audio: f32, complexity: f32,
@@ -247,7 +244,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Mouse in 3D
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
   let mouseUV = u.zoom_config.yz;
-  let mouseY = mouseUV.y;  // Flip Y: screen top = up
+  let mouseY = 1.0 - mouseUV.y;  // Flip Y: screen top = up (uv.y grows downward)
   let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
   var shock = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);
@@ -263,7 +260,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   shock = min(shock, 2.0);
   let mousePos = vec3<f32>(
     (mouseUV.x * 2.0 - 1.0) * 3.0 * aspect,
-    (mouseUV.y * 2.0 - 1.0) * 3.0,  // 3D position: screen top = +Y (up)
+    (1.0 - mouseUV.y * 2.0) * 3.0,  // 3D position: screen top = +Y (up)
     0.0
   );
 
@@ -279,7 +276,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   var p = uv * 2.0 - 1.0;
   p.x = p.x * aspect;
-  let rd = normalize(p.x * uu + p.y * vv + 2.5 * ww);
+  // uv.y grows downward; negate so world +y (the lit, AO-bright side) is up
+  let rd = normalize(p.x * uu - p.y * vv + 2.5 * ww);
 
   // Raymarch
   var t = 0.0;
@@ -328,6 +326,32 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       // Fresnel edge
       let fresnel = pow(1.0 - nDotV, 4.0);
       col = col + vec3<f32>(0.05, 0.04, 0.08) * fresnel * 0.3;
+
+      // Idea 1 — Chladni node lines: a standing-wave plate pattern on whichever face the normal picks
+      let an = abs(n);
+      var face = hitPos.xy;
+      if (an.x >= an.y && an.x >= an.z) { face = hitPos.yz; }
+      else if (an.y >= an.z) { face = hitPos.xz; }
+      let modeN = 2.0 + floor(monolithComplexity);
+      let modeM = modeN + 1.0 + floor(bass * 2.0);
+      let fk = face * 2.4 + vec2<f32>(sin(time * 0.13), cos(time * 0.11)) * 0.15;
+      let plate = cos(modeN * fk.x) * cos(modeM * fk.y) - cos(modeM * fk.x) * cos(modeN * fk.y);
+      let nodal = 1.0 - smoothstep(0.0, 0.07 + bass * 0.04, abs(plate));
+      col = col + vec3<f32>(0.35, 0.55, 1.0) * nodal * (coreResonance * 0.5 + bass * 0.45 + shock * 0.3);
+      // Idea: fold seam — crease where the absolute sum meets the KIFS fold limit.
+      let foldLimit = 1.0 + monolithComplexity * 0.5;
+      let foldSum = abs(hitPos.x) + abs(hitPos.y) + abs(hitPos.z);
+      let seam = exp(-abs(foldSum - foldLimit) * 9.0);
+      col = col + vec3<f32>(0.55, 0.72, 1.0) * seam * (0.28 + coreResonance * 0.55);
+      // Idea 6 — ribbon spill-light: each orbiting plasma ribbon is an emitter, so the
+      // obsidian it sweeps past picks up its hue (cosine-weighted toward the ribbon)
+      let liveOrbitS = time * 0.5 + audio * 0.3;
+      let trioS = ribbonTrio(hitPos, liveOrbitS, audio);
+      let spillPhase = hitPos.x * 2.0 + time * 2.0;
+      let spillCol = vec3<f32>(0.2 + 0.3 * sin(spillPhase), 0.3 + 0.4 * sin(spillPhase + 2.09), 0.5 + 0.3 * sin(spillPhase + 4.18));
+      let spillFacing = 0.35 + 0.65 * sat(dot(n, normalize(hitPos)) + 0.5);
+      let spill = exp(-trioS.x * 3.5) + exp(-trioS.y * 3.5) * 0.8 + exp(-trioS.z * 3.5) * 0.6;
+      col = col + max(spillCol, vec3<f32>(0.0)) * spill * spillFacing * plasmaDensity * (1.2 + audio * 0.6);
     } else if (hitMat < 1.5) {
       // Temporal plasma ribbon - cyan, violet, gold
       let ribbonPhase = hitPos.x * 2.0 + time * 2.0;
@@ -351,6 +375,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       // Fracture - revealing core
       let fractureCol = vec3<f32>(0.15, 0.05, 0.2) * (0.5 + hitGlow * 2.0);
       col = fractureCol + vec3<f32>(0.3, 0.2, 0.5) * spec * 0.3;
+      // Idea 3 — fracture core-leak: cracks nearer the inner core spill its light
+      let coreNear = exp(-max(length(hitPos) - 0.8, 0.0) * 2.5);
+      col = col + vec3<f32>(0.2, 0.5, 0.8) * coreNear * (0.25 + coreResonance * 1.4) * (0.8 + mids * 0.4);
     }
 
     // Ambient occlusion
@@ -383,7 +410,41 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       );
       volGlow = volGlow + vCol * falloff * 0.02 * (0.5 + audio * 0.5);
     }
+    // Idea 2 — ribbon time-echo: the same ribbons at earlier orbit phases leave fading wakes
+    let liveOrbit = time * 0.5 + audio * 0.3;
+    for (var k: i32 = 1; k <= 3; k = k + 1) {
+      let lag = f32(k) * (0.22 + temporalFlow * 0.1);
+      let dEcho = ribbonField(vPos, liveOrbit - lag, audio);
+      let echoPhase = vPos.x * 2.0 + (time - lag * 2.0) * 2.0;
+      let eCol = vec3<f32>(0.1 + 0.1 * sin(echoPhase), 0.15 + 0.12 * sin(echoPhase + 2.09), 0.3 + 0.1 * sin(echoPhase + 4.18));
+      volGlow = volGlow + eCol * exp(-dEcho * 9.0) * exp(-vt * 0.1) * plasmaDensity * 0.035 / f32(k);
+    }
+    // Idea: braid knot — gold where two of the live ribbons pass close.
+    let trio = ribbonTrio(vPos, liveOrbit, audio);
+    let knot = exp(-trio.x * 8.0) * exp(-trio.y * 8.0)
+      + exp(-trio.y * 8.0) * exp(-trio.z * 8.0)
+      + exp(-trio.z * 8.0) * exp(-trio.x * 8.0);
+    volGlow = volGlow + vec3<f32>(1.0, 0.82, 0.35) * knot * plasmaDensity * 0.09;
   }
+
+  // Idea 7 — core standing-wave nodal shells: the resonating core's spherical
+  // standing wave has fixed node radii; resonance dust settles there as thin
+  // shells. Solved per ray (impact parameter), so each shell gets crisp limb
+  // brightening instead of march speckle; shells behind the monolith are occluded.
+  let tMid = dot(-ro, rd);
+  let bImp = length(cross(ro, rd));
+  let shellGap = 0.46 - monolithComplexity * 0.03;
+  let breathe = 0.6 + 0.4 * abs(cos(time * temporalFlow * 3.0));
+  var shellGlow = 0.0;
+  for (var sn: i32 = 0; sn < 4; sn = sn + 1) {
+    let R = 1.05 + f32(sn) * shellGap;
+    if (bImp < R) {
+      let h = sqrt(R * R - bImp * bImp);
+      let limb = min(R / max(h, 1e-3), 7.0) / (1.0 + f32(sn) * 0.6);
+      shellGlow += limb * (select(0.0, 1.0, tMid - h < depth) + select(0.0, 1.0, tMid + h < depth));
+    }
+  }
+  volGlow = volGlow + vec3<f32>(0.25, 0.42, 1.0) * shellGlow * coreResonance * breathe * (0.07 + bass * 0.04);
   col = col + volGlow;
 
   // Screen-space resonator harmonics make click energy legible across the void.
@@ -394,16 +455,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Temporal persistence
   let prev = textureLoad(dataTextureC, coord, 0);
-  col = mix(col, prev.rgb * 0.92, 0.03);
+  let hdr = clamp(mix(col, prev.rgb * 0.92, 0.03), vec3<f32>(0.0), vec3<f32>(8.0));
 
-  // Tone map
-  col = acesToneMap(col * 1.3);
+  // Tone map (display only; A keeps HDR history)
+  let display = acesToneMap(hdr * 1.3);
 
   let hitSignal = select(0.0, 1.0, hit);
   let alpha = clamp(hitSignal * 0.72 + length(volGlow) * 0.9 + harmonic * coreResonance * 0.18 + shock * 0.25, 0.02, 1.0);
   let finalDepth = sat(0.95 - depth * 0.03);
 
-  textureStore(writeTexture, coord, vec4<f32>(col, alpha));
+  textureStore(writeTexture, coord, vec4<f32>(display, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 1.0));
-  textureStore(dataTextureA, coord, vec4<f32>(col.r, col.g, col.b, alpha));
+  textureStore(dataTextureA, coord, vec4<f32>(hdr, alpha));
 }

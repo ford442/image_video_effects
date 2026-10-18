@@ -36,7 +36,6 @@
     {
       "id": "vignetteStrength",
       "name": "Vignette Strength",
-      "type": "float",
       "default": 0.5,
       "min": 0.0,
       "max": 1.0,
@@ -45,7 +44,6 @@
     {
       "id": "bloomRadius",
       "name": "Bloom Radius",
-      "type": "float",
       "default": 0.4,
       "min": 0.0,
       "max": 1.0,
@@ -54,7 +52,6 @@
     {
       "id": "hazeAmount",
       "name": "Haze Amount",
-      "type": "float",
       "default": 0.3,
       "min": 0.0,
       "max": 1.0,
@@ -63,7 +60,6 @@
     {
       "id": "bloomIntensity",
       "name": "Bloom Intensity",
-      "type": "float",
       "default": 0.6,
       "min": 0.0,
       "max": 1.0,

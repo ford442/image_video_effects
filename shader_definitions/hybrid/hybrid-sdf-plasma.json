@@ -53,12 +53,14 @@
       "description": "Raymarching step count (affects performance)"
     }
   ],
-  "chunks_used": [
-    "sdSphere (gen-xeno-botanical-synth-flora.wgsl)",
-    "sdSmoothUnion (gen-xeno-botanical-synth-flora.wgsl)",
-    "fbm3 (gen-xeno-botanical-synth-flora.wgsl)",
-    "palette (gen-xeno-botanical-synth-flora.wgsl)"
-  ],
-  "created_by": "Agent 2A - Shader Surgeon",
-  "created_date": "2026-03-22"
+  "x-meta": {
+    "chunks_used": [
+      "sdSphere (gen-xeno-botanical-synth-flora.wgsl)",
+      "sdSmoothUnion (gen-xeno-botanical-synth-flora.wgsl)",
+      "fbm3 (gen-xeno-botanical-synth-flora.wgsl)",
+      "palette (gen-xeno-botanical-synth-flora.wgsl)"
+    ],
+    "created_by": "Agent 2A - Shader Surgeon",
+    "created_date": "2026-03-22"
+  }
 }

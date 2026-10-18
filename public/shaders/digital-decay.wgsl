@@ -1,29 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Digital Decay — Batch 61
-//  Block corruption + ghost persistence: spring hotspot, held burst,
-//  capped ripples, exact C ghost load, bit-flip, ACES + semantic alpha.
+//  Digital Decay
+//  Category: retro-glitch
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-10
+//  Ideas: block tear; stuck row
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash11(p: f32) -> f32 {
   var v = fract(p * 0.1031);
@@ -119,6 +104,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   if (blockHash < depthCorrupt * 0.55) {
     glitchUV += (hash22(vec2<f32>(f32(blockUV.x), f32(blockUV.y)) * 99.0 + blockTime) - 0.5) * 0.35;
   }
+  // Idea: blockTear — lower half of a corrupting block slides in x.
+  let blockTear = step(0.5, fract(vec2<f32>(gid.xy) / blockPx).y) * step(blockHash, depthCorrupt * 0.55);
+  glitchUV = glitchUV + vec2<f32>(blockTear * (hash21(vec2<f32>(f32(blockUV.x), blockTime)) - 0.5) * 0.08, 0.0);
   if (blockHash < depthCorrupt * 0.25) {
     glitchUV += (vec2<f32>(hash21(uv * 500.0 + time * 3.0), hash21(uv * 600.0)) - 0.5) / resolution * 18.0;
   }
@@ -144,6 +132,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let ghost = textureLoad(dataTextureC, coord, 0).rgb;
   let ghostBlend = clamp(depthCorrupt * 0.6, 0.0, 0.8);
   outCol = mix(outCol, ghost * ghostDecay, ghostBlend);
+  // Idea: stuckRow — a sparse line latches the ghost. Ghost decay owns the hold.
+  let stuckRow = step(0.86, hash11(floor(f32(gid.y) / 4.0) * 0.17 + floor(time * 0.35)));
+  outCol = mix(outCol, ghost, stuckRow * ghostDecay);
   if (corruptionRate < 0.01) { outCol = src.rgb; }
 
   outCol = acesToneMap(outCol * (0.95 + bass * 0.08 + mids * 0.04));

@@ -3,30 +3,12 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: brood-cell comb — voronoi hive cells read as chitin-walled brood chambers, some wax-capped domes, others open with heartbeat-pulsing larval plasma; peristaltic hemolymph pumping — boluses travel along the strut tubes, bulging the tube SDF and pushing bright plasma through the neon veins
+//  Upgraded: 2026-10-17
+//  Ideas: brood-cell comb — voronoi hive cells read as chitin-walled brood chambers, some wax-capped domes, others open with heartbeat-pulsing larval plasma; peristaltic hemolymph pumping — boluses travel along the strut tubes, bulging the tube SDF and pushing bright plasma through the neon veins; chitin valve irises — capped brood chambers open/close with a rotating annular shutter under bass/treble pressure; trophallactic plasma bridges — neighbouring open chambers exchange neon hemolymph through pulsing inter-cell conduits; sclerite-segmented struts — each strut tube is ringed into arthropod segments whose intersegmental membranes leak neon where the hemolymph bolus is passing; hydraulic gear collars — toothed mechanical collars clamp each strut where it enters a node, counter-rotating with the hive pump
 //  A packing: ACES display RGBA in A (feedback inverts ACES analytically to recover HDR trails)
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=time (s), y=rippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=time, yz=mouse uv (0-1 canvas, y=0 top), w=mouseDown (>0.5 pressed)
-    zoom_params: vec4<f32>,  // x=Hive Breathing Speed, y=Neon Intensity, z=Spore Density, w=Magnetic Pull
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Hive Breathing Speed, y=Neon Intensity, z=Spore Density, w=Magnetic Pull
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -132,25 +114,54 @@ fn voronoiCell(x: vec3<f32>) -> vec3<f32> {
 // ── IDEA 2 helper: peristaltic bolus profile along a strut axis ──
 // A contraction wave squeezes hemolymph into a travelling bolus: sharp
 // crest, long relaxed trough (raised-cosine to the 4th power).
-fn peristalsis(axial: f32, time: f32, pump: f32) -> f32 {
-    let w = 0.5 + 0.5 * sin(axial * TAU * 0.75 - time * pump);
+// `pumpPhase` is an accumulated phase (rate × time + bounded audio offset).
+fn peristalsis(axial: f32, pumpPhase: f32) -> f32 {
+    let w = 0.5 + 0.5 * sin(axial * TAU * 0.75 - pumpPhase);
     let w2 = w * w;
     return w2 * w2;
+}
+
+// Cursor gravity well (shared by map() and strutDetail()) — force clamped
+fn wellWarp(pos: vec3<f32>, mouse_pos: vec3<f32>, mouse_pull: f32) -> vec3<f32> {
+    var p = pos;
+    let pull_dist = length(p - mouse_pos);
+    if (pull_dist > 0.1) {
+        let pull_force = mouse_pull / (pull_dist * pull_dist);
+        p -= normalize(mouse_pos - p) * clamp(pull_force, 0.0, 2.0);
+    }
+    return p;
+}
+
+// ── IDEAS 5 + 6 helper: frame of the nearest strut in the lattice cell ──
+// Returns (sclerite membrane mask, gear-collar band × tooth, collar band, 0).
+// Struts run from the node at q = 0 out to the cell face (|axial| = 0.5),
+// so |axial| is continuous across cells and segment bands line up.
+fn strutDetail(q: vec3<f32>, gear: f32) -> vec3<f32> {
+    let dx = length(q.yz);
+    let dy = length(q.xz);
+    let dz = length(q.xy);
+    var axial = q.x;
+    var around = atan2(q.z, q.y);
+    if (dy < dx && dy <= dz) { axial = q.y; around = atan2(q.x, q.z); }
+    else if (dz < dx && dz < dy) { axial = q.z; around = atan2(q.y, q.x); }
+    let ax = abs(axial);
+    // IDEA 5: sclerite rings — 7 segments per half-strut, narrow soft membrane
+    let seg = fract(ax * 14.0) - 0.5;
+    let membrane = exp(-seg * seg * 90.0) * smoothstep(0.31, 0.37, ax);
+    // IDEA 6: gear collar just outside the node sphere; the two collars of
+    // a strut counter-rotate (sign of axial), 10 teeth.
+    let band = exp(-(ax - 0.29) * (ax - 0.29) * 1400.0);
+    let spin = select(-1.0, 1.0, axial > 0.0);
+    let tooth = smoothstep(0.2, 0.6, 0.5 + 0.5 * cos(around * 10.0 + gear * spin));
+    return vec3<f32>(membrane, band * tooth, band);
 }
 
 fn luma(rgb: vec3<f32>) -> f32 {
     return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
 }
 
-fn map(pos: vec3<f32>, mouse_pos: vec3<f32>, mouse_pull: f32, time: f32, pump: f32) -> vec2<f32> {
-    var p = pos;
-
-    // Cursor gravity well — force clamped so speed stays stable
-    let pull_dist = length(p - mouse_pos);
-    if (pull_dist > 0.1) {
-        let pull_force = mouse_pull / (pull_dist * pull_dist);
-        p -= normalize(mouse_pos - p) * clamp(pull_force, 0.0, 2.0);
-    }
+fn map(pos: vec3<f32>, mouse_pos: vec3<f32>, mouse_pull: f32, time: f32, pump: f32, gear: f32) -> vec2<f32> {
+    let p = wellWarp(pos, mouse_pos, mouse_pull);
 
     let v = voronoi(p * 2.0);
     let displacement = (v.y - v.x) * 0.3;
@@ -160,13 +171,16 @@ fn map(pos: vec3<f32>, mouse_pos: vec3<f32>, mouse_pull: f32, time: f32, pump: f
 
     // IDEA 2: struts are muscular tubes; the bolus bulges the tube wall as it
     // travels along each strut axis (axial coordinate = unwrapped world axis).
-    let bx = peristalsis(p.x, time, pump);
-    let by = peristalsis(p.y + 0.37, time, pump);
-    let bz = peristalsis(p.z + 0.71, time, pump);
+    let bx = peristalsis(p.x, pump);
+    let by = peristalsis(p.y + 0.37, pump);
+    let bz = peristalsis(p.z + 0.71, pump);
     let cyl_x = length(q.yz) - (0.1 + 0.03 * bx);
     let cyl_y = length(q.xz) - (0.1 + 0.03 * by);
     let cyl_z = length(q.xy) - (0.1 + 0.03 * bz);
-    let cyl = min(min(cyl_x, cyl_y), cyl_z);
+    // IDEAS 5 + 6: sclerite grooves sink into the tube wall; gear teeth stand
+    // proud of it where the strut enters the node.
+    let sd = strutDetail(q, gear);
+    let cyl = min(min(cyl_x, cyl_y), cyl_z) + 0.009 * sd.x - 0.022 * sd.y - 0.008 * sd.z;
     // Bolus of the nearest strut (for vein shading at the hit point)
     var bolus = bx;
     if (cyl_y < cyl_x && cyl_y <= cyl_z) { bolus = by; }
@@ -203,7 +217,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let pixel = vec2<i32>(global_id.xy);
     let aspect = res / min(res.x, res.y);
-    let uv = (vec2<f32>(global_id.xy) * 2.0 - res) / min(res.x, res.y);
+    // Rows grow downward; flip so world +y (key light, bob) is screen-up
+    let uvRaw = (vec2<f32>(global_id.xy) * 2.0 - res) / min(res.x, res.y);
+    let uv = vec2<f32>(uvRaw.x, -uvRaw.y);
     let time = u.config.x;
 
     // ── Live sliders (updatedParams contract, byte-exact) ─────────
@@ -216,53 +232,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bass   = clamp(plasmaBuffer[0].x, 0.0, 1.0);
     let mids   = clamp(plasmaBuffer[0].y, 0.0, 1.0);
     let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
-    // Hemolymph pump rate: breathing speed, quickened by bass
-    let pump = 1.5 + breathing_speed * 1.2 + bass * 0.5;
+    // Hemolymph pump phase: breathing-speed rate × time, bass nudges the
+    // phase forward by a bounded amount (never scales absolute time).
+    let pump = time * (1.5 + breathing_speed * 1.2) + bass * 0.9;
+    // IDEA 6: gear collars turn with the pump (geared down ×0.6)
+    let gear = pump * 0.6;
 
     // Mouse in hive uv space (zoom_config.yz already 0–1, y=0 top)
-    let mouseS = (u.zoom_config.yz * 2.0 - vec2<f32>(1.0)) * aspect;
+    let mouseS = (u.zoom_config.yz * 2.0 - vec2<f32>(1.0)) * aspect * vec2<f32>(1.0, -1.0);
     let mouseDown = u.zoom_config.w > 0.5;
 
-    // ── Persistent state (extraBuffer[133..137], single writer) ───
-    // [133] bass envelope   [134] last kick time
-    // [135..136] spring-smoothed cursor   [137] prev time (dt)
-    var bassEnv = bass;
-    var lastKick = time - 10.0;
-    var smoothMouse = mouseS;
-    var dt = 0.016;
-    if (arrayLength(&extraBuffer) > 138u) {
-        bassEnv = extraBuffer[133];
-        lastKick = extraBuffer[134];
-        smoothMouse = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-        dt = clamp(time - extraBuffer[137], 0.001, 0.1);
-        if (global_id.x == 0u && global_id.y == 0u) {
-            // Fast attack / slow release bass envelope
-            var be = bassEnv;
-            be = mix(be, bass, select(0.06, 0.4, bass > be));
-            // Kick = bass pokes above its own envelope (0.3 s retrigger gap)
-            var lk = lastKick;
-            if (bass > be * 1.25 + 0.12 && time - lk > 0.3) { lk = time; }
-            // Frame-rate-independent spring chase of the cursor
-            let sm = mix(smoothMouse, mouseS, vec2<f32>(1.0 - exp(-dt * 12.0)));
-            extraBuffer[133] = be;
-            extraBuffer[134] = lk;
-            extraBuffer[135] = sm.x;
-            extraBuffer[136] = sm.y;
-            extraBuffer[137] = time;
-        }
-    }
-
-    // ── Bass-kick shockwave (bounded exp decay) ───────────────────
-    let kickAge = time - lastKick;
-    let kickEnv = exp(-kickAge * 2.5);
+    // ── Bass pulse (stateless) ────────────────────────────────────
+    // extraBuffer is re-uploaded every frame, so the old envelope/kick/spring
+    // state never persisted. A fixed-rate front now launches every 1.2 s and
+    // its brightness is gated by the live bass level.
+    let kickAge = fract(time / 1.2) * 1.2;
+    let kickEnv = exp(-kickAge * 2.5) * smoothstep(0.25, 0.75, bass);
     let kickRadius = kickAge * 3.5; // fast propagation front
 
-    // ── Cursor pursuit: velocity + lead (whip-fast anticipation) ──
-    // Spring-smoothed cursor lags the real cursor ⇒ delta/dt ≈ velocity.
-    var mVel = (mouseS - smoothMouse) / dt;
-    mVel *= min(1.0, MAX_MOUSE_VEL / max(length(mVel), 0.001)); // velocity clamp
-    let lead = clamp(mVel * 0.12, vec2<f32>(-0.6), vec2<f32>(0.6));
-    let chaseS = mix(mouseS, smoothMouse, 0.35) + lead;
+    // ── Cursor: raw (the spring-smoothed copy never persisted) ────
+    let chaseS = mouseS;
 
     // ── Click shockwaves (guarded ripple loop) ────────────────────
     var shockVec = vec2<f32>(0.0);
@@ -272,17 +261,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let rp = u.ripples[i];
         let age = time - rp.z;
         if (age > 0.0 && age < 3.0) {
-            let rc = (rp.xy * 2.0 - vec2<f32>(1.0)) * aspect;
+            let rc = (rp.xy * 2.0 - vec2<f32>(1.0)) * aspect * vec2<f32>(1.0, -1.0);
             let dvec = uv - rc;
             let dist = length(dvec);
-            let ring = exp(-pow((dist - age * 2.8) * 7.0, 2.0)) * exp(-age * 2.0);
+            let rr = (dist - age * 2.8) * 7.0;
+            let ring = exp(-rr * rr) * exp(-age * 2.0);
             shockVec += (dvec / max(dist, 0.05)) * ring;
             shockFlash += ring;
         }
     }
     // Bass-kick shockwave ring from screen center
     let kDist = length(uv);
-    let kRing = exp(-pow((kDist - kickRadius) * 6.0, 2.0)) * kickEnv;
+    let kr = (kDist - kickRadius) * 6.0;
+    let kRing = exp(-kr * kr) * kickEnv;
     shockVec += (uv / max(kDist, 0.05)) * kRing;
     shockFlash += kRing;
     shockFlash = min(shockFlash, 2.0); // bounded flash energy
@@ -319,7 +310,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         for (var i = 0; i < 64; i++) {
             p = ro + rd_offset * t;
             let p_breathe = p * (1.0 + sin(time * breathing_speed) * 0.05);
-            let d = map(p_breathe, mouse_pos, pull, time, pump).x;
+            let d = map(p_breathe, mouse_pos, pull, time, pump, gear).x;
 
             let spore_d = map_spores(p, time, mouse_pos, 0.35 + select(0.0, 0.45, mouseDown));
             glow += 0.05 / (0.01 + abs(spore_d)) * spore_density * (1.0 + bass * 0.5 + kickEnv);
@@ -337,14 +328,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             if (c == 1) { hitT = t; }
             let vein_noise = fbm(p * 5.0 - time * (1.0 + breathing_speed));
             // IDEA 2: bolus pushes plasma through the veins of its tube
-            let bolus = map(p, mouse_pos, pull, time, pump).y;
+            let bolus = map(p, mouse_pos, pull, time, pump, gear).y;
             let vein_glow = pow(vein_noise, 3.0) * neon_intensity * (1.0 + bass * 0.5 + mids * 0.3) * (0.6 + bolus * 1.6);
 
             let eps = vec2<f32>(0.001, 0.0);
             let n = normalize(vec3<f32>(
-                map(p + eps.xyy, mouse_pos, pull, time, pump).x - map(p - eps.xyy, mouse_pos, pull, time, pump).x,
-                map(p + eps.yxy, mouse_pos, pull, time, pump).x - map(p - eps.yxy, mouse_pos, pull, time, pump).x,
-                map(p + eps.yyx, mouse_pos, pull, time, pump).x - map(p - eps.yyx, mouse_pos, pull, time, pump).x
+                map(p + eps.xyy, mouse_pos, pull, time, pump, gear).x - map(p - eps.xyy, mouse_pos, pull, time, pump, gear).x,
+                map(p + eps.yxy, mouse_pos, pull, time, pump, gear).x - map(p - eps.yxy, mouse_pos, pull, time, pump, gear).x,
+                map(p + eps.yyx, mouse_pos, pull, time, pump, gear).x - map(p - eps.yyx, mouse_pos, pull, time, pump, gear).x
             ));
 
             let light_dir = normalize(vec3<f32>(1.0, 1.0, -1.0));
@@ -374,11 +365,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let capShade = capped * dome * dome * (0.35 + diff * 0.9);
             let heartbeat = pow(0.5 + 0.5 * sin(time * (2.2 + breathing_speed * 0.8) + bc.z * TAU), 6.0);
             let larva = (1.0 - capped) * exp(-bc.x * bc.x * 9.0) * (0.25 + heartbeat * (0.9 + bass * 0.5));
+            // IDEA 3: valve iris — capped chambers expose a narrow annular shutter
+            // that rotates and opens under high-frequency pressure.
+            let irisPhase = fract(time * 0.35 + mids * 0.25 + bc.z * 1.7);
+            let irisD = (bc.x - (0.17 + 0.09 * irisPhase)) * 22.0;
+            let irisRing = exp(-irisD * irisD);
+            let iris = capped * irisRing * wall * (0.4 + treble * 0.6);
+            // IDEA 4: trophallactic bridge — open neighbouring cells exchange
+            // hemolymph through thin conduits that pulse with the hive beat.
+            let brD = (bc.y - bc.x) - 0.045;
+            let bridge = exp(-brD * brD * 520.0) * (1.0 - capped);
+            let bridgePulse = 0.5 + 0.5 * sin(time * 3.0 + bass * 1.5 + bc.z * TAU * 2.0);
+            let troph = bridge * bridgePulse * (0.2 + neon_intensity * 0.15);
             let broodCol = vec3<f32>(0.55, 0.36, 0.10) * capShade
                          + vec3<f32>(0.9, 0.35, 1.0) * larva * (0.15 + neon_intensity * 0.12)
+                         + vec3<f32>(0.95, 0.78, 0.42) * iris * 0.35
+                         + vec3<f32>(0.3, 0.9, 1.0) * troph
                          + neon_color * wall * 0.12 * (1.0 + treble * 0.5);
 
-            let c_val = base_color * diff + neon_color * vein_glow + broodCol;
+            // ── IDEAS 5 + 6 shading (same warped cell frame as map) ──
+            let sq = fract(wellWarp(p, mouse_pos, pull) * 0.5) - 0.5;
+            let sdt = strutDetail(sq, gear);
+            let strutOnly = 1.0 - wall * 0.5; // brood walls keep their own glow
+            // IDEA 5: membranes glow where the bolus is passing; treble flickers them
+            let membraneCol = neon_color * sdt.x * strutOnly * (0.08 + bolus * 0.9) * (0.25 + neon_intensity * 0.2) * (1.0 + treble * 0.4);
+            // IDEA 6: machined collar — brushed gunmetal with a tight specular glint
+            let hv = normalize(light_dir - rd_offset);
+            let spec = pow(max(dot(n, hv), 0.0), 40.0);
+            let collarCol = vec3<f32>(0.32, 0.36, 0.42) * sdt.z * (0.25 + diff * 0.75)
+                          + vec3<f32>(1.0, 0.95, 0.85) * spec * sdt.y * (1.2 + mids * 0.6);
+            let c_val = base_color * diff + neon_color * vein_glow + broodCol + membraneCol + collarCol;
             if (c == 0) { col.r = c_val.r; }
             else if (c == 1) { col.g = c_val.g; }
             else { col.b = c_val.b; }
@@ -393,7 +409,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ── Velocity-advected HDR feedback trails ─────────────────────
     // Fetch upstream along the shockwave/velocity direction (clamped
     // fetch, textureLoad only); decaying history streaks fast motion.
-    let advVec = shockVec * 0.10 + vec2<f32>(0.003 + breathing_speed * 0.002, 0.0);
+    // shockVec lives in y-up uv; pixel rows grow down, so flip y back
+    let advVec = vec2<f32>(shockVec.x, -shockVec.y) * 0.10 + vec2<f32>(0.003 + breathing_speed * 0.002, 0.0);
     let advPx = clamp(
         vec2<i32>(vec2<f32>(pixel) - advVec * res),
         vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1)

@@ -14,7 +14,7 @@ export const useAudioAnalyzer = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const dataArrayRef = useRef<Uint8Array | null>(null);
+  const dataArrayRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
   // Reusable Float32Array for bin data to avoid per-frame allocations
   const binsRef = useRef<Float32Array>(new Float32Array(AUDIO_FFT_BINS));
   const [isActive, setIsActive] = useState(false);
@@ -43,7 +43,7 @@ export const useAudioAnalyzer = () => {
 
   const stopAudio = useCallback(() => {
     sourceRef.current?.disconnect();
-    audioContextRef.current?.close();
+    audioContextRef.current?.close().catch(() => { /* already closed */ });
     setIsActive(false);
   }, []);
 
@@ -64,7 +64,7 @@ export const useAudioAnalyzer = () => {
     let bass = 0, mid = 0, treble = 0, overall = 0;
 
     for (let i = 0; i < bufferLength; i++) {
-      const value = dataArray[i] / 255;
+      const value = dataArray[i]! / 255;
       overall += value;
 
       if (i < bassEnd) {
@@ -112,7 +112,7 @@ export const useAudioAnalyzer = () => {
 
     const len = Math.min(dataArray.length, AUDIO_FFT_BINS);
     for (let i = 0; i < len; i++) {
-      bins[i] = dataArray[i] / 255;
+      bins[i] = dataArray[i]! / 255;
     }
     // Zero any remaining slots if bin count < AUDIO_FFT_BINS
     for (let i = len; i < AUDIO_FFT_BINS; i++) {

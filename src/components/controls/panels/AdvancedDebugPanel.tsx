@@ -1,6 +1,12 @@
-import React, { useMemo, useState } from 'react';
-import { ShadertoyImportPanel } from './ShadertoyImportPanel';
+import React, { lazy, Suspense, useMemo, useState } from 'react';
 import { classifyBandsToRgba } from '../../../gpuChores/lut';
+import type { PassTiming } from '../../../renderer/passTimings';
+import { isWasmForcedByURL } from '../../../renderer/rendererUrl';
+import { PassFlameStrip } from './PassFlameStrip';
+import { usePersistedToggle } from '../../../hooks/usePersistedToggle';
+
+// The GLSL→WGSL importer (and its converter) loads only when the debug panel opens it.
+const ShadertoyImportPanel = lazy(() => import(/* webpackChunkName: "shadertoy-import" */ './ShadertoyImportPanel'));
 
 /** Backend health shown in the debug panel — see WASM_BACKEND_POLICY.md (Tier B triage). */
 export interface RendererDiagnosticsSummary {
@@ -27,6 +33,9 @@ export interface RendererDiagnosticsSummary {
     gpuChoresEv?: number;
     gpuChoresSourceGain?: 'on' | 'off' | 'skipped-physics';
     gpuChoresClassify?: { width: number; height: number; bands: number[] } | null;
+    /** TS WebGPU per-pass GPU time (#1314 WP-4). */
+    passTimings?: PassTiming[];
+    timingSource?: 'gpu-timestamp' | 'wall-clock';
 }
 
 export interface AdvancedDebugPanelProps {
@@ -51,7 +60,7 @@ export const AdvancedDebugPanel: React.FC<AdvancedDebugPanelProps> = ({
     onImportStatus,
     diagnostics,
 }) => {
-    const [devToolsOpen, setDevToolsOpen] = useState(false);
+    const [devToolsOpen, setDevToolsOpen] = usePersistedToggle('advanced.devTools', false);
     const [lutPreviewOpen, setLutPreviewOpen] = useState(false);
 
     const lutPreview = useMemo(() => {
@@ -93,7 +102,11 @@ export const AdvancedDebugPanel: React.FC<AdvancedDebugPanelProps> = ({
                                         Renderer Backend
                                     </div>
                                     <div style={{ display: 'flex', gap: '4px' }}>
-                                        {(['webgpu', 'wasm', 'js'] as const).map(type => (
+                                        {/* WASM is frozen R&D (#1080): offered only when forced via ?renderer=wasm. */}
+                                        {(isWasmForcedByURL()
+                                            ? (['webgpu', 'wasm', 'js'] as const)
+                                            : (['webgpu', 'js'] as const)
+                                        ).map(type => (
                                             <button
                                                 key={type}
                                                 onClick={() => onSwitchRenderer(type)}
@@ -118,10 +131,12 @@ export const AdvancedDebugPanel: React.FC<AdvancedDebugPanelProps> = ({
                                     </div>
                                 </div>
                             )}
-                            <ShadertoyImportPanel
-                                onPreviewShader={onPreviewImportShader}
-                                onStatus={onImportStatus}
-                            />
+                            <Suspense fallback={null}>
+                                <ShadertoyImportPanel
+                                    onPreviewShader={onPreviewImportShader}
+                                    onStatus={onImportStatus}
+                                />
+                            </Suspense>
                         </div>
                     )}
                 </div>
@@ -159,6 +174,9 @@ export const AdvancedDebugPanel: React.FC<AdvancedDebugPanelProps> = ({
                         <div style={{ color: '#ff9d9d' }}>
                             wasm error: {diagnostics.wasmLastInitError}
                         </div>
+                    )}
+                    {diagnostics.backend === 'webgpu' && (
+                        <PassFlameStrip passes={diagnostics.passTimings ?? []} source={diagnostics.timingSource} />
                     )}
                     {(diagnostics.graphRequested !== undefined || (diagnostics.graphErrors && diagnostics.graphErrors.length > 0)) && (
                         <div data-testid="graph-run-report" style={{ marginTop: '6px' }}>

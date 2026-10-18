@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: carapace scute plates with glowing growth-ring annuli; counter-rotating flipper wake vortex rings
+//  Upgraded: 2026-10-17
+//  Ideas: carapace scute plates with glowing growth-ring annuli; counter-rotating flipper wake vortex rings; scute-junction constellation stars (the shell as a star chart); geomagnetic dipole field lines with drifting star-dust the turtle navigates by
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-    zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
-    zoom_params: vec4<f32>,  // .x = Fractal Detail, .y = Plasma Glow, .z = Void Density, .w = Acoustic Reactivity
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Fractal Detail, .y = Plasma Glow, .z = Void Density, .w = Acoustic Reactivity
 
 // Per-frame audio / interaction state shared with map()
 var<private> g_bass: f32 = 0.0;
@@ -174,6 +156,71 @@ fn flipperWake(tp: vec3<f32>, t: f32, side: f32) -> f32 {
     return core * fade * (0.35 + g_bass * 0.6 + g_held * 0.4 + g_shock * 0.5);
 }
 
+// ----------------------------------------------------------------
+// Native idea 3: scute-junction constellations.
+// The World-Turtle carries the sky on its back: wherever three scutes meet
+// (Voronoi triple junction, f3 ~ f1) a star sits on the shell. Each star
+// twinkles on its own phase; treble sharpens the twinkle.
+// ----------------------------------------------------------------
+fn scuteJunctionStars(sp: vec3<f32>, t: f32) -> f32 {
+    let q = sp.xz * vec2<f32>(1.4, 1.1); // same lattice as carapaceScutes
+    let n = floor(q);
+    let f = fract(q);
+    var f1 = 8.0;
+    var f2 = 8.0;
+    var f3 = 8.0;
+    var h1 = 0.0;
+    var h2 = 0.0;
+    var h3 = 0.0;
+    for (var j = -1; j <= 1; j = j + 1) {
+        for (var i = -1; i <= 1; i = i + 1) {
+            let g = vec2<f32>(f32(i), f32(j));
+            let o = hash22(n + g) * 0.8 + vec2<f32>(0.1);
+            let dist = length(g + o - f);
+            let h = hash12(n + g);
+            if (dist < f1) {
+                f3 = f2; f2 = f1; f1 = dist; h3 = h2; h2 = h1; h1 = h;
+            } else if (dist < f2) {
+                f3 = f2; f2 = dist; h3 = h2; h2 = h;
+            } else if (dist < f3) {
+                f3 = dist; h3 = h;
+            }
+        }
+    }
+    // order-independent id of the three cells meeting here, so one star
+    // keeps one id across all six sectors around the junction
+    let starId = fract((h1 + h2 + h3) * 7.31);
+    let core = exp(-(f3 - f1) * 60.0);
+    let twinkle = 0.55 + 0.45 * sin(t * (1.3 + starId * 2.7) + starId * 6.2831);
+    let sharp = mix(twinkle, twinkle * twinkle * twinkle, g_treble);
+    return core * (0.4 + sharp * (0.8 + g_treble * 0.8)) * step(0.25, starId);
+}
+
+// ----------------------------------------------------------------
+// Native idea 4: geomagnetic migration field.
+// Sea turtles navigate by the geomagnetic field. A dipole aligned with the
+// body (head = +z) threads the void: field lines r = L sin^2(theta) on six
+// meridian planes, with star-dust beads drifting pole-to-pole along them.
+// Evaluated in turtle space so the field rolls with the turtle.
+// ----------------------------------------------------------------
+fn dipoleFieldLines(lp: vec3<f32>, t: f32) -> f32 {
+    let rho = length(lp);
+    if (rho < 1.2 || rho > 5.0) { return 0.0; }
+    let cosT = lp.z / rho;
+    let sin2 = max(1.0 - cosT * cosT, 1e-3);
+    let L = rho / sin2;
+    let shellD = abs(L - 2.6 - 0.8 * floor((L - 2.2) / 0.8)); // nearest of L = 2.6, 3.4, 4.2
+    let shellMask = exp(-shellD * shellD * 60.0) * smoothstep(2.1, 2.3, L) * smoothstep(5.2, 4.0, L);
+    let phi = atan2(lp.y, lp.x);
+    let sector = 6.2831 / 6.0;
+    let dphi = phi - sector * floor(phi / sector + 0.5);
+    let perp = rho * sqrt(sin2) * abs(sin(dphi));
+    let tube = exp(-perp * perp * 220.0);
+    let theta = acos(clamp(cosT, -1.0, 1.0));
+    let bead = pow(0.5 + 0.5 * sin(theta * 14.0 - t * 1.6 + floor(phi / sector + 0.5) * 1.7), 8.0);
+    return shellMask * tube * (0.35 + bead * (1.2 + g_mids * 0.8));
+}
+
 struct MapResult {
     d: f32,
     mat: f32,
@@ -227,7 +274,8 @@ fn map(pos: vec3<f32>, time: f32, audio: f32) -> MapResult {
 
     // Fins (mouse hold = stronger power-stroke)
     let stroke = 0.2 + g_held * 0.15;
-    let beat = t * (3.0 + g_held * 1.5);
+    // Fixed stroke rate: scaling absolute time by held jumped the fin phase on every press
+    let beat = t * 3.0;
     // Front fins
     var fl_p = turtle_p - vec3<f32>(1.2, 0.0, 1.0);
     let xy_fl = rot2D(0.5 + sin(beat)*stroke) * fl_p.xy;
@@ -331,7 +379,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let ww = normalize(ta - ro);
     let uu = normalize(cross(ww, vec3<f32>(0.0, 1.0, 0.0)));
     let vv = normalize(cross(uu, ww));
-    let rd = normalize(uv.x * uu + uv.y * vv + 1.5 * ww);
+    // uv.y grows down the screen; vv is world-up, so negate (uu = cross(ww, Y) is screen-right)
+    let rd = normalize(uv.x * uu - uv.y * vv + 1.5 * ww);
 
     // Raymarching
     var t_dist = 0.0;
@@ -354,6 +403,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let v_noise = fbm(p * 0.5 - time * 0.2, 3);
         let vol_dens_local = max(0.0, v_noise - 0.5) * void_dens;
         accum_glow = accum_glow + m.glow * 0.02 + vec3<f32>(0.1, 0.05, 0.2) * vol_dens_local * 0.05 * (1.0 + audio * u.zoom_params.w * 0.5);
+        // Geomagnetic field lines (step-length weighted so the near-body march doesn't oversample)
+        let fieldW = clamp(m.d * 0.5, 0.0, 0.25);
+        accum_glow = accum_glow + vec3<f32>(0.45, 0.6, 1.0) * dipoleFieldLines(m.lp, time) * fieldW * 0.5 * (0.4 + void_dens * 0.5);
 
         if (abs(m.d) < surf_dist) {
             hit = true;
@@ -392,8 +444,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let tint = mix(vec3<f32>(0.25, 0.85, 1.0), vec3<f32>(0.95, 0.45, 0.9), sc.z);
             let scuteGlow = tint * sc.x * u.zoom_params.y * 0.6
                 + vec3<f32>(1.0, 0.85, 0.5) * sc.y * (0.25 + g_treble * 0.35 + g_shock * 0.6);
-            col = col * (1.0 - sc.y * 0.4 * onShell) + scuteGlow * onShell;
-            alpha = alpha + (sc.x + sc.y) * 0.2 * onShell;
+            let stars = scuteJunctionStars(lp, time);
+            let starCol = vec3<f32>(1.0, 0.95, 0.8) * stars * (0.6 + u.zoom_params.y * 0.5);
+            col = col * (1.0 - sc.y * 0.4 * onShell) + (scuteGlow + starCol) * onShell;
+            alpha = alpha + (sc.x + sc.y + stars) * 0.2 * onShell;
         }
 
         depth = clamp(1.0 - t_dist / max_dist, 0.0, 1.0);

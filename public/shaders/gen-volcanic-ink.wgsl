@@ -6,29 +6,12 @@
 //            depth-aware, chromatic-aberration, ACES-tone-map, HDR-ready
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-06-29
+//  Upgraded: 2026-10-10
+//  Ideas: capillary ink margin; cooling rind; pahoehoe rope folds; rind vesicles
+//  A packing: linear ink trail in A; ACES on display; B stores (lava, cracks, ember, smoke)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = delta_time, .zw = resolution (width, height)
-  zoom_config: vec4<f32>,  // .x = zoom, .yz = mouse_uv (0-1), .w = mouse_down (>0.5 = pressed)
-  zoom_params: vec4<f32>,  // .xyzw = user params p1…p4 (mapped from UI sliders)
-  ripples: array<vec4<f32>, 50>,  // .xy = ripple uv, .z = time_created, .w = strength
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -123,23 +106,22 @@ fn qualityLOD(shortEdge: f32, detail: f32) -> i32 {
 // ── Temporal: unrolled 3x3 bilinear neighbor blur ─────────────────
 // Small, separable-ish kernel. Weights sum to 1.0 and use dataTextureC
 // so feedback trails stay smooth without a loop.
-fn neighborBlur(uv: vec2<f32>, invRes: vec2<f32>) -> vec4<f32> {
-    let dx = vec2<f32>(invRes.x, 0.0);
-    let dy = vec2<f32>(0.0, invRes.y);
+fn loadC(p: vec2<i32>, res: vec2<f32>) -> vec4<f32> {
+    let hi = vec2<i32>(max(i32(res.x) - 1, 0), max(i32(res.y) - 1, 0));
+    return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), hi), 0);
+}
+
+fn neighborBlur(pixel: vec2<i32>, res: vec2<f32>) -> vec4<f32> {
     var acc = vec4<f32>(0.0);
-
-    acc += 0.0625 * textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(-dx.x, -dy.y), 0.0);
-    acc += 0.1250 * textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>( 0.0,   -dy.y), 0.0);
-    acc += 0.0625 * textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>( dx.x, -dy.y), 0.0);
-
-    acc += 0.1250 * textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(-dx.x,  0.0),  0.0);
-    acc += 0.2500 * textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>( 0.0,    0.0),  0.0);
-    acc += 0.1250 * textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>( dx.x,  0.0),  0.0);
-
-    acc += 0.0625 * textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(-dx.x,  dy.y), 0.0);
-    acc += 0.1250 * textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>( 0.0,    dy.y), 0.0);
-    acc += 0.0625 * textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>( dx.x,  dy.y), 0.0);
-
+    acc += 0.0625 * loadC(pixel + vec2<i32>(-1, -1), res);
+    acc += 0.1250 * loadC(pixel + vec2<i32>( 0, -1), res);
+    acc += 0.0625 * loadC(pixel + vec2<i32>( 1, -1), res);
+    acc += 0.1250 * loadC(pixel + vec2<i32>(-1,  0), res);
+    acc += 0.2500 * loadC(pixel + vec2<i32>( 0,  0), res);
+    acc += 0.1250 * loadC(pixel + vec2<i32>( 1,  0), res);
+    acc += 0.0625 * loadC(pixel + vec2<i32>(-1,  1), res);
+    acc += 0.1250 * loadC(pixel + vec2<i32>( 0,  1), res);
+    acc += 0.0625 * loadC(pixel + vec2<i32>( 1,  1), res);
     return acc;
 }
 
@@ -152,7 +134,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv01 = vec2<f32>(pixel) / res;
     let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);
     let time = u.config.x;
-    let invRes = 1.0 / res;
 
     // Inputs
     let mouse = u.zoom_config.yz * 2.0 - 1.0;
@@ -212,8 +193,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color += SMOKE_TINT * smoke * soot * (1.0 + treble * 0.1);
     color += SPARK_TINT * emberSpark * (0.4 + bass);
 
+    // Idea 1 — capillary ink margin. A wider dark wet edge around the hot crack core.
+    let inkMargin = smoothstep(0.45, 0.72, crackDiff) * (1.0 - cracks);
+    color = mix(color, INK_BASE * 0.35, inkMargin * 0.75);
+
+    // Idea 2 — cooling rind. Off-crack lava skins darker and still rides Magma Flow.
+    let rindNoise = fbm(lavaUv * 0.5 - vec2<f32>(flowTime * 0.15, 0.0), max(octaves - 1, 2));
+    let rind = smoothstep(0.35, 0.7, rindNoise) * (1.0 - cracks) * (1.0 - lava);
+    color = mix(color, color * vec3<f32>(0.25, 0.12, 0.08), rind * 0.8);
+    // Idea: pahoehoe ropes — folds on the lava, carried by the same flow.
+    let ropePhase = dot(lavaUv, vec2<f32>(7.5, 1.1)) + flowTime * 0.8;
+    let rope = pow(max(0.5 + 0.5 * sin(ropePhase), 0.0), 6.0) * lava;
+    color += LAVA_TINT * rope * 0.28 * emberIntensity;
+    // Idea: vesicles — gas holes in the cooling rind.
+    let vesicle = step(0.93, hash21(floor(lavaUv * 16.0))) * rind;
+    color = mix(color, INK_BASE * 0.5, vesicle * 0.7);
+
     // ── Temporal feedback (ink persistence) ─────────────────────────
-    let prevBlur = neighborBlur(uv01, invRes);
+    let prevBlur = neighborBlur(pixel, res);
     let feedbackStrength = 0.03 + soot * 0.07 + bass * 0.015;
     let trail = mix(color, prevBlur.rgb * 0.96, feedbackStrength);
 
@@ -227,7 +224,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let exposure = 1.05 + mids * 0.12;
     color = acesToneMap(color * exposure);
 
-    let presence = clamp(lava * 0.9 + cracks * 0.3 + emberSpark * 0.85, 0.0, 1.0);
+    let presence = clamp(lava * 0.9 + cracks * 0.3 + emberSpark * 0.85 + rope * 0.2, 0.0, 1.0);
     let alpha = clamp(0.15 + presence * 0.85, 0.0, 0.96);
 
     // ── Pipeline outputs ────────────────────────────────────────────

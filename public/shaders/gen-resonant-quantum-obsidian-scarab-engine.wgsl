@@ -5,7 +5,9 @@
 //            upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration
 //  Complexity: High
 //  Chunks From: gen-protocell-division.wgsl (upgraded-rgba stack)
-//  Upgraded: 2026-06-14
+//  Upgraded: 2026-09-27
+//  Ideas: elytra plate seams lit by an outgoing core-breath pulse; plasma mirror in the obsidian; core corona leaking between plates
+//  A packing: ACES display RGBA
 //  By: Claude Code Batch 3B
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
@@ -94,6 +96,38 @@ fn calcNormal(p: vec3<f32>, audioLevel: f32) -> vec3<f32> {
     ));
 }
 
+// Core frame and core-only distance — identical to the torus term in map().
+fn corePos(p: vec3<f32>) -> vec3<f32> {
+    var q = p;
+    let mouse = u.zoom_config.yz;
+    q.x -= mouse.x * 2.0;
+    q.y += mouse.y * 2.0;
+    return q;
+}
+
+fn coreDist(p: vec3<f32>, audioLevel: f32) -> f32 {
+    let corePulseRate = u.zoom_params.w + audioLevel * 2.0;
+    return sdTorus(corePos(p), vec2<f32>(1.0 + sin(u.config.x * corePulseRate) * 0.2, 0.5));
+}
+
+// IDEA 1 (geometry): elytra plates. Replays the exact KIFS fold of map()
+// (including its in-place x/y shear) and splits each folded bead into octant
+// plates. x = seam distance on the 0.2 shell, y = plate id 0..7.
+fn scarabPlates(p: vec3<f32>, audioLevel: f32) -> vec2<f32> {
+    let exoskeletonComplexity = u.zoom_params.x;
+    var p_kifs = p;
+    for(var i = 0; i < 4; i++) {
+        p_kifs = abs(p_kifs) - 0.5 * exoskeletonComplexity;
+        let r = rot(u.config.x * 0.5 + f32(i) + audioLevel * 0.5);
+        p_kifs.x = p_kifs.x * r[0][0] + p_kifs.y * r[1][0];
+        p_kifs.y = p_kifs.x * r[0][1] + p_kifs.y * r[1][1];
+    }
+    let s = p_kifs / max(length(p_kifs), 1e-4) * 0.2;
+    let seam = min(abs(s.x), min(abs(s.y), abs(s.z)));
+    let plateId = step(0.0, p_kifs.x) + 2.0 * step(0.0, p_kifs.y) + 4.0 * step(0.0, p_kifs.z);
+    return vec2<f32>(seam, plateId);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let res = vec2<f32>(u.config.z, u.config.w);
@@ -114,9 +148,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     var t = 0.0;
     var mat = 0.0;
+    var corona = 0.0; // IDEA 3: core light integrated along the primary ray
     for(var i = 0; i < 100; i++) {
         let p = ro + rd * t;
         let d = map(p, audioLevel);
+        // IDEA 3 (core corona): plasma bleeds through the gaps between plates;
+        // weighted by step length so it is independent of step count.
+        corona += exp(-max(coreDist(p, audioLevel), 0.0) * 4.0) * clamp(d.x, 0.0, 0.5);
         if(d.x < 0.001) {
             mat = d.y;
             break;
@@ -145,9 +183,37 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         } else if (mat == 2.0) { // Exoskeleton
              let refl = reflect(rd, n);
              spec = pow(clamp(dot(refl, l), 0.0, 1.0), 32.0);
-             col = vec3<f32>(0.1) * dif + vec3<f32>(1.0) * spec * obsidianReflectivity;
+
+             // IDEA 1 (elytra plates): per-plate obsidian tint (mean 1.0).
+             let plates = scarabPlates(p, audioLevel);
+             let plateTint = 0.8 + 0.4 * fract(sin(plates.y * 12.9898 + 3.1) * 43758.5453);
+             col = vec3<f32>(0.1) * plateTint * dif + vec3<f32>(1.0) * spec * obsidianReflectivity;
+
+             // IDEA 1 (seam circuitry): seams carry the core's breath outward —
+             // same sin(time*rate) that pulses the torus, delayed by distance.
+             let corePulseRate = u.zoom_params.w + audioLevel * 2.0;
+             let breath = sin(u.config.x * corePulseRate - length(corePos(p)) * 2.5);
+             let wave = pow(max(breath, 0.0), 6.0);
+             let seamLine = 1.0 - smoothstep(0.004, 0.018, plates.x);
+             let seamCol = mix(vec3<f32>(0.5, 0.0, 1.0), vec3<f32>(0.0, 1.0, 1.0), 0.35 + 0.65 * wave);
+             col += seamCol * seamLine * (0.3 + 1.7 * wave) * plasmaIntensity * 0.5;
+
+             // IDEA 2 (plasma mirror): march the reflected ray against the core
+             // torus only; the cyan core shows in the black glass, Fresnel-weighted.
+             var mirror = 0.0;
+             for (var k = 1; k <= 12; k++) {
+                 let q = p + refl * (0.1 + 0.3 * f32(k));
+                 mirror += exp(-max(coreDist(q, audioLevel), 0.0) * 5.0) * 0.3;
+             }
+             mirror = min(mirror, 1.5);
+             let fres = pow(1.0 - clamp(dot(-rd, n), 0.0, 1.0), 5.0);
+             col += vec3<f32>(0.0, 1.0, 1.0) * mirror * (0.2 + 0.8 * fres) * obsidianReflectivity * plasmaIntensity * 0.6;
         }
     }
+
+    // IDEA 3 (core corona): cyan at the dense centre, violet at the fringe.
+    let coronaAmt = min(corona, 2.0) * 0.35 * u.zoom_params.y * (1.0 + mids * 0.4);
+    col += mix(vec3<f32>(0.5, 0.0, 1.0), vec3<f32>(0.0, 1.0, 1.0), clamp(corona, 0.0, 1.0)) * coronaAmt;
 
     // Quantum Dust
     let dustDensity = u.zoom_config.w * 0.1 + treble * 0.05;

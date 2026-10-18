@@ -12,26 +12,93 @@ const SOURCE_MAP: Record<string, number> = {
   live: 5,
 };
 
+/**
+ * Bridge backstop for C++ Initialize(). The ASYNCIFY init ccall returns as soon as
+ * CreateDevice() suspends in wgpuInstanceWaitAny, so the bridge polls C++ instead
+ * of trusting that return value. C++ times its own adapter/device waits out
+ * (device.cpp: 4 × 3 s + 5 s = 17 s); this only fires if C++ is still suspended.
+ */
+export const CPP_INIT_TIMEOUT_MS = 20_000;
+const CPP_INIT_POLL_MS = 50;
+/** How long an abandoned (timed-out) init is watched before it is left to leak. */
+const REAP_POLL_MS = 500;
+const REAP_MAX_MS = 5 * 60_000;
+
+type CppInitOutcome = 'ready' | 'failed' | 'pending';
+
+/**
+ * Plain getters only (no ASYNCIFY), so they are safe while Initialize() is
+ * suspended. Never call shutdown / anything that touches the instance until this
+ * is no longer 'pending': destroying the instance mid-WaitAny crashes the tab.
+ */
+function readCppInitOutcome(mod: EmscriptenModule): CppInitOutcome {
+  try {
+    if (Number(mod.ccall('isRendererInitialized', 'number', [], [])) === 1) return 'ready';
+    const stage = Number(mod.ccall('getLastInitErrorStage', 'number', [], []) ?? 0);
+    // 0 = None (still running), 8 = Ready; anything else is a stage C++ failed at
+    // after running its own Shutdown().
+    return stage > 0 && stage < 8 ? 'failed' : 'pending';
+  } catch {
+    return 'pending';
+  }
+}
+
+function waitForCppInit(
+  mod: EmscriptenModule,
+  timeoutMs = CPP_INIT_TIMEOUT_MS,
+): Promise<CppInitOutcome | 'timeout'> {
+  const deadline = performance.now() + timeoutMs;
+  return new Promise((resolve) => {
+    const poll = () => {
+      const outcome = readCppInitOutcome(mod);
+      if (outcome !== 'pending') resolve(outcome);
+      else if (performance.now() >= deadline) resolve('timeout');
+      else setTimeout(poll, CPP_INIT_POLL_MS);
+    };
+    poll();
+  });
+}
+
+/**
+ * Shut a timed-out init down the way a failed init is: once C++ settles (ready, or
+ * failed after its own Shutdown()), release the renderer. A WaitAny that never
+ * returns leaks this one module rather than destroying the instance under it.
+ */
+function reapAbandonedInit(mod: EmscriptenModule): void {
+  const deadline = performance.now() + REAP_MAX_MS;
+  const poll = () => {
+    if (readCppInitOutcome(mod) !== 'pending') {
+      try {
+        mod.ccall('shutdownWasmRenderer', null, [], []);
+        console.log('[WASM] Abandoned init settled; C++ renderer shut down');
+      } catch (err) {
+        console.error('[WASM] Abandoned init shutdown error:', err);
+      }
+      return;
+    }
+    if (performance.now() >= deadline) {
+      console.warn('[WASM] Abandoned init never settled; leaking that module (instance not destroyed)');
+      return;
+    }
+    setTimeout(poll, REAP_POLL_MS);
+  };
+  setTimeout(poll, REAP_POLL_MS);
+}
+
 export async function initWasmRenderer(canvasElement: HTMLCanvasElement): Promise<boolean> {
   if (state.initialized) {
     console.warn('[WASM] Renderer already initialized');
     return true;
   }
+  state.initTimedOut = false;
 
   wasmRef.canvas = canvasElement;
-  // Keep key in sync with src/config/vramBudget.ts HISTORY_OOM_CAP_KEY (#1204).
-  // Default working size is 1024; never pass 2048 as the first WASM committed resource.
-  const sizeFallback = 1024;
-  let cap = sizeFallback;
-  try {
-    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('px_history_oom_cap') === '1024') {
-      cap = 1024;
-    }
-  } catch {
-    /* private mode */
-  }
-  state.canvasWidth = Math.min(wasmRef.canvas.width || sizeFallback, cap);
-  state.canvasHeight = Math.min(wasmRef.canvas.height || sizeFallback, cap);
+  // Never pass more than HISTORY_SAFE_WORKING_SIZE (src/config/vramBudget.ts, 1024) as the
+  // first WASM committed resource (#1204). The cap is unconditional, so the OOM-cap
+  // sessionStorage flag cannot raise or lower it and is not read here.
+  const sizeCap = 1024;
+  state.canvasWidth = Math.min(wasmRef.canvas.width || sizeCap, sizeCap);
+  state.canvasHeight = Math.min(wasmRef.canvas.height || sizeCap, sizeCap);
   state.initStartTime = performance.now();
 
   const base = window.location.pathname.startsWith('/image_video_effects/')
@@ -64,16 +131,38 @@ export async function initWasmRenderer(canvasElement: HTMLCanvasElement): Promis
 
   let ok = 0;
   try {
-    // Suspends in WaitAny (adapter/device/error scopes) under both builds.
-    ok = Number(
-      await callSuspending(
+    // { async: true } waits out WaitAny. The poll is the backstop if that
+    // promise never settles (C++ still suspended past CPP_INIT_TIMEOUT_MS).
+    const raced = await Promise.race([
+      callSuspending(
         mod,
         'initWasmRenderer',
         'number',
         ['number', 'number', 'string'],
         [state.canvasWidth, state.canvasHeight, selector],
-      ),
-    );
+      ).then((value) => ({ tag: 'call' as const, value })),
+      waitForCppInit(mod).then((outcome) => ({ tag: 'poll' as const, outcome })),
+    ]);
+    if (raced.tag === 'poll' && raced.outcome === 'timeout') {
+      state.initTimedOut = true;
+      state.lastLoadError =
+        `C++ Initialize() still pending after ${CPP_INIT_TIMEOUT_MS / 1000} s (suspended in WaitAny)`;
+      state.loadErrorCount++;
+      state.initEndTime = performance.now();
+      console.error(`[WASM] ❌ ${state.lastLoadError}; abandoning this module`);
+      wasmRef.module = null;
+      wasmRef.canvas = null;
+      reapAbandonedInit(mod);
+      return false;
+    }
+    if (raced.tag === 'poll') {
+      ok = raced.outcome === 'ready' ? 1 : 0;
+    } else {
+      ok = Number(raced.value);
+      const settled = readCppInitOutcome(mod);
+      if (settled === 'failed') ok = 0;
+      else if (settled === 'ready') ok = 1;
+    }
   } catch (callErr: unknown) {
     console.error('[WASM] ccall initWasmRenderer threw:', callErr);
     const cppDiag = readCppInitDiagnostics();
@@ -102,6 +191,11 @@ export async function initWasmRenderer(canvasElement: HTMLCanvasElement): Promis
   state.initEndTime = performance.now();
   const elapsed = state.initEndTime - state.initStartTime;
   console.log(`[WASM] ✅ Initialization complete in ${elapsed} ms (${state.wasmArtifact ?? 'preloaded'} build)`);
+
+  state.maxShaderSlots = typeof mod._getMaxShaderSlots === 'function'
+    ? mod._getMaxShaderSlots()
+    : null;
+  console.log(`[WASM] maxShaderSlots=${state.maxShaderSlots ?? 'unknown (artifact predates export)'}`);
 
   const cppFmt = Number(mod.ccall('getColorFormat', 'number', [], []) ?? 0);
   const pending = state.colorFormat;
@@ -218,6 +312,7 @@ export function shutdownWasmRenderer(): void {
   state.initialized = false;
   state.activeShader = null;
   state.droppedSlots.clear();
+  state.maxShaderSlots = null;
   wasmRef.module = null;
   wasmRef.canvas = null;
   console.log('[WASM] Shutdown complete');
@@ -273,3 +368,4 @@ export function getPresentCanvasId(): string {
   const found = document.querySelector<HTMLCanvasElement>('[id^="pixelocity-wasm-canvas-"]');
   return found?.id ?? tagged?.id ?? '';
 }
+

@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-09-14
-//  Ideas: Cauchy prism dispersion splitting RGB wavefronts at refracted crests; click tide packets with water-wave dispersion (w^2 = g k tanh(k h)) and Miche breaking foam
+//  Upgraded: 2026-10-10
+//  Ideas: Cauchy crest split; dispersive tide packets and Miche foam; capillary wrinkles; trough set-down
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Wave Scale, .y = Refraction, .z = Pulse, .w = Saturation
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Wave Scale, .y = Refraction, .z = Pulse, .w = Saturation
 
 // ── Color Science ─────────────────────────────────────────────────
 
@@ -244,12 +226,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let b = 0.5 + 0.5 * sin(phase * dispersionB + splitPhase.b + 4.188 + pulse * 1.4 + bass * 1.6 + treble * 0.1);
 
   let crest = smoothstep(0.55, 1.0, max(max(r, g), b));
+  // Idea: capillary wrinkles on the forward face of a steep crest, ahead of the white foam.
+  let capillary = sin(phase * 16.0 + time * (2.4 + pulse)) * smoothstep(0.35, 0.85, crest) * (0.045 + pulse * 0.02);
   // Miche breaking limit: packets steeper than H/L ~ 0.142 spill white foam
   let breaking = smoothstep(0.142, 0.35, packetSteep);
   let foam = sat(smoothstep(0.65, 1.0, sin(phase * 2.3 + n * 2.0)) + breaking * 0.8);
   let sparkle = 0.5 + 0.5 * sin(time * (4.0 + treble * 22.0) + n * 15.0);
 
   var color = vec3<f32>(r, g, b) * saturation;
+  color = color + vec3<f32>(0.55, 0.78, 1.0) * capillary * (0.8 + treble * 0.5);
+  // Idea: trough set-down — water between crests darkens.
+  let trough = smoothstep(0.42, 0.12, max(max(r, g), b));
+  color = color * (1.0 - trough * 0.28);
   color = color + vec3<f32>(0.8, 0.9, 1.0) * foam * 0.35 * (1.0 + treble * 0.6);
   color = color * (0.75 + crest * 0.75) * (0.85 + sparkle * 0.25);
 

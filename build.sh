@@ -9,6 +9,16 @@ npm run build
 # Generate .htaccess for Apache cache control (required for DreamHost deployment)
 HTACCESS="build/.htaccess"
 cat > "$HTACCESS" << 'HTACCESS_EOF'
+# Cross-origin isolation (#1314): lets the page share memory (SharedArrayBuffer)
+# with the render worker. credentialless (not require-corp) keeps no-cors
+# cross-origin images (gallery thumbnails on other hosts) loading. Applied to
+# every response, so the worker script carries it too. Safari ignores
+# credentialless: it stays non-isolated and the worker falls back to postMessage.
+<IfModule mod_headers.c>
+    Header always set Cross-Origin-Opener-Policy "same-origin"
+    Header always set Cross-Origin-Embedder-Policy "credentialless"
+</IfModule>
+
 # Cache busting for React/Vue bundles
 <IfModule mod_headers.c>
     # Never cache HTML (contains bundle references)
@@ -46,4 +56,4 @@ cat > "$HTACCESS" << 'HTACCESS_EOF'
 HTACCESS_EOF
 
 echo "✅ Generated $HTACCESS"
-echo "=== Build complete! Run 'python3 scripts/deploy.py' to deploy ==="
+echo "=== Build complete! Run 'python3 tools/deploy/deploy.py' to deploy ==="

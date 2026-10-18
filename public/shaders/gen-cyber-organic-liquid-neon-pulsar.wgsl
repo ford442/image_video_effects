@@ -6,28 +6,13 @@
 //  Wolfram Data: Crab Pulsar PSR B0531+21 — 33.08 ms period (30.2 Hz)
 //                Neutron star magnetic field: 10^8 Tesla
 //  Created: 2026-06-07
+//  Upgraded: 2026-10-10
+//  Ideas: polar lighthouse beams on a precessing magnetic axis; fibre current packets; polar cap hotspots
+//  A packing: HDR display RGB + alpha (C read back as colour history); ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Base Color Hue, y=Fiber Density, z=Pulsation Speed, w=Glow Intensity
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Base Color Hue, y=Fiber Density, z=Pulsation Speed, w=Glow Intensity
 
 const PI: f32 = 3.14159265359;
 
@@ -241,6 +226,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     var col = vec3<f32>(0.0);
 
+    // Magnetic axis: inclined to the spin axis, so it precesses like a real pulsar
+    let spinPhase = time * (0.4 + u.zoom_params.z * 2.2);
+    let magAxis = normalize(vec3<f32>(sin(0.55) * cos(spinPhase), cos(0.55), sin(0.55) * sin(spinPhase)));
+
     if (hit) {
         let n = getNormal(p, time, bass);
 
@@ -263,11 +252,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         if (fibers < 0.1) {
             // Metallic fibers
             col = vec3<f32>(0.1) + spec * vec3<f32>(1.0) + rim * 0.5 * base_col;
+            // Idea 2 — fibre current packets: pulses run along the voronoi edges
+            let packet = pow(0.5 + 0.5 * sin(v.x * 28.0 - time * (3.0 + u.zoom_params.z * 9.0)), 12.0);
+            col = col + base_col * packet * (0.6 + treble * 1.2) * (1.0 - fibers * 10.0);
         } else {
             // Liquid Neon Core
             col = base_col * (diff * 0.5 + 0.5) + spec * 0.5;
             // Pulsing emission
             col = col + base_col * (bass * 2.0) * pow(rim, 2.0);
+            // Idea 3 — polar cap hotspots where the magnetic axis exits the core
+            let cap = pow(abs(dot(normalize(p), magAxis)), 28.0);
+            col = col + mix(base_col, vec3<f32>(1.0, 0.95, 0.9), 0.6) * cap * (1.2 + bass * 1.5) * u.zoom_params.w * 2.0;
         }
     }
 
@@ -287,6 +282,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Background fade
     let bg = vec3<f32>(0.02, 0.01, 0.05) * (1.0 - length(uv));
     col = mix(bg, col, clamp(t / 10.0, 0.0, 1.0));
+
+    // Idea 1 — polar lighthouse beams: twin cones along the projected magnetic axis sweep the frame,
+    // flaring when the axis swings toward the viewer
+    let beamDir2 = magAxis.xy / max(length(magAxis.xy), 0.0001);
+    let uvLen = max(length(uv), 0.0001);
+    let beamAlign = abs(dot(uv / uvLen, beamDir2));
+    let beamCone = pow(beamAlign, 60.0) * smoothstep(0.12, 0.35, uvLen) * exp(-uvLen * 1.2);
+    let facing = 0.35 + 2.0 * pow(abs(magAxis.z), 6.0);
+    let beamGlow = beamCone * facing * (0.5 + bass * 0.8) * u.zoom_params.w;
+    col += palette(0.15 + u.zoom_params.x + uvLen * 0.4) * beamGlow * select(1.0, 0.25, hit);
 
     // Clicks launch magnetic wavefronts across the pulsar magnetosphere.
     var rippleGlow = 0.0;
@@ -313,7 +318,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Step 5: ACES tone mapping + semantic alpha
     col = acesToneMap(col * 1.1);
-    let alpha = clamp(select(0.04, 0.28 + length(col) * 0.38, hit) + rippleGlow * 0.12, 0.02, 0.98);
+    let alpha = clamp(select(0.04, 0.28 + length(col) * 0.38, hit) + rippleGlow * 0.12 + beamGlow * 0.3, 0.02, 0.98);
 
     let outColor = vec4<f32>(col, alpha);
     textureStore(writeTexture, coords, outColor);

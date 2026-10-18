@@ -3,6 +3,8 @@
 //  Canonical shader metadata service — single source of truth for the app.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import { parseShaderDefinition } from './shaderDefinition';
+
 export interface CatalogParam {
   id: string;
   name: string;
@@ -107,15 +109,16 @@ export async function buildCatalog(): Promise<CatalogShader[]> {
 
   for (const arr of categoryArrays) {
     if (!Array.isArray(arr)) continue;
-    for (const def of arr) {
-      if (!def || !def.id) continue;
+    for (const raw of arr) {
+      const def = parseShaderDefinition(raw);
+      if (!def) continue;
 
-      const baseParams: CatalogParam[] = (def.params || []).map((p: any) => ({
-        id: p.id || '',
-        name: p.name || '',
-        default: p.default ?? 0.5,
-        min: p.min ?? 0,
-        max: p.max ?? 1,
+      const baseParams: CatalogParam[] = (def.params ?? []).map((p) => ({
+        id: p.id,
+        name: p.name,
+        default: p.default,
+        min: p.min,
+        max: p.max,
         step: p.step,
         mapping: p.mapping,
         description: p.description,

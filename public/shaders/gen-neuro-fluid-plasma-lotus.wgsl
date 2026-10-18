@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-09-14
-//  Ideas: golden-angle phyllotaxis stamen florets (8/13 Fibonacci parastichies) on the plasma core; twisted MHD flux-rope field lines carrying Alfven wave packets
+//  Upgraded: 2026-10-17
+//  Ideas: phyllotaxis florets; flux ropes; capillary veins; reconnection plumes; anther pollen; petal scallop
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Petal Curl, y=Bloom Pulse, z=Core Heat, w=Dispersion
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Petal Curl, y=Bloom Pulse, z=Core Heat, w=Dispersion
 
 // ─── Math Helpers ───
 fn sat(x: f32) -> f32 { return clamp(x, 0.0, 1.0); }
@@ -253,6 +235,9 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, petalCurl: f32, bloomPulse: f32, coreH
         let fl = phyllotaxisFlorets(atan2(p.z, p.x), acos(clamp(p.y / max(rC, 0.001), -1.0, 1.0)));
         col += vec3<f32>(1.0, 0.75, 0.35) * fl * coreHeat * 0.6;
         col *= mix(0.8, 1.0, fl);
+        // Idea 5 — pollen in the valleys between florets
+        let pollen = step(0.93, hash21(floor(p.xz * 36.0))) * (1.0 - fl) * smoothstep(0.15, 0.55, rC);
+        col += vec3<f32>(1.0, 0.86, 0.4) * pollen * 0.55;
         col += vec3<f32>(0.3, 0.6, 1.0) * g_audio * 2.0;
         alpha = 0.95;
       } else {
@@ -280,8 +265,15 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, petalCurl: f32, bloomPulse: f32, coreH
         // Core illumination (subsurface scattering)
         let coreDist = length(p);
         let sss = vec3<f32>(1.0, 0.6, 0.3) * (1.0 / (1.0 + coreDist * coreDist * 2.0)) * coreHeat * bloomPulse;
+        // IDEA 3: capillary venation channels across each petal blade.
+        let veinTheta = atan2(p.z, p.x);
+        let capillary = pow(0.5 + 0.5 * cos(veinTheta * 18.0 + p.y * 14.0 - g_time * (1.4 + g_mids)), 6.0) * (1.0 - tipFactor * 0.4);
 
         col = petalCol * (diff * 0.6 + 0.2) + sheen + chromatic * 0.2 + sss;
+        col += vec3<f32>(0.12, 0.9, 0.75) * capillary * (0.12 + g_audio * 0.08);
+        // Idea 6 — scalloped margin on the existing eight-petal crests
+        let scallop = pow(0.5 + 0.5 * sin(veinTheta * 8.0 + g_time * 0.5), 8.0) * fresnel * tipFactor;
+        col += tipCol * scallop * 0.42;
         col += vec3<f32>(0.2, 0.0, 0.4) * g_audio * fresnel;
         alpha = 0.4 + fresnel * 0.4;
       }
@@ -399,8 +391,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let fr = fluxRopeEmission(vp, twist, time, smoothBass);
     fieldGlow += vec3<f32>(0.15, 0.55, 1.0) * fr * exp(-vt * 0.08) * occl * (0.03 + shock * 0.08) * (0.6 + dispersion * 0.3);
   }
+  // IDEA 4: reconnection plume when click-driven Alfven shocks strike the sheath.
+  let reconnection = shock * shock * (0.35 + smoothBass * 0.45);
+  fieldGlow += vec3<f32>(0.85, 0.35, 0.95) * reconnection * 0.08;
   col = col + volGlow + fieldGlow;
-  col = col + vec3<f32>(0.35, 0.6, 1.0) * shock * 0.12;
+  col = col + vec3<f32>(0.35, 0.6, 1.0) * shock * 0.12 + vec3<f32>(1.0, 0.48, 0.18) * reconnection * 0.18;
 
   // Audio-reactive bloom on petals
   col = col + vec3<f32>(0.3, 0.0, 0.5) * smoothBass * 0.15 * alpha;

@@ -17,43 +17,41 @@
     1
   ],
   "params": [
-    { "id": "fractal_density", "name": "Fractal Density", "default": 3, "min": 1, "max": 8, "step": 0.1, "mapping": "zoom_params.x" },
-    { "id": "holographic_frequency", "name": "Holographic Frequency", "default": 5, "min": 1, "max": 20, "step": 0.5, "mapping": "zoom_params.y" },
-    { "id": "bioluminescence_intensity", "name": "Bio-Luminescence Intensity", "default": 1.2, "min": 0, "max": 3, "step": 0.1, "mapping": "zoom_params.z" },
-    { "id": "audio_pulse_propagation", "name": "Audio Pulse Propagation", "default": 2, "min": 0.5, "max": 5, "step": 0.1, "mapping": "zoom_params.w" }
-  ],
-  "updatedParams": [
     {
-      "index": 0,
+      "id": "fractal_density",
       "name": "Fractal Density",
-      "default": 3.0,
-      "min": 1.0,
-      "max": 8.0,
-      "step": 0.1
+      "default": 3,
+      "min": 1,
+      "max": 8,
+      "step": 0.1,
+      "mapping": "zoom_params.x"
     },
     {
-      "index": 1,
+      "id": "holographic_frequency",
       "name": "Holographic Frequency",
-      "default": 5.0,
-      "min": 1.0,
-      "max": 20.0,
-      "step": 0.5
+      "default": 5,
+      "min": 1,
+      "max": 20,
+      "step": 0.5,
+      "mapping": "zoom_params.y"
     },
     {
-      "index": 2,
+      "id": "bioluminescence_intensity",
       "name": "Bio-Luminescence Intensity",
       "default": 1.2,
-      "min": 0.0,
-      "max": 3.0,
-      "step": 0.1
+      "min": 0,
+      "max": 3,
+      "step": 0.1,
+      "mapping": "zoom_params.z"
     },
     {
-      "index": 3,
+      "id": "audio_pulse_propagation",
       "name": "Audio Pulse Propagation",
-      "default": 2.0,
+      "default": 2,
       "min": 0.5,
-      "max": 5.0,
-      "step": 0.1
+      "max": 5,
+      "step": 0.1,
+      "mapping": "zoom_params.w"
     }
   ],
   "supportsDepth": true,
@@ -61,6 +59,53 @@
   "updated": true,
   "id": "gen-ethereal-quantum-holographic-fractal-coral",
   "url": "shaders/gen-ethereal-quantum-holographic-fractal-coral.wgsl",
-  "features": ["audio-reactive", "mouse-driven", "click-reactive", "temporal-feedback", "depth-output", "aces-tonemap", "semantic-alpha"],
-  "feedbackPacking": "A/C = final ACES display RGBA; exact fractal-coral persistence history"
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "click-reactive",
+    "temporal-feedback",
+    "depth-output",
+    "aces-tonemap",
+    "semantic-alpha",
+    "upgraded-rgba"
+  ],
+  "feedbackPacking": "A/C = final ACES display RGBA (alpha = branch coverage); exact fractal-coral persistence history",
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Fractal Density",
+          "default": 3.0,
+          "min": 1.0,
+          "max": 8.0,
+          "step": 0.1
+        },
+        {
+          "index": 1,
+          "name": "Holographic Frequency",
+          "default": 5.0,
+          "min": 1.0,
+          "max": 20.0,
+          "step": 0.5
+        },
+        {
+          "index": 2,
+          "name": "Bio-Luminescence Intensity",
+          "default": 1.2,
+          "min": 0.0,
+          "max": 3.0,
+          "step": 0.1
+        },
+        {
+          "index": 3,
+          "name": "Audio Pulse Propagation",
+          "default": 2.0,
+          "min": 0.5,
+          "max": 5.0,
+          "step": 0.1
+        }
+      ]
+    }
+  }
 }

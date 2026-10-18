@@ -24,7 +24,11 @@
     "radial",
     "mirror"
   ],
-  "workgroup_size": [16, 16, 1],
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
   "params": [
     {
       "id": "segments",
@@ -69,10 +73,12 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "chunks_used": [
-    "kaleidoscope (kaleidoscope.wgsl)",
-    "rdPulse (gen-bioelectric-pulse.wgsl)",
-    "glow (anamorphic-flare.wgsl)"
-  ],
-  "updated": true
+  "updated": true,
+  "x-meta": {
+    "chunks_used": [
+      "kaleidoscope (kaleidoscope.wgsl)",
+      "rdPulse (gen-bioelectric-pulse.wgsl)",
+      "glow (anamorphic-flare.wgsl)"
+    ]
+  }
 }

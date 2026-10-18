@@ -2,12 +2,12 @@
 //  Superformula Spirograph Spiral
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, audio-driven, temporal, chromatic,
-//            depth-aware, spirograph, superformula, feedback-warp
+//            depth-aware, spirograph, superformula, feedback-warp, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-07-26 (Batch 15)
-//    - Per-bin FFT modulation of superformula exponents n2/n3
-//    - Click petal bursts via ripples[] radial impulses
-//    - IQ cosine palette + hue-preserving clamp for the history loop
+//  Upgraded: 2026-09-27
+//  Ideas: petal-tip pearls from outline curvature; pen-trace rosette (the real epicycle curve); nested outline ladder
+//  A packing: raw hue-clamped colour history (pre-ACES) + presence alpha; ACES on display RGB only
+//  Earlier (2026-07-26): per-bin FFT n2/n3, click petal bursts, IQ palette, hueClamp for the history loop
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -48,6 +48,17 @@ fn superformula(phi: f32, m: f32, n1: f32, n2: f32, n3: f32) -> f32 {
     return pow(max(t1 + t2, 0.0001), -1.0 / max(n1, 0.0001));
 }
 
+fn acesFilm(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Idea 2 helper: distance from point to segment a-b.
+fn segDist(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
+    let ab = b - a;
+    let h = clamp(dot(p - a, ab) / max(dot(ab, ab), 1e-8), 0.0, 1.0);
+    return length(p - a - ab * h);
+}
+
 fn spiroCenter(phi: f32, time: f32, speed: f32, intensity: f32, bass: f32) -> vec2<f32> {
     var center = vec2<f32>(0.0);
     var radius = mix(0.22, 0.36, intensity);
@@ -77,6 +88,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coord = vec2<i32>(global_id.xy);
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x * 5.0; // Fast motion upgrade
+    let clock = u.config.x;      // raw time: ripple.z is stamped in raw time
     let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
@@ -126,14 +138,47 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
         let rp = (ripple.xy - 0.5) * vec2<f32>(aspect, 1.0) - mouseOffset * 0.55;
-        let age = time - ripple.z;
+        let age = clock - ripple.z; // fix: was fast-time minus raw stamp (window collapsed to ~0.3 s)
         if (age > 0.0 && age < 1.6) {
             let decay = max(0.0, 1.0 - age * 0.625);
             let ringDist = abs(length(q - rp + orbit * mix(0.08, 0.22, intensity)) - age * 0.55);
             let ring = smoothstep(0.12, 0.0, ringDist);
-            shapeRadius = shapeRadius + ring * decay * decay * 0.16 * ripple.w;
+            shapeRadius = shapeRadius + ring * decay * decay * 0.16; // fix: ripple.w is always 0 (engine padding) -> clicks were dead
         }
     }
+
+    // Idea 1 - petal-tip pearls: a Newton step on the outline's own radius
+    // (slope / curvature from two angular neighbours) locates each petal apex
+    // without any state. A bead of light sits on the outline exactly at the tips.
+    let sfAng = angle + time * spinSpeed * 0.18;
+    let sfM = petalCount + bass * 4.0 + binMid * 2.0;
+    let dA = 0.1;
+    let rL = superformula(sfAng - dA, sfM, n1, n2, n3);
+    let rR = superformula(sfAng + dA, sfM, n1, n2, n3);
+    let curvDen = 2.0 * superR - rL - rR;                      // > 0 on a convex cap
+    let apexOff = (rR - rL) * dA / (2.0 * max(curvDen, 1e-4 * superR));
+    let apex = select(0.0, exp(-(apexOff * apexOff) / 0.0064), curvDen > 1e-4 * superR);
+    let beadR = (dist - shapeRadius) / 0.022;
+    let pearl = apex * exp(-beadR * beadR);
+
+    // Idea 2 - pen-trace rosette: the actual 4-harmonic epicycle curve
+    // (closed over phi = 0..TAU) drawn as a glowing hairline inside the bloom.
+    let penScale = 0.4;
+    var penMin = 1e3;
+    var penPrev = spiroCenter(0.0, time, spinSpeed, intensity, bass) * penScale;
+    for (var k: i32 = 1; k <= 48; k = k + 1) {
+        let penNext = spiroCenter(TAU * f32(k) / 48.0, time, spinSpeed, intensity, bass) * penScale;
+        penMin = min(penMin, segDist(q, penPrev, penNext));
+        penPrev = penNext;
+    }
+    let pen = smoothstep(0.007, 0.0, penMin) + 0.35 * smoothstep(0.03, 0.0, penMin);
+
+    // Idea 3 - nested outline ladder: homothetic copies of the superformula
+    // outline (dist / shapeRadius contours) drift inward like a topographic rosette.
+    let rel = dist / max(shapeRadius, 0.03);
+    let ladderF = fract(rel * 4.0 - time * 0.05 * spinSpeed);
+    let ladderLine = smoothstep(0.09, 0.0, abs(ladderF - 0.5) * 0.5);
+    let ladder = ladderLine * smoothstep(1.02, 0.85, rel) * smoothstep(0.08, 0.35, rel);
 
     // Counter-rotating ghost ring: a dim echo of the same superformula,
     // spun backwards and shrunk, gives the bloom interior some depth.
@@ -149,12 +194,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let swirl = 0.5 + 0.5 * sin(length(p) * 24.0 - angle * (petalCount * 1.5) - time * spinSpeed * 3.0);
     let halo = smoothstep(0.35, 0.0, abs(dist - shapeRadius * 1.18));
     let pattern = band * (0.6 + 0.4 * spokes) + pow(swirl, 3.0) * 0.25 + halo * 0.18
-                + ghostBand * 0.22 + core * 0.45;
+                + ghostBand * 0.22 + core * 0.45
+                + pearl * 0.55 + pen * 0.4 + ladder * 0.16;
 
     // IQ cosine palette replaces HSV: t plays the hue role, gain plays value.
     let hueT = fract(angle / TAU + time * 0.12 * spinSpeed + spokes * 0.18 + length(p) * 0.2 + mids * 0.1);
     let gain = pattern * mix(0.85, 2.6, intensity) * mix(0.85, 1.0, treble * 0.5);
     var color = iqPalette(hueT) * gain;
+    color = color + vec3<f32>(1.0, 0.94, 0.82) * pearl * 0.35              // pearls run hot
+                  + iqPalette(fract(hueT + 0.33)) * pen * 0.25;             // pen hairline gets its own hue
 
     // ── Feedback history UV chain (warp signature - preserve verbatim) ──
     let rot = 0.015 + spinSpeed * 0.01;
@@ -175,7 +223,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = mix(color, chromaticPrev, feedbackMix * (0.42 + band * 0.28));
 
     // Standard temporal feedback blend
-    let prevStandard = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    let prevStandard = textureLoad(dataTextureC, coord, 0);
     color = mix(color, prevStandard.rgb * 0.9, 0.03 + bass * 0.01);
 
     // Chromatic dispersion: per-channel audio boosts
@@ -189,7 +237,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let edgeFade = 1.0 - smoothstep(0.35, 0.82, length(p));
     let presence = clamp(pattern * edgeFade, 0.0, 1.0);
-    let finalColor = mix(inputColor.rgb, color, presence * 0.9);
+    let finalColor = mix(inputColor.rgb, acesFilm(color), presence * 0.9); // ACES on display only; A keeps raw history
     let finalAlpha = max(inputColor.a, presence * 0.9);
     let finalDepth = mix(inputDepth, clamp(shapeRadius + halo * 0.25, 0.0, 1.0), presence * 0.85);
 

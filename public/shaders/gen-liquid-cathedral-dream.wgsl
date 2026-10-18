@@ -3,31 +3,12 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-13
-//  Ideas: leaded came panes in each window; molten glass drips below arches
+//  Upgraded: 2026-10-10
+//  Ideas: leaded came panes in each window; molten glass drips below arches; pane-coloured god-ray shafts down the nave; dichroic hue shift across the pointer
 //  A packing: ACES display RGBA (C read back as melt-offset colour history)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -116,6 +97,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let drip = (1.0 - smoothstep(dripWidth * 0.5, dripWidth, abs(dripLocalX))) * dripActive;
     let bead = exp(-length(vec2<f32>(dripLocalX, tierY - dripStart - dripLength)) * 70.0) * step(abs(cellX), 0.34);
 
+    // Idea 3: god-ray shafts — slanted light falls from the windows into the nave, each shaft tinted by the
+    // pane it passes through; strongest just under the arches, thinning toward the floor, lifted by mids.
+    let shaftCoord = cellX + tierY * 0.45;
+    let shaftBand = pow(0.5 + 0.5 * cos(shaftCoord * TAU * 3.0 + columnId * 2.1 + flowTime * 0.15), 5.0);
+    let shaftFade = smoothstep(-0.55, 0.05, tierY) * smoothstep(0.5, 0.0, tierY) * (1.0 - window * 0.7);
+    let shaftHue = (hash21(vec2<f32>(floor(shaftCoord * 3.0 + columnId * 3.1), tierId * 5.3)) - 0.5) * 0.35;
+    let shaft = shaftBand * shaftFade * (0.3 + audio.y * 0.5) * (0.5 + refraction * 0.8);
+
+    // Idea 4: dichroic shift — the glass changes colour with viewing angle; panes slide toward the complement
+    // as the pointer crosses the window (zero shift when the pointer sits at centre).
+    let dichroic = clamp((q.x - mouseP.x) * 0.5, -0.35, 0.35) * (0.5 + refraction);
+
     var clickRose = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
     for (var i = 0u; i < rippleCount; i = i + 1u) {
@@ -130,9 +123,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     let hue = stainedHue + cellX * 0.7 + tierY * 0.35 + flowTime * 0.06;
-    var hdr = palette(hue + paneHue) * window * (1.0 - came * 0.88) * (0.5 + glassPulse * 1.4 + audio.z);
+    var hdr = palette(hue + paneHue + dichroic) * window * (1.0 - came * 0.88) * (0.5 + glassPulse * 1.4 + audio.z);
     hdr += vec3<f32>(0.32, 0.28, 0.24) * came * glassPulse * 0.35;
     hdr += palette(hue + paneHue) * (drip * 0.9 + bead * 2.4) * (0.7 + audio.x);
+    hdr += palette(hue + shaftHue + dichroic) * shaft * 1.1;
     hdr += palette(hue + 0.57) * floorCaustic * (drip + bead) * 0.8;
     hdr += palette(hue + 0.32) * (arch * 1.8 + spire * 0.8) * (0.8 + audio.x);
     hdr += palette(hue + 0.57) * (roseTracery * 1.35 + floorCaustic * 0.45) * (0.6 + audio.y);
@@ -141,7 +135,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let historyUV = clamp(uv + vec2<f32>(melt.x / max(aspect, 0.001), 0.004 + meltSpeed * 0.007), vec2<f32>(0.0), vec2<f32>(1.0));
     let history = historyLoadUV(historyUV);
     hdr = mix(hdr, history.rgb, clamp(0.10 + refraction * 0.20 + dragMask * 0.12, 0.0, 0.42));
-    let structure = clamp(max(arch, spire) + window * 0.45 + roseTracery * 0.35 + clickRose * 0.5 + came * 0.3 + drip * 0.5 + bead * 0.6, 0.0, 1.0);
+    let structure = clamp(max(arch, spire) + window * 0.45 + roseTracery * 0.35 + clickRose * 0.5 + came * 0.3 + drip * 0.5 + bead * 0.6 + shaft * 0.25, 0.0, 1.0);
     let output = vec4<f32>(acesToneMap(hdr), clamp(0.16 + structure * 0.82, 0.0, 1.0));
     textureStore(writeTexture, coord, output);
     textureStore(dataTextureA, coord, output);

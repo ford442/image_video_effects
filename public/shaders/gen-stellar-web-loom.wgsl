@@ -5,6 +5,10 @@
 //           warp-speed-streaks, hdr-feedback-trails, audio-transient-burst,
 //           audio-color-temperature, aces-tone-map, semantic-alpha,
 //           generated-depth, fast-motion
+//  Upgraded: 2026-09-27
+//  Ideas: plucked standing-wave strings pinned at lattice nodes;
+//         warp/weft hues + over/under weave thickness; gyro ring per node
+//  A packing: A.rgb = HDR trail colour (clamped), A.a = march depth
 // ----------------------------------------------------------------
 // --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
 @group(0) @binding(0) var u_sampler: sampler;
@@ -93,6 +97,21 @@ var<private> g_time: f32;
 var<private> g_mouse: vec2<f32>;
 var<private> g_audio: f32;
 
+// IDEA 1: plucked string. s = signed axis coordinate inside the cell (node at 0),
+// seg = hashed id of the node-to-node segment (same id from both neighbouring
+// cells), returns transverse displacement. Mode 1 is pinned at both nodes
+// (|s| keeps it continuous across the cell face), mode 2 decays faster.
+fn pluck(s: f32, sp: f32, seg: vec3<f32>, salt: f32) -> vec2<f32> {
+    let h = hash31(seg + vec3<f32>(salt, salt * 1.7, salt * 2.3));
+    let ring = exp(-3.0 * fract(g_time * 0.3 + h)); // re-plucked every ~3 s
+    let amp = min(0.05 + 0.16 * ring + 0.2 * g_audio, 0.3);
+    let e1 = sin(3.14159265 * abs(s) / sp);
+    let e2 = sin(6.2831853 * s / sp);
+    let a = g_time * 4.0 + h * 6.2831853;
+    let b = g_time * 8.0 + h * 17.0;
+    return amp * (e1 * vec2<f32>(cos(a), sin(a)) + 0.4 * ring * e2 * vec2<f32>(cos(b), sin(b)));
+}
+
 fn map(pos: vec3<f32>) -> vec2<f32> {
     let density = max(0.1, u.zoom_params.x);
     let weaveSpeed = u.zoom_params.y;
@@ -133,15 +152,54 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
 
     let nodeDist = sdSphere(q, 0.3);
 
-    let cylDistX = sdCylinder(warped_q.yzx, vec2<f32>(0.05, domainSpacing));
-    let cylDistY = sdCylinder(warped_q.zxy, vec2<f32>(0.05, domainSpacing));
-    let cylDistZ = sdCylinder(warped_q.xyz, vec2<f32>(0.05, domainSpacing));
+    // IDEA 1: per-axis plucked displacement of the thread centre-line.
+    let sp = domainSpacing;
+    let segZ = cell + vec3<f32>(0.0, 0.0, select(0.0, -1.0, q.z < 0.0));
+    let segX = cell + vec3<f32>(select(0.0, -1.0, q.x < 0.0), 0.0, 0.0);
+    let segY = cell + vec3<f32>(0.0, select(0.0, -1.0, q.y < 0.0), 0.0);
+    let dZ = pluck(q.z, sp, segZ, 3.1);
+    let dX = pluck(q.x, sp, segX, 11.3);
+    let dY = pluck(q.y, sp, segY, 23.7);
+
+    // IDEA 2: plain-weave parity. Radius swells where a thread passes over its
+    // crossing neighbours and thins where it passes under; cos(2*pi*s/sp) is
+    // continuous across cell faces because parity flips with the cell.
+    let par = cell.x + cell.y + cell.z;
+    let pf = select(-1.0, 1.0, fract(par * 0.5) < 0.25);
+    let swZ = pf * cos(6.2831853 * q.z / sp);
+    let swX = -pf * cos(6.2831853 * q.x / sp);
+    let swY = pf * cos(6.2831853 * q.y / sp);
+
+    // Cylinder axes: cylDistX runs along z, cylDistY along x, cylDistZ along y.
+    let cylDistX = sdCylinder((warped_q + vec3<f32>(dZ.x, dZ.y, 0.0)).yzx, vec2<f32>(0.05 * (1.0 + 0.6 * swZ), sp));
+    let cylDistY = sdCylinder((warped_q + vec3<f32>(0.0, dX.x, dX.y)).zxy, vec2<f32>(0.05 * (1.0 + 0.6 * swX), sp));
+    let cylDistZ = sdCylinder((warped_q + vec3<f32>(dY.x, 0.0, dY.y)).xyz, vec2<f32>(0.05 * (1.0 + 0.6 * swY), sp));
 
     let threadDist = min(cylDistX, min(cylDistY, cylDistZ));
 
-    let d = min(nodeDist, threadDist);
+    // IDEA 3: gyro ring — tilted torus precessing about each node.
+    let hN = hash31(cell + vec3<f32>(5.5, 1.3, 9.1));
+    var rp = q;
+    let ryz = rot(hN * 3.14159265) * vec2<f32>(rp.y, rp.z);
+    rp = vec3<f32>(rp.x, ryz.x, ryz.y);
+    let rxz = rot(g_time * (0.8 + hN) + hN * 6.2831853) * vec2<f32>(rp.x, rp.z);
+    rp = vec3<f32>(rxz.x, rp.y, rxz.y);
+    let ringDist = length(vec2<f32>(length(vec2<f32>(rp.x, rp.z)) - 0.36, rp.y)) - 0.022;
+
+    let d = min(ringDist, min(nodeDist, threadDist));
+    // mat_id: 0 node, 1/2/3 thread family (z/x/y, +0.5 when passing under), 4 ring
     var mat_id = 0.0;
-    if (threadDist < nodeDist) { mat_id = 1.0; }
+    if (ringDist < nodeDist && ringDist < threadDist) {
+        mat_id = 4.0;
+    } else if (threadDist < nodeDist) {
+        if (cylDistX <= cylDistY && cylDistX <= cylDistZ) {
+            mat_id = 1.0 + select(0.0, 0.5, swZ < 0.0);
+        } else if (cylDistY <= cylDistZ) {
+            mat_id = 2.0 + select(0.0, 0.5, swX < 0.0);
+        } else {
+            mat_id = 3.0 + select(0.0, 0.5, swY < 0.0);
+        }
+    }
 
     return vec2<f32>(d * 0.6, mat_id);
 }
@@ -163,18 +221,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let treble = plasmaBuffer[0].z;
     g_audio = bass * 0.5;
 
-    // ── Audio transient burst envelope (rising-edge on bass, bounded decay) ──
-    // extraBuffer[133] = previous bass, [134] = burst envelope. Single writer.
-    let bufLen = arrayLength(&extraBuffer);
-    if (global_id.x == 0u && global_id.y == 0u && bufLen > 135u) {
-        let prevBass = extraBuffer[133];
-        var env = extraBuffer[134] * 0.90; // smooth exp decay
-        env = max(env, min((bass - prevBass) * 5.0, 2.0)); // rising-edge launch
-        extraBuffer[133] = bass;
-        extraBuffer[134] = clamp(env, 0.0, 2.0);
-    }
-    var burst = 0.0;
-    if (bufLen > 135u) { burst = extraBuffer[134]; }
+    // Audio transient burst — stateless per-pixel (was extraBuffer[133/134], which is
+    // zeroed every upload and raced across threads). Fires on loud bass hits, 0..2.
+    let burst = clamp((bass - 0.3) * 5.0, 0.0, 2.0);
 
     // Mouse: zoom_config.yz is already 0–1 canvas uv (y=0 top, matching uv below)
     g_mouse = u.zoom_config.yz * 2.0 - vec2<f32>(1.0);
@@ -186,6 +235,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coolTint = vec3<f32>(0.35, 0.7, 1.0);
     let warmTint = vec3<f32>(1.0, 0.55, 0.25);
     let tempTint = mix(coolTint, warmTint, tempMix);
+    let threadTint = mix(vec3<f32>(1.0), tempTint, 0.5); // keep the three thread hues distinct
 
     // Starfield — smooth sinusoidal twinkle (no per-frame hash strobing)
     var starCol = vec3<f32>(0.0);
@@ -231,8 +281,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let mat_id = res.y;
         if (mat_id == 0.0) {
             colorAccum += vec3<f32>(0.1, 0.3, 0.8) * tempTint * curGlow * plasmaGlow * 0.02 * (1.0 + bass + burst);
+        } else if (mat_id >= 4.0) {
+            // IDEA 3: gyro ring, pale cyan-white
+            colorAccum += vec3<f32>(0.6, 0.85, 1.0) * tempTint * curGlow * plasmaGlow * 0.02 * (1.0 + bass + burst);
         } else {
-            colorAccum += vec3<f32>(0.5, 0.2, 0.9) * tempTint * curGlow * plasmaGlow * 0.015 * (1.0 + bass * 1.5 + burst * 1.5);
+            // IDEA 2: warp/weft hue by axis family; under-passing segments dimmer
+            let fam = i32(floor(mat_id));
+            var hue = vec3<f32>(0.5, 0.2, 0.9);   // z: violet (original thread colour)
+            if (fam == 2) { hue = vec3<f32>(0.9, 0.5, 0.12); }  // x: amber
+            if (fam == 3) { hue = vec3<f32>(0.1, 0.7, 0.5); }   // y: teal
+            let shade = select(1.0, 0.55, fract(mat_id) > 0.25);
+            colorAccum += hue * threadTint * shade * curGlow * plasmaGlow * 0.015 * (1.0 + bass * 1.5 + burst * 1.5);
         }
 
         if (d < 0.001 || t > maxT) { break; }

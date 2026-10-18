@@ -3,31 +3,14 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-21
-//  Ideas: pulse-swim contraction with thrust/coast surge; pupils track the pointer and blink on seeded schedules
+//  Upgraded: 2026-10-10
+//  Ideas: pulse-swim contraction with thrust/coast surge; pupils track the pointer and
+//         blink on seeded schedules; tentacle-anchored luminous wake from a second
+//         history sample; click-triggered startle contraction spike; audio-linked pupil dilation; oracle synapse sparks; bioluminescent bell-edge frills
 //  A packing: ACES display RGBA (read back as colour history)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -79,33 +62,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     local.x += sin(drift + seed * TAU + cell.y) * (0.06 + tentacleCurl * 0.12);
     local.y += cos(drift * 0.7 + seed * 4.0) * 0.05;
 
-    // Idea 1 — pulse-swim: each jelly contracts (bell narrows and lengthens), surges up on the stroke,
-    // then coasts back; the net rise is the grid drift. -y is up (bells dome toward -y).
-    let swimPhase = fract(drift * 0.55 + seed * 3.7);
-    let contraction = smoothstep(0.0, 0.16, swimPhase) * (1.0 - smoothstep(0.16, 0.55, swimPhase));
-    local.y += (smoothstep(0.0, 0.45, swimPhase) - swimPhase) * (0.10 + tentacleCurl * 0.06);
-    let bellDistance = length(vec2<f32>(local.x * 1.05 * (1.0 + contraction * 0.38), max(local.y + 0.08, 0.0) * 1.5 * (1.0 - contraction * 0.22)));
-    let bell = smoothstep(0.42, 0.25, bellDistance) * smoothstep(0.32, -0.22, local.y);
-    let rim = exp(-abs(bellDistance - 0.34) * (35.0 + swarmDensity * 25.0)) * smoothstep(0.30, -0.12, local.y);
-    // Idea 2 — watching eye: the pupil turns toward the pointer inside the iris; a seeded eyelid blinks.
-    let blinkPhase = fract(time * 0.23 + seed * 7.13);
-    let lid = smoothstep(0.0, 0.022, blinkPhase) * (1.0 - smoothstep(0.034, 0.06, blinkPhase));
-    let eyeLocal = local - vec2<f32>(0.0, -0.07);
-    let eyeCenterP = p - eyeLocal / gridScale;
-    let toPointer = mouseP - eyeCenterP;
-    let gaze = toPointer / max(length(toPointer), 0.001) * min(length(toPointer) * 2.5, 1.0) * 0.045;
-    let eyeDistance = length(eyeLocal * vec2<f32>(1.0, 1.7 / max(1.0 - lid, 0.08)));
-    let eye = exp(-eyeDistance * 22.0) * bell * (1.0 - lid * 0.85);
-    let pupilDistance = length((eyeLocal - gaze) * vec2<f32>(1.0, 1.7));
-    let pupil = exp(-pupilDistance * (65.0 + oracleChroma * 45.0)) * (1.0 - lid) * bell;
-    let tentaclePhase = local.x * (18.0 + tentacleCurl * 30.0) + sin(local.y * 12.0 - drift * 3.0) * (1.0 + tentacleCurl * 3.0) * (1.0 - contraction * 0.5);
-    let tentacles = pow(0.5 + 0.5 * cos(tentaclePhase), 12.0) * smoothstep(-0.08, 0.48 + contraction * 0.22, local.y) * exp(-abs(local.x) * 2.2);
-    let oracleAngle = atan2(local.y + 0.07, local.x);
-    let oracleSigil = pow(0.5 + 0.5 * cos(oracleAngle * (7.0 + floor(swarmDensity * 6.0)) + drift * 2.0), 14.0) *
-        exp(-abs(eyeDistance - 0.15) * (45.0 + oracleChroma * 25.0));
-    let deepBell = exp(-abs(bellDistance - 0.48) * 28.0) * (0.5 + 0.5 * sin(drift + seed * TAU));
-
+    // Idea 4 — click-triggered startle: a cell near a fresh ripple recoils with an
+    // extra contraction kick, wiring the existing (previously decorative) click
+    // ripples into the existing pulse-swim mechanism. Reuses the same ripple loop
+    // that also drives the deep-glow "clickOracle" ring below.
+    let cellCenterP = vec2<f32>((cell.x + 0.5) / gridScale - 1.0, (cell.y + 0.5) / gridScale - 1.0 - drift * 0.13);
     var clickOracle = 0.0;
+    var startleKick = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
     for (var i = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
@@ -115,17 +78,63 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let ring = abs(length(delta) - age * (0.16 + driftSpeed * 0.16));
             clickOracle += (1.0 - smoothstep(0.0, 0.030, ring)) * (1.0 - age / 3.1);
         }
+        if (age >= 0.0 && age < 0.6) {
+            let rippleWorldP = (ripple.xy - 0.5) * vec2<f32>(aspect, 1.0);
+            let cellDist = length(cellCenterP - rippleWorldP);
+            startleKick += (1.0 - smoothstep(0.0, 0.35, cellDist)) * (1.0 - age / 0.6);
+        }
     }
+
+    // Idea 1 — pulse-swim: each jelly contracts (bell narrows and lengthens), surges up on the stroke,
+    // then coasts back; the net rise is the grid drift. -y is up (bells dome toward -y).
+    let swimPhase = fract(drift * 0.55 + seed * 3.7);
+    let contraction = clamp(smoothstep(0.0, 0.16, swimPhase) * (1.0 - smoothstep(0.16, 0.55, swimPhase)) + startleKick * 0.6, 0.0, 1.4);
+    local.y += (smoothstep(0.0, 0.45, swimPhase) - swimPhase) * (0.10 + tentacleCurl * 0.06);
+    let bellDistance = length(vec2<f32>(local.x * 1.05 * (1.0 + contraction * 0.38), max(local.y + 0.08, 0.0) * 1.5 * (1.0 - contraction * 0.22)));
+    let bell = smoothstep(0.42, 0.25, bellDistance) * smoothstep(0.32, -0.22, local.y);
+    // Idea 2: Bioluminescent bell-edge frills
+    let frillWave = abs(sin(atan2(local.y, local.x) * 20.0 + time * 5.0)) * 0.02;
+    let rim = exp(-abs(bellDistance - 0.34 - frillWave) * (35.0 + swarmDensity * 25.0)) * smoothstep(0.30, -0.12, local.y);
+    // Idea 2 — watching eye: the pupil turns toward the pointer inside the iris; a seeded eyelid blinks.
+    let blinkPhase = fract(time * 0.23 + seed * 7.13);
+    let lid = smoothstep(0.0, 0.022, blinkPhase) * (1.0 - smoothstep(0.034, 0.06, blinkPhase));
+    let eyeLocal = local - vec2<f32>(0.0, -0.07);
+    let eyeCenterP = p - eyeLocal / gridScale;
+    let toPointer = mouseP - eyeCenterP;
+    let gaze = toPointer / max(length(toPointer), 0.001) * min(length(toPointer) * 2.5, 1.0) * 0.045;
+    let eyeDistance = length(eyeLocal * vec2<f32>(1.0, 1.7 / max(1.0 - lid, 0.08)));
+    let eye = exp(-eyeDistance * 22.0) * bell * (1.0 - lid * 0.85);
+    // Idea 5 (optional) — audio-linked pupil dilation: bass widens the pupil's
+    // falloff radius so the oracle's eyes visibly react to sound.
+    let pupilDistance = length((eyeLocal - gaze) * vec2<f32>(1.0, 1.7));
+    let pupil = exp(-pupilDistance * max(65.0 + oracleChroma * 45.0 - audio.x * 35.0, 12.0)) * (1.0 - lid) * bell;
+    let tentaclePhase = local.x * (18.0 + tentacleCurl * 30.0) + sin(local.y * 12.0 - drift * 3.0) * (1.0 + tentacleCurl * 3.0) * (1.0 - contraction * 0.5);
+    let tentacles = pow(0.5 + 0.5 * cos(tentaclePhase), 12.0) * smoothstep(-0.08, 0.48 + contraction * 0.22, local.y) * exp(-abs(local.x) * 2.2);
+    
+    // Idea 1: Oracle synapse sparks (flashes on the tentacles)
+    let sparkHash = hash21(floor(local * 20.0 + time));
+    let synapseSparks = tentacles * step(0.99, sparkHash) * (1.0 + audio.z * 2.0);
+    let oracleAngle = atan2(local.y + 0.07, local.x);
+    let oracleSigil = pow(0.5 + 0.5 * cos(oracleAngle * (7.0 + floor(swarmDensity * 6.0)) + drift * 2.0), 14.0) *
+        exp(-abs(eyeDistance - 0.15) * (45.0 + oracleChroma * 25.0));
+    let deepBell = exp(-abs(bellDistance - 0.48) * 28.0) * (0.5 + 0.5 * sin(drift + seed * TAU));
 
     let hue = seed + oracleChroma * 0.55 + local.y * 0.35 + time * (0.04 + driftSpeed * 0.10);
     var hdr = palette(hue) * bell * (0.6 + oracleChroma * 2.1 + audio.y);
-    hdr += palette(hue + 0.34) * (rim * 1.7 + tentacles * (0.7 + audio.z));
+    hdr += palette(hue + 0.34) * (rim * 1.7 + tentacles * (0.7 + audio.z)) + vec3<f32>(1.0, 0.9, 0.5) * synapseSparks * 3.0;
     hdr += vec3<f32>(1.0, 0.85, 0.40) * eye * (0.6 + audio.x) - vec3<f32>(0.3, 0.05, 0.45) * pupil;
     hdr += palette(hue + 0.48) * (oracleSigil * 1.2 + deepBell * 0.42) * (0.5 + audio.z);
     hdr += palette(hue + 0.68) * (clickOracle * 1.8 + dragMask * 0.9);
     let historyUV = clamp(uv + vec2<f32>(sin(drift + uv.y * 9.0) * 0.002, 0.003 + driftSpeed * 0.008), vec2<f32>(0.0), vec2<f32>(1.0));
     let history = historyLoadUV(historyUV);
     hdr = mix(hdr, history.rgb, clamp(0.10 + oracleChroma * 0.16 + dragMask * 0.14, 0.0, 0.42));
+
+    // Idea 3 — tentacle-anchored luminous wake: a second history sample, offset
+    // along the tentacles' own phase, is screened additively into the tentacle
+    // term for a longer luminous streak distinct from the frame-wide history mix.
+    let tentacleWakeUV = clamp(uv + vec2<f32>(sin(tentaclePhase * 0.05) * 0.008, 0.014 + driftSpeed * 0.012), vec2<f32>(0.0), vec2<f32>(1.0));
+    let tentacleWake = historyLoadUV(tentacleWakeUV).rgb;
+    hdr += tentacleWake * tentacles * 0.55;
     let structure = clamp(bell * 0.65 + rim * 0.5 + tentacles * 0.45 + oracleSigil * 0.35 + eye + clickOracle * 0.45, 0.0, 1.0);
     let output = vec4<f32>(acesToneMap(max(hdr, vec3<f32>(0.0))), clamp(0.10 + structure * 0.88, 0.0, 1.0));
     textureStore(writeTexture, coord, output);

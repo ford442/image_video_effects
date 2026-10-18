@@ -1,31 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Voronoi Multi-Focal Selective
 //  Category: image
-//  Features: mouse-driven, depth-aware, temporal
+//  Features: mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded by: Optimizer Agent
-//  Date: 2026-05-03
+//  Upgraded: 2026-10-16
+//  Ideas: hue window around the pointer sample; mask contour on the island edge
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
@@ -82,6 +64,10 @@ fn sdHexagon(p: vec2<f32>, r: f32) -> f32 {
   let d = dot(k.xy, q);
   return max(d, q.y) - r * k.z;
 }
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn chromaticSplit(uv: vec2<f32>, offset: vec2<f32>) -> vec3<f32> {
   let r = textureSampleLevel(readTexture, u_sampler, uv + offset, 0.0).r;
   let g = textureSampleLevel(readTexture, u_sampler, uv, 0.0).g;
@@ -173,14 +159,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let texel = 1.0 / resolution;
   let edgeMag = depthSobel(uv, texel);
 
-  // Final composite
+  // Idea 1 — hue window: islands keep the color under the pointer.
+  let key = textureSampleLevel(readTexture, u_sampler, clamp(mouse, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  let hueGate = 1.0 - smoothstep(0.08, 0.38, length(color.rgb - key));
+  let selective = mix(grayVec, caColor, mix(0.25, 1.0, hueGate));
   let desatColor = mix(caColor, grayVec, desatStrength);
-  let finalRGB = mix(desatColor, caColor, combinedMask);
+  var finalRGB = mix(desatColor, selective, combinedMask);
+  // Idea 2 — mask contour.
+  finalRGB = mix(finalRGB, finalRGB * vec3<f32>(0.32, 0.30, 0.27), boundary * 0.85);
   let edgeTint = vec3<f32>(1.0, 0.92, 0.75) * edgeMag * combinedMask * 0.4;
-  let finalAlpha = mix(color.a * (1.0 - desatStrength * 0.2), color.a, combinedMask);
-  let finalColor = vec4<f32>(finalRGB + edgeTint, finalAlpha);
+  let finalAlpha = clamp(mix(color.a * (1.0 - desatStrength * 0.2), color.a, combinedMask) + boundary * 0.15, 0.0, 1.0);
+  let display = aces(max(finalRGB + edgeTint, vec3<f32>(0.0)));
+  let finalColor = vec4<f32>(display, finalAlpha);
+  let pixel = vec2<i32>(global_id.xy);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
+  textureStore(writeTexture, pixel, finalColor);
+  textureStore(dataTextureA, pixel, finalColor);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));

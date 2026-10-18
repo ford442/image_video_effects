@@ -27,7 +27,7 @@ export function lutU8Map(
   const lutLen = lut.length;
   for (let i = 0; i < limit; i++) {
     const o = i * 4;
-    const bin = lumaToBin(lumaBt709(rgba[o], rgba[o + 1], rgba[o + 2]));
+    const bin = lumaToBin(lumaBt709(rgba[o]!, rgba[o + 1]!, rgba[o + 2]!));
     out[i] = lut[bin < lutLen ? bin : lutLen - 1] ?? 0;
   }
   return out;
@@ -77,7 +77,7 @@ export function classifyBandsToRgba(
   const palette = CLASSIFY_FALSE_COLOR;
   for (let i = 0; i < n; i++) {
     const band = Math.max(0, Math.min(palette.length - 1, bands[i] ?? 0));
-    const rgb = palette[band];
+    const rgb = palette[band]!;
     const o = i * 4;
     out[o] = rgb[0];
     out[o + 1] = rgb[1];

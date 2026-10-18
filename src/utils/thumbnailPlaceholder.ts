@@ -1,4 +1,4 @@
-export const CATEGORY_LABELS: Record<string, string> = {
+export const CATEGORY_LABELS: Record<string, string> & { other: string } = {
   'interactive-mouse': '🖱️ Interactive',
   'artistic': '🎨 Artistic',
   'generative': '✨ Generative',
@@ -17,7 +17,9 @@ export const CATEGORY_LABELS: Record<string, string> = {
 };
 
 /** Per-category gradient colors for missing thumbnail placeholders. */
-export const CATEGORY_PLACEHOLDER_STYLES: Record<string, { from: string; to: string; accent: string }> = {
+type PlaceholderStyle = { from: string; to: string; accent: string };
+
+export const CATEGORY_PLACEHOLDER_STYLES: Record<string, PlaceholderStyle> & { other: PlaceholderStyle } = {
   'interactive-mouse': { from: '#1a2a4a', to: '#0d1528', accent: '#6eb5ff' },
   artistic: { from: '#3a1a4a', to: '#1a0d28', accent: '#e94596' },
   generative: { from: '#2a1a4a', to: '#120d28', accent: '#c9a227' },
@@ -48,8 +50,7 @@ export function getCategoryPlaceholderStyle(category?: string): {
   background: string;
   color: string;
 } {
-  const key = category && CATEGORY_PLACEHOLDER_STYLES[category] ? category : 'other';
-  const palette = CATEGORY_PLACEHOLDER_STYLES[key];
+  const palette = (category && CATEGORY_PLACEHOLDER_STYLES[category]) || CATEGORY_PLACEHOLDER_STYLES.other;
   return {
     background: `linear-gradient(135deg, ${palette.from} 0%, ${palette.to} 100%)`,
     color: palette.accent,

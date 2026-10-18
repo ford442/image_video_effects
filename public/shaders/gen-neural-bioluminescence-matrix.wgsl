@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: saltatory action potentials hopping node-of-Ranvier to node along each axon with depolarization spike and refractory undershoot; aequorin-to-GFP energy transfer where calcium flashes (spikes, click calcium waves) emit 469nm blue that lingers as 509nm green fluorescence in the trail
+//  Upgraded: 2026-10-18
+//  Ideas: saltatory action potentials hopping node-of-Ranvier to node along each axon with depolarization spike and refractory undershoot; aequorin-to-GFP energy transfer where calcium flashes (spikes, click calcium waves) emit 469nm blue that lingers as 509nm green fluorescence in the trail; astrocytic calcium tide that forms a slower turquoise support glow around active tracts; vesicle-quantal bouton scintillation that adds amber puncta at firing synaptic boutons; Hursh caliber-velocity axons (each axon segment gets its own diameter and its spikes travel proportionally faster on thick fibres); voltage-sensitive-dye membrane imaging (the struck tissue surface is false-coloured by the signed membrane potential — warm depolarization at the spike, indigo refractory undershoot, faint electrotonic spread along the internode)
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-    zoom_params: vec4<f32>,  // x=Node Density, y=Pulse Speed, z=Audio Reactivity, w=Bio-Glow Intensity
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Node Density, y=Pulse Speed, z=Audio Reactivity, w=Bio-Glow Intensity
 
 // Persistent state (extraBuffer safe zone, pixel (0,0) writes only)
 // 133 = bass envelope, 134 = mid envelope, 135 = treble envelope,
@@ -103,7 +85,24 @@ fn nodeSpacing() -> f32 {
     return 4.0 / max(u.zoom_params.x, 0.1); // Node Density
 }
 
-fn map(p_in: vec3<f32>, audioPulse: f32, clickPulse: f32) -> f32 {
+// Hash for one axon segment (cell + axis). Stable over time so spikes really
+// hop node to node; .y doubles as the Hursh caliber.
+fn axonHash(cell: vec3<f32>, axis: f32) -> vec3<f32> {
+    return hash33(cell * 1.7 + vec3<f32>(axis * 11.0, 0.0, 0.0));
+}
+
+// Idea: Hursh caliber-velocity law — myelinated conduction velocity scales
+// with fibre diameter (~6 m/s per um), so each segment's radius and spike speed
+// share one factor (0.6..1.4, mean 1 = the old radius 0.15).
+// Keyed on the whole fibre (the cell coords across the axis), so the radius is
+// continuous where neighbouring cells' segments meet at a cell face.
+fn axonCaliber(cell: vec3<f32>, axis: f32) -> f32 {
+    var fibre = cell;
+    if (axis < 0.5) { fibre.x = 0.0; } else if (axis < 1.5) { fibre.y = 0.0; } else { fibre.z = 0.0; }
+    return 0.6 + 0.8 * axonHash(fibre, axis).y;
+}
+
+fn warpPoint(p_in: vec3<f32>, audioPulse: f32, clickPulse: f32) -> vec3<f32> {
     var p = p_in;
 
     // Magnetic mouse repulsion (zoom_config.yz is already normalized uv)
@@ -116,24 +115,33 @@ fn map(p_in: vec3<f32>, audioPulse: f32, clickPulse: f32) -> f32 {
 
     // Organic displacement using FBM, audio modulated
     p += (vec3<f32>(fbm(p), fbm(p + 10.0), fbm(p + 20.0)) - 0.5) * (1.5 + audioPulse * 0.5);
+    return p;
+}
 
+// Lattice SDF in warped space
+fn mapWarped(p: vec3<f32>) -> f32 {
     let spacing = nodeSpacing();
+    let cell = floor(p / spacing + 0.5);
 
     var q = p;
     q.x = mod_float(q.x + spacing * 0.5, spacing) - spacing * 0.5;
     q.y = mod_float(q.y + spacing * 0.5, spacing) - spacing * 0.5;
     q.z = mod_float(q.z + spacing * 0.5, spacing) - spacing * 0.5;
 
-    // A few connecting capsules
+    // A few connecting capsules, each axon segment with its own caliber
     let r = 0.15;
-    let d1 = sdCapsule(q, vec3<f32>(-spacing*0.5, 0.0, 0.0), vec3<f32>(spacing*0.5, 0.0, 0.0), r);
-    let d2 = sdCapsule(q, vec3<f32>(0.0, -spacing*0.5, 0.0), vec3<f32>(0.0, spacing*0.5, 0.0), r);
-    let d3 = sdCapsule(q, vec3<f32>(0.0, 0.0, -spacing*0.5), vec3<f32>(0.0, 0.0, spacing*0.5), r);
+    let d1 = sdCapsule(q, vec3<f32>(-spacing*0.5, 0.0, 0.0), vec3<f32>(spacing*0.5, 0.0, 0.0), r * axonCaliber(cell, 0.0));
+    let d2 = sdCapsule(q, vec3<f32>(0.0, -spacing*0.5, 0.0), vec3<f32>(0.0, spacing*0.5, 0.0), r * axonCaliber(cell, 1.0));
+    let d3 = sdCapsule(q, vec3<f32>(0.0, 0.0, -spacing*0.5), vec3<f32>(0.0, 0.0, spacing*0.5), r * axonCaliber(cell, 2.0));
 
     var d = smin(d1, d2, 12.0);
     d = smin(d, d3, 12.0);
 
     return d;
+}
+
+fn map(p_in: vec3<f32>, audioPulse: f32, clickPulse: f32) -> f32 {
+    return mapWarped(warpPoint(p_in, audioPulse, clickPulse));
 }
 
 fn calcNormal(p: vec3<f32>, audioPulse: f32, clickPulse: f32) -> vec3<f32> {
@@ -149,7 +157,10 @@ fn calcNormal(p: vec3<f32>, audioPulse: f32, clickPulse: f32) -> vec3<f32> {
 // potential regenerates only at nodes of Ranvier and hops node to node.
 // Returns the membrane response at p: a sharp depolarization flash at the
 // node the spike just reached, then a refractory hyperpolarized undershoot.
-fn ranvierSpike(p: vec3<f32>, time: f32, pulseSpeed: f32, seed: f32) -> f32 {
+// .x = node-masked response (as before), .y = same potential with the
+// passive electrotonic spread along the myelinated internode (for the dye).
+// p must be in warped (lattice) space so nodes sit on the drawn axons.
+fn ranvierSpike(p: vec3<f32>, time: f32, pulseSpeed: f32) -> vec2<f32> {
     let spacing = nodeSpacing();
     let cell = floor(p / spacing + 0.5);
     let lc = p / spacing - cell;               // -0.5..0.5 within the neuron cell
@@ -160,9 +171,10 @@ fn ranvierSpike(p: vec3<f32>, time: f32, pulseSpeed: f32, seed: f32) -> f32 {
     if (al.y > al.x && al.y > al.z) { along = lc.y; axis = 1.0; }
     else if (al.z > al.x) { along = lc.z; axis = 2.0; }
     let u01 = along + 0.5;
-    let h = hash33(cell * 1.7 + vec3<f32>(axis * 11.0, seed * 23.0, 0.0));
-    // Spike front position along the axon (cycles/second from Pulse Speed)
-    let front = fract(h.x + time * (0.15 + pulseSpeed * 0.25) * (0.7 + 0.6 * h.y));
+    let h = axonHash(cell, axis);
+    // Spike front position along the axon (cycles/second from Pulse Speed),
+    // faster on thicker fibres (Hursh)
+    let front = fract(h.x + time * (0.15 + pulseSpeed * 0.25) * axonCaliber(cell, axis));
     // Nodes of Ranvier: discrete gaps along the myelinated axon
     let nodeIdx = floor(u01 * RANVIER_NODES);
     let nodeU = (nodeIdx + 0.5) / RANVIER_NODES;
@@ -171,8 +183,10 @@ fn ranvierSpike(p: vec3<f32>, time: f32, pulseSpeed: f32, seed: f32) -> f32 {
     // Time since this node fired, in cycle units
     let elapsed = fract(front - nodeU);
     let depol = smoothstep(0.0, 0.015, elapsed) * exp(-elapsed * 30.0);
-    let undershoot = exp(-pow((elapsed - 0.12) * 14.0, 2.0)) * 0.35;
-    return (depol - undershoot) * nodeMask;
+    let uz = (elapsed - 0.12) * 14.0;
+    let undershoot = exp(-uz * uz) * 0.35;
+    let v = depol - undershoot;
+    return vec2<f32>(v * nodeMask, v * mix(0.3, 1.0, nodeMask));
 }
 
 // --- Main Render Loop ---
@@ -287,19 +301,28 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var p = ro;
     var glow = 0.0;
     var spikeGlow = 0.0;
+    var gliaGlow = 0.0;
+    var vesicleGlow = 0.0;
 
     for (var i = 0; i < 80; i++) {
         p = ro + rd * t;
-        d = map(p, audioPulse, clickPulse);
+        let pw = warpPoint(p, audioPulse, clickPulse);
+        d = mapWarped(pw);
 
         let pulseWave = sin(dot(p, vec3<f32>(0.5, 0.5, 0.5)) - time * u.zoom_params.y * 3.0 + mutationSeed * 6.28) * 0.5 + 0.5; // Pulse Speed
         let pulseIntensity = pow(pulseWave, 4.0) * (1.0 + audioPulse * 0.5 + clickPulse);
 
         let proximity = 0.02 / (0.01 + abs(d));
-        let ap = ranvierSpike(p, time, u.zoom_params.y, mutationSeed);
+        let ap = ranvierSpike(pw, time, u.zoom_params.y).x;
         // Refractory undershoot dims the ambient pulse; depolarization flashes
         glow += proximity * max(pulseIntensity * (1.0 + ap * 0.8), 0.0) * u.zoom_params.w; // Bio-Glow Intensity
         spikeGlow += proximity * max(ap, 0.0) * (1.0 + bassSmooth * 0.4) * u.zoom_params.w;
+        // IDEA 3: astrocytic calcium tide, phase-locked to stimulation waves.
+        let gliaWave = 0.5 + 0.5 * sin(dot(p, vec3<f32>(0.31, 0.27, 0.23)) - time * 0.7 + calcium * 2.0);
+        gliaGlow += proximity * pow(gliaWave, 3.0) * (0.35 + midSmooth * 0.4);
+        // IDEA 4: vesicle bouton scintillation at active synapses.
+        let vesicle = proximity * max(ap, 0.0) * pow(0.5 + 0.5 * sin(dot(p.xy, vec2<f32>(7.0, 9.0)) + time * 5.5), 4.0);
+        vesicleGlow += vesicle * (0.4 + trebleSmooth * 0.5);
 
         if (d < 0.01 || t > 50.0) { break; }
         t += d * 0.7;
@@ -319,6 +342,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         let sss = max(0.0, map(p + rd * 0.5, audioPulse, clickPulse));
         color += vec3<f32>(0.1, 0.3, 0.4) * sss * 0.5;
+
+        // Idea: voltage-sensitive-dye imaging — the membrane itself reports
+        // its potential: dF/F false colour, warm where the spike depolarizes,
+        // indigo in the refractory undershoot the glow term only used to dim.
+        let vm = ranvierSpike(warpPoint(p, audioPulse, clickPulse), time, u.zoom_params.y).y;
+        let dye = vec3<f32>(1.0, 0.42, 0.18) * max(vm, 0.0) * 0.9
+                + vec3<f32>(0.28, 0.22, 1.0) * max(-vm, 0.0) * 1.6;
+        color += dye * (0.35 + 0.65 * diff) * ao * (0.5 + u.zoom_params.w * 0.25);
     }
 
     let fog = exp(-t * 0.05);
@@ -329,6 +360,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // and along calcium wavefronts from clicks.
     let flash = spikeGlow * 0.06 * fog + calcium * (0.4 + treble * 0.3) * (0.3 + u.zoom_params.w * 0.15);
     color += AEQUORIN_BLUE * flash;
+    color += vec3<f32>(0.18, 0.95, 0.62) * gliaGlow * 0.04 * fog;
+    color += vec3<f32>(1.0, 0.78, 0.35) * vesicleGlow * 0.03;
 
     color = mix(color, vec3<f32>(0.01, 0.01, 0.02), 1.0 - exp(-t * 0.02));
 
@@ -350,7 +383,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Alpha: neural tissue coverage + emitted bioluminescence density
     let tissue = select(0.0, exp(-t * 0.03), hit);
-    let alphaNow = clamp(tissue * 0.6 + min(glow * 0.02, 1.0) * 0.25 + min(flash, 1.0) * 0.3, 0.02, 1.0);
+    let alphaNow = clamp(tissue * 0.6 + min(glow * 0.02, 1.0) * 0.25 + min(flash, 1.0) * 0.3 + min(gliaGlow * 0.015 + vesicleGlow * 0.012, 0.28), 0.02, 1.0);
     let alpha = clamp(mix(prevData.a * 0.95, alphaNow, max(feedbackMix, 0.35)), 0.02, 1.0);
     let outColor = vec4<f32>(display, alpha);
     textureStore(writeTexture, id.xy, outColor);

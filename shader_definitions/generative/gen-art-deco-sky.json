@@ -13,45 +13,11 @@
     "audio",
     "music"
   ],
-  "description": "Infinite vertical ascent up a monumental Art Deco tower with gold fluting, drag-steered searchlights, click-launched skyline halos, and bounded display history.",
+  "description": "Infinite vertical ascent up a monumental Art Deco tower with gold fluting, drag-steered searchlights, click-launched skyline halos, a stepped sunburst sky, climbing elevator cabs, and bounded display history.",
   "workgroup_size": [
     16,
     16,
     1
-  ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "City Density",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.1
-    },
-    {
-      "index": 1,
-      "name": "Ascent Speed",
-      "default": 1,
-      "min": 0,
-      "max": 5,
-      "step": 0.1
-    },
-    {
-      "index": 2,
-      "name": "Gold Glow",
-      "default": 1,
-      "min": 0,
-      "max": 2,
-      "step": 0.1
-    },
-    {
-      "index": 3,
-      "name": "Fog Density",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.1
-    }
   ],
   "supportsDepth": true,
   "supportsDof": false,
@@ -66,7 +32,8 @@
     "click-reactive",
     "temporal",
     "raymarching",
-    "generated-depth"
+    "generated-depth",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -105,5 +72,43 @@
       "step": 0.1,
       "mapping": "zoom_params.w"
     }
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "City Density",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.1
+        },
+        {
+          "index": 1,
+          "name": "Ascent Speed",
+          "default": 1,
+          "min": 0,
+          "max": 5,
+          "step": 0.1
+        },
+        {
+          "index": 2,
+          "name": "Gold Glow",
+          "default": 1,
+          "min": 0,
+          "max": 2,
+          "step": 0.1
+        },
+        {
+          "index": 3,
+          "name": "Fog Density",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.1
+        }
+      ]
+    }
+  }
 }

@@ -9,32 +9,13 @@
 //  release to watch them drift back and reform over ~1.5s.
 //  Audio drives glow pulse, lattice breathing, and spark frequency.
 //  Created: 2026-06-06
-//  Upgraded: 2026-09-13
+//  Upgraded: 2026-10-11
 //  Ideas: triple-junction glow; cell-core heat; heat crawl along lattice lines;
-//         shard cooling and re-ignition
+//         shard cooling and re-ignition; oxide scale; pop-off sparks
 //  A packing: raw shard state — A.rg displacement, A.b seed, A.a reform (C via textureLoad)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
@@ -201,6 +182,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Idea 4: cooled shards shift toward deep red; rejoining shards re-ignite
   col = vec3<f32>(col.r, col.g * (1.0 - cool * 0.35), col.b * (1.0 - cool * 0.5));
   col = col + EMBER_CORE * (edge * 0.8 + junc) * reignite * glowIntensity * (0.9 + bass * 0.4);
+  // Oxide scale — dark crust on cooled faces, off the hot edges.
+  let oxideN = hash21(floor(p * 2.7) + cellId * 0.17);
+  let oxide = cool * smoothstep(0.42, 0.78, oxideN) * (1.0 - edgeRaw);
+  col = mix(col, vec3<f32>(0.07, 0.065, 0.06), oxide * 0.72);
+  // Pop-off sparks — embers leave the lattice along the shatter displacement.
+  let dispLen = length(disp);
+  let popDir = disp / max(dispLen, 1e-4);
+  let popP = (sampleUV - popDir * shatterAmt * (0.012 + seed * 0.01)) * scale;
+  let popD = triLatticeDist(popP);
+  let pop = (1.0 - smoothstep(0.0, 0.018, popD)) * shatterAmt * smoothstep(0.15, 0.55, cool) * sparkDensity;
+  col = col + EMBER_HOT * pop * glowIntensity * (0.45 + treble * 0.35);
 
   // ── Shatter visual flair ──
   // Shard boundary glow

@@ -12,7 +12,7 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "param": "zoom_params.x"
+      "mapping": "zoom_params.x"
     },
     {
       "id": "distortion",
@@ -21,7 +21,7 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "param": "zoom_params.y"
+      "mapping": "zoom_params.y"
     },
     {
       "id": "shimmer",
@@ -30,7 +30,7 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "param": "zoom_params.z"
+      "mapping": "zoom_params.z"
     },
     {
       "id": "noise_scale",
@@ -39,14 +39,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "param": "zoom_params.w"
+      "mapping": "zoom_params.w"
     }
-  ],
-  "updatedParams": [
-    { "index": 0, "name": "Cloak Radius", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 1, "name": "Refraction Strength", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 2, "name": "Chromatophore Speed", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 3, "name": "Noise Scale", "default": 0.2, "min": 0, "max": 1, "step": 0.01 }
   ],
   "features": [
     "mouse-driven",
@@ -67,5 +61,43 @@
     "thermal",
     "chromatophore",
     "IR"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Cloak Radius",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Refraction Strength",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Chromatophore Speed",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Noise Scale",
+          "default": 0.2,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

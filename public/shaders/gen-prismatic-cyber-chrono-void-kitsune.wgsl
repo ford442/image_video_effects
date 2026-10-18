@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: kitsunebi fox-fire wisps riding each of the nine tails (occluded, treble flicker); Cauchy-dispersed quantum-glass armour (per-wavelength refraction)
+//  Upgraded: 2026-09-14, 2026-10-18
+//  Ideas: kitsunebi fox-fire wisps riding each of the nine tails; Cauchy-dispersed quantum-glass armour; caudal-band tail caustics; helical rift current sheets; sculpted kitsune fox ears, tapered snout, cyber-visor eye slits & 5-tap armour crevice AO (§12.2E); inter-tail 9-fold braided plasma filaments & Beer-Lambert armour thickness absorption (§12.2F)
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount (click count), z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=Time, y=MouseX (uv), z=MouseY (uv), w=MouseDown
-    zoom_params: vec4<f32>,  // x=Tail Dispersion, y=Rift Density, z=Rune Intensity, w=Glass Refraction
-    ripples: array<vec4<f32>, 50>,
-};
-
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=Tail Dispersion, y=Rift Density, z=Rune Intensity, w=Glass Refraction
 
 // ----------------------------------------------------------------
 // Helper functions and Math utilities
@@ -121,9 +103,22 @@ fn map(p: vec3<f32>, time: f32, audio: f32, mpos: vec2<f32>) -> vec2<f32> {
     pt.x -= mpos.x * 2.0 * smoothstep(10.0, 0.0, abs(pt.z));
     pt.y -= mpos.y * 2.0 * smoothstep(10.0, 0.0, abs(pt.z));
 
-    // 1. Central Body
+    // 1. Central Body + Sculpted Kitsune Fox Ears & Snout (§12.2E)
     let body_pos = pt - vec3<f32>(0.0, 0.0, 5.0);
     var d_body = length(body_pos) - 1.5; // Base sphere
+    // Bilateral swept kitsune ears above the crown
+    var ear_p = vec3<f32>(abs(body_pos.x) - 0.78, body_pos.y - 1.25, body_pos.z + 0.15);
+    let ear_rot = rot(-0.32) * ear_p.xy;
+    ear_p = vec3<f32>(ear_rot.x, ear_rot.y, ear_p.z);
+    let ear_h = clamp(ear_p.y, -0.55, 0.65);
+    let ear_r = 0.34 * (1.0 - (ear_h + 0.55) / 1.35);
+    let d_ears = length(vec3<f32>(ear_p.x, ear_p.y - ear_h, ear_p.z)) - max(ear_r, 0.04);
+    // Tapered forward muzzle snout
+    let snout_p = body_pos - vec3<f32>(0.0, -0.22, -1.15);
+    let snout_z = clamp(snout_p.z, -0.55, 0.45);
+    let snout_r = mix(0.20, 0.58, (snout_z + 0.55));
+    let d_snout = length(vec3<f32>(snout_p.x, snout_p.y, snout_p.z - snout_z)) - snout_r;
+    d_body = smin(d_body, min(d_ears, d_snout), 0.26);
     // Add cellular perturbation
     d_body += 0.2 * cellular(body_pos * 2.0 + vec3<f32>(time));
 
@@ -203,6 +198,18 @@ fn calcNormal(p: vec3<f32>, time: f32, audio: f32, mpos: vec2<f32>) -> vec3<f32>
     ));
 }
 
+// ── Idea 1 (helper): 5-tap step-count ambient occlusion on the cellular armour (§12.2E) ──
+fn aoFive(p: vec3<f32>, n: vec3<f32>, time: f32, audio: f32, mpos: vec2<f32>) -> f32 {
+    var occ = 0.0;
+    var sca = 1.0;
+    for (var i = 1; i <= 5; i = i + 1) {
+        let h = 0.02 + 0.14 * f32(i) / 5.0;
+        occ += (h - map(p + n * h, time, audio, mpos).x) * sca;
+        sca *= 0.5;
+    }
+    return clamp(1.0 - 2.4 * occ, 0.12, 1.0);
+}
+
 // ----------------------------------------------------------------
 // Main Compute
 // ----------------------------------------------------------------
@@ -278,7 +285,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         // Volumetric accumulation for rift
         if (m == 3.0) {
-            density += 0.05 * rift_density_param / (1.0 + d*d);
+            // Idea 4: helical current sheets wrapped around the void tunnel.
+            let phi = atan2(p.y, p.x);
+            let sheet = pow(0.5 + 0.5 * sin(phi * 6.0 + p.z * 1.9 - time * (2.0 + rift_density_param * 2.5)), 3.0);
+            density += 0.05 * rift_density_param / (1.0 + d*d) * (0.55 + sheet * 1.1);
         }
 
         t += d * 0.5; // conservative step
@@ -295,7 +305,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let l = normalize(vec3<f32>(1.0, 2.0, -1.0));
         let diff = max(dot(n, l), 0.0);
         let view = normalize(ro - p);
-        let fre = pow(1.0 - max(dot(n, view), 0.0), 3.0);
+        let fre = pow(clamp(1.0 - max(dot(n, view), 0.0), 0.0, 1.0), 3.0);
 
         if (m == 1.0) {
             // Kitsune Body (Cyber-glass armor + runes)
@@ -306,6 +316,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
                 let rune_hue = vec3<f32>(0.8, 0.1, 1.0) * (1.0 - audio) + vec3<f32>(1.0, 0.8, 0.2) * audio;
                 rune_col = rune_hue * rune_intensity * (0.3 + audio * 0.7 + mids * 0.2) * 2.0;
             }
+
+            // ── Idea 1: 5-tap armour crevice AO & cyber-visor eye slits (§12.2E) ──
+            let armorAO = aoFive(p, n, time, tailDrive, mpos);
+            var bp = p - vec3<f32>(0.0, 0.0, 5.0);
+            bp.x -= mpos.x * 2.0 * smoothstep(10.0, 0.0, abs(p.z));
+            bp.y -= mpos.y * 2.0 * smoothstep(10.0, 0.0, abs(p.z));
+            let eyeTilt = abs(bp.x) * 0.42 - 0.18;
+            let eyeSlit = exp(-pow((bp.y - eyeTilt) * 18.0, 2.0)) * smoothstep(0.75, 0.22, abs(abs(bp.x) - 0.46)) * smoothstep(-0.4, -1.1, bp.z);
+            let visorEyeGlow = mix(vec3<f32>(0.15, 0.95, 1.0), vec3<f32>(1.0, 0.82, 0.25), audio) * eyeSlit * (1.8 + rune_intensity * 0.8);
 
             // NATIVE IDEA 2: Cauchy-dispersed faux refraction, n(λ) = A + B/λ²
             // (λ in µm). Glass Refraction scales the dispersion coefficient B.
@@ -319,14 +338,25 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let bg_g = vec3<f32>(0.1, 0.0, 0.2) + 0.5 * sin(refr_dir.xyz * 5.0 + vec3<f32>(time));
             let bg_r = vec3<f32>(0.1, 0.0, 0.2) + 0.5 * sin(refr_r.xyz * 5.0 + vec3<f32>(time));
             let bg_b = vec3<f32>(0.1, 0.0, 0.2) + 0.5 * sin(refr_b.xyz * 5.0 + vec3<f32>(time));
-            let bg_col = vec3<f32>(bg_r.x, bg_g.y, bg_b.z);
+            // ── Idea 2 (part 1): Beer-Lambert armour thickness absorption (§12.2F) ──
+            let pathThick = (1.6 - max(dot(n, view), 0.0)) * (1.25 - glass_refraction * 0.45);
+            let armorAbsorption = exp(-vec3<f32>(0.55, 0.22, 0.08) * pathThick);
+            let bg_col = vec3<f32>(bg_r.x, bg_g.y, bg_b.z) * armorAbsorption;
 
-            col = mix(bg_col * glass_refraction, vec3<f32>(1.0), fre) + diff * 0.2 + rune_col;
+            col = (mix(bg_col * glass_refraction, vec3<f32>(1.0), fre) + diff * 0.2) * mix(0.35, 1.15, armorAO) + rune_col + visorEyeGlow;
 
         } else if (m == 2.0) {
             // Tails (Liquid neon)
             let tail_glow = vec3<f32>(0.1, 0.8, 1.0) * (0.5 + audio + mids * 0.3);
             col = tail_glow * (diff + fre);
+            // Idea 3: caudal-band caustic packets racing down each tail.
+            let tailPhi = atan2(p.y, p.x);
+            let band = pow(0.5 + 0.5 * sin(p.z * 8.0 - time * (6.0 + mids * 3.0) + tailPhi * 5.0), 4.0);
+            let caustic = band * exp(-abs(length(p.xy) - 0.24) * 8.0);
+            col += vec3<f32>(1.0, 0.72, 0.25) * caustic * (0.25 + treble * 0.4);
+            // ── Idea 2 (part 2): Inter-tail 9-fold braided plasma filaments (§12.2F) ──
+            let interTailArc = pow(0.5 + 0.5 * cos(tailPhi * 9.0 + sin(p.z * 2.2 - time * 4.0) * 1.6), 8.0);
+            col += vec3<f32>(0.85, 0.35, 1.0) * interTailArc * (0.4 + audio * 0.65) * (0.4 + fre);
 
         } else if (m == 4.0) {
             // Dust

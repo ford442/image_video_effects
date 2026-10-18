@@ -59,38 +59,42 @@
     "scattering",
     "physics"
   ],
-  "updatedParams": [
-    {
-      "id": "stiffness",
-      "name": "Spring Stiffness",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "description": "Restoring force pulling each particle back to its home pixel."
-    },
-    {
-      "id": "force",
-      "name": "Pointer Force",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "description": "Attraction/repulsion strength around the cursor (0.5 is neutral)."
-    },
-    {
-      "id": "damping",
-      "name": "Damping",
-      "default": 0.8,
-      "min": 0,
-      "max": 1,
-      "description": "Velocity retention per frame."
-    },
-    {
-      "id": "radius",
-      "name": "Particle Size",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "description": "Interaction radius and particle opacity."
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "id": "stiffness",
+          "name": "Spring Stiffness",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "description": "Restoring force pulling each particle back to its home pixel."
+        },
+        {
+          "id": "force",
+          "name": "Pointer Force",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "description": "Attraction/repulsion strength around the cursor (0.5 is neutral)."
+        },
+        {
+          "id": "damping",
+          "name": "Damping",
+          "default": 0.8,
+          "min": 0,
+          "max": 1,
+          "description": "Velocity retention per frame."
+        },
+        {
+          "id": "radius",
+          "name": "Particle Size",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "description": "Interaction radius and particle opacity."
+        }
+      ]
     }
-  ]
+  }
 }

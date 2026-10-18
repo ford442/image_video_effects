@@ -55,40 +55,6 @@
       "max": 1
     }
   ],
-  "updatedParams": [
-    {
-      "id": "strength",
-      "name": "Field Strength",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "description": "Lorentz displacement gain applied to the image."
-    },
-    {
-      "id": "radius",
-      "name": "Field Radius",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "description": "Extent of the field envelope around the pointer."
-    },
-    {
-      "id": "density",
-      "name": "Line Density",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "description": "Spacing of the field-line caustic ridges and tracer bands."
-    },
-    {
-      "id": "mode",
-      "name": "Field Mode",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "description": "Monopole / dipole / multipole / solenoid vortex geometry."
-    }
-  ],
   "tags": [
     "filter",
     "image-processing",
@@ -103,5 +69,43 @@
     "physics",
     "lorentz",
     "aurora"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "id": "strength",
+          "name": "Field Strength",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "description": "Lorentz displacement gain applied to the image."
+        },
+        {
+          "id": "radius",
+          "name": "Field Radius",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "description": "Extent of the field envelope around the pointer."
+        },
+        {
+          "id": "density",
+          "name": "Line Density",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "description": "Spacing of the field-line caustic ridges and tracer bands."
+        },
+        {
+          "id": "mode",
+          "name": "Field Mode",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "description": "Monopole / dipole / multipole / solenoid vortex geometry."
+        }
+      ]
+    }
+  }
 }

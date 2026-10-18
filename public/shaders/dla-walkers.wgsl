@@ -1,5 +1,9 @@
-// ═══ DLA CRYSTALS — WALKERS + FREEZE ═══════════════════════════════════════
-//  A/C packing: .r frozen, .g age, .b hue, .a branch id
+// ═══ DLA CRYSTALS — WALKERS (sim ring, simState dispatch) ═════════════════
+//  One invocation per walker. Walkers live in the @group(1) sim ring
+//  (src/contracts/bind_group1.json), not in extraBuffer.
+//  simState[i]: .xy position (pixels), .z hue seed, .w alive flag
+//  A/C packing: .r frozen, .g freeze time (frozen) / last visit time (free),
+//               .b hue, .a branch id
 //  zoom_params: .x walker speed, .y attract, .z stickiness, .w branch angle
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,106 +27,110 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-fn hash21(p: vec2<f32>) -> f32 {
-  var p3 = fract(vec3<f32>(p.x, p.y, p.x) * 0.1031);
-  p3 = p3 + dot(p3, vec3<f32>(p3.y + 33.33, p3.z + 33.33, p3.x + 33.33));
-  return fract((p3.x + p3.y) * p3.z);
+struct SimParams {
+  stateCount: u32,
+  indexCount: u32,
+  frame: u32,
+  truncated: u32,
+};
+
+@group(1) @binding(0) var<storage, read_write> simState: array<vec4<f32>>;
+@group(1) @binding(2) var<uniform> simParams: SimParams;
+
+const TAU: f32 = 6.28318530718;
+const MAX_STEPS: u32 = 4u;
+
+fn pcg(v: u32) -> u32 {
+  let state = v * 747796405u + 2891336453u;
+  let word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+  return (word >> 22u) ^ word;
 }
 
-fn hash22(p: vec2<f32>) -> vec2<f32> {
-  return vec2<f32>(hash21(p), hash21(p + vec2<f32>(1.0, 1.0)));
+fn rand(seed: ptr<function, u32>) -> f32 {
+  *seed = pcg(*seed);
+  return f32(*seed) / 4294967295.0;
 }
 
 fn load(p: vec2<i32>, resI: vec2<i32>) -> vec4<f32> {
   return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), resI - vec2<i32>(1)), 0);
 }
 
-fn neighborFrozen(p: vec2<i32>, resI: vec2<i32>) -> f32 {
-  var maxF = 0.0;
-  for (var dy = -1; dy <= 1; dy = dy + 1) {
-    for (var dx = -1; dx <= 1; dx = dx + 1) {
-      if (dx == 0 && dy == 0) { continue; }
-      maxF = max(maxF, load(p + vec2<i32>(dx, dy), resI).r);
-    }
-  }
-  return maxF;
+fn spawn(seed: ptr<function, u32>, res: vec2<f32>) -> vec4<f32> {
+  let pos = vec2<f32>(rand(seed), rand(seed)) * (res - vec2<f32>(1.0));
+  return vec4<f32>(pos, rand(seed), 1.0);
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(64, 1, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-  let pixel = vec2<i32>(gid.xy);
+  let i = gid.x;
+  if (i >= simParams.stateCount) { return; }
+
   let res = vec2<f32>(u.config.zw);
   let resI = vec2<i32>(res);
-  if (pixel.x >= resI.x || pixel.y >= resI.y) { return; }
+  if (resI.x < 2 || resI.y < 2) { return; }
 
-  let uv = (vec2<f32>(pixel) + 0.5) / res;
   let time = u.config.x;
   let bass = plasmaBuffer[0].x;
   let treble = plasmaBuffer[0].z;
   let walkerSpeed = mix(0.5, 3.0, u.zoom_params.x);
   let attractStrength = mix(0.0, 0.5, u.zoom_params.y);
-  let walkerSpeed = u.zoom_params.x * 0.0; // dummy read for audit
-  let attract = u.zoom_params.y * 0.0; // dummy read for audit
-  let stickiness = mix(0.25, 0.95, u.zoom_params.z + bass * 0.08);
+  let stickiness = clamp(mix(0.25, 0.95, u.zoom_params.z + bass * 0.08), 0.0, 1.0);
   let branchAngle = u.zoom_params.w;
-  let walkerSpeed = mix(0.5, 3.0, u.zoom_params.x);
-  let attractStrength = mix(0.0, 0.5, u.zoom_params.y);
+
+  var seed = pcg(i ^ pcg(simParams.frame + 0x9e3779b9u));
+  var w = simState[i];
+
+  let outside = any(w.xy < vec2<f32>(0.0)) || any(w.xy > res - vec2<f32>(1.0));
+  if (simParams.frame == 0u || w.w < 0.5 || outside) {
+    simState[i] = spawn(&seed, res);
+    return;
+  }
+
+  // Attraction toward the pointer seed, else the canvas centre.
   let mouse = u.zoom_config.yz;
+  let inCanvas = all(mouse >= vec2<f32>(0.0)) && all(mouse <= vec2<f32>(1.0));
+  let goal = select(vec2<f32>(0.5), mouse, inCanvas) * res;
 
-  var st = load(pixel, resI);
-  var frozen = st.r;
-  var age = st.g;
-  var crystalHue = st.b;
-  var branchId = st.a;
+  var pos = w.xy;
+  let steps = clamp(u32(walkerSpeed + 0.5), 1u, MAX_STEPS);
+  for (var s = 0u; s < steps; s = s + 1u) {
+    let ang = rand(&seed) * TAU;
+    let toTarget = goal - pos;
+    let pull = select(vec2<f32>(0.0), normalize(toTarget), dot(toTarget, toTarget) > 1.0);
+    let dir = normalize(vec2<f32>(cos(ang), sin(ang)) + pull * attractStrength * 1.5 + vec2<f32>(1e-4));
+    let next = clamp(pos + dir, vec2<f32>(0.0), res - vec2<f32>(1.0));
+    let p = vec2<i32>(next);
 
-  if (time < 0.05) {
-    frozen = 0.0;
-    age = time;
-    crystalHue = 0.55;
-    branchId = 0.0;
-  }
+    // Never walk into the crystal — bounce off it instead.
+    if (load(p, resI).r > 0.5) { continue; }
+    pos = next;
 
-  let nRipple = min(u32(u.config.y), 50u);
-  for (var i = 0u; i < nRipple; i = i + 1u) {
-    let rp = u.ripples[i];
-    let ageR = time - rp.z;
-    if (ageR > 0.0 && ageR < 0.5 && length(uv - rp.xy) < 0.02 && frozen < 0.5) {
-      frozen = 1.0;
-      age = time;
-      crystalHue = hash21(rp.xy) * 0.3 + 0.6;
-      branchId = f32(i) / 50.0;
-    }
-  }
-
-  if (length(uv - mouse) < 0.012 + attractStrength * 0.02 && frozen < 0.5) {
-    frozen = 1.0;
-    age = time;
-    crystalHue = 0.55;
-    branchId = 0.0;
-  }
-
-  if (frozen < 0.5) {
-    let nf = neighborFrozen(pixel, resI);
-    if (nf > 0.5 && hash21(uv * 500.0 + vec2<f32>(time * walkerSpeed)) < stickiness) {
-      frozen = 1.0;
-      age = time;
-      var hueSum = 0.0;
-      var hueCount = 0.0;
-      for (var dy = -1; dy <= 1; dy = dy + 1) {
-        for (var dx = -1; dx <= 1; dx = dx + 1) {
-          let n = load(pixel + vec2<i32>(dx, dy), resI);
-          if (n.r > 0.5) {
-            hueSum += n.b;
-            hueCount += 1.0;
-          }
+    var hueSum = 0.0;
+    var hueCount = 0.0;
+    for (var dy = -1; dy <= 1; dy = dy + 1) {
+      for (var dx = -1; dx <= 1; dx = dx + 1) {
+        if (dx == 0 && dy == 0) { continue; }
+        let n = load(p + vec2<i32>(dx, dy), resI);
+        if (n.r > 0.5) {
+          hueSum += n.b;
+          hueCount += 1.0;
         }
       }
-      crystalHue = (hueSum / max(hueCount, 1.0)) + hash21(uv * 123.0) * 0.1 + treble * 0.05 + attractStrength * 0.08;
-      branchId = branchAngle * hash21(uv + vec2<f32>(time * 0.1));
     }
-  } else {
-    age = age + 0.001 * walkerSpeed;
+
+    if (hueCount > 0.0 && rand(&seed) < stickiness) {
+      // Freeze: this walker becomes crystal, then respawns elsewhere.
+      let hue = fract(hueSum / hueCount + (rand(&seed) - 0.5) * 0.06 + treble * 0.05 + attractStrength * 0.08);
+      textureStore(dataTextureA, p, vec4<f32>(1.0, time, hue, branchAngle * rand(&seed)));
+      simState[i] = spawn(&seed, res);
+      return;
+    }
   }
 
-  textureStore(dataTextureA, pixel, vec4<f32>(frozen, age, crystalHue, branchId));
+  // Trail stamp: free pixel remembers when a walker last passed (render fades it).
+  let here = vec2<i32>(pos);
+  if (load(here, resI).r < 0.5) {
+    textureStore(dataTextureA, here, vec4<f32>(0.0, time, w.z, 0.0));
+  }
+  simState[i] = vec4<f32>(pos, w.z, 1.0);
 }

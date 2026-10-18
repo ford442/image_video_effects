@@ -34,36 +34,6 @@
       "max": 1
     }
   ],
-  "updatedParams": [
-    {
-      "id": "threshold",
-      "name": "Edge Threshold",
-      "default": 0.3,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "glowRadius",
-      "name": "Glow Radius",
-      "default": 0.4,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "intensity",
-      "name": "Intensity",
-      "default": 0.6,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "colorCycle",
-      "name": "Color Speed",
-      "default": 0.3,
-      "min": 0,
-      "max": 1
-    }
-  ],
   "features": [
     "mouse-driven",
     "audio-reactive",
@@ -86,5 +56,39 @@
     "HDR",
     "iridescent",
     "oil-slick"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "id": "threshold",
+          "name": "Edge Threshold",
+          "default": 0.3,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "id": "glowRadius",
+          "name": "Glow Radius",
+          "default": 0.4,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "id": "intensity",
+          "name": "Intensity",
+          "default": 0.6,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "id": "colorCycle",
+          "name": "Color Speed",
+          "default": 0.3,
+          "min": 0,
+          "max": 1
+        }
+      ]
+    }
+  }
 }

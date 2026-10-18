@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: Lorentz gyro-helix + magnetic-mirror bounce with loss-cone precipitation; auroral oval curtains at field-line footpoints with click substorms
+//  Upgraded: 2026-10-10, 2026-10-18
+//  Ideas: Lorentz gyro-helix + magnetic-mirror bounce with loss-cone precipitation; auroral oval curtains at field-line footpoints with click substorms; Van Allen belts (inner proton + bass-injected outer electron shells with slot); magnetopause standoff curve + bow shock; iron-filing clumps; magnetic null
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time (seconds), .y = rippleCount, .zw = resolution (width, height)
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0–1 canvas: y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Field Strength, .y = Particle Speed, .z = Line Density, .w = Color Shift
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Field Strength, .y = Particle Speed, .z = Line Density, .w = Color Shift
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -149,6 +131,51 @@ fn auroralOval(r: vec2<f32>, time: f32, lAur: f32, flux: f32) -> vec4<f32> {
   return vec4<f32>(curtainCol * e, e);
 }
 
+// ── IDEA 3: Van Allen belts ──
+// Trapped-radiation shells on the pixel's own L parameter (same lPix as the
+// auroral oval) restricted to the equatorial latitude band: a compact inner
+// proton belt and a broad outer electron belt, with the empty slot between
+// them. Bass injects electrons: the outer belt swells, widens and brightens.
+fn vanAllenBelts(r: vec2<f32>, time: f32, moment: f32, bass: f32, substorm: f32) -> vec4<f32> {
+  let rp = length(r);
+  let sp = clamp(abs(r.x) / max(rp, 0.0001), 0.0, 1.0);
+  let lPix = rp / max(sp * sp, 0.0005);
+  let equatorial = smoothstep(0.72, 0.94, sp);
+  let lIn = 0.095 + 0.02 * moment;
+  let lOut = 0.26 + 0.05 * moment;
+  let dIn = (lPix - lIn) / (0.16 * lIn);
+  let dOut = (lPix - lOut) / (0.2 * lOut * (1.0 + bass * 0.5 + substorm * 0.3));
+  let inner = exp(-dIn * dIn);
+  let outer = exp(-dOut * dOut) * (0.55 + bass * 0.9 + substorm * 0.5);
+  let psi = atan2(abs(r.x), r.y);
+  let grain = 0.7 + 0.3 * valueNoise(vec2<f32>(psi * 16.0 - time * 0.4, lPix * 40.0 + time * 0.3));
+  let planetClear = smoothstep(PLANET_R, PLANET_R * 1.6, rp);
+  let k = equatorial * grain * planetClear;
+  let col = vec3<f32>(1.0, 0.5, 0.22) * inner * 0.55 + vec3<f32>(0.3, 0.55, 1.0) * outer * 0.45;
+  return vec4<f32>(col * k, (inner * 0.55 + outer * 0.45) * k);
+}
+
+// ── IDEA 4: magnetopause + bow shock ──
+// Solar wind from +x squeezes the dayside: the Chapman-Ferraro standoff curve
+// r = 2R / (1 + cos(theta)) (theta from the sun line) with a looser, fainter
+// bow shock outside it. Field Strength pushes the standoff out; bass pressure
+// and click substorms push it in and brighten it.
+fn magnetopause(r: vec2<f32>, time: f32, moment: f32, bass: f32, substorm: f32) -> vec2<f32> {
+  let rp = max(length(r), 0.0001);
+  let cosT = r.x / rp;
+  let standoff = (0.42 + 0.08 * moment) * (1.0 - bass * 0.14 - substorm * 0.1);
+  let tailFade = smoothstep(-0.7, -0.15, cosT);
+  let denom = max(1.0 + cosT, 0.12);
+  let rMP = 2.0 * standoff / denom;
+  let rBS = 2.0 * standoff * 1.28 / denom;
+  let ang = atan2(r.y, r.x);
+  let ripple = 0.8 + 0.2 * valueNoise(vec2<f32>(ang * 9.0 + time * 0.9, rp * 14.0));
+  let mp = exp(-abs(rp - rMP) * 170.0) * tailFade * ripple;
+  let bs = exp(-abs(rp - rBS) * 70.0) * tailFade * ripple * (0.3 + 0.5 * smoothstep(-0.2, 0.9, cosT));
+  let pressure = 0.3 + bass * 0.6 + substorm * 0.3;
+  return vec2<f32>(mp * pressure, bs * (0.3 + bass * 0.4));
+}
+
 // Evaluate field and particles at a given UV, returning color + particle density in alpha.
 // withParticles=false skips the particle loops (cheap variant for the ghost dipole).
 fn sampleField(uv: vec2<f32>, time: f32, p1: f32, p2: f32, p3: f32, p4: f32, dipole: vec2<f32>, bass: f32, ionDrive: f32, lossFrac: f32, withParticles: bool) -> vec4<f32> {
@@ -162,6 +189,10 @@ fn sampleField(uv: vec2<f32>, time: f32, p1: f32, p2: f32, p3: f32, p4: f32, dip
   let perp_B = vec2<f32>(-B_dir.y, B_dir.x);
   let stream_val = dot(uv, perp_B) * line_density;
   let field_line = exp(-abs(stream_val - round(stream_val)) * 40.0);
+  // ── Idea: iron-filing clumps ────────────────────────────────────────
+  // Filings bunch along a line instead of painting a uniform stroke.
+  let bunch = 0.55 + 0.45 * valueNoise(vec2<f32>(stream_val * 2.4, time * 0.35 + p2));
+  let filed = field_line * bunch;
   let intensity = dipole_moment / (r_sq + 0.02);
 
   var particle_glow = 0.0;
@@ -202,10 +233,10 @@ fn sampleField(uv: vec2<f32>, time: f32, p1: f32, p2: f32, p3: f32, p4: f32, dip
     }
   }
 
-  let field_contrib = field_line * intensity * 0.15;
+  let field_contrib = filed * intensity * 0.15;
   let total_intensity = field_contrib + particle_glow;
   let strength_norm = clamp(intensity * 0.3, 0.0, 1.0);
-  var color = field_palette(strength_norm + field_line * 0.2, p4) * total_intensity;
+  var color = field_palette(strength_norm + filed * 0.2, p4) * total_intensity;
   let bg_glow = dipole_moment * 0.03 / (r_sq + 0.1);
   color += vec3<f32>(0.05, 0.08, 0.15) * bg_glow;
   color += vec3<f32>(0.8, 0.9, 1.0) * particle_glow * 0.5;
@@ -333,10 +364,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let aurora_oval = auroralOval(r, time, lAur, flux);
   color += aurora_oval.rgb * 1.6;
 
+  // Radiation belts + magnetopause (after feedback so they never smear)
+  let belts = vanAllenBelts(r, time, dipole_moment, bass, substorm);
+  color += belts.rgb * planetMask * (0.8 + mids * 0.3);
+  let mpause = magnetopause(r, time, dipole_moment, bass, substorm);
+  color += (vec3<f32>(0.75, 0.6, 1.0) * mpause.x + vec3<f32>(0.4, 0.7, 1.0) * mpause.y) * 0.7;
+
+  // ── Idea: magnetic null ─────────────────────────────────────────────
+  // Where this dipole and the ghost cancel, the filings vanish and an X
+  // lights up. Drawn after the history smear so the null does not streak.
+  let Bghost = dipoleB(uv - ghost_dipole, dipole_moment * 0.4);
+  let apart = min(length(r), length(uv - ghost_dipole));
+  let nullGate = smoothstep(PLANET_R * 2.2, PLANET_R * 5.0, apart) * planetMask;
+  let xpoint = exp(-length(Bv + Bghost) * 90.0) * nullGate;
+  color += vec3<f32>(0.85, 0.8, 1.0) * xpoint * (0.55 + treble * 0.45);
+
   // Semantic alpha from field/particle/aurora energy (never constant)
   let particle_density = clamp(gResult.w, 0.0, 1.0);
   let f_intensity = clamp(field_intensity * 0.5, 0.0, 1.0) * planetMask;
-  let alpha = clamp(f_intensity * 0.55 + particle_density * 0.85 + aurora_oval.w * 0.6 + front * 0.3, 0.05, 1.0) * (0.45 + 0.55 * depth);
+  let alpha = clamp(f_intensity * 0.55 + particle_density * 0.85 + aurora_oval.w * 0.6 + front * 0.3 + belts.w * 0.35 + (mpause.x + mpause.y) * 0.3 + xpoint * 0.4, 0.05, 1.0) * (0.45 + 0.55 * depth);
 
   // ACES tone mapping; the same display RGBA goes to screen and to A (read back via C)
   color = acesToneMap(min(color, vec3<f32>(HDR_CAP)) * (1.3 + mids * 0.3));

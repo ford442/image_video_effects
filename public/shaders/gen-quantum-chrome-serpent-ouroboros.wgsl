@@ -1,6 +1,9 @@
 // ----------------------------------------------------------------
 // Quantum-Chrome Serpent Ouroboros
 // Category: generative
+// Upgraded: 2026-09-27
+// Ideas: quantum dispersion trails; audio chromatic reflection aberration
+// A packing: ACES display RGBA
 // ----------------------------------------------------------------
 // --- COPY PASTE THIS HEADER ---
 @group(0) @binding(0) var u_sampler: sampler;
@@ -25,6 +28,11 @@ struct Uniforms {
 };
 
 const PI: f32 = 3.14159265359;
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 // Rotation matrix
 fn rot(a: f32) -> mat2x2<f32> {
@@ -215,7 +223,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     uv.y = -uv.y;
 
     let time = u.config.x;
-    let audio = u.config.y;
+    let bass = plasmaBuffer[0].x;
+    let audio = clamp(bass, 0.0, 2.0);
 
     // Cinematic camera setup
     let camRadius = 8.0;
@@ -229,7 +238,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let cv = normalize(cross(cu, cw));
 
     // Ray direction with dispersion mapping
-    let disp = u.zoom_params.w * 0.5;
+    let disp = max(u.zoom_params.w, 0.1) * 0.5;
     let rd = normalize(uv.x * cu + uv.y * cv + (1.0 / disp) * cw);
 
     // Render
@@ -238,11 +247,19 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let mat_id = rm.y;
 
     var col = vec3<f32>(0.0);
+    var alpha = 0.0;
 
     // Deep abyss background volumetric dust
     let dust = fbm(rd * 10.0 + time * 0.2) * 0.1;
     let bgCol = mix(vec3<f32>(0.01, 0.01, 0.03), vec3<f32>(0.0, 0.1, 0.2), rd.y * 0.5 + 0.5) + vec3<f32>(dust);
     col = bgCol;
+    alpha = dust * 0.5;
+
+    // Idea 1: Quantum dispersion trails lagging behind the serpent core
+    let trailDist = length(cross(rd, ta - ro)) / length(rd);
+    let trailGlow = exp(-trailDist * 2.0) * vec3<f32>(0.1, 0.3, 0.8) * bass * u.zoom_params.z;
+    col += trailGlow;
+    alpha += length(trailGlow);
 
     if (t < 20.0 && mat_id > 0.0) {
         let p = ro + rd * t;
@@ -259,8 +276,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Reflected ray
         let r = reflect(rd, n);
 
-        // Environment map reflection
-        let envCol = getEnvMap(r);
+        // Idea 2: Chromatic aberration in the reflection mapping based on audio
+        let audioCa = bass * 0.05 * u.zoom_params.z;
+        let envColR = getEnvMap(r + vec3<f32>(audioCa, 0.0, 0.0));
+        let envColG = getEnvMap(r);
+        let envColB = getEnvMap(r - vec3<f32>(audioCa, 0.0, 0.0));
+        let envCol = vec3<f32>(envColR.r, envColG.g, envColB.b);
 
         // Specular highlight from core
         let lightDir = normalize(vec3<f32>(0.0) - p); // Core is at center
@@ -277,13 +298,24 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         // Combine lighting
         let diffuse = vec3<f32>(0.1) * ndotl; // very dark diffuse for chrome
-        col = diffuse + envCol * fresnel + vec3<f32>(spec) + plasmaColor;
+        let hitCol = diffuse + envCol * fresnel + vec3<f32>(spec) + plasmaColor;
 
         // Fog based on distance
-        col = mix(col, bgCol, 1.0 - exp(-0.02 * t * t));
+        col = mix(hitCol, bgCol, 1.0 - exp(-0.02 * t * t));
+        alpha = clamp(1.0 - exp(-0.02 * t * t) + 0.6, 0.0, 1.0);
     }
 
+    // Temporal smoothing
+    let prev = textureLoad(dataTextureC, tex_coords, 0);
+    col = mix(max(col, vec3<f32>(0.0)), prev.rgb * 0.92, 0.05 + bass * 0.02);
+    alpha = mix(alpha, prev.a, 0.5);
+
+    let displayColor = acesToneMap(col * 1.1);
+    let finalAlpha = clamp(alpha * 1.2, 0.1, 0.95);
+    let depth = select(0.0, clamp(1.0 - t / 20.0, 0.0, 1.0), t < 20.0);
+
     // Output to texture
-    textureStore(writeTexture, tex_coords, vec4<f32>(col, 1.0));
-    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, tex_coords, vec4<f32>(displayColor, finalAlpha));
+    textureStore(writeDepthTexture, tex_coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, tex_coords, vec4<f32>(col, alpha));
 }

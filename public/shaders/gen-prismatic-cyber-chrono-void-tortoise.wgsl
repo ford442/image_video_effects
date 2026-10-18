@@ -4,30 +4,13 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-09-14
-//  Ideas: scute growth annuli (chrono-drifting concentric keratin rings per hex scute); hawksbill tortoiseshell mottling with backlit amber keratin translucency gating the pocket glow
+//  Ideas: scute growth annuli (chrono-drifting concentric keratin rings per hex scute); hawksbill tortoiseshell mottling with backlit amber keratin translucency gating the pocket glow; triradiate osteoderm sutures; magnetotactic plankton lanes
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: .x = Time, .y = Audio Reactivity, .z = Brightness, .w = Evolution Speed
 
-struct Uniforms {
-  config: vec4<f32>,       // .x = time (seconds), .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0-1, y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Time, .y = Audio Reactivity, .z = Brightness, .w = Evolution Speed
-  ripples: array<vec4<f32>, 50>,
-};
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
 const MAX_DIST: f32 = 20.0;
@@ -243,6 +226,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let ringPhase = hexR * ringCount - time * 0.15 - scuteSeed * 4.0;
         let ringLine = smoothstep(0.78, 0.98 - min(treble * audioReact, 1.0) * 0.1, abs(fract(ringPhase) - 0.5) * 2.0);
         let annuli = ringLine * smoothstep(0.03, 0.12, hexR);
+        // Idea 3: triradiate osteoderm sutures from each scute center.
+        let spoke0 = abs(dot(hc.xy, vec2<f32>(1.0, 0.0)));
+        let spoke1 = abs(dot(hc.xy, vec2<f32>(-0.5, 0.8660254)));
+        let spoke2 = abs(dot(hc.xy, vec2<f32>(-0.5, -0.8660254)));
+        let spokeMin = min(spoke0, min(spoke1, spoke2));
+        let suture = smoothstep(0.07, 0.014, spokeMin) * smoothstep(0.1, 0.42, hexR);
 
         // Idea 2 — hawksbill tortoiseshell: per-scute melanin blotches over amber keratin;
         // amber windows transmit the backlit pocket glow, dark patches occlude it.
@@ -257,6 +246,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
                      + keratin * (0.5 + dif * shadow * 0.5)
                      + pocketHue * (0.35 + bass * audioReact * 0.5) * keratinWindow * (1.0 - annuli * 0.45)
                      + amber * annuli * 0.12 * (1.0 - melanin)
+                     + vec3<f32>(0.26, 0.85, 1.0) * suture * (0.18 + mids * audioReact * 0.22)
                      + pocketHue.brg * seam * 1.2
                      + vec3<f32>(1.0) * spec * 0.8;
 
@@ -266,6 +256,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Abyssal quantum sea: depth gradient + drifting motes + plankton glow
     let abyss = mix(vec3<f32>(0.02, 0.05, 0.1), vec3<f32>(0.0, 0.01, 0.03), saturate(uv.y + 0.5));
     let motes = moteField(uv * 8.0 + vec2<f32>(time * 0.1, -time * 0.05)) * (0.3 + mids * audioReact * 0.4);
+    // Idea 4: magnetotactic plankton lanes advected by abyssal field lines.
+    let laneDir = normalize(vec2<f32>(0.86, 0.5));
+    let laneCoord = dot(uv + vec2<f32>(sin(time * 0.2), cos(time * 0.17)) * 0.15, laneDir);
+    let planktonLane = pow(0.5 + 0.5 * sin(laneCoord * 30.0 - time * (2.3 + bass * 2.0)), 4.0) * exp(-abs(uv.y + 0.05) * 2.4);
+    let planktonGlow = planktonLane * (0.2 + treble * audioReact * 0.35);
 
     // Engine ripple rings shimmering across the sea (guarded loop, <=50)
     let rippleCount = min(u32(u.config.y), 50u);
@@ -279,12 +274,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
     rippleGlow = min(rippleGlow, 1.5);
 
-    col = select(abyss + vec3<f32>(0.4, 0.8, 0.9) * motes + vec3<f32>(0.2, 0.7, 0.9) * rippleGlow, col, hit);
+    col = select(abyss + vec3<f32>(0.4, 0.8, 0.9) * motes + vec3<f32>(0.2, 0.7, 0.9) * rippleGlow + vec3<f32>(0.25, 0.95, 0.7) * planktonGlow, col, hit);
     col += vec3<f32>(0.2, 0.7, 0.9) * rippleGlow * select(0.3, 0.0, hit);
 
     col = acesToneMap(col * (0.6 + brightness * 0.8)); // Brightness = exposure
     // Semantic alpha: solid anatomy coverage when hit, glow density (motes/rings) in the sea
-    let seaDensity = clamp(0.12 + motes * 0.6 + rippleGlow * 0.5, 0.0, 1.0);
+    let seaDensity = clamp(0.12 + motes * 0.6 + rippleGlow * 0.5 + planktonGlow * 0.45, 0.0, 1.0);
     let bodyCoverage = clamp(0.8 + 0.2 * (1.0 - t / MAX_DIST), 0.0, 1.0);
     let alpha = select(seaDensity, bodyCoverage, hit);
     let depth = select(0.0, clamp(1.0 - t / MAX_DIST, 0.0, 1.0), hit);

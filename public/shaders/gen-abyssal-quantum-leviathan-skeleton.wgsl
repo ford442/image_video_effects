@@ -1,6 +1,13 @@
-// ----------------------------------------------------------------
-// Abyssal Quantum-Leviathan Skeleton
-// Category: generative
+// ═══════════════════════════════════════════════════════════════════
+//  Abyssal Quantum-Leviathan Skeleton
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
+//  Complexity: High
+//  Upgraded: 2026-10-18
+//  Ideas: marrow canal riding the displaced spine core (pinches at rib joints); bending-strain bioluminescence on the tension flank of the traveling wave; bow-wave current parting around the swaying bones; vertebral electroplate ladders; caudal vortex-bead shedding; rib-joint crevice occlusion (§12.2 Step-count AO on the marched bones: smin rib joints and the cage interior darken, emissive marrow stays lit); bone-worm plume tufts (crimson Osedax-style plumes rooted on the dorsal bone in the spine-local frame, swaying with the current and tipped with treble glow)
+//  A packing: HDR history RGB (clamped <= 6) + semantic alpha; ACES on writeTexture only
+// ═══════════════════════════════════════════════════════════════════
+// History —
 // Batch 38 (Algorithmist): FAST MOTION upgrade —
 //   * fast undulating spine kinematics: closed-form traveling wave with
 //     tail-growing whip amplitude + incommensurate second harmonic
@@ -16,28 +23,13 @@
 //     (textureLoad only, HDR history clamped <= 6.0)
 //   * uniform-truth rewrite, plasmaBuffer audio (was fake: rippleCount!),
 //     ACES, semantic alpha, real generated depth.
-// ----------------------------------------------------------------
+// 2026-09-27 fixes: noise corner (1,0,1) hashed i+(1,0,0) (z-cell seams);
+//   rib flare now uses body z like the pulse lighting; miss depth = 0.0.
+//   Note: kick state in extraBuffer[133..135] is zeroed by the host every
+//   frame and raced by other threads — left as HEAD, nothing new built on it.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // .x = time (seconds), .y = rippleCount (0-50 active), .zw = resolution (width, height)
-    zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0-1 canvas: y=0 top), .w = mouse_down (>0.5 = pressed)
-    zoom_params: vec4<f32>,  // .x = Bone Density, .y = Marrow Glow, .z = Current Turbulence, .w = Audio Reactivity
-    ripples: array<vec4<f32>, 50>, // .xy = ripple uv, .z = startTime (seconds), .w = padding
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Bone Density, .y = Marrow Glow, .z = Current Turbulence, .w = Audio Reactivity
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -81,7 +73,7 @@ fn noise3(p: vec3<f32>) -> f32 {
             mix(dot(hash3(i + vec3<f32>(0.0, 1.0, 0.0)), f - vec3<f32>(0.0, 1.0, 0.0)),
                 dot(hash3(i + vec3<f32>(1.0, 1.0, 0.0)), f - vec3<f32>(1.0, 1.0, 0.0)), u_f.x), u_f.y),
         mix(mix(dot(hash3(i + vec3<f32>(0.0, 0.0, 1.0)), f - vec3<f32>(0.0, 0.0, 1.0)),
-                dot(hash3(i + vec3<f32>(1.0, 0.0, 0.0)), f - vec3<f32>(1.0, 0.0, 1.0)), u_f.x),
+                dot(hash3(i + vec3<f32>(1.0, 0.0, 1.0)), f - vec3<f32>(1.0, 0.0, 1.0)), u_f.x),
             mix(dot(hash3(i + vec3<f32>(0.0, 1.0, 1.0)), f - vec3<f32>(0.0, 1.0, 1.0)),
                 dot(hash3(i + vec3<f32>(1.0, 1.0, 1.0)), f - vec3<f32>(1.0, 1.0, 1.0)), u_f.x), u_f.y), u_f.z);
 }
@@ -99,8 +91,34 @@ struct SceneCtx {
     mouseWorld: vec3<f32>,// cursor gravity-well position (uniform truth)
 };
 
+// Idea 2/3: analytic kinematics of the SAME traveling wave map() applies.
+// bend = d2/dz2 of the (x,y) displacement (whip held locally constant),
+// sway = d/d(animTime) of it. map() ADDS the displacement to the sample, so
+// the world centreline is -disp: tension flank is dot(offset, bend) > 0,
+// leading flank of the sideways sway is dot(offset, sway) < 0.
+struct SpineKin {
+    bend: vec2<f32>,
+    sway: vec2<f32>,
+};
+
+fn spineKin(z: f32, ctx: SceneCtx) -> SpineKin {
+    let whip = 1.4 + 0.9 * smoothstep(0.0, 12.0, abs(z));
+    let ph1 = z * 0.30 - ctx.animTime * ctx.waveSpeed;
+    let ph2 = z * 0.22 - ctx.animTime * ctx.waveSpeed * 0.77;
+    let h1 = ph1 * 2.17 + 1.3;
+    var k: SpineKin;
+    k.bend = vec2<f32>(-0.09 * (sin(ph1) + 0.35 * 4.7089 * sin(h1)) * whip * 1.3,
+                       -0.0484 * cos(ph2) * whip * 0.8);
+    k.sway = vec2<f32>(-ctx.waveSpeed * (cos(ph1) + 0.35 * 2.17 * cos(h1)) * whip * 1.3,
+                        ctx.waveSpeed * 0.77 * sin(ph2) * whip * 0.8);
+    return k;
+}
+
 // SDF for the leviathan skeleton
-fn map(pos_in: vec3<f32>, ctx: SceneCtx) -> vec2<f32> {
+// Returns (distance, spine-local frame xyz): .yz = offset from the DISPLACED
+// spine core, .w = body z (after lunge + mouse pull). Idea 1 uses .yz for the
+// marrow canal; the old .y material id was a constant 1.0 nobody read.
+fn map(pos_in: vec3<f32>, ctx: SceneCtx) -> vec4<f32> {
     var p = pos_in;
 
     // Ballistic lunge: the whole skeleton darts along its spine axis
@@ -125,7 +143,7 @@ fn map(pos_in: vec3<f32>, ctx: SceneCtx) -> vec2<f32> {
     // Spine core
     let spine_dist = length(p.xy) - 0.5 * ctx.boneDensity;
     var d = spine_dist;
-    var material = 1.0; // 1.0 for bone
+    let spineLocal = p; // Idea 1: displaced spine frame, before rib repetition
 
     // Ribs (domain repetition along Z)
     let rib_spacing = 1.5 / max(ctx.boneDensity, 0.05);
@@ -137,7 +155,9 @@ fn map(pos_in: vec3<f32>, ctx: SceneCtx) -> vec2<f32> {
     p_rib.y -= 0.5;
 
     // Audio reactivity bulges the ribs (real bass + racing pulse flare)
-    let flare = exp(-abs(pos_in.z - ctx.pulseZ) * 0.6) * ctx.pulseEnv;
+    // Fix: flare measured in body z (pos_in.z + lunge) — same frame as the
+    // pulse lighting in main(), so the bulge and the light coincide.
+    let flare = exp(-abs(pos_in.z + ctx.lungeOffset - ctx.pulseZ) * 0.6) * ctx.pulseEnv;
     let bulge = sin(ctx.animTime * 6.0 + p.z * 0.5) * ctx.audioReact * ctx.bass * 0.25 + flare * 0.15;
     let rib_thickness = max(0.2 * ctx.boneDensity + bulge, 0.03);
 
@@ -147,7 +167,37 @@ fn map(pos_in: vec3<f32>, ctx: SceneCtx) -> vec2<f32> {
 
     d = smin(d, rib_dist, 0.8);
 
-    return vec2<f32>(d, material);
+    return vec4<f32>(d, spineLocal.x, spineLocal.y, spineLocal.z);
+}
+
+// Idea 6 (§12.2 Step-count AO): 5 taps along the normal, each weighted 1/2^i.
+fn calcAO(p: vec3<f32>, n: vec3<f32>, ctx: SceneCtx) -> f32 {
+    var occ = 0.0;
+    var sca = 1.0;
+    for (var i = 0; i < 5; i++) {
+        let h = 0.03 + 0.11 * f32(i);
+        occ += (h - map(p + n * h, ctx).x) * sca;
+        sca *= 0.5;
+    }
+    return clamp(1.0 - 1.6 * occ, 0.0, 1.0);
+}
+
+// Idea 7: bone-worm plume tufts. Sparse cells in the spine-local frame (map .yzw), so the
+// tufts stay rooted on the bone as it whips. Returns (crimson body, pale tip) coverage.
+fn wormTufts(sl: vec3<f32>, animTime: f32, flow: f32) -> vec2<f32> {
+    let g = sl * 5.0;
+    let cell = floor(g);
+    let h = hash3(cell + vec3<f32>(17.0, 3.0, 41.0));
+    if (h.x > 0.42) {
+        return vec2<f32>(0.0);
+    }
+    // plume leans and sways downstream (+z) with the current
+    let sway = sin(animTime * 3.1 + h.y * 6.2832) * 0.12 + 0.08 * flow;
+    let centre = cell + vec3<f32>(0.25, 0.25, 0.25) + h * 0.5 + vec3<f32>(0.0, 0.0, sway);
+    let r = length(g - centre);
+    let body = 1.0 - smoothstep(0.12, 0.3, r);
+    let tip = (1.0 - smoothstep(0.0, 0.12, r)) * (0.5 + 0.5 * sin(animTime * 5.0 + h.z * 6.2832));
+    return vec2<f32>(body, tip);
 }
 
 fn calcNormal(p: vec3<f32>, ctx: SceneCtx) -> vec3<f32> {
@@ -220,8 +270,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     ctx.boneDensity = boneDensity;
     ctx.audioReact = audioReact;
     ctx.bass = bass;
-    let mouseUv = u.zoom_config.yz;
-    ctx.mouseWorld = vec3<f32>((mouseUv.x - 0.5) * 10.0, (mouseUv.y - 0.5) * 10.0, 0.0); // top-down mouse: screen top = -cv (world -y), so no y-flip
 
     // ---- Camera: fast pursuit orbit with lunge follow-through -------------
     let orbA = animTime * mix(0.3, 0.8, turb);
@@ -233,13 +281,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let cu = normalize(cross(cw, vec3<f32>(0.0, 1.0, 0.0)));
     let cv = normalize(cross(cu, cw));
 
-    let uv = (vec2<f32>(coords) - 0.5 * res) / res.y;
+    // 2026-10-18: rows grow downward and cv is world-up, so y is negated (HEAD was upside down,
+    // key light from below). cu = cross(cw, Y) is screen-right, so x is unchanged.
+    let uv = (vec2<f32>(coords) - 0.5 * res) / res.y * vec2<f32>(1.0, -1.0);
+
+    // Gravity well under the cursor: on the focal plane through the target, in camera basis
+    // (HEAD used a world-fixed xy plane, so the well drifted off the pointer as the camera
+    // orbited). Idle pointer (0.5, 0.5) = origin, as before.
+    let mouseUv = u.zoom_config.yz;
+    let focalScale = length(ta - ro) / 1.5;
+    ctx.mouseWorld = ta + (cu * ((mouseUv.x - 0.5) * res.x / res.y) + cv * (0.5 - mouseUv.y)) * focalScale;
     let rd = normalize(uv.x * cu + uv.y * cv + 1.5 * cw);
 
     // ---- Raymarching -------------------------------------------------------
     var t = 0.0;
     var hit = false;
-    var res2 = vec2<f32>(0.0);
+    var res2 = vec4<f32>(0.0);
     var p = ro;
 
     for (var i = 0; i < 80; i++) {
@@ -270,8 +327,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let rim = 1.0 - max(dot(n, -rd), 0.0);
         color += vec3<f32>(0.1, 0.8, 1.0) * pow(rim, 3.0);
 
+        // Idea 6: rib-joint crevice occlusion on the reflected light only (rim + diffuse);
+        // the emissive marrow / strain / pulse light added below is left unoccluded.
+        let ao = calcAO(p, n, ctx);
+        color *= mix(0.3, 1.0, ao);
+
+        // Idea 7: bone-worm plume tufts on upward-facing bone, kept out of the deepest crevices.
+        let dorsal = smoothstep(0.15, 0.6, n.y);
+        let shelter = smoothstep(0.3, 0.7, ao);
+        let tuft = wormTufts(res2.yzw, animTime, turb) * dorsal * shelter;
+        color = mix(color, vec3<f32>(0.55, 0.05, 0.08) * (0.35 + 0.65 * diff) + vec3<f32>(0.08, 0.0, 0.01), tuft.x * 0.85);
+        color += vec3<f32>(1.0, 0.45, 0.4) * tuft.y * (0.15 + treble * 0.6 * audioReact);
+
+        // Idea 1: Marrow canal — distance to the DISPLACED spine core (map .yz),
+        // not world length(p.xy): the violet canal rides the whip and pinches
+        // where the smin rib joints push the surface outward.
         // Marrow glow inside bones (real audio pulse: mids/treble + FFT)
-        let dist_to_center = length(p.xy);
+        let spineOff = res2.yz;
+        let dist_to_center = length(spineOff);
         let marrow_intensity = smoothstep(2.0, 0.0, dist_to_center) * marrowGlow;
         let audio_pulse = (sin(animTime * 8.0 + p.z) * 0.5 + 0.5) * (mids + fftPulse) * audioReact;
         color += vec3<f32>(0.5, 0.0, 1.0) * marrow_intensity * (0.6 + audio_pulse);
@@ -279,6 +352,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Racing shock-pulse lights the bones as it passes (kick/lunge)
         let pulseHere = exp(-abs(p.z + ctx.lungeOffset - ctx.pulseZ) * 0.6) * ctx.pulseEnv;
         color += vec3<f32>(0.2, 1.0, 0.9) * pulseHere * 0.8;
+
+        // Idea 2: Bending-strain bioluminescence — strain = offset . bend of
+        // the traveling wave at this body z. Tension (convex) flank of the
+        // tightest bends glows emerald, the compression flank dims; the light
+        // travels with the wave. Audio-independent.
+        let kin = spineKin(res2.w, ctx);
+        let strain = dot(spineOff, kin.bend);
+        let tension = smoothstep(0.25, 1.4, strain);
+        let compress = smoothstep(0.25, 1.4, -strain);
+        color *= 1.0 - 0.3 * compress;
+        color += vec3<f32>(0.35, 1.0, 0.45) * tension * (0.35 + 0.65 * pow(rim, 1.5));
+        // Idea 4: vertebral electroplate ladders running segment-to-segment.
+        let vertebra = pow(0.5 + 0.5 * sin(res2.w * 8.8 + animTime * 5.5), 10.0);
+        color += vec3<f32>(0.85, 0.95, 1.0) * vertebra * (0.08 + mids * 0.18) * (0.4 + tension * 0.6);
 
         // Simple fog
         color = mix(color, vec3<f32>(0.0, 0.02, 0.05), smoothstep(10.0, MAX_D, t));
@@ -293,11 +380,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let freq = mix(0.35, 0.9, turb);
         for (var i = 0; i < 24; i++) {
             let vp = ro + rd * vol_t;
+            // Idea 3: Bow-wave current parting — near the bones the flow sample
+            // is pushed outward along the spine-local radial (streaks part
+            // around the silhouette); the flank leading the sideways sway is
+            // compressed/brightened, the trailing flank thinned (no vortices).
+            let mB = map(vp, ctx);
+            let nearB = exp(-max(mB.x, 0.0) * 0.9);
+            let dirB = mB.yz / max(length(mB.yz), 1e-3);
+            let swayB = spineKin(mB.w, ctx).sway;
+            let lead = -dot(dirB, swayB / max(length(swayB), 1e-3));
+            let bow = 1.0 + nearB * (0.9 * max(lead, 0.0) - 0.5 * max(-lead, 0.0));
+            let part = dirB * nearB * 1.4;
             // Stretch z (flow axis): elongates eddies into speed lines
-            let sp = vec3<f32>(vp.x * 2.0, vp.y * 2.0, vp.z * 0.35 - animTime * flowSpeed) * freq;
+            let sp = vec3<f32>((vp.x - part.x) * 2.0, (vp.y - part.y) * 2.0, vp.z * 0.35 - animTime * flowSpeed) * freq;
             let n_val = noise3(sp);
             let n_det = noise3(sp * 2.3 + vec3<f32>(0.0, animTime * flowSpeed * 0.35, 0.0));
-            vol_acc += smoothstep(0.15, 0.45, n_val + 0.4 * n_det) * 0.06;
+            vol_acc += smoothstep(0.15, 0.45, n_val + 0.4 * n_det) * 0.06 * bow;
+            // Idea 5: caudal vortex-bead shedding in the wake train.
+            let bead = pow(0.5 + 0.5 * sin(vp.z * 9.0 - animTime * 7.5 + vp.x * 2.0), 7.0)
+                     * exp(-abs(length(vp.xy) - 1.2) * 3.5);
+            vol_acc += bead * 0.03 * (0.4 + treble * 0.8);
             vol_t += step_size;
             if (vol_t > MAX_D) { break; }
         }
@@ -322,7 +424,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ---- HDR -> ACES, semantic alpha, real generated depth -----------------
     let tone = acesTone(history * 1.1);
     let alpha = clamp(select(0.08 + luma(color) * 0.4, 0.92, hit), 0.0, 0.97);
-    let depth = select(0.05, clamp(1.0 - t / MAX_D, 0.0, 1.0), hit); // near-is-one
+    let depth = select(0.0, clamp(1.0 - t / MAX_D, 0.0, 1.0), hit); // near-is-one, miss = far = 0
 
     textureStore(dataTextureA, coords, vec4<f32>(history, alpha));
     textureStore(writeTexture, coords, vec4<f32>(tone, alpha));

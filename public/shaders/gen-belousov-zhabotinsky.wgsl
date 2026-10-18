@@ -4,8 +4,8 @@
 //  Features: upgraded-rgba, aces-tone-map, depth-aware, audio-reactive, temporal, mouse-driven, hue-preserve-clamp, ign-dither
 //  Complexity: Medium
 //  Created: 2026-05-30
-//  Upgraded: 2026-06-07, 2026-09-15
-//  Ideas: refractory-tail shading behind the wavefront; pacemaker excitability gradient forming target-wave zones
+//  Upgraded: 2026-06-07, 2026-09-15, 2026-09-27
+//  Ideas: refractory-tail shading behind the wavefront; pacemaker excitability gradient forming target-wave zones; phase hue around the spiral; annihilation cusp where fronts meet
 //  A packing: raw sim (newA, newB, waveFront, alpha) + B detail (lapA, lapB, oxidized, waveFront^2)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -136,6 +136,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // recovery band trailing the wave instead of flat color.
   let refractory = clamp(newB * 0.85 - waveFront * 0.12, 0.0, 1.0);
   col = mix(col, vec3<f32>(0.02, 0.03, 0.10), refractory * 0.55);
+
+  // Idea: phase hue — activator vs inhibitor angle cycles around the spiral.
+  let phase = atan2(newA - 0.5, newB - 0.5);
+  let phaseTint = vec3<f32>(
+    0.55 + 0.45 * cos(phase),
+    0.55 + 0.45 * cos(phase + 2.094395),
+    0.55 + 0.45 * cos(phase + 4.188790)
+  );
+  col = mix(col, col * phaseTint, 0.38);
+
+  // Idea: annihilation cusp — fronts meeting (steep front, flat laplacian).
+  let meet = smoothstep(0.35, 1.2, waveFront) * (1.0 - smoothstep(0.015, 0.12, abs(lapA)));
+  col = col + vec3<f32>(1.0, 0.96, 0.9) * meet * 0.7;
 
   let tipDist = length(uv - vec2<f32>(0.5 + 0.2 * cos(time * 0.3), 0.5 + 0.2 * sin(time * 0.4)));
   let spiralTip = 0.002 / (tipDist * tipDist + 0.001);

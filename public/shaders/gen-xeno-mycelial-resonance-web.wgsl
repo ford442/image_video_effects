@@ -5,19 +5,15 @@
 //           upgraded-rgba, aces-tone-map, temporal-feedback, gravity-wells,
 //           mouse-attractors, feedback-accumulation, chromatic-aberration
 // Chunks From: gen-protocell-division.wgsl (upgraded-rgba stack)
-// Upgraded: 2026-06-28 — Interactivist Batch (gravity wells + feedback loops)
+// Upgraded: 2026-10-10
+// Ideas: anastomosis bridges; septal rings; click thickening; hyphal medulla; spitzenkörper tip
+// A packing: ACES display RGBA
+// Kept: 2026-06-28 gravity well and feedback accumulation
 // ----------------------------------------------------------------
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+#include "_prelude.wgsl"
+// zoom_params: x=Repetition, y=BranchSize, z=Hue, w=PulseSpeed
 
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-    zoom_params: vec4<f32>,  // x=Repetition, y=BranchSize, z=Hue, w=PulseSpeed
-    ripples: array<vec4<f32>, 50>,
-}
 fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
   let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
   let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
@@ -31,16 +27,6 @@ fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
 
 const PI:  f32 = 3.14159265358979323846;
 const TAU: f32 = 6.28318530717958647692;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 // --- SHADER LOGIC ---
 
@@ -93,6 +79,7 @@ fn map(pos: vec3<f32>, time: f32) -> f32 {
     p = (fract(p / u.zoom_params.x + 0.5) - 0.5) * u.zoom_params.x;
 
     var d = 100.0;
+    var prevBranch = 100.0;
 
     // Branching KIFS with audio-reactive angle
     let bassAngle = plasmaBuffer[0].x * 0.3;
@@ -105,8 +92,28 @@ fn map(pos: vec3<f32>, time: f32) -> f32 {
         p.y = pYZ.x;
         p.z = pYZ.y;
 
-        let branch = length(p.xy) - u.zoom_params.y * (1.0 - f32(i)*0.2);
+        // Septal rings: periodic constrictions along the existing hypha.
+        let septal = 0.5 + 0.5 * sin(p.y * 36.0 + p.z * 8.0);
+        let branch = length(p.xy) - u.zoom_params.y * (1.0 - f32(i)*0.2) + septal * 0.018;
         d = smin(d, branch, 0.2);
+        // Anastomosis: a wider blend fuses successive fold branches.
+        if (i > 0) {
+            d = smin(d, smin(prevBranch, branch, 0.55), 0.35);
+        }
+        prevBranch = branch;
+    }
+
+    // Click inoculation thickens hyphae near the ripple for its lifetime.
+    let rippleCount = min(u32(u.config.y), 8u);
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+        let rp = u.ripples[ri];
+        let age = time - rp.z;
+        if (age > 0.0 && age < 2.6) {
+            let clickP = vec2<f32>((rp.x - 0.5) * 8.0, (rp.y - 0.5) * 8.0);
+            let cd = length(p.xy - clickP);
+            let life = exp(-age * 1.3);
+            d = d - exp(-cd * cd * 1.6) * life * 0.14;
+        }
     }
 
     // Audio reactive swelling — bass via plasmaBuffer
@@ -189,6 +196,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         glow = pow(pulse, 4.0) * (0.5 + bass * 2.0);
 
         col = base_col * (0.2 + glow);
+        // Idea: medulla — darker core where the view looks through the tube middle.
+        let fres = pow(1.0 - max(dot(n, -rd), 0.0), 2.0);
+        col = mix(col, col * vec3<f32>(0.35, 0.5, 0.32), (1.0 - fres) * 0.4);
+        // Idea: spitzenkörper — a bright tip facing out along the fold.
+        let tip = pow(max(dot(n, normalize(p + vec3<f32>(0.001))), 0.0), 10.0);
+        col = col + vec3<f32>(0.45, 1.0, 0.55) * tip * (0.35 + glow * 0.4);
 
         // Basic lighting
         let lightDir = normalize(vec3<f32>(1.0, 1.0, -1.0));

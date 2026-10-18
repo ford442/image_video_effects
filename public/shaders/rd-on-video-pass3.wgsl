@@ -1,32 +1,19 @@
 // ═══════════════════════════════════════════════════════════════════
 //  RD on Video (Pass 3: Composite Over Video)
 //  Category: simulation
-//  Features: multi-pass-3, video-composite, luma-mask
-//  Pass graph: Pass 3 reads the colorized pattern from dataTextureC
-//              (copy of Pass 2's dataTextureB), composites it over the
-//              input video, and writes the final image to writeTexture.
+//  Features: multi-pass-3, video-composite, luma-mask, upgraded-rgba
+//  Upgraded: 2026-10-17
+//  Ideas: dye take-up toward the video hue; gate meniscus on the luma threshold
+//  A packing: display ACES RGBA on writeTexture. Does not write A.
+//  Pass graph: C is previous-frame feedback. A wins the copy, so C is
+//              pass 1's chemistry (U, V, luma memory, activity), not pass 2's B.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + vec3<f32>(0.03))) / (x * (2.43 * x + vec3<f32>(0.59)) + vec3<f32>(0.14)), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
@@ -37,7 +24,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = vec2<i32>(gid.xy);
 
   let base = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-  let overlay = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  let overlay = textureLoad(dataTextureC, coord, 0);
   let luma = dot(base.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
 
   let lumaGate = mix(0.15, 0.80, clamp(u.zoom_params.x, 0.0, 1.0));
@@ -48,11 +35,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let lumaMask = smoothstep(lumaGate - maskSoftness, lumaGate + maskSoftness, luma);
   let simMask = clamp(overlay.a * glowGain, 0.0, 1.0);
   let blend = clamp(simMask * blendGain * lumaMask, 0.0, 1.0);
+  // Idea 1: dye take-up. Dense pattern picks up the video's own color.
+  let stain = mix(overlay.rgb, base.rgb * (0.45 + dot(overlay.rgb, vec3<f32>(0.25))), simMask * 0.62);
 
-  var outColor = mix(base.rgb, base.rgb + overlay.rgb * (0.7 + simMask), blend);
-  outColor = clamp(outColor, vec3<f32>(0.0), vec3<f32>(1.0));
+  var outColor = mix(base.rgb, base.rgb + stain * (0.7 + simMask), blend);
+  // Idea 2: gate meniscus. A hairline where luma crosses the gate and the pattern is present.
+  let gateDist = luma - lumaGate;
+  let meniscus = exp(-gateDist * gateDist / max(maskSoftness * maskSoftness, 0.0016)) * simMask;
+  outColor = outColor + vec3<f32>(0.85, 0.95, 1.0) * meniscus * 0.28 * blendGain;
+  let mapped = aces(max(outColor, vec3<f32>(0.0)));
+  let alpha = clamp(base.a * (0.55 + 0.45 * (1.0 - blend)) + blend * 0.4 + meniscus * 0.2, 0.0, 1.0);
 
-  textureStore(writeTexture, coord, vec4<f32>(outColor, base.a));
+  textureStore(writeTexture, coord, vec4<f32>(mapped, alpha));
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

@@ -57,58 +57,6 @@
       "description": "Intensity of gravitational redshift"
     }
   ],
-  "advanced_params": [
-    {
-      "id": "patch_radius",
-      "name": "Patch Radius",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_config.x",
-      "description": "NLM patch comparison radius"
-    },
-    {
-      "id": "search_radius",
-      "name": "Search Radius",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_config.y",
-      "description": "NLM search window radius"
-    },
-    {
-      "id": "filter_strength",
-      "name": "Filter Strength",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_config.z",
-      "description": "NLM filter strength (h parameter)"
-    },
-    {
-      "id": "overdrive",
-      "name": "Artistic Overdrive",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_config.w",
-      "description": "Artistic overdrive blend amount"
-    }
-  ],
-  "chunks_used": [
-    "hash12 (gravitational-lensing.wgsl)",
-    "schwarzschildFactor (gravitational-lensing.wgsl)",
-    "renderAccretionDisk (gravitational-lensing.wgsl)",
-    "gravitationalRedshift (gravitational-lensing.wgsl)",
-    "patchDistance (conv-non-local-means.wgsl)"
-  ],
-  "performance_target": "20-30 FPS (GTX 1060)",
-  "created_by": "Agent CB-3 — Convolution Post-Processor",
-  "created_date": "2026-04-18",
   "tags": [
     "black-hole",
     "gravitational-lensing",
@@ -117,38 +65,96 @@
     "space"
   ],
   "updated": true,
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Black Hole Mass",
-      "default": 0.25,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+  "x-meta": {
+    "legacy": {
+      "advanced_params": [
+        {
+          "id": "patch_radius",
+          "name": "Patch Radius",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "mapping": "zoom_config.x",
+          "description": "NLM patch comparison radius"
+        },
+        {
+          "id": "search_radius",
+          "name": "Search Radius",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "mapping": "zoom_config.y",
+          "description": "NLM search window radius"
+        },
+        {
+          "id": "filter_strength",
+          "name": "Filter Strength",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "mapping": "zoom_config.z",
+          "description": "NLM filter strength (h parameter)"
+        },
+        {
+          "id": "overdrive",
+          "name": "Artistic Overdrive",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "mapping": "zoom_config.w",
+          "description": "Artistic overdrive blend amount"
+        }
+      ]
     },
-    {
-      "index": 1,
-      "name": "Accretion Disk Brightness",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Black Hole Mass",
+          "default": 0.25,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Accretion Disk Brightness",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Camera Orbit",
+          "default": 0.0,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Gravitational Redshift",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
     },
-    {
-      "index": 2,
-      "name": "Camera Orbit",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Gravitational Redshift",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    }
-  ]
+    "chunks_used": [
+      "hash12 (gravitational-lensing.wgsl)",
+      "schwarzschildFactor (gravitational-lensing.wgsl)",
+      "renderAccretionDisk (gravitational-lensing.wgsl)",
+      "gravitationalRedshift (gravitational-lensing.wgsl)",
+      "patchDistance (conv-non-local-means.wgsl)"
+    ],
+    "performance_target": "20-30 FPS (GTX 1060)",
+    "created_by": "Agent CB-3 — Convolution Post-Processor",
+    "created_date": "2026-04-18"
+  }
 }

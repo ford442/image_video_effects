@@ -9,7 +9,7 @@
     "plasma",
     "audio-reactive"
   ],
-  "description": "A majestic, hyper-dimensional ocean of auroral plasma where a synchronized swarm of glowing, cyber-organic manta rays glide and ripple in perfect unison with deep ambient acoustic bass drops.",
+  "description": "A hyper-dimensional auroral ocean where a synchronized manta swarm shows chordwise wing waves, countershaded chevrons and spot constellations, ventral gill-arch bioluminescence, ram-ventilation wake ribbons, a barrel-roll wave through the school, and aurora-lit dorsal dapple.",
   "workgroup_size": [
     16,
     16,
@@ -53,40 +53,6 @@
       "step": 0.01
     }
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Scale",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Intensity",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Speed",
-      "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Detail",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    }
-  ],
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
@@ -96,5 +62,43 @@
     "audio-reactive",
     "mouse-driven",
     "upgraded-rgba"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Scale",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Intensity",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Speed",
+          "default": 0.3,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Detail",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

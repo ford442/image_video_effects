@@ -1,8 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Interactive Kuwahara — Batch 58E
-//  Four-sector oil paint with held wet-focus, traveling wet runners,
-//  oil-slick pigment, click clarity fronts, exact C wetness trail.
-//  Display RGBA in A.
+//  Interactive Kuwahara
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-10-04
+//  Ideas: generalised variance-weighted sector blend; impasto ridges lit from the sector-mean gradient; canvas weave through thin paint
+//  A packing: ACES display RGBA (C read back as colour for the wet trail)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -19,6 +22,8 @@
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
+
+
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
@@ -30,6 +35,10 @@ fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
   let k = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
   let p = abs(fract(hsv.xxx + k.xyz) * 6.0 - k.www);
   return hsv.z * mix(k.xxx, clamp(p - k.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), hsv.y);
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -105,16 +114,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     sigma[k] = abs(sigma[k] / safeCount - mean[k] * mean[k]);
   }
 
-  var minVar = sigma[0].r + sigma[0].g + sigma[0].b;
-  var kuwaColor = mean[0];
-  let v1 = sigma[1].r + sigma[1].g + sigma[1].b;
-  kuwaColor = select(kuwaColor, mean[1], v1 < minVar);
-  minVar = select(minVar, v1, v1 < minVar);
-  let v2 = sigma[2].r + sigma[2].g + sigma[2].b;
-  kuwaColor = select(kuwaColor, mean[2], v2 < minVar);
-  minVar = select(minVar, v2, v2 < minVar);
-  let v3 = sigma[3].r + sigma[3].g + sigma[3].b;
-  kuwaColor = select(kuwaColor, mean[3], v3 < minVar);
+  // Idea 1: generalised Kuwahara. Instead of snapping to the single
+  // lowest-variance sector (which leaves hard block seams where two sectors
+  // tie), every sector contributes with weight 1 / (1 + sigma^q); q = 8 keeps
+  // the classic edge-preserving choice but blends near-ties smoothly.
+  var weightSum = 0.0;
+  var weighted = vec3<f32>(0.0);
+  var varSum = 0.0;
+  var sectorLuma: array<f32, 4>;
+  for (var k = 0; k < 4; k++) {
+    let v = sigma[k].r + sigma[k].g + sigma[k].b;
+    let w = 1.0 / (1.0 + pow(sqrt(v) * 25.5, 8.0));
+    weighted += mean[k] * w;
+    weightSum += w;
+    varSum += v;
+    sectorLuma[k] = dot(mean[k], vec3<f32>(0.2126, 0.7152, 0.0722));
+  }
+  let kuwaColor = weighted / max(weightSum, 1e-6);
 
   let smallRadiusMix = clamp(1.0 - effectiveRadius, 0.0, 1.0);
   let blendedRGB = mix(kuwaColor, baseSample.rgb, smallRadiusMix);
@@ -124,11 +140,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let shimmer = sin(uv.x * 200.0 + u.config.x * 12.0) * treble * 0.05;
   let wetTint = vec3<f32>(0.08, 0.16, 0.22) * wetRunner * (0.3 + treble * 0.3);
   var finalRGB = clamp(satColor + vec3<f32>(shimmer) + wetTint, vec3<f32>(0.0), vec3<f32>(4.0));
+
+  // Idea 2: impasto. The four sector means already sample left/right and
+  // up/down of this pixel, so their luma difference is the slope of the
+  // painted surface. Busy (high-variance) regions carry thick paint; a fixed
+  // studio light from the upper left catches the ridges.
+  let stylization = clamp(effectiveRadius / 12.0, 0.0, 1.0);
+  let paintSlope = vec2<f32>(
+    (sectorLuma[1] + sectorLuma[3]) - (sectorLuma[0] + sectorLuma[2]),
+    (sectorLuma[2] + sectorLuma[3]) - (sectorLuma[0] + sectorLuma[1])
+  );
+  let thickness = clamp(sqrt(varSum * 0.25) * 6.0, 0.0, 1.0) * stylization;
+  let ridge = dot(paintSlope, vec2<f32>(-0.6, -0.8)) * 2.2;
+  finalRGB = finalRGB * (1.0 + clamp(ridge, -0.6, 0.6) * thickness * 0.55);
+
+  // Idea 3: canvas weave. Where the paint is thin (stylised but flat), the
+  // over/under texture of the linen shows through the film.
+  let gp = vec2<f32>(global_id.xy);
+  let warp = abs(sin(gp.x * 1.2566));
+  let weft = abs(sin(gp.y * 1.2566));
+  let over = step(0.5, fract((floor(gp.x / 2.5) + floor(gp.y / 2.5)) * 0.5));
+  let weave = mix(warp, weft, over);
+  let thinPaint = (1.0 - thickness) * stylization;
+  finalRGB = finalRGB * (1.0 - (1.0 - weave) * 0.10 * thinPaint);
   finalRGB = mix(finalRGB, finalRGB * slick * 1.18, 0.14 + wetRunner * 0.2);
   finalRGB += slick * (packets * 0.12 + clickClarity * 0.22);
+  finalRGB = aces(max(finalRGB, vec3<f32>(0.0)) * 0.8);
   finalRGB = mix(finalRGB, prev.rgb, 0.14 * (0.4 + wetRunner));
 
-  let stylization = clamp(effectiveRadius / 12.0, 0.0, 1.0);
   let alpha = clamp(baseSample.a * 0.5 + stylization * 0.4 + (1.0 - mouseFactor) * 0.2 + bass * 0.1, 0.0, 1.0);
   let depth = textureLoad(readDepthTexture, coord, 0).r;
   let outCol = vec4<f32>(finalRGB, alpha);

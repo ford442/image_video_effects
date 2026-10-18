@@ -2,7 +2,7 @@
   "id": "interactive-fisheye",
   "name": "Fluid Lens Dynamics",
   "url": "shaders/interactive-fisheye.wgsl",
-  "description": "Kelvin-Voigt droplet lens with capillary waves, held meniscus pinch, oil-slick thin-film rim, traveling caustic runners, and exact-load state memory. A remains [h, v, nx, ny].",
+  "description": "Kelvin-Voigt droplet lens that refracts through its simulated surface, so overshoot and capillary waves really bend the image; the convex body focuses light into a caustic and the meniscus darkens. Held pinch, caustic runners and splash fronts. A remains [h, v, nx, ny].",
   "features": [
     "mouse-driven",
     "geometry",
@@ -48,44 +48,6 @@
       "max": 1
     }
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "id": "surface_tension",
-      "name": "Surface Tension",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "id": "viscosity",
-      "name": "Viscosity",
-      "default": 0.35,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "id": "mass",
-      "name": "Lens Mass",
-      "default": 0.45,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "id": "splash_threshold",
-      "name": "Splash Threshold",
-      "default": 0.35,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
-  ],
   "tags": [
     "filter",
     "image-processing",
@@ -95,5 +57,47 @@
     "lens",
     "fluid",
     "temporal"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "id": "surface_tension",
+          "name": "Surface Tension",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "id": "viscosity",
+          "name": "Viscosity",
+          "default": 0.35,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "id": "mass",
+          "name": "Lens Mass",
+          "default": 0.45,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "id": "splash_threshold",
+          "name": "Splash Threshold",
+          "default": 0.35,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

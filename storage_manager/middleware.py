@@ -55,3 +55,19 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         response.headers["X-RateLimit-Remaining"] = str(max(0, self.requests - count))
         response.headers["X-RateLimit-Reset"] = str(int(reset))
         return response
+
+
+class CrossOriginResourcePolicyMiddleware(BaseHTTPMiddleware):
+    """Mark responses as embeddable by cross-origin isolated pages (#1314).
+
+    The app sends COEP so it can share memory with its render worker. With
+    `credentialless` the browser already loads no-cors images from this host;
+    an explicit CORP header also keeps them working for pages that use
+    `require-corp`. Never overrides a route that set its own policy.
+    """
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers.setdefault("Cross-Origin-Resource-Policy", "cross-origin")
+        return response
+

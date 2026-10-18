@@ -7,57 +7,93 @@ export interface VideoSegment {
 }
 
 const DURATION_CACHE = new Map<string, number>();
+/** Probes still waiting on metadata; concurrent callers share one request (#1404). */
+const IN_FLIGHT = new Map<string, Promise<number | undefined>>();
+const PROBE_TIMEOUT_MS = 15000;
+
+let loggedBlocked = false;
+
+/**
+ * True when the WebGPU boot probe has not succeeded (failed, or not published yet).
+ * Media probes are wasted work behind the "WebGPU required" overlay.
+ */
+function isRendererBlocked(): boolean {
+    return typeof window !== 'undefined' && window.webgpuProbe?.ok !== true;
+}
 
 /**
  * Probe a video's duration by loading it into a hidden <video> element.
- * Cached per-URL for the session.
+ * Cached per-URL for the session. Resolves undefined without touching the
+ * network while the renderer is blocked; that result is not cached.
  */
-export async function probeVideoDuration(url: string): Promise<number | undefined> {
+export function probeVideoDuration(url: string): Promise<number | undefined> {
     const cached = DURATION_CACHE.get(url);
     if (cached !== undefined) {
-        return cached;
+        return Promise.resolve(cached);
+    }
+    const pending = IN_FLIGHT.get(url);
+    if (pending) {
+        return pending;
+    }
+    if (isRendererBlocked()) {
+        if (!loggedBlocked) {
+            loggedBlocked = true;
+            console.info('[videoSegmentManager] Duration probes skipped: renderer blocked');
+        }
+        return Promise.resolve(undefined);
     }
 
-    return new Promise((resolve) => {
+    const probe = new Promise<number | undefined>((resolve) => {
         const video = document.createElement('video');
         video.preload = 'metadata';
         video.muted = true;
         video.crossOrigin = 'anonymous';
 
-        const cleanup = () => {
+        let settled = false;
+        let timer: ReturnType<typeof setTimeout> | undefined;
+
+        const finish = (duration: number | undefined) => {
+            if (settled) return;
+            settled = true;
+            if (timer !== undefined) clearTimeout(timer);
             video.removeEventListener('loadedmetadata', onLoaded);
             video.removeEventListener('error', onError);
-            video.src = '';
-            video.load();
+            // Release the media resource; no load() when nothing was ever requested.
+            if (video.getAttribute('src')) {
+                video.removeAttribute('src');
+                video.load();
+            }
+            resolve(duration);
         };
 
         const onLoaded = () => {
             const duration = video.duration;
             if (duration && !isNaN(duration) && isFinite(duration)) {
                 DURATION_CACHE.set(url, duration);
-                cleanup();
-                resolve(duration);
+                finish(duration);
             } else {
-                cleanup();
-                resolve(undefined);
+                finish(undefined);
             }
         };
 
-        const onError = () => {
-            cleanup();
-            resolve(undefined);
-        };
+        const onError = () => finish(undefined);
 
-        // Time out after 15 seconds
-        setTimeout(() => {
-            cleanup();
-            resolve(undefined);
-        }, 15000);
-
+        timer = setTimeout(() => finish(undefined), PROBE_TIMEOUT_MS);
         video.addEventListener('loadedmetadata', onLoaded);
         video.addEventListener('error', onError);
         video.src = url;
     });
+
+    IN_FLIGHT.set(url, probe);
+    void probe.finally(() => IN_FLIGHT.delete(url));
+    return probe;
+}
+
+/** Test hook: forget cached durations, in-flight probes and the blocked log latch. */
+export function resetDurationProbesForTests(): void {
+    DURATION_CACHE.clear();
+    IN_FLIGHT.clear();
+    loggedBlocked = false;
 }
 
 /**
@@ -111,12 +147,15 @@ export function pickRandomSegment(
 
     let random = Math.random() * totalWeight;
     let chosen = eligible[0];
-    for (let i = 0; i < eligible.length; i++) {
-        random -= weights[i];
+    for (const [i, video] of eligible.entries()) {
+        random -= weights[i] ?? 0;
         if (random <= 0) {
-            chosen = eligible[i];
+            chosen = video;
             break;
         }
+    }
+    if (!chosen) {
+        return null;
     }
 
     const duration = chosen.duration || 0;

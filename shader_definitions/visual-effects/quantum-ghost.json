@@ -3,7 +3,7 @@
   "name": "Quantum Ghost",
   "category": "visual-effects",
   "url": "shaders/quantum-ghost.wgsl",
-  "description": "Quantum uncertainty visualization with Gaussian wave packet spreading, interference patterns from partial measurement, and entanglement correlation lines between ghost copies. Ghostly translucent copies with phase-dependent opacity, neon quantum numbers, HDR bloom on measurement events, ACES tone mapping, and chromatic separation by momentum uncertainty.",
+  "description": "Quantum ghost: radial ghost copies with double-slit fringes where they overlap, wave packets re-emitted from the cursor, and click collapse that snaps the ghosts back.",
   "features": [
     "mouse-driven",
     "audio-reactive",

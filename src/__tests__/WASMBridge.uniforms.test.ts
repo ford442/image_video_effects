@@ -1,15 +1,15 @@
 /**
- * @jest-environment jsdom
+ * @vitest-environment jsdom
  *
  * Tests WASM bridge input-source mapping and pending-source flush on init.
  * Uses the real wasm_bridge module (not the mock in WASMBridge.test.ts).
  */
 
 describe('WASM bridge uniforms (setInputSource)', () => {
-  const ccall = jest.fn();
-  const malloc = jest.fn().mockReturnValue(1000);
-  const free = jest.fn();
-  const getValue = jest.fn((ptr: number, type: string): number => {
+  const ccall = vi.fn();
+  const malloc = vi.fn().mockReturnValue(1000);
+  const free = vi.fn();
+  const getValue = vi.fn((ptr: number, type: string): number => {
     if (type === 'float' && ptr === 1000) return 1.25;
     if (type === 'float' && ptr === 1004) return 2.5;
     if (type === 'float' && ptr === 1008) return 3.75;
@@ -23,13 +23,13 @@ describe('WASM bridge uniforms (setInputSource)', () => {
       _malloc: malloc,
       _free: free,
       getValue,
-      HEAPU8: { set: jest.fn() },
-      HEAPF32: { set: jest.fn() },
+      HEAPU8: { set: vi.fn() },
+      HEAPF32: { set: vi.fn() },
     };
   }
 
   beforeEach(() => {
-    jest.resetModules();
+    vi.resetModules();
     ccall.mockReset();
     malloc.mockReset();
     malloc.mockReturnValue(1000);
@@ -42,7 +42,7 @@ describe('WASM bridge uniforms (setInputSource)', () => {
       if (type === 'i32' && ptr === 1012) return 0;
       return 0;
     });
-    (window as unknown as { PixelocityWASM?: unknown }).PixelocityWASM = jest
+    (window as unknown as { PixelocityWASM?: unknown }).PixelocityWASM = vi
       .fn()
       .mockResolvedValue(makeMockModule());
   });
@@ -51,6 +51,8 @@ describe('WASM bridge uniforms (setInputSource)', () => {
     const bridge = await import('../wasm/wasm_bridge');
     ccall.mockImplementation((name: string) => {
       if (name === 'initWasmRenderer') return Promise.resolve(1);
+      // The bridge waits for C++ Initialize() to report Ready (init gate).
+      if (name === 'isRendererInitialized') return 1;
       return undefined;
     });
     const canvas = document.createElement('canvas');
@@ -94,6 +96,8 @@ describe('WASM bridge uniforms (setInputSource)', () => {
 
     ccall.mockImplementation((name: string) => {
       if (name === 'initWasmRenderer') return Promise.resolve(1);
+      // The bridge waits for C++ Initialize() to report Ready (init gate).
+      if (name === 'isRendererInitialized') return 1;
       return undefined;
     });
     const canvas = document.createElement('canvas');

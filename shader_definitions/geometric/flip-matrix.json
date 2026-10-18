@@ -15,7 +15,6 @@
     {
       "id": "density",
       "name": "Grid Density",
-      "type": "float",
       "default": 0.3,
       "min": 0,
       "max": 1
@@ -23,7 +22,6 @@
     {
       "id": "radius",
       "name": "Effect Radius",
-      "type": "float",
       "default": 0.4,
       "min": 0,
       "max": 1
@@ -31,7 +29,6 @@
     {
       "id": "rotation",
       "name": "Flip Intensity",
-      "type": "float",
       "default": 0.5,
       "min": 0,
       "max": 1
@@ -39,17 +36,10 @@
     {
       "id": "gap",
       "name": "Tile Gap",
-      "type": "float",
       "default": 0.1,
       "min": 0,
       "max": 1
     }
-  ],
-  "updatedParams": [
-    { "index": 0, "name": "Grid Density", "default": 0.3, "min": 0, "max": 1 },
-    { "index": 1, "name": "Effect Radius", "default": 0.4, "min": 0, "max": 1 },
-    { "index": 2, "name": "Flip Intensity", "default": 0.5, "min": 0, "max": 1 },
-    { "index": 3, "name": "Tile Gap", "default": 0.1, "min": 0, "max": 1 }
   ],
   "feedbackPacking": "A/C = ACES display RGBA for update-wave persistence; B is unused; source depth passes through.",
   "tags": [
@@ -57,5 +47,39 @@
     "kinetic",
     "geometric",
     "interactive"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Grid Density",
+          "default": 0.3,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 1,
+          "name": "Effect Radius",
+          "default": 0.4,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 2,
+          "name": "Flip Intensity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 3,
+          "name": "Tile Gap",
+          "default": 0.1,
+          "min": 0,
+          "max": 1
+        }
+      ]
+    }
+  }
 }

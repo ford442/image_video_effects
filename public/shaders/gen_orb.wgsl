@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: lobe-switch sparks where trajectories cross between the two wings; unstable fixed-point eyes C± = (±√(β(ρ−1)), ±√(β(ρ−1)), ρ−1)
+//  Upgraded: 2026-09-27
+//  Ideas: lobe-switch sparks where trajectories cross between the two wings; unstable fixed-point eyes C± = (±√(β(ρ−1)), ±√(β(ρ−1)), ρ−1); Lyapunov stretch sheen (high |Δpos|/dt filaments thin and bright); Poincaré z=ρ−1 flashes
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -142,6 +142,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let jitterAmp = treble * 0.35 + kick * 0.8;
 
     var sparks = 0.0;
+    var poincare = 0.0;
 
     for (var s = 0; s < 14; s = s + 1) {
         if (s >= streamCount) { break; }
@@ -188,8 +189,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 let depth = 1.0 - (z / 60.0);
                 maxDepth = max(maxDepth, depth);
 
-                let particleSize = (0.003 + avgVel * 0.5) * (0.5 + depth * 0.5);
+                // Idea 1 — Lyapunov stretch sheen: mixing stretches glow thin and bright.
+                let stretch = clamp(avgVel * 80.0, 0.0, 1.0);
+                let particleSize = mix(0.0046, 0.0011, stretch) * (0.5 + depth * 0.5);
                 let glow = particleSize / (dist * dist + 0.0001);
+                let lyapGain = mix(0.82, 1.65, stretch);
 
                 let speedNorm = clamp(avgVel * 50.0, 0.0, 1.0);
                 let hue = f32(s) * 0.125 + speedNorm * 0.3 + time * 0.05;
@@ -211,7 +215,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 let depthHalo = smoothstep(0.5, 1.0, depth);
                 let halo = (particleSize * 4.0) / (dist * dist * 4.0 + 0.001) * depthHalo;
 
-                accumColor = accumColor + rgb * glow * trailFade * depth * 0.3 * glowBoost;
+                accumColor = accumColor + rgb * glow * trailFade * depth * 0.3 * glowBoost * lyapGain;
                 accumColor = accumColor + rgb * halo * trailFade * 0.06;
 
                 if (prevScreenPos.x > -100.0) {
@@ -220,9 +224,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                     accumColor = accumColor + rgb * lineGlow * trailFade * depth * 0.1 * glowBoost;
                 }
 
-                // ─── Idea 1: lobe-switch sparks — the chaotic hop between wings (x changes sign) ───
+                // ─── Idea 1 (09-14): lobe-switch sparks — the chaotic hop between wings (x changes sign) ───
                 if (currentPos.x * pos.x < 0.0) {
                     sparks = sparks + 0.000004 / (dist * dist + 0.000004) * trailFade * depth;
+                }
+
+                // Idea 2 — Poincaré z=ρ−1 flashes: crossing the plane of the fixed points.
+                let planeZ = rho - 1.0;
+                if ((currentPos.z - planeZ) * (pos.z - planeZ) < 0.0) {
+                    poincare = poincare + 0.000005 / (dist * dist + 0.000004) * trailFade * depth;
                 }
 
                 prevScreenPos = screenPos;
@@ -249,6 +259,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     accumColor = accumColor + vec3<f32>(0.4, 0.9, 1.0) * eyeRing * (0.6 + mids * 0.4);
 
     accumColor = accumColor + vec3<f32>(1.0, 0.95, 0.9) * sparks * (1.5 + treble * 1.5);
+    accumColor = accumColor + vec3<f32>(1.0, 0.88, 0.45) * poincare * (1.4 + treble * 1.2);
     accumColor = accumColor + vec3<f32>(0.6, 0.8, 1.0) * rippleRing * 0.5;
 
     generatedColor = generatedColor + accumColor;

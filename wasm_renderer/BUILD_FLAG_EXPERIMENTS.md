@@ -32,9 +32,7 @@ ASYNCIFY is required for `wgpuInstanceWaitAny` + emdawn callback mode (`device.c
 
 ### CMake vs `build.sh`
 
-CI and `npm run wasm:build` use **`build.sh` only**. CMake (`CMakeLists.txt`) is IDE/fallback — two-step emdawn historically broke with `-sUSE_WEBGPU=1` leakage. **2026-09-19:** CMake is now a thin wrapper that runs `build.sh` (see the dual-build section below).
-
-**2026-09-21:** The TU list moved into the contract (`sources`); build.sh reads it. `compile_commands.json` is rendered from the contract by `npm run wasm:compile-commands`, not from CMake — the wrapper compiles nothing, so `CMAKE_EXPORT_COMPILE_COMMANDS` would be empty. All 9 TUs pass `-fsyntax-only` with the generated per-TU flags (local em++ 6.0.6). Human dump: `reports/wasm_compile_line.txt`.
+CI and `npm run wasm:build` use **`build.sh` only**. `CMakeLists.txt` was deleted in 2026-10: it was never a CI build, two-step emdawn historically broke with `-sUSE_WEBGPU=1` leakage, and it guessed the emdawn include dir.
 
 **2026-07-26:** Removed duplicate `-sGROWABLE_ARRAYBUFFERS=0` from the emcc line (cosmetic; no size change).
 
@@ -68,11 +66,33 @@ change. That is the drift `latest` would have let through silently.
 
 ### Flag SoT
 
-`build.sh` (via `scripts/format-wasm-compile-flags.js`) and `CMakeLists.txt` (`file(READ)` +
-`string(JSON)`) both read `std`, `opt`, `usePort`, `sFlags`, `jsOutputName` from
-`wasm_compile_flags.json`. `verify:wasm-invariants` fails if either hardcodes a `-s` flag or
+`build.sh` (via `scripts/format-wasm-compile-flags.js`) reads `std`, `opt`, `usePort`,
+`sFlags`, `extraFlags`, `jsOutputName` from
+`wasm_compile_flags.json`. `verify:wasm-invariants` fails if it hardcodes a `-s` flag or
 `--use-port`, or if CI's emsdk version drifts from the pin. The flag set is unchanged, and so is the output
 (see the byte-identical rebuild above).
+
+### `-sENVIRONMENT=web`, `-msimd128`, `-flto` (2026-10-03, emsdk 6.0.9, `-O2`, ASYNCIFY)
+
+Measured with the source of the WP-B correctness branch. All variants pass `wasm:validate`.
+
+| Variant | .wasm bytes | .js bytes | Delta (.wasm / .js) |
+|---------|------------:|----------:|---------------------|
+| baseline | 158,745 | 82,803 | — |
+| `-sENVIRONMENT=web` | 158,745 | 81,385 | 0 / −1,418 |
+| `-msimd128` | 159,855 | 82,803 | +1,110 / 0 |
+| `-flto` | 146,198 | 83,053 | **−12,547** / +250 |
+| web + simd128 | 159,855 | 81,385 | +1,110 / −1,418 |
+| web + simd128 + flto | 147,096 | 81,635 | −11,649 / −1,168 |
+
+**Decision: adopt `-flto` only** (`extraFlags` in `wasm_compile_flags.json`).
+- `-flto`: −12.5 KB `.wasm` for +250 B glue. Pure optimisation, no ABI change.
+- `-sENVIRONMENT=web`: rejected. It only trims 1.4 KB of glue, and it drops the worker/node
+  loaders. That would block loading the module in a Worker, which the planned off-main-thread
+  render engine needs, and Node-side tooling.
+- `-msimd128`: rejected on size (+1.1 KB). The RGBA8→float upload loop and `FloatToHalf` did not
+  get smaller under autovectorisation at `-O2`. Revisit only with a measured upload-time win on
+  real hardware. That is a perf question, and it can't be answered headlessly.
 
 ### JSPI vs ASYNCIFY: stay on ASYNCIFY (2026-09-13)
 
@@ -92,84 +112,99 @@ available. **ASYNCIFY stays the committed default.** Before anyone attempts the 
 - Expected upside is bounded by the table above: ≈ −40 KB `.wasm` (−31%) plus some init time.
   Record size and init-time numbers in a new dated section here. `-O3` stays a benchmark, not a default.
 
-## Dual build: JSPI primary + ASYNCIFY fallback (2026-09-19)
+## Release flags + debug profiles (2026-10-18, emsdk 6.0.12, `-O2 -flto`, ASYNCIFY) — #1343 Phase 3
 
-Compile ABI only; nothing has been promoted. #1080 still owns Promote / Stay-B / Demote.
+Measured with `bash wasm_renderer/measure_wasm_build_flags.sh`, which builds the real
+contract flags, TU list and export lists (the old version built a stub export list and
+overwrote this file). Sources are the tree at the commit that adds this section.
 
-**What changed**
+| Variant | .wasm bytes | .js bytes | Delta (.wasm / .js) |
+|---------|------------:|----------:|---------------------|
+| baseline | 158,212 | 84,684 | — |
+| `-fno-exceptions -fno-rtti` | 171,783 | 83,882 | **+13,571** / −802 |
+| `-fno-exceptions` | 171,973 | 83,877 | **+13,761** / −807 |
+| `-fno-rtti` | 158,023 | 84,683 | −189 / −1 |
+| `-sENVIRONMENT=web` | 158,212 | 83,265 | 0 / −1,419 |
+| `-sENVIRONMENT=web,worker` | 158,212 | 83,645 | 0 / −1,039 |
+| `--closure 1` | 158,212 | 35,542 | 0 / **−49,142 (−58%)** |
+| `-sASYNCIFY_IMPORTS=emwgpuWaitAny` | 158,212 | 84,706 | 0 / +22 |
+| `-sASYNCIFY_IGNORE_INDIRECT` | 126,631 | 84,690 | **−31,581 (−20%)** / +6 |
 
-- `wasm_compile_flags.json` has two graphs. The top-level `sFlags` is the ASYNCIFY fallback and
-  is **unchanged**. `jspi.sFlags` is the same list with `ASYNCIFY` → `JSPI`, and
-  `verify:wasm-invariants` requires that relationship. `build.sh` loops over
-  `format-wasm-compile-flags.js variants` and emits `pixelocity_wasm.{js,wasm}` plus
-  `pixelocity_wasm_jspi.{js,wasm}`.
-- `CMakeLists.txt` is now a thin `add_custom_target` around `build.sh` plus a headers-only
-  `INTERFACE` target for IDEs. It has no `add_executable` and no link options, so it can't
-  produce a third flag set or leak `--use-port` into per-TU compiles.
-- `init.ts` loads the JSPI glue when `WebAssembly.Suspending` + `WebAssembly.promising` exist. If
-  that script fails to load or instantiate, it falls back to the ASYNCIFY glue. Both register
-  `PixelocityWASM`. `getDiagnostics().wasmArtifact` reports which build is loaded.
+(The `.js` column moves by a few bytes with the output file name.)
 
-**Correction to the 2026-09-13 note: five WaitAny sites, not three**
+Decisions:
 
-| Site | Function | Exports that reach it |
-|------|----------|-----------------------|
-| `device.cpp` adapter request | `CreateDevice` | `initWasmRenderer` |
-| `device.cpp` device request | `CreateDevice` | `initWasmRenderer` |
-| `device.cpp` format-probe error scope | `CreateDevice` | `initWasmRenderer` |
-| `pipeline.cpp` pipeline error scope | `LoadShader` | `loadShader`, `reloadShader` |
-| `resources.cpp` history-tex error scope | `TryCreateHistoryTexture` | `initWasmRenderer`, **`resizeCanvas`**, **`setColorFormat`** (via `RecreateTextures`) |
+- **`-fno-rtti`: adopted** (`extraFlags`). −189 B, and the sources use neither `typeid` nor
+  `dynamic_cast`, so it is a tripwire more than a saving.
+- **`-fno-exceptions`: rejected, it makes the binary 8.7% bigger.** Emscripten already
+  disables exception catching by default, so there was little to strip; why the flag grows
+  the output was not investigated (a different libc++ variant is the likely cause). The
+  `try`/`catch` in `device.cpp` and `audio_depth.cpp` are inside `EM_JS` (JavaScript) and
+  are not affected either way.
+- **`-sENVIRONMENT=web,worker`: not adopted.** It keeps the Worker loader the render
+  engine needs, but saves only 1 KB of glue. (`web` alone is the same 1.4 KB as before.)
+- **`ASYNCIFY_IMPORTS`: nothing to gain.** The only async import is `emwgpuWaitAny`
+  (`library_webgpu.js` marks it `__async`), which emscripten already adds. Setting the
+  list by hand is a no-op.
+- **`ASYNCIFY_IGNORE_INDIRECT` (+ `ASYNCIFY_ADD`): the biggest win and not adopted.**
+  −31.6 KB (−20%), because no indirect call is instrumented. That is only correct if no
+  indirect call sits on the stack while `wgpuInstanceWaitAny` unwinds; one that does makes
+  the unwind hit uninstrumented code and trap. On SwiftShader (below) init, `LoadShader`'s
+  error-scope pop and a render all work with it and no `ASYNCIFY_ADD` list, but that covers
+  three of the unwinding call sites, not capture/readback or video upload. **Revisit with
+  the #1080 real-GPU run**, building an `ASYNCIFY_ADD` list from whichever paths trap.
+- **`--closure 1`: the biggest JS win and not adopted.** −49 KB of glue (the `.wasm` is
+  untouched). It renames properties, so every `Module.xxx`, `WebGPU.xxx` and `EM_JS` access
+  has to survive minification. It did on SwiftShader, but a missed access only fails at
+  runtime, and the swiftshader specs are not part of CI. Adopt it together with a boot test
+  that is, not as a flag flip.
 
-`jspi.jspiExports` = those five exports. `verify:wasm-invariants` fails if any function that
-calls `wgpuInstanceWaitAny` is missing from `jspi.waitAnyCallGraph`. It also fails if
-`call.ts` `SUSPENDING_EXPORTS` drifts from `jspiExports`, or if a bridge module `ccall`s a
-suspending export directly. The check is name-based, not full reachability: a new **caller**
-of `RecreateTextures` still needs a human to add its export.
+Functional check of the two size wins: `tests/wasm-measurement.swiftshader.spec.ts` on the
+`swiftshader` Playwright project, with `build/wasm/pixelocity_wasm.{js,wasm}` swapped for each
+variant. `closure1` and `asyncify-ignore-indirect` match the release baseline: the app boots
+`?renderer=wasm` and the standalone instance initialises, loads `kaleidoscope` through an
+ASYNCIFY unwind, and renders it with GPU timing. The spec's `plasma` load returns 0 on the
+committed main artifact too (before this change); that failure is not part of the comparison.
+SwiftShader proves the module starts and unwinds. It is not a performance or real-GPU result.
 
-**Latent ASYNCIFY bug fixed by the same change.** Emscripten's `ccall` returns
-`Asyncify.whenDone()` (a Promise) from any call that unwinds, even without `{async: true}`. The
-shipped glue does this. So before this change, `initWasmRenderer` "returned" a truthy Promise
-(`state.initialized = true` before the device existed), and `loadShader`/`reloadShader`
-returned `Number(Promise)` = NaN, which logged "Failed to compile/load shader" even when the
-shader loaded. Suspending exports now go through `callSuspending()` with
-`{async: true}` + `await` on **both** builds. Calls are serialized. While one is in flight,
-`updateUniforms`/`uploadVideoFrame`/`updateDepthMap` drop the frame and `uploadImageData`
-defers, because `RecreateTextures` has released the size-dependent textures at that point.
+### Profiles (`wasm_compile_flags.json` `profiles`)
 
-**Size (headless, NOT the pin).** These were built with the local **emcc 6.0.6** into a scratch
-directory (the pin is 6.0.9, and `emcc-version-gate.sh` rightly refuses 6.0.6). Nothing was
-committed from this build.
+| Command | Flags on top of release | `.wasm` | Output |
+|---------|------------------------|--------:|--------|
+| `npm run wasm:build:debug` | `-O0 -g -gsource-map -sASSERTIONS=2 -sSAFE_HEAP=1`, no `-flto` | 4,453,252 B | `wasm_renderer/build/debug/` |
+| `npm run wasm:build:asan` | debug + `-fsanitize=address`, minus `SAFE_HEAP` (ASan refuses to link with it) | 8,030,545 B | `wasm_renderer/build/debug/` |
 
-| Variant | `.wasm` | `.js` | vs ASYNCIFY |
-|---------|--------:|------:|------------:|
-| ASYNCIFY fallback | 148,573 B | 80,414 B | — |
-| JSPI (`-sJSPI -sJSPI_EXPORTS=<5>`) | 101,784 B | 76,605 B | **−46,789 B (−31.5%)** |
+Neither writes `public/wasm/`. Both build with ASYNCIFY, and ASan + ASYNCIFY links and runs
+the standalone SwiftShader path without a report. What the debug profile found on its first run:
 
-Both import tables have 57 entries and no `wgpuSurfacePresent`. The JSPI glue wraps exactly the
-five `jspiExports` (`instrumentWasmExports` pattern). emcc 6.0.6 warns
-`-sJSPI (ASYNCIFY=2) is still experimental`.
+1. **`lengthBytesUTF8` was never exported.** `src/wasm/bridge/state.ts` feature-detects
+   `module.lengthBytesUTF8`; with `ASSERTIONS` on, merely reading a non-exported runtime
+   method aborts, so the debug build died before init. Release silently took the
+   `TextEncoder` fallback. It is now in `wasm_exports.json` `exportedRuntimeMethods`.
+2. **The app bridge calls an ASYNCIFY export with a sync `ccall`** (`initWasmRenderer`).
+   Release gets away with it because init finishes after `ccall` has returned; `ASSERTIONS=2`
+   aborts with "The call to initWasmRenderer is running asynchronously". This is the
+   sync-`ccall` hazard described in the header of `tests/wasm-measurement.swiftshader.spec.ts`
+   and fixed only on the JSPI branch, and the frozen WASM backend (`docs/WASM_BACKEND_POLICY.md`)
+   leaves it open. Until then the debug build boots through a standalone page with
+   `{ async: true }`, not through `?renderer=wasm`.
 
-**Init time: not measured.** Needs a real GPU + Chrome (#1080 session).
+### Also in this change
 
-**Pinned build (2026-09-27, emcc 6.0.9 `4e422385`).** Both artifacts are committed from this
-build and `artifactsPendingPinnedBuild` is gone from `wasm_runtime_invariants.json`.
+- `webgpu_limits.h` is generated from `webgpu_limits.json` (`npm run gen:webgpu-limits`);
+  `device.cpp` uses the constants and `verify:device-policy` fails on a stale header or a
+  hardcoded literal. `sizeof(Uniforms)` is `static_assert`ed against the contract.
+- `device.cpp` reads the device through the public `WebGPU.getJsObject` instead of the private
+  `WebGPU.Internals.jsObjects`.
+- `EM_CACHE` is overridable (`EM_CACHE=... npm run wasm:build`); the Colab `emsdk` path is gone and
+  emsdk is found by `wasm_renderer/emsdk_env_locate.sh` (`PATH`, `$EMSDK_ENV`, `$EMSDK`, `~/emsdk`).
 
-| Variant | `.wasm` | `.js` | vs ASYNCIFY |
-|---------|--------:|------:|------------:|
-| ASYNCIFY fallback (`pixelocity_wasm`) | 150,419 B | 80,477 B | — |
-| JSPI (`pixelocity_wasm_jspi`) | 102,920 B | 76,668 B | **−47,499 B (−31.6%)** |
+## Dual build: JSPI primary + ASYNCIFY fallback (rebased 2026-10-18)
 
-Import tables: 57 entries each, no `wgpuSurfacePresent` in either. The JSPI module exports no
-`asyncify_*` functions; the ASYNCIFY module exports 5. The 6.0.9 ASYNCIFY `.wasm` is **not**
-byte-identical to the one it replaces (148,601 B on `main`). The fallback flags did not change;
-the difference is the toolchain bump plus the bridge-ABI change above. That is why the ASYNCIFY
-build is in the #1080 checklist too.
+Release `npm run wasm:build` links the same sources twice from `wasm_compile_flags.json`:
 
-**Still open (merge gate, needs #1080 hardware)**
+- `pixelocity_wasm.js` — top-level `sFlags`, ASYNCIFY fallback. Today's ABI.
+- `pixelocity_wasm_jspi.js` — `jspi.sFlags` (ASYNCIFY replaced by JSPI) plus `-sJSPI_EXPORTS`. Loaded only where `WebAssembly.Suspending` exists (`src/wasm/bridge/init.ts`).
 
-1. On Chrome + ≥1 real GPU: `CreateDevice()` and `LoadShader` succeed on the JSPI build
-   (`getDiagnostics().wasmArtifact === 'jspi'`). Record init ms for both builds here.
-2. Safari and Firefox boot the ASYNCIFY build (`wasmArtifact === 'asyncify'`).
-3. Chrome with JSPI disabled (`--disable-features=WebAssemblyJSPI` or an older channel)
-   falls back to ASYNCIFY and still initializes.
+`asyncifyFallback` stays true. Debug and ASan profiles (`WASM_PROFILE=debug`) build the ASYNCIFY graph only and are not copied to `public/wasm/`. Both graphs take `extraFlags` (`-flto`, `-fno-rtti`) and the emsdk pin on this file's release row. CMake stays deleted; `build.sh` is the only build.
 

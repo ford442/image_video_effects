@@ -3,11 +3,10 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-07-26 (Batch 15)
-//    - Removed double tonemap (Reinhard+pow stacked under ACES)
-//    - Removed dead psi() helper
-//    - Spectrum interferometer: per-source FFT bin amplitudes
-//    - Honest slider wiring (labels match effects, defaults preserved)
+//  Upgraded: 2026-09-27
+//  Ideas: nodal lines at amplitude zero; click wave packet; decoherence haze from C
+//  A packing: ACES display RGBA
+//  Kept: 2026-07-26 spectrum interferometer and honest slider wiring
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -182,9 +181,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         probability += wave * wave;
     }
 
+    // Click packet: one extra source per ripple, same envelope as the field.
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+        let rp = u.ripples[ri];
+        let age = time - rp.z;
+        if (age > 0.0 && age < 2.2) {
+            let life = exp(-age * 1.5);
+            var clickP = rp.xy * 2.0 - 1.0;
+            clickP.x *= aspect;
+            let source = clickP / fieldZoom;
+            let diff = fp - source;
+            let dist = length(diff);
+            let spread = 0.1 + uncertainty * 0.6;
+            let envelope = exp(-dist * dist / (2.0 * spread * spread));
+            let wave = sin(14.0 * dist - phaseVelocity * 3.0 * time) * envelope * life;
+            amplitude += wave;
+            probability += wave * wave;
+        }
+    }
+
     // Normalize
-    amplitude /= f32(waveCount);
-    probability /= f32(waveCount);
+    let normCount = f32(waveCount);
+    amplitude /= normCount;
+    probability /= normCount;
 
     // Phase visualization
     let phaseColor = 0.5 + 0.5 * sin(amplitude * 10.0 + time);
@@ -196,6 +216,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var col = mix(lowEnergy, midEnergy, smoothstep(0.0, 0.5, probability));
     col = mix(col, highEnergy, smoothstep(0.5, 1.0, probability));
+
+    // Nodal lines: dark where the wave crosses zero, not where |ψ|² peaks.
+    let nodal = exp(-abs(amplitude) * 22.0);
+    col = col * (1.0 - nodal * 0.72);
 
     // Phase hue via IQ cosine palette: mids rotate the palette phase, so
     // the interferogram's fringe colors track the mid spectrum.
@@ -228,6 +252,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Intensity: honest output gain (exactly 1.0 at the 0.5 default)
     col *= intensityGain;
+
+    // Decoherence: a faint haze of the previous display.
+    let prev = textureLoad(dataTextureC, coord, 0).rgb;
+    col = mix(col, prev, 0.07);
 
     // Alpha encodes probability density (|ψ|²) + collapse flashes, never flat 1.0
     let alpha = clamp(probability + nodes * 0.3 + collapsed * mouseDown, 0.0, 1.0);

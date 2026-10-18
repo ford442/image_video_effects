@@ -4,10 +4,10 @@
 //  Features: raymarched, iridescence, audio-reactive, mouse-interactive, semantic-alpha, aces-tone-mapping, chromatic-aberration, temporal-feedback, depth-aware, domain-warped-fbm, turing-banding, multi-scale-detail, ripple-reactive
 //  Complexity: High
 //  Created: 2026-05-31
-//  Updated: 2026-08-05 (Batch 36 — Algorithmist: domain-warped FBM spikes,
-//           ridged micro-detail, Gray-Scott Turing banding, three-band audio,
-//           click-ripple spike bursts, dataTextureA temporal state)
-//  By: Kimi Agent (Bright batch)
+//  Upgraded: 2026-09-27
+//  Ideas: circuit-trace glow along the Turing-band seams; outward-travelling
+//         treble-keyed signal pulse racing across the shell from the core
+//  A packing: A/C = raw HDR display RGBA history
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -175,6 +175,19 @@ fn marchRay(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: vec3<f32>, density: 
                                 vec3<f32>(0.0, 0.25, 0.25));
             let coreEmission = coreColor * coreGlow * (1.0 + audio.x * 2.0 + (spikeBoost - 1.0) * 0.5);
             col = mix(coreEmission, shellCol, mat);
+
+            // Idea 1 — circuit-trace glow: literalize "cybernetic" by lighting
+            // a thin emissive trace exactly on the Turing-band balance line.
+            let bandAtHit = turingBand(p, time);
+            let circuitGlow = smoothstep(0.72, 0.95, bandAtHit);
+            col += vec3<f32>(0.2, 0.9, 1.0) * circuitGlow * (0.4 + spectralEnv * 0.6);
+
+            // Idea 2 — signal pulse: a ring travels outward from the coral's
+            // centre across the shell, a "data pulse" whose amplitude tracks treble.
+            let pulseRaw = length(p) * 0.5 - time * 2.2;
+            let pulsePhase = pulseRaw - floor(pulseRaw);
+            let signalPulse = exp(-pow((pulsePhase - 0.5) / 0.05, 2.0)) * audio.z * 1.5;
+            col += vec3<f32>(0.25, 0.95, 1.0) * signalPulse * (0.5 + spectralEnv * 0.5);
             break;
         }
         if (mat < 0.5 && d < 0.1) {

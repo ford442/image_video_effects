@@ -2,33 +2,12 @@
 //  aurora-rift-2-pass1
 //  Category: lighting-effects
 //  Features: multi-pass-1, volumetric, curl-flow, audio-reactive, depth-aware
-//  Ideas: Birkeland plasma vortex tubes, ionospheric substorm flash bursts, multi-scale layer diffusion coupling
+//  Upgraded: 2026-10-18
+//  Ideas: Birkeland plasma vortex tubes, ionospheric substorm flash bursts, multi-scale layer diffusion coupling, omega band, picket fence
 //  A packing: volumetric data [RGB=aurora color, A=density] for Pass 2 compositor
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var videoSampler: sampler;
-@group(0) @binding(1) var videoTex:    texture_2d<f32>;
-@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
-
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var depthTex:   texture_2d<f32>;
-@group(0) @binding(5) var depthSampler: sampler;
-@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
-
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB:  texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config:      vec4<f32>,       // x=time, y=globalIntensity, z=resX, w=resY
-    zoom_params: vec4<f32>,       // x=scale, y=flowSpeed, z=diffusionRate, w=fbmOctaves
-    zoom_config: vec4<f32>,       // x=rotationSpeed, y=depthParallax, z=emitThresh, w=chromaticSpread
-    ripples:     array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash2(p: vec2<f32>) -> f32 {
     var h = dot(p, vec2<f32>(127.1, 311.7));
@@ -127,10 +106,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Enhanced parameters
     let scale = u.zoom_params.x * 3.0 + 1.0;
     let flowSpeed = u.zoom_params.y * 2.0 + 0.5;
-    let diffRate = u.zoom_params.z; // Live diffusion slider!
+    let diffRate = u.zoom_params.z;
     let fbmOctaves = i32(u.zoom_params.w * 5.0 + 2.0);
-    let depthParallax = u.zoom_config.y * 0.6 + 0.1;
-    let emitThresh = u.zoom_config.z * 0.3 + 0.1;
+    let depthParallax = 0.1 + u.zoom_params.y * 0.6;
+    let emitThresh = 0.25;
     
     // 3-band audio
     let bass = plasmaBuffer[0].x;
@@ -138,7 +117,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let treble = plasmaBuffer[0].z;
 
     // Sample depth
-    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     
     // Distance-based LOD
     let dist = length(uv - 0.5);
@@ -193,6 +172,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let vortexSheath = smoothstep(0.3, 0.9, abs(vortexTube)) * length(curl);
     pattern += vortexSheath * (0.4 + mids * 0.4);
 
+    // Idea: omega band — an equatorward tongue folding on a slow east-west wave.
+    let omegaPhase = sin(uv.x * 5.0 - time * (0.22 + u.zoom_params.y * 0.15));
+    let omegaY = 0.46 + omegaPhase * 0.07;
+    let omega = smoothstep(0.07, 0.0, abs(uv.y - omegaY)) * smoothstep(-0.2, 0.85, omegaPhase);
+    pattern += omega * 0.5;
+
+    // Idea: picket fence — narrow vertical rays on the poleward (upper) edge.
+    let picket = pow(0.5 + 0.5 * sin(uv.x * 96.0 + totalWarp.y * 6.0), 14.0);
+    let poleward = smoothstep(0.42, 0.12, uv.y);
+    pattern += picket * poleward * 0.4;
+
     // Emissive plasma on cell borders
     let border = smoothstep(emitThresh, 1.0, smoothstep(0.08, 0.12, cellDist) * pattern * length(curl));
     let plasma = hsv2rgb(fract(time * 0.07 + pattern + hyper + bass * 0.1), 0.9, 1.0);
@@ -200,6 +190,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Enhanced aurora color with violet / magenta ionospheric glow
     let auroraBase = hsv2rgb(fract(0.25 + pattern * 0.25), 0.85, 0.92);
     var auroraColor = mix(auroraBase, plasma, border * 0.6);
+    auroraColor += vec3<f32>(0.35, 0.92, 0.48) * omega * 0.4;
+    auroraColor += vec3<f32>(0.65, 0.9, 1.0) * picket * poleward * 0.28;
 
     // IDEA 2: Ionospheric geomagnetic substorm flash bursts
     // Treble and click ripples ignite localized geomagnetic substorm flares with intense N2+ violet boundary glow
@@ -234,7 +226,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let volumetric = vec4<f32>(ditheredColor, density);
     textureStore(dataTextureA, coord, volumetric);
     
-    let inputColor = textureSampleLevel(videoTex, videoSampler, uv, 0.0);
+    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     textureStore(writeTexture, coord, inputColor);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

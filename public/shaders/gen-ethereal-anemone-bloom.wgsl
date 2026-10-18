@@ -3,37 +3,32 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, click-reactive, raymarching, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: spring-eased current eddy (pointer vortex centre persists in
-//         extraBuffer and lags like water); bass-envelope tentacle
-//         retraction (anemones flinch shorter on hits, relax slowly);
+//  Upgraded: 2026-10-17
+//  Ideas: current eddy (held-pointer vortex centred where the cursor ray
+//         meets the seabed); bass tentacle retraction (anemones flinch
+//         shorter on hits);
 //         peristaltic feeding pulse of light travelling up each tentacle
 //         (speed from mids, bands from treble)
+//         2nd pass (2026-10-10): helical coil (retraction twists each
+//         tentacle into a spiral about the anemone axis instead of only
+//         shortening it); geometric peristalsis (the feed pulse is now a
+//         physical bulge of base/top radius, phase-locked to the emissive band)
+//         3rd pass (2026-10-17): seabed light pools (each anemone's tip glow
+//         pools on the sand around its base, hue-matched, dimming as the
+//         tentacles flinch); fluorescent pigment rings (transverse bands that
+//         stay dark until the feed pulse / tip glow excites a green Stokes glow)
+//  Fixes 2026-10-17: extraBuffer[133..138] never persists, so the "spring eddy"
+//         and retraction envelope were always raw pointer / raw bass; the dead
+//         state is removed. The eddy sat at fixed world xz near the origin and
+//         the camera flew away from it within seconds; it is now the cursor ray
+//         hit on the seabed. The ray used screen uv.y (grows downward) as up,
+//         so the seabed was drawn at the top of the frame; flipped.
 //  A packing: display RGB history (pre-ACES) + semantic tissue alpha;
 //             read back via exact textureLoad(dataTextureC, coord, 0)
 //  Engine: zoom_config.yz = mouse, zoom_config.w = mouse-down, config.y = ripple count
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // Anemone Tissue Properties
 const TENTACLE_DENSITY: f32 = 1.8;      // Less dense than skin
@@ -41,7 +36,7 @@ const TISSUE_SCATTERING: f32 = 2.2;     // High scattering for gelatinous look
 const TIP_EMISSION: f32 = 1.5;          // Bioluminescent emission strength
 
 // Per-frame state shared with map(): eased eddy centre + bass retraction envelope
-var<private> gEddy: vec2<f32> = vec2<f32>(0.5, 0.5);
+var<private> gEddy: vec2<f32> = vec2<f32>(0.0, 0.0); // world xz of the cursor on the seabed
 var<private> gRetract: f32 = 0.0;
 
 // --- Helpers ---
@@ -158,6 +153,19 @@ fn calculateGelatinousAlpha(thickness: f32, n: vec3<f32>, l: vec3<f32>,
     return clamp(glowAlpha, 0.25, 0.9);
 }
 
+// Idea 2nd-pass B: one shared peristaltic wave. Both the geometry (radius bulge in map)
+// and the emissive feed band (main) read this, so the glow rides a real swelling.
+fn peristalsis(y: f32, t: f32, speed: f32, mid: f32, high: f32) -> f32 {
+    let climb = y * (1.2 + high * 2.5) - t * (1.5 + mid * 4.0) * speed;
+    return pow(max(0.0, sin(climb)), 12.0);
+}
+
+// World y of an anemone's tip region for the cell centred at cc (matches map's
+// local_ground + mean tentacle height) — used to hue-match the seabed light pools.
+fn groundTipY(cc: vec2<f32>) -> f32 {
+    return -4.0 + fbm(cc * 0.2) * 2.0 + 4.0;
+}
+
 // --- Map Function ---
 
 fn map(p: vec3<f32>) -> vec2<f32> {
@@ -181,10 +189,8 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     var q = vec3<f32>(q_xz.x, p.y - local_ground, q_xz.y);
 
     // Mouse Interaction (Vortex/Eddy)
-    // Idea 1: vortex centre is the spring-eased eddy, not the raw pointer
-    let mouseWorldX = (gEddy.x - 0.5) * 30.0;
-    let mouseWorldZ = (gEddy.y - 0.5) * 30.0;
-    let mouseWorld = vec3<f32>(mouseWorldX, 0.0, mouseWorldZ);
+    // Idea 1: vortex centre is the eddy (cursor ray ∩ seabed)
+    let mouseWorld = vec3<f32>(gEddy.x, 0.0, gEddy.y);
 
     let distToMouse = length(p - mouseWorld);
     let mouseForce = exp(-distToMouse * 0.15) * 5.0 * select(0.0, 1.0, u.zoom_config.w > 0.5);
@@ -224,9 +230,19 @@ fn map(p: vec3<f32>) -> vec2<f32> {
         let radius = 0.5 + th * 0.5;
         let offset = vec3<f32>(cos(angle)*radius, 0.0, sin(angle)*radius);
 
-        let p_cone = q - offset - vec3<f32>(0.0, height * 0.5, 0.0);
-        let base_r = 0.4 + th * 0.2;
-        let top_r = 0.05;
+        // Idea 2nd-pass A: helical coil. A cone is axially symmetric, so the twist is applied
+        // about the anemone's own axis (before the per-tentacle offset): the tentacle axis
+        // becomes a helix whose winding grows with the bass flinch and with height.
+        let coil = gRetract * (0.35 + th * 0.3) * clamp(q.y, 0.0, 6.0);
+        let q_coil = rot2D(coil) * q.xz;
+        let q_c = vec3<f32>(q_coil.x, q.y, q_coil.y);
+
+        let p_cone = q_c - offset - vec3<f32>(0.0, height * 0.5, 0.0);
+        // Idea 2nd-pass B: peristaltic swell of both radii (mids/treble widen and speed it up)
+        let bulge = 1.0 + (0.05 + audioMid * 0.3 + audioHigh * 0.15) *
+                    peristalsis(p.y, time, current_speed, audioMid, audioHigh);
+        let base_r = (0.4 + th * 0.2) * bulge;
+        let top_r = 0.05 * bulge;
 
         let d = sdCappedCone(p_cone, height * 0.5, base_r, top_r);
         d_tentacles = smin(d_tentacles, d, 0.6);
@@ -269,7 +285,7 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
         let d = res.x;
         mat = res.y;
         if(d < 0.002 || t > 80.0) { break; }
-        t += d;
+        t += d * 0.8; // peristaltic bulge can push the SDF gradient above 1
     }
     return vec2<f32>(t, mat);
 }
@@ -293,32 +309,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let audioHigh = plasmaBuffer[0].z;
     let audioReactivity = 1.0 + audioBass * 0.5 + audioMid * 0.2;
 
-    // Persistent state [133..134] eddy pos, [135..136] eddy vel,
-    // [137] bass retraction envelope, [138] init. Only (0,0) writes.
+    // Stateless retraction (extraBuffer does not persist across frames)
     let rawMouse = u.zoom_config.yz;
-    var eddy = rawMouse;
-    var eddyVel = vec2<f32>(0.0);
-    var retract = clamp(audioBass, 0.0, 1.0);
-    let hasState = arrayLength(&extraBuffer) > 138u;
-    if (hasState && extraBuffer[138] > 0.5) {
-        eddy = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-        eddyVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-        eddyVel = (eddyVel + (rawMouse - eddy) * 0.05) * 0.9;
-        eddy += eddyVel;
-        let prevR = extraBuffer[137];
-        let targetR = clamp(audioBass, 0.0, 1.0);
-        retract = select(prevR * 0.96, mix(prevR, targetR, 0.5), targetR > prevR);
-    }
-    if (hasState && global_id.x == 0u && global_id.y == 0u) {
-        extraBuffer[133] = eddy.x;
-        extraBuffer[134] = eddy.y;
-        extraBuffer[135] = eddyVel.x;
-        extraBuffer[136] = eddyVel.y;
-        extraBuffer[137] = retract;
-        extraBuffer[138] = 1.0;
-    }
-    gEddy = eddy;
-    gRetract = retract;
+    gRetract = clamp(audioBass, 0.0, 1.0);
 
     // 1. Ray setup and camera matrix
     let ro = vec3<f32>(time * 2.0 * audioReactivity, -1.0, time * 2.0 * audioReactivity);
@@ -327,7 +320,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let forward = normalize(targetPos - ro);
     let right = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), forward));
     let up = cross(forward, right);
-    let rd = normalize(forward + right * uv.x + up * uv.y);
+    // screen uv.y grows downward; world up is +y
+    let rd = normalize(forward + right * uv.x - up * uv.y);
+
+    // Eddy centre: the cursor ray's hit on the mean seabed plane, so the vortex
+    // stays under the pointer while the camera drifts (gated on mouse-down in map).
+    let um = (rawMouse - vec2<f32>(0.5)) * vec2<f32>(resolution.x / resolution.y, 1.0);
+    let mdir = normalize(forward + right * um.x - up * um.y);
+    var mt = 40.0;
+    if (mdir.y < -0.01) { mt = min((-3.0 - ro.y) / mdir.y, 40.0); }
+    gEddy = ro.xz + mdir.xz * mt;
 
     // 2. Raymarching loop
     let res = raymarch(ro, rd);
@@ -370,6 +372,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         var emissive = vec3<f32>(0.0);
         var glowIntensity = 0.0;
+
+        // Idea 3rd-pass A: seabed light pools. Each anemone's tips glow down onto the
+        // sand around its base (3x3 neighbour cells so pools cross cell borders),
+        // hue-matched to the tip colour cycle; flinched (retracted) tips dim them.
+        if (mat == 1.0) {
+            let cs = mix(8.0, 2.0, u.zoom_params.y);
+            let cid = floor(p.xz / cs);
+            var pool = vec3<f32>(0.0);
+            for (var oy = -1; oy <= 1; oy++) {
+                for (var ox = -1; ox <= 1; ox++) {
+                    let nid = cid + vec2<f32>(f32(ox), f32(oy));
+                    let cc = (nid + 0.5) * cs;
+                    let r2 = dot(p.xz - cc, p.xz - cc);
+                    let tipY = groundTipY(cc);
+                    let hue = fract(tipY * 0.1 - time * 2.0 * audioReactivity);
+                    let pk = vec3<f32>(1.0, 2.0/3.0, 1.0/3.0);
+                    let pc = clamp(abs(fract(vec3<f32>(hue) + pk) * 6.0 - vec3<f32>(3.0)) - vec3<f32>(1.0), vec3<f32>(0.0), vec3<f32>(1.0));
+                    pool += pc * exp(-r2 * 0.45);
+                }
+            }
+            emissive += pool * u.zoom_params.z * 0.08 * (1.0 - gRetract * 0.5) * (1.0 + audioMid * 0.5);
+        }
         
         if (mat == 3.0) {
             isTip = true;
@@ -388,10 +412,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Idea 3: peristaltic feeding pulse climbing the tentacle body
         if (mat == 2.0 || mat == 3.0) {
-            let climb = p.y * (1.2 + audioHigh * 2.5) - fullTime * (1.5 + audioMid * 4.0) * u.zoom_params.x;
-            let band = pow(max(0.0, sin(climb)), 12.0);
+            let band = peristalsis(p.y, fullTime, u.zoom_params.x, audioMid, audioHigh);
             let feedCol = vec3<f32>(0.2, 0.95, 0.85) * (0.5 + audioMid);
-            emissive += feedCol * band * u.zoom_params.z * 0.35 * (1.0 - fogAmountEarly(t, water_murkiness));
+            let clearWater = 1.0 - fogAmountEarly(t, water_murkiness);
+            emissive += feedCol * band * u.zoom_params.z * 0.35 * clearWater;
+
+            // Idea 3rd-pass B: fluorescent pigment rings. Thin transverse bands that are
+            // dark in plain light and re-emit green (Stokes shift) only where the feed
+            // band passes or the tip glow is lit; treble sharpens the rings.
+            let ringPhase = 0.5 + 0.5 * sin(p.y * 7.0);
+            let ring = smoothstep(0.86 - audioHigh * 0.08, 0.98, ringPhase);
+            let excite = band + glowIntensity * 0.15 + 0.04;
+            emissive += vec3<f32>(0.3, 1.0, 0.35) * ring * excite * u.zoom_params.z * 0.3 * clearWater;
+
             glowIntensity = max(glowIntensity, band * u.zoom_params.z * 0.4);
         }
 

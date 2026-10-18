@@ -1,27 +1,19 @@
-// ----------------------------------------------------------------
-// Hyper-Geometric Void-Glass Seraph
-// Category: generative
-// ----------------------------------------------------------------
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+// ═══════════════════════════════════════════════════════════════════
+//  Hyper-Geometric Void-Glass Seraph
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-10-17
+//  Ideas: inner void core rotation; chromatic dispersion tied to KIFS iterations; six-wing seraphic feather-vane facets; singularity Einstein-ring gravitational lensing halo
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Folding Scale, .y = Glass Refraction, .z = Singularity Mass, .w = Chromatic Aberration
-  ripples: array<vec4<f32>, 50>,
-};
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// zoom_params: .x = Folding Scale, .y = Glass Refraction, .z = Singularity Mass, .w = Chromatic Aberration
 
 const MAX_STEPS: i32 = 100;
 const SURF_DIST: f32 = 0.001;
@@ -65,8 +57,12 @@ fn map(p_in: vec3<f32>, time: f32) -> vec2<f32> {
     let distToCenter = length(p);
     let warpFactor = 1.0 + (u.zoom_params.z * 0.5) / (distToCenter + 0.1);
 
+    // Idea 1: Inner void core rotation - twist space based on proximity to the singularity
+    let twist = smoothstep(1.5, 0.0, dSing) * time * 2.5;
+    let pRot = rot3D(p, vec2<f32>(-twist, twist * 0.5));
+
     // KIFS Fractal folding
-    var pFold = p * warpFactor;
+    var pFold = pRot * warpFactor;
     let foldScale = u.zoom_params.x;
     var iters = 0.0;
 
@@ -88,14 +84,14 @@ fn map(p_in: vec3<f32>, time: f32) -> vec2<f32> {
     // KIFS distance estimator
     let dKifs = length(pFold) * pow(foldScale, -iters) - 0.05;
 
-    // Combine the structures. Max for intersection to cut the fractal out around singularity
-    // Min to show both, let's do a smooth min to merge them
+    // Combine the structures. Smooth min to merge them
     let k = 0.5;
     let h = clamp(0.5 + 0.5 * (dKifs - dSing) / k, 0.0, 1.0);
     let d = mix(dKifs, dSing, h) - k * h * (1.0 - h);
 
-    // Return distance and material ID (iterations used for edge glow)
-    return vec2<f32>(d, iters);
+    // Return distance and material ID (iterations + wing vane modulation)
+    let vaneMod = fract(sin(dot(pFold, vec3<f32>(3.0, 5.0, 2.0))) * 0.5 + 0.5) * 0.4;
+    return vec2<f32>(d, iters + vaneMod);
 }
 
 fn getNormal(p: vec3<f32>, time: f32) -> vec3<f32> {
@@ -108,16 +104,19 @@ fn getNormal(p: vec3<f32>, time: f32) -> vec3<f32> {
     return normalize(n);
 }
 
-// Simulated refraction and chromatic aberration
-fn renderGlass(ro: vec3<f32>, rd: vec3<f32>, time: f32) -> vec3<f32> {
+// Simulated refraction, chromatic aberration, seraphic vanes, and Einstein lensing ring
+fn renderGlass(ro: vec3<f32>, rd: vec3<f32>, time: f32, bass: f32, mids: f32, treble: f32) -> vec4<f32> {
     var p: vec3<f32>;
     var dO: f32 = 0.0;
     var hit: bool = false;
     var res: vec2<f32>;
+    var minSingDist: f32 = 100.0;
+    let singRadius = max(u.zoom_params.z * 0.5, 0.15);
 
     for (var i = 0; i < MAX_STEPS; i = i + 1) {
         p = ro + rd * dO;
         res = map(p, time);
+        minSingDist = min(minSingDist, abs(length(p) - singRadius * 1.35));
         dO = dO + res.x;
         if (res.x < SURF_DIST) {
             hit = true;
@@ -148,26 +147,45 @@ fn renderGlass(ro: vec3<f32>, rd: vec3<f32>, time: f32) -> vec3<f32> {
         let refrIndex = u.zoom_params.y;
         let refrVector = refract(-viewDir, n, 1.0 / (1.0 + refrIndex));
 
-        // Chromatic aberration splits the color slightly based on normal and refrVector
-        let ca = u.zoom_params.w * 0.1;
+        // Idea 2: chromatic dispersion tied to KIFS iterations (fractal depth)
+        let kifsDepth = res.y;
+        let ca = u.zoom_params.w * 0.1 * (1.0 + kifsDepth * 0.8);
 
         let colR = 0.5 + 0.5 * cos(6.28 * (dot(refrVector + vec3<f32>(ca, 0.0, 0.0), vec3<f32>(1.0)) * 0.5 + 0.0));
         let colG = 0.5 + 0.5 * cos(6.28 * (dot(refrVector, vec3<f32>(1.0)) * 0.5 + 0.33));
         let colB = 0.5 + 0.5 * cos(6.28 * (dot(refrVector - vec3<f32>(ca, 0.0, 0.0), vec3<f32>(1.0)) * 0.5 + 0.67));
 
-        let glassBase = vec3<f32>(colR, colG, colB);
+        let rawGlass = vec3<f32>(colR, colG, colB);
+        let deepViolet = vec3<f32>(0.4, 0.0, 0.8);
+        let glassBase = mix(rawGlass, deepViolet, smoothstep(3.0, 6.0, kifsDepth));
+
+        // ─── Idea 3: Six-wing seraphic feather-vane facets ───
+        // Three pairs of angled seraphic wing planes with fine beveled glass feather barbs
+        let wingAngle = atan2(p.y, abs(p.x) + 1e-4);
+        let sixWingMask = pow(0.5 + 0.5 * cos(wingAngle * 6.0 - time * 0.6), 4.0);
+        let barbStriae = pow(0.5 + 0.5 * sin(length(p.xy) * 22.0 - wingAngle * 12.0 + kifsDepth * 3.14), 8.0);
+        let seraphVanes = mix(vec3<f32>(1.0, 0.85, 0.42), vec3<f32>(0.25, 0.95, 1.0), fract(kifsDepth))
+                        * sixWingMask * barbStriae * (0.45 + fresnel * 1.4 + treble * 0.6);
 
         // Edge glow based on iteration count (res.y)
         let edgeGlow = smoothstep(5.0, 6.0, res.y) * vec3<f32>(0.0, 1.0, 1.0); // Cyan glow
 
         // Combine
-        col = mix(glassBase, vec3<f32>(1.0), fresnel) + vec3<f32>(spec) + edgeGlow * 0.5;
+        col = mix(glassBase, vec3<f32>(1.0), fresnel) + vec3<f32>(spec) + edgeGlow * 0.5 + seraphVanes;
 
         // Attenuate by distance
         col = col * exp(-0.1 * dO);
     }
 
-    return col;
+    // ─── Idea 4: Singularity Einstein-ring gravitational lensing halo ───
+    // Rays grazing the central void singularity bend into a photon-sphere ring with Doppler spin asymmetry
+    let photonRing = exp(-minSingDist * 26.0) * (0.55 + u.zoom_params.z * 0.25 + bass * 0.45);
+    let dopplerShift = clamp(rd.x * 2.2, -1.0, 1.0);
+    let einsteinColor = mix(vec3<f32>(1.0, 0.72, 0.32), vec3<f32>(0.38, 0.82, 1.15), dopplerShift * 0.5 + 0.5);
+    col += einsteinColor * photonRing * (1.0 + mids * 0.4);
+
+    let normDepth = select(0.0, clamp(1.0 - dO / 24.0, 0.0, 1.0), hit);
+    return vec4<f32>(col, max(normDepth, photonRing * 0.5));
 }
 
 
@@ -177,6 +195,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (id.x >= dimensions.x || id.y >= dimensions.y) {
         return;
     }
+    let coord = vec2<i32>(id.xy);
 
     let uv = vec2<f32>(id.xy) / vec2<f32>(dimensions);
     let uv_centered = (uv - 0.5) * 2.0;
@@ -187,14 +206,21 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var ro = vec3<f32>(0.0, 0.0, -8.0);
     let rd = normalize(vec3<f32>(p_screen, 1.0));
 
-    // Audio reactivity modulating time
-    let bass = extraBuffer[0];
+    // Audio reactivity from canonical plasmaBuffer
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
     let time = u.config.x + bass * 0.2;
 
-    let col = renderGlass(ro, rd, time);
+    let rendered = renderGlass(ro, rd, time, bass, mids, treble);
+    let col = rendered.rgb;
 
-    // Gamma correction
-    let finalCol = pow(col, vec3<f32>(0.4545));
+    let currentDisplay = acesToneMap(col);
+    let prev = textureLoad(dataTextureC, coord, 0);
+    let finalCol = mix(prev.rgb * 0.94, currentDisplay, 0.28 + bass * 0.04);
+    let alpha = max(clamp(length(col), 0.05, 0.98), prev.a * 0.92);
 
-    textureStore(writeTexture, id.xy, vec4<f32>(finalCol, 1.0));
+    textureStore(dataTextureA, coord, vec4<f32>(finalCol, alpha));
+    textureStore(writeTexture, coord, vec4<f32>(finalCol, alpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(rendered.a, 0.0, 0.0, 0.0));
 }

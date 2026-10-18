@@ -27,7 +27,11 @@
     "pulse",
     "edges"
   ],
-  "workgroup_size": [16, 16, 1],
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
   "params": [
     {
       "id": "grid_scale",
@@ -72,18 +76,50 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "chunks_used": [
-    "nearestHexCenter (hex-mosaic.wgsl / quantum-prism.wgsl)",
-    "sdSegment (gen-holographic-fracture.wgsl)",
-    "glow (anamorphic-flare.wgsl)",
-    "hsv2rgb (chronos-brush.wgsl)"
-  ],
-  "created_by": "Agent 4c - Advanced Hybrid Effect Creator",
-  "updatedParams": [
-    { "index": 0, "name": "Grid Scale", "default": 0.35, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 1, "name": "Trace Width", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 2, "name": "Chroma Spread", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
-    { "index": 3, "name": "Effect Mix", "default": 0.75, "min": 0, "max": 1, "step": 0.01 }
-  ],
-  "updated": true
+  "updated": true,
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Grid Scale",
+          "default": 0.35,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Trace Width",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Chroma Spread",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Effect Mix",
+          "default": 0.75,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    },
+    "chunks_used": [
+      "nearestHexCenter (hex-mosaic.wgsl / quantum-prism.wgsl)",
+      "sdSegment (gen-holographic-fracture.wgsl)",
+      "glow (anamorphic-flare.wgsl)",
+      "hsv2rgb (chronos-brush.wgsl)"
+    ],
+    "created_by": "Agent 4c - Advanced Hybrid Effect Creator"
+  }
 }

@@ -1,36 +1,30 @@
-// ----------------------------------------------------------------
-// Kinetic Bioluminescent Obsidian-Coral Reactor
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Kinetic Bioluminescent Obsidian-Coral Reactor
+//  Category: generative
+//  Features: audio-reactive, mouse-control, volumetric, raymarching,
+//            aces-tone-map, semantic-alpha, depth-aware
+//  Complexity: High
+//  Upgraded: 2026-10-10
+//  Ideas: fBm ridge-vein filaments; coral/obsidian contact meniscus
+//  A packing: ACES display RGBA (rgb = tone-mapped display history; a = ray coverage)
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-    zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-    zoom_params: vec4<f32>,  // .x = Color Shift, .y = Coral Density, .zw unused
-    speed_params: vec4<f32>, // .x = Fluid Speed, .y = Lattice Complexity, .zw unused
-    extra_params: vec4<f32>, // .x = Glow Intensity, .y = Void Darkness, .zw unused
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // Math and constants
-const PI = 3.14159265359;
-const MAX_STEPS = 100;
-const SURF_DIST = 0.005;
-const MAX_DIST = 50.0;
+const PI: f32 = 3.14159265359;
+const MAX_STEPS: i32 = 100;
+const SURF_DIST: f32 = 0.005;
+const MAX_DIST: f32 = 50.0;
+// The legacy controls exposed six values, but the canonical ABI carries four.
+// Keep unavailable Glow / Void at their saved defaults.
+const GLOW_INTENSITY: f32 = 2.0;
+const VOID_DARKNESS: f32 = 0.8;
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn rot(a: f32) -> mat2x2<f32> {
     let s = sin(a);
@@ -90,8 +84,9 @@ fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
     return length(max(q, vec3<f32>(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0);
 }
 
-// Distance to Obsidian Lattice and Coral
-fn map(p: vec3<f32>, mouse_pos: vec3<f32>, audio_bass: f32) -> vec2<f32> {
+// Distance to Obsidian Lattice and Coral.
+// z carries the distance between the two fields for contact-line shading.
+fn map(p: vec3<f32>, mouse_pos: vec3<f32>, audio_bass: f32) -> vec3<f32> {
     var d_obj = 0.0; // Material ID
 
     // Domain repetition for brutalist tunnel
@@ -104,7 +99,7 @@ fn map(p: vec3<f32>, mouse_pos: vec3<f32>, audio_bass: f32) -> vec2<f32> {
     var d_obsidian = sdBox(q, vec3<f32>(3.0));
 
     // Subtractions for lattice holes, using Lattice Complexity parameter
-    let complexity = max(1.0, u.speed_params.y);
+    let complexity = max(1.0, u.zoom_params.w);
     for (var i = 0.0; i < 5.0; i += 1.0) {
         if (i >= complexity) { break; }
         let s = pow(3.0, i);
@@ -118,7 +113,7 @@ fn map(p: vec3<f32>, mouse_pos: vec3<f32>, audio_bass: f32) -> vec2<f32> {
 
     // Coral Growth SDF
     let coral_density = u.zoom_params.y;
-    let fluid_speed = u.speed_params.x;
+    let fluid_speed = u.zoom_params.z;
     let noise_val = fbm(p * 0.5 + vec3<f32>(0.0, 0.0, -u.config.x * fluid_speed));
 
     // Audio pushes the coral outward
@@ -142,7 +137,7 @@ fn map(p: vec3<f32>, mouse_pos: vec3<f32>, audio_bass: f32) -> vec2<f32> {
         d_obj = 0.0; // Obsidian
     }
 
-    return vec2<f32>(final_d, d_obj);
+    return vec3<f32>(final_d, d_obj, abs(d_coral - d_obsidian));
 }
 
 // Calculate normal
@@ -174,18 +169,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
 
     // Audio Reactivity
-    let bass = extraBuffer[0];
-    let treble = extraBuffer[133];
+    let bass = plasmaBuffer[0].x;
+    let treble = plasmaBuffer[0].z;
+    let fluid_speed = u.zoom_params.z;
 
     // Mouse Interaction
     var mouse_pos = vec3<f32>(0.0, 0.0, -100.0); // Default far away
     if (u.zoom_config.w > 0.5) { // Mouse down
         let muv = u.zoom_config.yz * 2.0 - 1.0;
-        mouse_pos = vec3<f32>(muv.x * 5.0, -muv.y * 5.0, 2.0 + time * u.speed_params.x);
+        mouse_pos = vec3<f32>(muv.x * 5.0, -muv.y * 5.0, 2.0 + time * fluid_speed);
     }
 
     // Camera setup
-    var ro = vec3<f32>(0.0, 0.0, -2.0 + time * u.speed_params.x); // Camera moves forward
+    var ro = vec3<f32>(0.0, 0.0, -2.0 + time * fluid_speed); // Camera moves forward
     // Mild sway based on time
     ro.x += sin(time * 0.5) * 0.5;
     ro.y += cos(time * 0.4) * 0.5;
@@ -199,6 +195,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Mild chromatic aberration for ray directions
     let shift = 0.01;
     var final_color = vec3<f32>(0.0);
+    var center_depth = 0.0;
+    var center_coverage = 0.0;
+    var center_emission = 0.0;
 
     // Trace 3 rays for RGB split (chromatic aberration on periphery)
     let lens_dist = length(uv);
@@ -213,6 +212,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         var p = ro;
         var mat_id = 0.0;
         var dist_to_coral = 0.0;
+        var contact_gap = 1.0;
 
         // Raymarch
         for (var i = 0; i < MAX_STEPS; i++) {
@@ -227,13 +227,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
             if (abs(d) < SURF_DIST || t > MAX_DIST) {
                 mat_id = res.y;
+                contact_gap = res.z;
                 break;
             }
             t += d;
         }
 
         var col = vec3<f32>(0.0);
-        let void_darkness = u.extra_params.y; // 0.8 default
+        var ray_emission = 0.0;
 
         if (t < MAX_DIST) {
             let n = calcNormal(p, mouse_pos, bass);
@@ -272,34 +273,67 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 let dx = vec3<f32>(0.00, 0.33, 0.67) + color_shift;
                 let coral_color = palette(fbm(p) + time * 0.1, a, b, cx, dx);
 
-                // Emissive glowing
-                let glow_intensity = u.extra_params.x;
-                let emission = coral_color * glow_intensity * (1.0 + bass);
+                // Idea 1 — fBm ridge veins: two coral-native frequencies are
+                // collapsed around zero into narrow, branching emissive filaments.
+                let vein_domain = p * vec3<f32>(3.2, 6.5, 3.2) + vec3<f32>(0.0, 0.0, -time * fluid_speed * 0.18);
+                let vein_field = fbm(vein_domain) + fbm(vein_domain * 2.7 + vec3<f32>(4.1, 1.7, 8.3)) * 0.35;
+                let vein_ridge = pow(1.0 - clamp(abs(vein_field) * 3.6, 0.0, 1.0), 7.0);
+                let vein_color = mix(coral_color, vec3<f32>(0.65, 0.95, 1.0), 0.55);
 
-                col = emission * ao;
+                // Emissive glowing
+                let emission = coral_color * GLOW_INTENSITY * (1.0 + bass);
+
+                col = emission * ao + vein_color * vein_ridge * GLOW_INTENSITY * (1.2 + treble);
+                ray_emission += length(emission) * 0.2 + vein_ridge;
             }
+
+            // Idea 2 — a narrow emissive meniscus marks the smooth-min contact
+            // where living coral wets the obsidian. Grazing angles sharpen it.
+            let contact_band = 1.0 - smoothstep(0.018, 0.095, contact_gap);
+            let grazing = pow(1.0 - abs(dot(n, view_dir)), 2.0);
+            let meniscus = contact_band * (0.35 + grazing * 0.65);
+            let meniscus_color = palette(
+                fbm(p * 2.0) + time * 0.08,
+                vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0),
+                vec3<f32>(0.08, 0.40, 0.72) + u.zoom_params.x
+            );
+            col += meniscus_color * meniscus * GLOW_INTENSITY * (1.0 + bass * 0.35);
+            ray_emission += meniscus;
         }
 
         // Volumetric glowing from coral
-        let glow = dist_to_coral * 0.02 * u.extra_params.x;
+        let glow = dist_to_coral * 0.02 * GLOW_INTENSITY;
         let color_shift = u.zoom_params.x;
         let glow_color = palette(time * 0.2, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0), vec3<f32>(0.0, 0.33, 0.67) + color_shift);
 
         col += glow * glow_color;
+        ray_emission += glow;
 
         // Fog based on void darkness
-        col = mix(col, vec3<f32>(0.0, 0.0, 0.05) * (1.0 - void_darkness), smoothstep(0.0, MAX_DIST, t));
+        col = mix(col, vec3<f32>(0.0, 0.0, 0.05) * (1.0 - VOID_DARKNESS), smoothstep(0.0, MAX_DIST, t));
 
         if (c == 0) { final_color.r = col.r; }
-        if (c == 1) { final_color.g = col.g; }
+        if (c == 1) {
+            final_color.g = col.g;
+            center_depth = select(0.0, 1.0 - clamp(t / MAX_DIST, 0.0, 1.0), t < MAX_DIST);
+            center_coverage = select(0.0, 1.0, t < MAX_DIST);
+            center_emission = ray_emission;
+        }
         if (c == 2) { final_color.b = col.b; }
     }
 
     // Vignette
-    final_color *= 1.0 - length(uv) * 0.5;
+    final_color *= max(1.0 - length(uv) * 0.5, 0.0);
 
-    // Tonemapping (ACES-like)
-    final_color = (final_color * (2.51 * final_color + 0.03)) / (final_color * (2.43 * final_color + 0.59) + 0.14);
+    let mapped_color = acesToneMap(max(final_color, vec3<f32>(0.0)));
+    let prev = textureLoad(dataTextureC, coords, 0);
+    let history_weight = select(0.0, 0.1, prev.a > 0.001);
+    let display_color = mix(mapped_color, prev.rgb, history_weight);
+    let emissive_coverage = 1.0 - exp(-max(center_emission, 0.0) * 0.45);
+    let alpha = clamp(center_coverage * 0.82 + emissive_coverage * 0.16 + 0.02, 0.02, 0.98);
 
-    textureStore(writeTexture, coords, vec4<f32>(final_color, 1.0));
+    // A stores the same ACES display RGBA read from C for restrained persistence.
+    textureStore(dataTextureA, coords, vec4<f32>(display_color, alpha));
+    textureStore(writeTexture, coords, vec4<f32>(display_color, alpha));
+    textureStore(writeDepthTexture, coords, vec4<f32>(center_depth, 0.0, 0.0, 0.0));
 }

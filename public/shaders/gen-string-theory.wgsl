@@ -5,6 +5,9 @@
 //    chromatic-aberration, audio-reactive, temporal-feedback, depth-aware, upgraded-rgba
 //  Created: 2026-03-22
 //  Updated: 2026-08-03 (Batch 34)
+//  Upgraded: 2026-09-27
+//  Ideas: stiff-string inharmonicity on the partials; bridge reflection of the pluck
+//  A packing: ACES display RGBA
 //  By: Agent 4A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -61,8 +64,11 @@ fn evalStrings(p: vec2<f32>, t: f32, fundamental: f32, harmonicRichness: i32, da
       let n = f32(h);
       let amp = 0.1 * (1.0 + bass * excitement) / n;
       let damp = pow(damping, n);
-      let k = fundamental * n * 6.28318;
-      let w = fundamental * n * 3.14159;
+      // Idea 1 — stiff-string inharmonicity. Richness sharpens the upper partials.
+      let stiffB = 0.004 * f32(harmonicRichness) / 10.0;
+      let inharm = sqrt(1.0 + stiffB * n * n);
+      let k = fundamental * n * inharm * 6.28318;
+      let w = fundamental * n * inharm * 3.14159;
       y += 2.0 * amp * damp * sin(k * x) * cos(w * t);
       let hue = fract(n * 0.15 + t * 0.05);
       let c = 0.48;
@@ -79,6 +85,12 @@ fn evalStrings(p: vec2<f32>, t: f32, fundamental: f32, harmonicRichness: i32, da
     y += travelAmp * sin(x * fundamental * 12.56636 - t * fundamental * 12.56636);
     let pluckProfile = exp(-abs(sX - mouseX) * 8.0);
     y += pluckProfile * clamp(mouseY, -0.3, 0.3) * excitement * mix(0.2, 0.75, pressed);
+    // Idea 2 — bridge reflection. The pluck image travels back from the far end.
+    let bridge = 1.5;
+    let mirrored = 2.0 * bridge - mouseX;
+    let travel = fract(t * max(fundamental, 0.001) * 0.35);
+    let bounceX = mix(mouseX, mirrored, travel);
+    y += exp(-abs(sX - bounceX) * 8.0) * clamp(mouseY, -0.3, 0.3) * excitement * mix(0.12, 0.4, pressed) * (1.0 - travel);
     let dist = abs(sY - y);
     let thick = (0.003 + 0.002 * excitement) * (0.6 + 0.4 * depth);
     let intensity = smoothstep(thick * 3.0, 0.0, dist);

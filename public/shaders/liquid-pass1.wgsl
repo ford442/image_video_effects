@@ -2,29 +2,13 @@
 //  Liquid – Pass 1: Capillary Wave Physics
 //  Category: image
 //  Features: multi-pass-1, surface tension, gravity waves, ripple propagation
+//  Upgraded: 2026-10-17
+//  Ideas: crest lean down the height slope; capillary fringe from Color Shift
+//  A packing: raw (h_prev, h_curr, velocity, age)
 //  Outputs: dataTextureA (h_prev, h_curr, velocity, age)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn sampleHeight(uv: vec2<f32>) -> f32 {
   return textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).g;
@@ -73,6 +57,7 @@ fn meniscusEffect(uv: vec2<f32>, depth: f32, surfaceTension: f32) -> f32 {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
   let uv = vec2<f32>(global_id.xy) / resolution;
   let currentTime = u.config.x;
   let pixelSize = vec2<f32>(1.0) / resolution;
@@ -153,6 +138,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   newHeight += sourceHeight + ambientHeight;
   newVelocity += sourceVelocity;
+
+  // Idea 1 — crest lean: the front face steepens along the height slope.
+  let hL = sampleHeightClamped(uv - vec2<f32>(pixelSize.x, 0.0), pixelSize);
+  let hR = sampleHeightClamped(uv + vec2<f32>(pixelSize.x, 0.0), pixelSize);
+  let hB = sampleHeightClamped(uv - vec2<f32>(0.0, pixelSize.y), pixelSize);
+  let hT = sampleHeightClamped(uv + vec2<f32>(0.0, pixelSize.y), pixelSize);
+  let slopeX = hR - hL;
+  let slopeY = hT - hB;
+  newHeight = clamp(newHeight - (slopeX + slopeY) * newVelocity * 0.12, -0.5, 0.5);
+
+  // Idea 2 — capillary fringe. Color Shift (zoom_params.w) was unread here;
+  // it sets a short wave that outruns the ambient swell.
+  let colorShift = clamp(u.zoom_params.w, 0.0, 1.0);
+  let fringePhase = currentTime * (3.5 + colorShift * 7.0);
+  let fringe = sin(uv.x * 70.0 + fringePhase) * sin(uv.y * 58.0 - fringePhase * 0.8);
+  newHeight = clamp(newHeight + fringe * 0.004 * colorShift * surfaceTension, -0.5, 0.5);
 
   let newAge = age + dt;
   let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);

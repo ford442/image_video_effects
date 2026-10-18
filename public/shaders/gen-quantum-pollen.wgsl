@@ -1,12 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Quantum Pollen — Interactivist Upgrade
+//  Quantum Pollen
 //  Category: generative
-//  Features: procedural, audio-reactive, mouse-gravity, click-burst,
-//            video-luma-spawn, depth-aware, temporal-feedback,
-//            motion-advection, chromatic-aberration, aces-tone-map
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Created: 2026-05-31
-//  Upgraded: 2026-06-29
+//  Upgraded: 2026-09-27
+//  Ideas: echinate exine spikes; tetrad dehiscence (4-grain clusters that separate)
+//  A packing: HDR advected feedback RGB, alpha = slow age accumulator
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -125,9 +124,27 @@ fn particleLayer(uv: vec2<f32>, time: f32, scale: f32, drift: vec2<f32>, phase: 
   let local = fract(gridUV) - 0.5;
   let rnd = hash22(cell);
   let center = rnd - 0.5;
-  let d = length(local - center * 0.7);
-  let core = exp(-d * d * 34.0);
+  let rel = local - center * 0.7;
+  let d = length(rel);
   let halo = exp(-d * d * 8.0);
+
+  // Idea 2: tetrad dehiscence — four grains per cell that breathe between a
+  // tight tetrad and released monads, on a per-cell clock.
+  let release = 0.5 + 0.5 * sin(time * 0.55 + rnd.y * TAU);
+  let sep = mix(0.055, 0.2, release * release);
+  let spin = rnd.x * TAU + time * (0.2 + rnd.y * 0.3);
+  // Idea 1: echinate exine — angular spikes, count and phase from the cell hash.
+  let spikes = 7.0 + floor(rnd.y * 7.0);
+  var core = 0.0;
+  for (var k = 0; k < 4; k++) {
+    let a = spin + f32(k) * 1.5707963;
+    let g = rel - vec2<f32>(cos(a), sin(a)) * sep;
+    let gd = length(g);
+    let ga = atan2(g.y, g.x);
+    let spike = pow(max(cos(ga * spikes + spin * 3.0), 0.0), 6.0);
+    let rMod = gd / (1.0 + 0.45 * spike * smoothstep(0.02, 0.07, gd));
+    core = max(core, exp(-rMod * rMod * 95.0));
+  }
   return vec3<f32>(core, halo, rnd.x);
 }
 
@@ -220,7 +237,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Motion-vector advection + temporal accumulation feedback
   let advectUV = clamp(uv01 - totalDrift * 0.008 * (1.0 + p4 * 2.0), vec2<f32>(0.0), vec2<f32>(1.0));
-  let advect = textureSampleLevel(dataTextureC, u_sampler, advectUV, 0.0);
+  let advectCoord = clamp(vec2<i32>(advectUV * res), vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1));
+  let advect = textureLoad(dataTextureC, advectCoord, 0);
   let decay = 0.92 - p4 * 0.07;
   let trailMix = 0.13 + bass * 0.05;
   var feedback = mix(advect.rgb * decay, color, trailMix);

@@ -41,41 +41,11 @@
       "step": 0.01
     }
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Complexity",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Iridescence",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Twist",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Speed",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    }
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "workgroup_size": [16, 16, 1],
   "features": [
     "mouse-driven",
     "audio-reactive",
@@ -86,5 +56,44 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Complexity",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Iridescence",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Twist",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Speed",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
+    }
+  },
+  "description": "Basal cleavage sheen now catches the broad crystal faces while treble micro-serrations sharpen the later hopper-fold generations. Upper ledges cast step shadows down the stairs, and fresh-cleave fronts sweep past, stripping the oxide to bare silver before the film regrows."
 }

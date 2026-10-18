@@ -4,30 +4,12 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
 //  Upgraded: 2026-09-14
-//  Ideas: quantal vesicle release with diffusing neurotransmitter clouds; action-potential spike with refractory afterhyperpolarization
+//  Ideas: quantal vesicle release with diffusing neurotransmitter clouds; action-potential spike with refractory afterhyperpolarization; conduction-delay ladders where each synaptic cell injects a small latency into the travelling pulse; astrocytic uptake halo that re-emits transmitter-rich regions as cool cyan sheaths
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Pulse Speed, .y = Glow Intensity, .z = Trail Decay, .w = Mouse Influence
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Pulse Speed, .y = Glow Intensity, .z = Trail Decay, .w = Mouse Influence
 
 // Persistent state (extraBuffer safe zone, pixel (0,0) writes only):
 //   [133] bass envelope, [134..135] smoothed mouse uv, [136] init flag
@@ -161,7 +143,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
 
-    let pulse_ring = fract(min_dist * 5.0 - t * pulse_speed * 0.1 + input_luma * 0.3);
+    // IDEA 3: per-cell synaptic delay: local conduction latency jitters the pulse phase.
+    let conductionDelay = hash12(i + vec2<f32>(13.7, 4.1)) * (0.18 + min_dist * 0.35);
+    let pulse_ring = fract(min_dist * 5.0 - t * pulse_speed * 0.1 + input_luma * 0.3 - conductionDelay);
     let edge_intensity = smoothstep(0.05, 0.0, min_dist);
     let ap = actionPotential(pulse_ring, treble);
     let wave = ap.x * (1.0 + env * 2.5);
@@ -175,6 +159,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Neurotransmitter clouds (glutamate green-gold) around firing boutons
     let nt = clamp(transmitter, 0.0, 1.5);
     col += vec3<f32>(0.55, 1.0, 0.45) * nt * 0.35 * glow_intensity * (1.0 + bass * 0.4);
+    // IDEA 4: astrocytic uptake sheath around transmitter-rich synapses.
+    let uptake = smoothstep(0.08, 0.8, nt) * exp(-min_dist * 9.0);
+    col = mix(col, vec3<f32>(0.22, 0.95, 0.72), uptake * 0.22);
 
     // Chromatic synapse separation: excitatory = warm, inhibitory = cool
     let excite = smoothstep(0.3, 0.8, bass);
@@ -213,7 +200,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let scaledIntensity = intensity * depthScale;
 
     // Alpha = synaptic activity: potentiated trail + firing intensity + transmitter density
-    let alpha = clamp(potentiation + scaledIntensity * 0.3 + nt * 0.2 + mids * 0.05 + treble * 0.05, 0.0, 1.0);
+    let alpha = clamp(potentiation + scaledIntensity * 0.3 + nt * 0.2 + uptake * 0.18 + mids * 0.05 + treble * 0.05, 0.0, 1.0);
 
     let display = acesToneMap(col * 1.1);
     let finalColor = vec4<f32>(display, alpha);

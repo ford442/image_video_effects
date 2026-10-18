@@ -107,7 +107,7 @@ export const HLSVideoSource: React.FC<HLSVideoSourceProps> = ({
       hls.attachMedia(video);
     };
 
-    run();
+    void run();
 
     frameRef.current = requestAnimationFrame(frameLoop);
 

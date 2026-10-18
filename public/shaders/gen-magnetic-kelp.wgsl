@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: holdfast-anchored cantilever deflection (Euler-Bernoulli s²(3−s) profile) with buoyant stipe tension; pneumatocyst gas bladders that bob, rim-light and lift the upper stipe
+//  Upgraded: 2026-10-10
+//  Ideas: cantilever deflection; pneumatocyst bladders; Vogel streamwise reconfiguration; intercalary meristem pallor
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Strand Density, .y = Current Speed, .z = Magnetism, .w = Biolume
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Strand Density, .y = Current Speed, .z = Magnetism, .w = Biolume
 
 fn sat(x: f32) -> f32 {
   return clamp(x, 0.0, 1.0);
@@ -148,7 +130,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // ═══ Organic FBM displacement for non-uniform strand motion ═══
   let fbmSway = fbm(vec2<f32>(laneId * 0.1, p.y * 2.0 + time * 0.2), 4) - 0.5;
-  let organicWidth = 1.0 + fbm(vec2<f32>(p.y * 3.0, laneId * 0.3), 3) * 0.5;
+  // Idea: Vogel reconfiguration — blades streamwise-flatten as the current rises.
+  let reconfig = 1.0 / (1.0 + currentSpeed * 0.28 + smoothBass * 0.12);
+  let organicWidth = (1.0 + fbm(vec2<f32>(p.y * 3.0, laneId * 0.3), 3) * 0.5) * reconfig;
 
   // ── IDEA 1: holdfast-anchored cantilever ──
   // Drag load grows with current speed (reconfiguration: stiffer bend in fast
@@ -180,7 +164,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let strandDist = abs(laneLocal + strandOffset);
   let rooted = smoothstep(0.0, 0.04, s);
-  let strand = smoothstep(0.30, 0.02, strandDist) * organicWidth * rooted;
+  let strand = smoothstep(0.30 * reconfig, 0.02, strandDist) * organicWidth * rooted;
 
   // ── IDEA 2: pneumatocyst gas bladders ──
   // Giant kelp carries a gas-filled float at the base of each blade. They sit
@@ -201,6 +185,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let bulbFill = smoothstep(1.0, 0.85, bulbD) * bulbPresent;
   let bulbRim = smoothstep(0.55, 0.95, bulbD) * bulbFill;
   let bulbSpec = exp(-dot(vec2<f32>(bdx, bdy) / max(bulbR, 1e-4) + vec2<f32>(0.35, 0.35), vec2<f32>(bdx, bdy) / max(bulbR, 1e-4) + vec2<f32>(0.35, 0.35)) * 12.0) * bulbFill;
+  // Idea: intercalary meristem — youngest blade tissue is pale just tip-ward of each bladder.
+  let meristem = exp(-abs(bdy + spacing * 0.22) * 70.0) * exp(-abs(bdx) * 28.0) * bulbPresent * strand;
 
   // ═══ Fronds and bioluminescent tips (tips at the free end of the cantilever) ═══
   let frond = smoothstep(0.7, 1.0, sin((p.y + seed * 0.7) * 18.0 + time * 2.0 + smoothBass * 4.0)) * strand;
@@ -229,6 +215,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   color = mix(color, vec3<f32>(0.32, 0.36, 0.08) + color * 0.3, bulbFill * 0.7);
   color = color + vec3<f32>(0.3, 1.0, 0.8) * bulbRim * biolume * (0.35 + mids * 0.3);
   color = color + vec3<f32>(1.0, 0.95, 0.75) * bulbSpec * (0.6 + treble * 0.5);
+  color = color + vec3<f32>(0.72, 0.78, 0.32) * meristem * (0.7 + biolume * 0.35);
   // Surge fronts and magnetic halo
   color = color + vec3<f32>(0.2, 0.55, 0.7) * surgeGlow * (0.5 + bass * 0.5);
   let mouseHalo = exp(-length(p - mouse) * 6.0) * magnetism * 0.25;
@@ -242,7 +229,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let display = acesToneMap(color * (1.1 + bass * 0.1));
 
   // Alpha = kelp-canopy coverage: stipes, fronds, bladders, glowing tips.
-  let alpha = clamp(strand * 0.55 + frond * 0.15 + bulbFill * 0.35 + tipGlow * 0.25 + spores * 0.3 + surgeGlow * 0.2 + mouseHalo * 0.2, 0.04, 1.0);
+  let alpha = clamp(strand * 0.55 + frond * 0.15 + bulbFill * 0.35 + tipGlow * 0.25 + spores * 0.3 + surgeGlow * 0.2 + mouseHalo * 0.2 + meristem * 0.25, 0.04, 1.0);
   // Depth: canopy toward the surface (high s) and bladders sit nearer.
   let depth = clamp(sat(strand) * (0.3 + s * 0.45) + bulbFill * 0.2, 0.0, 1.0);
   let finalColor = vec4<f32>(display, alpha);

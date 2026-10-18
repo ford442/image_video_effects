@@ -2,6 +2,9 @@
 //  RGB Shift Brush - Feedback-based RGB displacement with spectral alpha
 //  Category: artistic
 //  Features: feedback, brush-dispersion, wavelength-dependent-alpha
+//  Upgraded: 2026-10-04
+//  Ideas: chromatic tail lag (slow long-wave mask in A.g); 7-tap prism fan on the WAVELENGTH_* bands
+//  A packing: raw mask state — r = fast trail mask, g = slow tail mask, b = 0, a = 1
 //
 //  STYLIZED SPECTRAL MODEL:
 //  - Dispersion shifts position and maps trail thickness to channel alpha
@@ -45,6 +48,15 @@ fn calculateChannelAlpha(thickness: f32, wavelength: f32) -> f32 {
     return exp(-thickness * absorption);
 }
 
+// Gaussian response of each display channel to a wavelength (nm), centred on the
+// file's named bands, used to weight the prism-fan taps.
+fn bandResponse(lambda: f32) -> vec3<f32> {
+    let r = exp(-pow((lambda - WAVELENGTH_RED) / 55.0, 2.0));
+    let g = exp(-pow((lambda - WAVELENGTH_GREEN) / 50.0, 2.0));
+    let b = exp(-pow((lambda - WAVELENGTH_BLUE) / 45.0, 2.0));
+    return vec3<f32>(r, g, b);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -68,7 +80,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let historyCoord = clamp(vec2<i32>((uv - feedbackFlow) * resolution), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1));
 
     // 1. Update Feedback Mask using exact prior-state texels.
-    let prevVal = textureLoad(dataTextureC, historyCoord, 0).r;
+    let prevState = textureLoad(dataTextureC, historyCoord, 0);
+    let prevVal = prevState.r;
 
     // Calculate Brush Influence
     let aspect = resolution.x / resolution.y;
@@ -88,22 +101,50 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // New mask value
     let newVal = clamp(prevVal * decay + brush + clickFront * 0.35 + ribbonRunner * audio.z * 0.025, 0.0, 1.0);
 
+    // Idea 1 — chromatic tail lag: a second, slower "long-wave" mask outlives the fast one,
+    // so the trail tail keeps only its blue displacement and resolves into a lingering fringe.
+    let slowDecay = mix(decay, 1.0, 0.6);
+    let newSlow = max(newVal, clamp(prevState.g * slowDecay, 0.0, 1.0));
+
     // Write to DataTextureA for next frame
-    textureStore(dataTextureA, global_id.xy, vec4(newVal, 0.0, 0.0, 1.0));
+    textureStore(dataTextureA, global_id.xy, vec4(newVal, newSlow, 0.0, 1.0));
 
     // 2. Render Effect
-    let shift = shiftAmount * newVal * (1.0 + audio.x * 0.35 + spectralRunner * 0.25);
+    let shiftGain = shiftAmount * (1.0 + audio.x * 0.35 + spectralRunner * 0.25);
+    let shift = shiftGain * newVal;
+    let shiftSlow = shiftGain * newSlow;
 
     // Shift direction based on time
     let angle = time * (2.0 + audio.y * 1.4) + ribbonRunner * 0.45;
     var dir = vec2(cos(angle), sin(angle));
 
     let r_uv = clamp(uv + dir * shift, vec2<f32>(0.0), vec2<f32>(1.0));
-    let b_uv = clamp(uv - dir * shift, vec2<f32>(0.0), vec2<f32>(1.0));
+    let b_uv = clamp(uv - dir * shiftSlow, vec2<f32>(0.0), vec2<f32>(1.0));
 
     var r = textureSampleLevel(readTexture, u_sampler, r_uv, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, uv, 0.0).g;
+    var g = textureSampleLevel(readTexture, u_sampler, uv, 0.0).g;
     var b = textureSampleLevel(readTexture, u_sampler, b_uv, 0.0).b;
+
+    // Idea 2 — prism fan: in the dense trail the 3-tap split opens into seven taps from
+    // 650 nm (at +shift) to 450 nm (at -shiftSlow), each weighted by bandResponse, so a
+    // strong shift smears into a continuous spectrum instead of three hard ghosts.
+    let fanMix = smoothstep(0.25, 0.9, newSlow) * smoothstep(0.004, 0.02, shift + shiftSlow);
+    if (fanMix > 0.001) {
+        var acc = vec3<f32>(0.0);
+        var wsum = vec3<f32>(0.0);
+        for (var k: i32 = 0; k < 7; k = k + 1) {
+            let t = f32(k) / 6.0;
+            let lambda = mix(WAVELENGTH_RED, WAVELENGTH_BLUE, t);
+            let w = bandResponse(lambda);
+            let tapUV = clamp(uv + dir * mix(shift, -shiftSlow, t), vec2<f32>(0.0), vec2<f32>(1.0));
+            acc += textureSampleLevel(readTexture, u_sampler, tapUV, 0.0).rgb * w;
+            wsum += w;
+        }
+        let fan = acc / max(wsum, vec3<f32>(1e-4));
+        r = mix(r, fan.r, fanMix);
+        g = mix(g, fan.g, fanMix);
+        b = mix(b, fan.b, fanMix);
+    }
 
     // Optional Hue Shift on the trail
     if (hueShift > 0.0) {

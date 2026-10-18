@@ -3,31 +3,12 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-09-11
-//  Ideas: condensation droplet beads on terrarium glass shell; dew meniscus highlights on leaf-tip normals
+//  Upgraded: 2026-10-17
+//  Ideas: condensation droplet beads on terrarium glass shell; dew meniscus highlights on leaf-tip normals; capillary nectar lumen; spectral dispersion fringes; geodesic terrarium glass-dome mullions & click-driven acoustic mist rings; pinnate leaf-blade venation & stomatal spore-pore luminescence
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ─── Math Helpers ───
 fn sat(x: f32) -> f32 { return clamp(x, 0.0, 1.0); }
@@ -154,13 +135,27 @@ fn dewMeniscus(n: vec3<f32>, p: vec3<f32>, t: f32) -> f32 {
   return tipUp * meniscus * bead;
 }
 
+// Shared by glassBranch and the lumen: the branch-local bent space.
+fn branchBend(p: vec3<f32>, fi: f32) -> vec3<f32> {
+  let bend = vec3<f32>(sin(p.y * 1.5 + fi * 3.0) * 0.2, 0.0, cos(p.y * 1.2 + fi * 2.5) * 0.15);
+  return p + bend;
+}
+
+// Idea 2nd-pass A: capillary nectar lumen. A thin capsule SDF running down the inside of the
+// stem (radius 0.022 < stem 0.06). Returns a soft emission density: tight halo around the
+// lumen axis times travelling packets of nectar that climb the stem (faster on bass).
+fn lumenBranch(bp: vec3<f32>, fi: f32, time: f32, bass: f32) -> f32 {
+  let ld = sdCapsule(bp, vec3<f32>(0.0, -0.6, 0.0), vec3<f32>(0.0, 0.6, 0.0), 0.022);
+  let phase = bp.y * 7.0 - time * (1.8 + bass * 2.0) + fi * 2.3;
+  let packet = pow(0.5 + 0.5 * sin(phase), 3.0); // base in [0,1]
+  return exp(-max(ld, 0.0) * 22.0) * (0.25 + 0.75 * packet);
+}
+
 // ─── Glass Flora Branch (L-system approximated via folding) ───
 fn glassBranch(p: vec3<f32>, seed: f32, time: f32, audio: f32, floraDensity: f32) -> f32 {
   let fi = seed;
-  var bp = p;
   // Bend toward mouse area (subtle)
-  let bend = vec3<f32>(sin(bp.y * 1.5 + fi * 3.0) * 0.2, 0.0, cos(bp.y * 1.2 + fi * 2.5) * 0.15);
-  bp = bp + bend;
+  var bp = branchBend(p, fi);
 
   // Main stem
   let stem = sdCapsule(bp, vec3<f32>(0.0, -0.6, 0.0), vec3<f32>(0.0, 0.6, 0.0), 0.06 + audio * 0.01);
@@ -189,6 +184,42 @@ fn glassBranch(p: vec3<f32>, seed: f32, time: f32, audio: f32, floraDensity: f32
   return smin(smin(stem, joints, 0.05), petals, 0.06);
 }
 
+// Mouse gravity well - flora bends toward cursor (shared by map and lumenField)
+fn gravityWarp(p_in: vec3<f32>, time: f32, mousePos: vec3<f32>) -> vec3<f32> {
+  var p = p_in;
+  let md = p - mousePos;
+  let mDist = length(md);
+  let gravityRadius = 3.0;
+  if (mDist < gravityRadius) {
+    let bend = (1.0 - mDist / gravityRadius) * 0.2;
+    p = p + normalize(md) * bend * sin(mDist * 3.0 + time);
+  }
+  return p;
+}
+
+// Idea 2nd-pass A: strongest nectar-lumen emission density over all flora at p.
+// Only evaluated in the glass interior march (not in the main march / normals).
+fn lumenField(p_in: vec3<f32>, time: f32, bass: f32, floraDensity: f32, mousePos: vec3<f32>) -> f32 {
+  let p = gravityWarp(p_in, time, mousePos);
+  var dens = 0.0;
+  let numFlora = i32(floraDensity * 3.0 + 2.0);
+  for (var i: i32 = 0; i < numFlora; i = i + 1) {
+    let fi = f32(i);
+    let pos = vec3<f32>(sin(fi * 2.7) * 1.5, -0.5 + fi * 0.3, cos(fi * 1.9) * 1.5);
+    let bp = branchBend(p - pos, fi + 0.5);
+    dens = max(dens, lumenBranch(bp, fi + 0.5, time, bass));
+  }
+  return dens;
+}
+
+// Idea 2nd-pass B: background haze as a function of direction, so refracted/dispersed
+// rays can each look up their own colour. rd-direction call reproduces the old miss colour.
+fn bgHaze(dir: vec3<f32>, time: f32, bass: f32) -> vec3<f32> {
+  let s = sin(dir.x * 3.0 + time * 0.2) * sin(dir.y * 2.5 + time * 0.15);
+  let haze = s * s; // was pow(s, 2.0): NaN for s < 0, which then persisted in history
+  return vec3<f32>(0.01, 0.02, 0.015) + vec3<f32>(0.05, 0.1, 0.08) * haze * (0.1 + bass * 0.1);
+}
+
 // ─── Scene Map ───
 struct MapResult {
   d: f32,
@@ -198,16 +229,7 @@ struct MapResult {
 
 fn map(p_in: vec3<f32>, time: f32, audio: f32, bass: f32, floraDensity: f32,
        nectarGlow: f32, refractionIdx: f32, mousePos: vec3<f32>) -> MapResult {
-  var p = p_in;
-
-  // Mouse gravity well - flora bends toward cursor
-  let md = p - mousePos;
-  let mDist = length(md);
-  let gravityRadius = 3.0;
-  if (mDist < gravityRadius) {
-    let bend = (1.0 - mDist / gravityRadius) * 0.2;
-    p = p + normalize(md) * bend * sin(mDist * 3.0 + time);
-  }
+  let p = gravityWarp(p_in, time, mousePos);
 
   // Multiple glass flora instances
   var flora = 8.0;
@@ -310,9 +332,11 @@ fn raymarchChromatic(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: 
         var innerCol = vec3<f32>(0.0);
         let innerSteps = 12;
         var it = 0.05;
+        var lumen = 0.0; // Idea 2nd-pass A: nectar emission accumulated through the glass
         for (var j: i32 = 0; j < innerSteps; j = j + 1) {
           let ip = p + rg * it;
           let ires = map(ip, time, audio, bass, floraDensity, nectarGlow, refractionIdx, mousePos);
+          lumen = lumen + lumenField(ip, time, bass, floraDensity, mousePos) * 0.1;
           if (ires.d > 0.0) {
             innerCol = vec3<f32>(0.02, 0.04, 0.03) * (1.0 + 0.3 * sin(ip.y * 2.0 + time));
             innerCol = innerCol + vec3<f32>(0.0, 1.0, 0.8) * ires.glow * 0.5;
@@ -320,6 +344,16 @@ fn raymarchChromatic(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: 
           }
           it = it + 0.08;
         }
+
+        // Idea 2nd-pass A: lumen light seen through the stem wall (teal, magenta kick on bass)
+        innerCol = innerCol + (vec3<f32>(0.0, 0.9, 0.7) + vec3<f32>(0.8, 0.0, 0.6) * bass) * lumen * nectarGlow * 2.0;
+
+        // Idea 2nd-pass B: spectral dispersion — each channel sees the background through its
+        // own refracted direction (rr/rb were computed but unused), so edges fringe.
+        // The green-ray haze is added once; the per-channel difference (the fringe) is amplified.
+        let hazeG = bgHaze(rg, time, bass);
+        let dispersed = vec3<f32>(bgHaze(rr, time, bass).r, hazeG.g, bgHaze(rb, time, bass).b);
+        innerCol = max(innerCol + hazeG + (dispersed - hazeG) * 30.0, vec3<f32>(0.0));
 
         // Nectar emissive glow
         let nectarCol = vec3<f32>(0.0, 0.9, 0.7) * hitGlow * 3.0
@@ -344,7 +378,17 @@ fn raymarchChromatic(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: 
         let dew = dewMeniscus(n, p, time);
         col += vec3<f32>(0.85, 1.0, 0.95) * dew * (0.35 + treble * 0.4);
 
-        alpha = sat(0.3 + f * 0.7 + dew * 0.15);
+        // Idea 3rd-pass B: Pinnate leaf-blade venation & stomatal spore-pore luminescence
+        let canopyMask = smoothstep(-0.05, 0.55, p.y);
+        let veinCoord = p.y * 16.0 - length(p.xz) * 11.0;
+        let pinnateVeins = pow(0.5 + 0.5 * cos(veinCoord * 2.2), 6.0) * canopyMask;
+        let stomataSeed = hash3(floor(p * 28.0));
+        let stomataPulse = 0.5 + 0.5 * sin(time * 3.8 + stomataSeed * 18.0 + bass * 4.0);
+        let stomataPores = step(0.84, stomataSeed) * stomataPulse * canopyMask * (0.4 + nectarGlow * 1.1);
+        col += vec3<f32>(0.18, 0.95, 0.68) * pinnateVeins * (0.22 + nectarGlow * 0.45)
+             + vec3<f32>(0.95, 0.85, 0.35) * stomataPores * (0.55 + treble * 0.5);
+
+        alpha = sat(0.3 + f * 0.7 + dew * 0.15 + pinnateVeins * 0.08);
       } else {
         // Pollen - bright emissive spheres
         let pollenCol = vec3<f32>(0.9, 0.8, 0.4) * (1.0 + treble * 2.0);
@@ -366,17 +410,28 @@ fn raymarchChromatic(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: 
 
   if (!hit) {
     // Terrarium background with soft atmospheric haze
-    col = vec3<f32>(0.01, 0.02, 0.015);
-    let haze = pow(sin(rd.x * 3.0 + time * 0.2) * sin(rd.y * 2.5 + time * 0.15), 2.0);
-    col = col + vec3<f32>(0.05, 0.1, 0.08) * haze * (0.1 + bass * 0.1);
+    col = bgHaze(rd, time, bass);
     alpha = 0.0;
   }
 
-  // Condensation beads on the outer terrarium glass shell.
-  let shellProbe = ro + rd * 7.8;
-  let condense = condensationDroplets(shellProbe, time);
-  col += vec3<f32>(0.75, 0.92, 1.0) * condense * (0.2 + mids * 0.15);
-  alpha = sat(alpha + condense * 0.12);
+  // Idea 3rd-pass A: Geodesic terrarium glass-dome mullions & condensation beads on the 4.0-radius shell
+  let bDot = dot(ro, rd);
+  let disc = max(bDot * bDot - dot(ro, ro) + 16.0, 0.0);
+  let tDome = max(-bDot + sqrt(disc), 0.5);
+  let domePos = ro + rd * tDome;
+  let domeN = normalize(domePos);
+  let domeAz = atan2(domeN.z, domeN.x);
+  let domeEl = asin(clamp(domeN.y, -1.0, 1.0));
+  let ribMeridian = smoothstep(0.045, 0.008, abs(fract(domeAz * 6.0 / 3.14159265) - 0.5));
+  let ribLat = smoothstep(0.045, 0.008, abs(fract(domeEl * 5.0 / 1.5707963) - 0.5));
+  let ribDiag = smoothstep(0.05, 0.009, abs(fract((domeAz * 6.0 + domeEl * 10.0) / 3.14159265) - 0.5));
+  let domeMullion = max(ribMeridian, max(ribLat, ribDiag * 0.75)) * select(1.0, 0.35, hit && t < tDome);
+  let domeFresnel = pow(1.0 - abs(dot(rd, domeN)), 3.0);
+
+  let condense = condensationDroplets(domePos, time);
+  col += vec3<f32>(0.75, 0.92, 1.0) * condense * (0.25 + mids * 0.18)
+       + mix(vec3<f32>(0.55, 0.78, 0.72), vec3<f32>(0.85, 0.72, 0.42), domeMullion) * (domeMullion * 0.16 + domeFresnel * 0.09);
+  alpha = sat(alpha + condense * 0.14 + domeMullion * 0.08);
 
   return vec4<f32>(col, alpha);
 }
@@ -435,9 +490,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let fogCol = vec3<f32>(0.01, 0.03, 0.02) * (1.0 + bass * 0.1);
   col = mix(fogCol, col, fog);
 
-  // Audio-reactive enhancements
+  // Audio-reactive enhancements + click-driven acoustic mist rings on the terrarium glass
   col = col + vec3<f32>(0.0, 0.15, 0.1) * bass * 0.15;
   col = col + vec3<f32>(0.1, 0.0, 0.08) * mids * 0.1;
+
+  var mistRing = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var ri: u32 = 0u; ri < rippleCount; ri = ri + 1u) {
+    let rp = u.ripples[ri];
+    let age = time - rp.z;
+    if (age > 0.0 && age < 3.0) {
+      let dMist = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
+      let wave = exp(-pow((dMist - age * 0.28) * 32.0, 2.0)) * exp(-age * 1.1);
+      mistRing += wave;
+    }
+  }
+  col += vec3<f32>(0.45, 0.95, 0.82) * mistRing * (0.35 + nectarGlow * 0.45);
+  alpha = sat(alpha + mistRing * 0.16);
 
   // Temporal persistence
   let prev = textureLoad(dataTextureC, coord, 0);

@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-15
-//  Ideas: logarithmic chamber septa; birefringent growth lamellae
+//  Upgraded: 2026-10-10
+//  Ideas: logarithmic chamber septa; birefringent growth lamellae; siphuncle plasma conduit; chamber-sequential plasma tide; septal suture scallops; nacre growth striae; clockwork escapement ticking; chrono-glass shatter
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=time, y=rippleCount, zw=resolution
-    zoom_config: vec4<f32>,  // x=time, yz=mouse_uv (y=0 top), w=mouse_down
-    zoom_params: vec4<f32>,  // x=Spiral Tightness, y=Plasma Bloom, z=Glass Refraction, w=Audio Reactivity
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Spiral Tightness, y=Plasma Bloom, z=Glass Refraction, w=Audio Reactivity
 
 const PI: f32 = 3.14159265359;
 
@@ -54,6 +36,15 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
     return min(a, b) - h * h * k * (1.0 / 4.0);
 }
 
+var<private> g_chamber: f32;
+
+// Idea 4: plasma tide — brightness wave stepping chamber to chamber.
+fn chamberTide(chamber: f32) -> f32 {
+    let tideSpeed = 1.2 + plasmaBuffer[0].x * u.zoom_params.w * 2.0;
+    let w = 0.5 + 0.5 * sin(chamber * 0.9 - u.config.x * tideSpeed);
+    return 0.3 + 0.7 * w * w * w;
+}
+
 // Logarithmic spiral SDF
 fn map(p_in: vec3<f32>) -> vec2<f32> {
     var p = p_in;
@@ -72,7 +63,9 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
     let z = p.z;
 
     let tightness = u.zoom_params.x; // 0.1 to 1.0
-    let spiral_a = a * tightness + log(r) * 2.0 + t * 0.5;
+    // Idea 1: clockwork escapement ticking
+    let ticking = floor(t * 4.0) * 0.25 + smoothstep(0.8, 1.0, fract(t * 4.0)) * 0.25;
+    let spiral_a = a * tightness + log(r) * 2.0 + ticking * 0.5;
 
     // Create nautilus chambers
     let chamberPhase = fract(spiral_a * 1.5);
@@ -82,16 +75,25 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
     // Logarithmic chamber septa: walls at chamber-phase boundaries, thickening with radius
     let wallPhase = min(chamberPhase, 1.0 - chamberPhase);
     let septumThick = 0.014 + clamp(r, 0.0, 4.0) * 0.010;
-    let septum = length(vec2<f32>(wallPhase * 1.8, z * 2.2)) - septumThick;
+    // Idea 5: septal suture scallops at chamber joins.
+    let scallop = 0.008 * sin(spiral_a * 8.0 + z * 18.0 + t * 0.7);
+    let septum = length(vec2<f32>(wallPhase * 1.8, z * 2.2)) - (septumThick + scallop);
+
+    // Idea 3: siphuncle — a thin tube running along the ventral side of the
+    // plasma interior, threading every chamber.
+    let siphuncle = length(vec2<f32>(fract(spiral_a * 1.5 + 0.5) - 0.5, z * 2.0 + 0.19)) - 0.04;
+    g_chamber = floor(spiral_a * 1.5);
 
     // Smoothly combine chambers + septa
     var dist = smin(shell, interior, 0.2);
     dist = smin(dist, septum, 0.06);
+    dist = smin(dist, siphuncle, 0.03);
 
     // ID mapping
     var id = 1.0;
     if (shell > interior) { id = 2.0; } // 1.0 = shell, 2.0 = interior
     if (septum < min(shell, interior)) { id = 3.0; } // 3.0 = septum
+    if (siphuncle < min(min(shell, interior), septum)) { id = 4.0; } // 4.0 = siphuncle
     return vec2<f32>(dist * 0.5, id);
 }
 
@@ -141,7 +143,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         if (d < 0.001 || t > 10.0) { break; }
         t += d;
         if (id == 2.0) {
-            glow += 0.01 / (0.01 + d * d) * u.zoom_params.y; // Plasma Bloom
+            glow += 0.01 / (0.01 + d * d) * u.zoom_params.y * chamberTide(g_chamber); // Plasma Bloom
         }
     }
 
@@ -162,15 +164,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         if (id == 3.0) {
             col = vec3<f32>(0.85, 0.92, 1.0) * (0.35 + f);
         }
+        // Chamber the hit belongs to (map() sets g_chamber).
+        let hitMap = map(p);
+        if (id == 2.0) {
+            col *= 0.55 + 0.45 * chamberTide(g_chamber);
+        }
+        if (hitMap.y == 4.0) {
+            // Plasma pulses travel outward along log r through the siphuncle.
+            let logR = log(max(length(p.xy), 0.001));
+            let pulse = pow(max(sin(logR * 9.0 - u.config.x * 3.0), 0.0), 8.0);
+            col = vec3<f32>(0.25, 0.1, 0.55) + vec3<f32>(0.4, 0.95, 1.0) * (0.3 + pulse * u.zoom_params.y * 0.8) * chamberTide(g_chamber);
+        }
         // Birefringent growth lamellae: paired spectral lobes from spiral phase + n·v
         let spiralPhase = atan2(p.y, p.x);
+        // Idea 6: nacre growth striae swept along shell arcs.
+        let logR = log(max(length(p.xy), 0.001));
+        let striae = pow(0.5 + 0.5 * sin(logR * 38.0 + spiralPhase * 5.0 - u.config.x * 0.8), 6.0);
         let nDotV = max(dot(n, -rd), 0.0);
         let opticalSep = refraction * 4.0;
         let lobeA = 0.5 + 0.5 * sin(spiralPhase * 6.0 + nDotV * opticalSep);
         let lobeB = 0.5 + 0.5 * sin(spiralPhase * 6.0 - nDotV * opticalSep + 1.2);
         col += vec3<f32>(lobeA, 0.18 * (lobeA + lobeB), lobeB) * f * 0.22;
+        col += vec3<f32>(0.95, 0.92, 0.82) * striae * f * 0.12;
         // Mid-frequency chromatic shimmer across the glass
         col += vec3<f32>(0.2, 0.05, 0.3) * f * mids;
+        
+        // Idea 2: chrono-glass shatter (fracture highlights)
+        let shatter = fract(sin(dot(floor(p * 15.0), vec3<f32>(12.9898, 78.233, 37.719))) * 43758.5453);
+        let shardEdge = smoothstep(0.48, 0.5, abs(fract(p.x * 10.0 + shatter) - 0.5));
+        col += vec3<f32>(0.8, 0.9, 1.0) * shardEdge * f * 0.5;
     }
 
     col += vec3<f32>(0.0, 0.5, 1.0) * glow * 0.1;

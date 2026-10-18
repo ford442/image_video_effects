@@ -59,14 +59,16 @@
     "interactive",
     "cursor"
   ],
-  "chunks_used": [
-    "pixel sorting pattern (bitonic-sort)",
-    "spectral analysis (spectrogram-displace)",
-    "audio-reactive pattern",
-    "fbm2 (gen_grid.wgsl)",
-    "palette (gen-xeno-botanical-synth-flora.wgsl)",
-    "hueShift (stellar-plasma.wgsl)"
-  ],
-  "created_by": "Agent 2A - Shader Surgeon",
-  "created_date": "2026-03-22"
+  "x-meta": {
+    "chunks_used": [
+      "pixel sorting pattern (bitonic-sort)",
+      "spectral analysis (spectrogram-displace)",
+      "audio-reactive pattern",
+      "fbm2 (gen_grid.wgsl)",
+      "palette (gen-xeno-botanical-synth-flora.wgsl)",
+      "hueShift (stellar-plasma.wgsl)"
+    ],
+    "created_by": "Agent 2A - Shader Surgeon",
+    "created_date": "2026-03-22"
+  }
 }

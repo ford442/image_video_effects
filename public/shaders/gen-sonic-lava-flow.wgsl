@@ -5,6 +5,9 @@
 //               Voronoi crust detail, Beer-Lambert volumetric glow,
 //               Fresnel molten surface, enhanced curl noise, and
 //               deep audio reactivity creating a living molten world.
+//  Upgraded: 2026-09-27
+//  Ideas: cooling skin where the flow is slow; pahoehoe ropes stretched along the flow
+//  A packing: linear color history in A; ACES on writeTexture only
 //  Features: audio-reactive, mouse-driven, temporal, domain-warping,
 //            voronoi, beer-lambert, fresnel, curl-noise
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -167,6 +170,11 @@ fn voronoi3(p: vec3<f32>) -> vec2<f32> {
     return vec2<f32>(sqrt(minDist), sqrt(secondDist));
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 // ── Fresnel-Schlick for molten surface ──
 fn fresnelSchlick(cosTheta: f32, f0: vec3<f32>) -> vec3<f32> {
     return f0 + (vec3<f32>(1.0) - f0) * pow(1.0 - cosTheta, 5.0);
@@ -224,6 +232,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let turbulence = zp.y * 3.0;
     let decay = mix(0.8, 0.99, zp.z);
     let heatGlow = zp.w;
+    // Crust Detail keeps the decay above and also scales crust contrast (1 at the default 0.5).
+    let crustAmt = mix(0.35, 1.65, zp.z);
 
     let mouseDown = u.zoom_config.w > 0.5;
     let mouseDist = length(uv - mousePos);
@@ -257,8 +267,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Temperature color with physics
     let lavaCol = temperatureColor(temp, time);
 
-    // Molten surface detail with Fresnel
-    let crustVoro = voronoi(advectUV * 8.0 - time * 0.5);
+    // Idea 2 — pahoehoe ropes. Stretch crust cells along the flow, pack them across it.
+    let flowDir = velocity / max(length(velocity), 1e-3);
+    let perp = vec2<f32>(-flowDir.y, flowDir.x);
+    let ropeUV = vec2<f32>(dot(advectUV, flowDir) * 3.0, dot(advectUV, perp) * 12.0);
+    let crustVoro = voronoi(ropeUV);
     let crustMask = smoothstep(0.05, 0.0, crustVoro.x);
     let crustTemp = crustMask * 0.3;
     let crustCol = mix(
@@ -273,10 +286,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let cosTheta = max(dot(surfaceNormal, viewDir), 0.0);
     let f0 = vec3<f32>(0.15, 0.05, 0.02); // Molten F0
     let fresnel = fresnelSchlick(cosTheta, f0);
-    var moltenLava = mix(lavaCol, crustCol + fresnel * 0.5, crustMask * 0.4);
+    var moltenLava = mix(lavaCol, crustCol + fresnel * 0.5, clamp(crustMask * 0.4 * crustAmt, 0.0, 1.0));
+
+    // Idea 1 — cooling skin. Slow flow crusts over; shear opens it.
+    let shear = length(curlNoise(flowP, time) - curlNoise(flowP2, time * 0.7));
+    let slowSkin = (1.0 - smoothstep(0.05, 0.8, length(velocity))) * (1.0 - smoothstep(0.15, 0.9, shear));
+    moltenLava = mix(moltenLava, crustCol * 0.65, clamp(slowSkin * crustAmt * 0.75, 0.0, 0.8));
 
     // Add molten cracks
-    let cracks = smoothstep(0.6, 0.8, crustDetail) * 0.5;
+    let cracks = smoothstep(0.6, 0.8, crustDetail) * 0.5 * crustAmt;
     moltenLava += vec3<f32>(1.0, 0.6, 0.2) * cracks * (1.0 + bass * 0.5);
 
     // Decay/feedback blend with video using temporal coherence
@@ -333,7 +351,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let _luma_sl = dot(clamp(finalCol, vec3<f32>(0.0), vec3<f32>(1.0)), vec3<f32>(0.299, 0.587, 0.114));
     let _alpha_sl = clamp(_luma_sl * 0.7 + 0.2 + glowDensity * 0.3, 0.0, 1.0);
 
-    textureStore(writeTexture, id.xy, vec4<f32>(clamp(finalCol, vec3<f32>(0.0), vec3<f32>(2.0)), _alpha_sl));
+    let displayCol = acesToneMap(clamp(finalCol, vec3<f32>(0.0), vec3<f32>(4.0)));
+    textureStore(writeTexture, id.xy, vec4<f32>(displayCol, _alpha_sl));
     textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
     // Temporal feedback for next frame
     textureStore(dataTextureA, id.xy, vec4<f32>(clamp(finalCol, vec3<f32>(0.0), vec3<f32>(1.0)), _alpha_sl));

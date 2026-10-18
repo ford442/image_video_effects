@@ -13,5 +13,5 @@
     "frameFile": "wasm_renderer/frame.cpp",
     "sliceFile": "wasm_renderer/renderer.cpp"
   },
-  "note": "Committed public/wasm artifacts built before this contract are 3-slot. The TS bridge reads each slot back after setSlotShader and warns when the artifact dropped it, so a stale build is visible rather than silent. GPU-PENDING: rebuild with emcc 6.0.9."
+  "note": "The committed public/wasm artifact is built with the emsdk pin (6.0.9) and exports getMaxShaderSlots(); npm run wasm:validate instantiates it in Node and fails when the compiled MAX_SHADER_SLOTS differs from maxPhysicalSlots (a stale 3-slot build cannot ship). The TS bridge still reads each slot back after setSlotShader and records drops in droppedSlots."
 }

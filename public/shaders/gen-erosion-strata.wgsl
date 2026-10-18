@@ -5,31 +5,12 @@
 //            upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-09-06
-//  Ideas: bedding-contact highlights; intra-layer cross-beds
+//  Upgraded: 2026-10-10
+//  Ideas: bedding-contact highlights; intra-layer cross-beds; ripple marks; iron concretions
 //  A packing: ACES display RGBA
 //  By: Kimi Code CLI
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn h12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -147,6 +128,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Idea 2 — cross-beds: diagonal foresets inside a bed
   let crossBed = 0.5 + 0.5 * sin((wuv.x * freq * 2.4 + lf * 14.0 + li * 1.7));
   col *= 1.0 + (crossBed - 0.5) * 0.18 * exposed * (1.0 - contact);
+  // Idea: ripple marks — small waves on the top of a bed.
+  let rip = 0.5 + 0.5 * sin(wuv.x * freq * 28.0 + li * 1.3);
+  let rippleMark = smoothstep(0.78, 0.96, lf) * exposed * smoothstep(0.42, 0.7, rip);
+  col += vec3<f32>(0.86, 0.7, 0.42) * rippleMark * 0.32;
+  // Idea: iron concretions — round ochre nodules inside the sand beds.
+  let sandBed = step(0.4, lm) * (1.0 - step(0.6, lm));
+  let concCenter = vec2<f32>(h12(vec2<f32>(li, 9.0)), 0.35 + 0.3 * h12(vec2<f32>(li, 10.0)));
+  let conc = exp(-length((fract(wuv * vec2<f32>(6.0, freq)) - concCenter) * vec2<f32>(1.0, 2.2)) * 8.0);
+  col = mix(col, vec3<f32>(0.55, 0.22, 0.08), conc * sandBed * exposed * 0.7);
   let fossil = smoothstep(0.12, 0.0, length(fract(wuv * 15.0 + li * 4.0) - vec2<f32>(h12(vec2<f32>(li, 3.0)), h12(vec2<f32>(li, 4.0))))) * smoothstep(0.7, 1.0, h12(vec2<f32>(li, 2.0))) * exposed;
   col *= 1.0 - fossil * 0.4;
   col += vec3<f32>(0.08, 0.06, 0.04) * fossil;

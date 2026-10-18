@@ -102,6 +102,8 @@ function verifyCallSites() {
     ['src/wasm/bridge/shader.ts', /expandWgslIncludes\s*\(/, 'the WASM load path'],
     ['scripts/verify-naga-wasm.mjs', /expandWgslIncludes\s*\(/, 'the naga gate'],
     ['scripts/bindgroup_checker.py', /expand_wgsl_includes\s*\(|expand_file\s*\(/, 'the bindgroup checker'],
+    ['src/components/ShaderValidator.tsx', /expandFetchedWgsl\s*\(/, 'the in-app shader validator'],
+    ['scripts/generate-shader-thumbnails.js', /expandWgslIncludes\s*\(/, 'the minimal thumbnail engine'],
   ];
   for (const [file, re, what] of checks) {
     const p = path.join(ROOT, file);
@@ -111,6 +113,19 @@ function verifyCallSites() {
     }
     if (!re.test(fs.readFileSync(p, 'utf8'))) {
       fail(`❌ ${file} does not call the include expander — ${what} would see raw #include directives`);
+    }
+  }
+
+  // The app deploy does not ship public/shaders and the storage sync never
+  // uploads `_` libraries, so the runtime seams must take _prelude.wgsl from the
+  // bundle (src/wasm/bridge/wgslLibraries.ts) rather than a sibling URL.
+  for (const file of ['src/utils/fetchShaderWgsl.ts', 'src/wasm/bridge/shader.ts']) {
+    const p = path.join(ROOT, file);
+    if (fs.existsSync(p) && !/withBundledLibraries\s*\(/.test(fs.readFileSync(p, 'utf8'))) {
+      fail(
+        `❌ ${file} must wrap its include resolver in withBundledLibraries() — ` +
+          'without it _prelude.wgsl is fetched from hosts that do not serve it',
+      );
     }
   }
 

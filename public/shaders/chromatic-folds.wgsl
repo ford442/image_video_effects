@@ -1,38 +1,14 @@
-// ────────────────────────────────────────────────────────────────────────────────
-//  Chromatic Folds – mind‑bending psychedelic topology
-//  Color as a physical dimension: each pixel is a point in 4‑D (x, y, depth, hue).
-//  Warps image along local hue‑gradient, bends depth into curvature tensor.
-// ────────────────────────────────────────────────────────────────────────────────
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture:    texture_2d<f32>;
-@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
+// ═══════════════════════════════════════════════════════════════════
+//  Chromatic Folds
+//  Category: artistic
+//  Features: mouse-driven, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-09
+//  Ideas: geodesic bend of the hue gradient; saturation-tightened foldHue
+//  A packing: pre-ACES display RGB in A (C is color history)
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
-
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB:   texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ────────────────────────────────────────────────────────────────────────────────
-
-struct Uniforms {
-  // config.x = time, config.y = rippleCount, config.zw = resolution.xy
-  config:      vec4<f32>,
-  // zoom_config.x = noise_amount, zoom_config.y = feedback_strength
-  // zoom_config.z = ripple_strength, zoom_config.w = unused
-  zoom_config: vec4<f32>,
-  // zoom_params.x = fold_strength, zoom_params.y = hue_pivot
-  // zoom_params.z = saturation_scale, zoom_params.w = depth_influence
-  zoom_params: vec4<f32>,
-  // ripple data: [x, y, startTime, unused] * 50
-  ripples:     array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ───────────────────────────────────────────────────────────────────────────────
 //  RGB ↔ HSV conversion
@@ -111,6 +87,7 @@ fn aces_tonemap(color: vec3<f32>) -> vec3<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dims = u.config.zw;
+  if (f32(gid.x) >= dims.x || f32(gid.y) >= dims.y) { return; }
 
   var uv = vec2<f32>(gid.xy) / dims;
   let texel = 1.0 / dims;
@@ -136,7 +113,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // ──────────────────────────────────────────────────────────────────────────
   //  2. Compute local hue gradient (finite differences)
   // ──────────────────────────────────────────────────────────────────────────
-  let h = rgb2hsv(srcColor).x;
+  let srcHsv = rgb2hsv(srcColor);
+  let h = srcHsv.x;
+  let srcSat = srcHsv.y;
   let hR = rgb2hsv(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).rgb).x;
   let hL = rgb2hsv(textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(texel.x, 0.0), 0.0).rgb).x;
   let hU = rgb2hsv(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, texel.y), 0.0).rgb).x;
@@ -156,7 +135,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   //  4. Ambient "fold" displacement
   // ──────────────────────────────────────────────────────────────────────────
   // Map hue gradient to a displacement vector in screen space
-  let dispBase = hueGrad * foldStrength * 0.05 * (1.0 + curvature);
+  // One geodesic step: bend the gradient toward the local hue angle.
+  let hueAngle = h * 6.28318530718;
+  let hueDir = vec2<f32>(cos(hueAngle), sin(hueAngle));
+  let geodesicBend = hueDir * dot(hueGrad, hueDir);
+  let dispBase = (hueGrad + geodesicBend * 0.45) * foldStrength * 0.05 * (1.0 + curvature);
 
   // Add subtle noise to the displacement
   let noise = hash2(uv * 100.0 + time);
@@ -194,20 +177,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   //  7. Fold the hue of the sampled color
   // ──────────────────────────────────────────────────────────────────────────
   var hsv = rgb2hsv(displacedColor);
-  hsv.x = foldHue(hsv.x, pivotHue, foldStrength);
+  // Higher saturation tightens the existing foldHue exponent.
+  let foldExp = foldStrength * mix(0.82, 1.28, clamp(srcSat, 0.0, 1.0));
+  hsv.x = foldHue(hsv.x, pivotHue, foldExp);
   hsv.y = clamp(hsv.y * satScale, 0.0, 1.0);
   let foldedColor = hsv2rgb(hsv.x, hsv.y, hsv.z);
 
   // ──────────────────────────────────────────────────────────────────────────
   //  8. Feedback: blend with previous frame
   // ──────────────────────────────────────────────────────────────────────────
-  let prev = textureLoad(dataTextureC, vec2<i32>((uv) * vec2<f32>(textureDimensions(dataTextureC))), 0).rgb;
+  let histSize = vec2<i32>(textureDimensions(dataTextureC));
+  let prev = textureLoad(dataTextureC, clamp(vec2<i32>(gid.xy), vec2<i32>(0), histSize - vec2<i32>(1)), 0).rgb;
   let finalColor = mix(foldedColor, prev, feedbackStrength);
 
   // ──────────────────────────────────────────────────────────────────────────
   //  9. Write outputs
   // ──────────────────────────────────────────────────────────────────────────
-  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(aces_tonemap(finalColor), 1.0));
+  let foldAlpha = clamp(0.32 + length(hueGrad) * 2.4 + srcSat * 0.28, 0.0, 1.0);
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(aces_tonemap(finalColor), foldAlpha));
   textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthVal, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(finalColor, foldAlpha));
 }

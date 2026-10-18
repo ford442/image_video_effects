@@ -1,5 +1,20 @@
 # Liquid Category Shader Upgrade Plan
 
+> **Upgrade law (live):** [`docs/SHADER_UPGRADE_BATCH.md`](../docs/SHADER_UPGRADE_BATCH.md)
+> An upgrade **adds 2–4 named, effect-native visual ideas** to the existing picture.
+> Bindings / ACES / alpha / sliders / `updatedParams` / naga / springs-for-completeness
+> are the **floor**, not the upgrade. Size tiers and science lists below only decide
+> *which ideas to add* and *in what order*. They are not a completeness checklist.
+> Hygiene-only = not upgraded. Rewrite-as-new-motif = not upgraded (that is a new shader).
+
+> **Reading the per-shader entries:** every "Upgrade Concept", "→ New Name",
+> "Transform …", "Replace …" or "Upgrade to simulate …" line below is a **candidate
+> idea to add**, not a target the file must be rebuilt into. Read it as *"add X as 1–2
+> native ideas; keep the effect's identity, kernel, modes and saved params."* Pick 2–4
+> per file for its Idea Card. Do not stamp the same concept across a whole batch.
+> Parameter lists name quantities an idea *may* drive — map them onto the file's existing
+> param roles; saved `params` stay byte-exact (no renames, no re-defaults).
+
 ## Category Summary
 
 The Liquid shader category currently contains **26 shaders** ranging from simple displacement effects to complex fluid simulations. The category represents the intersection of artistic visual effects and computational fluid dynamics approximations.
@@ -489,27 +504,30 @@ Repeat 20-40 times:
 
 ---
 
-## Implementation Roadmap
+## Implementation Roadmap (order of work, not a standard)
 
-### Phase 1: Foundation (Weeks 1-2)
-- Implement basic pressure projection for liquid-warp
-- Add velocity field dual-buffer to liquid-touch
-- Create shared utility functions for curl/divergence/gradient
+Each bullet is a **candidate native idea** for that file's Idea Card — one extra field or force
+the existing solver already implies. Keep the solver family, the A packing, and saved params.
 
-### Phase 2: Core Physics (Weeks 3-4)
-- Add vorticity confinement to liquid-viscous
-- Implement wave equation with dispersion for liquid-touch
-- Add semi-Lagrangian advection to liquid-warp
+### Phase 1: Foundation
+- liquid-warp: pressure projection as an added idea on the existing velocity field
+- liquid-touch: velocity channel alongside the existing height field (only if HEAD packing allows)
+- curl/divergence/gradient helpers — Optional helpers only. WGSL has no `#include`, so each file carries what it uses. A helper library or template is never the goal and never counts as an upgrade; each file still needs its own Idea Card.
 
-### Phase 3: Advanced Effects (Weeks 5-6)
-- Implement Rayleigh-Taylor instability in liquid-volumetric-zoom
-- Add physical thin-film interference to liquid-oil
-- Add anisotropic diffusion to liquid-viscous
+### Phase 2: Core Physics (as native ideas)
+- liquid-viscous: vorticity confinement on the existing vortex field
+- liquid-touch: dispersion term on the existing wave/height diffusion
+- liquid-warp: semi-Lagrangian advection of the existing velocity field
 
-### Phase 4: Polish & Integration (Weeks 7-8)
-- Parameter tuning and artist-friendly controls
-- Performance optimization
-- Cross-shader technique sharing
+### Phase 3: Advanced Effects (as native ideas)
+- liquid-volumetric-zoom: Rayleigh-Taylor fingering between the existing layers
+- liquid-oil: thin-film interference on the existing flow-noise interference
+- liquid-viscous: anisotropic diffusion along the existing shear
+
+### Phase 4: More ideas on files that already have the floor
+- Files with bindings / ACES / alpha / `updatedParams` but no native ideas are **not upgraded** — give them Idea Cards
+- Performance and parameter tuning without renaming or re-defaulting saved `params`
+- No cross-shader homogenization: do not copy one file's overlay onto the next
 
 ---
 
@@ -528,7 +546,8 @@ Repeat 20-40 times:
 - Ping-pong textures (A→C→A) for iterative methods
 
 ### Artistic Control Parameters
-Each upgraded shader should expose:
+Saved `params` stay byte-exact. The roles below are **candidates** for new shaders or for
+wiring a new idea onto an existing, compatible slider — not a set every upgraded file must expose:
 - **Intensity/Strength** (0-1): Overall effect magnitude
 - **Scale/Size** (0-1): Spatial frequency of features
 - **Speed/Time Scale** (0-1): Temporal evolution rate

@@ -10,11 +10,11 @@ describe('AdaptivePerformanceController', () => {
 
   beforeEach(() => {
     now = 0;
-    jest.spyOn(performance, 'now').mockImplementation(() => now);
+    vi.spyOn(performance, 'now').mockImplementation(() => now);
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   function makeController(opts: {
@@ -23,7 +23,7 @@ describe('AdaptivePerformanceController', () => {
     targetFps?: number;
   }) {
     let scale = opts.scale;
-    const setScale = jest.fn((next: number) => {
+    const setScale = vi.fn((next: number) => {
       scale = next;
     });
     const controller = new AdaptivePerformanceController({

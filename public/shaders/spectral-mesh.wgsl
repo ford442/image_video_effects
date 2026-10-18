@@ -1,33 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Spectral Mesh v2
+//  Spectral Mesh
 //  Category: image
-//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Chunks From: spectral-mesh
-//  Created: 2026-05-30
-//  By: 4-Agent Shader Upgrade Swarm
+//  Upgraded: 2026-10-16
+//  Ideas: junction beads at wire crossings; grating fringe along the wire normal
+//  A packing: A stores (line, triLine, pull, alpha); C is not read as color
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn acesFilm(x: vec3<f32>) -> vec3<f32> {
   let a = vec3<f32>(2.51, 2.51, 2.51);
@@ -121,6 +102,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let bloom = glow * glow * vec3<f32>(0.45, 0.55, 0.75);
   finalColor = finalColor + bloom;
+
+  // Idea 1 — junction beads where the two wire axes cross.
+  let junction = (1.0 - smoothstep(0.0, lineWidth * 1.4, grid.x))
+               * (1.0 - smoothstep(0.0, lineWidth * 1.4, grid.y));
+  finalColor += spectral * junction * (0.55 + audio.y * 0.35);
+
+  // Idea 2 — grating fringe: R and B leave the wire along its normal.
+  let wireNormal = select(vec2<f32>(0.0, 1.0), vec2<f32>(1.0, 0.0), grid.x < grid.y);
+  let fringePx = (0.0015 + audio.z * 0.002) * line;
+  let fringeR = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV + wireNormal * fringePx, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let fringeB = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV - wireNormal * fringePx, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  finalColor = mix(finalColor, vec3<f32>(fringeR, baseColor.g, fringeB), line * 0.45);
 
   finalColor = acesFilm(finalColor * 1.08);
 

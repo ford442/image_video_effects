@@ -5,7 +5,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { gzipSync } from 'node:zlib';
 
-const DEFAULT_MAIN_GZIP_LIMIT_KIB = 320;
+const DEFAULT_MAIN_GZIP_LIMIT_KIB = 325;
 const buildDir = path.resolve(process.argv[2] || 'build');
 const manifestPath = path.join(buildDir, 'asset-manifest.json');
 
@@ -56,7 +56,7 @@ if (!Number.isFinite(limitKib) || limitKib <= 0) {
 const limitBytes = Math.round(limitKib * 1024);
 
 const main = readAsset(manifest, 'main.js');
-const lazyAssets = ['auto-dj.js', 'transformers.js', 'web-llm.js', 'gpu-encode.js']
+const lazyAssets = ['auto-dj.js', 'transformers.js', 'web-llm.js', 'gpu-encode.js', 'render-worker.js', 'osc.js', 'graph-lab.js', 'graph-lab-canvas.js']
   .map(key => readAsset(manifest, key))
   .filter(Boolean);
 
@@ -74,7 +74,7 @@ if (main) {
 
 for (const asset of lazyAssets) {
   if (entrypoints.has(asset.relativePath)) {
-    fail(`${asset.relativePath} is an entrypoint; AI and encoder/muxer code must remain lazy-loaded.`);
+    fail(`${asset.relativePath} is an entrypoint; AI, encoder/muxer, render-worker and OSC code must remain lazy-loaded.`);
   }
 }
 

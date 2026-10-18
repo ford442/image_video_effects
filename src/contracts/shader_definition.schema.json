@@ -1,0 +1,395 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pixelocity.local/contracts/shader_definition.schema.json",
+  "title": "ShaderDefinition",
+  "description": "One shader_definitions/<category>/<id>.json file. Source of truth for the catalog: scripts/generate_shader_lists.js copies it into public/shader-lists/<category>.json (minus x-meta). Cross-field rules JSON Schema cannot express (id == file stem, id/url stem, category == folder, unique param ids, default within [min, max]) live in scripts/validate_shader_definitions.mjs. TypeScript type: src/types/ShaderDefinition.ts (generated).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "url"],
+  "properties": {
+    "id": {
+      "description": "Catalog id. Kebab-case; 22 legacy ids keep underscores (hyphen aliases in shader-id-aliases.json).",
+      "type": "string",
+      "pattern": "^[a-z0-9]+([-_][a-z0-9]+)*$"
+    },
+    "name": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "url": {
+      "description": "WGSL path under public/. Relative; 19 legacy files keep a leading slash.",
+      "type": "string",
+      "pattern": "^/?shaders/[A-Za-z0-9_.-]+\\.wgsl$"
+    },
+    "description": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "\\S"
+      }
+    },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "\\S"
+      }
+    },
+    "category": {
+      "description": "Redundant with the folder (the generator uses the folder). If present it must equal the folder; validate_shader_definitions.mjs enforces that.",
+      "type": "string",
+      "enum": [
+        "advanced-hybrid",
+        "artistic",
+        "distortion",
+        "generative",
+        "geometric",
+        "hybrid",
+        "image",
+        "interactive-mouse",
+        "lighting-effects",
+        "liquid-effects",
+        "post-processing",
+        "retro-glitch",
+        "simulation",
+        "visual-effects"
+      ]
+    },
+    "params": {
+      "description": "UI sliders, in zoom_params slot order unless mapping says otherwise.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/param"
+      }
+    },
+    "multipass": {
+      "$ref": "#/$defs/multipass"
+    },
+    "simRing": {
+      "$ref": "#/$defs/simRing"
+    },
+    "workgroup_size": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "supportsDepth": {
+      "type": "boolean"
+    },
+    "supportsDof": {
+      "type": "boolean"
+    },
+    "feedbackPacking": {
+      "description": "How dataTextureA/B/C are packed for feedback shaders.",
+      "type": "string"
+    },
+    "persistentState": {
+      "description": "Where cross-frame state lives (extraBuffer ranges etc.).",
+      "type": "string"
+    },
+    "requiresDeepWorkgroup": {
+      "description": "Shader needs @workgroup_size(16,16,4) = 1024 invocations.",
+      "type": "boolean"
+    },
+    "requiresHistoryRing": {
+      "description": "Shader samples binding 13 (historyTexture 2d-array ring).",
+      "type": "boolean"
+    },
+    "requiresRgba32Float": {
+      "description": "Shader needs rgba32float storage (physics / RD sims).",
+      "type": "boolean"
+    },
+    "audioReactive": {
+      "type": "boolean"
+    },
+    "mouseReactive": {
+      "type": "boolean"
+    },
+    "updated": {
+      "description": "Swarm marker: shader went through an upgrade pass.",
+      "type": "boolean"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["generative", "compute"]
+    },
+    "coordinate": {
+      "description": "Position on the shader-coordinate quality axis.",
+      "type": "integer"
+    },
+    "icon": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "x-meta": {
+      "$ref": "#/$defs/xMeta"
+    }
+  },
+  "$defs": {
+    "param": {
+      "title": "ShaderDefinitionParam",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "default", "min", "max"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "default": {
+          "type": "number"
+        },
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "step": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "mapping": {
+          "description": "WGSL uniform lane this slider drives, e.g. zoom_params.x.",
+          "type": "string",
+          "pattern": "^[a-z_]+\\.[xyzw]$"
+        },
+        "audio": {
+          "description": "Audio source that drives this slider in audio-reactive mode: a named band, or an FFT bin.",
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": ["bass", "mid", "treble", "overall"]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["fft"],
+              "properties": {
+                "fft": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          ]
+        },
+        "description": {
+          "type": "string"
+        },
+        "labels": {
+          "description": "Names for the steps of a discrete slider.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "multipass": {
+      "title": "ShaderDefinitionMultipass",
+      "description": "Linear chain (pass/totalPasses/next|prevShader), a Tier C graph, or both.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pass": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "totalPasses": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "nextShader": {
+          "type": ["string", "null"]
+        },
+        "prevShader": {
+          "type": ["string", "null"]
+        },
+        "passes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["pass", "file"],
+            "properties": {
+              "pass": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "name": {
+                "type": "string"
+              },
+              "file": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_.-]+\\.wgsl$"
+              }
+            }
+          }
+        },
+        "graph": {
+          "$ref": "#/$defs/graph"
+        }
+      },
+      "dependentRequired": {
+        "pass": ["totalPasses"],
+        "totalPasses": ["pass"]
+      }
+    },
+    "graph": {
+      "title": "ShaderDefinitionGraph",
+      "description": "Mirrors MultipassGraphDef in src/renderer/multipassGraph.ts.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maxPassesPerFrame", "nodes"],
+      "properties": {
+        "maxPassesPerFrame": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "entry", "reads", "writes"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "\\S"
+              },
+              "entry": {
+                "type": "string",
+                "pattern": "\\S"
+              },
+              "reads": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/graphRole"
+                }
+              },
+              "writes": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/graphRole"
+                }
+              },
+              "repeat": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 64
+              },
+              "dispatch": {
+                "type": "string",
+                "enum": ["pixels", "simState"]
+              },
+              "scalable": {
+                "type": "boolean"
+              },
+              "minScale": {
+                "type": "number",
+                "enum": [0.25, 0.5, 0.75, 1]
+              }
+            }
+          }
+        }
+      }
+    },
+    "graphRole": {
+      "title": "ShaderDefinitionGraphRole",
+      "type": "string",
+      "enum": ["read", "color", "dataA", "dataB", "dataC", "simState", "simIndex"]
+    },
+    "simRing": {
+      "title": "ShaderDefinitionSimRing",
+      "description": "Opt-in @group(1) sim-ring request (see bind_group1.json). Only stateCount is consumed.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stateCount"],
+      "properties": {
+        "stateCount": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "agent": {
+          "type": "string"
+        },
+        "packing": {
+          "type": "string"
+        }
+      }
+    },
+    "xMeta": {
+      "title": "ShaderDefinitionMeta",
+      "description": "Authoring / swarm provenance. The app never reads it and generate_shader_lists.js strips it from public/shader-lists. Anything that is not shader behaviour belongs here, not at the top level.",
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "seeded_by": {
+          "type": "string"
+        },
+        "chunks_used": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "target_rating": {
+          "type": "number"
+        },
+        "performance_target": {
+          "type": "string"
+        },
+        "wolfram_params": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "created_by": {
+          "type": "string"
+        },
+        "created_date": {
+          "type": "string"
+        },
+        "author": {
+          "type": "string"
+        },
+        "complexity": {
+          "type": "string"
+        },
+        "filename": {
+          "type": "string"
+        },
+        "upgrade": {
+          "description": "Swarm upgrade pass output. `params` is the index-keyed slider list the upgrade scripts write (formerly top-level updatedParams).",
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "params": {
+              "type": "array"
+            }
+          }
+        },
+        "legacy": {
+          "description": "Redundant pre-schema containers kept verbatim (parameters / controls / advanced_params / uniforms / passes) when `params` already existed.",
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

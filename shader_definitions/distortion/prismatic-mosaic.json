@@ -10,12 +10,11 @@
     "upgraded-rgba",
     "temporal"
   ],
-  "description": "Multi-layer prismatic facet tiles with volumetric fog, chromatic dispersion, vortex distortion, and depth-gradient edge glows.",
+  "description": "Prismatic mosaic tunnel: five zooming layers cut into prism tiles that split colour, with depth-edge glints, a cursor vortex and volumetric fog.",
   "params": [
     {
       "id": "min_speed",
       "name": "Min Speed",
-      "type": "float",
       "default": 0.3,
       "min": 0,
       "max": 1
@@ -23,7 +22,6 @@
     {
       "id": "max_speed",
       "name": "Max Speed",
-      "type": "float",
       "default": 0.7,
       "min": 0,
       "max": 1
@@ -31,7 +29,6 @@
     {
       "id": "saturation_boost",
       "name": "Saturation Boost",
-      "type": "float",
       "default": 0.2,
       "min": 0,
       "max": 1
@@ -39,7 +36,6 @@
     {
       "id": "fog_density",
       "name": "Fog Density",
-      "type": "float",
       "default": 0.3,
       "min": 0,
       "max": 1
@@ -54,38 +50,42 @@
     "fog"
   ],
   "updated": true,
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Min Speed",
-      "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Max Speed",
-      "default": 0.7,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Saturation Boost",
-      "default": 0.2,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Fog Density",
-      "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Min Speed",
+          "default": 0.3,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Max Speed",
+          "default": 0.7,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Saturation Boost",
+          "default": 0.2,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Fog Density",
+          "default": 0.3,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
     }
-  ]
+  }
 }

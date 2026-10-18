@@ -6,6 +6,9 @@
 //            upgraded-rgba, depth-aware, aces-tone-map
 //  Complexity: Very High
 //  Created: 2026-06-28
+//  Upgraded: 2026-09-27
+//  Ideas: internal energy veins based on fractal distance; subsurface spectral dispersion
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -258,13 +261,19 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, auraIntensity: f32, expansion: f32, fr
           0.5 + 0.5 * cos(iridPhase + 4.2)
         );
 
-        // Subsurface scattering approximation
+        // Idea 2: Subsurface spectral dispersion based on view angle and audio
         let sss = pow(1.0 - cosi, 2.0) * auraIntensity;
-        let sssCol = vec3<f32>(0.3, 0.6, 0.9) * sss;
+        let sssDispersion = g_audio * 0.5 * auraIntensity;
+        let sssCol = vec3<f32>(0.3 + sssDispersion, 0.6, 0.9 - sssDispersion) * sss;
+
+        // Idea 1: Internal energy veins on the shell surface
+        let veinNoise = fbm3(p * 8.0 - vec3<f32>(g_time * 0.4, g_time * 0.2, 0.0));
+        let veinMask = smoothstep(0.75, 0.95, veinNoise);
+        let veins = vec3<f32>(1.0, 0.3, 0.6) * veinMask * auraIntensity * (1.0 + g_audio * 2.0);
 
         // Shell base color with prismatic tint
         let shellCol = mix(vec3<f32>(0.1, 0.15, 0.2), irid * 1.5, fresnel);
-        col = shellCol + sssCol;
+        col = shellCol + sssCol + veins;
         col += vec3<f32>(0.2, 0.5, 0.7) * g_audio * fresnel;
         alpha = 0.5 + fresnel * 0.4;
       }
@@ -366,7 +375,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col = col + vec3<f32>(0.1, 0.3, 0.5) * smoothBass * 0.15 * alpha;
 
   // Temporal persistence
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  let prev = textureLoad(dataTextureC, coord, 0);
   col = mix(col, prev.rgb * 0.92, 0.04);
 
   // Tone map

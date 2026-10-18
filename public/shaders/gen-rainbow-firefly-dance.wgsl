@@ -1,13 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Rainbow Firefly Dance
 //  Category: generative
-//  Features: firefly, rainbow, dance, audio-reactive, mouse-interactive,
-//            semantic-alpha, aces-tone-mapping, chromatic-aberration,
-//            temporal-feedback, depth-aware
+//  Features: firefly, rainbow, dance, audio-reactive, mouse-driven,
+//            semantic-alpha, upgraded-rgba, temporal-feedback, depth-aware
 //  Complexity: Medium
-//  Created: 2026-05-31
-//  Updated: 2026-06-01
-//  By: Kimi Agent (Bright batch)
+//  Upgraded: 2026-09-27
+//  Ideas: velocity-stretched comet tails; click mini-swarms; Photinus flash codes (per-fly hash duty cycle, bass shortens the dark); courtship antiphase (even/odd delayed flash, held mouse tightens pairing)
+//  A packing: linear HDR history in A; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -125,10 +124,10 @@ fn fireflyField(
         // Firefly position
         var fPos = vec2<f32>(swirlX, swirlY) + turb;
 
-        // Mouse attraction
+        // Mouse attraction — held tightens courtship pairing (stronger pull)
         let toMouse = mouseNorm - fPos;
         let mouseDist = length(toMouse);
-        let attractStrength = mouseDown * 0.3 * intensity + (1.0 - mouseDown) * 0.05;
+        let attractStrength = mouseDown * 0.55 * intensity + (1.0 - mouseDown) * 0.05;
         fPos += normalize(toMouse + vec2<f32>(0.001)) * attractStrength / (mouseDist + 0.3);
 
         // Scale firefly size with bass pulse
@@ -141,6 +140,17 @@ fn fireflyField(
         // Brightness pulsing
         let pulse = 0.7 + 0.3 * sin(time * 3.0 * speed + fi * 1.7);
 
+        // Idea 1 — Photinus flash codes: per-fly hash duty cycle (dark interval).
+        // Bass shortens the dark so the swarm blinks faster on the kick.
+        let flashRate = 1.35 + seed2 * 2.4;
+        let duty = mix(0.20, 0.44, 1.0 - bass * 0.4);
+        // Idea 2 — courtship antiphase: even flies answer after a delay;
+        // held mouse locks phases closer together.
+        let answerDelay = select(0.0, mix(0.18, 0.04, mouseDown), (i & 1) == 0);
+        let flashPhase = fract(time * flashRate + seed * 6.283185 + answerDelay);
+        let flash = smoothstep(0.0, 0.05, flashPhase) * (1.0 - smoothstep(duty, duty + 0.07, flashPhase));
+        let pulseFlash = pulse * (0.08 + 0.92 * flash);
+
         // Velocity-stretched comet tail: one swarm evaluation replaces the
         // former three complete chromatic field passes.
         let rel = uv - fPos;
@@ -152,7 +162,7 @@ fn fireflyField(
                    step(0.0, dot(rel, -velocityDir));
         let glow = fireflyGlow(uv, fPos, fSize, intensity);
         let spectralTail = hue2rgb(hue + behind * 4.0 + bass * 0.08);
-        col += (fColor * glow + spectralTail * tail * 0.32) * pulse * intensity * 2.5;
+        col += (fColor * glow + spectralTail * tail * 0.32) * pulseFlash * intensity * 2.5;
     }
     return col;
 }

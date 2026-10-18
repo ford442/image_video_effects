@@ -2,11 +2,10 @@
   "id": "crt-clear-zone",
   "name": "CRT Clear Zone",
   "url": "shaders/crt-clear-zone.wgsl",
-  "description": "Accurate CRT electron beam simulation with Gaussian spot spread, inline shadow mask, phosphor decay via temporal feedback, barrel distortion with corner darkening, per-RGB chromatic aberration, and ACES tone mapping.",
+  "description": "CRT screen with a clear window at the cursor: slot mask, visible beam raster, corner misconvergence, glass halation, and purity blotches around the rim that wobble when you click to degauss.",
   "params": [
     {
       "name": "Distortion",
-      "type": "f32",
       "min": 0,
       "max": 1,
       "default": 0.5,
@@ -15,7 +14,6 @@
     },
     {
       "name": "Aberration",
-      "type": "f32",
       "min": 0,
       "max": 1,
       "default": 0.3,
@@ -24,7 +22,6 @@
     },
     {
       "name": "Clear Radius",
-      "type": "f32",
       "min": 0,
       "max": 1,
       "default": 0.3,
@@ -33,7 +30,6 @@
     },
     {
       "name": "Scanlines",
-      "type": "f32",
       "min": 0,
       "max": 1,
       "default": 0.5,

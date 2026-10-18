@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "description": "Opt-in @group(1) sim ring: an indexable storage-buffer ring for particles / walkers / photons. Group 0 is at the contract ceiling (bindings 0–13, 2 storage buffers, 4 storage textures), so persistent agents live here instead of in extraBuffer or plasmaBuffer. Shaders that never declare @group(1) keep the single-layout pipeline. Keep in sync with src/renderer/webgpu/simRing.ts (createSimRingBindGroupLayout) — enforced by `npm run verify:device-policy`.",
+  "group": 1,
+  "bindings": [
+    {
+      "binding": 0,
+      "name": "simState",
+      "bufferType": "storage",
+      "wgsl": "var<storage, read_write> simState: array<vec4<f32>>",
+      "elementBytes": 16,
+      "note": "Live agent state, one vec4<f32> per element. Written by simState-domain passes."
+    },
+    {
+      "binding": 1,
+      "name": "simIndex",
+      "bufferType": "read-only-storage",
+      "wgsl": "var<storage, read> simIndex: array<u32>",
+      "elementBytes": 4,
+      "note": "Byte-for-byte snapshot of simState taken by the copy barrier (4 u32 words per state element; bitcast<vec4<f32>> to read). The buffer twin of dataC."
+    },
+    {
+      "binding": 2,
+      "name": "simParams",
+      "bufferType": "uniform",
+      "wgsl": "var<uniform> simParams: SimParams",
+      "sizeBytes": 16,
+      "fields": ["stateCount", "indexCount", "frame", "truncated"],
+      "note": "All u32. stateCount = allocated vec4 elements; indexCount = stateCount * 4; frame = frames since the ring was (re)armed; truncated = 1 when the OOM ladder allocated fewer elements than requested."
+    }
+  ],
+  "barrier": {
+    "kind": "copyBufferToBuffer",
+    "from": "simState",
+    "to": "simIndex",
+    "twinOf": "dataA → dataC"
+  },
+  "dispatch": {
+    "domains": ["pixels", "simState"],
+    "default": "pixels",
+    "simStateWorkgroupSize": [64, 1, 1]
+  },
+  "group1RequiredLimits": {
+    "maxStorageBuffersPerShaderStage": 4,
+    "maxUniformBuffersPerShaderStage": 2,
+    "maxBindGroups": 2
+  },
+  "webgpuBaseLimits": {
+    "maxStorageBuffersPerShaderStage": 8,
+    "maxUniformBuffersPerShaderStage": 12,
+    "maxBindGroups": 4
+  },
+  "oom": {
+    "ladder": [65536, 32768, 16384, 4096],
+    "sessionStorageKey": "px_simring_oom_cap",
+    "defaultStateCount": 65536
+  },
+  "wasm": {
+    "policy": "refuse",
+    "note": "WASM_BACKEND_POLICY.md feature freeze: the C++ pipeline keeps bindGroupLayoutCount = 1 and src/wasm/bridge/shader.ts refuses @group(1) WGSL before LoadShader (logged skip, never an emdawn abort)."
+  }
+}

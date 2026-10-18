@@ -6,28 +6,12 @@
 //  Complexity: High
 //  Created: 2026-05-31
 //  Enhanced: 2026-06-28
+//  Upgraded: 2026-10-17
+//  Ideas: valley pool; tip bead
+//  A packing: pre-ACES HDR history RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.141592653589793;
 
@@ -343,6 +327,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = color + irid * sss;
     // Eruption crests flare on the same palette, half a turn round the wheel.
     color = color + vivify(ferroSpectrum(fract(hue + 0.5)), 0.7) * erupt * field * (0.35 + treble * 0.5);
+    // Idea 1 — valley pool: spikes draw fluid out of the lattice lows
+    let valley = smoothstep(0.28, 0.02, spikeBase) * field;
+    color = mix(color, color * vec3<f32>(0.32, 0.36, 0.44), valley * 0.62);
+    // Idea 2 — chrome bead on the tallest peaks
+    let tipBead = smoothstep(0.58, 0.92, spikeBase) * field;
+    color = color + vec3<f32>(0.92, 0.94, 0.98) * tipBead * (0.22 + highlightSharpness * 0.45);
 
     // Audio-reactive pulse: bass drives light intensity
     let pulse = 1.0 + bass * 0.3 + sin(time * 3.0 + dist * 10.0) * bass * 0.2;

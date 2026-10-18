@@ -2,48 +2,28 @@
 //  Celestial Forge — Batch 63
 //  Category: generative
 //  A stellar engine hammering at speed: contra-rotating greebled rings,
-//  psychedelic plasma spectra, spring-cursor orbit, held forge surge,
+//  psychedelic plasma spectra, cursor orbit, held forge surge,
 //  capped click hammer-strike shockwaves.
+//  Upgraded: 2026-10-17
+//  Ideas: temper gradient by ring index; hammer flats on the tube; hammer scale; quench collar;
+//         pattern-welded Damascus lamination riding each ring; strike heat that
+//         travels ring-to-ring outward and cools along the blackbody locus
+//  A packing: ACES display RGBA
 //  Contract: 13 bindings, ACES, semantic alpha, dataTextureA writeback only,
 //            exact textureLoad from dataTextureC, plasmaBuffer three-band audio,
-//            bounded extraBuffer[133..138] state.
+//            stateless (no extraBuffer).
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=Time, yz=MouseUV, w=MouseDown
-    zoom_params: vec4<f32>,  // x=Rotation Speed, y=Complexity, z=Ring Scale, w=Core Intensity
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Rotation Speed, y=Complexity, z=Ring Scale, w=Core Intensity
 
 const TAU: f32 = 6.28318530718;
-
-const SPRING_X: i32 = 133;
-const SPRING_Y: i32 = 134;
-const SPRING_VX: i32 = 135;
-const SPRING_VY: i32 = 136;
-const SPRING_T: i32 = 137;
-const SPRING_INIT: i32 = 138;
 
 var<private> g_bass: f32;
 var<private> g_mids: f32;
 var<private> g_treble: f32;
 var<private> g_strike: f32;
 var<private> g_held: f32;
+var<private> g_heatAge: f32;
 
 // --- Helper Functions ---
 
@@ -135,13 +115,36 @@ fn fbm(p: vec3<f32>) -> f32 {
     return value;
 }
 
+// Shared ring frame (map + shading). Audio nudges phase, never the clock rate.
+fn ringRot(i: i32) -> mat3x3<f32> {
+    let fi = f32(i);
+    let speed = u.zoom_params.x * 3.2;
+    let kick = g_bass * 0.35 * (1.0 + fi * 0.3);
+    let rotSpeed1 = u.config.x * speed * (0.5 + fi * 0.2) + kick;
+    let rotSpeed2 = u.config.x * speed * (0.3 - fi * 0.15) - kick * 0.5;
+    if (i % 2 == 0) {
+        return rotY(rotSpeed2 * 0.5) * rotX(rotSpeed1);
+    }
+    return rotZ(rotSpeed2 * 0.7) * rotY(rotSpeed1);
+}
+
+// Idea: blackbody locus for cooling strike heat (1 = white-hot, 0 = dark).
+fn blackbody(h: f32) -> vec3<f32> {
+    return vec3<f32>(
+        smoothstep(0.0, 0.35, h),
+        smoothstep(0.25, 0.75, h) * 0.85,
+        smoothstep(0.6, 1.0, h) * 0.7
+    );
+}
+
 // --- Map Function ---
 // Returns vec3: x = distance, y = material ID, z = emission
 fn map(p_in: vec3<f32>) -> vec3<f32> {
     let p = p_in;
     let time = u.config.x;
-    // Fast motion: the forge spins hard, bass and held both throttle it
-    let speed = u.zoom_params.x * (3.2 + g_bass * 2.6 + g_held * 1.8);
+    // Fast motion: the forge spins hard; bass kicks phase in ringRot()
+    let speed = u.zoom_params.x * 3.2;
+    let bassPhase = g_bass * 0.35;
     let complexity = u.zoom_params.y;
     let scale = u.zoom_params.z;
 
@@ -150,7 +153,7 @@ fn map(p_in: vec3<f32>) -> vec3<f32> {
     var emission = 0.0;
 
     // --- Central energy core ---
-    let corePulse = 1.0 + sin(time * (6.0 + g_bass * 6.0)) * 0.12 + g_strike * 0.25;
+    let corePulse = 1.0 + sin(time * 6.0) * (0.12 + g_bass * 0.08) + g_strike * 0.25;
     let coreRadius = 0.8 * corePulse * scale;
     let dCore = sdSphere(p, coreRadius);
 
@@ -172,20 +175,15 @@ fn map(p_in: vec3<f32>) -> vec3<f32> {
         let ringRadius = (1.5 + fi * 0.8) * scale;
         let ringThickness = 0.08 + complexity * 0.05;
 
-        let rotSpeed1 = time * speed * (0.5 + fi * 0.2);
-        let rotSpeed2 = time * speed * (0.3 - fi * 0.15);
-
-        var ringP = p;
-
-        if (i % 2 == 0) {
-            ringP = rotX(rotSpeed1) * ringP;
-            ringP = rotY(rotSpeed2 * 0.5) * ringP;
-        } else {
-            ringP = rotY(rotSpeed1) * ringP;
-            ringP = rotZ(rotSpeed2 * 0.7) * ringP;
-        }
+        let ringP = ringRot(i) * p;
 
         var dTorus = sdTorus(ringP, vec2<f32>(ringRadius, ringThickness));
+
+        // Hammer flats: low-count chamfer on the tube. Greeble noise stays below.
+        let radial = length(ringP.xz);
+        let minorAng = atan2(ringP.y, radial - ringRadius);
+        let flatFrac = abs(fract(minorAng * 4.0 / TAU + 0.5) - 0.5);
+        dTorus += (0.5 - flatFrac) * ringThickness * (0.28 + g_strike * 0.9);
 
         // Greeble pass: hull plating + rivet rows carved into every ring
         let ringAngle = atan2(ringP.z, ringP.x);
@@ -194,7 +192,7 @@ fn map(p_in: vec3<f32>) -> vec3<f32> {
 
         // Boolean trenches
         let trenchCount = 6.0 + fi * 4.0;
-        let trenchAngle = ringAngle * trenchCount + time * speed;
+        let trenchAngle = ringAngle * trenchCount + time * speed + bassPhase;
         let trenchPos = vec3<f32>(
             ringRadius * cos(trenchAngle / trenchCount),
             ringP.y,
@@ -206,22 +204,23 @@ fn map(p_in: vec3<f32>) -> vec3<f32> {
 
         // Glowing panels
         let panelCount = 12.0;
-        let panelPhase = sin(ringAngle * panelCount + time * speed * 3.0);
+        let panelPhase = sin(ringAngle * panelCount + time * speed * 3.0 + bassPhase * 3.0);
         let isPanel = panelPhase > 0.7 - g_treble * 0.2;
 
         if (dRingDetail < d) {
             d = dRingDetail;
-            mat = 2.0;
+            let ringT = fi / max(f32(numRings - 1), 1.0);
+            mat = 2.0 + ringT * 0.99;
             if (isPanel) {
-                mat = 3.0;
+                mat = 3.0 + ringT * 0.99;
                 emission = 0.5 * u.zoom_params.w;
             }
         }
     }
 
     // --- Plasma arcs — fast, and click strikes fire extra ones ---
-    let arcTime = fract(time * (1.1 + g_mids * 0.8));
-    if (arcTime < 0.3 + g_strike * 0.4) {
+    let arcTime = fract(time * 1.1);
+    if (arcTime < 0.3 + g_mids * 0.15 + g_strike * 0.4) {
         let arcAngle = time * 6.0;
         let arcRadius = 1.2 * scale;
         let arcPos = vec3<f32>(
@@ -273,40 +272,19 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let held = u.zoom_config.w > 0.5;
     g_held = select(0.0, 1.0, held);
 
-    // ── spring cursor (extraBuffer[133..138] only) ──────────────────────
-    var smoothMouse = rawMouse;
-    let hasSpring = arrayLength(&extraBuffer) > 138u;
-    if (hasSpring && extraBuffer[SPRING_INIT] > 0.5) {
-        smoothMouse = vec2<f32>(extraBuffer[SPRING_X], extraBuffer[SPRING_Y]);
-    }
-    if (hasSpring && id.x == 0u && id.y == 0u) {
-        var springPos = smoothMouse;
-        var springVel = vec2<f32>(extraBuffer[SPRING_VX], extraBuffer[SPRING_VY]);
-        if (extraBuffer[SPRING_INIT] <= 0.5) {
-            springPos = rawMouse;
-            springVel = vec2<f32>(0.0);
-        } else {
-            let dt = clamp(time - extraBuffer[SPRING_T], 0.001, 0.05);
-            let omega = 9.0;
-            let accel = (rawMouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
-            springVel += accel * dt;
-            springPos += springVel * dt;
-        }
-        extraBuffer[SPRING_X] = springPos.x;
-        extraBuffer[SPRING_Y] = springPos.y;
-        extraBuffer[SPRING_VX] = springVel.x;
-        extraBuffer[SPRING_VY] = springVel.y;
-        extraBuffer[SPRING_T] = time;
-        extraBuffer[SPRING_INIT] = 1.0;
-        smoothMouse = springPos;
-    }
+    // Raw cursor: the old extraBuffer spring never persisted (re-uploaded each frame).
+    let smoothMouse = rawMouse;
 
     // ── click hammer strikes (capped, bounded) ─────────────────────────
     var strike = 0.0;
+    var heatAge = 99.0;
     let rippleCount = min(u32(u.config.y), 50u);
     for (var i = 0u; i < rippleCount; i = i + 1u) {
         let rp = u.ripples[i];
         let age = time - rp.z;
+        if (age >= 0.0) {
+            heatAge = min(heatAge, age);
+        }
         if (age >= 0.0 && age < 1.1) {
             let front = abs(length((uv01 - rp.xy) * aspect) - age * 1.05);
             strike = max(strike, exp(-front * 32.0) * (1.0 - age / 1.1));
@@ -314,17 +292,18 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
     strike = min(strike, 1.0);
     g_strike = strike;
+    g_heatAge = heatAge;
 
     // Camera — orbit steered by the smoothed cursor, auto-spin runs fast
     var ro = vec3<f32>(0.0, 0.0, 6.0 - g_held * 1.2 + strike * 0.8);
     let mouseX = smoothMouse.x * 2.0 - 1.0;
     let mouseY = smoothMouse.y * 2.0 - 1.0;
 
-    let temp_ro_yz = rot(mouseY * 1.5) * ro.yz;
+    let temp_ro_yz = rot(-mouseY * 1.5) * ro.yz;
     ro.y = temp_ro_yz.x;
     ro.z = temp_ro_yz.y;
 
-    let temp_ro_xz = rot(mouseX * 3.14159 + time * (0.55 + g_bass * 0.9)) * ro.xz;
+    let temp_ro_xz = rot(mouseX * 3.14159 + time * 0.55 + g_bass * 0.25) * ro.xz;
     ro.x = temp_ro_xz.x;
     ro.z = temp_ro_xz.y;
 
@@ -332,7 +311,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let ww = normalize(ta - ro);
     let uu = normalize(cross(ww, vec3<f32>(0.0, 1.0, 0.0)));
     let vv = normalize(cross(uu, ww));
-    let rd = normalize(uv.x * uu + uv.y * vv + 1.8 * ww);
+    // uv.y grows downward on screen; negate so world-up is screen-up.
+    let rd = normalize(uv.x * uu - uv.y * vv + 1.8 * ww);
 
     // Raymarching
     var t = 0.0;
@@ -375,19 +355,26 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let coreIntensity = u.zoom_params.w * (1.0 + g_bass * 0.8 + strike * 0.6);
 
         // Hue races around the forge with the mids
-        let hue = fract(distToCore * 0.14 + time * (0.25 + g_mids * 0.85) + strike * 0.35);
+        let hue = fract(distToCore * 0.14 + time * 0.25 + g_mids * 0.3 + strike * 0.35);
 
-        if (m == 1.0) {
+        let matId = floor(m + 1.0e-4);
+        let ringT = fract(m);
+        if (matId == 1.0) {
             let plasmaDetail = fbm(p * 5.0 + time * 2.0);
             col = forgePalette(hue, 1.0 + g_bass) * (1.0 + plasmaDetail * 0.4) * coreIntensity * 2.0;
 
-        } else if (m == 2.0 || m == 3.0) {
+        } else if (matId == 2.0 || matId == 3.0) {
             let dif = max(dot(n, toCore), 0.0);
             let hal = normalize(toCore - rd);
             let spec = pow(max(dot(n, hal), 0.0), 64.0);
             fre = pow(1.0 - max(dot(n, v), 0.0), 5.0);
 
-            let metalCol = vec3<f32>(0.4, 0.45, 0.5);
+            // Temper: inner rings white-hot, outer rings straw then blue.
+            let hot = vec3<f32>(1.0, 0.96, 0.9);
+            let straw = vec3<f32>(0.92, 0.62, 0.22);
+            let blue = vec3<f32>(0.28, 0.48, 0.82);
+            let temper = mix(mix(hot, straw, smoothstep(0.0, 0.5, ringT)), blue, smoothstep(0.35, 1.0, ringT));
+            let metalCol = temper;
             let warmRim = forgePalette(hue + 0.2, g_treble) * fre * coreIntensity * 1.3;
             let ambientCore = coreIntensity / (distToCore * distToCore + 1.0);
 
@@ -399,13 +386,49 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let band = 0.5 + 0.5 * sin(atan2(p.z, p.x) * 24.0 + p.y * 30.0);
             col *= 0.82 + band * 0.36;
 
-            if (m == 3.0) {
+            // Ring-local frame for the welded-in details below
+            let numRingsS = 3 + i32(u.zoom_params.y * 3.0);
+            let ringIdx = i32(round(ringT / 0.99 * f32(numRingsS - 1)));
+            let lp = ringRot(ringIdx) * p;
+            let ringR = (1.5 + f32(ringIdx) * 0.8) * u.zoom_params.z;
+            let theta = atan2(lp.z, lp.x);
+            let phi = atan2(lp.y, length(lp.xz) - ringR);
+
+            // Idea: Damascus lamination — folded-steel layers ride the ring as
+            // warped contour bands (fixed in the ring frame, so they spin with it).
+            let fold = phi * 1.6 + sin(theta * (5.0 + f32(ringIdx) * 2.0) + phi * 2.0) * 0.9
+                     + fbm(lp * 3.5 + f32(ringIdx) * 7.1) * 2.2;
+            let layer = abs(fract(fold * 3.0) - 0.5) * 2.0;
+            let etch = smoothstep(0.15, 0.0, layer) * (0.5 + u.zoom_params.y * 0.6);
+            col *= 1.0 - etch * 0.35;
+            col += temper * smoothstep(0.85, 1.0, layer) * spec * coreIntensity * 0.6;
+
+            // Idea: strike heat travels ring-to-ring outward from the core and
+            // cools along the blackbody locus (white -> straw -> cherry -> dark).
+            let ringAge = g_heatAge - f32(ringIdx) * 0.12;
+            if (ringAge >= 0.0 && ringAge < 2.5) {
+                let heat = exp(-ringAge * 1.8) * smoothstep(0.0, 0.05, ringAge);
+                col += blackbody(heat) * heat * 2.2 * (0.5 + coreIntensity * 0.5);
+            }
+
+            // Idea: hammer scale — oxide flakes on the cooler outer rings, bright when struck.
+            let flake = hash31(floor(p * 18.0));
+            let scaleFlake = smoothstep(0.82, 0.93, flake) * smoothstep(0.25, 0.9, ringT);
+            col = col * (1.0 - scaleFlake * 0.5);
+            col += vec3<f32>(1.0, 0.72, 0.35) * scaleFlake * g_strike * 1.6;
+
+            if (matId == 3.0) {
                 col += forgePalette(hue + 0.55, 1.0) * (0.6 + g_treble * 0.8) * coreIntensity;
             }
 
-        } else if (m == 4.0) {
+        } else if (matId == 4.0) {
             col = forgePalette(hue + 0.7, 1.0 + g_treble) * coreIntensity * 3.2;
         }
+
+        // Idea: quench collar — pale steam just outside the core.
+        let coreR = 0.85 * u.zoom_params.z + 0.15;
+        let collar = exp(-abs(distToCore - coreR) * 7.0);
+        col += vec3<f32>(0.72, 0.82, 0.9) * collar * (0.12 + coreIntensity * 0.28);
 
         col += accumEmission * forgePalette(time * 0.3, g_mids) * 0.05;
         col = mix(col, vec3<f32>(0.005, 0.01, 0.02), 1.0 - exp(-0.08 * t));
@@ -417,7 +440,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col += forgePalette(time * 0.5 + cursorDist, g_bass) * exp(-cursorDist * 7.5) * (0.14 + g_held * 0.5);
 
     // Vignette
-    col *= 1.0 - 0.4 * length(uv);
+    col *= max(1.0 - 0.4 * length(uv), 0.0);
 
     // ── temporal feedback — exact load, no filtering ────────────────────
     let prev = textureLoad(dataTextureC, coord, 0);

@@ -4,29 +4,11 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-09-14
-//  Ideas: chitin wing-membrane thin-film interference (2*n*d*cos theta at 650/532/450 nm); longitudinal costa/radius/media vein spars with nodus and dark pterostigma cell
+//  Ideas: chitin wing-membrane thin-film interference (2*n*d*cos theta at 650/532/450 nm); longitudinal costa/radius/media vein spars with nodus and dark pterostigma cell; leading-edge vortex sheets; abdominal bioluminescent segment pulses
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-
-struct Uniforms {
-    config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-    zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
-    zoom_params: vec4<f32>,  // .x = Wingspan, .y = Plasma Intensity, .z = Vein Density, .w = Flap Rate
-    ripples: array<vec4<f32>, 50>, // .xy = click uv, .z = start time
-};
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: .x = Wingspan, .y = Plasma Intensity, .z = Vein Density, .w = Flap Rate
 
 const PI: f32 = 3.14159265359;
 
@@ -302,10 +284,21 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     bodyColor = mix(bodyColor, vec3<f32>(0.04, 0.07, 0.1), wingOnly * ven.x * (0.4 + veinDensity * 0.5));
     bodyColor = mix(bodyColor, vec3<f32>(0.12, 0.02, 0.03), wingOnly * ven.y * 0.9);
     bodyColor += vec3<f32>(1.0, 0.35, 0.2) * wingOnly * ven.y * treble * 0.6;
+    // Idea 3: leading-edge vortex sheet riding the costa during flapping.
+    let levBand = smoothstep(0.62, 0.93, wf.y) * smoothstep(0.06, 0.0, abs(wf.z));
+    let levPulse = 0.5 + 0.5 * sin(time * (12.0 * flapRate + 2.0 + bass * 4.0) - wf.x * 10.0);
+    let lev = wingOnly * levBand * levPulse * (0.35 + plasma * 0.4);
+    bodyColor += vec3<f32>(0.35, 0.95, 1.0) * lev;
 
     // Plasma core glow
     let core = smoothstep(0.15, 0.0, length(p - vec2<f32>(0.0, 0.2))) * plasma * 4.0;
     bodyColor += vec3<f32>(0.2, 0.9, 0.6) * core * (1.0 + bass * 0.5);
+    // Idea 4: abdominal lantern segments pulsing down the tail.
+    let tailMask = smoothstep(0.085, 0.0, abs(p.x)) * smoothstep(0.35, 1.2, -p.y);
+    let segCoord = (p.y + 1.25) * 13.0;
+    let segment = pow(max(0.5 + 0.5 * sin(segCoord - time * (4.0 + mids * 2.0)), 0.0), 3.0);
+    let abdomenGlow = tailMask * segment * (0.25 + treble * 0.45);
+    bodyColor += vec3<f32>(0.95, 0.75, 0.2) * abdomenGlow;
 
     // Strange-attractor crystal particles
     let particles = attractorParticles(uv, time, treble);
@@ -328,7 +321,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     color = acesToneMap(color * (1.0 + bass * 0.15));
 
     // Alpha: dragonfly coverage, SDF shell proximity, thin-film membrane and particle emission
-    let alpha = clamp(density + shell * 0.35 + wingOnly * 0.15 + particles * 0.3 + gust * 0.2, 0.0, 1.0);
+    let alpha = clamp(density + shell * 0.35 + wingOnly * 0.15 + particles * 0.3 + gust * 0.2 + lev * 0.2 + abdomenGlow * 0.25, 0.0, 1.0);
     let depth = mix(inDepth, 0.15 + density * 0.65, clamp(density + shell * 0.6, 0.0, 1.0));
 
     let finalColor = vec4<f32>(color, alpha);

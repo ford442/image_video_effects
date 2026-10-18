@@ -9,30 +9,13 @@
 //    smooth coloring uses log(log|z|)/log(2)
 //  Chunks From: gen-dmt-fractal-zoom (original)
 //  Created: 2026-05-31
-//  Upgraded: 2026-06-07
+//  Upgraded: 2026-10-10
+//  Ideas: escape-argument spokes; interior nucleus
+//  A packing: ACES display RGBA in A (C read as display history)
 //  By: Kimi Agent
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265;
 
@@ -72,7 +55,7 @@ fn fractalColor(iter: f32, maxIter: f32, zMag: f32, time: f32, colorShift: f32) 
 }
 
 // Mandelbrot / Julia iteration — Wolfram escape radius |z|>2
-fn fractalIter(c: vec2<f32>, maxIter: i32, time: f32) -> vec2<f32> {
+fn fractalIter(c: vec2<f32>, maxIter: i32, time: f32) -> vec3<f32> {
   var z = vec2<f32>(0.0);
   var iter: f32 = 0.0;
   let hybridMix = sin(time * 0.2) * 0.5 + 0.5;
@@ -94,11 +77,11 @@ fn fractalIter(c: vec2<f32>, maxIter: i32, time: f32) -> vec2<f32> {
     // Wolfram: |z| > 2 guarantees divergence  =>  |z|^2 > 4
     if (mag > 4.0) {
       iter = f32(i);
-      return vec2<f32>(iter, mag);
+      return vec3<f32>(iter, mag, atan2(z.y, z.x));
     }
   }
 
-  return vec2<f32>(f32(maxIter), dot(z, z));
+  return vec3<f32>(f32(maxIter), dot(z, z), atan2(z.y, z.x));
 }
 
 // Secondary fractal layer - orbit traps coloring
@@ -210,6 +193,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let interiorPhase = time * 0.05 + colorShift;
     color = dmtRainbow(interiorPhase, 0.0) * 0.3;
     color += vec3<f32>(0.05, 0.0, 0.1);
+    // Idea: interior nucleus — never-escaped orbits glow from how small the final |z| is.
+    let nucleus = exp(-sqrt(max(result.y, 0.0)) * 2.4);
+    color += dmtRainbow(interiorPhase + 0.18, 0.0) * nucleus * 0.65;
   } else {
     // Exterior — colorful escape with Wolfram smooth coloring
     color = fractalColor(iter, f32(baseIter), zMag, time, colorShift);
@@ -222,6 +208,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let band = fract(iter * 0.1);
     let bandGlow = smoothstep(0.0, 0.15, band) * smoothstep(0.5, 0.15, band);
     color += dmtRainbow(iter * 0.05 + time * 0.1, colorShift + 0.5) * bandGlow * 0.4;
+    // Idea: escape-argument spokes — the angle of the escaping z.
+    let argHue = result.z / 6.2831853 + 0.5;
+    let spokePhase = min(fract(argHue * 6.0), 1.0 - fract(argHue * 6.0));
+    let spoke = 1.0 - smoothstep(0.0, 0.045, spokePhase);
+    color += dmtRainbow(argHue, colorShift + 0.15) * spoke * intensity * 0.45;
   }
 
   // Second fractal layer at different scale for depth

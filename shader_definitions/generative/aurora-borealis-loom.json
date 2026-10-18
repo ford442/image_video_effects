@@ -3,7 +3,7 @@
   "name": "Aurora Borealis Loom",
   "category": "generative",
   "url": "shaders/aurora-borealis-loom.wgsl",
-  "description": "Aurora curtains woven like fabric on a celestial loom. Curtain conveyor scroll, vertical ion drift streaks, and advected HDR trails. Bass swells the weave, mids shift hue through the spectrum, treble adds bead-like ionization nodes. Mouse pulls the fabric.",
+  "description": "Aurora curtains woven like fabric on a celestial loom. Curtain conveyor scroll, vertical ion drift streaks, and advected HDR trails. Bass swells the weave, mids shift hue through the spectrum, treble adds bead-like ionization nodes. Mouse pulls the fabric. The cloth ends at a travelling fell line where the reed beats up each new pick (harder on bass); hand-spun slub yarn pools the aurora light; soft patches of the curtains pulse on their own 3-12 s periods.",
   "features": [
     "audio-reactive",
     "generative",
@@ -63,39 +63,43 @@
     "abstract",
     "atmospheric"
   ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Weave Density",
-      "default": 0.4,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Hue Speed",
-      "default": 0.3,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Ionization",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Curtain Flow",
-      "default": 0.4,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+  "updated": true,
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Weave Density",
+          "default": 0.4,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Hue Speed",
+          "default": 0.3,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Ionization",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Curtain Flow",
+          "default": 0.4,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
     }
-  ],
-  "updated": true
+  }
 }

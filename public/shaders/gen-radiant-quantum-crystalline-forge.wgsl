@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-15
-//  Ideas: crystallographic twin facets; accretion weld seams
+//  Upgraded: 2026-09-27
+//  Ideas: crystallographic twin facets; accretion weld seams; blackbody seam cooling; cleavage-plane glints
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -84,6 +84,16 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     ));
 }
 
+// Idea 3 helper: blackbody-ish ramp, 0 = cold dull red, 1 = white-hot.
+fn blackbody(heat: f32) -> vec3<f32> {
+    let h = clamp(heat, 0.0, 1.0);
+    return vec3<f32>(
+        smoothstep(0.0, 0.35, h),
+        smoothstep(0.25, 0.75, h) * 0.9,
+        smoothstep(0.6, 1.0, h) * 0.85
+    ) * (0.35 + 1.1 * h);
+}
+
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
   let b = 0.03;
@@ -118,6 +128,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var dO = 0.0;
     var hit = false;
     var glow = 0.0;
+    var seamGlow = vec3<f32>(0.0);
     var p = ro;
 
     let chroma = u.zoom_params.y;
@@ -129,7 +140,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Volumetric Fog accumulation
         glow += 0.01 * fogInt / (1.0 + dS.x * dS.x * 100.0) * (1.0 + mids * 0.8);
-        glow += 0.008 * fogInt * exp(-g_seam * 14.0);
+        // Idea 3: seam fog glows by blackbody heat that cools with distance
+        // from the forge front (the camera).
+        let seamE = exp(-g_seam * 14.0);
+        glow += 0.004 * fogInt * seamE;
+        seamGlow += blackbody(exp(-dO * 0.07)) * 0.006 * fogInt * seamE;
 
         if(dS.x < SURF_DIST) {
             hit = true;
@@ -161,12 +176,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let twinTint = mix(twinA, twinB, hitMap.y);
         col = mix(baseCol, twinTint, 0.45 * chroma) * diff + spec * vec3<f32>(1.0) + fresnel * twinTint * chroma;
         let weld = exp(-g_seam * 18.0);
-        col += mix(vec3<f32>(1.0, 0.95, 0.75), vec3<f32>(0.55, 0.2, 1.0), fract(u.config.x * 0.15 + g_seam * 4.0)) * weld * (0.8 + treble);
+        let weldPal = mix(vec3<f32>(1.0, 0.95, 0.75), vec3<f32>(0.55, 0.2, 1.0), fract(u.config.x * 0.15 + g_seam * 4.0));
+        let weldHeat = blackbody(exp(-dO * 0.07) * (0.85 + treble * 0.3));
+        col += mix(weldPal, weldHeat * 1.3, 0.55) * weld * (0.8 + treble);
+
+        // Idea 4: cleavage-plane glints — facets lying on the axis-aligned fold
+        // planes flash a razor specular when they catch the light.
+        let axisAlign = max(abs(n.x), max(abs(n.y), abs(n.z)));
+        let cleave = pow(axisAlign, 24.0) * pow(max(dot(n, h), 0.0), 160.0);
+        col += vec3<f32>(0.9, 0.97, 1.0) * cleave * (2.5 + treble * 4.0);
     }
 
     // Add fog
     let fogCol = vec3<f32>(0.5) + vec3<f32>(0.5) * cos(vec3<f32>(u.config.x * 0.2) + vec3<f32>(0.0, 1.0, 2.0));
-    col += vec3<f32>(glow) * fogCol;
+    col += vec3<f32>(glow) * fogCol + seamGlow;
 
     // Background fade
     let bgFade = smoothstep(0.0, MAX_DIST, dO);

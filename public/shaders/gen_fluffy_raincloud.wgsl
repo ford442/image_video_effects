@@ -4,31 +4,13 @@
 //  Features: upgraded-rgba, aces-tone-map, depth-aware, audio-reactive, mouse-driven, temporal
 //  Complexity: Very High
 //  Scientific: Curl-noise cloud advection with vorticity confinement, buoyant convection, Mie silver lining, and rain-sheet transport
-//  Upgraded: 2026-09-06
-//  Ideas: anvil deck at cloud top; virga (rain fading before ground)
+//  Upgraded: 2026-10-11
+//  Ideas: anvil deck at cloud top; virga (rain fading before ground); mammatus pouches; shelf-cloud roll
 //  A packing: raw density, velocity.xy, moisture
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Coverage, y=Turbulence, z=Rain, w=Wind
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Coverage, y=Turbulence, z=Rain, w=Wind
 
 const PI: f32 = 3.14159265359;
 
@@ -198,6 +180,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let anvil = smoothstep(0.22, 0.08, uv.y) * coverage;
   density = saturate(density + anvil * 0.08 * (0.65 + fbm(uv * 6.0 + vec2<f32>(noiseTime * 0.04, 0.0))));
   density = mix(density, density * 0.92 + 0.08, anvil * 0.35);
+  // Mammatus pouches — hanging lobes on the underside of the anvil.
+  let pouchBand = smoothstep(0.06, 0.16, uv.y) * (1.0 - smoothstep(0.16, 0.34, uv.y));
+  let pouchPhase = uv.x * 22.0 + fbm(uv * 4.0 + vec2<f32>(noiseTime * 0.03, 3.1)) * 2.4;
+  let pouch = pow(saturate(0.5 + 0.5 * sin(pouchPhase)), 5.0);
+  density = saturate(density + anvil * pouchBand * pouch * (0.07 + coverage * 0.08));
+  // Shelf-cloud roll — wind-sheared density lip under the deck.
+  let shelfY = 0.46 + windX * 4.0;
+  let shelfArg = (uv.y - shelfY) * 16.0;
+  let shelf = exp(-shelfArg * shelfArg);
+  let roll = 0.5 + 0.5 * sin(uv.x * 7.0 - noiseTime * (0.12 + abs(windX) * 30.0) + fbm(uv * 3.0) * 2.0);
+  density = saturate(density + shelf * roll * coverage * (0.06 + turbulence * 0.05) * cloudBand);
   var moisture = mix(advected.a, baseCloud * (0.45 + rainIntensity * 0.5), 0.045);
 
   let curl = curlNoise(uv * mix(1.5, 4.8, coverage) + vec2<f32>(noiseTime * 0.02, -noiseTime * 0.016), noiseTime, pixel * 5.0);

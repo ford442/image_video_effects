@@ -16,7 +16,10 @@ import {
   WebGPUTextureSet,
 } from './resources';
 import { WebGPUTimestampQueries } from './WebGPUTiming';
+import type { GraphSimRingBindings } from '../GraphRunner';
+import type { SimRing } from './simRing';
 import { ShaderSlot } from './webgpuConstants';
+import type { FrameIslands } from './framePlan';
 
 export interface WebGPUFrameState {
   device: GPUDevice | null;
@@ -59,6 +62,12 @@ export interface WebGPUFrameState {
   getWorkgroupSize: (id: string) => { x: number; y: number };
   hasPipeline: (id: string) => boolean;
   getBindingUsage: (id: string) => ShaderBindingUsage;
+  /** True when `id` was compiled against the group-1 sim-ring layout. */
+  usesSimRing: (id: string) => boolean;
+  /** Armed sim ring bindings, or null when no ring is allocated. */
+  getSimRing: () => GraphSimRingBindings | null;
+  /** Upload simParams and advance the ring frame counter (once per frame). */
+  writeSimRingParams: () => void;
   createBindGroupForPass: (readTex: GPUTexture, writeTex: GPUTexture) => GPUBindGroup;
   createBindGroupForRoles: (roles: {
     read: GPUTexture;
@@ -69,6 +78,12 @@ export interface WebGPUFrameState {
   }) => GPUBindGroup;
   getTextureSet: () => WebGPUTextureSet;
   maxPassesPerFrame: number;
+  /** Compute passes allowed per frame across every slot (Infinity = per-graph caps only). */
+  framePassBudget: number;
+  /** Requested scale for an opt-in graph node (#1314; 1 = full size). */
+  nodeScale?: (slotIndex: number, nodeId: string) => number;
+  /** Scaled-island resources, or null when no node is demoted. */
+  getIslands?: () => FrameIslands | null;
 
   ripples: Ripple[];
   mouseX: number;
@@ -79,7 +94,8 @@ export interface WebGPUFrameState {
 
   inputSource: 'image' | 'video' | 'webcam' | 'generative' | 'live';
   video: HTMLVideoElement | null;
-  updateVideoFrame: () => void;
+  /** Encode this frame's video ingest into the frame encoder; true when commands were added. */
+  encodeVideoFrame: (encoder: GPUCommandEncoder) => boolean;
 
   frameCount: number;
   lastFPSTime: number;
@@ -97,7 +113,13 @@ export interface WebGPUFrameState {
   /** Mutable GPU timestamp runtime (shared with WebGPURenderer). */
   timestampRuntime: WebGPUTimestampQueries;
   encodePreFxChores?: (encoder: GPUCommandEncoder) => void;
+  /** Encode chore readback copies into the frame encoder (before finish). */
+  encodePostFxChores?: (encoder: GPUCommandEncoder) => void;
   afterFrameSubmitChores?: () => void;
+  /** After every frame submit (both paths): release per-frame inputs such as VideoFrames. */
+  afterFrameSubmit?: () => void;
+  /** Before encoding each frame: pull input (the render worker drains its SAB ring here). */
+  beforeFrame?: () => void;
 }
 
 /** Minimal host surface the frame loop reads/writes through getters. */
@@ -135,6 +157,8 @@ export interface WebGPUFrameHost {
   resolutionScale: number;
   slots: ShaderSlot[];
   shaderManager: WebGPUShaderManager;
+  getSimRing: () => GraphSimRingBindings | null;
+  writeSimRingParams: () => void;
   getTextureSet: () => WebGPUTextureSet;
   getBufferSet: () => WebGPUBufferSet;
   getSamplerSet: () => WebGPUSamplerSet;
@@ -147,6 +171,9 @@ export interface WebGPUFrameHost {
     dataC: GPUTexture;
   }) => GPUBindGroup;
   maxPassesPerFrame: number;
+  framePassBudget: number;
+  nodeScale?: (slotIndex: number, nodeId: string) => number;
+  getIslands?: () => FrameIslands | null;
   ripples: Ripple[];
   mouseX: number;
   mouseYShader: number;
@@ -155,7 +182,7 @@ export interface WebGPUFrameHost {
   audioDepth: AudioDepthState;
   inputSource: 'image' | 'video' | 'webcam' | 'generative' | 'live';
   mediaVideo: HTMLVideoElement | null;
-  updateVideoFrame: () => void;
+  encodeVideoFrame: (encoder: GPUCommandEncoder) => boolean;
   frameCount: number;
   lastFPSTime: number;
   fps: number;
@@ -169,11 +196,17 @@ export interface WebGPUFrameHost {
   gpuTimings: { parallelTime: number; chainedTime: number; totalTime: number };
   timestampRuntime: WebGPUTimestampQueries;
   encodePreFxChores?: (encoder: GPUCommandEncoder) => void;
+  /** Encode chore readback copies into the frame encoder (before finish). */
+  encodePostFxChores?: (encoder: GPUCommandEncoder) => void;
   afterFrameSubmitChores?: () => void;
+  /** After every frame submit (both paths): release per-frame inputs such as VideoFrames. */
+  afterFrameSubmit?: () => void;
+  /** Before encoding each frame: pull input (the render worker drains its SAB ring here). */
+  beforeFrame?: () => void;
 }
 
-/** Dependencies passed from WebGPURenderer to build a frame host. */
-export interface RendererFrameDeps {
+/** The renderer state the frame loop reads and writes; WebGPURenderer.createFrameContext builds it. */
+export interface FrameContext {
   get device(): GPUDevice | null;
   set device(v: GPUDevice | null);
   get context(): GPUCanvasContext | null;
@@ -188,6 +221,7 @@ export interface RendererFrameDeps {
   set animationId(v: number | null);
   resources: WebGPUResourcePool;
   pipeline: WebGPUPipelineModule;
+  simRing?: SimRing;
   get computeBindGroup(): GPUBindGroup;
   get blitReadTex(): GPUTexture;
   set blitReadTex(v: GPUTexture);
@@ -205,7 +239,7 @@ export interface RendererFrameDeps {
   audioDepth: AudioDepthState;
   inputSource: 'image' | 'video' | 'webcam' | 'generative' | 'live';
   mediaVideo: HTMLVideoElement | null;
-  updateVideoFrame: () => void;
+  encodeVideoFrame: (encoder: GPUCommandEncoder) => boolean;
   frameCount: number;
   lastFPSTime: number;
   fps: number;
@@ -219,11 +253,32 @@ export interface RendererFrameDeps {
   gpuTimings: { parallelTime: number; chainedTime: number; totalTime: number };
   timestampRuntime: WebGPUTimestampQueries;
   maxPassesPerFrame: number;
+  framePassBudget: number;
+  nodeScale?: (slotIndex: number, nodeId: string) => number;
+  getIslands?: () => FrameIslands | null;
   encodePreFxChores?: (encoder: GPUCommandEncoder) => void;
+  /** Encode chore readback copies into the frame encoder (before finish). */
+  encodePostFxChores?: (encoder: GPUCommandEncoder) => void;
   afterFrameSubmitChores?: () => void;
+  /** After every frame submit (both paths): release per-frame inputs such as VideoFrames. */
+  afterFrameSubmit?: () => void;
+  /** Before encoding each frame: pull input (the render worker drains its SAB ring here). */
+  beforeFrame?: () => void;
 }
 
-export function createRendererFrameHost(d: RendererFrameDeps): WebGPUFrameHost {
+function simRingBindings(ring: SimRing | undefined): GraphSimRingBindings | null {
+  const bindGroup = ring?.getBindGroup();
+  if (!ring || !bindGroup || !ring.stateBuffer || !ring.indexBuffer) return null;
+  return {
+    bindGroup,
+    stateBuffer: ring.stateBuffer,
+    indexBuffer: ring.indexBuffer,
+    stateCount: ring.stateCount,
+    byteSize: ring.byteSize,
+  };
+}
+
+export function createRendererFrameHost(d: FrameContext): WebGPUFrameHost {
   return {
     get device() { return d.device; },
     set device(v) { d.device = v; },
@@ -266,6 +321,10 @@ export function createRendererFrameHost(d: RendererFrameDeps): WebGPUFrameHost {
     get resolutionScale() { return d.resolutionScale; },
     get slots() { return d.slots; },
     get shaderManager() { return d.pipeline.shaderManager; },
+    getSimRing: () => simRingBindings(d.simRing),
+    writeSimRingParams: () => {
+      if (d.device && d.simRing?.allocated) d.simRing.writeParams(d.device.queue);
+    },
     getTextureSet: () => d.resources.getTextureSet(),
     getBufferSet: () => d.resources.getBufferSet(),
     getSamplerSet: () => d.resources.getSamplerSet(),
@@ -281,6 +340,9 @@ export function createRendererFrameHost(d: RendererFrameDeps): WebGPUFrameHost {
       ),
     get maxPassesPerFrame() { return d.maxPassesPerFrame; },
     set maxPassesPerFrame(v) { d.maxPassesPerFrame = v; },
+    get framePassBudget() { return d.framePassBudget; },
+    nodeScale: (slot, nodeId) => d.nodeScale?.(slot, nodeId) ?? 1,
+    getIslands: () => d.getIslands?.() ?? null,
     get ripples() { return d.ripples; },
     get mouseX() { return d.mouseX; },
     get mouseYShader() { return d.mouseYShader; },
@@ -289,7 +351,7 @@ export function createRendererFrameHost(d: RendererFrameDeps): WebGPUFrameHost {
     get audioDepth() { return d.audioDepth; },
     get inputSource() { return d.inputSource; },
     get mediaVideo() { return d.mediaVideo; },
-    updateVideoFrame: () => d.updateVideoFrame(),
+    encodeVideoFrame: (encoder) => d.encodeVideoFrame(encoder),
     get frameCount() { return d.frameCount; },
     set frameCount(v) { d.frameCount = v; },
     get lastFPSTime() { return d.lastFPSTime; },
@@ -309,7 +371,10 @@ export function createRendererFrameHost(d: RendererFrameDeps): WebGPUFrameHost {
     get gpuTimings() { return d.gpuTimings; },
     get timestampRuntime() { return d.timestampRuntime; },
     encodePreFxChores: (encoder) => d.encodePreFxChores?.(encoder),
+    encodePostFxChores: (encoder) => d.encodePostFxChores?.(encoder),
     afterFrameSubmitChores: () => d.afterFrameSubmitChores?.(),
+    afterFrameSubmit: () => d.afterFrameSubmit?.(),
+    beforeFrame: () => d.beforeFrame?.(),
   };
 }
 
@@ -360,11 +425,17 @@ export function createFrameState(host: WebGPUFrameHost): WebGPUFrameState {
     getWorkgroupSize: (id) => h.shaderManager.getWorkgroupSize(id),
     hasPipeline: (id) => h.shaderManager.hasPipeline(id),
     getBindingUsage: (id) => h.shaderManager.getBindingUsage(id),
+    usesSimRing: (id) => h.shaderManager.usesSimRing(id),
+    getSimRing: () => h.getSimRing(),
+    writeSimRingParams: () => h.writeSimRingParams(),
     createBindGroupForPass: (read, write) => h.createBindGroupForPass(read, write),
     createBindGroupForRoles: (roles) => h.createBindGroupForRoles(roles),
     getTextureSet: () => h.getTextureSet(),
     get maxPassesPerFrame() { return h.maxPassesPerFrame; },
     set maxPassesPerFrame(v) { h.maxPassesPerFrame = v; },
+    get framePassBudget() { return h.framePassBudget; },
+    nodeScale: (slot, nodeId) => h.nodeScale?.(slot, nodeId) ?? 1,
+    getIslands: () => h.getIslands?.() ?? null,
     get ripples() { return h.ripples; },
     get mouseX() { return h.mouseX; },
     get mouseYShader() { return h.mouseYShader; },
@@ -373,7 +444,7 @@ export function createFrameState(host: WebGPUFrameHost): WebGPUFrameState {
     get audioDepth() { return h.audioDepth; },
     get inputSource() { return h.inputSource; },
     get video() { return h.mediaVideo; },
-    updateVideoFrame: () => h.updateVideoFrame(),
+    encodeVideoFrame: (encoder) => h.encodeVideoFrame(encoder),
     get frameCount() { return h.frameCount; },
     set frameCount(v) { h.frameCount = v; },
     get lastFPSTime() { return h.lastFPSTime; },
@@ -393,6 +464,9 @@ export function createFrameState(host: WebGPUFrameHost): WebGPUFrameState {
     get gpuTimings() { return h.gpuTimings; },
     get timestampRuntime() { return h.timestampRuntime; },
     encodePreFxChores: (encoder) => h.encodePreFxChores?.(encoder),
+    encodePostFxChores: (encoder) => h.encodePostFxChores?.(encoder),
     afterFrameSubmitChores: () => h.afterFrameSubmitChores?.(),
+    afterFrameSubmit: () => h.afterFrameSubmit?.(),
+    beforeFrame: () => h.beforeFrame?.(),
   };
 }

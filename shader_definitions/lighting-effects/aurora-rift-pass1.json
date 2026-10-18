@@ -2,7 +2,7 @@
   "id": "aurora-rift-pass1",
   "name": "Aurora Rift (Pass 1: Volumetric)",
   "url": "shaders/aurora-rift-pass1.wgsl",
-  "description": "Raymarches volumetric aurora with curl-driven flow, geomagnetic Birkeland curtain folds, discrete atmospheric spectral emission, and temporal diffusion. First pass of 2-pass system.",
+  "description": "Raymarches volumetric aurora with curl-driven flow, geomagnetic Birkeland curtain folds, rayed beads, a dark gap under the curtain, discrete atmospheric spectral emission, and temporal diffusion. First pass of 2-pass system.",
   "workgroup_size": [
     16,
     16,
@@ -15,7 +15,8 @@
     "raymarch",
     "birkeland-currents",
     "spectral-emission",
-    "temporal-diffusion"
+    "temporal-diffusion",
+    "audio-reactive"
   ],
   "multipass": {
     "pass": 1,
@@ -27,40 +28,6 @@
     "volumetric",
     "lighting",
     "atmospheric"
-  ],
-  "updatedParams": [
-    {
-      "index": 0,
-      "name": "Scale",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Flow Speed",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Diffusion Rate",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "FBM Octaves",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
   ],
   "params": [
     {
@@ -95,5 +62,43 @@
       "max": 1,
       "step": 0.01
     }
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Scale",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Flow Speed",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Diffusion Rate",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "FBM Octaves",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

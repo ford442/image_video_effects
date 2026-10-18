@@ -1,7 +1,12 @@
-// ----------------------------------------------------------------
-// Quantum Mycelial Neural Web
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Quantum Mycelial Neural Web
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-27
+//  Ideas: action-potential spikes along fibres; synaptic junction flares
+//  A packing: ACES display RGBA (C unused)
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -31,6 +36,15 @@ fn rot(a: f32) -> mat2x2<f32> {
     return mat2x2<f32>(c, -s, s, c);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 // 3D Noise for organic structures
 fn hash33(p3: vec3<f32>) -> vec3<f32> {
     var p = fract(p3 * vec3<f32>(0.1031, 0.1030, 0.0973));
@@ -55,7 +69,8 @@ fn noise(p: vec3<f32>) -> f32 {
 }
 
 // Distance estimation for mycelial network
-fn map(p: vec3<f32>, time: f32, audio: f32) -> f32 {
+// returns (sdf, axial coord along nearest fibre + fibre seed, junction closeness)
+fn map(p: vec3<f32>, time: f32, audio: f32) -> vec3<f32> {
     let density = u.zoom_params.x; // Web Density
     let entanglement = u.zoom_params.w; // Entanglement
 
@@ -87,19 +102,30 @@ fn map(p: vec3<f32>, time: f32, audio: f32) -> f32 {
     // Combine fibers
     let min_fiber = min(min(fiber_x, fiber_y), fiber_z);
 
+    // Idea 1 support: axial coordinate of the nearest fibre (+ per-fibre seed
+    // so the three axons fire out of phase).
+    var axial = q.x;
+    if (fiber_y <= fiber_x && fiber_y <= fiber_z) { axial = q.y + 17.0; }
+    if (fiber_z < fiber_x && fiber_z < fiber_y) { axial = q.z + 41.0; }
+
+    // Idea 2 support: second-nearest fibre almost as close = a crossing.
+    let max_fiber = max(max(fiber_x, fiber_y), fiber_z);
+    let second_fiber = fiber_x + fiber_y + fiber_z - min_fiber - max_fiber;
+    let junction = 1.0 - smoothstep(0.0, 0.18, second_fiber - min_fiber);
+
     // Add some noise displacement for organic feel
     let disp = noise(q * 4.0) * 0.1 * (1.0 + audio);
 
-    return min_fiber * spacing - disp;
+    return vec3<f32>(min_fiber * spacing - disp, axial, junction);
 }
 
 // Calculate normal
 fn getNormal(p: vec3<f32>, time: f32, audio: f32) -> vec3<f32> {
     let e = vec2<f32>(0.001, 0.0);
     return normalize(vec3<f32>(
-        map(p + e.xyy, time, audio) - map(p - e.xyy, time, audio),
-        map(p + e.yxy, time, audio) - map(p - e.yxy, time, audio),
-        map(p + e.yyx, time, audio) - map(p - e.yyx, time, audio)
+        map(p + e.xyy, time, audio).x - map(p - e.xyy, time, audio).x,
+        map(p + e.yxy, time, audio).x - map(p - e.yxy, time, audio).x,
+        map(p + e.yyx, time, audio).x - map(p - e.yyx, time, audio).x
     ));
 }
 
@@ -117,8 +143,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let time = u.config.x;
 
-    // Read audio data from dataTextureC
-    let audio = textureSampleLevel(dataTextureC, non_filtering_sampler, vec2<f32>(uv.x, 0.5), 0.0).r;
+    // Live audio (binding 12): bass drives displacement/glow as the old
+    // "audio" term did; mids tint the membrane, treble sharpens spikes.
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let audio = bass;
 
     // Camera setup
     var ro = vec3<f32>(0.0, 0.0, -3.0);
@@ -148,7 +178,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             p = mix(p, mouse_world, pull * 0.1);
         }
 
-        d = map(p, time, audio);
+        d = map(p, time, audio).x;
 
         // Accumulate glow based on proximity to surfaces and audio
         glow = glow + 0.01 / (0.01 + abs(d)) * (1.0 + audio * 2.0);
@@ -160,9 +190,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     var col = vec3<f32>(0.0);
+    let hit = t < max_d;
+    var spike = 0.0;
+    var flare = 0.0;
 
-    if (t < max_d) {
+    if (hit) {
         let n = getNormal(p, time, audio);
+        let hitRes = map(p, time, audio);
 
         // Simple lighting
         let l = normalize(vec3<f32>(1.0, 1.0, -1.0));
@@ -173,12 +207,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let pulse = sin(time * pulse_speed + length(p) * 2.0) * 0.5 + 0.5;
 
         // Base color based on depth and position
-        let base_col = mix(vec3<f32>(0.1, 0.3, 0.5), vec3<f32>(0.6, 0.1, 0.4), sin(p.z * 0.5) * 0.5 + 0.5);
+        let base_col = mix(vec3<f32>(0.1, 0.3, 0.5), vec3<f32>(0.6, 0.1, 0.4),
+                           clamp(sin(p.z * 0.5) * 0.5 + 0.5 + mids * 0.15, 0.0, 1.0));
 
         // Emission color
         let emit_col = vec3<f32>(0.2, 0.8, 1.0) * bioluminescence * pulse * (1.0 + audio * 3.0);
 
         col = base_col * (diff + amb) + emit_col * 0.5;
+
+        // Idea 1: action-potential spikes travel along each fibre's axis.
+        let spikePhase = sin(hitRes.y * 3.0 - time * pulse_speed * 2.5);
+        spike = pow(max(spikePhase, 0.0), 18.0 - treble * 8.0);
+        col += vec3<f32>(0.55, 0.95, 1.0) * spike * bioluminescence * (1.6 + bass);
+
+        // Idea 2: synaptic junction flares where fibres cross — they fire as
+        // the spike train passes, tinted warmer by Entanglement.
+        let arrival = pow(max(sin(-time * pulse_speed * 2.5 + hitRes.y * 0.35), 0.0), 6.0);
+        flare = hitRes.z * (0.25 + 0.75 * max(arrival, spike));
+        let synCol = mix(vec3<f32>(1.0, 0.62, 0.25), vec3<f32>(1.0, 0.3, 0.75), u.zoom_params.w);
+        col += synCol * flare * bioluminescence * 1.4;
     }
 
     // Add volumetric glow
@@ -189,5 +236,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Attenuation based on distance
     col = mix(col, vec3<f32>(0.0, 0.0, 0.05), clamp(t / max_d, 0.0, 1.0));
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(col, 1.0));
+    // Semantic alpha: fibre coverage + spike/flare emission, volumetric glow off-surface.
+    let glowA = clamp(glow * 0.012 * bioluminescence, 0.0, 0.6);
+    let alpha = select(glowA + 0.02, clamp(0.55 + spike * 0.25 + flare * 0.2, 0.0, 1.0), hit);
+    let display = vec4<f32>(acesToneMap(max(col, vec3<f32>(0.0))), alpha);
+
+    let coord = vec2<i32>(global_id.xy);
+    let srcDepth = textureLoad(readDepthTexture, coord, 0).r;
+    let depth = select(srcDepth, clamp(1.0 - t / max_d, 0.0, 1.0), hit);
+    textureStore(writeTexture, coord, display);
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, display);
 }

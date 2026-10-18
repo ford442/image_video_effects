@@ -8,7 +8,7 @@
 
 ## Executive summary
 
-Integration epics #817–#890 are closed. The WASM path **builds**, **unit tests pass**, and **CI smoke jobs are green** on recent `main` pushes. However, **none of the four promotion gates** in [`WASM_BACKEND_POLICY.md`](../WASM_BACKEND_POLICY.md) are satisfied because GPU-dependent benchmarks and parity tests **skip** on headless CI, and no local GPU benchmark artifacts exist.
+Integration epics #817–#890 are closed. The WASM path **builds**, **unit tests pass**, and **CI smoke jobs are green** on recent `main` pushes. However, **none of the four promotion gates** in [`WASM_BACKEND_POLICY.md`](../docs/WASM_BACKEND_POLICY.md) are satisfied because GPU-dependent benchmarks and parity tests **skip** on headless CI, and no local GPU benchmark artifacts exist.
 
 **Do not promote.** Continue Tier B experimental policy.
 
@@ -41,7 +41,7 @@ Integration epics #817–#890 are closed. The WASM path **builds**, **unit tests
 
 | Item | Status |
 |------|--------|
-| [`WASM_SMOKE_TEST.md`](../WASM_SMOKE_TEST.md) outside `testMode` | **Not signed off** |
+| [`WASM_SMOKE_TEST.md`](../docs/WASM_SMOKE_TEST.md) outside `testMode` | **Not signed off** |
 | Recording / input sources / shader browser | **Needs human GPU session** |
 
 ---
@@ -81,7 +81,7 @@ Playwright suites blocked on this branch: production `npm run build` fails with 
 
 1. **Machine A (discrete):** run full bench + parity; attach JSON + `chrome://gpu` screenshot text.
 2. **Machine B (iGPU or AMD):** repeat.
-3. **Manual smoke:** complete Gate 3 table in [`WASM_PROMOTION_TRACKING.md`](../WASM_PROMOTION_TRACKING.md).
+3. **Manual smoke:** complete Gate 3 table in [`WASM_PROMOTION_TRACKING.md`](../docs/WASM_PROMOTION_TRACKING.md).
 4. Re-review when **week 2026-W32** completes with 4 consecutive green weeks (if trend holds from Jul 10).
 
 ---

@@ -37,8 +37,9 @@ export async function webhookSave(
   await assertOk(response);
   const result = (await response.json()) as StorageSaveResponse;
 
-  if (result.files && result.files.length > 0) {
-    result.url = resolveStaticUrl(config.staticUrl, result.files[0]);
+  const firstFile = result.files?.[0];
+  if (firstFile !== undefined) {
+    result.url = resolveStaticUrl(config.staticUrl, firstFile);
   }
 
   return result;
@@ -162,7 +163,7 @@ export function readFileAsBase64(file: File): Promise<string> {
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result as string;
-      resolve(result.split(',')[1]);
+      resolve(result.split(',')[1] ?? '');
     };
     reader.onerror = reject;
     reader.readAsDataURL(file);

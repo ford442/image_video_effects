@@ -1,40 +1,17 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Art Deco Skyscraper
 //  Category: generative
-//  Features: raymarching, architectural, generative-city, audio-lights, mouse-wind, gold-metallic, atmospheric-fog
+//  Features: raymarching, architectural, audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Chunks From: previous art deco work + richer lighting and atmosphere
-//  Created: 2026-05-10
-//  Updated: 2026-05-31
-//  By: Grok (visual flourish pass — richer metallic light, audio city glow, depth)
-// ═══════════════════════════════════════════════════════════════════
-//  OPTIMIZATION LOG (2026-05-31):
-//  - Audio reactivity wired to plasmaBuffer (bass→gold glow + window flicker)
-//  - Raymarch 150→110 steps with adaptive relaxation
-//  - Reinhard → ACES filmic tone mapping
-//  - IGN dither added before write
+//  Upgraded: 2026-10-17
+//  Ideas: ziggurat setbacks; casement mullions; stepped zenith sunburst sky
+//         (tiered gold rays fanning from the tower's vanishing point);
+//         elevator cabs climbing a lit shaft behind each facade's glass
+//  A packing: pre-ACES history RGB (ACES on display)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=City Density, y=Ascent Speed, z=Gold Glow, w=Fog Density
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=City Density, y=Ascent Speed, z=Gold Glow, w=Fog Density
 
 // --- SDF Functions ---
 
@@ -81,14 +58,22 @@ fn acesToneMapping(color: vec3<f32>) -> vec3<f32> {
     return clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+// Every vertical period in the scene (ziggurat 80, floors 10, bg floors 15,
+// motif 2, mullions 1/0.55) divides 240, so the ascent wraps there seamlessly.
+const ASCENT_WRAP: f32 = 240.0;
+
+// Building-frame ascent offset, wrapped so f32 precision (and calcNormal's
+// 0.001 epsilon) holds over long sessions.
+fn ascentOffset() -> f32 {
+    return fract(u.config.x * u.zoom_params.y * 5.0 / ASCENT_WRAP) * ASCENT_WRAP;
+}
+
 // --- Scene Mapping ---
 
 fn map(p: vec3<f32>) -> vec2<f32> {
     // Parameters
     let density = u.zoom_params.x; // 0..1
-    var time = u.config.x;
-    var ascentSpeed = u.zoom_params.y; // 0..5
-    var y_offset = time * ascentSpeed * 5.0; // Global Y movement
+    var y_offset = ascentOffset(); // Global Y movement (Ascent Speed, wrapped)
 
     // We will apply the offset to p.y before mapping
     var pos = vec3<f32>(p.x, p.y + y_offset, p.z);
@@ -105,13 +90,12 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     let base_width = 8.0;
     let base_depth = 8.0;
 
-    // Stepped setbacks based on continuous Y
-    let tier = floor(pos.y / 20.0);
-    // Use modulo for infinite repeating setbacks if needed, or just let it be a straight tower for infinite ascent
-    // Let's make repeating geometric patterns instead of a shrinking tower since it's infinite ascent
+    // Idea 1 — repeating ziggurat setbacks (four terraces, then the shaft repeats)
+    let tierStep = floor(fract(pos.y / 80.0) * 4.0);
+    let wallW = max(3.2, 6.0 - tierStep * 0.7);
 
     // Core pillar
-    let d_core = sdBox(cp, vec3<f32>(6.0, 1000000.0, 6.0));
+    let d_core = sdBox(cp, vec3<f32>(wallW, 1000000.0, wallW));
 
     // Fluting (subtractive waves on X and Z facades)
     let fluting_freq = 2.0;
@@ -126,19 +110,19 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     let local_y = (fract((cp.y + floor_h * 0.5) / floor_h) - 0.5) * floor_h;
 
     // Main walls
-    var d_walls = sdBox(vec3<f32>(cp.x, local_y, cp.z), vec3<f32>(6.0, 5.0, 6.0));
+    var d_walls = sdBox(vec3<f32>(cp.x, local_y, cp.z), vec3<f32>(wallW, 5.0, wallW));
 
     // Recessed windows
-    let window_w = 4.0;
-    let d_windows_cut = sdBox(vec3<f32>(cp.x, local_y, cp.z), vec3<f32>(window_w, 4.0, 6.5));
-    var d_windows = sdBox(vec3<f32>(cp.x, local_y, cp.z), vec3<f32>(window_w - 0.2, 3.8, 5.8));
+    let window_w = wallW * 0.66;
+    let d_windows_cut = sdBox(vec3<f32>(cp.x, local_y, cp.z), vec3<f32>(window_w, 4.0, wallW + 0.5));
+    var d_windows = sdBox(vec3<f32>(cp.x, local_y, cp.z), vec3<f32>(window_w - 0.2, 3.8, wallW - 0.2));
 
     // Subtract windows from walls
     d_walls = max(d_walls, -d_windows_cut);
 
     // Add vertical columns (fluted)
-    let d_col1 = sdBox(vec3<f32>(cp.x - 5.0, local_y, cp.z - 6.0), vec3<f32>(0.5, 5.0, 0.5));
-    let d_col2 = sdBox(vec3<f32>(cp.x - 6.0, local_y, cp.z - 5.0), vec3<f32>(0.5, 5.0, 0.5));
+    let d_col1 = sdBox(vec3<f32>(cp.x - wallW * 0.83, local_y, cp.z - wallW), vec3<f32>(0.5, 5.0, 0.5));
+    let d_col2 = sdBox(vec3<f32>(cp.x - wallW, local_y, cp.z - wallW * 0.83), vec3<f32>(0.5, 5.0, 0.5));
 
     let fluted_col1 = d_col1 + cos(cp.x*10.0)*0.1 + cos(cp.z*10.0)*0.1;
     let fluted_col2 = d_col2 + cos(cp.x*10.0)*0.1 + cos(cp.z*10.0)*0.1;
@@ -146,10 +130,10 @@ fn map(p: vec3<f32>) -> vec2<f32> {
 
     // Gold Trim (horizontal bands and geometric motifs)
     // Horizontal band
-    let d_band = sdBox(vec3<f32>(cp.x, local_y - 4.5, cp.z), vec3<f32>(6.2, 0.5, 6.2));
+    let d_band = sdBox(vec3<f32>(cp.x, local_y - 4.5, cp.z), vec3<f32>(wallW + 0.2, 0.5, wallW + 0.2));
 
     // Sunburst or stepped motif on the band
-    let motif_x = sdBox(vec3<f32>(cp.x, local_y - 4.0, cp.z - 6.2), vec3<f32>(2.0 - cp.y%2.0, 1.0, 0.2));
+    let motif_x = sdBox(vec3<f32>(cp.x, local_y - 4.0, cp.z - (wallW + 0.2)), vec3<f32>(2.0 - cp.y%2.0, 1.0, 0.2));
 
     var d_gold = min(d_band, motif_x);
 
@@ -270,7 +254,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Orbit camera based on mouse
     let cam_radius = 20.0 + (mouse.y - 0.5) * 10.0 - mouseDown * 3.0;
-    let cam_angle = (mouse.x - 0.5) * 6.28 + time * (0.05 + mouseDown * 0.08);
+    let cam_angle = (mouse.x - 0.5) * 6.28 + time * 0.05 + mouseDown * 0.4;
 
     // Look slightly up
     let ro = vec3<f32>(sin(cam_angle) * cam_radius, -5.0, cos(cam_angle) * cam_radius);
@@ -281,7 +265,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uu = normalize(cross(ww, vec3<f32>(0.0, 1.0, 0.0)));
     let vv = normalize(cross(uu, ww));
 
-    let rd = normalize(uv.x * uu + uv.y * vv + 1.5 * ww);
+    // Pixel rows grow downward and uu = cross(ww, Y) points screen-right:
+    // negate only the vertical term so the scene renders upright, unmirrored.
+    let rd = normalize(uv.x * uu - uv.y * vv + 1.5 * ww);
 
     // Raymarch
     var res = raymarch(ro, rd);
@@ -294,10 +280,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let lightColor2 = vec3<f32>(0.2, 0.5, 1.0); // Cool blue fill light
 
     var color = fogColor;
+    var coverage = 0.16;
 
     // Global Y offset for materials that depend on world pos
-    var ascentSpeed = u.zoom_params.y;
-    var y_offset = time * ascentSpeed * 5.0;
+    var y_offset = ascentOffset();
 
     if (t < 200.0) {
         var p = ro + rd * t;
@@ -329,8 +315,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
             // Window lights (randomly lit)
             // Determine grid cell for window
-            let win_cell = floor(world_p.y / 1.0) * 10.0 + floor(world_p.x / 1.0) + floor(world_p.z / 1.0);
-            var h = hash(vec2<f32>(win_cell, floor(world_p.y / 10.0))); // change per floor block too
+            // Seeded on the wrapped height so lit windows do not reshuffle at the wrap
+            let wy = world_p.y - ASCENT_WRAP * floor(world_p.y / ASCENT_WRAP);
+            let win_cell = floor(wy) * 10.0 + floor(world_p.x) + floor(world_p.z);
+            var h = hash(vec2<f32>(win_cell, floor(wy / 10.0))); // change per floor block too
 
             if (h > 0.6) {
                 // Lit window
@@ -338,6 +326,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 // Flicker — mid-range audio modulates window twinkle
                 emission *= 0.8 + 0.2 * sin(time * 5.0 + h * 100.0) + mid * 0.25;
             }
+            // Idea 4 — elevator cabs: on the central tower, a lit car rides a shaft
+            // behind the middle of each facade's glass. Cars climb in the building
+            // frame (two per ziggurat cycle, phase per face), so they overtake or
+            // fall behind the camera's own ascent.
+            if (max(abs(world_p.x), abs(world_p.z)) < 7.0) {
+                let xFace = abs(world_p.x) > abs(world_p.z);
+                let along = select(world_p.x, world_p.z, xFace);
+                let faceId = select(0.0, 1.0, xFace) + select(0.0, 2.0, select(world_p.z, world_p.x, xFace) < 0.0);
+                let cabY = fract((wy - time * 3.2 - faceId * 17.0) / 40.0) * 40.0;
+                let cabBody = smoothstep(0.0, 0.4, cabY) * (1.0 - smoothstep(2.6, 3.2, cabY));
+                let shaft = 1.0 - smoothstep(0.7, 1.1, abs(along));
+                let cab = cabBody * shaft;
+                // the shaft itself is a faint lit slot; the car is a warm box of light
+                emission += vec3<f32>(1.0, 0.86, 0.6) * (shaft * 0.12 + cab * (1.6 + mid * 0.6)) * (0.4 + goldGlow * 0.6);
+            }
+            // Idea 2 — casement mullions over the glass
+            let mullion = max(
+                1.0 - smoothstep(0.0, 0.07, abs(fract(world_p.x * 0.55) - 0.5)),
+                1.0 - smoothstep(0.0, 0.07, abs(fract(world_p.y * 0.55) - 0.5))
+            );
+            emission *= 1.0 - mullion * 0.88;
+            albedo = mix(albedo, vec3<f32>(0.012, 0.01, 0.008), mullion * 0.92);
         }
 
         // Lighting
@@ -381,17 +391,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Distance Fog
         let fog_amount = 1.0 - exp(-t * (0.01 + fogDensity * 0.05));
+        let emitAmt = clamp(length(emission) * 0.28, 0.0, 1.0);
+        coverage = clamp(0.36 + emitAmt * 0.34 + metallic * 0.22 + ao * 0.08, 0.2, 0.96);
+        coverage *= 1.0 - fog_amount * 0.4;
         color = mix(color, fogColor, fog_amount);
 
         // Height Fog / City Glow
         // Simulate glow from the city below
-        let height_fog = exp(-p.y * 0.1) * 0.5;
+        // capped: below y=0 the exponential grew without bound and washed the
+        // frame out to cream after ACES
+        let height_fog = min(exp(-p.y * 0.1), 1.6) * 0.5;
         color += lightColor1 * height_fog * fogDensity;
     } else {
         // Sky / Void
         // Add a vertical gradient for city glow
-        let sky_glow = exp(-rd.y * 4.0) * 0.5;
+        let sky_glow = exp(-max(rd.y, -0.3) * 4.0) * 0.5;
         color += lightColor1 * sky_glow * fogDensity;
+        // Idea 3 — stepped zenith sunburst: the tower's verticals converge on
+        // the zenith, so the sky carries the deco crown motif there — gold rays
+        // fanning by azimuth, narrowing in stepped tiers as they climb, thinned
+        // by fog. World-fixed, so the orbiting camera sweeps through the fan.
+        let az = atan2(rd.z, rd.x) / 6.2831853 + 0.5;
+        let tier = floor(clamp(rd.y, 0.0, 0.999) * 4.0);
+        let rayW = 0.34 - tier * 0.07;
+        let rayF = abs(fract(az * 24.0) - 0.5);
+        let ray = 1.0 - smoothstep(rayW - 0.03, rayW, 0.5 - rayF);
+        let tierEdge = 1.0 - smoothstep(0.0, 0.012, abs(fract(rd.y * 4.0) - 0.02));
+        let burst = (ray * 0.16 + tierEdge * ray * 0.25) * smoothstep(0.05, 0.3, rd.y)
+                  * goldGlow * (1.0 - fogDensity * 0.6) * (0.85 + bass * 0.3);
+        color += vec3<f32>(1.0, 0.72, 0.3) * burst;
+        coverage = 0.14 + sky_glow * fogDensity * 0.2 + burst * 0.3;
     }
 
     // Post processing / Vignette
@@ -403,6 +432,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pointerDelta = (uv_screen - mouse) * vec2<f32>(aspect, 1.0);
     let searchlight = exp(-abs(pointerDelta.x) * 28.0) * exp(-max(pointerDelta.y, 0.0) * 3.0) * mouseDown;
     color += lightColor1 * searchlight * (0.35 + goldGlow * 0.25);
+    coverage = clamp(coverage + searchlight * 0.22, 0.0, 0.98);
 
     let rippleCount = min(u32(u.config.y), 50u);
     for (var i: u32 = 0u; i < rippleCount; i++) {
@@ -412,21 +442,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let d = length((uv_screen - ripple.xy) * vec2<f32>(aspect, 1.0));
         let halo = exp(-abs(d - age * 0.3) * 75.0) * exp(-age * 1.1);
         color += mix(lightColor1, lightColor2, fract(age * 0.4)) * halo * (0.6 + bass);
+        coverage = clamp(coverage + halo * 0.18, 0.0, 0.98);
     }
 
     // Temporal blend before ACES
     let decay = 0.96;
     let temporal = mix(prev.rgb * decay, color, 0.25 + mouseDown * 0.12);
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(temporal, 1.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(temporal, coverage));
 
     // ACES filmic tone mapping (replaces Reinhard — gold accents keep their warmth)
     color = acesToneMapping(temporal);
-    color = pow(color, vec3<f32>(1.0 / 2.2)); // Gamma correction
+    // (no extra pow(1/2.2): the presenter already treats output as display
+    // values, and the second gamma lifted the night palette to a cream wash)
 
     // IGN dither — suppresses banding in the dark night-sky gradient
     let ign = fract(52.9829189 * fract(dot(vec2<f32>(global_id.xy), vec2<f32>(0.06711056, 0.00583715))));
     color = clamp(color + (ign - 0.5) * (1.0 / 255.0), vec3<f32>(0.0), vec3<f32>(1.0));
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
+    textureStore(writeTexture, global_id.xy, vec4<f32>(color, coverage));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(t / 200.0, 0.0, 0.0, 0.0));
 }

@@ -1,30 +1,20 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Relay Psychedelia — multi-agent generative shader relay
 //  Category: generative
-//  Relay doc: agents/RELAY_PROTOCOL.md
+//  Relay doc: docs/agents/RELAY_PROTOCOL.md
 //  Hop 0 (spine): baseline warped field + palette + feedback-ready composite
+//  Upgraded: 2026-10-18
+//  Ideas: second curl octave; directional trail smear; complementary seam fringe;
+//         liquid-light-show oil cells (immiscible oil level-set drifting slower
+//         than the dye, complementary dye inside, dark meniscus + bright lens rim,
+//         bass = projector-lamp convection); marbled drag striations (fine
+//         ink-comb lines whose density follows the domain-warp displacement,
+//         so dragged regions thin into marbled-paper combing)
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=time, y=delta_time, z=resX, w=resY
-  zoom_config: vec4<f32>,  // x=time, yz=mouse_uv, w=mouse_down
-  zoom_params: vec4<f32>,  // x=warp, y=saturation, z=hue-shift, w=feedback
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=warp, y=saturation, z=hue-shift, w=feedback
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -193,8 +183,15 @@ fn applyDomainWarp(p: vec2<f32>, time: f32, strength: f32) -> vec2<f32> {
         fbm(pp * 1.4 + r * 2.7 + vec2<f32>(3.4, 7.7) - flow * 0.9, 3)
     ) - vec2<f32>(0.5);
 
-    // Bounded: |q|,|r|,|s| <~ 0.5 each, so total offset <~ 2.1 * strength.
-    return pp + strength * (q * 0.7 + r * 1.2 + s * 1.6);
+    // Second curl octave on the same warp. Strength is Warp Depth (passed in).
+    let curl = vec2<f32>(
+        fbm(pp * 3.1 + vec2<f32>(2.2, 0.4) + flow * 2.0, 3) - 0.5,
+        fbm(pp * 3.1 + vec2<f32>(0.4, 2.2) - flow * 2.0, 3) - 0.5
+    );
+    let curl90 = vec2<f32>(-curl.y, curl.x);
+
+    // Bounded: |q|,|r|,|s| <~ 0.5 each, curl <~ 0.5, so total offset stays finite.
+    return pp + strength * (q * 0.7 + r * 1.2 + s * 1.6 + curl90 * 0.45);
 }
 
 // ═══ CHUNK: symmetry-fold (OWNER: hop-2) ═════════════════════════════════════
@@ -226,13 +223,19 @@ fn applySymmetry(p: vec2<f32>) -> vec2<f32> {
 
 // ═══ CHUNK: palette (OWNER: hop-3) — sole RGB assignment site ══════════════
 
-fn sampleField(p: vec2<f32>, time: f32) -> f32 {
+fn sampleField(p: vec2<f32>, time: f32) -> vec2<f32> {
     // OWNER: kimi-hop-3 2026-07-19
     // Base fbm layer + finer ridged layer so the kaleidoscope folds pick up vein detail.
+    // .y is kaleido-seam tightness for applyPalette (no new hue source here).
     let drift = vec2<f32>(sin(time * 0.07), cos(time * 0.05)) * 0.3;
     let base = fbm(p * 2.4 + drift, 4);
     let ridge = 1.0 - abs(2.0 * fbm(p * 4.8 - drift * 1.6, 3) - 1.0);
-    return clamp(mix(base, ridge, 0.3), 0.0, 1.0);
+    let field = clamp(mix(base, ridge, 0.3), 0.0, 1.0);
+    let ang = abs(atan2(p.y, p.x));
+    let segmentAngle = TAU / 6.0;
+    let seamDist = min(ang, abs(segmentAngle - ang));
+    let seam = 1.0 - smoothstep(0.0, 0.06, seamDist);
+    return vec2<f32>(field, seam);
 }
 
 // Chunk-local IQ cosine palette helper (hop 3).
@@ -240,7 +243,20 @@ fn iqPalette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> 
     return a + b * cos(TAU * (c * t + d));
 }
 
-fn applyPalette(field: f32, time: f32, saturation: f32, hueShift: f32) -> vec3<f32> {
+// Liquid light show: oil and water don't mix, so the projector dish shows
+// sharp-edged oil cells drifting slower than the water dye. .x = inside-oil
+// coverage, .y = meniscus line, .z = lens rim just inside the oil edge.
+fn oilCells(p: vec2<f32>, time: f32, heat: f32) -> vec3<f32> {
+    let convect = vec2<f32>(time * 0.021, -time * 0.017) * (1.0 + heat);
+    let oil = fbm(p * 1.25 + convect + vec2<f32>(3.7, 8.1), 3);
+    let edge = oil - 0.52;
+    let inside = smoothstep(-0.006, 0.006, edge);
+    let meniscus = 1.0 - smoothstep(0.0, 0.016, abs(edge));
+    let rim = smoothstep(0.004, 0.02, edge) * (1.0 - smoothstep(0.02, 0.05, edge));
+    return vec3<f32>(inside, meniscus, rim);
+}
+
+fn applyPalette(field: f32, time: f32, saturation: f32, hueShift: f32, seam: f32, oil: vec3<f32>, drag: f32) -> vec3<f32> {
     // OWNER: kimi-hop-3 2026-07-19
     // Hybrid: psychedelicPalette base + IQ cosine interference bands at a slower phase.
     let t = field + time * 0.06 + hueShift * TAU;
@@ -253,8 +269,21 @@ fn applyPalette(field: f32, time: f32, saturation: f32, hueShift: f32) -> vec3<f
         vec3<f32>(0.0, 0.33, 0.67)
     );
     var color = mix(base, bands, 0.45);
+    // Oil cells carry their own dye: the complementary palette phase, a touch denser.
+    let oilDye = mix(psychedelicPalette(t + 0.5), bands.zxy, 0.35) * 0.92;
+    color = mix(color, oilDye, oil.x * 0.6);
+    color *= 1.0 - oil.y * 0.55;
+    color += vec3<f32>(oil.z * 0.22);
+    // Marbled drag striations: where the warp dragged the domain far, the dye
+    // thins into fine comb lines whose spacing tightens with the drag.
+    let comb = 0.5 + 0.5 * sin(TAU * (field * 7.0 + drag * 16.0));
+    color *= 1.0 - smoothstep(0.06, 0.3, drag) * comb * comb * 0.3;
+    let sat = clamp(saturation, 0.0, 1.0);
     let gray = vec3<f32>(dot(color, vec3<f32>(0.2126, 0.7152, 0.0722)));
-    color = mix(gray, color, clamp(saturation, 0.0, 1.0));
+    color = mix(gray, color, sat);
+    // Complementary fringe on tight kaleido seams. Saturation still owns chroma.
+    let comp = vec3<f32>(1.0) - clamp(color, vec3<f32>(0.0), vec3<f32>(1.0));
+    color = mix(color, comp, clamp(seam, 0.0, 1.0) * 0.38 * sat);
     return clamp(color, vec3<f32>(0.0), vec3<f32>(1.2));
 }
 
@@ -272,14 +301,16 @@ fn applyTemporalFeedback(
     // Self-advecting echo trails: organic UV warp on history + stable decay blend.
     let uv01 = (vec2<f32>(coord) + 0.5) / res;
 
-    // Warp the history sample UV — trails smear instead of stacking in place.
-    let drift = organicDrift(uv01, time, 5.0) * (0.012 + strength * 0.018 + bass * 0.008);
-    let fbUV = clamp(uv01 + drift, vec2<f32>(0.0), vec2<f32>(1.0));
-    let fbUV2 = clamp(uv01 - drift * 0.65, vec2<f32>(0.0), vec2<f32>(1.0));
-
-    // Bilinear history taps for soft phosphor echo (dataTextureC → prior frame).
-    let prevA = textureSampleLevel(dataTextureC, u_sampler, fbUV, 0.0).rgb;
-    let prevB = textureSampleLevel(dataTextureC, u_sampler, fbUV2, 0.0).rgb;
+    // Directional smear along the warp flow. Trail Echo (strength) sets the reach.
+    let drift = organicDrift(uv01, time, 5.0);
+    let reach = clamp(strength * 14.0, 1.0, 10.0);
+    let off = vec2<i32>(
+        i32(drift.x * res.x * reach * 0.08),
+        i32(drift.y * res.y * reach * 0.08)
+    );
+    let maxC = vec2<i32>(i32(res.x) - 1, i32(res.y) - 1);
+    let prevA = textureLoad(dataTextureC, clamp(coord + off, vec2<i32>(0), maxC), 0).rgb;
+    let prevB = textureLoad(dataTextureC, clamp(coord - off, vec2<i32>(0), maxC), 0).rgb;
     let prev = (prevA + prevB) * 0.5;
 
     // Trail Echo slider drives mix; bass nudges persistence.
@@ -313,13 +344,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let animTime = time * motion.timeScale;
 
     var p = aspectUv(coord, res);
+    let pRest = p;
     p = applyDomainWarp(p, animTime, motion.warpStrength);
+    let drag = length(p - pRest);
     p = applySymmetry(p);
 
-    let field = sampleField(p, animTime);
+    let fieldPack = sampleField(p, animTime);
+    let field = fieldPack.x;
     let paletteSat = clamp(mix(0.55, 1.0, u.zoom_params.y) * motion.saturationBoost, 0.0, 1.0);
     let paletteHue = fract(u.zoom_params.z + motion.hueDrift);
-    var color = applyPalette(field, animTime, paletteSat, paletteHue);
+    let oil = oilCells(p, animTime, clamp(bass, 0.0, 2.0) * 0.6);
+    var color = applyPalette(field, animTime, paletteSat, paletteHue, fieldPack.y, oil, drag);
 
     color = applyTemporalFeedback(color, coord, res, u.zoom_params.w * 0.35, bass, animTime);
 

@@ -49,7 +49,7 @@ describe('layerChainShare', () => {
                 const slotCount = 1 + Math.floor(Math.random() * MAX_SHARED_SLOTS);
                 const slots: SharedChainSlot[] = [];
                 for (let s = 0; s < slotCount; s++) {
-                    const shaderId = shaderIds[Math.floor(Math.random() * shaderIds.length)];
+                    const shaderId = shaderIds[Math.floor(Math.random() * shaderIds.length)] ?? null;
                     const slot: SharedChainSlot = { shaderId };
                     if (shaderId && Math.random() > 0.5) {
                         slot.params = { zoomParam1: Math.round(Math.random() * 100) / 100 };
@@ -83,9 +83,9 @@ describe('layerChainShare', () => {
 
             const expanded = expandSharedChain(decoded!);
             expect(expanded.modes).toEqual(['liquid-metal', null, 'cosmic-flow', null, null, null]);
-            expect(expanded.slotParams[0].zoomParam1).toBeCloseTo(0.42);
+            expect(expanded.slotParams[0]!.zoomParam1).toBeCloseTo(0.42);
             expect(expanded.slotParams[1]).toEqual(DEFAULT_SLOT_PARAMS);
-            expect(expanded.slotParams[2].lightStrength).toBeCloseTo(2.0);
+            expect(expanded.slotParams[2]!.lightStrength).toBeCloseTo(2.0);
         });
     });
 
@@ -95,7 +95,7 @@ describe('layerChainShare', () => {
             const slotParams: SlotParams[] = [makeParams({ zoomParam1: 0.42, lightStrength: DEFAULT_SLOT_PARAMS.lightStrength })];
 
             const chain = buildSharedChain(modes, slotParams);
-            expect(chain.slots[0].params).toEqual({ zoomParam1: 0.42 });
+            expect(chain.slots[0]!.params).toEqual({ zoomParam1: 0.42 });
 
             const expanded = expandSharedChain(chain);
             expect(expanded.slotParams[0]).toEqual(makeParams({ zoomParam1: 0.42 }));
@@ -103,14 +103,14 @@ describe('layerChainShare', () => {
 
         it('omits params entirely when the slot matches all defaults', () => {
             const chain = buildSharedChain(['liquid-metal'], [makeParams()]);
-            expect(chain.slots[0].params).toBeUndefined();
+            expect(chain.slots[0]!.params).toBeUndefined();
         });
 
         it('treats null/none shader ids as empty slots', () => {
             const chain = buildSharedChain(['none', null as any], [makeParams(), makeParams()]);
-            expect(chain.slots[0].shaderId).toBeNull();
-            expect(chain.slots[1].shaderId).toBeNull();
-            expect(chain.slots[0].params).toBeUndefined();
+            expect(chain.slots[0]!.shaderId).toBeNull();
+            expect(chain.slots[1]!.shaderId).toBeNull();
+            expect(chain.slots[0]!.params).toBeUndefined();
         });
     });
 

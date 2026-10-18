@@ -27,6 +27,8 @@ export interface LiveControlPanelProps {
     midiEnabled: boolean;
     setMidiEnabled: Dispatch<SetStateAction<boolean>>;
     midiDevices: MIDIDevice[];
+    midiPair14Bit?: boolean;
+    setMidiPair14Bit?: Dispatch<SetStateAction<boolean>>;
     armed: null | 'midi' | 'key';
     setArmed: Dispatch<SetStateAction<null | 'midi' | 'key'>>;
     learnedTrigger: ControlTrigger | null;
@@ -62,6 +64,8 @@ export const LiveControlPanel: React.FC<LiveControlPanelProps> = ({
     midiEnabled,
     setMidiEnabled,
     midiDevices,
+    midiPair14Bit = false,
+    setMidiPair14Bit,
     armed,
     setArmed,
     learnedTrigger,
@@ -98,6 +102,20 @@ export const LiveControlPanel: React.FC<LiveControlPanelProps> = ({
                         type="checkbox"
                         checked={midiEnabled}
                         onChange={(e) => setMidiEnabled(e.target.checked)}
+                    />
+                </label>
+            )}
+
+            {showMidi && midiEnabled && setMidiPair14Bit && (
+                <label
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11px', color: '#a0a0b0' }}
+                    title="Pair CC 0–31 with CC 32–63 (MSB/LSB) for 14-bit faders. Leave off if your controller uses CC 32–63 as separate knobs."
+                >
+                    <span>14-bit CC (MSB/LSB pairs)</span>
+                    <input
+                        type="checkbox"
+                        checked={midiPair14Bit}
+                        onChange={(e) => setMidiPair14Bit(e.target.checked)}
                     />
                 </label>
             )}

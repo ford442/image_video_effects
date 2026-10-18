@@ -3,10 +3,12 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, click-reactive, upgraded-rgba
 //  Complexity: High
+//  Upgraded: 2026-10-17
 //  Ideas: two-layer thin-film interference with mouse view-angle shift and
 //         bulge/depression; click impulses that perturb height and normal
 //         and leave a slope-driven specular kick; bass/mids/treble/rms-
-//         driven vibration, iridescence speed, and trough transparency
+//         driven vibration, iridescence speed, and trough transparency;
+//         Newton black-film drainage islets; Plateau-border capillary veins
 //  A packing: raw [membrane height, normal.x, normal.y, alpha] — ACES is
 //             display-only, matches exact dataTextureC read next frame
 //  Description: Thin-film interference membrane that undulates in space.
@@ -15,26 +17,8 @@
 //    for rainbow interference patterns. Temporal feedback smooths motion.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Thickness, y=Frequency, z=Amplitude, w=Iridescence
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Thickness, y=Frequency, z=Amplitude, w=Iridescence
 
 // ── Value noise ───────────────────────────────────────────────────
 fn hash3(p: vec2<f32>) -> f32 {
@@ -257,6 +241,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let spec2 = pow(max(dot(normal, halfDir), 0.0), 16.0) * 0.3;
   interferenceCol += vec3<f32>(spec * 0.6 + spec2 * 0.2);
 
+  // ── Idea 4: Plateau-border capillary veins ──────────────────────
+  // Where crossing wave trains meet at saddle ridges, capillary suction thickens the film
+  let saddleRidge = exp(-abs(wave1 - wave2) * 12.0) * smoothstep(-0.15, 0.45, wave3);
+  let veinFringe = thinFilmIridescence2(cosTheta, filmThickness * 1.48, filmIOR * 1.03, iridTime * 0.65);
+  interferenceCol += veinFringe * saddleRidge * (0.42 + midsSmooth * 0.35);
+
+  // ── Alpha encoding & Idea 5: Newton black-film drainage islets ──
+  // Alpha = membrane depth: peaks (high Z) = opaque, troughs (low Z) = transparent
+  let depthNorm = clamp(membraneZ / amplitude * 0.5 + 0.5, 0.0, 1.0);
+  // Sub-wavelength drainage in deep troughs cancels reflection into velvety black islets with a silvery-violet step rim
+  let blackFilmIslet = smoothstep(0.26, 0.08, depthNorm);
+  let blackFilmRim = exp(-pow((depthNorm - 0.25) * 26.0, 2.0)) * (0.65 + trebleSmooth * 0.5);
+  interferenceCol = interferenceCol * (1.0 - blackFilmIslet * 0.78) + vec3<f32>(0.78, 0.72, 1.0) * blackFilmRim * 0.55;
+
   // Background bleed-through where membrane is thin
   let bgColor = vec3<f32>(0.02, 0.03, 0.05);
   var col = mix(bgColor, clamp(interferenceCol, vec3<f32>(0.0), vec3<f32>(1.0)), 0.85);
@@ -265,12 +263,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let vignette = 1.0 - length(uv - 0.5) * 0.3;
   col *= vignette;
 
-  // ── Alpha encoding ──────────────────────────────────────────────
-  // Alpha = membrane depth: peaks (high Z) = opaque, troughs (low Z) = transparent
-  let depthNorm = clamp(membraneZ / amplitude * 0.5 + 0.5, 0.0, 1.0);
   let peakAlpha = smoothstep(0.3, 0.7, depthNorm);
   let troughAlpha = smoothstep(0.7, 0.3, depthNorm) * 0.15;
-  var alpha = peakAlpha * 0.92 + troughAlpha + sheen * 0.3;
+  var alpha = peakAlpha * 0.92 + troughAlpha + sheen * 0.3 + saddleRidge * 0.12 - blackFilmIslet * 0.08;
 
   // Thin areas become more translucent
   let thinness = abs(membraneZ) / (amplitude + 0.01);

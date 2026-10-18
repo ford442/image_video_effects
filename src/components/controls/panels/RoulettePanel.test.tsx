@@ -1,10 +1,9 @@
-import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { RoulettePanel } from './RoulettePanel';
 
 test('renders randomize-all button and menubar hint for per-slot randomize', () => {
-    const onRandomizeAllSlots = jest.fn();
+    const onRandomizeAllSlots = vi.fn();
 
     render(
         <RoulettePanel

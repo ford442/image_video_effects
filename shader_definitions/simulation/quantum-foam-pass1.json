@@ -2,7 +2,7 @@
   "id": "quantum-foam-pass1",
   "name": "Quantum Foam (Pass 1: Field Generation)",
   "url": "shaders/quantum-foam-pass1.wgsl",
-  "description": "Generates quantum probability field with curl noise and FBM. First pass of 3-pass system.",
+  "description": "Generates quantum probability field with curl noise and FBM. First pass of 3-pass system. Diffusion Rate opens voids at cell centers, and three-wave crossings raise foam ridges.",
   "features": [
     "multi-pass-1",
     "compute-shader",

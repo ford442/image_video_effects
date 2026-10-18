@@ -2,7 +2,7 @@
   "id": "chromatic-phase-inversion",
   "name": "Chromatic Phase Inversion",
   "url": "shaders/chromatic-phase-inversion.wgsl",
-  "description": "Individual color channels are inverted by a slowly evolving temporal phase, causing color ghosts that drift ahead or behind the true image in surreal independent waves. Audio reactivity pulses phase speed and ghost offset with the beat.",
+  "description": "Individual color channels are inverted by a slowly evolving temporal phase, causing color ghosts that drift ahead or behind the true image. Sabattier-style Mackie lines flare on edges mid-inversion; the cursor phase-locks a coherent spot (hold for a full negative). Bass pulses phase and ghosts.",
   "tags": [
     "chromatic",
     "phase",
@@ -16,9 +16,10 @@
   ],
   "features": [
     "mouse-driven",
-    "audio-reactive"
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
   ],
-  "author": "AI",
   "params": [
     {
       "id": "speed_of_the_temporal_phase_oscillation_per_channel",
@@ -56,5 +57,8 @@
       "step": 0.01,
       "description": "Mix of spatial noise field into the phase (low=global, high=local)."
     }
-  ]
+  ],
+  "x-meta": {
+    "author": "AI"
+  }
 }

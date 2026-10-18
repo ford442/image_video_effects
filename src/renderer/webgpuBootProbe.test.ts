@@ -2,11 +2,14 @@
  * WebGPU boot probe tests (mocked GPU — no real adapter required).
  */
 
+import type { Mock } from 'vitest';
 import {
   runWebGpuBootProbe,
   toWebGpuProbeBreadcrumb,
   publishWebGpuProbe,
   collectUserAgentBrands,
+  negotiateCanvasColor,
+  updateWebGpuProbeColor,
 } from './webgpuBootProbe';
 import { ADAPTER_ATTEMPT_LADDER } from './webgpuDevicePolicy';
 
@@ -62,22 +65,22 @@ function makeLimits(overrides: Partial<GPUSupportedLimits> = {}): GPUSupportedLi
 function makeMockDevice(pipelineThrows = false): GPUDevice {
   const limits = makeLimits();
   const createComputePipeline = pipelineThrows
-    ? jest.fn(() => {
+    ? vi.fn(() => {
         throw new Error('probe pipeline failed');
       })
-    : jest.fn(() => ({} as GPUComputePipeline));
+    : vi.fn(() => ({} as GPUComputePipeline));
 
   return {
     limits,
     features: new Set<GPUFeatureName>(),
-    createShaderModule: jest.fn(() => ({} as GPUShaderModule)),
+    createShaderModule: vi.fn(() => ({} as GPUShaderModule)),
     createComputePipeline,
-    createTexture: jest.fn((desc: GPUTextureDescriptor) => ({
-      destroy: jest.fn(),
+    createTexture: vi.fn((desc: GPUTextureDescriptor) => ({
+      destroy: vi.fn(),
       format: desc.format,
     } as unknown as GPUTexture)),
-    destroy: jest.fn(),
-    addEventListener: jest.fn(),
+    destroy: vi.fn(),
+    addEventListener: vi.fn(),
   } as unknown as GPUDevice;
 }
 
@@ -96,14 +99,14 @@ function makeMockAdapter(
       device: 'test-device',
       description: 'mock adapter',
     },
-    requestDevice: jest.fn().mockResolvedValue(dev),
+    requestDevice: vi.fn().mockResolvedValue(dev),
   } as unknown as GPUAdapter;
 }
 
 function makeMockContext(): GPUCanvasContext {
   return {
-    configure: jest.fn(),
-    unconfigure: jest.fn(),
+    configure: vi.fn(),
+    unconfigure: vi.fn(),
   } as unknown as GPUCanvasContext;
 }
 
@@ -115,7 +118,7 @@ describe('webgpuBootProbe', () => {
   });
 
   it('returns ok:false with ladder attempts when all adapters null', async () => {
-    const requestAdapter = jest.fn().mockResolvedValue(null);
+    const requestAdapter = vi.fn().mockResolvedValue(null);
     (navigator as Navigator & { gpu?: GPU }).gpu = {
       requestAdapter,
       getPreferredCanvasFormat: () => 'bgra8unorm',
@@ -136,7 +139,7 @@ describe('webgpuBootProbe', () => {
   it('records contract failure and continues ladder', async () => {
     const badAdapter = makeMockAdapter({ maxBindingsPerBindGroup: 4 });
     const goodAdapter = makeMockAdapter();
-    const requestAdapter = jest
+    const requestAdapter = vi
       .fn()
       .mockResolvedValueOnce(badAdapter)
       .mockResolvedValueOnce(goodAdapter);
@@ -145,7 +148,7 @@ describe('webgpuBootProbe', () => {
     const canvas = document.createElement('canvas');
     canvas.width = 1024;
     canvas.height = 1024;
-    canvas.getContext = jest.fn(() => context) as unknown as typeof canvas.getContext;
+    canvas.getContext = vi.fn(() => context) as unknown as typeof canvas.getContext;
 
     (navigator as Navigator & { gpu?: GPU }).gpu = {
       requestAdapter,
@@ -161,12 +164,12 @@ describe('webgpuBootProbe', () => {
   it('fails at probePipeline stage when pipeline create throws', async () => {
     const device = makeMockDevice(true);
     const adapter = makeMockAdapter({}, device);
-    const requestAdapter = jest.fn().mockResolvedValue(adapter);
+    const requestAdapter = vi.fn().mockResolvedValue(adapter);
     const context = makeMockContext();
     const canvas = document.createElement('canvas');
     canvas.width = 1024;
     canvas.height = 1024;
-    canvas.getContext = jest.fn(() => context) as unknown as typeof canvas.getContext;
+    canvas.getContext = vi.fn(() => context) as unknown as typeof canvas.getContext;
 
     (navigator as Navigator & { gpu?: GPU }).gpu = {
       requestAdapter,
@@ -179,22 +182,45 @@ describe('webgpuBootProbe', () => {
     expect(device.destroy).toHaveBeenCalled();
   });
 
+  it('fails at probePipeline stage when the async create rejects without throwing (#1395)', async () => {
+    const device = makeMockDevice();
+    (device as unknown as { createComputePipelineAsync: Mock }).createComputePipelineAsync = vi.fn(
+      async () => {
+        throw Object.assign(new Error('entry point not found'), { name: 'GPUPipelineError' });
+      },
+    );
+    const adapter = makeMockAdapter({}, device);
+    const context = makeMockContext();
+    const canvas = document.createElement('canvas');
+    canvas.getContext = vi.fn(() => context) as unknown as typeof canvas.getContext;
+    (navigator as Navigator & { gpu?: GPU }).gpu = {
+      requestAdapter: vi.fn().mockResolvedValue(adapter),
+      getPreferredCanvasFormat: () => 'bgra8unorm',
+    } as unknown as GPU;
+
+    const result = await runWebGpuBootProbe(canvas, 1024, 1024);
+    expect(result.ok).toBe(false);
+    const failed = result.attempts.find((a) => a.failedStage === 'probePipeline');
+    expect(failed?.error).toBe('entry point not found');
+    expect(device.createComputePipeline).not.toHaveBeenCalled();
+  });
+
   describe('canvas configure opt-ins', () => {
     function setup(context: GPUCanvasContext, device: GPUDevice = makeMockDevice()) {
       const canvas = document.createElement('canvas');
       canvas.width = 1024;
       canvas.height = 1024;
-      canvas.getContext = jest.fn(() => context) as unknown as typeof canvas.getContext;
+      canvas.getContext = vi.fn(() => context) as unknown as typeof canvas.getContext;
       (navigator as Navigator & { gpu?: GPU }).gpu = {
-        requestAdapter: jest.fn().mockResolvedValue(makeMockAdapter({}, device)),
+        requestAdapter: vi.fn().mockResolvedValue(makeMockAdapter({}, device)),
         getPreferredCanvasFormat: () => 'bgra8unorm',
       } as unknown as GPU;
       return canvas;
     }
 
     const lastConfig = (context: GPUCanvasContext) => {
-      const calls = (context.configure as jest.Mock).mock.calls;
-      return calls[calls.length - 1][0] as GPUCanvasConfiguration;
+      const calls = (context.configure as Mock).mock.calls;
+      return calls[calls.length - 1]![0] as GPUCanvasConfiguration;
     };
 
     it('records canvasCopySrc=true and restores render-only usage', async () => {
@@ -206,7 +232,7 @@ describe('webgpuBootProbe', () => {
       expect(result.canvasColorSpace).toBe('srgb');
       expect(result.canvasToneMapping).toBe('standard');
       expect(toWebGpuProbeBreadcrumb(result).canvasCopySrc).toBe(true);
-      const configs = (context.configure as jest.Mock).mock.calls.map((c) => c[0]);
+      const configs = (context.configure as Mock).mock.calls.map((c) => c[0]);
       expect(configs[0].usage).toBe(0x10);
       expect(configs.some((c: GPUCanvasConfiguration) => c.usage === (0x10 | 0x01))).toBe(true);
       expect(lastConfig(context)).toMatchObject({ alphaMode: 'opaque', usage: 0x10 });
@@ -215,7 +241,7 @@ describe('webgpuBootProbe', () => {
 
     it('fails soft when configure throws for COPY_SRC', async () => {
       const context = makeMockContext();
-      (context.configure as jest.Mock).mockImplementation((c: GPUCanvasConfiguration) => {
+      (context.configure as Mock).mockImplementation((c: GPUCanvasConfiguration) => {
         if ((c.usage as number) & 0x01) throw new Error('COPY_SRC unsupported');
       });
       const result = await runWebGpuBootProbe(setup(context), 1024, 1024);
@@ -229,12 +255,12 @@ describe('webgpuBootProbe', () => {
       const device = makeMockDevice();
       const context = makeMockContext();
       let pending: GPUCanvasConfiguration | null = null;
-      (context.configure as jest.Mock).mockImplementation((c: GPUCanvasConfiguration) => {
+      (context.configure as Mock).mockImplementation((c: GPUCanvasConfiguration) => {
         pending = c;
       });
       Object.assign(device, {
-        pushErrorScope: jest.fn(),
-        popErrorScope: jest.fn(async () =>
+        pushErrorScope: vi.fn(),
+        popErrorScope: vi.fn(async () =>
           pending && (pending.usage as number) & 0x01 ? { message: 'bad usage' } : null,
         ),
       });
@@ -247,7 +273,7 @@ describe('webgpuBootProbe', () => {
     it('does not request display-p3 by default', async () => {
       const context = makeMockContext();
       await runWebGpuBootProbe(setup(context), 1024, 1024);
-      const configs = (context.configure as jest.Mock).mock.calls.map((c) => c[0]);
+      const configs = (context.configure as Mock).mock.calls.map((c) => c[0]);
       expect(configs.some((c: GPUCanvasConfiguration) => 'colorSpace' in c)).toBe(false);
     });
 
@@ -289,7 +315,7 @@ describe('webgpuBootProbe', () => {
   });
 
   it('publishWebGpuProbe writes breadcrumb without handoff handles', async () => {
-    const requestAdapter = jest.fn().mockResolvedValue(null);
+    const requestAdapter = vi.fn().mockResolvedValue(null);
     (navigator as Navigator & { gpu?: GPU }).gpu = {
       requestAdapter,
       getPreferredCanvasFormat: () => 'bgra8unorm',
@@ -312,10 +338,10 @@ describe('webgpuBootProbe', () => {
     const canvas = document.createElement('canvas');
     canvas.width = 1024;
     canvas.height = 1024;
-    canvas.getContext = jest.fn(() => context) as unknown as typeof canvas.getContext;
+    canvas.getContext = vi.fn(() => context) as unknown as typeof canvas.getContext;
 
     (navigator as Navigator & { gpu?: GPU }).gpu = {
-      requestAdapter: jest.fn().mockResolvedValue(adapter),
+      requestAdapter: vi.fn().mockResolvedValue(adapter),
       getPreferredCanvasFormat: () => 'bgra8unorm',
     } as unknown as GPU;
 
@@ -329,5 +355,61 @@ describe('webgpuBootProbe', () => {
     const crumb = toWebGpuProbeBreadcrumb(result);
     expect(crumb.ok).toBe(true);
     expect(crumb).not.toHaveProperty('handoff');
+  });
+});
+
+describe('negotiateCanvasColor', () => {
+  const device = () => makeMockDevice();
+  const configs = (c: GPUCanvasContext) => (c.configure as Mock).mock.calls.map((x) => x[0]);
+
+  it('reports sRGB/standard and resets the swapchain when nothing is requested', async () => {
+    const context = makeMockContext();
+    const r = await negotiateCanvasColor(device(), context, 'bgra8unorm', { displayP3: false }, true);
+    expect(r).toMatchObject({ colorSpace: 'srgb', toneMapping: 'standard' });
+    expect(r.reason).toBeUndefined();
+    expect(configs(context)[0]).not.toHaveProperty('colorSpace');
+    expect(configs(context)[0].usage).toBe(0x10 | 0x01); // copySrc preserved
+  });
+
+  it('accepts display-p3 + extended tone mapping when the readback agrees', async () => {
+    const context = makeMockContext();
+    Object.assign(context, { getConfiguration: () => ({ colorSpace: 'display-p3', toneMapping: { mode: 'extended' } }) });
+    const r = await negotiateCanvasColor(device(), context, 'bgra8unorm', { displayP3: true, extendedToneMapping: true });
+    expect(r).toMatchObject({ colorSpace: 'display-p3', toneMapping: 'extended' });
+    expect(r.reason).toBeUndefined();
+  });
+
+  it('steps down to p3/standard when extended tone mapping is rejected', async () => {
+    const context = makeMockContext();
+    Object.assign(context, { getConfiguration: () => ({ colorSpace: 'display-p3', toneMapping: { mode: 'standard' } }) });
+    const r = await negotiateCanvasColor(device(), context, 'bgra8unorm', { displayP3: true, extendedToneMapping: true });
+    expect(r).toMatchObject({ colorSpace: 'display-p3', toneMapping: 'standard', reason: 'unsupported-extended-tone-mapping' });
+  });
+
+  it('notes an SDR display when p3 is accepted without extended tone mapping requested', async () => {
+    const r = await negotiateCanvasColor(device(), makeMockContext(), 'bgra8unorm', { displayP3: true, extendedToneMapping: false });
+    expect(r).toMatchObject({ colorSpace: 'display-p3', reason: 'not-hdr-display' });
+  });
+
+  it('falls back to sRGB (never a blank canvas) when configure throws, keeping copySrc', async () => {
+    const context = makeMockContext();
+    (context.configure as Mock).mockImplementation((c: GPUCanvasConfiguration) => {
+      if ('colorSpace' in c) throw new Error('unsupported colorSpace');
+    });
+    const r = await negotiateCanvasColor(device(), context, 'bgra8unorm', { displayP3: true, extendedToneMapping: true }, true);
+    expect(r).toMatchObject({ colorSpace: 'srgb', toneMapping: 'standard', reason: 'unsupported-p3' });
+    const last = configs(context).slice(-1)[0];
+    expect(last).not.toHaveProperty('colorSpace');
+    expect(last.usage).toBe(0x10 | 0x01);
+  });
+
+  it('updateWebGpuProbeColor reflects the live result in window.webgpuProbe', () => {
+    window.webgpuProbe = { ok: true, finishedAt: '', userAgent: '', userAgentBrands: [], attempts: [], canvasColorFallback: 'unsupported-p3' };
+    updateWebGpuProbeColor({
+      requested: { displayP3: true }, applied: { displayP3: true }, colorSpace: 'display-p3', toneMapping: 'standard',
+    });
+    expect(window.webgpuProbe).toMatchObject({ canvasColorSpace: 'display-p3', canvasToneMapping: 'standard' });
+    expect(window.webgpuProbe?.canvasColorFallback).toBeUndefined();
+    window.webgpuProbe = undefined;
   });
 });

@@ -342,7 +342,11 @@ def has_deep_workgroup_marker(filepath: str, content: str) -> bool:
         "/root/image_video_effects/public/shader-lists",
     ]
     for root in search_roots:
-        for json_path in glob.glob(os.path.join(root, "**", f"{shader_id}.json"), recursive=True):
+        json_candidates = {shader_id, shader_id.replace("_", "-")}  # legacy underscore WGSL stems
+        for json_path in (
+            p for name in sorted(json_candidates)
+            for p in glob.glob(os.path.join(root, "**", f"{name}.json"), recursive=True)
+        ):
             try:
                 with open(json_path, 'r', encoding='utf-8') as jf:
                     data = json.load(jf)
@@ -405,7 +409,15 @@ def check_type_match(binding_num, found_type, found_storage):
 def parse_shader(filepath):
     with open(filepath, 'r', encoding='utf-8') as f:
         content = f.read()
+    return parse_shader_source(content, filepath)
 
+
+def parse_shader_source(content, filepath):
+    """
+    parse_shader() on text already in memory. `filepath` only names the shader
+    in the result; scripts/migrate_to_prelude.py uses this to prove a rewrite
+    leaves the checker's verdict unchanged before writing anything.
+    """
     shader_id = Path(filepath).stem
     filename = Path(filepath).name
 
@@ -524,7 +536,9 @@ def parse_shader(filepath):
     # Check Uniforms struct
     uniforms_match = UNIFORM_STRUCT_PATTERN.search(content)
     if uniforms_match:
-        struct_content = uniforms_match.group(1)
+        # Field comments are prose ("mouse_uv (0-1 canvas: y=0 top)" in the
+        # prelude) and must not be read as `name: type` fields.
+        struct_content = strip_wgsl_comments(uniforms_match.group(1))
         found_fields = {}
         for field_match in STRUCT_FIELD_PATTERN.finditer(struct_content):
             field_name = field_match.group(1).strip()
@@ -557,6 +571,11 @@ def parse_shader(filepath):
     
     if result["workgroup_sizes"]:
         has_valid = any(ws == [8, 8, 1] or ws == [16, 16, 1] for ws in result["workgroup_sizes"])
+        # Opt-in @group(1) sim ring (src/contracts/bind_group1.json): simState-domain
+        # passes dispatch one invocation per agent with @workgroup_size(64, 1, 1).
+        declares_sim_ring = re.search(r"@group\(\s*1\s*\)", strip_wgsl_comments(content)) is not None
+        if not has_valid and declares_sim_ring:
+            has_valid = any(ws == [64, 1, 1] for ws in result["workgroup_sizes"])
         if not has_valid:
             if has_deep_workgroup_marker(filepath, content):
                 result["warnings"].append(

@@ -3,8 +3,10 @@
 // Category: generative
 // Features: temporal-layering, OkLab-color-mixing, blackbody-palette,
 //           chromatic-offset, bass-distortion, feedback-accumulation,
-//           upgraded-rgba, Fresnel-rim-glow
-// Upgraded: 2026-06-28 — Visualist Batch (OkLab + blackbody + Fresnel)
+//           upgraded-rgba, Fresnel-rim-glow, audio-reactive, mouse-driven
+// Upgraded: 2026-09-27
+// Ideas: lagged echo taps (each layer re-samples the video at time - i*lag); postmark rings (dashed, aged, pointer-anchored, distortion-warped); delay wavefront (radial offset on the delay clock)
+// A packing: raw pre-ACES accumulated feedback RGB in A.rgb, wrapping delay clock in A.a (C read the same way; ACES only on writeTexture)
 // ----------------------------------------------------------------
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -51,11 +53,11 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 
 // ─── OkLab: perceptual color mixing ───
 fn srgb_to_linear(c: vec3<f32>) -> vec3<f32> {
-    return pow(c, vec3<f32>(2.2));
+    return pow(max(c, vec3<f32>(0.0)), vec3<f32>(2.2));
 }
 
 fn linear_to_srgb(c: vec3<f32>) -> vec3<f32> {
-    return pow(c, vec3<f32>(1.0 / 2.2));
+    return pow(max(c, vec3<f32>(0.0)), vec3<f32>(1.0 / 2.2));
 }
 
 fn linear_to_oklab(c: vec3<f32>) -> vec3<f32> {
@@ -107,6 +109,25 @@ fn fresnel_rim(normal: vec3<f32>, viewDir: vec3<f32>, power: f32) -> f32 {
     return pow(1.0 - max(dot(normal, viewDir), 0.0), power);
 }
 
+// ─── Idea 1: lagged echo tap — one layer's distorted, chroma-split video sample ───
+fn echo_tap(uv: vec2<f32>, wob: vec2<f32>, shift_r: f32, shift_b: f32, resolution: vec2<f32>) -> vec3<f32> {
+    let hi = vec2<i32>(resolution) - vec2<i32>(1);
+    let r_uv = clamp(uv + wob + vec2<f32>(shift_r, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+    let g_uv = clamp(uv + wob, vec2<f32>(0.0), vec2<f32>(1.0));
+    let b_uv = clamp(uv + wob - vec2<f32>(shift_b, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+    let r = textureLoad(readTexture, clamp(vec2<i32>(r_uv * resolution), vec2<i32>(0), hi), 0).r;
+    let g = textureLoad(readTexture, clamp(vec2<i32>(g_uv * resolution), vec2<i32>(0), hi), 0).g;
+    let b = textureLoad(readTexture, clamp(vec2<i32>(b_uv * resolution), vec2<i32>(0), hi), 0).b;
+    return vec3<f32>(r, g, b);
+}
+
+// ─── Per-layer ink hue on the layer's age phase (replaces dead plasmaBuffer[1..255] colour read) ───
+fn stamp_ink(phase: f32) -> vec3<f32> {
+    let h = phase * 2.0 * PI;
+    let lab = vec3<f32>(0.72, 0.10 * cos(h), 0.10 * sin(h));
+    return linear_to_srgb(oklab_to_linear(lab));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
@@ -138,20 +159,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     cos(uv.x * 10.0 + time) * distortion_amp * (1.0 + bass * 2.0)
   );
 
-  let r_uv = clamp(uv + r_dist_offset, vec2<f32>(0.0), vec2<f32>(1.0));
-  let b_uv = clamp(uv + b_dist_offset, vec2<f32>(0.0), vec2<f32>(1.0));
-  let g_uv = clamp(uv + vec2<f32>(
-    sin(uv.y * 10.0 + time) * distortion_amp * (1.0 + bass * 2.0),
-    cos(uv.x * 10.0 + time) * distortion_amp * (1.0 + bass * 2.0)
-  ), vec2<f32>(0.0), vec2<f32>(1.0));
+  let asp = vec2<f32>(resolution.x / resolution.y, 1.0);
+  let anchor = mouse;
+  let hue_gain = 1.0 + bass * 2.0;
+  let amp = distortion_amp * hue_gain;
+  // Idea 1: seconds of distortion-phase lag per layer (delay slider); layer 0 has zero lag = HEAD's base sample
+  let lag_dt = 0.12 + delay_scale * 0.5;
 
-  let r_sample = textureLoad(readTexture, clamp(vec2<i32>(r_uv * resolution), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1)), 0).r;
-  let g_sample = textureLoad(readTexture, clamp(vec2<i32>(g_uv * resolution), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1)), 0).g;
-  let b_sample = textureLoad(readTexture, clamp(vec2<i32>(b_uv * resolution), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1)), 0).b;
-  var base_color = vec3<f32>(r_sample, g_sample, b_sample);
-
+  // Idea 3: delay clock lives in C.a; radial phase makes the wrap edge sweep outward from the anchor
   let delay_info = textureLoad(dataTextureC, coord, 0);
-  let current_delay = delay_info.x + (bass * 0.1);
+  let clock = delay_info.a;
+  let wave = 0.35 * length((uv - anchor) * asp);
+  let delay_here = fract(clock - wave + 1.0);
+  let current_delay = delay_here + (bass * 0.1);
+
+  var ring_acc = vec3<f32>(0.0);
 
   for(var i = 0; i < 10; i = i + 1) {
     if (i >= layer_count) { break; }
@@ -159,19 +181,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let color_shift_raw = time * 0.1 + layer_factor;
     let color_shift = color_shift_raw - floor(color_shift_raw);
-    let plasma_idx = i32(color_shift * 255.0);
-    let plasma_color = plasmaBuffer[plasma_idx].rgb;
+    let ink_color = stamp_ink(color_shift);
 
     // OkLab mix with blackbody temperature
     let temp = layer_factor + bass * 0.3;
     let bb = blackbody(temp);
-    let mixed = oklab_mix(plasma_color, bb, 0.5 + bass * 0.2);
+    let mixed = oklab_mix(ink_color, bb, 0.5 + bass * 0.2);
 
     let layer_weight = exp(-current_delay * delay_scale * f32(i));
-    final_color += base_color * mixed * layer_weight;
+
+    // Idea 1: lagged echo tap — this layer sees the distortion field as it was i*lag ago
+    let t_i = time - lag_dt * f32(i);
+    let wob = vec2<f32>(sin(uv.y * 10.0 + t_i) * amp, cos(uv.x * 10.0 + t_i) * amp);
+    let echo = echo_tap(uv, wob, chromatic_shift * (1.0 + bass), chromatic_shift * (1.0 + treble), resolution);
+    final_color += echo * mixed * layer_weight;
+
+    // Idea 2: postmark ring — radius = layer age, born/dies invisibly, dashed, warped by the distortion
+    let ring_env = sin(PI * color_shift);
+    let rp = (uv + wob - anchor) * asp;
+    let ring_d = abs(length(rp) - (0.06 + color_shift * 0.6));
+    let ang = atan2(rp.y, rp.x);
+    let dash_f = fract(ang * (16.0 / (2.0 * PI)) + f32(i) * 0.37 + time * 0.05);
+    let dash = 0.35 + 0.65 * smoothstep(0.3, 0.6, abs(dash_f - 0.5) * 2.0);
+    ring_acc += mixed * (1.0 - smoothstep(0.0, 0.007, ring_d)) * ring_env * dash * layer_weight;
   }
 
   final_color = final_color / f32(layer_count);
+  final_color += ring_acc * 0.45;
 
   let mouse_dist = distance(uv, mouse);
   let isMouseActive = mouse_dist < 0.1 && u.zoom_config.w > 0.5;
@@ -185,14 +221,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   final_color += rimCol;
 
   // Feedback accumulation with chromatic boost
-  let prev_frame = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+  let prev_frame = delay_info.rgb;
   let fbMix = 0.1 + mids * 0.15;
   final_color = mix(final_color, prev_frame * vec3<f32>(1.0 + bass * 0.1, 1.0, 1.0 + treble * 0.1), fbMix);
 
-  let delay_track = textureLoad(dataTextureC, coord, 0);
-  let delay_raw = delay_track.x + 0.01;
-  let new_delay = delay_raw - floor(delay_raw);
-  textureStore(dataTextureA, coord, vec4<f32>(new_delay, 0.0, 0.0, 1.0));
+  let new_clock = fract(clock + 0.01);
+  textureStore(dataTextureA, coord, vec4<f32>(clamp(final_color, vec3<f32>(0.0), vec3<f32>(8.0)), new_clock));
 
   let luma = dot(final_color, vec3<f32>(0.299, 0.587, 0.114));
   let alpha = clamp(luma * 0.6 + current_delay * 0.2 + 0.15 + bass * 0.05, 0.0, 1.0);

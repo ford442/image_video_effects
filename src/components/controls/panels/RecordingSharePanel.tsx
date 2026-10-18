@@ -71,7 +71,7 @@ export const RecordingSharePanel: React.FC<RecordingSharePanelProps> = ({
             <label
                 style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', marginTop: '10px', opacity: gpuEncodeAvailable ? 1 : 0.5 }}
                 title={gpuEncodeAvailable
-                    ? 'Encode with WebCodecs (WebM). Falls back to MediaRecorder if the renderer or codec is unavailable.'
+                    ? 'Encode with WebCodecs (WebM). Falls back to MediaRecorder if the renderer or codec is unavailable. The WASM renderer always uses WebCodecs when the browser has it.'
                     : 'WebCodecs VideoEncoder is not available in this browser.'}
             >
                 <input

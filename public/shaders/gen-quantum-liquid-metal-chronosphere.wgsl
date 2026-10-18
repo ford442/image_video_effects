@@ -3,9 +3,9 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-15
-//  Ideas: capillary mode splitting; differential time bands
-//  A packing: ACES display RGBA
+//  Upgraded: 2026-09-27
+//  Ideas: capillary mode splitting; differential time bands; Rayleigh-Plateau tendril beading; chrono echo shells
+//  A packing: ACES display RGBA (C read back as radial echo in the void)
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -118,7 +118,12 @@ fn map(p_in: vec3<f32>, time: f32) -> f32 {
       let t_ray = dot(p, mouse_ray);
       let closest_p = mouse_ray * t_ray;
       let dist_to_ray = length(p - closest_p);
-      let pull = exp(-dist_to_ray * 3.0) * 0.8;
+      // Idea 3: Rayleigh–Plateau beading — the tendril necks into droplets
+      // along the pull ray; higher surface tension = fewer, fatter beads.
+      let beadK = mix(14.0, 6.0, clamp((surfaceTension - 0.1) / 1.9, 0.0, 1.0));
+      let bead = 0.5 + 0.5 * cos(t_ray * beadK - time * flowSpeed * 1.5);
+      let neck = mix(1.0, 3.2, (1.0 - bead) * smoothstep(1.2, 1.8, t_ray));
+      let pull = exp(-dist_to_ray * 3.0 * neck) * 0.8;
       d = smin(d, baseSphere - pull, 0.5);
   }
 
@@ -228,7 +233,19 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let glow = exp(-t * 0.15) * 0.2 * palette(time * 0.1);
     color += glow;
 
-    let display = vec4<f32>(acesToneMap(max(color, vec3<f32>(0.0))), alpha);
+    var display = vec4<f32>(acesToneMap(max(color, vec3<f32>(0.0))), alpha);
+
+    // Idea 4: chrono echo shells — exact C loads from a radially contracted
+    // coord, so earlier frames expand outward; a pulsing gain bands them into shells.
+    if (!hit) {
+        let center = 0.5 * resolution;
+        let echoScale = 0.985 - u.zoom_params.z * 0.004;
+        let srcF = center + (vec2<f32>(coord) - center) * echoScale;
+        let src = clamp(vec2<i32>(srcF), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1));
+        let prev = textureLoad(dataTextureC, src, 0);
+        let shellGain = 0.9 * (0.72 + 0.28 * sin(time * u.zoom_params.z * 2.2 + audio.x * 1.5));
+        display = vec4<f32>(max(display.rgb, prev.rgb * shellGain), max(display.a, prev.a * shellGain * 0.6));
+    }
     let source_depth = textureLoad(readDepthTexture, coord, 0).r;
     let depth = select(source_depth, clamp(1.0 - t / 10.0, 0.0, 1.0), hit);
     textureStore(writeTexture, coord, display);
