@@ -91,13 +91,15 @@
   },
   "bubble-chamber": {
     "thumbnail_url": "thumbnails/bubble-chamber.png",
-    "generated_at": "2026-06-14T06:41:23.030Z",
+    "generated_at": "2026-10-18T06:12:40.977Z",
     "params_snapshot": [
       0.5,
       0.5,
       0.5,
       0.5
-    ]
+    ],
+    "source_hash": "131789a40120649d",
+    "capture_host": "swiftshader"
   },
   "chromatic-ghost-tunnel": {
     "thumbnail_url": "thumbnails/chromatic-ghost-tunnel.png",
@@ -243,13 +245,15 @@
   },
   "gen-abyssal-chrono-coral": {
     "thumbnail_url": "thumbnails/gen-abyssal-chrono-coral.png",
-    "generated_at": "2026-06-14T06:41:28.954Z",
+    "generated_at": "2026-10-18T06:17:39.565Z",
     "params_snapshot": [
       0.5,
       4,
       1,
       0.2
-    ]
+    ],
+    "source_hash": "a0abf9e58c7146bf",
+    "capture_host": "swiftshader"
   },
   "gen-abyssal-leviathan-scales": {
     "thumbnail_url": "thumbnails/gen-abyssal-leviathan-scales.png",
@@ -479,14 +483,14 @@
   },
   "gen-biomechanical-hive": {
     "thumbnail_url": "thumbnails/gen-biomechanical-hive.png",
-    "generated_at": "2026-10-05T15:59:42.546Z",
+    "generated_at": "2026-10-18T06:19:34.504Z",
     "params_snapshot": [
       0.5,
       0.5,
       0.3,
       0
     ],
-    "source_hash": "b871a86d4010faaf",
+    "source_hash": "e9ca474c8de47599",
     "capture_host": "swiftshader"
   },
   "gen-bioreactor-bloom": {
@@ -747,13 +751,15 @@
   },
   "gen-cosmic-slime-mold": {
     "thumbnail_url": "thumbnails/gen-cosmic-slime-mold.png",
-    "generated_at": "2026-06-14T06:41:49.682Z",
+    "generated_at": "2026-10-18T05:27:35.543Z",
     "params_snapshot": [
       0.8,
       0.3,
       0.5,
       0
-    ]
+    ],
+    "source_hash": "3816ec9b1767a871",
+    "capture_host": "swiftshader"
   },
   "gen-cosmic-web-filament": {
     "thumbnail_url": "thumbnails/gen-cosmic-web-filament.png",
@@ -1791,13 +1797,15 @@
   },
   "gen-neural-bioluminescence-matrix": {
     "thumbnail_url": "thumbnails/gen-neural-bioluminescence-matrix.png",
-    "generated_at": "2026-06-14T06:42:27.776Z",
+    "generated_at": "2026-10-18T05:37:21.804Z",
     "params_snapshot": [
       1,
       1,
       1,
       2
-    ]
+    ],
+    "source_hash": "3a590f8182fafa58",
+    "capture_host": "swiftshader"
   },
   "gen-neural-fractal": {
     "thumbnail_url": "thumbnails/gen-neural-fractal.png",
@@ -2499,13 +2507,15 @@
   },
   "gen-topological-phase-weave": {
     "thumbnail_url": "thumbnails/gen-topological-phase-weave.png",
-    "generated_at": "2026-06-14T06:42:56.286Z",
+    "generated_at": "2026-10-18T06:20:28.395Z",
     "params_snapshot": [
       0.5,
       0.5,
-      0.3,
-      0.7
-    ]
+      0.5,
+      0.5
+    ],
+    "source_hash": "305d6dc5655b68de",
+    "capture_host": "swiftshader"
   },
   "gen-topology-flow": {
     "thumbnail_url": "thumbnails/gen-topology-flow.png",
@@ -3911,14 +3921,14 @@
   },
   "gen-aether-forged-nacreous-labyrinth": {
     "thumbnail_url": "thumbnails/gen-aether-forged-nacreous-labyrinth.png",
-    "generated_at": "2026-10-05T11:08:42.520Z",
+    "generated_at": "2026-10-18T05:28:55.910Z",
     "params_snapshot": [
       0.5,
       1,
       0.7,
       0
     ],
-    "source_hash": "114ebd802bd5c49b",
+    "source_hash": "4e0f3528ff5597c9",
     "capture_host": "swiftshader"
   },
   "gen-alien-flora-ecosystem": {
@@ -4151,14 +4161,14 @@
   },
   "gen-ethereal-cyber-chrono-void-whale": {
     "thumbnail_url": "thumbnails/gen-ethereal-cyber-chrono-void-whale.png",
-    "generated_at": "2026-10-05T11:20:50.216Z",
+    "generated_at": "2026-10-18T05:54:57.240Z",
     "params_snapshot": [
       0.5,
       0.2,
       1.5,
       0.8
     ],
-    "source_hash": "c81ddb8bbcbf7a59",
+    "source_hash": "85a12f9063447dd1",
     "capture_host": "swiftshader"
   },
   "gen-chrono-kitsune-prism-weaver": {
@@ -5255,14 +5265,14 @@
   },
   "gen-luminescent-silica-diatom-swarm": {
     "thumbnail_url": "thumbnails/gen-luminescent-silica-diatom-swarm.png",
-    "generated_at": "2026-10-05T12:14:22.863Z",
+    "generated_at": "2026-10-18T06:20:50.262Z",
     "params_snapshot": [
       1,
       1.5,
       1.33,
       1
     ],
-    "source_hash": "105b63dc24985f7a",
+    "source_hash": "1f9c2329bfe5012a",
     "capture_host": "swiftshader"
   },
   "cinematic-flare": {
@@ -5663,14 +5673,14 @@
   },
   "gen-relay-psychedelia": {
     "thumbnail_url": "thumbnails/gen-relay-psychedelia.png",
-    "generated_at": "2026-10-05T12:33:54.195Z",
+    "generated_at": "2026-10-18T05:28:56.462Z",
     "params_snapshot": [
       0.55,
       0.75,
       0.35,
       0.4
     ],
-    "source_hash": "7dfe61c3e3c4bc1f",
+    "source_hash": "c5ade14fde2c5683",
     "capture_host": "swiftshader"
   },
   "aurora-rift-pass1": {

@@ -6,31 +6,12 @@
 //  Complexity: High
 //  Created: 2026-05-31
 //  Updated: 2026-06-07
-//  Upgraded: 2026-09-27
-//  Ideas: true line-integral convolution along the director; +1/2 comet / -1/2 trefoil glyphs; order parameter drives thread coherence
+//  Upgraded: 2026-10-18
+//  Ideas: true line-integral convolution along the director; +1/2 comet / -1/2 trefoil glyphs; order parameter drives thread coherence; anisotropic Frank elasticity (K1 != K3 bends each core: theta = s(phi + eps sin 2(1-s)phi), mids soften bend); splay/bend energy decomposition (n x grad-theta splits the elastic energy into gold splay and violet bend birefringence)
 //  A packing: (ACES display RGBA)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ---- ACES TONE MAPPING ----
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -65,7 +46,17 @@ fn noise(p: vec2<f32>) -> f32 {
 // ═══ Director Field (nematic angle) ═══
 // Returns (angle, d angle/dx, d angle/dy). The gradient of atan2 is (-dy, dx)/r^2, so the
 // LIC below gets a cheap local director (Taylor step) without re-running the 8 atan2s.
-fn directorFieldG(p: vec2<f32>, time: f32, defectDensity: f32, mobility: f32, mousePos: vec2<f32>, mouseDown: f32) -> vec3<f32> {
+// IDEA 4: the plain charge * atan2 sum is the one-constant (K1 = K3) solution. With unequal
+// splay/bend constants the first-order correction is theta = s * (phi + eps * sin(2(1-s)phi)):
+// +1/2 comets close into a U, -1/2 trefoil arms curve. sin(2(1-s)phi) is continuous across the
+// atan2 cut for s = +-1/2 (sin(phi), sin(3phi)), so no new seams.
+fn frankTerm(charge: f32, ang: f32, eps: f32) -> vec2<f32> {
+    let m = 2.0 * (1.0 - charge);
+    // (theta contribution, d theta / d phi)
+    return vec2<f32>(charge * (ang + eps * sin(m * ang)), charge * (1.0 + eps * m * cos(m * ang)));
+}
+
+fn directorFieldG(p: vec2<f32>, time: f32, defectDensity: f32, mobility: f32, mousePos: vec2<f32>, mouseDown: f32, eps: f32) -> vec3<f32> {
     var angle = 0.0;
     var grad = vec2<f32>(0.0);
     let numDefects = 8;
@@ -85,8 +76,9 @@ fn directorFieldG(p: vec2<f32>, time: f32, defectDensity: f32, mobility: f32, mo
 
         let dp = p - defectPos;
         let defectAngle = atan2(dp.y, dp.x);
-        angle += charge * defectAngle;
-        grad += charge * vec2<f32>(-dp.y, dp.x) / max(dot(dp, dp), 1e-4);
+        let ft = frankTerm(charge, defectAngle, eps);
+        angle += ft.x;
+        grad += ft.y * vec2<f32>(-dp.y, dp.x) / max(dot(dp, dp), 1e-4);
     }
 
     // Mouse creates topological defect when down
@@ -105,7 +97,7 @@ fn directorFieldG(p: vec2<f32>, time: f32, defectDensity: f32, mobility: f32, mo
 
 // Scalar-angle form kept from the original layout.
 fn directorField(p: vec2<f32>, time: f32, defectDensity: f32, mobility: f32, mousePos: vec2<f32>, mouseDown: f32) -> f32 {
-    return directorFieldG(p, time, defectDensity, mobility, mousePos, mouseDown).x;
+    return directorFieldG(p, time, defectDensity, mobility, mousePos, mouseDown, 0.0).x;
 }
 
 // IDEA 1: line-integral convolution. Integrates a noise texture along the streamline of the
@@ -240,7 +232,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mp = (mousePos - 0.5) * vec2<f32>(aspect, 1.0) * 2.0;
 
     // ═══ DIRECTOR FIELD COMPUTATION ═══
-    let dfg = directorFieldG(p, time, dynDensity, dynMobility, mp, mouseDown);
+    // Elastic anisotropy: a constant splay-soft offset plus mids, so it reads at audio = 0.
+    let frankEps = 0.22 + mids * 0.12;
+    let dfg = directorFieldG(p, time, dynDensity, dynMobility, mp, mouseDown, frankEps);
     let angle = dfg.x;
 
     // Add high-frequency treble perturbation
@@ -305,6 +299,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Compose final color with phase transition influence
     var col = iridescentBase * brushIntensity * colorSaturation;
     col = mix(col, col * phaseCol * 2.0, orderParam * 0.6 + 0.2);
+
+    // IDEA 5: splay / bend decomposition of the Frank energy. With n = (cos t, sin t),
+    // div n = n_perp . grad(t) (splay) and |curl n| = n . grad(t) (bend). The comet head and the
+    // gaps between trefoil arms are splay, comet tails and arm flanks bend. Energy saturates
+    // ~0.1 from a core; the tint is a birefringence colour shift, scaled multiplicatively so the
+    // dark background stays dark.
+    let gradT = gEff;
+    let splayE = dot(vec2<f32>(-director.y, director.x), gradT);
+    let bendE = dot(director, gradT);
+    let elastic = dot(gradT, gradT);
+    let strain = elastic / (elastic + 25.0);
+    let splayFrac = splayE * splayE / (splayE * splayE + bendE * bendE + 1e-5);
+    let splayCol = vec3<f32>(1.25, 0.95, 0.35);   // gold
+    let bendCol = vec3<f32>(0.75, 0.45, 1.35);    // violet
+    col *= mix(vec3<f32>(1.0), mix(bendCol, splayCol, splayFrac), strain * 0.7);
 
     // Add defect singularity highlights
     col += defectCol;

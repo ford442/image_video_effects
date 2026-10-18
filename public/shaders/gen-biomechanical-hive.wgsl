@@ -4,36 +4,22 @@
 //  Features: biomechanical, hive, organic-mechanical, audio-rhythm, mouse-drone,
 //             depth-layers, pulsing-growth, temporal-feedback, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
+//  Upgraded: 2026-10-18
 //  Ideas: growth-memory afterglow (dataTextureA/C now wired — a strong core pulse
 //         lingers and slowly fades); biomass-driven vein bumps on the chitin walls;
-//         treble-triggered nerve flicker across the shell
+//         treble-triggered nerve flicker across the shell; metachronal pacemaker
+//         relay (each cell's core beats with a phase lag by cell id, so heartbeats
+//         race down the corridor toward the drone and the cores swell in systole);
+//         core-lit brood chambers (each core lights its own chitin walls with
+//         inverse-square falloff, thin rib troughs glowing through)
 //  A packing: raw HDR display RGBA history (pre-ACES), ACES applied on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 //  History: Grok (visual flourish pass 2026-05-31); Claude Opus 4.8 (swarm
 //  optimization pass 2026-05-31 — audio wiring, ACES, IGN dither)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Density, y=PulseSpeed, z=Biomass, w=HueShift
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Density, y=PulseSpeed, z=Biomass, w=HueShift
 
 // Biomechanical Material Properties
 const CHITIN_DENSITY: f32 = 4.5;          // Chitinous shell is fairly opaque
@@ -45,6 +31,35 @@ fn rotate2D(p: vec2<f32>, angle: f32) -> vec2<f32> {
     let s = sin(angle);
     let c = cos(angle);
     return vec2<f32>(p.x * c - p.y * s, p.x * s + p.y * c);
+}
+
+fn hiveCellSize() -> f32 {
+    return 12.0 / mix(4.0, 10.0, u.zoom_params.x);
+}
+
+fn hiveSpacing() -> vec3<f32> {
+    let c = hiveCellSize();
+    return vec3<f32>(c * 2.0, c * 2.0, c * 4.0);
+}
+
+// Idea: metachronal pacemaker relay — each brood cell's core beats with a
+// phase lag set by its cell id (mostly along the corridor axis), so a heartbeat
+// visibly races cell to cell toward the drone instead of every core flashing in
+// lockstep. Same rate/shape as the old global pulse.
+fn corePulse(id: vec3<f32>) -> f32 {
+    let lag = id.z * 1.1 + (id.x + id.y) * 0.6;
+    return sin(u.config.x * u.zoom_params.y * 5.0 + lag) * 0.5 + 0.5;
+}
+
+// Core emission colour (unchanged ramp, factored out so walls can be lit by it)
+fn coreColor(hueShift: f32) -> vec3<f32> {
+    let coreColor1 = vec3<f32>(1.0, 0.6, 0.1);
+    let coreColor2 = vec3<f32>(0.1, 1.0, 0.2);
+    let coreColor3 = vec3<f32>(1.0, 0.1, 0.2);
+    var mixColor = coreColor1;
+    if (hueShift > 0.3) { mixColor = mix(coreColor1, coreColor2, (hueShift - 0.3) * 3.0); }
+    if (hueShift > 0.6) { mixColor = mix(coreColor2, coreColor3, (hueShift - 0.6) * 3.0); }
+    return mixColor;
 }
 
 // ACES filmic tone mapping — keeps glowing chitin cores from clipping to white
@@ -200,13 +215,22 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     let vein_pattern = fbm(p * 6.0 + vec3<f32>(0.0, 0.0, time * 0.35)) - 0.5;
     let veins = vein_pattern * biomass * 0.12;
 
-    let d_organic = d_base + ribs + displacement + breathing + veins;
+    var d_organic = d_base + ribs + displacement + breathing + veins;
 
-    // Core sphere
-    let d_sphere_core = length(local_p) - cell_size * 0.2;
+    // HEAD fix: the drone flies along x=y=0 straight through every cell's end
+    // cap and core, so ~30% of frames started the march inside solid chitin
+    // (flat frame). Bore a narrow passage through the caps of the drone's own
+    // column and keep a small bubble around the lens.
+    let camZ = u.config.x * 2.0;
+    let bore = cell_size * 0.32 - length(p.xy);
+    d_organic = max(d_organic, bore);
+
+    // Core sphere — swells slightly in systole with its own relay beat
+    let d_sphere_core = length(local_p) - cell_size * 0.2 * (1.0 + 0.12 * corePulse(id));
 
     // Combine walls and core
-    let d_final = min(d_organic, d_sphere_core);
+    let bubble = cell_size * 0.3 - length(p - vec3<f32>(0.0, 0.0, camZ));
+    let d_final = max(min(d_organic, d_sphere_core), bubble);
 
     var mat = 1.0;
     if (d_sphere_core < d_organic) {
@@ -248,6 +272,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
+    // HEAD fix: storage rows run top-down, so world +y (and the key light)
+    // rendered at the bottom of the frame. Flip to y-up; pitch is negated
+    // below so the drone still looks toward the cursor.
+    uv.y = -uv.y;
 
     // Audio reactivity — bass drives core pulse, mid modulates hue breathing,
     // treble drives the nerve-flicker idea below
@@ -260,7 +288,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var time = u.config.x;
 
     let yaw = (mouse.x - 0.5) * 6.28;
-    let pitch = ((mouse.y - 0.5)) * 3.14;
+    let pitch = (0.5 - mouse.y) * 3.14;
 
     let cam_pos = vec3<f32>(0.0, 0.0, time * 2.0);
     let ro = cam_pos;
@@ -286,31 +314,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         let lightDir = normalize(vec3<f32>(0.5, 0.8, -0.5));
 
-        // Core pulse — bass adds a punch on the beat
-        var pulse = sin(u.config.x * u.zoom_params.y * 5.0) * 0.5 + 0.5 + bass * 0.4;
+        // Calculate cell-local position for thickness
+        let cell_size = hiveCellSize();
+        let spacing = hiveSpacing();
+        let cell_id = floor((p + spacing * 0.5) / spacing);
+        let local_p = (fract((p + spacing * 0.5) / spacing) - 0.5) * spacing;
+
+        // Core pulse — this cell's relay beat; bass adds a punch on the beat
+        var pulse = corePulse(cell_id) + bass * 0.4;
 
         var baseColor = vec3<f32>(0.1, 0.1, 0.15);
         var thickness = 0.2;
         var isCore = false;
-        
-        // Calculate cell-local position for thickness
-        let cell_size = 12.0 / mix(4.0, 10.0, u.zoom_params.x);
-        let spacing = vec3<f32>(cell_size * 2.0, cell_size * 2.0, cell_size * 4.0);
-        let local_p = (fract((p + spacing * 0.5) / spacing) - 0.5) * spacing;
-        
+
+        // Mid-range audio breathes the hue forward for living color shifts
+        let hueShift = u.zoom_params.w + mid * 0.1;
+        let mixColor = coreColor(hueShift);
+        var coreLight = vec3<f32>(0.0);
+
         if (mat == 2.0) {
             isCore = true;
-            // Mid-range audio breathes the hue forward for living color shifts
-            let hueShift = u.zoom_params.w + mid * 0.1;
-            let hue = 0.1 + hueShift;
-
-            let coreColor1 = vec3<f32>(1.0, 0.6, 0.1);
-            let coreColor2 = vec3<f32>(0.1, 1.0, 0.2);
-            let coreColor3 = vec3<f32>(1.0, 0.1, 0.2);
-
-            var mixColor = coreColor1;
-            if (hueShift > 0.3) { mixColor = mix(coreColor1, coreColor2, (hueShift - 0.3) * 3.0); }
-            if (hueShift > 0.6) { mixColor = mix(coreColor2, coreColor3, (hueShift - 0.6) * 3.0); }
 
             baseColor = mixColor * (1.0 + pulse);
             baseColor += fbm(p * 5.0) * 0.2;
@@ -338,11 +361,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let nerveSeed = fract(sin(dot(floor(p * 3.0), vec3<f32>(12.989, 78.233, 37.719))) * 43758.5453);
             let nerveFlicker = step(0.965, nerveSeed) * treble * 1.5;
             baseColor += vec3<f32>(0.3, 0.6, 1.0) * nerveFlicker;
+
+            // Idea: core-lit brood chambers — the bioluminescent core is the
+            // chamber's real light source, so its own walls receive its colour
+            // with inverse-square falloff (Lambert toward the core) and the thin
+            // rib troughs let it glow through the membrane.
+            let toCore = -local_p;
+            let dCore = length(toCore);
+            let att = 1.0 / (1.0 + (dCore * dCore) / (cell_size * cell_size * 0.36));
+            let lambertCore = max(dot(n, toCore / max(dCore, 1e-4)), 0.0);
+            let thinGlow = 1.0 - smoothstep(MEMBRANE_THINNESS, MEMBRANE_THINNESS * 2.5, thickness);
+            coreLight = mixColor * (0.5 + pulse) * att * (lambertCore * 0.55 + thinGlow * 0.3);
         }
 
         // Diffuse
         let diff = max(dot(n, lightDir), 0.0);
-        color = baseColor * (diff * 0.8 + 0.2);
+        color = baseColor * (diff * 0.8 + 0.2) + coreLight;
 
         // Fog
         let fogAmount = 1.0 - exp(-t * 0.05);

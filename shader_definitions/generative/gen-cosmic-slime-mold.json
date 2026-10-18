@@ -10,7 +10,7 @@
     "veins",
     "dendritic"
   ],
-  "description": "Simulation of slime mold growth with vivid psychedelic coloring. Branching veins of bright neon spread across the screen in organic dendritic patterns. Colors shift from deep purple to hot pink to electric cyan. Mouse feeds the slime causing rapid growth pulses.",
+  "description": "Psychedelic slime mold growth: neon dendritic veins behind a reticulated fan-shaped front, trails settling to pale mucus. Mouse feeds the colony, which stays larger for a while after feeding.",
   "workgroup_size": [
     16,
     16,
