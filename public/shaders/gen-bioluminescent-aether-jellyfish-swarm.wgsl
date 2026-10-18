@@ -94,10 +94,11 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
 }
 
 // ═══ ACES Tone Mapping ═══
+// Narkowicz ACES fit. The Hable-shaped curve this file used had no exposure
+// gain (1.0 -> 0.24, 0 -> 0.063), so without the old double gamma the swarm
+// sat in a dim grey wash.
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
-  let a = x * (x * 0.15 + 0.05) + 0.004;
-  let b = x * (x * 0.15 + 0.50) + 0.06;
-  return clamp(a / b - 0.0033, vec3<f32>(0.0), vec3<f32>(1.0));
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // ═══ Bioluminescent Glow ═══
@@ -331,6 +332,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let bio_glow = base_col * sss * bio_intensity * (0.8 + 0.6 * audio_pulse);
         let aequorin_glow = bioluminescentGlow(sss * bio_intensity * audio_pulse);
         final_color = mix(bg_color, bio_glow + aequorin_glow + vec3<f32>(dif * 0.1), sss * 0.8 + 0.2);
+        // Translucent mesoglea body: the face-on bell was only ~2% lit (sss
+        // vanishes there), so at silence the swarm read as rim outlines on a
+        // flat wash. Give the bell interior its own key-lit glow.
+        let bodyLum = (0.35 + 0.65 * dif) * (0.6 + 0.4 * audio_pulse);
+        final_color += base_col * bio_intensity * 0.3 * bodyLum;
 
         // Re-evaluate the scene once at the hit point to pick up stinger-tip
         // proximity and repulsion strength for the two ideas below.
@@ -376,7 +382,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         final_color += bioluminescentGlow(pulse * onTentacle * bio_intensity * (0.5 + 0.4 * audio_pulse)) * 1.3;
 
         // Fog/Depth fade
-        final_color = mix(final_color, bg_color, clamp(dist / 30.0, 0.0, 1.0));
+        final_color = mix(final_color, bg_color, clamp(dist / 45.0, 0.0, 1.0));
     } else {
         // Volumetric pass in empty space using noise to represent aether
         var v_col = vec3<f32>(0.0);
@@ -402,8 +408,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let decay = 0.96;
     let temporal = mix(prev.rgb * decay, final_color, 0.25);
 
-    // Semantic alpha
-    let alpha = clamp(length(temporal) * 1.2, 0.2, 0.95);
+    // Semantic alpha: jelly coverage. length(temporal)*1.2 never cleared its
+    // 0.2 floor in this dark scene, so the whole swarm composited at 20%.
+    let cover = select(0.0, 0.92, dist > 0.0);
+    let alpha = clamp(max(cover, length(temporal) * 2.5), 0.25, 0.95);
 
     // Real hit depth (0 = camera-near, 1 = background/no hit)
     let depthVal = select(1.0, clamp(dist / 30.0, 0.0, 0.995), dist > 0.0);

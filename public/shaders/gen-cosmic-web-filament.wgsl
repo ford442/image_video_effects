@@ -320,7 +320,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let cmbT = clamp(cmbN * 0.5 + 0.5, 0.0, 1.0);
   let szGas = smoothstep(0.38, 0.03, gap) * (0.55 + tempGrad * 0.6 + bass * 0.2);
   let cmbCol = mix(vec3<f32>(0.05, 0.07, 0.17), vec3<f32>(0.19, 0.08, 0.05), cmbT) * (1.0 - clamp(szGas, 0.0, 1.0) * 0.75);
-  col += cmbCol * (1.0 - structDensity) * 0.6;
+  col += cmbCol * (1.0 - structDensity) * 0.35;
 
   // Idea 4: weak-lensing cosmic shear. A sparse field of faint high-redshift
   // galaxies sits on the screen behind the web; the void-well mass under the
