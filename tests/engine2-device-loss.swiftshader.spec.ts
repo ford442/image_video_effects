@@ -22,6 +22,8 @@ import {
 const PORT = 3464;
 const STILL = './thumbnails/acoustic-string-theory.png';
 const STACK = ['rgb-split-glitch', 'kaleidoscope'];
+/** A full physical stack (slot_limits.json): slots 3–5 used to be dropped on recovery (#1425). */
+const STACK6 = ['rgb-split-glitch', 'kaleidoscope', 'vortex', 'chroma-lens', 'chromatic-focus', 'chroma-vortex'];
 
 type Mode = 'main' | 'worker';
 const MODES: Mode[] = ['main', 'worker'];
@@ -54,10 +56,19 @@ async function boot(page: Page, mode: Mode): Promise<void> {
   );
   const probe = await page.evaluate(() => (window as any).webgpuProbe);
   expect(probe.ok, `boot probe failed: ${probe.failedStage} ${probe.lastError}`).toBe(true);
+  // The app's boot effect puts its default shader (Liquid) in slot 0 once the shader lists
+  // loaded; a stack set before that would be overwritten. Tolerant: a build without the
+  // default simply never gets one.
+  await page
+    .waitForFunction(() => (window as any).__pixelocity__.getSlotState(0)?.shaderId === 'liquid', null, {
+      timeout: 60_000,
+      polling: 250,
+    })
+    .catch(() => undefined);
 }
 
 /** A still image under a two-slot stack: a blank readback means the image or stack was not replayed. */
-async function loadSession(page: Page): Promise<void> {
+async function loadSession(page: Page, stack: string[] = STACK): Promise<void> {
   const loaded = await page.evaluate(
     async ({ ids, still }) => {
       const api = (window as any).__pixelocity__;
@@ -72,7 +83,7 @@ async function loadSession(page: Page): Promise<void> {
       api.setTestRenderState({ time: 1.5, mouseX: 0.5, mouseY: 0.5 });
       return ok;
     },
-    { ids: STACK, still: STILL },
+    { ids: stack, still: STILL },
   );
   expect(loaded.every(Boolean)).toBe(true);
 }
@@ -91,22 +102,27 @@ async function waitForFramesAbove(page: Page, n: number): Promise<void> {
   );
 }
 
-async function waitForRecovery(page: Page, state: 'idle' | 'failed', attempts: number) {
-  await page.waitForFunction(
-    ({ state, attempts }) => {
-      const s = (window as any).__pixelocity__.getDeviceRecoveryStatus();
-      return s.state === state && s.attempts === attempts;
-    },
-    { state, attempts },
-    { timeout: 90_000, polling: 250 },
-  );
+async function waitForRecovery(page: Page, state: 'idle' | 'failed', attempts: number, timeout = 90_000) {
+  try {
+    await page.waitForFunction(
+      ({ state, attempts }) => {
+        const s = (window as any).__pixelocity__.getDeviceRecoveryStatus();
+        return s.state === state && s.attempts === attempts;
+      },
+      { state, attempts },
+      { timeout, polling: 250 },
+    );
+  } catch (e) {
+    const status = await page.evaluate(() => (window as any).__pixelocity__.getDeviceRecoveryStatus()).catch(() => null);
+    throw new Error(`recovery did not reach ${state}/${attempts}: ${JSON.stringify(status)}\n${e}`);
+  }
   return page.evaluate(() => (window as any).__pixelocity__.getDeviceRecoveryStatus());
 }
 
-async function slotShaders(page: Page): Promise<Array<string | null>> {
+async function slotShaders(page: Page, count = STACK.length): Promise<Array<string | null>> {
   return page.evaluate(
     (n) => Array.from({ length: n }, (_, i) => (window as any).__pixelocity__.getSlotState(i)?.shaderId ?? null),
-    STACK.length,
+    count,
   );
 }
 
@@ -143,6 +159,9 @@ async function gpuErrors(page: Page, mode: Mode): Promise<string[]> {
 }
 
 test.describe('device-loss recovery on SwiftShader WebGPU', () => {
+  // SwiftShader on a shared CI box: boot + loss + recompile can take minutes.
+  test.describe.configure({ timeout: 300_000 });
+
   for (const mode of MODES) {
     test(`a lost device is rebuilt with the session and renders again [${mode}]`, async ({ page }) => {
       await boot(page, mode);
@@ -174,6 +193,78 @@ test.describe('device-loss recovery on SwiftShader WebGPU', () => {
       await expect(page.getByTestId('webgpu-probe-failure')).toHaveCount(0);
       expect(await gpuErrors(page, mode)).toEqual([]);
       // One device owner (#1395): the lost device is gone, only the rebuilt one is alive.
+      await expectOneLiveDevice(page);
+    });
+  }
+
+  for (const mode of MODES) {
+    test(`a six-slot stack comes back whole, slots 3–5 included [${mode}]`, async ({ page }) => {
+      await boot(page, mode);
+      await loadSession(page, STACK6);
+      await page.evaluate(() => (window as any).__pixelocity__.renderer.setSlotMode(3, 'parallel'));
+      await waitForFramesAbove(page, 2);
+      expect(await slotShaders(page, STACK6.length)).toEqual(STACK6);
+
+      expect(await page.evaluate(() => (window as any).__pixelocity__.simulateDeviceLoss())).toBe(true);
+      await waitForRecovery(page, 'idle', 1, 240_000); // six shaders recompile one after another
+
+      expect(await slotShaders(page, STACK6.length)).toEqual(STACK6);
+      const slot3Mode = await page.evaluate(() => (window as any).__pixelocity__.getSlotState(3)?.mode);
+      expect(slot3Mode).toBe('parallel');
+      const after = await framesRendered(page);
+      await waitForFramesAbove(page, after + 2);
+      expect(await gpuErrors(page, mode)).toEqual([]);
+      await expectOneLiveDevice(page);
+    });
+  }
+
+  for (const mode of MODES) {
+    test(`the Graph Lab draft is re-sent before the stack is restored [${mode}]`, async ({ page }) => {
+      await boot(page, mode);
+      await loadSession(page);
+      // What runDraft does: register the draft graph, compile its entries, bind it to a slot.
+      const draft = await page.evaluate(async () => {
+        const manager = (window as any).__pixelocity__.renderer;
+        const id = 'graphlab-draft';
+        const graph = {
+          maxPassesPerFrame: 8,
+          nodes: [
+            { id: 'step', entry: 'wave-step', reads: ['dataC'], writes: ['dataA'], repeat: 3 },
+            { id: 'inject', entry: 'wave-inject', reads: ['dataA'], writes: ['dataB'] },
+            { id: 'render', entry: 'wave-render', reads: ['dataB'], writes: ['color', 'dataA'] },
+          ],
+        };
+        if (!manager.setRuntimeGraph(id, graph)) return false;
+        let ok = await manager.loadShader(id, 'shaders/wave-step.wgsl');
+        for (const entry of ['wave-step', 'wave-inject', 'wave-render']) {
+          ok = (await manager.loadShader(entry, `shaders/${entry}.wgsl`)) && ok;
+        }
+        manager.setSlotShader(1, id);
+        return ok;
+      });
+      expect(draft).toBe(true);
+      const graphReport = (page: Page) =>
+        page.evaluate(() => (window as any).__pixelocity__.renderer.getDiagnostics()?.webgpu?.graph ?? null);
+      await page.waitForFunction(
+        () => (window as any).__pixelocity__.renderer.getDiagnostics()?.webgpu?.graph?.shaderId === 'graphlab-draft',
+        null,
+        { timeout: 90_000, polling: 250 },
+      );
+
+      expect(await page.evaluate(() => (window as any).__pixelocity__.simulateDeviceLoss())).toBe(true);
+      await waitForRecovery(page, 'idle', 1);
+
+      // The new backend (a new worker has an empty overlay) plans the draft as a graph again.
+      await page.waitForFunction(
+        () => (window as any).__pixelocity__.renderer.getDiagnostics()?.webgpu?.graph?.shaderId === 'graphlab-draft',
+        null,
+        { timeout: 90_000, polling: 250 },
+      );
+      const report = await graphReport(page);
+      expect(report.errors).toEqual([]);
+      expect(report.executed).toBeGreaterThan(0);
+      expect((await slotShaders(page, 2))[1]).toBe('graphlab-draft');
+      expect(await gpuErrors(page, mode)).toEqual([]);
       await expectOneLiveDevice(page);
     });
   }

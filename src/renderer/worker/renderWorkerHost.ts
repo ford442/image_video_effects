@@ -26,6 +26,7 @@ import {
   RenderRpcResults,
   RenderSnapshot,
   RenderToWorker,
+  StampedRenderToWorker,
   transferablesOf,
 } from './protocol';
 import { PHYSICAL_SLOT_LIMIT } from '../slotOrchestrator';
@@ -121,13 +122,15 @@ export interface RenderWorkerHostDeps {
 
 const MAX_GPU_ERRORS = 16;
 
+export const STALE_GENERATION_ERROR = 'stale device generation';
+
 type CommandHandlers = { [K in RenderCommand['type']]: (msg: Extract<RenderCommand, { type: K }>) => void };
 type RpcHandlers = {
   [K in RenderRpc['type']]: (msg: Extract<RenderRpc, { type: K }>) => Promise<RenderRpcResults[K]>;
 };
 
 export interface RenderWorkerHost {
-  handle(message: RenderToWorker): void;
+  handle(message: StampedRenderToWorker): void;
   /** Exposed for the contract test. */
   readonly commandTypes: string[];
   readonly rpcTypes: string[];
@@ -141,6 +144,8 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
   let video: TransferredVideoFrames | null = null;
   let snapshotTimer: ReturnType<typeof setInterval> | null = null;
   let inputRing: InputRingReader | null = null;
+  /** The device generation `init` bound this worker to; null until then (or when init sent none). */
+  let generation: number | null = null;
   const gpuErrors: string[] = [];
 
   deps.setErrorSink((error) => deps.post({ type: 'error', error }));
@@ -266,9 +271,10 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
   };
 
   const rpcs: RpcHandlers = {
-    init: async ({ canvas, config, colorOptIns, appBaseUrl, inputRing: ringBuffer }) => {
+    init: async ({ canvas, config, colorOptIns, appBaseUrl, inputRing: ringBuffer, generation: initGeneration }) => {
       // One renderer (one GPUDevice) per worker: recovery spawns a new worker.
       if (renderer || lostRenderer) throw new Error('render worker is already initialized');
+      generation = initGeneration ?? null;
       deps.setFetchBase(appBaseUrl);
       const probe = await deps.runProbe(canvas, config.width, config.height, { colorOptIns });
       const breadcrumb = deps.toBreadcrumb(probe);
@@ -377,6 +383,15 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
     commandTypes: Object.keys(commands),
     rpcTypes: Object.keys(rpcs),
     handle(message) {
+      // Messages from another device generation (a superseded proxy) must not touch this
+      // renderer. The error reply lets a stale caller's RPC settle instead of timing out.
+      if (generation !== null && message.type !== 'init' && message.gen !== generation) {
+        for (const t of transferablesOf(message)) safeClose(t as unknown as { close(): void });
+        if (isRpc(message)) {
+          deps.post({ type: 'rpcResult', requestId: message.requestId, ok: false, error: STALE_GENERATION_ERROR });
+        }
+        return;
+      }
       if (isRpc(message)) {
         const handler = rpcs[message.type] as (m: RenderRpc) => Promise<unknown>;
         answer(message.requestId, () => handler(message));

@@ -231,13 +231,15 @@
   },
   "gen-4d-projection-dream-weavers": {
     "thumbnail_url": "thumbnails/gen-4d-projection-dream-weavers.png",
-    "generated_at": "2026-06-14T06:41:28.008Z",
+    "generated_at": "2026-10-17T23:57:00.011Z",
     "params_snapshot": [
       0.4,
       0.4,
       0.3,
       0.4
-    ]
+    ],
+    "source_hash": "f1968abbdfedf869",
+    "capture_host": "swiftshader"
   },
   "gen-abyssal-chrono-coral": {
     "thumbnail_url": "thumbnails/gen-abyssal-chrono-coral.png",
@@ -355,13 +357,15 @@
   },
   "gen-audiovisual-mandelbulb-raymarcher": {
     "thumbnail_url": "thumbnails/gen-audiovisual-mandelbulb-raymarcher.png",
-    "generated_at": "2026-06-14T06:41:33.901Z",
+    "generated_at": "2026-10-18T00:27:23.158Z",
     "params_snapshot": [
       0.5,
       0.5,
       0.3,
       0.4
-    ]
+    ],
+    "source_hash": "8f2ca25103d48325",
+    "capture_host": "swiftshader"
   },
   "gen-aurora-borealis-synthesis": {
     "thumbnail_url": "thumbnails/gen-aurora-borealis-synthesis.png",
@@ -2745,13 +2749,15 @@
   },
   "kimi_flock_symphony": {
     "thumbnail_url": "thumbnails/kimi_flock_symphony.png",
-    "generated_at": "2026-06-14T06:43:27.399Z",
+    "generated_at": "2026-10-18T01:01:02.865Z",
     "params_snapshot": [
       0.5,
       0.5,
       0,
       0.5
-    ]
+    ],
+    "source_hash": "0a85e57516052a32",
+    "capture_host": "swiftshader"
   },
   "lava-lamp-blobs": {
     "thumbnail_url": "thumbnails/lava-lamp-blobs.png",
@@ -3861,14 +3867,14 @@
   },
   "gen-bioluminescent-cyber-aether-void-seahorse": {
     "thumbnail_url": "thumbnails/gen-bioluminescent-cyber-aether-void-seahorse.png",
-    "generated_at": "2026-10-05T11:07:19.241Z",
+    "generated_at": "2026-10-18T00:02:36.756Z",
     "params_snapshot": [
       0,
       1,
       0.5,
       1
     ],
-    "source_hash": "8e616b2e39fe8115",
+    "source_hash": "0b2f6716c0c4ba60",
     "capture_host": "swiftshader"
   },
   "gen-chronos-monolith-resonator": {
@@ -4377,14 +4383,14 @@
   },
   "gen-hyper-bismuth-clockwork": {
     "thumbnail_url": "thumbnails/gen-hyper-bismuth-clockwork.png",
-    "generated_at": "2026-10-05T11:32:24.618Z",
+    "generated_at": "2026-10-18T00:31:53.009Z",
     "params_snapshot": [
       0.5,
       0.44,
       0.5,
       0.5
     ],
-    "source_hash": "0b4863cfe887c706",
+    "source_hash": "27201d5ad0811cb7",
     "capture_host": "swiftshader"
   },
   "gen-fireworks-smoke-bloom": {
@@ -4449,14 +4455,14 @@
   },
   "gen-ethereal-cyber-aurora-hummingbird-core": {
     "thumbnail_url": "thumbnails/gen-ethereal-cyber-aurora-hummingbird-core.png",
-    "generated_at": "2026-10-05T11:38:06.864Z",
+    "generated_at": "2026-10-18T00:30:00.467Z",
     "params_snapshot": [
       1,
       0.5,
       1,
       0.2
     ],
-    "source_hash": "c73c028e3dea865a",
+    "source_hash": "97932a7c7e60922a",
     "capture_host": "swiftshader"
   },
   "gen-fractal-chrono-dendrite-forge": {
@@ -14433,14 +14439,14 @@
   },
   "gen-neutron-star-magnetic-spindle": {
     "thumbnail_url": "thumbnails/gen-neutron-star-magnetic-spindle.png",
-    "generated_at": "2026-10-05T18:17:28.731Z",
+    "generated_at": "2026-10-18T00:08:08.250Z",
     "params_snapshot": [
       1,
       1,
       1.5,
       1
     ],
-    "source_hash": "fe894121b8e77a43",
+    "source_hash": "f46293d6e6156a0c",
     "capture_host": "swiftshader"
   },
   "gen-prismatic-cyber-chrono-void-tortoise": {
@@ -14505,14 +14511,14 @@
   },
   "gen-quantum-acoustic-bioluminescent-void-urchin": {
     "thumbnail_url": "thumbnails/gen-quantum-acoustic-bioluminescent-void-urchin.png",
-    "generated_at": "2026-10-05T18:22:00.443Z",
+    "generated_at": "2026-10-18T00:11:31.833Z",
     "params_snapshot": [
       0.5,
       0.5,
       0.5,
       0.5
     ],
-    "source_hash": "671170153c5af0f0",
+    "source_hash": "079e2949909104d2",
     "capture_host": "swiftshader"
   },
   "gen-rainbow-smoke": {
@@ -14837,6 +14843,30 @@
       0.5
     ],
     "source_hash": "1688caf7bf62e4c5",
+    "capture_host": "swiftshader"
+  },
+  "gen-symbiotic-cyber-fungal-core-reactor": {
+    "thumbnail_url": "thumbnails/gen-symbiotic-cyber-fungal-core-reactor.png",
+    "generated_at": "2026-10-18T00:35:57.327Z",
+    "params_snapshot": [
+      1,
+      0.5,
+      0.3,
+      1
+    ],
+    "source_hash": "a543d26830099f20",
+    "capture_host": "swiftshader"
+  },
+  "gen-symbiotic-plasma-reef-matrix": {
+    "thumbnail_url": "thumbnails/gen-symbiotic-plasma-reef-matrix.png",
+    "generated_at": "2026-10-18T00:20:24.633Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "source_hash": "792bb2a7824acc5f",
     "capture_host": "swiftshader"
   }
 }

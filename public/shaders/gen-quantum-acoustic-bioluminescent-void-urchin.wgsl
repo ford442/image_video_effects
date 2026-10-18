@@ -3,32 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: spine firing waves; luminous C afterglow; cage void-reflection
+//  Upgraded: 2026-10-18
+//  Ideas: spine firing waves; luminous C afterglow; cage void-reflection; Aristotle's-lantern jaw (five chewing teeth at the oral pole, bite flash); pentaradial ambulacral pore-pair rows with a tube-foot walking wave
 //  A packing: ACES display RGBA
 //  (2026-08-03 b31: canonical Uniforms, 3D SDF lib, gyro rings, quantum cage,
 //   hex membrane + kaleidoscopic void backdrop, adaptive steps, real depth)
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time (seconds), .y = rippleCount (0-50 active ripples), .zw = resolution (width, height)
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0–1 canvas: y=0 top), .w = mouse_down (>0.5 = pressed)
-  zoom_params: vec4<f32>,  // .xyzw = user params p1…p4 (mapped from UI sliders)
-  ripples: array<vec4<f32>, 50>,  // .xy = ripple uv, .z = startTime (seconds), .w = padding (0)
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -142,6 +123,30 @@ fn noise3D(x: vec3<f32>) -> f32 {
                    mix(fract(sin(n + 170.0) * 43758.5453), fract(sin(n + 171.0) * 43758.5453), fs.x), fs.y), fs.z);
 }
 
+// Aristotle's-lantern opening: 0 = teeth meet at the oral point, 1 = gaping.
+// Slow idle chew, bass pushes the jaw open (bounded amplitude, no time scaling).
+fn lanternOpen(time: f32, audioBase: f32) -> f32 {
+    return clamp(0.42 + 0.42 * sin(time * 1.3) + audioBase * 0.25, 0.0, 1.0);
+}
+
+// IDEA 4 — Aristotle's lantern: five calcite teeth converging on the oral (-y)
+// pole, pentaradially folded. Distance only; the caller tags it matID 5.
+fn sdLantern(p: vec3<f32>, open: f32) -> f32 {
+    let seg = TAU / 5.0;
+    let a = atan2(p.z, p.x);
+    let af = (fract(a / seg + 0.5) - 0.5) * seg;
+    let rr = length(p.xz);
+    let q = vec3<f32>(rr * cos(af), p.y, rr * sin(af));
+    let tipR = 0.03 + open * 0.24;
+    let root = vec3<f32>(0.30, -1.02, 0.0);
+    let tip = vec3<f32>(tipR, -1.66, 0.0);
+    // tapered tooth: thick root capsule blended into a thin tip capsule
+    let mid = mix(root, tip, 0.55);
+    let dRoot = sdCapsule(q, root, mid, 0.075);
+    let dTip = sdCapsule(q, mid, tip, 0.035);
+    return smin(dRoot, dTip, 0.05);
+}
+
 fn map(p_in: vec3<f32>) -> vec2<f32> { // returns vec2(dist, material_id)
     var p = p_in;
 
@@ -242,8 +247,12 @@ fn map(p_in: vec3<f32>) -> vec2<f32> { // returns vec2(dist, material_id)
         plSDF += 0.2 * (2.5 + audioBase - distToCore);
     }
 
-    // Material resolve: 1 = urchin, 2 = plankton, 3 = rings, 4 = cage
+    // Aristotle's lantern jaw (matID 5)
+    let lanternSDF = sdLantern(p, lanternOpen(time, audioBase));
+
+    // Material resolve: 1 = urchin, 2 = plankton, 3 = rings, 4 = cage, 5 = lantern
     var res = vec2<f32>(urchinSDF, 1.0);
+    if (lanternSDF < res.x) { res = vec2<f32>(lanternSDF, 5.0); }
     if (plSDF < res.x) { res = vec2<f32>(plSDF, 2.0); }
     if (ringSDF < res.x) { res = vec2<f32>(ringSDF, 3.0); }
     if (cageSDF < res.x) { res = vec2<f32>(cageSDF, 4.0); }
@@ -266,6 +275,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
 
     var uv = (vec2<f32>(pixel) - 0.5 * res) / min(res.x, res.y);
+    uv.y = -uv.y; // pixel rows grow downward; world +y = screen-top (HEAD rendered upside down)
 
     let time = u.config.x;
     let audioBase = plasmaBuffer[0].x * u.zoom_params.y * 2.0;
@@ -313,6 +323,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                     * (0.008 / (1.0 + d.x * d.x * 60.0)) * (1.0 + audioBase);
         } else if (d.y == 4.0) { // Quantum cage sparkle
             glow += vec3<f32>(0.6, 0.9, 1.0) * (0.006 / (1.0 + d.x * d.x * 80.0));
+        } else if (d.y == 5.0) { // Lantern tooth glow (flares as the teeth bite shut)
+            let bite = 1.0 - smoothstep(0.0, 0.25, lanternOpen(time, audioBase));
+            glow += vec3<f32>(1.0, 0.85, 0.6) * (0.006 / (1.0 + d.x * d.x * 60.0)) * (1.0 + bite * 3.0);
         }
     }
 
@@ -354,6 +367,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let fireCol = mix(vec3<f32>(0.5, 1.0, 1.0), emitColor * 2.0, 0.35);
             emit += fireCol * (band * 0.9 + tipFlare * 1.4) * spineMask;
 
+            // IDEA 5 — ambulacral pore-pair rows: five meridian bands (the urchin's
+            // pentaradial plan, converging on the lantern) carry double rows of
+            // tube-foot pores on the test; a walking wave climbs oral -> aboral and
+            // mids brighten the feet. Only on the test, not the spine shafts.
+            let seg5 = TAU / 5.0;
+            let az = atan2(p.z, p.x);
+            let dAz = abs(fract(az / seg5 + 0.5) - 0.5) * seg5;
+            let polar = acos(clamp(p.y / max(rad, 1e-4), -1.0, 1.0)); // 0 aboral, PI oral
+            let rowD = abs(dAz - 0.06);
+            let row = exp(-rowD * rowD * 2500.0);
+            let pore = 1.0 - smoothstep(0.12, 0.32, abs(fract(polar * 24.0 / PI) - 0.5));
+            let ambBand = 1.0 - smoothstep(0.11, 0.15, dAz);
+            let walk = fract(time * 0.22 + polar / PI);
+            let walkBand = exp(-(1.0 - walk) * (1.0 - walk) * 30.0) + exp(-walk * walk * 30.0);
+            let testMask = 1.0 - smoothstep(1.3, 1.55, rad);
+            let mids = plasmaBuffer[0].y * u.zoom_params.y * 2.0;
+            let footCol = mix(vec3<f32>(0.9, 0.5, 1.0), vec3<f32>(0.5, 1.0, 0.7), colorShift);
+            emit += footCol * row * pore * testMask * (0.35 + walkBand * 1.2 + mids * 0.8);
+            emit *= 1.0 - ambBand * testMask * 0.35 * (1.0 - row); // darker ambulacral groove
+
             col = baseColor * (diff * 0.5 + 0.5) + emit;
 
         } else if (matID == 2.0) { // Plankton Material
@@ -368,6 +401,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let voidRefl = voidBackdrop(refl.xy * 0.5 + n.xy * 0.1, time, colorShift, u.zoom_params.w, audioBase);
             col = cageCol * (diff * 0.6 + 0.4) * 0.8 + fresnel * vec3<f32>(0.9, 1.0, 1.0) * 0.8
                   + voidRefl * 5.0 * (0.4 + fresnel);
+        } else if (matID == 5.0) { // Lantern tooth — ivory calcite, glowing tip
+            let open = lanternOpen(time, audioBase);
+            let bite = 1.0 - smoothstep(0.0, 0.25, open);
+            let tipness = 1.0 - smoothstep(-1.62, -1.35, p.y);
+            let ivory = vec3<f32>(0.75, 0.68, 0.55);
+            let emitColor = mix(vec3<f32>(0.4, 0.2, 1.0), vec3<f32>(0.3, 1.0, 0.8), colorShift);
+            col = ivory * (diff * 0.6 + 0.25) + fresnel * vec3<f32>(0.6, 0.9, 1.0) * 0.5
+                  + emitColor * tipness * (0.6 + bite * 2.5 + audioBase * 0.5);
         }
 
         // Soft shadows / Subsurface faux

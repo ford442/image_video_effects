@@ -3,11 +3,11 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: escape-time strata (smooth escape-count onion shells, Escape Radius = real bailout); DE soft shadow + 5-tap AO; trap-coloured silhouette halo from closest approach; cusp-caustic glints; chromatic wedge dispersion
+//  Upgraded: 2026-10-18
+//  Ideas: escape-time strata (smooth escape-count onion shells, Escape Radius = real bailout); DE soft shadow + 5-tap AO; trap-coloured silhouette halo from closest approach; cusp-caustic glints; chromatic wedge dispersion; three-band ring traps (orbit-trap tori keyed to bass/mids/treble paint audio filigree on the surface); lobe-shadowed light shafts (key-light in-scatter through the gaps between lobes)
 //  A packing: A.rgb = linear HDR scene colour after trail blend (pre-tint, pre-ACES), A.a = semantic alpha; C read as the same HDR
 //  Fast power morphing, orbit-trap spectra, greebled micro-detail; cursor orbits
-//  the camera, held throttles spin + dollies in, clicks fire shock rings.
+//  the camera, held dollies in, clicks fire shock rings.
 //  Note: extraBuffer[133..138] spring is inert (slots are zeroed every frame).
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -32,6 +32,10 @@ var<private> g_time: f32;
 var<private> g_trap: f32;
 var<private> g_bailout: f32;  // Idea 1: Escape Radius slider -> true bailout radius
 var<private> g_esc: f32;      // Idea 1: smooth escape count from the last DE call
+var<private> g_ring: vec3<f32>; // Idea 6: closest approach of the orbit to the three band tori
+
+// Idea 6: major radii of the bass / mids / treble ring traps (in the y=0 plane).
+const RING_R: vec3<f32> = vec3<f32>(0.45, 0.78, 1.1);
 
 fn rotY(a: f32) -> mat3x3<f32> {
     let s = sin(a);
@@ -108,6 +112,7 @@ fn mandelbulbDE(p: vec3<f32>) -> f32 {
     var r = 0.0;
     var trap = 1e9;
     var esc = f32(g_iters);
+    var ring = vec3<f32>(1e9);
     for (var i: i32 = 0; i < g_iters; i = i + 1) {
         r = length(z);
         if (r > g_bailout) {
@@ -117,6 +122,9 @@ fn mandelbulbDE(p: vec3<f32>) -> f32 {
             break;
         }
         trap = min(trap, length(z - vec3<f32>(0.0, 0.35, 0.0)));
+        // Idea 6: torus distances |(|z.xz| - R, z.y)| for the three band rings
+        let rq = vec3<f32>(length(z.xz)) - RING_R;
+        ring = min(ring, sqrt(rq * rq + vec3<f32>(z.y * z.y)));
         let theta = acos(clamp(z.y / max(r, 1e-6), -1.0, 1.0));
         let phi = atan2(z.z, z.x);
         let zr = pow(r, g_power);
@@ -129,6 +137,7 @@ fn mandelbulbDE(p: vec3<f32>) -> f32 {
     }
     g_trap = trap;
     g_esc = esc;
+    g_ring = ring;
     var d = 0.5 * log(max(r, 1e-6)) * r / max(dr, 1e-6);
     // Greeble shell: high-frequency ridging carved into the surface (geometric detail)
     let ridge = sin(p.x * 24.0 + g_time * 3.0) * sin(p.y * 24.0 - g_time * 2.6) * sin(p.z * 24.0 + g_time * 3.4);
@@ -154,6 +163,19 @@ fn softShadow(ro: vec3<f32>, rd: vec3<f32>, k: f32) -> f32 {
         res = min(res, k * h / t);
         t += clamp(h, 0.01, 0.18);
         if (res < 0.003 || t > 2.5) { break; }
+    }
+    return clamp(res, 0.0, 1.0);
+}
+
+// Idea 7: short shadow probe for the light-shaft samples (10 DE steps)
+fn shaftShadow(ro: vec3<f32>, rd: vec3<f32>) -> f32 {
+    var res = 1.0;
+    var t = 0.03;
+    for (var i: i32 = 0; i < 10; i = i + 1) {
+        let h = mandelbulbDE(ro + rd * t);
+        res = min(res, 6.0 * h / t);
+        t += clamp(h, 0.03, 0.25);
+        if (res < 0.01 || t > 2.0) { break; }
     }
     return clamp(res, 0.0, 1.0);
 }
@@ -248,15 +270,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let glowStrength = u.zoom_params.z * 2.0;
     let textureBlend = clamp(u.zoom_params.w, 0.0, 1.0);
 
-    // Fast motion: spun-up orbit, bass kicks the spin, held presses the throttle
-    let spinRate = 0.55 + bass * 1.6 + select(0.0, 0.9, held);
-    let mouseRotY = (smoothMouse.x - 0.5) * PI * 2.0 + time * spinRate;
-    let mouseRotX = (smoothMouse.y - 0.5) * 1.5708 + sin(time * 0.9) * 0.25;
+    // Fast motion: steady orbit, bass kicks the yaw as a bounded push.
+    // (fix: HEAD's time * (0.55 + bass * 1.6 + held * 0.9) jumped the whole orbit
+    // phase on every bass change or press.)
+    let mouseRotY = (smoothMouse.x - 0.5) * PI * 2.0 + time * 0.55 + bass * 0.6;
+    // Pointer-down tilts the camera over the top (screen-up after the y fix).
+    let mouseRotX = -(smoothMouse.y - 0.5) * 1.5708 + sin(time * 0.9) * 0.25;
 
     // Held pulls the camera into the fractal; shock rings punch it back out
     let dolly = 2.5 - select(0.0, 0.7, held) + shock * 0.9;
     var ro = vec3<f32>(0.0, 0.0, -dolly);
-    var rd = normalize(vec3<f32>(uv, 1.25));
+    var rd = normalize(vec3<f32>(uv.x, -uv.y, 1.25)); // uv.y grows downward; world +y = screen up
 
     let cam = rotY(mouseRotY) * rotX(mouseRotX);
     ro = cam * ro;
@@ -270,6 +294,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var surfTrap = 0.0;
     var glowAccum = 0.0;
     var surfEsc = 0.0;
+    var surfRing = vec3<f32>(1e9);
     // Idea 3: closest approach of the ray to the bulb, with the trap / radius seen there
     var minD = 1e9;
     var minTrap = 0.0;
@@ -282,6 +307,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             hit = true;
             surfTrap = g_trap;
             surfEsc = g_esc;
+            surfRing = g_ring;
             break;
         }
         if (d < minD) {
@@ -303,7 +329,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let viewDir = -rd;
 
         // Psychedelic orbit-trap spectrum, hue racing with treble
-        let orbit = fract(length(p) * 0.7 + surfTrap * 1.4 + time * (0.35 + treble * 0.9));
+        // (fix: time * (0.35 + treble * 0.9) jumped the hue on treble changes)
+        let orbit = fract(length(p) * 0.7 + surfTrap * 1.4 + time * 0.35 + treble * 0.6);
         let orbitCol = psychePalette(orbit, mids * 1.4 + shock);
         let bb = blackbody(orbit * 0.8 + bass * 0.3);
         let fractalCol = oklab_mix(orbitCol, bb, 0.32 + bass * 0.2);
@@ -345,6 +372,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let cusp = pow(max(0.0, 1.0 - abs(dot(n, normalize(p)))), 8.0);
         col += vec3<f32>(1.0, 0.96, 0.8) * cusp * (0.12 + spec * 0.25);
 
+        // Idea 6: three-band ring traps — orbits that pass through the bass / mids /
+        // treble tori leave engraved filigree that lights with that band's level.
+        let ringLine = exp(-surfRing * 30.0);
+        let bands3 = vec3<f32>(bass, mids, treble) * 1.4 + vec3<f32>(0.12);
+        col += blackbody(0.85) * ringLine.x * bands3.x * 0.8;
+        col += psychePalette(orbit + 0.33, mids) * ringLine.y * bands3.y * 0.8;
+        col += vec3<f32>(0.75, 0.9, 1.0) * ringLine.z * bands3.z * 0.8;
+
         depth = clamp(1.0 - t / escapeRadius, 0.0, 1.0);
     } else {
         let bgUV = uv * 0.5 + vec2<f32>(0.5);
@@ -354,11 +389,38 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         // Idea 3: trap-coloured silhouette halo — grazing rays glow in the hue the surface
         // would have at their closest approach (same orbit-trap formula as the hit branch)
-        let haloOrbit = fract(minR * 0.7 + minTrap * 1.4 + time * (0.35 + treble * 0.9));
+        let haloOrbit = fract(minR * 0.7 + minTrap * 1.4 + time * 0.35 + treble * 0.6);
         let halo = exp(-max(minD, 0.0) * 30.0) * glowStrength * 0.9;
         col += psychePalette(haloOrbit, mids * 1.4 + shock) * halo * (1.0 + bass * 0.5);
         depth = 0.0;
     }
+
+    // Idea 7: lobe-shadowed light shafts — the key light in-scatters inside the
+    // bulb's bounding sphere and is blocked by the lobes, so shafts stream
+    // through the gaps. The view ray is clipped to the r = 1.5 sphere first, so
+    // all 3 samples land inside it; static per-pixel interleaved-gradient jitter
+    // (no time term) keeps the estimate stable frame to frame.
+    let lig7 = normalize(vec3<f32>(0.8, 0.7, -0.6));
+    let segEnd = select(min(t, escapeRadius), t, hit);
+    let bOc = dot(ro, rd);
+    let disc = bOc * bOc - (dot(ro, ro) - 2.25);
+    var shafts = 0.0;
+    if (disc > 0.0) {
+        let sq = sqrt(disc);
+        let s0 = max(-bOc - sq, 0.0);
+        let s1 = min(-bOc + sq, segEnd);
+        if (s1 > s0) {
+            let jit = fract(52.9829189 * fract(dot(vec2<f32>(f32(id.x), f32(id.y)), vec2<f32>(0.06711056, 0.00583715))));
+            for (var k: i32 = 0; k < 3; k = k + 1) {
+                let ps = ro + rd * mix(s0, s1, (f32(k) + jit) / 3.0);
+                let rs = length(ps);
+                shafts += shaftShadow(ps, lig7) * exp(-rs * 1.2) * smoothstep(0.15, 0.35, rs);
+            }
+            shafts = shafts / 3.0 * (s1 - s0);
+        }
+    }
+    let phaseFS = 0.35 + 0.65 * pow(max(dot(rd, lig7), 0.0), 3.0);
+    col += blackbody(0.55 + bass * 0.35) * shafts * phaseFS * glowStrength * 0.55 * (1.0 + bass * 0.8);
 
     // Volumetric spectral haze gathered along the march
     col += psychePalette(time * 0.2 + glowAccum, treble * 1.5) * min(glowAccum, 2.0) * (0.25 + glowStrength * 0.2);
@@ -388,7 +450,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let wedge = (uv.x * uv.x - uv.y * uv.y);
     col = vec3<f32>(col.r + caStr * (1.0 + wedge * 0.6), col.g, col.b - caStr * 0.5 * (1.0 - wedge * 0.4));
 
-    col = acesToneMap(col * (1.3 + mids * 0.25));
+    col = acesToneMap(max(col, vec3<f32>(0.0)) * (1.3 + mids * 0.25));
 
     // Semantic alpha: surface presence + spectral energy, transparent in the void
     let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));

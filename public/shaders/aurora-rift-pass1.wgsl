@@ -2,33 +2,12 @@
 //  Aurora Rift – Pass 1: Volumetric Raymarch
 //  Category: lighting-effects
 //  Features: multi-pass-1, volumetric, curl-flow, audio-reactive, depth-aware
-//  Ideas: Birkeland vertical curtain folds, discrete atmospheric spectral emission, diffusion-rate temporal drift
+//  Upgraded: 2026-10-18
+//  Ideas: Birkeland vertical curtain folds, discrete atmospheric spectral emission, diffusion-rate temporal drift, rayed beads, dark gap
 //  A packing: volumetric data [RGB=aurora color, A=density] for Pass 2 compositor
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var videoSampler: sampler;
-@group(0) @binding(1) var videoTex:    texture_2d<f32>;
-@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
-
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var depthTex:   texture_2d<f32>;
-@group(0) @binding(5) var depthSampler: sampler;
-@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
-
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB:  texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config:      vec4<f32>,       // x=time, y=globalIntensity, z=resX, w=resY
-    zoom_params: vec4<f32>,       // x=scale, y=flowSpeed, z=diffusionRate, w=fbmOctaves
-    zoom_config: vec4<f32>,       // x=rotationSpeed, y=depthParallax, z=emitThresh, w=chromaticSpread
-    ripples:     array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash2(p: vec2<f32>) -> f32 {
     let h = dot(p, vec2<f32>(127.1, 311.7));
@@ -112,10 +91,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Sliders
     let scale = u.zoom_params.x * 3.5 + 0.5;
     let flowSpeed = u.zoom_params.y * 2.8 + 0.2;
-    let diffRate = u.zoom_params.z; // Live diffusion slider!
+    let diffRate = u.zoom_params.z;
     let fbmOctaves = i32(u.zoom_params.w * 5.0 + 2.0);
-    let depthParallax = u.zoom_config.y * 0.8;
-    let emitThresh = u.zoom_config.z * 0.25 + 0.05;
+    // Flow Speed keeps the old parallax gain (default 0.5 → 0.4). Emission
+    // threshold stays at the old default so Diffusion Rate is the temporal mix.
+    let depthParallax = 0.15 + u.zoom_params.y * 0.5;
+    let emitThresh = 0.175;
     
     // 3-band audio
     let bass = plasmaBuffer[0].x;
@@ -123,7 +104,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let treble = plasmaBuffer[0].z;
 
     // Sample source depth
-    let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
     // Distance-based LOD
     let dist = length(uv - 0.5);
@@ -197,6 +178,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Density calculation
     var density = pattern * (1.0 + border * 2.0) * (1.0 + bass * 0.6);
 
+    // Idea: rayed beads — bright knots that climb the curtain folds.
+    let beadY = fract(uv.y * 7.0 - time * (0.12 + u.zoom_params.y * 0.08) + totalWarp.x * 0.5);
+    let bead = pow(max(1.0 - abs(beadY - 0.5) * 5.0, 0.0), 2.0);
+    let beadMask = curtainStriations * bead;
+    auroraColor += vec3<f32>(0.72, 1.0, 0.82) * beadMask * (0.22 + treble * 0.3);
+    density += beadMask * 0.3;
+
+    // Idea: dark gap — a narrow emission break under the curtains.
+    let gapY = 0.64 + 0.03 * sin(time * 0.18 + uv.x * 4.0);
+    let gap = exp(-pow((uv.y - gapY) / 0.011, 2.0));
+    density *= 1.0 - 0.82 * gap;
+    auroraColor *= 1.0 - 0.65 * gap;
+
     // IDEA 3: Diffusion-rate driven temporal ribbon drift from dataTextureC
     // diffRate actively blurs and blends previous frame auroral state
     let prevHistory = textureLoad(dataTextureC, coord, 0);
@@ -216,7 +210,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     textureStore(dataTextureA, coord, volumetric);
 
     // Pass-through input texture on writeTexture to preserve rendering pipeline chain
-    let inputColor = textureSampleLevel(videoTex, videoSampler, uv, 0.0);
+    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     textureStore(writeTexture, coord, inputColor);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

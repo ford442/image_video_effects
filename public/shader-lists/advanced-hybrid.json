@@ -6827,7 +6827,7 @@
     "id": "hyper-tensor-fluid-coupled",
     "name": "Hyper Tensor Fluid + Mouse Coupling",
     "url": "shaders/hyper-tensor-fluid-coupled.wgsl",
-    "description": "Tensor-field fluid dynamics with viscous mouse stirring. Mouse injects velocity and vorticity; click ripples spawn radial fluid bursts.",
+    "description": "Tensor-field fluid dynamics with viscous mouse stirring. Density piles up on image contours and the jet swells as it leaves an edge. Mouse injects velocity and vorticity; click ripples spawn radial fluid bursts.",
     "features": [
       "advanced-hybrid",
       "tensor-field",
@@ -6837,7 +6837,8 @@
       "interactive",
       "randomization-safe",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -10007,7 +10008,7 @@
     "id": "wave-equation-rgba-fluid",
     "name": "Wave Equation RGBA Fluid",
     "url": "shaders/wave-equation-rgba-fluid.wgsl",
-    "description": "Coupled wave equation and incompressible fluid simulation packed into RGBA32FLOAT. Wave height and velocity drive fluid motion while fluid pressure dampens waves. Dye advection visualizes the combined flow field with rainbow phase coloring.",
+    "description": "Coupled wave equation and dye packed into RGBA32FLOAT. Waves break downhill, dye stretches and Stokes-drifts with the amplitude, and capillary ripples run ahead of the crest.",
     "tags": [
       "wave",
       "fluid",

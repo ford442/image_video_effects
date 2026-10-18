@@ -2,7 +2,7 @@
   "id": "gray-scott-tank",
   "name": "Gray-Scott Tank",
   "url": "shaders/gray-scott-step.wgsl",
-  "description": "Physics Lab — true multi-step Gray–Scott reaction-diffusion (Jacobi ×4 / frame). Hold paints V, clicks seed spots. graph · 6 passes · rgba32float.",
+  "description": "Physics Lab — true multi-step Gray–Scott reaction-diffusion (Jacobi ×4 / frame). V stretches along its tangent, dense spots hollow where the feed is shadowed, and the held brush paints a comet. graph · 6 passes · rgba32float.",
   "requiresRgba32Float": true,
   "multipass": {
     "graph": {

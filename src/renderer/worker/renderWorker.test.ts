@@ -19,10 +19,11 @@ import {
   RenderToWorker,
   transferablesOf,
 } from './protocol';
-import { createRenderWorkerHost, HostedRenderer, RenderWorkerHostDeps } from './renderWorkerHost';
+import { createRenderWorkerHost, HostedRenderer, RenderWorkerHostDeps, STALE_GENERATION_ERROR } from './renderWorkerHost';
 import { createInputRingBuffer, InputRingWriter } from './inputRing';
 import { connectRenderWorker } from './renderWorkerClient';
 import {
+  claimDeviceGeneration,
   getDeviceGeneration,
   getRendererDeviceEntry,
   isRendererDeviceLive,
@@ -381,6 +382,57 @@ describe('render worker host ↔ client', () => {
     expect(fake.raw.init).toHaveBeenCalledTimes(1);
   });
 
+  describe('device generations', () => {
+    const generationRpc = { ...initRpc, generation: 7 };
+
+    it('applies only messages of the generation init bound the worker to', async () => {
+      const { mainPort, fake, posted } = setup();
+      const client = await connectRenderWorker(mainPort);
+      client.setGeneration(7);
+      await client.rpc(generationRpc);
+      client.send({ type: 'setSlotShader', index: 3, id: 'current' });
+      // A superseded proxy (or an unstamped sender) talking to this worker.
+      mainPort.postMessage({ type: 'setSlotShader', index: 4, id: 'old-generation', gen: 6 });
+      mainPort.postMessage({ type: 'setSlotShader', index: 5, id: 'unstamped' });
+      mainPort.postMessage({ type: 'setRuntimeGraph', id: 'graphlab-draft', graph: createWaveTankGraph(), gen: 6 });
+      mainPort.postMessage({ type: 'loadShader', requestId: 900, id: 'x', url: 'y', gen: 6 });
+      mainPort.postMessage({ type: 'dispose', requestId: 901, gen: 6 });
+      await flushPorts();
+      const slotCalls = fake.calls.filter(([name]) => name === 'setSlotShader');
+      expect(slotCalls).toEqual([['setSlotShader', [3, 'current']]]);
+      expect(getRuntimeGraph('graphlab-draft')).toBeNull();
+      expect(fake.raw.loadShader).not.toHaveBeenCalled();
+      expect(fake.raw.destroy).not.toHaveBeenCalled();
+      // A stale RPC settles with an error instead of timing out.
+      expect(posted).toEqual(expect.arrayContaining([
+        { type: 'rpcResult', requestId: 900, ok: false, error: STALE_GENERATION_ERROR },
+        { type: 'rpcResult', requestId: 901, ok: false, error: STALE_GENERATION_ERROR },
+      ]));
+      // The current generation still gets its RPCs answered.
+      expect(await client.rpc({ type: 'loadShader', id: 'ok', url: 'u' })).toBe(true);
+    });
+
+    it('does not filter a worker whose init carried no generation', async () => {
+      const { mainPort, fake } = setup();
+      const client = await connectRenderWorker(mainPort);
+      await client.rpc(initRpc);
+      mainPort.postMessage({ type: 'setSlotShader', index: 1, id: 'anything', gen: 99 });
+      await flushPorts();
+      expect(fake.calls).toContainEqual(['setSlotShader', [1, 'anything']]);
+    });
+
+    it('closes the VideoFrame of a stale videoFrame command', async () => {
+      const { mainPort } = setup();
+      const client = await connectRenderWorker(mainPort);
+      client.setGeneration(7);
+      await client.rpc(generationRpc);
+      const frame = { close: vi.fn() } as unknown as VideoFrame;
+      mainPort.postMessage({ type: 'videoFrame', frame, gen: 3 });
+      await flushPorts();
+      expect(frame.close).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it('simulateDeviceLoss goes through the same loss path', async () => {
     const { mainPort, fake, posted } = setup();
     const client = await connectRenderWorker(mainPort);
@@ -518,6 +570,28 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
     expect(backend.setNodeScale(0, 'tensor', 0.3)).toBe(0.5);
     expect(backend.setNodeScale(0, 'not-scalable', 0.5)).toBe(1);
     await backend.destroy();
+  });
+
+  it('gives every proxy a fresh device generation and stamps it on everything it sends', async () => {
+    const first = await backendWithWorker();
+    const second = await backendWithWorker();
+    expect(second.backend.deviceGeneration).toBeGreaterThan(first.backend.deviceGeneration);
+    expect(claimDeviceGeneration()).toBeGreaterThan(second.backend.deviceGeneration);
+
+    second.backend.setSlotShader(3, 'plasma');
+    second.backend.setRuntimeGraph('graphlab-draft', createWaveTankGraph());
+    await flushPorts();
+    const sent = (second.mainPort as FakePort).sent as Array<{ type: string; gen?: number; generation?: number }>;
+    expect(sent.find((m) => m.type === 'init')).toMatchObject({ generation: second.backend.deviceGeneration });
+    for (const m of sent) expect(m.gen).toBe(second.backend.deviceGeneration);
+    expect(sent.map((m) => m.type)).toEqual(expect.arrayContaining(['init', 'setSlotShader', 'setRuntimeGraph']));
+
+    // The previous generation's proxy cannot drive the new worker.
+    (second.mainPort as FakePort).postMessage({ type: 'setSlotShader', index: 0, id: 'stale', gen: first.backend.deviceGeneration });
+    await flushPorts();
+    expect(second.fake.calls.filter(([n]) => n === 'setSlotShader')).toEqual([['setSlotShader', [3, 'plasma']]]);
+    await first.backend.destroy();
+    await second.backend.destroy();
   });
 
   it('forwards runtime graphs to the worker as a setRuntimeGraph command', async () => {

@@ -14,6 +14,7 @@ import {
   RenderRpcResults,
   RenderToWorker,
   RenderWorkerCaps,
+  StampedRenderToWorker,
   transferablesOf,
 } from './protocol';
 
@@ -29,6 +30,8 @@ type RpcBody<K extends RenderRpc['type']> = Omit<Extract<RenderRpc, { type: K }>
 
 export interface RenderWorkerClient {
   readonly caps: RenderWorkerCaps;
+  /** Stamp every message sent from now on with this device generation (worker drops others). */
+  setGeneration(generation: number): void;
   send(command: RenderCommand): void;
   rpc<K extends RenderRpc['type']>(body: RpcBody<K> & { type: K }, timeoutMs?: number): Promise<RenderRpcResults[K]>;
   onEvent(listener: (event: RenderEvent) => void): () => void;
@@ -49,6 +52,7 @@ export function connectRenderWorker(worker: WorkerLike, helloTimeoutMs = 3000): 
   const pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void }>();
   let nextId = 1;
   let dead: Error | null = null;
+  let generation: number | undefined;
 
   const failAll = (error: Error) => {
     dead = error;
@@ -102,12 +106,16 @@ export function connectRenderWorker(worker: WorkerLike, helloTimeoutMs = 3000): 
   });
 
   function post(message: RenderToWorker): void {
-    worker.postMessage(message, transferablesOf(message));
+    const stamped: StampedRenderToWorker = generation === undefined ? message : { ...message, gen: generation };
+    worker.postMessage(stamped, transferablesOf(message));
   }
 
   function client(caps: RenderWorkerCaps): RenderWorkerClient {
     return {
       caps,
+      setGeneration(next) {
+        generation = next;
+      },
       send(command) {
         if (!dead) post(command);
       },

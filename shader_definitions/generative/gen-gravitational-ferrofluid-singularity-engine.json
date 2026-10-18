@@ -3,7 +3,7 @@
   "name": "Gravitational Ferrofluid Singularity-Engine",
   "url": "shaders/gen-gravitational-ferrofluid-singularity-engine.wgsl",
   "category": "generative",
-  "description": "A stylized ferrofluid singularity with rotating magnetic domains, orbiting spike fronts, accelerating droplets, click shocks, and bounded horizon-aligned light trails driven by live audio.",
+  "description": "A stylized ferrofluid singularity with rotating magnetic domains, frame-dragged inner spikes, an ISCO hot ring outside the photon sheen, accelerating droplets, click shocks, and bounded horizon-aligned light trails driven by live audio.",
   "features": [
     "ferrofluid",
     "singularity",

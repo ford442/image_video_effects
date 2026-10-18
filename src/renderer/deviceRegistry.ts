@@ -101,6 +101,18 @@ export function getDeviceGeneration(): number {
   return entry.generation;
 }
 
+let lastClaimedGeneration = 0;
+
+/**
+ * A new device generation for a backend that is about to request a device. Monotonic for
+ * the page's lifetime and independent of `generation` above (which also bumps on clears).
+ * The render-worker proxy stamps it on every message it sends, and the worker applies only
+ * messages of the generation it was initialised for (renderWorkerHost.ts).
+ */
+export function claimDeviceGeneration(): number {
+  return ++lastClaimedGeneration;
+}
+
 /** True while a TS backend holds a live device, on this thread or in the render worker. */
 export function isRendererDeviceLive(): boolean {
   return entry.thread !== null;
