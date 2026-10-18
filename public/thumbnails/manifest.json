@@ -335,13 +335,15 @@
   },
   "gen-astro-kinetic-chrono-orrery": {
     "thumbnail_url": "thumbnails/gen-astro-kinetic-chrono-orrery.png",
-    "generated_at": "2026-06-14T06:41:33.508Z",
+    "generated_at": "2026-10-18T03:11:31.681Z",
     "params_snapshot": [
       4,
       1,
       1,
       0.5
-    ]
+    ],
+    "source_hash": "b7f94143362f48c2",
+    "capture_host": "swiftshader"
   },
   "gen-audio-spirograph": {
     "thumbnail_url": "thumbnails/gen-audio-spirograph.png",
@@ -443,13 +445,15 @@
   },
   "gen-bioluminescent-aether-jellyfish-swarm": {
     "thumbnail_url": "thumbnails/gen-bioluminescent-aether-jellyfish-swarm.png",
-    "generated_at": "2026-06-14T06:41:37.024Z",
+    "generated_at": "2026-10-18T03:35:30.415Z",
     "params_snapshot": [
       10,
       1,
       2,
       5
-    ]
+    ],
+    "source_hash": "afab16c95809f238",
+    "capture_host": "swiftshader"
   },
   "gen-bioluminescent-aether-pulsar": {
     "thumbnail_url": "thumbnails/gen-bioluminescent-aether-pulsar.png",
@@ -753,13 +757,15 @@
   },
   "gen-cosmic-web-filament": {
     "thumbnail_url": "thumbnails/gen-cosmic-web-filament.png",
-    "generated_at": "2026-06-14T06:41:50.188Z",
+    "generated_at": "2026-10-18T03:31:45.653Z",
     "params_snapshot": [
       0.33,
       0.4,
-      0.25,
-      0
-    ]
+      0.35,
+      0.4
+    ],
+    "source_hash": "7fe22c4c6e529c4f",
+    "capture_host": "swiftshader"
   },
   "gen-crystal-caverns": {
     "thumbnail_url": "thumbnails/gen-crystal-caverns.png",
@@ -2853,13 +2859,15 @@
   },
   "neon-fern-garden": {
     "thumbnail_url": "thumbnails/neon-fern-garden.png",
-    "generated_at": "2026-06-14T06:43:29.113Z",
+    "generated_at": "2026-10-18T03:26:28.539Z",
     "params_snapshot": [
       0.5,
       0.5,
       0.5,
       0.5
-    ]
+    ],
+    "source_hash": "d8697430b774a8fd",
+    "capture_host": "swiftshader"
   },
   "neural-mandala": {
     "thumbnail_url": "thumbnails/neural-mandala.png",
@@ -3747,14 +3755,14 @@
   },
   "gen-abyssal-quantum-leviathan-skeleton": {
     "thumbnail_url": "thumbnails/gen-abyssal-quantum-leviathan-skeleton.png",
-    "generated_at": "2026-10-05T11:02:09.721Z",
+    "generated_at": "2026-10-18T03:10:29.849Z",
     "params_snapshot": [
       0.5,
       0.5,
       0.5,
       0.5
     ],
-    "source_hash": "d313c3977fe7d3c4",
+    "source_hash": "054f4273f8500405",
     "capture_host": "swiftshader"
   },
   "gen-aethereal-ferrofluid-chrono-core": {
@@ -3999,14 +4007,14 @@
   },
   "gen-cybernetic-aether-moth-chrysalis": {
     "thumbnail_url": "thumbnails/gen-cybernetic-aether-moth-chrysalis.png",
-    "generated_at": "2026-10-05T11:12:31.800Z",
+    "generated_at": "2026-10-18T03:16:56.554Z",
     "params_snapshot": [
       0.5,
       0.2,
       0.4,
       0
     ],
-    "source_hash": "c92369108f460881",
+    "source_hash": "9187249b67e0e635",
     "capture_host": "swiftshader"
   },
   "gen-cybernetic-plasma-orchid-nexus": {
@@ -5187,14 +5195,14 @@
   },
   "gen-luminescent-cyber-chrono-void-turtle": {
     "thumbnail_url": "thumbnails/gen-luminescent-cyber-chrono-void-turtle.png",
-    "generated_at": "2026-10-05T12:10:43.970Z",
+    "generated_at": "2026-10-18T03:18:45.278Z",
     "params_snapshot": [
       0.5,
       0.5,
       0.5,
       0.5
     ],
-    "source_hash": "5b9b3a52de563122",
+    "source_hash": "997896b574ff71cc",
     "capture_host": "swiftshader"
   },
   "hybrid-fractal-feedback": {
@@ -13719,14 +13727,14 @@
   },
   "gen-abyssal-plasma-void-medusa": {
     "thumbnail_url": "thumbnails/gen-abyssal-plasma-void-medusa.png",
-    "generated_at": "2026-10-05T16:59:37.017Z",
+    "generated_at": "2026-10-18T03:09:03.473Z",
     "params_snapshot": [
       0.5,
       0.3,
       0.8,
       0.5
     ],
-    "source_hash": "e9fbe9f3745e0872",
+    "source_hash": "472ace90340dad29",
     "capture_host": "swiftshader"
   },
   "mouse-hyperbolic-navigator": {
@@ -14867,6 +14875,30 @@
       0.5
     ],
     "source_hash": "792bb2a7824acc5f",
+    "capture_host": "swiftshader"
+  },
+  "gen-quantum-singularity-forge": {
+    "thumbnail_url": "thumbnails/gen-quantum-singularity-forge.png",
+    "generated_at": "2026-10-18T03:22:39.422Z",
+    "params_snapshot": [
+      0.36,
+      0.33,
+      0.3,
+      0.5
+    ],
+    "source_hash": "b330d342b8fabb0a",
+    "capture_host": "swiftshader"
+  },
+  "gen-sentient-cyber-chrono-void-serpent": {
+    "thumbnail_url": "thumbnails/gen-sentient-cyber-chrono-void-serpent.png",
+    "generated_at": "2026-10-18T03:24:19.039Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "source_hash": "9a91b8b1adfb0c30",
     "capture_host": "swiftshader"
   }
 }
