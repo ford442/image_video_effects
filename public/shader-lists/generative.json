@@ -1518,7 +1518,7 @@
       "audio-reactive",
       "music"
     ],
-    "description": "A stylized projection of rotating 4D fractal slices with rapid hyperslice transport, velocity-stretched lattice afterimages, click phase kicks, live audio response, and bounded display history. Julia distance-estimate filaments trace the true set boundary, the hypercube folds draw a crease lattice coloured by fold count, and the lattice lives in 4D so the rotations skew and spread it.",
+    "description": "A stylized projection of rotating 4D fractal slices with rapid hyperslice transport, velocity-stretched lattice afterimages, click phase kicks, live audio response, and bounded display history. Julia distance-estimate filaments trace the true set boundary, the hypercube folds draw a crease lattice coloured by fold count, and the lattice lives in 4D so the rotations skew and spread it. Stereo hyperslice fringes show the boundary of the two neighbouring slices (warm behind, cool ahead), and orbit-trap veins hued by the quaternion axis light the interior.",
     "workgroup_size": [
       16,
       16,
@@ -3075,7 +3075,7 @@
       "aces-tone-map",
       "semantic-alpha"
     ],
-    "description": "A Mandelbulb raymarched at speed: the fractal exponent morphs several times a second under bass, orbit-trap coloring races through a full psychedelic spectrum with treble, and a greebled ridge shell carves micro-detail into every surface. The cursor orbits the camera, holding the button throttles the spin and dollies in, and clicks fire shock rings that deform the bulb and flash the palette. Upgraded: the surface is terraced into escape-time strata (smooth escape-count onion shells with hue-stepped contours) whose shells the Escape Radius bailout slides, lobes cast DE soft shadows and ambient occlusion into their crevices, and rays grazing the bulb leave a silhouette halo coloured by the orbit trap at their closest approach (scaled by Glow).",
+    "description": "A Mandelbulb raymarched at speed: the exponent morphs under bass, orbit-trap colour races through a psychedelic spectrum, and a greebled ridge shell carves micro-detail. The cursor orbits the camera, holding dollies in, and clicks fire shock rings. Escape-time strata terrace the surface, lobes cast soft shadows and light shafts, and ring traps keyed to bass, mids and treble engrave glowing filigree.",
     "workgroup_size": [
       16,
       16,
@@ -3973,7 +3973,7 @@
     "id": "gen-bioluminescent-cyber-aether-void-seahorse",
     "name": "Bioluminescent Cyber-Aether Void-Seahorse",
     "url": "/shaders/gen-bioluminescent-cyber-aether-void-seahorse.wgsl",
-    "description": "A hyper-majestic, biomechanical void-seahorse woven from shattered liquid-aether and pulsing cybernetic bioluminescence, drifting gracefully through a chaotic, fluid-dynamic quantum reef. Upgraded 2026-08-05: capsule-chain spine anatomy with smooth-union SDF composition, dorsal-fin membrane, tail orbit-trap filaments, domain-warped FBM bioluminescence and void nebula, tetrahedral SDF normals, temporal history feedback and generated relief depth.",
+    "description": "A biomechanical void-seahorse of liquid aether and pulsing cybernetic bioluminescence: armoured trunk rings with glowing tubercles, independently swivelling turret eyes, a rippling fin-ray dorsal membrane and a fractal curled tail, drifting through a domain-warped quantum-reef nebula.",
     "tags": [
       "organic",
       "quantum",
@@ -10139,7 +10139,7 @@
       "plasma",
       "quantum"
     ],
-    "description": "A hyper-fast, biomechanical hummingbird woven from liquid auroral plasma and shattered quantum glass, hovering within a massive chrono-distortion flower. A gorget plate on the throat splits hue with the view angle, and two tail ribbons stream behind the body.",
+    "description": "A hyper-fast, biomechanical hummingbird woven from liquid auroral plasma and shattered quantum glass, hovering within a massive chrono-distortion flower. Its wings trace a figure-eight hover stroke, a forked tongue laps nectar, and the gorget splits hue with the view angle.",
     "workgroup_size": [
       16,
       16,
@@ -14849,7 +14849,7 @@
       "KIFS",
       "bismuth"
     ],
-    "description": "A relentlessly grinding, infinite geometric mechanism built entirely of iridescent, square-stepped bismuth crystals that unfold and interlock like a cosmic clockwork engine.",
+    "description": "A relentlessly grinding, infinite geometric mechanism built entirely of iridescent, square-stepped bismuth crystals that unfold and interlock like a cosmic clockwork engine. Blued hairsprings breathe around each crystal, whose faces carry engine-turned engraving.",
     "workgroup_size": [
       16,
       16,
@@ -20964,7 +20964,7 @@
       "mouse-driven",
       "upgraded-rgba"
     ],
-    "description": "A relativistic neutron-star scene where twisted dipole field lines, pulsar beams, and accretion structures react to audio while the camera orbits under mouse control. This pass adds polar-cap spark carousels and striped equatorial current sheets beyond the light cylinder."
+    "description": "A relativistic neutron-star scene where twisted dipole field lines, pulsar beams, polar-cap sparks and a striped current sheet react to audio while the camera orbits under mouse control. Accretion curtains lift disk plasma along the magnetic field onto shock rings around each pole."
   },
   {
     "id": "gen-newton-fractal",
@@ -23151,7 +23151,7 @@
       "kaleidoscopic",
       "geometry"
     ],
-    "description": "A colossal, undulating deep-space entity of hyper-reactive quantum spines tipped with octahedral crystals, gyroscopic plasma torus rings and an orbiting quantum-shard cage, breathing to sonic vibrations over a kaleidoscopic hex-tessellated void ocean.",
+    "description": "A colossal deep-space void-urchin of audio-reactive quantum spines tipped with octahedral crystals, a chewing five-tooth jaw at its oral pole and pentaradial rows of glowing tube-foot pores, ringed by gyroscopic plasma tori and a quantum-shard cage over a kaleidoscopic hex-tessellated void ocean.",
     "workgroup_size": [
       16,
       16,
@@ -26759,7 +26759,7 @@
   {
     "id": "gen-symbiotic-cyber-fungal-core-reactor",
     "name": "Symbiotic Cyber-Fungal Core-Reactor",
-    "description": "A biomechanical network of luminescent mycelium feeding off the chaotic energy of a fractured quantum singularity. Upgraded with a spring-smoothed mouse gravity-well attractor that steers fungal growth, click-spawned spore-burst shockwaves with bounded energy, hold-to-mutate surges, real audio reactivity (bass/mids/treble plus guarded FFT bins), engine-ripple nutrient rings, temporal feedback memory so growth self-organizes along its own history, generated raymarch depth, semantic alpha, a precessing plasma containment ring around the core, breathing sporangia pods on the mycelium, and a fractured core shell leaking light through Worley cracks.",
+    "description": "A biomechanical network of luminescent mycelium feeding off a fractured quantum singularity: the mouse is its gravity well, clicks fire spore bursts, a plasma containment ring precesses around the core, melanized hyphae near the core turn radiation into an ember glow, and a Cherenkov-blue coolant pool surrounds it.",
     "type": "generative",
     "url": "shaders/gen-symbiotic-cyber-fungal-core-reactor.wgsl",
     "tags": [
@@ -26946,7 +26946,7 @@
       "coral",
       "deep-sea"
     ],
-    "description": "A hyper-vibrant deep-sea reef of fractal coral structures and bioluminescent plasma that pulsates with rhythmic audio, swarming with microscopic glowing entities.",
+    "description": "A hyper-vibrant deep-sea reef of fractal coral and bioluminescent plasma swarming with glowing entities; branches spawn rising gamete bundles and the water absorbs red with distance (Fog Density = turbidity).",
     "workgroup_size": [
       16,
       16,
@@ -28893,7 +28893,7 @@
     "id": "kimi_flock_symphony",
     "name": "Kimi Flock Symphony",
     "url": "shaders/kimi_flock_symphony.wgsl",
-    "description": "Audio-driven boid flock (separation, alignment, cohesion, mouse spiral) drawn as soft coloured glows. Real trails: each glow leaves decaying history in the feedback texture (Trail Length = decay). Orchestra sections: boid quartiles are bass/mid/mid/treble voices - bass voices large, slow and warm, treble voices small, darting and cool - each sized and sped by its own audio band. Tutti swell: bass widens the separation radius so the whole flock breathes outward on hits. ACES tone map.",
+    "description": "Audio-driven boid flock (separation, alignment, cohesion, mouse spiral) drawn as soft coloured glows. Real trails: each glow leaves decaying history in the feedback texture (Trail Length = decay). Orchestra sections: boid quartiles are bass/mid/mid/treble voices - bass voices large, slow and warm, treble voices small, darting and cool - each sized and sped by its own audio band. Tutti swell: bass widens the separation radius so the whole flock breathes outward on hits. Section strings: same-section neighbours are joined by thin filaments that brighten when their headings agree. Solo spotlight: the section whose band dominates the mix plays louder while the rest drop back. ACES tone map.",
     "tags": [
       "boids",
       "flocking",
