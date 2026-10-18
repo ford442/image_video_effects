@@ -268,6 +268,25 @@ SFTP login reads gitignored `.env.deploy` (copy from `.env.deploy.example`) or
 scripts no longer prompt when that file is present. An authorized `DEPLOY_KEY`
 (or `~/.ssh/id_ed25519`) is used when available.
 
+**Preview a deploy without connecting** — both deploy scripts accept `--dry-run`
+(`--force` / `--fresh` behave as before and can be combined with it):
+
+```bash
+npm run build
+python3 tools/deploy/deploy.py --dry-run            # full: everything in build/
+python3 tools/deploy/deploy_app_only.py --dry-run   # app-only: build/ minus shaders/
+```
+
+The dry run opens no SFTP/network connection, never reads credentials or prompts, and does
+not modify `build/`, the remote, or the committed `.deploy_manifest.json` /
+`.deploy_app_manifest.json`. It walks `build/` against the manifest (honouring `ALWAYS_UPLOAD`)
+and prints each file to upload with its size and reason (`new`, `hash-changed`, `always`),
+the remote files a real run would delete, totals, and the destination root. It exits `0` when a
+plan can be computed and non-zero (with a message) when `build/` is missing or fails the
+integrity check. The plan is computed from the manifest only, so for `deploy.py` it is an upper
+bound: a real run also skips a file whose remote size already matches. Tests:
+`python3 -m pytest tools/deploy -q`.
+
 CI enforces relative URLs via `npm run verify:shader-list-urls` (part of
 `verify:toolchain-foundation`). `build:manifest` rejects absolute URLs unless a base-url env is set.
 
@@ -320,7 +339,7 @@ See [`docs/THUMBNAIL_PIPELINE.md`](docs/THUMBNAIL_PIPELINE.md). CI: **Generate T
 | `npm run bucket:sync` | Sync GCS bucket (simple watcher) |
 | `npm run bucket:watch` | Watch mode |
 | `npm run sync:shaders` | Push shaders to VPS storage (`tools/deploy/sync_shaders_to_storage.py`) |
-| `npm run deploy` / `deploy:app` / `deploy:full` | Deploy scripts in `tools/deploy/` (SFTP; reads gitignored `.env.deploy`) |
+| `npm run deploy` / `deploy:app` / `deploy:full` | Deploy scripts in `tools/deploy/` (SFTP; reads gitignored `.env.deploy`; add `-- --dry-run` to preview, e.g. `npm run deploy -- --dry-run`) |
 | `npm run audit:shaders` | WGSL audit swarm |
 | `npm run swarm:upgrade` | Shader upgrade swarm runner |
 

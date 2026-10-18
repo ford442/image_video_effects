@@ -4,12 +4,24 @@ Smart deployment script - only uploads changed files.
 Uses a local manifest to track uploaded file hashes.
 """
 
+import argparse
 import os
 import json
 import hashlib
+import sys
 from pathlib import Path
+from typing import Optional
 
 from deploy_credentials import load_credentials, open_sftp
+from deploy_plan import (
+    REASON_ALWAYS,
+    REASON_HASH_CHANGED,
+    REASON_NEW,
+    DeployPlan,
+    build_plan,
+    format_plan,
+    walk_build,
+)
 
 # --- Server Configuration ---
 # DreamHost (Apache) — override via .env.deploy or DEPLOY_* / FTP_* env vars
@@ -59,32 +71,47 @@ def save_manifest(manifest: dict):
         json.dump(manifest, f, indent=2)
 
 
+def upload_reason(local_path: str, manifest: dict) -> Optional[str]:
+    """
+    Local-only half of the upload decision (no network). Returns:
+      None           - skip: matches a skip pattern, or hash equals the manifest entry
+      "always"       - file is in ALWAYS_UPLOAD
+      "new"          - not tracked in the manifest
+      "hash-changed" - tracked, but the local hash differs
+    """
+    rel_path = os.path.relpath(local_path, LOCAL_DIRECTORY)
+    filename = os.path.basename(local_path)
+
+    for pattern in SKIP_PATTERNS:
+        if local_path.endswith(pattern.replace('*', '')):
+            return None
+
+    # ALWAYS upload critical files (they contain bundle references)
+    if filename in ALWAYS_UPLOAD:
+        return REASON_ALWAYS
+
+    if rel_path in manifest:
+        if manifest[rel_path].get('hash') == get_file_hash(local_path):
+            return None  # File unchanged
+        return REASON_HASH_CHANGED
+    return REASON_NEW
+
+
 def should_upload(local_path: str, remote_path: str, sftp_client, manifest: dict) -> bool:
     """
     Determine if a file should be uploaded by checking:
     1. If it's in the skip list
     2. If it's in ALWAYS_UPLOAD (always upload these)
-    3. If it exists remotely
-    4. If local hash differs from manifest
+    3. If local hash differs from manifest
+    4. If it exists remotely with the same size
     """
-    rel_path = os.path.relpath(local_path, LOCAL_DIRECTORY)
-    filename = os.path.basename(local_path)
-    
-    # Check skip patterns
-    for pattern in SKIP_PATTERNS:
-        if local_path.endswith(pattern.replace('*', '')):
-            return False
-    
-    # ALWAYS upload critical files (they contain bundle references)
-    if filename in ALWAYS_UPLOAD:
+    reason = upload_reason(local_path, manifest)
+    if reason is None:
+        return False
+    if reason == REASON_ALWAYS:
         return True
-    local_hash = get_file_hash(local_path)
-    local_size = os.path.getsize(local_path)
 
-    # Check manifest first (fast local check)
-    if rel_path in manifest:
-        if manifest[rel_path].get('hash') == local_hash:
-            return False  # File unchanged
+    local_size = os.path.getsize(local_path)
 
     # Check remote file
     try:
@@ -152,6 +179,19 @@ def upload_directory(sftp_client, local_path: str, remote_path: str, manifest: d
     return uploaded_count, skipped_count
 
 
+def stale_manifest_entries(manifest: dict, local_files: set) -> tuple:
+    """Manifest paths no longer present locally -> (to_remove, protected_kept)."""
+    to_remove = []
+    protected = []
+    for rel_path in manifest.keys():
+        if rel_path not in local_files:
+            if rel_path in PROTECTED_FILES:
+                protected.append(rel_path)
+                continue
+            to_remove.append(rel_path)
+    return to_remove, protected
+
+
 def clean_remote(sftp_client, remote_path: str, manifest: dict):
     """
     Remove files from remote that no longer exist locally.
@@ -166,14 +206,9 @@ def clean_remote(sftp_client, remote_path: str, manifest: dict):
             local_files.add(os.path.relpath(os.path.join(root, f), LOCAL_DIRECTORY))
 
     # Check manifest for files that no longer exist locally
-    to_remove = []
-    for rel_path in manifest.keys():
-        if rel_path not in local_files:
-            # Skip protected files
-            if rel_path in PROTECTED_FILES:
-                print(f"  🛡️  Protected: {rel_path} (skipping removal)")
-                continue
-            to_remove.append(rel_path)
+    to_remove, protected = stale_manifest_entries(manifest, local_files)
+    for rel_path in protected:
+        print(f"  🛡️  Protected: {rel_path} (skipping removal)")
 
     for rel_path in to_remove:
         remote_file = f"{REMOTE_DIRECTORY}/{rel_path}"
@@ -295,15 +330,89 @@ def main():
         print("🔒 Connection closed.")
 
 
+def compute_plan(local_dir: str, manifest: dict, fresh: bool = False, force: bool = False) -> DeployPlan:
+    """
+    Offline equivalent of what a real run would upload/remove. Reads ``local_dir`` and
+    ``manifest`` only: no network, no credentials, no writes.
+
+    The real run additionally skips a non-ALWAYS file whose size already matches the remote
+    copy (see should_upload); that needs SFTP, so the "new" / "hash-changed" counts here are
+    an upper bound.
+    """
+    plan = build_plan(
+        script="tools/deploy/deploy.py",
+        local_dir=local_dir,
+        remote_root=REMOTE_DIRECTORY,
+        manifest_file=MANIFEST_FILE,
+        manifest=manifest,
+        reason_for=upload_reason,
+        fresh=fresh,
+    )
+    # clean_remote() runs on every real run, against the manifest as loaded
+    # (--fresh deletes the manifest first, so it then has nothing to remove).
+    effective = {} if fresh else manifest
+    local_files = {rel for rel, _ in walk_build(local_dir)}
+    plan.deletions, plan.protected_kept = stale_manifest_entries(effective, local_files)
+    plan.notes.append(
+        "remote-size shortcut not evaluated offline: the real run may skip some 'new'/'hash-changed' "
+        "files whose remote size already matches"
+    )
+    if fresh:
+        plan.notes.append(
+            "--fresh clears the manifest before the run, so clean_remote() has nothing to delete "
+            "(stale remote files are NOT removed)"
+        )
+    if force:
+        plan.notes.append(
+            "--force only adds a confirmation prompt in deploy.py; it does not clear the manifest, "
+            "so the plan is identical to a plain run"
+        )
+    return plan
+
+
+def parse_args(argv=None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Smart SFTP deploy of build/ to DreamHost - only uploads changed files.",
+        allow_abbrev=False,
+    )
+    parser.add_argument("--force", action="store_true",
+                        help="Redeploy all files (keep manifest history); asks for confirmation")
+    parser.add_argument("--fresh", action="store_true",
+                        help="Clear manifest and redeploy all (fixes 404 errors)")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="Print the upload/delete plan from build/ + the manifest and exit. "
+                             "Opens no network connection, never asks for credentials, writes nothing.")
+    return parser.parse_args(argv)
+
+
+def run_dry_run(fresh: bool, force: bool) -> int:
+    """Print the plan. Must stay free of load_credentials()/open_sftp()/any write."""
+    if not os.path.isdir(LOCAL_DIRECTORY):
+        print(f"❌ Error: Directory '{LOCAL_DIRECTORY}' not found. Run 'npm run build' first.")
+        return 1
+    print("🔍 Verifying build integrity...")
+    if not verify_build_integrity():
+        print("\n❌ Build verification failed. Fix errors before deploying.")
+        return 1
+    print("")
+    plan = compute_plan(LOCAL_DIRECTORY, load_manifest(), fresh=fresh, force=force)
+    print(format_plan(plan))
+    return 0
+
+
 if __name__ == "__main__":
+    args = parse_args()
+
+    if args.dry_run:
+        sys.exit(run_dry_run(fresh=args.fresh, force=args.force))
+
     if not os.path.exists(LOCAL_DIRECTORY):
         print(f"❌ Error: Directory '{LOCAL_DIRECTORY}' not found. Run 'npm run build' first.")
         exit(1)
 
     # Optional: Force full redeploy or fresh start
-    import sys
-    force_redeploy = '--force' in sys.argv
-    fresh_deploy = '--fresh' in sys.argv
+    force_redeploy = args.force
+    fresh_deploy = args.fresh
 
     if fresh_deploy:
         print("🗑️  Fresh deploy: Clearing manifest and uploading ALL files")
@@ -319,8 +428,9 @@ if __name__ == "__main__":
         manifest = {}
     else:
         print("💡 Tips:")
-        print("   --force  : Redeploy all files (keep manifest history)")
-        print("   --fresh  : Clear manifest and redeploy all (fixes 404 errors)")
+        print("   --force   : Redeploy all files (keep manifest history)")
+        print("   --fresh   : Clear manifest and redeploy all (fixes 404 errors)")
+        print("   --dry-run : Print the upload plan; no connection, no writes")
         print("")
 
     main()
