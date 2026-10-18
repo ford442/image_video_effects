@@ -154,6 +154,13 @@ describe('Thumbnail Coverage Check', () => {
       });
     });
 
+    it('counts unexpired against the given day (THUMBS_DEFERRALS_NOW via today())', () => {
+      withDeferrals([{ id: 'dated', deferred_at: '2026-10-01', expires: '2026-10-26', reason: 'gpu-capture-pending' }], () => {
+        assert.ok(loadDeferralEntries('2026-10-26').valid.has('dated'));
+        assert.ok(!loadDeferralEntries('2026-10-27').valid.has('dated'));
+      });
+    });
+
     it('should exclude expired deferral entries', () => {
       const pastDate = new Date();
       pastDate.setDate(pastDate.getDate() - 5);
@@ -197,7 +204,7 @@ describe('Deferral honesty gate', () => {
     assert.deepStrictEqual(validateDeferrals([ok], opts), []);
   });
   it('rejects expired, >30-day, legacy-reason and permanent-reason entries', () => {
-    assert.ok(validateDeferrals([{ ...ok, expires: '2026-09-20' }], opts).some(e => /expired/.test(e)));
+    assert.ok(validateDeferrals([{ ...ok, expires: '2026-09-20' }], { ...opts, expiryMode: 'enforce' }).some(e => /expired/.test(e)));
     assert.ok(validateDeferrals([{ ...ok, expires: '2026-12-31' }], opts).some(e => /30 days/.test(e)));
     assert.ok(validateDeferrals([{ ...ok, reason: 'gpu-capture pending' }], opts).some(e => /not in/.test(e)));
     assert.ok(validateDeferrals([{ ...ok, reason: 'audio-only' }], opts).some(e => /allowlist/.test(e)));

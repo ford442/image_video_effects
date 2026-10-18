@@ -4,6 +4,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..', '..');
 const DEFERRALS_PATH = path.join(ROOT, 'reports', 'thumbnail_deferrals.json');
@@ -14,6 +15,7 @@ const PERMANENT_REASONS = new Set(['audio-only', 'interactive-no-still']);
 const MAX_DEFERRAL_DAYS = 30;
 const MAX_RENEWALS_WITHOUT_NOTE = 1;
 const EXPIRY_WARNING_DAYS = 7;
+const EXPIRY_MODES = ['push', 'enforce'];
 const DAY_MS = 86400000;
 
 const isoDate = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value));
@@ -38,14 +40,43 @@ function loadRatchet(file = RATCHET_PATH) {
   return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : { maxGpuCapturePending: Infinity };
 }
 
+/** `git show <ref>:reports/thumbnail_deferrals.json` entries; [] when the ref has no file; throws on a bad ref. */
+function loadBaseDeferrals(ref, cwd = ROOT) {
+  const git = args => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 * 1024 * 1024 });
+  try {
+    git(['rev-parse', '--verify', '--quiet', `${ref}^{commit}`]);
+  } catch {
+    throw new Error(`base ref "${ref}" does not resolve to a commit`);
+  }
+  const file = path.relative(ROOT, DEFERRALS_PATH).split(path.sep).join('/');
+  try {
+    git(['cat-file', '-e', `${ref}:${file}`]);
+  } catch {
+    return [];
+  }
+  return JSON.parse(git(['show', `${ref}:${file}`])).entries || [];
+}
+
 /**
- * Checks the deferral file. `errors` fail the gate; `warnings` (entries expiring within
- * EXPIRY_WARNING_DAYS) never do. An entry is valid through its `expires` day inclusive.
+ * Checks the deferral file. `errors` fail the gate; `warnings` never do. An entry is valid
+ * through its `expires` day inclusive.
+ *
+ * expiryMode 'push' (default, every push/PR): no calendar error. Rows that merely aged past
+ * `expires` produce one warning — the scheduled job (`--expiry`) owns them. With `baseEntries`,
+ * a past-dated row that is new or whose date changed vs the base is an error, so nobody can
+ * commit a pre-expired entry.
+ * expiryMode 'enforce' (`--expiry`, scheduled): past `expires` is an error, rows expiring
+ * within EXPIRY_WARNING_DAYS warn, and `nextExpiry` names the earliest still-valid date.
  */
-function checkDeferrals(entries, { now = today(), ratchet = loadRatchet() } = {}) {
+function checkDeferrals(entries, { now = today(), ratchet = loadRatchet(), expiryMode = 'push', baseEntries } = {}) {
+  if (!EXPIRY_MODES.includes(expiryMode)) throw new Error(`expiryMode must be one of [${EXPIRY_MODES.join(', ')}], got "${expiryMode}"`);
+  const enforce = expiryMode === 'enforce';
+  const baseExpiry = baseEntries ? new Map(baseEntries.map(e => [e.id, e.expires || e.until])) : null;
   const errors = [];
   const warnings = [];
   const expiringSoon = [];
+  const stillValid = [];
+  let expiredCount = 0;
   const seen = new Set();
   let pending = 0;
 
@@ -67,8 +98,18 @@ function checkDeferrals(entries, { now = today(), ratchet = loadRatchet() } = {}
       errors.push(`${id}: deferred_at and expires must be YYYY-MM-DD`);
       continue;
     }
-    if (expires < now) errors.push(`${id}: expired ${expires} (today ${now}) — capture it or renew with a note`);
-    else if (daysBetween(now, expires) <= EXPIRY_WARNING_DAYS) expiringSoon.push(expires);
+    if (expires < now) {
+      expiredCount++;
+      if (enforce) {
+        errors.push(`${id}: expired ${expires} (today ${now}) — capture it or renew with a note`);
+      } else if (baseExpiry && baseExpiry.get(e.id) !== expires) {
+        const was = baseExpiry.has(e.id) ? `changed from ${baseExpiry.get(e.id)}` : 'new';
+        errors.push(`${id}: expires ${expires} is already past (today ${now}) and is ${was} vs the base — do not commit a pre-expired deferral`);
+      }
+    } else {
+      stillValid.push(expires);
+      if (enforce && daysBetween(now, expires) <= EXPIRY_WARNING_DAYS) expiringSoon.push(expires);
+    }
     if (daysBetween(e.deferred_at, expires) > MAX_DEFERRAL_DAYS) {
       errors.push(`${id}: expires ${expires} is more than ${MAX_DEFERRAL_DAYS} days after deferred_at ${e.deferred_at}`);
     }
@@ -81,11 +122,14 @@ function checkDeferrals(entries, { now = today(), ratchet = loadRatchet() } = {}
   if (pending > ratchet.maxGpuCapturePending) {
     errors.push(`gpu-capture-pending count ${pending} exceeds ratchet ${ratchet.maxGpuCapturePending}`);
   }
+  const earliest = dates => dates.reduce((a, b) => (a < b ? a : b));
   if (expiringSoon.length) {
-    const earliest = expiringSoon.reduce((a, b) => (a < b ? a : b));
-    warnings.push(`${expiringSoon.length} deferral(s) expire within ${EXPIRY_WARNING_DAYS} days (earliest ${earliest}, today ${now})`);
+    warnings.push(`${expiringSoon.length} deferral(s) expire within ${EXPIRY_WARNING_DAYS} days (earliest ${earliest(expiringSoon)}, today ${now})`);
   }
-  return { errors, warnings };
+  if (!enforce && expiredCount) {
+    warnings.push(`${expiredCount} deferral(s) expired — the scheduled expiry job owns this; run verify:thumbs-deferrals --expiry`);
+  }
+  return { errors, warnings, nextExpiry: enforce && stillValid.length ? earliest(stillValid) : null };
 }
 
 /** Errors only; empty array means the deferral file is honest. */
@@ -94,7 +138,7 @@ function validateDeferrals(entries, opts) {
 }
 
 module.exports = {
-  REASONS, PERMANENT_REASONS, MAX_DEFERRAL_DAYS, MAX_RENEWALS_WITHOUT_NOTE, EXPIRY_WARNING_DAYS,
+  REASONS, PERMANENT_REASONS, MAX_DEFERRAL_DAYS, MAX_RENEWALS_WITHOUT_NOTE, EXPIRY_WARNING_DAYS, EXPIRY_MODES,
   DEFERRALS_PATH, RATCHET_PATH,
-  today, isoDate, daysBetween, loadDeferralFile, loadRatchet, checkDeferrals, validateDeferrals,
+  today, isoDate, daysBetween, loadDeferralFile, loadRatchet, loadBaseDeferrals, checkDeferrals, validateDeferrals,
 };

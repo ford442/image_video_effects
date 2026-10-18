@@ -75,8 +75,35 @@ jobs:
     - name: Verify catalog count SoT
       run: npm run verify:catalog-counts
 
+    - name: Thumbnail pipeline unit tests
+      run: npm run thumbs:test
+
+    # verify:thumbs-deferrals (inside verify:toolchain-foundation) runs in push mode: no calendar
+    # error, but a past-dated deferral that is new or re-dated vs this base fails. Expiry itself
+    # is enforced by thumbnail-coverage-status.yml (--expiry). No base (new branch, force-push
+    # with an unreachable before-sha) = the introduced check is skipped.
+    - name: Fetch deferral base ref
+      id: deferral-base
+      run: |
+        if [ "$EVENT" = "pull_request" ]; then
+          git fetch --no-tags --depth=1 origin "+refs/heads/${BASE_BRANCH}:refs/remotes/origin/${BASE_BRANCH}"
+          echo "ref=origin/${BASE_BRANCH}" >> "$GITHUB_OUTPUT"
+        elif [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ]; then
+          if git fetch --no-tags --depth=1 origin "$BEFORE"; then
+            echo "ref=$BEFORE" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::could not fetch push base $BEFORE; skipping the introduced-expired deferral check"
+          fi
+        fi
+      env:
+        EVENT: ${{ github.event_name }}
+        BASE_BRANCH: ${{ github.base_ref }}
+        BEFORE: ${{ github.event.before }}
+
     - name: Enforce bundle and dependency boundaries
       run: npm run verify:toolchain-foundation
+      env:
+        THUMBS_DEFERRALS_BASE_REF: ${{ steps.deferral-base.outputs.ref }}
 
     # Committed public/wasm/ artifacts (the WASM build itself lives in wasm.yml, #1080).
     - name: Validate WASM artifacts after build

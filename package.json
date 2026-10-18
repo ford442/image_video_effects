@@ -60,7 +60,7 @@
     "thumbs:backfill-hashes": "node scripts/thumbs-backfill-source-hashes.js",
     "build:source-hashes": "node scripts/build-shader-source-hashes.js",
     "upgrades:record": "node scripts/record-shader-upgrades.js",
-    "thumbs:test": "node --test scripts/generate-shader-thumbnails.test.js scripts/check-thumbnail-coverage.test.js scripts/defer-thumbnail.test.js scripts/shader-upgrade-tracking.test.js && python3 scripts/test_audit_thumbnail_integrity.py",
+    "thumbs:test": "node --test scripts/generate-shader-thumbnails.test.js scripts/check-thumbnail-coverage.test.js scripts/defer-thumbnail.test.js scripts/verify-thumbs-deferrals.test.js scripts/shader-upgrade-tracking.test.js && python3 scripts/test_audit_thumbnail_integrity.py",
     "verify:thumbs-deferrals": "node scripts/verify-thumbs-deferrals.js",
     "thumbs:check-regression": "node scripts/check-thumbnail-coverage.js",
     "verify:device-policy": "node scripts/verify-device-policy-sync.js",
