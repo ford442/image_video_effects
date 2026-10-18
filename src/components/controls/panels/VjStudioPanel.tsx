@@ -14,6 +14,7 @@ import { shouldShowMidiControls } from '../../../utils/deviceCapabilities';
 import type { MyVjSet } from '../../../services/myVjSets';
 import type { UseProjectFileReturn } from '../../../hooks/useProjectFile';
 import { ProjectFilePanel } from './ProjectFilePanel';
+import { usePersistedToggle } from '../../../hooks/usePersistedToggle';
 
 export interface VjStudioPanelProps {
     studioOpen: boolean;
@@ -72,7 +73,6 @@ export const VjStudioPanel: React.FC<VjStudioPanelProps> = ({
     studioOpen,
     setStudioOpen,
     modes,
-    slotParams,
     activeSlot,
     setActiveSlot,
     liveControl,
@@ -102,16 +102,16 @@ export const VjStudioPanel: React.FC<VjStudioPanelProps> = ({
     getCurrentChain,
     onUpdateStack,
     onUpdateParams,
-    onGenerateFromVibe,
     projectFile,
 }) => {
-    const [historyOpen, setHistoryOpen] = useState(false);
-    const [setsOpen, setSetsOpen] = useState(false);
-    const [shareOpen, setShareOpen] = useState(true);
-    const [midiOpen, setMidiOpen] = useState(true);
-    const [oscOpen, setOscOpen] = useState(() => osc?.oscEnabled ?? false);
-    const [history, setHistory] = useState<VJHistoryEntry[]>([]);
-    const [myVjSets, setMyVjSets] = useState<MyVjSet[]>([]);
+    const [historyOpen, setHistoryOpen] = usePersistedToggle('vj.history', false);
+    const [setsOpen, setSetsOpen] = usePersistedToggle('vj.sets', false);
+    const [shareOpen, setShareOpen] = usePersistedToggle('vj.share', true);
+    const [midiOpen, setMidiOpen] = usePersistedToggle('vj.midi', true);
+    const [oscOpen, setOscOpen] = usePersistedToggle('vj.osc', () => osc?.oscEnabled ?? false);
+    // A section restored as open never fires its open handler, so seed its data here.
+    const [history, setHistory] = useState<VJHistoryEntry[]>(() => (historyOpen ? loadVJHistory() : []));
+    const [myVjSets, setMyVjSets] = useState<MyVjSet[]>(() => (setsOpen ? loadMyVjSets() : []));
     const [vjSetName, setVjSetName] = useState('');
     const [importStatus, setImportStatus] = useState<string | null>(null);
     const [includeTimeline, setIncludeTimeline] = useState(true);

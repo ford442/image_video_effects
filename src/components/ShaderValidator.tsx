@@ -139,7 +139,7 @@ export const ShaderValidator: React.FC = () => {
             url,
           });
         }
-      } catch (e) {
+      } catch {
         console.warn(`Could not load ${listFile}`);
       }
     }

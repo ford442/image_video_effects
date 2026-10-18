@@ -5,5 +5,5 @@
  */
 
 export function spawnRenderWorker(): Worker {
-  return new Worker(/* webpackChunkName: "render-worker" */ new URL('./render.worker.ts', import.meta.url));
+  return new Worker(new URL('./render.worker.ts', import.meta.url), { type: 'module' });
 }

@@ -1,4 +1,3 @@
-import React from 'react';
 import { SIM_STATE_COUNT_CHOICES } from '../../graphLab/graphDraft';
 import type { RuntimeSimRingRequest } from '../../renderer/runtimeGraphs';
 import { SIM_STATE_ELEMENT_BYTES } from '../../renderer/webgpu/simRing';
@@ -8,6 +7,8 @@ export interface SimRingSectionProps {
   request: RuntimeSimRingRequest | null;
   /** A node still uses a sim role or a simState dispatch, so the ring cannot be turned off. */
   locked: boolean;
+  /** Draft entries whose WGSL declares @group(1) (naga reflection). */
+  simEntries?: readonly string[];
   onToggle: (enabled: boolean) => void;
   onStateCount: (stateCount: number) => void;
 }
@@ -19,10 +20,20 @@ const mib = (elements: number) => ((elements * SIM_STATE_ELEMENT_BYTES) / 104857
  * `simRing` request. It adds no binding: the renderer arms the ring only when an
  * entry that declares @group(1) compiles, and binds it only to those entries.
  */
-export function SimRingSection({ request, locked, onToggle, onStateCount }: SimRingSectionProps) {
+export function SimRingSection({ request, locked, simEntries = [], onToggle, onStateCount }: SimRingSectionProps) {
   const on = request !== null;
   return (
     <div className="graph-lab__simring" data-testid="graph-lab-simring">
+      <p className="graph-lab__muted" data-testid="sim-ring-entries">
+        {simEntries.length > 0 ? (
+          <>
+            Declares <code>@group(1)</code> (read from the WGSL): {simEntries.join(', ')}.
+            {!on && ' Turn the ring on to arm it for them.'}
+          </>
+        ) : (
+          <>No entry in this draft declares <code>@group(1)</code>.</>
+        )}
+      </p>
       <label className="graph-lab__field graph-lab__field--inline">
         <input
           type="checkbox"

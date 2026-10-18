@@ -17,31 +17,13 @@
 //  State:    dataTextureA = (u_total, r, phi/2π, blendAlpha) — raw sim state,
 //            never tone-mapped; extraBuffer is declared but never written
 //            (all persistent data lives in the uniform ripple ring buffer).
-//  Upgraded: 2026-09-06
-//  Ideas: radial vs azimuthal Chladni tint; Lambert from signed displacement
+//  Upgraded: 2026-10-17
+//  Ideas: radial vs azimuthal tint; displacement Lambert; antinode disks; radial beat
 //  A packing: raw u_total, r, phi/2π, blendAlpha
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0)  var u_sampler: sampler;
-@group(0) @binding(1)  var readTexture: texture_2d<f32>;
-@group(0) @binding(2)  var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3)  var<uniform> u: Uniforms;
-@group(0) @binding(4)  var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5)  var non_filtering_sampler: sampler;
-@group(0) @binding(6)  var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7)  var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8)  var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9)  var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config:      vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,  // x=ModeScale, y=ColourMode, z=NodeSharpness, w=ModeCount
-    ripples:     array<vec4<f32>, 50>,
-}
+#include "_prelude.wgsl"
+// zoom_params: x=ModeScale, y=ColourMode, z=NodeSharpness, w=ModeCount
 
 // ─── Polynomial Bessel approximations (Abramowitz & Stegun 9.4) ───
 // J₀(x)  — accurate for x ∈ [0, 8] via two-range polynomial
@@ -264,6 +246,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 2 — displacement Lambert (signed u as a drum surface)
     let lambert = 0.62 + 0.38 * clamp(u_total * 1.8, -1.0, 1.0);
     chladniColor = chladniColor * lambert;
+    // Idea 3 — antinode disks: soft peaks away from the node lines
+    let antinode = smoothstep(0.28, 0.75, abs(u_total)) * (1.0 - nodeGlow);
+    chladniColor = chladniColor + baseColor * antinode * 0.28;
+    // Idea 4 — beat between the first two radial zeros (α02 − α01)
+    let radialBeat = 0.5 + 0.5 * cos((5.5201 - 2.4048) * 0.5 * time);
+    let radialShare = abs(u_radial) / (abs(u_total) + 0.08);
+    chladniColor = chladniColor * (0.78 + 0.22 * radialBeat * smoothstep(0.2, 0.7, radialShare));
 
     // Strike flash tints the impact zone hot white while the hit rings down
     chladniColor = mix(chladniColor, vec3<f32>(1.0, 0.98, 0.92), clamp(strikeGlow, 0.0, 1.0) * 0.6);

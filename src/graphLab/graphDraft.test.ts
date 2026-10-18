@@ -233,3 +233,44 @@ describe('graphDraft sim ring', () => {
     expect(back.graph.nodes[0]?.dispatch).toBeUndefined();
   });
 });
+
+describe('GraphDraft v2 (layout, upgrade, inferred roles)', () => {
+  it('upgrades a v1 draft (no version, no layout) and rejects non-drafts and future versions', async () => {
+    const { upgradeDraft, GRAPH_DRAFT_VERSION } = await import('./graphDraft');
+    const v1 = { id: 'x', name: 'X', category: 'simulation', envelope: {}, multipassExtra: {}, graph: { maxPassesPerFrame: 4, nodes: [] } };
+    const up = upgradeDraft(v1);
+    expect(up?.version).toBe(GRAPH_DRAFT_VERSION);
+    expect(up?.layout).toEqual({});
+    expect(up?.graph.maxPassesPerFrame).toBe(4);
+    expect(upgradeDraft({ id: 1 })).toBeNull();
+    expect(upgradeDraft({ ...v1, version: 99 })).toBeNull();
+    expect(upgradeDraft({ ...v1, layout: { a: { x: 1, y: 2 }, bad: { x: 'no' } } })?.layout).toEqual({ a: { x: 1, y: 2 } });
+  });
+
+  it('positions follow renames, duplicates and removals; layout never reaches the graph', async () => {
+    const { addNode, duplicateNodeAt, newDraft, removeNodeAt, resolvedLayout, setNodeId, setNodePosition, defaultNodePosition } =
+      await import('./graphDraft');
+    let d = addNode(addNode(newDraft(), 'a-step'), 'b-render');
+    expect(resolvedLayout(d)).toEqual([defaultNodePosition(0), defaultNodePosition(1)]);
+    d = setNodePosition(d, 'step', { x: 10.4, y: 20.6 });
+    expect(d.layout.step).toEqual({ x: 10, y: 21 });
+    expect(setNodePosition(d, 'step', { x: 10, y: 21 })).toBe(d);
+    d = setNodeId(d, 0, 'sim');
+    expect(d.layout).toEqual({ sim: { x: 10, y: 21 } });
+    d = duplicateNodeAt(d, 0);
+    expect(d.layout[d.graph.nodes[1]!.id]).toEqual({ x: 50, y: 61 });
+    d = removeNodeAt(d, 0);
+    expect(d.layout.sim).toBeUndefined();
+    expect(JSON.stringify(d.graph)).not.toContain('"x"');
+  });
+
+  it('addNode with inferred roles drops a second color writer and turns the sim ring on', async () => {
+    const { addNode, newDraft, isSimRingDraft } = await import('./graphDraft');
+    let d = addNode(newDraft(), 'plain', 0, { reads: ['read'], writes: ['color'] });
+    expect(d.graph.nodes[0]).toMatchObject({ reads: ['read'], writes: ['color'] });
+    d = addNode(d, 'dla-walkers', 1, { reads: ['dataC', 'simState'], writes: ['simState', 'color'], dispatch: 'simState' });
+    expect(d.graph.nodes[1]).toMatchObject({ reads: ['dataC', 'simState'], writes: ['simState'], dispatch: 'simState' });
+    expect(isSimRingDraft(d)).toBe(true);
+    expect(d.envelope.simRing).toBeDefined();
+  });
+});

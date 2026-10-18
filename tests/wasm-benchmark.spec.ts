@@ -13,6 +13,7 @@ import {
   startStaticServer,
   stopStaticServer,
   buildAppUrl,
+  isGpuProbeOk,
   waitForTestApi,
   loadShaderOnSlot,
   applyTestState,
@@ -38,9 +39,11 @@ const WARMUP_FRAMES = 10;
 const UNCAPPED_FRAMES = 120;
 
 test.beforeAll(async () => {
+  // beforeAll takes no timeout argument; set it inside the hook.
+  test.setTimeout(60000);
   // Cross-origin isolated (#1080): performance.now() at ~5 µs instead of ~100 µs.
   await startStaticServer(undefined, { isolated: true });
-}, 60000);
+});
 
 test.afterAll(async () => {
   await stopStaticServer();
@@ -274,6 +277,7 @@ test('format tier FP16 vs FP32 (WebGPU)', async ({ page }) => {
 test('WASM getGPUTimings API surface', async ({ page }) => {
   await page.goto(buildAppUrl('wasm'), { waitUntil: 'networkidle' });
   await waitForTestApi(page);
+  test.skip(!(await isGpuProbeOk(page)), 'needs WebGPU');
 
   const timings = await page.evaluate(() => (window as any).__pixelocity__?.getGPUTimings?.());
   expect(timings).toBeDefined();

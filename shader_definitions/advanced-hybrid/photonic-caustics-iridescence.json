@@ -2,7 +2,7 @@
   "id": "photonic-caustics-iridescence",
   "name": "Photonic Caustics Iridescence",
   "url": "shaders/photonic-caustics-iridescence.wgsl",
-  "description": "Backward photon-traced caustics combined with thin-film optical iridescence. High-energy caustic focal concentrations illuminate an iridescent surface layer with chromatic dispersion, Fresnel reflections, and exact temporal feedback.",
+  "description": "Backward photon-traced caustics combined with thin-film optical iridescence, catastrophe-optics fold and Pearcey cusp Airy supernumerary fringes, and subsurface depth-bounce secondary caustic aureoles.",
   "tags": [
     "caustics",
     "iridescence",
@@ -24,7 +24,8 @@
     "audio-reactive",
     "exact-feedback",
     "temporal-state",
-    "ACES-tonemapped"
+    "ACES-tonemapped",
+    "upgraded-rgba"
   ],
   "params": [
     {

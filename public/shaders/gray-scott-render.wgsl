@@ -1,25 +1,9 @@
 // ═══ GRAY-SCOTT TANK — RENDER ══════════════════════════════════════════════
+//  Upgraded: 2026-10-18
+//  Ideas: iso-V threads
+//  A packing: raw (U, V, age, seed mask). Display ACES is writeTexture only.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
   let c = v * s;
@@ -56,6 +40,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var col = hsv2rgb(hue, mix(0.45, 0.95, V), mix(0.08, 1.05, V * 1.2 + (1.0 - U) * 0.25));
   col = mix(src.rgb * 0.12, col, 0.9);
   col += vec3<f32>(0.2, 0.55, 1.0) * plasmaBuffer[0].y * V * V * 0.2;
+  // Idea: iso-V threads — hairlines where concentration crosses two fixed levels.
+  let thread = exp(-abs(V - 0.36) * 48.0) + exp(-abs(V - 0.7) * 64.0);
+  col += vec3<f32>(0.72, 0.9, 1.0) * thread * 0.42;
   let alpha = clamp(src.a * 0.2 + V * 0.72 + st.a * 0.12, 0.0, 1.0);
   textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(col), alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));

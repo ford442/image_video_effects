@@ -1,4 +1,3 @@
-import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { CommunityGallery, CommunityGalleryProps } from './CommunityGallery';
@@ -27,7 +26,7 @@ function makePack(id: string, name: string, chain: SharedChain) {
 }
 
 describe('CommunityGallery', () => {
-  const fetchMock = jest.fn();
+  const fetchMock = vi.fn();
 
   beforeEach(() => {
     _resetCache?.();
@@ -43,7 +42,7 @@ describe('CommunityGallery', () => {
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   function setupFetchHandlers(options: {
@@ -95,8 +94,8 @@ describe('CommunityGallery', () => {
   function renderGallery(props: Partial<CommunityGalleryProps> = {}) {
     const defaultProps: CommunityGalleryProps = {
       open: false,
-      onToggle: jest.fn(),
-      onApplySharedChain: jest.fn(),
+      onToggle: vi.fn(),
+      onApplySharedChain: vi.fn(),
       getCurrentChain: () => makeChain(),
     };
     return render(<CommunityGallery {...defaultProps} {...props} />);
@@ -162,9 +161,9 @@ describe('CommunityGallery', () => {
     const chain = makeChain('liquid-metal');
     setupFetchHandlers({ listPacks: [makePack('pack-1', 'Pack One', chain)], manifest: { 'liquid-metal': { thumbnail_url: './thumbnails/liquid-metal.png' } } });
     // reset the cached manifest so we fetch again in this test
-    require('../hooks/useThumbnailManifest')._resetCache?.();
+    (await import('../hooks/useThumbnailManifest') as { _resetCache?: () => void })._resetCache?.();
 
-    const onApplySharedChain = jest.fn();
+    const onApplySharedChain = vi.fn();
     renderGallery({ open: true, onApplySharedChain });
 
     await screen.findByText('Pack One');
@@ -187,7 +186,7 @@ describe('CommunityGallery', () => {
   });
 
   it('calls onToggle when the header is clicked', () => {
-    const onToggle = jest.fn();
+    const onToggle = vi.fn();
     renderGallery({ open: false, onToggle });
     fireEvent.click(screen.getByText('Community Gallery'));
     expect(onToggle).toHaveBeenCalled();
@@ -279,7 +278,7 @@ describe('CommunityGallery', () => {
   it('round-trip: publish → list → apply decodes original chain', async () => {
     const chain = makeChain('liquid-metal');
     const pack = makePack('rt-pack', 'Round Trip Pack', chain);
-    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     let listCallCount = 0;
 
     fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
@@ -314,7 +313,7 @@ describe('CommunityGallery', () => {
       throw new Error(`unexpected fetch: ${url}`);
     });
 
-    const onApplySharedChain = jest.fn();
+    const onApplySharedChain = vi.fn();
     renderGallery({ open: true, getCurrentChain: () => chain, onApplySharedChain });
 
     await screen.findByText('No community packs yet — be the first!');

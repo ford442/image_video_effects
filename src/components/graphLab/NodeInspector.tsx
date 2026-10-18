@@ -1,7 +1,7 @@
-import React from 'react';
 import { EntryCatalog } from '../../graphLab/entryCatalog';
 import { RoleSide } from '../../graphLab/graphDraft';
 import { GraphDispatchDomain, GraphNodeDef, GraphRole, MAX_REPEAT, NODE_SCALE_LEVELS } from '../../renderer/multipassGraph';
+import type { EntryPorts } from '../../graphLab/portInference';
 import { EntryPicker } from './EntryPicker';
 
 /** Binding each role maps to (docs/MULTIPASS_GRAPH.md "Texture roles"). */
@@ -26,6 +26,10 @@ export interface NodeInspectorProps {
   writeRoles: readonly GraphRole[];
   /** The draft uses the sim ring, so a node may dispatch over simState. */
   simRing: boolean;
+  /** What the entry's WGSL binds (naga reflection); undefined while it is being read. */
+  ports?: EntryPorts;
+  /** Where the node's roles and its WGSL disagree (portInference.portWarnings). */
+  warnings?: string[];
   onId: (id: string) => void;
   onEntry: (entry: string) => void;
   onToggleRole: (side: RoleSide, role: GraphRole) => void;
@@ -74,6 +78,26 @@ function RoleToggles({
   );
 }
 
+function PortSummary({ ports }: { ports: EntryPorts | undefined }) {
+  if (!ports) return <small className="graph-lab__muted">reading the WGSL…</small>;
+  if (ports.status === 'error') return <small className="graph-lab__error">{ports.message}</small>;
+  const list = (roles: readonly string[]) => (roles.length ? roles.join(', ') : 'nothing');
+  return (
+    <small>
+      reads {list(ports.reads)} · writes {list(ports.writes)}
+      {ports.declaresSimRing && (
+        <>
+          {' '}
+          · declares <code>@group(1)</code>
+        </>
+      )}
+      {ports.usesHistory && ' · history ring'}
+      {ports.workgroupSize && ` · workgroup ${ports.workgroupSize.join('×')}`}
+      {ports.status === 'unvalidated' && ` (${ports.message})`}
+    </small>
+  );
+}
+
 export function NodeInspector({
   node,
   index,
@@ -81,6 +105,8 @@ export function NodeInspector({
   readRoles,
   writeRoles,
   simRing,
+  ports,
+  warnings = [],
   onId,
   onEntry,
   onToggleRole,
@@ -102,6 +128,18 @@ export function NodeInspector({
         <span>Shader entry</span>
         <EntryPicker catalog={catalog} value={node.entry} onPick={onEntry} />
       </div>
+
+      <div className="graph-lab__field" data-testid="node-ports">
+        <span>WGSL ports</span>
+        <PortSummary ports={ports} />
+      </div>
+      {warnings.length > 0 && (
+        <ul className="graph-lab__port-warnings" data-testid="node-port-warnings">
+          {warnings.map((w) => (
+            <li key={w}>{w}</li>
+          ))}
+        </ul>
+      )}
 
       <div className="graph-lab__field">
         <span>Reads</span>

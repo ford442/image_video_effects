@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, click-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-06
-//  Ideas: crystal Cauchy facet dispersion & TIR; dielectric plasma arc filaments; agate mineral growth banding
+//  Upgraded: 2026-10-17
+//  Ideas: crystal Cauchy facet dispersion & TIR; dielectric plasma arc filaments; agate mineral growth banding; druzy quartz micro-sparkle collar; piezoelectric phantom zoning
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Plasma Intensity, y=Crystal Density, z=Holographic Hue, w=Core Rotation Speed
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Plasma Intensity, y=Crystal Density, z=Holographic Hue, w=Core Rotation Speed
 
 fn hash(p: vec3<f32>) -> f32 {
     return fract(sin(dot(p, vec3<f32>(12.9898, 78.233, 45.164))) * 43758.5453);
@@ -169,6 +151,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         if (d < 0.001) {
             let n = calcNormal(p, time, audio);
+            let rep_p = vec3<f32>(fract(vec2<f32>(p.x, p.y) / 4.0 + vec2<f32>(0.5)) * 4.0 - vec2<f32>(2.0), p.z);
+            let cavRadius = length(rep_p);
 
             if (matId > 0.5) {
                 // ─── Native Idea 1: Crystal Cauchy Facet Dispersion & TIR ───
@@ -183,9 +167,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
                 let tirFresnel = pow(1.0 - viewAngle, 4.0);
                 let tirGlint = vec3<f32>(1.0, 0.95, 0.85) * tirFresnel * 1.8;
 
+                // ─── Idea 5: Piezoelectric phantom zoning ───
+                // Concentric hexagonal growth-stage phantom planes inside the crystals
+                let phantomPhase = cavRadius * 36.0 - dot(abs(n), vec3<f32>(5.5)) + time * 1.2;
+                let phantomBand = pow(0.5 + 0.5 * sin(phantomPhase), 8.0);
+                let piezoGlow = palette(phantomPhase * 0.08 + 0.35) * phantomBand * (0.45 + bass * 0.75 + shellShock * 0.9);
+
                 // Subsurface scattering approximation
                 let sss = smoothstep(0.0, 1.0, map(p + rd * 0.1, time, audio).x);
-                col = (dispersedHolo * (0.5 + 0.5 * sss) + tirGlint) * (1.0 + shellShock * 0.7 + mids * 0.15);
+                col = (dispersedHolo * (0.5 + 0.5 * sss) + tirGlint + piezoGlow) * (1.0 + shellShock * 0.7 + mids * 0.15);
             } else {
                 // ─── Native Idea 3: Agate Mineral Growth Banding ───
                 let rimDist = length(p);
@@ -197,10 +187,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
                 let fineLine = smoothstep(0.75, 0.95, sin(bandFreq * 2.5)) * 0.18;
                 let rockyColor = baseRock + vec3<f32>(fineLine * 0.9, fineLine * 0.7, fineLine * 0.5);
 
+                // ─── Idea 4: Druzy quartz micro-sparkle collar ───
+                // Sub-millimeter quartz drusy bed lining the cavity rim where agate meets the hollow
+                let collarMask = exp(-abs(cavRadius - 1.2) * 14.0);
+                let druzyGrain = pow(hash(floor(p * 58.0) + floor(rd * 9.0 + time * 0.6)), 12.0);
+                let druzySparkle = palette(cavRadius * 2.0 + treble * 0.5) * collarMask * druzyGrain * (1.6 + treble * 2.2);
+
                 let l = normalize(vec3<f32>(1.0, 1.0, -1.0));
                 let diff = max(dot(n, l), 0.0);
                 let spec = pow(max(dot(reflect(-l, n), -rd), 0.0), 16.0);
-                col = rockyColor * (diff + 0.2) + vec3<f32>(spec * 0.1);
+                col = rockyColor * (diff + 0.2) + vec3<f32>(spec * 0.1) + druzySparkle;
             }
             break;
         }

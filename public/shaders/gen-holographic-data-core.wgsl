@@ -3,31 +3,12 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, click-reactive, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-09-06
-//  Ideas: logic bus photon energy packets; hexagonal quantum containment cage; depth parallax moiré fringe interference
-//  A packing: ACES display RGBA
+//  Upgraded: 2026-10-17
+//  Ideas: logic bus photon energy packets; hexagonal quantum containment cage; depth parallax moiré fringe interference; corner-cube retroreflector bevels; bus-junction standing-wave nodes; inner-core Bragg memory-page strata; Pepper's-ghost beamsplitter parallax double-reflection
+//  A packing: linear HDR display RGBA history (ACES on writeTexture)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══════════════════════════════════════════════════════════════
 // Thin-Film Interference Physics
@@ -280,7 +261,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 let photonZ = pow(max(0.5 + 0.5 * sin(p.z * 3.0 - packetSpeed), 0.0), 16.0);
                 let photonX = pow(max(0.5 + 0.5 * sin(p.x * 3.0 + packetSpeed * 0.8), 0.0), 16.0);
                 let photonPulse = (photonZ + photonX) * (1.2 + bass * 1.5);
-                glow += (vec3<f32>(0.0, 0.8, 0.8) + vec3<f32>(0.3, 1.0, 0.6) * photonPulse) * (0.006 / g_dist) * (1.0 + interference.g) * glowBoost;
+                // ─── Idea 5: Bus-junction standing-wave nodes ───
+                let spacing_vol = 4.0 / max(u.zoom_params.x, 0.1);
+                let c_vol = vec3<f32>(spacing_vol);
+                let q_vol = (p + 0.5 * c_vol) % c_vol - 0.5 * c_vol;
+                let portEnvelope = exp(-abs(length(q_vol) - 0.6) * 14.0);
+                let standingWave = pow(abs(cos(q_vol.x * 10.0) * cos(q_vol.y * 10.0) * cos(q_vol.z * 10.0)), 3.0);
+                let junctionNode = portEnvelope * standingWave * (1.0 + mids * 1.4);
+                glow += (vec3<f32>(0.0, 0.8, 0.8) + vec3<f32>(0.3, 1.0, 0.6) * photonPulse + vec3<f32>(0.95, 0.85, 0.35) * junctionNode * 1.8) * (0.006 / g_dist) * (1.0 + interference.g) * glowBoost;
             }
         }
 
@@ -292,18 +280,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let spacing = 4.0 / max(u.zoom_params.x, 0.1);
             let c_node = vec3<f32>(spacing);
             let q_cell = (p + 0.5 * c_node) % c_node - 0.5 * c_node;
+            let cell_id_hit = floor((p + 0.5 * c_node) / c_node);
 
             // ─── Native Idea 2: Hexagonal quantum containment lattice cage ───
             let hexDist = max(abs(q_cell.x) * 0.866025 + abs(q_cell.y) * 0.5, abs(q_cell.y)) - 0.68;
             let cageWire = smoothstep(0.04, 0.005, abs(hexDist)) * step(abs(q_cell.z), 0.62);
             let cageGlow = vec3<f32>(0.1, 0.85, 1.0) * cageWire * (0.7 + mids * 0.5);
 
+            // ─── Idea 4: Corner-cube retroreflector bevels ───
+            let cornerSum = abs(q_cell.x) + abs(q_cell.y) + abs(q_cell.z);
+            let bevelMask = smoothstep(1.32, 1.52, cornerSum) * smoothstep(1.78, 1.56, cornerSum);
+            let retroAlign = pow(max(dot(n, -rd), 0.0), 5.0);
+            let cellPulse = 0.5 + 0.5 * sin(cell_id_hit.x * 12.3 + cell_id_hit.y * 45.6 + cell_id_hit.z * 78.9 + time * pulse_rate * 5.0);
+            let retroFlash = vec3<f32>(0.35, 1.0, 0.9) * bevelMask * retroAlign * (0.8 + cellPulse * 1.4 + treble * 0.8);
+
+            // ─── Idea 5 (surface): Bus-junction port ring at cube Entry ───
+            let portRing = exp(-abs(length(q_cell) - 0.6) * 24.0) * smoothstep(0.11, 0.04, min(length(q_cell.xy), min(length(q_cell.yz), length(q_cell.xz))));
+            let junctionSurface = vec3<f32>(1.0, 0.88, 0.4) * portRing * (0.7 + bass * 0.8);
+
+            // ─── Idea 6: Inner-core Bragg memory-page strata ───
+            let braggLamella = pow(0.5 + 0.5 * sin(q_cell.z * 48.0 + cellPulse * 6.28318), 4.0);
+            let braggPhase = dot(n, -rd) * 8.0 + q_cell.y * 14.0 + time * pulse_rate * 2.0;
+            let braggStrata = (0.5 + 0.5 * cos(braggPhase + vec3<f32>(0.0, 2.094, 4.188))) * braggLamella * (0.85 + mids * 0.9);
+
             if (res.mat_id == 1.0) {
-                col += vec3<f32>(0.1, 0.5, 0.8) * fresnel * (1.0 + intColor.b) + cageGlow;
+                col += vec3<f32>(0.1, 0.5, 0.8) * fresnel * (1.0 + intColor.b) + cageGlow + retroFlash + junctionSurface;
             } else if (res.mat_id == 2.0) {
-                col += vec3<f32>(1.0, 0.5, 0.2) * (1.0 + fresnel) * (1.0 + intColor.r) + cageGlow * 0.5;
+                col += vec3<f32>(1.0, 0.5, 0.2) * (1.0 + fresnel) * (1.0 + intColor.r) + cageGlow * 0.5 + retroFlash * 0.7 + braggStrata * 1.15;
             } else if (res.mat_id == 3.0) {
-                col += vec3<f32>(0.2, 0.8, 1.0) * 0.5 * fresnel * (1.0 + intColor.g);
+                col += vec3<f32>(0.2, 0.8, 1.0) * 0.5 * fresnel * (1.0 + intColor.g) + junctionSurface * 1.2;
             }
             break;
         }
@@ -354,8 +359,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depth_factor = 1.0 - smoothstep(10.0, 40.0, t);
     alpha *= 0.7 + depth_factor * 0.3;
     
-    let ghost_col = col * 0.5;
-    col = mix(col, ghost_col, PEPPER_GHOST_REFLECTION);
+    // ─── Idea 7: Pepper's-ghost 45-degree beamsplitter parallax double-reflection ───
+    let ghostShift = vec2<i32>(i32(clamp(uv.x * (6.0 + depth_factor * 8.0), -12.0, 12.0)), -3);
+    let ghostCoord = clamp(pixel + ghostShift, vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1));
+    let ghostHistory = textureLoad(dataTextureC, ghostCoord, 0).rgb;
+    let ghost_col = ghostHistory * vec3<f32>(0.65, 1.05, 1.25) * 0.65 + col * 0.35;
+    col = mix(col, ghost_col, PEPPER_GHOST_REFLECTION * (1.0 + depth_factor * 0.8));
     
     let speckle = hash21(uv * 80.0 + vec2<f32>(sin(time * 0.7), cos(time * 0.6)) * 2.0);
     alpha *= 0.92 + speckle * 0.16;

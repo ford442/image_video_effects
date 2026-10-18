@@ -656,9 +656,32 @@
       "added": "2026-10-11T17:29:07.940749"
     },
     {
+      "filename": "2026-10-13_chrono-luminescent-voxel-citadel.md",
+      "title": "Chrono-Luminescent Voxel Citadel",
+      "added": "2026-10-13T15:37:53.256987"
+    },
+    {
       "filename": "2026-10-12_neon-geode-crystallization.md",
       "title": "Neon Geode Crystallization",
       "added": "2026-10-12T15:20:48.948810"
+    },
+    {
+      "filename": "2026-10-14_aetheric-tachyon-lattice.md",
+      "title": "Aetheric Tachyon Lattice",
+      "added": "2026-10-14T15:38:03.754329"
+    },
+    {
+      "filename": "2026-10-15_synaptic-void-weaver.md",
+      "title": "Synaptic Void-Weaver",
+      "added": "2026-10-15T16:12:06.031203",
+      "status": "completed"
+    },
+    {
+      "filename": "2026-10-17_abyssal-ferrofluid-singularity.md",
+      "title": "Abyssal Ferrofluid Singularity",
+      "added": "2026-10-17T15:28:34.031544",
+      "status": "completed",
+      "completed_at": "2026-10-18T08:01:20.210494"
     }
   ],
   "current": null,
@@ -1318,6 +1341,25 @@
       "added": "2026-10-11T17:29:07.940749",
       "status": "completed",
       "completed_at": "2026-10-13T08:20:08.492767+00:00"
+    },
+    {
+      "filename": "2026-10-12_neon-geode-crystallization.md",
+      "title": "Neon Geode Crystallization",
+      "added": "2026-10-12T15:20:48.948810",
+      "status": "completed",
+      "completed_at": "2026-10-14T08:03:32.975443+00:00"
+    },
+    {
+      "file": "2026-10-14_aetheric-tachyon-lattice.md",
+      "status": "completed",
+      "completed_at": "2026-10-15T08:08:18.877033+00:00"
+    },
+    {
+      "filename": "2026-10-16_prismatic-singularity-engine.md",
+      "title": "Prismatic Singularity Engine",
+      "added": "2026-10-16T15:20:26.922472",
+      "status": "completed",
+      "completed_at": "2026-10-17T08:06:59.181430"
     }
   ],
   "rejected": [],

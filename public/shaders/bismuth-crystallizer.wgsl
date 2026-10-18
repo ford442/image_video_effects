@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Bismuth Crystallizer
 //  Category: image
-//  Features: crystal, growth, bismuth, audio-iridescence, step-growth, depth-facets, metallic-shimmer
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Updated: 2026-05-31
-//  By: Grok (visual flourish — richer iridescence, audio-driven growth, metallic depth)
+//  Upgraded: 2026-10-16
+//  Ideas: terrace rims on the hopper stair; tarnish wells in the stair center
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -19,7 +20,11 @@ fn hueShift(color: vec3<f32>, shift: f32) -> vec3<f32> {
 
 // Fresnel for metals (complex IOR approximation)
 fn fresnelMetal(cosTheta: f32, F0: vec3<f32>) -> vec3<f32> {
-    return F0 + (vec3<f32>(1.0) - F0) * pow(1.0 - cosTheta, 5.0);
+    return F0 + (vec3<f32>(1.0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -58,6 +63,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var height = 0.0;
     var size = 1.0;
     var current_offset = vec2<f32>(0.0);
+    var terraceEdge = 1.0;
+    var hitTerrace = 0.0;
 
     // Iterative box SDF-like approach for hopper crystals
     for (var i = 0.0; i < steps_param; i = i + 1.0) {
@@ -65,6 +72,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         if (d < size) {
             height = i;
+            hitTerrace = 1.0;
+            terraceEdge = (size - d) / max(size, 0.0001);
             let shrink = 0.1;
             size = size - shrink;
 
@@ -94,7 +103,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Displace UV based on crystal structure
     let refraction_scale = 0.01;
-    let uv_refracted = uv + vec2<f32>(sin(height), cos(height)) * refraction_scale;
+    let uv_refracted = clamp(uv + vec2<f32>(sin(height), cos(height)) * refraction_scale, vec2<f32>(0.0), vec2<f32>(1.0));
     let refracted_color = textureSampleLevel(readTexture, u_sampler, uv_refracted, 0.0).rgb;
 
     // ═══════════════════════════════════════════════════════════════
@@ -135,15 +144,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let crystalTemp = 1.0 + mids * 0.5 + treble * 0.4;
     final_color = final_color * mix(vec3<f32>(0.9, 0.95, 1.1), vec3<f32>(1.15, 0.95, 0.75), crystalTemp * 0.6);
 
-    // ═══════════════════════════════════════════════════════════════
-    // Transmission Alpha
-    // ═══════════════════════════════════════════════════════════════
-    
-    // Metallic bismuth is mostly reflective, but thin oxide layers transmit
-    let transmission = (1.0 - metallic * 0.7) * oxidePurity * (1.0 - distFromCenter * 0.5);
-    let alpha = clamp(transmission, 0.4, 1.0);
+    // Idea 1 — terrace rim. Idea 2 — tarnish well in the open center of the stair.
+    let inCrystal = hitTerrace;
+    let rim = smoothstep(0.22, 0.0, terraceEdge) * inCrystal;
+    let tarnish = smoothstep(0.35, 0.9, terraceEdge) * inCrystal;
+    final_color = mix(final_color, final_color * vec3<f32>(0.42, 0.52, 0.36), tarnish * 0.55);
+    final_color = final_color + vec3<f32>(1.0, 0.9, 0.68) * rim * (0.35 + treble * 0.15);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, alpha));
+    let transmission = (1.0 - metallic * 0.7) * oxidePurity * (1.0 - distFromCenter * 0.5);
+    let alpha = clamp(transmission * (0.55 + rim * 0.45) + tarnish * 0.12, 0.0, 1.0);
+    let display = aces(max(final_color, vec3<f32>(0.0)));
+    let pixel = vec2<i32>(global_id.xy);
+    textureStore(writeTexture, pixel, vec4<f32>(display, alpha));
+    textureStore(dataTextureA, pixel, vec4<f32>(display, alpha));
     
     // Pass depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

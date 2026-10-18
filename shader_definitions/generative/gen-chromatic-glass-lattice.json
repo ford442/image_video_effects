@@ -3,7 +3,7 @@
   "name": "Chromatic Glass Lattice",
   "category": "generative",
   "url": "shaders/gen-chromatic-glass-lattice.wgsl",
-  "description": "Raymarched 3D chromatic glass lattice with Cauchy multi-order dispersion, internal TIR caustic ribs, acoustic resonance stress birefringence, and micro-fracture edge sparkle glints.",
+  "description": "Raymarched 3D chromatic glass lattice with Cauchy multi-order dispersion, Beer-Lambert optical path absorption, waveguide core modes, tetrahedral curvature beveled strut ridges, Airy diffraction node rings, and stress birefringence.",
   "workgroup_size": [
     16,
     16,

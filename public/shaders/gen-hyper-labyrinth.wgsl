@@ -2,33 +2,12 @@
 // Hyper Labyrinth - 4D Maze Visualization
 // Category: generative
 // Features: 4D geometry, raymarching, neon aesthetics
-// Upgrade (2026-09-06): gyroid zero-set ridge; W-slice hue
-// Ideas: maze midline glow; 4th-coordinate neon tint
+// Upgraded: 2026-10-17
+// Ideas: maze midline; W-slice tint; cul-de-sac chambers; floor treads
 // A packing: persisted neon RGB + alpha
 // ═══════════════════════════════════════════════════════════════
 
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Use for persistence/trail history
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>; // Previous frame (A)
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>; // Or generic object data
-
-// ---------------------------------------------------
-struct Uniforms {
-    config: vec4<f32>, // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>, // x=ZoomTime, y=MouseX, z=MouseY (0-1, y=0 top), w=MouseDown
-    zoom_params: vec4<f32>, // x=Param1 (scale), y=Param2 (morph speed), z=Param3 (glow), w=Param4 (thickness)
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ── Color science helpers ───────────────────────────────────────
 // ACES filmic approximation (HDR in, display-ready out)
@@ -257,6 +236,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Idea 2 — W-slice hue from the rotated 4th coordinate
         let wHue = 0.5 + 0.5 * sin(p4.w * 2.4);
         neon = mix(neon, neon.bgr * vec3<f32>(0.85 + wHue * 0.4, 1.0, 1.25 - wHue * 0.35), 0.22);
+        // Idea 3 — cul-de-sac chambers where the gyroid gradient vanishes on the wall
+        let hx = q.x * 0.5;
+        let hy = q.y * 0.5;
+        let hz = q.z * 0.5;
+        let hw = q.w * 0.5;
+        let gx = cos(hx) * cos(hy) - sin(hw) * sin(hx);
+        let gy = -sin(hx) * sin(hy) + cos(hy) * cos(hz);
+        let gz = -sin(hy) * sin(hz) + cos(hz) * cos(hw);
+        let gw = -sin(hz) * sin(hw) + cos(hw) * cos(hx);
+        let gradMag = length(vec4<f32>(gx, gy, gz, gw));
+        let culDeSac = exp(-gradMag * gradMag * 2.4) * zeroRidge;
+        neon += vec3<f32>(1.05, 0.72, 0.32) * culDeSac * glowIntensity * 0.5;
+        // Idea 4 — floor treads: world-up faces darken into worn walkways
+        let floorFace = pow(max(n.y, 0.0), 5.0);
+        let tread = floorFace * (0.45 + 0.55 * sin(dot(p.xz, vec2<f32>(7.5, 5.2))));
+        surfCol = surfCol * (1.0 - tread * 0.38);
 
         // Cyber Fresnel rim, treble-reactive, cool electric tint
         let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);

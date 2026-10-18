@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: refraction through the plasma core (gears and pillar seen bent through the furnace); meshing gear train (gears turn on their axles, fold-mirrored neighbours and alternate KIFS levels counter-rotate); piston-chuff exhaust (pillar always streams and puffs 4x per gear revolution); tooth-root heat-check crazing; anvil spark shower
+//  Upgraded: 2026-10-17
+//  Ideas: refraction through the plasma core (gears and pillar seen bent through the furnace); meshing gear train (gears turn on their axles, fold-mirrored neighbours and alternate KIFS levels counter-rotate); piston-chuff exhaust (pillar always streams and puffs 4x per gear revolution); tooth-root heat-check crazing; anvil spark shower; furnace-lit gear faces (core is a point light: inverse-square, plasma-tinted glow on the faces turned toward it); convective throat shimmer (rays grazing the furnace are wobbled by rising noise before the march)
 //  A packing: raw HDR trail RGB (pre-ACES, clamped 0..64) + semantic alpha; C read back as HDR
 // ═══════════════════════════════════════════════════════════════════
 // KIFS gear-train around a plasma furnace, run hot and fast:
@@ -12,8 +12,8 @@
 // well, held overdrive, capped click detonation rings.
 // Contract: 13 bindings, ACES on display only, semantic alpha, dataTextureA
 //           writeback only, exact textureLoad from dataTextureC, plasmaBuffer
-//           three-band audio. The extraBuffer[133..138] spring below is INERT:
-//           the engine zeroes extraBuffer[133..] every frame, so the cursor is raw.
+//           three-band audio. Cursor is raw (the old extraBuffer[133..138]
+//           spring never persisted — extraBuffer is re-uploaded every frame).
 // ----------------------------------------------------------------
 
 #include "_prelude.wgsl"
@@ -23,14 +23,6 @@
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
-
-// Inert: extraBuffer[133..255] is zeroed every frame by the engine.
-const SPRING_X: i32 = 133;
-const SPRING_Y: i32 = 134;
-const SPRING_VX: i32 = 135;
-const SPRING_VY: i32 = 136;
-const SPRING_T: i32 = 137;
-const SPRING_INIT: i32 = 138;
 
 // Idea 2/3: one shared gear clock drives axle turn and exhaust beat
 const GEAR_TURN: f32 = 1.6;        // rad/s each gear turns on its own axle
@@ -43,6 +35,8 @@ var<private> g_treble: f32;
 var<private> g_held: f32;
 var<private> g_blast: f32;
 var<private> g_skipCore: f32;      // Idea 1: 1 while marching the view behind the core
+var<private> g_plasma: f32;        // Idea 6: Plasma Intensity, read by shadeBrass
+var<private> g_coreR: f32;         // Idea 6: this frame's core radius
 
 fn rot(a: f32) -> mat2x2<f32> {
     let s = sin(a);
@@ -254,6 +248,15 @@ fn shadeBrass(p: vec3<f32>, n: vec3<f32>, rd: vec3<f32>, hue: f32, refIndex: f32
     // Idea 4: tooth-root heat-check crazing etched into loaded metal.
     let craze = pow(0.5 + 0.5 * sin(gearAng * 52.0 + p.y * 40.0), 9.0);
     col += vec3<f32>(1.0, 0.45, 0.22) * craze * (0.06 + g_bass * 0.08);
+    // Idea 6: furnace-lit gear faces. The core is a point light at the origin:
+    // faces turned toward it pick up plasma-tinted light, falling off with the
+    // square of the gap past the core surface (cavity keeps the gap >= 0.5).
+    let rC = max(length(p), 1e-3);
+    let nToCore = max(dot(n, -p / rC), 0.0);
+    let gap = max(rC - g_coreR, 0.0);
+    let coreFall = 1.0 / (1.0 + gap * gap * 0.35);
+    let coreTint = mix(vec3<f32>(1.0, 0.7, 0.4), furnacePalette(hue + 0.5, 1.0 + g_bass), 0.45);
+    col += coreTint * nToCore * coreFall * (0.25 + g_bass * 0.35) * g_plasma;
 
     let ao = clamp(1.0 - iterFrac, 0.0, 1.0);
     col *= ao;
@@ -310,34 +313,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let held = u.zoom_config.w > 0.5;
     g_held = select(0.0, 1.0, held);
 
-    // ── spring cursor (extraBuffer[133..138]) — INERT: the engine zeroes this
-    //    range every frame, so SPRING_INIT reads 0 and smoothMouse == rawMouse ──
-    var smoothMouse = rawMouse;
-    let hasSpring = arrayLength(&extraBuffer) > 138u;
-    if (hasSpring && extraBuffer[SPRING_INIT] > 0.5) {
-        smoothMouse = vec2<f32>(extraBuffer[SPRING_X], extraBuffer[SPRING_Y]);
-    }
-    if (hasSpring && id.x == 0u && id.y == 0u) {
-        var springPos = smoothMouse;
-        var springVel = vec2<f32>(extraBuffer[SPRING_VX], extraBuffer[SPRING_VY]);
-        if (extraBuffer[SPRING_INIT] <= 0.5) {
-            springPos = rawMouse;
-            springVel = vec2<f32>(0.0);
-        } else {
-            let dt = clamp(time - extraBuffer[SPRING_T], 0.001, 0.05);
-            let omega = 9.5;
-            let accel = (rawMouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
-            springVel += accel * dt;
-            springPos += springVel * dt;
-        }
-        extraBuffer[SPRING_X] = springPos.x;
-        extraBuffer[SPRING_Y] = springPos.y;
-        extraBuffer[SPRING_VX] = springVel.x;
-        extraBuffer[SPRING_VY] = springVel.y;
-        extraBuffer[SPRING_T] = time;
-        extraBuffer[SPRING_INIT] = 1.0;
-        smoothMouse = springPos;
-    }
+    // Raw cursor: the old extraBuffer spring read back 0 every frame (identical)
+    let smoothMouse = rawMouse;
+    g_plasma = plasmaIntensity;
     // Mouse UV is 0..1 top-down; map straight to centred coords (no resolution divide)
     let mouseNorm = smoothMouse * 2.0 - 1.0;
 
@@ -354,6 +332,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
     blast = min(blast, 1.0);
     g_blast = blast;
+    g_coreR = coreRadiusOf(audio);
 
     // Camera — orbits fast, cursor tilts it, held pulls in
     var ro = vec3<f32>(0.0, 0.0, 12.0 - g_held * 2.0 + blast * 1.5);
@@ -366,7 +345,18 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let fwd = normalize(lookAt - ro);
     let right = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), fwd));
     let up = cross(fwd, right);
-    let rd = normalize(fwd + right * uv.x + up * uv.y);
+    var rd = normalize(fwd + right * uv.x + up * uv.y);
+
+    // Idea 7: convective throat shimmer. Rays whose closest approach passes near
+    // the furnace are wobbled by noise rising in world y before the march, so the
+    // core limb and the gears just beside it waver like air over a forge.
+    let bC = max(-dot(ro, rd), 0.0);
+    let dMin = length(ro + rd * bC);
+    let haze = exp(-max(dMin - g_coreR, 0.0) * 0.9) * (1.0 + g_bass * 0.6);
+    let hq = rd * 9.0 + vec3<f32>(0.0, -time * 2.5, 0.0);
+    // fbm is ~0..0.94 (mean ~0.47): centre it so the haze wobbles, not bends.
+    let hn = vec2<f32>(fbm(hq), fbm(hq + vec3<f32>(5.2, 1.3, 7.7))) - vec2<f32>(0.47);
+    rd = normalize(rd + (right * hn.x + up * hn.y) * 0.02 * haze);
 
     // Raymarch
     var t = 0.0;
@@ -477,7 +467,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col += glowColor * totalGlow * step(emissionThresh, totalGlow);
     // Idea 5: anvil spark shower around the furnace throat.
     let sparkPhi = atan2(uv.y, uv.x);
-    let sparkRing = exp(-pow((length(uv) - 0.28) * 8.0, 2.0));
+    let sparkR = (length(uv) - 0.28) * 8.0;
+    let sparkRing = exp(-sparkR * sparkR); // x*x: pow() of the negative inner side was NaN
     let sparks = pow(0.5 + 0.5 * sin(sparkPhi * 30.0 - time * 18.0 + g_treble * 6.0), 10.0);
     col += vec3<f32>(1.0, 0.82, 0.45) * sparkRing * sparks * (0.08 + plasmaIntensity * 0.12);
 

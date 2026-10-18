@@ -5467,7 +5467,7 @@
       "chromatic-aberration",
       "fluid-simulation"
     ],
-    "description": "RK4 semi-Lagrangian flow combines exact-load state with an analytic pointer Jacobian. A finite-time Cauchy-Green tensor now yields rotation-invariant principal stretch, anisotropic chromatic spread, and near-singular fold caustics; bounded click rings inject vorticity.",
+    "description": "RK4 semi-Lagrangian flow combines exact-load state with an analytic pointer Jacobian. A finite-time Cauchy-Green tensor now yields rotation-invariant principal stretch, anisotropic chromatic spread, and near-singular fold caustics; bounded click rings inject vorticity. Stretch threads follow the principal axis, and high vorticity darkens a vortex eye.",
     "params": [
       {
         "id": "radius",
@@ -8071,7 +8071,7 @@
     "name": "Optical Feedback Loop",
     "url": "shaders/optical-feedback.wgsl",
     "category": "interactive-mouse",
-    "description": "Infinite optical feedback tunnel with a time-correct spring-damped pointer, multi-front ripple shockwaves and per-band spectral hue rotation that separates the tunnel into rings. Fixes two serious bugs: u.config.y (the ripple count) was used as delta time, freezing the spring and hue when no clicks were alive and exploding the integrator when they were; and nine state values were written into extraBuffer[0..8], the engine's bass/mid/treble/historyHead and FFT bins, corrupting the audio every other shader reads. State now lives in extraBuffer[133..135].",
+    "description": "Infinite optical feedback tunnel with a spring-damped pointer, multi-front ripple shockwaves, 8-band spectral hue rings, a 9-point isotropic Laplacian Turing-edge restorer on dataTextureC, and Fabry-Perot optical cavity interference.",
     "tags": [
       "feedback",
       "loop",
@@ -10823,7 +10823,8 @@
     "features": [
       "mouse-driven",
       "depth-aware",
-      "temporal"
+      "temporal",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -12539,7 +12540,7 @@
     "id": "volumetric-depth-zoom",
     "name": "Volumetric Depth Zoom (Pass 1)",
     "url": "shaders/volumetric-depth-zoom.wgsl",
-    "description": "Raymarched volumetric zoom using multiple depth slices, DOF, parallax and edge specular lighting.",
+    "description": "Raymarched volumetric zoom using multiple depth slices, DOF, parallax and edge specular lighting. Foreground and background slices drift at their own speeds, and a pale sheet marks the focal plane.",
     "params": [
       {
         "id": "fg_speed",
@@ -12575,7 +12576,9 @@
       "volumetric",
       "depth",
       "mouse-driven",
-      "advanced-alpha"
+      "advanced-alpha",
+      "upgraded-rgba",
+      "audio-reactive"
     ],
     "tags": [
       "filter",

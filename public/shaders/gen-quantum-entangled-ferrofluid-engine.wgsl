@@ -6,31 +6,13 @@
 //  Scientific Math: Wavefunction ψ(x,t), Probability Density |ψ|², Quantum Measurement Collapse
 //  Chunks From: original gen-quantum-entangled-ferrofluid-engine
 //  Created: 2026-05-31
-//  Upgraded: 2026-09-27
-//  Ideas: Rosensweig spike lattice; entangled-pair |psi|^2 bead filaments; |psi|^2 nodal contours on the metal
+//  Upgraded: 2026-10-17
+//  Ideas: Rosensweig lattice; pair filaments; nodal contours; measurement scar; pair neck
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Magnetic Strength, y=Fluid Viscosity, z=Quantum Glow, w=Audio Reactivity
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Magnetic Strength, y=Fluid Viscosity, z=Quantum Glow, w=Audio Reactivity
 
 // ═══ CHUNK: acesToneMap (canonical ACES) ═══
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -351,6 +333,18 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let psi = wavefunction(p, u.config.x + bass * 2.0, 2.0 + mids_s, 1.5 + treble_s);
         let contour = 1.0 - smoothstep(0.0, 0.05, abs(psi - 0.5));
         col += vec3<f32>(0.1, 0.7, 1.0) * contour * (0.35 + fresnel) * u.zoom_params.z * 0.25;
+        // Idea 4 — measurement scar where the pointer collapses the superposition
+        let mouseWorld = vec3<f32>(
+            (u.zoom_config.y * 2.0 - 1.0) * aspect * 3.0,
+            u.zoom_config.z * 2.0 - 1.0,
+            0.0
+        );
+        let collapse = exp(-length(p - mouseWorld) * 0.55);
+        col += vec3<f32>(0.9, 0.95, 1.0) * collapse * fresnel * 0.4;
+        // Idea 5 — meniscus at the midpoint of an entangled satellite pair
+        let neckMid = (satPos(0.0, u.config.x) + satPos(1.0, u.config.x)) * 0.5;
+        let neck = exp(-dot(p - neckMid, p - neckMid) * 6.0);
+        col += vec3<f32>(0.55, 0.85, 1.0) * neck * 0.4;
     }
 
     // Quantum interference pattern overlay in background

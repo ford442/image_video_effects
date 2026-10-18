@@ -1,6 +1,13 @@
-// Fabric of Reality — Verlet integration + external forces
-// Reads dataTextureC (.rg pos, .ba prev pos), writes dataTextureA
-// zoom_params: .x stiffness (unused here), .y tear (unused), .z gravity, .w selfHeal
+// ═══════════════════════════════════════════════════════════════════
+//  Fabric of Reality — Verlet
+//  Category: simulation
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-10-18
+//  Ideas: shear springs (constraint + tear); catenary tension; open weave and frayed ends (render)
+//  A packing: raw (position.xy, previous.xy). Display ACES is the render pass.
+// ═══════════════════════════════════════════════════════════════════
+// zoom_params: .x stiffness (damping hint), .y tear (constraint/tear), .z gravity, .w selfHeal
 // Damping is derived from a stable base (not .w) so Self Heal stays honest.
 
 #include "_prelude.wgsl"
@@ -54,7 +61,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
 
-  let prevState = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
+  let prevState = textureLoad(dataTextureC, vec2<i32>(coord), 0);
   var pos = prevState.xy;
   var prevPos = prevState.zw;
 
@@ -96,6 +103,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let windX = fbm(pos * 4.0 + vec2<f32>(time * 0.5, 0.0), time) - 0.5;
   let windY = fbm(pos * 4.0 + vec2<f32>(0.0, time * 0.5), time) - 0.5;
   vel = vel + vec2<f32>(windX, windY) * 0.0008 * (1.0 + bass * 0.5);
+
+  // ── Idea 2: catenary tension ────────────────────────────────────────
+  // A pinned cloth hangs. Gravity's horizontal partner pulls each node
+  // back toward its rest column; the top row is pinned again below.
+  vel.x = vel.x + (uv.x - pos.x) * gravity * 6.0;
 
   // Hard velocity clamp — keeps the constraint loop from exploding
   let speed = length(vel);

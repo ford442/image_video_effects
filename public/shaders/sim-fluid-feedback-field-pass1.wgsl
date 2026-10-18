@@ -3,7 +3,9 @@
 //  Category: simulation
 //  Features: simulation, multi-pass-1, navier-stokes, velocity-advection
 //  Complexity: Very High
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-10-17
+//  Ideas: semi-Lagrangian self-advection of stored velocity; dye streak that warps the photo
+//  A packing: raw (velX, velY, dye, 1) — display ACES is writeTexture only
 //  upgraded-rgba
 // ═══════════════════════════════════════════════════════════════════
 //  Pass graph: Pass 1 reads the previous velocity from dataTextureC,
@@ -11,26 +13,8 @@
 //              the new velocity field to dataTextureA.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Viscosity, y=Turbulence, z=MouseForce, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Viscosity, y=Turbulence, z=MouseForce, w=Param4
 
 const PI:  f32 = 3.14159265358979323846;
 const TAU: f32 = 6.28318530717958647692;
@@ -63,6 +47,11 @@ fn curlNoise(p: vec2<f32>) -> vec2<f32> {
     return vec2<f32>((n4 - n3) / (2.0 * eps), (n1 - n2) / (2.0 * eps));
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 // ═══ MAIN: VELOCITY ADVECTION ═══
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
@@ -71,7 +60,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     
     let uv = vec2<f32>(gid.xy) / resolution;
     let coord = vec2<i32>(gid.xy);
-    let pixel = 1.0 / resolution;
     let time = u.config.x;
     
     let bass = plasmaBuffer[0].x;
@@ -83,9 +71,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let turbulence = clamp(u.zoom_params.y, 0.0, 1.0) * 2.0 * (1.0 + bass * 0.5);
     let mouseForce = clamp(u.zoom_params.z, 0.0, 1.0);
 
-    // Curl-noise seed (divergence-free) modulated by mouse stir
+    // Idea 1 — self-advection of the velocity stored last frame, mixed with the curl seed.
+    let prev = textureLoad(dataTextureC, coord, 0);
+    let backUv = clamp(uv - prev.xy * 1.5, vec2<f32>(0.0), vec2<f32>(1.0));
+    let backPx = clamp(vec2<i32>(backUv * resolution), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1));
+    let adv = textureLoad(dataTextureC, backPx, 0);
     let curl = curlNoise(uv * 5.0 + time * 0.1);
-    var newVel = curl * turbulence * 0.1;
+    var newVel = mix(adv.xy, curl * turbulence * 0.1, 0.55);
 
     // Mouse impulse — radial outward push (Gaussian)
     let toMouse = uv - mouse;
@@ -95,15 +87,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Apply viscosity (damping)
     newVel *= viscosity;
-    
-    // Store new velocity in dataTextureA
-    textureStore(dataTextureA, coord, vec4<f32>(newVel, 0.0, 1.0));
 
-    // Pass-through input to maintain chain (Pass 2 will do final compositing)
-    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    textureStore(writeTexture, coord, inputColor);
+    // Idea 2 — dye rides the same backtrace. Glow (zoom_params.w) brightens it.
+    let glow = clamp(u.zoom_params.w, 0.0, 1.0);
+    var dye = max(adv.z, 0.0) * 0.985;
+    dye = clamp(dye + mouseGate * 0.45, 0.0, 1.5);
 
-    // Pass depth
+    textureStore(dataTextureA, coord, vec4<f32>(newVel, dye, 1.0));
+
+    let warpUv = clamp(uv + newVel * 0.85, vec2<f32>(0.0), vec2<f32>(1.0));
+    let src = textureSampleLevel(readTexture, u_sampler, warpUv, 0.0);
+    let dyeCol = vec3<f32>(0.15, 0.72, 1.0) * dye * mix(0.35, 1.4, glow);
+    let rgb = acesToneMap(max(src.rgb * (1.0 - dye * 0.35) + dyeCol, vec3<f32>(0.0)));
+    let alpha = clamp(src.a * 0.45 + dye * 0.4 + length(newVel) * 0.35, 0.0, 1.0);
+    textureStore(writeTexture, coord, vec4<f32>(rgb, alpha));
+
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth * (1.0 - dye * 0.25), 0.0, 0.0, 0.0));
 }

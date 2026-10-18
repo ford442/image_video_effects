@@ -2,7 +2,7 @@
   "id": "fabric-of-reality",
   "name": "Fabric of Reality",
   "url": "shaders/fabric-verlet.wgsl",
-  "description": "Living mass-spring cloth — hold to tear, release to watch Self Heal knit seams. Bass breathes the drape; mouse spotlight rides the weave. Tier C graph · 7 passes.",
+  "description": "Living mass-spring cloth — hold to tear, release to watch Self Heal knit seams. Bass breathes the drape; mouse spotlight rides the weave. Shear springs, a catenary hang, and frayed yarn. Tier C graph · 7 passes.",
   "requiresRgba32Float": true,
   "multipass": {
     "graph": {
@@ -89,7 +89,8 @@
     "physics",
     "mouse-driven",
     "audio-reactive",
-    "interactive"
+    "interactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "cloth",

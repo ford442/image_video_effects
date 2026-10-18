@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-10-10
-//  Ideas: Taylor-cone droplet pinch-off from spike tips on bass; field-induced dipole chain bridges between neighbouring spike tips (Magnetic Pull / mouse held); spike lean toward the cursor magnet (cone shear, tips/chains follow); thin-film colour bands climbing spike height
+//  Upgraded: 2026-10-17
+//  Ideas: Taylor cones; dipole chains; spike lean; thin-film bands; contact meniscus; magnetite grain
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -386,6 +386,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // from the bulk sphere radius are the ejected or bridged fluid.
     let offBulk = sat((length(hitPos) - (1.2 + bass * 0.3) - 0.35) * 2.0);
     col = col + vec3<f32>(0.35, 0.7, 1.0) * offBulk * (spec * 1.5 + fresnel) * (0.4 + treble * 0.6);
+    // Idea 5 — contact meniscus where the spike meets the bulk sphere
+    let meniscus = exp(-filmH * filmH * 70.0) * sat(filmH * 24.0);
+    col = col + vec3<f32>(0.78, 0.82, 0.9) * meniscus * 0.5;
+    // Idea 6 — magnetite grains suspended in the metal
+    let grain = hash3(floor(hitPos * 46.0));
+    col = col * (1.0 - step(0.84, grain) * 0.22 * (1.0 - fresnel));
 
     // Depth fog
     col = mix(col, vec3<f32>(0.01, 0.015, 0.025), 1.0 - exp(-0.03 * depth));

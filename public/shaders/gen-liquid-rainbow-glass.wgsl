@@ -4,8 +4,8 @@
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-10-10
-//  Ideas: meniscus rainbow rims at the liquid/glass lip; viscous stir memory (C history swirled around pointer); refraction caustic web with per-channel focus; rising micro-bubbles with lens rings and specular pinpoints
+//  Upgraded: 2026-10-17
+//  Ideas: meniscus rainbow rims at the liquid/glass lip; viscous stir memory (C history swirled around pointer); refraction caustic web with per-channel focus; rising micro-bubbles with lens rings and specular pinpoints; hand-blown murrine glass-cane striae (cord); dichroic gold-ruby/cyan-violet shift & click-dropped molten glass gathers
 //  A packing: display-history RGBA (A = mix(prev*0.96, color, 0.25); C read via exact textureLoad)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -225,12 +225,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color += oil * oilMask * 0.3 * audioIntensity;
 
   // ---- LAYER 3: Main flowing liquid (thick) ----
-  // Apply mouse stir if active
+  // Apply mouse stir if active + click-dropped molten glass gathers
   let held = select(0.0, 1.0, mouseDown > 0.5);
-  let stir = vortexStir(centered, mouseCentered, t, 0.3 * intensity) * held;
+  var gatherWarp = vec2<f32>(0.0);
+  var gatherRim = vec3<f32>(0.0);
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var ri: u32 = 0u; ri < rippleCount; ri = ri + 1u) {
+    let rp = u.ripples[ri];
+    let age = time - rp.z;
+    if (age > 0.0 && age < 3.4) {
+      let rpPos = (rp.xy - vec2<f32>(0.5)) * vec2<f32>(aspect, 1.0);
+      let dVec = centered - rpPos;
+      let dGather = length(dVec);
+      let radius = age * 0.22 * (0.7 + speed * 0.6);
+      let cool = 1.0 - smoothstep(2.0, 3.4, age);
+      let lensRing = exp(-pow((dGather - radius) / 0.035, 2.0)) * cool;
+      gatherWarp += (dVec / max(dGather, 0.001)) * lensRing * 0.065;
+      gatherRim += liquidRainbow(age * 0.6 + dGather * 4.0 + colorShift) * lensRing * (0.75 + treble * 0.5);
+    }
+  }
+  let stir = vortexStir(centered, mouseCentered, t, 0.3 * intensity) * held + gatherWarp;
   let uv3 = centered * 0.8 + stir;
   let layer3 = liquidLayer(uv3, t, 1.0, scale * 1.5, 0.5);
   color = mix(color, layer3.rgb, layer3.a * 0.6);
+  color += gatherRim * 0.65 * intensity;
 
   // Idea 1: meniscus rims — the thick liquid's lip against clear glass (layer3.a ≈ 0.5) refracts into a
   // rainbow-split band: red sits just outside the lip, blue just inside.
@@ -243,10 +261,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color += meniscus * 0.85;
 
   // ---- LAYER 4: Glass refraction layer ----
-  let refraction = glassRefraction(centered, t, intensity, scale);
+  let refraction = glassRefraction(centered + gatherWarp * 0.5, t, intensity, scale);
   let uv4 = (centered + refraction) * 1.2;
   let layer4 = liquidLayer(uv4, t, 2.0, scale * 2.5, 0.4);
   color = mix(color, layer4.rgb, layer4.a * 0.5);
+
+  // Idea 5: Hand-blown murrine glass-cane striae (cord) along shear tangent
+  let canePhase = (uv4.x * 18.0 - uv4.y * 14.0) * (0.6 + scale) + layer3.a * 9.0;
+  let caneStriae = pow(0.5 + 0.5 * sin(canePhase), 5.0) * smoothstep(0.25, 0.75, layer3.a);
+  let caneDisp = chromaticDispersion(uv4 * 0.85, 0.025 * (0.5 + intensity), t);
+  color += caneDisp * caneStriae * 0.34 * audioIntensity;
+
+  // Idea 6: Dichroic gold-ruby transmission / cyan-violet reflection shift
+  let poolDepth = clamp(layer3.a * layer4.a * 1.6, 0.0, 1.0);
+  let steepGrad = clamp(length(refraction) * 14.0, 0.0, 1.0);
+  let dichroicTransmit = vec3<f32>(1.18, 0.72, 0.36); // warm gold-ruby interior pool
+  let dichroicReflect = vec3<f32>(0.28, 0.96, 1.22);  // cyan-violet grazing reflection
+  color = mix(color, color * dichroicTransmit, poolDepth * 0.28) + dichroicReflect * steepGrad * (0.24 + mids * 0.22) * intensity;
 
   // Idea 3: refraction caustic web — light focuses where the glass-refraction field converges. The divergence of
   // the same glassRefraction field marks the focus; each colour channel focuses a touch differently (dispersion).

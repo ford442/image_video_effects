@@ -2,6 +2,7 @@
  * device.test.ts — optional feature collection, canvas configure, init paths.
  */
 
+import type { Mock } from 'vitest';
 import {
   appendAdapterSummaryFields,
   attachUncapturedErrorRouter,
@@ -55,7 +56,7 @@ function makeAdapter(
     limits: makeLimits(limits),
     features: new Set(featureNames),
     info: { adapterType: 'discrete' } as unknown as GPUAdapterInfo,
-    requestDevice: jest.fn(),
+    requestDevice: vi.fn(),
   } as unknown as GPUAdapter;
 }
 
@@ -63,12 +64,12 @@ function makeDevice(featureNames: GPUFeatureName[] = []): GPUDevice {
   return {
     features: new Set(featureNames),
     limits: makeLimits({ maxTextureDimension2D: 4096, maxComputeInvocationsPerWorkgroup: 256 }),
-    addEventListener: jest.fn(),
-    destroy: jest.fn(),
+    addEventListener: vi.fn(),
+    destroy: vi.fn(),
     lost: Promise.resolve({ reason: 'destroyed', message: '' }),
-    createShaderModule: jest.fn().mockReturnValue({}),
-    createComputePipeline: jest.fn().mockReturnValue({}),
-    createTexture: jest.fn(() => ({ destroy: jest.fn() })),
+    createShaderModule: vi.fn().mockReturnValue({}),
+    createComputePipeline: vi.fn().mockReturnValue({}),
+    createTexture: vi.fn(() => ({ destroy: vi.fn() })),
   } as unknown as GPUDevice;
 }
 
@@ -174,6 +175,40 @@ describe('canvas_configure.json contract', () => {
       toneMapping: 'standard',
     });
   });
+
+  it('usageBits match the WebGPU spec GPUTextureUsage bits', () => {
+    for (const [name, bit] of Object.entries(canvasConfigureContract.usageBits)) {
+      expect(TU[name as keyof typeof TU]).toBe(bit);
+    }
+  });
+
+  it('declares backends for every capability (copySrc on both, color TS-only)', () => {
+    const backends = Object.fromEntries(
+      Object.entries(canvasConfigureContract.optIn).map(([k, v]) => [k, v.backends]),
+    );
+    expect(backends).toEqual({
+      copySrc: ['ts', 'wasm'],
+      displayP3: ['ts'],
+      extendedToneMapping: ['ts'],
+    });
+    expect(canvasConfigureContract.optIn.extendedToneMapping.requires).toBe('displayP3');
+  });
+
+  it('keeps the generated C++ header in sync with the JSON', () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const gen = require('../../../scripts/gen-canvas-configure-header.js') as {
+      renderHeader: (c: unknown) => string;
+      headerPath: (c: unknown) => string;
+    };
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const fs = require('fs') as typeof import('fs');
+    const header = gen.renderHeader(canvasConfigureContract);
+    expect(fs.readFileSync(gen.headerPath(canvasConfigureContract), 'utf8')).toBe(header);
+    expect(header).toContain('kUsage = WGPUTextureUsage_RenderAttachment;');
+    expect(header).toContain('kCopySrcUsage = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;');
+    expect(header).toContain('kAlphaModeJs = "opaque";');
+    expect(header).toContain('kPresentMode = WGPUPresentMode_Fifo;');
+  });
 });
 
 describe('resolveCanvasColorOptIns', () => {
@@ -238,7 +273,7 @@ describe('initializeWebGPUDevice', () => {
       configurable: true,
       value: originalGpu,
     });
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('returns ok:false when navigator.gpu is missing', async () => {
@@ -249,7 +284,7 @@ describe('initializeWebGPUDevice', () => {
   });
 
   it('returns ok:false when adapter ladder fails', async () => {
-    const requestAdapter = jest.fn().mockResolvedValue(null);
+    const requestAdapter = vi.fn().mockResolvedValue(null);
     Object.defineProperty(navigator, 'gpu', {
       configurable: true,
       value: { requestAdapter, getPreferredCanvasFormat: () => 'bgra8unorm' },
@@ -265,16 +300,16 @@ describe('initializeWebGPUDevice', () => {
   it('requests timestamp-query when adapter offers it', async () => {
     const mockDevice = makeDevice(['float32-filterable', 'timestamp-query']);
     const adapter = makeAdapter(['float32-filterable', 'timestamp-query']);
-    (adapter.requestDevice as jest.Mock).mockResolvedValue(mockDevice);
+    (adapter.requestDevice as Mock).mockResolvedValue(mockDevice);
 
-    const configure = jest.fn();
+    const configure = vi.fn();
     const canvas = {
       width: 800,
       height: 600,
-      getContext: jest.fn().mockReturnValue({ configure, unconfigure: jest.fn() }),
+      getContext: vi.fn().mockReturnValue({ configure, unconfigure: vi.fn() }),
     } as unknown as HTMLCanvasElement;
 
-    const requestAdapter = jest.fn().mockResolvedValue(adapter);
+    const requestAdapter = vi.fn().mockResolvedValue(adapter);
     Object.defineProperty(navigator, 'gpu', {
       configurable: true,
       value: { requestAdapter, getPreferredCanvasFormat: () => 'bgra8unorm' },
@@ -299,16 +334,16 @@ describe('initializeWebGPUDevice', () => {
   it('omits timestamp-query and still succeeds when adapter lacks it', async () => {
     const mockDevice = makeDevice(['float32-filterable']);
     const adapter = makeAdapter(['float32-filterable']);
-    (adapter.requestDevice as jest.Mock).mockResolvedValue(mockDevice);
+    (adapter.requestDevice as Mock).mockResolvedValue(mockDevice);
 
-    const configure = jest.fn();
+    const configure = vi.fn();
     const canvas = {
       width: 800,
       height: 600,
-      getContext: jest.fn().mockReturnValue({ configure, unconfigure: jest.fn() }),
+      getContext: vi.fn().mockReturnValue({ configure, unconfigure: vi.fn() }),
     } as unknown as HTMLCanvasElement;
 
-    const requestAdapter = jest.fn().mockResolvedValue(adapter);
+    const requestAdapter = vi.fn().mockResolvedValue(adapter);
     Object.defineProperty(navigator, 'gpu', {
       configurable: true,
       value: { requestAdapter, getPreferredCanvasFormat: () => 'bgra8unorm' },
@@ -350,10 +385,10 @@ describe('uncaptured error routing', () => {
     setRendererErrorHandler((e) => reported.push(e));
     let listener: ((ev: Event) => void) | null = null;
     const device = {
-      addEventListener: jest.fn((_t: string, fn: (ev: Event) => void) => { listener = fn; }),
-      removeEventListener: jest.fn(() => { listener = null; }),
+      addEventListener: vi.fn((_t: string, fn: (ev: Event) => void) => { listener = fn; }),
+      removeEventListener: vi.fn(() => { listener = null; }),
     } as unknown as GPUDevice;
-    const onOom = jest.fn();
+    const onOom = vi.fn();
     const detach = attachUncapturedErrorRouter(device, { onOom });
 
     listener!({ error: { name: 'GPUOutOfMemoryError', message: 'oom' } } as unknown as Event);
@@ -374,22 +409,22 @@ describe('attachDeviceLostHandler', () => {
   beforeEach(() => {
     errors.length = 0;
     setRendererErrorHandler((e) => errors.push(e));
-    jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
   });
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
     setRendererErrorHandler((e) => console.error(e));
   });
 
   function lostDevice(info: { reason: string; message: string }) {
     return { lost: Promise.resolve(info) } as unknown as GPUDevice;
   }
-  const ctx = () => ({ unconfigure: jest.fn() }) as unknown as GPUCanvasContext & { unconfigure: jest.Mock };
+  const ctx = () => ({ unconfigure: vi.fn() }) as unknown as GPUCanvasContext & { unconfigure: Mock };
   const settle = () => new Promise((r) => setTimeout(r, 0));
 
   it('a real loss is reported as recoverable, unconfigures and calls onLost once', async () => {
     const context = ctx();
-    const onLost = jest.fn();
+    const onLost = vi.fn();
     attachDeviceLostHandler(lostDevice({ reason: 'unknown', message: 'driver reset' }), context, onLost);
     await settle();
     expect(onLost).toHaveBeenCalledTimes(1);
@@ -401,7 +436,7 @@ describe('attachDeviceLostHandler', () => {
 
   it('a destroy is silent and leaves the (possibly reused) context alone', async () => {
     const context = ctx();
-    const onLost = jest.fn();
+    const onLost = vi.fn();
     attachDeviceLostHandler(lostDevice({ reason: 'destroyed', message: '' }), context, onLost);
     await settle();
     expect(onLost).not.toHaveBeenCalled();
@@ -410,7 +445,7 @@ describe('attachDeviceLostHandler', () => {
   });
 
   it('a simulated loss (test hook destroy) takes the loss path', async () => {
-    const onLost = jest.fn();
+    const onLost = vi.fn();
     attachDeviceLostHandler(lostDevice({ reason: 'destroyed', message: '' }), ctx(), onLost, {
       isSimulated: () => true,
     });

@@ -42,10 +42,45 @@
     "pbr-chrome",
     "capillary-waves",
     "chromatic-dispersion",
-    "aces-tone-map"
+    "aces-tone-map",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",
     "image-processing"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Flow Speed",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 1,
+          "name": "Distortion",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 2,
+          "name": "Metalness",
+          "default": 0.8,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 3,
+          "name": "Ripple Freq",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        }
+      ]
+    }
+  }
 }

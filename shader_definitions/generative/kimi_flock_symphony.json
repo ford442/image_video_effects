@@ -2,7 +2,7 @@
   "id": "kimi_flock_symphony",
   "name": "Kimi Flock Symphony",
   "url": "shaders/kimi_flock_symphony.wgsl",
-  "description": "Audio-driven boid flock (separation, alignment, cohesion, mouse spiral) drawn as soft coloured glows. Real trails: each glow leaves decaying history in the feedback texture (Trail Length = decay). Orchestra sections: boid quartiles are bass/mid/mid/treble voices - bass voices large, slow and warm, treble voices small, darting and cool - each sized and sped by its own audio band. Tutti swell: bass widens the separation radius so the whole flock breathes outward on hits. ACES tone map.",
+  "description": "Audio-driven boid flock (separation, alignment, cohesion, mouse spiral) drawn as soft coloured glows. Real trails: each glow leaves decaying history in the feedback texture (Trail Length = decay). Orchestra sections: boid quartiles are bass/mid/mid/treble voices - bass voices large, slow and warm, treble voices small, darting and cool - each sized and sped by its own audio band. Tutti swell: bass widens the separation radius so the whole flock breathes outward on hits. Section strings: same-section neighbours are joined by thin filaments that brighten when their headings agree. Solo spotlight: the section whose band dominates the mix plays louder while the rest drop back. ACES tone map.",
   "tags": [
     "boids",
     "flocking",

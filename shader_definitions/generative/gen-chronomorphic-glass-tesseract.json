@@ -10,7 +10,8 @@
     "iridescent",
     "refraction"
   ],
-  "description": "A hyper-dimensional glass structure that continuously folds through time and space, refracting shifting iridescent cosmic energies. Features chronomorphic spatial distortion and raymarched chromatic dispersion.",
+  "description": "A hyper-dimensional 4D glass tesseract with Schlegel wireframe struts, an inner W-projected hypercube core, 16-vertex Airy-disc diffraction flares, W-slice caustic sheets, and chronomorphic dispersion.",
+  "updated": true,
   "url": "/shaders/gen-chronomorphic-glass-tesseract.wgsl",
   "workgroup_size": [
     16,

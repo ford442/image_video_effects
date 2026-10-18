@@ -6,7 +6,7 @@
     "holographic",
     "matrix"
   ],
-  "description": "Generate a matrix of holographic lens flares that follow motion in the video or a synthetic flow field.",
+  "description": "Generate a matrix of holographic lens flares that follow motion in the video or a synthetic flow field. Achromatic doublet cemented-interface halos and micro-lenticular sensor-grid satellite dots surround each flare cell.",
   "workgroup_size": [
     16,
     16,

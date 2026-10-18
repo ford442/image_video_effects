@@ -2,7 +2,7 @@
   "id": "gen-grid",
   "name": "Domain-Warped FBM Grid",
   "url": "shaders/gen_grid.wgsl",
-  "description": "Audio-reactive domain-warped FBM grid with mouse gravity well, recursive moir\u00e9 sub-grids, chromatic dispersion edges, and temporal motion blur.",
+  "description": "Audio-reactive domain-warped FBM grid with mouse gravity well, recursive moir\u00e9 sub-grids, chromatic dispersion edges, and temporal motion blur. Lattice cells hold a stable interior wash, and Jacobian creases brighten where the warp folds.",
   "features": [
     "mouse-driven",
     "depth-aware",

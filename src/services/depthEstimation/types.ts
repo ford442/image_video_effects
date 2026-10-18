@@ -1,6 +1,6 @@
 /**
  * Typed contracts for depth-estimation pipeline I/O.
- * Matches @xenova/transformers depth-estimation output and App updateDepthMap path.
+ * Matches @huggingface/transformers depth-estimation output and App updateDepthMap path.
  */
 
 /** Raw depth tensor from the model (typically [batch, height, width] or [height, width]). */

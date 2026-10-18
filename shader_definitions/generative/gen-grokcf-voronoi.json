@@ -2,7 +2,7 @@
   "id": "gen-grokcf-voronoi",
   "name": "Worley Cellular",
   "url": "shaders/gen_grokcf_voronoi.wgsl",
-  "description": "Audio-reactive Worley cellular fields with thin-film interference edge glow and micro-cosmic starfields hidden inside each cell.",
+  "description": "Audio-reactive Worley cellular fields with thin-film interference edge glow and micro-cosmic starfields hidden inside each cell. Drifting sites leave comets, and triple junctions flare where three cells meet.",
   "features": [
     "mouse-driven",
     "depth-aware",

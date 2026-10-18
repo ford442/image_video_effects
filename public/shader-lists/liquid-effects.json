@@ -638,7 +638,7 @@
     "id": "liquid-optimized-pass1",
     "name": "Liquid Optimized (Pass 1)",
     "url": "shaders/liquid-optimized-pass1.wgsl",
-    "description": "Physics simulation pass: capillary wave dynamics, Laplace pressure, ripple propagation, and ambient micro-ripples. Outputs height field state to dataTextureA.",
+    "description": "Physics simulation pass: capillary wave dynamics, Laplace pressure, ripple propagation, a seiche beat on the ambient ripples, and shore set-down. Outputs height field state to dataTextureA.",
     "tags": [
       "liquid",
       "surface-tension",
@@ -761,7 +761,7 @@
     "id": "liquid-pass1",
     "name": "Liquid (Pass 1)",
     "url": "shaders/liquid-pass1.wgsl",
-    "description": "Capillary wave physics pass: surface tension simulation with Laplacian and biharmonic operators, gravity waves, ripple sources, and ambient micro-ripples. Outputs persistent height field to dataTextureA.",
+    "description": "Capillary wave physics pass: surface tension simulation with Laplacian and biharmonic operators, gravity waves, ripple sources, and ambient micro-ripples. Crests lean down the height slope, and Color Shift adds a faster capillary fringe. Outputs persistent height field to dataTextureA.",
     "tags": [
       "liquid",
       "capillary-waves",
@@ -1397,7 +1397,7 @@
     "id": "liquid-viscous",
     "name": "Liquid Viscous",
     "url": "shaders/liquid-viscous.wgsl",
-    "description": "A persistent 2D fluid state with midpoint semi-Lagrangian transport, streamline-aligned viscosity, Reynolds-number turbulence transition, shared-stencil vorticity confinement, a convergent local Jacobi projection, continuously drifting audio vortices, and per-band dye injection.",
+    "description": "A persistent 2D fluid state with midpoint semi-Lagrangian transport, streamline-aligned viscosity, an Ekman veer with depth, Rayleigh–Plateau beads on quiet dye threads, Reynolds-number turbulence transition, shared-stencil vorticity confinement, a convergent local Jacobi projection, continuously drifting audio vortices, and per-band dye injection.",
     "tags": [
       "filter",
       "image-processing",

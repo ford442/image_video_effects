@@ -11,7 +11,7 @@ import {
 const API_URL = 'https://storage.noahcohn.com';
 
 describe('ratingCache', () => {
-  const fetchMock = jest.fn();
+  const fetchMock = vi.fn();
 
   beforeEach(() => {
     localStorage.clear();
@@ -19,11 +19,11 @@ describe('ratingCache', () => {
     circuitBreakerState.openUntilMs = 0;
     fetchMock.mockReset();
     global.fetch = fetchMock as unknown as typeof fetch;
-    jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   // ─── getRating / setRating ─────────────────────────────────────────────────
@@ -234,11 +234,11 @@ describe('ratingCache', () => {
 
   describe('initOfflineSync', () => {
     beforeEach(() => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
     });
 
     afterEach(() => {
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it('returns a cleanup function', () => {
@@ -257,7 +257,7 @@ describe('ratingCache', () => {
       const cleanup = initOfflineSync(API_URL);
 
       window.dispatchEvent(new Event('online'));
-      jest.runAllTimers();
+      vi.runAllTimers();
 
       cleanup();
       // fetch was eventually called (timers ran)
@@ -265,7 +265,7 @@ describe('ratingCache', () => {
     });
 
     it('removes the online listener when the cleanup function is called', () => {
-      const removeSpy = jest.spyOn(window, 'removeEventListener');
+      const removeSpy = vi.spyOn(window, 'removeEventListener');
       const cleanup = initOfflineSync(API_URL);
       cleanup();
       expect(removeSpy).toHaveBeenCalledWith('online', expect.any(Function));

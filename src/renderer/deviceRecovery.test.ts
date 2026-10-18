@@ -1,11 +1,12 @@
+import type { Mock } from 'vitest';
 import { AUTO_RECOVERY_COOLDOWN_MS, DeviceRecoveryController } from './deviceRecovery';
 
 const loss = (reason = 'unknown') => ({ kind: 'device-lost' as const, reason, message: '', at: 0 });
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
-function controller(recover: jest.Mock, now = { t: 0 }) {
+function controller(recover: Mock, now = { t: 0 }) {
   const states: string[] = [];
-  const onFailed = jest.fn();
+  const onFailed = vi.fn();
   const c = new DeviceRecoveryController({
     recover,
     onStatus: (s) => states.push(s.state),
@@ -18,7 +19,7 @@ function controller(recover: jest.Mock, now = { t: 0 }) {
 
 describe('DeviceRecoveryController', () => {
   it('auto-recovers once per loss', async () => {
-    const { c, states } = controller(jest.fn().mockResolvedValue(true));
+    const { c, states } = controller(vi.fn().mockResolvedValue(true));
     c.handleLoss(loss());
     await settle();
     expect(states).toEqual(['lost', 'recovering', 'idle']);
@@ -26,7 +27,7 @@ describe('DeviceRecoveryController', () => {
   });
 
   it('fails with the probe diagnostics and recovers on retry', async () => {
-    const recover = jest.fn().mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+    const recover = vi.fn().mockResolvedValueOnce(false).mockResolvedValueOnce(true);
     const { c, states, onFailed } = controller(recover);
     c.handleLoss(loss());
     await settle();
@@ -38,14 +39,14 @@ describe('DeviceRecoveryController', () => {
   });
 
   it('a throwing rebuild fails with its message', async () => {
-    const { c, onFailed } = controller(jest.fn().mockRejectedValue(new Error('canvas gone')));
+    const { c, onFailed } = controller(vi.fn().mockRejectedValue(new Error('canvas gone')));
     expect(await c.retry()).toBe(false);
     expect(onFailed).toHaveBeenCalledWith('canvas gone');
   });
 
   it('is single-flight and ignores losses reported mid-recovery', async () => {
     let finish!: (ok: boolean) => void;
-    const recover = jest.fn(() => new Promise<boolean>((r) => { finish = r; }));
+    const recover = vi.fn(() => new Promise<boolean>((r) => { finish = r; }));
     const { c } = controller(recover);
     const a = c.retry();
     const b = c.retry();
@@ -57,7 +58,7 @@ describe('DeviceRecoveryController', () => {
   });
 
   it('only auto-retries again once the cooldown has passed', async () => {
-    const recover = jest.fn().mockResolvedValue(true);
+    const recover = vi.fn().mockResolvedValue(true);
     const { c, states, now } = controller(recover);
     c.handleLoss(loss());
     await settle();
@@ -74,7 +75,7 @@ describe('DeviceRecoveryController', () => {
   });
 
   it('stops after dispose', async () => {
-    const recover = jest.fn().mockResolvedValue(true);
+    const recover = vi.fn().mockResolvedValue(true);
     const { c, states } = controller(recover);
     c.dispose();
     c.handleLoss(loss());

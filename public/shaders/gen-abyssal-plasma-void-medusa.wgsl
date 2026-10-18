@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: plasma node lanterns at the tentacle roots (SDF bulbs + volumetric halo); bell shell-thickness translucency (Beer-Lambert lantern light through the outer/inner shell gap); void-current filaments (iso-lines of the map() warp noise, dragged by the mouse); nematocyst strobe ringlets; bell-rim ciliary fringe sparkles
+//  Upgraded: 2026-10-18
+//  Ideas: plasma node lanterns at the tentacle roots (SDF bulbs + volumetric halo); bell shell-thickness translucency (Beer-Lambert lantern light through the outer/inner shell gap); void-current filaments (iso-lines of the map() warp noise, dragged by the mouse); nematocyst strobe ringlets; bell-rim ciliary fringe sparkles; rhopalial pacemaker statocysts (8 rim eye-beads that flash at the onset of each bell contraction); coronal swim-muscle wave (concentric subumbrella striations with a contraction ring racing rim to crown after each pacemaker flash, filtered by shell thickness)
 //  A packing: HDR linear RGB (pre-ACES, with short C light-wake) + semantic alpha (body 1, glow coverage elsewhere)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -73,16 +73,35 @@ fn bellRadius() -> f32 {
     return 1.5 + sin(time * speed) * 0.1 * u.zoom_params.x + bass * 0.06;
 }
 
-// Mouse drag of the body (verbatim HEAD rule, shared by map() and the void currents).
+// Mouse drag of the body (HEAD rule, shared by map() and the void currents). 2026-10-18: the image is no
+// longer upside down (world +y = screen top), so the drag centre uses -mousePos.y and the y push flips sign
+// to keep the same on-screen behaviour.
 fn mouseDrag(p_in: vec3<f32>) -> vec3<f32> {
     var p = p_in;
     if (u.zoom_config.w > 0.0) {
         let mousePos = u.zoom_config.yz * 2.0 - 1.0;
-        let dragDist = length(p.xy - mousePos * 5.0);
+        let dragDist = length(p.xy - vec2<f32>(mousePos.x, -mousePos.y) * 5.0);
         let dragForce = exp(-dragDist * 0.5);
-        p = vec3<f32>(p.x + mousePos.x * dragForce, p.y - mousePos.y * dragForce, p.z);
+        p = vec3<f32>(p.x + mousePos.x * dragForce, p.y + mousePos.y * dragForce, p.z);
     }
     return p;
+}
+
+// Idea 6: swim-pulse phase. bellRadius() peaks at sin = 1 (phase PI/2); the contraction starts there.
+// pw = 0 at contraction onset, rising to 1 over one breath cycle.
+fn pulsePhase() -> f32 {
+    let speed = 1.0 + u.zoom_params.x * 2.0;
+    return fract((u.config.x * speed - 1.5707963) / 6.2831853);
+}
+
+// Idea 6: rhopalium (marginal sense club) position on the bell rim, riding the tentacle crown's rotation
+// and sitting between tentacle roots.
+fn rhopaliumPos(fi: f32) -> vec3<f32> {
+    let a = fi * 0.7853982 + u.config.x * 0.5 + 0.6283185;
+    // Just outside the margin lip (outer shell meets the cut face at r = bellRadius, y = 1),
+    // clear of the solid rim even under the ±0.07 void-current warp.
+    let r = bellRadius() + 0.06;
+    return vec3<f32>(cos(a) * r, 1.0, sin(a) * r);
 }
 
 // Raw void-current noise (the domain-warp field of map()).
@@ -204,7 +223,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
     let coord = vec2<i32>(id.xy);
 
-    let uv = (vec2<f32>(id.xy) * 2.0 - resolution) / min(resolution.x, resolution.y);
+    // Rows grow downward; cv is world-up, so y is negated (HEAD rendered the medusa upside down,
+    // tentacles rising above the bell). cu = cross(cw, Y) is screen-right, so x is unchanged.
+    let uv = (vec2<f32>(id.xy) * 2.0 - resolution) / min(resolution.x, resolution.y) * vec2<f32>(1.0, -1.0);
     let time = u.config.x;
 
     let biolum = u.zoom_params.x;
@@ -329,7 +350,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         // Idea 4: nematocyst strobe ringlets around tentacle-root collars.
         let rootR = length(q.xz);
-        let rootBand = exp(-pow((rootR - 0.82) * 8.0, 2.0)) * exp(-pow((q.y - LANTERN_Y) * 4.5, 2.0));
+        // squares, not pow(): pow() with a negative base is NaN in WGSL
+        let rbR = (rootR - 0.82) * 8.0;
+        let rbY = (q.y - LANTERN_Y) * 4.5;
+        let rootBand = exp(-rbR * rbR) * exp(-rbY * rbY);
         let rootPulse = pow(0.5 + 0.5 * sin(atan2(q.z, q.x) * 10.0 + time * (4.0 + audio.x * 3.0)), 6.0);
         col += vec3<f32>(0.9, 0.95, 1.0) * rootBand * rootPulse * (0.14 + audio.z * 0.22);
 
@@ -337,6 +361,19 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let rimBand = exp(-pow((abs(length(bellP) - bellRad)) * 18.0, 2.0)) * smoothstep(-0.05, 0.12, bellP.y);
         let cilia = pow(0.5 + 0.5 * sin(atan2(bellP.z, bellP.x) * 34.0 - time * 10.0), 8.0);
         col += vec3<f32>(0.45, 0.85, 1.0) * rimBand * cilia * (0.12 + biolum * 0.2);
+
+        // Idea 7: coronal swim-muscle wave. Polar angle from the crown (0) to the rim (PI/2); fine
+        // concentric muscle striations, plus a contraction ring that leaves the rim at the pacemaker flash
+        // and climbs toward the crown while the bell shrinks. Lit through the shell: thin tissue glows more.
+        let pw = pulsePhase();
+        let polar = acos(clamp(bellP.y / max(length(bellP), 1e-3), -1.0, 1.0));
+        let ringPos = 1.5707963 - pw * 2.6;
+        let rd7 = (polar - ringPos) * 11.0;
+        let ring = exp(-rd7 * rd7) * exp(-pw * 2.5) * step(0.0, ringPos + 0.2);
+        let striae = smoothstep(0.55, 1.0, 0.5 + 0.5 * cos(polar * 46.0)) * smoothstep(0.2, 1.3, polar);
+        let thinGlow = 0.35 + 0.65 * dot(transmit, vec3<f32>(0.3333));
+        let muscleCol = mix(hueShiftCol, lanternCol, 0.4);
+        col += muscleCol * bellMask * thinGlow * (ring * (0.9 + audio.x * 0.8) + striae * 0.07) * (0.4 + biolum);
 
         // Falloff into void (hits only; HEAD also zeroed every miss because dO > MAX_DIST)
         col *= exp(-dO * 0.05);
@@ -364,6 +401,23 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col += vec3<f32>(0.1, 0.4, 0.8) * vol * biolum * (0.5 + audio_glow);
     // Idea 1: volumetric lantern halo
     col += lanternCol * lanternHalo;
+
+    // Idea 6: rhopalial pacemaker statocysts. Eight amber eye-beads on the rim fire in a quick cascade at
+    // the onset of each contraction (the swim pulse's pacemaker), then fade to a dim watch-light. Closest
+    // approach of the ray to each bead, hidden when it lies behind the hit surface.
+    let pwR = pulsePhase();
+    let eyeCol = vec3<f32>(1.0, 0.82, 0.5);
+    for (var k = 0; k < 8; k++) {
+        let fk = f32(k);
+        let rp = rhopaliumPos(fk);
+        let along = dot(rp - ro, rd);
+        if (along > 0.0 && (!hit || along < dO + 0.05)) {
+            let off = rp - ro - rd * along;
+            let dl2 = dot(off, off);
+            let flash = exp(-fract(pwR - fk * 0.012) * 14.0) * (1.0 + audio.x * 1.5);
+            col += eyeCol * (0.12 + 1.6 * flash) * (0.3 + biolum) * 0.0009 / (dl2 + 0.0012);
+        }
+    }
 
     // Short HDR light-wake from the previous frame (C = last frame's A, stored as HDR linear)
     let prev = textureLoad(dataTextureC, coord, 0);

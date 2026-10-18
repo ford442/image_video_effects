@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import type { GraphAnalysis } from '../../graphLab/graphAnalysis';
 import type { LiveReading } from '../../graphLab/runDraft';
 

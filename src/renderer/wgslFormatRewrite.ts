@@ -11,6 +11,7 @@
  */
 
 import type { InternalColorFormat } from '../config/formatPolicy';
+import { hashWgslSource } from './wgslHash';
 
 export interface FormatRewriteResult {
   wgsl: string;
@@ -50,6 +51,7 @@ export function rewriteWgslStorageFormatsChecked(
   return { wgsl: out, rewritten, missed };
 }
 
+/** Cache key for a compiled pipeline: tier format + length + 64-bit FNV-1a of the source (not the source itself). */
 export function pipelineCacheKey(wgsl: string, colorFormat: InternalColorFormat): string {
-  return `${colorFormat}:${wgsl.length}:${wgsl}`;
+  return `${colorFormat}:${wgsl.length}:${hashWgslSource(wgsl)}`;
 }

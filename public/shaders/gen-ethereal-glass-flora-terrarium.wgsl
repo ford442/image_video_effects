@@ -3,13 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-10-10
-//  Ideas: condensation droplet beads on terrarium glass shell; dew meniscus highlights on leaf-tip normals;
-//         2nd pass (2026-10-10): capillary nectar lumen — a real inner capsule SDF in every
-//         stem with travelling emissive packets, accumulated through the glass (revives the
-//         near-zero Nectar Glow); spectral dispersion fringes — the per-channel refracted
-//         directions rr/rg/rb now sample a per-channel background haze; also fixed a
-//         pow(negative, 2.0) NaN in the background haze that persisted in history
+//  Upgraded: 2026-10-17
+//  Ideas: condensation droplet beads on terrarium glass shell; dew meniscus highlights on leaf-tip normals; capillary nectar lumen; spectral dispersion fringes; geodesic terrarium glass-dome mullions & click-driven acoustic mist rings; pinnate leaf-blade venation & stomatal spore-pore luminescence
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -383,7 +378,17 @@ fn raymarchChromatic(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: 
         let dew = dewMeniscus(n, p, time);
         col += vec3<f32>(0.85, 1.0, 0.95) * dew * (0.35 + treble * 0.4);
 
-        alpha = sat(0.3 + f * 0.7 + dew * 0.15);
+        // Idea 3rd-pass B: Pinnate leaf-blade venation & stomatal spore-pore luminescence
+        let canopyMask = smoothstep(-0.05, 0.55, p.y);
+        let veinCoord = p.y * 16.0 - length(p.xz) * 11.0;
+        let pinnateVeins = pow(0.5 + 0.5 * cos(veinCoord * 2.2), 6.0) * canopyMask;
+        let stomataSeed = hash3(floor(p * 28.0));
+        let stomataPulse = 0.5 + 0.5 * sin(time * 3.8 + stomataSeed * 18.0 + bass * 4.0);
+        let stomataPores = step(0.84, stomataSeed) * stomataPulse * canopyMask * (0.4 + nectarGlow * 1.1);
+        col += vec3<f32>(0.18, 0.95, 0.68) * pinnateVeins * (0.22 + nectarGlow * 0.45)
+             + vec3<f32>(0.95, 0.85, 0.35) * stomataPores * (0.55 + treble * 0.5);
+
+        alpha = sat(0.3 + f * 0.7 + dew * 0.15 + pinnateVeins * 0.08);
       } else {
         // Pollen - bright emissive spheres
         let pollenCol = vec3<f32>(0.9, 0.8, 0.4) * (1.0 + treble * 2.0);
@@ -409,11 +414,24 @@ fn raymarchChromatic(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: 
     alpha = 0.0;
   }
 
-  // Condensation beads on the outer terrarium glass shell.
-  let shellProbe = ro + rd * 7.8;
-  let condense = condensationDroplets(shellProbe, time);
-  col += vec3<f32>(0.75, 0.92, 1.0) * condense * (0.2 + mids * 0.15);
-  alpha = sat(alpha + condense * 0.12);
+  // Idea 3rd-pass A: Geodesic terrarium glass-dome mullions & condensation beads on the 4.0-radius shell
+  let bDot = dot(ro, rd);
+  let disc = max(bDot * bDot - dot(ro, ro) + 16.0, 0.0);
+  let tDome = max(-bDot + sqrt(disc), 0.5);
+  let domePos = ro + rd * tDome;
+  let domeN = normalize(domePos);
+  let domeAz = atan2(domeN.z, domeN.x);
+  let domeEl = asin(clamp(domeN.y, -1.0, 1.0));
+  let ribMeridian = smoothstep(0.045, 0.008, abs(fract(domeAz * 6.0 / 3.14159265) - 0.5));
+  let ribLat = smoothstep(0.045, 0.008, abs(fract(domeEl * 5.0 / 1.5707963) - 0.5));
+  let ribDiag = smoothstep(0.05, 0.009, abs(fract((domeAz * 6.0 + domeEl * 10.0) / 3.14159265) - 0.5));
+  let domeMullion = max(ribMeridian, max(ribLat, ribDiag * 0.75)) * select(1.0, 0.35, hit && t < tDome);
+  let domeFresnel = pow(1.0 - abs(dot(rd, domeN)), 3.0);
+
+  let condense = condensationDroplets(domePos, time);
+  col += vec3<f32>(0.75, 0.92, 1.0) * condense * (0.25 + mids * 0.18)
+       + mix(vec3<f32>(0.55, 0.78, 0.72), vec3<f32>(0.85, 0.72, 0.42), domeMullion) * (domeMullion * 0.16 + domeFresnel * 0.09);
+  alpha = sat(alpha + condense * 0.14 + domeMullion * 0.08);
 
   return vec4<f32>(col, alpha);
 }
@@ -472,9 +490,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let fogCol = vec3<f32>(0.01, 0.03, 0.02) * (1.0 + bass * 0.1);
   col = mix(fogCol, col, fog);
 
-  // Audio-reactive enhancements
+  // Audio-reactive enhancements + click-driven acoustic mist rings on the terrarium glass
   col = col + vec3<f32>(0.0, 0.15, 0.1) * bass * 0.15;
   col = col + vec3<f32>(0.1, 0.0, 0.08) * mids * 0.1;
+
+  var mistRing = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var ri: u32 = 0u; ri < rippleCount; ri = ri + 1u) {
+    let rp = u.ripples[ri];
+    let age = time - rp.z;
+    if (age > 0.0 && age < 3.0) {
+      let dMist = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
+      let wave = exp(-pow((dMist - age * 0.28) * 32.0, 2.0)) * exp(-age * 1.1);
+      mistRing += wave;
+    }
+  }
+  col += vec3<f32>(0.45, 0.95, 0.82) * mistRing * (0.35 + nectarGlow * 0.45);
+  alpha = sat(alpha + mistRing * 0.16);
 
   // Temporal persistence
   let prev = textureLoad(dataTextureC, coord, 0);

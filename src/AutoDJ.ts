@@ -106,7 +106,7 @@ export class Alucinate {
             const suggestionsResponse = await fetch(imageSuggestionsUrl);
             const suggestionsMarkdown = await suggestionsResponse.text();
             this.imageThemes = this.parseImageSuggestions(suggestionsMarkdown);
-        } catch (e) {
+        } catch {
             console.warn("Could not load suggestions, using defaults.");
             this.imageThemes = ["abstract digital art", "neon geometric shapes", "fluid dynamics"];
         }
@@ -454,7 +454,7 @@ Your Selection:
                     }
                     if (result.length > 0) return result;
                 }
-            } catch (e) {
+            } catch {
                 console.warn("[Alucinate] Failed to parse LLM object array, falling back to string array.");
             }
         }

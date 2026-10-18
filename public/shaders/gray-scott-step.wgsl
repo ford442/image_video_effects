@@ -1,4 +1,7 @@
 // ═══ GRAY-SCOTT TANK — STEP (Jacobi / Gray–Scott) ══════════════════════════
+//  Upgraded: 2026-10-18
+//  Ideas: tangent stretch of V; feed shadow rings
+//  A packing: raw (U, V, age, seed mask)
 //  A/C packing: .r = U, .g = V, .b = age, .a = seed-mask
 //  zoom_params: .x feed, .y kill, .z diffusion, .w seed strength
 
@@ -41,8 +44,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let lapU = (n.r + s.r + e.r + w.r) * 0.25 - st.r;
   let lapV = (n.g + s.g + e.g + w.g) * 0.25 - st.g;
   let uvv = st.r * st.g * st.g;
-  var U = st.r + (Du * lapU - uvv + F * (1.0 - st.r)) * dt;
-  var V = st.g + (Dv * lapV + uvv - (F + K) * st.g) * dt;
+  // Idea: feed shadow — dense V starves the local feed so the spot center hollows.
+  let feed = F * (1.0 - 0.42 * smoothstep(0.38, 0.78, st.g));
+  var U = st.r + (Du * lapU - uvv + feed * (1.0 - st.r)) * dt;
+  var V = st.g + (Dv * lapV + uvv - (feed + K) * st.g) * dt;
+  // Idea: tangent stretch — extra diffusion of V along the concentration tangent.
+  let gVx = e.g - w.g;
+  let gVy = n.g - s.g;
+  let tang = abs(gVy) / max(abs(gVx) + abs(gVy), 0.001);
+  let lapTang = mix((n.g + s.g) * 0.5 - st.g, (e.g + w.g) * 0.5 - st.g, tang);
+  V = V + Dv * 0.7 * lapTang * dt;
   U = clamp(U, 0.0, 1.0);
   V = clamp(V, 0.0, 1.0);
   let age = clamp(st.b + V * 0.01, 0.0, 1.0);

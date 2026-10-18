@@ -16,7 +16,7 @@
     "kaleidoscopic",
     "geometry"
   ],
-  "description": "A majestic hyper-dimensional cyber-dragon of flowing quantum plasma with octahedral crystal scale-shards, box-ribbed spine segments and a bass-pulsed torus halo engraved with rotating star sigils, soaring through a kaleidoscopically folded dark-matter nebula veined with Voronoi energy circuits.",
+  "description": "A majestic hyper-dimensional cyber-dragon of flowing quantum plasma with octahedral crystal scale-shards, box-ribbed spine segments and a bass-pulsed torus halo engraved with rotating star sigils, soaring through a kaleidoscopically folded dark-matter nebula veined with Voronoi energy circuits. It chases a flaming pearl at the pointer and wears swept-back horns.",
   "url": "shaders/gen-ethereal-cyber-plasma-void-dragon.wgsl",
   "updated": true,
   "supportsDepth": true,

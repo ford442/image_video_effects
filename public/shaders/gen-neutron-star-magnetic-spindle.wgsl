@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: dipole field lines (r = L sin^2 theta) inside the light cylinder, coloured by curvature radiation; oblique-rotator pulsar beams with lighthouse pulse flash; polar-cap spark carousel producing drifting subpulse knots around each magnetic pole; striped equatorial current sheet beyond the light cylinder
+//  Upgraded: 2026-10-18
+//  Ideas: dipole field lines (r = L sin^2 theta) inside the light cylinder, coloured by curvature radiation; oblique-rotator pulsar beams with lighthouse pulse flash; polar-cap spark carousel producing drifting subpulse knots around each magnetic pole; striped equatorial current sheet beyond the light cylinder; magnetospheric accretion curtains (disk truncated at the Alfven radius, matter lifted along the L = r_m shell in two curtains, infalling knots heating toward the star); funnel-footprint shock rings on the crust at sin^2 theta = R / r_m around each magnetic pole
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -154,7 +154,7 @@ fn magAxisWorld(phase: f32) -> vec3<f32> {
 // Native idea 2 (volumetric half): open polar-cap field lines (L beyond the light
 // cylinder) channel the coherent pulsar beam along the magnetic axis.
 // Returns rgb emission in .rgb and glow coverage in .w.
-fn magnetosphere(pw: vec3<f32>, phase: f32, time: f32, core_r: f32, r_lc: f32, line_gain: f32, beam_gain: f32) -> vec4<f32> {
+fn magnetosphere(pw: vec3<f32>, phase: f32, time: f32, core_r: f32, r_lc: f32, line_gain: f32, beam_gain: f32, r_m: f32, acc_gain: f32) -> vec4<f32> {
     let pm = toMagFrame(pw, phase);
     let r = length(pm);
     if (r < core_r * 0.98 || r > r_lc * 1.6 + 1.5) {
@@ -191,7 +191,8 @@ fn magnetosphere(pw: vec3<f32>, phase: f32, time: f32, core_r: f32, r_lc: f32, l
     let beam = open * axial * exp(-r * 0.3) * beam_gain;
     let beamCol = vec3<f32>(0.55, 0.72, 1.0) * beam;
     // IDEA 3: Ruderman-Sutherland-like polar-cap spark carousel.
-    let polarCap = exp(-sin2 * 18.0) * exp(-pow((r - core_r * 1.6) * 2.2, 2.0));
+    let capR = (r - core_r * 1.6) * 2.2;
+    let polarCap = exp(-sin2 * 18.0) * exp(-capR * capR);
     let carousel = pow(0.5 + 0.5 * cos(phiM * 10.0 - time * (2.2 + beam_gain * 3.0)), 8.0);
     let spark = polarCap * carousel * (0.4 + open * 0.6) * beam_gain;
     let sparkCol = vec3<f32>(1.0, 0.82, 0.6) * spark;
@@ -202,8 +203,23 @@ fn magnetosphere(pw: vec3<f32>, phase: f32, time: f32, core_r: f32, r_lc: f32, l
     let sheet = beyond * sheetPlane * stripes * line_gain * 0.6;
     let sheetCol = vec3<f32>(0.45, 0.68, 1.0) * sheet;
 
-    let glow = clamp(tube * closed * fieldB * 0.5 + beam + spark * 0.8 + sheet * 0.9, 0.0, 1.0);
-    return vec4<f32>(lineCol + beamCol + sparkCol + sheetCol, glow);
+    // IDEA 5: magnetospheric accretion curtains. The disk is truncated at the
+    // Alfven radius r_m; plasma climbs the L = r_m dipole shell in two curtains
+    // (the plane holding spin + magnetic axes, |cos phiM| ~ 0) and falls onto
+    // the poles in knots that heat up as they approach the star.
+    let dLm = (L - r_m) * sin2;
+    let fw = 0.045 + r * 0.01;
+    let shellM = exp(-dLm * dLm / (fw * fw));
+    let cphi = pm.x / max(r * sinT, 1e-3);
+    let curtain = exp(-cphi * cphi * 5.0);
+    let fall = abs(cosT);
+    let knots = 0.35 + 0.65 * pow(0.5 + 0.5 * sin(fall * 22.0 - time * 7.0 + sign(cosT) * 1.7), 6.0);
+    let infallHeat = clamp(core_r / r, 0.0, 1.0);
+    let acc = shellM * curtain * knots * (0.3 + infallHeat * 1.2) * acc_gain;
+    let accCol = blackbody(0.35 + infallHeat * 0.6) * acc;
+
+    let glow = clamp(tube * closed * fieldB * 0.5 + beam + spark * 0.8 + sheet * 0.9 + acc * 0.7, 0.0, 1.0);
+    return vec4<f32>(lineCol + beamCol + sparkCol + sheetCol + accCol, glow);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -225,7 +241,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Mouse Interaction
     let mouse = u.zoom_config.yz;
     let mouse_ang_x = (mouse.x - 0.5) * PI * 2.0;
-    let mouse_ang_y = (mouse.y - 0.5) * PI;
+    // Slight elevation at the idle pointer so the disk reads as an ellipse.
+    let mouse_ang_y = clamp((mouse.y - 0.5) * PI + 0.3, -1.45, 1.45);
     let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
 
     // Parameters
@@ -238,7 +255,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Ray setup
     let clip_uv = (uv - 0.5) * 2.0;
     let aspect = resolution.x / resolution.y;
-    let p_ndc = vec2<f32>(clip_uv.x * aspect, clip_uv.y);
+    let p_ndc = vec2<f32>(clip_uv.x * aspect, -clip_uv.y); // uv.y grows downward; world +y = screen up
 
     var ro = vec3<f32>(0.0, 0.0, 5.0); // Camera pos
     var rd = normalize(vec3<f32>(p_ndc, -1.5));
@@ -250,8 +267,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     ro = vec3<f32>(rot_x * ro.xz, ro.y).xzy;
     rd = vec3<f32>(rot_x * rd.xz, rd.y).xzy;
 
-    ro = vec3<f32>(ro.x, rot_y * ro.yz).xzy;
-    rd = vec3<f32>(rd.x, rot_y * rd.yz).xzy;
+    ro = vec3<f32>(ro.x, rot_y * ro.yz);
+    rd = vec3<f32>(rd.x, rot_y * rd.yz);
 
     // Click ripples: starquake glitches — expanding Alfven ring from the click
     // point and a transient field-line brightening.
@@ -276,6 +293,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let core_r = 0.5 * core_density + audio_pulse * 0.1;
     let line_gain = 0.9 * (1.0 + treble * 0.4) * (1.0 + held * 0.8 + quakeFlare * 0.6);
     let beam_gain_base = 0.35 * (jet_intensity / 1.5) * (1.0 + treble * 0.3);
+    // Alfven (magnetospheric) radius: inner edge of the accretion torus, kept
+    // inside the light cylinder so the funnel shell is a closed field line.
+    let r_m = clamp(1.5 * disk_scale - 0.25, core_r * 1.3 + 0.1, r_lc * 0.8);
+    let acc_gain = 0.8 * (0.6 + mids * 0.8);
 
     // Native idea 2: lighthouse pulse when the magnetic axis sweeps the line of sight.
     let mAxis = magAxisWorld(pulsarPhase);
@@ -306,7 +327,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         if (d < 1.0) { // Near objects
             // Accretion disk volumetric
             if (abs(p.y) < 0.5 && r > 0.5 && r < 3.0 * disk_scale) {
-               let den = fbm(p * 2.0 - vec3<f32>(0.0, time, 0.0));
+               // Disk haze truncated inside the magnetospheric radius.
+               let den = fbm(p * 2.0 - vec3<f32>(0.0, time, 0.0)) * smoothstep(r_m * 0.7, r_m, r);
                let heat = 1.0 / (r * r) * (1.0 + audio_pulse * 0.5 + mids * 0.3); // hotter near core
                v_density += 0.02 * den;
                v_color += blackbody(heat * 0.8) * 0.02 * den;
@@ -324,7 +346,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Magnetosphere emission (field lines + beams), weighted by step length.
         let stepLen = clamp(d * 0.7, 0.01, 0.25);
-        let mag = magnetosphere(p, pulsarPhase, time, core_r, r_lc, line_gain, beam_gain);
+        let mag = magnetosphere(p, pulsarPhase, time, core_r, r_lc, line_gain, beam_gain, r_m, acc_gain);
         v_color += mag.rgb * stepLen;
         fieldGlow += mag.w * stepLen;
 
@@ -368,6 +390,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // Rim lighting
             let rim = 1.0 - max(0.0, dot(-rd, n));
             final_color += vec3<f32>(0.5, 0.2, 1.0) * pow(rim, 4.0);
+
+            // IDEA 6: funnel-footprint shock rings. The accretion curtains land
+            // on the crust at magnetic colatitude sin^2(theta) = R / r_m, so a
+            // co-rotating hot annulus rings each magnetic pole, brightest on
+            // the two arcs where the curtains touch down.
+            let hm = toMagFrame(hit, pulsarPhase);
+            let hr = max(length(hm), 1e-3);
+            let hs2 = 1.0 - (hm.y / hr) * (hm.y / hr);
+            let footS2 = clamp(core_r / r_m, 0.05, 0.95);
+            let ringD = (hs2 - footS2) / 0.045;
+            let footRing = exp(-ringD * ringD);
+            let hxz = max(length(hm.xz), 1e-3);
+            let landArc = 0.3 + 0.7 * exp(-(hm.x / hxz) * (hm.x / hxz) * 3.0);
+            let shock = footRing * landArc * acc_gain * (1.0 + lighthouse * 0.5);
+            final_color += mix(vec3<f32>(1.0, 0.75, 0.45), vec3<f32>(0.85, 0.92, 1.0), footRing) * shock * 1.8;
             surface = 1.0;
         } else if (obj_id == 2.0) {
             // Solid part of Accretion Disk (if hit)

@@ -6,32 +6,13 @@
 //            aces-tone-map, blackbody-radiation
 //  Complexity: Very High
 //  Created: 2026-06-28
-//  Upgraded: 2026-09-27
-//  Ideas: incandescent-crack temperature ramp (continuous white-yellow -> orange -> red -> obsidian from edge distance);
-//         per-plate isostatic bobbing/tilt from the Voronoi cell hash + bass rifting that widens fissures
+//  Upgraded: 2026-10-17
+//  Ideas: incandescent-crack temperature ramp; per-plate isostatic bobbing and bass rift;
+//         pillow rind on the thermal margin; strike-slip striae along the plate-slip direction
 //  A packing: display RGBA (ACES RGB, alpha = hit coverage + heat glow)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ─── Math Helpers ───
 fn sat(x: f32) -> f32 { return clamp(x, 0.0, 1.0); }
@@ -388,9 +369,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       // Heat glow on crust edges
       let edgeGlow = blackbody(hitTemp) * hitTemp * 0.5;
       crustCol = crustCol + edgeGlow;
+      // Idea: pillow rind. Cooled lobes sit on the margin between crack and obsidian.
+      let margin = smoothstep(0.1, 0.28, hitHeat) * (1.0 - smoothstep(0.48, 0.75, hitHeat));
+      let lobe = 0.5 + 0.5 * sin(hitPos.x * 17.0 + hitPos.z * 11.0);
+      crustCol = crustCol * (1.0 - margin * 0.5) + vec3<f32>(0.09, 0.045, 0.03) * margin * lobe;
 
       col = crustCol * (0.3 + diff * 0.5) + vec3<f32>(0.3, 0.25, 0.35) * spec * 0.4;
       col = col + vec3<f32>(0.1, 0.05, 0.2) * fresnel * 0.3;
+      // Idea: strike-slip striae. Scratch grooves follow the slip direction.
+      let slipCoord = dot(hitPos.xz, vec2<f32>(0.86, 0.51));
+      let slip = abs(fract(slipCoord * (5.0 + tectonicStress * 3.5)) - 0.5);
+      let stria = (1.0 - smoothstep(0.02, 0.09, slip)) * (0.22 + tectonicStress * 0.1);
+      col = col * (1.0 - stria * 0.6);
       // IDEA 1: thermal halo — unlit emissive falloff from the crack onto the obsidian
       col = col + incandescent(hitHeat) * hitHeat * 0.8;
     }

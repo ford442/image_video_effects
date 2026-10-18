@@ -7,31 +7,13 @@
 //  Created: 2026-05-23
 //  Updated: 2026-05-31
 //  By: Grok (seasonal audio ecosystem + submarine light mouse upgrade)
-//  Upgraded: 2026-09-27
-//  Ideas: tube-worm plume crown (radial gill lamellae bump, retracts under spotlight/click); chemosynthetic bacterial mats zoned around the nearest vent; arrival-gated click chain-reaction hopping worm to worm
+//  Upgraded: 2026-10-17
+//  Ideas: tube-worm plume crown (radial gill lamellae bump, retracts under spotlight/click); chemosynthetic bacterial mats zoned around the nearest vent; arrival-gated click chain-reaction hopping worm to worm; black-smoker plumes billowing from each vent over a glowing orange mouth; tip-light pools where each worm crown lights the seabed around its base
 //  A packing: ACES display RGBA (rgb trail + alpha trail)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Density, y=Current/Sway, z=GlowIntensity, w=WaterClarity
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Density, y=Current/Sway, z=GlowIntensity, w=WaterClarity
 
 // Deep Sea Organism Properties
 const WORM_TISSUE_DENSITY: f32 = 3.2;      // Tube worms are relatively dense
@@ -242,6 +224,37 @@ fn nearestVent(pxz: vec2<f32>) -> vec2<f32> {
     return vec2<f32>(best, bh);
 }
 
+// IDEA 4: black-smoker plume. x = smoke density, y = hot vent-mouth glow, at p.
+// Only the vent cell under p is tested, and the fbm ground lookup runs only inside
+// the plume's bounding radius, so open water pays a single hash per march step.
+fn plumeField(p: vec3<f32>, clock: f32, bass: f32) -> vec3<f32> {
+    let cs = 30.0;
+    let cell = floor(p.xz / cs);
+    let vh = hash(cell + vec2<f32>(12.34, 56.78));
+    if (vh <= 0.7) { return vec3<f32>(0.0); }
+    let center = (cell + 0.5) * cs;
+    let r = length(p.xz - center);
+    if (r > 3.4) { return vec3<f32>(0.0); }
+    let ventTop = -4.0 - fbm(center * 0.2) * 2.0 + 3.0 + vh * 2.0;
+    let hy = p.y - ventTop;
+    if (hy < -0.4 || hy > 14.0) { return vec3<f32>(0.0); }
+    // z = 1 inside the bounds: the march takes short steps here so the smoke is sampled.
+    let rise = max(hy, 0.0);
+    let R = 0.45 + rise * 0.18;
+    // Rising billows: noise advected upward, drifting with the current.
+    let billow = noise(vec2<f32>(rise * 1.3 - clock * 0.9 - bass * 0.5, r * 2.2 + vh * 17.0));
+    let dens = (1.0 - smoothstep(R * 0.3, R, r)) * (0.45 + 0.8 * billow) * exp(-rise * 0.12)
+             * smoothstep(-0.4, 0.1, hy);
+    let mouth = exp(-r * 2.6) * exp(-abs(hy - 0.1) * 3.0);
+    return vec3<f32>(dens, mouth, 1.0);
+}
+
+fn tipHue(hue: f32) -> vec3<f32> {
+    let k = vec3<f32>(1.0, 2.0/3.0, 1.0/3.0);
+    let p_col = abs(fract(vec3<f32>(hue) + k) * 6.0 - 3.0);
+    return clamp(p_col - 1.0, vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 // --- Map Function ---
 
 fn map(p: vec3<f32>) -> vec2<f32> {
@@ -331,18 +344,42 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     ));
 }
 
-fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
+struct MarchResult {
+    t: f32,
+    mat: f32,
+    smoke: f32,   // fog-weighted plume optical depth along the ray (IDEA 4)
+    mouth: f32,   // fog-weighted vent-mouth glow along the ray (IDEA 4)
+};
+
+fn raymarch(ro: vec3<f32>, rd: vec3<f32>, clock: f32, bass: f32) -> MarchResult {
     var t = 0.1;
     var mat = 0.0;
-    for(var i=0; i<128; i++) {
+    var smoke = 0.0;
+    var mouth = 0.0;
+    for(var i=0; i<160; i++) { // +32 steps: budget for the capped stride inside plumes
         var p = ro + rd * t;
         var res = map(p);
         var d = res.x;
         mat = res.y;
         if(d < 0.001 || t > 100.0) { break; }
-        t += d;
+        // The plume is not part of the SDF, so inside its bounds the stride is capped
+        // and the smoke integrated over the step actually taken.
+        let pf = plumeField(p, clock, bass);
+        var stepLen = d;
+        if (pf.z > 0.5) {
+            stepLen = min(d, 0.45);
+            let w = stepLen * exp(-t * 0.03);
+            smoke += pf.x * w;
+            mouth += pf.y * w;
+        }
+        t += stepLen;
     }
-    return vec2<f32>(t, mat);
+    var r: MarchResult;
+    r.t = t;
+    r.mat = mat;
+    r.smoke = smoke;
+    r.mouth = mouth;
+    return r;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -376,7 +413,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let forward = normalize(target_pos - ro);
     let right = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), forward));
     let up = cross(forward, right);
-    let rd = normalize(forward + right * uv.x + up * uv.y);
+    // Screen rows grow downward; negate uv.y so world-up (vent plumes, worm
+    // crowns) points up the screen instead of the seabed hanging overhead.
+    let rd = normalize(forward + right * uv.x - up * uv.y);
 
     // === AUDIO SEASONS FOR THE ABYSS (Grok upgrade) ===
     let bass = plasmaBuffer[0].x;
@@ -390,9 +429,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let seasonHarsh = bass * 0.55;
     let seasonVolatile = treble * 0.8;
 
-    var res = raymarch(ro, rd);
-    var t = res.x;
-    var mat = res.y;
+    let res = raymarch(ro, rd, clock, bass);
+    var t = res.t;
+    var mat = res.mat;
 
     var color = vec3<f32>(0.0);
     var alpha = 1.0;
@@ -446,10 +485,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             glowIntensity += clickBloom + chain * 1.4;
 
             let hue = p.y * 0.1;
-
-            let k = vec3<f32>(1.0, 2.0/3.0, 1.0/3.0);
-            let p_col = abs(fract(vec3<f32>(hue) + k) * 6.0 - 3.0);
-            var glowColor = clamp(p_col - 1.0, vec3<f32>(0.0), vec3<f32>(1.0));
+            var glowColor = tipHue(hue);
             glowColor = mix(glowColor, vec3<f32>(0.7, 1.0, 1.0), clamp(chain, 0.0, 1.0) * 0.6); // IDEA 3 flash tint
 
             // IDEA 1: plume crown. Radial gill lamellae around the swayed worm axis, in shading/bump only.
@@ -486,6 +522,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                            MAT_COLOR_TEAL, smoothstep(0.4, 0.85, zoneT));
             let breathe = 0.75 + 0.25 * sin(nv.x * 0.9 - clock * 1.2 + nv.y * 6.0);
             matGlow = mcol * cover * breathe * 0.3 * u.zoom_params.z * (1.0 + seasonBloom * 0.8 + mouseSpot);
+        }
+
+        // IDEA 5: tip-light pools. The crown of this cell's worm is a light source:
+        // the seabed and vent flanks under it pick up its hue with inverse-square-ish
+        // falloff. Uses the swayed worm frame, so the pool slides as the worm sways.
+        if (mat == 1.0 || mat == 4.0) {
+            let wf = wormFrame(p);
+            let tipLocal = vec3<f32>(0.0, wf.height - 0.25, 0.0);
+            let toTip = tipLocal - wf.q;
+            let dTip = length(toTip);
+            let tipWorldY = p.y + toTip.y;
+            let lambert = max(dot(n, toTip / max(dTip, 1e-3)), 0.0);
+            let poolGlow = u.zoom_params.z * (0.7 + seasonBloom * 0.6 + seasonVolatile * 0.9)
+                         * (0.8 + 0.2 * sin(u.config.x * 2.0));
+            // Only this cell's worm lights the floor: fade toward the cell border
+            // so neighbouring pools don't meet in a visible seam grid.
+            let poolCs = mix(10.0, 4.0, u.zoom_params.x);
+            let poolQc = abs(fract(p.xz / poolCs) - 0.5);
+            let edgeFade = 1.0 - smoothstep(0.3, 0.5, max(poolQc.x, poolQc.y));
+            let pool = lambert * poolGlow * edgeFade / (1.0 + dTip * dTip * 0.6);
+            matGlow += tipHue(tipWorldY * 0.1) * pool * 0.5;
         }
 
         // Apply lighting
@@ -531,6 +588,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         color = fogColor;
         alpha = 0.0;
     }
+
+    // IDEA 4: black-smoker plumes. Mineral smoke absorbs what is behind it and
+    // scatters a little of the down-welling caustic light; the vent mouth glows.
+    let smokeOpacity = 1.0 - exp(-res.smoke * 0.45);
+    let smokeScatter = vec3<f32>(0.07, 0.10, 0.13) * (0.8 + mids * 0.6);
+    color = mix(color, smokeScatter, smokeOpacity * 0.85);
+    color += vec3<f32>(1.0, 0.38, 0.08) * min(res.mouth, 2.0) * 0.8 * (0.6 + u.zoom_params.z * 0.5 + bass * 0.5);
+    alpha = max(alpha, smokeOpacity * 0.7);
 
     // Temporal feedback via dataTextureA
     let decay = 0.96;

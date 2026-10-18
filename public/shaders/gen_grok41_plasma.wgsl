@@ -3,31 +3,12 @@
 //  Category: generative
 //  Features: upgraded-rgba, depth-aware, audio-reactive, mouse-driven,
 //            spherical-harmonics, animated
-//  Upgraded: 2026-09-06
-//  Ideas: zonal jet stripes in the harmonic pattern; storm-eye vortex from Worley mask
+//  Upgraded: 2026-10-17
+//  Ideas: zonal jets; storm-eye vortex; polar hood; belt boundaries
 //  A packing: raw pattern, stormMask, limbT, validity
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -280,6 +261,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let eyeLon = exp(-pow(sin(phi * 0.5 + time * 0.08), 2.0) * 6.0);
         let stormEye = stormMask * eyeLat * eyeLon;
         baseColor = mix(baseColor, vec3<f32>(0.95, 0.38, 0.18), clamp(stormEye * 0.45, 0.0, 0.4));
+
+        // Idea 3 — polar hood: high-latitude haze, separate from the jet field
+        let polarHood = pow(abs(cos(theta)), 5.0);
+        baseColor = mix(baseColor, vec3<f32>(0.74, 0.80, 0.90), polarHood * 0.42);
+        // Idea 4 — belt edges at the zero-crossings of the existing jet sine
+        let jetPhase = theta * 18.0 + time * 0.35 + pattern * 0.4;
+        let beltEdge = smoothstep(0.86, 0.99, abs(cos(jetPhase)));
+        baseColor = baseColor * (1.0 - beltEdge * 0.32);
 
         // HDR accumulation (boost before tone map)
         var litColor = baseColor * (diff * 1.1 + ambient) * 1.4 + vec3<f32>(spec) * 1.5;

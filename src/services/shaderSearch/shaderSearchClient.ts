@@ -37,7 +37,7 @@ export function getShaderSearchClient(): ShaderSearchClient | null {
   if (singleton) return singleton;
   if (!supportsSemanticSearch()) return null;
 
-  const worker = new Worker(new URL('./shaderSearch.worker.ts', import.meta.url));
+  const worker = new Worker(new URL('./shaderSearch.worker.ts', import.meta.url), { type: 'module' });
   let nextId = 1;
   const pending = new Map<number, { resolve: (r: ShaderSearchResponse) => void; reject: (e: Error) => void }>();
 

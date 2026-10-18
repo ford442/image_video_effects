@@ -8,7 +8,7 @@
 import { isWasmBlockedAfterOom } from '../config/vramBudget';
 import { Renderer, RendererConfig } from './Renderer';
 import { JSRenderer } from './JSRenderer';
-import { WASMRenderer } from './WASMRenderer';
+import type { WASMRenderer } from './WASMRenderer';
 import { WebGPURenderer } from './WebGPURenderer';
 import type { WebGpuProbeHandoff } from './webgpuBootProbe';
 import { isWebGpuBackend } from './webgpuBackendApi';
@@ -108,16 +108,23 @@ export async function releaseRendererGpu(renderer: Renderer): Promise<void> {
   await yieldForGpuRelease();
 }
 
-/** Factory for the three renderer backends — keeps RendererManager free of `new` branches. */
-export function createRendererForType(
+/**
+ * Factory for the three renderer backends — keeps RendererManager free of `new` branches.
+ * The WASM renderer is R&D-frozen (`?renderer=wasm` only), so it is a separate chunk loaded here
+ * on demand instead of shipping in the main bundle.
+ */
+export async function createRendererForType(
   type: RendererType,
   config: RendererConfig,
   renderThread: RenderThread = resolveRenderThread(),
-): Renderer {
+): Promise<Renderer> {
   if (type === 'webgpu') {
     return renderThread === 'worker' ? new WorkerWebGPUBackend(config) : new WebGPURenderer(config);
   }
-  if (type === 'wasm') return new WASMRenderer(config);
+  if (type === 'wasm') {
+    const { WASMRenderer: WasmRendererClass } = await import(/* webpackChunkName: "wasm-renderer" */ './WASMRenderer');
+    return new WasmRendererClass(config);
+  }
   return new JSRenderer(config);
 }
 
@@ -180,9 +187,17 @@ export async function performBackendSwitch(input: BackendSwitchInput): Promise<B
     await releaseRendererGpu(previousRenderer!);
   }
 
-  let renderer = createRendererForType(targetType, config, input.renderThread);
+  let renderer: Renderer | null = null;
+  try {
+    renderer = await createRendererForType(targetType, config, input.renderThread);
+  } catch (err) {
+    // The lazy WASM chunk can fail to load (offline, stale deploy): same outcome as a failed init.
+    console.warn(`[RendererManager] could not create the '${targetType}' renderer:`, err);
+  }
   let success = false;
-  if (isWebGpuBackend(renderer)) {
+  if (!renderer) {
+    // fall through to the failure result below
+  } else if (isWebGpuBackend(renderer)) {
     success = await renderer.init(canvas, input.webGpuHandoff);
     if (!success && renderer.renderThread === 'worker' && !isCanvasTransferred(canvas)) {
       // The worker never took the canvas (no worker WebGPU, spawn failure): render on the page.
@@ -195,7 +210,7 @@ export async function performBackendSwitch(input: BackendSwitchInput): Promise<B
     success = await renderer.init(canvas);
   }
 
-  if (success) {
+  if (success && renderer) {
     if (!mustReleaseFirst && previousRenderer) {
       await releaseRendererGpu(previousRenderer);
     }
@@ -221,7 +236,7 @@ export async function performBackendSwitch(input: BackendSwitchInput): Promise<B
   }
 
   console.warn(`[RendererManager] switchRenderer('${targetType}') failed`);
-  const failedWasmRenderer = targetType === 'wasm' ? (renderer as WASMRenderer) : null;
+  const failedWasmRenderer = targetType === 'wasm' && renderer ? (renderer as WASMRenderer) : null;
 
   return {
     success: false,

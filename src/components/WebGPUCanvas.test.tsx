@@ -1,34 +1,32 @@
-import React from 'react';
 import { render, fireEvent, screen, act } from '@testing-library/react';
 import WebGPUCanvas, { waitForCanvasTeardown } from './WebGPUCanvas';
 import { RendererManager } from '../renderer/RendererManager';
 import { ShaderEntry, SlotParams } from '../renderer/types';
 
 // Mock RendererManager + boot probe so no WebGPU initialization runs in tests.
-// Plain functions, not jest.fn(): CRA's resetMocks would wipe factory implementations.
-let mockReleaseGate: Promise<void> = Promise.resolve();
-const mockEvents: string[] = [];
+// Plain functions, not vi.fn(): CRA's resetMocks would wipe factory implementations.
+const mocks = vi.hoisted(() => ({ releaseGate: Promise.resolve() as Promise<void>, events: [] as string[] }));
 
-jest.mock('../renderer/RendererManager', () => ({
+vi.mock('../renderer/RendererManager', () => ({
     getRendererTypeFromURL: () => null,
     RendererManager: class {
         init = async () => true;
         destroy = () => {
-            mockEvents.push('destroy:start');
-            return mockReleaseGate.then(() => { mockEvents.push('destroy:done'); });
+            mocks.events.push('destroy:start');
+            return mocks.releaseGate.then(() => { mocks.events.push('destroy:done'); });
         };
         setVideo = () => {};
         setInputSource = () => {};
         syncAllSlotParams = () => {};
-        render = () => {};
+        render() {}
         setParam = () => {};
         getDiagnostics = () => ({});
     },
 }));
 
-jest.mock('../renderer/webgpuBootProbe', () => ({
+vi.mock('../renderer/webgpuBootProbe', () => ({
     runWebGpuBootProbe: async () => {
-        mockEvents.push('probe');
+        mocks.events.push('probe');
         return { ok: true, handoff: {} };
     },
     publishWebGpuProbe: () => {},
@@ -47,46 +45,46 @@ beforeAll(() => {
     // Mock matchMedia
     Object.defineProperty(window, 'matchMedia', {
         writable: true,
-        value: jest.fn().mockImplementation(query => ({
+        value: vi.fn().mockImplementation(query => ({
             matches: false,
             media: query,
             onchange: null,
-            addListener: jest.fn(), // Deprecated
-            removeListener: jest.fn(), // Deprecated
-            addEventListener: jest.fn(),
-            removeEventListener: jest.fn(),
-            dispatchEvent: jest.fn(),
+            addListener: vi.fn(), // Deprecated
+            removeListener: vi.fn(), // Deprecated
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+            dispatchEvent: vi.fn(),
         })),
     });
 
     // Mock HTMLMediaElement methods
     Object.defineProperty(window.HTMLMediaElement.prototype, 'play', {
         writable: true,
-        value: jest.fn().mockImplementation(() => Promise.resolve()),
+        value: vi.fn().mockImplementation(() => Promise.resolve()),
     });
     Object.defineProperty(window.HTMLMediaElement.prototype, 'pause', {
         writable: true,
-        value: jest.fn(),
+        value: vi.fn(),
     });
     Object.defineProperty(window.HTMLMediaElement.prototype, 'load', {
         writable: true,
-        value: jest.fn(),
+        value: vi.fn(),
     });
 });
 
 test('mouse down emits ripple for mouse-driven shader', () => {
     const mockRenderer = {
-        addRipplePoint: jest.fn(),
-        firePlasma: jest.fn(),
-        syncAllSlotParams: jest.fn(),
-        setInputSource: jest.fn(),
-        setVideo: jest.fn(),
-        render: jest.fn(),
+        addRipplePoint: vi.fn(),
+        firePlasma: vi.fn(),
+        syncAllSlotParams: vi.fn(),
+        setInputSource: vi.fn(),
+        setVideo: vi.fn(),
+        render: vi.fn(),
     };
 
     const rendererRef = { current: mockRenderer as unknown as RendererManager };
-    const setMousePosition = jest.fn();
-    const setIsMouseDown = jest.fn();
+    const setMousePosition = vi.fn();
+    const setIsMouseDown = vi.fn();
 
     render(
         <WebGPUCanvas
@@ -124,21 +122,21 @@ test('mouse down emits ripple for mouse-driven shader', () => {
 });
 
 test('remount waits for the previous renderer teardown before re-probing', async () => {
-    const rectSpy = jest.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue(
+    const rectSpy = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue(
         { left: 0, top: 0, width: 200, height: 200, right: 200, bottom: 200, x: 0, y: 0, toJSON: () => ({}) } as DOMRect,
     );
-    mockEvents.length = 0;
+    mocks.events.length = 0;
     let releaseFirst!: () => void;
-    mockReleaseGate = new Promise<void>((resolve) => { releaseFirst = resolve; });
+    mocks.releaseGate = new Promise<void>((resolve) => { releaseFirst = resolve; });
 
     const props = {
         modes: ['none'] as never,
         slotParams: [] as SlotParams[],
         farthestPoint: { x: 0.5, y: 0.5 },
         mousePosition: { x: -1, y: -1 },
-        setMousePosition: jest.fn(),
+        setMousePosition: vi.fn(),
         isMouseDown: false,
-        setIsMouseDown: jest.fn(),
+        setIsMouseDown: vi.fn(),
         isMuted: false,
         inputSource: 'image' as const,
         selectedVideo: '',
@@ -149,19 +147,19 @@ test('remount waits for the previous renderer teardown before re-probing', async
 
     const view = render(<WebGPUCanvas {...props} rendererRef={{ current: null }} />);
     await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
-    expect(mockEvents).toEqual(['probe']);
+    expect(mocks.events).toEqual(['probe']);
     view.unmount();
 
     render(<WebGPUCanvas {...props} rendererRef={{ current: null }} />);
     await act(async () => { await new Promise((r) => setTimeout(r, 10)); });
     // The second mount must not request a device while the first is still releasing.
-    expect(mockEvents).toEqual(['probe', 'destroy:start']);
+    expect(mocks.events).toEqual(['probe', 'destroy:start']);
 
     await act(async () => {
         releaseFirst();
         await waitForCanvasTeardown();
         await new Promise((r) => setTimeout(r, 0));
     });
-    expect(mockEvents).toEqual(['probe', 'destroy:start', 'destroy:done', 'probe']);
+    expect(mocks.events).toEqual(['probe', 'destroy:start', 'destroy:done', 'probe']);
     rectSpy.mockRestore();
 });

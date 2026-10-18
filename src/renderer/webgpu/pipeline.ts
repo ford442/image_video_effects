@@ -15,6 +15,7 @@ import type { InternalColorFormat } from '../../config/formatPolicy';
 import { BLIT_WGSL, GENERATIVE_BLIT_WGSL, SCALE_COPY_WGSL, VIDEO_COPY_WGSL } from '../ShaderTemplates';
 import { fetchShaderWgsl } from '../../utils/fetchShaderWgsl';
 import { HISTORY_DEPTH } from './webgpuConstants';
+import { PIPELINE_CACHE_LIMIT, PipelineLru } from './pipelineCache';
 import {
   checkSimRingLimits,
   createSimRingBindGroupLayout,
@@ -49,6 +50,11 @@ export type SimRingLayoutProvider = () => GPUPipelineLayout | null;
 
 export class WebGPUShaderManager {
   private pipelines = new Map<string, GPUComputePipeline>();
+  /** Recency of every cached pipeline; the single eviction authority (warm-up included). */
+  private readonly lru = new PipelineLru();
+  private cacheLimit = PIPELINE_CACHE_LIMIT;
+  /** Ids bound to a slot (including graph chains): never evicted. */
+  private boundIds: () => ReadonlySet<string> = () => new Set<string>();
   private simRingShaders = new Set<string>();
   private simRingLayoutProvider: SimRingLayoutProvider = () => null;
   private pipelineHashes = new Map<string, string>();
@@ -67,7 +73,29 @@ export class WebGPUShaderManager {
   }
 
   getPipeline(id: string): GPUComputePipeline | undefined {
-    return this.pipelines.get(id);
+    const pipeline = this.pipelines.get(id);
+    // Keeps a shader that was just switched away from as recent as the moment it stopped rendering.
+    if (pipeline) this.lru.touch(id);
+    return pipeline;
+  }
+
+  /** Slot-bound ids the LRU must keep. Defaults to none. */
+  setBoundIdsProvider(provider: () => ReadonlySet<string>): void {
+    this.boundIds = provider;
+  }
+
+  /** Test/tuning hook: the most pipelines kept before unbound ones are evicted. */
+  setCacheLimit(limit: number): void {
+    this.cacheLimit = Math.max(1, Math.floor(limit));
+    this.trim(null);
+  }
+
+  /** Evict least recently used unbound pipelines beyond the cache limit. */
+  private trim(justUsed: string | null): void {
+    if (this.lru.size <= this.cacheLimit) return;
+    const keep = new Set(this.boundIds());
+    if (justUsed) keep.add(justUsed);
+    for (const victim of this.lru.overflow(this.cacheLimit, keep)) this.evict(victim);
   }
 
   hasPipeline(id: string): boolean {
@@ -98,8 +126,9 @@ export class WebGPUShaderManager {
     };
   }
 
-  /** Drop one cached pipeline (warm-up LRU eviction). */
+  /** Drop one cached pipeline. */
   evict(id: string): void {
+    this.lru.remove(id);
     this.pipelines.delete(id);
     this.pipelineHashes.delete(id);
     this.workgroupSizes.delete(id);
@@ -108,6 +137,7 @@ export class WebGPUShaderManager {
   }
 
   clear(): void {
+    this.lru.clear();
     this.pipelines.clear();
     this.pipelineHashes.clear();
     this.workgroupSizes.clear();
@@ -155,6 +185,8 @@ export class WebGPUShaderManager {
       this.bindingUsages.set(id, analyzeShaderBindings(wgsl));
       if (wantsSimRing) this.simRingShaders.add(id);
       else this.simRingShaders.delete(id);
+      this.lru.touch(id);
+      this.trim(id);
     }
     return ok;
   }

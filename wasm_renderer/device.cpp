@@ -1,5 +1,7 @@
 #include "renderer.h"
 #include "wasm_internal.h"
+#include "canvas_configure.h"
+#include "webgpu_limits.h"
 #include <webgpu/webgpu.h>
 #include <emscripten/emscripten.h>
 #include <emscripten/em_js.h>
@@ -10,6 +12,9 @@
 #include <algorithm>
 
 namespace pixelocity {
+
+static_assert(sizeof(Uniforms) == webgpu_limits::kMaxUniformBufferBindingSize,
+              "Uniforms size must equal webgpu_limits.json minimumComputeLimits.maxUniformBufferBindingSize");
 
 using wasm_internal::MakeStringView;
 using wasm_internal::CheckLimit;
@@ -33,7 +38,9 @@ constexpr uint64_t kDeviceWaitTimeoutNs = 5'000'000'000ull;
 //
 // Returns the WASM surface handle (pointer-sized integer) on success, 0 on failure.
 // The caller must cast the return value to WGPUSurface.
-EM_JS(uint32_t, JS_CreateSurfaceFromCanvas, (const char* selectorPtr, WGPUDevice deviceHandle), {
+// usage / alphaModePtr come from canvas_configure.h (kUsage / kAlphaModeJs).
+EM_JS(uint32_t, JS_CreateSurfaceFromCanvas, (const char* selectorPtr, WGPUDevice deviceHandle,
+                                             uint32_t usage, const char* alphaModePtr), {
     var selector = UTF8ToString(selectorPtr);
     var canvasEl = document.querySelector(selector);
     if (!canvasEl) {
@@ -49,7 +56,7 @@ EM_JS(uint32_t, JS_CreateSurfaceFromCanvas, (const char* selectorPtr, WGPUDevice
                            typeof navigator.gpu.getPreferredCanvasFormat === 'function')
         ? navigator.gpu.getPreferredCanvasFormat()
         : 'bgra8unorm';
-    var jsDevice = WebGPU.Internals.jsObjects[deviceHandle >>> 0];
+    var jsDevice = WebGPU.getJsObject(deviceHandle);
     if (!jsDevice) {
         console.error('[WASM] Device JS object not found at handle', deviceHandle);
         return 0;
@@ -63,8 +70,8 @@ EM_JS(uint32_t, JS_CreateSurfaceFromCanvas, (const char* selectorPtr, WGPUDevice
         ctx.configure({
             device: jsDevice,
             format: preferredFormat,
-            alphaMode: 'opaque',
-            usage: GPUTextureUsage.RENDER_ATTACHMENT
+            alphaMode: UTF8ToString(alphaModePtr),
+            usage: usage >>> 0
         });
     } catch (err) {
         console.error('[WASM] Canvas context configure failed:', err);
@@ -92,11 +99,12 @@ EM_JS(int, JS_GetPreferredCanvasFormat, (), {
 // ─── JavaScript bridge: canvas COPY_SRC opt-in probe ───────────────────────────────────────────
 //
 // Mirrors TS probeCanvasCopySrc() (webgpuBootProbe.ts): configure with the
-// canvas_configure.json optIn.copySrc usage and read it back. The caller wraps
-// this in a validation error scope and then calls ConfigureSurface() to restore
-// the render-only default, so the live swapchain never keeps COPY_SRC from here.
-// Returns 1 when the configure was accepted with the COPY_SRC bit, 0 otherwise.
-EM_JS(int, JS_ProbeCanvasCopySrc, (const char* selectorPtr, WGPUDevice deviceHandle), {
+// canvas_configure.json optIn.copySrc usage (kCopySrcUsage) and read it back. The
+// caller wraps this in a validation error scope and then calls ConfigureSurface()
+// to restore the render-only default, so the live swapchain never keeps COPY_SRC
+// from here. Returns 1 when the configure was accepted with every usage bit, 0 otherwise.
+EM_JS(int, JS_ProbeCanvasCopySrc, (const char* selectorPtr, WGPUDevice deviceHandle,
+                                   uint32_t usage, const char* alphaModePtr), {
     var canvasEl = document.querySelector(UTF8ToString(selectorPtr));
     var ctx = canvasEl ? canvasEl.getContext('webgpu') : null;
     var jsDevice = WebGPU.getJsObject(deviceHandle);
@@ -104,15 +112,16 @@ EM_JS(int, JS_ProbeCanvasCopySrc, (const char* selectorPtr, WGPUDevice deviceHan
     var preferredFormat = (navigator.gpu && navigator.gpu.getPreferredCanvasFormat)
         ? navigator.gpu.getPreferredCanvasFormat() : 'bgra8unorm';
     try {
+        var want = usage >>> 0;
         ctx.configure({
             device: jsDevice,
             format: preferredFormat,
-            alphaMode: 'opaque',
-            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC
+            alphaMode: UTF8ToString(alphaModePtr),
+            usage: want
         });
         var readback = typeof ctx.getConfiguration === 'function' ? ctx.getConfiguration() : null;
         if (readback && typeof readback.usage === 'number'
-            && !(readback.usage & GPUTextureUsage.COPY_SRC)) {
+            && (readback.usage & want) !== want) {
             return 0;
         }
         return 1;
@@ -325,26 +334,26 @@ bool WebGPURenderer::CreateDevice() {
     wgpuAdapterGetLimits(adapter_.get(), &limits);
 
     bool limitsOk = true;
-    // 8192 = webgpu_limits.json minimumComputeLimits.maxTextureDimension2D (comfortable floor).
+    // Every number below is a webgpu_limits.h constant (generated from webgpu_limits.json); maxTextureDimension2D is the comfortable floor.
     printf("[WASM] Adapter limits (validating against 14-entry compute contract):\n");
-    CheckLimit("maxTextureDimension2D",              limits.maxTextureDimension2D,              8192, limitsOk);
-    CheckLimit("maxBindingsPerBindGroup",            limits.maxBindingsPerBindGroup,            14,  limitsOk);
-    CheckLimit("maxSampledTexturesPerShaderStage",   limits.maxSampledTexturesPerShaderStage,    3,  limitsOk);
-    CheckLimit("maxSamplersPerShaderStage",          limits.maxSamplersPerShaderStage,           3,  limitsOk);
-    CheckLimit("maxStorageTexturesPerShaderStage",   limits.maxStorageTexturesPerShaderStage,    4,  limitsOk);
-    CheckLimit("maxStorageBuffersPerShaderStage",    limits.maxStorageBuffersPerShaderStage,     2,  limitsOk);
-    CheckLimit("maxUniformBuffersPerShaderStage",    limits.maxUniformBuffersPerShaderStage,     1,  limitsOk);
-    CheckLimit("maxComputeWorkgroupSizeX",           limits.maxComputeWorkgroupSizeX,            16, limitsOk);
-    CheckLimit("maxComputeWorkgroupSizeY",           limits.maxComputeWorkgroupSizeY,            16, limitsOk);
-    CheckLimit("maxComputeInvocationsPerWorkgroup",  limits.maxComputeInvocationsPerWorkgroup,   256, limitsOk);
+    CheckLimit("maxTextureDimension2D",              limits.maxTextureDimension2D,              webgpu_limits::kMaxTextureDimension2D, limitsOk);
+    CheckLimit("maxBindingsPerBindGroup",            limits.maxBindingsPerBindGroup,            webgpu_limits::kMaxBindingsPerBindGroup,  limitsOk);
+    CheckLimit("maxSampledTexturesPerShaderStage",   limits.maxSampledTexturesPerShaderStage,    webgpu_limits::kMaxSampledTexturesPerShaderStage,  limitsOk);
+    CheckLimit("maxSamplersPerShaderStage",          limits.maxSamplersPerShaderStage,           webgpu_limits::kMaxSamplersPerShaderStage,  limitsOk);
+    CheckLimit("maxStorageTexturesPerShaderStage",   limits.maxStorageTexturesPerShaderStage,    webgpu_limits::kMaxStorageTexturesPerShaderStage,  limitsOk);
+    CheckLimit("maxStorageBuffersPerShaderStage",    limits.maxStorageBuffersPerShaderStage,     webgpu_limits::kMaxStorageBuffersPerShaderStage,  limitsOk);
+    CheckLimit("maxUniformBuffersPerShaderStage",    limits.maxUniformBuffersPerShaderStage,     webgpu_limits::kMaxUniformBuffersPerShaderStage,  limitsOk);
+    CheckLimit("maxComputeWorkgroupSizeX",           limits.maxComputeWorkgroupSizeX,            webgpu_limits::kMaxComputeWorkgroupSizeX, limitsOk);
+    CheckLimit("maxComputeWorkgroupSizeY",           limits.maxComputeWorkgroupSizeY,            webgpu_limits::kMaxComputeWorkgroupSizeY, limitsOk);
+    CheckLimit("maxComputeInvocationsPerWorkgroup",  limits.maxComputeInvocationsPerWorkgroup,   webgpu_limits::kMaxComputeInvocationsPerWorkgroup, limitsOk);
 
     // Deep workgroup (webgpu_limits.json deepWorkgroupLimits): requested below
     // only when the adapter offers all three. supportsDeepWorkgroup_ is set from
     // the *device* limits after creation, since that is what shaders get.
     const bool adapterDeepWorkgroup =
-        limits.maxComputeWorkgroupSizeX >= 32 &&
-        limits.maxComputeWorkgroupSizeY >= 32 &&
-        limits.maxComputeInvocationsPerWorkgroup >= 1024;
+        limits.maxComputeWorkgroupSizeX >= webgpu_limits::deep::kMaxComputeWorkgroupSizeX &&
+        limits.maxComputeWorkgroupSizeY >= webgpu_limits::deep::kMaxComputeWorkgroupSizeY &&
+        limits.maxComputeInvocationsPerWorkgroup >= webgpu_limits::deep::kMaxComputeInvocationsPerWorkgroup;
     printf("[WASM] Adapter limits: maxTex2D=%u, storageTex=%u, sampledTex=%u, computeInvocations=%u (%s)\n",
            limits.maxTextureDimension2D, limits.maxStorageTexturesPerShaderStage,
            limits.maxSampledTexturesPerShaderStage, limits.maxComputeInvocationsPerWorkgroup,
@@ -406,22 +415,22 @@ bool WebGPURenderer::CreateDevice() {
     // All other fields stay WGPU_LIMIT_*_UNDEFINED (via WGPU_LIMITS_INIT) so
     // we don't over-request anything the adapter doesn't already offer.
     WGPULimits requiredLimits = WGPU_LIMITS_INIT;
-    requiredLimits.maxTextureDimension2D             = 8192; // webgpu_limits.json comfortable floor
-    requiredLimits.maxBindingsPerBindGroup           = 14;
-    requiredLimits.maxSampledTexturesPerShaderStage  = 3;
-    requiredLimits.maxSamplersPerShaderStage         = 3;
-    requiredLimits.maxStorageTexturesPerShaderStage  = 4;
-    requiredLimits.maxStorageBuffersPerShaderStage   = 2;
-    requiredLimits.maxUniformBuffersPerShaderStage   = 1;
-    requiredLimits.maxUniformBufferBindingSize       = sizeof(Uniforms);
-    requiredLimits.maxComputeWorkgroupSizeX          = 16;
-    requiredLimits.maxComputeWorkgroupSizeY          = 16;
-    requiredLimits.maxComputeInvocationsPerWorkgroup = 256;
+    requiredLimits.maxTextureDimension2D             = webgpu_limits::kMaxTextureDimension2D;
+    requiredLimits.maxBindingsPerBindGroup           = webgpu_limits::kMaxBindingsPerBindGroup;
+    requiredLimits.maxSampledTexturesPerShaderStage  = webgpu_limits::kMaxSampledTexturesPerShaderStage;
+    requiredLimits.maxSamplersPerShaderStage         = webgpu_limits::kMaxSamplersPerShaderStage;
+    requiredLimits.maxStorageTexturesPerShaderStage  = webgpu_limits::kMaxStorageTexturesPerShaderStage;
+    requiredLimits.maxStorageBuffersPerShaderStage   = webgpu_limits::kMaxStorageBuffersPerShaderStage;
+    requiredLimits.maxUniformBuffersPerShaderStage   = webgpu_limits::kMaxUniformBuffersPerShaderStage;
+    requiredLimits.maxUniformBufferBindingSize       = sizeof(Uniforms); // == webgpu_limits::kMaxUniformBufferBindingSize (asserted above)
+    requiredLimits.maxComputeWorkgroupSizeX          = webgpu_limits::kMaxComputeWorkgroupSizeX;
+    requiredLimits.maxComputeWorkgroupSizeY          = webgpu_limits::kMaxComputeWorkgroupSizeY;
+    requiredLimits.maxComputeInvocationsPerWorkgroup = webgpu_limits::kMaxComputeInvocationsPerWorkgroup;
     if (adapterDeepWorkgroup) {
         // webgpu_limits.json deepWorkgroupLimits — mirrors buildRequiredLimits(adapterLimits).
-        requiredLimits.maxComputeWorkgroupSizeX          = 32;
-        requiredLimits.maxComputeWorkgroupSizeY          = 32;
-        requiredLimits.maxComputeInvocationsPerWorkgroup = 1024;
+        requiredLimits.maxComputeWorkgroupSizeX          = webgpu_limits::deep::kMaxComputeWorkgroupSizeX;
+        requiredLimits.maxComputeWorkgroupSizeY          = webgpu_limits::deep::kMaxComputeWorkgroupSizeY;
+        requiredLimits.maxComputeInvocationsPerWorkgroup = webgpu_limits::deep::kMaxComputeInvocationsPerWorkgroup;
     }
 
     // Optional features: same order as collectOptionalDeviceFeatures() in
@@ -690,7 +699,8 @@ bool WebGPURenderer::CreateDevice() {
         printf("[WASM] Negotiated canvas format: %s\n", fmt == 1 ? "rgba8unorm" : "bgra8unorm");
 
         uint32_t surfHandle = JS_CreateSurfaceFromCanvas(
-            canvasSelector_.c_str(), device_.get());
+            canvasSelector_.c_str(), device_.get(),
+            static_cast<uint32_t>(canvas_configure::kUsage), canvas_configure::kAlphaModeJs);
         if (!surfHandle) {
             // Surface creation failed (no canvas at selector / getContext('webgpu')
             // failed / ctx.configure threw). Without a surface there is no way to
@@ -713,7 +723,9 @@ bool WebGPURenderer::CreateDevice() {
         // Never fails init; ConfigureSurface() below restores render-only.
         {
             wgpuDevicePushErrorScope(device_.get(), WGPUErrorFilter_Validation);
-            const int accepted = JS_ProbeCanvasCopySrc(canvasSelector_.c_str(), device_.get());
+            const int accepted = JS_ProbeCanvasCopySrc(
+                canvasSelector_.c_str(), device_.get(),
+                static_cast<uint32_t>(canvas_configure::kCopySrcUsage), canvas_configure::kAlphaModeJs);
             bool hadError = false;
             WGPUFuture popFuture = wgpuDevicePopErrorScope(device_.get(), WGPUPopErrorScopeCallbackInfo{
                 nullptr, WGPUCallbackMode_WaitAnyOnly,
@@ -766,20 +778,19 @@ void WebGPURenderer::ConfigureSurface() {
     if (!surface_.get() || !device_.get()) return;
 
     // Intentional second configure after JS_CreateSurfaceFromCanvas.
-    // JS path matches TS { alphaMode: opaque, usage: RENDER_ATTACHMENT }.
-    // C++ adds swapchain size + presentMode Fifo. Keep both.
+    // Both read canvas_configure.h (same JSON as TS buildCanvasConfigureOptions).
+    // C++ adds swapchain size + presentMode. Keep both.
     WGPUSurfaceConfiguration config = WGPU_SURFACE_CONFIGURATION_INIT;
     config.device      = device_.get();
     config.format      = surfaceFormat_;          // negotiated via JS_GetPreferredCanvasFormat()
-    config.usage       = WGPUTextureUsage_RenderAttachment;
     // Capture opt-in (canvas_configure.json optIn.copySrc). Only SetCanvasCopySrc()
     // turns this on, and only after the boot probe said yes; kept in a member
     // so a resize reconfigure does not drop it mid-recording.
-    if (canvasCopySrc_) config.usage |= WGPUTextureUsage_CopySrc;
-    config.alphaMode   = WGPUCompositeAlphaMode_Opaque;
+    config.usage       = canvasCopySrc_ ? canvas_configure::kCopySrcUsage : canvas_configure::kUsage;
+    config.alphaMode   = canvas_configure::kAlphaMode;
     config.width       = static_cast<uint32_t>(canvasWidth_);
     config.height      = static_cast<uint32_t>(canvasHeight_);
-    config.presentMode = WGPUPresentMode_Fifo;
+    config.presentMode = canvas_configure::kPresentMode;
 
     wgpuSurfaceConfigure(surface_.get(), &config);
     printf("✅ WebGPU surface configured (%dx%d%s)\n", canvasWidth_, canvasHeight_,

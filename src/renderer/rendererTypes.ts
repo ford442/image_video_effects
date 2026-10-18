@@ -1,12 +1,45 @@
 import type { GpuChoresBreadcrumbs } from '../gpuChores';
 import type { WebGpuProbeSerializable } from './webgpuBootProbe';
-import { WASMDiagnostics } from './WASMRenderer';
+import type { WasmErrorRing } from '../wasm/wasm_bridge';
 import type { RendererType } from './backendLifecycle';
 import type { GraphRunReport } from './GraphRunner';
 import type { FrameStats } from './webgpu/deviceCounters';
 import type { PassTiming } from './passTimings';
 import type { VideoIngestStats } from './media/videoFramePump';
 import type { DeviceRecoveryStatus } from './deviceRecovery';
+
+/**
+ * Diagnostic information from the WASM renderer (type-only: the renderer itself is lazy-loaded).
+ */
+export interface WASMDiagnostics {
+  initialized: boolean;
+  initAttempts: number;
+  errorCount: number;
+  lastErrorTime: string | null;
+  fps: number;
+  hasModule: boolean;
+  adapterInfo: string;
+  /** WebGPURenderer::InitStage of the last Initialize() attempt (0=None, 8=Ready). */
+  failedStage: number;
+  /** Human-readable reason for the last Initialize() failure, or '' if none. */
+  lastInitError: string;
+  /** InitStage name from C++ (e.g. 'Device', 'Surface'). */
+  failedStageName: string;
+  /** Bridge-layer load/init failures (from wasm_bridge getDiagnostics). */
+  loadErrorCount: number;
+  lastLoadError: string | null;
+  initTime: string;
+  /** One-line "ready / partial / failed at <stage> · adapter: …" summary for the debug panel. */
+  initSummary: string;
+  /** C++ canvas COPY_SRC probe (canvas_configure.json optIn.copySrc); null = artifact predates it. */
+  canvasCopySrc: boolean | null;
+  /** MAX_SHADER_SLOTS in the loaded artifact; null = artifact predates the export. */
+  maxShaderSlots: number | null;
+  /** Smoothed per-pass GPU ms from C++ timestamp queries (#1314 D); [] until they resolve. */
+  passTimings: PassTiming[];
+  /** C++ uncaptured WebGPU errors + device-lost messages (count survives clearErrorRing). */
+  errors: WasmErrorRing;
+}
 
 export interface RendererMetrics {
   fps: number;

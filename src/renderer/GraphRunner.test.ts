@@ -45,7 +45,7 @@ describe('GraphRunner', () => {
       }),
     } as unknown as GPUCommandEncoder;
 
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const report = runner.runGraph(encoder, graph, mockCtx({ dispatched }));
     warn.mockRestore();
 
@@ -60,9 +60,9 @@ describe('GraphRunner', () => {
 
   it('skips invalid graphs and surfaces errors on the report', () => {
     const runner = new GraphRunner();
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const encoder = {
-      beginComputePass: jest.fn(),
+      beginComputePass: vi.fn(),
     } as unknown as GPUCommandEncoder;
 
     const report = runner.runGraph(encoder, { maxPassesPerFrame: 0, nodes: [] }, {
@@ -91,7 +91,7 @@ describe('GraphRunner', () => {
       }),
     } as unknown as GPUCommandEncoder;
     const shared = { label: 'computeBG' } as unknown as GPUBindGroup;
-    const createBindGroupForRoles = jest.fn(() => ({} as GPUBindGroup));
+    const createBindGroupForRoles = vi.fn(() => ({} as GPUBindGroup));
 
     const report = runner.runGraph(encoder, graph, {
       ...mockCtx({ dispatched: [], maxPassesPerFrame: 16 }),
@@ -113,7 +113,7 @@ describe('GraphRunner', () => {
         setPipeline: () => {}, setBindGroup: () => {}, dispatchWorkgroups: () => {}, end: () => {},
       }),
     } as unknown as GPUCommandEncoder;
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const first = runner.runGraph(encoder, graph, mockCtx({ dispatched: [], maxPassesPerFrame: 2 }));
     const again = runner.runGraph(encoder, graph, mockCtx({ dispatched: [], maxPassesPerFrame: 2 }));
     const wider = runner.runGraph(encoder, graph, mockCtx({ dispatched: [], maxPassesPerFrame: 16 }));

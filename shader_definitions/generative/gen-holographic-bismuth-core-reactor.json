@@ -8,7 +8,7 @@
     "raymarching",
     "holographic"
   ],
-  "description": "A hyper-dimensional, endlessly unfolding bismuth core reactor, merging metallic stepped-fractals with liquid-holographic interference patterns.",
+  "description": "A hyper-dimensional KIFS bismuth core reactor with fold-generation stepped oxide thin-film terraces, 4-tap cavity AO, criticality-throttled Cherenkov phase-cone radiation, and control-rod coolant wake rings.",
   "workgroup_size": [
     16,
     16,
@@ -67,7 +67,7 @@
     "generated-depth",
     "upgraded-rgba"
   ],
-  "feedbackPacking": "A/C = ACES display RGBA history; exact same-pixel temporal load",
+  "feedbackPacking": "A/C = HDR RGBA history before primary controls; display = ACES(controls(A)); exact same-pixel temporal load",
   "x-meta": {
     "upgrade": {
       "params": [

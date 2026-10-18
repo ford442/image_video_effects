@@ -1,5 +1,6 @@
 import { Renderer, RendererConfig, GPUTimings, UncappedBenchResult, DeviceLossInfo } from './Renderer';
-import { WASMRenderer } from './WASMRenderer';
+import type { WASMRenderer } from './WASMRenderer';
+import { isWasmBackend } from './wasmBackend';
 import { WebGPURenderer } from './WebGPURenderer';
 import { InputSource, RenderMode, ShaderEntry, SlotParams } from './types';
 import { AdaptivePerformanceController } from './adaptivePerformance';
@@ -31,7 +32,7 @@ import { isCanvasTransferred, WorkerWebGPUBackend } from './worker/WorkerWebGPUB
 import { isWebGpuBackend, type WebGPUBackendApi } from './webgpuBackendApi';
 import type { PassTiming } from './passTimings';
 import type { MultipassGraphDef } from './multipassGraph';
-import { setRuntimeGraph as setRuntimeGraphOverlay, type RuntimeSimRingRequest } from './runtimeGraphs';
+import { listRuntimeGraphs, setRuntimeGraph as setRuntimeGraphOverlay, type RuntimeSimRingRequest } from './runtimeGraphs';
 import {
   ShaderLoadMeta,
   addRipple,
@@ -160,7 +161,7 @@ export class RendererManager {
 
   private shaderRenderer(): WebGPUBackendApi | WASMRenderer | null {
     const r = this.currentRenderer;
-    return isWebGpuBackend(r) || r instanceof WASMRenderer ? r : null;
+    return isWebGpuBackend(r) || isWasmBackend(r) ? r : null;
   }
 
   private backend() {
@@ -314,6 +315,8 @@ export class RendererManager {
           presentCanvas: this.canvas,
           logUpload: type === 'wasm',
         });
+        // Before the stack: a slot may hold the Graph Lab draft, which a new worker has never seen.
+        if (type === 'webgpu') this.reseedRuntimeGraphs();
         if (this.lastShaderStack) {
           await this.resyncShaderStack(this.lastShaderStack);
         }
@@ -337,6 +340,16 @@ export class RendererManager {
       console.warn(`[RendererManager] switchRenderer('${type}') failed — keeping previous renderer`);
     }
     return false;
+  }
+
+  /**
+   * Re-send the page's runtime graphs (the Graph Lab draft) to a freshly built TS backend. The
+   * page's overlay survives a backend switch, but a render worker's realm starts empty.
+   */
+  private reseedRuntimeGraphs(): void {
+    const r = this.shaderRenderer();
+    if (!isWebGpuBackend(r)) return;
+    for (const { id, graph, simRing } of listRuntimeGraphs()) r.setRuntimeGraph(id, graph, simRing);
   }
 
   /**
@@ -677,7 +690,7 @@ export class RendererManager {
   getPassTimings(): PassTiming[] {
     const r = this.shaderRenderer();
     if (isWebGpuBackend(r)) return r.getPassTimings();
-    if (r instanceof WASMRenderer) return r.getPassTimings();
+    if (isWasmBackend(r)) return r.getPassTimings();
     return [];
   }
   /** Bench only (#1080): vsync-free ms/frame from the active TS or C++ backend. */

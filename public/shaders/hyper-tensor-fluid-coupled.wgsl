@@ -6,32 +6,16 @@
 //  Chunks From: hyper-tensor-fluid, mouse-fluid-coupling
 //  Created: 2026-04-18
 //  By: Agent CB-4 - Mouse Physics Injector
+//  Upgraded: 2026-10-18
+//  Ideas: Weissenberg pile-up on tensor edges; die swell downstream of an edge
+//  A packing: raw (velocity.xy, vorticity, density). Pixel (0,0) stashes the pointer. Display ACES is writeTexture only.
 // ═══════════════════════════════════════════════════════════════════
 //  Tensor-field fluid with viscous mouse stirring. Mouse acts as a
 //  stirring rod injecting velocity and vorticity. Click ripples spawn
 //  radial fluid bursts. Alpha stores fluid density/thickness.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══ CHUNK: hash12 (from gen_grid.wgsl) ═══
 fn hash12(p: vec2<f32>) -> f32 {
@@ -101,12 +85,22 @@ fn calculateTensorEigen(tensor: mat2x2<f32>) -> vec4<f32> {
   return vec4<f32>(vec1, vec2);
 }
 
-fn sampleVelocity(tex: texture_2d<f32>, uv: vec2<f32>) -> vec2<f32> {
-  return textureSampleLevel(tex, u_sampler, uv, 0.0).xy;
+fn loadState(p: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
+  return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), dims - vec2<i32>(1)), 0);
 }
 
-fn sampleDensity(tex: texture_2d<f32>, uv: vec2<f32>) -> f32 {
-  return textureSampleLevel(tex, u_sampler, uv, 0.0).a;
+fn stateBilinear(uv: vec2<f32>, res: vec2<f32>) -> vec4<f32> {
+  let q = clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * res - 0.5;
+  let p = vec2<i32>(floor(q));
+  let f = fract(q);
+  let dims = vec2<i32>(res);
+  let a = mix(loadState(p, dims), loadState(p + vec2<i32>(1, 0), dims), f.x);
+  let b = mix(loadState(p + vec2<i32>(0, 1), dims), loadState(p + vec2<i32>(1, 1), dims), f.x);
+  return mix(a, b, f.y);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -120,8 +114,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let id = vec2<i32>(global_id.xy);
   let aspect = resolution.x / resolution.y;
 
-  let audioOverall = u.zoom_config.x;
-  let audioReactivity = 1.0 + audioOverall * 0.3;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+  let audioReactivity = 1.0 + bass * 0.3;
 
   // Parameters
   let tensorStrength = mix(0.0, 2.0, u.zoom_params.x);
@@ -148,19 +144,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let eigen = calculateTensorEigen(tensor);
 
   let flowDirection = eigen.xy;
-  let edgeStrength = length(eigen.xy);
+  let edgeStrength = clamp((tensor[0][0] + tensor[1][1]) * 48.0, 0.0, 1.0);
 
-  // Read previous velocity and density from dataTextureC
-  let prevVel = sampleVelocity(dataTextureC, uv);
-  let prevDens = sampleDensity(dataTextureC, uv);
+  // Read previous velocity and density from exact dataTextureC loads.
+  let prevState = stateBilinear(uv, resolution);
+  let prevVel = prevState.xy;
 
   // Advect velocity (semi-Lagrangian)
-  let backUV = uv - prevVel * pixel * 2.0;
-  var velocity = sampleVelocity(dataTextureC, backUV) * viscosity;
-  var dens = sampleDensity(dataTextureC, backUV) * viscosity;
+  let backUV = clamp(uv - prevVel * pixel * 2.0, vec2<f32>(0.0), vec2<f32>(1.0));
+  let backState = stateBilinear(backUV, resolution);
+  var velocity = backState.xy * viscosity;
+  var dens = backState.w * viscosity;
 
   // Apply tensor field influence
   velocity = velocity + flowDirection * tensorStrength * 0.01;
+
+  // Idea: Weissenberg pile-up — density climbs the image contour.
+  dens = dens + edgeStrength * tensorStrength * 0.12 * (0.65 + mids * 0.35);
+
+  // Idea: die swell — the jet widens along the minor axis once it leaves the edge.
+  let aheadUV = clamp(uv + flowDirection * pixel * 6.0, vec2<f32>(0.0), vec2<f32>(1.0));
+  let tensorAhead = calculateStructureTensor(aheadUV, pixel);
+  let edgeAhead = clamp((tensorAhead[0][0] + tensorAhead[1][1]) * 48.0, 0.0, 1.0);
+  let swell = max(edgeStrength - edgeAhead, 0.0);
+  velocity = velocity + eigen.zw * swell * tensorStrength * 0.05;
 
   // Add FBM turbulence
   let turb = fbm2(uv * 8.0 + time * 0.1 * audioReactivity, 4);
@@ -241,8 +248,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Specular highlight on fluid surface near mouse
   let specNoise = hash12(uv * 300.0 + time * 2.0);
-  let specular = pow(specNoise, 20.0) * influence * dens * 3.0;
+  let specular = pow(specNoise, 20.0) * influence * dens * 3.0 * (0.7 + treble * 0.6);
   color = color + vec3<f32>(0.9, 0.95, 1.0) * specular;
+
+  color = acesToneMap(max(color, vec3<f32>(0.0)));
 
   // Alpha = fluid density
   let alpha = mix(0.7, 1.0, flowIntensity + dens * 0.3);

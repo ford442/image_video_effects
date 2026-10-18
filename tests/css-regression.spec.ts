@@ -33,9 +33,11 @@ test.describe.configure({ mode: 'serial' });
 test.use({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
 
 test.beforeAll(async ({ browserName }) => {
+  // beforeAll takes no timeout argument; set it inside the hook.
+  test.setTimeout(60000);
   test.skip(browserName !== 'chromium', 'CSS baselines are pinned to chromium');
   await startStaticServer(PORT);
-}, 60000);
+});
 
 test.afterAll(async () => {
   await stopStaticServer();

@@ -1,5 +1,5 @@
 /**
- * The real public/wasm/naga_wasm.wasm, instantiated for jest.
+ * The real public/wasm/naga_wasm.wasm, instantiated for the test run.
  *
  * The ABI is re-implemented here rather than imported from public/wasm/naga_wasm.js
  * because that file is ESM and jest runs tests as CommonJS; the loader itself is
@@ -10,13 +10,13 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { TextDecoder as NodeTextDecoder, TextEncoder as NodeTextEncoder } from 'util';
-import type { NagaGlslConverter, NagaValidator } from '../utils/nagaWasm';
+import type { NagaGlslConverter, NagaReflector, NagaValidator } from '../utils/nagaWasm';
 
 export const NAGA_WASM_PATH = resolve(__dirname, '../../public/wasm/naga_wasm.wasm');
 
 const GLSL_STAGES = { vertex: 0, fragment: 1, compute: 2 } as const;
 
-export async function loadRealNaga(): Promise<NagaValidator & NagaGlslConverter> {
+export async function loadRealNaga(): Promise<NagaValidator & NagaGlslConverter & NagaReflector> {
   const { instance } = await WebAssembly.instantiate(readFileSync(NAGA_WASM_PATH), {});
   const w = instance.exports as any;
   // jsdom ships neither TextEncoder nor TextDecoder.
@@ -42,5 +42,6 @@ export async function loadRealNaga(): Promise<NagaValidator & NagaGlslConverter>
     validate: (wgsl) => run(wgsl, (ptr, len) => w.wgsl_validate(ptr, len)),
     glslToWgsl: (glsl, stage = 'fragment') =>
       run(glsl, (ptr, len) => w.glsl_to_wgsl(ptr, len, GLSL_STAGES[stage])),
+    reflect: (wgsl) => run(wgsl, (ptr, len) => w.wgsl_reflect(ptr, len)),
   };
 }

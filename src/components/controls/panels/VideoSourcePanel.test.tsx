@@ -1,4 +1,3 @@
-import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { VideoSourcePanel } from './VideoSourcePanel';
@@ -9,8 +8,8 @@ const videoList = [
 ];
 
 test('renders video select and fires selection callbacks', () => {
-    const setSelectedVideo = jest.fn();
-    const setInputSource = jest.fn();
+    const setSelectedVideo = vi.fn();
+    const setInputSource = vi.fn();
 
     render(
         <VideoSourcePanel

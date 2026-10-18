@@ -9,7 +9,7 @@
     "raymarch",
     "audio-reactive"
   ],
-  "description": "A raymarched refractive rain matrix with viscous drop merging, pointer repulsion, audio-driven caustics, bass-triggered lightning strobes, prismatic RGB dispersion on drop rims, and fall-aligned HDR rain streaks.",
+  "description": "A raymarched refractive rain matrix with viscous drop merging, pointer repulsion, audio-driven caustics, bass-triggered lightning strobes, prismatic RGB dispersion on drop rims, and fall-aligned HDR rain streaks. Villermaux-Bossa basal flattening and Descartes secondary internal-reflection rainbow glints illuminate each drop.",
   "workgroup_size": [
     16,
     16,

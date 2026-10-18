@@ -104,9 +104,9 @@ describe('probeFormatCapabilities', () => {
   it('measures storage formats instead of hardcoding true', async () => {
     const created: GPUTextureFormat[] = [];
     const device = {
-      createTexture: jest.fn((desc: GPUTextureDescriptor) => {
+      createTexture: vi.fn((desc: GPUTextureDescriptor) => {
         created.push(desc.format);
-        return { destroy: jest.fn() };
+        return { destroy: vi.fn() };
       }),
     } as unknown as GPUDevice;
     const adapter = {
@@ -123,7 +123,7 @@ describe('probeFormatCapabilities', () => {
 
   it('records false when the 1×1 storage create throws', async () => {
     const device = {
-      createTexture: jest.fn(() => {
+      createTexture: vi.fn(() => {
         throw new Error('rgba32float storage not supported');
       }),
     } as unknown as GPUDevice;
@@ -139,9 +139,9 @@ describe('probeFormatCapabilities', () => {
 
   it('records false when the create only raises a validation error (#1395)', async () => {
     const device = {
-      createTexture: jest.fn(() => ({ destroy: jest.fn() })),
-      pushErrorScope: jest.fn(),
-      popErrorScope: jest.fn(async () => ({ message: 'storage format not allowed' })),
+      createTexture: vi.fn(() => ({ destroy: vi.fn() })),
+      pushErrorScope: vi.fn(),
+      popErrorScope: vi.fn(async () => ({ message: 'storage format not allowed' })),
     } as unknown as GPUDevice;
     const adapter = { features: new Set<GPUFeatureName>(), info: {} } as unknown as GPUAdapter;
 
@@ -149,6 +149,33 @@ describe('probeFormatCapabilities', () => {
     expect(caps.supportsRgba32FloatStorage).toBe(false);
     expect(caps.supportsRgba16FloatStorage).toBe(false);
     expect(device.pushErrorScope).toHaveBeenCalledWith('validation');
+  });
+
+  describe('float32-blendable', () => {
+    const blendableAdapter = () => ({
+      features: new Set<GPUFeatureName>(['float32-blendable' as GPUFeatureName]),
+      info: {},
+    }) as unknown as GPUAdapter;
+    const deviceWith = (features: string[]) => ({
+      features: new Set(features),
+      createTexture: vi.fn(() => ({ destroy: vi.fn() })),
+    }) as unknown as GPUDevice;
+
+    it('reports the device feature, not the adapter offer, when the device lacks it', async () => {
+      const caps = await probeFormatCapabilities(blendableAdapter(), { device: deviceWith([]) });
+      expect(caps.hasFloat32Blendable).toBe(false);
+    });
+
+    it('is true when the device was granted it', async () => {
+      const caps = await probeFormatCapabilities(blendableAdapter(), {
+        device: deviceWith(['float32-blendable']),
+      });
+      expect(caps.hasFloat32Blendable).toBe(true);
+    });
+
+    it('falls back to the adapter when no device is supplied', async () => {
+      expect((await probeFormatCapabilities(blendableAdapter(), false)).hasFloat32Blendable).toBe(true);
+    });
   });
 
   it('does not assume storage support without a device', async () => {

@@ -3,9 +3,11 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, click-reactive, upgraded-rgba
 //  Complexity: High
+//  Upgraded: 2026-10-17
 //  Ideas: spring-eased mouse crack origin driving a radial SDF fracture
 //         network; click-triggered expanding crack fronts with trailing
-//         spokes; per-crack iridescence phase keyed to FFT bins 1-8
+//         spokes; per-crack iridescence phase keyed to FFT bins 1-8;
+//         Wallner stress-wave hackle arcs; birefringent photoelastic isochromatic fringes
 //  A packing: ACES display RGBA (hue-preserving clamp before tonemap;
 //             alpha = fracture/edge/front coverage; matches exact C read)
 //
@@ -14,26 +16,8 @@
 //    zoom_config.x  = TIME (do NOT use as mouse x)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=FractureCount, y=Iridescence, z=CrackWidth, w=PulseSpeed
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=FractureCount, y=Iridescence, z=CrackWidth, w=PulseSpeed
 
 // ── Chunk: hash22 (from gen_grid.wgsl / chunk-library) ────────────
 fn hash22(p: vec2<f32>) -> vec2<f32> {
@@ -247,10 +231,27 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let pulse = 0.5 + 0.5 * sin(time * pulseSpeed * 3.0 + distToCenter * 10.0);
     let crackGlow = glow(minDist, crackWidth * 4.0, 1.0 + pulse * 0.7) * (0.4 + bass * 0.6);
 
+    // ─── Idea 4: Wallner stress-wave hackle arcs ───
+    // Sonic waves crossing advancing radial cracks leave bowed hyperbolic hackle ripples inside each shard
+    let sectorBow = sqrt(max(minDist, 0.0) * 14.0);
+    let hacklePhase = distToCenter * (42.0 + fractureCount * 2.5) - sectorBow * 9.5 - time * pulseSpeed * 1.4;
+    let wallnerArcs = pow(0.5 + 0.5 * cos(hacklePhase), 6.0) * exp(-minDist * 16.0) * (1.0 - crackIntensity);
+
+    // ─── Idea 5: Birefringent photoelastic isochromatic fringes ───
+    // Mechanical stress concentrates near crack walls and Voronoi shard intersections, retarding polarized light
+    let stressField = 1.0 / (minDist * 38.0 + 0.28) + 0.45 / (edgeDist * 28.0 + 0.35);
+    let retardPhase = stressField * (1.8 + iridescenceAmt * 3.2) + domPhase * 3.14159 - time * pulseSpeed * 0.6;
+    let isochromatic = iridescence(retardPhase * 0.35, iridShift + 1.047)
+                     * (0.5 + 0.5 * sin(retardPhase * 2.0))
+                     * exp(-minDist * 11.0)
+                     * (0.25 + iridescenceAmt * 0.55);
+
     // Compose
     var col = vec3<f32>(0.02, 0.03, 0.05);
     col += shardColor * substrate * 0.25;
     col += shardColor * iridescenceAmt * 0.2;
+    col += isochromatic * (0.55 + mids * 0.35);
+    col += mix(vec3<f32>(0.65, 0.88, 1.0), shardColor, 0.45) * wallnerArcs * (0.28 + treble * 0.32);
     col += vec3<f32>(0.7, 0.9, 1.0) * crackGlow;
     col += shardColor * edgeGlow * iridescenceAmt;
     col += vec3<f32>(1.0, 0.9, 0.7) * crackIntensity * (0.6 + treble);

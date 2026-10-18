@@ -1,30 +1,14 @@
 // ═══════════════════════════════════════════════════════════════
 //  Fluid Vortex – Pass 1: Velocity Field & Vorticity
 //  Category: distortion
-//  Features: multi-pass-1, vortex dynamics, Biot-Savart, vorticity confinement
+//  Features: multi-pass-1, vortex dynamics, Biot-Savart, vorticity confinement, audio-reactive
+//  Upgraded: 2026-10-17
+//  Ideas: pairing jet between the counter-rotating cores; viscous memory of last frame's velocity
+//  A packing: raw (vx, vy, vorticity, velMag+2) — the +2 marks the field, not a color alpha
 //  Outputs: dataTextureA (velocity.x, velocity.y, vorticity, velMag)
 // ═══════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash2(p: vec2<f32>) -> vec2<f32> {
   let n = sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453;
@@ -119,10 +103,11 @@ fn vorticityConfinement(
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
   let uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
-  let audioOverall = u.zoom_config.x;
-  let audioReactivity = 1.0 + audioOverall * 0.3;
+  let bass = plasmaBuffer[0].x;
+  let audioReactivity = 1.0 + bass * 0.35;
 
   let vortexStrength = u.zoom_params.x;
   let coreSizeParam = u.zoom_params.y;
@@ -158,6 +143,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let confinementForce = vorticityConfinement(uv, vortices, time, 0.02 * vortexStrength, audioReactivity);
   velocity = velocity + confinementForce;
 
+  // Idea 1 — pairing jet: cores 0 (+) and 1 (−) swim perpendicular to their join.
+  let pairSep = vortices[1].center - vortices[0].center;
+  let pairLen = max(length(pairSep), 0.001);
+  let pairMid = (vortices[0].center + vortices[1].center) * 0.5;
+  let pairN = vec2<f32>(-pairSep.y, pairSep.x) / pairLen;
+  let pairFall = exp(-length(uv - pairMid) / (pairLen * 0.65 + 0.02));
+  velocity = velocity + pairN * strengthScale * 0.55 * pairFall;
+
   let turbUV = uv * 3.0 + time * 0.1 * audioReactivity;
   let turbulenceNoise = vec2<f32>(
     fbm(turbUV + vec2<f32>(0.0, time * 0.05 * audioReactivity), 3),
@@ -166,12 +159,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   velocity = velocity + turbulenceNoise * turbAmount;
 
   let vorticity = calculateVorticity(uv, vortices, time, audioReactivity);
+
+  // Idea 2 — viscous memory. C.a = velMag+2 when the buffer is this field.
+  let prevField = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
+  let memory = select(0.0, 0.42, prevField.a > 1.5);
+  velocity = mix(velocity, prevField.xy, memory);
   let velMag = length(velocity);
 
   let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   textureStore(writeTexture, vec2<i32>(global_id.xy), inputColor);
   textureStore(dataTextureA, vec2<i32>(global_id.xy),
-    vec4<f32>(velocity.x, velocity.y, vorticity, velMag));
+    vec4<f32>(velocity.x, velocity.y, vorticity, velMag + 2.0));
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

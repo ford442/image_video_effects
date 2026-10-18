@@ -1,10 +1,11 @@
 /**
- * @jest-environment jsdom
+ * @vitest-environment jsdom
  *
  * slot_limits.json: TS PHYSICAL_SLOT_LIMIT and C++ MAX_SHADER_SLOTS share one
  * ceiling (verify:device-policy checks the C++ side). Out-of-range or dropped
  * slots must be logged and visible, never a silent no-op.
  */
+import type { Mock, MockInstance } from 'vitest';
 import slotLimitsContract from '../contracts/slot_limits.json';
 import { PHYSICAL_SLOT_LIMIT, checkPhysicalSlotIndex } from '../renderer/slotOrchestrator';
 import * as WasmBridge from '../wasm/wasm_bridge';
@@ -15,7 +16,7 @@ import { WebGPURenderer } from '../renderer/WebGPURenderer';
 /** Fake module that behaves like a C++ build with `slotCount` slots. */
 function makeSlotModule(slotCount: number, knownShaders: string[]) {
   const slots: string[] = Array.from({ length: slotCount }, () => '');
-  const ccall = jest.fn((name: string, _ret: unknown, _types: unknown, args: unknown[]) => {
+  const ccall = vi.fn((name: string, _ret: unknown, _types: unknown, args: unknown[]) => {
     const [i, id] = args as [number, string];
     if (name === 'setSlotShader') {
       if (i < 0 || i >= slotCount) return undefined;
@@ -25,13 +26,13 @@ function makeSlotModule(slotCount: number, knownShaders: string[]) {
     if (name === 'getSlotShaderId') return i >= 0 && i < slotCount ? slots[i] : '';
     return 0;
   });
-  return { ccall } as unknown as EmscriptenModule & { ccall: jest.Mock };
+  return { ccall } as unknown as EmscriptenModule & { ccall: Mock };
 }
 
-let warn: jest.SpyInstance;
+let warn: MockInstance;
 
 beforeEach(() => {
-  warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+  warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
   state.droppedSlots.clear();
 });
 

@@ -5,7 +5,9 @@
 //            per-band-fft, rk4-advection, Cauchy-Green-deformation,
 //            fold-caustics, strain-tensor, chromatic-aberration,
 //            depth-aware, upgraded-rgba, semantic-alpha, aces
-//  Upgraded: 2026-08-23 (Batch 58B — Liquid)
+//  Upgraded: 2026-10-17
+//  Ideas: stretch threads along the principal axis; vortex eye in high vorticity
+//  A packing: raw velocity.xy, displacement, vorticity
 // ═══════════════════════════════════════════════════════════════════
 //  A carries SIM STATE (rg = velocity, b = displacement, a = vorticity) and is
 //  read back next frame as dataTextureC. Display RGBA goes to writeTexture.
@@ -44,26 +46,8 @@
 //       Octave amplitudes are additionally banded across plasmaBuffer[1..8].
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=WarpScale, y=Turbulence, z=Stretch, w=Chroma
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=WarpScale, y=Turbulence, z=Stretch, w=Chroma
 
 fn clampUV(uv: vec2<f32>) -> vec2<f32> {
   return clamp(uv, vec2<f32>(0.001), vec2<f32>(0.999));
@@ -349,6 +333,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                      (vec3<f32>(stretchAnisotropy * 1.7 - time * 0.04)
                       + vec3<f32>(0.00, 0.31, 0.67)));
   highlight += spectralFold * foldCaustic * (0.25 + 0.35 * treble);
+  // Idea 1 — threads follow the principal stretch where the fluid is pulled thin
+  let threadPhase = fract(dot(uv, principalAxis) * mix(16.0, 42.0, stretchParam));
+  let thread = (1.0 - smoothstep(0.0, 0.07, min(threadPhase, 1.0 - threadPhase))) * stretchAnisotropy;
+  highlight += vec3<f32>(0.9, 0.96, 1.0) * thread * 0.28;
+  // Idea 2 — vortex eye: the spin core darkens instead of only glowing
+  let vortexEye = smoothstep(0.42, 0.88, omegaVisual);
+  highlight *= 1.0 - vortexEye * 0.4;
   let finalColor = acesFilm(warpedColor + highlight);
 
   // ── Semantic alpha (resolution factor removed — see header) ──────────────

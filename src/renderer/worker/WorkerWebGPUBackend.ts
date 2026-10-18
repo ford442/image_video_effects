@@ -42,7 +42,7 @@ import {
 import type { FrameInput, RenderEvent, RenderInitInfo, RenderSnapshot, TestRenderState } from './protocol';
 import { connectRenderWorker, RenderWorkerClient } from './renderWorkerClient';
 import { registerShaderCompileService } from '../../utils/shaderCompileService';
-import { clearRendererDevice, publishRendererDevice } from '../deviceRegistry';
+import { claimDeviceGeneration, clearRendererDevice, publishRendererDevice } from '../deviceRegistry';
 import { canShareMemory, createInputRingBuffer, InputRingWriter } from './inputRing';
 import { PHYSICAL_SLOT_LIMIT } from '../slotOrchestrator';
 
@@ -102,6 +102,8 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   readonly backendKind = 'webgpu' as const;
   readonly renderThread: 'main' | 'worker' = 'worker';
   initialized = false;
+  /** The device generation this proxy and its worker serve; the worker ignores any other. */
+  readonly deviceGeneration = claimDeviceGeneration();
 
   private client: RenderWorkerClient | null = null;
   private unsubscribe: (() => void) | null = null;
@@ -155,6 +157,7 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
       publishWorkerFailure(`failed to start (${e instanceof Error ? e.message : String(e)})`);
       return false;
     }
+    this.client.setGeneration(this.deviceGeneration);
     const { caps } = this.client;
     if (!caps.gpu || !caps.offscreenWebgpu) {
       console.warn(`[RenderWorker] no WebGPU in the worker (gpu=${caps.gpu}, offscreen=${caps.offscreenWebgpu})`);
@@ -186,6 +189,7 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
         config: this.config,
         colorOptIns: resolveCanvasColorOptIns(undefined, undefined, loadDisplayP3()),
         appBaseUrl: absoluteUrl('.'),
+        generation: this.deviceGeneration,
         ...(ringBuffer ? { inputRing: ringBuffer } : {}),
       });
     } catch (e) {

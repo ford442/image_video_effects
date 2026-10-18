@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: Gravity drainage with Marangoni marginal-regeneration plumes and Newton black film; Culick rupture holes with Rayleigh-Plateau rim beading on click
+//  Upgraded: 2026-10-17
+//  Ideas: Gravity drainage with Marangoni marginal-regeneration plumes and Newton black film; Culick rupture holes with Rayleigh-Plateau rim beading on click; Bonnet-rotated asymptotic geodesic surfactant web; multi-bounce Airy finesse interference & projected fold caustics
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=time, y=rippleCount, zw=resolution
-  zoom_config: vec4<f32>,  // x=time, yz=mouse uv, w=mouse down
-  zoom_params: vec4<f32>,  // x=Bonnet Rotation, y=Surface Tension, z=Y Rotation, w=Caustic Glow
-  ripples: array<vec4<f32>, 50>, // xy=pos, z=start time
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Bonnet Rotation, y=Surface Tension, z=Y Rotation, w=Caustic Glow
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -243,7 +225,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let plumeCoord = vec2<f32>((uv01.x + swirl) * 9.0 * aspect, uv01.y * 2.5 + time * (0.12 + tension * 0.25));
     let plumeNoise = fbm(plumeCoord, 3);
     let marangoni = smoothstep(0.52, 0.8, plumeNoise) * smoothstep(0.15, 0.85, height) * (0.5 + tension * 0.6);
-    let filmThick = max(0.0, filmBase * mix(0.18, 1.3, drainProfile) - marangoni * 0.22 * filmBase);
+    // ── Idea 3: Bonnet-rotated asymptotic geodesic surfactant web ──
+    // Minimal surfaces (H = 0) carry orthogonal asymptotic curves in (u, v)
+    // that rotate by bonnet/2 as catenoid morphs into helicoid.
+    let halfBonnet = bonnet * 0.5;
+    let chb = cos(halfBonnet);
+    let shb = sin(halfBonnet);
+    let asymU = uParam * chb - vParam * shb;
+    let asymV = uParam * shb + vParam * chb;
+    let asymptoticWeb = pow(0.5 + 0.5 * cos(asymU * 6.0) * cos(asymV * 6.0), 5.0) * (0.35 + tension * 0.45);
+
+    let filmThick = max(0.0, filmBase * mix(0.18, 1.3, drainProfile) - marangoni * 0.22 * filmBase + asymptoticWeb * 0.085);
     let blackFilm = (1.0 - smoothstep(0.035, 0.11, filmThick)) * (0.85 + treble * 0.15);
 
     // View-dependent thin-film phase
@@ -251,7 +243,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let NdotV = max(0.0, dot(N, V));
     let viewAngle = 1.0 - NdotV;
     let phaseScale = 0.13 + 0.04 * sin(time * 0.2);
-    let basePhase = filmThick * 14.0 + rz * 0.12 + viewAngle * 1.4;
+    let basePhase = filmThick * 14.0 + rz * 0.12 + viewAngle * 1.4 + asymptoticWeb * 1.6;
     let phaseR = basePhase + 0.05;
     let phaseG = basePhase;
     let phaseB = basePhase - 0.04;
@@ -261,6 +253,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         hsv2rgb(fract(phaseG * phaseScale), 0.55 + mids * 0.25, 0.88).g,
         hsv2rgb(fract(phaseB * phaseScale), 0.55 + mids * 0.25, 0.88).b
     );
+
+    // ── Idea 4: Multi-bounce Airy finesse interference & projected fold caustics ──
+    let finesse = 0.6 + pow(viewAngle, 3.0) * 5.5;
+    let s2R = pow(sin(phaseR * PI * phaseScale * 2.0), 2.0);
+    let s2G = pow(sin(phaseG * PI * phaseScale * 2.0), 2.0);
+    let s2B = pow(sin(phaseB * PI * phaseScale * 2.0), 2.0);
+    let airyOrder2 = vec3<f32>(
+        (4.0 * finesse * s2R) / (1.0 + 4.0 * finesse * s2R),
+        (4.0 * finesse * s2G) / (1.0 + 4.0 * finesse * s2G),
+        (4.0 * finesse * s2B) / (1.0 + 4.0 * finesse * s2B)
+    );
+    irid = mix(irid, irid * 0.65 + airyOrder2 * 0.55, clamp(viewAngle * 0.65 + asymptoticWeb * 0.4, 0.0, 0.85));
+
     // Newton black film: path difference << wavelength, reflectance ∝ sin²(2πnh/λ) → 0
     irid *= 1.0 - blackFilm * 0.93;
 
@@ -287,8 +292,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let backLight = max(0.0, -dot(N, L));
     let sss = vec3<f32>(1.0, 0.5, 0.32) * backLight * filmThick * (0.35 + bass * 0.5);
 
-    // Caustics
-    let caustic = pow(curvature, 1.6) * 1.4;
+    // Caustics + projected minimal-surface fold concentration
+    let foldProximity = exp(-length(screenPos - uv01) * 7.5);
+    let caustic = pow(curvature, 1.6) * (1.4 + foldProximity * 0.9 * (0.5 + p4));
     let causticColor = vec3<f32>(0.48, 0.72, 0.9) * caustic * (0.4 + treble);
 
     // Combine lighting layers

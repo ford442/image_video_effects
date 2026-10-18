@@ -1,6 +1,5 @@
 import { renderHook, act } from '@testing-library/react';
 import { useRemoteSync } from './useRemoteSync';
-import { SYNC_CHANNEL_NAME } from '../syncTypes';
 
 class MockBroadcastChannel {
   static instances: MockBroadcastChannel[] = [];
@@ -61,24 +60,24 @@ describe('useRemoteSync commands', () => {
         videoList: [],
         selectedVideo: '',
         isMuted: true,
-        setMode: jest.fn(),
-        setActiveSlot: jest.fn(),
-        updateSlotParam: handlers.updateSlotParam ?? jest.fn(),
-        setShaderCategory: jest.fn(),
-        syncInputSourceToRenderer: jest.fn(),
-        setAutoChangeEnabled: jest.fn(),
-        setAutoChangeDelay: jest.fn(),
-        handleNewRandomImage: jest.fn(async () => {}),
-        loadDepthModel: jest.fn(async () => {}),
-        setSelectedVideo: jest.fn(),
-        setIsMuted: jest.fn(),
+        setMode: vi.fn(),
+        setActiveSlot: vi.fn(),
+        updateSlotParam: handlers.updateSlotParam ?? vi.fn(),
+        setShaderCategory: vi.fn(),
+        syncInputSourceToRenderer: vi.fn(),
+        setAutoChangeEnabled: vi.fn(),
+        setAutoChangeDelay: vi.fn(),
+        handleNewRandomImage: vi.fn(async () => {}),
+        loadDepthModel: vi.fn(async () => {}),
+        setSelectedVideo: vi.fn(),
+        setIsMuted: vi.fn(),
         ...handlers,
       }),
     );
   }
 
   it('dispatches CMD_RANDOMIZE_SLOT to handleRandomizeSlot', () => {
-    const handleRandomizeSlot = jest.fn();
+    const handleRandomizeSlot = vi.fn();
     mountMain({ handleRandomizeSlot });
 
     const main = MockBroadcastChannel.instances[0];
@@ -92,7 +91,7 @@ describe('useRemoteSync commands', () => {
   });
 
   it('dispatches CMD_ROULETTE to triggerRoulette', () => {
-    const triggerRoulette = jest.fn();
+    const triggerRoulette = vi.fn();
     mountMain({ triggerRoulette });
 
     const main = MockBroadcastChannel.instances[0];
@@ -106,7 +105,7 @@ describe('useRemoteSync commands', () => {
   });
 
   it('dispatches CMD_RANDOMIZE_ALL_SLOTS', () => {
-    const triggerRandomizeAllSlots = jest.fn();
+    const triggerRandomizeAllSlots = vi.fn();
     mountMain({ triggerRandomizeAllSlots });
 
     const main = MockBroadcastChannel.instances[0];
@@ -120,7 +119,7 @@ describe('useRemoteSync commands', () => {
   });
 
   it('dispatches CMD_UPDATE_SLOT_PARAM to updateSlotParam (target params)', () => {
-    const updateSlotParam = jest.fn();
+    const updateSlotParam = vi.fn();
     mountMain({ updateSlotParam });
 
     const main = MockBroadcastChannel.instances[0];
@@ -137,7 +136,7 @@ describe('useRemoteSync commands', () => {
   });
 
   it('ignores CMD_UPDATE_SLOT_PARAM without index/updates', () => {
-    const updateSlotParam = jest.fn();
+    const updateSlotParam = vi.fn();
     mountMain({ updateSlotParam });
 
     const main = MockBroadcastChannel.instances[0];
@@ -151,7 +150,7 @@ describe('useRemoteSync commands', () => {
   });
 
   it('dispatches CMD_LOAD_RANDOM_IMAGE to handleNewRandomImage', () => {
-    const handleNewRandomImage = jest.fn(async () => {});
+    const handleNewRandomImage = vi.fn(async () => {});
     mountMain({ handleNewRandomImage });
 
     const main = MockBroadcastChannel.instances[0];

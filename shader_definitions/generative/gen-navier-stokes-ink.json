@@ -16,7 +16,7 @@
     "interactive",
     "depth"
   ],
-  "description": "A single-pass fluid-inspired ink field with semi-Lagrangian advection and local pressure approximation, extended by raymarched vortex tubes and a tessellated emitter corona. Mouse input, bounded click ripples, audio, and FFT energy shape the motion and geometry.",
+  "description": "A single-pass fluid-inspired ink field with semi-Lagrangian advection and local pressure approximation, extended by raymarched vortex tubes and a tessellated emitter corona. Mouse input, bounded click ripples, audio, and FFT energy shape the motion and geometry. Ink skims outward by Marangoni stress and leaves a coffee-ring rim.",
   "workgroup_size": [
     16,
     16,

@@ -56,8 +56,8 @@ describe('renderer device registry (#1395)', () => {
   });
 
   it('a throwing subscriber does not stop the others', () => {
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
-    const ok = jest.fn();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const ok = vi.fn();
     subscribeRendererDevice(() => { throw new Error('boom'); });
     subscribeRendererDevice(ok);
     publishRendererDevice(fakeDevice('a'));

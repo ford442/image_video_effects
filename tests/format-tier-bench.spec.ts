@@ -31,8 +31,10 @@ const BENCH_FRAMES = 90;
 const WARMUP_MS = 2500;
 
 test.beforeAll(async () => {
+  // beforeAll takes no timeout argument; set it inside the hook.
+  test.setTimeout(60000);
   await startStaticServer();
-}, 60000);
+});
 
 test.afterAll(async () => {
   await stopStaticServer();

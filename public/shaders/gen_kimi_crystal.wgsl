@@ -3,9 +3,9 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: Nakaya habit transition - hex plates sprout six-fold stellar dendrite arms with 60-degree sidebranches as growth (and treble supersaturation) advances; 22-degree ice halo + parhelia around the mouse "sun" from minimum deviation through 60-degree ice prisms, dispersed by IOR 1.31/1.32/1.33; 46-degree halo from 90-degree ice paths; light pillars from plate-habit diamond dust
-//  A packing: ACES display RGBA in A
+//  Upgraded: 2026-09-27, 2026-10-18
+//  Ideas: Nakaya habit transition - hex plates sprout six-fold stellar dendrite arms with 60-degree sidebranches; 22-degree & 46-degree ice halos + parhelia + light pillars; hexagonal basal hopper terraces & dendrite midrib air-inclusion veil (§12.2E); circumzenithal upper tangent ice-prism arc & exact C frost-glint persistence (§12.2F)
+//  A packing: ACES display RGBA in A; C read back as diamond-dust scintillation persistence
 // ═══════════════════════════════════════════════════════════════════
 //
 //  Preserved core: odd-row hex offset grid, sdHexagon crystals, the
@@ -13,26 +13,8 @@
 //  from IOR_ICE = 1.31, Beer absorption, transmission product) and the
 //  spectral-dispersion Fresnel edge glow.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=time, y=rippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Grid Density, y=Crystal Purity, z=Growth Speed, w=Crystal Thickness
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Grid Density, y=Crystal Purity, z=Growth Speed, w=Crystal Thickness
 
 const TAU: f32 = 6.28318530718;
 // Ice refractive index (mean) - identity constant of this shader.
@@ -288,8 +270,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let F0 = pow((IOR_ICE - 1.0) / (IOR_ICE + 1.0), 2.0);
     let fresnel = fresnelSchlick(max(cosTheta, 0.0), F0);
 
-    // Path length through crystal (thicker at center)
-    let pathLength = crystalThickness * (1.0 - distFromCenter * 0.3) / crystalPurity;
+    // ── Idea 1: Hexagonal basal hopper terraces & dendrite midrib air-inclusion veil (§12.2E) ──
+    let hopperFreq = 68.0 / max(crystalSize, 0.08);
+    let hopperStep = floor(max(-plateD, 0.0) * hopperFreq) / max(hopperFreq, 1.0);
+    let hopperPhase = fract(max(-plateD, 0.0) * hopperFreq);
+    let hopperRiser = exp(-pow(hopperPhase - 0.5, 2.0) * 42.0) * smoothstep(0.0, -0.012, plateD);
+    let secAng = atan2(hexLocal.y, hexLocal.x);
+    let secFold = abs(secAng - (TAU / 6.0) * round(secAng / (TAU / 6.0)));
+    let midribDist = length(hexLocal) * sin(secFold);
+    let midribVeil = exp(-midribDist * midribDist * 4500.0) * smoothstep(0.0, max(armLen, 0.02), length(hexLocal)) * (0.25 + 0.75 * habit);
+
+    // Path length through crystal (thicker at center, stepped across basal hopper terraces)
+    let pathLength = crystalThickness * max(0.1, 1.0 - distFromCenter * 0.3 + hopperStep * 0.55) / crystalPurity;
 
     // Absorption (ice absorbs slightly, more if impure)
     let absorptionCoeff = mix(0.5, 3.0, 1.0 - crystalPurity);
@@ -305,6 +297,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = mix(color, crystalDeep, crystalMask * 0.5 * (1.0 - distFromCenter * 0.5));
     color = mix(color, crystalBase, crystalMask * interiorPattern * transmission);
     color = mix(color, crystalHighlight, crystalMask * smoothstep(0.0, 0.3, -d) * transmission);
+    color += crystalMask * (crystalHighlight * hopperRiser * 0.38 + vec3<f32>(0.92, 0.97, 1.0) * midribVeil * 0.48);
 
     // ── Spectral dispersion edge glow ───────────────────────────
     let cosT = max(cosTheta, 0.0);
@@ -376,22 +369,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 2 — light pillars: vertical diamond-dust glints from plate-habit cells.
     let pillar = exp(-abs(sunVec.x) * 36.0) * exp(-abs(sunVec.y) * 2.15) * (1.0 - habit);
 
+    // ── Idea 2 (new): Circumzenithal upper tangent ice-prism arc & exact C frost-glint persistence (§12.2F) ──
+    // Horizontal basal-to-prism 90° refraction above the sun forms an inverted spectral smile
+    // tangent to the top of the 46° halo with red on the sunward side and blue/violet toward the zenith.
+    let czCenter = vec2<f32>(0.0, -r46G * 1.38);
+    let czRad = length((sunVec - czCenter) * vec2<f32>(0.78, 1.0));
+    let czMask = smoothstep(-r46G * 0.52, -r46G * 0.92, sunVec.y) * smoothstep(0.65, 0.05, abs(sunVec.x));
+    let circumzenithalArc = vec3<f32>(
+        exp(-pow((czRad - r46R * 0.38) * 36.0, 2.0)),
+        exp(-pow((czRad - r46G * 0.38) * 36.0, 2.0)),
+        exp(-pow((czRad - r46B * 0.38) * 36.0, 2.0))
+    ) * czMask * (0.45 + 0.55 * (1.0 - habit));
+
     // Inside minimum deviation the sky is darker (no refracted light there).
     linear *= 1.0 - smoothstep(rMinR, rMinR * 0.8, sunR) * 0.12 * haloStrength;
     linear += haloLight * (1.0 - body * 0.5);
     linear += halo46 * haloStrength * 0.32 * (1.0 - body * 0.4);
+    linear += circumzenithalArc * haloStrength * 0.68 * (1.0 - body * 0.35);
     linear += vec3<f32>(0.92, 0.95, 1.0) * pillar * haloStrength * 0.7;
 
     // Nucleation frost ring from clicks
     linear += crystalHighlight * frostFlash * 0.35;
 
-    // Single ACES pass on the display colour
-    let display = acesToneMap(max(linear, vec3<f32>(0.0)));
+    // Single ACES pass on the display colour + exact C frost-scintillation persistence
+    let prevFrost = textureLoad(dataTextureC, px, 0);
+    let display = mix(acesToneMap(max(linear, vec3<f32>(0.0))), prevFrost.rgb, 0.08);
 
     // Alpha: ice coverage (opaque where thick/impure, clearer where
     // transmissive) plus Fresnel edge, halo light and frost-front glow.
     let luma = dot(display, vec3<f32>(0.299, 0.587, 0.114));
-    let haloLum = dot(haloLight, vec3<f32>(0.333)) + dot(halo46, vec3<f32>(0.333)) * 0.3 + pillar * 0.25;
+    let haloLum = dot(haloLight, vec3<f32>(0.333)) + dot(halo46, vec3<f32>(0.333)) * 0.3
+                + dot(circumzenithalArc, vec3<f32>(0.333)) * 0.35 + pillar * 0.25;
     let edgeLum = dot(spectralEdge, vec3<f32>(0.333));
     let alpha = clamp(body * mix(1.0, 0.55, transmission) + edgeLum * 0.3 + haloLum * 0.4
                       + frostFlash * 0.25 + luma * 0.15, 0.02, 1.0);

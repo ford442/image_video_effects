@@ -1,18 +1,7 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
+#include "_prelude.wgsl"
+//  Upgraded: 2026-10-17
+//  Ideas: slice drift at foreground and background speeds; focal sheet on the focus plane
+//  A packing: display RGBA on writeTexture only
 
 // ═══════════════════════════════════════════════════════════════
 //  Volumetric Depth Zoom - PASS 1 of 2
@@ -25,13 +14,6 @@
 //  
 //  Next Pass: parallax-glow-compositor.wgsl
 // ═══════════════════════════════════════════════════════════════
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=unused
-  zoom_params: vec4<f32>,  // x=unused, y=unused, z=unused, w=unused
-  ripples: array<vec4<f32>, 50>,
-};
 
 // Mapping (engine conventions):
 // - time -> u.config.x
@@ -73,6 +55,15 @@ fn reconstruct_normal(uv: vec2<f32>, depth: f32, resolution: vec2<f32>) -> vec3<
     let p_dx = vec3<f32>(offset_x.x * 2.0, 0.0, (depth_x2 - depth_x1) * normal_strength);
     let p_dy = vec3<f32>(0.0, offset_y.y * 2.0, (depth_y2 - depth_y1) * normal_strength);
     return normalize(cross(p_dy, p_dx));
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn calculate_fog(depth: f32, color: vec3<f32>) -> vec3<f32> {
@@ -134,6 +125,7 @@ fn calculateAdvancedAlpha(color: vec3<f32>, finalDepth: f32, totalWeight: f32) -
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = vec2<f32>(u.config.z, u.config.w);
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     var uv = vec2<f32>(global_id.xy) / resolution;
     let zoom_time = u.zoom_config.x;
     let time = u.config.x;
@@ -159,7 +151,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     for (var i: i32 = 0; i < num_slices; i = i + 1) {
         let slice_depth = f32(i) / f32(num_slices - 1);
-        let layer = sample_layer(parallax_uv, zoom_center, slice_depth);
+        // Idea 1 — foreground and background slices scroll at their saved speeds
+        let sliceSpeed = mix(u.zoom_params.x, u.zoom_params.y, slice_depth);
+        let sliceDrift = vec2<f32>(time * sliceSpeed * 0.015, time * sliceSpeed * 0.006);
+        let layer = sample_layer(parallax_uv + sliceDrift, zoom_center, slice_depth);
         var color = layer.rgb;
         var depth = layer.a;
 
@@ -175,6 +170,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let density = exp(-slice_depth * 2.0);
 
         let weight = dof_factor * density;
+        // Idea 2 — pale sheet on the current focal plane
+        let focalSheet = exp(-abs(slice_depth - focal_depth) * 36.0);
+        color = color + vec3<f32>(0.82, 0.9, 1.0) * focalSheet * 0.12;
         accumulated_color = accumulated_color + color * weight;
         accumulated_depth = accumulated_depth + depth * weight;
         total_weight = total_weight + weight;
@@ -231,7 +229,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let clockRings = sin(length(uv - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
     let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
 
-    let __finalRGB = fogged_color + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
-    textureStore(writeTexture, vec2<u32>(global_id.xy), vec4<f32>(__finalRGB, alpha));
+    let finalRGB = acesToneMap(fogged_color + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25));
+    textureStore(writeTexture, vec2<u32>(global_id.xy), vec4<f32>(finalRGB, alpha));
     textureStore(writeDepthTexture, vec2<u32>(global_id.xy), vec4<f32>(final_depth, 0.0, 0.0, 0.0));
 }

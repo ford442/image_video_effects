@@ -1,4 +1,3 @@
-import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { GenerativeSourcePanel } from './GenerativeSourcePanel';
@@ -9,7 +8,7 @@ const generativeMenuOptions = [
 ];
 
 test('renders generative picker and calls setActiveGenerativeShader', () => {
-    const setActiveGenerativeShader = jest.fn();
+    const setActiveGenerativeShader = vi.fn();
 
     render(
         <GenerativeSourcePanel

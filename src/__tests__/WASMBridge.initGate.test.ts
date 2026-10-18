@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @vitest-environment jsdom
  *
  * The ASYNCIFY init ccall returns while C++ CreateDevice() is still suspended in
  * wgpuInstanceWaitAny. The bridge must not report ready (or let anyone shut the
@@ -12,7 +12,7 @@ type CppState = { initialized: number; stage: number };
 function fakeModule(cpp: CppState) {
   const calls: string[] = [];
   const mod = {
-    ccall: jest.fn((name: string) => {
+    ccall: vi.fn((name: string) => {
       calls.push(name);
       switch (name) {
         case 'initWasmRenderer':
@@ -39,9 +39,9 @@ function fakeModule(cpp: CppState) {
 const POLLS = new Set(['isRendererInitialized', 'getLastInitErrorStage']);
 
 async function loadBridge(cpp: CppState) {
-  jest.resetModules();
+  vi.resetModules();
   const { mod, calls } = fakeModule(cpp);
-  (window as any).PixelocityWASM = jest.fn(() => Promise.resolve(mod));
+  (window as any).PixelocityWASM = vi.fn(() => Promise.resolve(mod));
   const init = await import('../wasm/bridge/init');
   const diagnostics = await import('../wasm/bridge/diagnostics');
   return { init, diagnostics, calls };
@@ -60,7 +60,7 @@ async function advance(ms: number) {
   for (let t = 0; t < ms; t += 50) {
     // eslint-disable-next-line no-await-in-loop
     await Promise.resolve();
-    jest.advanceTimersByTime(50);
+    vi.advanceTimersByTime(50);
     // eslint-disable-next-line no-await-in-loop
     await Promise.resolve();
   }
@@ -68,15 +68,15 @@ async function advance(ms: number) {
 
 describe('WASM bridge init gate', () => {
   beforeEach(() => {
-    jest.useFakeTimers('modern');
-    jest.spyOn(performance, 'now').mockImplementation(() => Date.now());
-    jest.spyOn(console, 'log').mockImplementation(() => {});
-    jest.spyOn(console, 'error').mockImplementation(() => {});
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.useFakeTimers();
+    vi.spyOn(performance, 'now').mockImplementation(() => Date.now());
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
   afterEach(() => {
-    jest.useRealTimers();
-    jest.restoreAllMocks();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
     delete (window as any).PixelocityWASM;
   });
 

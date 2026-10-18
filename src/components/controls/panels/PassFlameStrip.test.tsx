@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { PassFlameStrip, passColor } from './PassFlameStrip';
 import type { PassTiming } from '../../../renderer/passTimings';
