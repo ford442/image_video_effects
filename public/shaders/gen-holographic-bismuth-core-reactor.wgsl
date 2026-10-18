@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, click-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-17
-//  Ideas: hopper-step terrace edge diffraction glints; multi-order oxide thin-film interference; magnetic containment field flux lines; control-rod bank whose insertion throttles the plasma bloom; fold-seam fuel channels glowing along the KIFS mirror planes
+//  Upgraded: 2026-10-18
+//  Ideas: hopper-step terrace edge diffraction glints; multi-order oxide thin-film interference; magnetic containment field flux lines; control-rod bank whose insertion throttles the plasma bloom; fold-seam fuel channels glowing along the KIFS mirror planes; KIFS fold-generation terrace oxide stepping & 4-tap cavity AO (§12.2E Fold count as material); Cherenkov phase-cone radiation & control-rod coolant wake rings (§12.2F Fresnel–Schlick / Henyey–Greenstein)
 //  A packing: HDR history RGBA (pre-controls); display = ACES(controls(A))
 // ═══════════════════════════════════════════════════════════════════
 
@@ -94,9 +94,9 @@ fn sdRods(p: vec3<f32>, time: f32, bass: f32) -> vec2<f32> {
     return best;
 }
 
-// ─── Native Idea 5: Fold-Seam Fuel Channels ───
-// Same KIFS fold as the core; traps how close the point sits to a mirror plane.
-fn coreSeamTrap(p_in: vec3<f32>, time: f32, bass: f32) -> f32 {
+// ─── Native Idea 5 & Idea 6: Fold-Seam Fuel Channels & KIFS Fold-Generation Count (§12.2E) ───
+// Same KIFS fold as the core; returns (trap, foldGen) where foldGen counts mirror-plane reflections.
+fn coreSeamTrap(p_in: vec3<f32>, time: f32, bass: f32) -> vec2<f32> {
     var p = reactorFrame(p_in);
     let speed = mix(0.2, 2.4, clamp(u.zoom_params.y, 0.0, 1.0));
     let pulse = sin(time * speed * 2.0) * 0.5 + 0.5;
@@ -104,7 +104,9 @@ fn coreSeamTrap(p_in: vec3<f32>, time: f32, bass: f32) -> f32 {
                      (1.0 + pulse * (1.0 + bass * 0.5) * (0.08 + u.zoom_params.x * 0.32));
     var s: f32 = 1.0;
     var trap: f32 = 1e5;
+    var foldGen: f32 = 0.0;
     for (var i = 0; i < 4; i = i + 1) {
+        foldGen += select(0.0, 1.0, p.x < 0.0) + select(0.0, 1.0, p.y < 0.0) + select(0.0, 1.0, p.z < 0.0);
         p = abs(p) - vec3<f32>(0.5, 0.5, 0.5) * core_scale;
         let a = abs(p);
         trap = min(trap, min(a.x, min(a.y, a.z)) / s);
@@ -113,7 +115,7 @@ fn coreSeamTrap(p_in: vec3<f32>, time: f32, bass: f32) -> f32 {
         p = p * 1.5;
         s *= 1.5;
     }
-    return trap;
+    return vec2<f32>(trap, foldGen);
 }
 
 fn map(p_in: vec3<f32>, time: f32, bass: f32) -> vec2<f32> {
@@ -164,8 +166,8 @@ fn getNormal(p: vec3<f32>, time: f32, bass: f32) -> vec3<f32> {
     return normalize(n);
 }
 
-// ─── Native Idea 2: Multi-Order Bismuth Oxidation Thin-Film Interference ───
-fn bismuthOxidationColor(p: vec3<f32>, dot_vn: f32, time: f32, bass: f32, mids: f32) -> vec3<f32> {
+// ─── Native Idea 2 & Idea 6: Multi-Order Bismuth Oxidation with KIFS Fold-Generation Stepping (§12.2E) ───
+fn bismuthOxidationColor(p: vec3<f32>, dot_vn: f32, foldGen: f32, time: f32, bass: f32, mids: f32) -> vec3<f32> {
     let speed = mix(0.2, 2.4, clamp(u.zoom_params.y, 0.0, 1.0));
     let t = dot_vn * 2.0 + time * speed * 0.5 + bass * u.zoom_params.x + mids * 0.3;
     let baseInterference = vec3<f32>(
@@ -174,8 +176,8 @@ fn bismuthOxidationColor(p: vec3<f32>, dot_vn: f32, time: f32, bass: f32, mids: 
         sin(t * 3.14159 + 4.189) * 0.5 + 0.5
     );
 
-    // Multi-order physical oxide thickness gradient across hopper terraces
-    let oxideThicknessNm = fract(length(p) * 2.8 + dot_vn * 1.2) * 520.0 + 180.0;
+    // Multi-order physical oxide thickness stepped per KIFS fold generation
+    let oxideThicknessNm = fract(length(p) * 2.2 + dot_vn * 1.1) * 420.0 + 180.0 + foldGen * 68.0;
     let phaseR = oxideThicknessNm / 650.0;
     let phaseG = oxideThicknessNm / 530.0;
     let phaseB = oxideThicknessNm / 460.0;
@@ -185,7 +187,7 @@ fn bismuthOxidationColor(p: vec3<f32>, dot_vn: f32, time: f32, bass: f32, mids: 
         cos(phaseB * 6.28318) * 0.5 + 0.5
     );
 
-    return mix(baseInterference, multiOrderOxide * 1.4, 0.55);
+    return mix(baseInterference, multiOrderOxide * 1.4, 0.65);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -214,6 +216,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var dO    = 0.0;
     var res   = vec2<f32>(0.0);
     var accum = 0.0;
+    var cherenkovAccum = 0.0;
+    var rodWakeAccum = 0.0;
+    let speed = mix(0.2, 2.4, clamp(u.zoom_params.y, 0.0, 1.0));
 
     for (var i = 0; i < MAX_STEPS; i = i + 1) {
         p   = ro + rd * dO;
@@ -222,6 +227,25 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         dO += dS;
 
         accum += (0.12 + u.zoom_params.x * 0.65 + treble * 0.1) * heldPlasma * 0.05 / max(1.0 + abs(dS) * 50.0, 0.001);
+
+        // ── Idea 7: Cherenkov Phase-Cone Radiation & Control-Rod Coolant Wake Rings (§12.2F Fresnel–Schlick / Henyey–Greenstein) ──
+        let pLen = length(p);
+        if (pLen < 2.8) {
+            let cosPhase = dot(p / max(pLen, 0.001), rd);
+            let cherenkovCone = exp(-pow((cosPhase - 0.72) * 8.5, 2.0)) * exp(-pLen * 0.65);
+            cherenkovAccum += cherenkovCone * 0.022;
+
+            if ((i & 3) == 0) {
+                let pr = reactorFrame(p);
+                for (var rIdx = 0; rIdx < 4; rIdx = rIdx + 1) {
+                    let tipY = rodTipY(rodInsertion(rIdx, time, bass));
+                    let rDist = length(pr.xz - rodXZ(rIdx));
+                    let ySlab = exp(-abs(pr.y - tipY) * 6.0);
+                    let ringWave = pow(0.5 + 0.5 * sin(rDist * 22.0 - time * speed * 5.0), 6.0) * exp(-rDist * 2.8);
+                    rodWakeAccum += ringWave * ySlab * 0.035;
+                }
+            }
+        }
 
         if (dS < SURF_DIST || dO > MAX_DIST) { break; }
     }
@@ -232,7 +256,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let dot_vn = max(dot(v, n), 0.0);
 
     let isRod = step(2.5, res.y);
-    var surface_col = bismuthOxidationColor(p, dot_vn, time, bass, mids) * exp(-dO * 0.1) * (1.0 - isRod);
+    // ── Idea 6: KIFS Fold-Generation Terrace Oxide Stepping & 4-Tap Cavity AO (§12.2E Fold count as material) ──
+    let seamInfo = coreSeamTrap(p, time, bass);
+    let seam = seamInfo.x;
+    let foldGen = seamInfo.y;
+    var surface_col = bismuthOxidationColor(p, dot_vn, foldGen, time, bass, mids) * exp(-dO * 0.1) * (1.0 - isRod);
 
     // ─── Native Idea 1: Hopper-Step Terrace Edge Diffraction Glints ───
     // At right-angle hopper crystalline boundaries, normal components cross-align
@@ -254,22 +282,34 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         surface_col += graphite * bands + vec3<f32>(1.0, 0.42, 0.12) * tipHeat * (0.6 + bass * 0.8);
     }
 
-    // Idea 5: fuel channels burn amber-white along the core's fold seams
+    // Idea 5 & Idea 6: 4-tap cavity AO grounds the stepped hopper recesses while fuel channels burn along fold seams
     let isCoreHit = step(abs(res.y - 1.0), 0.1) * hit;
     var fuelGlow = 0.0;
     if (isCoreHit > 0.5) {
-        let seam = coreSeamTrap(p, time, bass);
+        var aoOcc = 0.0;
+        var aoWeight = 1.0;
+        for (var k = 1; k <= 4; k = k + 1) {
+            let h = 0.035 * f32(k);
+            let dAo = map(p + n * h, time, bass).x;
+            aoOcc += (h - dAo) * aoWeight;
+            aoWeight *= 0.6;
+        }
+        let cavityAO = clamp(1.0 - 2.4 * aoOcc, 0.22, 1.0);
+        surface_col *= cavityAO;
+
         fuelGlow = exp(-seam * 40.0) * (0.35 + u.zoom_params.x * 0.6) * (0.6 + bass * 1.2);
         surface_col += vec3<f32>(1.0, 0.62, 0.25) * fuelGlow * 1.6;
     }
 
     var col = surface_col * hit;
 
-    // Add plasma bloom — throttled by mean control-rod insertion (criticality)
+    // Add plasma bloom & Cherenkov radiation — throttled by mean control-rod insertion (criticality)
     let meanIns = (rodInsertion(0, time, bass) + rodInsertion(1, time, bass) +
                    rodInsertion(2, time, bass) + rodInsertion(3, time, bass)) * 0.25;
     let criticality = mix(1.25, 0.7, meanIns);
     col = col + vec3<f32>(0.2, 0.6, 1.0) * accum * heldPlasma * criticality;
+    col = col + vec3<f32>(0.18, 0.38, 1.15) * cherenkovAccum * criticality * (0.8 + u.zoom_params.x * 0.9 + bass * 0.6);
+    col = col + vec3<f32>(0.32, 0.88, 1.1) * rodWakeAccum * (0.7 + mids * 0.8);
 
     // ─── Native Idea 3: Reactor Magnetic Containment Field Flux Lines ───
     // Spherical containment shell with pulsating geodesic field lines
@@ -298,7 +338,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
     col += vec3<f32>(1.0, 0.28, 1.25) * clickRings * (0.45 + mids + treble * 0.6);
 
-    let alpha = clamp(mix(clamp(accum * 3.0 + clickRings * 0.3 + containmentFlux * 0.5, 0.0, 1.0), 1.0, hit), 0.0, 1.0);
+    let alpha = clamp(mix(clamp(accum * 3.0 + cherenkovAccum * 0.6 + rodWakeAccum * 0.5 + clickRings * 0.3 + containmentFlux * 0.5, 0.0, 1.0), 1.0, hit), 0.0, 1.0);
 
     let previous = textureLoad(dataTextureC, coord, 0);
     let historyWeight = clamp(0.90 - u.zoom_params.y * 0.25 - held * 0.08, 0.48, 0.90);

@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: raymarch, audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: body-as-prism tail spectrum; heartbeat transfer; tail unfurl; kitsune spirit fireballs; prismatic temporal shockwaves
+//  Upgraded: 2026-10-10, 2026-10-18
+//  Ideas: body-as-prism tail spectrum; heartbeat transfer; tail unfurl; kitsune spirit fireballs; prismatic temporal shockwaves; internal 3-wavelength Snell-Cauchy prism body refraction & kitsune ear-crest facets (§12.2F); plumose tail-fur chevron barbules & radial chromatic C-echo split (§12.2E)
 //  A packing: HDR linear RGB (pre-ACES) + semantic alpha; C read exactly as HDR radial echo
 // ═══════════════════════════════════════════════════════════════════
 // Optimizer pass (Batch 37): bounding-sphere early-out, tetrahedral
@@ -104,14 +104,21 @@ fn spectralBand(x: f32) -> vec3<f32> {
 // beat amplitude are hoisted per-frame (uniform across the march).
 // Returns (distance, material 1=body 2=tail, band of nearest tail, pulse on nearest tail).
 fn mapKitsune(p: vec3<f32>, time: f32, tail_full: i32, tail_grow: f32, weave: f32, beat_amp: f32) -> vec4<f32> {
-    // Kitsune central body
+    // Kitsune central body + bilateral prismatic ear-crest facets (§12.2F)
     let bp = p - BODY_POS;
     let ripple = sin(bp.x * BODY_DETAIL_FREQ + time)
                * sin(bp.y * BODY_DETAIL_FREQ + time)
                * sin(bp.z * BODY_DETAIL_FREQ + time);
     // Idea 2: the heart — the body swells on each lub-dub
     let body_beat = heartbeat(time / BEAT_PERIOD) * beat_amp;
-    let d_body = (length(bp) - BODY_RADIUS - BODY_BEAT_SWELL * body_beat) + BODY_DETAIL_AMP * ripple;
+    let d_sphere = (length(bp) - BODY_RADIUS - BODY_BEAT_SWELL * body_beat) + BODY_DETAIL_AMP * ripple;
+    var ear_p = vec3<f32>(abs(bp.x) - 0.62, bp.y - 0.96, bp.z + 0.10);
+    let ear_xy = rot2(-0.34) * ear_p.xy;
+    ear_p = vec3<f32>(ear_xy.x, ear_xy.y, ear_p.z);
+    let ear_h = clamp(ear_p.y, -0.45, 0.55);
+    let ear_r = 0.28 * (1.0 - (ear_h + 0.45) / 1.15);
+    let d_earCrest = length(vec3<f32>(ear_p.x, ear_p.y - ear_h, ear_p.z)) - max(ear_r, 0.035);
+    let d_body = smin(d_sphere, d_earCrest, 0.22);
 
     // Prismatic tails (bounded 3–9 by slider)
     // Idea 3: tail unfurl — fractional count; the newest tail (index tail_full)
@@ -155,7 +162,7 @@ fn mapKitsune(p: vec3<f32>, time: f32, tail_full: i32, tail_grow: f32, weave: f3
     var orbP = p - BODY_POS;
     let orbRot = rot2(time * 2.0);
     let rotatedOrb = orbRot * orbP.xz;
-orbP = vec3<f32>(rotatedOrb.x, orbP.y, rotatedOrb.y);
+    orbP = vec3<f32>(rotatedOrb.x, orbP.y, rotatedOrb.y);
     let d_orbs = length(orbP - vec3<f32>(3.0, 0.0, 0.0)) - 0.5;
 
     let d_all = smin(smin(d_body, d_tails, BODY_SMIN), d_orbs, 0.2);
@@ -284,25 +291,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let l = normalize(vec3<f32>(1.0, 1.0, -1.0));
         let diff = max(dot(n, l), 0.0);
         let view = normalize(ro - p);
-        let fre = pow(1.0 - max(dot(n, view), 0.0), 4.0);
+        let fre = pow(clamp(1.0 - max(dot(n, view), 0.0), 0.0, 1.0), 4.0);
 
         let hue = p_prism_hue + t * 0.1 - time * 0.5 + mids * 0.15;
         let base_col = vec3<f32>(0.5 + 0.5 * sin(hue * TAU + vec3<f32>(0.0, 2.0, 4.0)));
 
         if (m < 1.5) {
-            // Kitsune Body — Idea 1: the body is the prism. White light in
-            // (HEAD hue kept as a faint tint); the silhouette rim disperses
-            // into the band of the tail rooted behind that rim angle
-            // (tail i points along +phase_i in xy, band_i = i / count).
+            // Kitsune Body — Idea 1: the body is the prism.
+            // ── Idea 1 (new): Internal 3-wavelength Snell-Cauchy prism body refraction (§12.2F) ──
+            let refR = refract(rd, n, 1.0 / 1.46);
+            let refG = refract(rd, n, 1.0 / 1.52);
+            let refB = refract(rd, n, 1.0 / 1.60);
+            let bp = p - BODY_POS;
+            let caustR = pow(0.5 + 0.5 * sin(dot(bp + refR * 0.9, vec3<f32>(6.0, 7.0, 5.0)) - time * 2.2), 4.0);
+            let caustG = pow(0.5 + 0.5 * sin(dot(bp + refG * 0.9, vec3<f32>(6.0, 7.0, 5.0)) - time * 2.2), 4.0);
+            let caustB = pow(0.5 + 0.5 * sin(dot(bp + refB * 0.9, vec3<f32>(6.0, 7.0, 5.0)) - time * 2.2), 4.0);
+            let prismInternalRefract = vec3<f32>(caustR, caustG, caustB) * 0.85;
             let rim_band = fract(atan2(n.y, n.x) / TAU + 1.0);
             let rim_col = spectralBand(fract(rim_band + band_shift)) * 1.6;
-            let core = mix(base_col, vec3<f32>(1.0), 0.65) * (0.25 + diff);
+            let core = (mix(base_col, vec3<f32>(1.0), 0.65) + prismInternalRefract) * (0.25 + diff);
             col = mix(core, rim_col, fre);
         } else {
             // Prismatic Tails — Idea 1: each tail is one discrete spectral band;
-            // Idea 2: the travelling heartbeat lights the tail as it passes. Bass glow (HEAD).
-            let tail_col = spectralBand(fract(band + band_shift));
-            col = tail_col * (diff + fre * 2.0) * (1.0 + PULSE_GLOW * 0.4 * pulse) + vec3<f32>(glow * bass);
+            // Idea 2: the travelling heartbeat lights the tail as it passes.
+            // ── Idea 2 (new): Plumose tail-fur chevron barbules (§12.2E) ──
+            let s_tail = max(p.z - TAIL_Z_START, 0.0);
+            let furBarbules = 0.5 + 0.5 * cos(s_tail * (12.0 + weave * 2.5) - abs(atan2(n.y, n.x)) * 10.0 - time * 3.0);
+            let barbuleSheen = pow(furBarbules, 3.0) * (0.35 + 0.65 * pulse);
+            let tail_col = spectralBand(fract(band + band_shift + barbuleSheen * 0.08));
+            col = tail_col * (diff * (0.82 + 0.36 * furBarbules) + fre * (2.0 + barbuleSheen * 0.9))
+                * (1.0 + PULSE_GLOW * 0.4 * pulse) + vec3<f32>(glow * bass);
         }
     }
 
@@ -317,7 +335,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let shockRing = exp(-abs(shockDist - fract(time * 0.5) * 20.0) * 5.0) * (0.5 + bass);
     col += spectralBand(fract(shockDist * 0.1 - time)) * shockRing * 0.5;
 
-    // ── Temporal ping-pong feedback (HDR, textureLoad-only) ─────
+    // ── Temporal ping-pong feedback + radial chromatic C-echo split (§12.2E) ──
     let tex_uv = (vec2<f32>(pixel) + 0.5) / res;
     let from_center = tex_uv - vec2<f32>(0.5);
     let dist_center = length(from_center);
@@ -326,8 +344,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         * sin(dist_center * ECHO_DISP_FREQ - time * ECHO_DISP_SPEED)
         * ECHO_DISP_AMP * p_echo * (1.0 + burst * 0.5);
     let prev_uv = clamp(tex_uv + displacement, vec2<f32>(0.0), vec2<f32>(1.0));
-    let prev_px = vec2<i32>(prev_uv * (res - vec2<f32>(1.0)));
-    let prev_frame = textureLoad(dataTextureC, prev_px, 0).rgb;
+    let max_px = vec2<i32>(res - vec2<f32>(1.0));
+    let prev_px = clamp(vec2<i32>(prev_uv * (res - vec2<f32>(1.0))), vec2<i32>(0), max_px);
+    let chroma_step = vec2<i32>(round(center_dir * p_echo));
+    let prev_r = textureLoad(dataTextureC, clamp(prev_px - chroma_step, vec2<i32>(0), max_px), 0).r;
+    let prev_g = textureLoad(dataTextureC, prev_px, 0).g;
+    let prev_b = textureLoad(dataTextureC, clamp(prev_px + chroma_step, vec2<i32>(0), max_px), 0).b;
+    let prev_frame = vec3<f32>(prev_r, prev_g, prev_b);
 
     // Prismatic color shift on the feedback
     let shifted_prev = prev_frame * vec3<f32>(0.99, 0.95, 0.9);

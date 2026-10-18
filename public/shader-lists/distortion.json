@@ -724,7 +724,7 @@
     "id": "fractal-glass-distort",
     "name": "IFS Attractor Glass",
     "url": "shaders/fractal-glass-distort.wgsl",
-    "description": "IFS attractor glass with branch runners, held contraction pinch, treble iridescence, and capped attractor shock rings.",
+    "description": "IFS stained-glass attractor with base-4 pane tints, wavelength-dispersive IFS gradients, orbit-trap ream striae veins, trapped air-seed bubbles, and 3D rounded lead-came H-channel relief.",
     "features": [
       "mouse-driven",
       "audio-reactive",

@@ -3,7 +3,7 @@
   "name": "Chrono-Kitsune Prism Weaver",
   "url": "shaders/gen-chrono-kitsune-prism-weaver.wgsl",
   "category": "generative",
-  "description": "A living prismatic kitsune spirit weaving through a chrono-void lattice with deep temporal feedback and audio reactivity. Optimized: bounding-sphere early-out, tetrahedral normals, HDR feedback chain, generated depth.",
+  "description": "A living prismatic kitsune spirit weaving through a chrono-void lattice with sculpted ear-crest facets, internal 3-wavelength Snell-Cauchy prism refraction, plumose chevron tail-fur barbules, heartbeat pulse transfer, and dispersive HDR radial echo feedback.",
   "workgroup_size": [
     16,
     16,

@@ -15,7 +15,7 @@
     "raymarched",
     "showcase"
   ],
-  "description": "A breathing network of hexagonal bio-synthetic cells filled with turbulent liquid crystal. Smoothed audio and pointer drag disrupt the field while clicks inject traveling chemotactic fronts into its preserved hive state.",
+  "description": "A breathing network of hexagonal bio-synthetic cells filled with turbulent nematic liquid crystal, featuring homeotropic wall anchoring, Grandjean-Cano cholesteric pitch bands, four-brush schlieren crosses, and 9-point Laplacian diffusion of chemotactic hive-pulse fronts.",
   "workgroup_size": [
     16,
     16,

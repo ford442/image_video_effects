@@ -4,8 +4,8 @@
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-10-10
-//  Ideas: crossed-polariser birefringence from the curl director; hive relay wave spreading cell-to-cell from the pointer; four-brush schlieren cross in every cell; refractory shadow trailing the relay wave
+//  Upgraded: 2026-10-10, 2026-10-18
+//  Ideas: crossed-polariser birefringence from the curl director; hive relay wave spreading cell-to-cell from the pointer; four-brush schlieren cross in every cell; refractory shadow trailing the relay wave; hex-wall homeotropic director anchoring & Grandjean-Cano cholesteric pitch stripes (§12.2F); spatial hive-pulse 9-point Laplacian diffusion & hex-corner meniscus pooling (§12.2D)
 //  A packing: raw sim state (A.rgb = bass/mids/treble envelopes, A.a = hive pulse; not tone-mapped)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -153,7 +153,9 @@ struct MapResult {
     director: f32, // Nematic director angle of the local curl flow
     relay: f32,    // Hive relay wave intensity for this cell
     brush: f32,    // Schlieren extinction brush darkness (0 = clear, 1 = on a brush)
-    refractory: f32 // Refractory dip trailing the relay wave
+    refractory: f32, // Refractory dip trailing the relay wave
+    grandjean: f32,  // Grandjean-Cano cholesteric pitch stripe modulation
+    meniscus: f32    // Capillary wetting meniscus in the 6 hex corners
 }
 
 fn map(p: vec3<f32>, bass: f32, mids: f32, hivePulse: f32, mouseField: vec2<f32>) -> MapResult {
@@ -224,8 +226,19 @@ fn map(p: vec3<f32>, bass: f32, mids: f32, hivePulse: f32, mouseField: vec2<f32>
 
     res.hexId = grid.id;
 
-    // Idea 1: the curl flow orients the liquid-crystal director.
-    res.director = atan2(fluidMove.y, fluidMove.x);
+    // ── Idea 1 (new): Hex-wall homeotropic director anchoring & Grandjean-Cano cholesteric pitch stripes (§12.2F) ──
+    let cellUV = grid.uv / hexSize;
+    let cellRad = length(cellUV);
+    let wallNormalAngle = atan2(cellUV.y, cellUV.x);
+    let bulkDirector = atan2(fluidMove.y, fluidMove.x);
+    let wallAnchoring = smoothstep(0.20, 0.40, cellRad);
+    res.director = mix(bulkDirector, wallNormalAngle, wallAnchoring * 0.65);
+    let pitchFreq = 32.0 + syncPulse * 8.0;
+    res.grandjean = (0.5 + 0.5 * cos(abs(innerHex) * pitchFreq - t * 2.2 + cellHash * 6.28318)) * smoothstep(0.10, 0.39, cellRad);
+
+    // ── Idea 2 (part 1): Capillary meniscus pooling in the 6 interior hex corners (§12.2D) ──
+    let hexCornerWave = 0.5 + 0.5 * cos(wallNormalAngle * 6.0);
+    res.meniscus = smoothstep(0.26, 0.41, cellRad) * hexCornerWave;
 
     // Idea 2: relay wave — whole cells light in sequence outward from the pointer's cell (hex-id distance).
     let mouseCell = (rot2D(fieldAngle) * mousePos) / hexSize;
@@ -235,16 +248,35 @@ fn map(p: vec3<f32>, bass: f32, mids: f32, hivePulse: f32, mouseField: vec2<f32>
         * exp(-cellDistance * 0.08);
 
     // Idea 3: schlieren brushes — a nematic cell seen between crossed polarisers shows four dark brushes
-    // meeting at its defect core; brush axes rotate with the cell hash and the local curl director.
-    let cellUV = grid.uv / hexSize;
-    let brushAngle = atan2(cellUV.y, cellUV.x) - cellHash * 3.14159 - res.director * 0.5;
+    // meeting at its defect core; brush axes rotate with the cell hash and the wall-anchored director.
+    let brushAngle = wallNormalAngle - cellHash * 3.14159 - res.director * 0.5;
     let brushAxis = 1.0 - pow(sin(2.0 * brushAngle), 2.0);
-    res.brush = brushAxis * smoothstep(0.55, 0.05, length(cellUV)) * (0.55 + 0.45 * smoothstep(0.0, 0.4, 1.0 - length(cellUV)));
+    res.brush = brushAxis * smoothstep(0.55, 0.05, cellRad) * (0.55 + 0.45 * smoothstep(0.0, 0.4, 1.0 - cellRad));
 
     // Idea 4: refractory shadow — the cells the wave has just left stay dark and cool for a beat
     // (excitable-medium recovery), a half-cycle behind each relay crest.
     res.refractory = pow(0.5 + 0.5 * cos(relayPhase + 1.5), 6.0) * (0.3 + syncPulse * 0.4) * exp(-cellDistance * 0.08);
     return res;
+}
+
+// ── Idea 2 (part 2): Isotropic 9-point Laplacian on the stored hivePulse field in dataTextureC.a (§12.2D) ──
+fn lap9HivePulse(c: vec2<i32>, dims: vec2<i32>) -> f32 {
+    let stepPx = 4;
+    let maxC = dims - vec2<i32>(1);
+    let cE  = clamp(c + vec2<i32>( stepPx, 0), vec2<i32>(0), maxC);
+    let cW  = clamp(c + vec2<i32>(-stepPx, 0), vec2<i32>(0), maxC);
+    let cN  = clamp(c + vec2<i32>(0,  stepPx), vec2<i32>(0), maxC);
+    let cS  = clamp(c + vec2<i32>(0, -stepPx), vec2<i32>(0), maxC);
+    let cNE = clamp(c + vec2<i32>( stepPx,  stepPx), vec2<i32>(0), maxC);
+    let cNW = clamp(c + vec2<i32>(-stepPx,  stepPx), vec2<i32>(0), maxC);
+    let cSE = clamp(c + vec2<i32>( stepPx, -stepPx), vec2<i32>(0), maxC);
+    let cSW = clamp(c + vec2<i32>(-stepPx, -stepPx), vec2<i32>(0), maxC);
+    var s = 0.0;
+    s += 0.20 * (textureLoad(dataTextureC, cE, 0).a + textureLoad(dataTextureC, cW, 0).a
+               + textureLoad(dataTextureC, cN, 0).a + textureLoad(dataTextureC, cS, 0).a);
+    s += 0.05 * (textureLoad(dataTextureC, cNE, 0).a + textureLoad(dataTextureC, cNW, 0).a
+               + textureLoad(dataTextureC, cSE, 0).a + textureLoad(dataTextureC, cSW, 0).a);
+    return s - textureLoad(dataTextureC, c, 0).a;
 }
 
 // Normal Calculation for Walls
@@ -272,10 +304,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids = bass_env(previousState.g, plasmaBuffer[0].y);
     let treble = bass_env(previousState.b, plasmaBuffer[0].z);
     let hivePulse = previousState.a;
+    let pulseLaplacian = lap9HivePulse(coord, vec2<i32>(res));
     let mouse = u.zoom_config.yz * 2.0 - vec2<f32>(1.0);
     let mouseField = vec2<f32>(mouse.x * res.x / max(res.y, 1.0), -mouse.y);
 
-    // Clicks inject bounded chemotactic fronts into the existing hive-pulse state.
+    // Clicks inject bounded chemotactic fronts into the existing hive-pulse state + 9-pt spatial diffusion.
     let aspect = res.x / res.y;
     var clickPulse = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
@@ -286,7 +319,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let d = length((uv01 - ripple.xy) * vec2<f32>(aspect, 1.0));
         clickPulse += exp(-abs(d - age * 0.2) * 65.0) * exp(-age * 0.85);
     }
-    let activeHivePulse = clamp(hivePulse + clickPulse * 0.3, 0.0, 1.0);
+    let activeHivePulse = clamp(hivePulse + pulseLaplacian * 0.22 + clickPulse * 0.3, 0.0, 1.0);
 
     // Camera setup - looking straight down Z
     let ro = vec3<f32>(mouseField * 0.18, -5.0);
@@ -336,17 +369,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
             let paletteColor = palette(m.glow + colorShift, a, b, c, d);
 
-            // Idea 1: crossed-polariser birefringence — sin²(2θ) extinction × per-wavelength retardance fringe.
+            // Idea 1: crossed-polariser birefringence + Grandjean-Cano cholesteric pitch phase (§12.2F)
             let extinction = pow(sin(2.0 * m.director), 2.0);
-            let retardance = 0.6 + abs(m.glow) * 1.8 * (0.4 + u.zoom_params.y * 0.25) + t_dist * 0.08 + treble * 0.15;
+            let retardance = 0.6 + abs(m.glow) * 1.8 * (0.4 + u.zoom_params.y * 0.25) + m.grandjean * 0.45 + t_dist * 0.08 + treble * 0.15;
             let fringe = vec3<f32>(0.5) - vec3<f32>(0.5) * cos(6.28318 * retardance * vec3<f32>(1.0 / 0.65, 1.0 / 0.53, 1.0 / 0.45));
-            var fluidColor = mix(paletteColor, fringe * extinction * 1.3, 0.45);
+            var fluidColor = mix(paletteColor, fringe * extinction * 1.35, 0.48);
+            fluidColor += vec3<f32>(0.85, 0.95, 1.0) * m.meniscus * 0.28;
             fluidColor *= 1.0 - m.brush * 0.55;
             fluidColor = mix(fluidColor, fluidColor * vec3<f32>(0.35, 0.5, 0.9), clamp(m.refractory, 0.0, 1.0) * 0.8);
 
             // Accumulate
             // Deeper fluid = denser accumulation, audio boosts brightness
-            let density = 0.045 * (1.0 + bass * 0.8 + treble * 0.25) * (1.0 + m.relay * 1.5) * (1.0 - 0.4 * clamp(m.refractory, 0.0, 1.0));
+            let density = 0.045 * (1.0 + bass * 0.8 + treble * 0.25) * (1.0 + m.relay * 1.5 + m.meniscus * 0.35) * (1.0 - 0.4 * clamp(m.refractory, 0.0, 1.0));
             relaySum += m.relay * density;
             fluidAccum += fluidColor * density * exp(-t_dist * 0.2);
             glowSum += m.glow * density;
