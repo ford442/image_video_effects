@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: raymarch, audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: camshaft lobe timing notches stamped into the chrome flow; exhaust-manifold blueing bands around heated outer shells
+//  Upgraded: 2026-10-10, 2026-10-18
+//  Ideas: camshaft lobe timing notches stamped into the chrome flow; exhaust-manifold blueing bands around heated outer shells; oil gallery; head bolts
 //  A packing: HDR linear RGB (pre-ACES) + semantic alpha; C read back as HDR for the advected chrome smear
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -266,6 +266,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Idea 5: exhaust-manifold blueing around hot outer shell bands.
         let manifold = exp(-abs(abs(local.y) - 2.0) * 4.0) * exp(-abs(length(local.xz) - 2.6) * 2.4);
         col += vec3<f32>(0.2, 0.45, 1.0) * manifold * (0.14 + treble * 0.16);
+
+        // ── Idea: oil gallery ──
+        // A dark wet streak along the bore. It takes more of the specular already computed.
+        let bore = length(local.xz);
+        let oilArg = bore - 0.95;
+        let oil = exp(-local.y * local.y * 1.6) * exp(-oilArg * oilArg * 6.0);
+        col = mix(col, col * vec3<f32>(0.32, 0.30, 0.27), oil * 0.62);
+        col += vec3<f32>(spec) * oil * (0.35 + intensity * 0.4);
+
+        // ── Idea: head bolts ──
+        // A ring of dark dots on the deck face.
+        let boltR = length(local.xz);
+        let boltArg = boltR - 1.35;
+        let boltRing = exp(-boltArg * boltArg * 48.0);
+        let boltAng = atan2(local.z, local.x);
+        let boltSin = abs(sin(boltAng * 3.0));
+        let boltDot = pow(boltSin, 16.0);
+        let deck = exp(-abs(local.y + 1.05) * 4.0);
+        col = col * (1.0 - boltRing * boltDot * deck * 0.72);
     }
 
     // Iridescent plasma glow with chromatic dispersion

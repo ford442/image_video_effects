@@ -4806,7 +4806,7 @@
     "id": "spectrogram-displace-pass1",
     "name": "Spectrogram Displace (Pass 1)",
     "url": "shaders/spectrogram-displace-pass1.wgsl",
-    "description": "Spectrogram field generation: synthetic audio analysis, frequency bin calculation, perceptual color mapping, and displacement vector computation. Outputs spectrogram data to dataTextureA.",
+    "description": "Spectrogram field generation: harmonic peaks, Hann sidelobes, peak-hold, and live FFT bin ink. Outputs (spectroColor.rgb, magnitude) to dataTextureA.",
     "tags": [
       "spectrogram",
       "audio",
@@ -4816,7 +4816,8 @@
     ],
     "features": [
       "multi-pass-1",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive"
     ],
     "multipass": {
       "pass": 1,
@@ -4862,7 +4863,7 @@
     "id": "spectrogram-displace",
     "name": "Spectrogram Displace",
     "url": "shaders/spectrogram-displace.wgsl",
-    "description": "Live three-band and read-only FFT-bin displacement with sprung pointer focus, bounded click accents, and a scrolling exact-C spectrogram persisted through authoritative A display history.",
+    "description": "Live three-band and read-only FFT-bin displacement with a harmonic stack, differential waterfall decay, sprung pointer focus, bounded click accents, and a scrolling exact-C spectrogram persisted through authoritative A display history.",
     "features": [
       "mouse-driven",
       "audio-reactive",

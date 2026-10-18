@@ -17,6 +17,7 @@ _Learn about the person you're helping. Update this as you go._
   - 2026-10-17: sent Cursor batch-03 (rd-on-video-pass1 through gen-auroral-ferrofluid-monolith).
   - 2026-10-18: sent Cursor batch-04 (aurora-rift-pass1 through wave-equation-rgba-fluid).
   - 2026-10-18: sent Cursor batch-05 (fabric-of-reality through fire_smoke_volumetric).
+  - 2026-10-18: sent Cursor batch-06 (spectrogram-displace-pass1 through gen-fluffy-raincloud). The single-pass spectrogram stays in this batch. `gen-fluffy-raincloud` is `gen_fluffy_raincloud.wgsl`.
 
 ## Context
 

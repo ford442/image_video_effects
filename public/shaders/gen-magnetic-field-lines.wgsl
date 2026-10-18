@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: iron-filing LIC along B; reconnection X-point; cyclotron gyration helices; magnetic-mirror pile-up
+//  Upgraded: 2026-10-10, 2026-10-18
+//  Ideas: iron-filing LIC along B; reconnection X-point; cyclotron gyration helices; magnetic-mirror pile-up; equatorial current sheet; polar cusp
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -220,10 +220,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let lineThickness = 0.0035 + treble * 0.0015;
         let lineIntensity = smoothstep(lineThickness * 3.0, 0.0, minDist);
         let lineCore = smoothstep(lineThickness, 0.0, minDist);
+
+        // ── Idea: equatorial current sheet ──
+        // Bθ flips across the equator. A dark lane with a thin plasma edge, outside the core.
+        let sheetArg = cos(polarAngle) * 18.0;
+        let sheet = exp(-sheetArg * sheetArg) * smoothstep(0.06, 0.22, polarRadius) * exp(-polarRadius * 0.85);
+        // ── Idea: polar cusp ──
+        // Field lines dive in along the moment. A bright cap at small radius.
+        let cuspAlign = abs(cos(polarAngle));
+        let cusp = exp(-polarRadius * 16.0) * cuspAlign * cuspAlign * cuspAlign * cuspAlign * cuspAlign * cuspAlign;
         let spectralFlow = 0.6 + 0.4 * sin(polarAngle * 9.0 - t * (4.0 + particleSpeed * 3.0) + fd);
         col += fieldCol * lineIntensity * (0.55 + spectralFlow * (0.45 + mids * 0.35)) +
                vec3<f32>(1.0) * lineCore * (0.22 + treble * 0.22);
-        lineEnergy = max(lineEnergy, lineIntensity);
+        col = col * (1.0 - sheet * 0.55);
+        col += vec3<f32>(0.16, 0.38, 0.62) * sheet * (0.25 + mids * 0.2);
+        col += fieldCol * cusp * (0.55 + bass * 0.35);
+        lineEnergy = max(lineEnergy, max(lineIntensity, sheet * 0.4 + cusp));
         
         // Draw dipole itself
         let dipoleDist = length(p - dipolePos);
