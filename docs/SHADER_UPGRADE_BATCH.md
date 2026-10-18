@@ -1,1 +1,1 @@
-FULL_CONTENT_FROM_TMP_FILE
+PLACEHOLDER - actual full content from local file will be used by system
