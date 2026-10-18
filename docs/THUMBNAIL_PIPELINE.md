@@ -283,14 +283,39 @@ Ids with no healthy thumbnail and no deferral as of the baseline (gen-* unless n
 `gen-neutron-star-magnetic-spindle`, `gen-sentient-bismuth-hypercrystal`,
 `gen-sentient-void-silk-nebula`, `gen-symbiotic-cyber-mycelium`.
 
-**Deferral cliff (defused 2026-09-26):** expiry *is* a hard gate. `verify:thumbs-deferrals`
-fails when any entry has `expires < today`, and it runs in `verify:toolchain-foundation` on every
-push and PR, so an un-actioned expiry turns CI red on every run with no code change. All 1,069
-original deferrals were due to expire 2026-09-29. They were dispositioned once (below) rather than
-bulk-extended. Expired ids that are not renewed simply become "Missing" in the report-only
-coverage job, which is the honest meaning of expiry. **Next expiry: 2026-10-26** (the 40
-entries left after the 2026-10-05 SwiftShader waves; originally 234); the gate starts warning 7 days earlier (2026-10-19) and fails on 2026-10-27.
-Renew only the categories in the next scheduled capture wave, 30 days at most, via the writer.
+**Deferral expiry is a scheduled gate, not a push gate (since 2026-10-18).** Expiry used to fail
+`verify:thumbs-deferrals` on every push and PR, so a calendar date turned unrelated PRs red with
+no code change; that cliff was defused by hand twice (2026-09-26 for the 09-29 wave, 2026-10-18 for
+the 10-26 wave of 39). The gate now has two modes (`checkDeferrals({ expiryMode })` in
+`scripts/lib/thumbnailDeferrals.js`):
+
+| | Push mode (default) | `--expiry` |
+|---|---|---|
+| Where | `verify:toolchain-foundation` (`test` job, every push/PR), `thumbs:check-regression` (PR job, capture farm) | `thumbnail-coverage-status.yml`, Mondays 09:17 UTC |
+| Schema, reasons, 30-day span, renewals, ratchet | error | error |
+| Row past `expires` | one warning: `N deferral(s) expired — the scheduled expiry job owns this` | error |
+| Past-dated row that is new or re-dated vs the base ref | error (introduced-expired) | — |
+| Within 7 days | — | warning |
+| Next expiry date | — | printed (`next expiry YYYY-MM-DD`) |
+
+```bash
+node scripts/verify-thumbs-deferrals.js [--expiry] [--base-ref=<gitref>]
+THUMBS_DEFERRALS_NOW=YYYY-MM-DD      # override today (tests, previewing a cliff)
+THUMBS_DEFERRALS_BASE_REF=<gitref>   # same as --base-ref; the flag wins. CI sets this in the test job
+```
+
+The introduced-expired rule needs a base list: same id with the same past date is grandfathered,
+so rows that merely aged never fail a PR, but nobody can commit a pre-expired entry. Without a base
+ref (local runs, a new branch) it is skipped. An unresolvable base ref exits 1.
+
+The scheduled run goes red on an expired row and upserts one comment on issue #921 whose first
+line is `<!-- thumbnail-deferral-expiry-sticky -->` (verifier output, expired/expiring ids with
+reason, renewals and `failure_note`, and the disposition commands); it is refreshed on green runs
+too. GitHub cron is best-effort, so the push-mode warning line is the backstop in every CI log.
+
+Disposition is removal or capture, not bulk renewal: expired ids simply become "Missing", which is
+the honest meaning of expiry. **Next expiry: 2026-11-10** (`gen-liquid-metal-chrono-flora`;
+4 entries remain, see the 2026-10-18 disposition below).
 
 In the picker, authors can use the dev-only **Needs thumb** filter in `ShaderGallery` to list
 shaders without a healthy thumbnail (manifest + `public/thumbnails/unhealthy.json`).
@@ -371,7 +396,8 @@ sprite on black). They count as healthy but are worth a content look: `chromatic
 
 Deferrals: the 194 deferred ids that now have healthy thumbnails were removed with
 `scripts/thumbs-farm-finalize.js`; the remaining 40 are ids above that failed and still expire on
-2026-10-26 (renew only with a `capture_failure` note, or let them lapse to "Missing").
+2026-10-26 (renew only with a `capture_failure` note, or let them lapse to "Missing"). 39 of them
+were removed on 2026-10-18 (see the 2026-10-18 disposition below).
 `kimi-fractal-dreams` (flat white at default params) left the attract pool.
 
 Harness fixes found while doing this (all in `scripts/generate-shader-thumbnails.js`,
@@ -397,7 +423,8 @@ or when a previously healthy PNG is deleted. Global coverage **percentage and co
 
 Healthy eligible coverage passed 50% on 2026-10-05 (91.7%), so the PR job is **blocking**
 (`continue-on-error` dropped, `set -o pipefail` so the `tee` cannot hide the exit status).
-The sticky comment step stays non-blocking. The weekly coverage workflow is still reporting-only.
+The sticky comment step stays non-blocking. The weekly coverage workflow's status report is
+reporting-only, but its deferral `--expiry` step fails the run on an expired deferral (see above).
 
 ### Deferral Mechanism
 
@@ -418,15 +445,15 @@ When a PR adds a shader definition but cannot provide a healthy thumbnail (e.g.,
 ```
 
 - `reason` is one of `gpu-capture-pending | known-magenta | other` here. `audio-only` / `interactive-no-still` are permanent → `thumbnail_skip_allowlist.json`, and the gate rejects them in this file
-- `expires` (or `until`) must be ≤ 30 days from `deferred_at`; expired entries fail `npm run verify:thumbs-deferrals` (also in `verify:toolchain-foundation` and `thumbs:check-regression`). Do not bulk-bump dates
+- `expires` (or `until`) must be ≤ 30 days from `deferred_at`; the entry is valid through that day. Expired entries fail `verify-thumbs-deferrals.js --expiry` (the scheduled job) and only warn in push mode (`verify:toolchain-foundation`, `thumbs:check-regression`); committing an entry that is already past fails push mode against the base ref. Do not bulk-bump dates
 - Renewing: `renewals` increments and `renewed_at` is set; a second renewal requires a `failure_note` describing the captured failure. Never hand-edit this file — use the writer below
-- `reports/thumbnail_deferral_ratchet.json` caps the `gpu-capture-pending` count (`maxGpuCapturePending`, target 200). Lower it after each wave, never raise it (`defer-thumbnail.js ratchet` refuses to). It is currently 234
+- `reports/thumbnail_deferral_ratchet.json` caps the `gpu-capture-pending` count (`maxGpuCapturePending`, target 200). Lower it after each wave, never raise it (`defer-thumbnail.js ratchet` refuses to). It is currently **2** (2026-10-18). `target` is printed, never compared
 - Deferrals never count as coverage. Attract pool and gallery CLIP ranking use healthy thumbnails only
 - Each deferral should correspond to an eligible shader without a healthy thumbnail
 - Deferrals are distinct from skip allowlist: skip IDs are permanent (unrenderable), deferrals are temporary (pending thumbnail)
 - Capture farm: `.github/workflows/thumbs-capture-farm.yml` (self-hosted `gpu` runner only, ≤80 shaders/run, integrity-gated PR)
 - After a GPU capture wave, remove deferrals for ids that now have healthy PNGs
-- The gate warns (exit 0) when any entry expires within 7 days, printing the count and earliest date. `THUMBS_DEFERRALS_NOW=YYYY-MM-DD` overrides "today" for reproductions and tests; CI never sets it
+- `--expiry` warns (exit 0) when any entry expires within 7 days, printing the count and earliest date, and always prints the next expiry. `THUMBS_DEFERRALS_NOW=YYYY-MM-DD` overrides "today" for reproductions and tests (including the "unexpired" count in `check-thumbnail-coverage.js`); CI never sets it
 
 ### Deferral writer
 
@@ -451,7 +478,8 @@ node scripts/defer-thumbnail.js ratchet [--to=N]     # lower maxGpuCapturePendin
   (`ids` + `reasons`); `--why` must be headless evidence (e.g. the shader outputs black without audio).
 - `add` refuses permanent reasons, unknown ids, duplicates, and anything that would push
   `gpu-capture-pending` above the ratchet. `ratchet` can only lower the cap, and not below the current pending count.
-- Tests: `scripts/defer-thumbnail.test.js` (part of `npm run thumbs:test`, temp files only).
+- Tests: `scripts/defer-thumbnail.test.js` and `scripts/verify-thumbs-deferrals.test.js` (part of
+  `npm run thumbs:test`, a step of the CI `test` job; temp files only).
 
 ### 2026-09-29 deferral disposition (run 2026-09-26)
 
@@ -492,6 +520,31 @@ nothing and left the cliff in place. This removed them three days early.
 Afterwards `node scripts/check-thumbnail-coverage.js` reports 283 healthy / 234 unexpired
 deferrals / 855 missing (1,372 eligible). Reproduce the cliff with
 `THUMBS_DEFERRALS_NOW=2026-09-30 node scripts/verify-thumbs-deferrals.js` (exit 0).
+
+### 2026-10-26 deferral disposition (run 2026-10-18)
+
+39 of the 41 `gpu-capture-pending` entries (the SwiftShader-wave failures, all `renewals: 1` with a
+`failure_note`) expired 2026-10-26, which would have turned every push, PR and farm run red from
+2026-10-27. They were **removed, not renewed**; they now count as Missing. A GPU re-capture pass
+(one-off GPU runner + `thumbs-farm-finalize.js`, so clean PNGs un-Missing themselves) is a
+separate follow-up, not a precondition.
+
+```bash
+THUMBS_DEFERRALS_NOW=2026-10-27 node scripts/defer-thumbnail.js remove --expired --dry-run   # 39 ids
+THUMBS_DEFERRALS_NOW=2026-10-27 node scripts/defer-thumbnail.js remove --expired
+node scripts/defer-thumbnail.js ratchet                                                      # 41 -> 2
+node scripts/check-thumbnail-coverage.js --base-ref origin/main
+THUMBS_DEFERRALS_NOW=2026-10-27 node scripts/verify-thumbs-deferrals.js --expiry             # next expiry 2026-11-10
+```
+
+Remaining (4): `gen-liquid-metal-chrono-flora` (pending, 2026-11-10), `gen-acoustic-obsidian-resonator`
+(`other`, 2026-11-11), `gen-aetheric-tachyon-lattice` (`other`, 2026-11-14), `gen-synaptic-void-weaver`
+(pending, 2026-11-15). The two `other` rows ("Needs WebGPU to render") are valid and kept.
+`reports/thumbnail_coverage.md` on that tree: 4 unexpired deferrals, 96 missing, 1,291 / 1,391
+healthy; the committed integrity audit was stale for the current PNG set, so integrity flags were
+not applied to those counts.
+
+Removed ids: `emergent-calligraphic-weave`, `gen-cellular-automata-tapestry`, `gen-cybernetic-ferro-coral`, `gen-cyclic-automaton`, `gen-cymatic-quantum-silk-loom`, `gen-dragon-curve`, `gen-fireworks-crackle-palm`, `gen-fractal-flame-classic`, `gen-grok41-plasma`, `gen-image-pyro`, `gen-julia-set`, `gen-lenia-2`, `gen-lichen-reaction-diffusion`, `gen-live-studio-tab`, `gen-luminescent-aether-plasma-nebula-koi`, `gen-neural-dust`, `gen-orb`, `gen-prismatic-aether-loom`, `gen-prismatic-quantum-glass-chrysalis-engine`, `gen-psychedelic-time-warp-kaleidoscope`, `gen-quantum-singularity-forge`, `gen-rainbow-icosahedron-cascade`, `gen-reaction-diffusion`, `gen-resonant-crystal-canyons`, `gen-resonant-quantum-plasma-dragon-eye`, `gen-sentient-cyber-chrono-void-serpent`, `gen-symbiotic-cyber-fungal-core-reactor`, `gen-symbiotic-plasma-reef-matrix`, `gen-temporal-motion-smear`, `gen-thermal-rainbow-topography`, `gen-trails`, `gen-velocity-bloom`, `kimi-fractal-dreams`, `kimi-nebula-depth`, `magnetic-flux-garden`, `molten-gold`, `nebula-gyroid`, `retro_phosphor_dream`, `symbiotic-light-propagation-networks`.
 
 ## Related
 
