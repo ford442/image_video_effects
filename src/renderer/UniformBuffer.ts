@@ -60,7 +60,7 @@ export interface UniformBufferView {
   clearRipple(index: number): void;
 
   /** Gets the underlying Float32Array for GPU upload */
-  readonly data: Float32Array;
+  readonly data: Float32Array<ArrayBuffer>;
 }
 
 /** Creates a type-safe view over a uniform buffer */

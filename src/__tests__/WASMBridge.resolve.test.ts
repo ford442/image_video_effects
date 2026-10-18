@@ -1,14 +1,14 @@
 /**
- * @jest-environment jsdom
+ * @vitest-environment jsdom
  *
- * Regression for #1234: Jest must resolve the TypeScript WASM barrel
+ * Regression for #1234: Vitest must resolve the TypeScript WASM barrel
  * (explicit .js specifiers → .ts) without a GPU or emcc.
- * Fails if craco's mapper stops mapping ./bridge/api.js to api.ts.
+ * Fails if `.js` ESM specifiers stop resolving to their `.ts` sources.
  */
 
 import * as staticBridge from '../wasm/wasm_bridge';
 
-describe('WASM bridge Jest resolution', () => {
+describe('WASM bridge test resolution', () => {
   it('resolves a static import of the TypeScript barrel', () => {
     expect(typeof staticBridge.initWasmRenderer).toBe('function');
     expect(typeof staticBridge.setInputSource).toBe('function');
@@ -17,7 +17,7 @@ describe('WASM bridge Jest resolution', () => {
   });
 
   it('resolves a dynamic import after resetModules (same path as uniforms tests)', async () => {
-    jest.resetModules();
+    vi.resetModules();
     const bridge = await import('../wasm/wasm_bridge');
     expect(typeof bridge.initWasmRenderer).toBe('function');
     expect(typeof bridge.setInputSource).toBe('function');

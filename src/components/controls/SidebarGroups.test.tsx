@@ -9,10 +9,10 @@ import type { ShaderEntry, SlotParams } from '../../renderer/types';
 beforeAll(() => {
     Object.defineProperty(window, 'matchMedia', {
         writable: true,
-        value: jest.fn().mockImplementation(query => ({
+        value: vi.fn().mockImplementation(query => ({
             matches: false, media: query, onchange: null,
-            addListener: jest.fn(), removeListener: jest.fn(),
-            addEventListener: jest.fn(), removeEventListener: jest.fn(), dispatchEvent: jest.fn(),
+            addListener: vi.fn(), removeListener: vi.fn(),
+            addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn(),
         })),
     });
 });
@@ -31,7 +31,7 @@ const params: SlotParams = {
     lightStrength: 1, ambient: 0.2, normalStrength: 0.1, fogFalloff: 4, depthThreshold: 0.5,
 };
 
-const setMode = jest.fn();
+const setMode = vi.fn();
 
 const renderControls = () => render(
     <Controls
@@ -139,7 +139,7 @@ describe('usePersistedToggle', () => {
     });
 
     test('survives a throwing localStorage', () => {
-        const spy = jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked'); });
+        const spy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked'); });
         render(<Probe />);
         expect(screen.getByText('on')).toBeInTheDocument();
         spy.mockRestore();

@@ -35,10 +35,10 @@ describe('readGraphLabEnabled', () => {
   });
 
   it('still honours the URL when storage is blocked', () => {
-    const get = jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+    const get = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('blocked');
     });
-    const set = jest.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+    const set = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('blocked');
     });
     expect(readGraphLabEnabled('?graphlab=1')).toBe(true);

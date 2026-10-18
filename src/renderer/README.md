@@ -36,5 +36,5 @@ TypeScript WebGPU renderer split mirrors the C++ WASM layout (#965).
 ## Tests
 
 ```bash
-npx react-scripts test --watchAll=false --ci src/renderer/webgpu/
+npx vitest run src/renderer/webgpu/
 ```

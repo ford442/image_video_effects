@@ -15,13 +15,13 @@ describe('bundled WGSL libraries', () => {
   });
 
   it('serves the prelude without calling the fallback', async () => {
-    const fallback = jest.fn(async () => 'from network');
+    const fallback = vi.fn(async () => 'from network');
     await expect(withBundledLibraries(fallback)('_prelude.wgsl')).resolves.toBe(PRELUDE);
     expect(fallback).not.toHaveBeenCalled();
   });
 
   it('defers every other library to the fallback', async () => {
-    const fallback = jest.fn(async (name: string) => (name === '_hash.wgsl' ? 'fn hash() {}' : null));
+    const fallback = vi.fn(async (name: string) => (name === '_hash.wgsl' ? 'fn hash() {}' : null));
     const resolve = withBundledLibraries(fallback);
     await expect(resolve('_hash.wgsl')).resolves.toBe('fn hash() {}');
     await expect(resolve('_missing.wgsl')).resolves.toBeNull();
@@ -30,7 +30,7 @@ describe('bundled WGSL libraries', () => {
   });
 
   it('expands a prelude include with no network at all', async () => {
-    const offline = jest.fn(async () => null);
+    const offline = vi.fn(async () => null);
     const out = await expandWgslIncludes(
       '#include "_prelude.wgsl"\n@compute @workgroup_size(16, 16, 1) fn main() {}',
       withBundledLibraries(offline),

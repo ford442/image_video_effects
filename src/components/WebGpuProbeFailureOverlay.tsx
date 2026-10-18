@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { WebGpuProbeSerializable } from '../renderer/webgpuBootProbe';
 import './WebGpuProbeFailureOverlay.css';
 

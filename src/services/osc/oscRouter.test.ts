@@ -49,10 +49,10 @@ describe('routeOscMessage', () => {
 describe('dispatchOscMessage', () => {
   it('calls the handle', () => {
     const handle: OscActionsHandle = {
-      setSlotParam: jest.fn(),
-      triggerTransition: jest.fn(),
-      setSlotShader: jest.fn(),
-      setAudioAmount: jest.fn(),
+      setSlotParam: vi.fn(),
+      triggerTransition: vi.fn(),
+      setSlotShader: vi.fn(),
+      setAudioAmount: vi.fn(),
     };
     dispatchOscMessage(msg('/pixelocity/slot/3/param/w', 0.5), handle);
     dispatchOscMessage(msg('/pixelocity/slot/0/shader', 'none'), handle);

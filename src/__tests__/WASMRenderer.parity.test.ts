@@ -2,22 +2,22 @@ import * as WasmBridge from '../wasm/wasm_bridge';
 import { WASMRenderer } from '../renderer/WASMRenderer';
 import { DEFAULT_CONFIG } from '../renderer/Renderer';
 
-jest.mock('../wasm/wasm_bridge', () => ({
-  initWasmRenderer: jest.fn().mockResolvedValue(true),
-  shutdownWasmRenderer: jest.fn(),
-  setInputSource: jest.fn(),
-  updateAudioFrequencyBins: jest.fn(),
-  updateAudioData: jest.fn(),
-  updateSlotParams: jest.fn(),
+vi.mock('../wasm/wasm_bridge', () => ({
+  initWasmRenderer: vi.fn().mockResolvedValue(true),
+  shutdownWasmRenderer: vi.fn(),
+  setInputSource: vi.fn(),
+  updateAudioFrequencyBins: vi.fn(),
+  updateAudioData: vi.fn(),
+  updateSlotParams: vi.fn(),
   getSupportsDeepWorkgroup: () => true,
   getSlotState: () => ({ shaderId: 'rain', enabled: true, mode: 'chained' }),
   getGPUTimings: () => ({ parallelTime: 1, chainedTime: 2, totalTime: 3, available: false, timingSource: 'wall-clock' }),
-  isRecordingActive: jest.fn().mockReturnValue(false),
+  isRecordingActive: vi.fn().mockReturnValue(false),
   captureFrameDataUrl: async () => 'data:image/png;base64,abc',
-  setRecording: jest.fn(),
-  startRecording: jest.fn().mockResolvedValue(new Blob()),
-  stopRecording: jest.fn(),
-  updateUniforms: jest.fn(),
+  setRecording: vi.fn(),
+  startRecording: vi.fn().mockResolvedValue(new Blob()),
+  stopRecording: vi.fn(),
+  updateUniforms: vi.fn(),
   getFPS: () => 60,
 }));
 
@@ -25,7 +25,7 @@ describe('WASMRenderer Phase 3 parity methods', () => {
   let renderer: WASMRenderer;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     renderer = new WASMRenderer(DEFAULT_CONFIG);
   });
 

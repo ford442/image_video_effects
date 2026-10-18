@@ -1,3 +1,4 @@
+import type { MockInstance } from 'vitest';
 import { mapVJStackToSharedChain, buildCatalogDefaultsLookup } from './vjToSharedChain';
 import {
     DEFAULT_SLOT_PARAMS,
@@ -49,9 +50,9 @@ const CATALOG: CatalogShader[] = [
 
 const KNOWN = new Set(CATALOG.map(s => s.id));
 
-let warnSpy: jest.SpyInstance;
+let warnSpy: MockInstance;
 beforeEach(() => {
-    warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 });
 afterEach(() => {
     warnSpy.mockRestore();

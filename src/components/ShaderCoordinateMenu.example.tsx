@@ -4,7 +4,7 @@
 //  This shows how to integrate the coordinate-based menu into the existing App.tsx
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ShaderCoordinateMenu } from './ShaderCoordinateMenu';
 import shaderCoordinates from '../shader_coordinates.json';
 
@@ -43,7 +43,7 @@ export const ShaderSelector: React.FC<ShaderSelectorProps> = ({
     const saved = localStorage.getItem('recentShaders');
     return saved ? JSON.parse(saved) : [];
   });
-  const [favoriteIds, setFavoriteIds] = useState<string[]>(() => {
+  const [favoriteIds] = useState<string[]>(() => {
     const saved = localStorage.getItem('favoriteShaders');
     return saved ? JSON.parse(saved) : [];
   });
@@ -61,17 +61,6 @@ export const ShaderSelector: React.FC<ShaderSelectorProps> = ({
     });
   };
 
-  // Toggle favorite
-  const toggleFavorite = (id: string) => {
-    setFavoriteIds(prev => {
-      const isFav = prev.includes(id);
-      const updated = isFav 
-        ? prev.filter(f => f !== id)
-        : [...prev, id];
-      localStorage.setItem('favoriteShaders', JSON.stringify(updated));
-      return updated;
-    });
-  };
 
   return (
     <ShaderCoordinateMenu

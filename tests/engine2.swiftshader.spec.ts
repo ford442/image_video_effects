@@ -31,7 +31,7 @@ const STACK = [
   'gen-lichen-reaction-diffusion',
 ];
 
-type Api = Record<string, (...args: any[]) => any> & { renderer: any };
+type Api = Record<string, any>;
 
 // PX_ISOLATED=1 serves the build with the production COOP/COEP headers
 // (scripts/serve-isolated.mjs), so the whole suite also runs cross-origin isolated.
@@ -74,8 +74,9 @@ async function loadStack(page: Page, ids: string[], input: 'generative' | 'image
       api.setInputSource(input);
       const loaded: Record<string, boolean> = {};
       for (let i = 0; i < ids.length; i++) {
-        loaded[ids[i]] = await api.loadShader(ids[i], `./shaders/${ids[i]}.wgsl`);
-        api.setSlotShader(i, ids[i]);
+        const id = ids[i] as string;
+        loaded[id] = await api.loadShader(id, `./shaders/${id}.wgsl`);
+        api.setSlotShader(i, id);
       }
       api.setTestRenderState({ time: 2.5, mouseX: 0.5, mouseY: 0.5 });
       return loaded;
@@ -102,10 +103,6 @@ async function waitForRenderedFrames(page: Page, n: number): Promise<void> {
   );
 }
 
-async function waitFrames(page: Page, n: number): Promise<void> {
-  await page.evaluate((count) => (window as any).__pixelocity__.waitFrames(count), n);
-}
-
 async function frameStats(page: Page) {
   return page.evaluate(() => (window as any).__pixelocity__.renderer.getDiagnostics()?.webgpu?.frameStats);
 }
@@ -122,7 +119,7 @@ async function thumbnailStats(page: Page, size = 64, attempts = 4) {
       size,
     );
     expect(png, 'captureThumbnailPng returned null').toBeTruthy();
-    const b64 = png!.includes(',') ? png!.split(',')[1] : png!;
+    const b64 = png!.includes(',') ? png!.split(',')[1] ?? '' : png!;
     const stats = await sharp(Buffer.from(b64, 'base64')).stats();
     const max = Math.max(...stats.channels.slice(0, 3).map((c) => c.max));
     const stdev = Math.max(...stats.channels.slice(0, 3).map((c) => c.stdev));

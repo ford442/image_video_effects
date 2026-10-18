@@ -111,30 +111,30 @@ function makeDevice(opts: {
   const params: number[][] = [];
   const device = {
     limits: { ...BASE_LIMITS, ...opts.limits },
-    createBindGroupLayout: jest.fn((d: GPUBindGroupLayoutDescriptor) => ({ label: d.label })),
-    createPipelineLayout: jest.fn((d: GPUPipelineLayoutDescriptor) => {
+    createBindGroupLayout: vi.fn((d: GPUBindGroupLayoutDescriptor) => ({ label: d.label })),
+    createPipelineLayout: vi.fn((d: GPUPipelineLayoutDescriptor) => {
       const groups = Array.from(d.bindGroupLayouts) as GPUBindGroupLayout[];
       pipelineLayouts.push(groups);
       return { label: d.label, groups: groups.length };
     }),
-    createShaderModule: jest.fn(() => ({})),
-    createComputePipeline: jest.fn((d: GPUComputePipelineDescriptor) => ({ layout: d.layout })),
-    createBindGroup: jest.fn((d: GPUBindGroupDescriptor) => ({ label: d.label })),
-    createBuffer: jest.fn((d: GPUBufferDescriptor) => {
+    createShaderModule: vi.fn(() => ({})),
+    createComputePipeline: vi.fn((d: GPUComputePipelineDescriptor) => ({ layout: d.layout })),
+    createBindGroup: vi.fn((d: GPUBindGroupDescriptor) => ({ label: d.label })),
+    createBuffer: vi.fn((d: GPUBufferDescriptor) => {
       if (opts.oomAtBytes !== undefined && d.size >= opts.oomAtBytes) scopeOom = true;
       const rec = { size: d.size, label: d.label, destroyed: false };
       created.push(rec);
       return { size: d.size, label: d.label, destroy: () => { rec.destroyed = true; } };
     }),
-    pushErrorScope: jest.fn(() => { scopeOom = false; }),
-    popErrorScope: jest.fn(async () => {
+    pushErrorScope: vi.fn(() => { scopeOom = false; }),
+    popErrorScope: vi.fn(async () => {
       const err = scopeOom ? ({ name: 'GPUOutOfMemoryError', message: 'out of memory' } as GPUError) : null;
       scopeOom = false;
       return err;
     }),
     // Real writeBuffer copies synchronously; snapshot so reuse of the params array is visible.
     queue: {
-      writeBuffer: jest.fn((_b: GPUBuffer, _o: number, data: Uint32Array) => {
+      writeBuffer: vi.fn((_b: GPUBuffer, _o: number, data: Uint32Array) => {
         params.push(Array.from(data));
       }),
     },
@@ -144,12 +144,12 @@ function makeDevice(opts: {
 
 beforeEach(() => {
   sessionStorage.clear();
-  jest.spyOn(console, 'warn').mockImplementation(() => {});
-  jest.spyOn(console, 'log').mockImplementation(() => {});
+  vi.spyOn(console, 'warn').mockImplementation(() => {});
+  vi.spyOn(console, 'log').mockImplementation(() => {});
 });
 
 afterEach(() => {
-  jest.restoreAllMocks();
+  vi.restoreAllMocks();
 });
 
 describe('bind_group1.json contract', () => {

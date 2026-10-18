@@ -68,7 +68,7 @@ Status is reported in `getDiagnostics().deviceRecovery` and `__pixelocity__.getD
 
 ## Cross-origin isolation and the SharedArrayBuffer ring
 
-Production (`build.sh` → `.htaccess`), `npm start` (`craco.config.js` devServer) and `scripts/serve-isolated.mjs` send:
+Production (`build.sh` → `.htaccess`), `npm start` (`vite.config.ts` `server.headers`) and `scripts/serve-isolated.mjs` send:
 
 ```
 Cross-Origin-Opener-Policy: same-origin
@@ -93,6 +93,6 @@ Side effects of isolation:
 
 ## Testing
 
-- Jest: `src/renderer/worker/renderWorker.test.ts` (protocol contract, host ↔ client over an in-memory port with a fake renderer, proxy coalescing and getters, device loss, stale worker messages and stale device generations). Recovery sequencing: `src/renderer/deviceRecovery.test.ts`, `src/__tests__/RendererManager.test.ts`.
+- Vitest: `src/renderer/worker/renderWorker.test.ts` (protocol contract, host ↔ client over an in-memory port with a fake renderer, proxy coalescing and getters, device loss, stale worker messages and stale device generations). Recovery sequencing: `src/renderer/deviceRecovery.test.ts`, `src/__tests__/RendererManager.test.ts`.
 - Real (software) device: `npm run test:engine2` (`swiftshader` Playwright project). The core tests run with `?renderer=main` and with `?renderer=worker`. `npm run test:engine2:isolated` runs the same suite cross-origin isolated (SAB channel). `tests/engine2-isolation.swiftshader.spec.ts` checks the SAB path end to end. `npm run test:engine2:smoke` runs the renderer smoke + layer-chain specs on SwiftShader in both modes (`PX_RENDER_THREAD=main|worker`).
 - Real-GPU gate (not runnable on the Cloud VM): main-thread idle trace during a 6-slot 1080p stack, 4K30 HLS throughput, hardware pixel diffs.

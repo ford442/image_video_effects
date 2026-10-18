@@ -67,10 +67,10 @@ export function waitForCanvasTeardown(): Promise<void> {
 
 const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     modes, slotParams, rendererRef,
-    mousePosition, setMousePosition,
+    setMousePosition,
     isMouseDown, setIsMouseDown, onInit,
     inputSource, selectedVideo, videoSourceUrl, isMuted,
-    setInputSource, activeSlot, apiBaseUrl,
+    setInputSource, apiBaseUrl,
     isWebcamActive = false,
     webcamVideoElement,
     liveStreamUrl,

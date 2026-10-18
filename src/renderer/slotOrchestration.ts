@@ -158,8 +158,8 @@ export async function loadShaderForBackend(
 
 export async function loadShadersForBackend(
   backend: ShaderSlotRenderer | null,
-  policy: SlotOrchestrationPolicy,
-  callbacks: SlotOrchestrationCallbacks,
+  _policy: SlotOrchestrationPolicy,
+  _callbacks: SlotOrchestrationCallbacks,
   shaders: ShaderEntry[],
   loadOne: (id: string, url: string, meta?: ShaderLoadMeta) => Promise<boolean>,
 ): Promise<void> {
@@ -184,7 +184,7 @@ export async function loadShadersForBackend(
 export async function resyncShaderStack(
   backend: ShaderSlotRenderer | null,
   policy: SlotOrchestrationPolicy,
-  callbacks: SlotOrchestrationCallbacks,
+  _callbacks: SlotOrchestrationCallbacks,
   loadOne: (id: string, url: string, meta?: ShaderLoadMeta) => Promise<boolean>,
   setInputSource: (source: InputSource) => void,
   options: {

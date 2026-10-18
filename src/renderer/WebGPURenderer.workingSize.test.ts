@@ -1,16 +1,17 @@
+import type { Mock } from 'vitest';
 import { WebGPURenderer } from './WebGPURenderer';
 import { DEFAULT_CONFIG } from './Renderer';
 import { allocateWorkingPool } from './webgpu/historyTexProbe';
 import { allowsFullWorkingSize } from '../config/vramBudget';
 
-jest.mock('./webgpu/historyTexProbe', () => {
-  const actual = jest.requireActual('./webgpu/historyTexProbe');
-  return { ...actual, allocateWorkingPool: jest.fn() };
+vi.mock('./webgpu/historyTexProbe', async () => {
+  const actual = await vi.importActual<Record<string, unknown>>('./webgpu/historyTexProbe');
+  return { ...actual, allocateWorkingPool: vi.fn() };
 });
 
-jest.mock('../config/vramBudget', () => {
-  const actual = jest.requireActual('../config/vramBudget');
-  return { ...actual, allowsFullWorkingSize: jest.fn(() => false), persistHistoryOomCap: jest.fn() };
+vi.mock('../config/vramBudget', async () => {
+  const actual = await vi.importActual<Record<string, unknown>>('../config/vramBudget');
+  return { ...actual, allowsFullWorkingSize: vi.fn(() => false), persistHistoryOomCap: vi.fn() };
 });
 
 type Alloc = Awaited<ReturnType<typeof allocateWorkingPool>>;
@@ -41,21 +42,21 @@ interface Internals {
 }
 
 describe('working-size upgrade outcomes', () => {
-  const alloc = allocateWorkingPool as jest.Mock;
+  const alloc = allocateWorkingPool as Mock;
   const device = {} as GPUDevice;
   let wgpu: WebGPURenderer;
   let internals: Internals;
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    jest.spyOn(console, 'log').mockImplementation(() => undefined);
-    jest.spyOn(console, 'warn').mockImplementation(() => undefined);
-    jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.clearAllMocks();
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
     wgpu = new WebGPURenderer(DEFAULT_CONFIG);
     internals = wgpu as unknown as Internals;
   });
 
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => vi.restoreAllMocks());
 
   describe('tryUpgradeToFullWorkingSize', () => {
     it('keeps 1024 when the 2048 upgrade OOMs and the restore succeeds', async () => {
@@ -82,15 +83,15 @@ describe('working-size upgrade outcomes', () => {
 
   describe('setupGpuResources', () => {
     beforeEach(() => {
-      (allowsFullWorkingSize as jest.Mock).mockReturnValue(true);
+      (allowsFullWorkingSize as Mock).mockReturnValue(true);
       internals.device = { limits: { maxBufferSize: 1 << 30 } } as unknown as GPUDevice;
-      jest.spyOn(internals.pipeline as { setupComputeLayout: () => void }, 'setupComputeLayout')
+      vi.spyOn(internals.pipeline as { setupComputeLayout: () => void }, 'setupComputeLayout')
         .mockImplementation(() => undefined);
-      jest.spyOn(
+      vi.spyOn(
         (wgpu as unknown as { resources: { applyTextureSet: () => void; ensureSamplersAndBuffers: () => void } }).resources,
         'applyTextureSet',
       ).mockImplementation(() => undefined);
-      jest.spyOn(
+      vi.spyOn(
         (wgpu as unknown as { resources: { ensureSamplersAndBuffers: () => void } }).resources,
         'ensureSamplersAndBuffers',
       ).mockImplementation(() => undefined);
@@ -98,12 +99,12 @@ describe('working-size upgrade outcomes', () => {
     });
 
     it("propagates 'oom' from a failed restore so init does not request a new device", async () => {
-      jest.spyOn(wgpu as unknown as Internals, 'tryUpgradeToFullWorkingSize').mockResolvedValue('oom');
+      vi.spyOn(wgpu as unknown as Internals, 'tryUpgradeToFullWorkingSize').mockResolvedValue('oom');
       expect(await internals.setupGpuResources(false, 'rgba16float')).toBe('oom');
     });
 
     it("still propagates 'lost' so init retries on a fresh device", async () => {
-      jest.spyOn(wgpu as unknown as Internals, 'tryUpgradeToFullWorkingSize').mockResolvedValue('lost');
+      vi.spyOn(wgpu as unknown as Internals, 'tryUpgradeToFullWorkingSize').mockResolvedValue('lost');
       expect(await internals.setupGpuResources(false, 'rgba16float')).toBe('lost');
     });
   });

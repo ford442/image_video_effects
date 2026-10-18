@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import {
   normalizeShaderRatingResponse,
   postShaderRating,
@@ -11,7 +12,7 @@ describe('postShaderRating', () => {
   });
 
   it('POSTs JSON { rating } (not FormData stars)', async () => {
-    global.fetch = jest.fn(async () =>
+    global.fetch = vi.fn(async () =>
       new Response(
         JSON.stringify({
           shader_id: 'glass-brick-distortion',
@@ -36,7 +37,7 @@ describe('postShaderRating', () => {
         headers: { 'Content-Type': 'application/json' },
       }),
     );
-    const [, init] = (global.fetch as jest.Mock).mock.calls[0] as [string, RequestInit];
+    const [, init] = (global.fetch as Mock).mock.calls[0] as [string, RequestInit];
     expect(typeof init.body).toBe('string');
     expect(JSON.parse(String(init.body))).toEqual({ rating: 5 });
     expect(result).toEqual({
@@ -50,7 +51,7 @@ describe('postShaderRating', () => {
   });
 
   it('includes notes and idempotency_key when provided', async () => {
-    global.fetch = jest.fn(async () =>
+    global.fetch = vi.fn(async () =>
       new Response(JSON.stringify({ rating: 4 }), { status: 200 }),
     ) as typeof fetch;
 
@@ -59,7 +60,7 @@ describe('postShaderRating', () => {
       idempotencyKey: 'abc123',
     });
 
-    const [, init] = (global.fetch as jest.Mock).mock.calls[0] as [string, RequestInit];
+    const [, init] = (global.fetch as Mock).mock.calls[0] as [string, RequestInit];
     expect(JSON.parse(String(init.body))).toEqual({
       rating: 4,
       notes: 'nice',
@@ -68,7 +69,7 @@ describe('postShaderRating', () => {
   });
 
   it('rejects out-of-range ratings before fetch', async () => {
-    global.fetch = jest.fn() as typeof fetch;
+    global.fetch = vi.fn() as typeof fetch;
     await expect(postShaderRating('https://x', 'a', 9)).rejects.toThrow(/0 and 5/);
     expect(global.fetch).not.toHaveBeenCalled();
   });

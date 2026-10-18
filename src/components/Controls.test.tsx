@@ -1,4 +1,3 @@
-import React from 'react';
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
@@ -9,15 +8,15 @@ import { ShaderEntry, SlotParams } from '../renderer/types';
 beforeAll(() => {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
-    value: jest.fn().mockImplementation(query => ({
+    value: vi.fn().mockImplementation(query => ({
       matches: false,
       media: query,
       onchange: null,
-      addListener: jest.fn(),
-      removeListener: jest.fn(),
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
-      dispatchEvent: jest.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
     })),
   });
 });
@@ -26,10 +25,10 @@ beforeEach(() => {
     localStorage.clear();
 });
 
-const mockSetMode = jest.fn();
-const mockSetShaderCategory = jest.fn();
-const mockSetActiveSlot = jest.fn();
-const mockUpdateSlotParam = jest.fn();
+const mockSetMode = vi.fn();
+const mockSetShaderCategory = vi.fn();
+const mockSetActiveSlot = vi.fn();
+const mockUpdateSlotParam = vi.fn();
 
 const availableModes: ShaderEntry[] = [
     {
@@ -232,9 +231,9 @@ describe('Live Control panel', () => {
         isAiVjMode: false,
         onToggleAiVj: () => {},
         aiVjStatus: 'idle' as const,
-        onTriggerNextTransition: jest.fn(),
-        onRandomizeSlot: jest.fn(),
-        onSetSlotParam: jest.fn(),
+        onTriggerNextTransition: vi.fn(),
+        onRandomizeSlot: vi.fn(),
+        onSetSlotParam: vi.fn(),
     };
 
     test('expands and captures a key binding', async () => {
@@ -320,7 +319,7 @@ describe('Community gallery wiring', () => {
                 isAiVjMode={false}
                 onToggleAiVj={() => {}}
                 aiVjStatus="idle"
-                onApplySharedChain={jest.fn()}
+                onApplySharedChain={vi.fn()}
                 getCurrentChain={() => chain}
             />
         );

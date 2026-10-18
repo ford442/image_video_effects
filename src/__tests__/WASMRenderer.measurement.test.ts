@@ -2,6 +2,7 @@
  * #1314 D — WASMRenderer surfaces the C++ per-pass timings and error ring.
  */
 
+import type { Mocked } from 'vitest';
 import * as WasmBridge from '../wasm/wasm_bridge';
 import { WASMRenderer } from '../renderer/WASMRenderer';
 import { DEFAULT_CONFIG } from '../renderer/Renderer';
@@ -18,21 +19,25 @@ const PASS = {
   iterations: 1,
 };
 
-jest.mock('../wasm/wasm_bridge', () => ({
-  getDiagnostics: jest.fn(() => ({})),
+vi.mock('../wasm/wasm_bridge', () => ({
+  getDiagnostics: vi.fn(() => ({})),
   getFPS: () => 60,
-  getGPUTimings: jest.fn(),
-  readPassTimings: jest.fn(),
-  readErrorRing: jest.fn(),
+  getAdapterSummary: vi.fn(),
+  getLastInitErrorStage: vi.fn(),
+  getLastInitErrorMessage: vi.fn(),
+  getColorFormat: vi.fn(),
+  getGPUTimings: vi.fn(),
+  readPassTimings: vi.fn(),
+  readErrorRing: vi.fn(),
 }));
 
-const bridge = WasmBridge as jest.Mocked<typeof WasmBridge>;
+const bridge = WasmBridge as Mocked<typeof WasmBridge>;
 
 describe('WASMRenderer measurement surface', () => {
   let renderer: WASMRenderer;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     renderer = new WASMRenderer(DEFAULT_CONFIG);
     bridge.readPassTimings.mockReturnValue([PASS]);
     bridge.readErrorRing.mockReturnValue({ count: 2, last: 'Validation: b', recent: ['Validation: a', 'Validation: b'] });

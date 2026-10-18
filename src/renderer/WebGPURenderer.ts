@@ -169,7 +169,6 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private supportsSubgroups = false;
   private supportsDeepWorkgroup = false;
   private colorFormat: InternalColorFormat = 'rgba32float';
-  private hasF32Filterable = false;
   /** Adapter identity from the init ladder — surfaced in diagnostics for Tier B evidence. */
   private adapterSummary = '';
   private adapterAttemptLabel: string | null = null;
@@ -246,7 +245,6 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       this.canvasH = outcome.canvasH;
       this.supportsSubgroups = outcome.supportsSubgroups;
       this.supportsDeepWorkgroup = outcome.supportsDeepWorkgroup;
-      this.hasF32Filterable = outcome.hasF32Filterable;
       this.formatCapabilities = outcome.formatCapabilities;
       this.adapterSummary = outcome.adapterSummary ?? '';
       this.adapterAttemptLabel = outcome.adapterAttemptLabel ?? null;

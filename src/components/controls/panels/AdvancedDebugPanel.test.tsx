@@ -1,10 +1,9 @@
-import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { AdvancedDebugPanel } from './AdvancedDebugPanel';
 
 test('renders coordinate browser button and fires onOpenCoordinateBrowser', () => {
-    const onOpenCoordinateBrowser = jest.fn();
+    const onOpenCoordinateBrowser = vi.fn();
 
     render(
         <AdvancedDebugPanel
@@ -17,7 +16,7 @@ test('renders coordinate browser button and fires onOpenCoordinateBrowser', () =
 });
 
 test('fires onOpenStorageBrowser when storage entry is shown', () => {
-    const onOpenStorageBrowser = jest.fn();
+    const onOpenStorageBrowser = vi.fn();
 
     render(
         <AdvancedDebugPanel

@@ -20,9 +20,9 @@ async function flushAsync(): Promise<void> {
 }
 
 function build() {
-  const onUpdateStack = jest.fn();
+  const onUpdateStack = vi.fn();
   const dj = new Alucinate(
-    jest.fn(),
+    vi.fn(),
     onUpdateStack,
     () => ({ currentImage: { url: 'https://img/a.jpg', tags: [] } as never, currentShader: null }),
   );
@@ -35,19 +35,19 @@ function build() {
 
 describe('Alucinate cycle recovery', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
-    jest.spyOn(console, 'log').mockImplementation(() => {});
-    jest.spyOn(console, 'error').mockImplementation(() => {});
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.useFakeTimers();
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
   afterEach(() => {
-    jest.useRealTimers();
-    jest.restoreAllMocks();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   it('keeps cycling after the captioner rejects', async () => {
     const { dj, internals, onUpdateStack } = build();
-    const captioner = jest.fn().mockRejectedValue(new Error('model crashed'));
+    const captioner = vi.fn().mockRejectedValue(new Error('model crashed'));
     internals.captioner = captioner;
 
     expect(dj.start()).toBe(true);
@@ -56,7 +56,7 @@ describe('Alucinate cycle recovery', () => {
     expect(internals.status).toBe('error');
     expect(onUpdateStack).toHaveBeenLastCalledWith(['liquid', 'none', 'none']);
 
-    jest.advanceTimersByTime(CYCLE_MS);
+    vi.advanceTimersByTime(CYCLE_MS);
     await flushAsync();
     expect(captioner).toHaveBeenCalledTimes(2);
 
@@ -65,18 +65,18 @@ describe('Alucinate cycle recovery', () => {
 
   it('returns to ready when no next theme comes back, so the next tick runs', async () => {
     const { dj, internals } = build();
-    const captioner = jest.fn().mockResolvedValue([{ generated_text: 'a forest' }]);
+    const captioner = vi.fn().mockResolvedValue([{ generated_text: 'a forest' }]);
     internals.captioner = captioner;
-    internals.selectShadersFromLLM = jest.fn().mockResolvedValue(null);
-    internals.getNextImageThemeFromLLM = jest.fn().mockResolvedValue(null);
+    internals.selectShadersFromLLM = vi.fn().mockResolvedValue(null);
+    internals.getNextImageThemeFromLLM = vi.fn().mockResolvedValue(null);
 
     dj.start();
     await flushAsync();
-    jest.advanceTimersByTime(2000); // pause between stack and theme
+    vi.advanceTimersByTime(2000); // pause between stack and theme
     await flushAsync();
     expect(internals.status).toBe('ready');
 
-    jest.advanceTimersByTime(CYCLE_MS);
+    vi.advanceTimersByTime(CYCLE_MS);
     await flushAsync();
     expect(captioner).toHaveBeenCalledTimes(2);
     dj.stop();

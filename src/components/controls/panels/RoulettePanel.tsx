@@ -15,7 +15,6 @@ export interface RoulettePanelProps {
 
 export const RoulettePanel: React.FC<RoulettePanelProps> = ({
     activeSlot,
-    onRoulette,
     onRandomizeAllSlots,
     isRouletteActive = false,
     chaosModeEnabled = false,

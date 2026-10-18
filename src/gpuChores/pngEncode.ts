@@ -14,7 +14,7 @@ export function rgbaFloatsToPngBase64(
   return canvas.toDataURL('image/png').replace(/^data:image\/png;base64,/, '');
 }
 
-function toPixels(rgba: ArrayLike<number>, width: number, height: number): Uint8ClampedArray {
+function toPixels(rgba: ArrayLike<number>, width: number, height: number): Uint8ClampedArray<ArrayBuffer> {
   const pixels = new Uint8ClampedArray(width * height * 4);
   for (let i = 0; i < width * height; i++) {
     const o = i * 4;

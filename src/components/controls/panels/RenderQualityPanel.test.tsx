@@ -1,10 +1,9 @@
-import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { RenderQualityPanel } from './RenderQualityPanel';
 
 test('source auto-exposure toggle defaults off and fires the handler', () => {
-  const onSource = jest.fn();
+  const onSource = vi.fn();
   render(
     <RenderQualityPanel
       qualityMode="auto"
@@ -25,7 +24,7 @@ test('source auto-exposure toggle defaults off and fires the handler', () => {
 });
 
 test('Display P3 toggle defaults off, shows the status, and fires the handler', () => {
-  const onP3 = jest.fn();
+  const onP3 = vi.fn();
   render(
     <RenderQualityPanel
       qualityMode="auto"

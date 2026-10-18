@@ -1,3 +1,4 @@
+import type { MockInstance } from 'vitest';
 import {
     hydrateDurations,
     probeVideoDuration,
@@ -23,27 +24,27 @@ describe('probeVideoDuration (#1404)', () => {
         if (!el) throw new Error(`no <video> #${i}`);
         return el;
     };
-    let createSpy: jest.SpyInstance;
-    let loadSpy: jest.SpyInstance;
+    let createSpy: MockInstance;
+    let loadSpy: MockInstance;
 
     beforeEach(() => {
         resetDurationProbesForTests();
         setProbe(true);
         created = [];
         const realCreate = document.createElement.bind(document);
-        createSpy = jest.spyOn(document, 'createElement').mockImplementation(
+        createSpy = vi.spyOn(document, 'createElement').mockImplementation(
             (tag: string, options?: ElementCreationOptions) => {
                 const el = realCreate(tag, options);
                 if (tag === 'video') created.push(el as HTMLVideoElement);
                 return el;
             },
         );
-        loadSpy = jest.spyOn(HTMLMediaElement.prototype, 'load').mockImplementation(() => {});
+        loadSpy = vi.spyOn(HTMLMediaElement.prototype, 'load').mockImplementation(() => {});
     });
 
     afterEach(() => {
-        jest.restoreAllMocks();
-        jest.useRealTimers();
+        vi.restoreAllMocks();
+        vi.useRealTimers();
         setProbe(undefined);
     });
 
@@ -73,7 +74,7 @@ describe('probeVideoDuration (#1404)', () => {
         ['not yet published', undefined],
     ])('resolves undefined without document.createElement when the probe is %s', async (_label, ok) => {
         setProbe(ok);
-        const info = jest.spyOn(console, 'info').mockImplementation(() => {});
+        const info = vi.spyOn(console, 'info').mockImplementation(() => {});
 
         await expect(probeVideoDuration('https://x/c.mp4')).resolves.toBeUndefined();
         await expect(probeVideoDuration('https://x/d.mp4')).resolves.toBeUndefined();
@@ -83,7 +84,7 @@ describe('probeVideoDuration (#1404)', () => {
 
     it('does not cache a blocked result, so a later probe still runs', async () => {
         setProbe(false);
-        jest.spyOn(console, 'info').mockImplementation(() => {});
+        vi.spyOn(console, 'info').mockImplementation(() => {});
         await probeVideoDuration('https://x/e.mp4');
 
         setProbe(true);
@@ -94,12 +95,12 @@ describe('probeVideoDuration (#1404)', () => {
     });
 
     it('releases the element once, even when the timeout fires after metadata', async () => {
-        jest.useFakeTimers();
+        vi.useFakeTimers();
         const p = probeVideoDuration('https://x/f.mp4');
         fireMetadata(video(0), 5);
         await p;
 
-        jest.advanceTimersByTime(20000);
+        vi.advanceTimersByTime(20000);
         expect(loadSpy).toHaveBeenCalledTimes(1);
         expect(video(0).hasAttribute('src')).toBe(false);
     });

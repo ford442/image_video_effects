@@ -69,3 +69,5 @@ tests/smoke/.bundle/
 
 # Generated in prestart/prebuild by scripts/build-shader-source-hashes.js
 public/thumbnails/source-hashes.json
+
+coverage/

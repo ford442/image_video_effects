@@ -194,7 +194,7 @@ describe('NodeScaleIslands', () => {
     const fake = createFakeGpu();
     const big = Math.ceil(Math.sqrt(ISLAND_SCRATCH_BUDGET_BYTES / (5 * 8)) / 0.75) + 64;
     const islands = islandsOn(fake, big);
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     expect(islands.encodeEnter(fake.device.createCommandEncoder(), 0.75)).toBe(false);
     warn.mockRestore();
     expect(islands.allocatedScales()).toEqual([]);

@@ -5,8 +5,8 @@ function scopedDevice(pops: Array<GPUError | null | Error>) {
   const stack: string[] = [];
   let i = 0;
   const device = {
-    pushErrorScope: jest.fn((filter: string) => stack.push(filter)),
-    popErrorScope: jest.fn(() => {
+    pushErrorScope: vi.fn((filter: string) => stack.push(filter)),
+    popErrorScope: vi.fn(() => {
       stack.pop();
       const next = pops[Math.min(i++, pops.length - 1)];
       return next instanceof Error ? Promise.reject(next) : Promise.resolve(next ?? null);
@@ -80,10 +80,10 @@ describe('compileCheckWgsl', () => {
   function compileDevice(opts: { messages?: GPUCompilationMessage[]; pops?: Array<GPUError | null>; pipelineRejects?: string }) {
     const { device } = scopedDevice(opts.pops ?? [null]);
     return Object.assign(device, {
-      createShaderModule: jest.fn(() => ({
+      createShaderModule: vi.fn(() => ({
         getCompilationInfo: async () => ({ messages: opts.messages ?? [] }),
       })),
-      createComputePipelineAsync: jest.fn(async () => {
+      createComputePipelineAsync: vi.fn(async () => {
         if (opts.pipelineRejects) throw new Error(opts.pipelineRejects);
         return {};
       }),

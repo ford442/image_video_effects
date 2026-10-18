@@ -1,28 +1,22 @@
-// Fabric of Reality — one Jacobi constraint relaxation iteration
-// Reads dataTextureC (positions), writes dataTextureA
+// ═══════════════════════════════════════════════════════════════════
+//  Fabric of Reality — Jacobi constraint
+//  Category: simulation
+//  Features: audio-reactive, mouse-driven
+//  Complexity: High
+//  Upgraded: 2026-10-18
+//  Ideas: shear springs; catenary tension (verlet); open weave and frayed ends (render)
+//  A packing: raw (position.xy, previous.xy)
+// ═══════════════════════════════════════════════════════════════════
+// One Jacobi iteration. Structural springs plus bias (shear) springs.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const REST_LENGTH: f32 = 1.0;
+
+fn loadState(c: vec2<i32>, size: vec2<u32>) -> vec4<f32> {
+  let hi = vec2<i32>(max(i32(size.x) - 1, 0), max(i32(size.y) - 1, 0));
+  return textureLoad(dataTextureC, clamp(c, vec2<i32>(0), hi), 0);
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
@@ -36,30 +30,37 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let tearThreshold = mix(1.5, 4.0, u.zoom_params.y);
   let selfHeal = u.zoom_params.w;
 
-  let state = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
+  let ic = vec2<i32>(coord);
+  let state = loadState(ic, size);
   var pos = state.xy;
   let prevPos = state.zw;
+  if (length(pos) < 0.001) { pos = uv; }
 
   let texelSize = 1.0 / vec2<f32>(f32(size.x), f32(size.y));
   let restLen = texelSize.x * REST_LENGTH;
+  let restDiag = length(texelSize) * REST_LENGTH;
 
-  let leftUV = uv + vec2<f32>(-texelSize.x, 0.0);
-  let rightUV = uv + vec2<f32>(texelSize.x, 0.0);
-  let upUV = uv + vec2<f32>(0.0, -texelSize.y);
-  let downUV = uv + vec2<f32>(0.0, texelSize.y);
+  var leftPos = loadState(ic + vec2<i32>(-1, 0), size).xy;
+  var rightPos = loadState(ic + vec2<i32>(1, 0), size).xy;
+  var upPos = loadState(ic + vec2<i32>(0, -1), size).xy;
+  var downPos = loadState(ic + vec2<i32>(0, 1), size).xy;
+  var upLeft = loadState(ic + vec2<i32>(-1, -1), size).xy;
+  var upRight = loadState(ic + vec2<i32>(1, -1), size).xy;
+  var downLeft = loadState(ic + vec2<i32>(-1, 1), size).xy;
+  var downRight = loadState(ic + vec2<i32>(1, 1), size).xy;
 
-  var leftPos = textureSampleLevel(dataTextureC, non_filtering_sampler, leftUV, 0.0).xy;
-  var rightPos = textureSampleLevel(dataTextureC, non_filtering_sampler, rightUV, 0.0).xy;
-  var upPos = textureSampleLevel(dataTextureC, non_filtering_sampler, upUV, 0.0).xy;
-  var downPos = textureSampleLevel(dataTextureC, non_filtering_sampler, downUV, 0.0).xy;
-
-  if (length(leftPos) < 0.001) { leftPos = leftUV; }
-  if (length(rightPos) < 0.001) { rightPos = rightUV; }
-  if (length(upPos) < 0.001) { upPos = upUV; }
-  if (length(downPos) < 0.001) { downPos = downUV; }
+  if (length(leftPos) < 0.001) { leftPos = uv + vec2<f32>(-texelSize.x, 0.0); }
+  if (length(rightPos) < 0.001) { rightPos = uv + vec2<f32>(texelSize.x, 0.0); }
+  if (length(upPos) < 0.001) { upPos = uv + vec2<f32>(0.0, -texelSize.y); }
+  if (length(downPos) < 0.001) { downPos = uv + vec2<f32>(0.0, texelSize.y); }
+  if (length(upLeft) < 0.001) { upLeft = uv + vec2<f32>(-texelSize.x, -texelSize.y); }
+  if (length(upRight) < 0.001) { upRight = uv + vec2<f32>(texelSize.x, -texelSize.y); }
+  if (length(downLeft) < 0.001) { downLeft = uv + vec2<f32>(-texelSize.x, texelSize.y); }
+  if (length(downRight) < 0.001) { downRight = uv + vec2<f32>(texelSize.x, texelSize.y); }
 
   // When self-heal is high, gently pull torn gaps back toward rest length
   let healBoost = select(1.0, 1.15, selfHeal > 0.5);
+  let shearK = stiffness * 0.5;
 
   if (coord.x > 0u) {
     let delta = pos - leftPos;
@@ -98,6 +99,50 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (dist > restLen && (dist < maxDist || selfHeal > 0.5)) {
       let effective = select(stiffness, stiffness * healBoost * 0.35, dist >= maxDist);
       let correction = (dist - restLen) / dist * 0.5 * effective;
+      pos = pos - delta * correction;
+    }
+  }
+
+  // ── Idea 1: shear springs ───────────────────────────────────────────
+  // Bias threads. Same Jacobi correction, half stiffness, rest length on
+  // the diagonal, so the cloth resists parallelogram shear.
+  if (coord.x > 0u && coord.y > 0u) {
+    let delta = pos - upLeft;
+    let dist = length(delta);
+    let maxDist = tearThreshold * restDiag;
+    if (dist > restDiag && (dist < maxDist || selfHeal > 0.5)) {
+      let effective = select(shearK, shearK * healBoost * 0.35, dist >= maxDist);
+      let correction = (dist - restDiag) / dist * 0.5 * effective;
+      pos = pos - delta * correction;
+    }
+  }
+  if (coord.x < size.x - 1u && coord.y > 0u) {
+    let delta = pos - upRight;
+    let dist = length(delta);
+    let maxDist = tearThreshold * restDiag;
+    if (dist > restDiag && (dist < maxDist || selfHeal > 0.5)) {
+      let effective = select(shearK, shearK * healBoost * 0.35, dist >= maxDist);
+      let correction = (dist - restDiag) / dist * 0.5 * effective;
+      pos = pos - delta * correction;
+    }
+  }
+  if (coord.x > 0u && coord.y < size.y - 1u) {
+    let delta = pos - downLeft;
+    let dist = length(delta);
+    let maxDist = tearThreshold * restDiag;
+    if (dist > restDiag && (dist < maxDist || selfHeal > 0.5)) {
+      let effective = select(shearK, shearK * healBoost * 0.35, dist >= maxDist);
+      let correction = (dist - restDiag) / dist * 0.5 * effective;
+      pos = pos - delta * correction;
+    }
+  }
+  if (coord.x < size.x - 1u && coord.y < size.y - 1u) {
+    let delta = pos - downRight;
+    let dist = length(delta);
+    let maxDist = tearThreshold * restDiag;
+    if (dist > restDiag && (dist < maxDist || selfHeal > 0.5)) {
+      let effective = select(shearK, shearK * healBoost * 0.35, dist >= maxDist);
+      let correction = (dist - restDiag) / dist * 0.5 * effective;
       pos = pos - delta * correction;
     }
   }

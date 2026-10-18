@@ -3,7 +3,7 @@ import { ProjectFilePanel } from './ProjectFilePanel';
 
 describe('ProjectFilePanel', () => {
   it('shows import warnings returned after a project is applied', async () => {
-    const importProject = jest.fn().mockResolvedValue({
+    const importProject = vi.fn().mockResolvedValue({
       ok: true,
       errors: [],
       warnings: ['Unknown shader imported as an empty slot.'],

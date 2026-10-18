@@ -65,7 +65,7 @@ async function presents(page: Page): Promise<boolean> {
     await page.evaluate(() => (window as any).__pixelocity__.waitFrames(2));
     const png: string | null = await page.evaluate(() => (window as any).__pixelocity__.captureThumbnailPng(64));
     if (png) {
-      const b64 = png.includes(',') ? png.split(',')[1] : png;
+      const b64 = png.includes(',') ? png.split(',')[1] ?? '' : png;
       const stats = await sharp(Buffer.from(b64, 'base64')).stats();
       const max = Math.max(...stats.channels.slice(0, 3).map((c) => c.max));
       const stdev = Math.max(...stats.channels.slice(0, 3).map((c) => c.stdev));

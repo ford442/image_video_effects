@@ -1,7 +1,7 @@
 {
   "id": "gen-abyssal-plasma-void-medusa",
   "name": "Abyssal Plasma Void-Medusa",
-  "description": "A deep-space biomechanical void-medusa with plasma root lanterns, nematocyst strobe ringlets, and ciliary bell-rim sparkles drifting through warped abyssal currents.",
+  "description": "A deep-space void-medusa with plasma root lanterns, amber rim eyes that fire each swim pulse, and a muscle ring sweeping the bell, drifting through warped abyssal currents.",
   "category": "generative",
   "url": "shaders/gen-abyssal-plasma-void-medusa.wgsl",
   "features": [

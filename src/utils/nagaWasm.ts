@@ -65,7 +65,7 @@ export function loadNagaGlslConverter(): Promise<NagaGlslConverter> {
 function loadNagaInstance(): Promise<NagaInstance> {
   if (!cached) {
     cached = (async () => {
-      const mod: NagaWasmModule = await import(/* webpackIgnore: true */ LOADER_URL);
+      const mod: NagaWasmModule = await import(/* webpackIgnore: true */ /* @vite-ignore */ LOADER_URL);
       return mod.createNagaValidator();
     })().catch((err) => {
       cached = null;

@@ -17,23 +17,23 @@ function fakeManager(overrides: Partial<Record<string, unknown>> = {}) {
   const cached = new Set<string>();
   const calls: string[] = [];
   const m = {
-    getSlotState: jest.fn(() => ({ shaderId: 'plasma', enabled: true, mode: 'chained' })),
-    setRuntimeGraph: jest.fn((id: string, graph: MultipassGraphDef | null, simRing: RuntimeSimRingRequest | null = null) => {
+    getSlotState: vi.fn(() => ({ shaderId: 'plasma', enabled: true, mode: 'chained' })),
+    setRuntimeGraph: vi.fn((id: string, graph: MultipassGraphDef | null, simRing: RuntimeSimRingRequest | null = null) => {
       calls.push(`graph:${id}:${graph ? 'set' : 'clear'}${simRing ? `:ring=${simRing.stateCount}` : ''}`);
       setRuntimeGraph(id, graph, simRing);
       return true;
     }),
-    isShaderCached: jest.fn((id: string) => cached.has(id)),
-    loadShader: jest.fn(async (id: string, url: string) => {
+    isShaderCached: vi.fn((id: string) => cached.has(id)),
+    loadShader: vi.fn(async (id: string, url: string) => {
       calls.push(`load:${id}:${url}`);
       cached.add(id);
       return true;
     }),
-    setSlotShader: jest.fn((slot: number, id: string) => {
+    setSlotShader: vi.fn((slot: number, id: string) => {
       calls.push(`slot:${slot}:${id}`);
     }),
-    getDiagnostics: jest.fn(() => ({ webgpu: { graph: null } })),
-    getPassTimings: jest.fn((): PassTiming[] => []),
+    getDiagnostics: vi.fn(() => ({ webgpu: { graph: null } })),
+    getPassTimings: vi.fn((): PassTiming[] => []),
     ...overrides,
   };
   return { manager: m as unknown as RendererManager, m, calls, cached };
@@ -98,14 +98,14 @@ describe('runDraft', () => {
   });
 
   it('reports a backend that cannot run graphs', async () => {
-    const { manager, calls } = fakeManager({ setRuntimeGraph: jest.fn(() => false) });
+    const { manager, calls } = fakeManager({ setRuntimeGraph: vi.fn(() => false) });
     expect(await runDraft(manager, 0, waveTank())).toMatchObject({ ok: false, reason: 'backend' });
     expect(calls).toEqual([]);
   });
 
   it('stops before binding the slot when an entry fails to compile', async () => {
     const { manager, calls } = fakeManager({
-      loadShader: jest.fn(async (id: string) => id !== 'wave-inject'),
+      loadShader: vi.fn(async (id: string) => id !== 'wave-inject'),
     });
     const res = await runDraft(manager, 0, waveTank());
     expect(res).toMatchObject({ ok: false, reason: 'load-failed', message: 'Could not compile "wave-inject".' });
@@ -166,7 +166,7 @@ describe('runDraft', () => {
 });
 
 describe('stopDraft', () => {
-  const showing = (shaderId: string | null) => ({ getSlotState: jest.fn(() => ({ shaderId, enabled: true, mode: 'chained' })) });
+  const showing = (shaderId: string | null) => ({ getSlotState: vi.fn(() => ({ shaderId, enabled: true, mode: 'chained' })) });
 
   it('restores the previous shader and drops the runtime graph', () => {
     const { manager, calls } = fakeManager(showing(GRAPH_LAB_RUNTIME_ID));
@@ -191,8 +191,8 @@ describe('readLive', () => {
   it('returns the planner report and timings only for the running draft', () => {
     const report = { shaderId: GRAPH_LAB_RUNTIME_ID, requested: 5, executed: 4, truncated: 1, cap: 4, errors: [] };
     const { manager } = fakeManager({
-      getDiagnostics: jest.fn(() => ({ webgpu: { graph: report } })),
-      getPassTimings: jest.fn(() => [timing(GRAPH_LAB_RUNTIME_ID, 'step'), timing('other', 'x'), { ...timing(GRAPH_LAB_RUNTIME_ID, 'p'), kind: 'present' as const }]),
+      getDiagnostics: vi.fn(() => ({ webgpu: { graph: report } })),
+      getPassTimings: vi.fn(() => [timing(GRAPH_LAB_RUNTIME_ID, 'step'), timing('other', 'x'), { ...timing(GRAPH_LAB_RUNTIME_ID, 'p'), kind: 'present' as const }]),
     });
     const live = readLive(manager);
     expect(live.report).toBe(report);
@@ -201,7 +201,7 @@ describe('readLive', () => {
 
   it('ignores another shader’s graph report', () => {
     const { manager } = fakeManager({
-      getDiagnostics: jest.fn(() => ({ webgpu: { graph: { shaderId: 'ripple-tank', requested: 7, executed: 7, truncated: 0, cap: 8, errors: [] } } })),
+      getDiagnostics: vi.fn(() => ({ webgpu: { graph: { shaderId: 'ripple-tank', requested: 7, executed: 7, truncated: 0, cap: 8, errors: [] } } })),
     });
     expect(readLive(manager).report).toBeNull();
   });

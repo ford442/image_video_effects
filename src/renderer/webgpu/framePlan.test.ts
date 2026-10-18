@@ -94,7 +94,7 @@ describe('compileFramePlan', () => {
   });
 
   it('skips missing pipelines and unarmed sim-ring passes, warning once', () => {
-    const warn = jest.fn();
+    const warn = vi.fn();
     const c = ctx({
       getPipeline: (id) => (id === 'missing' ? undefined : pipeline(id)),
       usesSimRing: (id) => id === 'ringy',
@@ -108,7 +108,7 @@ describe('compileFramePlan', () => {
   });
 
   it('reports invalid graphs without encoding them', () => {
-    const warn = jest.fn();
+    const warn = vi.fn();
     const bad: MultipassGraphDef = { maxPassesPerFrame: 0, nodes: [] };
     const fp = compileFramePlan(plan([slot(0, graph(bad))]), ctx({ warn }));
     expect(fp.computeCount).toBe(0);

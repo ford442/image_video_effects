@@ -62,8 +62,10 @@ async function requireWasmGpu(page: Page, needVideoEncoder: boolean): Promise<bo
 }
 
 test.beforeAll(async () => {
+  // beforeAll takes no timeout argument; set it inside the hook.
+  test.setTimeout(60000);
   await startStaticServer();
-}, 60000);
+});
 
 test.afterAll(async () => {
   writeReport();
@@ -74,7 +76,7 @@ test('committed WASM artifact round-trips all 6 physical slots', async ({ page }
   test.setTimeout(60000);
   if (!(await requireWasmGpu(page, false))) return;
 
-  const shader = PARITY_MATRIX[0];
+  const shader = PARITY_MATRIX[0]!;
   const slots = await page.evaluate(async (s) => {
     const api = (window as any).__pixelocity__;
     const ok = await api.loadShader(s.id, s.url);

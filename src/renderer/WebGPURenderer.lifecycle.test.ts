@@ -1,3 +1,4 @@
+import type { Mock, MockInstance } from 'vitest';
 import { WebGPURenderer } from './WebGPURenderer';
 import { DEFAULT_CONFIG } from './Renderer';
 import { createWorkerRenderer } from './worker/workerRenderer';
@@ -12,20 +13,20 @@ import {
   resetRendererDeviceRegistryForTests,
 } from './deviceRegistry';
 
-jest.mock('./webgpu/device', () => {
-  const actual = jest.requireActual('./webgpu/device');
-  return { ...actual, initializeWebGPUDevice: jest.fn() };
+vi.mock('./webgpu/device', async () => {
+  const actual = await vi.importActual<Record<string, unknown>>('./webgpu/device');
+  return { ...actual, initializeWebGPUDevice: vi.fn() };
 });
 
-jest.mock('./webgpu/frame', () => {
-  const actual = jest.requireActual('./webgpu/frame');
+vi.mock('./webgpu/frame', async () => {
+  const actual = await vi.importActual<Record<string, unknown>>('./webgpu/frame');
   return {
     ...actual,
-    createFrameState: jest.fn(() => ({ maxPassesPerFrame: 12 })),
-    createRendererFrameHost: jest.fn(() => ({})),
+    createFrameState: vi.fn(() => ({ maxPassesPerFrame: 12 })),
+    createRendererFrameHost: vi.fn(() => ({})),
     WebGPUFrameRenderer: class {
-      startRenderLoop = jest.fn();
-      stopRenderLoop = jest.fn();
+      startRenderLoop = vi.fn();
+      stopRenderLoop = vi.fn();
     },
   };
 });
@@ -47,13 +48,13 @@ function makeDevice(): FakeDevice {
   const device = {
     lost,
     listeners,
-    destroy: jest.fn(() => resolveLost({ reason: 'destroyed', message: '' } as GPUDeviceLostInfo)),
+    destroy: vi.fn(() => resolveLost({ reason: 'destroyed', message: '' } as GPUDeviceLostInfo)),
     loseUnexpectedly: () => resolveLost({ reason: 'unknown', message: 'driver reset' } as GPUDeviceLostInfo),
-    addEventListener: jest.fn((type: string, fn: (ev: Event) => void) => {
+    addEventListener: vi.fn((type: string, fn: (ev: Event) => void) => {
       if (!listeners.has(type)) listeners.set(type, new Set());
       listeners.get(type)!.add(fn);
     }),
-    removeEventListener: jest.fn((type: string, fn: (ev: Event) => void) => {
+    removeEventListener: vi.fn((type: string, fn: (ev: Event) => void) => {
       listeners.get(type)?.delete(fn);
     }),
   };
@@ -64,7 +65,7 @@ function outcomeFor(device: GPUDevice, detachUncapturedLog?: () => void) {
   return {
     ok: true as const,
     device,
-    context: { configure: jest.fn(), unconfigure: jest.fn() } as unknown as GPUCanvasContext,
+    context: { configure: vi.fn(), unconfigure: vi.fn() } as unknown as GPUCanvasContext,
     canvasFormat: 'bgra8unorm' as GPUTextureFormat,
     canvasW: 1024,
     canvasH: 1024,
@@ -84,37 +85,37 @@ function outcomeFor(device: GPUDevice, detachUncapturedLog?: () => void) {
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
 describe('WebGPURenderer lifecycle', () => {
-  let setupSpy: jest.SpyInstance;
+  let setupSpy: MockInstance;
   const errors: Array<{ type: string; message: string }> = [];
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     errors.length = 0;
     setErrorSink((e) => errors.push(e));
-    setupSpy = jest.spyOn(
+    setupSpy = vi.spyOn(
       WebGPURenderer.prototype as unknown as { setupGpuResources: () => Promise<string> },
       'setupGpuResources',
     );
-    jest.spyOn(console, 'error').mockImplementation(() => undefined);
-    jest.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
   });
 
   afterEach(() => {
     setupSpy.mockRestore();
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
     setErrorSink((e) => console.error(e));
   });
 
   function createWebGpu(): WebGPURenderer {
     const wgpu = new WebGPURenderer(DEFAULT_CONFIG);
-    jest.spyOn(wgpu.gpuChores, 'attach').mockImplementation(() => undefined as never);
+    vi.spyOn(wgpu.gpuChores, 'attach').mockImplementation(() => undefined as never);
     return wgpu;
   }
 
   it('reacts to a genuine device loss after an OOM retry', async () => {
     const first = makeDevice();
     const second = makeDevice();
-    (initializeWebGPUDevice as jest.Mock)
+    (initializeWebGPUDevice as Mock)
       .mockResolvedValueOnce(outcomeFor(first))
       .mockResolvedValueOnce(outcomeFor(second));
     setupSpy.mockResolvedValueOnce('lost').mockResolvedValueOnce('ok');
@@ -135,12 +136,12 @@ describe('WebGPURenderer lifecycle', () => {
       const device = makeDevice();
       const out = outcomeFor(device);
       (out as { canvasCopySrc: boolean }).canvasCopySrc = copySrcSupported;
-      (initializeWebGPUDevice as jest.Mock).mockClear();
-      (initializeWebGPUDevice as jest.Mock).mockResolvedValueOnce(out);
+      (initializeWebGPUDevice as Mock).mockClear();
+      (initializeWebGPUDevice as Mock).mockResolvedValueOnce(out);
       setupSpy.mockResolvedValueOnce('ok');
       const wgpu = createWebGpu();
       await wgpu.init(document.createElement('canvas'));
-      return { wgpu, context: out.context as unknown as { configure: jest.Mock } };
+      return { wgpu, context: out.context as unknown as { configure: Mock } };
     }
 
     it('reconfigures the same context without requesting a second device', async () => {
@@ -190,12 +191,12 @@ describe('WebGPURenderer lifecycle', () => {
     const withAllocators = (d: FakeDevice) => {
       const created = { buffers: [] as GPUBuffer[], samplers: [] as GPUSampler[] };
       Object.assign(d, {
-        createBuffer: jest.fn(() => {
-          const b = { destroy: jest.fn() } as unknown as GPUBuffer;
+        createBuffer: vi.fn(() => {
+          const b = { destroy: vi.fn() } as unknown as GPUBuffer;
           created.buffers.push(b);
           return b;
         }),
-        createSampler: jest.fn(() => {
+        createSampler: vi.fn(() => {
           const sampler = {} as GPUSampler;
           created.samplers.push(sampler);
           return sampler;
@@ -207,7 +208,7 @@ describe('WebGPURenderer lifecycle', () => {
     const second = makeDevice();
     const firstCreated = withAllocators(first);
     const secondCreated = withAllocators(second);
-    (initializeWebGPUDevice as jest.Mock)
+    (initializeWebGPUDevice as Mock)
       .mockResolvedValueOnce(outcomeFor(first))
       .mockResolvedValueOnce(outcomeFor(second));
     // Stand-in for setupGpuResources: only the part that touches the pool's buffers/samplers.
@@ -242,8 +243,8 @@ describe('WebGPURenderer lifecycle', () => {
     beforeEach(() => resetRendererDeviceRegistryForTests());
 
     async function initAndReadThread(renderer: WebGPURenderer) {
-      jest.spyOn(renderer.gpuChores, 'attach').mockImplementation(() => undefined as never);
-      (initializeWebGPUDevice as jest.Mock).mockResolvedValueOnce(outcomeFor(makeDevice()));
+      vi.spyOn(renderer.gpuChores, 'attach').mockImplementation(() => undefined as never);
+      (initializeWebGPUDevice as Mock).mockResolvedValueOnce(outcomeFor(makeDevice()));
       setupSpy.mockResolvedValueOnce('ok');
       expect(await renderer.init(document.createElement('canvas'))).toBe(true);
       return getRendererDeviceEntry().thread;
@@ -260,7 +261,7 @@ describe('WebGPURenderer lifecycle', () => {
 
   it('releases the device when init fails after acquiring it', async () => {
     const device = makeDevice();
-    (initializeWebGPUDevice as jest.Mock).mockResolvedValueOnce(outcomeFor(device));
+    (initializeWebGPUDevice as Mock).mockResolvedValueOnce(outcomeFor(device));
     setupSpy.mockResolvedValueOnce('oom');
 
     const wgpu = createWebGpu();
@@ -271,13 +272,13 @@ describe('WebGPURenderer lifecycle', () => {
 
   it('destroy() resolves only after device.lost settles', async () => {
     const device = makeDevice();
-    (initializeWebGPUDevice as jest.Mock).mockResolvedValueOnce(outcomeFor(device));
+    (initializeWebGPUDevice as Mock).mockResolvedValueOnce(outcomeFor(device));
     setupSpy.mockResolvedValueOnce('ok');
     const wgpu = createWebGpu();
     await wgpu.init(document.createElement('canvas'));
 
     let settled = false;
-    (device.destroy as jest.Mock).mockImplementation(() => undefined); // lost stays pending
+    (device.destroy as Mock).mockImplementation(() => undefined); // lost stays pending
     const done = wgpu.destroy().then(() => { settled = true; });
     await flush();
     expect(settled).toBe(false);
@@ -289,8 +290,8 @@ describe('WebGPURenderer lifecycle', () => {
 
   it('replaces the probe log listener with one routed listener', async () => {
     const device = makeDevice();
-    const detachUncapturedLog = jest.fn();
-    (initializeWebGPUDevice as jest.Mock).mockResolvedValueOnce(outcomeFor(device, detachUncapturedLog));
+    const detachUncapturedLog = vi.fn();
+    (initializeWebGPUDevice as Mock).mockResolvedValueOnce(outcomeFor(device, detachUncapturedLog));
     setupSpy.mockResolvedValueOnce('ok');
     const wgpu = createWebGpu();
     await wgpu.init(document.createElement('canvas'));
@@ -312,16 +313,16 @@ describe('WebGPURenderer lifecycle', () => {
   describe('runtime device loss', () => {
     async function initialized() {
       // CRA's resetMocks clears the factory implementation; the loop needs a frame state.
-      (createFrameState as jest.Mock).mockReturnValue({ maxPassesPerFrame: 12 });
+      (createFrameState as Mock).mockReturnValue({ maxPassesPerFrame: 12 });
       const device = makeDevice();
-      (initializeWebGPUDevice as jest.Mock).mockResolvedValueOnce(outcomeFor(device));
+      (initializeWebGPUDevice as Mock).mockResolvedValueOnce(outcomeFor(device));
       setupSpy.mockResolvedValueOnce('ok');
       const wgpu = createWebGpu();
-      const detach = jest.spyOn(wgpu.gpuChores, 'detach');
-      const fatal = jest.fn();
+      const detach = vi.spyOn(wgpu.gpuChores, 'detach');
+      const fatal = vi.fn();
       wgpu.setFatalErrorHandler(fatal);
       expect(await wgpu.init(document.createElement('canvas'))).toBe(true);
-      const loop = (wgpu as unknown as { frameRenderer: { stopRenderLoop: jest.Mock } }).frameRenderer;
+      const loop = (wgpu as unknown as { frameRenderer: { stopRenderLoop: Mock } }).frameRenderer;
       return { wgpu, device, fatal, detach, loop };
     }
 
@@ -333,7 +334,7 @@ describe('WebGPURenderer lifecycle', () => {
       expect(loop.stopRenderLoop).toHaveBeenCalled();
       expect(detach).toHaveBeenCalledWith('device lost');
       expect(fatal).toHaveBeenCalledTimes(1);
-      expect(fatal.mock.calls[0][1]).toMatchObject({ kind: 'device-lost', reason: 'unknown', message: 'driver reset' });
+      expect(fatal.mock.calls[0]![1]).toMatchObject({ kind: 'device-lost', reason: 'unknown', message: 'driver reset' });
       expect(wgpu.getLastDeviceLoss()).toMatchObject({ reason: 'unknown' });
       expect(wgpu.getGpuDevice()).toBeNull();
       expect(errors).toContainEqual(expect.objectContaining({ type: 'device-lost', recoverable: true }));
@@ -357,19 +358,19 @@ describe('WebGPURenderer lifecycle', () => {
       expect(device.destroy).toHaveBeenCalled();
       await flush();
       expect(fatal).toHaveBeenCalledTimes(1);
-      expect(fatal.mock.calls[0][1]).toMatchObject({ reason: 'simulated' });
+      expect(fatal.mock.calls[0]![1]).toMatchObject({ reason: 'simulated' });
       expect(wgpu.simulateDeviceLoss()).toBe(false);
     });
 
     it('a loss while init is still allocating (OOM retry) does not fire the runtime handler', async () => {
       const first = makeDevice();
       const second = makeDevice();
-      (initializeWebGPUDevice as jest.Mock)
+      (initializeWebGPUDevice as Mock)
         .mockResolvedValueOnce(outcomeFor(first))
         .mockResolvedValueOnce(outcomeFor(second));
       setupSpy.mockResolvedValueOnce('lost').mockResolvedValueOnce('ok');
       const wgpu = createWebGpu();
-      const fatal = jest.fn();
+      const fatal = vi.fn();
       wgpu.setFatalErrorHandler(fatal);
       expect(await wgpu.init(document.createElement('canvas'))).toBe(true);
       await flush();
@@ -384,7 +385,7 @@ describe('WebGPURenderer lifecycle', () => {
     it('publishes the device it ended up with after an OOM retry, not the handoff', async () => {
       const handoffDevice = makeDevice();
       const retried = makeDevice();
-      (initializeWebGPUDevice as jest.Mock)
+      (initializeWebGPUDevice as Mock)
         .mockResolvedValueOnce(outcomeFor(handoffDevice))
         .mockResolvedValueOnce(outcomeFor(retried));
       setupSpy.mockResolvedValueOnce('lost').mockResolvedValueOnce('ok');
@@ -398,9 +399,9 @@ describe('WebGPURenderer lifecycle', () => {
       const first = makeDevice();
       const second = makeDevice();
       let releaseLost!: () => void;
-      (first.destroy as jest.Mock).mockImplementation(() => undefined);
+      (first.destroy as Mock).mockImplementation(() => undefined);
       const order: string[] = [];
-      (initializeWebGPUDevice as jest.Mock)
+      (initializeWebGPUDevice as Mock)
         .mockImplementationOnce(async () => outcomeFor(first))
         .mockImplementationOnce(async () => {
           order.push('probe-2');
@@ -426,7 +427,7 @@ describe('WebGPURenderer lifecycle', () => {
 
     it('clears the registry on a runtime loss and on destroy, bumping the generation', async () => {
       const device = makeDevice();
-      (initializeWebGPUDevice as jest.Mock).mockResolvedValueOnce(outcomeFor(device));
+      (initializeWebGPUDevice as Mock).mockResolvedValueOnce(outcomeFor(device));
       setupSpy.mockResolvedValueOnce('ok');
       const wgpu = createWebGpu();
       await wgpu.init(document.createElement('canvas'));
@@ -438,7 +439,7 @@ describe('WebGPURenderer lifecycle', () => {
       expect(getDeviceGeneration()).toBe(published + 1);
 
       const next = makeDevice();
-      (initializeWebGPUDevice as jest.Mock).mockResolvedValueOnce(outcomeFor(next));
+      (initializeWebGPUDevice as Mock).mockResolvedValueOnce(outcomeFor(next));
       setupSpy.mockResolvedValueOnce('ok');
       const rebuilt = createWebGpu();
       await rebuilt.init(document.createElement('canvas'));

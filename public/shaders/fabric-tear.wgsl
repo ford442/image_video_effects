@@ -1,29 +1,23 @@
-// Fabric of Reality — strain + tear mask
-// dataTextureB: .r strain, .g tear (0/1), .b weave phase, .a debris age
+// ═══════════════════════════════════════════════════════════════════
+//  Fabric of Reality — strain + tear mask
+//  Category: simulation
+//  Features: audio-reactive, mouse-driven
+//  Complexity: High
+//  Upgraded: 2026-10-18
+//  Ideas: shear springs (diagonal strain included); catenary tension (verlet); open weave and frayed ends (render)
+//  A packing: does not write A. B = (strain, tear, weave phase, debris age)
+// ═══════════════════════════════════════════════════════════════════
 // zoom_params.y = tearThreshold, .w = selfHeal (reconnect when > ~0.35)
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const REST_LENGTH: f32 = 1.0;
+
+fn loadPos(c: vec2<i32>, size: vec2<u32>, fallback: vec2<f32>) -> vec2<f32> {
+  let hi = vec2<i32>(max(i32(size.x) - 1, 0), max(i32(size.y) - 1, 0));
+  let p = textureLoad(dataTextureC, clamp(c, vec2<i32>(0), hi), 0).xy;
+  return select(p, fallback, length(p) < 0.001);
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
@@ -37,16 +31,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let selfHeal = u.zoom_params.w;
   let treble = plasmaBuffer[0].z;
 
-  let state = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
-  let pos = state.xy;
-
+  let ic = vec2<i32>(coord);
   let texelSize = 1.0 / vec2<f32>(f32(size.x), f32(size.y));
-  let restLen = texelSize.x * REST_LENGTH;
+  let pos = loadPos(ic, size, uv);
 
-  let leftUV = uv + vec2<f32>(-texelSize.x, 0.0);
-  let upUV = uv + vec2<f32>(0.0, -texelSize.y);
-  let leftPos = textureSampleLevel(dataTextureC, non_filtering_sampler, leftUV, 0.0).xy;
-  let upPos = textureSampleLevel(dataTextureC, non_filtering_sampler, upUV, 0.0).xy;
+  let restLen = texelSize.x * REST_LENGTH;
+  let restDiag = length(texelSize) * REST_LENGTH;
+
+  let leftPos = loadPos(ic + vec2<i32>(-1, 0), size, uv + vec2<f32>(-texelSize.x, 0.0));
+  let upPos = loadPos(ic + vec2<i32>(0, -1), size, uv + vec2<f32>(0.0, -texelSize.y));
+  let upLeft = loadPos(ic + vec2<i32>(-1, -1), size, uv + vec2<f32>(-texelSize.x, -texelSize.y));
+  let upRight = loadPos(ic + vec2<i32>(1, -1), size, uv + vec2<f32>(texelSize.x, -texelSize.y));
 
   var totalStrain = 0.0;
   var isTorn = false;
@@ -59,6 +54,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let d = length(pos - upPos);
     totalStrain = totalStrain + abs(d - restLen) / max(restLen, 1e-5);
     if (d >= tearThreshold * restLen) { isTorn = true; }
+  }
+  // ── Idea 1: shear strain ────────────────────────────────────────────
+  // The constraint pass now has bias springs. The mask has to see them
+  // or a diagonal rip stays invisible. Half weight so the structural
+  // strain still leads.
+  if (coord.x > 0u && coord.y > 0u) {
+    let d = length(pos - upLeft);
+    totalStrain = totalStrain + abs(d - restDiag) / max(restDiag, 1e-5) * 0.5;
+    if (d >= tearThreshold * restDiag) { isTorn = true; }
+  }
+  if (coord.x < size.x - 1u && coord.y > 0u) {
+    let d = length(pos - upRight);
+    totalStrain = totalStrain + abs(d - restDiag) / max(restDiag, 1e-5) * 0.5;
+    if (d >= tearThreshold * restDiag) { isTorn = true; }
   }
   totalStrain = clamp(totalStrain * 2.0, 0.0, 1.0);
 

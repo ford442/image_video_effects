@@ -10,7 +10,6 @@ export interface ImageAutoSwitchPanelProps {
 }
 
 export const ImageAutoSwitchPanel: React.FC<ImageAutoSwitchPanelProps> = ({
-    onNewImage,
     autoChangeEnabled,
     setAutoChangeEnabled,
     autoChangeDelay,

@@ -7,7 +7,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { execSync, spawn } from 'child_process';
+import { spawn } from 'child_process';
 import { resolve } from 'path';
 import { isGpuProbeOk, waitForWebGpuProbe } from './helpers/rendererHarness';
 
@@ -62,8 +62,10 @@ async function stopServer(): Promise<void> {
 }
 
 test.beforeAll(async () => {
+  // beforeAll takes no timeout argument; set it inside the hook.
+  test.setTimeout(60000);
   await startServer();
-}, 60000);
+});
 
 test.afterAll(async () => {
   await stopServer();

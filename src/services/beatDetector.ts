@@ -13,7 +13,7 @@ export class BeatDetector {
 
   private analyser: AnalyserNode;
   private onBeat: (timestamp: number) => void;
-  private buffer: Uint8Array;
+  private buffer: Uint8Array<ArrayBuffer>;
   private rafId: number | null = null;
   private running = false;
   private energyAverage = 0;

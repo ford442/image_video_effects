@@ -4,6 +4,7 @@
  * an in-memory port pair with a fake renderer.
  */
 
+import type { Mock } from 'vitest';
 import { createPortPair, flushPorts, FakePort } from '../testing/fakePorts';
 import { setRendererErrorHandler } from '../ErrorHandling';
 import { createWaveTankGraph } from '../multipassGraph';
@@ -46,11 +47,11 @@ function fakeRenderer() {
   let fatal: ((message: string, info?: DeviceLossInfo) => void) | null = null;
   const r = {
     initialized: false,
-    init: jest.fn(async () => {
+    init: vi.fn(async () => {
       r.initialized = true;
       return true;
     }),
-    destroy: jest.fn(async () => undefined),
+    destroy: vi.fn(async () => undefined),
     updateMouse: record('updateMouse'),
     setParam: record('setParam'),
     updateAudioData: record('updateAudioData'),
@@ -82,9 +83,9 @@ function fakeRenderer() {
       return true;
     },
     warmShaders: record('warmShaders'),
-    loadShader: jest.fn(async (id: string) => id !== 'broken'),
-    loadImageBitmap: jest.fn(async () => undefined),
-    captureChoresThumbnailPng: jest.fn(async () => 'cG5n'),
+    loadShader: vi.fn(async (id: string) => id !== 'broken'),
+    loadImageBitmap: vi.fn(async () => undefined),
+    captureChoresThumbnailPng: vi.fn(async () => 'cG5n'),
     getFPS: () => 59,
     getGPUTimings: () => ({ parallelTime: 0, chainedTime: 1, totalTime: 2, available: true, timingSource: 'gpu-timestamp' as const }),
     getPassTimings: () => [{ key: '0:a', label: 'a', kind: 'compute' as const, slot: 0, scale: 1, gpuMs: 1, iterations: 1 }],
@@ -106,22 +107,22 @@ function fakeRenderer() {
     getAdapterSummary: () => 'fake adapter',
     getAdapterAttemptLabel: () => 'HighPerformance',
     getSupportsSubgroups: () => true,
-    setBeforeFrame: jest.fn(),
+    setBeforeFrame: vi.fn(),
     getCanvasColorState: () => ({ requestedDisplayP3: true, colorSpace: 'display-p3' as const, toneMapping: 'standard' as const, copySrc: false }),
-    setDisplayP3: jest.fn(async (enabled: boolean, isHdr: boolean) => ({
+    setDisplayP3: vi.fn(async (enabled: boolean, isHdr: boolean) => ({
       requested: { displayP3: enabled, extendedToneMapping: enabled && isHdr },
       applied: { displayP3: enabled, extendedToneMapping: false },
       colorSpace: enabled ? 'display-p3' as const : 'srgb' as const,
       toneMapping: 'standard' as const,
     })),
     getInputEcho: () => ({ mouse: [0.5, 0.5] as [number, number], mouseDown: false, audio: [0, 0, 0] as [number, number, number], slot0: [0.5, 0.5, 0.5, 0.5] }),
-    grabPresentedFrame: jest.fn(async () => null),
-    compileCheck: jest.fn(async (_id: string, code: string) =>
+    grabPresentedFrame: vi.fn(async () => null),
+    compileCheck: vi.fn(async (_id: string, code: string) =>
       code.includes('oops') ? [{ type: 'error' as const, lineNum: 1, linePos: 2, message: 'bad' }] : []),
-    setFatalErrorHandler: jest.fn((handler: typeof fatal) => {
+    setFatalErrorHandler: vi.fn((handler: typeof fatal) => {
       fatal = handler;
     }),
-    simulateDeviceLoss: jest.fn(() => {
+    simulateDeviceLoss: vi.fn(() => {
       lose('simulated');
       return true;
     }),
@@ -135,7 +136,7 @@ function fakeRenderer() {
 }
 
 function probe(ok: boolean): WebGpuProbeResult {
-  const device = { addEventListener: jest.fn() } as unknown as GPUDevice;
+  const device = { addEventListener: vi.fn() } as unknown as GPUDevice;
   return {
     ok,
     finishedAt: 'now',
@@ -156,8 +157,8 @@ function setup(options: { probeOk?: boolean; post?: (e: RenderEvent) => void } =
       posted.push(event);
       workerPort.postMessage(event);
     },
-    createRenderer: jest.fn(() => fake.r),
-    runProbe: jest.fn(async () => probe(options.probeOk ?? true)),
+    createRenderer: vi.fn(() => fake.r),
+    runProbe: vi.fn(async () => probe(options.probeOk ?? true)),
     toBreadcrumb: (p) => {
       const { handoff: _h, ...rest } = p;
       return rest;
@@ -165,7 +166,7 @@ function setup(options: { probeOk?: boolean; post?: (e: RenderEvent) => void } =
     setErrorSink: (sink) => {
       errorSink = sink;
     },
-    setFetchBase: jest.fn(),
+    setFetchBase: vi.fn(),
     snapshotIntervalMs: 1_000_000,
   };
   const host = createRenderWorkerHost(deps);
@@ -280,7 +281,7 @@ describe('render worker host ↔ client', () => {
     const client = await connectRenderWorker(mainPort);
     const ring = createInputRingBuffer();
     await client.rpc({ type: 'init', canvas: {} as OffscreenCanvas, config: CONFIG, colorOptIns: {}, appBaseUrl: '/', inputRing: ring });
-    const hook = (fake.raw.setBeforeFrame as jest.Mock).mock.calls.at(-1)?.[0] as () => void;
+    const hook = (fake.raw.setBeforeFrame as Mock).mock.calls.at(-1)?.[0] as () => void;
     expect(typeof hook).toBe('function');
     const writer = new InputRingWriter(ring);
     writer.setMouse(0.1, 0.9);
@@ -339,7 +340,7 @@ describe('render worker host ↔ client', () => {
   });
 
   it('stops the snapshot timer on a device loss', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     try {
       const [mainPort, workerPort] = createPortPair();
       const fake = fakeRenderer();
@@ -360,14 +361,14 @@ describe('render worker host ↔ client', () => {
       };
       host.handle({ ...initRpc, requestId: 1 });
       await settle();
-      jest.advanceTimersByTime(250);
+      vi.advanceTimersByTime(250);
       expect(posted.filter((e) => e.type === 'snapshot').length).toBeGreaterThanOrEqual(3);
       fake.lose();
       const after = posted.length;
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
       expect(posted.length).toBe(after);
     } finally {
-      jest.useRealTimers();
+      vi.useRealTimers();
     }
   });
 
@@ -425,7 +426,7 @@ describe('render worker host ↔ client', () => {
       const client = await connectRenderWorker(mainPort);
       client.setGeneration(7);
       await client.rpc(generationRpc);
-      const frame = { close: jest.fn() } as unknown as VideoFrame;
+      const frame = { close: vi.fn() } as unknown as VideoFrame;
       mainPort.postMessage({ type: 'videoFrame', frame, gen: 3 });
       await flushPorts();
       expect(frame.close).toHaveBeenCalledTimes(1);
@@ -445,7 +446,7 @@ describe('render worker host ↔ client', () => {
   it('an error after hello marks the client dead and notifies onDied once', async () => {
     const { mainPort } = setup();
     const client = await connectRenderWorker(mainPort);
-    const died = jest.fn();
+    const died = vi.fn();
     client.onDied(died);
     const pending = client.rpc({ type: 'captureFrame' });
     mainPort.dispatch('error', { message: 'boom' } as unknown as MessageEvent);
@@ -466,7 +467,7 @@ describe('render worker host ↔ client', () => {
     const g = globalThis as { VideoFrame?: unknown };
     const hadVideoFrame = 'VideoFrame' in g;
     class FakeVideoFrame {
-      close = jest.fn();
+      close = vi.fn();
     }
     g.VideoFrame = FakeVideoFrame;
     try {
@@ -487,10 +488,10 @@ describe('render worker host ↔ client', () => {
 
   it('rejects the handshake when the worker never says hello', async () => {
     const [mainPort] = createPortPair();
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     const pending = connectRenderWorker(mainPort, 50);
-    jest.advanceTimersByTime(60);
-    jest.useRealTimers();
+    vi.advanceTimersByTime(60);
+    vi.useRealTimers();
     await expect(pending).rejects.toThrow('did not say hello');
   });
 });
@@ -619,7 +620,7 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
 
   it('a deviceLost event stops the proxy: initialized=false, one fatal call, no more input sent', async () => {
     const { backend, fake } = await backendWithWorker();
-    const fatal = jest.fn();
+    const fatal = vi.fn();
     backend.setFatalErrorHandler(fatal);
     await flushPorts();
     deliverSnapshot(backend, true);
@@ -629,7 +630,7 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
     await flushPorts();
     expect(backend.initialized).toBe(false);
     expect(fatal).toHaveBeenCalledTimes(1);
-    expect(fatal.mock.calls[0][1]).toMatchObject({ kind: 'device-lost', reason: 'unknown', message: 'driver reset' });
+    expect(fatal.mock.calls[0]![1]).toMatchObject({ kind: 'device-lost', reason: 'unknown', message: 'driver reset' });
     expect(backend.getLastDeviceLoss()).toMatchObject({ reason: 'unknown' });
 
     // Stale: a snapshot that claims the old worker still renders cannot revive the proxy.
@@ -660,7 +661,7 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
   it('a worker crash stops the proxy like a loss: registry cleared, one worker-died fatal, compiler gone', async () => {
     resetRendererDeviceRegistryForTests();
     const { backend, mainPort } = await backendWithWorker();
-    const fatal = jest.fn();
+    const fatal = vi.fn();
     backend.setFatalErrorHandler(fatal);
     deliverSnapshot(backend, true);
     expect(getShaderCompileService()).not.toBeNull();
@@ -671,7 +672,7 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
     mainPort.dispatch('error', crash);
     expect(backend.initialized).toBe(false);
     expect(fatal).toHaveBeenCalledTimes(1);
-    expect(fatal.mock.calls[0][1]).toMatchObject({ kind: 'worker-died', reason: 'render worker crashed', message: 'Uncaught Error: boom' });
+    expect(fatal.mock.calls[0]![1]).toMatchObject({ kind: 'worker-died', reason: 'render worker crashed', message: 'Uncaught Error: boom' });
     expect(isRendererDeviceLive()).toBe(false);
     expect(getDeviceGeneration()).toBe(generation + 1);
     expect(getShaderCompileService()).toBeNull();
@@ -685,7 +686,7 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
     const { backend, deps } = await backendWithWorker();
     deliverSnapshot(backend, true);
     expect(backend.getLiveGpuDevices()).toBe(1);
-    deps.crash = jest.fn();
+    deps.crash = vi.fn();
     expect(backend.simulateWorkerCrash()).toBe(true);
     await flushPorts();
     expect(deps.crash).toHaveBeenCalledWith('simulated render worker crash (test hook)');
@@ -694,7 +695,7 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
 
   it('ignores events from a worker after the proxy shut it down', async () => {
     const { backend } = await backendWithWorker();
-    const fatal = jest.fn();
+    const fatal = vi.fn();
     backend.setFatalErrorHandler(fatal);
     const seen: RendererError[] = [];
     setRendererErrorHandler((e) => seen.push(e));

@@ -399,8 +399,6 @@ export async function loadShaderOnSlot(
       api.setInputSource(source);
       const ok = await api.loadShader(s.id, s.url);
       if (!ok) {
-        const diags = api.renderer?.getDiagnostics?.();
-        const lastErr = diags?.wasm?.lastLoadError || 'Unknown (check console)';
         return false;
       }
       api.setSlotShader(s.slot ?? 0, s.id);
@@ -448,9 +446,9 @@ export async function captureCanvasStats(page: Page): Promise<ImageStats> {
     let active = 0;
     const pixels = w * h;
     for (let i = 0; i < data.length; i += 4) {
-      const r = data[i] / 255;
-      const g = data[i + 1] / 255;
-      const b = data[i + 2] / 255;
+      const r = data[i]! / 255;
+      const g = data[i + 1]! / 255;
+      const b = data[i + 2]! / 255;
       const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
       lumSum += lum;
       if (lum > 0.05) active++;
@@ -479,7 +477,7 @@ export async function exerciseShaderOnWasm(
 ): Promise<{ loaded: boolean; fps: number; stats: ImageStats; criticalErrors: string[] }> {
   const { criticalErrors } = attachConsoleCollector(page);
   const loaded = await loadShaderOnSlot(page, shader);
-  if (!loaded) return { loaded: false, fps: 0, stats: { width: 0, height: 0, nonZeroPixels: 0, rBar: 0, gBar: 0, bBar: 0 }, criticalErrors };
+  if (!loaded) return { loaded: false, fps: 0, stats: { width: 0, height: 0, meanLuminance: 0, activePixelRatio: 0 }, criticalErrors };
   if (shader.testState) {
     await applyTestState(page, shader.testState);
   }
@@ -883,7 +881,7 @@ export function diffFrames(
     const o = i * 4;
     let cellMax = 0;
     for (let c = 0; c < 3; c++) {
-      const d = Math.abs(a.grid[o + c] - b.grid[o + c]) / 255;
+      const d = Math.abs(a.grid[o + c]! - b.grid[o + c]!) / 255;
       sum += d;
       if (d > cellMax) cellMax = d;
     }

@@ -223,17 +223,17 @@ See [`docs/APP_STRUCTURE.md`](docs/APP_STRUCTURE.md) for panel/hook detail.
 | Uniforms layout | `npm run verify:uniforms` |
 | Foundation gates | `npm run verify:toolchain-foundation` |
 
-See [`docs/TOOLCHAIN_DECISION.md`](docs/TOOLCHAIN_DECISION.md) for CRA + CRACO rationale and dependency boundaries.
+See [`docs/TOOLCHAIN_DECISION.md`](docs/TOOLCHAIN_DECISION.md) for the Vite/Vitest toolchain rationale and dependency boundaries.
 
 ### Dev & build
 
 | Command | Purpose |
 |---------|---------|
 | `npm start` | Dev server (prestart: shader lists + manifest, relative URLs) |
-| `npm run build` | Production build (`prebuild`: wasm → lists → manifest → craco; relative URLs unless `SHADER_LIST_BASE_URL` is set) |
+| `npm run build` | Production build (`prebuild`: wasm → lists → manifest → vite build; relative URLs unless `SHADER_LIST_BASE_URL` is set) |
 | `npm run build:manifest` | Regenerate `shader-manifest-unified.json` from category lists |
 | `npm run verify:toolchain-foundation` | Bundle budget, dependency boundaries, shader-list URL policy, catalog count SoT |
-| `npm test` | Jest unit tests (~250) |
+| `npm test` | Vitest unit tests (watch mode; `npm run test:ci` for a single run) |
 | `bash scripts/jules-setup.sh` | Agent/headless setup (`npm ci`, skip WASM compile) |
 
 Production path: `wasm:build` runs **once** in `prebuild`, not again in `build`. No emcc: `SKIP_WASM_BUILD=1 npm run build`. Details: [`WASM_BUILD_CI_GUIDE.md`](docs/WASM_BUILD_CI_GUIDE.md).
@@ -271,16 +271,14 @@ scripts no longer prompt when that file is present. An authorized `DEPLOY_KEY`
 CI enforces relative URLs via `npm run verify:shader-list-urls` (part of
 `verify:toolchain-foundation`). `build:manifest` rejects absolute URLs unless a base-url env is set.
 
-The production `main.js` budget is **320 KiB gzip**. `npm run verify:bundle-size` reads CRA's
-`build/asset-manifest.json`, measures only the main entry chunk, and separately asserts that
+The production `main.js` budget is **320 KiB gzip**. `npm run verify:bundle-size` reads
+`build/asset-manifest.json` (emitted in CRA's shape by `scripts/vite/assetManifestPlugin.ts`), measures only the main entry chunk, and separately asserts that
 `auto-dj`, `transformers`, and `web-llm` remain lazy chunks. The current baseline is about
 **252 KiB gzip**; AI chunks are deliberately excluded from that budget. Run the production
 build before this check.
 
-TypeScript **5.4.5** is the locked compiler and CI runs a full `tsc --noEmit` plus the CRA/craco
-production build. CRA 5's unmaintained peer metadata still declares TypeScript support only
-through 4.x; this repository tests the working TS 5 combination directly, but removing that
-metadata mismatch is one reason the optional Vite migration remains a separate follow-up.
+TypeScript is pinned to the 5.9 line (`~5.9.3`); CI runs `tsc --noEmit` for `src/`, `scripts/` and the
+Playwright specs, then the Vite production build. Node 24 (`.nvmrc`) everywhere.
 
 ### WASM (Tier B)
 
@@ -289,7 +287,7 @@ metadata mismatch is one reason the optional Vite migration remains a separate f
 | `npm run wasm:build` | Compile C++ → `public/wasm/` |
 | `npm run wasm:validate` | Check committed artifacts |
 | `npm run wasm:clean` | Remove build + public wasm |
-| `npm run test:wasm:unit` | Jest WASM bridge tests |
+| `npm run test:wasm:unit` | Vitest WASM bridge tests |
 | `npm run test:wasm:e2e` | Playwright smoke (layer chain) |
 | `npm run test:wasm:parity` | Renderer parity (needs GPU) |
 | `npm run test:wasm:bench` | WASM benchmark (needs GPU) |

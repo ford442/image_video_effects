@@ -1,5 +1,5 @@
 /**
- * @jest-environment node
+ * @vitest-environment node
  *
  * The acceptance check for "exported definitions are consumed by the existing
  * registry/build path without hand-translating": write an export into a scratch

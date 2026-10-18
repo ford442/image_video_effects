@@ -1,31 +1,32 @@
-import React from 'react';
+import type { Mock } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ShaderValidator from './ShaderValidator';
 import { runWebGpuBootProbe } from '../renderer/webgpuBootProbe';
 import {
+  getRendererDevice,
   publishRendererDevice,
   resetRendererDeviceRegistryForTests,
 } from '../renderer/deviceRegistry';
 
 // naga is the primary validator now, so the component never reaches the device
 // path without it. A trivial stub is enough here — the real artifact is
-// exercised in ShaderValidator.naga.test.tsx. Plain function, not jest.fn():
-// CRA's resetMocks would strip a jest.fn implementation between tests.
-jest.mock('../renderer/webgpuBootProbe', () => ({
-  ...jest.requireActual('../renderer/webgpuBootProbe'),
-  runWebGpuBootProbe: jest.fn(),
+// exercised in ShaderValidator.naga.test.tsx. Plain function, not vi.fn():
+// CRA's resetMocks would strip a vi.fn implementation between tests.
+vi.mock('../renderer/webgpuBootProbe', async () => ({
+  ...(await vi.importActual<Record<string, unknown>>('../renderer/webgpuBootProbe')),
+  runWebGpuBootProbe: vi.fn(),
 }));
 
-jest.mock('../utils/nagaWasm', () => ({
-  ...jest.requireActual('../utils/nagaWasm'),
+vi.mock('../utils/nagaWasm', async () => ({
+  ...(await vi.importActual<Record<string, unknown>>('../utils/nagaWasm')),
   loadNagaValidator: () => Promise.resolve({ validate: () => ({ ok: true }) }),
 }));
 
 describe('ShaderValidator device policy', () => {
-  const requestAdapter = jest.fn();
-  const requestDevice = jest.fn();
-  let mockDestroy: jest.Mock;
+  const requestAdapter = vi.fn();
+  const requestDevice = vi.fn();
+  let mockDestroy: Mock;
 
   beforeEach(() => {
     resetRendererDeviceRegistryForTests();
@@ -37,10 +38,10 @@ describe('ShaderValidator device policy', () => {
       attempts: [],
     };
 
-    mockDestroy = jest.fn();
+    mockDestroy = vi.fn();
     const mockDevice = {
-      createShaderModule: jest.fn().mockReturnValue({
-        getCompilationInfo: jest.fn().mockResolvedValue({ messages: [] }),
+      createShaderModule: vi.fn().mockReturnValue({
+        getCompilationInfo: vi.fn().mockResolvedValue({ messages: [] }),
       }),
       features: new Set<string>(),
       destroy: mockDestroy,
@@ -52,7 +53,7 @@ describe('ShaderValidator device policy', () => {
     };
     nav.gpu = { requestAdapter, requestDevice };
 
-    global.fetch = jest.fn().mockImplementation(async (input: RequestInfo | URL) => {
+    global.fetch = vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes('/shader-lists/')) {
         return {
@@ -72,7 +73,7 @@ describe('ShaderValidator device policy', () => {
   afterEach(() => {
     delete window.webgpuProbe;
     resetRendererDeviceRegistryForTests();
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('never calls requestAdapter, requestDevice, or device.destroy when the renderer device is registered', async () => {
@@ -92,16 +93,16 @@ describe('ShaderValidator device policy', () => {
     resetRendererDeviceRegistryForTests();
     delete window.webgpuProbe;
     let resolveLost: (v: unknown) => void = () => {};
-    const ownDestroy = jest.fn(() => resolveLost({ reason: 'destroyed', message: '' }));
+    const ownDestroy = vi.fn(() => resolveLost({ reason: 'destroyed', message: '' }));
     const ownDevice = {
-      createShaderModule: jest.fn().mockReturnValue({
-        getCompilationInfo: jest.fn().mockResolvedValue({ messages: [] }),
+      createShaderModule: vi.fn().mockReturnValue({
+        getCompilationInfo: vi.fn().mockResolvedValue({ messages: [] }),
       }),
       features: new Set<string>(),
       lost: new Promise((r) => { resolveLost = r; }),
       destroy: ownDestroy,
     } as unknown as GPUDevice;
-    (runWebGpuBootProbe as jest.Mock).mockResolvedValue({
+    (runWebGpuBootProbe as Mock).mockResolvedValue({
       ok: true,
       finishedAt: '',
       userAgent: 'test',
@@ -109,7 +110,6 @@ describe('ShaderValidator device policy', () => {
       attempts: [],
       handoff: { device: ownDevice, supportsSubgroups: false },
     });
-    const { getRendererDevice } = jest.requireActual('../renderer/deviceRegistry');
 
     render(<ShaderValidator />);
     fireEvent.click(screen.getByLabelText(/Also compile on the GPU/));

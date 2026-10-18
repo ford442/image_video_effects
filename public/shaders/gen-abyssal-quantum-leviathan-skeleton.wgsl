@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: marrow canal riding the displaced spine core (pinches at rib joints); bending-strain bioluminescence on the tension flank of the traveling wave; bow-wave current parting around the swaying bones; vertebral electroplate ladders; caudal vortex-bead shedding
+//  Upgraded: 2026-10-18
+//  Ideas: marrow canal riding the displaced spine core (pinches at rib joints); bending-strain bioluminescence on the tension flank of the traveling wave; bow-wave current parting around the swaying bones; vertebral electroplate ladders; caudal vortex-bead shedding; rib-joint crevice occlusion (§12.2 Step-count AO on the marched bones: smin rib joints and the cage interior darken, emissive marrow stays lit); bone-worm plume tufts (crimson Osedax-style plumes rooted on the dorsal bone in the spine-local frame, swaying with the current and tipped with treble glow)
 //  A packing: HDR history RGB (clamped <= 6) + semantic alpha; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 // History —
@@ -170,6 +170,36 @@ fn map(pos_in: vec3<f32>, ctx: SceneCtx) -> vec4<f32> {
     return vec4<f32>(d, spineLocal.x, spineLocal.y, spineLocal.z);
 }
 
+// Idea 6 (§12.2 Step-count AO): 5 taps along the normal, each weighted 1/2^i.
+fn calcAO(p: vec3<f32>, n: vec3<f32>, ctx: SceneCtx) -> f32 {
+    var occ = 0.0;
+    var sca = 1.0;
+    for (var i = 0; i < 5; i++) {
+        let h = 0.03 + 0.11 * f32(i);
+        occ += (h - map(p + n * h, ctx).x) * sca;
+        sca *= 0.5;
+    }
+    return clamp(1.0 - 1.6 * occ, 0.0, 1.0);
+}
+
+// Idea 7: bone-worm plume tufts. Sparse cells in the spine-local frame (map .yzw), so the
+// tufts stay rooted on the bone as it whips. Returns (crimson body, pale tip) coverage.
+fn wormTufts(sl: vec3<f32>, animTime: f32, flow: f32) -> vec2<f32> {
+    let g = sl * 5.0;
+    let cell = floor(g);
+    let h = hash3(cell + vec3<f32>(17.0, 3.0, 41.0));
+    if (h.x > 0.42) {
+        return vec2<f32>(0.0);
+    }
+    // plume leans and sways downstream (+z) with the current
+    let sway = sin(animTime * 3.1 + h.y * 6.2832) * 0.12 + 0.08 * flow;
+    let centre = cell + vec3<f32>(0.25, 0.25, 0.25) + h * 0.5 + vec3<f32>(0.0, 0.0, sway);
+    let r = length(g - centre);
+    let body = 1.0 - smoothstep(0.12, 0.3, r);
+    let tip = (1.0 - smoothstep(0.0, 0.12, r)) * (0.5 + 0.5 * sin(animTime * 5.0 + h.z * 6.2832));
+    return vec2<f32>(body, tip);
+}
+
 fn calcNormal(p: vec3<f32>, ctx: SceneCtx) -> vec3<f32> {
     let e = vec2<f32>(0.01, 0.0);
     return normalize(vec3<f32>(
@@ -240,8 +270,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     ctx.boneDensity = boneDensity;
     ctx.audioReact = audioReact;
     ctx.bass = bass;
-    let mouseUv = u.zoom_config.yz;
-    ctx.mouseWorld = vec3<f32>((mouseUv.x - 0.5) * 10.0, (mouseUv.y - 0.5) * 10.0, 0.0); // top-down mouse: screen top = -cv (world -y), so no y-flip
 
     // ---- Camera: fast pursuit orbit with lunge follow-through -------------
     let orbA = animTime * mix(0.3, 0.8, turb);
@@ -253,7 +281,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let cu = normalize(cross(cw, vec3<f32>(0.0, 1.0, 0.0)));
     let cv = normalize(cross(cu, cw));
 
-    let uv = (vec2<f32>(coords) - 0.5 * res) / res.y;
+    // 2026-10-18: rows grow downward and cv is world-up, so y is negated (HEAD was upside down,
+    // key light from below). cu = cross(cw, Y) is screen-right, so x is unchanged.
+    let uv = (vec2<f32>(coords) - 0.5 * res) / res.y * vec2<f32>(1.0, -1.0);
+
+    // Gravity well under the cursor: on the focal plane through the target, in camera basis
+    // (HEAD used a world-fixed xy plane, so the well drifted off the pointer as the camera
+    // orbited). Idle pointer (0.5, 0.5) = origin, as before.
+    let mouseUv = u.zoom_config.yz;
+    let focalScale = length(ta - ro) / 1.5;
+    ctx.mouseWorld = ta + (cu * ((mouseUv.x - 0.5) * res.x / res.y) + cv * (0.5 - mouseUv.y)) * focalScale;
     let rd = normalize(uv.x * cu + uv.y * cv + 1.5 * cw);
 
     // ---- Raymarching -------------------------------------------------------
@@ -289,6 +326,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Rim light
         let rim = 1.0 - max(dot(n, -rd), 0.0);
         color += vec3<f32>(0.1, 0.8, 1.0) * pow(rim, 3.0);
+
+        // Idea 6: rib-joint crevice occlusion on the reflected light only (rim + diffuse);
+        // the emissive marrow / strain / pulse light added below is left unoccluded.
+        let ao = calcAO(p, n, ctx);
+        color *= mix(0.3, 1.0, ao);
+
+        // Idea 7: bone-worm plume tufts on upward-facing bone, kept out of the deepest crevices.
+        let dorsal = smoothstep(0.15, 0.6, n.y);
+        let shelter = smoothstep(0.3, 0.7, ao);
+        let tuft = wormTufts(res2.yzw, animTime, turb) * dorsal * shelter;
+        color = mix(color, vec3<f32>(0.55, 0.05, 0.08) * (0.35 + 0.65 * diff) + vec3<f32>(0.08, 0.0, 0.01), tuft.x * 0.85);
+        color += vec3<f32>(1.0, 0.45, 0.4) * tuft.y * (0.15 + treble * 0.6 * audioReact);
 
         // Idea 1: Marrow canal — distance to the DISPLACED spine core (map .yz),
         // not world length(p.xy): the violet canal rides the whip and pinches

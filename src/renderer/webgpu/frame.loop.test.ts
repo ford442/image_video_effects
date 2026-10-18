@@ -13,7 +13,7 @@ describe('WebGPUFrameRenderer.startRenderLoop', () => {
   beforeEach(() => {
     queued = [];
     errors.length = 0;
-    jest.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
       queued.push(() => cb(0));
       return queued.length;
     });
@@ -21,7 +21,7 @@ describe('WebGPUFrameRenderer.startRenderLoop', () => {
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
     setRendererErrorHandler(() => {});
   });
 
@@ -35,7 +35,7 @@ describe('WebGPUFrameRenderer.startRenderLoop', () => {
     const state = { initialized: true, startTime: 0, currentTime: 0, animationId: null } as unknown as WebGPUFrameState;
     const renderer = new WebGPUFrameRenderer();
     let calls = 0;
-    jest.spyOn(renderer, 'renderFrame').mockImplementation(() => {
+    vi.spyOn(renderer, 'renderFrame').mockImplementation(() => {
       calls += 1;
       if (calls <= 2) throw new Error('boom');
     });
@@ -52,7 +52,7 @@ describe('WebGPUFrameRenderer.startRenderLoop', () => {
   it('stops scheduling once the state is no longer initialized', () => {
     const state = { initialized: true, startTime: 0, currentTime: 0, animationId: null } as unknown as WebGPUFrameState;
     const renderer = new WebGPUFrameRenderer();
-    jest.spyOn(renderer, 'renderFrame').mockImplementation(() => {
+    vi.spyOn(renderer, 'renderFrame').mockImplementation(() => {
       state.initialized = false;
       throw new Error('device gone');
     });

@@ -297,7 +297,7 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
         return { ok: false, probe: breadcrumb, lastInitError: 'WebGPU renderer init failed in the render worker' };
       }
       renderer = r;
-      r.setFatalErrorHandler((message, info) => {
+      r.setFatalErrorHandler((_message, info) => {
         if (info?.kind === 'device-lost') onDeviceLost(r, info.reason, info.message);
       });
       if (video) r.setTransferredVideo(video);
