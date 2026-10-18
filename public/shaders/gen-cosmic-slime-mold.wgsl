@@ -6,15 +6,16 @@
 //  Complexity: Medium
 //  Created: 2026-05-31
 //  Upgraded: 2026-10-18
-//  Ideas: persistent growth memory (single cell: A(0,0).a, read back from
-//         exact C) — a well-fed colony stays visibly larger after the pointer
-//         lifts and decays over ~20 s; mature-colony core glow lights thick
+//  Ideas: persistent growth memory (single cell: A(0,0).a = 7 + memory,
+//         read back from exact C; untagged values from a previous shader read
+//         as 0) — a well-fed colony stays visibly larger after the pointer
+//         lifts; per-frame decay, half-life ~1400 frames (~23 s at 60 fps); mature-colony core glow lights thick
 //         trunks once memory crosses a threshold; fan-shaped reticulated
 //         advancing front (the plasmodium sheet that resolves into veins
 //         behind it, steered outward / toward the feeder); extracellular slime
 //         memory (aged trail loses its neon and settles to a pale mucus sheen)
 //  A packing: exact HDR temporal history in rgb; alpha = semantic alpha,
-//             except texel (0,0).a = growth memory 0..1
+//             except texel (0,0).a = 7.0 + growth memory (0..1) tag
 // ═══════════════════════════════════════════════════════════════════
 //  History: Kimi Agent (Bright batch, 2026-06-01)
 
@@ -194,7 +195,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // history is a single-writer accumulator (written below) that rises while
     // the colony is fed and decays slowly otherwise. (extraBuffer is
     // re-uploaded every frame, so it can't hold this.)
-    let growthMemory = clamp(textureLoad(dataTextureC, vec2<i32>(0, 0), 0).a, 0.0, 1.0);
+    // Stored as 7 + memory so a previous shader's alpha (0..1) can't seed it.
+    let memRaw = textureLoad(dataTextureC, vec2<i32>(0, 0), 0).a;
+    let growthMemory = select(0.0, clamp(memRaw - 7.0, 0.0, 1.0), memRaw >= 7.0 && memRaw <= 8.0);
 
     var col = vec3<f32>(0.0);
 
@@ -350,7 +353,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var storedAlpha = alpha;
     if (global_id.x == 0u && global_id.y == 0u) {
         let feed = select(0.0, 0.004, mouseDown > 0.5);
-        storedAlpha = clamp(growthMemory * 0.9995 + feed, 0.0, 1.0);
+        // Per-frame (no dt uniform): half-life ~1400 frames, ~23 s at 60 fps.
+        storedAlpha = 7.0 + clamp(growthMemory * 0.9995 + feed, 0.0, 1.0);
     }
     textureStore(dataTextureA, pixel, vec4<f32>(temporal, storedAlpha));
 

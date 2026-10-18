@@ -94,8 +94,12 @@ fn axonHash(cell: vec3<f32>, axis: f32) -> vec3<f32> {
 // Idea: Hursh caliber-velocity law — myelinated conduction velocity scales
 // with fibre diameter (~6 m/s per um), so each segment's radius and spike speed
 // share one factor (0.6..1.4, mean 1 = the old radius 0.15).
+// Keyed on the whole fibre (the cell coords across the axis), so the radius is
+// continuous where neighbouring cells' segments meet at a cell face.
 fn axonCaliber(cell: vec3<f32>, axis: f32) -> f32 {
-    return 0.6 + 0.8 * axonHash(cell, axis).y;
+    var fibre = cell;
+    if (axis < 0.5) { fibre.x = 0.0; } else if (axis < 1.5) { fibre.y = 0.0; } else { fibre.z = 0.0; }
+    return 0.6 + 0.8 * axonHash(fibre, axis).y;
 }
 
 fn warpPoint(p_in: vec3<f32>, audioPulse: f32, clickPulse: f32) -> vec3<f32> {
@@ -170,7 +174,7 @@ fn ranvierSpike(p: vec3<f32>, time: f32, pulseSpeed: f32) -> vec2<f32> {
     let h = axonHash(cell, axis);
     // Spike front position along the axon (cycles/second from Pulse Speed),
     // faster on thicker fibres (Hursh)
-    let front = fract(h.x + time * (0.15 + pulseSpeed * 0.25) * (0.6 + 0.8 * h.y));
+    let front = fract(h.x + time * (0.15 + pulseSpeed * 0.25) * axonCaliber(cell, axis));
     // Nodes of Ranvier: discrete gaps along the myelinated axon
     let nodeIdx = floor(u01 * RANVIER_NODES);
     let nodeU = (nodeIdx + 0.5) / RANVIER_NODES;
@@ -179,7 +183,8 @@ fn ranvierSpike(p: vec3<f32>, time: f32, pulseSpeed: f32) -> vec2<f32> {
     // Time since this node fired, in cycle units
     let elapsed = fract(front - nodeU);
     let depol = smoothstep(0.0, 0.015, elapsed) * exp(-elapsed * 30.0);
-    let undershoot = exp(-pow((elapsed - 0.12) * 14.0, 2.0)) * 0.35;
+    let uz = (elapsed - 0.12) * 14.0;
+    let undershoot = exp(-uz * uz) * 0.35;
     let v = depol - undershoot;
     return vec2<f32>(v * nodeMask, v * mix(0.3, 1.0, nodeMask));
 }

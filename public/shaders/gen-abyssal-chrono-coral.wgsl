@@ -12,6 +12,9 @@
 //            exact textureLoad from dataTextureC, plasmaBuffer three-band audio.
 //            (The old extraBuffer[133..138] cursor spring was a no-op - the
 //            buffer is zeroed every frame - and has been removed.)
+//  Rescue (2026-10-18): HEAD rendered stars + overlay only — camera y drifted
+//  out of the reef, fbm3 was uninterpolated white noise (speckle warp), the
+//  well offset time by 12 s (shredded spiral) with the raw slider as radius.
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 // zoom_params: x=Coral Density, y=Branch Complexity, z=Bioluminescence Intensity, w=Time Dilation Field
@@ -44,13 +47,30 @@ fn hash3(p: vec3<f32>) -> vec3<f32> {
     return fract((q.xxy + q.yxx) * q.zyx);
 }
 
+// Trilinear value noise. HEAD summed raw hash3(x) — uninterpolated white noise — so the
+// ±1 domain warp in map() moved every sample to a random place: per-pixel speckle.
+fn vnoise3(p: vec3<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let w = f * f * (3.0 - 2.0 * f);
+    let n000 = hash3(i).x;
+    let n100 = hash3(i + vec3<f32>(1.0, 0.0, 0.0)).x;
+    let n010 = hash3(i + vec3<f32>(0.0, 1.0, 0.0)).x;
+    let n110 = hash3(i + vec3<f32>(1.0, 1.0, 0.0)).x;
+    let n001 = hash3(i + vec3<f32>(0.0, 0.0, 1.0)).x;
+    let n101 = hash3(i + vec3<f32>(1.0, 0.0, 1.0)).x;
+    let n011 = hash3(i + vec3<f32>(0.0, 1.0, 1.0)).x;
+    let n111 = hash3(i + vec3<f32>(1.0, 1.0, 1.0)).x;
+    return mix(mix(mix(n000, n100, w.x), mix(n010, n110, w.x), w.y),
+               mix(mix(n001, n101, w.x), mix(n011, n111, w.x), w.y), w.z);
+}
+
 fn fbm3(p: vec3<f32>) -> f32 {
     var f = 0.0;
     var x = p;
     var a = 0.5;
     for(var i = 0; i < 4; i++) {
-        let h = hash3(x);
-        f += a * (h.x + h.y + h.z) / 3.0;
+        f += a * vnoise3(x);
         x *= 2.0;
         a *= 0.5;
     }
@@ -232,12 +252,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let base_time = time * (1.4 + g_mids * 0.6);
 
     let dist_to_mouse = length((uv01 - smoothMouse) * aspect);
-    let dilation_strength = max(u.zoom_params.w, 0.02);
+    // Well radius in screen units. HEAD used the raw slider as the radius, so mid values
+    // covered the whole frame; 0.04..0.34 keeps it a lens around the cursor.
+    let dilation_strength = 0.04 + 0.3 * clamp(u.zoom_params.w, 0.0, 1.0);
     let well = smoothstep(dilation_strength, 0.0, dist_to_mouse);
-    let dilation = well * 12.0 * (1.0 + g_held);
+    // HEAD offset local time by up to 12 s: the KIFS fold angles and the warp are fast
+    // functions of time, so neighbouring pixels saw unrelated geometry (shredded spiral).
+    // A ~2 s lead still visibly ages the coral inside the well while staying coherent.
+    let dilation = well * 2.0 * (1.0 + g_held);
     let local_time = base_time + dilation;
 
-    var ro = vec3<f32>(0.0, base_time * driftSpeed * 0.9, base_time * driftSpeed);
+    // The field repeats only in x/z, so an unbounded y drift (HEAD: y = t·speed·0.9) carried
+    // the camera above the reef within seconds and frames showed only stars. Bob instead.
+    var ro = vec3<f32>(0.0, sin(base_time * 0.23) * 1.2, base_time * driftSpeed);
     var rd = normalize(vec3<f32>(uv, 1.0));
 
     // Camera bank — cursor steers it, current rolls it
@@ -329,7 +356,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 + abyssPalette(hue + 0.6, g_treble) * fres * 0.9;
         }
     } else {
-        let stars = pow(hash3(rd * 110.0).x, 48.0);
+        // Sparse cell stars (HEAD's pow(hash(rd*110),48) lit ~1 pixel in 10: speckle)
+        let stars = smoothstep(0.994, 1.0, hash3(floor(rd * 160.0) + 17.0).x);
         col += stars * vec3<f32>(0.9, 0.95, 1.0);
         col += abyssPalette(time * 0.05 + length(uv) * 0.3, g_mids) * 0.03;
     }
@@ -368,7 +396,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     let bioIntensity = min(acc_glow, 2.0) * 0.4 + (g_mids + g_treble) * 0.3;
     let alpha = clamp(
-        select(0.0, 0.4 + fres * 0.3, t < 22.0)
+        // The abyss is part of the scene: misses at alpha ~0 composited onto the page
+        // and read as a white wash. Water floor 0.8; coral/glow push it to 1.
+        select(0.8, 0.85 + fres * 0.15, t < 22.0)
         + luma * 0.45 + bioIntensity * 0.35 + sediment * 0.3,
         0.0, 1.0);
 

@@ -4,7 +4,10 @@
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, feedback, click-reactive
 //  Upgraded: 2026-10-18
 //  Ideas: dE/dx bubble beading (tracks resolve into discrete bubbles whose density follows the ionisation, densest at the Bragg peak); expansion-cycle sensitivity (piston cycle gates the beam spill, bubbles grow as sqrt(t) after expansion, a photo flash fires mid-cycle, recompression collapses them)
-//  A packing: un-beaded ACES display RGBA (exact-C feedback history); writeTexture = A.rgb x bubble beads x flash
+//  A packing: linear un-tinted trail energy RGB (decay only; exact-C feedback history) + semantic alpha; writeTexture = ACES(Bragg x nucleation threshold x tint + chamber glow) x bubble beads x flash
+//  HEAD bugs fixed 2026-10-18: alpha ~0 on the dark chamber composited the frame onto the page (the pink wash);
+//  spawn keyed on readTexture luminance = own previous frame in the generative slot (runaway); goldNoise spawn test
+//  non-uniform; Bragg gain + tint + ACES inside the feedback loop; half-texel bilinear offset blurred trails each frame
 //  Curl-noise velocity field + Clifford perturbation + Gold-noise emission,
 //  Bragg-curve ionization falloff, mouse Lorentz (point-vortex) bend
 // ═══════════════════════════════════════════════════════════════════
@@ -57,6 +60,12 @@ const TRAIL_CLAMP = 1.2;
 
 fn hash21(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
+}
+
+fn pcgHash(v: u32) -> u32 {
+  let st = v * 747796405u + 2891336453u;
+  let w = ((st >> ((st >> 28u) + 4u)) ^ st) * 277803737u;
+  return (w >> 22u) ^ w;
 }
 
 fn goldNoise(uv: vec2<f32>, seed: f32) -> f32 {
@@ -208,7 +217,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let vel_scale = 0.30 + 1.45 * p_speed;
 
   // Divergence-free curl noise turbulence layer (Scale = domain, Detail = amplitude)
-  let turb = curl2D(p * noise_scale + mouse_pos * 2.0, flow_time) * (0.06 + 0.30 * p_detail);
+  // HEAD BUG: curl2D is an fbm gradient (|curl| ~2-3 at this domain scale), so
+  // the old 0.06..0.36 weight advected ~0.5 units/frame — a quarter of the
+  // chamber per frame, ~40x the magnetic field. Deposits teleported instead of
+  // drawing lines. Scaled so turbulence perturbs, not replaces, the field.
+  let turb = curl2D(p * noise_scale + mouse_pos * 2.0, flow_time) * (0.06 + 0.30 * p_detail) * 0.025;
   // Clifford strange-attractor perturbation for organic drift
   let cliff = clifford(p * 2.0, 1.7, 1.3, 1.1 + time * 0.02, 1.9) * 0.015 * p_detail;
   let velocity = (base_vel + lorentz + turb + cliff) * vel_scale;
@@ -274,24 +287,45 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let fs = f32(s) / 4.0;
     let w = 1.0 - fs * 0.7;
     let tapUV = clamp(sample_uv - streakDir * streakLen * fs, vec2<f32>(0.0), vec2<f32>(1.0));
-    history += historyBilinear(tapUV * dimsF, dimsI) * w;
+    // HEAD BUG: tapUV·dims lands between texels (texel centres sit at +0.5),
+    // so every frame was a 2x2 box blur plus a half-texel drift — each track
+    // dissolved into haze within a few frames. Sample at texel centres.
+    history += historyBilinear(tapUV * dimsF - vec2<f32>(0.5), dimsI) * w;
     wsum += w;
   }
   history = history / max(wsum, 1e-4);
 
   // Trail persistence — decoupled from Speed; kept safely below 1.0 so
   // the Bragg gain bump (≤ 1 + prominence) settles at a finite equilibrium.
-  let decay = 0.962;
+  // HEAD 0.962 (~100-frame memory) let sub-pixel advection diffuse every
+  // deposit into a uniform haze; a shorter memory keeps tracks as streaks.
+  let decay = 0.965;
 
+  // HEAD BUG: spawn probability and spark energy were the input luminance.
+  // In the generative slot readTexture is the previous displayed frame, so
+  // bright tracks spawned more tracks on themselves — a runaway that ends in
+  // a full-frame wash (or, from a black start, nothing at all). The beam
+  // current is now a constant; the input only lends its hue, at fixed energy.
   let input_color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-  let luminance = luma(input_color.rgb);
+  let inHue = input_color.rgb / max(max(input_color.r, max(input_color.g, input_color.b)), 1e-3);
+  let beamRGB = mix(vec3<f32>(0.75, 0.85, 1.0), inHue, 0.35 * smoothstep(0.02, 0.2, luma(input_color.rgb)));
+  let luminance = 0.85;
 
   // Gold-noise ionization spawn (quasi-random, better distribution).
   // Spawn density follows Intensity (beam current) modulated by Detail
   // (chamber sensitivity) — Scale no longer double-duties here.
   // Continuous phase; the old `floor(time * 3.0)` made the spawn field jump
   // three times a second instead of flowing.
-  let rand_val = goldNoise(uv * noise_scale, time * 0.37);
+  // HEAD BUG: goldNoise is far from uniform near 0 (sin·cos·uv.x products
+  // cluster at small values), so the "< p" spawn test fired ~30x more often
+  // than p. Nucleation now uses a uniform integer hash per pixel and tick.
+  // A nucleus is a short-lived emitter, not a one-frame dot: pure advection
+  // only carries a single deposit away, but a source that keeps depositing
+  // for ~0.6 s strings its deposits out along the streamline into a track.
+  // Each pixel's window is phase-offset so emitters don't switch in lockstep.
+  let pixKey = pcgHash(gid.x + pcgHash(gid.y));
+  let window = u32(max(time, 0.0) * 1.6 + f32(pixKey & 1023u) / 1024.0);
+  let rand_val = f32(pcgHash(pixKey + pcgHash(window))) / 4294967295.0;
   let spawn_rate = 0.04 + 0.35 * p_intensity * (0.4 + 0.6 * p_detail);
 
   // IDEA 2: expansion cycle. The piston drops the pressure, the liquid is
@@ -308,18 +342,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Fresh ionization deposit: brightness scales with beam intensity.
   var spark = vec4<f32>(0.0);
-  if (rand_val < luminance * spawn_rate * 0.2 * spillGate) {
-    spark = vec4<f32>(input_color.rgb * (1.4 + 2.2 * p_intensity), luminance * 2.0);
+  // Sparse emitters (~0.03% of pixels active at default); advection draws
+  // each one's steady deposit out into a track.
+  if (rand_val < luminance * spawn_rate * 0.002 * spillGate) {
+    spark = vec4<f32>(beamRGB * (1.4 + 2.2 * p_intensity) * 1.4, luminance * 0.3);
   }
 
   var shifted_history = history * decay;
 
-  // Ionization falloff along trail length with Bragg-peak bump near the
-  // end of the track — trails read as physical particles, not worms.
-  let trail_energy = clamp(luma(shifted_history.rgb), 0.0, 1.0);
+  // HEAD BUG: the Bragg gain (up to 1+prominence ≈ 1.9 at faint energies) was
+  // applied inside the feedback loop, so 0.962·gain > 1 below ~0.3 energy and
+  // every faint trail grew to a non-zero equilibrium instead of dying; with the
+  // tint gain and ACES re-encode on top, the chamber filled with a full-frame
+  // wash. A now holds the linear trail (decay only); Bragg + tint + ACES are
+  // display-side.
   let bragg_prominence = 0.35 + 1.05 * p_detail;
-  shifted_history = vec4<f32>(shifted_history.rgb * braggGain(trail_energy, bragg_prominence),
-                              shifted_history.a);
 
   // Feedback safety clamp PRE-TINT (luma-echo-warp lesson): no channel
   // of the accumulated trail may exceed TRAIL_CLAMP before the chromatic
@@ -341,7 +378,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let drift = warpedFBM(uv * noise_scale, time * 0.03) * 0.02;
   shifted_history = shifted_history * (1.0 - drift);
 
-  var output = max(shifted_history, spark);
+  let trailState = max(shifted_history, spark);
+  // Ionization falloff along trail length with Bragg-peak bump near the
+  // end of the track — trails read as physical particles, not worms.
+  // Nucleation threshold: superheated liquid only boils where the deposited
+  // dE/dx clears a threshold, so the advection haze stays dark and only the
+  // fresh, dense track cores show (HEAD displayed every faint residue).
+  let rawE = luma(trailState.rgb);
+  let nucleate = smoothstep(0.04, 0.2, rawE);
+  var output = vec4<f32>(trailState.rgb * braggGain(rawE, bragg_prominence) * nucleate, trailState.a);
   let energy = luma(output.rgb);
 
   // ── PSYCHEDELIC: momentum-keyed spectrum with prismatic streak dispersion ──
@@ -360,36 +405,46 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   output = vec4<f32>(output.rgb + mix(vec3<f32>(1.0), prism, 0.4) * vertexFlash * 1.4,
                      max(output.a, vertexFlash));
 
-  let finalRGB = acesFilm(output.rgb);
+  // Dark-field chamber glass: the flash lights the liquid faintly, brightest
+  // mid-window (keeps the empty chamber from reading as a dead black frame).
+  let vig = 1.0 - smoothstep(0.3, 1.5, length(p));
+  let chamberGlow = vec3<f32>(0.035, 0.05, 0.07) * (0.5 + 0.8 * vig);
+  let finalRGB = acesFilm(output.rgb + chamberGlow);
   let outEnergy = luma(finalRGB);
   let bloom = max(0.0, outEnergy - 0.7) * 3.0;
-  let alpha = clamp(outEnergy * 1.5 + bloom + output.a * 0.5 + vertexFlash * 0.3, 0.0, 1.0);
+  // The chamber liquid is an opaque scene: dark pixels at alpha ~0 were
+  // composited onto the page background (the white/pink wash in captures).
+  // Base opacity is the lit glass; tracks and vertices push it to 1.
+  let alpha = clamp(0.82 + outEnergy * 0.6 + bloom + output.a * 0.2 + vertexFlash * 0.3, 0.0, 1.0);
   let depth = clamp(1.0 - outEnergy * 0.8, 0.0, 1.0);
 
-  let outColor = vec4<f32>(finalRGB, alpha);
+  let outColor = vec4<f32>(trailState.rgb, alpha);
 
   // IDEA 1: dE/dx bubble beading. A track is a string of discrete bubbles
   // nucleated in the (stationary) liquid; their count per length follows the
   // ionisation, so the bright Bragg end is dense and the faint tail sparse.
-  // One jittered bubble site per pixel-sized cell (radius < cell margin, so
+  // One jittered bubble site per few-pixel cell (radius < cell margin, so
   // no neighbour search); sites re-seed every expansion, and the radius grows
   // ~sqrt(t) after expansion (bass = beam spill swells them) until
   // recompression collapses them. Display only: A keeps the continuous trail.
-  let cellPx = max(2.5, resolution.y * (0.0075 - 0.0035 * p_scale));
+  let cellPx = max(4.0, resolution.y * (0.016 - 0.006 * p_scale));
   let cpos = vec2<f32>(gid.xy) / cellPx;
-  let cseed = floor(cpos) + vec2<f32>(cycleId * 17.31, cycleId * 5.77);
-  let site = vec2<f32>(hash21(cseed + 3.1), hash21(cseed + 7.7)) * 0.5 + 0.25;
+  let cyc97 = cycleId % 97.0; // keep the sin-hash argument small over long sessions
+  let cseed = floor(cpos) + vec2<f32>(cyc97 * 17.31, cyc97 * 5.77);
+  let site = vec2<f32>(hash21(cseed + 3.1), hash21(cseed + 7.7)) * 0.4 + 0.3;
   let ionise = smoothstep(0.03, 0.6, energy);
   let hasBubble = step(hash21(cseed), ionise * 0.9);
   let growth = sqrt(clamp(cyc / 0.5, 0.0, 1.0)) * (1.0 - recompress);
-  let rB = 0.06 + 0.19 * clamp(growth * (1.0 + bass * 0.3), 0.0, 1.0);
+  let rB = 0.12 + 0.17 * clamp(growth * (1.0 + bass * 0.3), 0.0, 1.0);
   let dB = length(fract(cpos) - site);
   let bead = hasBubble * (1.0 - smoothstep(rB - 0.07, rB, dB));
-  let beadAmt = 0.55 * (1.0 - recompress);
+  // Ramp in after the wrap (no strobe) and keep a 0.7 floor so tracks keep
+  // roughly their old mean brightness (beads cover ~25% at full growth).
+  let beadAmt = 0.3 * (1.0 - recompress) * smoothstep(0.0, 0.12, cyc);
   // Mid-cycle photo flash (squared Gaussian, no pow of a negative base).
   let fz = (cyc - 0.32) / 0.025;
   let flash = 1.0 + 0.22 * exp(-fz * fz);
-  let shownRGB = min(finalRGB * ((1.0 - beadAmt) + beadAmt * bead * 2.2) * flash, vec3<f32>(1.0));
+  let shownRGB = min(finalRGB * ((1.0 - beadAmt) + beadAmt * bead * 2.5) * flash, vec3<f32>(1.0));
 
   textureStore(writeTexture, gid.xy, vec4<f32>(shownRGB, alpha));
   textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 1.0));

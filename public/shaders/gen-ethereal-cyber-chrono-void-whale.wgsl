@@ -7,6 +7,7 @@
 //  Ideas: baleen comb striations across rib openings; bass sonar ping rings from core; tail flukes; bass blow mist above the core;
 //         pectoral fin-ray fans; ventral throat-pleat shimmer;
 //         Snell refraction at the temporal-stream sheath (§12.2F, Refraction Index bends the ray); Beer–Lambert absorption along the in-sheath path (§12.2F)
+//  Default view: 3/4 orbit offset (yaw +1.05, pitch -0.3) so the skeleton is not end-on
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -179,6 +180,18 @@ fn calcNormal(p: vec3<f32>, time: f32, glitch: f32) -> vec3<f32> {
     return normalize(n);
 }
 
+// Body-only normal: inside the sheath map().dist is the (negative) stream distance,
+// so the whale surface must be differenced on .body or it shades with stream noise.
+fn calcNormalBody(p: vec3<f32>, time: f32, glitch: f32) -> vec3<f32> {
+    let e = vec2<f32>(0.001, 0.0);
+    let n = vec3<f32>(
+        map(p + e.xyy, time, glitch).body - map(p - e.xyy, time, glitch).body,
+        map(p + e.yxy, time, glitch).body - map(p - e.yxy, time, glitch).body,
+        map(p + e.yyx, time, glitch).body - map(p - e.yyx, time, glitch).body
+    );
+    return normalize(n);
+}
+
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -233,8 +246,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Camera setup
     let heldGain = select(1.0, 1.35, u.zoom_config.w > 0.5);
-    let mx = (u.zoom_config.y - 0.5) * 6.28 * heldGain;
-    let my = (u.zoom_config.z - 0.5) * 3.14 * heldGain;
+    // Default 3/4 view (HEAD looked straight down the spine, so the skeleton was end-on);
+    // the cursor still orbits from there.
+    let mx = (u.zoom_config.y - 0.5) * 6.28 * heldGain + 1.05;
+    let my = (u.zoom_config.z - 0.5) * 3.14 * heldGain - 0.3;
 
     var ro = vec3<f32>(0.0, 0.0, -8.0);
     // Orbit camera based on mouse
@@ -269,6 +284,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var inSheath = false;
     var sheathCol = vec3<f32>(0.0);
     var sheathPath = 0.0;
+    var tSheath = 0.0;
 
     for (var i = 0; i < 100; i++) {
         m = map(p, time, temporalGlitch);
@@ -276,14 +292,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         // Volumetric accumulation for plasma ocean (outside the sheath, as before)
         let ocean_density = fbm(p * 0.5 + vec3<f32>(time * 0.1));
         vol_plasma += select(ocean_density * plasmaDensity * (0.02 + bass * 0.008), 0.0, inSheath);
-        sonarGlow += bassSonarPings(p, time, bass) * 0.015;
+        // Inside the sheath the march takes tiny steps grazing the bones; weight the
+        // per-step glow by step length (nominal 0.1) so silhouettes don't collect halos.
+        let volW = select(1.0, clamp(m.body * 8.0, 0.0, 1.0), inSheath);
+        sonarGlow += bassSonarPings(p, time, bass) * 0.015 * volW;
         // Idea — blow mist: a vertical puff above the core, not a horizontal sonar ring.
         let blowCenter = vec3<f32>(0.0, 1.15, 1.05);
-        blowMist += exp(-length(p - blowCenter) * 2.4) * bass * 0.018;
+        blowMist += exp(-length(p - blowCenter) * 2.4) * bass * 0.018 * volW;
 
         if (!inSheath && m.mat == 3.0 && m.dist < 0.01) {
             inSheath = true;
             let ns = calcNormal(p, time, temporalGlitch);
+            tSheath = t;
             let sheathFresnel = pow(1.0 - max(dot(ns, -rd), 0.0), 3.0);
             var stream_col = vec3<f32>(0.0, 1.0, 0.8) * sheathFresnel * 1.5; // Cyan
             // Glitchy noise on streams
@@ -291,12 +311,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             if (temporalGlitch > 0.5 && stream_glitch > 0.9) {
                 stream_col = vec3<f32>(1.0, 0.0, 1.0); // Glitch flash
             }
-            sheathCol = stream_col * 0.5;
+            sheathCol = stream_col * 0.35;
             // ── Idea 7: Snell refraction at the sheath (§12.2F). Refraction Index now bends
             // the ray (softened, η = 1/mix(1, n, 0.35)), so the skeleton wobbles behind the
             // noisy stream surface instead of being painted over by it.
+            // Bend about a mostly-smooth normal (the capsule's radial direction): the raw
+            // fbm normal is near-random and scattered the skeleton into fragments.
+            let axisP = vec3<f32>(0.0, 0.0, clamp(p.z, -4.0, 5.0));
+            let nSmooth = normalize(p - axisP + vec3<f32>(0.0, 0.0, 1e-4));
+            let nRef = normalize(mix(nSmooth, ns, 0.1));
             let eta = 1.0 / mix(1.0, refractionIndex, 0.35);
-            let bent = refract(rd, ns, eta);
+            let bent = refract(rd, nRef, eta);
             rd = select(rd, normalize(bent), t > 0.0 && dot(bent, bent) > 0.5);
             p += rd * 0.02;
             t += 0.02;
@@ -329,11 +354,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ── Idea 8: Beer–Lambert absorption in the stream sheath (§12.2F). The whale seen
     // through the plasma is attenuated by exp(-σ·path): red dies first, so the skeleton
     // reads teal and deeper ribs (longer path) sink further. Plasma Density scales σ.
-    let sigma = vec3<f32>(0.42, 0.14, 0.09) * (0.5 + plasmaDensity);
+    let sigma = vec3<f32>(0.21, 0.07, 0.045) * (0.5 + plasmaDensity);
     let trans = exp(-sigma * sheathPath);
 
     if (hit) {
-        let n = calcNormal(p, time, temporalGlitch);
+        var n = calcNormal(p, time, temporalGlitch);
+        if (inSheath) { n = calcNormalBody(p, time, temporalGlitch); }
         let lightDir = normalize(vec3<f32>(1.0, 1.0, -1.0));
         let diff = max(dot(n, lightDir), 0.0);
         let viewDir = normalize(-rd);
@@ -367,7 +393,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
         }
     }
-    col += sheathCol; // additive stream surface on top
 
     // Timestamp-bounded click fronts refract the plasma ocean.
     var clickEnergy = 0.0;
@@ -385,13 +410,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Fog fading into background
     col = mix(col, vec3<f32>(0.01, 0.03, 0.1), smoothstep(10.0, 20.0, t));
+    // Additive stream surface on top, fogged at its own (entry) distance, not the
+    // distance the ray travelled on through the sheath.
+    col += sheathCol * (1.0 - smoothstep(10.0, 20.0, tSheath));
 
     let previous = textureLoad(dataTextureC, coord, 0);
     col = mix(col, previous.rgb * 0.94, 0.04 + mids * 0.025);
-    let hitSignal = select(0.0, 1.0, hit);
+    // The sheath is a surface too (HEAD counted it as a hit): misses inside it stay opaque.
+    let hitSignal = select(0.0, 1.0, hit || inSheath);
     let alpha = clamp(hitSignal * 0.72 + vol_plasma * 0.18 + length(col) * 0.08 + clickEnergy * 0.15 + blowMist * 0.2, 0.0, 1.0);
     let inputDepth = textureLoad(readDepthTexture, coord, 0).r;
-    let rayDepth = select(inputDepth, clamp(1.0 - t / 20.0, 0.0, 1.0), hit);
+    let rayDepth = select(select(inputDepth, clamp(1.0 - tSheath / 20.0, 0.0, 1.0), inSheath), clamp(1.0 - t / 20.0, 0.0, 1.0), hit);
     let finalColor = vec4<f32>(acesToneMap(col * (1.05 + bass * 0.2)), alpha);
     textureStore(writeTexture, coord, finalColor);
     textureStore(writeDepthTexture, coord, vec4<f32>(rayDepth, 0.0, 0.0, 0.0));

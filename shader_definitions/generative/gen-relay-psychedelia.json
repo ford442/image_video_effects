@@ -3,7 +3,7 @@
   "name": "Relay Psychedelia",
   "category": "generative",
   "url": "shaders/gen-relay-psychedelia.wgsl",
-  "description": "Multi-agent relay generative shader — warped fbm kaleidoscope with liquid-light-show oil cells and hue-precessing feedback echoes.",
+  "description": "Multi-agent relay generative shader — warped fbm kaleidoscope with liquid-light-show oil cells and marbled drag striations.",
   "tags": [
     "generative",
     "psychedelic",

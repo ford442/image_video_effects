@@ -349,15 +349,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // them are matte and dark, so the pearl reads as tiled at close range.
             let po = orgSpace(flowSpace(p, ro));
             let tab = nacreTablets(po * 16.0);
-            let tabFade = 1.0 - smoothstep(3.0, 8.0, t);
-            let iridescence_t = ndotv + iridescenceShift + p.z * 0.1 + film * 0.5 + tab.y * 0.35 * tabFade; // Idea 1
+            let tabFade = 1.0 - smoothstep(2.0, 5.0, t);
+            let iridescence_t = ndotv + iridescenceShift + p.z * 0.1 + film * 0.5 + tab.y * 0.15 * tabFade; // Idea 1
             let iri_col = pal(iridescence_t, vec3<f32>(0.5,0.5,0.5), vec3<f32>(0.5,0.5,0.5), vec3<f32>(1.0,1.0,1.0), vec3<f32>(0.0,0.33,0.67));
 
             let diffuse = ndotl * iri_col;
             let seam = tab.x * tabFade;
             let specular = pow(ndoth, 16.0) * vec3<f32>(1.0) * (1.0 - seam * 0.8);
 
-            col = (diffuse * 0.8 + specular * 0.5 + iri_col * sss * 0.5) * (1.0 - seam * 0.45);
+            col = (diffuse * 0.8 + specular * 0.5 + iri_col * sss * 0.5) * (1.0 - seam * 0.25);
 
             // Bioluminescent glow from audio
             col += iri_col * fft_mid * 2.0 * sss;
