@@ -8,7 +8,8 @@
 //  Created: 2026-06-28
 //  Upgraded: 2026-10-18
 //  Ideas: hopper terrace ridges on step-cuts; escapement mesh flash at gearPhase crests; mainspring wind-down with ratchet rewind flash; polished brass seams where gear teeth bite the crystal; blued-steel hairspring coiled round each crystal, breathing with the balance swing; guilloché engine-turned rosette engraving on the crystal faces (petal count follows Complexity)
-//  A packing: ACES display RGBA
+//  A packing: ACES display RGBA; texel (0,0) = torque state
+//             (eased torque, marker 7.25, accumulated torque phase, 0)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -317,7 +318,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     gearShock += exp(-ring * ring) * exp(-age * 0.9) * teeth;
   }
   // Torque and shocks are bounded phase pushes, not speed multipliers on absolute time.
-  let torquePush = (heldTorque * 0.45 + gearShock * 0.75) * 1.6 / clockSpeed;
+  // Held torque eases in/out and integrates into a phase that is kept on
+  // release (A texel (0,0), read back from C) — no step on press or release.
+  let st = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+  let stOk = abs(st.y - 7.25) < 0.01;
+  let prevTorque = select(0.0, clamp(st.x, -2.0, 2.0), stOk);
+  let prevTorquePhase = select(0.0, st.z, stOk && abs(st.z) < 1.0e5);
+  let torque = mix(prevTorque, heldTorque, 0.08);
+  let torquePhase = prevTorquePhase + torque * 0.03;
+  let torquePush = (torquePhase + gearShock * 1.2) / clockSpeed;
   let effectiveClockSpeed = clockSpeed;
   let rd = normalize(-p.x * uu - p.y * vv + 2.5 * ww);
 
@@ -429,7 +438,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // A/C owns exact ACES display history; do not re-tone-map prior frames.
   let currentDisplay = acesToneMap(col * 1.2);
-  let prev = textureLoad(dataTextureC, coord, 0);
+  let isState = gid.x == 0u && gid.y == 0u;
+  let prev = select(textureLoad(dataTextureC, coord, 0), vec4<f32>(0.0), isState);
   col = mix(prev.rgb * 0.95, currentDisplay, 0.24 + bass * 0.035);
 
   let finalDepth = sat(0.95 - depth * 0.04);
@@ -439,5 +449,5 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   textureStore(writeTexture, coord, vec4<f32>(col, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 1.0));
-  textureStore(dataTextureA, coord, vec4<f32>(col, alpha));
+  textureStore(dataTextureA, coord, select(vec4<f32>(col, alpha), vec4<f32>(torque, 7.25, torquePhase, 0.0), isState));
 }

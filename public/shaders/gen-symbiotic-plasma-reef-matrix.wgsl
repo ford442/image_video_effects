@@ -240,7 +240,10 @@ fn spawnGlow(ro: vec3<f32>, rd: vec3<f32>, tHit: f32, time: f32, bass: f32,
     let fi = f32(i);
     let seed = fi + 0.5;
     let pos = vec3<f32>(sin(fi * 2.1) * 2.0, -1.0 + fi * 0.2, cos(fi * 1.7) * 2.0);
-    let tip = pos + vec3<f32>(sin(seed * 3.0) * 0.5, seed * 0.8 + 0.5, cos(seed * 2.7) * 0.5);
+    // Same bend coralBranch applies, evaluated at the tip (bp.y = 0.5): bp = branchP + bend,
+    // so the tip sits at branchP = (0, 0.5, 0) - bend
+    let tipBend = vec3<f32>(sin(1.0 + seed + time * 0.3) * 0.3, 0.0, cos(0.75 + seed + time * 0.2) * 0.2);
+    let tip = pos + vec3<f32>(sin(seed * 3.0) * 0.5, seed * 0.8 + 0.5, cos(seed * 2.7) * 0.5) - tipBend;
     for (var k: i32 = 0; k < 4; k = k + 1) {
       let h = hash21(vec2<f32>(fi, f32(k) * 7.3));
       let life = fract(time * 0.09 + h);

@@ -91,6 +91,50 @@ fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
     return length(max(d, vec3<f32>(0.0))) + min(max(d.x, max(d.y, d.z)), 0.0);
 }
 
+// Idea — lapping tongue: a forked tongue flicks out of the beak tip three
+// times a second, tilted slightly up so it clears the head as seen from the
+// chase camera; reach swells with the nectar envelope. p is the bird body frame.
+fn sdTongue(p: vec3<f32>, t: f32, nectar: f32) -> f32 {
+    let lick = sin(PI * fract(t * 3.0));
+    let reach = lick * lick * (0.17 + nectar * 0.16);
+    let beakTip = vec3<f32>(0.0, 0.2, 1.38 + nectar * 0.08);
+    let tongueEnd = beakTip + vec3<f32>(0.0, 0.12 * reach, reach);
+    let fork = 0.045 * lick;
+    var tongue = sdCapsule(p, beakTip, tongueEnd, 0.012);
+    tongue = min(tongue, sdCapsule(p, tongueEnd, tongueEnd + vec3<f32>(fork, 0.01, fork * 1.2), 0.009));
+    tongue = min(tongue, sdCapsule(p, tongueEnd, tongueEnd + vec3<f32>(-fork, 0.01, fork * 1.2), 0.009));
+    // Hidden inside the beak when retracted.
+    return select(tongue, MAX_DIST, reach < 0.004);
+}
+
+// Tongue halo, analytic and unoccluded so it reads past the head silhouette:
+// distance from the whole ray line to the (unwarped) tongue segment in world.
+fn tongueHalo(ro: vec3<f32>, rd: vec3<f32>, t: f32, hover: vec4<f32>) -> f32 {
+    let lick = sin(PI * fract(t * 3.0));
+    let reach = lick * lick * (0.17 + hover.w * 0.16);
+    if (reach < 0.004) { return 0.0; }
+    let unbank = rot(-hover.z);
+    let b0 = vec3<f32>(0.0, 0.2, 1.38 + hover.w * 0.08);
+    let b1 = b0 + vec3<f32>(0.0, 0.12 * reach, reach);
+    let x0 = unbank * b0.xy;
+    let x1 = unbank * b1.xy;
+    let a = vec3<f32>(x0.x + hover.x, x0.y + hover.y, b0.z);
+    let seg = vec3<f32>(x1.x + hover.x, x1.y + hover.y, b1.z) - a;
+    // Closest approach between the ray line and the segment.
+    let w0 = ro - a;
+    let bb = dot(rd, seg);
+    let cc = dot(seg, seg);
+    let dd = dot(rd, w0);
+    let ee = dot(seg, w0);
+    let den = max(cc - bb * bb, 1e-6);
+    let sc = clamp((ee - bb * dd) / den, 0.0, 1.0);
+    let along = max(dot(a + seg * sc - ro, rd), 0.5);
+    let q = a + seg * sc - ro;
+    // Angular distance (radians); one pixel is ~1/res.y.
+    let ang = length(q - rd * dot(q, rd)) / along;
+    return lick * (exp(-ang * ang * 2.0e5) + 0.3 * exp(-ang * ang * 1.5e4));
+}
+
 // --- Map Function ---
 fn map(p_in: vec3<f32>, t: f32, audio: f32, flutter: f32, hover: vec4<f32>) -> vec2<f32> {
     // hover.xy = spring-eased bird offset, hover.z = bank roll, hover.w = nectar bloom
@@ -126,18 +170,7 @@ fn map(p_in: vec3<f32>, t: f32, audio: f32, flutter: f32, hover: vec4<f32>) -> v
         sdEllipsoid(p_body - vec3<f32>(-0.14, -0.02, -1.0), vec3<f32>(0.03, 0.015, 0.55))
     );
 
-    // Idea — lapping tongue: a forked tongue flicks out of the beak tip three
-    // times a second; reach swells with the nectar envelope (hover.w).
-    let lick = sin(PI * fract(t * 3.0));
-    let reach = lick * lick * (0.06 + hover.w * 0.16);
-    let beakTip = vec3<f32>(0.0, 0.2, 1.38 + hover.w * 0.08);
-    let tongueEnd = beakTip + vec3<f32>(0.0, -0.25 * reach, reach);
-    let fork = 0.035 * lick;
-    var tongue = sdCapsule(p_body, beakTip, tongueEnd, 0.011);
-    tongue = min(tongue, sdCapsule(p_body, tongueEnd, tongueEnd + vec3<f32>(fork, -0.01, fork * 1.2), 0.008));
-    tongue = min(tongue, sdCapsule(p_body, tongueEnd, tongueEnd + vec3<f32>(-fork, -0.01, fork * 1.2), 0.008));
-    // Hidden inside the beak when retracted.
-    tongue = select(tongue, MAX_DIST, reach < 0.004);
+    let tongue = sdTongue(p_body, t, hover.w);
 
     // Add auroral plasma texture displacement
     body -= simplex(p_body * 5.0 + vec3<f32>(t, 0.0, t)) * 0.05 * audio;
@@ -401,6 +434,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         // Apply glow
         col += vec3<f32>(0.0, 0.5, 1.0) * glow * aura_intensity;
+        col += vec3<f32>(1.0, 0.45, 0.75) * tongueHalo(ro, cur_rd, t, hover) * (0.6 + nectar + aura_intensity * 0.5);
 
         // Volumetric Pollen
         if (pollen_density > 0.0) {

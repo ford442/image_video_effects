@@ -13,8 +13,8 @@
 //    shell (F2-F1 cracks leaking light through the inverted skin);
 //    radiotrophic melanization (hyphae nearest the core darken to melanin
 //    and re-emit absorbed dose as a bass-fed radiosynthesis ember sheen);
-//    Cherenkov coolant pool (ray path through a sphere around the core
-//    integrates a blue glow, brighter where the ray skims the core)
+//    Cherenkov coolant pool (lattice recedes from a coolant cavity round the
+//    core; ray path through it integrates a blue glow, brighter near the core)
 //  A packing: raw HDR trail rgb (pre-ACES) + nutrient alpha; ACES on
 //    writeTexture only
 //  Fixes: extraBuffer[133..138] is zeroed per frame so the spring/click
@@ -22,7 +22,9 @@
 //    (dead [133..138] writer removed 2026-10-18); pow(negative, 2.0) NaN
 //    in the spore ring replaced by squaring; 2026-10-18: camera rows grew
 //    downward (scene and mouse-y upside down) -> rd.y = -uv.y; inverted
-//    core skin went negative under ACES (bright) -> clamped at 0
+//    core skin went negative under ACES (bright) -> clamped at 0; camera orbit
+//    sat inside solid gyroid ~49% of the time (flat frame) -> clearance
+//    bubble; reversed-edge smoothsteps (undefined) -> 1 - smoothstep
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -119,7 +121,13 @@ struct ReactorCtx {
     pulse: f32,      // click spore-burst energy (bounded 0..1)
     pulse_age: f32,  // seconds since click (scaled time)
     mutate: f32,     // hold-to-mutate surge (mouseDown)
+    cam: vec3<f32>,  // camera position (clearance bubble)
 };
+
+// IDEA 5: coolant cavity radius around the core (shared by map + shading)
+fn cavityRadius() -> f32 {
+    return 0.5 * u.zoom_params.x * 2.8 + 1.0;
+}
 
 fn map(p: vec3<f32>, c: ReactorCtx) -> f32 {
     let core_density = u.zoom_params.x;
@@ -143,8 +151,17 @@ fn map(p: vec3<f32>, c: ReactorCtx) -> f32 {
 
     // Attraction to core
     let dist_to_core = length(p - c.core_pos);
-    let pull = smoothstep(2.0, 0.0, dist_to_core);
+    let pull = (1.0 - smoothstep(0.0, 2.0, dist_to_core));
     d_gyroid -= pull * 0.5;
+
+    // IDEA 5: coolant cavity — the lattice recedes from a sphere of coolant
+    // around the core, so rays reach the pool and the core
+    let cavR = cavityRadius();
+    d_gyroid += (1.0 - smoothstep(core_radius * 1.1, cavR, dist_to_core)) * 2.0;
+
+    // Camera clearance: the orbit passed through solid gyroid ~half the time
+    // (every ray hit at t = 0 -> one flat colour); keep a bubble open
+    d_gyroid += (1.0 - smoothstep(0.3, 1.8, length(p - c.cam))) * 3.0;
 
     // Click spore-burst: expanding shockwave swells the mycelium outward
     let ringX = (dist_to_core - c.pulse_age * 2.2) * 3.0;
@@ -219,7 +236,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         fft_hi = (extraBuffer[11] + extraBuffer[12] + extraBuffer[13]) * 0.3333;
     }
 
-    let ctx = ReactorCtx(time, core_pos, bass, mids, treble, fft_lo, fft_hi, pulse, pulse_age, mutate);
 
     var ro = vec3<f32>(0.0, 0.0, -4.0);
     var rd = normalize(vec3<f32>(uv.x, -uv.y, 1.0)); // rows grow down; world +y = screen up
@@ -228,6 +244,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rotMatrix = rot(time * 0.1);
     ro = vec3<f32>(rotMatrix * ro.xz, ro.y).xzy;
     rd = vec3<f32>(rotMatrix * rd.xz, rd.y).xzy;
+
+    let ctx = ReactorCtx(time, core_pos, bass, mids, treble, fft_lo, fft_hi, pulse, pulse_age, mutate, ro);
 
     var t = 0.0;
     var col = vec3<f32>(0.0);
@@ -243,7 +261,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let ringMinor = 0.05 + 0.04 * coreR;
     var ringGlow = 0.0;
     // IDEA 5: Cherenkov coolant pool radius (scales with the core)
-    let poolR = coreR * 2.6 + 0.45;
+    let poolR = cavityRadius(); // the coolant fills the cavity
     var cherenkov = 0.0;
 
     for (var i = 0; i < 100; i++) {
@@ -304,8 +322,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 // darken to melanin; the pigment harvests the core's radiation and
                 // re-emits it as an ember sheen on core-facing surfaces (bass feeds)
                 if (!coreSkin) {
-                    let doseR = coreR * 2.0 + 0.5;
-                    let mel = smoothstep(doseR, coreR * 0.9, dist_to_core);
+                    // dose zone = the cavity lining, where the walls face the core
+                    let mel = 1.0 - smoothstep(coreR * 2.0 + 0.6, cavityRadius() + 0.2, dist_to_core);
                     let toCore = normalize(core_pos - p);
                     let facing = max(dot(n, toCore), 0.0);
                     let grain = cellular(p * 7.0 + 3.1);
@@ -318,9 +336,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 // breathe on per-cell phases (mycelium only, not the core skin)
                 if (!coreSkin) {
                     let pw = worley(p * 3.0 + vec3<f32>(0.0, 0.0, time * 0.05));
-                    let pod = smoothstep(0.30, 0.07, pw.x);
+                    let pod = (1.0 - smoothstep(0.07, 0.30, pw.x));
                     let breath = 0.5 + 0.5 * sin(time * 1.7 + pw.z * TAU);
-                    let nucleus = smoothstep(0.12, 0.0, pw.x);
+                    let nucleus = (1.0 - smoothstep(0.0, 0.12, pw.x));
                     base_col += (vec3<f32>(0.55, 1.0, 0.3) * pod + vec3<f32>(1.0, 0.95, 0.7) * nucleus)
                         * (0.3 + 0.7 * breath) * 0.8;
                 }
@@ -334,7 +352,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                     // hot light through the inverted skin, flickering per fragment
                     let cq = (p - core_pos) / max(coreR, 0.05);
                     let cw = worley(cq * 2.6 + vec3<f32>(0.0, 0.0, time * 0.06));
-                    let crack = smoothstep(0.14, 0.0, cw.y - cw.x);
+                    let crack = (1.0 - smoothstep(0.0, 0.14, cw.y - cw.x));
                     let flick = 0.5 + 0.5 * sin(time * 3.1 + cw.z * TAU);
                     base_col += vec3<f32>(1.0, 0.72, 0.35) * crack * (0.9 + 1.3 * flick);
                 }
@@ -367,7 +385,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col = mix(col, vec3<f32>(0.0, 0.05, 0.1), 1.0 - exp(-0.1 * t));
 
     // IDEA 5: Cherenkov blue, under the ring (treble shimmer, no phase jumps)
-    col += vec3<f32>(0.12, 0.42, 1.0) * cherenkov * (0.4 + treble * 0.15);
+    col += vec3<f32>(0.12, 0.42, 1.0) * cherenkov * (0.6 + treble * 0.2);
 
     // IDEA 1: containment ring added after the fog so it stays vivid
     col += vec3<f32>(1.0, 0.55, 0.2) * ringGlow * 2.2;

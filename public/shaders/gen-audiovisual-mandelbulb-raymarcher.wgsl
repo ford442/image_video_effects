@@ -397,22 +397,30 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Idea 7: lobe-shadowed light shafts — the key light in-scatters inside the
     // bulb's bounding sphere and is blocked by the lobes, so shafts stream
-    // through the gaps (5 jittered samples on the view segment, forward-scatter phase).
+    // through the gaps. The view ray is clipped to the r = 1.5 sphere first, so
+    // all 3 samples land inside it; static per-pixel interleaved-gradient jitter
+    // (no time term) keeps the estimate stable frame to frame.
     let lig7 = normalize(vec3<f32>(0.8, 0.7, -0.6));
     let segEnd = select(min(t, escapeRadius), t, hit);
-    let jit = hash(vec2<f32>(f32(id.x), f32(id.y)) * 0.37 + fract(time * 7.0));
+    let bOc = dot(ro, rd);
+    let disc = bOc * bOc - (dot(ro, ro) - 2.25);
     var shafts = 0.0;
-    for (var k: i32 = 0; k < 5; k = k + 1) {
-        let tk = (f32(k) + jit) / 5.0 * segEnd;
-        let ps = ro + rd * tk;
-        let rs = length(ps);
-        if (rs < 1.5 && rs > 0.2) {
-            shafts += shaftShadow(ps, lig7) * exp(-rs * 1.2);
+    if (disc > 0.0) {
+        let sq = sqrt(disc);
+        let s0 = max(-bOc - sq, 0.0);
+        let s1 = min(-bOc + sq, segEnd);
+        if (s1 > s0) {
+            let jit = fract(52.9829189 * fract(dot(vec2<f32>(f32(id.x), f32(id.y)), vec2<f32>(0.06711056, 0.00583715))));
+            for (var k: i32 = 0; k < 3; k = k + 1) {
+                let ps = ro + rd * mix(s0, s1, (f32(k) + jit) / 3.0);
+                let rs = length(ps);
+                shafts += shaftShadow(ps, lig7) * exp(-rs * 1.2) * smoothstep(0.15, 0.35, rs);
+            }
+            shafts = shafts / 3.0 * (s1 - s0);
         }
     }
     let phaseFS = 0.35 + 0.65 * pow(max(dot(rd, lig7), 0.0), 3.0);
-    shafts = shafts / 5.0 * segEnd * phaseFS;
-    col += blackbody(0.55 + bass * 0.35) * shafts * glowStrength * 0.55 * (1.0 + bass * 0.8);
+    col += blackbody(0.55 + bass * 0.35) * shafts * phaseFS * glowStrength * 0.55 * (1.0 + bass * 0.8);
 
     // Volumetric spectral haze gathered along the march
     col += psychePalette(time * 0.2 + glowAccum, treble * 1.5) * min(glowAccum, 2.0) * (0.25 + glowStrength * 0.2);

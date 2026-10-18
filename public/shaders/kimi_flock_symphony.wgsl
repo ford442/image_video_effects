@@ -41,7 +41,8 @@ const BOID_COUNT: u32 = 256u;
 const MAX_SPEED: f32 = 0.30;          // normalized units per second
 const PERCEPTION_RADIUS: f32 = 0.06;  // normalized
 const DT: f32 = 0.016;                // fixed integration step (60 fps)
-const SECTION_SIZE: u32 = 64u;        // BOID_COUNT / 4 — one orchestra section per index quartile
+const SECTION_SIZE: u32 = 64u;
+const STRING_CAP: i32 = 16;           // Idea 4: string candidates kept per pixel        // BOID_COUNT / 4 — one orchestra section per index quartile
 
 // ═══ Idea 2: orchestra sections ═══
 // Boid index quartiles are sections of the orchestra:
@@ -311,14 +312,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var accumulated_density: f32 = 0.0;
     var total_energy: f32 = 0.0;
 
-    // Idea 4: the nearest 8 boids within the perception radius of this pixel
-    // (torus-wrapped normalized distance, same metric as the sim). Empty slots
-    // hold 1e3 so they fill in order 0, 1, 2, ...
-    var nearRel: array<vec2<f32>, 8>;
-    var nearVel: array<vec2<f32>, 8>;
-    var nearIdx: array<u32, 8>;
-    var nearD: array<f32, 8>;
-    for (var k = 0; k < 8; k++) { nearD[k] = 1e3; nearIdx[k] = 0u; nearRel[k] = vec2<f32>(0.0); nearVel[k] = vec2<f32>(0.0); }
+    // Idea 4: the nearest STRING_CAP boids within the perception radius of this
+    // pixel (torus-wrapped normalized distance, same metric as the sim). Empty
+    // slots hold 1e3 so they fill in order 0, 1, 2, ... A cap of 16 keeps a
+    // string's endpoints in the set along its length even inside dense clusters
+    // (~3 boids per radius on average); pair cost only scales with nearCount.
+    var nearRel: array<vec2<f32>, 16>;
+    var nearVel: array<vec2<f32>, 16>;
+    var nearIdx: array<u32, 16>;
+    var nearD: array<f32, 16>;
+    for (var k = 0; k < STRING_CAP; k++) { nearD[k] = 1e3; nearIdx[k] = 0u; nearRel[k] = vec2<f32>(0.0); nearVel[k] = vec2<f32>(0.0); }
     var nearCount = 0;
 
     // Sample boids
@@ -339,13 +342,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let dn = length(wrap_delta / resolution);
         if (dn < PERCEPTION_RADIUS) {
             var far = 0;
-            for (var k = 1; k < 8; k++) { if (nearD[k] > nearD[far]) { far = k; } }
+            for (var k = 1; k < STRING_CAP; k++) { if (nearD[k] > nearD[far]) { far = k; } }
             if (dn < nearD[far]) {
                 nearD[far] = dn;
                 nearRel[far] = -wrap_delta;
                 nearVel[far] = vel;
                 nearIdx[far] = i;
-                nearCount = min(nearCount + 1, 8);
+                nearCount = min(nearCount + 1, STRING_CAP);
             }
         }
 
@@ -411,16 +414,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // section's band and its solo gain; it fades as the pair drifts apart.
     // Drawn after the trail store so the strings stay crisp, not smeared.
     let stringW = 0.9 + glow_radius * 0.08;
-    for (var a = 0; a < 7; a++) {
+    for (var a = 0; a < STRING_CAP - 1; a++) {
         if (a >= nearCount) { break; }
-        for (var c = a + 1; c < 8; c++) {
+        for (var c = a + 1; c < STRING_CAP; c++) {
             if (c >= nearCount) { break; }
             let ia = nearIdx[a];
             let ic = nearIdx[c];
             if (ia / SECTION_SIZE != ic / SECTION_SIZE) { continue; }
             let pairD = length((nearRel[c] - nearRel[a]) / resolution);
             if (pairD >= PERCEPTION_RADIUS) { continue; }
-            let line = smoothstep(stringW, 0.0, segDist(nearRel[a], nearRel[c]));
+            let line = 1.0 - smoothstep(0.0, stringW, segDist(nearRel[a], nearRel[c]));
             if (line <= 0.0) { continue; }
             let agree = 0.5 + 0.5 * dot(safeNormalize(nearVel[a]), safeNormalize(nearVel[c]));
             let band = sectionBand(ia, bass, mids, treble);
