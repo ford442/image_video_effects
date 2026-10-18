@@ -6238,7 +6238,7 @@
     "id": "gravitational-lensing",
     "name": "Gravitational Lensing",
     "url": "shaders/gravitational-lensing.wgsl",
-    "description": "Schwarzschild geodesic raytracing with a Shakura-Sunyaev accretion disk: temperature follows T(r) ~ r^-3/4 through a Planck blackbody fit, and Keplerian orbital velocity v ~ r^-1/2 drives relativistic Doppler beaming (delta^3) so the approaching limb brightens correctly. Each of the eight FFT bins owns a disk annulus. Fixes a bug where zoom_config.x (time, not audio) was read as an audio level, making the camera orbit accelerate quadratically forever.",
+    "description": "Schwarzschild geodesic raytracing with a Shakura-Sunyaev blackbody accretion disk, relativistic Doppler beaming, Henyey-Greenstein coronal scattering, geodesic periapsis n=1/n=2 photon sub-rings, Lense-Thirring frame-dragging, and Cauchy plasma dispersion.",
     "features": [
       "mouse-driven",
       "advanced-hybrid",

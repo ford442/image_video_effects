@@ -8071,7 +8071,7 @@
     "name": "Optical Feedback Loop",
     "url": "shaders/optical-feedback.wgsl",
     "category": "interactive-mouse",
-    "description": "Infinite optical feedback tunnel with a time-correct spring-damped pointer, multi-front ripple shockwaves and per-band spectral hue rotation that separates the tunnel into rings. Fixes two serious bugs: u.config.y (the ripple count) was used as delta time, freezing the spring and hue when no clicks were alive and exploding the integrator when they were; and nine state values were written into extraBuffer[0..8], the engine's bass/mid/treble/historyHead and FFT bins, corrupting the audio every other shader reads. State now lives in extraBuffer[133..135].",
+    "description": "Infinite optical feedback tunnel with a spring-damped pointer, multi-front ripple shockwaves, 8-band spectral hue rings, a 9-point isotropic Laplacian Turing-edge restorer on dataTextureC, and Fabry-Perot optical cavity interference.",
     "tags": [
       "feedback",
       "loop",

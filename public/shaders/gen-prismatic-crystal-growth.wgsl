@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-10-10
-//  Ideas: Cauchy facet fire; growth-zone banding; hopper-face recess; re-entrant twin notch
+//  Upgraded: 2026-10-18
+//  Ideas: Cauchy facet fire; growth-zone banding; hopper-face recess; re-entrant twin notch; tetrahedral curvature cleavage-edge bevel glints (§12.2E Tetrahedral curvature); Beer-Lambert crystal interior absorption & ground-plane projected prismatic caustic carpet (§12.2F Beer–Lambert absorption)
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -119,6 +119,21 @@ fn calcNormal(p: vec3<f32>, t: f32, growth: f32, spacing: f32) -> vec3<f32> {
     map(p + e.yxy, t, growth, spacing).x - map(p - e.yxy, t, growth, spacing).x,
     map(p + e.yyx, t, growth, spacing).x - map(p - e.yyx, t, growth, spacing).x
   ));
+}
+
+// ── Idea 5: Tetrahedral Curvature Cleavage-Edge Bevel Glints (§12.2E Tetrahedral curvature) ──
+fn calcCrystalCurvature(p: vec3<f32>, t: f32, growth: f32, spacing: f32) -> f32 {
+  let eps = 0.012;
+  let k1 = vec3<f32>( 1.0, -1.0, -1.0);
+  let k2 = vec3<f32>(-1.0, -1.0,  1.0);
+  let k3 = vec3<f32>(-1.0,  1.0, -1.0);
+  let k4 = vec3<f32>( 1.0,  1.0,  1.0);
+  let d0 = map(p, t, growth, spacing).x;
+  let sum = map(p + k1 * eps, t, growth, spacing).x +
+            map(p + k2 * eps, t, growth, spacing).x +
+            map(p + k3 * eps, t, growth, spacing).x +
+            map(p + k4 * eps, t, growth, spacing).x;
+  return clamp((sum - 4.0 * d0) / (4.0 * eps), -1.0, 1.0);
 }
 
 // ═══ Native idea 1: Cauchy dispersion facet fire ═══
@@ -294,9 +309,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     thickness = clamp(abs(innerD) * 8.0, 0.05, 1.0);
 
     if (mat < 0.1) {
-      // Ground plane
+      // Ground plane with Idea 6: Projected Prismatic Caustic Carpet from overhead crystal lattice
       let diff = max(dot(n, lightDir), 0.0);
-      color = vec3<f32>(0.08, 0.1, 0.15) * (diff * 0.5 + 0.2);
+      let cPos = p.xz + lightDir.xz * 1.4;
+      let cDisp = prismIntensity * 0.18;
+      let cR = pow(abs(sin((cPos.x + cDisp) * 6.5 / spacing + time * 0.4) * cos((cPos.y - cDisp) * 6.5 / spacing - time * 0.3)), 6.0);
+      let cG = pow(abs(sin(cPos.x * 6.5 / spacing + time * 0.4) * cos(cPos.y * 6.5 / spacing - time * 0.3)), 6.0);
+      let cB = pow(abs(sin((cPos.x - cDisp) * 6.5 / spacing + time * 0.4) * cos((cPos.y + cDisp) * 6.5 / spacing - time * 0.3)), 6.0);
+      let groundCaustic = vec3<f32>(cR, cG, cB) * causticStrength * storedGrowth * (0.45 + bass * 0.4);
+      color = vec3<f32>(0.08, 0.1, 0.15) * (diff * 0.5 + 0.2) + groundCaustic;
       alpha = clamp(0.85 + diff * 0.12, 0.85, 0.98);
     } else {
       // Crystal material
@@ -315,15 +336,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let hue = fract(crystalRand + dot(n, vec3<f32>(1.0, 0.5, 0.3)) * 0.3 + prismIntensity * 0.2);
       let crystalCol = max(hueToRGB(hue), vec3<f32>(0.2));
 
-      // Base crystal color
-      color = crystalCol * diff * 0.6;
+      // ── Idea 6: Beer-Lambert Crystal Interior Absorption (§12.2F Beer–Lambert absorption) ──
+      let beerAbsorb = exp(-thickness * (vec3<f32>(1.0) - crystalCol) * 2.2);
+
+      // Base crystal color attenuated by Beer-Lambert optical path
+      color = crystalCol * beerAbsorb * (diff * 0.6 + 0.18);
+
+      // ── Idea 5: Tetrahedral Curvature Cleavage-Edge Bevel Glints (§12.2E Tetrahedral curvature) ──
+      let curv = calcCrystalCurvature(p, time, storedGrowth, spacing);
+      let ridgeBevel = max(0.0, curv);
+      color = color + mix(crystalCol, vec3<f32>(1.0, 0.98, 0.95), 0.65) * ridgeBevel * (0.35 + treble * 0.45) * prismIntensity;
 
       // Specular highlight
       color = color + vec3<f32>(1.0, 0.95, 0.9) * spec * 0.8;
 
       // Internal glow / subsurface scattering approximation
       let sss = pow(max(dot(n, -lightDir), 0.0), 2.0) * 0.3;
-      color = color + crystalCol * sss * prismIntensity;
+      color = color + crystalCol * beerAbsorb * sss * prismIntensity;
 
       // Caustics — early exit: skip the refract/sin chain on thin edges
       // where causticStrength * thickness is below visibility threshold
@@ -358,7 +387,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       // Boost alpha where Fresnel is high (edges glow more)
       alpha = mix(alpha, 0.6, fresnelScalar * 0.5);
       // Dispersion fire adds emissive coverage
-      alpha = alpha + dot(fire, vec3<f32>(0.333)) * 0.15;
+      alpha = alpha + dot(fire, vec3<f32>(0.333)) * 0.15 + ridgeBevel * 0.1;
     }
   } else {
     // Background

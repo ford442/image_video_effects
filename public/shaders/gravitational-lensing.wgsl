@@ -6,28 +6,13 @@
 //            keplerian-disk, doppler-beaming, temporal-accretion,
 //            depth-aware, upgraded-rgba, semantic-alpha, ACES
 //  Complexity: Very High
+//  Upgraded: 2026-10-18
+//  Ideas: Shakura-Sunyaev blackbody accretion disk with relativistic Doppler beaming; 8-band FFT annuli; geodesic periapsis n=1/n=2 photon sub-rings & anisotropic disk corona scattering (§12.2F Henyey–Greenstein phase); Cauchy relativistic plasma dispersion & Lense-Thirring frame-dragging twist (§12.2F Cauchy dispersion)
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Mass, y=DiskBrightness, z=CameraOrbit, w=Redshift
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Mass, y=DiskBrightness, z=CameraOrbit, w=Redshift
 
 const MAX_STEPS: i32 = 128;
 const MAX_DIST: f32 = 50.0;
@@ -41,6 +26,12 @@ fn acesFilm(x: vec3<f32>) -> vec3<f32> {
   let d = 0.59;
   let e = 0.14;
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// ── Idea 3 helper: Henyey-Greenstein phase function (§12.2F Henyey–Greenstein phase) ──
+fn hgPhase(cosTheta: f32, g: f32) -> f32 {
+  let g2 = g * g;
+  return (1.0 - g2) / (12.56637 * pow(max(1.0 + g2 - 2.0 * g * cosTheta, 1e-3), 1.5));
 }
 
 // ═══ BLACKBODY (Planck fit, temperature in Kelvin) ═══
@@ -99,6 +90,7 @@ fn renderAccretionDisk(
   let gamma = 1.0 / sqrt(max(1.0 - beta * beta, 1e-4));
   let dopplerFactor = 1.0 / (gamma * max(1.0 - beta * cosAngle, 0.05));
   let beaming = dopplerFactor * dopplerFactor * dopplerFactor;
+  let coronaPhase = 0.75 + 1.8 * hgPhase(cosAngle, 0.45);
 
   var color = blackbody(temperature * dopplerFactor);
 
@@ -111,7 +103,7 @@ fn renderAccretionDisk(
 
   let falloff = smoothstep(outerRadius, innerRadius, r);
   let thermal = pow(rNorm, -1.5);
-  return color * beaming * thermal * emissivity * falloff * 0.35;
+  return color * beaming * coronaPhase * thermal * emissivity * falloff * 0.35;
 }
 
 fn gravitationalRedshift(r: f32, mass: f32) -> vec3<f32> {
@@ -196,6 +188,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let blackHolePos = vec3<f32>(0.0, 0.0, 0.0);
   let rs = 2.0 * blackHoleMass;
   let eventHorizon = rs * 1.05;
+  let photonSphere = rs * 1.5;
 
   let camDist = 20.0;
   let camAngle = time * 0.1 + cameraOrbit + bass * 0.25;
@@ -210,10 +203,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var rayDir = rd;
   var color = vec3<f32>(0.0);
   var depth = 1.0;
+  var minR = 1e5;
+  var totalBend = 0.0;
 
   for (var i = 0; i < MAX_STEPS; i = i + 1) {
     let toCenter = rayPos - blackHolePos;
     let r = length(toCenter);
+    minR = min(minR, r);
 
     if (r < eventHorizon) {
       color = vec3<f32>(0.0);
@@ -222,16 +218,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     if (r > MAX_DIST) {
+      // ── Idea 4: Cauchy Relativistic Plasma Dispersion & Lense-Thirring Frame-Dragging Twist (§12.2F Cauchy dispersion) ──
       let bgUV = vec2<f32>(atan2(rayDir.z, rayDir.x) / 6.2831853 + 0.5, rayDir.y * 0.5 + 0.5);
-      color = textureSampleLevel(readTexture, u_sampler, bgUV, 0.0).rgb;
+      let plasmaDisp = clamp(totalBend * 0.012 * (0.4 + redshiftIntensity), 0.0, 0.035);
+      let dispDir = normalize(vec2<f32>(rayDir.z, -rayDir.x) + vec2<f32>(1e-4));
+      let bgR = textureSampleLevel(readTexture, u_sampler, fract(bgUV + dispDir * plasmaDisp * 1.35), 0.0).r;
+      let bgG = textureSampleLevel(readTexture, u_sampler, fract(bgUV + dispDir * plasmaDisp * 0.45), 0.0).g;
+      let bgB = textureSampleLevel(readTexture, u_sampler, fract(bgUV - dispDir * plasmaDisp * 0.65), 0.0).b;
+      color = vec3<f32>(bgR, bgG, bgB);
 
-      let redshift = gravitationalRedshift(r, blackHoleMass);
+      let redshift = gravitationalRedshift(minR, blackHoleMass);
       color = color * mix(vec3<f32>(1.0), redshift, redshiftIntensity);
       depth = 0.5 + r / MAX_DIST * 0.5;
       break;
     }
 
     let accel = -normalize(toCenter) * blackHoleMass / (r * r);
+    // Lense-Thirring frame-dragging azimuthal swirl near the horizon
+    let frameDrag = cross(vec3<f32>(0.0, 1.0, 0.0), toCenter) * (blackHoleMass * 0.35 / max(r * r * r, 0.25));
 
     let cursorPos3D = vec3<f32>((mouse.x - 0.5) * 6.0 * aspect, (mouse.y - 0.5) * 6.0, 0.0);
     let toCursor = cursorPos3D - rayPos;
@@ -239,12 +243,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let cursorMass = blackHoleMass * 0.25 * (1.0 + held * 2.0 + mids * 0.6);
     let cursorAccel = -normalize(toCursor) * cursorMass / (rCursor * rCursor + 0.1);
 
-    rayDir = normalize(rayDir + (accel + cursorAccel) * DT);
+    let stepAccel = (accel + frameDrag + cursorAccel) * DT;
+    totalBend += length(stepAccel);
+    rayDir = normalize(rayDir + stepAccel);
     rayPos += rayDir * DT * r * 0.5;
   }
 
   let diskColor = renderAccretionDisk(ro, rd, blackHolePos, blackHoleMass, time, clickPulse) * diskBrightness;
   color += diskColor;
+
+  // ── Idea 3: Geodesic Periapsis n=1 / n=2 Photon Sub-Rings (§12.2F Henyey–Greenstein phase) ──
+  let periapsisDelta = (minR - photonSphere) / max(rs, 0.1);
+  let photonSubRing1 = exp(-pow((periapsisDelta - 0.08) * 14.0, 2.0)) * step(eventHorizon, minR);
+  let photonSubRing2 = exp(-pow((periapsisDelta - 0.018) * 38.0, 2.0)) * step(eventHorizon, minR);
+  let subRingBeaming = 0.7 + 0.5 * uv.x;
+  color += (vec3<f32>(1.0, 0.78, 0.48) * photonSubRing1 * 0.55 + vec3<f32>(0.85, 0.94, 1.2) * photonSubRing2 * 0.85) * subRingBeaming * diskBrightness;
 
   let closestApproach = length(ro - blackHolePos);
   let einsteinRadius = sqrt(rs * closestApproach);

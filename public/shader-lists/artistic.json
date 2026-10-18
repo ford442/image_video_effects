@@ -2671,7 +2671,7 @@
       1
     ],
     "supportsDepth": true,
-    "description": "Colors separate along curved planes like light through prisms, creating a layered 3-D depth illusion where R, G, and B channels drift independently through warped color-space.",
+    "description": "Three-stage liquid prism refraction cascade with isotropic Sobel-3x3 meniscus ridge normals, capillary wavelet caustics, critical-angle TIR sparkle, and anti-halo envelope bounds.",
     "tags": [
       "chromatic",
       "prism",

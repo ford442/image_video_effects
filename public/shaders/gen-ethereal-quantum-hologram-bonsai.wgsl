@@ -4,10 +4,12 @@
 //  Features: procedural, audio-reactive, mouse-driven, temporal, chromatic,
 //            hologram, l-system, quantum, iridescence, curl-noise, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
+//  Upgraded: 2026-10-18
 //  Ideas: prune-cut seal rings at terminal branch tips; north-facing moss lichen from bark normal vs up-light;
 //         superposition collapse (per-branch presence flicker that locks inside the cursor well, seal rings and leaves
-//         now sit on the true cylinder end); 3D root-to-tip sap pulse along height + branch reach (replaces screen-space ripple)
+//         now sit on the true cylinder end); 3D root-to-tip sap pulse along height + branch reach;
+//         5-tap bonsai bough crevice AO & helical shari deadwood grain striations (§12.2E 5-tap AO);
+//         orbit-trap quantum sakura blossom motes in canopy space (§12.2E Orbit trap)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -172,6 +174,19 @@ fn calcNormal(p: vec3<f32>, time: f32, complexity: f32, instability: f32) -> vec
   ));
 }
 
+// ── Idea 5 helper: 5-Tap Bonsai Bough Crevice AO (§12.2E 5-tap AO) ──
+fn calcBonsaiAO(p: vec3<f32>, n: vec3<f32>, time: f32, complexity: f32, instability: f32) -> f32 {
+  var occ = 0.0;
+  var w = 1.0;
+  for (var i = 1; i <= 5; i++) {
+    let h = 0.03 * f32(i);
+    let d = bonsaiSDF(p + n * h, time, complexity, instability);
+    occ += (h - d) * w;
+    w *= 0.62;
+  }
+  return clamp(1.0 - 2.6 * occ, 0.22, 1.0);
+}
+
 // Prune-cut seal rings at terminal branch tips (concentric cross-section bands).
 fn pruneSealRings(p: vec3<f32>, time: f32, complexity: f32, instability: f32) -> f32 {
   var rings = 0.0;
@@ -239,9 +254,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     0.0
   );
 
-  // Raymarch
+  // Raymarch + Idea 6: Orbit-Trap Quantum Sakura Blossom Motes in Canopy Space (§12.2E Orbit trap)
   var t = 0.0;
   var d = 0.0;
+  var sakuraMotes = 0.0;
   for(var i = 0; i < MAX_STEPS; i++) {
     let p = ro + rd * t;
     let pp = p;
@@ -250,6 +266,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mDist = length(toMouse);
     let lensing = toMouse / (mDist * mDist + 0.1) * 0.05 * length(u.zoom_config.yz);
     d = bonsaiSDF(pp + lensing, time, complexity, instability);
+
+    let canopyDist = length(p - vec3<f32>(0.0, 0.7, 0.0));
+    if (canopyDist < 1.85 && (i & 3) == 0) {
+      let moteCell = fract(p * 3.6 + vec3<f32>(sin(time * 0.35 + p.y), time * 0.28, cos(time * 0.3 + p.x))) - vec3<f32>(0.5);
+      let petalTrap = max(abs(moteCell.x) * 1.4 + abs(moteCell.y), abs(moteCell.z) * 2.2);
+      sakuraMotes += exp(-petalTrap * 26.0) * smoothstep(1.85, 0.4, canopyDist) * 0.035;
+    }
+
     if(d < SURF_DIST || t > MAX_DIST) { break; }
     t += d * 0.8;
   }
@@ -259,6 +283,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if(t < MAX_DIST) {
     let p = ro + rd * t;
     let n = calcNormal(p, time, complexity, instability);
+
+    // ── Idea 5: 5-Tap Bonsai Bough Crevice AO & Helical Shari Deadwood Grain Striations (§12.2E 5-tap AO) ──
+    let boughAO = calcBonsaiAO(p, n, time, complexity, instability);
+    let shariTwist = atan2(p.z, p.x) + p.y * 2.6;
+    let shariStrip = smoothstep(0.52, 0.78, sin(shariTwist * 3.0)) * (0.5 + 0.5 * sin(p.y * 28.0 + shariTwist * 6.0));
 
     // Lighting
     let lightDir = normalize(vec3<f32>(2.0, 3.0, -1.0));
@@ -274,14 +303,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       holoHue
     );
 
-    // Base bark color
+    // Base bark color with bleached silvery-ivory shari deadwood veins
+    let barkBase = mix(vec3<f32>(0.1, 0.08, 0.05), vec3<f32>(0.42, 0.39, 0.34), shariStrip * 0.65);
     let barkCol = mix(
-      vec3<f32>(0.1, 0.08, 0.05),
+      barkBase,
       holoCol,
       fresnel * instability
     );
 
-    col = barkCol * (diff * 0.6 + 0.3) + spec * vec3<f32>(0.8, 0.9, 1.0) * 0.5;
+    col = (barkCol * (diff * 0.6 + 0.3) + spec * vec3<f32>(0.8, 0.9, 1.0) * 0.5) * boughAO;
 
     // Chromatic aberration (holographic glitch)
     let glitch = noise3(p * 5.0 + time * 2.0) * instability * 0.3;
@@ -320,13 +350,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col *= exp(-t * 0.08);
   }
 
-  // Ambient glow / background
+  // Ambient glow / background + Orbit-Trap Quantum Sakura Blossom Motes
   let bgGrad = mix(
     vec3<f32>(0.02, 0.03, 0.04),
     vec3<f32>(0.05, 0.08, 0.1),
     uv.y * 0.5 + 0.5
   );
   col = mix(bgGrad, col, smoothstep(MAX_DIST, 0.0, t));
+  col += vec3<f32>(0.95, 0.48, 0.78) * sakuraMotes * (0.5 + glow * 0.8 + treble * audioReact * 0.5);
 
   // Temporal feedback
   let previous = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);

@@ -9,7 +9,7 @@
     "growth",
     "sdf"
   ],
-  "description": "SDF crystal lattice that grows over time with Fresnel reflectance for glass-like translucency. Alpha encodes crystal thickness \u2014 thin edges are transparent, thick centers opaque. Audio drives growth rate and crystal rotation.",
+  "description": "SDF crystal lattice with Cauchy facet fire, oscillatory growth-zone shells, tetrahedral curvature cleavage-edge bevel glints, Beer-Lambert optical absorption, and a ground-plane projected prismatic caustic carpet.",
   "workgroup_size": [
     16,
     16,
