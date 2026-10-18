@@ -38,7 +38,7 @@ Full snapshot: [`STATUS.md`](./STATUS.md) · gaps: [`WASM_RENDERER_GAP_ANALYSIS.
 | `canvas_configure.h` | **Generated** canvas configure constants (usage, alphaMode, presentMode) from `canvas_configure.json` |
 | `src/wasm/bridge/*.ts` | **Hand-edited TypeScript glue** (edit here; webpack compiles `src/wasm/wasm_bridge.ts`) |
 | `wasm_bridge.js` (generated) | ESM copies in `wasm_renderer/` + `public/wasm/` — do not edit |
-| `build.sh` | **The only build** — single-pass `emcc` + emdawnwebgpu. Flags from `src/contracts/wasm_compile_flags.json`, exports from `wasm_exports.json`. |
+| `build.sh` | **The only build** — single-pass `emcc` + emdawnwebgpu. Flags from `src/contracts/wasm_compile_flags.json`, exports from `wasm_exports.json`. A release build writes both `pixelocity_wasm` (ASYNCIFY) and `pixelocity_wasm_jspi`. |
 
 There is no CMake build (removed 2026-10; it was never used by CI and guessed the emdawn
 include dir). For clangd/IDE indexing, run `npm run wasm:compdb`. It writes the gitignored

@@ -198,3 +198,13 @@ the standalone SwiftShader path without a report. What the debug profile found o
   `WebGPU.Internals.jsObjects`.
 - `EM_CACHE` is overridable (`EM_CACHE=... npm run wasm:build`); the Colab `emsdk` path is gone and
   emsdk is found by `wasm_renderer/emsdk_env_locate.sh` (`PATH`, `$EMSDK_ENV`, `$EMSDK`, `~/emsdk`).
+
+## Dual build: JSPI primary + ASYNCIFY fallback (rebased 2026-10-18)
+
+Release `npm run wasm:build` links the same sources twice from `wasm_compile_flags.json`:
+
+- `pixelocity_wasm.js` — top-level `sFlags`, ASYNCIFY fallback. Today's ABI.
+- `pixelocity_wasm_jspi.js` — `jspi.sFlags` (ASYNCIFY replaced by JSPI) plus `-sJSPI_EXPORTS`. Loaded only where `WebAssembly.Suspending` exists (`src/wasm/bridge/init.ts`).
+
+`asyncifyFallback` stays true. Debug and ASan profiles (`WASM_PROFILE=debug`) build the ASYNCIFY graph only and are not copied to `public/wasm/`. Both graphs take `extraFlags` (`-flto`, `-fno-rtti`) and the emsdk pin on this file's release row. CMake stays deleted; `build.sh` is the only build.
+

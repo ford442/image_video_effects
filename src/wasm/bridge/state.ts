@@ -5,6 +5,7 @@ export interface EmscriptenModule {
     returnType: string | null,
     argTypes: string[],
     args: unknown[],
+    opts?: { async?: boolean },
   ): unknown;
   _malloc(size: number): number;
   _free(ptr: number): void;
@@ -31,6 +32,9 @@ export interface EmscriptenModule {
   /** Set by awaitSubmittedWorkDone(); called from the C++ work-done callback. */
   __pxWorkDone?: (ok: number) => void;
 }
+
+/** Which Emscripten build is loaded (src/contracts/wasm_compile_flags.json graphs). */
+export type WasmArtifactKind = 'jspi' | 'asyncify';
 
 export type PixelocityWasmFactory = (opts: {
   locateFile: (path: string) => string;
@@ -84,6 +88,8 @@ export const state = {
   colorFormat: 0 as 0 | 1,
   /** Slot indexes whose last setSlotShader the module did not accept. */
   droppedSlots: new Set<number>(),
+  /** null until a build is instantiated by init.ts (or a preloaded factory was reused). */
+  wasmArtifact: null as WasmArtifactKind | null,
   /** MAX_SHADER_SLOTS compiled into the loaded artifact; null = older binary without the export. */
   maxShaderSlots: null as number | null,
   /**

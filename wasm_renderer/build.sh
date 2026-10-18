@@ -63,9 +63,15 @@ echo "Profile: $PROFILE${WASM_ASAN:+ (+ASan)}  Output: ${BUILD_DIR#"$REPO_ROOT"/
 EXPORTED="$(node "$REPO_ROOT/scripts/format-wasm-exports.js" functions)"
 RUNTIME_METHODS="$(node "$REPO_ROOT/scripts/format-wasm-exports.js" runtime)"
 # Toolchain pin + std/opt/port/-s flags live in src/contracts/wasm_compile_flags.json.
-mapfile -t COMPILE_FLAGS < <(node "$REPO_ROOT/scripts/format-wasm-compile-flags.js" args "${PROFILE_ARGS[@]}")
-JS_OUTPUT_NAME="$(node "$REPO_ROOT/scripts/format-wasm-compile-flags.js" output)"
-WASM_OUTPUT_NAME="${JS_OUTPUT_NAME%.js}.wasm"
+# Release builds both graphs: "asyncify" (fallback, today's ABI) and "jspi"
+# (primary where WebAssembly.Suspending exists). Debug / ASan stay ASYNCIFY-only
+# and are never copied to public/wasm/. Never spell the async mode flags here.
+FLAGS_JS="$REPO_ROOT/scripts/format-wasm-compile-flags.js"
+if [ "$PROFILE" = "release" ]; then
+    mapfile -t VARIANTS < <(node "$FLAGS_JS" variants)
+else
+    VARIANTS=(asyncify)
+fi
 
 bash "$REPO_ROOT/scripts/emcc-version-gate.sh"
 # canvas_configure.h is generated from src/contracts/canvas_configure.json (committed).
@@ -109,28 +115,39 @@ SOURCES=()
 while IFS= read -r src; do
     SOURCES+=("$SCRIPT_DIR/$src")
 done < <(node "$REPO_ROOT/scripts/format-wasm-compile-flags.js" sources)
-echo "Flags: ${COMPILE_FLAGS[*]}"
-em++ "${COMPILE_FLAGS[@]}" \
-    "${SOURCES[@]}" \
-    "-I$SCRIPT_DIR" \
-    -sEXPORTED_FUNCTIONS="${EXPORTED}" \
-    -sEXPORTED_RUNTIME_METHODS="${RUNTIME_METHODS}" \
-    -o "$BUILD_DIR/$JS_OUTPUT_NAME"
+PUBLIC_WASM="$REPO_ROOT/public/wasm"
+if [ "$PROFILE" = "release" ]; then
+    mkdir -p "$PUBLIC_WASM"
+fi
+for VARIANT in "${VARIANTS[@]}"; do
+    mapfile -t COMPILE_FLAGS < <(node "$FLAGS_JS" args "${PROFILE_ARGS[@]}" --variant="$VARIANT")
+    JS_OUTPUT_NAME="$(node "$FLAGS_JS" output --variant="$VARIANT")"
+    WASM_OUTPUT_NAME="${JS_OUTPUT_NAME%.js}.wasm"
+    echo "--- variant: $VARIANT → $JS_OUTPUT_NAME"
+    echo "Flags: ${COMPILE_FLAGS[*]}"
+    em++ "${COMPILE_FLAGS[@]}" \
+        "${SOURCES[@]}" \
+        "-I$SCRIPT_DIR" \
+        -sEXPORTED_FUNCTIONS="${EXPORTED}" \
+        -sEXPORTED_RUNTIME_METHODS="${RUNTIME_METHODS}" \
+        -o "$BUILD_DIR/$JS_OUTPUT_NAME"
+    if [ "$PROFILE" = "release" ]; then
+        cp "$BUILD_DIR/$JS_OUTPUT_NAME" "$BUILD_DIR/$WASM_OUTPUT_NAME" "$PUBLIC_WASM/"
+        echo "   $WASM_OUTPUT_NAME: $(wc -c < "$BUILD_DIR/$WASM_OUTPUT_NAME") bytes"
+    fi
+done
 
-# Only the release profile replaces the committed artifact. A debug (-O0, ASSERTIONS,
+# Only the release profile replaces the committed artifacts. A debug (-O0, ASSERTIONS,
 # optional ASan) module must never land in public/wasm/ where it could be committed.
 if [ "$PROFILE" != "release" ]; then
-    echo "✅ WASM $PROFILE build complete (public/wasm/ untouched)"
-    echo "   Output: ${BUILD_DIR#"$REPO_ROOT"/}/{$JS_OUTPUT_NAME,$WASM_OUTPUT_NAME}"
+    echo "✅ WASM $PROFILE build complete (public/wasm/ untouched, ASYNCIFY only)"
+    echo "   Output: ${BUILD_DIR#"$REPO_ROOT"/}/"
     echo "   To try it locally: copy those over public/wasm/, then 'git checkout public/wasm' when done."
     exit 0
 fi
 
-# Copy output to public folder (repo-relative path)
-PUBLIC_WASM="$REPO_ROOT/public/wasm"
-mkdir -p "$PUBLIC_WASM"
-cp "$BUILD_DIR/$JS_OUTPUT_NAME" "$BUILD_DIR/$WASM_OUTPUT_NAME" "$PUBLIC_WASM/"
 echo "✅ WASM build complete!"
-echo "   Emscripten output: public/wasm/pixelocity_wasm.{js,wasm}"
+echo "   Emscripten output: public/wasm/pixelocity_wasm.{js,wasm} (ASYNCIFY fallback)"
+echo "                      public/wasm/pixelocity_wasm_jspi.{js,wasm} (JSPI primary)"
 echo "   Bridge copies:     public/wasm/wasm_bridge.js, src/wasm/wasm_bridge.js"
-echo "   Edit JS bridge:    src/wasm/bridge/*.js (sync via concat_bridge.sh)"
+echo "   Edit JS bridge:    src/wasm/bridge/*.ts (sync via concat_bridge.sh)"

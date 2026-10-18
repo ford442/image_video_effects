@@ -1,0 +1,11 @@
+# clangd / Cursor C++ config for wasm_renderer/.
+#
+# compile_commands.json is generated, not committed (paths are machine-absolute):
+#   npm run wasm:compile-commands
+# It is rendered from src/contracts/wasm_compile_flags.json `sources`, with the
+# wasm32-unknown-emscripten target, the EM_CACHE sysroot and the emdawnwebgpu
+# port include dir. Run `npm run wasm:build` once first so EM_CACHE holds the
+# port headers (webgpu/webgpu.h). Use emsdk's own clangd
+# ($EMSDK/upstream/bin/clangd) so the clang version matches em++.
+CompileFlags:
+  CompilationDatabase: wasm_renderer

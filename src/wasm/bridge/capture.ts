@@ -1,3 +1,4 @@
+import { callSuspending, isSuspended, whenIdle } from './call.js';
 import { state, wasmRef } from './state.js';
 
 /** C++ CaptureState (renderer.h): 0=idle, 1=pending, 2=ready, 3=error. */
@@ -169,19 +170,22 @@ export function uploadImageData(
   if (!imgWidth || !imgHeight || !pixels || pixels.length === 0) return;
 
   const numBytes = imgWidth * imgHeight * 4;
-  const ptr = wasmRef.module._malloc(numBytes);
-  wasmRef.module.HEAPU8.set(asU8(pixels).subarray(0, numBytes), ptr);
-
-  try {
-    wasmRef.module.ccall(
-      'loadImageData',
-      null,
-      ['number', 'number', 'number'],
-      [ptr, imgWidth, imgHeight],
-    );
-  } finally {
-    wasmRef.module._free(ptr);
-  }
+  // A one-shot upload must not be dropped: if a resize/format switch is
+  // suspended (input textures released), upload once it resolves.
+  const src = isSuspended() ? asU8(pixels).slice(0, numBytes) : asU8(pixels).subarray(0, numBytes);
+  const w = imgWidth;
+  const h = imgHeight;
+  whenIdle(() => {
+    const module = wasmRef.module;
+    if (!state.initialized || !module) return;
+    const ptr = module._malloc(numBytes);
+    module.HEAPU8.set(src, ptr);
+    try {
+      module.ccall('loadImageData', null, ['number', 'number', 'number'], [ptr, w, h]);
+    } finally {
+      module._free(ptr);
+    }
+  });
 }
 
 export function uploadVideoFrame(
@@ -190,6 +194,8 @@ export function uploadVideoFrame(
   height?: number,
 ): void {
   if (!state.initialized || !wasmRef.module) return;
+  // Per-frame: skip while a suspending call has the input textures released.
+  if (isSuspended()) return;
 
   if (videoOrPixels instanceof Uint8Array || videoOrPixels instanceof Uint8ClampedArray) {
     if (!width || !height || videoOrPixels.length === 0) return;
@@ -234,9 +240,9 @@ export function uploadVideoFrame(
   wasmRef.module._free(ptr);
 }
 
-export function resizeCanvas(width: number, height: number): void {
+export async function resizeCanvas(width: number, height: number): Promise<void> {
   if (!state.initialized || !wasmRef.module) return;
   state.canvasWidth = width;
   state.canvasHeight = height;
-  wasmRef.module.ccall('resizeCanvas', null, ['number', 'number'], [width, height]);
+  await callSuspending(wasmRef.module, 'resizeCanvas', null, ['number', 'number'], [width, height]);
 }

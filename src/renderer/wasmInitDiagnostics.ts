@@ -30,6 +30,8 @@ export interface WasmInitDiagnosticsInput {
   adapterInfo?: string;
   hasModule?: boolean;
   lastLoadError?: string | null;
+  /** Which Emscripten glue init.ts instantiated; null before a build loaded. */
+  wasmArtifact?: 'jspi' | 'asyncify' | null;
 }
 
 export interface WasmInitFailureDescription {
@@ -110,7 +112,8 @@ export function describeWasmInitFailure(
 /** Compact one-line status for the debug panel / diagnostics readout. */
 export function summarizeWasmInitState(input: WasmInitDiagnosticsInput & { initialized?: boolean }): string {
   if (input.initialized) {
-    return `ready · adapter: ${input.adapterInfo?.trim() || 'unreported'}`;
+    const build = input.wasmArtifact ? ` (${input.wasmArtifact})` : '';
+    return `ready${build} · adapter: ${input.adapterInfo?.trim() || 'unreported'}`;
   }
   const d = describeWasmInitFailure(input);
   return `${d.partial ? 'partial' : 'failed'} at ${d.stageName} · adapter: ${
