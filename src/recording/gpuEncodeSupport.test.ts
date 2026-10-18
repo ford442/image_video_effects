@@ -1,25 +1,27 @@
 /**
- * @jest-environment jsdom
+ * @vitest-environment jsdom
  */
+import type { Mock } from 'vitest';
 import { forcesMediaRecorder, GpuEncodeFrames, startGpuEncodeSession } from './gpuEncodeSupport';
 
-const mockStart = jest.fn();
-jest.mock('./gpuEncoder', () => ({
+const mockStart = vi.fn();
+vi.mock('./gpuEncoder', () => ({
   GpuEncodeRecorder: { start: (...args: unknown[]) => mockStart(...args) },
   canvasFrameSource: (canvas: HTMLCanvasElement) => ({ kind: 'canvas', canvas }),
   readbackFrameSource: (capture: () => Promise<ImageData>) => ({ kind: 'readback', capture }),
+  workerFrameSource: (grab: unknown) => ({ kind: 'worker', grab }),
 }));
 
 const OPTS = { width: 64, height: 64, fps: 60, bitrate: 1e6 };
 
-function frames(overrides: Partial<GpuEncodeFrames> = {}): GpuEncodeFrames & { setCanvasCopySrc: jest.Mock } {
+function frames(overrides: Partial<GpuEncodeFrames> = {}): GpuEncodeFrames & { setCanvasCopySrc: Mock } {
   return {
     canvas: document.createElement('canvas'),
     supportsCanvasCopySrc: () => false,
-    setCanvasCopySrc: jest.fn().mockReturnValue(true),
+    setCanvasCopySrc: vi.fn().mockReturnValue(true),
     readback: null,
     ...overrides,
-  } as GpuEncodeFrames & { setCanvasCopySrc: jest.Mock };
+  } as GpuEncodeFrames & { setCanvasCopySrc: Mock };
 }
 
 describe('startGpuEncodeSession', () => {
@@ -27,12 +29,12 @@ describe('startGpuEncodeSession', () => {
 
   it('prefers the canvas VideoFrame when COPY_SRC is available and restores render-only on stop', async () => {
     const blob = new Blob(['x']);
-    mockStart.mockResolvedValue({ stop: jest.fn().mockResolvedValue(blob) });
-    const f = frames({ supportsCanvasCopySrc: () => true, readback: jest.fn() });
+    mockStart.mockResolvedValue({ stop: vi.fn().mockResolvedValue(blob) });
+    const f = frames({ supportsCanvasCopySrc: () => true, readback: vi.fn() });
 
     const session = await startGpuEncodeSession(f, OPTS);
     expect(session?.kind).toBe('canvas');
-    expect(mockStart.mock.calls[0][0]).toMatchObject({ kind: 'canvas', canvas: f.canvas });
+    expect(mockStart.mock.calls[0]![0]).toMatchObject({ kind: 'canvas', canvas: f.canvas });
     expect(f.setCanvasCopySrc.mock.calls).toEqual([[true]]);
 
     await expect(session!.stop()).resolves.toBe(blob);
@@ -40,14 +42,14 @@ describe('startGpuEncodeSession', () => {
   });
 
   it('uses the RGBA readback when COPY_SRC is refused (probe red or bit dropped)', async () => {
-    mockStart.mockResolvedValue({ stop: jest.fn().mockResolvedValue(new Blob()) });
-    const readback = jest.fn();
+    mockStart.mockResolvedValue({ stop: vi.fn().mockResolvedValue(new Blob()) });
+    const readback = vi.fn();
     const f = frames({ supportsCanvasCopySrc: () => true, readback });
     f.setCanvasCopySrc.mockReturnValue(false);
 
     const session = await startGpuEncodeSession(f, OPTS);
     expect(session?.kind).toBe('readback');
-    expect(mockStart.mock.calls[0][0]).toMatchObject({ kind: 'readback', capture: readback });
+    expect(mockStart.mock.calls[0]![0]).toMatchObject({ kind: 'readback', capture: readback });
     await session!.stop();
     expect(f.setCanvasCopySrc.mock.calls).toEqual([[true]]);
   });

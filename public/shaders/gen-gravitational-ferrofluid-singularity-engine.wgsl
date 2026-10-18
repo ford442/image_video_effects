@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-17
-//  Ideas: Rosensweig peak ridges on angular×radial crests; photon-ring oil sheen outside the horizon; field-aligned anisotropic glints streaking along the radial magnetization; gravitational redshift on escaping droplets and click fronts
+//  Upgraded: 2026-10-18
+//  Ideas: Rosensweig peak ridges on angular×radial crests; photon-ring oil sheen outside the horizon; frame-dragging lean; ISCO hot ring
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -41,15 +41,6 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-// Gravitational redshift of an emitted colour: energy slides from blue to red
-// and the whole beam dims by the lapse g = sqrt(1 - rs/r).
-fn redshiftTint(c: vec3<f32>, g: f32, loss: f32) -> vec3<f32> {
-    let shifted = vec3<f32>(c.r + c.g * 0.6 * loss + c.b * 0.3 * loss,
-                            c.g * g + c.b * 0.35 * loss,
-                            c.b * g * g);
-    return shifted * g;
-}
-
 fn sdf(p: vec3<f32>, singularityMass: f32, fluidViscosity: f32, spikeDensity: f32) -> f32 {
     let time = u.config.x;
 
@@ -60,7 +51,9 @@ fn sdf(p: vec3<f32>, singularityMass: f32, fluidViscosity: f32, spikeDensity: f3
     // discarding it. Two counter-moving angular fronts rake the fluid surface.
     var distortedP = p;
     let dist = length(p);
-    let angle = time * (0.8 + fluidViscosity * 2.4) + 1.0 / (dist + 0.1);
+    // Idea: frame-dragging lean — inner spikes wind tighter; viscosity resists.
+    let frameDrag = singularityMass * 0.55 / pow(dist + 0.35, 3.0) * (1.15 - clamp(fluidViscosity, 0.0, 1.0));
+    let angle = time * (0.8 + fluidViscosity * 2.4) + 1.0 / (dist + 0.1) + frameDrag;
     let r2 = rot(angle);
     distortedP = vec3<f32>(r2 * distortedP.xy, distortedP.z);
     let angularFront = sin(atan2(distortedP.y, distortedP.x) * (5.0 + spikeDensity * 2.0) - time * 8.0);
@@ -187,24 +180,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let crest = pow(max(sin(spikeAng * (5.0 + spikeDensity * 2.0) - time * 8.0)
                           * sin(distToCenter * 15.0 - time * (9.0 + fluidViscosity * 5.0)), 0.0), 4.0);
         color += iridColor * crest * (0.55 + spec * 0.4) * (0.6 + iridescence * 0.5);
-
-        // Idea 3 — field-aligned anisotropic glints: the magnetization points
-        // radially out of the singularity, so the surface sheen is a narrow
-        // Ward-style lobe stretched along the field and pinched across it.
-        let fieldDir = p / max(distToCenter, 0.0001);
-        let fieldTan = fieldDir - n * dot(fieldDir, n);
-        let tanLen = length(fieldTan);
-        if (tanLen > 0.02) {
-            let tA = fieldTan / tanLen;
-            let tB = cross(n, tA);
-            let hv = normalize(lightDir + v);
-            let hn = max(dot(hv, n), 0.05);
-            let ht = dot(hv, tA) / 0.55;
-            let hb = dot(hv, tB) / (0.05 + 0.04 / (1.0 + spikeDensity));
-            let aniso = exp(-(ht * ht + hb * hb) / (hn * hn)) * smoothstep(0.02, 0.2, tanLen);
-            let glintCol = mix(vec3<f32>(0.55, 0.65, 0.8), iridColor, 0.35 + iridescence * 0.4);
-            color += glintCol * aniso * (0.7 + treble * 0.3);
-        }
     }
 
     // Event horizon lensing overlay
@@ -229,6 +204,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                  0.5 + 0.5 * sin(sheenHue + 4.0)
              );
              color += sheenCol * sheen * iridescence * 0.7;
+             // Idea: ISCO hot ring — a thin amber orbit outside the photon ring.
+             let iscoR = horizonR * 2.35;
+             let iscoBand = abs(distToCenter - iscoR);
+             let isco = exp(-iscoBand * iscoBand * 2200.0);
+             color += vec3<f32>(1.0, 0.62, 0.28) * isco * (0.4 + bass * 0.45);
         }
     }
 
@@ -245,12 +225,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let intensity = max(0.0, 1.0 - abs(band) * 30.0) * (1.0 - age / 2.5);
         rippleGlow += intensity;
     }
-    // Idea 4 — gravitational redshift: light emitted near the horizon climbs
-    // out of the well, dimming by sqrt(1 - rs/r) and sliding blue → red.
-    let rsScreen = singularityMass * 0.5;
-    let redshiftG = sqrt(clamp(1.0 - rsScreen / max(length(uv), 0.0001), 0.0, 1.0));
-    let redshiftLoss = 1.0 - redshiftG;
-    color += redshiftTint(vec3<f32>(0.2, 0.5, 1.0), redshiftG, redshiftLoss) * rippleGlow;
+    color += vec3<f32>(0.2, 0.5, 1.0) * rippleGlow;
 
     // Accelerating ferrofluid droplets: fixed identities, smooth analytic
     // trajectories, and velocity-stretched fronts rather than frame hashes.
@@ -269,7 +244,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let streak = exp(-across * across * 900.0) * exp(-abs(along + 0.08) * 18.0) * smoothstep(0.0, 0.15, phase) * (1.0 - phase);
         dropletGlow += streak;
     }
-    color += redshiftTint(vec3<f32>(0.18, 0.55, 1.2), redshiftG, redshiftLoss) * dropletGlow * (0.5 + iridescence) * (1.0 + treble * 0.35);
+    color += vec3<f32>(0.18, 0.55, 1.2) * dropletGlow * (0.5 + iridescence) * (1.0 + treble * 0.35);
 
     // Advect prior display light around the event horizon and show the bounded
     // result. A is the next display history; B remains untouched.

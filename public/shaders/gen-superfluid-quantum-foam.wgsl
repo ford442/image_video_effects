@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, raymarched, temporal, chromatic, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: coalescing bubble necks (8-neighbour smooth-min); film-drainage black-film pop (burst shells); Kelvin-wave vortex filament (hollow core + 1/r swirl); second-sound thermal fronts; vortex reconnection sparks
+//  Upgraded: 2026-10-18
+//  Ideas: coalescing bubble necks (8-neighbour smooth-min); film-drainage black-film pop (burst shells); Kelvin-wave vortex filament (hollow core + 1/r swirl); second-sound thermal fronts; vortex reconnection sparks; Abrikosov dimples; Andreev sheen
 //  A packing: ACES display RGBA, premultiplied (col*alpha, alpha) - unchanged; C read back as colour history
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -122,7 +122,10 @@ fn map(p: vec3<f32>) -> vec4<f32> {
     let ph = fract(t * (0.35 + 0.3 * h2) + h2 * 7.0);
     let grow = smoothstep(0.0, 0.12, ph);
     let popK = smoothstep(0.9, 0.95, ph);
-    let r = r0 * grow * (1.0 - popK);
+    // Idea: Abrikosov dimples — a shallow flux-lattice dent, deeper as vortex radius rises.
+    let lattice = 0.5 + 0.5 * cos(cell.x * 2.15 + cell.z * 1.27);
+    let dimple = 1.0 - 0.14 * clamp(vr, 0.0, 1.6) * lattice;
+    let r = r0 * grow * (1.0 - popK) * dimple;
     let lq = length(q);
     let di = lq - r;
     // burst shell thrown out as the black film ruptures
@@ -220,6 +223,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dif = clamp(dot(n, normalize(vec3<f32>(0.8, 0.7, -0.6))), 0.0, 1.0);
     col = mix(vec3<f32>(0.1, 0.1, 0.2), irid, 0.6) * dif;
     col *= 1.0 - 0.8 * blackFilm;   // black film just before rupture
+    // Idea: Andreev sheen — cool counterflow rim where excitations bounce off the film.
+    let andreev = pow(1.0 - ndotv, 2.0) * clamp(0.55 - n.z, 0.0, 1.0);
+    col += vec3<f32>(0.35, 0.72, 1.15) * andreev * (0.28 + mids * 0.22);
     col = mix(col, vec3<f32>(0.02, 0.0, 0.05), 1.0 - exp(-0.02 * dist * dist));
     alpha = clamp(1.0 - exp(-0.05 * dist), 0.0, 1.0) * (0.4 + 0.6 * dif);
   }

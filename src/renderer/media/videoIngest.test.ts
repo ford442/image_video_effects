@@ -33,8 +33,8 @@ function fakeVideo() {
     videoWidth: 640,
     videoHeight: 360,
     error: null as MediaError | null,
-    requestVideoFrameCallback: jest.fn((fn: FrameCb) => { cb = fn; return 1; }),
-    cancelVideoFrameCallback: jest.fn(() => { cb = null; }),
+    requestVideoFrameCallback: vi.fn((fn: FrameCb) => { cb = fn; return 1; }),
+    cancelVideoFrameCallback: vi.fn(() => { cb = null; }),
   };
   const present = (skip = 0) => {
     presented += 1 + skip;

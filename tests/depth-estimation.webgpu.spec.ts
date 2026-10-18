@@ -49,13 +49,15 @@ async function startServer(): Promise<void> {
 }
 
 test.beforeAll(async () => {
+  // beforeAll takes no timeout argument; set it inside the hook.
+  test.setTimeout(120000);
   fs.mkdirSync(BUNDLE_DIR, { recursive: true });
   execSync(
     `npx esbuild "${resolve(SMOKE_DIR, 'depth-webgpu-entry.mjs')}" --bundle --format=esm --platform=browser --outfile="${BUNDLE_FILE}"`,
     { cwd: ROOT, stdio: 'inherit' }
   );
   await startServer();
-}, 120000);
+});
 
 test.afterAll(async () => {
   if (server) {

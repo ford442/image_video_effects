@@ -1,5 +1,5 @@
 /**
- * The real public/wasm/naga_wasm.wasm, instantiated for jest.
+ * The real public/wasm/naga_wasm.wasm, instantiated for the test run.
  *
  * The ABI is re-implemented here rather than imported from public/wasm/naga_wasm.js
  * because that file is ESM and jest runs tests as CommonJS; the loader itself is

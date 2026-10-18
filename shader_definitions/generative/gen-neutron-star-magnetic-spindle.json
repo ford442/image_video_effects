@@ -46,5 +46,5 @@
     "mouse-driven",
     "upgraded-rgba"
   ],
-  "description": "A relativistic neutron-star scene where twisted dipole field lines, pulsar beams, and accretion structures react to audio while the camera orbits under mouse control. This pass adds polar-cap spark carousels and striped equatorial current sheets beyond the light cylinder."
+  "description": "A relativistic neutron-star scene where twisted dipole field lines, pulsar beams, polar-cap sparks and a striped current sheet react to audio while the camera orbits under mouse control. Accretion curtains lift disk plasma along the magnetic field onto shock rings around each pole."
 }

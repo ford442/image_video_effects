@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: frame-dragged sky (core gravity twist swirls nebula + lattice); lattice plumage (sky lattice etched on the owl); nebula-dissolve fog (distance + silhouette melt into the real sky); facial-disk diffraction rings; wingtip plasma-vortex shed
+//  Upgraded: 2026-10-17
+//  Ideas: frame-dragged sky (core gravity twist swirls nebula + lattice); lattice plumage (sky lattice etched on the owl); nebula-dissolve fog (distance + silhouette melt into the real sky); facial-disk diffraction rings; wingtip plasma-vortex shed; chrono-dial irises (tick ring + sweeping hands inside each eye); wingbeat primary sweep (feather rachis/barb vanes lit root-to-tip once per wingbeat)
 //  A packing: HDR linear RGB (pre-ACES echo history) + semantic alpha; C read back as HDR
 // ═══════════════════════════════════════════════════════════════════
 // History: 2026-08-03 Interactivist b31 — mouse-orbit camera, click-ripple
@@ -126,6 +126,23 @@ fn twistY(v: vec3<f32>, ang: f32) -> vec3<f32> {
     return vec3<f32>(v.x * c - v.z * s, v.y, v.x * s + v.z * c);
 }
 
+// Owl's own frame: core-gravity twist then bass breathing (shared by map + shading).
+fn owlFrame(p: vec3<f32>, snd: vec4<f32>, rip: f32) -> vec3<f32> {
+    return twistY(p, coreTwistAngle(length(p), snd, rip)) / (1.0 + snd.x * 0.12);
+}
+
+// Wing-local coordinates (mirrored, flapped, feather-helix folded), before fbm.
+// x runs along the span from the shoulder, z across the wing chord.
+fn wingLocal(q: vec3<f32>, snd: vec4<f32>, rip: f32, t: f32) -> vec3<f32> {
+    let wing_flap = sin(t * 2.0) * 0.5 + snd.x * 0.35;
+    var wing_q = q;
+    wing_q.x = abs(wing_q.x) - 0.5;
+    wing_q.y -= wing_q.x * wing_flap;
+    let fold_twist = snd.w * 1.5 + snd.z * 0.6 + rip * 3.0;
+    let wq_xy = wing_q.xy * rot2D(fold_twist * wing_q.x);
+    return vec3<f32>(wq_xy.x, wq_xy.y, wing_q.z);
+}
+
 // The SDF for the Owl
 // snd = (bass, mids, treble, fftWingBand); rip = click-ripple displacement
 fn map(p: vec3<f32>, snd: vec4<f32>, rip: f32) -> vec2<f32> {
@@ -134,12 +151,9 @@ fn map(p: vec3<f32>, snd: vec4<f32>, rip: f32) -> vec2<f32> {
     let t = u.config.x;
     let bass = snd.x;
 
-    // Core gravity well bending space around the owl (fixed stale-read rotation)
-    q = twistY(q, coreTwistAngle(length(q), snd, rip));
-
-    // Bass pulse breathes the whole chrono-plasma body
+    // Core gravity well bending space around the owl, then the bass breath
     let breathe = 1.0 + bass * 0.12;
-    q = q / breathe;
+    q = owlFrame(q, snd, rip);
 
     // Owl Body (composite SDF)
     // Central ellipsoid body
@@ -153,15 +167,8 @@ fn map(p: vec3<f32>, snd: vec4<f32>, rip: f32) -> vec2<f32> {
     d = smin(d, head_dist, 0.3);
 
     // Wings (Ethereal fractal wings) — FFT band folds the feather lattice
-    let wing_flap = sin(t * 2.0) * 0.5 + bass * 0.35;
-    var wing_q = q;
-    // Wing mirroring and flapping
-    wing_q.x = abs(wing_q.x) - 0.5;
-    wing_q.y -= wing_q.x * wing_flap;
-    // Symmetry fold: treble-band twists the wing plane into a feather helix
-    let fold_twist = snd.w * 1.5 + snd.z * 0.6 + rip * 3.0;
-    let wq_xy = wing_q.xy * rot2D(fold_twist * wing_q.x);
-    wing_q = vec3<f32>(wq_xy.x, wq_xy.y, wing_q.z);
+    // Mirroring, flapping and the treble feather-helix fold live in wingLocal()
+    let wing_q = wingLocal(q, snd, rip, t);
 
     // Domain warping for plasma feathers
     let wing_distortion = u.zoom_params.x;
@@ -342,6 +349,26 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let eye_glow = vec3<f32>(0.1, 1.0, 0.8) * (1.0 + treble * 2.0 + fft_air);
             let spec = pow(max(dot(reflect(-l, n), view_dir), 0.0), 32.0);
             col = eye_glow + vec3<f32>(spec);
+            // Idea 6: Chrono-dial irises — each eye is a clock face in the owl's own
+            // frame: twelve bright ticks round the rim, a dark pupil, and minute/hour
+            // hands that sweep at fixed rates (bass only brightens the tick ring).
+            let qe = owlFrame(p, snd, rip) - vec3<f32>(0.0, 0.9, 0.1);
+            let ec = vec2<f32>(qe.x - sign(qe.x) * 0.2, qe.y - 0.1) / 0.1;
+            let er = length(ec);
+            let ea = atan2(ec.x, ec.y); // 0 = twelve o'clock, clockwise
+            let tick = (1.0 - smoothstep(0.08, 0.16, abs(fract(ea / TAU * 12.0 + 0.5) - 0.5)))
+                     * smoothstep(0.62, 0.7, er) * (1.0 - smoothstep(0.86, 0.94, er));
+            let minute_a = time * TAU / 20.0;
+            let hour_a = minute_a / 12.0;
+            let along_m = dot(ec, vec2<f32>(sin(minute_a), cos(minute_a)));
+            let across_m = abs(dot(ec, vec2<f32>(cos(minute_a), -sin(minute_a))));
+            let along_h = dot(ec, vec2<f32>(sin(hour_a), cos(hour_a)));
+            let across_h = abs(dot(ec, vec2<f32>(cos(hour_a), -sin(hour_a))));
+            let hand_m = (1.0 - smoothstep(0.03, 0.07, across_m)) * step(0.0, along_m) * (1.0 - smoothstep(0.72, 0.8, along_m));
+            let hand_h = (1.0 - smoothstep(0.05, 0.1, across_h)) * step(0.0, along_h) * (1.0 - smoothstep(0.45, 0.52, along_h));
+            let pupil = 1.0 - smoothstep(0.12, 0.2, er);
+            col += vec3<f32>(0.9, 1.0, 0.85) * tick * (0.6 + bass * 0.8);
+            col *= 1.0 - 0.85 * max(max(hand_m, hand_h), pupil);
         } else {
             // Owl Body (Bioluminescent cyber-organic); mix factor clamped (HEAD
             // extrapolated below y=-1 → negative red → NaN after gamma).
@@ -355,7 +382,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             // from the core in the owl's own twisted, breathing frame, so it rides
             // the flap/twist with the plumage while staying the same lattice
             // (same folds, same drift) as the sky behind it.
-            let q_obj = twistY(p, coreTwistAngle(length(p), snd, rip)) / (1.0 + bass * 0.12);
+            let q_obj = owlFrame(p, snd, rip);
             let plume_dir = normalize(q_obj + vec3<f32>(0.0, 0.0, 1e-4));
             let plume = chronoLattice(plume_dir.xy * 1.35, time, snd);
             let plume_glow = 0.55 + 0.45 * (1.0 - diff) + snd.w * 0.9;
@@ -363,8 +390,27 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             // Idea 4: facial-disk diffraction rings around the owl's face.
             let headLocal = p - vec3<f32>(0.0, 0.9, 0.1);
             let ringR = length(headLocal.xy);
-            let disk = exp(-pow((ringR - 0.34) * 9.0, 2.0)) * (0.5 + 0.5 * sin(ringR * 36.0 - time * 4.0));
+            let disk_x = (ringR - 0.34) * 9.0;
+            let disk = exp(-disk_x * disk_x) * (0.5 + 0.5 * sin(ringR * 36.0 - time * 4.0));
             col += vec3<f32>(0.95, 0.85, 0.55) * disk * (0.08 + mids * 0.15);
+            // Idea 7: Wingbeat primary sweep — the wing slab is split into seven
+            // primaries along the span, each with a rachis and chevron barbs; once per
+            // wingbeat (same 2 rad/s clock as the flap) a bioluminescent pulse runs
+            // from shoulder to tip along them, brightest on the trailing edge.
+            let wq = wingLocal(q_obj, snd, rip, time);
+            let wbox = abs(wq) - vec3<f32>(1.2, 0.05, 0.3);
+            let wdist = length(max(wbox, vec3<f32>(0.0))) + min(max(wbox.x, max(wbox.y, wbox.z)), 0.0);
+            let on_wing = (1.0 - smoothstep(0.02, 0.12, wdist)) * smoothstep(0.05, 0.25, wq.x);
+            let span = clamp(wq.x / 1.2, 0.0, 1.0);
+            let fcell = fract(wq.x * 7.0 / 1.2) - 0.5;
+            let rachis = 1.0 - smoothstep(0.02, 0.06, abs(fcell));
+            let barbs = pow(0.5 + 0.5 * sin((abs(fcell) * 0.5 - wq.z) * 70.0), 4.0);
+            let beat_ph = fract(time * 2.0 / TAU);
+            let sweep_d = span - beat_ph * 1.3 + 0.15;
+            let sweep = exp(-sweep_d * sweep_d * 40.0);
+            let trailing = smoothstep(0.0, 0.3, abs(wq.z));
+            let vane = rachis * 0.8 + barbs * 0.35;
+            col += vec3<f32>(0.2, 0.95, 0.75) * on_wing * vane * (0.06 + sweep * (0.7 + 0.6 * trailing) * (1.0 + mids * 0.6));
         }
 
         // Bloom from core gravity well
@@ -398,8 +444,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col = mix(col, prev.rgb * 0.94, clamp(echo_fade, 0.0, 1.0) * 0.45);
     col = max(col, vec3<f32>(0.0));
 
-    // Display: ACES then gamma (HEAD's Reinhard+gamma replaced)
-    let display = pow(max(acesToneMap(col * 0.8), vec3<f32>(0.0)), vec3<f32>(1.0 / 2.2));
+    // Display: ACES only — the presenter blit gamma-encodes (HEAD's extra
+    // pow(1/2.2) here double-encoded and washed the void grey).
+    let display = acesToneMap(col * 0.8);
 
     // Semantic alpha: owl solid, fog/glow translucent from luma
     let luma = dot(display, vec3<f32>(0.299, 0.587, 0.114));

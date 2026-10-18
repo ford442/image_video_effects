@@ -1,4 +1,3 @@
-import React from 'react';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { createWaveTankGraph } from '../../renderer/multipassGraph';
@@ -26,28 +25,28 @@ function fakeManager(opts: { report?: Record<string, unknown> | null; timings?: 
   const slots = new Map<number, string | null>([[0, 'plasma']]);
   const cached = new Set<string>();
   const m = {
-    getSlotState: jest.fn((i: number) => ({ shaderId: slots.get(i) ?? null, enabled: true, mode: 'chained' })),
-    setRuntimeGraph: jest.fn((id: string, graph, simRing: RuntimeSimRingRequest | null = null) => {
+    getSlotState: vi.fn((i: number) => ({ shaderId: slots.get(i) ?? null, enabled: true, mode: 'chained' })),
+    setRuntimeGraph: vi.fn((id: string, graph, simRing: RuntimeSimRingRequest | null = null) => {
       setRuntimeGraph(id, graph, simRing);
       return true;
     }),
-    isShaderCached: jest.fn((id: string) => cached.has(id)),
-    loadShader: jest.fn(async (id: string) => {
+    isShaderCached: vi.fn((id: string) => cached.has(id)),
+    loadShader: vi.fn(async (id: string) => {
       cached.add(id);
       return true;
     }),
-    setSlotShader: jest.fn((i: number, id: string) => {
+    setSlotShader: vi.fn((i: number, id: string) => {
       slots.set(i, id || null);
     }),
-    getDiagnostics: jest.fn(() => ({ webgpu: { graph: opts.report ?? null } })),
-    getPassTimings: jest.fn(() => opts.timings ?? []),
+    getDiagnostics: vi.fn(() => ({ webgpu: { graph: opts.report ?? null } })),
+    getPassTimings: vi.fn(() => opts.timings ?? []),
   };
   return { manager: m as unknown as RendererManager, m, slots };
 }
 
 function renderPanel(manager: RendererManager | null = fakeManager().manager, modes: ShaderEntry[] = MODES) {
   const rendererRef = { current: manager };
-  const onClose = jest.fn();
+  const onClose = vi.fn();
   const utils = render(
     <GraphLabPanel rendererRef={rendererRef} availableModes={modes} activeSlot={0} onClose={onClose} />,
   );

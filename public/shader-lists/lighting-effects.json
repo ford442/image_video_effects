@@ -58,7 +58,7 @@
     "id": "aurora-rift-2-pass1",
     "name": "Aurora Rift 2 (Pass 1: Enhanced Volumetric)",
     "url": "shaders/aurora-rift-2-pass1.wgsl",
-    "description": "Enhanced volumetric aurora with Birkeland plasma vortex tubes, ionospheric geomagnetic substorm flash bursts, and multi-scale temporal diffusion. First pass of 2-pass system.",
+    "description": "Enhanced volumetric aurora with Birkeland plasma vortex tubes, an omega-band tongue, a poleward picket fence, ionospheric substorm flashes, and multi-scale temporal diffusion. First pass of 2-pass system.",
     "workgroup_size": [
       16,
       16,
@@ -71,7 +71,8 @@
       "raymarch",
       "plasma-vortex",
       "substorm-flashes",
-      "temporal-diffusion"
+      "temporal-diffusion",
+      "audio-reactive"
     ],
     "multipass": {
       "pass": 1,
@@ -123,7 +124,7 @@
     "id": "aurora-rift-pass1",
     "name": "Aurora Rift (Pass 1: Volumetric)",
     "url": "shaders/aurora-rift-pass1.wgsl",
-    "description": "Raymarches volumetric aurora with curl-driven flow, geomagnetic Birkeland curtain folds, discrete atmospheric spectral emission, and temporal diffusion. First pass of 2-pass system.",
+    "description": "Raymarches volumetric aurora with curl-driven flow, geomagnetic Birkeland curtain folds, rayed beads, a dark gap under the curtain, discrete atmospheric spectral emission, and temporal diffusion. First pass of 2-pass system.",
     "workgroup_size": [
       16,
       16,
@@ -136,7 +137,8 @@
       "raymarch",
       "birkeland-currents",
       "spectral-emission",
-      "temporal-diffusion"
+      "temporal-diffusion",
+      "audio-reactive"
     ],
     "multipass": {
       "pass": 1,

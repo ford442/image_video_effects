@@ -4,7 +4,6 @@
  * The real public/wasm/naga_wasm.wasm is instantiated here (test-utils/nagaWasmNode)
  * — this is an end-to-end check of the committed artifact, not a stub.
  */
-import React from 'react';
 import { TextEncoder as NodeTextEncoder, TextDecoder as NodeTextDecoder } from 'util';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
@@ -30,10 +29,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 // `let x: i32 = 1.5;` — a type error naga reports with a line and column.
 const BROKEN_WGSL = '@compute @workgroup_size(1,1,1)\nfn main() { let x: i32 = 1.5; }';
 
-// A plain function, not jest.fn(): CRA's jest config sets resetMocks, which
-// would strip a jest.fn implementation between tests and hand back undefined.
-jest.mock('../utils/nagaWasm', () => {
-  const actual = jest.requireActual('../utils/nagaWasm');
+// A plain function, not vi.fn(): CRA's jest config sets resetMocks, which
+// would strip a vi.fn implementation between tests and hand back undefined.
+vi.mock('../utils/nagaWasm', async () => {
+  const actual = await vi.importActual<Record<string, unknown>>('../utils/nagaWasm');
   return {
     ...actual,
     loadNagaValidator: () => (global as any).__nagaValidatorPromise,
@@ -51,8 +50,8 @@ async function settle() {
 }
 
 describe('ShaderValidator GPU-less validation', () => {
-  const requestAdapter = jest.fn();
-  const requestDevice = jest.fn();
+  const requestAdapter = vi.fn();
+  const requestDevice = vi.fn();
 
   beforeAll(() => {
     (global as any).__nagaValidatorPromise = loadRealNaga();
@@ -66,7 +65,7 @@ describe('ShaderValidator GPU-less validation', () => {
     const nav = navigator as unknown as { gpu?: unknown };
     nav.gpu = { requestAdapter, requestDevice };
 
-    global.fetch = jest.fn().mockImplementation(async (input: RequestInfo | URL) => {
+    global.fetch = vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes('/shader-lists/image.json')) {
         return {
@@ -90,7 +89,7 @@ describe('ShaderValidator GPU-less validation', () => {
 
   afterEach(() => {
     resetRendererDeviceRegistryForTests();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('fails a broken shader and passes a good one with no GPUDevice at all', async () => {

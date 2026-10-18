@@ -9,7 +9,6 @@
 import {
   orchestrateSlots,
   isFrameValid,
-  PHYSICAL_SLOT_LIMIT,
   ShaderSlot,
   SlotOrchestration,
 } from '../renderer/slotOrchestrator';
@@ -29,7 +28,7 @@ function loadWgsl(id: string): string | null {
   return WGSL_CACHE.get(id) ?? null;
 }
 
-function makeSlot(index: number, shaderId: string, mode: 'chained' | 'parallel' = 'chained'): ShaderSlot {
+function makeSlot(_index: number, shaderId: string, mode: 'chained' | 'parallel' = 'chained'): ShaderSlot {
   return { shaderId, enabled: true, mode };
 }
 

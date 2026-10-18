@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { GraphDraft } from '../../graphLab/graphDraft';
 import { EXPORT_CATEGORIES, ExportResult } from '../../graphLab/graphExport';
 

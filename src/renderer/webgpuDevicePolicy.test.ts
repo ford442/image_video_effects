@@ -51,7 +51,7 @@ function makeAdapter(limits: Partial<GPUSupportedLimits> = {}): GPUAdapter {
   return {
     limits: fullLimits,
     features: new Set<GPUFeatureName>(),
-    requestDevice: jest.fn(),
+    requestDevice: vi.fn(),
   } as unknown as GPUAdapter;
 }
 

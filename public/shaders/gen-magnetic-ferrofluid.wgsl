@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: Rosensweig hexagonal spike lattice with critical-field onset and capillary-wavenumber spacing; labyrinthine fingering instability when the field is tipped tangential (mouse held); Rayleigh l=2/l=3 shape-mode ringing kicked by bass; studio softbox + horizon reflections on the mirror body
+//  Upgraded: 2026-10-17
+//  Ideas: Rosensweig hexagonal spike lattice; labyrinthine fingering; Rayleigh l=2/l=3 ringing; studio softbox; secondary peak bifurcation above the critical field; magnetite chains along the applied field
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -140,8 +140,12 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     let tangential = held;
     if (latticeAmp > 0.0) {
         let hexPeaks = rosensweigLattice(pos, kc);
+        // Idea: secondary bifurcation. Well above Hc each hex peak fattens into a pair.
+        let split = smoothstep(0.45, 0.95, supercrit);
+        let hexPair = max(hexPeaks, rosensweigLattice(pos + vec3<f32>(0.09, 0.0, 0.04), kc));
+        let hexUse = mix(hexPeaks, hexPair, split);
         let fingers = labyrinthFingers(pos, kc * 0.8, time);
-        let relief = mix(hexPeaks * latticeAmp, fingers * latticeAmp * 0.35, tangential);
+        let relief = mix(hexUse * latticeAmp, fingers * latticeAmp * 0.35, tangential);
         // Lipschitz-safe scaling: surface relief pulls the surface outward.
         d -= relief * 0.4;
     }
@@ -274,6 +278,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             peakGlow = mix(tipMask, wallMask * 0.6, held) * supercrit;
             let tipCol = mix(vec3<f32>(0.55, 0.75, 1.1), vec3<f32>(1.0, 0.45, 0.9), held);
             col += tipCol * peakGlow * (0.35 + treble * 0.3) * (0.4 + spec * 2.0 + fre);
+            // Idea: magnetite chains. Thin dark streaks follow the applied field.
+            let chainPhase = dot(p, normalize(vec3<f32>(0.2, 1.0, 0.15))) * kc * 2.4;
+            let chain = pow(0.5 + 0.5 * sin(chainPhase), 12.0);
+            col = col * (1.0 - chain * 0.34 * clamp(supercrit, 0.0, 1.0));
         }
 
         // Add fake environment reflection (simple gradient mapping)

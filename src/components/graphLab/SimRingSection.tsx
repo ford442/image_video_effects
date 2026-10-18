@@ -1,4 +1,3 @@
-import React from 'react';
 import { SIM_STATE_COUNT_CHOICES } from '../../graphLab/graphDraft';
 import type { RuntimeSimRingRequest } from '../../renderer/runtimeGraphs';
 import { SIM_STATE_ELEMENT_BYTES } from '../../renderer/webgpu/simRing';

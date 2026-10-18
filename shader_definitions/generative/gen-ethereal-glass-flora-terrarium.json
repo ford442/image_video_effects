@@ -11,7 +11,7 @@
     "refraction",
     "terrarium"
   ],
-  "description": "A translucent macroscopic greenhouse where impossible glass botanicals bloom with neon nectar flowing through crystalline stems, surrounded by gravity-defying pollen particles.",
+  "description": "A translucent macroscopic greenhouse where impossible glass botanicals bloom with capillary neon nectar lumens, pinnate leaf-blade venation, bioluminescent stomatal spore-pores, and swirling pollen inside a geodesic condensation-beaded glass terrarium dome.",
   "workgroup_size": [
     16,
     16,
@@ -66,7 +66,8 @@
     "temporal-feedback",
     "depth-output",
     "aces-tonemap",
-    "semantic-alpha"
+    "semantic-alpha",
+    "upgraded-rgba"
   ],
   "feedbackPacking": "A/C = final ACES display RGBA; exact glass-flora persistence history",
   "x-meta": {

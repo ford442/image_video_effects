@@ -1,16 +1,19 @@
+import type { Mock, MockInstance, Mocked } from 'vitest';
 import { RendererManager } from '../renderer/RendererManager';
 import { WebGPURenderer } from '../renderer/WebGPURenderer';
 import { WASMRenderer } from '../renderer/WASMRenderer';
 import { JSRenderer } from '../renderer/JSRenderer';
 import { DEFAULT_CONFIG } from '../renderer/Renderer';
 import { SlotParams } from '../renderer/types';
+import { createWaveTankGraph } from '../renderer/multipassGraph';
+import { clearRuntimeGraphs, GRAPH_LAB_RUNTIME_ID } from '../renderer/runtimeGraphs';
 
-jest.mock('../renderer/WebGPURenderer');
-jest.mock('../renderer/WASMRenderer');
-jest.mock('../renderer/JSRenderer');
-jest.mock('../wasm/wasm_bridge', () => ({
-  initWasmRenderer: jest.fn().mockResolvedValue(true),
-  shutdownWasmRenderer: jest.fn(),
+vi.mock('../renderer/WebGPURenderer');
+vi.mock('../renderer/WASMRenderer');
+vi.mock('../renderer/JSRenderer');
+vi.mock('../wasm/wasm_bridge', () => ({
+  initWasmRenderer: vi.fn().mockResolvedValue(true),
+  shutdownWasmRenderer: vi.fn(),
 }));
 
 const defaultSlotParams: SlotParams = {
@@ -25,80 +28,80 @@ const defaultSlotParams: SlotParams = {
   depthThreshold: 0.5,
 };
 
-function makeMockWebGPU(): jest.Mocked<WebGPURenderer> {
+function makeMockWebGPU(): Mocked<WebGPURenderer> {
   return {
-    init: jest.fn().mockResolvedValue(true),
-    destroy: jest.fn(),
-    loadShader: jest.fn().mockResolvedValue(true),
-    setActiveShader: jest.fn(),
-    setSlotShader: jest.fn(),
-    setSlotParams: jest.fn(),
-    updateSlotParams: jest.fn(),
-    setSlotMode: jest.fn(),
-    addRipple: jest.fn(),
-    clearRipples: jest.fn(),
-    setInputSource: jest.fn(),
-    getInputSource: jest.fn().mockReturnValue('image'),
-    updateVideoFrame: jest.fn(),
-    updateAudioData: jest.fn(),
-    updateAudioFrequencyBins: jest.fn(),
-    takeScreenshot: jest.fn().mockResolvedValue(undefined),
-    refreshFrameImage: jest.fn().mockResolvedValue(''),
-    getFrameImage: jest.fn().mockReturnValue(''),
-    getFPS: jest.fn().mockReturnValue(60),
-    loadImage: jest.fn().mockResolvedValue('https://example.com/webgpu.png'),
-    reloadShaderFromURL: jest.fn().mockResolvedValue(true),
-    setVideo: jest.fn(),
-    getVideo: jest.fn().mockReturnValue(null),
-  } as unknown as jest.Mocked<WebGPURenderer>;
+    init: vi.fn().mockResolvedValue(true),
+    destroy: vi.fn(),
+    loadShader: vi.fn().mockResolvedValue(true),
+    setActiveShader: vi.fn(),
+    setSlotShader: vi.fn(),
+    setSlotParams: vi.fn(),
+    updateSlotParams: vi.fn(),
+    setSlotMode: vi.fn(),
+    addRipple: vi.fn(),
+    clearRipples: vi.fn(),
+    setInputSource: vi.fn(),
+    getInputSource: vi.fn().mockReturnValue('image'),
+    updateVideoFrame: vi.fn(),
+    updateAudioData: vi.fn(),
+    updateAudioFrequencyBins: vi.fn(),
+    takeScreenshot: vi.fn().mockResolvedValue(undefined),
+    refreshFrameImage: vi.fn().mockResolvedValue(''),
+    getFrameImage: vi.fn().mockReturnValue(''),
+    getFPS: vi.fn().mockReturnValue(60),
+    loadImage: vi.fn().mockResolvedValue('https://example.com/webgpu.png'),
+    reloadShaderFromURL: vi.fn().mockResolvedValue(true),
+    setVideo: vi.fn(),
+    getVideo: vi.fn().mockReturnValue(null),
+  } as unknown as Mocked<WebGPURenderer>;
 }
 
-function makeMockWASM(): jest.Mocked<WASMRenderer> {
+function makeMockWASM(): Mocked<WASMRenderer> {
   return {
-    init: jest.fn().mockResolvedValue(true),
-    destroy: jest.fn(),
-    loadShader: jest.fn().mockResolvedValue(true),
-    setActiveShader: jest.fn(),
-    setSlotShader: jest.fn(),
-    setSlotParams: jest.fn(),
-    updateSlotParams: jest.fn(),
-    setSlotMode: jest.fn(),
-    addRipple: jest.fn(),
-    clearRipples: jest.fn(),
-    setInputSource: jest.fn(),
-    getInputSource: jest.fn().mockReturnValue('image'),
-    updateVideoFrame: jest.fn(),
-    updateAudioData: jest.fn(),
-    updateAudioFrequencyBins: jest.fn(),
-    takeScreenshot: jest.fn().mockResolvedValue(undefined),
-    refreshFrameImage: jest.fn().mockResolvedValue('data:image/png;base64,x'),
-    getFrameImage: jest.fn().mockReturnValue(''),
-    getSlotState: jest.fn().mockReturnValue({ shaderId: 'rain', enabled: true, mode: 'chained' }),
-    getGPUTimings: jest.fn().mockReturnValue({ parallelTime: 1, chainedTime: 2, totalTime: 3, available: false, timingSource: 'wall-clock' }),
-    getAudioData: jest.fn().mockReturnValue({ bass: 0, mid: 0, treble: 0, freqBins: new Float32Array(128) }),
-    isRecording: jest.fn().mockReturnValue(false),
-    getSupportsDeepWorkgroup: jest.fn().mockReturnValue(true),
-    setRecording: jest.fn(),
-    startRecording: jest.fn().mockResolvedValue(new Blob()),
-    stopRecording: jest.fn(),
-    loadImage: jest.fn().mockResolvedValue('https://example.com/img.png'),
-    reloadShaderFromURL: jest.fn().mockResolvedValue(true),
-    setVideo: jest.fn(),
-    getVideo: jest.fn().mockReturnValue(null),
-    getFPS: jest.fn().mockReturnValue(55),
-    getDiagnostics: jest.fn().mockReturnValue({ initialized: true }),
-  } as unknown as jest.Mocked<WASMRenderer>;
+    init: vi.fn().mockResolvedValue(true),
+    destroy: vi.fn(),
+    loadShader: vi.fn().mockResolvedValue(true),
+    setActiveShader: vi.fn(),
+    setSlotShader: vi.fn(),
+    setSlotParams: vi.fn(),
+    updateSlotParams: vi.fn(),
+    setSlotMode: vi.fn(),
+    addRipple: vi.fn(),
+    clearRipples: vi.fn(),
+    setInputSource: vi.fn(),
+    getInputSource: vi.fn().mockReturnValue('image'),
+    updateVideoFrame: vi.fn(),
+    updateAudioData: vi.fn(),
+    updateAudioFrequencyBins: vi.fn(),
+    takeScreenshot: vi.fn().mockResolvedValue(undefined),
+    refreshFrameImage: vi.fn().mockResolvedValue('data:image/png;base64,x'),
+    getFrameImage: vi.fn().mockReturnValue(''),
+    getSlotState: vi.fn().mockReturnValue({ shaderId: 'rain', enabled: true, mode: 'chained' }),
+    getGPUTimings: vi.fn().mockReturnValue({ parallelTime: 1, chainedTime: 2, totalTime: 3, available: false, timingSource: 'wall-clock' }),
+    getAudioData: vi.fn().mockReturnValue({ bass: 0, mid: 0, treble: 0, freqBins: new Float32Array(128) }),
+    isRecording: vi.fn().mockReturnValue(false),
+    getSupportsDeepWorkgroup: vi.fn().mockReturnValue(true),
+    setRecording: vi.fn(),
+    startRecording: vi.fn().mockResolvedValue(new Blob()),
+    stopRecording: vi.fn(),
+    loadImage: vi.fn().mockResolvedValue('https://example.com/img.png'),
+    reloadShaderFromURL: vi.fn().mockResolvedValue(true),
+    setVideo: vi.fn(),
+    getVideo: vi.fn().mockReturnValue(null),
+    getFPS: vi.fn().mockReturnValue(55),
+    getDiagnostics: vi.fn().mockReturnValue({ initialized: true }),
+  } as unknown as Mocked<WASMRenderer>;
 }
 
-function makeMockJS(): jest.Mocked<JSRenderer> {
+function makeMockJS(): Mocked<JSRenderer> {
   return {
-    init: jest.fn().mockResolvedValue(true),
-    destroy: jest.fn(),
-    setInputSource: jest.fn(),
-    getInputSource: jest.fn().mockReturnValue('image'),
-    updateVideoFrame: jest.fn(),
-    getFPS: jest.fn().mockReturnValue(30),
-  } as unknown as jest.Mocked<JSRenderer>;
+    init: vi.fn().mockResolvedValue(true),
+    destroy: vi.fn(),
+    setInputSource: vi.fn(),
+    getInputSource: vi.fn().mockReturnValue('image'),
+    updateVideoFrame: vi.fn(),
+    getFPS: vi.fn().mockReturnValue(30),
+  } as unknown as Mocked<JSRenderer>;
 }
 
 describe('RendererManager shader forwarding', () => {
@@ -106,17 +109,17 @@ describe('RendererManager shader forwarding', () => {
 
   beforeEach(() => {
     canvas = document.createElement('canvas');
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('forwards setSlotShader and updateSlotParams to WASMRenderer', async () => {
     const wasm = makeMockWASM();
-    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
-    (WebGPURenderer as jest.Mock).mockImplementation(() => ({
-      init: jest.fn().mockResolvedValue(false),
-      destroy: jest.fn(),
+    (WASMRenderer as Mock).mockImplementation(() => wasm);
+    (WebGPURenderer as Mock).mockImplementation(() => ({
+      init: vi.fn().mockResolvedValue(false),
+      destroy: vi.fn(),
     }));
-    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
 
     const manager = new RendererManager(DEFAULT_CONFIG);
     await manager.init(canvas);
@@ -134,9 +137,9 @@ describe('RendererManager shader forwarding', () => {
 
   it('forwards setSlotShader and updateSlotParams to WebGPURenderer', async () => {
     const webgpu = makeMockWebGPU();
-    (WebGPURenderer as jest.Mock).mockImplementation(() => webgpu);
-    (WASMRenderer as jest.Mock).mockImplementation(() => makeMockWASM());
-    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+    (WebGPURenderer as Mock).mockImplementation(() => webgpu);
+    (WASMRenderer as Mock).mockImplementation(() => makeMockWASM());
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
 
     const manager = new RendererManager(DEFAULT_CONFIG);
     await manager.init(canvas);
@@ -152,12 +155,12 @@ describe('RendererManager shader forwarding', () => {
 
   it('forwards loadShaders to WASMRenderer', async () => {
     const wasm = makeMockWASM();
-    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
-    (WebGPURenderer as jest.Mock).mockImplementation(() => ({
-      init: jest.fn().mockResolvedValue(false),
-      destroy: jest.fn(),
+    (WASMRenderer as Mock).mockImplementation(() => wasm);
+    (WebGPURenderer as Mock).mockImplementation(() => ({
+      init: vi.fn().mockResolvedValue(false),
+      destroy: vi.fn(),
     }));
-    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
 
     const manager = new RendererManager(DEFAULT_CONFIG);
     await manager.init(canvas);
@@ -175,12 +178,12 @@ describe('RendererManager shader forwarding', () => {
 
   it('syncAllSlotParams pushes each slot to WASM', async () => {
     const wasm = makeMockWASM();
-    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
-    (WebGPURenderer as jest.Mock).mockImplementation(() => ({
-      init: jest.fn().mockResolvedValue(false),
-      destroy: jest.fn(),
+    (WASMRenderer as Mock).mockImplementation(() => wasm);
+    (WebGPURenderer as Mock).mockImplementation(() => ({
+      init: vi.fn().mockResolvedValue(false),
+      destroy: vi.fn(),
     }));
-    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
 
     const manager = new RendererManager(DEFAULT_CONFIG);
     await manager.init(canvas);
@@ -201,12 +204,12 @@ describe('RendererManager shader forwarding', () => {
 
   it('resyncShaderStack reloads active modes after backend switch', async () => {
     const wasm = makeMockWASM();
-    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
-    (WebGPURenderer as jest.Mock).mockImplementation(() => ({
-      init: jest.fn().mockResolvedValue(false),
-      destroy: jest.fn(),
+    (WASMRenderer as Mock).mockImplementation(() => wasm);
+    (WebGPURenderer as Mock).mockImplementation(() => ({
+      init: vi.fn().mockResolvedValue(false),
+      destroy: vi.fn(),
     }));
-    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
 
     const manager = new RendererManager(DEFAULT_CONFIG);
     await manager.init(canvas);
@@ -234,10 +237,10 @@ describe('RendererManager shader forwarding', () => {
 
   it('does not auto-fallback to Canvas2D when WebGPU init fails', async () => {
     const js = makeMockJS();
-    (JSRenderer as jest.Mock).mockImplementation(() => js);
-    (WebGPURenderer as jest.Mock).mockImplementation(() => ({
-      init: jest.fn().mockResolvedValue(false),
-      destroy: jest.fn(),
+    (JSRenderer as Mock).mockImplementation(() => js);
+    (WebGPURenderer as Mock).mockImplementation(() => ({
+      init: vi.fn().mockResolvedValue(false),
+      destroy: vi.fn(),
     }));
 
     const manager = new RendererManager(DEFAULT_CONFIG);
@@ -248,10 +251,10 @@ describe('RendererManager shader forwarding', () => {
 
   it('no-ops shader calls when Canvas2D fallback is active', async () => {
     const js = makeMockJS();
-    (JSRenderer as jest.Mock).mockImplementation(() => js);
-    (WebGPURenderer as jest.Mock).mockImplementation(() => ({
-      init: jest.fn().mockResolvedValue(false),
-      destroy: jest.fn(),
+    (JSRenderer as Mock).mockImplementation(() => js);
+    (WebGPURenderer as Mock).mockImplementation(() => ({
+      init: vi.fn().mockResolvedValue(false),
+      destroy: vi.fn(),
     }));
 
     const manager = new RendererManager(DEFAULT_CONFIG);
@@ -266,12 +269,12 @@ describe('RendererManager shader forwarding', () => {
 
   it('forwards setInputSource to WASMRenderer', async () => {
     const wasm = makeMockWASM();
-    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
-    (WebGPURenderer as jest.Mock).mockImplementation(() => ({
-      init: jest.fn().mockResolvedValue(false),
-      destroy: jest.fn(),
+    (WASMRenderer as Mock).mockImplementation(() => wasm);
+    (WebGPURenderer as Mock).mockImplementation(() => ({
+      init: vi.fn().mockResolvedValue(false),
+      destroy: vi.fn(),
     }));
-    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
 
     const manager = new RendererManager(DEFAULT_CONFIG);
     await manager.init(document.createElement('canvas'));
@@ -289,9 +292,9 @@ describe('RendererManager shader forwarding', () => {
 
   it('forwards setInputSource to WebGPURenderer', async () => {
     const webgpu = makeMockWebGPU();
-    (WebGPURenderer as jest.Mock).mockImplementation(() => webgpu);
-    (WASMRenderer as jest.Mock).mockImplementation(() => makeMockWASM());
-    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+    (WebGPURenderer as Mock).mockImplementation(() => webgpu);
+    (WASMRenderer as Mock).mockImplementation(() => makeMockWASM());
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
 
     const manager = new RendererManager(DEFAULT_CONFIG);
     await manager.init(canvas);
@@ -302,12 +305,12 @@ describe('RendererManager shader forwarding', () => {
 
   it('render() uploads video frames on WASM backend', async () => {
     const wasm = makeMockWASM();
-    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
-    (WebGPURenderer as jest.Mock).mockImplementation(() => ({
-      init: jest.fn().mockResolvedValue(false),
-      destroy: jest.fn(),
+    (WASMRenderer as Mock).mockImplementation(() => wasm);
+    (WebGPURenderer as Mock).mockImplementation(() => ({
+      init: vi.fn().mockResolvedValue(false),
+      destroy: vi.fn(),
     }));
-    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
 
     const manager = new RendererManager(DEFAULT_CONFIG);
     await manager.init(document.createElement('canvas'));
@@ -319,9 +322,9 @@ describe('RendererManager shader forwarding', () => {
 
   it('addRipplePoint forwards to addRipple on shader backends', async () => {
     const webgpu = makeMockWebGPU();
-    (WebGPURenderer as jest.Mock).mockImplementation(() => webgpu);
-    (WASMRenderer as jest.Mock).mockImplementation(() => makeMockWASM());
-    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+    (WebGPURenderer as Mock).mockImplementation(() => webgpu);
+    (WASMRenderer as Mock).mockImplementation(() => makeMockWASM());
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
 
     const manager = new RendererManager(DEFAULT_CONFIG);
     await manager.init(canvas);
@@ -333,12 +336,12 @@ describe('RendererManager shader forwarding', () => {
 
   it('forwards updateAudioFrequencyBins to WASMRenderer', async () => {
     const wasm = makeMockWASM();
-    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
-    (WebGPURenderer as jest.Mock).mockImplementation(() => ({
-      init: jest.fn().mockResolvedValue(false),
-      destroy: jest.fn(),
+    (WASMRenderer as Mock).mockImplementation(() => wasm);
+    (WebGPURenderer as Mock).mockImplementation(() => ({
+      init: vi.fn().mockResolvedValue(false),
+      destroy: vi.fn(),
     }));
-    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
 
     const manager = new RendererManager(DEFAULT_CONFIG);
     await manager.init(document.createElement('canvas'));
@@ -351,12 +354,12 @@ describe('RendererManager shader forwarding', () => {
 
   it('delegates takeScreenshot to WASMRenderer', async () => {
     const wasm = makeMockWASM();
-    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
-    (WebGPURenderer as jest.Mock).mockImplementation(() => ({
-      init: jest.fn().mockResolvedValue(false),
-      destroy: jest.fn(),
+    (WASMRenderer as Mock).mockImplementation(() => wasm);
+    (WebGPURenderer as Mock).mockImplementation(() => ({
+      init: vi.fn().mockResolvedValue(false),
+      destroy: vi.fn(),
     }));
-    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
 
     const manager = new RendererManager(DEFAULT_CONFIG);
     await manager.init(document.createElement('canvas'));
@@ -368,12 +371,12 @@ describe('RendererManager shader forwarding', () => {
 
   it('exposes getSlotState and getGPUTimings from WASMRenderer', async () => {
     const wasm = makeMockWASM();
-    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
-    (WebGPURenderer as jest.Mock).mockImplementation(() => ({
-      init: jest.fn().mockResolvedValue(false),
-      destroy: jest.fn(),
+    (WASMRenderer as Mock).mockImplementation(() => wasm);
+    (WebGPURenderer as Mock).mockImplementation(() => ({
+      init: vi.fn().mockResolvedValue(false),
+      destroy: vi.fn(),
     }));
-    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
 
     const manager = new RendererManager(DEFAULT_CONFIG);
     await manager.init(document.createElement('canvas'));
@@ -390,12 +393,12 @@ describe('RendererManager shader forwarding', () => {
 
   it('delegates startRecording and stopRendererRecording to WASMRenderer', async () => {
     const wasm = makeMockWASM();
-    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
-    (WebGPURenderer as jest.Mock).mockImplementation(() => ({
-      init: jest.fn().mockResolvedValue(false),
-      destroy: jest.fn(),
+    (WASMRenderer as Mock).mockImplementation(() => wasm);
+    (WebGPURenderer as Mock).mockImplementation(() => ({
+      init: vi.fn().mockResolvedValue(false),
+      destroy: vi.fn(),
     }));
-    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
 
     const manager = new RendererManager(DEFAULT_CONFIG);
     await manager.init(document.createElement('canvas'));
@@ -413,12 +416,12 @@ describe('RendererManager shader forwarding', () => {
 
   it('delegates getAudioData and isRecording from WASMRenderer', async () => {
     const wasm = makeMockWASM();
-    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
-    (WebGPURenderer as jest.Mock).mockImplementation(() => ({
-      init: jest.fn().mockResolvedValue(false),
-      destroy: jest.fn(),
+    (WASMRenderer as Mock).mockImplementation(() => wasm);
+    (WebGPURenderer as Mock).mockImplementation(() => ({
+      init: vi.fn().mockResolvedValue(false),
+      destroy: vi.fn(),
     }));
-    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
 
     const manager = new RendererManager(DEFAULT_CONFIG);
     await manager.init(document.createElement('canvas'));
@@ -433,12 +436,12 @@ describe('RendererManager shader forwarding', () => {
 
   it('delegates loadImage to WASMRenderer via duck-typed loadImage', async () => {
     const wasm = makeMockWASM();
-    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
-    (WebGPURenderer as jest.Mock).mockImplementation(() => ({
-      init: jest.fn().mockResolvedValue(false),
-      destroy: jest.fn(),
+    (WASMRenderer as Mock).mockImplementation(() => wasm);
+    (WebGPURenderer as Mock).mockImplementation(() => ({
+      init: vi.fn().mockResolvedValue(false),
+      destroy: vi.fn(),
     }));
-    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
 
     const manager = new RendererManager(DEFAULT_CONFIG);
     await manager.init(document.createElement('canvas'));
@@ -451,12 +454,12 @@ describe('RendererManager shader forwarding', () => {
 
   it('delegates loadImage to WebGPURenderer', async () => {
     const webgpu = makeMockWebGPU();
-    (WebGPURenderer as jest.Mock).mockImplementation(() => webgpu);
-    (WASMRenderer as jest.Mock).mockImplementation(() => ({
-      init: jest.fn().mockResolvedValue(false),
-      destroy: jest.fn(),
+    (WebGPURenderer as Mock).mockImplementation(() => webgpu);
+    (WASMRenderer as Mock).mockImplementation(() => ({
+      init: vi.fn().mockResolvedValue(false),
+      destroy: vi.fn(),
     }));
-    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
 
     const manager = new RendererManager(DEFAULT_CONFIG);
     await manager.init(document.createElement('canvas'));
@@ -469,9 +472,9 @@ describe('RendererManager shader forwarding', () => {
   it('re-uploads the current image after switching to WASM (#1206)', async () => {
     const webgpu = makeMockWebGPU();
     const wasm = makeMockWASM();
-    (WebGPURenderer as jest.Mock).mockImplementation(() => webgpu);
-    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
-    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+    (WebGPURenderer as Mock).mockImplementation(() => webgpu);
+    (WASMRenderer as Mock).mockImplementation(() => wasm);
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
 
     const manager = new RendererManager(DEFAULT_CONFIG);
     await manager.init(canvas);
@@ -491,12 +494,12 @@ describe('RendererManager shader forwarding', () => {
     const webgpu = makeMockWebGPU();
     (webgpu as unknown as { getCpuInputBitmap: () => HTMLCanvasElement }).getCpuInputBitmap = () => offscreen;
     const wasm = makeMockWASM();
-    (wasm as unknown as { loadImageFromElement: jest.Mock }).loadImageFromElement = jest
+    (wasm as unknown as { loadImageFromElement: Mock }).loadImageFromElement = vi
       .fn()
       .mockReturnValue({ width: 16, height: 8 });
-    (WebGPURenderer as jest.Mock).mockImplementation(() => webgpu);
-    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
-    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+    (WebGPURenderer as Mock).mockImplementation(() => webgpu);
+    (WASMRenderer as Mock).mockImplementation(() => wasm);
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
 
     const manager = new RendererManager(DEFAULT_CONFIG);
     await manager.init(canvas);
@@ -504,16 +507,16 @@ describe('RendererManager shader forwarding', () => {
 
     await manager.switchRenderer('wasm');
 
-    expect((wasm as unknown as { loadImageFromElement: jest.Mock }).loadImageFromElement).toHaveBeenCalledWith(offscreen);
+    expect((wasm as unknown as { loadImageFromElement: Mock }).loadImageFromElement).toHaveBeenCalledWith(offscreen);
     expect(wasm.loadImage).not.toHaveBeenCalled();
   });
 
   it('resyncs the stored shader stack as part of switchRenderer (#1206)', async () => {
     const webgpu = makeMockWebGPU();
     const wasm = makeMockWASM();
-    (WebGPURenderer as jest.Mock).mockImplementation(() => webgpu);
-    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
-    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+    (WebGPURenderer as Mock).mockImplementation(() => webgpu);
+    (WASMRenderer as Mock).mockImplementation(() => wasm);
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
 
     const manager = new RendererManager(DEFAULT_CONFIG);
     await manager.init(canvas);
@@ -542,12 +545,12 @@ describe('RendererManager shader forwarding', () => {
 
   it('reloadShader prefers reloadShaderFromURL on shader backends', async () => {
     const wasm = makeMockWASM();
-    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
-    (WebGPURenderer as jest.Mock).mockImplementation(() => ({
-      init: jest.fn().mockResolvedValue(false),
-      destroy: jest.fn(),
+    (WASMRenderer as Mock).mockImplementation(() => wasm);
+    (WebGPURenderer as Mock).mockImplementation(() => ({
+      init: vi.fn().mockResolvedValue(false),
+      destroy: vi.fn(),
     }));
-    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
 
     const manager = new RendererManager(DEFAULT_CONFIG);
     await manager.init(document.createElement('canvas'));
@@ -559,12 +562,12 @@ describe('RendererManager shader forwarding', () => {
 
   it('firePlasma falls back to addRipple when backend has no firePlasma', async () => {
     const wasm = makeMockWASM();
-    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
-    (WebGPURenderer as jest.Mock).mockImplementation(() => ({
-      init: jest.fn().mockResolvedValue(false),
-      destroy: jest.fn(),
+    (WASMRenderer as Mock).mockImplementation(() => wasm);
+    (WebGPURenderer as Mock).mockImplementation(() => ({
+      init: vi.fn().mockResolvedValue(false),
+      destroy: vi.fn(),
     }));
-    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
 
     const manager = new RendererManager(DEFAULT_CONFIG);
     await manager.init(document.createElement('canvas'));
@@ -576,12 +579,12 @@ describe('RendererManager shader forwarding', () => {
 
   it('reports renderer type from metrics rather than instanceof', async () => {
     const wasm = makeMockWASM();
-    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
-    (WebGPURenderer as jest.Mock).mockImplementation(() => ({
-      init: jest.fn().mockResolvedValue(false),
-      destroy: jest.fn(),
+    (WASMRenderer as Mock).mockImplementation(() => wasm);
+    (WebGPURenderer as Mock).mockImplementation(() => ({
+      init: vi.fn().mockResolvedValue(false),
+      destroy: vi.fn(),
     }));
-    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
 
     const manager = new RendererManager(DEFAULT_CONFIG);
     await manager.init(document.createElement('canvas'));
@@ -593,18 +596,18 @@ describe('RendererManager shader forwarding', () => {
   it('releases WebGPU before WASM init (exclusive adapter ownership)', async () => {
     const order: string[] = [];
     const webgpu = makeMockWebGPU();
-    webgpu.destroy = jest.fn(async () => {
+    webgpu.destroy = vi.fn(async () => {
       order.push('webgpu.destroy');
     });
     const wasm = makeMockWASM();
-    wasm.init = jest.fn(async (canvas: HTMLCanvasElement) => {
+    wasm.init = vi.fn(async (_canvas: HTMLCanvasElement) => {
       order.push('wasm.init');
       return true;
     });
 
-    (WebGPURenderer as jest.Mock).mockImplementation(() => webgpu);
-    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
-    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+    (WebGPURenderer as Mock).mockImplementation(() => webgpu);
+    (WASMRenderer as Mock).mockImplementation(() => wasm);
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
 
     const manager = new RendererManager(DEFAULT_CONFIG);
     await manager.init(canvas);
@@ -619,44 +622,44 @@ describe('RendererManager shader forwarding', () => {
 
   it('restores WebGPU when WASM init fails after exclusive release', async () => {
     let webgpuInitCount = 0;
-    const webgpuInstances: Array<{ init: jest.Mock; destroy: jest.Mock }> = [];
+    const webgpuInstances: Array<{ init: Mock; destroy: Mock }> = [];
 
-    (WebGPURenderer as jest.Mock).mockImplementation(() => {
+    (WebGPURenderer as Mock).mockImplementation(() => {
       const instance = {
-        init: jest.fn(async () => {
+        init: vi.fn(async () => {
           webgpuInitCount += 1;
           return true;
         }),
-        destroy: jest.fn(),
-        loadShader: jest.fn().mockResolvedValue(true),
-        setActiveShader: jest.fn(),
-        setSlotShader: jest.fn(),
-        setSlotParams: jest.fn(),
-        updateSlotParams: jest.fn(),
-        setSlotMode: jest.fn(),
-        addRipple: jest.fn(),
-        clearRipples: jest.fn(),
-        setInputSource: jest.fn(),
-        getInputSource: jest.fn().mockReturnValue('image'),
-        updateVideoFrame: jest.fn(),
-        updateAudioData: jest.fn(),
-        updateAudioFrequencyBins: jest.fn(),
-        takeScreenshot: jest.fn().mockResolvedValue(undefined),
-        refreshFrameImage: jest.fn().mockResolvedValue(''),
-        getFrameImage: jest.fn().mockReturnValue(''),
-        getFPS: jest.fn().mockReturnValue(60),
-        loadImage: jest.fn().mockResolvedValue('https://example.com/webgpu.png'),
-        reloadShaderFromURL: jest.fn().mockResolvedValue(true),
-        getDiagnostics: jest.fn().mockReturnValue({ initialized: true }),
+        destroy: vi.fn(),
+        loadShader: vi.fn().mockResolvedValue(true),
+        setActiveShader: vi.fn(),
+        setSlotShader: vi.fn(),
+        setSlotParams: vi.fn(),
+        updateSlotParams: vi.fn(),
+        setSlotMode: vi.fn(),
+        addRipple: vi.fn(),
+        clearRipples: vi.fn(),
+        setInputSource: vi.fn(),
+        getInputSource: vi.fn().mockReturnValue('image'),
+        updateVideoFrame: vi.fn(),
+        updateAudioData: vi.fn(),
+        updateAudioFrequencyBins: vi.fn(),
+        takeScreenshot: vi.fn().mockResolvedValue(undefined),
+        refreshFrameImage: vi.fn().mockResolvedValue(''),
+        getFrameImage: vi.fn().mockReturnValue(''),
+        getFPS: vi.fn().mockReturnValue(60),
+        loadImage: vi.fn().mockResolvedValue('https://example.com/webgpu.png'),
+        reloadShaderFromURL: vi.fn().mockResolvedValue(true),
+        getDiagnostics: vi.fn().mockReturnValue({ initialized: true }),
       };
       webgpuInstances.push(instance);
       return instance;
     });
 
     const wasm = makeMockWASM();
-    wasm.init = jest.fn().mockResolvedValue(false);
-    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
-    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+    wasm.init = vi.fn().mockResolvedValue(false);
+    (WASMRenderer as Mock).mockImplementation(() => wasm);
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
 
     const manager = new RendererManager(DEFAULT_CONFIG);
     await manager.init(canvas);
@@ -675,19 +678,19 @@ describe('RendererManager shader forwarding', () => {
     // The worker took the canvas, so switchRenderer releases it before WASM init and
     // performBackendSwitch has no previous renderer to restore by itself.
     const webgpu = makeMockWebGPU();
-    (WebGPURenderer as jest.Mock).mockImplementation(() => webgpu);
+    (WebGPURenderer as Mock).mockImplementation(() => webgpu);
     const wasm = makeMockWASM();
-    wasm.init = jest.fn().mockResolvedValue(false);
-    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
+    wasm.init = vi.fn().mockResolvedValue(false);
+    (WASMRenderer as Mock).mockImplementation(() => wasm);
 
     const fresh = document.createElement('canvas');
-    const acquireFreshCanvas = jest.fn(async () => fresh);
+    const acquireFreshCanvas = vi.fn(async () => fresh);
     const manager = new RendererManager(DEFAULT_CONFIG, undefined, { acquireFreshCanvas });
     await manager.init(canvas);
     expect(manager.getActiveRendererType()).toBe('webgpu');
     // Only now does the worker own the canvas the manager holds.
     const workerBackend = await import('../renderer/worker/WorkerWebGPUBackend');
-    const transferredSpy = jest
+    const transferredSpy = vi
       .spyOn(workerBackend, 'isCanvasTransferred')
       .mockImplementation((c) => c === canvas);
 
@@ -707,8 +710,8 @@ describe('RendererManager lifecycle', () => {
   let canvas: HTMLCanvasElement;
   let rafCallbacks: Map<number, FrameRequestCallback>;
   let nextRafId: number;
-  let rafSpy: jest.SpyInstance;
-  let cancelSpy: jest.SpyInstance;
+  let rafSpy: MockInstance;
+  let cancelSpy: MockInstance;
 
   /** Run one frame of every pending rAF callback (loops re-register themselves). */
   function flushFrame(): void {
@@ -719,10 +722,10 @@ describe('RendererManager lifecycle', () => {
 
   beforeEach(() => {
     canvas = document.createElement('canvas');
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     rafCallbacks = new Map();
     nextRafId = 1;
-    rafSpy = jest.spyOn(window, 'requestAnimationFrame').mockImplementation((cb: FrameRequestCallback) => {
+    rafSpy = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb: FrameRequestCallback) => {
       const id = nextRafId++;
       rafCallbacks.set(id, cb);
       // Backend switches await yieldForGpuRelease(); resolve those frames promptly.
@@ -735,12 +738,12 @@ describe('RendererManager lifecycle', () => {
       }, 0);
       return id;
     });
-    cancelSpy = jest.spyOn(window, 'cancelAnimationFrame').mockImplementation((id: number) => {
+    cancelSpy = vi.spyOn(window, 'cancelAnimationFrame').mockImplementation((id: number) => {
       rafCallbacks.delete(id);
     });
-    (WebGPURenderer as jest.Mock).mockImplementation(() => makeMockWebGPU());
-    (WASMRenderer as jest.Mock).mockImplementation(() => makeMockWASM());
-    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+    (WebGPURenderer as Mock).mockImplementation(() => makeMockWebGPU());
+    (WASMRenderer as Mock).mockImplementation(() => makeMockWASM());
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
   });
 
   afterEach(() => {
@@ -749,7 +752,7 @@ describe('RendererManager lifecycle', () => {
   });
 
   it('keeps exactly one metrics loop across 10 backend toggles', async () => {
-    const onMetrics = jest.fn();
+    const onMetrics = vi.fn();
     const manager = new RendererManager(DEFAULT_CONFIG, onMetrics);
     await manager.init(canvas);
     for (let i = 0; i < 10; i++) {
@@ -777,7 +780,7 @@ describe('RendererManager lifecycle', () => {
 
   it('render() takes no arguments and uploads video frames only on WASM', async () => {
     const wasm = makeMockWASM();
-    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
+    (WASMRenderer as Mock).mockImplementation(() => wasm);
     const manager = new RendererManager(DEFAULT_CONFIG);
     await manager.init(canvas);
     await manager.switchRenderer('wasm');
@@ -789,10 +792,10 @@ describe('RendererManager lifecycle', () => {
   it('destroy() resolves after the backend releases its GPU device', async () => {
     let releaseDone = false;
     const webgpu = makeMockWebGPU();
-    (webgpu as unknown as { releaseExclusiveGpu: () => Promise<void> }).releaseExclusiveGpu = jest.fn(
+    (webgpu as unknown as { releaseExclusiveGpu: () => Promise<void> }).releaseExclusiveGpu = vi.fn(
       () => new Promise<void>((resolve) => setTimeout(() => { releaseDone = true; resolve(); }, 5)),
     );
-    (WebGPURenderer as jest.Mock).mockImplementation(() => webgpu);
+    (WebGPURenderer as Mock).mockImplementation(() => webgpu);
     const manager = new RendererManager(DEFAULT_CONFIG);
     await manager.init(canvas);
     await manager.destroy();
@@ -803,9 +806,9 @@ describe('RendererManager lifecycle', () => {
   it('falls back to WebGPU when the WASM loop reports a fatal error', async () => {
     let fatal: ((message: string) => void) | null = null;
     const wasm = makeMockWASM();
-    (wasm as unknown as { setFatalErrorHandler: jest.Mock }).setFatalErrorHandler = jest.fn((h) => { fatal = h; });
-    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
-    const onBackendFailure = jest.fn();
+    (wasm as unknown as { setFatalErrorHandler: Mock }).setFatalErrorHandler = vi.fn((h) => { fatal = h; });
+    (WASMRenderer as Mock).mockImplementation(() => wasm);
+    const onBackendFailure = vi.fn();
     const manager = new RendererManager(DEFAULT_CONFIG, undefined, { onBackendFailure });
     await manager.init(canvas);
     await manager.switchRenderer('wasm');
@@ -821,13 +824,13 @@ describe('RendererManager lifecycle', () => {
   it('reports backend failure when no fallback can take over', async () => {
     let fatal: ((message: string) => void) | null = null;
     const wasm = makeMockWASM();
-    (wasm as unknown as { setFatalErrorHandler: jest.Mock }).setFatalErrorHandler = jest.fn((h) => { fatal = h; });
-    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
-    const onBackendFailure = jest.fn();
+    (wasm as unknown as { setFatalErrorHandler: Mock }).setFatalErrorHandler = vi.fn((h) => { fatal = h; });
+    (WASMRenderer as Mock).mockImplementation(() => wasm);
+    const onBackendFailure = vi.fn();
     const manager = new RendererManager(DEFAULT_CONFIG, undefined, { onBackendFailure });
     await manager.init(canvas);
     await manager.switchRenderer('wasm');
-    (WebGPURenderer as jest.Mock).mockImplementation(() => ({ init: jest.fn().mockResolvedValue(false), destroy: jest.fn() }));
+    (WebGPURenderer as Mock).mockImplementation(() => ({ init: vi.fn().mockResolvedValue(false), destroy: vi.fn() }));
 
     fatal!('render loop stopped');
     await new Promise((r) => setTimeout(r, 20));
@@ -837,17 +840,17 @@ describe('RendererManager lifecycle', () => {
 
 describe('RendererManager device-loss recovery', () => {
   let canvas: HTMLCanvasElement;
-  let rafSpy: jest.SpyInstance;
+  let rafSpy: MockInstance;
 
   type LossHandler = (message: string, info?: import('../renderer/Renderer').DeviceLossInfo) => void;
   const loss = (reason = 'unknown') => ({ kind: 'device-lost' as const, reason, message: 'driver reset', at: Date.now() });
 
   /** A TS WebGPU mock that captures the manager's fatal handler. */
   function lossAwareWebGPU(initOk = true) {
-    const r = makeMockWebGPU() as unknown as jest.Mocked<WebGPURenderer> & { fatal: LossHandler | null };
+    const r = makeMockWebGPU() as unknown as Mocked<WebGPURenderer> & { fatal: LossHandler | null };
     r.fatal = null;
-    (r.init as jest.Mock).mockResolvedValue(initOk);
-    (r as unknown as { setFatalErrorHandler: jest.Mock }).setFatalErrorHandler = jest.fn((h: LossHandler) => {
+    (r.init as Mock).mockResolvedValue(initOk);
+    (r as unknown as { setFatalErrorHandler: Mock }).setFatalErrorHandler = vi.fn((h: LossHandler) => {
       r.fatal = h;
     });
     return r;
@@ -863,11 +866,11 @@ describe('RendererManager device-loss recovery', () => {
 
   beforeEach(() => {
     canvas = document.createElement('canvas');
-    jest.clearAllMocks();
-    rafSpy = jest.spyOn(window, 'requestAnimationFrame').mockImplementation((cb: FrameRequestCallback) =>
+    vi.clearAllMocks();
+    rafSpy = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb: FrameRequestCallback) =>
       setTimeout(() => cb(performance.now()), 0) as unknown as number);
-    (WASMRenderer as jest.Mock).mockImplementation(() => makeMockWASM());
-    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+    (WASMRenderer as Mock).mockImplementation(() => makeMockWASM());
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
   });
 
   afterEach(() => {
@@ -875,9 +878,9 @@ describe('RendererManager device-loss recovery', () => {
   });
 
   async function bootWith(first: ReturnType<typeof lossAwareWebGPU>, options = {}) {
-    (WebGPURenderer as jest.Mock).mockImplementationOnce(() => first);
+    (WebGPURenderer as Mock).mockImplementationOnce(() => first);
     const statuses: string[] = [];
-    const onBackendFailure = jest.fn();
+    const onBackendFailure = vi.fn();
     const manager = new RendererManager(DEFAULT_CONFIG, undefined, {
       onBackendFailure,
       getSessionState: () => rainStack,
@@ -893,12 +896,14 @@ describe('RendererManager device-loss recovery', () => {
     const first = lossAwareWebGPU();
     const second = lossAwareWebGPU();
     const { manager, statuses, onBackendFailure } = await bootWith(first);
-    (WebGPURenderer as jest.Mock).mockImplementation(() => second);
+    (WebGPURenderer as Mock).mockImplementation(() => second);
 
     first.fatal!('GPU device lost (unknown)', loss());
     await settle();
 
-    expect(statuses).toEqual(['lost', 'recovering', 'idle']);
+    // Poll rather than trust one 10 ms tick: recovery takes several async hops and
+    // a loaded CI worker can starve the timer.
+    await vi.waitFor(() => expect(statuses).toEqual(['lost', 'recovering', 'idle']));
     expect(first.destroy).toHaveBeenCalled();
     expect(second.init).toHaveBeenCalledTimes(1);
     expect(second.loadShader).toHaveBeenCalledWith('rain', '/rain.wgsl');
@@ -923,8 +928,8 @@ describe('RendererManager device-loss recovery', () => {
     const second = lossAwareWebGPU();
     const { manager, statuses } = await bootWith(first);
     let releaseInit!: (ok: boolean) => void;
-    (second.init as jest.Mock).mockReturnValue(new Promise<boolean>((r) => { releaseInit = r; }));
-    (WebGPURenderer as jest.Mock).mockImplementation(() => second);
+    (second.init as Mock).mockReturnValue(new Promise<boolean>((r) => { releaseInit = r; }));
+    (WebGPURenderer as Mock).mockImplementation(() => second);
 
     first.fatal!('Render worker crashed (boom)', {
       kind: 'worker-died', reason: 'render worker crashed', message: 'boom', at: Date.now(),
@@ -946,7 +951,7 @@ describe('RendererManager device-loss recovery', () => {
     const first = lossAwareWebGPU();
     const failing = lossAwareWebGPU(false);
     const { manager, statuses, onBackendFailure } = await bootWith(first);
-    (WebGPURenderer as jest.Mock).mockImplementation(() => failing);
+    (WebGPURenderer as Mock).mockImplementation(() => failing);
 
     first.fatal!('GPU device lost (unknown)', loss());
     await settle();
@@ -958,7 +963,7 @@ describe('RendererManager device-loss recovery', () => {
     expect(JSRenderer).not.toHaveBeenCalled();
 
     const third = lossAwareWebGPU();
-    (WebGPURenderer as jest.Mock).mockImplementation(() => third);
+    (WebGPURenderer as Mock).mockImplementation(() => third);
     expect(await manager.recoverFromDeviceLoss()).toBe(true);
     expect(statuses.slice(-2)).toEqual(['recovering', 'idle']);
     expect(manager.getDeviceRecoveryStatus().attempts).toBe(2);
@@ -969,8 +974,8 @@ describe('RendererManager device-loss recovery', () => {
     const first = lossAwareWebGPU();
     const { manager } = await bootWith(first);
     const second = lossAwareWebGPU();
-    (WebGPURenderer as jest.Mock).mockClear();
-    (WebGPURenderer as jest.Mock).mockImplementation(() => second);
+    (WebGPURenderer as Mock).mockClear();
+    (WebGPURenderer as Mock).mockImplementation(() => second);
     const [a, b] = await Promise.all([manager.recoverFromDeviceLoss(), manager.recoverFromDeviceLoss()]);
     expect(a).toBe(true);
     expect(b).toBe(true);
@@ -981,10 +986,10 @@ describe('RendererManager device-loss recovery', () => {
     const first = lossAwareWebGPU();
     const second = lossAwareWebGPU();
     const { manager, statuses, onBackendFailure } = await bootWith(first);
-    (WebGPURenderer as jest.Mock).mockImplementation(() => second);
+    (WebGPURenderer as Mock).mockImplementation(() => second);
     first.fatal!('lost', loss());
     await settle();
-    (WebGPURenderer as jest.Mock).mockClear();
+    (WebGPURenderer as Mock).mockClear();
 
     second.fatal!('lost again', loss());
     await settle();
@@ -996,13 +1001,13 @@ describe('RendererManager device-loss recovery', () => {
 
   it('replays what the lost backend was rendering, even when the host session does not know it', async () => {
     const first = lossAwareWebGPU();
-    (first as unknown as { getSlotState: jest.Mock }).getSlotState = jest.fn((i: number) =>
+    (first as unknown as { getSlotState: Mock }).getSlotState = vi.fn((i: number) =>
       i === 1 ? { shaderId: 'plasma', enabled: true, mode: 'parallel' } : { shaderId: null, enabled: false, mode: 'chained' });
     const second = lossAwareWebGPU();
     const { manager } = await bootWith(first, { getSessionState: () => ({ ...rainStack, modes: ['none', 'none'] }) });
     await manager.loadShader('plasma', '/shaders/plasma.wgsl', { requiresHistoryRing: true });
     manager.setInputSource('generative');
-    (WebGPURenderer as jest.Mock).mockImplementation(() => second);
+    (WebGPURenderer as Mock).mockImplementation(() => second);
 
     first.fatal!('lost', loss());
     await settle();
@@ -1012,6 +1017,73 @@ describe('RendererManager device-loss recovery', () => {
     expect(second.setSlotShader).toHaveBeenCalledWith(0, '');
     expect(second.setSlotMode).toHaveBeenCalledWith(1, 'parallel');
     expect(second.setInputSource).toHaveBeenLastCalledWith('generative');
+  });
+
+  it('restores all six slots, their modes and params — slots 3–5 are not dropped (#1425)', async () => {
+    const ids = ['s0', 's1', 's2', 's3', 's4', 's5'];
+    const modes = ['chained', 'parallel', 'chained', 'parallel', 'chained', 'parallel'] as const;
+    const first = lossAwareWebGPU();
+    (first as unknown as { getSlotState: Mock }).getSlotState = vi.fn((i: number) =>
+      i < ids.length ? { shaderId: ids[i], enabled: true, mode: modes[i] } : null);
+    const second = lossAwareWebGPU();
+    const sixParams = ids.map((_, i) => ({ ...defaultSlotParams, zoomParam1: 0.1 * (i + 1) }));
+    const { manager, statuses } = await bootWith(first, {
+      getSessionState: () => ({ ...rainStack, modes: ['none', 'none', 'none'], slotParams: sixParams }),
+    });
+    manager.overrideSlotCapForTests(6); // the cap override outlives the backend, as in the harness / VJ
+    for (const id of ids) await manager.loadShader(id, `/${id}.wgsl`);
+    (WebGPURenderer as Mock).mockImplementation(() => second);
+
+    first.fatal!('lost', loss());
+    await settle();
+
+    expect(statuses).toEqual(['lost', 'recovering', 'idle']);
+    ids.forEach((id, i) => {
+      expect(second.loadShader).toHaveBeenCalledWith(id, `/${id}.wgsl`);
+      expect(second.setSlotShader).toHaveBeenCalledWith(i, id);
+    });
+    expect((second.setSlotMode as Mock).mock.calls).toEqual([[1, 'parallel'], [3, 'parallel'], [5, 'parallel']]);
+    for (const slot of [3, 4, 5]) {
+      expect(second.updateSlotParams).toHaveBeenCalledWith(
+        expect.objectContaining({ zoomParam1: sixParams[slot]!.zoomParam1 }),
+        slot,
+      );
+    }
+  });
+
+  it('re-sends the Graph Lab draft to the rebuilt backend before the shader stack (#1418)', async () => {
+    const graph = createWaveTankGraph();
+    const first = lossAwareWebGPU();
+    const second = lossAwareWebGPU();
+    for (const r of [first, second]) {
+      Object.assign(r, {
+        backendKind: 'webgpu',
+        setRuntimeGraph: vi.fn(),
+        setResolutionScale: vi.fn(),
+        setAdaptiveQuality: vi.fn(),
+        setMaxPassesPerFrame: vi.fn(),
+        setFramePassBudget: vi.fn(),
+        setColorFormat: vi.fn(),
+      });
+    }
+    (first as unknown as { getSlotState: Mock }).getSlotState = vi.fn((i: number) =>
+      i === 0 ? { shaderId: GRAPH_LAB_RUNTIME_ID, enabled: true, mode: 'chained' } : null);
+    const { manager } = await bootWith(first);
+    await manager.loadShader(GRAPH_LAB_RUNTIME_ID, '/graphlab-draft.wgsl');
+    expect(manager.setRuntimeGraph(GRAPH_LAB_RUNTIME_ID, graph, { stateCount: 4096 })).toBe(true);
+    (WebGPURenderer as Mock).mockImplementation(() => second);
+
+    first.fatal!('lost', loss());
+    await settle();
+    // Recovery takes several async hops; poll rather than trust one 10 ms tick under load.
+    await vi.waitFor(() => expect(second.setSlotShader).toHaveBeenCalled());
+
+    const setGraph = second.setRuntimeGraph as unknown as Mock;
+    expect(setGraph).toHaveBeenCalledTimes(1);
+    expect(setGraph).toHaveBeenCalledWith(GRAPH_LAB_RUNTIME_ID, graph, { stateCount: 4096 });
+    expect(setGraph.mock.invocationCallOrder[0]).toBeLessThan((second.loadShader as Mock).mock.invocationCallOrder[0]!);
+    expect(setGraph.mock.invocationCallOrder[0]).toBeLessThan((second.setSlotShader as Mock).mock.invocationCallOrder[0]!);
+    clearRuntimeGraphs();
   });
 
   it('a non-loss fatal error keeps the existing backend-failure path', async () => {
@@ -1027,9 +1099,9 @@ describe('RendererManager device-loss recovery', () => {
     const first = lossAwareWebGPU();
     const second = lossAwareWebGPU();
     let finishInit!: (ok: boolean) => void;
-    (second.init as jest.Mock).mockImplementation(() => new Promise<boolean>((r) => { finishInit = r; }));
+    (second.init as Mock).mockImplementation(() => new Promise<boolean>((r) => { finishInit = r; }));
     const { manager } = await bootWith(first);
-    (WebGPURenderer as jest.Mock).mockImplementation(() => second);
+    (WebGPURenderer as Mock).mockImplementation(() => second);
     first.fatal!('lost', loss());
     await settle();
     expect(second.init).toHaveBeenCalled();

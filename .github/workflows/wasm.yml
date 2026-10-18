@@ -58,9 +58,9 @@ jobs:
       run: npm run wasm:validate
 
     # Committed artifact must match a fresh pinned build (replaces the old mtime
-    # heuristic). Report-only until the 6-slot artifact (#1339) lands on main.
+    # heuristic). Blocking: ci.yml's Jest suites run against the committed
+    # public/wasm/, so a stale artifact must not sit on main (#1343).
     - name: Compare built WASM to committed artifact
-      continue-on-error: true
       run: |
         built=$(sha256sum public/wasm/pixelocity_wasm.wasm | cut -d' ' -f1)
         committed=$(git show HEAD:public/wasm/pixelocity_wasm.wasm | sha256sum | cut -d' ' -f1)
@@ -75,8 +75,8 @@ jobs:
     
     - name: Run WASM unit smoke tests
       run: |
-        echo "WASM Jest gate: testPathPattern=WASM (job fails on any test failure; no || true)"
-        npm test -- --watchAll=false --ci --testPathPattern='WASM'
+        echo "WASM Vitest gate: filter=WASM (job fails on any test failure; no || true)"
+        npm run test:wasm:unit
       env:
         CI: true
     

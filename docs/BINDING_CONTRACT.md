@@ -16,7 +16,7 @@ Single source of truth for the Pixelocity compute bind group layout and device p
 - Pre-FX analysis (not this bind group): [`docs/GPU_CHORES.md`](GPU_CHORES.md) — Tier 4b gpu-chores on the **same** `GPUDevice`
 - Boot probe / hard-fail (WebGPU required, no WebGL fallback): [`docs/WEBGPU_BOOT_PROBE.md`](WEBGPU_BOOT_PROBE.md)
 
-**One renderer `GPUDevice`:** the boot probe owns the sole `requestAdapter`/`requestDevice` for catalog rendering, gpu-chores, ShaderValidator, and ShaderScanner. Lazy depth (`@xenova/transformers`) prefers WASM/CPU while that device is live — Transformers may still allocate internally when `device:'webgpu'` is selected.
+**One renderer `GPUDevice`:** the boot probe owns the sole `requestAdapter`/`requestDevice` for catalog rendering, gpu-chores, ShaderValidator, and ShaderScanner. Lazy depth (`@huggingface/transformers`) prefers WASM/CPU while that device is live — Transformers may still allocate internally when `device:'webgpu'` is selected.
 
 **Device owner registry (#1395):** [`src/renderer/deviceRegistry.ts`](../src/renderer/deviceRegistry.ts) records which backend owns the live device. The page `WebGPURenderer` publishes the device it *ended up with* after setup — after any OOM retry, never the probe handoff it may have destroyed. The render-worker proxy publishes `{ device: null, thread: 'worker' }`. The owner clears the entry on device loss, worker crash and teardown, and only the current owner can clear it. Every publish and clear bumps `generation`. Consumers read or subscribe and never cache a device across a generation change:
 - `RendererManager.getDevice()` / `isGpuDeviceActive()`

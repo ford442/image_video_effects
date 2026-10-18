@@ -6,7 +6,6 @@ import { DanmakuOverlay } from './DanmakuOverlay';
 import { BilibiliInput } from './BilibiliInput';
 import { usePerformanceMonitor } from '../hooks/usePerformanceMonitor';
 import { useAudioAnalyzer } from '../hooks/useAudioAnalyzer';
-import { WASMRenderer } from '../renderer/WASMRenderer';
 import { isWasmForcedByURL } from '../renderer/rendererUrl';
 import { JSRenderer } from '../renderer/JSRenderer';
 import { type Renderer, DEFAULT_CONFIG } from '../renderer/Renderer';
@@ -38,11 +37,21 @@ export const LiveStudioTab: React.FC<LiveStudioTabProps> = ({ className }) => {
     await rendererRef.current?.destroy();
 
     // Create new renderer
-    const RendererClass = wasmMode ? WASMRenderer : JSRenderer;
-    const renderer = new RendererClass({
-      ...DEFAULT_CONFIG,
-      agentCount,
-    }) as Renderer;
+    const rendererConfig = { ...DEFAULT_CONFIG, agentCount };
+    let renderer: Renderer;
+    if (wasmMode) {
+      // R&D-frozen backend: its own chunk, fetched only when WASM mode is actually chosen.
+      try {
+        const { WASMRenderer } = await import(/* webpackChunkName: "wasm-renderer" */ '../renderer/WASMRenderer');
+        renderer = new WASMRenderer(rendererConfig);
+      } catch (err) {
+        console.warn('[LiveStudio] could not load the WASM renderer:', err);
+        setIsLoading(false);
+        return;
+      }
+    } else {
+      renderer = new JSRenderer(rendererConfig);
+    }
 
     const success = await renderer.init(canvasRef.current);
 

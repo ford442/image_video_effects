@@ -3,8 +3,10 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: anther-filament whiskers tethering pollinia to the column; serrated petal-edge corona around the bloom ring
+//  Upgraded: 2026-10-17
+//  Ideas: anther-filament whiskers tethering pollinia to the column; serrated petal-edge corona around the bloom ring;
+//         3rd pass: pollinarium pull (held pointer = pollinator; pollinia stretch toward it on glowing
+//         caudicle threads); nectar-guide freckles on the labellum lit by a mids wave flowing into the throat
 //  A packing: ACES display RGBA (rgb = tone-mapped colour, a = surface/glow coverage); C is not read
 // ═══════════════════════════════════════════════════════════════════
 //  A raymarched plasma core (sphere smin spinning torus) inside a polar
@@ -35,6 +37,7 @@ struct Scene {
   petals: f32,
   distortion: f32,
   bass: f32,
+  pull: vec3<f32>,     // pollinarium offset toward a held pointer (flower space; 0 when released)
 };
 
 const TAU: f32 = 6.28318;
@@ -235,11 +238,18 @@ fn map(p: vec3<f32>, sc: Scene) -> vec4<f32> {
     let column = sdCapsule(p_mod, vec3<f32>(0.0, 0.0, -0.2), col_tip, 0.08);
     let perp = vec3<f32>(-sc.lab.y, sc.lab.x, 0.0);
     let bead_r = 0.07 * (1.0 + 0.35 * clamp(sc.bass, 0.0, 2.0));
-    let bead_c = col_tip + vec3<f32>(sc.lab.xy * 0.03, -0.05);
-    let pollen_d = min(
+    let bead_c = col_tip + vec3<f32>(sc.lab.xy * 0.03, -0.05) + sc.pull;
+    var pollen_d = min(
         length(p_mod - (bead_c + perp * 0.085)),
         length(p_mod - (bead_c - perp * 0.085))
     ) - bead_r;
+    // Pollinarium pull: real caudicle threads once the beads leave the column
+    // (absent at rest, so the released look is unchanged).
+    if (dot(sc.pull, sc.pull) > 1e-4) {
+        let cA = sdCapsule(p_mod, col_tip, bead_c + perp * 0.085, 0.016);
+        let cB = sdCapsule(p_mod, col_tip, bead_c - perp * 0.085, 0.016);
+        pollen_d = min(pollen_d, min(cA, cB));
+    }
 
     // Idea — dorsal sepal: one cooler hood opposite the lip, outside the polar repeat.
     let up = -sc.lab.xy;
@@ -330,7 +340,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let frame = rotY(time * 0.2 + bass * 0.1) * rotZ(time * 0.1);
     let down_f = vec3<f32>(0.0, -1.0, 0.0) * frame;
     let dn = normalize(down_f.xy + vec2<f32>(1e-5, 0.0));
-    let sc = Scene(frame, mouse3, vec3<f32>(dn, atan2(dn.y, dn.x)), time, petal_complexity, distortion, bass);
+    // Idea — pollinarium pull: while the pointer is held it plays pollinator;
+    // the pollinia beads leave the column tip toward it (flower space, where
+    // the pointer itself is unwarped), capped so they stay tethered.
+    let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+    let bead_rest = vec3<f32>(dn * 0.23, -0.87);
+    let to_poll = mouse3 * frame - bead_rest;
+    let poll_dist = length(to_poll);
+    let pull = to_poll / max(poll_dist, 1e-4) * (0.65 * (1.0 - exp(-poll_dist * 0.9))) * held;
+    let sc = Scene(frame, mouse3, vec3<f32>(dn, atan2(dn.y, dn.x)), time, petal_complexity, distortion, bass, pull);
 
     // Bloom Spread: radial split strength (grows toward the frame edge).
     let ca = smoothstep(0.0, 1.5, length(uv)) * bloom_spread * 0.6;
@@ -416,6 +434,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let lip_color = paletteCA(fresnel * 0.6 + time * 0.2 + 0.5, pk);
             col = lip_color * (diff + amb) * 0.55 + fresnel * vec3<f32>(1.0, 0.8, 0.2) * 0.5;
             col += nectar_col * throat_fall * (0.35 + 0.25 * vein) * plasma_intensity * (0.6 + mids);
+            // Idea — nectar-guide freckles: jittered spots across the lip, denser
+            // and larger toward the throat; a mids wave lights them in rows that
+            // flow inward, leading the eye (and the pollinator) to the nectar.
+            let fg = vec2<f32>(lc.x * 7.0, lc.y * 9.0);
+            let fid = floor(fg);
+            let jit = vec2<f32>(hash3(vec3<f32>(fid, 3.1)), hash3(vec3<f32>(fid, 7.7)));
+            let fr = 0.16 + 0.22 * hash3(vec3<f32>(fid, 1.3)) * throat_fall + 0.08 * throat_fall;
+            let fdist = length(fract(fg) - (0.25 + 0.5 * jit));
+            let freckle = (1.0 - smoothstep(fr * 0.7, fr, fdist)) * step(LIP_START, lc.x);
+            let guideWave = pow(0.5 + 0.5 * sin(lc.x * 6.0 + time * 2.0), 4.0);
+            col = mix(col, vec3<f32>(0.28, 0.02, 0.22), freckle * 0.75);
+            col += nectar_col * freckle * guideWave * (0.25 + mids * 0.9) * plasma_intensity * 0.35;
         } else if (m < 4.5) { // Column: waxy, lit from within by the core
             let sss = smoothstep(0.0, 1.0, 0.5 + 0.5 * ndv);
             col = vec3<f32>(0.62, 0.8, 0.7) * (diff + amb) * 0.6 + paletteCA(time + 0.2, pk) * sss * 0.25;
@@ -428,11 +458,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Idea 5: anther-filament whiskers from the column to each pollinium bead.
         let col_tip = vec3<f32>(sc.lab.xy * 0.2, -0.82);
         let perp = vec3<f32>(-sc.lab.y, sc.lab.x, 0.0);
-        let bead_c = col_tip + vec3<f32>(sc.lab.xy * 0.03, -0.05);
+        let bead_c = col_tip + vec3<f32>(sc.lab.xy * 0.03, -0.05) + sc.pull;
         let whiskA = sdCapsule(p_mod, col_tip + vec3<f32>(sc.lab.xy * 0.015, -0.03), bead_c + perp * 0.085, 0.018);
         let whiskB = sdCapsule(p_mod, col_tip + vec3<f32>(sc.lab.xy * 0.015, -0.03), bead_c - perp * 0.085, 0.018);
         let whisker = exp(-abs(min(whiskA, whiskB)) * 35.0);
-        col += vec3<f32>(1.0, 0.92, 0.66) * whisker * (0.16 + bass * 0.18);
+        // Stretched into caudicles by the pollinator, the threads glow hotter.
+        let stretch = length(sc.pull);
+        col += vec3<f32>(1.0, 0.92, 0.66) * whisker * (0.16 + bass * 0.18 + stretch * 1.2);
     }
 
     // Add glow (HEAD colour); nectar + pollinia halos

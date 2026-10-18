@@ -1,17 +1,17 @@
 /**
- * Lazy loader for @xenova/transformers — keeps heavy ONNX/WASM out of the main bundle.
+ * Lazy loader for @huggingface/transformers — keeps heavy ONNX/WASM out of the main bundle.
  *
  * Security note (#873): models load from Hugging Face CDN at runtime only when the user
  * triggers depth or AutoDJ. Playground default path never downloads ML weights.
  * Treat CDN as trusted only on networks you control; restricted VMs show offline UX.
  */
 
-let modulePromise: Promise<typeof import('@xenova/transformers')> | null = null;
+let modulePromise: Promise<typeof import('@huggingface/transformers')> | null = null;
 let configured = false;
 
-export function loadTransformersModule(): Promise<typeof import('@xenova/transformers')> {
+export function loadTransformersModule(): Promise<typeof import('@huggingface/transformers')> {
   if (!modulePromise) {
-    modulePromise = import(/* webpackChunkName: "transformers" */ '@xenova/transformers');
+    modulePromise = import(/* webpackChunkName: "transformers" */ '@huggingface/transformers');
   }
   return modulePromise.then(mod => {
     if (!configured) {
@@ -22,7 +22,7 @@ export function loadTransformersModule(): Promise<typeof import('@xenova/transfo
   });
 }
 
-function configureTransformersEnv(env: typeof import('@xenova/transformers').env): void {
+function configureTransformersEnv(env: typeof import('@huggingface/transformers').env): void {
   env.allowLocalModels = false;
   env.backends.onnx.logLevel = 'warning';
   // Cross-origin isolation (#1314) would otherwise switch ONNX Runtime to its

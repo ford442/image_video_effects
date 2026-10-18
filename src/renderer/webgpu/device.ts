@@ -112,11 +112,16 @@ export interface CanvasConfigureOptIns {
   extendedToneMapping?: boolean;
 }
 
-// WebGPU spec GPUTextureUsage bit values, for non-browser (Jest / SSR) evaluation.
-const TEXTURE_USAGE_FALLBACK: Record<string, number> = {
-  COPY_SRC: 0x01,
-  RENDER_ATTACHMENT: 0x10,
-};
+/** One canvas capability per canvas_configure.json optIn entry (shared with C++ canvas_configure.h). */
+export type CanvasCapability = keyof typeof canvasConfigureContract.optIn;
+
+// Compile-time lockstep: CanvasConfigureOptIns has exactly the contract's capability keys.
+type SameKeys<A, B> = [keyof A] extends [keyof B] ? ([keyof B] extends [keyof A] ? true : false) : false;
+const optInKeysMatchContract: SameKeys<Required<CanvasConfigureOptIns>, typeof canvasConfigureContract.optIn> = true;
+void optInKeysMatchContract;
+
+// WebGPU spec GPUTextureUsage bit values (contract usageBits), for non-browser (Jest / SSR) evaluation.
+const TEXTURE_USAGE_FALLBACK: Record<string, number> = canvasConfigureContract.usageBits;
 
 function textureUsageBits(names: readonly string[]): GPUTextureUsageFlags {
   const table = (typeof GPUTextureUsage !== 'undefined'

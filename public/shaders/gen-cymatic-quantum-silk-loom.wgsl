@@ -6,11 +6,13 @@
 //            depth-aware, flowing, neon-spectrum
 //  Complexity: Very High
 //  Created: 2026-06-28
-//  Upgraded: 2026-10-10
+//  Upgraded: 2026-10-17
 //  Ideas: Chladni nodal sand-lines from the plate equation (modes follow cymatic frequency + mids);
 //         Kajiya-Kay anisotropic silk sheen from the ribbon tangent, shifting the iridescence phase;
 //         over/under weft thread woven through the ribbons at the mouse shuttle (the formerly dead frame slot);
-//         luminescence made live as a distance-glow halo accumulated along the march
+//         luminescence made live as a distance-glow halo accumulated along the march;
+//         plucked-string harmonics: each ribbon vibrates in a standing mode along its length with fixed glowing nodes (clicks pluck);
+//         Chladni damask: a woven twill microstructure on the silk whose float direction flips on the nodal sand-lines
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -124,11 +126,21 @@ fn kajiyaKay(tang: vec3<f32>, n: vec3<f32>, h: vec3<f32>) -> f32 {
 }
 
 // ─── Silk Ribbon SDF ───
-fn silkRibbon(p: vec3<f32>, ribbonId: f32, time: f32, audio: f32, cymFreq: f32) -> f32 {
+// Idea 5: plucked-string harmonic along a ribbon. Mode number follows the cymatic
+// frequency; nodes sit at fixed z (they do not travel), antinodes swing in y.
+fn stringMode(z: f32, cymFreq: f32) -> f32 {
+  let k = 1.2 + cymFreq * 0.6;
+  return sin(z * k);
+}
+
+fn silkRibbon(p: vec3<f32>, ribbonId: f32, time: f32, audio: f32, cymFreq: f32, pluck: f32) -> vec2<f32> {
   let fi = ribbonId;
   // Base ribbon path (sine wave through space)
   let pathT = p.z * 0.5 + fi * 1.7 + time * 0.2;
-  let baseY = sin(pathT) * 0.5 + fi * 0.3;
+  // Idea 5: standing wave sin(kz)cos(wt) on top of the path; each ribbon is its own
+  // string (phase by id), bass and click plucks raise the swing.
+  let swing = (0.035 + audio * 0.05 + pluck * 0.07) * stringMode(p.z, cymFreq) * cos(time * 3.1 + fi * 1.3);
+  let baseY = sin(pathT) * 0.5 + fi * 0.3 + swing;
   let baseX = cos(pathT * 0.7 + fi) * 0.3;
   let ribbonP = p - vec3<f32>(baseX, baseY, 0.0);
 
@@ -149,7 +161,8 @@ fn silkRibbon(p: vec3<f32>, ribbonId: f32, time: f32, audio: f32, cymFreq: f32) 
   let ribbonThickness = 0.01 + audio * 0.005;
   let d = abs(ribbonP3.x) - ribbonWidth;
   let d2 = abs(ribbonP3.y) - ribbonThickness;
-  return max(d, d2);
+  // .y = across-ribbon coordinate in [-1, 1] (Idea 6 weave texture)
+  return vec2<f32>(max(d, d2), ribbonP3.x / ribbonWidth);
 }
 
 // ─── Scene Map ───
@@ -158,10 +171,11 @@ struct MapResult {
   mat: f32,
   glow: f32,
   rid: f32,
+  across: f32,
 };
 
 fn map(p_in: vec3<f32>, time: f32, audio: f32, bass: f32, silkDensity: f32,
-       cymFreq: f32, luminescence: f32, mousePos: vec3<f32>) -> MapResult {
+       cymFreq: f32, luminescence: f32, mousePos: vec3<f32>, pluck: f32) -> MapResult {
   var p = p_in;
 
   // Mouse acts as shuttle - pinch and twist nearby silk
@@ -178,11 +192,13 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, bass: f32, silkDensity: f32,
   var silk = 8.0;
   var nearestD = 8.0;
   var nearestId = 0.0;
+  var nearestAcross = 0.0;
   var numRibbons = i32(silkDensity * 8.0 + 3.0);
   for (var i: i32 = 0; i < numRibbons; i = i + 1) {
     let fi = f32(i);
-    let ribbon = silkRibbon(p, fi, time, audio, cymFreq);
-    if (ribbon < nearestD) { nearestD = ribbon; nearestId = fi; }
+    let rb = silkRibbon(p, fi, time, audio, cymFreq, pluck);
+    let ribbon = rb.x;
+    if (ribbon < nearestD) { nearestD = ribbon; nearestId = fi; nearestAcross = rb.y; }
     silk = smin(silk, ribbon, 0.1);
   }
 
@@ -203,25 +219,25 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, bass: f32, silkDensity: f32,
   let glowIntensity = sat(0.0 - silk) * 3.0 * luminescence;
   glow = glowIntensity * (0.5 + bass * 0.5);
 
-  return MapResult(d, mat, glow, nearestId);
+  return MapResult(d, mat, glow, nearestId, nearestAcross);
 }
 
 fn calcNormal(p: vec3<f32>, time: f32, audio: f32, bass: f32, silkDensity: f32,
-              cymFreq: f32, luminescence: f32, mousePos: vec3<f32>) -> vec3<f32> {
+              cymFreq: f32, luminescence: f32, mousePos: vec3<f32>, pluck: f32) -> vec3<f32> {
   let e = vec2<f32>(0.001, 0.0);
-  let m1 = map(p + e.xyy, time, audio, bass, silkDensity, cymFreq, luminescence, mousePos);
-  let m2 = map(p - e.xyy, time, audio, bass, silkDensity, cymFreq, luminescence, mousePos);
-  let m3 = map(p + e.yxy, time, audio, bass, silkDensity, cymFreq, luminescence, mousePos);
-  let m4 = map(p - e.yxy, time, audio, bass, silkDensity, cymFreq, luminescence, mousePos);
-  let m5 = map(p + e.yyx, time, audio, bass, silkDensity, cymFreq, luminescence, mousePos);
-  let m6 = map(p - e.yyx, time, audio, bass, silkDensity, cymFreq, luminescence, mousePos);
+  let m1 = map(p + e.xyy, time, audio, bass, silkDensity, cymFreq, luminescence, mousePos, pluck);
+  let m2 = map(p - e.xyy, time, audio, bass, silkDensity, cymFreq, luminescence, mousePos, pluck);
+  let m3 = map(p + e.yxy, time, audio, bass, silkDensity, cymFreq, luminescence, mousePos, pluck);
+  let m4 = map(p - e.yxy, time, audio, bass, silkDensity, cymFreq, luminescence, mousePos, pluck);
+  let m5 = map(p + e.yyx, time, audio, bass, silkDensity, cymFreq, luminescence, mousePos, pluck);
+  let m6 = map(p - e.yyx, time, audio, bass, silkDensity, cymFreq, luminescence, mousePos, pluck);
   return normalize(vec3<f32>(m1.d - m2.d, m3.d - m4.d, m5.d - m6.d));
 }
 
 // ─── Raymarch ───
 fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: f32, mids: f32,
             treble: f32, silkDensity: f32, cymFreq: f32, luminescence: f32,
-            mousePos: vec3<f32>) -> vec4<f32> {
+            mousePos: vec3<f32>, pluck: f32) -> vec4<f32> {
   var t = 0.0;
   var col = vec3<f32>(0.0);
   var alpha = 0.0;
@@ -230,14 +246,14 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: f32, mids
 
   for (var i: i32 = 0; i < 80; i = i + 1) {
     let p = ro + rd * t;
-    let res = map(p, time, audio, bass, silkDensity, cymFreq, luminescence, mousePos);
+    let res = map(p, time, audio, bass, silkDensity, cymFreq, luminescence, mousePos, pluck);
     let d = res.d;
 
     if (d < 0.003) {
       hit = true;
       hitGlow = res.glow;
       let halo = col;
-      let n = calcNormal(p, time, audio, bass, silkDensity, cymFreq, luminescence, mousePos);
+      let n = calcNormal(p, time, audio, bass, silkDensity, cymFreq, luminescence, mousePos, pluck);
       let viewAngle = dot(-rd, n);
 
       // Strand tangent: analytic ribbon centre-line derivative, or the weft's own slope
@@ -274,7 +290,21 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: f32, mids
       } else {
         // Idea 1: Chladni sand-lines gathered on the nodal set
         let sand = chladniLines(p, cymFreq, mids);
+        // Idea 6: Chladni damask. Warp runs along the ribbon (z), weft across it;
+        // a 4-shaft twill whose diagonal reverses inside the nodal band, so the
+        // sand figure is also woven into the cloth. Fades out before it aliases.
+        let wu = p.z * 30.0;
+        let wv = res.across * 6.0;
+        let flip = select(1.0, -1.0, sand > 0.5);
+        let twill = fract((floor(wu) + flip * floor(wv)) * 0.25);
+        let float_ = smoothstep(0.35, 0.5, twill) * (1.0 - smoothstep(0.75, 0.9, twill));
+        let weaveFade = 1.0 - smoothstep(3.5, 7.0, t);
+        col = col * (1.0 + (float_ - 0.4) * 0.45 * weaveFade);
+        col = col + irid * float_ * sheen * 0.35 * weaveFade;
         col = col + vec3<f32>(1.0, 0.92, 0.75) * sand * (0.28 + mids * 0.5);
+        // Idea 5: string nodes (where the standing wave never moves) glow faintly.
+        let node = 1.0 - smoothstep(0.0, 0.18, abs(stringMode(p.z, cymFreq)));
+        col = col + vec3<f32>(0.75, 0.9, 1.0) * node * (0.12 + pluck * 0.6) * luminescence;
       }
       col = col + mix(vec3<f32>(1.0, 0.95, 0.85), irid, 0.5) * sheen * 0.45;
       col = col + halo;
@@ -347,15 +377,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mouseUV = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
   let mouseY = mouseUV.y;
   let heldGain = select(1.0, 1.8, u.zoom_config.w > 0.5);
-  let mousePos = vec3<f32>(
-    (mouseUV.x * 2.0 - 1.0) * 3.0 * aspect / heldGain,
-    (mouseUV.y * 2.0 - 1.0) * 3.0 / heldGain,
-    0.0
-  );
 
   // Clicks pluck the loom: finite radial fronts raise cymatic frequency and
   // luminescence without leaving stale ripple entries active indefinitely.
   var clickEnergy = 0.0;
+  var pluck = 0.0; // whole-string pluck: newest click's decay, not the screen ring
   let rippleCount = min(u32(u.config.y), 50u);
   for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
     let ripple = u.ripples[ri];
@@ -363,6 +389,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (age < 0.0 || age > 2.4) { continue; }
     let rippleDistance = length((uv - ripple.xy) * vec2<f32>(aspect, 1.0));
     clickEnergy += exp(-abs(rippleDistance - age * 0.24) * 72.0) * exp(-age * 1.2);
+    pluck = max(pluck, exp(-age * 1.2));
   }
   clickEnergy = clamp(clickEnergy, 0.0, 1.0);
 
@@ -373,18 +400,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let ro = vec3<f32>(cos(camAng) * camDist, camHeight, sin(camAng) * camDist);
   let ta = vec3<f32>(0.0, 0.0, 0.0);
   let ww = normalize(ta - ro);
-  let uu = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), ww));
-  let vv = cross(ww, uu);
+  // Screen-right basis (cross(Y, ww) was screen-left, and rows grow downward,
+  // so HEAD rendered the loom rotated 180 degrees).
+  let uu = normalize(cross(ww, vec3<f32>(0.0, 1.0, 0.0)));
+  let vv = cross(uu, ww);
+
+  // Mouse shuttle on the camera plane through the target: screen top = UP, right = right.
+  let mousePos = (uu * (mouseUV.x * 2.0 - 1.0) * 3.0 * aspect
+                + vv * (1.0 - mouseUV.y * 2.0) * 3.0) / heldGain;
 
   // Ray direction
   var p = uv * 2.0 - 1.0;
+  p.y = -p.y;
   p.x = p.x * aspect;
   let rd = normalize(p.x * uu + p.y * vv + 2.5 * ww);
 
   // Raymarch
   let activeCymFreq = cymFreq * (1.0 + clickEnergy * 0.28 + mids * 0.08);
   let activeLuminescence = luminescence * heldGain + clickEnergy * 0.7;
-  let result = raymarch(ro, rd, sceneTime, audio, bass, mids, treble, silkDensity, activeCymFreq, activeLuminescence, mousePos);
+  let result = raymarch(ro, rd, sceneTime, audio, bass, mids, treble, silkDensity, activeCymFreq, activeLuminescence, mousePos, pluck);
   var col = result.rgb;
   var alpha = result.a;
 

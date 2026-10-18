@@ -59,7 +59,7 @@ function normalizeInPlace(v: Float32Array): Float32Array {
   let n = 0;
   for (const x of v) n += x * x;
   n = Math.sqrt(n) || 1;
-  for (let i = 0; i < v.length; i++) v[i] /= n;
+  for (let i = 0; i < v.length; i++) v[i] = (v[i] ?? 0) / n;
   return v;
 }
 

@@ -22,7 +22,8 @@ import {
 } from '../config/formatPolicy';
 import { AdaptivePerformanceController } from './adaptivePerformance';
 import { RendererConfig } from './Renderer';
-import { WASMRenderer } from './WASMRenderer';
+import type { WASMRenderer } from './WASMRenderer';
+import { isWasmBackend } from './wasmBackend';
 import { isWebGpuBackend, type WebGPUBackendApi } from './webgpuBackendApi';
 import type { RendererType } from './backendLifecycle';
 import { HISTORY_DEPTH } from './webgpu/webgpuConstants';
@@ -217,7 +218,7 @@ export function framePassBudgetFor(
 function applyColorFormat(renderer: WebGPUBackendApi | WASMRenderer | null, format: InternalColorFormat): void {
   if (isWebGpuBackend(renderer)) {
     renderer.setColorFormat(format);
-  } else if (renderer instanceof WASMRenderer) {
+  } else if (isWasmBackend(renderer)) {
     renderer.setColorFormat(format);
   }
 }
@@ -231,7 +232,7 @@ function applyResolutionScale(
   if (isWebGpuBackend(renderer)) {
     renderer.setResolutionScale(scale);
     renderer.setAdaptiveQuality(false);
-  } else if (renderer instanceof WASMRenderer) {
+  } else if (isWasmBackend(renderer)) {
     renderer.setResolutionScale(scale);
   }
 }

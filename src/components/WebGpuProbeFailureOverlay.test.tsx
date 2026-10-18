@@ -1,4 +1,3 @@
-import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { WebGpuProbeFailureOverlay } from './WebGpuProbeFailureOverlay';
@@ -42,7 +41,7 @@ describe('WebGpuProbeFailureOverlay', () => {
   });
 
   it('shows a busy device-lost card while recovering (no actions)', () => {
-    render(<WebGpuProbeFailureOverlay probe={null} deviceLoss={{ state: 'recovering', reason: 'unknown', onRetry: jest.fn() }} />);
+    render(<WebGpuProbeFailureOverlay probe={null} deviceLoss={{ state: 'recovering', reason: 'unknown', onRetry: vi.fn() }} />);
     const overlay = screen.getByTestId('webgpu-device-lost');
     expect(overlay).toHaveAttribute('data-recovery-state', 'recovering');
     expect(overlay).toHaveAttribute('aria-busy', 'true');
@@ -53,7 +52,7 @@ describe('WebGpuProbeFailureOverlay', () => {
   });
 
   it('offers Retry with the probe diagnostics after a failed recovery', () => {
-    const onRetry = jest.fn();
+    const onRetry = vi.fn();
     render(
       <WebGpuProbeFailureOverlay
         probe={fixture}

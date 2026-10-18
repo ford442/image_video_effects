@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: sagittal fin-ray membrane with a travelling undulation wave; fold-tree chromatophore cascade through the fractal tail beads; electroreceptor snout whiskers; brood-pouch pulse bloom
+//  Upgraded: 2026-10-18
+//  Ideas: sagittal fin-ray membrane with a travelling undulation wave; fold-tree chromatophore cascade through the fractal tail beads; electroreceptor snout whiskers; brood-pouch pulse bloom; bony trunk-ring armour with luminous tubercles (ring-by-ring wave); independent turret eyes with their own saccades (front eye locks on a held cursor)
 //  A packing: HDR linear RGB (pre-ACES) + semantic alpha; C read back as HDR history
 // ═══════════════════════════════════════════════════════════════════
 //  History: 2026-08-05 Algorithmist b35 (capsule-chain spine anatomy,
@@ -106,6 +106,40 @@ fn finRayField(p: vec3<f32>) -> vec3<f32> {
     return vec3<f32>(ridge, free, s);
 }
 
+// Idea 5 (field): bony trunk armour in spine-curved space. A seahorse trunk
+// is a stack of bony rings with 7 longitudinal ridges; knobs (tubercles)
+// stand where ridges cross ring joints. x = joint closeness (1 on a joint),
+// y = tubercle (1 on a knob), z = ring index, w = trunk mask.
+fn armorField(p: vec3<f32>) -> vec4<f32> {
+    let ringS = p.y * 8.0;
+    let ringD = abs(fract(ringS + 0.5) - 0.5);
+    let ang = atan2(p.z, p.x + 0.06);
+    let ridgeD = abs(fract(ang * 7.0 / TAU + 0.5) - 0.5);
+    let joint = 1.0 - smoothstep(0.0, 0.09, ringD);
+    let tub = (1.0 - smoothstep(0.04, 0.13, ringD)) * (1.0 - smoothstep(0.05, 0.15, ridgeD));
+    let mask = smoothstep(-1.25, -1.0, p.y) * (1.0 - smoothstep(0.38, 0.6, p.y));
+    return vec4<f32>(joint, tub, floor(ringS + 0.5), mask);
+}
+
+// Idea 6: turret-eye centres (spine-curved space), one per side of the head.
+fn eyeCentre(side: f32) -> vec3<f32> {
+    return vec3<f32>(0.40, 0.95, 0.30 * side);
+}
+
+// Idea 6: each eye saccades on its own hashed schedule — a quick swivel
+// (first 12% of a fixation) then a hold. Directions stay on the eye's side.
+fn saccadeDir(seg: f32, side: f32) -> vec3<f32> {
+    let h = hash33(vec3<f32>(seg, side * 7.3, 3.1));
+    return normalize(vec3<f32>(h.x * 1.6 - 0.5, h.y * 1.2 - 0.6, side * (0.5 + h.z * 0.7)));
+}
+
+fn eyeGaze(t: f32, side: f32) -> vec3<f32> {
+    let k = t * 0.45 + select(0.0, 0.53, side < 0.0);
+    let seg = floor(k);
+    let sw = smoothstep(0.0, 0.12, fract(k));
+    return normalize(mix(saccadeDir(seg - 1.0, side), saccadeDir(seg, side), sw));
+}
+
 // ----------------------------------------------------------------
 // Mapping & Raymarching
 // map returns: x = signed distance, y = material id
@@ -124,7 +158,9 @@ fn map(p_in: vec3<f32>, t: f32, audio: vec3<f32>) -> vec4<f32> {
 
     // --- Body: bent ellipsoid + belly, smooth-unioned ---
     let qb = p / (vec3<f32>(0.60, 1.05, 0.48) * breathe);
-    let dBody = (length(qb) - 1.0) * 0.48;
+    let arm = armorField(p);
+    // Idea 5: tubercle knobs raise the trunk surface slightly (Lipschitz-safe).
+    let dBody = (length(qb) - 1.0) * 0.48 - 0.006 * arm.y * arm.w;
     let dBelly = sdSphere(p, vec3<f32>(-0.12, -0.38, 0.0), 0.60 * breathe);
     var d = smin(dBody, dBelly, 0.35);
 
@@ -138,6 +174,9 @@ fn map(p_in: vec3<f32>, t: f32, audio: vec3<f32>) -> vec4<f32> {
     // Coronet ridge on the skull
     let dCoronet = sdSphere(p, vec3<f32>(0.20, 1.24, 0.0), 0.14);
     d = smin(d, dCoronet, 0.12);
+    // Idea 6: conical eye turrets bulging from both sides of the head.
+    let dEyes = min(sdSphere(p, eyeCentre(1.0), 0.12), sdSphere(p, eyeCentre(-1.0), 0.12));
+    d = smin(d, dEyes, 0.06);
     let dMain = d;
 
     // --- Idea 1: sagittal fin-ray membrane on the lower back ---
@@ -334,8 +373,41 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         col += vec3<f32>(0.8, 0.95, 1.0) * whisk * (0.06 + audio.z * 0.15);
         // Idea 4: brood-pouch pulse bloom under the belly.
         let pouch = exp(-dot((p - vec3<f32>(-0.18, -0.42, 0.0)) * vec3<f32>(1.7, 2.4, 2.0), (p - vec3<f32>(-0.18, -0.42, 0.0)) * vec3<f32>(1.7, 2.4, 2.0)));
-        let pouchPulse = 0.5 + 0.5 * sin(t * (2.2 + audio.x * 1.8));
+        let pouchPulse = 0.5 + 0.5 * sin(t * 2.2 + audio.x * 1.2); // was t*(2.2+bass): phase jumps on beats
         col += vec3<f32>(0.95, 0.55, 0.85) * pouch * pouchPulse * (0.08 + audio.y * 0.12);
+
+        // Idea 5: trunk-ring armour. Ring joints are dark sutures; tubercle knobs
+        // light up one ring after the next, a wave running from neck to tail
+        // (bass lifts its brightness, never its speed).
+        let isBody = select(0.0, 1.0, mat < 1.5);
+        let arm = armorField(pc);
+        col *= 1.0 - 0.35 * arm.x * arm.w * isBody;
+        let ringWave = pow(fract(t * 0.5 + arm.z * 0.09), 6.0);
+        col += bioPalette(arm.z * 0.05 + 0.55, phase) * arm.y * arm.w * isBody * (0.18 + ringWave * (0.9 + audio.x * 0.8));
+
+        // Idea 6: independent turret eyes. Each eye swivels on its own saccade
+        // schedule; holding the mouse makes the camera-side eye lock onto it.
+        for (var e = 0; e < 2; e++) {
+            let side = select(-1.0, 1.0, e == 0);
+            let ec = eyeCentre(side);
+            let eLen = length(pc - ec);
+            let eyeMask = (1.0 - smoothstep(0.122, 0.14, eLen)) * isBody;
+            if (eyeMask > 0.0) {
+                var gaze = eyeGaze(t, side);
+                if (side > 0.0 && u.zoom_config.w > 0.5) {
+                    let mT = vec3<f32>((u.zoom_config.y - 0.5) * 3.0 * (res.x / res.y), (0.5 - u.zoom_config.z) * 3.0, 3.0);
+                    gaze = normalize(mT - ec);
+                }
+                let c = dot((pc - ec) / max(eLen, 1e-4), gaze);
+                let iris = smoothstep(0.78, 0.86, c);
+                let pupil = smoothstep(0.93, 0.96, c);
+                let irisCol = bioPalette(0.1 + c * 0.3, phase) * (1.1 + audio.z * 0.5);
+                var eyeCol = vec3<f32>(0.03, 0.12, 0.14) * (dif + 0.3);
+                eyeCol = mix(eyeCol, irisCol, iris);
+                eyeCol = mix(eyeCol, vec3<f32>(0.004), pupil);
+                col = mix(col, eyeCol, eyeMask);
+            }
+        }
 
         // Fresnel rim + treble glints = the "cyber" sheen
         col += vec3<f32>(0.5, 0.3, 1.0) * fres * (0.6 + audio.z * 0.6);

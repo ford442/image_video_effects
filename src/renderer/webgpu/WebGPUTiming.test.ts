@@ -3,6 +3,7 @@
  * allocation, resolve/readback cadence, decode, smoothing and the honesty gate.
  */
 
+import type { Mock } from 'vitest';
 import {
   buildGPUTimings,
   createDisabledTimestampQueries,
@@ -31,22 +32,22 @@ beforeAll(() => {
 
 function stagingBuffer(stamps?: bigint[]) {
   return {
-    mapAsync: jest.fn().mockResolvedValue(undefined),
-    getMappedRange: jest.fn((_offset = 0, size = QUERY_COUNT * 8) => {
+    mapAsync: vi.fn().mockResolvedValue(undefined),
+    getMappedRange: vi.fn((_offset = 0, size = QUERY_COUNT * 8) => {
       const buf = new ArrayBuffer(size);
       if (stamps) new BigUint64Array(buf).set(stamps.slice(0, size / 8));
       return buf;
     }),
-    unmap: jest.fn(),
-    destroy: jest.fn(),
+    unmap: vi.fn(),
+    destroy: vi.fn(),
   };
 }
 
 function enabledTiming(overrides: Partial<WebGPUTimestampQueries> = {}): WebGPUTimestampQueries {
   const timing = createDisabledTimestampQueries();
   timing.supportsTimestampQuery = true;
-  timing.querySet = { destroy: jest.fn() } as unknown as GPUQuerySet;
-  timing.queryBuffer = { destroy: jest.fn() } as unknown as GPUBuffer;
+  timing.querySet = { destroy: vi.fn() } as unknown as GPUQuerySet;
+  timing.queryBuffer = { destroy: vi.fn() } as unknown as GPUBuffer;
   timing.stagingRing = [stagingBuffer(), stagingBuffer()] as unknown as GPUBuffer[];
   timing.stagingBusy = [false, false];
   timing.timestampPeriodNs = 1;
@@ -55,9 +56,9 @@ function enabledTiming(overrides: Partial<WebGPUTimestampQueries> = {}): WebGPUT
 }
 
 const encoderStub = () => ({
-  resolveQuerySet: jest.fn(),
-  copyBufferToBuffer: jest.fn(),
-}) as unknown as GPUCommandEncoder & { resolveQuerySet: jest.Mock; copyBufferToBuffer: jest.Mock };
+  resolveQuerySet: vi.fn(),
+  copyBufferToBuffer: vi.fn(),
+}) as unknown as GPUCommandEncoder & { resolveQuerySet: Mock; copyBufferToBuffer: Mock };
 
 const compute = (slot: number, nodeId: string, mode: 'parallel' | 'chained' = 'chained'): PassProfileMeta => ({
   kind: 'compute',
@@ -165,8 +166,8 @@ describe('createTimestampQueries', () => {
     const device = {
       features: { has: () => false },
       queue: {},
-      createQuerySet: jest.fn(),
-      createBuffer: jest.fn(),
+      createQuerySet: vi.fn(),
+      createBuffer: vi.fn(),
     } as unknown as GPUDevice;
     expect(createTimestampQueries(device).supportsTimestampQuery).toBe(false);
     expect(device.createQuerySet).not.toHaveBeenCalled();
@@ -176,8 +177,8 @@ describe('createTimestampQueries', () => {
     const device = {
       features: { has: (f: string) => f === 'timestamp-query' },
       queue: { timestampPeriod: 0 },
-      createQuerySet: jest.fn(),
-      createBuffer: jest.fn(),
+      createQuerySet: vi.fn(),
+      createBuffer: vi.fn(),
     } as unknown as GPUDevice;
     expect(createTimestampQueries(device).supportsTimestampQuery).toBe(false);
   });
@@ -186,8 +187,8 @@ describe('createTimestampQueries', () => {
     const device = {
       features: { has: (f: string) => f === 'timestamp-query' },
       queue: {},
-      createQuerySet: jest.fn(() => ({ destroy: jest.fn() })),
-      createBuffer: jest.fn(() => ({ destroy: jest.fn(), mapAsync: jest.fn() })),
+      createQuerySet: vi.fn(() => ({ destroy: vi.fn() })),
+      createBuffer: vi.fn(() => ({ destroy: vi.fn(), mapAsync: vi.fn() })),
     } as unknown as GPUDevice;
     const t = createTimestampQueries(device);
     expect(t.supportsTimestampQuery).toBe(true);

@@ -35,14 +35,20 @@ Full snapshot: [`STATUS.md`](./STATUS.md) · gaps: [`WASM_RENDERER_GAP_ANALYSIS.
 | `timing.cpp` | GPU timestamp queries: one begin/end pair per slot compute pass, resolve/readback, `getGPUTimings` phases + `getPassTimingsJson` (#1314 D) |
 | `audio_depth.cpp` | Image/video upload, depth map, audio FFT bins |
 | `wasm_internal.cpp/h` | Shared helpers (`CheckLimit`, `ParseWorkgroupSize`, …) |
+| `canvas_configure.h` | **Generated** canvas configure constants (usage, alphaMode, presentMode) from `canvas_configure.json` |
 | `src/wasm/bridge/*.ts` | **Hand-edited TypeScript glue** (edit here; webpack compiles `src/wasm/wasm_bridge.ts`) |
 | `wasm_bridge.js` (generated) | ESM copies in `wasm_renderer/` + `public/wasm/` — do not edit |
 | `build.sh` | **The only build** — single-pass `emcc` + emdawnwebgpu. Flags from `src/contracts/wasm_compile_flags.json`, exports from `wasm_exports.json`. |
 
 There is no CMake build (removed 2026-10; it was never used by CI and guessed the emdawn
-include dir). For clangd/IDE indexing, point the language server at emsdk's
-`upstream/bin/clangd` with `--target=wasm32-unknown-emscripten` and
-`--sysroot=$EM_CACHE/sysroot`, plus the flags `build.sh` prints.
+include dir). For clangd/IDE indexing, run `npm run wasm:compdb`. It writes the gitignored
+`wasm_renderer/compile_commands.json` from the same flag contract `build.sh` uses
+(`src/contracts/wasm_compile_flags.json`); see [ARTIFACTS.md](ARTIFACTS.md#c-ide-index-clangd).
+
+`canvas_configure.h` is generated from `src/contracts/canvas_configure.json` by
+`npm run gen:canvas-configure`, the same capabilities object the TS renderer reads. Don't
+edit it by hand: `build.sh` and `verify:device-policy` fail when it is stale. See
+[DEVICE_FEATURES.md](../docs/DEVICE_FEATURES.md#canvas-configure-contract).
 
 Cross-reference: TypeScript device policy lives in `src/renderer/webgpuDevicePolicy.ts`
 (must stay in sync with `device.cpp` `CreateDevice()` limits table).

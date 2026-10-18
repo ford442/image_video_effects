@@ -4,7 +4,7 @@
 //  Features: audio-reactive, mouse-driven, temporal-feedback, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-10-17
-//  Ideas: moving hyperplane slice (strands are 4D hypertube cross-sections); counter-propagating current packets; packet-wake comets along helix phase; brief beat weft bridges between opposing threads; pinch-neck current crowding where the slice thins a strand; dashed w-ghosts tracing strands that have left the slice
+//  Ideas: moving hyperplane slice (strands are 4D hypertube cross-sections); counter-propagating current packets; packet-wake comets along helix phase; brief beat weft bridges between opposing threads; pinch-neck current crowding where the slice thins a strand; dashed w-ghosts tracing strands that have left the slice; kink-instability corkscrew where a current packet bends its strand's axis; w-depth chroma tinting each strand by which side of the hyperplane its hypertube centre lies
 //  A packing: rgb = pre-tonemap HDR radiance (trail-blended), a = coverage; C read back as HDR colour history
 // ═══════════════════════════════════════════════════════════════════
 //  Twisted xy-repeated cells of counter-rotating helical tubes with
@@ -22,6 +22,12 @@
 //    crowds into a white-hot neck just before a strand leaves the slice.
 //  - w-ghosts: a strand that has left the slice still leaves a faint
 //    dashed outline where its hypertube passes outside this w-plane.
+//  - Kink instability: a plasma column carrying a current packet goes
+//    m=1 unstable — the strand's axis corkscrews sideways under the
+//    packet and straightens again behind it.
+//  - w-depth chroma: the hypertube centre sits at +w or -w of the cut;
+//    the surface film shifts ochre for +w and cyan for -w, so the 4th
+//    coordinate reads as a colour depth cue across the lattice.
 //  Mouse: hold to pull the weave toward the cursor (no pull on hover).
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -126,6 +132,7 @@ struct LoomMapResult {
     bridge: f32,
     neck: f32,
     ghost: f32,
+    wside: f32,
 };
 
 fn map(p_in: vec3<f32>, time: f32, m_world: vec3<f32>, pull_str: f32, cam_off: vec2<f32>,
@@ -163,6 +170,26 @@ fn map(p_in: vec3<f32>, time: f32, m_world: vec3<f32>, pull_str: f32, cam_off: v
     let rad1 = sliceRadius(R1, w1);
     let rad2 = sliceRadius(R2, w2);
 
+    // IDEA 2 packet phases (computed here so Idea 7 can bend the strands under them).
+    let sharp = mix(11.0, 5.5, clamp(mid, 0.0, 1.0));
+    let pf = 0.55;
+    let pv = 0.9;
+    let ph1 = fract(r.z * pf - t * pv + h1);
+    let ph2 = fract(r.z * pf + t * pv + h2);
+    let present1 = smoothstep(0.0, 0.35 * R1, rad1);
+    let present2 = smoothstep(0.0, 0.35 * R2, rad2);
+    let pk1 = packet(ph1, sharp) * present1;
+    let pk2 = packet(ph2, sharp) * present2;
+
+    // Pointable Idea 7: kink instability. Under a packet the column's axis is
+    // displaced on a short helix (m=1 kink) that rides along with the packet;
+    // amplitude is a fraction of the live slice radius so thin strands barely kink.
+    let kinkK = 27.0; // wavelength ~0.23, short enough for a full turn under one packet
+    let kph1 = r.z * kinkK - t * pv * kinkK / pf;
+    let kph2 = r.z * kinkK + t * pv * kinkK / pf;
+    let kink1 = vec2<f32>(cos(kph1), sin(kph1)) * (0.55 * max(rad1, 0.0) * pk1);
+    let kink2 = vec2<f32>(cos(kph2), -sin(kph2)) * (0.55 * max(rad2, 0.0) * pk2);
+
     // Strand 1
     var s1_p = r;
     let angle1 = s1_p.z * 2.0 + t * 2.0;
@@ -170,6 +197,7 @@ fn map(p_in: vec3<f32>, time: f32, m_world: vec3<f32>, pull_str: f32, cam_off: v
     let s1_xy = r1 * s1_p.xy;
     s1_p.x = s1_xy.x; s1_p.y = s1_xy.y;
     s1_p.x += spacing * 0.2;
+    s1_p.x -= kink1.x; s1_p.y -= kink1.y;
     let d1 = length(s1_p.xy) - rad1;
 
     // Strand 2
@@ -179,6 +207,7 @@ fn map(p_in: vec3<f32>, time: f32, m_world: vec3<f32>, pull_str: f32, cam_off: v
     let s2_xy = r2 * s2_p.xy;
     s2_p.x = s2_xy.x; s2_p.y = s2_xy.y;
     s2_p.x += spacing * 0.2;
+    s2_p.x -= kink2.x; s2_p.y -= kink2.y;
     let d2 = length(s2_p.xy) - rad2;
 
     // (HEAD's strand-3 "cross weave" was smin'd at d3+0.5 and never reachable; removed.)
@@ -193,16 +222,7 @@ fn map(p_in: vec3<f32>, time: f32, m_world: vec3<f32>, pull_str: f32, cam_off: v
 
     // IDEA 2: counter-propagating current packets. Helix 1 carries packets toward
     // +z, helix 2 toward -z (lattice axis). Mids lengthen packets. Packets only
-    // exist where the hyperplane slice leaves the strand present.
-    let sharp = mix(11.0, 5.5, clamp(mid, 0.0, 1.0));
-    let pf = 0.55;
-    let pv = 0.9;
-    let ph1 = fract(r.z * pf - t * pv + h1);
-    let ph2 = fract(r.z * pf + t * pv + h2);
-    let present1 = smoothstep(0.0, 0.35 * R1, rad1);
-    let present2 = smoothstep(0.0, 0.35 * R2, rad2);
-    let pk1 = packet(ph1, sharp) * present1;
-    let pk2 = packet(ph2, sharp) * present2;
+    // exist where the hyperplane slice leaves the strand present (phases above).
     // Pointable Idea 3: helix 1 moves +z, so lower phase trails it; helix 2
     // moves -z, so higher phase trails it. The old packet phases are unchanged.
     let wake1 = packetWake(fract(0.5 - ph1), mid) * present1;
@@ -220,6 +240,10 @@ fn map(p_in: vec3<f32>, time: f32, m_world: vec3<f32>, pull_str: f32, cam_off: v
     let neck1 = smoothstep(0.0, 0.08 * R1, rad1) * (1.0 - smoothstep(0.18 * R1, 0.55 * R1, rad1));
     let neck2 = smoothstep(0.0, 0.08 * R2, rad2) * (1.0 - smoothstep(0.18 * R2, 0.55 * R2, rad2));
     let neck_near = select(neck2, neck1, d1 < d2);
+
+    // Pointable Idea 8: which side of the cut the nearest hypertube centre lies
+    // on, normalised to [-1, 1] (w / R).
+    let wside = clamp(select(w2 / max(R2, 1e-4), w1 / max(R1, 1e-4), d1 < d2), -1.0, 1.0);
 
     // Pointable Idea 6: w-ghosts. Once |w| > R the strand is off-slice; its
     // hypertube still passes nearby in w, drawn as a thin dashed shell at the
@@ -254,7 +278,7 @@ fn map(p_in: vec3<f32>, time: f32, m_world: vec3<f32>, pull_str: f32, cam_off: v
         d = smin(d, bridgeD, 12.0);
     }
 
-    return LoomMapResult(d, mat, pk_near, flash, wake_near, bridgeSignal, neck_near, ghost);
+    return LoomMapResult(d, mat, pk_near, flash, wake_near, bridgeSignal, neck_near, ghost, wside);
 }
 
 fn calcNormal(p: vec3<f32>, time: f32, m_world: vec3<f32>, pull_str: f32, cam_off: vec2<f32>,
@@ -329,7 +353,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var t_dist = NEAR_T;
     let max_d = 20.0;
     var col = vec3<f32>(0.0);
-    var d = LoomMapResult(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    var d = LoomMapResult(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
     var p = ro;
     var hit = false;
 
@@ -373,7 +397,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let fresnel = pow(max(1.0 - max(dot(n, view_dir), 0.0), 0.0), 3.0);
 
         // Material color base
-        let irid_color = iridescence(p.z * 0.1 + fresnel + time * 0.2 + d.material * 0.3);
+        var irid_color = iridescence(p.z * 0.1 + fresnel + time * 0.2 + d.material * 0.3);
+        // IDEA 8: w-depth chroma — ochre on the +w side of the cut, cyan on -w;
+        // strongest on strands about to leave the slice (|w| near R).
+        let wtint = select(vec3<f32>(0.15, 0.85, 1.0), vec3<f32>(1.0, 0.62, 0.18), d.wside > 0.0);
+        irid_color = mix(irid_color, wtint * (0.6 + 0.4 * irid_color), 0.55 * smoothstep(0.15, 0.95, abs(d.wside)));
 
         // Ambient + Diffuse
         let ambient = vec3<f32>(0.05, 0.0, 0.1);
@@ -423,7 +451,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depth = select(0.0, clamp(1.0 - t_dist / max_d, 0.0, 1.0), hit);
     textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 
-    // Display: ACES, then HEAD's 2.2 gamma encode
-    let disp = pow(acesToneMap(col), vec3<f32>(1.0 / 2.2));
+    // Display: ACES only — the presenter blit gamma-encodes (HEAD's extra
+    // pow(1/2.2) here was a double gamma that washed the void grey).
+    let disp = acesToneMap(col);
     textureStore(writeTexture, coords, vec4<f32>(disp, alpha));
 }

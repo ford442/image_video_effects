@@ -1,26 +1,10 @@
 // ═══ GRAY-SCOTT TANK — INJECT ══════════════════════════════════════════════
+//  Upgraded: 2026-10-18
+//  Ideas: paint comet behind the pointer
+//  A packing: raw (U, V, age, seed mask)
 //  Hold paints V; clicks seed spots; seed-mask in .a
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash21(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
@@ -50,11 +34,33 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let md = length((uv - mouse) * vec2<f32>(aspect, 1.0));
   let hover = smoothstep(0.07, 0.0, md);
   V = clamp(V + hover * 0.002 * (1.0 + mids), 0.0, 1.0);
-  if (held && md < 0.045) {
-    let w = smoothstep(0.045, 0.0, md) * seed;
+  // Idea: paint comet — the held brush stretches behind the pointer.
+  var brushVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+  if (extraBuffer[137] < 0.5) { brushVel = vec2<f32>(0.0); }
+  let brushSpeed = length(brushVel);
+  let brushAxis = brushVel / max(brushSpeed, 0.0001);
+  let rel = (uv - mouse) * vec2<f32>(aspect, 1.0);
+  let along = dot(rel, brushAxis);
+  let across = length(rel - brushAxis * along);
+  let stretch = clamp(brushSpeed * 28.0, 0.0, 1.0);
+  let disk = smoothstep(0.045, 0.0, md);
+  let comet = smoothstep(0.018, 0.0, across) * smoothstep(0.01, -0.09, along);
+  let brush = mix(disk, max(disk, comet), stretch);
+  if (held && brush > 0.001) {
+    let w = brush * seed;
     V = clamp(V + w * 0.55, 0.0, 1.0);
     U = clamp(U - w * 0.25, 0.0, 1.0);
     mask = max(mask, w);
+  }
+  if (gid.x == 0u && gid.y == 0u && arrayLength(&extraBuffer) > 137u) {
+    let prevMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    let primed = extraBuffer[137] > 0.5;
+    let delta = select(vec2<f32>(0.0), mouse - prevMouse, primed);
+    extraBuffer[133] = mouse.x;
+    extraBuffer[134] = mouse.y;
+    extraBuffer[135] = delta.x;
+    extraBuffer[136] = delta.y;
+    extraBuffer[137] = 1.0;
   }
 
   let nRipple = min(u32(u.config.y), 50u);
@@ -69,9 +75,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
 
-  // Sparse spontaneous seeds so the tank never dies in attract mode.
-  if (hash21(uv * 17.0 + floor(time * 0.7)) > 0.997) {
-    V = clamp(V + 0.35 * seed, 0.0, 1.0);
+  // Sparse spontaneous seeds so the tank never dies. Slow cell pulses, not a floor(time) teleport.
+  let cellId = floor(uv * 36.0);
+  let cellHash = hash21(cellId);
+  let pulse = fract(time * 0.11 + cellHash);
+  let spark = smoothstep(0.0, 0.03, pulse) * smoothstep(0.1, 0.04, pulse);
+  if (cellHash > 0.992) {
+    V = clamp(V + spark * 0.35 * seed, 0.0, 1.0);
   }
 
   textureStore(dataTextureA, pixel, vec4<f32>(clamp(U, 0.0, 1.0), clamp(V, 0.0, 1.0), st.b, clamp(mask * 0.96, 0.0, 1.0)));

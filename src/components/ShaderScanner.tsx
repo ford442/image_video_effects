@@ -922,7 +922,7 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
                           </tr>
                         </thead>
                         <tbody>
-                          {result.params.map((param, pidx) => (
+                          {result.params.map((param) => (
                             <tr key={param.id} style={{ 
                               color: param.default >= param.min && param.default <= param.max ? '#aaffaa' : '#ff6666'
                             }}>

@@ -13,7 +13,8 @@ export function lumaHistogramBt709(
   for (let i = 0; i < limit; i++) {
     const o = i * 4;
     const y = lumaBt709(rgba[o]!, rgba[o + 1]!, rgba[o + 2]!);
-    bins[lumaToBin(y)] += 1;
+    const bin = lumaToBin(y);
+    bins[bin] = (bins[bin] ?? 0) + 1;
   }
   return { bins, pixelCount: limit };
 }

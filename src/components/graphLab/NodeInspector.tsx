@@ -1,4 +1,3 @@
-import React from 'react';
 import { EntryCatalog } from '../../graphLab/entryCatalog';
 import { RoleSide } from '../../graphLab/graphDraft';
 import { GraphDispatchDomain, GraphNodeDef, GraphRole, MAX_REPEAT, NODE_SCALE_LEVELS } from '../../renderer/multipassGraph';

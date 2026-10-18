@@ -7,6 +7,7 @@ We use **CI-built, committed baseline**:
 | Artifact | Location | Role |
 |----------|----------|------|
 | C++ sources | `wasm_renderer/*.cpp`, `*.h` | Source of truth for renderer logic |
+| Canvas configure header | `wasm_renderer/canvas_configure.h` | **Generated** from `src/contracts/canvas_configure.json` by `npm run gen:canvas-configure`; committed; do not edit |
 | JS bridge (TypeScript) | `src/wasm/bridge/*.ts`, `src/wasm/wasm_bridge.ts` | **Hand-edited SoT — edit here only. Never edit `public/wasm/bridge/*.js`.** |
 | Bridge types | `src/wasm/wasm_bridge.d.ts` | Public contract for generated ESM |
 | Emscripten output | `public/wasm/pixelocity_wasm.{js,wasm}` | Runtime-loaded WASM module |
@@ -59,7 +60,8 @@ tools/naga_wasm/src/lib.rs                       ← separate crate, separate ar
 ## Build commands
 
 ```bash
-npm run wasm:build      # Requires emsdk; fails if emcc missing
+npm run wasm:build      # Requires emsdk; fails if emcc missing (or if canvas_configure.h is stale)
+npm run gen:canvas-configure     # Regenerate wasm_renderer/canvas_configure.h after editing canvas_configure.json
 npm run wasm:validate   # Checks sizes, magic, exports, generated-copy equality
 npm run verify:wasm-bridge-sync  # TypeScript SoT vs generated JS
 npm run wasm:clean      # Remove build/ and public/wasm/

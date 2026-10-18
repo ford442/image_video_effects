@@ -21,13 +21,13 @@ describe('slotOrchestration', () => {
 
   it('resolves duck-typed shader backends', () => {
     const backend = {
-      loadShader: jest.fn(),
-      setActiveShader: jest.fn(),
-      setSlotShader: jest.fn(),
-      updateSlotParams: jest.fn(),
-      setSlotMode: jest.fn(),
-      addRipple: jest.fn(),
-      clearRipples: jest.fn(),
+      loadShader: vi.fn(),
+      setActiveShader: vi.fn(),
+      setSlotShader: vi.fn(),
+      updateSlotParams: vi.fn(),
+      setSlotMode: vi.fn(),
+      addRipple: vi.fn(),
+      clearRipples: vi.fn(),
     };
     expect(resolveShaderBackend(backend as never)).toBe(backend);
     expect(resolveShaderBackend(null)).toBeNull();
@@ -35,14 +35,14 @@ describe('slotOrchestration', () => {
 
   it('forwards setSlotParams via setSlotParams when available', () => {
     const backend = {
-      loadShader: jest.fn(),
-      setActiveShader: jest.fn(),
-      setSlotShader: jest.fn(),
-      setSlotParams: jest.fn(),
-      updateSlotParams: jest.fn(),
-      setSlotMode: jest.fn(),
-      addRipple: jest.fn(),
-      clearRipples: jest.fn(),
+      loadShader: vi.fn(),
+      setActiveShader: vi.fn(),
+      setSlotShader: vi.fn(),
+      setSlotParams: vi.fn(),
+      updateSlotParams: vi.fn(),
+      setSlotMode: vi.fn(),
+      addRipple: vi.fn(),
+      clearRipples: vi.fn(),
     };
     setSlotParams(backend, 1, 0.1, 0.2, 0.3, 0.4);
     expect(backend.setSlotParams).toHaveBeenCalledWith(1, 0.1, 0.2, 0.3, 0.4);
@@ -50,13 +50,13 @@ describe('slotOrchestration', () => {
 
   it('falls back to updateSlotParams aggregate form (#887)', () => {
     const backend = {
-      loadShader: jest.fn(),
-      setActiveShader: jest.fn(),
-      setSlotShader: jest.fn(),
-      updateSlotParams: jest.fn(),
-      setSlotMode: jest.fn(),
-      addRipple: jest.fn(),
-      clearRipples: jest.fn(),
+      loadShader: vi.fn(),
+      setActiveShader: vi.fn(),
+      setSlotShader: vi.fn(),
+      updateSlotParams: vi.fn(),
+      setSlotMode: vi.fn(),
+      addRipple: vi.fn(),
+      clearRipples: vi.fn(),
     };
     setSlotParams(backend, 0, 1, 2, 3, 4);
     expect(backend.updateSlotParams).toHaveBeenCalledWith(
@@ -67,13 +67,13 @@ describe('slotOrchestration', () => {
 
   it('syncAllSlotParams pushes each slot index', () => {
     const backend = {
-      loadShader: jest.fn(),
-      setActiveShader: jest.fn(),
-      setSlotShader: jest.fn(),
-      updateSlotParams: jest.fn(),
-      setSlotMode: jest.fn(),
-      addRipple: jest.fn(),
-      clearRipples: jest.fn(),
+      loadShader: vi.fn(),
+      setActiveShader: vi.fn(),
+      setSlotShader: vi.fn(),
+      updateSlotParams: vi.fn(),
+      setSlotMode: vi.fn(),
+      addRipple: vi.fn(),
+      clearRipples: vi.fn(),
     };
     const slots = [
       { ...defaultSlotParams, zoomParam1: 0.11 },
@@ -91,21 +91,21 @@ describe('slotOrchestration', () => {
 
   it('resyncShaderStack skips a failed slot without clearing later successes', async () => {
     const backend = {
-      loadShader: jest.fn(),
-      setActiveShader: jest.fn(),
-      setSlotShader: jest.fn(),
-      updateSlotParams: jest.fn(),
-      setSlotMode: jest.fn(),
-      addRipple: jest.fn(),
-      clearRipples: jest.fn(),
+      loadShader: vi.fn(),
+      setActiveShader: vi.fn(),
+      setSlotShader: vi.fn(),
+      updateSlotParams: vi.fn(),
+      setSlotMode: vi.fn(),
+      addRipple: vi.fn(),
+      clearRipples: vi.fn(),
     };
-    const loadOne = jest.fn(async (id: string) => id !== 'broken');
+    const loadOne = vi.fn(async (id: string) => id !== 'broken');
     await resyncShaderStack(
       backend,
       { maxActiveSlots: 3, preferNonDeepVariants: false },
-      { onFp32Required: jest.fn() },
+      { onFp32Required: vi.fn() },
       loadOne,
-      jest.fn(),
+      vi.fn(),
       {
         modes: ['broken', 'none', 'liquid'],
         slotParams: [defaultSlotParams, defaultSlotParams, defaultSlotParams],
@@ -125,21 +125,21 @@ describe('slotOrchestration', () => {
 
   it('resyncShaderStack replays every physical slot, not the 3-slot UI default (#1395)', async () => {
     const backend = {
-      loadShader: jest.fn(),
-      setActiveShader: jest.fn(),
-      setSlotShader: jest.fn(),
-      updateSlotParams: jest.fn(),
-      setSlotMode: jest.fn(),
-      addRipple: jest.fn(),
-      clearRipples: jest.fn(),
+      loadShader: vi.fn(),
+      setActiveShader: vi.fn(),
+      setSlotShader: vi.fn(),
+      updateSlotParams: vi.fn(),
+      setSlotMode: vi.fn(),
+      addRipple: vi.fn(),
+      clearRipples: vi.fn(),
     };
     const ids = ['a', 'b', 'c', 'd', 'e', 'f'];
     await resyncShaderStack(
       backend,
       { maxActiveSlots: 6, preferNonDeepVariants: false },
-      { onFp32Required: jest.fn() },
-      jest.fn(async () => true),
-      jest.fn(),
+      { onFp32Required: vi.fn() },
+      vi.fn(async () => true),
+      vi.fn(),
       {
         modes: ids,
         slotParams: ids.map(() => defaultSlotParams),

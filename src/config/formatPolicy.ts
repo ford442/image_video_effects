@@ -76,12 +76,12 @@ export function packRgbaUploadData(
   width: number,
   height: number,
   format: InternalColorFormat,
-): { data: ArrayBufferView; bytesPerRow: number; rowsPerImage: number } {
+): { data: ArrayBufferView<ArrayBuffer>; bytesPerRow: number; rowsPerImage: number } {
   const bytesPerRow = width * bytesPerPixel(format);
   if (format === 'rgba32float') {
-    return { data: floats, bytesPerRow, rowsPerImage: height };
+    return { data: floats as Float32Array<ArrayBuffer>, bytesPerRow, rowsPerImage: height };
   }
-  const Float16Ctor = (globalThis as unknown as { Float16Array?: new (n: number) => ArrayBufferView }).Float16Array;
+  const Float16Ctor = (globalThis as unknown as { Float16Array?: new (n: number) => ArrayBufferView<ArrayBuffer> }).Float16Array;
   if (Float16Ctor) {
     const f16 = new Float16Ctor(floats.length);
     const f16View = f16 as unknown as { length: number; [i: number]: number };
@@ -153,7 +153,11 @@ export async function probeFormatCapabilities(
   const isMobile = options.isMobile ?? false;
   const features = adapter?.features;
   const hasFloat32Filterable = !!features?.has('float32-filterable');
-  const hasFloat32Blendable = !!features?.has('float32-blendable' as GPUFeatureName);
+  // The device is never asked for float32-blendable, so with a device in hand report what it
+  // was granted; the adapter's offer only counts for an adapter-only (pre-device) probe.
+  const hasFloat32Blendable = options.device
+    ? !!options.device.features?.has('float32-blendable' as GPUFeatureName)
+    : !!features?.has('float32-blendable' as GPUFeatureName);
   const float16 = hasFloat16Array();
   const supportsRgba16FloatStorage = await probeStorageTexture(options.device, 'rgba16float');
   const supportsRgba32FloatStorage = await probeStorageTexture(options.device, 'rgba32float');

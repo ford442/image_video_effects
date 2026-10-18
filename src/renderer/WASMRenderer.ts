@@ -1,7 +1,7 @@
 import { Renderer, RendererConfig, ShaderSlotRenderer, GPUTimings, UncappedBenchResult } from './Renderer';
 import * as WasmBridge from '../wasm/wasm_bridge';
-import type { WasmErrorRing } from '../wasm/wasm_bridge';
 import type { PassTiming } from './passTimings';
+import type { WASMDiagnostics } from './rendererTypes';
 import { reportError } from './ErrorHandling';
 import { describeWasmInitFailure, summarizeWasmInitState } from './wasmInitDiagnostics';
 import { publishWasmProbeSuccess } from './webgpuBootProbe';
@@ -22,41 +22,11 @@ type SlotMode = 'chained' | 'parallel';
 /** FFT bins mirrored in extraBuffer[5..132] (matches TS WebGPURenderer). */
 const AUDIO_FFT_BINS = 128;
 
-/**
- * Diagnostic information from the WASM renderer.
- */
-export interface WASMDiagnostics {
-  initialized: boolean;
-  initAttempts: number;
-  errorCount: number;
-  lastErrorTime: string | null;
-  fps: number;
-  hasModule: boolean;
-  adapterInfo: string;
-  /** WebGPURenderer::InitStage of the last Initialize() attempt (0=None, 8=Ready). */
-  failedStage: number;
-  /** Human-readable reason for the last Initialize() failure, or '' if none. */
-  lastInitError: string;
-  /** InitStage name from C++ (e.g. 'Device', 'Surface'). */
-  failedStageName: string;
-  /** Bridge-layer load/init failures (from wasm_bridge getDiagnostics). */
-  loadErrorCount: number;
-  lastLoadError: string | null;
-  initTime: string;
-  /** One-line "ready / partial / failed at <stage> · adapter: …" summary for the debug panel. */
-  initSummary: string;
-  /** C++ canvas COPY_SRC probe (canvas_configure.json optIn.copySrc); null = artifact predates it. */
-  canvasCopySrc: boolean | null;
-  /** MAX_SHADER_SLOTS in the loaded artifact; null = artifact predates the export. */
-  maxShaderSlots: number | null;
-  /** Smoothed per-pass GPU ms from C++ timestamp queries (#1314 D); [] until they resolve. */
-  passTimings: PassTiming[];
-  /** C++ uncaptured WebGPU errors + device-lost messages (count survives clearErrorRing). */
-  errors: WasmErrorRing;
-}
+export type { WASMDiagnostics };
 
 export class WASMRenderer implements Renderer, ShaderSlotRenderer {
-  private config: RendererConfig;
+  /** Discriminant for `isWasmBackend`: lets the rest of the app tell this backend apart without importing it. */
+  readonly backendKind = 'wasm' as const;
   private video: HTMLVideoElement | null = null;
   private animationId: number | null = null;
   private startTime = 0;
@@ -88,9 +58,7 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
   private audioTreble = 0;
   private readonly audioFreqBins = new Float32Array(AUDIO_FFT_BINS);
 
-  constructor(config: RendererConfig) {
-    this.config = config;
-  }
+  constructor(_config: RendererConfig) {}
 
   async init(canvas: HTMLCanvasElement): Promise<boolean> {
     this.initAttempts++;

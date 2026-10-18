@@ -1,11 +1,12 @@
 /**
- * @jest-environment jsdom
+ * @vitest-environment jsdom
  *
  * WASM bridge capture ABI (wasm_renderer/main.cpp): getFrameCaptureState is
  * 0=idle 1=pending 2=ready 3=error, and readCapturedFrame(outPtr, maxBytes)
  * writes RGBA8 into a caller-owned buffer. Also covers GPU still ingest
  * (loadImageExternal) and its CPU fallback signal.
  */
+import type { Mock } from 'vitest';
 import { captureFrame, uploadImageSource } from '../wasm/bridge/capture';
 import { state, wasmRef, EmscriptenModule } from '../wasm/bridge/state';
 
@@ -17,13 +18,13 @@ class FakeImageData {
   constructor(public data: Uint8ClampedArray, public width: number, public height: number) {}
 }
 
-type CaptureModule = EmscriptenModule & { ccall: jest.Mock; _malloc: jest.Mock; _free: jest.Mock };
+type CaptureModule = EmscriptenModule & { ccall: Mock; _malloc: Mock; _free: Mock };
 
 /** Fake module whose capture goes pending → `finalState` after `pendingPolls` polls. */
 function makeCaptureModule(finalState: 2 | 3, pendingPolls = 1, written = W * H * 4): CaptureModule {
   const heap = new Uint8Array(PTR + W * H * 4 + 16);
   let polls = 0;
-  const ccall = jest.fn((name: string, _ret: unknown, _types: unknown, args: unknown[]) => {
+  const ccall = vi.fn((name: string, _ret: unknown, _types: unknown, args: unknown[]) => {
     switch (name) {
       case 'getFrameCaptureState':
         polls += 1;
@@ -44,10 +45,10 @@ function makeCaptureModule(finalState: 2 | 3, pendingPolls = 1, written = W * H 
   });
   return {
     ccall,
-    _malloc: jest.fn(() => PTR),
-    _free: jest.fn(),
-    getValue: jest.fn(() => 0),
-    stringToUTF8: jest.fn(),
+    _malloc: vi.fn(() => PTR),
+    _free: vi.fn(),
+    getValue: vi.fn(() => 0),
+    stringToUTF8: vi.fn(),
     HEAPU8: heap,
     HEAPF32: new Float32Array(heap.buffer),
   } as unknown as CaptureModule;
@@ -61,16 +62,16 @@ function flushRaf(): void {
 beforeEach(() => {
   rafQueue.length = 0;
   (globalThis as Record<string, unknown>).ImageData = FakeImageData;
-  jest.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+  vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
     rafQueue.push(cb);
     return rafQueue.length;
   });
-  jest.spyOn(console, 'warn').mockImplementation(() => {});
+  vi.spyOn(console, 'warn').mockImplementation(() => {});
   state.initialized = true;
 });
 
 afterEach(() => {
-  jest.restoreAllMocks();
+  vi.restoreAllMocks();
   state.initialized = false;
   wasmRef.module = null;
 });

@@ -12,7 +12,7 @@
     "audio",
     "music"
   ],
-  "description": "A raymarched metallic ferrofluid mass with density-driven volume and spikes, sprung orbit control, audio-excited iridescence, click magnetic shells, temporal polish, and real hit depth.",
+  "description": "A raymarched metallic ferrofluid mass with density-driven volume and spikes, sprung orbit control, audio-excited iridescence, click magnetic shells, temporal polish, and real hit depth. Above the critical field the hex peaks bifurcate, and magnetite chains streak along the applied field.",
   "workgroup_size": [
     16,
     16,

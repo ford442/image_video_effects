@@ -20,7 +20,7 @@
     "split-tone",
     "chromatic-aberration"
   ],
-  "description": "Parametric minimal surfaces morphing between catenoid and helicoid via Bonnet rotation, now with cinematic HDR lighting: view-dependent thin-film interference, Fresnel rim, roughness-aware specular, subsurface scattering glow, HDR bloom, ACES tone mapping, dynamic color temperature, split-tone shadows/highlights, volumetric fog, and chromatic aberration. Audio-reactive curvature and temporal trails preserve the living soap-film soul.",
+  "description": "Parametric minimal surfaces morphing between catenoid and helicoid via Bonnet rotation, with gravity drainage, Marangoni plumes, Newton black film, Culick click-rupture holes, Bonnet-rotated asymptotic geodesic surfactant webs, and multi-bounce Airy finesse interference.",
   "workgroup_size": [
     16,
     16,

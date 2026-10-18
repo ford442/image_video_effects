@@ -6,33 +6,17 @@
 //  Chunks From: aurora-rift-pass2.wgsl (ACES tone mapping), gen-quantum-foam-alpha.wgsl (glow)
 //  Created: 2026-05-31
 //  By: Claude Sonnet 4.6 (swarm optimization pass)
-//  upgraded-rgba
+//  Upgraded: 2026-10-17
+//  Ideas: flow-smear glow along the emission gradient; Beer thickness veil
+//  A packing: color only — pass 2 owns the particle pack in A/B
 // ═══════════════════════════════════════════════════════════════════
 //  Pass graph: Pass 3 reads the particle data from dataTextureC (copy of
 //              Pass 2's dataTextureB), applies glow, tone mapping, and
 //              color grading, and writes the final image to writeTexture.
 //  Inputs:  dataTextureC (particles from Pass 2)
 //  Outputs: writeTexture (final color), writeDepthTexture
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config:      vec4<f32>,       // x=time, y=globalIntensity, z=resX, w=resY
-    zoom_config: vec4<f32>,       // x=rotationSpeed, y=depthParallax, z=emissionThreshold, w=chromaticSpread
-    zoom_params: vec4<f32>,       // x=foamScale, y=flowSpeed, z=diffusionRate, w=octaveCount
-    ripples:     array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=foamScale, y=flowSpeed, z=diffusionRate, w=octaveCount
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  Tone mapping helpers
@@ -53,21 +37,21 @@ fn gammaCorrect(color: vec3<f32>, gamma: f32) -> vec3<f32> {
 // ═══════════════════════════════════════════════════════════════════════════
 //  Glow/bloom approximation (fast box blur)
 // ═══════════════════════════════════════════════════════════════════════════
-fn sampleGlow(uv: vec2<f32>, emission: f32, dims: vec2<f32>) -> vec3<f32> {
-    let texel = 1.0 / dims;
-    let glowRadius = 3.0 * emission;
-
+fn sampleGlow(coord: vec2<i32>, resI: vec2<i32>, emission: f32, flow: vec2<f32>) -> vec3<f32> {
+    let rad = max(1, i32(1.0 + emission * 2.0));
     var glowAccum = vec3<f32>(0.0);
     var weightSum = 0.0;
 
-    // Simple 3x3 kernel for glow
+    // 3x3 kernel, shifted along the emission gradient (idea 1).
     for (var y: i32 = -1; y <= 1; y = y + 1) {
         for (var x: i32 = -1; x <= 1; x = x + 1) {
-            let offset = vec2<f32>(f32(x), f32(y)) * texel * glowRadius;
-            let sampleUV = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
+            let smear = vec2<i32>(
+                i32(flow.x * f32(x + 1) * 2.0),
+                i32(flow.y * f32(y + 1) * 2.0)
+            );
+            let samplePx = clamp(coord + vec2<i32>(x, y) * rad + smear, vec2<i32>(0), resI - vec2<i32>(1));
             let weight = 1.0 / (1.0 + length(vec2<f32>(f32(x), f32(y))));
-
-            let sampleData = textureSampleLevel(dataTextureC, u_sampler, sampleUV, 0.0);
+            let sampleData = textureLoad(dataTextureC, samplePx, 0);
             glowAccum = glowAccum + sampleData.rgb * sampleData.a * weight;
             weightSum = weightSum + weight;
         }
@@ -100,41 +84,42 @@ fn colorGrade(color: vec3<f32>, saturation: f32, contrast: f32) -> vec3<f32> {
 // ═══════════════════════════════════════════════════════════════════════════
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-  let unused_x = u.zoom_params.x;
-  let unused_y = u.zoom_params.y;
-  let unused_z = u.zoom_params.z;
-  let unused_w = u.zoom_params.w;
     let dims = u.config.zw;
+    if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) { return; }
     let uv = vec2<f32>(gid.xy) / dims;
     let coord = vec2<i32>(gid.xy);
-    let time = u.config.x;
+    let resI = vec2<i32>(dims);
     let globalIntensity = u.config.y;
 
-    // Read particle data from Pass 2 (via dataTextureC which has Pass 2's content)
-    let particleData = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    // Particles from Pass 2 (graph copies dataB into C before this dispatch).
+    let particleData = textureLoad(dataTextureC, coord, 0);
     let particleColor = particleData.rgb;
     let emission = particleData.a;
 
-    // Sample depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-
-    // Source color for mixing
     let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
-    // Dummy slider consume
-    let dummySlider = u.zoom_params.x * u.zoom_params.y * u.zoom_params.z * u.zoom_params.w * 0.0001;
+    let flowSpeed = clamp(u.zoom_params.y, 0.0, 1.0);
+    let diffusion = clamp(u.zoom_params.z, 0.0, 1.0);
 
-    // Early exit optimization - if minimal effect, pass through source
     if (globalIntensity < 0.01) {
-        textureStore(writeTexture, coord, vec4<f32>(src.rgb + vec3<f32>(dummySlider), src.a));
+        textureStore(writeTexture, coord, src);
         textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
         return;
     }
 
-    // Add glow for emissive regions
-    let glowColor = sampleGlow(uv, emission, dims);
-    let glowIntensity = 0.5 + dummySlider;
-    let withGlow = particleColor + glowColor * glowIntensity * emission;
+    let pxR = textureLoad(dataTextureC, clamp(coord + vec2<i32>(1, 0), vec2<i32>(0), resI - vec2<i32>(1)), 0);
+    let pxL = textureLoad(dataTextureC, clamp(coord - vec2<i32>(1, 0), vec2<i32>(0), resI - vec2<i32>(1)), 0);
+    let pxU = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, 1), vec2<i32>(0), resI - vec2<i32>(1)), 0);
+    let pxD = textureLoad(dataTextureC, clamp(coord - vec2<i32>(0, 1), vec2<i32>(0), resI - vec2<i32>(1)), 0);
+    let flow = vec2<f32>(pxR.a - pxL.a, pxU.a - pxD.a);
+    let flowDir = flow / max(length(flow), 0.001);
+    let glowColor = sampleGlow(coord, resI, emission, flowDir * (0.6 + flowSpeed * 1.8));
+
+    // Idea 2 — Beer veil: transmitted color thins where the surrounding glow is dense.
+    let thick = saturate(length(glowColor) * (0.8 + diffusion));
+    let transmitted = particleColor * exp(-thick * (0.45 + diffusion * 0.9));
+    let withGlow = transmitted + glowColor * (0.45 + flowSpeed * 0.35) * emission;
 
     // Depth-based atmospheric haze
     let haze = (1.0 - depth) * 0.1;

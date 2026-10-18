@@ -1,9 +1,8 @@
-import { WASMDiagnostics } from './WASMRenderer';
 import type { RendererType } from './backendLifecycle';
-import type { RendererDiagnostics, RendererMetrics } from './rendererTypes';
+import type { RendererDiagnostics, RendererMetrics, WASMDiagnostics } from './rendererTypes';
 import { resolveShaderBackend } from './slotOrchestration';
 import { Renderer } from './Renderer';
-import { WASMRenderer } from './WASMRenderer';
+import type { WASMRenderer } from './WASMRenderer';
 
 export function buildRendererDiagnostics(
   rendererType: RendererType,

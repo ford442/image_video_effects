@@ -1,4 +1,4 @@
-import React from 'react';
+import type { Mock } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ShaderScanner from './ShaderScanner';
@@ -9,13 +9,13 @@ import {
   resetRendererDeviceRegistryForTests,
 } from '../renderer/deviceRegistry';
 
-jest.mock('../utils/fetchShaderWgsl', () => ({
-  fetchShaderWgsl: jest.fn().mockResolvedValue('@compute @workgroup_size(16, 16) fn main() {}'),
+vi.mock('../utils/fetchShaderWgsl', () => ({
+  fetchShaderWgsl: vi.fn().mockResolvedValue('@compute @workgroup_size(16, 16) fn main() {}'),
 }));
 
 describe('ShaderScanner device policy', () => {
-  const requestAdapter = jest.fn();
-  const requestDevice = jest.fn();
+  const requestAdapter = vi.fn();
+  const requestDevice = vi.fn();
 
   beforeEach(() => {
     resetRendererDeviceRegistryForTests();
@@ -28,8 +28,8 @@ describe('ShaderScanner device policy', () => {
     };
 
     const mockDevice = {
-      createShaderModule: jest.fn().mockReturnValue({
-        getCompilationInfo: jest.fn().mockResolvedValue({ messages: [] }),
+      createShaderModule: vi.fn().mockReturnValue({
+        getCompilationInfo: vi.fn().mockResolvedValue({ messages: [] }),
       }),
       features: new Set(['subgroups']),
     } as unknown as GPUDevice;
@@ -65,7 +65,7 @@ describe('ShaderScanner device policy', () => {
 
 describe('ShaderScanner across a device loss (#1395)', () => {
   beforeEach(() => {
-    (fetchShaderWgsl as jest.Mock).mockResolvedValue('@compute @workgroup_size(16, 16) fn main() {}');
+    (fetchShaderWgsl as Mock).mockResolvedValue('@compute @workgroup_size(16, 16) fn main() {}');
     resetRendererDeviceRegistryForTests();
     window.webgpuProbe = { ok: true, finishedAt: '', userAgent: 'test', userAgentBrands: [], attempts: [] };
   });
@@ -77,9 +77,9 @@ describe('ShaderScanner across a device loss (#1395)', () => {
 
   const deviceWith = (compile: () => Promise<{ messages: unknown[] }>) =>
     ({
-      createShaderModule: jest.fn().mockReturnValue({ getCompilationInfo: jest.fn(compile) }),
+      createShaderModule: vi.fn().mockReturnValue({ getCompilationInfo: vi.fn(compile) }),
       features: new Set<string>(),
-    }) as unknown as GPUDevice & { createShaderModule: jest.Mock };
+    }) as unknown as GPUDevice & { createShaderModule: Mock };
 
   it('re-compiles on the recovered device when the device changed mid-compile', async () => {
     const recovered = deviceWith(async () => ({ messages: [] }));
@@ -115,7 +115,7 @@ describe('ShaderScanner thumbnail batch', () => {
 
   beforeEach(() => {
     // CRA's resetMocks clears the module-factory implementation before each test.
-    (fetchShaderWgsl as jest.Mock).mockResolvedValue('@compute @workgroup_size(16, 16) fn main() {}');
+    (fetchShaderWgsl as Mock).mockResolvedValue('@compute @workgroup_size(16, 16) fn main() {}');
     resetRendererDeviceRegistryForTests();
     window.webgpuProbe = {
       ok: true,
@@ -125,8 +125,8 @@ describe('ShaderScanner thumbnail batch', () => {
       attempts: [],
     };
     publishRendererDevice({
-      createShaderModule: jest.fn().mockReturnValue({
-        getCompilationInfo: jest.fn().mockResolvedValue({ messages: [] }),
+      createShaderModule: vi.fn().mockReturnValue({
+        getCompilationInfo: vi.fn().mockResolvedValue({ messages: [] }),
       }),
       features: new Set(['subgroups']),
     } as unknown as GPUDevice, { supportsSubgroups: true });
@@ -144,7 +144,7 @@ describe('ShaderScanner thumbnail batch', () => {
         'changed-one': { thumbnail_url: 'thumbnails/changed-one.png', generated_at: '', source_hash: 'h2-old' },
       },
     };
-    global.fetch = jest.fn(async (url: RequestInfo | URL) => {
+    global.fetch = vi.fn(async (url: RequestInfo | URL) => {
       const body = files[String(url)];
       return { ok: body !== undefined, json: async () => body } as Response;
     }) as typeof fetch;
@@ -168,20 +168,20 @@ describe('ShaderScanner thumbnail batch', () => {
   });
 
   function hostThatStopsOn(stopAfterCaptures: number | null) {
-    const restore = jest.fn().mockResolvedValue(undefined);
+    const restore = vi.fn().mockResolvedValue(undefined);
     let captures = 0;
     const host = {
       // null renderer → every capture fails fast with gpu_unavailable (no GPU in jsdom).
-      getRenderer: jest.fn(() => {
+      getRenderer: vi.fn(() => {
         captures++;
         if (stopAfterCaptures !== null && captures === stopAfterCaptures) {
           fireEvent.click(screen.getByRole('button', { name: /Stop/i }));
         }
         return null;
       }),
-      loadIntoSlot: jest.fn().mockResolvedValue(undefined),
-      clearSlot: jest.fn().mockResolvedValue(undefined),
-      beginSession: jest.fn().mockResolvedValue(restore),
+      loadIntoSlot: vi.fn().mockResolvedValue(undefined),
+      clearSlot: vi.fn().mockResolvedValue(undefined),
+      beginSession: vi.fn().mockResolvedValue(restore),
     };
     return { host, restore };
   }

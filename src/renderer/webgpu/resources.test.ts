@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { WebGPUResourcePool, createTextures } from './resources';
 
 // Minimal WebGPU globals for unit tests (no real GPU in Jest).
@@ -19,19 +20,67 @@ const TU = {
 function makeMockDevice(): GPUDevice {
   const textures: GPUTexture[] = [];
   return {
-    createTexture: jest.fn(() => {
-      const tex = { destroy: jest.fn(), createView: jest.fn() } as unknown as GPUTexture;
+    createTexture: vi.fn(() => {
+      const tex = { destroy: vi.fn(), createView: vi.fn() } as unknown as GPUTexture;
       textures.push(tex);
       return tex;
     }),
-    createSampler: jest.fn(() => ({} as GPUSampler)),
-    createBuffer: jest.fn(() => ({ destroy: jest.fn() } as unknown as GPUBuffer)),
-    queue: { writeTexture: jest.fn() },
+    createSampler: vi.fn(() => ({} as GPUSampler)),
+    createBuffer: vi.fn(() => ({ destroy: vi.fn() } as unknown as GPUBuffer)),
+    queue: { writeTexture: vi.fn() },
     _textures: textures,
   } as unknown as GPUDevice & { _textures: GPUTexture[] };
 }
 
 describe('WebGPUResourcePool', () => {
+  describe('device reset (OOM retry)', () => {
+    it('destroyBuffers clears the fields so ensureSamplersAndBuffers allocates again', () => {
+      const device = makeMockDevice();
+      const pool = new WebGPUResourcePool();
+      pool.ensureSamplersAndBuffers(device);
+      const first = [pool.uniformBuf, pool.extraBuf, pool.plasmaBuf];
+
+      pool.destroyBuffers();
+      first.forEach((b) => expect(b.destroy).toHaveBeenCalledTimes(1));
+
+      pool.ensureSamplersAndBuffers(device);
+      const second = [pool.uniformBuf, pool.extraBuf, pool.plasmaBuf];
+      second.forEach((b) => expect(first).not.toContain(b));
+    });
+
+    it('a fresh device gets fresh buffers and samplers after resetForDevice', () => {
+      const first = makeMockDevice();
+      const second = makeMockDevice();
+      const pool = new WebGPUResourcePool();
+
+      pool.setup(first, 1920, 1080, 960, 540);
+      const oldBuffers = [pool.uniformBuf, pool.extraBuf, pool.plasmaBuf];
+      const oldSamplers = [pool.filterSampler, pool.nearestSampler, pool.compSampler];
+      const oldRead = pool.readTex;
+
+      pool.resetForDevice();
+      expect(oldRead.destroy).toHaveBeenCalled();
+      oldBuffers.forEach((b) => expect(b.destroy).toHaveBeenCalledTimes(1));
+
+      pool.ensureSamplersAndBuffers(second);
+      expect(second.createBuffer).toHaveBeenCalledTimes(3);
+      expect(second.createSampler).toHaveBeenCalledTimes(3);
+      const bufs = pool.getBufferSet();
+      const samplers = pool.getSamplerSet();
+      Object.values(bufs).forEach((b) => expect(oldBuffers).not.toContain(b));
+      Object.values(samplers).forEach((s) => expect(oldSamplers).not.toContain(s));
+    });
+
+    it('ensureSamplersAndBuffers still reuses live resources on the same device', () => {
+      const device = makeMockDevice();
+      const pool = new WebGPUResourcePool();
+      pool.ensureSamplersAndBuffers(device);
+      pool.ensureSamplersAndBuffers(device);
+      expect(device.createBuffer).toHaveBeenCalledTimes(3);
+      expect(device.createSampler).toHaveBeenCalledTimes(3);
+    });
+  });
+
   it('recreateScaleTextures destroys old textures and creates new ones', () => {
     const device = makeMockDevice();
     const pool = new WebGPUResourcePool();
@@ -114,9 +163,9 @@ describe('WebGPUResourcePool', () => {
     );
     expect(emptyCall?.[0].format).toBe('r32float');
 
-    const writeTexture = device.queue.writeTexture as jest.Mock;
+    const writeTexture = device.queue.writeTexture as Mock;
     expect(writeTexture).toHaveBeenCalled();
-    const [dest, data, layout] = writeTexture.mock.calls[0];
+    const [dest, data, layout] = writeTexture.mock.calls[0]!;
     expect(dest).toEqual({ texture: expect.anything() });
     expect(data).toBeInstanceOf(Float32Array);
     expect((data as Float32Array).length).toBe(1);

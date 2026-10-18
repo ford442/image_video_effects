@@ -4,8 +4,8 @@
 //  Features: upgraded-rgba, temporal, audio-reactive, mouse-driven
 //  Complexity: Medium-High
 //  Created: 2026-05-31
-//  Upgraded: 2026-09-13
-//  Ideas: Rankine core/irrotational seam; counter-arm braid beads; differential-rotation feedback advection; cyclostrophic pressure-deficit condensation funnel
+//  Upgraded: 2026-10-17
+//  Ideas: Rankine core/irrotational seam; counter-arm braid beads; differential-rotation feedback advection; cyclostrophic pressure-deficit condensation funnel; Kelvin-Helmholtz eyewall shear vortices; Ekman boundary-layer spiral inflow streaks
 //  A packing: raw HDR display RGBA history (pre-ACES), alpha = vortex energy
 //  By: Kimi Agent
 // ═══════════════════════════════════════════════════════════════════
@@ -15,26 +15,7 @@
 //  Core radius a = 0.2 + bass*0.1, angular velocity Ω = 2.0 + mids*3.0
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265;
 const TAU: f32 = 6.28318530;
@@ -199,6 +180,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let striae = 0.55 + 0.45 * sin(swirlAngle * (4.0 + scale * 4.0) - r * 18.0 + time * speed * 2.0);
   let funnelHaze = condense * striae * (0.35 + treble * 0.4) * omega * 0.18;
   color += mix(vec3<f32>(0.85, 0.8, 1.0), neonRainbow(pDeficit * 0.25 + colorShift + 0.6), 0.35) * funnelHaze;
+
+  // Idea 5 — Kelvin-Helmholtz eyewall shear vortices along r = coreR (m=6 polygonal sub-vortex roll-ups)
+  let khPhase = swirlAngle * 6.0 - time * omega * 0.45;
+  let khRadius = coreR + 0.018 * sin(khPhase);
+  let khCurl = sin((r - khRadius) * 85.0 + cos(khPhase) * 2.4);
+  let eyewallEddies = exp(-pow((r - khRadius) * 28.0, 2.0)) * pow(0.5 + 0.5 * cos(khPhase), 3.0) * (0.65 + 0.35 * khCurl);
+  color += neonRainbow(khPhase / TAU + colorShift + 0.15) * eyewallEddies * (0.55 + mids * 0.35);
+
+  // Idea 6 — Ekman boundary-layer spiral inflow streaks outside the Rankine core
+  let outerMask = smoothstep(coreR * 0.9, coreR * 1.35, r) * exp(-r * 2.2);
+  let logSpiral = sin(a * 8.0 + log(max(r, 0.02)) * (14.0 + scale * 10.0) + time * speed * 3.8);
+  let ekmanInflow = pow(max(logSpiral, 0.0), 7.0) * outerMask * (0.45 + treble * 0.45);
+  color += neonRainbow(log(max(r, 0.02)) * 0.6 + colorShift + 0.4) * ekmanInflow;
 
   // Clicks launch bounded vortex-energy fronts without auxiliary state.
   var clickEnergy = 0.0;

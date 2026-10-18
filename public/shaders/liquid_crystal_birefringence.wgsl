@@ -15,7 +15,9 @@
 //    - Crossed-polarizer analyzer obeying Malus's law, steered by the pointer
 //    - Frederiks relaxation lag read back from dataTextureC
 //  Target: 4.7★ rating
-//  Upgraded: 2026-08-23 (Batch 58B — Liquid)
+//  Upgraded: 2026-10-17
+//  Ideas: crossed-polarizer Malus analyzer; asymmetric Frederiks relaxation lag in C; conoscopic Maltese-cross isogyres & melatope rings around defect core; extraordinary-ray birefringent double-refraction walk-off
+//  A packing: ACES display RGBA in A
 //
 //  BUG FIXED IN THIS PASS — depth clobber. The shader wrote its polarization
 //  alpha into writeDepthTexture:
@@ -44,26 +46,7 @@
 //       transitions snap under voltage and dark ones bleed away.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 
@@ -289,8 +272,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                    + mouseGravity * 2.0 + clickPulse * 3.0
                    + voltageFront * PI * 0.5; // director flip behind the front
 
-    // Sample background
-    let bg = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    // ── Structure 3: Extraordinary-ray birefringent double-refraction walk-off ──
+    let bgO = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let walkOff = director * localBirefringence * max(effectiveThickness, 0.1) * 0.045;
+    let uvE = clamp(uv + walkOff, vec2<f32>(0.0), vec2<f32>(1.0));
+    let bgE = vec3<f32>(
+        textureSampleLevel(readTexture, u_sampler, clamp(uv + walkOff * 1.12, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r,
+        textureSampleLevel(readTexture, u_sampler, uvE, 0.0).g,
+        textureSampleLevel(readTexture, u_sampler, clamp(uv + walkOff * 0.88, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b
+    );
+    let eWeight = 0.35 + 0.35 * sin(localTwist) * sin(localTwist);
+    let bg = mix(bgO, bgE, eWeight);
 
     // Apply polarization effect
     var color = rotatePolarization(bg, localTwist, retardation);
@@ -317,6 +309,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                             select(0.0, 1.0, isMouseDown) * (1.0 - smoothstep(0.0, 0.6, distToMouse)));
     let transmission = malusTransmission(emergentAngle, analyzerAngle, retardation);
     color *= 0.35 + transmission * 0.9;
+
+    // ── Structure 4: Conoscopic Maltese-cross isogyres & melatope rings ─────
+    let conoscopicMask = smoothstep(0.42, 0.02, distToMouse);
+    let isogyreArm = pow(sin(2.0 * (heldAnalyzer - analyzerAngle)), 2.0);
+    let melatopePhase = distToMouse * 28.0 * localBirefringence * max(effectiveThickness, 0.15);
+    let melatopeRing = 0.5 + 0.5 * cos(melatopePhase * vec3<f32>(1.0, 1.22, 1.42) - time * 1.4);
+    color = mix(color, color * (0.32 + 0.68 * isogyreArm) + melatopeRing * isogyreArm * 0.28, conoscopicMask * 0.65);
 
     // Alpha based on polarization rotation amount
     let rotationAmount = abs(sin(localTwist)) * (1.0 + birefringence);

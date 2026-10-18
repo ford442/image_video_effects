@@ -20,7 +20,7 @@
  * captures are tagged capture_host=swiftshader). See docs/THUMBNAIL_PIPELINE.md.
  */
 
-const { chromium } = require('playwright');
+const { chromium } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');

@@ -7,38 +7,27 @@
 //    temporal feedback memory dataTextureA/C, generated depth, semantic
 //    alpha, ACES tone map)
 //  Complexity: High
-//  Upgraded: 2026-09-27
+//  Upgraded: 2026-10-18
 //  Ideas: reactor containment ring (precessing plasma torus + hot spot);
 //    sporangia pods (breathing Worley nuclei on the gyroid); fractured core
-//    shell (F2-F1 cracks leaking light through the inverted skin)
+//    shell (F2-F1 cracks leaking light through the inverted skin);
+//    radiotrophic melanization (hyphae nearest the core darken to melanin
+//    and re-emit absorbed dose as a bass-fed radiosynthesis ember sheen);
+//    Cherenkov coolant pool (lattice recedes from a coolant cavity round the
+//    core; ray path through it integrates a blue glow, brighter near the core)
 //  A packing: raw HDR trail rgb (pre-ACES) + nutrient alpha; ACES on
 //    writeTexture only
 //  Fixes: extraBuffer[133..138] is zeroed per frame so the spring/click
 //    state never persisted -> stateless mouse + ripple-derived click age
-//    (old [133..138] writer left in place, unread); pow(negative, 2.0) NaN
-//    in the spore ring replaced by squaring
+//    (dead [133..138] writer removed 2026-10-18); pow(negative, 2.0) NaN
+//    in the spore ring replaced by squaring; 2026-10-18: camera rows grew
+//    downward (scene and mouse-y upside down) -> rd.y = -uv.y; inverted
+//    core skin went negative under ACES (bright) -> clamped at 0; camera orbit
+//    sat inside solid gyroid ~49% of the time (flat frame) -> clearance
+//    bubble; reversed-edge smoothsteps (undefined) -> 1 - smoothstep
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time (seconds), .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0-1 canvas: y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .xyzw = user params p1...p4 (mapped from UI sliders)
-  ripples: array<vec4<f32>, 50>,  // .xy = ripple uv, .z = startTime (seconds), .w = padding
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -132,7 +121,13 @@ struct ReactorCtx {
     pulse: f32,      // click spore-burst energy (bounded 0..1)
     pulse_age: f32,  // seconds since click (scaled time)
     mutate: f32,     // hold-to-mutate surge (mouseDown)
+    cam: vec3<f32>,  // camera position (clearance bubble)
 };
+
+// IDEA 5: coolant cavity radius around the core (shared by map + shading)
+fn cavityRadius() -> f32 {
+    return 0.5 * u.zoom_params.x * 2.8 + 1.0;
+}
 
 fn map(p: vec3<f32>, c: ReactorCtx) -> f32 {
     let core_density = u.zoom_params.x;
@@ -156,8 +151,17 @@ fn map(p: vec3<f32>, c: ReactorCtx) -> f32 {
 
     // Attraction to core
     let dist_to_core = length(p - c.core_pos);
-    let pull = smoothstep(2.0, 0.0, dist_to_core);
+    let pull = (1.0 - smoothstep(0.0, 2.0, dist_to_core));
     d_gyroid -= pull * 0.5;
+
+    // IDEA 5: coolant cavity — the lattice recedes from a sphere of coolant
+    // around the core, so rays reach the pool and the core
+    let cavR = cavityRadius();
+    d_gyroid += (1.0 - smoothstep(core_radius * 1.1, cavR, dist_to_core)) * 2.0;
+
+    // Camera clearance: the orbit passed through solid gyroid ~half the time
+    // (every ray hit at t = 0 -> one flat colour); keep a bubble open
+    d_gyroid += (1.0 - smoothstep(0.3, 1.8, length(p - c.cam))) * 3.0;
 
     // Click spore-burst: expanding shockwave swells the mycelium outward
     let ringX = (dist_to_core - c.pulse_age * 2.2) * 3.0;
@@ -199,34 +203,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let treble = plasmaBuffer[0].z;
     let mouseDown = u.zoom_config.w;
 
-    // ── Persistent state: spring-smoothed nutrient attractor + click edge ──
-    // extraBuffer[133..136] = attractor pos/vel (uv), [137] = prev mouseDown,
-    // [138] = last click timestamp (scaled time; -10 = never fired)
     let sbLen = arrayLength(&extraBuffer);
-    let canState = sbLen > 138u;
     let rawMouse = u.zoom_config.yz;
-    if (global_id.x == 0u && global_id.y == 0u && canState) {
-        let h = 0.016;
-        let spx = extraBuffer[133];
-        let spy = extraBuffer[134];
-        let svx = extraBuffer[135];
-        let svy = extraBuffer[136];
-        let nvx = clamp(svx + ((rawMouse.x - spx) * 70.0 - svx * 10.0) * h, -4.0, 4.0);
-        let nvy = clamp(svy + ((rawMouse.y - spy) * 70.0 - svy * 10.0) * h, -4.0, 4.0);
-        extraBuffer[133] = clamp(spx + nvx * h, 0.0, 1.0);
-        extraBuffer[134] = clamp(spy + nvy * h, 0.0, 1.0);
-        extraBuffer[135] = nvx;
-        extraBuffer[136] = nvy;
-        let prevDown = extraBuffer[137];
-        if (mouseDown > 0.5 && prevDown <= 0.5) {
-            extraBuffer[138] = max(time, 0.001);
-        } else if (extraBuffer[138] == 0.0) {
-            extraBuffer[138] = -10.0;
-        }
-        extraBuffer[137] = mouseDown;
-    }
-    // extraBuffer[133..138] is zeroed every frame by the engine, so the spring
-    // above never persists: read the mouse directly and derive the click age
+    // extraBuffer[133..138] is zeroed every frame by the engine, so a spring
+    // there never persists: read the mouse directly and derive the click age
     // from the newest engine ripple (age = time - ripple.z; never ripple.w).
     let sm = rawMouse;
     var clickAge = 1.0e4;
@@ -256,15 +236,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         fft_hi = (extraBuffer[11] + extraBuffer[12] + extraBuffer[13]) * 0.3333;
     }
 
-    let ctx = ReactorCtx(time, core_pos, bass, mids, treble, fft_lo, fft_hi, pulse, pulse_age, mutate);
 
     var ro = vec3<f32>(0.0, 0.0, -4.0);
-    var rd = normalize(vec3<f32>(uv, 1.0));
+    var rd = normalize(vec3<f32>(uv.x, -uv.y, 1.0)); // rows grow down; world +y = screen up
 
     // Slight camera rotation
     let rotMatrix = rot(time * 0.1);
     ro = vec3<f32>(rotMatrix * ro.xz, ro.y).xzy;
     rd = vec3<f32>(rotMatrix * rd.xz, rd.y).xzy;
+
+    let ctx = ReactorCtx(time, core_pos, bass, mids, treble, fft_lo, fft_hi, pulse, pulse_age, mutate, ro);
 
     var t = 0.0;
     var col = vec3<f32>(0.0);
@@ -279,6 +260,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let ringMajor = coreR * 1.9 + 0.15;
     let ringMinor = 0.05 + 0.04 * coreR;
     var ringGlow = 0.0;
+    // IDEA 5: Cherenkov coolant pool radius (scales with the core)
+    let poolR = cavityRadius(); // the coolant fills the cavity
+    var cherenkov = 0.0;
 
     for (var i = 0; i < 100; i++) {
         let p = ro + rd * t;
@@ -299,6 +283,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let hs = max(cos(ang - time * 1.3), 0.0);
             let hs2 = hs * hs;
             ringGlow += rw * (0.35 + 1.4 * hs2 * hs2) * clamp(d, 0.01, 0.25);
+        }
+
+        // IDEA 5: Cherenkov coolant — integrate the step length spent inside the
+        // pool sphere; emission rises toward the core (dose ~ 1/r^2, capped)
+        let pr = length(rq);
+        if (pr < poolR) {
+            let inner = 1.0 - pr / poolR;
+            cherenkov += clamp(d, 0.005, 0.2) * inner * inner * (1.0 + 2.5 / (1.0 + 12.0 * max(pr - coreR, 0.0)));
         }
 
         if (d < 0.001 || t > 10.0) {
@@ -326,27 +318,41 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
                 let coreSkin = dist_to_core < u.zoom_params.x * 0.55;
 
+                // IDEA 4: radiotrophic melanization — hyphae inside the dose zone
+                // darken to melanin; the pigment harvests the core's radiation and
+                // re-emits it as an ember sheen on core-facing surfaces (bass feeds)
+                if (!coreSkin) {
+                    // dose zone = the cavity lining, where the walls face the core
+                    let mel = 1.0 - smoothstep(coreR * 2.0 + 0.6, cavityRadius() + 0.2, dist_to_core);
+                    let toCore = normalize(core_pos - p);
+                    let facing = max(dot(n, toCore), 0.0);
+                    let grain = cellular(p * 7.0 + 3.1);
+                    base_col = mix(base_col, vec3<f32>(0.07, 0.035, 0.02) * (0.6 + grain), mel * 0.7);
+                    let ember = mel * facing * facing * (0.55 + bass * 0.6) * (0.6 + 0.4 * sin(time * 2.3 + grain * 9.0));
+                    base_col += vec3<f32>(1.0, 0.42, 0.08) * ember;
+                }
+
                 // IDEA 2: sporangia pods — Worley nuclei on the gyroid swell and
                 // breathe on per-cell phases (mycelium only, not the core skin)
                 if (!coreSkin) {
                     let pw = worley(p * 3.0 + vec3<f32>(0.0, 0.0, time * 0.05));
-                    let pod = smoothstep(0.30, 0.07, pw.x);
+                    let pod = (1.0 - smoothstep(0.07, 0.30, pw.x));
                     let breath = 0.5 + 0.5 * sin(time * 1.7 + pw.z * TAU);
-                    let nucleus = smoothstep(0.12, 0.0, pw.x);
+                    let nucleus = (1.0 - smoothstep(0.0, 0.12, pw.x));
                     base_col += (vec3<f32>(0.55, 1.0, 0.3) * pod + vec3<f32>(1.0, 0.95, 0.7) * nucleus)
                         * (0.3 + 0.7 * breath) * 0.8;
                 }
 
                 // Negative color space near singularity
                 if (coreSkin) {
-                    base_col = 1.0 - base_col;
+                    base_col = max(1.0 - base_col, vec3<f32>(0.0)); // ACES maps negatives bright
                     base_col *= vec3<f32>(1.0, 0.5, 0.2); // Chromatic aberration effect
 
                     // IDEA 3: fractured core shell — Worley F2-F1 cracks leak
                     // hot light through the inverted skin, flickering per fragment
                     let cq = (p - core_pos) / max(coreR, 0.05);
                     let cw = worley(cq * 2.6 + vec3<f32>(0.0, 0.0, time * 0.06));
-                    let crack = smoothstep(0.14, 0.0, cw.y - cw.x);
+                    let crack = (1.0 - smoothstep(0.0, 0.14, cw.y - cw.x));
                     let flick = 0.5 + 0.5 * sin(time * 3.1 + cw.z * TAU);
                     base_col += vec3<f32>(1.0, 0.72, 0.35) * crack * (0.9 + 1.3 * flick);
                 }
@@ -378,13 +384,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Subsurface scattering approximation (cheap distance based fog)
     col = mix(col, vec3<f32>(0.0, 0.05, 0.1), 1.0 - exp(-0.1 * t));
 
+    // IDEA 5: Cherenkov blue, under the ring (treble shimmer, no phase jumps)
+    col += vec3<f32>(0.12, 0.42, 1.0) * cherenkov * (0.6 + treble * 0.2);
+
     // IDEA 1: containment ring added after the fog so it stays vivid
     col += vec3<f32>(1.0, 0.55, 0.2) * ringGlow * 2.2;
 
     // ── Temporal feedback memory: growth self-organizes along its history ──
     let prev = textureLoad(dataTextureC, px, 0); // non-filtering history read
     let decay = 0.90 + u.zoom_params.y * 0.06;   // Mycelium Spread = trail persistence
-    var trail = prev.rgb * decay + col * (0.22 + bass * 0.08);
+    var trail = prev.rgb * decay + max(col, vec3<f32>(0.0)) * (0.22 + bass * 0.08);
     trail = min(trail, vec3<f32>(3.0));
     let nutrient = clamp(mix(prev.a, glow * 0.05 + rippleGlow, 0.12), 0.0, 1.0);
     textureStore(dataTextureA, px, vec4<f32>(trail, nutrient));
@@ -401,6 +410,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(writeDepthTexture, px, vec4<f32>(depth, 0.0, 0.0, 0.0));
 
     // Semantic alpha: reactor luminance density
-    let alpha = clamp(luma(col) * 1.1 + glow * 0.004 + ringGlow * 0.3 + rippleGlow * 0.2, 0.06, 1.0);
+    let alpha = clamp(luma(col) * 1.1 + glow * 0.004 + ringGlow * 0.3 + cherenkov * 0.25 + rippleGlow * 0.2, 0.06, 1.0);
     textureStore(writeTexture, px, vec4<f32>(col, alpha));
 }

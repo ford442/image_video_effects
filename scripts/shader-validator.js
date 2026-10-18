@@ -7,7 +7,7 @@
  * Default URL: https://test.1ink.us/image_video_effects/index.html
  */
 
-const { chromium } = require('playwright');
+const { chromium } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
 

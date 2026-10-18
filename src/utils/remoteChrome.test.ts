@@ -1,3 +1,4 @@
+import type { MockInstance } from 'vitest';
 import { isRemoteChromeHidden, writeRemoteChromeParam } from './remoteChrome';
 
 describe('isRemoteChromeHidden', () => {
@@ -18,7 +19,7 @@ describe('isRemoteChromeHidden', () => {
 
 describe('writeRemoteChromeParam', () => {
   const original = window.location;
-  let replaceState: jest.SpyInstance;
+  let replaceState: MockInstance;
 
   beforeEach(() => {
     Object.defineProperty(window, 'location', {
@@ -30,7 +31,7 @@ describe('writeRemoteChromeParam', () => {
       },
       configurable: true,
     });
-    replaceState = jest.spyOn(window.history, 'replaceState').mockImplementation(() => {});
+    replaceState = vi.spyOn(window.history, 'replaceState').mockImplementation(() => {});
   });
 
   afterEach(() => {
