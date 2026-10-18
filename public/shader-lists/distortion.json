@@ -55,7 +55,7 @@
     "name": "Bubble Lens",
     "category": "distortion",
     "url": "shaders/bubble-lens.wgsl",
-    "description": "Soap bubble lens with Marangoni convection — surface-tension gradients drive tangential flow along the film, which is why real bubble bands swirl rather than merely sagging — and per-band membrane resonance: eight drum modes of the film, one per FFT bin, perturbing the thickness so the bubble rings at the frequencies present in the audio. Retains the spring-damped pointer, satellite bubbles and film shockwaves; adds ACES, dataTextureC iridescent trails and a corrected A/B packing. Optical, good Gemini-style check.",
+    "description": "Soap bubble lens with Marangoni counter-rotating vortices, 8-band FFT membrane resonance, 3-wavelength spherical Snell vector refraction, Airy diffraction specular glints, Plateau-border capillary rim meniscus, and inverted rear-wall reflection.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -724,7 +724,7 @@
     "id": "fractal-glass-distort",
     "name": "IFS Attractor Glass",
     "url": "shaders/fractal-glass-distort.wgsl",
-    "description": "IFS attractor glass with branch runners, held contraction pinch, treble iridescence, and capped attractor shock rings.",
+    "description": "IFS stained-glass attractor with base-4 pane tints, wavelength-dispersive IFS gradients, orbit-trap ream striae veins, trapped air-seed bubbles, and 3D rounded lead-came H-channel relief.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -3039,7 +3039,7 @@
     "id": "spiral-lens",
     "name": "Spiral Lens",
     "url": "shaders/spiral-lens.wgsl",
-    "description": "Liquid rainbow interference through a Möbius kaleidoscopic lens, with spectral caustics, drag-twisted focus, bounded click-launched iris waves, domain warp, audio response, and layered depth alpha.",
+    "description": "Liquid rainbow interference through a Möbius kaleidoscopic lens with 3D grooved spiral Fresnel-zone Snell refraction, kaleidoscopic sector fold-parity tints, mirror-seam bevel glints, and spectral caustics.",
     "updated": true,
     "features": [
       "mouse-driven",

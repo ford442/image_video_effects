@@ -27,6 +27,29 @@
  * @property {number} [pos]
  */
 
+/**
+ * @typedef {Object} NagaBinding
+ * @property {number} group
+ * @property {number} binding
+ * @property {string} name
+ * @property {'texture'|'depth_texture'|'storage_texture'|'sampler'|'uniform'|'storage'|'other'} resource
+ * @property {'read'|'write'|'read_write'} access
+ * @property {string} dim        '1d' | '2d' | '3d' | 'cube', '' for non-textures.
+ * @property {boolean} arrayed
+ */
+
+/**
+ * @typedef {Object} NagaReflection
+ * @property {boolean} ok        false on a parse error (then the NagaDiagnostic fields are set).
+ * @property {boolean} [valid]   false when the module parses but does not validate (no `uses`).
+ * @property {NagaBinding[]} [bindings]
+ * @property {{name: string, stage: string, workgroupSize: number[], uses?: number[][]  [group, binding, flags] (1 read, 2 write, 4 query, 8 atomic)}[]} [entryPoints]
+ * @property {'parse'|'encoding'} [kind]
+ * @property {string} [message]
+ * @property {number} [line]
+ * @property {number} [pos]
+ */
+
 const GLSL_STAGES = { vertex: 0, fragment: 1, compute: 2 };
 
 const DEFAULT_WASM_URL = '/wasm/naga_wasm.wasm';
@@ -40,6 +63,7 @@ const DEFAULT_WASM_URL = '/wasm/naga_wasm.wasm';
  * @returns {Promise<{
  *   validate: (wgsl: string) => NagaDiagnostic,
  *   glslToWgsl: (glsl: string, stage?: 'vertex'|'fragment'|'compute') => NagaGlslResult,
+ *   reflect: (wgsl: string) => NagaReflection,
  * }>}
  */
 export async function createNagaValidator(options = {}) {
@@ -85,7 +109,14 @@ export async function createNagaValidator(options = {}) {
     return run(glsl, (ptr, len) => wasm.glsl_to_wgsl(ptr, len, stageId));
   }
 
-  return { validate, glslToWgsl };
+  function reflect(wgsl) {
+    if (typeof wasm.wgsl_reflect !== 'function') {
+      throw new Error('naga_wasm: artifact has no wgsl_reflect export — rebuild with tools/naga_wasm/build.sh');
+    }
+    return run(wgsl, (ptr, len) => wasm.wgsl_reflect(ptr, len));
+  }
+
+  return { validate, glslToWgsl, reflect };
 }
 
 async function instantiateFromUrl(url) {

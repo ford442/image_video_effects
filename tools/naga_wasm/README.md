@@ -55,6 +55,8 @@ wgsl_validate(ptr, len) -> i32      0 = valid, 1 = parse error, 2 = validation e
 glsl_to_wgsl(ptr, len, stage) -> i32
                                     stage 0 = vertex, 1 = fragment, 2 = compute;
                                     0 = translated, 1 = parse, 2 = validation, 3 = WGSL writer error
+wgsl_reflect(ptr, len) -> i32       0 = reflected + valid, 1 = parse error,
+                                    2 = reflected, module does not validate (no per-entry `uses`)
 wgsl_result_ptr() / wgsl_result_len()   JSON result for the last call
 wgsl_free(ptr, len)
 ```

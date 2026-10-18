@@ -41,8 +41,8 @@ To build the WASM renderer locally, you must have the **Emscripten SDK** install
 # Standard setup:
 git clone https://github.com/emscripten-core/emsdk.git
 cd emsdk
-./emsdk install 6.0.9    # pinned — see src/contracts/wasm_compile_flags.json
-./emsdk activate 6.0.9
+./emsdk install 6.0.12    # pinned — see src/contracts/wasm_compile_flags.json
+./emsdk activate 6.0.12
 source ./emsdk_env.sh
 
 # Then in the image_video_effects repo:
@@ -54,12 +54,29 @@ npm run wasm:build
 The Emscripten version is **pinned**, not `latest` — a moving emsdk silently changes the
 ABI of `public/wasm/pixelocity_wasm.{js,wasm}`.
 
-- **Pin:** `emsdkVersion` in [`src/contracts/wasm_compile_flags.json`](../src/contracts/wasm_compile_flags.json) (currently **6.0.9**). The same file holds `std`, `opt`, `usePort`, `sFlags`, `jsOutputName` — `build.sh` (the only build) reads it via `scripts/format-wasm-compile-flags.js`.
+- **Pin:** `emsdkVersion` in [`src/contracts/wasm_compile_flags.json`](../src/contracts/wasm_compile_flags.json) (currently **6.0.12**). The same file holds `std`, `opt`, `usePort`, `sFlags`, `jsOutputName` — `build.sh` (the only build) reads it via `scripts/format-wasm-compile-flags.js`.
 - **CI:** `setup-emsdk` `version:` must equal the pin; `npm run verify:wasm-invariants` fails on drift or on `-s` flags hardcoded in `build.sh`/CMake.
 - **Local gate:** `build.sh` runs `scripts/emcc-version-gate.sh`; a mismatched emcc fails the build. Emscripten 6.x glue does not embed its version, so `wasm:validate` can only check the pin exists (and would fail if a future glue embeds a mismatched version).
-- **Beware stale SDKs:** `build.sh` sources the first `emsdk_env.sh` it finds (`$REPO_ROOT/emsdk`, `~/emsdk`, …), which can override an already-activated emsdk. The gate catches this.
+- **Finding emsdk:** an `emcc` already on `PATH` (CI's `setup-emsdk`, or a shell that sourced `emsdk_env.sh`) is used as is. Otherwise `wasm_renderer/emsdk_env_locate.sh` sources the first of `$EMSDK_ENV`, `$EMSDK/emsdk_env.sh`, `<repo>/emsdk`, `~/emsdk`, `/usr/local/emsdk`. With several emsdks installed, point `EMSDK_ENV` at the one you want; the gate refuses any version but the pin.
+- **Cache:** `EM_CACHE` defaults to `/tmp/emscripten_cache`; set it to keep per-emsdk caches apart.
 - **Cloud VMs / Jules:** `SKIP_WASM_BUILD=1`. Do not compile with 3.1.x.
 - **Bumping:** edit the JSON + `.github/workflows/wasm.yml` together, rebuild, commit artifacts in the same PR, note size deltas in `wasm_renderer/BUILD_FLAG_EXPERIMENTS.md`.
+
+## Build profiles (2026-10)
+
+`build.sh` builds the **release** profile by default; that is the only build that writes
+`public/wasm/`. The profiles live in `wasm_compile_flags.json` (`profiles`).
+
+| Command | Profile | Output |
+|---------|---------|--------|
+| `npm run wasm:build` | release (`-O2 -flto`) | `wasm_renderer/build/` → copied to `public/wasm/` |
+| `npm run wasm:build:debug` | debug: `-O0 -g -gsource-map -sASSERTIONS=2 -sSAFE_HEAP=1`, no LTO | `wasm_renderer/build/debug/` only |
+| `npm run wasm:build:asan` | debug + `-fsanitize=address` | `wasm_renderer/build/debug/` only |
+
+To debug a build in the browser, copy `build/debug/pixelocity_wasm.{js,wasm,wasm.map}` over `public/wasm/`
+(Chrome DevTools then steps through the C++ with the C/C++ DevTools extension), and run
+`git checkout public/wasm` afterwards: a debug module must never be committed. The CI staleness
+check compares `public/wasm/pixelocity_wasm.wasm` with a fresh **release** build, so it would catch it.
 
 ## Build Failures: CI vs Local
 
@@ -151,7 +168,7 @@ WASM is frozen R&D (#1080), so the `wasm` job lives in [`.github/workflows/wasm.
 Neither WASM job is a required check. Steps:
 
 1. **Setup**: Node.js 24 + npm dependencies
-2. **Emscripten**: emsdk **6.0.9** (pinned) via `mymindstorm/setup-emsdk@v14`
+2. **Emscripten**: emsdk **6.0.12** (pinned) via `mymindstorm/setup-emsdk@v14`
 3. **Build**: `npm run wasm:build` compiles from source (fails if emcc missing)
 4. **Validation**: `npm run wasm:validate` — integrity, bridge sync, freshness
 5. **Smoke**: Jest tests matching `WASM` (bridge API surface)
@@ -171,8 +188,8 @@ Install and activate the Emscripten SDK:
 ```bash
 git clone https://github.com/emscripten-core/emsdk.git ~/emsdk
 cd ~/emsdk
-./emsdk install 6.0.9
-./emsdk activate 6.0.9
+./emsdk install 6.0.12
+./emsdk activate 6.0.12
 source ./emsdk_env.sh
 ```
 

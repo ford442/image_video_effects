@@ -3,36 +3,19 @@
 //  Category: advanced-hybrid
 //  Features: audio-reactive, mouse-driven, click-reactive, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-09-06
-//  Ideas: sub-cellular micro-fracture spiderweb cracks; grazing prismatic TIR facet glints; photoelastic stress birefringence fringes
+//  Upgraded: 2026-10-18
+//  Ideas: sub-cellular micro-fracture spiderweb cracks; grazing prismatic TIR facet glints; photoelastic stress birefringence fringes; F2-F1 polygonal Voronoi fracture bevels & conchoidal Wallner hackle ripples (§12.2F Snell vector refraction); morphological top-hat crack frosting & anti-halo interior clamp (§12.2A Anti-halo envelope)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 struct VoronoiResult {
   dist: f32,
+  edgeDist: f32,
   id: vec2<f32>,
   center: vec2<f32>,
+  edgeNormal: vec2<f32>,
 };
 
 fn hash22(p: vec2<f32>) -> vec2<f32> {
@@ -44,7 +27,12 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
 fn voronoi(uv: vec2<f32>, scale: f32) -> VoronoiResult {
   let g = floor(uv * scale);
   let f = fract(uv * scale);
-  var res = VoronoiResult(8.0, vec2<f32>(0.0), vec2<f32>(0.0));
+  var d1 = 8.0;
+  var d2 = 8.0;
+  var p1 = vec2<f32>(0.0);
+  var p2 = vec2<f32>(1.0, 0.0);
+  var bestId = vec2<f32>(0.0);
+  var bestCenter = vec2<f32>(0.0);
 
   for (var y: i32 = -1; y <= 1; y = y + 1) {
     for (var x: i32 = -1; x <= 1; x = x + 1) {
@@ -53,16 +41,23 @@ fn voronoi(uv: vec2<f32>, scale: f32) -> VoronoiResult {
       let p = lattice + offset - f;
       let d = dot(p, p);
 
-      if (d < res.dist) {
-        res.dist = d;
-        res.id = g + lattice;
-        res.center = (g + lattice + offset) / scale;
+      if (d < d1) {
+        d2 = d1;
+        p2 = p1;
+        d1 = d;
+        p1 = p;
+        bestId = g + lattice;
+        bestCenter = (g + lattice + offset) / scale;
+      } else if (d < d2) {
+        d2 = d;
+        p2 = p;
       }
     }
   }
 
-  res.dist = sqrt(res.dist);
-  return res;
+  let edgeDir = normalize(p2 - p1 + vec2<f32>(1e-5));
+  let edgeDist = max(0.0, dot(0.5 * (p1 + p2), edgeDir));
+  return VoronoiResult(sqrt(d1), edgeDist, bestId, bestCenter, -edgeDir);
 }
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
@@ -156,7 +151,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   let randTilt = (hash22(v.id) - 0.5) * 0.03 * displaceStr;
-  let finalUV = clamp(uv - vec2<f32>(shatterOffset.x / aspect, shatterOffset.y) - randTilt - rippleForce, vec2<f32>(0.0), vec2<f32>(1.0));
+
+  // ── Idea 4: F2-F1 Polygonal Voronoi Fracture Bevels & Conchoidal Wallner Hackle Ripples (§12.2F Snell vector refraction) ──
+  let bevelZone = 1.0 - smoothstep(0.0, edgeWidth * 2.2, v.edgeDist);
+  let pRel = aspectUV - v.center;
+  let wallnerAngle = atan2(pRel.y, pRel.x);
+  let wallnerWave = sin(v.dist * 44.0 - wallnerAngle * 3.0 + hash22(v.id).x * 6.283) *
+                    smoothstep(0.35, 0.03, v.edgeDist) * (0.25 + displaceParam * 0.55);
+  let wallnerVec = normalize(pRel + vec2<f32>(1e-4)) * wallnerWave * 0.18;
+
+  let shardTilt = normalize(shatterOffset + randTilt * 10.0 + rippleForce * 5.0 + v.edgeNormal * bevelZone * 0.85 + wallnerVec + vec2<f32>(0.001));
+  let normal = normalize(vec3<f32>(shardTilt * (1.8 + bevelZone * 1.4), max(0.25, 1.0 - bevelZone * 0.55)));
+  let snellRay = refract(vec3<f32>(0.0, 0.0, -1.0), normal, 1.0 / 1.52);
+  let bevelRefract = snellRay.xy * (0.018 + displaceStr * 0.06) * (1.0 + bevelZone * 1.4);
+
+  let finalUV = clamp(uv - vec2<f32>((shatterOffset.x + bevelRefract.x) / aspect, shatterOffset.y + bevelRefract.y) - randTilt - rippleForce, vec2<f32>(0.0), vec2<f32>(1.0));
 
   // Morphological erosion/dilation on shard boundaries
   let pixelSize = 1.0 / resolution;
@@ -179,15 +188,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let morphGradient = dilation - erosion;
   let morphRGB = mix(erosion, dilation, morphBlend);
 
-  // Shard facet normal and Fresnel reflection
-  let shardTilt = normalize(shatterOffset + randTilt * 10.0 + rippleForce * 5.0 + vec2<f32>(0.001));
-  let normal = normalize(vec3<f32>(shardTilt * 2.0, 1.0));
+  // Fresnel reflection from 3D beveled shard normal
   let cosTheta = clamp(normal.z, 0.0, 1.0);
   let R0 = 0.045;
   let fresnel = R0 + (1.0 - R0) * pow(1.0 - cosTheta, 5.0);
 
   // Chromatic refraction per shard
-  let aberration = edgeWidth * 0.35 * (1.0 + treble * 0.5);
+  let aberration = edgeWidth * 0.35 * (1.0 + treble * 0.5 + bevelZone * 0.6);
   let r = textureSampleLevel(readTexture, u_sampler, clamp(finalUV + vec2<f32>(aberration, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
   let g = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0).g;
   let b = textureSampleLevel(readTexture, u_sampler, clamp(finalUV - vec2<f32>(aberration, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
@@ -203,16 +210,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let crackNoise = hash22(subCell + v.id * 13.0);
   let crackDir = normalize(crackNoise - vec2<f32>(0.5) + vec2<f32>(1e-4));
   let crackLine = abs(dot(subFract, crackDir));
-  let microCracks = smoothstep(0.05, 0.008, crackLine) * smoothstep(0.05, 0.25, v.dist) * (0.35 + displaceParam * 0.45);
+  let microCracks = smoothstep(0.05, 0.008, crackLine) * smoothstep(0.28, 0.02, v.edgeDist) * (0.35 + displaceParam * 0.45);
   color = mix(color, vec3<f32>(0.98, 1.0, 1.0), microCracks * 0.6);
 
-  // Shard crack edge proximity
-  let edgeProx = smoothstep(0.0, 0.12, v.dist) * (1.0 - smoothstep(0.12, 0.3, v.dist));
-  color = mix(color, morphRGB + morphGradient * 0.35, edgeProx * 0.5);
+  // ── Idea 5: Morphological Top-Hat Crack Frosting & Anti-Halo Interior Clamp (§12.2A Anti-halo envelope) ──
+  // True polygonal F2-F1 shard boundary proximity
+  let edgeProx = 1.0 - smoothstep(0.0, edgeWidth * 2.0, v.edgeDist);
+  let centerSample = vec3<f32>(r, g, b);
+  let whiteTopHat = max(centerSample - erosion, vec3<f32>(0.0));
+  let blackTopHat = max(dilation - centerSample, vec3<f32>(0.0));
+  let topHatFrost = mix(whiteTopHat, blackTopHat, morphBlend) + morphGradient * 0.45;
+  let antiHaloSpan = morphGradient * 0.35;
+  color = mix(clamp(color, erosion - antiHaloSpan, dilation + antiHaloSpan), color, edgeProx);
+  color = mix(color, morphRGB + topHatFrost * 0.85, clamp(edgeProx * 0.68 + microCracks * 0.3, 0.0, 0.85));
+
+  // Conchoidal Wallner hackle sheen across shard cleavage faces
+  color += vec3<f32>(0.88, 0.95, 1.0) * max(0.0, wallnerWave) * 0.22;
 
   // Facet specular glint
   let lightDir = normalize(vec2<f32>(0.6, -0.6));
-  let specular = pow(max(dot(shardTilt, lightDir), 0.0), 12.0) * fresnel * 2.0;
+  let specular = pow(max(dot(shardTilt, lightDir), 0.0), 12.0) * fresnel * (2.0 + bevelZone * 0.8);
 
   // ─── Native Idea 2: Grazing Prismatic TIR Facet Glints ───
   let tirAngle = acos(clamp(normal.z, 0.0, 1.0));
@@ -227,7 +244,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color += vec3<f32>(1.0, 0.98, 0.95) * specular;
 
   // ─── Native Idea 3: Photoelastic Stress Birefringence Fringes ───
-  let stress = (edgeProx + microCracks * 0.9) * (displaceStr * 3.5 + bass * 0.65);
+  let stress = (edgeProx + microCracks * 0.9 + abs(wallnerWave) * 0.5) * (displaceStr * 3.5 + bass * 0.65);
   let retardance = stress * 16.0 - time * 2.2;
   let isochromaticFringe = vec3<f32>(
     sin(retardance) * 0.5 + 0.5,
@@ -245,7 +262,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Semantic transmittance alpha
   let transmission = (1.0 - fresnel) * 0.85;
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  let alpha = clamp(mix(srcA, transmission + edgeProx * 0.3 + microCracks * 0.2, 0.8) + specular * 0.2, 0.25, 1.0);
+  let alpha = clamp(mix(srcA, transmission + edgeProx * 0.35 + microCracks * 0.2, 0.8) + specular * 0.2, 0.25, 1.0);
   let finalPixel = vec4<f32>(finalRGB, alpha);
 
   textureStore(writeTexture, pixel, finalPixel);

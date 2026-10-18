@@ -2,8 +2,8 @@
 //  gen-chromatic-glass-lattice
 //  Category: generative
 //  Features: raymarched, chromatic-dispersion, audio-reactive, mouse-driven, glass-refraction, upgraded-rgba, depth-aware, aces-tone-map
-//  Upgraded: 2026-10-10
-//  Ideas: Cauchy multi-order dispersion with internal TIR caustic ribs, acoustic resonance stress birefringence, micro-fracture edge sparkle glints; prismatic node flares; crystalline growth spurs
+//  Upgraded: 2026-10-18
+//  Ideas: Cauchy multi-order dispersion with internal TIR caustic ribs, acoustic resonance stress birefringence, micro-fracture edge sparkle glints; prismatic node flares; crystalline growth spurs; tetrahedral curvature beveled strut ridges & Airy diffraction node rings (§12.2E Tetrahedral curvature, §12.2F Airy ring); Beer-Lambert optical path absorption & internal waveguide core modes (§12.2F Beer–Lambert absorption)
 //  A packing: display RGBA (RGB=ACES tone-mapped glass color, A=alpha/presence)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -165,6 +165,27 @@ fn calcNormal(p: vec3<f32>, time: f32, audio: f32, shatterForce: f32, latticeDen
   return normalize(vec3<f32>(m1.d - m2.d, m3.d - m4.d, m5.d - m6.d));
 }
 
+// ── Idea 6 helpers: Tetrahedral Curvature (§12.2E) & Airy Diffraction Ring (§12.2F) ──
+fn calcStrutCurvature(p: vec3<f32>, time: f32, audio: f32, shatterForce: f32, latticeDensity: f32, mousePos: vec3<f32>) -> f32 {
+  let eps = 0.012;
+  let k1 = vec3<f32>( 1.0, -1.0, -1.0);
+  let k2 = vec3<f32>(-1.0, -1.0,  1.0);
+  let k3 = vec3<f32>(-1.0,  1.0, -1.0);
+  let k4 = vec3<f32>( 1.0,  1.0,  1.0);
+  let d0 = map(p, time, audio, shatterForce, latticeDensity, mousePos).d;
+  let sum = map(p + k1 * eps, time, audio, shatterForce, latticeDensity, mousePos).d +
+            map(p + k2 * eps, time, audio, shatterForce, latticeDensity, mousePos).d +
+            map(p + k3 * eps, time, audio, shatterForce, latticeDensity, mousePos).d +
+            map(p + k4 * eps, time, audio, shatterForce, latticeDensity, mousePos).d;
+  return clamp((sum - 4.0 * d0) / (4.0 * eps), -1.0, 1.0);
+}
+
+fn airyDisc(r: f32) -> f32 {
+  let x = max(r, 1e-4);
+  let s = sin(x) / x;
+  return s * s;
+}
+
 // ─── Chromatic Raymarch ───
 fn raymarchChromatic(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, mids: f32, treble: f32,
                      shatterForce: f32, latticeDensity: f32, chromaticSpread: f32,
@@ -200,20 +221,26 @@ fn raymarchChromatic(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, mids: 
       let rg = refractRay(rd, n, etaG);
       let rb = refractRay(rd, n, etaB);
 
-      // Internal raymarch for caustics & TIR
+      // ── Idea 7: Beer-Lambert Optical Path Absorption & Internal Waveguide Core Modes (§12.2F Beer–Lambert absorption) ──
       var innerCol = vec3<f32>(0.0);
       let innerSteps = 16;
       var it = 0.06;
+      var opticalPath = 0.0;
       for (var j: i32 = 0; j < innerSteps; j = j + 1) {
         let ip = p + rg * it;
         let ires = map(ip, time, audio, shatterForce, latticeDensity, mousePos);
+        let waveguideMode = pow(abs(sin(ip.x * latticeDensity * 5.0 - time * 2.5) * cos(ip.z * latticeDensity * 5.0 + time * 2.0)), 6.0);
+        innerCol += vec3<f32>(0.18, 0.55, 0.95) * waveguideMode * 0.04;
         if (ires.d > 0.0) {
-          innerCol = vec3<f32>(0.02, 0.03, 0.06) * (1.0 + 0.5 * sin(ip.y * 0.5 + time));
-          innerCol += vec3<f32>(0.1, 0.05, 0.2) * ires.glow;
+          innerCol += vec3<f32>(0.04, 0.06, 0.12) * (1.0 + 0.5 * sin(ip.y * 0.5 + time));
+          innerCol += vec3<f32>(0.15, 0.08, 0.28) * ires.glow;
           break;
         }
+        opticalPath += 0.1;
         it += 0.1;
       }
+      let beerTransmit = exp(-opticalPath * vec3<f32>(0.55, 0.22, 0.08));
+      innerCol *= beerTransmit;
 
       // IDEA 2: Acoustic resonance stress birefringence
       // Internal lattice stress modulated by audio bass/mids produces photoelastic isochromatics
@@ -222,12 +249,14 @@ fn raymarchChromatic(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, mids: 
       let photoelasticBirefringence = 0.5 + 0.5 * cos(stressPhase + vec3<f32>(0.0, 2.094, 4.188));
       innerCol += photoelasticBirefringence * (0.2 + mids * 0.3);
 
-      // Core glow
-      // Idea 1: Prismatic node flares (starbursts at the lattice intersections)
+      // ── Idea 6: Tetrahedral Curvature Beveled Strut Ridges & Airy Diffraction Node Rings (§12.2E / §12.2F) ──
+      let strutCurv = max(0.0, calcStrutCurvature(p, time, audio, shatterForce, latticeDensity, mousePos));
       let nodeCoord = opRep(p, vec3<f32>(2.2 / latticeDensity));
       let nodeAngle = atan2(nodeCoord.y, nodeCoord.x);
+      let nodeRadius = length(nodeCoord) * latticeDensity * 9.0;
+      let airyRing = airyDisc(nodeRadius);
       let flare = pow(abs(sin(nodeAngle * 8.0 + time * 3.0)), 16.0) * hitGlow;
-      let flareCol = vec3<f32>(1.0, 0.8, 0.4) * flare * (1.0 + treble * 2.0);
+      let flareCol = vec3<f32>(1.0, 0.85, 0.45) * (flare + airyRing * hitGlow * 0.8) * (1.0 + treble * 2.0);
       
       let coreCol = vec3<f32>(0.8, 0.3, 0.9) * hitGlow * 2.0
                   + vec3<f32>(0.2, 0.6, 1.0) * hitGlow * audio
@@ -240,9 +269,9 @@ fn raymarchChromatic(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, mids: 
       col.g = mix(innerCol.g * 1.0 + coreCol.g, reflCol.g, f);
       col.b = mix(innerCol.b * 1.2 + coreCol.b, reflCol.b, f);
 
-      // Iridescent thin-film Fresnel tint
+      // Iridescent thin-film Fresnel tint + beveled strut edge highlight
       let fresnelTint = 0.5 + 0.5 * cos(cosi * 6.0 + vec3<f32>(0.0, 2.094, 4.188));
-      col += fresnelTint * f * 0.35;
+      col += fresnelTint * f * 0.35 + vec3<f32>(0.88, 0.94, 1.0) * strutCurv * (0.28 + chromaticSpread * 2.0);
 
       // IDEA 3: Micro-fracture edge sparkle glints
       // Grazing specular reflection on shatter fractures
@@ -250,7 +279,7 @@ fn raymarchChromatic(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, mids: 
       let glint = pow(glintDot, 64.0) * shatterEdge * (1.0 + treble * 2.0);
       col += vec3<f32>(1.2, 0.9, 1.5) * glint;
 
-      alpha = sat(0.35 + f * 0.65);
+      alpha = sat(0.35 + f * 0.65 + strutCurv * 0.15);
       break;
     }
 

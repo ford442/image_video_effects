@@ -37,7 +37,16 @@ export const DEFAULT_MAX_PASSES = 8;
 export const DEFAULT_CATEGORY = 'simulation';
 const DEFAULT_ID = 'my-graph';
 
+/** Draft document version. v1 (no layout) is upgraded on load by `upgradeDraft`. */
+export const GRAPH_DRAFT_VERSION = 2;
+
+export interface NodePosition {
+  x: number;
+  y: number;
+}
+
 export interface GraphDraft {
+  version: typeof GRAPH_DRAFT_VERSION;
   /** Catalog id the definition is exported under. */
   id: string;
   name: string;
@@ -54,18 +63,74 @@ export interface GraphDraft {
   /** Id of the shader this draft was started from, if any (export may replace it). */
   sourceId?: string;
   graph: MultipassGraphDef;
+  /**
+   * Canvas position per node id. Editor-only: never exported, never seen by the
+   * renderer. Execution order stays the node array order, not the layout.
+   */
+  layout: Record<string, NodePosition>;
 }
 
 export function newDraft(overrides: Partial<Pick<GraphDraft, 'id' | 'name' | 'category'>> = {}): GraphDraft {
   return {
+    version: GRAPH_DRAFT_VERSION,
     id: DEFAULT_ID,
     name: 'My Graph',
     category: DEFAULT_CATEGORY,
     envelope: {},
     multipassExtra: {},
     graph: { maxPassesPerFrame: DEFAULT_MAX_PASSES, nodes: [] },
+    layout: {},
     ...overrides,
   };
+}
+
+/**
+ * A stored draft of any version as a current one: v1 drafts (no `version`, no
+ * `layout`) get an empty layout, which the canvas fills with `autoLayout`.
+ * Null when the value is not a draft at all.
+ */
+export function upgradeDraft(raw: unknown): GraphDraft | null {
+  if (!isRecord(raw) || typeof raw.id !== 'string' || !isRecord(raw.graph) || !Array.isArray(raw.graph.nodes)) return null;
+  if (typeof raw.version === 'number' && raw.version > GRAPH_DRAFT_VERSION) return null;
+  const layout: Record<string, NodePosition> = {};
+  if (isRecord(raw.layout)) {
+    for (const [id, p] of Object.entries(raw.layout)) {
+      if (isRecord(p) && Number.isFinite(p.x) && Number.isFinite(p.y)) layout[id] = { x: p.x as number, y: p.y as number };
+    }
+  }
+  return { ...newDraft(), ...(raw as Partial<GraphDraft>), version: GRAPH_DRAFT_VERSION, layout };
+}
+
+// ── Layout ──────────────────────────────────────────────────────────────────
+
+export const LAYOUT_COLUMN = 220;
+export const LAYOUT_ROW = 110;
+
+/**
+ * Default position of node `index`: a left-to-right column per node in
+ * execution order, rows zig-zagging so long chains stay readable.
+ */
+export function defaultNodePosition(index: number): NodePosition {
+  return { x: LAYOUT_COLUMN * (index + 1), y: (index % 2) * LAYOUT_ROW };
+}
+
+/** Position of every node: stored, or the default for its index. */
+export function resolvedLayout(draft: GraphDraft): NodePosition[] {
+  return draft.graph.nodes.map((n, i) => draft.layout?.[n.id] ?? defaultNodePosition(i));
+}
+
+export function setNodePosition(draft: GraphDraft, nodeId: string, position: NodePosition): GraphDraft {
+  if (!Number.isFinite(position.x) || !Number.isFinite(position.y)) return draft;
+  const x = Math.round(position.x);
+  const y = Math.round(position.y);
+  const current = draft.layout?.[nodeId];
+  if (current && current.x === x && current.y === y) return draft;
+  return { ...draft, layout: { ...draft.layout, [nodeId]: { x, y } } };
+}
+
+/** Drop stored positions back to the default layout. */
+export function resetLayout(draft: GraphDraft): GraphDraft {
+  return Object.keys(draft.layout ?? {}).length === 0 ? draft : { ...draft, layout: {} };
 }
 
 /** True when the draft uses the group-1 sim ring (sim roles / simState dispatch, or a `simRing` request). */
@@ -135,27 +200,50 @@ function clampInt(value: number, min: number, max: number, fallback: number): nu
 
 // ── Edits ───────────────────────────────────────────────────────────────────
 
+/** Roles for a new node, typically inferred from its WGSL (portInference.ts). */
+export interface NodeRoles {
+  reads: readonly GraphRole[];
+  writes: readonly GraphRole[];
+  dispatch?: GraphDispatchDomain;
+}
+
 /**
- * Append (or insert at `index`) a node for `entry`. The first color writer gets
- * `color`; later nodes default to a simulation step (dataC → dataA).
+ * Append (or insert at `index`) a node for `entry`. With `roles` (what the
+ * entry's WGSL binds) the node gets those, minus `color` when another node
+ * already writes it, and a sim role turns the sim ring on. Without, the first
+ * color writer gets `color`; later nodes default to a simulation step
+ * (dataC → dataA).
  */
-export function addNode(draft: GraphDraft, entry: string, index = draft.graph.nodes.length): GraphDraft {
+export function addNode(draft: GraphDraft, entry: string, index = draft.graph.nodes.length, roles?: NodeRoles): GraphDraft {
   const nodes = draft.graph.nodes.slice();
   const hasColorWriter = nodes.some((n) => (n.writes ?? []).includes('color'));
-  const node: GraphNodeDef = {
-    id: uniqueNodeId(nodes, entry),
-    entry,
-    reads: ['dataC'],
-    writes: hasColorWriter ? ['dataA'] : ['color', 'dataA'],
-  };
+  const node: GraphNodeDef = roles
+    ? {
+        id: uniqueNodeId(nodes, entry),
+        entry,
+        reads: sortRoles([...roles.reads]),
+        writes: sortRoles(roles.writes.filter((r) => !(hasColorWriter && r === 'color'))),
+        ...(roles.dispatch === 'simState' ? { dispatch: 'simState' as const } : {}),
+      }
+    : {
+        id: uniqueNodeId(nodes, entry),
+        entry,
+        reads: ['dataC'],
+        writes: hasColorWriter ? ['dataA'] : ['color', 'dataA'],
+      };
   const at = clampInt(index, 0, nodes.length, nodes.length);
   nodes.splice(at, 0, node);
-  return withGraph(draft, nodes);
+  const next = withGraph(draft, nodes);
+  return graphUsesSimRing(next.graph) && draft.envelope.simRing === undefined ? setSimRing(next, true) : next;
 }
 
 export function removeNodeAt(draft: GraphDraft, index: number): GraphDraft {
-  if (index < 0 || index >= draft.graph.nodes.length) return draft;
-  return withGraph(draft, draft.graph.nodes.filter((_, i) => i !== index));
+  const node = draft.graph.nodes[index];
+  if (!node) return draft;
+  const next = withGraph(draft, draft.graph.nodes.filter((_, i) => i !== index));
+  if (!draft.layout?.[node.id] || next.graph.nodes.some((n) => n.id === node.id)) return next;
+  const { [node.id]: _gone, ...layout } = draft.layout;
+  return { ...next, layout };
 }
 
 export function duplicateNodeAt(draft: GraphDraft, index: number): GraphDraft {
@@ -169,7 +257,9 @@ export function duplicateNodeAt(draft: GraphDraft, index: number): GraphDraft {
   };
   const nodes = draft.graph.nodes.slice();
   nodes.splice(index + 1, 0, copy);
-  return withGraph(draft, nodes);
+  const next = withGraph(draft, nodes);
+  const from = draft.layout?.[source.id];
+  return from ? { ...next, layout: { ...draft.layout, [copy.id]: { x: from.x + 40, y: from.y + 40 } } } : next;
 }
 
 export function moveNode(draft: GraphDraft, from: number, to: number): GraphDraft {
@@ -190,7 +280,14 @@ export function setNodeEntry(draft: GraphDraft, index: number, entry: string): G
 
 export function setNodeId(draft: GraphDraft, index: number, id: string): GraphDraft {
   const node = draft.graph.nodes[index];
-  return node ? replaceNode(draft, index, { ...node, id }) : draft;
+  if (!node) return draft;
+  const next = replaceNode(draft, index, { ...node, id });
+  // The position follows the node, unless another node still answers to the old id.
+  const position = draft.layout?.[node.id];
+  if (!position || draft.layout[id]) return next;
+  const { [node.id]: _old, ...rest } = draft.layout;
+  const shared = draft.graph.nodes.some((n, i) => i !== index && n.id === node.id);
+  return { ...next, layout: shared ? { ...draft.layout, [id]: position } : { ...rest, [id]: position } };
 }
 
 /** Roles the editor offers on one side: the texture roles, plus the sim roles while the ring is on. */
@@ -308,6 +405,7 @@ export function draftFromDefinition(input: unknown): DraftImport {
   return {
     ok: true,
     draft: {
+      version: GRAPH_DRAFT_VERSION,
       id: draftId,
       name: typeof name === 'string' && name ? name : draftId,
       category: DEFAULT_CATEGORY,
@@ -315,6 +413,7 @@ export function draftFromDefinition(input: unknown): DraftImport {
       multipassExtra: cloneJson(multipassExtra),
       sourceId: typeof id === 'string' ? id : undefined,
       graph,
+      layout: {},
     },
   };
 }
@@ -346,6 +445,7 @@ export function draftFromRegistryGraph(
   if (entry?.features?.length) envelope.features = [...entry.features];
   if (entry?.tags?.length) envelope.tags = [...entry.tags];
   return {
+    version: GRAPH_DRAFT_VERSION,
     id: shaderId,
     name: entry?.name ?? shaderId,
     category: entry?.category && entry.category !== 'shader' ? entry.category : DEFAULT_CATEGORY,
@@ -353,10 +453,11 @@ export function draftFromRegistryGraph(
     multipassExtra: {},
     sourceId: shaderId,
     graph: cloneJson(graph),
+    layout: {},
   };
 }
 
 /** A starting copy of an existing draft under a new id (the Lab's "fork"). */
 export function forkDraft(draft: GraphDraft, id: string, name: string): GraphDraft {
-  return { ...draft, id, name, sourceId: undefined, graph: cloneJson(draft.graph) };
+  return { ...draft, id, name, sourceId: undefined, graph: cloneJson(draft.graph), layout: cloneJson(draft.layout ?? {}) };
 }

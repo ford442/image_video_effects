@@ -404,8 +404,17 @@
       "history": []
     },
     "glass-shatter-morph": {
-      "hash": "6c45bea5f1c4a7d5",
-      "history": []
+      "hash": "bd8fc768d35e953f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T06:50:25.047Z",
+          "hash": "bd8fc768d35e953f",
+          "prev_hash": "6c45bea5f1c4a7d5",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 argon4/batch-04: two native ideas each"
+        }
+      ]
     },
     "glass-wall-prismatic": {
       "hash": "07b8c0ae28725521",
@@ -420,8 +429,17 @@
       "history": []
     },
     "gravitational-lensing": {
-      "hash": "122af2cee1fabe22",
-      "history": []
+      "hash": "ad9afdd184f9b9fd",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T06:50:27.188Z",
+          "hash": "ad9afdd184f9b9fd",
+          "prev_hash": "122af2cee1fabe22",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 argon4/batch-02: two native ideas each"
+        }
+      ]
     },
     "gravity-well-em": {
       "hash": "f73bf54a330e5237",
@@ -1006,7 +1024,7 @@
       "history": []
     },
     "liquid-prism-cascade": {
-      "hash": "c92df32d84844700",
+      "hash": "85d9a72052121e59",
       "history": [
         {
           "event": "upgraded",
@@ -1015,6 +1033,14 @@
           "prev_hash": "7ed38a1c6c8a1d01",
           "commit": "86d8f696",
           "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T06:50:27.188Z",
+          "hash": "85d9a72052121e59",
+          "prev_hash": "c92df32d84844700",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 argon4/batch-02: two native ideas each"
         }
       ]
     },
@@ -1299,8 +1325,17 @@
       "history": []
     },
     "bubble-lens": {
-      "hash": "f4b36283c12a4ec2",
-      "history": []
+      "hash": "5695976a608e8e52",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T06:50:27.188Z",
+          "hash": "5695976a608e8e52",
+          "prev_hash": "f4b36283c12a4ec2",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 argon4/batch-02: two native ideas each"
+        }
+      ]
     },
     "chromatic-swirl": {
       "hash": "3cb700dad12d5cdc",
@@ -1352,8 +1387,17 @@
       "history": []
     },
     "fractal-glass-distort": {
-      "hash": "63c622fb1a88f03b",
-      "history": []
+      "hash": "24f32eeedd902ce1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T06:50:25.047Z",
+          "hash": "24f32eeedd902ce1",
+          "prev_hash": "63c622fb1a88f03b",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 argon4/batch-04: two native ideas each"
+        }
+      ]
     },
     "fractal-image-surf": {
       "hash": "ba48f288d31ce90e",
@@ -1566,8 +1610,17 @@
       "history": []
     },
     "spiral-lens": {
-      "hash": "aa03edbe6254b6a7",
-      "history": []
+      "hash": "1a446ae054668700",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T06:50:27.188Z",
+          "hash": "1a446ae054668700",
+          "prev_hash": "aa03edbe6254b6a7",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 argon4/batch-02: two native ideas each"
+        }
+      ]
     },
     "temporal-distortion-field": {
       "hash": "537c4219b21100d6",
@@ -2191,7 +2244,7 @@
       "history": []
     },
     "gen-bismuth-crystal-citadel": {
-      "hash": "afbe2d62dda7a709",
+      "hash": "a1099cfd021752f7",
       "history": [
         {
           "event": "upgraded",
@@ -2200,6 +2253,14 @@
           "prev_hash": "14ef76b86e54d688",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T06:50:25.047Z",
+          "hash": "a1099cfd021752f7",
+          "prev_hash": "afbe2d62dda7a709",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 argon4/batch-04: two native ideas each"
         }
       ]
     },
@@ -2428,7 +2489,7 @@
       ]
     },
     "gen-chromatic-glass-lattice": {
-      "hash": "b2e83f31e39ee0a8",
+      "hash": "da0887c44ead37a7",
       "history": [
         {
           "event": "upgraded",
@@ -2437,6 +2498,14 @@
           "prev_hash": "920c1ae5aec66a9e",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T06:50:27.188Z",
+          "hash": "da0887c44ead37a7",
+          "prev_hash": "b2e83f31e39ee0a8",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 argon4/batch-02: two native ideas each"
         }
       ]
     },
@@ -2519,7 +2588,7 @@
       ]
     },
     "gen-chrono-kitsune-prism-weaver": {
-      "hash": "4a62b63839756820",
+      "hash": "735a46f5bb21359a",
       "history": [
         {
           "event": "upgraded",
@@ -2528,6 +2597,14 @@
           "prev_hash": "18f6986affda13b0",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T06:50:25.047Z",
+          "hash": "735a46f5bb21359a",
+          "prev_hash": "4a62b63839756820",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 argon4/batch-04: two native ideas each"
         }
       ]
     },
@@ -2562,7 +2639,7 @@
       ]
     },
     "gen-chronomorphic-glass-tesseract": {
-      "hash": "bedd9047f6bc23fb",
+      "hash": "45fec65ba16baaff",
       "history": [
         {
           "event": "upgraded",
@@ -2571,6 +2648,14 @@
           "prev_hash": "c82d225226aaa2c9",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T06:50:25.047Z",
+          "hash": "45fec65ba16baaff",
+          "prev_hash": "bedd9047f6bc23fb",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 argon4/batch-04: two native ideas each"
         }
       ]
     },
@@ -3310,7 +3395,7 @@
       ]
     },
     "gen-ethereal-quantum-hologram-bonsai": {
-      "hash": "2c5438fcb7a1df5a",
+      "hash": "c7df3998b758f93a",
       "history": [
         {
           "event": "upgraded",
@@ -3319,6 +3404,14 @@
           "prev_hash": "7891fedf76563226",
           "commit": "d74e665b",
           "note": "2026-10-10 ethereal/cymatic/labyrinth ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-10-ethereal-cymatic-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T06:50:27.188Z",
+          "hash": "c7df3998b758f93a",
+          "prev_hash": "2c5438fcb7a1df5a",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 argon4/batch-02: two native ideas each"
         }
       ]
     },
@@ -3884,7 +3977,7 @@
       ]
     },
     "gen-holographic-bismuth-core-reactor": {
-      "hash": "a24d0410c42e345e",
+      "hash": "638c37e71ec33361",
       "history": [
         {
           "event": "upgraded",
@@ -3893,6 +3986,14 @@
           "prev_hash": "00e96a2671f1329c",
           "commit": "4653c738",
           "note": null
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T06:50:25.047Z",
+          "hash": "638c37e71ec33361",
+          "prev_hash": "a24d0410c42e345e",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 argon4/batch-04: two native ideas each"
         }
       ]
     },
@@ -4443,7 +4544,7 @@
       ]
     },
     "gen-liquid-crystal-hive-mind": {
-      "hash": "894999a66cf032c0",
+      "hash": "7c309c9e73908873",
       "history": [
         {
           "event": "upgraded",
@@ -4452,6 +4553,14 @@
           "prev_hash": "4fae6eb7a7c4732d",
           "commit": "cc600bb4",
           "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T06:50:25.047Z",
+          "hash": "7c309c9e73908873",
+          "prev_hash": "894999a66cf032c0",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 argon4/batch-04: two native ideas each"
         }
       ]
     },
@@ -4617,7 +4726,7 @@
       "history": []
     },
     "gen-luminescent-quantum-glass-phoenix-egg": {
-      "hash": "663fb2b216240d55",
+      "hash": "d4585bf22b364427",
       "history": [
         {
           "event": "upgraded",
@@ -4626,6 +4735,14 @@
           "prev_hash": "babb82a0647f2a8a",
           "commit": "a26af174",
           "note": "2026-10-10 luminescent/magnetic ten (Claude) — agents/swarm-outputs/claude-2026-10-10-luminescent-magnetic-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T06:50:27.188Z",
+          "hash": "d4585bf22b364427",
+          "prev_hash": "663fb2b216240d55",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 argon4/batch-02: two native ideas each"
         }
       ]
     },
@@ -5317,7 +5434,7 @@
       ]
     },
     "gen-prismatic-crystal-growth": {
-      "hash": "8c3f6654df202eb3",
+      "hash": "29e0cfc929551e09",
       "history": [
         {
           "event": "upgraded",
@@ -5326,6 +5443,14 @@
           "prev_hash": "6fb48b2cbab01354",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T06:50:27.188Z",
+          "hash": "29e0cfc929551e09",
+          "prev_hash": "8c3f6654df202eb3",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 argon4/batch-02: two native ideas each"
         }
       ]
     },
@@ -5398,7 +5523,7 @@
       ]
     },
     "gen-prismatic-cyber-chrono-void-kitsune": {
-      "hash": "030252f5bfb2bf8f",
+      "hash": "55eaf296cc3c7080",
       "history": [
         {
           "event": "upgraded",
@@ -5407,6 +5532,14 @@
           "prev_hash": "9b61d2224374da0f",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T06:50:25.047Z",
+          "hash": "55eaf296cc3c7080",
+          "prev_hash": "030252f5bfb2bf8f",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 argon4/batch-04: two native ideas each"
         }
       ]
     },
@@ -6354,8 +6487,17 @@
       "history": []
     },
     "gen-kimi-crystal": {
-      "hash": "9ed2b861f36214c3",
-      "history": []
+      "hash": "0b43c21e2e88271b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T06:50:25.047Z",
+          "hash": "0b43c21e2e88271b",
+          "prev_hash": "9ed2b861f36214c3",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 argon4/batch-04: two native ideas each"
+        }
+      ]
     },
     "gen-kimi-nebula": {
       "hash": "c2fdf01543c02d9d",
@@ -8189,8 +8331,17 @@
       "history": []
     },
     "optical-feedback": {
-      "hash": "ea727e5b99d5b294",
-      "history": []
+      "hash": "c39ff527f1c39507",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T06:50:27.188Z",
+          "hash": "c39ff527f1c39507",
+          "prev_hash": "ea727e5b99d5b294",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 argon4/batch-02: two native ideas each"
+        }
+      ]
     },
     "origami-fold": {
       "hash": "68eba54e47612b13",
@@ -9978,6 +10129,18 @@
           "hash": "c627cd41a16b1825",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        }
+      ]
+    },
+    "gen-prismatic-singularity-engine": {
+      "hash": "9214f40e60534b0a",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-10-18T06:50:25.047Z",
+          "hash": "9214f40e60534b0a",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 argon4/batch-04: two native ideas each"
         }
       ]
     }

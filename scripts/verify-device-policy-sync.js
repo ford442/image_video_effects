@@ -51,6 +51,9 @@ function extractTsLimits() {
   return out;
 }
 
+/** webgpu_limits.json key -> the generated C++ constant name (kMaxTextureDimension2D). */
+const cppConst = (key, ns = 'webgpu_limits') => `${ns}::${require('./gen-webgpu-limits-header.js').constName(key)}`;
+
 function extractCppRequiredLimits() {
   const src = fs.readFileSync(CPP_DEVICE, 'utf8');
   const out = {};
@@ -59,12 +62,20 @@ function extractCppRequiredLimits() {
       if (!/requiredLimits\.maxUniformBufferBindingSize\s*=\s*sizeof\(Uniforms\)/.test(src)) {
         throw new Error('requiredLimits.maxUniformBufferBindingSize = sizeof(Uniforms) not found in device.cpp');
       }
+      if (!/static_assert\(sizeof\(Uniforms\)\s*==\s*webgpu_limits::kMaxUniformBufferBindingSize/.test(src)) {
+        throw new Error('device.cpp must static_assert(sizeof(Uniforms) == webgpu_limits::kMaxUniformBufferBindingSize)');
+      }
       out[key] = EXPECTED_LIMITS[key];
       continue;
     }
-    const m = src.match(new RegExp(`requiredLimits\\.${key}\\s*=\\s*(\\d+)`));
+    // The value comes from webgpu_limits.h (checked against the JSON below); a
+    // literal here is the drift this header exists to remove.
+    const m = src.match(new RegExp(`requiredLimits\\.${key}\\s*=\\s*([^;]+);`));
     if (!m) throw new Error(`requiredLimits.${key} not found in device.cpp`);
-    out[key] = parseInt(m[1], 10);
+    if (m[1].trim() !== cppConst(key)) {
+      throw new Error(`device.cpp requiredLimits.${key} must be ${cppConst(key)} (found '${m[1].trim()}')`);
+    }
+    out[key] = EXPECTED_LIMITS[key];
   }
   return out;
 }
@@ -72,7 +83,7 @@ function extractCppRequiredLimits() {
 function extractCppCheckLimits() {
   const src = fs.readFileSync(CPP_DEVICE, 'utf8');
   const adapterBlock = src.match(
-    /Adapter limits \(validating against 14-entry compute contract\):[\s\S]*?maxComputeInvocationsPerWorkgroup,\s*(\d+)/,
+    /Adapter limits \(validating against 14-entry compute contract\):[\s\S]*?maxComputeInvocationsPerWorkgroup,\s*[^,]+,/,
   );
   if (!adapterBlock) {
     throw new Error('Adapter CheckLimit block not found in device.cpp');
@@ -86,13 +97,13 @@ function extractCppCheckLimits() {
       continue;
     }
     const m = block.match(
-      new RegExp(`CheckLimit\\("${key}",\\s*limits\\.${key},\\s*(\\d+)`),
+      new RegExp(`CheckLimit\\("${key}",\\s*limits\\.${key},\\s*([^,]+),`),
     );
     if (!m) throw new Error(`CheckLimit("${key}", ...) not found in adapter block`);
-    out[key] = parseInt(m[1], 10);
-    if (out[key] !== expected) {
-      throw new Error(`CheckLimit ${key} need=${m[1]} does not match contract ${expected}`);
+    if (m[1].trim() !== cppConst(key)) {
+      throw new Error(`device.cpp CheckLimit ${key} must use ${cppConst(key)} (found '${m[1].trim()}')`);
     }
+    out[key] = expected;
   }
   return out;
 }
@@ -138,12 +149,13 @@ function verifyDeepWorkgroupLimits() {
   const block = cpp.match(/if \(adapterDeepWorkgroup\) \{([^}]+)\}/);
   if (!gate) fail('device.cpp: const bool adapterDeepWorkgroup = ... not found (deepWorkgroupLimits)');
   if (!block) fail('device.cpp: if (adapterDeepWorkgroup) { requiredLimits... } not found (deepWorkgroupLimits)');
-  for (const [key, value] of Object.entries(deep)) {
-    if (gate && !new RegExp(`limits\\.${key}\\s*>=\\s*${value}\\b`).test(gate[1])) {
-      fail(`device.cpp adapterDeepWorkgroup must test limits.${key} >= ${value} (webgpu_limits.json deepWorkgroupLimits)`);
+  for (const key of Object.keys(deep)) {
+    const want = cppConst(key, 'webgpu_limits::deep');
+    if (gate && !new RegExp(`limits\\.${key}\\s*>=\\s*${want}\\b`).test(gate[1])) {
+      fail(`device.cpp adapterDeepWorkgroup must test limits.${key} >= ${want} (webgpu_limits.json deepWorkgroupLimits)`);
     }
-    if (block && !new RegExp(`requiredLimits\\.${key}\\s*=\\s*${value}\\s*;`).test(block[1])) {
-      fail(`device.cpp deep requiredLimits.${key} must be ${value} (webgpu_limits.json deepWorkgroupLimits)`);
+    if (block && !new RegExp(`requiredLimits\\.${key}\\s*=\\s*${want}\\s*;`).test(block[1])) {
+      fail(`device.cpp deep requiredLimits.${key} must be ${want} (webgpu_limits.json deepWorkgroupLimits)`);
     }
   }
   const ts = fs.readFileSync(TS_POLICY, 'utf8');
@@ -171,7 +183,22 @@ function verifyBufferSizeLimits() {
   }
 }
 
+// wasm_renderer/webgpu_limits.h is generated from webgpu_limits.json; device.cpp
+// must include it (the constants are what extractCpp*Limits above verify).
+function verifyLimitsHeader() {
+  const gen = require('./gen-webgpu-limits-header.js');
+  const headerFile = gen.headerPath(contract);
+  const have = fs.existsSync(headerFile) ? fs.readFileSync(headerFile, 'utf8') : '';
+  if (have !== gen.renderHeader(contract)) {
+    fail(`${contract.cpp.header} is stale or missing; run: npm run gen:webgpu-limits`);
+  }
+  if (!/#include "webgpu_limits\.h"/.test(fs.readFileSync(CPP_DEVICE, 'utf8'))) {
+    fail('device.cpp must #include "webgpu_limits.h"');
+  }
+}
+
 if (!ONLY_WASM_INVARIANTS) {
+  verifyLimitsHeader();
   verifyDeepWorkgroupLimits();
   verifyBufferSizeLimits();
 }
@@ -611,6 +638,20 @@ function verifyWasmCompileFlags() {
   for (const f of flags.extraFlags || []) {
     if (typeof f !== 'string' || !f.startsWith('-') || f.startsWith('-s')) {
       fail(`wasm_compile_flags.json extraFlags entry "${f}" must be a plain em++ flag (put -s settings in sFlags)`);
+    }
+  }
+  // Profiles layer on the release flags; the debug build must stay out of public/wasm/.
+  for (const [name, p] of Object.entries(flags.profiles || {})) {
+    for (const f of [...(p.extraFlags || []), ...(p.asan?.extraFlags || [])]) {
+      if (typeof f !== 'string' || !f.startsWith('-') || f.startsWith('-s')) {
+        fail(`wasm_compile_flags.json profiles.${name} extraFlags entry "${f}" must be a plain em++ flag (put -s settings in sFlags)`);
+      }
+    }
+    for (const f of p.dropExtraFlags || []) {
+      if (!(flags.extraFlags || []).includes(f)) fail(`profiles.${name}.dropExtraFlags "${f}" is not a release extraFlags entry`);
+    }
+    if (p.outDir && (path.isAbsolute(p.outDir) || p.outDir.includes('..') || !p.outDir.startsWith('build/'))) {
+      fail(`profiles.${name}.outDir must be under wasm_renderer/build/ (never public/wasm/), got "${p.outDir}"`);
     }
   }
   if (!flags.sFlags.includes('GROWABLE_ARRAYBUFFERS=0')) {

@@ -1,6 +1,7 @@
 #include "renderer.h"
 #include "wasm_internal.h"
 #include "canvas_configure.h"
+#include "webgpu_limits.h"
 #include <webgpu/webgpu.h>
 #include <emscripten/emscripten.h>
 #include <emscripten/em_js.h>
@@ -11,6 +12,9 @@
 #include <algorithm>
 
 namespace pixelocity {
+
+static_assert(sizeof(Uniforms) == webgpu_limits::kMaxUniformBufferBindingSize,
+              "Uniforms size must equal webgpu_limits.json minimumComputeLimits.maxUniformBufferBindingSize");
 
 using wasm_internal::MakeStringView;
 using wasm_internal::CheckLimit;
@@ -52,7 +56,7 @@ EM_JS(uint32_t, JS_CreateSurfaceFromCanvas, (const char* selectorPtr, WGPUDevice
                            typeof navigator.gpu.getPreferredCanvasFormat === 'function')
         ? navigator.gpu.getPreferredCanvasFormat()
         : 'bgra8unorm';
-    var jsDevice = WebGPU.Internals.jsObjects[deviceHandle >>> 0];
+    var jsDevice = WebGPU.getJsObject(deviceHandle);
     if (!jsDevice) {
         console.error('[WASM] Device JS object not found at handle', deviceHandle);
         return 0;
@@ -330,26 +334,26 @@ bool WebGPURenderer::CreateDevice() {
     wgpuAdapterGetLimits(adapter_.get(), &limits);
 
     bool limitsOk = true;
-    // 8192 = webgpu_limits.json minimumComputeLimits.maxTextureDimension2D (comfortable floor).
+    // Every number below is a webgpu_limits.h constant (generated from webgpu_limits.json); maxTextureDimension2D is the comfortable floor.
     printf("[WASM] Adapter limits (validating against 14-entry compute contract):\n");
-    CheckLimit("maxTextureDimension2D",              limits.maxTextureDimension2D,              8192, limitsOk);
-    CheckLimit("maxBindingsPerBindGroup",            limits.maxBindingsPerBindGroup,            14,  limitsOk);
-    CheckLimit("maxSampledTexturesPerShaderStage",   limits.maxSampledTexturesPerShaderStage,    3,  limitsOk);
-    CheckLimit("maxSamplersPerShaderStage",          limits.maxSamplersPerShaderStage,           3,  limitsOk);
-    CheckLimit("maxStorageTexturesPerShaderStage",   limits.maxStorageTexturesPerShaderStage,    4,  limitsOk);
-    CheckLimit("maxStorageBuffersPerShaderStage",    limits.maxStorageBuffersPerShaderStage,     2,  limitsOk);
-    CheckLimit("maxUniformBuffersPerShaderStage",    limits.maxUniformBuffersPerShaderStage,     1,  limitsOk);
-    CheckLimit("maxComputeWorkgroupSizeX",           limits.maxComputeWorkgroupSizeX,            16, limitsOk);
-    CheckLimit("maxComputeWorkgroupSizeY",           limits.maxComputeWorkgroupSizeY,            16, limitsOk);
-    CheckLimit("maxComputeInvocationsPerWorkgroup",  limits.maxComputeInvocationsPerWorkgroup,   256, limitsOk);
+    CheckLimit("maxTextureDimension2D",              limits.maxTextureDimension2D,              webgpu_limits::kMaxTextureDimension2D, limitsOk);
+    CheckLimit("maxBindingsPerBindGroup",            limits.maxBindingsPerBindGroup,            webgpu_limits::kMaxBindingsPerBindGroup,  limitsOk);
+    CheckLimit("maxSampledTexturesPerShaderStage",   limits.maxSampledTexturesPerShaderStage,    webgpu_limits::kMaxSampledTexturesPerShaderStage,  limitsOk);
+    CheckLimit("maxSamplersPerShaderStage",          limits.maxSamplersPerShaderStage,           webgpu_limits::kMaxSamplersPerShaderStage,  limitsOk);
+    CheckLimit("maxStorageTexturesPerShaderStage",   limits.maxStorageTexturesPerShaderStage,    webgpu_limits::kMaxStorageTexturesPerShaderStage,  limitsOk);
+    CheckLimit("maxStorageBuffersPerShaderStage",    limits.maxStorageBuffersPerShaderStage,     webgpu_limits::kMaxStorageBuffersPerShaderStage,  limitsOk);
+    CheckLimit("maxUniformBuffersPerShaderStage",    limits.maxUniformBuffersPerShaderStage,     webgpu_limits::kMaxUniformBuffersPerShaderStage,  limitsOk);
+    CheckLimit("maxComputeWorkgroupSizeX",           limits.maxComputeWorkgroupSizeX,            webgpu_limits::kMaxComputeWorkgroupSizeX, limitsOk);
+    CheckLimit("maxComputeWorkgroupSizeY",           limits.maxComputeWorkgroupSizeY,            webgpu_limits::kMaxComputeWorkgroupSizeY, limitsOk);
+    CheckLimit("maxComputeInvocationsPerWorkgroup",  limits.maxComputeInvocationsPerWorkgroup,   webgpu_limits::kMaxComputeInvocationsPerWorkgroup, limitsOk);
 
     // Deep workgroup (webgpu_limits.json deepWorkgroupLimits): requested below
     // only when the adapter offers all three. supportsDeepWorkgroup_ is set from
     // the *device* limits after creation, since that is what shaders get.
     const bool adapterDeepWorkgroup =
-        limits.maxComputeWorkgroupSizeX >= 32 &&
-        limits.maxComputeWorkgroupSizeY >= 32 &&
-        limits.maxComputeInvocationsPerWorkgroup >= 1024;
+        limits.maxComputeWorkgroupSizeX >= webgpu_limits::deep::kMaxComputeWorkgroupSizeX &&
+        limits.maxComputeWorkgroupSizeY >= webgpu_limits::deep::kMaxComputeWorkgroupSizeY &&
+        limits.maxComputeInvocationsPerWorkgroup >= webgpu_limits::deep::kMaxComputeInvocationsPerWorkgroup;
     printf("[WASM] Adapter limits: maxTex2D=%u, storageTex=%u, sampledTex=%u, computeInvocations=%u (%s)\n",
            limits.maxTextureDimension2D, limits.maxStorageTexturesPerShaderStage,
            limits.maxSampledTexturesPerShaderStage, limits.maxComputeInvocationsPerWorkgroup,
@@ -411,22 +415,22 @@ bool WebGPURenderer::CreateDevice() {
     // All other fields stay WGPU_LIMIT_*_UNDEFINED (via WGPU_LIMITS_INIT) so
     // we don't over-request anything the adapter doesn't already offer.
     WGPULimits requiredLimits = WGPU_LIMITS_INIT;
-    requiredLimits.maxTextureDimension2D             = 8192; // webgpu_limits.json comfortable floor
-    requiredLimits.maxBindingsPerBindGroup           = 14;
-    requiredLimits.maxSampledTexturesPerShaderStage  = 3;
-    requiredLimits.maxSamplersPerShaderStage         = 3;
-    requiredLimits.maxStorageTexturesPerShaderStage  = 4;
-    requiredLimits.maxStorageBuffersPerShaderStage   = 2;
-    requiredLimits.maxUniformBuffersPerShaderStage   = 1;
-    requiredLimits.maxUniformBufferBindingSize       = sizeof(Uniforms);
-    requiredLimits.maxComputeWorkgroupSizeX          = 16;
-    requiredLimits.maxComputeWorkgroupSizeY          = 16;
-    requiredLimits.maxComputeInvocationsPerWorkgroup = 256;
+    requiredLimits.maxTextureDimension2D             = webgpu_limits::kMaxTextureDimension2D;
+    requiredLimits.maxBindingsPerBindGroup           = webgpu_limits::kMaxBindingsPerBindGroup;
+    requiredLimits.maxSampledTexturesPerShaderStage  = webgpu_limits::kMaxSampledTexturesPerShaderStage;
+    requiredLimits.maxSamplersPerShaderStage         = webgpu_limits::kMaxSamplersPerShaderStage;
+    requiredLimits.maxStorageTexturesPerShaderStage  = webgpu_limits::kMaxStorageTexturesPerShaderStage;
+    requiredLimits.maxStorageBuffersPerShaderStage   = webgpu_limits::kMaxStorageBuffersPerShaderStage;
+    requiredLimits.maxUniformBuffersPerShaderStage   = webgpu_limits::kMaxUniformBuffersPerShaderStage;
+    requiredLimits.maxUniformBufferBindingSize       = sizeof(Uniforms); // == webgpu_limits::kMaxUniformBufferBindingSize (asserted above)
+    requiredLimits.maxComputeWorkgroupSizeX          = webgpu_limits::kMaxComputeWorkgroupSizeX;
+    requiredLimits.maxComputeWorkgroupSizeY          = webgpu_limits::kMaxComputeWorkgroupSizeY;
+    requiredLimits.maxComputeInvocationsPerWorkgroup = webgpu_limits::kMaxComputeInvocationsPerWorkgroup;
     if (adapterDeepWorkgroup) {
         // webgpu_limits.json deepWorkgroupLimits — mirrors buildRequiredLimits(adapterLimits).
-        requiredLimits.maxComputeWorkgroupSizeX          = 32;
-        requiredLimits.maxComputeWorkgroupSizeY          = 32;
-        requiredLimits.maxComputeInvocationsPerWorkgroup = 1024;
+        requiredLimits.maxComputeWorkgroupSizeX          = webgpu_limits::deep::kMaxComputeWorkgroupSizeX;
+        requiredLimits.maxComputeWorkgroupSizeY          = webgpu_limits::deep::kMaxComputeWorkgroupSizeY;
+        requiredLimits.maxComputeInvocationsPerWorkgroup = webgpu_limits::deep::kMaxComputeInvocationsPerWorkgroup;
     }
 
     // Optional features: same order as collectOptionalDeviceFeatures() in

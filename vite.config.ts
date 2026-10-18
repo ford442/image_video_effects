@@ -75,7 +75,7 @@ export default defineConfig(({ mode }) => {
           hashCharacters: 'hex' as const,
           entryFileNames: 'static/js/[name].[hash].js',
           chunkFileNames: chunk =>
-            `static/js/${chunkNames.chunkName(chunk.facadeModuleId) ?? '[name]'}.[hash].chunk.js`,
+            `static/js/${chunkNames.chunkName(chunk) ?? '[name]'}.[hash].chunk.js`,
           assetFileNames: info => {
             const name = info.names[0] ?? '';
             if (name.endsWith('.css')) return 'static/css/[name].[hash][extname]';

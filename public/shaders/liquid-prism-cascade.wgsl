@@ -3,8 +3,8 @@
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-05
-//  Ideas: three-stage refraction cascade; critical-angle (TIR) rim sparkle
+//  Upgraded: 2026-10-18
+//  Ideas: three-stage refraction cascade; critical-angle (TIR) rim sparkle; isotropic Sobel-3x3 meniscus ridge normals & capillary wavelet caustics (§12.2A Isotropic Sobel 3×3); anti-halo envelope clamp & temporal cascade trail (§12.2A Anti-halo envelope)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Restored from b6ba3632 (9983b1eb had pasted an unrelated comic-ink
@@ -154,27 +154,70 @@ fn pickChannel(c: vec3<f32>, ch: i32) -> f32 {
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res   = u.config.zw;
     if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
+    let coord = vec2<i32>(gid.xy);
     let uv    = vec2<f32>(gid.xy) / res;
     let t     = u.config.x;
     let tx    = 1.0 / res;
 
-    // Audio: bass swells the dispersion (≤ +35%), treble feeds the shimmer
+    // Audio: bass swells the dispersion (≤ +35%), mids drive capillary caustics, treble feeds shimmer
     let bass   = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids   = clamp(plasmaBuffer[0].y, 0.0, 1.0);
     let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
+    // Critically damped spring cursor in extraBuffer[133..138]
+    let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+    let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+    let isWriter = (gid.x == 0u && gid.y == 0u);
+    let hasState = (arrayLength(&extraBuffer) > 138u);
+    var mouse = rawMouse;
+    if (hasState && extraBuffer[138] > 0.5) {
+        mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    }
+    if (isWriter && hasState) {
+        let lastTime = extraBuffer[137];
+        let dt = clamp(t - lastTime, 0.0, 0.05);
+        var sPos = mouse;
+        var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+        if (extraBuffer[138] < 0.5) {
+            sPos = rawMouse;
+            sVel = vec2<f32>(0.0);
+        }
+        let stiffness = 42.0;
+        let damping = 12.96;
+        let accel = (rawMouse - sPos) * stiffness - sVel * damping;
+        sVel += accel * dt;
+        sPos += sVel * dt;
+        extraBuffer[133] = sPos.x;
+        extraBuffer[134] = sPos.y;
+        extraBuffer[135] = sVel.x;
+        extraBuffer[136] = sVel.y;
+        extraBuffer[137] = t;
+        extraBuffer[138] = 1.0;
+    }
+
     // Parameters
-    let dispStrength = (u.zoom_params.x * 2.0 + 0.3) * (1.0 + 0.35 * bass); // 0.3 – 2.3
+    let dispStrength = (u.zoom_params.x * 2.0 + 0.3) * (1.0 + 0.35 * bass + 0.2 * held); // 0.3 – 2.3
     let curvScale    = u.zoom_params.y * 3.0 + 0.5;    // 0.5 – 3.5
     let prismTwist   = u.zoom_params.z * 3.14159;       // 0 – π
     let depthWeight  = u.zoom_params.w;                  // 0 – 1
 
-    // ── Luminance gradient (finite differences) ───────────────────────────
+    // ── Idea 3: Isotropic Sobel-3x3 Meniscus Ridge Normals & Capillary Wavelet Caustics (§12.2A Isotropic Sobel 3×3) ──
     let srcC  = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let lumR  = luma(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(tx.x, 0.0), 0.0).rgb);
-    let lumL  = luma(textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(tx.x, 0.0), 0.0).rgb);
-    let lumU  = luma(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, tx.y), 0.0).rgb);
-    let lumD  = luma(textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(0.0, tx.y), 0.0).rgb);
-    let lumGrad = vec2<f32>(lumR - lumL, lumU - lumD);
+    let cR    = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(tx.x, 0.0), 0.0).rgb;
+    let cL    = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(tx.x, 0.0), 0.0).rgb;
+    let cU    = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, tx.y), 0.0).rgb;
+    let cD    = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(0.0, tx.y), 0.0).rgb;
+    let lumR  = luma(cR);
+    let lumL  = luma(cL);
+    let lumU  = luma(cU);
+    let lumD  = luma(cD);
+    let lumTR = luma(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>( tx.x,  tx.y), 0.0).rgb);
+    let lumTL = luma(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-tx.x,  tx.y), 0.0).rgb);
+    let lumBR = luma(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>( tx.x, -tx.y), 0.0).rgb);
+    let lumBL = luma(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-tx.x, -tx.y), 0.0).rgb);
+    let sobelX = ((lumTR + 2.0 * lumR + lumBR) - (lumTL + 2.0 * lumL + lumBL)) * 0.25;
+    let sobelY = ((lumTL + 2.0 * lumU + lumTR) - (lumBL + 2.0 * lumD + lumBR)) * 0.25;
+    let lumGrad = vec2<f32>(sobelX, sobelY);
 
     // ── Depth curvature ───────────────────────────────────────────────────
     let depth  = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
@@ -184,8 +227,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let depthD = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(0.0, tx.y * 2.0), 0.0).r;
     let depthCurv = vec2<f32>(depthR - depthL, depthU - depthD) * curvScale;
 
-    // Combined gradient (luminance + depth curvature)
-    let grad = lumGrad + depthCurv * depthWeight;
+    // Combined gradient (isotropic Sobel luminance + depth curvature + mouse meniscus tilt)
+    let toMouse = uv - mouse;
+    let mouseMeniscus = toMouse * exp(-dot(toMouse, toMouse) * 14.0) * (0.08 + held * 0.12);
+    let grad = lumGrad + depthCurv * depthWeight + mouseMeniscus;
 
     // ── Slow curved warp via noise ─────────────────────────────────────────
     let noiseUV   = uv * 3.5 + vec2<f32>(t * 0.04, t * 0.03);
@@ -197,11 +242,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let ripples = rippleDisp(uv, t, min(u32(u.config.y), 50u));
 
     // ── Idea 1: Cascade — per-channel prismatic sampling, three refractions ─
-    // Stage 0 is HEAD's single refraction. Each later stage re-reads the
-    // luminance gradient at the previously refracted (green-path) UV and
-    // refracts every channel again with 0.6× attenuation, so the channels
-    // separate further in stacked planes; the three stage samples are layered
-    // (0.55 / 0.28 / 0.17) so each plane stays visible as its own fringe.
     let layerW = array<f32, 3>(0.55, 0.28, 0.17);
     var chUV = array<vec2<f32>, 3>(uv + ripples, uv + ripples, uv + ripples);
     var stageGrad = bentGrad;
@@ -218,9 +258,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             else { rgb.b += layerW[stage] * col.b; }
         }
         if (stage < 2) {
-            // re-read the gradient at the refracted UV (2-texel forward
-            // differences ≈ HEAD's central-difference scale; the green tap is
-            // the centre sample). Depth curvature + noise bend carry over.
             let p  = chUV[1];
             let lc = luma(greenTap);
             let lx = luma(textureSampleLevel(readTexture, u_sampler, clamp(p + vec2<f32>(2.0 * tx.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb);
@@ -244,11 +281,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         1.0
     );
 
-    // ── Idea 2: Critical-angle rim — the bent gradient is the incidence at
-    // the liquid surface. Each channel exits with its own Cauchy index (blue
-    // bends most → reaches the critical angle first); Fresnel reflectance
-    // climbs as θt grazes 90°, and past the critical angle the channel
-    // reflects (TIR) instead of refracting: a bright glint along strong edges.
+    // ── Idea 2: Critical-angle rim ──
     let sinI = clamp(length(bentGrad) * dispStrength * 1.2, 0.0, 1.0);
     let nTIR = vec3<f32>(cauchyN(0.65, 1.40, 0.04), cauchyN(0.55, 1.40, 0.04), cauchyN(0.45, 1.40, 0.04));
     let reflUV = clamp(uv - bentGrad * 0.05 + ripples, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -265,9 +298,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
     let tirAvg = (tirAmt.r + tirAmt.g + tirAmt.b) / 3.0;
 
+    // Capillary wavelet caustic along Sobel meniscus ridges
+    let meniscusPhase = dot(uv, normalize(lumGrad + vec2<f32>(1e-5))) * 48.0 - t * 2.4;
+    let capillaryCaustic = pow(0.5 + 0.5 * sin(meniscusPhase), 8.0) * smoothstep(0.02, 0.22, length(lumGrad)) * (0.14 + mids * 0.18);
+
     // ── FBM-modulated prismatic shimmer ───────────────────────────────────
-    // FLOOR FIX: HEAD wrote shimmer*sin(..)*0.5+0.5, adding ~0.5 grey to every
-    // channel (washed-out image). The 0.5 bias belongs inside the shimmer.
     let fbmVal  = fbm(uv * 6.0 + vec2<f32>(t * 0.02, -t * 0.015));
     let shimmer = fbmVal * 0.04 * dispStrength * (1.0 + treble);
     let shimmerColor = vec3<f32>(
@@ -288,23 +323,33 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // ── Tone-mapped composite with shimmer ────────────────────────────────
     let prismFinal = toneMap(vec3<f32>(
-        clamp(outColor.r * 0.85 + extraR * 0.15 + shimmerColor.r, 0.0, 1.0),
-        clamp(outColor.g + shimmerColor.g, 0.0, 1.0),
-        clamp(outColor.b * 0.85 + extraB * 0.15 + shimmerColor.b, 0.0, 1.0)
+        clamp(outColor.r * 0.85 + extraR * 0.15 + shimmerColor.r + capillaryCaustic * 0.9, 0.0, 1.0),
+        clamp(outColor.g + shimmerColor.g + capillaryCaustic, 0.0, 1.0),
+        clamp(outColor.b * 0.85 + extraB * 0.15 + shimmerColor.b + capillaryCaustic * 1.1, 0.0, 1.0)
     ));
     let baseRGB = clamp(outColor.rgb, vec3<f32>(0.0), vec3<f32>(1.0));
     var finalRGB = softLight(baseRGB, prismFinal) * 0.6 + prismFinal * 0.4;
+
+    // ── Idea 4: Anti-Halo Envelope Clamp & Temporal Cascade Trail (§12.2A Anti-halo envelope) ──
+    let localMin = min(srcC.rgb, min(min(cR, cL), min(cU, cD)));
+    let localMax = max(srcC.rgb, max(max(cR, cL), max(cU, cD)));
+    let haloSpan = vec3<f32>(0.18 + 0.15 * u.zoom_params.x) + (localMax - localMin) * 0.35;
+    finalRGB = mix(clamp(finalRGB, localMin - haloSpan, localMax + haloSpan), finalRGB, tirAvg * 0.65);
 
     // ── Edge vignette darkening for depth of field feel ───────────────────
     let edgeDist = length(uv - vec2<f32>(0.5));
     let vignette = 1.0 - smoothstep(0.35, 0.85, edgeDist) * 0.4;
     finalRGB = aces(max(finalRGB * vignette, vec3<f32>(0.0)));
 
+    // Exact dataTextureC liquid cascade persistence
+    let prev = textureLoad(dataTextureC, coord, 0);
+    finalRGB = mix(finalRGB, prev.rgb, 0.06);
+
     // Semantic alpha: source coverage, raised where the TIR glint lights up
     let alpha = clamp(srcC.a + tirAvg * 0.3 * (1.0 - srcC.a), 0.0, 1.0);
     let outPix = vec4<f32>(finalRGB, alpha);
 
-    textureStore(writeTexture, gid.xy, outPix);
-    textureStore(dataTextureA, gid.xy, outPix);
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 1.0));
+    textureStore(writeTexture, coord, outPix);
+    textureStore(dataTextureA, coord, outPix);
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
 }
