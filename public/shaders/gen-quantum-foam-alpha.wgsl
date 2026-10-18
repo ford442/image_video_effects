@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-09-27
-//  Ideas: virtual pair flashes (stateless birth/separate/annihilate); Born-rule detection hits; spacetime-foam membranes (Worley F2-F1)
+//  Upgraded: 2026-09-27, 2026-10-18
+//  Ideas: virtual pair flashes (stateless birth/separate/annihilate); Born-rule detection hits; spacetime-foam membranes (Worley F2-F1); pair worldline; one-sigma shell
 //  A packing: raw sim state (vacuumField, totalProb, avgUncertainty, alpha) - unchanged; ACES on writeTexture only
 //  Description: Particle positions rendered as quantum probability clouds.
 //    Alpha encodes Heisenberg uncertainty — high uncertainty creates diffuse
@@ -12,26 +12,8 @@
 //    Mouse measurement collapses the wavefunction locally.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=CloudDensity, y=Uncertainty, z=VacuumEnergy, w=CollapseStrength
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=CloudDensity, y=Uncertainty, z=VacuumEnergy, w=CollapseStrength
 
 const PI: f32 = 3.14159265358979323846;
 
@@ -221,6 +203,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let interf = interference(p, p1, p2, localSigma, time);
     let pairProb = prob1 + prob2 + interf * 0.3;
 
+    // ── Idea: pair worldline ──
+    let ab = p2 - p1;
+    let abLen2 = max(dot(ab, ab), 1e-6);
+    let alongPair = clamp(dot(p - p1, ab) / abLen2, 0.0, 1.0);
+    let worldDist = length((p - p1) - ab * alongPair);
+    let worldSigma = max(localSigma * 0.28, 1e-4);
+    let worldArg = worldDist / worldSigma;
+    let worldline = exp(-worldArg * worldArg);
+
+    // ── Idea: one-sigma shell ──
+    let shellWidth = max(localSigma * 0.18, 1e-4);
+    let s1 = (dMouse1 - localSigma) / shellWidth;
+    let s2 = (dMouse2 - localSigma) / shellWidth;
+    let shell = exp(-s1 * s1) + exp(-s2 * s2);
+
     // Color based on energy level
     let energy = hash_q(seed + 5.0) + vacuumField * 0.3;
     let hue = fract(energy * 0.3 + fi / f32(numPairs) + time * 0.02);
@@ -228,8 +225,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let val = 0.5 + pairProb * 2.0;
     let pColor = hsv2rgb_q(hue, sat, val);
 
-    totalProb += pairProb;
-    colorAccum += pColor * pairProb;
+    totalProb += pairProb + worldline * 0.15 + shell * 0.12;
+    colorAccum += pColor * (pairProb + worldline * 0.22 + shell * 0.35);
     totalUncertainty += localSigma * pairProb;
   }
 

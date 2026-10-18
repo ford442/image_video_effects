@@ -4,8 +4,8 @@
 //  Features: upgraded-rgba, aces-tone-map, depth-aware, audio-reactive, mouse-driven, temporal
 //  Complexity: Very High
 //  Scientific: Curl-noise cloud advection with vorticity confinement, buoyant convection, Mie silver lining, and rain-sheet transport
-//  Upgraded: 2026-10-11
-//  Ideas: anvil deck at cloud top; virga (rain fading before ground); mammatus pouches; shelf-cloud roll
+//  Upgraded: 2026-10-11, 2026-10-18
+//  Ideas: anvil deck at cloud top; virga (rain fading before ground); mammatus pouches; shelf-cloud roll; fallstreak hole; crepuscular shafts
 //  A packing: raw density, velocity.xy, moisture
 // ═══════════════════════════════════════════════════════════════════
 
@@ -191,6 +191,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let shelf = exp(-shelfArg * shelfArg);
   let roll = 0.5 + 0.5 * sin(uv.x * 7.0 - noiseTime * (0.12 + abs(windX) * 30.0) + fbm(uv * 3.0) * 2.0);
   density = saturate(density + shelf * roll * coverage * (0.06 + turbulence * 0.05) * cloudBand);
+  // ── Idea: fallstreak hole ──
+  // Rain punches a cavum in the anvil. Rain sets how open it is; the rim stays bright.
+  let holeCenter = vec2<f32>(0.64, 0.18);
+  let holeR = length((uv - holeCenter) * vec2<f32>(1.15, 1.6));
+  let hole = smoothstep(0.05 + (1.0 - rainIntensity) * 0.08, 0.0, holeR - 0.07) * anvil;
+  let holeRimArg = holeR - 0.09;
+  let holeRim = exp(-holeRimArg * holeRimArg * 420.0) * anvil * rainIntensity;
+  density = saturate(density * (1.0 - hole * 0.82));
+  density = saturate(density + holeRim * 0.12);
   var moisture = mix(advected.a, baseCloud * (0.45 + rainIntensity * 0.5), 0.045);
 
   let curl = curlNoise(uv * mix(1.5, 4.8, coverage) + vec2<f32>(noiseTime * 0.02, -noiseTime * 0.016), noiseTime, pixel * 5.0);
@@ -242,6 +251,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let rain = rainCore * smoothstep(streakLo, 0.92, rainNoise) * smoothstep(0.18, 0.92, uv.y);
   // Idea 2 — virga: evaporate before the ground
   let virga = rain * (1.0 - smoothstep(0.72, 0.98, uv.y));
+  let fallstreak = holeRim * (0.35 + rainIntensity * 0.5);
   moisture = saturate(moisture - rain * 0.09);
   density = saturate(density - rain * 0.025);
 
@@ -267,8 +277,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var cloudColor = mix(cloudBase, vec3<f32>(1.0, 0.99, 0.97), silverEdge * saturate(mie * 18.0));
   cloudColor = mix(cloudColor, vec3<f32>(0.18, 0.20, 0.25), shadow * density * 0.75);
   cloudColor += vec3<f32>(1.0, 0.98, 0.96) * lightning * 1.8;
+  // ── Idea: crepuscular shafts ──
+  // Light through a thinner column along the existing light direction.
+  let overhead = sampleState(uv + lightDir2 * 0.045, resolution, size).r;
+  let shaft = saturate((1.0 - overhead) * smoothstep(0.08, 0.55, density)) * (0.12 + mids * 0.18);
+  cloudColor += vec3<f32>(1.0, 0.94, 0.82) * shaft;
 
-  let rainColor = vec3<f32>(0.70, 0.82, 1.0) * virga * (0.35 + density * 0.8);
+  let rainColor = vec3<f32>(0.70, 0.82, 1.0) * (virga + fallstreak) * (0.35 + density * 0.8);
   let generatedColor = mix(skyColor, cloudColor + rainColor, saturate(density * 0.95 + virga * 0.45));
   let finalColor = mix(inputColor.rgb, generatedColor, 0.94);
   let finalAlpha = max(inputColor.a, saturate(0.42 + density * 0.55 + virga * 0.12 + lightning * 0.2));
