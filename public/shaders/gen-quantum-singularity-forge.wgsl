@@ -359,7 +359,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mouseUV = u.zoom_config.yz;
   let camDist = 4.0 + sin(time * 0.15) * 0.3;
   let camAng = time * 0.2 + mouseUV.x * 0.5;
-  let camHeight = 0.5 - mouseUV.y;
+  // Lifted 0.6 above the disk plane at idle: an exactly edge-on camera made
+  // every ray's disk-plane crossing tp = 0, hiding the plunging streamers.
+  let camHeight = 0.6 + (0.5 - mouseUV.y);
   let ro = vec3<f32>(cos(camAng) * camDist, camHeight, sin(camAng) * camDist);
   let ta = vec3<f32>(0.0, 0.0, 0.0);
   let ww = normalize(ta - ro);

@@ -324,7 +324,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // IDEA 3 — scute growth rings: concentric annuli around each plate
         // centre, grooved into the obsidian; ring phase creeps outward with
         // (dilated) chronal time so older rings feel like accumulated epochs
-        let ringTime = gTime * (1.0 - 0.75 * gDilation) * 0.15;
+        let ringTime = gTime * 0.15 - 0.6 * gDilation; // bounded dilation lag, not a per-pixel time scale
         let ringPhase = plateF1 * (18.0 + 10.0 * u.zoom_params.x) - ringTime + plateId * TAU;
         let groove = smoothstep(0.75, 1.0, 0.5 + 0.5 * cos(ringPhase))
                    * smoothstep(0.02, 0.12, plateEdge);
@@ -348,10 +348,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         col += vec3<f32>(0.1, 0.8, 1.0) * gKeel * (0.04 + spec * 0.3) * u.zoom_params.y;
 
         // IDEA 8 — carapace hour-hand sweep: a meridian circles the shell about
-        // the body's vertical axis on dilated chronal time (≈12.6 s per turn at
-        // rest, slower inside the mouse well). Seams it has just crossed burn
+        // the body's vertical axis on chronal time (≈12.6 s per turn; it
+        // lags behind inside the mouse well). Seams it has just crossed burn
         // gold and fade behind it like a comet tail; sharp leading edge.
-        let handAng = gTime * (1.0 - 0.75 * gDilation) * 0.5;
+        let handAng = gTime * 0.5 - 2.0 * gDilation; // bounded lag: per-pixel time scaling spiralled the hand
         let azim = atan2(gPBody.x, gPBody.z);
         let lag = fract((handAng - azim) / TAU);
         let trail = exp(-lag * 9.0);

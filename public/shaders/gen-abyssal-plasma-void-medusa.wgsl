@@ -98,8 +98,10 @@ fn pulsePhase() -> f32 {
 // and sitting between tentacle roots.
 fn rhopaliumPos(fi: f32) -> vec3<f32> {
     let a = fi * 0.7853982 + u.config.x * 0.5 + 0.6283185;
-    let r = bellRadius() - 0.04;
-    return vec3<f32>(cos(a) * r, 1.02, sin(a) * r);
+    // Just outside the margin lip (outer shell meets the cut face at r = bellRadius, y = 1),
+    // clear of the solid rim even under the ±0.07 void-current warp.
+    let r = bellRadius() + 0.06;
+    return vec3<f32>(cos(a) * r, 1.0, sin(a) * r);
 }
 
 // Raw void-current noise (the domain-warp field of map()).
