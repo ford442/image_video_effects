@@ -116,6 +116,11 @@ export type RenderRpc =
       appBaseUrl: string;
       /** SharedArrayBuffer input ring (inputRing.ts) when both sides are cross-origin isolated. */
       inputRing?: SharedArrayBuffer;
+      /**
+       * The device generation this worker serves (deviceRegistry.claimDeviceGeneration). From
+       * here on the worker applies only messages stamped with it; absent → no check.
+       */
+      generation?: number;
     }
   | { type: 'loadShader'; requestId: number; id: string; url: string }
   | { type: 'loadImageBitmap'; requestId: number; bitmap: ImageBitmap }
@@ -194,6 +199,9 @@ export type RenderEvent =
   | { type: 'rpcResult'; requestId: number; ok: false; error: string };
 
 export type RenderToWorker = RenderCommand | RenderRpc;
+
+/** What goes over the wire: the client stamps `gen` once it knows its device generation. */
+export type StampedRenderToWorker = RenderToWorker & { gen?: number };
 
 export const RENDER_COMMAND_TYPES = [
   'frameInput',

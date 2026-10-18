@@ -65,6 +65,15 @@ export function listRuntimeGraphIds(): string[] {
   return Array.from(overlay.keys());
 }
 
+/** Every registered runtime graph with its sim-ring request, for re-seeding a new backend. */
+export function listRuntimeGraphs(): Array<{
+  id: string;
+  graph: MultipassGraphDef;
+  simRing: RuntimeSimRingRequest | null;
+}> {
+  return Array.from(overlay, ([id, graph]) => ({ id, graph, simRing: simRingOverlay.get(id) ?? null }));
+}
+
 /** Test hook: drop every runtime graph. */
 export function clearRuntimeGraphs(): void {
   overlay.clear();
