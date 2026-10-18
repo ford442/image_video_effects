@@ -1,8 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Bubble Chamber — Algorithmist Upgrade
-//  Curl-noise velocity field + Clifford perturbation + Gold-noise emission
-//  Domain-warped FBM for chromatic drift, divergence-free advection
-//  + Bragg-curve ionization falloff, mouse Lorentz (point-vortex) bend
+//  Bubble Chamber
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, feedback, click-reactive
+//  Upgraded: 2026-10-18
+//  Ideas: dE/dx bubble beading (tracks resolve into discrete bubbles whose density follows the ionisation, densest at the Bragg peak); expansion-cycle sensitivity (piston cycle gates the beam spill, bubbles grow as sqrt(t) after expansion, a photo flash fires mid-cycle, recompression collapses them)
+//  A packing: un-beaded ACES display RGBA (exact-C feedback history); writeTexture = A.rgb x bubble beads x flash
+//  Curl-noise velocity field + Clifford perturbation + Gold-noise emission,
+//  Bragg-curve ionization falloff, mouse Lorentz (point-vortex) bend
 // ═══════════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -115,7 +119,9 @@ fn luma(rgb: vec3<f32>) -> f32 {
 //   →0.0 below the cutoff so dead tracks vanish instead of lingering.
 fn braggGain(t: f32, prominence: f32) -> f32 {
   let cutoff = smoothstep(0.0, 0.045, t);
-  let bump = exp(-pow((t - 0.16) / 0.085, 2.0));
+  // Squared explicitly: pow() of the negative base (t < 0.16) is NaN.
+  let z = (t - 0.16) / 0.085;
+  let bump = exp(-z * z);
   return cutoff * (1.0 + prominence * bump);
 }
 
@@ -212,7 +218,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
   let bandIdx = u32(clamp(dist * 4.0, 0.0, 7.999));
-  let band = plasmaBuffer[bandIdx + 1u].x;
+  // Only plasmaBuffer[0] is uploaded; [1..8] read as zero. Radial band blend of
+  // bass → mids → treble stands in for the old per-band FFT lookup.
+  let bandT = f32(bandIdx) / 7.0;
+  let band = mix(mix(bass, mids, smoothstep(0.0, 0.5, bandT)), treble, smoothstep(0.5, 1.0, bandT));
 
   // ── HIGH ENERGY: bounded click collision vertices ────────────────────────
   // Each click is a collision that sprays secondary tracks radially.
@@ -285,9 +294,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let rand_val = goldNoise(uv * noise_scale, time * 0.37);
   let spawn_rate = 0.04 + 0.35 * p_intensity * (0.4 + 0.6 * p_detail);
 
+  // IDEA 2: expansion cycle. The piston drops the pressure, the liquid is
+  // superheated (sensitive) for the first ~third of the cycle while the beam
+  // spills in, bubbles then grow and are photographed, and recompression
+  // collapses them. The spawn gate averages ~1 over a cycle, so the mean
+  // track density matches the old constant rate.
+  let cyclePeriod = 2.6;
+  let cyc = fract(time / cyclePeriod);
+  let cycleId = floor(time / cyclePeriod);
+  let sensitive = smoothstep(0.0, 0.06, cyc) * (1.0 - smoothstep(0.38, 0.6, cyc));
+  let recompress = smoothstep(0.82, 0.97, cyc);
+  let spillGate = mix(0.35, 1.7, sensitive);
+
   // Fresh ionization deposit: brightness scales with beam intensity.
   var spark = vec4<f32>(0.0);
-  if (rand_val < luminance * spawn_rate * 0.2) {
+  if (rand_val < luminance * spawn_rate * 0.2 * spillGate) {
     spark = vec4<f32>(input_color.rgb * (1.4 + 2.2 * p_intensity), luminance * 2.0);
   }
 
@@ -346,7 +367,31 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let depth = clamp(1.0 - outEnergy * 0.8, 0.0, 1.0);
 
   let outColor = vec4<f32>(finalRGB, alpha);
-  textureStore(writeTexture, gid.xy, outColor);
+
+  // IDEA 1: dE/dx bubble beading. A track is a string of discrete bubbles
+  // nucleated in the (stationary) liquid; their count per length follows the
+  // ionisation, so the bright Bragg end is dense and the faint tail sparse.
+  // One jittered bubble site per pixel-sized cell (radius < cell margin, so
+  // no neighbour search); sites re-seed every expansion, and the radius grows
+  // ~sqrt(t) after expansion (bass = beam spill swells them) until
+  // recompression collapses them. Display only: A keeps the continuous trail.
+  let cellPx = max(2.5, resolution.y * (0.0075 - 0.0035 * p_scale));
+  let cpos = vec2<f32>(gid.xy) / cellPx;
+  let cseed = floor(cpos) + vec2<f32>(cycleId * 17.31, cycleId * 5.77);
+  let site = vec2<f32>(hash21(cseed + 3.1), hash21(cseed + 7.7)) * 0.5 + 0.25;
+  let ionise = smoothstep(0.03, 0.6, energy);
+  let hasBubble = step(hash21(cseed), ionise * 0.9);
+  let growth = sqrt(clamp(cyc / 0.5, 0.0, 1.0)) * (1.0 - recompress);
+  let rB = 0.06 + 0.19 * clamp(growth * (1.0 + bass * 0.3), 0.0, 1.0);
+  let dB = length(fract(cpos) - site);
+  let bead = hasBubble * (1.0 - smoothstep(rB - 0.07, rB, dB));
+  let beadAmt = 0.55 * (1.0 - recompress);
+  // Mid-cycle photo flash (squared Gaussian, no pow of a negative base).
+  let fz = (cyc - 0.32) / 0.025;
+  let flash = 1.0 + 0.22 * exp(-fz * fz);
+  let shownRGB = min(finalRGB * ((1.0 - beadAmt) + beadAmt * bead * 2.2) * flash, vec3<f32>(1.0));
+
+  textureStore(writeTexture, gid.xy, vec4<f32>(shownRGB, alpha));
   textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 1.0));
   textureStore(dataTextureA, gid.xy, outColor);
 }

@@ -2,7 +2,7 @@
   "id": "bubble-chamber",
   "name": "Bubble Chamber",
   "url": "shaders/bubble-chamber.wgsl",
-  "description": "Simulates subatomic particle trails in a magnetic field using a feedback loop.",
+  "description": "Simulates subatomic particle trails in a magnetic field using a feedback loop; tracks bead into discrete bubbles over each chamber expansion cycle.",
   "features": [
     "mouse-driven",
     "feedback",

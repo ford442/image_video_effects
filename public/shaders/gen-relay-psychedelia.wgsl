@@ -3,8 +3,12 @@
 //  Category: generative
 //  Relay doc: docs/agents/RELAY_PROTOCOL.md
 //  Hop 0 (spine): baseline warped field + palette + feedback-ready composite
-//  Upgraded: 2026-09-27
-//  Ideas: second curl octave; directional trail smear; complementary seam fringe
+//  Upgraded: 2026-10-18
+//  Ideas: second curl octave; directional trail smear; complementary seam fringe;
+//         liquid-light-show oil cells (immiscible oil level-set drifting slower
+//         than the dye, complementary dye inside, dark meniscus + bright lens rim,
+//         bass = projector-lamp convection); echo hue precession (each feedback
+//         generation is YIQ hue-rotated, so smeared echoes fan into spectra)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -238,7 +242,20 @@ fn iqPalette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> 
     return a + b * cos(TAU * (c * t + d));
 }
 
-fn applyPalette(field: f32, time: f32, saturation: f32, hueShift: f32, seam: f32) -> vec3<f32> {
+// Liquid light show: oil and water don't mix, so the projector dish shows
+// sharp-edged oil cells drifting slower than the water dye. .x = inside-oil
+// coverage, .y = meniscus line, .z = lens rim just inside the oil edge.
+fn oilCells(p: vec2<f32>, time: f32, heat: f32) -> vec3<f32> {
+    let convect = vec2<f32>(time * 0.021, -time * 0.017) * (1.0 + heat);
+    let oil = fbm(p * 1.25 + convect + vec2<f32>(3.7, 8.1), 3);
+    let edge = oil - 0.52;
+    let inside = smoothstep(-0.006, 0.006, edge);
+    let meniscus = 1.0 - smoothstep(0.0, 0.016, abs(edge));
+    let rim = smoothstep(0.004, 0.02, edge) * (1.0 - smoothstep(0.02, 0.05, edge));
+    return vec3<f32>(inside, meniscus, rim);
+}
+
+fn applyPalette(field: f32, time: f32, saturation: f32, hueShift: f32, seam: f32, oil: vec3<f32>) -> vec3<f32> {
     // OWNER: kimi-hop-3 2026-07-19
     // Hybrid: psychedelicPalette base + IQ cosine interference bands at a slower phase.
     let t = field + time * 0.06 + hueShift * TAU;
@@ -251,6 +268,11 @@ fn applyPalette(field: f32, time: f32, saturation: f32, hueShift: f32, seam: f32
         vec3<f32>(0.0, 0.33, 0.67)
     );
     var color = mix(base, bands, 0.45);
+    // Oil cells carry their own dye: the complementary palette phase, a touch denser.
+    let oilDye = mix(psychedelicPalette(t + 0.5), bands.zxy, 0.35) * 0.92;
+    color = mix(color, oilDye, oil.x * 0.6);
+    color *= 1.0 - oil.y * 0.55;
+    color += vec3<f32>(oil.z * 0.22);
     let sat = clamp(saturation, 0.0, 1.0);
     let gray = vec3<f32>(dot(color, vec3<f32>(0.2126, 0.7152, 0.0722)));
     color = mix(gray, color, sat);
@@ -284,7 +306,24 @@ fn applyTemporalFeedback(
     let maxC = vec2<i32>(i32(res.x) - 1, i32(res.y) - 1);
     let prevA = textureLoad(dataTextureC, clamp(coord + off, vec2<i32>(0), maxC), 0).rgb;
     let prevB = textureLoad(dataTextureC, clamp(coord - off, vec2<i32>(0), maxC), 0).rgb;
-    let prev = (prevA + prevB) * 0.5;
+    let prevRaw = (prevA + prevB) * 0.5;
+
+    // Echo hue precession: rotate each generation's chroma in YIQ, so the
+    // smear fans out into a spectrum the further back it reaches.
+    let yiq = vec3<f32>(
+        dot(prevRaw, vec3<f32>(0.299, 0.587, 0.114)),
+        dot(prevRaw, vec3<f32>(0.596, -0.274, -0.322)),
+        dot(prevRaw, vec3<f32>(0.211, -0.523, 0.312))
+    );
+    let precess = 0.32 + clamp(plasmaBuffer[0].y, 0.0, 2.0) * 0.12;
+    let cp = cos(precess);
+    let sp = sin(precess);
+    let iq = vec2<f32>(cp * yiq.y - sp * yiq.z, sp * yiq.y + cp * yiq.z);
+    let prev = max(vec3<f32>(
+        yiq.x + 0.956 * iq.x + 0.621 * iq.y,
+        yiq.x - 0.272 * iq.x - 0.647 * iq.y,
+        yiq.x - 1.106 * iq.x + 1.703 * iq.y
+    ), vec3<f32>(0.0));
 
     // Trail Echo slider drives mix; bass nudges persistence.
     let fbMix = clamp(strength * 0.82 + bass * 0.04, 0.0, 0.85);
@@ -324,7 +363,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let field = fieldPack.x;
     let paletteSat = clamp(mix(0.55, 1.0, u.zoom_params.y) * motion.saturationBoost, 0.0, 1.0);
     let paletteHue = fract(u.zoom_params.z + motion.hueDrift);
-    var color = applyPalette(field, animTime, paletteSat, paletteHue, fieldPack.y);
+    let oil = oilCells(p, animTime, clamp(bass, 0.0, 2.0) * 0.6);
+    var color = applyPalette(field, animTime, paletteSat, paletteHue, fieldPack.y, oil);
 
     color = applyTemporalFeedback(color, coord, res, u.zoom_params.w * 0.35, bass, animTime);
 

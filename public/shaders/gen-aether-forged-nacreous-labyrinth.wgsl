@@ -3,8 +3,9 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: nacre film thickness read from the gyroid level-set (colour follows the membrane); periodic KIFS polytypes (z-wrapped lattice, per-cell hash into the fold angle); labyrinth breathing (gyroid bias driven by a slow sine + mids)
+//  Upgraded: 2026-10-18
+//  Ideas: nacre film thickness read from the gyroid level-set (colour follows the membrane); periodic KIFS polytypes (z-wrapped lattice, per-cell hash into the fold angle); labyrinth breathing (gyroid bias driven by a slow sine + mids);
+//         fold count as material (§12.2E: few-mirror facets polished, deep-folded facets frosted); aragonite tablet mosaic (per-tablet film thickness + matte organic seams on the nacre)
 //  A packing: ACES display RGBA (0.8 temporal blend with exact dataTextureC history)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -93,12 +94,16 @@ fn sdGyroid(p: vec3<f32>, scale: f32, thickness: f32, bias: f32) -> f32 {
     return abs(dot(sin(p_scaled), cos(p_scaled.zxy)) + bias) / scale - thickness;
 }
 
-// KIFS fractal lattice
-fn sdKIFS(p: vec3<f32>, sharp: f32, polytype: f32) -> f32 {
+// KIFS fractal lattice. Returns (distance, fold count).
+fn sdKIFSFolds(p: vec3<f32>, sharp: f32, polytype: f32) -> vec2<f32> {
     var q = p;
     let s = 1.2;
     var d = 1000.0;
+    var folds = 0.0;
     for(var i = 0; i < 4; i++) {
+        // ── Idea 4: fold count as material (§12.2E) — every abs() mirror a point
+        // passes through is counted; each kaleidoscope facet gets its own count.
+        folds += dot(vec3<f32>(1.0), step(q, vec3<f32>(0.0)));
         q = abs(q) - vec3<f32>(0.5, 0.5, 0.5) * sharp;
 
         let rot1 = rot(PI / 4.0 + 0.1 * f32(i));
@@ -112,7 +117,7 @@ fn sdKIFS(p: vec3<f32>, sharp: f32, polytype: f32) -> f32 {
         q *= s;
         d = min(d, length(max(abs(q) - 0.2, vec3<f32>(0.0))) / pow(s, f32(i+1)));
     }
-    return d;
+    return vec2<f32>(d, folds);
 }
 
 
@@ -123,16 +128,16 @@ fn kifsHash(c: f32) -> f32 {
     return fract(sin(c * 12.9898 + 4.1414) * 43758.5453) - 0.5;
 }
 
-fn sdKIFSPeriodic(p: vec3<f32>, sharp: f32) -> f32 {
+fn sdKIFSPeriodicFolds(p: vec3<f32>, sharp: f32) -> vec2<f32> {
     let L = 4.0;
     let g = p.z / L + 0.5;
     let c0 = floor(g);
     let f = fract(g) - 0.5;
     let sgn = select(-1.0, 1.0, f >= 0.0);
     let c1 = c0 + sgn;
-    let d0 = sdKIFS(vec3<f32>(p.x, p.y, f * L), sharp, kifsHash(c0));
-    let d1 = sdKIFS(vec3<f32>(p.x, p.y, (f - sgn) * L), sharp, kifsHash(c1));
-    return min(d0, d1);
+    let d0 = sdKIFSFolds(vec3<f32>(p.x, p.y, f * L), sharp, kifsHash(c0));
+    let d1 = sdKIFSFolds(vec3<f32>(p.x, p.y, (f - sgn) * L), sharp, kifsHash(c1));
+    return select(d1, d0, d0.x <= d1.x);
 }
 
 // Spatial distortion based on mouse
@@ -171,21 +176,28 @@ fn applyGravityWell(p: vec3<f32>, ro: vec3<f32>) -> vec3<f32> {
     return q;
 }
 
-// Scene SDF
-fn map(pos_in: vec3<f32>, ro: vec3<f32>, audio: f32) -> vec3<f32> {
-    var p = applyGravityWell(pos_in, ro);
+// Lattice space: gravity well + flow drift (shared by map and the shading pass)
+fn flowSpace(pos_in: vec3<f32>, ro: vec3<f32>) -> vec3<f32> {
+    let flowSpeed = u.zoom_params.y; // Flow Speed
+    let flowOffset = vec3<f32>(0.0, 0.0, u.config.x * 0.5 * flowSpeed);
+    return applyGravityWell(pos_in, ro) + flowOffset;
+}
+
+// Membrane space: lattice space deformed with curl noise
+fn orgSpace(p: vec3<f32>) -> vec3<f32> {
+    let aetherDen = u.zoom_params.z; // Aether Density
+    let curl = curlNoise(p * 0.5 + u.config.x * 0.2);
+    return p + curl * 0.2 * aetherDen;
+}
+
+// Scene SDF: (distance, material, nacre film, KIFS fold count)
+fn map(pos_in: vec3<f32>, ro: vec3<f32>, audio: f32) -> vec4<f32> {
+    let p = flowSpace(pos_in, ro);
 
     let time = u.config.x;
     let sharp = u.zoom_params.x;     // Crystal Sharpness
-    let flowSpeed = u.zoom_params.y; // Flow Speed
-    let aetherDen = u.zoom_params.z; // Aether Density
 
-    let flowOffset = vec3<f32>(0.0, 0.0, time * 0.5 * flowSpeed);
-    p += flowOffset;
-
-    // Deform space with curl noise
-    let curl = curlNoise(p * 0.5 + time * 0.2);
-    let p_org = p + curl * 0.2 * aetherDen;
+    let p_org = orgSpace(p);
 
     // Organic Labyrinth (Gyroid + fBM)
     // Idea 3: labyrinth breathing - the hard-wired bias=0 level-set now swells and
@@ -195,7 +207,8 @@ fn map(pos_in: vec3<f32>, ro: vec3<f32>, audio: f32) -> vec3<f32> {
     let d_org = sdGyroid(p_org, 2.0, 0.05 + audio * 0.05, bias) + fbm(p_org * 4.0) * 0.05;
 
     // Rigid KIFS Lattice (Idea 2: periodic polytypes)
-    let d_kifs = sdKIFSPeriodic(p, sharp);
+    let kifs = sdKIFSPeriodicFolds(p, sharp);
+    let d_kifs = kifs.x;
 
     // Blend
     let d_final = smin(d_org, d_kifs, 0.2);
@@ -209,7 +222,34 @@ fn map(pos_in: vec3<f32>, ro: vec3<f32>, audio: f32) -> vec3<f32> {
     let pl = p_org * 0.8;
     let film = (dot(sin(ps), cos(ps.zxy)) + bias) * 2.0 + dot(sin(pl), cos(pl.zxy)) * 0.5;
 
-    return vec3<f32>(d_final, mat, film);
+    return vec4<f32>(d_final, mat, film, kifs.y);
+}
+
+// ── Idea 5 helper: aragonite tablet mosaic. Real nacre is brick-and-mortar —
+// polygonal aragonite tablets glued by thin organic seams. 3-D Voronoi in membrane
+// space: returns (seam proximity 0..1, per-tablet hash -0.5..0.5).
+fn nacreTablets(p: vec3<f32>) -> vec2<f32> {
+    let i = floor(p);
+    let f = fract(p);
+    var f1 = 8.0;
+    var f2 = 8.0;
+    var id = 0.0;
+    for (var z = -1; z <= 1; z++) {
+        for (var y = -1; y <= 1; y++) {
+            for (var x = -1; x <= 1; x++) {
+                let o = vec3<f32>(f32(x), f32(y), f32(z));
+                let h = hash3(i + o);
+                let r = o + 0.5 + 0.4 * h - f;
+                let dd = dot(r, r);
+                let closer = dd < f1;
+                f2 = select(min(f2, dd), f1, closer);
+                id = select(id, h.x, closer);
+                f1 = min(f1, dd);
+            }
+        }
+    }
+    let gap = sqrt(f2) - sqrt(f1);
+    return vec2<f32>(1.0 - smoothstep(0.03, 0.12, gap), id * 0.5);
 }
 
 // Normal calculation
@@ -261,6 +301,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var d = 0.0;
     var mat_id = 0.0;
     var film = 0.0;
+    var folds = 0.0;
     let max_steps = 100;
     let max_dist = 20.0;
 
@@ -274,6 +315,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         d = res.x;
         mat_id = res.y;
         film = res.z;
+        folds = res.w;
         if (d < 0.001 || t > max_dist) { break; }
         t += d;
     }
@@ -302,13 +344,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         if (mat_id < 0.5) {
             // Organic Nacreous
-            let iridescence_t = ndotv + iridescenceShift + p.z * 0.1 + film * 0.5; // Idea 1
+            // ── Idea 5: aragonite tablet mosaic — each tablet is a slightly different
+            // film thickness (shifts its interference colour); the organic seams between
+            // them are matte and dark, so the pearl reads as tiled at close range.
+            let po = orgSpace(flowSpace(p, ro));
+            let tab = nacreTablets(po * 16.0);
+            let tabFade = 1.0 - smoothstep(3.0, 8.0, t);
+            let iridescence_t = ndotv + iridescenceShift + p.z * 0.1 + film * 0.5 + tab.y * 0.35 * tabFade; // Idea 1
             let iri_col = pal(iridescence_t, vec3<f32>(0.5,0.5,0.5), vec3<f32>(0.5,0.5,0.5), vec3<f32>(1.0,1.0,1.0), vec3<f32>(0.0,0.33,0.67));
 
             let diffuse = ndotl * iri_col;
-            let specular = pow(ndoth, 16.0) * vec3<f32>(1.0);
+            let seam = tab.x * tabFade;
+            let specular = pow(ndoth, 16.0) * vec3<f32>(1.0) * (1.0 - seam * 0.8);
 
-            col = diffuse * 0.8 + specular * 0.5 + iri_col * sss * 0.5;
+            col = (diffuse * 0.8 + specular * 0.5 + iri_col * sss * 0.5) * (1.0 - seam * 0.45);
 
             // Bioluminescent glow from audio
             col += iri_col * fft_mid * 2.0 * sss;
@@ -316,14 +365,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         } else {
             // Rigid Crystalline
             let metallic_col = vec3<f32>(0.7, 0.8, 0.9);
-            let diffuse = ndotl * metallic_col * 0.2;
-            let specular = pow(ndoth, 64.0) * vec3<f32>(1.0, 1.0, 1.0);
+            // ── Idea 4: fold count as material — facets reached through few mirrors are
+            // polished (tight, bright highlight); deeply folded facets are frosted (broad,
+            // dimmer highlight, more diffuse). Median count lands near the old exponent (64).
+            let fm = clamp((folds - 3.5) / 4.5, 0.0, 1.0); // counts span ~5..8 of 12
+            let specExp = mix(128.0, 20.0, fm);
+            let diffuse = ndotl * metallic_col * mix(0.1, 0.32, fm);
+            let specular = pow(ndoth, specExp) * vec3<f32>(1.0, 1.0, 1.0) * mix(1.3, 0.55, fm);
 
             // Chromatic aberration at grazing angles
             let fresnel = pow(clamp(1.0 - ndotv, 0.0, 1.0), 5.0);
-            let r = pow(ndoth, 32.0);
-            let g = pow(max(dot(n, normalize(l + vec3<f32>(0.1, 0.0, 0.0))), 0.0), 32.0);
-            let b = pow(max(dot(n, normalize(l + vec3<f32>(-0.1, 0.0, 0.0))), 0.0), 32.0);
+            let chromExp = specExp * 0.5;
+            let r = pow(ndoth, chromExp);
+            let g = pow(max(dot(n, normalize(l + vec3<f32>(0.1, 0.0, 0.0))), 0.0), chromExp);
+            let b = pow(max(dot(n, normalize(l + vec3<f32>(-0.1, 0.0, 0.0))), 0.0), chromExp);
             let chromatic = vec3<f32>(r, g, b);
 
             col = diffuse + specular + fresnel * metallic_col + chromatic * 0.5;

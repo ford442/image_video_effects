@@ -3,6 +3,7 @@
   "name": "Luminescent Silica Diatom Swarm",
   "category": "generative",
   "url": "/shaders/gen-luminescent-silica-diatom-swarm.wgsl",
+  "description": "A drifting swarm of glass diatoms: lidded silica frustules of shrinking generations, porous valves leaking their glowing cores' light, linked into chains.",
   "params": [
     {
       "id": "swarmDensity",

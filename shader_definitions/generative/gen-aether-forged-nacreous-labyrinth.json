@@ -1,7 +1,7 @@
 {
   "id": "gen-aether-forged-nacreous-labyrinth",
   "name": "Aether-Forged Nacreous Labyrinth",
-  "description": "A hyper-dimensional structure where organic, pearlescent membranes weave continuously through rigid, crystalline geometries, bathed in shifting bioluminescent aether.",
+  "description": "A hyper-dimensional labyrinth where tiled pearlescent nacre membranes weave through polished and frosted crystalline lattices, bathed in shifting bioluminescent aether.",
   "type": "generative",
   "category": "generative",
   "url": "shaders/gen-aether-forged-nacreous-labyrinth.wgsl",

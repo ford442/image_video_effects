@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: colony chain linkage (interlocking linking spines join frustules into Skeletonema-style chains); chloroplast plastid chlorophyll-a fluorescence (685 nm red) excited by the mouse light
+//  Upgraded: 2026-10-18
+//  Ideas: colony chain linkage (interlocking linking spines join frustules into Skeletonema-style chains); chloroplast plastid chlorophyll-a fluorescence (685 nm red) excited by the mouse light; epitheca-over-hypotheca girdle overlap (lidded pillbox step + hyaline copulae bands); MacDonald–Pfitzer size diminution (each division generation a smaller frustule); core light escaping through the pore walls
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -47,6 +47,10 @@ fn voronoi3D(x: vec3<f32>) -> f32 {
   }
   return sqrt(res);
 }
+
+// Side channels for shading, written by map() for the shell under the ray
+var<private> g_holes: f32;   // >0 inside a pore, <0 in silica; ~0 on a pore wall
+var<private> g_girdle: f32;  // 0..1 on the girdle band at the valve overlap
 
 // SDF for a microscopic silica shell
 fn map(p: vec3<f32>, audioReact: f32) -> vec2<f32> { // returns (distance, material_id)
@@ -97,8 +101,22 @@ fn map(p: vec3<f32>, audioReact: f32) -> vec2<f32> { // returns (distance, mater
 
   q = t2_q;
 
+  // ── Idea 4: MacDonald–Pfitzer size diminution. Each daughter cell is built inside the
+  // smaller (hypotheca) half of its parent, so every division generation is a little smaller;
+  // a per-cell generation 0..4 sets this frustule's radius (0.4 -> ~0.31 of the cell).
+  let gen = floor(h.z * 5.0);
+  let R0 = 0.4 * scale * (1.0 - 0.055 * gen);
+
+  // ── Idea 3: epitheca over hypotheca. The frustule is a lidded box: the upper valve (epitheca,
+  // q.y>0) is slightly wider and its lip reaches past the equator over the lower hypotheca,
+  // leaving a visible step ring; the overlap zone is the solid girdle band.
+  let lipY = -0.1 * R0;
+  let epi = smoothstep(lipY - 0.012 * scale, lipY + 0.012 * scale, q.y);
+  let Rv = R0 * mix(0.93, 1.0, epi);
+  let girdle = (1.0 - smoothstep(0.0, 0.16 * R0, abs(q.y - lipY * 0.5)));
+
   // Diatom shell shape: porous sphere/capsule mix
-  let baseSphere = length(q) - (0.4 * scale);
+  let baseSphere = length(q) - Rv;
 
   // subtract Voronoi noise for porous silica look
   let noiseFreq = 8.0 / scale;
@@ -107,8 +125,10 @@ fn map(p: vec3<f32>, audioReact: f32) -> vec2<f32> { // returns (distance, mater
   // the thickness of the shell
   let shell = abs(baseSphere) - 0.02 * scale;
 
-  // punch holes using the voronoi noise
-  let holes = 0.25 * scale - vNoise * 0.4 * scale;
+  // punch holes using the voronoi noise (the girdle band is hyaline: no pores)
+  let holes = 0.25 * scale - vNoise * 0.4 * scale - girdle * 0.3 * scale;
+  g_holes = holes;
+  g_girdle = girdle;
 
   let d = max(shell, -holes);
 
@@ -164,8 +184,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Mouse Interaction (localized thermal/gravity well warping)
   // map mouse to -1..1
-  var mouseUV = (u.zoom_config.yz - 0.5) * 2.0;
-  mouseUV.y = -mouseUV.y; // invert Y
+  // (HEAD fix: was (m-0.5)*2 with y negated — a different space from uv, so the cursor light
+  // and warp landed far from (and vertically mirrored to) the pointer. uv here is y-down.)
+  let mouseUV = (u.zoom_config.yz * res - 0.5 * res) / min(res.x, res.y);
 
   // Distort rays based on mouse proximity
   let mouseDist = length(uv - mouseUV);
@@ -221,6 +242,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (hit) {
     let p = ro + rd * t;
     let n = calcNormal(p, audioIntensity);
+    _ = map(p, audioIntensity); // refresh side channels at the hit point
 
     // Mouse proximity color shift
     // approximate 3D pos of mouse on a plane
@@ -250,6 +272,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let refrUV = clamp(fragCoord / res + n.xy * 0.05 * refrFactor, vec2<f32>(0.0), vec2<f32>(1.0));
       let refrCol = textureSampleLevel(readTexture, u_sampler, refrUV, 0.0).rgb;
       col = shellColor + fresnel * 0.5 * refrFactor + refrCol * 0.08 * refrFactor;
+      // ── Idea 3 shading: the girdle band is smooth hyaline silica — a brighter, glassier
+      // equatorial ring, with two thin copulae seams across it
+      let seams = 0.5 + 0.5 * cos(g_girdle * 18.85);
+      col += vec3<f32>(0.12, 0.3, 0.34) * g_girdle * (0.6 + 0.4 * seams) * (0.4 + diff);
+      // ── Idea 5: energy accounting. The core is the only emitter inside the box; its light
+      // leaves through the pores, so pore walls glow with the core colour (warm near the cursor),
+      // scaled by Bioluminescence (the core's own gain).
+      let cellScale = 2.0 / max(0.1, u.zoom_params.x);
+      let wall = exp(-abs(g_holes) / (0.03 * cellScale));
+      let coreCol = mix(vec3<f32>(0.1, 0.8, 0.9), vec3<f32>(1.0, 0.7, 0.2), mouseColorInfluence);
+      let leak = wall * (1.0 - g_girdle) * u.zoom_params.y * 0.35;
+      col += coreCol * leak * (1.0 + audioIntensity);
       alphaHit = clamp(0.45 + fresnel * 0.4 + diff * 0.15, 0.0, 1.0);
 
     } else if (mat == 2.0) {

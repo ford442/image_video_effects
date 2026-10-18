@@ -3,9 +3,10 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
+//  Upgraded: 2026-10-18
 //  Ideas: baleen comb striations across rib openings; bass sonar ping rings from core; tail flukes; bass blow mist above the core;
-//         pectoral fin-ray fans; ventral throat-pleat shimmer
+//         pectoral fin-ray fans; ventral throat-pleat shimmer;
+//         Snell refraction at the temporal-stream sheath (§12.2F, Refraction Index bends the ray); Beer–Lambert absorption along the in-sheath path (§12.2F)
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -83,11 +84,14 @@ fn fbm(p: vec3<f32>) -> f32 {
 struct MapResult {
     dist: f32,
     mat: f32, // 1.0 = bone/ribs, 2.0 = core, 3.0 = temporal stream
+    body: f32,     // whale only (core + bone), used once the ray is inside the stream sheath
+    bodyMat: f32,  // 1.0 = bone/ribs, 2.0 = core
+    stream: f32,   // temporal stream sheath (negative inside)
 }
 
 // The Whale SDF
 fn map(p: vec3<f32>, time: f32, glitch: f32) -> MapResult {
-    var res = MapResult(1000.0, 0.0);
+    var res = MapResult(1000.0, 0.0, 1000.0, 1.0, 1000.0);
 
     // Temporal distortion
     var tp = p;
@@ -154,9 +158,13 @@ fn map(p: vec3<f32>, time: f32, glitch: f32) -> MapResult {
     let my = u.zoom_config.z * 2.0 - 1.0;
     let mouse_pos = vec3<f32>(mx * 5.0, my * 5.0, 0.0);
     let d_mouse = length(p - mouse_pos);
+    let repel = max(2.0 - d_mouse, 0.0) * 0.5;
     if (d_mouse < 2.0 && res.mat == 3.0) {
-        res.dist += (2.0 - d_mouse) * 0.5; // push away
+        res.dist += repel; // push away
     }
+    res.stream = d_stream + repel;
+    res.body = min(d_core, d_bone);
+    res.bodyMat = select(1.0, 2.0, d_core < d_bone);
 
     return res;
 }
@@ -209,7 +217,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let size = vec2<f32>(u.config.z, u.config.w);
     if (gid.x >= u32(size.x) || gid.y >= u32(size.y)) { return; }
 
-    let uv = (vec2<f32>(gid.xy) - 0.5 * size) / size.y;
+    // y-up screen space (HEAD rendered the leviathan upside-down: gid.y grows downward)
+    let uv = (vec2<f32>(gid.xy) - 0.5 * size) / size.y * vec2<f32>(1.0, -1.0);
     let uv01 = (vec2<f32>(gid.xy) + 0.5) / size;
     let coord = vec2<i32>(gid.xy);
     let time = u.config.x;
@@ -242,44 +251,86 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let cw = normalize(ta - ro);
     let cu = normalize(cross(cw, vec3<f32>(0.0, 1.0, 0.0)));
     let cv = normalize(cross(cu, cw));
-    let rd = normalize(uv.x * cu + uv.y * cv + 1.5 * cw);
+    var rd = normalize(uv.x * cu + uv.y * cv + 1.5 * cw);
 
     // Raymarching
     var p = ro;
     var t = 0.0;
     var hit = false;
-    var m = MapResult(0.0, 0.0);
+    var m = MapResult(0.0, 0.0, 0.0, 0.0, 0.0);
 
     var vol_plasma = 0.0;
     var sonarGlow = 0.0;
     var blowMist = 0.0;
 
+    // The temporal-stream sheath fully encloses the skeleton (radius ~2.6-3.5 vs ribs 1.2),
+    // so at HEAD every ray stopped on it and the whale was never seen. The sheath is now
+    // a transmissive surface: shade it on entry, then keep marching the whale alone.
+    var inSheath = false;
+    var sheathCol = vec3<f32>(0.0);
+    var sheathPath = 0.0;
+
     for (var i = 0; i < 100; i++) {
-        p = ro + rd * t;
         m = map(p, time, temporalGlitch);
 
-        // Volumetric accumulation for plasma ocean
+        // Volumetric accumulation for plasma ocean (outside the sheath, as before)
         let ocean_density = fbm(p * 0.5 + vec3<f32>(time * 0.1));
-        vol_plasma += ocean_density * plasmaDensity * (0.02 + bass * 0.008);
+        vol_plasma += select(ocean_density * plasmaDensity * (0.02 + bass * 0.008), 0.0, inSheath);
         sonarGlow += bassSonarPings(p, time, bass) * 0.015;
         // Idea — blow mist: a vertical puff above the core, not a horizontal sonar ring.
         let blowCenter = vec3<f32>(0.0, 1.15, 1.05);
         blowMist += exp(-length(p - blowCenter) * 2.4) * bass * 0.018;
 
-        if (m.dist < 0.01) {
+        if (!inSheath && m.mat == 3.0 && m.dist < 0.01) {
+            inSheath = true;
+            let ns = calcNormal(p, time, temporalGlitch);
+            let sheathFresnel = pow(1.0 - max(dot(ns, -rd), 0.0), 3.0);
+            var stream_col = vec3<f32>(0.0, 1.0, 0.8) * sheathFresnel * 1.5; // Cyan
+            // Glitchy noise on streams
+            let stream_glitch = fract(sin(dot(p.xy, vec2<f32>(12.9898, 78.233)) + time) * 43758.5453);
+            if (temporalGlitch > 0.5 && stream_glitch > 0.9) {
+                stream_col = vec3<f32>(1.0, 0.0, 1.0); // Glitch flash
+            }
+            sheathCol = stream_col * 0.5;
+            // ── Idea 7: Snell refraction at the sheath (§12.2F). Refraction Index now bends
+            // the ray (softened, η = 1/mix(1, n, 0.35)), so the skeleton wobbles behind the
+            // noisy stream surface instead of being painted over by it.
+            let eta = 1.0 / mix(1.0, refractionIndex, 0.35);
+            let bent = refract(rd, ns, eta);
+            rd = select(rd, normalize(bent), t > 0.0 && dot(bent, bent) > 0.5);
+            p += rd * 0.02;
+            t += 0.02;
+            continue;
+        }
+
+        let dMarch = select(m.dist, m.body, inSheath);
+        if (dMarch < 0.01) {
             hit = true;
             break;
         }
         if (t > 20.0) {
             break;
         }
-        t += m.dist * 0.8;
+        let stepLen = dMarch * 0.8;
+        // Path length travelled inside the stream volume (for Beer–Lambert below)
+        sheathPath += select(0.0, stepLen, inSheath && m.stream < 0.0);
+        p += rd * stepLen;
+        t += stepLen;
+    }
+    if (hit && inSheath) {
+        m.mat = m.bodyMat;
     }
 
     var col = vec3<f32>(0.01, 0.03, 0.1); // Deep abyss background
     col += vec3<f32>(0.1, 0.5, 0.8) * vol_plasma; // Add volumetric plasma
     col += vec3<f32>(0.2, 0.85, 1.0) * sonarGlow * coreBloom;
     col += vec3<f32>(0.72, 0.88, 1.0) * blowMist * (0.55 + coreBloom * 0.35);
+
+    // ── Idea 8: Beer–Lambert absorption in the stream sheath (§12.2F). The whale seen
+    // through the plasma is attenuated by exp(-σ·path): red dies first, so the skeleton
+    // reads teal and deeper ribs (longer path) sink further. Plasma Density scales σ.
+    let sigma = vec3<f32>(0.42, 0.14, 0.09) * (0.5 + plasmaDensity);
+    let trans = exp(-sigma * sheathPath);
 
     if (hit) {
         let n = calcNormal(p, time, temporalGlitch);
@@ -302,31 +353,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let throatPleats = pow(max(0.0, sin((p.z + 2.2) * 26.0 + p.y * 18.0 - time * 1.8)), 4.0)
                 * smoothstep(-0.65, -0.1, p.y) * smoothstep(-0.3, 1.6, p.z);
             bone_col += vec3<f32>(0.55, 0.9, 1.0) * throatPleats * (0.18 + mids * 0.4);
-            col = mix(col, bone_col, 0.9);
+            col = mix(col, bone_col * trans, 0.9);
         } else if (m.mat == 2.0) {
             // Core
             var core_col = vec3<f32>(1.0, 0.2, 0.8); // Neon purple/pink
             core_col += vec3<f32>(1.0, 1.0, 1.0) * pow(diff, 8.0);
             core_col *= coreBloom * (2.0 + bass * 0.8);
-            col = mix(col, core_col, 0.9);
+            col = mix(col, core_col * trans, 0.9);
 
             // Bloom glow effect around core (distance based)
             let core_dist = length(p - vec3<f32>(0.0, 0.0, 0.5));
-            col += vec3<f32>(1.0, 0.2, 0.8) * (1.0 / (1.0 + core_dist * core_dist * 5.0)) * coreBloom;
+            col += vec3<f32>(1.0, 0.2, 0.8) * (1.0 / (1.0 + core_dist * core_dist * 5.0)) * coreBloom * trans;
 
-        } else if (m.mat == 3.0) {
-            // Temporal Streams
-            var stream_col = vec3<f32>(0.0, 1.0, 0.8); // Cyan
-            stream_col *= fresnel * 1.5;
-            // Glitchy noise on streams
-            let stream_glitch = fract(sin(dot(p.xy, vec2<f32>(12.9898, 78.233)) + time) * 43758.5453);
-            if (temporalGlitch > 0.5 && stream_glitch > 0.9) {
-                stream_col = vec3<f32>(1.0, 0.0, 1.0); // Glitch flash
-            }
-            // Additive blending for streams
-            col += stream_col * 0.5;
         }
     }
+    col += sheathCol; // additive stream surface on top
 
     // Timestamp-bounded click fronts refract the plasma ocean.
     var clickEnergy = 0.0;

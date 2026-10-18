@@ -5,8 +5,8 @@
 //  Deep-time coral growth accelerated into a fast abyssal current:
 //  psychedelic bioluminescent spectra, polyp-level geometric detail,
 //  cursor time-dilation well, held bloom, capped click sediment rings.
-//  Upgraded: 2026-09-27
-//  Ideas: growth-band strata carved along each branch (age faster in the well); gravitational red-shift in the well + blue Einstein-ring rim; travelling budding front swelling tip nodes
+//  Upgraded: 2026-10-18
+//  Ideas: growth-band strata carved along each branch (age faster in the well); gravitational red-shift in the well + blue Einstein-ring rim; travelling budding front swelling tip nodes; hexameral corallite cups with 6+6 septa pitted into each branch (oral discs glow); tip-node light spill onto nearby branches (energy accounting)
 //  A packing: ACES display RGBA (prev.rgb*0.94 trail, read back as colour)
 //  Contract: 13 bindings, ACES, semantic alpha, dataTextureA writeback only,
 //            exact textureLoad from dataTextureC, plasmaBuffer three-band audio.
@@ -27,6 +27,10 @@ var<private> g_held: f32;
 // g_band.x = stratum height 0..1 (ledge -> taper), g_band.y = sharp ledge line; g_bud = budding-front strength 0..1
 var<private> g_band: vec2<f32>;
 var<private> g_bud: f32;
+// IDEA 4/5 side channels: g_local = folded branch-space point of the closest branch,
+// g_node = distance to the tip-node surface (world units)
+var<private> g_local: vec3<f32>;
+var<private> g_node: f32;
 
 fn rotate2D(angle: f32) -> mat2x2<f32> {
     let c = cos(angle);
@@ -97,9 +101,33 @@ fn strata(axis: f32, t: f32) -> vec3<f32> {
     return vec3<f32>(h, line, h - 0.5);
 }
 
+// ── Idea 4: corallite cups. Scleractinian (hexacoral) skeleton: each polyp sits in a cup
+// (calyx) on the branch wall, ribbed by 6 primary + 6 secondary radial septa. Laid out on the
+// branch's own cylinder (angle around p.xz, length along p.y) in offset rows, jittered.
+// Returns x = pit depth 0..1, y = septal ridge 0..1, z = oral-disc centre 0..1.
+fn corallite(lp: vec3<f32>) -> vec3<f32> {
+    let ang = atan2(lp.z, lp.x) / TAU;            // -0.5..0.5 around the branch
+    var cell = vec2<f32>(ang * 9.0, lp.y * 3.2);
+    let row = floor(cell.y);
+    cell.x += 0.5 * (row - 2.0 * floor(row * 0.5)); // brick-offset rows -> hex-like packing
+    let id = floor(cell);
+    let jit = hash3(vec3<f32>(id, 7.0)).xy - 0.5;
+    let lc = (fract(cell) - 0.5 - jit * 0.18) * vec2<f32>(1.0, 1.15);
+    let r = length(lc) / 0.44;
+    let a = atan2(lc.y, lc.x);
+    let pit = 1.0 - smoothstep(0.55, 1.0, r);
+    let ring = smoothstep(0.18, 0.3, r) * (1.0 - smoothstep(0.85, 1.0, r));
+    let s1 = pow(abs(cos(3.0 * a)), 10.0);        // 6 primary septa
+    let s2 = pow(abs(cos(6.0 * a + 1.5708)), 14.0) * 0.5; // 6 shorter secondaries
+    let septa = max(s1, s2 * smoothstep(0.45, 0.6, r)) * ring;
+    let disc = 1.0 - smoothstep(0.0, 0.22, r);
+    return vec3<f32>(pit, septa, disc);
+}
+
 fn map(pos_in: vec3<f32>, time: f32) -> vec2<f32> {
     var p = pos_in;
     g_band = vec2<f32>(0.5, 0.0);
+    g_local = vec3<f32>(0.0);
 
     // Domain repetition
     p.x = (fract(p.x / 10.0 + 0.5) - 0.5) * 10.0;
@@ -134,7 +162,7 @@ fn map(pos_in: vec3<f32>, time: f32) -> vec2<f32> {
         let radius = u.zoom_params.x * (1.0 + g_bass * 0.4 + ringMod * 0.3) * (1.0 + 0.16 * band.z);
         var branch = (length(p.xz) - radius) / s;
         branch -= polypDetail(p, time) / s;
-        if (branch < d) { g_band = band.xy; }
+        if (branch < d) { g_band = band.xy; g_local = p; }
         d = smin(d, branch, 0.2);
     }
 
@@ -144,6 +172,7 @@ fn map(pos_in: vec3<f32>, time: f32) -> vec2<f32> {
     let bud = smoothstep(0.0, 0.15, budPhase) * (1.0 - smoothstep(0.15, 0.7, budPhase));
     g_bud = bud;
     let node_d = length(p) / s - (0.18 + audioPulse * 0.24 + g_held * 0.06) * (1.0 + 0.7 * bud);
+    g_node = node_d;
 
     if (node_d < d) {
         return vec2<f32>(node_d, 2.0);
@@ -256,6 +285,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         _ = map(p, local_time);
         let strat = g_band;
         let bud = g_bud;
+        let lp = g_local;
+        let nodeD = max(g_node, 0.0);
         let l = normalize(vec3<f32>(1.0, 1.0, -1.0));
 
         let diff = max(dot(n, l), 0.0);
@@ -278,6 +309,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // IDEA 1 shading: each stratum is lighter on its ledge, and the ledge line glows
             col *= 0.78 + 0.44 * strat.x;
             col += strat.y * abyssPalette(hue + 0.3, g_mids) * 0.3 * (0.5 + well);
+            // ── Idea 4: corallite cups — dark calyx pits ribbed by bright septa, the polyp's
+            // oral disc glowing faintly at each centre (scaled by Bioluminescence)
+            let cup = corallite(lp);
+            let cupFade = exp(-0.06 * t); // fine detail resolves only up close
+            col *= 1.0 - 0.5 * cup.x * (1.0 - cup.y) * cupFade;
+            col += cup.y * branchTint * 0.35 * diff * cupFade;
+            col += cup.z * abyssPalette(hue + 0.15, 1.0 + g_bass) * (0.25 + 0.5 * g_mids) * u.zoom_params.z * cupFade;
+            // ── Idea 5: tip-node light spill. The tip nodes are the only light sources in the
+            // abyss; branches near a node catch its colour with inverse-square falloff, hotter
+            // while the node is swelling on the budding front.
+            let nodeCol = abyssPalette(hue + 0.15, 1.0 + g_bass) * (1.6 + (g_mids + g_treble) * 1.5 + sediment * 2.2);
+            let spill = u.zoom_params.z * (1.0 + 0.6 * bud) / (1.0 + nodeD * nodeD * 40.0);
+            col += nodeCol * spill * (0.18 + 0.14 * (1.0 - cup.x));
         } else {
             let bloomAmt = 1.6 + (g_mids + g_treble) * 1.5 + sediment * 2.2;
             // IDEA 3: a swelling bud burns hotter
