@@ -257,13 +257,15 @@
   },
   "gen-abyssal-leviathan-scales": {
     "thumbnail_url": "thumbnails/gen-abyssal-leviathan-scales.png",
-    "generated_at": "2026-06-14T06:41:29.855Z",
+    "generated_at": "2026-10-18T11:15:34.159Z",
     "params_snapshot": [
       5,
       1,
       1,
       2
-    ]
+    ],
+    "source_hash": "de6fa1b3b537d339",
+    "capture_host": "swiftshader"
   },
   "gen-acid-lissajous": {
     "thumbnail_url": "thumbnails/gen-acid-lissajous.png",
@@ -1627,13 +1629,15 @@
   },
   "gen-micro-cosmos": {
     "thumbnail_url": "thumbnails/gen-micro-cosmos.png",
-    "generated_at": "2026-06-14T06:42:19.806Z",
+    "generated_at": "2026-10-18T11:23:17.194Z",
     "params_snapshot": [
       0.5,
       0.3,
       1,
       0
-    ]
+    ],
+    "source_hash": "2654b95f1ece21e4",
+    "capture_host": "swiftshader"
   },
   "gen-minimal-surface-soap-iridescence": {
     "thumbnail_url": "thumbnails/gen-minimal-surface-soap-iridescence.png",
@@ -1659,14 +1663,14 @@
   },
   "gen-multi-scale-evolutionary-cellular-gardens": {
     "thumbnail_url": "thumbnails/gen-multi-scale-evolutionary-cellular-gardens.png",
-    "generated_at": "2026-10-05T17:04:04.857Z",
+    "generated_at": "2026-10-18T11:31:12.070Z",
     "params_snapshot": [
       0.5,
       0.5,
       0.4,
       0.5
     ],
-    "source_hash": "e1ef36931fc3e1b0",
+    "source_hash": "3e3aedd96fa05b0d",
     "capture_host": "swiftshader"
   },
   "gen-murmuration-phantom": {
@@ -3789,14 +3793,14 @@
   },
   "gen-abyssal-silicate-geode-weaver": {
     "thumbnail_url": "thumbnails/gen-abyssal-silicate-geode-weaver.png",
-    "generated_at": "2026-10-05T11:02:58.985Z",
+    "generated_at": "2026-10-18T11:15:54.071Z",
     "params_snapshot": [
       1,
       2.5,
       0.8,
       1.5
     ],
-    "source_hash": "3a8d081ac5cd49f0",
+    "source_hash": "31e583af23f4ec64",
     "capture_host": "swiftshader"
   },
   "gen-astral-plasma-accretion-forge": {
@@ -3933,14 +3937,14 @@
   },
   "gen-alien-flora-ecosystem": {
     "thumbnail_url": "thumbnails/gen-alien-flora-ecosystem.png",
-    "generated_at": "2026-10-05T11:09:26.402Z",
+    "generated_at": "2026-10-18T11:17:38.485Z",
     "params_snapshot": [
       0.5,
       0.5,
       0.5,
       0.5
     ],
-    "source_hash": "2bb391498a064da2",
+    "source_hash": "ef54c1a020431562",
     "capture_host": "swiftshader"
   },
   "gen-celestial-clockwork-plasma-loom": {
@@ -4953,14 +4957,14 @@
   },
   "gen-sentient-aether-plasma-nebula-moth": {
     "thumbnail_url": "thumbnails/gen-sentient-aether-plasma-nebula-moth.png",
-    "generated_at": "2026-10-05T12:01:26.947Z",
+    "generated_at": "2026-10-18T11:26:25.245Z",
     "params_snapshot": [
       1,
       0.5,
       0.8,
       0.2
     ],
-    "source_hash": "5701f8fbb9c2e520",
+    "source_hash": "f40e76eb28c8abc0",
     "capture_host": "swiftshader"
   },
   "gen-grok4-perlin": {
@@ -14909,6 +14913,18 @@
       0.5
     ],
     "source_hash": "9a91b8b1adfb0c30",
+    "capture_host": "swiftshader"
+  },
+  "gen-luminescent-aether-plasma-nebula-koi": {
+    "thumbnail_url": "thumbnails/gen-luminescent-aether-plasma-nebula-koi.png",
+    "generated_at": "2026-10-18T11:22:25.426Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "source_hash": "d037ea5a0061be03",
     "capture_host": "swiftshader"
   }
 }

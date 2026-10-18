@@ -165,14 +165,11 @@
       "failure_note": "no self-hosted gpu runner registered (gpu-required.yml / thumbs-capture-farm.yml); next capture wave"
     },
     {
-      "id": "gen-luminescent-aether-plasma-nebula-koi",
-      "added_by": "thumbnail-campaign",
-      "deferred_at": "2026-09-26",
-      "expires": "2026-10-26",
-      "reason": "gpu-capture-pending",
-      "renewals": 1,
-      "renewed_at": "2026-09-26",
-      "failure_note": "no self-hosted gpu runner registered (gpu-required.yml / thumbs-capture-farm.yml); next capture wave"
+      "id": "gen-luminescent-nebula-silk-weaver",
+      "added_by": "defer-thumbnail",
+      "deferred_at": "2026-10-18",
+      "expires": "2026-11-17",
+      "reason": "gpu-capture-pending"
     },
     {
       "id": "gen-neural-dust",

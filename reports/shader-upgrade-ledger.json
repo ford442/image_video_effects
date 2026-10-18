@@ -1835,8 +1835,17 @@
       ]
     },
     "gen-abyssal-leviathan-scales": {
-      "hash": "e41bee0d8d313dea",
-      "history": []
+      "hash": "de6fa1b3b537d339",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T11:42:54.922Z",
+          "hash": "de6fa1b3b537d339",
+          "prev_hash": "e41bee0d8d313dea",
+          "commit": "7f56ef87",
+          "note": null
+        }
+      ]
     },
     "gen-abyssal-plasma-void-medusa": {
       "hash": "472ace90340dad29",
@@ -1881,8 +1890,17 @@
       ]
     },
     "gen-abyssal-silicate-geode-weaver": {
-      "hash": "3a8d081ac5cd49f0",
-      "history": []
+      "hash": "31e583af23f4ec64",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T11:42:54.922Z",
+          "hash": "31e583af23f4ec64",
+          "prev_hash": "3a8d081ac5cd49f0",
+          "commit": "7f56ef87",
+          "note": null
+        }
+      ]
     },
     "gen-acid-lissajous": {
       "hash": "3a9a5432a58bad2f",
@@ -1936,8 +1954,17 @@
       "history": []
     },
     "gen-alien-flora-ecosystem": {
-      "hash": "2bb391498a064da2",
-      "history": []
+      "hash": "ef54c1a020431562",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T11:42:54.922Z",
+          "hash": "ef54c1a020431562",
+          "prev_hash": "2bb391498a064da2",
+          "commit": "7f56ef87",
+          "note": null
+        }
+      ]
     },
     "gen-alien-flora": {
       "hash": "ee3f38c2a8d47517",
@@ -4450,7 +4477,7 @@
       ]
     },
     "gen-kinetic-bioluminescent-obsidian-coral-reactor": {
-      "hash": "ba5d5b10d138d127",
+      "hash": "291f8669ef9b0649",
       "history": [
         {
           "event": "upgraded",
@@ -4459,6 +4486,14 @@
           "prev_hash": "bf50dff3dd1543f8",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T11:42:54.922Z",
+          "hash": "291f8669ef9b0649",
+          "prev_hash": "ba5d5b10d138d127",
+          "commit": "7f56ef87",
+          "note": null
         }
       ]
     },
@@ -4650,7 +4685,7 @@
       ]
     },
     "gen-luminescent-aether-plasma-nebula-koi": {
-      "hash": "97f409a9239771c7",
+      "hash": "d037ea5a0061be03",
       "history": [
         {
           "event": "upgraded",
@@ -4659,6 +4694,14 @@
           "prev_hash": "e6c67f8bda21ceb4",
           "commit": "cc600bb4",
           "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T11:42:54.922Z",
+          "hash": "d037ea5a0061be03",
+          "prev_hash": "97f409a9239771c7",
+          "commit": "7f56ef87",
+          "note": null
         }
       ]
     },
@@ -4718,8 +4761,17 @@
       ]
     },
     "gen-luminescent-nebula-silk-weaver": {
-      "hash": "686ac9f9f5df7185",
-      "history": []
+      "hash": "7020a3be498810d8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T11:42:54.922Z",
+          "hash": "7020a3be498810d8",
+          "prev_hash": "686ac9f9f5df7185",
+          "commit": "7f56ef87",
+          "note": null
+        }
+      ]
     },
     "gen-luminescent-quantum-flora-symphony": {
       "hash": "e35488753fe75a7c",
@@ -4947,7 +4999,7 @@
       ]
     },
     "gen-micro-cosmos": {
-      "hash": "760e50b43c06c4cd",
+      "hash": "2654b95f1ece21e4",
       "history": [
         {
           "event": "upgraded",
@@ -4956,6 +5008,14 @@
           "prev_hash": "a340d5258089cf85",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T11:42:54.922Z",
+          "hash": "2654b95f1ece21e4",
+          "prev_hash": "760e50b43c06c4cd",
+          "commit": "7f56ef87",
+          "note": null
         }
       ]
     },
@@ -4977,8 +5037,17 @@
       "history": []
     },
     "gen-multi-scale-evolutionary-cellular-gardens": {
-      "hash": "e1ef36931fc3e1b0",
-      "history": []
+      "hash": "3e3aedd96fa05b0d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T11:42:54.922Z",
+          "hash": "3e3aedd96fa05b0d",
+          "prev_hash": "e1ef36931fc3e1b0",
+          "commit": "7f56ef87",
+          "note": null
+        }
+      ]
     },
     "gen-murmuration-phantom": {
       "hash": "0cc2f130f8996d9b",
@@ -5827,8 +5896,17 @@
       ]
     },
     "gen-sentient-aether-plasma-nebula-moth": {
-      "hash": "5701f8fbb9c2e520",
-      "history": []
+      "hash": "f40e76eb28c8abc0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T11:42:54.922Z",
+          "hash": "f40e76eb28c8abc0",
+          "prev_hash": "5701f8fbb9c2e520",
+          "commit": "7f56ef87",
+          "note": null
+        }
+      ]
     },
     "gen-sentient-bismuth-hypercrystal": {
       "hash": "fd5689eeb58adada",
@@ -5891,7 +5969,7 @@
       ]
     },
     "gen-sentient-quantum-chrono-leviathan-moth": {
-      "hash": "47e9db30d3610b4b",
+      "hash": "ed8aabbc8a9d4c47",
       "history": [
         {
           "event": "upgraded",
@@ -5900,6 +5978,14 @@
           "prev_hash": "3339c54ab8edbfb7",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T11:42:54.922Z",
+          "hash": "ed8aabbc8a9d4c47",
+          "prev_hash": "47e9db30d3610b4b",
+          "commit": "7f56ef87",
+          "note": null
         }
       ]
     },
