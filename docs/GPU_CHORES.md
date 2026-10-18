@@ -33,7 +33,7 @@ Dispatch ceiling: WebGPU `maxComputeWorkgroupsPerDimension` is **65535**. Chores
 - **Single device:** `GpuChoresHost.attach(rendererDevice)` only. No `requestAdapter()` / `requestDevice()`.
 - **Boot probe gate:** chores run only when `window.webgpuProbe.ok === true` (adopt probed device). Probe failure = idle — no silent CPU pre-FX feeding catalog FX.
 - **Shader tools:** `ShaderValidator` and `ShaderScanner` compile on the renderer's `GPUDevice` through `shaderCompileService`, which reads the renderer device registry (`src/renderer/deviceRegistry.ts`; an RPC to the worker in worker mode). They never call `requestAdapter()` / `requestDevice()`. The registry holds the device the renderer actually ended up with, and its `generation` changes on every loss and recovery.
-- **Depth estimation:** while the canvas WebGPU renderer is live, prefer WASM/CPU for `@xenova/transformers` depth (it may allocate its own `GPUDevice` when `device:'webgpu'`).
+- **Depth estimation:** while the canvas WebGPU renderer is live, prefer WASM/CPU for `@huggingface/transformers` depth (it may allocate its own `GPUDevice` when `device:'webgpu'`).
 - **No dual-hot WebGL + WebGPU** on the same working set. WebGL2 FBO kernels are later, not required here.
 - Backend order: **WebGPU (renderer device) → existing WASM/C++ analysis (none yet) → TS** (`?no_gpu_compute` only when probe succeeded).
 - Kill switch: `?no_gpu_compute` (also `=1` / `=true`). Forces TS.

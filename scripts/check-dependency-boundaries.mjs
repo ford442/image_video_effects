@@ -53,7 +53,7 @@ if (!fs.existsSync(installedTypescriptPath)) {
 }
 
 const aiBoundaries = new Map([
-  ['@xenova/transformers', 'src/services/aiModels/transformersLoader.ts'],
+  ['@huggingface/transformers', 'src/services/aiModels/transformersLoader.ts'],
   ['@mlc-ai/web-llm', 'src/services/aiModels/webLlmLoader.ts'],
 ]);
 const sourceExtensions = new Set(['.js', '.jsx', '.ts', '.tsx']);

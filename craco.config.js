@@ -14,7 +14,7 @@
         // Shim import.meta inside transformers before webpack parses the package.
         webpackConfig.module.rules.unshift({
           test: /\.m?js$/,
-          include: /node_modules[\\/]@xenova[\\/]transformers/,
+          include: /node_modules[\\/]@huggingface[\\/]transformers/,
           use: path.resolve(__dirname, 'scripts/webpack-import-meta-shim-loader.js'),
         });
         webpackConfig.experiments = {

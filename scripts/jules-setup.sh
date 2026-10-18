@@ -21,7 +21,7 @@
 #   BROWSER=none npm start              # dev server (no browser pop)
 #
 # Notes:
-# - Sharp (transitive via @xenova/transformers for AI depth) has occasional flaky
+# - Sharp (transitive via @huggingface/transformers for AI depth) has occasional flaky
 #   postinstall (libvips download). The script retries install on failure.
 # - No GPU in most Jules/CI envs → WebGPU falls back; that's expected.
 # - Emscripten is NOT required for normal work (committed WASM artifacts exist).
@@ -64,7 +64,7 @@ install_deps() {
 
 echo "📦 Installing dependencies..."
 if ! install_deps; then
-  echo "⚠️  npm ci failed (often transient sharp postinstall via @xenova/transformers)."
+  echo "⚠️  npm ci failed (often transient sharp postinstall via @huggingface/transformers)."
   echo "   Retrying with npm install + legacy-peer-deps..."
   npm cache clean --force 2>/dev/null || true
   npm install --no-audit --no-fund --legacy-peer-deps --prefer-offline

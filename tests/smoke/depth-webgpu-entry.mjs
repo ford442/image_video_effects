@@ -2,7 +2,7 @@
  * Browser entry for Playwright WebGPU depth smoke.
  * Bundled by tests/depth-estimation.webgpu.spec.ts via esbuild.
  */
-import { pipeline, env, RawImage } from '@xenova/transformers';
+import { pipeline, env, RawImage } from '@huggingface/transformers';
 import { assertDepthOutput, DEPTH_MODEL_ID, DEPTH_PIPELINE_TASK } from './depthEstimationConfig.mjs';
 
 export async function runDepthWebgpuSmoke(imageUrl) {
