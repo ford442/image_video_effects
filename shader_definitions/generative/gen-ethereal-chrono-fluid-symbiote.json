@@ -4,7 +4,7 @@
   "url": "shaders/gen-ethereal-chrono-fluid-symbiote.wgsl",
   "type": "generative",
   "category": "generative",
-  "description": "A flowing, temporal liquid entity that responds dynamically to audio and mouse interactions, weaving through dimensions of time and space in a continuous symbiotic dance. A meniscus film traces the seam between fluid and crystal, and Chrono Warp smears the fluid against the previous frame.",
+  "description": "A flowing, temporal liquid entity that responds dynamically to audio and mouse interactions, weaving through dimensions of time and space in a continuous symbiotic dance. A meniscus film traces the seam between fluid and crystal, Chrono Warp smears the fluid against the previous frame, and age shells ride the fluid.",
   "workgroup_size": [
     16,
     16,
@@ -48,5 +48,10 @@
       "mapping": "zoom_params.w"
     }
   ],
-  "supportsDepth": true
+  "supportsDepth": true,
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ]
 }

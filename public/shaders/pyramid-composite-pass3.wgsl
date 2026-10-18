@@ -1,10 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════════════
 //  Gaussian-Laplacian Pyramid — Pass 3: ROI Magnifying-Glass Composite
 //  Category: image
-//  Features: multi-pass-3, roi, mouse-driven, frequency-domain, composite
+//  Features: multi-pass-3, roi, mouse-driven, frequency-domain, composite, upgraded-rgba
 //  Complexity: Medium
-//  Part of chain: pyramid-downsample-pass1 → pyramid-bandprocess-pass2 → pyramid-composite-pass3
-//
+//  Upgraded: 2026-10-18
+//  Ideas: glass magnification; rim dispersion
+//  A packing: display only. Does not write A or B. C is the blur.
+// ═══════════════════════════════════════════════════════════════════════════
 //  This is the final pass of the pyramid chain.  It applies the full Laplacian
 //  pyramid frequency-domain effect with a ROI (region-of-interest) magnifying-
 //  glass twist:
@@ -87,6 +89,17 @@ fn rotateHue(rgb: vec3<f32>, shift: f32) -> vec3<f32> {
   return hsl2rgb(hsl);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let c = max(x, vec3<f32>(0.0));
+  return clamp((c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn loadBlur(uv: vec2<f32>, res: vec2<f32>) -> vec3<f32> {
+  let hi = vec2<i32>(max(i32(res.x) - 1, 0), max(i32(res.y) - 1, 0));
+  let p = vec2<i32>(clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * res);
+  return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), hi), 0).rgb;
+}
+
 fn neonPalette(t: f32) -> vec3<f32> {
   let hue = fract(t * 1.5 + 0.55);
   return hsl2rgb(vec3<f32>(hue, 1.0, 0.6));
@@ -165,34 +178,31 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // ── Sample textures ─────────────────────────────────────────────────────
   let orig = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-  let blur = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+  let blur = loadBlur(uv, resolution);
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-  // ── ROI radial distance (aspect-ratio corrected) ─────────────────────────
-  // Scale the X component by the aspect ratio so that a given normalised
-  // offset in X covers the same number of screen pixels as the same offset
-  // in Y.  Scaling by vec2(aspect, 1.0) achieves a circular ROI regardless
-  // of canvas dimensions (wider-than-tall canvases have aspect > 1).
   let aspect  = resolution.x / resolution.y;
   let delta   = (uv - mousePos) * vec2<f32>(aspect, 1.0);
   let dist    = length(delta);
-
-  // Normalised distance relative to roiR (0 = centre, 1 = rim, >1 = outside).
   let normDist = dist / roiR;
 
-  // ── Inside ROI — enhanced processing ────────────────────────────────────
-  // Amplify all bands significantly to create the "magnifying glass of
-  // psychedelic detail" described in the issue.
-  let roiScale  = 2.5 + bass * 1.0;  // 2.5× base + audio boost
+  // ── Idea 1: glass magnification ─────────────────────────────────────
+  // Inside the circle the photo and the blur are sampled closer to the
+  // cursor. The radius slider still owns the circle.
+  let mag = mix(1.18, 1.0, smoothstep(0.0, 1.0, normDist));
+  let uvGlass = clamp(mousePos + (uv - mousePos) / mag, vec2<f32>(0.0), vec2<f32>(1.0));
+  let origIn = textureSampleLevel(readTexture, u_sampler, uvGlass, 0.0).rgb;
+  let blurIn = loadBlur(uvGlass, resolution);
+
+  let roiScale  = 2.5 + bass * 1.0;
   let innerResult = applyPyramid(
-    orig, blur,
+    origIn, blurIn,
     highAmp * roiScale,
     midAmp  * roiScale,
     lowAmp  * roiScale,
     bass, mids, treble, time
   );
 
-  // ── Outside ROI — subtle processing ─────────────────────────────────────
   let outerResult = applyPyramid(
     orig, blur,
     highAmp * 0.3,
@@ -201,24 +211,28 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     bass, mids, treble, time
   );
 
-  // ── Smooth blend across the ROI boundary ────────────────────────────────
-  // smoothstep from fully-inner (normDist=0.8) to fully-outer (normDist=1.1)
-  // gives a soft falloff rather than a hard ring cut.
-  let blend = smoothstep(0.85, 1.1, normDist);  // 0 inside, 1 outside
+  let blend = smoothstep(0.85, 1.1, normDist);
   var composed = mix(innerResult, outerResult, blend);
 
-  // ── ROI border ring — thin luminous outline ──────────────────────────────
-  // Peaks at normDist ≈ 1.0, width = RING_WIDTH of the normalised radius.
   let ringPeak   = 1.0 - abs(normDist - 1.0) / RING_WIDTH;
   let ringAlpha  = clamp(ringPeak, 0.0, 1.0) * 0.6;
-  // Ring colour pulses gently with time and bass.
   let ringHue    = fract(time * 0.08 + bass * 0.3);
   let ringCol    = hsl2rgb(vec3<f32>(ringHue, 0.9, 0.7));
   composed = mix(composed, ringCol, ringAlpha);
 
-  // ── Final output ─────────────────────────────────────────────────────────
-  let finalColor = clamp(composed, vec3<f32>(0.0), vec3<f32>(1.0));
-  textureStore(writeTexture, gid.xy, vec4<f32>(finalColor, 1.0));
+  // ── Idea 2: rim dispersion ──────────────────────────────────────────
+  // The glass edge splits red and blue along the radius of the ring.
+  let radial = delta / max(dist, 1e-4);
+  let ca = ringAlpha * 2.2 / resolution.x;
+  let rimR = textureSampleLevel(readTexture, u_sampler, clamp(uv + radial * ca, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let rimB = textureSampleLevel(readTexture, u_sampler, clamp(uv - radial * ca, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  composed.r = mix(composed.r, rimR, ringAlpha * 0.55);
+  composed.b = mix(composed.b, rimB, ringAlpha * 0.55);
+
+  let edgeHint = length(orig - blur);
+  let alpha = clamp(0.7 + ringAlpha * 0.3 + edgeHint * 0.2, 0.0, 1.0);
+  let finalColor = acesToneMap(clamp(composed, vec3<f32>(0.0), vec3<f32>(1.0)));
+  textureStore(writeTexture, gid.xy, vec4<f32>(finalColor, alpha));
 
   // Propagate depth for downstream effects.
   // r32float only stores the R channel; other vec4 components are discarded.

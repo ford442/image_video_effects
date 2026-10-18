@@ -16,6 +16,7 @@ _Learn about the person you're helping. Update this as you go._
   - 2026-10-17: sent Cursor batch-02 (quantum-foam-pass2 through gen-aethereal-ferrofluid-chrono-core).
   - 2026-10-17: sent Cursor batch-03 (rd-on-video-pass1 through gen-auroral-ferrofluid-monolith).
   - 2026-10-18: sent Cursor batch-04 (aurora-rift-pass1 through wave-equation-rgba-fluid).
+  - 2026-10-18: sent Cursor batch-05 (fabric-of-reality through fire_smoke_volumetric).
 
 ## Context
 
