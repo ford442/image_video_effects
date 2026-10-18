@@ -10,7 +10,9 @@ const DYNAMIC_IMPORT_WITH_NAME =
  */
 export function chunkNamePlugin() {
   const namesById = new Map<string, string>();
-  const plugin: Plugin & { chunkName(facadeModuleId: string | null | undefined): string | undefined } = {
+  const plugin: Plugin & {
+    chunkName(chunk: { facadeModuleId: string | null; moduleIds: readonly string[] }): string | undefined;
+  } = {
     name: 'pixelocity:chunk-names',
     async transform(code, id) {
       if (!code.includes('webpackChunkName')) return null;
@@ -22,8 +24,13 @@ export function chunkNamePlugin() {
       }
       return null;
     },
-    chunkName(facadeModuleId) {
-      return facadeModuleId ? namesById.get(facadeModuleId) : undefined;
+    chunkName({ facadeModuleId, moduleIds }) {
+      if (facadeModuleId) return namesById.get(facadeModuleId);
+      // A dynamic entry that shares modules with a chunk it lazy-loads itself (the
+      // Graph Lab panel and its canvas) is emitted without a facade; name it after
+      // its one named module.
+      const named = [...new Set(moduleIds.map((id) => namesById.get(id)).filter((n): n is string => !!n))];
+      return named.length === 1 ? named[0] : undefined;
     },
   };
   return plugin;

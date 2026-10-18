@@ -34,6 +34,41 @@ The Lab is a side panel, not a tab: switching tabs unmounts the canvas and destr
 
 Run is disabled (with the reason on hover) for an empty graph and a graph with errors; an invalid draft is never registered or compiled.
 
+## v2: canvas, undo/redo, ports from the WGSL (#1451, slice 1)
+
+### Node canvas
+
+Above the node list is a [React Flow 12](https://reactflow.dev) canvas (`@xyflow/react`), its own lazy chunk `graph-lab-canvas` inside the lazy Lab, so neither `main.js` nor the Lab panel chunk carries it (`verify:bundle-size` lists both as lazy). *Expand* puts it over the stage, *Auto layout* forgets the stored positions.
+
+- **Nodes** are the graph's nodes. The number is the execution order, which is still the node array order: dragging moves a node on the canvas and never reorders passes (use the list's ↑ ↓).
+- **Ports** are the roles. A chip is plain when it is in the graph (and the WGSL agrees), struck through in orange when the graph has it but the WGSL never binds it, and dim when the WGSL binds it but the graph does not. Click a dim chip to add the role.
+- **Edges** are derived, not stored: `graphEdges.ts` walks the planner's own `expandGraph` and connects each read to the node that last wrote that role. A `dataC` / `simIndex` read is drawn from the `dataA`/`dataB` / `simState` writer with the copy barrier as its label. A read only the previous frame satisfies is dashed and animated. A node that reads its own output (a `repeat` chain, a ping-pong sim) gets a `↺ role` tag instead of a loop. **source image** and **display** stand for `read` and `color`.
+- **Drawing an edge** from an output port to an input port makes sure the source writes that role and the target reads it (`source image → node` adds `read`, `node → display` adds `color`). Deleting a selected node (Delete / Backspace) removes it.
+- Positions live in the draft (`layout`, keyed by node id), follow a rename or a duplicate, and are never exported. The renderer never sees them.
+
+Without `ResizeObserver` (jsdom) the canvas is not offered; the list view does everything the canvas does.
+
+### Undo / redo
+
+↶ ↷ in the toolbar, Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z (or Ctrl+Y) outside text fields, where the field's own undo applies. Every edit is a pure function returning a new draft, so history (`draftHistory.ts`) is a stack of up to 100 snapshots, with no patch library. Rapid edits to the same field (typing an id, a repeat count, the pass ceiling, export metadata) fold into one step. *New*, *Start from…* and *Import* are undoable too. The present draft is what is autosaved.
+
+### Ports from the WGSL (naga reflection)
+
+The Lab no longer guesses which entries use the sim ring. `tools/naga_wasm` has a third export, `wgsl_reflect`, which returns every `@group/@binding` global (resource kind, access, texture dimension) and, for each entry point, the bindings it reaches with naga's `GlobalUse` read/write flags. `portInference.ts` runs it on the include-expanded same-origin WGSL (`fetchShaderWgsl`, so `_prelude.wgsl`'s 13 bindings are expanded but only the used ones count) and maps bindings to roles: 1 → `read`, 2 → `color`, 7 → `dataA`, 8 → `dataB`, 9 → `dataC`, 13 → history ring, `@group(1)` 0 → `simState` (read and/or write), 1 → `simIndex`. One reflection per entry per page.
+
+- The **Sim ring** section lists the draft's entries that declare `@group(1)`: the only entries the renderer arms and binds the ring for.
+- **Node settings** shows the selected entry's WGSL ports, workgroup size, and port warnings. A sim role or `simState` dispatch on an entry without `@group(1)` is the case v1 could not see. The others are a role the graph reads or writes that the WGSL never binds. Warnings are advisory: the planner's diagnostics still gate Run and Export.
+- **Adding a node** uses the inferred roles: what the WGSL reads and writes, minus `color` when another node already writes it, with a `simState` dispatch for a `simState` writer with a 1-D workgroup. A sim role arms the sim ring in the same undo step. An entry whose WGSL cannot be read gets the v1 defaults.
+- A module that parses but does not validate under naga (see the `knownFailures` ratchet) reports its *declared* bindings and is tagged *declared only*.
+
+### Draft v2
+
+`GraphDraft` now carries `version: 2` and `layout`. It is stored under `graphlab.draft.v2`, and a v1 draft (`graphlab.draft.v1`) is upgraded on first load. `upgradeDraft` refuses a draft from a newer version rather than dropping its fields.
+
+### Not in this slice
+
+Inline WGSL / params editing (CodeMirror 6 + naga diagnostics), one draft per slot, drafts in project files (#1438) and device-loss restore (#1430), "Save as shader" registration, and Part B (HDR `rgba16float`, `shader-f16`, `bgra8unorm-storage`, `featureLevel: 'compatibility'`, `float32-blendable`) remain open on #1451.
+
 ## Installing an export
 
 1. Save the JSON at the path the Lab shows, `shader_definitions/<category>/<id>.json`. The folder is the catalog category.
@@ -63,17 +98,17 @@ The Lab adds no binding and no allocation path. A sim draft's `{ stateCount }` t
 
 `SimRing.ensure` runs on compile, so *Run* recompiles every entry of a sim draft (re-seeding the ring at `frame 0`), and so does a change of the element count while running. Other edits keep the ring running. The ring keeps its largest allocation for the session, like a shipped sim shader's.
 
-## Limits in v1
+## Limits
 
-- **Sim ring:** the Lab cannot tell from the graph which entries declare `@group(1)`; a draft whose entries never do runs without the ring (its `simState` dispatches are skipped). `?renderer=wasm` refuses sim-ring shaders (the C++ backend has one bind group).
+- **Sim ring:** an entry's `@group(1)` declaration is read from its WGSL (v2), but the ring is still a per-draft toggle; a draft whose entries never declare it runs without the ring (its `simState` dispatches are skipped). `?renderer=wasm` refuses sim-ring shaders (the C++ backend has one bind group).
 - One running draft at a time, in the active slot.
-- No undo/redo, no free-form canvas, no editing of `params` or WGSL.
+- No editing of `params` or WGSL.
 - Entries come from the shader catalog, the entries of registered graphs and Tier B chain passes. An entry that exists as a file but in none of those can be typed only while the catalog is still loading.
 
 ## Tests
 
 ```bash
-npm test -- --watchAll=false --ci src/graphLab src/components/graphLab src/renderer/multipassGraph src/renderer/runtimeGraphs src/renderer/worker
+npx vitest run src/graphLab src/components/graphLab src/renderer/multipassGraph src/renderer/runtimeGraphs src/renderer/worker
 SKIP_WASM_BUILD=1 npm run build && npm run test:engine2 -- tests/graph-lab.swiftshader.spec.ts
 ```
 

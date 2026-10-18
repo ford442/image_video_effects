@@ -12,6 +12,7 @@ import {
   setRuntimeGraph,
 } from '../../renderer/runtimeGraphs';
 import type { ShaderEntry } from '../../renderer/types';
+import type { EntryPorts, PortInference } from '../../graphLab/portInference';
 import GraphLabPanel from './GraphLabPanel';
 import { GraphLabLauncher } from './GraphLabLauncher';
 import { DRAFT_STORAGE_KEY } from './useGraphLab';
@@ -206,14 +207,15 @@ describe('GraphLabPanel', () => {
       expect(within(screen.getByTestId('graph-lab-nodes')).getAllByRole('listitem')).toHaveLength(3);
     });
 
-    it('adds a node by searching the entry catalog (including graph secondaries)', () => {
+    it('adds a node by searching the entry catalog (including graph secondaries)', async () => {
       // The "Add node" picker comes first; the inspector's picker (which re-points the selected node) second.
       const add = screen.getAllByTestId('entry-picker-input')[0];
       if (!add) throw new Error('missing entry picker');
       fireEvent.change(add, { target: { value: 'wave-inject' } });
       fireEvent.click(screen.getByTestId('entry-option-wave-inject'));
+      // The node is added once its WGSL ports are inferred (here: no WGSL in jsdom, so the default roles).
+      await waitFor(() => expect(within(screen.getByTestId('graph-lab-nodes')).getAllByRole('listitem')).toHaveLength(4));
       const items = within(screen.getByTestId('graph-lab-nodes')).getAllByRole('listitem');
-      expect(items).toHaveLength(4);
       expect(items[3]).toHaveTextContent('wave-inject');
     });
 
@@ -406,5 +408,65 @@ describe('GraphLabLauncher', () => {
     expect(screen.getByTestId('graph-lab-toggle')).toHaveAttribute('aria-expanded', 'true');
     fireEvent.click(screen.getByTestId('graph-lab-close'));
     await waitFor(() => expect(screen.queryByTestId('graph-lab')).not.toBeInTheDocument());
+  });
+});
+
+describe('GraphLabPanel v2', () => {
+  const portsOf = (entry: string): EntryPorts => ({
+    entry,
+    status: 'ok',
+    declaresSimRing: entry === 'dla-walkers',
+    reads: entry === 'dla-walkers' ? ['dataC', 'simState'] : ['read'],
+    writes: entry === 'dla-walkers' ? ['dataA', 'simState'] : ['color'],
+    usesHistory: false,
+    bindings: [],
+    workgroupSize: entry === 'dla-walkers' ? [64, 1, 1] : [16, 16, 1],
+  });
+  const fakeInference = (): PortInference => ({
+    get: () => undefined,
+    request: async (entry) => portsOf(entry),
+    invalidate: () => {},
+  });
+  const renderV2 = (modes: ShaderEntry[] = MODES) =>
+    render(
+      <GraphLabPanel
+        rendererRef={{ current: fakeManager().manager }}
+        availableModes={modes}
+        activeSlot={0}
+        onClose={vi.fn()}
+        portInference={fakeInference()}
+      />,
+    );
+
+  it('undo / redo walk back through edits, by button and keyboard', () => {
+    renderV2();
+    expect(screen.getByTestId('graph-lab-undo')).toBeDisabled();
+    fireEvent.click(screen.getByTestId('graph-lab-new'));
+    expect(screen.getByTestId('graph-lab-no-nodes')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('graph-lab-undo'));
+    expect(within(screen.getByTestId('graph-lab-nodes')).getAllByRole('listitem')).toHaveLength(3);
+    fireEvent.keyDown(window, { key: 'z', ctrlKey: true, shiftKey: true });
+    expect(screen.getByTestId('graph-lab-no-nodes')).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: 'z', ctrlKey: true });
+    expect(within(screen.getByTestId('graph-lab-nodes')).getAllByRole('listitem')).toHaveLength(3);
+  });
+
+  it('shows the WGSL ports of the selected node and which entries declare @group(1)', async () => {
+    renderV2();
+    await waitFor(() => expect(screen.getByTestId('node-ports')).toHaveTextContent('reads read · writes color'));
+    expect(screen.getByTestId('sim-ring-entries')).toHaveTextContent('No entry in this draft declares @group(1)');
+  });
+
+  it('a node added from a @group(1) entry gets its inferred sim roles and arms the ring', async () => {
+    const modes = [...MODES, { id: 'dla-walkers', name: 'DLA walkers', url: 'shaders/dla-walkers.wgsl', category: 'simulation' }] as unknown as ShaderEntry[];
+    renderV2(modes);
+    fireEvent.click(screen.getByTestId('graph-lab-new'));
+    const picker = screen.getAllByTestId('entry-picker-input')[0]!;
+    fireEvent.change(picker, { target: { value: 'dla-walkers' } });
+    fireEvent.click(await screen.findByTestId('entry-option-dla-walkers'));
+    await waitFor(() => expect(screen.getByTestId('sim-ring-toggle')).toBeChecked());
+    expect(screen.getByTestId('role-writes-simState')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('node-dispatch')).toHaveValue('simState');
+    await waitFor(() => expect(screen.getByTestId('sim-ring-entries')).toHaveTextContent('dla-walkers'));
   });
 });

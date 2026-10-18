@@ -1,4 +1,6 @@
 import { RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { loadNagaReflector } from '../../utils/nagaWasm';
+import { fetchShaderWgsl } from '../../utils/fetchShaderWgsl';
 import type { RendererManager } from '../../renderer/RendererManager';
 import { GRAPH_REGISTRY } from '../../renderer/multipassRegistry';
 import { GRAPH_LAB_RUNTIME_ID } from '../../renderer/runtimeGraphs';
@@ -6,17 +8,30 @@ import type { ShaderEntry } from '../../renderer/types';
 import { buildEntryCatalog, EntryCatalog } from '../../graphLab/entryCatalog';
 import { analyzeGraph, GraphAnalysis } from '../../graphLab/graphAnalysis';
 import {
+  canRedo,
+  canUndo,
+  createHistory,
+  DraftHistory,
+  pushHistory,
+  redo as redoHistory,
+  undo as undoHistory,
+} from '../../graphLab/draftHistory';
+import {
   draftFromDefinition,
   draftFromRegistryGraph,
   forkDraft,
   GraphDraft,
   newDraft,
   simRingRequest,
+  upgradeDraft,
 } from '../../graphLab/graphDraft';
+import { createPortInference, EntryPorts, PortInference, portWarnings } from '../../graphLab/portInference';
 import { exportGraphDefinition, ExportResult } from '../../graphLab/graphExport';
 import { LiveReading, readLive, runDraft, stopDraft } from '../../graphLab/runDraft';
 
-export const DRAFT_STORAGE_KEY = 'graphlab.draft.v1';
+export const DRAFT_STORAGE_KEY = 'graphlab.draft.v2';
+/** v1 drafts (no layout) are read once and upgraded. */
+export const LEGACY_DRAFT_STORAGE_KEY = 'graphlab.draft.v1';
 /** Flagship the Lab opens on when nothing is stored, so the first view is a graph that runs. */
 export const SEED_GRAPH_ID = 'wave-tank';
 const LIVE_POLL_MS = 500;
@@ -27,6 +42,24 @@ export interface UseGraphLabArgs {
   availableModes: ShaderEntry[];
   activeSlot: number;
   setStatus?: (status: string) => void;
+  /** Test seam; defaults to naga reflection of the same-origin, include-expanded WGSL. */
+  portInference?: PortInference;
+}
+
+let browserPortInference: PortInference | null = null;
+
+/** One cache per page: an entry's WGSL does not change while the app runs. */
+function defaultPortInference(): PortInference {
+  browserPortInference ??= createPortInference({
+    loadSource: (entry) => fetchShaderWgsl(entry, undefined, { primaryOnly: true }),
+    reflect: loadNagaReflector,
+  });
+  return browserPortInference;
+}
+
+/** How an edit is recorded: `coalesce` folds rapid edits with the same key into one undo step. */
+export interface EditOptions {
+  coalesce?: string;
 }
 
 export interface RunningState {
@@ -44,12 +77,10 @@ function templateDraft(id: string, availableModes: ShaderEntry[]): GraphDraft | 
 
 function loadStoredDraft(availableModes: ShaderEntry[]): GraphDraft {
   try {
-    const raw = window.localStorage.getItem(DRAFT_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as GraphDraft;
-      if (parsed && typeof parsed.id === 'string' && Array.isArray(parsed.graph?.nodes)) {
-        return { ...newDraft(), ...parsed };
-      }
+    for (const key of [DRAFT_STORAGE_KEY, LEGACY_DRAFT_STORAGE_KEY]) {
+      const raw = window.localStorage.getItem(key);
+      const draft = raw ? upgradeDraft(JSON.parse(raw)) : null;
+      if (draft) return draft;
     }
   } catch {
     // Missing / blocked / corrupt storage: start from the seed.
@@ -65,8 +96,9 @@ function storeDraft(draft: GraphDraft): void {
   }
 }
 
-export function useGraphLab({ rendererRef, availableModes, activeSlot, setStatus }: UseGraphLabArgs) {
-  const [draft, setDraftState] = useState<GraphDraft>(() => loadStoredDraft(availableModes));
+export function useGraphLab({ rendererRef, availableModes, activeSlot, setStatus, portInference }: UseGraphLabArgs) {
+  const [history, setHistory] = useState<DraftHistory<GraphDraft>>(() => createHistory(loadStoredDraft(availableModes)));
+  const draft = history.present;
   const [selected, setSelected] = useState(0);
   const [running, setRunning] = useState<RunningState | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
@@ -93,13 +125,39 @@ export function useGraphLab({ rendererRef, availableModes, activeSlot, setStatus
   const simRingKey = simRing ? String(simRing.stateCount) : '';
   const armedSimRingRef = useRef<string | null>(null);
 
-  const setDraft = useCallback((next: GraphDraft | ((prev: GraphDraft) => GraphDraft)) => {
-    setDraftState((prev) => {
-      const value = typeof next === 'function' ? next(prev) : next;
-      storeDraft(value);
-      return value;
-    });
-  }, []);
+  const setDraft = useCallback(
+    (next: GraphDraft | ((prev: GraphDraft) => GraphDraft), opts: EditOptions = {}) => {
+      setHistory((h) => pushHistory(h, typeof next === 'function' ? next(h.present) : next, opts));
+    },
+    [],
+  );
+  const undo = useCallback(() => setHistory(undoHistory), []);
+  const redo = useCallback(() => setHistory(redoHistory), []);
+
+  // Every present (edit, undo, redo) is the autosaved draft.
+  useEffect(() => storeDraft(draft), [draft]);
+
+  // ── Port inference: what each entry's WGSL binds (naga reflection). ──
+  const inference = useMemo(() => portInference ?? defaultPortInference(), [portInference]);
+  const [ports, setPorts] = useState<ReadonlyMap<string, EntryPorts>>(() => new Map());
+  const entryKey = useMemo(() => [...new Set(draft.graph.nodes.map((n) => n.entry))].sort().join('\n'), [draft.graph]);
+  useEffect(() => {
+    let cancelled = false;
+    const wanted = entryKey ? entryKey.split('\n') : [];
+    for (const entry of wanted) {
+      void inference.request(entry).then((p) => {
+        if (cancelled) return;
+        setPorts((prev) => (prev.get(entry) === p ? prev : new Map(prev).set(entry, p)));
+      });
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [entryKey, inference]);
+  const warnings = useMemo(() => portWarnings(draft.graph.nodes, ports), [draft.graph.nodes, ports]);
+
+  /** Ports of `entry`, inferring them if needed (resolves to an `error` status rather than rejecting). */
+  const inferPorts = useCallback((entry: string) => inference.request(entry), [inference]);
 
   // Keep the selection inside the node list as nodes come and go.
   useEffect(() => {
@@ -238,6 +296,13 @@ export function useGraphLab({ rendererRef, availableModes, activeSlot, setStatus
   return {
     draft,
     setDraft,
+    undo,
+    redo,
+    canUndo: canUndo(history),
+    canRedo: canRedo(history),
+    ports,
+    warnings,
+    inferPorts,
     selected,
     setSelected,
     entries,

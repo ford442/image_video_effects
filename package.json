@@ -8,6 +8,7 @@
   "dependencies": {
     "@huggingface/transformers": "^4.2.0",
     "@mlc-ai/web-llm": "^0.2.80",
+    "@xyflow/react": "^12.12.0",
     "hls.js": "^1.6.15",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
