@@ -533,7 +533,7 @@
     "id": "bubble-chamber",
     "name": "Bubble Chamber",
     "url": "shaders/bubble-chamber.wgsl",
-    "description": "Simulates subatomic particle trails in a magnetic field using a feedback loop.",
+    "description": "Simulates subatomic particle trails in a magnetic field using a feedback loop; tracks bead into discrete bubbles over each chamber expansion cycle.",
     "features": [
       "mouse-driven",
       "feedback",
@@ -1596,7 +1596,7 @@
       "aces-tone-map",
       "semantic-alpha"
     ],
-    "description": "A vast abyssal coral reef torn along a fast current. Growth rings race instead of creeping, polyp corrugation carves micro-detail into every branch, and bioluminescent nodes pulse through a psychedelic cyan-magenta spectrum driven by mids and treble. Growth-band strata ledge every branch and age faster in the well, where light is red-shifted and ringed by a blue Einstein rim, while a budding front swells the tip nodes. The cursor opens a time-dilation well, holding the button blooms the reef, and clicks raise sediment rings that surge across the structure.",
+    "description": "A vast abyssal coral reef torn along a fast current. Branches are ledged with growth strata and pitted with septate corallite cups, while bioluminescent tip nodes pulse through a cyan-magenta spectrum and spill their light onto nearby branches. The cursor opens a red-shifted time-dilation well ringed by a blue Einstein rim, holding blooms the reef, and clicks raise sediment rings.",
     "workgroup_size": [
       16,
       16,
@@ -2068,7 +2068,7 @@
   {
     "id": "gen-aether-forged-nacreous-labyrinth",
     "name": "Aether-Forged Nacreous Labyrinth",
-    "description": "A hyper-dimensional structure where organic, pearlescent membranes weave continuously through rigid, crystalline geometries, bathed in shifting bioluminescent aether.",
+    "description": "A hyper-dimensional labyrinth where tiled pearlescent nacre membranes weave through polished and frosted crystalline lattices, bathed in shifting bioluminescent aether.",
     "type": "generative",
     "category": "generative",
     "url": "shaders/gen-aether-forged-nacreous-labyrinth.wgsl",
@@ -4242,7 +4242,7 @@
       "audio",
       "music"
     ],
-    "description": "An infinite, claustrophobic structure of hexagonal cells blending industrial machinery with organic tissue. Features pulsating lights, rhythmic breathing, and slimy metallic textures.",
+    "description": "An infinite, claustrophobic structure of hexagonal cells blending industrial machinery with organic tissue. Heartbeats relay cell to cell, each glowing core lighting its own chamber of slimy metallic chitin.",
     "workgroup_size": [
       16,
       16,
@@ -7090,7 +7090,7 @@
       "veins",
       "dendritic"
     ],
-    "description": "Simulation of slime mold growth with vivid psychedelic coloring. Branching veins of bright neon spread across the screen in organic dendritic patterns. Colors shift from deep purple to hot pink to electric cyan. Mouse feeds the slime causing rapid growth pulses.",
+    "description": "Psychedelic slime mold growth: neon dendritic veins behind a reticulated fan-shaped front, trails settling to pale mucus. Mouse feeds the colony, which stays larger for a while after feeding.",
     "workgroup_size": [
       16,
       16,
@@ -10282,7 +10282,7 @@
       "void",
       "volumetric"
     ],
-    "description": "A colossal, slow-moving biomechanical space leviathan swimming gracefully through a dense volumetric plasma-ocean, whose transparent cyber-skeletal ribs refract and ripple with shifting temporal energy streams. Flukes spread from the tail of the spine, and a bass-gated blow mist rises above the core.",
+    "description": "A colossal biomechanical space leviathan swimming through a volumetric plasma-ocean; its cyber-skeletal ribs are seen refracted and tinted through a shimmering sheath of temporal energy streams.",
     "workgroup_size": [
       16,
       16,
@@ -18044,6 +18044,7 @@
     "name": "Luminescent Silica Diatom Swarm",
     "category": "generative",
     "url": "/shaders/gen-luminescent-silica-diatom-swarm.wgsl",
+    "description": "A drifting swarm of glass diatoms: lidded silica frustules of shrinking generations, porous valves leaking their glowing cores' light, linked into chains.",
     "params": [
       {
         "id": "swarmDensity",
@@ -20373,7 +20374,7 @@
       "bioluminescence",
       "neural"
     ],
-    "description": "A pulsing, infinite organic matrix of glowing synthetic neurons firing quantum light impulses across a void, merging biological growth with cybernetic circuitry. Second pass layers in astrocytic calcium tides and vesicle-bouton scintillation around firing tracts.",
+    "description": "A pulsing, infinite organic matrix of glowing synthetic neurons firing quantum light impulses across a void, merging biological growth with cybernetic circuitry. Astrocytic calcium tides, thick fast axons and voltage-dye membrane colouring trace each spike.",
     "workgroup_size": [
       16,
       16,
@@ -24891,7 +24892,7 @@
     "name": "Relay Psychedelia",
     "category": "generative",
     "url": "shaders/gen-relay-psychedelia.wgsl",
-    "description": "Multi-agent relay generative shader — warped fbm field, palette-driven color, temporal feedback. See agents/RELAY_PROTOCOL.md.",
+    "description": "Multi-agent relay generative shader — warped fbm kaleidoscope with liquid-light-show oil cells and marbled drag striations.",
     "tags": [
       "generative",
       "psychedelic",
