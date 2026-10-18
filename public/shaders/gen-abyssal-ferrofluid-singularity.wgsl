@@ -82,9 +82,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Camera setup
     let ro = vec3<f32>(sin(u.config.x * 0.2) * 4.0, sin(u.config.x * 0.1) * 2.0, cos(u.config.x * 0.2) * 4.0);
-    let target = vec3<f32>(0.0);
+    let cam_target = vec3<f32>(0.0);
 
-    let cd = normalize(target - ro);
+    let cd = normalize(cam_target - ro);
     let cr = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), cd));
     let cu = normalize(cross(cd, cr));
 
