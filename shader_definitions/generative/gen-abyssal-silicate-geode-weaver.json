@@ -10,7 +10,7 @@
     "audio-reactive",
     "raymarching"
   ],
-  "description": "A stylized warp-flight through a crystalline cavity with fast gyroid filaments, audio-lit shard pulses, click refraction waves, and bounded iridescent trails. Agate-banded facets and dew-bead knots on the threads add mineral detail.",
+  "description": "A stylized warp-flight through a crystalline cavity with fast gyroid filaments, audio-lit shard pulses, click refraction waves, and bounded iridescent trails. Agate-banded facets with onyx water-line strata, druzy quartz glints and dew-bead knots on the threads add mineral detail.",
   "url": "shaders/gen-abyssal-silicate-geode-weaver.wgsl",
   "updated": true,
   "supportsDepth": true,

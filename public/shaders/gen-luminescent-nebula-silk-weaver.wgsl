@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: plucked-thread standing waves (bass, mouse tension damps); dew beads with treble glint; silk afterglow via exact C history
+//  Upgraded: 2026-10-18
+//  Ideas: plucked-thread standing waves (bass, mouse tension damps); dew beads with treble glint; silk afterglow via exact C history; gossamer backlighting (Henyey-Greenstein forward scatter from the nebula core behind the web); vibrating-string envelope (antinodes blur into a dimmer spindle)
 //  A packing: linear HDR composite RGB (pre-ACES) + a = accumulated silk density
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -16,6 +16,11 @@ const TAU: f32 = 6.28318530718;
 // Per-frame audio + per-sample bead state (set in main / map)
 var<private> gPluck: f32 = 0.0;
 var<private> gBead: f32 = 0.0;
+var<private> gEnv: f32 = 0.0;
+
+// Nebula core that backlights the web (world space, behind the target).
+const CORE_POS: vec3<f32> = vec3<f32>(0.0, 0.4, 7.0);
+const CORE_COL: vec3<f32> = vec3<f32>(1.0, 0.72, 0.5);
 
 // --- UTILS ---
 fn rot2D(a: f32) -> mat2x2<f32> {
@@ -100,21 +105,23 @@ fn snoiseVec3(x: vec3<f32>) -> vec3<f32> {
 }
 
 fn curlNoise(p: vec3<f32>) -> vec3<f32> {
+    // Central differences as a loop over the three axes (same stencil as six
+    // unrolled snoiseVec3 taps, but the noise body is emitted twice, not six
+    // times — the unrolled form never finished compiling on SwiftShader).
     let e = 0.01;
-    let dx = vec3<f32>(e, 0.0, 0.0);
-    let dy = vec3<f32>(0.0, e, 0.0);
-    let dz = vec3<f32>(0.0, 0.0, e);
-
-    let p_x0 = snoiseVec3(p - dx);
-    let p_x1 = snoiseVec3(p + dx);
-    let p_y0 = snoiseVec3(p - dy);
-    let p_y1 = snoiseVec3(p + dy);
-    let p_z0 = snoiseVec3(p - dz);
-    let p_z1 = snoiseVec3(p + dz);
-
-    let x = p_y1.z - p_y0.z - p_z1.y + p_z0.y;
-    let y = p_z1.x - p_z0.x - p_x1.z + p_x0.z;
-    let z = p_x1.y - p_x0.y - p_y1.x + p_y0.x;
+    var dfdx = vec3<f32>(0.0);
+    var dfdy = vec3<f32>(0.0);
+    var dfdz = vec3<f32>(0.0);
+    for (var a = 0; a < 3; a++) {
+        let off = vec3<f32>(f32(a == 0), f32(a == 1), f32(a == 2)) * e;
+        let diff = snoiseVec3(p + off) - snoiseVec3(p - off);
+        dfdx += diff * off.x / e;
+        dfdy += diff * off.y / e;
+        dfdz += diff * off.z / e;
+    }
+    let x = dfdy.z - dfdz.y;
+    let y = dfdz.x - dfdx.z;
+    let z = dfdx.y - dfdy.x;
 
     return normalize(vec3<f32>(x, y, z) / (2.0 * e));
 }
@@ -144,12 +151,14 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
     let complexity = u.zoom_params.x; // 0.5 - 4.0
     let width = u.zoom_params.y; // 0.01 - 0.2
 
-    var flow = p * complexity + t * 0.2;
+    // Warp wavelength kept long against the 0.5 displacement: at HEAD's p * complexity
+    // the warp folded every tube into sub-pixel speckle.
+    var flow = p * complexity * 0.2 + t * 0.2;
     var curl = curlNoise(flow);
 
     // Add fBM turbulence
-    curl += snoiseVec3(flow * 2.5) * 0.5;
-    curl += snoiseVec3(flow * 5.0) * 0.25;
+    // One turbulence octave (HEAD's 5x octave only fed the speckle; dropped for cost).
+    curl += snoiseVec3(flow * 2.5) * 0.25;
     curl = normalize(curl);
 
     // SDF to "ribbons" or "tubes" along the curl noise
@@ -179,12 +188,23 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
     let standing = sin(qWorld.y * 2.2 + phase) * cos(t * 9.0 + phase);
     q = vec3<f32>(q.x - cos(phase) * pluckAmp * standing, q.y, q.z - sin(phase) * pluckAmp * standing);
 
+    // IDEA 4 — vibrating-string envelope: a string oscillating faster than the
+    // eye resolves is seen as its swept envelope, widest at the antinodes and
+    // pinched at the nodes; the same silk spread wider glows dimmer.
+    let env = abs(sin(qWorld.y * 2.2 + phase)) * pluckAmp * 1.6;
+    gEnv = env / (env + width);
+
     // IDEA 2 — dew beads: periodic droplet swellings strung along the thread
     let bead = pow(0.5 + 0.5 * cos(qWorld.y * 7.0 + phase * 3.0), 12.0);
     gBead = bead;
 
     // Distance to ribbon surface
-    let dRibbon = length(q.xz) - width * (1.0 + 1.8 * bead);
+    var dRibbon = length(q.xz) - width * (1.0 + 1.8 * bead) - env;
+    // Only ~75% of lattice columns carry a thread, so rays reach the void between
+    // strands; empty columns return the distance to their cell wall + 0.1 (scaled
+    // ≥ 0.06, outside the 0.05 accumulation shell, so empty cells leave no ghost walls).
+    let colHash = fract(sin(dot(cell.xz, vec2<f32>(127.1, 311.7))) * 43758.5453);
+    dRibbon = select(0.75 - max(abs(q.x), abs(q.z)) + 0.1, dRibbon, colHash < 0.75);
 
     // Material ID based on noise
     let matID = snoise(p * 0.5) * 0.5 + 0.5;
@@ -192,14 +212,16 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
     return vec2<f32>(dRibbon * 0.6, matID); // 0.6 is a safe under-estimator for raymarching with heavy noise
 }
 
-// Get normal for lighting
+// Get normal for lighting: tetrahedral 4-tap gradient in a loop so map() is
+// emitted once here (HEAD's six unrolled taps blew up shader compilation).
 fn getNormal(p: vec3<f32>) -> vec3<f32> {
-    let e = vec2<f32>(0.001, 0.0);
-    return normalize(vec3<f32>(
-        map(p + e.xyy).x - map(p - e.xyy).x,
-        map(p + e.yxy).x - map(p - e.yxy).x,
-        map(p + e.yyx).x - map(p - e.yyx).x
-    ));
+    let e = 0.001;
+    var n = vec3<f32>(0.0);
+    for (var i = 0; i < 4; i++) {
+        let k = 2.0 * vec3<f32>(f32(((i + 3) >> 1) & 1), f32((i >> 1) & 1), f32(i & 1)) - 1.0;
+        n += k * map(p + k * e).x;
+    }
+    return normalize(n);
 }
 
 // ACES Tone Mapping
@@ -227,15 +249,20 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, audioPulse: f32, treble: f32) -> SilkR
 
     let iridescence = u.zoom_params.z; // 0.0 - 3.0
 
-    for (var i = 0; i < 80; i++) {
+    for (var i = 0; i < 56; i++) {
         let p = ro + rd * dO;
         dS = map(p);
         let beadHere = gBead; // capture before getNormal re-evaluates map
+        let envHere = gEnv;
+        // Weight each sample by its step length so density no longer depends on
+        // where the variable steps happen to land inside the shell.
+        let stepLen = max(abs(dS.x), 0.03);
+        let w = stepLen / 0.05;
 
         // Volumetric accumulation
         if (dS.x < 0.05) {
-            let dens = (0.05 - dS.x) * 10.0; // Density
-            accumDens += dens * 0.05;
+            let dens = (0.05 - dS.x) * 10.0 * (1.0 - 0.65 * envHere); // Density (IDEA 4: envelope spreads it thin)
+            accumDens += dens * 0.05 * w;
             firstHit = select(firstHit, dO, firstHit < 0.0);
 
             // Color based on material ID and time
@@ -255,13 +282,22 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, audioPulse: f32, treble: f32) -> SilkR
             // Dew-bead glint: droplets catch starlight at grazing angles, treble sparkles
             baseCol += vec3<f32>(0.9, 0.95, 1.0) * beadHere * (0.25 + treble * 0.8) * (0.3 + fre * 1.5);
 
-            col += baseCol * dens * 0.1 * exp(-dO * 0.2); // Attenuation
+            // IDEA 3 — gossamer backlighting: silk is nearly invisible lit from the
+            // front and flares when the light sits behind it. Henyey-Greenstein
+            // forward scatter (g = 0.78) of the nebula core through each strand.
+            let toCore = normalize(CORE_POS - p);
+            let hgG = 0.78;
+            let cosT = dot(rd, toCore);
+            let hg = (1.0 - hgG * hgG) / pow(max(1.0 + hgG * hgG - 2.0 * hgG * cosT, 1e-3), 1.5) / (4.0 * PI);
+            baseCol += CORE_COL * hg * (0.9 + audioPulse * 0.6);
+
+            col += baseCol * dens * 0.1 * w * exp(-dO * 0.2); // Attenuation
         }
 
         if (accumDens > 0.95 || dO > 20.0) { break; }
 
         // Push forward, minimum step size to avoid getting stuck in negative space
-        dO += max(abs(dS.x), 0.02);
+        dO += stepLen;
     }
 
     return SilkResult(col, accumDens, firstHit);
@@ -280,6 +316,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let base_uv = uv; // Keep for data textures
     uv = uv * 2.0 - 1.0;
     uv.x *= resolution.x / resolution.y;
+    uv.y = -uv.y; // y=0 is the top row: flip so world up is screen up and the vortex sits under the cursor
 
     // Camera setup
     var ro = vec3<f32>(0.0, 0.0, -5.0);
@@ -309,7 +346,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let result = raymarch(ro, rd, audioPulse, treble * u.zoom_params.w);
 
     // Background color (dark blue/purple void)
-    var bg = vec3<f32>(0.01, 0.0, 0.03) - length(uv) * 0.01;
+    var bg = max(vec3<f32>(0.01, 0.0, 0.03) - length(uv) * 0.01, vec3<f32>(0.0));
+    // The backlighting core itself, a soft glow behind the web.
+    let coreDir = normalize(CORE_POS - ro);
+    bg += CORE_COL * pow(max(dot(rd, coreDir), 0.0), 60.0) * 0.35;
 
     // Composite
     var color = mix(bg, result.rgb, min(result.a, 1.0));
@@ -328,8 +368,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Tone mapping (display only; A keeps linear)
     let display = aces(linearOut);
 
-    // Semantic alpha: live silk density, afterglow density, faint void floor
-    let alpha = clamp(min(result.a, 1.0) * 0.85 + density * 0.25 + 0.05, 0.0, 1.0);
+    // Semantic alpha: void floor 0.85 (HEAD's 0.05 let the white page show
+    // through the whole void), raised to opaque by live silk and afterglow density
+    let alpha = clamp(0.85 + min(result.a, 1.0) * 0.15 + density * 0.05, 0.0, 1.0);
 
     textureStore(writeTexture, coords, vec4<f32>(display, alpha));
     let depth = select(0.0, 1.0 - clamp(result.firstHit / 20.0, 0.0, 1.0), result.firstHit >= 0.0);

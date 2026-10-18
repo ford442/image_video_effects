@@ -3,7 +3,7 @@
   "name": "Luminescent Nebula-Silk Weaver",
   "url": "shaders/gen-luminescent-nebula-silk-weaver.wgsl",
   "category": "generative",
-  "description": "An expanding cosmos of silken energy ribbons that autonomously weave and untangle in zero gravity, driven by fluid dynamics and spectral analysis. This shader generates a mesmerizing, ethereal textile of starlight that breathes and flows, wrapping around unseen multidimensional objects and erupting into brilliant, audio-reactive flares.",
+  "description": "An expanding cosmos of silken energy ribbons that autonomously weave and untangle in zero gravity, driven by fluid dynamics and spectral analysis. This shader generates a mesmerizing, ethereal textile of starlight that breathes and flows, wrapping around unseen multidimensional objects and erupting into brilliant, audio-reactive flares; the web glows where a nebula core backlights it.",
   "features": [
     "fluid",
     "ribbon",

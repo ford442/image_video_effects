@@ -2,7 +2,7 @@
   "id": "gen-alien-flora-ecosystem",
   "name": "Gen Alien Flora Ecosystem",
   "url": "shaders/gen-alien-flora-ecosystem.wgsl",
-  "description": "Gen Alien Flora Ecosystem",
+  "description": "Gen Alien Flora Ecosystem: glowing alien mushrooms whose caps dry pale from the centre, with pinhead buds flushing around each stem.",
   "tags": [
     "multi-species-flora",
     "audio-seasons",
