@@ -679,7 +679,9 @@
     {
       "filename": "2026-10-17_abyssal-ferrofluid-singularity.md",
       "title": "Abyssal Ferrofluid Singularity",
-      "added": "2026-10-17T15:28:34.031544"
+      "added": "2026-10-17T15:28:34.031544",
+      "status": "completed",
+      "completed_at": "2026-10-18T08:01:20.210494"
     }
   ],
   "current": null,
