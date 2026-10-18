@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: raymarch, audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: hopper growth striae marching by terrace index and radius; spire-pinnacle cathodoluminescent arcs locked to sixfold citadel symmetry
+//  Upgraded: 2026-10-10, 2026-10-18
+//  Ideas: hopper growth striae marching by terrace index and radius; spire-pinnacle cathodoluminescent arcs locked to sixfold citadel symmetry; SDF-curvature oxide thickness shift & {110} polysynthetic twin lamellae (§12.2E); solidifying 6-fold hopper crystal rafts & blackbody meniscus seams on the molten pools (§12.2F)
 //  A packing: HDR linear RGB (pre-ACES) + semantic alpha; C read back as HDR for a light rising trail
 // ═══════════════════════════════════════════════════════════════════
 
@@ -184,6 +184,16 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     return g / max(length(g), 1e-6);
 }
 
+// ── Idea 1 (helper): 6-tap finite-difference SDF mean curvature (§12.2E) ──
+fn calcCurvature(p: vec3<f32>) -> f32 {
+    let e = vec2<f32>(0.012, 0.0);
+    let d0 = map(p).x;
+    let sum6 = map(p + e.xyy).x + map(p - e.xyy).x
+             + map(p + e.yxy).x + map(p - e.yxy).x
+             + map(p + e.yyx).x + map(p - e.yyx).x;
+    return clamp((sum6 - 6.0 * d0) / (0.012 * 0.012 * 18.0), -1.0, 1.0);
+}
+
 // FIX: HEAD AO was the constant 1 - 100/100 -> 0.5; real few-tap occlusion along the normal.
 fn calcAO(p: vec3<f32>, n: vec3<f32>) -> f32 {
     var occ = 0.0;
@@ -287,7 +297,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             // Idea 1: melt-pool surface — emissive melt that mirrors the beacon column.
             let melt = meltColor(radius, clock, bass);
             let beaconInMelt = beaconGlow(p + n * 0.01, refl, 30.0, 0.02, clock);
-            col = melt + beaconInMelt * 0.6 + vec3<f32>(0.9, 0.9, 1.0) * fresnel * 0.4;
+            // ── Idea 2 (new): Solidifying 6-fold hopper crystal rafts & blackbody meniscus seams on the molten pools (§12.2F) ──
+            let secAng = atan2(p.z, p.x);
+            let secFold = abs(fract(secAng * 6.0 / 6.28318 + 0.5) - 0.5);
+            let raftCoord = (POOL_RADIUS - radius) - secFold * 0.55 - 0.08 * sin(clock * 0.9);
+            let solidifyingRafts = smoothstep(0.52, 0.18, raftCoord);
+            let raftTerrace = 0.5 + 0.5 * cos(raftCoord * 26.0);
+            let raftOxide = palette(raftCoord * 1.8 + fresnel * iridescence, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0, 1.0, 0.8), vec3<f32>(0.0, 0.33, 0.67));
+            let meniscusEmber = exp(-pow((raftCoord - 0.36) * 14.0, 2.0)) * vec3<f32>(2.4, 0.78, 0.18) * (1.0 + bass * 0.7);
+            let liquidCol = melt + beaconInMelt * 0.6 + vec3<f32>(0.9, 0.9, 1.0) * fresnel * 0.4;
+            let raftCol = raftOxide * (0.55 + 0.45 * raftTerrace) * metalFresnel + beaconInMelt * 0.85;
+            col = mix(liquidCol, raftCol, solidifyingRafts * 0.78) + meniscusEmber;
             alpha = 1.0;
         } else {
             // Mouse-controlled secondary light: a lamp offset from the camera toward the pointer.
@@ -299,11 +319,18 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let dif = max(dot(n, lig), 0.0);
             let dif_mouse = max(dot(n, l_mouse), 0.0);
 
-            let hal = normalize(lig - rd);
-            let spec = pow(max(dot(n, hal), 0.0), 32.0);
+            // ── Idea 1 (new): SDF-curvature oxide thickness shift & {110} polysynthetic twin lamellae (§12.2E) ──
+            let sdfCurvature = calcCurvature(p);
+            let twinPlane = sin((p.x + p.y + p.z) * (14.0 / max(stepSize, 0.15)));
+            let twinLamellae = smoothstep(-0.15, 0.15, twinPlane);
+            let twinNormal = normalize(n + vec3<f32>(0.09, -0.09, 0.06) * (twinLamellae * 2.0 - 1.0));
 
-            // Thin-film interference
-            let interferenceOffset = p.y * 0.1 + p.x * 0.05 + clock * 0.1;
+            let hal = normalize(lig - rd);
+            let spec = pow(max(dot(twinNormal, hal), 0.0), 32.0);
+            let twinBoundaryGlint = exp(-twinPlane * twinPlane * 28.0) * pow(max(dot(n, hal), 0.0), 12.0);
+
+            // Thin-film interference shifted by SDF mean curvature (convex edges oxidize thicker than recesses)
+            let interferenceOffset = p.y * 0.1 + p.x * 0.05 + clock * 0.1 + sdfCurvature * 0.35 + twinLamellae * 0.12;
             let iriPhase = fresnel * iridescence + interferenceOffset;
 
             // Bismuth color palette
@@ -319,8 +346,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
             // Combine lighting
             var litColor = baseColor * (dif * 0.7 + dif_mouse * 0.5 + 0.2);
-            litColor += iridColor * fresnel * 0.8 * oxidePurity;
-            litColor += vec3<f32>(1.0) * spec * metallic;
+            litColor += iridColor * (fresnel * 0.8 + max(sdfCurvature, 0.0) * 0.28) * oxidePurity;
+            litColor += vec3<f32>(1.0) * (spec + twinBoundaryGlint * 0.45) * metallic;
 
             // Terrace pattern edge highlights
             let terracePattern = sin(p.x * 10.0) * sin(p.y * 10.0) * sin(p.z * 10.0);

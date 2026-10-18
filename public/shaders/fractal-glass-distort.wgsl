@@ -4,8 +4,8 @@
 //  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba,
 //            fractal-attractor, chromatic-aberration, semantic-alpha, ACES
 //  Complexity: High
-//  Upgraded: 2026-10-05
-//  Ideas: 1) stained-glass cells (base-4 map address → per-cell tint, pane tilt, lead lines) 2) thick glass (Beer-Lambert absorption + Fresnel rim) 3) wavelength IFS (R/G/B gradients at shifted contraction = true dispersion)
+//  Upgraded: 2026-10-18
+//  Ideas: 1) stained-glass cells (base-4 map address → per-cell tint, pane tilt, lead lines) 2) thick glass (Beer-Lambert absorption + Fresnel rim) 3) wavelength IFS (R/G/B gradients at shifted contraction = true dispersion) 4) IFS orbit-trap ream striae veins & trapped air-seed bubbles (§12.2E Orbit trap) 5) 3D rounded lead-came H-channel relief, silvered solder bosses & pane bevel drop-shadow (§12.2A Local contrast / bevel relief)
 //  A packing: ACES display RGBA (alpha = glass coverage); C feedback mixed post-ACES
 // ═══════════════════════════════════════════════════════════════════
 
@@ -20,9 +20,9 @@ fn ifsAffine(p: vec2<f32>, angle: f32, scale: f32, tx: f32, ty: f32) -> vec2<f32
   return vec2<f32>(scale * (c * p.x - s * p.y) + tx, scale * (s * p.x + c * p.y) + ty);
 }
 
-// Returns (density, address). Idea 1: address = base-4 index of the winning maps at the
-// first three levels (0..63), i.e. which stained-glass pane of the attractor this pixel is in.
-fn ifsAttractorDensity(p: vec2<f32>, contraction: f32, rotation: f32) -> vec2<f32> {
+// Returns (density, address, veinTrap). Idea 1: address = base-4 index of the winning maps at the
+// first three levels (0..63). Idea 4 (§12.2E Orbit trap): veinTrap = cross-axis orbit trap for antique glass ream striae.
+fn ifsAttractorDensity(p: vec2<f32>, contraction: f32, rotation: f32) -> vec3<f32> {
   let s  = contraction * 0.55;
   let s2 = contraction * 0.45;
   let r1 = rotation;
@@ -32,6 +32,7 @@ fn ifsAttractorDensity(p: vec2<f32>, contraction: f32, rotation: f32) -> vec2<f3
   var q = p;
   var density = 0.0;
   var address = 0.0;
+  var veinTrap = 1e5;
   for (var i = 0; i < 8; i = i + 1) {
     let q1 = ifsAffine(q, r1, 1.0 / s,  0.0, 0.5);
     let q2 = ifsAffine(q, r2, 1.0 / s2, 0.5, -0.4);
@@ -50,9 +51,10 @@ fn ifsAttractorDensity(p: vec2<f32>, contraction: f32, rotation: f32) -> vec2<f3
     else                                   { q = q4; }
 
     if (i < 3) { address = address * 4.0 + k; }
+    veinTrap = min(veinTrap, min(abs(q.x), abs(q.y)));
     density += exp(-length(q) * 3.0);
   }
-  return vec2<f32>(clamp(density / 8.0, 0.0, 1.0), address);
+  return vec3<f32>(clamp(density / 8.0, 0.0, 1.0), address, veinTrap);
 }
 
 // Density gradient per unit of p (finite difference divided by its step).
@@ -149,9 +151,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dG = ifsAttractorDensity(p, contraction, rotation);
   let d0 = dG.x;
   let address = dG.y;
+  let veinTrap = dG.z;
   let dGx = ifsAttractorDensity(p + vec2<f32>(FD_STEP, 0.0), contraction, rotation);
   let dGy = ifsAttractorDensity(p + vec2<f32>(0.0, FD_STEP), contraction, rotation);
   let gradG = vec2<f32>(dGx.x - d0, dGy.x - d0) / FD_STEP;
+  let veinGrad = vec2<f32>(dGx.z - veinTrap, dGy.z - veinTrap) / FD_STEP;
 
   // Idea 3: wavelength IFS — red and blue see a slightly different contraction, so each
   // channel refracts off its own attractor gradient (true dispersion, not a scaled copy).
@@ -185,11 +189,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Idea 1: each pane is a slightly tilted sheet — a constant per-cell offset.
   let paneTilt = (vec2<f32>(hash11(address + 7.0), hash11(address + 19.0)) - 0.5) * 0.006 * u.zoom_params.z;
 
-  // Idea 3: blue bends a little more than red (Cauchy-style), on top of its own gradient.
+  // ── Idea 4: IFS Orbit-Trap Ream Striae Veins & Trapped Air-Seed Bubbles (§12.2E Orbit trap) ──
   let toUV = vec2<f32>(1.0 / aspect, 1.0) / 1.5;
-  let offR = softCap(gradR * refrScale * boost * (1.0 - aberration * 6.0), 0.08) * toUV + paneTilt;
-  let offG = softCap(grad * boost, 0.08) * toUV + paneTilt;
-  let offB = softCap(gradB * refrScale * boost * (1.0 + aberration * 6.0), 0.08) * toUV + paneTilt;
+  let reamVein = exp(-veinTrap * 14.0);
+  let striaeRefract = softCap(veinGrad * refrScale * 0.35, 0.015) * toUV;
+
+  let seedGrid = p * 16.0 + vec2<f32>(hash11(address + 3.0), hash11(address + 11.0)) * 5.0;
+  let seedCell = floor(seedGrid);
+  let seedPos = fract(seedGrid) - vec2<f32>(0.5);
+  let seedHash = hash11(dot(seedCell, vec2<f32>(12.9898, 78.233)) + address * 1.7);
+  let seedRadius = 0.17 * step(0.76, seedHash);
+  let seedDist = length(seedPos);
+  let seedBubble = smoothstep(seedRadius, seedRadius * 0.45, seedDist) * smoothstep(seedRadius * 0.18, seedRadius * 0.85, seedDist);
+  let seedRefract = normalize(seedPos + vec2<f32>(1e-4)) * seedBubble * 0.008 * u.zoom_params.z;
+
+  // Idea 3: blue bends a little more than red (Cauchy-style), on top of its own gradient.
+  let offR = softCap(gradR * refrScale * boost * (1.0 - aberration * 6.0), 0.08) * toUV + paneTilt + striaeRefract + seedRefract;
+  let offG = softCap(grad * boost, 0.08) * toUV + paneTilt + striaeRefract + seedRefract;
+  let offB = softCap(gradB * refrScale * boost * (1.0 + aberration * 6.0), 0.08) * toUV + paneTilt + striaeRefract + seedRefract;
 
   let uvR = clamp(uv + offR, vec2<f32>(0.0), vec2<f32>(1.0));
   let uvG = clamp(uv + offG, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -202,19 +219,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Idea 1: pane tint + lead came where the base-4 address changes between neighbours.
   let tint = paneTint(address);
-  color = color * mix(vec3<f32>(1.0), tint, 0.18);
-  let lead = select(0.0, 1.0, dGx.y != address || dGy.y != address);
+  color = color * mix(vec3<f32>(1.0), tint, 0.18 + reamVein * 0.12);
+  let leadX = select(0.0, 1.0, dGx.y != address);
+  let leadY = select(0.0, 1.0, dGy.y != address);
+  let lead = max(leadX, leadY);
 
   // Idea 2: thick glass — Beer-Lambert absorption through the attractor body, coloured by
   // the pane (light of the tint colour passes), plus a Fresnel rim from the gradient normal.
-  let thickness = d0 * 4.0;
+  let thickness = d0 * 4.0 + reamVein * 0.65;
   let absorb = exp(-thickness * (vec3<f32>(1.0) - tint));
   color = color * absorb;
-  let nrm = normalize(vec3<f32>(-gradG * 0.3, 1.0));
+  let nrm = normalize(vec3<f32>(-gradG * 0.3 - veinGrad * 0.12, 1.0));
   let oneMinusCos = clamp(1.0 - nrm.z, 0.0, 1.0);
   let om2 = oneMinusCos * oneMinusCos;
   let fresnel = 0.96 * om2 * om2 * oneMinusCos;   // Schlick term above the F0 = 0.04 base
   color += vec3<f32>(0.92, 0.96, 1.0) * fresnel * 0.8;
+
+  // Idea 4 shading: antique glass ream striae sheen and specular air-seed bubble rim
+  color += mix(tint, vec3<f32>(1.0), 0.65) * reamVein * 0.18 * (0.6 + d0);
+  color += vec3<f32>(0.96, 0.98, 1.0) * seedBubble * 0.55;
 
   let glow = d0 * d0 * 0.6 * (1.0 + attractorRunner * 0.35);
   let angle = atan2(grad.y, grad.x) / 6.2831853 + 0.5 + treble * 0.15;
@@ -226,8 +249,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color += vec3<f32>(0.9, 0.95, 1.0) * smoothstep(0.7, 1.0, d0) * 0.5;
   color += vec3<f32>(0.4, 0.6, 1.0) * clickRing * 0.25;
 
-  // Idea 1: lead line — dark came with a faint metallic sheen.
-  color = mix(color, vec3<f32>(0.08, 0.08, 0.09) + fresnel * 0.2, lead * 0.6);
+  // ── Idea 5: 3D Rounded Lead-Came H-Channel Relief, Silvered Solder Bosses & Pane Bevel Drop-Shadow (§12.2A Local contrast / bevel relief) ──
+  let dGShadow = ifsAttractorDensity(p + vec2<f32>(-FD_STEP * 1.5, FD_STEP * 1.5), contraction, rotation);
+  let paneShadow = select(0.0, 1.0, dGShadow.y != address) * (1.0 - lead);
+  color *= 1.0 - paneShadow * 0.28;
+
+  let cameNormal = normalize(vec3<f32>((leadX - 0.5 * lead) * 1.4, (leadY - 0.5 * lead) * 1.4, 0.65));
+  let cameLight = normalize(vec3<f32>(-0.55, 0.65, 0.52));
+  let cameSpec = pow(max(dot(cameNormal, cameLight), 0.0), 10.0);
+  let solderBoss = leadX * leadY;
+  let pewterCame = vec3<f32>(0.07, 0.075, 0.085) + vec3<f32>(0.38, 0.40, 0.44) * cameSpec + vec3<f32>(0.55, 0.58, 0.62) * solderBoss * 0.65 + fresnel * 0.2;
+  color = mix(color, pewterCame, lead * 0.72);
 
   // ACES on display RGB; C holds last frame's ACES display, so persistence mixes post-ACES.
   let prevC = textureLoad(dataTextureC, coord, 0).rgb;
@@ -235,8 +267,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let luminance = dot(finalRGB, vec3<f32>(0.299, 0.587, 0.114));
-  // Semantic alpha: glass coverage (body density, bend, rim, lead) over the image.
-  let alpha = clamp(d0 * 0.5 + length(offG) * 5.0 + glow * 0.5 + fresnel * 0.4 + lead * 0.3
+  // Semantic alpha: glass coverage (body density, bend, rim, lead, seed bubbles) over the image.
+  let alpha = clamp(d0 * 0.5 + length(offG) * 5.0 + glow * 0.5 + fresnel * 0.4 + lead * 0.35 + seedBubble * 0.25
                     + luminance * 0.2 + mousePinch * 0.2, 0.2, 1.0);
   let finalPixel = vec4<f32>(finalRGB, alpha);
 

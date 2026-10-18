@@ -4461,7 +4461,7 @@
       "audio",
       "music"
     ],
-    "description": "Endless procedural canyon of iridescent bismuth crystals with physical light transmission. Features metallic Fresnel reflection, thin-film interference, and oxide layer transmission.",
+    "description": "Endless procedural canyon of iridescent bismuth crystals with SDF-curvature oxide thickness shifting, {110} polysynthetic twin lamellae, solidifying 6-fold hopper rafts on molten tier-gap pools, and an axial beacon column.",
     "workgroup_size": [
       16,
       16,
@@ -6263,7 +6263,7 @@
     "name": "Chrono-Kitsune Prism Weaver",
     "url": "shaders/gen-chrono-kitsune-prism-weaver.wgsl",
     "category": "generative",
-    "description": "A living prismatic kitsune spirit weaving through a chrono-void lattice with deep temporal feedback and audio reactivity. Optimized: bounding-sphere early-out, tetrahedral normals, HDR feedback chain, generated depth.",
+    "description": "A living prismatic kitsune spirit weaving through a chrono-void lattice with sculpted ear-crest facets, internal 3-wavelength Snell-Cauchy prism refraction, plumose chevron tail-fur barbules, heartbeat pulse transfer, and dispersive HDR radial echo feedback.",
     "workgroup_size": [
       16,
       16,
@@ -6538,7 +6538,8 @@
       "iridescent",
       "refraction"
     ],
-    "description": "A hyper-dimensional glass structure that continuously folds through time and space, refracting shifting iridescent cosmic energies. Features chronomorphic spatial distortion and raymarched chromatic dispersion.",
+    "description": "A hyper-dimensional 4D glass tesseract with Schlegel wireframe struts, an inner W-projected hypercube core, 16-vertex Airy-disc diffraction flares, W-slice caustic sheets, and chronomorphic dispersion.",
+    "updated": true,
     "url": "/shaders/gen-chronomorphic-glass-tesseract.wgsl",
     "workgroup_size": [
       16,
@@ -14256,7 +14257,7 @@
       "raymarching",
       "holographic"
     ],
-    "description": "A hyper-dimensional, endlessly unfolding bismuth core reactor, merging metallic stepped-fractals with liquid-holographic interference patterns.",
+    "description": "A hyper-dimensional KIFS bismuth core reactor with fold-generation stepped oxide thin-film terraces, 4-tap cavity AO, criticality-throttled Cherenkov phase-cone radiation, and control-rod coolant wake rings.",
     "workgroup_size": [
       16,
       16,
@@ -16483,7 +16484,7 @@
     "id": "gen-kimi-crystal",
     "name": "Kimi Crystal",
     "url": "shaders/gen_kimi_crystal.wgsl",
-    "description": "Animated crystalline structures growing on a hexagonal grid with physical light transmission. Features ice IOR-based Fresnel reflection, purity-based absorption, and variable crystal thickness.",
+    "description": "Animated crystalline structures on a hexagonal grid with Nakaya plate-to-dendrite habit growth, hexagonal basal hopper terraces, midrib air-inclusion veils, physical ice-IOR transmission, and 22°/46° halos with parhelia and a circumzenithal tangent arc.",
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -17145,7 +17146,7 @@
       "raymarched",
       "showcase"
     ],
-    "description": "A breathing network of hexagonal bio-synthetic cells filled with turbulent liquid crystal. Smoothed audio and pointer drag disrupt the field while clicks inject traveling chemotactic fronts into its preserved hive state.",
+    "description": "A breathing network of hexagonal bio-synthetic cells filled with turbulent nematic liquid crystal, featuring homeotropic wall anchoring, Grandjean-Cano cholesteric pitch bands, four-brush schlieren crosses, and 9-point Laplacian diffusion of chemotactic hive-pulse fronts.",
     "workgroup_size": [
       16,
       16,
@@ -22351,7 +22352,7 @@
       "audio-reactive",
       "volumetric"
     ],
-    "description": "A nine-tailed cybernetic void-kitsune of prismatic glass and liquid aurora, with kitsunebi wisps, Cauchy-dispersed armor refraction, caudal-band tail caustics, and helical rift current sheets.",
+    "description": "A nine-tailed cybernetic void-kitsune with sculpted fox ears, cyber-visor eye slits, 5-tap cellular armour AO, Cauchy-dispersed Beer-Lambert refraction, kitsunebi wisps, inter-tail braided plasma filaments, and helical rift current sheets.",
     "params": [
       {
         "id": "tailDispersion",
@@ -22877,7 +22878,7 @@
     "category": "generative",
     "name": "Prismatic Singularity Engine",
     "url": "shaders/gen-prismatic-singularity-engine.wgsl",
-    "description": "A hyper-dense, spinning core of compressed chromatic energy that bends space-time and fragments light into spectral ribbons.",
+    "description": "A hyper-dense spinning singularity and 3-octave gyroid manifold with relativistic photon-sphere Doppler beaming, step-count labyrinth AO, and chromatically dispersed spacetime trajectories.",
     "tags": [
       "singularity",
       "gravity",
@@ -22887,9 +22888,11 @@
     ],
     "features": [
       "audio-reactive",
-      "mouse-control",
-      "raymarching"
+      "mouse-driven",
+      "raymarching",
+      "upgraded-rgba"
     ],
+    "updated": true,
     "workgroup_size": [
       16,
       16,

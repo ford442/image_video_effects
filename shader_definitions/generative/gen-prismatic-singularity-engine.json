@@ -3,9 +3,10 @@
   "category": "generative",
   "name": "Prismatic Singularity Engine",
   "url": "shaders/gen-prismatic-singularity-engine.wgsl",
-  "description": "A hyper-dense, spinning core of compressed chromatic energy that bends space-time and fragments light into spectral ribbons.",
+  "description": "A hyper-dense spinning singularity and 3-octave gyroid manifold with relativistic photon-sphere Doppler beaming, step-count labyrinth AO, and chromatically dispersed spacetime trajectories.",
   "tags": ["singularity", "gravity", "spectral", "gyroid", "audio-reactive"],
-  "features": ["audio-reactive", "mouse-control", "raymarching"],
+  "features": ["audio-reactive", "mouse-driven", "raymarching", "upgraded-rgba"],
+  "updated": true,
   "workgroup_size": [16, 16, 1],
   "params": [
     {
