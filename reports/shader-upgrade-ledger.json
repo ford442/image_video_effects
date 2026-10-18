@@ -456,8 +456,17 @@
       "history": []
     },
     "hyper-tensor-fluid-coupled": {
-      "hash": "29aa3f704575d8fb",
-      "history": []
+      "hash": "3275b604a365f6fd",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T01:11:04.227Z",
+          "hash": "3275b604a365f6fd",
+          "prev_hash": "29aa3f704575d8fb",
+          "commit": "36c35ccc",
+          "note": "2026-10-18 cursor batch-04 — docs/agents/swarm-outputs/cursor-2026-10-18-batch-04/BRIEFS.md"
+        }
+      ]
     },
     "hyper-tensor-fluid": {
       "hash": "629e12c5f8cf7f4e",
@@ -673,8 +682,17 @@
       "history": []
     },
     "wave-equation-rgba-fluid": {
-      "hash": "bf94a3c4c72c046e",
-      "history": []
+      "hash": "196d02cafc5e825d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T01:11:04.227Z",
+          "hash": "196d02cafc5e825d",
+          "prev_hash": "bf94a3c4c72c046e",
+          "commit": "36c35ccc",
+          "note": "2026-10-18 cursor batch-04 — docs/agents/swarm-outputs/cursor-2026-10-18-batch-04/BRIEFS.md"
+        }
+      ]
     },
     "alpha-paint-thickness": {
       "hash": "386282af65cec871",
@@ -3637,7 +3655,7 @@
       ]
     },
     "gen-gravitational-ferrofluid-singularity-engine": {
-      "hash": "dd8d51700f8a179d",
+      "hash": "25e41ec3f7e98857",
       "history": [
         {
           "event": "upgraded",
@@ -3646,6 +3664,14 @@
           "prev_hash": "4f8fd4a51d914b22",
           "commit": "4653c738",
           "note": null
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T01:11:04.227Z",
+          "hash": "25e41ec3f7e98857",
+          "prev_hash": "dd8d51700f8a179d",
+          "commit": "36c35ccc",
+          "note": "2026-10-18 cursor batch-04 — docs/agents/swarm-outputs/cursor-2026-10-18-batch-04/BRIEFS.md"
         }
       ]
     },
@@ -5641,7 +5667,7 @@
       "history": []
     },
     "gen-superfluid-quantum-foam": {
-      "hash": "c933e25e41f8b5fa",
+      "hash": "c05abda9b3399df9",
       "history": [
         {
           "event": "upgraded",
@@ -5650,6 +5676,14 @@
           "prev_hash": "43471b59f4b76768",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T01:11:04.227Z",
+          "hash": "c05abda9b3399df9",
+          "prev_hash": "c933e25e41f8b5fa",
+          "commit": "36c35ccc",
+          "note": "2026-10-18 cursor batch-04 — docs/agents/swarm-outputs/cursor-2026-10-18-batch-04/BRIEFS.md"
         }
       ]
     },
@@ -8314,20 +8348,56 @@
       "history": []
     },
     "aurora-rift-2-pass1": {
-      "hash": "b4c5bb5b53dc88af",
-      "history": []
+      "hash": "c60d5a78284035d7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T01:11:04.227Z",
+          "hash": "c60d5a78284035d7",
+          "prev_hash": "b4c5bb5b53dc88af",
+          "commit": "36c35ccc",
+          "note": "2026-10-18 cursor batch-04 — docs/agents/swarm-outputs/cursor-2026-10-18-batch-04/BRIEFS.md"
+        }
+      ]
     },
     "aurora-rift-2-pass2": {
-      "hash": "cd2a2e801d74c6e3",
-      "history": []
+      "hash": "c37f94d3abf005d1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T01:11:04.227Z",
+          "hash": "c37f94d3abf005d1",
+          "prev_hash": "cd2a2e801d74c6e3",
+          "commit": "36c35ccc",
+          "note": "2026-10-18 cursor batch-04 — docs/agents/swarm-outputs/cursor-2026-10-18-batch-04/BRIEFS.md"
+        }
+      ]
     },
     "aurora-rift-pass1": {
-      "hash": "19b67eb357b3d9a6",
-      "history": []
+      "hash": "02cb59462c6e7809",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T01:11:04.227Z",
+          "hash": "02cb59462c6e7809",
+          "prev_hash": "19b67eb357b3d9a6",
+          "commit": "36c35ccc",
+          "note": "2026-10-18 cursor batch-04 — docs/agents/swarm-outputs/cursor-2026-10-18-batch-04/BRIEFS.md"
+        }
+      ]
     },
     "aurora-rift-pass2": {
-      "hash": "b5f5839ea76317a9",
-      "history": []
+      "hash": "c3b8b32633ee344e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T01:11:04.227Z",
+          "hash": "c3b8b32633ee344e",
+          "prev_hash": "b5f5839ea76317a9",
+          "commit": "36c35ccc",
+          "note": "2026-10-18 cursor batch-04 — docs/agents/swarm-outputs/cursor-2026-10-18-batch-04/BRIEFS.md"
+        }
+      ]
     },
     "aurora_borealis": {
       "hash": "0c08d43975541d8d",
@@ -8510,8 +8580,17 @@
       "history": []
     },
     "liquid-viscous": {
-      "hash": "414810c0002676e6",
-      "history": []
+      "hash": "78779bbf8015b9d0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T01:11:04.227Z",
+          "hash": "78779bbf8015b9d0",
+          "prev_hash": "414810c0002676e6",
+          "commit": "36c35ccc",
+          "note": "2026-10-18 cursor batch-04 — docs/agents/swarm-outputs/cursor-2026-10-18-batch-04/BRIEFS.md"
+        }
+      ]
     },
     "liquid-zoom": {
       "hash": "657b75b751f9f5e8",
@@ -8979,8 +9058,17 @@
       "history": []
     },
     "gray-scott-tank": {
-      "hash": "d142a2063a61045b",
-      "history": []
+      "hash": "ee31b94d212e5bd4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T01:11:04.227Z",
+          "hash": "ee31b94d212e5bd4",
+          "prev_hash": "d142a2063a61045b",
+          "commit": "36c35ccc",
+          "note": "2026-10-18 cursor batch-04 — docs/agents/swarm-outputs/cursor-2026-10-18-batch-04/BRIEFS.md"
+        }
+      ]
     },
     "jfa-aurora-voronoi": {
       "hash": "fa33e1820d3c59e7",

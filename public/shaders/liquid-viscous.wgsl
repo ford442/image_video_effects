@@ -9,7 +9,9 @@
 //  Complexity: Very High
 //  Scientific: 2D incompressible Navier-Stokes with vorticity confinement,
 //              turbulence cascade, semi-Lagrangian advection and dye roll-up
-//  Upgraded: 2026-08-23 (Batch 58B — Liquid)
+//  Upgraded: 2026-10-18
+//  Ideas: Ekman veer of the velocity with depth; Rayleigh–Plateau beads on quiet dye threads
+//  A packing: raw (velocity.xy, dye, pressure)
 // ═══════════════════════════════════════════════════════════════════
 //  A carries SIM STATE (rg = velocity, b = dye, a = pressure); it is read back
 //  next frame as dataTextureC. Display RGBA goes to writeTexture only —
@@ -255,6 +257,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   velocity += (confinementForce + cascadeForce + mouseCurl + rippleForce + audioVortices) * dt;
   velocity *= 1.0 / (1.0 + 10.0 * viscosity * dt);
 
+  // Idea: Ekman veer — viscosity turns the flow with picture depth.
+  let pictureDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clampUV(uv), 0.0).r;
+  let veer = viscosity * (0.12 + pictureDepth * 0.38);
+  let veerC = cos(veer);
+  let veerS = sin(veer);
+  velocity = vec2<f32>(velocity.x * veerC - velocity.y * veerS, velocity.x * veerS + velocity.y * veerC);
+
   // ── Local Jacobi pressure projection (the fixed solve) ────────────────────
   let divC = (cE.x  - cW.x)  * invDx + (cN.y  - cS.y)  * invDy;
   let divE = (cEE.x - c00.x) * invDx + (cNE.y - cSE.y) * invDy;
@@ -307,7 +316,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                  + vec3<f32>(0.10, 0.18, 0.28) * dye
                  + vec3<f32>(0.55, 0.72, 0.95) * shearHighlight * (0.08 + 0.18 * treble);
   let blend = clamp(0.32 + 0.45 * dye + 0.28 * vorticityVisual, 0.0, 1.0);
-  let finalColor = acesFilm(mix(advectedColor.rgb, iridescent + rollupGlow, blend));
+  // Idea: filament beads — Rayleigh–Plateau pearls on quiet dye threads.
+  let dyeG = vec2<f32>(cE.b - cW.b, cN.b - cS.b);
+  let dyeGLen = length(dyeG);
+  let beadTang = vec2<f32>(-dyeG.y, dyeG.x) / max(dyeGLen, 0.0001);
+  let bead = pow(0.5 + 0.5 * sin(dot(uv, beadTang) * 110.0 + time * 1.4), 10.0);
+  let quietThread = (1.0 - smoothstep(0.35, 2.4, abs(omega) * 0.05)) * smoothstep(0.012, 0.07, dyeGLen);
+  let beadLight = vec3<f32>(0.9, 0.95, 1.0) * bead * quietThread * (0.12 + 0.28 * (1.0 - viscosity));
+  let finalColor = acesFilm(mix(advectedColor.rgb, iridescent + rollupGlow, blend) + beadLight);
 
   // ── Semantic alpha: dye load and roll-up are the substance ────────────────
   let alpha = clamp(mix(advectedColor.a, 1.0, clamp(dye * 0.8 + vorticityVisual * 0.5, 0.0, 1.0))
