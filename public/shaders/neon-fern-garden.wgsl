@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: procedural, audio-reactive, mouse-driven, upgraded-rgba, semantic-alpha, depth-aware
 //  Complexity: High
-//  Upgraded: 2026-10-05
-//  Ideas: fiddlehead unfurl (live growthPhase clips the tip and coils the last 20% into a crozier); dew on leaflet tips; soil glow-bed under each base
+//  Upgraded: 2026-10-18
+//  Ideas: fiddlehead unfurl (live growthPhase clips the tip and coils the last 20% into a crozier); dew on leaflet tips; soil glow-bed under each base; bipinnate pinnules (each pinna carries forward-swept sub-leaflets, fading in as the frond matures); breeze front (a gust band sweeps across the bed and bends each frond as it passes, instead of every frond swaying in unison)
 //  A packing: linear pre-ACES RGB + presence alpha (exact C load, 2.5% ghost)
 // ═══════════════════════════════════════════════════════════════════
 //  Procedurally generated fern fronds unfurling in neon colors against
@@ -104,7 +104,14 @@ fn frondControl(base: vec2<f32>, angle: f32, scale: f32,
 
   // Bend the frond with growth (bass-driven)
   let growth = 0.6 + bass * 0.4;
-  let bend = sin(time * 0.5) * 0.08 * growth;
+  // ── Idea 5: breeze front — HEAD's sway, phase-lagged by the base x so the bed
+  // ripples left→right, plus a gust band that crosses the garden every ~14 s
+  // (x from -2.2 to 2.2, wider than any aspect) and leans each frond downwind
+  // as it passes; bass stiffens the gust a little like a stronger blow.
+  let gustX = fract(time * 0.07) * 4.4 - 2.2;
+  let gx = (base.x - gustX) / 0.35;
+  let gust = exp(-gx * gx) * (0.10 + bass * 0.04);
+  let bend = sin(time * 0.5 - base.x * 1.8) * 0.08 * growth - gust * sin(angle);
   let mid = mix(base, bentTip, 0.5) + vec2<f32>(cos(angle + 1.57), sin(angle + 1.57)) * bend;
 
   var c: FrondCtl;
@@ -186,7 +193,8 @@ fn fernFrond(p: vec2<f32>, base: vec2<f32>, angle: f32, scale: f32,
 
   // FIX: early-return bound widened past the leaflet reach (0.04*scale + its
   // soft edge) so leaflets survive where the stem itself has faded out.
-  if (d > frondWidth + 0.05 * scale) {
+  // Idea 4 widens it again by the pinnule reach (0.45 of a 0.04*scale leaflet).
+  if (d > frondWidth + 0.065 * scale) {
     return vec4<f32>(0.0);
   }
 
@@ -207,6 +215,26 @@ fn fernFrond(p: vec2<f32>, base: vec2<f32>, angle: f32, scale: f32,
     let lTip = lPos + lPerp * lSize * select(-1.0, 1.0, (i % 2u) == 0u);
     let ld = sdSegment(p, lPos, lTip);
     leafletStr = max(leafletStr, smoothstepf32(lSize * 0.15, 0.0, ld));
+
+    // ── Idea 4: bipinnate pinnules — a real fern is self-similar: each pinna
+    // (leaflet) carries a pinnule pair on both sides of its midrib, swept
+    // toward the pinna tip. Three pairs at 30/55/80% along the pinna,
+    // shrinking outward, opening only once the frond is mature (curl ≈ 0).
+    let mature = smoothstepf32(0.6, 1.0, unfurl);
+    if (lSize * mature > 0.004) {
+      let pinDir = (lTip - lPos) / max(lSize, 1e-4);
+      let sweepA = normalize(lDir + pinDir * 0.6);
+      let sweepB = normalize(-lDir + pinDir * 0.6);
+      for (var k = 0u; k < 3u; k = k + 1u) {
+        let f = 0.3 + 0.25 * f32(k);
+        let root = lPos + (lTip - lPos) * f;
+        let pinLen = lSize * 0.45 * (1.0 - 0.45 * f) * mature;
+        let dA = sdSegment(p, root, root + sweepA * pinLen);
+        let dB = sdSegment(p, root, root + sweepB * pinLen);
+        // stroke as wide as the pinna's own (lSize*0.15) so it stays ≥ ~1 px
+        leafletStr = max(leafletStr, smoothstepf32(lSize * 0.15, 0.0, min(dA, dB)) * 0.85);
+      }
+    }
   }
 
   // Chromatic: neon magenta core, green mid, cyan edge

@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, upgraded-rgba, mouse-driven, click-reactive, held-drag, raymarched, depth-aware
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: eclosion seam (smin-lipped dorsal split); cremaster thread + silk girdle pendulum sway; defensive click wriggle; core-backlit wing-case venation; abdominal segments with breathing spiracles
+//  Upgraded: 2026-10-18
+//  Ideas: eclosion seam (smin-lipped dorsal split); cremaster thread + silk girdle pendulum sway; defensive click wriggle; core-backlit wing-case venation; abdominal segments with breathing spiracles; pharate wing pattern show-through (discal lunule window + postmedial zig-zag, matures with the gape); bipectinate antenna sheaths along the wing-pad edges (treble-sheened barbs)
 //  A packing: raw HDR display RGB + semantic alpha (C read back as colour history)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -299,7 +299,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     var col = vec3<f32>(0.02, 0.03, 0.05) * (1.0 - length(p)*0.3); // Background
 
-    if (t < 20.0) {
+    // A march that runs out of steps (m = -1) is a grazing miss, not a hit.
+    let hit = t < 20.0 && m > 0.0;
+    if (hit) {
         let n = getNormal(p_current, pose);
         let l = normalize(vec3<f32>(1.0, 1.0, 1.0));
         let diff = max(dot(n, l), 0.0);
@@ -339,6 +341,36 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let venation = clamp(max(vein * 0.9, crossVein * 0.5) + padEdge * 0.6, 0.0, 1.0) * wingMask;
             col += mix(coreCol, fiberCol, 0.25) * venation * (0.22 + audio.x * 0.5 + pose.gape * 1.5);
 
+            // Idea 6 — pharate wing pattern: before eclosion the pupal cuticle clears and the adult's wing
+            // markings show through the pads. Maturity follows the seam gape (bass / held pointer).
+            let maturity = clamp(0.3 + pose.gape * 1.6 + audio.x * 0.25, 0.0, 1.0);
+            // Discal lunule: a dark-ringed disc with a clear crescent window that lets the core shine out.
+            let lun = vec2<f32>((abs(girth) - 1.05) / 0.3, (pb.y + 1.7) / 0.5);
+            let lunR = length(lun);
+            let lunDisc = smoothstep(1.0, 0.85, lunR);
+            let lunWindow = lunDisc * smoothstep(0.55, 0.8, length(lun - vec2<f32>(-0.4, 0.2)));
+            let lunRing = 1.0 - smoothstep(0.0, 0.12, abs(lunR - 0.92));
+            // Postmedial zig-zag line at a fixed distance out from the wing base, crossing every vein.
+            let zig = (abs(fract(fan * 4.0) - 0.5) * 2.0 - 0.5) * 0.2;
+            let pmLine = 1.0 - smoothstep(0.03, 0.08, abs(length(fromBase) - 3.0 - zig));
+            let pigment = mix(vec3<f32>(0.9, 0.5, 0.18), vec3<f32>(0.75, 0.3, 0.9), colorShift);
+            let showThrough = wingMask * maturity;
+            col = mix(col, col * 0.35, (lunRing + pmLine * 0.7) * showThrough);
+            col += pigment * (lunDisc - lunWindow) * 0.18 * showThrough;
+            col += coreCol * lunWindow * showThrough * (0.5 + audio.x * 0.9);
+
+            // Idea 7 — antenna sheaths: the bipectinate (feathered) antenna cases of a moth pupa lie along the
+            // inner edge of each wing pad, from the head end up to the wing base; the barbs sheen with treble.
+            let shaft = abs(abs(girth) - 0.32);
+            let antW = 0.06 + 0.09 * smoothstep(-4.3, -1.5, pb.y) * smoothstep(0.7, -0.6, pb.y);
+            let antMask = smoothstep(antW + 0.03, antW, shaft)
+                        * smoothstep(-4.45, -4.15, pb.y) * smoothstep(0.75, 0.45, pb.y);
+            let barb = 1.0 - smoothstep(0.0, 0.35, abs(fract((pb.y + shaft * 1.6) * 8.0) - 0.5) * 2.0);
+            let rachis = 1.0 - smoothstep(0.012, 0.03, shaft);
+            col *= 1.0 - antMask * (1.0 - barb) * 0.45;
+            col += mix(fiberCol, vec3<f32>(0.9, 0.85, 0.7), 0.4) * antMask * (barb * 0.5 + rachis * 0.6)
+                 * (0.12 + audio.z * 0.7 + spec * 0.8);
+
             // Idea 5 — abdominal segments + spiracles: grooved rings toward the cremaster end, with a
             // breathing spiracle on each flank of every segment.
             let abdomen = smoothstep(0.9, 1.6, pb.y) * smoothstep(5.4, 4.6, pb.y);
@@ -373,7 +405,6 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let history = textureLoad(dataTextureC, coord, 0);
     let hdrColor = clamp(mix(col, history.rgb, 0.06 + audio.x * 0.08), vec3<f32>(0.0), vec3<f32>(7.0));
     let mappedColor = acesToneMap(hdrColor);
-    let hit = t < 20.0;
     let alpha = clamp(select(0.03, 0.32 + length(mappedColor) * 0.32, hit) + clickGlow * 0.12, 0.02, 0.98);
     let depth = select(0.0, clamp(1.0 - t / 20.0, 0.0, 1.0), hit);
 

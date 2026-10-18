@@ -3,44 +3,20 @@
 //  Category: generative
 //  Large-scale structure evolving at speed: Zel'dovich streaming,
 //  psychedelic stellar-population spectra, ridged filament micro-detail,
-//  spring-cursor void well, held collapse, capped click density shocks.
-//  Upgraded: 2026-09-27
-//  Ideas: cosmic-web walls; galaxy beads on filaments
+//  cursor void well, held collapse, capped click density shocks.
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, click-reactive, held-drag, fast-motion
+//  Upgraded: 2026-10-18
+//  Ideas: cosmic-web walls; galaxy beads on filaments; weak-lensing cosmic shear (background galaxies stretched tangentially around the void-well mass); CMB last-scattering backdrop with Sunyaev–Zel'dovich decrement shadows along the hot filament gas
 //  A packing: ACES display RGBA
 //  Contract: 13 bindings, ACES, semantic alpha, dataTextureA writeback only,
 //            exact textureLoad from dataTextureC, plasmaBuffer three-band audio,
-//            bounded extraBuffer[133..138] state.
+//            stateless (no extraBuffer).
 // ═══════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, yz=MouseUV, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Warp Strength, y=Filament Density, z=Evolution Speed, w=Void Pull
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Warp Strength, y=Filament Density, z=Evolution Speed, w=Void Pull
 
 const PI: f32 = 3.14159265;
 const TAU: f32 = 6.28318530718;
-
-const SPRING_X: i32 = 133;
-const SPRING_Y: i32 = 134;
-const SPRING_VX: i32 = 135;
-const SPRING_VY: i32 = 136;
-const SPRING_T: i32 = 137;
-const SPRING_INIT: i32 = 138;
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -236,33 +212,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let held = u.zoom_config.w > 0.5;
   let heldF = select(0.0, 1.0, held);
 
-  // ── spring cursor (extraBuffer[133..138] only) ──────────────────────
-  var smoothMouse = rawMouse;
-  let hasSpring = arrayLength(&extraBuffer) > 138u;
-  if (hasSpring && extraBuffer[SPRING_INIT] > 0.5) {
-    smoothMouse = vec2<f32>(extraBuffer[SPRING_X], extraBuffer[SPRING_Y]);
-  }
-  if (hasSpring && id.x == 0u && id.y == 0u) {
-    var springPos = smoothMouse;
-    var springVel = vec2<f32>(extraBuffer[SPRING_VX], extraBuffer[SPRING_VY]);
-    if (extraBuffer[SPRING_INIT] <= 0.5) {
-      springPos = rawMouse;
-      springVel = vec2<f32>(0.0);
-    } else {
-      let dt = clamp(time - extraBuffer[SPRING_T], 0.001, 0.05);
-      let omega = 9.5;
-      let accel = (rawMouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
-      springVel += accel * dt;
-      springPos += springVel * dt;
-    }
-    extraBuffer[SPRING_X] = springPos.x;
-    extraBuffer[SPRING_Y] = springPos.y;
-    extraBuffer[SPRING_VX] = springVel.x;
-    extraBuffer[SPRING_VY] = springVel.y;
-    extraBuffer[SPRING_T] = time;
-    extraBuffer[SPRING_INIT] = 1.0;
-    smoothMouse = springPos;
-  }
+  // extraBuffer is re-uploaded every frame, so the old spring state never
+  // persisted (and raced across workgroups): the pointer drives directly.
+  let smoothMouse = rawMouse;
 
   // ── click density shocks (capped, bounded) ─────────────────────────
   var shock = 0.0;
@@ -280,22 +232,27 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let zp = u.zoom_params;
   let warpStrength = clamp(zp.x, 0.0, 1.0) * 3.0 + bass * 0.8 + shock * 1.2;
   let densityParam = clamp(zp.y, 0.0, 1.0) * 3.5 + 0.5;
-  // Fast motion: cosmic evolution runs an order faster, bass and held on the throttle
-  let speed = clamp(zp.z, 0.0, 1.0) * (6.0 + bass * 5.0 + heldF * 3.0) + 0.6;
+  // Fast motion: cosmic evolution runs an order faster. Bass pushes the clock
+  // by a bounded offset; scaling absolute time by bass/held made the whole
+  // web jump on every beat and press.
+  let speed = clamp(zp.z, 0.0, 1.0) * 6.0 + 0.6;
+  let clock = time * speed + bass * 0.9;
   let voidPull = clamp(zp.w, 0.0, 1.0);
 
   // Void well at the smoothed cursor — held collapses the web into it
   let mouseC = (smoothMouse - 0.5) * vec2<f32>(aspect.x, -1.0);
   let dist = length(uv - mouseC);
   let force = smoothstep(0.6, 0.0, dist) * (0.8 + heldF * 1.4 + shock * 0.8) * (0.4 + voidPull);
+  let uvScreen = uv;
   uv -= normalize(uv - mouseC + vec2<f32>(1e-4)) * force * 0.8;
 
-  var p = vec3<f32>(uv * 3.0, time * speed * 0.3);
-  p += zeldovichDisplacement(p * 0.5, time * speed * 0.1);
+  var p = vec3<f32>(uv * 3.0, clock * 0.3);
+  // Zel'dovich growth factor is capped so streaming stays bounded in long sets.
+  p += zeldovichDisplacement(p * 0.5, min(clock * 0.1, 60.0));
   p = spiralWarp(p, 3.0, 0.5, warpStrength * 0.2);
-  p = domainWarp(p, time * speed * 0.2);
-  p = quaternionRotate(p, vec3<f32>(0.3, 0.7, 0.5), time * speed * 0.15);
-  p = kleinWarp(p, time * speed);
+  p = domainWarp(p, clock * 0.2);
+  p = quaternionRotate(p, vec3<f32>(0.3, 0.7, 0.5), clock * 0.15);
+  p = kleinWarp(p, clock);
 
   let voidSDF = min(
     min(sdfSphere(p - vec3<f32>(mouseC * 3.0, 0.0), 0.4 + bass * 0.2 + heldF * 0.25),
@@ -304,7 +261,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   );
 
   let apollo = apollonianEstimate(p * 0.5, 2.0 + mids);
-  let noise3 = snoise3(p * 0.8 + time * speed * 0.1);
+  let noise3 = snoise3(p * 0.8 + clock * 0.1);
   let mf = multifractalNoise(p * 0.4, 4, 0.6);
   p += mf * warpStrength * 0.3;
   let fbmDetail = fbm(p * 0.6);
@@ -328,7 +285,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let starCol = cosmicPalette(popHue, mids * 1.4);
 
   let glow = volumetricGlow(vec3<f32>(uv * 3.0, 0.0), vec3<f32>(mouseC * 3.0, 0.0), structDensity);
-  let evolution = sin(time * speed * 0.1) * 0.5 + 0.5;
+  let evolution = sin(clock * 0.1) * 0.5 + 0.5;
 
   var col = starCol * structDensity * (0.9 + evolution * 0.5);
   col += cosmicPalette(popHue + 0.35, treble) * tempGrad * 0.55;
@@ -353,6 +310,40 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   col += cosmicPalette(fract(time * 0.9), 1.0) * shock * 1.3;
   let cursorDist = length((uv01 - smoothMouse) * aspect);
   col += cosmicPalette(fract(time * 0.4 + cursorDist), bass) * exp(-cursorDist * 7.0) * (0.12 + heldF * 0.45);
+
+  // Idea 3: CMB last-scattering backdrop. The voids are not empty sky: behind
+  // the web sits the microwave background, a fixed (non-evolving) field of
+  // degree + sub-degree anisotropy. Hot filament gas Compton-scatters it — the
+  // Sunyaev–Zel'dovich decrement — so the backdrop cools and darkens in a
+  // halo around every strand (F2−F1 gap) and deepens with tempGrad.
+  let cmbN = snoise3(vec3<f32>(uvScreen * 5.0, 3.7)) * 0.6 + snoise3(vec3<f32>(uvScreen * 13.0, 9.1)) * 0.4;
+  let cmbT = clamp(cmbN * 0.5 + 0.5, 0.0, 1.0);
+  let szGas = smoothstep(0.38, 0.03, gap) * (0.55 + tempGrad * 0.6 + bass * 0.2);
+  let cmbCol = mix(vec3<f32>(0.05, 0.07, 0.17), vec3<f32>(0.19, 0.08, 0.05), cmbT) * (1.0 - clamp(szGas, 0.0, 1.0) * 0.75);
+  col += cmbCol * (1.0 - structDensity) * 0.35;
+
+  // Idea 4: weak-lensing cosmic shear. A sparse field of faint high-redshift
+  // galaxies sits on the screen behind the web; the void-well mass under the
+  // pointer stretches each one tangentially and squeezes it radially
+  // (shear ∝ 1/distance), so arcs line up around the cursor — stronger when
+  // held or shocked. Sampled in unwarped screen space: the light is behind.
+  let gScale = 34.0;
+  let gCell = floor(uvScreen * gScale);
+  let gh = hash33(vec3<f32>(gCell, 7.0));
+  if (gh.z > 0.55) {
+    let gc = (gCell + 0.25 + gh.xy * 0.5) / gScale;
+    let toWell = gc - mouseC;
+    let rw = length(toWell) + 1e-4;
+    let radial = toWell / rw;
+    let tangent = vec2<f32>(-radial.y, radial.x);
+    let shearG = clamp(0.06 / (rw + 0.08) * (0.5 + voidPull) * (1.0 + heldF * 1.5 + shock), 0.0, 0.85);
+    let local = (uvScreen - gc) * gScale;
+    let lt = dot(local, tangent) / (1.0 + shearG * 1.6);
+    let lr = dot(local, radial) * (1.0 + shearG * 1.6);
+    let sigma = 0.08 + gh.x * 0.08;
+    let galaxy = exp(-(lt * lt + lr * lr) / (sigma * sigma));
+    col += vec3<f32>(1.0, 0.72, 0.5) * galaxy * (0.25 + 0.2 * gh.y) * (1.0 - structDensity * 0.8) * (1.0 + shearG);
+  }
 
   // ── temporal feedback — exact loads, no filtering ───────────────────
   let prev = textureLoad(dataTextureC, coord, 0);
