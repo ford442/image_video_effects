@@ -79,6 +79,92 @@ jobs:
           ISSUE="${{ inputs.issue_number || '921' }}"
           gh issue comment "$ISSUE" --body-file /tmp/thumb-comment.md
 
+      # The calendar half of the deferral gate. Push/PR CI runs push mode (expiry only warns),
+      # so a red run here is the signal; no continue-on-error. !cancelled(): run even when the
+      # coverage status step went red.
+      - name: Deferral expiry gate
+        id: expiry
+        if: ${{ !cancelled() }}
+        run: |
+          set -o pipefail
+          node scripts/verify-thumbs-deferrals.js --expiry 2>&1 | tee /tmp/deferral-expiry.txt
+
+      # One upserted comment on the tracking issue, refreshed on green runs too so a cleared
+      # cliff does not leave last week's list behind.
+      - name: Sticky deferral expiry comment
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OUTCOME: ${{ steps.expiry.outcome }}
+        run: |
+          ISSUE="${{ inputs.issue_number || '921' }}"
+          MARKER="<!-- thumbnail-deferral-expiry-sticky -->"
+          AFFECTED=$(node -e "
+            const { loadDeferralFile, today, daysBetween, EXPIRY_WARNING_DAYS } = require('./scripts/lib/thumbnailDeferrals');
+            const now = today();
+            const rows = loadDeferralFile()
+              .map(e => ({ ...e, exp: e.expires || e.until }))
+              .filter(e => e.exp && daysBetween(now, e.exp) <= EXPIRY_WARNING_DAYS)
+              .sort((a, b) => a.exp.localeCompare(b.exp) || a.id.localeCompare(b.id));
+            if (!rows.length) process.exit(0);
+            const cell = v => String(v ?? '').replace(/\|/g, '\\\\|').replace(/\n/g, ' ');
+            console.log('| id | expires | reason | renewals | failure_note |');
+            console.log('|---|---|---|---|---|');
+            for (const e of rows) console.log('| \`' + e.id + '\` | ' + e.exp + (e.exp < now ? ' (expired)' : '') + ' | ' + cell(e.reason) + ' | ' + (e.renewals || 0) + ' | ' + cell(e.failure_note) + ' |');
+          ")
+          {
+            echo "$MARKER"
+            echo "## Thumbnail deferral expiry"
+            echo ""
+            if [ "$OUTCOME" = "success" ]; then
+              echo "✅ \`verify-thumbs-deferrals --expiry\` passed ($(date -u +%F))."
+            else
+              echo "❌ \`verify-thumbs-deferrals --expiry\` failed ($(date -u +%F), outcome: ${OUTCOME:-unknown})."
+            fi
+            echo ""
+            echo '```'
+            cat /tmp/deferral-expiry.txt 2>/dev/null || echo "(no verifier output)"
+            echo '```'
+            echo ""
+            if [ -n "$AFFECTED" ]; then
+              echo "### Expired or expiring within 7 days"
+              echo ""
+              echo "$AFFECTED"
+              echo ""
+              echo "### Disposition"
+              echo ""
+              echo "Re-capture on a GPU runner (\`thumbs-capture-farm.yml\`; \`thumbs-farm-finalize.js\` drops the deferral for a clean PNG), or remove the expired rows — they then count as Missing. Do not bulk-renew."
+              echo ""
+              echo '```sh'
+              echo 'node scripts/defer-thumbnail.js remove --expired --dry-run'
+              echo 'node scripts/defer-thumbnail.js remove --expired'
+              echo 'node scripts/defer-thumbnail.js ratchet'
+              echo 'node scripts/check-thumbnail-coverage.js --base-ref origin/main'
+              echo 'node scripts/verify-thumbs-deferrals.js --expiry'
+              echo '```'
+              echo ""
+              echo "Before the expiry day, preview with \`THUMBS_DEFERRALS_NOW=<day after expiry>\` on the first two commands."
+            else
+              echo "No deferral expired or expiring within 7 days."
+            fi
+            echo ""
+            echo "Push/PR CI runs the gate in push mode (expiry only warns). Docs: [THUMBNAIL_PIPELINE.md](docs/THUMBNAIL_PIPELINE.md)"
+          } > /tmp/deferral-expiry-comment.md
+
+          EXISTING=$(gh api --paginate "repos/${{ github.repository }}/issues/${ISSUE}/comments" \
+            --jq '.[] | select(.body | contains("thumbnail-deferral-expiry-sticky")) | .id' | head -n 1)
+          if [ -n "$EXISTING" ]; then
+            gh api --method PATCH "repos/${{ github.repository }}/issues/comments/${EXISTING}" \
+              -f body="$(cat /tmp/deferral-expiry-comment.md)"
+          else
+            gh issue comment "$ISSUE" --body-file /tmp/deferral-expiry-comment.md
+          fi
+
       - name: Job summary
         if: always()
-        run: cat /tmp/thumb-status.txt >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          cat /tmp/thumb-status.txt >> "$GITHUB_STEP_SUMMARY" || true
+          if [ -f /tmp/deferral-expiry.txt ]; then
+            { echo ""; echo "### Deferral expiry"; echo '```'; cat /tmp/deferral-expiry.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          fi

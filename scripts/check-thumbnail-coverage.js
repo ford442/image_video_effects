@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const { loadThumbnailSkipIds } = require('./lib/thumbnailSkipAllowlist');
-const { loadRatchet, validateDeferrals } = require('./lib/thumbnailDeferrals');
+const { loadRatchet, validateDeferrals, today } = require('./lib/thumbnailDeferrals');
 
 const ROOT = path.join(__dirname, '..');
 const LISTS_DIR = path.join(ROOT, 'public', 'shader-lists');
@@ -129,21 +129,21 @@ function deferralExpiry(entry) {
   return entry.expires || entry.until || null;
 }
 
-function loadDeferralEntries() {
+/** THUMBS_DEFERRALS_NOW (via the lib's today()) governs which deferrals count as unexpired. */
+function loadDeferralEntries(now = today()) {
   if (!fs.existsSync(DEFERRALS_PATH)) {
     return { valid: new Set(), all: [] };
   }
   const data = JSON.parse(fs.readFileSync(DEFERRALS_PATH, 'utf8'));
   const entries = data.entries || [];
 
-  const today = new Date().toISOString().split('T')[0];
   const valid = new Set();
 
   for (const entry of entries) {
     if (!entry.id) continue;
     const expires = deferralExpiry(entry);
     if (!expires) continue;
-    if (expires >= today) {
+    if (expires >= now) {
       valid.add(entry.id);
     }
   }
@@ -275,8 +275,11 @@ function main() {
     console.log('No newly eligible shaders in this pull request; coverage check is informational.');
   }
 
+  // Push mode: rows that merely aged past `expires` belong to the scheduled --expiry job;
+  // a past-dated row that is new or re-dated vs the base still fails here.
   const ratchet = loadRatchet();
-  const deferralErrors = validateDeferrals(deferrals.all, { ratchet });
+  const baseEntries = readGitJson(baseRef, 'reports/thumbnail_deferrals.json')?.entries || [];
+  const deferralErrors = validateDeferrals(deferrals.all, { ratchet, expiryMode: 'push', baseEntries });
   if (deferralErrors.length > 0) {
     console.error(
       `❌ Thumbnail deferral violations (${deferralErrors.length}):\n  ` + deferralErrors.slice(0, 20).join('\n  '),

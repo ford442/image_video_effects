@@ -24,23 +24,23 @@ describe('deferral gate dates', () => {
     assert.deepStrictEqual(checkDeferrals([entry('a')], { now: '2026-09-30', ratchet }).errors, []);
   });
 
-  it('fails when now == expires + 1', () => {
-    const { errors } = checkDeferrals([entry('a')], { now: '2026-10-01', ratchet });
+  it('fails when now == expires + 1 (enforce mode)', () => {
+    const { errors } = checkDeferrals([entry('a')], { now: '2026-10-01', ratchet, expiryMode: 'enforce' });
     assert.strictEqual(errors.length, 1);
     assert.match(errors[0], /expired 2026-09-30/);
   });
 
   it('warns (no error) when an entry expires within 7 days, naming count and earliest date', () => {
     const entries = [entry('a', { expires: '2026-10-03', deferred_at: '2026-09-10' }), entry('b', { expires: '2026-10-02', deferred_at: '2026-09-10' }), entry('c', { expires: '2026-10-30', deferred_at: '2026-10-01' })];
-    const { errors, warnings } = checkDeferrals(entries, { now: '2026-09-26', ratchet });
+    const { errors, warnings } = checkDeferrals(entries, { now: '2026-09-26', ratchet, expiryMode: 'enforce' });
     assert.deepStrictEqual(errors, []);
     assert.strictEqual(warnings.length, 1);
     assert.match(warnings[0], /^2 deferral\(s\) expire within 7 days \(earliest 2026-10-02/);
   });
 
   it('does not warn at 8 days out, and an expired entry is an error, not a warning', () => {
-    assert.deepStrictEqual(checkDeferrals([entry('a', { expires: '2026-10-04', deferred_at: '2026-09-10' })], { now: '2026-09-26', ratchet }).warnings, []);
-    const expired = checkDeferrals([entry('a')], { now: '2026-10-05', ratchet });
+    assert.deepStrictEqual(checkDeferrals([entry('a', { expires: '2026-10-04', deferred_at: '2026-09-10' })], { now: '2026-09-26', ratchet, expiryMode: 'enforce' }).warnings, []);
+    const expired = checkDeferrals([entry('a')], { now: '2026-10-05', ratchet, expiryMode: 'enforce' });
     assert.strictEqual(expired.errors.length, 1);
     assert.deepStrictEqual(expired.warnings, []);
   });
