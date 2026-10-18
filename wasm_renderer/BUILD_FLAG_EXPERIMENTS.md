@@ -111,3 +111,90 @@ available. **ASYNCIFY stays the committed default.** Before anyone attempts the 
   fallback ASYNCIFY build. Never ship a JSPI-only binary.
 - Expected upside is bounded by the table above: ≈ −40 KB `.wasm` (−31%) plus some init time.
   Record size and init-time numbers in a new dated section here. `-O3` stays a benchmark, not a default.
+
+## Release flags + debug profiles (2026-10-18, emsdk 6.0.12, `-O2 -flto`, ASYNCIFY) — #1343 Phase 3
+
+Measured with `bash wasm_renderer/measure_wasm_build_flags.sh`, which builds the real
+contract flags, TU list and export lists (the old version built a stub export list and
+overwrote this file). Sources are the tree at the commit that adds this section.
+
+| Variant | .wasm bytes | .js bytes | Delta (.wasm / .js) |
+|---------|------------:|----------:|---------------------|
+| baseline | 158,212 | 84,684 | — |
+| `-fno-exceptions -fno-rtti` | 171,783 | 83,882 | **+13,571** / −802 |
+| `-fno-exceptions` | 171,973 | 83,877 | **+13,761** / −807 |
+| `-fno-rtti` | 158,023 | 84,683 | −189 / −1 |
+| `-sENVIRONMENT=web` | 158,212 | 83,265 | 0 / −1,419 |
+| `-sENVIRONMENT=web,worker` | 158,212 | 83,645 | 0 / −1,039 |
+| `--closure 1` | 158,212 | 35,542 | 0 / **−49,142 (−58%)** |
+| `-sASYNCIFY_IMPORTS=emwgpuWaitAny` | 158,212 | 84,706 | 0 / +22 |
+| `-sASYNCIFY_IGNORE_INDIRECT` | 126,631 | 84,690 | **−31,581 (−20%)** / +6 |
+
+(The `.js` column moves by a few bytes with the output file name.)
+
+Decisions:
+
+- **`-fno-rtti`: adopted** (`extraFlags`). −189 B, and the sources use neither `typeid` nor
+  `dynamic_cast`, so it is a tripwire more than a saving.
+- **`-fno-exceptions`: rejected, it makes the binary 8.7% bigger.** Emscripten already
+  disables exception catching by default, so there was little to strip; why the flag grows
+  the output was not investigated (a different libc++ variant is the likely cause). The
+  `try`/`catch` in `device.cpp` and `audio_depth.cpp` are inside `EM_JS` (JavaScript) and
+  are not affected either way.
+- **`-sENVIRONMENT=web,worker`: not adopted.** It keeps the Worker loader the render
+  engine needs, but saves only 1 KB of glue. (`web` alone is the same 1.4 KB as before.)
+- **`ASYNCIFY_IMPORTS`: nothing to gain.** The only async import is `emwgpuWaitAny`
+  (`library_webgpu.js` marks it `__async`), which emscripten already adds. Setting the
+  list by hand is a no-op.
+- **`ASYNCIFY_IGNORE_INDIRECT` (+ `ASYNCIFY_ADD`): the biggest win and not adopted.**
+  −31.6 KB (−20%), because no indirect call is instrumented. That is only correct if no
+  indirect call sits on the stack while `wgpuInstanceWaitAny` unwinds; one that does makes
+  the unwind hit uninstrumented code and trap. On SwiftShader (below) init, `LoadShader`'s
+  error-scope pop and a render all work with it and no `ASYNCIFY_ADD` list, but that covers
+  three of the unwinding call sites, not capture/readback or video upload. **Revisit with
+  the #1080 real-GPU run**, building an `ASYNCIFY_ADD` list from whichever paths trap.
+- **`--closure 1`: the biggest JS win and not adopted.** −49 KB of glue (the `.wasm` is
+  untouched). It renames properties, so every `Module.xxx`, `WebGPU.xxx` and `EM_JS` access
+  has to survive minification. It did on SwiftShader, but a missed access only fails at
+  runtime, and the swiftshader specs are not part of CI. Adopt it together with a boot test
+  that is, not as a flag flip.
+
+Functional check of the two size wins: `tests/wasm-measurement.swiftshader.spec.ts` on the
+`swiftshader` Playwright project, with `build/wasm/pixelocity_wasm.{js,wasm}` swapped for each
+variant. `closure1` and `asyncify-ignore-indirect` match the release baseline: the app boots
+`?renderer=wasm` and the standalone instance initialises, loads `kaleidoscope` through an
+ASYNCIFY unwind, and renders it with GPU timing. The spec's `plasma` load returns 0 on the
+committed main artifact too (before this change); that failure is not part of the comparison.
+SwiftShader proves the module starts and unwinds. It is not a performance or real-GPU result.
+
+### Profiles (`wasm_compile_flags.json` `profiles`)
+
+| Command | Flags on top of release | `.wasm` | Output |
+|---------|------------------------|--------:|--------|
+| `npm run wasm:build:debug` | `-O0 -g -gsource-map -sASSERTIONS=2 -sSAFE_HEAP=1`, no `-flto` | 4,453,252 B | `wasm_renderer/build/debug/` |
+| `npm run wasm:build:asan` | debug + `-fsanitize=address`, minus `SAFE_HEAP` (ASan refuses to link with it) | 8,030,545 B | `wasm_renderer/build/debug/` |
+
+Neither writes `public/wasm/`. Both build with ASYNCIFY, and ASan + ASYNCIFY links and runs
+the standalone SwiftShader path without a report. What the debug profile found on its first run:
+
+1. **`lengthBytesUTF8` was never exported.** `src/wasm/bridge/state.ts` feature-detects
+   `module.lengthBytesUTF8`; with `ASSERTIONS` on, merely reading a non-exported runtime
+   method aborts, so the debug build died before init. Release silently took the
+   `TextEncoder` fallback. It is now in `wasm_exports.json` `exportedRuntimeMethods`.
+2. **The app bridge calls an ASYNCIFY export with a sync `ccall`** (`initWasmRenderer`).
+   Release gets away with it because init finishes after `ccall` has returned; `ASSERTIONS=2`
+   aborts with "The call to initWasmRenderer is running asynchronously". This is the
+   sync-`ccall` hazard described in the header of `tests/wasm-measurement.swiftshader.spec.ts`
+   and fixed only on the JSPI branch, and the frozen WASM backend (`docs/WASM_BACKEND_POLICY.md`)
+   leaves it open. Until then the debug build boots through a standalone page with
+   `{ async: true }`, not through `?renderer=wasm`.
+
+### Also in this change
+
+- `webgpu_limits.h` is generated from `webgpu_limits.json` (`npm run gen:webgpu-limits`);
+  `device.cpp` uses the constants and `verify:device-policy` fails on a stale header or a
+  hardcoded literal. `sizeof(Uniforms)` is `static_assert`ed against the contract.
+- `device.cpp` reads the device through the public `WebGPU.getJsObject` instead of the private
+  `WebGPU.Internals.jsObjects`.
+- `EM_CACHE` is overridable (`EM_CACHE=... npm run wasm:build`); the Colab `emsdk` path is gone and
+  emsdk is found by `wasm_renderer/emsdk_env_locate.sh` (`PATH`, `$EMSDK_ENV`, `$EMSDK`, `~/emsdk`).
