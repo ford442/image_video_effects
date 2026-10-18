@@ -3,9 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, temporal, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
+//  Upgraded: 2026-10-18
 //  Ideas: bell-contraction jet propulsion pulsing per cell; stinger-tip glow
-//         at tentacle endpoints; startle flash on strong mouse repulsion
+//         at tentacle endpoints; startle flash on strong mouse repulsion;
+//         aequorin->GFP margin photocytes (32 green granules on the bell rim
+//         re-emitting the blue aequorin light at 509 nm, flaring on each stroke);
+//         nerve-net conduction pulse (a light front runs root-to-stinger down
+//         every tentacle after each stroke is triggered)
 //  A packing: display RGBA (temporal color history)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -104,10 +108,31 @@ fn bioluminescentGlow(intensity: f32) -> vec3<f32> {
     return mix(aequorin, highInt, clamp(intensity - 0.5, 0.0, 1.0)) * intensity;
 }
 
+// Swim cycle phase at which the margin pacemakers fire: just before the power stroke
+// (bellRadius starts shrinking at swimPhase angle PI/2).
+const PACEMAKER_PHASE: f32 = 1.3208;
+
+// Wrapped age of the current swim cycle since the last pacemaker fire, in [0,1).
+fn pacemakerAge(phi: f32) -> f32 {
+    return fract((phi - PACEMAKER_PHASE) / (2.0 * PI));
+}
+
+struct SceneSample {
+    d: f32,
+    mat: f32,
+    tip: f32,       // distance to nearest stinger tip
+    repulse: f32,   // mouse repulsion magnitude
+    bellR: f32,     // current bell radius
+    phi: f32,       // swim-cycle phase angle of this cell
+    lp: vec3<f32>,  // jelly-local position (y = 0 at the tentacle roots)
+    tentLen: f32,   // in-cell tentacle length
+};
+
 // Jellyfish Body Modeling
-// Returns (distance, distance-to-nearest-tentacle-tip) so shading can pick up
-// stinger-tip proximity without re-deriving the tentacle geometry.
-fn mapJellyfish(p_in: vec3<f32>, cell_id: vec3<f32>, t: f32, audio_propulsion: f32) -> vec2<f32> {
+// Returns (distance, distance-to-nearest-tentacle-tip, bell radius, swim phase
+// angle) so shading can pick up stinger-tip proximity and the bell margin
+// without re-deriving the geometry.
+fn mapJellyfish(p_in: vec3<f32>, cell_id: vec3<f32>, t: f32, audio_propulsion: f32, tentacle_length: f32) -> vec4<f32> {
     var p = p_in;
 
     // Perturb points slightly to simulate organic breathing/pulse
@@ -117,7 +142,8 @@ fn mapJellyfish(p_in: vec3<f32>, cell_id: vec3<f32>, t: f32, audio_propulsion: f
     // Bell-contraction jet propulsion: the bell pulses between a contracted
     // and relaxed radius per cell (thrust/coast swim cycle), instead of a
     // fixed sphere, so the swarm visibly swims by contraction.
-    let swimPhase = sin(t * 1.6 + cell_id.x * 6.283 + cell_id.y * 3.14159);
+    let phi = t * 1.6 + cell_id.x * 6.283 + cell_id.y * 3.14159;
+    let swimPhase = sin(phi);
     let contraction = 0.5 + 0.5 * swimPhase;
     let bellRadius = mix(0.32, 0.42, contraction) + audio_propulsion * 0.03;
 
@@ -134,8 +160,7 @@ fn mapJellyfish(p_in: vec3<f32>, cell_id: vec3<f32>, t: f32, audio_propulsion: f
     // Combine bells and core softly
     var d = smin(bell, core, 0.1);
 
-    // Simple tentacles using capsules and smin
-    let tentacle_length = u.zoom_params.w;
+    // Simple tentacles using capsules and smin (length passed in, clamped to the cell)
 
     // Use noise to animate tentacles
     let wave = sin(p.y * 3.0 - t * 2.0 + cell_id.x * 10.0) * 0.1;
@@ -159,12 +184,12 @@ fn mapJellyfish(p_in: vec3<f32>, cell_id: vec3<f32>, t: f32, audio_propulsion: f
     // nearest tentacle endpoint, used later by bioluminescentGlow() in shading.
     let tipDist = min(min(length(p - tip1), length(p - tip2)), min(length(p - tip3), length(p - tip4)));
 
-    return vec2<f32>(d, tipDist);
+    return vec4<f32>(d, tipDist, bellRadius, phi);
 }
 
 // Global scene mapping (Swarm domain repetition)
 // Returns (distance, materialId, tipProximity, repulseMagnitude).
-fn mapScene(pos: vec3<f32>, t: f32, mids: f32, bass: f32) -> vec4<f32> {
+fn mapScene(pos: vec3<f32>, t: f32, mids: f32, bass: f32) -> SceneSample {
     // Determine grid size based on Swarm Density parameter
     let density = u.zoom_params.x;
     let spacing = mix(5.0, 1.5, density / 30.0); // Larger density -> smaller spacing
@@ -190,12 +215,15 @@ fn mapScene(pos: vec3<f32>, t: f32, mids: f32, bass: f32) -> vec4<f32> {
     let repulseMag = length(repulse);
 
     // Add movement and drift
-    let propulsion_speed = u.zoom_params.y * (1.0 + mids * 0.5);
+    // Mids widen the wander instead of scaling absolute time (t * (1 + mids)
+    // jumps the phase of every jelly whenever the mids level changes).
+    let propulsion_speed = u.zoom_params.y;
+    let wander = 0.5 * (1.0 + mids * 0.5);
     let audio_val = bass * 0.5 + 0.5; // Audio influences pulsing
 
-    let drift_x = sin(t * propulsion_speed + hash.x * 10.0) * 0.5;
-    let drift_y = cos(t * propulsion_speed * 0.8 + hash.y * 10.0) * 0.5 + fract(t * propulsion_speed * 0.2 + hash.y) * spacing;
-    let drift_z = sin(t * propulsion_speed * 1.1 + hash.z * 10.0) * 0.5;
+    let drift_x = sin(t * propulsion_speed + hash.x * 10.0) * wander;
+    let drift_y = cos(t * propulsion_speed * 0.8 + hash.y * 10.0) * wander + fract(t * propulsion_speed * 0.2 + hash.y) * spacing;
+    let drift_z = sin(t * propulsion_speed * 1.1 + hash.z * 10.0) * wander;
 
     let drift_offset = vec3<f32>(drift_x, drift_y, drift_z) + repulse * 2.0;
 
@@ -207,10 +235,22 @@ fn mapScene(pos: vec3<f32>, t: f32, mids: f32, bass: f32) -> vec4<f32> {
     let dir = normalize(vec3<f32>(drift_x, 1.0, drift_z));
 
     // Evaluate geometry for this cell
-    let jelly = mapJellyfish(local_p, hash, t, audio_val);
+    // Domain repetition cuts anything past the cell wall, so tentacles longer
+    // than the cell were chopped and their stinger tips never rendered.
+    let tentLen = min(u.zoom_params.w, spacing * 0.5 - 0.08);
+    let jelly = mapJellyfish(local_p, hash, t, audio_val, tentLen);
 
     // Material ID: 1.0 for jelly
-    return vec4<f32>(jelly.x, 1.0, jelly.y, repulseMag);
+    var s: SceneSample;
+    s.d = jelly.x;
+    s.mat = 1.0;
+    s.tip = jelly.y;
+    s.repulse = repulseMag;
+    s.bellR = jelly.z;
+    s.phi = jelly.w;
+    s.lp = local_p;
+    s.tentLen = tentLen;
+    return s;
 }
 
 // Raymarching
@@ -220,9 +260,9 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, t: f32, mids: f32, bass: f32) -> vec2<
     for(var i=0; i<80; i++) {
         let p = ro + rd * dO;
         let dS = mapScene(p, t, mids, bass);
-        dO += dS.x;
-        mat_id = dS.y;
-        if(dO > 50.0 || abs(dS.x) < 0.01) { break; }
+        dO += dS.d;
+        mat_id = dS.mat;
+        if(dO > 50.0 || abs(dS.d) < 0.01) { break; }
     }
     if (dO > 50.0) { return vec2<f32>(-1.0, 0.0); }
     return vec2<f32>(dO, mat_id);
@@ -232,9 +272,9 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, t: f32, mids: f32, bass: f32) -> vec2<
 fn getNormal(p: vec3<f32>, t: f32, mids: f32, bass: f32) -> vec3<f32> {
     let e = vec2<f32>(0.01, 0.0);
     let n = vec3<f32>(
-        mapScene(p + e.xyy, t, mids, bass).x - mapScene(p - e.xyy, t, mids, bass).x,
-        mapScene(p + e.yxy, t, mids, bass).x - mapScene(p - e.yxy, t, mids, bass).x,
-        mapScene(p + e.yyx, t, mids, bass).x - mapScene(p - e.yyx, t, mids, bass).x
+        mapScene(p + e.xyy, t, mids, bass).d - mapScene(p - e.xyy, t, mids, bass).d,
+        mapScene(p + e.yxy, t, mids, bass).d - mapScene(p - e.yxy, t, mids, bass).d,
+        mapScene(p + e.yyx, t, mids, bass).d - mapScene(p - e.yyx, t, mids, bass).d
     );
     return normalize(n);
 }
@@ -258,7 +298,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Camera setup
     let ro = vec3<f32>(0.0, 0.0, 8.0);
-    let rd = normalize(vec3<f32>(uv, -1.0));
+    // Pixel rows grow downward; flip y so bells are up and tentacles trail below.
+    let rd = normalize(vec3<f32>(uv.x, -uv.y, -1.0));
 
     let rm = raymarch(ro, rd, time, mids, bass);
     let dist = rm.x;
@@ -294,8 +335,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Re-evaluate the scene once at the hit point to pick up stinger-tip
         // proximity and repulsion strength for the two ideas below.
         let sceneAtHit = mapScene(p, time, mids, bass);
-        let tipProximity = sceneAtHit.z;
-        let repulseMag = sceneAtHit.w;
+        let tipProximity = sceneAtHit.tip;
+        let repulseMag = sceneAtHit.repulse;
 
         // Stinger-tip glow: brighten tentacle endpoints with the same
         // aequorin glow function used on the bell.
@@ -306,6 +347,33 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // flashes its bell instead of only being shoved aside.
         let startle = smoothstep(0.35, 0.85, repulseMag);
         final_color += bioluminescentGlow(startle * bio_intensity) * 1.1;
+
+        // Aequorin -> GFP: photocyte granules ring the bell margin (the circle
+        // where the outer and hollow spheres meet, solved analytically) and
+        // re-emit the bell's blue aequorin light as 509 nm green, flaring as
+        // the pacemakers fire each stroke.
+        let lp = sceneAtHit.lp;
+        let bellR = sceneAtHit.bellR;
+        let hollowR = bellR * 0.875;
+        let rimY = (0.03 - (bellR * bellR - hollowR * hollowR)) / 0.6;
+        let rimRho = sqrt(max(hollowR * hollowR - (rimY + 0.1) * (rimY + 0.1), 0.0));
+        let sector = 2.0 * PI / 32.0;
+        let aLocal = (fract(atan2(lp.z, lp.x) / sector + 0.5) - 0.5) * sector;
+        let rhoP = length(lp.xz);
+        let gq = vec3<f32>(rhoP * cos(aLocal) - rimRho, lp.y - rimY, rhoP * sin(aLocal));
+        let granule = exp(-dot(gq, gq) * 2500.0);
+        let age = pacemakerAge(sceneAtHit.phi);
+        let fire = exp(-age * 12.0) + exp(-(1.0 - age) * 40.0) * 0.5;
+        let aequorinIn = bio_intensity * audio_pulse * (0.35 + sss);
+        final_color += vec3<f32>(0.25, 1.0, 0.35) * granule * aequorinIn * (0.25 + fire * (1.2 + bass));
+
+        // Nerve-net conduction: each fire launches a light front from the
+        // tentacle roots that reaches the stingers about 0.6 of a cycle later.
+        let along = clamp(-lp.y / max(sceneAtHit.tentLen, 0.1), 0.0, 1.0);
+        let onTentacle = smoothstep(-0.04, -0.12, lp.y);
+        let front = age * 1.7;
+        let pulse = exp(-(along - front) * (along - front) * 160.0) * (1.0 - smoothstep(0.85, 1.0, age));
+        final_color += bioluminescentGlow(pulse * onTentacle * bio_intensity * (0.5 + 0.4 * audio_pulse)) * 1.3;
 
         // Fog/Depth fade
         final_color = mix(final_color, bg_color, clamp(dist / 30.0, 0.0, 1.0));
@@ -325,9 +393,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let caStr = 0.003 * (1.0 + bass) + dist * 0.001;
     final_color = vec3<f32>(final_color.r + caStr, final_color.g, final_color.b - caStr * 0.5);
 
-    // ACES tone mapping and gamma correction
-    final_color = acesToneMap(final_color);
-    final_color = pow(final_color, vec3<f32>(1.0/2.2));
+    // ACES tone mapping (the presenter already gamma-encodes, so no pow(1/2.2)
+    // here; clamp first so the blue shift can't feed ACES a negative)
+    final_color = acesToneMap(max(final_color, vec3<f32>(0.0)));
 
     // Temporal feedback — exact previous-frame state, no filtering
     let prev = textureLoad(dataTextureC, tex_coords, 0);

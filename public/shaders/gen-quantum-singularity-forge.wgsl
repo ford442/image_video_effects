@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-09-27
-//  Ideas: photon ring + lensed starfield (Lensing Intensity); relativistic Doppler beaming on the disk
+//  Upgraded: 2026-10-18
+//  Ideas: photon ring + lensed starfield (Lensing Intensity); relativistic Doppler beaming on the disk; Shakura–Sunyaev thermal ladder (T ∝ r^-3/4 (1-√(r_in/r))^1/4, luminosity T^4); plunging-region streamers (log-spiral infall inside the disk's inner edge, gravitationally redshifted at the horizon)
 //  A packing: ACES display RGBA, alpha = coverage
 // ═══════════════════════════════════════════════════════════════════
 
@@ -228,7 +228,7 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: f32, mids
           0.5 + 0.5 * cos(viewAngle * 8.0 + 4.2)
         );
         col = irid * (1.0 + bass * 2.0) * 0.8;
-        col = col + vec3<f32>(0.8, 0.9, 1.0) * pow(viewAngle, 3.0) * 0.5;
+        col = col + vec3<f32>(0.8, 0.9, 1.0) * pow(max(viewAngle, 0.0), 3.0) * 0.5;
         alpha = 0.9;
       } else {
         // Accretion disk - heat gradient
@@ -237,6 +237,18 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: f32, mids
         // Add emissive swirl
         let swirl = sin(p.x * 3.0 + time * 2.0 + p.z * 2.0) * 0.5 + 0.5;
         col = col + vec3<f32>(0.2, 0.4, 0.8) * swirl * bass * 0.3;
+
+        // Idea 3: Shakura–Sunyaev thermal ladder. A thin accretion disk's
+        // effective temperature runs T ∝ r^-3/4 (1 - sqrt(r_in/r))^1/4; the
+        // inner flank of the tube glows white-cyan, the outer flank cools to
+        // indigo, and brightness follows Stefan–Boltzmann (T^4). Applied before
+        // the Doppler factor so beaming acts on the thermal light too.
+        let xr = max(length(p.xz) / 0.6, 1.0);
+        let ssProfile = pow(xr, -0.75) * pow(max(1.0 - inverseSqrt(xr), 1e-6), 0.25) / 0.488;
+        let ssT = sat(ssProfile) * (1.0 + bass * 0.12);
+        let ssLum = ssT * ssT * ssT * ssT;
+        let ssCol = heatGradient(0.35 + 0.6 * sat((ssT - 0.78) / 0.22));
+        col = col + ssCol * ssLum * 0.9;
 
         // Idea 2: relativistic Doppler beaming. The side of the disk moving
         // toward the camera brightens and blue-shifts; the receding side dims
@@ -262,6 +274,33 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32, bass: f32, mids
     if (glowSample > 0.01) {
       let glowCol = heatGradient(glowSample * 0.5) * glowSample * 0.05 * (1.0 + bass * 0.5);
       col = col + glowCol * exp(-t * 0.1);
+    }
+  }
+
+  // Idea 4: plunging-region streamers. Inside the disk's inner edge gas
+  // stops orbiting and spirals into the hole along log-spiral lanes. The
+  // ray is intersected once with the disk plane (y = 0); the lanes show
+  // wherever that crossing lies in front of the first surface hit, and dim
+  // with the Schwarzschild redshift sqrt(1 - r_s/r) as they reach the horizon.
+  if (abs(rd.y) > 1e-4) {
+    let tp = -ro.y / rd.y;
+    if (tp > 0.0 && (!hit || tp < t)) {
+      let pp = ro + rd * tp;
+      let r = length(pp.xz);
+      let bhR = 0.3 + audio * 0.05;
+      let window = smoothstep(bhR, bhR * 1.5, r) * (1.0 - smoothstep(0.7, 0.98, r));
+      if (window > 0.0) {
+        let phase = 2.0 * atan2(pp.z, pp.x) + 6.0 * log(r) - time * accretionSpeed * 2.0;
+        let lane = 0.5 + 0.5 * cos(phase);
+        let lane2 = lane * lane;
+        let lanes = lane2 * lane2 * lane2;
+        let redshift = sqrt(max(1.0 - bhR / r, 0.0));
+        let heat = sat((0.98 - r) / (0.98 - bhR));
+        let graze = min(1.0 / max(abs(rd.y), 0.2), 3.0);
+        let stream = lanes * window * redshift * graze * (0.35 + bass * 0.5);
+        col = col + heatGradient(0.55 + 0.4 * heat) * stream * 0.6;
+        alpha = max(alpha, sat(stream * 0.5));
+      }
     }
   }
 
@@ -315,30 +354,29 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let ejectionRate = mix(0.0, 1.0, zparams.z);
   let lensIntensity = mix(0.5, 2.0, zparams.w);
 
-  // Mouse handling: screen top = UP in 3D
+  // Camera orbiting the singularity (mouse up = camera up)
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
   let mouseUV = u.zoom_config.yz;
-  let mouseY = mouseUV.y; // Flip Y
-  let mousePos = vec3<f32>(
-    (mouseUV.x * 2.0 - 1.0) * 3.0 * aspect,
-    (mouseUV.y * 2.0 - 1.0) * 3.0,
-    0.0
-  );
-
-  // Camera orbiting the singularity
   let camDist = 4.0 + sin(time * 0.15) * 0.3;
   let camAng = time * 0.2 + mouseUV.x * 0.5;
-  let camHeight = mouseY * 1.0 - 0.5;
+  let camHeight = 0.5 - mouseUV.y;
   let ro = vec3<f32>(cos(camAng) * camDist, camHeight, sin(camAng) * camDist);
   let ta = vec3<f32>(0.0, 0.0, 0.0);
   let ww = normalize(ta - ro);
+  // uu = cross(Y, ww) is screen-LEFT and vv is up, while uv.y grows down:
+  // rays use (-p.x, -p.y) so the picture is not rotated 180°.
   let uu = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), ww));
   let vv = cross(ww, uu);
+
+  // Gravity well under the pointer, on the focal plane through the hole
+  // (idle 0.5,0.5 = the hole itself, as before).
+  let focal = camDist / 2.5;
+  let mousePos = (-uu * (mouseUV.x * 2.0 - 1.0) * aspect + vv * (1.0 - 2.0 * mouseUV.y)) * focal;
 
   // Ray direction
   var p = uv * 2.0 - 1.0;
   p.x = p.x * aspect;
-  let rd = normalize(p.x * uu + p.y * vv + 2.5 * ww);
+  let rd = normalize(-p.x * uu - p.y * vv + 2.5 * ww);
 
   // Raymarch
   let result = raymarch(ro, rd, time, audio, bass, mids, gravity, accretionSpeed, ejectionRate, mousePos, lensIntensity);
@@ -354,7 +392,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col = mix(col, prev.rgb * 0.92, 0.05);
 
   // Tone map
-  col = acesToneMap(col * 1.5);
+  col = acesToneMap(max(col, vec3<f32>(0.0)) * 1.5);
 
   let finalDepth = sat(0.95 - alpha * 0.3);
   // Semantic alpha: surface/ring coverage plus emitted light (void stays thin).

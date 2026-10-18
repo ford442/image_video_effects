@@ -22,7 +22,7 @@
     "aces-tone-map",
     "semantic-alpha"
   ],
-  "description": "Large-scale cosmic structure evolving at speed — Zel'dovich streaming, Voronoi filaments and Apollonian voids, with caustic striation running along each strand. Stellar populations are graded through a psychedelic spectrum. The spring-smoothed cursor opens a void well that drags the web toward it, holding collapses structure into the well, and clicks send density shocks rippling through the filaments.",
+  "description": "Large-scale cosmic structure evolving at speed — Zel'dovich streaming, Voronoi filaments and Apollonian voids, with caustic striation running along each strand. Stellar populations are graded through a psychedelic spectrum. The cursor opens a void well that drags the web toward it, holding collapses structure into the well, and clicks send density shocks rippling through the filaments.",
   "workgroup_size": [
     16,
     16,
@@ -71,7 +71,11 @@
   "updated": true,
   "id": "gen-cosmic-web-filament",
   "url": "shaders/gen-cosmic-web-filament.wgsl",
-  "features": [],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
   "x-meta": {
     "upgrade": {
       "params": [

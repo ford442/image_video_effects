@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: orbital, mechanical, cosmic, audio-reactive, mouse-orbit, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: singularity-lit crescent phases in true blackbody hue; disk-crossing flares + tidal gaps
+//  Upgraded: 2026-10-18
+//  Ideas: singularity-lit crescent phases in true blackbody hue; disk-crossing flares + tidal gaps; brass orrery arms (spindle post + radial arm carrying each body, core-lit, glow-exempt); crossing shadow spokes (umbra/penumbra cones cast from the core by each body — cool tongues across the irradiated disk, mutual eclipses)
 //  A packing: HDR linear RGB (pre-ACES trail) + semantic alpha; C read back as the same HDR
 //  Updated: 2026-05-31 — Grok (audio orbit modulation; mouse rotates the orrery)
 //  Optimized: 2026-08-05 — Batch 35 (Optimizer)
@@ -40,7 +40,11 @@ var<private> g_rotXZ: mat2x2<f32>;                     // mouse orbit, hoisted
 var<private> g_rotYZ: mat2x2<f32>;
 var<private> g_fftTurb: f32;                           // guarded FFT drive for disk turbulence
 var<private> g_bodyOrbit: array<vec2<f32>, MAX_BODIES>; // x = semi-major axis a, y = disk-crossing flare 0..1
-var<private> g_hitId: i32;                             // last map() winner: -1 core, -2 disk, i = body
+var<private> g_hitId: i32;                             // last map() winner: -1 core, -2 disk, i = body, 100+i = arm i
+var<private> g_sceneD: f32;                            // last map() distance WITHOUT the arms (glow integral)
+
+const ARM_R: f32 = 0.011;                              // brass arm radius (≈ 1–2 px at the default view)
+const CORE_R: f32 = 0.25;                              // singularity radius = the light source size
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -125,6 +129,42 @@ fn particlePosition(id: f32, t: f32, innerR: f32, outerR: f32) -> vec3<f32> {
 fn sdSphere(p: vec3<f32>, r: f32) -> f32 {
     return length(p) - r;
 }
+fn sdCapsule(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, r: f32) -> f32 {
+    let pa = p - a;
+    let ba = b - a;
+    let h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-6), 0.0, 1.0);
+    return length(pa - ba * h) - r;
+}
+// ── Idea 3: brass orrery arm — a real orrery carries every planet on an arm
+// from the central spindle: a post along the orbit axis (q.z) up to the body's
+// height, then a radial arm out to the body. Returns min distance of both pieces.
+fn sdArm(q: vec3<f32>, b: vec3<f32>) -> f32 {
+    let hub = vec3<f32>(0.0, 0.0, b.z);
+    return min(sdCapsule(q, vec3<f32>(0.0), hub, ARM_R * 1.3), sdCapsule(q, hub, b, ARM_R));
+}
+// ── Idea 4: crossing shadow spokes — the core (radius CORE_R) is an extended
+// light, so each body casts a true umbra cone (length ≈ w·D/(CORE_R−w)) wrapped
+// in a widening penumbra. Returns the occluded fraction 0..1 of core light at q.
+fn coreOcclusion(q: vec3<f32>, skip: i32) -> f32 {
+    let dist = length(q);
+    let L = -q / max(dist, 1e-4);
+    var lit = 1.0;
+    for (var i: i32 = 0; i < g_numBodies; i++) {
+        let bc = g_bodies[i].xyz - q;
+        let s = dot(bc, L);                         // distance from q back to the body
+        let bD = dist - s;                          // body → core distance
+        let w = g_bodies[i].w;
+        let perp = length(bc - L * s);
+        let umbra = w - s * (CORE_R - w) / max(bD, 0.05);
+        let pen = w + s * (CORE_R + w) / max(bD, 0.05);
+        // past the umbra tip only an annulus of the core is hidden (antumbra)
+        let depthK = mix((w * w) / (CORE_R * CORE_R), 1.0, clamp(umbra / w, 0.0, 1.0));
+        let occ = (1.0 - smoothstep(umbra, pen, perp)) * depthK;
+        let valid = select(0.0, 1.0, i != skip && s > 0.0 && bD > CORE_R);
+        lit *= 1.0 - occ * valid;
+    }
+    return 1.0 - lit;
+}
 // Hoisted mouse-orbit rotations (identical transform as the original); linear,
 // so it maps both points and directions into the orrery frame.
 fn toOrrery(p: vec3<f32>) -> vec3<f32> {
@@ -182,6 +222,14 @@ fn map(p: vec3<f32>, time: f32) -> vec4<f32> {
         if (bodyDist < d) {
             d = bodyDist; temp = g_bodyProps[i].x;
             metal = g_bodyProps[i].y; density = 1.0; g_hitId = i;
+        }
+    }
+    g_sceneD = d;
+    // Idea 3: brass arms (after the bodies so a body still wins at its own surface).
+    for (var i: i32 = 0; i < g_numBodies; i++) {
+        let armDist = sdArm(q, g_bodies[i].xyz);
+        if (armDist < d) {
+            d = armDist; temp = 3000.0; metal = 1.0; density = 1.0; g_hitId = 100 + i;
         }
     }
     return vec4<f32>(d, temp, metal, density);
@@ -262,7 +310,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             if (surf.x < SURF_DIST) { hit = true; break; }
             if (t > MAX_DIST) { break; }
             // Near-miss glow integral — one exp per step, gain applied later.
-            glowAcc += exp(-max(surf.x, 0.0) * 6.0) * 0.015;
+            // Idea 3: arms are solid brass, not plasma — the glow ignores them.
+            glowAcc += exp(-max(g_sceneD, 0.0) * 6.0) * 0.015;
             t += surf.x;
         }
     }
@@ -284,8 +333,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             // Accretion disk, carved by the tidal gaps (Idea 2b).
             let r = length(hq.xz);
             dens = surf.w * tidalGap(r);
-            let temp = 4000.0 + dens * 4000.0;
-            col = blackbodyColor(temp) * (0.3 + dens * 0.9) * (0.9 + mids * 0.2);
+            // Idea 4: the disk is partly irradiated by the core, so a body's
+            // shadow both dims and cools it — a reddened tongue behind the body.
+            let occ = coreOcclusion(hq, -1);
+            let temp = 4000.0 + dens * 4000.0 - 2500.0 * occ;
+            col = blackbodyColor(temp) * (0.3 + dens * 0.9) * (0.9 + mids * 0.2) * (1.0 - 0.65 * occ);
             // Idea 2a: crossing splash — a flaring body heats the disk around its
             // piercing point into a white-hot pool.
             var splash = 0.0;
@@ -293,7 +345,29 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
                 let dp = hq - g_bodies[i].xyz;
                 splash += g_bodyOrbit[i].y * exp(-dot(dp, dp) * 5.0);
             }
-            col += blackbodyColor(temp + 3000.0) * splash * 2.2 * flareGain;
+            col += blackbodyColor(temp + 3000.0) * splash * 2.2 * flareGain * (1.0 - 0.5 * occ);
+        } else if (g_hitId >= 100) {
+            // Idea 3: brass arm — capsule normal from the closest point on its
+            // axis, lit only by the core, eclipsed by the bodies (Idea 4).
+            let b = g_bodies[g_hitId - 100].xyz;
+            let hub = vec3<f32>(0.0, 0.0, b.z);
+            let ab = b - hub;
+            let hA = clamp(dot(hq - hub, ab) / max(dot(ab, ab), 1e-6), 0.0, 1.0);
+            let onArm = hub + ab * hA;
+            let hP = clamp(hq.z / select(b.z, 1e-4, abs(b.z) < 1e-4), 0.0, 1.0);
+            let onPost = vec3<f32>(0.0, 0.0, b.z * hP);
+            let axisPt = select(onPost, onArm, length(hq - onArm) < length(hq - onPost));
+            let n = normalize(hq - axisPt + vec3<f32>(1e-5));
+            let toCore = -hq;
+            let dCore = max(length(toCore), 0.3);
+            let L = toCore / dCore;
+            let lit = 1.0 - coreOcclusion(hq, -1);
+            let brass = vec3<f32>(0.85, 0.58, 0.26);
+            let h = normalize(L + vq);
+            let spec = pow(max(dot(n, h), 0.0), 48.0);
+            let coreLight = blackbodyColor(8000.0) * (0.9 + 1.2 / dCore);
+            col = (brass * max(dot(n, L), 0.0) * 0.9 + brass * spec * 1.6) * coreLight * lit
+                + brass * 0.04;
         } else {
             // Idea 1: singularity-lit crescent phases — analytic sphere normal,
             // lit only by the core, so each body shows a phase that turns as it
@@ -313,7 +387,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let spec = pow(max(dot(n, h), 0.0), mix(16.0, 96.0, metal)) * (0.15 + metal * 0.85);
             // Soft terminator + faint self-glow of the body's own temperature on the night side.
             let terminator = smoothstep(-0.08, 0.25, dot(n, L));
-            col = (albedo * lam * 1.4 + vec3<f32>(spec) * terminator) * coreLight
+            // Idea 4: mutual eclipses — another body between this one and the core.
+            let lit = 1.0 - coreOcclusion(hq, bi);
+            col = (albedo * lam * 1.4 + vec3<f32>(spec) * terminator) * coreLight * lit
                 + blackbodyColor(bodyTemp) * 0.05;
             // Idea 2a: the body itself goes white-hot while inside the disk slab.
             let flare = g_bodyOrbit[bi].y;

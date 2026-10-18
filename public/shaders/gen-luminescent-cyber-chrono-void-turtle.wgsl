@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: chronal plate drift (per-cell lift, bass-kicked); chrono-distortion time dilation in mouse well; scute growth rings; void wake via exact C history; fore-flipper power-stroke about the shoulder; seam epibionts (algae/barnacle specks in plate gaps)
+//  Upgraded: 2026-10-18
+//  Ideas: chronal plate drift (per-cell lift, bass-kicked); chrono-distortion time dilation in mouse well; scute growth rings; void wake via exact C history; fore-flipper power-stroke about the shoulder; seam epibionts (algae/barnacle specks in plate gaps); leatherback dorsal keels (seven ridges along the carapace, plates ride over them); carapace hour-hand sweep (a dilated-time meridian circles the shell, igniting the seams it crosses with a fading gold comet trail)
 //  A packing: raw linear wake emission RGB (pre-tonemap) + a = wake energy
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -79,6 +79,7 @@ var<private> gPlateEdge: f32 = 1.0;
 var<private> gPlateId: f32 = 0.0;
 var<private> gDilation: f32 = 0.0;
 var<private> gPBody: vec3<f32> = vec3<f32>(0.0);
+var<private> gKeel: f32 = 0.0;
 
 fn map(p_in: vec3<f32>) -> f32 {
     var p = p_in;
@@ -108,7 +109,19 @@ fn map(p_in: vec3<f32>) -> f32 {
     let temp_xz = bodyRot * pBody.xz;
     pBody = vec3<f32>(temp_xz.x, pBody.y, temp_xz.y);
 
-    let baseShell = sdEllipsoid(pBody, vec3<f32>(2.0, 1.0, 2.5));
+    var baseShell = sdEllipsoid(pBody, vec3<f32>(2.0, 1.0, 2.5));
+
+    // IDEA 7 — leatherback dorsal keels: seven longitudinal ridges fanned
+    // around the body's long axis over the dorsal half. Angular spacing makes
+    // them converge toward head and tail as the shell narrows, like a real
+    // leatherback carapace; the Voronoi plates are extruded on top of them.
+    let keelK = atan2(pBody.x, pBody.y) / 0.42;
+    let keelRow = abs(keelK - round(keelK));
+    let keel = (1.0 - smoothstep(0.0, 0.2, keelRow))
+             * step(abs(round(keelK)), 3.0)
+             * (1.0 - smoothstep(1.6, 2.5, abs(pBody.z)));
+    gKeel = keel;
+    baseShell -= keel * 0.07;
 
     // Shell Complexity (Voronoi Plates)
     let complexity = u.zoom_params.x * 5.0 + 2.0;
@@ -245,7 +258,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Camera setup
     var ro = vec3<f32>(0.0, 2.0, -8.0);
-    var rd = normalize(vec3<f32>(uv, 1.0));
+    // uv.y grows down the screen; world Y is up
+    var rd = normalize(vec3<f32>(uv.x, -uv.y, 1.0));
 
     // Slow rotation of camera
     let camRot = rot(sin(gTime * 0.1) * 0.2);
@@ -255,10 +269,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let temp_rd_xz = camRot * rd.xz;
     rd = vec3<f32>(temp_rd_xz.x, rd.y, temp_rd_xz.y);
 
-    let rot_x = rot(0.2);
+    // Elevate the camera 0.2 rad and pitch the view a further atan(2/8) down so
+    // it looks straight at the turtle from above (carapace in frame centre)
+    let rot_x = rot(-0.2);
     let temp_ro_yz = rot_x * ro.yz;
     ro = vec3<f32>(ro.x, temp_ro_yz.x, temp_ro_yz.y);
-    let temp_rd_yz = rot_x * rd.yz;
+    let temp_rd_yz = rot(-0.445) * rd.yz;
     rd = vec3<f32>(rd.x, temp_rd_yz.x, temp_rd_yz.y);
 
     var t = 0.0;
@@ -327,6 +343,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let epiCol = mix(vec3<f32>(0.85, 0.5, 0.12), vec3<f32>(0.35, 0.65, 0.12), fract(epiH.x * 5.0));
         col = mix(col, epiCol * (0.35 + diff * 0.6), epi * 0.85);
         col += epiCol * epi * glow * 0.15;
+
+        // IDEA 7 — keel crests catch a cold sheen along their spines
+        col += vec3<f32>(0.1, 0.8, 1.0) * gKeel * (0.04 + spec * 0.3) * u.zoom_params.y;
+
+        // IDEA 8 — carapace hour-hand sweep: a meridian circles the shell about
+        // the body's vertical axis on dilated chronal time (≈12.6 s per turn at
+        // rest, slower inside the mouse well). Seams it has just crossed burn
+        // gold and fade behind it like a comet tail; sharp leading edge.
+        let handAng = gTime * (1.0 - 0.75 * gDilation) * 0.5;
+        let azim = atan2(gPBody.x, gPBody.z);
+        let lag = fract((handAng - azim) / TAU);
+        let trail = exp(-lag * 9.0);
+        let dorsal = smoothstep(-0.2, 0.4, gPBody.y);
+        let handSeam = 1.0 - smoothstep(0.02, 0.15, plateEdge);
+        let handCol = vec3<f32>(1.0, 0.72, 0.28);
+        col += handCol * trail * dorsal * (handSeam * 0.9 + 0.08) * u.zoom_params.y * (0.7 + mids * 0.5);
 
         // Add fake subsurface scattering / ambient based on glow
         col += vec3<f32>(0.1, 0.8, 1.0) * glow * 0.5;
