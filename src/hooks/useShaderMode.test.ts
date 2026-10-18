@@ -12,12 +12,12 @@ function deferred<T>() {
 function setup() {
   const loads = new Map<string, ReturnType<typeof deferred<boolean>>>();
   const renderer = {
-    loadShader: jest.fn((id: string) => {
+    loadShader: vi.fn((id: string) => {
       const d = deferred<boolean>();
       loads.set(id, d);
       return d.promise;
     }),
-    setSlotShader: jest.fn(),
+    setSlotShader: vi.fn(),
   };
   const status: Array<'idle' | 'loading' | 'error'> = ['idle', 'idle', 'idle'];
   const modes: RenderMode[] = ['none', 'none', 'none'];
@@ -31,10 +31,10 @@ function setup() {
       slotParamsRef: { current: [] as SlotParams[] },
       inputSourceRef: { current: 'image' as InputSource },
       slotShaderStatusRef: { current: status },
-      setModes: jest.fn(),
-      setSlotParams: jest.fn(),
-      setSlotShaderStatus: jest.fn(),
-      setInputSource: jest.fn(),
+      setModes: vi.fn(),
+      setSlotParams: vi.fn(),
+      setSlotShaderStatus: vi.fn(),
+      setInputSource: vi.fn(),
     }),
   );
   return { result, renderer, loads };

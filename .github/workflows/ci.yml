@@ -43,14 +43,16 @@ jobs:
     - name: Check for duplicate shader IDs
       run: node scripts/check_duplicates.js
 
-    - name: Verify TypeScript 5 compatibility
+    - name: Typecheck src/
       run: |
-        node -e "require.resolve('typescript'); console.log('typescript OK:', require('typescript').version)"
         npx tsc --version
-        npx tsc --noEmit
+        npm run typecheck
 
     - name: Typecheck scripts/
       run: npm run typecheck:scripts
+
+    - name: Typecheck Playwright specs (tests/, playwright.config.ts)
+      run: npm run typecheck:tests
 
     - name: Verify device policy sync (TS ↔ C++)
       run: npm run verify:device-policy
@@ -61,7 +63,7 @@ jobs:
         npm run verify:uniforms
 
     - name: Run unit tests
-      run: npm test -- --watchAll=false --ci --coverage
+      run: npm run test:ci -- --coverage
       env:
         CI: true
     

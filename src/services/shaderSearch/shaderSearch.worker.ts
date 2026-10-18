@@ -17,16 +17,13 @@ import {
 } from './semanticIndex';
 import type { ShaderSearchRequest, ShaderSearchResponse } from './shaderSearchProtocol';
 
-declare let __webpack_public_path__: string;
-
-// CRA builds with a relative public path ("homepage": "."), which webpack resolves
-// against this worker's own URL (static/js/). Re-anchor chunk loads and the index
-// fetch at the app root before the transformers chunk is requested.
-const APP_BASE = new URL('../../', self.location.href).href;
-if (process.env.NODE_ENV === 'production') {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  __webpack_public_path__ = APP_BASE;
-}
+// The built worker lives in static/js/ (vite.config.ts worker output), two levels
+// below the app root; under `vite dev` it is served from the root's /src/ tree.
+// Lazy chunks resolve against the worker's own URL via import.meta.url, so only
+// page-relative fetches need this base.
+const APP_BASE = import.meta.env.DEV
+  ? new URL('/', self.location.href).href
+  : new URL('../../', self.location.href).href;
 
 type EncodeFn = (text: string) => Promise<Float32Array>;
 

@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { WebGPUResourcePool, createTextures } from './resources';
 
 // Minimal WebGPU globals for unit tests (no real GPU in Jest).
@@ -19,14 +20,14 @@ const TU = {
 function makeMockDevice(): GPUDevice {
   const textures: GPUTexture[] = [];
   return {
-    createTexture: jest.fn(() => {
-      const tex = { destroy: jest.fn(), createView: jest.fn() } as unknown as GPUTexture;
+    createTexture: vi.fn(() => {
+      const tex = { destroy: vi.fn(), createView: vi.fn() } as unknown as GPUTexture;
       textures.push(tex);
       return tex;
     }),
-    createSampler: jest.fn(() => ({} as GPUSampler)),
-    createBuffer: jest.fn(() => ({ destroy: jest.fn() } as unknown as GPUBuffer)),
-    queue: { writeTexture: jest.fn() },
+    createSampler: vi.fn(() => ({} as GPUSampler)),
+    createBuffer: vi.fn(() => ({ destroy: vi.fn() } as unknown as GPUBuffer)),
+    queue: { writeTexture: vi.fn() },
     _textures: textures,
   } as unknown as GPUDevice & { _textures: GPUTexture[] };
 }
@@ -162,9 +163,9 @@ describe('WebGPUResourcePool', () => {
     );
     expect(emptyCall?.[0].format).toBe('r32float');
 
-    const writeTexture = device.queue.writeTexture as jest.Mock;
+    const writeTexture = device.queue.writeTexture as Mock;
     expect(writeTexture).toHaveBeenCalled();
-    const [dest, data, layout] = writeTexture.mock.calls[0];
+    const [dest, data, layout] = writeTexture.mock.calls[0]!;
     expect(dest).toEqual({ texture: expect.anything() });
     expect(data).toBeInstanceOf(Float32Array);
     expect((data as Float32Array).length).toBe(1);

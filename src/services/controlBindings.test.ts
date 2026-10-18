@@ -179,7 +179,7 @@ describe('localStorage persistence', () => {
       },
     ];
     const originalSetItem = Storage.prototype.setItem;
-    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     Storage.prototype.setItem = function setItem(key: string, value: string) {
       if (key === 'vj_control_bindings') {

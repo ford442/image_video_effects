@@ -1,10 +1,10 @@
-import React from 'react';
+import type { MockInstance } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import RemoteApp from './RemoteApp';
 import { FullState } from './syncTypes';
 
-jest.mock('./components/Controls', () => {
+vi.mock('./components/Controls', () => {
   const React = require('react');
   return {
     __esModule: true,
@@ -84,19 +84,19 @@ function setSearch(search: string, hash = '') {
 describe('RemoteApp chrome', () => {
   const originalLocation = window.location;
   const originalBC = global.BroadcastChannel;
-  let replaceState: jest.SpyInstance;
+  let replaceState: MockInstance;
 
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     MockBroadcastChannel.instances = [];
     // @ts-expect-error test mock
     global.BroadcastChannel = MockBroadcastChannel;
     setSearch('?mode=remote');
-    replaceState = jest.spyOn(window.history, 'replaceState').mockImplementation(() => {});
+    replaceState = vi.spyOn(window.history, 'replaceState').mockImplementation(() => {});
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
     replaceState.mockRestore();
     global.BroadcastChannel = originalBC;
     Object.defineProperty(window, 'location', { value: originalLocation, configurable: true });

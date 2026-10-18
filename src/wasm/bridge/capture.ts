@@ -37,7 +37,7 @@ export function captureFrame(): Promise<ImageData> {
         const byteLength = width * height * 4;
         const ptr = byteLength > 0 ? mod._malloc(byteLength) : 0;
         let written = 0;
-        let rgba8: Uint8ClampedArray | null = null;
+        let rgba8: Uint8ClampedArray<ArrayBuffer> | null = null;
         try {
           if (ptr) {
             written = Number(mod.ccall(
@@ -47,7 +47,7 @@ export function captureFrame(): Promise<ImageData> {
               [ptr, byteLength],
             ));
             if (written === byteLength) {
-              rgba8 = new Uint8ClampedArray(mod.HEAPU8.slice(ptr, ptr + byteLength).buffer);
+              rgba8 = new Uint8ClampedArray(mod.HEAPU8.slice(ptr, ptr + byteLength).buffer as ArrayBuffer);
             }
           }
         } finally {

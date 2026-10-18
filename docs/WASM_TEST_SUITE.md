@@ -28,7 +28,7 @@ Full automated testing for the C++ WASM renderer path — parity with the TypeSc
 
 | Command | What it runs |
 |---------|----------------|
-| `npm run test:wasm:unit` | Jest — bridge API + RendererManager parity mocks |
+| `npm run test:wasm:unit` | Vitest — bridge API + RendererManager parity mocks |
 | `npm run test:wasm:e2e` | Playwright — init, multi-shader, error checks |
 | `npm run test:wasm:parity` | Playwright — WASM vs WebGPU statistical parity matrix |
 | `npm run test:wasm:bench` | Playwright — FPS + `getGPUTimings()` benchmark report |
@@ -109,7 +109,7 @@ The `test-wasm-e2e` job in [`.github/workflows/wasm.yml`](../.github/workflows/w
 3. Runs `tests/wasm-renderer.smoke.spec.ts` + `tests/layerChain.smoke.spec.ts` (soft, `WASM_GPU_TESTS=0`)
 4. Uploads Playwright HTML report
 
-The `wasm` job runs Jest unit smoke (`--testPathPattern=WASM`).
+The `wasm` job runs the Vitest unit smoke (`npm run test:wasm:unit`, filter `WASM`).
 
 ## Troubleshooting
 

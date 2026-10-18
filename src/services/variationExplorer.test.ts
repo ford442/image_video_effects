@@ -159,7 +159,6 @@ describe('variationExplorer', () => {
         if (!slot.shaderId) continue;
         const shaderMeta = CATALOG.find(s => s.id === slot.shaderId)!;
         const params = at(expanded.slotParams, i);
-        const orderedIds = shaderMeta.params.map(p => p.id);
         const values = [
           { key: 'zoomParam1', val: params.zoomParam1 },
           { key: 'zoomParam2', val: params.zoomParam2 },

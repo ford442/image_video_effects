@@ -1,9 +1,9 @@
-import React from 'react';
+import type { MockedFunction } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { ShaderGallery } from './ShaderGallery';
 import { useSemanticShaderSearch } from '../hooks/useSemanticShaderSearch';
 
-jest.mock('../hooks/useThumbnailManifest', () => ({
+vi.mock('../hooks/useThumbnailManifest', () => ({
   useThumbnailManifest: () => ({
     manifest: { halftone: { thumbnail_url: 'thumbnails/halftone.png' } },
     loading: false,
@@ -12,11 +12,11 @@ jest.mock('../hooks/useThumbnailManifest', () => ({
   }),
 }));
 
-jest.mock('../hooks/useSemanticShaderSearch', () => ({
-  useSemanticShaderSearch: jest.fn(() => ({ status: 'off', hits: null })),
+vi.mock('../hooks/useSemanticShaderSearch', () => ({
+  useSemanticShaderSearch: vi.fn(() => ({ status: 'off', hits: null })),
 }));
 
-const mockSemantic = useSemanticShaderSearch as jest.MockedFunction<typeof useSemanticShaderSearch>;
+const mockSemantic = useSemanticShaderSearch as MockedFunction<typeof useSemanticShaderSearch>;
 
 beforeAll(() => {
   (global as unknown as { IntersectionObserver: unknown }).IntersectionObserver = class {
@@ -39,7 +39,7 @@ describe('ShaderGallery search', () => {
   beforeEach(() => mockSemantic.mockReturnValue({ status: 'off', hits: null }));
 
   it('uses the substring filter when no semantic hits are available', () => {
-    render(<ShaderGallery options={options} onSelect={jest.fn()} onClose={jest.fn()} />);
+    render(<ShaderGallery options={options} onSelect={vi.fn()} onClose={vi.fn()} />);
     fireEvent.change(screen.getByPlaceholderText('Search shaders...'), { target: { value: 'ferro' } });
     expect(names()).toEqual(['Ferrofluid Spikes']);
   });
@@ -52,13 +52,13 @@ describe('ShaderGallery search', () => {
         { id: 'halftone', score: 0.3 },
       ],
     });
-    render(<ShaderGallery options={options} onSelect={jest.fn()} onClose={jest.fn()} />);
+    render(<ShaderGallery options={options} onSelect={vi.fn()} onClose={vi.fn()} />);
     // halftone (healthy thumb) outranks plasma despite the lower CLIP score
     expect(names()).toEqual(['Retro Halftone', 'Plasma']);
   });
 
   it('dev "Needs thumb" filter hides shaders with a healthy thumbnail', () => {
-    render(<ShaderGallery options={options} onSelect={jest.fn()} onClose={jest.fn()} />);
+    render(<ShaderGallery options={options} onSelect={vi.fn()} onClose={vi.fn()} />);
     fireEvent.click(screen.getByLabelText('Needs thumb'));
     expect(names()).toEqual(['Ferrofluid Spikes', 'Plasma']);
   });

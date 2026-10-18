@@ -151,7 +151,7 @@ Main went red on three different ratchet gates in six days because shader-batch 
 | Job (workflow) | What it guards |
 | --- | --- |
 | `wgsl-precommit-gate` (`ci.yml`) | `#include "_prelude.wgsl"` (no pasted 13-binding headers), naga validation, workgroup convention, extraBuffer reserved zone, dead sliders |
-| `test` (`ci.yml`) | generated-file sync, Jest (craco), production build, catalog counts, bundle budget + dependency boundaries (`verify:toolchain-foundation`) |
+| `test` (`ci.yml`) | generated-file sync, Vitest, production build, catalog counts, bundle budget + dependency boundaries (`verify:toolchain-foundation`) |
 | `catalog-consistency-audit` (`ci.yml`) | workgroup-size audit and defs ↔ WGSL ↔ list drift (baseline may only shrink) |
 | `lint` (`ci.yml`) | ESLint, regenerated lists + unified manifest, JSON manifest validation |
 | `wasm` (`wasm.yml`) | WASM renderer build/validate; **do not** make it unconditionally required — the workflow is path-filtered (`wasm_renderer/**`, `public/wasm/**`, `tests/wasm-*`) and a required check that never runs blocks every other PR |
@@ -167,7 +167,7 @@ Main went red on three different ratchet gates in six days because shader-batch 
 ## Testing
 
 ```bash
-npm test -- --watchAll=false --ci
+npm run test:ci
 npm run verify:device-policy
 SKIP_WASM_BUILD=1 npm run build
 ```

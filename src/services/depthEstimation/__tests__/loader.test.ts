@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { loadTransformersModule } from '../../aiModels/transformersLoader';
 import {
   isDepthWebGpuAvailable,
@@ -5,17 +6,17 @@ import {
   resetDepthPipelineCache,
 } from '../loader';
 
-jest.mock('../../aiModels/transformersLoader');
+vi.mock('../../aiModels/transformersLoader');
 
-const mockPipeline = jest.fn().mockResolvedValue({ predict: jest.fn() });
+const mockPipeline = vi.fn().mockResolvedValue({ predict: vi.fn() });
 
 describe('depthEstimation/loader device policy', () => {
-  const requestAdapter = jest.fn();
+  const requestAdapter = vi.fn();
 
   beforeEach(() => {
     resetDepthPipelineCache();
     mockPipeline.mockClear();
-    (loadTransformersModule as jest.Mock).mockResolvedValue({ pipeline: mockPipeline });
+    (loadTransformersModule as Mock).mockResolvedValue({ pipeline: mockPipeline });
     window.webgpuProbe = {
       ok: true,
       finishedAt: new Date().toISOString(),
@@ -30,7 +31,7 @@ describe('depthEstimation/loader device policy', () => {
   afterEach(() => {
     delete window.webgpuProbe;
     resetDepthPipelineCache();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('isDepthWebGpuAvailable uses probe gate without requestAdapter', () => {

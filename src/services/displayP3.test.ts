@@ -15,8 +15,8 @@ describe('displayP3 persistence', () => {
   });
 
   it('survives throwing storage', () => {
-    const get = jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked'); });
-    const set = jest.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked'); });
+    const get = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked'); });
+    const set = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked'); });
     expect(loadDisplayP3()).toBe(false);
     expect(() => saveDisplayP3(true)).not.toThrow();
     get.mockRestore();

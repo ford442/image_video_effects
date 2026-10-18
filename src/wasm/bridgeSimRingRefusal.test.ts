@@ -4,6 +4,7 @@
  * a logged skip, never an emdawn abort.
  */
 
+import type { Mock, MockInstance } from 'vitest';
 import { loadShader, reloadShader } from './bridge/shader';
 import { state, wasmRef, EmscriptenModule } from './bridge/state';
 import { expandShaderSource, readExpandedShader } from '../test-utils/shaderSource';
@@ -18,14 +19,14 @@ beforeAll(async () => {
   DLA_WALKERS = wgsl;
 });
 
-function mockModule(): EmscriptenModule & { ccall: jest.Mock } {
+function mockModule(): EmscriptenModule & { ccall: Mock } {
   return {
-    ccall: jest.fn(() => 1),
-    _malloc: jest.fn(() => 16),
-    _free: jest.fn(),
-    getValue: jest.fn(() => 0),
+    ccall: vi.fn(() => 1),
+    _malloc: vi.fn(() => 16),
+    _free: vi.fn(),
+    getValue: vi.fn(() => 0),
     lengthBytesUTF8: (s: string) => s.length,
-    stringToUTF8: jest.fn(),
+    stringToUTF8: vi.fn(),
     HEAPU8: new Uint8Array(1),
     HEAPF32: new Float32Array(1),
   };
@@ -33,20 +34,20 @@ function mockModule(): EmscriptenModule & { ccall: jest.Mock } {
 
 describe('WASM bridge — group-1 refusal', () => {
   const prev = { initialized: state.initialized, module: wasmRef.module };
-  let warn: jest.SpyInstance;
+  let warn: MockInstance;
 
   beforeEach(() => {
     state.initialized = true;
     state.lastLoadError = null;
     wasmRef.module = mockModule();
-    warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
-    jest.spyOn(console, 'log').mockImplementation(() => {});
+    warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterEach(() => {
     state.initialized = prev.initialized;
     wasmRef.module = prev.module;
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it.each([

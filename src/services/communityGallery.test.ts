@@ -15,7 +15,7 @@ import { encodeChain, decodeChain, SharedChain } from './layerChainShare';
 const API_URL = 'https://storage.noahcohn.com';
 
 describe('communityGallery', () => {
-  const fetchMock = jest.fn();
+  const fetchMock = vi.fn();
 
   beforeEach(() => {
     fetchMock.mockReset();
@@ -70,7 +70,7 @@ describe('communityGallery', () => {
         })
       );
 
-      const body = JSON.parse(fetchMock.mock.calls[0][1]!.body as string);
+      const body = JSON.parse(fetchMock.mock.calls[0]![1]!.body as string);
       expect(body.name).toBe('Liquid Dreams');
       expect(body.description).toBe('desc');
       expect(body.author).toBe('tester');

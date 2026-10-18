@@ -115,7 +115,7 @@ async function thumbnailStats(page: Page, size = 64, attempts = 4) {
   for (let i = 0; i < attempts; i++) {
     const png: string | null = await page.evaluate((s) => (window as any).__pixelocity__.captureThumbnailPng(s), size);
     expect(png, 'captureThumbnailPng returned null').toBeTruthy();
-    const b64 = png!.includes(',') ? png!.split(',')[1] : png!;
+    const b64 = png!.includes(',') ? png!.split(',')[1] ?? '' : png!;
     const stats = await sharp(Buffer.from(b64, 'base64')).stats();
     const max = Math.max(...stats.channels.slice(0, 3).map((c) => c.max));
     const stdev = Math.max(...stats.channels.slice(0, 3).map((c) => c.stdev));

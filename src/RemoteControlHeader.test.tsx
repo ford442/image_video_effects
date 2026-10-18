@@ -1,17 +1,16 @@
-import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { RemoteControlHeader } from './RemoteControlHeader';
 
 describe('RemoteControlHeader', () => {
   it('calls onLoadRandom when Random Image is clicked', () => {
-    const onLoadRandom = jest.fn();
+    const onLoadRandom = vi.fn();
     render(
       <RemoteControlHeader
         inputSource="image"
         onLoadRandom={onLoadRandom}
         hidden={false}
-        onHide={jest.fn()}
+        onHide={vi.fn()}
       />
     );
     fireEvent.click(screen.getByRole('button', { name: /random image/i }));
@@ -22,9 +21,9 @@ describe('RemoteControlHeader', () => {
     render(
       <RemoteControlHeader
         inputSource="video"
-        onLoadRandom={jest.fn()}
+        onLoadRandom={vi.fn()}
         hidden={false}
-        onHide={jest.fn()}
+        onHide={vi.fn()}
       />
     );
     expect(screen.getByRole('button', { name: /random image/i })).toBeDisabled();
@@ -34,9 +33,9 @@ describe('RemoteControlHeader', () => {
     render(
       <RemoteControlHeader
         inputSource="image"
-        onLoadRandom={jest.fn()}
+        onLoadRandom={vi.fn()}
         hidden={false}
-        onHide={jest.fn()}
+        onHide={vi.fn()}
       />
     );
     expect(screen.getByRole('heading', { name: /remote control/i })).toBeInTheDocument();
@@ -48,9 +47,9 @@ describe('RemoteControlHeader', () => {
     const { container } = render(
       <RemoteControlHeader
         inputSource="image"
-        onLoadRandom={jest.fn()}
+        onLoadRandom={vi.fn()}
         hidden
-        onHide={jest.fn()}
+        onHide={vi.fn()}
       />
     );
     expect(container).toBeEmptyDOMElement();
@@ -60,11 +59,11 @@ describe('RemoteControlHeader', () => {
   });
 
   it('calls onHide when Hide Controls is clicked', () => {
-    const onHide = jest.fn();
+    const onHide = vi.fn();
     render(
       <RemoteControlHeader
         inputSource="image"
-        onLoadRandom={jest.fn()}
+        onLoadRandom={vi.fn()}
         hidden={false}
         onHide={onHide}
       />

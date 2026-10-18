@@ -4,6 +4,7 @@
  * pipeline that a slot is bound to.
  */
 
+import type { Mock } from 'vitest';
 import { PIPELINE_CACHE_LIMIT, PipelineLru } from './pipelineCache';
 import { WebGPUPipelineModule } from './pipeline';
 import { ShaderWarmupQueue } from './shaderWarmup';
@@ -47,21 +48,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 function makeDevice() {
   const device = {
     limits: { maxStorageBuffersPerShaderStage: 8, maxUniformBuffersPerShaderStage: 12, maxBindGroups: 4 },
-    createBindGroupLayout: jest.fn(() => ({})),
-    createPipelineLayout: jest.fn(() => ({})),
-    createShaderModule: jest.fn(() => ({})),
-    createComputePipeline: jest.fn(() => ({})),
-    pushErrorScope: jest.fn(),
-    popErrorScope: jest.fn(async () => null),
+    createBindGroupLayout: vi.fn(() => ({})),
+    createPipelineLayout: vi.fn(() => ({})),
+    createShaderModule: vi.fn(() => ({})),
+    createComputePipeline: vi.fn(() => ({})),
+    pushErrorScope: vi.fn(),
+    popErrorScope: vi.fn(async () => null),
   };
   return device as unknown as GPUDevice;
 }
 
 beforeEach(() => {
-  jest.spyOn(console, 'warn').mockImplementation(() => undefined);
-  jest.spyOn(console, 'log').mockImplementation(() => undefined);
+  vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+  vi.spyOn(console, 'log').mockImplementation(() => undefined);
 });
-afterEach(() => jest.restoreAllMocks());
+afterEach(() => vi.restoreAllMocks());
 
 describe('PipelineLru', () => {
   it('evicts oldest first and skips protected ids', () => {
@@ -160,7 +161,7 @@ describe('WebGPUShaderManager pipeline cache', () => {
     mod.setupComputeLayout(device, true);
     const manager = mod.shaderManager;
     manager.setCacheLimit(1);
-    const create = device.createComputePipeline as jest.Mock;
+    const create = device.createComputePipeline as Mock;
 
     await manager.compile(device, mod.pipelineLayout, 'a', shaderSource(1));
     await manager.compile(device, mod.pipelineLayout, 'a', shaderSource(1));

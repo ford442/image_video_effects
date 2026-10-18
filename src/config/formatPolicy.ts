@@ -76,12 +76,12 @@ export function packRgbaUploadData(
   width: number,
   height: number,
   format: InternalColorFormat,
-): { data: ArrayBufferView; bytesPerRow: number; rowsPerImage: number } {
+): { data: ArrayBufferView<ArrayBuffer>; bytesPerRow: number; rowsPerImage: number } {
   const bytesPerRow = width * bytesPerPixel(format);
   if (format === 'rgba32float') {
-    return { data: floats, bytesPerRow, rowsPerImage: height };
+    return { data: floats as Float32Array<ArrayBuffer>, bytesPerRow, rowsPerImage: height };
   }
-  const Float16Ctor = (globalThis as unknown as { Float16Array?: new (n: number) => ArrayBufferView }).Float16Array;
+  const Float16Ctor = (globalThis as unknown as { Float16Array?: new (n: number) => ArrayBufferView<ArrayBuffer> }).Float16Array;
   if (Float16Ctor) {
     const f16 = new Float16Ctor(floats.length);
     const f16View = f16 as unknown as { length: number; [i: number]: number };

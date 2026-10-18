@@ -1,6 +1,5 @@
 import { Renderer, RendererConfig, ShaderSlotRenderer, GPUTimings, UncappedBenchResult } from './Renderer';
 import * as WasmBridge from '../wasm/wasm_bridge';
-import type { WasmErrorRing } from '../wasm/wasm_bridge';
 import type { PassTiming } from './passTimings';
 import type { WASMDiagnostics } from './rendererTypes';
 import { reportError } from './ErrorHandling';
@@ -28,7 +27,6 @@ export type { WASMDiagnostics };
 export class WASMRenderer implements Renderer, ShaderSlotRenderer {
   /** Discriminant for `isWasmBackend`: lets the rest of the app tell this backend apart without importing it. */
   readonly backendKind = 'wasm' as const;
-  private config: RendererConfig;
   private video: HTMLVideoElement | null = null;
   private animationId: number | null = null;
   private startTime = 0;
@@ -60,9 +58,7 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
   private audioTreble = 0;
   private readonly audioFreqBins = new Float32Array(AUDIO_FFT_BINS);
 
-  constructor(config: RendererConfig) {
-    this.config = config;
-  }
+  constructor(_config: RendererConfig) {}
 
   async init(canvas: HTMLCanvasElement): Promise<boolean> {
     this.initAttempts++;

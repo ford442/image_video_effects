@@ -1,16 +1,16 @@
-import React from 'react';
+import type { MockedFunction } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { AppShell, AppShellProps } from './AppShell';
 import { isPublicPixelocityHost } from '../../utils/publicHost';
 
-jest.mock('../WebGPUCanvas', () => () => <div data-testid="canvas-stub" />);
-jest.mock('../Controls', () => () => <div data-testid="controls-stub" />);
-jest.mock('../../utils/publicHost', () => ({
-  isPublicPixelocityHost: jest.fn(() => false),
+vi.mock('../WebGPUCanvas', () => ({ default: () => <div data-testid="canvas-stub" /> }));
+vi.mock('../Controls', () => ({ default: () => <div data-testid="controls-stub" /> }));
+vi.mock('../../utils/publicHost', () => ({
+  isPublicPixelocityHost: vi.fn(() => false),
 }));
 
-const mockedIsPublic = isPublicPixelocityHost as jest.MockedFunction<typeof isPublicPixelocityHost>;
+const mockedIsPublic = isPublicPixelocityHost as MockedFunction<typeof isPublicPixelocityHost>;
 
 function baseProps(overrides: Partial<AppShellProps> = {}): AppShellProps {
   const noop = () => {};
@@ -142,7 +142,7 @@ describe('AppShell chrome', () => {
   });
 
   it('hides header and shows overlay when controls are hidden', () => {
-    const setShowSidebar = jest.fn();
+    const setShowSidebar = vi.fn();
     render(<AppShell {...baseProps({ showSidebar: false, setShowSidebar })} />);
 
     expect(screen.queryByAltText('Pixelocity')).not.toBeInTheDocument();
@@ -176,7 +176,7 @@ describe('AppShell renderer pill (WASM frozen R&D, #1080)', () => {
   });
 
   it('is display-only and shows no R&D badge by default', () => {
-    const handleSwitchRenderer = jest.fn(async () => {});
+    const handleSwitchRenderer = vi.fn(async () => {});
     render(<AppShell {...baseProps({ handleSwitchRenderer })} />);
 
     const pill = screen.getByText('🔷 WebGPU');

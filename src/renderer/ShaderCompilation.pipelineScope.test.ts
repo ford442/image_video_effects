@@ -52,21 +52,21 @@ function makeDevice(opts: {
   const popSequence = opts.popSequence ?? [null];
   let popIdx = 0;
   const createComputePipeline = opts.createThrows
-    ? jest.fn(() => {
+    ? vi.fn(() => {
         throw new Error('createComputePipeline threw');
       })
-    : jest.fn(() => ({ label: 'pipeline' } as unknown as GPUComputePipeline));
+    : vi.fn(() => ({ label: 'pipeline' } as unknown as GPUComputePipeline));
 
   return {
-    pushErrorScope: jest.fn(),
-    popErrorScope: jest.fn(async () => {
+    pushErrorScope: vi.fn(),
+    popErrorScope: vi.fn(async () => {
       const v = popSequence[Math.min(popIdx, popSequence.length - 1)];
       popIdx += 1;
       return v;
     }),
     createComputePipeline,
-    createShaderModule: jest.fn(() => ({
-      getCompilationInfo: jest.fn(async () => ({ messages: [] })),
+    createShaderModule: vi.fn(() => ({
+      getCompilationInfo: vi.fn(async () => ({ messages: [] })),
     })),
   } as unknown as GPUDevice;
 }
@@ -114,16 +114,16 @@ describe('compileShader validation-scope fail-soft', () => {
     setRendererErrorHandler((e) => {
       reported.push(e);
     });
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
-    jest.spyOn(console, 'error').mockImplementation(() => {});
-    jest.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterEach(() => {
     setRendererErrorHandler((error) => {
       console.error(`[WebGPU Renderer] ${error.type}: ${error.message}`);
     });
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('does not cache an invalid pipeline; uses fallback when fallback scope is clean', async () => {
@@ -227,10 +227,10 @@ describe('createComputePipelineChecked (#1314 async pipelines)', () => {
   it('prefers createComputePipelineAsync and skips the error scope', async () => {
     const pipeline = { label: 'async' } as unknown as GPUComputePipeline;
     const device = {
-      createComputePipelineAsync: jest.fn(async () => pipeline),
-      createComputePipeline: jest.fn(),
-      pushErrorScope: jest.fn(),
-      popErrorScope: jest.fn(),
+      createComputePipelineAsync: vi.fn(async () => pipeline),
+      createComputePipeline: vi.fn(),
+      pushErrorScope: vi.fn(),
+      popErrorScope: vi.fn(),
     } as unknown as GPUDevice;
     const res = await createComputePipelineChecked(device, descriptor);
     expect(res).toEqual({ pipeline, error: null });
@@ -240,7 +240,7 @@ describe('createComputePipelineChecked (#1314 async pipelines)', () => {
 
   it('maps a GPUPipelineError rejection to a null pipeline', async () => {
     const device = {
-      createComputePipelineAsync: jest.fn(async () => {
+      createComputePipelineAsync: vi.fn(async () => {
         throw new Error('GPUPipelineError: storage format mismatch');
       }),
     } as unknown as GPUDevice;

@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import {
   createRendererForType,
   getRendererTypeFromURL,
@@ -16,17 +17,17 @@ import { WASMRenderer } from './WASMRenderer';
 import { WebGPURenderer } from './WebGPURenderer';
 import { DEFAULT_CONFIG } from './Renderer';
 
-jest.mock('./WebGPURenderer');
-jest.mock('./WASMRenderer');
-jest.mock('./JSRenderer');
-jest.mock('../wasm/wasm_bridge', () => ({
-  initWasmRenderer: jest.fn().mockResolvedValue(true),
-  shutdownWasmRenderer: jest.fn(),
+vi.mock('./WebGPURenderer');
+vi.mock('./WASMRenderer');
+vi.mock('./JSRenderer');
+vi.mock('../wasm/wasm_bridge', () => ({
+  initWasmRenderer: vi.fn().mockResolvedValue(true),
+  shutdownWasmRenderer: vi.fn(),
 }));
 
 describe('backendLifecycle', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('getRendererTypeFromURL', () => {
@@ -148,23 +149,23 @@ describe('backendLifecycle', () => {
       const order: string[] = [];
       const canvas = document.createElement('canvas');
       const webgpu = {
-        init: jest.fn().mockResolvedValue(true),
-        destroy: jest.fn(() => order.push('webgpu.destroy')),
-        releaseExclusiveGpu: jest.fn(async () => {
+        init: vi.fn().mockResolvedValue(true),
+        destroy: vi.fn(() => order.push('webgpu.destroy')),
+        releaseExclusiveGpu: vi.fn(async () => {
           order.push('webgpu.lost');
         }),
-        setVideo: jest.fn(),
+        setVideo: vi.fn(),
       };
       const wasm = {
-        init: jest.fn(async () => {
+        init: vi.fn(async () => {
           order.push('wasm.init');
           return true;
         }),
-        destroy: jest.fn(),
-        setVideo: jest.fn(),
+        destroy: vi.fn(),
+        setVideo: vi.fn(),
       };
-      (WebGPURenderer as jest.Mock).mockImplementation(() => webgpu);
-      (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
+      (WebGPURenderer as Mock).mockImplementation(() => webgpu);
+      (WASMRenderer as Mock).mockImplementation(() => wasm);
 
       const result = await performBackendSwitch({
         targetType: 'wasm',
@@ -183,16 +184,16 @@ describe('backendLifecycle', () => {
     it('reports a failed switch (and restores the previous backend) when the WASM renderer cannot be created', async () => {
       const canvas = document.createElement('canvas');
       const webgpu = {
-        init: jest.fn().mockResolvedValue(true),
-        destroy: jest.fn(),
-        releaseExclusiveGpu: jest.fn().mockResolvedValue(undefined),
-        setVideo: jest.fn(),
+        init: vi.fn().mockResolvedValue(true),
+        destroy: vi.fn(),
+        releaseExclusiveGpu: vi.fn().mockResolvedValue(undefined),
+        setVideo: vi.fn(),
       };
-      (WebGPURenderer as jest.Mock).mockImplementation(() => webgpu);
-      (WASMRenderer as jest.Mock).mockImplementation(() => {
+      (WebGPURenderer as Mock).mockImplementation(() => webgpu);
+      (WASMRenderer as Mock).mockImplementation(() => {
         throw new Error('Loading chunk wasm-renderer failed');
       });
-      jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+      vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 
       const result = await performBackendSwitch({
         targetType: 'wasm',
@@ -215,7 +216,7 @@ describe('backendLifecycle', () => {
     it('blocks wasm after a historyTex OOM this tab', async () => {
       sessionStorage.setItem('px_webgpu_oom_block_wasm', '1');
       const canvas = document.createElement('canvas');
-      const webgpu = { init: jest.fn(), destroy: jest.fn(), setVideo: jest.fn() };
+      const webgpu = { init: vi.fn(), destroy: vi.fn(), setVideo: vi.fn() };
       const result = await performBackendSwitch({
         targetType: 'wasm',
         canvas,
@@ -230,9 +231,9 @@ describe('backendLifecycle', () => {
 
     it('requests restore type when wasm fails after exclusive release', async () => {
       const canvas = document.createElement('canvas');
-      const webgpu = { init: jest.fn().mockResolvedValue(true), destroy: jest.fn(), setVideo: jest.fn() };
-      const wasm = { init: jest.fn().mockResolvedValue(false), destroy: jest.fn(), setVideo: jest.fn() };
-      (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
+      const webgpu = { init: vi.fn().mockResolvedValue(true), destroy: vi.fn(), setVideo: vi.fn() };
+      const wasm = { init: vi.fn().mockResolvedValue(false), destroy: vi.fn(), setVideo: vi.fn() };
+      (WASMRenderer as Mock).mockImplementation(() => wasm);
 
       const result = await performBackendSwitch({
         targetType: 'wasm',
@@ -250,7 +251,7 @@ describe('backendLifecycle', () => {
 
   describe('yieldForGpuRelease', () => {
     it('resolves after one animation frame when available', async () => {
-      const raf = jest.fn((cb: FrameRequestCallback) => {
+      const raf = vi.fn((cb: FrameRequestCallback) => {
         cb(0);
         return 0;
       });
@@ -265,8 +266,8 @@ describe('backendLifecycle', () => {
   describe('releaseRendererGpu', () => {
     it('prefers releaseExclusiveGpu and does not call destroy separately', async () => {
       const renderer = {
-        destroy: jest.fn(),
-        releaseExclusiveGpu: jest.fn().mockResolvedValue(undefined),
+        destroy: vi.fn(),
+        releaseExclusiveGpu: vi.fn().mockResolvedValue(undefined),
       };
       await releaseRendererGpu(renderer as never);
       expect(renderer.releaseExclusiveGpu).toHaveBeenCalledTimes(1);
@@ -276,12 +277,12 @@ describe('backendLifecycle', () => {
     it('awaits an async destroy() and then yields a frame', async () => {
       const order: string[] = [];
       const renderer = {
-        destroy: jest.fn(
+        destroy: vi.fn(
           () => new Promise<void>((resolve) => setTimeout(() => { order.push('destroyed'); resolve(); }, 5)),
         ),
       };
       const original = global.requestAnimationFrame;
-      global.requestAnimationFrame = jest.fn((cb: FrameRequestCallback) => {
+      global.requestAnimationFrame = vi.fn((cb: FrameRequestCallback) => {
         order.push('yield');
         cb(0);
         return 0;
@@ -294,9 +295,9 @@ describe('backendLifecycle', () => {
 
   describe('createRendererForType', () => {
     it('instantiates the three backend classes (WASM through its lazy chunk)', async () => {
-      (WebGPURenderer as jest.Mock).mockImplementation(() => ({ tag: 'webgpu' }));
-      (WASMRenderer as jest.Mock).mockImplementation(() => ({ tag: 'wasm' }));
-      (JSRenderer as jest.Mock).mockImplementation(() => ({ tag: 'js' }));
+      (WebGPURenderer as Mock).mockImplementation(() => ({ tag: 'webgpu' }));
+      (WASMRenderer as Mock).mockImplementation(() => ({ tag: 'wasm' }));
+      (JSRenderer as Mock).mockImplementation(() => ({ tag: 'js' }));
 
       expect(await createRendererForType('webgpu', DEFAULT_CONFIG)).toEqual({ tag: 'webgpu' });
       expect(await createRendererForType('wasm', DEFAULT_CONFIG)).toEqual({ tag: 'wasm' });

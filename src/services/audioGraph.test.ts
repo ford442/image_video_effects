@@ -1,8 +1,8 @@
 import { connectSource, disposeAudioGraph, getSharedAudioContext } from './audioGraph';
 
 class FakeNode {
-  connect = jest.fn();
-  disconnect = jest.fn();
+  connect = vi.fn();
+  disconnect = vi.fn();
 }
 
 class FakeAnalyser extends FakeNode {
@@ -44,8 +44,8 @@ describe('audioGraph', () => {
     (global as any).AudioContext = FakeAudioContext as any;
     Object.defineProperty(navigator, 'mediaDevices', {
       value: {
-        getUserMedia: jest.fn(async () => ({
-          getTracks: () => [{ stop: jest.fn() }],
+        getUserMedia: vi.fn(async () => ({
+          getTracks: () => [{ stop: vi.fn() }],
         })),
       },
       configurable: true,

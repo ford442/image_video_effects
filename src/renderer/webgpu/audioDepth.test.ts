@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import {
   createAudioDepthState,
   updateAudioData,
@@ -19,14 +20,14 @@ describe('audioDepth', () => {
     updateAudioFrequencyBins(state, bins);
 
     const device = {
-      queue: { writeBuffer: jest.fn() },
+      queue: { writeBuffer: vi.fn() },
     } as unknown as GPUDevice;
     const extraBuf = {} as GPUBuffer;
 
     writeExtraBuffer(device, extraBuf, state);
 
     expect(device.queue.writeBuffer).toHaveBeenCalledTimes(1);
-    const written = (device.queue.writeBuffer as jest.Mock).mock.calls[0][2] as Float32Array;
+    const written = (device.queue.writeBuffer as Mock).mock.calls[0]![2] as Float32Array;
     expect(written.length).toBe(EXTRA_FLOATS);
     expect(written[0]).toBeCloseTo(0.1);
     expect(written[1]).toBeCloseTo(0.5);
@@ -41,14 +42,14 @@ describe('audioDepth', () => {
     updateAudioData(state, 0.2, 0.4, 0.6);
 
     const device = {
-      queue: { writeBuffer: jest.fn() },
+      queue: { writeBuffer: vi.fn() },
     } as unknown as GPUDevice;
     const plasmaBuf = {} as GPUBuffer;
 
     writePlasmaBuffer(device, plasmaBuf, state);
 
     expect(device.queue.writeBuffer).toHaveBeenCalledTimes(1);
-    const [buf, offset, written] = (device.queue.writeBuffer as jest.Mock).mock.calls[0] as [
+    const [buf, offset, written] = (device.queue.writeBuffer as Mock).mock.calls[0] as [
       GPUBuffer,
       number,
       Float32Array,

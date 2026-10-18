@@ -274,8 +274,8 @@ describe('GpuChoresHost', () => {
       userAgentBrands: [],
       attempts: [],
     };
-    const requestAdapter = jest.fn();
-    const requestDevice = jest.fn();
+    const requestAdapter = vi.fn();
+    const requestDevice = vi.fn();
     const nav = navigator as unknown as { gpu?: { requestAdapter: typeof requestAdapter; requestDevice?: typeof requestDevice } };
     const previousGpu = nav.gpu;
     nav.gpu = { requestAdapter, requestDevice };
@@ -323,7 +323,7 @@ describe('GpuChoresHost', () => {
       value: { ...original, search: '?no_gpu_compute' },
       configurable: true,
     });
-    const createShaderModule = jest.fn();
+    const createShaderModule = vi.fn();
     const host = new GpuChoresHost();
     host.attach({ createShaderModule } as unknown as GPUDevice);
     expect(createShaderModule).not.toHaveBeenCalled();

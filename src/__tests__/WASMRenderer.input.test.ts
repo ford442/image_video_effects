@@ -1,25 +1,26 @@
+import type { Mock } from 'vitest';
 import { WASMRenderer } from '../renderer/WASMRenderer';
 import { DEFAULT_CONFIG } from '../renderer/Renderer';
 
 import * as WasmBridge from '../wasm/wasm_bridge';
 
-jest.mock('../wasm/wasm_bridge', () => ({
-  initWasmRenderer: jest.fn().mockResolvedValue(true),
-  shutdownWasmRenderer: jest.fn(),
-  setInputSource: jest.fn(),
-  uploadVideoFrame: jest.fn(),
-  uploadImageData: jest.fn(),
+vi.mock('../wasm/wasm_bridge', () => ({
+  initWasmRenderer: vi.fn().mockResolvedValue(true),
+  shutdownWasmRenderer: vi.fn(),
+  setInputSource: vi.fn(),
+  uploadVideoFrame: vi.fn(),
+  uploadImageData: vi.fn(),
   // GPU still ingest unavailable by default so the CPU fallback path is exercised.
-  uploadImageSource: jest.fn().mockReturnValue(false),
-  updateUniforms: jest.fn(),
-  getFPS: jest.fn().mockReturnValue(60),
+  uploadImageSource: vi.fn().mockReturnValue(false),
+  updateUniforms: vi.fn(),
+  getFPS: vi.fn().mockReturnValue(60),
 }));
 
 describe('WASMRenderer input sources', () => {
   let renderer: WASMRenderer;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     renderer = new WASMRenderer(DEFAULT_CONFIG);
   });
 
@@ -56,17 +57,20 @@ describe('WASMRenderer input sources', () => {
 
     renderer.setVideo(video);
 
-    jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
-      drawImage: jest.fn(),
-      getImageData: jest.fn().mockReturnValue({ data: fakeImageData, width: 640, height: 480 }),
-      clearRect: jest.fn(),
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      drawImage: vi.fn(),
+      getImageData: vi.fn().mockReturnValue({ data: fakeImageData, width: 640, height: 480 }),
+      clearRect: vi.fn(),
     } as unknown as GPUCanvasContext);
 
     for (const source of ['video', 'webcam', 'live'] as const) {
-      jest.clearAllMocks();
+      vi.clearAllMocks();
       renderer.setInputSource(source);
       renderer.updateVideoFrame();
-      expect(WasmBridge.uploadVideoFrame).toHaveBeenCalledWith(fakeImageData, 640, 480);
+      // Identity check: deep-equality on a 1.2 MB typed array takes seconds under Vitest.
+      const [data, width, height] = vi.mocked(WasmBridge.uploadVideoFrame).mock.calls[0] ?? [];
+      expect(data).toBe(fakeImageData);
+      expect([width, height]).toEqual([640, 480]);
     }
   });
 
@@ -74,21 +78,21 @@ describe('WASMRenderer input sources', () => {
     const fakeImageData = new Uint8ClampedArray(32 * 24 * 4);
     fakeImageData[0] = 200;
 
-    const drawImage = jest.fn();
-    const getImageData = jest.fn().mockReturnValue({
+    const drawImage = vi.fn();
+    const getImageData = vi.fn().mockReturnValue({
       data: fakeImageData,
       width: 32,
       height: 24,
     });
 
-    jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
       drawImage,
       getImageData,
-      clearRect: jest.fn(),
+      clearRect: vi.fn(),
     } as unknown as GPUCanvasContext);
 
-    const decode = jest.fn().mockResolvedValue(undefined);
-    jest.spyOn(global, 'Image').mockImplementation(() => {
+    const decode = vi.fn().mockResolvedValue(undefined);
+    vi.spyOn(global, 'Image').mockImplementation(() => {
       const img = document.createElement('img');
       Object.defineProperty(img, 'naturalWidth', { value: 32 });
       Object.defineProperty(img, 'naturalHeight', { value: 24 });
@@ -105,22 +109,22 @@ describe('WASMRenderer input sources', () => {
   });
 
   it('logs input w×h when the image upload runs', async () => {
-    const log = jest.spyOn(console, 'log').mockImplementation(() => {});
-    jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
-      drawImage: jest.fn(),
-      getImageData: jest.fn().mockReturnValue({
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      drawImage: vi.fn(),
+      getImageData: vi.fn().mockReturnValue({
         data: new Uint8ClampedArray(8 * 4 * 4),
         width: 8,
         height: 4,
       }),
-      clearRect: jest.fn(),
+      clearRect: vi.fn(),
     } as unknown as GPUCanvasContext);
 
-    jest.spyOn(global, 'Image').mockImplementation(() => {
+    vi.spyOn(global, 'Image').mockImplementation(() => {
       const img = document.createElement('img');
       Object.defineProperty(img, 'naturalWidth', { value: 8 });
       Object.defineProperty(img, 'naturalHeight', { value: 4 });
-      img.decode = jest.fn().mockResolvedValue(undefined);
+      img.decode = vi.fn().mockResolvedValue(undefined);
       return img;
     });
 
@@ -130,12 +134,12 @@ describe('WASMRenderer input sources', () => {
   });
 
   it('loadImageFromElement uploads decoded RGBA and logs w×h', () => {
-    const log = jest.spyOn(console, 'log').mockImplementation(() => {});
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
     const fakeImageData = new Uint8ClampedArray(4 * 2 * 4);
-    jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
-      drawImage: jest.fn(),
-      clearRect: jest.fn(),
-      getImageData: jest.fn().mockReturnValue({
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      drawImage: vi.fn(),
+      clearRect: vi.fn(),
+      getImageData: vi.fn().mockReturnValue({
         data: fakeImageData,
         width: 4,
         height: 2,
@@ -154,13 +158,13 @@ describe('WASMRenderer input sources', () => {
   });
 
   it('loadImageFromElement prefers GPU copyExternalImageToTexture and skips getImageData', () => {
-    const log = jest.spyOn(console, 'log').mockImplementation(() => {});
-    (WasmBridge.uploadImageSource as jest.Mock).mockReturnValueOnce(true);
-    const drawImage = jest.fn();
-    const getImageData = jest.fn();
-    const getContext = jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    (WasmBridge.uploadImageSource as Mock).mockReturnValueOnce(true);
+    const drawImage = vi.fn();
+    const getImageData = vi.fn();
+    const getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
       drawImage,
-      clearRect: jest.fn(),
+      clearRect: vi.fn(),
       getImageData,
     } as unknown as GPUCanvasContext);
 

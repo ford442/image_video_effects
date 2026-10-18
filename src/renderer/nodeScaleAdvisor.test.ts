@@ -49,15 +49,15 @@ describe('adviseNodePromotion', () => {
 });
 
 describe('AdaptivePerformanceController with per-node demotion', () => {
-  beforeEach(() => jest.useFakeTimers());
-  afterEach(() => jest.useRealTimers());
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
 
   it('shrinks the expensive node before the canvas, and restores it before scaling the canvas up', () => {
     let fps = 20;
     let scale = 1;
     const nodes = [node()];
-    const setScale = jest.fn((s: number) => { scale = s; });
-    const setNodeScale = jest.fn((_slot: number, _id: string, s: number) => { nodes[0]!.scale = s; });
+    const setScale = vi.fn((s: number) => { scale = s; });
+    const setNodeScale = vi.fn((_slot: number, _id: string, s: number) => { nodes[0]!.scale = s; });
     const ctl = new AdaptivePerformanceController({
       getFps: () => fps,
       getScale: () => scale,
@@ -74,19 +74,19 @@ describe('AdaptivePerformanceController with per-node demotion', () => {
     expect(setNodeScale).toHaveBeenLastCalledWith(0, 'tensor', 0.75);
     expect(setScale).not.toHaveBeenCalled();
 
-    jest.advanceTimersByTime(2500);
+    vi.advanceTimersByTime(2500);
     ctl.sampleNow();
     ctl.sampleNow();
     expect(setNodeScale).toHaveBeenLastCalledWith(0, 'tensor', 0.5);
     expect(setScale).not.toHaveBeenCalled();
 
-    jest.advanceTimersByTime(2500);
+    vi.advanceTimersByTime(2500);
     ctl.sampleNow();
     ctl.sampleNow(); // node at its floor → the canvas scale steps down
     expect(setScale).toHaveBeenCalledTimes(1);
 
     fps = 75;
-    jest.advanceTimersByTime(5000);
+    vi.advanceTimersByTime(5000);
     ctl.sampleNow();
     ctl.sampleNow(); // recovering: node first
     expect(setNodeScale).toHaveBeenLastCalledWith(0, 'tensor', 0.75);

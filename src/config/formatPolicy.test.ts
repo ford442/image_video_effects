@@ -104,9 +104,9 @@ describe('probeFormatCapabilities', () => {
   it('measures storage formats instead of hardcoding true', async () => {
     const created: GPUTextureFormat[] = [];
     const device = {
-      createTexture: jest.fn((desc: GPUTextureDescriptor) => {
+      createTexture: vi.fn((desc: GPUTextureDescriptor) => {
         created.push(desc.format);
-        return { destroy: jest.fn() };
+        return { destroy: vi.fn() };
       }),
     } as unknown as GPUDevice;
     const adapter = {
@@ -123,7 +123,7 @@ describe('probeFormatCapabilities', () => {
 
   it('records false when the 1×1 storage create throws', async () => {
     const device = {
-      createTexture: jest.fn(() => {
+      createTexture: vi.fn(() => {
         throw new Error('rgba32float storage not supported');
       }),
     } as unknown as GPUDevice;
@@ -139,9 +139,9 @@ describe('probeFormatCapabilities', () => {
 
   it('records false when the create only raises a validation error (#1395)', async () => {
     const device = {
-      createTexture: jest.fn(() => ({ destroy: jest.fn() })),
-      pushErrorScope: jest.fn(),
-      popErrorScope: jest.fn(async () => ({ message: 'storage format not allowed' })),
+      createTexture: vi.fn(() => ({ destroy: vi.fn() })),
+      pushErrorScope: vi.fn(),
+      popErrorScope: vi.fn(async () => ({ message: 'storage format not allowed' })),
     } as unknown as GPUDevice;
     const adapter = { features: new Set<GPUFeatureName>(), info: {} } as unknown as GPUAdapter;
 
@@ -158,7 +158,7 @@ describe('probeFormatCapabilities', () => {
     }) as unknown as GPUAdapter;
     const deviceWith = (features: string[]) => ({
       features: new Set(features),
-      createTexture: jest.fn(() => ({ destroy: jest.fn() })),
+      createTexture: vi.fn(() => ({ destroy: vi.fn() })),
     }) as unknown as GPUDevice;
 
     it('reports the device feature, not the adapter offer, when the device lacks it', async () => {

@@ -111,7 +111,7 @@ describe('audioParamMapping', () => {
         amount: 0.5,
         smoothed,
         isHeld: (slot, key) => slot === 1 && key === 'zoomParam2',
-        baseFor: (slot, key) => (key === 'zoomParam1' ? 0.1 : undefined),
+        baseFor: (_slot, key) => (key === 'zoomParam1' ? 0.1 : undefined),
         smoothing: 1,
       });
       expect(Object.keys(out[0]!.updates)).toEqual(['zoomParam1']);

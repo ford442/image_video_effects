@@ -73,7 +73,6 @@ export const VjStudioPanel: React.FC<VjStudioPanelProps> = ({
     studioOpen,
     setStudioOpen,
     modes,
-    slotParams,
     activeSlot,
     setActiveSlot,
     liveControl,
@@ -103,7 +102,6 @@ export const VjStudioPanel: React.FC<VjStudioPanelProps> = ({
     getCurrentChain,
     onUpdateStack,
     onUpdateParams,
-    onGenerateFromVibe,
     projectFile,
 }) => {
     const [historyOpen, setHistoryOpen] = usePersistedToggle('vj.history', false);
