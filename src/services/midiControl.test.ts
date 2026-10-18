@@ -16,8 +16,8 @@ function makeFakeInput(id: string, name = 'Fake Input'): MIDIInputLike {
     name,
     manufacturer: 'Test',
     onmidimessage: null,
-    open: jest.fn().mockResolvedValue({} as MIDIInputLike),
-    close: jest.fn().mockResolvedValue({} as MIDIInputLike),
+    open: vi.fn().mockResolvedValue({} as MIDIInputLike),
+    close: vi.fn().mockResolvedValue({} as MIDIInputLike),
   };
 }
 
@@ -159,7 +159,7 @@ describe('MidiControlAdapter', () => {
 describe('subscribeKeyEvents', () => {
   afterEach(() => {
     // Ensure no lingering listeners between tests.
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   test('translates keydown/keyup to ControlEvents', () => {

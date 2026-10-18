@@ -30,7 +30,7 @@
 set -euo pipefail
 
 echo "🚀 [Jules] Setting up image_video_effects environment..."
-echo "   (WebGPU shader effects + CRA + optional WASM)"
+echo "   (WebGPU shader effects + Vite + optional WASM)"
 
 echo "   Node: $(node --version 2>/dev/null || echo '?') | npm: $(npm --version 2>/dev/null || echo '?')"
 
@@ -76,10 +76,10 @@ echo "   ✅ Dependencies installed (or already present)."
 # 3. Run the generator steps that prestart/prebuild normally perform.
 #    These populate public/shader-lists/*.json and public/shader-manifest-unified.json.
 #    They are pure Node (no GPU, no WASM) and important for the app to list shaders.
-#    CRA's prestart does exactly this before `npm start`.
+#    `npm run gen` (the prestart hook) does exactly this before `npm start`.
 # -------------------------------------------------------------------
 echo "📜 Regenerating shader lists and unified manifest..."
-echo "   (matches what CRA prestart/prebuild do)"
+echo "   (matches what the prestart/prebuild hooks do)"
 
 # Use the exact same invocation as package.json prestart
 if node scripts/generate_shader_lists.js; then
@@ -123,8 +123,8 @@ echo ""
 echo "Recommended commands from here:"
 echo "  BROWSER=none npm start"
 echo "  SKIP_WASM_BUILD=1 npm run build"
-echo "  npm test -- --watchAll=false --ci"
-echo "  npx react-scripts test --watchAll=false --ci --testPathPattern=WASM"
+echo "  npm run test:ci"
+echo "  npm run test:wasm:unit"
 echo ""
 echo "   (WebGPU will be unavailable in headless Jules → falls back to Canvas2D/JS)"
 echo "   Shader lists + manifest are fresh. Edit shader_definitions/ then re-run"

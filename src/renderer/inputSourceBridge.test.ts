@@ -3,8 +3,8 @@ import { loadImage, setInputSource, getInputSource, rebindMediaAfterBackendSwitc
 describe('inputSourceBridge', () => {
   it('forwards setInputSource and getInputSource', () => {
     const renderer = {
-      setInputSource: jest.fn(),
-      getInputSource: jest.fn().mockReturnValue('webcam'),
+      setInputSource: vi.fn(),
+      getInputSource: vi.fn().mockReturnValue('webcam'),
     };
     setInputSource(renderer as never, 'video');
     expect(renderer.setInputSource).toHaveBeenCalledWith('video');
@@ -13,8 +13,8 @@ describe('inputSourceBridge', () => {
 
   it('prefers loadImage over loadImageFromURL (#887 duck-type)', async () => {
     const renderer = {
-      loadImage: jest.fn().mockResolvedValue('https://cdn/a.png'),
-      loadImageFromURL: jest.fn(),
+      loadImage: vi.fn().mockResolvedValue('https://cdn/a.png'),
+      loadImageFromURL: vi.fn(),
     };
     const url = await loadImage(renderer as never, 'https://cdn/a.png');
     expect(renderer.loadImage).toHaveBeenCalledWith('https://cdn/a.png');
@@ -24,7 +24,7 @@ describe('inputSourceBridge', () => {
 
   it('falls back to loadImageFromURL when loadImage is absent', async () => {
     const renderer = {
-      loadImageFromURL: jest.fn().mockResolvedValue(undefined),
+      loadImageFromURL: vi.fn().mockResolvedValue(undefined),
     };
     const url = await loadImage(renderer as never, 'https://cdn/b.png');
     expect(renderer.loadImageFromURL).toHaveBeenCalledWith('https://cdn/b.png');
@@ -40,12 +40,12 @@ describe('inputSourceBridge', () => {
   });
 
   it('rebind uploads the current image URL after a backend switch', async () => {
-    const loadImageFn = jest.fn().mockResolvedValue('https://cdn/photo.png');
-    const setSource = jest.fn();
+    const loadImageFn = vi.fn().mockResolvedValue('https://cdn/photo.png');
+    const setSource = vi.fn();
     const renderer = {
       setInputSource: setSource,
       loadImage: loadImageFn,
-      updateVideoFrame: jest.fn(),
+      updateVideoFrame: vi.fn(),
     };
     const result = await rebindMediaAfterBackendSwitch(renderer as never, {
       inputSource: 'image',
@@ -62,13 +62,13 @@ describe('inputSourceBridge', () => {
     const canvas = document.createElement('canvas');
     canvas.width = 16;
     canvas.height = 8;
-    const loadImageFromElement = jest.fn().mockReturnValue({ width: 16, height: 8 });
-    const loadImageFn = jest.fn();
+    const loadImageFromElement = vi.fn().mockReturnValue({ width: 16, height: 8 });
+    const loadImageFn = vi.fn();
     const renderer = {
-      setInputSource: jest.fn(),
+      setInputSource: vi.fn(),
       loadImage: loadImageFn,
       loadImageFromElement,
-      updateVideoFrame: jest.fn(),
+      updateVideoFrame: vi.fn(),
     };
     const result = await rebindMediaAfterBackendSwitch(renderer as never, {
       inputSource: 'image',
@@ -80,11 +80,11 @@ describe('inputSourceBridge', () => {
   });
 
   it('rebind warns when image source has no bitmap and no URL', async () => {
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const renderer = {
-      setInputSource: jest.fn(),
-      loadImage: jest.fn(),
-      updateVideoFrame: jest.fn(),
+      setInputSource: vi.fn(),
+      loadImage: vi.fn(),
+      updateVideoFrame: vi.fn(),
     };
     const result = await rebindMediaAfterBackendSwitch(renderer as never, {
       inputSource: 'image',
@@ -100,11 +100,11 @@ describe('inputSourceBridge', () => {
     Object.defineProperty(video, 'videoWidth', { value: 1280 });
     Object.defineProperty(video, 'videoHeight', { value: 720 });
     const renderer = {
-      setInputSource: jest.fn(),
-      setVideo: jest.fn(),
+      setInputSource: vi.fn(),
+      setVideo: vi.fn(),
       getVideo: () => video,
-      updateVideoFrame: jest.fn(),
-      loadImage: jest.fn(),
+      updateVideoFrame: vi.fn(),
+      loadImage: vi.fn(),
     };
     const result = await rebindMediaAfterBackendSwitch(renderer as never, {
       inputSource: 'video',
@@ -120,9 +120,9 @@ describe('inputSourceBridge', () => {
 
   it('rebind skips pixel upload for generative', async () => {
     const renderer = {
-      setInputSource: jest.fn(),
-      loadImage: jest.fn(),
-      updateVideoFrame: jest.fn(),
+      setInputSource: vi.fn(),
+      loadImage: vi.fn(),
+      updateVideoFrame: vi.fn(),
     };
     const result = await rebindMediaAfterBackendSwitch(renderer as never, {
       inputSource: 'generative',

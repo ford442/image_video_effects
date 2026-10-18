@@ -29,8 +29,9 @@ import {
 } from './helpers/rendererHarness';
 
 test.beforeAll(async () => {
+  test.setTimeout(60000);
   await startStaticServer();
-}, 60000);
+});
 
 test.afterAll(async () => {
   await stopStaticServer();

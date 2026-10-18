@@ -105,7 +105,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
 };
 
 // Simple FPS graph component
-const FPSGraph: React.FC<{ fps: number }> = ({ fps }) => {
+const FPSGraph: React.FC<{ fps: number }> = () => {
   // In a real implementation, this would track FPS history
   const bars = [60, 58, 62, 59, 61, 57, 60, 60, 58, 59];
 

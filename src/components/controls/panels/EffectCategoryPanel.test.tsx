@@ -1,10 +1,9 @@
-import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { EffectCategoryPanel } from './EffectCategoryPanel';
 
 test('renders category select and calls setShaderCategory', () => {
-    const setShaderCategory = jest.fn();
+    const setShaderCategory = vi.fn();
 
     render(
         <EffectCategoryPanel

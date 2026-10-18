@@ -8,7 +8,7 @@ describe('fetchShaderWgsl', () => {
   });
 
   it('returns WGSL from storage API JSON when static host 404s', async () => {
-    global.fetch = jest.fn(async (input: RequestInfo | URL) => {
+    global.fetch = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes('test.1ink.us')) {
         return new Response('not found', { status: 404 });
@@ -34,7 +34,7 @@ describe('fetchShaderWgsl', () => {
   });
 
   it('prefers same-origin public shader before remote hosts', async () => {
-    global.fetch = jest.fn(async (input: RequestInfo | URL) => {
+    global.fetch = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.endsWith('./shaders/liquid.wgsl')) {
         return new Response('@compute fn main() { /* local */ }', { status: 200 });
@@ -48,7 +48,7 @@ describe('fetchShaderWgsl', () => {
 
   it('primaryOnly skips storage API fallback for optional probes', async () => {
     const urls: string[] = [];
-    global.fetch = jest.fn(async (input: RequestInfo | URL) => {
+    global.fetch = vi.fn(async (input: RequestInfo | URL) => {
       urls.push(String(input));
       return new Response('not found', { status: 404 });
     }) as typeof fetch;
@@ -67,7 +67,7 @@ describe('fetchShaderWgsl', () => {
   describe('#include expansion', () => {
     it('expands a prelude include from the bundle, with no request for _prelude.wgsl', async () => {
       const urls: string[] = [];
-      global.fetch = jest.fn(async (input: RequestInfo | URL) => {
+      global.fetch = vi.fn(async (input: RequestInfo | URL) => {
         const url = String(input);
         urls.push(url);
         if (url.endsWith('./shaders/zz-includes.wgsl')) {
@@ -86,7 +86,7 @@ describe('fetchShaderWgsl', () => {
     });
 
     it('expands a prelude include in storage-API JSON, which has no sibling directory', async () => {
-      global.fetch = jest.fn(async (input: RequestInfo | URL) => {
+      global.fetch = vi.fn(async (input: RequestInfo | URL) => {
         const url = String(input);
         if (url.includes('/api/shaders/zz-api/code')) {
           return new Response(JSON.stringify({ code: '#include "_prelude.wgsl"\nfn main() {}' }), {
@@ -105,7 +105,7 @@ describe('fetchShaderWgsl', () => {
 
     it('resolves any other library next to the shader it was served from', async () => {
       const urls: string[] = [];
-      global.fetch = jest.fn(async (input: RequestInfo | URL) => {
+      global.fetch = vi.fn(async (input: RequestInfo | URL) => {
         const url = String(input);
         urls.push(url);
         if (url === 'https://cdn.example/shaders/zz-cdn.wgsl') {
@@ -125,8 +125,8 @@ describe('fetchShaderWgsl', () => {
     });
 
     it('falls through to the next host when a copy cannot resolve its includes', async () => {
-      const error = jest.spyOn(console, 'error').mockImplementation(() => {});
-      global.fetch = jest.fn(async (input: RequestInfo | URL) => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      global.fetch = vi.fn(async (input: RequestInfo | URL) => {
         const url = String(input);
         if (url.endsWith('./shaders/zz-split.wgsl')) {
           return new Response('#include "_lib.wgsl"\nfn main() { /* local */ }', { status: 200 });
@@ -149,8 +149,8 @@ describe('fetchShaderWgsl', () => {
     });
 
     it('returns null rather than unexpanded source when a library is missing', async () => {
-      const error = jest.spyOn(console, 'error').mockImplementation(() => {});
-      global.fetch = jest.fn(async (input: RequestInfo | URL) => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      global.fetch = vi.fn(async (input: RequestInfo | URL) => {
         const url = String(input);
         if (url.endsWith('./shaders/zz-broken-include.wgsl')) {
           return new Response('#include "_nope.wgsl"\nfn main() {}', { status: 200 });
@@ -165,7 +165,7 @@ describe('fetchShaderWgsl', () => {
 
     it('leaves a shader with no directive untouched', async () => {
       const source = '@group(0) @binding(0) var s: sampler;\n@compute fn main() {}';
-      global.fetch = jest.fn(async () => new Response(source, { status: 200 })) as typeof fetch;
+      global.fetch = vi.fn(async () => new Response(source, { status: 200 })) as typeof fetch;
 
       await expect(fetchShaderWgsl('zz-plain')).resolves.toBe(source);
     });

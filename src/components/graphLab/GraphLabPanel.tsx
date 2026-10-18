@@ -1,4 +1,4 @@
-import React, { RefObject, useRef, useState } from 'react';
+import { RefObject, useRef, useState } from 'react';
 import {
   addNode,
   duplicateNodeAt,

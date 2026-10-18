@@ -1,4 +1,3 @@
-import React from 'react';
 import type { GraphDiagnostic, GraphNodeDef } from '../../renderer/multipassGraph';
 
 export interface NodeListProps {

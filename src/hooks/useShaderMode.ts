@@ -32,7 +32,6 @@ export function useShaderMode({
     availableModes,
     availableModesRef,
     modesRef,
-    slotParamsRef,
     inputSourceRef,
     slotShaderStatusRef,
     setModes,

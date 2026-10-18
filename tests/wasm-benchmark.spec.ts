@@ -39,9 +39,11 @@ const WARMUP_FRAMES = 10;
 const UNCAPPED_FRAMES = 120;
 
 test.beforeAll(async () => {
+  // beforeAll takes no timeout argument; set it inside the hook.
+  test.setTimeout(60000);
   // Cross-origin isolated (#1080): performance.now() at ~5 µs instead of ~100 µs.
   await startStaticServer(undefined, { isolated: true });
-}, 60000);
+});
 
 test.afterAll(async () => {
   await stopStaticServer();

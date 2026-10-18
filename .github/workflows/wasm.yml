@@ -75,8 +75,8 @@ jobs:
     
     - name: Run WASM unit smoke tests
       run: |
-        echo "WASM Jest gate: testPathPattern=WASM (job fails on any test failure; no || true)"
-        npm test -- --watchAll=false --ci --testPathPattern='WASM'
+        echo "WASM Vitest gate: filter=WASM (job fails on any test failure; no || true)"
+        npm run test:wasm:unit
       env:
         CI: true
     

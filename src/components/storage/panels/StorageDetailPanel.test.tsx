@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { StorageDetailPanel } from './StorageDetailPanel';
@@ -6,7 +5,7 @@ import { StorageDetailPanel } from './StorageDetailPanel';
 describe('StorageDetailPanel', () => {
   it('renders nothing when closed', () => {
     const { container } = render(
-      <StorageDetailPanel isOpen={false} item={null} onClose={jest.fn()} />,
+      <StorageDetailPanel isOpen={false} item={null} onClose={vi.fn()} />,
     );
     expect(container).toBeEmptyDOMElement();
   });
@@ -21,7 +20,7 @@ describe('StorageDetailPanel', () => {
           type: 'shader',
           description: 'A test',
         }}
-        onClose={jest.fn()}
+        onClose={vi.fn()}
       />,
     );
     expect(screen.getByText('Test Shader')).toBeInTheDocument();

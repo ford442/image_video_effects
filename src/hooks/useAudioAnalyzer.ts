@@ -14,7 +14,7 @@ export const useAudioAnalyzer = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const dataArrayRef = useRef<Uint8Array | null>(null);
+  const dataArrayRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
   // Reusable Float32Array for bin data to avoid per-frame allocations
   const binsRef = useRef<Float32Array>(new Float32Array(AUDIO_FFT_BINS));
   const [isActive, setIsActive] = useState(false);

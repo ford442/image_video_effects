@@ -1,5 +1,5 @@
 /**
- * @jest-environment node
+ * @vitest-environment node
  */
 import { CICP_PRIMARIES_DISPLAY_P3, CICP_TRANSFER_SRGB, tagWebmDisplayP3 } from './webmColour';
 
@@ -55,9 +55,8 @@ describe('tagWebmDisplayP3', () => {
     expect(new Uint8Array(buf)).toEqual(before);
   });
 
-  it('patches the bytes the real muxer writes', () => {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { Muxer, ArrayBufferTarget } = jest.requireActual('webm-muxer');
+  it('patches the bytes the real muxer writes', async () => {
+    const { Muxer, ArrayBufferTarget } = await vi.importActual<typeof import('webm-muxer')>('webm-muxer');
     class FakeChunk {
       type = 'key';
       timestamp = 0;
@@ -71,7 +70,7 @@ describe('tagWebmDisplayP3', () => {
       video: { codec: 'V_VP9', width: 64, height: 64, frameRate: 30 },
       firstTimestampBehavior: 'offset',
     });
-    muxer.addVideoChunk(new FakeChunk(), {
+    muxer.addVideoChunk(new FakeChunk() as unknown as EncodedVideoChunk, {
       decoderConfig: {
         codec: 'vp09.00.10.08',
         colorSpace: { matrix: 'smpte170m', primaries: 'smpte170m', transfer: 'smpte170m', fullRange: false },

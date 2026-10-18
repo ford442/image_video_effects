@@ -115,7 +115,6 @@ export const ShaderCoordinateMenu: React.FC<ShaderCoordinateMenuProps> = ({
   const [typedNumber, setTypedNumber] = useState<string>('');
   const [showNumberOverlay, setShowNumberOverlay] = useState(false);
   const numberTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const menuContentRef = useRef<HTMLDivElement>(null);
 
   const activeMenu = MENUS.find(m => m.id === activeMenuId) || MENUS[0];
 

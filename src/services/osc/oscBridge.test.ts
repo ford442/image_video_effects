@@ -32,12 +32,12 @@ describe('oscFlags', () => {
 describe('OscBridge', () => {
   beforeEach(() => {
     FakeSocket.instances = [];
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
-  afterEach(() => jest.useRealTimers());
+  afterEach(() => vi.useRealTimers());
 
   const make = () => {
-    const handle = { setSlotParam: jest.fn(), triggerTransition: jest.fn(), setSlotShader: jest.fn(), setAudioAmount: jest.fn() };
+    const handle = { setSlotParam: vi.fn(), triggerTransition: vi.fn(), setSlotShader: vi.fn(), setAudioAmount: vi.fn() };
     const statuses: OscBridgeStatus[] = [];
     const bridge = new OscBridge({
       url: 'ws://relay',
@@ -60,7 +60,7 @@ describe('OscBridge', () => {
     const pkt = encodeOscMessage('/pixelocity/slot/1/param/y', [0.5]);
     ws!.onmessage?.({ data: pkt.buffer.slice(pkt.byteOffset, pkt.byteOffset + pkt.byteLength) });
     expect(handle.setSlotParam).toHaveBeenCalledWith(1, 'zoomParam2', 0.5);
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     ws!.onmessage?.({ data: new ArrayBuffer(3) });
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
@@ -71,15 +71,15 @@ describe('OscBridge', () => {
     const { bridge, statuses } = make();
     bridge.start();
     FakeSocket.instances[0]!.onclose?.();
-    jest.advanceTimersByTime(99);
+    vi.advanceTimersByTime(99);
     expect(FakeSocket.instances).toHaveLength(1);
-    jest.advanceTimersByTime(1);
+    vi.advanceTimersByTime(1);
     expect(FakeSocket.instances).toHaveLength(2);
     FakeSocket.instances[1]!.onclose?.();
-    jest.advanceTimersByTime(200);
+    vi.advanceTimersByTime(200);
     expect(FakeSocket.instances).toHaveLength(3);
     bridge.stop();
-    jest.advanceTimersByTime(10_000);
+    vi.advanceTimersByTime(10_000);
     expect(FakeSocket.instances).toHaveLength(3);
     expect(statuses[statuses.length - 1]).toBe('closed');
   });

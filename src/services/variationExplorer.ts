@@ -199,7 +199,7 @@ export function generateChainVariations(
     });
 
     const summary: VariationSummary = {
-      slots: chain.slots.map((slot, idx) => ({
+      slots: chain.slots.map((slot) => ({
         shaderId: slot.shaderId,
         params: slot.params ?? {},
       })),

@@ -24,22 +24,22 @@ function mockModule(strings: Partial<Record<'pass' | 'ring' | 'last', string>>, 
     return ptr;
   };
   const base: EmscriptenModule = {
-    ccall: jest.fn(),
-    _malloc: jest.fn(() => 16),
-    _free: jest.fn(),
-    getValue: jest.fn(() => 0),
-    stringToUTF8: jest.fn(),
+    ccall: vi.fn(),
+    _malloc: vi.fn(() => 16),
+    _free: vi.fn(),
+    getValue: vi.fn(() => 0),
+    stringToUTF8: vi.fn(),
     HEAPU8: new Uint8Array(1),
     HEAPF32: new Float32Array(1),
-    UTF8ToString: jest.fn((ptr: number) => heap.get(ptr) ?? ''),
+    UTF8ToString: vi.fn((ptr: number) => heap.get(ptr) ?? ''),
   };
   if (!withExports) return base;
   return {
     ...base,
-    _getPassTimingsJson: jest.fn(() => put(strings.pass ?? '[]')),
-    _getErrorRingJson: jest.fn(() => put(strings.ring ?? '{"count":0,"messages":[]}')),
-    _getLastError: jest.fn(() => put(strings.last ?? '')),
-    _clearErrorRing: jest.fn(),
+    _getPassTimingsJson: vi.fn(() => put(strings.pass ?? '[]')),
+    _getErrorRingJson: vi.fn(() => put(strings.ring ?? '{"count":0,"messages":[]}')),
+    _getLastError: vi.fn(() => put(strings.last ?? '')),
+    _clearErrorRing: vi.fn(),
   };
 }
 
@@ -157,10 +157,10 @@ describe('bridge measurement readers', () => {
 
   it('swallow a throwing export (e.g. module aborted)', () => {
     const mod = mockModule({});
-    mod._getPassTimingsJson = jest.fn(() => {
+    mod._getPassTimingsJson = vi.fn(() => {
       throw new Error('abort');
     });
-    mod._clearErrorRing = jest.fn(() => {
+    mod._clearErrorRing = vi.fn(() => {
       throw new Error('abort');
     });
     wasmRef.module = mod;

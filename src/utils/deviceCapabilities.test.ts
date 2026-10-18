@@ -8,11 +8,11 @@ describe('deviceCapabilities', () => {
   });
 
   it('detects mobile touch via coarse pointer', () => {
-    window.matchMedia = jest.fn().mockImplementation((query: string) => ({
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
       matches: query.includes('pointer: coarse'),
       media: query,
-      addListener: jest.fn(),
-      removeListener: jest.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
     })) as typeof window.matchMedia;
 
     expect(isMobileTouchDevice()).toBe(true);
@@ -20,15 +20,15 @@ describe('deviceCapabilities', () => {
   });
 
   it('shows MIDI on desktop when API available', () => {
-    window.matchMedia = jest.fn().mockImplementation(() => ({
+    window.matchMedia = vi.fn().mockImplementation(() => ({
       matches: false,
       media: '',
-      addListener: jest.fn(),
-      removeListener: jest.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
     })) as typeof window.matchMedia;
 
     Object.defineProperty(navigator, 'requestMIDIAccess', {
-      value: jest.fn(),
+      value: vi.fn(),
       configurable: true,
     });
 

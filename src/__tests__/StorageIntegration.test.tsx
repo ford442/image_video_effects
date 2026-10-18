@@ -3,29 +3,26 @@
 //  Quick verification that all components are properly integrated
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React from 'react';
 import '@testing-library/jest-dom';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import App from '../App';
+import { render, screen, waitFor } from '@testing-library/react';
 import { StorageBrowser } from '../components/storage';
 import { useStorage } from '../hooks/useStorage';
-import StorageClient from '../services/storage/client';
 
 // Mock the storage service
-jest.mock('../services/storage', () => ({
+vi.mock('../services/storage', () => ({
   getStorageClient: () => ({
-    checkHealth: jest.fn().mockResolvedValue({ status: 'ok', service: 'contabo-storage-manager' }),
-    listShaders: jest.fn().mockResolvedValue([
+    checkHealth: vi.fn().mockResolvedValue({ status: 'ok', service: 'contabo-storage-manager' }),
+    listShaders: vi.fn().mockResolvedValue([
       { id: 'test-shader', name: 'Test Shader', rating: 5, filename: 'test.json', tags: ['test'] }
     ]),
-    listImages: jest.fn().mockResolvedValue([]),
-    listVideos: jest.fn().mockResolvedValue([]),
-    listAudio: jest.fn().mockResolvedValue([]),
-    subscribeToOperations: jest.fn(() => jest.fn()),
-    clearCompletedOperations: jest.fn(),
+    listImages: vi.fn().mockResolvedValue([]),
+    listVideos: vi.fn().mockResolvedValue([]),
+    listAudio: vi.fn().mockResolvedValue([]),
+    subscribeToOperations: vi.fn(() => vi.fn()),
+    clearCompletedOperations: vi.fn(),
   }),
-  createStorageClient: jest.fn(),
-  resetStorageClient: jest.fn(),
+  createStorageClient: vi.fn(),
+  resetStorageClient: vi.fn(),
 }));
 
 describe('Storage Integration', () => {
@@ -33,9 +30,9 @@ describe('Storage Integration', () => {
     it('renders without crashing', () => {
       render(
         <StorageBrowser
-          onSelectShader={jest.fn()}
-          onSelectImage={jest.fn()}
-          onSelectVideo={jest.fn()}
+          onSelectShader={vi.fn()}
+          onSelectImage={vi.fn()}
+          onSelectVideo={vi.fn()}
         />
       );
       
@@ -45,9 +42,9 @@ describe('Storage Integration', () => {
     it('shows connection status', async () => {
       render(
         <StorageBrowser
-          onSelectShader={jest.fn()}
-          onSelectImage={jest.fn()}
-          onSelectVideo={jest.fn()}
+          onSelectShader={vi.fn()}
+          onSelectImage={vi.fn()}
+          onSelectVideo={vi.fn()}
         />
       );
       

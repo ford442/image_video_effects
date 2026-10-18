@@ -2,6 +2,7 @@
  * historyTex VRAM probe (#1204)
  */
 
+import type { Mock } from 'vitest';
 import {
   HISTORY_OOM_CAP_KEY,
   WASM_BLOCK_AFTER_OOM_KEY,
@@ -44,16 +45,16 @@ function makeDevice(opts: {
     : new Promise<GPUDeviceLostInfo>(() => undefined);
   return {
     lost,
-    queue: { writeTexture: jest.fn() },
-    pushErrorScope: jest.fn(),
-    popErrorScope: jest.fn(async () => {
+    queue: { writeTexture: vi.fn() },
+    pushErrorScope: vi.fn(),
+    popErrorScope: vi.fn(async () => {
       creates += 1;
       if (creates <= oomUntil) {
         return { message: 'GPUOutOfMemoryError' } as GPUError;
       }
       return null;
     }),
-    createTexture: jest.fn(() => ({ destroy: jest.fn() })),
+    createTexture: vi.fn(() => ({ destroy: vi.fn() })),
   } as unknown as GPUDevice;
 }
 
@@ -151,13 +152,13 @@ describe('probeHistoryTex', () => {
     expect(result.workingSize).toBe(1024);
     expect(result.layers).toBe(8);
     expect(result.oom).toBe(false);
-    const labels = (device.createTexture as jest.Mock).mock.calls.map(
-      (call: [{ label?: string }]) => call[0]?.label,
+    const labels = (device.createTexture as Mock).mock.calls.map(
+      (call: unknown[]) => (call[0] as { label?: string } | undefined)?.label,
     );
     expect(labels).not.toContain('historyTex');
     expect(
-      (device.createTexture as jest.Mock).mock.calls.every(
-        (call: [{ size?: { width?: number } }]) => (call[0]?.size?.width ?? 0) <= 1024,
+      (device.createTexture as Mock).mock.calls.every(
+        (call: unknown[]) => ((call[0] as { size?: { width?: number } } | undefined)?.size?.width ?? 0) <= 1024,
       ),
     ).toBe(true);
   });
@@ -196,8 +197,8 @@ describe('allocateWorkingPool', () => {
     const device = makeDevice({ oomUntil: 0 });
     const result = await allocateWorkingPool(device, 1920, 1080, 1024, 8, 'rgba16float');
     expect(result.ok).toBe(true);
-    const labels = (device.createTexture as jest.Mock).mock.calls.map(
-      (call: [{ label?: string }]) => call[0]?.label,
+    const labels = (device.createTexture as Mock).mock.calls.map(
+      (call: unknown[]) => (call[0] as { label?: string } | undefined)?.label,
     );
     expect(labels[0]).toBe('historyTex');
   });

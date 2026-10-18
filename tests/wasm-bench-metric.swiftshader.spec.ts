@@ -57,7 +57,7 @@ async function thumbnailActiveRatio(page: Page): Promise<number> {
     ctx.drawImage(img, 0, 0);
     const { data } = ctx.getImageData(0, 0, c.width, c.height);
     let active = 0;
-    for (let i = 0; i < data.length; i += 4) if (data[i] + data[i + 1] + data[i + 2] > 38) active++;
+    for (let i = 0; i < data.length; i += 4) if (data[i]! + data[i + 1]! + data[i + 2]! > 38) active++;
     return active / (c.width * c.height);
   });
 }
