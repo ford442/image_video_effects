@@ -29,7 +29,7 @@ Parent: [#965](https://github.com/ford442/image_video_effects/issues/965) · Epi
 CRA’s default webpack config is insufficient for this repo. CRACO patches:
 
 1. **`fullySpecified: false` for `.m?js`** — ESM packages (e.g. `@huggingface/transformers`) omit `.js` extensions; webpack 5 strict resolution breaks without this.
-2. **`import.meta` shim for `@xenova/transformers`** — Custom loader (`scripts/webpack-import-meta-shim-loader.js`) runs before webpack parses the package; transformers assumes Vite/Node ESM.
+2. **`import.meta` shim for `@huggingface/transformers`** — Custom loader (`scripts/webpack-import-meta-shim-loader.js`) runs before webpack parses the package; transformers assumes Vite/Node ESM.
 3. **`topLevelAwait` + `dynamicImport` output env** — Required for async WASM / dynamic `import()` in the app and ML paths.
 4. **`sharp$` and `onnxruntime-node$` → `false`** — Stub Node-only optional deps so browser bundle does not pull native binaries.
 5. **`ignoreWarnings`** — Source-map and `import.meta` parse noise from third-party ML packages.
@@ -40,9 +40,9 @@ Without CRACO, `npm start` / `npm run build` fail on transformers import resolut
 
 | Boundary | Mechanism |
 |----------|-----------|
-| `@xenova/transformers` alias | `package.json` maps `@xenova/transformers` → `npm:@huggingface/transformers@^4.2.0` — keeps import path stable for [`transformersLoader.ts`](src/services/aiModels/transformersLoader.ts) |
+| `@huggingface/transformers` | Direct dependency (the former `@xenova/transformers` → `npm:@huggingface/transformers` alias was dropped in #1343); imported only from [`transformersLoader.ts`](src/services/aiModels/transformersLoader.ts) |
 | No accidental Node ONNX | CRACO stubs `sharp$` / `onnxruntime-node$` → `false` in [`craco.config.js`](craco.config.js) |
-| AI lazy boundaries | `@xenova/transformers` and `@mlc-ai/web-llm` must be dynamically imported only through their loader modules — enforced by `npm run verify:dependency-boundaries` |
+| AI lazy boundaries | `@huggingface/transformers` and `@mlc-ai/web-llm` must be dynamically imported only through their loader modules — enforced by `npm run verify:dependency-boundaries` |
 | Shader list URLs | Committed `public/shader-lists/*.json` must use relative paths (no leaked test-CDN URLs) — same gate |
 
 Run `npm run verify:toolchain-foundation` before merge (bundle budget + dependency boundaries + shader-list URL policy).

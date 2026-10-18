@@ -27,7 +27,7 @@ let abortController: AbortController | null = null;
  * WebGPU depth is only considered when the boot probe succeeded.
  * Never call requestAdapter() here — the renderer owns the sole adapter/device.
  *
- * Note: @xenova/transformers with device:'webgpu' may still allocate its own
+ * Note: @huggingface/transformers with device:'webgpu' may still allocate its own
  * GPUDevice internally. Prefer WASM/CPU while the canvas renderer is live.
  */
 function webGpuAvailable(): boolean {

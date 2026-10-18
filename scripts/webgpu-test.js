@@ -1,4 +1,4 @@
-const { chromium } = require('playwright');
+const { chromium } = require('@playwright/test');
 
 (async () => {
   const browser = await chromium.launch({ headless: true });
