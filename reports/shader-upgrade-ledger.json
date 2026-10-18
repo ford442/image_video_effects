@@ -420,8 +420,17 @@
       "history": []
     },
     "gravitational-lensing": {
-      "hash": "122af2cee1fabe22",
-      "history": []
+      "hash": "ad9afdd184f9b9fd",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T06:50:27.188Z",
+          "hash": "ad9afdd184f9b9fd",
+          "prev_hash": "122af2cee1fabe22",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 argon4/batch-02: two native ideas each"
+        }
+      ]
     },
     "gravity-well-em": {
       "hash": "f73bf54a330e5237",
@@ -1006,7 +1015,7 @@
       "history": []
     },
     "liquid-prism-cascade": {
-      "hash": "c92df32d84844700",
+      "hash": "85d9a72052121e59",
       "history": [
         {
           "event": "upgraded",
@@ -1015,6 +1024,14 @@
           "prev_hash": "7ed38a1c6c8a1d01",
           "commit": "86d8f696",
           "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T06:50:27.188Z",
+          "hash": "85d9a72052121e59",
+          "prev_hash": "c92df32d84844700",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 argon4/batch-02: two native ideas each"
         }
       ]
     },
@@ -1299,8 +1316,17 @@
       "history": []
     },
     "bubble-lens": {
-      "hash": "f4b36283c12a4ec2",
-      "history": []
+      "hash": "5695976a608e8e52",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T06:50:27.188Z",
+          "hash": "5695976a608e8e52",
+          "prev_hash": "f4b36283c12a4ec2",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 argon4/batch-02: two native ideas each"
+        }
+      ]
     },
     "chromatic-swirl": {
       "hash": "3cb700dad12d5cdc",
@@ -1566,8 +1592,17 @@
       "history": []
     },
     "spiral-lens": {
-      "hash": "aa03edbe6254b6a7",
-      "history": []
+      "hash": "1a446ae054668700",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T06:50:27.188Z",
+          "hash": "1a446ae054668700",
+          "prev_hash": "aa03edbe6254b6a7",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 argon4/batch-02: two native ideas each"
+        }
+      ]
     },
     "temporal-distortion-field": {
       "hash": "537c4219b21100d6",
@@ -2393,7 +2428,7 @@
       ]
     },
     "gen-chromatic-glass-lattice": {
-      "hash": "b2e83f31e39ee0a8",
+      "hash": "da0887c44ead37a7",
       "history": [
         {
           "event": "upgraded",
@@ -2402,6 +2437,14 @@
           "prev_hash": "920c1ae5aec66a9e",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T06:50:27.188Z",
+          "hash": "da0887c44ead37a7",
+          "prev_hash": "b2e83f31e39ee0a8",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 argon4/batch-02: two native ideas each"
         }
       ]
     },
@@ -3258,7 +3301,7 @@
       ]
     },
     "gen-ethereal-quantum-hologram-bonsai": {
-      "hash": "2c5438fcb7a1df5a",
+      "hash": "c7df3998b758f93a",
       "history": [
         {
           "event": "upgraded",
@@ -3267,6 +3310,14 @@
           "prev_hash": "7891fedf76563226",
           "commit": "d74e665b",
           "note": "2026-10-10 ethereal/cymatic/labyrinth ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-10-ethereal-cymatic-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T06:50:27.188Z",
+          "hash": "c7df3998b758f93a",
+          "prev_hash": "2c5438fcb7a1df5a",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 argon4/batch-02: two native ideas each"
         }
       ]
     },
@@ -4565,7 +4616,7 @@
       "history": []
     },
     "gen-luminescent-quantum-glass-phoenix-egg": {
-      "hash": "663fb2b216240d55",
+      "hash": "d4585bf22b364427",
       "history": [
         {
           "event": "upgraded",
@@ -4574,6 +4625,14 @@
           "prev_hash": "babb82a0647f2a8a",
           "commit": "a26af174",
           "note": "2026-10-10 luminescent/magnetic ten (Claude) — agents/swarm-outputs/claude-2026-10-10-luminescent-magnetic-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T06:50:27.188Z",
+          "hash": "d4585bf22b364427",
+          "prev_hash": "663fb2b216240d55",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 argon4/batch-02: two native ideas each"
         }
       ]
     },
@@ -5248,7 +5307,7 @@
       ]
     },
     "gen-prismatic-crystal-growth": {
-      "hash": "8c3f6654df202eb3",
+      "hash": "29e0cfc929551e09",
       "history": [
         {
           "event": "upgraded",
@@ -5257,6 +5316,14 @@
           "prev_hash": "6fb48b2cbab01354",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T06:50:27.188Z",
+          "hash": "29e0cfc929551e09",
+          "prev_hash": "8c3f6654df202eb3",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 argon4/batch-02: two native ideas each"
         }
       ]
     },
@@ -8102,8 +8169,17 @@
       "history": []
     },
     "optical-feedback": {
-      "hash": "ea727e5b99d5b294",
-      "history": []
+      "hash": "c39ff527f1c39507",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T06:50:27.188Z",
+          "hash": "c39ff527f1c39507",
+          "prev_hash": "ea727e5b99d5b294",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 argon4/batch-02: two native ideas each"
+        }
+      ]
     },
     "origami-fold": {
       "hash": "68eba54e47612b13",

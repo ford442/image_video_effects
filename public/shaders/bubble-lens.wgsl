@@ -4,32 +4,16 @@
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, thin-film,
 //            marangoni-convection, membrane-resonance, ACES
 //  Complexity: Very High
-//  Upgraded: 2026-09-21
+//  Upgraded: 2026-10-18
 //  Ideas: inverted rear-wall reflection by sphere-incidence Fresnel (IOR-driven);
-//         Marangoni vortices curl the film thickness
+//         Marangoni vortices curl the film thickness;
+//         Airy diffraction specular glint & Plateau-border capillary rim meniscus (§12.2F Airy ring);
+//         3-wavelength spherical Snell vector refraction (§12.2F Snell vector refraction)
 //  A packing: ACES display RGBA (max-blended with C)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,  // x=BubbleSize, y=Magnification, z=FilmThickness, w=IOR
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=BubbleSize, y=Magnification, z=FilmThickness, w=IOR
 
 fn hash12(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
@@ -58,6 +42,13 @@ fn acesFilm(x: vec3<f32>) -> vec3<f32> {
   let d = 0.59;
   let e = 0.14;
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// ── Idea 3 helper: Airy diffraction ring (§12.2F Airy ring) ──
+fn airyDisc(r: f32) -> f32 {
+  let x = max(r, 1e-4);
+  let s = sin(x) / x;
+  return s * s;
 }
 
 struct BubbleEval {
@@ -94,11 +85,19 @@ fn evalBubble(
   let displacement = direction * lensStrength * bubbleRadius * (1.0 - factor);
   let warpedUV = clamp(uv - displacement / vec2<f32>(aspect, 1.0), vec2<f32>(0.0), vec2<f32>(1.0));
 
+  // ── Idea 4: 3-Wavelength Spherical Snell Vector Refraction (§12.2F Snell vector refraction) ──
+  let cosInc = sqrt(max(1.0 - factor * factor, 0.02));
+  let sphereN = normalize(vec3<f32>(direction * factor, cosInc));
+  let snellR = refract(vec3<f32>(0.0, 0.0, -1.0), sphereN, 1.0 / max(ior - 0.035, 1.02)).xy;
+  let snellG = refract(vec3<f32>(0.0, 0.0, -1.0), sphereN, 1.0 / ior).xy;
+  let snellB = refract(vec3<f32>(0.0, 0.0, -1.0), sphereN, 1.0 / (ior + 0.045)).xy;
+  let dispScale = bubbleRadius * 0.14 / vec2<f32>(aspect, 1.0);
+  let sampleR = textureSampleLevel(readTexture, u_sampler, clamp(warpedUV + (snellR - snellG) * dispScale, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
   let bubbleSample = textureSampleLevel(readTexture, u_sampler, warpedUV, 0.0);
+  let sampleB = textureSampleLevel(readTexture, u_sampler, clamp(warpedUV + (snellB - snellG) * dispScale, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  let dispersedSample = vec3<f32>(sampleR, bubbleSample.g, sampleB);
 
-  // Idea 2 — Marangoni vortices. Surface-tension gradients spin the film into slow,
-  // counter-rotating swirls; two vortices rotate the thickness-noise lookup so the
-  // interference colours curl instead of only drifting.
+  // Idea 2 — Marangoni vortices.
   let local = delta / max(bubbleRadius, 1e-4);
   var swirled = local;
   for (var k = 0; k < 2; k = k + 1) {
@@ -148,27 +147,28 @@ fn evalBubble(
   let cosTheta = max(dot(-direction, vec2<f32>(0.0, 1.0)), 0.0);
   let fresnel = fresnelBase + (1.0 - fresnelBase) * pow(1.0 - cosTheta, 5.0);
   let rim = smoothstep(0.65, 1.0, factor) * inside;
-  let spec = pow(max(0.0, 1.0 - factor), 4.0) * (0.25 + audio.y * 0.6);
 
-  var bubbleColor = bubbleSample.rgb;
-  bubbleColor = mix(bubbleColor, bubbleSample.rgb * interference * 1.25, 0.35 + fresnel * 0.35);
+  // ── Idea 3: Airy Diffraction Specular Glint & Plateau-Border Capillary Rim Meniscus (§12.2F Airy ring) ──
+  let specSpotDist = length(local - vec2<f32>(-0.34, -0.34));
+  let airySpec = airyDisc(specSpotDist * 18.0) * 0.45;
+  let plateauMeniscus = exp(-pow((factor - 0.94) * 28.0, 2.0)) * inside;
+  let spec = pow(max(0.0, 1.0 - factor), 4.0) * (0.25 + audio.y * 0.6) + airySpec * (0.6 + audio.z * 0.5);
 
-  // Idea 1 — rear-wall reflection. The inside of the far wall is a concave mirror, so the
-  // scene appears inverted through the centre and squeezed toward the rim. Its strength is
-  // Schlick Fresnel at the true sphere incidence (cosθ = sqrt(1 - r²)), so the IOR slider
-  // now sets how mirror-like the rim gets; the reflection is tinted by the film colour.
-  let cosInc = sqrt(max(1.0 - factor * factor, 0.0));
+  var bubbleColor = dispersedSample;
+  bubbleColor = mix(bubbleColor, dispersedSample * interference * 1.25, 0.35 + fresnel * 0.35);
+
+  // Idea 1 — rear-wall reflection.
   let sphereFresnel = fresnelBase + (1.0 - fresnelBase) * pow(1.0 - cosInc, 5.0);
   let reach = bubbleRadius * (0.35 + 2.4 * factor * factor);
   let reflUV = clamp(center - direction * reach / vec2<f32>(aspect, 1.0), vec2<f32>(0.0), vec2<f32>(1.0));
   let reflCol = textureSampleLevel(readTexture, u_sampler, reflUV, 0.0).rgb;
   let reflW = clamp(0.06 + sphereFresnel * 0.9, 0.0, 0.7) * (1.0 - blackSpot * 0.8);
   bubbleColor = mix(bubbleColor, reflCol * mix(vec3<f32>(1.0), interference * 1.3, 0.5), reflW);
-  bubbleColor = bubbleColor + vec3<f32>(1.0, 0.95, 0.92) * spec + interference * (rim * 0.2);
+  bubbleColor = bubbleColor + vec3<f32>(1.0, 0.95, 0.92) * spec + interference * (rim * 0.2 + plateauMeniscus * 0.45);
 
   let transmittance = exp(-drainedThickness * 0.35) * (0.85 + fresnel * 0.15);
   let finalColor = mix(src.rgb, bubbleColor, inside);
-  let finalAlpha = clamp(mix(src.a, transmittance, inside) + inside * (0.14 + rim * 0.08), 0.08, 0.98);
+  let finalAlpha = clamp(mix(src.a, transmittance, inside) + inside * (0.14 + rim * 0.08 + plateauMeniscus * 0.12), 0.08, 0.98);
 
   var out: BubbleEval;
   out.color = finalColor;

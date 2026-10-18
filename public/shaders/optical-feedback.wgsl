@@ -6,73 +6,13 @@
 //            domain-warp, hue-shift, semantic-alpha, gravity-well,
 //            click-shockwave, spring-damper, emergent-feedback
 //  Complexity: High
-//  Upgraded: 2026-08-23 (Batch 64)
-//
-//  TWO BUGS FIXED IN THIS PASS
-//
-//  1. Ripple count used as delta time. The shader had
-//
-//         let dt = u.config.y;
-//         velocity = velocity + accel * dt;
-//         smoothMouse = smoothMouse + velocity * dt;
-//
-//     `config.y` is the RIPPLE COUNT, not a per-frame dt — no dt is uploaded on
-//     either backend (docs/BINDING_CONTRACT.md, do-not-reintroduce list). With
-//     no clicks alive `dt == 0`, so the spring never moved and the hue phase
-//     never advanced: the "spring-damper" and "hue-shift" features were frozen
-//     solid. With clicks alive it jumped to 1..50, and a stiff spring (k = 55)
-//     integrated at dt = 50 diverges instantly. The spring is now a
-//     frame-rate-corrected exponential tracker driven by the fixed engine step,
-//     which needs no velocity state at all.
-//
-//  2. State written into the engine's audio slots. Nine values were stored at
-//     `extraBuffer[0..8]` — which per the binding contract are bass, mid,
-//     treble, reserved, `historyHead`, and FFT bins 5-8. This shader was
-//     overwriting the audio EVERY OTHER SHADER IN THE CHAIN reads, and reading
-//     back values the engine rewrites each frame, so its own state was garbage
-//     too. The extraBuffer audit carried these as nine grandfathered baseline
-//     violations.
-//
-//     The state also did not need nine slots: `clickTime`/`clickPos` duplicate
-//     what `u.ripples[i]` already provides (`.xy` = click uv, `.z` = click
-//     time), and `prevPress` existed only to detect the press edge the ripple
-//     queue already detects. Dropping those four plus the two velocity slots
-//     leaves smoothed pointer xy + hue phase, now at `extraBuffer[133..135]` —
-//     inside the engine's scratch range — and written only by invocation (0,0)
-//     instead of racing across every pixel.
-//
-//  TWO NEW STRUCTURES
-//
-//    1. Multi-front ripple shockwaves — the feedback loop was disturbed by a
-//       single hand-tracked click at a time. It now integrates every live
-//       ripple (capped at 50) as its own expanding front, so overlapping clicks
-//       build interference in the feedback rather than replacing each other.
-//
-//    2. Per-band spectral hue rotation — the hue shift was one global phase.
-//       Each of the eight FFT bins now rotates its own radial zone of the
-//       frame, so the feedback tunnel separates into spectral rings.
+//  Upgraded: 2026-10-18
+//  Ideas: multi-front ripple shockwaves; per-band spectral hue rotation; 9-point isotropic Laplacian Turing-edge restorer on feedback buffer (§12.2D 9-point Laplacian); Fabry-Perot optical cavity mirror interference fringes (§12.2F Thin-film interference)
+//  A packing: ACES display RGBA (alpha = accumulated envelope/coverage)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
 
@@ -92,6 +32,21 @@ fn feedbackBilinear(p: vec2<f32>, dims: vec2<i32>) -> vec4<f32> {
     let s01 = textureLoad(dataTextureC, clamp(i0 + vec2<i32>(0, 1), vec2<i32>(0), maxC), 0);
     let s11 = textureLoad(dataTextureC, clamp(i0 + vec2<i32>(1, 1), vec2<i32>(0), maxC), 0);
     return mix(mix(s00, s10, f.x), mix(s01, s11, f.x), f.y);
+}
+
+// ── Idea 3: 9-Point Isotropic Laplacian Turing-Edge Restorer on Feedback Buffer (§12.2D 9-point Laplacian) ──
+fn lap9Feedback(c: vec2<i32>, dims: vec2<i32>) -> vec3<f32> {
+    let maxC = dims - vec2<i32>(1);
+    let u0 = textureLoad(dataTextureC, clamp(c, vec2<i32>(0), maxC), 0).rgb;
+    let ax = textureLoad(dataTextureC, clamp(c + vec2<i32>( 1,  0), vec2<i32>(0), maxC), 0).rgb +
+             textureLoad(dataTextureC, clamp(c + vec2<i32>(-1,  0), vec2<i32>(0), maxC), 0).rgb +
+             textureLoad(dataTextureC, clamp(c + vec2<i32>( 0,  1), vec2<i32>(0), maxC), 0).rgb +
+             textureLoad(dataTextureC, clamp(c + vec2<i32>( 0, -1), vec2<i32>(0), maxC), 0).rgb;
+    let dg = textureLoad(dataTextureC, clamp(c + vec2<i32>( 1,  1), vec2<i32>(0), maxC), 0).rgb +
+             textureLoad(dataTextureC, clamp(c + vec2<i32>(-1,  1), vec2<i32>(0), maxC), 0).rgb +
+             textureLoad(dataTextureC, clamp(c + vec2<i32>( 1, -1), vec2<i32>(0), maxC), 0).rgb +
+             textureLoad(dataTextureC, clamp(c + vec2<i32>(-1, -1), vec2<i32>(0), maxC), 0).rgb;
+    return 0.5 * ax + 0.25 * dg - 3.0 * u0;
 }
 
 fn hash21(p: vec2<f32>) -> f32 {
@@ -180,16 +135,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let prev = textureLoad(dataTextureC, coord, 0);
     let env = bass_env(prev.a, bass, 0.8, 0.15);
     // ---- persistent interactive state (scratch range only, (0,0) writes) ----
-    // Critically-damped exponential tracker with a frame-rate-correct factor;
-    // no velocity slots needed, and no bogus dt (see header).
     let ENGINE_DT = 0.016;
     let springRate = 14.0;
     let springK = 1.0 - exp(-springRate * ENGINE_DT);
 
     var smoothMouse = vec2<f32>(extraBuffer[SMOOTH_X], extraBuffer[SMOOTH_Y]);
     var huePhase = extraBuffer[HUE_PHASE];
-    // Cold start: a zeroed buffer snaps to the live cursor rather than crawling
-    // out of the corner.
     if (smoothMouse.x == 0.0 && smoothMouse.y == 0.0) { smoothMouse = mouse; }
     smoothMouse = smoothMouse + (mouse - smoothMouse) * springK;
     huePhase = fract(huePhase + (env * 0.02 + mouseDown * 0.04) * ENGINE_DT * 60.0);
@@ -224,8 +175,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     sampleUV = sampleUV + toMouse * gravityStrength;
     sampleUV = clamp(sampleUV, vec2<f32>(0.0), vec2<f32>(1.0));
     // ---- Structure 1: every live ripple is its own shockwave front ----
-    // Previously only one hand-tracked click could disturb the loop at a time;
-    // overlapping clicks now build real interference in the feedback.
     var shock = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
     for (var i = 0u; i < rippleCount; i = i + 1u) {
@@ -245,15 +194,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     sampleUV = sampleUV + safeNormalize(sampleUV - center) * feedbackEnergy * 0.01 * (1.0 + mids);
     sampleUV = clamp(sampleUV, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // Exact float32 fetch with hand-rolled bilinear — dataTextureC is rgba32float
-    // and `float32-filterable` is only requested when the adapter offers it
-    // (src/renderer/webgpu/device.ts), so the filtering sampler is unsafe here.
-    let feedbackSample = feedbackBilinear(sampleUV * resolution, vec2<i32>(resolution));
-    let feedbackColor = feedbackSample.rgb * brightness;
+    let dimsI = vec2<i32>(resolution);
+    let feedbackSample = feedbackBilinear(sampleUV * resolution, dimsI);
+    let lapRestorer = lap9Feedback(vec2<i32>(sampleUV * resolution), dimsI);
+    let feedbackColor = clamp(feedbackSample.rgb * brightness - lapRestorer * (0.14 + treble * 0.1), vec3<f32>(0.0), vec3<f32>(4.0));
 
     // ---- Structure 2: per-band spectral hue rotation ----
-    // Each FFT bin owns a radial zone of the tunnel, so the feedback separates
-    // into spectral rings instead of rotating under one global phase.
     let ringT = clamp(length(uv - center) * 1.9, 0.0, 0.999);
     let bandIdx = u32(ringT * 8.0);
     let bandEnergy = plasmaBuffer[bandIdx + 1u].x;
@@ -273,6 +219,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let totalAlpha = min(accumulatedAlpha * depthFade, 1.0);
     let blendFactor = select(feedbackSample.a * accumulationRate / totalAlpha, 0.0, totalAlpha < 0.001);
     var color = mix(prev.rgb, shifted, blendFactor);
+
+    // ── Idea 4: Fabry-Perot Optical Cavity Mirror Interference Fringes (§12.2F Thin-film interference) ──
+    let opticalPathDiff = ringT * 12.0 + dot(current.rgb - feedbackSample.rgb, vec3<f32>(1.2)) - time * 0.8;
+    let finesse = 3.5 + zoomParam * 4.0;
+    let fpPhase = vec3<f32>(opticalPathDiff, opticalPathDiff + 1.047, opticalPathDiff + 2.094);
+    let sinFp = sin(fpPhase);
+    let fabryPerot = vec3<f32>(1.0) / (vec3<f32>(1.0) + finesse * sinFp * sinFp);
+    color = mix(color, color * (0.75 + 0.55 * fabryPerot), 0.28 * accumulationRate);
 
     color = mix(color, current.rgb, 0.08 + depth * 0.08);
     // ---- shockwave brightness injection ----

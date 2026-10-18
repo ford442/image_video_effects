@@ -5,28 +5,13 @@
 //            domain-warp, kaleidoscope, chromatic-dispersion, mobius-lens,
 //            semantic-alpha, ACES
 //  Complexity: High
+//  Upgraded: 2026-10-18
+//  Ideas: Mobius kaleidoscopic lens with logarithmic/Archimedean spiral blend; 3D grooved spiral Fresnel-zone normals & Snell vector refraction (§12.2F Snell vector refraction); kaleidoscopic sector fold-parity tint & mirror-seam bevel glints (§12.2E Fold count as material)
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,  // x=SpiralTightness, y=LensStrength, z=Chromatic, w=RotationSpeed
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=SpiralTightness, y=LensStrength, z=Chromatic, w=RotationSpeed
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -69,12 +54,18 @@ fn rot2(a: f32) -> mat2x2<f32> {
   return mat2x2<f32>(c, -s, s, c);
 }
 
-fn kaleido(uv: vec2<f32>, segs: f32) -> vec2<f32> {
+// Returns (folded.x, folded.y, sectorParity, seamDist)
+fn kaleido(uv: vec2<f32>, segs: f32) -> vec4<f32> {
   let r = length(uv);
-  var a = atan2(uv.y, uv.x);
+  let rawA = atan2(uv.y, uv.x);
   let seg = TAU / max(segs, 1.0);
-  a = abs(((a % seg) + seg) % seg - seg * 0.5);
-  return vec2<f32>(cos(a), sin(a)) * r;
+  let wrapped = ((rawA % seg) + seg) % seg;
+  let sectorIdx = floor((rawA + PI) / seg);
+  let sectorParity = fract(sectorIdx * 0.5) * 2.0;
+  let centered = wrapped - seg * 0.5;
+  let a = abs(centered);
+  let seamDist = min(a, seg * 0.5 - a) * r;
+  return vec4<f32>(cos(a) * r, sin(a) * r, sectorParity, seamDist);
 }
 
 fn cmul(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
@@ -177,7 +168,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   );
 
   let segs = 3.0 + treble * 5.0;
-  let dvec = kaleido(mz, segs + bass * 2.0);
+  let kal = kaleido(mz, segs + bass * 2.0);
+  let dvec = kal.xy;
+  let sectorParity = kal.z;
+  let seamDist = kal.w;
   let dist = length(dvec);
   let angle = atan2(dvec.y, dvec.x);
 
@@ -210,11 +204,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let dir = select(vec2<f32>(0.0), dvec / max(dist, 0.0001), dist > 0.0001);
   let ndcDir = dir / vec2<f32>(aspect, 1.0);
-  let lensedNdc = mouseNdc + dvec * lensFactor + dir * lensWarp * lensMask;
+
+  // ── Idea 3: 3D Grooved Spiral Fresnel-Zone Normals & Snell Vector Refraction (§12.2F Snell vector refraction) ──
+  let grooveSlope = cos(spiralAngle * 4.0 + warpedDist * 18.0) * lensMask * (0.28 + p1 * 0.35);
+  let seamBevel = exp(-seamDist * 45.0) * lensMask;
+  let grooveNormal = normalize(vec3<f32>(dir * grooveSlope + vec2<f32>(-dir.y, dir.x) * seamBevel * 0.45, 1.0));
+  let snellShift = refract(vec3<f32>(0.0, 0.0, -1.0), grooveNormal, 1.0 / 1.52).xy * 0.035;
+
+  let lensedNdc = mouseNdc + dvec * lensFactor + dir * lensWarp * lensMask + snellShift;
   let lensedUV = lensedNdc / vec2<f32>(aspect, 1.0) + vec2<f32>(0.5);
   let sampleUV = mix(lensedUV, spiralUV, lensMask * 0.25);
 
-  let caScale = chromatic * (1.0 + dist * 2.5);
+  let caScale = chromatic * (1.0 + dist * 2.5 + seamBevel * 0.8);
   let rUV = clamp(sampleUV + ndcDir * caScale, vec2<f32>(0.0), vec2<f32>(1.0));
   let gUV = clamp(sampleUV + ndcDir * caScale * 0.3 * dist, vec2<f32>(0.0), vec2<f32>(1.0));
   let bUV = clamp(sampleUV - ndcDir * caScale * (1.0 + dist * 0.8), vec2<f32>(0.0), vec2<f32>(1.0));
@@ -223,6 +224,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let g = textureSampleLevel(readTexture, u_sampler, gUV, 0.0).g;
   let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
   var col = vec3<f32>(r, g, b);
+
+  // ── Idea 4: Kaleidoscopic Sector Fold-Parity Tint & Mirror-Seam Bevel Glints (§12.2E Fold count as material) ──
+  let parityTint = mix(vec3<f32>(1.04, 0.98, 0.94), vec3<f32>(0.94, 0.99, 1.05), sectorParity);
+  col = mix(col, col * parityTint, lensMask * 0.55);
+  let grooveSpec = pow(max(dot(grooveNormal, normalize(vec3<f32>(0.45, -0.55, 0.7))), 0.0), 16.0) * lensMask;
+
   let baseLuma = luma(col);
 
   let edgePhase = dist * 6.0 - time * 0.3 + fbm(dvec * 8.0 + time * 0.5, 3);
@@ -256,9 +263,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let lumaAlpha = smoothstep(0.04, 0.22, baseLuma);
   let edgeAlpha = smoothstep(0.0, 0.18, lensMask + warpMag);
   var alpha = mix(lumaAlpha, depthAlpha, 0.5) * effectIntensity * edgeAlpha;
-  alpha = clamp(alpha + held * 0.1, 0.06, 1.0);
+  alpha = clamp(alpha + held * 0.1 + seamBevel * 0.12, 0.06, 1.0);
 
-  let overlay = (rainbow + causticLight + bloom + armColor + liquidRainbow * (mobiusCaustic * 0.3 + irisWave * 0.38)) * alpha;
+  let seamGlint = vec3<f32>(0.92, 0.96, 1.0) * (seamBevel * 0.28 + grooveSpec * 0.35);
+  let overlay = (rainbow + causticLight + bloom + armColor + seamGlint + liquidRainbow * (mobiusCaustic * 0.3 + irisWave * 0.38)) * alpha;
   var color = col + overlay;
 
   // Exact dataTextureC persistence

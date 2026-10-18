@@ -5737,7 +5737,7 @@
     "name": "Chromatic Glass Lattice",
     "category": "generative",
     "url": "shaders/gen-chromatic-glass-lattice.wgsl",
-    "description": "Raymarched 3D chromatic glass lattice with Cauchy multi-order dispersion, internal TIR caustic ribs, acoustic resonance stress birefringence, and micro-fracture edge sparkle glints.",
+    "description": "Raymarched 3D chromatic glass lattice with Cauchy multi-order dispersion, Beer-Lambert optical path absorption, waveguide core modes, tetrahedral curvature beveled strut ridges, Airy diffraction node rings, and stress birefringence.",
     "workgroup_size": [
       16,
       16,
@@ -10554,7 +10554,7 @@
       "audio-reactive",
       "interactive"
     ],
-    "description": "A serene, hyper-dimensional bonsai tree woven entirely from shimmering quantum hard-light, its branches continuously fracturing and self-assembling in probabilistic super-position.",
+    "description": "A serene quantum hard-light bonsai tree with probabilistic superposition branch collapse, 5-tap bough crevice AO, helical shari deadwood striations, 3D sap pulses, and orbit-trap sakura blossom motes.",
     "workgroup_size": [
       16,
       16,
@@ -17802,7 +17802,7 @@
       "plasma",
       "volumetric"
     ],
-    "description": "Iridescent glass egg with a volumetric ember core, shell cracks and a hatching pip.",
+    "description": "Iridescent glass egg with a volumetric Henyey-Greenstein ember core, twisted chalaza suspension cords, 5-tap shell crevice AO, blunt-end air-cell meniscus, Voronoi cracks, and a hatching pip.",
     "workgroup_size": [
       16,
       16,
@@ -22032,7 +22032,7 @@
       "growth",
       "sdf"
     ],
-    "description": "SDF crystal lattice that grows over time with Fresnel reflectance for glass-like translucency. Alpha encodes crystal thickness — thin edges are transparent, thick centers opaque. Audio drives growth rate and crystal rotation.",
+    "description": "SDF crystal lattice with Cauchy facet fire, oscillatory growth-zone shells, tetrahedral curvature cleavage-edge bevel glints, Beer-Lambert optical absorption, and a ground-plane projected prismatic caustic carpet.",
     "workgroup_size": [
       16,
       16,

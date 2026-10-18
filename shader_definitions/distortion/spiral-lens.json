@@ -2,7 +2,7 @@
   "id": "spiral-lens",
   "name": "Spiral Lens",
   "url": "shaders/spiral-lens.wgsl",
-  "description": "Liquid rainbow interference through a M\u00f6bius kaleidoscopic lens, with spectral caustics, drag-twisted focus, bounded click-launched iris waves, domain warp, audio response, and layered depth alpha.",
+  "description": "Liquid rainbow interference through a M\u00f6bius kaleidoscopic lens with 3D grooved spiral Fresnel-zone Snell refraction, kaleidoscopic sector fold-parity tints, mirror-seam bevel glints, and spectral caustics.",
   "updated": true,
   "features": [
     "mouse-driven",
