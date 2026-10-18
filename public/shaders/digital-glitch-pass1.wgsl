@@ -1,8 +1,11 @@
 // ═══════════════════════════════════════════════════════════════
-//  Digital Glitch Pass 1 — Batch 60
-//  Glitch field generation: spring hotspot, capped ripples, held
-//  intensify, bitwise seeds, exact C error mask, audio bands.
-//  Outputs: dataTextureA (displacedUV.xy, intensity, blockSeed)
+//  Digital Glitch Pass 1
+//  Category: retro-glitch
+//  Features: audio-reactive, mouse-driven
+//  Complexity: High
+//  Upgraded: 2026-10-18
+//  Ideas: macroblock motion carry; Schmitt-trigger scan tear
+//  A packing: raw (displacedUV.xy, intensity, blockSeed). No ACES on A.
 // ═══════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -113,9 +116,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
   let corruptionIntensity = clamp(u.zoom_params.x * (1.0 + bass * 0.35), 0.0, 1.0);
   let bitManipulationType = u.zoom_params.y;
+  let errorSpread = clamp(u.zoom_params.z, 0.0, 1.0);
+  let decayRate = clamp(u.zoom_params.w, 0.0, 1.0);
 
   var smoothMouse = mouse;
   let hasSpring = arrayLength(&extraBuffer) > 138u;
@@ -149,7 +155,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var effectiveIntensity = clamp(corruptionIntensity + mouseInfluence * 0.35, 0.0, 1.0);
   effectiveIntensity = clamp(effectiveIntensity * select(1.0, 1.4, held), 0.0, 1.0);
 
-  let prevMask = textureLoad(dataTextureC, texelCoord, 0).b;
+  let prevField = textureLoad(dataTextureC, texelCoord, 0);
+  let prevMask = prevField.b;
   var rippleBurst = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);
   for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
@@ -170,10 +177,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let yShift = (hash21(blockCoord + vec2<f32>(7.0, 3.0) + vec2<f32>(time * 0.07, 0.0)) - 0.5) * maxShift;
   var displacedUV = clamp(uv + vec2<f32>(xShift, yShift), vec2<f32>(0.0), vec2<f32>(1.0));
 
+  // ── Idea 1: macroblock motion carry ─────────────────────────────────
+  // Last frame's displaced UV is the block's previous motion. Error
+  // Propagation keeps that smear; Decay Rate lets the P-frame go.
+  let prevDisp = prevField.rg - uv;
+  let carry = errorSpread * (1.0 - decayRate * 0.7);
+  displacedUV = clamp(displacedUV + prevDisp * carry, vec2<f32>(0.0), vec2<f32>(1.0));
+
   let row = floor(uv.y * blockSize);
   let scanSeed = hash21(vec2<f32>(row, floor(time * 10.0)));
-  let tear = step(0.94, scanSeed);
-  displacedUV.x = displacedUV.x + tear * 0.16 * (blockSeed - 0.5) * effectiveIntensity;
+  // ── Idea 2: Schmitt-trigger scan tear ───────────────────────────────
+  // The tear latches while the row is still hot and releases only under
+  // a lower seed, so tracking errors hold instead of flickering.
+  let prevLock = step(0.42 + decayRate * 0.2, prevField.b);
+  var tear = prevLock;
+  tear = select(tear, 1.0, scanSeed > 0.94);
+  tear = select(tear, 0.0, scanSeed < 0.78);
+  displacedUV.x = displacedUV.x + tear * (0.16 + treble * 0.05) * (blockSeed - 0.5) * effectiveIntensity;
   displacedUV = clamp(displacedUV, vec2<f32>(0.0), vec2<f32>(1.0));
 
   let baseColor = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0);
@@ -196,8 +216,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
   }
 
-  let band = min(u32(uv.x * 8.0), 7u);
-  effectiveIntensity = clamp(effectiveIntensity + plasmaBuffer[band + 1u].x * 0.07, 0.0, 1.0);
   color = mix(baseColor.rgb, color, 0.5 + mids * 0.3);
 
   textureStore(writeTexture, texelCoord, vec4<f32>(color, baseColor.a));

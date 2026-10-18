@@ -23,7 +23,12 @@
   "updated": true,
   "id": "gen-stable-fluids-jos-stam",
   "url": "shaders/gen-stable-fluids-jos-stam.wgsl",
-  "features": [],
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba",
+    "simulation"
+  ],
   "x-meta": {
     "upgrade": {
       "params": [

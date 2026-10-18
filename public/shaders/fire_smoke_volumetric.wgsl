@@ -5,29 +5,12 @@
 //            chromatic-temperature, temporal-smoke, audio-turbulence,
 //            worley-embers, treble-edge-flicker, feedback-clamped
 //  Complexity: High
-//  Upgraded: 2026-08-23 (Batch 68 stateful smoke advection and ignition)
+//  Upgraded: 2026-08-23, 2026-10-18
+//  Ideas: buoyancy lift; soot cap; red fringe
+//  A packing: raw smoke RGB plus density in A. ACES on writeTexture only.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI:  f32 = 3.14159265358979323846;
 const TAU: f32 = 6.28318530717958647692;
@@ -183,9 +166,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let fireB = mix(0.1, 0.05, temp) * (1.0 + bass * 0.1);
     let tempColor = vec3<f32>(fireR, fireG, fireB);
     let fireColor = tempColor * fireShape * (0.5 + fireIntensity * 0.5);
+    // ── Idea 3: red fringe ──────────────────────────────────────────────
+    // The silhouette, where the flame is halfway, is the cool red edge.
+    let fringe = clamp(fireShape * (1.0 - fireShape) * 4.0, 0.0, 1.0);
+    let fireFringed = mix(fireColor, vec3<f32>(0.86, 0.14, 0.03), fringe * 0.7);
 
     let smokeColor = vec3<f32>(0.3, 0.3, 0.35) * density;
-    let effectColor = mix(smokeColor, fireColor, fireShape);
+    let effectColor = mix(smokeColor, fireFringed, fireShape);
 
     // Worley-noise ember sparks riding the flame, tinted by the same gradient
     let emberColor = emberField(uv, time, turbulence, fireShape, tempColor, fireIntensity);
@@ -193,14 +180,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Exact-load semi-Lagrangian smoke advection from authoritative C state.
     let historyDims = vec2<i32>(textureDimensions(dataTextureC));
     let curl = vec2<f32>(sin(uv.y * 13.0 + time), cos(uv.x * 11.0 - time * 0.7));
-    let advectedUV = clamp(uv + vec2<f32>(curl.x * 0.004, 0.008 + curl.y * 0.002) * turbulence - springVel * mouseHeat * 0.018, vec2<f32>(0.0), vec2<f32>(1.0));
+    // ── Idea 1: buoyancy lift ───────────────────────────────────────────
+    // Hot core rises faster than the cool smoke. y = 0 is the top.
+    let lift = fireShape * fireIntensity * 0.0035;
+    let advectedUV = clamp(uv + vec2<f32>(curl.x * 0.004, 0.008 + curl.y * 0.002) * turbulence - vec2<f32>(0.0, lift) - springVel * mouseHeat * 0.018, vec2<f32>(0.0), vec2<f32>(1.0));
     let prevState = textureLoad(dataTextureC, historyCoord(advectedUV, historyDims), 0);
     let prevSmoke = prevState.rgb;
     let decay = 0.92 + smokeDensity * 0.04;
     // Feedback stability: clamp accumulation pre-write at 1.2 (luma-echo-warp lesson)
     let decayedPrev = min(prevSmoke * decay, vec3<f32>(1.2));
     let smokeBlend = clamp(0.18 + bass * 0.04 + smokeDensity * 0.18, 0.0, 0.65);
-    let persistentSmoke = mix(effectColor, decayedPrev, smokeBlend);
+    var persistentSmoke = mix(effectColor, decayedPrev, smokeBlend);
+    // ── Idea 2: soot cap ────────────────────────────────────────────────
+    // Density that has risen past the flame cools into a dark cap.
+    let above = smoothstep(0.45, 0.08, uv.y) * (1.0 - fireShape);
+    let soot = clamp(prevState.a * above * smokeDensity * 1.6, 0.0, 0.82);
+    persistentSmoke = mix(persistentSmoke, vec3<f32>(0.015, 0.016, 0.02), soot);
 
     // Physical transmittance through the smoke slab
     let opticalDepth = density * (1.0 + turbulence) * slabThickness;

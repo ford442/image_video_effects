@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: Lorentz gyro-helix + magnetic-mirror bounce with loss-cone precipitation; auroral oval curtains at field-line footpoints with click substorms; Van Allen belts (inner proton + bass-injected outer electron shells with slot); magnetopause standoff curve + bow shock
+//  Upgraded: 2026-10-10, 2026-10-18
+//  Ideas: Lorentz gyro-helix + magnetic-mirror bounce with loss-cone precipitation; auroral oval curtains at field-line footpoints with click substorms; Van Allen belts (inner proton + bass-injected outer electron shells with slot); magnetopause standoff curve + bow shock; iron-filing clumps; magnetic null
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -189,6 +189,10 @@ fn sampleField(uv: vec2<f32>, time: f32, p1: f32, p2: f32, p3: f32, p4: f32, dip
   let perp_B = vec2<f32>(-B_dir.y, B_dir.x);
   let stream_val = dot(uv, perp_B) * line_density;
   let field_line = exp(-abs(stream_val - round(stream_val)) * 40.0);
+  // ── Idea: iron-filing clumps ────────────────────────────────────────
+  // Filings bunch along a line instead of painting a uniform stroke.
+  let bunch = 0.55 + 0.45 * valueNoise(vec2<f32>(stream_val * 2.4, time * 0.35 + p2));
+  let filed = field_line * bunch;
   let intensity = dipole_moment / (r_sq + 0.02);
 
   var particle_glow = 0.0;
@@ -229,10 +233,10 @@ fn sampleField(uv: vec2<f32>, time: f32, p1: f32, p2: f32, p3: f32, p4: f32, dip
     }
   }
 
-  let field_contrib = field_line * intensity * 0.15;
+  let field_contrib = filed * intensity * 0.15;
   let total_intensity = field_contrib + particle_glow;
   let strength_norm = clamp(intensity * 0.3, 0.0, 1.0);
-  var color = field_palette(strength_norm + field_line * 0.2, p4) * total_intensity;
+  var color = field_palette(strength_norm + filed * 0.2, p4) * total_intensity;
   let bg_glow = dipole_moment * 0.03 / (r_sq + 0.1);
   color += vec3<f32>(0.05, 0.08, 0.15) * bg_glow;
   color += vec3<f32>(0.8, 0.9, 1.0) * particle_glow * 0.5;
@@ -366,10 +370,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mpause = magnetopause(r, time, dipole_moment, bass, substorm);
   color += (vec3<f32>(0.75, 0.6, 1.0) * mpause.x + vec3<f32>(0.4, 0.7, 1.0) * mpause.y) * 0.7;
 
+  // ── Idea: magnetic null ─────────────────────────────────────────────
+  // Where this dipole and the ghost cancel, the filings vanish and an X
+  // lights up. Drawn after the history smear so the null does not streak.
+  let Bghost = dipoleB(uv - ghost_dipole, dipole_moment * 0.4);
+  let apart = min(length(r), length(uv - ghost_dipole));
+  let nullGate = smoothstep(PLANET_R * 2.2, PLANET_R * 5.0, apart) * planetMask;
+  let xpoint = exp(-length(Bv + Bghost) * 90.0) * nullGate;
+  color += vec3<f32>(0.85, 0.8, 1.0) * xpoint * (0.55 + treble * 0.45);
+
   // Semantic alpha from field/particle/aurora energy (never constant)
   let particle_density = clamp(gResult.w, 0.0, 1.0);
   let f_intensity = clamp(field_intensity * 0.5, 0.0, 1.0) * planetMask;
-  let alpha = clamp(f_intensity * 0.55 + particle_density * 0.85 + aurora_oval.w * 0.6 + front * 0.3 + belts.w * 0.35 + (mpause.x + mpause.y) * 0.3, 0.05, 1.0) * (0.45 + 0.55 * depth);
+  let alpha = clamp(f_intensity * 0.55 + particle_density * 0.85 + aurora_oval.w * 0.6 + front * 0.3 + belts.w * 0.35 + (mpause.x + mpause.y) * 0.3 + xpoint * 0.4, 0.05, 1.0) * (0.45 + 0.55 * depth);
 
   // ACES tone mapping; the same display RGBA goes to screen and to A (read back via C)
   color = acesToneMap(min(color, vec3<f32>(HDR_CAP)) * (1.3 + mids * 0.3));

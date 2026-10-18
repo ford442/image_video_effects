@@ -3,9 +3,10 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
+//  Upgraded: 2026-10-10, 2026-10-18
 //  Ideas: meniscus film on the fluid-crystal seam; chrono smear from previous frame;
-//         peristaltic vein bands in the fluid mantle; crystal twinning shear planes
+//         peristaltic vein bands in the fluid mantle; crystal twinning shear planes;
+//         step-count ambient occlusion; chrono shells
 //  A packing: ACES display RGBA; C is the previous display frame
 // ═══════════════════════════════════════════════════════════════════
 
@@ -226,6 +227,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             col += vec3<f32>(0.65, 1.0, 0.78) * seam;
             let veinBands = pow(max(0.0, sin((p.z + p.x) * 7.0 - time * 3.4)), 4.0) * (0.3 + bass * 0.7);
             col += vec3<f32>(0.2, 0.95, 0.72) * veinBands * 0.25;
+            // ── Idea 2: chrono shells ───────────────────────────────────
+            // Age bands on the fluid. Chrono Warp packs them tighter.
+            let chronoWarp = u.zoom_params.z;
+            let shellPhase = fract(length(p) * (1.2 + chronoWarp * 0.55) - time * 0.12);
+            let shells = exp(-abs(shellPhase - 0.5) * 14.0);
+            col += vec3<f32>(0.35, 0.85, 1.0) * shells * 0.22;
 
         } else { // Crystal
             let refl = reflect(rd, n);
@@ -239,6 +246,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
 
         depthOut = t_dist / MAX_DIST;
+        // ── Idea 1: step-count ambient occlusion ────────────────────────
+        // A ray that needed more steps arrived through a crevice. The
+        // count is the march this shader already ran.
+        let stepFrac = f32(maxIter) / f32(MAX_STEPS);
+        let ao = clamp(1.0 - stepFrac * stepFrac * 1.6, 0.32, 1.0);
+        col = col * ao;
     }
 
     // Bloom / Ethereal Glow

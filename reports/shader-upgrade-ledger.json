@@ -1726,8 +1726,17 @@
       "history": []
     },
     "fire_smoke_volumetric": {
-      "hash": "0e20b854abb03b16",
-      "history": []
+      "hash": "e6fc628dceaa7077",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T04:32:55.061Z",
+          "hash": "e6fc628dceaa7077",
+          "prev_hash": "0e20b854abb03b16",
+          "commit": "8e59ee8c",
+          "note": "2026-10-18 cursor batch-05 — docs/agents/swarm-outputs/cursor-2026-10-18-batch-05/"
+        }
+      ]
     },
     "fractal-ice-palace": {
       "hash": "f846c4f6585db3c6",
@@ -3130,7 +3139,7 @@
       ]
     },
     "gen-ethereal-chrono-fluid-symbiote": {
-      "hash": "968ded45c3ec5018",
+      "hash": "e62f4a62515e5247",
       "history": [
         {
           "event": "upgraded",
@@ -3139,6 +3148,14 @@
           "prev_hash": "065d209fa8473c1d",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T04:32:55.061Z",
+          "hash": "e62f4a62515e5247",
+          "prev_hash": "968ded45c3ec5018",
+          "commit": "8e59ee8c",
+          "note": "2026-10-18 cursor batch-05 — docs/agents/swarm-outputs/cursor-2026-10-18-batch-05/"
         }
       ]
     },
@@ -4620,7 +4637,7 @@
       ]
     },
     "gen-magnetic-dipole-field": {
-      "hash": "1783b4c6f62f28c6",
+      "hash": "e952fa49db7986a1",
       "history": [
         {
           "event": "upgraded",
@@ -4629,6 +4646,14 @@
           "prev_hash": "89b978e68de9481d",
           "commit": "a26af174",
           "note": "2026-10-10 luminescent/magnetic ten (Claude) — agents/swarm-outputs/claude-2026-10-10-luminescent-magnetic-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T04:32:55.061Z",
+          "hash": "e952fa49db7986a1",
+          "prev_hash": "1783b4c6f62f28c6",
+          "commit": "8e59ee8c",
+          "note": "2026-10-18 cursor batch-05 — docs/agents/swarm-outputs/cursor-2026-10-18-batch-05/"
         }
       ]
     },
@@ -5747,7 +5772,7 @@
       ]
     },
     "gen-stable-fluids-jos-stam": {
-      "hash": "3268066e58182c78",
+      "hash": "3ae3dd76d82b7445",
       "history": [
         {
           "event": "upgraded",
@@ -5756,6 +5781,14 @@
           "prev_hash": "0b8d2deb44cc34b5",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T04:32:55.061Z",
+          "hash": "3ae3dd76d82b7445",
+          "prev_hash": "3268066e58182c78",
+          "commit": "8e59ee8c",
+          "note": "2026-10-18 cursor batch-05 — docs/agents/swarm-outputs/cursor-2026-10-18-batch-05/"
         }
       ]
     },
@@ -7062,16 +7095,43 @@
       "history": []
     },
     "pyramid-bandprocess-pass2": {
-      "hash": "e64d162c7ce8e2ce",
-      "history": []
+      "hash": "115feb04c1b8a366",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T04:32:55.061Z",
+          "hash": "115feb04c1b8a366",
+          "prev_hash": "e64d162c7ce8e2ce",
+          "commit": "8e59ee8c",
+          "note": "2026-10-18 cursor batch-05 — docs/agents/swarm-outputs/cursor-2026-10-18-batch-05/"
+        }
+      ]
     },
     "pyramid-composite-pass3": {
-      "hash": "b08f609b77f8367a",
-      "history": []
+      "hash": "d9d0568ecbdfb2ff",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T04:32:55.061Z",
+          "hash": "d9d0568ecbdfb2ff",
+          "prev_hash": "b08f609b77f8367a",
+          "commit": "8e59ee8c",
+          "note": "2026-10-18 cursor batch-05 — docs/agents/swarm-outputs/cursor-2026-10-18-batch-05/"
+        }
+      ]
     },
     "pyramid-downsample-pass1": {
-      "hash": "65f46256def7edf8",
-      "history": []
+      "hash": "6a77ae75e52148ee",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T04:32:55.061Z",
+          "hash": "6a77ae75e52148ee",
+          "prev_hash": "65f46256def7edf8",
+          "commit": "8e59ee8c",
+          "note": "2026-10-18 cursor batch-05 — docs/agents/swarm-outputs/cursor-2026-10-18-batch-05/"
+        }
+      ]
     },
     "retro-gameboy": {
       "hash": "5be639a173e206f6",
@@ -9010,12 +9070,30 @@
       ]
     },
     "digital-glitch-pass1": {
-      "hash": "c048226b7d9cfe4b",
-      "history": []
+      "hash": "d6903aedc044edc9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T04:32:55.061Z",
+          "hash": "d6903aedc044edc9",
+          "prev_hash": "c048226b7d9cfe4b",
+          "commit": "8e59ee8c",
+          "note": "2026-10-18 cursor batch-05 — docs/agents/swarm-outputs/cursor-2026-10-18-batch-05/"
+        }
+      ]
     },
     "digital-glitch-pass2": {
-      "hash": "7e8602f73a35efa4",
-      "history": []
+      "hash": "2085bfcc89895e02",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T04:32:55.061Z",
+          "hash": "2085bfcc89895e02",
+          "prev_hash": "7e8602f73a35efa4",
+          "commit": "8e59ee8c",
+          "note": "2026-10-18 cursor batch-05 — docs/agents/swarm-outputs/cursor-2026-10-18-batch-05/"
+        }
+      ]
     },
     "digital-glitch": {
       "hash": "b6022c2c2efaea01",
@@ -9203,8 +9281,17 @@
       "history": []
     },
     "fabric-of-reality": {
-      "hash": "87274f999ef47297",
-      "history": []
+      "hash": "7c8356dcc8ee138d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T04:32:55.061Z",
+          "hash": "7c8356dcc8ee138d",
+          "prev_hash": "87274f999ef47297",
+          "commit": "8e59ee8c",
+          "note": "2026-10-18 cursor batch-05 — docs/agents/swarm-outputs/cursor-2026-10-18-batch-05/"
+        }
+      ]
     },
     "ferrofluid-spikes": {
       "hash": "d5f50ea62ca35574",
