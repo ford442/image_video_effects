@@ -4,8 +4,9 @@
 //  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-10-10
-//  Ideas: anastomosis knots where generations cross; cytoplasmic streaming beads root-to-tip
+//  Upgraded: 2026-10-19
+//  Ideas: anastomosis knots where generations cross; cytoplasmic streaming beads root-to-tip;
+//         rhizomorph cords (melanised core + cortex rim) on the ancient layer; chrono-sepia trail aging
 //  A packing: HDR display RGB + coverage alpha (C read back as the max-trail); ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
@@ -231,6 +232,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Combine layers with depth
     var col = vec3<f32>(0.02, 0.015, 0.01); // Dark organic background
     col += ancientCol * tint;
+
+    // Idea 3 — rhizomorph cords: the oldest generation has bundled into cords with a dark
+    // melanised core and a bright cortex rim (cross-section read from the filament distance).
+    let cordR = ancient.x / (ancientThick * 3.0);
+    let cordCore = smoothstep(0.5, 0.1, cordR);
+    let cortex = exp(-pow((cordR - 0.72) * 5.5, 2.0));
+    col = col * (1.0 - cordCore * 0.6) + vec3<f32>(0.75, 0.55, 0.25) * tint * cortex * (0.25 + temporalDepth * 0.2);
     col += midCol * tint;
     col += freshCol * tint;
 
@@ -259,7 +267,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Temporal feedback: blend with previous frame for persistence
     let prev = textureLoad(dataTextureC, coord, 0).rgb;
     let decayRate = 0.92 + temporalDepth * 0.05;
-    let hdr = clamp(max(col, prev * decayRate), vec3<f32>(0.0), vec3<f32>(6.0));
+    // Idea 4 — chrono-sepia aging: as the stored trail decays it also drifts toward an amber
+    // sepia of its own luminance, so remembered growth reads older than live growth.
+    let prevLuma = dot(prev, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let aged = mix(prev, prevLuma * vec3<f32>(1.08, 0.80, 0.50), 0.035 + temporalDepth * 0.02);
+    let hdr = clamp(max(col, aged * decayRate), vec3<f32>(0.0), vec3<f32>(6.0));
 
     // Chromatic aberration
     let caStr = 0.003 * (1.0 + smoothBass) + ancient.x * 0.001;

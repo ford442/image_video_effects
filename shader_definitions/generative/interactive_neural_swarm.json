@@ -2,7 +2,7 @@
   "id": "interactive_neural_swarm",
   "name": "Neural Swarm",
   "url": "shaders/interactive_neural_swarm.wgsl",
-  "description": "Agent-based neural network visualization with signal propagation, connection weights, and emergent activation patterns",
+  "description": "Agent-based neural network visualization with signal propagation, connection weights, and emergent activation patterns. Axons are myelinated with saltatory node hops, synaptic boutons flare on arrival, and somas grow dendritic spines.",
   "tags": [
     "neural",
     "network",
@@ -16,7 +16,8 @@
     "audio-reactive",
     "agent-based",
     "signal-propagation",
-    "neon"
+    "neon",
+    "upgraded-rgba"
   ],
   "params": [
     {

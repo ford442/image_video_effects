@@ -8,31 +8,13 @@
 //           curl of a scalar potential (~4.5x noise-eval reduction),
 //           dead-code removal, named constants, HDR feedback chain,
 //           fixed mouse/audio uniform truth, clamped advection fetch.
-//  Upgraded: 2026-09-27
+//  Upgraded: 2026-10-19
 //  Ideas: wingbeat flutter + cyan/magenta wing sheen; flight-aligned wing smear;
-//         lantern orbit around the mouse; idle roost mandala (audio-free)
+//         lantern orbit around the mouse; idle roost mandala (audio-free);
+//         ocellus eyespots in each wing blob; shed wing-scale dust carried by the trail
 //  A packing: raw HDR RGB + semantic alpha (C read back as HDR trail; ACES on writeTexture only)
 // ----------------------------------------------------------------
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time (seconds), .y = rippleCount (0-50 active ripples), .zw = resolution (width, height)
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0–1 canvas: y=0 top), .w = mouse_down (>0.5 = pressed)
-  zoom_params: vec4<f32>,  // .xyzw = user params p1…p4 (mapped from UI sliders)
-  ripples: array<vec4<f32>, 50>,  // .xy = ripple uv, .z = startTime (seconds), .w = padding (0)
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -58,6 +40,8 @@ const ORBIT_SWIRL: f32 = 1.6;      // [idea 3] tangential / radial force ratio a
 const LURE_RADIUS: f32 = 4.0;      // [idea 3] lure falloff (1/radius²-ish, uv² units)
 const ROOST_RATE: f32 = 0.4;       // [idea 4] idle mandala breathing rate (rad/s, ~16 s period)
 const ROOST_SPIN: f32 = 0.12;      // [idea 4] mandala arm rotation (rad/s)
+const EYE_FREQ: f32 = 48.0;        // [idea 5] ocellus ring frequency in spawn-noise units
+const DUST_RATE: f32 = 0.035;      // [idea 6] wing-scale shedding probability per frame at full spawn
 
 // ── 3D simplex noise (canonical Ashima form) ────────────────────
 fn mod289(x: vec3<f32>) -> vec3<f32> {
@@ -145,6 +129,12 @@ fn curl2(p: vec3<f32>) -> vec2<f32> {
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn hash12(p: vec2<f32>) -> f32 {
+    var p3 = fract(vec3<f32>(p.x, p.y, p.x) * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
 }
 
 fn luma(rgb: vec3<f32>) -> f32 {
@@ -260,8 +250,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let flutter = mix(0.4, 1.6, wing_open * wing_open);
     let wing_sheen = mix(col1, col2, wing_open) * (0.3 * wing_open);
 
+    // [idea 5] Ocellus eyespots: iso-rings of the spawn noise inside each blob read as
+    // concentric wing eyespots (gold ring, magenta ring, dark pupil at the blob peak).
+    let eye_t = max(particle_noise - SPAWN_LO, 0.0);
+    let eye_ring = pow(0.5 + 0.5 * cos(eye_t * EYE_FREQ), 4.0) * spawn;
+    let eye_tint = mix(vec3<f32>(1.0, 0.78, 0.25), col2, step(0.5, fract(eye_t * EYE_FREQ / TAU)));
+    let pupil = smoothstep(0.97, 1.03, particle_noise);
+    let moth_body = (vel_color + wing_sheen) * (1.0 - pupil * 0.75) + eye_tint * eye_ring * 0.55;
+
     var hdr = trail * TRAIL_DECAY;
-    hdr += (vel_color + wing_sheen) * spawn * flutter * glow_strength * shimmer;
+    hdr += moth_body * spawn * flutter * glow_strength * shimmer;
+
+    // [idea 6] Shed wing-scale dust: sparse fluorescent glints deposited under flying
+    // moths; the advected trail fetch above then carries and fades them as drifting dust.
+    let dust_roll = hash12(vec2<f32>(pixel) + vec2<f32>(floor(time * 30.0) * 17.0, 3.0));
+    let dust = step(1.0 - DUST_RATE * spawn * (0.5 + vspeed), dust_roll);
+    hdr += mix(col1, vec3<f32>(0.85, 1.0, 0.9), dust_roll) * dust * glow_strength * (1.5 + treble);
     // [idea 3] warm lantern halo at the mouse (fades out when held)
     hdr += vec3<f32>(1.0, 0.85, 0.55) * (lure * lure * lure) * 0.35;
     hdr = min(hdr, vec3<f32>(HDR_CEIL));

@@ -3,31 +3,14 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: septate rings along cylinder axis; neighbor-cell fusion bridges; cytoplasmic streaming granules; melanized wound rim
+//  Upgraded: 2026-10-19
+//  Ideas: septate rings along cylinder axis; neighbor-cell fusion bridges; cytoplasmic streaming granules; melanized wound rim;
+//         clamp-connection hooks beside each septum; compartment-quantized pulse stepping between septa
 //  A packing: ACES display RGBA (C unused)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=rippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=time, yz=mouse_uv (0-1), w=mouse_down
-    zoom_params: vec4<f32>,  // x=Network Density, y=Growth Chaos, z=Pulse Speed, w=Edge Softness
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Network Density, y=Growth Chaos, z=Pulse Speed, w=Edge Softness
 
 fn rot(a: f32) -> mat2x2<f32> {
     let s = sin(a);
@@ -85,6 +68,7 @@ var<private> g_audio: f32;
 var<private> g_mouse3D: vec3<f32>;
 var<private> g_granule: f32;
 var<private> g_wound: f32;
+var<private> g_compartment: f32;
 
 // returns (sdf, septum, threadCenterDist)
 fn map(p: vec3<f32>) -> vec3<f32> {
@@ -124,6 +108,16 @@ fn map(p: vec3<f32>) -> vec3<f32> {
     let ring = abs(fract(q.y * septFreq) - 0.5);
     let septum = 1.0 - smoothstep(0.0, mix(0.10, 0.025, edgeSoft), ring);
     d = d - septum * (0.028 / density);
+
+    // Idea 5 — clamp connections: a small hook capsule bypasses each septum on the
+    // thread's flank (dikaryotic hyphae), smoothly fused into the wall.
+    let septY = (round(q.y * septFreq - 0.5) + 0.5) / septFreq;
+    let hookHalf = 0.22 / septFreq;
+    let hookX = radius * 1.05;
+    let dHook = sdCapsule(q, vec3<f32>(hookX, septY - hookHalf, 0.0), vec3<f32>(hookX, septY + hookHalf, 0.0), radius * 0.32);
+    d = smin(d, dHook, radius * 0.35);
+    // Idea 6 — septal compartment index (between two septa), salted per repeat cell.
+    g_compartment = floor(q.y * septFreq - 0.5) + dot(round(bp / cell), vec3<f32>(5.0, 3.0, 7.0));
 
     // Idea 2 — neighbor fusion: capsule to the nearest domain-repeat face
     let qAbs = abs(q);
@@ -227,6 +221,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let res = map(p);
         let granule = g_granule;
         let wound = g_wound;
+        let compartment = g_compartment;
         let distToThread = res.z;
         let edgeSoftness = max(u.zoom_params.w * 0.5, 0.001);
         alpha = 1.0 - smoothstep(0.0, edgeSoftness, distToThread);
@@ -241,6 +236,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let pulseWave = sin(p.z * 5.0 - g_time * pulseSpeed * 3.0 + g_audio * 5.0 + treble * 10.0);
         let pulse = smoothstep(0.8, 1.0, pulseWave);
         let glowCol = vec3<f32>(0.1, 0.9, 0.8) * pulse * 3.0;
+        // Idea 6 — compartment-quantized pulse: the signal fills one whole septal
+        // compartment at a time and steps to the next, walled in by the septa.
+        let stepK = compartment - floor(g_time * (0.6 + pulseSpeed * 2.4) + treble * 2.0);
+        let stepM = stepK - 6.0 * floor(stepK / 6.0);
+        let compLit = select(0.0, 1.0, stepM < 0.5) * (1.0 - res.y);
 
         let dif = max(dot(n, vec3<f32>(0.5, 0.8, 0.5)), 0.0);
         let fre = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
@@ -248,6 +248,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col = fleshyCol * dif * 0.5;
         col += fleshyCol * sss;
         col += glowCol;
+        col += vec3<f32>(0.2, 1.0, 0.75) * compLit * (0.35 + sss * 0.9) * (1.0 + bass * 0.5);
         col += fre * vec3<f32>(0.5, 0.7, 1.0) * 0.5;
         // Septum emission — pearly rings, not a pulse clone
         col += vec3<f32>(0.95, 0.85, 0.55) * septumLit * (0.55 + mids * 0.35);

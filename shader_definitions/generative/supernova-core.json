@@ -3,7 +3,7 @@
   "name": "Supernova Core",
   "category": "generative",
   "url": "shaders/supernova-core.wgsl",
-  "description": "Sedov-Taylor blast wave with radioactive decay luminosity (56Ni->56Co->56Fe). Rayleigh-Taylor instability fingers and neutrino-driven convection cells. Blackbody cooling sequence with iron emission lines and chromatic aberration. Audio drives shock expansion. Mouse creates asymmetric ejecta. Depth controls light echo perspective. Advanced alpha composition blends luminance keying, depth layering, and physical transmittance for cleaner 3-slot compositing.",
+  "description": "Sedov-Taylor blast wave with radioactive decay luminosity (56Ni->56Co->56Fe). Rayleigh-Taylor instability fingers and neutrino-driven convection cells. Blackbody cooling sequence with iron emission lines and chromatic aberration. Audio drives shock expansion. Mouse creates asymmetric ejecta. Depth controls light echo perspective. Advanced alpha composition blends luminance keying, depth layering, and physical transmittance for cleaner 3-slot compositing. Dust light echoes race ahead of the shock, the companion carves a shadow cone in the ejecta, and a reverse shock reignites the RT fingers.",
   "features": [
     "audio-reactive",
     "generative",
