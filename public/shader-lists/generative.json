@@ -793,7 +793,7 @@
     "id": "cosmic-jellyfish",
     "name": "Cosmic Jellyfish",
     "url": "shaders/cosmic-jellyfish.wgsl",
-    "description": "A raymarched cosmic jellyfish with a ribbed scalloped bell, layered oral arms and fine tentacles, audio-driven bioluminescence, click pressure waves, and persistent volumetric trails.",
+    "description": "A raymarched cosmic jellyfish with a ribbed scalloped bell, layered oral arms and fine tentacles, audio-driven bioluminescence, click pressure waves, and persistent volumetric trails. Thin bell regions transmit the glow, horseshoe gonads shine through the crown, and eight rhopalia blink around the rim.",
     "tags": [
       "3d",
       "raymarching",
@@ -812,7 +812,8 @@
       "raymarching",
       "bioluminescent",
       "depth-aware",
-      "aces-tone-map"
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -3264,7 +3265,7 @@
       "volumetric",
       "filmic"
     ],
-    "description": "Flowing aurora curtains with silky spectral ribbons, now in HDR with ACES filmic grading, dynamic temperature shifts, split-tone shadows/highlights, Fresnel rim lighting, volumetric god rays, caustic dapples, and depth-layered fog. Reacts to bass, mids, and treble.",
+    "description": "Flowing aurora curtains with silky spectral ribbons, now in HDR with ACES filmic grading, dynamic temperature shifts, split-tone shadows/highlights, Fresnel rim lighting, volumetric god rays, caustic dapples, and depth-layered fog. Reacts to bass, mids, and treble. Fine field-aligned rays flicker inside the curtains and each ribbon carries a nitrogen-pink lower hem.",
     "workgroup_size": [
       16,
       16,
@@ -6392,7 +6393,7 @@
       "reactive",
       "ambient"
     ],
-    "description": "A multi-temporal fungal network where different generations of mycelium coexist in layered time, creating a living, breathing tapestry of organic growth across temporal dimensions.",
+    "description": "A multi-temporal fungal network where different generations of mycelium coexist in layered time, creating a living, breathing tapestry of organic growth across temporal dimensions. Ancient growth bundles into dark-cored rhizomorph cords and the remembered trail ages toward sepia.",
     "workgroup_size": [
       16,
       16,
@@ -6403,7 +6404,9 @@
     "updated": true,
     "id": "gen-chrono-mycelial-tapestry",
     "url": "shaders/gen-chrono-mycelial-tapestry.wgsl",
-    "features": [],
+    "features": [
+      "upgraded-rgba"
+    ],
     "params": [
       {
         "id": "growth_rate",
@@ -23328,7 +23331,7 @@
       "audio-reactive",
       "interactive"
     ],
-    "description": "A hyper-dense, glowing swarm of ethereal quantum 'moths' that dynamically flock and self-organize into luminous geometric mandalas, reacting violently to acoustic frequencies. Optimized: 4-tap scalar-potential curl flow, HDR feedback chain, generated depth.",
+    "description": "A hyper-dense, glowing swarm of ethereal quantum 'moths' that dynamically flock and self-organize into luminous geometric mandalas, reacting violently to acoustic frequencies. Optimized: 4-tap scalar-potential curl flow, HDR feedback chain, generated depth. Wing blobs carry ocellus eyespots and shed fluorescent scale dust into the drifting trail.",
     "workgroup_size": [
       16,
       16,
@@ -23636,7 +23639,7 @@
       "music",
       "reactive"
     ],
-    "description": "A hyper-organic, microscopic journey through an infinitely growing, glowing fungal network that pulses with data-like energy and branches dynamically based on spatial noise.",
+    "description": "A hyper-organic, microscopic journey through an infinitely growing, glowing fungal network that pulses with data-like energy and branches dynamically based on spatial noise. Clamp-connection hooks bypass each septum and the pulse steps compartment by compartment.",
     "workgroup_size": [
       16,
       16,
@@ -25822,7 +25825,7 @@
   {
     "id": "gen-sentient-void-silk-nebula",
     "name": "Sentient Void-Silk Nebula",
-    "description": "A hyper-dimensional fluid simulation that weaves iridescent void silk threads.",
+    "description": "A hyper-dimensional fluid simulation that weaves iridescent void silk threads. Dew beads string along the fibrils and slack regions open into rim-lit void pockets.",
     "category": "generative",
     "url": "shaders/gen-sentient-void-silk-nebula.wgsl",
     "workgroup_size": [
@@ -28789,7 +28792,7 @@
     "id": "interactive_neural_swarm",
     "name": "Neural Swarm",
     "url": "shaders/interactive_neural_swarm.wgsl",
-    "description": "Agent-based neural network visualization with signal propagation, connection weights, and emergent activation patterns",
+    "description": "Agent-based neural network visualization with signal propagation, connection weights, and emergent activation patterns. Axons are myelinated with saltatory node hops, synaptic boutons flare on arrival, and somas grow dendritic spines.",
     "tags": [
       "neural",
       "network",
@@ -28803,7 +28806,8 @@
       "audio-reactive",
       "agent-based",
       "signal-propagation",
-      "neon"
+      "neon",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -30963,7 +30967,7 @@
     "name": "Supernova Core",
     "category": "generative",
     "url": "shaders/supernova-core.wgsl",
-    "description": "Sedov-Taylor blast wave with radioactive decay luminosity (56Ni->56Co->56Fe). Rayleigh-Taylor instability fingers and neutrino-driven convection cells. Blackbody cooling sequence with iron emission lines and chromatic aberration. Audio drives shock expansion. Mouse creates asymmetric ejecta. Depth controls light echo perspective. Advanced alpha composition blends luminance keying, depth layering, and physical transmittance for cleaner 3-slot compositing.",
+    "description": "Sedov-Taylor blast wave with radioactive decay luminosity (56Ni->56Co->56Fe). Rayleigh-Taylor instability fingers and neutrino-driven convection cells. Blackbody cooling sequence with iron emission lines and chromatic aberration. Audio drives shock expansion. Mouse creates asymmetric ejecta. Depth controls light echo perspective. Advanced alpha composition blends luminance keying, depth layering, and physical transmittance for cleaner 3-slot compositing. Dust light echoes race ahead of the shock, the companion carves a shadow cone in the ejecta, and a reverse shock reignites the RT fingers.",
     "features": [
       "audio-reactive",
       "generative",

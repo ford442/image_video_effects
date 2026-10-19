@@ -12,7 +12,7 @@
     "volumetric",
     "filmic"
   ],
-  "description": "Flowing aurora curtains with silky spectral ribbons, now in HDR with ACES filmic grading, dynamic temperature shifts, split-tone shadows/highlights, Fresnel rim lighting, volumetric god rays, caustic dapples, and depth-layered fog. Reacts to bass, mids, and treble.",
+  "description": "Flowing aurora curtains with silky spectral ribbons, now in HDR with ACES filmic grading, dynamic temperature shifts, split-tone shadows/highlights, Fresnel rim lighting, volumetric god rays, caustic dapples, and depth-layered fog. Reacts to bass, mids, and treble. Fine field-aligned rays flicker inside the curtains and each ribbon carries a nitrogen-pink lower hem.",
   "workgroup_size": [
     16,
     16,

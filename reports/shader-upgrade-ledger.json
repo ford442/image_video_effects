@@ -1850,8 +1850,17 @@
       "history": []
     },
     "cosmic-jellyfish": {
-      "hash": "2b1b3676844d56ed",
-      "history": []
+      "hash": "9ef20ff6309b968f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T11:41:14.615Z",
+          "hash": "9ef20ff6309b968f",
+          "prev_hash": "2b1b3676844d56ed",
+          "commit": "85a82d6d",
+          "note": "2026-10-19 bio-cosmic-eight (claude) — docs/agents/swarm-outputs/claude-2026-10-19-bio-cosmic-eight/BRIEFS.md"
+        }
+      ]
     },
     "cosmic-web": {
       "hash": "2699a90ce839e2c1",
@@ -2192,8 +2201,17 @@
       "history": []
     },
     "gen-aurora-silk": {
-      "hash": "8f147f754bb752e5",
-      "history": []
+      "hash": "81227dc368946ba2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T11:41:14.615Z",
+          "hash": "81227dc368946ba2",
+          "prev_hash": "8f147f754bb752e5",
+          "commit": "85a82d6d",
+          "note": "2026-10-19 bio-cosmic-eight (claude) — docs/agents/swarm-outputs/claude-2026-10-19-bio-cosmic-eight/BRIEFS.md"
+        }
+      ]
     },
     "gen-auroral-ferrofluid-monolith": {
       "hash": "de4aaeeeeabdb1e3",
@@ -2734,7 +2752,7 @@
       ]
     },
     "gen-chrono-mycelial-tapestry": {
-      "hash": "2460bc9e04f89c5f",
+      "hash": "9bdeccc5aeea291c",
       "history": [
         {
           "event": "upgraded",
@@ -2743,6 +2761,14 @@
           "prev_hash": "956ad4cc99e91372",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T11:41:14.615Z",
+          "hash": "9bdeccc5aeea291c",
+          "prev_hash": "2460bc9e04f89c5f",
+          "commit": "85a82d6d",
+          "note": "2026-10-19 bio-cosmic-eight (claude) — docs/agents/swarm-outputs/claude-2026-10-19-bio-cosmic-eight/BRIEFS.md"
         }
       ]
     },
@@ -5862,8 +5888,17 @@
       ]
     },
     "gen-quantum-fluorescent-aether-moth-swarm": {
-      "hash": "b5a01cfcf749b8c6",
-      "history": []
+      "hash": "b412cb95da334a21",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T11:41:14.615Z",
+          "hash": "b412cb95da334a21",
+          "prev_hash": "b5a01cfcf749b8c6",
+          "commit": "85a82d6d",
+          "note": "2026-10-19 bio-cosmic-eight (claude) — docs/agents/swarm-outputs/claude-2026-10-19-bio-cosmic-eight/BRIEFS.md"
+        }
+      ]
     },
     "gen-quantum-fluorescent-nebula-anemone": {
       "hash": "db37fd64ba337efc",
@@ -5899,8 +5934,17 @@
       "history": []
     },
     "gen-quantum-mycelium": {
-      "hash": "779f44a42d4760ac",
-      "history": []
+      "hash": "a25156e0a248d938",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T11:41:14.615Z",
+          "hash": "a25156e0a248d938",
+          "prev_hash": "779f44a42d4760ac",
+          "commit": "85a82d6d",
+          "note": "2026-10-19 bio-cosmic-eight (claude) — docs/agents/swarm-outputs/claude-2026-10-19-bio-cosmic-eight/BRIEFS.md"
+        }
+      ]
     },
     "gen-quantum-neural-lace": {
       "hash": "afb1466ab94e0973",
@@ -6148,8 +6192,17 @@
       ]
     },
     "gen-sentient-void-silk-nebula": {
-      "hash": "6baa42941ce69b7e",
-      "history": []
+      "hash": "14c2ba0a8684df13",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T11:41:14.615Z",
+          "hash": "14c2ba0a8684df13",
+          "prev_hash": "6baa42941ce69b7e",
+          "commit": "85a82d6d",
+          "note": "2026-10-19 bio-cosmic-eight (claude) — docs/agents/swarm-outputs/claude-2026-10-19-bio-cosmic-eight/BRIEFS.md"
+        }
+      ]
     },
     "gen-showcase-crystalline-pulse": {
       "hash": "2591730920d729c5",
@@ -6834,8 +6887,17 @@
       "history": []
     },
     "interactive_neural_swarm": {
-      "hash": "37f812302ffec125",
-      "history": []
+      "hash": "8ad437717ca9a375",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T11:41:14.615Z",
+          "hash": "8ad437717ca9a375",
+          "prev_hash": "37f812302ffec125",
+          "commit": "85a82d6d",
+          "note": "2026-10-19 bio-cosmic-eight (claude) — docs/agents/swarm-outputs/claude-2026-10-19-bio-cosmic-eight/BRIEFS.md"
+        }
+      ]
     },
     "kimi_flock_symphony": {
       "hash": "0a85e57516052a32",
@@ -7001,8 +7063,17 @@
       "history": []
     },
     "supernova-core": {
-      "hash": "4ce9bc8fcdbf464b",
-      "history": []
+      "hash": "3bce0799205d24a9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T11:41:14.615Z",
+          "hash": "3bce0799205d24a9",
+          "prev_hash": "4ce9bc8fcdbf464b",
+          "commit": "85a82d6d",
+          "note": "2026-10-19 bio-cosmic-eight (claude) — docs/agents/swarm-outputs/claude-2026-10-19-bio-cosmic-eight/BRIEFS.md"
+        }
+      ]
     },
     "supernova-remnant": {
       "hash": "1a1de0bab8d19195",

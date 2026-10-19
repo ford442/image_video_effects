@@ -2,7 +2,7 @@
   "id": "cosmic-jellyfish",
   "name": "Cosmic Jellyfish",
   "url": "shaders/cosmic-jellyfish.wgsl",
-  "description": "A raymarched cosmic jellyfish with a ribbed scalloped bell, layered oral arms and fine tentacles, audio-driven bioluminescence, click pressure waves, and persistent volumetric trails.",
+  "description": "A raymarched cosmic jellyfish with a ribbed scalloped bell, layered oral arms and fine tentacles, audio-driven bioluminescence, click pressure waves, and persistent volumetric trails. Thin bell regions transmit the glow, horseshoe gonads shine through the crown, and eight rhopalia blink around the rim.",
   "tags": [
     "3d",
     "raymarching",
@@ -21,7 +21,8 @@
     "raymarching",
     "bioluminescent",
     "depth-aware",
-    "aces-tone-map"
+    "aces-tone-map",
+    "upgraded-rgba"
   ],
   "params": [
     {

@@ -5,27 +5,12 @@
 //   blackbody-cooling, volumetric-fog, ign-dither, alpha-layered,
 //   physical-transmittance, luminance-key, depth-layered,
 //   spectrum-rays, click-sedov-rings, spring-companion
+// Upgraded: 2026-10-19
+// Ideas: dust light echoes beyond the shock; companion shadow cone carved in the
+//   ejecta; inward reverse shock that ignites the RT fingers it crosses
+// A packing: premultiplied ACES display RGBA (C unused)
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -151,6 +136,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let cobaltLum = sin(decayTime * TAU) * 0.5 + 0.5;
   let flareTrigger = step(1.0 - treble * 0.15, hash21(vec2<f32>(floor(time * 5.0), 0.0))) * cobaltLum;
 
+  // [idea 2] Companion shadow cone: the companion star blocks ejecta behind it
+  // (as seen from the core), carving a widening conical hole downstream.
+  let compLen = max(length(mouseWorld), 1e-3);
+  let coneAxis = mouseWorld / compLen;
+  let alongC = dot(p, coneAxis);
+  let perpC = length(p - coneAxis * alongC);
+  let coneHalf = 0.012 + max(alongC - compLen, 0.0) * 0.32;
+  let shadowCone = smoothstep(coneHalf, coneHalf * 0.4, perpC) * smoothstep(compLen - 0.01, compLen + 0.03, alongC)
+                 * smoothstep(0.02, 0.06, compLen);
+  let ejectaPass = 1.0 - shadowCone * 0.85;
+
   var hdr = vec3<f32>(0.0);
   var ejectaDensity = 0.0;
   var shockTemp = 0.0;
@@ -171,21 +167,41 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let cooling = 1.0 - wf / 4.0 - dist * 0.8;
     let tempK = mix(15000.0, 2500.0, smoothstep(0.0, 1.0, cooling));
     let shell = mixOkLab(blackbodyRGB(tempK), blackbodyRGB(tempK * 0.6), wf / 4.0) * (1.2 + mids * 0.8);
-    hdr += shell * wave;
-    shockTemp += wave * coreTemp * (1.0 - wf * 0.2);
-    ejectaDensity += wave * 0.3;
+    hdr += shell * wave * ejectaPass;
+    shockTemp += wave * coreTemp * (1.0 - wf * 0.2) * ejectaPass;
+    ejectaDensity += wave * 0.3 * ejectaPass;
   }
 
   // ── Rayleigh-Taylor instability fingers (iron emission) ─────────
   let rtCoord = vec2<f32>(angle * 3.0, dist * 8.0 - time * 0.5);
   let rtFingers = smoothstep(0.45, 0.65, fbm(rtCoord * vec2<f32>(1.0, 2.0 + mids * 2.0), 3)) * smoothstep(blastRadius + 0.05, blastRadius - 0.05, dist);
   let ironColor = mixOkLab(vec3<f32>(0.55, 0.75, 0.85), vec3<f32>(0.25, 0.45, 0.65), mids);
-  hdr += ironColor * rtFingers * mids * 1.5;
-  ejectaDensity += rtFingers * 0.2;
+  hdr += ironColor * rtFingers * mids * 1.5 * ejectaPass;
+  ejectaDensity += rtFingers * 0.2 * ejectaPass;
+
+  // [idea 3] Reverse shock: a shell that sweeps inward through the ejecta each
+  // cycle; where it crosses an RT finger the iron reheats to a hot white-blue.
+  let rsPhase = fract(time * 0.07 * (1.0 + shockwaves));
+  let rsRadius = blastRadius * mix(0.85, 0.2, rsPhase);
+  let rsRing = exp(-pow((dist - rsRadius) * 70.0, 2.0)) * (1.0 - rsPhase) * ejectaPass;
+  hdr += blackbodyRGB(mix(9000.0, 4000.0, rsPhase)) * rsRing * (0.25 + rtFingers * 2.2) * (1.0 + mids * 0.5);
+  shockTemp += rsRing * coreTemp * 0.3;
+  ejectaDensity += rsRing * 0.15;
+
+  // [idea 1] Light echoes: flash light scattered by interstellar dust sheets
+  // outside the shock, racing ahead of it; dust fbm makes the rings patchy.
+  for (var ei = 0; ei < 3; ei++) {
+    let ef = f32(ei);
+    let echoR = blastRadius * (1.35 + ef * 0.5) + fract(time * 0.03 + ef * 0.33) * 0.06;
+    let echoRing = exp(-pow((dist - echoR) * 85.0, 2.0));
+    let dust = smoothstep(0.4, 0.75, fbm(p * 5.5 + vec2<f32>(ef * 3.1, ef * 1.7), 3));
+    hdr += blackbodyRGB(mix(9000.0, 5000.0, ef / 2.0)) * echoRing * dust * (0.4 - ef * 0.1) * (1.0 + bass * 0.4);
+    ejectaDensity += echoRing * dust * 0.05;
+  }
 
   // ── Neutrino-driven convection cells ────────────────────────────
   let cellMask = smoothstep(0.08, 0.0, abs(dist - blastRadius * 0.6)) * fbm(p * 6.0 + vec2<f32>(cos(time * 0.3), sin(time * 0.25)) * 0.5, 3) * fbm(p * 13.8 + vec2<f32>(10.0, 20.0), 2);
-  hdr += vec3<f32>(0.45, 0.25, 0.65) * cellMask * 0.45;
+  hdr += vec3<f32>(0.45, 0.25, 0.65) * cellMask * 0.45 * ejectaPass;
 
   // ── Companion-star rim light (uses eased spring position) ───────
   let toCompanion = normalize(mouseWorld - p + vec2<f32>(0.001));
