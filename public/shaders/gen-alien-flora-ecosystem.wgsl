@@ -6,8 +6,8 @@
 //  Chunks From: gen-alien-flora.wgsl, alpha-multi-state-ecosystem.wgsl
 //  Created: 2026-04-18
 //  Updated: 2026-05-31
-//  Upgraded: 2026-09-27
-//  Ideas: species-1 cap vs species-2 stem; toxin allelopathy ring in the soil
+//  Upgraded: 2026-10-18
+//  Ideas: species-1 cap vs species-2 stem; toxin allelopathy ring in the soil; hygrophanous cap drying front (bass dries, mids re-wets); caespitose primordia flush around each stem base (resource + mids)
 //  A packing: pre-ACES display RGBA; ACES on writeTexture
 //  By: Grok (audio-driven symbiosis + mouse as pollinator/disturber)
 // ═══════════════════════════════════════════════════════════════════
@@ -16,26 +16,7 @@
 //  treble = volatile pollination. Mouse acts as pollinator or disturbance.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TISSUE_DENSITY: f32 = 2.5;
 const SCATTERING_COEFF: f32 = 1.8;
@@ -104,10 +85,8 @@ fn calculateThickness(d: f32, normal: vec3<f32>, p: vec3<f32>) -> f32 {
     return max(0.05, min(1.0, abs(inner_d - d) * 5.0));
 }
 
-fn map(p: vec3<f32>) -> vec2<f32> {
-    let terrainHeight = sin(p.x * 0.2) * sin(p.z * 0.2) * 2.0 + sin(p.x * 0.5 + p.z * 0.3) * 0.5;
-    let d_terrain = p.y - terrainHeight;
-
+// Plant-local frame: swayed cell coordinates (xyz) and the cell's hash (w).
+fn plantFrame(p: vec3<f32>) -> vec4<f32> {
     let density = mix(16.0, 4.0, u.zoom_params.x);
     let cell_size = density;
     let id = floor(p.xz / cell_size);
@@ -127,6 +106,16 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     );
     q.x -= sway.x;
     q.z -= sway.z;
+    return vec4<f32>(q, rand);
+}
+
+fn map(p: vec3<f32>) -> vec2<f32> {
+    let terrainHeight = sin(p.x * 0.2) * sin(p.z * 0.2) * 2.0 + sin(p.x * 0.5 + p.z * 0.3) * 0.5;
+    let d_terrain = p.y - terrainHeight;
+
+    let frame = plantFrame(p);
+    let q = frame.xyz;
+    let rand = frame.w;
 
     let stemHeight = 2.0 + rand * 3.0;
     let stemRadius = 0.2 + rand * 0.1;
@@ -141,6 +130,24 @@ fn map(p: vec3<f32>) -> vec2<f32> {
 
     let d_plant = smin(stem, cap, 0.3);
 
+    // Idea: caespitose flush — a ring of pinhead primordia fruits around the
+    // stem base; their size follows the cell's resource level and the mids bloom.
+    let density = mix(16.0, 4.0, u.zoom_params.x);
+    let cellRes = 0.4 + 0.3 * hash(floor(p.xz / density) + vec2<f32>(5.0, 6.0));
+    let flush = clamp((cellRes - 0.4) * 2.3 + plasmaBuffer[0].y * 0.5, 0.15, 1.0);
+    let pinScale = 0.35 + 0.65 * flush;
+    let sector = 6.2831853 / 5.0;
+    let an = atan2(q.z, q.x) + rand * 6.2831853;
+    let a = an - sector * round(an / sector);
+    let pr = length(q.xz);
+    let ringR = stemRadius + 0.45 + rand * 0.35;
+    // Height above the local soil (not the cell-centre ground) so pins sit on slopes.
+    let pq = vec3<f32>(pr * cos(a) - ringR, d_terrain, pr * sin(a));
+    let pinH = 0.45 * pinScale;
+    let pinStem = sdCappedCylinder(pq - vec3<f32>(0.0, pinH * 0.5, 0.0), pinH * 0.5, 0.06 * pinScale + 0.02);
+    let pinCap = (length((pq - vec3<f32>(0.0, pinH, 0.0)) * vec3<f32>(1.0, 1.6, 1.0)) - (0.2 * pinScale + 0.04)) / 1.6;
+    let d_pin = smin(pinStem, pinCap, 0.08);
+
     var d = d_terrain;
     var mat = 1.0;
 
@@ -148,6 +155,10 @@ fn map(p: vec3<f32>) -> vec2<f32> {
         d = d_plant;
         // 2 = stem (species 2), 3 = cap (species 1). The blend still uses smin.
         mat = select(3.0, 2.0, stem < cap);
+    }
+    if (d_pin < d) {
+        d = d_pin;
+        mat = 4.0; // primordia: young species-1 buttons
     }
 
     return vec2<f32>(d, mat);
@@ -204,15 +215,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
+    uv.y = -uv.y; // texel rows run downward; world up is +y (HEAD rendered the canopy upside-down)
     var mouse = u.zoom_config.yz;
     var time = u.config.x * 0.1;
     let yaw = (mouse.x - 0.5) * 10.0 + time;
     let pitch = ((mouse.y - 0.5)) * 2.0 + 0.5;
-    let dist = 10.0;
-    let target_pos = vec3<f32>(0.0, 2.0, time * 10.0);
+    let dist = 8.0;
+    // Orbit the plant column (cells are centred at half a cell; x = 0 is a cell
+    // boundary, so HEAD framed bare soil between columns) at cap-underside height.
+    let cellSize = mix(16.0, 4.0, u.zoom_params.x);
+    let target_pos = vec3<f32>(0.5 * cellSize, 3.0, time * 10.0);
     let ro = vec3<f32>(
         target_pos.x + sin(yaw) * dist,
-        target_pos.y + pitch * 5.0 + 2.0,
+        target_pos.y + pitch * 5.0 + 2.5, // idle eye y = 8: above all but the tallest caps on the highest ground
         target_pos.z + cos(yaw) * dist
     );
     let forward = normalize(target_pos - ro);
@@ -227,6 +242,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var color = vec3<f32>(0.0);
     var alpha = 1.0;
     var lifeForceOut = 0.0;
+    var capWet = 1.0;
+    var isPlant = false;
     let fogColor = vec3<f32>(0.02, 0.05, 0.1);
     let lightDir = normalize(vec3<f32>(0.5, 0.8, -0.5));
 
@@ -236,7 +253,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (t < 100.0) {
         var p = ro + rd * t;
         let n = calcNormal(p);
-        let thickness = calculateThickness(res.x, n, p);
+        let thickness = calculateThickness(map(p).x, n, p);
         let diff = max(dot(n, lightDir), 0.0);
         var baseColor = vec3<f32>(0.1, 0.3, 0.1);
 
@@ -283,8 +300,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             baseColor = mix(vec3<f32>(0.2, 0.8, 0.9), hueColor, 0.5);
 
             // Idea: cap takes species 1 (cyan), stem takes species 2 (magenta).
-            if (mat > 2.5) {
+            if (mat > 3.5) {
+                // Primordia: species-1 tint, paler and fresher than the mature caps.
+                baseColor = mix(baseColor, vec3<f32>(0.55, 0.95, 1.0), 0.35 + s1 * 0.4);
+            } else if (mat > 2.5) {
                 baseColor = mix(baseColor, vec3<f32>(0.0, 0.8, 1.0), s1 * 0.7);
+
+                // Idea: hygrophanous drying front — the cap dries from the centre
+                // outward (pale, chalky, opaque) while the margin stays water-soaked
+                // (dark, saturated, translucent). Bass dries, mids re-wets.
+                let frame = plantFrame(p);
+                let stemH = 2.0 + frame.w * 3.0;
+                let capR = 1.0 + frame.w * 1.5;
+                let capRel = length((frame.xyz - vec3<f32>(0.0, stemH, 0.0)).xz) / capR;
+                let front = clamp(0.45 + bass * 0.45 - mids * 0.35 + 0.25 * sin(u.config.x * 0.15 + frame.w * 6.2831853), 0.08, 0.95);
+                capWet = smoothstep(front - 0.07, front + 0.07, capRel);
+                let dryTone = mix(vec3<f32>(dot(baseColor, vec3<f32>(0.299, 0.587, 0.114))), baseColor, 0.35) * 0.75 + vec3<f32>(0.22, 0.24, 0.22);
+                let wetTone = baseColor * vec3<f32>(0.55, 0.75, 0.85);
+                baseColor = mix(dryTone, wetTone, capWet);
+                // Water-soaked line right at the front.
+                let fx = (capRel - front) * 22.0;
+                baseColor *= 1.0 - 0.45 * exp(-fx * fx);
             } else {
                 baseColor = mix(baseColor, vec3<f32>(1.0, 0.2, 0.6), s2 * 0.7);
             }
@@ -304,17 +340,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
 
         if (mat > 1.5) {
-            let sss = subsurfaceScattering(n, lightDir, -rd, thickness, baseColor);
+            // Wet tissue transmits more light than dried, air-filled tissue.
+            let isCap = mat > 2.5 && mat < 3.5;
+            let sss = subsurfaceScattering(n, lightDir, -rd, thickness, baseColor) * select(1.0, mix(0.35, 1.4, capWet), isCap);
             baseColor += sss;
+            isPlant = true;
         }
 
         let ambient = vec3<f32>(0.05, 0.1, 0.1);
         color = baseColor * (diff * 0.5 + 0.5);
         let rim = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
-        color += vec3<f32>(0.5, 0.8, 1.0) * rim * 0.5;
+        // Bioluminescent rim belongs to the flora; on the grazing soil it washed the frame pale.
+        color += vec3<f32>(0.5, 0.8, 1.0) * rim * select(0.12, 0.5, isPlant);
         let fogAmount = 1.0 - exp(-t * 0.05);
         color = mix(color, fogColor, fogAmount);
-        alpha = calculateOrganicAlpha(mat, thickness, n, lightDir);
+        alpha = calculateOrganicAlpha(mat, thickness, n, lightDir) * (1.0 - 0.12 * capWet * f32(mat > 2.5 && mat < 3.5));
         lifeForceOut = (s1 + s2) * 0.4 + seasonBloom * 0.3;
         if (mat > 1.5 && u.zoom_params.z > 0.7) {
             alpha = mix(alpha, 0.75, 0.3);
@@ -326,7 +366,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Grok upgrade: Better alpha for compositing + seasonal life force
     let lifeForce = lifeForceOut;
-    let finalAlpha = clamp(alpha * (0.8 + lifeForce), 0.0, 1.1);
+    // Misses are fog-filled sky, i.e. full coverage of the scene (0.8 composited the page white).
+    // Hits keep translucent tissue readable but never drop below 0.85 coverage.
+    let finalAlpha = select(1.0, select(clamp(alpha * (0.8 + lifeForce), 0.85, 1.0), 1.0, mat == 1.0), t < 100.0); // soil is opaque
     let a = clamp(finalAlpha, 0.0, 1.0);
     let coord = vec2<i32>(global_id.xy);
     textureStore(dataTextureA, coord, vec4<f32>(color, a));

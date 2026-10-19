@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: mycorrhizal hyphal transport (fungal species conducts substrate across the far neighbourhood); Red Queen frequency-dependent rule drift (locally dominant species' evolved thresholds shift against it)
+//  Upgraded: 2026-10-18
+//  Ideas: mycorrhizal hyphal transport (fungal species conducts substrate across the far neighbourhood); Red Queen frequency-dependent rule drift (locally dominant species' evolved thresholds shift against it); pioneer lichen succession (species 3 colonises bare ground at colony fronts, shaded out under canopy); wind-borne seed rain (the inhibitory far ring is displaced upwind by a slowly veering breeze, so colonies creep downwind in aligned bands)
 //  A packing: ACES display RGBA in A — display is an exactly invertible
 //    encoding of the sim: RGB = ACES(gain * vignette * speciesColor(s1,s2,s3,res)),
 //    alpha = 1 - exp(-(0.9*pop + 0.45*res + 0.05)) (canopy+substrate optical
@@ -12,30 +12,13 @@
 //    inverse pigment matrix, so no flourish that would corrupt state is drawn.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Mutation Rate, .y = Species Competition, .z = Fertility, .w = Diversity
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Mutation Rate, .y = Species Competition, .z = Fertility, .w = Diversity
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
-const ENC_GAIN: f32 = 1.1;
+const ENC_GAIN: f32 = 0.75; // exposure of the invertible encoding (decode divides it back out)
+const GROWTH_RATE: f32 = 0.3; // per-frame step; 1.0 overshot into 1-px oscillation
 
 // ─── Hash utilities ───────────────────────────────────────────────
 fn hash12(p: vec2<f32>) -> f32 {
@@ -71,17 +54,18 @@ fn smoothNoise(p: vec2<f32>) -> f32 {
 // ─── Rule kernel: evolved growth behaviour ────────────────────────
 // Returns growth impulse for a species given its neighbourhood average
 // and the current "genetic" ruleset encoded in rulePhase
-fn growthKernel(selfDensity: f32, neighborAvg: f32, rulePhase: f32,
+fn growthKernel(selfDensity: f32, nearAvg: f32, farAvg: f32, rulePhase: f32,
                 resourceLevel: f32, fertility: f32) -> f32 {
     // Evolving activation threshold (shifts with rulePhase)
     let activateThreshold = 0.15 + rulePhase * 0.3;
     let inhibitThreshold = 0.7 - rulePhase * 0.15;
 
-    // Growth if neighbours in sweet-spot, decay if isolated or overcrowded
-    let activation = smoothstep(activateThreshold - 0.05, activateThreshold + 0.05, neighborAvg);
-    let inhibition = smoothstep(inhibitThreshold, inhibitThreshold + 0.15, neighborAvg);
+    // Multi-scale: the near disc (self included) activates, the far ring inhibits.
+    // (One blended self-excluding ring for both made period-2 checkerboard speckle.)
+    let activation = smoothstep(activateThreshold - 0.05, activateThreshold + 0.05, nearAvg);
+    let inhibition = smoothstep(inhibitThreshold, inhibitThreshold + 0.15, farAvg);
 
-    let growthImpulse = activation * (1.0 - inhibition) * resourceLevel * fertility;
+    let growthImpulse = activation * (1.0 - inhibition) * resourceLevel * fertility * GROWTH_RATE;
     let decayRate = 0.02 + (1.0 - resourceLevel) * 0.03;
 
     return growthImpulse - selfDensity * decayRate;
@@ -163,17 +147,36 @@ fn decodeState(coord: vec2<i32>, dims: vec2<i32>, res: vec2<f32>, pigInv: mat3x3
     return vec4<f32>(s, substrate);
 }
 
+// Deadband for what a cell SEES of its neighbourhood: storage rounding (FP16
+// tiers) and the frame-to-frame drift of the iridescent pigment decode as a few %
+// of phantom species, which must not trigger growth or fronts. The cell's own
+// state is read raw so small per-frame pushes (pioneer lichen) still accumulate.
+fn seen(st: vec4<f32>) -> vec4<f32> {
+    return vec4<f32>(st.rgb * step(vec3<f32>(0.04), st.rgb), st.a);
+}
+
 // ─── Multi-scale neighbourhood sampling (exact texel loads) ───────
-fn sampleNeighbourhood(coord: vec2<i32>, dims: vec2<i32>, res: vec2<f32>, scale: i32, pigInv: mat3x3<f32>) -> vec4<f32> {
-    let n0 = decodeState(coord + vec2<i32>( scale, 0), dims, res, pigInv);
-    let n1 = decodeState(coord - vec2<i32>( scale, 0), dims, res, pigInv);
-    let n2 = decodeState(coord + vec2<i32>(0,  scale), dims, res, pigInv);
-    let n3 = decodeState(coord - vec2<i32>(0,  scale), dims, res, pigInv);
-    let n4 = decodeState(coord + vec2<i32>( scale,  scale), dims, res, pigInv);
-    let n5 = decodeState(coord - vec2<i32>( scale,  scale), dims, res, pigInv);
-    let n6 = decodeState(coord + vec2<i32>( scale, -scale), dims, res, pigInv);
-    let n7 = decodeState(coord - vec2<i32>( scale, -scale), dims, res, pigInv);
-    return (n0 + n1 + n2 + n3 + n4 + n5 + n6 + n7) * 0.125;
+// Near: 3x3 disc including the cell itself.
+fn sampleNear(coord: vec2<i32>, dims: vec2<i32>, res: vec2<f32>, pigInv: mat3x3<f32>, selfState: vec4<f32>) -> vec4<f32> {
+    var acc = seen(selfState);
+    for (var j = -1; j <= 1; j = j + 1) {
+        for (var i = -1; i <= 1; i = i + 1) {
+            if (i != 0 || j != 0) { acc += seen(decodeState(coord + vec2<i32>(i, j), dims, res, pigInv)); }
+        }
+    }
+    return acc / 9.0;
+}
+
+// Far: 16-tap ring of radius ~4*k px (k grows with resolution so the pattern
+// scale is screen-relative), displaced by the wind vector (in px).
+fn sampleFarRing(coord: vec2<i32>, dims: vec2<i32>, res: vec2<f32>, pigInv: mat3x3<f32>, k: f32, wind: vec2<f32>) -> vec4<f32> {
+    var acc = vec4<f32>(0.0);
+    for (var i = 0; i < 16; i = i + 1) {
+        let a = f32(i) * (TAU / 16.0);
+        let o = vec2<f32>(cos(a), sin(a)) * 4.0 * k + wind;
+        acc += seen(decodeState(coord + vec2<i32>(round(o)), dims, res, pigInv));
+    }
+    return acc / 16.0;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -220,16 +223,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rulePhase2 = fract(rulePhase + 0.33 + treble * 0.1);
     let rulePhase3 = fract(rulePhase + 0.67 + mids * 0.12);
 
+    // ── Idea 4: wind-borne seed rain ──
+    // A breeze veers slowly (bass gusts strengthen it). Displacing the inhibitory
+    // far ring upwind makes colonies creep downwind and bands align across it.
+    let patternK = clamp(res.y / 256.0, 2.0, 5.0);
+    let windAng = t * 0.021 + 1.1;
+    let wind = vec2<f32>(cos(windAng), sin(windAng)) * patternK * (0.35 + bass * 0.3);
+
     // Multi-scale neighbourhood averages (near + far = multi-scale competition)
-    let nearNeighbours = sampleNeighbourhood(coord, dims, res, 1, pigInv);
-    let farNeighbours  = sampleNeighbourhood(coord, dims, res, 3, pigInv);
+    let nearNeighbours = sampleNear(coord, dims, res, pigInv, state);
+    let farNeighbours  = sampleFarRing(coord, dims, res, pigInv, patternK, wind);
 
     // Weighted neighbourhood for each species (multi-scale awareness)
     let nearWeight = 0.7;
     let farWeight = 0.3;
-    let avgS1 = nearNeighbours.r * nearWeight + farNeighbours.r * farWeight;
+    let avgS1 = nearNeighbours.r;
     let avgS2 = nearNeighbours.g * nearWeight + farNeighbours.g * farWeight;
-    let avgS3 = nearNeighbours.b * nearWeight + farNeighbours.b * farWeight;
+    let avgS3 = nearNeighbours.b;
     let avgRes = nearNeighbours.a * nearWeight + farNeighbours.a * farWeight;
 
     // ── Idea 2: Red Queen frequency-dependent selection ──
@@ -242,9 +252,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rq3 = min(rulePhase3 + (s3 / localPop) * redQueen, 1.3);
 
     // Apply evolving growth kernels per species
-    let grow1 = growthKernel(s1, avgS1, rq1, resourceLevel, fertility);
-    let grow2 = growthKernel(s2, avgS2, rq2, resourceLevel, fertility * 0.9);
-    let grow3 = growthKernel(s3, avgS3, rq3, resourceLevel, fertility * 0.85) * diversity;
+    let grow1 = growthKernel(s1, nearNeighbours.r, farNeighbours.r, rq1, resourceLevel, fertility);
+    let grow2 = growthKernel(s2, nearNeighbours.g, farNeighbours.g, rq2, resourceLevel, fertility * 0.9);
+    let grow3 = growthKernel(s3, nearNeighbours.b, farNeighbours.b, rq3, resourceLevel, fertility * 0.85) * diversity;
 
     // Inter-species competition
     let comp12 = s1 * s2 * competition;
@@ -262,6 +272,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var newS2 = s2 + grow2 - comp12 - comp23 + audioPressure2;
     var newS3 = s3 + grow3 - comp13 - comp23 + audioPressure3;
 
+    // ── Idea 3: pioneer lichen succession ──
+    // Lichen (species 3) colonises bare ground right at the coral/fungal fronts,
+    // then is shaded out once the climax canopy closes over it.
+    let canopy = nearNeighbours.r + nearNeighbours.g;
+    let frontier = smoothstep(0.08, 0.2, canopy) * smoothstep(0.4, 0.12, canopy);
+    newS3 += 0.2 * frontier * resourceLevel * fertility * GROWTH_RATE * (1.0 - smoothstep(0.6, 1.2, s3)) * (0.5 + diversity);
+    newS3 -= s3 * smoothstep(0.3, 0.9, canopy) * 0.008;
+
     // Resource dynamics: slowly regenerates, consumed by all species
     let totalConsumption = (newS1 + newS2 + newS3) * 0.012;
     let regeneration = 0.015 * fertility + avgRes * 0.01;
@@ -269,7 +287,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // ── Idea 1: mycorrhizal hyphal transport ──
     // The fungal species forms a conductive network: where hyphae are dense,
-    // substrate flows from the far (3-texel) neighbourhood toward local deficit.
+    // substrate flows from the far ring toward local deficit.
     let hyphalConductance = smoothstep(0.05, 0.6, avgS2) * (0.2 + mids * 0.1);
     newRes += hyphalConductance * (farNeighbours.a - resourceLevel);
     // Mutualism: coral fed by the network grows slightly where hyphae connect
@@ -311,15 +329,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         newRes += founder * 0.15;
     }
 
-    // Random seeding for new growth when population is low
+    // Random seeding for new growth when population is low. Spores land in
+    // clumps (value-noise blobs a few px wide): a lone texel never reaches the
+    // activation threshold, so per-texel seeding only flickered as speckle.
     let totalPopPre = newS1 + newS2 + newS3;
     if (totalPopPre < 0.05) {
-        let seed = hash13(vec3<f32>(uv * 100.0, floor(t * 2.0)));
-        if (seed > 0.97) {
-            let which = hash12(uv * 57.3 + t);
-            if (which < 0.33) { newS1 += 0.3; }
-            else if (which < 0.66) { newS2 += 0.3; }
-            else { newS3 += 0.3; }
+        let window = floor(t * 2.0);
+        let sp = vec2<f32>(coord) / (4.0 * patternK) + window * vec2<f32>(37.0, 17.0);
+        let seed = smoothNoise(sp);
+        if (seed > 0.85) {
+            let which = hash12(floor(sp) + vec2<f32>(0.5, 3.1));
+            // 0.6: above the highest evolved activation threshold (0.15 + 1.3 * 0.3),
+            // so a clump can take root at any rule phase (0.3 only could early on).
+            if (which < 0.33) { newS1 += 0.6; }
+            else if (which < 0.66) { newS2 += 0.6; }
+            else { newS3 += 0.6; }
             newRes += 0.2;
         }
     }

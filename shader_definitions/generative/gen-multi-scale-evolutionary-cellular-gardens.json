@@ -11,7 +11,7 @@
     "emergent",
     "music"
   ],
-  "description": "A multi-state cellular automata system where growth rules slowly evolve based on local conditions and global audio input. Audio drives genetic pressure on the automata. Mouse introduces invasive species or protected zones. Organic, plant-like emergent structures that change their fundamental behavior over time.",
+  "description": "A multi-state cellular automata system where growth rules slowly evolve based on local conditions and global audio input. Audio drives genetic pressure on the automata. Mouse introduces invasive species or protected zones. Organic, plant-like emergent structures that change their fundamental behavior over time. Pioneer lichen fringes colony fronts while a veering breeze drifts the bands.",
   "workgroup_size": [
     16,
     16,

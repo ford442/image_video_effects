@@ -25,6 +25,153 @@
       "failure_note": "New shader requires GPU capture for thumbnail"
     },
     {
+      "id": "gen-live-studio-tab",
+      "added_by": "thumbnail-campaign",
+      "deferred_at": "2026-09-26",
+      "expires": "2026-10-26",
+      "reason": "gpu-capture-pending",
+      "renewals": 1,
+      "renewed_at": "2026-09-26",
+      "failure_note": "no self-hosted gpu runner registered (gpu-required.yml / thumbs-capture-farm.yml); next capture wave"
+    },
+    {
+      "id": "gen-luminescent-nebula-silk-weaver",
+      "added_by": "defer-thumbnail",
+      "deferred_at": "2026-10-18",
+      "expires": "2026-11-17",
+      "reason": "gpu-capture-pending"
+    },
+    {
+      "id": "gen-neural-dust",
+      "added_by": "thumbnail-campaign",
+      "deferred_at": "2026-09-26",
+      "expires": "2026-10-26",
+      "reason": "gpu-capture-pending",
+      "renewals": 1,
+      "renewed_at": "2026-09-26",
+      "failure_note": "no self-hosted gpu runner registered (gpu-required.yml / thumbs-capture-farm.yml); next capture wave"
+    },
+    {
+      "id": "gen-orb",
+      "added_by": "thumbnail-campaign",
+      "deferred_at": "2026-09-26",
+      "expires": "2026-10-26",
+      "reason": "gpu-capture-pending",
+      "renewals": 1,
+      "renewed_at": "2026-09-26",
+      "failure_note": "no self-hosted gpu runner registered (gpu-required.yml / thumbs-capture-farm.yml); next capture wave"
+    },
+    {
+      "id": "gen-prismatic-aether-loom",
+      "added_by": "thumbnail-campaign",
+      "deferred_at": "2026-09-26",
+      "expires": "2026-10-26",
+      "reason": "gpu-capture-pending",
+      "renewals": 1,
+      "renewed_at": "2026-09-26",
+      "failure_note": "no self-hosted gpu runner registered (gpu-required.yml / thumbs-capture-farm.yml); next capture wave"
+    },
+    {
+      "id": "gen-prismatic-quantum-glass-chrysalis-engine",
+      "added_by": "thumbnail-campaign",
+      "deferred_at": "2026-09-26",
+      "expires": "2026-10-26",
+      "reason": "gpu-capture-pending",
+      "renewals": 1,
+      "renewed_at": "2026-09-26",
+      "failure_note": "no self-hosted gpu runner registered (gpu-required.yml / thumbs-capture-farm.yml); next capture wave"
+    },
+    {
+      "id": "gen-psychedelic-time-warp-kaleidoscope",
+      "added_by": "thumbnail-campaign",
+      "deferred_at": "2026-09-26",
+      "expires": "2026-10-26",
+      "reason": "gpu-capture-pending",
+      "renewals": 1,
+      "renewed_at": "2026-09-26",
+      "failure_note": "no self-hosted gpu runner registered (gpu-required.yml / thumbs-capture-farm.yml); next capture wave"
+    },
+    {
+      "id": "gen-quantum-singularity-forge",
+      "added_by": "thumbnail-campaign",
+      "deferred_at": "2026-09-26",
+      "expires": "2026-10-26",
+      "reason": "gpu-capture-pending",
+      "renewals": 1,
+      "renewed_at": "2026-09-26",
+      "failure_note": "no self-hosted gpu runner registered (gpu-required.yml / thumbs-capture-farm.yml); next capture wave"
+    },
+    {
+      "id": "gen-rainbow-icosahedron-cascade",
+      "added_by": "thumbnail-campaign",
+      "deferred_at": "2026-09-26",
+      "expires": "2026-10-26",
+      "reason": "gpu-capture-pending",
+      "renewals": 1,
+      "renewed_at": "2026-09-26",
+      "failure_note": "no self-hosted gpu runner registered (gpu-required.yml / thumbs-capture-farm.yml); next capture wave"
+    },
+    {
+      "id": "gen-reaction-diffusion",
+      "added_by": "thumbnail-campaign",
+      "deferred_at": "2026-09-26",
+      "expires": "2026-10-26",
+      "reason": "gpu-capture-pending",
+      "renewals": 1,
+      "renewed_at": "2026-09-26",
+      "failure_note": "no self-hosted gpu runner registered (gpu-required.yml / thumbs-capture-farm.yml); next capture wave"
+    },
+    {
+      "id": "gen-resonant-crystal-canyons",
+      "added_by": "thumbnail-campaign",
+      "deferred_at": "2026-09-26",
+      "expires": "2026-10-26",
+      "reason": "gpu-capture-pending",
+      "renewals": 1,
+      "renewed_at": "2026-09-26",
+      "failure_note": "no self-hosted gpu runner registered (gpu-required.yml / thumbs-capture-farm.yml); next capture wave"
+    },
+    {
+      "id": "gen-resonant-quantum-plasma-dragon-eye",
+      "added_by": "thumbnail-campaign",
+      "deferred_at": "2026-09-26",
+      "expires": "2026-10-26",
+      "reason": "gpu-capture-pending",
+      "renewals": 1,
+      "renewed_at": "2026-09-26",
+      "failure_note": "no self-hosted gpu runner registered (gpu-required.yml / thumbs-capture-farm.yml); next capture wave"
+    },
+    {
+      "id": "gen-sentient-cyber-chrono-void-serpent",
+      "added_by": "thumbnail-campaign",
+      "deferred_at": "2026-09-26",
+      "expires": "2026-10-26",
+      "reason": "gpu-capture-pending",
+      "renewals": 1,
+      "renewed_at": "2026-09-26",
+      "failure_note": "no self-hosted gpu runner registered (gpu-required.yml / thumbs-capture-farm.yml); next capture wave"
+    },
+    {
+      "id": "gen-symbiotic-cyber-fungal-core-reactor",
+      "added_by": "thumbnail-campaign",
+      "deferred_at": "2026-09-26",
+      "expires": "2026-10-26",
+      "reason": "gpu-capture-pending",
+      "renewals": 1,
+      "renewed_at": "2026-09-26",
+      "failure_note": "no self-hosted gpu runner registered (gpu-required.yml / thumbs-capture-farm.yml); next capture wave"
+    },
+    {
+      "id": "gen-symbiotic-plasma-reef-matrix",
+      "added_by": "thumbnail-campaign",
+      "deferred_at": "2026-09-26",
+      "expires": "2026-10-26",
+      "reason": "gpu-capture-pending",
+      "renewals": 1,
+      "renewed_at": "2026-09-26",
+      "failure_note": "no self-hosted gpu runner registered (gpu-required.yml / thumbs-capture-farm.yml); next capture wave"
+    },
+    {
       "id": "gen-synaptic-void-weaver",
       "added_by": "defer-thumbnail",
       "deferred_at": "2026-10-16",
