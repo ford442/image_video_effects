@@ -1870,8 +1870,17 @@
       "history": []
     },
     "electric-eel-storm": {
-      "hash": "c8e75e9a8cc051ed",
-      "history": []
+      "hash": "0527357e6a8f4d1d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:16:47.561Z",
+          "hash": "0527357e6a8f4d1d",
+          "prev_hash": "c8e75e9a8cc051ed",
+          "commit": "f4b48122",
+          "note": "opus/batch-08: native ideas + rescues (2026-10-19)"
+        }
+      ]
     },
     "emergent-calligraphic-weave": {
       "hash": "19d97c70ee42cbad",
@@ -2247,7 +2256,7 @@
       ]
     },
     "gen-bio-luminescent-jelly": {
-      "hash": "9efdb02e5ad790fa",
+      "hash": "a6d1579f26d9a376",
       "history": [
         {
           "event": "upgraded",
@@ -2256,6 +2265,14 @@
           "prev_hash": "c1e8882dd890fd74",
           "commit": "2c248569",
           "note": "2026-10-11 mid twelve (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-mid-twelve"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:16:47.561Z",
+          "hash": "a6d1579f26d9a376",
+          "prev_hash": "9efdb02e5ad790fa",
+          "commit": "f4b48122",
+          "note": "opus/batch-08: native ideas + rescues (2026-10-19)"
         }
       ]
     },
@@ -2785,7 +2802,7 @@
       ]
     },
     "gen-chronos-biomechanical-void-leviathan": {
-      "hash": "1ca3b29aaeea62cd",
+      "hash": "9d51910c12a26776",
       "history": [
         {
           "event": "upgraded",
@@ -2794,6 +2811,14 @@
           "prev_hash": "0adac1fc449a8821",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:16:47.561Z",
+          "hash": "9d51910c12a26776",
+          "prev_hash": "1ca3b29aaeea62cd",
+          "commit": "f4b48122",
+          "note": "opus/batch-08: native ideas + rescues (2026-10-19)"
         }
       ]
     },
@@ -2930,7 +2955,7 @@
       ]
     },
     "gen-cryogenic-frost-plasma-matrix": {
-      "hash": "b600103ca617bf51",
+      "hash": "fd925b9d95b90cf6",
       "history": [
         {
           "event": "upgraded",
@@ -2939,6 +2964,14 @@
           "prev_hash": "c7a30f5f91be4ebb",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:16:47.561Z",
+          "hash": "fd925b9d95b90cf6",
+          "prev_hash": "b600103ca617bf51",
+          "commit": "f4b48122",
+          "note": "opus/batch-08: native ideas + rescues (2026-10-19)"
         }
       ]
     },
@@ -4796,7 +4829,7 @@
       "history": []
     },
     "gen-luminescent-aether-plasma-astro-axolotl": {
-      "hash": "ec6c859ef979551b",
+      "hash": "cdd134d2a0560ba1",
       "history": [
         {
           "event": "upgraded",
@@ -4805,6 +4838,14 @@
           "prev_hash": "27d5c63a56153605",
           "commit": "cc600bb4",
           "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:16:47.561Z",
+          "hash": "cdd134d2a0560ba1",
+          "prev_hash": "ec6c859ef979551b",
+          "commit": "f4b48122",
+          "note": "opus/batch-08: native ideas + rescues (2026-10-19)"
         }
       ]
     },
@@ -5360,8 +5401,17 @@
       ]
     },
     "gen-neural-dust": {
-      "hash": "c0eafe0f7c0399f2",
-      "history": []
+      "hash": "22156bed9cfaa8e8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:16:47.561Z",
+          "hash": "22156bed9cfaa8e8",
+          "prev_hash": "c0eafe0f7c0399f2",
+          "commit": "f4b48122",
+          "note": "opus/batch-08: native ideas + rescues (2026-10-19)"
+        }
+      ]
     },
     "gen-neural-fractal": {
       "hash": "b2f223738e0471d8",
@@ -5505,7 +5555,7 @@
       "history": []
     },
     "gen-phase-transition-memory-weave": {
-      "hash": "c20cd8b4a5e0a45d",
+      "hash": "80483454e3222f1d",
       "history": [
         {
           "event": "upgraded",
@@ -5514,6 +5564,14 @@
           "prev_hash": "7960716a36a39a77",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:16:47.561Z",
+          "hash": "80483454e3222f1d",
+          "prev_hash": "c20cd8b4a5e0a45d",
+          "commit": "f4b48122",
+          "note": "opus/batch-08: native ideas + rescues (2026-10-19)"
         }
       ]
     },
@@ -5970,8 +6028,17 @@
       "history": []
     },
     "gen-radiant-quantum-plasma-kraken-core": {
-      "hash": "f5e1a6ae399e91cf",
-      "history": []
+      "hash": "ad3e97437fac9b52",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:16:47.561Z",
+          "hash": "ad3e97437fac9b52",
+          "prev_hash": "f5e1a6ae399e91cf",
+          "commit": "f4b48122",
+          "note": "opus/batch-08: native ideas + rescues (2026-10-19)"
+        }
+      ]
     },
     "gen-rainbow-firefly-dance": {
       "hash": "c364078978ff0157",
@@ -6071,8 +6138,17 @@
       "history": []
     },
     "gen-sentient-cyber-aurora-void-owl": {
-      "hash": "63c061c5b15e54d4",
-      "history": []
+      "hash": "d4ad7892cb2870d2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:16:47.561Z",
+          "hash": "d4ad7892cb2870d2",
+          "prev_hash": "63c061c5b15e54d4",
+          "commit": "f4b48122",
+          "note": "opus/batch-08: native ideas + rescues (2026-10-19)"
+        }
+      ]
     },
     "gen-sentient-cyber-chrono-void-serpent": {
       "hash": "9a91b8b1adfb0c30",
@@ -6287,8 +6363,17 @@
       ]
     },
     "gen-stellar-web-loom": {
-      "hash": "ca771165d30f91c1",
-      "history": []
+      "hash": "8cd3f52f1ca55f78",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:16:47.561Z",
+          "hash": "8cd3f52f1ca55f78",
+          "prev_hash": "ca771165d30f91c1",
+          "commit": "f4b48122",
+          "note": "opus/batch-08: native ideas + rescues (2026-10-19)"
+        }
+      ]
     },
     "gen-strange-field-flow": {
       "hash": "f98ee201ad36a403",

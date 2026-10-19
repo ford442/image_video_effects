@@ -5,10 +5,12 @@
 //           warp-speed-streaks, hdr-feedback-trails, audio-transient-burst,
 //           audio-color-temperature, aces-tone-map, semantic-alpha,
 //           generated-depth, fast-motion
-//  Upgraded: 2026-09-27
+//  Upgraded: 2026-10-19
 //  Ideas: plucked standing-wave strings pinned at lattice nodes;
-//         warp/weft hues + over/under weave thickness; gyro ring per node
-//  A packing: A.rgb = HDR trail colour (clamped), A.a = march depth
+//         warp/weft hues + over/under weave thickness; gyro ring per node;
+//         shuttle pick racing along every weft thread with a cooling laid pick;
+//         stellar-class knots (§12.2E orbit trap of node distance → blackbody)
+//  A packing: A.rgb = HDR trail colour (clamped), A.a = march depth; writeTexture alpha = 0.85 void + 0.15 thread intensity
 // ----------------------------------------------------------------
 #include "_prelude.wgsl"
 
@@ -75,6 +77,33 @@ fn sdSphere(p: vec3<f32>, r: f32) -> f32 {
 var<private> g_time: f32;
 var<private> g_mouse: vec2<f32>;
 var<private> g_audio: f32;
+var<private> g_shuttle: f32;      // Idea 4: shuttle bead + laid-pick glow on the weft row at this step
+var<private> g_node: f32;         // Idea 5: node-sphere distance at this step (orbit-trap source)
+var<private> g_nodeCell: vec3<f32>;
+
+// Idea 5: blackbody colour for a stellar surface temperature in kelvin
+// (Helland fit, guarded so the unselected branches never see a negative base).
+fn blackbody(kelvin: f32) -> vec3<f32> {
+    let tt = kelvin / 100.0;
+    let hot = tt > 66.0;
+    let r = select(1.0, clamp(1.292936 * pow(max(tt - 60.0, 1.0), -0.1332047), 0.0, 1.0), hot);
+    let g = select(clamp(0.3900816 * log(tt) - 0.6318414, 0.0, 1.0),
+                   clamp(1.1298909 * pow(max(tt - 60.0, 1.0), -0.0755148), 0.0, 1.0), hot);
+    let b = select(clamp(0.5432068 * log(max(tt - 10.0, 1.0)) - 1.1962541, 0.0, 1.0), 1.0, hot);
+    return vec3<f32>(r, g, b);
+}
+
+// Idea 5: each knot hashes a surface temperature, skewed toward cool K/M stars
+// with rare hot O/B ones.
+fn starColour(cell: vec3<f32>) -> vec3<f32> {
+    let h = hash31(cell + vec3<f32>(3.3, 8.1, 1.7));
+    let bb = blackbody(mix(2800.0, 26000.0, h * h * h));
+    // Stretch the pastel blackbody chroma so classes read against the glow, then
+    // normalise to a fixed luminance so a hot star is bluer, not brighter.
+    let lw = vec3<f32>(0.2126, 0.7152, 0.0722);
+    let sat = max(mix(vec3<f32>(dot(bb, lw)), bb, 2.6), vec3<f32>(0.0));
+    return sat / max(dot(sat, lw), 1e-3);
+}
 
 // IDEA 1: plucked string. s = signed axis coordinate inside the cell (node at 0),
 // seg = hashed id of the node-to-node segment (same id from both neighbouring
@@ -94,7 +123,10 @@ fn pluck(s: f32, sp: f32, seg: vec3<f32>, salt: f32) -> vec2<f32> {
 fn map(pos: vec3<f32>) -> vec2<f32> {
     let density = max(0.1, u.zoom_params.x);
     let weaveSpeed = u.zoom_params.y;
-    let singularityPull = 1.5 + u.zoom_config.w * 1.5; // click deepens the singularity
+    // Click deepens the singularity. The idle pointer parks at the canvas centre, i.e.
+    // on the flight axis, so HEAD's 1.5-rad idle pull swirled the whole lattice into an
+    // unreadable vortex; idle is now a gentle 0.6, held reaches 3.0 (HEAD: 3.0).
+    let singularityPull = 0.6 + u.zoom_config.w * 2.4;
 
     var p = pos;
 
@@ -130,6 +162,8 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
     let warped_q = q + warp * 0.5;
 
     let nodeDist = sdSphere(q, 0.3);
+    g_node = nodeDist;
+    g_nodeCell = cell;
 
     // IDEA 1: per-axis plucked displacement of the thread centre-line.
     let sp = domainSpacing;
@@ -149,12 +183,25 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
     let swX = -pf * cos(6.2831853 * q.x / sp);
     let swY = pf * cos(6.2831853 * q.y / sp);
 
+    // IDEA 4: shuttle pick. Each weft row (x-family thread, fixed cell.y/z) carries
+    // one shuttle per 3 lattice spans, thrown in +x at a hashed phase. ph = 0 at the
+    // shuttle; small ph is the pick it has just laid behind it, which cools off.
+    // The shuttle is a spindle: it also swells the weft thread it rides.
+    let rowH = hash31(vec3<f32>(7.7, cell.y, cell.z));
+    let shuttleRate = 0.12 + 0.18 * weaveSpeed;
+    let ph = fract(rowH + g_time * shuttleRate - p.x / (3.0 * sp));
+    let along = 3.0 * sp;
+    let bead = exp(-min(ph, 1.0 - ph) * along * 5.0);
+    let laid = exp(-ph * along * 0.9) * (1.0 - bead);
+    g_shuttle = bead * 3.0 + laid * 0.6;
+
     // Cylinder axes: cylDistX runs along z, cylDistY along x, cylDistZ along y.
     let cylDistX = sdCylinder((warped_q + vec3<f32>(dZ.x, dZ.y, 0.0)).yzx, vec2<f32>(0.05 * (1.0 + 0.6 * swZ), sp));
-    let cylDistY = sdCylinder((warped_q + vec3<f32>(0.0, dX.x, dX.y)).zxy, vec2<f32>(0.05 * (1.0 + 0.6 * swX), sp));
+    let cylDistY = sdCylinder((warped_q + vec3<f32>(0.0, dX.x, dX.y)).zxy, vec2<f32>(0.05 * (1.0 + 0.6 * swX) + 0.09 * bead, sp));
     let cylDistZ = sdCylinder((warped_q + vec3<f32>(dY.x, 0.0, dY.y)).xyz, vec2<f32>(0.05 * (1.0 + 0.6 * swY), sp));
 
     let threadDist = min(cylDistX, min(cylDistY, cylDistZ));
+
 
     // IDEA 3: gyro ring — tilted torus precessing about each node.
     let hN = hash31(cell + vec3<f32>(5.5, 1.3, 9.1));
@@ -191,6 +238,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let fragCoord = vec2<f32>(pixel);
     var uv = (fragCoord * 2.0 - dims) / dims.y;
+    uv.y = -uv.y; // row 0 is the top of the canvas
 
     g_time = u.config.x;
 
@@ -201,11 +249,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     g_audio = bass * 0.5;
 
     // Audio transient burst — stateless per-pixel (was extraBuffer[133/134], which is
-    // zeroed every upload and raced across threads). Fires on loud bass hits, 0..2.
-    let burst = clamp((bass - 0.3) * 5.0, 0.0, 2.0);
+    // zeroed every upload and raced across threads). Fires on loud bass hits, 0..1.
+    // It is a level, not a transient, so sustained bass held it at 2.0 and (with the
+    // exposure term) whited out the frame; now it fires only above 0.45 and caps at 1.
+    let burst = clamp((bass - 0.45) * 3.0, 0.0, 1.0);
 
-    // Mouse: zoom_config.yz is already 0–1 canvas uv (y=0 top, matching uv below)
-    g_mouse = u.zoom_config.yz * 2.0 - vec2<f32>(1.0);
+    // Mouse: zoom_config.yz is 0–1 canvas uv with y=0 at the top; flip to y-up like uv.
+    g_mouse = vec2<f32>(u.zoom_config.y * 2.0 - 1.0, 1.0 - u.zoom_config.z * 2.0);
 
     let weaveSpeed = u.zoom_params.y;
 
@@ -248,6 +298,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var glow = 0.0;
     var colorAccum = vec3<f32>(0.0);
     let plasmaGlow = u.zoom_params.z;
+    var nodeTrap = 1e3;
+    var trapCell = vec3<f32>(0.0);
 
     for (var i = 0; i < 80; i++) {
         let p = ro + rd * t;
@@ -258,8 +310,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         glow += curGlow;
 
         let mat_id = res.y;
+        // IDEA 5: orbit trap over the march — closest knot the ray grazed.
+        if (g_node < nodeTrap) { nodeTrap = g_node; trapCell = g_nodeCell; }
         if (mat_id == 0.0) {
-            colorAccum += vec3<f32>(0.1, 0.3, 0.8) * tempTint * curGlow * plasmaGlow * 0.02 * (1.0 + bass + burst);
+            // IDEA 5: the knot's glow takes its star's spectral colour (HEAD: flat blue).
+            let knotHue = mix(vec3<f32>(0.1, 0.3, 0.8) * tempTint, starColour(g_nodeCell) * 0.22, 0.75);
+            colorAccum += knotHue * curGlow * plasmaGlow * 0.02 * (1.0 + bass + burst);
         } else if (mat_id >= 4.0) {
             // IDEA 3: gyro ring, pale cyan-white
             colorAccum += vec3<f32>(0.6, 0.85, 1.0) * tempTint * curGlow * plasmaGlow * 0.02 * (1.0 + bass + burst);
@@ -271,6 +327,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             if (fam == 3) { hue = vec3<f32>(0.1, 0.7, 0.5); }   // y: teal
             let shade = select(1.0, 0.55, fract(mat_id) > 0.25);
             colorAccum += hue * threadTint * shade * curGlow * plasmaGlow * 0.015 * (1.0 + bass * 1.5 + burst * 1.5);
+            // IDEA 4: the shuttle and its freshly laid pick ride the amber weft only.
+            if (fam == 2) {
+                colorAccum += vec3<f32>(1.0, 0.82, 0.45) * g_shuttle * curGlow * plasmaGlow * 0.02 * (1.0 + bass);
+            }
         }
 
         if (d < 0.001 || t > maxT) { break; }
@@ -278,6 +338,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     colorAccum += vec3<f32>(1.0, 0.4, 0.2) * g_audio * glow * 0.005 * (1.0 + burst);
+
+    // IDEA 5: stellar-class knots. Each knot hashes a surface temperature, skewed
+    // toward cool K/M stars with rare hot O/B ones, and shines through the trap.
+    // The trap's minimum gives the corona of the knot the ray grazed most closely.
+    let knot = exp(-max(nodeTrap, 0.0) * 14.0);
+    colorAccum += starColour(trapCell) * knot * plasmaGlow * 0.05 * (1.0 + bass * 0.6 + burst * 0.5);
 
     var col = colorAccum + starCol * exp(-t * 0.1);
 
@@ -297,7 +363,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let prev = textureLoad(dataTextureC, pixel, 0);
     let trailDecay = 0.82 + clamp(weaveSpeed, 0.0, 3.0) * 0.04; // faster weave → longer streaks
     let history = min(prev.rgb * trailDecay, vec3<f32>(HDR_CLAMP));
-    var hdr = col + history;
+    // Trails only where history is brighter than the new frame: col + prev was a
+    // 1/(1-decay) ≈ 7x feedback gain that pinned every pixel at HDR_CLAMP (white page).
+    var hdr = col + 0.35 * max(history - col, vec3<f32>(0.0));
     hdr = min(hdr, vec3<f32>(HDR_CLAMP));
 
     // Real generated depth (raymarch travel distance, normalized)
@@ -305,13 +373,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(dataTextureA, pixel, vec4<f32>(hdr, depthOut));
 
     // ── ACES tone map (linear HDR workflow, exposure rides audio) ─────
-    let exposure = 1.05 + plasmaGlow * 0.06 + mids * 0.2 + burst * 0.4;
+    let exposure = 1.05 + plasmaGlow * 0.06 + mids * 0.2 + burst * 0.25;
     let outCol = acesToneMap(hdr * exposure);
 
-    // Semantic alpha: luminous intensity shaped by the Thread Opacity slider
+    // Semantic alpha: an opaque void (0.85) that threads push to 1, shaped by
+    // the Thread Opacity slider. A bare intensity alpha left the void ~0 and
+    // the page showed through as a wash.
     let intensity = luma(outCol);
-    let threadOpacityExp = u.zoom_params.w;
-    let alpha = pow(clamp(intensity * 1.8, 0.0, 1.0), threadOpacityExp);
+    let threadOpacityExp = max(u.zoom_params.w, 0.25);
+    let alpha = 0.85 + 0.15 * pow(clamp(intensity * 1.8, 0.0, 1.0), threadOpacityExp);
 
     textureStore(writeDepthTexture, pixel, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
     textureStore(writeTexture, pixel, vec4<f32>(outCol, alpha));

@@ -3,7 +3,7 @@
   "name": "Electric Eel Storm",
   "category": "generative",
   "url": "shaders/electric-eel-storm.wgsl",
-  "description": "Electric eels swimming through a conductive storm cloud, discharging arcs between them. Bass drives eel body pulses, mids create storm cloud turbulence, treble triggers lightning arc flashes. Mouse attracts the eel school.",
+  "description": "Undulating electric eels with ribbon fins drift through a storm cloud, firing discharge volleys that light their dipole field lines and arc between them. Bass drives volleys and body pulses, treble drops lightning; mouse attracts the school, clicks startle nearby eels.",
   "features": [
     "audio-reactive",
     "generative",
