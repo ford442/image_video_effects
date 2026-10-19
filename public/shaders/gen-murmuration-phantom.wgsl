@@ -3,8 +3,10 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: banking agitation waves; marginal opacity; scale-free correlated turn; heading-defect eye
+//  Upgraded: 2026-10-10, 2026-10-19
+//  Ideas: banking agitation waves; marginal opacity; scale-free correlated turn; heading-defect eye;
+//    fringe birds resolve (thin margin becomes individual starlings, P(bird) ∝ density);
+//    flow-carried wake (C fetched at the curl-flow back-trace, trail streams with the flock)
 //  A packing: ACES display RGBA in A (alpha = flock sky-coverage 1-T plus glint/scatter;
 //    C.rgb read back as colour history, C.a inverted as approximate trail density)
 // ═══════════════════════════════════════════════════════════════════
@@ -170,6 +172,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let eye = exp(-vort * vort * 9.0) * mask * smoothstep(0.62, 0.18, radius);
   density *= 1.0 - eye * (0.55 + cohesion * 0.35);
 
+  // ── Idea 5: fringe birds resolve into individual starlings ──
+  // The density is a continuum, but a flock is a point process: only where
+  // birds overlap does it read as smoke. In the thin margin the field is
+  // swapped for bird specks on a jittered flock-space grid, each present with
+  // probability ∝ density, so the edge breaks into single starlings while the
+  // core stays continuous. The grid rides p, so birds travel with the flow.
+  let birdGrid = p * 72.0;
+  let birdCell = floor(birdGrid);
+  let birdJit = vec2<f32>(h2(birdCell + vec2<f32>(7.1, 3.3)), h2(birdCell + vec2<f32>(19.3, 11.7)));
+  let birdOff = fract(birdGrid) - (vec2<f32>(0.2) + birdJit * 0.6);
+  // Slightly wider than tall: wings out, seen from below.
+  let birdD = length(birdOff * vec2<f32>(0.75, 1.6));
+  let birdHere = step(h2(birdCell + vec2<f32>(3.7, 41.9)), clamp(density * 3.0, 0.0, 1.0));
+  let bird = birdHere * smoothstep(0.2, 0.06, birdD);
+  let fringe = smoothstep(0.0, 0.03, density) * (1.0 - smoothstep(0.07, 0.28, density)) * smoothstep(0.0, 0.05, mask);
+  density = mix(density, max(density * 0.3, bird * 0.5), fringe);
+
   let ex = 0.01;
   let dx = fbm3(vec3<f32>((p + vec2<f32>(ex, 0.0)) * 3.0, t * 0.2)) * mask -
            fbm3(vec3<f32>((p - vec2<f32>(ex, 0.0)) * 3.0, t * 0.2)) * mask;
@@ -189,7 +208,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // ═══ trail-accumulation — exact load of previous A (display RGBA) ═══
   let tauMax = TAU_MARGINAL * mix(0.8, 1.4, cohesion);
-  let prevTrail = textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), dims - vec2<i32>(1)), 0);
+  // ── Idea 6: flow-carried wake ──
+  // The smoke a flock leaves rides the same air the birds steer in. C (colour
+  // history + C.a trail density) is fetched at the curl-flow back-trace
+  // (semi-Lagrangian, exact integer load, ≤3 px/frame) instead of in place.
+  let wakeShift = clamp(flow * flockSize * res.y * 0.008, vec2<f32>(-3.0), vec2<f32>(3.0));
+  let wakeCoord = coord - vec2<i32>(round(wakeShift));
+  let prevTrail = textureLoad(dataTextureC, clamp(wakeCoord, vec2<i32>(0), dims - vec2<i32>(1)), 0);
   let prevDensity = densityFromCoverage(prevTrail.a, tauMax);
   let trailDecay = 0.93 - bass * 0.04;
   let trailDensity = max(density, prevDensity * trailDecay);
@@ -208,7 +233,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let caStr = 0.003 * (1.0 + bass) + density * 0.001;
   col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
 
-  var outCol = acesToneMap(huePreserveClamp(col * 1.2, 2.5));
+  var outCol = acesToneMap(huePreserveClamp(max(col, vec3<f32>(0.0)) * 1.2, 2.5));
   outCol += (ign(vec2<f32>(coord)) - 0.5) / 255.0;
   outCol = clamp(outCol, vec3<f32>(0.0), vec3<f32>(1.0));
   // Semantic alpha: flock sky-coverage (1 - T), plus glints and click scatter

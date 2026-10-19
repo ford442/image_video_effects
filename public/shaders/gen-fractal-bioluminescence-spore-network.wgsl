@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: generative, mouse-driven, audio-reactive, temporal, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: light packets running along the spore-to-spore hypha (map returns the capsule parameter); marine-snow plankton motes that flash on bass and are depth-dimmed; kept: capsule hyphae between Clifford spores; quorum pulse when the two spores close
+//  Upgraded: 2026-10-10, 2026-10-19
+//  Ideas: light packets running along the spore-to-spore hypha (map returns the capsule parameter); marine-snow plankton motes that flash on bass and are depth-dimmed; kept: capsule hyphae between Clifford spores; quorum pulse when the two spores close; seawater spectral extinction of each glow step along the march (§12.2F Beer–Lambert); luciferin depletion — fresh emission dims where C shows the pixel has been glowing
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 const PI=3.14159265358979323846; const TAU=6.28318530717958647692;
@@ -158,6 +158,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var rd = normalize(vec3<f32>(uv, 1.0));
 
     var t = 0.0; var d = 0.0; var glow = 0.0; var energy = 0.0; var packetGlow = 0.0;
+    // Idea 5 accumulators: glow weighted by its seawater transmittance to the eye
+    let seaSigma = vec3<f32>(0.22, 0.07, 0.045);
+    var glowSea = vec3<f32>(0.0);
     for (var i = 0; i < 64; i = i + 1) {
         let p = ro + rd * t;
         let m = map(p, network_complexity + injection * 2.0 + clickPulse, time + (bass + mids * 0.5) * audio_react, audio_react);
@@ -168,7 +171,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             break;
         }
         t += d * 0.5;
-        glow += (0.01 / (0.01 + d * d)) * spore_density;
+        let glowStep = (0.01 / (0.01 + d * d)) * spore_density;
+        glow += glowStep;
+        // ── Idea 5: seawater spectral extinction (§12.2F Beer–Lambert) ──
+        // light emitted at march distance t loses red fastest, blue-green slowest
+        glowSea += glowStep * exp(-seaSigma * t);
         if (t > 20.0) { break; }
     }
 
@@ -177,6 +184,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let col_inj = vec3<f32>(0.15, 0.75, 0.45);
 
     var final_col = mix(col_base, col_hot, glow * 0.1) * glow * bio_intensity * 0.25;
+    // Idea 5 (cont.): normalised transmittance colour, green-referenced so overall level is kept
+    let seaTint = glowSea / max(glow, 1e-4);
+    final_col *= clamp(seaTint / max(seaTint.g, 1e-3), vec3<f32>(0.0), vec3<f32>(1.6));
     final_col += col_inj * injection * 2.0;
     final_col += vec3<f32>(0.35, 0.95, 1.2) * clickPulse * (0.7 + mids * 0.5);
 
@@ -202,7 +212,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let absorb = exp(-depth * 2.0 * LN2);
     final_col = final_col * absorb + vec3<f32>(0.02, 0.08, 0.12) * (1.0 - absorb);
 
-    final_col = max(final_col, prev * (0.80 + spore_density * 0.12));
+    // ── Idea 6: luciferin depletion ──
+    // C luma records how hard this pixel has been glowing. A flash consumes luciferin, so
+    // fresh emission is reduced there: a held injection or hot quorum zone flashes, then
+    // settles to a lower steady glow; the afterglow max() below still holds the trail.
+    let prevGlow = dot(prev, vec3<f32>(0.299, 0.587, 0.114));
+    let depleted = smoothstep(0.35, 0.9, prevGlow);
+    final_col *= 1.0 - depleted * 0.4;
+    final_col = max(max(final_col, vec3<f32>(0.0)), prev * (0.80 + spore_density * 0.12));
     final_col = acesToneMap(final_col * (1.05 + bio_intensity * 0.08));
     let luma = dot(final_col, vec3<f32>(0.299, 0.587, 0.114));
     let semantic_alpha = clamp(energy * 0.4 + luma * 2.0 + glow * 0.1, 0.05, 0.98);
