@@ -12,7 +12,8 @@ type CppState = { initialized: number; stage: number };
 function fakeModule(cpp: CppState) {
   const calls: string[] = [];
   const mod = {
-    ccall: vi.fn((name: string) => {
+    ccall: vi.fn((name: string, _rt?: string, _at?: string[], _a?: unknown[], opts?: { async?: boolean }) => {
+      if (name === "initWasmRenderer" && opts?.async) return new Promise(() => {});
       calls.push(name);
       switch (name) {
         case 'initWasmRenderer':

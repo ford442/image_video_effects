@@ -1,6 +1,7 @@
 /**
  * @jest-environment jsdom
  *
+import { vi } from "vitest";
  * Suspending-export ABI (src/wasm/bridge/call.ts) against both Emscripten builds.
  * No GPU: each mock module reproduces how its build's ccall behaves.
  *
@@ -27,7 +28,7 @@ function makeModule(shape: Shape) {
     getColorFormat: 0,
   };
 
-  const ccall = jest.fn(
+  const ccall = vi.fn(
     (ident: string, _ret: string | null, _types: string[], args: unknown[], opts?: { async?: boolean }) => {
       log.push(`call:${ident}`);
       if (!SUSPENDING.has(ident)) return results[ident];
@@ -47,13 +48,13 @@ function makeModule(shape: Shape) {
 
   const module = {
     ccall,
-    _malloc: jest.fn().mockReturnValue(4096),
-    _free: jest.fn((ptr: number) => log.push(`free:${ptr}`)),
-    getValue: jest.fn().mockReturnValue(0),
+    _malloc: vi.fn().mockReturnValue(4096),
+    _free: vi.fn((ptr: number) => log.push(`free:${ptr}`)),
+    getValue: vi.fn().mockReturnValue(0),
     lengthBytesUTF8: (s: string) => s.length,
-    stringToUTF8: jest.fn(),
-    HEAPU8: { set: jest.fn() },
-    HEAPF32: { set: jest.fn() },
+    stringToUTF8: vi.fn(),
+    HEAPU8: { set: vi.fn() },
+    HEAPF32: { set: vi.fn() },
   };
   return {
     module,
@@ -92,9 +93,9 @@ describe.each<Shape>(['asyncify', 'jspi'])('bridge over the %s build', (shape) =
   let bridge: typeof import('../wasm/wasm_bridge');
 
   beforeEach(() => {
-    jest.resetModules();
+    vi.resetModules();
     mock = makeModule(shape);
-    (window as unknown as { PixelocityWASM?: unknown }).PixelocityWASM = jest
+    (window as unknown as { PixelocityWASM?: unknown }).PixelocityWASM = vi
       .fn()
       .mockResolvedValue(mock.module);
   });
@@ -121,10 +122,10 @@ describe.each<Shape>(['asyncify', 'jspi'])('bridge over the %s build', (shape) =
     bridge.setInputSource('image');
 
     const wrongShape = mock.ccall.mock.calls
-      .filter(([ident, , , , opts]) => (SUSPENDING.has(ident) ? opts?.async !== true : opts !== undefined))
+      .filter(([ident, _ret, _types, _args, opts]: any) => (SUSPENDING.has(ident) ? opts?.async !== true : opts !== undefined))
       .map(([ident]) => ident);
     expect(wrongShape).toEqual([]);
-    const called = new Set(mock.ccall.mock.calls.map((c) => c[0]));
+    const called = new Set(mock.ccall.mock.calls.map((c) => c[0] as any));
     for (const exp of SUSPENDING) expect(called.has(exp)).toBe(true);
   });
 
@@ -147,7 +148,7 @@ describe.each<Shape>(['asyncify', 'jspi'])('bridge over the %s build', (shape) =
     const a = bridge.resizeCanvas(32, 32);
     const b = bridge.resizeCanvas(48, 48);
     await flush();
-    expect(mock.ccall.mock.calls.filter((c) => c[0] === 'resizeCanvas')).toHaveLength(1);
+    expect(mock.ccall.mock.calls.filter((c) => c[0] as any === 'resizeCanvas')).toHaveLength(1);
     mock.release();
     await flush();
     mock.release();
@@ -167,7 +168,7 @@ describe.each<Shape>(['asyncify', 'jspi'])('bridge over the %s build', (shape) =
     bridge.uploadVideoFrame(new Uint8Array(16), 2, 2);
     bridge.updateDepthMap(new Float32Array(4), 2, 2);
     bridge.uploadImageData(new Uint8Array(16), 2, 2);
-    const idents = mock.ccall.mock.calls.map((c) => c[0]);
+    const idents = mock.ccall.mock.calls.map((c) => c[0] as any);
     expect(idents).not.toContain('updateUniforms');
     expect(idents).not.toContain('uploadVideoFrame');
     expect(idents).not.toContain('updateDepthMap');
@@ -175,11 +176,11 @@ describe.each<Shape>(['asyncify', 'jspi'])('bridge over the %s build', (shape) =
 
     mock.release();
     await p;
-    expect(mock.ccall.mock.calls.map((c) => c[0])).toContain('loadImageData');
+    expect(mock.ccall.mock.calls.map((c) => c[0] as any)).toContain('loadImageData');
 
     mock.ccall.mockClear();
     bridge.updateUniforms({ time: 2 });
-    expect(mock.ccall.mock.calls.map((c) => c[0])).toContain('updateUniforms');
+    expect(mock.ccall.mock.calls.map((c) => c[0] as any)).toContain('updateUniforms');
   });
 
   it('a rejected suspending call does not wedge the queue', async () => {
@@ -189,7 +190,7 @@ describe.each<Shape>(['asyncify', 'jspi'])('bridge over the %s build', (shape) =
     await expect(bridge.loadShader('after', 'code')).resolves.toBe(true);
     mock.ccall.mockClear();
     bridge.updateUniforms({ time: 3 });
-    expect(mock.ccall.mock.calls.map((c) => c[0])).toContain('updateUniforms');
+    expect(mock.ccall.mock.calls.map((c) => c[0] as any)).toContain('updateUniforms');
   });
 });
 
@@ -201,7 +202,7 @@ describe('artifact selection', () => {
     wa.Suspending = saved.Suspending;
     wa.promising = saved.promising;
     delete (window as unknown as { PixelocityWASM?: unknown }).PixelocityWASM;
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   function setJspi(on: boolean) {
@@ -210,7 +211,7 @@ describe('artifact selection', () => {
   }
 
   it('orders JSPI first only when WebAssembly.Suspending + promising exist', async () => {
-    jest.resetModules();
+    vi.resetModules();
     const { wasmArtifactOrder } = await import('../wasm/bridge/init');
     setJspi(true);
     expect(wasmArtifactOrder()).toEqual(['jspi', 'asyncify']);
@@ -221,7 +222,7 @@ describe('artifact selection', () => {
   /** Fake <script> loading: per file name, fail to load or register a factory. */
   function fakeScripts(behaviour: Record<string, 'error' | (() => Promise<unknown>)>) {
     const loaded: string[] = [];
-    jest.spyOn(document.head, 'appendChild').mockImplementation(<T extends Node>(node: T): T => {
+    vi.spyOn(document.head, 'appendChild').mockImplementation(<T extends Node>(node: T): T => {
       const script = node as unknown as HTMLScriptElement;
       const name = script.src.split('/').pop() as string;
       loaded.push(name);
@@ -243,7 +244,7 @@ describe('artifact selection', () => {
     ['JSPI glue 404s', 'error' as const],
     ['JSPI instantiation rejects', () => Promise.reject(new Error('no JSPI'))],
   ])('falls back to ASYNCIFY when %s', async (_label, jspiBehaviour) => {
-    jest.resetModules();
+    vi.resetModules();
     setJspi(true);
     const asyncify = makeModule('asyncify');
     const loaded = fakeScripts({
@@ -259,7 +260,7 @@ describe('artifact selection', () => {
   });
 
   it('loads only the ASYNCIFY build when JSPI is absent', async () => {
-    jest.resetModules();
+    vi.resetModules();
     setJspi(false);
     const asyncify = makeModule('asyncify');
     const loaded = fakeScripts({ 'pixelocity_wasm.js': () => Promise.resolve(asyncify.module) });
@@ -270,7 +271,7 @@ describe('artifact selection', () => {
   });
 
   it('uses the JSPI build when available', async () => {
-    jest.resetModules();
+    vi.resetModules();
     setJspi(true);
     const jspi = makeModule('jspi');
     const loaded = fakeScripts({ 'pixelocity_wasm_jspi.js': () => Promise.resolve(jspi.module) });
@@ -282,7 +283,7 @@ describe('artifact selection', () => {
   });
 
   it('reports failure when no build loads', async () => {
-    jest.resetModules();
+    vi.resetModules();
     setJspi(true);
     fakeScripts({});
     const bridge = await import('../wasm/wasm_bridge');

@@ -1154,11 +1154,11 @@ function verifyBindGroup1() {
   const bridgeFile = 'src/wasm/bridge/shader.ts';
   const bridge = fs.readFileSync(path.join(ROOT, bridgeFile), 'utf8');
   for (const fnName of ['loadShader', 'reloadShader']) {
-    const body = bridge.match(new RegExp(`export function ${fnName}\\([\\s\\S]*?\\n\\}`));
+    const body = bridge.match(new RegExp(`export async function ${fnName}\\([\\s\\S]*?\\n\\}`));
     const refuse = body ? body[0].indexOf('declaresBindGroup1(') : -1;
-    const ccall = body ? body[0].indexOf(`ccall('${fnName}'`) : -1;
+    const ccall = body ? body[0].indexOf(`callSuspending(wasmRef.module, '${fnName}'`) : -1;
     if (refuse < 0 || ccall < 0 || refuse > ccall) {
-      fail(`${bridgeFile} ${fnName} must refuse @group(1) WGSL before ccall('${fnName}')`);
+      fail(`${bridgeFile} ${fnName} must refuse @group(1) WGSL before callSuspending(wasmRef.module, '${fnName}')`);
     }
   }
 
