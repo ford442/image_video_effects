@@ -4,8 +4,9 @@
 //  Features: mouse-driven, audio-reactive, upgraded-rgba,
 //            complex-math, domain-warp, depth-aware, aces-tone-map,
 //            julia-orbit-trap, sdf-cardioid, newton-fractal
-//  Upgraded: 2026-10-05
+//  Upgraded: 2026-10-19
 //  Ideas: 1) Riemann-sheet crossfade at the atan2 cut 2) conformal magnification shading (|dz^w/dz| blur + brightness) 3) mirrored-repeat tiling
+//         4) conformal grid (iso-arg / iso-log|z^w| contours) 5) exponent dispersion (red sampled through w·(1+δ))
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -180,6 +181,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var result_zB = complex_pow(zr, thetaB, w);
     let sheetW = 0.5 * smoothstep(0.55, 1.0, abs(theta) / PI);
 
+    // Idea 5: exponent dispersion. Red is sampled through w·(1+δ), so colour fringes follow
+    // the map's own spirals instead of a straight radial split. δ rides UV Warp and treble.
+    let dispDelta = 0.012 * p4 * (1.0 + treble);
+    var result_zR = complex_pow(zr, theta, w * (1.0 + dispDelta));
+
+    // Idea 4: conformal grid. Contours of arg(z^w) (12 per turn) and log|z^w| cross at right
+    // angles for any w — the map's own domain-colouring grid.
+    let argF = atan2(result_z.y, result_z.x);
+    let logModF = log(max(length(result_z), 0.0001));
+    let argLine = abs(fract(argF / (TAU / 12.0) + 0.5) - 0.5);
+    let modLine = abs(fract(logModF * 1.5 + 0.5) - 0.5);
+    let gridLine = 1.0 - smoothstep(0.0, 0.05, min(argLine, modLine));
+
     // Idea 2: conformal magnification |d(z^w)/dz| = |w|·|z|^{Re w−1}·e^{−Im w·θ},
     // taken relative to |z| = 1, θ = 0 (so the default w = 1 is neutral).
     let relLogJ = clamp((w.x - 1.0) * log(max(zr, 0.0001)) - w.y * theta, -8.0, 8.0);
@@ -193,12 +207,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let rotation = vec2<f32>(cos(spiral), sin(spiral));
     result_z = cmul(result_z, rotation);
     result_zB = cmul(result_zB, rotation);
+    result_zR = cmul(result_zR, rotation);
 
     result_z.x /= aspect;
     result_zB.x /= aspect;
+    result_zR.x /= aspect;
     let outScale = mix(0.1, 1.0, p4);
     let final_uv = mirrorRepeat(result_z * outScale + 0.5);   // Idea 3 (was fract)
     let final_uvB = mirrorRepeat(result_zB * outScale + 0.5);
+    let final_uvR = mirrorRepeat(result_zR * outScale + 0.5);
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
@@ -208,7 +225,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let blurTexels = clamp(exp2(max(stretchOct, 0.0)) - 1.0, 0.0, 6.0);
     let blurUV = blurTexels / max(texDims, vec2<f32>(1.0));
 
-    let ca = (final_uv - 0.5) * 0.02 * p4 * (1.0 + treble);
+    let dispR = final_uvR - final_uv;
+    let dispRc = dispR * min(1.0, 0.04 / max(length(dispR), 0.00001));   // fold seams can jump
+    let ca = (final_uv - 0.5) * 0.02 * p4 * (1.0 + treble) + dispRc;
     var col = sampleSheet(final_uv, ca, blurUV);
     // Idea 1: twin-sheet ghost near the cut (skipped when the sheets coincide).
     if (sheetW > 0.001 && length(final_uvB - final_uv) > 0.0005) {
@@ -220,6 +239,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Idea 2: conformal brightness — compressed regions gather more source
     // light and brighten, stretched regions dim (a softened |J|² law).
     col *= exp(clamp(relLogJ * 0.35, -0.45, 0.4));
+
+    // Idea 4: the grid fades where the map compresses (lines would alias into noise).
+    let gridFade = exp(-max(stretchOct, 0.0) * 0.6);
+    col = mix(col, col * 0.55 + vec3<f32>(0.04, 0.05, 0.08), gridLine * gridFade * 0.3);
 
     // Newton fractal color overlay.
     let newton = newtonColor(z * mix(0.5, 2.0, p3), time);

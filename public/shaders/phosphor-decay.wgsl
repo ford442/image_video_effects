@@ -3,8 +3,10 @@
 //  Category: retro-glitch
 //  Features: audio-reactive, upgraded-rgba, mouse-driven, click-reactive, held-drag
 //  Complexity: Medium
-//  Upgraded: 2026-09-28
-//  Ideas: burn-in (slow luma EMA in A.a lowers phosphor efficiency, leaving a dim negative ghost of static content); held static charge (electrostatic crackle sparks at the cursor + dust specks that cling to the glass and fade after release); blanking-interval flicker (Scan Blanking drives a per-frame vertical-blank dip on the bottom rows)
+//  Upgraded: 2026-10-19
+//  Ideas (2026-10-19): hyperbolic (bimolecular) afterglow — bright trails collapse fast, dim
+//         tails linger; faceplate halation ring from 8 exact C taps (display only)
+//  Ideas (2026-09-28): burn-in (slow luma EMA in A.a lowers phosphor efficiency, leaving a dim negative ghost of static content); held static charge (electrostatic crackle sparks at the cursor + dust specks that cling to the glass and fade after release); blanking-interval flicker (Scan Blanking drives a per-frame vertical-blank dip on the bottom rows)
 //  A packing: linear HDR phosphor RGB (post-blackbody, pre-vignette, pre-ACES) in .rgb + burn-in luma accumulator in .a; C read back as that HDR RGB and the accumulator
 // ═══════════════════════════════════════════════════════════════════
 
@@ -176,7 +178,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         0.96 - decayRateParam * 0.1,
         0.98 - decayRateParam * 0.05
     );
-    var history = prevRGB * decay;
+    // IDEA 4 — hyperbolic afterglow. Trap recombination is bimolecular (dI/dt = −kI²), so the
+    // tail is hyperbolic, not exponential: the per-frame factor is divided by (1 + k·I) and
+    // renormalised at I = 0.15, so bright trails drop fast and dim ones linger (capped < 1).
+    let kHyp = 0.8;
+    let hypDecay = min(decay * (1.0 + kHyp * 0.15) / (vec3<f32>(1.0) + kHyp * prevRGB), vec3<f32>(0.995));
+    var history = prevRGB * hypDecay;
 
     // Current input with audio-reactive chromatic aberration.
     let inputRGB  = chromatic_aberration(uv, 0.003 + treble * 0.001);
@@ -266,6 +273,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // ---- PASS 2: display output (vignette, tone-map, dither) ----
     let energy = clamp(max(state.r, max(state.g, state.b)), 0.0, 1.0);
+
+    // IDEA 5 — faceplate halation ring. Light from a bright phosphor spot reflects inside the
+    // faceplate glass and returns as a ring at ~2× the glass thickness. 8 exact C taps on a
+    // 9 px ring gather last frame's bright phosphor; the ring is glass light, so it is added to
+    // the display only (after the A write) and never feeds back. Rides Bloom Spread.
+    let maxPx = vec2<i32>(i32(res.x) - 1, i32(res.y) - 1);
+    var ringLight = 0.0;
+    for (var k = 0; k < 8; k = k + 1) {
+        let a = f32(k) * (TAU / 8.0);
+        let tap = clamp(pixel + vec2<i32>(vec2<f32>(cos(a), sin(a)) * 9.0), vec2<i32>(0), maxPx);
+        let tc = textureLoad(dataTextureC, tap, 0).rgb;
+        let tl = finiteOr(dot(tc, vec3<f32>(0.2126, 0.7152, 0.0722)), 0.0, 0.0, 16.0);
+        ringLight += max(tl - 0.6, 0.0);
+    }
+    state += vec3<f32>(1.0, 0.82, 0.62) * (ringLight / 8.0) * bloomSpread * 0.35;
     state *= vignette(uv, 1.2);
 
     state = hue_preserve_clamp(state, 2.0);
