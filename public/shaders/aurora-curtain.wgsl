@@ -7,6 +7,12 @@
 //            chromatic-aberration, two-tone-atmosphere, alpha-layered,
 //            depth-aware, luminance-key, edge-preserve
 //  Complexity: High
+//  Upgraded: 2026-10-19
+//  Ideas: sharp lower border with rayed upper tail (field-aligned rays climb from the
+//         energy-deposition edge); N2 pink lower fringe (type-B aurora under strong
+//         curtains); O(1D) red afterglow (C history decays per channel, red slowest)
+//  A packing: display RGBA in A (premultiplied, gamma); C.rgb read as colour history,
+//             C.a as trail weight
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -49,7 +55,7 @@ fn linear_srgb_to_oklab(c: vec3<f32>) -> vec3<f32> {
   let l = 0.4122214708 * c.r + 0.5363325363 * c.g + 0.0514459929 * c.b;
   let m = 0.2119034982 * c.r + 0.6806995451 * c.g + 0.1073969566 * c.b;
   let s = 0.0883024619 * c.r + 0.2817188376 * c.g + 0.6299787005 * c.b;
-  let l_ = pow(l, 1.0 / 3.0); let m_ = pow(m, 1.0 / 3.0); let s_ = pow(s, 1.0 / 3.0);
+  let l_ = pow(max(l, 0.0), 1.0 / 3.0); let m_ = pow(max(m, 0.0), 1.0 / 3.0); let s_ = pow(max(s, 0.0), 1.0 / 3.0);
   return vec3<f32>(0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_,
                    1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_,
                    0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_);
@@ -138,15 +144,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let dist = abs(p.y - curtainY);
     let thickness = curtainWidth * (0.65 + fi * 0.09) * (1.0 + bass * 0.22);
-    let glow = smoothstep(thickness, 0.0, dist);
+    let glowSym = smoothstep(thickness, 0.0, dist);
     let rim = pow(1.0 - clamp(dist / (thickness * 1.5), 0.0, 1.0), 2.0);
+
+    // Ray striation (HEAD formula, hoisted so the upper tail can use it).
+    let rayBands = sin(p.x * 20.0 + fi * 4.0 + treble * 6.0) * 0.5 + 0.5;
+
+    // ── Idea 1: sharp lower border, rayed upper tail ──
+    // Precipitating electrons stop at a fairly sharp altitude, so a real curtain
+    // has a crisp LOWER edge and a long glow climbing UP the field line. Screen
+    // up is −y. The signed offset HEAD folded away with abs() splits the profile:
+    // below the line it cuts off fast; above it decays exponentially, and that
+    // tail is broken into field-aligned rays by the existing ray bands.
+    let below = max(p.y - curtainY, 0.0);
+    let above = max(curtainY - p.y, 0.0);
+    let lowerEdge = smoothstep(thickness * 0.45, 0.0, below);
+    let rayTail = exp(-above / max(thickness * 1.6, 1e-3)) * mix(0.55, 1.0, smoothstep(0.3, 0.9, rayBands));
+    let glowAsym = select(rayTail, lowerEdge, p.y > curtainY);
+    let glow = mix(glowSym, glowAsym, 0.6);
 
     var layerColor: vec3<f32>;
     if (altitude < 0.35) { layerColor = mixOkLab(cRed, cGreen, altitude / 0.35); }
     else if (altitude < 0.65) { layerColor = mixOkLab(cGreen, cBlue, (altitude - 0.35) / 0.30); }
     else { layerColor = mixOkLab(cBlue, cPink, (altitude - 0.65) / 0.35); }
 
-    let rayBands = sin(p.x * 20.0 + fi * 4.0 + treble * 6.0) * 0.5 + 0.5;
     let rayMask = smoothstep(0.55, 0.95, rayBands) * treble * 0.45;
     layerColor = mix(layerColor, layerColor * 1.55, rayMask);
 
@@ -157,6 +178,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let layerIntensity = glow * (0.55 + fi * 0.08) * (1.0 + bass * 0.4);
     hdr = hdr + layerColor * layerIntensity * 1.6;
+
+    // ── Idea 2: N2 pink lower fringe (type-B aurora) ──
+    // When precipitation is hard enough to reach below the oxygen layer, molecular
+    // nitrogen lights a thin magenta border just under the curtain's lower edge.
+    // Strength follows this curtain's own intensity and the bass drive.
+    let fringeBand = smoothstep(thickness * 0.55, thickness * 0.2, below) * smoothstep(0.0, thickness * 0.18, below);
+    let fringeDrive = smoothstep(0.35, 1.1, (0.55 + fi * 0.08) * (1.0 + bass * 0.4)) * (0.45 + bass * 0.55);
+    hdr = hdr + vec3<f32>(0.85, 0.12, 0.55) * fringeBand * fringeDrive * 0.9;
     excitation = excitation + layerIntensity;
     bloom = bloom + glow * (0.35 + bass * 0.25);
     edgeField = edgeField + rim * layerIntensity;
@@ -180,10 +209,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   hdr = hdr * exp(-extinction * 0.85);
 
   let decay = 0.96 - p4 * 0.03;
-  let trail = mix(prev.rgb * decay, hdr, 0.22 + bass * 0.08);
+  // ── Idea 3: O(1D) red afterglow ──
+  // The red 630 nm oxygen line is metastable (~110 s) while green 557.7 nm decays
+  // in ~0.7 s, so where a curtain moved the red lingers. Same exact-C read, same
+  // mean decay; only the per-channel split is new (red slowest, green fastest).
+  let decayRGB = clamp(decay * vec3<f32>(1.03, 0.93, 0.98), vec3<f32>(0.0), vec3<f32>(0.995));
+  let trail = mix(prev.rgb * decayRGB, hdr, 0.22 + bass * 0.08);
   hdr = hdr + trail * 0.25 * prev.a;
 
-  hdr = hue_preserve_clamp(hdr, 7.0);
+  // Click fronts (kept from HEAD) excite the oxygen-green line inside the sky,
+  // before tone mapping, instead of riding a spectral overlay afterwards.
+  var clickFront = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let event = u.ripples[i];
+    let age = max(time - event.z, 0.0);
+    clickFront += exp(-age * 1.8) * exp(-abs(length((uv01 - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.38) * 58.0);
+  }
+  hdr = hdr + cGreen * clickFront * 0.6;
+
+  hdr = hue_preserve_clamp(max(hdr, vec3<f32>(0.0)), 7.0);
   let mapped = acesToneMap(hdr * 1.25);
   let dither = (ign(vec2<f32>(pixel)) - 0.5) / 255.0;
   var color = pow(mapped, vec3<f32>(1.0 / 2.2)) + vec3<f32>(dither);
@@ -198,26 +243,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let edgeAlpha = clamp(excitation * 1.1 + edgeField * 0.35, 0.0, 1.0);
   let skyFade = 1.0 - smoothstep(0.0, 0.5, uv01.y) * 0.32;
 
-  var alpha = mix(lumaAlpha, depthAlpha, 0.4) * edgeAlpha * skyFade;
+  var alpha = mix(lumaAlpha, depthAlpha, 0.4) * max(edgeAlpha, clamp(clickFront, 0.0, 1.0) * 0.6) * skyFade;
   alpha = clamp(alpha, 0.0, 0.98);
 
-  let premul = color * alpha;
-  
-    var clickFront = 0.0;
-    let rippleCount = min(u32(u.config.y), 50u);
-    let aspect = u.config.z / max(u.config.w, 1.0);
-    let screenUV = vec2<f32>(pixel) / vec2<f32>(u.config.z, u.config.w);
-    for (var i = 0u; i < rippleCount; i = i + 1u) {
-        let event = u.ripples[i];
-        let age = max(time - event.z, 0.0);
-        clickFront += exp(-age * 1.8) * exp(-abs(length((screenUV - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.38) * 58.0);
-    }
-    
-    let clockRings = sin(length(screenUV - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
-    let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
-
-    let __finalRGB = premul + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
-    textureStore(writeTexture, pixel, vec4<f32>(__finalRGB, alpha));
-  textureStore(dataTextureA, pixel, vec4<f32>(__finalRGB, alpha));
+  let finalRGB = clamp(color * alpha, vec3<f32>(0.0), vec3<f32>(1.0));
+  textureStore(writeTexture, pixel, vec4<f32>(finalRGB, alpha));
+  textureStore(dataTextureA, pixel, vec4<f32>(finalRGB, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(alpha * 0.5 + depth * 0.25, 0.0, 0.0, 0.0));
 }

@@ -1897,8 +1897,17 @@
       "history": []
     },
     "aurora-curtain": {
-      "hash": "caea7515e5327a82",
-      "history": []
+      "hash": "65f9603a68246cf0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T13:35:13.699Z",
+          "hash": "65f9603a68246cf0",
+          "prev_hash": "caea7515e5327a82",
+          "commit": "f34ae895",
+          "note": "2026-10-19 generative-fourteen (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-generative-fourteen"
+        }
+      ]
     },
     "bio_lenia_continuous": {
       "hash": "3af46adbee2c4b77",
@@ -2472,8 +2481,17 @@
       ]
     },
     "gen-bioreactor-bloom": {
-      "hash": "a939941bca235e8e",
-      "history": []
+      "hash": "d5458ad04b1b4b49",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T13:35:13.699Z",
+          "hash": "d5458ad04b1b4b49",
+          "prev_hash": "a939941bca235e8e",
+          "commit": "f34ae895",
+          "note": "2026-10-19 generative-fourteen (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-generative-fourteen"
+        }
+      ]
     },
     "gen-bismuth-crystal-citadel": {
       "hash": "a1099cfd021752f7",
@@ -4019,7 +4037,7 @@
       ]
     },
     "gen-fractal-bioluminescence-spore-network": {
-      "hash": "3f7edf38b2175a8b",
+      "hash": "fc29cf1741eda568",
       "history": [
         {
           "event": "upgraded",
@@ -4028,6 +4046,14 @@
           "prev_hash": "ab1a6fc9b6898637",
           "commit": "f17da9d0",
           "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T13:35:13.699Z",
+          "hash": "fc29cf1741eda568",
+          "prev_hash": "3f7edf38b2175a8b",
+          "commit": "f34ae895",
+          "note": "2026-10-19 generative-fourteen (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-generative-fourteen"
         }
       ]
     },
@@ -5097,8 +5123,17 @@
       ]
     },
     "gen-luminous-cauldron": {
-      "hash": "77aa80c48d66ee60",
-      "history": []
+      "hash": "51df84cccb12b86c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T13:35:13.699Z",
+          "hash": "51df84cccb12b86c",
+          "prev_hash": "77aa80c48d66ee60",
+          "commit": "f34ae895",
+          "note": "2026-10-19 generative-fourteen (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-generative-fourteen"
+        }
+      ]
     },
     "gen-luminous-fluid-chladni-resonator": {
       "hash": "f88cfcca963e70d8",
@@ -5305,7 +5340,7 @@
       ]
     },
     "gen-murmuration-phantom": {
-      "hash": "0cc2f130f8996d9b",
+      "hash": "185a34d3e8b3644d",
       "history": [
         {
           "event": "upgraded",
@@ -5314,6 +5349,14 @@
           "prev_hash": "6390ad73a49d41eb",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T13:35:13.699Z",
+          "hash": "185a34d3e8b3644d",
+          "prev_hash": "0cc2f130f8996d9b",
+          "commit": "f34ae895",
+          "note": "2026-10-19 generative-fourteen (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-generative-fourteen"
         }
       ]
     },
@@ -5369,8 +5412,17 @@
       "history": []
     },
     "gen-nebular-chrono-astrolabe": {
-      "hash": "c53617614578f5d1",
-      "history": []
+      "hash": "31cc7fc10dfd132c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T13:35:13.699Z",
+          "hash": "31cc7fc10dfd132c",
+          "prev_hash": "c53617614578f5d1",
+          "commit": "f34ae895",
+          "note": "2026-10-19 generative-fourteen (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-generative-fourteen"
+        }
+      ]
     },
     "gen-neon-acid-geometry": {
       "hash": "a928b154039ce431",
@@ -5487,7 +5539,7 @@
       "history": []
     },
     "gen-neural-fractal": {
-      "hash": "b2f223738e0471d8",
+      "hash": "95d37034a49c9a42",
       "history": [
         {
           "event": "upgraded",
@@ -5496,6 +5548,14 @@
           "prev_hash": "7538e7afbdbbb5df",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T13:35:13.699Z",
+          "hash": "95d37034a49c9a42",
+          "prev_hash": "b2f223738e0471d8",
+          "commit": "f34ae895",
+          "note": "2026-10-19 generative-fourteen (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-generative-fourteen"
         }
       ]
     },
@@ -5964,8 +6024,17 @@
       ]
     },
     "gen-quantum-aether-origami": {
-      "hash": "15d5b8ae3cd279de",
-      "history": []
+      "hash": "2a6c8ac011d3a016",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T13:35:13.699Z",
+          "hash": "2a6c8ac011d3a016",
+          "prev_hash": "15d5b8ae3cd279de",
+          "commit": "f34ae895",
+          "note": "2026-10-19 generative-fourteen (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-generative-fourteen"
+        }
+      ]
     },
     "gen-quantum-chrome-serpent-ouroboros": {
       "hash": "b5bf2a3ed8ba15de",
@@ -6722,7 +6791,7 @@
       ]
     },
     "gen-xeno-botanical-synth-flora": {
-      "hash": "2f26650b6ecad30a",
+      "hash": "83ac2cff0b96554c",
       "history": [
         {
           "event": "upgraded",
@@ -6731,6 +6800,14 @@
           "prev_hash": "b34e597a3457a04b",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T13:35:13.699Z",
+          "hash": "83ac2cff0b96554c",
+          "prev_hash": "2f26650b6ecad30a",
+          "commit": "f34ae895",
+          "note": "2026-10-19 generative-fourteen (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-generative-fourteen"
         }
       ]
     },
@@ -6960,8 +7037,17 @@
       "history": []
     },
     "generative-turing-veins": {
-      "hash": "ac50a376f19d2d7b",
-      "history": []
+      "hash": "82edecfb2adf7656",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T13:35:13.699Z",
+          "hash": "82edecfb2adf7656",
+          "prev_hash": "ac50a376f19d2d7b",
+          "commit": "f34ae895",
+          "note": "2026-10-19 generative-fourteen (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-generative-fourteen"
+        }
+      ]
     },
     "gravito-phononic-accretion": {
       "hash": "fedd0318160f4290",
@@ -7132,8 +7218,17 @@
       "history": []
     },
     "sand-dunes": {
-      "hash": "34538e0368f118fc",
-      "history": []
+      "hash": "dde5ac63d9b69f0d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T13:35:13.699Z",
+          "hash": "dde5ac63d9b69f0d",
+          "prev_hash": "34538e0368f118fc",
+          "commit": "f34ae895",
+          "note": "2026-10-19 generative-fourteen (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-generative-fourteen"
+        }
+      ]
     },
     "solar-flare-cascade": {
       "hash": "8c4e461cc94194a8",
@@ -7152,8 +7247,17 @@
       "history": []
     },
     "spore-galaxy": {
-      "hash": "e65f3282509a1071",
-      "history": []
+      "hash": "ce5374f9486cfee6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T13:35:13.699Z",
+          "hash": "ce5374f9486cfee6",
+          "prev_hash": "e65f3282509a1071",
+          "commit": "f34ae895",
+          "note": "2026-10-19 generative-fourteen (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-generative-fourteen"
+        }
+      ]
     },
     "stellar-plasma": {
       "hash": "3112f529912c5980",
@@ -7189,8 +7293,17 @@
       "history": []
     },
     "turing-veins": {
-      "hash": "293f0f4f2c748e19",
-      "history": []
+      "hash": "d2f1e80df07be27a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T13:35:13.699Z",
+          "hash": "d2f1e80df07be27a",
+          "prev_hash": "293f0f4f2c748e19",
+          "commit": "f34ae895",
+          "note": "2026-10-19 generative-fourteen (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-generative-fourteen"
+        }
+      ]
     },
     "volumetric-cloud-nebula": {
       "hash": "7a97cac3c3ae69d0",
@@ -10517,7 +10630,7 @@
       "history": []
     },
     "neon-edge-pulse": {
-      "hash": "77449fbc75cff242",
+      "hash": "409d8c9ad7128542",
       "history": [
         {
           "event": "upgraded",
@@ -10526,6 +10639,14 @@
           "prev_hash": "defc2d6b2a72f688",
           "commit": "c9151d6f",
           "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T13:35:13.699Z",
+          "hash": "409d8c9ad7128542",
+          "prev_hash": "77449fbc75cff242",
+          "commit": "f34ae895",
+          "note": "2026-10-19 generative-fourteen (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-generative-fourteen"
         }
       ]
     },
@@ -10605,8 +10726,17 @@
       "history": []
     },
     "voxel-grid": {
-      "hash": "58e13cef5dbf6a5e",
-      "history": []
+      "hash": "eb9556c7b47fabd3",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T13:35:13.699Z",
+          "hash": "eb9556c7b47fabd3",
+          "prev_hash": "58e13cef5dbf6a5e",
+          "commit": "f34ae895",
+          "note": "2026-10-19 generative-fourteen (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-generative-fourteen"
+        }
+      ]
     },
     "warp-drive": {
       "hash": "e6bab6bf6eaea0db",

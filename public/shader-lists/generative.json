@@ -28394,7 +28394,8 @@
       "temporal",
       "semantic-alpha",
       "reaction-diffusion",
-      "biological"
+      "biological",
+      "upgraded-rgba"
     ],
     "tags": [
       "procedural",
@@ -31349,7 +31350,8 @@
       "turing-patterns",
       "depth-aware",
       "biological",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",

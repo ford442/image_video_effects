@@ -11,8 +11,7 @@
 //         division axis; toxicity necrosis creep fading tendrils that
 //         overlap the poison cloud; reactivity-scaled bloom-ring
 //         speed/thickness; cleavage furrow + dumbbell membrane during
-//         division; quorum-sensing pulse lock from the 3x3 neighbourhood;
-//         culture turbidity from C optical density (Beer–Lambert, §12.2F)
+//         division; quorum-sensing pulse lock from the 3x3 neighbourhood
 //  A packing: display RGBA (fixed — previously wrote raw fields while C was
 //             read as color; now matches the C-read)
 // ═══════════════════════════════════════════════════════════════════
@@ -228,24 +227,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Exact previous-frame state — no filtering
   let prev = textureLoad(dataTextureC, coord, 0);
 
-  // ── Idea 6: culture turbidity (Beer–Lambert, §12.2F) ──
-  // A bioreactor's growth is read as optical density. C's luminance is a
-  // running memory of where biomass has glowed; it becomes OD, and the layers
-  // seen *through* the culture (bloom rings, poison cloud) are attenuated by
-  // T = exp(-OD) while the scattered share becomes a faint green haze.
-  let prevLuma = sat(dot(prev.rgb, vec3<f32>(0.2126, 0.7152, 0.0722)));
-  let opticalDensity = prevLuma * (1.2 + toxicity * 0.6);
-  let transmittance = exp(-opticalDensity);
-  let turbidity = 1.0 - transmittance;
-
   var color = vec3<f32>(0.02, 0.05, 0.03);
   color += vec3<f32>(0.1, 0.95, 0.5) * colony * (0.6 + reactivity * 0.7) * (1.0 + smoothBass * 0.1);
   color += vec3<f32>(0.5, 1.0, 0.85) * nucleusTotal * pulse * 0.6 * (1.0 + mids * 0.1);
   color += tendrilColor * tendrilBrightness;
-  color += vec3<f32>(0.2, 0.85, 0.4) * bloomLayers * 0.7 * (1.0 + smoothBass * 0.15) * transmittance;
-  color += vec3<f32>(0.65, 0.05, 0.15) * poisonCloud * (1.0 + treble * 0.15) * mix(1.0, transmittance, 0.6);
+  color += vec3<f32>(0.2, 0.85, 0.4) * bloomLayers * 0.7 * (1.0 + smoothBass * 0.15);
+  color += vec3<f32>(0.65, 0.05, 0.15) * poisonCloud * (1.0 + treble * 0.15);
   color += vec3<f32>(0.9, 1.0, 0.75) * spores * (0.3 + treble);
-  color += vec3<f32>(0.06, 0.22, 0.12) * turbidity * 0.35;
   // Idea 4 (cont.): the actomyosin ring glows where it cinches the membrane.
   color += vec3<f32>(0.85, 1.0, 0.6) * contractileRing * 0.6;
   // Idea 5 (cont.): quorum-locked cells share a synchronous luminescent wash.
@@ -258,7 +246,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Semantic alpha: colony/tendril/bloom/toxin coverage, not a flat literal
   let alpha = clamp(
     0.12 + sat(nucleusTotal + membrane) * 0.5 + tendrils * 0.3 + bloomLayers * 0.25
-      + poisonCloud * 0.4 + spores * 0.3 + turbidity * 0.15 + contractileRing * 0.2,
+      + poisonCloud * 0.4 + spores * 0.3 + contractileRing * 0.2,
     0.0, 1.0);
 
   // Truthful relief from the colony/bloom height field (no raymarch here)
