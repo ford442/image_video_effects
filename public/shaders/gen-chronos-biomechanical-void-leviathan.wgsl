@@ -100,7 +100,7 @@ fn swimDistortion(p_in: vec3<f32>, time: f32) -> vec3<f32> {
 
     // Mouse orbit
     let mouse = u.zoom_config.yz;
-    let rx = (mouse.y - 0.5) * PI;
+    let rx = (0.5 - mouse.y) * PI; // y=0 top; flipped with uv.y in main() (pointer up = nose up)
     let ry = -(mouse.x - 0.5) * PI * 2.0;
     let rotX = rotate2D(rx);
     let rotY = rotate2D(ry);

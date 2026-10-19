@@ -2802,7 +2802,7 @@
       ]
     },
     "gen-chronos-biomechanical-void-leviathan": {
-      "hash": "9d51910c12a26776",
+      "hash": "3bb24684540c9d4c",
       "history": [
         {
           "event": "upgraded",
@@ -2819,6 +2819,14 @@
           "prev_hash": "1ca3b29aaeea62cd",
           "commit": "f4b48122",
           "note": "opus/batch-08: native ideas + rescues (2026-10-19)"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:27:02.779Z",
+          "hash": "3bb24684540c9d4c",
+          "prev_hash": "9d51910c12a26776",
+          "commit": "23a5752c",
+          "note": "opus/batch-08 review fixes (2026-10-19)"
         }
       ]
     },
@@ -4829,7 +4837,7 @@
       "history": []
     },
     "gen-luminescent-aether-plasma-astro-axolotl": {
-      "hash": "cdd134d2a0560ba1",
+      "hash": "c9b33075edf4beab",
       "history": [
         {
           "event": "upgraded",
@@ -4846,6 +4854,14 @@
           "prev_hash": "ec6c859ef979551b",
           "commit": "f4b48122",
           "note": "opus/batch-08: native ideas + rescues (2026-10-19)"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:27:02.779Z",
+          "hash": "c9b33075edf4beab",
+          "prev_hash": "cdd134d2a0560ba1",
+          "commit": "23a5752c",
+          "note": "opus/batch-08 review fixes (2026-10-19)"
         }
       ]
     },
@@ -5401,7 +5417,7 @@
       ]
     },
     "gen-neural-dust": {
-      "hash": "22156bed9cfaa8e8",
+      "hash": "e01848188b4f2782",
       "history": [
         {
           "event": "upgraded",
@@ -5410,6 +5426,14 @@
           "prev_hash": "c0eafe0f7c0399f2",
           "commit": "f4b48122",
           "note": "opus/batch-08: native ideas + rescues (2026-10-19)"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:27:02.779Z",
+          "hash": "e01848188b4f2782",
+          "prev_hash": "22156bed9cfaa8e8",
+          "commit": "23a5752c",
+          "note": "opus/batch-08 review fixes (2026-10-19)"
         }
       ]
     },
@@ -6028,7 +6052,7 @@
       "history": []
     },
     "gen-radiant-quantum-plasma-kraken-core": {
-      "hash": "ad3e97437fac9b52",
+      "hash": "5b92652a1bc64230",
       "history": [
         {
           "event": "upgraded",
@@ -6037,6 +6061,14 @@
           "prev_hash": "f5e1a6ae399e91cf",
           "commit": "f4b48122",
           "note": "opus/batch-08: native ideas + rescues (2026-10-19)"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:27:02.779Z",
+          "hash": "5b92652a1bc64230",
+          "prev_hash": "ad3e97437fac9b52",
+          "commit": "23a5752c",
+          "note": "opus/batch-08 review fixes (2026-10-19)"
         }
       ]
     },
@@ -6363,7 +6395,7 @@
       ]
     },
     "gen-stellar-web-loom": {
-      "hash": "8cd3f52f1ca55f78",
+      "hash": "5ffc8eb06d0a736b",
       "history": [
         {
           "event": "upgraded",
@@ -6372,6 +6404,14 @@
           "prev_hash": "ca771165d30f91c1",
           "commit": "f4b48122",
           "note": "opus/batch-08: native ideas + rescues (2026-10-19)"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:27:02.779Z",
+          "hash": "5ffc8eb06d0a736b",
+          "prev_hash": "8cd3f52f1ca55f78",
+          "commit": "23a5752c",
+          "note": "opus/batch-08 review fixes (2026-10-19)"
         }
       ]
     },

@@ -363,9 +363,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let prev = textureLoad(dataTextureC, pixel, 0);
     let trailDecay = 0.82 + clamp(weaveSpeed, 0.0, 3.0) * 0.04; // faster weave → longer streaks
     let history = min(prev.rgb * trailDecay, vec3<f32>(HDR_CLAMP));
-    // Trails only where history is brighter than the new frame: col + prev was a
-    // 1/(1-decay) ≈ 7x feedback gain that pinned every pixel at HDR_CLAMP (white page).
-    var hdr = col + 0.35 * max(history - col, vec3<f32>(0.0));
+    // Half-weight history: col + prev was a 1/(1-decay) ≈ 7x feedback gain that
+    // pinned every pixel at HDR_CLAMP at high glow; 0.5 keeps the gain under ~1.8x.
+    var hdr = col + 0.5 * history;
     hdr = min(hdr, vec3<f32>(HDR_CLAMP));
 
     // Real generated depth (raymarch travel distance, normalized)

@@ -250,9 +250,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Click ripples deform the geometry
     let rip = rippleField(uv01, t);
 
-    // Mouse-orbit camera (mouse uv is 0-1, y=0 top — used directly, no flip)
+    // Mouse-orbit camera (mouse uv is 0-1, y=0 top). uv.y is flipped above, so the
+    // pitch is flipped too: vertical drag keeps the same sense as the horizontal yaw.
     let yaw = (u.zoom_config.y - 0.5) * PI * 1.4 + t * 0.06;
-    let pitch = (u.zoom_config.z - 0.5) * PI * 0.6;
+    let pitch = (0.5 - u.zoom_config.z) * PI * 0.6;
     let cam = rotY(yaw) * rotX(pitch);
 
     let ro = cam * vec3<f32>(0.0, 0.0, -3.0);

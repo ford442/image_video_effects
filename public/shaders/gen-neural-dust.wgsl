@@ -220,7 +220,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var wSince: array<f32, 16>;
     var wPeriod: array<f32, 16>;
     var wEnergy: array<f32, 16>;
-    for (var j = 0; j < 16; j = j + 1) {
+    for (var j = 1; j < 16; j = j + 1) {   // j = 0, the (-2,-2) corner, is never read
         let c = cellId + vec2<f32>(f32(j % 4) - 2.0, f32(j / 4) - 2.0);
         let e = cellBandEnergy(c);
         let sp = sinceSpike(c, time, e * 0.25 + bass * 0.15 + mouseKick);
@@ -245,8 +245,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         for (var m = 0; m < 2; m = m + 1) {
             let si = select(wi - 4, wi - 1, m == 0);
             let src = select(c - vec2<f32>(0.0, 1.0), c - vec2<f32>(1.0, 0.0), m == 0);
-            let excitatory = hash12(src * 1.3 + c * 0.9 + vec2<f32>(7.0, 3.0)) > 0.3;
-            if (linkOn(src, c, densityNorm) && excitatory) {
+            if (linkOn(src, c, densityNorm) && hash12(src * 1.3 + c * 0.9 + vec2<f32>(7.0, 3.0)) > 0.3) {
                 let delay = length(wCenter[wi] - wCenter[si]) / conduction + 0.04;
                 var arrived = wSince[si] - delay;
                 if (arrived < 0.0) { arrived += wPeriod[si]; }
