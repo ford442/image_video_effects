@@ -400,8 +400,17 @@
       "history": []
     },
     "gen-biomechanical-hive-julia": {
-      "hash": "f290ec07dea83ae3",
-      "history": []
+      "hash": "38efed292c3a9279",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T11:54:14.909Z",
+          "hash": "38efed292c3a9279",
+          "prev_hash": "f290ec07dea83ae3",
+          "commit": "e9898100",
+          "note": "2026-10-19 mixed-eight (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-mixed-eight"
+        }
+      ]
     },
     "gen-bismuth-citadel-crystal": {
       "hash": "b20ccf1ec929b325",
@@ -1124,7 +1133,7 @@
       "history": []
     },
     "mosaic-reveal": {
-      "hash": "558f300759cc31f2",
+      "hash": "ee96a5b3100c364e",
       "history": [
         {
           "event": "upgraded",
@@ -1133,6 +1142,14 @@
           "prev_hash": "40c13ec64a89e71d",
           "commit": "0910248e",
           "note": "2026-10-05 dissolve & reveal ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-dissolve-reveal-ten/"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T11:54:14.909Z",
+          "hash": "ee96a5b3100c364e",
+          "prev_hash": "558f300759cc31f2",
+          "commit": "e9898100",
+          "note": "2026-10-19 mixed-eight (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-mixed-eight"
         }
       ]
     },
@@ -1453,8 +1470,17 @@
       "history": []
     },
     "data-slicer": {
-      "hash": "f99fd762440c4d6a",
-      "history": []
+      "hash": "c7f827cbdad00668",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T11:54:14.909Z",
+          "hash": "c7f827cbdad00668",
+          "prev_hash": "f99fd762440c4d6a",
+          "commit": "e9898100",
+          "note": "2026-10-19 mixed-eight (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-mixed-eight"
+        }
+      ]
     },
     "dimension-slicer": {
       "hash": "11fbdb4ac01e37f0",
@@ -7988,8 +8014,17 @@
       ]
     },
     "cyber-organic": {
-      "hash": "c5f5d513502265eb",
-      "history": []
+      "hash": "12a578d013b7607f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T11:54:14.909Z",
+          "hash": "12a578d013b7607f",
+          "prev_hash": "c5f5d513502265eb",
+          "commit": "e9898100",
+          "note": "2026-10-19 mixed-eight (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-mixed-eight"
+        }
+      ]
     },
     "cyber-rain": {
       "hash": "fc952c70728b353a",
@@ -9774,8 +9809,17 @@
       "history": []
     },
     "vinyl-scratch": {
-      "hash": "5b020b6e9318b754",
-      "history": []
+      "hash": "e2efc2b92fc8ab57",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T11:54:14.909Z",
+          "hash": "e2efc2b92fc8ab57",
+          "prev_hash": "5b020b6e9318b754",
+          "commit": "e9898100",
+          "note": "2026-10-19 mixed-eight (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-mixed-eight"
+        }
+      ]
     },
     "waveform-glitch": {
       "hash": "c90893b11c4c7f1d",
@@ -9818,8 +9862,17 @@
       "history": []
     },
     "bitonic-sort": {
-      "hash": "911c1c1e808a8232",
-      "history": []
+      "hash": "0e0a5266813c8166",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T11:54:14.909Z",
+          "hash": "0e0a5266813c8166",
+          "prev_hash": "911c1c1e808a8232",
+          "commit": "e9898100",
+          "note": "2026-10-19 mixed-eight (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-mixed-eight"
+        }
+      ]
     },
     "cellular-automata-rgba": {
       "hash": "7e8e56de55569526",
@@ -9902,8 +9955,17 @@
       "history": []
     },
     "lenia-on-video": {
-      "hash": "b8d86616b7a7300c",
-      "history": []
+      "hash": "3fe0a86e6a48caff",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T11:54:14.909Z",
+          "hash": "3fe0a86e6a48caff",
+          "prev_hash": "b8d86616b7a7300c",
+          "commit": "e9898100",
+          "note": "2026-10-19 mixed-eight (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-mixed-eight"
+        }
+      ]
     },
     "lichtenberg-fractal": {
       "hash": "5746de8562f4d7d0",
@@ -10073,8 +10135,17 @@
       "history": []
     },
     "sim-slime-mold-growth-em": {
-      "hash": "fcf74d1f0e013bf1",
-      "history": []
+      "hash": "f213670838bb0f1f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T11:54:14.909Z",
+          "hash": "f213670838bb0f1f",
+          "prev_hash": "fcf74d1f0e013bf1",
+          "commit": "e9898100",
+          "note": "2026-10-19 mixed-eight (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-mixed-eight"
+        }
+      ]
     },
     "sim-slime-mold-growth": {
       "hash": "6d5dc6ec60b14937",
