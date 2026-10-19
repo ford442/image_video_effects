@@ -2,10 +2,11 @@
 //  gen-celestial-quantum-glass-dragonfly
 //  Category: generative
 //  Features: dragonfly, quantum, fractal, audio-reactive, mouse-driven, raymarching, crystalline, upgraded-rgba
-//  Upgraded: 2026-10-10
+//  Upgraded: 2026-10-18
 //  Ideas: Cauchy thin-film wing iridescence, quantum glass caustic core & photon emission,
 //         acoustic wing-tip vortex trails; velocity-banked flight roll from the spring's
-//         own momentum; vortex-synced wingtip flutter in the wing SDF; hexagonal compound eye lattice; quantum decoherence static
+//         own momentum; vortex-synced wingtip flutter in the wing SDF; hexagonal compound eye lattice; quantum decoherence static;
+//         chitinous pterostigma wingtip counterweight & nodus flexion-hinge strut; forewing/hindwing 90-degree counter-stroking phase lag & dorsal ocelli / thoracic flight-muscle striations
 //  A packing: display RGBA (RGB=ACES tone-mapped dragonfly scene, A=semantic wing/body alpha)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -81,13 +82,18 @@ fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
     return length(max(d, vec3<f32>(0.0))) + min(max(d.x, max(d.y, d.z)), 0.0);
 }
 
-fn mapWings(p: vec3<f32>, audio_mod: f32, treble: f32) -> f32 {
+fn mapWings(p: vec3<f32>, audio_mod: f32, treble: f32, wingPhaseLag: f32) -> f32 {
     var p_w = p;
     let wing_freq = u.zoom_params.x;
-    let time = u.config.x * wing_freq * (1.0 + audio_mod * 0.5);
+    let time = u.config.x * wing_freq * (1.0 + audio_mod * 0.5) + wingPhaseLag;
 
     p_w.y -= sin(time + abs(p_w.x) * 1.5) * 0.4 * abs(p_w.x);
     p_w.z += cos(time + abs(p_w.x) * 1.5) * 0.2 * abs(p_w.x);
+
+    // Idea 6: Mid-wing nodus flexion-hinge torsion beyond |x| = 1.05
+    let beyondNodus = smoothstep(0.95, 1.25, abs(p_w.x));
+    let nodusTwist = sin(time) * 0.14 * beyondNodus;
+    p_w.y += (p_w.z - 0.15) * nodusTwist;
 
     let fractal_density = u.zoom_params.y;
     var p_f = p_w;
@@ -100,7 +106,12 @@ fn mapWings(p: vec3<f32>, audio_mod: f32, treble: f32) -> f32 {
         scale *= 1.8;
     }
 
-    let base_wing = sdBox(p_w, vec3<f32>(2.5, 0.02, 0.6));
+    // Idea 6: Chitinous pterostigma wingtip counterweight & leading-edge costa rib
+    let spanX = abs(p_w.x);
+    let pterostigmaBulge = smoothstep(1.62, 1.72, spanX) * (1.0 - smoothstep(2.08, 2.18, spanX))
+                         * smoothstep(0.28, 0.40, p_w.z) * 0.012;
+    let nodusPinch = exp(-pow((spanX - 1.05) * 16.0, 2.0)) * smoothstep(0.35, 0.58, p_w.z) * 0.08;
+    let base_wing = sdBox(p_w, vec3<f32>(2.5, 0.02 + pterostigmaBulge, 0.6 - nodusPinch));
     let venation = sdBox(p_f, vec3<f32>(1.5, 0.1, 1.0)) / scale;
 
     // IDEA 5 — vortex-synced wingtip flutter: the same distance/time-driven wave
@@ -108,7 +119,7 @@ fn mapWings(p: vec3<f32>, audio_mod: f32, treble: f32) -> f32 {
     // here at the wing's trailing edge, so the physical wing surface visibly
     // flutters in sync with the vortex it emits into the fog.
     let vortexPhase = sin(length(p_w.xz) * 4.0 - time * 8.0);
-    let trailingEdge = smoothstep(0.8, 2.5, abs(p_w.x));
+    let trailingEdge = smoothstep(0.8, 2.5, spanX);
     let vortexFlutter = pow(max(vortexPhase, 0.0), 6.0) * (0.015 + treble * 0.05) * trailingEdge;
 
     return max(base_wing, -venation * fractal_density * 0.5) - vortexFlutter;
@@ -155,8 +166,9 @@ fn mapScene(p: vec3<f32>, mouse_pos: vec3<f32>, audio: f32, bank: f32, treble: f
     var p_wings2 = p_mod;
     p_wings2.z += 0.4;
 
-    let wings1 = mapWings(p_wings1, audio, treble);
-    let wings2 = mapWings(p_wings2, audio * 0.8, treble);
+    // Idea 7: Forewing/hindwing biomechanical 90-degree counter-stroking phase lag
+    let wings1 = mapWings(p_wings1, audio, treble, 0.0);
+    let wings2 = mapWings(p_wings2, audio * 0.8, treble, 1.5707963);
     let wings = min(wings1, wings2);
 
     let isWing = select(0.0, 1.0, wings < body);
@@ -324,10 +336,27 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let staticNoise = hash3(p * 50.0 + time).x;
         let decoherence = vec3<f32>(0.1, 0.8, 1.0) * staticNoise * tailMask * bass * 0.5;
 
-        col = mat_col * (dif1 * vec3<f32>(1.0) + dif2 * vec3<f32>(0.2, 0.3, 0.5)) + spec + lum + eyeGlow + compoundEye + decoherence;
+        // Idea 6: Chitinous pterostigma wingtip counterweight & nodus flexion-hinge strut
+        let spanX = abs(p.x);
+        let pterostigmaMask = hitMat * smoothstep(1.62, 1.72, spanX) * (1.0 - smoothstep(2.08, 2.18, spanX));
+        let nodusCrease = hitMat * exp(-pow((spanX - 1.05) * 18.0, 2.0));
+        let pterostigmaGlow = vec3<f32>(1.15, 0.72, 0.18) * pterostigmaMask * (0.45 + fre * 0.8)
+                            + vec3<f32>(0.25, 0.95, 1.0) * nodusCrease * (0.35 + treble * 0.5);
+
+        // Idea 7: Dorsal simple ocelli triad on head vertex & thoracic flight-muscle myofibril striations
+        let bodyMask = 1.0 - hitMat;
+        let ocellusCenter = exp(-length(p.xz - vec2<f32>(0.0, 1.05)) * 28.0);
+        let ocellusLateral = exp(-length(vec2<f32>(abs(p.x) - 0.11, p.z - 0.98)) * 28.0);
+        let ocelliTriad = vec3<f32>(1.0, 0.92, 0.35) * (ocellusCenter + ocellusLateral) * smoothstep(0.15, 0.32, p.y) * bodyMask * (0.7 + glow_int * 0.4);
+        let thoraxMask = bodyMask * smoothstep(0.75, 0.25, abs(p.z));
+        let myofibrilWave = 0.5 + 0.5 * sin((p.y * 16.0 + p.z * 11.0) - time * 9.0 * u.zoom_params.x);
+        let thoraxMuscleFibers = vec3<f32>(0.15, 0.95, 0.78) * pow(myofibrilWave, 4.0) * thoraxMask * (0.35 + mids * 0.65);
+
+        col = mat_col * (dif1 * vec3<f32>(1.0) + dif2 * vec3<f32>(0.2, 0.3, 0.5))
+            + spec + lum + eyeGlow + compoundEye + decoherence + pterostigmaGlow + ocelliTriad + thoraxMuscleFibers;
         col = mix(col, fog_col, smoothstep(6.0, 15.0, t));
 
-        semanticAlpha = mix(0.95, 0.65, hitMat); // Body is solid 0.95, wing is glass 0.65
+        semanticAlpha = mix(0.95, clamp(0.65 + pterostigmaMask * 0.22, 0.0, 0.95), hitMat); // Body is solid 0.95, wing is glass 0.65 (denser at pterostigma)
     } else {
         semanticAlpha = clamp(length(fog_col) * 0.3, 0.0, 0.4);
     }

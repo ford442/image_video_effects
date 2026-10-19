@@ -4,6 +4,9 @@
 //  Features: lens-flares, prismatic-dispersion, spectral-rendering,
 //            mouse-driven, audio-reactive, exact-feedback
 //  Complexity: Very High
+//  Upgraded: 2026-10-18
+//  Ideas: polygonal iris diaphragm blades with edge-diffraction ringing & Petzval field-curvature coma tangents; chromatic ciliary corona (wavelength-scaled Fraunhofer diffraction spikes + radial spectrum needles)
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Cinematic optical lens flares with physical prismatic dispersion.
 //  Ghost elements refract through virtual glass lens surfaces using
@@ -11,26 +14,8 @@
 //  the optical axis with starburst diffraction and ring halos.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, zw=Resolution
-    zoom_config: vec4<f32>,  // x=Time, yz=MouseUV, w=MouseDown
-    zoom_params: vec4<f32>,  // x=Intensity, y=Threshold, z=Spread, w=GhostCount
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Intensity, y=Threshold, z=Spread, w=GhostCount
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -69,6 +54,26 @@ fn refractThroughSurface(uv: vec2<f32>, center: vec2<f32>, ior: f32, curvature: 
     let lensStrength = curvature * 0.35;
     let offset = toCenter * (1.0 - 1.0 / max(ior, 0.01)) * lensStrength * (1.0 + dist * 1.5);
     return uv + offset;
+}
+
+// Idea 1: 7-blade heptagonal iris diaphragm ghost with Fresnel edge-diffraction ringing & Petzval coma stretch
+fn irisPolygonGhost(delta: vec2<f32>, size: f32, offAxis: vec2<f32>) -> f32 {
+    let comaMag = length(offAxis);
+    let radialDir = normalize(offAxis + vec2<f32>(0.0001));
+    let tangDir = vec2<f32>(-radialDir.y, radialDir.x);
+    let radProj = dot(delta, radialDir);
+    let tangProj = dot(delta, tangDir);
+    let comaStretch = vec2<f32>(radProj / (1.0 + comaMag * 0.95), tangProj * (1.0 + comaMag * 0.45));
+    let r = length(comaStretch);
+    let ang = atan2(comaStretch.y, comaStretch.x);
+    let blades = 7.0;
+    let sector = TAU / blades;
+    let localAng = fract(ang / sector + 0.5) * sector - sector * 0.5;
+    let polyDist = r * cos(localAng) / cos(sector * 0.5);
+    let fill = smoothstep(size + 0.02, size * 0.88, polyDist);
+    let fresnelRimRing = exp(-pow((polyDist - size * 0.94) / max(size * 0.09, 0.003), 2.0)) * 0.55;
+    let innerRing = (0.85 + 0.15 * cos(polyDist / max(size, 0.005) * 28.0)) * fill;
+    return innerRing + fresnelRimRing * smoothstep(size * 1.15, size * 0.7, polyDist);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -173,11 +178,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         let uvAspect = (uv - vec2<f32>(0.5)) * aspectVec + vec2<f32>(0.5);
         let ghostAspect = (ghostPos - vec2<f32>(0.5)) * aspectVec + vec2<f32>(0.5);
-        let d = length(uvAspect - ghostAspect);
 
         let size = (0.05 + 0.08 * sin(i * 123.4 + 1.0)) * (1.0 + mids * 0.25);
-        let softness = 0.025;
-        let weight = smoothstep(size + softness, size, d);
+        let weight = irisPolygonGhost(uvAspect - ghostAspect, size, ghostPos - center);
 
         // 4-band Cauchy prismatic dispersion per ghost
         var prismaticGhost = vec3<f32>(0.0);
@@ -208,12 +211,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let ring = smoothstep(ringRadius + ringWidth, ringRadius, distToMouseAspect) - smoothstep(ringRadius, ringRadius - ringWidth, distToMouseAspect);
     flareAccum = flareAccum + lightColor * ring * 0.25 * (1.0 + treble * 0.3);
 
-    // Starburst rays
+    // Starburst rays + Idea 2: Chromatic ciliary corona (wavelength-scaled Fraunhofer radial needles)
     let dirToMouse = normalize((uv - smoothLight) * aspectVec + vec2<f32>(0.0001));
     let angle = atan2(dirToMouse.y, dirToMouse.x);
     let ray = max(0.0, sin(angle * 12.0 + time * 0.3) * sin(angle * 6.0 - time * 0.2));
     let rayFalloff = 1.0 / (distToMouseAspect * 12.0 + 0.12);
-    flareAccum = flareAccum + lightColor * ray * rayFalloff * 0.22 * (1.0 + treble * 0.5);
+    let needleCarrier = hash12(vec2<f32>(floor((angle + PI) * 28.0), 17.3));
+    let ciliaryNeedles = pow(0.5 + 0.5 * cos(angle * 64.0 + needleCarrier * TAU), 6.0);
+    var chromaticCorona = vec3<f32>(0.0);
+    for (var cIdx: i32 = 0; cIdx < 4; cIdx = cIdx + 1) {
+        let wl = WAVELENGTHS[cIdx];
+        let wlReach = (wl / 560.0) * (0.18 + 0.14 * spread);
+        let radialMod = 0.5 + 0.5 * cos((distToMouseAspect / max(wlReach, 0.02)) * 18.0 - time * 2.2);
+        let envNeedles = exp(-distToMouseAspect / max(wlReach, 0.02)) * radialMod;
+        chromaticCorona = chromaticCorona + wavelengthToRGB(wl) * envNeedles * ciliaryNeedles * 0.28;
+    }
+    flareAccum = flareAccum + lightColor * (ray * rayFalloff * 0.22 + chromaticCorona * spectralSat * 0.38) * (1.0 + treble * 0.5);
 
     let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

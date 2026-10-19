@@ -2,7 +2,7 @@
   "id": "glass-refraction-prismatic",
   "name": "Glass Refraction Prismatic",
   "url": "shaders/glass-refraction-prismatic.wgsl",
-  "description": "Raymarched optical glass prism with 4-band Cauchy spectral dispersion. Physical Snell refraction rays split wavelengths internally with Fresnel dielectric reflections and Beer-Lambert spectral absorption.",
+  "description": "Raymarched optical glass prism with 4-band Cauchy spectral dispersion, back-face exit refraction, critical-angle total-internal-reflection prismatic fire, dispersion-focused caustic convergence, and Brewster-angle polarized highlights.",
   "tags": [
     "glass",
     "refraction",
@@ -22,7 +22,8 @@
     "audio-reactive",
     "exact-feedback",
     "temporal-state",
-    "ACES-tonemapped"
+    "ACES-tonemapped",
+    "upgraded-rgba"
   ],
   "params": [
     {

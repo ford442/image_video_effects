@@ -5389,7 +5389,7 @@
       "crystalline",
       "iridescent"
     ],
-    "description": "A hyper-dimensional biomechanical dragonfly forged from quantum glass with Cauchy thin-film wing iridescence, starlight caustic core emission, acoustic wing-tip vortex trails, and spring-guided flight dynamics.",
+    "description": "A hyper-dimensional biomechanical dragonfly forged from quantum glass with Cauchy thin-film wing iridescence, chitinous pterostigma wingtip cells, nodus flexion hinges, 90-degree counter-stroking wing pairs, dorsal ocelli, and thoracic flight-muscle striations.",
     "workgroup_size": [
       16,
       16,
@@ -10683,7 +10683,7 @@
       "oceanic",
       "audio-reactive"
     ],
-    "description": "A majestic, deep-void cybernetic coral reef that self-assembles through quantum superposition, weaving holographic bio-luminescence with hyper-geometric fractal branches. The coral branches pulsate with liquid neon energy driven by audio frequencies, expanding the fractal recursion depth on bass hits.",
+    "description": "A deep-void cybernetic coral reef weaving holographic bioluminescence with fractal branches, featuring 12-fold radial sclerosepta corallite cups, aragonite calcification growth rings, GFP/RFP FRET fluorescence, swaying polyp tentacle tufts, and overhead marine surface caustics.",
     "workgroup_size": [
       16,
       16,
@@ -22338,7 +22338,7 @@
     "id": "gen-prismatic-cyber-chrono-nebula-peacock",
     "name": "Prismatic Cyber-Chrono Nebula-Peacock",
     "category": "generative",
-    "description": "A biomechanical celestial peacock woven from quantum glass and aurora, with barbule thin-film iridescence, zoned ocelli, rachis-barb shaft branching, and chrono-precessing ocellus halos.",
+    "description": "A biomechanical celestial peacock woven from quantum glass and aurora, with barbule thin-film iridescence, 2D melanin photonic-crystal rod-lattice Bragg shift, coronet crest aigrettes, zoned ocelli, rachis-barb shaft branching, and chrono-precessing ocellus halos.",
     "url": "shaders/gen-prismatic-cyber-chrono-nebula-peacock.wgsl",
     "tags": [
       "organic",
@@ -22752,7 +22752,7 @@
       "prismatic",
       "raymarched"
     ],
-    "description": "A hyper-organic spiraling biomechanical nautilus shell forged from prismatic quantum glass and auroral plasma, endlessly unfurling within a deep-space nebula while reacting explosively to ambient acoustic frequencies.",
+    "description": "A hyper-organic spiraling biomechanical nautilus shell forged from prismatic quantum glass and auroral plasma, featuring calcified septa chamber bulkheads, a glowing central siphuncle osmotic conduit, aragonite nacre brick-stack interference, and periostracum tiger-stripe banding.",
     "workgroup_size": [
       16,
       16,

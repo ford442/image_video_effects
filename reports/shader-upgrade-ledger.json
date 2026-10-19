@@ -20,8 +20,17 @@
       "history": []
     },
     "anamorphic-flare-iridescence": {
-      "hash": "20d9485699813953",
-      "history": []
+      "hash": "f25ece8dc3a1fd9a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T06:32:49.698Z",
+          "hash": "f25ece8dc3a1fd9a",
+          "prev_hash": "20d9485699813953",
+          "commit": "8ede1173",
+          "note": "2026-10-18 argon4/batch-03: two native ideas each"
+        }
+      ]
     },
     "anisotropic-kuwahara-nlm": {
       "hash": "980aadb7e331dbe7",
@@ -180,8 +189,17 @@
       "history": []
     },
     "crystal-illuminator-iridescence": {
-      "hash": "2841e597623478cc",
-      "history": []
+      "hash": "2ca936dca8c99ec3",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T06:32:49.698Z",
+          "hash": "2ca936dca8c99ec3",
+          "prev_hash": "2841e597623478cc",
+          "commit": "8ede1173",
+          "note": "2026-10-18 argon4/batch-03: two native ideas each"
+        }
+      ]
     },
     "cursor-aura-explosion": {
       "hash": "9b8e7fc36448bf64",
@@ -272,8 +290,17 @@
       "history": []
     },
     "dynamic-lens-flares-prismatic": {
-      "hash": "3db1724cc28ab411",
-      "history": []
+      "hash": "4ea937b6414e4a3d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T06:32:49.698Z",
+          "hash": "4ea937b6414e4a3d",
+          "prev_hash": "3db1724cc28ab411",
+          "commit": "8ede1173",
+          "note": "2026-10-18 argon4/batch-03: two native ideas each"
+        }
+      ]
     },
     "edge-glow-mouse-em": {
       "hash": "b428a6f379c7017a",
@@ -336,8 +363,17 @@
       "history": []
     },
     "frosted-glass-lens-iridescence": {
-      "hash": "a9e48aa21fa9d78e",
-      "history": []
+      "hash": "9f10fe5228726933",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T06:32:49.698Z",
+          "hash": "9f10fe5228726933",
+          "prev_hash": "a9e48aa21fa9d78e",
+          "commit": "8ede1173",
+          "note": "2026-10-18 argon4/batch-03: two native ideas each"
+        }
+      ]
     },
     "gamma-ray-burst-blackbody": {
       "hash": "da1aaeff519d14a0",
@@ -400,8 +436,17 @@
       "history": []
     },
     "glass-refraction-prismatic": {
-      "hash": "6b4f3e2c624c3ab9",
-      "history": []
+      "hash": "d525d5ea51031d54",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T06:32:49.698Z",
+          "hash": "d525d5ea51031d54",
+          "prev_hash": "6b4f3e2c624c3ab9",
+          "commit": "8ede1173",
+          "note": "2026-10-18 argon4/batch-03: two native ideas each"
+        }
+      ]
     },
     "glass-shatter-morph": {
       "hash": "bd8fc768d35e953f",
@@ -454,8 +499,17 @@
       "history": []
     },
     "holographic-interferometry-bilateral": {
-      "hash": "809d893571ce2f16",
-      "history": []
+      "hash": "75bd27defb9795ea",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T06:32:49.698Z",
+          "hash": "75bd27defb9795ea",
+          "prev_hash": "809d893571ce2f16",
+          "commit": "8ede1173",
+          "note": "2026-10-18 argon4/batch-03: two native ideas each"
+        }
+      ]
     },
     "holographic-interferometry": {
       "hash": "cf1569cd32546d98",
@@ -2474,7 +2528,7 @@
       ]
     },
     "gen-celestial-quantum-glass-dragonfly": {
-      "hash": "8b2b89a679967b80",
+      "hash": "d371d775bc3e7373",
       "history": [
         {
           "event": "upgraded",
@@ -2483,6 +2537,14 @@
           "prev_hash": "5f547d1287769ecc",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T06:32:49.698Z",
+          "hash": "d371d775bc3e7373",
+          "prev_hash": "8b2b89a679967b80",
+          "commit": "8ede1173",
+          "note": "2026-10-18 argon4/batch-03: two native ideas each"
         }
       ]
     },
@@ -3496,8 +3558,17 @@
       ]
     },
     "gen-ethereal-quantum-holographic-fractal-coral": {
-      "hash": "df8a77e43ce9a036",
-      "history": []
+      "hash": "5857d976f39e52d4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T06:32:49.698Z",
+          "hash": "5857d976f39e52d4",
+          "prev_hash": "df8a77e43ce9a036",
+          "commit": "8ede1173",
+          "note": "2026-10-18 argon4/batch-03: two native ideas each"
+        }
+      ]
     },
     "gen-ethereal-quantum-medusa": {
       "hash": "e4e5f380f18fd39e",
@@ -5640,7 +5711,7 @@
       ]
     },
     "gen-prismatic-cyber-chrono-nebula-peacock": {
-      "hash": "e18b576aa64d69ec",
+      "hash": "a16f53b9f94b75e5",
       "history": [
         {
           "event": "upgraded",
@@ -5649,6 +5720,14 @@
           "prev_hash": "882923fe271af8aa",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T06:32:49.698Z",
+          "hash": "a16f53b9f94b75e5",
+          "prev_hash": "e18b576aa64d69ec",
+          "commit": "8ede1173",
+          "note": "2026-10-18 argon4/batch-03: two native ideas each"
         }
       ]
     },
@@ -5708,8 +5787,17 @@
       "history": []
     },
     "gen-prismatic-quantum-fractal-nautilus-engine": {
-      "hash": "76379b3c1443a8f9",
-      "history": []
+      "hash": "a4526d16039f972f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T06:32:49.698Z",
+          "hash": "a4526d16039f972f",
+          "prev_hash": "76379b3c1443a8f9",
+          "commit": "8ede1173",
+          "note": "2026-10-18 argon4/batch-03: two native ideas each"
+        }
+      ]
     },
     "gen-prismatic-quantum-glass-chrysalis-engine": {
       "hash": "6e196defdcb0e71b",

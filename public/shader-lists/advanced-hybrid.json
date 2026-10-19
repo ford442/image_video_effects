@@ -265,7 +265,7 @@
     "id": "anamorphic-flare-iridescence",
     "name": "Anamorphic Flare Iridescence",
     "url": "shaders/anamorphic-flare-iridescence.wgsl",
-    "description": "Cinematic anamorphic lens flare combined with physical thin-film interference. Flare streaks, hexagonal ghosts, starburst rays, and halo rings carry angle-dependent iridescent soap-bubble reflections modulated by audio dynamics.",
+    "description": "Cinematic 2x anamorphic lens flare with physical thin-film interference, cylindrical oval cat's-eye squeeze bokeh ghosts, quarter-wave MgF2/TiO2 AR coating tints, horizontal Fraunhofer diffraction micro-combs, and CMOS sensor microlens cross-grid glints.",
     "tags": [
       "lens-flare",
       "thin-film-interference",
@@ -284,7 +284,8 @@
       "audio-reactive",
       "exact-feedback",
       "temporal-state",
-      "ACES-tonemapped"
+      "ACES-tonemapped",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2648,7 +2649,7 @@
     "id": "crystal-illuminator-iridescence",
     "name": "Crystal Illuminator Iridescence",
     "url": "shaders/crystal-illuminator-iridescence.wgsl",
-    "description": "Faceted glass and gemstone crystal with thin-film rainbow iridescence, Voronoi cell dynamics, and mouse-illuminated caustics.",
+    "description": "Faceted glass and gemstone crystal with thin-film rainbow iridescence, uniaxial birefringent double refraction, rhombohedral cleavage growth steps, sub-facet inter-grain boundary reflections, and fluid-inclusion sparkles.",
     "tags": [
       "voronoi-facets",
       "thin-film-interference",
@@ -4110,7 +4111,7 @@
     "id": "dynamic-lens-flares-prismatic",
     "name": "Dynamic Lens Flares Prismatic",
     "url": "shaders/dynamic-lens-flares-prismatic.wgsl",
-    "description": "Cinematic optical lens flares with physical prismatic dispersion. Ghost elements refract through virtual glass lens surfaces using Cauchy's equation, creating distinct chromatic splitting along the optical axis with starburst diffraction and ring halos.",
+    "description": "Cinematic optical lens flares with physical Cauchy prismatic dispersion, 7-blade heptagonal iris diaphragm ghosts with Fresnel edge-diffraction ringing and Petzval coma stretch, and a wavelength-scaled chromatic ciliary corona.",
     "tags": [
       "lens-flares",
       "prismatic-dispersion",
@@ -4128,7 +4129,8 @@
       "audio-reactive",
       "exact-feedback",
       "temporal-state",
-      "ACES-tonemapped"
+      "ACES-tonemapped",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -5064,7 +5066,7 @@
     "id": "frosted-glass-lens-iridescence",
     "name": "Frosted Glass Lens Iridescence",
     "url": "shaders/frosted-glass-lens-iridescence.wgsl",
-    "description": "Physical frosted glass transmission with thin-film optical iridescence on the glass surface. Multi-tap microfacet scattering and Beer-Lambert absorption blend with soap-bubble Fresnel interference and an interactive chromatic magnifying lens.",
+    "description": "Physical frosted glass transmission with 6-fold dendritic ice-fern crystals, 6-tap Poisson microfacet scattering, condensation droplet beads, pointer-drag moisture wipe with plowed meniscus bead rim, plano-convex Newton's rings, and lens bevel Cauchy dispersion.",
     "tags": [
       "frosted-glass",
       "thin-film-interference",
@@ -5919,7 +5921,7 @@
     "id": "glass-refraction-prismatic",
     "name": "Glass Refraction Prismatic",
     "url": "shaders/glass-refraction-prismatic.wgsl",
-    "description": "Raymarched optical glass prism with 4-band Cauchy spectral dispersion. Physical Snell refraction rays split wavelengths internally with Fresnel dielectric reflections and Beer-Lambert spectral absorption.",
+    "description": "Raymarched optical glass prism with 4-band Cauchy spectral dispersion, back-face exit refraction, critical-angle total-internal-reflection prismatic fire, dispersion-focused caustic convergence, and Brewster-angle polarized highlights.",
     "tags": [
       "glass",
       "refraction",
@@ -5939,7 +5941,8 @@
       "audio-reactive",
       "exact-feedback",
       "temporal-state",
-      "ACES-tonemapped"
+      "ACES-tonemapped",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -6499,7 +6502,7 @@
     "id": "holographic-interferometry-bilateral",
     "name": "Holographic Interferometry Bilateral",
     "url": "shaders/holographic-interferometry-bilateral.wgsl",
-    "description": "Simulated optical hologram with interference fringes and edge-preserving bilateral filtering. Laser speckle noise is smoothly filtered in uniform zones while sharp interference fringe edges remain crisp.",
+    "description": "Simulated optical hologram with interference fringes, double-exposure strain moire bullseyes, phase-singularity fork dislocations, Lippmann-Bragg volume-grating selectivity, and edge-preserving bilateral speckle filtering.",
     "tags": [
       "hologram",
       "interference",
@@ -6519,7 +6522,8 @@
       "mouse-driven",
       "exact-feedback",
       "temporal-state",
-      "ACES-tonemapped"
+      "ACES-tonemapped",
+      "upgraded-rgba"
     ],
     "params": [
       {

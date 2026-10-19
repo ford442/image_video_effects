@@ -5,28 +5,13 @@
 //            voronoi-facets, thin-film-interference, fresnel,
 //            semantic-alpha, ACES
 //  Complexity: Very High
+//  Upgraded: 2026-10-18
+//  Ideas: uniaxial crystal birefringent double refraction (o-ray / e-ray optic-axis split) & crystallographic cleavage growth steps; sub-facet internal reflection bounce between neighboring grain boundaries & fluid-inclusion sparkle
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=CellDensity, y=IORMix, z=LightPower, w=FilmThickness
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=CellDensity, y=IORMix, z=LightPower, w=FilmThickness
 
 fn hash22(p: vec2<f32>) -> vec2<f32> {
   var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
@@ -163,10 +148,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
 
-  // Facet normal
+  // Facet normal + Idea 1: Crystallographic cleavage growth steps along per-grain optic axis
   let n_hash = hash22(cell_id + vec2<f32>(12.34, 56.78));
-  var facet_normal = normalize(vec3<f32>(n_hash.x - 0.5, n_hash.y - 0.5, 0.5));
+  let opticAngle = hash21(cell_id + vec2<f32>(7.13, 3.91)) * 6.2831853;
+  let opticAxis = vec2<f32>(cos(opticAngle), sin(opticAngle));
   let local_uv = uv_st - cell_center;
+  let cleavageCoord = dot(local_uv, opticAxis) * 14.0;
+  let cleavageStep = smoothstep(0.38, 0.48, abs(fract(cleavageCoord) - 0.5));
+  let cleavageNormal = vec3<f32>(opticAxis * cleavageStep * 0.22, 0.0);
+
+  var facet_normal = normalize(vec3<f32>(n_hash.x - 0.5, n_hash.y - 0.5, 0.5) + cleavageNormal);
   let curvature = vec3<f32>(local_uv, sqrt(max(0.0, 1.0 - dot(local_uv, local_uv))));
   let roughness = 0.2;
   facet_normal = normalize(mix(facet_normal, curvature, roughness));
@@ -206,8 +197,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
 
-  let read_uv = clamp(uv + refract_offset + rippleDistort, vec2<f32>(0.001), vec2<f32>(0.999));
-  let tex_color = textureSampleLevel(readTexture, u_sampler, read_uv, 0.0);
+  // Idea 1: Uniaxial crystal birefringent double refraction (o-ray / e-ray optic-axis split)
+  let sinThetaSq = max(0.0, 1.0 - cosTheta * cosTheta);
+  let birefringentSplit = opticAxis * (0.004 + 0.014 * iorMix) * (0.35 + 0.65 * sinThetaSq);
+  let read_uv_o = clamp(uv + refract_offset - birefringentSplit + rippleDistort, vec2<f32>(0.001), vec2<f32>(0.999));
+  let read_uv_e = clamp(uv + refract_offset + birefringentSplit + rippleDistort, vec2<f32>(0.001), vec2<f32>(0.999));
+  let tex_o = textureSampleLevel(readTexture, u_sampler, read_uv_o, 0.0).rgb;
+  let tex_e = textureSampleLevel(readTexture, u_sampler, read_uv_e, 0.0).rgb;
+  let polAngle = dot(normalize(local_uv + vec2<f32>(0.0001)), opticAxis);
+  let malusWeight = polAngle * polAngle;
+  let tex_color = mix(tex_o, vec3<f32>(tex_e.r, mix(tex_o.g, tex_e.g, 0.6), tex_e.b), 0.35 + 0.45 * malusWeight);
 
   // Thin-Film Iridescence per Facet
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
@@ -215,19 +214,29 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let distCenter = length(toCenter);
   let viewCosTheta = sqrt(max(1.0 - distCenter * distCenter * 0.5, 0.01));
 
-  let cellThickness = filmThicknessBase * (0.7 + depth * 0.6 + hash21(cell_id) * 0.3);
+  let cellThickness = filmThicknessBase * (0.7 + depth * 0.6 + hash21(cell_id) * 0.3 + cleavageStep * 0.14);
   let mouseDist = length(uv - mouse);
   let mouseInfluence = exp(-mouseDist * mouseDist * 800.0) * held;
   let thickness = cellThickness + mouseInfluence * 300.0 * sin(time * 3.0 + mouseDist * 30.0);
 
   let iridescent = thinFilmColor(thickness, viewCosTheta, filmIOR);
 
+  // Idea 2: Sub-facet internal reflection bounce off steep inter-grain boundaries & fluid-inclusion sparkle
+  let boundaryWall = smoothstep(0.18, 0.015, edge_dist) * (1.0 - edge_factor);
+  let boundaryNormal = normalize(vec3<f32>(-local_uv, 0.25));
+  let internalBounceSpec = pow(max(0.0, dot(reflect(-light_dir, boundaryNormal), view_dir)), 18.0);
+  let internalFacetBounce = iridescent * boundaryWall * internalBounceSpec * light_power * attenuation * 1.35;
+  let incSeed = hash22(cell_id * 3.7 + floor(local_uv * 6.0));
+  let incDist = length(fract(local_uv * 6.0) - vec2<f32>(0.5) - (incSeed - 0.5) * 0.35);
+  let inclusionGlint = smoothstep(0.12, 0.01, incDist) * step(0.72, incSeed.x) * pow(max(0.0, dot(facet_normal, light_dir)), 8.0) * light_power * attenuation;
+
   let fresnelBlend = pow(1.0 - viewCosTheta, 3.0);
-  let facetColor = mix(tex_color.rgb, iridescent, fresnelBlend * 0.7);
+  let facetColor = mix(tex_color, iridescent, fresnelBlend * 0.7);
 
   var final_color = facetColor * (ambient + lighting);
   final_color += vec3<f32>(specular * attenuation * light_power);
   final_color += vec3<f32>(fresnel * 0.3);
+  final_color += internalFacetBounce + mix(vec3<f32>(1.0, 0.92, 0.7), iridescent, 0.5) * inclusionGlint * 0.85;
   final_color = mix(final_color, iridescent * 1.5, edge_factor * 0.5);
 
   // Exact dataTextureC persistence

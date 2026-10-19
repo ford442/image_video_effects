@@ -2,7 +2,7 @@
   "id": "crystal-illuminator-iridescence",
   "name": "Crystal Illuminator Iridescence",
   "url": "shaders/crystal-illuminator-iridescence.wgsl",
-  "description": "Faceted glass and gemstone crystal with thin-film rainbow iridescence, Voronoi cell dynamics, and mouse-illuminated caustics.",
+  "description": "Faceted glass and gemstone crystal with thin-film rainbow iridescence, uniaxial birefringent double refraction, rhombohedral cleavage growth steps, sub-facet inter-grain boundary reflections, and fluid-inclusion sparkles.",
   "tags": [
     "voronoi-facets",
     "thin-film-interference",

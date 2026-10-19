@@ -2,7 +2,7 @@
   "id": "anamorphic-flare-iridescence",
   "name": "Anamorphic Flare Iridescence",
   "url": "shaders/anamorphic-flare-iridescence.wgsl",
-  "description": "Cinematic anamorphic lens flare combined with physical thin-film interference. Flare streaks, hexagonal ghosts, starburst rays, and halo rings carry angle-dependent iridescent soap-bubble reflections modulated by audio dynamics.",
+  "description": "Cinematic 2x anamorphic lens flare with physical thin-film interference, cylindrical oval cat's-eye squeeze bokeh ghosts, quarter-wave MgF2/TiO2 AR coating tints, horizontal Fraunhofer diffraction micro-combs, and CMOS sensor microlens cross-grid glints.",
   "tags": [
     "lens-flare",
     "thin-film-interference",
@@ -21,7 +21,8 @@
     "audio-reactive",
     "exact-feedback",
     "temporal-state",
-    "ACES-tonemapped"
+    "ACES-tonemapped",
+    "upgraded-rgba"
   ],
   "params": [
     {

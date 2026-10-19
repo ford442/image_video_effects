@@ -2,7 +2,7 @@
   "id": "frosted-glass-lens-iridescence",
   "name": "Frosted Glass Lens Iridescence",
   "url": "shaders/frosted-glass-lens-iridescence.wgsl",
-  "description": "Physical frosted glass transmission with thin-film optical iridescence on the glass surface. Multi-tap microfacet scattering and Beer-Lambert absorption blend with soap-bubble Fresnel interference and an interactive chromatic magnifying lens.",
+  "description": "Physical frosted glass transmission with 6-fold dendritic ice-fern crystals, 6-tap Poisson microfacet scattering, condensation droplet beads, pointer-drag moisture wipe with plowed meniscus bead rim, plano-convex Newton's rings, and lens bevel Cauchy dispersion.",
   "tags": [
     "frosted-glass",
     "thin-film-interference",

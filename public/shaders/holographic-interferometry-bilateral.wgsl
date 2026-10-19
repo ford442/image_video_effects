@@ -5,6 +5,9 @@
 //            interference-patterns, speckle-reduction, audio-reactive,
 //            mouse-driven, exact-feedback
 //  Complexity: High
+//  Upgraded: 2026-10-18
+//  Ideas: double-exposure holographic strain interferometry (phase-difference moire bullseyes & contour deformation fringes); phase-singularity optical vortices (fork dislocations in the reference carrier) & Lippmann-Bragg volume-grating selectivity
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Simulated hologram with interference fringes and edge-preserving
 //  bilateral filtering. High-frequency laser speckle noise is softly
@@ -12,26 +15,8 @@
 //  strictly preserved.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, zw=Resolution
-    zoom_config: vec4<f32>,  // x=Time, yz=MouseUV, w=MouseDown
-    zoom_params: vec4<f32>,  // x=FringeDensity, y=Coherence, z=ReconAngle, w=Saturation
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=FringeDensity, y=Coherence, z=ReconAngle, w=Saturation
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -61,9 +46,18 @@ fn speckleNoise(uv: vec2<f32>, coherence: f32, time: f32) -> f32 {
     return s * 0.25;
 }
 
-fn interferencePattern(uv: vec2<f32>, depth: f32, fringeDensity: f32, angle: f32, distortion: f32) -> f32 {
+// Idea 2: Phase-singularity optical vortex (topological charge m = +1/-1 fork dislocation in reference carrier)
+fn opticalVortexPhase(uv: vec2<f32>, probePos: vec2<f32>) -> f32 {
+    let d1 = uv - probePos;
+    let d2 = uv - (vec2<f32>(1.0) - probePos);
+    let vortex1 = atan2(d1.y, d1.x) * exp(-dot(d1, d1) * 18.0);
+    let vortex2 = -atan2(d2.y, d2.x) * exp(-dot(d2, d2) * 24.0);
+    return vortex1 + vortex2;
+}
+
+fn interferencePattern(uv: vec2<f32>, depth: f32, fringeDensity: f32, angle: f32, distortion: f32, vortexCharge: f32) -> f32 {
     let objectPhase = depth * fringeDensity * 12.0 + distortion;
-    let refPhase = (uv.x * cos(angle) + uv.y * sin(angle)) * fringeDensity * 45.0;
+    let refPhase = (uv.x * cos(angle) + uv.y * sin(angle)) * fringeDensity * 45.0 + vortexCharge;
     let phaseDiff = objectPhase + refPhase;
     return 0.5 + 0.5 * cos(phaseDiff);
 }
@@ -171,14 +165,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     rippleDistortion = rippleDistortion + sin(distMouse * 32.0 - time * 8.0) * exp(-distMouse * 7.5) * clickImpulse * 0.5;
     rippleDistortion = rippleDistortion + holdEffect * 0.25;
 
+    // Idea 1 & 2: Phase-singularity fork dislocations & double-exposure holographic strain interferometry
+    let forkDislocation = opticalVortexPhase(uv, smoothMouse) * (1.0 + holdEffect * 1.5);
+    let strainPhaseDelta = (depth - depthSrc) * fringeDensity * 18.0 + exp(-distMouse * distMouse * 14.0) * (1.5 + holdEffect * 4.5 + bass * 2.5) * fringeDensity * 0.28 + rippleDistortion * 4.0;
+    let moireBeatFringe = 0.5 + 0.5 * cos(strainPhaseDelta);
+
     // Center holographic sample
-    let centerInterference = interferencePattern(uv, depth, fringeDensity, reconAngle, rippleDistortion);
+    let centerInterference = interferencePattern(uv, depth, fringeDensity, reconAngle, rippleDistortion, forkDislocation);
     let centerPhase = acos(clamp(centerInterference * 2.0 - 1.0, -1.0, 1.0));
-    let centerRecon = (uv.x * cos(reconAngle + 0.5) + uv.y * sin(reconAngle + 0.5)) * 22.0;
+    let centerRecon = (uv.x * cos(reconAngle + 0.5) + uv.y * sin(reconAngle + 0.5)) * 22.0 + forkDislocation * 0.5;
     let centerHolo = spectralReconstruct(centerPhase + centerRecon + rippleDistortion * 3.5, luma, saturation);
     let centerSpeckle = speckleNoise(uv + time * 0.005, coherence, time);
     let speckleMod = mix(1.0, 0.6 + 0.8 * centerSpeckle, coherence);
-    let centerRaw = mix(sourceColor * 0.3, centerHolo * (luma * 1.2 + 0.2 + bass * 0.2) * speckleMod, 0.8);
+    // Lippmann-Bragg volume-grating sinc^2 selectivity envelope
+    let braggDetune = (depth - 0.5) * (1.5 + coherence * 3.5) + sin(reconAngle) * 0.4;
+    let braggSinc = sin(braggDetune * PI) / max(abs(braggDetune * PI), 0.001);
+    let braggEnvelope = mix(1.0, 0.72 + 0.48 * braggSinc * braggSinc, coherence);
+    let centerRaw = mix(sourceColor * 0.3, centerHolo * (luma * 1.2 + 0.2 + bass * 0.2) * speckleMod * braggEnvelope * (0.72 + 0.42 * moireBeatFringe), 0.8);
 
     // Bilateral speckle-reduction filter over 5x5 footprint
     var accumColor = vec3<f32>(0.0);
@@ -195,11 +198,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let sColor = textureSampleLevel(readTexture, u_sampler, sUV, 0.0).rgb;
             let sDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, sUV, 0.0).r + geo;
             let sLuma = dot(sColor, vec3<f32>(0.2126, 0.7152, 0.0722));
-            let sInterf = interferencePattern(sUV, sDepth, fringeDensity, reconAngle, rippleDistortion);
+            let sVortex = opticalVortexPhase(sUV, smoothMouse) * (1.0 + holdEffect * 1.5);
+            let sInterf = interferencePattern(sUV, sDepth, fringeDensity, reconAngle, rippleDistortion, sVortex);
             let sPhase = acos(clamp(sInterf * 2.0 - 1.0, -1.0, 1.0));
-            let sRecon = (sUV.x * cos(reconAngle + 0.5) + sUV.y * sin(reconAngle + 0.5)) * 22.0;
+            let sRecon = (sUV.x * cos(reconAngle + 0.5) + sUV.y * sin(reconAngle + 0.5)) * 22.0 + sVortex * 0.5;
             let sHolo = spectralReconstruct(sPhase + sRecon + rippleDistortion * 3.5, sLuma, saturation);
-            let neighborVal = mix(sColor * 0.3, sHolo * (sLuma * 1.2 + 0.2 + bass * 0.2), 0.8);
+            let neighborVal = mix(sColor * 0.3, sHolo * (sLuma * 1.2 + 0.2 + bass * 0.2) * braggEnvelope * (0.72 + 0.42 * moireBeatFringe), 0.8);
 
             let spatialDistSq = dot(offset, offset);
             let spatialWeight = exp(-spatialDistSq / twoSpatialSq);

@@ -2,7 +2,7 @@
   "id": "holographic-interferometry-bilateral",
   "name": "Holographic Interferometry Bilateral",
   "url": "shaders/holographic-interferometry-bilateral.wgsl",
-  "description": "Simulated optical hologram with interference fringes and edge-preserving bilateral filtering. Laser speckle noise is smoothly filtered in uniform zones while sharp interference fringe edges remain crisp.",
+  "description": "Simulated optical hologram with interference fringes, double-exposure strain moire bullseyes, phase-singularity fork dislocations, Lippmann-Bragg volume-grating selectivity, and edge-preserving bilateral speckle filtering.",
   "tags": [
     "hologram",
     "interference",
@@ -22,7 +22,8 @@
     "mouse-driven",
     "exact-feedback",
     "temporal-state",
-    "ACES-tonemapped"
+    "ACES-tonemapped",
+    "upgraded-rgba"
   ],
   "params": [
     {

@@ -4,6 +4,9 @@
 //  Features: raymarched, spectral-dispersion, physical-refraction,
 //            mouse-driven, audio-reactive, exact-feedback
 //  Complexity: Very High
+//  Upgraded: 2026-10-18
+//  Ideas: back-face exit march & critical-angle total-internal-reflection (TIR) prismatic fire; dispersion-focused spectral caustic convergence & Brewster-angle polarized reflection
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Raymarched optical glass prism with 4-band Cauchy spectral
 //  dispersion. Physical Snell refraction rays split wavelengths
@@ -11,26 +14,8 @@
 //  spectral absorption.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, zw=Resolution
-    zoom_config: vec4<f32>,  // x=Time, yz=MouseUV, w=MouseDown
-    zoom_params: vec4<f32>,  // x=Transparency, y=Dispersion, z=Thickness, w=Roughness
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Transparency, y=Dispersion, z=Thickness, w=Roughness
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -215,33 +200,60 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (hit) {
         let WAVELENGTHS = array<f32, 4>(450.0, 520.0, 600.0, 680.0);
         var spectralColor = vec3<f32>(0.0);
+        var tirFire = vec3<f32>(0.0);
         let viewDotNormal = dot(-rd, normal);
         let baseEta = 1.0 / (1.52 + bass * 0.08);
+
+        // Idea 1: Back-face exit march through glass interior for two-interface Snell refraction & TIR
+        let pEnter = ro + rd * enterT;
+        let innerDir = refractRay(rd, normal, baseEta);
+        var exitStep = 0.08 * thicknessScale;
+        for (var k: i32 = 0; k < 6; k = k + 1) {
+            let pIn = pEnter + innerDir * exitStep;
+            let dIn = map(pIn, time, bass, mids, holdEffect);
+            exitStep = exitStep + max(-dIn * 0.65, 0.025);
+        }
+        let pExit = pEnter + innerDir * clamp(exitStep, 0.06, 0.65);
+        let exitNormal = -calcNormal(pExit, time, bass, mids, holdEffect);
+        let pathLen = clamp(length(pExit - pEnter) * thicknessScale * 2.2, 0.15, 1.8);
+
+        // Idea 2: Dispersion-focused spectral caustic convergence from front/back curvature lens power
+        let curvatureFocus = clamp(1.0 + length(normal.xy + exitNormal.xy) * 0.95, 0.75, 2.15);
 
         for (var w: i32 = 0; w < 4; w = w + 1) {
             let ior = cauchyIOR(WAVELENGTHS[w], 1.5, cauchyB);
             let eta = 1.0 / ior;
-            let refracted = refractRay(rd, normal, eta);
-            let refractUV = clamp(uv + refracted.xy * 0.25 * thicknessScale, vec2<f32>(0.0), vec2<f32>(1.0));
+            let refracted1 = refractRay(rd, normal, eta);
+            let exitCos = abs(dot(refracted1, exitNormal));
+            let sinTheta2Sq = (ior * ior) * max(0.0, 1.0 - exitCos * exitCos);
+            let tirWeight = smoothstep(0.78, 1.06, sinTheta2Sq);
+            let refracted2 = refractRay(refracted1, exitNormal, ior);
+            let combinedRay = mix(refracted1, refracted2, 0.55);
+            let refractUV = clamp(uv + combinedRay.xy * 0.25 * pathLen, vec2<f32>(0.0), vec2<f32>(1.0));
 
             let sampleColor = textureSampleLevel(readTexture, u_sampler, refractUV, 0.0).rgb;
-            let absorption = exp(-thicknessScale * (4.0 - f32(w)) * 0.14);
-            let bandIntensity = dot(sampleColor, wavelengthToRGB(WAVELENGTHS[w])) * absorption;
-            spectralColor = spectralColor + wavelengthToRGB(WAVELENGTHS[w]) * bandIntensity;
+            let absorption = exp(-pathLen * (4.0 - f32(w)) * 0.14);
+            let bandRGB = wavelengthToRGB(WAVELENGTHS[w]);
+            let bandIntensity = dot(sampleColor, bandRGB) * absorption * curvatureFocus;
+            spectralColor = spectralColor + bandRGB * bandIntensity;
+            tirFire = tirFire + bandRGB * tirWeight * (0.45 + cauchyB * 4.5);
         }
 
         let fresnelFactor = fresnel(viewDotNormal, baseEta);
+        // Brewster-angle s/p polarization highlight around cos(theta_B) ~ 0.55
+        let brewsterGlint = exp(-pow((abs(viewDotNormal) - 0.55) * 6.5, 2.0)) * (1.0 - roughness);
         let glassTint = mix(vec3<f32>(0.94, 0.98, 1.0), vec3<f32>(1.0, 0.92, 0.97), treble);
-        let absorption = exp(-vec3<f32>(0.1, 0.05, 0.15) * thicknessScale);
+        let absorption = exp(-vec3<f32>(0.1, 0.05, 0.15) * pathLen);
 
         finalRGB = mix(spectralColor * absorption * glassTint * 1.5, bgColor, fresnelFactor * (1.0 - transparency));
+        finalRGB = finalRGB + tirFire * (0.55 + treble * 0.35);
 
         // Specular highlight
         let lightDir = normalize(vec3<f32>(0.5, 0.9, -0.6));
         let halfDir = normalize(lightDir - rd);
         let specAngle = max(dot(normal, halfDir), 0.0);
         let specular = pow(specAngle, 64.0) * (1.0 - roughness);
-        finalRGB = finalRGB + vec3<f32>(1.0) * specular * 0.9 + vec3<f32>(0.3, 0.6, 1.0) * treble * 0.4 * fresnelFactor;
+        finalRGB = finalRGB + vec3<f32>(1.0) * specular * 0.9 + vec3<f32>(0.3, 0.6, 1.0) * treble * 0.4 * fresnelFactor + vec3<f32>(0.85, 0.95, 1.0) * brewsterGlint * 0.22;
 
         finalAlpha = mix(0.3, 0.96, (1.0 - transparency) + fresnelFactor * 0.4 + holdEffect * 0.2);
     } else {
