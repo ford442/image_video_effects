@@ -1,6 +1,13 @@
-// ASCII Flow Structure — Composer batch cyber/digital/glitch cohort 3
-// Structure-tensor eigenflow + LIC glyphs, spring flow bias, held coherence lock,
-// click shockfront, exact C coherency blend, ACES display.
+// ═══════════════════════════════════════════════════════════════════
+//  ASCII Flow Structure — Composer batch cyber/digital/glitch cohort 3
+//  Structure-tensor eigenflow + LIC glyphs, spring flow bias, held coherence lock,
+//  click shockfront, exact C coherency blend, ACES display.
+//  Upgraded: 2026-10-19
+//  Ideas: ink-weight tone matching (stroke width follows cell brightness);
+//         orientation hysteresis from exact C.xy (no / | \ flicker)
+//  A packing: raw fields (eigenvec.x, eigenvec.y, coherency, lic); C.z is the
+//  previous coherency (HEAD read C.a, which holds lic)
+// ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
 
@@ -75,7 +82,9 @@ fn lic(uv: vec2<f32>, direction: vec2<f32>, pixelSize: vec2<f32>, steps: i32, st
 }
 
 // ═══ CHUNK: draw_glyph (from ascii-flow.wgsl, modified) ═══
-fn draw_glyph(uv: vec2<f32>, index: i32, rotation: f32) -> f32 {
+// Idea 1: ink-weight tone matching. `weight` scales every stroke half-width,
+// dot radius and box wall, so a glyph's ink coverage follows cell brightness.
+fn draw_glyph(uv: vec2<f32>, index: i32, rotation: f32, weight: f32) -> f32 {
     // Rotate UV by flow direction
     let c = cos(rotation);
     let s = sin(rotation);
@@ -85,36 +94,36 @@ fn draw_glyph(uv: vec2<f32>, index: i32, rotation: f32) -> f32 {
 
     // 0: Dot
     if (index == 0) {
-        d = length(p) - 0.2;
+        d = length(p) - 0.2 * weight;
     }
     // 1: Vertical Line
     else if (index == 1) {
-        d = abs(p.x) - 0.1;
+        d = abs(p.x) - 0.1 * weight;
     }
     // 2: Horizontal Line
     else if (index == 2) {
-        d = abs(p.y) - 0.1;
+        d = abs(p.y) - 0.1 * weight;
     }
     // 3: Plus
     else if (index == 3) {
-        d = min(abs(p.x), abs(p.y)) - 0.08;
+        d = min(abs(p.x), abs(p.y)) - 0.08 * weight;
     }
     // 4: Diagonal /
     else if (index == 4) {
-        d = abs(p.x + p.y) - 0.1;
+        d = abs(p.x + p.y) - 0.1 * weight;
     }
     // 5: Diagonal \
     else if (index == 5) {
-        d = abs(p.x - p.y) - 0.1;
+        d = abs(p.x - p.y) - 0.1 * weight;
     }
     // 6: X
     else if (index == 6) {
-        d = min(abs(p.x + p.y), abs(p.x - p.y)) - 0.08;
+        d = min(abs(p.x + p.y), abs(p.x - p.y)) - 0.08 * weight;
     }
     // 7: Box
     else {
         d = max(abs(p.x), abs(p.y)) - 0.4;
-        d = abs(d) - 0.05;
+        d = abs(d) - 0.05 * weight;
     }
 
     return 1.0 - smoothstep(0.0, 0.05, d);
@@ -202,6 +211,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let coherency = select(0.0, (lambda1 - lambda2) / (lambda1 + lambda2 + 0.0001), lambda1 + lambda2 > 0.0001);
     let boostedCoherency = pow(coherency, 1.0 / coherencyBoost);
 
+    // Idea 2: orientation hysteresis. Last frame's flow vector for this cell
+    // (exact C.xy at the cell centre, sign-aligned because an eigenvector is
+    // only defined up to ±) holds the glyph in place, weighted by last frame's
+    // coherency (C.z). The pointer vortex below stays immediate.
+    let cellTexel = clamp(vec2<i32>(cell_center_uv * resolution), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1));
+    let prevCell = textureLoad(dataTextureC, cellTexel, 0);
+    let prevVecRaw = prevCell.xy;
+    let prevValid = dot(prevVecRaw, prevVecRaw) > 0.25;
+    let prevVec = select(-prevVecRaw, prevVecRaw, dot(prevVecRaw, eigenvec) >= 0.0);
+    let holdW = select(0.0, 0.7 * clamp(prevCell.z, 0.0, 1.0), prevValid);
+    eigenvec = normalize(mix(eigenvec, prevVec, holdW) + vec2<f32>(1e-5, 0.0));
+
     let toMouse = cell_center_uv - smoothMouse;
     let mouseDist = length(toMouse * vec2<f32>(aspect, 1.0));
     let mouseFactor = exp(-mouseDist * mouseDist * 8.0) * mouseInfluence;
@@ -246,7 +267,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         glyphRotation = flowAngle;
     }
 
-    let shape = draw_glyph(cell_uv, glyph_idx, glyphRotation);
+    let inkWeight = mix(0.55, 1.6, gray);
+    let shape = draw_glyph(cell_uv, glyph_idx, glyphRotation, inkWeight);
 
     // Color: phosphor green blended with flow-colored LIC
     let flowHue = flowAngle * 0.15915 + 0.5;
@@ -260,7 +282,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var final_color = mixedColor * shape * (0.5 + 0.5 * gray) * (1.0 + bass * 0.2 + clickShock * 0.4);
 
     let prev = textureLoad(dataTextureC, coord, 0);
-    let prevCoherency = prev.a;
+    let prevCoherency = prev.z;
     let coherencyBlend = mix(coherencyLocked, prevCoherency, 0.2);
     let alpha = shape * mix(0.5, 1.0, coherencyBlend);
 

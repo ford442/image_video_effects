@@ -2,6 +2,11 @@
 //  Byte Mosh Explosion — Batch 62
 //  Bitwise corruption + chromatic prism: spring cursor, held boost,
 //  capped ripples, audio-reactive error rate, ACES + semantic alpha.
+//  Upgraded: 2026-10-19
+//  Ideas: resync propagation (byte slips smear forward to the next resync
+//         marker); decoder error concealment from exact C; Cauchy prism
+//  A packing: ACES display RGBA (HEAD wrote blue byte/error/glow/alpha that
+//  nothing read; C is now read as colour for concealment)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -19,6 +24,14 @@ fn hash21(p: vec2<f32>) -> f32 {
 }
 
 const MAX_CHANNEL_VALUE: f32 = 255.0;
+
+// Idea 3: Cauchy prism. n(λ) = A + B/λ² at 650/550/450 nm, relative to green:
+// B/λ² = 2.367, 3.306, 4.938 µm⁻² → (−0.939, 0, +1.632), rescaled to HEAD's
+// total spread of 2. Blue bends ~1.7× more than red instead of −1/0/+1.
+const CAUCHY_R: f32 = -0.730;
+const CAUCHY_B: f32 = 1.270;
+// Idea 1: a slice of 4 blocks ends in a resync marker.
+const RESYNC_BLOCKS: u32 = 4u;
 
 fn floatToU32(x: f32) -> u32 {
   return u32(clamp(x, 0.0, 1.0) * MAX_CHANNEL_VALUE);
@@ -115,9 +128,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mouseDown = select(u.zoom_config.w, 1.0, held);
 
   // ═══ CHROMATIC EXPLOSION SAMPLING ═══
-  let rUV = prismDisplace(uv, smoothMouse, -1.0, prismStrength);
+  let rUV = prismDisplace(uv, smoothMouse, CAUCHY_R, prismStrength);
   let gUV = prismDisplace(uv, smoothMouse, 0.0, prismStrength);
-  let bUV = prismDisplace(uv, smoothMouse, 1.0, prismStrength);
+  let bUV = prismDisplace(uv, smoothMouse, CAUCHY_B, prismStrength);
 
   // Ripple chromatic shockwaves
   let rippleCount = min(u32(u.config.y), 50u);
@@ -185,6 +198,28 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
 
+  // ── Idea 1: resync propagation. A corrupted word desynchronises the decoder
+  // until the next resync marker, so a block up to 3 blocks to the left in the
+  // same slice smears forward as a byte slip (word rotated by 8 bits:
+  // R←G←B←A), decaying with distance. Rolled per scanline, like a decoder
+  // losing sync mid-row.
+  let timeSlot = floor(time * 2.0);
+  let sliceStart = (blockCoord.x / RESYNC_BLOCKS) * RESYNC_BLOCKS;
+  var slip = 0.0;
+  for (var k = 1u; k <= 3u; k = k + 1u) {
+    if (blockCoord.x >= sliceStart + k) {
+      let upstreamBlock = vec2<f32>(f32(blockCoord.x - k), f32(blockCoord.y));
+      let upstreamNoise = hash21(upstreamBlock + vec2<f32>(timeSlot));
+      if (upstreamNoise < effectiveError) {
+        slip = max(slip, exp(-f32(k) * 0.7));
+      }
+    }
+  }
+  let slipRoll = hash21(vec2<f32>(f32(blockCoord.x) * 1.37, f32(coord.y)) + vec2<f32>(timeSlot * 0.61));
+  if (blockNoise >= effectiveError && slipRoll < slip * 0.85) {
+    packedColor = rotateLeft(packedColor, 8u);
+  }
+
   if (pixelNoise < effectiveError * 0.3) {
     let flipMask = u32(pixelNoise * 4294967295.0) & (0xFFu << (bitShift * 4u));
     packedColor = packedColor ^ flipMask;
@@ -229,12 +264,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let glow = exp(-mouseDist * mouseDist * 100.0) * prismStrength * 10.0;
   finalColor = vec4<f32>(finalColor.rgb + vec3<f32>(0.5, 0.3, 0.8) * glow, finalColor.a);
 
-  finalColor.rgb = acesToneMap(finalColor.rgb * (0.96 + mids * 0.05));
+  // WGSL has no swizzle assignment: HEAD's `finalColor.rgb = …` failed Naga.
   let alpha = clamp(finalColor.a + glow * 0.15 + bass * 0.05, 0.0, 1.0);
-  finalColor = vec4<f32>(finalColor.rgb, alpha);
+  finalColor = vec4<f32>(acesToneMap(finalColor.rgb * (0.96 + mids * 0.05)), alpha);
   finalColor = clamp(finalColor, vec4<f32>(0.0), vec4<f32>(1.0));
 
+  // ── Idea 2: decoder error concealment. A share of corrupted blocks are not
+  // decoded at all: the decoder repeats the previous frame's block (exact C,
+  // already ACES display), so stale tiles hold for the 0.5 s slot.
+  let concealRoll = hash21(vec2<f32>(f32(blockCoord.x), f32(blockCoord.y)) * 3.17 + vec2<f32>(timeSlot + 7.0));
+  let conceal = blockNoise < effectiveError && concealRoll < 0.3 + operationMix * 0.2;
+  let prevDecoded = textureLoad(dataTextureC, vec2<i32>(coord), 0);
+  finalColor = select(finalColor, vec4<f32>(prevDecoded.rgb, max(prevDecoded.a, 0.6)), conceal);
+
   textureStore(writeTexture, vec2<i32>(coord), finalColor);
-  textureStore(dataTextureA, vec2<i32>(coord), vec4<f32>(f32(packedColor & 0xFFu) / 255.0, effectiveError, glow, alpha));
+  textureStore(dataTextureA, vec2<i32>(coord), finalColor);
   textureStore(writeDepthTexture, vec2<i32>(coord), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
