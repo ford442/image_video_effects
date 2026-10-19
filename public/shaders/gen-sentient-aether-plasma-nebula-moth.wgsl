@@ -3,30 +3,12 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-15
-//  Ideas: thorax-rooted plasma venation; flap-reversal ion-scale wake
+//  Upgraded: 2026-10-18
+//  Ideas: thorax-rooted plasma venation; flap-reversal ion-scale wake;
+//         saturniid hindwing eyespots with deimatic flash as the wings pass open; chequered marginal cilia fringe
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const MAX_STEPS: i32 = 100;
 const SURF_DIST: f32 = 0.005;
@@ -123,6 +105,33 @@ var<private> g_glow: f32 = 0.0;
 var<private> g_wing_dist: f32 = 0.0;
 var<private> g_body_dist: f32 = 0.0;
 var<private> g_vein_dist: f32 = 1.0;
+var<private> g_wing_p: vec3<f32> = vec3<f32>(0.0);
+var<private> g_fringe: f32 = 0.0;
+
+// Wing-plane coordinates: x = elliptical radius (1 at the margin), y = angle around the wing centre
+fn wingPlane(wp: vec3<f32>) -> vec2<f32> {
+    let q = (wp.xz - vec2<f32>(1.2, 0.0)) / vec2<f32>(1.5, 1.0);
+    return vec2<f32>(length(q), atan2(q.y, q.x));
+}
+
+// Marginal cilia fringe: hair-scales past the wing edge, chequered dark/pale like a real moth fringe
+fn ciliaFringe(wp: vec3<f32>) -> f32 {
+    let wpl = wingPlane(wp);
+    let hairs = pow(abs(sin(wpl.y * 140.0)), 3.0);
+    let chequer = select(0.35, 1.0, fract(wpl.y * 7.0 / 3.14159265) < 0.5);
+    let band = smoothstep(0.84, 0.93, wpl.x) * (1.0 - smoothstep(1.0, 1.12, wpl.x));
+    return band * mix(0.4, 1.0, hairs) * chequer;
+}
+
+// Saturniid hindwing eyespot: pupil, amber iris, black ring, pale outer ring (wing-local xz)
+fn eyespot(wp: vec3<f32>) -> vec4<f32> {
+    let r = length(wp.xz - vec2<f32>(1.75, -0.42)) / 0.34;
+    let pupil = 1.0 - smoothstep(0.2, 0.27, r);
+    let iris = smoothstep(0.2, 0.27, r) * (1.0 - smoothstep(0.6, 0.66, r));
+    let black = smoothstep(0.6, 0.66, r) * (1.0 - smoothstep(0.8, 0.86, r));
+    let halo = smoothstep(0.8, 0.86, r) * (1.0 - smoothstep(0.96, 1.04, r));
+    return vec4<f32>(pupil, iris, black, halo);
+}
 
 fn map(p_in: vec3<f32>) -> f32 {
     let time = u.config.x;
@@ -141,6 +150,11 @@ fn map(p_in: vec3<f32>) -> f32 {
 
     // Base animation
     let t = time * flutter_freq;
+
+    // Time Rift Distortion: warps the space around the moth (HEAD added it to the distance, which
+    // tore the 0.02-thick wing into floating shards and shells)
+    let rift = sin(p.x * 2.0 + t) * sin(p.y * 2.0 - t) * sin(p.z * 2.0) * rift_dist;
+    p.y = p.y + rift;
 
     // Thorax / Body
     var body = sdEllipsoid(p, vec3<f32>(0.3, 0.2 + bass * 0.1, 1.0));
@@ -171,26 +185,31 @@ fn map(p_in: vec3<f32>) -> f32 {
     wp.x = tmp3.x;
     wp.y = tmp3.y;
 
-    // Wing shape - using a thin ellipsoid with noise distortion
-    let wing_base = sdEllipsoid(wp - vec3<f32>(1.2, 0.0, 0.0), vec3<f32>(1.5, 0.02, 1.0));
+    // Plasma wing: fbm billows the membrane along its normal (HEAD added fbm to the distance,
+    // which shredded the thin wing into caps)
+    let billow = fbm(vec3<f32>(wp.x * 1.5, 0.0, wp.z * 1.5) - vec3<f32>(0.0, 0.0, time * 2.0)) * 0.35 * plasma_glow;
+    wp.y = wp.y - billow;
 
-    // Add fbm distortion for the plasma wing effect
-    let distortion = fbm(wp * 3.0 - vec3<f32>(0.0, 0.0, time * 2.0)) * 0.2 * plasma_glow;
-    var wing = wing_base + distortion;
+    // Wing shape - a thin ellipsoid membrane
+    let wing_base = sdEllipsoid(wp - vec3<f32>(1.2, 0.0, 0.0), vec3<f32>(1.5, 0.02, 1.0));
+    var wing = wing_base;
 
     // Thorax-rooted plasma venation: shallow ridges along the wing surface
     let vein = wingVeinDistance(wp);
     g_vein_dist = vein;
     wing = wing - exp(-vein * 28.0) * 0.018 * plasma_glow;
 
-    // Time Rift Distortion (modifies the space around the moth)
-    let rift = sin(p.x * 2.0 + t) * sin(p.y * 2.0 - t) * sin(p.z * 2.0) * rift_dist;
-
-    let final_body = body + rift;
-    let final_wing = wing + rift;
+    let final_body = body;
+    let final_wing = wing;
 
     g_body_dist = final_body;
     g_wing_dist = final_wing;
+    g_wing_p = wp;
+
+    // Cilia fringe glow: hair-scales just past the margin, in the wing plane only
+    let wpl = wingPlane(wp);
+    let past = max(wpl.x - 1.0, 0.0);
+    g_fringe = g_fringe + ciliaFringe(wp) * exp(-past * 30.0) * exp(-abs(wp.y) * 40.0) * 0.012;
 
     // Accumulate glow
     g_glow = g_glow + 0.01 / (0.01 + abs(final_wing)) * plasma_glow;
@@ -219,11 +238,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     let resolution = vec2<f32>(f32(dims.x), f32(dims.y));
-    let uv = (vec2<f32>(coord) - 0.5 * resolution) / resolution.y;
+    var uv = (vec2<f32>(coord) - 0.5 * resolution) / resolution.y;
+    uv.y = -uv.y; // texture rows run down; HEAD rendered the moth upside-down
     let time = u.config.x;
 
     // Camera setup
-    var ro = vec3<f32>(0.0, 2.0, -6.0);
+    var ro = vec3<f32>(0.0, 5.5, -6.0); // above the moth so the open wings read (HEAD: grazing, edge-on)
     // Mouse orbit
     let mouse = u.zoom_config.yz;
     let mx = (mouse.x * 2.0 - 1.0) * 3.14;
@@ -252,6 +272,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     g_glow = 0.0;
     g_vein_dist = 1.0;
+    g_fringe = 0.0;
 
     for (var i = 0; i < MAX_STEPS; i++) {
         p = ro + rd * t_dist;
@@ -321,6 +342,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let veinMask = exp(-g_vein_dist * 22.0);
             matCol += vec3<f32>(0.25, 0.95, 0.85) * veinMask * u.zoom_params.z;
             matCol += vec3<f32>(0.55, 0.2, 0.95) * veinMask * mids * 0.4;
+
+            // Saturniid eyespot with deimatic flash: the iris flares as the wings pass fully open
+            let spread = pow(abs(cos(time * flutter_freq * 15.0)), 4.0);
+            let es = eyespot(g_wing_p);
+            let startle = 0.6 + spread * (1.2 + bass * 1.5);
+            matCol = mix(matCol, vec3<f32>(0.02, 0.0, 0.04), es.x * 0.9 + es.z * 0.85);
+            matCol += vec3<f32>(1.0, 0.55, 0.12) * es.y * startle;
+            matCol += vec3<f32>(0.85, 0.9, 1.0) * es.w * (0.5 + spread * 0.6);
+            let glint = 1.0 - smoothstep(0.0, 0.05, length(g_wing_p.xz - vec2<f32>(1.70, -0.37)));
+            matCol += vec3<f32>(1.0) * glint * (0.8 + treble);
+
+            // Chequered cilia fringe along the margin
+            matCol = mix(matCol, vec3<f32>(0.85, 0.75, 1.0) * (diff + 0.6), ciliaFringe(g_wing_p) * 0.7);
         }
 
         col = matCol * ao * (1.0 + clamp(-hitD, 0.0, 0.05) * 0.2);
@@ -329,10 +363,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Add volumetric glow
     let glowCol = vec3<f32>(0.2, 0.9, 0.7) * (g_glow * 0.02); // Auroral greens
     col = col + glowCol;
+    col = col + vec3<f32>(0.75, 0.65, 1.0) * g_fringe * (0.8 + mids * 0.5);
 
     col = acesToneMap(col * 1.1);
-    let hitAlpha = select(0.12, 0.55, hit);
-    let alpha = clamp(hitAlpha + g_glow * 0.04 + storm * 0.2 + wake * 0.5, 0.08, 0.96);
+    // Semantic alpha: open space is the storm-filled void (floor 0.8, denser storm/glow/wake -> opaque),
+    // wing/body hits are solid (HEAD's 0.12 miss floor washed the void out on light pages)
+    let hitAlpha = select(0.8, 0.97, hit);
+    let alpha = clamp(hitAlpha + g_glow * 0.01 + storm * 0.1 + wake * 0.2 + g_fringe * 0.2, 0.8, 1.0);
     let depth = select(0.0, clamp(1.0 - t_dist / MAX_DIST, 0.0, 1.0), hit);
     let outCol = vec4<f32>(col, alpha);
     textureStore(writeTexture, coord, outCol);

@@ -3,9 +3,9 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: Zernike phase contrast; binary fission; metachronal cilia; contractile vacuole
-//  A packing: ACES display RGBA in A
+//  Upgraded: 2026-10-18
+//  Ideas: Zernike phase contrast; binary fission; metachronal cilia; contractile vacuole; optical sectioning (fine-focus plane, off-plane cells defocus to soft phase ghosts); Becke line (edge halo swaps inside/outside the membrane as focus crosses each cell)
+//  A packing: ACES display RGBA in A; alpha = medium (0.9) raised by specimen coverage, snow, blooms
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -13,6 +13,7 @@
 
 var<private> g_audio: vec3<f32>;
 var<private> g_minD: f32;
+var<private> g_minT: f32;
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
@@ -59,14 +60,19 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
     // Audio-driven helical current and fast forward transport. Both are
     // closed-form, avoiding fixed-per-frame integration.
     let currentAngle = time * (0.8 + flowSpeed * 1.4) + g_audio.y * 0.35 + p.z * 0.22;
-    let currentXZ = rotate2D(p.xz, currentAngle * 0.28);
-    p.x = currentXZ.x + sin(currentAngle) * (0.35 + g_audio.x * 0.18);
-    p.z = currentXZ.y + time * (1.2 + flowSpeed * 1.8);
+    // (A z-dependent rotation of xz about the world origin used to sit here:
+    // it wound distant space into a spiral, Lipschitz >> 1, and rays stopped
+    // on speckle and concentric shells instead of cells.)
+    p.x = p.x + sin(currentAngle) * (0.35 + g_audio.x * 0.18);
+    p.z = p.z + time * (1.2 + flowSpeed * 1.8);
     p.y += time * (0.45 + flowSpeed * 0.9) + cos(currentAngle) * (0.25 + g_audio.z * 0.12);
 
     // Domain Repetition
     // Adjust grid size based on density. Higher density -> smaller grid cells.
-    let gridSize = mix(6.0, 3.0, densityParams);
+    // Cells must fit their repetition cell: a full-size dividing cell reaches
+    // ~1.55 * 1.5 = 2.33 from its centre, so the grid stays >= 5.5 (was 3..6,
+    // which cut bodies into flat shards at every cell wall).
+    let gridSize = mix(7.0, 5.5, densityParams);
 
     let id = floor(p / gridSize);
     let q = (fract(p / gridSize) - 0.5) * gridSize;
@@ -75,7 +81,7 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
     let rand = hash(id);
 
     // Vary position within cell
-    let offset = (vec3<f32>(rand, fract(rand * 12.3), fract(rand * 45.6)) - 0.5) * gridSize * 0.4;
+    let offset = (vec3<f32>(rand, fract(rand * 12.3), fract(rand * 45.6)) - 0.5) * gridSize * 0.1;
     var localP = q - offset;
 
     // Random rotation
@@ -137,12 +143,14 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
     var t = 0.1;
     var mat = 0.0;
     g_minD = 1e3;
+    g_minT = 50.0;
     for(var i=0; i<80; i++) {
         var p = ro + rd * t;
         var res = map(p);
         var d = res.x;
         mat = res.y;
-        g_minD = min(g_minD, d / max(t * 0.08, 0.05));
+        let nd = d / max(t * 0.08, 0.05);
+        if (nd < g_minD) { g_minD = nd; g_minT = t; }
         if(d < 0.001 || t > 50.0) { break; }
         t += d * 0.8; // Understep for better organic shapes
     }
@@ -169,6 +177,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
+    uv.y = -uv.y; // row 0 is the top of the screen
     let screenUV = vec2<f32>(global_id.xy) / resolution;
 
     // Camera Setup
@@ -196,7 +205,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Mouse perturbs the ray direction (look offset)
     let rd_pre = normalize(fw + rt * uv.x + up * uv.y);
-    let rd = normalize(rd_pre + rt * (mouse.x - 0.5) * 0.5 + up * (mouse.y - 0.5) * 0.5);
+    let rd = normalize(rd_pre + rt * (mouse.x - 0.5) * 0.5 + up * (0.5 - mouse.y) * 0.5);
 
     // Raymarch
     var res = raymarch(ro, rd);
@@ -204,6 +213,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var mat = res.y;
     let hit = t < 50.0;
     let nearMiss = g_minD;
+
+    // IDEA 5: optical sectioning. The objective's fine-focus plane breathes
+    // through the swarm (bass nudges it); only cells near that plane are sharp,
+    // the rest defocus into soft phase ghosts instead of aliased detail.
+    let focusDist = 6.5 + sin(time * 0.33) * 2.5 + bass * 0.8;
+    let defocus = smoothstep(1.2, 7.0, abs(t - focusDist));
+    // IDEA 6: Becke line. The bright edge line moves toward the higher-index side
+    // as focus is raised: inside the membrane for cells beyond the focal plane,
+    // outside (into the medium) for cells in front of it.
+    let beckeSide = clamp((t - focusDist) * 0.6, -1.0, 1.0);
+    let beckeMiss = clamp((focusDist - g_minT) * 0.6, -1.0, 1.0);
 
     // Environment/Fluid Color (Deep Blue/Purple)
     let colorShift = u.zoom_params.w;
@@ -221,7 +241,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // IDEA 1 (halo): Zernike phase-contrast rings a bright halo just outside
     // specimen edges; near-miss rays carry it.
-    let haloBand = exp(-max(nearMiss, 0.0) * 6.0) * (1.0 - select(0.0, 1.0, hit));
+    let haloBand = exp(-max(nearMiss, 0.0) * 6.0) * (1.0 - select(0.0, 1.0, hit))
+        * (1.0 + 0.9 * beckeMiss) * (1.0 - 0.6 * smoothstep(1.2, 7.0, abs(g_minT - focusDist)));
     color += mix(vec3<f32>(0.55, 0.75, 0.85), vec3<f32>(0.85, 0.6, 0.8), colorShift) * haloBand * 0.18 * glowIntensity * (1.0 + treble * 0.4);
 
     if (hit) {
@@ -286,16 +307,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let divide = clamp((mat - 1.0) * 2.0, 0.0, 1.0);
         cellCol += vec3<f32>(1.0, 0.75, 0.45) * divide * rim * 0.35 * glowIntensity;
 
+        // Becke line: a thin bright band just inside the edge (cell beyond focus)
+        // or a dark one with the bright line pushed out into the halo (in front).
+        let edgeBand = smoothstep(0.25, 0.55, rim) * (1.0 - smoothstep(0.7, 0.95, rim));
+        cellCol += vec3<f32>(0.85, 0.95, 1.0) * edgeBand * beckeSide * (0.45 + treble * 0.2) * (1.0 - defocus);
+
         // Inner Organelle Glow (Fake)
         let innerGlow = sin(p.x * 20.0) * sin(p.y * 20.0) * sin(p.z * 20.0);
         if (innerGlow > 0.8 - treble * 0.08) {
-             cellCol += vec3<f32>(1.0, 0.8, 0.4) * 0.5 * glowIntensity; // Orange specks
+             cellCol += vec3<f32>(1.0, 0.8, 0.4) * 0.5 * glowIntensity * (1.0 - defocus); // Orange specks
         }
+
+        // Optical section: out of the focal plane only the phase ghost survives,
+        // a soft disc darkened by its optical path, lit at the rim by the halo.
+        let ghost = objColor * (0.12 + 0.3 * (0.5 - 0.5 * cos(phase))) + vec3<f32>(0.55, 0.75, 0.85) * rim * 0.25 * glowIntensity;
+        cellCol = mix(max(cellCol, vec3<f32>(0.0)), ghost, defocus * 0.85);
 
         // Distance Fog (Fluid density)
         let fogAmount = 1.0 - exp(-t * 0.08);
         color = mix(cellCol, color, fogAmount);
-        coverage = (1.0 - fogAmount) * clamp(0.45 + thick * 0.25 + rim * 0.3 + cilium * 0.15 + vacuole * 0.12, 0.0, 1.0);
+        coverage = (1.0 - fogAmount) * (1.0 - 0.5 * defocus) * clamp(0.45 + thick * 0.25 + rim * 0.3 + cilium * 0.15 + vacuole * 0.12, 0.0, 1.0);
     }
 
     // Smooth traveling marine snow with fixed particle identities.
@@ -336,10 +367,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let shiftPx = vec2<i32>(round(currentDir * (0.004 + flowSpeed * 0.005) * resolution));
     let historyCoord = clamp(coord - shiftPx, vec2<i32>(0), maxCoord);
     let previous = textureLoad(dataTextureC, historyCoord, 0);
-    let temporal = clamp(max(display, previous.rgb * 0.89), vec3<f32>(0.0), vec3<f32>(1.0));
+    // Bounded wake: only a third of the shifted history's excess over the live
+    // frame carries on, so trails fade instead of max-holding into a grey wash.
+    let temporal = clamp(display + max(previous.rgb * 0.89 - display, vec3<f32>(0.0)) * 0.35, vec3<f32>(0.0), vec3<f32>(1.0));
 
     // Alpha = specimen optical density / coverage + snow, blooms, halo, wake.
-    let alpha = clamp(max(coverage + marineSnow * 0.5 + bloom * 0.4 + haloBand * 0.15, previous.a * 0.85), 0.06, 1.0);
+    // The field of view is filled with medium (0.9); specimens and blooms raise it.
+    let alpha = clamp(0.9 + 0.1 * max(coverage + marineSnow * 0.5 + bloom * 0.4 + haloBand * 0.15, max(previous.a - 0.9, 0.0) * 8.5), 0.0, 1.0);
     let depth = select(1.0, clamp(t / 50.0, 0.0, 0.995), hit);
     let finalColor = vec4<f32>(temporal, alpha);
     textureStore(writeTexture, coord, finalColor);

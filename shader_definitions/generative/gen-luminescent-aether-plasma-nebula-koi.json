@@ -2,7 +2,7 @@
   "id": "gen-luminescent-aether-plasma-nebula-koi",
   "name": "Luminescent Aether-Plasma Nebula-Koi",
   "category": "generative",
-  "description": "A hyper-organic, glowing biomechanical space-koi woven from flowing aether-plasma and shattered chromatic crystal, swimming gracefully through a volumetric quantum nebula while reacting dynamically to ambient acoustic frequencies.",
+  "description": "A hyper-organic, glowing biomechanical space-koi woven from flowing aether-plasma and shattered chromatic crystal, swimming gracefully through a volumetric quantum nebula while reacting dynamically to ambient acoustic frequencies. Backlit fin rays and breathing gill covers.",
   "url": "shaders/gen-luminescent-aether-plasma-nebula-koi.wgsl",
   "tags": [
     "organic",

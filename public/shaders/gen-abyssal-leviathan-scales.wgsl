@@ -3,53 +3,35 @@
 // Category: generative
 // Features: mouse-driven, audio-reactive, click-reactive, upgraded-rgba
 // Complexity: High
-// Upgraded: 2026-09-27
+// Upgraded: 2026-10-18
 // Ideas: chromatic dispersion split on the thin-film sheen at grazing
 //        fresnel angles; fading molt-scar crack glow on scales recently
-//        crossed by a breach ring (exact dataTextureC history + per-cell
-//        hash); held-flare micro-ridging that sharpens keel/facet
-//        frequency under the cursor while held
-// A packing: display RGBA (temporal-blended color + scar-carrying alpha)
+//        crossed by a breach ring (time since the ring front passed +
+//        per-cell hash); held-flare micro-ridging that sharpens keel/facet
+//        frequency under the cursor while held; growth annuli + radii
+//        (each scale carries its own count of crowded seasonal bands and
+//        radial grooves fanning from the focus to the anterior margin);
+//        lateral-line canal (one longitudinal row of pored scales whose
+//        neuromasts flare as breach pressure rings pass)
+// A packing: display RGBA (temporal max-hold color + semantic alpha)
 // A hexagonal scale conveyor over a fissured plasma bed, driven at
 // speed: psychedelic thin-film spectra, greebled scale ridging,
-// spring-cursor repulsion wake, held flare, capped click breach rings.
+// cursor repulsion wake, held flare, capped click breach rings.
 // Contract: 13 bindings, ACES, semantic alpha, dataTextureA writeback only,
-//           exact textureLoad from dataTextureC, plasmaBuffer three-band audio,
-//           bounded extraBuffer[133..138] state.
+//           exact textureLoad from dataTextureC, plasmaBuffer three-band audio.
 // ----------------------------------------------------------------
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=Time, yz=MouseUV, w=MouseDown
-    zoom_params: vec4<f32>,  // x=Scale Density, y=Plasma Intensity, z=Conveyor Speed, w=Core Heat
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Scale Density, y=Plasma Intensity, z=Conveyor Speed, w=Core Heat
 
 const TAU: f32 = 6.28318530718;
 
-const SPRING_X: i32 = 133;
-const SPRING_Y: i32 = 134;
-const SPRING_VX: i32 = 135;
-const SPRING_VY: i32 = 136;
-const SPRING_T: i32 = 137;
-const SPRING_INIT: i32 = 138;
+// Lateral-line canal runs along the hex column one scale-spacing left of centre.
+const LATERAL_COLUMN: f32 = -1.0;
 
 // --- UTILITY FUNCTIONS ---
 fn hash21(p: vec2<f32>) -> f32 { return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453); }
+// Floored modulo: WGSL `%` truncates, which broke the hex lattice for x < 0.
+fn modFloor(a: vec2<f32>, m: vec2<f32>) -> vec2<f32> { return a - m * floor(a / m); }
 fn rot2D(a: f32) -> mat2x2<f32> { let c = cos(a); let s = sin(a); return mat2x2<f32>(c, -s, s, c); }
 
 fn hash31(p: vec3<f32>) -> f32 {
@@ -86,6 +68,7 @@ fn sdScale(p: vec3<f32>, size: vec2<f32>) -> f32 {
 var<private> g_time: f32;
 var<private> g_audio: vec3<f32>;
 var<private> g_mouse: vec2<f32>;
+var<private> g_mouseWorld: vec2<f32>;
 var<private> g_held: f32;
 var<private> g_breach: f32;
 
@@ -97,8 +80,8 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
 
     // Hexagonal grid setup on XZ plane
     let grid = vec2<f32>(1.0, 1.7320508) * spacing;
-    let h1 = p.xz % grid - grid * 0.5;
-    let h2 = (p.xz + grid * 0.5) % grid - grid * 0.5;
+    let h1 = modFloor(p.xz, grid) - grid * 0.5;
+    let h2 = modFloor(p.xz + grid * 0.5, grid) - grid * 0.5;
     var cellPos = h1;
     var cellId = floor(p.xz / grid);
     if (length(h1) > length(h2)) {
@@ -119,12 +102,12 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
     var lift = sin(localTime) * 0.2 + 0.2 + max(rowWave, 0.0) * (0.22 + g_audio.x * 0.16);
     var tilt = cos(localTime) * 0.3 + rowWave * 0.28;
 
-    // Mouse repulsion — the smoothed cursor shoves scales open ahead of it
-    let mouseWorld = vec2<f32>(g_mouse.x * 10.0, g_mouse.y * 7.0 + g_time * 3.4);
-    let distToMouse = length(p.xz - mouseWorld);
-    let repel = 1.0 - smoothstep(0.0, 5.0 + g_held * 2.5, distToMouse);
-    lift += repel * (1.5 + g_held * 1.2);
-    tilt += repel * (1.5 + g_held * 0.8);
+    // Mouse repulsion — the cursor shoves scales open ahead of it
+    let distToMouse = length(p.xz - g_mouseWorld);
+    // Hover nudges about one scale; holding throws the full wake open.
+    let repel = 1.0 - smoothstep(0.0, mix(1.8, 7.5, g_held), distToMouse);
+    lift += repel * mix(0.35, 2.7, g_held);
+    tilt += repel * mix(0.4, 2.3, g_held);
 
     q.y -= lift;
     let rM = rot2D(tilt);
@@ -169,7 +152,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (fragCoord.x >= dims.x || fragCoord.y >= dims.y) { return; }
 
     let coord = vec2<i32>(id.xy);
-    var uv = (fragCoord * 2.0 - dims) / dims.y;
+    // y up: texture rows grow downward, so flip (HEAD rendered the floor at the top).
+    var uv = (fragCoord * 2.0 - dims) / dims.y * vec2<f32>(1.0, -1.0);
     let dataUV = fragCoord / dims;
     let aspectFix = vec2<f32>(dims.x / max(dims.y, 1.0), 1.0);
     g_time = u.config.x;
@@ -179,45 +163,27 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let held = u.zoom_config.w > 0.5;
     g_held = select(0.0, 1.0, held);
 
-    // ── spring cursor (extraBuffer[133..138] only) ──────────────────────
-    var smoothMouse = rawMouse;
-    let hasSpring = arrayLength(&extraBuffer) > 138u;
-    if (hasSpring && extraBuffer[SPRING_INIT] > 0.5) {
-        smoothMouse = vec2<f32>(extraBuffer[SPRING_X], extraBuffer[SPRING_Y]);
-    }
-    if (hasSpring && id.x == 0u && id.y == 0u) {
-        var springPos = smoothMouse;
-        var springVel = vec2<f32>(extraBuffer[SPRING_VX], extraBuffer[SPRING_VY]);
-        if (extraBuffer[SPRING_INIT] <= 0.5) {
-            springPos = rawMouse;
-            springVel = vec2<f32>(0.0);
-        } else {
-            let dt = clamp(g_time - extraBuffer[SPRING_T], 0.001, 0.05);
-            let omega = 10.0;
-            let accel = (rawMouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
-            springVel += accel * dt;
-            springPos += springVel * dt;
-        }
-        extraBuffer[SPRING_X] = springPos.x;
-        extraBuffer[SPRING_Y] = springPos.y;
-        extraBuffer[SPRING_VX] = springVel.x;
-        extraBuffer[SPRING_VY] = springVel.y;
-        extraBuffer[SPRING_T] = g_time;
-        extraBuffer[SPRING_INIT] = 1.0;
-        smoothMouse = springPos;
-    }
+    // extraBuffer is re-uploaded every frame, so the old spring never held state.
+    let smoothMouse = rawMouse;
     g_mouse = (smoothMouse - 0.5) * 2.0;
 
     // ── click breaches race down the conveyor (capped, bounded) ─────────
+    // Molt scars are measured from the time since each ring front crossed
+    // this pixel (the old A-alpha decay fed back on its own semantic alpha
+    // and never let go).
     var breach = 0.0;
+    var scar = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
+    let ringSpeed = 1.1 + u.zoom_params.z * 0.3;
     for (var r = 0u; r < rippleCount; r++) {
         let ripple = u.ripples[r];
         let age = g_time - ripple.z;
-        if (age < 0.0 || age > 2.0) { continue; }
-        let delta = (dataUV - ripple.xy) * aspectFix;
-        let front = abs(length(delta) - age * (1.1 + u.zoom_params.z * 0.3));
-        breach += exp(-front * 55.0) * (1.0 - age * 0.5);
+        if (age < 0.0 || age > 4.0) { continue; }
+        let dist = length((dataUV - ripple.xy) * aspectFix);
+        let front = abs(dist - age * ringSpeed);
+        breach += exp(-front * 55.0) * max(1.0 - age * 0.5, 0.0);
+        let since = age - dist / ringSpeed;
+        scar += select(0.0, exp(-since * 2.5), since > 0.0);
     }
     breach = min(breach, 1.5);
     g_breach = breach;
@@ -230,6 +196,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let uu = normalize(cross(ww, vec3<f32>(0.0, 1.0, 0.0)));
     let vv = normalize(cross(uu, ww));
     let rd = normalize(uv.x * uu + uv.y * vv + 1.5 * ww);
+
+    // The cursor's ray meets the scale field ahead of the camera (HEAD scrolled
+    // the wake at 3.4/s while the camera ran at ~9/s, so it fell behind view).
+    let mUv = (smoothMouse * 2.0 - 1.0) * vec2<f32>(dims.x / max(dims.y, 1.0), -1.0);
+    let rdM = normalize(mUv.x * uu + mUv.y * vv + 1.5 * ww);
+    let tGround = ro.y / max(-rdM.y, 0.12);
+    g_mouseWorld = ro.xz + rdM.xz * tGround;
 
     var t = 0.0;
     var d = 0.0;
@@ -254,10 +227,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let coreHeat = u.zoom_params.w;
     let audioPulse = 1.0 + g_audio.x * 1.5;
 
-    // Exact previous-frame state, read early so scars can decay from it.
     let prev = textureLoad(dataTextureC, coord, 0);
-    let scarDecay = clamp(prev.a * 0.955 - 0.01, 0.0, 1.5);
-    let scarEnergy = clamp(max(scarDecay, breach), 0.0, 1.5);
+    let scarEnergy = clamp(max(scar, breach), 0.0, 1.5);
 
     if (t < maxT) {
         let p = ro + rd * t;
@@ -287,20 +258,58 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
             col = diff + spec + sheen * fres * 0.55;
 
+            // Scale-local frame of the hit (same hex lattice as map()).
+            let spacingL = 10.0 / max(1.0, u.zoom_params.x);
+            let gridL = vec2<f32>(1.0, 1.7320508) * spacingL;
+            let k1 = modFloor(p.xz, gridL) - gridL * 0.5;
+            let k2 = modFloor(p.xz + gridL * 0.5, gridL) - gridL * 0.5;
+            let local = select(k1, k2, length(k1) > length(k2));
+            let center = p.xz - local;
+            let rN = length(local) / (spacingL * 0.45);
+            // Both hex sub-lattices put centres on multiples of half a cell, so
+            // the rounded index is exact per scale (no flicker at large z).
+            let cellIndex = round(center / (gridL * 0.5));
+            let cellAge = hash21(cellIndex);
+
             // Keel ridging shading — reads the carved geometry back as highlight bands
-            let ridge = 0.5 + 0.5 * sin(length(p.xz % vec2<f32>(1.0) - 0.5) * 34.0 - g_time * 5.0);
+            let ridge = 0.5 + 0.5 * sin(length(local) * 34.0 - g_time * 5.0);
             col *= 0.82 + ridge * 0.36;
+
+            // ── Idea: growth annuli + radii ──
+            // A scale grows by adding rings at its margin; slow seasons crowd
+            // them into darker annuli, and radii grooves fan from the focus to
+            // the anterior (oncoming) margin. Older scales carry more annuli.
+            let annuli = 2.0 + floor(cellAge * 4.0);
+            let crowd = pow(0.5 + 0.5 * cos(TAU * (rN * annuli + cellAge)), 6.0);
+            let theta = atan2(local.x, -local.y);
+            let radiiMask = pow(abs(cos(theta * 4.5)), 40.0)
+                * smoothstep(0.15, 0.35, rN) * step(abs(theta), 1.2);
+            let growth = smoothstep(1.05, 0.9, rN);
+            col *= 1.0 - growth * (crowd * 0.45 + radiiMask * 0.55);
+            col += sheen * crowd * growth * fres * 0.25;
+
+            // ── Idea: lateral-line canal ──
+            // One longitudinal row of scales is pierced by the canal: a pore at
+            // each scale's focus joined by a raised tube. Its neuromasts sense
+            // pressure, so they flare as breach rings and bass pass over them.
+            let inLine = 1.0 - smoothstep(0.08, 0.12, abs(center.x / spacingL - LATERAL_COLUMN));
+            let tube = (1.0 - smoothstep(0.035, 0.06, abs(local.x) / spacingL)) * growth;
+            let poreR = rN / 0.16;
+            let pore = 1.0 - smoothstep(0.7, 1.0, poreR);
+            let poreRim = exp(-(poreR - 1.0) * (poreR - 1.0) * 18.0);
+            let sense = 0.25 + g_audio.x * 0.5 + scarEnergy * 1.6 + g_breach * 1.5;
+            col = mix(col, col * 0.55 + vec3<f32>(0.04, 0.05, 0.06), tube * inLine * 0.6);
+            col *= 1.0 - pore * inLine * 0.9;
+            col += scalePalette(filmT + 0.6, 1.0) * poreRim * inLine * sense;
 
             // Plasma bleed from below
             let plasmaProximity = exp(-p.y * 2.0);
             col += scalePalette(filmT + 0.45, 1.0) * plasmaProximity * 0.35 * plasmaIntensity * audioPulse;
 
             // Molt scar: a scale recently crossed by a breach ring keeps a
-            // fading glowing crack, carried across frames via the exact
-            // dataTextureC alpha history and varied per scale by the same
-            // hex-grid hash used for the scale layout.
-            let spacingM = 10.0 / max(1.0, u.zoom_params.x);
-            let cellHashScar = hash21(floor(p.xz / spacingM));
+            // fading glowing crack, timed from when the ring front crossed
+            // the pixel (stateless) and varied per scale by the lattice hash.
+            let cellHashScar = cellAge;
             let scarGlow = scarEnergy * ridge * mix(0.6, 1.4, cellHashScar);
             col += scalePalette(filmT + 0.15, 1.0) * scarGlow * 0.7;
 
@@ -330,11 +339,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Semantic alpha: surface presence + plasma energy + persistent molt scar
     let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(
-        select(0.0, 0.45 + fres * 0.3, t < maxT)
+        select(0.85, 0.9 + fres * 0.1, t < maxT)
         + luma * 0.45 + min(glow, 2.0) * 0.15 + scarEnergy * 0.3,
         0.0, 1.0);
 
-    // (prev already exact-loaded above for scar decay — reused here, no filtering)
+    // Exact previous frame (loaded above) keeps a decaying max-hold trail in A.
     let temporal = clamp(max(col, prev.rgb * 0.9), vec3<f32>(0.0), vec3<f32>(5.0));
     let depth = select(1.0, clamp(t / maxT, 0.0, 0.995), t < maxT);
 

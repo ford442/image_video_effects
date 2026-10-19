@@ -3,12 +3,14 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
+//  Upgraded: 2026-10-18
 //  Ideas: tail-fin Karman wake shed into the volumetric nebula (phase-locked to tail, bass);
 //         half-offset scale rows with head-to-tail turning flash (mids) and rim sparkle (treble);
 //         exact dataTextureC persistence that lingers longer inside the wake;
 //         kohaku plasma hi-patches with a hot edge line on the body (koi markings);
-//         pectoral fin flutter, swim-phased stroke and ripple
+//         pectoral fin flutter, swim-phased stroke and ripple;
+//         backlit caudal fin rays (vertical fan fin, light transmitted through, rays branch toward the edge);
+//         operculum breathing (gill covers gape on a breath cycle, crimson lamellae, bass deepens the gape)
 //  A packing: ACES display RGBA (read back from C as display history)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -89,10 +91,15 @@ fn mapKoi(p_in: vec3<f32>, time: f32, koi_speed: f32, tail_length: f32) -> f32 {
     var d_fins = length(vec2<f32>(fin_p.x, fin_p.y)) - 0.02;
     d_fins = max(d_fins, abs(p.z) - 0.5);
 
-    // Tail
+    // Tail: a vertical caudal fan (HEAD's round tail term was a ~1.05-radius ball, bigger than the body)
     let tail_p = p - vec3<f32>(0.0, 0.0, -body_len - tail_length * 0.5);
     let tail_wave = sin(tail_p.z * 5.0 - time * koi_speed * 5.0) * 0.5;
-    let d_tail = length(vec2<f32>(tail_p.x + tail_wave, tail_p.y)) - (0.3 - abs(tail_p.z)*0.2) + abs(tail_p.z)-tail_length*0.5;
+    let fan_s = clamp((tail_length * 0.5 - tail_p.z) / tail_length, 0.0, 1.0); // 0 peduncle .. 1 trailing edge
+    let fan_h = 0.1 + 0.7 * pow(fan_s, 0.7);
+    let fan_y = clamp(abs(tail_p.y) / fan_h, 0.0, 1.0);
+    let fork_z = -tail_length * 0.5 + 0.3 * tail_length * (1.0 - fan_y * fan_y); // shallow forked trailing edge
+    let d_tail = max(max(abs(tail_p.x + tail_wave) - 0.035 * (1.0 - 0.6 * fan_s), abs(tail_p.y) - fan_h),
+                     max(tail_p.z - tail_length * 0.5, fork_z - tail_p.z));
 
     var d = smin(d_body, d_tail, 0.3);
     d = smin(d, d_fins, 0.2);
@@ -110,6 +117,12 @@ fn fbm(p_in: vec3<f32>) -> f32 {
         amp *= 0.5;
     }
     return f;
+}
+
+// Nebula density: the two coarse voronoi octaves of fbm (octaves 3-4 added ~0.19 of fine grain at
+// 2x the cost per march step; HEAD's 40-step x 4-octave march timed out on SwiftShader; now 20 x 0.5)
+fn fbm2(p_in: vec3<f32>) -> f32 {
+    return 0.5 * (voronoi(p_in).x * 2.0 - 1.0) + 0.25 * (voronoi(p_in * 2.0).x * 2.0 - 1.0);
 }
 
 // Idea 1: Karman vortex street behind the tail. Alternating puffs are shed at the tail tip,
@@ -214,15 +227,24 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Previous display frame — exact load, no filtering on rgba32float history
     let prev = textureLoad(dataTextureC, vec2<i32>(id.xy), 0);
 
-    let ro = vec3<f32>(0.0, 0.0, 5.0);
-    var rd = normalize(vec3<f32>(uv, -1.0));
-
-    // Mouse interaction - bend rays (gravitational ripple)
+    // Mouse interaction - bend rays (gravitational ripple), in screen space
+    var uvb = uv;
     let mouse_dist = length(uv - mouse);
     if (mouse_dist < 0.5) {
-        let pull = (0.5 - mouse_dist) * 0.5;
-        rd = normalize(rd + vec3<f32>(normalize(uv - mouse + 0.0001) * pull, 0.0));
+        // gentle lens that vanishes at the cursor (HEAD pushed rays up to 0.25 outward, and the idle
+        // cursor parks at screen centre, so it hollowed the koi out of the middle of the frame)
+        let pull = (0.5 - mouse_dist) * 0.12 * smoothstep(0.0, 0.15, mouse_dist);
+        uvb = uv + normalize(uv - mouse + 0.0001) * pull;
     }
+
+    // 3/4 overhead pond view of the swimming koi (HEAD looked straight down its +z body axis,
+    // so the fish read as a blob and the tail wake sat hidden behind it). Screen y is down.
+    let ta = vec3<f32>(0.0, -0.3, -0.4);
+    let ro = ta + 6.6 * vec3<f32>(sin(1.13) * cos(0.56), sin(0.56), cos(1.13) * cos(0.56));
+    let cw = normalize(ta - ro);
+    let cu = normalize(cross(cw, vec3<f32>(0.0, 1.0, 0.0)));
+    let cv = cross(cu, cw);
+    let rd = normalize(uvb.x * cu - uvb.y * cv + 1.15 * cw);
 
     // Light sources
     let keyLight = normalize(vec3<f32>(1.0, 1.0, -0.5));
@@ -240,7 +262,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var fresnel = 0.0;
     var sss = 0.0;
 
-    for(var i = 0; i < 80; i++) {
+    for(var i = 0; i < 110; i++) {
         p = ro + rd * t;
         let d = mapKoi(p, time, koi_speed, tail_length);
         if (d < 0.005) {
@@ -248,7 +270,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             break;
         }
         t += d * 0.5;
-        if (t > 10.0) { break; }
+        if (t > 14.0) { break; }
     }
 
     if (hit) {
@@ -302,6 +324,32 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let hi_col = vec3<f32>(1.0, 0.35, 0.22) * (0.5 + diffKey) * (0.7 + plasma_intensity * 0.5) + glow_col * 0.25;
         col = mix(col, hi_col, hi_mask * 0.7);
         col += vec3<f32>(1.0, 0.8, 0.6) * hi_edge * (0.25 + clamp(treble, 0.0, 1.5) * 0.4);
+
+        // Idea 6: backlit caudal fin rays — the thin fan transmits the key/fill light through it,
+        // and the bony lepidotrichia fan out from the peduncle as brighter, branching streaks.
+        let fin_mask = smoothstep(-1.95, -2.15, p.z);
+        let fin_ang = atan2(p.y, max(-2.0 - p.z, 0.001));
+        let fin_s = clamp((-2.0 - p.z) / tail_length, 0.0, 1.0);
+        let ray_n = mix(9.0, 18.0, step(0.55, fin_s));   // rays dichotomously branch toward the edge
+        let fin_rays = pow(abs(cos(fin_ang * ray_n)), 6.0);
+        let transmit = max(dot(-n, keyLight), 0.0) * keyColor + max(dot(n, keyLight), 0.0) * fillColor * 0.4;
+        let membrane = (vec3<f32>(1.0, 0.45, 0.3) * 0.35 + glow_col * 0.2) * transmit * (1.0 - fin_s * 0.4);
+        let ray_glow = vec3<f32>(1.0, 0.85, 0.65) * fin_rays * (0.35 + transmit.r * 0.6) * (0.6 + clamp(mids, 0.0, 1.5) * 0.6);
+        col = mix(col, col * 0.45 + membrane + ray_glow, fin_mask);
+
+        // Idea 7: operculum breathing — the gill-cover edge arcs back across each flank and gapes on a
+        // ~0.7 s breath, exposing crimson gill lamellae; bass deepens the gape.
+        let q_x = p.x + body_wave;
+        let r_here = max(0.4 * (1.0 - abs(p.z) / 2.1), 0.02);
+        let flank = clamp(abs(q_x) / r_here, 0.0, 1.0);
+        let seam_z = 1.05 - 0.14 * flank;
+        let breath = 0.5 + 0.5 * sin(time * 9.0);
+        let gape = 0.03 + 0.09 * breath * (1.0 + clamp(bass, 0.0, 1.5) * 0.6);
+        let behind = seam_z - p.z;
+        let gill = smoothstep(0.0, 0.012, behind) * (1.0 - smoothstep(gape * 0.7, gape, behind)) * smoothstep(0.35, 0.6, flank);
+        let lamellae = 0.55 + 0.45 * cos(atan2(p.y, q_x) * 46.0);
+        col = mix(col, vec3<f32>(1.6, 0.18, 0.22) * lamellae * (0.6 + breath * 0.8), gill * 0.85);
+        col *= 1.0 - 0.6 * exp(-behind * behind / 0.00015) * smoothstep(0.3, 0.55, flank);
     }
 
     // Nebula Background (volumetric)
@@ -309,26 +357,28 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var nt = 0.0;
     var nebula_density_acc = 0.0;
     var wake_acc = 0.0;
-    for(var i = 0; i < 40; i++) {
+    for(var i = 0; i < 20; i++) {
         let np = ro + rd * nt;
         let wk = koiWake(np, time, koi_speed, tail_length, bass);
-        wake_acc += wk * 0.25;
-        nebula_col += mix(vec3<f32>(0.1, 0.6, 0.9), vec3<f32>(0.9, 0.3, 0.95), wk) * wk * 0.05 * (0.4 + plasma_intensity);
-        let den = fbm(np * 0.5 + vec3<f32>(time * 0.1, 0.0, time * 0.2));
+        wake_acc += wk * 0.5;
+        nebula_col += mix(vec3<f32>(0.1, 0.6, 0.9), vec3<f32>(0.9, 0.3, 0.95), wk) * wk * 0.1 * (0.4 + plasma_intensity);
+        let den = fbm2(np * 0.5 + vec3<f32>(time * 0.1, 0.0, time * 0.2));
         if (den > 0.0) {
             let nc = mix(vec3<f32>(0.12, 0.0, 0.25), vec3<f32>(0.0, 0.45, 0.65), den);
-            nebula_col += nc * den * 0.08 * nebula_density;
-            nebula_density_acc += den * 0.02;
+            nebula_col += nc * den * 0.16 * nebula_density;
+            nebula_density_acc += den * 0.04;
         }
-        nt += 0.25;
+        nt += 0.5;
     }
 
     col += nebula_col;
 
     // God rays from above
-    let rayAngle = atan2(rd.y, rd.x);
-    let rays = pow(max(0.0, sin(rayAngle * 6.0 + time * 0.15)), 10.0) * 0.5;
-    col += vec3<f32>(1.2, 0.8, 1.4) * rays * nebula_density;
+    // God rays from above: shafts fan down from a source above the top edge and fade with distance
+    let ray_src = uvb - vec2<f32>(0.25, -0.75);
+    let rayAngle = atan2(ray_src.y, ray_src.x);
+    let rays = pow(max(0.0, sin(rayAngle * 14.0 + time * 0.15)), 10.0) * 0.3 * exp(-length(ray_src) * 0.9);
+    col += vec3<f32>(1.2, 0.8, 1.4) * rays * nebula_density * select(1.0, 0.3, hit);
 
     // Apply bloom from audio
     col += vec3<f32>(0.25, 0.55, 1.0) * (bass * 0.5 + mids * 0.2) * plasma_intensity * (1.0 / (1.0 + t*t*0.1));
@@ -348,10 +398,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col = clamp(col + vec3<f32>(dither), vec3<f32>(0.0), vec3<f32>(1.0));
 
     // Alpha: emission + density + hit occlusion
-    let alpha = clamp(0.2 + (select(0.0, sss + fresnel, hit) * 0.5) + nebula_density_acc + wake_acc * 0.1, 0.0, 1.0);
+    // Nebula is a filled volume (floor 0.8, denser gas/wake -> opaque); the koi body is solid
+    let alpha = clamp(0.8 + select(0.0, 0.15 + (sss + fresnel) * 0.1, hit) + nebula_density_acc * 0.3 + wake_acc * 0.05, 0.0, 1.0);
 
     // Depth: koi geometry near = 1, open nebula = 0
-    let depth = select(0.0, clamp(1.0 - t * 0.1, 0.0, 1.0), hit);
+    let depth = select(0.0, clamp(1.0 - t / 14.0, 0.0, 1.0), hit);
 
     textureStore(writeTexture, id.xy, vec4<f32>(col, alpha));
     textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
