@@ -1,9 +1,14 @@
-// ================================================================
-//  Data Slicer — Batch 66
-//  fp128 slice phase, continuous jitter waves, voronoi cracks,
-//  C smear along slices, racing horizontal packet, capped clicks,
-//  held intensifies chaos, ACES + semantic alpha.
-// ================================================================
+// ═══════════════════════════════════════════════════════════════════
+//  Data Slicer
+//  Category: distortion
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-10-19
+//  Ideas: fp128 slice phase; continuous jitter waves; voronoi cracks;
+//         C smear along slices; racing packet; torn slice seams;
+//         per-slice bit-crush (§12.2B block quantization); dropout bursts (§12.2B)
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
 
@@ -178,7 +183,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let fractalDisplacement = (fbmJitter + totalWave + sliceBend * mouseMask) * (1.0 + bass * 0.5);
   let packet = slice_packet(uv, time, jitterSpeed);
 
-  let baseUV = clamp(uv + vec2<f32>(fractalDisplacement + qc * chaosAmount * 0.3 * cellEdge + packet * chaosAmount * 0.04, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+  // ── Idea 2: per-slice bit-crush (§12.2B block quantization) ──────────
+  // A few slices per jitter tick lose precision like a corrupt data packet:
+  // their row is block-pixelated horizontally (block width follows the
+  // slice thickness) and later quantised to few levels.
+  let crushTick = floor(time * jitterSpeed * 2.0);
+  let crushRoll = hash12(vec2<f32>(sliceIndex * 1.37, crushTick));
+  let crush = step(1.0 - zp.z * 0.35 - bass * 0.08, crushRoll) * step(0.001, zp.z);
+  let blockW = max(sliceThickness * 0.5 / aspect, 1.0 / resolution.x);
+  let crushX = (floor(uv.x / blockW) + 0.5) * blockW;
+  let sliceX = mix(uv.x, crushX, crush);
+
+  let baseUV = clamp(vec2<f32>(sliceX, uv.y) + vec2<f32>(fractalDisplacement + qc * chaosAmount * 0.3 * cellEdge + packet * chaosAmount * 0.04, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
 
   let splitStrength = colorSplit * (0.4 + mouseMask) * (1.0 + treble * 0.5);
   let curlAngle = fbm(uv * 5.0 + time * 0.25, 4, 2.0, 0.5) * PI;
@@ -195,6 +211,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     textureSampleLevel(readTexture, u_sampler, baseUV, 0.0).g,
     textureSampleLevel(readTexture, u_sampler, sampleB, 0.0).b
   );
+
+  // ── Idea 1: torn slice seams ─────────────────────────────────────────
+  // Where two slices shear apart, the boundary band shows the neighbour
+  // slice's content (its own jitter) overlapping this one, plus a dark
+  // sync gap right on the cut. Seam width grows with chaos.
+  let edgeDist = min(localY, 1.0 - localY);
+  let nbrIndex = sliceIndex + select(1.0, -1.0, localY < 0.5);
+  let nbrJitter = (fbm(vec2<f32>(nbrIndex, jitterT) + vec2<f32>(sin(jitterT * 0.7), cos(jitterT * 0.5)), 4, 2.1, 0.5) - 0.5) * chaosAmount * (1.0 + bass * 0.8)
+    + sin(nbrIndex * 0.33 + time * jitterSpeed * 5.0 + uv.x * 18.0) * chaosAmount * 0.30;
+  let seamWidth = 0.04 + zp.z * 0.16;
+  let seam = (1.0 - smoothstep(0.0, seamWidth, edgeDist)) * step(0.001, zp.z);
+  let nbrUV = clamp(vec2<f32>(uv.x + nbrJitter, uv.y), vec2<f32>(0.0), vec2<f32>(1.0));
+  let nbrCol = textureSampleLevel(readTexture, u_sampler, nbrUV, 0.0).rgb;
+  finalColor = mix(finalColor, nbrCol, seam * 0.5);
+  let syncGap = (1.0 - smoothstep(0.0, seamWidth * 0.25, edgeDist)) * step(0.001, zp.z) * clamp(abs(fractalDisplacement - nbrJitter) * 40.0, 0.0, 1.0);
+  finalColor = finalColor * (1.0 - syncGap * 0.7);
+
+  // Idea 2 (cont.): quantise crushed slices to a few levels per channel.
+  let levels = mix(3.0, 6.0, hash12(vec2<f32>(sliceIndex, crushTick + 7.0)));
+  finalColor = mix(finalColor, floor(clamp(finalColor, vec3<f32>(0.0), vec3<f32>(1.0)) * levels + 0.5) / levels, crush);
 
   let prev = textureLoad(dataTextureC, pixel, 0);
   finalColor = mix(finalColor, prev.rgb * 0.9, packet * 0.18);
@@ -220,11 +256,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   finalColor = finalColor + glitchTint * clickBurst * 0.35;
 
+  // ── Idea 3: dropout bursts (§12.2B) ─────────────────────────────────
+  // A rare slice drops data: a white or black streak starts at a random x
+  // and decays exponentially along the slice in the read direction.
+  let dropTick = floor(time * (2.0 + jitterSpeed * 3.0));
+  let dropRoll = hash12(vec2<f32>(sliceIndex * 0.91 + 3.1, dropTick));
+  let dropOn = step(1.0 - (zp.z * 0.12 + bass * 0.05), dropRoll);
+  let dropX0 = hash12(vec2<f32>(sliceIndex, dropTick + 11.0));
+  let dropRun = uv.x - dropX0;
+  let dropTail = step(0.0, dropRun) * exp(-max(dropRun, 0.0) * 9.0) * (1.0 - smoothstep(0.3, 0.5, abs(localY - 0.5)));
+  let dropWhite = step(0.5, hash12(vec2<f32>(sliceIndex, dropTick + 23.0)));
+  let dropout = dropOn * dropTail;
+  finalColor = mix(finalColor, vec3<f32>(dropWhite * 1.2), dropout * 0.85);
+
   let sparkle = hash12(vec2<f32>(gid.xy) + vec2<f32>(time * 12.0, time * 8.0)) * treble * 0.15 * mouseMask;
   finalColor = finalColor + vec3<f32>(sparkle);
 
-  finalColor = acesToneMap(finalColor);
-  let finalAlpha = clamp(0.76 + mouseMask * 0.12 + abs(fractalDisplacement) * 1.4 + cellEdge * 0.2 + clickBurst * 0.1, 0.45, 0.98);
+  finalColor = acesToneMap(max(finalColor, vec3<f32>(0.0)));
+  let finalAlpha = clamp(0.76 + mouseMask * 0.12 + abs(fractalDisplacement) * 1.4 + cellEdge * 0.2 + clickBurst * 0.1 + seam * 0.1 + crush * 0.08 + dropout * 0.15, 0.45, 0.98);
 
   let baseDepth = textureLoad(readDepthTexture, vec2<i32>(clamp(vec2<i32>(baseUV * resolution), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1))), 0).r;
   let depthOut = clamp(mix(baseDepth, 0.25 + scanGlow + mouseMask * 0.25 + cellEdge * 0.15, 0.25 + chaosAmount * 2.0), 0.0, 1.0);

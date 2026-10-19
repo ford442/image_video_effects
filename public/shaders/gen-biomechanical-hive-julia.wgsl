@@ -6,6 +6,11 @@
 //  Chunks From: gen-biomechanical-hive.wgsl, spec-quaternion-julia.wgsl
 //  Created: 2026-04-18
 //  By: Agent CB-5 — Generative & Hybrid Enhancer
+//  Upgraded: 2026-10-19
+//  Ideas: orbit-trap veins on the Julia core (§12.2E); step-count AO in
+//         the hive chambers (§12.2E); core bioluminescence on the chitin
+//         via soft inverse-square (§12.2F)
+//  A packing: ACES display RGBA (C unused); depth = t / 100
 // ═══════════════════════════════════════════════════════════════════
 //  A biomechanical hive where each cell contains a living quaternion
 //  Julia fractal core. The chitinous exoskeleton surrounds morphing
@@ -80,6 +85,23 @@ fn quaternionJuliaDE(p: vec3<f32>, c: vec4<f32>) -> f32 {
   return 0.5 * r * log(r) / max(dr, 0.001);
 }
 
+// ── Idea 1: orbit-trap veins (§12.2E) ───────────────────────────────
+// Re-runs the core's own quaternion iteration once at the hit point and
+// keeps the closest approach of the orbit to the origin and to the w=0
+// plane: thin minima trace veins through the organism's body.
+fn quaternionJuliaTrap(p: vec3<f32>, c: vec4<f32>) -> vec2<f32> {
+  var q = vec4<f32>(p, 0.0);
+  var trapPt = 1e9;
+  var trapPlane = 1e9;
+  for (var i: i32 = 0; i < 8; i = i + 1) {
+    q = quaternionMul(q, q) + c;
+    trapPt = min(trapPt, length(q.xyz));
+    trapPlane = min(trapPlane, abs(q.w));
+    if (dot(q, q) > 256.0) { break; }
+  }
+  return vec2<f32>(trapPt, trapPlane);
+}
+
 fn toneMapACES(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
   let b = 0.03;
@@ -137,6 +159,21 @@ fn calcNormal(p: vec3<f32>, time: f32, c: vec4<f32>, density: f32, biomass: f32,
     map(p + vec3<f32>(0.0, e, 0.0), time, c, density, biomass, pulseSpeed).x - d,
     map(p + vec3<f32>(0.0, 0.0, e), time, c, density, biomass, pulseSpeed).x - d
   ));
+}
+
+// ── Idea 2: step-count AO (§12.2E) ──────────────────────────────────
+// Five probes along the normal with the hive's own map(): rib grooves,
+// wall/core junctions and the cell corners fill with shadow.
+fn hiveAO(p: vec3<f32>, n: vec3<f32>, time: f32, c: vec4<f32>, density: f32, biomass: f32, pulseSpeed: f32) -> f32 {
+  let cell_size = 12.0 / density;
+  var occ = 0.0;
+  var sca = 1.0;
+  for (var i = 1; i <= 5; i = i + 1) {
+    let h = cell_size * (0.01 + 0.10 * f32(i) / 5.0);
+    occ += (h - map(p + n * h, time, c, density, biomass, pulseSpeed).x) * sca;
+    sca *= 0.5;
+  }
+  return clamp(1.0 - 3.0 * occ / cell_size, 0.0, 1.0);
 }
 
 fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, c: vec4<f32>, density: f32, biomass: f32, pulseSpeed: f32) -> vec2<f32> {
@@ -210,16 +247,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let spacing = vec3<f32>(cell_size * 2.0, cell_size * 2.0, cell_size * 4.0);
     let local_p = (fract((p + spacing * 0.5) / spacing) - 0.5) * spacing;
 
+    let hue = f32(t_dist) * 0.05 + time * 0.05;
+    let coreHue = vec3<f32>(
+      0.5 + 0.5 * cos(6.28318 * (hue + 0.0)),
+      0.5 + 0.5 * cos(6.28318 * (hue + 0.33)),
+      0.5 + 0.5 * cos(6.28318 * (hue + 0.67))
+    );
+    var emission = vec3<f32>(0.0);
+    var veinGlow = 0.0;
+
     if (mat == 2.0) {
       // Julia core coloring
-      let hue = f32(t_dist) * 0.05 + time * 0.05;
-      baseColor = vec3<f32>(
-        0.5 + 0.5 * cos(6.28318 * (hue + 0.0)),
-        0.5 + 0.5 * cos(6.28318 * (hue + 0.33)),
-        0.5 + 0.5 * cos(6.28318 * (hue + 0.67))
-      );
+      baseColor = coreHue;
       baseColor = baseColor * (1.0 + pulse * 0.5);
       baseColor += fbm(p * 5.0) * 0.2;
+
+      // Idea 1: veins where the orbit grazes its traps, pulsing with the core
+      let juliaScale = cell_size * 0.15;
+      let trap = quaternionJuliaTrap(local_p / juliaScale, c);
+      veinGlow = exp(-trap.x * 6.0) * 0.6 + exp(-trap.y * 30.0) * 0.8;
+      baseColor = mix(baseColor * 0.7, baseColor, smoothstep(0.0, 0.5, veinGlow));
+      emission += mix(coreHue, vec3<f32>(1.0), 0.35) * veinGlow * (0.4 + 0.8 * pulse);
     } else {
       // Chitinous wall
       let refl = reflect(-rd, n);
@@ -227,20 +275,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       baseColor += vec3<f32>(1.0) * spec * 0.5;
       let rim = pow(1.0 - max(dot(n, -rd), 0.0), 4.0);
       baseColor += vec3<f32>(0.2, 0.3, 0.4) * rim;
+
+      // ── Idea 3: core bioluminescence on the chitin (§12.2F) ──────────
+      // The cell's own core sits at its centre: walls catch its light with
+      // a soft inverse-square falloff, facing-weighted, riding the pulse.
+      let toCore = -local_p;
+      let r0 = cell_size * 0.35;
+      let fall = (r0 * r0) / (dot(toCore, toCore) + r0 * r0);
+      let facing = max(dot(n, normalize(toCore + vec3<f32>(1e-4))), 0.0) * 0.7 + 0.3;
+      emission += coreHue * fall * facing * (0.25 + 0.5 * pulse);
     }
 
     let diff = max(dot(n, lightDir), 0.0);
-    color = baseColor * (diff * 0.8 + 0.2);
+    let ao = hiveAO(p, n, time, c, density, biomass, pulseSpeed);
+    color = baseColor * (diff * 0.8 + 0.2) * ao + emission * mix(0.6, 1.0, ao);
 
     let fogAmount = 1.0 - exp(-t_dist * 0.05);
     color = mix(color, fogColor, fogAmount);
 
     alpha = select(0.75, 0.55 + pulse * 0.2, mat == 2.0);
-    alpha = clamp(alpha, 0.35, 0.95);
+    alpha = clamp(alpha + veinGlow * 0.1, 0.35, 0.95);
   } else {
     color = fogColor;
   }
 
-  textureStore(writeTexture, vec2<u32>(global_id.xy), vec4<f32>(color, alpha));
+  let display = vec4<f32>(toneMapACES(max(color, vec3<f32>(0.0))), alpha);
+  textureStore(writeTexture, vec2<u32>(global_id.xy), display);
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), display);
   textureStore(writeDepthTexture, vec2<u32>(global_id.xy), vec4<f32>(t_dist / 100.0, 0.0, 0.0, 0.0));
 }

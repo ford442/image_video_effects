@@ -4,8 +4,10 @@
 //  Features: simulation, temporal, video-driven, cellular-automata,
 //             audio-reactive, mouse-driven, lenia, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-12
-//  Ideas: anisotropic kernel from video luma gradient; membrane from |grad A|
+//  Upgraded: 2026-09-12, 2026-10-19
+//  Ideas: anisotropic kernel from video luma gradient; membrane from |grad A|;
+//         beta-weighted second kernel shell; motion-fed growth from C.a;
+//         growth-front shading
 //  A packing: raw (density, neighborhood, signed growth, video luma)
 // ═══════════════════════════════════════════════════════════════════
 //  Continuous Lenia cellular automaton (Bert Wang-Chak Chan, 2019)
@@ -148,7 +150,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let growthSigma = mix(0.015, 0.06, vidSat  * videoCoupling + 0.04 * (1.0 - videoCoupling));
 
   // ── Read previous CA state from ping-pong buffer ──────────────────────────
-  let prevState = stateAt(coord, dims).r;
+  let prevTexel = stateAt(coord, dims);
+  let prevState = prevTexel.r;
+
+  // ── Idea 4: motion-fed growth ─────────────────────────────────────────────
+  // C.a already holds last frame's video luma (exact load). Its change is the
+  // fresh "food" — Lenia tissue gets a small growth bias where the footage moves.
+  let vidMotion = clamp(abs(vidLuma - prevTexel.a) * 6.0, 0.0, 1.0);
+  let foodBias  = vidMotion * videoCoupling * 0.35;
+
+  // ── Idea 3: β-weighted outer kernel shell (Chan's multi-ring kernels) ─────
+  // Wide kernels grow a second ring at r≈0.82 with β₂ up to ½, so large
+  // species form layered, multi-shell bodies instead of one blurry disc.
+  let shellBeta = 0.5 * u.zoom_params.x;
 
   // ── Lenia kernel convolution over a (2r+1)×(2r+1) window ─────────────────
   //    Kernel radius in UV space
@@ -162,7 +176,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let p = vec2<f32>(f32(dx), f32(dy));
       let pStretch = p + gN * dot(p, gN) * aniso;
       let rNorm  = length(pStretch) / kernelRadius;
-      let kw     = leniaKernel(rNorm, 1.0);
+      let kw     = leniaKernel(rNorm, 1.0)
+                 + shellBeta * leniaBell(rNorm, 0.82, 0.06) * step(rNorm, 1.0);
       let cellVal = stateAt(coord + vec2<i32>(dx, dy), dims).r;
       convAcc    += cellVal * kw;
       kernSum    += kw;
@@ -173,7 +188,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // ── Lenia growth update ──────────────────────────────────────────────────
   let dt = 0.1 + mids * 0.05;
-  var newState = clamp(prevState + dt * leniaGrowth(neighborhood, growthMu, growthSigma), 0.0, 1.0);
+  let growthRaw = leniaGrowth(neighborhood, growthMu, growthSigma);
+  let growthFed = clamp(growthRaw + foodBias * smoothstep(0.02, 0.2, neighborhood), -1.0, 1.0);
+  var newState = clamp(prevState + dt * growthFed, 0.0, 1.0);
 
   // ── Video-coupling injection: bass beat injects cells from bright video ───
   let beatPulse = step(0.6, bass);
@@ -206,7 +223,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   // Store new CA state
-  let growthSignal = leniaGrowth(neighborhood, growthMu, growthSigma);
+  let growthSignal = growthFed;
   textureStore(dataTextureA, coord, vec4<f32>(newState, neighborhood,
     growthSignal * 0.5 + 0.5, vidLuma));
 
@@ -230,11 +247,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let nU = stateAt(coord + vec2<i32>(0, 1), dims).r;
   let gradA = length(vec2<f32>(nR - nL, nU - nD));
   let membrane = smoothstep(0.04, 0.18, gradA) * smoothstep(0.08, 0.35, newState);
-  let caWithSkin = caFinal + vec3<f32>(0.75, 1.0, 0.85) * membrane * glowInt * 0.85;
+  var caWithSkin = caFinal + vec3<f32>(0.75, 1.0, 0.85) * membrane * glowInt * 0.85;
+
+  // ── Idea 5: growth-front shading ──────────────────────────────────────────
+  // The signed growth already computed for A.b: advancing rims flare warm-white,
+  // retreating tissue cools and dims, so the creature's direction reads at once.
+  let advance = max(growthSignal, 0.0) * smoothstep(0.05, 0.4, newState) * (1.0 - newState);
+  let retreat = max(-growthSignal, 0.0) * smoothstep(0.02, 0.3, newState);
+  caWithSkin = caWithSkin * (1.0 - 0.35 * retreat)
+             + vec3<f32>(1.0, 0.9, 0.7) * advance * glowInt * 0.6
+             + vec3<f32>(0.0, 0.08, 0.18) * retreat * glowInt;
 
   // ── Composite CA over video ───────────────────────────────────────────────
   let output = mix(vidColor.rgb, caWithSkin, compositeMix * min(newState * 2.0 + 0.1, 1.0));
-  let alpha   = clamp(newState * 1.5 + 0.3 + bass * 0.2 + membrane * 0.25, 0.0, 1.0);
+  let alpha   = clamp(newState * 1.5 + 0.3 + bass * 0.2 + membrane * 0.25 + advance * 0.2, 0.0, 1.0);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeTexture, coord, vec4<f32>(aces(output), alpha));
