@@ -1,36 +1,15 @@
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>,
-}
+// ═══════════════════════════════════════════════════════════════════
+//  Neural Raymarcher
+//  Category: advanced-hybrid
+//  Features: audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-19
+//  Ideas: marched in-scatter (the discarded layer-march colour lights the fog);
+//         action-potential wavefronts through the march's depth shells
+//  A packing: A unused (C never read)
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) 
-var u_sampler: sampler;
-@group(0) @binding(1) 
-var readTexture: texture_2d<f32>;
-@group(0) @binding(2) 
-var writeTexture: texture_storage_2d<rgba32float,write>;
-@group(0) @binding(3) 
-var<uniform> u: Uniforms;
-@group(0) @binding(4) 
-var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) 
-var non_filtering_sampler: sampler;
-@group(0) @binding(6) 
-var writeDepthTexture: texture_storage_2d<r32float,write>;
-@group(0) @binding(7) 
-var dataTextureA: texture_storage_2d<rgba32float,write>;
-@group(0) @binding(8) 
-var dataTextureB: texture_storage_2d<rgba32float,write>;
-@group(0) @binding(9) 
-var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) 
-var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) 
-var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) 
-var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
 fn ping_pong(a: f32) -> f32 {
     return (1.0 - abs(((fract((a * 0.5)) * 2.0) - 1.0)));
@@ -123,6 +102,10 @@ fn reconstruct_normal(uv_1: vec2<f32>, depth: f32) -> vec3<f32> {
     return normalize(n);
 }
 
+fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn schlickFresnel(cosTheta: f32, F0_: f32) -> f32 {
     return (F0_ + ((1.0 - F0_) * pow((1.0 - cosTheta), 5.0)));
 }
@@ -151,6 +134,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let _e4 = u.config.z;
     let _e8 = u.config.w;
     resolution = vec2<f32>(_e4, _e8);
+    if (f32(gid.x) >= _e4 || f32(gid.y) >= _e8) {
+        return;
+    }
     let _e13 = resolution;
     uv = (vec2<f32>(gid.xy) / _e13);
     let time = u.config.x;
@@ -247,7 +233,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let depthY = _e250.x;
     let depthGrad = length(vec2<f32>((depthX - baseDepth), (depthY - baseDepth)));
     let edgeGlow = ((exp((-(depthGrad) * 30.0)) * baseDepth) * 2.0);
-    let finalColor = (chromaticColor + vec3<f32>(edgeGlow, (edgeGlow * 0.8), (edgeGlow * 0.6)));
+    let glowAmt = u.zoom_params.z;
+    // ── Idea 2: action-potential wavefronts. Spikes travel through the march's
+    // depth shells: sharp leading edge, exponential refractory tail, strongest
+    // where the depth steps. The FFT-bin vortex value pushes the front forward
+    // as a bounded phase offset (scaling `time` by it would jump the phase).
+    let firePhase = fract(baseDepth * 6.0 - time * 0.35 - clamp(clickIntensity, 0.0, 1.0) * 0.4);
+    let spike = exp(-firePhase * 14.0) * smoothstep(1.0, 0.96, firePhase);
+    let membrane = smoothstep(0.002, 0.03, depthGrad);
+    let actionPotential = spike * (0.2 + 0.8 * membrane) * glowAmt * 1.2;
+    let finalColor = (chromaticColor + vec3<f32>(edgeGlow, (edgeGlow * 0.8), (edgeGlow * 0.6)))
+        + vec3<f32>(1.0, 0.8, 0.6) * actionPotential;
     let fogDensity_1 = u.zoom_params.w;
     let _e273 = uv;
     let _e274 = reconstruct_normal(_e273, baseDepth);
@@ -257,9 +253,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let normalizedWeight = (_e281 / f32(5));
     let _e284 = calculateVolumetricAlpha(0.5, fogDensity_1, viewDotNormal_1, normalizedWeight);
     let fog = exp(((-(baseDepth) * fogDensity_1) * 3.0));
-    let fogColor = vec3<f32>(0.02, 0.05, 0.1);
+    // ── Idea 1: marched in-scatter. The fog no longer only absorbs toward a
+    // constant navy: it is lit by the colour the 5-layer march accumulated
+    // (baseColor, discarded at HEAD), so deep fog glows with the tunnel.
+    let inScatter = baseColor * (0.15 + 0.55 * glowAmt) * (1.0 - fog);
+    let fogColor = vec3<f32>(0.02, 0.05, 0.1) + inScatter;
     let outColor = mix(finalColor, fogColor, (1.0 - fog));
-    textureStore(writeTexture, vec2<u32>(gid.xy), vec4<f32>(outColor, _e284));
+    let displayColor = aces_tonemap(clamp(outColor, vec3<f32>(0.0), vec3<f32>(4.0)));
+    textureStore(writeTexture, vec2<u32>(gid.xy), vec4<f32>(displayColor, _e284));
     textureStore(writeDepthTexture, vec2<u32>(gid.xy), vec4<f32>(baseDepth, 0.0, 0.0, 0.0));
     return;
 }

@@ -2,28 +2,13 @@
 //  data-stream-structure — Batch 60
 //  Structure-tensor LIC data streams: spring cursor, capped ripples,
 //  held vortex, hex packet geometry, exact C trail mask, ACES + audio.
+//  Upgraded: 2026-10-19
+//  Ideas: packet framing (gaps + lit 4-bit headers travelling with each strip);
+//         lane collisions where the tensor is isotropic but textured
+//  A packing: (trail, lum, flowAngle, alpha) — unchanged
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -174,6 +159,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let trace = Jxx + Jyy;
   let diff = sqrt(max((Jxx - Jyy) * (Jxx - Jyy) + 4.0 * Jxy * Jxy, 0.0));
   let lambda1 = (trace + diff) * 0.5;
+  let lambda2 = (trace - diff) * 0.5;
+  let coherency = select(0.0, (lambda1 - lambda2) / (lambda1 + lambda2 + 0.0001), lambda1 + lambda2 > 0.0001);
 
   var eigenvec = vec2<f32>(1.0, 0.0);
   if (abs(Jxy) > 0.0001 || abs(Jxx - lambda1) > 0.0001) {
@@ -201,6 +188,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     sampleUV = sampleUV + eigenvec * (sin(time * 12.0 + stripIdx) * 0.015);
   }
 
+  // Idea 2 — lane collisions: where the tensor is isotropic but textured
+  // (corners, clutter: low coherency, non-zero trace) a lane has no direction,
+  // so packets collide — per-cell bytes re-hash in short slots and jump.
+  let collision = (1.0 - coherency) * smoothstep(0.002, 0.03, trace) * density;
+  let collideCell = floor(uv * vec2<f32>(48.0, 27.0));
+  let collideSlot = floor(time * 9.0 + rand * 3.0);
+  let collideRoll = hash12(collideCell + vec2<f32>(collideSlot, stripIdx * 0.37));
+  let collideHit = step(1.0 - collision * 0.6, collideRoll);
+  sampleUV = sampleUV + (hash22(collideCell + collideSlot) - 0.5) * 0.06 * collideHit;
+
   let color = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
   let lum = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
 
@@ -222,6 +219,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let flowAngle = atan2(eigenvec.y, eigenvec.x) * 0.15915 + 0.5;
   let flowColor = cyberPalette(flowAngle + bass * 0.1);
   outputColor = mix(outputColor, flowColor * lum * 2.2, glow * 0.35);
+
+  // Idea 1 — packet framing: each strip is cut along its length into packets
+  // that travel with that strip's speed; a dark inter-packet gap and a lit
+  // 4-bit header at the leading edge, in the strip's palette colour.
+  let packetCoord = dot(uv, perp) * numStrips * 0.22 - time * flowSpeed * 9.0;
+  let packetId = floor(packetCoord);
+  let packetLocal = fract(packetCoord);
+  let packetGap = 1.0 - smoothstep(0.0, 0.035, packetLocal) * smoothstep(1.0, 0.965, packetLocal);
+  let headerSpan = 0.16;
+  // packetCoord falls with time, so packets move toward +local: the header
+  // rides the high end of each packet.
+  let inHeader = step(1.0 - headerSpan, packetLocal) * (1.0 - packetGap);
+  let bitIdx = floor(clamp((packetLocal - (1.0 - headerSpan)) / headerSpan, 0.0, 0.999) * 4.0);
+  let headerBit = step(0.5, hash12(vec2<f32>(packetId * 4.0 + bitIdx, stripIdx)));
+  let headerColor = cyberPalette(fract(stripIdx * 0.07 + 0.5));
+  outputColor = outputColor * (1.0 - packetGap * glow * 0.55);
+  outputColor = outputColor + headerColor * inHeader * mix(0.15, 1.0, headerBit) * glow * 0.6;
+  outputColor = outputColor + vec3<f32>(0.0, 0.9, 0.35) * collideHit * glow * 0.25;
 
   let band = min(u32(uv.x * 8.0), 7u);
   outputColor += cyberPalette(fract(time * 0.1 + f32(band) * 0.12)) * plasmaBuffer[band + 1u].x * 0.08;

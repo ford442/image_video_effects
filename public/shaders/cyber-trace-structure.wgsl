@@ -3,31 +3,14 @@
 //  Category: advanced-hybrid
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: eigenvector neon streak; saddle bifurcation fork
+//  Upgraded: 2026-10-19
+//  Ideas: eigenvector neon streak; saddle bifurcation fork;
+//         trace current (history advected along the eigenflow from exact C);
+//         octilinear 45° routing of that current
 //  A packing: trace history RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -95,6 +78,19 @@ fn hessianDet(uv: vec2<f32>, pixelSize: vec2<f32>) -> f32 {
   let dyy = l02 - 2.0 * l12 + l22;
   let dxy = 0.25 * (l22 - l20 - l02 + l00);
   return dxx * dyy - dxy * dxy;
+}
+
+// Manual bilinear of four exact C loads (no filtering sampler on rgba32float).
+fn loadHistoryBilinear(pos: vec2<f32>, maxC: vec2<i32>) -> vec4<f32> {
+  let p0 = floor(pos);
+  let f = pos - p0;
+  let c0 = clamp(vec2<i32>(p0), vec2<i32>(0), maxC);
+  let c1 = clamp(vec2<i32>(p0) + vec2<i32>(1, 1), vec2<i32>(0), maxC);
+  let h00 = textureLoad(dataTextureC, c0, 0);
+  let h10 = textureLoad(dataTextureC, vec2<i32>(c1.x, c0.y), 0);
+  let h01 = textureLoad(dataTextureC, vec2<i32>(c0.x, c1.y), 0);
+  let h11 = textureLoad(dataTextureC, c1, 0);
+  return mix(mix(h00, h10, f.x), mix(h01, h11, f.x), f.y);
 }
 
 fn lic(uv: vec2<f32>, direction: vec2<f32>, pixelSize: vec2<f32>, steps: i32, stepSize: f32) -> f32 {
@@ -221,7 +217,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let streakL = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv + eigenvec * streakStep, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
   let streakR = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv - eigenvec * streakStep, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
   let neonStreak = pow(max(0.0, 1.0 - abs(streakL - streakR) * 6.0), 2.0) * coherency;
-  let history = textureLoad(dataTextureC, coord, 0);
+  let historyHere = textureLoad(dataTextureC, coord, 0);
+
+  // Idea 4 — octilinear routing: the current's direction snaps toward the
+  // nearest 45° route in proportion to coherency (a PCB router's angles), so
+  // traces run in straight segments that bend at the saddle forks. One global
+  // sign convention keeps neighbouring eigenvectors flowing the same way.
+  let flowDir = select(-eigenvec, eigenvec, dot(eigenvec, vec2<f32>(0.8, 0.6)) >= 0.0);
+  let routeAngle = round(atan2(flowDir.y, flowDir.x) / 0.78539816) * 0.78539816;
+  let routeDir = normalize(mix(flowDir, vec2<f32>(cos(routeAngle), sin(routeAngle)), 0.85 * coherency) + vec2<f32>(1e-5, 0.0));
+
+  // Idea 3 — trace current: history is read upstream along the route (four
+  // exact C loads, ~1.6 px), weighted by coherency, so painted traces run along
+  // image edges like current down a trace; isotropic regions just fade in place.
+  let maxC = vec2<i32>(i32(res.x) - 1, i32(res.y) - 1);
+  let upstream = loadHistoryBilinear(vec2<f32>(coord) - routeDir * 1.6, maxC);
+  let history = mix(historyHere, upstream, clamp(coherency * 1.2, 0.0, 0.9));
 
   let flowAngle = atan2(eigenvec.y, eigenvec.x) * 0.15915 + 0.5;
   let drawColor = hslToRgb(fract(flowAngle + hueShiftParam + time * 0.05 + treble * 0.08), 1.0, 0.5);

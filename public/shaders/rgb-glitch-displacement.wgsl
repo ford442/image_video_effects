@@ -2,6 +2,10 @@
 //  RGB Glitch Displacement — Batch 61
 //  Offset persistence via textureLoad C, spring epicenter, held/ripples,
 //  ACES display, wavelength semantic alpha. A: offset.xy + glitchEnergy.z
+//  Upgraded: 2026-10-19
+//  Ideas: Schmitt tracking latch (scanline tears latch with hysteresis);
+//         macroblock motion carry with I-frame refresh in the datamosh zone
+//  A packing: offset.xy, glitch energy .z, tracking latch .w (was 0)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -216,8 +220,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let temporalIntensity = u.zoom_params.w * (1.0 + audioOverall * 0.4);
 
     let histCoord = clamp(coord, vec2<i32>(0), maxCoord);
-    let prevOffset = textureLoad(dataTextureC, histCoord, 0).xy;
-    var offsetAccum = prevOffset * 0.88;
+    let prevState = textureLoad(dataTextureC, histCoord, 0);
+    let prevOffset = prevState.xy;
+
+    // ── Idea 2: macroblock motion carry. Inside the pointer's datamosh zone the
+    // carry reads the previous frame's 16 px macroblock vector (exact C at the
+    // block centre) and barely decays, so blocks drift as units like P-frames;
+    // an I-frame every 2 s resets the carry everywhere.
+    let moshZone = clamp(smoothstep(0.3, 0.0, length(uv - mouse)) * glitchIntensity * 1.5, 0.0, 1.0);
+    let blockTexel = clamp((coord / vec2<i32>(16)) * 16 + vec2<i32>(8), vec2<i32>(0), maxCoord);
+    let prevBlockOffset = textureLoad(dataTextureC, blockTexel, 0).xy;
+    let iFrame = step(fract(time * 0.5), 0.03);
+    var offsetAccum = mix(prevOffset * 0.88, prevBlockOffset * 0.94, moshZone) * (1.0 - iFrame);
 
     var tearX = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
@@ -242,6 +256,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     p = p + blockOffset;
     let scanOffset = scanlineGlitch(p, time, glitchIntensity);
     p = vec2<f32>(p.x + scanOffset, p.y);
+
+    // ── Idea 1: Schmitt tracking latch. Each of the 50 scanline bands has a
+    // smooth drive; crossing `hi` latches a tear, and it only releases below
+    // `lo`, so tears lock and hold instead of re-rolling every 1/15 s. The
+    // latch is stored in A.w and read back from exact C.w.
+    let lineIdx = floor(uv.y * 50.0);
+    let drive = noise1d(lineIdx * 7.31 + time * 1.7);
+    let gi = clamp(glitchIntensity, 0.0, 1.0);
+    let hi = 0.92 - 0.25 * gi;
+    let lo = hi - 0.22;
+    var trackLock = step(0.5, prevState.w);
+    trackLock = select(trackLock, 1.0, drive > hi);
+    trackLock = select(trackLock, 0.0, drive < lo);
+    // Small per frame: the offset carry through C integrates it (~8× at 0.88).
+    let tearSkew = (fract(uv.y * 50.0) - 0.5) * 0.012;
+    let trackTear = trackLock * gi * ((hash1(lineIdx * 3.1) - 0.5) * 0.035 + tearSkew);
+    p = vec2<f32>(p.x + trackTear, p.y);
     p = pixelSort(p, time, glitchIntensity);
     p = datamosh(p, mouse, time, glitchIntensity);
 
@@ -336,6 +367,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let displayRgb = acesToneMap(clamp(finalColor, vec3<f32>(0.0), vec3<f32>(4.0)));
 
     textureStore(writeTexture, coord, vec4<f32>(displayRgb, finalAlpha));
-    textureStore(dataTextureA, coord, vec4<f32>(clamp(p - uv, vec2<f32>(-0.5), vec2<f32>(0.5)), glitchEnergy, 0.0));
+    textureStore(dataTextureA, coord, vec4<f32>(clamp(p - uv, vec2<f32>(-0.5), vec2<f32>(0.5)), glitchEnergy, trackLock));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

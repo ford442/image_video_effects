@@ -37,8 +37,17 @@
       "history": []
     },
     "ascii-flow-structure": {
-      "hash": "1365b76bcb857c90",
-      "history": []
+      "hash": "563cf36c2e581a8e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T12:38:00.426Z",
+          "hash": "563cf36c2e581a8e",
+          "prev_hash": "1365b76bcb857c90",
+          "commit": "0fd2d171",
+          "note": "2026-10-19 cyber-glitch-eight (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-cyber-glitch-eight/NOTES.md"
+        }
+      ]
     },
     "astral-kaleidoscope-julia": {
       "hash": "ddb137bd3b9a4e42",
@@ -113,8 +122,17 @@
       "history": []
     },
     "byte-mosh-explosion": {
-      "hash": "26bebb5f67bab229",
-      "history": []
+      "hash": "ef5bb39693e98f20",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T12:38:00.426Z",
+          "hash": "ef5bb39693e98f20",
+          "prev_hash": "26bebb5f67bab229",
+          "commit": "0fd2d171",
+          "note": "2026-10-19 cyber-glitch-eight (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-cyber-glitch-eight/NOTES.md"
+        }
+      ]
     },
     "cellular-automata-3d": {
       "hash": "6ad554b85d5003c0",
@@ -226,8 +244,17 @@
       "history": []
     },
     "cyber-trace-structure": {
-      "hash": "0da32a7db91f6f0b",
-      "history": []
+      "hash": "c11867c3e5fe787c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T12:38:00.426Z",
+          "hash": "c11867c3e5fe787c",
+          "prev_hash": "0da32a7db91f6f0b",
+          "commit": "0fd2d171",
+          "note": "2026-10-19 cyber-glitch-eight (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-cyber-glitch-eight/NOTES.md"
+        }
+      ]
     },
     "data-scanner-gabor": {
       "hash": "3c1346e5438efc86",
@@ -242,8 +269,17 @@
       "history": []
     },
     "data-stream-structure": {
-      "hash": "907daa0e59db3581",
-      "history": []
+      "hash": "f2c68294f5283007",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T12:38:00.426Z",
+          "hash": "f2c68294f5283007",
+          "prev_hash": "907daa0e59db3581",
+          "commit": "0fd2d171",
+          "note": "2026-10-19 cyber-glitch-eight (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-cyber-glitch-eight/NOTES.md"
+        }
+      ]
     },
     "datamosh-brush-diffusion": {
       "hash": "6754d2f4cff84e95",
@@ -630,12 +666,30 @@
       "history": []
     },
     "neural-raymarcher-gabor": {
-      "hash": "c40ae4d576dcb7b1",
-      "history": []
+      "hash": "298847ff712cc5a6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T12:38:00.426Z",
+          "hash": "298847ff712cc5a6",
+          "prev_hash": "c40ae4d576dcb7b1",
+          "commit": "0fd2d171",
+          "note": "2026-10-19 cyber-glitch-eight (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-cyber-glitch-eight/NOTES.md"
+        }
+      ]
     },
     "neural-raymarcher": {
-      "hash": "0815db279be7f30b",
-      "history": []
+      "hash": "3d6c2b56f2a4471e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T12:38:00.426Z",
+          "hash": "3d6c2b56f2a4471e",
+          "prev_hash": "0815db279be7f30b",
+          "commit": "0fd2d171",
+          "note": "2026-10-19 cyber-glitch-eight (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-cyber-glitch-eight/NOTES.md"
+        }
+      ]
     },
     "painterly-oil-bilateral": {
       "hash": "eff4fd236ffa9cfe",
@@ -9759,8 +9813,17 @@
       "history": []
     },
     "rgb-glitch-displacement": {
-      "hash": "25b10fe001d04664",
-      "history": []
+      "hash": "f9a1a3506b6153cb",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T12:38:00.426Z",
+          "hash": "f9a1a3506b6153cb",
+          "prev_hash": "25b10fe001d04664",
+          "commit": "0fd2d171",
+          "note": "2026-10-19 cyber-glitch-eight (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-cyber-glitch-eight/NOTES.md"
+        }
+      ]
     },
     "rgb-glitch-trail": {
       "hash": "9cc599b50f38bfb1",
@@ -10271,7 +10334,7 @@
       "history": []
     },
     "cyber-scan": {
-      "hash": "ebe7515b83bdb66b",
+      "hash": "9e3198ca8b5050c7",
       "history": [
         {
           "event": "upgraded",
@@ -10280,6 +10343,14 @@
           "prev_hash": "fee3a7b6bdd71949",
           "commit": "bb2b2aed",
           "note": "2026-10-04 holo-display-eight (claude-opus-5-5): idea cards in agents/swarm-outputs/claude-2026-10-04-holo-display-eight/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T12:38:00.426Z",
+          "hash": "9e3198ca8b5050c7",
+          "prev_hash": "ebe7515b83bdb66b",
+          "commit": "0fd2d171",
+          "note": "2026-10-19 cyber-glitch-eight (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-cyber-glitch-eight/NOTES.md"
         }
       ]
     },
