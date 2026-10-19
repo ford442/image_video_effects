@@ -6,11 +6,13 @@
 //            nutrient-tendrils, pulsing-bloom, fbm-warp
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-09-27
+//  Upgraded: 2026-09-27, 2026-10-19
 //  Ideas: mitosis split event budding a second nucleus along a hashed
 //         division axis; toxicity necrosis creep fading tendrils that
 //         overlap the poison cloud; reactivity-scaled bloom-ring
-//         speed/thickness
+//         speed/thickness; cleavage furrow + dumbbell membrane during
+//         division; quorum-sensing pulse lock from the 3x3 neighbourhood;
+//         culture turbidity from C optical density (Beer–Lambert, §12.2F)
 //  A packing: display RGBA (fixed — previously wrote raw fields while C was
 //             read as color; now matches the C-read)
 // ═══════════════════════════════════════════════════════════════════
@@ -107,10 +109,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let time = u.config.x;
   let bass = plasmaBuffer[0].x;
 
-  let prevBass = extraBuffer[0];
-  let smoothBass = bass_env(prevBass, bass, 0.8, 0.15);
-  if (gid.x == 0u && gid.y == 0u) {
-    extraBuffer[0] = smoothBass;
+  // Smoothed bass envelope (relocated from extraBuffer[0] to guarded slot 133,
+  // single writer at (0,0)).
+  var smoothBass = bass;
+  if (arrayLength(&extraBuffer) > 138u) {
+    let prevBass = extraBuffer[133];
+    smoothBass = bass_env(prevBass, bass, 0.8, 0.15);
+    if (gid.x == 0u && gid.y == 0u) {
+      extraBuffer[133] = smoothBass;
+    }
   }
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
@@ -136,8 +143,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let d = length(local - center);
   let nucleus = exp(-d * d * (18.0 + reactivity * 22.0));
-  let membrane = smoothstep(0.25, 0.05, abs(sdCircle(local - center, 0.22 + seed.x * 0.18)));
-  let pulse = 0.5 + 0.5 * sin(time * (2.5 + mids * 6.0) + seed.y * 9.0 + d * 18.0);
+
+  // ── Idea 5: quorum-sensing pulse lock ──
+  // Each cell reads its 3x3 neighbourhood's seeds. Bigger cells (seed.x)
+  // secrete more autoinducer; past a Reactivity-scaled threshold the cell's
+  // pulse phase is pulled toward the neighbourhood phase, so dense patches of
+  // the culture blink in sync (V. fischeri-style quorum luminescence).
+  var nbSeedSum = vec2<f32>(0.0);
+  for (var oy: i32 = -1; oy <= 1; oy = oy + 1) {
+    for (var ox: i32 = -1; ox <= 1; ox = ox + 1) {
+      nbSeedSum += hash22(cell + vec2<f32>(f32(ox), f32(oy)));
+    }
+  }
+  let nbMean = nbSeedSum / 9.0;
+  let autoinducer = nbMean.x * (0.6 + reactivity * 0.35);
+  let quorumLock = smoothstep(0.52, 0.66, autoinducer);
+  let pulsePhase = mix(seed.y, nbMean.y, quorumLock) * 9.0;
+  let pulse = 0.5 + 0.5 * sin(time * (2.5 + mids * 6.0) + pulsePhase + d * 18.0);
 
   // Mitosis split event: past a phase+mitosis threshold, a second nucleus
   // buds off along a hashed division axis, so the Mitosis slider shows real
@@ -150,7 +172,27 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let nucleus2 = exp(-d2 * d2 * (18.0 + reactivity * 22.0)) * dividing;
   let nucleusTotal = sat(nucleus + nucleus2);
 
-  let colony = nucleusTotal * (0.7 + pulse * 0.7) + membrane * 0.5;
+  // ── Idea 4: cleavage furrow ──
+  // During division the membrane wraps both nuclei (dumbbell union of the
+  // parent and bud circles) and a contractile ring pinches the cytoplasm on
+  // the plane perpendicular to the division axis at the parent/bud midpoint.
+  // With dividing == 0 the bud circle is pushed far away, so the membrane is
+  // exactly the original single circle.
+  let membraneR = 0.22 + seed.x * 0.18;
+  let sdParent = sdCircle(local - center, membraneR);
+  let sdBud = sdCircle(local - center2, membraneR * 0.8) + (1.0 - dividing) * 2.0;
+  let sdCellBody = min(sdParent, sdBud);
+  let membrane = smoothstep(0.25, 0.05, abs(sdCellBody));
+  let midPt = (center + center2) * 0.5;
+  let furrowS = dot(local - midPt, divisionAxis);
+  let furrowT = dot(local - midPt, vec2<f32>(-divisionAxis.y, divisionAxis.x));
+  let pinchR = membraneR * (1.0 - 0.65 * dividing);
+  let cytoplasm = smoothstep(0.02, -0.04, sdCellBody);
+  let furrowLine = exp(-furrowS * furrowS * 900.0) * cytoplasm * dividing;
+  let contractileRing = exp(-furrowS * furrowS * 900.0)
+    * exp(-(abs(furrowT) - pinchR) * (abs(furrowT) - pinchR) * 700.0) * dividing;
+
+  let colony = (nucleusTotal * (0.7 + pulse * 0.7) + membrane * 0.5) * (1.0 - 0.55 * furrowLine);
 
   var tendrils = 0.0;
   for (var i: i32 = 0; i < 3; i = i + 1) {
@@ -183,24 +225,40 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let tendrilColor = mix(vec3<f32>(0.3, 0.9, 1.0), vec3<f32>(0.35, 0.22, 0.12), necrosis);
   let tendrilBrightness = tendrils * 0.8 * (1.0 + treble * 0.2) * mix(1.0, 0.4, necrosis);
 
+  // Exact previous-frame state — no filtering
+  let prev = textureLoad(dataTextureC, coord, 0);
+
+  // ── Idea 6: culture turbidity (Beer–Lambert, §12.2F) ──
+  // A bioreactor's growth is read as optical density. C's luminance is a
+  // running memory of where biomass has glowed; it becomes OD, and the layers
+  // seen *through* the culture (bloom rings, poison cloud) are attenuated by
+  // T = exp(-OD) while the scattered share becomes a faint green haze.
+  let prevLuma = sat(dot(prev.rgb, vec3<f32>(0.2126, 0.7152, 0.0722)));
+  let opticalDensity = prevLuma * (1.2 + toxicity * 0.6);
+  let transmittance = exp(-opticalDensity);
+  let turbidity = 1.0 - transmittance;
+
   var color = vec3<f32>(0.02, 0.05, 0.03);
   color += vec3<f32>(0.1, 0.95, 0.5) * colony * (0.6 + reactivity * 0.7) * (1.0 + smoothBass * 0.1);
   color += vec3<f32>(0.5, 1.0, 0.85) * nucleusTotal * pulse * 0.6 * (1.0 + mids * 0.1);
   color += tendrilColor * tendrilBrightness;
-  color += vec3<f32>(0.2, 0.85, 0.4) * bloomLayers * 0.7 * (1.0 + smoothBass * 0.15);
-  color += vec3<f32>(0.65, 0.05, 0.15) * poisonCloud * (1.0 + treble * 0.15);
+  color += vec3<f32>(0.2, 0.85, 0.4) * bloomLayers * 0.7 * (1.0 + smoothBass * 0.15) * transmittance;
+  color += vec3<f32>(0.65, 0.05, 0.15) * poisonCloud * (1.0 + treble * 0.15) * mix(1.0, transmittance, 0.6);
   color += vec3<f32>(0.9, 1.0, 0.75) * spores * (0.3 + treble);
+  color += vec3<f32>(0.06, 0.22, 0.12) * turbidity * 0.35;
+  // Idea 4 (cont.): the actomyosin ring glows where it cinches the membrane.
+  color += vec3<f32>(0.85, 1.0, 0.6) * contractileRing * 0.6;
+  // Idea 5 (cont.): quorum-locked cells share a synchronous luminescent wash.
+  color += vec3<f32>(0.35, 1.0, 0.75) * quorumLock * (0.4 + 0.6 * pulse) * cytoplasm * 0.22;
 
-  // Exact previous-frame state — no filtering
-  let prev = textureLoad(dataTextureC, coord, 0);
   color = mix(color, prev.rgb * 0.9, 0.03 + smoothBass * 0.01);
 
-  color = acesToneMap(color * 1.1);
+  color = acesToneMap(max(color * 1.1, vec3<f32>(0.0)));
 
   // Semantic alpha: colony/tendril/bloom/toxin coverage, not a flat literal
   let alpha = clamp(
     0.12 + sat(nucleusTotal + membrane) * 0.5 + tendrils * 0.3 + bloomLayers * 0.25
-      + poisonCloud * 0.4 + spores * 0.3,
+      + poisonCloud * 0.4 + spores * 0.3 + turbidity * 0.15 + contractileRing * 0.2,
     0.0, 1.0);
 
   // Truthful relief from the colony/bloom height field (no raymarch here)

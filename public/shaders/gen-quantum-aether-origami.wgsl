@@ -5,7 +5,9 @@
 //            depth-aware, upgraded-rgba, KIFS, FBM, domain-warping,
 //            curl-noise, thin-film, Fresnel-Schlick, temporal
 //  Complexity: Very High
-//  Upgraded: 2026-06-28
+//  Upgraded: 2026-06-28, 2026-10-19
+//  Ideas: quantum superposition tearing (jittered C mix); chromatic fold creases; mountain/valley fold parity (§12.2E fold count as material); whitened crease lines (§12.2E SDF curvature)
+//  A packing: ACES display RGBA (C read as colour history)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 // zoom_params: x=Fold Complexity, y=Crease Glow, z=Audio Reactivity, w=Interference Shift
@@ -50,7 +52,13 @@ fn curl(p: vec3<f32>, t: f32) -> vec3<f32> {
     return vec3<f32>(dy - dz, dz - dx, dx - dy);
 }
 
-fn fold(p: vec3<f32>, normal: vec3<f32>, d: f32) -> vec3<f32> { let t = dot(p, normal) - d; return p - 2.0 * min(0.0, t) * normal; }
+// Idea 3 support: fold() records whether it actually reflected the point (one crease crossed).
+var<private> gFolds: f32 = 0.0;
+fn fold(p: vec3<f32>, normal: vec3<f32>, d: f32) -> vec3<f32> {
+    let t = dot(p, normal) - d;
+    gFolds += select(0.0, 1.0, t < 0.0);
+    return p - 2.0 * min(0.0, t) * normal;
+}
 fn smin(a: f32, b: f32, k: f32) -> f32 { let h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0); return mix(b, a, h) - k * h * (1.0 - h); }
 fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 { let d = abs(p) - b; return min(max(d.x, max(d.y, d.z)), 0.0) + length(max(d, vec3<f32>(0.0))); }
 fn sdSphere(p: vec3<f32>, r: f32) -> f32 { return length(p) - r; }
@@ -62,6 +70,7 @@ fn map(p: vec3<f32>) -> f32 {
     let treble = plasmaBuffer[0].z * zparams.z;
     let t = u.config.x * 0.2 + audio * 0.5;
     let iters = i32(mix(1.0, 10.0, zparams.x));
+    gFolds = 0.0;
     var q = p;
     // Add curl noise aether flow
     q += curl(q * 0.3, t * 0.3) * 0.15;
@@ -163,7 +172,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var color = vec4<f32>(0.0);
     if (hit) {
         let e = vec2<f32>(0.001, 0.0);
-        let d_p = mix(p.z, map(p), fold_factor);
+        let dRaw = map(p);
+        // ── Idea 3: mountain/valley fold parity (§12.2E fold count as material) ──
+        // map() just counted how many of the KIFS mirror planes reflected this point.
+        // Each reflection flips the paper facet, so parity = mountain vs valley side;
+        // the total count is how worked the sheet is here.
+        let foldCount = gFolds;
+        let foldMax = 5.0 * f32(i32(mix(1.0, 10.0, zparams.x)));
+        let parity = foldCount - 2.0 * floor(foldCount * 0.5);
+        let foldWear = clamp(foldCount / max(foldMax, 1.0), 0.0, 1.0);
+        let d_p = mix(p.z, dRaw, fold_factor);
         let n = normalize(vec3<f32>(
             mix(p.z, map(p + vec3<f32>(e.x, e.y, e.y)), fold_factor) - d_p,
             mix(p.z, map(p + vec3<f32>(e.y, e.x, e.y)), fold_factor) - d_p,
@@ -181,7 +199,20 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let shadow = softShadow(p + n * 0.01, l, 0.02, 5.0, 8.0);
         let ao = ambientOcclusion(p, n);
         let ambient = vec3<f32>(0.02, 0.02, 0.05);
-        let base_col = ambient + diff * interference * shadow * ao;
+        let base_col_flat = ambient + diff * interference * shadow * ao;
+        let mvTone = mix(vec3<f32>(0.80, 0.84, 0.97), vec3<f32>(1.06, 1.02, 0.95), parity);
+        let base_col = base_col_flat * mix(vec3<f32>(1.0), mvTone, fold_factor)
+            + interference * foldWear * 0.10 * ao * fold_factor;
+        // ── Idea 4: whitened crease lines (§12.2E SDF curvature) ──
+        // Laplacian of the folded SDF = how hard the sheet bends here. Paper fibres
+        // break along a sharp crease, so the line goes pale; rides Crease Glow (y).
+        let ec = 0.012;
+        let kap = (map(p + vec3<f32>(ec, 0.0, 0.0)) + map(p - vec3<f32>(ec, 0.0, 0.0))
+                 + map(p + vec3<f32>(0.0, ec, 0.0)) + map(p - vec3<f32>(0.0, ec, 0.0))
+                 + map(p + vec3<f32>(0.0, 0.0, ec)) + map(p - vec3<f32>(0.0, 0.0, ec))
+                 - 6.0 * dRaw) / (ec * ec);
+        let creaseLine = smoothstep(8.0, 60.0, abs(kap)) * fold_factor;
+        let creaseWhite = vec3<f32>(0.95, 0.93, 0.88) * creaseLine * (0.12 + 0.30 * zparams.y) * (0.4 + 0.6 * shadow);
         // Spectral fold coloring based on iteration depth
         let foldCol = spectralFold(min_dist * 10.0, u.config.x, bass) * 0.15 * zparams.y;
         // Fresnel rim lighting
@@ -192,8 +223,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let edge_glow = smoothstep(0.05, 0.0, min_dist);
         let audio_pulse = 1.0 + u.config.y * zparams.z;
         let emissive = vec3<f32>(1.0, 0.8, 0.2) * edge_glow * zparams.y * audio_pulse;
-        let lum = dot(base_col + emissive + rim + foldCol, vec3<f32>(0.299, 0.587, 0.114));
-        color = vec4<f32>(base_col + emissive + rim + foldCol, clamp(lum * 1.2 + 0.15, 0.05, 0.98));
+        let lum = dot(base_col + emissive + rim + foldCol + creaseWhite, vec3<f32>(0.299, 0.587, 0.114));
+        color = vec4<f32>(base_col + emissive + rim + foldCol + creaseWhite, clamp(lum * 1.2 + 0.15, 0.05, 0.98));
     } else {
         let bg_glow = 0.1 / max(length(centered_uv), 0.01);
         let bgCol = vec3<f32>(0.05, 0.0, 0.1) * bg_glow;
@@ -224,7 +255,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         color.b -= split_factor * 0.3;
     }
     
-    let displayColor = acesToneMap(color.rgb * 1.05);
+    let displayColor = acesToneMap(max(color.rgb, vec3<f32>(0.0)) * 1.05);
     // Semantic alpha: depth or intensity
     let outAlpha = clamp(color.a * 1.5, 0.1, 0.95);
     
