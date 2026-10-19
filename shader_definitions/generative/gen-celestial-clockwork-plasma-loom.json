@@ -1,7 +1,7 @@
 {
   "id": "gen-celestial-clockwork-plasma-loom",
   "name": "Celestial Clockwork Plasma-Loom",
-  "description": "A gargantuan interstellar loom of turning astrolabes and celestial gears forged from liquid plasma and starlight, weaving threads of radiant energy across an endless, deep-void chronosphere.",
+  "description": "A gargantuan celestial loom of turning chronoglass astrolabe gears and over-under plasma threads around a singularity core: ratchet sparks at meshing teeth, burnished tooth crowns, and an iridescent time-weathered patina that thickens in the mouse's time-dilation field.",
   "category": "generative",
   "type": "generative",
   "url": "shaders/gen-celestial-clockwork-plasma-loom.wgsl",

@@ -3,9 +3,12 @@
 //  Category: generative
 //  Features: generative, audio-reactive, mouse-driven, temporal, chromatic, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-28
-//  Ideas: travelling morph front (morphogen wave from pointer); crystalline facet spokes; veins conduct the discharge
-//  A packing: ACES display RGBA (rgb = toned colour incl. CA, a = edge/interior coverage); C read as colour history
+//  Upgraded: 2026-10-19
+//  Ideas: travelling morph front (morphogen wave from pointer); crystalline facet spokes; veins conduct the discharge;
+//         mitotic cleavage (mature organic cells pinch into two daughter lobes along a per-cell spindle axis);
+//         membrane surface tension (§12.2D: κ = ∇·(∇φ/|∇φ|) of the organic membrane; curvature flow φ+σκ
+//         rounds it, tension rim lights convex lobes and creases the cleavage furrow)
+//  A packing: ACES display RGBA (rgb = toned colour incl. CA + display-space trails, a = 0.85 void + 0.15 body coverage); C read as colour history
 // ═══════════════════════════════════════════════════════════════════
 //  Organic shapes morph between geometric and biological forms via
 //  sinusoidal interpolation. Bass drives morph speed, mids add surface
@@ -60,11 +63,24 @@ fn sdPolygon(p: vec2<f32>, n: f32, r: f32) -> f32 {
   return polyDist;
 }
 
+fn sminK(a: f32, b: f32, k: f32) -> f32 {
+  let h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+  return mix(b, a, h) - k * h * (1.0 - h);
+}
+
 // SDF for organic blob (biological form)
-fn sdOrganic(p: vec2<f32>, time: f32, seed: f32) -> f32 {
+// Idea 4 — mitotic cleavage: `dv` 0→1 elongates the blob along the spindle
+// axis and pinches it into two daughter lobes (radius 0.25 → 0.12 plus a
+// shrunken wobble, kept inside the cell); the neck blend shrinks with dv so
+// the furrow closes.
+fn sdOrganic(p: vec2<f32>, time: f32, seed: f32, axis: vec2<f32>, dv: f32) -> f32 {
   let n1 = noise2(p * 3.0 + vec2<f32>(time * 0.3 + seed, seed));
   let n2 = noise2(p * 5.0 - vec2<f32>(seed, time * 0.2));
-  let d = length(p) - 0.25 - n1 * 0.08 - n2 * 0.04;
+  let wobble = (n1 * 0.08 + n2 * 0.04) * (1.0 - 0.35 * dv);
+  let sep = axis * (0.2 * dv);
+  let rD = mix(0.25, 0.12, dv);
+  let neck = mix(0.2, 0.02, dv);
+  let d = sminK(length(p - sep), length(p + sep), neck) - rD - wobble;
   return d;
 }
 
@@ -91,6 +107,7 @@ struct MorphSample {
   spoke: f32,   // facet spoke line, already faded by organic-ness
   facet: f32,   // facet shade, already faded by organic-ness (signed, 0 = neutral)
   vein: f32,    // vein band 0..1, weighted by organic-ness
+  kappa: f32,   // membrane curvature (1/cell units), weighted by organic-ness
 };
 
 // Morph field value
@@ -119,11 +136,42 @@ fn morphField(uv: vec2<f32>, time: f32, morphSpeed: f32, geoBias: f32, waveOrigi
   let rotLocal = vec2<f32>(c * local.x - s * local.y, s * local.x + c * local.y);
 
   let geoDist = sdPolygon(rotLocal, nSides, 0.22 + seed * 0.08);
-  let bioDist = sdOrganic(local, t, seed);
 
   // Sinusoidal interpolation between forms
-  let interp = phase + geoBias * 0.3;
+  // (clamped: HEAD's phase + bias reached 1.3 and the cubic folded back)
+  let interp = clamp(phase + geoBias * 0.3, 0.0, 1.0);
   let smoothInterp = interp * interp * (3.0 - 2.0 * interp);
+
+  // Idea 4 — division progress: only the most mature organic cells divide; the
+  // spindle axis is per cell and precesses slowly.
+  let dv = smoothstep(0.62, 0.97, smoothInterp);
+  let axAng = seed * 17.0 + t * 0.15;
+  let axis = vec2<f32>(cos(axAng), sin(axAng));
+  let bioRaw = sdOrganic(local, t, seed, axis, dv);
+
+  // Idea 5 — membrane surface tension (§12.2D). κ = ∇·(∇φ/|∇φ|) from four
+  // central-difference taps of the organic membrane, ≈ ∇²φ/|∇φ| (clamped to
+  // the cell scale). One step of curvature flow φ + σκ rounds the noisy
+  // membrane the way tension rounds a real cell, most strongly mid-division.
+  // Taps are only taken near an organic membrane (the only place κ is used).
+  let onMembrane = 1.0 - smoothstep(0.0, 0.05, abs(bioRaw));
+  var kappa = 0.0;
+  if (onMembrane > 0.0 && smoothInterp > 0.02) {
+    let he = 0.012;
+    let bxp = sdOrganic(local + vec2<f32>(he, 0.0), t, seed, axis, dv);
+    let bxm = sdOrganic(local - vec2<f32>(he, 0.0), t, seed, axis, dv);
+    let byp = sdOrganic(local + vec2<f32>(0.0, he), t, seed, axis, dv);
+    let bym = sdOrganic(local - vec2<f32>(0.0, he), t, seed, axis, dv);
+    let grad = vec2<f32>(bxp - bxm, byp - bym) / (2.0 * he);
+    let lap = (bxp + bxm + byp + bym - 4.0 * bioRaw) / (he * he);
+    kappa = clamp(lap / max(length(grad), 0.3), -30.0, 30.0);
+  }
+  // Tension acts on the membrane only: off the interface the field's medial
+  // creases (e.g. the bisector between daughters) have huge |κ| and no film.
+  let kappaM = kappa * onMembrane;
+  let sigma = 0.0012 + 0.0016 * dv;
+  let bioDist = bioRaw + sigma * kappaM;
+
   var dist = mix(geoDist, bioDist, smoothInterp);
 
   // Idea 2 — facets are bright while geometric, dissolve as the cell turns organic.
@@ -140,7 +188,7 @@ fn morphField(uv: vec2<f32>, time: f32, morphSpeed: f32, geoBias: f32, waveOrigi
   }
 
   return MorphSample(dist, morphPhase, clamp(smoothInterp, 0.0, 1.0),
-                     fac.x * geoAmt, (fac.y - 0.5) * geoAmt, veinBand);
+                     fac.x * geoAmt, (fac.y - 0.5) * geoAmt, veinBand, kappaM * smoothInterp);
 }
 
 fn hueShiftRGB(hue: f32) -> vec3<f32> {
@@ -212,7 +260,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   dist += ripple;
 
   // Shape edge glow
-  let edge = 1.0 - smoothstep(-0.02, 0.04, dist);
+  // HEAD's "edge" was 1 − smoothstep(−0.02, 0.04, dist): a second interior
+  // fill, so every body got +0.5 pale blue and read as a flat wash. Now a rim
+  // band around the membrane.
+  let edge = 1.0 - smoothstep(0.0, 0.035, abs(dist - 0.005));
   let interior = 1.0 - smoothstep(0.0, 0.06, dist);
 
   // Treble edge discharge — smooth noise, no per-frame hash strobing.
@@ -234,18 +285,29 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // shape change together as the front passes.
   let formColor = mix(geoColor, bioColor, ms.phase);
   col = mix(col, formColor, 0.4);
+  // The void keeps a dim tint of the hue field (HEAD lit it at full value,
+  // which with the trail gain whited the frame).
+  col *= mix(0.14, 1.0, interior);
 
   // Idea 2 — crystalline facet spokes: faceted bevel shading plus bright
   // centre-to-vertex ridge lines while the cell is geometric.
   col += geoColor * ms.facet * 0.35 * interior;
   col += vec3<f32>(0.8, 0.95, 1.0) * ms.spoke * interior * (0.55 + treble * 0.4);
 
+  // Idea 5 — tension rim: the membrane glints where tension pulls hardest
+  // (convex lobes, κ > 0) and creases dark in the cleavage furrow (κ < 0).
+  // κ·0.2 = 1 for a membrane as round as a resting daughter cell.
+  let kN = ms.kappa * 0.2;
+  let rim = 1.0 - smoothstep(0.0, 0.022, abs(dist));
+  col += vec3<f32>(1.0, 0.85, 0.6) * rim * smoothstep(0.6, 1.8, kN) * (1.1 + mids * 0.6);
+  col *= 1.0 - 0.85 * (1.0 - smoothstep(0.0, 0.05, abs(dist))) * smoothstep(0.0, 1.2, -kN);
+
   // Interior fill with organic texture
   let interiorTex = fbm2(warpedUV * 6.0 + time * 0.1, 4) * interior;
   col += vec3<f32>(0.1, 0.2, 0.15) * interiorTex;
 
   // Edge glow and discharge
-  col += vec3<f32>(0.6, 0.8, 1.0) * edge * (0.5 + treble);
+  col += vec3<f32>(0.6, 0.8, 1.0) * edge * (0.35 + treble);
   col += vec3<f32>(1.0, 0.9, 0.7) * discharge;
 
   // Velocity-advected HDR trails (textureLoad only, bounded).
@@ -254,19 +316,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let histCoord = clamp(vec2<i32>(gid.xy) - vec2<i32>(flowDir * (3.0 + morphSpeed * 4.0)), vec2<i32>(0), maxCoord);
   let prev = textureLoad(dataTextureC, histCoord, 0).rgb;
   let decay = 0.84 + morphSpeed * 0.04 + bass * 0.02;
-  var fbCol = clamp(col + prev * decay, vec3<f32>(0.0), vec3<f32>(5.5));
 
-  // Semantic alpha: based on edge presence and interior density
-  let alpha = clamp(edge * 0.9 + interior * 0.6 + discharge * 0.3, 0.0, 1.0);
+  // Semantic alpha: void 0.85 (HEAD 0 → the page showed through as a white
+  // wash), bodies/edges/discharge raise it to opaque.
+  let alpha = clamp(0.85 + 0.15 * clamp(edge * 0.9 + interior * 0.6 + discharge * 0.3, 0.0, 1.0), 0.0, 1.0);
 
   // Depth based on morph field distance
   let depth = clamp(0.5 + dist * 2.0 + interiorTex * 0.2, 0.0, 1.0);
 
   // Chromatic aberration
   let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
-  fbCol = vec3<f32>(fbCol.r + caStr, fbCol.g, fbCol.b - caStr * 0.5);
+  var fbCol = vec3<f32>(col.r + caStr, col.g, max(col.b - caStr * 0.5, 0.0));
 
-  fbCol = acesToneMap(fbCol * 1.1);
+  // Trails in display space. HEAD added the toned history (from A via C) to
+  // the HDR colour: col + prev·0.86 has a steady-state gain of ~7×, so every
+  // pixel pinned near white. Now the advected history only shows where it is
+  // brighter than the new frame, decaying by `decay` per frame — bounded.
+  fbCol = acesToneMap(max(fbCol, vec3<f32>(0.0)) * 1.1);
+  fbCol = fbCol + max(prev * decay - fbCol, vec3<f32>(0.0)) * 0.45;
   textureStore(writeTexture, gid.xy, vec4<f32>(fbCol, alpha));
   textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
   textureStore(dataTextureA, gid.xy, vec4<f32>(fbCol, alpha));

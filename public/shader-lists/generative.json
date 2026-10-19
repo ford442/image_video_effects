@@ -2839,7 +2839,7 @@
       "fractal",
       "audio-reactive"
     ],
-    "description": "A majestic, biomechanical celestial arachnid suspended in a deep cosmic void, continuously weaving an intricate, glowing fractal web of 'astral silk' out of raw quantum time-fluid, heavily reacting to bass frequencies by sending shockwaves of light through its geometric threads.",
+    "description": "A celestial arachnid at the hub of a glowing orb web it is weaving: leg-anchored spokes, a capture spiral beaded with dew-like glue droplets that glint with Airy halos, and bass shockwaves racing through the silk.",
     "workgroup_size": [
       16,
       16,
@@ -5033,7 +5033,7 @@
   {
     "id": "gen-celestial-clockwork-plasma-loom",
     "name": "Celestial Clockwork Plasma-Loom",
-    "description": "A gargantuan interstellar loom of turning astrolabes and celestial gears forged from liquid plasma and starlight, weaving threads of radiant energy across an endless, deep-void chronosphere.",
+    "description": "A gargantuan celestial loom of turning chronoglass astrolabe gears and over-under plasma threads around a singularity core: ratchet sparks at meshing teeth, burnished tooth crowns, and an iridescent time-weathered patina that thickens in the mouse's time-dilation field.",
     "category": "generative",
     "type": "generative",
     "url": "shaders/gen-celestial-clockwork-plasma-loom.wgsl",
@@ -6457,7 +6457,7 @@
       "music",
       "reactive"
     ],
-    "description": "Multi-temporal Voronoi fungal growth with fast nutrient wavefronts, smoothly advected spores, and bounded luminous history trails. Mouse and clicks seed growth while audio drives layered colony motion.",
+    "description": "Multi-temporal Voronoi fungal colonies: golden-angle leading hyphae fan out from each spore to the barrage border with glowing growth tips, centres brown out into fairy rings, nutrient wavefronts and spore trails. Mouse and clicks feed growth; audio drives the colony.",
     "workgroup_size": [
       16,
       16,
@@ -21597,7 +21597,7 @@
       "mouse-driven",
       "psychedelic"
     ],
-    "description": "A psychedelic organic simulation where millions of microscopic agents feed on video input, leaving vibrant, glowing, fractal trails that pulse with audio.",
+    "description": "Slime-mould agents trace a Flower-of-Life compass: yellow sol-cored veins with ochre gel walls, junction nodes, and protoplasm sheets filling the vesica petals, pulsing with audio.",
     "workgroup_size": [
       16,
       16,
@@ -26522,7 +26522,7 @@
     "tags": [
       "generative"
     ],
-    "description": "An infinite, self-consuming mechanical serpent made of fractured glass scales and stellar plasma.",
+    "description": "An infinite self-consuming serpent coiling into the void: amber glass hex scales glow with the plasma river seen through them, wrapped in a blue ionised corona.",
     "workgroup_size": [
       16,
       16,
@@ -26537,6 +26537,44 @@
       "audio-reactive",
       "mouse-driven",
       "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "scaleDensity",
+        "name": "Scale Density",
+        "default": 10,
+        "min": 1,
+        "max": 50,
+        "step": 1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "plasmaIntensity",
+        "name": "Plasma Intensity",
+        "default": 2,
+        "min": 0.1,
+        "max": 10,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "anomalyGravity",
+        "name": "Anomaly Gravity",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "timeWarp",
+        "name": "Time Warp",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.w"
+      }
     ]
   },
   {
@@ -27359,7 +27397,7 @@
       "domain-warp",
       "fbm"
     ],
-    "description": "An algorithmically deep (p,q) torus knot rendered as an analytic smooth-union SDF of capsules. Tube radius harmonically modulates with FBM domain warp, while a multi-orbit Julia trap adds iridescent halo detail. Audio drives the wind modulation, spin, and glow intensity; temporal feedback leaves rainbow trails. Depth-aware output and ACES tone mapping keep it compositing-friendly.",
+    "description": "A rainbow (p,q) torus knot of smooth-union capsule tubes with Julia-trap iridescence over a domain-warped psychedelic field. Over/under crossings break like a knot diagram, and each glass tube splits its white flux core into Cauchy-dispersed red, green and blue bands. Audio drives winding, glow and pinch; display-space trails follow the spin.",
     "workgroup_size": [
       16,
       16,
@@ -27368,7 +27406,50 @@
     "supportsDepth": true,
     "supportsDof": false,
     "updated": true,
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "spinSpeed",
+        "name": "Spin Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "pWinds",
+        "name": "P Winds",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "qWinds",
+        "name": "Q Winds",
+        "default": 0.33,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "tubeSmoothness",
+        "name": "Tube Smoothness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
   },
   {
     "id": "gen-trails",
@@ -27446,7 +27527,7 @@
       "translucent",
       "worley-noise"
     ],
-    "description": "Volumetric gas clouds with density-based alpha translucency. FBM and Worley noise create organic nebula structure where dense cores are opaque and edges fade to transparent. Star sparkle reacts to treble and nebula pulses with bass.",
+    "description": "Volumetric gas clouds with density-based translucency, lit by embedded stars: pink ionised gas around hot stars, blue dust reflection, reddened starlight through the dense pillars.",
     "workgroup_size": [
       16,
       16,
@@ -27457,7 +27538,49 @@
     "updated": true,
     "id": "gen-translucent-nebula",
     "url": "shaders/gen-translucent-nebula.wgsl",
-    "features": []
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "cloudDensity",
+        "name": "Cloud Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "cloudScale",
+        "name": "Cloud Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "colorShift",
+        "name": "Color Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "starDensity",
+        "name": "Star Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
   },
   {
     "name": "Turing Morphogenesis",
@@ -29372,7 +29495,7 @@
     "name": "Morphogenic Resonance",
     "category": "generative",
     "url": "shaders/morphogenic-resonance.wgsl",
-    "description": "Organic shapes that morph between geometric and biological forms via sinusoidal interpolation. Closed-form morph-field conveyor, traveling resonance rings, and advected HDR trails. Bass drives morph speed, mids add surface ripple resonance, treble creates smooth edge discharge. Mouse warps the morph field and launches a travelling morph front: cells turn geometric-to-organic in a wave outward from the pointer. Geometric cells show crystalline facet spokes; in organic cells the treble discharge runs along the veins.",
+    "description": "Organic shapes morph between faceted crystals and biological blobs in a wave travelling out from the pointer. Mature cells divide, pinching into two daughter lobes, and surface tension rounds each membrane, glinting on tight lobes and creasing the cleavage furrow. Bass drives morph speed, mids add ripple resonance, treble runs discharge along edges and veins.",
     "features": [
       "audio-reactive",
       "generative",

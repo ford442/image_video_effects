@@ -12,7 +12,7 @@
     "music",
     "reactive"
   ],
-  "description": "Multi-temporal Voronoi fungal growth with fast nutrient wavefronts, smoothly advected spores, and bounded luminous history trails. Mouse and clicks seed growth while audio drives layered colony motion.",
+  "description": "Multi-temporal Voronoi fungal colonies: golden-angle leading hyphae fan out from each spore to the barrage border with glowing growth tips, centres brown out into fairy rings, nutrient wavefronts and spore trails. Mouse and clicks feed growth; audio drives the colony.",
   "workgroup_size": [
     16,
     16,

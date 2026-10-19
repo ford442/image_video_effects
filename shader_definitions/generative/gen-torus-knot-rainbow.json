@@ -22,7 +22,7 @@
     "domain-warp",
     "fbm"
   ],
-  "description": "An algorithmically deep (p,q) torus knot rendered as an analytic smooth-union SDF of capsules. Tube radius harmonically modulates with FBM domain warp, while a multi-orbit Julia trap adds iridescent halo detail. Audio drives the wind modulation, spin, and glow intensity; temporal feedback leaves rainbow trails. Depth-aware output and ACES tone mapping keep it compositing-friendly.",
+  "description": "A rainbow (p,q) torus knot of smooth-union capsule tubes with Julia-trap iridescence over a domain-warped psychedelic field. Over/under crossings break like a knot diagram, and each glass tube splits its white flux core into Cauchy-dispersed red, green and blue bands. Audio drives winding, glow and pinch; display-space trails follow the spin.",
   "workgroup_size": [
     16,
     16,
@@ -31,7 +31,50 @@
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
-  "features": [],
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "temporal",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "spinSpeed",
+      "name": "Spin Speed",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "pWinds",
+      "name": "P Winds",
+      "default": 0.25,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "qWinds",
+      "name": "Q Winds",
+      "default": 0.33,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "tubeSmoothness",
+      "name": "Tube Smoothness",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
   "x-meta": {
     "upgrade": {
       "params": [

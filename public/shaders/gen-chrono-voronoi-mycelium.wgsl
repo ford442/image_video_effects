@@ -3,11 +3,15 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, click-reactive
 //  Complexity: High
-//  Upgraded: 2026-09-27
+//  Upgraded: 2026-10-19
 //  Ideas: clamp connections across generation borders; apothecia cups on high-gen seeds;
 //         cyclic birth-death regeneration per cell (colonies now die and regrow, not
-//         settle to a static age); green rebirth burst when a cell starts a new cycle
-//  A packing: HDR display RGBA (pre-ACES in A; ACES on writeTexture)
+//         settle to a static age); green rebirth burst when a cell starts a new cycle;
+//         golden-angle leading hyphae fanning from each inoculation seed to the barrage
+//         border, Y-branching, with a Spitzenkörper tip on the growth front (§12.2E);
+//         fairy-ring senescence — the colony centre autolyses behind the front (§12.1 t2)
+//  A packing: HDR display RGBA (pre-ACES in A, alpha 0.86 dark substrate → 1 on hyphae;
+//             ACES on writeTexture)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -56,7 +60,12 @@ fn fbm2(p: vec2<f32>, octaves: i32) -> f32 {
     return v;
 }
 
-// Voronoi with temporal generation layers
+var<private> g_toSeed: vec2<f32>;   // nearest seed minus pixel, cell units (set by voronoiLayer)
+
+// Voronoi with temporal generation layers.
+// .z is the true distance to the colony border (bisector of the two nearest seeds);
+// the old squared-distance difference widened into multi-cell beams whenever two
+// drifting seeds nearly coincided.
 fn voronoiLayer(uv: vec2<f32>, scale: f32, timeLayer: f32, growthRate: f32) -> vec4<f32> {
     let s = uv * scale;
     let n = floor(s);
@@ -66,6 +75,8 @@ fn voronoiLayer(uv: vec2<f32>, scale: f32, timeLayer: f32, growthRate: f32) -> v
     var minDist2 = 9.0;
     var minCell = vec2<f32>(0.0);
     var minSeed = vec2<f32>(0.0);
+    var o1 = vec2<f32>(0.0);
+    var o2 = vec2<f32>(1.0, 0.0);
 
     for (var j: i32 = -2; j <= 2; j++) {
         for (var i: i32 = -2; i <= 2; i++) {
@@ -81,22 +92,34 @@ fn voronoiLayer(uv: vec2<f32>, scale: f32, timeLayer: f32, growthRate: f32) -> v
             let d = dot(o, o);
             if (d < minDist1) {
                 minDist2 = minDist1;
+                o2 = o1;
                 minDist1 = d;
+                o1 = o;
                 minCell = cell;
                 minSeed = seed;
             } else if (d < minDist2) {
                 minDist2 = d;
+                o2 = o;
             }
         }
     }
-    let border = minDist2 - minDist1;
+    g_toSeed = o1;
+    let sep = o2 - o1;
+    let border = dot(0.5 * (o1 + o2), sep / max(length(sep), 1e-4));
     return vec4<f32>(sqrt(minDist1), sqrt(minDist2), border, hash21(minCell));
 }
 
+struct Branch {
+    intensity: f32,   // barrage-border hypha
+    border: f32,      // distance to the border (for clamp connections)
+    rebirth: f32,     // Idea 4 — bright at the instant a cell starts a new cycle
+    hyphae: f32,      // Idea 5 — living leading hyphae
+    spitz: f32,       // Idea 5 — Spitzenkörper tips on the growth front
+    senescent: f32,   // Idea 6 — autolysed hyphae behind the front
+}
+
 // Mycelium branch SDF approximation using distance transform.
-// .x = branch intensity, .y = Voronoi border width (for clamp connections),
-// .z = rebirth flash (Idea 4 — bright at the instant a cell starts a new cycle)
-fn myceliumBranch(uv: vec2<f32>, t: f32, generation: f32, bass: f32) -> vec3<f32> {
+fn myceliumBranch(uv: vec2<f32>, t: f32, generation: f32, bass: f32) -> Branch {
     let scale = 4.0 + generation * 2.0;
     let v = voronoiLayer(uv, scale, t, 1.0 + bass * 0.5);
 
@@ -114,26 +137,76 @@ fn myceliumBranch(uv: vec2<f32>, t: f32, generation: f32, bass: f32) -> vec3<f32
     let lifeState = alive * aged;
     let rebirthFlash = exp(-pow(cycleT / 0.15, 2.0));
 
-    let branchWidth = 0.08 + bass * 0.03;
+    let branchWidth = 0.03 + bass * 0.012;
     let branchIntensity = smoothstep(branchWidth, 0.0, border) * lifeState;
-    return vec3<f32>(branchIntensity, border, rebirthFlash);
+
+    // ── Idea 5: golden-angle leading hyphae ─────────────────────────────
+    // Each Voronoi seed is an inoculation point; its colony extends radially as
+    // leading hyphae spaced by the golden angle (no two ever align), each forking
+    // once into a sister hypha, until they hit the barrage border where the
+    // neighbouring colony stops them. The tip on the advancing front (the
+    // Spitzenkörper) is the brightest point of a growing hypha.
+    let q = -g_toSeed;
+    let r = length(q);
+    let ang = atan2(q.y, q.x);
+    let frontR = 1.1 * clamp(cycleT / (cyclePeriod * 0.55), 0.0, 1.0);
+    let inFront = smoothstep(frontR, frontR - 0.02, r);
+    // ── Idea 6: fairy-ring senescence ───────────────────────────────────
+    // A segment at radius r grew when the front passed it; once it is older than
+    // ~40% of the cycle it autolyses, so the colony hollows into a living ring
+    // that keeps pushing into the barrage while its centre browns out.
+    let segAge = cycleT - r / 1.1 * cyclePeriod * 0.55;
+    let living = 1.0 - smoothstep(cyclePeriod * 0.25, cyclePeriod * 0.45, segAge);
+    var hyph = 0.0;
+    var spitz = 0.0;
+    let base = cell_id * TAU;
+    for (var i = 0; i < 9; i++) {
+        let fi = f32(i);
+        let hh = hash21(vec2<f32>(cell_id * 37.0, fi));
+        let bend = (hh - 0.5) * 1.4;
+        let th = base + fi * 2.39996323 + bend * r;
+        var dA = ang - th;
+        dA = dA - TAU * round(dA / TAU);
+        let perp = abs(r * sin(dA));
+        let fwd = step(0.0, cos(dA));
+        let w = 0.011 + bass * 0.004;
+        hyph = max(hyph, smoothstep(w, w * 0.25, perp) * fwd);
+        // sister hypha forks off at rb and diverges by ±0.5 rad
+        let rb = 0.18 + 0.3 * fract(hh * 7.31);
+        let thB = base + fi * 2.39996323 + bend * rb;
+        let eB = vec2<f32>(cos(thB), sin(thB));
+        let sB = select(-0.4794255, 0.4794255, fract(hh * 13.7) > 0.5);   // sin(±0.5)
+        let dB = vec2<f32>(eB.x * 0.8775826 - eB.y * sB, eB.y * 0.8775826 + eB.x * sB);
+        let qB = q - rb * eB;
+        let alongB = dot(qB, dB);
+        let perpB = abs(qB.x * dB.y - qB.y * dB.x);
+        hyph = max(hyph, smoothstep(w * 0.8, w * 0.2, perpB) * step(0.0, alongB));
+        // Spitzenkörper on the leading tip at the front radius
+        let dAF = dA - bend * (frontR - r);
+        let td2 = max(r * r + frontR * frontR - 2.0 * r * frontR * cos(dAF), 0.0);
+        spitz = max(spitz, exp(-td2 * 1500.0));
+    }
+    let growing = 1.0 - smoothstep(0.92, 1.0, frontR / 1.1);
+    let hyphTotal = hyph * inFront * alive;
+    return Branch(branchIntensity, border, rebirthFlash,
+                  hyphTotal * living * aged, spitz * growing * alive,
+                  hyphTotal * (1.0 - living));
 }
 
 // Glowing tip effect at Voronoi seed points
-fn glowingTips(uv: vec2<f32>, t: f32, generation: f32, treble: f32) -> f32 {
-    let scale = 4.0 + generation * 2.0;
-    let v = voronoiLayer(uv, scale, t, 1.0);
+// (v = voronoiLayer(uv, 4 + 2·gen, t, 1.0), shared with apotheciaCups)
+fn glowingTips(v: vec4<f32>, t: f32, treble: f32) -> f32 {
     let tipRadius = 0.05 + treble * 0.02;
     return smoothstep(tipRadius, 0.0, v.x) * (0.5 + 0.5 * sin(t * 2.0 + v.w * TAU));
 }
 
 // Idea 2 — apothecia cups: dark well + bright rim at high-generation seeds (not tip spark)
-fn apotheciaCups(uv: vec2<f32>, t: f32, generation: f32, treble: f32) -> f32 {
-    let scale = 4.0 + generation * 2.0;
-    let v = voronoiLayer(uv, scale, t, 1.0);
+fn apotheciaCups(v: vec4<f32>, t: f32, genFrac: f32, treble: f32) -> f32 {
     let cupR = 0.075 + treble * 0.018;
     let rim = smoothstep(cupR, cupR * 0.62, v.x) * smoothstep(cupR * 0.12, cupR * 0.42, v.x);
-    let highGen = smoothstep(1.1, 2.5, generation);
+    // Relative to the layer count: the absolute 1.1..2.5 gate never opened at the
+    // default two layers, so the cups were dead unless Generations was > 0.67.
+    let highGen = smoothstep(0.5, 1.0, genFrac);
     return rim * highGen * (0.55 + 0.45 * sin(t * 1.6 + v.w * TAU));
 }
 
@@ -183,6 +256,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var clampGlow = 0.0;
     var cupGlow = 0.0;
     var rebirthGlow = 0.0;
+    var hyphGlow = 0.0;
+    var spitzGlow = 0.0;
+    var senGlow = 0.0;
     var prevBorder = -1.0;
     var prevBranch = 0.0;
 
@@ -193,21 +269,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let layerTime = t * growthRate + timeOffset;
 
         let branchRes = myceliumBranch(uvAspect, layerTime, gf, bass);
-        let branches = branchRes.x;
-        let border = branchRes.y;
-        let rebirthFlash = branchRes.z;
-        let tips = glowingTips(uvAspect, layerTime, gf, treble);
-        let cups = apotheciaCups(uvAspect, layerTime, gf, treble);
+        let branches = branchRes.intensity;
+        let border = branchRes.border;
+        let rebirthFlash = branchRes.rebirth;
+        let vSeed = voronoiLayer(uvAspect, 4.0 + gf * 2.0, layerTime, 1.0);
+        let tips = glowingTips(vSeed, layerTime, treble);
+        let genFrac = gf / max(f32(numGen) - 1.0, 1.0);
+        let cups = apotheciaCups(vSeed, layerTime, genFrac, treble);
 
         let genStrength = pow(decay, gf) * (1.0 + nutrient * 0.5 + clickSurge * 0.9);
         totalMycelium += branches * genStrength;
         totalGlow += tips * genStrength * glowAmt;
         cupGlow += cups * genStrength;
         rebirthGlow += rebirthFlash * genStrength;
+        hyphGlow += branchRes.hyphae * genStrength;
+        spitzGlow += branchRes.spitz * genStrength;
+        senGlow += branchRes.senescent * genStrength;
 
         // Idea 1 — clamp connections where two generation borders coincide
         if (g > 0) {
-            let coincide = 1.0 - smoothstep(0.0, 0.045, abs(border - prevBorder));
+            let coincide = 1.0 - smoothstep(0.0, 0.025, abs(border - prevBorder));
             clampGlow += coincide * min(branches, prevBranch) * genStrength;
         }
         prevBorder = border;
@@ -247,6 +328,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 4 — rebirth burst: a green spark distinct from the warm clamp/apothecia
     // hues, marking the instant a cell re-enters its growth cycle.
     color += vec3<f32>(0.55, 0.95, 0.65) * rebirthGlow * 1.4;
+    // Idea 5/6 — cream-white living hyphae over browned autolysed ones, gold
+    // Spitzenkörper tips on the advancing front (bass feeds the tips).
+    let hyphI = clamp(hyphGlow, 0.0, 1.0);
+    let senI = clamp(senGlow, 0.0, 1.0);
+    color = mix(color, vec3<f32>(0.30, 0.19, 0.11), senI * 0.55);
+    color = mix(color, vec3<f32>(0.86, 0.84, 0.72) * (0.55 + mids * 0.3), hyphI * 0.62);
+    color += vec3<f32>(1.25, 0.95, 0.45) * clamp(spitzGlow, 0.0, 1.5) * (0.9 + bass * 0.8) * glowAmt * 0.6;
 
     // Smooth traveling spores replace the old frame-hash sparkle. The long
     // vertical footprint reads as speed without temporal strobing.
@@ -274,8 +362,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let historyDecay = clamp(0.76 + decay * 0.12, 0.76, 0.88);
     let trailMask = clamp(networkIntensity * 0.45 + tipIntensity * 0.7 + clickSurge, 0.0, 1.0);
     let hdrColor = clamp(color + history * historyDecay * (0.24 + trailMask * 0.36), vec3<f32>(0.0), vec3<f32>(5.0));
-    let alpha = clamp(networkIntensity * 0.62 + tipIntensity * 0.8 + spore * 0.45 + clickSurge * 0.4 + clampGlow * 0.35 + cupGlow * 0.4 + rebirthGlow * 0.3, 0.04, 0.96);
-    let depth = clamp(networkIntensity * 0.48 + tipIntensity * 0.38 + clickSurge * 0.24 + clampGlow * 0.15 + rebirthGlow * 0.1, 0.0, 1.0);
+    // Dark substrate is opaque enough not to wash out over a light page; hyphae
+    // and glow push it to full coverage.
+    let alpha = clamp(0.86 + networkIntensity * 0.1 + hyphI * 0.1 + tipIntensity * 0.12 + spore * 0.1 + clickSurge * 0.1 + clampGlow * 0.08 + cupGlow * 0.08 + rebirthGlow * 0.06, 0.86, 1.0);
+    let depth = clamp(networkIntensity * 0.48 + hyphI * 0.3 + tipIntensity * 0.38 + clickSurge * 0.24 + clampGlow * 0.15 + rebirthGlow * 0.1, 0.0, 1.0);
     let coords = vec2<i32>(global_id.xy);
     textureStore(dataTextureA, coords, vec4<f32>(hdrColor, alpha));
     textureStore(writeTexture, coords, vec4<f32>(acesToneMap(hdrColor * 1.15), alpha));
