@@ -14,7 +14,7 @@
     "hysteresis",
     "feedback"
   ],
-  "description": "A viscous history-dependent field undergoing phase transitions between fluid, crystalline, and chaotic states with strong visual memory of past configurations. Audio controls phase transition thresholds. Mouse locally forces phase changes. Beautiful hysteresis and pattern retention.",
+  "description": "A viscous history-dependent field freezing into hex-lattice polycrystals that grow as six-armed dendrites, with latent heat rising off the fronts, melting back to fluid and chaos. Audio shifts the thresholds; press to nucleate crystal.",
   "workgroup_size": [
     16,
     16,
