@@ -4,32 +4,14 @@
 //  Features: raymarched, iridescence, audio-reactive, mouse-interactive, semantic-alpha, aces-tone-mapping, chromatic-aberration, temporal-feedback, depth-aware, domain-warped-fbm, turing-banding, multi-scale-detail, ripple-reactive
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-09-27
+//  Upgraded: 2026-09-27, 2026-10-18
 //  Ideas: circuit-trace glow along the Turing-band seams; outward-travelling
-//         treble-keyed signal pulse racing across the shell from the core
-//  A packing: A/C = raw HDR display RGBA history
+//         treble-keyed signal pulse racing across the shell from the core;
+//         corallite cup; septa
+//  A packing: ACES display RGBA history (tone-mapped before the A store)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 
@@ -119,6 +101,15 @@ fn map(p: vec3<f32>, time: f32, audio: vec3<f32>, density: f32, spikeIntensity: 
         d -= micro * spikeMult;
         let band = turingBand(op, time);
         d -= band * 0.035 * (1.0 + audio.z * 1.5) * spikeMult;
+        // ── Idea: corallite cup and septa ──
+        // An annular indent on the cell sphere, with six radial walls inside it.
+        let cupR = length(q.xy);
+        let cupArg = cupR - 0.18;
+        let cup = exp(-cupArg * cupArg * 90.0) * exp(-abs(q.z) * 5.0);
+        let septSin = abs(sin(atan2(q.y, q.x) * 6.0));
+        let sept = pow(septSin, 10.0) * cup;
+        d += cup * 0.05 * spikeIntensity * spikeMult;
+        d -= sept * 0.03 * spikeIntensity * spikeMult;
     }
     let q2 = op - c * floor((op + c * 0.5) / c) - c * 0.5;
     let d2 = length(q2) - 0.4;
@@ -186,8 +177,18 @@ fn marchRay(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: vec3<f32>, density: 
             // centre across the shell, a "data pulse" whose amplitude tracks treble.
             let pulseRaw = length(p) * 0.5 - time * 2.2;
             let pulsePhase = pulseRaw - floor(pulseRaw);
-            let signalPulse = exp(-pow((pulsePhase - 0.5) / 0.05, 2.0)) * audio.z * 1.5;
+            let pulseArg = (pulsePhase - 0.5) / 0.05;
+            let signalPulse = exp(-pulseArg * pulseArg) * audio.z * 1.5;
             col += vec3<f32>(0.25, 0.95, 1.0) * signalPulse * (0.5 + spectralEnv * 0.5);
+
+            let cellC = vec3<f32>(2.0 / max(density, 0.05));
+            let qq = p - cellC * floor(p / cellC) - cellC * 0.5;
+            let cupArg = length(qq.xy) - 0.18;
+            let cupShade = exp(-cupArg * cupArg * 90.0) * exp(-abs(qq.z) * 5.0);
+            col = col * (1.0 - cupShade * 0.45);
+            let septSin = abs(sin(atan2(qq.y, qq.x) * 6.0));
+            let septShade = pow(septSin, 10.0) * cupShade;
+            col += vec3<f32>(0.55, 0.85, 0.75) * septShade * (0.15 + coreGlow * 0.2);
             break;
         }
         if (mat < 0.5 && d < 0.1) {

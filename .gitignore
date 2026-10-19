@@ -9,8 +9,12 @@ venv/
 .venv/
 emsdk
 
-# clangd index for wasm_renderer/ (machine-absolute paths) — `npm run wasm:compdb`
+# clangd index (machine-absolute paths) — `npm run wasm:compdb`
+# (`wasm:compile-commands` is the same command)
+/compile_commands.json
 wasm_renderer/compile_commands.json
+wasm_renderer/build-ide/
+wasm_renderer/build-cmake/
 .cache/clangd/
 
 # Python cache

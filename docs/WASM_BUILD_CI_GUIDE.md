@@ -55,7 +55,13 @@ The Emscripten version is **pinned**, not `latest` — a moving emsdk silently c
 ABI of `public/wasm/pixelocity_wasm.{js,wasm}`.
 
 - **Pin:** `emsdkVersion` in [`src/contracts/wasm_compile_flags.json`](../src/contracts/wasm_compile_flags.json) (currently **6.0.12**). The same file holds `std`, `opt`, `usePort`, `sFlags`, `jsOutputName` — `build.sh` (the only build) reads it via `scripts/format-wasm-compile-flags.js`.
-- **CI:** `setup-emsdk` `version:` must equal the pin; `npm run verify:wasm-invariants` fails on drift or on `-s` flags hardcoded in `build.sh`/CMake.
+- **CI:** `setup-emsdk` `version:` must equal the pin; `npm run verify:wasm-invariants` fails on drift or on `-s` flags hardcoded in `build.sh`.
+
+### IDE indexing: `compile_commands.json`
+
+`npm run wasm:compdb` (alias `wasm:compile-commands`) writes `wasm_renderer/compile_commands.json` (**gitignored**). It needs `em++` on PATH. Each entry is `em++ --cflags` plus the release ASYNCIFY flag list. `wasm_renderer/.clangd` strips the `-s` / `--use-port` settings before indexing. `verify:wasm-invariants` checks that database shape against the contract.
+
+There is no CMake build. A release `npm run wasm:build` writes both `public/wasm/pixelocity_wasm` (ASYNCIFY) and `public/wasm/pixelocity_wasm_jspi`.
 - **Local gate:** `build.sh` runs `scripts/emcc-version-gate.sh`; a mismatched emcc fails the build. Emscripten 6.x glue does not embed its version, so `wasm:validate` can only check the pin exists (and would fail if a future glue embeds a mismatched version).
 - **Finding emsdk:** an `emcc` already on `PATH` (CI's `setup-emsdk`, or a shell that sourced `emsdk_env.sh`) is used as is. Otherwise `wasm_renderer/emsdk_env_locate.sh` sources the first of `$EMSDK_ENV`, `$EMSDK/emsdk_env.sh`, `<repo>/emsdk`, `~/emsdk`, `/usr/local/emsdk`. With several emsdks installed, point `EMSDK_ENV` at the one you want; the gate refuses any version but the pin.
 - **Cache:** `EM_CACHE` defaults to `/tmp/emscripten_cache`; set it to keep per-emsdk caches apart.

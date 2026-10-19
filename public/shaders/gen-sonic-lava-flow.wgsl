@@ -5,33 +5,14 @@
 //               Voronoi crust detail, Beer-Lambert volumetric glow,
 //               Fresnel molten surface, enhanced curl noise, and
 //               deep audio reactivity creating a living molten world.
-//  Upgraded: 2026-09-27
-//  Ideas: cooling skin where the flow is slow; pahoehoe ropes stretched along the flow
+//  Upgraded: 2026-09-27, 2026-10-18
+//  Ideas: cooling skin where the flow is slow; pahoehoe ropes stretched along the flow; channel levees; a'a clinker
 //  A packing: linear color history in A; ACES on writeTexture only
 //  Features: audio-reactive, mouse-driven, temporal, domain-warping,
 //            voronoi, beer-lambert, fresnel, curl-noise
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -292,6 +273,21 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let shear = length(curlNoise(flowP, time) - curlNoise(flowP2, time * 0.7));
     let slowSkin = (1.0 - smoothstep(0.05, 0.8, length(velocity))) * (1.0 - smoothstep(0.15, 0.9, shear));
     moltenLava = mix(moltenLava, crustCol * 0.65, clamp(slowSkin * crustAmt * 0.75, 0.0, 0.8));
+
+    // ── Idea: channel levees ──
+    // Crust piles on either side of a hot thread. The thread itself stays molten.
+    let across = abs(dot(advectUV, perp));
+    let channel = exp(-across * across * 90.0) * smoothstep(0.4, 0.75, temp);
+    let leveeD = across - 0.07;
+    let levee = exp(-leveeD * leveeD * 1400.0) * smoothstep(0.3, 0.65, temp);
+    moltenLava = mix(moltenLava, crustCol * 0.45, clamp(levee * crustAmt * 0.85, 0.0, 0.75));
+    moltenLava += lavaCol * channel * 0.18;
+
+    // ── Idea: a'a clinker ──
+    // Fast shear breaks the crust into rubble. Viscous flows stay pahoehoe.
+    let clinkerGate = smoothstep(0.35, 1.05, shear) * (1.0 - smoothstep(0.55, 0.95, viscosity));
+    let rubble = step(0.62, h2(floor(ropeUV * 9.0)));
+    moltenLava = mix(moltenLava, crustCol * 0.35, clamp(clinkerGate * rubble * crustAmt * 0.7, 0.0, 0.65));
 
     // Add molten cracks
     let cracks = smoothstep(0.6, 0.8, crustDetail) * 0.5 * crustAmt;

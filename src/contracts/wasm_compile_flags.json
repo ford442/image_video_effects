@@ -1,9 +1,21 @@
 {
-  "description": "Single source of truth for the Emscripten toolchain pin and compile/link flags. Consumed by wasm_renderer/build.sh (via scripts/format-wasm-compile-flags.js; the only build), scripts/emcc-version-gate.sh and the CI wasm job (setup-emsdk version must equal emsdkVersion). Export lists live in wasm_exports.json. ASYNCIFY is required by device.cpp WaitAny init \u2014 see wasm_renderer/BUILD_FLAG_EXPERIMENTS.md before touching it. GROWABLE_ARRAYBUFFERS=0 is deliberate (TextDecoder + resizable heap); do not flip without a Dawn re-test. extraFlags are plain em++ args (compile + link); -flto adopted 2026-10 (-12.5 KB .wasm); -fno-rtti adopted 2026-10-18 (-189 B, and a tripwire against typeid/dynamic_cast). -fno-exceptions, -sENVIRONMENT=web[,worker], -msimd128, --closure 1 and the ASYNCIFY_* narrowing were measured and not adopted; see BUILD_FLAG_EXPERIMENTS.md. Debug / ASan builds are `profiles` (wasm_renderer/build.sh, WASM_PROFILE). `sources` is the one translation-unit list (build.sh and `npm run wasm:compdb` both read it).",
+  "description": "Single source of truth for the Emscripten toolchain pin and compile/link flags. Consumed by wasm_renderer/build.sh (via scripts/format-wasm-compile-flags.js; the only build), scripts/emcc-version-gate.sh and the CI wasm job (setup-emsdk version must equal emsdkVersion). Export lists live in wasm_exports.json. Two release artifacts are built from the same sources: the top-level graph (sFlags, jsOutputName) is the ASYNCIFY fallback and keeps today's ABI; the `jspi` graph swaps ASYNCIFY for JSPI and is loaded only where WebAssembly.Suspending exists (src/wasm/bridge/init.ts). Never ship JSPI-only (asyncifyFallback). WaitAny init needs one of the two — see wasm_renderer/BUILD_FLAG_EXPERIMENTS.md before touching either. GROWABLE_ARRAYBUFFERS=0 is deliberate (TextDecoder + resizable heap); do not flip without a Dawn re-test. extraFlags are plain em++ args (compile + link); -flto adopted 2026-10 (-12.5 KB .wasm); -fno-rtti adopted 2026-10-18 (-189 B, and a tripwire against typeid/dynamic_cast). Debug / ASan builds are `profiles` (WASM_PROFILE) and stay ASYNCIFY-only; they are never copied to public/wasm/. `sources` is the one translation-unit list (build.sh and `npm run wasm:compdb` both read it).",
   "emsdkVersion": "6.0.12",
   "std": "c++20",
   "opt": "-O2",
   "usePort": "emdawnwebgpu",
+  "sources": [
+    "main.cpp",
+    "renderer.cpp",
+    "device.cpp",
+    "resources.cpp",
+    "pipeline.cpp",
+    "frame.cpp",
+    "timing.cpp",
+    "audio_depth.cpp",
+    "wasm_internal.cpp"
+  ],
+  "asyncifyFallback": true,
   "sFlags": [
     "ALLOW_MEMORY_GROWTH=1",
     "GROWABLE_ARRAYBUFFERS=0",
@@ -16,20 +28,9 @@
     "-flto",
     "-fno-rtti"
   ],
-  "sources": [
-    "main.cpp",
-    "renderer.cpp",
-    "device.cpp",
-    "resources.cpp",
-    "pipeline.cpp",
-    "frame.cpp",
-    "timing.cpp",
-    "audio_depth.cpp",
-    "wasm_internal.cpp"
-  ],
   "profiles": {
     "debug": {
-      "description": "Local debugging build (`npm run wasm:build:debug`). -O0 + DWARF + a source map so Chrome DevTools steps through the C++; ASSERTIONS=2 and SAFE_HEAP=1 trap bad heap access with a stack instead of corrupting silently. -flto is dropped (slow link, no debug value at -O0). The output goes to wasm_renderer/build/debug/ and is never copied to public/wasm/: the committed artifact is always the release build. `asan` is opt-in on top (WASM_ASAN=1) and drops SAFE_HEAP, which ASan refuses to link with.",
+      "description": "Local debugging build (`npm run wasm:build:debug`). -O0 + DWARF + a source map so Chrome DevTools steps through the C++; ASSERTIONS=2 and SAFE_HEAP=1 trap bad heap access with a stack instead of corrupting silently. -flto is dropped (slow link, no debug value at -O0). ASYNCIFY only (no JSPI twin). The output goes to wasm_renderer/build/debug/ and is never copied to public/wasm/: the committed artifacts are always the release builds. `asan` is opt-in on top (WASM_ASAN=1) and drops SAFE_HEAP, which ASan refuses to link with.",
       "opt": "-O0",
       "sFlags": ["ASSERTIONS=2", "SAFE_HEAP=1"],
       "extraFlags": ["-g", "-gsource-map"],
@@ -42,5 +43,31 @@
       }
     }
   },
-  "jsOutputName": "pixelocity_wasm.js"
+  "jsOutputName": "pixelocity_wasm.js",
+  "jspi": {
+    "description": "JSPI primary graph. sFlags must equal the fallback sFlags with ASYNCIFY replaced by JSPI (verify:wasm-invariants). jspiExports lists every C export whose call graph can reach wgpuInstanceWaitAny; each becomes Promise-returning and the bridge must ccall it with { async: true } via src/wasm/bridge/call.ts SUSPENDING_EXPORTS. Calling an unlisted export that suspends traps under JSPI. extraFlags and profiles apply on top of these sFlags the same way they apply to the fallback.",
+    "sFlags": [
+      "ALLOW_MEMORY_GROWTH=1",
+      "GROWABLE_ARRAYBUFFERS=0",
+      "NO_EXIT_RUNTIME=1",
+      "MODULARIZE=1",
+      "EXPORT_NAME=PixelocityWASM",
+      "JSPI"
+    ],
+    "jspiExports": [
+      "initWasmRenderer",
+      "loadShader",
+      "reloadShader",
+      "resizeCanvas",
+      "setColorFormat"
+    ],
+    "waitAnyCallGraph": {
+      "initWasmRenderer": "Initialize → CreateDevice (adapter, device, format-probe error scope WaitAny) → CreateResources → CreateHistoryTextureFailSoft → TryCreateHistoryTexture (error scope WaitAny)",
+      "loadShader": "LoadShader (compute pipeline error scope WaitAny)",
+      "reloadShader": "ReloadShader → LoadShader",
+      "resizeCanvas": "ResizeCanvas → RecreateTextures → CreateHistoryTextureFailSoft → TryCreateHistoryTexture",
+      "setColorFormat": "SetColorFormat → RecreateTextures → CreateHistoryTextureFailSoft → TryCreateHistoryTexture"
+    },
+    "jsOutputName": "pixelocity_wasm_jspi.js"
+  }
 }

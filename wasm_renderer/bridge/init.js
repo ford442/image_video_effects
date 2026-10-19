@@ -1,5 +1,6 @@
 // GENERATED — do not edit. Source: src/wasm/ (concat_bridge.sh / emit-wasm-bridge.mjs)
 
+import { callSuspending } from "./call.js";
 import { formatCppInitFailure, readCppInitDiagnostics } from "./diagnostics.js";
 import { state, wasmRef } from "./state.js";
 const SOURCE_MAP = {
@@ -66,139 +67,160 @@ async function initWasmRenderer(canvasElement) {
   state.canvasWidth = Math.min(wasmRef.canvas.width || sizeCap, sizeCap);
   state.canvasHeight = Math.min(wasmRef.canvas.height || sizeCap, sizeCap);
   state.initStartTime = performance.now();
-  return new Promise((resolve) => {
-    const pathname = window.location.pathname;
-    const isUnderSubpath = pathname.startsWith("/image_video_effects/");
-    const wasmJsPath = isUnderSubpath ? "/image_video_effects/wasm/pixelocity_wasm.js" : "/wasm/pixelocity_wasm.js";
-    console.log(`[WASM] Loading from: ${wasmJsPath}`);
-    console.log(`[WASM] Canvas size: ${state.canvasWidth}x${state.canvasHeight}`);
-    let handled = false;
-    const handleLoad = () => {
-      if (handled) return;
-      handled = true;
-      if (typeof window.PixelocityWASM !== "function") {
-        console.error("[WASM] PixelocityWASM factory function not found");
-        state.lastLoadError = "Factory PixelocityWASM missing";
-        state.loadErrorCount++;
-        resolve(false);
-        return;
-      }
-      console.log("[WASM] Creating module from factory...");
-      const wasmLocatePath = isUnderSubpath ? "/image_video_effects/wasm/" : "/wasm/";
-      window.PixelocityWASM({
-        locateFile: (path) => wasmLocatePath + path
-      }).then((mod) => {
-        wasmRef.module = mod;
-        const canvas = wasmRef.canvas;
-        if (!canvas) {
-          state.lastLoadError = "Canvas missing after module load";
-          state.loadErrorCount++;
-          state.initEndTime = performance.now();
-          resolve(false);
-          return;
-        }
-        const canvasId = ensureWasmCanvasId(canvas);
-        const selector = "#" + canvasId;
-        console.log(`[WASM] Calling initWasmRenderer( ${state.canvasWidth} , ${state.canvasHeight} , ${selector} )`);
-        try {
-          mod.ccall(
-            "initWasmRenderer",
-            "number",
-            ["number", "number", "string"],
-            [state.canvasWidth, state.canvasHeight, selector]
-          );
-        } catch (callErr) {
-          console.error("[WASM] ccall initWasmRenderer threw:", callErr);
-          const cppDiag = readCppInitDiagnostics();
-          const detail = formatCppInitFailure(cppDiag);
-          const message = callErr instanceof Error ? callErr.message : String(callErr);
-          state.lastLoadError = `ccall exception: ${message} (${detail})`;
-          state.loadErrorCount++;
-          state.initEndTime = performance.now();
-          resolve(false);
-          return;
-        }
-        return waitForCppInit(mod).then((outcome) => {
-          if (outcome === "timeout") {
-            state.initTimedOut = true;
-            state.lastLoadError = `C++ Initialize() still pending after ${CPP_INIT_TIMEOUT_MS / 1e3} s (suspended in WaitAny)`;
-            state.loadErrorCount++;
-            state.initEndTime = performance.now();
-            console.error(`[WASM] \u274C ${state.lastLoadError}; abandoning this module`);
-            wasmRef.module = null;
-            wasmRef.canvas = null;
-            reapAbandonedInit(mod);
-            resolve(false);
-            return;
-          }
-          if (outcome === "ready") {
-            state.initialized = true;
-            state.initEndTime = performance.now();
-            const elapsed = state.initEndTime - state.initStartTime;
-            console.log(`[WASM] \u2705 Initialization complete in ${elapsed} ms`);
-            const cppFmt = Number(
-              mod.ccall("getColorFormat", "number", [], []) ?? 0
-            );
-            const pending = state.colorFormat;
-            if (pending !== 0 && pending !== cppFmt) {
-              mod.ccall("setColorFormat", null, ["number"], [pending]);
-            }
-            const applied = Number(
-              mod.ccall("getColorFormat", "number", [], []) ?? cppFmt
-            );
-            state.colorFormat = applied === 1 ? 1 : 0;
-            console.log(
-              `[WASM] colorFormat=${state.colorFormat === 1 ? "rgba16float" : "rgba32float"}`
-            );
-            state.maxShaderSlots = typeof mod._getMaxShaderSlots === "function" ? mod._getMaxShaderSlots() : null;
-            console.log(`[WASM] maxShaderSlots=${state.maxShaderSlots ?? "unknown (artifact predates export)"}`);
-            promoteWasmCanvasVisible(canvas);
-            if (state.pendingInputSource !== null) {
-              const src = state.pendingInputSource;
-              state.pendingInputSource = null;
-              const sourceInt = typeof src === "string" ? SOURCE_MAP[src] ?? 0 : src;
-              mod.ccall("setInputSource", null, ["number"], [sourceInt]);
-              state.inputSource = sourceInt;
-            }
-            resolve(true);
-          } else {
-            const cppDiag = readCppInitDiagnostics();
-            const failMsg = formatCppInitFailure(cppDiag);
-            console.error(`[WASM] \u274C initWasmRenderer failed: ${failMsg}`);
-            if (cppDiag.adapterSummary) {
-              console.error(`[WASM] GPU Adapter: ${cppDiag.adapterSummary}`);
-            }
-            state.lastLoadError = failMsg;
-            state.loadErrorCount++;
-            state.initEndTime = performance.now();
-            resolve(false);
-          }
-        });
-      }).catch((err) => {
-        console.error("[WASM] Module instantiation failed:", err);
-        state.lastLoadError = err instanceof Error ? err.message : String(err);
-        state.loadErrorCount++;
-        state.initEndTime = performance.now();
-        resolve(false);
-      });
-    };
-    const script = document.createElement("script");
-    script.src = wasmJsPath;
-    script.onload = handleLoad;
-    script.onerror = () => {
-      if (handled) return;
-      handled = true;
-      console.error(`[WASM] Failed to load script: ${wasmJsPath}`);
-      state.lastLoadError = `Failed to load script: ${wasmJsPath}`;
+  const base = window.location.pathname.startsWith("/image_video_effects/") ? "/image_video_effects/wasm/" : "/wasm/";
+  console.log(`[WASM] Canvas size: ${state.canvasWidth}x${state.canvasHeight}`);
+  const mod = await instantiateWasmModule(base);
+  if (!mod) {
+    state.loadErrorCount++;
+    state.initEndTime = performance.now();
+    return false;
+  }
+  wasmRef.module = mod;
+  const canvas = wasmRef.canvas;
+  if (!canvas) {
+    state.lastLoadError = "Canvas missing after module load";
+    state.loadErrorCount++;
+    state.initEndTime = performance.now();
+    return false;
+  }
+  const canvasId = ensureWasmCanvasId(canvas);
+  const selector = "#" + canvasId;
+  console.log(`[WASM] Calling initWasmRenderer( ${state.canvasWidth} , ${state.canvasHeight} , ${selector} )`);
+  let ok = 0;
+  try {
+    const raced = await Promise.race([
+      callSuspending(
+        mod,
+        "initWasmRenderer",
+        "number",
+        ["number", "number", "string"],
+        [state.canvasWidth, state.canvasHeight, selector]
+      ).then((value) => ({ tag: "call", value })),
+      waitForCppInit(mod).then((outcome) => ({ tag: "poll", outcome }))
+    ]);
+    if (raced.tag === "poll" && raced.outcome === "timeout") {
+      state.initTimedOut = true;
+      state.lastLoadError = `C++ Initialize() still pending after ${CPP_INIT_TIMEOUT_MS / 1e3} s (suspended in WaitAny)`;
       state.loadErrorCount++;
       state.initEndTime = performance.now();
-      resolve(false);
-    };
-    document.head.appendChild(script);
-    if (typeof window.PixelocityWASM === "function") {
-      queueMicrotask(handleLoad);
+      console.error(`[WASM] \u274C ${state.lastLoadError}; abandoning this module`);
+      wasmRef.module = null;
+      wasmRef.canvas = null;
+      reapAbandonedInit(mod);
+      return false;
     }
+    if (raced.tag === "poll") {
+      ok = raced.outcome === "ready" ? 1 : 0;
+    } else {
+      ok = Number(raced.value);
+      const settled = readCppInitOutcome(mod);
+      if (settled === "failed") ok = 0;
+      else if (settled === "ready") ok = 1;
+    }
+  } catch (callErr) {
+    console.error("[WASM] ccall initWasmRenderer threw:", callErr);
+    const cppDiag = readCppInitDiagnostics();
+    const detail = formatCppInitFailure(cppDiag);
+    const message = callErr instanceof Error ? callErr.message : String(callErr);
+    state.lastLoadError = `ccall exception: ${message} (${detail})`;
+    state.loadErrorCount++;
+    state.initEndTime = performance.now();
+    return false;
+  }
+  if (!ok) {
+    const cppDiag = readCppInitDiagnostics();
+    const failMsg = formatCppInitFailure(cppDiag);
+    console.error(`[WASM] \u274C initWasmRenderer failed: ${failMsg}`);
+    if (cppDiag.adapterSummary) {
+      console.error(`[WASM] GPU Adapter: ${cppDiag.adapterSummary}`);
+    }
+    state.lastLoadError = failMsg;
+    state.loadErrorCount++;
+    state.initEndTime = performance.now();
+    return false;
+  }
+  state.initialized = true;
+  state.initEndTime = performance.now();
+  const elapsed = state.initEndTime - state.initStartTime;
+  console.log(`[WASM] \u2705 Initialization complete in ${elapsed} ms (${state.wasmArtifact ?? "preloaded"} build)`);
+  state.maxShaderSlots = typeof mod._getMaxShaderSlots === "function" ? mod._getMaxShaderSlots() : null;
+  console.log(`[WASM] maxShaderSlots=${state.maxShaderSlots ?? "unknown (artifact predates export)"}`);
+  const cppFmt = Number(mod.ccall("getColorFormat", "number", [], []) ?? 0);
+  const pending = state.colorFormat;
+  if (pending !== 0 && pending !== cppFmt) {
+    await callSuspending(mod, "setColorFormat", null, ["number"], [pending]);
+  }
+  const applied = Number(mod.ccall("getColorFormat", "number", [], []) ?? cppFmt);
+  state.colorFormat = applied === 1 ? 1 : 0;
+  console.log(
+    `[WASM] colorFormat=${state.colorFormat === 1 ? "rgba16float" : "rgba32float"}`
+  );
+  promoteWasmCanvasVisible(canvas);
+  if (state.pendingInputSource !== null) {
+    const src = state.pendingInputSource;
+    state.pendingInputSource = null;
+    const sourceInt = typeof src === "string" ? SOURCE_MAP[src] ?? 0 : src;
+    mod.ccall("setInputSource", null, ["number"], [sourceInt]);
+    state.inputSource = sourceInt;
+  }
+  return true;
+}
+const WASM_ARTIFACT_JS = {
+  jspi: "pixelocity_wasm_jspi.js",
+  asyncify: "pixelocity_wasm.js"
+};
+function supportsJspi() {
+  const wa = globalThis.WebAssembly;
+  return typeof wa?.Suspending === "function" && typeof wa?.promising === "function";
+}
+function wasmArtifactOrder() {
+  return supportsJspi() ? ["jspi", "asyncify"] : ["asyncify"];
+}
+function loadScript(src) {
+  return new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.head.appendChild(script);
   });
+}
+async function instantiateWasmModule(base) {
+  const locateFile = (path) => base + path;
+  if (typeof window.PixelocityWASM === "function") {
+    try {
+      return await window.PixelocityWASM({ locateFile });
+    } catch (err) {
+      console.error("[WASM] Module instantiation failed:", err);
+      state.lastLoadError = err instanceof Error ? err.message : String(err);
+      return null;
+    }
+  }
+  for (const kind of wasmArtifactOrder()) {
+    const src = base + WASM_ARTIFACT_JS[kind];
+    console.log(`[WASM] Loading ${kind} build from: ${src}`);
+    if (!await loadScript(src)) {
+      console.error(`[WASM] Failed to load script: ${src}`);
+      state.lastLoadError = `Failed to load script: ${src}`;
+      continue;
+    }
+    const factory = window.PixelocityWASM;
+    if (typeof factory !== "function") {
+      console.error("[WASM] PixelocityWASM factory function not found");
+      state.lastLoadError = "Factory PixelocityWASM missing";
+      continue;
+    }
+    try {
+      const mod = await factory({ locateFile });
+      state.wasmArtifact = kind;
+      return mod;
+    } catch (err) {
+      console.error(`[WASM] ${kind} module instantiation failed:`, err);
+      state.lastLoadError = err instanceof Error ? err.message : String(err);
+      delete window.PixelocityWASM;
+    }
+  }
+  return null;
 }
 function shutdownWasmRenderer() {
   if (!state.initialized || !wasmRef.module) {
@@ -259,11 +281,14 @@ function getPresentCanvasId() {
 }
 export {
   CPP_INIT_TIMEOUT_MS,
+  WASM_ARTIFACT_JS,
   ensureWasmCanvasId,
   getPresentCanvas,
   getPresentCanvasId,
   initWasmRenderer,
   isInitialized,
   promoteWasmCanvasVisible,
-  shutdownWasmRenderer
+  shutdownWasmRenderer,
+  supportsJspi,
+  wasmArtifactOrder
 };

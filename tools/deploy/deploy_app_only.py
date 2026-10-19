@@ -14,15 +14,26 @@ Usage:
     python3 tools/deploy/deploy_app_only.py
     python3 tools/deploy/deploy_app_only.py --force     # re-upload all app files
     python3 tools/deploy/deploy_app_only.py --fresh     # clear manifest & redeploy
+    python3 tools/deploy/deploy_app_only.py --dry-run   # print the upload plan; no network, no writes
 """
 
+import argparse
 import os
 import sys
 import json
 import hashlib
 from pathlib import Path
+from typing import Optional
 
 from deploy_credentials import load_credentials, open_sftp
+from deploy_plan import (
+    REASON_ALWAYS,
+    REASON_HASH_CHANGED,
+    REASON_NEW,
+    DeployPlan,
+    build_plan,
+    format_plan,
+)
 
 # ── Configuration ────────────────────────────────────────────────────────────
 # Host/user/password come from .env.deploy or DEPLOY_* / FTP_* env vars.
@@ -61,15 +72,21 @@ def save_manifest(manifest: dict):
         json.dump(manifest, f, indent=2)
 
 
-def should_upload(local_path: str, manifest: dict) -> bool:
+def upload_reason(local_path: str, manifest: dict) -> Optional[str]:
+    """None = unchanged (skip); else "always" / "new" / "hash-changed"."""
     filename = os.path.basename(local_path)
     if filename in ALWAYS_UPLOAD:
-        return True
-    local_hash = get_file_hash(local_path)
+        return REASON_ALWAYS
     rel_path = os.path.relpath(local_path, LOCAL_DIRECTORY)
-    if rel_path in manifest and manifest[rel_path].get("hash") == local_hash:
-        return False
-    return True
+    if rel_path not in manifest:
+        return REASON_NEW
+    if manifest[rel_path].get("hash") == get_file_hash(local_path):
+        return None
+    return REASON_HASH_CHANGED
+
+
+def should_upload(local_path: str, manifest: dict) -> bool:
+    return upload_reason(local_path, manifest) is not None
 
 
 def upload_file(sftp, local_path: str, remote_path: str, manifest: dict):
@@ -127,15 +144,70 @@ def verify_build() -> bool:
     return True
 
 
+def compute_plan(local_dir: str, manifest: dict, fresh: bool = False, force: bool = False) -> DeployPlan:
+    """Offline equivalent of a real run: reads ``local_dir`` + ``manifest`` only."""
+    plan = build_plan(
+        script="tools/deploy/deploy_app_only.py",
+        local_dir=local_dir,
+        remote_root=REMOTE_DIRECTORY,
+        manifest_file=MANIFEST_FILE,
+        manifest=manifest,
+        reason_for=upload_reason,
+        skip_dirs=SKIP_DIRS,
+        # --force and --fresh both start the real run from an empty manifest.
+        fresh=fresh or force,
+    )
+    plan.deletes_supported = False
+    stale = sorted(
+        rel for rel in manifest
+        if not os.path.exists(os.path.join(local_dir, rel))
+        and rel.split(os.sep, 1)[0] not in SKIP_DIRS
+    )
+    if stale and not (fresh or force):
+        plan.notes.append(
+            f"{len(stale)} manifest entries point at files no longer in build/ "
+            "(never deleted remotely by this script)"
+        )
+    return plan
+
+
+def parse_args(argv=None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="App-only SFTP deploy of build/ (shaders/ excluded) to DreamHost.",
+        allow_abbrev=False,
+    )
+    parser.add_argument("--force", action="store_true", help="Re-upload all app files")
+    parser.add_argument("--fresh", action="store_true", help="Clear manifest and redeploy")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="Print the upload plan from build/ + the manifest and exit. "
+                             "Opens no network connection, never asks for credentials, writes nothing.")
+    return parser.parse_args(argv)
+
+
+def run_dry_run(fresh: bool, force: bool) -> int:
+    """Print the plan. Must stay free of load_credentials()/open_sftp()/any write."""
+    if not os.path.isdir(LOCAL_DIRECTORY):
+        print(f"❌  Directory '{LOCAL_DIRECTORY}' not found. Run 'npm run build' first.")
+        return 1
+    if not verify_build():
+        return 1
+    print(format_plan(compute_plan(LOCAL_DIRECTORY, load_manifest(), fresh=fresh, force=force)))
+    return 0
+
+
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 
-def main():
+def main(argv=None):
+    args = parse_args(argv)
+    if args.dry_run:
+        sys.exit(run_dry_run(fresh=args.fresh, force=args.force))
+
     if not verify_build():
         sys.exit(1)
 
-    force = "--force" in sys.argv
-    fresh = "--fresh" in sys.argv
+    force = args.force
+    fresh = args.fresh
 
     manifest = load_manifest()
 

@@ -1,26 +1,15 @@
-// Spectrogram Displace — Batch 58D live-audio temporal upgrade
+// ═══════════════════════════════════════════════════════════════════
+//  Spectrogram Displace
+//  Category: artistic
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, click-reactive, temporal
+//  Complexity: Medium
+//  Upgraded: 2026-10-18
+//  Ideas: harmonic stack; differential waterfall decay
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 // A owns the scrolling spectrogram display history; B is intentionally unwritten.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -95,8 +84,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let historyPixel = vec2<i32>(clamp(pixel.x - scrollPixels, 0, dims.x - 1), clamp(pixel.y, 0, dims.y - 1));
   let previous = textureLoad(dataTextureC, historyPixel, 0);
   let newColumn = 1.0 - smoothstep(0.0, 0.018 + speed * 0.035, uv.x);
-  let spectralInk = palette(logY * 0.75 + time * 0.025 + mids * 0.1) * magnitude;
-  let spectrogram = mix(previous.rgb * (0.955 + detail * 0.025), spectralInk, newColumn);
+  // ── Idea 1: harmonic stack ──
+  // Integer partials of a bass fundamental, painted only into the fresh column.
+  let f0 = 0.07 + bass * 0.06;
+  var harm = 0.0;
+  for (var n: i32 = 1; n <= 6; n = n + 1) {
+    let dPartial = logY - f0 * f32(n);
+    harm = max(harm, exp(-dPartial * dPartial * (900.0 + detail * 1400.0)));
+  }
+  let spectralInk = palette(logY * 0.75 + time * 0.025 + mids * 0.1) * magnitude
+    + palette(logY * 0.75 + 0.08) * harm * magnitude * (0.35 + detail * 0.4);
+  // ── Idea 2: differential waterfall decay ──
+  // Low rows ring; high rows fade. Detail still lengthens the hold.
+  let rowHold = mix(0.988, 0.90, logY);
+  let rowDecay = rowHold * (0.97 + detail * 0.02);
+  let spectrogram = mix(previous.rgb * rowDecay, spectralInk, newColumn);
 
   let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let displacement = vec2<f32>((magnitude - 0.5) * (source.r - source.b), (source.g - 0.5) * magnitude * (1.0 - uv.y)) *

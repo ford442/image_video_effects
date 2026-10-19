@@ -1,15 +1,19 @@
 #!/usr/bin/env node
 /**
  * Print toolchain pin / compile flags from src/contracts/wasm_compile_flags.json.
- * Usage: node scripts/format-wasm-compile-flags.js [args|emsdk|output|sources|outdir|compdb] [profile] [--asan]
- *   args    — one em++ argument per line (std, opt, use-port, -s flags, extraFlags)
- *             for `profile` (default release); `debug --asan` adds the optional ASan flags
- *   outdir  — build output dir of the profile, relative to wasm_renderer/
- *   emsdk   — pinned emsdk/emcc version
- *   output  — Emscripten JS output file name
- *   sources — translation units (relative to wasm_renderer/), one per line
- *   compdb  — write wasm_renderer/compile_commands.json for clangd (gitignored;
- *             needs em++ on PATH). IDE index only: build.sh stays the one build.
+ * Usage: node scripts/format-wasm-compile-flags.js [args|emsdk|output|sources|outdir|variants|compdb|compile-commands] [profile] [--asan] [--variant=asyncify|jspi]
+ *   args             — one em++ argument per line (std, opt, use-port, -s flags, extraFlags [, -sJSPI_EXPORTS])
+ *   outdir           — build output dir of the profile, relative to wasm_renderer/
+ *   emsdk            — pinned emsdk/emcc version
+ *   output           — Emscripten JS output file name for --variant (default asyncify)
+ *   sources          — translation units (relative to wasm_renderer/), one per line
+ *   variants         — release build variant names, one per line (build.sh loops over these)
+ *   compdb           — write wasm_renderer/compile_commands.json for clangd (gitignored)
+ *   compile-commands — alias of compdb (older npm script name)
+ *
+ * The top-level graph is the ASYNCIFY fallback (variant "asyncify"). The `jspi`
+ * graph swaps ASYNCIFY for JSPI and adds -sJSPI_EXPORTS. Profiles (debug / ASan)
+ * layer on either variant. build.sh never spells -sASYNCIFY or -sJSPI itself.
  */
 const fs = require('fs');
 const path = require('path');
@@ -19,18 +23,30 @@ const ROOT = path.join(__dirname, '..');
 const CONTRACT_PATH = path.join(ROOT, 'src', 'contracts', 'wasm_compile_flags.json');
 const RENDERER_DIR = path.join(ROOT, 'wasm_renderer');
 const COMPDB_PATH = path.join(RENDERER_DIR, 'compile_commands.json');
-// Same default as build.sh (export EM_CACHE=/tmp/emscripten_cache).
 const DEFAULT_EM_CACHE = '/tmp/emscripten_cache';
+const VARIANTS = ['asyncify', 'jspi'];
 
 function loadContract(file = CONTRACT_PATH) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
+/** Resolved { sFlags, jsOutputName, jspiExports } for one async-mode graph. */
+function variantGraph(contract, variant) {
+  if (variant === 'asyncify') {
+    return { sFlags: contract.sFlags, jsOutputName: contract.jsOutputName, jspiExports: [] };
+  }
+  if (variant === 'jspi') {
+    const j = contract.jspi;
+    if (!j) throw new Error('wasm_compile_flags.json has no `jspi` graph');
+    return { sFlags: j.sFlags, jsOutputName: j.jsOutputName, jspiExports: j.jspiExports || [] };
+  }
+  throw new Error(`unknown variant "${variant}" (expected ${VARIANTS.join('|')})`);
+}
+
 /**
  * Top-level opt / sFlags / extraFlags are the release profile. A named profile
- * (contract.profiles.<name>) overrides `opt` and adds sFlags / extraFlags, minus
- * its dropExtraFlags. `asan` layers profiles.<name>.asan on top (its dropSFlags
- * remove incompatible settings: ASan does not work with SAFE_HEAP).
+ * overrides `opt` and adds sFlags / extraFlags, minus its dropExtraFlags.
+ * `asan` layers profiles.<name>.asan on top.
  */
 function resolveProfile(contract, { profile = 'release', asan = false } = {}) {
   const base = {
@@ -64,28 +80,38 @@ function resolveProfile(contract, { profile = 'release', asan = false } = {}) {
   return out;
 }
 
+function normalizeOptions(options) {
+  if (typeof options === 'string') return { variant: options, profile: 'release', asan: false };
+  return { variant: 'asyncify', profile: 'release', asan: false, ...(options || {}) };
+}
+
 /** The exact em++ flag list build.sh passes (before sources, -I and exports). */
 function emccArgs(contract, options) {
-  const p = resolveProfile(contract, options);
-  return [
+  const opts = normalizeOptions(options);
+  const g = variantGraph(contract, opts.variant);
+  const p = resolveProfile(contract, opts);
+  // Profile sFlags are the fallback list plus profile additions. The jspi graph
+  // is that list with ASYNCIFY replaced by JSPI (verify:wasm-invariants).
+  const sFlags = opts.variant === 'jspi'
+    ? p.sFlags.map((f) => (f === 'ASYNCIFY' ? 'JSPI' : f))
+    : p.sFlags;
+  const args = [
     `-std=${contract.std}`,
     p.opt,
     `--use-port=${contract.usePort}`,
-    ...p.sFlags.map((f) => `-s${f}`),
+    ...sFlags.map((f) => `-s${f}`),
     ...p.extraFlags,
   ];
+  if (g.jspiExports.length > 0) {
+    args.push(`-sJSPI_EXPORTS=${g.jspiExports.join(',')}`);
+  }
+  return args;
 }
 
-/** Header dir of the emdawnwebgpu port inside EM_CACHE (populated by the first wasm:build). */
 function portIncludeDir(contract, emCache) {
   return path.join(emCache, 'ports', contract.usePort, `${contract.usePort}_pkg`, 'webgpu', 'include');
 }
 
-/**
- * `em++ --cflags` is what em++ adds when it drives clang: the wasm32 target, the
- * EM_CACHE sysroot and the compat include. clangd does not run em++, so without
- * these it indexes the TUs as host code. -mllvm pairs are codegen-only.
- */
 function parseEmccCflags(text) {
   const tokens = text.trim().split(/\s+/).filter(Boolean);
   const out = [];
@@ -99,10 +125,6 @@ function parseEmccCflags(text) {
   return out;
 }
 
-/**
- * One entry per TU with build.sh's full flag list. The --use-port / -s settings
- * mean nothing to clang; wasm_renderer/.clangd removes them before indexing.
- */
 function compileCommands(contract, { cflags, emCache, rendererDir = RENDERER_DIR }) {
   const args = [
     ...cflags,
@@ -130,7 +152,6 @@ function writeCompdb(contract) {
     console.error('   source <emsdk>/emsdk_env.sh first, then run: npm run wasm:compdb');
     process.exit(1);
   }
-  // em++ may print sanity-check INFO lines first; the flags are the last line.
   const lines = raw.trim().split('\n');
   const cflags = parseEmccCflags(lines[lines.length - 1]);
   const cmds = compileCommands(contract, { cflags, emCache });
@@ -145,7 +166,9 @@ function writeCompdb(contract) {
 module.exports = {
   CONTRACT_PATH,
   COMPDB_PATH,
+  VARIANTS,
   loadContract,
+  variantGraph,
   resolveProfile,
   emccArgs,
   parseEmccCflags,
@@ -155,23 +178,29 @@ module.exports = {
 if (require.main === module) {
   const argv = process.argv.slice(2);
   const asan = argv.includes('--asan');
-  const [kind = 'args', profile = 'release'] = argv.filter((a) => !a.startsWith('--'));
+  const variantArg = argv.find((a) => a.startsWith('--variant='));
+  const variant = variantArg ? variantArg.slice('--variant='.length) : 'asyncify';
+  const positional = argv.filter((a) => !a.startsWith('--'));
+  const kind = positional[0] || 'args';
+  const profile = positional[1] || 'release';
   const contract = loadContract();
   try {
     if (kind === 'args') {
-      process.stdout.write(`${emccArgs(contract, { profile, asan }).join('\n')}\n`);
+      process.stdout.write(`${emccArgs(contract, { profile, asan, variant }).join('\n')}\n`);
     } else if (kind === 'outdir') {
       process.stdout.write(resolveProfile(contract, { profile, asan }).outDir);
     } else if (kind === 'emsdk') {
       process.stdout.write(contract.emsdkVersion);
     } else if (kind === 'output') {
-      process.stdout.write(contract.jsOutputName);
+      process.stdout.write(variantGraph(contract, variant).jsOutputName);
+    } else if (kind === 'variants') {
+      process.stdout.write(`${VARIANTS.join('\n')}\n`);
     } else if (kind === 'sources') {
       process.stdout.write(`${contract.sources.join('\n')}\n`);
-    } else if (kind === 'compdb') {
+    } else if (kind === 'compdb' || kind === 'compile-commands') {
       writeCompdb(contract);
     } else {
-      console.error('Usage: format-wasm-compile-flags.js [args|emsdk|output|sources|outdir|compdb] [profile] [--asan]');
+      console.error('Usage: format-wasm-compile-flags.js [args|emsdk|output|sources|outdir|variants|compdb|compile-commands] [profile] [--asan] [--variant=asyncify|jspi]');
       process.exit(1);
     }
   } catch (err) {

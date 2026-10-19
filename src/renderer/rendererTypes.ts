@@ -35,6 +35,8 @@ export interface WASMDiagnostics {
   canvasCopySrc: boolean | null;
   /** MAX_SHADER_SLOTS in the loaded artifact; null = artifact predates the export. */
   maxShaderSlots: number | null;
+  /** Emscripten glue that loaded: 'jspi' or 'asyncify'. null before init. */
+  wasmArtifact: 'jspi' | 'asyncify' | null;
   /** Smoothed per-pass GPU ms from C++ timestamp queries (#1314 D); [] until they resolve. */
   passTimings: PassTiming[];
   /** C++ uncaptured WebGPU errors + device-lost messages (count survives clearErrorRing). */

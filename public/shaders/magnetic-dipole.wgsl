@@ -1,3 +1,12 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Magnetic Dipole Field
+//  Category: artistic
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-08-23, 2026-10-18
+//  Ideas: magnet body; filing chain links
+//  A packing: (fieldDir.xy, alignment, fieldStrength)
+// ═══════════════════════════════════════════════════════════════════
 // Magnetic Dipole Field - Particle Alignment Visualization
 // Simulates magnetic field lines with dipole physics
 
@@ -40,26 +49,8 @@
 //  local polarity and send the filings into a scramble that settles elastically.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // field data
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>; // alignment data
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>; // read previous
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=unused
-  zoom_params: vec4<f32>,  // x=ChargeStrength, y=AlignmentInertia, z=SpriteSize, w=FieldDensity
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=ChargeStrength, y=AlignmentInertia, z=SpriteSize, w=FieldDensity
 
 const PI: f32 = 3.14159265359;
 const MU0: f32 = 1.0; // Magnetic permeability (simplified)
@@ -247,22 +238,38 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let toFiling = uv - filingCenter;
       let filingDist = length(toFiling);
       
+      // b = alignment, a = field strength (see the A packing above).
+      let fcI = clamp(vec2<i32>(filingCenter * vec2<f32>(f32(size.x), f32(size.y))),
+                      vec2<i32>(0), vec2<i32>(i32(size.x) - 1, i32(size.y) - 1));
+      let filingField = textureLoad(dataTextureC, fcI, 0);
+      let filingAngle = filingField.b;
+      let filingIntensity = clamp(filingField.a * 2.0, 0.3, 1.0);
+
       if (filingDist < spriteSize * 2.0) {
-        // Get field at filing position
-        // b = alignment, a = field strength (see the A packing above).
-        let fcI = clamp(vec2<i32>(filingCenter * vec2<f32>(f32(size.x), f32(size.y))),
-                        vec2<i32>(0), vec2<i32>(i32(size.x) - 1, i32(size.y) - 1));
-        let filingField = textureLoad(dataTextureC, fcI, 0);
-        let filingAngle = filingField.b;
-        let filingIntensity = clamp(filingField.a * 2.0, 0.3, 1.0);
-        
-        // Render sprite
         let localUV = toFiling / spriteSize;
         filingAccum = filingAccum + ironFilingSprite(localUV, filingAngle, filingIntensity);
       }
+
+      // ── Idea: chain links ──
+      // A short segment along the local field joins a strong filing to its neighbor.
+      let along = vec2<f32>(cos(filingAngle), sin(filingAngle));
+      let ba = along * gridSize * 0.42;
+      let linkH = clamp(dot(toFiling, ba) / max(dot(ba, ba), 1e-6), 0.0, 1.0);
+      let linkDist = length(toFiling - ba * linkH);
+      let linkWidth = max(spriteSize * spriteSize * 0.035, 1e-6);
+      let link = exp(-linkDist * linkDist / linkWidth);
+      filingAccum = filingAccum + link * smoothstep(0.4, 0.85, filingIntensity) * 0.45;
     }
   }
-  
+
+  // ── Idea: magnet body ──
+  // The pointer is the dipole. Filings do not enter the core; packets brighten at the rim.
+  let coreR = 0.016 + chargeStrength * 0.014;
+  let toCore = length(uv - mouse);
+  let magnetBody = smoothstep(coreR, coreR * 0.62, toCore);
+  let rimArg = toCore - coreR;
+  let magnetRim = exp(-rimArg * rimArg * 22000.0);
+  filingAccum = filingAccum * (1.0 - magnetBody);
   filingAccum = clamp(filingAccum, 0.0, 1.0);
   
   // ── FAST MOTION 1: field-line particle dance ──────────────────────────────
@@ -288,10 +295,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Add iron filings
   let filingColor = vec3<f32>(0.2, 0.2, 0.25); // Dark iron color
   finalColor = mix(finalColor, filingColor, filingAccum * 0.8);
-  
+  finalColor = mix(finalColor, finalColor * vec3<f32>(0.12, 0.13, 0.16), magnetBody * 0.8);
+
   // Add streaming field-line packets, tinted by the spectrum.
   let lineColor = spectrum(fract(fieldHue + 0.25));
-  finalColor = finalColor + lineColor * fieldLineIntensity * 1.4;
+  finalColor = finalColor + lineColor * fieldLineIntensity * (1.4 + magnetRim * 2.2);
 
   // Add glow around strong field regions
   let fieldGlow = exp(-1.0 / (fieldStrength + 0.1)) * 0.3;

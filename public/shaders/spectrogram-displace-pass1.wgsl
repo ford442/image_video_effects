@@ -1,30 +1,13 @@
 // ═════════════════════════════════════════════════════════════════════════════
 //  Spectrogram Displace – Pass 1: Spectrogram Field Generation
 //  Category: image
-//  Features: multi-pass-1, frequency analysis, magnitude field, color mapping
-//  Outputs: dataTextureA (spectroColor*mag, mag, displacementX, displacementY)
+//  Features: multi-pass-1, frequency analysis, magnitude field, color mapping, audio-reactive
+//  Upgraded: 2026-10-18
+//  Ideas: Hann sidelobes; peak-hold; live FFT bin ink
+//  A packing: raw (spectroColor.rgb, magnitude)
 // ═════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const NUM_BINS: u32 = 128u;
@@ -169,7 +152,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let binIndex = u32(uv.y * f32(NUM_BINS)) % NUM_BINS;
   let binMagnitude = calculateFrequencyBin(binIndex, NUM_BINS, timeSample);
   magnitude = mix(magnitude, binMagnitude, 0.7);
-  magnitude = pow(magnitude, 0.5) * effectiveMag;
+  magnitude = pow(max(magnitude, 0.0), 0.5) * effectiveMag;
+
+  // ── Idea 1: Hann sidelobes ──
+  // The first sidelobe of a Hann window sits about one bin off the peak, near −13 dB.
+  let binF = (1.0 - uv.y) * effectiveFreqRange * f32(NUM_BINS);
+  let shoulderArg = (fract(binF) - 0.5) * 4.2;
+  let shoulder = exp(-shoulderArg * shoulderArg);
+  magnitude = magnitude * (1.0 + shoulder * 0.22);
+
+  // ── Idea 3: live bin ink ──
+  // Same log row the synth paints. Bin 0 is the low end, matching getFrequency's inverted y.
+  let fftBin = u32(clamp((1.0 - uv.y) * effectiveFreqRange * 127.0, 0.0, 127.0));
+  let fft = extraBuffer[5u + fftBin];
+  magnitude = magnitude + fft * (0.35 + effectiveMag * 0.35);
 
   let mousePos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
   if (mousePos.y > 0.0 && mousePos.y < 1.0) {
@@ -195,6 +191,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
 
+  // ── Idea 2: peak-hold ──
+  // Time Window is the release. Pass 2 does not write A, so C.a stays last frame's magnitude.
+  let prevMag = textureLoad(dataTextureC, vec2<i32>(i32(coord.x), i32(coord.y)), 0).a;
+  let hold = mix(0.72, 0.975, clamp(timeWindow, 0.0, 1.0));
+  magnitude = max(magnitude, prevMag * hold);
   magnitude = clamp(magnitude, 0.0, 1.0);
   let spectroColor = getColor(magnitude, colorScheme);
 

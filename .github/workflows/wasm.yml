@@ -62,13 +62,15 @@ jobs:
     # public/wasm/, so a stale artifact must not sit on main (#1343).
     - name: Compare built WASM to committed artifact
       run: |
-        built=$(sha256sum public/wasm/pixelocity_wasm.wasm | cut -d' ' -f1)
-        committed=$(git show HEAD:public/wasm/pixelocity_wasm.wasm | sha256sum | cut -d' ' -f1)
-        echo "built=$built committed=$committed"
-        if [ "$built" != "$committed" ]; then
-          echo "::warning file=public/wasm/pixelocity_wasm.wasm::Committed WASM artifact is stale; rebuild with emsdk 6.0.12 (npm run wasm:build) and commit public/wasm/."
-          exit 1
-        fi
+        for art in pixelocity_wasm.wasm pixelocity_wasm_jspi.wasm; do
+          built=$(sha256sum "public/wasm/$art" | cut -d' ' -f1)
+          committed=$(git show "HEAD:public/wasm/$art" | sha256sum | cut -d' ' -f1)
+          echo "$art built=$built committed=$committed"
+          if [ "$built" != "$committed" ]; then
+            echo "::warning file=public/wasm/$art::Committed WASM artifact is stale; rebuild with emsdk 6.0.12 (npm run wasm:build) and commit public/wasm/."
+            exit 1
+          fi
+        done
 
     - name: Verify WASM bridge copies match TypeScript SoT
       run: npm run verify:wasm-bridge-sync
@@ -87,6 +89,8 @@ jobs:
         path: |
           public/wasm/pixelocity_wasm.js
           public/wasm/pixelocity_wasm.wasm
+          public/wasm/pixelocity_wasm_jspi.js
+          public/wasm/pixelocity_wasm_jspi.wasm
           public/wasm/wasm_bridge.js
           public/wasm/wasm_bridge.d.ts
           public/wasm/bridge

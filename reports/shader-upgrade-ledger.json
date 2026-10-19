@@ -1049,8 +1049,17 @@
       "history": []
     },
     "magnetic-dipole": {
-      "hash": "5b769629332992eb",
-      "history": []
+      "hash": "d0d69f0805450765",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T08:09:49.368Z",
+          "hash": "d0d69f0805450765",
+          "prev_hash": "5b769629332992eb",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 cursor batch-06 (grok) — docs/agents/swarm-outputs/cursor-2026-10-18-batch-06/"
+        }
+      ]
     },
     "melting-oil": {
       "hash": "eb9c9dc80aa30e5d",
@@ -1251,16 +1260,43 @@
       "history": []
     },
     "spectrogram-displace-pass1": {
-      "hash": "88887bf1ff4b5d83",
-      "history": []
+      "hash": "a072caed362ea004",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T08:09:49.368Z",
+          "hash": "a072caed362ea004",
+          "prev_hash": "88887bf1ff4b5d83",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 cursor batch-06 (grok) — docs/agents/swarm-outputs/cursor-2026-10-18-batch-06/"
+        }
+      ]
     },
     "spectrogram-displace-pass2": {
-      "hash": "d3c77906e24ff064",
-      "history": []
+      "hash": "8db77e3febeff4e3",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T08:09:49.368Z",
+          "hash": "8db77e3febeff4e3",
+          "prev_hash": "d3c77906e24ff064",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 cursor batch-06 (grok) — docs/agents/swarm-outputs/cursor-2026-10-18-batch-06/"
+        }
+      ]
     },
     "spectrogram-displace": {
-      "hash": "8811be19d6db0264",
-      "history": []
+      "hash": "d8511e892f0f6dbc",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T08:09:49.368Z",
+          "hash": "d8511e892f0f6dbc",
+          "prev_hash": "8811be19d6db0264",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 cursor batch-06 (grok) — docs/agents/swarm-outputs/cursor-2026-10-18-batch-06/"
+        }
+      ]
     },
     "speed-lines-focus": {
       "hash": "a70d5551ea71bdea",
@@ -2956,11 +2992,20 @@
       ]
     },
     "gen-cybernetic-ferro-coral": {
-      "hash": "503f68791d28a96a",
-      "history": []
+      "hash": "d258c6a713644635",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T08:09:49.368Z",
+          "hash": "d258c6a713644635",
+          "prev_hash": "503f68791d28a96a",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 cursor batch-06 (grok) — docs/agents/swarm-outputs/cursor-2026-10-18-batch-06/"
+        }
+      ]
     },
     "gen-cybernetic-liquid-chrome-engine": {
-      "hash": "9db1f6f42e9c984d",
+      "hash": "221b02a9651049ad",
       "history": [
         {
           "event": "upgraded",
@@ -2969,6 +3014,14 @@
           "prev_hash": "86d87d4d842d73a7",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T08:09:49.368Z",
+          "hash": "221b02a9651049ad",
+          "prev_hash": "9db1f6f42e9c984d",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 cursor batch-06 (grok) — docs/agents/swarm-outputs/cursor-2026-10-18-batch-06/"
         }
       ]
     },
@@ -4930,7 +4983,7 @@
       ]
     },
     "gen-magnetic-field-lines": {
-      "hash": "2fa8f57f988b043e",
+      "hash": "d975286918325fbd",
       "history": [
         {
           "event": "upgraded",
@@ -4939,6 +4992,14 @@
           "prev_hash": "32937bb9c54ad531",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T08:09:49.368Z",
+          "hash": "d975286918325fbd",
+          "prev_hash": "2fa8f57f988b043e",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 cursor batch-06 (grok) — docs/agents/swarm-outputs/cursor-2026-10-18-batch-06/"
         }
       ]
     },
@@ -5721,8 +5782,17 @@
       "history": []
     },
     "gen-quantum-foam-alpha": {
-      "hash": "a818daba9cb15855",
-      "history": []
+      "hash": "1d7b2ede1b81201c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T08:09:49.368Z",
+          "hash": "1d7b2ede1b81201c",
+          "prev_hash": "a818daba9cb15855",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 cursor batch-06 (grok) — docs/agents/swarm-outputs/cursor-2026-10-18-batch-06/"
+        }
+      ]
     },
     "gen-quantum-foam": {
       "hash": "86327bf55c2fb81d",
@@ -6031,8 +6101,17 @@
       "history": []
     },
     "gen-sonic-lava-flow": {
-      "hash": "a5e57387772adfaa",
-      "history": []
+      "hash": "e5f41e626d7ed46f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T08:09:49.368Z",
+          "hash": "e5f41e626d7ed46f",
+          "prev_hash": "a5e57387772adfaa",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 cursor batch-06 (grok) — docs/agents/swarm-outputs/cursor-2026-10-18-batch-06/"
+        }
+      ]
     },
     "gen-sonoluminescent-chrono-geode-matrix": {
       "hash": "ff7be263af71c41e",
@@ -6452,7 +6531,7 @@
       "history": []
     },
     "gen-fluffy-raincloud": {
-      "hash": "1e032acad10bf754",
+      "hash": "aa344827da1efd1d",
       "history": [
         {
           "event": "upgraded",
@@ -6461,6 +6540,14 @@
           "prev_hash": "01ad7f5e158950e7",
           "commit": "3e0dde9d",
           "note": "2026-10-11 crackle-echo nine (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-crackle-echo-nine"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-18T08:09:49.368Z",
+          "hash": "aa344827da1efd1d",
+          "prev_hash": "1e032acad10bf754",
+          "commit": "5c5183cd",
+          "note": "2026-10-18 cursor batch-06 (grok) — docs/agents/swarm-outputs/cursor-2026-10-18-batch-06/"
         }
       ]
     },

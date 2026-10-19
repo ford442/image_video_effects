@@ -36,6 +36,8 @@ const state = {
   colorFormat: 0,
   /** Slot indexes whose last setSlotShader the module did not accept. */
   droppedSlots: /* @__PURE__ */ new Set(),
+  /** null until a build is instantiated by init.ts (or a preloaded factory was reused). */
+  wasmArtifact: null,
   /** MAX_SHADER_SLOTS compiled into the loaded artifact; null = older binary without the export. */
   maxShaderSlots: null,
   /**
