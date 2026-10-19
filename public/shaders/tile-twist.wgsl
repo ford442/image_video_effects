@@ -4,6 +4,10 @@
 //  Features: upgraded-rgba, mouse-driven, audio-reactive, depth-aware,
 //            temporal-feedback, aces-tone-map, chromatic-aberration
 //  Complexity: Medium
+//  Upgraded: 2026-10-19
+//  Ideas: turning plates (rotated-frame tile SDF: grout revealed at the corners + lit bevel);
+//         arc blur along each tile's rotation from its analytic angular velocity
+//  A packing: (bass envelope, trail RGB) — unchanged
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 
@@ -167,7 +171,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let lissajousAngle = atan2(lissB, lissA) * 0.5;
   let tileTwist = tileHash * twist * pulse * (1.0 + ridge + influence * 2.0 + treble);
   let kaleidoDrag = f32(mouseDown) * atan2(uv01.y - mouse.y, (uv01.x - mouse.x) * aspect);
-  let angle = lissajousAngle + tileTwist + kaleidoDrag * influence + clickWave * (0.8 + tileHash);
+  let angleRest = tileTwist + kaleidoDrag * influence + clickWave * (0.8 + tileHash);
+  let angle = lissajousAngle + angleRest;
+
+  // Idea 2 setup — the Lissajous term is analytic in time, so the angle one frame ago is free.
+  // atan2(...)·0.5 wraps by π, so the step is re-wrapped into (−π/2, π/2].
+  let tPrev = time - 1.0 / 30.0;
+  let lissPrev = atan2(sin(tPrev * oscSpeed + tileHash * TAU * 0.7),
+                       sin(tPrev * oscSpeed * 2.0 + tileHash * TAU)) * 0.5;
+  let dRaw = lissajousAngle - lissPrev;
+  let dAngle = atan2(sin(2.0 * dRaw), cos(2.0 * dRaw)) * 0.5;
 
   // Rotate pixel around jittered tile center
   let rel = wuv - tCenter;
@@ -188,6 +201,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let b = textureSampleLevel(readTexture, u_sampler, clamp(rotUV - caDir * caStr * 0.6, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
   var color = vec3<f32>(r, src.g, b);
 
+  // ── Idea 2: arc blur. Two extra taps along the rotation arc between last frame's angle and
+  // now, weighted by angular speed, so fast-turning tiles smear around their centre.
+  let arcA = rot2(angle - dAngle * 0.333) * relA;
+  let arcB = rot2(angle - dAngle * 0.667) * relA;
+  let arcColA = textureSampleLevel(readTexture, u_sampler, vec2<f32>(arcA.x / aspect, arcA.y) + tCenter, 0.0).rgb;
+  let arcColB = textureSampleLevel(readTexture, u_sampler, vec2<f32>(arcB.x / aspect, arcB.y) + tCenter, 0.0).rgb;
+  let arcW = clamp(abs(dAngle) * 10.0, 0.0, 1.0);
+  color = mix(color, (color + arcColA + arcColB) / 3.0, arcW);
+
   // Synesthetic quilt palette and animated moire seams.
   let quilt = 0.5 + 0.5 * cos(TAU * (vec3<f32>(tileHash + ridge * 0.7 + time * 0.07)
                                   + vec3<f32>(0.0, 0.33, 0.67)));
@@ -195,6 +217,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                                + sin((tFrac.x - tFrac.y) * 22.0 - time * 3.2)), 8.0);
   color = mix(color, color * quilt * 1.7, 0.28 + mids * 0.18);
   color += quilt * (moire * 0.16 + clickWave * 0.32) * edgeMask;
+
+  // ── Idea 1: turning plates. The tile is a plate that turns with its image: its rounded-box
+  // SDF is taken in the ROTATED frame, so as it twists the corners leave the cell and reveal
+  // grout, and a fixed upper-left light rakes the turning bevel.
+  let plateRot = rot2(angle);
+  let plateP = plateRot * tFrac;
+  let plateD = sdRoundBox(plateP, vec2<f32>(0.5), 0.06);
+  let grout = smoothstep(-softness, softness, plateD);
+  let ePl = 0.01;
+  let plateGrad = vec2<f32>(
+    sdRoundBox(plateP + vec2<f32>(ePl, 0.0), vec2<f32>(0.5), 0.06) - sdRoundBox(plateP - vec2<f32>(ePl, 0.0), vec2<f32>(0.5), 0.06),
+    sdRoundBox(plateP + vec2<f32>(0.0, ePl), vec2<f32>(0.5), 0.06) - sdRoundBox(plateP - vec2<f32>(0.0, ePl), vec2<f32>(0.5), 0.06));
+  let screenN = transpose(plateRot) * normalize(plateGrad + vec2<f32>(1e-6, 0.0));
+  let bevel = smoothstep(-0.07, -0.01, plateD) * (1.0 - grout);
+  let rake = dot(screenN, normalize(vec2<f32>(-0.6, -0.8)));
+  color = color * (1.0 + rake * bevel * 0.45);
+  color = mix(color, vec3<f32>(0.035, 0.03, 0.028), grout * 0.85);
 
   // Mids-driven hue rotation + treble sparkle
   color = acesToneMap(color * (0.9 + mids * 0.2) * pulse);
