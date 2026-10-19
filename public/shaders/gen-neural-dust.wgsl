@@ -155,9 +155,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Depth-aware parallax: gradient of the input frame's depth pushes
     // the dust field so motes drift around foreground silhouettes.
     let texel = vec2<f32>(1.0) / res;
-    let depthC = textureSampleLevel(readDepthTexture, u_sampler, uv, 0.0).r;
-    let depthDX = textureSampleLevel(readDepthTexture, u_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).r - depthC;
-    let depthDY = textureSampleLevel(readDepthTexture, u_sampler, uv + vec2<f32>(0.0, texel.y), 0.0).r - depthC;
+    let depthC = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depthDX = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).r - depthC;
+    let depthDY = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, texel.y), 0.0).r - depthC;
     let depthGrad = vec2<f32>(depthDX, depthDY);
     // Dust Density also sets how strongly motes skirt silhouettes.
     let pDust = p + depthGrad * mix(0.5, 2.5, densityNorm);

@@ -5417,7 +5417,7 @@
       ]
     },
     "gen-neural-dust": {
-      "hash": "e01848188b4f2782",
+      "hash": "98bf03797af989ba",
       "history": [
         {
           "event": "upgraded",
@@ -5434,6 +5434,14 @@
           "prev_hash": "22156bed9cfaa8e8",
           "commit": "23a5752c",
           "note": "opus/batch-08 review fixes (2026-10-19)"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:44:52.063Z",
+          "hash": "98bf03797af989ba",
+          "prev_hash": "e01848188b4f2782",
+          "commit": "9a62d483",
+          "note": "opus/batch-08: depth read via non_filtering_sampler (2026-10-19)"
         }
       ]
     },

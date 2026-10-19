@@ -183,13 +183,15 @@
   },
   "electric-eel-storm": {
     "thumbnail_url": "thumbnails/electric-eel-storm.png",
-    "generated_at": "2026-06-14T06:41:25.090Z",
+    "generated_at": "2026-10-19T07:28:00.697Z",
     "params_snapshot": [
       0.5,
       0.4,
       0.5,
       0.3
-    ]
+    ],
+    "source_hash": "0527357e6a8f4d1d",
+    "capture_host": "swiftshader"
   },
   "emergent-calligraphic-weave": {
     "thumbnail_url": "thumbnails/emergent-calligraphic-weave.png",
@@ -441,13 +443,15 @@
   },
   "gen-bio-luminescent-jelly": {
     "thumbnail_url": "thumbnails/gen-bio-luminescent-jelly.png",
-    "generated_at": "2026-06-14T06:41:36.417Z",
+    "generated_at": "2026-10-19T07:28:30.776Z",
     "params_snapshot": [
       0.5,
       0.5,
       0.5,
       0.5
-    ]
+    ],
+    "source_hash": "a6d1579f26d9a376",
+    "capture_host": "swiftshader"
   },
   "gen-bioluminescent-aether-jellyfish-swarm": {
     "thumbnail_url": "thumbnails/gen-bioluminescent-aether-jellyfish-swarm.png",
@@ -1907,13 +1911,15 @@
   },
   "gen-phase-transition-memory-weave": {
     "thumbnail_url": "thumbnails/gen-phase-transition-memory-weave.png",
-    "generated_at": "2026-06-14T06:42:31.196Z",
+    "generated_at": "2026-10-19T07:32:10.679Z",
     "params_snapshot": [
       0.5,
       0.4,
       0.4,
       0.3
-    ]
+    ],
+    "source_hash": "80483454e3222f1d",
+    "capture_host": "swiftshader"
   },
   "gen-photonic-crystal-brain": {
     "thumbnail_url": "thumbnails/gen-photonic-crystal-brain.png",
@@ -2409,13 +2415,15 @@
   },
   "gen-stellar-web-loom": {
     "thumbnail_url": "thumbnails/gen-stellar-web-loom.png",
-    "generated_at": "2026-06-14T06:42:49.573Z",
+    "generated_at": "2026-10-19T07:36:02.770Z",
     "params_snapshot": [
-      2,
-      1,
-      3,
-      1
-    ]
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "source_hash": "5ffc8eb06d0a736b",
+    "capture_host": "swiftshader"
   },
   "gen-strange-field-flow": {
     "thumbnail_url": "thumbnails/gen-strange-field-flow.png",
@@ -3997,14 +4005,14 @@
   },
   "gen-chronos-biomechanical-void-leviathan": {
     "thumbnail_url": "thumbnails/gen-chronos-biomechanical-void-leviathan.png",
-    "generated_at": "2026-10-05T11:11:22.585Z",
+    "generated_at": "2026-10-19T07:29:30.704Z",
     "params_snapshot": [
       0,
       1,
       1,
       1
     ],
-    "source_hash": "0adac1fc449a8821",
+    "source_hash": "3bb24684540c9d4c",
     "capture_host": "swiftshader"
   },
   "gen-cosmic-velvet-hypnosis": {
@@ -4273,14 +4281,14 @@
   },
   "gen-cryogenic-frost-plasma-matrix": {
     "thumbnail_url": "thumbnails/gen-cryogenic-frost-plasma-matrix.png",
-    "generated_at": "2026-10-05T11:25:31.609Z",
+    "generated_at": "2026-10-19T07:30:43.563Z",
     "params_snapshot": [
       0.5,
       0.8,
       1.2,
       0.3
     ],
-    "source_hash": "c7a30f5f91be4ebb",
+    "source_hash": "fd925b9d95b90cf6",
     "capture_host": "swiftshader"
   },
   "gen-fireworks-horse-tail": {
@@ -4909,14 +4917,14 @@
   },
   "gen-radiant-quantum-plasma-kraken-core": {
     "thumbnail_url": "thumbnails/gen-radiant-quantum-plasma-kraken-core.png",
-    "generated_at": "2026-10-05T11:57:29.933Z",
+    "generated_at": "2026-10-19T07:33:47.911Z",
     "params_snapshot": [
       1,
       2,
       1.5,
       0.8
     ],
-    "source_hash": "f5e1a6ae399e91cf",
+    "source_hash": "5b92652a1bc64230",
     "capture_host": "swiftshader"
   },
   "gen-gravitational-ferrofluid-singularity-engine": {
@@ -5161,14 +5169,14 @@
   },
   "gen-luminescent-aether-plasma-astro-axolotl": {
     "thumbnail_url": "thumbnails/gen-luminescent-aether-plasma-astro-axolotl.png",
-    "generated_at": "2026-10-05T12:08:36.158Z",
+    "generated_at": "2026-10-19T07:31:22.300Z",
     "params_snapshot": [
       0.5,
       0.5,
       0.5,
       0.5
     ],
-    "source_hash": "27d5c63a56153605",
+    "source_hash": "c9b33075edf4beab",
     "capture_host": "swiftshader"
   },
   "hyb-chromatic-circuit": {
@@ -14509,14 +14517,14 @@
   },
   "gen-sentient-cyber-aurora-void-owl": {
     "thumbnail_url": "thumbnails/gen-sentient-cyber-aurora-void-owl.png",
-    "generated_at": "2026-10-05T18:20:45.034Z",
+    "generated_at": "2026-10-19T07:34:43.832Z",
     "params_snapshot": [
       1,
       1,
       0.7,
       0.8
     ],
-    "source_hash": "63c061c5b15e54d4",
+    "source_hash": "d4ad7892cb2870d2",
     "capture_host": "swiftshader"
   },
   "gen-symbiotic-bismuth-crystal-dragon-core": {
@@ -14925,6 +14933,18 @@
       0.5
     ],
     "source_hash": "d037ea5a0061be03",
+    "capture_host": "swiftshader"
+  },
+  "gen-neural-dust": {
+    "thumbnail_url": "thumbnails/gen-neural-dust.png",
+    "generated_at": "2026-10-19T07:38:31.991Z",
+    "params_snapshot": [
+      0.5,
+      0.35,
+      0.5,
+      0
+    ],
+    "source_hash": "98bf03797af989ba",
     "capture_host": "swiftshader"
   }
 }
