@@ -162,6 +162,13 @@
       "failure_note": "no self-hosted gpu runner registered (gpu-required.yml / thumbs-capture-farm.yml); next capture wave"
     },
     {
+      "id": "gen-symbiotic-neuro-lattice",
+      "added_by": "defer-thumbnail",
+      "deferred_at": "2026-10-19",
+      "expires": "2026-11-18",
+      "reason": "gpu-capture-pending"
+    },
+    {
       "id": "gen-symbiotic-plasma-reef-matrix",
       "added_by": "thumbnail-campaign",
       "deferred_at": "2026-09-26",
