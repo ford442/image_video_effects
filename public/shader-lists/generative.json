@@ -4110,41 +4110,46 @@
     ],
     "workgroup_size": [
       16,
-      16
+      16,
+      1
     ],
-    "url": "shaders/gen-bioluminescent-neural-coral-matrix.wgsl",
-    "parameters": [
+    "url": "/shaders/gen-bioluminescent-neural-coral-matrix.wgsl",
+    "params": [
       {
         "name": "Structure Scale",
-        "uniform": "zoom_params.x",
         "default": 2.5,
         "min": 1,
         "max": 5,
-        "step": 0.1
+        "step": 0.1,
+        "id": "structure_scale",
+        "mapping": "zoom_params.x"
       },
       {
         "name": "Distortion Intensity",
-        "uniform": "zoom_params.y",
         "default": 1.5,
         "min": 0,
         "max": 3,
-        "step": 0.1
+        "step": 0.1,
+        "id": "distortion_intensity",
+        "mapping": "zoom_params.y"
       },
       {
         "name": "Travel Speed",
-        "uniform": "zoom_params.z",
         "default": 1,
         "min": 0,
         "max": 5,
-        "step": 0.1
+        "step": 0.1,
+        "id": "travel_speed",
+        "mapping": "zoom_params.z"
       },
       {
         "name": "Bioluminescence",
-        "uniform": "zoom_params.w",
         "default": 1,
         "min": 0,
         "max": 3,
-        "step": 0.1
+        "step": 0.1,
+        "id": "bioluminescence",
+        "mapping": "zoom_params.w"
       }
     ]
   },

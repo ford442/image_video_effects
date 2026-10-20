@@ -64,7 +64,7 @@ fn getNormal(p: vec3<f32>) -> vec3<f32> {
     ));
 }
 
-@compute @workgroup_size(16, 16)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let resolution = u.config.zw;
     if (f32(id.x) >= resolution.x || f32(id.y) >= resolution.y) { return; }
