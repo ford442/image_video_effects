@@ -56,6 +56,17 @@ ABI of `public/wasm/pixelocity_wasm.{js,wasm}`.
 
 - **Pin:** `emsdkVersion` in [`src/contracts/wasm_compile_flags.json`](./src/contracts/wasm_compile_flags.json) (currently **6.0.9**). The same file holds `std`, `opt`, `usePort`, `sFlags`, `jsOutputName` — `build.sh` reads it via `scripts/format-wasm-compile-flags.js`, `CMakeLists.txt` via `file(READ)`.
 - **CI:** `setup-emsdk` `version:` must equal the pin; `npm run verify:wasm-invariants` fails on drift or on `-s` flags hardcoded in `build.sh`/CMake.
+
+### IDE indexing: `compile_commands.json` (2026-09-21)
+
+`npm run wasm:compile-commands` writes two files from the contract (no emcc needed to generate them):
+
+- `compile_commands.json` at the repo root (**gitignored**) — one entry per TU in the contract's `sources`: `em++ -std=… -O2 -Iwasm_renderer -I$EM_CACHE/ports/emdawnwebgpu/emdawnwebgpu_pkg/webgpu/include -c <tu>`. No `--use-port` and no `-s` per TU (that is the `USE_WEBGPU=1` leak build.sh avoids). `EM_CACHE` defaults to `/tmp/emscripten_cache`, the same as build.sh; the port headers exist once one `npm run wasm:build` has populated the cache.
+- `reports/wasm_compile_line.txt` (**committed**) — both link lines (ASYNCIFY fallback + JSPI), human-readable. Read it instead of grepping `build.sh`. `verify:wasm-invariants` fails when it drifts from the contract.
+
+clangd needs the Emscripten sysroot from the driver: start it with `--query-driver=**/em++` (VS Code / Cursor: `"clangd.arguments": ["--query-driver=**/em++"]`). CLion: *File → Open* `compile_commands.json` as a project.
+
+Why not `emcmake cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON`? `CMakeLists.txt` is a thin `add_custom_target` wrapper around build.sh and compiles no TUs, so CMake exports an empty database. Adding an object target would give CMake its own flag set, which `verify:wasm-invariants` forbids. The CI `wasm` job uploads the generated files as the `wasm-compile-commands` artifact (runner-absolute paths; for reference only).
 - **Local gate:** `build.sh` runs `scripts/emcc-version-gate.sh`; a mismatched emcc fails the build. Emscripten 6.x glue does not embed its version, so `wasm:validate` can only check the pin exists (and would fail if a future glue embeds a mismatched version).
 - **Beware stale SDKs:** `build.sh` sources the first `emsdk_env.sh` it finds (`$REPO_ROOT/emsdk`, `~/emsdk`, …), which can override an already-activated emsdk. The gate catches this.
 - **Cloud VMs / Jules:** `SKIP_WASM_BUILD=1`. Do not compile with 3.1.x.

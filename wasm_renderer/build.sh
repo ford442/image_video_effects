@@ -107,17 +107,10 @@ bash "$REPO_ROOT/scripts/emcc-version-gate.sh"
 # any CWD (e.g. /content/build_space/) without accidentally picking up stale
 # copies that still use the old WebGPU C++ API or html5_webgpu.h.
 echo "=== Compiling + linking ==="
-SOURCES=(
-    "$SCRIPT_DIR/main.cpp"
-    "$SCRIPT_DIR/renderer.cpp"
-    "$SCRIPT_DIR/device.cpp"
-    "$SCRIPT_DIR/resources.cpp"
-    "$SCRIPT_DIR/pipeline.cpp"
-    "$SCRIPT_DIR/frame.cpp"
-    "$SCRIPT_DIR/timing.cpp"
-    "$SCRIPT_DIR/audio_depth.cpp"
-    "$SCRIPT_DIR/wasm_internal.cpp"
-)
+# Translation units live in the contract's `sources` (the same list
+# `npm run wasm:compile-commands` indexes for clangd / CLion).
+mapfile -t SOURCE_NAMES < <(node "$FLAGS_JS" sources)
+SOURCES=("${SOURCE_NAMES[@]/#/$SCRIPT_DIR/}")
 PUBLIC_WASM="$REPO_ROOT/public/wasm"
 mkdir -p "$PUBLIC_WASM"
 for VARIANT in "${VARIANTS[@]}"; do

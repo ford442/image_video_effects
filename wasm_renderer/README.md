@@ -38,7 +38,7 @@ Full snapshot: [`STATUS.md`](./STATUS.md) · gaps: [`WASM_RENDERER_GAP_ANALYSIS.
 | `src/wasm/bridge/*.ts` | **Hand-edited TypeScript glue** (edit here; webpack compiles `src/wasm/wasm_bridge.ts`) |
 | `wasm_bridge.js` (generated) | ESM copies in `wasm_renderer/` + `public/wasm/` — do not edit |
 | `build.sh` | **Canonical build** — single-pass `emcc` + emdawnwebgpu |
-| `CMakeLists.txt` | Optional IDE/fallback build (link-time port only). Reads `src/contracts/wasm_exports.json` — not used in CI. |
+| `CMakeLists.txt` | Thin wrapper that runs `build.sh` — not used in CI. For clangd / CLion run `npm run wasm:compile-commands` (see `WASM_BUILD_CI_GUIDE.md`). |
 
 Cross-reference: TypeScript device policy lives in `src/renderer/webgpuDevicePolicy.ts`
 (must stay in sync with `device.cpp` `CreateDevice()` limits table).
