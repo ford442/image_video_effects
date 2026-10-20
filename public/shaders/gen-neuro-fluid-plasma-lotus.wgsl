@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-09-14
-//  Ideas: golden-angle phyllotaxis stamen florets (8/13 Fibonacci parastichies) on the plasma core; twisted MHD flux-rope field lines carrying Alfven wave packets; capillary petal venation that carries bioluminescent sap from base to tip; magnetic-reconnection plumes igniting where click-driven Alfven shocks strike the field sheath
+//  Upgraded: 2026-10-17
+//  Ideas: phyllotaxis florets; flux ropes; capillary veins; reconnection plumes; anther pollen; petal scallop
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -235,6 +235,9 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, petalCurl: f32, bloomPulse: f32, coreH
         let fl = phyllotaxisFlorets(atan2(p.z, p.x), acos(clamp(p.y / max(rC, 0.001), -1.0, 1.0)));
         col += vec3<f32>(1.0, 0.75, 0.35) * fl * coreHeat * 0.6;
         col *= mix(0.8, 1.0, fl);
+        // Idea 5 — pollen in the valleys between florets
+        let pollen = step(0.93, hash21(floor(p.xz * 36.0))) * (1.0 - fl) * smoothstep(0.15, 0.55, rC);
+        col += vec3<f32>(1.0, 0.86, 0.4) * pollen * 0.55;
         col += vec3<f32>(0.3, 0.6, 1.0) * g_audio * 2.0;
         alpha = 0.95;
       } else {
@@ -268,6 +271,9 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, petalCurl: f32, bloomPulse: f32, coreH
 
         col = petalCol * (diff * 0.6 + 0.2) + sheen + chromatic * 0.2 + sss;
         col += vec3<f32>(0.12, 0.9, 0.75) * capillary * (0.12 + g_audio * 0.08);
+        // Idea 6 — scalloped margin on the existing eight-petal crests
+        let scallop = pow(0.5 + 0.5 * sin(veinTheta * 8.0 + g_time * 0.5), 8.0) * fresnel * tipFactor;
+        col += tipCol * scallop * 0.42;
         col += vec3<f32>(0.2, 0.0, 0.4) * g_audio * fresnel;
         alpha = 0.4 + fresnel * 0.4;
       }

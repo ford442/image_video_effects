@@ -2,14 +2,17 @@
   "id": "sim-fluid-feedback-field",
   "name": "Fluid Feedback Field",
   "url": "shaders/sim-fluid-feedback-field-pass1.wgsl",
-  "description": "Multi-pass Navier-Stokes fluid simulation with feedback trails. Glowing fluid that swirls and mixes.",
+  "description": "Curl-driven velocity that advects itself and a dye streak. The dye warps the photo and brightens with Glow. Mouse pushes the flow.",
   "features": [
     "simulation",
     "multi-pass",
     "navier-stokes",
     "velocity-advection",
     "density-advection",
-    "randomization-safe"
+    "randomization-safe",
+    "audio-reactive",
+    "upgraded-rgba",
+    "mouse-driven"
   ],
   "multipass": {
     "pass": 1,
@@ -84,6 +87,42 @@
     ],
     "performance_target": "45-60 FPS (GTX 1060)",
     "created_by": "Agent 3B - Advanced Hybrid Creator",
-    "created_date": "2026-03-22"
+    "created_date": "2026-03-22",
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Viscosity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Turbulence",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Fade Rate",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Glow Intensity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
   }
 }

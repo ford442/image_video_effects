@@ -9,8 +9,8 @@
 //  Jacobi pressure solve (warm-started), gradient subtraction,
 //  dye advection, and audio-reactive color mapping.
 //  Created: 2026-06-06
-//  Upgraded: 2026-09-27
-//  Ideas: vorticity confinement along the velocity curl; buoyancy lift from the dye field; baroclinic shear jets; enstrophy-cascade shimmer
+//  Upgraded: 2026-09-27, 2026-10-18
+//  Ideas: vorticity confinement along the velocity curl; buoyancy lift from the dye field; baroclinic shear jets; enstrophy-cascade shimmer; MacCormack dye; no-slip walls
 //  A packing: raw (vel.x, vel.y, pressure, dye); ACES on display only
 // ═══════════════════════════════════════════════════════════════════
 
@@ -168,9 +168,27 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Idea 2 — buoyancy. Dye is density; positive vel.y backtraces downward, so lift is negative.
   vel.y = vel.y - dye * 0.18;
 
+  // ── Idea: no-slip walls ─────────────────────────────────────────────
+  // The box has edges. Viscosity sticks the fluid to the frame.
+  let wall = smoothstep(0.10, 0.0, min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y)));
+  vel = vel * (1.0 - wall * mix(0.25, 0.85, u.zoom_params.x));
+
   // ── Dye advection through projected velocity ──
   let dyeBackUV = uv - vel * texel * DT;
   dye = sampleC(dyeBackUV, resolution).a;
+
+  // ── Idea: MacCormack dye ────────────────────────────────────────────
+  // One correction step on the same backtrace, clamped to the
+  // neighborhood so the dye cannot ring.
+  let velBack = sampleC(dyeBackUV, resolution).rg;
+  let forthUV = clamp(dyeBackUV + velBack * texel * DT, vec2<f32>(0.0), vec2<f32>(1.0));
+  let dyeForth = sampleC(forthUV, resolution).a;
+  let dyeMac = dye + 0.5 * (prev.a - dyeForth);
+  let dNb = sampleC(dyeBackUV + vec2<f32>(0.0, texel.y), resolution).a;
+  let dSb = sampleC(dyeBackUV - vec2<f32>(0.0, texel.y), resolution).a;
+  let dEb = sampleC(dyeBackUV + vec2<f32>(texel.x, 0.0), resolution).a;
+  let dWb = sampleC(dyeBackUV - vec2<f32>(texel.x, 0.0), resolution).a;
+  dye = clamp(dyeMac, min(dye, min(dNb, min(dSb, min(dEb, dWb)))), max(dye, max(dNb, max(dSb, max(dEb, dWb)))));
 
   // ── Dye sources ──
   let hue = fract(time * 0.08 + colorIntensity * 0.2 + bass * 0.1);

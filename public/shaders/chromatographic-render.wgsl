@@ -1,26 +1,10 @@
 // ═══ CHROMATOGRAPHIC FLUID — RENDER ════════════════════════════════════════
 //  False-color plate + solvent sparkle. Commits dye+temp to dataA.
+//  Upgraded: 2026-10-17
+//  Ideas: solvent-front band on the downwind edge of the dye
+//  A packing: raw dye.rgb + temperature (display is ACES on writeTexture only)
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -40,7 +24,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dye = st.rgb;
   let temp = st.a;
   let lum = max(dye.r, max(dye.g, dye.b));
+  let time = u.config.x;
+  let mouse = u.zoom_config.yz;
+  let wind = vec2<f32>(
+    sin(time * 0.37 + uv.y * 3.1) + (mouse.x - 0.5) * 0.8,
+    cos(time * 0.29 + uv.x * 2.7) + (0.5 - mouse.y) * 0.8
+  );
+  let aheadPx = clamp(pixel + vec2<i32>(i32(sign(wind.x)), i32(sign(wind.y))), vec2<i32>(0), resI - vec2<i32>(1));
+  let ahead = textureLoad(dataTextureC, aheadPx, 0).rgb;
+  let here = length(dye);
+  // Idea — pale solvent front where dye is here and the downwind neighbor is empty.
+  let front = smoothstep(0.04, 0.35, here - length(ahead)) * smoothstep(0.08, 0.5, here);
   var col = pow(dye / (dye + vec3<f32>(1.0)), vec3<f32>(0.85));
+  col += vec3<f32>(0.9, 0.97, 1.0) * front * (0.35 + plasmaBuffer[0].y * 0.15);
   col = mix(src.rgb * 0.15, col, 0.88);
   col += vec3<f32>(1.0, 0.7, 0.3) * temp * lum * 0.25;
   col += vec3<f32>(0.4, 0.8, 1.0) * plasmaBuffer[0].z * lum * 0.12;

@@ -2,7 +2,7 @@
   "id": "spectrogram-displace",
   "name": "Spectrogram Displace",
   "url": "shaders/spectrogram-displace.wgsl",
-  "description": "Live three-band and read-only FFT-bin displacement with sprung pointer focus, bounded click accents, and a scrolling exact-C spectrogram persisted through authoritative A display history.",
+  "description": "Live three-band and read-only FFT-bin displacement with a harmonic stack, differential waterfall decay, sprung pointer focus, bounded click accents, and a scrolling exact-C spectrogram persisted through authoritative A display history.",
   "features": [
     "mouse-driven",
     "audio-reactive",

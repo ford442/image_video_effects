@@ -11,7 +11,7 @@
     "iridescent",
     "atmospheric"
   ],
-  "description": "An infinite expanse of refractive crystalline petals with Cauchy edge dispersion, micro-venation bioluminescent nutrient flow, starlight corona diffraction starbursts, and pollinator spring dynamics.",
+  "description": "An infinite expanse of refractive crystalline petals with Cauchy edge dispersion, micro-venation bioluminescent nutrient flow, starlight corona diffraction starbursts, labellum UV-to-gold nectar-guide chevrons, five-fold floral column caustics, and golden pollinia pollinator tethers.",
   "workgroup_size": [
     16,
     16,
@@ -34,7 +34,8 @@
     "raymarching",
     "semantic-alpha",
     "aces-tone-mapping",
-    "generated-depth"
+    "generated-depth",
+    "upgraded-rgba"
   ],
   "params": [
     {

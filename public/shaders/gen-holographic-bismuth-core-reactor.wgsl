@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, click-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-06
-//  Ideas: hopper-step terrace edge diffraction glints; multi-order oxide thin-film interference; magnetic containment field flux lines
-//  A packing: ACES display RGBA
+//  Upgraded: 2026-10-18
+//  Ideas: hopper-step terrace edge diffraction glints; multi-order oxide thin-film interference; magnetic containment field flux lines; control-rod bank whose insertion throttles the plasma bloom; fold-seam fuel channels glowing along the KIFS mirror planes; KIFS fold-generation terrace oxide stepping & 4-tap cavity AO (§12.2E Fold count as material); Cherenkov phase-cone radiation & control-rod coolant wake rings (§12.2F Fresnel–Schlick / Henyey–Greenstein)
+//  A packing: HDR history RGBA (pre-controls); display = ACES(controls(A))
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/FrameCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Intensity, y=Speed, z=Scale, w=MouseInfluence
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Intensity, y=Speed, z=Scale, w=MouseInfluence
 
 fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
   let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
@@ -71,14 +53,74 @@ fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
     return length(max(q, vec3<f32>(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0);
 }
 
-fn map(p_in: vec3<f32>, time: f32, bass: f32) -> vec2<f32> {
-    var p = p_in;
-
+// Reactor frame: mouse tilts the whole vessel (core + control rods)
+fn reactorFrame(p_in: vec3<f32>) -> vec3<f32> {
     let mouse = u.zoom_config.yz;
     let held = step(0.5, u.zoom_config.w);
     let mouseGain = u.zoom_params.w * (1.0 + held * 0.65);
-    p = rot3D(vec3<f32>(1.0, 0.0, 0.0), (mouse.y - 0.5) * 3.14 * mouseGain) * p;
+    var p = rot3D(vec3<f32>(1.0, 0.0, 0.0), (mouse.y - 0.5) * 3.14 * mouseGain) * p_in;
     p = rot3D(vec3<f32>(0.0, 1.0, 0.0), (mouse.x - 0.5) * 3.14 * mouseGain) * p;
+    return p;
+}
+
+// ─── Native Idea 4: Control-Rod Bank ───
+// Four rods on the vessel diagonals; 0 = withdrawn, 1 = fully inserted.
+// Bass pulls the rods out (reactor runs hotter on the beat).
+fn rodInsertion(i: i32, time: f32, bass: f32) -> f32 {
+    let speed = mix(0.2, 2.4, clamp(u.zoom_params.y, 0.0, 1.0));
+    let wave = 0.5 + 0.5 * sin(time * speed * 0.35 + f32(i) * 1.7);
+    return clamp(wave * (1.0 - bass * 0.6), 0.0, 1.0);
+}
+
+// uv.y grows downward (id.y, no flip), so world -y is screen-top: rods hang from
+// y=-4.5 and insertion pushes the tip toward +y (screen-down) into the core.
+fn rodTipY(ins: f32) -> f32 { return mix(-1.3, 0.7, ins); }
+
+fn rodXZ(i: i32) -> vec2<f32> {
+    let a = 0.7854 + f32(i) * 1.5708;
+    return vec2<f32>(cos(a), sin(a)) * 1.45;
+}
+
+// x = distance, y = rod index
+fn sdRods(p: vec3<f32>, time: f32, bass: f32) -> vec2<f32> {
+    var best = vec2<f32>(1e5, 0.0);
+    for (var i = 0; i < 4; i = i + 1) {
+        let tipY = rodTipY(rodInsertion(i, time, bass));
+        var q = p - vec3<f32>(rodXZ(i).x, tipY, rodXZ(i).y);
+        q.y = q.y - clamp(q.y, -4.5 - tipY, 0.0);
+        let d = length(q) - 0.085;
+        if (d < best.x) { best = vec2<f32>(d, f32(i)); }
+    }
+    return best;
+}
+
+// ─── Native Idea 5 & Idea 6: Fold-Seam Fuel Channels & KIFS Fold-Generation Count (§12.2E) ───
+// Same KIFS fold as the core; returns (trap, foldGen) where foldGen counts mirror-plane reflections.
+fn coreSeamTrap(p_in: vec3<f32>, time: f32, bass: f32) -> vec2<f32> {
+    var p = reactorFrame(p_in);
+    let speed = mix(0.2, 2.4, clamp(u.zoom_params.y, 0.0, 1.0));
+    let pulse = sin(time * speed * 2.0) * 0.5 + 0.5;
+    let core_scale = mix(0.28, 1.05, clamp(u.zoom_params.z, 0.0, 1.0)) *
+                     (1.0 + pulse * (1.0 + bass * 0.5) * (0.08 + u.zoom_params.x * 0.32));
+    var s: f32 = 1.0;
+    var trap: f32 = 1e5;
+    var foldGen: f32 = 0.0;
+    for (var i = 0; i < 4; i = i + 1) {
+        foldGen += select(0.0, 1.0, p.x < 0.0) + select(0.0, 1.0, p.y < 0.0) + select(0.0, 1.0, p.z < 0.0);
+        p = abs(p) - vec3<f32>(0.5, 0.5, 0.5) * core_scale;
+        let a = abs(p);
+        trap = min(trap, min(a.x, min(a.y, a.z)) / s);
+        p = rot3D(vec3<f32>(0.0, 1.0, 0.0), 1.5708) * p;
+        p = rot3D(vec3<f32>(1.0, 0.0, 0.0), 1.5708) * p;
+        p = p * 1.5;
+        s *= 1.5;
+    }
+    return vec2<f32>(trap, foldGen);
+}
+
+fn map(p_in: vec3<f32>, time: f32, bass: f32) -> vec2<f32> {
+    var p = reactorFrame(p_in);
+    let rods = sdRods(p, time, bass);
 
     var s: f32 = 1.0;
 
@@ -109,6 +151,7 @@ fn map(p_in: vec3<f32>, time: f32, bass: f32) -> vec2<f32> {
     let isCore = step(d2, d1);
     let dMin   = mix(d2, d1, isCore);
     let idMin  = mix(2.0, 1.0, isCore);
+    if (rods.x < dMin) { return vec2<f32>(rods.x, 3.0 + rods.y); }
     return vec2<f32>(dMin, idMin);
 }
 
@@ -123,8 +166,8 @@ fn getNormal(p: vec3<f32>, time: f32, bass: f32) -> vec3<f32> {
     return normalize(n);
 }
 
-// ─── Native Idea 2: Multi-Order Bismuth Oxidation Thin-Film Interference ───
-fn bismuthOxidationColor(p: vec3<f32>, dot_vn: f32, time: f32, bass: f32, mids: f32) -> vec3<f32> {
+// ─── Native Idea 2 & Idea 6: Multi-Order Bismuth Oxidation with KIFS Fold-Generation Stepping (§12.2E) ───
+fn bismuthOxidationColor(p: vec3<f32>, dot_vn: f32, foldGen: f32, time: f32, bass: f32, mids: f32) -> vec3<f32> {
     let speed = mix(0.2, 2.4, clamp(u.zoom_params.y, 0.0, 1.0));
     let t = dot_vn * 2.0 + time * speed * 0.5 + bass * u.zoom_params.x + mids * 0.3;
     let baseInterference = vec3<f32>(
@@ -133,8 +176,8 @@ fn bismuthOxidationColor(p: vec3<f32>, dot_vn: f32, time: f32, bass: f32, mids: 
         sin(t * 3.14159 + 4.189) * 0.5 + 0.5
     );
 
-    // Multi-order physical oxide thickness gradient across hopper terraces
-    let oxideThicknessNm = fract(length(p) * 2.8 + dot_vn * 1.2) * 520.0 + 180.0;
+    // Multi-order physical oxide thickness stepped per KIFS fold generation
+    let oxideThicknessNm = fract(length(p) * 2.2 + dot_vn * 1.1) * 420.0 + 180.0 + foldGen * 68.0;
     let phaseR = oxideThicknessNm / 650.0;
     let phaseG = oxideThicknessNm / 530.0;
     let phaseB = oxideThicknessNm / 460.0;
@@ -144,7 +187,7 @@ fn bismuthOxidationColor(p: vec3<f32>, dot_vn: f32, time: f32, bass: f32, mids: 
         cos(phaseB * 6.28318) * 0.5 + 0.5
     );
 
-    return mix(baseInterference, multiOrderOxide * 1.4, 0.55);
+    return mix(baseInterference, multiOrderOxide * 1.4, 0.65);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -173,6 +216,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var dO    = 0.0;
     var res   = vec2<f32>(0.0);
     var accum = 0.0;
+    var cherenkovAccum = 0.0;
+    var rodWakeAccum = 0.0;
+    let speed = mix(0.2, 2.4, clamp(u.zoom_params.y, 0.0, 1.0));
 
     for (var i = 0; i < MAX_STEPS; i = i + 1) {
         p   = ro + rd * dO;
@@ -182,6 +228,25 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         accum += (0.12 + u.zoom_params.x * 0.65 + treble * 0.1) * heldPlasma * 0.05 / max(1.0 + abs(dS) * 50.0, 0.001);
 
+        // ── Idea 7: Cherenkov Phase-Cone Radiation & Control-Rod Coolant Wake Rings (§12.2F Fresnel–Schlick / Henyey–Greenstein) ──
+        let pLen = length(p);
+        if (pLen < 2.8) {
+            let cosPhase = dot(p / max(pLen, 0.001), rd);
+            let cherenkovCone = exp(-pow((cosPhase - 0.72) * 8.5, 2.0)) * exp(-pLen * 0.65);
+            cherenkovAccum += cherenkovCone * 0.022;
+
+            if ((i & 3) == 0) {
+                let pr = reactorFrame(p);
+                for (var rIdx = 0; rIdx < 4; rIdx = rIdx + 1) {
+                    let tipY = rodTipY(rodInsertion(rIdx, time, bass));
+                    let rDist = length(pr.xz - rodXZ(rIdx));
+                    let ySlab = exp(-abs(pr.y - tipY) * 6.0);
+                    let ringWave = pow(0.5 + 0.5 * sin(rDist * 22.0 - time * speed * 5.0), 6.0) * exp(-rDist * 2.8);
+                    rodWakeAccum += ringWave * ySlab * 0.035;
+                }
+            }
+        }
+
         if (dS < SURF_DIST || dO > MAX_DIST) { break; }
     }
 
@@ -190,7 +255,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let v      = -rd;
     let dot_vn = max(dot(v, n), 0.0);
 
-    var surface_col = bismuthOxidationColor(p, dot_vn, time, bass, mids) * exp(-dO * 0.1);
+    let isRod = step(2.5, res.y);
+    // ── Idea 6: KIFS Fold-Generation Terrace Oxide Stepping & 4-Tap Cavity AO (§12.2E Fold count as material) ──
+    let seamInfo = coreSeamTrap(p, time, bass);
+    let seam = seamInfo.x;
+    let foldGen = seamInfo.y;
+    var surface_col = bismuthOxidationColor(p, dot_vn, foldGen, time, bass, mids) * exp(-dO * 0.1) * (1.0 - isRod);
 
     // ─── Native Idea 1: Hopper-Step Terrace Edge Diffraction Glints ───
     // At right-angle hopper crystalline boundaries, normal components cross-align
@@ -198,12 +268,48 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let edgeFresnel = pow(1.0 - dot_vn, 4.0);
     let edgeGlint = (terraceEdge * 0.8 + edgeFresnel * 0.6) * (0.8 + treble * 0.9);
     let glintCol = vec3<f32>(0.9, 0.96, 1.0) * edgeGlint * 1.8;
-    surface_col += glintCol;
+    surface_col += glintCol * (1.0 - isRod * 0.85);
+
+    // Idea 4 shading: graphite rod body, boron tip glowing hot as it nears the core
+    if (isRod > 0.5) {
+        let ri = i32(res.y - 3.0 + 0.5);
+        let pr = reactorFrame(p);
+        let tipY = rodTipY(rodInsertion(ri, time, bass));
+        let tipHeat = exp(-max(tipY - pr.y, 0.0) * 3.5) * (1.0 - smoothstep(0.0, 1.4, abs(tipY)));
+        let lightRod = max(dot(n, normalize(vec3<f32>(0.4, 0.8, -0.5))), 0.0);
+        let graphite = vec3<f32>(0.07, 0.075, 0.085) * (0.35 + lightRod * 0.9);
+        let bands = 0.85 + 0.15 * step(0.5, fract(pr.y * 2.5));
+        surface_col += graphite * bands + vec3<f32>(1.0, 0.42, 0.12) * tipHeat * (0.6 + bass * 0.8);
+    }
+
+    // Idea 5 & Idea 6: 4-tap cavity AO grounds the stepped hopper recesses while fuel channels burn along fold seams
+    let isCoreHit = step(abs(res.y - 1.0), 0.1) * hit;
+    var fuelGlow = 0.0;
+    if (isCoreHit > 0.5) {
+        var aoOcc = 0.0;
+        var aoWeight = 1.0;
+        for (var k = 1; k <= 4; k = k + 1) {
+            let h = 0.035 * f32(k);
+            let dAo = map(p + n * h, time, bass).x;
+            aoOcc += (h - dAo) * aoWeight;
+            aoWeight *= 0.6;
+        }
+        let cavityAO = clamp(1.0 - 2.4 * aoOcc, 0.22, 1.0);
+        surface_col *= cavityAO;
+
+        fuelGlow = exp(-seam * 40.0) * (0.35 + u.zoom_params.x * 0.6) * (0.6 + bass * 1.2);
+        surface_col += vec3<f32>(1.0, 0.62, 0.25) * fuelGlow * 1.6;
+    }
 
     var col = surface_col * hit;
 
-    // Add plasma bloom
-    col = col + vec3<f32>(0.2, 0.6, 1.0) * accum * heldPlasma;
+    // Add plasma bloom & Cherenkov radiation — throttled by mean control-rod insertion (criticality)
+    let meanIns = (rodInsertion(0, time, bass) + rodInsertion(1, time, bass) +
+                   rodInsertion(2, time, bass) + rodInsertion(3, time, bass)) * 0.25;
+    let criticality = mix(1.25, 0.7, meanIns);
+    col = col + vec3<f32>(0.2, 0.6, 1.0) * accum * heldPlasma * criticality;
+    col = col + vec3<f32>(0.18, 0.38, 1.15) * cherenkovAccum * criticality * (0.8 + u.zoom_params.x * 0.9 + bass * 0.6);
+    col = col + vec3<f32>(0.32, 0.88, 1.1) * rodWakeAccum * (0.7 + mids * 0.8);
 
     // ─── Native Idea 3: Reactor Magnetic Containment Field Flux Lines ───
     // Spherical containment shell with pulsating geodesic field lines
@@ -226,21 +332,23 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let age = time - ripple.z;
         if (age < 0.0 || age > 2.0) { continue; }
         let dist = length((uv_px - ripple.xy) * vec2<f32>(aspect, 1.0));
-        let strength = clamp(ripple.w, 0.0, 1.0) * exp(-age * 1.5);
+        // ripple.w is padding (always 0); use a fixed click strength
+        let strength = exp(-age * 1.5);
         clickRings += exp(-abs(dist - age * 0.36) * 80.0) * strength;
     }
     col += vec3<f32>(1.0, 0.28, 1.25) * clickRings * (0.45 + mids + treble * 0.6);
 
-    let alpha = clamp(mix(clamp(accum * 3.0 + clickRings * 0.3 + containmentFlux * 0.5, 0.0, 1.0), 1.0, hit), 0.0, 1.0);
+    let alpha = clamp(mix(clamp(accum * 3.0 + cherenkovAccum * 0.6 + rodWakeAccum * 0.5 + clickRings * 0.3 + containmentFlux * 0.5, 0.0, 1.0), 1.0, hit), 0.0, 1.0);
 
     let previous = textureLoad(dataTextureC, coord, 0);
     let historyWeight = clamp(0.90 - u.zoom_params.y * 0.25 - held * 0.08, 0.48, 0.90);
     let historyColor = clamp(max(col, previous.rgb * historyWeight), vec3<f32>(0.0), vec3<f32>(8.0));
     let historyAlpha = max(alpha, previous.a * historyWeight);
+    // History stays pre-controls so Intensity/contrast are not re-applied every frame.
     let controlled = applyGenerativePrimaryControls(vec4<f32>(historyColor, historyAlpha));
 
     textureStore(writeTexture, coord, vec4<f32>(acesToneMap(controlled.rgb), controlled.a));
-    textureStore(dataTextureA, coord, controlled);
+    textureStore(dataTextureA, coord, vec4<f32>(historyColor, historyAlpha));
 
     let depth_val = clamp(dO / MAX_DIST, 0.0, 1.0);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth_val, 0.0, 0.0, 0.0));

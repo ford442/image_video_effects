@@ -2,7 +2,7 @@
   "id": "aurora-rift-pass1",
   "name": "Aurora Rift (Pass 1: Volumetric)",
   "url": "shaders/aurora-rift-pass1.wgsl",
-  "description": "Raymarches volumetric aurora with curl-driven flow, geomagnetic Birkeland curtain folds, discrete atmospheric spectral emission, and temporal diffusion. First pass of 2-pass system.",
+  "description": "Raymarches volumetric aurora with curl-driven flow, geomagnetic Birkeland curtain folds, rayed beads, a dark gap under the curtain, discrete atmospheric spectral emission, and temporal diffusion. First pass of 2-pass system.",
   "workgroup_size": [
     16,
     16,
@@ -15,7 +15,8 @@
     "raymarch",
     "birkeland-currents",
     "spectral-emission",
-    "temporal-diffusion"
+    "temporal-diffusion",
+    "audio-reactive"
   ],
   "multipass": {
     "pass": 1,

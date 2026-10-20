@@ -4,6 +4,9 @@
 //  Features: lens-flare, thin-film-interference, spectral-render,
 //            mouse-driven, audio-reactive, exact-feedback
 //  Complexity: Very High
+//  Upgraded: 2026-10-18
+//  Ideas: cylindrical front-element 2:1 anamorphic squeeze bokeh ghosts with peripheral cat's-eye vignetting & multi-layer MgF2/TiO2 quarter-wave AR coating shift; horizontal streak Fraunhofer diffraction micro-comb & CMOS sensor microlens cross-grid glint
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Cinematic anamorphic lens flare combined with physical thin-film
 //  interference. Flare streaks, hexagonal ghosts, starburst rays,
@@ -11,26 +14,8 @@
 //  reflections modulated by audio dynamics.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, zw=Resolution
-    zoom_config: vec4<f32>,  // x=Time, yz=MouseUV, w=MouseDown
-    zoom_params: vec4<f32>,  // x=FlareIntensity, y=StreakLength, z=FilmThickness, w=FilmIOR
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=FlareIntensity, y=StreakLength, z=FilmThickness, w=FilmIOR
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -72,14 +57,19 @@ fn hexagonAperture(uv: vec2<f32>, size: f32) -> f32 {
     let angle = atan2(uv.y, uv.x);
     let sectorAngle = fract(angle / (PI / 3.0)) * (PI / 3.0) - PI / 6.0;
     let dist = r * cos(sectorAngle) / cos(PI / 6.0);
-    return smoothstep(size + 0.015, size - 0.015, dist);
+    let body = smoothstep(size + 0.015, size - 0.015, dist);
+    let rimRing = exp(-pow((dist - size * 0.92) * 28.0, 2.0)) * 0.35;
+    return body + rimRing * body;
 }
 
 fn anamorphicStreak(uv: vec2<f32>, lightPos: vec2<f32>, streakLength: f32, width: f32, aspect: f32) -> f32 {
     let toLight = uv - lightPos;
     let distX = abs(toLight.x) * aspect;
     let distY = abs(toLight.y);
-    let hStreak = exp(-distX / max(streakLength, 0.01)) * exp(-distY * 60.0 / width);
+    // Idea 2: Horizontal streak Fraunhofer diffraction micro-comb & dual-rail cylinder split
+    let streakDiffractionComb = 0.78 + 0.22 * cos(toLight.y * 260.0) * cos(toLight.x * 42.0);
+    let dualRail = exp(-abs(distY - 0.0042 * width) * 145.0 / width) * 0.28;
+    let hStreak = (exp(-distY * 60.0 / width) * streakDiffractionComb + dualRail) * exp(-distX / max(streakLength, 0.01));
     let vStreak = exp(-distY / max(streakLength * 0.12, 0.01)) * exp(-distX * 80.0 / width);
     return hStreak * 0.92 + vStreak * 0.08;
 }
@@ -87,11 +77,15 @@ fn anamorphicStreak(uv: vec2<f32>, lightPos: vec2<f32>, streakLength: f32, width
 fn ghostElement(uv: vec2<f32>, lightPos: vec2<f32>, offset: vec2<f32>, size: f32) -> f32 {
     let center = vec2<f32>(0.5);
     let ghostPos = center + (center - lightPos) * offset * 2.0 + offset * 0.5;
+    let localVec = (uv - ghostPos) / max(size, 0.001);
+    // Idea 1: 2:1 cylindrical anamorphic oval squeeze bokeh & peripheral cat's-eye mechanical vignetting
+    let anamorphicOvalBokeh = vec2<f32>(localVec.x * 1.72, localVec.y * 0.92);
+    let hex = hexagonAperture(anamorphicOvalBokeh, 0.8);
+    let offAxis = ghostPos - center;
+    let catsEyeClip = smoothstep(1.05, 0.45, length(anamorphicOvalBokeh - offAxis * 1.65));
     let dist = length(uv - ghostPos);
-    let hexUV = (uv - ghostPos) / max(size, 0.001);
-    let hex = hexagonAperture(hexUV, 0.8);
     let falloff = exp(-dist * dist * 10.0 / max(size, 0.001));
-    return hex * falloff;
+    return hex * catsEyeClip * falloff;
 }
 
 fn centralGlow(uv: vec2<f32>, lightPos: vec2<f32>, size: f32, aspect: f32) -> f32 {
@@ -193,7 +187,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let streakIrid = thinFilmColor(streakThickness, cosTheta, filmIOR);
     flareAccum = flareAccum + streak * streakIrid * flareIntensity * 1.4;
 
-    // 2. Hexagonal ghost reflections
+    // 2. Hexagonal anamorphic oval ghost reflections with quarter-wave MgF2/TiO2 AR coating shift
     let ghostCount = i32(u.zoom_params.y * 5.0 + 2.0);
     for (var i: i32 = 0; i < ghostCount; i = i + 1) {
         let fi = f32(i);
@@ -206,7 +200,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let ghost = ghostElement(uv, smoothLight, ghostOffset, ghostSize);
         let ghostThickness = filmThicknessBase * (0.75 + fi * 0.28 + rippleDistortion * 0.1);
         let ghostIrid = thinFilmColor(ghostThickness, cosTheta, filmIOR);
-        flareAccum = flareAccum + ghost * ghostIntensity * ghostIrid;
+        let arCoatingTint = 0.65 + 0.35 * cos(vec3<f32>(0.0, 2.1, 4.2) + fi * 1.35 + filmIOR * 1.2);
+        flareAccum = flareAccum + ghost * ghostIntensity * ghostIrid * arCoatingTint;
     }
 
     // 3. Central glow with interference corona
@@ -215,14 +210,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let glowIrid = thinFilmColor(glowThickness, cosTheta, filmIOR);
     flareAccum = flareAccum + glow * glowIrid * flareIntensity * 0.9;
 
-    // 4. Starburst with spectral diffraction
+    // 4. Starburst with spectral diffraction & CMOS sensor microlens cross-grid glint
     let toLight = (uv - smoothLight) * aspectVec;
     let angle = atan2(toLight.y, toLight.x);
     let dist = length(toLight);
     let starburst = pow(abs(sin(angle * 6.0 + time * 0.2)), 24.0) * exp(-dist * 3.2) * (1.0 + treble * 0.5);
     let starThickness = filmThicknessBase * (0.4 + starburst * 350.0);
     let starIrid = thinFilmColor(starThickness, cosTheta, filmIOR);
-    flareAccum = flareAccum + starburst * starIrid * flareIntensity * 0.45;
+    let sensorPitch = 140.0;
+    let sensorLattice = pow(max(0.0, cos(toLight.x * sensorPitch) * cos(toLight.y * sensorPitch)), 12.0);
+    let sensorGridGlint = sensorLattice * exp(-dist * 7.5) * (0.35 + treble * 0.45);
+    flareAccum = flareAccum + (starburst * 0.45 + sensorGridGlint * 0.32) * starIrid * flareIntensity;
 
     // 5. Rainbow halo ring
     let haloDist = abs(dist - 0.26 * (1.0 + bass * 0.2));

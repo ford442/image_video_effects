@@ -1,26 +1,10 @@
 // ═══ CHROMATOGRAPHIC FLUID — ADVECT ════════════════════════════════════════
 //  Semi-Lagrangian dye advection in a shared wind field (mouse vane + audio gusts).
+//  Upgraded: 2026-10-17
+//  Ideas: differential migration — red lags, blue leads along the same wind
+//  A packing: raw dye.rgb + temperature
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn loadDye(p: vec2<i32>, resI: vec2<i32>) -> vec4<f32> {
   return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), resI - vec2<i32>(1)), 0);
@@ -52,8 +36,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     vel += vec2<f32>(-dm.y, dm.x) / md * 0.012 * smoothstep(0.35, 0.0, md);
   }
 
-  let srcUv = clamp(uv - vel, vec2<f32>(0.001), vec2<f32>(0.999));
-  let srcPx = vec2<i32>(srcUv * res);
-  let st = loadDye(srcPx, resI);
-  textureStore(dataTextureA, pixel, vec4<f32>(clamp(st.rgb, vec3<f32>(0.0), vec3<f32>(4.0)), clamp(st.a, 0.0, 1.0)));
+  // Solvent (temperature) rides the full wind. Dyes retain differently:
+  // Viscosity Split makes red sticky and blue runny.
+  let split = u.zoom_params.x;
+  let lag = vec3<f32>(
+    mix(0.85, 0.35, split),
+    mix(0.90, 1.00, split),
+    mix(1.00, 1.75, split)
+  );
+  let solventUv = clamp(uv - vel, vec2<f32>(0.001), vec2<f32>(0.999));
+  let solvent = loadDye(vec2<i32>(solventUv * res), resI);
+  let rUv = clamp(uv - vel * lag.x, vec2<f32>(0.001), vec2<f32>(0.999));
+  let gUv = clamp(uv - vel * lag.y, vec2<f32>(0.001), vec2<f32>(0.999));
+  let bUv = clamp(uv - vel * lag.z, vec2<f32>(0.001), vec2<f32>(0.999));
+  let dR = loadDye(vec2<i32>(rUv * res), resI).r;
+  let dG = loadDye(vec2<i32>(gUv * res), resI).g;
+  let dB = loadDye(vec2<i32>(bUv * res), resI).b;
+  textureStore(dataTextureA, pixel, vec4<f32>(
+    clamp(vec3<f32>(dR, dG, dB), vec3<f32>(0.0), vec3<f32>(4.0)),
+    clamp(solvent.a, 0.0, 1.0)
+  ));
 }

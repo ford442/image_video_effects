@@ -6,31 +6,13 @@
 //            upgraded-rgba, depth-aware, aces-tone-map
 //  Complexity: Very High
 //  Created: 2026-06-28
-//  Upgraded: 2026-09-27
-//  Ideas: internal energy veins based on fractal distance; subsurface spectral dispersion
+//  Upgraded: 2026-10-18
+//  Ideas: internal energy veins based on fractal distance; subsurface spectral dispersion; calcified septa chamber bulkheads & central siphuncle osmotic conduit; aragonite nacre brick-and-mortar tablet interference & periostracum tiger-stripe flame banding
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=AuraIntensity, y=SpiralExpansion, z=FractalDepth, w=AudioReactivity
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=AuraIntensity, y=SpiralExpansion, z=FractalDepth, w=AudioReactivity
 
 // ─── Math Helpers ───
 fn sat(x: f32) -> f32 { return clamp(x, 0.0, 1.0); }
@@ -172,7 +154,15 @@ fn map(p_in: vec3<f32>, auraIntensity: f32, expansion: f32, fractalDepth: f32, a
   // Main nautilus shell - torus-like structure along spiral
   let shellR = 2.0;
   let shellThick = 0.3 + g_audio * 0.05 * audioReactivity;
-  let torusDist = sdTorus(sp - vec3<f32>(shellR, 0.0, 0.0), vec2<f32>(shellR * 0.5, shellThick));
+  let spLocal = sp - vec3<f32>(shellR, 0.0, 0.0);
+  let whorlAngle = atan2(spLocal.z, spLocal.x);
+  let septaRib = sin(whorlAngle * (6.0 + floor(fractalDepth * 2.0)) - length(vec2<f32>(length(spLocal.xz) - shellR * 0.5, spLocal.y)) * 8.0);
+  let septaWall = smoothstep(0.65, 0.98, septaRib) * 0.032;
+  let torusDist = sdTorus(spLocal, vec2<f32>(shellR * 0.5, shellThick)) - septaWall;
+
+  // Idea 3: Central siphuncle osmotic conduit threading the spiral chambers
+  let siphunclePulse = 0.012 * sin(whorlAngle * 8.0 - g_time * 3.5);
+  let siphuncleTube = sdTorus(spLocal, vec2<f32>(shellR * 0.5, 0.052 + siphunclePulse + g_audio * 0.018));
 
   // Fractal inner chambers via domain repetition along spiral
   var chamberDist = 1000.0;
@@ -197,8 +187,14 @@ fn map(p_in: vec3<f32>, auraIntensity: f32, expansion: f32, fractalDepth: f32, a
   // Glowing auroral core
   let coreDist = length(sp - vec3<f32>(shellR * 0.1, 0.0, 0.0)) - (0.15 + g_audio * 0.1 * audioReactivity);
 
-  var mat = 1.0; // 1.0 = shell
+  var mat = 1.0; // 1.0 = shell, 2.0 = siphuncle osmotic conduit
   var glow = 0.0;
+
+  if (siphuncleTube < d) {
+    d = smin(d, siphuncleTube, 0.04);
+    mat = 2.0;
+    glow = auraIntensity * (1.2 + g_audio * 2.0);
+  }
 
   if (coreDist < d) {
     d = coreDist;
@@ -251,6 +247,14 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, auraIntensity: f32, expansion: f32, fr
         col = coreCol * (0.8 + auroraSwirl * 0.4);
         col += vec3<f32>(1.0, 0.3, 0.8) * g_audio * auraIntensity;
         alpha = 0.9;
+      } else if (matId > 1.5) {
+        // Idea 3: Siphuncle osmotic conduit — pressurized bioluminescent fluid filament
+        let spSiph = spiralMap(p, expansion) - vec3<f32>(2.0, 0.0, 0.0);
+        let siphAngle = atan2(spSiph.z, spSiph.x);
+        let osmoticWave = 0.5 + 0.5 * sin(siphAngle * 10.0 - g_time * 4.5);
+        let siphuncleGlow = mix(vec3<f32>(0.15, 0.95, 0.85), vec3<f32>(1.0, 0.72, 0.25), osmoticWave);
+        col = siphuncleGlow * (0.75 + auraIntensity * 1.6 + g_audio * 1.4) + vec3<f32>(0.9, 0.98, 1.0) * fresnel;
+        alpha = 0.86;
       } else {
         // Shell: prismatic glass with subsurface scattering
         // Iridescence based on view angle
@@ -271,11 +275,29 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, auraIntensity: f32, expansion: f32, fr
         let veinMask = smoothstep(0.75, 0.95, veinNoise);
         let veins = vec3<f32>(1.0, 0.3, 0.6) * veinMask * auraIntensity * (1.0 + g_audio * 2.0);
 
-        // Shell base color with prismatic tint
-        let shellCol = mix(vec3<f32>(0.1, 0.15, 0.2), irid * 1.5, fresnel);
+        // Idea 4: Aragonite nacre brick-and-mortar tablet interference (~500 nm platelets)
+        // & outer-whorl periostracum tiger-stripe flame banding
+        let spShell = spiralMap(p, expansion) - vec3<f32>(2.0, 0.0, 0.0);
+        let whorlPhi = atan2(spShell.z, spShell.x);
+        let septaCrest = smoothstep(0.55, 0.95, sin(whorlPhi * (6.0 + floor(fractalDepth * 2.0)) - length(spShell.xz) * 5.0));
+        let plateletNm = 485.0 + 55.0 * sin(whorlPhi * 14.0 + spShell.y * 18.0);
+        let nacreOpd = 2.0 * 1.68 * plateletNm * sqrt(max(1.0 - 0.35 * (1.0 - cosi * cosi), 0.1));
+        let nacreBrickStack = (
+          wavelengthToRGB(625.0) * (0.5 + 0.5 * cos(6.28318 * nacreOpd / 625.0)) +
+          wavelengthToRGB(535.0) * (0.5 + 0.5 * cos(6.28318 * nacreOpd / 535.0)) +
+          wavelengthToRGB(460.0) * (0.5 + 0.5 * cos(6.28318 * nacreOpd / 460.0))
+        ) * 0.55;
+        let tigerWave = sin(whorlPhi * 22.0 + sin(spShell.y * 12.0) * 1.8);
+        let tigerStripeMask = smoothstep(0.35, 0.82, tigerWave) * smoothstep(0.35, 0.95, length(spShell.xz));
+        let tigerFlame = vec3<f32>(0.88, 0.36, 0.12) * tigerStripeMask * 0.38;
+
+        // Shell base color with prismatic tint, nacre platelets, septa bulkheads, and tiger stripes
+        var shellCol = mix(vec3<f32>(0.1, 0.15, 0.2), mix(irid * 1.5, nacreBrickStack * 1.7, 0.45), fresnel);
+        shellCol = mix(shellCol, shellCol + tigerFlame, 0.65);
+        shellCol += nacreBrickStack * septaCrest * (0.28 + auraIntensity * 0.35);
         col = shellCol + sssCol + veins;
         col += vec3<f32>(0.2, 0.5, 0.7) * g_audio * fresnel;
-        alpha = 0.5 + fresnel * 0.4;
+        alpha = 0.5 + fresnel * 0.4 + septaCrest * 0.08;
       }
       break;
     }

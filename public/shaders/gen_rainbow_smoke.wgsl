@@ -4,31 +4,12 @@
 //  Features: upgraded-rgba, depth-aware, audio-reactive, mouse-driven, temporal
 //  Complexity: Very High
 //  Scientific: Multi-scale curl-noise smoke with vorticity confinement, buoyancy, Rayleigh edge scattering, and Mie forward glow
-//  Upgraded: 2026-09-27
-//  Ideas: CFL velocity clamp; spectral FFT emitters; click bursts; spring mouse; vortex-ring clicks (toroidal smoke rings plus radial burst); Kelvin-Helmholtz billows along the density-gradient edge
+//  Upgraded: 2026-10-17
+//  Ideas: CFL clamp; spectral emitters; vortex rings; KH billows; soot cap; ash fall
 //  A packing: raw (velocity.xy, density, temperature) in A; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 
@@ -322,7 +303,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bodyColor = albedo * density * (0.35 + scatteringControl * 0.55);
 
   let alpha = 1.0 - exp(-density * (1.8 + scatteringControl * 2.2));
-  let generatedColor = acesToneMap(mieColor + rayleighColor + bodyColor + coreGlow);
+  // Idea 3 — soot cap on hot smoke at the top of the rising plume (velocity.y is upward)
+  var plume = mieColor + rayleighColor + bodyColor + coreGlow;
+  let sootCap = smoothstep(0.55, 0.95, temperature) * smoothstep(0.5, 0.08, uv.y) * density;
+  plume *= 1.0 - sootCap * 0.48;
+  // Idea 4 — cooled density settles as ash on the downward side
+  let ashFall = (1.0 - temperature) * smoothstep(0.55, 0.95, uv.y) * density * (1.0 - edge);
+  plume += vec3<f32>(0.24, 0.22, 0.2) * ashFall * 0.4;
+  let generatedColor = acesToneMap(plume);
   let background = mix(vec3<f32>(0.02, 0.02, 0.03), inputColor.rgb, 0.35);
   let finalColor = mix(background, generatedColor, alpha);
   let finalAlpha = max(inputColor.a, alpha);

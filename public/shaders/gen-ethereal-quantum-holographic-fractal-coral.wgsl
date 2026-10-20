@@ -3,10 +3,12 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
+//  Upgraded: 2026-10-18
 //  Ideas: polyp mouth pits on the branches (fold space); zooxanthellae symbiont pulse
 //         on-branch from exact C; 2nd pass: polyp tentacle tufts at fold-trap tips
-//         swaying with mids; bass spawning bursts released from the tips into the glow
+//         swaying with mids; bass spawning bursts released from the tips into the glow;
+//         3rd pass: radial sclerosepta corallite ridges & aragonite growth-ring bands;
+//         mesenterial filament GFP/RFP FRET fluorescence & overhead marine surface caustic web
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -24,6 +26,8 @@ const DEPTH_FAR: f32 = 12.0;
 var<private> gTuft: f32 = 1e3;
 var<private> gBurst: f32 = 1e3;
 var<private> gHitDist: f32 = 1e3;
+var<private> gCoralliteRim: f32 = 0.0;
+var<private> gGrowthBand: f32 = 0.0;
 
 fn rot(a: f32) -> mat2x2<f32> {
     let s = sin(a);
@@ -161,14 +165,24 @@ fn map(p_in: vec3<f32>) -> f32 {
     // Polyp mouth pits, carved in fold space so they sit on the branches:
     // a lattice of small spheres in the final folded frame (where the branch
     // surface is the |p| = 1.2 shell), scaled back to world units.
+    // Idea 5: Radial 12-fold sclerosepta corallite blades & concentric aragonite growth-ring bands.
     let pitCell = fract(p * 2.5) - 0.5;
-    let pitSDF = (length(pitCell) / 2.5 - 0.07) / scale;
+    let pitAngle = atan2(pitCell.z, pitCell.x);
+    let scleroseptaRidges = cos(pitAngle * 12.0);
+    let pitRadius = 0.07 + 0.011 * scleroseptaRidges;
+    let pitSDF = (length(pitCell) / 2.5 - pitRadius) / scale;
     d = max(d, -pitSDF);
+
+    let rimWindow = exp(-pow((length(pitCell) / 2.5 - 0.075) * 42.0, 2.0));
+    let growthAnnuli = 0.5 + 0.5 * sin(length(p) * 18.0 + dot(p, vec3<f32>(2.0, 3.0, 1.5)));
+    d -= growthAnnuli * 0.0025 / scale;
 
     // Tufts join the branch tips; side outputs for shading/glow.
     d = smin(d, tuft, 0.02);
     gTuft = tuft;
     gBurst = burst;
+    gCoralliteRim = rimWindow * (0.5 + 0.5 * scleroseptaRidges);
+    gGrowthBand = growthAnnuli;
 
     return d;
 }
@@ -228,6 +242,8 @@ fn render(ro: vec3<f32>, rd: vec3<f32>) -> vec4<f32> {
     }
 
     if (tDist < MAX_DIST) {
+        let hitRim = gCoralliteRim;
+        let hitAnnuli = gGrowthBand;
         let n = calcNormal(p);
         let viewDir = -rd;
 
@@ -243,6 +259,20 @@ fn render(ro: vec3<f32>, rd: vec3<f32>) -> vec4<f32> {
         let interference = sin(dot(n, vec3<f32>(1.0)) * 10.0 + u.config.x) * 0.5 + 0.5;
 
         col = mix(c1, vec3<f32>(1.0, 0.8 + mids * 0.2, 1.0), fresnel * interference);
+
+        // Idea 5: Pearlescent aragonite growth-ring bands & sclerosepta corallite teeth
+        col *= 0.86 + 0.24 * hitAnnuli;
+        col += vec3<f32>(0.92, 0.96, 1.0) * hitRim * (0.45 + fresnel * 0.6);
+
+        // Idea 6: Mesenterial filament GFP/RFP donor-acceptor FRET fluorescence
+        // & overhead marine surface caustic web
+        let fretTransfer = clamp(hitRim * 1.4 + fresnel * (0.35 + mids * 0.65), 0.0, 1.0);
+        let gfpDonor = vec3<f32>(0.12, 0.98, 0.58);
+        let rfpAcceptor = vec3<f32>(1.0, 0.34, 0.52);
+        let fretEmission = mix(gfpDonor, rfpAcceptor, fretTransfer) * (hitRim * 0.65 + fresnel * 0.28) * maxGlow;
+        let causticV = voronoi(vec3<f32>(p.xz * 1.85 + vec2<f32>(u.config.x * 0.32, -u.config.x * 0.24), u.config.x * 0.18));
+        let seawaterCaustics = pow(clamp(1.0 - causticV, 0.0, 1.0), 3.0) * max(n.y * 0.65 + 0.35, 0.0);
+        col += fretEmission * 0.55 + vec3<f32>(0.35, 0.88, 1.0) * seawaterCaustics * (0.32 + treble * 0.45);
 
         // Audio reactive pulsing from the interior
         col = col + vec3<f32>(0.2, 0.8, 1.0) * audioEnergy * maxGlow * fresnel;

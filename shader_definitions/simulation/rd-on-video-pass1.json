@@ -2,12 +2,15 @@
   "id": "rd-on-video-pass1",
   "name": "RD on Video (Pass 1: State Update)",
   "url": "shaders/rd-on-video-pass1.wgsl",
-  "description": "Gray-Scott reaction-diffusion seeded and continuously driven by video luminance, with exact-load chemistry, three-band kinetics, held inoculation, click seed fronts, ACES preview, semantic alpha, and A-only state ownership.",
+  "description": "Gray-Scott reaction-diffusion seeded and continuously driven by video luminance, with exact-load chemistry, three-band kinetics, held inoculation, click seed fronts, contour stretch along the luma tangent, spot-fission pinches, ACES preview, semantic alpha, and A-only state ownership.",
   "features": [
     "multi-pass-1",
     "temporal",
     "video-driven",
-    "webcam-friendly"
+    "webcam-friendly",
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
   ],
   "multipass": {
     "pass": 1,

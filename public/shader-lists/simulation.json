@@ -650,7 +650,7 @@
     "id": "chromatographic-fluid",
     "name": "Chromatographic Fluid",
     "url": "shaders/chromatographic-force.wgsl",
-    "description": "Physics Lab — RGB dyes with distinct viscosity in a shared wind field. Hold to paint, click solvent splashes, audio gusts. graph · 7 passes · rgba32float.",
+    "description": "Physics Lab — RGB dyes with distinct viscosity in a shared wind field. Red lags and blue leads along the wind, and a pale solvent front marks the downwind edge. Hold to paint, click solvent splashes, audio gusts. graph · 7 passes · rgba32float.",
     "requiresRgba32Float": true,
     "multipass": {
       "graph": {
@@ -922,7 +922,7 @@
     "id": "fabric-of-reality",
     "name": "Fabric of Reality",
     "url": "shaders/fabric-verlet.wgsl",
-    "description": "Living mass-spring cloth — hold to tear, release to watch Self Heal knit seams. Bass breathes the drape; mouse spotlight rides the weave. Tier C graph · 7 passes.",
+    "description": "Living mass-spring cloth — hold to tear, release to watch Self Heal knit seams. Bass breathes the drape; mouse spotlight rides the weave. Shear springs, a catenary hang, and frayed yarn. Tier C graph · 7 passes.",
     "requiresRgba32Float": true,
     "multipass": {
       "graph": {
@@ -1026,7 +1026,8 @@
       "physics",
       "mouse-driven",
       "audio-reactive",
-      "interactive"
+      "interactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "cloth",
@@ -1041,7 +1042,7 @@
     "name": "Ferrofluid Spikes",
     "category": "simulation",
     "url": "shaders/ferrofluid-spikes.wgsl",
-    "description": "A classic Rosensweig ferrofluid lattice with bounded magnet inertia, held polarity strength, click-launched spike fronts, exact-load viscous persistence, three-band response, honest depth, and studio-lit anisotropic GGX metal.",
+    "description": "A classic Rosensweig ferrofluid lattice with bounded magnet inertia, held polarity strength, click-launched spike fronts, exact-load viscous persistence, three-band response, honest depth, and studio-lit anisotropic GGX metal. Lattice valleys pool darker, and the tallest peaks carry a chrome tip bead.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -1209,7 +1210,7 @@
     "id": "gray-scott-tank",
     "name": "Gray-Scott Tank",
     "url": "shaders/gray-scott-step.wgsl",
-    "description": "Physics Lab — true multi-step Gray–Scott reaction-diffusion (Jacobi ×4 / frame). Hold paints V, clicks seed spots. graph · 6 passes · rgba32float.",
+    "description": "Physics Lab — true multi-step Gray–Scott reaction-diffusion (Jacobi ×4 / frame). V stretches along its tangent, dense spots hollow where the feed is shadowed, and the held brush paints a comet. graph · 6 passes · rgba32float.",
     "requiresRgba32Float": true,
     "multipass": {
       "graph": {
@@ -2197,7 +2198,7 @@
     "id": "quantum-foam-pass1",
     "name": "Quantum Foam (Pass 1: Field Generation)",
     "url": "shaders/quantum-foam-pass1.wgsl",
-    "description": "Generates quantum probability field with curl noise and FBM. First pass of 3-pass system.",
+    "description": "Generates quantum probability field with curl noise and FBM. First pass of 3-pass system. Diffusion Rate opens voids at cell centers, and three-wave crossings raise foam ridges.",
     "features": [
       "multi-pass-1",
       "compute-shader",
@@ -2288,12 +2289,15 @@
     "id": "rd-on-video-pass1",
     "name": "RD on Video (Pass 1: State Update)",
     "url": "shaders/rd-on-video-pass1.wgsl",
-    "description": "Gray-Scott reaction-diffusion seeded and continuously driven by video luminance, with exact-load chemistry, three-band kinetics, held inoculation, click seed fronts, ACES preview, semantic alpha, and A-only state ownership.",
+    "description": "Gray-Scott reaction-diffusion seeded and continuously driven by video luminance, with exact-load chemistry, three-band kinetics, held inoculation, click seed fronts, contour stretch along the luma tangent, spot-fission pinches, ACES preview, semantic alpha, and A-only state ownership.",
     "features": [
       "multi-pass-1",
       "temporal",
       "video-driven",
-      "webcam-friendly"
+      "webcam-friendly",
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "multipass": {
       "pass": 1,
@@ -2651,14 +2655,17 @@
     "id": "sim-fluid-feedback-field",
     "name": "Fluid Feedback Field",
     "url": "shaders/sim-fluid-feedback-field-pass1.wgsl",
-    "description": "Multi-pass Navier-Stokes fluid simulation with feedback trails. Glowing fluid that swirls and mixes.",
+    "description": "Curl-driven velocity that advects itself and a dye streak. The dye warps the photo and brightens with Glow. Mouse pushes the flow.",
     "features": [
       "simulation",
       "multi-pass",
       "navier-stokes",
       "velocity-advection",
       "density-advection",
-      "randomization-safe"
+      "randomization-safe",
+      "audio-reactive",
+      "upgraded-rgba",
+      "mouse-driven"
     ],
     "multipass": {
       "pass": 1,

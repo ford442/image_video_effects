@@ -2136,7 +2136,7 @@
       "bioluminescent",
       "liquid"
     ],
-    "description": "A hyper-magnetic temporal liquid entity that pulses and spikes to an unseen quantum beat, blending dark metallic spikes with internal bioluminescent ethereal light.",
+    "description": "A hyper-magnetic temporal liquid entity that pulses and spikes to an unseen quantum beat, blending dark metallic spikes with internal bioluminescent ethereal light. Needle tips end in droplets, and a current sheet glows between the equatorial clock ticks.",
     "workgroup_size": [
       16,
       16,
@@ -3286,7 +3286,7 @@
       "audio-reactive",
       "collapse"
     ],
-    "description": "A colossal liquid-metal monolith whose surface forms readable magnetic glyphs under strong bass, then collapses into chaotic auroral breakup on treble. Mouse drag rotates an external magnetic field that sculpts the ferrofluid in real time. The aurora clings to the spiked surface as a sheath, co-winds with the Magnetic Twist and gathers at the mouse pole, and spike crests throw an aurora-tinted corona.",
+    "description": "A colossal liquid-metal monolith whose surface forms readable magnetic glyphs under strong bass, then collapses into chaotic auroral breakup on treble. Mouse drag rotates an external magnetic field that sculpts the ferrofluid in real time. The aurora clings to the spiked surface as a sheath, co-winds with the Magnetic Twist and gathers at the mouse pole, and spike crests throw an aurora-tinted corona. A stable red arc sits at one latitude, and black-aurora lanes cut through the curtains.",
     "workgroup_size": [
       16,
       16,
@@ -4461,7 +4461,7 @@
       "audio",
       "music"
     ],
-    "description": "Endless procedural canyon of iridescent bismuth crystals with physical light transmission. Features metallic Fresnel reflection, thin-film interference, and oxide layer transmission.",
+    "description": "Endless procedural canyon of iridescent bismuth crystals with SDF-curvature oxide thickness shifting, {110} polysynthetic twin lamellae, solidifying 6-fold hopper rafts on molten tier-gap pools, and an axial beacon column.",
     "workgroup_size": [
       16,
       16,
@@ -5256,7 +5256,7 @@
       "iridescent",
       "atmospheric"
     ],
-    "description": "An infinite expanse of refractive crystalline petals with Cauchy edge dispersion, micro-venation bioluminescent nutrient flow, starlight corona diffraction starbursts, and pollinator spring dynamics.",
+    "description": "An infinite expanse of refractive crystalline petals with Cauchy edge dispersion, micro-venation bioluminescent nutrient flow, starlight corona diffraction starbursts, labellum UV-to-gold nectar-guide chevrons, five-fold floral column caustics, and golden pollinia pollinator tethers.",
     "workgroup_size": [
       16,
       16,
@@ -5279,7 +5279,8 @@
       "raymarching",
       "semantic-alpha",
       "aces-tone-mapping",
-      "generated-depth"
+      "generated-depth",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -5332,7 +5333,7 @@
       "crystalline",
       "iridescent"
     ],
-    "description": "A hyper-dimensional biomechanical dragonfly forged from quantum glass with Cauchy thin-film wing iridescence, starlight caustic core emission, acoustic wing-tip vortex trails, and spring-guided flight dynamics.",
+    "description": "A hyper-dimensional biomechanical dragonfly forged from quantum glass with Cauchy thin-film wing iridescence, chitinous pterostigma wingtip cells, nodus flexion hinges, 90-degree counter-stroking wing pairs, dorsal ocelli, and thoracic flight-muscle striations.",
     "workgroup_size": [
       16,
       16,
@@ -6262,7 +6263,7 @@
     "name": "Chrono-Kitsune Prism Weaver",
     "url": "shaders/gen-chrono-kitsune-prism-weaver.wgsl",
     "category": "generative",
-    "description": "A living prismatic kitsune spirit weaving through a chrono-void lattice with deep temporal feedback and audio reactivity. Optimized: bounding-sphere early-out, tetrahedral normals, HDR feedback chain, generated depth.",
+    "description": "A living prismatic kitsune spirit weaving through a chrono-void lattice with sculpted ear-crest facets, internal 3-wavelength Snell-Cauchy prism refraction, plumose chevron tail-fur barbules, heartbeat pulse transfer, and dispersive HDR radial echo feedback.",
     "workgroup_size": [
       16,
       16,
@@ -6537,7 +6538,8 @@
       "iridescent",
       "refraction"
     ],
-    "description": "A hyper-dimensional glass structure that continuously folds through time and space, refracting shifting iridescent cosmic energies. Features chronomorphic spatial distortion and raymarched chromatic dispersion.",
+    "description": "A hyper-dimensional 4D glass tesseract with Schlegel wireframe struts, an inner W-projected hypercube core, 16-vertex Airy-disc diffraction flares, W-slice caustic sheets, and chronomorphic dispersion.",
+    "updated": true,
     "url": "/shaders/gen-chronomorphic-glass-tesseract.wgsl",
     "workgroup_size": [
       16,
@@ -10015,7 +10017,7 @@
     "url": "shaders/gen-ethereal-chrono-fluid-symbiote.wgsl",
     "type": "generative",
     "category": "generative",
-    "description": "A flowing, temporal liquid entity that responds dynamically to audio and mouse interactions, weaving through dimensions of time and space in a continuous symbiotic dance. A meniscus film traces the seam between fluid and crystal, and Chrono Warp smears the fluid against the previous frame.",
+    "description": "A flowing, temporal liquid entity that responds dynamically to audio and mouse interactions, weaving through dimensions of time and space in a continuous symbiotic dance. A meniscus film traces the seam between fluid and crystal, Chrono Warp smears the fluid against the previous frame, and age shells ride the fluid.",
     "workgroup_size": [
       16,
       16,
@@ -10059,7 +10061,12 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "supportsDepth": true
+    "supportsDepth": true,
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "id": "gen-ethereal-chrono-plasma-void-manta",
@@ -10413,7 +10420,7 @@
       "refraction",
       "terrarium"
     ],
-    "description": "A translucent macroscopic greenhouse where impossible glass botanicals bloom with neon nectar flowing through crystalline stems, surrounded by gravity-defying pollen particles.",
+    "description": "A translucent macroscopic greenhouse where impossible glass botanicals bloom with capillary neon nectar lumens, pinnate leaf-blade venation, bioluminescent stomatal spore-pores, and swirling pollen inside a geodesic condensation-beaded glass terrarium dome.",
     "workgroup_size": [
       16,
       16,
@@ -10468,7 +10475,8 @@
       "temporal-feedback",
       "depth-output",
       "aces-tonemap",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = final ACES display RGBA; exact glass-flora persistence history"
   },
@@ -10605,7 +10613,7 @@
       "oceanic",
       "audio-reactive"
     ],
-    "description": "A majestic, deep-void cybernetic coral reef that self-assembles through quantum superposition, weaving holographic bio-luminescence with hyper-geometric fractal branches. The coral branches pulsate with liquid neon energy driven by audio frequencies, expanding the fractal recursion depth on bass hits.",
+    "description": "A deep-void cybernetic coral reef weaving holographic bioluminescence with fractal branches, featuring 12-fold radial sclerosepta corallite cups, aragonite calcification growth rings, GFP/RFP FRET fluorescence, swaying polyp tentacle tufts, and overhead marine surface caustics.",
     "workgroup_size": [
       16,
       16,
@@ -13502,7 +13510,7 @@
     "name": "Gravitational Ferrofluid Singularity-Engine",
     "url": "shaders/gen-gravitational-ferrofluid-singularity-engine.wgsl",
     "category": "generative",
-    "description": "A stylized ferrofluid singularity with rotating magnetic domains, orbiting spike fronts, accelerating droplets, click shocks, and bounded horizon-aligned light trails driven by live audio.",
+    "description": "A stylized ferrofluid singularity with rotating magnetic domains, frame-dragged inner spikes, an ISCO hot ring outside the photon sheen, accelerating droplets, click shocks, and bounded horizon-aligned light trails driven by live audio.",
     "features": [
       "ferrofluid",
       "singularity",
@@ -14235,7 +14243,7 @@
       "raymarching",
       "holographic"
     ],
-    "description": "A hyper-dimensional, endlessly unfolding bismuth core reactor, merging metallic stepped-fractals with liquid-holographic interference patterns.",
+    "description": "A hyper-dimensional KIFS bismuth core reactor with fold-generation stepped oxide thin-film terraces, 4-tap cavity AO, criticality-throttled Cherenkov phase-cone radiation, and control-rod coolant wake rings.",
     "workgroup_size": [
       16,
       16,
@@ -14294,7 +14302,7 @@
       "generated-depth",
       "upgraded-rgba"
     ],
-    "feedbackPacking": "A/C = ACES display RGBA history; exact same-pixel temporal load"
+    "feedbackPacking": "A/C = HDR RGBA history before primary controls; display = ACES(controls(A)); exact same-pixel temporal load"
   },
   {
     "name": "Holographic Data Core",
@@ -14311,7 +14319,7 @@
       "audio",
       "music"
     ],
-    "description": "An infinite journey through a quantum lattice of glowing data nodes, smooth scan packets, pointer beams, and click-launched data rings with bounded display history.",
+    "description": "An infinite journey through a quantum lattice of glowing data nodes, smooth scan packets, pointer beams, and click-launched data rings with bounded display history. Corner-cube retroreflector bevels, bus-junction standing-wave nodes, inner-core Bragg memory-page strata, and Pepper's-ghost beamsplitter parallax reflections glint across active cells.",
     "workgroup_size": [
       16,
       16,
@@ -14380,7 +14388,7 @@
     "name": "Holographic Fracture",
     "category": "generative",
     "url": "shaders/gen-holographic-fracture.wgsl",
-    "description": "Iridescent cracked planes with SDF fracture lines and thin-film holographic shards. Audio drives crack glow, and mouse interaction spawns new radial cracks.",
+    "description": "Iridescent cracked planes with SDF fracture lines and thin-film holographic shards. Audio drives crack glow, mouse interaction spawns new radial cracks, and Wallner stress-wave hackle arcs with photoelastic isochromatic fringes ripple across stressed shards.",
     "features": [
       "generative",
       "sdf",
@@ -14463,7 +14471,7 @@
       "holographic",
       "matrix"
     ],
-    "description": "Generate a matrix of holographic lens flares that follow motion in the video or a synthetic flow field.",
+    "description": "Generate a matrix of holographic lens flares that follow motion in the video or a synthetic flow field. Achromatic doublet cemented-interface halos and micro-lenticular sensor-grid satellite dots surround each flare cell.",
     "workgroup_size": [
       16,
       16,
@@ -14536,7 +14544,7 @@
       "translucent",
       "interference"
     ],
-    "description": "Thin-film interference membrane that undulates with depth-based alpha translucency. Audio drives vibration and iridescence; mouse controls viewing angle for rainbow interference patterns.",
+    "description": "Thin-film interference membrane that undulates with depth-based alpha translucency. Audio drives vibration and iridescence; mouse controls viewing angle for rainbow interference patterns, with Newton black-film drainage islets in deep troughs and Plateau-border capillary veins along wave saddles.",
     "workgroup_size": [
       16,
       16,
@@ -14608,7 +14616,7 @@
       "holographic",
       "raymarching"
     ],
-    "description": "A hyper-dimensional geode cracked open to reveal a swirling, audio-reactive core of liquid plasma and holographic fractal crystals.",
+    "description": "A hyper-dimensional geode cracked open to reveal a swirling, audio-reactive core of liquid plasma and holographic fractal crystals, lined with a druzy quartz micro-sparkle collar and piezoelectric phantom zoning.",
     "workgroup_size": [
       16,
       16,
@@ -14685,7 +14693,7 @@
       "thin-film",
       "interference"
     ],
-    "description": "A liquid holographic surface with iridescent rainbow colors driven by thin-film interference physics. Prismatic diffraction highlights, spectral color separation based on surface normals, temporal feedback trails, chromatic aberration, and audio-reactive film thickness modulation create a scientifically-grounded chromatic light simulation. Mouse tilts the interference plane.",
+    "description": "A liquid holographic surface with iridescent rainbow colors driven by thin-film interference physics. Prismatic diffraction highlights, spectral color separation based on surface normals, temporal feedback trails, chromatic aberration, and audio-reactive film thickness modulation create a scientifically-grounded chromatic light simulation. Mouse tilts the interference plane, while Rayleigh-Plateau ridge pearl beads and Brewster-angle polarization extinction bands sculpt the crests.",
     "workgroup_size": [
       16,
       16,
@@ -15055,6 +15063,22 @@
     "type": "generative",
     "category": "generative",
     "url": "shaders/gen-hyper-geometric-void-glass-seraph.wgsl",
+    "description": "A raymarched KIFS void-glass seraph folded around a gravitational singularity with inner void core twist, iteration-scaled chromatic dispersion, six-wing feather-vane facets, and an Einstein-ring gravitational lensing halo.",
+    "tags": [
+      "3d",
+      "raymarching",
+      "kifs",
+      "glass",
+      "refraction",
+      "singularity",
+      "seraph",
+      "audio-reactive"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "params": [
       {
         "id": "folding_scale",
@@ -15092,7 +15116,21 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ]
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "raymarched",
+      "audio-reactive",
+      "mouse-driven",
+      "temporal-feedback",
+      "semantic-alpha",
+      "aces-tonemap",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
+    "feedbackPacking": "A/C = exact ACES display RGBA history"
   },
   {
     "name": "Hyper Labyrinth",
@@ -15187,7 +15225,7 @@
       "fluid-dynamics",
       "rankine"
     ],
-    "description": "A multi-layered chromatic vortex enriched with Wolfram Rankine fluid dynamics: solid-body rotation inside a bass-reactive core and irrotational flow outside. Angular velocity modulated by mids. Feedback history is advected by the Rankine differential rotation, and the cyclostrophic pressure well condenses a striated funnel haze. Mouse spawns secondary vortices. Full upgraded-rgba stack with ACES tone mapping, temporal feedback, chromatic aberration, and semantic alpha.",
+    "description": "A multi-layered chromatic vortex enriched with Wolfram Rankine fluid dynamics: solid-body rotation inside a bass-reactive core and irrotational flow outside. Angular velocity modulated by mids. Feedback history is advected by the Rankine differential rotation, the cyclostrophic pressure well condenses a striated funnel haze, and Kelvin-Helmholtz eyewall shear vortices with Ekman boundary-layer inflow streaks ring the core.",
     "workgroup_size": [
       16,
       16,
@@ -15262,7 +15300,7 @@
       "raymarch",
       "audio-reactive"
     ],
-    "description": "A raymarched refractive rain matrix with viscous drop merging, pointer repulsion, audio-driven caustics, bass-triggered lightning strobes, prismatic RGB dispersion on drop rims, and fall-aligned HDR rain streaks.",
+    "description": "A raymarched refractive rain matrix with viscous drop merging, pointer repulsion, audio-driven caustics, bass-triggered lightning strobes, prismatic RGB dispersion on drop rims, and fall-aligned HDR rain streaks. Villermaux-Bossa basal flattening and Descartes secondary internal-reflection rainbow glints illuminate each drop.",
     "workgroup_size": [
       16,
       16,
@@ -15756,7 +15794,7 @@
       "branching",
       "audio-reactive"
     ],
-    "description": "Hexagonal ice branches advance through luminous frost fronts, pointer-seeded nucleation, Fresnel-like rims, and click-launched fracture waves.",
+    "description": "Hexagonal ice branches advance through luminous frost fronts, pointer-seeded nucleation, Fresnel-like rims, and click-launched fracture waves, with basal-facet stepped hopper terraces and cross-polarized birefringence interference tints.",
     "workgroup_size": [
       16,
       16,
@@ -16432,7 +16470,7 @@
     "id": "gen-kimi-crystal",
     "name": "Kimi Crystal",
     "url": "shaders/gen_kimi_crystal.wgsl",
-    "description": "Animated crystalline structures growing on a hexagonal grid with physical light transmission. Features ice IOR-based Fresnel reflection, purity-based absorption, and variable crystal thickness.",
+    "description": "Animated crystalline structures on a hexagonal grid with Nakaya plate-to-dendrite habit growth, hexagonal basal hopper terraces, midrib air-inclusion veils, physical ice-IOR transmission, and 22°/46° halos with parhelia and a circumzenithal tangent arc.",
     "features": [
       "audio-reactive",
       "mouse-driven",
@@ -17094,7 +17132,7 @@
       "raymarched",
       "showcase"
     ],
-    "description": "A breathing network of hexagonal bio-synthetic cells filled with turbulent liquid crystal. Smoothed audio and pointer drag disrupt the field while clicks inject traveling chemotactic fronts into its preserved hive state.",
+    "description": "A breathing network of hexagonal bio-synthetic cells filled with turbulent nematic liquid crystal, featuring homeotropic wall anchoring, Grandjean-Cano cholesteric pitch bands, four-brush schlieren crosses, and 9-point Laplacian diffusion of chemotactic hive-pulse fronts.",
     "workgroup_size": [
       16,
       16,
@@ -17320,7 +17358,7 @@
       "oil",
       "swirl"
     ],
-    "description": "Simulates looking through liquid rainbow glass - thick translucent layers of flowing color with refraction-like effects. Colors blend and swirl like oil in water but extremely bright and saturated. Chromatic dispersion at edges. Mouse stirs the liquid creating swirling vortices.",
+    "description": "Simulates looking through liquid rainbow glass — thick translucent layers of flowing color with meniscus rainbow rims, hand-blown murrine glass-cane striae, dichroic gold-ruby to cyan-violet angle shifts, rising micro-bubbles, and click-dropped molten glass gathers.",
     "workgroup_size": [
       16,
       16,
@@ -17569,7 +17607,7 @@
       "holographic",
       "audio-reactive"
     ],
-    "description": "A hyper-intricate, multi-dimensional astrolabe forged from flowing liquid-gold plasma and hard-light holograms, endlessly spinning and realigning its cosmic rings in perfect synchronization with audio frequencies.",
+    "description": "A hyper-intricate, multi-dimensional astrolabe forged from flowing liquid-gold plasma and hard-light holograms, endlessly spinning and realigning its cosmic rings in perfect synchronization with audio frequencies. Unequal-hour arcs cross the rete, and the alidade casts a shadow on the chart.",
     "workgroup_size": [
       16,
       16,
@@ -18334,7 +18372,7 @@
       "iridescent",
       "mouse-driven"
     ],
-    "description": "A hyper-reflective, organic-mechanical mass of magnetic liquid that constantly shifts and forms razor-sharp crystalline spikes, rippling with fluid dynamics and metallic peaks driven by audio frequencies.",
+    "description": "A hyper-reflective, organic-mechanical mass of magnetic liquid that constantly shifts and forms razor-sharp crystalline spikes, rippling with fluid dynamics and metallic peaks driven by audio frequencies. Spikes meet the bulk in a contact meniscus, and magnetite grains speckle the metal.",
     "workgroup_size": [
       16,
       16,
@@ -18403,7 +18441,7 @@
       "audio",
       "music"
     ],
-    "description": "A raymarched metallic ferrofluid mass with density-driven volume and spikes, sprung orbit control, audio-excited iridescence, click magnetic shells, temporal polish, and real hit depth.",
+    "description": "A raymarched metallic ferrofluid mass with density-driven volume and spikes, sprung orbit control, audio-excited iridescence, click magnetic shells, temporal polish, and real hit depth. Above the critical field the hex peaks bifurcate, and magnetite chains streak along the applied field.",
     "workgroup_size": [
       16,
       16,
@@ -18976,7 +19014,7 @@
       "split-tone",
       "chromatic-aberration"
     ],
-    "description": "Parametric minimal surfaces morphing between catenoid and helicoid via Bonnet rotation, now with cinematic HDR lighting: view-dependent thin-film interference, Fresnel rim, roughness-aware specular, subsurface scattering glow, HDR bloom, ACES tone mapping, dynamic color temperature, split-tone shadows/highlights, volumetric fog, and chromatic aberration. Audio-reactive curvature and temporal trails preserve the living soap-film soul.",
+    "description": "Parametric minimal surfaces morphing between catenoid and helicoid via Bonnet rotation, with gravity drainage, Marangoni plumes, Newton black film, Culick click-rupture holes, Bonnet-rotated asymptotic geodesic surfactant webs, and multi-bounce Airy finesse interference.",
     "workgroup_size": [
       16,
       16,
@@ -19411,7 +19449,7 @@
       "interactive",
       "depth"
     ],
-    "description": "A single-pass fluid-inspired ink field with semi-Lagrangian advection and local pressure approximation, extended by raymarched vortex tubes and a tessellated emitter corona. Mouse input, bounded click ripples, audio, and FFT energy shape the motion and geometry.",
+    "description": "A single-pass fluid-inspired ink field with semi-Lagrangian advection and local pressure approximation, extended by raymarched vortex tubes and a tessellated emitter corona. Mouse input, bounded click ripples, audio, and FFT energy shape the motion and geometry. Ink skims outward by Marangoni stress and leaves a coffee-ring rim.",
     "workgroup_size": [
       16,
       16,
@@ -20670,7 +20708,7 @@
       "volumetric",
       "raymarched"
     ],
-    "description": "A majestic, hyper-organic lotus flower suspended in zero-gravity, blooming endlessly with translucent liquid-neon neuro-fluid petals that ripple with bioluminescent plasma in sync with ambient cosmic frequencies. The second pass adds capillary petal venation and click-driven magnetic-reconnection plume bursts.",
+    "description": "A majestic, hyper-organic lotus flower suspended in zero-gravity, blooming endlessly with translucent liquid-neon neuro-fluid petals that ripple with bioluminescent plasma in sync with ambient cosmic frequencies. The second pass adds capillary petal venation and click-driven magnetic-reconnection plume bursts. Pollen sits between florets, and the eight petal crests scallop.",
     "workgroup_size": [
       16,
       16,
@@ -22054,7 +22092,7 @@
       "kaleidoscopic",
       "geometry"
     ],
-    "description": "A hyper-majestic cybernetic celestial kitsune of shattered prismatic glass and liquid quantum-aether, hex-rune-etched armor and octahedral shoulder crystals, orbited by a prismatic shard swarm and stacked auroral torus rings, its nine radiant tails carving rifts into a kaleidoscopically folded volumetric particle-storm.",
+    "description": "A cybernetic celestial kitsune of prismatic glass and liquid quantum-aether with hex-rune-etched armor, kabuki cyber-visor eye markings, a levitating Hoshi-no-tama star-ball jewel ahead of its snout, dispersive 3-channel octahedral shard facets, stacked auroral torus rings, and nine thin-film tails with kitsune-bi fox-fire tips.",
     "url": "shaders/gen-prismatic-cyber-aether-void-kitsune.wgsl",
     "updated": true,
     "supportsDepth": true,
@@ -22229,7 +22267,7 @@
     "id": "gen-prismatic-cyber-chrono-nebula-peacock",
     "name": "Prismatic Cyber-Chrono Nebula-Peacock",
     "category": "generative",
-    "description": "A biomechanical celestial peacock woven from quantum glass and aurora, with barbule thin-film iridescence, zoned ocelli, rachis-barb shaft branching, and chrono-precessing ocellus halos.",
+    "description": "A biomechanical celestial peacock woven from quantum glass and aurora, with barbule thin-film iridescence, 2D melanin photonic-crystal rod-lattice Bragg shift, coronet crest aigrettes, zoned ocelli, rachis-barb shaft branching, and chrono-precessing ocellus halos.",
     "url": "shaders/gen-prismatic-cyber-chrono-nebula-peacock.wgsl",
     "tags": [
       "organic",
@@ -22300,7 +22338,7 @@
       "audio-reactive",
       "volumetric"
     ],
-    "description": "A nine-tailed cybernetic void-kitsune of prismatic glass and liquid aurora, with kitsunebi wisps, Cauchy-dispersed armor refraction, caudal-band tail caustics, and helical rift current sheets.",
+    "description": "A nine-tailed cybernetic void-kitsune with sculpted fox ears, cyber-visor eye slits, 5-tap cellular armour AO, Cauchy-dispersed Beer-Lambert refraction, kitsunebi wisps, inter-tail braided plasma filaments, and helical rift current sheets.",
     "params": [
       {
         "id": "tailDispersion",
@@ -22643,7 +22681,7 @@
       "prismatic",
       "raymarched"
     ],
-    "description": "A hyper-organic spiraling biomechanical nautilus shell forged from prismatic quantum glass and auroral plasma, endlessly unfurling within a deep-space nebula while reacting explosively to ambient acoustic frequencies.",
+    "description": "A hyper-organic spiraling biomechanical nautilus shell forged from prismatic quantum glass and auroral plasma, featuring calcified septa chamber bulkheads, a glowing central siphuncle osmotic conduit, aragonite nacre brick-stack interference, and periostracum tiger-stripe banding.",
     "workgroup_size": [
       16,
       16,
@@ -22819,6 +22857,61 @@
       "river",
       "prismatic",
       "chromatic"
+    ]
+  },
+  {
+    "id": "gen-prismatic-singularity-engine",
+    "category": "generative",
+    "name": "Prismatic Singularity Engine",
+    "url": "shaders/gen-prismatic-singularity-engine.wgsl",
+    "description": "A hyper-dense spinning singularity and 3-octave gyroid manifold with relativistic photon-sphere Doppler beaming, step-count labyrinth AO, and chromatically dispersed spacetime trajectories.",
+    "tags": [
+      "singularity",
+      "gravity",
+      "spectral",
+      "gyroid",
+      "audio-reactive"
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "raymarching",
+      "upgraded-rgba"
+    ],
+    "updated": true,
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "singularity_mass",
+        "name": "Singularity Mass",
+        "default": 1.5,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "twist_factor",
+        "name": "Twist Factor",
+        "default": 4,
+        "min": 0,
+        "max": 10,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "spectral_bleed",
+        "name": "Spectral Bleed",
+        "default": 0.05,
+        "min": 0,
+        "max": 0.2,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      }
     ]
   },
   {
@@ -23136,7 +23229,7 @@
       "neon",
       "abstract"
     ],
-    "description": "A quantum-mechanically enriched ferrofluid visualization. Wavefunction ψ(x,t) interference patterns drive ferrofluid spike formation. Probability density |ψ|² modulates glow intensity. Bass triggers wavefunction collapse probability. Mouse acts as a quantum measurement device, collapsing superposition and sharpening the interference pattern. Features double-slit interference, entanglement glow, and metallic PBR rendering.",
+    "description": "A quantum-mechanically enriched ferrofluid visualization. Wavefunction ψ(x,t) interference patterns drive ferrofluid spike formation. Probability density |ψ|² modulates glow intensity. Bass triggers wavefunction collapse probability. Mouse acts as a quantum measurement device, collapsing superposition and sharpening the interference pattern. Features double-slit interference, entanglement glow, and metallic PBR rendering. The pointer leaves a measurement scar, and entangled satellites share a neck meniscus.",
     "workgroup_size": [
       16,
       16,
@@ -24511,7 +24604,7 @@
     "id": "gen-rainbow-smoke",
     "name": "Rainbow Smoke with Dual Scattering",
     "url": "shaders/gen_rainbow_smoke.wgsl",
-    "description": "Multi-scale rainbow smoke with vorticity confinement, buoyancy, Rayleigh edge glow, and Mie-lit cores driven by bass and treble.",
+    "description": "Multi-scale rainbow smoke with vorticity confinement, buoyancy, Rayleigh edge glow, and Mie-lit cores driven by bass and treble. Hot smoke caps with soot, and cooled density falls out as ash.",
     "features": [
       "upgraded-rgba",
       "depth-aware",
@@ -25396,7 +25489,7 @@
       "fluid-dynamics",
       "fractal"
     ],
-    "description": "A hyper-dynamic, liquid-metal particle swarm that self-assembles into brutalist geometric architectures before dissolving back into a chaotic, churning ferro-fluid storm.",
+    "description": "A hyper-dynamic, liquid-metal particle swarm that self-assembles into brutalist geometric architectures before dissolving back into a chaotic, churning ferro-fluid storm. Locked beads trap fluid inclusions, and a shatter throws silicate dust.",
     "workgroup_size": [
       16,
       16,
@@ -26220,7 +26313,7 @@
       "translucent",
       "field-lines"
     ],
-    "description": "Magnetic ferrofluid simulation with field-strength alpha translucency and audio-reactive spikes. Mouse acts as a magnetic source while temporal feedback creates organic fluid memory.",
+    "description": "Magnetic ferrofluid simulation with field-strength alpha translucency and audio-reactive spikes. Mouse acts as a magnetic source while temporal feedback creates organic fluid memory. Inner-shoulder mirror beads and Bloch domain walls sit on the existing crowns and field lines.",
     "workgroup_size": [
       16,
       16,
@@ -26262,7 +26355,12 @@
     "updated": true,
     "id": "gen-stable-fluids-jos-stam",
     "url": "shaders/gen-stable-fluids-jos-stam.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba",
+      "simulation"
+    ]
   },
   {
     "name": "Stardust Nebula",
@@ -26525,7 +26623,7 @@
       "temporal",
       "depth-aware"
     ],
-    "description": "A mesmerizing, hyper-turbulent ocean of boiling quantum probability foam, where iridescent hyper-bubbles merge and burst in sync with audio frequencies, releasing flashes of raw cosmic energy.",
+    "description": "A raymarched superfluid foam: bubbles neck and pop, a Kelvin vortex line carries second sound, Abrikosov dimples dent the films, and an Andreev sheen rims the silhouette.",
     "workgroup_size": [
       16,
       16,
@@ -26945,7 +27043,7 @@
       "voronoi",
       "raymarched"
     ],
-    "description": "A violently shifting landscape of cooling obsidian geometric slabs floating on a turbulent, audio-reactive ocean of blinding-hot plasma magma that constantly fractures, erupts, and reshapes itself.",
+    "description": "A violently shifting landscape of cooling obsidian geometric slabs floating on a turbulent, audio-reactive ocean of blinding-hot plasma magma that constantly fractures, erupts, and reshapes itself. Pillow rind lines the thermal margin, and strike-slip striae scratch along the plate-slip direction.",
     "workgroup_size": [
       16,
       16,
@@ -28929,7 +29027,7 @@
     "id": "liquid_crystal_birefringence",
     "name": "Liquid Crystal",
     "url": "shaders/liquid_crystal_birefringence.wgsl",
-    "description": "Twisted-nematic cell between crossed polarizers. The analyzer now obeys Malus's law and rotates toward a held pointer, producing the dark extinction brushes real liquid-crystal microscopy shows — previously no analyzer existed at all, so the effect's most recognisable feature could not appear. Transmitted light relaxes through dataTextureC with an asymmetric Frederiks time constant. Scene depth is preserved (it was previously overwritten with polarization alpha).",
+    "description": "Twisted-nematic cell between crossed polarizers with Malus's-law analyzer extinction brushes, extraordinary-ray birefringent double-refraction walk-off, conoscopic Maltese-cross isogyres and melatope rings around the defect core, and asymmetric Frederiks relaxation lag in dataTextureC.",
     "tags": [
       "interactive",
       "cursor",
@@ -31126,7 +31224,7 @@
     "id": "volumetric-cloud-nebula",
     "name": "Volumetric Cloud Nebula",
     "url": "shaders/volumetric-cloud-nebula.wgsl",
-    "description": "Raymarched volumetric clouds with nebula coloring. Warp-flight orbital camera, fast cloud advection, treble ionization flashes, advected colour trails, a periodic central flash whose light echo sweeps outward through the gas as a white-blue shell, dark absorbing cores inside bright envelopes, and background stars that streak along the orbit. Bass/mids/treble drive orbit speed, flash brightness, height and sparkle. Extinction slider controls optical depth per march step.",
+    "description": "Raymarched volumetric clouds with nebula coloring. Warp-flight orbital camera, fast cloud advection, treble ionization flashes, advected colour trails, a periodic central flash whose light echo sweeps outward through the gas as a white-blue shell, dark absorbing cores inside bright envelopes, and background stars that streak along the orbit. Bass/mids/treble drive orbit speed, flash brightness, height and sparkle. Extinction slider controls optical depth per march step. Medium-density gas takes a silver lining, and dense knots shed virga.",
     "tags": [
       "generative",
       "nebula",

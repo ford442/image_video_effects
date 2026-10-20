@@ -3,30 +3,12 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, raymarched, temporal-feedback, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: storm lightning double-strobe; spectral RGB dispersion in drops; fall-aligned streak history
+//  Upgraded: 2026-10-17
+//  Ideas: storm lightning double-strobe; spectral RGB dispersion in drops; fall-aligned streak history; Villermaux-Bossa aerodynamic basal flattening & capillary ripples; Descartes secondary internal-reflection rainbow glint
 //  A packing: raw HDR rain RGB + coverage alpha (C read raw via exact textureLoad; ACES on display only)
 // ═══════════════════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Intensity, y=Speed, z=Scale, w=MouseInfluence
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Intensity, y=Speed, z=Scale, w=MouseInfluence
 
 // --- Color Science: OkLab ---
 fn srgb_to_linear(c: vec3<f32>) -> vec3<f32> {
@@ -146,7 +128,10 @@ fn map(pos_in: vec3<f32>) -> vec2<f32> {
     let h = hash33(cell);
     q.y += (h.y - 0.5) * cellSpacing;
     let stretch = 0.8 + dropSpeed + bass * 0.9;
-    let d1 = sdCapsule(q, vec3<f32>(0.0, stretch, 0.0), vec3<f32>(0.0, -stretch, 0.0), 0.2 + h.x * 0.3);
+    // Idea 4: Villermaux-Bossa aerodynamic basal flattening & capillary surface ripples
+    let basalBulge = smoothstep(0.2, -stretch, q.y) * 0.065;
+    let capRipple = sin(q.y * 18.0 - u.config.x * 12.0 + h.z * 6.28) * 0.014;
+    let d1 = sdCapsule(q, vec3<f32>(0.0, stretch, 0.0), vec3<f32>(0.0, -stretch, 0.0), 0.2 + h.x * 0.3 + basalBulge + capRipple);
     var d2 = 1e10;
     for(var i=-1; i<=1; i++) {
         for(var j=-1; j<=1; j++) {
@@ -225,6 +210,15 @@ fn render(ro: vec3<f32>, rd: vec3<f32>) -> vec4<f32> {
         col += rimColor * fresnel * 0.5;
         // Idea 1: lightning back-lights drop rims (top-facing normals catch more)
         col += flashCol * flash * (fresnel * 1.4 + clamp(n.y, 0.0, 1.0) * 0.25);
+        // Idea 4 (optical): basal meniscus TIR caustic arc concentrated along the flattened drop belly
+        let basalBelly = smoothstep(0.15, 0.75, -n.y) * (0.5 + 0.5 * cos(p.y * 24.0 - u.config.x * 10.0));
+        col += vec3<f32>(0.75, 0.92, 1.2) * basalBelly * (0.28 + bass * 0.35 + stormIntensity * 0.3);
+        // Idea 5: Descartes secondary internal-reflection rainbow glint near minimum deviation
+        let cosInc = clamp(dot(-rd, n), 0.0, 1.0);
+        let descartesWindow = exp(-pow((cosInc - 0.42) * 14.0, 2.0)) * smoothstep(-0.1, 0.55, n.y);
+        let bowHue = (cosInc - 0.34) * 6.0 + m * 0.5;
+        let descartesBow = cosinePalette(bowHue, vec3<f32>(0.55), vec3<f32>(0.55), vec3<f32>(1.0, 1.0, 1.0), vec3<f32>(0.0, 0.33, 0.67));
+        col += descartesBow * descartesWindow * (0.55 + stormIntensity * 0.65 + treble * 0.4);
         // Caustics approximation on surface
         let caustics = sin(p.x * (18.0 + treble * 8.0) + u.config.x * 2.0) * cos(p.z * 20.0 + u.config.x * 1.5) * 0.5 + 0.5;
         col += refCol * caustics * (0.12 + treble * 0.22) * fresnel;

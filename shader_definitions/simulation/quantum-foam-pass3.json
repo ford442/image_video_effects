@@ -2,11 +2,12 @@
   "id": "quantum-foam-pass3",
   "name": "Quantum Foam (Pass 3: Compositing)",
   "url": "shaders/quantum-foam-pass3.wgsl",
-  "description": "Volumetric rendering and final compositing with glow and tone mapping. Third pass of 3-pass system.",
+  "description": "Volumetric rendering and final compositing with glow and tone mapping. Third pass of 3-pass system. Glow smears along the emission gradient, and a Beer veil darkens dense foam.",
   "features": [
     "multi-pass-3",
     "compute-shader",
-    "post-processing"
+    "post-processing",
+    "upgraded-rgba"
   ],
   "multipass": {
     "pass": 3,

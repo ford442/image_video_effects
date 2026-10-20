@@ -3,30 +3,12 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: Rosensweig peak ridges on angular×radial crests; photon-ring oil sheen outside the horizon
+//  Upgraded: 2026-10-18
+//  Ideas: Rosensweig peak ridges on angular×radial crests; photon-ring oil sheen outside the horizon; frame-dragging lean; ISCO hot ring
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Singularity Mass, .y = Fluid Viscosity, .z = Spike Density, .w = Iridescence
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Singularity Mass, .y = Fluid Viscosity, .z = Spike Density, .w = Iridescence
 
 // --- CORE ALGORITHM ---
 
@@ -69,7 +51,9 @@ fn sdf(p: vec3<f32>, singularityMass: f32, fluidViscosity: f32, spikeDensity: f3
     // discarding it. Two counter-moving angular fronts rake the fluid surface.
     var distortedP = p;
     let dist = length(p);
-    let angle = time * (0.8 + fluidViscosity * 2.4) + 1.0 / (dist + 0.1);
+    // Idea: frame-dragging lean — inner spikes wind tighter; viscosity resists.
+    let frameDrag = singularityMass * 0.55 / pow(dist + 0.35, 3.0) * (1.15 - clamp(fluidViscosity, 0.0, 1.0));
+    let angle = time * (0.8 + fluidViscosity * 2.4) + 1.0 / (dist + 0.1) + frameDrag;
     let r2 = rot(angle);
     distortedP = vec3<f32>(r2 * distortedP.xy, distortedP.z);
     let angularFront = sin(atan2(distortedP.y, distortedP.x) * (5.0 + spikeDensity * 2.0) - time * 8.0);
@@ -220,6 +204,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                  0.5 + 0.5 * sin(sheenHue + 4.0)
              );
              color += sheenCol * sheen * iridescence * 0.7;
+             // Idea: ISCO hot ring — a thin amber orbit outside the photon ring.
+             let iscoR = horizonR * 2.35;
+             let iscoBand = abs(distToCenter - iscoR);
+             let isco = exp(-iscoBand * iscoBand * 2200.0);
+             color += vec3<f32>(1.0, 0.62, 0.28) * isco * (0.4 + bass * 0.45);
         }
     }
 

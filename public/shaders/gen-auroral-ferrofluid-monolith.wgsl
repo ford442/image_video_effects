@@ -4,8 +4,8 @@
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
 //  Created: 2026-05-23
-//  Upgraded: 2026-09-27
-//  Ideas: aurora sheath hugging the spike SDF; co-wound field aurora pinched toward the mouse pole; aurora-tinted spike-tip corona; cusp-knot aurora whorls; substorm breakup arc curtains
+//  Upgraded: 2026-10-17
+//  Ideas: aurora sheath; co-wound field aurora; spike-tip corona; cusp-knot whorls; substorm breakup curtains; stable red arc at one magnetic latitude; black-aurora emission lanes
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -276,13 +276,19 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let den = mapAurora(p);
 
         if(den > 0.01) {
+            // Idea: black-aurora lanes. Narrow emission gaps cut through the curtains.
+            let lane = pow(0.5 + 0.5 * sin(atan2(p.z, p.x) * 5.0 + p.y * 0.4), 18.0);
+            let laneCut = 1.0 - lane * 0.72;
             // Color gradient based on height and density
-            aurCol += auroraTint(p) * den * stepSize * 2.0;
+            aurCol += auroraTint(p) * den * stepSize * 2.0 * laneCut;
             // Idea 5: substorm breakup arc curtains (rapidly brightening bands).
             let breakup = pow(0.5 + 0.5 * sin(p.y * 7.0 - u.config.x * (6.0 + bass * 5.0)), 7.0);
-            aurCol += vec3<f32>(0.95, 0.45, 1.0) * breakup * den * stepSize * 0.35;
-            aurDepth += den * stepSize * 2.0;
+            aurCol += vec3<f32>(0.95, 0.45, 1.0) * breakup * den * stepSize * 0.35 * laneCut;
+            aurDepth += den * stepSize * 2.0 * laneCut;
         }
+        // Idea: stable auroral red arc. One monochromatic band at a fixed latitude.
+        let sar = exp(-abs(abs(p.y) - 2.35) * 7.0) * exp(-max(length(p.xz) - 0.4, 0.0) * 0.8);
+        aurCol += vec3<f32>(0.85, 0.12, 0.08) * sar * stepSize * 1.4 * u.zoom_params.y;
 
         tVol += stepSize;
     }

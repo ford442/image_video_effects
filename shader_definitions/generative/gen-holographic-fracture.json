@@ -3,7 +3,7 @@
   "name": "Holographic Fracture",
   "category": "generative",
   "url": "shaders/gen-holographic-fracture.wgsl",
-  "description": "Iridescent cracked planes with SDF fracture lines and thin-film holographic shards. Audio drives crack glow, and mouse interaction spawns new radial cracks.",
+  "description": "Iridescent cracked planes with SDF fracture lines and thin-film holographic shards. Audio drives crack glow, mouse interaction spawns new radial cracks, and Wallner stress-wave hackle arcs with photoelastic isochromatic fringes ripple across stressed shards.",
   "features": [
     "generative",
     "sdf",

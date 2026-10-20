@@ -1,5 +1,8 @@
 // ═══ CHROMATOGRAPHIC FLUID — FORCE / INJECT ════════════════════════════════
 //  Shared velocity (wind + mouse) + RGB dyes with distinct viscosity.
+//  Upgraded: 2026-10-17
+//  Ideas: differential migration in advect (red lags, blue leads); solvent-front band in render
+//  A packing: dye.rgb + temperature at every graph node
 //  A/C packing: dye.rgb + temperature. A is authoritative at every graph node.
 //  zoom_params: .x viscosity split, .y wind, .z temperature, .w dye inject
 

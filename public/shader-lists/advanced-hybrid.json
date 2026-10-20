@@ -265,7 +265,7 @@
     "id": "anamorphic-flare-iridescence",
     "name": "Anamorphic Flare Iridescence",
     "url": "shaders/anamorphic-flare-iridescence.wgsl",
-    "description": "Cinematic anamorphic lens flare combined with physical thin-film interference. Flare streaks, hexagonal ghosts, starburst rays, and halo rings carry angle-dependent iridescent soap-bubble reflections modulated by audio dynamics.",
+    "description": "Cinematic 2x anamorphic lens flare with physical thin-film interference, cylindrical oval cat's-eye squeeze bokeh ghosts, quarter-wave MgF2/TiO2 AR coating tints, horizontal Fraunhofer diffraction micro-combs, and CMOS sensor microlens cross-grid glints.",
     "tags": [
       "lens-flare",
       "thin-film-interference",
@@ -284,7 +284,8 @@
       "audio-reactive",
       "exact-feedback",
       "temporal-state",
-      "ACES-tonemapped"
+      "ACES-tonemapped",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2648,7 +2649,7 @@
     "id": "crystal-illuminator-iridescence",
     "name": "Crystal Illuminator Iridescence",
     "url": "shaders/crystal-illuminator-iridescence.wgsl",
-    "description": "Faceted glass and gemstone crystal with thin-film rainbow iridescence, Voronoi cell dynamics, and mouse-illuminated caustics.",
+    "description": "Faceted glass and gemstone crystal with thin-film rainbow iridescence, uniaxial birefringent double refraction, rhombohedral cleavage growth steps, sub-facet inter-grain boundary reflections, and fluid-inclusion sparkles.",
     "tags": [
       "voronoi-facets",
       "thin-film-interference",
@@ -4110,7 +4111,7 @@
     "id": "dynamic-lens-flares-prismatic",
     "name": "Dynamic Lens Flares Prismatic",
     "url": "shaders/dynamic-lens-flares-prismatic.wgsl",
-    "description": "Cinematic optical lens flares with physical prismatic dispersion. Ghost elements refract through virtual glass lens surfaces using Cauchy's equation, creating distinct chromatic splitting along the optical axis with starburst diffraction and ring halos.",
+    "description": "Cinematic optical lens flares with physical Cauchy prismatic dispersion, 7-blade heptagonal iris diaphragm ghosts with Fresnel edge-diffraction ringing and Petzval coma stretch, and a wavelength-scaled chromatic ciliary corona.",
     "tags": [
       "lens-flares",
       "prismatic-dispersion",
@@ -4128,7 +4129,8 @@
       "audio-reactive",
       "exact-feedback",
       "temporal-state",
-      "ACES-tonemapped"
+      "ACES-tonemapped",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -5064,7 +5066,7 @@
     "id": "frosted-glass-lens-iridescence",
     "name": "Frosted Glass Lens Iridescence",
     "url": "shaders/frosted-glass-lens-iridescence.wgsl",
-    "description": "Physical frosted glass transmission with thin-film optical iridescence on the glass surface. Multi-tap microfacet scattering and Beer-Lambert absorption blend with soap-bubble Fresnel interference and an interactive chromatic magnifying lens.",
+    "description": "Physical frosted glass transmission with 6-fold dendritic ice-fern crystals, 6-tap Poisson microfacet scattering, condensation droplet beads, pointer-drag moisture wipe with plowed meniscus bead rim, plano-convex Newton's rings, and lens bevel Cauchy dispersion.",
     "tags": [
       "frosted-glass",
       "thin-film-interference",
@@ -5919,7 +5921,7 @@
     "id": "glass-refraction-prismatic",
     "name": "Glass Refraction Prismatic",
     "url": "shaders/glass-refraction-prismatic.wgsl",
-    "description": "Raymarched optical glass prism with 4-band Cauchy spectral dispersion. Physical Snell refraction rays split wavelengths internally with Fresnel dielectric reflections and Beer-Lambert spectral absorption.",
+    "description": "Raymarched optical glass prism with 4-band Cauchy spectral dispersion, back-face exit refraction, critical-angle total-internal-reflection prismatic fire, dispersion-focused caustic convergence, and Brewster-angle polarized highlights.",
     "tags": [
       "glass",
       "refraction",
@@ -5939,7 +5941,8 @@
       "audio-reactive",
       "exact-feedback",
       "temporal-state",
-      "ACES-tonemapped"
+      "ACES-tonemapped",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -5990,7 +5993,7 @@
     "id": "glass-shatter-morph",
     "name": "Glass Shatter Morph",
     "url": "shaders/glass-shatter-morph.wgsl",
-    "description": "Interactive shattered glass where Voronoi shards are sculpted by morphological erosion/dilation on edges. Combines physical glass transmission with mathematical morphology for cracked-edge detail.",
+    "description": "Interactive shattered glass where polygonal F2-F1 Voronoi shard bevels, conchoidal Wallner hackle ripples, and Snell vector refraction are sculpted by morphological top-hat crack frosting and anti-halo interior bounds.",
     "tags": [
       "glass",
       "shatter",
@@ -6499,7 +6502,7 @@
     "id": "holographic-interferometry-bilateral",
     "name": "Holographic Interferometry Bilateral",
     "url": "shaders/holographic-interferometry-bilateral.wgsl",
-    "description": "Simulated optical hologram with interference fringes and edge-preserving bilateral filtering. Laser speckle noise is smoothly filtered in uniform zones while sharp interference fringe edges remain crisp.",
+    "description": "Simulated optical hologram with interference fringes, double-exposure strain moire bullseyes, phase-singularity fork dislocations, Lippmann-Bragg volume-grating selectivity, and edge-preserving bilateral speckle filtering.",
     "tags": [
       "hologram",
       "interference",
@@ -6519,7 +6522,8 @@
       "mouse-driven",
       "exact-feedback",
       "temporal-state",
-      "ACES-tonemapped"
+      "ACES-tonemapped",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -6827,7 +6831,7 @@
     "id": "hyper-tensor-fluid-coupled",
     "name": "Hyper Tensor Fluid + Mouse Coupling",
     "url": "shaders/hyper-tensor-fluid-coupled.wgsl",
-    "description": "Tensor-field fluid dynamics with viscous mouse stirring. Mouse injects velocity and vorticity; click ripples spawn radial fluid bursts.",
+    "description": "Tensor-field fluid dynamics with viscous mouse stirring. Density piles up on image contours and the jet swells as it leaves an edge. Mouse injects velocity and vorticity; click ripples spawn radial fluid bursts.",
     "features": [
       "advanced-hybrid",
       "tensor-field",
@@ -6837,7 +6841,8 @@
       "interactive",
       "randomization-safe",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -8433,7 +8438,7 @@
     "id": "photonic-caustics-iridescence",
     "name": "Photonic Caustics Iridescence",
     "url": "shaders/photonic-caustics-iridescence.wgsl",
-    "description": "Backward photon-traced caustics combined with thin-film optical iridescence. High-energy caustic focal concentrations illuminate an iridescent surface layer with chromatic dispersion, Fresnel reflections, and exact temporal feedback.",
+    "description": "Backward photon-traced caustics combined with thin-film optical iridescence, catastrophe-optics fold and Pearcey cusp Airy supernumerary fringes, and subsurface depth-bounce secondary caustic aureoles.",
     "tags": [
       "caustics",
       "iridescence",
@@ -8455,7 +8460,8 @@
       "audio-reactive",
       "exact-feedback",
       "temporal-state",
-      "ACES-tonemapped"
+      "ACES-tonemapped",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -10006,7 +10012,7 @@
     "id": "wave-equation-rgba-fluid",
     "name": "Wave Equation RGBA Fluid",
     "url": "shaders/wave-equation-rgba-fluid.wgsl",
-    "description": "Coupled wave equation and incompressible fluid simulation packed into RGBA32FLOAT. Wave height and velocity drive fluid motion while fluid pressure dampens waves. Dye advection visualizes the combined flow field with rainbow phase coloring.",
+    "description": "Coupled wave equation and dye packed into RGBA32FLOAT. Waves break downhill, dye stretches and Stokes-drifts with the amplitude, and capillary ripples run ahead of the crest.",
     "tags": [
       "wave",
       "fluid",

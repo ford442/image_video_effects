@@ -3,31 +3,13 @@
 //  Category: advanced-hybrid
 //  Features: audio-reactive, mouse-driven, click-reactive, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-09-06
-//  Ideas: microscopic condensation droplet beads; pointer-drag moisture wipe; lens bevel Cauchy prism dispersion
+//  Upgraded: 2026-10-18
+//  Ideas: microscopic condensation droplet beads; pointer-drag moisture wipe; lens bevel Cauchy prism dispersion; anisotropic dendritic ice-fern crystal needles & 6-tap golden-angle Poisson microfacet scattering; wiped-rim plowed condensation meniscus ridge & Newton's-ring air-gap interference inside the lens
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, zw=Resolution
-    zoom_config: vec4<f32>,  // x=Time, yz=MouseUV, w=MouseDown
-    zoom_params: vec4<f32>,  // x=FrostAmount, y=LensRadius, z=EdgeSoftness, w=FilmIOR
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=FrostAmount, y=LensRadius, z=EdgeSoftness, w=FilmIOR
 
 const TAU: f32 = 6.28318530718;
 
@@ -166,26 +148,50 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dropMask = smoothstep(dropRadius, dropRadius * 0.6, dropDist) * step(0.68, dropSeed) * frostAmt;
     let dropRefract = dropFract * dropMask * 0.018;
 
-    // Multi-tap microfacet frost scattering
+    // ─── Native Idea 4: Anisotropic 6-fold Dendritic Ice-Fern Crystal Needles ───
+    let fernUV = (uv - 0.5) * aspectVec * 28.0;
+    let fernWarp = sin(fernUV.yx * 2.4 + vec2<f32>(1.7, -2.3)) * 0.65;
+    let qFern = fernUV + fernWarp;
+    let hAxis1 = sin(qFern.x * 3.2 + sin(qFern.y * 6.4) * 0.8);
+    let hAxis2 = sin((qFern.x * 0.5 + qFern.y * 0.866025) * 3.2 + sin((qFern.x * 0.866025 - qFern.y * 0.5) * 6.4) * 0.8);
+    let hAxis3 = sin((-qFern.x * 0.5 + qFern.y * 0.866025) * 3.2 + sin((qFern.x * 0.866025 + qFern.y * 0.5) * 6.4) * 0.8);
+    let iceFernCrystal = smoothstep(0.45, 0.96, (abs(hAxis1) + abs(hAxis2) + abs(hAxis3)) / 3.0) * frostAmt;
+    let frostNormal = vec2<f32>(hAxis2 - hAxis3, hAxis1 - 0.5 * (hAxis2 + hAxis3)) * iceFernCrystal * 0.014;
+
+    // ─── Native Idea 5: Wiped-Rim Plowed Condensation Meniscus Ridge ───
+    let wipeRimCenter = lensRadius * 0.84;
+    let wipeRimWidth = max(edgeSoftness * 0.45, 0.015);
+    let wipeMeniscusBead = exp(-pow((dist - wipeRimCenter) / wipeRimWidth, 2.0)) * rawFrost * select(0.45, 1.0, isMouseDown);
+    let meniscusRefract = normalize(distVec + vec2<f32>(0.0001)) * (dist - wipeRimCenter) * wipeMeniscusBead * 0.35;
+
+    // Multi-tap golden-angle Poisson microfacet frost scattering
     let noiseVal = hash12(uv * 180.0 + vec2<f32>(time * 0.05, -time * 0.03));
     let noiseAngle = hash12(uv * 90.0 - time * 0.02) * TAU;
-    let scatterRadius = (frostAmt * 0.025 * (1.0 - lensMask * 0.7) + rippleDistortion * 0.01) * (1.0 + mids * 0.3);
+    let scatterRadius = (frostAmt * 0.022 * (1.0 - lensMask * 0.7) + abs(rippleDistortion) * 0.008) * (1.0 + mids * 0.3);
     let frostOffset = vec2<f32>(cos(noiseAngle), sin(noiseAngle)) * noiseVal * scatterRadius;
 
     let caStrength = (0.006 * frostAmt + 0.012 * lensMask + treble * 0.004) * smoothstep(0.0, lensRadius, dist);
     let caDir = normalize(distVec + vec2<f32>(0.0001));
 
-    let baseUV = uv + lensOffset + frostOffset + dropRefract;
-    let uvR = clamp(baseUV + caDir * caStrength, vec2<f32>(0.0), vec2<f32>(1.0));
-    let uvG = clamp(baseUV, vec2<f32>(0.0), vec2<f32>(1.0));
-    let uvB = clamp(baseUV - caDir * caStrength * 0.8, vec2<f32>(0.0), vec2<f32>(1.0));
+    let baseUV = uv + lensOffset + frostOffset + dropRefract + frostNormal + meniscusRefract;
+    var poissonScatter = vec3<f32>(0.0);
+    for (var tap: i32 = 0; tap < 6; tap = tap + 1) {
+        let ft = f32(tap);
+        let tapAng = noiseAngle + ft * 2.3999632;
+        let tapRad = sqrt((ft + 0.5) / 6.0) * scatterRadius;
+        let tapOffset = vec2<f32>(cos(tapAng), sin(tapAng)) * tapRad;
+        let tapUV = baseUV + tapOffset;
+        let uvR = clamp(tapUV + caDir * caStrength, vec2<f32>(0.0), vec2<f32>(1.0));
+        let uvG = clamp(tapUV, vec2<f32>(0.0), vec2<f32>(1.0));
+        let uvB = clamp(tapUV - caDir * caStrength * 0.8, vec2<f32>(0.0), vec2<f32>(1.0));
+        let colR = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
+        let colG = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
+        let colB = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
+        poissonScatter = poissonScatter + vec3<f32>(colR, colG, colB);
+    }
+    var scatteredColor = poissonScatter / 6.0;
 
-    let colR = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
-    let colG = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
-    let colB = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
-    var scatteredColor = vec3<f32>(colR, colG, colB);
-
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uvG, 0.0).r;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(baseUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
 
     // Beer-Lambert glass absorption
     let glassThickness = 0.04 + frostAmt * 0.12 * (1.0 + noiseVal) + depth * 0.08;
@@ -193,12 +199,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let absorption = exp(-(vec3<f32>(1.0) - glassTint) * glassThickness * 3.5);
     let transmission = (absorption.r + absorption.g + absorption.b) * 0.3333;
 
-    // Thin-film iridescence coating on glass surface
+    // Thin-film iridescence coating on glass surface + plano-convex Newton's-ring air-gap interference inside lens
     let toCenter = uv - vec2<f32>(0.5);
     let viewDist = length(toCenter);
     let cosTheta = sqrt(max(1.0 - viewDist * viewDist * 0.5, 0.02));
 
-    let filmThicknessBase = 220.0 + frostAmt * 450.0 + lensMask * 200.0;
+    let newtonRingPhase = (dist * dist) / max(lensRadius * lensRadius, 0.01) * 380.0 * lensMask;
+    let filmThicknessBase = 220.0 + frostAmt * 450.0 + lensMask * 200.0 + newtonRingPhase;
     let filmNoise = hash12(uv * 14.0 + time * 0.08) * 0.6 + hash12(uv * 28.0 - time * 0.12) * 0.4;
     let thickness = filmThicknessBase * (0.65 + depth * 0.5 + filmNoise * 0.35 + holdEffect * 0.3 + bass * 0.2);
 
@@ -207,9 +214,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let fresnel = R0 + (1.0 - R0) * pow(1.0 - cosTheta, 4.0);
     let edgeIridescence = fresnel * (0.4 + frostAmt * 0.5 + lensMask * 0.4);
 
-    // Composite glass layers
+    // Composite glass layers + ice-fern crystal specular & wiped-rim meniscus highlight
     var finalColor = scatteredColor * absorption * glassTint;
-    finalColor = mix(finalColor, iridescent, edgeIridescence * 0.65);
+    finalColor = mix(finalColor, iridescent, (edgeIridescence + lensMask * 0.16) * 0.65);
+    finalColor = finalColor + mix(vec3<f32>(0.82, 0.94, 1.0), iridescent, 0.45) * (iceFernCrystal * 0.24 + wipeMeniscusBead * 0.38);
 
     // Lens bevel specular highlight & Native Idea 3: Bevel Prism Dispersion
     let bevelMask = smoothstep(lensRadius - 0.02, lensRadius, dist) * (1.0 - smoothstep(lensRadius, lensRadius + edgeSoftness, dist));
@@ -229,7 +237,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     finalColor = mix(finalColor, prev, 0.1 + mids * 0.08);
 
     let tonemapped = acesToneMap(finalColor * (1.0 + treble * 0.1));
-    let alpha = clamp(transmission * 0.6 + edgeIridescence * 0.3 + bevelMask * 0.3 + holdEffect * 0.15 + dropMask * 0.2, 0.2, 0.98);
+    let alpha = clamp(transmission * 0.6 + edgeIridescence * 0.3 + bevelMask * 0.3 + holdEffect * 0.15 + dropMask * 0.2 + wipeMeniscusBead * 0.15, 0.2, 0.98);
     let outputRGBA = vec4<f32>(tonemapped, alpha);
 
     textureStore(writeTexture, pixel, outputRGBA);
