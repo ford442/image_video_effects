@@ -331,13 +331,15 @@
   },
   "gen-astral-silk-chrono-weaver-arachnid": {
     "thumbnail_url": "thumbnails/gen-astral-silk-chrono-weaver-arachnid.png",
-    "generated_at": "2026-06-14T06:41:33.206Z",
+    "generated_at": "2026-10-20T03:54:53.414Z",
     "params_snapshot": [
       0.5,
       0.5,
-      0.5,
+      1,
       0.5
-    ]
+    ],
+    "source_hash": "5ba8663e5dfc0998",
+    "capture_host": "swiftshader"
   },
   "gen-astro-kinetic-chrono-orrery": {
     "thumbnail_url": "thumbnails/gen-astro-kinetic-chrono-orrery.png",
@@ -691,13 +693,15 @@
   },
   "gen-chrono-voronoi-mycelium": {
     "thumbnail_url": "thumbnails/gen-chrono-voronoi-mycelium.png",
-    "generated_at": "2026-06-14T06:41:47.279Z",
+    "generated_at": "2026-10-20T03:56:22.959Z",
     "params_snapshot": [
       0.5,
       0.5,
       0.6,
       0.5
-    ]
+    ],
+    "source_hash": "93ea93a2a4a1ad0c",
+    "capture_host": "swiftshader"
   },
   "gen-chronodynamic-aether-weaver-automata": {
     "thumbnail_url": "thumbnails/gen-chronodynamic-aether-weaver-automata.png",
@@ -1937,14 +1941,14 @@
   },
   "gen-physarum-sacred-geometry": {
     "thumbnail_url": "thumbnails/gen-physarum-sacred-geometry.png",
-    "generated_at": "2026-10-05T16:15:29.725Z",
+    "generated_at": "2026-10-20T04:53:50.151Z",
     "params_snapshot": [
       0.5,
       0.5,
       0.5,
       0.5
     ],
-    "source_hash": "002680e44e5bc3b8",
+    "source_hash": "0211a856ae1e45a7",
     "capture_host": "swiftshader"
   },
   "gen-plasma-mandala": {
@@ -2399,13 +2403,15 @@
   },
   "gen-stellar-plasma-ouroboros": {
     "thumbnail_url": "thumbnails/gen-stellar-plasma-ouroboros.png",
-    "generated_at": "2026-06-14T06:42:48.781Z",
+    "generated_at": "2026-10-20T03:59:00.125Z",
     "params_snapshot": [
       10,
       2,
       0.5,
       1
-    ]
+    ],
+    "source_hash": "ed0fa3acc149c3ee",
+    "capture_host": "swiftshader"
   },
   "gen-stellar-web-loom": {
     "thumbnail_url": "thumbnails/gen-stellar-web-loom.png",
@@ -2533,23 +2539,27 @@
   },
   "gen-torus-knot-rainbow": {
     "thumbnail_url": "thumbnails/gen-torus-knot-rainbow.png",
-    "generated_at": "2026-06-14T06:43:12.947Z",
+    "generated_at": "2026-10-20T03:59:46.931Z",
     "params_snapshot": [
       0.3,
       0.25,
       0.33,
       0.5
-    ]
+    ],
+    "source_hash": "e805c4dada07b9fe",
+    "capture_host": "swiftshader"
   },
   "gen-translucent-nebula": {
     "thumbnail_url": "thumbnails/gen-translucent-nebula.png",
-    "generated_at": "2026-06-14T06:43:13.283Z",
+    "generated_at": "2026-10-20T04:00:25.714Z",
     "params_snapshot": [
       0.5,
       0.5,
       0.5,
       0.5
-    ]
+    ],
+    "source_hash": "ec3b4f34ad7799a1",
+    "capture_host": "swiftshader"
   },
   "gen-turing-morphogenesis": {
     "thumbnail_url": "thumbnails/gen-turing-morphogenesis.png",
@@ -2831,13 +2841,15 @@
   },
   "morphogenic-resonance": {
     "thumbnail_url": "thumbnails/morphogenic-resonance.png",
-    "generated_at": "2026-06-14T06:43:28.263Z",
+    "generated_at": "2026-10-20T04:00:45.838Z",
     "params_snapshot": [
       0.4,
       0.3,
       0.5,
       0.2
-    ]
+    ],
+    "source_hash": "f696307124199c62",
+    "capture_host": "swiftshader"
   },
   "multi-scale-evolutionary-cellular-gardens": {
     "thumbnail_url": "thumbnails/multi-scale-evolutionary-cellular-gardens.png",
@@ -3949,14 +3961,14 @@
   },
   "gen-celestial-clockwork-plasma-loom": {
     "thumbnail_url": "thumbnails/gen-celestial-clockwork-plasma-loom.png",
-    "generated_at": "2026-10-05T11:09:37.296Z",
+    "generated_at": "2026-10-20T03:55:51.837Z",
     "params_snapshot": [
       0.5,
       0.5,
       0.5,
       0.5
     ],
-    "source_hash": "51859f320986e47e",
+    "source_hash": "afd89e4a9124006c",
     "capture_host": "swiftshader"
   },
   "gen-bioelectric-pulse": {
