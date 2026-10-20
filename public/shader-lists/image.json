@@ -2,6 +2,7 @@
   {
     "id": "aerogel-smoke",
     "name": "Aerogel Smoke",
+    "category": "image",
     "description": "Simulates the ethereal, frozen-smoke appearance of aerogel with volumetric lighting and Rayleigh scattering.",
     "url": "shaders/aerogel-smoke.wgsl",
     "features": [
@@ -108,7 +109,8 @@
   {
     "id": "analog-film-degrade",
     "name": "Analog Film Degrade",
-    "url": "/shaders/analog-film-degrade.wgsl",
+    "category": "image",
+    "url": "shaders/analog-film-degrade.wgsl",
     "description": "Vintage film degradation with grain, dust, scratches, color fading, and vignette.",
     "tags": [
       "film",
@@ -118,7 +120,8 @@
       "scratches",
       "sepia",
       "vignette",
-      "retro"
+      "retro",
+      "glitch"
     ],
     "features": [
       "upgraded-rgba",
@@ -419,9 +422,13 @@
       "mouse-driven",
       "audio-reactive",
       "audio-driven",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "rose-curve",
+      "epicycloid",
+      "iridescent",
+      "chromatic-dispersion"
     ],
-    "description": "Concentric rings that rotate in alternating directions. Mouse controls the center. Audio-reactive rotation with ring gap opacity.",
+    "description": "Rose-curve and epicycloid rings that rotate in alternating directions with FBM edge turbulence, iridescent thin-film bloom, and spring-physics mouse lag. Audio-reactive morphing, chromatic dispersion, and ripple pulse rings.",
     "params": [
       {
         "id": "param1",
@@ -439,14 +446,14 @@
       },
       {
         "id": "param3",
-        "name": "Smoothness",
+        "name": "Edge Smoothness",
         "default": 0.1,
         "min": 0,
         "max": 1
       },
       {
         "id": "param4",
-        "name": "Ring Gap Opacity",
+        "name": "Gap Opacity",
         "default": 0,
         "min": 0,
         "max": 1
@@ -457,7 +464,10 @@
       "image-processing",
       "audio",
       "music",
-      "reactive"
+      "reactive",
+      "geometric",
+      "kaleidoscope",
+      "hypnotic"
     ]
   },
   {
@@ -1717,8 +1727,9 @@
   {
     "id": "fractal-noise-dissolve",
     "name": "Fractal Noise Dissolve",
+    "category": "image",
     "url": "shaders/fractal-noise-dissolve.wgsl",
-    "description": "Dissolves the image into fractal noise around the mouse.",
+    "description": "Domain-warped FBM dissolve with audio-driven threshold and bass-triggered edge glow. Depth fades dissolution.",
     "params": [
       {
         "id": "scale",
@@ -1750,11 +1761,17 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "domain-warped-fbm",
+      "edge-glow",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "dissolve",
+      "noise",
+      "burn",
+      "audio-reactive"
     ]
   },
   {
@@ -2333,11 +2350,13 @@
   {
     "id": "neon-pulse-stream",
     "url": "shaders/neon-pulse-stream.wgsl",
-    "description": "Video luminance directs a fluid flow of neon trails injected by the mouse.",
+    "description": "Video luminance drives fluid neon trails with 3D tube Fresnel rim lighting and divergence-free curl advection. Treble injects sparkle particles along high-luminance paths.",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven",
+      "depth-aware",
+      "streaming-pulses",
+      "neon-effect",
       "upgraded-rgba"
     ],
     "params": [
@@ -2381,7 +2400,8 @@
       "music",
       "reactive"
     ],
-    "name": "Neon Pulse Stream"
+    "name": "Neon Pulse Stream",
+    "category": "image"
   },
   {
     "id": "optical-illusion-spin",
@@ -2577,7 +2597,7 @@
   {
     "id": "pixel-stretch-interactive",
     "name": "Pixel Stretch",
-    "description": "Stretches pixels from the mouse position to the screen edge, creating a spatial slit-scan effect.",
+    "description": "Spatial slit-scan stretch with per-channel chromatic dispersion. Audio bass elongates stretch length. Depth makes background pixels stretch more than foreground.",
     "url": "shaders/pixel-stretch-interactive.wgsl",
     "params": [
       {
@@ -2616,12 +2636,15 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "chromatic-stretch",
+      "depth-aware",
       "upgraded-rgba"
     ],
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "category": "image"
   },
   {
     "id": "plastic-bricks",
@@ -2669,7 +2692,7 @@
   {
     "id": "polka-wave",
     "name": "Polka Wave",
-    "description": "Halftone effect where dot size responds to image brightness and interactive ripples.",
+    "description": "True CMYK halftone print engine with four dot grids at canonical print angles. Mouse creates expanding ripple that inverts dot polarity. Bass inflates dots; treble adds micro-dot noise.",
     "url": "shaders/polka-wave.wgsl",
     "params": [
       {
@@ -2708,12 +2731,14 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "cmyk-halftone",
       "upgraded-rgba"
     ],
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "category": "image"
   },
   {
     "id": "posterize-neon-edges",
@@ -3080,56 +3105,64 @@
   },
   {
     "id": "ripple-blocks",
-    "name": "Ripple Blocks",
-    "description": "Grid blocks that scale based on a wave pattern from the mouse.",
+    "name": "Ripple Blocks v2.0",
+    "description": "Organic cymatics grid with domain-warped FBM, golden-ratio interference patterns, HDR rim lighting, audio-reactive temperature, and depth-aware parallax. Upgraded via 4-Agent Swarm.",
     "url": "shaders/ripple-blocks.wgsl",
     "params": [
       {
-        "name": "Grid Size",
-        "id": "grid_size",
+        "name": "Grid Scale",
+        "id": "grid_scale",
         "min": 0,
         "max": 1,
         "step": 0.01,
         "default": 0.5
       },
       {
-        "name": "Wave Amp",
-        "id": "wave_amp",
+        "name": "Warp Amount",
+        "id": "warp_amount",
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "default": 0.3
+      },
+      {
+        "name": "Glow Intensity",
+        "id": "glow_intensity",
         "min": 0,
         "max": 1,
         "step": 0.01,
         "default": 0.5
       },
       {
-        "name": "Freq",
-        "id": "freq",
+        "name": "Trail Persistence",
+        "id": "trail_persistence",
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "default": 0.5
-      },
-      {
-        "name": "Speed",
-        "id": "speed",
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "default": 0.5
+        "default": 0.6
       }
     ],
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "depth-aware",
+      "temporal",
+      "domain-warping",
       "upgraded-rgba"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "cymatics",
+      "interference",
+      "HDR",
+      "organic"
     ]
   },
   {
     "id": "slime-drip",
     "name": "Slime Drip",
+    "category": "image",
     "url": "shaders/slime-drip.wgsl",
     "description": "A gooey, dripping slime effect that can be wiped away.",
     "params": [
@@ -3163,11 +3196,15 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "slime",
+      "goo",
+      "organic",
+      "audio-reactive"
     ]
   },
   {

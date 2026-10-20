@@ -1,7 +1,7 @@
 {
   "id": "pixel-stretch-interactive",
   "name": "Pixel Stretch",
-  "description": "Stretches pixels from the mouse position to the screen edge, creating a spatial slit-scan effect.",
+  "description": "Spatial slit-scan stretch with per-channel chromatic dispersion. Audio bass elongates stretch length. Depth makes background pixels stretch more than foreground.",
   "url": "shaders/pixel-stretch-interactive.wgsl",
   "params": [
     {
@@ -40,10 +40,13 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "chromatic-stretch",
+    "depth-aware",
     "upgraded-rgba"
   ],
   "tags": [
     "filter",
     "image-processing"
-  ]
+  ],
+  "category": "image"
 }

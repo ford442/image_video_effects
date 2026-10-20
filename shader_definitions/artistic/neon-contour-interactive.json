@@ -1,12 +1,14 @@
 {
   "id": "neon-contour-interactive",
   "name": "Neon Contour",
+  "category": "artistic",
   "url": "shaders/neon-contour-interactive.wgsl",
   "description": "Interactive edge detection with neon glow responsive to mouse proximity.",
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "upgraded-rgba"
   ],
   "params": [
     {

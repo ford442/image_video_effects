@@ -1,6 +1,7 @@
 {
   "id": "ambient-liquid",
   "name": "Ambient Liquid",
+  "category": "artistic",
   "url": "shaders/ambient-liquid.wgsl",
   "description": "Gentle ambient liquid motion effects.",
   "features": [

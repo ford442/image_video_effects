@@ -6,9 +6,13 @@
     "mouse-driven",
     "audio-reactive",
     "audio-driven",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "rose-curve",
+    "epicycloid",
+    "iridescent",
+    "chromatic-dispersion"
   ],
-  "description": "Concentric rings that rotate in alternating directions. Mouse controls the center. Audio-reactive rotation with ring gap opacity.",
+  "description": "Rose-curve and epicycloid rings that rotate in alternating directions with FBM edge turbulence, iridescent thin-film bloom, and spring-physics mouse lag. Audio-reactive morphing, chromatic dispersion, and ripple pulse rings.",
   "params": [
     {
       "id": "param1",
@@ -26,14 +30,14 @@
     },
     {
       "id": "param3",
-      "name": "Smoothness",
+      "name": "Edge Smoothness",
       "default": 0.1,
       "min": 0,
       "max": 1
     },
     {
       "id": "param4",
-      "name": "Ring Gap Opacity",
+      "name": "Gap Opacity",
       "default": 0,
       "min": 0,
       "max": 1
@@ -44,6 +48,9 @@
     "image-processing",
     "audio",
     "music",
-    "reactive"
+    "reactive",
+    "geometric",
+    "kaleidoscope",
+    "hypnotic"
   ]
 }

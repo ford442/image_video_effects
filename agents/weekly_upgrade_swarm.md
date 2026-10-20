@@ -2,6 +2,8 @@
 
 > **Goal:** Upgrade WGSL shaders to fix undersized generative effects, replace naive RGB-only patterns with RGBA-aware blending, and add meaningful alpha, audio reactivity, and missing params.
 > **Constraint:** Do NOT modify `Renderer.ts`, `types.ts`, or bind groups. Do NOT install new npm packages.
+>
+> **Kimi Process (from 2026-05-31 onward):** All Kimi work now follows the Enhanced v2 Operating Procedure in `agents/KIMI_CLI_SWARM_UPGRADE_PLAN.md` (creative brief + differentiation + triple output contract + post-generation guard + `.notes.kimi.md` handoff). See `agents/5_31_26_kimi.md` for the first pilot execution.
 
 ---
 

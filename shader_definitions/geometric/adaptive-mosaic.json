@@ -1,6 +1,7 @@
 {
   "id": "adaptive-mosaic",
   "name": "Adaptive Mosaic",
+  "category": "geometric",
   "url": "shaders/adaptive-mosaic.wgsl",
   "description": "Depth-adaptive tile mosaic: near objects render as fine tiles, far objects as coarse blocks. SDF bevel on every tile edge, Voronoi crackle overlay at coarse sizes, mouse-focus zone, and audio-reactive tile-size pulse.",
   "features": [

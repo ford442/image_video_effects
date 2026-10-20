@@ -1,8 +1,13 @@
 {
   "id": "magnetic-ring",
   "url": "shaders/magnetic-ring.wgsl",
+  "category": "interactive-mouse",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "magnetic-field",
+    "particle-trails",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -47,8 +52,11 @@
     }
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "ring",
+    "magnetic",
+    "interactive",
+    "audio-reactive"
   ],
-  "name": "Magnetic Ring"
+  "name": "Magnetic Ring",
+  "description": "Multi-ring magnetic field with orbital field lines. Audio bass amplifies field strength; treble adds glow pulses."
 }

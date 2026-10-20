@@ -1,9 +1,12 @@
 {
   "id": "focal-pixelate",
   "name": "Focal Pixelate",
+  "category": "interactive-mouse",
   "url": "shaders/focal-pixelate.wgsl",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "description": "Applies pixelation that varies based on distance from the mouse cursor, creating a focal point effect.",
   "params": [
@@ -38,6 +41,9 @@
   ],
   "tags": [
     "mouse-driven",
-    "interactive"
+    "interactive",
+    "pixelate",
+    "focus",
+    "audio-reactive"
   ]
 }

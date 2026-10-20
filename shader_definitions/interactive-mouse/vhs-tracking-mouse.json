@@ -2,7 +2,7 @@
   "id": "vhs-tracking-mouse",
   "name": "VHS Tracking",
   "url": "shaders/vhs-tracking-mouse.wgsl",
-  "description": "A vertical tracking bar distortion controlled by mouse height with audio-reactive intensity.",
+  "description": "Complete VHS deck degradation simulator: tracking bar, chroma bleed, horizontal hold wobble, scanline dropouts, tape hiss, and tracking-loss white flashes on treble spikes.",
   "params": [
     {
       "id": "barHeight",
@@ -40,6 +40,9 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "vhs-degradation",
+    "chroma-bleed",
+    "scanline-dropouts",
     "upgraded-rgba"
   ],
   "tags": [
@@ -48,5 +51,6 @@
     "vhs",
     "glitch",
     "retro"
-  ]
+  ],
+  "category": "interactive-mouse"
 }

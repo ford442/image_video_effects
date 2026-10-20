@@ -2,42 +2,47 @@
   {
     "id": "black-hole",
     "name": "Gravitational Lensing",
+    "category": "distortion",
     "url": "shaders/black-hole.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "black-hole",
+      "lensing",
+      "accretion",
+      "audio-reactive"
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "gravity",
+        "name": "Gravity",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "radius",
+        "name": "Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "glow",
+        "name": "Disk Glow",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "lensing",
+        "name": "Lensing Width",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -94,10 +99,13 @@
   },
   {
     "id": "chromatic-swirl",
+    "category": "distortion",
     "url": "shaders/chromatic-swirl.wgsl",
     "icon": "cyclone",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -131,9 +139,10 @@
       }
     ],
     "tags": [
-      "warp",
+      "chromatic",
+      "swirl",
       "distort",
-      "transform"
+      "audio-reactive"
     ],
     "name": "Chromatic Swirl"
   },
@@ -497,8 +506,9 @@
   {
     "id": "fluid-grid",
     "name": "Fluid Grid",
+    "category": "distortion",
     "url": "shaders/fluid-grid.wgsl",
-    "description": "Flowing grid distortion with fluid dynamics.",
+    "description": "Flowing grid distortion with divergence-free curl-noise advection. Audio bass drives turbulence and cell push strength.",
     "params": [
       {
         "id": "grid_size",
@@ -530,13 +540,17 @@
       }
     ],
     "features": [
-      "animated",
-      "grid",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "curl-noise",
+      "divergence-free",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "grid",
+      "fluid",
+      "interactive",
+      "audio-reactive"
     ]
   },
   {
@@ -1497,10 +1511,16 @@
   {
     "id": "liquid-warp-interactive",
     "name": "Liquid Warp",
+    "category": "distortion",
     "url": "shaders/liquid-warp-interactive.wgsl",
-    "description": "Fluid-like distortion driven by mouse flow and noise.",
+    "description": "Fluid-like distortion with curl-noise advection and depth-aware viscosity. Mouse click amplifies chromatic aberration.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "curl-noise",
+      "depth-viscosity",
+      "temporal",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -1534,8 +1554,9 @@
     ],
     "tags": [
       "warp",
-      "distort",
-      "transform"
+      "liquid",
+      "chromatic",
+      "audio-reactive"
     ]
   },
   {
@@ -1587,9 +1608,12 @@
   {
     "id": "luma-glass",
     "name": "Luma Glass",
+    "category": "distortion",
     "url": "shaders/luma-glass.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "description": "Dynamic refraction shader where the image luminance creates a glass-like surface, lit by the mouse.",
     "params": [
@@ -1627,16 +1651,20 @@
       }
     ],
     "tags": [
-      "warp",
-      "distort",
-      "transform"
+      "glass",
+      "refraction",
+      "luminance",
+      "audio-reactive"
     ]
   },
   {
     "id": "luminescent-glass-tiles",
+    "category": "distortion",
     "url": "shaders/luminescent-glass-tiles.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -1674,9 +1702,10 @@
     ],
     "description": "Glass tiles that refract based on video brightness and mouse interaction.",
     "tags": [
-      "warp",
+      "glass",
+      "luminescent",
       "distort",
-      "transform"
+      "audio-reactive"
     ],
     "name": "Luminescent Glass"
   },
@@ -2198,6 +2227,7 @@
   {
     "id": "refraction-tunnel",
     "name": "Refraction Tunnel",
+    "category": "distortion",
     "url": "shaders/refraction-tunnel.wgsl",
     "description": "Infinite refractive tunnel effect.",
     "params": [
@@ -2233,11 +2263,15 @@
     "features": [
       "animated",
       "3d",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "tunnel",
+      "refraction",
+      "chromatic",
+      "audio-reactive"
     ]
   },
   {
@@ -2647,36 +2681,37 @@
   {
     "id": "voronoi-faceted-glass",
     "name": "Voronoi Faceted Glass",
+    "category": "distortion",
     "url": "shaders/voronoi-faceted-glass.wgsl",
     "description": "Cellular glass distortion effect.",
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "density",
+        "name": "Facet Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "refraction",
+        "name": "Refraction",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "shimmer",
+        "name": "Shimmer",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "edge_softness",
+        "name": "Edge Softness",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2684,11 +2719,15 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "glass",
+      "faceted",
+      "refraction",
+      "audio-reactive"
     ]
   },
   {

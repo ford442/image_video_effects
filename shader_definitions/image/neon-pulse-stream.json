@@ -1,11 +1,13 @@
 {
   "id": "neon-pulse-stream",
   "url": "shaders/neon-pulse-stream.wgsl",
-  "description": "Video luminance directs a fluid flow of neon trails injected by the mouse.",
+  "description": "Video luminance drives fluid neon trails with 3D tube Fresnel rim lighting and divergence-free curl advection. Treble injects sparkle particles along high-luminance paths.",
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "audio-driven",
+    "depth-aware",
+    "streaming-pulses",
+    "neon-effect",
     "upgraded-rgba"
   ],
   "params": [
@@ -49,5 +51,6 @@
     "music",
     "reactive"
   ],
-  "name": "Neon Pulse Stream"
+  "name": "Neon Pulse Stream",
+  "category": "image"
 }

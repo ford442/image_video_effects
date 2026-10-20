@@ -1,7 +1,7 @@
 {
   "id": "neon-topology",
   "url": "shaders/neon-topology.wgsl",
-  "description": "Renders the image as a glowing 3D topographic map.",
+  "description": "3D topographic neon contour map with audio elevation phantom lines and depth atmospheric haze.",
   "params": [
     {
       "id": "density",
@@ -37,9 +37,14 @@
     }
   ],
   "features": [
+    "advanced-alpha",
+    "topology",
+    "neon",
+    "contours",
     "mouse-driven",
     "audio-reactive",
-    "audio-driven"
+    "depth-haze",
+    "upgraded-rgba"
   ],
   "tags": [
     "vfx",
@@ -49,5 +54,6 @@
     "music",
     "reactive"
   ],
-  "name": "Neon Topology"
+  "name": "Neon Topology",
+  "category": "visual-effects"
 }

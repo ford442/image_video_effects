@@ -1,11 +1,15 @@
 {
   "id": "signal-modulation",
   "name": "Signal Modulation",
+  "category": "visual-effects",
   "url": "shaders/signal-modulation.wgsl",
-  "description": "Simulates AM/FM signal distortion with mouse-controlled frequency and amplitude.",
+  "description": "AM/FM signal distortion with chromatic aberration and 8-band spectral visualization. Depth attenuates signal strength.",
   "features": [
     "mouse-driven",
-    "visual-effect"
+    "audio-reactive",
+    "chromatic-aberration",
+    "spectral-bands",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -42,7 +46,9 @@
     }
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "signal",
+    "modulation",
+    "glow",
+    "audio-reactive"
   ]
 }

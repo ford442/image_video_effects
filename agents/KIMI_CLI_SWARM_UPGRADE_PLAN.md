@@ -1,246 +1,236 @@
-# Kimi-CLI Swarm Upgrade Plan
+# Kimi-CLI Swarm Upgrade Plan — v2 (Enhanced Operating Procedure)
 
-> **Status**: planning (2026-05-17)
-> **Scope**: tailor the existing shader upgrade swarm prompts to `kimi-cli`'s
-> invocation model, response shape, and strengths so the auto-repair /
-> auto-upgrade loop in `scripts/scan-shaders-naga.py` and the
-> `scripts/run-upgrade-swarm.js` orchestrator produce higher-quality WGSL
-> with fewer retries.
-
-## How kimi-cli is invoked today
-
-`scripts/scan-shaders-naga.py` calls:
-
-```python
-subprocess.run(["kimi-cli", "--no-stream"], input=prompt, timeout=120, ...)
-```
-
-- **stdin-only prompt** — no `--system` flag, so role guidance must live in
-  the prompt body.
-- **120 s wall-clock budget** — long chain-of-thought is expensive; concrete
-  bullets beat open-ended reasoning.
-- **`--no-stream`** — stdout is parsed as one blob. We rely on a *single*
-  ```` ```wgsl ```` fence; extra prose or multiple fences break the
-  downstream extractor.
-- **No tool access** — kimi-cli cannot read sibling files, naga, or JSON
-  defs, so anything the agent needs must be inlined.
-
-## Kimi-cli strengths to lean on
-
-1. Strong at pattern-completing **self-contained WGSL files**, especially
-   when given the exact binding header and a target line budget.
-2. Good at **localized repair** when handed the failing line + naga error
-   message — keep the prompt focused on that line range.
-3. Reliable at honoring **explicit output schemas** ("return exactly one
-   fenced block, no commentary") when told up front and again at the end.
-
-## Kimi-cli weaknesses to design around
-
-1. Drifts toward generic "cool noise" output when given vague visual goals
-   → always pin the *theme* of the shader (one sentence) before the task.
-2. Hallucinates bindings (`outputTex`, `iTime`, `mouse`) → re-state the
-   canonical 13-binding header verbatim in every prompt.
-3. Occasionally emits prose *after* the code fence → instruct: "stop after
-   the closing ``` ``` ``` ``` "; the extractor should also trim trailing
-   text.
-4. Can over-pad with comments and blow the line budget → state a hard
-   `<= N lines` cap and tell it to prefer math density over commentary.
+> **Status**: Active — v2.1 (Enhanced Kimi Agent Swarm OP)  
+> **Last Updated**: 2026-05-31  
+> **Owner**: Grok (Swarm Process Architect) + Kimi implementation  
+> **Scope**: Make the Kimi Code CLI the highest-volume, highest-consistency shader implementation engine in the Pixelocity weekly upgrade swarm while minimizing downstream Claude cleanup.
 
 ---
 
-## WGSL graphical tactics & tips for kimi-cli prompts
+## How kimi-cli is invoked today (unchanged constraints)
 
-Drop these snippets/tips into prompt templates so kimi-cli reaches for them
-instead of inventing weaker variants. All assume the canonical 13-binding
-header (sampler, readTexture, writeTexture, Uniforms, depth, etc.) and
-`@workgroup_size(16, 16, 1)`.
+`scripts/scan-shaders-naga.py` and `scripts/run-upgrade-swarm.js` call:
 
-### 1. Hue-preserving HDR clamp (avoid color hue-shift on bright pixels)
-
-```wgsl
-fn hue_preserve_clamp(c: vec3<f32>, max_lum: f32) -> vec3<f32> {
-    let l = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
-    let s = min(1.0, max_lum / max(l, 1e-4));
-    return c * s;
-}
+```bash
+kimi-cli --no-stream   < prompt via stdin
 ```
 
-Use after additive accumulation, before tonemap. Beats `min(c, 1.0)` which
-desaturates highlights to white.
-
-### 2. ACES filmic tonemap (drop-in, no LUT)
-
-```wgsl
-fn aces(x: vec3<f32>) -> vec3<f32> {
-    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
-    return clamp((x*(a*x+b))/(x*(c*x+d)+e), vec3<f32>(0.0), vec3<f32>(1.0));
-}
-```
-
-Apply after `hue_preserve_clamp` for cinematic rolloff. Pair with sRGB
-gamma `pow(c, vec3<f32>(1.0/2.2))` on write if the target view is sRGB.
-
-### 3. Interleaved-gradient blue-noise dither (kills 8-bit banding)
-
-```wgsl
-fn ign(p: vec2<f32>) -> f32 {
-    return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
-}
-// before writing color:
-let dither = (ign(vec2<f32>(gid.xy)) - 0.5) / 255.0;
-let outRGB = aces(hdr) + vec3<f32>(dither);
-```
-
-Cheaper than a blue-noise texture sample and visually identical at 8-bit.
-
-### 4. Anti-aliased SDF / line via `fwidth` (no MSAA needed in compute)
-
-```wgsl
-fn aa_step(edge: f32, x: f32) -> f32 {
-    let w = max(fwidth(x), 1e-4);
-    return smoothstep(edge - w, edge + w, x);
-}
-```
-
-Use everywhere a hard `step()` would otherwise produce shimmering edges,
-especially in kaleidoscope/SDF/grid shaders.
-
-### 5. Smooth-min for SDF unions (round seams between primitives)
-
-```wgsl
-fn smin(a: f32, b: f32, k: f32) -> f32 {
-    let h = clamp(0.5 + 0.5*(b - a)/k, 0.0, 1.0);
-    return mix(b, a, h) - k*h*(1.0 - h);
-}
-```
-
-`k ≈ 0.1–0.3` of the smaller primitive radius is a good default.
-
-### 6. Domain-warped FBM (organic flow, two-octave warp)
-
-```wgsl
-fn fbm(p: vec2<f32>) -> f32 {
-    var a = 0.5; var s = 0.0; var q = p;
-    for (var i = 0; i < 5; i = i + 1) {
-        s = s + a * valueNoise(q);
-        q = q * 2.02; a = a * 0.5;
-    }
-    return s;
-}
-fn warpedFBM(p: vec2<f32>, t: f32) -> f32 {
-    let q = vec2<f32>(fbm(p + vec2<f32>(0.0, t)),
-                      fbm(p + vec2<f32>(5.2, 1.3)));
-    let r = vec2<f32>(fbm(p + 4.0*q + vec2<f32>(1.7, 9.2)),
-                      fbm(p + 4.0*q + vec2<f32>(8.3, 2.8)));
-    return fbm(p + 4.0*r);
-}
-```
-
-Strictly better than single-octave noise for "alive" generative shaders;
-kimi-cli reliably reuses this when the snippet is in scope.
-
-### 7. Polar kaleidoscope fold (matches the platform's kaleidoscope family)
-
-```wgsl
-fn kaleido(uv: vec2<f32>, segs: f32) -> vec2<f32> {
-    let r = length(uv);
-    var a = atan2(uv.y, uv.x);
-    let seg = 6.2831853 / max(segs, 1.0);
-    a = abs(((a % seg) + seg) % seg - seg * 0.5);
-    return vec2<f32>(cos(a), sin(a)) * r;
-}
-```
-
-Cheap, branch-light, and folds into FBM/SDF sampling for instant symmetry.
-
-### 8. Hex bokeh sampling (better than circular for the same tap count)
-
-```wgsl
-const HEX_TAPS = array<vec2<f32>, 7>(
-    vec2<f32>( 0.0,  0.0),
-    vec2<f32>( 1.0,  0.0), vec2<f32>( 0.5,  0.866),
-    vec2<f32>(-0.5,  0.866), vec2<f32>(-1.0,  0.0),
-    vec2<f32>(-0.5, -0.866), vec2<f32>( 0.5, -0.866),
-);
-```
-
-Use for `radial-blur`, DOF, and glow shaders. 7 taps reads like 19 circular
-taps perceptually.
-
-### 9. Audio-reactive envelope (decay rather than raw bass)
-
-```wgsl
-fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
-    let k = select(release, attack, bass > prev);
-    return mix(prev, bass, k);
-}
-```
-
-Store previous in `dataTextureA.r` if a buffer slot is free. Eliminates the
-"strobe at every frame" look that raw `plasmaBuffer[0].x` produces.
-
-### 10. Depth-aware compositing for the 3-slot chain
-
-```wgsl
-let z = textureLoad(readDepthTexture, gid.xy, 0).r;
-let fog = 1.0 - exp(-z * u.zoom_params.z);   // exponential depth fog
-let outA = mix(srcA, fxA, fog);              // effect strengthens with depth
-```
-
-When a shader is meant to live in slot 2/3, this keeps foreground subjects
-crisp while letting the effect "breathe" in the background.
-
-### 11. Anti-moiré LOD bias for procedural noise
-
-For procedural patterns sampled per-pixel, drop the lattice cell size when
-`fwidth(uv) > cell_size` — i.e., trade detail for stability:
-
-```wgsl
-let lod = clamp(log2(max(fwidth(uv).x, fwidth(uv).y) * cell_freq), 0.0, 4.0);
-let p = uv * (cell_freq * exp2(-lod));
-```
-
-Kills the shimmer that otherwise plagues `kimi_fractal_dreams`-style
-shaders when zoomed out.
-
-### 12. Premultiplied-alpha writeback (correct compositing in slot chain)
-
-```wgsl
-let a = clamp(alpha, 0.0, 1.0);
-textureStore(writeTexture, gid.xy, vec4<f32>(rgb * a, a));
-```
-
-The renderer assumes premultiplied output downstream of slot 1. Straight
-alpha here causes dark fringes after the next slot's blur/blend.
+**Hard constraints Kimi prompts must respect**:
+- stdin-only (no `--system` flag)
+- 120s wall-clock budget — concrete bullets and repeated critical rules beat long CoT
+- `--no-stream` → stdout parsed as one blob; we rely on **exactly one** ```wgsl fenced block
+- No filesystem or tool access — everything (header, tactics, creative brief, similar shaders, output contract) must be inlined
+- Line cap discipline is effective (`current + 30~50`)
 
 ---
 
-## Concrete changes to the swarm prompts (next PRs)
+## Kimi Strengths to Lean On (v2)
 
-1. **`agents/prompt-templates/visualist.md`** — add §"Tonemap & dither
-   stack" pointing at tactics 1–3 and tactic 12 (premultiplied writeback).
-2. **`agents/prompt-templates/interactivist.md`** — replace raw
-   `plasmaBuffer[0].x` examples with the attack/release envelope (tactic 9)
-   and add the depth-aware composite (tactic 10).
-3. **`agents/prompt-templates/algorithmist.md`** — inline the warped-FBM,
-   kaleido fold, smooth-min, and `fwidth` AA snippets (tactics 4–7).
-4. **`agents/prompt-templates/optimizer.md`** — add hex bokeh taps (tactic
-   8) and the anti-moiré LOD bias (tactic 11).
-5. **`scripts/scan-shaders-naga.py::ask_kimi`** — extend the prompt with:
-   - the canonical 13-binding header (verbatim),
-   - the 1-sentence shader theme (extracted from the JSON def's `name` /
-     `description`),
-   - an explicit "**Return exactly one ```wgsl fenced block, no prose
-     before or after**" footer,
-   - a `<= N` line cap where `N = current_lines + 40`.
-6. **`scripts/run-upgrade-swarm.js`** — when `--dispatch` targets kimi-cli,
-   stitch the role template + the 12 tactics above into the prompt body,
-   and add a kimi-specific output parser that trims trailing prose after
-   the first complete ```` ```wgsl ```` block.
+1. **Pattern completion of self-contained WGSL** when given the exact 13-binding header + target line budget.
+2. **Localized high-volume repair** — when handed a clear error + theme + the canonical header, it is extremely reliable at canonical binding fixes, alpha semantics, and audio reactivity injection.
+3. **Honoring explicit output schemas** when the critical rule is stated at the **top, middle, and footer** of the prompt.
+4. **Re-using injected snippets** (the 12 graphical tactics, warpedFBM, kaleido, bass_env, etc.) with high fidelity.
+5. Speed and structured output when the prompt is tight and the "wow mandate" + creative brief are vivid.
 
-## Out of scope (for now)
+---
 
-- Multi-file refactors (kimi-cli has no FS access in our wrapper).
-- JSON-def edits — keep `selectShadersFromLLM`/Gemma in charge of params.
-- Replacing the existing role split — these tactics augment, not replace,
-  Algorithmist / Visualist / Interactivist / Optimizer.
+## Weaknesses & Mitigations (v2 — what changed)
+
+| Weakness | Old Mitigation | v2 Mitigation |
+|----------|----------------|---------------|
+| Drifts to generic "cool noise" | 1-sentence theme | **Grok creative brief + "wow mandate" + 2–3 "differentiate from these existing shaders"** injected per task |
+| Hallucinates bindings | Restate header | Header is now **first** after the creative brief + triple output contract |
+| Trailing prose after fence | `_extract_first_wgsl_block` + instruction | **Triple instruction** (top/mid/footer) + **post-generation kimi-output-guard** that rejects any response with text after the fence |
+| Over-comments / low math density | Line cap | Line cap + "math density > commentary" + guard that counts advanced tactic usage |
+| Repetitive or safe-but-not-transcendent results | None | Mandatory "similar shaders" differentiation block + weekly "this week we push X" aesthetic directive |
+| No standard header on new shaders | None | **New shader creation path** starts from a minimal canonical skeleton that already contains the full AGENTS.md Standard Hybrid Header |
+
+---
+
+## Kimi Agent Swarm Operating Procedure — v2 (The Core Process)
+
+### Phase 0 — Pre-Week (Grok)
+- Grok runs Discovery & Ideation.
+- Produces `swarm-outputs/weekly-ideation-YYYY-WW.md` containing 6–10 ranked briefs.
+- Each brief contains: name, one-sentence hook, visual reference aesthetic, technical differentiator, suggested params, anti-patterns, wow mandate, target lines, role.
+
+### Phase 1 — Weekly Handoff (Grok → Kimi boundary)
+- For every item that will go to Kimi, a **kimi-brief** is generated:
+  `swarm-tasks/kimi-briefs/<shader-id>.md`
+- This file contains only the high-signal creative brief + 2–3 "similar but clearly differentiate from" summaries + the wow mandate.
+- This is the single highest-leverage new artifact.
+
+### Phase 2 — Per-Shader Kimi Invocation (the prompt Kimi actually receives)
+
+Every prompt follows this rigid order:
+
+1. **Creative Spark Block** (first thing Kimi sees)
+   - The exact one-sentence hook + visual reference + wow mandate from the ideation brief.
+   - "This week we are pushing: [aesthetic/technical direction]."
+
+2. **Differentiation Block**
+   - 2–3 similar existing shaders with one-sentence "what they do" + "your version must not feel like this."
+
+3. **Output Contract (stated three times)**
+   - "Output **ONLY** the complete WGSL inside one ```wgsl fence."
+   - "Nothing — not a blank line, not 'here is the improved version' — may appear after the closing ```."
+   - "If you violate this, the pipeline will reject the output and you wasted the turn."
+
+4. **Immutable Contract Block**
+   - Full 13-binding header (verbatim, first time it appears)
+   - Uniforms struct
+   - @workgroup_size rule
+
+5. **If NEW shader creation**: "Begin the WGSL with the exact Standard Hybrid Header from AGENTS.md (date + By: Kimi Code CLI (weekly swarm)). You are completing from the canonical skeleton below."
+
+6. **Context** (tight)
+   - Current WGSL (or minimal canonical skeleton for new work)
+   - Role toolkit excerpt (Visualist/Algorithmist/etc.) focused on functions, not essays
+   - The 12 Kimi Graphical Tactics
+
+7. **Line budget + final triple reminder**
+
+**For repair work** (naga/bind-group/etc.): the same contract, but the "creative brief" becomes a crisp one-sentence diagnosis + "apply the canonical binding rename + meaningful alpha + audio reactivity pattern."
+
+### Phase 3 — Post-Generation Guard (before any write)
+A guard (script or manual checklist) enforces:
+- Exactly one ```wgsl block and zero bytes after it
+- All 13 canonical bindings present
+- (For creation) Standard Hybrid Header present with correct fields
+- At least two advanced tactics from the supplied set used
+- No naive `vec4(..., 1.0)` final write in non-background shaders (heuristic)
+- Line count within budget
+
+Failures land in `swarm-outputs/kimi-rejects/` with the raw output + the exact prompt that produced it (for prompt evolution).
+
+### Phase 4 — Handoff to Claude
+Kimi (or the orchestrator) also writes:
+`swarm-outputs/kimi-notes/<shader-id>.notes.kimi.md` (max 3 bullets)
+- What I changed / the core technique introduced
+- What I'm proud of (the surprising or high-wow bit)
+- What might need a human eye (performance at 2048², edge cases, etc.)
+
+Claude then performs the final optimization + polish pass (header standardization, last 10% visual transcendence, naga/runtime verification).
+
+### Batching Strategy
+- Kimi dispatch remains **sequential** (local CLI stability + 120s budget).
+- Group the weekly batch into 2–3 **themed micro-batches** (e.g., "all bind-group canonical renames", "new generative seeds", "audio-reactive upgrades").
+- This allows batch-level context injection ("this micro-batch must differentiate from the existing 14 liquid shaders by pushing 3D tensor advection + transmission alpha").
+
+---
+
+## Required New Artifacts (create these in the first week of v2)
+
+| Artifact | Location | Purpose |
+|----------|----------|---------|
+| `weekly-ideation-YYYY-WW.md` | `swarm-outputs/` | Grok's ranked creative briefs |
+| `kimi-briefs/<id>.md` | `swarm-tasks/kimi-briefs/` | High-signal handoff from Grok to Kimi (one per task) |
+| `kimi-output-guard.js` (or .py) | `scripts/` | Post-generation validator that enforces the triple contract before write |
+| `*.notes.kimi.md` | `swarm-outputs/kimi-notes/` | 3-bullet handoff from Kimi to Claude |
+| `kimi-rejects/` | `swarm-outputs/kimi-rejects/` | Raw failed outputs + the prompt that generated them (learning loop) |
+
+---
+
+## The Single Recommended Kimi Prompt Template (use this verbatim as the skeleton)
+
+```markdown
+# KIMI SWARM TASK — [CREATION|UPGRADE|REPAIR] — [shader-id or batch-name]
+
+## CREATIVE BRIEF (Grok ideation — this is the spark)
+[One-sentence visual hook + reference aesthetic + wow mandate]
+
+This week / this repair batch we are pushing: [direction]. Do not produce generic patterns.
+
+## DIFFERENTIATE FROM (mandatory)
+- [existing shader A]: does X via Y — your version must feel clearly distinct
+- [existing shader B]: ...
+
+## OUTPUT CONTRACT (read three times — non-negotiable)
+1. Your **entire response after the closing ``` of the WGSL block must be completely empty**. No explanations, no "done", no blank lines.
+2. If this is a NEW shader, the very first lines of the WGSL **MUST** be the exact Standard Hybrid Header from AGENTS.md with today's date and "By: Kimi Code CLI (weekly swarm)".
+3. Alpha must carry semantic meaning (bloom weight, depth, effect strength, Fresnel, etc.). Never end a non-background shader with `vec4(rgb, 1.0)`.
+4. You must use at least two techniques from the supplied tactics or role toolkit.
+
+## IMMUTABLE 13-BINDING CONTRACT (copy EXACTLY)
+```wgsl
+@group(0) @binding(0) var u_sampler: sampler;
+... (full 13 bindings + Uniforms struct) ...
+```
+
+## CURRENT SOURCE / CANONICAL SKELETON
+```wgsl
+... (current file or minimal correct skeleton) ...
+```
+
+## ROLE TOOLKIT (Visualist / Algorithmist / Interactivist / Optimizer — excerpt)
+... (only the concrete functions and patterns needed) ...
+
+## 12 KIMI GRAPHICAL TACTICS (apply where appropriate)
+... (the full 12 tactics block) ...
+
+## LINE BUDGET & FINAL REMINDER
+Target: ~XXX lines (±15%). Math density over commentary.
+
+If any text appears after the final WGSL fence, the pipeline **will reject** this output and you will have wasted the turn. Stop the moment you close the fence.
+```
+
+---
+
+## 12 WGSL Graphical Tactics (unchanged — still excellent)
+
+(The full set of 12 tactics from v1 — hue_preserve_clamp, ACES, IGN dither, aa_step, smin, warpedFBM, kaleido, HEX_TAPS, bass_env, depth-aware fog, anti-moiré LOD, premultiplied writeback — remain the canonical injection set. They are reproduced in every Kimi prompt under the "12 KIMI GRAPHICAL TACTICS" section.)
+
+---
+
+## Concrete Implementation Steps for v2 Adoption (this week)
+
+1. **Directory & Artifact Setup** (done 2026-05-31)
+   - `swarm-tasks/kimi-briefs/`
+   - `swarm-outputs/kimi-notes/`
+   - `swarm-outputs/kimi-rejects/`
+
+2. **Guard Script** (`scripts/kimi-output-guard.js` or Python)
+   - Takes raw kimi-cli stdout + the shader id + mode (creation/upgrade/repair)
+   - Enforces the four rules above
+   - On success: returns clean WGSL + writes the `.notes.kimi.md` stub
+   - On failure: writes everything to `kimi-rejects/` and exits non-zero
+
+3. **Prompt Builder** (optional but high ROI)
+   - `scripts/build-kimi-prompt.js --id=<shader> --mode=repair|creation` that assembles the template above from the kimi-brief + queue item + current source.
+
+4. **Update existing callers**
+   - `scripts/scan-shaders-naga.py::ask_kimi` — adopt the new triple-contract prompt + call the guard before writing
+   - `scripts/run-upgrade-swarm.js` — when `--dispatch --kimi`, use the new `generateKimiPromptV2` that includes the creative brief + differentiation block + guard step
+
+5. **Pilot on 2026-05-31**
+   - Use the new procedure on the bind-group repair backlog + 2 new shader creation tests
+   - Document results in `agents/5_31_26_kimi.md`
+
+6. **Update AGENTS.md** (small addition)
+   - New short section: "Kimi Code CLI Invocation Contract for Swarm Work"
+
+7. **Update PLAN.md** (`agents/grok_build_upgrade.md`)
+   - Reference this v2 document and the new artifacts in the weekly cadence table
+
+---
+
+## Success Metrics for v2
+
+- Kimi acceptance rate through the guard ≥ 85% on first try (target 95% after one week of prompt tuning)
+- Average Claude cleanup time per Kimi shader drops from ~15–25 min to < 8 min
+- Every new shader created via Kimi has the full Standard Hybrid Header and at least one "surprising" behavior noted in its `.notes.kimi.md`
+- Zero binding hallucinations on repair batches after the first 20 shaders processed under v2
+
+---
+
+## Out of Scope (still)
+
+- Giving Kimi filesystem access or multi-file edit capability
+- Replacing the Grok ideation role or the Claude optimization/review role
+- Changing the 13-binding contract or Renderer.ts
+
+---
+
+*This v2 plan turns Kimi from a high-volume but occasionally leaky implementation tool into the reliable, high-consistency engine of the weekly shader swarm while preserving every constraint of the local kimi-cli invocation model.*
+
+**Next action**: Execute the 2026-05-31 pilot defined in `agents/5_31_26_kimi.md`.

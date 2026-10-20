@@ -1,6 +1,7 @@
 {
   "id": "aerogel-smoke",
   "name": "Aerogel Smoke",
+  "category": "image",
   "description": "Simulates the ethereal, frozen-smoke appearance of aerogel with volumetric lighting and Rayleigh scattering.",
   "url": "shaders/aerogel-smoke.wgsl",
   "features": [

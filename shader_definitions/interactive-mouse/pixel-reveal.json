@@ -1,8 +1,9 @@
 {
   "id": "pixel-reveal",
   "name": "Pixel Reveal",
+  "category": "interactive-mouse",
   "url": "shaders/pixel-reveal.wgsl",
-  "description": "Pixelates the image, with a clear window (or obscuring block) around the mouse.",
+  "description": "Pixelates the image with per-channel chromatic aberration. Depth controls block size. Audio bass drives pixel jitter and treble adds chromatic shift.",
   "params": [
     {
       "id": "pixelSize",
@@ -34,10 +35,16 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "chromatic-pixelation",
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "interactive",
+    "pixelate",
+    "reveal",
+    "audio-reactive"
   ]
 }

@@ -120,6 +120,7 @@
   {
     "id": "ambient-liquid",
     "name": "Ambient Liquid",
+    "category": "artistic",
     "url": "shaders/ambient-liquid.wgsl",
     "description": "Gentle ambient liquid motion effects.",
     "features": [
@@ -221,6 +222,7 @@
   {
     "id": "artistic_painterly_oil",
     "name": "Oil Painting",
+    "category": "artistic",
     "url": "shaders/artistic_painterly_oil.wgsl",
     "description": "Oil painting effect with anisotropic Kuwahara filter, impasto texture, wet paint specular highlights, and canvas texture",
     "tags": [
@@ -1671,11 +1673,11 @@
     "id": "frosty-window",
     "name": "Frosty Window",
     "url": "shaders/frosty-window.wgsl",
-    "description": "Animated frost crystal patterns on glass with audio-reactive growth and mouse-driven melting.",
+    "description": "Hexagonal dendrite ice crystals with domain-warped FBM growth, Voronoi facets, subsurface scattering, caustic refraction, and Laplacian heat diffusion melting.",
     "params": [
       {
         "id": "density",
-        "name": "Frost Density",
+        "name": "Nucleation Rate",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -1689,14 +1691,14 @@
       },
       {
         "id": "blur",
-        "name": "Blur Amount",
+        "name": "Organic Warp",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
         "id": "sparkle",
-        "name": "Sparkle",
+        "name": "Melt Radius",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -1709,7 +1711,9 @@
       "crystalline",
       "interactive",
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "temporal",
+      "persistence"
     ],
     "tags": [
       "frost",
@@ -1717,7 +1721,9 @@
       "glass",
       "winter",
       "filter",
-      "image-processing"
+      "image-processing",
+      "caustic",
+      "subsurface-scattering"
     ]
   },
   {
@@ -2945,12 +2951,14 @@
   {
     "id": "neon-contour-interactive",
     "name": "Neon Contour",
+    "category": "artistic",
     "url": "shaders/neon-contour-interactive.wgsl",
     "description": "Interactive edge detection with neon glow responsive to mouse proximity.",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -4726,6 +4734,7 @@
   {
     "id": "thermal-vision",
     "name": "Thermal Vision",
+    "category": "artistic",
     "url": "shaders/thermal-vision.wgsl",
     "description": "Heat signature camera view.",
     "params": [
@@ -4760,11 +4769,14 @@
     ],
     "features": [
       "color-remap",
-      "mouse-driven"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "thermal",
+      "infrared",
+      "false-color",
+      "audio-reactive"
     ]
   },
   {

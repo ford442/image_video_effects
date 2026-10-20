@@ -1,6 +1,7 @@
 {
   "id": "artistic_painterly_oil",
   "name": "Oil Painting",
+  "category": "artistic",
   "url": "shaders/artistic_painterly_oil.wgsl",
   "description": "Oil painting effect with anisotropic Kuwahara filter, impasto texture, wet paint specular highlights, and canvas texture",
   "tags": [

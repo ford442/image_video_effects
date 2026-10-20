@@ -1,36 +1,37 @@
 {
   "id": "voronoi-faceted-glass",
   "name": "Voronoi Faceted Glass",
+  "category": "distortion",
   "url": "shaders/voronoi-faceted-glass.wgsl",
   "description": "Cellular glass distortion effect.",
   "params": [
     {
-      "id": "param1",
-      "name": "Intensity",
+      "id": "density",
+      "name": "Facet Density",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param2",
-      "name": "Speed",
+      "id": "refraction",
+      "name": "Refraction",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param3",
-      "name": "Scale",
+      "id": "shimmer",
+      "name": "Shimmer",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     },
     {
-      "id": "param4",
-      "name": "Detail",
+      "id": "edge_softness",
+      "name": "Edge Softness",
       "default": 0.5,
       "min": 0,
       "max": 1,
@@ -38,10 +39,14 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "glass",
+    "faceted",
+    "refraction",
+    "audio-reactive"
   ]
 }

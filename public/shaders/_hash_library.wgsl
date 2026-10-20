@@ -1,3 +1,13 @@
+// ═══════════════════════════════════════════════════════════════════
+//  _hash_library
+//  Category: utility
+//  Features: hash-library, canonical-bindings
+//  Complexity: Low
+//  Chunks From: _hash_library
+//  Created: 2026-05-31
+//  By: Copilot CLI (tactical swarm)
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;

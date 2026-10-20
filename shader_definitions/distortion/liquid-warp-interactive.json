@@ -1,10 +1,16 @@
 {
   "id": "liquid-warp-interactive",
   "name": "Liquid Warp",
+  "category": "distortion",
   "url": "shaders/liquid-warp-interactive.wgsl",
-  "description": "Fluid-like distortion driven by mouse flow and noise.",
+  "description": "Fluid-like distortion with curl-noise advection and depth-aware viscosity. Mouse click amplifies chromatic aberration.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "curl-noise",
+    "depth-viscosity",
+    "temporal",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -38,7 +44,8 @@
   ],
   "tags": [
     "warp",
-    "distort",
-    "transform"
+    "liquid",
+    "chromatic",
+    "audio-reactive"
   ]
 }

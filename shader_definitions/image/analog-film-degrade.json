@@ -1,7 +1,8 @@
 {
   "id": "analog-film-degrade",
   "name": "Analog Film Degrade",
-  "url": "/shaders/analog-film-degrade.wgsl",
+  "category": "image",
+  "url": "shaders/analog-film-degrade.wgsl",
   "description": "Vintage film degradation with grain, dust, scratches, color fading, and vignette.",
   "tags": [
     "film",
@@ -11,7 +12,8 @@
     "scratches",
     "sepia",
     "vignette",
-    "retro"
+    "retro",
+    "glitch"
   ],
   "features": [
     "upgraded-rgba",

@@ -1,8 +1,9 @@
 {
   "id": "velvet-vortex",
   "name": "Velvet Vortex",
+  "category": "interactive-mouse",
   "url": "shaders/velvet-vortex.wgsl",
-  "description": "A spiraling, velvety distortion that swirls video content around the mouse cursor.",
+  "description": "Velvet spiral vortex with SDF-based arm count modulated by audio mids. Depth parallax shifts the vortex center.",
   "params": [
     {
       "id": "radius",
@@ -36,13 +37,14 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "audio-driven"
+    "depth-aware",
+    "spiral-sdf",
+    "upgraded-rgba"
   ],
   "tags": [
-    "filter",
-    "image-processing",
+    "vortex",
+    "velvet",
     "audio",
-    "music",
     "reactive"
   ]
 }

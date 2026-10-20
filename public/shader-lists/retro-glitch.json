@@ -1,6 +1,7 @@
 [
   {
     "id": "ascii-flow",
+    "category": "retro-glitch",
     "url": "shaders/ascii-flow.wgsl",
     "features": [
       "mouse-driven"
@@ -40,6 +41,7 @@
       }
     ],
     "tags": [
+      "ascii",
       "glitch",
       "retro",
       "vintage"
@@ -1579,14 +1581,19 @@
   },
   {
     "id": "waveform-glitch",
-    "name": "Waveform Glitch",
+    "name": "Waveform Glitch v2",
     "url": "shaders/waveform-glitch.wgsl",
-    "description": "VHS waveform glitch with head-switching noise band, CRT shadow mask, bass-driven wave intensity, temporal feedback persistence, and alpha-channel translucency blending. Alpha encodes waveform displacement magnitude * block corruption intensity.",
+    "description": "Transcendent VHS waveform glitch with optical-flow-aware datamoshing, Bayer ordered dithering, coupled harmonic oscillators, film grain, phosphor persistence RGB decay, color bleeding, halation glow, audio transient glitch bursts, mouse-driven glitch zones with falloff, and velocity-based directional smear. Alpha encodes glitch magnitude * corruption * transient energy * mouse zone.",
     "features": [
       "temporal",
       "audio-reactive",
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "optical-flow",
+      "phosphor-persistence",
+      "halation",
+      "bayer-dither",
+      "mouse-driven"
     ],
     "params": [
       {
@@ -1637,7 +1644,11 @@
       "datamosh",
       "noise",
       "fractal",
-      "crt"
+      "crt",
+      "optical-flow",
+      "film-grain",
+      "halation",
+      "dither"
     ]
   },
   {

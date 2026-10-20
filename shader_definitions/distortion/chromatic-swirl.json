@@ -1,9 +1,12 @@
 {
   "id": "chromatic-swirl",
+  "category": "distortion",
   "url": "shaders/chromatic-swirl.wgsl",
   "icon": "cyclone",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -37,9 +40,10 @@
     }
   ],
   "tags": [
-    "warp",
+    "chromatic",
+    "swirl",
     "distort",
-    "transform"
+    "audio-reactive"
   ],
   "name": "Chromatic Swirl"
 }

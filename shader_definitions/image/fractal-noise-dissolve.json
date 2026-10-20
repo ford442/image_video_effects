@@ -1,8 +1,9 @@
 {
   "id": "fractal-noise-dissolve",
   "name": "Fractal Noise Dissolve",
+  "category": "image",
   "url": "shaders/fractal-noise-dissolve.wgsl",
-  "description": "Dissolves the image into fractal noise around the mouse.",
+  "description": "Domain-warped FBM dissolve with audio-driven threshold and bass-triggered edge glow. Depth fades dissolution.",
   "params": [
     {
       "id": "scale",
@@ -34,10 +35,16 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "domain-warped-fbm",
+    "edge-glow",
+    "upgraded-rgba"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "dissolve",
+    "noise",
+    "burn",
+    "audio-reactive"
   ]
 }

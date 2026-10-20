@@ -2,57 +2,65 @@
   "id": "alpha-reaction-diffusion-rgba",
   "name": "Alpha Reaction Diffusion RGBA",
   "url": "shaders/alpha-reaction-diffusion-rgba.wgsl",
-  "description": "Four-species reaction-diffusion simulation packed into RGBA32FLOAT. A feeds B, C feeds D, with cross-inhibition between pairs. Creates complex multi-color patterns impossible in 2-species systems.",
+  "category": "simulation",
+  "description": "Two competing four-chemical ecosystems in a single RGBA field. Bass makes predators more aggressive, mids increase competition between ecosystems, treble triggers spore-like bursts. Mouse acts as a keystone species that can trigger localized extinction and recovery events. Depth creates vertical stratification in diffusion rates.",
+  "features": [
+    "multi-species-ecosystem",
+    "predator-prey",
+    "audio-reactive",
+    "depth-stratified",
+    "mouse-keystone",
+    "temporal"
+  ],
   "tags": [
     "reaction-diffusion",
+    "ecosystem",
+    "predator-prey",
+    "audio-reactive",
     "simulation",
-    "interactive",
-    "mouse-driven",
-    "pattern",
-    "rgba-state-machine",
-    "colorful"
-  ],
-  "features": [
-    "mouse-driven",
-    "temporal",
-    "rgba-state-machine"
+    "organic",
+    "complex-patterns"
   ],
   "params": [
     {
       "id": "feed",
-      "name": "Feed Rate",
-      "type": "float",
+      "name": "Nutrient Availability",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "How much raw material is available for both ecosystems to grow"
     },
     {
-      "id": "kill",
-      "name": "Kill Rate",
-      "type": "float",
+      "id": "predation",
+      "name": "Predation Pressure",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Base aggression of predators (further amplified by bass)"
     },
     {
-      "id": "crossInhibit",
-      "name": "Cross Inhibition",
-      "type": "float",
+      "id": "competition",
+      "name": "Ecosystem Competition",
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "How fiercely the two separate ecosystems suppress each other (mids increase this)"
     },
     {
-      "id": "sourceMix",
-      "name": "Source Mix",
-      "type": "float",
+      "id": "source_nutrients",
+      "name": "Source Nutrients",
       "default": 0.2,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "How much the input image/video feeds the simulation as extra nutrients"
     }
   ]
 }

@@ -1,9 +1,12 @@
 {
   "id": "luma-glass",
   "name": "Luma Glass",
+  "category": "distortion",
   "url": "shaders/luma-glass.wgsl",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "description": "Dynamic refraction shader where the image luminance creates a glass-like surface, lit by the mouse.",
   "params": [
@@ -41,8 +44,9 @@
     }
   ],
   "tags": [
-    "warp",
-    "distort",
-    "transform"
+    "glass",
+    "refraction",
+    "luminance",
+    "audio-reactive"
   ]
 }

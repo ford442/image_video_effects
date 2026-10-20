@@ -60,6 +60,7 @@
   {
     "id": "alpha-hdr-bloom-chain",
     "name": "Alpha HDR Bloom Chain",
+    "category": "visual-effects",
     "url": "shaders/alpha-hdr-bloom-chain.wgsl",
     "description": "HDR bloom effect where alpha stores exposure/overexposure value. Identifies pixels above white point, radially blurs the excess brightness, and composites with ACES tone mapping. Mouse and ripples trigger localized flashes.",
     "tags": [
@@ -1012,9 +1013,12 @@
   {
     "id": "hex-circuit",
     "name": "Hex Circuit",
+    "category": "visual-effects",
     "url": "shaders/hex-circuit.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "description": "Overlays a cybernetic hexagonal grid that highlights image edges and reacts to mouse pulses.",
     "params": [
@@ -1050,7 +1054,9 @@
     "tags": [
       "vfx",
       "particles",
-      "glow"
+      "glow",
+      "cybernetic",
+      "audio-reactive"
     ]
   },
   {
@@ -1497,7 +1503,7 @@
   {
     "id": "neon-topology",
     "url": "shaders/neon-topology.wgsl",
-    "description": "Renders the image as a glowing 3D topographic map.",
+    "description": "3D topographic neon contour map with audio elevation phantom lines and depth atmospheric haze.",
     "params": [
       {
         "id": "density",
@@ -1533,9 +1539,14 @@
       }
     ],
     "features": [
+      "advanced-alpha",
+      "topology",
+      "neon",
+      "contours",
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "depth-haze",
+      "upgraded-rgba"
     ],
     "tags": [
       "vfx",
@@ -1545,7 +1556,8 @@
       "music",
       "reactive"
     ],
-    "name": "Neon Topology"
+    "name": "Neon Topology",
+    "category": "visual-effects"
   },
   {
     "id": "phantom-lag",
@@ -1780,11 +1792,15 @@
   {
     "id": "signal-modulation",
     "name": "Signal Modulation",
+    "category": "visual-effects",
     "url": "shaders/signal-modulation.wgsl",
-    "description": "Simulates AM/FM signal distortion with mouse-controlled frequency and amplitude.",
+    "description": "AM/FM signal distortion with chromatic aberration and 8-band spectral visualization. Depth attenuates signal strength.",
     "features": [
       "mouse-driven",
-      "visual-effect"
+      "audio-reactive",
+      "chromatic-aberration",
+      "spectral-bands",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -1821,8 +1837,10 @@
       }
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "signal",
+      "modulation",
+      "glow",
+      "audio-reactive"
     ]
   },
   {

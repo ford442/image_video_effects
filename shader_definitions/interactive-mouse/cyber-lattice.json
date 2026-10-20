@@ -5,9 +5,11 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "depth-aware",
+    "holographic-interference",
     "upgraded-rgba"
   ],
-  "description": "A dynamic holographic grid that reacts to mouse movement and clicks.",
+  "description": "Holographic 3D perspective grid with thin-film interference colors. Audio bass warps grid lines like wind. Mouse click spawns a geometric shockwave that inverts interference colors.",
   "params": [
     {
       "name": "Grid Scale",
@@ -41,5 +43,6 @@
   "tags": [
     "filter",
     "image-processing"
-  ]
+  ],
+  "category": "interactive-mouse"
 }

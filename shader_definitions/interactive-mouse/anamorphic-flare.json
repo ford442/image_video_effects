@@ -1,6 +1,7 @@
 {
   "id": "anamorphic-flare",
   "name": "Anamorphic Flare",
+  "category": "interactive-mouse",
   "url": "shaders/anamorphic-flare.wgsl",
   "description": "Generates a cinematic horizontal lens flare centered on the mouse position.",
   "params": [

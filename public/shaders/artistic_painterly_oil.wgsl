@@ -1,8 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  artistic_painterly_oil
+//  Oil Painting
 //  Category: artistic
-//  Features: upgraded-rgba, depth-aware, physical-media-alpha
-//  Upgraded: 2026-03-22
+//  Features: edge-aware, texture-synthesis, painterly
+//  Complexity: High
+//  Chunks From: artistic_painterly_oil
+//  Created: 2026-05-31
+//  By: Copilot CLI (tactical swarm)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;

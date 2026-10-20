@@ -1,6 +1,7 @@
 {
   "id": "thermal-vision",
   "name": "Thermal Vision",
+  "category": "artistic",
   "url": "shaders/thermal-vision.wgsl",
   "description": "Heat signature camera view.",
   "params": [
@@ -35,10 +36,13 @@
   ],
   "features": [
     "color-remap",
-    "mouse-driven"
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "thermal",
+    "infrared",
+    "false-color",
+    "audio-reactive"
   ]
 }

@@ -1,8 +1,9 @@
 {
   "id": "fluid-grid",
   "name": "Fluid Grid",
+  "category": "distortion",
   "url": "shaders/fluid-grid.wgsl",
-  "description": "Flowing grid distortion with fluid dynamics.",
+  "description": "Flowing grid distortion with divergence-free curl-noise advection. Audio bass drives turbulence and cell push strength.",
   "params": [
     {
       "id": "grid_size",
@@ -34,12 +35,16 @@
     }
   ],
   "features": [
-    "animated",
-    "grid",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "curl-noise",
+    "divergence-free",
+    "upgraded-rgba"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "grid",
+    "fluid",
+    "interactive",
+    "audio-reactive"
   ]
 }

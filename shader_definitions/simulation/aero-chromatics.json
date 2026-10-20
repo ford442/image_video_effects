@@ -1,9 +1,11 @@
 {
   "id": "aero-chromatics",
   "name": "Aero Chromatics",
+  "category": "simulation",
   "url": "shaders/aero-chromatics.wgsl",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "depth-aware"
   ],
   "description": "Wind tunnel simulation where image brightness determines aerodynamic drag, creating chromatic smoke trails.",
   "params": [

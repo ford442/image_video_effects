@@ -4,6 +4,8 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "depth-aware",
+    "temporal",
     "upgraded-rgba"
   ],
   "params": [
@@ -40,11 +42,12 @@
       "max": 1
     }
   ],
-  "description": "Video melts downwards, accelerated by brightness and mouse heat.",
+  "description": "Viscous luma-driven melt with curl-noise flow field. Depth controls viscosity (foreground melts slower). Mouse leaves persistent heat trails. Bass drives turbulence; mids increase melt speed.",
   "tags": [
     "fluid",
     "liquid",
     "water"
   ],
-  "name": "Luma Melt"
+  "name": "Luma Melt",
+  "category": "liquid-effects"
 }

@@ -1,6 +1,7 @@
 {
   "id": "dynamic-lens-flares",
   "name": "Dynamic Lens Flares",
+  "category": "lighting-effects",
   "url": "shaders/dynamic-lens-flares.wgsl",
   "description": "Cinematic lens flare following cursor. Generates ghost elements and chromatic artifacts.",
   "params": [
@@ -36,10 +37,14 @@
   "features": [
     "mouse-driven",
     "optical",
-    "cinematic"
+    "cinematic",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "optical",
+    "flare",
+    "cinematic",
+    "audio-reactive"
   ]
 }

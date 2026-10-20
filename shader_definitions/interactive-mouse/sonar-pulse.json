@@ -2,7 +2,7 @@
   "id": "sonar-pulse",
   "name": "Sonar Pulse",
   "url": "shaders/sonar-pulse.wgsl",
-  "description": "Radial sonar waves emitting from the cursor that distort and scan the image. Now with audio reactivity.",
+  "description": "Multi-ring sonar with chromatic echo separation and interference beats. Depth attenuates return signal strength.",
   "params": [
     {
       "id": "speed",
@@ -40,6 +40,9 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "chromatic-echo",
+    "depth-attenuation",
+    "interference",
     "upgraded-rgba"
   ],
   "tags": [
@@ -48,5 +51,6 @@
     "sonar",
     "pulse",
     "audio-reactive"
-  ]
+  ],
+  "category": "interactive-mouse"
 }

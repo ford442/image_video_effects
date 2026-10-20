@@ -700,9 +700,9 @@
   },
   {
     "id": "radial-blur",
-    "name": "Radial Blur",
+    "name": "Radial Blur v2",
     "url": "shaders/radial-blur.wgsl",
-    "description": "Depth-aware radial blur with bokeh shape selection, chromatic aberration, Gaussian kernel weighting, and vignette.",
+    "description": "Transcendent depth-aware radial blur with anisotropic bokeh shape morphing driven by audio, Fibonacci sphere sampling, lens diffraction spikes on bright highlights, anamorphic streaks from mouse velocity, Sellmeier spectral dispersion on high-contrast edges, atmospheric haze on distant blur, dynamic mouse focus with depth-aware CoC, and adaptive sample count.",
     "params": [
       {
         "id": "sigma",
@@ -710,7 +710,9 @@
         "default": 0.3,
         "min": 0.01,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Base blur radius, boosted by bass and CoC"
       },
       {
         "id": "shape",
@@ -723,7 +725,9 @@
           "Circle",
           "Hexagon",
           "Star"
-        ]
+        ],
+        "mapping": "zoom_params.y",
+        "description": "Base bokeh shape, audio morphs between them"
       },
       {
         "id": "focalDepth",
@@ -731,7 +735,9 @@
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Depth plane in perfect focus"
       },
       {
         "id": "maxBlur",
@@ -739,19 +745,30 @@
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Maximum blur amount at depth extremes"
       }
     ],
     "features": [
       "mouse-driven",
-      "depth-aware"
+      "depth-aware",
+      "audio-reactive",
+      "anisotropic-bokeh",
+      "diffraction-spikes",
+      "anamorphic-streaks",
+      "spectral-dispersion"
     ],
     "tags": [
       "blur",
       "bokeh",
       "depth-of-field",
       "post-processing",
-      "chromatic"
+      "chromatic",
+      "anamorphic",
+      "diffraction",
+      "haze",
+      "spectral"
     ]
   },
   {

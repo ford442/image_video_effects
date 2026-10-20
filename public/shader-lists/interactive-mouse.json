@@ -2,6 +2,7 @@
   {
     "id": "anamorphic-flare",
     "name": "Anamorphic Flare",
+    "category": "interactive-mouse",
     "url": "shaders/anamorphic-flare.wgsl",
     "description": "Generates a cinematic horizontal lens flare centered on the mouse position.",
     "params": [
@@ -192,9 +193,12 @@
   {
     "id": "biomimetic-scales",
     "name": "Biomimetic Scales",
+    "category": "interactive-mouse",
     "url": "shaders/biomimetic-scales.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -227,8 +231,10 @@
       }
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "organic",
+      "scales",
+      "shimmer",
+      "audio-reactive"
     ]
   },
   {
@@ -278,6 +284,7 @@
   {
     "id": "blueprint-reveal",
     "name": "Blueprint Reveal",
+    "category": "interactive-mouse",
     "url": "shaders/blueprint-reveal.wgsl",
     "description": "Interactive blueprint schematic that you can erase to reveal reality.",
     "params": [
@@ -311,11 +318,15 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "interactive",
+      "blueprint",
+      "edges",
+      "audio-reactive"
     ]
   },
   {
@@ -1401,9 +1412,11 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "depth-aware",
+      "holographic-interference",
       "upgraded-rgba"
     ],
-    "description": "A dynamic holographic grid that reacts to mouse movement and clicks.",
+    "description": "Holographic 3D perspective grid with thin-film interference colors. Audio bass warps grid lines like wind. Mouse click spawns a geometric shockwave that inverts interference colors.",
     "params": [
       {
         "name": "Grid Scale",
@@ -1437,7 +1450,8 @@
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "category": "interactive-mouse"
   },
   {
     "id": "cyber-magnifier",
@@ -2646,9 +2660,12 @@
   {
     "id": "focal-pixelate",
     "name": "Focal Pixelate",
+    "category": "interactive-mouse",
     "url": "shaders/focal-pixelate.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "description": "Applies pixelation that varies based on distance from the mouse cursor, creating a focal point effect.",
     "params": [
@@ -2683,7 +2700,10 @@
     ],
     "tags": [
       "mouse-driven",
-      "interactive"
+      "interactive",
+      "pixelate",
+      "focus",
+      "audio-reactive"
     ]
   },
   {
@@ -3214,7 +3234,7 @@
     "id": "hypnotic-spiral",
     "name": "Hypnotic Spiral",
     "url": "shaders/hypnotic-spiral.wgsl",
-    "description": "Breathing, rotating spirals with color cycling; mouse warps and twists the spiral geometry.",
+    "description": "Breathing SDF spiral with audio-modulated arm count and depth-based twist. Hue cycles with bass and mids.",
     "params": [
       {
         "id": "arms",
@@ -3248,15 +3268,16 @@
     "features": [
       "interactive",
       "spiral",
-      "visual",
-      "mouse-driven",
+      "sdf",
       "audio-reactive",
+      "depth-aware",
       "upgraded-rgba"
     ],
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "category": "image"
   },
   {
     "id": "impasto-swirl",
@@ -4167,11 +4188,14 @@
   },
   {
     "id": "kaleido-portal-interactive",
+    "category": "interactive-mouse",
     "url": "shaders/kaleido-portal-interactive.wgsl",
     "icon": "circle",
     "description": "A circular portal that reveals a kaleidoscopic view of the video, controlled by the mouse.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -4205,7 +4229,10 @@
     ],
     "tags": [
       "mouse-driven",
-      "interactive"
+      "interactive",
+      "kaleidoscope",
+      "portal",
+      "audio-reactive"
     ],
     "name": "Kaleido Portal"
   },
@@ -4376,10 +4403,13 @@
     "id": "kinetic-dispersion",
     "name": "Kinetic Dispersion",
     "url": "shaders/kinetic-dispersion.wgsl",
-    "description": "Mouse-velocity dispersion effect with RGB split, block scattering, and audio-reactive intensity.",
+    "description": "Velocity-based block dispersion with curl noise and audio shockwaves. Depth scales scatter intensity.",
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "curl-dispersion",
+      "shockwave",
+      "block-scatter",
       "upgraded-rgba"
     ],
     "params": [
@@ -4422,7 +4452,8 @@
       "audio-reactive",
       "dispersion",
       "glitch"
-    ]
+    ],
+    "category": "interactive-mouse"
   },
   {
     "id": "knitted-fabric",
@@ -5343,8 +5374,13 @@
   {
     "id": "magnetic-ring",
     "url": "shaders/magnetic-ring.wgsl",
+    "category": "interactive-mouse",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "magnetic-field",
+      "particle-trails",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -5389,10 +5425,13 @@
       }
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "ring",
+      "magnetic",
+      "interactive",
+      "audio-reactive"
     ],
-    "name": "Magnetic Ring"
+    "name": "Magnetic Ring",
+    "description": "Multi-ring magnetic field with orbital field lines. Audio bass amplifies field strength; treble adds glow pulses."
   },
   {
     "id": "matrix-curtain",
@@ -7604,13 +7643,17 @@
   },
   {
     "id": "pixel-repel",
+    "name": "Pixel Repeller",
     "url": "shaders/pixel-repel.wgsl",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "audio-driven",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "curl-noise",
+      "spectral-ca"
     ],
+    "description": "Divergence-free curl noise flow field with 4 orbiting Lissajous repel sources, superellipse masks, 7-sample spectral chromatic aberration, Fresnel rim lighting, and depth parallax.",
     "params": [
       {
         "id": "param1",
@@ -7631,7 +7674,7 @@
         "name": "Aberration",
         "default": 0.05,
         "min": 0,
-        "max": 0.2
+        "max": 0.25
       },
       {
         "id": "param4",
@@ -7646,15 +7689,19 @@
       "interactive",
       "audio",
       "music",
-      "reactive"
-    ],
-    "name": "Pixel Repeller"
+      "reactive",
+      "curl-noise",
+      "chromatic-aberration",
+      "flow-field",
+      "HDR"
+    ]
   },
   {
     "id": "pixel-reveal",
     "name": "Pixel Reveal",
+    "category": "interactive-mouse",
     "url": "shaders/pixel-reveal.wgsl",
-    "description": "Pixelates the image, with a clear window (or obscuring block) around the mouse.",
+    "description": "Pixelates the image with per-channel chromatic aberration. Depth controls block size. Audio bass drives pixel jitter and treble adds chromatic shift.",
     "params": [
       {
         "id": "pixelSize",
@@ -7686,11 +7733,17 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "chromatic-pixelation",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "interactive",
+      "pixelate",
+      "reveal",
+      "audio-reactive"
     ]
   },
   {
@@ -8736,8 +8789,9 @@
   {
     "id": "reactive-glass-grid",
     "name": "Reactive Glass Grid",
+    "category": "interactive-mouse",
     "url": "shaders/reactive-glass-grid.wgsl",
-    "description": "A grid of refractive glass tiles that light up and distort based on mouse proximity.",
+    "description": "Refractive glass tile grid with caustic sparkles, chromatic dispersion scaled by depth IOR, and Fresnel rim lighting.",
     "params": [
       {
         "id": "tile_size",
@@ -8769,11 +8823,18 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "caustics",
+      "chromatic-dispersion",
+      "fresnel",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "glass",
+      "grid",
+      "interactive",
+      "audio-reactive"
     ]
   },
   {
@@ -9728,7 +9789,7 @@
     "id": "sonar-pulse",
     "name": "Sonar Pulse",
     "url": "shaders/sonar-pulse.wgsl",
-    "description": "Radial sonar waves emitting from the cursor that distort and scan the image. Now with audio reactivity.",
+    "description": "Multi-ring sonar with chromatic echo separation and interference beats. Depth attenuates return signal strength.",
     "params": [
       {
         "id": "speed",
@@ -9766,6 +9827,9 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "chromatic-echo",
+      "depth-attenuation",
+      "interference",
       "upgraded-rgba"
     ],
     "tags": [
@@ -9774,7 +9838,8 @@
       "sonar",
       "pulse",
       "audio-reactive"
-    ]
+    ],
+    "category": "interactive-mouse"
   },
   {
     "id": "sonar-reveal",
@@ -9784,9 +9849,11 @@
       "mouse-driven",
       "audio-reactive",
       "audio-driven",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "temporal",
+      "depth-aware"
     ],
-    "description": "Reveals the original image in a radius around the mouse, with a scanning radar ring. Reactive to audio.",
+    "description": "Multi-frequency cymatics sonar with 3 detuned interference rings, Doppler shift, temporal echo decay, ripple shockwaves, and HDR split-tone rendering.",
     "params": [
       {
         "name": "Reveal Size",
@@ -9810,9 +9877,9 @@
         "max": 1
       },
       {
-        "name": "Color Mode",
-        "id": "color",
-        "default": 0,
+        "name": "Echo Mix",
+        "id": "echo",
+        "default": 0.5,
         "min": 0,
         "max": 1
       }
@@ -9822,7 +9889,12 @@
       "image-processing",
       "audio",
       "music",
-      "reactive"
+      "reactive",
+      "cymatics",
+      "sonar",
+      "temporal",
+      "depth-aware",
+      "HDR"
     ]
   },
   {
@@ -9882,9 +9954,11 @@
       "mouse-driven",
       "audio-reactive",
       "temporal",
+      "depth-aware",
+      "blackbody",
       "upgraded-rgba"
     ],
-    "description": "Reveals a spectral dimension where you paint with the mouse. Reacts to audio bass.",
+    "description": "Temporal spectral painting with physical blackbody radiation colors. ACES tone-mapped temporal feedback. Bass creates bloom around strokes. Depth makes background strokes diffuse like watercolor.",
     "params": [
       {
         "id": "brush-size",
@@ -9919,7 +9993,8 @@
       "filter",
       "image-processing",
       "audio-reactive"
-    ]
+    ],
+    "category": "image"
   },
   {
     "id": "spectral-distortion",
@@ -10757,8 +10832,9 @@
   {
     "id": "velvet-vortex",
     "name": "Velvet Vortex",
+    "category": "interactive-mouse",
     "url": "shaders/velvet-vortex.wgsl",
-    "description": "A spiraling, velvety distortion that swirls video content around the mouse cursor.",
+    "description": "Velvet spiral vortex with SDF-based arm count modulated by audio mids. Depth parallax shifts the vortex center.",
     "params": [
       {
         "id": "radius",
@@ -10792,13 +10868,14 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "depth-aware",
+      "spiral-sdf",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing",
+      "vortex",
+      "velvet",
       "audio",
-      "music",
       "reactive"
     ]
   },
@@ -10945,7 +11022,7 @@
     "id": "vhs-tracking-mouse",
     "name": "VHS Tracking",
     "url": "shaders/vhs-tracking-mouse.wgsl",
-    "description": "A vertical tracking bar distortion controlled by mouse height with audio-reactive intensity.",
+    "description": "Complete VHS deck degradation simulator: tracking bar, chroma bleed, horizontal hold wobble, scanline dropouts, tape hiss, and tracking-loss white flashes on treble spikes.",
     "params": [
       {
         "id": "barHeight",
@@ -10983,6 +11060,9 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "vhs-degradation",
+      "chroma-bleed",
+      "scanline-dropouts",
       "upgraded-rgba"
     ],
     "tags": [
@@ -10991,7 +11071,8 @@
       "vhs",
       "glitch",
       "retro"
-    ]
+    ],
+    "category": "interactive-mouse"
   },
   {
     "id": "virtual-lens",
@@ -11277,8 +11358,11 @@
   {
     "id": "voronoi-shatter",
     "name": "Voronoi Shatter",
+    "category": "interactive-mouse",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -11313,8 +11397,10 @@
     "url": "shaders/voronoi-shatter.wgsl",
     "description": "Breaks the image into crystalline shards that react to mouse movement.",
     "tags": [
-      "filter",
-      "image-processing"
+      "interactive",
+      "crystal",
+      "shatter",
+      "audio-reactive"
     ]
   },
   {

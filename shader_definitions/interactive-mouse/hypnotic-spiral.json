@@ -2,7 +2,7 @@
   "id": "hypnotic-spiral",
   "name": "Hypnotic Spiral",
   "url": "shaders/hypnotic-spiral.wgsl",
-  "description": "Breathing, rotating spirals with color cycling; mouse warps and twists the spiral geometry.",
+  "description": "Breathing SDF spiral with audio-modulated arm count and depth-based twist. Hue cycles with bass and mids.",
   "params": [
     {
       "id": "arms",
@@ -36,13 +36,14 @@
   "features": [
     "interactive",
     "spiral",
-    "visual",
-    "mouse-driven",
+    "sdf",
     "audio-reactive",
+    "depth-aware",
     "upgraded-rgba"
   ],
   "tags": [
     "filter",
     "image-processing"
-  ]
+  ],
+  "category": "image"
 }

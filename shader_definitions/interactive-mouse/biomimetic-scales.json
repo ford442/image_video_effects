@@ -1,9 +1,12 @@
 {
   "id": "biomimetic-scales",
   "name": "Biomimetic Scales",
+  "category": "interactive-mouse",
   "url": "shaders/biomimetic-scales.wgsl",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -36,7 +39,9 @@
     }
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "organic",
+    "scales",
+    "shimmer",
+    "audio-reactive"
   ]
 }

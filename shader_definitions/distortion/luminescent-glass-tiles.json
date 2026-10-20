@@ -1,8 +1,11 @@
 {
   "id": "luminescent-glass-tiles",
+  "category": "distortion",
   "url": "shaders/luminescent-glass-tiles.wgsl",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -40,9 +43,10 @@
   ],
   "description": "Glass tiles that refract based on video brightness and mouse interaction.",
   "tags": [
-    "warp",
+    "glass",
+    "luminescent",
     "distort",
-    "transform"
+    "audio-reactive"
   ],
   "name": "Luminescent Glass"
 }

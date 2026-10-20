@@ -2,10 +2,13 @@
   "id": "kinetic-dispersion",
   "name": "Kinetic Dispersion",
   "url": "shaders/kinetic-dispersion.wgsl",
-  "description": "Mouse-velocity dispersion effect with RGB split, block scattering, and audio-reactive intensity.",
+  "description": "Velocity-based block dispersion with curl noise and audio shockwaves. Depth scales scatter intensity.",
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "curl-dispersion",
+    "shockwave",
+    "block-scatter",
     "upgraded-rgba"
   ],
   "params": [
@@ -48,5 +51,6 @@
     "audio-reactive",
     "dispersion",
     "glitch"
-  ]
+  ],
+  "category": "interactive-mouse"
 }

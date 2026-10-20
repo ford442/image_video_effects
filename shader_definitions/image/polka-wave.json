@@ -1,7 +1,7 @@
 {
   "id": "polka-wave",
   "name": "Polka Wave",
-  "description": "Halftone effect where dot size responds to image brightness and interactive ripples.",
+  "description": "True CMYK halftone print engine with four dot grids at canonical print angles. Mouse creates expanding ripple that inverts dot polarity. Bass inflates dots; treble adds micro-dot noise.",
   "url": "shaders/polka-wave.wgsl",
   "params": [
     {
@@ -40,10 +40,12 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "cmyk-halftone",
     "upgraded-rgba"
   ],
   "tags": [
     "filter",
     "image-processing"
-  ]
+  ],
+  "category": "image"
 }

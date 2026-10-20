@@ -1,12 +1,16 @@
 {
   "id": "pixel-repel",
+  "name": "Pixel Repeller",
   "url": "shaders/pixel-repel.wgsl",
   "features": [
     "mouse-driven",
     "audio-reactive",
     "audio-driven",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "curl-noise",
+    "spectral-ca"
   ],
+  "description": "Divergence-free curl noise flow field with 4 orbiting Lissajous repel sources, superellipse masks, 7-sample spectral chromatic aberration, Fresnel rim lighting, and depth parallax.",
   "params": [
     {
       "id": "param1",
@@ -27,7 +31,7 @@
       "name": "Aberration",
       "default": 0.05,
       "min": 0,
-      "max": 0.2
+      "max": 0.25
     },
     {
       "id": "param4",
@@ -42,7 +46,10 @@
     "interactive",
     "audio",
     "music",
-    "reactive"
-  ],
-  "name": "Pixel Repeller"
+    "reactive",
+    "curl-noise",
+    "chromatic-aberration",
+    "flow-field",
+    "HDR"
+  ]
 }

@@ -2,9 +2,11 @@
   {
     "id": "aero-chromatics",
     "name": "Aero Chromatics",
+    "category": "simulation",
     "url": "shaders/aero-chromatics.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "depth-aware"
     ],
     "description": "Wind tunnel simulation where image brightness determines aerodynamic drag, creating chromatic smoke trails.",
     "params": [
@@ -344,57 +346,67 @@
     "id": "alpha-multi-state-ecosystem",
     "name": "Alpha Multi-State Ecosystem",
     "url": "shaders/alpha-multi-state-ecosystem.wgsl",
-    "description": "Continuous multi-species ecosystem simulation packed into RGBA32FLOAT. Two species compete for shared resources while producing toxins. Species diffuse, grow, compete, and die. Mouse nurtures by adding resources.",
+    "category": "simulation",
+    "description": "Two species in a shared environment with seasonal audio climate. Bass = harsh season (higher death, lingering toxins), mids = bloom season (explosive resource growth), treble = volatile spore season. Mouse acts as a keystone species that can trigger extinctions or create protected fertile zones. Depth creates stable ecological layers.",
+    "features": [
+      "multi-species-ecosystem",
+      "seasonal-cycles",
+      "audio-reactive",
+      "keystone-mouse",
+      "extinction-recovery",
+      "depth-stratified",
+      "temporal"
+    ],
     "tags": [
       "ecosystem",
       "simulation",
-      "interactive",
-      "mouse-driven",
-      "cellular-automata",
-      "pattern",
-      "rgba-state-machine"
-    ],
-    "features": [
-      "mouse-driven",
-      "temporal",
-      "rgba-state-machine"
+      "predator-prey",
+      "audio-reactive",
+      "organic",
+      "extinction",
+      "recovery",
+      "complex-dynamics"
     ],
     "params": [
       {
-        "id": "growthRate1",
-        "name": "Species 1 Growth",
-        "type": "float",
+        "id": "growth1",
+        "name": "Species 1 Vitality",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Base growth potential for species 1 (amplified in bloom seasons)"
       },
       {
-        "id": "growthRate2",
-        "name": "Species 2 Growth",
-        "type": "float",
-        "default": 0.4,
+        "id": "growth2",
+        "name": "Species 2 Vitality",
+        "default": 0.45,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Base growth potential for species 2"
       },
       {
-        "id": "diffusion",
-        "name": "Diffusion Rate",
-        "type": "float",
-        "default": 0.3,
+        "id": "seasonalVolatility",
+        "name": "Seasonal Volatility",
+        "default": 0.35,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "How dramatically audio seasons affect the ecosystem (treble spikes create chaos)"
       },
       {
-        "id": "toxinStrength",
-        "name": "Toxin Strength",
-        "type": "float",
+        "id": "keystoneImpact",
+        "name": "Keystone Impact",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "How strongly the mouse (keystone species) can trigger extinction or bloom events"
       }
     ]
   },
@@ -402,57 +414,65 @@
     "id": "alpha-reaction-diffusion-rgba",
     "name": "Alpha Reaction Diffusion RGBA",
     "url": "shaders/alpha-reaction-diffusion-rgba.wgsl",
-    "description": "Four-species reaction-diffusion simulation packed into RGBA32FLOAT. A feeds B, C feeds D, with cross-inhibition between pairs. Creates complex multi-color patterns impossible in 2-species systems.",
+    "category": "simulation",
+    "description": "Two competing four-chemical ecosystems in a single RGBA field. Bass makes predators more aggressive, mids increase competition between ecosystems, treble triggers spore-like bursts. Mouse acts as a keystone species that can trigger localized extinction and recovery events. Depth creates vertical stratification in diffusion rates.",
+    "features": [
+      "multi-species-ecosystem",
+      "predator-prey",
+      "audio-reactive",
+      "depth-stratified",
+      "mouse-keystone",
+      "temporal"
+    ],
     "tags": [
       "reaction-diffusion",
+      "ecosystem",
+      "predator-prey",
+      "audio-reactive",
       "simulation",
-      "interactive",
-      "mouse-driven",
-      "pattern",
-      "rgba-state-machine",
-      "colorful"
-    ],
-    "features": [
-      "mouse-driven",
-      "temporal",
-      "rgba-state-machine"
+      "organic",
+      "complex-patterns"
     ],
     "params": [
       {
         "id": "feed",
-        "name": "Feed Rate",
-        "type": "float",
+        "name": "Nutrient Availability",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "How much raw material is available for both ecosystems to grow"
       },
       {
-        "id": "kill",
-        "name": "Kill Rate",
-        "type": "float",
+        "id": "predation",
+        "name": "Predation Pressure",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Base aggression of predators (further amplified by bass)"
       },
       {
-        "id": "crossInhibit",
-        "name": "Cross Inhibition",
-        "type": "float",
+        "id": "competition",
+        "name": "Ecosystem Competition",
         "default": 0.3,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "How fiercely the two separate ecosystems suppress each other (mids increase this)"
       },
       {
-        "id": "sourceMix",
-        "name": "Source Mix",
-        "type": "float",
+        "id": "source_nutrients",
+        "name": "Source Nutrients",
         "default": 0.2,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "How much the input image/video feeds the simulation as extra nutrients"
       }
     ]
   },

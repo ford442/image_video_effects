@@ -18,9 +18,10 @@
 - **60 fps Target** — Mid-range GPUs (integrated graphics) must maintain smooth performance. Profile before shipping.
 - **Modularity** — Effects should be self-contained. Hybrid effects are allowed but must stay within the standard `Uniforms` interface.
 - **Agent Output Discipline**:
-  - When creating **new shaders**: Output **only** the `.wgsl` file content + the exact JSON snippet for the category list.
+  - When creating **new shaders**: Output **only** the `.wgsl` file content + the exact JSON snippet for the category list (Kimi follows the v2 triple-contract + Standard Hybrid Header rule — see `agents/KIMI_CLI_SWARM_UPGRADE_PLAN.md`).
   - For optimizations/fixes: Provide clear diffs or edit instructions.
   - Never touch package.json, tsconfig, or core infrastructure without a dedicated task.
+  - Kimi Code CLI now operates under the Enhanced v2 Operating Procedure (creative brief + differentiation block + post-generation guard + `.notes.kimi.md` handoff to Claude).
 
 ---
 
@@ -141,7 +142,7 @@ Ready for merge. Swarm continues next week.
 | Role | Best Model/Tool | Focus | Constraints |
 |------|------------------|-------|-------------|
 | **Creative Director / Ideation** | Grok | Visual poetry, new concepts, “wow” factor | Stay within hot-swap rules |
-| **Shader Engineer** | Kimi Code CLI, Grok Build | Fast, correct WGSL implementation | Output WGSL + JSON only |
+| **Shader Engineer** | Kimi Code CLI (v2 OP) | Fast, correct WGSL implementation under the triple-contract + guard | Output only WGSL (or WGSL + minimal JSON delta); must pass kimi-output-guard |
 | **Performance Engineer** | Claude / Grok | Profiling, workgroup tuning, memory | Conservative changes |
 | **QA & Integration** | Testing agent + manual spot checks | Hot-swap, FPS, interaction, depth | Break nothing |
 | **Release Engineer** | Jules (GitHub) | PR creation, description, labels | Follow PR template |
@@ -182,11 +183,11 @@ Use Kimi Code CLI in swarm mode with PLAN.md context and generate this week’s 
 ```
 
 **As Agent**:
-1. Read `PLAN.md`, `grok.md`, `AGENTS.md`, `README.md`
+1. Read `PLAN.md`, `grok.md`, `AGENTS.md`, `README.md`, and the current `agents/KIMI_CLI_SWARM_UPGRADE_PLAN.md` (v2)
 2. Check current date → create branch `weekly-shader-swarm-2026-XX`
-3. Start with Phase 1 (Ideation)
-4. Execute phases in order
-5. End with ready PR + summary comment
+3. Start with Phase 1 (Ideation) — produce the `weekly-ideation-YYYY-WW.md` artifact
+4. Execute phases in order, using the v2 Kimi prompt template and guard for all Kimi work
+5. End with ready PR + summary comment + handoff of all `*.notes.kimi.md` files to the Claude polish pass
 
 ---
 

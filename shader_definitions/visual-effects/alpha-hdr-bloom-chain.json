@@ -1,6 +1,7 @@
 {
   "id": "alpha-hdr-bloom-chain",
   "name": "Alpha HDR Bloom Chain",
+  "category": "visual-effects",
   "url": "shaders/alpha-hdr-bloom-chain.wgsl",
   "description": "HDR bloom effect where alpha stores exposure/overexposure value. Identifies pixels above white point, radially blurs the excess brightness, and composites with ACES tone mapping. Mouse and ripples trigger localized flashes.",
   "tags": [

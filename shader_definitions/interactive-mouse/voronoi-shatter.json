@@ -1,8 +1,11 @@
 {
   "id": "voronoi-shatter",
   "name": "Voronoi Shatter",
+  "category": "interactive-mouse",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -37,7 +40,9 @@
   "url": "shaders/voronoi-shatter.wgsl",
   "description": "Breaks the image into crystalline shards that react to mouse movement.",
   "tags": [
-    "filter",
-    "image-processing"
+    "interactive",
+    "crystal",
+    "shatter",
+    "audio-reactive"
   ]
 }

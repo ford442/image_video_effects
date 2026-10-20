@@ -6,9 +6,11 @@
     "mouse-driven",
     "audio-reactive",
     "temporal",
+    "depth-aware",
+    "blackbody",
     "upgraded-rgba"
   ],
-  "description": "Reveals a spectral dimension where you paint with the mouse. Reacts to audio bass.",
+  "description": "Temporal spectral painting with physical blackbody radiation colors. ACES tone-mapped temporal feedback. Bass creates bloom around strokes. Depth makes background strokes diffuse like watercolor.",
   "params": [
     {
       "id": "brush-size",
@@ -43,5 +45,6 @@
     "filter",
     "image-processing",
     "audio-reactive"
-  ]
+  ],
+  "category": "image"
 }

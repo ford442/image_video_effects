@@ -1,10 +1,13 @@
 {
   "id": "kaleido-portal-interactive",
+  "category": "interactive-mouse",
   "url": "shaders/kaleido-portal-interactive.wgsl",
   "icon": "circle",
   "description": "A circular portal that reveals a kaleidoscopic view of the video, controlled by the mouse.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -38,7 +41,10 @@
   ],
   "tags": [
     "mouse-driven",
-    "interactive"
+    "interactive",
+    "kaleidoscope",
+    "portal",
+    "audio-reactive"
   ],
   "name": "Kaleido Portal"
 }
