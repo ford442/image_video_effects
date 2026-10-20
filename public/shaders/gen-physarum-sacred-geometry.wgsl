@@ -7,8 +7,9 @@
 //  Ideas: Flower-of-Life compass; Tero tube reinforcement; shuttle streaming; five-fold dislocation scar;
 //         isotropic 9-point Laplacian diffusion + vein cross-section (sol core / gel wall) from −∇²₉ (§12.2D);
 //         plasmodial sheet filling the vesica petals bounded by live arcs (§12.1 t2)
-//  A packing: ACES display RGBA in A (alpha = pheromone trail density, fed back from C.a as the Physarum
-//             trail field); writeTexture alpha = 0.88 + 0.12·trail (display only)
+//  A packing: ACES display RGBA in A (alpha = pheromone trail density in [0,1], fed back from C.a as the
+//             Physarum trail field; saturating deposit keeps it off the clamp); writeTexture alpha =
+//             0.88 + 0.12·trail (display only)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 // zoom_params: x=Intensity, y=Speed, z=Scale, w=Mouse Influence
@@ -252,7 +253,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ── Native idea 2: Tero flux-adaptive tubes ─────────────────────────
     // dD/dt = f(|Q|) - D: strands carrying flux gain conductance (slower decay,
     // stronger deposition); idle strands thin out and are pruned.
-    let conductance = smoothstep(0.06, 0.6, blurResult);
+    // Reinforcement starts at strand level (0.2), not at 0.06: from 0.06 the
+    // faint jitter/diffusion haze also got slower decay + 2.5× deposit, so over
+    // minutes the whole field ratcheted up (median trail 0.08 → 0.43).
+    let conductance = smoothstep(0.2, 0.7, blurResult);
     let decayRate = mix(0.965, 0.985, conductance);
     // Diffusion spread over a trail lifetime must also scale with S² (0.12 at S ≈ 41 px).
     let diffK = clamp(0.12 * (S / 41.0) * (S / 41.0), 0.005, 0.5);
@@ -267,23 +271,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // per unit path length instead, so one pass lays ~0.6 and strands stay thin.
     let pathNorm = clamp(moveSpeed / (sigma * 2.5066), 0.03, 1.0) * 1.2;
     let depositGain = 0.5 * pathNorm * (1.0 + geo) * teroGain * mix(0.55, 1.45, intensity) * (1.0 + bass * 0.4);
-    let trailDensity = clamp(diffused + deposit * depositGain, 0.0, 1.0);
+    // Saturating deposit: a tube can only thicken into the space it has left
+    // (×(1 − trail)), so strands settle at a bounded level instead of piling
+    // into the hard clamp at 1; a tiny evaporation floor returns the unvisited
+    // background to 0. (×1.5 keeps the early-growth density of the old linear add.)
+    let depAmt = clamp(deposit * depositGain * 1.5, 0.0, 1.0);
+    let trailDensity = clamp(diffused + depAmt * (1.0 - diffused) - 0.0006, 0.0, 1.0);
 
     // Procedural color mapping with geometry + orbit trap accents
     let trap = mandelbrotTrap((uv - 0.5) * 2.5);
     let accent = exp(-trap * 5.0) * (0.5 + treble * 0.5);
-    let t = trailDensity * 2.0 + geo * 0.6 + accent * 0.4;
+    // Display trail: the saturating law leaves short-run peaks ~13% below the
+    // old clamp at 1, so the colour terms see trail × 1.15. The palette index also takes
+    // half the 3×3 mean: 2 palette cycles per unit trail turned pixel-scale
+    // trail noise into rainbow speckle.
+    let trailVis = clamp(trailDensity * 1.15, 0.0, 1.0);
+    let trailCol = clamp(mix(trailDensity, blurResult, 0.5) * 1.15, 0.0, 1.0);
+    let t = trailCol * 2.0 + geo * 0.6 + accent * 0.4;
     let a = vec3<f32>(0.5, 0.5, 0.5);
     let b = vec3<f32>(0.5, 0.5, 0.5);
     let c = vec3<f32>(1.0, 1.0, 1.0);
     let d = vec3<f32>(0.263, 0.416, 0.557);
     var colorVec = a + b * cos(6.28318 * (c * t + d));
     // Thick, high-conductance tubes glow (protoplasmic streaming)
-    colorVec += colorVec * smoothstep(0.45, 1.0, trailDensity) * conductance * (0.35 + mids * 0.3);
+    colorVec += colorVec * smoothstep(0.45, 1.0, trailVis) * conductance * (0.35 + mids * 0.3);
     // Idea: shuttle streaming — brightness pulses along thick, high-conductance tubes.
     let streamPhase = dot(uv, vec2<f32>(14.0, 8.0)) * 10.0 - time * (1.4 + speed * 3.2);
     let stream = pow(max(0.5 + 0.5 * sin(streamPhase), 0.0), 5.0);
-    colorVec += colorVec * stream * conductance * trailDensity * (0.28 + mids * 0.2);
+    colorVec += colorVec * stream * conductance * trailVis * (0.28 + mids * 0.2);
     // Idea: five-fold dislocation — one hashed lattice site breaks the hex compass.
     let defectId = floor(p / max(S, 1.0));
     let defect = step(0.975, hash21(defectId + vec2<f32>(2.2, 9.4))) * exp(-length(fract(p / max(S, 1.0)) - 0.5) * 7.0);
@@ -293,8 +308,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // A Physarum vein is a gel ectoplasm wall around a streaming sol core. The
     // Laplacian is negative on a strand's ridge and positive on its flanks, so
     // the core gets the yellow sol glow and the flanks a darker ochre gel rim.
-    let core = max(smoothstep(0.01, 0.08, -lap9) * smoothstep(0.1, 0.5, trailDensity),
-                   smoothstep(0.7, 1.0, trailDensity) * 0.7);
+    let core = max(smoothstep(0.01, 0.08, -lap9) * smoothstep(0.1, 0.5, trailVis),
+                   smoothstep(0.7, 1.0, trailVis) * 0.7);
     let wall = smoothstep(0.01, 0.07, lap9) * smoothstep(0.04, 0.3, blurResult);
     colorVec = mix(colorVec, colorVec * 0.4 + vec3<f32>(0.32, 0.2, 0.04), wall * 0.65);
     colorVec += vec3<f32>(1.0, 0.86, 0.32) * core * (0.45 + mids * 0.35) * (0.6 + 0.4 * conductance);
@@ -305,13 +320,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // a thin protoplasm sheet before pruning them, so each petal fills with a
     // translucent yellow film as strongly as its bounding arcs carry trail.
     let petal = abs(fract(cover * 0.5) * 2.0 - 1.0);      // 1 for odd cover, 0 for even
-    let sheet = petal * smoothstep(0.2, 0.6, arcTrail / max(cover, 1.0)) * (1.0 - smoothstep(0.2, 0.7, trailDensity));
+    let sheet = petal * smoothstep(0.2, 0.6, arcTrail * 1.15 / max(cover, 1.0)) * (1.0 - smoothstep(0.2, 0.7, trailVis));
     let sheetCol = vec3<f32>(0.8, 0.64, 0.16);
 
     // Composite with original video
     let vidColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let coverage = clamp(trailDensity + geo * 0.4 + accent * 0.3 + sheet * 0.3, 0.0, 1.0);
-    var mixed = mix(vidColor.rgb, colorVec, clamp(trailDensity + geo * 0.25, 0.0, 1.0));
+    let coverage = clamp(trailVis + geo * 0.4 + accent * 0.3 + sheet * 0.3, 0.0, 1.0);
+    var mixed = mix(vidColor.rgb, colorVec, clamp(trailVis + geo * 0.25, 0.0, 1.0));
     mixed = mix(mixed, sheetCol, sheet * 0.42 * (1.0 + bass * 0.3));
 
     // Held mouse: warm oat-flake glow at the food source
