@@ -184,6 +184,14 @@
       "deferred_at": "2026-10-16",
       "expires": "2026-11-15",
       "reason": "gpu-capture-pending"
+    },
+    {
+      "id": "gen-bioluminescent-neural-coral-matrix",
+      "added_by": "Jules",
+      "deferred_at": "2026-10-20",
+      "expires": "2026-11-19",
+      "reason": "gpu-capture-pending",
+      "failure_note": "New shader requires GPU capture for thumbnail"
     }
   ]
 }
