@@ -4096,6 +4096,59 @@
     "category": "generative"
   },
   {
+    "id": "gen-bioluminescent-neural-coral-matrix",
+    "name": "Bioluminescent Neural-Coral Matrix",
+    "category": "generative",
+    "tags": [
+      "organic",
+      "neural",
+      "coral",
+      "bioluminescence",
+      "cybernetic",
+      "sdf",
+      "audio-reactive"
+    ],
+    "workgroup_size": [
+      16,
+      16
+    ],
+    "url": "shaders/gen-bioluminescent-neural-coral-matrix.wgsl",
+    "parameters": [
+      {
+        "name": "Structure Scale",
+        "uniform": "zoom_params.x",
+        "default": 2.5,
+        "min": 1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "name": "Distortion Intensity",
+        "uniform": "zoom_params.y",
+        "default": 1.5,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "name": "Travel Speed",
+        "uniform": "zoom_params.z",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "name": "Bioluminescence",
+        "uniform": "zoom_params.w",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      }
+    ]
+  },
+  {
     "id": "gen-bioluminescent-neural-lattice-weaver",
     "name": "Bioluminescent Neural-Lattice Weaver",
     "category": "generative",

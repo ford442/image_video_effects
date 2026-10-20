@@ -689,11 +689,6 @@
       "added": "2026-10-18T15:31:38.231563",
       "status": "completed",
       "completed_at": "2026-10-19T07:53:25.435980"
-    },
-    {
-      "filename": "2026-10-19_bioluminescent-neural-coral-matrix.md",
-      "title": "Bioluminescent Neural-Coral Matrix",
-      "added": "2026-10-19T15:16:22.288113"
     }
   ],
   "current": null,
@@ -910,6 +905,13 @@
       "added": "2026-08-21T15:28:56.185053",
       "status": "completed",
       "completed_at": "2026-08-26T08:14:45.326604+00:00"
+    },
+    {
+      "filename": "2026-10-19_bioluminescent-neural-coral-matrix.md",
+      "title": "Bioluminescent Neural-Coral Matrix",
+      "added": "2026-10-19T15:16:22.288113",
+      "status": "completed",
+      "completed_at": "2026-10-20T07:57:42.816754+00:00"
     }
   ],
   "completed": [
