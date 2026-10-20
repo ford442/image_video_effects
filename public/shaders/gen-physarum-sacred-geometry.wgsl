@@ -8,10 +8,15 @@
 //         isotropic 9-point Laplacian diffusion + vein cross-section (sol core / gel wall) from −∇²₉ (§12.2D);
 //         plasmodial sheet filling the vesica petals bounded by live arcs (§12.1 t2)
 //  A packing: ACES display RGBA in A (alpha = pheromone trail density in [0,1], fed back from C.a as the
-//             Physarum trail field; saturating deposit keeps it off the clamp); writeTexture alpha =
-//             0.88 + 0.12·trail (display only)
+//             Physarum trail field; saturating deposit keeps it off the clamp); corner texel A.r =
+//             TRAIL_SENTINEL (C without it = another shader's data → trail starts empty);
+//             writeTexture alpha = 0.88 + 0.12·trail (display only)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
+
+// A.r of the corner texel: marks C as this shader's own trail (f16-exact, never a display value).
+const TRAIL_SENTINEL: f32 = -0.6875;
+var<private> trailOwned: f32 = 0.0;
 // zoom_params: x=Intensity, y=Speed, z=Scale, w=Mouse Influence
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -100,7 +105,7 @@ fn sense(pos: vec2<f32>, angleOffset: f32, sensorDist: f32) -> f32 {
     let inBounds = step(0.0, sensorPos.x) * step(sensorPos.x, res.x - 1.0) *
                    step(0.0, sensorPos.y) * step(sensorPos.y, res.y - 1.0);
     let clampedPos = clamp(sensorPos, vec2<f32>(0.0), res - 1.0);
-    let trail = textureLoad(dataTextureC, vec2<i32>(clampedPos), 0).a;
+    let trail = textureLoad(dataTextureC, vec2<i32>(clampedPos), 0).a * trailOwned;
     let uv = sensorPos / res;
     let warp = domainWarp(uv * 4.0, u.config.x * 0.1);
     let foodColor = textureSampleLevel(readTexture, u_sampler, clamp(warp, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
@@ -158,6 +163,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var cover = 0.0;        // Idea 6: how many compass discs contain this pixel
     var arcTrail = 0.0;     // Idea 6: trail on the arcs that bound this petal
     let maxCoord = res - vec2<i32>(1);
+    // C still holds the previous shader's data texture on the first frame after a
+    // switch (usually alpha 1). Read as trail, that full field sat above the
+    // conductance onset, decayed at 0.985 and was still a ~0.3–0.5 haze 60 frames
+    // later. The corner texel of A carries a sentinel; without it, start empty.
+    let owned = select(0.0, 1.0, abs(textureLoad(dataTextureC, maxCoord, 0).r - TRAIL_SENTINEL) < 1e-3);
+    trailOwned = owned;
     for (var dj = -2; dj <= 2; dj = dj + 1) {
         let j = j0 + dj;
         let xOff = select(0.0, S * 0.5, (abs(j) % 2) == 1);
@@ -170,7 +181,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             if (dc < S) {
                 cover += 1.0;
                 let proj = center + (p - center) / max(dc, 1e-3) * S;
-                arcTrail += textureLoad(dataTextureC, clamp(vec2<i32>(proj), vec2<i32>(0), maxCoord), 0).a;
+                arcTrail += textureLoad(dataTextureC, clamp(vec2<i32>(proj), vec2<i32>(0), maxCoord), 0).a * owned;
             }
             if (abs(dc - S) > reach) { continue; }
             let orbitDir = select(-1.0, 1.0, hash21(cellId + vec2<f32>(7.1, 3.3)) > 0.5);
@@ -235,12 +246,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // strands bled into a saturated blob field and the compass circles never
     // read. Diffuse with the isotropic stencil (0.2 edges, 0.05 corners, −1
     // centre; clamped coords = no-flux border) at a rate that keeps strands thin.
-    let prevTrail = textureLoad(dataTextureC, coords, 0).a;
+    let prevTrail = textureLoad(dataTextureC, coords, 0).a * owned;
     var edgeSum = 0.0;
     var cornerSum = 0.0;
     for (var i = -1; i <= 1; i = i + 1) {
         for (var j = -1; j <= 1; j = j + 1) {
-            let tap = textureLoad(dataTextureC, clamp(coords + vec2<i32>(i, j), vec2<i32>(0), maxCoord), 0).a;
+            let tap = textureLoad(dataTextureC, clamp(coords + vec2<i32>(i, j), vec2<i32>(0), maxCoord), 0).a * owned;
             let isEdge = select(0.0, 1.0, (i == 0) != (j == 0));
             let isCorner = select(0.0, 1.0, i != 0 && j != 0);
             edgeSum += tap * isEdge;
@@ -340,7 +351,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let display = acesToneMap(controlled.rgb * (1.0 + bass * 0.1));
     // A.a stays the raw trail (it is the sim state read back from C.a); the
     // display alpha floors at 0.88 so the dark substrate is not a white-page wash.
-    let finalColor = vec4<f32>(display, trailDensity);
+    var finalColor = vec4<f32>(display, trailDensity);
+    if (all(coords == maxCoord)) { finalColor.r = TRAIL_SENTINEL; }
     let displayOut = vec4<f32>(display, clamp(0.88 + trailDensity * 0.12, 0.0, 1.0));
 
     // Depth-aware output
