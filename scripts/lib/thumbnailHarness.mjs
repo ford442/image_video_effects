@@ -151,6 +151,17 @@ export async function resetFeedbackState(page, scale = null) {
   }, scale);
 }
 
+/**
+ * Push a shader's JSON slider defaults into the slot. setSlotShader skips the React
+ * path that applies them, so without this the capture runs on whatever zoom_params
+ * the renderer last held (the boot shader's, or the previous capture's).
+ */
+export async function applySlotParams(page, zoomParams, slot = 0) {
+  await page.evaluate(({ p, slot }) => {
+    window.__pixelocity__?.renderer?.setSlotParams?.(slot, p[0], p[1], p[2], p[3]);
+  }, { p: zoomParams, slot });
+}
+
 export async function applyTestState(page, state) {
   await page.evaluate((s) => {
     window.__pixelocity__?.setTestRenderState(s);
