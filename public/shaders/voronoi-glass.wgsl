@@ -1,3 +1,10 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Voronoi Glass
+//  Animated Voronoi cells refracting the source as bevelled glass tiles,
+//  with mouse-attracted cell points and audio-swelled density.
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -32,13 +39,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
   // ═══ AUDIO REACTIVITY ═══
-  let audioOverall = u.zoom_config.x;
-  let audioBass = audioOverall * 1.5;
-  let audioReactivity = 1.0 + audioOverall * 0.3;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
 
-  // Params
-  let cell_density = 5.0 + u.zoom_params.x * 20.0;
-  let refraction_strength = u.zoom_params.y * 0.1;
+  // Params — bass swells the cells, mids drive refraction
+  let cell_density = (5.0 + u.zoom_params.x * 20.0) * (1.0 + bass * 0.3);
+  let refraction_strength = u.zoom_params.y * 0.1 * (1.0 + mids * 0.5);
   let border_width = u.zoom_params.z * 0.1;
   let mouse_attraction = u.zoom_params.w;
 
@@ -110,7 +116,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color += vec3<f32>(0.1) * (1.0 - m_dist); // Center glow
   color -= vec3<f32>(0.2) * smoothstep(0.4, 0.5, m_dist); // Edge darken
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
+  // Glass alpha: cell centers read as thick/solid, bevelled edges thin out
+  let alpha = clamp(dot(color, vec3<f32>(0.299, 0.587, 0.114)) * 0.6 + (1.0 - m_dist) * 0.4, 0.0, 1.0);
+  let finalOut = vec4<f32>(color, alpha);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), finalOut);
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), finalOut);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

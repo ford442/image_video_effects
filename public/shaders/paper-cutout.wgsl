@@ -104,7 +104,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Layer-aware alpha: shadowed valleys recede, lit layers stay opaque
   let alpha = clamp(quantized_luma * (1.0 - shadow * 0.5) + 0.2, 0.0, 1.0);
-  textureStore(writeTexture, coord, vec4<f32>(final_color, alpha));
+  let finalOut = vec4<f32>(final_color, alpha);
+  textureStore(writeTexture, coord, finalOut);
+  textureStore(dataTextureA, coord, finalOut);
 
   // Pass through depth
   let depth = textureSampleLevel(readDepthTexture, filteringSampler, uv, 0.0).r;
