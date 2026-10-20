@@ -9,6 +9,12 @@ venv/
 .venv/
 emsdk
 
+# clangd / CLion index — regenerate with `npm run wasm:compile-commands`
+/compile_commands.json
+wasm_renderer/build-ide/
+wasm_renderer/build-cmake/
+.cache/clangd/
+
 # Python cache
 __pycache__/
 *.pyc

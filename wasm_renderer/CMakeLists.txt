@@ -15,6 +15,11 @@ project(PixelocityWASM CXX)
 #
 #   cmake -S wasm_renderer -B wasm_renderer/build-cmake
 #   cmake --build wasm_renderer/build-cmake --target pixelocity_wasm
+#
+# IDE indexing: this project compiles no TUs, so CMAKE_EXPORT_COMPILE_COMMANDS
+# yields an empty database. Use `npm run wasm:compile-commands` instead — it
+# renders compile_commands.json from the contract's std / opt / sources with the
+# emdawnwebgpu headers on the include path (port stays link-time only).
 
 # C++ standard for IDE indexing comes from the contract (same value build.sh uses).
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/../src/contracts/wasm_compile_flags.json" WASM_FLAGS_JSON)

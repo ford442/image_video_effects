@@ -34,6 +34,8 @@ ASYNCIFY is required for `wgpuInstanceWaitAny` + emdawn callback mode (`device.c
 
 CI and `npm run wasm:build` use **`build.sh` only**. CMake (`CMakeLists.txt`) is IDE/fallback — two-step emdawn historically broke with `-sUSE_WEBGPU=1` leakage. **2026-09-19:** CMake is now a thin wrapper that runs `build.sh` (see the dual-build section below).
 
+**2026-09-21:** The TU list moved into the contract (`sources`); build.sh reads it. `compile_commands.json` is rendered from the contract by `npm run wasm:compile-commands`, not from CMake — the wrapper compiles nothing, so `CMAKE_EXPORT_COMPILE_COMMANDS` would be empty. All 9 TUs pass `-fsyntax-only` with the generated per-TU flags (local em++ 6.0.6). Human dump: `reports/wasm_compile_line.txt`.
+
 **2026-07-26:** Removed duplicate `-sGROWABLE_ARRAYBUFFERS=0` from the emcc line (cosmetic; no size change).
 
 
