@@ -62,7 +62,7 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     );
 }
 
-@compute @workgroup_size(16, 16)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let resolution = u.config.zw;
     if (f32(id.x) >= resolution.x || f32(id.y) >= resolution.y) {
@@ -82,8 +82,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Camera setup
     var ro = vec3<f32>(0.0, 0.0, 3.0);
     ro = ro * rotate3D(vec3<f32>(0.0, 1.0, 0.0), time * 0.2);
-    let target = vec3<f32>(0.0, 0.0, 0.0);
-    let cz = normalize(target - ro);
+    let lookat_target = vec3<f32>(0.0, 0.0, 0.0);
+    let cz = normalize(lookat_target - ro);
     let cx = normalize(cross(cz, vec3<f32>(0.0, 1.0, 0.0)));
     let cy = normalize(cross(cx, cz));
     let rd = normalize(uv.x * cx + uv.y * cy + 1.5 * cz);
