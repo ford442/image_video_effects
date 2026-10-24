@@ -1,0 +1,53 @@
+{
+  "id": "gen-stellar-mycelium-overdrive",
+  "name": "Stellar Mycelium Overdrive",
+  "description": "A hyper-organic network of glowing stardust mycelium that dynamically branches, pulses with cosmic energy, and responds to gravity wells.",
+  "category": "generative",
+  "tags": [
+    "organic",
+    "cosmic",
+    "mycelium",
+    "sdf",
+    "bioluminescent"
+  ],
+  "url": "shaders/gen-stellar-mycelium-overdrive.wgsl",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "params": [
+    {
+      "id": "density",
+      "name": "Density",
+      "default": 1.0,
+      "min": 0.1,
+      "max": 5.0,
+      "step": 0.1
+    },
+    {
+      "id": "pulse_speed",
+      "name": "Pulse Speed",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.1
+    },
+    {
+      "id": "glow_intensity",
+      "name": "Glow Intensity",
+      "default": 2.0,
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.1
+    },
+    {
+      "id": "color_shift",
+      "name": "Color Shift",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.05
+    }
+  ]
+}
