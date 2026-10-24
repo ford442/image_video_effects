@@ -694,11 +694,6 @@
       "filename": "2026-10-20_quantum-coral-reef.md",
       "title": "Quantum Coral Reef",
       "added": "2026-10-20T15:16:21.619835"
-    },
-    {
-      "filename": "2026-10-21_stellar-mycelium-overdrive.md",
-      "title": "Stellar Mycelium Overdrive",
-      "added": "2026-10-21T15:42:11.213865"
     }
   ],
   "current": null,
@@ -922,6 +917,13 @@
       "added": "2026-10-19T15:16:22.288113",
       "status": "completed",
       "completed_at": "2026-10-20T07:57:42.816754+00:00"
+    },
+    {
+      "filename": "2026-10-21_stellar-mycelium-overdrive.md",
+      "title": "Stellar Mycelium Overdrive",
+      "added": "2026-10-21T15:42:11.213865",
+      "status": "completed",
+      "completed_at": "2026-10-24T07:58:24.615112+00:00"
     }
   ],
   "completed": [
