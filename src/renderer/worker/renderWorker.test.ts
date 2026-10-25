@@ -572,6 +572,22 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
     await backend.destroy();
   });
 
+  it('replaces the cached-shader set on every snapshot so LRU evictions read as uncached (#1511 bug 7)', async () => {
+    const { backend } = await backendWithWorker();
+    const deliver = (cachedShaderIds: string[]) =>
+      (backend as unknown as { onEvent: (e: RenderEvent) => void }).onEvent({
+        type: 'snapshot',
+        snapshot: { initialized: true, cachedShaderIds } as unknown as Extract<RenderEvent, { type: 'snapshot' }>['snapshot'],
+      });
+    deliver(['a', 'b']);
+    expect(backend.isShaderCached('a')).toBe(true);
+    expect(backend.isShaderCached('b')).toBe(true);
+    deliver(['b']);
+    expect(backend.isShaderCached('a')).toBe(false);
+    expect(backend.isShaderCached('b')).toBe(true);
+    await backend.destroy();
+  });
+
   it('gives every proxy a fresh device generation and stamps it on everything it sends', async () => {
     const first = await backendWithWorker();
     const second = await backendWithWorker();

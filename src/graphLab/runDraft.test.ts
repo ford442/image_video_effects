@@ -206,3 +206,16 @@ describe('readLive', () => {
     expect(readLive(manager).report).toBeNull();
   });
 });
+
+describe('runDraft after a worker LRU eviction (#1511 bug 7)', () => {
+  it('recompiles an entry that is no longer reported as cached', async () => {
+    const { manager, calls, cached } = fakeManager();
+    const draft = waveTank();
+    await runDraft(manager, 1, draft);
+    // The next worker snapshot no longer lists wave-step: the proxy reports it uncached.
+    cached.delete('wave-step');
+    calls.length = 0;
+    await runDraft(manager, 1, draft);
+    expect(calls.filter((c) => c.startsWith('load:'))).toEqual(['load:wave-step:shaders/wave-step.wgsl']);
+  });
+});

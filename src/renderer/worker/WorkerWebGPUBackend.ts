@@ -128,7 +128,8 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   private video: HTMLVideoElement | null = null;
   private pump: VideoFramePump | null = null;
   private cpuImage: HTMLImageElement | HTMLCanvasElement | null = null;
-  private readonly cachedIds = new Set<string>();
+  /** The worker's pipeline cache as of the last snapshot (its LRU evicts, #1449), plus loads acked since. */
+  private cachedIds = new Set<string>();
   private readonly audio = { bass: 0, mid: 0, treble: 0, freqBins: new Float32Array(FFT_BINS) };
   private lastFrameImage = '';
   /** SAB input ring when the page and the worker are cross-origin isolated (#1314 C3). */
@@ -256,7 +257,8 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
       this.snap = event.snapshot;
       // A lost worker never comes back; only a new backend (new worker) renders again.
       this.initialized = !this.lost && event.snapshot.initialized;
-      for (const id of event.snapshot.cachedShaderIds) this.cachedIds.add(id);
+      // Replace, never merge: an id the worker's LRU evicted must read as uncached (#1511 bug 7).
+      this.cachedIds = new Set(event.snapshot.cachedShaderIds);
     } else if (event.type === 'error') {
       reportError(event.error);
     } else if (event.type === 'deviceLost') {
@@ -440,6 +442,7 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   async loadShader(id: string, url: string): Promise<boolean> {
     if (!this.client) return false;
     const ok = await this.client.rpc({ type: 'loadShader', id, url: absoluteUrl(url) });
+    // Optimistic until the next snapshot replaces the set.
     if (ok) this.cachedIds.add(id);
     return ok;
   }
