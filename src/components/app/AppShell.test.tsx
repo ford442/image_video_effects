@@ -196,3 +196,53 @@ describe('AppShell renderer pill (WASM frozen R&D, #1080)', () => {
     expect(screen.queryByText('Experimental (R&D)')).not.toBeInTheDocument();
   });
 });
+
+describe('AppShell local uploads (#1511 bug 1)', () => {
+  const createObjectURL = vi.fn((file: File) => `blob:test/${file.name}`);
+  const revokeObjectURL = vi.fn();
+  beforeEach(() => {
+    mockedIsPublic.mockReturnValue(false);
+    createObjectURL.mockClear();
+    revokeObjectURL.mockClear();
+    Object.assign(URL, { createObjectURL, revokeObjectURL });
+  });
+
+  function resetSpy(input: HTMLInputElement): string[] {
+    const writes: string[] = [];
+    Object.defineProperty(input, 'value', { configurable: true, get: () => '', set: (v: string) => { writes.push(v); } });
+    return writes;
+  }
+
+  it('loads a picked image through the media loader and resets the input', async () => {
+    const handleLoadImage = vi.fn(async () => {});
+    const syncInputSourceToRenderer = vi.fn();
+    render(<AppShell {...baseProps({ handleLoadImage, syncInputSourceToRenderer })} />);
+    const input = screen.getByTestId('upload-image-input') as HTMLInputElement;
+    const resets = resetSpy(input);
+    const file = new File(['x'], 'photo.png', { type: 'image/png' });
+
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await vi.waitFor(() => expect(handleLoadImage).toHaveBeenCalledWith('blob:test/photo.png'));
+    expect(createObjectURL).toHaveBeenCalledWith(file);
+    expect(syncInputSourceToRenderer).toHaveBeenCalledWith('image');
+    expect(resets).toEqual(['']);
+  });
+
+  it('selects a picked video, switches to video input, and revokes the replaced URL', async () => {
+    const setSelectedVideo = vi.fn();
+    const syncInputSourceToRenderer = vi.fn();
+    render(<AppShell {...baseProps({ setSelectedVideo, syncInputSourceToRenderer })} />);
+    const input = screen.getByTestId('upload-video-input') as HTMLInputElement;
+    const resets = resetSpy(input);
+
+    fireEvent.change(input, { target: { files: [new File(['y'], 'one.mp4', { type: 'video/mp4' })] } });
+    await vi.waitFor(() => expect(setSelectedVideo).toHaveBeenCalledWith('blob:test/one.mp4'));
+    expect(syncInputSourceToRenderer).toHaveBeenCalledWith('video');
+
+    fireEvent.change(input, { target: { files: [new File(['z'], 'two.mp4', { type: 'video/mp4' })] } });
+    await vi.waitFor(() => expect(setSelectedVideo).toHaveBeenLastCalledWith('blob:test/two.mp4'));
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:test/one.mp4');
+    expect(resets).toEqual(['', '']);
+  });
+});

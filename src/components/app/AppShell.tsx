@@ -1,4 +1,4 @@
-import React, { RefObject, Suspense, lazy } from 'react';
+import React, { RefObject, Suspense, lazy, useCallback, useEffect, useRef } from 'react';
 import WebGPUCanvas from '../WebGPUCanvas';
 import Controls from '../Controls';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from '../../renderer/types';
@@ -11,6 +11,7 @@ import { SharedChain } from '../../services/layerChainShare';
 import { STORAGE_API_URL } from '../../config/appConfig';
 import { RenderQualityMode } from '../../config/performancePolicy';
 import { isPublicPixelocityHost } from '../../utils/publicHost';
+import { LocalMediaKind, useLocalMediaUpload } from '../../hooks/useLocalMediaUpload';
 
 const LiveStudioTab = lazy(() => import(/* webpackChunkName: "live-studio" */ '../LiveStudioTab'));
 
@@ -271,6 +272,27 @@ export function AppShell(props: AppShellProps) {
         rendererDiagnostics,
     } = props;
 
+    // Local uploads (#1511 bug 1): load the picked file as a blob: URL. The previous URL
+    // of the same kind is revoked once it has been replaced, and the last one on unmount.
+    const uploadedUrlsRef = useRef<Partial<Record<LocalMediaKind, string>>>({});
+    useEffect(() => () => {
+        for (const url of Object.values(uploadedUrlsRef.current)) if (url) URL.revokeObjectURL(url);
+    }, []);
+    const loadLocalMedia = useCallback(async (file: File, kind: LocalMediaKind) => {
+        const url = URL.createObjectURL(file);
+        const previous = uploadedUrlsRef.current[kind];
+        uploadedUrlsRef.current[kind] = url;
+        if (kind === 'image') {
+            syncInputSourceToRenderer('image');
+            await handleLoadImage(url);
+        } else {
+            setSelectedVideo(url);
+            syncInputSourceToRenderer('video');
+        }
+        if (previous) URL.revokeObjectURL(previous);
+    }, [handleLoadImage, setSelectedVideo, syncInputSourceToRenderer]);
+    const { onImageChange, onVideoChange } = useLocalMediaUpload(loadLocalMedia);
+
     const chromeHidden = !showSidebar && activeTab === 'main';
     const showRemoteButton = !isPublicPixelocityHost();
 
@@ -494,8 +516,8 @@ export function AppShell(props: AppShellProps) {
                 </main>
             </div>
             )}
-            <input type="file" ref={fileInputImageRef} accept="image/*" style={{display:'none'}} onChange={() => {}} />
-            <input type="file" ref={fileInputVideoRef} accept="video/*" style={{display:'none'}} onChange={() => {}} />
+            <input type="file" ref={fileInputImageRef} accept="image/*" style={{display:'none'}} onChange={onImageChange} data-testid="upload-image-input" />
+            <input type="file" ref={fileInputVideoRef} accept="video/*" style={{display:'none'}} onChange={onVideoChange} data-testid="upload-video-input" />
         </>
     );
 }

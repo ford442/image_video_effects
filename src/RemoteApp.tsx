@@ -4,6 +4,7 @@ import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from
 import { SyncMessage, FullState, SYNC_CHANNEL_NAME, VideoRecord } from './syncTypes';
 import { RemoteControlHeader } from './RemoteControlHeader';
 import { isRemoteChromeHidden, writeRemoteChromeParam } from './utils/remoteChrome';
+import { useLocalMediaUpload } from './hooks/useLocalMediaUpload';
 
 // Default State (matches App.tsx defaults roughly, but will be overwritten by sync)
 const DEFAULT_SLOT_PARAMS: SlotParams = {
@@ -222,12 +223,8 @@ const RemoteApp: React.FC = () => {
         sendMessage('CMD_SET_MUTED', muted);
     };
 
-    // File Uploads
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        // Read file
+    // File Uploads: forward the picked file to the main window (shared hook with App, #1511 bug 1)
+    const { onImageChange, onVideoChange } = useLocalMediaUpload(async (file, type) => {
         const buffer = await file.arrayBuffer();
         sendMessage('CMD_UPLOAD_FILE', {
             name: file.name,
@@ -235,10 +232,7 @@ const RemoteApp: React.FC = () => {
             mimeType: file.type,
             data: buffer
         });
-
-        // Reset input
-        e.target.value = '';
-    };
+    });
 
     if (!connected) {
         return (
@@ -281,14 +275,14 @@ const RemoteApp: React.FC = () => {
                 accept="image/*"
                 ref={fileInputImageRef}
                 style={{display: 'none'}}
-                onChange={(e) => handleFileUpload(e, 'image')}
+                onChange={onImageChange}
             />
             <input
                 type="file"
                 accept="video/*"
                 ref={fileInputVideoRef}
                 style={{display: 'none'}}
-                onChange={(e) => handleFileUpload(e, 'video')}
+                onChange={onVideoChange}
             />
 
             {/* Scrollable Content Container */}

@@ -465,8 +465,8 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 if (videoSourceUrl) {
                     src = videoSourceUrl; // Uploaded video (blob:)
                 } else if (selectedVideo) {
-                    // Handle both local files and full bucket URLs
-                    src = selectedVideo.startsWith('http')
+                    // Full bucket URLs and uploaded blob: URLs pass through; bare names are local files
+                    src = /^(https?|blob):/.test(selectedVideo)
                         ? selectedVideo
                         : `videos/${selectedVideo}`;
                 }
