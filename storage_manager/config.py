@@ -12,6 +12,12 @@ FTP_PASS = os.environ.get("FTP_PASS", "")
 FTP_DIR = os.environ.get("FTP_DIR", "/shaders")
 FTP_ENABLED = bool(FTP_HOST)
 
+# --- WEBHOOK SIGNING PROXY (#1511 bug 2) ---
+# The browser posts unsigned payloads to /api/webhook-proxy/image-effects; the
+# HMAC key stays server-side. Both unset -> the proxy answers 503.
+WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET", "")
+WEBHOOK_RECEIVER_URL = os.environ.get("WEBHOOK_RECEIVER_URL", "")
+
 # --- STORAGE MAP ---
 STORAGE_MAP = {
     "song": {"folder": "songs/", "index": "songs/_songs.json"},

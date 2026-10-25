@@ -16,6 +16,12 @@ FastAPI-based storage manager for Google Cloud Storage with shader library suppo
 ```bash
 GCP_BUCKET_NAME=your-bucket-name
 GCP_CREDENTIALS={"type": "service_account", ...}  # JSON string
+
+# Webhook signing proxy (POST /api/webhook-proxy/image-effects, #1511 bug 2).
+# The browser sends unsigned payloads. This server signs the raw body with HMAC-SHA256
+# and forwards it with `X-Hub-Signature-256: sha256=<hex>`. If either var is unset, it returns 503.
+WEBHOOK_SECRET=...                       # shared with the receiver; never put it in the React build
+WEBHOOK_RECEIVER_URL=https://storage.noahcohn.com/webhook/image-effects
 ```
 
 ## Running Locally
