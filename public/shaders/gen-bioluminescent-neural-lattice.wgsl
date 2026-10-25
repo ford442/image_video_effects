@@ -3,10 +3,15 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, temporal-feedback, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-27
+//  Upgraded: 2026-09-27, 2026-10-25
 //  Ideas: bass-triggered synapse firing pulses race along the lattice edges;
 //         bioluminescent afterglow via real dataTextureA/C temporal memory;
-//         treble shimmer on the closest-approach ambient glow
+//         treble shimmer on the closest-approach ambient glow; 2nd pass
+//         (2026-10-25): soft inverse-square soma glow at each cell seed (§12.2F);
+//         energy-conserving afterglow diffusion from exact C taps (§12.2F);
+//         refractory period damps re-firing of just-lit regions (§12.1 history).
+//         HEAD fixes: 180°-rotated camera basis vs cursor; mouse anchor left
+//         behind by the flying camera.
 //  A packing: display RGBA (afterglow-blended), C read back for temporal memory
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -108,7 +113,9 @@ fn map(p_in: vec3<f32>, time: f32, bass: f32, u_zoom: vec4<f32>) -> vec3<f32> {
     mouse.y *= -1.0;
 
     // Simple projection of mouse into scene space at some depth
-    let mouse_pos = vec3<f32>(mouse.x * 2.0, mouse.y * 2.0, 3.0);
+    // HEAD fix: the camera flies at 0.5/s, so the anchor rides 3 units ahead of it
+    // (it used to sit at world z=3 and the pull faded after ~10 s).
+    let mouse_pos = vec3<f32>(mouse.x * 2.0, mouse.y * 2.0, 2.0 + time * 0.5);
 
     // Warp space towards mouse slightly
     let dist_to_mouse = length(p - mouse_pos);
@@ -191,7 +198,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let cw = normalize(ta - ro);
     let cu = normalize(cross(cw, vec3<f32>(0.0, 1.0, 0.0)));
     let cv = cross(cu, cw);
-    let rd = normalize(uv.x * cu + uv.y * cv + 1.5 * cw);
+    // HEAD fix: cu = -x and cv = +y with uv.y pointing down gave a 180° rotated view,
+    // so the cursor warp sat opposite the pointer. Right = +x, up = +y now.
+    let rd = normalize(-uv.x * cu - uv.y * cv + 1.5 * cw);
 
     // Raymarching
     var d0 = 0.0;
@@ -227,6 +236,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // spark, distinct from the palette-driven ambient glow above
         fire_glow += vec3<f32>(0.6, 0.9, 1.0) * map_res.z * glow_factor * 0.05;
 
+        // Idea 4 (2nd pass A): soft inverse-square soma glow (§12.2F). map_res.y is the
+        // distance to the nearest cell seed, so each nucleus is a point light with a core
+        // radius (no singularity). Cheap: reuses the value map() already returned.
+        let soma = 0.012 / (map_res.y * map_res.y + 0.18);
+        glow += col_val * soma * glow_factor * glow_intensity;
+
         // Step forward
         d0 += max(d * 0.8, 0.01);
 
@@ -241,8 +256,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Depth fog
     let fog = 1.0 - exp(-d0 * 0.1);
 
+    // Idea 6 (2nd pass C): refractory period. A region that was just lit hard cannot flash
+    // again at full strength, so bursts read as travelling pulses instead of strobing.
+    let prevA = textureLoad(dataTextureC, id, 0);
+    let prevLuma = dot(prevA.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let refractory = 1.0 - 0.45 * smoothstep(0.45, 0.85, prevLuma);
+
     // Final composite
-    var col = mix(glow + fire_glow, bg_col, fog);
+    var col = mix(glow + fire_glow * refractory, bg_col, fog);
 
     // Idea 3: treble-driven shimmer on the ambient closest-approach glow
     let ambient = palette(min_dist, color_shift) * exp(-min_dist * 2.0) * glow_intensity;
@@ -255,9 +276,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 2: bioluminescent afterglow. dataTextureA/C now carry the real
     // display history (previously a dead binding), so recently-lit regions
     // keep a decaying glow rather than vanishing the instant the ray moves on.
-    let prevA = textureLoad(dataTextureC, id, 0);
+    // Idea 5 (2nd pass B): energy-conserving afterglow diffusion (§12.2F bloom row). The
+    // remembered light spreads to its neighbours with weights summing to 1, like
+    // dinoflagellate light diffusing through water: it softens, it never gains energy.
+    let cmax = dims_i32 - vec2<i32>(1);
+    let gN = textureLoad(dataTextureC, clamp(id + vec2<i32>(0, -2), vec2<i32>(0), cmax), 0).rgb;
+    let gS = textureLoad(dataTextureC, clamp(id + vec2<i32>(0, 2), vec2<i32>(0), cmax), 0).rgb;
+    let gE = textureLoad(dataTextureC, clamp(id + vec2<i32>(2, 0), vec2<i32>(0), cmax), 0).rgb;
+    let gW = textureLoad(dataTextureC, clamp(id + vec2<i32>(-2, 0), vec2<i32>(0), cmax), 0).rgb;
+    let prevSoft = prevA.rgb * 0.5 + (gN + gS + gE + gW) * 0.125;
     let afterglow_decay = clamp(0.78 + glow_intensity * 0.08, 0.7, 0.95);
-    let trailed = max(col, prevA.rgb * afterglow_decay);
+    let trailed = max(col, prevSoft * afterglow_decay);
 
     let lum = dot(trailed, vec3<f32>(0.2126, 0.7152, 0.0722));
     let alpha = clamp(lum * 1.4, 0.15, 1.0);

@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: hexagonal areolae pore lattice pitted into each frustule valve face; thin-film valve-thickness interference (2·n·d·cosθ) colouring the silica
+//  Upgraded: 2026-09-14, 2026-10-25
+//  Ideas: hexagonal areolae pore lattice pitted into each frustule valve face; thin-film valve-thickness interference (2·n·d·cosθ) colouring the silica; Airy-disc pore diffraction (§12.2F) — each areola is a circular aperture whose rings scale with λ; cribrum sieve plate (§12.1 tactic 1) — a finer hex lattice perforating every areola floor
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -78,17 +78,46 @@ fn frustuleLocal(p: vec3<f32>, mouse_pos: vec3<f32>) -> vec3<f32> {
 // Native idea 1: hexagonal areolae — the regular pore chambers of a diatom valve.
 // Each octahedral face is flattened to a 2D plane orthogonal to (1,1,1) and tiled
 // with a hex lattice; returns 1 at an areola centre, 0 on the silica ribs between.
-fn areolae(pos: vec3<f32>, poreDensity: f32) -> f32 {
+fn valveFace(pos: vec3<f32>) -> vec2<f32> {
     let a = abs(pos);
-    let face = vec2<f32>((a.x - a.y) * 0.70710678, (a.x + a.y - 2.0 * a.z) * 0.40824829);
-    let freq = 2.5 + poreDensity * 7.0;
-    let hp = face * freq;
+    return vec2<f32>((a.x - a.y) * 0.70710678, (a.x + a.y - 2.0 * a.z) * 0.40824829);
+}
+
+// Distance to the nearest hex-lattice centre (lattice period 1 in x, √3 in y).
+fn hexCell(hp: vec2<f32>) -> f32 {
     let s = vec2<f32>(1.0, 1.7320508);
     let h = s * 0.5;
     let c0 = modv2(hp, s) - h;
     let c1 = modv2(hp - h, s) - h;
-    let hexDist = min(length(c0), length(c1));
-    return smoothstep(0.36, 0.12, hexDist);
+    return min(length(c0), length(c1));
+}
+
+fn areolaFreq(poreDensity: f32) -> f32 {
+    return 2.5 + poreDensity * 7.0;
+}
+
+fn areolae(pos: vec3<f32>, poreDensity: f32) -> f32 {
+    return smoothstep(0.36, 0.12, hexCell(valveFace(pos) * areolaFreq(poreDensity)));
+}
+
+// Idea 4 (cribrum, §12.1 tactic 1): real areolae are closed by a sieve plate
+// (cribrum) perforated by a much finer pore lattice. Returns 1 at a sieve hole.
+fn cribrum(pos: vec3<f32>, poreDensity: f32) -> f32 {
+    return smoothstep(0.30, 0.12, hexCell(valveFace(pos) * areolaFreq(poreDensity) * 3.0 + vec2<f32>(0.37, 0.21)));
+}
+
+// Idea 3 (Airy pore diffraction, §12.2F): (2·J1(x)/x)². The small-x series is
+// only accurate to x≈3, so it blends into the large-x asymptotic form to carry
+// the first diffraction rings.
+fn airyDisc(x: f32) -> f32 {
+    let xs = max(abs(x), 1e-3);
+    let x2 = xs * xs;
+    let jSeries = xs * (0.5 - x2 * (0.0625 - x2 * (0.0026042 - x2 * 0.0000543)));
+    let chi = xs - 2.35619449;
+    let jAsym = sqrt(0.63661977 / xs) * (cos(chi) - 0.375 / xs * sin(chi));
+    let j1 = mix(jSeries, jAsym, smoothstep(2.4, 3.4, xs));
+    let v = 2.0 * j1 / xs;
+    return v * v;
 }
 
 fn map(p: vec3<f32>, mouse_pos: vec3<f32>) -> vec2<f32> {
@@ -106,7 +135,10 @@ fn map(p: vec3<f32>, mouse_pos: vec3<f32>) -> vec2<f32> {
     // Areolae pits only bite near the valve surface (keeps the field well-behaved).
     let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
     let shellBand = smoothstep(0.6, 0.0, abs(s));
-    s += areolae(pos, u.zoom_params.x) * shellBand * (0.12 + bass * 0.05);
+    let pit = areolae(pos, u.zoom_params.x);
+    s += pit * shellBand * (0.12 + bass * 0.05);
+    // Idea 4: the sieve plate partly refills each pit, leaving only the fine holes open.
+    s -= pit * shellBand * 0.06 * (1.0 - cribrum(pos, u.zoom_params.x));
 
     return vec2<f32>(s * 0.5, 1.0); // ID 1.0 for shell
 }
@@ -159,11 +191,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let cmouse = (mouse_uv - 0.5) * vec2<f32>(aspect, 1.0) * 2.0;
     let mouse_pos = vec3<f32>(cmouse * 5.0, 0.0);
 
-    var ro = vec3<f32>(0.0, 0.0, -5.0 + time * 0.5);
+    // HEAD fix: the camera started on the lattice axis, inside an octahedron (|z|=1 < 1.5),
+    // so every ray hit at t=0 and the frame was one flat gradient. It now flies down the
+    // diagonal gap between four frustule columns (L1 clearance ≥ 0.9).
+    var ro = vec3<f32>(1.2, 1.2, -5.0 + time * 0.5);
     var rd = normalize(vec3<f32>(cuv, 1.5));
 
     // Camera rotation
-    ro = vec3<f32>(rot(time * 0.2) * ro.xy, ro.z);
     rd = vec3<f32>(rot(time * 0.2) * rd.xy, rd.z);
 
     var t = 0.0;
@@ -204,7 +238,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
             // Thin-film valve interference driven by the areolae lattice
             let local = frustuleLocal(p, mouse_pos);
-            let areola = areolae(local, u.zoom_params.x);
+            let hexD = hexCell(valveFace(local) * areolaFreq(u.zoom_params.x));
+            let areola = smoothstep(0.36, 0.12, hexD);
             let noiseT = simplex3d(local * 1.7);
             let film = valveInterference(n, v, areola, noiseT, spread, treble);
             iridescent_col = mix(iridescent_col, film, 0.65);
@@ -216,9 +251,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             col += (iridescent_col * 0.5 + bio_col * audio_val) * (1.0 - f);
             // Light leaking through the open pores from the living cytoplasm behind
             col += bio_col * areola * 0.12 * (1.0 + bass * 0.4);
+            // Idea 3: each pore is a circular aperture; ring radius ∝ λ, so red rings
+            // sit wider than blue and the lattice picks up spectral diffraction fringes.
+            let airyX = hexD * 13.0 * (vec3<f32>(550.0) / vec3<f32>(650.0, 530.0, 450.0));
+            let airyRGB = vec3<f32>(airyDisc(airyX.x), airyDisc(airyX.y), airyDisc(airyX.z));
+            col += mix(airyRGB, sqrt(airyRGB), vec3<f32>(0.5)) * (0.05 + 0.06 * audio_val) * (1.0 - f);
 
             // Inner cytoplasm emission added
-            col += bio_col * vol_acc;
+            // HEAD fix: unclamped ray-long cytoplasm haze saturated every hit to flat cyan.
+            col += bio_col * min(vol_acc, 0.5) * 0.4;
             alpha = clamp(0.55 + (1.0 - f) * 0.35 + (1.0 - areola) * 0.1, 0.0, 1.0);
             break;
         }
