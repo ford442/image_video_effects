@@ -3,11 +3,14 @@
 //  Category: generative
 //  Features: raymarched, mouse-driven, audio-reactive, click-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
+//  Upgraded: 2026-09-27, 2026-10-25
 //  Ideas: spin-locked twin jet lobes above/below the disk plane; Keplerian
 //         azimuthal shear striping on the accretion disk noise;
 //         shockwave-triggered core brightness flare tying clicks into the
-//         pulsar material itself
+//         pulsar material itself; Henyey-Greenstein jet beaming (§12.2F);
+//         relativistic Doppler boost + blue/red shift on the disk (§12.1 t2)
+//  HEAD fixes: orbit camera now aimed at the origin and y-up (was upside-down,
+//         pulsar cut off); non-persisting extraBuffer cursor spring removed
 //  A packing: display RGBA (unchanged)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -59,6 +62,13 @@ fn noise3(p: vec3<f32>) -> f32 {
                 dot(hash3(i + vec3<f32>(1.0,0.0,1.0)), f - vec3<f32>(1.0,0.0,1.0)), u.x),
             mix(dot(hash3(i + vec3<f32>(0.0,1.0,1.0)), f - vec3<f32>(0.0,1.0,1.0)),
                 dot(hash3(i + vec3<f32>(1.0,1.0,1.0)), f - vec3<f32>(1.0,1.0,1.0)), u.x), u.y), u.z);
+}
+
+// Henyey–Greenstein phase (4π-normalised: mean over the sphere is 1)
+fn hgPhase(cosA: f32, g: f32) -> f32 {
+    let g2 = g * g;
+    let den = max(1.0 + g2 - 2.0 * g * cosA, 0.02);
+    return (1.0 - g2) / (den * sqrt(den));
 }
 
 // --- SDFs ---
@@ -122,43 +132,25 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let time = u.config.x;
     let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
-    var mouseUv = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[137] < 0.5) { mouseUv = rawMouse; mouseVelocity = vec2<f32>(0.0); }
-    let springDt = select(0.016, clamp(time - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
-    let springOmega = 8.0;
-    mouseVelocity += ((rawMouse - mouseUv) * springOmega * springOmega - mouseVelocity * 2.0 * springOmega) * springDt;
-    mouseUv += mouseVelocity * springDt;
-    if (id.x == 0u && id.y == 0u && arrayLength(&extraBuffer) > 138u) {
-        extraBuffer[133] = mouseUv.x; extraBuffer[134] = mouseUv.y;
-        extraBuffer[135] = mouseVelocity.x; extraBuffer[136] = mouseVelocity.y;
-        extraBuffer[137] = 1.0; extraBuffer[138] = time;
-    }
 
-    // Camera
-    let mouse = (mouseUv - vec2<f32>(0.5)) * vec2<f32>(6.28, 2.4);
-    var ro = vec3<f32>(0.0, 2.0, -6.0);
-    var rd = normalize(vec3<f32>(uv, 1.0));
+    // HEAD fix: the camera used to sit at a fixed (0,2,-6) looking straight down +z with
+    // y-down uv, so the pulsar was upside-down and cut off at the top; the extraBuffer
+    // cursor spring never persisted. Orbit camera aimed at the origin, y-up, cursor-driven.
+    let azim = (rawMouse.x - 0.5) * 6.28;
+    let elev = clamp(0.3217 + (0.5 - rawMouse.y) * 2.4, -1.35, 1.35);
+    let camR = 7.6;
+    let ro = camR * vec3<f32>(sin(azim) * cos(elev), sin(elev), -cos(azim) * cos(elev));
+    let fwd = -ro / camR;
+    let camRight = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), fwd));
+    let camUp = cross(fwd, camRight);
+    let rd = normalize(camRight * uv.x - camUp * uv.y + fwd);
 
-    // Mouse rotation
-    let rotY = rotate2D(mouse.x);
-    let rotX = rotate2D(mouse.y);
-
-    let roYZ = rotX * vec2<f32>(ro.y, ro.z);
-    ro.y = roYZ.x;
-    ro.z = roYZ.y;
-
-    let rdYZ = rotX * vec2<f32>(rd.y, rd.z);
-    rd.y = rdYZ.x;
-    rd.z = rdYZ.y;
-
-    let roXZ = rotY * vec2<f32>(ro.x, ro.z);
-    ro.x = roXZ.x;
-    ro.z = roXZ.y;
-
-    let rdXZ = rotY * vec2<f32>(rd.x, rd.z);
-    rd.x = rdXZ.x;
-    rd.z = rdXZ.y;
+    // ── Idea 1 (§12.2F Henyey–Greenstein): relativistic jet beaming. A jet pointing at the
+    // viewer is boosted, one pointing away is dimmed; edge-on stays 1.0 so the default
+    // 3/4 view keeps its old brightness and only looking down a jet flares it.
+    let hgNorm = hgPhase(0.0, 0.4);
+    let beamUp = clamp(hgPhase(-rd.y, 0.4) / hgNorm, 0.4, 3.5);
+    let beamDown = clamp(hgPhase(rd.y, 0.4) / hgNorm, 0.4, 3.5);
 
     // Raymarching
     var t = 0.0;
@@ -175,7 +167,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // below the disk plane carry a slight brightness asymmetry driven by
         // Pulsar Spin Rate, so it reads as a bipolar jet pair, not one tube.
         let jetLobe = sign(p.y + 0.0001);
-        let jetAsym = 1.0 + jetLobe * (u.zoom_params.x - 0.5) * 0.7;
+        let jetAsym = (1.0 + jetLobe * (u.zoom_params.x - 0.5) * 0.7) * select(beamDown, beamUp, jetLobe > 0.0);
         let beam_dist = length(p.xz) - 0.2 * (1.0 + p.y * 0.1);
         glow += exp(-abs(beam_dist) * 7.0) * 0.025 * u.zoom_params.y * (1.0 + plasmaBuffer[0].z * 0.5) * jetAsym;
 
@@ -212,6 +204,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             col += palette * pulsarShock * 1.6;
         } else { // Disk
             col = mix(vec3<f32>(0.15, 0.65, 0.8), palette, 0.35) * (1.0 + audio * 0.5);
+            // ── Idea 2 (§12.1 tactic 2): Doppler boost + shift on the disk. The tangential
+            // direction is the same sense as the Keplerian shear; the limb moving toward the
+            // camera is brighter and bluer, the receding limb dimmer and warmer.
+            let rr = max(length(p.xz), 0.5);
+            let vdir = vec3<f32>(-p.z, 0.0, p.x) / rr;
+            let beta = clamp(0.62 * (0.3 + 0.7 * u.zoom_params.x) / sqrt(rr), 0.0, 0.6);
+            let dop = 1.0 / (sqrt(1.0 - beta * beta) * (1.0 - beta * dot(vdir, -rd)));
+            col *= clamp(dop * dop, 0.4, 2.2);
+            col *= mix(vec3<f32>(1.12, 0.96, 0.82), vec3<f32>(0.82, 0.98, 1.2), clamp(0.5 + (dop - 1.0) * 2.5, 0.0, 1.0));
         }
 
         // Lighting

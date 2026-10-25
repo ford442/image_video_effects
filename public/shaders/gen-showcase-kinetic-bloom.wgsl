@@ -3,6 +3,15 @@
 //  Category: generative
 //  Features: upgraded-rgba, temporal, audio-reactive, mouse-driven
 //  Complexity: Medium
+//  Upgraded: 2026-10-25
+//  Ideas: circulating ring-down phase front (petals ring out of phase, §12.1 t2/t3);
+//         Fresnel-Schlick petal rim from the dome normal (§12.2F);
+//         energy-conserving bloom halo from exact C taps (§12.2F)
+//  HEAD fixes: petal count rounded to an integer (7.5 left a seam at theta=±pi); history read with
+//         a filtering sampler at an off-centre uv -> exact textureLoad, texel-centred uv;
+//         alpha floor 0.2 over the void -> coverage alpha; output multiplied by a shoulder profile
+//         instead of the pure dome (petals were ~30% bright, flower near-black)
+//  A packing: display RGBA (post-bloom), unchanged
 //  Enrichment: Damped harmonic oscillator (Wolfram Alpha)
 //    Equation: m d²x/dt² + c dx/dt + kx = 0
 //    ζ = c / (2√(mk)), ω₀ = √(k/m), ω = ω₀√(1-ζ²)
@@ -69,8 +78,9 @@ fn palette(t: f32) -> vec3<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let dims = vec2<f32>(textureDimensions(writeTexture));
+  if (id.x >= u32(dims.x) || id.y >= u32(dims.y)) { return; }
   let texel = vec2<f32>(id.xy);
-  let uv = texel / dims;
+  let uv = (texel + vec2<f32>(0.5)) / dims;
 
   let t = u.config.x;
   let mouseDown = u.zoom_config.w;
@@ -115,7 +125,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let theta = polar.y;
 
   // Petal count: 3 to 12 based on param
-  let nPetals = 3.0 + petalCount * 9.0;
+  // HEAD fix: an integer count so cos(rot*n) closes at theta=±pi (7.5 petals left a seam).
+  let nPetals = floor(3.0 + petalCount * 9.0 + 0.5);
 
   // ═══ Damped Harmonic Oscillator (Wolfram Alpha) ═══
   // Underdamped spring-mass: ζ < 1, ω = ω₀√(1-ζ²)
@@ -126,7 +137,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   // Bass triggers new bloom cycle; repeating underdamped envelope
   let bloomCycle = fract(t * (0.2 + bass * 0.5));
   let tOsc = bloomCycle * 5.0;
-  let motion = exp(-zeta * omega0 * tOsc) * cos(omega * tOsc);
+  // ── Idea 1: circulating ring-down front. The comment above says every petal is its own
+  // spring, but they all shared one phase. A continuous angular phase lag (one lobe that rides
+  // the spin) makes the petals ring out of phase, so a wave sweeps round the flower.
+  let spin0 = theta + t * spinMod * TAU * 0.1 + mids * 0.5;
+  let ringLag = 1.6 * (0.5 + 0.5 * cos(spin0 - 1.3));
+  let motion = exp(-zeta * omega0 * tOsc) * cos(omega * tOsc - ringLag);
   // Bass drives excitation amplitude
   let excitation = 1.0 + bass * 2.0;
 
@@ -141,6 +157,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   // Bloom intensity: petals + core
   let bloom = 1.0 - smoothstep(0.0, petalR, r);
   let core = 1.0 - smoothstep(0.0, 0.15, r);
+  // HEAD fix: multiplying the output by the pure dome `bloom` left the petal body at ~30% and the
+  // flower near-black (meanL 0.019); a shoulder profile keeps the petals solid. `bloom` itself
+  // still drives the rings mask and depth.
+  let body = 1.0 - smoothstep(petalR * 0.4, petalR, r);
 
   // Secondary ring structure (complexity)
   let rings = sin(r * 20.0 - t * 2.0 * spinMod) * complexity;
@@ -181,14 +201,35 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
   // ACES tone mapping + semantic alpha
   col = acesToneMap(col * 1.1);
-  let alpha = clamp(length(col) * 1.2, 0.2, 0.95);
+  var alpha = 0.0;
 
-  // Temporal feedback
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  // Temporal feedback (exact C: the old filtered read at an off-centre uv blurred every frame)
+  let coord = vec2<i32>(id.xy);
+  let maxC = vec2<i32>(dims) - vec2<i32>(1);
+  let prev = textureLoad(dataTextureC, coord, 0);
   col = mix(prev.rgb * 0.96, col, 0.25);
 
-  // Output
-  let outColor = vec4<f32>(col * bloom, alpha);
+  // ── Idea 3: energy-conserving bloom halo (§12.2F). Glow is moved outward, not added: the
+  // output is mix(source, spread, k) where spread is 4 exact C taps of last frame's display.
+  let hr = vec2<i32>(6, 6);
+  let spread = 0.25 * (
+    textureLoad(dataTextureC, clamp(coord + vec2<i32>(hr.x, 0), vec2<i32>(0), maxC), 0).rgb +
+    textureLoad(dataTextureC, clamp(coord - vec2<i32>(hr.x, 0), vec2<i32>(0), maxC), 0).rgb +
+    textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, hr.y), vec2<i32>(0), maxC), 0).rgb +
+    textureLoad(dataTextureC, clamp(coord - vec2<i32>(0, hr.y), vec2<i32>(0), maxC), 0).rgb);
+  var outRgb = mix(col * body, spread, 0.2);
+
+  // ── Idea 2: Fresnel–Schlick petal rim (§12.2F). The bloom profile is a dome, so a normal
+  // comes for free: n_z = sqrt(1-(r/petalR)^2). Translucent petal edges glint, F0 = 0.04.
+  let sR = r / max(petalR, 0.05);
+  let domeNz = sqrt(max(1.0 - sR * sR, 0.0));
+  let omn = 1.0 - domeNz;
+  let schlick = 0.04 + 0.96 * omn * omn * omn * omn * omn;
+  let rimMask = smoothstep(1.0, 0.94, sR) * smoothstep(0.5, 0.85, sR);
+  outRgb += palette(colorT + 0.15) * schlick * rimMask * 0.9 * (0.6 + 0.4 * openMod);
+
+  alpha = clamp(length(outRgb) * 1.2, 0.0, 0.95);
+  let outColor = vec4<f32>(outRgb, alpha);
   textureStore(writeTexture, id.xy, outColor);
   textureStore(dataTextureA, id.xy, outColor);
 

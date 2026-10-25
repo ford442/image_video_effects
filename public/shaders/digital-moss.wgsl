@@ -3,9 +3,9 @@
 //  Category: simulation
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, simulation
 //  Complexity: Medium
-//  Upgraded: 2026-09-12
-//  Ideas: shade taxis toward darker neighbor; rhizoid threads along luma gradient
-//  A packing: raw (grown, moisture, spores, age)
+//  Upgraded: 2026-09-12, 2026-10-25
+//  Ideas: shade taxis toward darker neighbor; rhizoid threads along luma gradient; isotropic 9-point propagation + capillary moisture diffusion (§12.2D); wet/dry moisture sheen (moisture promoted from habitat-only); sporophyte seta + capsule on mature cushions (§12.1)
+//  A packing: raw (grown, moisture, spores, age); texel (0,0) = inherited-state sentinel (r = -0.6875)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -30,8 +30,15 @@ fn aces(x: vec3<f32>) -> vec3<f32> {
         vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+// Inherited-state guard: on a shader switch dataTextureC still holds the PREVIOUS shader's display RGBA (alpha 1),
+// which this sim would read as moss. Texel (0,0) of A carries a sentinel; C is trusted only if it shows up there.
+const SENTINEL: f32 = -0.6875;
+var<private> g_valid: f32 = 1.0;
+
 fn stateAt(p: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
-    return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), dims - vec2<i32>(1)), 0);
+    let c = clamp(p, vec2<i32>(0), dims - vec2<i32>(1));
+    let isCorner = c.x == 0 && c.y == 0;     // the sentinel texel holds no moss
+    return textureLoad(dataTextureC, c, 0) * select(g_valid, 0.0, isCorner);
 }
 
 // Calculate moss density/thickness from growth state
@@ -92,6 +99,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
     let coord = vec2<i32>(global_id.xy);
+    g_valid = select(0.0, 1.0, abs(textureLoad(dataTextureC, vec2<i32>(0), 0).r - SENTINEL) < 0.001);
     var uv = (vec2<f32>(coord) + 0.5) / vec2<f32>(dims);
 
     // Uniforms
@@ -115,6 +123,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var spores = oldState.b;
     var mossAge = oldState.a;
 
+    // 8-neighbourhood of the previous state (4 edge + 4 corner taps)
+    let left = stateAt(coord + vec2<i32>(-1, 0), dims);
+    let right = stateAt(coord + vec2<i32>(1, 0), dims);
+    let up = stateAt(coord + vec2<i32>(0, 1), dims);
+    let down = stateAt(coord + vec2<i32>(0, -1), dims);
+    let ul = stateAt(coord + vec2<i32>(-1, 1), dims);
+    let ur = stateAt(coord + vec2<i32>(1, 1), dims);
+    let dl = stateAt(coord + vec2<i32>(-1, -1), dims);
+    let dr = stateAt(coord + vec2<i32>(1, -1), dims);
+
+    // ── Idea 1: isotropic 9-point stencil (§12.2D) — 0.2 edges / 0.05 corners (weights sum to 1, same mean as the
+    // old 4-tap average) removes the axis bias that grew diamond/blocky colonies. Moisture also wicks sideways.
+    let neighborGrowth = 0.2 * (left.r + right.r + up.r + down.r) + 0.05 * (ul.r + ur.r + dl.r + dr.r);
+    let neighborSpores = 0.2 * (left.b + right.b + up.b + down.b) + 0.05 * (ul.b + ur.b + dl.b + dr.b);
+    let neighborMoist = 0.2 * (left.g + right.g + up.g + down.g) + 0.05 * (ul.g + ur.g + dl.g + dr.g);
+    moisture = mix(moisture, neighborMoist, 0.12);
+
     // Random seed that varies with time slightly for spontaneous growth
     let seed = hash12(floor(uv * scale) + vec2<f32>(floor(time * 3.0), 17.0));
     moisture = clamp(moisture * 0.995 + (1.0 - luma) * speed * 0.7, 0.0, 1.0);
@@ -125,12 +150,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // 2. Propagation (Cellular Automata-ish)
-    let left = stateAt(coord + vec2<i32>(-1, 0), dims);
-    let right = stateAt(coord + vec2<i32>(1, 0), dims);
-    let up = stateAt(coord + vec2<i32>(0, 1), dims);
-    let down = stateAt(coord + vec2<i32>(0, -1), dims);
-    let neighborGrowth = (left.r + right.r + up.r + down.r) * 0.25;
-    let neighborSpores = (left.b + right.b + up.b + down.b) * 0.25;
     let habitat = smoothstep(0.68, 0.08, luma) * moisture;
 
     // Idea 1 — shade taxis: grow toward the darker neighbor
@@ -191,7 +210,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     mossAge = clamp((mossAge + grown * speed * 0.5) * (1.0 - clean * 0.4), 0.0, 8.0);
 
     // Write State for next frame
-    textureStore(dataTextureA, coord, vec4<f32>(grown, moisture, spores, mossAge));
+    let isCorner = coord.x == 0 && coord.y == 0;
+    textureStore(dataTextureA, coord, select(vec4<f32>(grown, moisture, spores, mossAge), vec4<f32>(SENTINEL, 0.0, 0.0, 0.0), isCorner));
 
     // Calculate moss material properties
     let mossThickness = calculateMossThickness(grown, mossAge);
@@ -201,7 +221,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Calculate SSS color
     let lightExposure = 1.0 - luma; // Grows in dark areas
-    let mossColor = mossSSS(grown, lightExposure);
+    var mossColor = mossSSS(grown, lightExposure);
+
+    // ── Idea 2: capillary moisture sheen (moisture promoted from habitat-only) — dry cushions go yellow-grey and
+    // matte, wet ones saturate and pick up a glossy film.
+    let dry = 1.0 - smoothstep(0.1, 0.6, moisture);
+    mossColor = mix(mossColor, vec3<f32>(0.55, 0.55, 0.32) * (0.4 + luma), dry * 0.5);
+    mossColor += vec3<f32>(0.10, 0.18, 0.15) * smoothstep(0.55, 1.0, moisture) * grown;
 
     // Apply scanline to color
     let scannedMossColor = mossColor * scan * intensity +
@@ -211,10 +237,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mossAlpha = calculateMossAlpha(grown, mossThickness, scan);
 
     // Blend: image shows through moss based on alpha
-    let finalColor = mix(imgColor, scannedMossColor, grown * mossAlpha);
+    var finalColor = mix(imgColor, scannedMossColor, grown * mossAlpha);
 
-    let alpha = clamp(grown * mossAlpha + spores * 0.15, 0.0, 1.0);
-    textureStore(writeTexture, coord, vec4<f32>(aces(finalColor), alpha));
+    // ── Idea 3: sporophytes (§12.1 tactic 5) — mature cushions throw up a thin seta topped by a capsule. They sit on
+    // a coarser grid (scale/4) so they read as stalks, are gated on grown + age, and glow with treble.
+    let sg = uv * scale * 0.25;
+    let sCell = floor(sg);
+    let sf = fract(sg);
+    let sh = hash12(sCell + vec2<f32>(7.3, 3.1));
+    let sh2 = hash12(sCell + vec2<f32>(1.7, 9.2));
+    let sx = 0.5 + (sh2 - 0.5) * 0.4;
+    let sHeight = 0.35 + 0.5 * sh2;
+    let rise = 1.0 - sf.y;                                           // uv.y points down, stalks rise toward y = 0
+    let mature = smoothstep(0.65, 0.9, grown) * smoothstep(0.1, 0.6, mossAge);
+    let present = step(0.88 - 0.1 * detail, sh) * mature;
+    let seta = (1.0 - smoothstep(0.05, 0.09, abs(sf.x - sx))) * step(rise, sHeight);
+    let capsule = 1.0 - smoothstep(0.14, 0.22, length(vec2<f32>(sf.x - sx, rise - sHeight - 0.1)));
+    let sporo = present * max(seta * 0.8, capsule);
+    let sporoCol = mix(vec3<f32>(0.50, 0.40, 0.18), vec3<f32>(1.0, 0.65, 0.2) * (1.0 + audio.z), capsule);
+    finalColor = mix(finalColor, sporoCol, sporo * 0.85);
+
+    let alpha = clamp(max(grown * mossAlpha + spores * 0.15, sporo * 0.9), 0.0, 1.0);
+    textureStore(writeTexture, coord, vec4<f32>(aces(max(finalColor, vec3<f32>(0.0))), alpha));
 
     // Pass through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

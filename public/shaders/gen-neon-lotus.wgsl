@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-27
-//  Ideas: Nelumbo seed-pod receptacle with carpel pits on a Vogel golden-angle spiral ringed by stamen filaments; lotus-effect water beads rolling along petal midlines and shed at the tips, shaken loose by click pond-ripples; nyctinasty (petals fold on a slow circadian of Speed, bass and held ease them open); peltate lily pad with radiating veins under the blossom
+//  Upgraded: 2026-09-27, 2026-10-25
+//  Ideas: Nelumbo seed-pod receptacle with carpel pits on a Vogel golden-angle spiral ringed by stamen filaments; lotus-effect water beads rolling along petal midlines and shed at the tips, shaken loose by click pond-ripples; nyctinasty (petals fold on a slow circadian of Speed, bass and held ease them open); peltate lily pad with radiating veins under the blossom; Cauchy-dispersed bead rims (§12.2F); coalescing mercury drops on the pad, smooth-min merged (§12.2D surface tension)
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -46,6 +46,38 @@ fn petalSdf(r: f32, theta: f32, phase: f32, bloom: f32) -> f32 {
 
 fn hash1(n: f32) -> f32 {
   return fract(sin(n * 127.1) * 43758.5453123);
+}
+
+// Idea 1 helper — Cauchy n(λ)=A+B/λ² (λ in µm) relative to green: (<1, 1, >1).
+fn cauchyScale(B: f32) -> vec3<f32> {
+  let lam = vec3<f32>(0.650, 0.550, 0.450);
+  let n = vec3<f32>(1.0) + B / (lam * lam);
+  return n / n.y;
+}
+
+// Idea 2 helper — surface-tension drop field on the lily pad: a jittered 3x3 cell
+// lattice of spheres merged with a polynomial smooth-min (coalescence). Negative inside.
+fn padDropField(p: vec2<f32>, shake: f32, t: f32) -> f32 {
+  let G = 11.0;
+  let cell = floor(p * G);
+  var d = 1e3;
+  for (var j = -1; j <= 1; j++) {
+    for (var i = -1; i <= 1; i++) {
+      let c = cell + vec2<f32>(f32(i), f32(j));
+      let hx = hash2(c + 3.7);
+      let hy = hash2(c + 19.1);
+      let hr = hash2(c + 41.3);
+      var ctr = (c + vec2<f32>(0.2 + 0.6 * hx, 0.2 + 0.6 * hy)) / G;
+      // pond swell shoves drops toward the peltate centre and jostles them
+      ctr -= normalize(ctr + vec2<f32>(1e-4)) * shake * 0.012;
+      ctr += vec2<f32>(sin(t * 17.0 + hx * 40.0), cos(t * 13.0 + hy * 30.0)) * shake * 0.003;
+      let di = length(p - ctr) - (0.16 + 0.22 * hr) / G;
+      let k = 0.5 / G;
+      let h = max(k - abs(d - di), 0.0) / k;
+      d = min(d, di) - h * h * k * 0.25;
+    }
+  }
+  return d;
 }
 
 // Nelumbo receptacle: flat-topped seed pod whose carpels sit in pits arranged
@@ -95,7 +127,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
   // Params
-  let nPetals   = mix(4.0, 16.0, u.zoom_params.x);
+  // Integer petal count: a fractional count cannot close around the atan2 cut (hard seam).
+  let nPetals   = floor(mix(4.0, 16.0, u.zoom_params.x) + 0.5);
   let bloomAmt  = mix(0.3, 1.0, u.zoom_params.y) * (1.0 + bass * 0.35);
   let speed     = mix(0.1, 0.8, u.zoom_params.z);
   let glowScale = mix(0.5, 2.5, u.zoom_params.w) * (1.0 + mids * 0.25);
@@ -145,6 +178,28 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var col = vec3<f32>(0.07, 0.38, 0.18) * padBody * 0.85;
   col += vec3<f32>(0.12, 0.62, 0.30) * padVein * 0.75;
   col += vec3<f32>(0.16, 0.32, 0.12) * peltate * 0.45;
+  // ── Idea 2: coalescing mercury drops on the pad (§12.2D surface tension) ──
+  // The pad is as superhydrophobic as the petals: water stands in near-spherical drops
+  // that merge when they touch; the swell shoves them toward the stem and jostles them.
+  var padDrop = 0.0;
+  if (padBody > 0.01) {
+    let px = 2.0 / max(u.config.w, 1.0);
+    let e = px * 1.5;
+    let d0 = padDropField(p, shake, t);
+    let gx = (padDropField(p + vec2<f32>(e, 0.0), shake, t) - d0) / e;
+    let gy = (padDropField(p + vec2<f32>(0.0, e), shake, t) - d0) / e;
+    let nrm = vec2<f32>(gx, gy) / max(length(vec2<f32>(gx, gy)), 1e-4);
+    let dropMask = smoothstep(0.2, 0.32, r) * smoothstep(padR - 0.02, padR - 0.09, r);
+    let body = smoothstep(px, -px, d0) * padBody * dropMask;
+    let depthIn = clamp(-d0 / 0.012, 0.0, 1.0);
+    let rimDark = mix(0.3, 1.0, smoothstep(0.0, 0.4, depthIn));
+    let lightDir2 = normalize(vec2<f32>(-0.6, -0.8));
+    let spec = pow(max(dot(nrm, -lightDir2), 0.0), 5.0) * (1.0 - depthIn) * smoothstep(0.0, 0.25, depthIn + 0.05);
+    let dropCol = (col * 0.55 + vec3<f32>(0.10, 0.30, 0.42) * 0.5) * rimDark
+                + vec3<f32>(0.85, 1.0, 1.0) * spec * (0.5 + treble * 1.0);
+    col = mix(col, dropCol, body * 0.9);
+    padDrop = body;
+  }
   var totalGlow = 0.0;
   var coverage = padBody * 0.62;
   var beadDepth = 0.0;
@@ -156,14 +211,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let layerR = r / layerScale;
     let layerT = theta + lf * GOLDEN_ANGLE + t * speed * (1.0 - lf * 0.2);
     let nP = nPetals + lf * 4.0;
-    let petalAngle = 6.28318 / nP;
+    let petalAngle = TAU / nP;
     let sector = floor(layerT / petalAngle + 0.5);
     let localTheta = layerT - sector * petalAngle;
-    let phase = sector * 0.1;
+    // Periodic in sector (period nP) so the petal shape closes across the atan2 cut.
+    let phase = 0.05 * nP * sin(TAU * sector / nP);
     let bloom = bloomAmt * layerScale * (0.8 + 0.2 * sin(t * 0.5 + lf)) * openAmt;
     let sdf = petalSdf(layerR, localTheta, phase, bloom);
     let petalMask = smoothstep(0.02, -0.02, sdf);
-    let hue = fract(lf * 0.33 + t * 0.05 + bass * 0.15 + sector * 0.07);
+    let hue = fract(lf * 0.33 + t * 0.05 + bass * 0.15 + sector / nP);
     let petalColor = vec3<f32>(
       0.5 + 0.5 * cos(6.2832 * hue),
       0.5 + 0.5 * cos(6.2832 * (hue + 0.33)),
@@ -186,10 +242,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let beadR = (0.010 + 0.008 * hash1(seed + 9.0)) * (1.0 - smoothstep(0.8, 1.0, roll) * 0.7);
     let bd = length(beadLocal - beadPos) * layerScale / beadR;
     let beadBody = smoothstep(1.0, 0.8, bd) * petalMask;
-    let beadRim = exp(-pow((bd - 0.9) * 6.0, 2.0)) * beadBody;
+    // ── Idea 1: Cauchy dispersion on the bead rim (§12.2F) ──────────────────
+    // A water drop is a prism: red bends least so its rim sits outside, blue inside.
+    let cs = cauchyScale(0.09);
+    let rimMask = smoothstep(1.15, 0.85, bd) * petalMask;
+    let beadRimRGB = vec3<f32>(exp(-pow((bd * cs.x - 0.9) * 6.0, 2.0)),
+                               exp(-pow((bd * cs.y - 0.9) * 6.0, 2.0)),
+                               exp(-pow((bd * cs.z - 0.9) * 6.0, 2.0))) * rimMask;
     let glint = exp(-length((beadLocal - beadPos) * layerScale / beadR - vec2<f32>(-0.35, -0.35)) * 9.0) * beadBody;
     col = mix(col, col * 0.55 + petalColor * 0.25, beadBody * 0.6);
-    col += vec3<f32>(0.75, 0.95, 1.0) * (beadRim * 0.5 * glowScale + glint * (1.2 + treble * 1.5));
+    col += vec3<f32>(0.75, 0.95, 1.0) * (beadRimRGB * 0.5 * glowScale + vec3<f32>(glint * (1.2 + treble * 1.5)));
     beadDepth = max(beadDepth, beadBody);
   }
 
@@ -225,7 +287,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let alpha = clamp(coverage * 0.75 + min(totalGlow, 1.0) * 0.15 + luma * 0.25 + pondGlow * 0.2, 0.02, 1.0);
 
   // Depth: dome of the flower, beads and receptacle sit proud
-  let depth = clamp(1.0 - r * 0.6 + beadDepth * 0.08 + pod.a * 0.1, 0.0, 1.0);
+  let depth = clamp(1.0 - r * 0.6 + beadDepth * 0.08 + padDrop * 0.05 + pod.a * 0.1, 0.0, 1.0);
 
   let finalColor = vec4<f32>(display, alpha);
   textureStore(writeTexture,      coord, finalColor);
