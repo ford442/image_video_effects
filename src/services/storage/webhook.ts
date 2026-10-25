@@ -1,8 +1,10 @@
 /**
- * HMAC-signed webhook writes to the VPS storage manager.
+ * Webhook writes to the VPS storage manager. The browser sends the unsigned
+ * payload to the storage manager's signing proxy, which adds the HMAC
+ * (`X-Hub-Signature-256`) server-side; no secret ships in the bundle (#1511 bug 2).
  */
 
-import { assertOk, generateHmacSignature, resolveStaticUrl } from './http';
+import { assertOk, resolveStaticUrl } from './http';
 import type {
   EffectConfigPayload,
   ShaderItem,
@@ -23,14 +25,9 @@ export async function webhookSave(
     timestamp: new Date().toISOString(),
   });
 
-  const signature = await generateHmacSignature(payload, config.secret);
-
   const response = await fetch(`${config.webhookUrl}/image-effects`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Hub-Signature-256': signature,
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: payload,
   });
 

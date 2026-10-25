@@ -56,9 +56,9 @@ export const SHADER_FILES_URL = process.env.REACT_APP_SHADER_FILES_URL || 'https
 // Override with REACT_APP_SHADER_FILES_BASE_URL for local dev or staging.
 export const SHADER_FILES_BASE_URL = process.env.REACT_APP_SHADER_FILES_BASE_URL || 'https://test.1ink.us/image_video_effects/';
 
-// Webhook Secret for HMAC SHA256 signatures
-// In production, this should be set via environment variable
-export const STORAGE_WEBHOOK_SECRET = process.env.REACT_APP_WEBHOOK_SECRET || 'your-webhook-secret-here';
+// Webhook writes go through the storage manager's signing proxy; the HMAC key
+// lives only on the server (#1511 bug 2).
+export const STORAGE_WEBHOOK_PROXY_URL = `${STORAGE_API_URL}/api/webhook-proxy`;
 
 // Google Cloud Storage Bucket
 export const LOCAL_MANIFEST_URL = './image_manifest.json';

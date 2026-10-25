@@ -6,8 +6,7 @@ import {
   API_BASE_URL,
   SHADER_FILES_BASE_URL,
   STATIC_NGINX_URL,
-  STORAGE_VPS_URL,
-  STORAGE_WEBHOOK_SECRET,
+  STORAGE_WEBHOOK_PROXY_URL,
 } from '../../config/appConfig';
 import * as assets from './assets';
 import { OperationTracker } from './operations';
@@ -52,9 +51,8 @@ export class StorageClient {
 
   constructor(config?: Partial<StorageClientConfig>) {
     this.config = {
-      webhookUrl: config?.webhookUrl ?? STORAGE_VPS_URL,
+      webhookUrl: config?.webhookUrl ?? STORAGE_WEBHOOK_PROXY_URL,
       staticUrl: config?.staticUrl ?? STATIC_NGINX_URL,
-      secret: config?.secret ?? STORAGE_WEBHOOK_SECRET,
       apiUrl: config?.apiUrl ?? API_BASE_URL,
       shaderFilesBaseUrl: config?.shaderFilesBaseUrl ?? SHADER_FILES_BASE_URL,
     };

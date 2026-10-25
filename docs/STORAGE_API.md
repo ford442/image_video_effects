@@ -8,7 +8,7 @@ Backend: `storage_manager/app.py` (FastAPI on VPS, GCS-backed)
 | Env var | Purpose |
 |---------|---------|
 | `REACT_APP_API_BASE_URL` | REST API root (default `https://storage.noahcohn.com`) |
-| `REACT_APP_STORAGE_VPS_URL` | HMAC webhook root (default `https://storage.noahcohn.com/webhook`) |
+| `REACT_APP_STORAGE_API_URL` | Storage manager root; webhook writes go to its signing proxy `{root}/api/webhook-proxy` |
 | `REACT_APP_STATIC_NGINX_URL` | Static file reads for saved metadata/outputs |
 | `REACT_APP_SHADER_FILES_BASE_URL` | WGSL CDN fallback (default `https://test.1ink.us/image_video_effects/`) |
 
@@ -108,11 +108,21 @@ Streams song/video/audio media.
 
 ---
 
-## Webhook writes (HMAC)
+## Webhook writes (HMAC, signed server-side)
 
-### `POST {webhookUrl}/image-effects`
+### `POST {STORAGE_API_URL}/api/webhook-proxy/image-effects`
 
-**Headers:** `Content-Type: application/json`, `X-Hub-Signature-256: sha256={hex}`
+The browser sends the **unsigned** body with `Content-Type: application/json`. No secret ships in the
+client bundle (#1511 bug 2). The storage manager signs the raw body with HMAC-SHA256 and forwards it to the
+receiver with `X-Hub-Signature-256: sha256={hex}`. It returns the receiver's status and JSON unchanged.
+A non-2xx response becomes a `StorageHttpError` that carries the proxy's error body.
+
+| Server env var (storage_manager) | Purpose |
+|----------------------------------|---------|
+| `WEBHOOK_SECRET` | HMAC-SHA256 key shared with the receiver |
+| `WEBHOOK_RECEIVER_URL` | Full receiver URL, e.g. `https://storage.noahcohn.com/webhook/image-effects` |
+
+If either is unset, the proxy answers `503`. If the receiver is unreachable, it answers `502`.
 
 **Body**
 

@@ -19,7 +19,6 @@ const KNOWN_APP_ENV = [
   'REACT_APP_STORAGE_VPS_PORT',
   'REACT_APP_STORAGE_VPS_URL',
   'REACT_APP_VERSION',
-  'REACT_APP_WEBHOOK_SECRET',
 ];
 
 // Same cross-origin isolation as production (build.sh .htaccess, #1314), so
