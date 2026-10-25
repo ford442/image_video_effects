@@ -569,8 +569,14 @@ export async function runWebGpuBootProbe(
     }
     console.log(`[WebGPU Probe] canvasCopySrc=${canvasCopySrc}`);
 
+    // Format probing runs on the probe device, so it shares the try that destroys it (#1511 bug 9).
+    let formatCapabilities: DeviceFormatCapabilities;
     try {
       await runProbePipeline(device);
+      formatCapabilities = await probeFormatCapabilities(adapter, {
+        isMobile: isMobileDevice(),
+        device,
+      });
     } catch (e) {
       record.error = e instanceof Error ? e.message : String(e);
       record.failedStage = 'probePipeline';
@@ -593,10 +599,6 @@ export async function runWebGpuBootProbe(
     const supportsDeepWorkgroup = meetsDeepWorkgroupLimits(device.limits);
     const adapterIdentity = readAdapterIdentity(adapter);
     const adapterGpuType = inferAdapterGpuType(adapterIdentity);
-    const formatCapabilities = await probeFormatCapabilities(adapter, {
-      isMobile: isMobileDevice(),
-      device,
-    });
 
     // Identity first: allowsFullWorkingSize matches the Pascal blocklist against this string.
     let adapterSummary =
