@@ -200,7 +200,7 @@ export function resolveColorFormat(
   caps: DeviceFormatCapabilities = DEFAULT_FORMAT_CAPABILITIES,
 ): InternalColorFormat {
   if (mode === 'ultra') {
-    return ULTRA_COLOR_FORMAT;
+    return fp32OrFilterableDemotion(caps);
   }
   if (mode === 'balanced' || mode === 'battery') {
     if (canUseRgba16Float(caps)) return BALANCED_COLOR_FORMAT;
@@ -213,10 +213,31 @@ export function resolveColorFormat(
     && !caps.isMobile
     && caps.supportsRgba32FloatStorage
   ) {
-    return ULTRA_COLOR_FORMAT;
+    return fp32OrFilterableDemotion(caps);
   }
   if (canUseRgba16Float(caps)) return BALANCED_COLOR_FORMAT;
+  return fp32OrFilterableDemotion(caps);
+}
+
+/**
+ * rgba32float is only filterable with 'float32-filterable'. Without it, the catalog's
+ * readTexture + filtering u_sampler pairs are invalid on an rgba32float bind group, so
+ * 'ultra'/'auto' demote to rgba16float, which is always filterable (#1511 bug 3).
+ */
+function fp32OrFilterableDemotion(caps: DeviceFormatCapabilities): InternalColorFormat {
+  if (!caps.hasFloat32Filterable && caps.supportsRgba16FloatStorage) return BALANCED_COLOR_FORMAT;
   return ULTRA_COLOR_FORMAT;
+}
+
+/**
+ * Texture sample type for the color-format bindings (readTexture, dataTextureC, history array).
+ * Keyed on the format: rgba16float always filters; rgba32float only with 'float32-filterable'.
+ */
+export function colorTextureSampleType(
+  format: InternalColorFormat,
+  hasFloat32Filterable: boolean,
+): GPUTextureSampleType {
+  return format === 'rgba32float' && !hasFloat32Filterable ? 'unfilterable-float' : 'float';
 }
 
 export function toGpuTextureFormat(format: InternalColorFormat): GPUTextureFormat {

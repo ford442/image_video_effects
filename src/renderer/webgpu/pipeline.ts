@@ -11,7 +11,7 @@ import {
   CONSERVATIVE_BINDING_USAGE,
   ShaderBindingUsage,
 } from '../ShaderCompilation';
-import type { InternalColorFormat } from '../../config/formatPolicy';
+import { colorTextureSampleType, type InternalColorFormat } from '../../config/formatPolicy';
 import { BLIT_WGSL, GENERATIVE_BLIT_WGSL, SCALE_COPY_WGSL, VIDEO_COPY_WGSL } from '../ShaderTemplates';
 import { fetchShaderWgsl } from '../../utils/fetchShaderWgsl';
 import { HISTORY_DEPTH } from './webgpuConstants';
@@ -210,7 +210,8 @@ export function createComputeBindGroupLayout(
   hasF32Filt: boolean,
   colorFormat: InternalColorFormat = 'rgba32float',
 ): WebGPUComputeLayout {
-  const fST: GPUTextureSampleType = hasF32Filt ? 'float' : 'unfilterable-float';
+  // Keyed on the format, not the device feature: rgba16float is always filterable (#1511 bug 3).
+  const fST = colorTextureSampleType(colorFormat, hasF32Filt);
   const V = GPUShaderStage.COMPUTE;
 
   const bindGroupLayout = device.createBindGroupLayout({

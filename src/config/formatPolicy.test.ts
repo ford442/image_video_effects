@@ -6,6 +6,7 @@ import {
   packRgbaUploadData,
   probeFormatCapabilities,
   resolveColorFormat,
+  colorTextureSampleType,
 } from './formatPolicy';
 import { resolvePerformancePolicy, type RenderQualityMode } from './performancePolicy';
 
@@ -23,7 +24,7 @@ beforeAll(() => {
 
 describe('formatPolicy', () => {
   it('maps ultra to rgba32float and balanced/battery to rgba16float', () => {
-    expect(resolveColorFormat('ultra')).toBe('rgba32float');
+    expect(resolveColorFormat('ultra', { ...DEFAULT_FORMAT_CAPABILITIES, hasFloat32Filterable: true })).toBe('rgba32float');
     expect(resolveColorFormat('balanced')).toBe('rgba16float');
     expect(resolveColorFormat('battery')).toBe('rgba16float');
   });
@@ -35,6 +36,7 @@ describe('formatPolicy', () => {
         adapterGpuType: 'discrete',
         isMobile: false,
         supportsRgba32FloatStorage: true,
+        hasFloat32Filterable: true,
       }),
     ).toBe('rgba32float');
 
@@ -54,6 +56,27 @@ describe('formatPolicy', () => {
         isMobile: false,
       }),
     ).toBe('rgba16float');
+  });
+
+  it('never picks rgba32float without float32-filterable (#1511 bug 3)', () => {
+    const noFilter = {
+      ...DEFAULT_FORMAT_CAPABILITIES,
+      adapterGpuType: 'discrete' as const,
+      supportsRgba32FloatStorage: true,
+      hasFloat32Filterable: false,
+    };
+    for (const mode of ['ultra', 'auto', 'balanced', 'battery'] as RenderQualityMode[]) {
+      expect(resolveColorFormat(mode, noFilter)).toBe('rgba16float');
+    }
+    // auto without Float16Array would have fallen back to FP32: demote instead.
+    expect(resolveColorFormat('auto', { ...noFilter, adapterGpuType: 'integrated', supportsFloat16Array: false })).toBe('rgba16float');
+  });
+
+  it('keys the color sample type on the format (#1511 bug 3)', () => {
+    expect(colorTextureSampleType('rgba16float', false)).toBe('float');
+    expect(colorTextureSampleType('rgba16float', true)).toBe('float');
+    expect(colorTextureSampleType('rgba32float', true)).toBe('float');
+    expect(colorTextureSampleType('rgba32float', false)).toBe('unfilterable-float');
   });
 
   it('fail-softs balanced/battery to FP32 without Float16Array or FP16 storage', () => {
