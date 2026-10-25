@@ -706,6 +706,8 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                     onError={(err) => console.error('Live stream error:', err)}
                 />
             )}
+            {/* Pointer events only: they cover mouse, touch and pen. Adding onMouseDown
+                would fire the down handler twice per click (#1511 bug 5). */}
             <canvas
                 key={canvasKey}
                 ref={canvasRef}
@@ -713,7 +715,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 width={INTERNAL_RENDER_RESOLUTION}
                 height={INTERNAL_RENDER_RESOLUTION}
                 onPointerMove={handleCanvasMouseMove}
-                onPointerDown={handleMouseDown} onMouseDown={handleMouseDown}
+                onPointerDown={handleMouseDown}
                 onPointerUp={handleMouseUp}
                 onPointerLeave={handleMouseLeave}
                 style={canvasStyle}
