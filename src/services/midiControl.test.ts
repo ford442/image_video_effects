@@ -3,6 +3,7 @@ import {
   MIDIAccessLike,
   MIDIInputLike,
   MIDIMessageEventLike,
+  MIDIConnectionEventLike,
   subscribeKeyEvents,
   captureKeyOnce,
   translateMIDIMessage,
@@ -10,31 +11,38 @@ import {
 } from './midiControl';
 import { ControlEvent } from './controlBindings';
 
-function makeFakeInput(id: string, name = 'Fake Input'): MIDIInputLike {
+type FakeInput = MIDIInputLike & { listeners: Set<(e: MIDIMessageEventLike) => void> };
+type FakeAccess = MIDIAccessLike & { stateListeners: Set<(e: MIDIConnectionEventLike) => void> };
+
+function makeFakeInput(id: string, name = 'Fake Input'): FakeInput {
+  const listeners = new Set<(e: MIDIMessageEventLike) => void>();
   return {
     id,
     name,
     manufacturer: 'Test',
-    onmidimessage: null,
+    listeners,
+    addEventListener: vi.fn((_type: 'midimessage', l: (e: MIDIMessageEventLike) => void) => { listeners.add(l); }),
+    removeEventListener: vi.fn((_type: 'midimessage', l: (e: MIDIMessageEventLike) => void) => { listeners.delete(l); }),
     open: vi.fn().mockResolvedValue({} as MIDIInputLike),
     close: vi.fn().mockResolvedValue({} as MIDIInputLike),
   };
 }
 
-function makeFakeAccess(inputs: MIDIInputLike[]): MIDIAccessLike {
+function makeFakeAccess(inputs: MIDIInputLike[]): FakeAccess {
   const map = new Map<string, MIDIInputLike>();
   inputs.forEach((input) => map.set(input.id, input));
+  const stateListeners = new Set<(e: MIDIConnectionEventLike) => void>();
   return {
     inputs: map,
-    onstatechange: null,
+    stateListeners,
+    addEventListener: vi.fn((_type: 'statechange', l: (e: MIDIConnectionEventLike) => void) => { stateListeners.add(l); }),
+    removeEventListener: vi.fn((_type: 'statechange', l: (e: MIDIConnectionEventLike) => void) => { stateListeners.delete(l); }),
   };
 }
 
 function sendMessage(input: MIDIInputLike, data: number[]): void {
   const event: MIDIMessageEventLike = { data };
-  if (input.onmidimessage) {
-    input.onmidimessage(event);
-  }
+  (input as FakeInput).listeners.forEach((l) => l(event));
 }
 
 describe('translateMIDIMessage', () => {
@@ -147,6 +155,76 @@ describe('MidiControlAdapter', () => {
     sendMessage(input, [0xb0, 1, 127]);
     expect(events).toHaveLength(0);
     expect(adapter.getDevices()).toEqual([]);
+  });
+
+  test('two adapters on one input both receive a message (#1511 bug 6)', () => {
+    const input = makeFakeInput('input-1');
+    const access = makeFakeAccess([input]);
+    const a = new MidiControlAdapter(access);
+    const b = new MidiControlAdapter(access);
+    const aEvents: ControlEvent[] = [];
+    const bEvents: ControlEvent[] = [];
+    a.subscribe((e) => aEvents.push(e));
+    b.subscribe((e) => bEvents.push(e));
+
+    sendMessage(input, [0xb0, 7, 127]);
+
+    expect(aEvents).toHaveLength(1);
+    expect(bEvents).toHaveLength(1);
+  });
+
+  test('disabling one adapter does not silence the other (#1511 bug 6)', () => {
+    const input = makeFakeInput('input-1');
+    const access = makeFakeAccess([input]);
+    const a = new MidiControlAdapter(access);
+    const b = new MidiControlAdapter(access);
+    const bEvents: ControlEvent[] = [];
+    b.subscribe((e) => bEvents.push(e));
+
+    a.disable();
+    sendMessage(input, [0xb0, 7, 127]);
+
+    expect(bEvents).toHaveLength(1);
+    expect(input.listeners.size).toBe(1);
+    expect(access.stateListeners.size).toBe(1);
+  });
+
+  test('hooks a hot-plugged input once and only for live adapters', () => {
+    const access = makeFakeAccess([]);
+    const adapter = new MidiControlAdapter(access);
+    const events: ControlEvent[] = [];
+    adapter.subscribe((e) => events.push(e));
+    const plugged = makeFakeInput('input-2');
+
+    access.stateListeners.forEach((l) => l({ port: plugged }));
+    access.stateListeners.forEach((l) => l({ port: plugged }));
+    sendMessage(plugged, [0x90, 60, 127]);
+    expect(events).toHaveLength(1);
+    expect(plugged.listeners.size).toBe(1);
+
+    adapter.disable();
+    expect(plugged.listeners.size).toBe(0);
+  });
+
+  test('disable before requestAccess resolves attaches nothing (#1511 bug 6)', async () => {
+    const input = makeFakeInput('input-1');
+    const access = makeFakeAccess([input]);
+    let resolveAccess!: (a: MIDIAccessLike) => void;
+    const nav = navigator as unknown as { requestMIDIAccess?: () => Promise<MIDIAccessLike> };
+    const original = nav.requestMIDIAccess;
+    nav.requestMIDIAccess = vi.fn(() => new Promise<MIDIAccessLike>((r) => { resolveAccess = r; }));
+    try {
+      const adapter = new MidiControlAdapter();
+      const pending = adapter.requestAccess();
+      adapter.disable();
+      resolveAccess(access);
+      await expect(pending).resolves.toBe(false);
+      expect(input.listeners.size).toBe(0);
+      expect(access.stateListeners.size).toBe(0);
+      expect(adapter.getDevices()).toEqual([]);
+    } finally {
+      nav.requestMIDIAccess = original;
+    }
   });
 
   test('requestAccess returns false when navigator.requestMIDIAccess is missing', async () => {

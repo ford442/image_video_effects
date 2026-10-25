@@ -200,13 +200,17 @@ export function useLiveControl({
 
         const adapter = new MidiControlAdapter(undefined, { pair14Bit: midiPair14BitRef.current });
         midiAdapterRef.current = adapter;
+        // A cleanup that runs before requestAccess() resolves must leave nothing attached (#1511 bug 6);
+        // disable() also makes the pending request resolve false.
+        let cancelled = false;
         adapter.requestAccess().then((ok) => {
-            if (!ok) return;
+            if (!ok || cancelled) return;
             setMidiDevices(adapter.getDevices());
             adapter.subscribe((event: ControlEvent) => handleControlEventRef.current(event));
         }).catch((err) => console.warn('[LiveControl] MIDI access failed:', err));
 
         return () => {
+            cancelled = true;
             adapter.disable();
             midiAdapterRef.current = null;
         };

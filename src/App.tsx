@@ -387,6 +387,7 @@ function MainApp() {
     useEffect(() => {
         if (!generativeShowcaseActive || generativeShowcaseLocked) return;
         const adapter = new MidiControlAdapter();
+        // Abort flag + disable(): a cleanup before requestAccess() resolves attaches nothing (#1511 bug 6).
         let cancelled = false;
         void adapter.requestAccess().then((ok) => {
             if (!ok || cancelled) return;

@@ -20,18 +20,27 @@ export interface MIDIConnectionEventLike {
   port: MIDIInputLike;
 }
 
+type MIDIMessageListener = (event: MIDIMessageEventLike) => void;
+type MIDIStateListener = (event: MIDIConnectionEventLike) => void;
+
+/**
+ * Adapters subscribe with addEventListener, never `onmidimessage =`: several adapters
+ * share one input (App attract mode + Live Control), and the last assignment would win (#1511 bug 6).
+ */
 export interface MIDIInputLike {
   id: string;
   name?: string;
   manufacturer?: string;
-  onmidimessage: ((event: MIDIMessageEventLike) => void) | null;
+  addEventListener(type: 'midimessage', listener: MIDIMessageListener): void;
+  removeEventListener(type: 'midimessage', listener: MIDIMessageListener): void;
   open(): Promise<MIDIInputLike>;
   close(): Promise<MIDIInputLike>;
 }
 
 export interface MIDIAccessLike {
   inputs: Map<string, MIDIInputLike>;
-  onstatechange: ((event: MIDIConnectionEventLike) => void) | null;
+  addEventListener(type: 'statechange', listener: MIDIStateListener): void;
+  removeEventListener(type: 'statechange', listener: MIDIStateListener): void;
 }
 
 function isMIDIInputLike(port: unknown): port is MIDIInputLike {
@@ -138,7 +147,10 @@ export interface MidiControlAdapterOptions {
 export class MidiControlAdapter {
   private access: MIDIAccessLike | null = null;
   private listeners = new Set<ControlEventCallback>();
-  private subscribedInputs = new Set<MIDIInputLike>();
+  /** This adapter's own listener per input; tracked here because the port cannot tell us. */
+  private subscribedInputs = new Map<MIDIInputLike, MIDIMessageListener>();
+  /** Bumped by disable(): an in-flight requestAccess from an older generation attaches nothing. */
+  private accessGeneration = 0;
   private pairer: Midi14BitPairer | null = null;
 
   constructor(initialAccess?: MIDIAccessLike, options: MidiControlAdapterOptions = {}) {
@@ -156,8 +168,11 @@ export class MidiControlAdapter {
     };
     if (!nav.requestMIDIAccess) return false;
 
+    const generation = this.accessGeneration;
     try {
       const access = await nav.requestMIDIAccess({ sysex: false });
+      // disable() ran while the permission prompt was open: stay detached.
+      if (generation !== this.accessGeneration) return false;
       this.attachAccess(access as unknown as MIDIAccessLike);
       return true;
     } catch {
@@ -166,10 +181,11 @@ export class MidiControlAdapter {
   }
 
   disable(): void {
+    this.accessGeneration++;
     if (!this.access) return;
-    this.access.onstatechange = null;
-    for (const input of this.subscribedInputs) {
-      input.onmidimessage = null;
+    this.access.removeEventListener('statechange', this.onStateChange);
+    for (const [input, listener] of this.subscribedInputs) {
+      input.removeEventListener('midimessage', listener);
     }
     this.subscribedInputs.clear();
     this.access = null;
@@ -204,23 +220,24 @@ export class MidiControlAdapter {
     this.access.inputs.forEach((input) => {
       this.hookInput(input);
     });
-    this.access.onstatechange = (event) => {
-      if (isMIDIInputLike(event.port) && event.port.onmidimessage === null) {
-        this.hookInput(event.port);
-      }
-    };
+    this.access.addEventListener('statechange', this.onStateChange);
   }
+
+  private readonly onStateChange = (event: MIDIConnectionEventLike): void => {
+    if (isMIDIInputLike(event.port)) this.hookInput(event.port);
+  };
 
   private hookInput(input: MIDIInputLike): void {
     if (this.subscribedInputs.has(input)) return;
-    this.subscribedInputs.add(input);
-    input.onmidimessage = (event) => {
+    const listener: MIDIMessageListener = (event) => {
       const data = normalizeMIDIData(event.data);
       const controlEvent = this.pairer ? this.pairer.translate(data) : translateMIDIMessage(data);
       if (controlEvent) {
         this.emit(controlEvent);
       }
     };
+    this.subscribedInputs.set(input, listener);
+    input.addEventListener('midimessage', listener);
   }
 
   private emit(event: ControlEvent): void {
