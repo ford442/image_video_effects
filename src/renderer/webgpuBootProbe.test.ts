@@ -290,6 +290,20 @@ describe('webgpuBootProbe', () => {
         expect(lastConfig(context)).toMatchObject({ colorSpace: 'display-p3', usage: 0x10 });
       });
 
+      it('reports standard tone mapping with a reason when extended is requested on the 8-bit canvas (#1511 bug 10)', async () => {
+        const context = makeMockContext();
+        Object.assign(context, { getConfiguration: () => ({ colorSpace: 'display-p3', toneMapping: { mode: 'extended' } }) });
+        const result = await runWebGpuBootProbe(setup(context), 1024, 1024, {
+          colorOptIns: { displayP3: true, extendedToneMapping: true },
+        });
+        expect(result.ok).toBe(true);
+        expect(result.canvasColorSpace).toBe('display-p3');
+        expect(result.canvasToneMapping).toBe('standard');
+        expect(result.canvasColorFallback).toBe('unsupported-extended-tone-mapping');
+        expect(result.handoff?.canvasColorOptIns.extendedToneMapping).toBe(false);
+        expect(result.adapterSummary).toContain('toneMapping=standard');
+      });
+
       it('falls back to srgb when getConfiguration reports srgb', async () => {
         const context = makeMockContext();
         Object.assign(context, { getConfiguration: () => ({ colorSpace: 'srgb', usage: 0x11 }) });
@@ -371,12 +385,26 @@ describe('negotiateCanvasColor', () => {
     expect(configs(context)[0].usage).toBe(0x10 | 0x01); // copySrc preserved
   });
 
-  it('accepts display-p3 + extended tone mapping when the readback agrees', async () => {
+  it('accepts display-p3 + extended tone mapping on an rgba16float canvas when the readback agrees', async () => {
     const context = makeMockContext();
     Object.assign(context, { getConfiguration: () => ({ colorSpace: 'display-p3', toneMapping: { mode: 'extended' } }) });
-    const r = await negotiateCanvasColor(device(), context, 'bgra8unorm', { displayP3: true, extendedToneMapping: true });
+    const r = await negotiateCanvasColor(device(), context, 'rgba16float', { displayP3: true, extendedToneMapping: true });
     expect(r).toMatchObject({ colorSpace: 'display-p3', toneMapping: 'extended' });
     expect(r.reason).toBeUndefined();
+  });
+
+  it('reports standard plus a reason when extended is requested on an 8-bit canvas (#1511 bug 10)', async () => {
+    const context = makeMockContext();
+    // The browser would accept the option, but an 8-bit canvas cannot show extended range.
+    Object.assign(context, { getConfiguration: () => ({ colorSpace: 'display-p3', toneMapping: { mode: 'extended' } }) });
+    const r = await negotiateCanvasColor(device(), context, 'bgra8unorm', { displayP3: true, extendedToneMapping: true });
+    expect(r).toMatchObject({
+      colorSpace: 'display-p3',
+      toneMapping: 'standard',
+      applied: { displayP3: true, extendedToneMapping: false },
+      reason: 'unsupported-extended-tone-mapping',
+    });
+    for (const c of configs(context)) expect(c.toneMapping?.mode).not.toBe('extended');
   });
 
   it('steps down to p3/standard when extended tone mapping is rejected', async () => {

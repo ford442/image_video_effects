@@ -311,7 +311,10 @@ export async function negotiateCanvasColor(
     return result(none);
   }
 
-  const ladder = requested.extendedToneMapping
+  // Extended tone mapping only does anything on a float16 canvas; on the 8-bit preferred format the
+  // browser may accept the option while the output stays SDR. Never report it as applied there (#1511 bug 10).
+  const canExtend = format === 'rgba16float';
+  const ladder = requested.extendedToneMapping && canExtend
     ? [{ displayP3: true, extendedToneMapping: true }, { displayP3: true, extendedToneMapping: false }]
     : [{ displayP3: true, extendedToneMapping: false }];
 
