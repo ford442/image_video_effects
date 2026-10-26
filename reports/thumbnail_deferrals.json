@@ -17,6 +17,14 @@
       "failure_note": "Needs WebGPU to render"
     },
     {
+      "id": "gen-bioluminescent-neural-coral-matrix",
+      "added_by": "Jules",
+      "deferred_at": "2026-10-20",
+      "expires": "2026-11-19",
+      "reason": "gpu-capture-pending",
+      "failure_note": "New shader requires GPU capture for thumbnail"
+    },
+    {
       "id": "gen-liquid-metal-chrono-flora",
       "added_by": "Jules",
       "deferred_at": "2026-10-11",
@@ -152,6 +160,13 @@
       "failure_note": "no self-hosted gpu runner registered (gpu-required.yml / thumbs-capture-farm.yml); next capture wave"
     },
     {
+      "id": "gen-stellar-mycelium-overdrive",
+      "added_by": "defer-thumbnail",
+      "deferred_at": "2026-10-24",
+      "expires": "2026-11-23",
+      "reason": "gpu-capture-pending"
+    },
+    {
       "id": "gen-symbiotic-cyber-fungal-core-reactor",
       "added_by": "thumbnail-campaign",
       "deferred_at": "2026-09-26",
@@ -184,22 +199,6 @@
       "deferred_at": "2026-10-16",
       "expires": "2026-11-15",
       "reason": "gpu-capture-pending"
-    },
-    {
-      "id": "gen-bioluminescent-neural-coral-matrix",
-      "added_by": "Jules",
-      "deferred_at": "2026-10-20",
-      "expires": "2026-11-19",
-      "reason": "gpu-capture-pending",
-      "failure_note": "New shader requires GPU capture for thumbnail"
-    },
-    {
-      "id": "gen-stellar-mycelium-overdrive",
-      "added_by": "Jules",
-      "deferred_at": "2026-10-23",
-      "expires": "2026-11-22",
-      "reason": "gpu-capture-pending",
-      "failure_note": "New shader requires GPU capture for thumbnail"
     }
   ]
 }

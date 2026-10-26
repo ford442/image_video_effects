@@ -7,6 +7,7 @@
 
 import { createBlitBindGroup } from './pipeline';
 import type { WebGPUFrameState } from './frameState';
+import { PresentHold } from './presentHold';
 import {
   encodeResolveAndCopy,
   profilePass,
@@ -54,6 +55,10 @@ export function needsScaledInputCopy(
 export class WebGPUPresenter {
   private scaleBindGroup: GPUBindGroup | null = null;
   private scaleBindGroupTex: GPUTexture | null = null;
+  /** Live cue crossfade: the frozen previous picture mixed in by the present pass. */
+  private readonly hold = new PresentHold();
+  /** What the last present drew (a cue's hold is a copy of exactly that); null before the first. */
+  private presented: { device: GPUDevice; generative: boolean } | null = null;
 
   /** Seed readTex from the source, scaling through a render pass when required. */
   encodeInputCopy(state: WebGPUFrameState, encoder: GPUCommandEncoder): void {
@@ -97,7 +102,19 @@ export class WebGPUPresenter {
     }
     if (!currentTexture) return false;
 
+    // The mix is applied after the pipeline choice below: a cue changes what is blended in,
+    // never which orientation the live frame uses.
+    const mix = this.hold.presentBinding(state, currentTexture);
+    const generative = state.inputSource === 'generative';
+    // HDR (rgba16float canvas) or the bgra8unorm compute present (#1512); a cue mix wins.
+    const variant = mix ? null : state.getPresentVariant?.() ?? null;
     const timestampWrites = profilePass(state.timestampRuntime, { kind: 'present', label: 'present' });
+    if (variant?.kind === 'storage'
+      && variant.encode(encoder, state.blitReadTex, currentTexture, generative, timestampWrites)) {
+      if (state.device) this.presented = { device: state.device, generative };
+      return true;
+    }
+    const hdr = variant?.kind === 'hdr' ? variant : null;
     const pass = encoder.beginRenderPass({
       colorAttachments: [
         {
@@ -109,17 +126,47 @@ export class WebGPUPresenter {
       ],
       ...(timestampWrites ? { timestampWrites } : {}),
     });
+    const pipelines = mix ?? hdr;
     pass.setPipeline(
-      selectPresentPipeline(
-        state.inputSource,
-        state.blitPipeline,
-        state.generativeBlitPipeline,
-      ),
+      pipelines
+        ? selectPresentPipeline(state.inputSource, pipelines.standard, pipelines.generative)
+        : selectPresentPipeline(
+            state.inputSource,
+            state.blitPipeline,
+            state.generativeBlitPipeline,
+          ),
     );
     pass.setBindGroup(0, state.blitBindGroup);
+    if (mix) pass.setBindGroup(1, mix.bindGroup);
+    else if (hdr) pass.setBindGroup(1, hdr.bindGroup);
     pass.draw(3);
     pass.end();
+    if (state.device) {
+      this.presented = { device: state.device, generative };
+    }
     return true;
+  }
+
+  /**
+   * Start a cue crossfade: dissolve from the last presented picture into whatever the
+   * frames after this call render. False when the picture simply cuts (duration 0,
+   * nothing presented yet, or no hold could be created).
+   */
+  startCrossfade(state: WebGPUFrameState, durationMs: number): boolean {
+    const hasPresented = !!state.device && this.presented?.device === state.device;
+    return this.hold.start(state, durationMs, hasPresented);
+  }
+
+  /** First command of a frame: copy the last presented picture into a pending cue's hold. */
+  encodeHoldCapture(state: WebGPUFrameState, encoder: GPUCommandEncoder): void {
+    if (!this.hold.hasPending) return;
+    this.hold.encodeCapture(state, encoder, this.presented?.generative ?? false);
+  }
+
+  /** Free the hold and forget what was presented (renderer teardown). */
+  releaseHold(): void {
+    this.hold.release();
+    this.presented = null;
   }
 
   /** Submit a fully encoded frame, including timestamp resolve/readback bookkeeping. */
@@ -127,6 +174,7 @@ export class WebGPUPresenter {
     if (!state.device) return;
     const readback = encodeResolveAndCopy(encoder, state.timestampRuntime);
     state.device.queue.submit([encoder.finish()]);
+    this.hold.afterSubmit();
     if (readback !== null) {
       scheduleTimestampReadback(state.timestampRuntime, readback);
     }

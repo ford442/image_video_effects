@@ -23,10 +23,46 @@
     "maxBufferSize": 268435456,
     "maxStorageBufferBindingSize": 134217728
   },
+  "limitsTiers": {
+    "order": ["base", "deep-workgroup", "big-buffer"],
+    "base": { "limits": "minimumComputeLimits", "maxTextureDimension2D": 4096, "comfortableMaxTextureDimension2D": 8192 },
+    "deep-workgroup": { "limits": "deepWorkgroupLimits" },
+    "big-buffer": { "maxBufferSize": 1073741824 }
+  },
+  "specDefaults": {
+    "core": {
+      "maxTextureDimension2D": 8192,
+      "maxBindingsPerBindGroup": 1000,
+      "maxSampledTexturesPerShaderStage": 16,
+      "maxSamplersPerShaderStage": 16,
+      "maxStorageTexturesPerShaderStage": 4,
+      "maxStorageBuffersPerShaderStage": 8,
+      "maxUniformBuffersPerShaderStage": 12,
+      "maxUniformBufferBindingSize": 65536,
+      "maxComputeWorkgroupSizeX": 256,
+      "maxComputeWorkgroupSizeY": 256,
+      "maxComputeInvocationsPerWorkgroup": 256
+    },
+    "compatibility": {
+      "maxTextureDimension2D": 4096,
+      "maxBindingsPerBindGroup": 1000,
+      "maxSampledTexturesPerShaderStage": 16,
+      "maxSamplersPerShaderStage": 16,
+      "maxStorageTexturesPerShaderStage": 4,
+      "maxStorageBuffersPerShaderStage": 8,
+      "maxUniformBuffersPerShaderStage": 12,
+      "maxUniformBufferBindingSize": 16384,
+      "maxComputeWorkgroupSizeX": 128,
+      "maxComputeWorkgroupSizeY": 128,
+      "maxComputeInvocationsPerWorkgroup": 128
+    }
+  },
   "notes": {
     "deepWorkgroupLimits": "Requested on top of minimumComputeLimits only when the adapter reports all three at or above these values. WebGPU never grants more than requested, so without this a 1024-capable adapter still yields a 256-invocation device. supportsDeepWorkgroup is read from the device limits after creation, not the adapter. Mirrored in webgpuDevicePolicy.ts buildRequiredLimits(adapterLimits) and device.cpp adapterDeepWorkgroup.",
     "maxTextureDimension2D": "Comfortable floor (WebGPU base limit is 8192; minimum viable 4096). Never derive this from maxBufferSize, pixel count, width*height, or a mis-ordered init arg / heap pointer.",
-    "bufferSizeLimits": "Floors (the WebGPU spec defaults). buildRequiredLimits(adapterLimits) requests the adapter's own value for each, never less than the floor, because a device only gets the spec default unless a higher value is requested. allowsFullWorkingSize (src/config/vramBudget.ts) needs device.limits.maxBufferSize >= 1 GiB for the 2048 working size. TypeScript only (cppMirror false): the WASM backend is frozen as R&D (docs/WASM_BACKEND_POLICY.md) and never offers the 2048 tier."
+    "bufferSizeLimits": "Floors (the WebGPU spec defaults). buildRequiredLimits(adapterLimits) requests the adapter's own value for each, never less than the floor, because a device only gets the spec default unless a higher value is requested. allowsFullWorkingSize (src/config/vramBudget.ts) needs device.limits.maxBufferSize >= 1 GiB for the 2048 working size. TypeScript only (cppMirror false): the WASM backend is frozen as R&D (docs/WASM_BACKEND_POLICY.md) and never offers the 2048 tier.",
+    "limitsTiers": "TypeScript limits tiers (#1512). A device is probed into every tier its granted limits reach: `base` (the real requirements of the 14-entry bind group and the 16x16 catalog workgroup: minimumComputeLimits, with maxTextureDimension2D checked at 4096 because the canvas and the working pool are at most 2048), `deep-workgroup` (deepWorkgroupLimits) and `big-buffer` (maxBufferSize >= 1 GiB, the 2048 working-size gate). buildRequiredLimits() requests a base limit only when it exceeds the spec default of the adapter's feature level, so a core device requests none of them (every base value is at or below the core default) and a compatibility device requests 256 invocations; maxTextureDimension2D is requested up to comfortableMaxTextureDimension2D when the feature level's default is lower. minimumComputeLimits itself stays the C++ mirror (webgpu_limits.h, device.cpp CheckLimit), which keeps the 8192 floor.",
+    "specDefaults": "WebGPU spec defaults per feature level for the limits the contract names (compatibility values as granted by a compatibility-mode device, e.g. Chromium's). Used only to decide what is worth requesting."
   },
   "cpp": {
     "header": "wasm_renderer/webgpu_limits.h"
@@ -49,6 +85,7 @@
     ]
   },
   "cppMirror": {
-    "bufferSizeLimits": false
+    "bufferSizeLimits": false,
+    "limitsTiers": false
   }
 }

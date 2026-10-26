@@ -21,6 +21,10 @@ on:
         description: Max shaders this run (cap keeps the PR reviewable)
         type: string
         default: '80'
+      ids:
+        description: Comma-separated shader ids to re-capture (overrides category; searches the whole catalog and re-captures even if a PNG already exists)
+        type: string
+        default: ''
       runner_label:
         description: Self-hosted runner label with a real GPU
         type: string
@@ -54,9 +58,22 @@ jobs:
         run: npx playwright install chromium
 
       - name: Capture missing thumbnails
+        env:
+          IDS: ${{ inputs.ids }}
+          CATEGORY: ${{ inputs.category }}
+          LIMIT_IN: ${{ inputs.limit }}
         run: |
-          LIMIT=$(( ${{ inputs.limit }} > 80 ? 80 : ${{ inputs.limit }} ))
-          npm run thumbs:generate -- --category="${{ inputs.category }}" --missing --limit="$LIMIT"
+          LIMIT=$(( LIMIT_IN > 80 ? 80 : LIMIT_IN ))
+          if [ -n "$IDS" ]; then
+            # Targeted re-capture: existing PNGs (black/flat SwiftShader frames) must be overwritten,
+            # so --force instead of --missing.
+            if ! printf '%s' "$IDS" | grep -Eq '^[A-Za-z0-9_-]+(,[A-Za-z0-9_-]+)*$'; then
+              echo "ids must be comma-separated shader ids" >&2; exit 1
+            fi
+            npm run thumbs:generate -- --category=all-catalog --ids="$IDS" --force --limit="$LIMIT"
+          else
+            npm run thumbs:generate -- --category="$CATEGORY" --missing --limit="$LIMIT"
+          fi
 
       - name: Integrity audit (non-zero exit expected from pre-existing flags)
         run: python3 scripts/audit_thumbnail_integrity.py || true

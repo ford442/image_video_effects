@@ -6,21 +6,31 @@
 import { loadDisplayP3 } from '../services/displayP3';
 import { reportError, getBrowserWarning } from './ErrorHandling';
 import {
-  ADAPTER_ATTEMPT_LADDER,
   assertAdapterMeetsContract,
   buildRequiredLimits,
+  isCompatibilityDevice,
   meetsDeepWorkgroupLimits,
   formatAdapterLimitsSummary,
   logAdapterFeatures,
+  resolveAdapterLadder,
+  resolveLimitsTiers,
   type AdapterAttempt,
+  type FeatureLevel,
+  type LimitsTier,
 } from './webgpuDevicePolicy';
 import {
   appendAdapterSummaryFields,
   buildCanvasConfigureOptions,
   collectOptionalDeviceFeatures,
+  effectiveCanvasFormat,
+  readDeviceTier2,
   resolveCanvasColorOptIns,
+  resolveCanvasFormatOverride,
   resolveSubgroupFeatureName,
+  storagePresentDisabledByUrl,
+  type CanvasColorOptInsState,
   type CanvasConfigureOptIns,
+  type DeviceTier2,
 } from './webgpu/device';
 import {
   AdapterGpuType,
@@ -55,6 +65,8 @@ export type WebGpuProbeAttempt = {
   label: string;
   powerPreference?: GPUPowerPreference;
   forceFallbackAdapter: boolean;
+  /** Set on the compatibility rung (#1512). */
+  featureLevel?: FeatureLevel;
   adapterPresent: boolean;
   adapterInfo?: WebGpuProbeAdapterInfo;
   limitsSummary?: string;
@@ -67,7 +79,12 @@ export type WebGpuProbeAttempt = {
 export type WebGpuProbeHandoff = {
   device: GPUDevice;
   context: GPUCanvasContext;
+  /** The applied swapchain format: rgba16float for an HDR canvas, else the preferred one. */
   canvasFormat: GPUTextureFormat;
+  /** getPreferredCanvasFormat() (or ?canvas_format=): every SDR configure uses it. */
+  preferredCanvasFormat?: GPUTextureFormat;
+  /** The swapchain was accepted with STORAGE_BINDING for the compute present (#1512). */
+  storagePresent?: boolean;
   canvasW: number;
   canvasH: number;
   supportsSubgroups: boolean;
@@ -82,7 +99,7 @@ export type WebGpuProbeHandoff = {
   /** Swapchain accepted RENDER_ATTACHMENT | COPY_SRC (configured render-only regardless). */
   canvasCopySrc: boolean;
   /** Color opt-ins actually applied to the live configure; rebuild configs with these. */
-  canvasColorOptIns: Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'>;
+  canvasColorOptIns: CanvasColorOptInsState;
   /** Why the requested color opt-in was narrowed at boot (absent when honored). */
   canvasColorFallback?: CanvasColorFallbackReason;
   /**
@@ -90,6 +107,8 @@ export type WebGpuProbeHandoff = {
    * adopts the device and installs its own routed listener.
    */
   detachUncapturedLog?: () => void;
+  /** Capability tier 2 (#1512); absent on handoffs built before it existed (treated as core). */
+  tier2?: DeviceTier2;
 };
 
 export type WebGpuProbeSerializable = {
@@ -113,6 +132,20 @@ export type WebGpuProbeSerializable = {
   canvasToneMapping?: 'standard' | 'extended';
   /** Why the requested display-p3 / extended tone mapping was narrowed (absent when honored). */
   canvasColorFallback?: CanvasColorFallbackReason;
+  /** Applied canvas format: getPreferredCanvasFormat(), or rgba16float for an HDR canvas (#1512). */
+  canvasFormat?: GPUTextureFormat;
+  /** The present writes the bgra8unorm swapchain from a compute pass (canvas_configure optIn.storagePresent). */
+  storagePresent?: boolean;
+  /** Capability tier 2 (#1512): the feature level the device runs at and its granted features. */
+  featureLevel?: FeatureLevel;
+  /** The device came from the compatibility rung and validates as compat. */
+  compat?: boolean;
+  shaderF16?: boolean;
+  bgra8unormStorage?: boolean;
+  float32Blendable?: boolean;
+  dualSourceBlending?: boolean;
+  /** Every limits tier the granted device limits reach (webgpu_limits.json limitsTiers). */
+  limitsTiers?: LimitsTier[];
   /**
    * Colour tag of the most recent WebCodecs recording: 'display-p3' when its WebM
    * Colour element was rewritten to P3 primaries, 'encoder-default' when the file
@@ -243,7 +276,7 @@ async function tryConfigure(
   return !scopeFailed(await withValidationScope(device, () => context.configure(config)));
 }
 
-export type CanvasColorOptIns = Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'>;
+export type CanvasColorOptIns = CanvasColorOptInsState;
 
 /** Why the applied canvas color differs from (or is narrower than) what was asked for. */
 export type CanvasColorFallbackReason =
@@ -256,6 +289,8 @@ export interface CanvasColorNegotiation {
   applied: CanvasColorOptIns;
   colorSpace: PredefinedColorSpace;
   toneMapping: 'standard' | 'extended';
+  /** The swapchain format the applied configure uses (rgba16float when HDR, #1512). */
+  format?: GPUTextureFormat;
   /** Set when the request was narrowed; absent when fully honored (or nothing requested). */
   reason?: CanvasColorFallbackReason;
 }
@@ -271,6 +306,10 @@ export interface CanvasColorState {
   colorSpace: PredefinedColorSpace;
   toneMapping: 'standard' | 'extended';
   copySrc: boolean;
+  /** The live swapchain format (#1512). */
+  format?: GPUTextureFormat;
+  /** The present is the bgra8unorm compute write (#1512). */
+  storagePresent?: boolean;
   fallbackReason?: CanvasColorFallbackReason;
 }
 
@@ -285,44 +324,57 @@ export function describeCanvasColorFallback(reason: CanvasColorFallbackReason): 
   }
 }
 
+/** Usage opt-ins kept across a colour renegotiation (they never change the colour). */
+export type CanvasUsageOptIns = Pick<CanvasConfigureOptIns, 'copySrc' | 'storagePresent'>;
+
 /**
  * Negotiate display-p3 (and extended tone mapping on HDR displays) fail-soft and
  * report what was actually accepted. Leaves the context configured with the
  * accepted options (default sRGB configure when everything is rejected).
+ *
+ * Extended tone mapping only changes anything on a float16 swapchain, so it is
+ * negotiated together with the rgba16float HDR canvas (#1512 optIn.hdrCanvas) and
+ * never reported as applied on the 8-bit preferred format. `format` is the
+ * preferred format; the result's `format` is what the swapchain uses now.
  */
 export async function negotiateCanvasColor(
   device: GPUDevice,
   context: GPUCanvasContext,
   format: GPUTextureFormat,
   requested: CanvasColorOptIns,
-  copySrc = false,
+  usage: boolean | CanvasUsageOptIns = false,
 ): Promise<CanvasColorNegotiation> {
+  const kept: CanvasUsageOptIns = typeof usage === 'boolean' ? { copySrc: usage } : usage;
   const result = (applied: CanvasColorOptIns, reason?: CanvasColorFallbackReason): CanvasColorNegotiation => ({
     requested,
     applied,
     colorSpace: applied.displayP3 ? 'display-p3' : 'srgb',
     toneMapping: applied.extendedToneMapping ? 'extended' : 'standard',
+    format: effectiveCanvasFormat(format, applied),
     ...(reason ? { reason } : {}),
   });
   const none = { displayP3: false, extendedToneMapping: false };
   if (!requested.displayP3) {
     // Switching back to default: reconfigure only if a previous call left p3 on.
-    context.configure(buildCanvasConfigureOptions(device, format, { copySrc }));
+    context.configure(buildCanvasConfigureOptions(device, format, kept));
     return result(none);
   }
 
-  const ladder = requested.extendedToneMapping
-    ? [{ displayP3: true, extendedToneMapping: true }, { displayP3: true, extendedToneMapping: false }]
+  const ladder: CanvasColorOptIns[] = requested.extendedToneMapping
+    ? [{ displayP3: true, extendedToneMapping: true, hdrCanvas: true }, { displayP3: true, extendedToneMapping: false }]
     : [{ displayP3: true, extendedToneMapping: false }];
 
   for (const optIns of ladder) {
-    if (!(await tryConfigure(device, context, buildCanvasConfigureOptions(device, format, { ...optIns, copySrc })))) {
+    // The compute present writes bgra8unorm only: an HDR canvas presents through the render pass.
+    const usageOptIns = optIns.hdrCanvas ? { copySrc: kept.copySrc } : kept;
+    if (!(await tryConfigure(device, context, buildCanvasConfigureOptions(device, format, { ...optIns, ...usageOptIns })))) {
       continue;
     }
     const readback = readCanvasConfiguration(context);
     if (readback) {
       if (readback.colorSpace !== 'display-p3') continue;
       if (optIns.extendedToneMapping && readback.toneMapping?.mode !== 'extended') continue;
+      if (optIns.hdrCanvas && readback.format !== undefined && readback.format !== effectiveCanvasFormat(format, optIns)) continue;
     }
     console.log(
       `[WebGPU Probe] canvas colorSpace=display-p3 toneMapping=${optIns.extendedToneMapping ? 'extended' : 'standard'}`,
@@ -334,8 +386,38 @@ export async function negotiateCanvasColor(
   }
 
   console.warn('[WebGPU Probe] display-p3 opt-in rejected; keeping srgb canvas');
-  context.configure(buildCanvasConfigureOptions(device, format, { copySrc }));
+  context.configure(buildCanvasConfigureOptions(device, format, kept));
   return result(none, 'unsupported-p3');
+}
+
+/**
+ * Probe whether the swapchain accepts STORAGE_BINDING for the compute present (#1512):
+ * only with the bgra8unorm-storage feature, a bgra8unorm SDR canvas, and not turned off
+ * by ?storage_present=0. Leaves it configured with the storage usage when accepted, and
+ * with `colorOptIns` either way. Never throws.
+ */
+export async function probeStoragePresent(
+  device: GPUDevice,
+  context: GPUCanvasContext,
+  format: GPUTextureFormat,
+  colorOptIns: CanvasColorOptIns,
+  search = '',
+): Promise<boolean> {
+  const eligible = device.features.has('bgra8unorm-storage' as GPUFeatureName)
+    && effectiveCanvasFormat(format, colorOptIns) === 'bgra8unorm'
+    && !storagePresentDisabledByUrl(search);
+  if (!eligible) return false;
+  try {
+    if (await tryConfigure(device, context, buildCanvasConfigureOptions(device, format, { ...colorOptIns, storagePresent: true }))) {
+      const readback = readCanvasConfiguration(context);
+      const storageBit = typeof GPUTextureUsage !== 'undefined' ? GPUTextureUsage.STORAGE_BINDING : 0x08;
+      if (!readback || typeof readback.usage !== 'number' || (readback.usage & storageBit)) return true;
+    }
+  } catch {
+    /* fall through to the render-pass present */
+  }
+  context.configure(buildCanvasConfigureOptions(device, format, colorOptIns));
+  return false;
 }
 
 /**
@@ -360,7 +442,7 @@ export async function probeCanvasCopySrc(
   device: GPUDevice,
   context: GPUCanvasContext,
   format: GPUTextureFormat,
-  colorOptIns: Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'> = {},
+  colorOptIns: CanvasColorOptIns = {},
 ): Promise<boolean> {
   let accepted = false;
   try {
@@ -418,7 +500,14 @@ export interface WebGpuProbeOptions {
    * HDR media query; a worker cannot see either, so the render worker (#1314)
    * passes the main thread's answer.
    */
-  colorOptIns?: Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'>;
+  colorOptIns?: CanvasColorOptIns;
+  /**
+   * The page's `location.search` for probe flags (#1512): `?feature_level=compatibility`
+   * starts at the compat rung, `?canvas_format=bgra8unorm|rgba8unorm` overrides the
+   * preferred canvas format, `?storage_present=0` keeps the render-pass present. Defaults
+   * to this realm's location; the render worker passes the page's.
+   */
+  search?: string;
 }
 
 export async function runWebGpuBootProbe(
@@ -446,12 +535,15 @@ export async function runWebGpuBootProbe(
   const canvasH = canvas.height || configHeight;
   const maxCanvasDim = Math.max(canvasW, canvasH, 1);
 
-  for (const attempt of ADAPTER_ATTEMPT_LADDER) {
+  const search = probeOptions.search ?? (typeof location !== 'undefined' ? location.search : '');
+  const ladder: readonly AdapterAttempt[] = resolveAdapterLadder(search);
+  for (const attempt of ladder) {
     const record: WebGpuProbeAttempt = {
       label: attempt.label,
       powerPreference: attempt.powerPreference,
       forceFallbackAdapter: attempt.forceFallbackAdapter,
       adapterPresent: false,
+      ...(attempt.featureLevel ? { featureLevel: attempt.featureLevel } : {}),
     };
 
     const options: GPURequestAdapterOptions = {
@@ -460,6 +552,7 @@ export async function runWebGpuBootProbe(
     if (attempt.powerPreference !== undefined) {
       options.powerPreference = attempt.powerPreference;
     }
+    if (attempt.featureLevel) options.featureLevel = attempt.featureLevel;
 
     let adapter: GPUAdapter | null = null;
     try {
@@ -503,7 +596,7 @@ export async function runWebGpuBootProbe(
       device = await adapter.requestDevice({
         label: 'PixelocityDevice',
         requiredFeatures: wantFeatures,
-        requiredLimits: buildRequiredLimits(maxCanvasDim, adapter.limits),
+        requiredLimits: buildRequiredLimits(maxCanvasDim, adapter.limits, attempt.featureLevel ?? 'core'),
       });
       trackLiveDevice(device);
     } catch (e) {
@@ -526,7 +619,8 @@ export async function runWebGpuBootProbe(
       continue;
     }
 
-    const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
+    // ?canvas_format= forces bgra8unorm (storage present) where the preferred one is rgba8unorm.
+    const canvasFormat = resolveCanvasFormatOverride(search) ?? navigator.gpu.getPreferredCanvasFormat();
     try {
       try {
         context.unconfigure();
@@ -545,9 +639,10 @@ export async function runWebGpuBootProbe(
 
     // Opt-ins are fail-soft: a rejection restores the default configure and
     // never fails the rung. A throw from the restore itself is a configure failure.
-    let canvasColorOptIns: Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'>;
+    let canvasColorOptIns: CanvasColorOptIns;
     let canvasColorFallback: CanvasColorFallbackReason | undefined;
     let canvasCopySrc: boolean;
+    let storagePresent = false;
     try {
       const requestedColor =
         probeOptions.colorOptIns ?? resolveCanvasColorOptIns(undefined, undefined, loadDisplayP3());
@@ -559,6 +654,7 @@ export async function runWebGpuBootProbe(
         canvasColorOptIns = { displayP3: false, extendedToneMapping: false };
       }
       canvasCopySrc = await probeCanvasCopySrc(device, context, canvasFormat, canvasColorOptIns);
+      storagePresent = await probeStoragePresent(device, context, canvasFormat, canvasColorOptIns, search);
     } catch (e) {
       record.error = e instanceof Error ? e.message : String(e);
       record.failedStage = 'configure';
@@ -567,10 +663,18 @@ export async function runWebGpuBootProbe(
       attempts.push(record);
       continue;
     }
-    console.log(`[WebGPU Probe] canvasCopySrc=${canvasCopySrc}`);
+    console.log(`[WebGPU Probe] canvasCopySrc=${canvasCopySrc} storagePresent=${storagePresent}`);
+    const presentFormat = effectiveCanvasFormat(canvasFormat, canvasColorOptIns);
 
+    let formatCapabilities: DeviceFormatCapabilities;
     try {
       await runProbePipeline(device);
+      // Inside the try: a rejection here must destroy the device like any other failed rung.
+      formatCapabilities = await probeFormatCapabilities(adapter, {
+        isMobile: isMobileDevice(),
+        device,
+        compat: isCompatibilityDevice(device, attempt.featureLevel),
+      });
     } catch (e) {
       record.error = e instanceof Error ? e.message : String(e);
       record.failedStage = 'probePipeline';
@@ -589,29 +693,35 @@ export async function runWebGpuBootProbe(
     attempts.push(record);
 
     const supportsSubgroups = !!(subgroupFeatureName && device.features.has(subgroupFeatureName));
+    const tier2 = readDeviceTier2(
+      device,
+      attempt.featureLevel ?? 'core',
+      isCompatibilityDevice(device, attempt.featureLevel),
+      resolveLimitsTiers(device.limits),
+    );
     // Granted device limits, not the adapter's: those are what shaders run under.
     const supportsDeepWorkgroup = meetsDeepWorkgroupLimits(device.limits);
     const adapterIdentity = readAdapterIdentity(adapter);
     const adapterGpuType = inferAdapterGpuType(adapterIdentity);
-    const formatCapabilities = await probeFormatCapabilities(adapter, {
-      isMobile: isMobileDevice(),
-      device,
-    });
 
     // Identity first: allowsFullWorkingSize matches the Pascal blocklist against this string.
     let adapterSummary =
       `Adapter attempt=${attempt.label} | adapter: ${formatAdapterIdentity(adapterIdentity)}`
       + ` type=${adapterGpuType} | limits: ${formatAdapterLimitsSummary(adapter)} (sufficient)`;
-    adapterSummary = appendAdapterSummaryFields(adapterSummary, device, canvasFormat);
+    adapterSummary = appendAdapterSummaryFields(adapterSummary, device, presentFormat);
     adapterSummary +=
       ` | storage: rgba16float=${formatCapabilities.supportsRgba16FloatStorage ? 'yes' : 'no'}`
       + ` rgba32float=${formatCapabilities.supportsRgba32FloatStorage ? 'yes' : 'no'}`
       + ` float16Array=${formatCapabilities.supportsFloat16Array ? 'yes' : 'no'}`
       + ` f32filter=${formatCapabilities.hasFloat32Filterable ? 'yes' : 'no'}`
       + ` f32blend=${formatCapabilities.hasFloat32Blendable ? 'yes' : 'no'}`
+      + ` | tier2: level=${tier2.compat ? 'compatibility' : 'core'} f16=${tier2.shaderF16 ? 'yes' : 'no'}`
+      + ` bgra8storage=${tier2.bgra8unormStorage ? 'yes' : 'no'} dualSource=${tier2.dualSourceBlending ? 'yes' : 'no'}`
+      + ` limitsTiers=${tier2.limitsTiers.join(',') || 'none'}`
       + ` | canvas: copySrc=${canvasCopySrc ? 'yes' : 'no'}`
       + ` colorSpace=${canvasColorOptIns.displayP3 ? 'display-p3' : 'srgb'}`
-      + ` toneMapping=${canvasColorOptIns.extendedToneMapping ? 'extended' : 'standard'}`;
+      + ` toneMapping=${canvasColorOptIns.extendedToneMapping ? 'extended' : 'standard'}`
+      + ` storagePresent=${storagePresent ? 'yes' : 'no'}`;
 
     const logUncaptured = (ev: Event) => {
       console.error('[WebGPU] Uncaptured error:', (ev as GPUUncapturedErrorEvent).error);
@@ -632,6 +742,15 @@ export async function runWebGpuBootProbe(
       canvasColorSpace: canvasColorOptIns.displayP3 ? 'display-p3' : 'srgb',
       canvasToneMapping: canvasColorOptIns.extendedToneMapping ? 'extended' : 'standard',
       ...(canvasColorFallback ? { canvasColorFallback } : {}),
+      canvasFormat: presentFormat,
+      storagePresent,
+      featureLevel: tier2.compat ? 'compatibility' : 'core',
+      compat: tier2.compat,
+      shaderF16: tier2.shaderF16,
+      bgra8unormStorage: tier2.bgra8unormStorage,
+      float32Blendable: tier2.float32Blendable,
+      dualSourceBlending: tier2.dualSourceBlending,
+      limitsTiers: tier2.limitsTiers,
       formatCapabilities,
     });
     serializable.ok = true;
@@ -641,7 +760,9 @@ export async function runWebGpuBootProbe(
       handoff: {
         device,
         context,
-        canvasFormat,
+        canvasFormat: presentFormat,
+        preferredCanvasFormat: canvasFormat,
+        storagePresent,
         canvasW,
         canvasH,
         supportsSubgroups,
@@ -656,6 +777,7 @@ export async function runWebGpuBootProbe(
         canvasColorOptIns,
         canvasColorFallback,
         detachUncapturedLog,
+        tier2,
       },
     };
   }
@@ -666,7 +788,7 @@ export async function runWebGpuBootProbe(
     last?.error && lastStage !== 'requestAdapter'
       ? last.error
       : 'Failed to obtain a WebGPU adapter after all fallback attempts ' +
-        '(HighPerformance/Undefined/LowPower/forceFallbackAdapter).';
+        `(${ladder.map((a) => a.label).join('/')}).`;
   reportError({ type: 'webgpu-unavailable', message: lastError, recoverable: false });
   console.warn('[WebGPU Probe]', lastError);
 
@@ -696,13 +818,15 @@ export function publishWebGpuProbeBreadcrumb(breadcrumb: WebGpuProbeSerializable
 }
 
 /** Reflect a live color renegotiation in window.webgpuProbe (no-op before the first publish). */
-export function updateWebGpuProbeColor(result: CanvasColorNegotiation): void {
+export function updateWebGpuProbeColor(result: CanvasColorNegotiation, storagePresent?: boolean): void {
   if (typeof window === 'undefined' || !window.webgpuProbe) return;
   const { canvasColorFallback: _drop, ...rest } = window.webgpuProbe;
   window.webgpuProbe = {
     ...rest,
     canvasColorSpace: result.colorSpace,
     canvasToneMapping: result.toneMapping,
+    ...(result.format ? { canvasFormat: result.format } : {}),
+    ...(storagePresent !== undefined ? { storagePresent } : {}),
     ...(result.reason ? { canvasColorFallback: result.reason } : {}),
   };
 }

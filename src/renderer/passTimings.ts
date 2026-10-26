@@ -6,7 +6,7 @@
  * (#1314 WP-4 / WP-5). One entry per graph node / slot step / fixed pass.
  */
 
-export type PassKind = 'compute' | 'present' | 'video' | 'input' | 'chores' | 'resample';
+export type PassKind = 'compute' | 'present' | 'video' | 'input' | 'chores' | 'resample' | 'composite';
 
 export interface PassTiming {
   /** Stable across frames: `${slot}:${nodeId ?? entry}` for compute, the label otherwise. */

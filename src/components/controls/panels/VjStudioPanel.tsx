@@ -237,7 +237,7 @@ export const VjStudioPanel: React.FC<VjStudioPanelProps> = ({
                                 )}
                                 <label style={{ fontSize: '12px' }}>
                                     Duration: {(autoTransitionDurationMs / 1000).toFixed(1)}s
-                                    <input type="range" min={200} max={10000} step={100} value={autoTransitionDurationMs} onChange={(e) => setAutoTransitionDurationMs(Number(e.target.value))} style={{ width: '100%' }} />
+                                    <input type="range" min={0} max={10000} step={100} value={autoTransitionDurationMs} onChange={(e) => setAutoTransitionDurationMs(Number(e.target.value))} style={{ width: '100%' }} />
                                 </label>
                                 <label style={{ fontSize: '12px' }}>
                                     Mode

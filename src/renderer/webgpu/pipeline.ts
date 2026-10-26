@@ -12,17 +12,22 @@ import {
   ShaderBindingUsage,
 } from '../ShaderCompilation';
 import type { InternalColorFormat } from '../../config/formatPolicy';
+import bindGroup0Contract from '../../contracts/bind_group0.json';
 import { BLIT_WGSL, GENERATIVE_BLIT_WGSL, SCALE_COPY_WGSL, VIDEO_COPY_WGSL } from '../ShaderTemplates';
 import { fetchShaderWgsl } from '../../utils/fetchShaderWgsl';
+import { applyF16Variant } from '../wgslF16';
 import { HISTORY_DEPTH } from './webgpuConstants';
 import { PIPELINE_CACHE_LIMIT, PipelineLru } from './pipelineCache';
 import {
   checkSimRingLimits,
   createSimRingBindGroupLayout,
+  createSimRingHashBindGroupLayout,
   createSimRingPipelineLayout,
   declaresBindGroup1,
+  declaresSimHash,
   validateGroup1Declarations,
 } from './simRing';
+import { createSimHashBuildResources, type SimHashBuildResources } from './simHash';
 import {
   WebGPUBufferSet,
   WebGPUSamplerSet,
@@ -45,8 +50,8 @@ export interface WebGPUBlitResources {
   supportsExternalTexture: boolean;
 }
 
-/** Group-1 layout provider; null when the device cannot host the sim ring. */
-export type SimRingLayoutProvider = () => GPUPipelineLayout | null;
+/** Group-1 layout provider (`spatialHash`: the 4-binding layout); null when the device cannot host it. */
+export type SimRingLayoutProvider = (spatialHash: boolean) => GPUPipelineLayout | null;
 
 export class WebGPUShaderManager {
   private pipelines = new Map<string, GPUComputePipeline>();
@@ -56,11 +61,24 @@ export class WebGPUShaderManager {
   /** Ids bound to a slot (including graph chains): never evicted. */
   private boundIds: () => ReadonlySet<string> = () => new Set<string>();
   private simRingShaders = new Set<string>();
+  private simHashShaders = new Set<string>();
   private simRingLayoutProvider: SimRingLayoutProvider = () => null;
   private pipelineHashes = new Map<string, string>();
   private workgroupSizes = new Map<string, { x: number; y: number }>();
   private bindingUsages = new Map<string, ShaderBindingUsage>();
   private colorFormat: InternalColorFormat = 'rgba32float';
+  /** The device was granted shader-f16: `// @requires f16` shaders compile their f16 variant. */
+  private shaderF16 = false;
+
+  setShaderF16(enabled: boolean): void {
+    if (this.shaderF16 === enabled) return;
+    this.shaderF16 = enabled;
+    this.clear();
+  }
+
+  getShaderF16(): boolean {
+    return this.shaderF16;
+  }
 
   setColorFormat(format: InternalColorFormat): void {
     if (this.colorFormat === format) return;
@@ -115,6 +133,11 @@ export class WebGPUShaderManager {
     return this.simRingShaders.has(id);
   }
 
+  /** True when the cached pipeline for `id` was built against the 4-binding (simHash) group-1 layout. */
+  usesSimHash(id: string): boolean {
+    return this.simHashShaders.has(id);
+  }
+
   getBindingUsage(id: string): ShaderBindingUsage {
     return this.bindingUsages.get(id) ?? CONSERVATIVE_BINDING_USAGE;
   }
@@ -134,6 +157,7 @@ export class WebGPUShaderManager {
     this.workgroupSizes.delete(id);
     this.bindingUsages.delete(id);
     this.simRingShaders.delete(id);
+    this.simHashShaders.delete(id);
   }
 
   clear(): void {
@@ -143,21 +167,26 @@ export class WebGPUShaderManager {
     this.workgroupSizes.clear();
     this.bindingUsages.clear();
     this.simRingShaders.clear();
+    this.simHashShaders.clear();
   }
 
   async compile(
     device: GPUDevice,
     pipelineLayout: GPUPipelineLayout,
     id: string,
-    wgsl: string,
+    source: string,
   ): Promise<boolean> {
+    // f16 variant first (#1512): everything below sees exactly what the GPU compiles.
+    const wgsl = applyF16Variant(source, this.shaderF16);
     // Opt-in @group(1): only shaders that declare it get the two-layout pipeline.
     // Everything else keeps the single group-0 layout it has always used.
     let layout = pipelineLayout;
     const wantsSimRing = declaresBindGroup1(wgsl);
+    // Opt-in within the opt-in: binding 3 selects the second, 4-binding group-1 layout.
+    const wantsSimHash = wantsSimRing && declaresSimHash(wgsl);
     if (wantsSimRing) {
       const errors = validateGroup1Declarations(wgsl);
-      const simLayout = this.simRingLayoutProvider();
+      const simLayout = this.simRingLayoutProvider(wantsSimHash);
       if (errors.length > 0 || !simLayout) {
         console.warn(
           `[WebGPU] Shader "${id}" declares @group(1) but ` +
@@ -185,6 +214,8 @@ export class WebGPUShaderManager {
       this.bindingUsages.set(id, analyzeShaderBindings(wgsl));
       if (wantsSimRing) this.simRingShaders.add(id);
       else this.simRingShaders.delete(id);
+      if (wantsSimHash) this.simHashShaders.add(id);
+      else this.simHashShaders.delete(id);
       this.lru.touch(id);
       this.trim(id);
     }
@@ -205,36 +236,60 @@ export class WebGPUShaderManager {
   }
 }
 
+type BindGroup0Kind = keyof typeof bindGroup0Contract.kinds;
+
+/** One @group(0) layout entry from src/contracts/bind_group0.json (shared with the C++ header). */
+function bindGroup0Entry(
+  binding: number,
+  kind: BindGroup0Kind,
+  visibility: GPUShaderStageFlags,
+  colorSample: GPUTextureSampleType,
+  colorFormat: InternalColorFormat,
+): GPUBindGroupLayoutEntry {
+  switch (kind) {
+    case 'filteringSampler': return { binding, visibility, sampler: { type: 'filtering' } };
+    case 'nonFilteringSampler': return { binding, visibility, sampler: { type: 'non-filtering' } };
+    case 'comparisonSampler': return { binding, visibility, sampler: { type: 'comparison' } };
+    case 'sampledColor': return { binding, visibility, texture: { sampleType: colorSample } };
+    case 'sampledColorArray':
+      return { binding, visibility, texture: { sampleType: colorSample, viewDimension: '2d-array' } };
+    case 'sampledDepth': return { binding, visibility, texture: { sampleType: 'unfilterable-float' } };
+    case 'storageColor':
+      return { binding, visibility, storageTexture: { access: 'write-only', format: colorFormat } };
+    case 'storageDepth':
+      return { binding, visibility, storageTexture: { access: 'write-only', format: 'r32float' } };
+    case 'uniformBuffer': return { binding, visibility, buffer: { type: 'uniform' } };
+    case 'storageBuffer': return { binding, visibility, buffer: { type: 'storage' } };
+    case 'readOnlyStorageBuffer': return { binding, visibility, buffer: { type: 'read-only-storage' } };
+  }
+}
+
+/**
+ * Sample type for the internal-colour bindings (1, 9, 13). Keyed on the texture format, not the
+ * device feature alone: rgba16float is always filterable, so pairing it with the filtering
+ * `u_sampler` is legal even without `float32-filterable`. Only rgba32float needs the feature.
+ */
+export function colorSampleType(
+  colorFormat: InternalColorFormat,
+  hasF32Filt: boolean,
+): GPUTextureSampleType {
+  if (colorFormat === 'rgba32float' && !hasF32Filt) return 'unfilterable-float';
+  return 'float';
+}
+
 export function createComputeBindGroupLayout(
   device: GPUDevice,
   hasF32Filt: boolean,
   colorFormat: InternalColorFormat = 'rgba32float',
 ): WebGPUComputeLayout {
-  const fST: GPUTextureSampleType = hasF32Filt ? 'float' : 'unfilterable-float';
+  const fST = colorSampleType(colorFormat, hasF32Filt);
   const V = GPUShaderStage.COMPUTE;
 
   const bindGroupLayout = device.createBindGroupLayout({
     label: 'computeBGL',
-    entries: [
-      { binding: 0, visibility: V, sampler: { type: 'filtering' } },
-      { binding: 1, visibility: V, texture: { sampleType: fST } },
-      { binding: 2, visibility: V, storageTexture: { access: 'write-only', format: colorFormat } },
-      { binding: 3, visibility: V, buffer: { type: 'uniform' } },
-      { binding: 4, visibility: V, texture: { sampleType: 'unfilterable-float' } },
-      { binding: 5, visibility: V, sampler: { type: 'non-filtering' } },
-      { binding: 6, visibility: V, storageTexture: { access: 'write-only', format: 'r32float' } },
-      { binding: 7, visibility: V, storageTexture: { access: 'write-only', format: colorFormat } },
-      { binding: 8, visibility: V, storageTexture: { access: 'write-only', format: colorFormat } },
-      { binding: 9, visibility: V, texture: { sampleType: fST } },
-      { binding: 10, visibility: V, buffer: { type: 'storage' } },
-      { binding: 11, visibility: V, sampler: { type: 'comparison' } },
-      { binding: 12, visibility: V, buffer: { type: 'read-only-storage' } },
-      {
-        binding: 13,
-        visibility: V,
-        texture: { sampleType: fST, viewDimension: '2d-array' },
-      },
-    ],
+    entries: bindGroup0Contract.bindings.map(({ binding, kind }) =>
+      bindGroup0Entry(binding, kind as BindGroup0Kind, V, fST, colorFormat),
+    ),
   });
 
   const pipelineLayout = device.createPipelineLayout({
@@ -473,12 +528,16 @@ export class WebGPUPipelineModule {
   /** Group-1 sim-ring layouts; created lazily, null when the device lacks the limits. */
   simRingBindGroupLayout: GPUBindGroupLayout | null = null;
   private simRingPipelineLayout: GPUPipelineLayout | null = null;
+  /** The second group-1 layout (bindings 0–3), only built once a simHash shader compiles. */
+  simRingHashBindGroupLayout: GPUBindGroupLayout | null = null;
+  private simRingHashPipelineLayout: GPUPipelineLayout | null = null;
+  private simHashBuild: SimHashBuildResources | null = null;
   private simRingDevice: GPUDevice | null = null;
 
   readonly shaderManager = new WebGPUShaderManager();
 
   constructor() {
-    this.shaderManager.setSimRingLayoutProvider(() => this.getSimRingPipelineLayout());
+    this.shaderManager.setSimRingLayoutProvider((spatialHash) => this.getSimRingPipelineLayout(spatialHash));
   }
 
   setupComputeLayout(
@@ -496,6 +555,9 @@ export class WebGPUPipelineModule {
     this.simRingDevice = device;
     this.simRingBindGroupLayout = null;
     this.simRingPipelineLayout = null;
+    this.simRingHashBindGroupLayout = null;
+    this.simRingHashPipelineLayout = null;
+    this.simHashBuild = null;
   }
 
   /**
@@ -503,22 +565,46 @@ export class WebGPUPipelineModule {
    * so non-sim sessions never create it; the group-1 limits are checked against
    * device.limits here instead of being added to catalog-wide requiredLimits.
    */
-  getSimRingPipelineLayout(): GPUPipelineLayout | null {
-    if (this.simRingPipelineLayout) return this.simRingPipelineLayout;
+  getSimRingPipelineLayout(spatialHash = false): GPUPipelineLayout | null {
+    const cached = spatialHash ? this.simRingHashPipelineLayout : this.simRingPipelineLayout;
+    if (cached) return cached;
     const device = this.simRingDevice;
     if (!device || !this.bindGroupLayout) return null;
-    const check = checkSimRingLimits(device.limits as never);
+    // The one extra storage buffer of simHash is checked here, never added to catalog-wide limits.
+    const check = checkSimRingLimits(device.limits as never, spatialHash);
     if (!check.ok) {
-      console.warn('[WebGPU] sim ring unavailable:', check.failures.join('; '));
+      console.warn(`[WebGPU] sim ring${spatialHash ? ' spatial hash' : ''} unavailable:`, check.failures.join('; '));
       return null;
     }
-    this.simRingBindGroupLayout = createSimRingBindGroupLayout(device);
-    this.simRingPipelineLayout = createSimRingPipelineLayout(
+    // A hash ring still binds the base layout for its nodes that do not declare simHash.
+    if (!this.simRingBindGroupLayout) {
+      this.simRingBindGroupLayout = createSimRingBindGroupLayout(device);
+      this.simRingPipelineLayout = createSimRingPipelineLayout(
+        device,
+        this.bindGroupLayout,
+        this.simRingBindGroupLayout,
+      );
+    }
+    if (!spatialHash) return this.simRingPipelineLayout;
+    this.simRingHashBindGroupLayout = createSimRingHashBindGroupLayout(device);
+    this.simRingHashPipelineLayout = createSimRingPipelineLayout(
       device,
       this.bindGroupLayout,
-      this.simRingBindGroupLayout,
+      this.simRingHashBindGroupLayout,
     );
-    return this.simRingPipelineLayout;
+    return this.simRingHashPipelineLayout;
+  }
+
+  /**
+   * The planner's scatter pass (simHash.ts) and its bind group layout; built on
+   * first use so sessions without a simHash shader never compile it.
+   */
+  getSimHashBuildResources(): SimHashBuildResources | null {
+    if (this.simHashBuild) return this.simHashBuild;
+    const device = this.simRingDevice;
+    if (!device) return null;
+    this.simHashBuild = createSimHashBuildResources(device);
+    return this.simHashBuild;
   }
 
   setupBlitPipelines(

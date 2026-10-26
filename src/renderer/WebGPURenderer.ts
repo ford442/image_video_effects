@@ -14,8 +14,12 @@ import {
   attachDeviceLostHandler,
   attachUncapturedErrorRouter,
   buildCanvasConfigureOptions,
-  type CanvasConfigureOptIns,
+  CORE_TIER2,
+  isHdrCanvas,
+  type CanvasColorOptInsState,
+  type DeviceTier2,
 } from './webgpu/device';
+import { HdrPresent, StoragePresent, type HdrPresentSettings, type PresentVariant } from './webgpu/presentVariants';
 import { WebGPUResourcePool } from './webgpu/resources';
 import { WebGPUPipelineModule, createComputeBindGroup } from './webgpu/pipeline';
 import {
@@ -72,8 +76,10 @@ import {
 } from './webgpuBootProbe';
 import { allocateWorkingPool, rungsForRequest } from './webgpu/historyTexProbe';
 import { declaresBindGroup1, SimRing } from './webgpu/simRing';
+import { armSimRingFor } from './webgpu/simRingArm';
 import { rewriteWgslStorageFormats } from './wgslFormatRewrite';
-import { resolveGraphForShader, resolveSimRingRequest, getGraphEntryIds, resolveMultipassChain } from './multipassRegistry';
+import { applyF16Variant } from './wgslF16';
+import { resolveGraphForShader, resolveSimHashRequest, resolveSimRingRequest, getGraphEntryIds, resolveMultipassChain } from './multipassRegistry';
 import { graphUsesSimRing, type MultipassGraphDef } from './multipassGraph';
 import { setRuntimeGraph as setRuntimeGraphOverlay, type RuntimeSimRingRequest } from './runtimeGraphs';
 import { instrumentDevice, type FrameStats } from './webgpu/deviceCounters';
@@ -81,6 +87,9 @@ import type { PassTiming } from './passTimings';
 import { ShaderWarmupQueue, type WarmupEntry } from './webgpu/shaderWarmup';
 import { NodeScaleIslands, nodeScaleKey, snapNodeScale } from './webgpu/nodeScale';
 import type { FrameIslands } from './webgpu/framePlan';
+import { IDLE_COMPOSITOR_STATS, outputComposites, type CompositorStats, type FrameCompositor } from './webgpu/compositor';
+import type { SlotCompositor } from './webgpu/slotCompositor';
+import { DEFAULT_SLOT_OUTPUT, normalizeSlotOutput, patchSlotOutput, type SlotOutput } from './slotOutput';
 import type { TransferredVideoFrames, VideoIngestStats } from './media/videoFramePump';
 import { VideoIngest } from './media/videoIngest';
 import { compileCheckWgsl } from './webgpu/compileCheck';
@@ -108,10 +117,20 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   readonly renderThread: 'main' | 'worker' = 'main';
   private device: GPUDevice | null = null;
   private context: GPUCanvasContext | null = null;
+  /** The live swapchain format (rgba16float for the HDR canvas, #1512). */
   private canvasFormat: GPUTextureFormat = 'bgra8unorm';
+  /** getPreferredCanvasFormat() (or ?canvas_format=): what every SDR configure uses. */
+  private preferredCanvasFormat: GPUTextureFormat = 'bgra8unorm';
+  /** Boot probe accepted STORAGE_BINDING on the swapchain (bgra8unorm-storage, #1512). */
+  private storagePresentSupported = false;
+  private readonly hdrPresent = new HdrPresent();
+  private readonly storagePresent = new StoragePresent(() => this.device);
+  /** Test hook: read presented texels back from the next frame (needs a COPY_SRC canvas). */
+  private texelProbe: { points: Array<[number, number]>; resolve: (texels: number[][] | null) => void } | null = null;
+  private texelReadback: { buffer: GPUBuffer; format: GPUTextureFormat; count: number; resolve: (texels: number[][] | null) => void } | null = null;
   private canvasCopySrcSupported = false;
   private canvasCopySrcActive = false;
-  private canvasColorOptIns: Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'> = {};
+  private canvasColorOptIns: CanvasColorOptInsState = {};
   private canvasColorRequested = false;
   private canvasColorFallback: CanvasColorFallbackReason | undefined;
 
@@ -130,8 +149,12 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   /** Per-slot zoom_params; slot objects hold these arrays by reference. */
   private slotZoomParams: number[][] = Array.from({ length: PHYSICAL_SLOT_LIMIT }, () => [0.5, 0.5, 0.5, 0.5]);
 
+  /** Per-slot compositor output (#1512); survives shader changes like the params do. */
+  private slotOutputs: SlotOutput[] = Array.from({ length: PHYSICAL_SLOT_LIMIT }, () => ({ ...DEFAULT_SLOT_OUTPUT }));
+
   private slots: ShaderSlot[] = Array.from({ length: PHYSICAL_SLOT_LIMIT }, (_, i) => ({
     shaderId: null, enabled: false, mode: 'chained' as SlotMode, params: this.slotZoomParams[i],
+    output: this.slotOutputs[i],
   }));
 
   private currentTime = 0;
@@ -175,6 +198,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private adapterIdentity: AdapterIdentity = UNKNOWN_ADAPTER_IDENTITY;
   private unregisterCompileService: (() => void) | null = null;
   private formatCapabilities = DEFAULT_FORMAT_CAPABILITIES;
+  /** Capability tier 2 of the live device (#1512): feature level, granted features, limits tiers. */
+  private tier2: DeviceTier2 = CORE_TIER2;
   private releasingDevice = false;
   private detachUncapturedErrors: (() => void) | null = null;
   /** Set by simulateDeviceLoss(): the next 'destroyed' of this device counts as a loss. */
@@ -190,6 +215,13 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private warmup: ShaderWarmupQueue | null = null;
   /** Scratch resources for opt-in graph nodes running below full size. */
   private readonly islands = new NodeScaleIslands();
+  /**
+   * Layer compositor for parallel groups with blend / mask outputs (#1512). Its GPU side is
+   * the lazy `compositor` chunk: null until the first group that composites has loaded it.
+   */
+  private compositor: SlotCompositor | null = null;
+  private compositorLoad: Promise<void> | null = null;
+  private compositorLoadError: string | null = null;
   /** Demoted opt-in graph nodes: `${slot}:${nodeId}` → scale (< 1). */
   private readonly nodeScales = new Map<string, number>();
   /** The canvas this renderer presents to (an OffscreenCanvas in the render worker). */
@@ -211,6 +243,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   getSupportsSubgroups(): boolean { return this.supportsSubgroups; }
   getColorFormat(): InternalColorFormat { return this.colorFormat; }
   getFormatCapabilities(): DeviceFormatCapabilities { return this.formatCapabilities; }
+  getDeviceTier2(): DeviceTier2 { return { ...this.tier2, limitsTiers: [...this.tier2.limitsTiers] }; }
   getHistoryLayers(): number { return this.resources.historyLayers; }
   getWorkingSizeCap(): number { return this.workingSizeCap; }
 
@@ -235,6 +268,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       instrumentDevice(outcome.device);
       this.context = outcome.context;
       this.canvasFormat = outcome.canvasFormat;
+      this.preferredCanvasFormat = outcome.preferredCanvasFormat ?? outcome.canvasFormat;
+      this.storagePresentSupported = outcome.storagePresent ?? false;
       this.canvasCopySrcSupported = outcome.canvasCopySrc ?? false;
       this.canvasCopySrcActive = false;
       this.canvasColorOptIns = outcome.canvasColorOptIns ?? {};
@@ -249,6 +284,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       this.adapterSummary = outcome.adapterSummary ?? '';
       this.adapterAttemptLabel = outcome.adapterAttemptLabel ?? null;
       this.adapterIdentity = outcome.adapterIdentity ?? UNKNOWN_ADAPTER_IDENTITY;
+      this.tier2 = outcome.tier2 ?? CORE_TIER2;
+      this.pipeline.shaderManager.setShaderF16(this.tier2.shaderF16);
 
       const device = outcome.device;
       attachDeviceLostHandler(device, outcome.context, (details) => {
@@ -492,7 +529,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     if (this.canvasCopySrcActive === enabled) return true;
     try {
       this.context.configure(buildCanvasConfigureOptions(
-        this.device, this.canvasFormat, { ...this.canvasColorOptIns, copySrc: enabled },
+        this.device, this.preferredCanvasFormat,
+        { ...this.canvasColorOptIns, copySrc: enabled, storagePresent: this.storagePresentConfigured() },
       ));
       this.canvasCopySrcActive = enabled;
       return true;
@@ -517,17 +555,25 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       applied: this.canvasColorOptIns,
       colorSpace: this.canvasColorOptIns.displayP3 ? 'display-p3' : 'srgb',
       toneMapping: this.canvasColorOptIns.extendedToneMapping ? 'extended' : 'standard',
+      format: this.canvasFormat,
       ...(this.canvasColorFallback ? { reason: this.canvasColorFallback } : {}),
     });
     if (!this.device || !this.context) return { ...current(), deferred: true };
     if (this.canvasCopySrcActive) return { ...current(), deferred: true };
     const result = await negotiateCanvasColor(
-      this.device, this.context, this.canvasFormat, requested, this.canvasCopySrcActive,
+      this.device, this.context, this.preferredCanvasFormat, requested,
+      { copySrc: this.canvasCopySrcActive, storagePresent: this.storagePresentSupported },
     );
     this.canvasColorOptIns = result.applied;
     this.canvasColorRequested = enabled;
     this.canvasColorFallback = result.reason;
-    updateWebGpuProbeColor(result);
+    const format = result.format ?? this.preferredCanvasFormat;
+    if (format !== this.canvasFormat) {
+      // HDR on / off swaps the swapchain format: the present pipelines follow it.
+      this.canvasFormat = format;
+      if (this.blitReadTex) this.pipeline.setupBlitPipelines(this.device, format, this.blitReadTex, this.colorFormat);
+    }
+    updateWebGpuProbeColor(result, this.storagePresentConfigured());
     return result;
   }
 
@@ -537,6 +583,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       colorSpace: this.canvasColorOptIns.displayP3 ? 'display-p3' : 'srgb',
       toneMapping: this.canvasColorOptIns.extendedToneMapping ? 'extended' : 'standard',
       copySrc: this.canvasCopySrcActive,
+      format: this.canvasFormat,
+      storagePresent: this.storagePresentConfigured(),
       ...(this.canvasColorFallback ? { fallbackReason: this.canvasColorFallback } : {}),
     };
   }
@@ -576,6 +624,17 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.gpuChores.setSourceNormalizeEnabled(enabled);
   }
 
+  /**
+   * Cue crossfade: dissolve over `durationMs` from the picture last presented into whatever
+   * the next frames render (the blit lives in webgpu/presentHold.ts). Call it with the
+   * shader-stack change it covers. False when the picture cuts instead: duration 0,
+   * nothing presented yet, or the hold could not be created.
+   */
+  startCrossfade(durationMs: number): boolean {
+    if (!this.frameState || !this.initialized) return false;
+    return this.frameRenderer.startCrossfade(this.frameState, durationMs);
+  }
+
   async captureChoresThumbnailPng(outSize: number): Promise<string | null> {
     // The texture the last frame presented. resources.blitReadTex is always
     // readTex, which holds the *input* for a single chained slot (output → writeTex).
@@ -592,6 +651,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
 
   encodePostFxChores(encoder: GPUCommandEncoder): void {
     this.gpuChores.encodeReadback(encoder);
+    // After the present: the swapchain texture holds this frame's picture.
+    this.encodeTexelProbe(encoder);
   }
 
   afterFrameSubmitChores(): void {
@@ -670,8 +731,10 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       this.device, this.pipeline.pipelineLayout, id, url,
     );
     if (ok && this.device && this.pipeline.shaderManager.usesSimRing(id)) {
-      const layout = this.pipeline.simRingBindGroupLayout;
-      if (!layout || !(await this.simRing.ensure(this.device, layout, resolveSimRingRequest(id)))) {
+      const armed = await armSimRingFor(
+        this.device, this.pipeline, this.simRing, id, resolveSimRingRequest(id), resolveSimHashRequest(id),
+      );
+      if (!armed) {
         console.warn(`[WebGPU] "${id}" declares @group(1) but the sim ring could not be armed`);
         return false;
       }
@@ -710,6 +773,139 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       scaledH: this.scaledH,
     });
     return this.islands;
+  }
+
+  /**
+   * The compositor while an enabled parallel slot blends or masks (frame-plan hook);
+   * frees its layer textures otherwise. Null also when its allocation failed.
+   */
+  getCompositor(): FrameCompositor | null {
+    const wanted = this.slots.some(
+      (slot) => slot.enabled && !!slot.shaderId && slot.mode === 'parallel' && outputComposites(slot.output),
+    );
+    if (!wanted || !this.device) {
+      this.compositor?.releaseTextures();
+      return null;
+    }
+    const compositor = this.compositor;
+    if (!compositor) {
+      this.loadCompositor();
+      return null; // last-one-wins until the chunk is in
+    }
+    compositor.attach({
+      device: this.device,
+      colorFormat: this.colorFormat,
+      scaledW: this.scaledW,
+      scaledH: this.scaledH,
+      depthTex: this.resources.depthRead,
+    });
+    return compositor.available ? compositor : null;
+  }
+
+  /** Fetch the compositor chunk once. A failed load keeps parallel groups on last-one-wins. */
+  private loadCompositor(): void {
+    this.compositorLoad ??= import(/* webpackChunkName: "compositor" */ './webgpu/slotCompositor').then(
+      ({ SlotCompositor }) => {
+        this.compositor = new SlotCompositor();
+      },
+      (e: unknown) => {
+        this.compositorLoadError = `compositor chunk failed to load: ${e instanceof Error ? e.message : String(e)}`;
+        console.warn(`[WebGPU] ${this.compositorLoadError}; parallel groups stay last-one-wins`);
+      },
+    );
+  }
+
+  /** Layer / mask memory, pass count and unresolved-mask warnings, for diagnostics. */
+  getCompositorStats(): CompositorStats {
+    if (this.compositor) return this.compositor.stats();
+    return { ...IDLE_COMPOSITOR_STATS, warnings: [], error: this.compositorLoadError };
+  }
+
+  /** The swapchain carries STORAGE_BINDING and is bgra8unorm: the compute present runs. */
+  private storagePresentConfigured(): boolean {
+    return this.storagePresentSupported && !isHdrCanvas(this.canvasColorOptIns) && this.canvasFormat === 'bgra8unorm';
+  }
+
+  /** HDR present on the rgba16float canvas, the compute present on a bgra8unorm one, else null (frame-plan hook). */
+  getPresentVariant(): PresentVariant | null {
+    const device = this.device;
+    if (!device) return null;
+    if (isHdrCanvas(this.canvasColorOptIns) && this.canvasFormat === 'rgba16float') {
+      return this.hdrPresent.get(device, this.pipeline.blitBindGroupLayout, this.canvasFormat);
+    }
+    return this.storagePresentConfigured() ? this.storagePresent.variant : null;
+  }
+
+  /** Paper white / peak of the HDR present (nits). Kept across HDR on / off. */
+  setHdrPresent(settings: Partial<HdrPresentSettings>): HdrPresentSettings {
+    return this.hdrPresent.setSettings(settings);
+  }
+
+  getHdrPresent(): HdrPresentSettings {
+    return this.hdrPresent.getSettings();
+  }
+
+  /** Compute presents encoded so far (0 when the render-pass blit presents). */
+  getStoragePresentCount(): number {
+    return this.storagePresent.presents;
+  }
+
+  /**
+   * Test hook (?testMode=1, page thread): the next presented frame's texels at normalized
+   * `points`, as floats (RGBA). rgba16float canvases keep values above 1.0, which is how
+   * the HDR present is checked without an HDR display. Needs setCanvasCopySrc(true).
+   */
+  readPresentedTexels(points: Array<[number, number]>): Promise<number[][] | null> {
+    if (!this.initialized || !this.canvasCopySrcActive || this.texelProbe || points.length === 0) {
+      return Promise.resolve(null);
+    }
+    return new Promise((resolve) => {
+      this.texelProbe = { points, resolve };
+    });
+  }
+
+  private encodeTexelProbe(encoder: GPUCommandEncoder): void {
+    const probe = this.texelProbe;
+    const device = this.device;
+    if (!probe || !device || !this.context) return;
+    this.texelProbe = null;
+    let texture: GPUTexture;
+    try {
+      texture = this.context.getCurrentTexture();
+    } catch {
+      probe.resolve(null);
+      return;
+    }
+    const buffer = device.createBuffer({
+      label: 'presentedTexels',
+      size: 256 * probe.points.length,
+      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+    });
+    probe.points.forEach(([u, v], i) => {
+      const x = Math.min(texture.width - 1, Math.max(0, Math.floor(u * texture.width)));
+      const y = Math.min(texture.height - 1, Math.max(0, Math.floor(v * texture.height)));
+      encoder.copyTextureToBuffer(
+        { texture, origin: [x, y, 0] },
+        { buffer, offset: i * 256, bytesPerRow: 256 },
+        [1, 1, 1],
+      );
+    });
+    this.texelReadback = { buffer, format: texture.format, count: probe.points.length, resolve: probe.resolve };
+  }
+
+  private resolveTexelReadback(): void {
+    const readback = this.texelReadback;
+    if (!readback) return;
+    this.texelReadback = null;
+    void readback.buffer.mapAsync(GPUMapMode.READ).then(() => {
+      const bytes = new Uint8Array(readback.buffer.getMappedRange().slice(0));
+      readback.buffer.unmap();
+      readback.buffer.destroy();
+      readback.resolve(Array.from({ length: readback.count }, (_, i) => decodeTexel(bytes, i * 256, readback.format)));
+    }, () => {
+      readback.buffer.destroy();
+      readback.resolve(null);
+    });
   }
 
   /** Opt-in graph nodes of the bound slots, with their floor and current scale. */
@@ -768,9 +964,13 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   setActiveShader(id: string): void {
     if (this.slots[0]?.shaderId !== id) this.rearmSimRingFor(id);
     for (let i = 0; i < PHYSICAL_SLOT_LIMIT; i++) this.clearNodeScales(i);
-    this.slots[0] = { shaderId: id, enabled: true, mode: 'chained', params: this.slotZoomParams[0] };
+    this.slots[0] = {
+      shaderId: id, enabled: true, mode: 'chained', params: this.slotZoomParams[0], output: this.slotOutputs[0],
+    };
     for (let i = 1; i < PHYSICAL_SLOT_LIMIT; i++) {
-      this.slots[i] = { shaderId: null, enabled: false, mode: 'chained', params: this.slotZoomParams[i] };
+      this.slots[i] = {
+        shaderId: null, enabled: false, mode: 'chained', params: this.slotZoomParams[i], output: this.slotOutputs[i],
+      };
     }
   }
 
@@ -781,7 +981,9 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       this.rearmSimRingFor(id);
       this.clearNodeScales(index);
     }
-    this.slots[index] = { shaderId: id, enabled: !!id, mode, params: this.slotZoomParams[index] };
+    this.slots[index] = {
+      shaderId: id, enabled: !!id, mode, params: this.slotZoomParams[index], output: this.slotOutputs[index],
+    };
   }
 
   setSlotEnabled(index: number, enabled: boolean): void {
@@ -801,11 +1003,28 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     return this.slots[index]?.mode ?? null;
   }
 
-  getSlotState(index: number): { shaderId: string | null; enabled: boolean; mode: SlotMode } | null {
+  getSlotState(index: number): { shaderId: string | null; enabled: boolean; mode: SlotMode; output: SlotOutput } | null {
     if (index < 0 || index >= PHYSICAL_SLOT_LIMIT) return null;
     const slot = this.slots[index];
     if (!slot) return null;
-    return { shaderId: slot.shaderId, enabled: slot.enabled, mode: slot.mode };
+    return { shaderId: slot.shaderId, enabled: slot.enabled, mode: slot.mode, output: normalizeSlotOutput(slot.output) };
+  }
+
+  /**
+   * Merge `patch` into slot `index`'s compositor output (blend mode, opacity, mask…).
+   * Takes effect on the next frame; only parallel slots composite. Returns the result.
+   */
+  setSlotOutput(index: number, patch: Partial<SlotOutput>): SlotOutput | null {
+    const target = this.slotOutputs[index];
+    if (!checkPhysicalSlotIndex('WebGPURenderer', index) || !target) return null;
+    // In place: the slot objects hold this output by reference, like their params.
+    Object.assign(target, patchSlotOutput(target, patch));
+    return { ...target };
+  }
+
+  getSlotOutput(index: number): SlotOutput | null {
+    const output = this.slotOutputs[index];
+    return output ? { ...output } : null;
   }
 
   addRipple(x: number, y: number): void {
@@ -1014,6 +1233,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       adaptQualityIfNeeded: r.adaptQualityIfNeeded.bind(r),
       nodeScale: r.nodeScale.bind(r),
       getIslands: r.getIslands.bind(r),
+      getCompositor: r.getCompositor.bind(r),
+      getPresentVariant: r.getPresentVariant.bind(r),
       encodePreFxChores: r.encodePreFxChores.bind(r),
       encodePostFxChores: r.encodePostFxChores.bind(r),
       afterFrameSubmitChores: r.afterFrameSubmitChores.bind(r),
@@ -1083,6 +1304,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   /** Frame-loop hook after queue.submit: release the frame's VideoFrame, serve frame grabs. */
   afterFrameSubmit(): void {
     this.videoIngest.afterSubmit();
+    this.resolveTexelReadback();
     if (this.frameGrabs.length > 0) this.resolveFrameGrabs();
   }
 
@@ -1119,7 +1341,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     // As loadShader compiles it: storage formats rewritten to the active tier, then checked
     // against the catalog layout, so "compiles but does not fit the bind group" fails here too.
     // @group(1) sim-ring shaders need the two-group layout; those get the module check only.
-    const compiled = rewriteWgslStorageFormats(code, this.colorFormat);
+    const compiled = rewriteWgslStorageFormats(applyF16Variant(code, this.tier2.shaderF16), this.colorFormat);
     const layout = declaresBindGroup1(code) ? undefined : this.pipeline.pipelineLayout;
     return compileCheckWgsl(this.device, id, compiled, { layout });
   }
@@ -1313,6 +1535,14 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.warmup?.stop();
     this.warmup = null;
     this.islands.destroy();
+    this.compositor?.destroy();
+    this.hdrPresent.release();
+    this.storagePresent.release();
+    this.texelProbe?.resolve(null);
+    this.texelProbe = null;
+    this.texelReadback?.resolve(null);
+    this.texelReadback = null;
+    this.frameRenderer.releasePresentHold();
     this.nodeScales.clear();
     this.videoIngest.detach();
     this.resolveFrameGrabs(null);
@@ -1347,4 +1577,23 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     if (!awaitLost) return undefined;
     return lost.then(() => undefined).catch(() => undefined);
   }
+}
+
+function halfToFloat(h: number): number {
+  const sign = h & 0x8000 ? -1 : 1;
+  const exp = (h >> 10) & 0x1f;
+  const mant = h & 0x3ff;
+  if (exp === 0) return sign * mant * 2 ** -24;
+  if (exp === 31) return mant ? Number.NaN : sign * Number.POSITIVE_INFINITY;
+  return sign * (1 + mant / 1024) * 2 ** (exp - 15);
+}
+
+/** One texel of a copyTextureToBuffer row as RGBA floats (rgba16float / bgra8unorm / rgba8unorm). */
+function decodeTexel(bytes: Uint8Array, offset: number, format: GPUTextureFormat): number[] {
+  if (format === 'rgba16float') {
+    const view = new DataView(bytes.buffer, bytes.byteOffset + offset, 8);
+    return [0, 2, 4, 6].map((o) => halfToFloat(view.getUint16(o, true)));
+  }
+  const px = Array.from(bytes.subarray(offset, offset + 4), (b) => b / 255);
+  return format === 'bgra8unorm' ? [px[2] ?? 0, px[1] ?? 0, px[0] ?? 0, px[3] ?? 0] : px;
 }

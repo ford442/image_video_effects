@@ -27,7 +27,10 @@ the timestamp profiler live in a dedicated worker that owns the canvas through
 - **Images.** Decoded on the page and transferred as `ImageBitmap`s.
 - **Getters.** Synchronous getters (`getFPS`, `getGPUTimings`, pass timings, frame stats, video stats, node scales, …) read the latest snapshot; slot state and params come from an optimistic local shadow.
 - **Capture.** The page cannot read a transferred canvas. `refreshFrameImage` / screenshots / `__pixelocity__.captureCanvasStats` use the `captureFrame` RPC: the worker takes a `VideoFrame` of the next presented frame **in the same task as its submit** (no COPY_SRC needed) and returns a PNG.
+- **Cue crossfade.** One `startCrossfade { durationMs }` command. The worker copies the picture it last presented into a canvas-sized `rgba8unorm` hold on its own device and mixes it in the present pass for `durationMs`; the page reads no pixels back and never ramps the mix itself. The page arms a cue and fires the command with the first shader-identity change (`RendererManager.armCrossfade`). See `docs/VJ_STUDIO.md` (Cue crossfade) and `src/renderer/webgpu/presentHold.ts`.
 - **Display P3.** The `setDisplayP3` RPC (`{enabled, isHdr}`) re-negotiates the canvas color space on the worker's own device and returns what was applied (`DisplayP3Result`). The page evaluates `(dynamic-range: high)` and passes it as `isHdr`; the worker cannot. The snapshot's `canvasColor` feeds `getDiagnostics().webgpu.canvas`. See `docs/DEVICE_FEATURES.md`.
+- **Layer compositor (#1512).** Slot outputs (`setSlotOutput`) ride the next `frameInput` as `slotOutputs`, coalesced per slot (only the last change per slot in a frame is sent). The worker's compositor reports through the snapshot's `compositor` (`getCompositorStats()`, `getDiagnostics().webgpu.compositor`).
+- **HDR present.** The `setHdrPresent` command (paper white / peak nits) only matters on an rgba16float canvas. The snapshot's `hdrPresent` feeds `getHdrPresent()`. The `init` RPC also carries the page's `pageSearch` (`location.search`), so the worker's boot probe sees `?feature_level=compatibility`, `?canvas_format=` and `?storage_present=0`.
 - **Recording.** GPU encode (WebCodecs) uses a `worker` frame source: each tick asks the worker for the next presented frame (`grabVideoFrame`) and encodes the transferred `VideoFrame` on the page. MediaRecorder still records `canvas.captureStream()` of the placeholder canvas.
 - **Thumbnails.** The `captureThumbnail` RPC (gpu-chores downsample of the presented texture).
 - **Dev tools.** `ShaderScanner` compiles through `utils/shaderCompileService.ts`: the page device, or the worker's device over the `compileCheck` RPC.
@@ -49,7 +52,14 @@ A runtime `GPUDevice` loss is recovered without a page reload. The flow is the s
    - The lost backend's own slot state is replayed (shader per slot, enabled, chained/parallel), for all `PHYSICAL_SLOT_LIMIT` (6) slots, with each shader loaded from the URL it was originally loaded from. Slot params come from the host's `getSessionState()`, and the manager's last input source is reused. So is the CPU-side still (read *before* the release) or else the last image URL. The `<video>` element re-attaches on the next page frame.
 4. **Fail.** If the attempt fails, the state goes to `failed`. `WebGPUCanvas` shows `WebGpuProbeFailureOverlay` with the new probe diagnostics and a **Retry** button (`recoverFromDeviceLoss()`). A second loss within 30 s of a recovery skips the automatic attempt and goes straight to `failed`.
 
-Not replayed: depth map, source auto-exposure, node scales, ripples. Quality, resolution scale and pass budgets come back through the manager's performance policy, as on any backend switch.
+`RendererManager.replayRenderState()` then re-applies what the shader stack does not carry (#1512). It runs after **every** successful webgpu switch, so a page ↔ worker move keeps these too:
+
+- per-slot compositor outputs (blend, opacity, mask);
+- the last depth map, as a copy;
+- source auto-exposure;
+- the HDR present settings.
+
+The device-loss path also replays Graph Lab node scales (after the stack, since a scale applies only to a node of a bound graph) and ripples younger than `RIPPLE_REPLAY_WINDOW_MS` (4 s). `__pixelocity__.getRenderStateReplay()` shows what a recovery will replay. A working-size or format rebuild keeps the canvas-sized depth texture (`recreateScaleTextures`), so the post-recovery rescale no longer wipes the replayed depth map. Quality, resolution scale and pass budgets come back through the manager's performance policy, as on any backend switch.
 
 A worker **crash** recovers the same way (#1395). An `error` event on the Worker after the handshake marks the client dead: pending RPCs reject and sends are dropped. `renderWorkerClient` then notifies `onDied`. `WorkerWebGPUBackend` stops like a loss (`initialized = false`, registry cleared, compile service unregistered) and fires the fatal handler once with `kind: 'worker-died'`. `RendererManager` hands that to the same `DeviceRecoveryController`, so the new worker replays the page-side slot shadow. Nothing is asked of the dead worker. `messageerror` is not treated as a crash.
 
@@ -59,7 +69,14 @@ Status is reported in `getDiagnostics().deviceRecovery` and `__pixelocity__.getD
 
 **Device generations.** Each `WorkerWebGPUBackend` claims a generation (`claimDeviceGeneration()` in `deviceRegistry.ts`, monotonic per page). The proxy sends it in the `init` RPC and `renderWorkerClient` stamps it as `gen` on every later message. Once `init` bound the worker to a generation, `renderWorkerHost` drops any message whose `gen` differs or is missing (closing transferred frames and answering a stale RPC with `stale device generation`), so a superseded proxy can never drive the renderer of a newer device. An `init` without a generation disables the check.
 
-`tests/engine2-device-loss.swiftshader.spec.ts` runs the loss in both threads, a full six-slot stack, the Graph Lab draft, the worker crash, and a failed attempt followed by Retry.
+`tests/engine2-device-loss.swiftshader.spec.ts` covers, in both threads where it applies:
+
+- the loss itself;
+- a full six-slot stack;
+- a composited parallel pair with a depth mask and HDR settings (the frame after recovery must match the one before);
+- the Graph Lab draft;
+- the worker crash;
+- a failed attempt followed by Retry.
 
 ## Not in the worker
 
@@ -94,5 +111,5 @@ Side effects of isolation:
 ## Testing
 
 - Vitest: `src/renderer/worker/renderWorker.test.ts` (protocol contract, host ↔ client over an in-memory port with a fake renderer, proxy coalescing and getters, device loss, stale worker messages and stale device generations). Recovery sequencing: `src/renderer/deviceRecovery.test.ts`, `src/__tests__/RendererManager.test.ts`.
-- Real (software) device: `npm run test:engine2` (`swiftshader` Playwright project). The core tests run with `?renderer=main` and with `?renderer=worker`. `npm run test:engine2:isolated` runs the same suite cross-origin isolated (SAB channel). `tests/engine2-isolation.swiftshader.spec.ts` checks the SAB path end to end. `npm run test:engine2:smoke` runs the renderer smoke + layer-chain specs on SwiftShader in both modes (`PX_RENDER_THREAD=main|worker`).
+- Real (software) device: `npm run test:engine2` (`swiftshader` Playwright project; `tests/cue-crossfade.swiftshader.spec.ts` reads the presented frames back through the worker to check the hold is not a black frame and the mix ramps). The core tests run with `?renderer=main` and with `?renderer=worker`. `npm run test:engine2:isolated` runs the same suite cross-origin isolated (SAB channel). `tests/engine2-isolation.swiftshader.spec.ts` checks the SAB path end to end. `npm run test:engine2:smoke` runs the renderer smoke + layer-chain specs on SwiftShader in both modes (`PX_RENDER_THREAD=main|worker`).
 - Real-GPU gate (not runnable on the Cloud VM): main-thread idle trace during a 6-slot 1080p stack, 4K30 HLS throughput, hardware pixel diffs.
