@@ -115,7 +115,7 @@ Streams song/video/audio media.
 
 The HMAC secret is server-only (`STORAGE_WEBHOOK_SECRET` on storage_manager). It used to be
 inlined into the client bundle as `REACT_APP_WEBHOOK_SECRET`; `vite.config.ts` now refuses to
-inline any `*SECRET*`/`*TOKEN*`/`*PASSWORD*`/`*PRIVATE*` variable and CI greps `dist/` for it.
+inline any `*SECRET*`/`*TOKEN*`/`*PASSWORD*`/`*PRIVATE*` variable and CI greps `build/` for it.
 
 **Body:** `{ "payload": "<the exact JSON string about to be posted to the webhook>" }`
 **Response 200:** `{ "signature": "sha256={hex}" }`
