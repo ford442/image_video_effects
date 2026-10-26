@@ -841,8 +841,17 @@
       "history": []
     },
     "viscous-drag-bilateral": {
-      "hash": "4bf851ad9fd50d52",
-      "history": []
+      "hash": "79f2c025e4cec803",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T21:33:54.175Z",
+          "hash": "79f2c025e4cec803",
+          "prev_hash": "4bf851ad9fd50d52",
+          "commit": "9c26cf56",
+          "note": "2026-10-26 cursor/batch-11 liquid, ripple, vortex (Grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-11"
+        }
+      ]
     },
     "vortex-warp-coupled": {
       "hash": "b0bc7d97512c9b3c",
@@ -8876,8 +8885,17 @@
       "history": []
     },
     "interactive-ripple": {
-      "hash": "d1df49932613b0d9",
-      "history": []
+      "hash": "2e78805cda939fcc",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T21:33:54.175Z",
+          "hash": "2e78805cda939fcc",
+          "prev_hash": "d1df49932613b0d9",
+          "commit": "9c26cf56",
+          "note": "2026-10-26 cursor/batch-11 liquid, ripple, vortex (Grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-11"
+        }
+      ]
     },
     "interactive-voronoi-lens": {
       "hash": "416173a8126703bc",
@@ -9541,8 +9559,17 @@
       "history": []
     },
     "raindrop-ripples": {
-      "hash": "1a5fde027e7ce071",
-      "history": []
+      "hash": "f876503472c04fc0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T21:33:54.175Z",
+          "hash": "f876503472c04fc0",
+          "prev_hash": "1a5fde027e7ce071",
+          "commit": "9c26cf56",
+          "note": "2026-10-26 cursor/batch-11 liquid, ripple, vortex (Grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-11"
+        }
+      ]
     },
     "reactive-glass-grid": {
       "hash": "34bb90badfa3acf1",
@@ -9591,8 +9618,17 @@
       "history": []
     },
     "rgb-ripple-waves": {
-      "hash": "1e770362bad343b2",
-      "history": []
+      "hash": "06f22d9e7b57bfe0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T21:33:54.175Z",
+          "hash": "06f22d9e7b57bfe0",
+          "prev_hash": "1e770362bad343b2",
+          "commit": "9c26cf56",
+          "note": "2026-10-26 cursor/batch-11 liquid, ripple, vortex (Grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-11"
+        }
+      ]
     },
     "rgb-shift-brush": {
       "hash": "e4b43e8e2ef9e3ac",
@@ -9754,8 +9790,17 @@
       "history": []
     },
     "velvet-vortex": {
-      "hash": "2451ddb7d30218bc",
-      "history": []
+      "hash": "c7ab7d9e6579bcff",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T21:33:54.175Z",
+          "hash": "c7ab7d9e6579bcff",
+          "prev_hash": "2451ddb7d30218bc",
+          "commit": "9c26cf56",
+          "note": "2026-10-26 cursor/batch-11 liquid, ripple, vortex (Grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-11"
+        }
+      ]
     },
     "venetian-blinds": {
       "hash": "be132400cbf86220",
@@ -9820,8 +9865,17 @@
       "history": []
     },
     "vortex-drag": {
-      "hash": "3ade12287ff49469",
-      "history": []
+      "hash": "6e58a3cc83d4ec8e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T21:33:54.175Z",
+          "hash": "6e58a3cc83d4ec8e",
+          "prev_hash": "3ade12287ff49469",
+          "commit": "9c26cf56",
+          "note": "2026-10-26 cursor/batch-11 liquid, ripple, vortex (Grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-11"
+        }
+      ]
     },
     "x-ray-reveal": {
       "hash": "731f2cff8f750d44",
@@ -9988,8 +10042,17 @@
       ]
     },
     "liquid-glitch": {
-      "hash": "4c8b018f037771e5",
-      "history": []
+      "hash": "46652bc64677b6ce",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T21:33:54.175Z",
+          "hash": "46652bc64677b6ce",
+          "prev_hash": "4c8b018f037771e5",
+          "commit": "9c26cf56",
+          "note": "2026-10-26 cursor/batch-11 liquid, ripple, vortex (Grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-11"
+        }
+      ]
     },
     "liquid-jelly": {
       "hash": "53744b82c10e8d09",
@@ -10009,8 +10072,17 @@
       ]
     },
     "liquid-mirror": {
-      "hash": "a7aabc874cb72de1",
-      "history": []
+      "hash": "662ea4e223083ee4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T21:33:54.175Z",
+          "hash": "662ea4e223083ee4",
+          "prev_hash": "a7aabc874cb72de1",
+          "commit": "9c26cf56",
+          "note": "2026-10-26 cursor/batch-11 liquid, ripple, vortex (Grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-11"
+        }
+      ]
     },
     "liquid-oil": {
       "hash": "94282d257aefff75",
@@ -10082,8 +10154,17 @@
       ]
     },
     "liquid-perspective": {
-      "hash": "190954c12e873fb4",
-      "history": []
+      "hash": "6a36110871abbf1c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T21:33:54.175Z",
+          "hash": "6a36110871abbf1c",
+          "prev_hash": "190954c12e873fb4",
+          "commit": "9c26cf56",
+          "note": "2026-10-26 cursor/batch-11 liquid, ripple, vortex (Grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-11"
+        }
+      ]
     },
     "liquid-rainbow-prismatic": {
       "hash": "857cd6879af532d9",
@@ -10137,12 +10218,30 @@
       "history": []
     },
     "liquid-viscous-grokcf1": {
-      "hash": "518ebb208d37df0b",
-      "history": []
+      "hash": "18d3214cd33593f7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T21:33:54.175Z",
+          "hash": "18d3214cd33593f7",
+          "prev_hash": "518ebb208d37df0b",
+          "commit": "9c26cf56",
+          "note": "2026-10-26 cursor/batch-11 liquid, ripple, vortex (Grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-11"
+        }
+      ]
     },
     "liquid-viscous-simple": {
-      "hash": "29ccdd2b8514c78f",
-      "history": []
+      "hash": "87c61fc245394ee6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T21:33:54.175Z",
+          "hash": "87c61fc245394ee6",
+          "prev_hash": "29ccdd2b8514c78f",
+          "commit": "9c26cf56",
+          "note": "2026-10-26 cursor/batch-11 liquid, ripple, vortex (Grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-11"
+        }
+      ]
     },
     "liquid-viscous": {
       "hash": "78779bbf8015b9d0",
@@ -11020,8 +11119,17 @@
       ]
     },
     "sim-volumetric-fake": {
-      "hash": "efe4b26a498afeb3",
-      "history": []
+      "hash": "430e4df7b2feb17a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T21:33:54.175Z",
+          "hash": "430e4df7b2feb17a",
+          "prev_hash": "efe4b26a498afeb3",
+          "commit": "9c26cf56",
+          "note": "2026-10-26 cursor/batch-11 liquid, ripple, vortex (Grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-11"
+        }
+      ]
     },
     "slime-mold-on-video": {
       "hash": "b85e191b08bbaa23",

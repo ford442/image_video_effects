@@ -1,27 +1,14 @@
-// Viscous Drag Bilateral — Codex (e) edge-aware displacement gel.
-// A/C packing: displacement.xy, edge confidence, coating thickness.
-// B and extraBuffer are intentionally unused; C loads are exact and bounded.
+// ═══════════════════════════════════════════════════════════════════
+//  Viscous Drag Bilateral
+//  Category: advanced-hybrid
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-26
+//  Ideas: isotropic 9-point diffusion (§12.2D); edge-confidence stall
+//  A packing: raw — displacement.xy, edge confidence, coating thickness
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) /
@@ -32,6 +19,16 @@ fn aces(x: vec3<f32>) -> vec3<f32> {
 fn stateAt(pixel: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
   return textureLoad(dataTextureC,
     clamp(pixel, vec2<i32>(0), dims - vec2<i32>(1)), 0);
+}
+
+// Weighted neighbor mean of the stored displacement. Weights sum to 1,
+// so a flat field is unchanged — same role as the old 4-neighbor box.
+fn isoDisp(coord: vec2<i32>, dims: vec2<i32>) -> vec2<f32> {
+  let edge = stateAt(coord + vec2<i32>(1, 0), dims).xy + stateAt(coord + vec2<i32>(-1, 0), dims).xy
+    + stateAt(coord + vec2<i32>(0, 1), dims).xy + stateAt(coord + vec2<i32>(0, -1), dims).xy;
+  let corner = stateAt(coord + vec2<i32>(1, 1), dims).xy + stateAt(coord + vec2<i32>(-1, 1), dims).xy
+    + stateAt(coord + vec2<i32>(1, -1), dims).xy + stateAt(coord + vec2<i32>(-1, -1), dims).xy;
+  return edge * 0.2 + corner * 0.05;
 }
 
 fn stateUV(uv: vec2<f32>, dims: vec2<i32>) -> vec4<f32> {
@@ -67,11 +64,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dragStrength = mix(0.25, 2.2, u.zoom_params.w);
 
   let previous = stateAt(coord, dims);
-  let average = (stateAt(coord + vec2<i32>(-1, 0), dims) +
-    stateAt(coord + vec2<i32>(1, 0), dims) +
-    stateAt(coord + vec2<i32>(0, -1), dims) +
-    stateAt(coord + vec2<i32>(0, 1), dims)) * 0.25;
-  var displacement = mix(previous.xy, average.xy, viscosity) *
+  // ── Idea 1: isotropic 9-point diffusion (§12.2D) ─────────────────
+  let average = isoDisp(coord, dims);
+  // ── Idea 2: edge-confidence stall ────────────────────────────────
+  // Last frame's bilateral confidence holds the gel on color edges.
+  let stall = mix(1.0, 0.35, clamp(previous.z, 0.0, 1.0));
+  var displacement = mix(previous.xy, average, viscosity * stall) *
     mix(0.965, 0.995, u.zoom_params.x);
 
   let p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
@@ -144,7 +142,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   rgb += tint * (specular * coating * 0.36 + clickFront * 0.11 + audio.z * 0.035);
   let alpha = clamp(mix(center.a, filteredAlpha, 0.72) * (0.72 + coating * 0.26) +
     brush * 0.05, 0.0, 1.0);
-  textureStore(writeTexture, coord, vec4<f32>(aces(rgb), alpha));
+  textureStore(writeTexture, coord, vec4<f32>(aces(max(rgb, vec3<f32>(0.0))), alpha));
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler,
     sampleUV, 0.0).r;

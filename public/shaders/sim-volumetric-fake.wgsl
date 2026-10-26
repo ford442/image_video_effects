@@ -3,31 +3,12 @@
 //  Category: lighting-effects
 //  Features: simulation, fake-volumetrics, radial-blur, god-rays, upgraded-rgba, audio-reactive
 //  Complexity: Medium
-//  Upgraded: 2026-09-11
-//  Ideas: depth occlusion vs the light; discrete dust motes on radial taps
+//  Upgraded: 2026-10-26
+//  Ideas: depth occlusion vs the light; discrete dust motes on radial taps; Beer-Lambert march (§12.2F); Henyey-Greenstein lobe (§12.2F)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -44,6 +25,12 @@ fn noise(p: vec2<f32>) -> f32 {
         mix(hash12(i + vec2<f32>(0.0, 1.0)), hash12(i + vec2<f32>(1.0, 1.0)), u.x),
         u.y
     );
+}
+
+fn hg(cosTheta: f32, g: f32) -> f32 {
+    let g2 = g * g;
+    let denom = max(1.0 + g2 - 2.0 * g * cosTheta, 0.0001);
+    return (1.0 - g2) / max(pow(denom, 1.5), 0.0001);
 }
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
@@ -101,7 +88,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         // Idea 1: occluder closer to camera than the light blocks the shaft
         let blocked = step(lightDepth + 0.02, sampleDepth);
         occlusion += luma * (1.0 - t) * (1.0 - blocked);
-        let attenuation = (1.0 - t) * (1.0 - t) * (1.0 - blocked);
+        // ── Idea 1: Beer-Lambert along the march (§12.2F) ───────────
+        let extinct = exp(-t * scattering * (0.35 + dustDensity));
+        let attenuation = (1.0 - t) * (1.0 - t) * (1.0 - blocked) * extinct;
         volumetric += vec3<f32>(1.0) * attenuation;
         // Idea 2: discrete motes on taps
         let mote = step(0.92, hash12(floor(samplePos * 80.0) + vec2<f32>(time * noiseSpeed, f32(i))));
@@ -125,13 +114,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var color = src.rgb + lightRays;
     let lightDir = normalize(vec2<f32>(0.5) - lightPos);
     let viewDir = normalize(uv - lightPos);
-    let alignment = max(0.0, dot(viewDir, lightDir));
-    color += sunColor * alignment * alignment * lightIntensity * 0.1;
+    // ── Idea 2: Henyey-Greenstein (§12.2F) ──────────────────────────
+    // Same angle as the old alignment term. Peak brightness is matched
+    // to that term; scattering sets how tight the forward lobe is.
+    let gPhase = clamp((scattering - 0.3) / 1.2 * 0.72, 0.0, 0.72);
+    let cosT = clamp(dot(viewDir, lightDir), -1.0, 1.0);
+    let phase = hg(cosT, gPhase);
+    let phaseN = phase / max(hg(1.0, gPhase), 0.001);
+    color += sunColor * phaseN * lightIntensity * 0.1;
     let falloff = 1.0 / (1.0 + distToLight * distToLight * 2.0);
     color = mix(src.rgb, color, falloff);
 
     let alpha = clamp(0.55 + length(lightRays) * 0.8 + treble * 0.1, 0.0, 1.0) * src.a;
-    let display = vec4<f32>(aces(color), alpha);
+    let display = vec4<f32>(aces(max(color, vec3<f32>(0.0))), alpha);
     textureStore(writeTexture, gid.xy, display);
     textureStore(dataTextureA, gid.xy, display);
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

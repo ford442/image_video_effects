@@ -3,7 +3,9 @@
 //  Category: liquid-effects
 //  Features: mouse-driven, audio-reactive, depth-aware, temporal, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-08-15
+//  Upgraded: 2026-10-26
+//  Ideas: dropout tail (§12.2B); chroma delay line (§12.2B)
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -74,7 +76,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   var glitchOffset = fluidStream + vec2<f32>((blockRand - 0.5) * corruption * 0.045, sin(block.x + time * 3.5) * corruption * 0.003);
   let isBadSignal = step(0.86 - corruption * 0.18 - audio.z * 0.15, rowRand);
-  glitchOffset.x += (rowRand - 0.5) * isBadSignal * (0.035 + corruption * 0.14);
+  // ── Idea 1: dropout tail (§12.2B) ────────────────────────────────
+  // The bad row fades along the scanline instead of shifting as a block.
+  let tail = exp(-clamp(uv.x, 0.0, 1.0) * mix(0.8, 5.5, rowRand));
+  glitchOffset.x += (rowRand - 0.5) * isBadSignal * (0.035 + corruption * 0.14) * mix(0.25, 1.0, tail);
 
   // Interactive pointer drag / vortex glitch tearing
   let mousePos = sprungMouse;
@@ -105,13 +110,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
 
-  // Chromatic glitch aberration channels
+  // ── Idea 2: chroma delay line (§12.2B) ──────────────────────────
+  // Green is the luma sample. Red and blue lag along the scan.
   let smear = vec2<f32>(glitchOffset.x * (1.0 + audio.x * 0.75), glitchOffset.y);
-  let split = vec2<f32>(0.0035 + chromaShift * 0.022 + audio.y * 0.008, 0.0);
+  let delay = vec2<f32>(0.0035 + chromaShift * 0.022 + audio.y * 0.008, 0.0);
 
-  let sampleR = textureSampleLevel(readTexture, u_sampler, clamp(uv + smear + split, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let sampleR = textureSampleLevel(readTexture, u_sampler, clamp(uv + smear - delay * 0.55, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
   let sampleG = textureSampleLevel(readTexture, u_sampler, clamp(uv + smear, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-  let sampleB = textureSampleLevel(readTexture, u_sampler, clamp(uv + smear - split, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let sampleB = textureSampleLevel(readTexture, u_sampler, clamp(uv + smear - delay, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
 
   // Exact-load temporal state feedback from dataTextureC
   let histUV = clamp(uv - smear * 0.4, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -120,11 +126,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let scanline = 0.88 + 0.12 * sin(f32(gid.y) * 3.14159 + time * (9.0 + audio.z * 12.0));
   let digitalTint = vec3<f32>(0.1, 0.0, 0.16) * blockRand * (corruption + audio.y * 0.8);
-  let currentRGB = vec3<f32>(sampleR.r, sampleG.g, sampleB.b) * scanline + digitalTint;
+  var currentRGB = vec3<f32>(sampleR.r, sampleG.g, sampleB.b) * scanline + digitalTint;
+  let dropout = isBadSignal * tail;
+  currentRGB += vec3<f32>(dropout * (0.08 + corruption * 0.12));
 
   let persistence = clamp(0.12 + corruption * 0.38 - burstMask * 0.1, 0.04, 0.52) * history.a;
   var rgb = mix(currentRGB, history.rgb, persistence);
-  rgb = acesToneMapping(rgb);
+  rgb = acesToneMapping(max(rgb, vec3<f32>(0.0)));
 
   let sourceAlpha = max(sampleR.a, max(sampleG.a, sampleB.a));
   let energy = clamp(length(smear) * 20.0 + burstMask * 0.4 + isBadSignal * 0.25, 0.0, 1.0);

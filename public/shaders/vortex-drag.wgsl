@@ -3,31 +3,13 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
 //  Complexity: High
-//  Upgraded: 2026-08-30
+//  Upgraded: 2026-10-26
+//  Ideas: pinch spin-up; ribbon groove
 //  A packing: ACES display RGBA
 //  Motion: sprung vortex core + helical streak ribbons
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -108,7 +90,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     click = click + select(0.0, exp(-abs(rd - age * 0.65) * 16.0) * exp(-age * 1.5), alive);
   }
 
-  let angle = twistStrength * effectT * effectT * hold + helix * 6.0 + click * 1.2;
+  // ── Idea 1: pinch spin-up ───────────────────────────────────────
+  // Pinching the core spins the twist up; a bulge slows it. The pinch
+  // still scales the rotated vector below.
+  let pinchIn = max(pinchStrength, 0.0);
+  let bulge = max(-pinchStrength, 0.0);
+  let spin = 1.0 + pinchIn * effectT * 0.85 - bulge * effectT * 0.35;
+  let angle = twistStrength * effectT * effectT * hold * spin + helix * 6.0 + click * 1.2;
   let s = sin(angle);
   let c = cos(angle);
   var rotated = vec2<f32>(dVec.x * c - dVec.y * s, dVec.x * s + dVec.y * c);
@@ -125,11 +113,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var hdr = warped.rgb * vec3<f32>(1.05, 1.0, 0.95) * (1.0 + pinchMag * 0.08);
   hdr = hdr * vec3<f32>(1.0 + twistMag * 0.04, 1.0, 1.0 - twistMag * 0.04);
   hdr = mix(hdr, hist.rgb, 0.16 * effectT);
+  // ── Idea 2: ribbon groove ────────────────────────────────────────
+  // The photo under the ribbon is stretched thin before the thread is lit.
+  hdr = hdr * (1.0 - ribbon * 0.28);
   hdr = hdr + palette(time * 0.08 + dist * 1.6 + binA * 0.1) * ribbon * (0.35 + treble * 0.2 + binB * 0.1);
   hdr = hdr + vec3<f32>(0.75, 0.9, 1.0) * click * 0.35;
   let luma = dot(hdr, vec3<f32>(0.2126, 0.7152, 0.0722));
   hdr = luma + (hdr - vec3<f32>(luma)) * 1.2;
-  let rgb = acesToneMap(hdr * 1.08);
+  let rgb = acesToneMap(max(hdr, vec3<f32>(0.0)) * 1.08);
 
   let alpha = clamp(warped.a * (0.7 + effectT * 0.3) * (1.0 - pinchMag * 0.15) + ribbon * 0.25 + click * 0.2, 0.12, 0.98);
   let outCol = vec4<f32>(rgb, alpha);

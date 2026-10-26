@@ -13,7 +13,9 @@
     "viscous-drag",
     "bilateral-filter",
     "mouse-driven",
-    "ripple-shockwaves"
+    "ripple-shockwaves",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
