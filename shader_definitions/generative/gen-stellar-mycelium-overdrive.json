@@ -1,14 +1,51 @@
 {
   "id": "gen-stellar-mycelium-overdrive",
-  "title": "Stellar Mycelium Overdrive",
   "description": "A hyper-organic network of glowing stardust mycelium that dynamically branches, pulses with cosmic energy, and responds to gravity wells.",
   "url": "shaders/gen-stellar-mycelium-overdrive.wgsl",
   "type": "compute",
-  "workgroup_size": [16, 16, 1],
-  "parameters": [
-    { "name": "Density", "type": "float", "default": 1.0, "min": 0.1, "max": 5.0, "step": 0.1 },
-    { "name": "Pulse Speed", "type": "float", "default": 1.0, "min": 0.0, "max": 3.0, "step": 0.1 },
-    { "name": "Glow Intensity", "type": "float", "default": 2.0, "min": 0.0, "max": 5.0, "step": 0.1 },
-    { "name": "Color Shift", "type": "float", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.05 }
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "name": "Stellar Mycelium Overdrive",
+  "category": "generative",
+  "params": [
+    {
+      "default": 1.0,
+      "min": 0.1,
+      "max": 5.0,
+      "step": 0.1,
+      "id": "p1",
+      "mapping": "zoom_params.x",
+      "name": "Density"
+    },
+    {
+      "default": 1.0,
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.1,
+      "id": "p2",
+      "mapping": "zoom_params.y",
+      "name": "Pulse Speed"
+    },
+    {
+      "default": 2.0,
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.1,
+      "id": "p3",
+      "mapping": "zoom_params.z",
+      "name": "Glow Intensity"
+    },
+    {
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.05,
+      "id": "p4",
+      "mapping": "zoom_params.w",
+      "name": "Color Shift"
+    }
   ]
 }

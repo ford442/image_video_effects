@@ -12,7 +12,7 @@ fn sdGyroid(p: vec3<f32>, scale: f32, thickness: f32, bias: f32) -> f32 {
 
 // Map function
 fn map(pos: vec3<f32>, mouse_dist: f32) -> f32 {
-    let density = u.custom[0];
+    let density = u.zoom_params.x;
     var p = pos;
     // Mouse Interaction
     if (u.zoom_config.w > 0.5) {
@@ -39,14 +39,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (id.x >= u32(dims.x) || id.y >= u32(dims.y)) { return; }
 
     let audio = getAudio();
-    let pulse_speed = u.custom[1];
-    let glow_intensity = u.custom[2];
-    let color_shift = u.custom[3];
+    let pulse_speed = u.zoom_params.y;
+    let glow_intensity = u.zoom_params.z;
+    let color_shift = u.zoom_params.w;
 
     // Setup camera, ray direction
     var ro = vec3<f32>(0.0, 0.0, -3.0);
     var rd = normalize(vec3<f32>(uv, 1.0));
-    let time = u.time * pulse_speed * 0.5;
+    let time = u.config.x * pulse_speed * 0.5;
     ro.z += time;
 
     // Mouse calculation
