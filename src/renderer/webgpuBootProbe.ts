@@ -311,7 +311,11 @@ export async function negotiateCanvasColor(
     return result(none);
   }
 
-  const ladder = requested.extendedToneMapping
+  // Extended tone mapping only changes anything on a float16 swapchain; on the 8-bit
+  // getPreferredCanvasFormat() canvas it is accepted but inert, so never report it as
+  // applied there (the rgba16float canvas is #1512).
+  const canExtend = format === 'rgba16float';
+  const ladder = requested.extendedToneMapping && canExtend
     ? [{ displayP3: true, extendedToneMapping: true }, { displayP3: true, extendedToneMapping: false }]
     : [{ displayP3: true, extendedToneMapping: false }];
 
@@ -569,8 +573,14 @@ export async function runWebGpuBootProbe(
     }
     console.log(`[WebGPU Probe] canvasCopySrc=${canvasCopySrc}`);
 
+    let formatCapabilities: DeviceFormatCapabilities;
     try {
       await runProbePipeline(device);
+      // Inside the try: a rejection here must destroy the device like any other failed rung.
+      formatCapabilities = await probeFormatCapabilities(adapter, {
+        isMobile: isMobileDevice(),
+        device,
+      });
     } catch (e) {
       record.error = e instanceof Error ? e.message : String(e);
       record.failedStage = 'probePipeline';
@@ -593,10 +603,6 @@ export async function runWebGpuBootProbe(
     const supportsDeepWorkgroup = meetsDeepWorkgroupLimits(device.limits);
     const adapterIdentity = readAdapterIdentity(adapter);
     const adapterGpuType = inferAdapterGpuType(adapterIdentity);
-    const formatCapabilities = await probeFormatCapabilities(adapter, {
-      isMobile: isMobileDevice(),
-      device,
-    });
 
     // Identity first: allowsFullWorkingSize matches the Pascal blocklist against this string.
     let adapterSummary =
