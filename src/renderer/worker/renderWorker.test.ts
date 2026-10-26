@@ -82,6 +82,10 @@ function fakeRenderer() {
       calls.push(['setCanvasCopySrc', args]);
       return true;
     },
+    startCrossfade: (...args: unknown[]) => {
+      calls.push(['startCrossfade', args]);
+      return true;
+    },
     warmShaders: record('warmShaders'),
     loadShader: vi.fn(async (id: string) => id !== 'broken'),
     loadImageBitmap: vi.fn(async () => undefined),
@@ -233,6 +237,34 @@ describe('render worker host ↔ client', () => {
     expect(getRuntimeGraph('graphlab-draft')).toBeNull();
     expect(hasGraph('graphlab-draft')).toBe(false);
     expect(getRuntimeSimRingRequest('graphlab-draft')).toBeUndefined();
+  });
+
+  it('applies startCrossfade on the worker renderer: the page sends the duration, nothing is read back', async () => {
+    const { mainPort, fake } = setup();
+    const client = await connectRenderWorker(mainPort);
+    await client.rpc({ type: 'init', canvas: {} as OffscreenCanvas, config: CONFIG, colorOptIns: {}, appBaseUrl: 'http://app/' });
+    fake.calls.length = 0;
+    client.send({ type: 'startCrossfade', durationMs: 1500 });
+    await flushPorts();
+    expect(fake.calls).toEqual([['startCrossfade', [1500]]]);
+  });
+
+  it('ignores startCrossfade before init and after the worker lost its device', async () => {
+    const { mainPort, fake, lose } = (() => {
+      const ctx = setup();
+      return { ...ctx, lose: ctx.fake.lose };
+    })();
+    const client = await connectRenderWorker(mainPort);
+    client.send({ type: 'startCrossfade', durationMs: 1000 });
+    await flushPorts();
+    expect(fake.calls.filter(([n]) => n === 'startCrossfade')).toEqual([]);
+
+    await client.rpc({ type: 'init', canvas: {} as OffscreenCanvas, config: CONFIG, colorOptIns: {}, appBaseUrl: 'http://app/' });
+    lose('driver reset');
+    await flushPorts();
+    client.send({ type: 'startCrossfade', durationMs: 1000 });
+    await flushPorts();
+    expect(fake.calls.filter(([n]) => n === 'startCrossfade')).toEqual([]);
   });
 
   it('re-negotiates the canvas color space through the setDisplayP3 RPC', async () => {
@@ -592,6 +624,30 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
     expect(second.fake.calls.filter(([n]) => n === 'setSlotShader')).toEqual([['setSlotShader', [3, 'plasma']]]);
     await first.backend.destroy();
     await second.backend.destroy();
+  });
+
+  it('sends startCrossfade to the worker and reports whether it was sent', async () => {
+    const { backend, fake } = await backendWithWorker();
+    await flushPorts();
+    fake.calls.length = 0;
+    expect(backend.startCrossfade(2000)).toBe(true);
+    expect(backend.startCrossfade(0)).toBe(true); // a hard cut still ends a fade in flight
+    expect(backend.startCrossfade(-1)).toBe(false);
+    expect(backend.startCrossfade(Number.NaN)).toBe(false);
+    await flushPorts();
+    expect(fake.calls).toEqual([['startCrossfade', [2000]], ['startCrossfade', [0]]]);
+    await backend.destroy();
+  });
+
+  it('a lost proxy sends no crossfade', async () => {
+    const { backend, fake } = await backendWithWorker();
+    await flushPorts();
+    fake.lose('driver reset');
+    await flushPorts();
+    fake.calls.length = 0;
+    expect(backend.startCrossfade(2000)).toBe(false);
+    await flushPorts();
+    expect(fake.calls).toEqual([]);
   });
 
   it('forwards runtime graphs to the worker as a setRuntimeGraph command', async () => {

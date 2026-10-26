@@ -14,6 +14,7 @@ import type {
   ImageCaptionPipeline,
   LlmEngine,
   AutoTransitionConfig,
+  TriggerTransitionOptions,
 } from './types/aiVj';
 
 export type {
@@ -24,6 +25,7 @@ export type {
   LlmChatCompletion,
   LlmEngine,
   AutoTransitionConfig,
+  TriggerTransitionOptions,
 } from './types/aiVj';
 
 // --- Configuration ---
@@ -61,6 +63,11 @@ export class Alucinate {
   private onUpdateStack: (ids: string[]) => void;
   public onUpdateParams?: (params: Record<string, number>[]) => void;
   public onApplyParamsDirect?: (params: Record<string, number>[]) => void;
+  /**
+   * A transition is about to swap the shader stack and asked to dissolve instead of cutting:
+   * arm the renderer's cue crossfade (called before onUpdateStack, with the transition duration).
+   */
+  public onCrossfade?: (durationMs: number) => void;
   public getCurrentState: () => { currentImage: ImageRecord | null, currentShader: ShaderRecord | null };
   private currentParams: Record<string, number>[] = [];
   private currentParamsSignature = '';
@@ -70,6 +77,8 @@ export class Alucinate {
   private autoTransitionConfig: AutoTransitionConfig | null = null;
   private beatDetector: BeatDetector | null = null;
   private presetCursor = 0;
+  /** The transition being built was fired with { crossfade: true } (OSC cue, button). */
+  private crossfadeRequested = false;
 
   constructor(
     onNextImage: (url: string) => void,
@@ -568,9 +577,20 @@ Your Selection:
     void disposeAudioGraph();
   }
 
-  public async triggerNextTransition(): Promise<boolean> {
+  /**
+   * Fire the next transition by hand. Bare, it behaves exactly as before; with
+   * `{ crossfade: true }` a preset that swaps the shader stack dissolves from the picture on
+   * screen instead of cutting. A param-only transition keeps lerping its sliders either way.
+   */
+  public async triggerNextTransition(options?: TriggerTransitionOptions): Promise<boolean> {
     if (!this.transitionOrchestrator || !this.autoTransitionConfig) return false;
-    const target = await this.buildTransitionTarget(this.autoTransitionConfig);
+    this.crossfadeRequested = !!options?.crossfade;
+    let target;
+    try {
+      target = await this.buildTransitionTarget(this.autoTransitionConfig);
+    } finally {
+      this.crossfadeRequested = false;
+    }
     if (!target) return false;
     return this.transitionOrchestrator.trigger(target);
   }
@@ -684,6 +704,10 @@ Your Selection:
         this.currentParams = hardPreset.params.map((p) => ({ ...p }));
         const nextSignature = this.shaderSignature(hardPreset.shaderIds);
         this.currentParamsSignature = nextSignature;
+        // The shader identity changes: dissolve from the picture on screen when asked to.
+        // Armed before the stack swap, so the first slot change lands inside the cue.
+        const hold = this.crossfadeRequested ? this.transitionOrchestrator?.requestHold(nextSignature) : null;
+        if (hold) this.onCrossfade?.(hold.durationMs);
         this.onUpdateStack(hardPreset.shaderIds);
         this.onApplyParamsDirect?.(hardPreset.params);
         this.onUpdateParams?.(hardPreset.params);

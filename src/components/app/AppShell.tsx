@@ -4,7 +4,7 @@ import Controls from '../Controls';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from '../../renderer/types';
 import { RendererManager, RendererType } from '../../renderer/RendererManager';
 import { isWasmForcedByURL } from '../../renderer/rendererUrl';
-import type { AIStatus, AutoTransitionConfig, ImageRecord } from '../../types/aiVj';
+import type { AIStatus, AutoTransitionConfig, ImageRecord, TriggerTransitionOptions } from '../../types/aiVj';
 import { VideoRecord } from '../../syncTypes';
 import { VideoSegment } from '../../services/videoSegmentManager';
 import { SharedChain } from '../../services/layerChainShare';
@@ -67,7 +67,8 @@ export interface AppShellProps {
     handleUpdateParams: (paramsList: Record<string, number>[]) => void;
     handleRandomizeParams: () => void;
     handleSavePreset: (name: string) => void;
-    handleTriggerNextTransition: () => void;
+    handleTriggerNextTransition: (options?: TriggerTransitionOptions) => void;
+    handleArmCrossfade?: (durationMs: number) => void;
     handleRandomizeSlot: (slot: number) => void;
     handleSetSlotParam: (slot: number, param: string, value: number) => void;
     handleShareVjSet: () => void;
@@ -205,6 +206,7 @@ export function AppShell(props: AppShellProps) {
         handleRandomizeParams,
         handleSavePreset,
         handleTriggerNextTransition,
+        handleArmCrossfade,
         handleRandomizeSlot,
         handleSetSlotParam,
         handleShareVjSet,
@@ -374,6 +376,7 @@ export function AppShell(props: AppShellProps) {
                         onRandomizeParams={handleRandomizeParams}
                         onSavePreset={handleSavePreset}
                         onTriggerNextTransition={handleTriggerNextTransition}
+                        onArmCrossfade={handleArmCrossfade}
                         onRandomizeSlot={handleRandomizeSlot}
                         onSetSlotParam={handleSetSlotParam}
                         onShareVjSet={handleShareVjSet}
